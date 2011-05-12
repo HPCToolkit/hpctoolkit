@@ -176,13 +176,13 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
 
   { 'R', "replace-path",    CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL},
-    
+
   // Output options
   { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
      NULL },
   {  0 , "compact",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
-  
+
   // General
   { 'v', "verbose",     CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
      CLP::isOptArg_long },
@@ -233,36 +233,36 @@ Args::~Args()
 }
 
 
-void 
+void
 Args::printVersion(std::ostream& os) const
 {
   os << getCmd() << ": " << version_info << endl;
 }
 
 
-void 
+void
 Args::printUsage(std::ostream& os) const
 {
   os << "Usage: " << getCmd() << " " << usage_summary << endl
      << usage_details << endl;
-} 
+}
 
 
-void 
+void
 Args::printError(std::ostream& os, const char* msg) const
 {
   os << getCmd() << ": " << msg << endl
      << "Try '" << getCmd() << " --help' for more information." << endl;
 }
 
-void 
+void
 Args::printError(std::ostream& os, const std::string& msg) const
 {
   printError(os, msg.c_str());
 }
 
 
-const std::string& 
+const std::string&
 Args::getCmd() const
 {
   return parser.getCmd();
@@ -283,7 +283,7 @@ Args::parse(int argc, const char* const argv[])
     // -------------------------------------------------------
     
     // Special options that should be checked first
-    if (parser.isOpt("debug")) { 
+    if (parser.isOpt("debug")) {
       int dbg = 1;
       if (parser.isOptArg("debug")) {
 	const string& arg = parser.getOptArg("debug");
@@ -291,11 +291,11 @@ Args::parse(int argc, const char* const argv[])
       }
       Diagnostics_SetDiagnosticFilterLevel(dbg);
     }
-    if (parser.isOpt("help")) { 
-      printUsage(std::cerr); 
+    if (parser.isOpt("help")) {
+      printUsage(std::cerr);
       exit(1);
     }
-    if (parser.isOpt("version")) { 
+    if (parser.isOpt("version")) {
       printVersion(std::cerr);
       exit(1);
     }
@@ -306,8 +306,8 @@ Args::parse(int argc, const char* const argv[])
 	verb = (int)CmdLineParser::toLong(arg);
       }
       Diagnostics_SetDiagnosticFilterLevel(verb);
-    } 
-    if (parser.isOpt("debug-proc")) { 
+    }
+    if (parser.isOpt("debug-proc")) {
       dbgProcGlob = parser.getOptArg("debug-proc");
     }
     
@@ -325,15 +325,15 @@ Args::parse(int argc, const char* const argv[])
     }
     if (parser.isOpt("loop-intvl")) {
       const string& arg = parser.getOptArg("loop-intvl");
-      isIrreducibleIntervalLoop = 
+      isIrreducibleIntervalLoop =
 	CmdLineParser::parseArg_bool(arg, "--loop-intvl option");
     }
     if (parser.isOpt("loop-fwd-subst")) {
       const string& arg = parser.getOptArg("loop-fwd-subst");
-      isForwardSubstitution = 
+      isForwardSubstitution =
 	CmdLineParser::parseArg_bool(arg, "--loop-fwd-subst option");
     }
-    if (parser.isOpt("normalize")) { 
+    if (parser.isOpt("normalize")) {
       const string& arg = parser.getOptArg("normalize");
       doNormalizeTy = parseArg_norm(arg, "--normalize option");
     }
@@ -342,10 +342,10 @@ Args::parse(int argc, const char* const argv[])
       string arg = parser.getOptArg("replace-path");
       
       std::vector<std::string> replacePaths;
-      StrUtil::tokenize_str(arg,CLP_SEPARATOR, replacePaths);
+      StrUtil::tokenize_str(arg, CLP_SEPARATOR, replacePaths);
       
       for (uint i = 0; i < replacePaths.size(); ++i) {
-	int occurancesOfEquals = 
+	int occurancesOfEquals =
 	  Analysis::Util::parseReplacePath(replacePaths[i]);
 	
 	if (occurancesOfEquals > 1) {
@@ -361,9 +361,9 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("output")) {
       out_filenm = parser.getOptArg("output");
     }
-    if (parser.isOpt("compact")) { 
+    if (parser.isOpt("compact")) {
       prettyPrintOutput = false;
-    } 
+    }
     
     // Check for required arguments
     if (parser.getNumArgs() != 1) {
@@ -386,15 +386,15 @@ Args::parse(int argc, const char* const argv[])
 }
 
 
-void 
+void
 Args::dump(std::ostream& os) const
 {
-  os << "Args.cmd= " << getCmd() << endl; 
+  os << "Args.cmd= " << getCmd() << endl;
   os << "Args.in_filenm= " << in_filenm << endl;
 }
 
 
-void 
+void
 Args::ddump() const
 {
   dump(std::cerr);
@@ -423,27 +423,27 @@ Args::parseArg_norm(const string& value, const char* err_note)
 //***************************************************************************
 
 #if 0
-void 
-Args::setHPCHome() 
+void
+Args::setHPCHome()
 {
-  char * home = getenv(HPCTOOLKIT.c_str()); 
+  char * home = getenv(HPCTOOLKIT.c_str());
   if (home == NULL) {
     cerr << "Error: Please set your " << HPCTOOLKIT << " environment variable."
-	 << endl; 
-    exit(1); 
-  } 
+	 << endl;
+    exit(1);
+  }
    
-  // chop of trailing slashes 
-  int len = strlen(home); 
-  if (home[len-1] == '/') home[--len] = 0; 
+  // chop of trailing slashes
+  int len = strlen(home);
+  if (home[len-1] == '/') home[--len] = 0;
    
-  DIR *fp = opendir(home); 
+  DIR *fp = opendir(home);
   if (fp == NULL) {
-    cerr << "Error: " << home << " is not a directory" << endl; 
-    exit(1); 
-  } 
-  closedir(fp); 
-  hpcHome = home; 
-} 
-#endif  
+    cerr << "Error: " << home << " is not a directory" << endl;
+    exit(1);
+  }
+  closedir(fp);
+  hpcHome = home;
+}
+#endif
 

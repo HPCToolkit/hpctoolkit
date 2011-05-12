@@ -235,7 +235,7 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
 #undef CLP
 
 
-static bool 
+static bool
 isOptArg_src(const char* x)
 {
   string opt(x);
@@ -262,7 +262,7 @@ isOptArg_src(const char* x)
 }
 
 
-static bool 
+static bool
 isOptArg_obj(const char* x)
 {
   string opt(x);
@@ -326,14 +326,14 @@ Args::~Args()
 }
 
 
-void 
+void
 Args::printVersion(std::ostream& os) const
 {
   os << getCmd() << ": " << version_info << endl;
 }
 
 
-void 
+void
 Args::printUsage(std::ostream& os) const
 {
   os << "Usage: \n"
@@ -341,29 +341,29 @@ Args::printUsage(std::ostream& os) const
      << "  " << getCmd() << " " << usage_summary2 << endl
      << "  " << getCmd() << " " << usage_summary3 << endl
      << usage_details << endl;
-} 
+}
 
 
-void 
+void
 Args::printError(std::ostream& os, const char* msg) /*const*/
 {
   os << getCmd() << ": " << msg << endl
      << "Try '" << getCmd() << " --help' for more information." << endl;
 }
 
-void 
+void
 Args::printError(std::ostream& os, const std::string& msg) /*const*/
 {
   printError(os, msg.c_str());
 }
 
 
-const std::string& 
+const std::string&
 Args::getCmd() /*const*/
-{ 
+{
   // avoid error messages with: .../bin/hpcproftt-bin
   static string cmd = "hpcproftt";
-  return cmd; // parser.getCmd(); 
+  return cmd; // parser.getCmd();
 }
 
 
@@ -390,11 +390,11 @@ Args::parse(int argc, const char* const argv[])
       Diagnostics_SetDiagnosticFilterLevel(dbg);
       trace = dbg;
     }
-    if (parser.isOpt("help")) { 
-      printUsage(std::cerr); 
+    if (parser.isOpt("help")) {
+      printUsage(std::cerr);
       exit(1);
     }
-    if (parser.isOpt("version")) { 
+    if (parser.isOpt("version")) {
       printVersion(std::cerr);
       exit(1);
     }
@@ -433,7 +433,7 @@ Args::parse(int argc, const char* const argv[])
       StrUtil::tokenize_str(str, CLP_SEPARATOR, searchPaths);
       
       for (uint i = 0; i < searchPaths.size(); ++i) {
-	searchPathTpls.push_back(Analysis::PathTuple(searchPaths[i], 
+	searchPathTpls.push_back(Analysis::PathTuple(searchPaths[i],
 						     Analysis::DefaultPathTupleTarget));
       }
     }
@@ -587,10 +587,10 @@ Args::parseArg_metric(Args* args, const string& value, const char* errTag)
 }
 
 
-void 
+void
 Args::dump(std::ostream& os) const
 {
-  os << "Args.cmd= " << getCmd() << endl; 
+  os << "Args.cmd= " << getCmd() << endl;
   Analysis::Args::dump(os);
 }
 
