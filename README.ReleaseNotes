@@ -162,6 +162,30 @@ Contents:
 ------------------------------------------------------------
 
 ----------------------------------------
+HPCToolkit Version 5.1.0: [2011.05.20]
+----------------------------------------
+
+- Full support for analyzing 64-bit Linux-POWER7 binaries [hpcprof, hpcstruct]
+
+- Preliminary support for sampling processes to monitor [hpcrun]
+
+- In binary analysis for computing unwind information: improvements
+  computing function bounds on partially stripped code (32-bit x86 and
+  libc on Ubuntu) [hpcfnbounds]
+
+- Monitoring threaded applications: fixed a rare race condition
+  tracking thread creation/destruction [libmonitor]
+
+- When analyzing multiple measurement databases, resolve certain bugs
+  [hpcprof-mpi]
+
+- Upgrade libraries for reading binaries [hpctoolkit-externals]
+  - upgrade to Symtab API 7.0.1
+  - upgrade to libelf 0.8.13
+  - upgrade to libdwarf-20110113
+
+
+----------------------------------------
 HPCToolkit Version 5.0.0: [2011.02.15]
 ----------------------------------------
 
