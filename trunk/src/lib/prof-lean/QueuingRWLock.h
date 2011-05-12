@@ -95,7 +95,7 @@ static inline bool
 QueuingRWLockOp_isParallel(QueuingRWLockOp_t x, QueuingRWLockOp_t y)
 {
   return (x == QueuingRWLockOp_read && y == QueuingRWLockOp_read);
-};
+}
 
 
 // ---------------------------------------------------------

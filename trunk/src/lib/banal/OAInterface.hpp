@@ -77,6 +77,8 @@
 #include "OpenAnalysis/Utils/OutputBuilderDOT.hpp"
 
 //*************************** User Include Files ****************************
+
+#include <include/gcc-attr.h>
  
 #include <lib/isa/ISA.hpp>
 
@@ -91,11 +93,11 @@
 // IRInterface types: Use OA_IRHANDLETYPE_SZ64 (size of bfd_vma/VMA)
 //   ProcHandle  - binutils::Proc*
 //   StmtHandle  - binutils::Insn*
-//   ExprHandle  - 
-//   LeafHandle  - 
+//   ExprHandle  -
+//   LeafHandle  -
 //   StmtLabel   - VMA
 //   SymHandle   - char* (simply dummy strings)
-//   ConstHandle - 
+//   ConstHandle -
 
 // FIXME: eraxxon: Due to some unwariness, these types are a mixture
 // of fixed size (VMA) and relative size (binutils::Insn*).  I think we
@@ -116,7 +118,7 @@
 namespace BAnal {
 
 inline BinUtil::Insn*
-OA_CFG_getBegInsn(OA::OA_ptr<OA::CFG::NodeInterface> bb) 
+OA_CFG_getBegInsn(OA::OA_ptr<OA::CFG::NodeInterface> bb)
 {
   OA::OA_ptr<OA::CFG::NodeStatementsIteratorInterface> stmtIt =
     bb->getNodeStatementsIterator();
@@ -130,7 +132,7 @@ OA_CFG_getBegInsn(OA::OA_ptr<OA::CFG::NodeInterface> bb)
 
 
 inline BinUtil::Insn*
-OA_CFG_getEndInsn(OA::OA_ptr<OA::CFG::NodeInterface> bb) 
+OA_CFG_getEndInsn(OA::OA_ptr<OA::CFG::NodeInterface> bb)
 {
   OA::OA_ptr<OA::CFG::NodeStatementsRevIteratorInterface> stmtIt =
     bb->getNodeStatementsRevIterator();
@@ -186,9 +188,9 @@ private:
 
 namespace BAnal {
 
-class OAInterface 
+class OAInterface
   : public virtual OA::IRHandlesIRInterface,
-    public OA::CFG::CFGIRInterfaceDefault 
+    public OA::CFG::CFGIRInterfaceDefault
 {
 public:
 
@@ -215,12 +217,15 @@ public:
   std::string toString(const OA::ConstValHandle h);
   
   // Given a statement, pretty-print it to the output stream os.
-  void dump(OA::StmtHandle stmt, std::ostream& os);
+  void
+  dump(OA::StmtHandle stmt, std::ostream& os);
   
   // Given a memory reference, pretty-print it to the output stream os.
-  void dump(OA::MemRefHandle h, std::ostream& os);
+  void
+  dump(OA::MemRefHandle h, std::ostream& os);
 
-  void currentProc(OA::ProcHandle p);
+  void
+  currentProc(OA::ProcHandle p);
 
   //-------------------------------------------------------------------------
   // CFGIRInterfaceDefault
@@ -228,7 +233,8 @@ public:
   
   //! Given a ProcHandle, return an IRRegionStmtIterator* for the
   //! procedure. The user must free the iterator's memory via delete.
-  OA::OA_ptr<OA::IRRegionStmtIterator> procBody(OA::ProcHandle h);
+  OA::OA_ptr<OA::IRRegionStmtIterator>
+  procBody(OA::ProcHandle h);
 
 
   //--------------------------------------------------------
@@ -236,64 +242,101 @@ public:
   //--------------------------------------------------------
 
   //! Are return statements allowed
-  bool returnStatementsAllowed() { return true; }
+  bool
+  returnStatementsAllowed()
+  { return true; }
 
   //! Given a statement, return its CFG::IRStmtType
-  OA::CFG::IRStmtType getCFGStmtType(OA::StmtHandle h);
+  OA::CFG::IRStmtType
+  getCFGStmtType(OA::StmtHandle h);
 
-  OA::StmtLabel getLabel(OA::StmtHandle h);
+  OA::StmtLabel
+  getLabel(OA::StmtHandle h);
 
-  OA::OA_ptr<OA::IRRegionStmtIterator> getFirstInCompound(OA::StmtHandle h);
+  OA::OA_ptr<OA::IRRegionStmtIterator>
+  getFirstInCompound(OA::StmtHandle h);
 
 
   //--------------------------------------------------------
   // Loops
   //--------------------------------------------------------
-  OA::OA_ptr<OA::IRRegionStmtIterator> loopBody(OA::StmtHandle h);
-  OA::StmtHandle loopHeader(OA::StmtHandle h);
-  OA::StmtHandle getLoopIncrement(OA::StmtHandle h);
-  bool loopIterationsDefinedAtEntry(OA::StmtHandle h);
+  OA::OA_ptr<OA::IRRegionStmtIterator>
+  loopBody(OA::StmtHandle h);
+
+  OA::StmtHandle
+  loopHeader(OA::StmtHandle h);
+
+  OA::StmtHandle
+  getLoopIncrement(OA::StmtHandle h);
+
+  bool
+  loopIterationsDefinedAtEntry(OA::StmtHandle h);
 
   //--------------------------------------------------------
   // Structured two-way conditionals
   //--------------------------------------------------------
-  OA::OA_ptr<OA::IRRegionStmtIterator> trueBody(OA::StmtHandle h);
-  OA::OA_ptr<OA::IRRegionStmtIterator> elseBody(OA::StmtHandle h);
+  OA::OA_ptr<OA::IRRegionStmtIterator>
+  trueBody(OA::StmtHandle h);
+
+  OA::OA_ptr<OA::IRRegionStmtIterator>
+  elseBody(OA::StmtHandle h);
   
   //--------------------------------------------------------
   // Structured multiway conditionals
   //--------------------------------------------------------
-  int numMultiCases(OA::StmtHandle h);
-  OA::OA_ptr<OA::IRRegionStmtIterator> multiBody(OA::StmtHandle h, 
-						 int bodyIndex);
-  bool isBreakImplied(OA::StmtHandle h);
-  bool isCatchAll(OA::StmtHandle h, int bodyIndex);
-  OA::OA_ptr<OA::IRRegionStmtIterator> getMultiCatchall(OA::StmtHandle h);
-  OA::ExprHandle getSMultiCondition (OA::StmtHandle h, int bodyIndex);
+  int
+  numMultiCases(OA::StmtHandle h);
+
+  OA::OA_ptr<OA::IRRegionStmtIterator>
+  multiBody(OA::StmtHandle h, int bodyIndex);
+
+  bool
+  isBreakImplied(OA::StmtHandle h);
+
+  bool
+  isCatchAll(OA::StmtHandle h, int bodyIndex);
+
+  OA::OA_ptr<OA::IRRegionStmtIterator>
+  getMultiCatchall(OA::StmtHandle h);
+
+  OA::ExprHandle
+  getSMultiCondition(OA::StmtHandle h, int bodyIndex);
 
   //--------------------------------------------------------
   // Unstructured two-way conditionals
   //--------------------------------------------------------
-  OA::StmtLabel getTargetLabel(OA::StmtHandle h, int n);
+  OA::StmtLabel
+  getTargetLabel(OA::StmtHandle h, int n);
   
   //--------------------------------------------------------
   // Unstructured multi-way conditionals
   //--------------------------------------------------------
-  int numUMultiTargets(OA::StmtHandle h);
-  OA::StmtLabel getUMultiTargetLabel(OA::StmtHandle h, int targetIndex);
-  OA::StmtLabel getUMultiCatchallLabel(OA::StmtHandle h);
-  OA::ExprHandle getUMultiCondition(OA::StmtHandle h, int targetIndex);
+  int
+  numUMultiTargets(OA::StmtHandle h);
+
+  OA::StmtLabel
+  getUMultiTargetLabel(OA::StmtHandle h, int targetIndex);
+
+  OA::StmtLabel
+  getUMultiCatchallLabel(OA::StmtHandle h);
+
+  OA::ExprHandle
+  getUMultiCondition(OA::StmtHandle h, int targetIndex);
 
   //--------------------------------------------------------
   // Special
   //--------------------------------------------------------
-  bool parallelWithSuccessor(OA::StmtHandle h) { return false; }
-  int numberOfDelaySlots(OA::StmtHandle h);
+  bool
+  parallelWithSuccessor(GCC_ATTR_UNUSED OA::StmtHandle h) { return false; }
+
+  int
+  numberOfDelaySlots(OA::StmtHandle h);
 
   //--------------------------------------------------------
   // Symbol Handles
-  //--------------------------------------------------------  
-  OA::SymHandle getProcSymHandle(OA::ProcHandle h);
+  //--------------------------------------------------------
+  OA::SymHandle
+  getProcSymHandle(OA::ProcHandle h);
   
 private:
   OAInterface() { DIAG_Die(DIAG_Unimplemented); }
@@ -303,7 +346,8 @@ private:
   // should be correct.  However, this is much easier than upgrading
   // to the next version of binutils every time new x86_64
   // instructions are added.
-  VMA normalizeTarget(VMA vma) const
+  VMA
+  normalizeTarget(VMA vma) const
   {
     VMA vma_norm = vma;
     BinUtil::Insn* insn = m_proc->lm()->findInsnNear(vma, 0);

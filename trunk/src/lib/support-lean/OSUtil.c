@@ -65,6 +65,8 @@
 #include <stdlib.h>
 
 #include <sys/types.h> // getpid()
+
+#define __USE_XOPEN_EXTENDED // for gethostid()
 #include <unistd.h>
 
 //*************************** User Include Files ****************************

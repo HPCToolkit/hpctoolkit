@@ -73,9 +73,10 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include "Util.hpp"
-
+#include <include/gcc-attr.h>
 #include <include/uint.h>
+
+#include "Util.hpp"
 
 #include <lib/banal/StructSimple.hpp>
 
@@ -359,7 +360,7 @@ copySourceFileMain(const string& fnm_orig,
 		   const string& dstDir);
 
 static bool 
-Flat_Filter(const Prof::Struct::ANode& x, long type)
+Flat_Filter(const Prof::Struct::ANode& x, GCC_ATTR_UNUSED long type)
 {
   return (x.type() == Prof::Struct::ANode::TyFile 
 	  || x.type() == Prof::Struct::ANode::TyAlien);
@@ -598,9 +599,9 @@ copyTraceFiles(const std::string& dstDir, const std::set<string>& srcFiles)
 	FileUtil::copy(dstFnm, srcFnm2);
       }
     }
-    catch (const Diagnostics::Exception& x) {
+    catch (const Diagnostics::Exception& ex) {
       DIAG_EMsg("While copying trace files ['"
-		<< srcFnm2 << "' -> '" << dstFnm << "']:" << x.message());
+		<< srcFnm2 << "' -> '" << dstFnm << "']:" << ex.message());
     }
   }
 }

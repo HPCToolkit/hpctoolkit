@@ -67,6 +67,7 @@
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
 #include <include/uint.h>
 
 #include "LM.hpp"
@@ -296,11 +297,11 @@ private:
   Proc()
   { }
 
-  Proc(const Proc& p)
+  Proc(GCC_ATTR_UNUSED const Proc& p)
   { }
 
   Proc&
-  operator=(const Proc& p)
+  operator=(GCC_ATTR_UNUSED const Proc& p)
   { return *this; }
 
 protected:
@@ -393,9 +394,10 @@ private:
   // Should not be used
   ProcInsnIterator();
   
-  ProcInsnIterator(const ProcInsnIterator& i);
+  ProcInsnIterator(GCC_ATTR_UNUSED const ProcInsnIterator& i);
 
-  ProcInsnIterator& operator=(const ProcInsnIterator& i)
+  ProcInsnIterator&
+  operator=(GCC_ATTR_UNUSED const ProcInsnIterator& i)
   { return *this; }
 
 protected:

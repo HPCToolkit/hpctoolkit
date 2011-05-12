@@ -564,12 +564,12 @@ LocationMgr::fixContextStack(const Prof::Struct::ACodeNode* proposed_scope)
   // FIXME: a big hack!
   m_ctxtStack.clear();
 
-  Prof::Struct::ACodeNode* x = proposed_scope->ancestorProcCtxt();
-  for ( ; typeid(*x) != typeid(Prof::Struct::Proc);
-	x = x->parent()->ancestorProcCtxt()) {
-    m_ctxtStack.push_back(Ctxt(x));
+  Prof::Struct::ACodeNode* proc = proposed_scope->ancestorProcCtxt();
+  for ( ; typeid(*proc) != typeid(Prof::Struct::Proc);
+	proc = proc->parent()->ancestorProcCtxt()) {
+    m_ctxtStack.push_back(Ctxt(proc));
   }
-  m_ctxtStack.push_back(Ctxt(x)); // add the TyPROC
+  m_ctxtStack.push_back(Ctxt(proc)); // add the TyPROC
 
   // FIXME: we don't really need this if proposed scope is always on
   // the top since we can just do a pointer comparison in

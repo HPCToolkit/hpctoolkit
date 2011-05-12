@@ -78,6 +78,7 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
 #include <include/gnu_bfd.h>
 
 #include "LM.hpp"
@@ -126,7 +127,8 @@ BinUtil::Seg::toString(int flags, const char* pre) const
 
 
 void
-BinUtil::Seg::dump(std::ostream& o, int flags, const char* pre) const
+BinUtil::Seg::dump(std::ostream& o, GCC_ATTR_UNUSED int flags,
+		   const char* pre) const
 {
   string p(pre);
   o << std::showbase;
@@ -187,15 +189,15 @@ BinUtil::TextSeg::~TextSeg()
 void
 BinUtil::TextSeg::dump(std::ostream& o, int flags, const char* pre) const
 {
-  string p(pre);
-  string p1 = p + "  ";
+  string pfx(pre);
+  string pfx1 = pfx + "  ";
 
   Seg::dump(o, flags, pre);
-  o << p << "  Procedures (" << numProcs() << ")\n";
+  o << pfx << "  Procedures (" << numProcs() << ")\n";
   for (ProcVec::const_iterator it = m_procs.begin(); 
        it != m_procs.end(); ++it) {
-    Proc* p = *it;
-    p->dump(o, flags, p1.c_str());
+    Proc* x = *it;
+    x->dump(o, flags, pfx1.c_str());
   }
 }
 

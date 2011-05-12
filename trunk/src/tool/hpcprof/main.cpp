@@ -69,6 +69,8 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
+
 #include "Args.hpp"
 
 #include <lib/analysis/CallPath.hpp>
@@ -245,7 +247,7 @@ realmain(int argc, char* const* argv)
 static void
 makeMetrics(Prof::CallPath::Profile& prof,
 	    const Analysis::Args& args,
-	    const Analysis::Util::NormalizeProfileArgs_t& nArgs)
+	    GCC_ATTR_UNUSED const Analysis::Util::NormalizeProfileArgs_t& nArgs)
 {
   Prof::Metric::Mgr& mMgr = *prof.metricMgr();
 

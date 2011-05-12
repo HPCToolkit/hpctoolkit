@@ -72,6 +72,8 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
+
 #include "HashTable.hpp"
 
 #include <lib/support/diagnostics.h>
@@ -230,7 +232,7 @@ void HashTable::Destroy ()
 
 //
 // Explicitly defined to prevent usage. 
-HashTable &HashTable::operator=(const HashTable & rhs)
+HashTable &HashTable::operator=(GCC_ATTR_UNUSED const HashTable & rhs)
 {
   DIAG_Die("Should not call HashTable::operator=()!");
   return *this;
@@ -850,7 +852,8 @@ int StringEntryCompare (const void* entry1, const void* entry2)
 
 //
 //
-static uint DefaultHashFunct (const void* entry, const uint size)
+static uint DefaultHashFunct (GCC_ATTR_UNUSED const void* entry,
+			      GCC_ATTR_UNUSED const uint size)
 {
   DIAG_Die("Failure to specify HashFunct function.");
   return 0;
@@ -876,7 +879,8 @@ static uint DefaultRehashFunct (const uint oldHashValue, const uint size)
 
 //
 //
-static int  DefaultEntryCompare (const void* entry1, const void* entry2)
+static int DefaultEntryCompare (GCC_ATTR_UNUSED const void* entry1,
+				GCC_ATTR_UNUSED const void* entry2)
 {
   DIAG_Die("Failure to specify EntryCompare function.");
   return 0;

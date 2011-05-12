@@ -74,6 +74,8 @@
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
+
 #include "NonUniformDegreeTree.hpp"
 #include "StrUtil.hpp"
 #include "diagnostics.h"
@@ -211,7 +213,8 @@ NonUniformDegreeTreeNode::maxDepth(uint parentDepth)
 
 
 std::string
-NonUniformDegreeTreeNode::toString(uint oFlags, const char* pfx) const
+NonUniformDegreeTreeNode::toString(GCC_ATTR_UNUSED uint oFlags,
+				   GCC_ATTR_UNUSED const char* pfx) const
 {
   return "NonUniformDegreeTreeNode: " + StrUtil::toStr((void*)this);
 }

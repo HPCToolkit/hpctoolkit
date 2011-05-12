@@ -70,6 +70,7 @@
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
 #include <include/uint.h>
 
 #include <lib/isa/ISATypes.hpp>
@@ -331,7 +332,10 @@ public:
 
 private:
   VMAIntervalSet(const VMAIntervalSet& x);
-  VMAIntervalSet& operator=(const VMAIntervalSet& x) { return *this; }
+
+  VMAIntervalSet&
+  operator=(GCC_ATTR_UNUSED const VMAIntervalSet& x)
+  { return *this; }
 
 private:
   
@@ -491,7 +495,10 @@ public:
 
 private:
   VMAIntervalMap(const VMAIntervalMap& x);
-  VMAIntervalMap& operator=(const VMAIntervalMap& x) { return *this; }
+
+  VMAIntervalMap&
+  operator=(const VMAIntervalMap& x)
+  { return *this; }
 
 private:
   

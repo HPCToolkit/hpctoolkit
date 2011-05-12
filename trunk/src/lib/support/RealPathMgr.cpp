@@ -65,6 +65,8 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
+
 #include "Logic.hpp"
 #include "RealPathMgr.hpp"
 #include "PathReplacementMgr.hpp"
@@ -205,7 +207,8 @@ RealPathMgr::toString(uint flags) const
 
 
 std::ostream&
-RealPathMgr::dump(std::ostream& os, uint flags, const char* pfx) const
+RealPathMgr::dump(std::ostream& os, GCC_ATTR_UNUSED uint flags,
+		  const char* pfx) const
 {
   os << pfx << "[ RealPathMgr:" << std::endl;
   for (MyMap::const_iterator it = m_cache.begin(); it != m_cache.end(); ++it) {

@@ -447,8 +447,8 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
     string the_file;
     SrcFile::ln the_line = SrcFile::ln_NULL;
 
-    for (BinUtil::ProcInsnIterator it(*p); it.isValid(); ++it) {
-      BinUtil::Insn* insn = it.current();
+    for (BinUtil::ProcInsnIterator it1(*p); it1.isValid(); ++it1) {
+      BinUtil::Insn* insn = it1.current();
       VMA vma = insn->vma();
       VMA opVMA = BinUtil::LM::isa->convertVMAToOpVMA(vma, insn->opIndex());
 

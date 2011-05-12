@@ -69,6 +69,7 @@
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
 #include <include/uint.h>
 #include <include/gnu_bfd.h>
 
@@ -476,8 +477,13 @@ public:
   
 protected:
   // Should not be used
-  LM(const LM& lm) : m_realpathMgr(RealPathMgr::singleton()) { }
-  LM& operator=(const LM& lm) { return *this; }
+  LM(GCC_ATTR_UNUSED const LM& lm)
+    : m_realpathMgr(RealPathMgr::singleton())
+  { }
+  
+  LM&
+  operator=(GCC_ATTR_UNUSED const LM& lm)
+  { return *this; }
 
 private:
   // Constructing routines: return true on success; false on error

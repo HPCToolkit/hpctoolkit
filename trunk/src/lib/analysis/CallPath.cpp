@@ -77,6 +77,7 @@ using std::string;
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
+#include <include/gcc-attr.h>
 
 #include "CallPath.hpp"
 #include "CallPath-MetricComponentsFact.hpp"
@@ -259,10 +260,10 @@ coalesceStmts(Prof::Struct::ANode* node)
       // Test for duplicate source line info.
       Prof::Struct::Stmt* n_stmt = static_cast<Prof::Struct::Stmt*>(n);
       SrcFile::ln line = n_stmt->begLine();
-      LineToStmtMap::iterator it = stmtMap.find(line);
-      if (it != stmtMap.end()) {
+      LineToStmtMap::iterator it_stmt = stmtMap.find(line);
+      if (it_stmt != stmtMap.end()) {
 	// found -- we have a duplicate
-	Prof::Struct::Stmt* n_stmtOrig = (*it).second;
+	Prof::Struct::Stmt* n_stmtOrig = (*it_stmt).second;
 	DIAG_MsgIf(0, "coalesceStmts: deleting " << n_stmt->toStringMe());
 	Prof::Struct::ANode::merge(n_stmtOrig, n_stmt); // deletes n_stmt
       }
@@ -658,10 +659,10 @@ coalesceStmts(Prof::CCT::ANode* node)
       // Test for duplicate source line info.
       Prof::CCT::Stmt* n_stmt = static_cast<Prof::CCT::Stmt*>(n);
       SrcFile::ln line = n_stmt->begLine();
-      LineToStmtMap::iterator it = stmtMap->find(line);
-      if (it != stmtMap->end()) {
+      LineToStmtMap::iterator it_stmt = stmtMap->find(line);
+      if (it_stmt != stmtMap->end()) {
 	// found -- we have a duplicate
-	Prof::CCT::Stmt* n_stmtOrig = (*it).second;
+	Prof::CCT::Stmt* n_stmtOrig = (*it_stmt).second;
 
 	Prof::CCT::MergeEffect effct = n_stmtOrig->mergeMe(*n_stmt);
 	DIAG_Assert(effct.isNoop(), "Analysis::CallPath::coalesceStmts: trace ids lost (" << effct.toString() << ") when merging y into x:\n"
@@ -726,7 +727,7 @@ Analysis::CallPath::pruneBySummaryMetrics(Prof::CallPath::Profile& prof,
 
 void
 Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
-			      string agent, bool doNormalizeTy)
+			      string agent, GCC_ATTR_UNUSED bool doNormalizeTy)
 {
   pruneTrivialNodes(prof);
 
