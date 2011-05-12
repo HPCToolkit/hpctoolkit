@@ -39,14 +39,26 @@
 /* Define to 1 if the system has the type `uint'. */
 #undef HAVE_UINT
 
+/* C compiler supports type "uint" */
+#undef HAVE_UINT_LANG_C
+
 /* Define to 1 if the system has the type `ulong'. */
 #undef HAVE_ULONG
+
+/* C compiler supports type "ulong" */
+#undef HAVE_ULONG_LANG_C
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
 /* Define to 1 if the system has the type `ushort'. */
 #undef HAVE_USHORT
+
+/* C compiler supports type "ushort" */
+#undef HAVE_USHORT_LANG_C
+
+/* C compiler supports type "voidp" */
+#undef HAVE_VOIDP_LANG_C
 
 /* HOST CPU: x86 (32-bit) */
 #undef HOST_CPU_x86

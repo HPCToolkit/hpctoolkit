@@ -99,6 +99,7 @@
 # include <stdint.h>
 #endif
 
+
 #if defined(__cplusplus)
 
 # if !defined(HAVE_USHORT)
@@ -110,10 +111,25 @@
 # endif
 
 # if !defined(HAVE_ULONG)
-  typedef    unsigned long int    ulong;
+  typedef    unsigned long int     ulong;
+# endif
+
+#else
+
+# if !defined(HAVE_USHORT_LANG_C)
+  typedef    unsigned short int    ushort;
+# endif
+
+# if !defined(HAVE_UINT_LANG_C)
+  typedef    unsigned int          uint;
+# endif
+
+# if !defined(HAVE_ULONG_LANG_C)
+  typedef    unsigned long int     ulong;
 # endif
 
 #endif
+
 
 //***************************************************************************
 
