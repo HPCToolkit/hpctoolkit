@@ -69,6 +69,7 @@ using std::string;
 #include "RealPathMgr.hpp"
 #include "PathReplacementMgr.hpp"
 #include "PathFindMgr.hpp"
+#include "StrUtil.hpp"
 
 #include "diagnostics.h"
 #include "realpath.h"
@@ -167,35 +168,28 @@ RealPathMgr::realpath(string& pathNm) const
 
 
 void
-RealPathMgr::searchPaths(const string& sPaths)
+RealPathMgr::searchPaths(const string& pathsStr)
 {
-  size_t trailingIn = -1;
-  size_t in = sPaths.find_first_of(":");
-  
-  while (trailingIn != sPaths.length()) {
-    // since trailingIn points to a ":", must add 1 to point to the path
-    trailingIn++;
-    std::string currentPath = sPaths.substr(trailingIn, in - trailingIn);
+  std::vector<std::string> searchPathVec;
+  StrUtil::tokenize_str(pathsStr, ":", searchPathVec);
 
-    if (PathFindMgr::isRecursivePath(currentPath.c_str())) {
-      // if its recursive, need to strip off and add back on '/*'
-      currentPath = currentPath.substr(0,currentPath.length() - 2);
-      currentPath = RealPath(currentPath.c_str());
-      m_searchPaths += (currentPath + "/*:");
+  // INVARIANT: m_searchPaths is non-empty
+  m_searchPaths += "."; // current working directory
+  
+  for (uint i = 0; i < searchPathVec.size(); ++i) {
+    string path = searchPathVec[i];
+
+    if (PathFindMgr::isRecursivePath(path.c_str())) {
+      path = path.substr(0, path.length() - PathFindMgr::RecursivePathSfxLn);
+      path = RealPath(path.c_str());
+      path += "/*";
     }
-    else if (currentPath != ".") { // so we can exclude this from cache
-      currentPath = RealPath(currentPath.c_str());
-      m_searchPaths += (currentPath + ":");
+    else if (path != ".") {
+      path = RealPath(path.c_str());
     }
-    
-    trailingIn = in;
-    in = sPaths.find_first_of(":", trailingIn + 1);
-    
-    if (in == sPaths.npos) { // deals with corner case of last element
-      in = sPaths.length();
-    }
+
+    m_searchPaths += ":" + path;
   }
-  m_searchPaths += "."; // add CWD back in
 }
 
 
