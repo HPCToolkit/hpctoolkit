@@ -83,7 +83,7 @@
 class PathFindMgr
 {
 public:
-  static const int RECURSIVE_PATH_SUFFIX_LN = 2;
+  static const int RecursivePathSfxLn = 2;
 
 public:
   PathFindMgr();

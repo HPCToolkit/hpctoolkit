@@ -186,7 +186,7 @@ PathFindMgr::pathfind_slow(const char* pathList, const char* name,
     if (PathFindMgr::isRecursivePath(aPath)) {
       // copy to recursive path list (Do not copy trailing '/*' )
       int l = strlen(aPath);
-      strncat(pathList_r, aPath, l - RECURSIVE_PATH_SUFFIX_LN);
+      strncat(pathList_r, aPath, l - RecursivePathSfxLn);
       strcat(pathList_r, ":"); // will have a trailing ':' for 'strchr'
     }
     else {
@@ -395,7 +395,7 @@ PathFindMgr::scan(std::string& path, std::set<std::string>& seenPaths,
 
   bool doRecursiveScan = isRecursivePath(path.c_str());
   if (doRecursiveScan) {
-    path = path.substr(0, path.length() - RECURSIVE_PATH_SUFFIX_LN);
+    path = path.substr(0, path.length() - RecursivePathSfxLn);
   }
 
   std::string localPaths;
@@ -574,7 +574,7 @@ int
 PathFindMgr::isRecursivePath(const char* path)
 {
   int l = strlen(path);
-  if (l > PathFindMgr::RECURSIVE_PATH_SUFFIX_LN && path[l - 1] == '*' &&
+  if (l > PathFindMgr::RecursivePathSfxLn && path[l - 1] == '*' &&
       path[l - 2] == '/') {
     return 1;
   }

@@ -490,7 +490,7 @@ matchFileWithPath(const string& filenm, const Analysis::PathTupleVec& pathVec)
     const string& curPath = pathVec[i].first;
     string realPath(curPath);
     if (PathFindMgr::isRecursivePath(curPath.c_str())) {
-      realPath[realPath.length()-PathFindMgr::RECURSIVE_PATH_SUFFIX_LN] = '\0';
+      realPath[realPath.length() - PathFindMgr::RecursivePathSfxLn] = '\0';
     }
     realPath = RealPath(realPath.c_str());
     int realPathLn = realPath.length();
