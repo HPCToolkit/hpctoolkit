@@ -108,7 +108,7 @@ csprof_atomic_swap_l(volatile long* addr, long new)
 
 // FIXME:tallent: this should be replace the "csprof" routines
 // Careful: return the *new* value
-#if (GCC_VERSION >= 4100)
+#if (HPC_GCC_VERSION >= 4100)
 #  define hpcrun_atomicIncr(x)      (void) __sync_add_and_fetch(x, 1)
 #  define hpcrun_atomicDecr(x)      (void) __sync_sub_and_fetch(x, 1)
 #  define hpcrun_atomicAdd(x, val)  __sync_add_and_fetch(x, val)

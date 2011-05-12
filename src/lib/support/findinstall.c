@@ -47,9 +47,13 @@
 /*************************** System Include Files ***************************/
 
 #include <stdio.h>  // for FILENAME_MAX
+#include <libgen.h> // for dirname/basename
+
+#define __USE_XOPEN_EXTENDED // for realpath()
 #include <stdlib.h>
-#include <libgen.h> /* for dirname/basename */
-#include <string.h> /* for strdup */
+
+#define __USE_XOPEN_EXTENDED // for strdup()
+#include <string.h>
 
 /**************************** User Include Files ****************************/
 

@@ -66,6 +66,7 @@
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
 #include <include/uint.h>
 
 #include "LM.hpp"
@@ -207,11 +208,11 @@ private:
   Insn()
   { }
 
-  Insn(const Insn& i)
+  Insn(GCC_ATTR_UNUSED const Insn& i)
   { }
 
   Insn&
-  operator=(const Insn& i)
+  operator=(GCC_ATTR_UNUSED const Insn& i)
   { return *this; }
   
 protected:
@@ -273,10 +274,10 @@ private:
   // Should not be used
   CISCInsn();
 
-  CISCInsn(const CISCInsn& i);
+  CISCInsn(GCC_ATTR_UNUSED const CISCInsn& i);
 
   CISCInsn&
-  operator=(const CISCInsn& i)
+  operator=(GCC_ATTR_UNUSED const CISCInsn& i)
   { return *this; }
   
 protected:
@@ -329,10 +330,10 @@ private:
   // Should not be used
   RISCInsn();
 
-  RISCInsn(const RISCInsn& i);
+  RISCInsn(GCC_ATTR_UNUSED const RISCInsn& i);
 
   RISCInsn&
-  operator=(const RISCInsn& i)
+  operator=(GCC_ATTR_UNUSED const RISCInsn& i)
   { return *this; }
   
 protected:
@@ -383,10 +384,10 @@ private:
   // Should not be used
   VLIWInsn();
 
-  VLIWInsn(const VLIWInsn& i);
+  VLIWInsn(GCC_ATTR_UNUSED const VLIWInsn& i);
 
   VLIWInsn&
-  operator=(const VLIWInsn& i)
+  operator=(GCC_ATTR_UNUSED const VLIWInsn& i)
   { return *this; }
   
 protected:

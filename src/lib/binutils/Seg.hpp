@@ -68,6 +68,7 @@
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
 #include <include/uint.h>
 #include <include/gnu_bfd.h>
 
@@ -184,11 +185,11 @@ protected:
   Seg()
   { }
 
-  Seg(const Seg& s)
+  Seg(GCC_ATTR_UNUSED const Seg& s)
   { }
 
   Seg&
-  operator=(const Seg& s)
+  operator=(GCC_ATTR_UNUSED const Seg& s)
   { return *this; }
   
 protected:
@@ -279,11 +280,11 @@ private:
   TextSeg()
   { }
   
-  TextSeg(const TextSeg& s)
+  TextSeg(GCC_ATTR_UNUSED const TextSeg& s)
   { }
 
   TextSeg&
-  operator=(const TextSeg& s)
+  operator=(GCC_ATTR_UNUSED const TextSeg& s)
   { return *this; }
 
   void

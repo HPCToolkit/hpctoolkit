@@ -64,8 +64,11 @@
 //************************* System Include Files ****************************
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
+
+#define __USE_POSIX // fdopen() from stdio
+#define __USE_MISC  // fputc_unlocked() from stdio
+#include <stdio.h>
 
 #include <unistd.h>
 #include <fcntl.h>

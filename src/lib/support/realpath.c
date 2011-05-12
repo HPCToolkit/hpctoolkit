@@ -47,7 +47,9 @@
 /*************************** System Include Files ***************************/
 
 #include <stdio.h>  // for FILENAME_MAX
-#include <stdlib.h> /* for 'realpath' */
+
+#define __USE_XOPEN_EXTENDED // realpath()
+#include <stdlib.h>
 
 /**************************** User Include Files ****************************/
 

@@ -66,7 +66,7 @@
 #include <include/gcc-attr.h>
 
 
-#if (GCC_VERSION >= 4100)
+#if (HPC_GCC_VERSION >= 4100)
 
 #  include "atomic-op-gcc.h"
 

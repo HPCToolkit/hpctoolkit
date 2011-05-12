@@ -87,15 +87,15 @@ using std::string;
 
 unsigned int BinUtil::Proc::nextId = 0;
 
-BinUtil::Proc::Proc(BinUtil::TextSeg* seg, 
+BinUtil::Proc::Proc(BinUtil::TextSeg* seg,
 		    const string& name, const string& linkname,
-		    BinUtil::Proc::Type t, VMA begVMA, VMA endVMA, 
+		    BinUtil::Proc::Type t, VMA begVMA, VMA endVMA,
 		    unsigned int size)
   : m_seg(seg), m_name(name), m_linkname(linkname), m_type(t), m_begVMA(begVMA),
     m_endVMA(endVMA), m_size(size), m_filenm(""), m_begLine(0), m_parent(NULL)
 {
   m_id = nextId++;
-  m_numInsns = 0; 
+  m_numInsns = 0;
 }
 
 
@@ -105,21 +105,21 @@ BinUtil::Proc::~Proc()
 }
 
 
-BinUtil::Insn* 
+BinUtil::Insn*
 BinUtil::Proc::endInsn() const
 {
   Insn* insn = findInsn(m_endVMA, 0);
   if (insn) {
     ushort numOps = insn->numOps();
     if (numOps != 0) {
-      insn = findInsn(m_endVMA, numOps - 1); // opIndex is 0-based
+      insn = findInsn(m_endVMA, numOps - (ushort)1); // opIndex is 0-based
     }
   }
   return insn;
 }
 
 
-string 
+string
 BinUtil::Proc::toString(int flags) const
 {
   std::ostringstream os;
@@ -133,12 +133,12 @@ BinUtil::Proc::dump(std::ostream& os, int flags, const char* pre) const
 {
   string p(pre);
   string p1 = p + "  ";
-  string p2 = p + "    ";  
+  string p2 = p + "    ";
   
   string proc, file, b_proc, b_file, e_proc, e_file;
   SrcFile::ln begLn, endLn, b_begLn, e_endLn2;
   Insn* eInsn = endInsn();
-  ushort endOp = (eInsn) ? eInsn->opIndex() : 0;
+  ushort endOp = (eInsn) ? eInsn->opIndex() : (ushort)0;
 
   // This call performs some consistency checking
   m_seg->findSrcCodeInfo(begVMA(), 0, endVMA(), endOp,
@@ -155,11 +155,11 @@ BinUtil::Proc::dump(std::ostream& os, int flags, const char* pre) const
   os << p << "  Name:     `" << nm << "'\n";
   os << p << "  LinkName: `" << ln_nm << "'\n";
   os << p << "  Sym:      {" << filename() << "}:" << begLine() << "\n";
-  os << p << "  LnMap:    {" << file << "}[" 
+  os << p << "  LnMap:    {" << file << "}["
      << BinUtil::canonicalizeProcName(proc) <<"]:" << begLn << "-" << endLn << "\n";
-  os << p << "  LnMap(b): {" << b_file << "}[" 
+  os << p << "  LnMap(b): {" << b_file << "}["
      << BinUtil::canonicalizeProcName(b_proc) << "]:" << b_begLn << "\n";
-  os << p << "  LnMap(e): {" << e_file << "}[" 
+  os << p << "  LnMap(e): {" << e_file << "}["
      << BinUtil::canonicalizeProcName(e_proc) << "]:" << e_endLn2 << "\n";
   
   os << p << "  ID, Type: " << id() << ", `";
@@ -168,14 +168,14 @@ BinUtil::Proc::dump(std::ostream& os, int flags, const char* pre) const
     case Weak:    os << "Weak'\n";   break;
     case Global:  os << "Global'\n"; break;
     case Quasi:   os << "Quasi'\n";  break;
-    default:      os << "-unknown-'\n"; 
+    default:      os << "-unknown-'\n";
       DIAG_Die("Unknown Procedure type: " << type());
   }
   os << showbase
      << p << "  VMA: [" << hex << begVMA() << ", " << endVMA() << dec << "]\n";
   os << p << "  Size(b): " << size() << "\n";
   
-  if ((flags & LM::DUMP_Flg_Insn_ty) 
+  if ((flags & LM::DUMP_Flg_Insn_ty)
       || (flags & LM::DUMP_Flg_Insn_decode)) {
     os << p1 << "----- Instruction Dump -----\n";
     for (ProcInsnIterator it(*this); it.isValid(); ++it) {
@@ -200,8 +200,8 @@ BinUtil::Proc::dump(std::ostream& os, int flags, const char* pre) const
 	proc = BinUtil::canonicalizeProcName(proc);
 	
 	os << p2 << "  ";
-	if (file == filename()) { 
-	  os << "-"; 
+	if (file == filename()) {
+	  os << "-";
 	}
 	else {
 	  os << "!{" << file << "}";
@@ -247,7 +247,7 @@ void
 BinUtil::ProcInsnIterator::reset()
 {
   it    = lm.m_insnMap.find(p.m_begVMA);
-  endIt = lm.m_insnMap.find(p.m_endVMA); 
+  endIt = lm.m_insnMap.find(p.m_endVMA);
   
   if (it != lm.m_insnMap.end()) {
     // We have at least one instruction: p.endVMA should have been found
