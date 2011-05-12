@@ -175,29 +175,29 @@ Args::~Args()
 }
 
 
-void 
+void
 Args::printVersion(std::ostream& os) const
 {
   os << getCmd() << ": " << version_info << endl;
 }
 
 
-void 
+void
 Args::printUsage(std::ostream& os) const
 {
   os << "Usage: " << getCmd() << " " << usage_summary << endl
      << usage_details << endl;
-} 
+}
 
 
-void 
+void
 Args::printError(std::ostream& os, const char* msg) const
 {
   os << getCmd() << ": " << msg << endl
      << "Try '" << getCmd() << " --help' for more information." << endl;
 }
 
-void 
+void
 Args::printError(std::ostream& os, const std::string& msg) const
 {
   printError(os, msg.c_str());
@@ -221,18 +221,18 @@ Args::parse(int argc, const char* const argv[])
     // Special options that should be checked first
     trace = debugLevel = 0;
     
-    if (parser.isOpt("debug")) { 
-      trace = debugLevel = 1; 
+    if (parser.isOpt("debug")) {
+      trace = debugLevel = 1;
       if (parser.isOptArg("debug")) {
 	const string& arg = parser.getOptArg("debug");
 	trace = debugLevel = (int)CmdLineParser::toLong(arg);
       }
     }
-    if (parser.isOpt("help")) { 
-      printUsage(std::cerr); 
+    if (parser.isOpt("help")) {
+      printUsage(std::cerr);
       exit(1);
     }
-    if (parser.isOpt("version")) { 
+    if (parser.isOpt("version")) {
       printVersion(std::cerr);
       exit(1);
     }
@@ -242,26 +242,26 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("long")) {
       dumpLong = true;
       numDumpOptions++;
-    } 
-    if (parser.isOpt("short")) { 
+    }
+    if (parser.isOpt("short")) {
       dumpShort = true;
       numDumpOptions++;
-    } 
+    }
     if (parser.isOpt("decode")) {
       dumpDecode = true;
       if (dumpShort) {
 	ARG_ERROR("--decode not valid with --short!");
       }
-    } 
-    if (parser.isOpt("old")) { 
+    }
+    if (parser.isOpt("old")) {
       dumpOld = true;
       numDumpOptions++;
-    } 
+    }
     if (numDumpOptions > 1) {
       ARG_ERROR("At most one dump option may be given!");
     }
 
-    if (parser.isOpt("load-addr")) { 
+    if (parser.isOpt("load-addr")) {
       const string& arg = parser.getOptArg("load-addr");
       loadVMA = CmdLineParser::toLong(arg);
 
@@ -275,7 +275,7 @@ Args::parse(int argc, const char* const argv[])
       loadVMA = (VMA)l;
 #endif
     }
-    
+
     // Check for required arguments
     if (parser.getNumArgs() != 1) {
       ARG_ERROR("Incorrect number of arguments!");
@@ -292,16 +292,16 @@ Args::parse(int argc, const char* const argv[])
 }
 
 
-void 
+void
 Args::dump(std::ostream& os) const
 {
-  os << "Args.cmd= " << getCmd() << endl; 
+  os << "Args.cmd= " << getCmd() << endl;
   os << "Args.debugLevel= " << debugLevel << endl;
   os << "Args.inputFile= " << inputFile << endl;
-  os << "::trace " << ::trace << endl; 
+  os << "::trace " << ::trace << endl;
 }
 
-void 
+void
 Args::ddump() const
 {
   dump(std::cerr);

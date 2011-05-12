@@ -98,9 +98,9 @@ Args::~Args()
 
 const std::string
 Args::getCmd() const
-{ 
+{
   // avoid error messages with: <path>/hpcprof-mpi
   static string cmd = "hpcprof-mpi";
-  return cmd; // parser.getCmd(); 
+  return cmd; // parser.getCmd();
 }
 

@@ -118,9 +118,9 @@ Args::parse(int argc, const char* const argv[])
 
 const std::string
 Args::getCmd() const
-{ 
+{
   // avoid error messages with: <path>/hpcprof-mpi
   static string cmd = "hpcprof";
-  return cmd; // parser.getCmd(); 
+  return cmd; // parser.getCmd();
 }
 
