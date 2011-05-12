@@ -48,7 +48,7 @@
 //
 // NonUniformDegreeTree.h
 //
-//   a general purpose abstraction for non-uniform degree trees. 
+//   a general purpose abstraction for non-uniform degree trees.
 //   children of a node are represented by a circularly linked-list
 //   of siblings.
 //
@@ -83,9 +83,9 @@
 
 //*************************** User Include Files ****************************
 
-#include "IteratorStack.hpp"
-
 #include <include/uint.h>
+
+#include "IteratorStack.hpp"
 
 //*************************** Forward Declarations **************************
 
@@ -105,12 +105,12 @@ public:
     zeroLinks();
     link(parent); // link to parent and siblings if any
   }
-  
+
   NonUniformDegreeTreeNode(const NonUniformDegreeTreeNode& other)
   {
     *this = other;
   }
-  
+
   NonUniformDegreeTreeNode&
   operator=(const NonUniformDegreeTreeNode& other)
   {
@@ -126,8 +126,8 @@ public:
   }
 
   //-----------------------------------------------
-  // virtual destructor that frees all of its 
-  // children before freeing itself 
+  // virtual destructor that frees all of its
+  // children before freeing itself
   //-----------------------------------------------
   virtual ~NonUniformDegreeTreeNode()
   {
@@ -140,24 +140,24 @@ public:
       }
     }
   }
-  
-  // link/unlink a node to a parent and siblings 
+
+  // link/unlink a node to a parent and siblings
   void
   link(NonUniformDegreeTreeNode *parent);
-  
+
   void
   linkBefore(NonUniformDegreeTreeNode *sibling);
-  
+
   void
   linkAfter(NonUniformDegreeTreeNode *sibling);
-  
+
   void
   unlink();
 
   // returns the number of ancestors walking up the tree
   uint
   ancestorCount() const;
-  
+
   // functions for inspecting links to other nodes
   uint
   childCount() const
@@ -167,16 +167,17 @@ public:
   isLeaf() const
   { return (m_child_count == 0); }
 
-  
+
   uint
   maxDepth()
   { return maxDepth(0); }
-  
+
   uint
   maxDepth(uint parentDepth);
 
 public:
-  virtual std::string toString() const;
+  virtual std::string
+  toString(uint oFlags = 0, const char* pfx = "") const;
 
 public:
   // N.B.: For derived classes, these may get in the way...
@@ -246,7 +247,7 @@ public:
   {
   }
 
-  void Reset(void) 
+  void Reset(void)
   {
     currentChild = forward ? m_parent->FirstChild() : m_parent->LastChild();
   }
@@ -256,9 +257,9 @@ public:
   operator++()
   {
     if (currentChild) {
-      currentChild = (forward ? currentChild->NextSibling() 
+      currentChild = (forward ? currentChild->NextSibling()
    		              : currentChild->PrevSibling());
-      const NonUniformDegreeTreeNode* pastEnd = 
+      const NonUniformDegreeTreeNode* pastEnd =
 	forward ? m_parent->FirstChild() : m_parent->LastChild();
       if (currentChild == pastEnd) {
 	currentChild = NULL;

@@ -48,7 +48,7 @@
 //
 // NonUniformDegreeTree.C
 //
-//   a general purpose abstraction for non-uniform degree trees. 
+//   a general purpose abstraction for non-uniform degree trees.
 //   children of a node are represented by a circularly linked-list
 //   of siblings.
 //
@@ -88,18 +88,18 @@ using std::endl;
 
 
 //-----------------------------------------------
-// links a node to a parent and at the end of the 
-// circular doubly-linked list of its siblings 
+// links a node to a parent and at the end of the
+// circular doubly-linked list of its siblings
 // (if any)
 //-----------------------------------------------
 void NonUniformDegreeTreeNode::link(NonUniformDegreeTreeNode *newParent)
 {
   DIAG_Assert(this->m_parent == 0, ""); // can only have one parent
   if (newParent != 0) {
-    // children maintained as a doubly linked ring. 
-    // a new node is linked at the end of the ring (as a predecessor 
+    // children maintained as a doubly linked ring.
+    // a new node is linked at the end of the ring (as a predecessor
     // of "m_parent->children") which points to first child in the ring
-    
+
     NonUniformDegreeTreeNode *first_sibling = newParent->m_children;
     if (first_sibling) linkAfter(first_sibling->m_prev_sibling);
     else {
@@ -116,16 +116,16 @@ void NonUniformDegreeTreeNode::linkAfter(NonUniformDegreeTreeNode *sibling)
 {
   DIAG_Assert(sibling != NULL, "");
   DIAG_Assert(this->m_parent == NULL, ""); // can only have one parent
-  
+
   this->m_parent = sibling->m_parent;
   if (m_parent) m_parent->m_child_count++;
-    
-  // children maintained as a doubly linked ring. 
-    
+
+  // children maintained as a doubly linked ring.
+
   // link forward chain
   m_next_sibling = sibling->m_next_sibling;
   sibling->m_next_sibling = this;
-      
+
   // link backward chain
   m_prev_sibling = sibling;
   m_next_sibling->m_prev_sibling = this;
@@ -150,8 +150,8 @@ void NonUniformDegreeTreeNode::linkBefore(NonUniformDegreeTreeNode *sibling)
 void NonUniformDegreeTreeNode::unlink()
 {
   if (m_parent != 0) {
-    // children maintained as a doubly linked ring. 
-    // excise this node from from the ring 
+    // children maintained as a doubly linked ring.
+    // excise this node from from the ring
     if (--(m_parent->m_child_count) == 0) {
       // current node is removed as only child of parent
       // leaving it linked in a circularly linked list with
@@ -164,10 +164,10 @@ void NonUniformDegreeTreeNode::unlink()
 	
       // relink predecessor's forward link
       m_prev_sibling->m_next_sibling = m_next_sibling;
-      
+
       // relink successor's backward link
       m_next_sibling->m_prev_sibling = m_prev_sibling;
-      
+
       // relink own pointers into self-circular configuration
       m_prev_sibling = this;
       m_next_sibling = this;
@@ -211,7 +211,7 @@ NonUniformDegreeTreeNode::maxDepth(uint parentDepth)
 
 
 std::string
-NonUniformDegreeTreeNode::toString() const
+NonUniformDegreeTreeNode::toString(uint oFlags, const char* pfx) const
 {
   return "NonUniformDegreeTreeNode: " + StrUtil::toStr((void*)this);
 }
@@ -260,11 +260,11 @@ NonUniformDegreeTreeIterator::IteratorToPushIfAny(void *current)
 
   if (GetTraversalOrder() == PreAndPostOrder) {
     StackableIterator *top = dynamic_cast<StackableIterator*>(Top());
-    SingletonIterator *stop = dynamic_cast<SingletonIterator*>(top); 
-    if (stop == 0) { // not a SingletonIterator 
+    SingletonIterator *stop = dynamic_cast<SingletonIterator*>(top);
+    if (stop == 0) { // not a SingletonIterator
       Push(new SingletonIterator(node, PostVisit));
     } else {
-      if (stop->VisitType() == PreVisit) { 
+      if (stop->VisitType() == PreVisit) {
 	Push(new SingletonIterator(node, PostVisit));
       } else return 0;
     }
@@ -280,24 +280,25 @@ NonUniformDegreeTreeIterator::IteratorToPushIfAny(void *current)
 /**********************************************************************/
 /* debugging support                                                  */
 /**********************************************************************/
-void 
+void
 NonUniformDegreeTreeIterator::DumpAndReset(std::ostream& os)
 {
-  os << "NonUniformDegreeTreeIterator: " << endl; 
+  os << "NonUniformDegreeTreeIterator: " << endl;
   while (Current()) {
-    os << Current()->toString() << endl; 
-    (*this)++; 
-  } 
-  Reset(); 
-} 
+    os << Current()->toString() << endl;
+    (*this)++;
+  }
+  Reset();
+}
 
-void 
+
+void
 NonUniformDegreeTreeNodeChildIterator::DumpAndReset(std::ostream& os)
 {
-  os << "NonUniformDegreeTreeNodeChildIterator: " << endl; 
+  os << "NonUniformDegreeTreeNodeChildIterator: " << endl;
   while (Current()) {
-    os << Current()->toString() << endl; 
-    (*this)++; 
-  } 
-  Reset(); 
-} 
+    os << Current()->toString() << endl;
+    (*this)++;
+  }
+  Reset();
+}

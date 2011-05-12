@@ -877,7 +877,7 @@ ADynNode::mergeMe(const ANode& y, MergeContext* mrgCtxt, uint metricBegIdx)
     // 3. Semi-trivial conflict: x's cpId is NULL, but y's is not
     //     => use y's cpId *if* it does not conflict with one already
     //        in x's tree.
-    DIAG_Assert(mrgCtxt, "ADynNode::mergeMe: potentially introducing cp-id conflicts; cannot verify with out MergeContext!");
+    DIAG_Assert(mrgCtxt, "ADynNode::mergeMe: potentially introducing cp-id conflicts; cannot verify without MergeContext!");
 
     MergeContext::pair ret = mrgCtxt->ensureUniqueCPId(y_dyn->cpId());
     m_cpId = ret.cpId;
