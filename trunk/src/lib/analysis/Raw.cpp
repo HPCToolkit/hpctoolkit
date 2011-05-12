@@ -148,7 +148,7 @@ Analysis::Raw::writeAsText_callpathMetricDB(const char* filenm)
       fprintf(stdout, "(%6u: ", nodeId);
       for (uint mId = 0; mId < hdr.numMetrics; ++mId) {
 	double mval = 0;
-	int ret = hpcfmt_real8_fread(&mval, fs);
+	ret = hpcfmt_real8_fread(&mval, fs);
 	if (ret != HPCFMT_OK) {
 	  DIAG_Throw("error reading trace file '" << filenm << "'");
 	}

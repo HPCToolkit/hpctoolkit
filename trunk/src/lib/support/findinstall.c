@@ -46,10 +46,10 @@
 
 /*************************** System Include Files ***************************/
 
+#include <stdio.h>  // for FILENAME_MAX
 #include <stdlib.h>
 #include <libgen.h> /* for dirname/basename */
 #include <string.h> /* for strdup */
-#include <limits.h> /* for 'PATH_MAX' */
 
 /**************************** User Include Files ****************************/
 
@@ -70,7 +70,7 @@
 char*
 findinstall(const char* cmd, const char* base_cmd)
 {
-  static char rootdir[PATH_MAX];
+  static char rootdir[FILENAME_MAX]; // PATH_MAX
   char *bindir, *rootdir_rel;
   char *cmd1 = NULL, *bindir_tmp = NULL;
 

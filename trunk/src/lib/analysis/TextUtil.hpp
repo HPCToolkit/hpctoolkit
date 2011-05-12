@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef Analysis_TextUtil_hpp 
+#ifndef Analysis_TextUtil_hpp
 #define Analysis_TextUtil_hpp
 
 //************************* System Include Files ****************************
@@ -88,20 +88,22 @@ namespace TextUtil {
 //****************************************************************************
 
 class ColumnFormatter {
-public:  
+public:
   // NOTE: Since computed metrics may be of any unit, forcing is only
   // allowed for raw metrics.
-  enum Flag { 
+  enum Flag {
     Flag_NULL  = 0,
     Flag_ForcePct, // force percent column formatting
     Flag_ForceVal  // force value column formatting
   };
 
 public:
-  ColumnFormatter(const Prof::Metric::Mgr& metricMgr, 
-		  std::ostream& os, 
+  ColumnFormatter(const Prof::Metric::Mgr& metricMgr,
+		  std::ostream& os,
 		  int numDecPct, int numDecVal);
-  ~ColumnFormatter() { }
+
+  ~ColumnFormatter()
+  { }
 
   // generates a summary of the formatted column for all metrics
   void
@@ -110,10 +112,10 @@ public:
   // generates a formatted column for metric id 'mid' (if displayed).
   // The flag can force the column to be displayed as a value
   // (non-percentage) even if it was formatted as a percent and vice versa
-  void 
+  void
   genCol(uint mid, double metricVal, double metricTot, Flag flg = Flag_NULL);
 
-  void 
+  void
   genCol(uint mid, double metricVal, Flag flg = Flag_ForceVal)
   {
     genCol(mid, metricVal, 0, flg);
@@ -121,23 +123,24 @@ public:
 
 
   // generate a blank column for metric 'mid'
-  void 
+  void
   genBlankCol(uint mid);
 
   // generates 'formatted blanks' for all 'displayed' metrics
   void
-  genBlankCols() {
+  genBlankCols()
+  {
     m_os << std::setw(m_annotWidthTot) << std::setfill(' ') << " ";
   }
 
 private:
   bool
-  isDisplayed(uint mId) 
+  isDisplayed(uint mId)
   {
     // m_mMgr.metric(mId)->Display()
     return (m_annotWidth[mId] != 0);
   }
-  
+
 
 private:
   const Prof::Metric::Mgr& m_mMgr;
