@@ -91,11 +91,11 @@ AC_CONFIG_SRCDIR([src/include/hpctoolkit-config.h.in])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config])
 
-AC_MSG_NOTICE([INFO: from user: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}'])
-AC_MSG_NOTICE([INFO: from user: CC='${CC}' CFLAGS='${CFLAGS}'])
-AC_MSG_NOTICE([INFO: from user: MPICC='${MPICC}'])
-AC_MSG_NOTICE([INFO: from user: MPICXX='${MPICXX}'])
-AC_MSG_NOTICE([INFO: from user: MPIF77='${MPIF77}'])
+AC_MSG_NOTICE([*** INFO: from user: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}' ***])
+AC_MSG_NOTICE([*** INFO: from user: CC='${CC}' CFLAGS='${CFLAGS}' ***])
+AC_MSG_NOTICE([*** INFO: from user: MPICC='${MPICC}' ***])
+AC_MSG_NOTICE([*** INFO: from user: MPICXX='${MPICXX}' ***])
+AC_MSG_NOTICE([*** INFO: from user: MPIF77='${MPIF77}' ***])
 
 # NOTE: please update config/README.version
 AC_PREREQ(2.67)
@@ -246,18 +246,63 @@ HPC_PROG_MPICXX(HPC_MPICXX_LIST)
 
 AC_PROG_INSTALL()
 
-AC_MSG_NOTICE([INFO: post autoconf tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}'])
-AC_MSG_NOTICE([INFO: post autoconf tests: CC='${CC}' CFLAGS='${CFLAGS}'])
-AC_MSG_NOTICE([INFO: post autoconf tests: MPICC='${MPICC}'])
-AC_MSG_NOTICE([INFO: post autoconf tests: MPICXX='${MPICXX}'])
-AC_MSG_NOTICE([INFO: post autoconf tests: MPIF77='${MPIF77}'])
+AC_MSG_NOTICE([*** INFO: post autoconf tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}'  ***])
+AC_MSG_NOTICE([*** INFO: post autoconf tests: CC='${CC}' CFLAGS='${CFLAGS}' ***])
+AC_MSG_NOTICE([*** INFO: post autoconf tests: MPICC='${MPICC}' ***])
+AC_MSG_NOTICE([*** INFO: post autoconf tests: MPICXX='${MPICXX}' ***])
+AC_MSG_NOTICE([*** INFO: post autoconf tests: MPIF77='${MPIF77}' ***])
 
 
-# Use C++ compiler for all checks
-AC_LANG([C++])
+#-------------------------------------------------
+# C compiler checks
+#-------------------------------------------------
+
+AC_MSG_NOTICE([*** Using C comiler for tests ***])
+
+AC_LANG([C])
 
 # Check for header files
 AC_HEADER_STDC()
+AC_CHECK_HEADERS(unistd.h)
+AC_CHECK_HEADERS(inttypes.h)
+
+AS_UNSET([ac_cv_header_unistd_h])   # retest for C++
+AS_UNSET([ac_cv_header_inttypes_h]) # retest for C++
+
+
+# Check for types
+AC_CHECK_SIZEOF([void*])
+AC_CHECK_TYPES([ushort, uint, ulong])
+
+if test "${ac_cv_type_voidp}" = "yes" ; then
+  AC_DEFINE([HAVE_VOIDP_LANG_C], [1], [C compiler supports type "voidp"])
+fi
+if test "${ac_cv_type_ushort}" = "yes" ; then
+  AC_DEFINE([HAVE_USHORT_LANG_C], [1], [C compiler supports type "ushort"])
+fi
+if test "${ac_cv_type_uint}" = "yes" ; then
+  AC_DEFINE([HAVE_UINT_LANG_C], [1], [C compiler supports type "uint"])
+fi
+if test "${ac_cv_type_ulong}" = "yes" ; then
+  AC_DEFINE([HAVE_ULONG_LANG_C], [1], [C compiler supports type "ulong"])
+fi
+
+AS_UNSET([ac_cv_sizeof_voidp])      # retest for C++
+AS_UNSET([ac_cv_type_ushort])       # retest for C++
+AS_UNSET([ac_cv_type_uint])         # retest for C++
+AS_UNSET([ac_cv_type_ulong])        # retest for C++
+
+
+#-------------------------------------------------
+# C++ compiler checks
+#-------------------------------------------------
+
+AC_MSG_NOTICE([*** Using C++ comiler for tests ***])
+
+AC_LANG([C++])
+
+# Check for header files
+#AC_HEADER_STDC()
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(inttypes.h)
 HPC_CHECK_CXX_STDC_HEADERS()
@@ -508,7 +553,9 @@ case "${host}" in
 
     # Intel compiler
     if HPCcxxcmp([icpc ecpc]) ; then
-      :
+      # Silence "remark #981: operands are evaluated in unspecified order"
+      # See: http://software.intel.com/en-us/forums/showthread.php?t=62309
+      HOST_CXXFLAGS="-wd981"
     fi
     if HPCcccmp([icc ecc]) ; then
       :
@@ -720,11 +767,11 @@ AC_SUBST([HOST_HPCPROF_FLAT_LDFLAGS])
 AC_SUBST([HOST_HPCPROFTT_LDFLAGS])
 AC_SUBST([HOST_XPROF_LDFLAGS])
 
-AC_MSG_NOTICE([INFO: post hpc tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}' HOST_CXXFLAGS='${HOST_CXXFLAGS}'])
-AC_MSG_NOTICE([INFO: post hpc tests: CC='${CC}' CFLAGS='${CFLAGS}' HOST_CFLAGS='${HOST_CFLAGS}'])
-AC_MSG_NOTICE([INFO: post hpc tests: MPICC='${MPICC}'])
-AC_MSG_NOTICE([INFO: post hpc tests: MPICXX='${MPICXX}'])
-AC_MSG_NOTICE([INFO: post hpc tests: MPIF77='${MPIF77}'])
+AC_MSG_NOTICE([*** INFO: post hpc tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}' HOST_CXXFLAGS='${HOST_CXXFLAGS}' ***])
+AC_MSG_NOTICE([*** INFO: post hpc tests: CC='${CC}' CFLAGS='${CFLAGS}' HOST_CFLAGS='${HOST_CFLAGS}' ***])
+AC_MSG_NOTICE([*** INFO: post hpc tests: MPICC='${MPICC}' ***])
+AC_MSG_NOTICE([*** INFO: post hpc tests: MPICXX='${MPICXX}' ***])
+AC_MSG_NOTICE([*** INFO: post hpc tests: MPIF77='${MPIF77}' ***])
 
 #----------------------------------------------------------------------------
 # Prerequisites: external libraries
@@ -1369,16 +1416,26 @@ AC_SUBST([XERCES_LIB])
 # enable-hpcrun-flat: Only build hpcrun if on Linux and PAPI is present
 #-------------------------------------------------
 
+AC_ARG_ENABLE([hpcrun-flat],
+  [AS_HELP_STRING([--enable-hpcrun-flat],
+	  [build hpcrun-flat (default yes)])],
+  [],
+  [enable_hpcrun_flat=yes])
+
 AC_MSG_CHECKING([whether to build hpcrun-flat])
 
 OPT_ENABLE_HPCRUN_FLAT="no"
-if test "$OPT_PAPI_DYNAMIC" = yes && test "$OPT_WITH_MONITOR" = yes \
+enable_hpcrun_flat_msg="${enable_hpcrun_flat}"
+
+if test "${enable_hpcrun_flat}" = yes \
+   && test "${OPT_PAPI_DYNAMIC}" = yes && test "${OPT_WITH_MONITOR}" = yes \
    && test "${HOST_OS}" = "Linux"
 then
   OPT_ENABLE_HPCRUN_FLAT="yes"
+  enable_hpcrun_flat_msg="no (missing prerequisites)"
 fi
 
-AC_MSG_RESULT([${OPT_ENABLE_HPCRUN_FLAT}])
+AC_MSG_RESULT([${enable_hpcrun_flat_msg}])
 AM_CONDITIONAL(OPT_ENABLE_HPCRUN_FLAT, test "${OPT_ENABLE_HPCRUN_FLAT}" = "yes")
 
 
@@ -1413,7 +1470,7 @@ fi
 #fi
 
 AC_MSG_RESULT([$enable_hpcrun_mesg])
-AM_CONDITIONAL([OPT_ENABLE_HPCRUN], [test "$OPT_ENABLE_HPCRUN" = yes])
+AM_CONDITIONAL([OPT_ENABLE_HPCRUN], [test "${OPT_ENABLE_HPCRUN}" = yes])
 
 
 
