@@ -46,8 +46,8 @@
 
 /*************************** System Include Files ***************************/
 
+#include <stdio.h>  // for FILENAME_MAX
 #include <stdlib.h> /* for 'realpath' */
-#include <limits.h> /* for 'PATH_MAX' */
 
 /**************************** User Include Files ****************************/
 
@@ -66,7 +66,7 @@
 const char*
 RealPath(const char* nm)
 {
-  static char _RealPathBuf[PATH_MAX];
+  static char _RealPathBuf[FILENAME_MAX]; // PATH_MAX
   if (realpath(nm, _RealPathBuf) == NULL) {
     return nm; /* error; return orig string */
   }

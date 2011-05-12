@@ -171,7 +171,7 @@ public:
   { return (m_metrics && mId < m_metrics->size() && hasMetric(mId)); }
 
 
-  const double
+  double
   metric(size_t mId) const
   { return (*m_metrics)[mId]; }
 
@@ -180,7 +180,7 @@ public:
   { return (*m_metrics)[mId]; }
 
 
-  const double
+  double
   demandMetric(size_t mId, size_t size = 0) const
   {
     size_t sz = std::max(size, mId+1);

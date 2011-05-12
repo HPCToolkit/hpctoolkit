@@ -71,6 +71,8 @@
 
 //*************************** User Include Files ****************************
 
+#include <include/uint.h>
+
 //*************************** Forward Declarations **************************
 
 #if defined(__cplusplus)

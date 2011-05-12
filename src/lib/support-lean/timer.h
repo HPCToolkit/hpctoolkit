@@ -68,7 +68,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include <time.h> /* clock_gettime() */
+#define __USE_POSIX199309 /* enable clockid_t */
+#include <time.h>         /* clock_gettime() */
 
 //*************************** User Include Files ****************************
 
