@@ -170,7 +170,7 @@ hpcio_le2_fread(uint16_t* val, FILE* fs)
   for (shift = 0; shift < 16; shift += 8) {
     if ( (c = fgetc(fs)) == EOF ) { break; }
     num_read++;
-    v |= ((uint16_t)(c & 0xff) << shift); // 0, 8
+    v = (uint16_t)(v | ((c & 0xff) << shift)); // 0, 8
   }
 
   *val = v;
@@ -272,7 +272,7 @@ hpcio_be2_fread(uint16_t* val, FILE* fs)
   for (shift = 8; shift >= 0; shift -= 8) {
     if ( (c = fgetc(fs)) == EOF ) { break; }
     num_read++;
-    v |= ((uint16_t)(c & 0xff) << shift); // 8, 0
+    v = (uint16_t)(v | ((c & 0xff) << shift)); // 8, 0
   }
 
   *val = v;
@@ -324,7 +324,7 @@ hpcio_beX_fread(uint8_t* val, size_t size, FILE* fs)
     if (c == EOF) {
       break;
     }
-    val[i] = c;
+    val[i] = (uint8_t) c;
     num_read++;
   }
 

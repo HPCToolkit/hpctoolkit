@@ -88,8 +88,8 @@ const string xml::attE  = "\"";  // attribute value end
 // Read
 //****************************************************************************
 
-// Reads from 'attB' to and including 'attE'. 
-bool 
+// Reads from 'attB' to and including 'attE'.
+bool
 xml::ReadAttrStr(std::istream& is, string& s, int flags)
 {
   bool STATE = true; // false indicates an error
@@ -108,49 +108,48 @@ xml::ReadAttrStr(std::istream& is, string& s, int flags)
 //****************************************************************************
 
 // Writes attribute value, beginning with 'attB' and ending with 'attE'.
-bool 
+bool
 xml::WriteAttrStr(std::ostream& os, const char* s, int flags)
 {
   string str = ((flags & ESC_TRUE) ? EscapeStr(s) : s);
   os << attB << str << attE;
   return (!os.fail());
-}       
+}
 
 
 //****************************************************************************
-// 
+//
 //****************************************************************************
 
 // 'EscapeStr' and 'UnEscapeStr': Returns the string with all
 // necessary characters (un)escaped; will not modify 'str'
 
 namespace xml {
-  string Substitute(const char* str, const string* fromStrs,
-		    const string* toStrs); 
+  static string
+  substitute(const char* str, const string* fromStrs, const string* toStrs);
 
   static const int numSubs = 4; // number of substitutes
-  static const string RegStrs[]  = {"<",    ">",    "&",     "\""}; 
+  static const string RegStrs[]  = {"<",    ">",    "&",     "\""};
   static const string EscStrs[]  = {"&lt;", "&gt;", "&amp;", "&quot;"};
 }
 
 
-string 
+string
 xml::EscapeStr(const char* str)
 {
-  return Substitute(str, RegStrs, EscStrs);
+  return substitute(str, RegStrs, EscStrs);
 }
 
-		      
-string 
+
+string
 xml::UnEscapeStr(const char* str)
 {
-  return Substitute(str, EscStrs, RegStrs);
+  return substitute(str, EscStrs, RegStrs);
 }
 
 
-string 
-xml::Substitute(const char* str, const string* fromStrs,
-		       const string* toStrs)
+static string
+xml::substitute(const char* str, const string* fromStrs, const string* toStrs)
 {
   static string newStr = string("", 512);
 
@@ -159,7 +158,7 @@ xml::Substitute(const char* str, const string* fromStrs,
 
   // Iterate over 'str' and substitute patterns
   newStr = "";
-  int strLn = strlen(str);  
+  int strLn = strlen(str);
   for (int i = 0; str[i] != '\0'; /* */) {
 
     // Attempt to find a pattern for substitution at this position
@@ -186,5 +185,5 @@ xml::Substitute(const char* str, const string* fromStrs,
 }
 
 //****************************************************************************
-// 
+//
 //****************************************************************************

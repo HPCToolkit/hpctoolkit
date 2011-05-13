@@ -215,7 +215,8 @@ removeEmptyNodes(Prof::Struct::ANode* node);
 // ------------------------------------------------------------
 class StmtData;
 
-class SortIdToStmtMap : public std::map<int, StmtData*> {
+class SortIdToStmtMap
+  : public std::map<int, StmtData*> {
 public:
   typedef std::map<int, StmtData*> My_t;
 

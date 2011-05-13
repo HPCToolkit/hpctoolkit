@@ -113,7 +113,8 @@ friend class WordSetIterator;
 //-------------------------------------------------------------
 // class WordSetIterator
 //-------------------------------------------------------------
-class WordSetIterator : private HashTableIterator {
+class WordSetIterator 
+  : private HashTableIterator {
 public:
   WordSetIterator(const WordSet *theTable);
   virtual ~WordSetIterator() { }

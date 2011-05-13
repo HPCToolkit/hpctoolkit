@@ -64,6 +64,7 @@
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
 #include <include/uint.h>
 #include <include/gnu_bfd.h>
 #include <include/gnu_dis-asm.h> // gnu binutils
@@ -89,7 +90,7 @@ public:
   // --------------------------------------------------------
 
   virtual ushort
-  getInsnSize(MachInsn* mi)
+  getInsnSize(MachInsn* GCC_ATTR_UNUSED mi)
   { return 16; /* Each IA64 VLIW packet is 16 bytes long. */ }
 
   virtual ushort
@@ -102,12 +103,18 @@ public:
   getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0);
 
   virtual ushort
-  getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0)
+  getInsnNumDelaySlots(MachInsn* GCC_ATTR_UNUSED mi,
+		       ushort GCC_ATTR_UNUSED opIndex,
+		       ushort GCC_ATTR_UNUSED sz = 0)
   { return 0; }
 
   virtual bool
-  isParallelWithSuccessor(MachInsn* mi1, ushort opIndex1, ushort sz1,
-			  MachInsn* mi2, ushort opIndex2, ushort sz2) const
+  isParallelWithSuccessor(MachInsn* GCC_ATTR_UNUSED mi1,
+			  ushort GCC_ATTR_UNUSED opIndex1,
+			  ushort GCC_ATTR_UNUSED sz1,
+			  MachInsn* GCC_ATTR_UNUSED mi2,
+			  ushort GCC_ATTR_UNUSED opIndex2,
+			  ushort GCC_ATTR_UNUSED sz2) const
   { return false; /* FIXME */ }
 
   virtual VMA
@@ -124,7 +131,7 @@ public:
   {
     // See above comments
     ushort offset = (opvma & 0xf); // 0, 6, 12
-    opIndex = offset / 6;
+    opIndex = (ushort)(offset / 6);
     return (opvma - offset);
   }
 
@@ -133,10 +140,10 @@ public:
 
 private:
   // Should not be used
-  IA64ISA(const IA64ISA& i)
+  IA64ISA(const IA64ISA& GCC_ATTR_UNUSED x)
   { }
   
-  IA64ISA& operator=(const IA64ISA& i)
+  IA64ISA& operator=(const IA64ISA& GCC_ATTR_UNUSED x)
   { return *this; }
 
 protected:

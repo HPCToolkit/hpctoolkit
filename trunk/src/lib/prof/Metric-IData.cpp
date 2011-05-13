@@ -68,6 +68,7 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
 #include <include/uint.h>
 
 #include "Metric-IData.hpp"
@@ -100,7 +101,7 @@ IData::toStringMetrics(int oFlags, const char* pfx) const
 
 std::ostream&
 IData::writeMetricsXML(std::ostream& os, uint mBegId, uint mEndId,
-		       int oFlags, const char* pfx) const
+		       int GCC_ATTR_UNUSED oFlags, const char* pfx) const
 {
   bool wasMetricWritten = false;
 
@@ -124,7 +125,8 @@ IData::writeMetricsXML(std::ostream& os, uint mBegId, uint mEndId,
 
 
 std::ostream&
-IData::dumpMetrics(std::ostream& os, int oFlags, const char* pfx) const
+IData::dumpMetrics(std::ostream& os, int GCC_ATTR_UNUSED oFlags,
+		   const char* GCC_ATTR_UNUSED pfx) const
 {
   return os;
 }

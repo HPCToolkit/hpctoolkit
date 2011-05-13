@@ -158,7 +158,7 @@ enum {
   // -------------------------------------------------------
   // *Private* CCT Merge flags
   // -------------------------------------------------------
-  MrgFlg_PropagateEffects    = (1 << 3),
+  MrgFlg_PropagateEffects    = (1 << 3)
 };
 
 

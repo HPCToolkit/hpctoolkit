@@ -64,6 +64,7 @@
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
 #include <include/uint.h>
 
 #include "ISA.hpp"
@@ -90,11 +91,11 @@ public:
   // --------------------------------------------------------
 
   virtual ushort
-  getInsnSize(MachInsn* mi)
+  getInsnSize(MachInsn* GCC_ATTR_UNUSED mi)
   { return MINSN_SIZE; }
 
   virtual ushort
-  getInsnNumOps(MachInsn* mi)
+  getInsnNumOps(MachInsn* GCC_ATTR_UNUSED mi)
   { return 1; }
 
   virtual InsnDesc
@@ -107,8 +108,12 @@ public:
   getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0);
 
   virtual bool
-  isParallelWithSuccessor(MachInsn* mi1, ushort opIndex1, ushort sz1,
-			  MachInsn* mi2, ushort opIndex2, ushort sz2) const
+  isParallelWithSuccessor(MachInsn* GCC_ATTR_UNUSED mi1,
+			  ushort GCC_ATTR_UNUSED opIndex1,
+			  ushort GCC_ATTR_UNUSED sz1,
+			  MachInsn* GCC_ATTR_UNUSED mi2,
+			  ushort GCC_ATTR_UNUSED opIndex2,
+			  ushort GCC_ATTR_UNUSED sz2) const
   { return false; }
 
   virtual void
@@ -116,11 +121,11 @@ public:
 
 private:
   // Should not be used
-  SparcISA(const SparcISA& i)
+  SparcISA(const SparcISA& GCC_ATTR_UNUSED x)
   { }
 
   SparcISA&
-  operator=(const SparcISA& i)
+  operator=(const SparcISA& GCC_ATTR_UNUSED x)
   { return *this; }
 
 protected:

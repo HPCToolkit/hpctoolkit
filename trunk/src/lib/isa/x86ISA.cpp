@@ -148,7 +148,7 @@ x86ISA::getInsnSize(MachInsn* mi)
   DecodingCache *cache;
 
   if ((cache = cacheLookup(mi)) == NULL) {
-    size = print_insn_i386(PTR_TO_BFDVMA(mi), m_di);
+    size = (ushort)print_insn_i386(PTR_TO_BFDVMA(mi), m_di);
     cacheSet(mi, size);
   }
   else {
@@ -159,13 +159,14 @@ x86ISA::getInsnSize(MachInsn* mi)
 
 
 ISA::InsnDesc
-x86ISA::getInsnDesc(MachInsn* mi, ushort opIndex, ushort s)
+x86ISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
+		    ushort GCC_ATTR_UNUSED s)
 {
   ISA::InsnDesc d;
 
   if (cacheLookup(mi) == NULL) {
-    ushort size = print_insn_i386(PTR_TO_BFDVMA(mi), m_di);
-    cacheSet(mi, size);
+    int size = print_insn_i386(PTR_TO_BFDVMA(mi), m_di);
+    cacheSet(mi, (ushort)size);
   }
 
   switch(m_di->insn_type) {
@@ -215,11 +216,12 @@ x86ISA::getInsnDesc(MachInsn* mi, ushort opIndex, ushort s)
 
 
 VMA
-x86ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
+x86ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
+			 ushort GCC_ATTR_UNUSED sz)
 {
   if (cacheLookup(mi) == NULL) {
-    ushort size = print_insn_i386(PTR_TO_BFDVMA(mi), m_di);
-    cacheSet(mi, size);
+    int size = print_insn_i386(PTR_TO_BFDVMA(mi), m_di);
+    cacheSet(mi, (ushort)size);
   }
 
   // The target field is only set on instructions with targets.
@@ -233,7 +235,8 @@ x86ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
 
 
 void
-x86ISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort opIndex)
+x86ISA::decode(ostream& os, MachInsn* mi, VMA vma,
+	       ushort GCC_ATTR_UNUSED opIndex)
 {
   m_dis_data.insn_addr = mi;
   m_dis_data.insn_vma = vma;

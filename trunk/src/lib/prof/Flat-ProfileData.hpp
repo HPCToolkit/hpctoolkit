@@ -77,6 +77,7 @@
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
 #include <include/uint.h>
 
 #include "Metric-ADesc.hpp"
@@ -114,12 +115,15 @@ class LM;
 //
 //---------------------------------------------------------------------------
 
-class ProfileData : public std::multimap<std::string, LM*> {
+class ProfileData
+  : public std::multimap<std::string, LM*> {
 public:
   ProfileData(const char* filename = NULL);
   ~ProfileData();
   
-  const std::string& name() const { return m_name; }
+  const std::string&
+  name() const
+  { return m_name; }
   
   // -------------------------------------------------------
   // LM: iterator, find/insert, etc
@@ -129,7 +133,9 @@ public:
   // -------------------------------------------------------
   // Metrics
   // -------------------------------------------------------
-  const Metric::SampledDescVec& mdescs() { return m_mdescs; }
+  const Metric::SampledDescVec&
+  mdescs()
+  { return m_mdescs; }
 
   // -------------------------------------------------------
   // open/read: Throws an exception on an error!
@@ -142,27 +148,41 @@ public:
   //
   // NOTE: in either case, fnm may be supplied by constructor
 
-  void openread(const char* filename = NULL);
+  void
+  openread(const char* filename = NULL);
  
-  void open(const char* filename = NULL);
-  void read();
+  void
+  open(const char* filename = NULL);
+
+  void
+  read();
 
   // -------------------------------------------------------
-  // 
+  //
   // -------------------------------------------------------
   
-  void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  void
+  dump(std::ostream& o = std::cerr, const char* pre = "") const;
 
 private:
   ProfileData(const ProfileData& x);
-  ProfileData& operator=(const ProfileData& x) { return *this; }
 
-  void read_metrics();
+  ProfileData&
+  operator=(const ProfileData& GCC_ATTR_UNUSED x)
+  { return *this; }
+
+  void
+  read_metrics();
   void mdescs(LM* proflm);
 
-  static FILE* fopen(const char* filename);
-  static void read_header(FILE* fs);
-  static uint read_lm_count(FILE* fs);
+  static FILE*
+  fopen(const char* filename);
+
+  static void
+  read_header(FILE* fs);
+
+  static uint
+  read_lm_count(FILE* fs);
 
 private:
   std::string m_name;
@@ -189,32 +209,51 @@ public:
   EventData();
   ~EventData();
   
-  const Metric::SampledDesc& mdesc() const { return m_mdesc; }
-  Metric::SampledDesc& mdesc() { return m_mdesc; }
+  const Metric::SampledDesc&
+  mdesc() const
+  { return m_mdesc; }
 
-  int  bucket_size() const { return sizeof(bucketsz_t); }
-  uint outofrange() const { return m_outofrange; }
-  uint overflow() const { return m_overflow; }
+  Metric::SampledDesc&
+  mdesc()
+  { return m_mdesc; }
+
+  int
+  bucket_size() const
+  { return sizeof(bucketsz_t); }
+
+  uint
+  outofrange() const
+  { return m_outofrange; }
+
+  uint
+  overflow() const
+  { return m_overflow; }
 
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
   
   // 0 based indexing
-  uint num_data() const { return m_sparsevec.size(); }
+  uint
+  num_data() const
+  { return m_sparsevec.size(); }
 
   // <VMA, count> where VMA is a *relocated* VMA
-  const Datum& datum(uint i) const { return m_sparsevec[i]; }
+  const Datum&
+  datum(uint i) const
+  { return m_sparsevec[i]; }
   
   // -------------------------------------------------------
   // read: Throws an exception on an error!
   // -------------------------------------------------------
-  void read(FILE*, uint64_t load_addr);
+  void
+  read(FILE*, uint64_t load_addr);
   
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
-  void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  void
+  dump(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
   Metric::SampledDesc m_mdesc;
@@ -237,23 +276,35 @@ public:
   LM();
   ~LM();
 
-  const std::string& name() const { return m_name; }
-  uint64_t load_addr() const { return m_load_addr; }
+  const std::string&
+  name() const
+  { return m_name; }
+
+  uint64_t
+  load_addr() const
+  { return m_load_addr; }
   
   // 0 based indexing
-  uint num_events() const { return m_eventvec.size(); }
-  const EventData& event(uint i) const { return m_eventvec[i]; }
+  uint
+  num_events() const
+  { return m_eventvec.size(); }
+
+  const EventData&
+  event(uint i) const
+  { return m_eventvec[i]; }
 
 
   // -------------------------------------------------------
   // read: Throws an exception on an error!
   // -------------------------------------------------------
-  void read(FILE*, const char* filename = NULL);
+  void
+  read(FILE*, const char* filename = NULL);
 
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
-  void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  void
+  dump(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
   std::string m_name;            // module name
@@ -274,9 +325,9 @@ public:
     : Diagnostics::Exception(x, filenm, lineno)
   { }
   
-  virtual std::string message() const { 
-    return "[Prof::Flat]: " + what();
-  }
+  virtual std::string
+  message() const
+  { return "[Prof::Flat]: " + what(); }
 
 private:
 };

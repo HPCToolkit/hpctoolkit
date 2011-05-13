@@ -772,9 +772,9 @@ Mgr::insertInMapsAndMakeUniqueName(Metric::ADesc* m)
   Metric::SampledDesc* mSmpl = dynamic_cast<Metric::SampledDesc*>(m);
   if (mSmpl) {
     const string& fnm = mSmpl->profileName();
-    StringToADescVecMap::iterator it = m_fnameToFMetricMap.find(fnm);
-    if (it != m_fnameToFMetricMap.end()) {
-      Metric::ADescVec& mvec = it->second;
+    StringToADescVecMap::iterator it1 = m_fnameToFMetricMap.find(fnm);
+    if (it1 != m_fnameToFMetricMap.end()) {
+      Metric::ADescVec& mvec = it1->second;
       mvec.push_back(mSmpl);
     }
     else {

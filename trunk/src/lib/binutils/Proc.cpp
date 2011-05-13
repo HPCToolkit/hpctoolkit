@@ -112,7 +112,7 @@ BinUtil::Proc::endInsn() const
   if (insn) {
     ushort numOps = insn->numOps();
     if (numOps != 0) {
-      insn = findInsn(m_endVMA, numOps - 1); // opIndex is 0-based
+      insn = findInsn(m_endVMA, (ushort)(numOps - 1)); // opIndex is 0-based
     }
   }
   return insn;
