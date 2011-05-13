@@ -297,11 +297,11 @@ private:
   Proc()
   { }
 
-  Proc(GCC_ATTR_UNUSED const Proc& p)
+  Proc(const Proc& GCC_ATTR_UNUSED p)
   { }
 
   Proc&
-  operator=(GCC_ATTR_UNUSED const Proc& p)
+  operator=(const Proc& GCC_ATTR_UNUSED p)
   { return *this; }
 
 protected:
@@ -394,10 +394,10 @@ private:
   // Should not be used
   ProcInsnIterator();
   
-  ProcInsnIterator(GCC_ATTR_UNUSED const ProcInsnIterator& i);
+  ProcInsnIterator(const ProcInsnIterator& GCC_ATTR_UNUSED i);
 
   ProcInsnIterator&
-  operator=(GCC_ATTR_UNUSED const ProcInsnIterator& i)
+  operator=(const ProcInsnIterator& GCC_ATTR_UNUSED i)
   { return *this; }
 
 protected:

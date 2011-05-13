@@ -327,7 +327,7 @@ public:
   // Special
   //--------------------------------------------------------
   bool
-  parallelWithSuccessor(GCC_ATTR_UNUSED OA::StmtHandle h) { return false; }
+  parallelWithSuccessor(OA::StmtHandle GCC_ATTR_UNUSED h) { return false; }
 
   int
   numberOfDelaySlots(OA::StmtHandle h);

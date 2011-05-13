@@ -727,7 +727,7 @@ Analysis::CallPath::pruneBySummaryMetrics(Prof::CallPath::Profile& prof,
 
 void
 Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
-			      string agent, GCC_ATTR_UNUSED bool doNormalizeTy)
+			      string agent, bool GCC_ATTR_UNUSED doNormalizeTy)
 {
   pruneTrivialNodes(prof);
 

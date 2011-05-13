@@ -247,7 +247,7 @@ realmain(int argc, char* const* argv)
 static void
 makeMetrics(Prof::CallPath::Profile& prof,
 	    const Analysis::Args& args,
-	    GCC_ATTR_UNUSED const Analysis::Util::NormalizeProfileArgs_t& nArgs)
+	    const Analysis::Util::NormalizeProfileArgs_t& GCC_ATTR_UNUSED nArgs)
 {
   Prof::Metric::Mgr& mMgr = *prof.metricMgr();
 

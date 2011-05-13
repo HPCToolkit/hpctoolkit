@@ -213,8 +213,8 @@ NonUniformDegreeTreeNode::maxDepth(uint parentDepth)
 
 
 std::string
-NonUniformDegreeTreeNode::toString(GCC_ATTR_UNUSED uint oFlags,
-				   GCC_ATTR_UNUSED const char* pfx) const
+NonUniformDegreeTreeNode::toString(uint GCC_ATTR_UNUSED oFlags,
+				   const char* GCC_ATTR_UNUSED pfx) const
 {
   return "NonUniformDegreeTreeNode: " + StrUtil::toStr((void*)this);
 }

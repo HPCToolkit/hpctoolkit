@@ -73,6 +73,8 @@
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
+
 #include "diagnostics.h"
 
 //*************************** Forward Declarations ***************************
@@ -373,8 +375,12 @@ public:
   
 private:
   // Should not be used 
-  CmdLineParser(const CmdLineParser& p) { }
-  CmdLineParser& operator=(const CmdLineParser& x) { return *this; }
+  CmdLineParser(const CmdLineParser& GCC_ATTR_UNUSED x)
+  { }
+  
+  CmdLineParser&
+  operator=(const CmdLineParser& GCC_ATTR_UNUSED x)
+  { return *this; }
   
   typedef std::map<std::string, std::string*> SwitchToArgMap;
   typedef std::vector<std::string> ArgVec;

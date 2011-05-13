@@ -553,9 +553,11 @@ case "${host}" in
 
     # Intel compiler
     if HPCcxxcmp([icpc ecpc]) ; then
-      # Silence "remark #981: operands are evaluated in unspecified order"
-      # See: http://software.intel.com/en-us/forums/showthread.php?t=62309
-      HOST_CXXFLAGS="-wd981"
+      # Silence the following warnings:
+      #   remark #383: value copied to temporary, reference to temporary used
+      #   remark #981: operands are evaluated in unspecified order
+      #   remark #1572: FP equality and inequality comparisons are unreliable
+      HOST_CXXFLAGS="-wd383 -wd981 -wd1572"
     fi
     if HPCcccmp([icc ecc]) ; then
       :

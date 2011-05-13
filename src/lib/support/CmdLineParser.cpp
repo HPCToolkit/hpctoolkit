@@ -443,7 +443,7 @@ CmdLineParser::isOptArg_long(const char* option)
   try {
     CmdLineParser::toLong(string(option));
   }
-  catch (const CmdLineParser::Exception& x) {
+  catch (const CmdLineParser::Exception& /*ex*/) {
     return false;
   }
   return true;

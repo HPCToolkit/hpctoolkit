@@ -54,7 +54,7 @@
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
-// 
+//
 // Author:
 //
 //
@@ -83,13 +83,13 @@ using namespace std; // For compatibility with non-std C headers
 
 /* #define STREQ(x,y) ((*(x) == *(y)) && !strcmp((x), (y))) */
 
-int 
+int
 STREQ(const char* x, const char* y)
 {
   return ((*(x) == *(y)) && !strcmp((x), (y)));
 }
 
-char* 
+char*
 ssave(const char* const str)
 {
   char* nstr = new char[strlen(str)+1];
@@ -97,14 +97,14 @@ ssave(const char* const str)
   return nstr;
 }
 
-void 
+void
 sfree(char *str)
 {
   delete[] str;
   return;
 }
 
-void 
+void
 smove(char **old, char *fresh)
 {
   sfree(*old);
@@ -113,10 +113,10 @@ smove(char **old, char *fresh)
 }
 
 /*
- *  strcpye -     like strcpy, but returns a pointer 
+ *  strcpye -     like strcpy, but returns a pointer
  *                to the null that terminates s1.
  */
-static char* 
+static char*
 strcpye(register char* s1, register char* s2)
 {
   while ( (*s1++ = *s2++) );
@@ -128,7 +128,7 @@ strcpye(register char* s1, register char* s2)
  * blob, and return a pointer to the result. "n" must be equal to the # of
  * strings. The returned pointer should be freed with sfree().
  */
-char* 
+char*
 nssave(int n, const char* const s1, ...)
 {
   va_list ap;
@@ -143,9 +143,9 @@ nssave(int n, const char* const s1, ...)
     for (int i = 0; i < n-1; i++) nb += strlen(va_arg(ap, char*));
   }
   va_end(ap);
-  
+
   tstr = new char[nb+1];
-  
+
   /* Concat them all together into the new space. */
   va_start(ap, s1);
   {
@@ -155,7 +155,7 @@ nssave(int n, const char* const s1, ...)
   }
   va_end(ap);
 
-  nstr = ssave(tstr); 
+  nstr = ssave(tstr);
 
   delete[] tstr;
 
@@ -168,12 +168,12 @@ nssave(int n, const char* const s1, ...)
  *  behaves properly for null s1.
  *  returns -1 for no match.
  */
-int 
+int
 find(char s1[], char s2[])
 {
   int l1, l2, i, j;
   bool match;
-  
+
   l1 = strlen(s1);
   l2 = strlen(s2);
   for (i = 0; i <= l1-l2; i++)
@@ -189,7 +189,7 @@ find(char s1[], char s2[])
 /*
  * counts occurrences of characters in s2 within s1.
  */
-int 
+int
 char_count(char s1[], char s2[])
 {
   int l1, l2, i, j, count;
@@ -207,14 +207,14 @@ char_count(char s1[], char s2[])
   return count;
 }
 
-int 
+int
 hash_string(register const char* string, int size)
 {
   register unsigned int result = 0;
-  
+
   if (*string == '\0')
     return result;  /* no content */
-  
+
   const char* stringend = strchr(string, '\0') - 1; /* address of last char */
   int step = ((stringend - string) >> 2) + 1;  /* gives <= 4 samples */
   while(stringend >= string)
@@ -223,67 +223,73 @@ hash_string(register const char* string, int size)
       result |= (*(unsigned char*) stringend) & 0x3F;
       stringend -= step;
     }
-  
+
   return (result % size);
 }
 
-char* 
+char*
 strlower (char *string)
 {
   register char* s = string;
   register char c;
 
-  while ((c = *s)) 
-    {
-       if (isupper(c)) *s = tolower(c);
-       s++;
+  while ((c = *s)) {
+    if (isupper(c)) {
+      *s = tolower(c);
     }
+    s++;
+  }
 
   return string;
 }
 
-char* 
+char*
 strupper (char* string)
 {
   register char* s = string;
   register char c;
 
-  while ((c = *s)) 
-    {
-       if (islower(c)) *s = toupper(c);
-       s++;
+  while ((c = *s)) {
+    if (islower(c)) {
+      *s = toupper(c);
     }
+    s++;
+  }
 
   return string;
 }
 
-char 
+char
 to_lower(char c)
 {
-  if (isupper(c)) return tolower(c);
-  else            return c;
+  if (isupper(c)) {
+    return tolower(c);
+  }
+  else {
+    return c;
+  }
 }
 
 /* Converts an integer to its ascii representation */
-void 
+void
 itoa(long n, char a[])
 {
   char* aptr;
-  
+
   if (n < 0) {
     a[0] = '-';
     aptr = a+1;
     n = -n;
   }
-  else 
+  else
     aptr = a;
-  utoa((unsigned long) n, aptr); 
+  utoa((unsigned long) n, aptr);
 }
 
-void 
+void
 utoa(unsigned long n, char a[])
 {
-  char *aptr = a; 
+  char *aptr = a;
   int i=0;
   while (n > 0) {
     aptr[i++] = '0' + n%10;
@@ -291,7 +297,7 @@ utoa(unsigned long n, char a[])
   }
   if (!i)
     aptr[i++] = '0';
-  
+
   /* swap aptr[] end-for-end */
   for (int j=0; j<i/2; j++) {
     aptr[i] = aptr[j];
@@ -302,21 +308,21 @@ utoa(unsigned long n, char a[])
 }
 
 /* converts 64 (or less) bit pointers into hex "strings" */
-void 
+void
 ultohex (unsigned long n, char a[])
 {
   int i;
-  
+
   a[0] = '0';
   a[1] = 'x';
   for (i=2; i<18; i++) {
     a[i] = '0';
   }
   a[18] = '\0';
-  
+
   i = 17;
   do {
     a[i--] = n % 16 + '0';
     if ( i<1 ) break;  /* ack, why are we running out of space?? */
-  } while ((n /= 16) > 0);  
+  } while ((n /= 16) > 0);
 }

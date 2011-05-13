@@ -249,15 +249,15 @@ BAnal::OAInterface::dump(OA::StmtHandle stmt, std::ostream& os)
 
 
 void
-BAnal::OAInterface::dump(GCC_ATTR_UNUSED OA::MemRefHandle h,
-			 GCC_ATTR_UNUSED std::ostream& os)
+BAnal::OAInterface::dump(OA::MemRefHandle GCC_ATTR_UNUSED h,
+			 std::ostream& GCC_ATTR_UNUSED os)
 {
   DIAG_Die(DIAG_Unimplemented);
 }
 
 
 void
-BAnal::OAInterface::currentProc(GCC_ATTR_UNUSED OA::ProcHandle p)
+BAnal::OAInterface::currentProc(OA::ProcHandle GCC_ATTR_UNUSED p)
 {
   DIAG_Die(DIAG_Unimplemented);
 }
@@ -355,7 +355,7 @@ BAnal::OAInterface::getLabel(OA::StmtHandle h)
 
 
 OA::OA_ptr<OA::IRRegionStmtIterator>
-BAnal::OAInterface::getFirstInCompound(GCC_ATTR_UNUSED OA::StmtHandle h)
+BAnal::OAInterface::getFirstInCompound(OA::StmtHandle GCC_ATTR_UNUSED h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<RegionStmtIterator>();
@@ -367,7 +367,7 @@ BAnal::OAInterface::getFirstInCompound(GCC_ATTR_UNUSED OA::StmtHandle h)
 //--------------------------------------------------------
 
 OA::OA_ptr<OA::IRRegionStmtIterator>
-BAnal::OAInterface::loopBody(GCC_ATTR_UNUSED OA::StmtHandle h)
+BAnal::OAInterface::loopBody(OA::StmtHandle GCC_ATTR_UNUSED h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<OA::IRRegionStmtIterator>();
@@ -375,7 +375,7 @@ BAnal::OAInterface::loopBody(GCC_ATTR_UNUSED OA::StmtHandle h)
 
 
 OA::StmtHandle
-BAnal::OAInterface::loopHeader(GCC_ATTR_UNUSED OA::StmtHandle h)
+BAnal::OAInterface::loopHeader(OA::StmtHandle GCC_ATTR_UNUSED h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::StmtHandle(0);
@@ -383,7 +383,7 @@ BAnal::OAInterface::loopHeader(GCC_ATTR_UNUSED OA::StmtHandle h)
 
 
 OA::StmtHandle
-BAnal::OAInterface::getLoopIncrement(GCC_ATTR_UNUSED OA::StmtHandle h)
+BAnal::OAInterface::getLoopIncrement(OA::StmtHandle GCC_ATTR_UNUSED h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::StmtHandle(0);
@@ -391,7 +391,7 @@ BAnal::OAInterface::getLoopIncrement(GCC_ATTR_UNUSED OA::StmtHandle h)
 
 
 bool
-BAnal::OAInterface::loopIterationsDefinedAtEntry(GCC_ATTR_UNUSED OA::StmtHandle h)
+BAnal::OAInterface::loopIterationsDefinedAtEntry(OA::StmtHandle GCC_ATTR_UNUSED h)
 {
   return false;
 }
@@ -402,7 +402,7 @@ BAnal::OAInterface::loopIterationsDefinedAtEntry(GCC_ATTR_UNUSED OA::StmtHandle 
 //--------------------------------------------------------
 
 OA::OA_ptr<OA::IRRegionStmtIterator>
-BAnal::OAInterface::trueBody(GCC_ATTR_UNUSED OA::StmtHandle h)
+BAnal::OAInterface::trueBody(OA::StmtHandle GCC_ATTR_UNUSED h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<RegionStmtIterator>();
@@ -410,7 +410,7 @@ BAnal::OAInterface::trueBody(GCC_ATTR_UNUSED OA::StmtHandle h)
 
 
 OA::OA_ptr<OA::IRRegionStmtIterator>
-BAnal::OAInterface::elseBody(GCC_ATTR_UNUSED OA::StmtHandle h)
+BAnal::OAInterface::elseBody(OA::StmtHandle GCC_ATTR_UNUSED h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<RegionStmtIterator>();
@@ -422,7 +422,7 @@ BAnal::OAInterface::elseBody(GCC_ATTR_UNUSED OA::StmtHandle h)
 //--------------------------------------------------------
 
 int
-BAnal::OAInterface::numMultiCases(GCC_ATTR_UNUSED OA::StmtHandle h)
+BAnal::OAInterface::numMultiCases(OA::StmtHandle GCC_ATTR_UNUSED h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return -1;
@@ -430,8 +430,8 @@ BAnal::OAInterface::numMultiCases(GCC_ATTR_UNUSED OA::StmtHandle h)
 
 
 OA::OA_ptr<OA::IRRegionStmtIterator>
-BAnal::OAInterface::multiBody(GCC_ATTR_UNUSED OA::StmtHandle h,
-			      GCC_ATTR_UNUSED int bodyIndex)
+BAnal::OAInterface::multiBody(OA::StmtHandle GCC_ATTR_UNUSED h,
+			      int GCC_ATTR_UNUSED bodyIndex)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<RegionStmtIterator>();
@@ -439,7 +439,7 @@ BAnal::OAInterface::multiBody(GCC_ATTR_UNUSED OA::StmtHandle h,
 
 
 bool
-BAnal::OAInterface::isBreakImplied(GCC_ATTR_UNUSED OA::StmtHandle h)
+BAnal::OAInterface::isBreakImplied(OA::StmtHandle GCC_ATTR_UNUSED h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return false;
@@ -447,8 +447,8 @@ BAnal::OAInterface::isBreakImplied(GCC_ATTR_UNUSED OA::StmtHandle h)
 
 
 bool
-BAnal::OAInterface::isCatchAll(GCC_ATTR_UNUSED OA::StmtHandle h,
-			       GCC_ATTR_UNUSED int bodyIndex)
+BAnal::OAInterface::isCatchAll(OA::StmtHandle GCC_ATTR_UNUSED h,
+			       int GCC_ATTR_UNUSED bodyIndex)
 {
   DIAG_Die(DIAG_Unimplemented);
   return false;
@@ -456,7 +456,7 @@ BAnal::OAInterface::isCatchAll(GCC_ATTR_UNUSED OA::StmtHandle h,
 
 
 OA::OA_ptr<OA::IRRegionStmtIterator>
-BAnal::OAInterface::getMultiCatchall(GCC_ATTR_UNUSED OA::StmtHandle h)
+BAnal::OAInterface::getMultiCatchall(OA::StmtHandle GCC_ATTR_UNUSED h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<RegionStmtIterator>();
@@ -464,8 +464,8 @@ BAnal::OAInterface::getMultiCatchall(GCC_ATTR_UNUSED OA::StmtHandle h)
 
 
 OA::ExprHandle
-BAnal::OAInterface::getSMultiCondition(GCC_ATTR_UNUSED OA::StmtHandle h,
-				       GCC_ATTR_UNUSED int bodyIndex)
+BAnal::OAInterface::getSMultiCondition(OA::StmtHandle GCC_ATTR_UNUSED h,
+				       int GCC_ATTR_UNUSED bodyIndex)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::ExprHandle(0);
@@ -477,7 +477,7 @@ BAnal::OAInterface::getSMultiCondition(GCC_ATTR_UNUSED OA::StmtHandle h,
 //--------------------------------------------------------
 
 OA::StmtLabel
-BAnal::OAInterface::getTargetLabel(OA::StmtHandle h, GCC_ATTR_UNUSED int n)
+BAnal::OAInterface::getTargetLabel(OA::StmtHandle h, int GCC_ATTR_UNUSED n)
 {
   OA::StmtLabel lbl = 0;
   Insn* insn = IRHNDL_TO_TY(h, Insn*);
@@ -497,7 +497,7 @@ BAnal::OAInterface::getTargetLabel(OA::StmtHandle h, GCC_ATTR_UNUSED int n)
 //--------------------------------------------------------
 
 int
-BAnal::OAInterface::numUMultiTargets(GCC_ATTR_UNUSED OA::StmtHandle h)
+BAnal::OAInterface::numUMultiTargets(OA::StmtHandle GCC_ATTR_UNUSED h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return -1;
@@ -505,8 +505,8 @@ BAnal::OAInterface::numUMultiTargets(GCC_ATTR_UNUSED OA::StmtHandle h)
 
 
 OA::StmtLabel
-BAnal::OAInterface::getUMultiTargetLabel(GCC_ATTR_UNUSED OA::StmtHandle h,
-					 GCC_ATTR_UNUSED int targetIndex)
+BAnal::OAInterface::getUMultiTargetLabel(OA::StmtHandle GCC_ATTR_UNUSED h,
+					 int GCC_ATTR_UNUSED targetIndex)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::StmtLabel(0);
@@ -514,7 +514,7 @@ BAnal::OAInterface::getUMultiTargetLabel(GCC_ATTR_UNUSED OA::StmtHandle h,
 
 
 OA::StmtLabel
-BAnal::OAInterface::getUMultiCatchallLabel(GCC_ATTR_UNUSED OA::StmtHandle h)
+BAnal::OAInterface::getUMultiCatchallLabel(OA::StmtHandle GCC_ATTR_UNUSED h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::StmtLabel(0);
@@ -522,8 +522,8 @@ BAnal::OAInterface::getUMultiCatchallLabel(GCC_ATTR_UNUSED OA::StmtHandle h)
 
 
 OA::ExprHandle
-BAnal::OAInterface::getUMultiCondition(GCC_ATTR_UNUSED OA::StmtHandle h,
-				       GCC_ATTR_UNUSED int targetIndex)
+BAnal::OAInterface::getUMultiCondition(OA::StmtHandle GCC_ATTR_UNUSED h,
+				       int GCC_ATTR_UNUSED targetIndex)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::ExprHandle(0);

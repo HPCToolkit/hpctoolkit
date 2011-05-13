@@ -411,10 +411,10 @@ makeMathMLExpr(const char* nm, DOMNode* mathMLExpr,
 
 static void 
 ProcessFILE(DOMNode* fileNode, 
-	    Analysis::Args& args, Prof::Metric::Mgr& mMgr, 
+	    Analysis::Args& GCC_ATTR_UNUSED args, Prof::Metric::Mgr& mMgr, 
 	    const string& metricNm, bool metricDoDisp, 
 	    bool metricDoPercent, bool metricDoSortBy, 
-	    const string& metricDispNm)
+	    const string& GCC_ATTR_UNUSED metricDispNm)
 {
   static XMLCh* TYPEATTR = XMLString::transcode("type");
   static XMLCh* NAMEATTR = XMLString::transcode("name");

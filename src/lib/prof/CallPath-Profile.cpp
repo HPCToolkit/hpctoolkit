@@ -492,7 +492,7 @@ writeXML_FileFilter(const Struct::ANode& x, long type)
 
 
 static bool
-writeXML_ProcFilter(const Struct::ANode& x, long type)
+writeXML_ProcFilter(const Struct::ANode& x, long GCC_ATTR_UNUSED type)
 {
   return (typeid(x) == typeid(Struct::Proc) || typeid(x) == typeid(Struct::Alien));
 }
@@ -500,7 +500,7 @@ writeXML_ProcFilter(const Struct::ANode& x, long type)
 
 std::ostream&
 Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
-		      uint oFlags, const char* pfx) const
+		      uint oFlags, const char* GCC_ATTR_UNUSED pfx) const
 {
   typedef std::map<uint, string> UIntToStringMap;
   UIntToStringMap metricIdToFormula;
@@ -808,7 +808,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   // ------------------------------------------------------------
 
   if (outfs) {
-    fprintf(outfs, "\n[You look fine today! (num-epochs: %d)]\n", num_epochs);
+    fprintf(outfs, "\n[You look fine today! (num-epochs: %u)]\n", num_epochs);
   }
 
   hpcrun_fmt_hdr_free(&hdr, free);

@@ -334,7 +334,7 @@ private:
   VMAIntervalSet(const VMAIntervalSet& x);
 
   VMAIntervalSet&
-  operator=(GCC_ATTR_UNUSED const VMAIntervalSet& x)
+  operator=(const VMAIntervalSet& GCC_ATTR_UNUSED x)
   { return *this; }
 
 private:

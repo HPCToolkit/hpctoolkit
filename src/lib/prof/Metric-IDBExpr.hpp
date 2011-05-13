@@ -68,6 +68,7 @@
  
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
 #include <include/uint.h>
 
 #include <lib/support/diagnostics.h>
@@ -104,7 +105,7 @@ public:
   { }
 
   IDBExpr&
-  operator=(const IDBExpr& x)
+  operator=(const IDBExpr& GCC_ATTR_UNUSED x)
   { return *this; }
 
 

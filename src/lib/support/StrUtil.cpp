@@ -78,6 +78,8 @@ using std::string;
 
 //*************************** User Include Files *****************************
 
+#include <include/gcc-attr.h>
+
 #include "StrUtil.hpp"
 #include "diagnostics.h"
 
@@ -326,7 +328,7 @@ toStr(const uint64_t x, int base)
 
 
 string
-toStr(const void* x, int base)
+toStr(const void* x, int GCC_ATTR_UNUSED base)
 {
   sprintf(buf, "%p", x);
   return string(buf);

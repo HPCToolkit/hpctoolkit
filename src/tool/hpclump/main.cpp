@@ -104,18 +104,18 @@ typedef std::map<SrcFile::ln, VMAList*> LineToVMAListMap;
 typedef std::map<SrcFile::ln, VMAList*>::iterator LineToVMAListMapIt;
 typedef std::map<SrcFile::ln, VMAList*>::value_type LineToVMAListMapItVal;
 
-void
-ClearLineToVMAListMap(LineToVMAListMap* map);
+static void
+clearLineToVMAListMap(LineToVMAListMap* map);
 
 // Dump Helpers
-void
-DumpSymbolicInfoOld(std::ostream& os, BinUtil::LM* lm);
+static void
+dumpSymbolicInfoOld(std::ostream& os, BinUtil::LM* lm);
 
 
 //****************************************************************************
 
-int 
-main(int argc, char* const* argv) 
+int
+main(int argc, char* const* argv)
 {
   int ret;
 
@@ -125,15 +125,15 @@ main(int argc, char* const* argv)
   catch (const Diagnostics::Exception& x) {
     DIAG_EMsg(x.message());
     exit(1);
-  } 
+  }
   catch (const std::bad_alloc& x) {
     DIAG_EMsg("[std::bad_alloc] " << x.what());
     exit(1);
-  } 
+  }
   catch (const std::exception& x) {
     DIAG_EMsg("[std::exception] " << x.what());
     exit(1);
-  } 
+  }
   catch (...) {
     DIAG_EMsg("Unknown exception encountered!");
     exit(2);
@@ -167,24 +167,24 @@ realmain(int argc, char* const argv[])
   // ------------------------------------------------------------
   try {
     if (args.dumpOld) {
-      DumpSymbolicInfoOld(std::cout, lm);
+      dumpSymbolicInfoOld(std::cout, lm);
     }
     
     // Assume parser sanity checked arguments
     BinUtil::LM::DumpTy ty = BinUtil::LM::DUMP_Mid;
     if (args.dumpShort) {
       ty = BinUtil::LM::DUMP_Short;
-    } 
+    }
     if (args.dumpLong) {
       ty = BinUtil::LM::DUMP_Long;
     }
     if (args.dumpDecode) {
       ty = (BinUtil::LM::DumpTy)(ty | BinUtil::LM::DUMP_Flg_Insn_decode);
     }
-    
+
     lm->dump(std::cout, ty);
 
-  } 
+  }
   catch (...) {
     DIAG_EMsg("Exception encountered while dumping " << args.inputFile);
     throw;
@@ -197,8 +197,8 @@ realmain(int argc, char* const argv[])
 
 //****************************************************************************
 
-void 
-DumpHeaderInfo(std::ostream& os, BinUtil::LM* lm, const char* pre = "")
+static void
+dumpHeaderInfo(std::ostream& os, BinUtil::LM* lm, const char* pre = "")
 {
   os << "Begin LoadModule Stmt Dump\n";
   os << pre << "Name: `" << lm->name() << "'\n";
@@ -211,29 +211,30 @@ DumpHeaderInfo(std::ostream& os, BinUtil::LM* lm, const char* pre = "")
       os << "Dynamically Shared Library'\n";
       break;
     default:
-      DIAG_Die("Unknown LM type!"); 
+      DIAG_Die("Unknown LM type!");
   }
   os << pre << "ISA: `" << typeid(*BinUtil::LM::isa).name() << "'\n"; // std::type_info
 }
 
 //****************************************************************************
 
-void DumpSymbolicInfoForFunc(std::ostream& os, const char* pre, 
-			     const char* func, LineToVMAListMap* map, 
-			     const char* file);
+static void
+dumpSymbolicInfoForFunc(std::ostream& os, const char* pre,
+			const char* func, LineToVMAListMap* map,
+			const char* file);
 
-void 
-DumpSymbolicInfoOld(std::ostream& os, BinUtil::LM* lm)
+static void
+dumpSymbolicInfoOld(std::ostream& os, BinUtil::LM* lm)
 {
   string pre = "  ";
   string pre1 = pre + "  ";
 
-  DumpHeaderInfo(os, lm, pre.c_str());
+  dumpHeaderInfo(os, lm, pre.c_str());
 
   // ------------------------------------------------------------------------
   // Iterate through the VMA values of the text section, collect
   //   symbolic information on a source line basis, and output the results
-  // ------------------------------------------------------------------------  
+  // ------------------------------------------------------------------------
 
   os << pre << "Dump:\n";
   for (BinUtil::LM::ProcMap::iterator it = lm->procs().begin();
@@ -242,12 +243,12 @@ DumpSymbolicInfoOld(std::ostream& os, BinUtil::LM* lm)
     string pName = BinUtil::canonicalizeProcName(p->name());
 
       
-    // We have a 'Procedure'.  Iterate over VMA values     
+    // We have a 'Procedure'.  Iterate over VMA values
     string theFunc = pName, theFile;
     LineToVMAListMap map;
 
-    for (BinUtil::ProcInsnIterator it(*p); it.isValid(); ++it) {
-      BinUtil::Insn* inst = it.current();
+    for (BinUtil::ProcInsnIterator it1(*p); it1.isValid(); ++it1) {
+      BinUtil::Insn* inst = it1.current();
       VMA vma = inst->vma();
       VMA opVMA = BinUtil::LM::isa->convertVMAToOpVMA(vma, inst->opIndex());
 	
@@ -264,41 +265,41 @@ DumpSymbolicInfoOld(std::ostream& os, BinUtil::LM* lm)
 
       // Bad/Different func name: ignore for now and use 'theFunc' (FIXME)
       if (func.empty()) { func = theFunc; }
-	
+      
       // Bad/Different file name: ignore and try 'theFile' (FIXME)
       if (file.empty() && !theFile.empty() // possible replacement...
 	  && func == theFunc) { // ...the replacement is valid
-	file = theFile; 
+	file = theFile;
       }
 
       // 2. We have decent symbolic info.  Squirrel this away.
       if (theFunc.empty()) { theFunc = func; }
       if (theFile.empty()) { theFile = file; }
 	
-      LineToVMAListMapIt it1 = map.find(line);
+      LineToVMAListMapIt it2 = map.find(line);
       VMAList* list;
-      if (it1 != map.end()) { 
-	list = (*it1).second; // modify existing list
-	list->push_back(opVMA);	  
-      } 
-      else { 
+      if (it2 != map.end()) {
+	list = (*it2).second; // modify existing list
+	list->push_back(opVMA);	
+      }
+      else {
 	list = new VMAList; // create a new list and insert pair
 	list->push_back(opVMA);
 	map.insert(LineToVMAListMapItVal(line, list));
       }
     }
       
-    DumpSymbolicInfoForFunc(os, pre1.c_str(), 
+    dumpSymbolicInfoForFunc(os, pre1.c_str(),
 			    theFunc.c_str(), &map, theFile.c_str());
-    ClearLineToVMAListMap(&map);
+    clearLineToVMAListMap(&map);
   }
   os << "\n" << "End LoadModule Stmt Dump\n";
 }
 
 
-void 
-DumpSymbolicInfoForFunc(std::ostream& os, const char* pre, 
-			const char* func, LineToVMAListMap* map, 
+static void
+dumpSymbolicInfoForFunc(std::ostream& os, const char* pre,
+			const char* func, LineToVMAListMap* map,
 			const char* file)
 {
   string p = pre;
@@ -324,8 +325,8 @@ DumpSymbolicInfoForFunc(std::ostream& os, const char* pre,
 }
 
 
-void 
-ClearLineToVMAListMap(LineToVMAListMap* map)
+static void
+clearLineToVMAListMap(LineToVMAListMap* map)
 {
   LineToVMAListMapIt it;
   for (it = map->begin(); it != map->end(); ++it) {

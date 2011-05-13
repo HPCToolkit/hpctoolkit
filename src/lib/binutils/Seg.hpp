@@ -185,11 +185,11 @@ protected:
   Seg()
   { }
 
-  Seg(GCC_ATTR_UNUSED const Seg& s)
+  Seg(const Seg& GCC_ATTR_UNUSED s)
   { }
 
   Seg&
-  operator=(GCC_ATTR_UNUSED const Seg& s)
+  operator=(const Seg& GCC_ATTR_UNUSED s)
   { return *this; }
   
 protected:
@@ -280,11 +280,11 @@ private:
   TextSeg()
   { }
   
-  TextSeg(GCC_ATTR_UNUSED const TextSeg& s)
+  TextSeg(const TextSeg& GCC_ATTR_UNUSED s)
   { }
 
   TextSeg&
-  operator=(GCC_ATTR_UNUSED const TextSeg& s)
+  operator=(const TextSeg& GCC_ATTR_UNUSED s)
   { return *this; }
 
   void
