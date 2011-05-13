@@ -136,7 +136,7 @@ Args::toString() const
 }
 
 
-void 
+void
 Args::dump(std::ostream& os) const
 {
   os << "db_dir= " << db_dir << std::endl;
@@ -146,7 +146,7 @@ Args::dump(std::ostream& os) const
 }
 
 
-void 
+void
 Args::ddump() const
 {
   dump(std::cerr);
@@ -167,12 +167,12 @@ Args::normalizeSearchPaths()
   char cwd[PATH_MAX+1];
   getcwd(cwd, PATH_MAX);
 
-  for (PathTupleVec::iterator it = searchPathTpls.begin(); 
+  for (PathTupleVec::iterator it = searchPathTpls.begin();
        it != searchPathTpls.end(); /* */) {
     string& x = it->first; // current path
     PathTupleVec::iterator x_it = it;
-    
-    ++it; // advance iterator 
+
+    ++it; // advance iterator
     
     if (chdir(x.c_str()) == 0) {
       char norm_x[PATH_MAX+1];
@@ -200,17 +200,17 @@ Args::makeDatabaseDir()
 {
   // prepare output directory (N.B.: chooses a unique name!)
   string dir = db_dir; // make copy
-  std::pair<string, bool> ret = 
+  std::pair<string, bool> ret =
     FileUtil::mkdirUnique(dir); // N.B.: exits on failure...
   db_dir = RealPath(ret.first.c_str());
 }
 
 
-std::string 
+std::string
 Args::searchPathStr() const
 {
   string path = ".";
-  for (uint i = 0; i < searchPathTpls.size(); ++i) { 
+  for (uint i = 0; i < searchPathTpls.size(); ++i) {
     path += string(":") + searchPathTpls[i].first;
   }
   return path;
@@ -221,5 +221,5 @@ Args::searchPathStr() const
 
 
 //***************************************************************************
- 
+
 
