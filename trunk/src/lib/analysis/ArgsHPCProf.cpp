@@ -489,10 +489,10 @@ ArgsHPCProf::makeDBDirName(const std::string& profileArg)
     string pfx = fnm.substr(pfx_beg, pfx_end - pfx_beg);
 
     // ---------------------------------
-    // nm
+    // nm (N.B.: can have 'negative' length with fnm='hpctoolkit-measurements')
     // ---------------------------------
-    size_t nm_beg = pos1 + str1.length(); // [inclusive
-    size_t nm_end = pos2;                 // exclusive)
+    size_t nm_beg = pos1 + str1.length();            // [inclusive
+    size_t nm_end = (nm_beg > pos2) ? nm_beg : pos2; // exclusive)
     string nm = fnm.substr(nm_beg, nm_end - nm_beg);
     
     // ---------------------------------
@@ -508,7 +508,11 @@ ArgsHPCProf::makeDBDirName(const std::string& profileArg)
       sfx = fnm.substr(sfx_beg, sfx_end - sfx_beg);
     }
     
-    db_dir = pfx + Analysis_DB_DIR_pfx "-" + nm + "-" Analysis_DB_DIR_nm + sfx;
+    db_dir = pfx + Analysis_DB_DIR_pfx;
+    if (!nm.empty()) {
+      db_dir += "-" + nm;
+    }
+    db_dir += "-" Analysis_DB_DIR_nm + sfx;
   }
 
   return db_dir;
