@@ -63,12 +63,12 @@
 
 //************************* System Include Files ****************************
 
+#define _POSIX_SOURCE
+#define _SVID_SOURCE
+
 #include <stdlib.h>
 #include <string.h>
-
-#define __USE_POSIX // fdopen() from stdio
-#define __USE_MISC  // fputc_unlocked() from stdio
-#include <stdio.h>
+#include <stdio.h>  // fdopen(), fputc_unlocked()
 
 #include <unistd.h>
 #include <fcntl.h>
