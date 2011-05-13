@@ -89,6 +89,7 @@ STREQ(const char* x, const char* y)
   return ((*(x) == *(y)) && !strcmp((x), (y)));
 }
 
+
 char*
 ssave(const char* const str)
 {
@@ -97,12 +98,14 @@ ssave(const char* const str)
   return nstr;
 }
 
+
 void
 sfree(char *str)
 {
   delete[] str;
   return;
 }
+
 
 void
 smove(char **old, char *fresh)
@@ -111,6 +114,7 @@ smove(char **old, char *fresh)
   *old = ssave(fresh);
   return;
 }
+
 
 /*
  *  strcpye -     like strcpy, but returns a pointer
@@ -122,6 +126,7 @@ strcpye(register char* s1, register char* s2)
   while ( (*s1++ = *s2++) );
   return --s1;
 }
+
 
 /*
  * nssave(n,s1,...,sn) - concatenate n strings into a dynamically allocated
@@ -186,6 +191,7 @@ find(char s1[], char s2[])
   return -1;
 }
 
+
 /*
  * counts occurrences of characters in s2 within s1.
  */
@@ -207,6 +213,7 @@ char_count(char s1[], char s2[])
   return count;
 }
 
+
 int
 hash_string(register const char* string, int size)
 {
@@ -227,48 +234,52 @@ hash_string(register const char* string, int size)
   return (result % size);
 }
 
+
 char*
 strlower (char *string)
 {
-  register char* s = string;
-  register char c;
+  char* s = string;
+  char c;
 
   while ((c = *s)) {
     if (isupper(c)) {
-      *s = tolower(c);
+      *s = (char) tolower(c);
     }
     s++;
   }
 
   return string;
 }
+
 
 char*
 strupper (char* string)
 {
-  register char* s = string;
-  register char c;
+  char* s = string;
+  char c;
 
   while ((c = *s)) {
     if (islower(c)) {
-      *s = toupper(c);
+      *s = (char) toupper(c);
     }
     s++;
   }
 
   return string;
 }
+
 
 char
 to_lower(char c)
 {
   if (isupper(c)) {
-    return tolower(c);
+    return (char) tolower(c);
   }
   else {
     return c;
   }
 }
+
 
 /* Converts an integer to its ascii representation */
 void
@@ -285,6 +296,7 @@ itoa(long n, char a[])
     aptr = a;
   utoa((unsigned long) n, aptr);
 }
+
 
 void
 utoa(unsigned long n, char a[])
@@ -306,6 +318,7 @@ utoa(unsigned long n, char a[])
   }
   aptr[i] = '\0';
 }
+
 
 /* converts 64 (or less) bit pointers into hex "strings" */
 void

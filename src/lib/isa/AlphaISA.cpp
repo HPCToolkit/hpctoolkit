@@ -83,7 +83,8 @@ using std::ostream;
 // See 'ISA.h' for comments on the interface
 
 ISA::InsnDesc
-AlphaISA::getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
+AlphaISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
+		      ushort GCC_ATTR_UNUSED sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.
@@ -770,7 +771,8 @@ AlphaISA::getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
 
 
 VMA
-AlphaISA::getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
+AlphaISA::getInsnTargetVMA(MachInsn* mi, VMA pc, ushort GCC_ATTR_UNUSED opIndex,
+			   ushort GCC_ATTR_UNUSED sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.
@@ -814,7 +816,8 @@ AlphaISA::getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
 
 
 void
-AlphaISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort opIndex)
+AlphaISA::decode(ostream& GCC_ATTR_UNUSED os, MachInsn* GCC_ATTR_UNUSED mi,
+		 VMA GCC_ATTR_UNUSED vma, ushort GCC_ATTR_UNUSED opIndex)
 {
   DIAG_Die(DIAG_Unimplemented);
 }

@@ -147,7 +147,8 @@ MipsISA::~MipsISA()
 
 
 ISA::InsnDesc
-MipsISA::getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
+MipsISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
+		     ushort GCC_ATTR_UNUSED sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.
@@ -294,7 +295,8 @@ MipsISA::getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
 
 
 VMA
-MipsISA::getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
+MipsISA::getInsnTargetVMA(MachInsn* mi, VMA pc, ushort GCC_ATTR_UNUSED opIndex,
+			  ushort GCC_ATTR_UNUSED sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.
@@ -381,7 +383,8 @@ MipsISA::getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz)
 
 
 void
-MipsISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort opIndex)
+MipsISA::decode(ostream& os, MachInsn* mi, VMA vma,
+		ushort GCC_ATTR_UNUSED opIndex)
 {
   m_dis_data.insn_addr = mi;
   m_dis_data.insn_vma = vma;

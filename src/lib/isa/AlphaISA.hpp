@@ -111,8 +111,12 @@ public:
   { return 0; /* The Alpha has no instruction-specified delay slots. */ }
 
   virtual bool
-  isParallelWithSuccessor(MachInsn* mi1, ushort opIndex1, ushort sz1,
-			  MachInsn* mi2, ushort opIndex2, ushort sz2) const
+  isParallelWithSuccessor(MachInsn* GCC_ATTR_UNUSED mi1,
+			  ushort GCC_ATTR_UNUSED opIndex1,
+			  ushort GCC_ATTR_UNUSED sz1,
+			  MachInsn* GCC_ATTR_UNUSED mi2,
+			  ushort GCC_ATTR_UNUSED opIndex2,
+			  ushort GCC_ATTR_UNUSED sz2) const
   { return false; }
 
   virtual void
@@ -120,11 +124,11 @@ public:
 
 private:
   // Should not be used
-  AlphaISA(const AlphaISA& i)
+  AlphaISA(const AlphaISA& GCC_ATTR_UNUSED x)
   { }
   
   AlphaISA&
-  operator=(const AlphaISA& i)
+  operator=(const AlphaISA& GCC_ATTR_UNUSED x)
   { return *this; }
 
 protected:

@@ -131,13 +131,14 @@ SparcISA::~SparcISA()
 
 
 ISA::InsnDesc
-SparcISA::getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
+SparcISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
+		      ushort GCC_ATTR_UNUSED sz)
 {
   ISA::InsnDesc d;
 
   if (cacheLookup(mi) == NULL) {
-    ushort size = print_insn_sparc(PTR_TO_BFDVMA(mi), m_di);
-    cacheSet(mi, size);
+    int size = print_insn_sparc(PTR_TO_BFDVMA(mi), m_di);
+    cacheSet(mi, (ushort)size);
   }
 
   // The target field is set (to an absolute vma) on PC-relative
@@ -203,8 +204,8 @@ SparcISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
   // actually the VMA in order to calculate VMA-relative targets.
 
   if (cacheLookup(mi) == NULL) {
-    ushort size = print_insn_sparc(PTR_TO_BFDVMA(mi), m_di);
-    cacheSet(mi, size);
+    int size = print_insn_sparc(PTR_TO_BFDVMA(mi), m_di);
+    cacheSet(mi, (ushort)size);
   }
 
   ISA::InsnDesc d = getInsnDesc(mi, opIndex, sz);
@@ -245,7 +246,8 @@ SparcISA::getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz)
 
 
 void
-SparcISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort opIndex)
+SparcISA::decode(ostream& os, MachInsn* mi, VMA vma,
+		 ushort GCC_ATTR_UNUSED opIndex)
 {
   m_dis_data.insn_addr = mi;
   m_dis_data.insn_vma = vma;

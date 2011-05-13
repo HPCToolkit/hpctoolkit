@@ -77,6 +77,7 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
 #include <include/uint.h>
 
 #include "Struct-Tree.hpp"
@@ -1370,7 +1371,7 @@ ANode::toStringXML(uint oFlags, const char* pre) const
 
 
 string
-ANode::toXML(uint oFlags) const
+ANode::toXML(uint GCC_ATTR_UNUSED oFlags) const
 {
   string self = ANodeTyToXMLelement(type()) + " i" + MakeAttrNum(id());
   return self;
@@ -1387,7 +1388,7 @@ ACodeNode::toXML(uint oFlags) const
 
 
 string
-ACodeNode::XMLLineRange(uint oFlags) const
+ACodeNode::XMLLineRange(uint GCC_ATTR_UNUSED oFlags) const
 {
   string line = StrUtil::toStr(begLine());
   if (begLine() != endLine()) {
@@ -1400,7 +1401,7 @@ ACodeNode::XMLLineRange(uint oFlags) const
 
 
 string
-ACodeNode::XMLVMAIntervals(uint oFlags) const
+ACodeNode::XMLVMAIntervals(uint GCC_ATTR_UNUSED oFlags) const
 {
   string self = "v" + MakeAttrStr(m_vmaSet.toString(), xml::ESC_FALSE);
   return self;
@@ -1516,7 +1517,8 @@ ANode::writeXML_pre(ostream& os, uint oFlags, const char* pfx) const
 
 
 void
-ANode::writeXML_post(ostream& os, uint oFlags, const char* pfx) const
+ANode::writeXML_post(ostream& os, uint GCC_ATTR_UNUSED oFlags,
+		     const char* pfx) const
 {
   bool doTag = (type() != TyRoot);
 
@@ -1631,8 +1633,9 @@ ANode::CSV_DumpSelf(const Root& root, ostream& os) const
 
 void
 ANode::CSV_dump(const Root& root, ostream& os,
-		const char* file_name, const char* proc_name,
-		int lLevel) const
+		const char* GCC_ATTR_UNUSED file_name,
+		const char* GCC_ATTR_UNUSED proc_name,
+		int GCC_ATTR_UNUSED lLevel) const
 {
   // print file name, routine name, start and end line, loop level
   os << name() << ",,,,";
@@ -1646,8 +1649,9 @@ ANode::CSV_dump(const Root& root, ostream& os,
 
 void
 File::CSV_dump(const Root& root, ostream& os,
-	       const char* file_name, const char* proc_name,
-	       int lLevel) const
+	       const char* GCC_ATTR_UNUSED file_name,
+	       const char* GCC_ATTR_UNUSED proc_name,
+	       int GCC_ATTR_UNUSED lLevel) const
 {
   // print file name, routine name, start and end line, loop level
   os << baseName() << ",," << m_begLn << "," << m_endLn << ",";
@@ -1661,8 +1665,9 @@ File::CSV_dump(const Root& root, ostream& os,
 
 void
 Proc::CSV_dump(const Root& root, ostream& os,
-	       const char* file_name, const char* proc_name,
-	       int lLevel) const
+	       const char* file_name,
+	       const char* GCC_ATTR_UNUSED proc_name,
+	       int GCC_ATTR_UNUSED lLevel) const
 {
   // print file name, routine name, start and end line, loop level
   os << file_name << "," << name() << "," << m_begLn << "," << m_endLn
@@ -1676,9 +1681,10 @@ Proc::CSV_dump(const Root& root, ostream& os,
 
 
 void
-Alien::CSV_dump(const Root& root, ostream& os,
-		const char* file_name, const char* proc_name,
-		int lLevel) const
+Alien::CSV_dump(const Root& GCC_ATTR_UNUSED root, ostream& GCC_ATTR_UNUSED os,
+		const char* GCC_ATTR_UNUSED file_name,
+		const char* GCC_ATTR_UNUSED proc_name,
+		int GCC_ATTR_UNUSED lLevel) const
 {
   DIAG_Die(DIAG_Unimplemented);
 }
@@ -1728,7 +1734,7 @@ ANode::toString(uint oFlags, const char* pre) const
 
 
 string
-ANode::toString_id(uint oFlags) const
+ANode::toString_id(uint GCC_ATTR_UNUSED oFlags) const
 {
   string str = "<" + ANodeTyToName(type()) + " uid="
     + StrUtil::toStr(id()) + ">";

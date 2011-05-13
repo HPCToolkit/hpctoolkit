@@ -68,6 +68,8 @@ using std::ostream;
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
+
 #include "ISA.hpp"
 
 #include <lib/support/diagnostics.h>
@@ -186,21 +188,23 @@ GNUbu_fprintf(void* stream, const char* format, ...)
 
 
 int
-GNUbu_fprintf_stub(void* stream, const char* format, ...)
+GNUbu_fprintf_stub(void* GCC_ATTR_UNUSED stream, 
+		   const char* GCC_ATTR_UNUSED format, ...)
 {
   return 0;
 }
 
 
 void
-GNUbu_print_addr_stub(bfd_vma di_vma, struct disassemble_info* di)
+GNUbu_print_addr_stub(bfd_vma GCC_ATTR_UNUSED di_vma,
+		      struct disassemble_info* GCC_ATTR_UNUSED di)
 {
 }
 
 
 int
 GNUbu_read_memory(bfd_vma vma, bfd_byte* myaddr, unsigned int len,
-		  struct disassemble_info* di)
+		  struct disassemble_info* GCC_ATTR_UNUSED di)
 {
   memcpy(myaddr, BFDVMA_TO_PTR(vma, const char*), len);
   return 0; /* success */

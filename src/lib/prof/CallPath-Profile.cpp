@@ -86,6 +86,7 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
 #include <include/uint.h>
 
 #include "CallPath-Profile.hpp"
@@ -345,7 +346,7 @@ Profile::merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects)
 	  }
 	}
 	if (chg.old_id == lmId2) {
-	  lush_lip_setLMId(lip, chg.new_id);
+	  lush_lip_setLMId(lip, (uint16_t) chg.new_id);
 	}
       }
     }
@@ -447,7 +448,7 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
 }
 
 
-void
+static void
 writeXML_help(std::ostream& os, const char* entry_nm,
 	      Struct::Tree* structure, const Struct::ANodeFilter* filter,
 	      int type)
@@ -485,7 +486,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
 
 
 static bool
-writeXML_FileFilter(const Struct::ANode& x, long type)
+writeXML_FileFilter(const Struct::ANode& x, long GCC_ATTR_UNUSED type)
 {
   return (typeid(x) == typeid(Struct::File) || typeid(x) == typeid(Struct::Alien));
 }
@@ -1368,7 +1369,7 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     const LoadMap::LM* lm = loadmap.lm(i);
 
     loadmap_entry_t lm_entry;
-    lm_entry.id = lm->id();
+    lm_entry.id = (uint16_t) lm->id();
     lm_entry.name = const_cast<char*>(lm->name().c_str());
     lm_entry.flags = 0; // TODO:flags
     
@@ -1742,7 +1743,7 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
       n_fmt.as_info = n_dyn.assocInfo();
     }
     
-    n_fmt.lm_id = n_dyn.lmId();
+    n_fmt.lm_id = (uint16_t) n_dyn.lmId();
     n_fmt.lm_ip = n_dyn.Prof::CCT::ADynNode::lmIP();
 
     if (flags.fields.isLogicalUnwind) {

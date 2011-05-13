@@ -77,11 +77,13 @@
 
 //************************ System Include Files ******************************
 
-#include <iostream> 
+#include <iostream>
 #include <string>
 #include <algorithm>
 
 //************************* User Include Files *******************************
+
+#include <include/gcc-attr.h>
 
 #include "Metric-IData.hpp"
 #include "Metric-IDBExpr.hpp"
@@ -113,7 +115,7 @@ public:
   typedef std::vector<AExpr*> AExprVec;
 
   static const double epsilon = 0.000001;
-  
+
 public:
   AExpr()
     : m_accumId(Metric::IData::npos), m_accum2Id(Metric::IData::npos),
@@ -337,7 +339,7 @@ protected:
   }
 
 
-  static void 
+  static void
   dump_opands(std::ostream& os, AExpr** opands, uint sz,
 	      const char* sep = ", ");
   
@@ -357,7 +359,7 @@ class Const
   : public AExpr
 {
 public:
-  Const(double c) 
+  Const(double c)
     : m_c(c)
   { }
 
@@ -365,7 +367,7 @@ public:
   { }
 
   virtual double
-  eval(const Metric::IData& mdata) const
+  eval(const Metric::IData& GCC_ATTR_UNUSED mdata) const
   { return m_c; }
 
 
@@ -379,7 +381,7 @@ public:
 
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   virtual std::ostream&
@@ -397,7 +399,7 @@ private:
 
 class Neg
   : public AExpr
-{  
+{
 public:
   // Assumes ownership of AExpr
   Neg(AExpr* expr)
@@ -420,12 +422,12 @@ public:
 
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
-  
+
 private:
   AExpr* m_expr;
 };
@@ -441,7 +443,7 @@ class Var
 {
 public:
   Var(std::string name, int metricId)
-    : m_name(name), m_metricId(metricId) 
+    : m_name(name), m_metricId(metricId)
   { }
   
   ~Var()
@@ -451,7 +453,7 @@ public:
   eval(const Metric::IData& mdata) const
   { return mdata.demandMetric(m_metricId); }
 
-  
+
   // ------------------------------------------------------------
   // Metric::IDBExpr: exported formulas for Flat and Callers view
   // ------------------------------------------------------------
@@ -462,7 +464,7 @@ public:
 
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   virtual std::ostream&
@@ -485,13 +487,13 @@ class Power
 public:
   // Assumes ownership of AExpr
   Power(AExpr* base, AExpr* exponent)
-    : m_base(base), m_exponent(exponent) 
+    : m_base(base), m_exponent(exponent)
   { }
 
   ~Power()
-  { 
-    delete m_base; 
-    delete m_exponent; 
+  {
+    delete m_base;
+    delete m_exponent;
   }
 
   virtual double
@@ -508,7 +510,7 @@ public:
 
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   virtual std::ostream&
@@ -531,13 +533,13 @@ class Divide
 public:
   // Assumes ownership of AExpr
   Divide(AExpr* numerator, AExpr* denominator)
-    : m_numerator(numerator), m_denominator(denominator) 
+    : m_numerator(numerator), m_denominator(denominator)
   { }
 
   ~Divide()
-  { 
-    delete m_numerator; 
-    delete m_denominator; 
+  {
+    delete m_numerator;
+    delete m_denominator;
   }
 
 
@@ -554,7 +556,7 @@ public:
 
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   virtual std::ostream&
@@ -577,7 +579,7 @@ class Minus
 public:
   // Assumes ownership of AExpr
   Minus(AExpr* minuend, AExpr* subtrahend)
-    : m_minuend(minuend), m_subtrahend(subtrahend) 
+    : m_minuend(minuend), m_subtrahend(subtrahend)
   { }
 
   ~Minus()
@@ -599,7 +601,7 @@ public:
 
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   virtual std::ostream&
@@ -622,7 +624,7 @@ class Plus
 public:
   // Assumes ownership of AExpr
   Plus(AExpr** oprnds, uint numOprnds)
-    : m_opands(oprnds), m_sz(numOprnds) 
+    : m_opands(oprnds), m_sz(numOprnds)
   { }
 
   ~Plus();
@@ -672,7 +674,7 @@ class Times
 public:
   // Assumes ownership of AExpr
   Times(AExpr** oprnds, uint numOprnds)
-    : m_opands(oprnds), m_sz(numOprnds) 
+    : m_opands(oprnds), m_sz(numOprnds)
   { }
 
   ~Times();
@@ -693,7 +695,7 @@ public:
 
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   virtual std::ostream&
@@ -718,7 +720,7 @@ class Min
 public:
   // Assumes ownership of AExpr
   Min(AExpr** oprnds, uint numOprnds)
-    : m_opands(oprnds), m_sz(numOprnds) 
+    : m_opands(oprnds), m_sz(numOprnds)
   { }
 
   ~Min();
@@ -745,7 +747,7 @@ public:
 
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   virtual std::ostream&
@@ -767,7 +769,7 @@ class Max
 public:
   // Assumes ownership of AExpr
   Max(AExpr** oprnds, uint numOprnds)
-    : m_opands(oprnds), m_sz(numOprnds) 
+    : m_opands(oprnds), m_sz(numOprnds)
   { }
 
   ~Max();
@@ -794,7 +796,7 @@ public:
 
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   virtual std::ostream&
@@ -816,7 +818,7 @@ class Mean
 public:
   // Assumes ownership of AExpr
   Mean(AExpr** oprnds, uint numOprnds)
-    : m_opands(oprnds), m_sz(numOprnds) 
+    : m_opands(oprnds), m_sz(numOprnds)
   { }
 
   ~Mean();
@@ -855,7 +857,7 @@ public:
 
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   virtual std::ostream&
@@ -877,7 +879,7 @@ class StdDev
 public:
   // Assumes ownership of AExpr
   StdDev(AExpr** oprnds, uint numOprnds)
-    : m_opands(oprnds), m_sz(numOprnds) 
+    : m_opands(oprnds), m_sz(numOprnds)
   { }
 
   ~StdDev();
@@ -921,7 +923,7 @@ public:
 
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   virtual std::ostream&
@@ -943,7 +945,7 @@ class CoefVar
 public:
   // Assumes ownership of AExpr
   CoefVar(AExpr** oprnds, uint numOprnds)
-    : m_opands(oprnds), m_sz(numOprnds) 
+    : m_opands(oprnds), m_sz(numOprnds)
   { }
 
   ~CoefVar();
@@ -987,7 +989,7 @@ public:
 
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   virtual std::ostream&
@@ -1053,7 +1055,7 @@ public:
 
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   virtual std::ostream&
@@ -1105,7 +1107,7 @@ public:
 
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   virtual std::ostream&

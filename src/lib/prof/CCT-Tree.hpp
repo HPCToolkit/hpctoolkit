@@ -785,7 +785,7 @@ public:
   void
   lmId(LoadMap::LMId_t x)
   {
-    if (isValid_lip()) { lush_lip_setLMId(m_lip, x); return; }
+    if (isValid_lip()) { lush_lip_setLMId(m_lip, (uint16_t)x); return; }
     m_lmId = x;
   }
 

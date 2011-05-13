@@ -136,6 +136,10 @@ namespace xml {
   // -------------------------------------------------------
   bool ReadAttrStr(std::istream& is, std::string& s, int flags = UNESC_TRUE);
 
+  // declaration to remove Intel compiler warning
+  template <class T> bool 
+  ReadAttrNum(std::istream& is, T& n);
+
   // Read a number into a C/C++ numerical type
   template <class T> bool 
   ReadAttrNum(std::istream& is, T& n)
@@ -192,6 +196,9 @@ namespace xml {
     return WriteAttrStr(os, s.c_str(), flags);
   }
 
+  // declaration to remove Intel compiler warning
+  template <class T> bool 
+  WriteAttrNum(std::ostream& os, T n);
 
   // Write a C/C++ numerical type
   template <class T> bool 

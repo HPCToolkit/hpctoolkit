@@ -78,6 +78,7 @@ using std::set;
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
 #include <include/uint.h>
 
 #include "CCT-Tree.hpp"
@@ -440,9 +441,9 @@ ANode::aggregateMetricsIncl(const VMAIntervalSet& ivalset)
     if (n != root) {
       ANode* n_parent = n->parent();
       
-      for (VMAIntervalSet::const_iterator it = ivalset.begin();
-	   it != ivalset.end(); ++it) {
-	const VMAInterval& ival = *it;
+      for (VMAIntervalSet::const_iterator it1 = ivalset.begin();
+	   it1 != ivalset.end(); ++it1) {
+	const VMAInterval& ival = *it1;
 	uint mBegId = (uint)ival.beg(), mEndId = (uint)ival.end();
 
 	for (uint mId = mBegId; mId < mEndId; ++mId) {
@@ -617,9 +618,9 @@ ANode::pruneByMetrics(const Metric::Mgr& mMgr, const VMAIntervalSet& ivalset,
     uint numIncl = 0;
     bool isImportant = false;
 
-    for (VMAIntervalSet::const_iterator it = ivalset.begin();
-	 it != ivalset.end(); ++it) {
-      const VMAInterval& ival = *it;
+    for (VMAIntervalSet::const_iterator it1 = ivalset.begin();
+	 it1 != ivalset.end(); ++it1) {
+      const VMAInterval& ival = *it1;
       uint mBegId = (uint)ival.beg(), mEndId = (uint)ival.end();
 
       for (uint mId = mBegId; mId < mEndId; ++mId) {
@@ -833,7 +834,8 @@ ANode::merge(ANode* y)
 
 
 MergeEffect
-ANode::mergeMe(const ANode& y, MergeContext* mrgCtxt, uint metricBegIdx)
+ANode::mergeMe(const ANode& y, MergeContext* GCC_ATTR_UNUSED mrgCtxt,
+	       uint metricBegIdx)
 {
   ANode* x = this;
   
@@ -1079,7 +1081,8 @@ ADynNode::nameDyn() const
 
 
 void
-ADynNode::writeDyn(std::ostream& o, uint oFlags, const char* pfx) const
+ADynNode::writeDyn(std::ostream& o, uint GCC_ATTR_UNUSED oFlags,
+		   const char* pfx) const
 {
   string p(pfx);
 
@@ -1268,7 +1271,8 @@ ANode::writeXML_pre(ostream& os, uint metricBeg, uint metricEnd,
 
 
 void
-ANode::writeXML_post(ostream& os, uint oFlags, const char* pfx) const
+ANode::writeXML_post(ostream& os, uint GCC_ATTR_UNUSED oFlags,
+		     const char* pfx) const
 {
   bool doTag = (type() != ANode::TyRoot);
   if (!doTag) {

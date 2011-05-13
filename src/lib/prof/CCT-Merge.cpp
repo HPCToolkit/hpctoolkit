@@ -67,6 +67,7 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
 #include <include/uint.h>
 
 #include "CCT-Merge.hpp"
@@ -126,7 +127,7 @@ MergeEffect::toString(const char* pfx) const
 
 
 std::ostream&
-MergeEffect::dump(std::ostream& os, const char* pfx) const
+MergeEffect::dump(std::ostream& os, const char* GCC_ATTR_UNUSED pfx) const
 {
   os << old_cpId << " => " << new_cpId;
   return os;

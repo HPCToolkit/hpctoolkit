@@ -89,7 +89,7 @@ ConvertMIToOpMI(MachInsn* mi, ushort opIndex)
 
 
 static VMA
-GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
+GNUvma2vma(bfd_vma di_vma, MachInsn* GCC_ATTR_UNUSED insn_addr, VMA insn_vma)
 {
   VMA x = (VMA)di_vma + insn_vma;
   return x;
@@ -140,14 +140,14 @@ IA64ISA::~IA64ISA()
 
 
 ISA::InsnDesc
-IA64ISA::getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
+IA64ISA::getInsnDesc(MachInsn* mi, ushort opIndex, ushort GCC_ATTR_UNUSED sz)
 {
   MachInsn* gnuMI = ConvertMIToOpMI(mi, opIndex);
   InsnDesc d;
 
   if (cacheLookup(gnuMI) == NULL) {
     int size = print_insn_ia64(PTR_TO_BFDVMA(gnuMI), m_di);
-    cacheSet(gnuMI, size);
+    cacheSet(gnuMI, (ushort)size);
   }
 
   switch(m_di->insn_type) {
@@ -199,13 +199,14 @@ IA64ISA::getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
 
 
 VMA
-IA64ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
+IA64ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex,
+			  ushort GCC_ATTR_UNUSED sz)
 {
   MachInsn* gnuMI = ConvertMIToOpMI(mi, opIndex);
 
   if (cacheLookup(gnuMI) == NULL) {
     int size = print_insn_ia64(PTR_TO_BFDVMA(gnuMI), m_di);
-    cacheSet(gnuMI, size);
+    cacheSet(gnuMI, (ushort)size);
   }
 
   // The target field is only set on instructions with targets.
@@ -226,7 +227,7 @@ IA64ISA::getInsnNumOps(MachInsn* mi)
   // Because of the MLX template and data, we can't just return 3 here.
   if (cacheLookup(mi) == NULL) {
     int size = print_insn_ia64(PTR_TO_BFDVMA(mi), m_di);
-    cacheSet(mi, size);
+    cacheSet(mi, (ushort)size);
   }
 
   return (ushort)(m_di->target2);
@@ -234,7 +235,8 @@ IA64ISA::getInsnNumOps(MachInsn* mi)
 
 
 void
-IA64ISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort opIndex)
+IA64ISA::decode(ostream& os, MachInsn* mi, VMA vma,
+		ushort GCC_ATTR_UNUSED opIndex)
 {
   m_dis_data.insn_addr = mi;
   m_dis_data.insn_vma = vma;
