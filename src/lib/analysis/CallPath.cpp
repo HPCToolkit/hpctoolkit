@@ -664,15 +664,30 @@ coalesceStmts(Prof::CCT::ANode* node)
 	// found -- we have a duplicate
 	Prof::CCT::Stmt* n_stmtOrig = (*it_stmt).second;
 
-	Prof::CCT::MergeEffect effct = n_stmtOrig->mergeMe(*n_stmt);
-	DIAG_Assert(effct.isNoop(), "Analysis::CallPath::coalesceStmts: trace ids lost (" << effct.toString() << ") when merging y into x:\n"
-		    << "\tx: " << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) << "\n"
-		    << "\ty: " << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug) << "\n"
-		    << "(Note: This should not happen because trace records contain a function's represenative IP.  Therefore, two traces that contain samples from the same function should have their conflict resolved in Prof::CallPath::Profile::merge())");
+	// N.B.: Because (a) trace records contain a function's
+	// representative IP and (b) two traces that contain samples
+	// from the same function should have their conflict resolved
+	// in Prof::CallPath::Profile::merge(), we would expect that
+	// merge effects are impossible.  That is, we expect that it
+	// is impossible that a CCT::ProcFrm has multiple CCT::Stmts
+	// with distinct trace ids.
+	//
+	// However, merge effects are possible *after* static
+	// structure is added to the CCT.  The reason is that multiple
+	// object-level procedures can map to one source-level
+	// procedure (e.g., multiple template instantiations mapping
+	// to the same source template or multiple stripped functions
+	// mapping to UnknownProcNm).
+	if (! Prof::CCT::ADynNode::hasMergeEffects(*n_stmtOrig, *n_stmt)) {
+	  Prof::CCT::MergeEffect effct = n_stmtOrig->mergeMe(*n_stmt);
+	  DIAG_Assert(effct.isNoop(), "Analysis::CallPath::coalesceStmts: trace ids lost (" << effct.toString() << ") when merging y into x:\n"
+		      << "\tx: " << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) << "\n"
+		      << "\ty: " << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug));
 	
-	// remove 'n_stmt' from tree
-	n_stmt->unlink();
-	delete n_stmt; // NOTE: could clear corresponding StructMetricIdFlg
+	  // remove 'n_stmt' from tree
+	  n_stmt->unlink();
+	  delete n_stmt; // NOTE: could clear corresponding StructMetricIdFlg
+	}
       }
       else {
 	// no entry found -- add
