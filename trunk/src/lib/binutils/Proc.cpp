@@ -112,7 +112,7 @@ BinUtil::Proc::endInsn() const
   if (insn) {
     ushort numOps = insn->numOps();
     if (numOps != 0) {
-      insn = findInsn(m_endVMA, numOps - (ushort)1); // opIndex is 0-based
+      insn = findInsn(m_endVMA, numOps - 1); // opIndex is 0-based
     }
   }
   return insn;
@@ -194,24 +194,24 @@ BinUtil::Proc::dump(std::ostream& os, int flags, const char* pre) const
 	VMA vma = insn->vma();
 	ushort opIdx = insn->opIndex();
 
-	string proc, file;
+	string proc1, file1;
 	SrcFile::ln line;
-    	m_seg->findSrcCodeInfo(vma, opIdx, proc, file, line);
-	proc = BinUtil::canonicalizeProcName(proc);
+    	m_seg->findSrcCodeInfo(vma, opIdx, proc1, file1, line);
+	proc1 = BinUtil::canonicalizeProcName(proc1);
 	
 	os << p2 << "  ";
-	if (file == filename()) {
+	if (file1 == filename()) {
 	  os << "-";
 	}
 	else {
-	  os << "!{" << file << "}";
+	  os << "!{" << file1 << "}";
 	}
 	os << ":" << line << ":";
-	if (proc == nm || proc == ln_nm) {
+	if (proc1 == nm || proc1 == ln_nm) {
 	  os << "-";
 	}
 	else {
-	  os << "![" << proc << "]";
+	  os << "![" << proc1 << "]";
 	}
 	os << "\n";
       }

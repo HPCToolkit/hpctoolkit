@@ -1028,7 +1028,7 @@ public:
   }
 
   virtual double
-  initializeSrc(Metric::IData& mdata) const
+  initializeSrc(Metric::IData& GCC_ATTR_UNUSED mdata) const
   { return 0.0; }
 
   virtual double

@@ -76,6 +76,7 @@ using std::endl;
 //*************************** User Include Files ****************************
 
 #include <include/hpctoolkit-config.h>
+#include <include/gcc-attr.h>
 #include <include/uint.h>
 
 #include "LM.hpp"
@@ -545,14 +546,16 @@ BinUtil::LM::ddump() const
 
 
 void
-BinUtil::LM::dumpme(std::ostream& o, const char* pre) const
+BinUtil::LM::dumpme(std::ostream& GCC_ATTR_UNUSED o,
+		    const char* GCC_ATTR_UNUSED pre) const
 {
 }
 
 
+
 void
 BinUtil::LM::dumpProcMap(std::ostream& os, unsigned flag, 
-			  const char* pre) const
+			  const char* GCC_ATTR_UNUSED pre) const
 {
   for (ProcMap::const_iterator it = m_procMap.begin(); 
        it != m_procMap.end(); ++it) {

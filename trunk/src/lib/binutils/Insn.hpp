@@ -208,11 +208,11 @@ private:
   Insn()
   { }
 
-  Insn(GCC_ATTR_UNUSED const Insn& i)
+  Insn(const Insn& GCC_ATTR_UNUSED i)
   { }
 
   Insn&
-  operator=(GCC_ATTR_UNUSED const Insn& i)
+  operator=(const Insn& GCC_ATTR_UNUSED i)
   { return *this; }
   
 protected:
@@ -274,10 +274,10 @@ private:
   // Should not be used
   CISCInsn();
 
-  CISCInsn(GCC_ATTR_UNUSED const CISCInsn& i);
+  CISCInsn(const CISCInsn& GCC_ATTR_UNUSED i);
 
   CISCInsn&
-  operator=(GCC_ATTR_UNUSED const CISCInsn& i)
+  operator=(const CISCInsn& GCC_ATTR_UNUSED i)
   { return *this; }
   
 protected:
@@ -330,10 +330,10 @@ private:
   // Should not be used
   RISCInsn();
 
-  RISCInsn(GCC_ATTR_UNUSED const RISCInsn& i);
+  RISCInsn(const RISCInsn& GCC_ATTR_UNUSED i);
 
   RISCInsn&
-  operator=(GCC_ATTR_UNUSED const RISCInsn& i)
+  operator=(const RISCInsn& GCC_ATTR_UNUSED i)
   { return *this; }
   
 protected:
@@ -384,10 +384,10 @@ private:
   // Should not be used
   VLIWInsn();
 
-  VLIWInsn(GCC_ATTR_UNUSED const VLIWInsn& i);
+  VLIWInsn(const VLIWInsn& GCC_ATTR_UNUSED i);
 
   VLIWInsn&
-  operator=(GCC_ATTR_UNUSED const VLIWInsn& i)
+  operator=(const VLIWInsn& GCC_ATTR_UNUSED i)
   { return *this; }
   
 protected:

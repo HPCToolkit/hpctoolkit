@@ -64,6 +64,7 @@
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
 #include <include/uint.h>
 
 #include "ISA.hpp"
@@ -90,11 +91,11 @@ public:
   // --------------------------------------------------------
 
   virtual ushort
-  getInsnSize(MachInsn* mi)
+  getInsnSize(MachInsn* GCC_ATTR_UNUSED mi)
   { return MINSN_SIZE; }
 
   virtual ushort
-  getInsnNumOps(MachInsn* mi)
+  getInsnNumOps(MachInsn* GCC_ATTR_UNUSED mi)
   { return 1; }
 
   virtual InsnDesc
@@ -104,7 +105,9 @@ public:
   getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0);
 
   virtual ushort
-  getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0)
+  getInsnNumDelaySlots(MachInsn* GCC_ATTR_UNUSED mi,
+		       ushort GCC_ATTR_UNUSED opIndex,
+		       GCC_ATTR_UNUSED ushort sz = 0)
   { return 0; /* The Alpha has no instruction-specified delay slots. */ }
 
   virtual bool

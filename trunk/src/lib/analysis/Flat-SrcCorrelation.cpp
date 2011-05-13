@@ -449,7 +449,7 @@ Driver::write_txt_annotateFile(std::ostream& os,
   try {
     is = IOUtil::OpenIStream(fnm.c_str());
   }
-  catch (const Diagnostics::Exception& x) {
+  catch (const Diagnostics::Exception& /*ex*/) {
     os << "  Cannot open.\n" << std::endl;
     return;
   }
@@ -797,7 +797,7 @@ void
 Driver::correlateRaw(Prof::Metric::ADesc* metric,
 		     const Prof::Flat::EventData& profevent,
 		     VMA lm_load_addr,
-		     GCC_ATTR_UNUSED Prof::Struct::Tree& structure,
+		     Prof::Struct::Tree& GCC_ATTR_UNUSED structure,
 		     Prof::Struct::LM* lmStrct,
 		     /*const*/ BinUtil::LM* lm,
 		     bool useStruct)

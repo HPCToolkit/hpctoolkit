@@ -232,7 +232,7 @@ void HashTable::Destroy ()
 
 //
 // Explicitly defined to prevent usage. 
-HashTable &HashTable::operator=(GCC_ATTR_UNUSED const HashTable & rhs)
+HashTable &HashTable::operator=(const HashTable& GCC_ATTR_UNUSED rhs)
 {
   DIAG_Die("Should not call HashTable::operator=()!");
   return *this;
@@ -852,8 +852,8 @@ int StringEntryCompare (const void* entry1, const void* entry2)
 
 //
 //
-static uint DefaultHashFunct (GCC_ATTR_UNUSED const void* entry,
-			      GCC_ATTR_UNUSED const uint size)
+static uint DefaultHashFunct (const void* GCC_ATTR_UNUSED entry,
+			      const uint GCC_ATTR_UNUSED size)
 {
   DIAG_Die("Failure to specify HashFunct function.");
   return 0;
@@ -879,8 +879,8 @@ static uint DefaultRehashFunct (const uint oldHashValue, const uint size)
 
 //
 //
-static int DefaultEntryCompare (GCC_ATTR_UNUSED const void* entry1,
-				GCC_ATTR_UNUSED const void* entry2)
+static int DefaultEntryCompare (const void* GCC_ATTR_UNUSED entry1,
+				const void* GCC_ATTR_UNUSED entry2)
 {
   DIAG_Die("Failure to specify EntryCompare function.");
   return 0;
@@ -888,7 +888,7 @@ static int DefaultEntryCompare (GCC_ATTR_UNUSED const void* entry1,
 
 //
 //
-static void DefaultEntryCleanup (void* entry)
+static void DefaultEntryCleanup (void* GCC_ATTR_UNUSED entry)
 {
 # ifdef DEBUG
     cerr << "\tHashTable::DefaultEntryCleanup\t" << (int)entry

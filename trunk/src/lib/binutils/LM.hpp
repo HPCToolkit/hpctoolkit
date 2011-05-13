@@ -477,12 +477,12 @@ public:
   
 protected:
   // Should not be used
-  LM(GCC_ATTR_UNUSED const LM& lm)
+  LM(const LM& GCC_ATTR_UNUSED lm)
     : m_realpathMgr(RealPathMgr::singleton())
   { }
   
   LM&
-  operator=(GCC_ATTR_UNUSED const LM& lm)
+  operator=(const LM& GCC_ATTR_UNUSED lm)
   { return *this; }
 
 private:

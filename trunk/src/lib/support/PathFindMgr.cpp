@@ -68,6 +68,8 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
+
 #include "FileUtil.hpp"
 #include "PathFindMgr.hpp"
 #include "StrUtil.hpp"
@@ -272,10 +274,10 @@ PathFindMgr::find(std::string& pathNm)
     // -----------------------------------------------------
     std::string toReturn;
     int comparisonDepth = 0;
-    std::vector<std::string>::const_iterator it;
+    std::vector<std::string>::const_iterator it1;
 
-    for (it = pathVec.begin(); it != pathVec.end(); it++) {
-      const std::string& currentPath = *it;
+    for (it1 = pathVec.begin(); it1 != pathVec.end(); it1++) {
+      const std::string& currentPath = *it1;
       
       if (currentPath == toReturn) {
 	continue;
@@ -594,7 +596,8 @@ PathFindMgr::toString(uint flags) const
 
 
 std::ostream&
-PathFindMgr::dump(std::ostream& os, uint flags, const char* pfx) const
+PathFindMgr::dump(std::ostream& os, uint GCC_ATTR_UNUSED flags,
+		  const char* pfx) const
 {
   using std::endl;
 

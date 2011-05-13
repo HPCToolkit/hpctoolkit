@@ -1082,7 +1082,7 @@ public:
   { }
 
   virtual double
-  eval(const Metric::IData& mdata) const
+  eval(const Metric::IData& GCC_ATTR_UNUSED mdata) const
   { return (double)m_numSrc; }
 
 

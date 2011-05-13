@@ -147,7 +147,7 @@ public:
     // Output flags
     OFlg_Compressed      = (1 << 1), // Write in compressed format
     OFlg_LeafMetricsOnly = (1 << 2), // Write metrics only at leaves
-    OFlg_Debug           = (1 << 3), // Debug: show xtra source line info
+    OFlg_Debug           = (1 << 3)  // Debug: show xtra source line info
   };
 
   static const std::string UnknownLMNm;

@@ -247,7 +247,7 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
 	try {
 	  nodes[i] = buildEvalTree(child, mMgr, isNum);
 	}
-	catch (const MathMLExprException& e) {
+	catch (const MathMLExprException& /*ex*/) {
 	  for (int j = 0; j < i; j++)
 	    delete nodes[j];
 	  delete[] nodes;
@@ -302,7 +302,7 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
 	builtNode = buildEvalTree(child, mMgr, true /*isNum*/);
 	return builtNode;
       }
-      catch (const MathMLExprException& e) {
+      catch (const MathMLExprException& /*ex*/) {
 	throw;
       }
     }
@@ -314,7 +314,7 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
 	builtNode = buildEvalTree(child, mMgr, false /*isNum*/);
 	return builtNode;
       }
-      catch (const MathMLExprException& e) {
+      catch (const MathMLExprException& /*ex*/) {
 	throw;
       }
     }

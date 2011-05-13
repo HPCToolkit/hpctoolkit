@@ -812,7 +812,7 @@ static Prof::Struct::ACodeNode*
 buildLoopAndStmts(Struct::LocationMgr& locMgr,
 		  Prof::Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
 		  OA::OA_ptr<OA::NestedSCR> tarj,
-		  GCC_ATTR_UNUSED OA::OA_ptr<OA::CFG::CFGInterface> cfg,
+		  OA::OA_ptr<OA::CFG::CFGInterface> GCC_ATTR_UNUSED cfg,
 		  OA::RIFG::NodeId fgNode,
 		  bool isIrrIvalLoop, ProcNameMgr* procNmMgr)
 {
@@ -1249,7 +1249,7 @@ CDS_InspectStmt(Prof::Struct::Stmt* stmt1, SortIdToStmtMap* stmtMap,
 		Prof::Struct::ANodeSet* toDelete, int level);
 
 static bool
-CDS_ScopeFilter(const Prof::Struct::ANode& x, GCC_ATTR_UNUSED long type)
+CDS_ScopeFilter(const Prof::Struct::ANode& x, long GCC_ATTR_UNUSED type)
 {
   return (x.type() == Prof::Struct::ANode::TyProc
 	  || x.type() == Prof::Struct::ANode::TyAlien);

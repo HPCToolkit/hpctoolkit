@@ -207,7 +207,7 @@ RealPathMgr::toString(uint flags) const
 
 
 std::ostream&
-RealPathMgr::dump(std::ostream& os, GCC_ATTR_UNUSED uint flags,
+RealPathMgr::dump(std::ostream& os, uint GCC_ATTR_UNUSED flags,
 		  const char* pfx) const
 {
   os << pfx << "[ RealPathMgr:" << std::endl;

@@ -79,10 +79,11 @@ readConfFile(Args& args, Prof::Metric::Mgr& metricMgr);
 
 //****************************************************************************
 
-int realmain(int argc, char* const* argv);
+static int
+realmain(int argc, char* const* argv);
 
-int 
-main(int argc, char* const* argv) 
+int
+main(int argc, char* const* argv)
 {
   int ret;
 
@@ -92,7 +93,7 @@ main(int argc, char* const* argv)
   catch (const Diagnostics::Exception& x) {
     DIAG_EMsg(x.message());
     exit(1);
-  } 
+  }
   catch (const std::bad_alloc& x) {
     DIAG_EMsg("[std::bad_alloc] " << x.what());
     exit(1);
@@ -110,8 +111,8 @@ main(int argc, char* const* argv)
 }
 
 
-int 
-realmain(int argc, char* const* argv) 
+static int
+realmain(int argc, char* const* argv)
 {
   Args args(argc, argv);  // exits if error on command line
 
@@ -138,9 +139,9 @@ realmain(int argc, char* const* argv)
 
   Analysis::Flat::Driver driver(args, metricMgr, structure);
   int ret = driver.run();
-  
+
   return ret;
-} 
+}
 
 
 //****************************************************************************
@@ -149,16 +150,16 @@ realmain(int argc, char* const* argv)
 
 #define NUM_PREFIX_LINES 2
 
-static string 
+static string
 buildConfFile(const string& hpcHome, const string& confFile);
 
-static void 
+static void
 appendContents(std::ofstream &dest, const char *srcFile);
 
 static void
 readConfFile(Args& args, Prof::Metric::Mgr& metricMgr)
 {
-  InitXerces(); // exits iff failure 
+  InitXerces(); // exits iff failure
 
   const string& cfgFile = args.configurationFile;
   DIAG_Msg(2, "Initializing from: " << cfgFile);
@@ -170,14 +171,14 @@ readConfFile(Args& args, Prof::Metric::Mgr& metricMgr)
     ConfigParser parser(tmpFile, errHndlr);
     parser.parse(args, metricMgr);
   }
-  catch (const SAXParseException& x) {
+  catch (const SAXParseException& /*ex*/) {
     unlink(tmpFile.c_str());
-    //DIAG_EMsg(XMLString::transcode(x.getMessage()));
+    //DIAG_EMsg(XMLString::transcode(ex.getMessage()));
     exit(1);
   }
-  catch (const ConfigParserException& x) {
+  catch (const ConfigParserException& ex) {
     unlink(tmpFile.c_str());
-    DIAG_EMsg(x.message());
+    DIAG_EMsg(ex.message());
     exit(1);
   }
   catch (...) {
@@ -193,9 +194,9 @@ readConfFile(Args& args, Prof::Metric::Mgr& metricMgr)
 
 
 static string
-buildConfFile(const string& hpcHome, const string& confFile) 
+buildConfFile(const string& hpcHome, const string& confFile)
 {
-  string tmpFile = FileUtil::tmpname(); 
+  string tmpFile = FileUtil::tmpname();
   string hpcloc = hpcHome;
   if (hpcloc[hpcloc.length()-1] != '/') {
     hpcloc += "/";
@@ -207,7 +208,7 @@ buildConfFile(const string& hpcHome, const string& confFile)
   }
   
   // the number of lines added below must equal NUM_PREFIX_LINES
-  os << "<?xml version=\"1.0\"?>" << std::endl 
+  os << "<?xml version=\"1.0\"?>" << std::endl
      << "<!DOCTYPE HPCPROF SYSTEM \"" << hpcloc // has trailing '/'
      << "share/hpctoolkit/dtd/hpcprof-config.dtd\">" << std::endl;
 
@@ -216,11 +217,11 @@ buildConfFile(const string& hpcHome, const string& confFile)
 
   appendContents(os, confFile.c_str());
   os.close();
-  return tmpFile; 
+  return tmpFile;
 }
 
 
-static void 
+static void
 appendContents(std::ofstream &dest, const char *srcFile)
 {
 #define MAX_IO_SIZE (64 * 1024)
@@ -230,17 +231,17 @@ appendContents(std::ofstream &dest, const char *srcFile)
     DIAG_Throw("Unable to read file: " << srcFile);
   }
 
-  char buf[MAX_IO_SIZE]; 
+  char buf[MAX_IO_SIZE];
   for(; !src.eof(); ) {
     src.read(buf, MAX_IO_SIZE);
 
     ssize_t nRead = src.gcount();
     if (nRead == 0) break;
-    dest.write(buf, nRead); 
+    dest.write(buf, nRead);
     if (dest.fail()) {
       DIAG_Throw("appendContents: failed!");
     }
-  } 
+  }
   src.close();
 }
 

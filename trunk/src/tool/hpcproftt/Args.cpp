@@ -69,6 +69,7 @@ using std::string;
 //*************************** User Include Files ****************************
 
 #include <include/hpctoolkit-config.h>
+#include <include/gcc-attr.h>
 
 #include "Args.hpp"
 
@@ -243,7 +244,7 @@ isOptArg_src(const char* x)
   try {
     Args::parseArg_source(NULL, opt, "");
   }
-  catch (const Args::Exception& x) {
+  catch (const Args::Exception& /*ex*/) {
     // To enable good error messages, consider strings with a ratio of
     // commas:characters >= 1/3 to be an attempt at a src argument.
     // NOTE: this metric assumes an implicit comma at the end of the string
@@ -254,7 +255,7 @@ isOptArg_src(const char* x)
       commas += 1;
     }
 
-    double characters = opt.size();
+    double characters = (double)opt.size();
     
     ret = (commas / characters) >= tolerance;
   }
@@ -270,7 +271,7 @@ isOptArg_obj(const char* x)
   try {
     Args::parseArg_object(NULL, opt, "");
   }
-  catch (const Args::Exception& x) {
+  catch (const Args::Exception& /*ex*/) {
     // To enable good error messages, consider strings of size 1
     return (opt.size() == 1);
   }

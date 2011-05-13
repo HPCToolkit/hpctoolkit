@@ -16372,9 +16372,11 @@ case "${host}" in
 
     # Intel compiler
     if MYcxxcmp $CXX icpc ecpc ; then
+      # Silence "remark #383: value copied to temporary, reference to
+      #          temporary used"
       # Silence "remark #981: operands are evaluated in unspecified order"
-      # See: http://software.intel.com/en-us/forums/showthread.php?t=62309
-      HOST_CXXFLAGS="-wd981"
+      #   http://software.intel.com/en-us/forums/showthread.php?t=62309
+      HOST_CXXFLAGS="-wd383 -wd981"
     fi
     if MYcxxcmp $CC icc ecc ; then
       :

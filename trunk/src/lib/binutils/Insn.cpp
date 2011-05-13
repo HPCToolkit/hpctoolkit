@@ -71,6 +71,8 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
+
 #include "Insn.hpp"
 
 //*************************** Forward Declarations ***************************
@@ -82,7 +84,8 @@ using std::string;
 //****************************************************************************
 
 void
-BinUtil::Insn::dump(std::ostream& o, int flags, const char* pre) const
+BinUtil::Insn::dump(std::ostream& o, int GCC_ATTR_UNUSED flags,
+		    const char* pre) const
 {
   string p(pre);
   VMA target = targetVMA(m_vma);
@@ -119,7 +122,8 @@ BinUtil::Insn::ddump() const
 
 
 void
-BinUtil::Insn::dumpme(std::ostream& o, const char* pre) const
+BinUtil::Insn::dumpme(std::ostream& GCC_ATTR_UNUSED o,
+		      const char* GCC_ATTR_UNUSED pre) const
 {
 }
 
@@ -136,7 +140,8 @@ BinUtil::CISCInsn::dump(std::ostream& o, int flags, const char* pre) const
 
 
 void
-BinUtil::CISCInsn::dumpme(std::ostream& o, const char* pre) const
+BinUtil::CISCInsn::dumpme(std::ostream& o,
+			  const char* GCC_ATTR_UNUSED pre) const
 {
   o << "(CISC sz:" << size() << ")";
 }
@@ -154,7 +159,8 @@ BinUtil::RISCInsn::dump(std::ostream& o, int flags, const char* pre) const
 
 
 void
-BinUtil::RISCInsn::dumpme(std::ostream& o, const char* pre) const
+BinUtil::RISCInsn::dumpme(std::ostream& o,
+			  const char* GCC_ATTR_UNUSED pre) const
 {
   o << "(RISC)";
 }
@@ -172,7 +178,8 @@ BinUtil::VLIWInsn::dump(std::ostream& o, int flags, const char* pre) const
 
 
 void
-BinUtil::VLIWInsn::dumpme(std::ostream& o, const char* pre) const
+BinUtil::VLIWInsn::dumpme(std::ostream& o,
+			  const char* GCC_ATTR_UNUSED pre) const
 {
   o << "(VLIW opIdx:" << opIndex() << ")";
 }

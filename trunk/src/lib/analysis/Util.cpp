@@ -360,7 +360,7 @@ copySourceFileMain(const string& fnm_orig,
 		   const string& dstDir);
 
 static bool 
-Flat_Filter(const Prof::Struct::ANode& x, GCC_ATTR_UNUSED long type)
+Flat_Filter(const Prof::Struct::ANode& x, long GCC_ATTR_UNUSED type)
 {
   return (x.type() == Prof::Struct::ANode::TyFile 
 	  || x.type() == Prof::Struct::ANode::TyAlien);
