@@ -65,11 +65,14 @@
 
 //************************* System Include Files ****************************
 
+#ifndef _POSIX_SOURCE
+#  define _POSIX_SOURCE /* enable clockid_t */
+#endif
+
 #include <stdlib.h>
 #include <stdint.h>
 
-#define __USE_POSIX199309 /* enable clockid_t */
-#include <time.h>         /* clock_gettime() */
+#include <time.h>     /* clock_gettime() */
 
 //*************************** User Include Files ****************************
 
