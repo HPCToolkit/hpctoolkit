@@ -63,8 +63,12 @@
 
 //************************* System Include Files ****************************
 
-#define _POSIX_SOURCE
-#define _SVID_SOURCE
+#ifndef _POSIX_SOURCE
+#  define _POSIX_SOURCE // fdopen()
+#endif
+#ifndef _SVID_SOURCE
+#  define _SVID_SOURCE  // fputc_unlocked()
+#endif
 
 #include <stdlib.h>
 #include <string.h>
