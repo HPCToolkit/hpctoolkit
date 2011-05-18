@@ -198,6 +198,9 @@ The user can also moving the current selected region to another region by clicki
 Some important \hpctraceviewer{} limitations are listed below:
 \begin{itemize}
 
+\item \textbf{Handling hybrid MPI and OpenMP applications are not fully supported}.
+	Although it is possible to display trace data from mixed programming models such as MPI and OpenMP, the callpath between threads and processes are not fully consistent; thus it may confuse the user. Note: some MPI runtime spawns helper-threads which makes the trace appears to have more threads than it should be.
+
 \item \textbf{No image save or print}.
 	At the moment \hpctraceviewer{} does not support saving and printing images of the traces.
 
