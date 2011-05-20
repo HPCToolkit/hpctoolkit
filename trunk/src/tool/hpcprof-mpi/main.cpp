@@ -229,6 +229,7 @@ realmain(int argc, char* const* argv)
   if (myRank == rootRank) {
     args.makeDatabaseDir();
 
+    memset(dbDirBuf, '\0', PATH_MAX); // avoid artificial valgrind warnings
     strncpy(dbDirBuf, args.db_dir.c_str(), PATH_MAX);
     dbDirBuf[PATH_MAX - 1] = '\0';
   }
@@ -274,8 +275,8 @@ realmain(int argc, char* const* argv)
 
   // Post-INVARIANT: 'profGbl' is the canonical CCT
   ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1);
-  
-  if (0) { writeProfile(*profGbl, "canonical-cct", myRank); }
+
+  if (0) { writeProfile(*profGbl, "canonical-cct-a", myRank); }
 
   // -------------------------------------------------------
   // 1c. Add static structure to canonical CCT; form dense node ids
@@ -297,6 +298,8 @@ realmain(int argc, char* const* argv)
 
   // N.B.: Dense ids are assigned w.r.t. Prof::CCT::...::cmpByStructureInfo()
   profGbl->cct()->makeDensePreorderIds();
+
+  if (0) { writeProfile(*profGbl, "canonical-cct-b", myRank); }
 
   // -------------------------------------------------------
   // 2a. Create summary metrics for canonical CCT
@@ -396,7 +399,7 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
   char* sendFilesBuf = NULL;
   uint sendFilesBufSz = 0;
   uint sendFilesChunkSz = 0;
-  uint groupIdLen = 1;
+  const uint groupIdLen = 1; // see asssertion below
   uint pathLenMax = 0;
   uint groupIdMax = 0;
 
@@ -405,7 +408,7 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
   // -------------------------------------------------------
 
   if (myRank == rootRank) {
-    Analysis::Util::NormalizeProfileArgs_t nArgs = 
+    Analysis::Util::NormalizeProfileArgs_t nArgs =
       Analysis::Util::normalizeProfileArgs(profileFiles);
     
     Analysis::Util::StringVec* canonicalFiles = nArgs.paths;
@@ -450,13 +453,13 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
   metadataBuf[1] = pathLenMax;
   metadataBuf[2] = groupIdMax;
 
-  MPI_Bcast((void*)metadataBuf, metadataBufSz, MPI_UNSIGNED, 
+  MPI_Bcast((void*)metadataBuf, metadataBufSz, MPI_UNSIGNED,
 	    rootRank, MPI_COMM_WORLD);
 
   if (myRank != rootRank) {
     sendFilesChunkSz = metadataBuf[0];
-    pathLenMax = metadataBuf[1];
-    groupIdMax = metadataBuf[2];
+    pathLenMax       = metadataBuf[1];
+    groupIdMax       = metadataBuf[2];
   }
 
   // -------------------------------------------------------
@@ -475,7 +478,8 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
 
   for (uint i = 0; i < recvFilesChunkSz; i += (groupIdLen + pathLenMax + 1)) {
     uint groupId = recvFilesBuf[i];
-    string nm = &recvFilesBuf[i + groupIdLen];
+    const char* nm_cstr = &recvFilesBuf[i + groupIdLen];
+    string nm = nm_cstr;
     if (!nm.empty()) {
       out.paths->push_back(nm);
       out.groupMap->push_back(groupId);
