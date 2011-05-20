@@ -70,16 +70,16 @@ The following prerequisites apply to our default source code distribution.
       <td></td>
     </tr>
     <tr>
-      <td>Cray XT (CNL + x86_64)</td>
+      <td>Linux + Power64</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Cray XT/XE (CNL + x86_64)</td>
       <td>Compute Node Linux &ge; 2.1</td>
     </tr>
     <tr>
       <td>IBM Blue Gene/P (BG/P kernel + Power32)</td>
       <td>BG/P kernel &ge; V1R3M0</td>
-    </tr>
-    <tr>
-      <td>Linux + MIPS-le (64 and n32)</td>
-      <td>for SiCortex clusters (little endian MIPS)</td>
     </tr>
 
     <tr>
@@ -87,12 +87,13 @@ The following prerequisites apply to our default source code distribution.
     </tr>
 
     <tr>
-      <td>Linux + Power64</td>
-      <td>testing</td>
-    </tr>
-    <tr>
       <td>Linux + IA64 </td>
       <td>testing (uses <a href="http://www.nongnu.org/libunwind/">libunwind</a>)</td>
+    </tr>
+
+    <tr>
+      <td>Linux + MIPS-le (64 and n32)</td>
+      <td>for SiCortex clusters; little endian MIPS (no longer tested) </td>
     </tr>
   </table>
 </li>
@@ -146,15 +147,15 @@ Some vendor compilers that support GNU extensions also work.
 </li>
 
 <li>
-<p>To use <span class="hpctool">hpcviewer</span> (HPCToolkit's interactive presentation tool) on MacOS, Windows, or Linux, a Java runtime environment (JRE) &ge; 1.5 is required.
+<p>To use <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> (HPCToolkit's interactive presentation tools) on MacOS, Windows, or Linux, a Java runtime environment (JRE) &ge; 1.5 is required.
 Use the Sun or IBM version; we have had problems with OpenJDK.
 </p>
 
 <p>
-To use <span class="hpctool">hpcviewer</span> on Linux, <a href="http://www.gtk.org">GTK+</a> is also required.
+To use <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> on Linux, <a href="http://www.gtk.org">GTK+</a> is also required.
 </p>
 
-<p>Note: Since HPCToolkit's databases are portable, we often install <span class="hpctool">hpcviewer</span> on local laptops/desktops to avoid sending display traffic over relatively slow network connections.
+<p>Note: Since HPCToolkit's databases are portable, we often install <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> on local laptops/desktops to avoid sending display traffic over relatively slow network connections.
 </p>
 </li>
 
@@ -226,10 +227,10 @@ We have succssfully used versions 5.6.x, 5.8.x.
     </p>
   </li>
 
-  <li><p>An <span class="hpctool">hpcviewer</span> build.</p>
+  <li><p>An <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> build.</p>
 
-  <p>Note: It is perfectly reasonable to install <span class="hpctool">hpcviewer</span> in multiple locations.
-    Since HPCToolkit's databases are portable, we often install <span class="hpctool">hpcviewer</span> on local laptops/desktops to avoid sending display traffic over relatively slow network connections.</p>
+  <p>Note: It is perfectly reasonable to install <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> in multiple locations.
+    Since HPCToolkit's databases are portable, we often install <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> on local laptops/desktops to avoid sending display traffic over relatively slow network connections.</p>
   </li>
 
 </ol>
@@ -315,20 +316,21 @@ Please note that a list of examples below provides <code>configure</code> comman
 </li>
 
 <li>
-<p>Install <span class="hpctool">hpcviewer</span>.
+<p>Install <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> .
 </p>
 
   <ul class="noindent">
   
-  <li> To install <span class="hpctool">hpcviewer</span> as a stand-alone package, simply unpack and move the directory tree to the desired location.
+  <li> To install <span class="hpctool">hpcviewer</span> or <span class="hpctool">hpctraceviewer</span> as a stand-alone package, simply unpack and move the directory tree to the desired location.
   (This is the only option on Windows or MacOS.)
   </li>
 
-  <li> To install <span class="hpctool">hpcviewer</span> in an HPCToolkit installation, unpack the tarball and execute the following command:
+  <li> To install <span class="hpctool">hpcviewer</span> or <span class="hpctool">hpctraceviewer</span> in an HPCToolkit installation, unpack the tarball and execute the following commands:
     <div class="indent">
-      <code>./&lt;<i>hpcviewer</i>&gt;/install &lt;<i>install-path</i>&gt;</code>
+      <code>./&lt;<i>hpcviewer</i>&gt;/install &lt;<i>install-path</i>&gt;</code><br />
+      <code>./&lt;<i>hpctraceviewer</i>&gt;/install &lt;<i>install-path</i>&gt;</code>
     </div>
-    Here, <code>&lt;<i>hpcviewer</i>&gt;</code> is the directory created by unpacking the tarball; and <code>&lt;<i>install-path</i>&gt;</code> is the above HPCToolkit installation directory.
+    Here, <code>&lt;<i>hpcviewer</i>&gt;</code> and <code>&lt;<i>hpctraceviewer</i>&gt;</code> are the directories created by unpacking the respective tarballs; and <code>&lt;<i>install-path</i>&gt;</code> is the above HPCToolkit installation directory.
   </li>
 
   </ul>
@@ -364,7 +366,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 	</dl>
     </li>
 
-    <li><p>Cray XT:</p>
+    <li><p>Cray XT/XE:</p>
 	<dl class="indent">
           <dt>N.B.: Use the GNU programming environment, e.g.:</dt>
 	  <dd><code>
@@ -524,7 +526,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2011/05/09</span>]
+<p>[<span class="lastupdated">Page last updated: 2011/05/19</span>]
 </p>
 
 <!-- ********************************************************************** -->
