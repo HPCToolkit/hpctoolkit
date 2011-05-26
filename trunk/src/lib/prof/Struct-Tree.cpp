@@ -167,6 +167,29 @@ Tree::ddump() const
 }
 
 
+void
+writeXML(std::ostream& os, const Prof::Struct::Tree& strctTree,
+	 bool prettyPrint)
+{
+  static const char* structureDTD =
+#include <lib/xml/hpc-structure.dtd.h>
+
+  os << "<?xml version=\"1.0\"?>" << std::endl;
+  os << "<!DOCTYPE HPCToolkitStructure [\n" << structureDTD << "]>" << std::endl;
+  os.flush();
+
+  int oFlags = 0;
+  if (!prettyPrint) {
+    oFlags |= Prof::Struct::Tree::OFlg_Compressed;
+  }
+  
+  os << "<HPCToolkitStructure i=\"0\" version=\"4.6\" n"
+     << xml::MakeAttrStr(strctTree.name()) << ">\n";
+  strctTree.writeXML(os, oFlags);
+  os << "</HPCToolkitStructure>\n";
+}
+
+
 //***************************************************************************
 // ANodeTy `methods' (could completely replace with dynamic typing)
 //***************************************************************************

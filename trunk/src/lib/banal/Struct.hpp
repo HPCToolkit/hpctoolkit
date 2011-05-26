@@ -101,10 +101,6 @@ namespace Struct {
   bool 
   normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe = true);
 
-  void
-  writeStructure(std::ostream& os, Prof::Struct::Tree* strctTree,
-		 bool prettyPrint = true);
-
 } // namespace Struct
 
 } // namespace BAnal
