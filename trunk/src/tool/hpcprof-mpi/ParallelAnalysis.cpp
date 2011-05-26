@@ -136,8 +136,6 @@ void
 mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
 	      int myRank, MPI_Comm comm)
 {
-  MPI_Status mpistat;
-
   int tag = rank_y; // sender
 
   uint8_t* profileBuf = NULL;
@@ -150,6 +148,7 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
 
     // rank_x probes rank_y
     int profileBufSz = 0;
+    MPI_Status mpistat;
     MPI_Probe(rank_y, tag, comm, &mpistat);
     MPI_Get_count(&mpistat, MPI_BYTE, &profileBufSz);
     profileBuf = new uint8_t[profileBufSz];
@@ -198,8 +197,6 @@ mergeNonLocal(std::pair<Prof::CallPath::Profile*,
 	                ParallelAnalysis::PackedMetrics*> data,
 	      int rank_x, int rank_y, int myRank, MPI_Comm comm)
 {
-  MPI_Status mpistat;
-
   int tag = rank_y; // sender
 
   if (myRank == rank_x) {
@@ -207,6 +204,7 @@ mergeNonLocal(std::pair<Prof::CallPath::Profile*,
     ParallelAnalysis::PackedMetrics* packedMetrics_x = data.second;
 
     // rank_x receives metric data from rank_y
+    MPI_Status mpistat;
     MPI_Recv(packedMetrics_x->data(), packedMetrics_x->dataSize(),
 	     MPI_DOUBLE, rank_y, tag, comm, &mpistat);
     DIAG_Assert(packedMetrics_x->verify(), DIAG_UnexpectedInput);
