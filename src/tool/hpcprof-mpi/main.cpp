@@ -89,6 +89,8 @@ using std::vector;
 #include <lib/analysis/CallPath.hpp>
 #include <lib/analysis/Util.hpp>
 
+#include <lib/banal/Struct.hpp>
+
 #include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/prof-lean/hpcrun-fmt.h>
@@ -109,9 +111,6 @@ static Analysis::Util::NormalizeProfileArgs_t
 myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
 		       vector<uint>& groupIdToGroupSizeMap,
 		       int myRank, int numRanks, int rootRank = 0);
-
-static void
-writeProfile(Prof::CallPath::Profile& prof, const char* baseNm, int myRank);
 
 
 static void
@@ -155,6 +154,15 @@ makeDBFileName(const string& dbDir, uint groupId, const string& profileFile);
 static void
 writeMetricsDB(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
 	       const string& metricDBFnm);
+
+
+static void
+writeStructure(const Prof::Struct::Tree& structure, const char* baseNm,
+	       int myRank);
+
+static void
+writeProfile(const Prof::CallPath::Profile& prof, const char* baseNm,
+	     int myRank);
 
 
 //****************************************************************************
@@ -290,6 +298,7 @@ realmain(int argc, char* const* argv)
     Analysis::CallPath::readStructure(structure, args);
   }
   profGbl->structure(structure);
+  if (0) { writeStructure(*structure, "structure-a", myRank); }
 
   // N.B.: Ensures that each rank adds static structure in the same
   // order so that new corresponding nodes have identical node ids.
@@ -299,6 +308,7 @@ realmain(int argc, char* const* argv)
   // N.B.: Dense ids are assigned w.r.t. Prof::CCT::...::cmpByStructureInfo()
   profGbl->cct()->makeDensePreorderIds();
 
+  if (0) { writeStructure(*structure, "structure-b", myRank); }
   if (0) { writeProfile(*profGbl, "canonical-cct-b", myRank); }
 
   // -------------------------------------------------------
@@ -499,24 +509,6 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
   }
 
   return out;
-}
-
-
-static void
-writeProfile(Prof::CallPath::Profile& prof, const char* baseNm, int myRank)
-{
-  string fnm_base = string(baseNm) + "-" + StrUtil::toStr(myRank);
-  string fnm_hpcrun = fnm_base + ".txt";
-  string fnm_xml    = fnm_base + ".xml";
-
-  // Only safe if static structure has not been added
-  //FILE* fs = hpcio_fopen_w(fnm_hpcrun.c_str(), 1);
-  //Prof::CallPath::Profile::fmt_fwrite(prof, fs, 0);
-  //hpcio_fclose(fs);
-
-  std::ostream* os = IOUtil::OpenOStream(fnm_xml.c_str());
-  prof.cct()->writeXML(*os, 0, 0, Prof::CCT::Tree::OFlg_Debug);
-  IOUtil::CloseStream(os);
 }
 
 
@@ -997,3 +989,37 @@ writeMetricsDB(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
 
 
 //***************************************************************************
+
+static void
+writeStructure(const Prof::Struct::Tree& structure, const char* baseNm,
+	       int myRank)
+{
+  string fnm_base = string(baseNm) + "-" + StrUtil::toStr(myRank);
+  string fnm_xml  = fnm_base + ".xml";
+
+  std::ostream* os = IOUtil::OpenOStream(fnm_xml.c_str());
+  Prof::Struct::writeXML(*os, structure, true);
+  IOUtil::CloseStream(os);
+}
+
+
+static void
+writeProfile(const Prof::CallPath::Profile& prof, const char* baseNm,
+	     int myRank)
+{
+  string fnm_base   = string(baseNm) + "-" + StrUtil::toStr(myRank);
+  string fnm_hpcrun = fnm_base + ".txt";
+  string fnm_xml    = fnm_base + ".xml";
+
+  // Only safe if static structure has not been added
+  //FILE* fs = hpcio_fopen_w(fnm_hpcrun.c_str(), 1);
+  //Prof::CallPath::Profile::fmt_fwrite(prof, fs, 0);
+  //hpcio_fclose(fs);
+
+  std::ostream* os = IOUtil::OpenOStream(fnm_xml.c_str());
+  prof.cct()->writeXML(*os, 0, 0, Prof::CCT::Tree::OFlg_Debug);
+  IOUtil::CloseStream(os);
+}
+
+//****************************************************************************
+

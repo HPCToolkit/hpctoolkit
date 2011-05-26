@@ -72,6 +72,8 @@ using std::endl;
 
 #include <lib/banal/Struct.hpp>
 
+#include <lib/prof/Struct-Tree.hpp>
+
 #include <lib/binutils/LM.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -155,14 +157,14 @@ realmain(int argc, char* argv[])
   Prof::Struct::Tree* strctTree = new Prof::Struct::Tree("", rootStrct);
   
   using namespace BAnal::Struct;
-  Prof::Struct::LM* lmStrct = makeStructure(lm, args.doNormalizeTy, 
+  Prof::Struct::LM* lmStrct = makeStructure(lm, args.doNormalizeTy,
 					    args.isIrreducibleIntervalLoop,
 					    args.isForwardSubstitution,
 					    procNameMgr,
 					    args.dbgProcGlob);
   lmStrct->link(rootStrct);
   
-  writeStructure(*os, strctTree, args.prettyPrintOutput);
+  Prof::Struct::writeXML(*os, *strctTree, args.prettyPrintOutput);
   IOUtil::CloseStream(os);
   
   delete strctTree;

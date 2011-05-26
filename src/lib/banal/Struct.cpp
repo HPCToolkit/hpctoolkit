@@ -284,33 +284,6 @@ static string OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm;
 
 
 //****************************************************************************
-// Set of routines to write a structure tree
-//****************************************************************************
-
-// FIXME (minor): move to prof library for experiment writer
-void
-BAnal::Struct::writeStructure(std::ostream& os, Prof::Struct::Tree* strctTree,
-			     bool prettyPrint)
-{
-  static const char* structureDTD =
-#include <lib/xml/hpc-structure.dtd.h>
-
-  os << "<?xml version=\"1.0\"?>" << std::endl;
-  os << "<!DOCTYPE HPCToolkitStructure [\n" << structureDTD << "]>" << std::endl;
-  os.flush();
-
-  int oFlags = 0;
-  if (!prettyPrint) {
-    oFlags |= Prof::Struct::Tree::OFlg_Compressed;
-  }
-  
-  os << "<HPCToolkitStructure i=\"0\" version=\"4.6\" n"
-     << xml::MakeAttrStr(strctTree->name()) << ">\n";
-  strctTree->writeXML(os, oFlags);
-  os << "</HPCToolkitStructure>\n";
-}
-
-//****************************************************************************
 // Set of routines to build a scope tree
 //****************************************************************************
 
@@ -328,11 +301,11 @@ BAnal::Struct::writeStructure(std::ostream& os, Prof::Struct::Tree* strctTree,
 //   optimizations such as loop unrolling.
 Prof::Struct::LM*
 BAnal::Struct::makeStructure(BinUtil::LM* lm,
-			    NormTy doNormalizeTy,
-			    bool isIrrIvalLoop,
-			    bool isFwdSubst,
-			    ProcNameMgr* procNmMgr,
-			    const std::string& dbgProcGlob)
+			     NormTy doNormalizeTy,
+			     bool isIrrIvalLoop,
+			     bool isFwdSubst,
+			     ProcNameMgr* procNmMgr,
+			     const std::string& dbgProcGlob)
 {
   // Assume lm->Read() has been performed
   DIAG_Assert(lm, DIAG_UnexpectedInput);

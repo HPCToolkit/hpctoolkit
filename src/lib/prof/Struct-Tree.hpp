@@ -205,6 +205,13 @@ private:
   Root* m_root;
 };
 
+
+// TODO: integrate with Tree::writeXML()
+void
+writeXML(std::ostream& os, const Prof::Struct::Tree& strctTree,
+	 bool prettyPrint = true);
+
+
 } // namespace Struct
 } // namespace Prof
 
