@@ -141,7 +141,6 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
   int tag = rank_y; // sender
 
   uint8_t* profileBuf = NULL;
-  size_t profileBufSz = 0;
 
   Prof::CallPath::Profile* profile_x = NULL;
   Prof::CallPath::Profile* profile_y = NULL;
@@ -149,15 +148,16 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
   if (myRank == rank_x) {
     profile_x = profile;
 
-    // rank_x receives profile buffer size from rank_y
-    MPI_Recv(&profileBufSz, 1, MPI_UNSIGNED_LONG, rank_y, tag, comm, &mpistat);
-
+    // rank_x probes rank_y
+    int profileBufSz = 0;
+    MPI_Probe(rank_y, tag, comm, &mpistat);
+    MPI_Get_count(&mpistat, MPI_BYTE, &profileBufSz);
     profileBuf = new uint8_t[profileBufSz];
 
     // rank_x receives profile from rank_y
     MPI_Recv(profileBuf, profileBufSz, MPI_BYTE, rank_y, tag, comm, &mpistat);
 
-    profile_y = unpackProfile(profileBuf, profileBufSz);
+    profile_y = unpackProfile(profileBuf, (size_t)profileBufSz);
     delete[] profileBuf;
 
     if (DBG_CCT_MERGE) {
@@ -182,13 +182,11 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
   if (myRank == rank_y) {
     profile_y = profile;
 
+    size_t profileBufSz = 0;
     packProfile(*profile_y, &profileBuf, &profileBufSz);
 
-    // rank_y sends profile buffer size to rank_x
-    MPI_Send(&profileBufSz, 1, MPI_UNSIGNED_LONG, rank_x, tag, comm);
-
     // rank_y sends profile to rank_x
-    MPI_Send(profileBuf, profileBufSz, MPI_BYTE, rank_x, tag, comm);
+    MPI_Send(profileBuf, (int)profileBufSz, MPI_BYTE, rank_x, tag, comm);
 
     free(profileBuf);
   }
