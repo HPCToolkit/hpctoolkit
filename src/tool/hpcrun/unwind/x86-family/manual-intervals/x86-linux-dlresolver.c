@@ -48,20 +48,32 @@
 #include "x86-unwind-interval-fixup.h"
 #include "x86-unwind-interval.h"
 
-static int _dl_runtime_resolve_signature[] = { 
-  0x38ec8348,      0x24048948,      0x244c8948,      0x54894808,
-  0x89481024,      0x48182474,      0x20247c89,      0x2444894c,
-  0x4c894c28,      0x8b483024,      0x49402474,      0x014cf389,
-  0xde014cde,      0x03e6c148,      0x247c8b48
-};
+static char dl_runtime_resolve_signature[] = { 
 
+ 0x48, 0x83, 0xec, 0x38,        // sub    $0x38,%rsp
+ 0x48, 0x89, 0x04, 0x24,        // mov    %rax,(%rsp)
+ 0x48, 0x89, 0x4c, 0x24, 0x08,  // mov    %rcx,0x8(%rsp)
+ 0x48, 0x89, 0x54, 0x24, 0x10,  // mov    %rdx,0x10(%rsp)
+ 0x48, 0x89, 0x74, 0x24, 0x18,  // mov    %rsi,0x18(%rsp)
+ 0x48, 0x89, 0x7c, 0x24, 0x20,  // mov    %rdi,0x20(%rsp)
+ 0x4c, 0x89, 0x44, 0x24, 0x28,  // mov    %r8,0x28(%rsp)
+ 0x4c, 0x89, 0x4c, 0x24, 0x30,  // mov    %r9,0x30(%rsp)
+ 0x48, 0x8b, 0x74, 0x24, 0x40,  // mov    0x40(%rsp),%rsi
+ 0x49, 0x89, 0xf3,              // mov    %rsi,%r11
+ 0x4c, 0x01, 0xde,              // add    %r11,%rsi
+ 0x4c, 0x01, 0xde,              // add    %r11,%rsi
+ 0x48, 0xc1, 0xe6, 0x03,        // shl    $0x3,%rsi
+ 0x48,                          // rex64
+ 0x8b,                          // .byte 0x8b
+ 0x7c, 0x24,                    // jl     60 <HPCTRACE_FMT_Magic>
+};
 
 static int 
 adjust_dl_runtime_resolve_unwind_intervals(char *ins, int len, interval_status *stat)
 {
-  int siglen = sizeof(_dl_runtime_resolve_signature);
+  int siglen = sizeof(dl_runtime_resolve_signature);
 
-  if (len > siglen && strncmp((char *)_dl_runtime_resolve_signature, ins, siglen) == 0) {
+  if (len > siglen && strncmp((char *)dl_runtime_resolve_signature, ins, siglen) == 0) {
     // signature matched 
     unwind_interval *ui = (unwind_interval *) stat->first;
     while(ui) {
