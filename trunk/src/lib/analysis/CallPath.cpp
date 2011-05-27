@@ -294,7 +294,7 @@ overlayStaticStructure(Prof::CCT::ANode* node,
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm);
 
 static Prof::CCT::ANode*
-demandScopeInFrame(Prof::CCT::ADynNode* node, Prof::Struct::ANode* strct, 
+demandScopeInFrame(Prof::CCT::ADynNode* node, Prof::Struct::ANode* strct,
 		   StructToCCTMap& strctToCCTMap);
 
 static Prof::CCT::ProcFrm*
@@ -464,6 +464,15 @@ overlayStaticStructure(Prof::CCT::ANode* node,
   // required for very deep CCTs.
   StructToCCTMap* strctToCCTMap = new StructToCCTMap;
 
+  if (0 && Analysis::CallPath::dbgOs) {
+    (*Analysis::CallPath::dbgOs) << "overlayStaticStructure: node (";
+    Prof::CCT::ADynNode* node_dyn = dynamic_cast<Prof::CCT::ADynNode*>(node);
+    if (node_dyn) {
+      (*Analysis::CallPath::dbgOs) << node_dyn->lmId() << ", " << hex << node_dyn->lmIP() << dec;
+    }
+    (*Analysis::CallPath::dbgOs) << "): " << node->toStringMe() << std::endl;
+  }
+
   // ---------------------------------------------------
   // For each immediate child of this node...
   //
@@ -500,6 +509,9 @@ overlayStaticStructure(Prof::CCT::ANode* node,
       //strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
 
       DIAG_MsgIf(0, "overlayStaticStructure: dyn (" << n_dyn->lmId() << ", " << hex << lm_ip << ") --> struct " << strct << dec << " " << strct->toStringMe());
+      if (0 && Analysis::CallPath::dbgOs) {
+	(*Analysis::CallPath::dbgOs) << "dyn (" << n_dyn->lmId() << ", " << hex << lm_ip << dec << ") --> struct " << strct->toStringMe() << std::endl;
+      }
 
       // 2. Demand a procedure frame for 'n_dyn' and its scope within it
       Struct::ANode* scope_strct = strct->ancestor(Struct::ANode::TyLoop,
@@ -507,7 +519,7 @@ overlayStaticStructure(Prof::CCT::ANode* node,
 						   Struct::ANode::TyProc);
       //scope_strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
 
-      Prof::CCT::ANode* scope_frame = 
+      Prof::CCT::ANode* scope_frame =
 	demandScopeInFrame(n_dyn, scope_strct, *strctToCCTMap);
 
       // 3. Link 'n' to its parent
@@ -516,7 +528,7 @@ overlayStaticStructure(Prof::CCT::ANode* node,
     }
     
     // ---------------------------------------------------
-    // recur 
+    // recur
     // ---------------------------------------------------
     if (!n->isLeaf()) {
       overlayStaticStructure(n, loadmap_lm, lmStrct, lm);
@@ -585,7 +597,7 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
 		   Prof::Struct::ACodeNode* node_strct,
 		   StructToCCTMap& strctToCCTMap)
 {
-  for (Prof::Struct::ACodeNodeChildIterator it(node_strct); 
+  for (Prof::Struct::ACodeNodeChildIterator it(node_strct);
        it.Current(); ++it) {
     Prof::Struct::ACodeNode* n_strct = it.current();
 
@@ -775,7 +787,7 @@ Analysis::CallPath::pruneStructTree(Prof::CallPath::Profile& prof)
 
 //***************************************************************************
 
-// pruneTrivialNodes: 
+// pruneTrivialNodes:
 // 
 // Without static structure, the CCT is sparse in the sense that
 // *every* node must have some non-zero inclusive metric value.  To
@@ -1042,7 +1054,7 @@ makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args)
 
 
 void
-write(Prof::CallPath::Profile& prof, std::ostream& os, 
+write(Prof::CallPath::Profile& prof, std::ostream& os,
       const string& title, bool prettyPrint)
 {
   static const char* experimentDTD =

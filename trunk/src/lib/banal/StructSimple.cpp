@@ -125,7 +125,7 @@ BAnal::Struct::makeStructureSimple(Prof::Struct::LM* lmStrct,
   if (insn) {
     endVMA = insn->endVMA();
   }
-  Prof::Struct::Stmt* stmtStrct = demandStmtStructure(lmStrct, procStrct, line, 
+  Prof::Struct::Stmt* stmtStrct = demandStmtStructure(lmStrct, procStrct, line,
 						      begVMA, endVMA);
   
   return stmtStrct;
