@@ -279,21 +279,42 @@ ANodeSortedIterator::cmpByDynInfo(const void* a, const void* b)
   ANode* x = (*(ANode**)a);
   ANode* y = (*(ANode**)b);
 
+  // 0. test for equality
+  if (x == y) {
+    return 0;
+  }
+
+  // INVARIANT: x != y, so never return 0
+
   ADynNode* x_dyn = dynamic_cast<ADynNode*>(x);
   ADynNode* y_dyn = dynamic_cast<ADynNode*>(y);
 
+  // 1. distinguish by dynamic info
   if (x_dyn && y_dyn) {
     return cmpByDynInfoSpecial(x_dyn, y_dyn);
   }
-  else if (x_dyn) {
-    return 1; // x_dyn > y_dyn=NULL
+
+  // 2. distinguish by structure ids
+  uint x_id = x->structureId();
+  uint y_id = y->structureId();
+  if (x_id != Prof::Struct::ANode::Id_NULL
+      && y_id != Prof::Struct::ANode::Id_NULL) {
+    int cmp_id = cmp(x_id, y_id);
+    if (cmp_id != 0) {
+      return cmp_id;
+    }
   }
-  else if (y_dyn) {
-    return -1; // x_dyn=NULL < y_dyn
+
+  // 3. distinguish by type
+  int cmp_ty = (int)x->type() - (int)y->type();
+  if (cmp_ty != 0) {
+    return cmp_ty;
   }
-  else {
-    return cmp((int64_t)x, (int64_t)y);
-  }
+
+  // *. Could compare childCount() and other aspects of children.
+  DIAG_Die("Prof::CCT::ANodeSortedIterator::cmpByDynInfo: cannot compare:"
+	   << "\n\tx: " << x->toStringMe(Prof::CCT::Tree::OFlg_Debug)
+	   << "\n\ty: " << y->toStringMe(Prof::CCT::Tree::OFlg_Debug));
 }
 
 
