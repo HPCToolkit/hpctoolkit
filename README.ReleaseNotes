@@ -144,7 +144,11 @@ Contents:
 - hpcprof currently does not generate 'metric databases' for hpcviewer
   scatter plots.
 
+
 1.3.2. Bugs
+
+- hpcprof/mpi currently does not properly combine multiple trace
+  measurement databases.
 
 - When processing in parallel measurements for a *dynamically linked
   binary*, hpcprof-mpi may abort with an MPI error.  The problem is
@@ -158,6 +162,7 @@ Contents:
      hpcstruct on the application and all DSOs
   4) Run hpcprof-mpi in parallel only on one node.  (Usually, GNU
      binutils is deterministic during one execution on one node.)
+
 
 ----------------------------------------
 1.4. hpcviewer
@@ -182,10 +187,10 @@ HPCToolkit Version 5.1.0: [2011.05.27]
 
 - Full support for analyzing 64-bit Linux-POWER7 binaries [hpcprof, hpcstruct]
 
-- Preliminary support for sampling processes to monitor large-scale
-  executions [hpcrun]
+- To profile/trace large-scale executions, add support for sampling
+  processes to measure.  Experimental. [hpcrun]
 
-- W.rt. binary analysis to compute unwind information for call path
+- W.r.t. binary analysis to compute unwind information for call path
   profiling: improvements computing function bounds on partially
   stripped code (32-bit x86 and libc on Ubuntu) [hpcfnbounds]
 
