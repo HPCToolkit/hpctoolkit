@@ -87,6 +87,9 @@ namespace Analysis {
 
 namespace CallPath {
 
+extern std::ostream* dbgOs; // for parallel debugging
+
+
 // ---------------------------------------------------------
 //
 // ---------------------------------------------------------

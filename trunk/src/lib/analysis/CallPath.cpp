@@ -102,6 +102,8 @@ using namespace xml;
 
 //*************************** Forward Declarations ***************************
 
+std::ostream* Analysis::CallPath::dbgOs = NULL; // for parallel debugging
+
 
 //****************************************************************************
 // 
@@ -471,7 +473,7 @@ overlayStaticStructure(Prof::CCT::ANode* node,
   for (Prof::CCT::ANodeSortedChildIterator it(node, Prof::CCT::ANodeSortedIterator::cmpByDynInfo);
        it.current(); /* */) {
     Prof::CCT::ANode* n = it.current();
-    it++; // advance iterator -- it is pointing at 'n' 
+    it++; // advance iterator -- it is pointing at 'n'
     
     // ---------------------------------------------------
     // process Prof::CCT::ADynNode nodes
