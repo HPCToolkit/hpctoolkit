@@ -332,6 +332,8 @@ public:
   id() const
   { return m_id; }
 
+  static const uint Id_NULL = 0;
+
   // maxId: the maximum id of all structure nodes
   static uint
   maxId()

@@ -235,10 +235,8 @@ public:
   static int cmpByStructureInfo(const void* x, const void* y);
 
   // cmpByDynInfo: Designed to produce deterministic sorts for a
-  // "non-structured CCT" across multiple runs and multiple processes.
-  // Note that any ADynNode is less than a non-ADynNode
-  // 
-  // N.B.: sort is only deterministic w.r.t. ADynNodes.
+  // "non-structured CCT" or "partially structured CCT" across
+  // multiple runs and multiple processes.
   static int cmpByDynInfo(const void* x, const void* y);
 
 public: 
