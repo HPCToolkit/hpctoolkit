@@ -117,7 +117,11 @@ if HOST_CPU_X86_FAMILY
   hpcfnbounds_bin_CPPFLAGS += -I$(XED2_INC)
   hpcfnbounds_bin_LDFLAGS  += $(XED2_LIB)/libxed.a
 else
+if HOST_CPU_PPC
+  hpcfnbounds_bin_SOURCES += ppc-process-ranges.cpp
+else
   hpcfnbounds_bin_SOURCES += generic-process-ranges.cpp
+endif
 endif
 
 MOSTLYCLEANFILES = $(MYCLEAN)

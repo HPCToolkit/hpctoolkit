@@ -72,7 +72,8 @@ pkglibexec_PROGRAMS = hpcfnbounds-bin$(EXEEXT)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_1 = x86-process-ranges.cpp
 @HOST_CPU_X86_FAMILY_TRUE@am__append_2 = -I$(XED2_INC)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_3 = $(XED2_LIB)/libxed.a
-@HOST_CPU_X86_FAMILY_FALSE@am__append_4 = generic-process-ranges.cpp
+@HOST_CPU_PPC_TRUE@@HOST_CPU_X86_FAMILY_FALSE@am__append_4 = ppc-process-ranges.cpp
+@HOST_CPU_PPC_FALSE@@HOST_CPU_X86_FAMILY_FALSE@am__append_5 = generic-process-ranges.cpp
 subdir = src/tool/hpcfnbounds
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -89,15 +90,16 @@ am__installdirs = "$(DESTDIR)$(pkglibexecdir)" \
 PROGRAMS = $(pkglibexec_PROGRAMS)
 am__hpcfnbounds_bin_SOURCES_DIST = main.cpp code-ranges.cpp \
 	function-entries.cpp intervals.cpp x86-process-ranges.cpp \
-	generic-process-ranges.cpp
+	ppc-process-ranges.cpp generic-process-ranges.cpp
 am__objects_1 = hpcfnbounds_bin-main.$(OBJEXT) \
 	hpcfnbounds_bin-code-ranges.$(OBJEXT) \
 	hpcfnbounds_bin-function-entries.$(OBJEXT) \
 	hpcfnbounds_bin-intervals.$(OBJEXT)
 @HOST_CPU_X86_FAMILY_TRUE@am__objects_2 = hpcfnbounds_bin-x86-process-ranges.$(OBJEXT)
-@HOST_CPU_X86_FAMILY_FALSE@am__objects_3 = hpcfnbounds_bin-generic-process-ranges.$(OBJEXT)
+@HOST_CPU_PPC_TRUE@@HOST_CPU_X86_FAMILY_FALSE@am__objects_3 = hpcfnbounds_bin-ppc-process-ranges.$(OBJEXT)
+@HOST_CPU_PPC_FALSE@@HOST_CPU_X86_FAMILY_FALSE@am__objects_4 = hpcfnbounds_bin-generic-process-ranges.$(OBJEXT)
 am_hpcfnbounds_bin_OBJECTS = $(am__objects_1) $(am__objects_2) \
-	$(am__objects_3)
+	$(am__objects_3) $(am__objects_4)
 hpcfnbounds_bin_OBJECTS = $(am_hpcfnbounds_bin_OBJECTS)
 hpcfnbounds_bin_LDADD = $(LDADD)
 hpcfnbounds_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -387,7 +389,8 @@ MYLDFLAGS = \
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibexec_SCRIPTS = hpcfnbounds
-hpcfnbounds_bin_SOURCES = $(MYSOURCES) $(am__append_1) $(am__append_4)
+hpcfnbounds_bin_SOURCES = $(MYSOURCES) $(am__append_1) $(am__append_4) \
+	$(am__append_5)
 hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS) $(am__append_2)
 hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcfnbounds_bin_LDFLAGS = $(MYLDFLAGS) $(am__append_3)
@@ -528,6 +531,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-generic-process-ranges.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-intervals.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-ppc-process-ranges.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-x86-process-ranges.Po@am__quote@
 
 .cpp.o:
@@ -620,6 +624,20 @@ hpcfnbounds_bin-x86-process-ranges.obj: x86-process-ranges.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='x86-process-ranges.cpp' object='hpcfnbounds_bin-x86-process-ranges.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-x86-process-ranges.obj `if test -f 'x86-process-ranges.cpp'; then $(CYGPATH_W) 'x86-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/x86-process-ranges.cpp'; fi`
+
+hpcfnbounds_bin-ppc-process-ranges.o: ppc-process-ranges.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-ppc-process-ranges.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-ppc-process-ranges.Tpo -c -o hpcfnbounds_bin-ppc-process-ranges.o `test -f 'ppc-process-ranges.cpp' || echo '$(srcdir)/'`ppc-process-ranges.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcfnbounds_bin-ppc-process-ranges.Tpo $(DEPDIR)/hpcfnbounds_bin-ppc-process-ranges.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ppc-process-ranges.cpp' object='hpcfnbounds_bin-ppc-process-ranges.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-ppc-process-ranges.o `test -f 'ppc-process-ranges.cpp' || echo '$(srcdir)/'`ppc-process-ranges.cpp
+
+hpcfnbounds_bin-ppc-process-ranges.obj: ppc-process-ranges.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-ppc-process-ranges.obj -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-ppc-process-ranges.Tpo -c -o hpcfnbounds_bin-ppc-process-ranges.obj `if test -f 'ppc-process-ranges.cpp'; then $(CYGPATH_W) 'ppc-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/ppc-process-ranges.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcfnbounds_bin-ppc-process-ranges.Tpo $(DEPDIR)/hpcfnbounds_bin-ppc-process-ranges.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ppc-process-ranges.cpp' object='hpcfnbounds_bin-ppc-process-ranges.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-ppc-process-ranges.obj `if test -f 'ppc-process-ranges.cpp'; then $(CYGPATH_W) 'ppc-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/ppc-process-ranges.cpp'; fi`
 
 hpcfnbounds_bin-generic-process-ranges.o: generic-process-ranges.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-generic-process-ranges.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-generic-process-ranges.Tpo -c -o hpcfnbounds_bin-generic-process-ranges.o `test -f 'generic-process-ranges.cpp' || echo '$(srcdir)/'`generic-process-ranges.cpp

@@ -268,9 +268,9 @@ void* tailcall_target(void *addr, long offset)
     xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
     if((xiclass==XED_ICLASS_JMP) || (xiclass==XED_ICLASS_JMP_FAR)) {
       // this jump represents a tailcall 
-      void *tailcall_target = x86_get_branch_target(ins, xptr);
-      if(tailcall_target != NULL) {
-	return (void *)((char *)tailcall_target-offset);
+      void *target = x86_get_branch_target(ins, xptr);
+      if(target != NULL) {
+	return (void *)((char *)target-offset);
       }
     }
   }

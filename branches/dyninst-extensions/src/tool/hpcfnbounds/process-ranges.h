@@ -48,7 +48,6 @@
 #define process_ranges_hpp
 
 #include "code-ranges.h"
-void *tailcall_target(void *addr, long offset);
 
 void process_range_init();
 
@@ -57,4 +56,5 @@ void process_range(long offset, void *vstart, void *vend,
 
 bool range_contains_control_flow(void *vstart, void *vend);
 
+void *tailcall_target(void *addr, long offset);
 #endif // process_ranges_hpp

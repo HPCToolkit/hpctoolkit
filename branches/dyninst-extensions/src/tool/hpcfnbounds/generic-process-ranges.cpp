@@ -52,6 +52,10 @@
 #include "process-ranges.h"
 #include "code-ranges.h"
 
+void *tailcall_target(void *addr, long offset)
+{
+  return NULL;
+}
 
 void
 process_range_init(void)
