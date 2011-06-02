@@ -48,6 +48,7 @@
 #define process_ranges_hpp
 
 #include "code-ranges.h"
+void *tailcall_target(void *addr, long offset);
 
 void process_range_init();
 

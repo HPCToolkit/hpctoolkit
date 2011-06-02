@@ -218,6 +218,64 @@ process_range_init()
   xed_tables_init();
 }
 
+void *
+actual_get_branch_target(void *ins, xed_decoded_inst_t *xptr,
+                   xed_operand_values_t *vals)
+{
+  int offset = xed_operand_values_get_branch_displacement_int32(vals);
+
+  char *end_of_call_inst = (char*)ins + xed_decoded_inst_get_length(xptr);
+  char *target = end_of_call_inst + offset;
+  return (void *)target;
+}
+
+
+void *
+x86_get_branch_target(void *ins, xed_decoded_inst_t *xptr)
+{
+  const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+  const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
+  xed_operand_enum_t   op0_name = xed_operand_name(op0);
+  xed_operand_type_enum_t op0_type = xed_operand_type(op0);
+
+  if (op0_name == XED_OPERAND_RELBR &&
+      op0_type == XED_OPERAND_TYPE_IMM_CONST) {
+    xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
+
+    if (xed_operand_values_has_branch_displacement(vals)) {
+      void *vaddr = actual_get_branch_target(ins, xptr, vals);
+      return vaddr;
+    }
+  }
+  return NULL;
+}
+
+
+void* tailcall_target(void *addr, long offset)
+{
+  xed_decoded_inst_t xedd;
+  xed_decoded_inst_t *xptr = &xedd;
+  xed_error_enum_t xed_error;
+  char *ins = (char *)addr +offset;
+
+  // FIXME: consolidate initialization later
+  xed_tables_init();
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
+  xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
+
+  if (xed_error == XED_ERROR_NONE) {
+    // successfully decoded an instruction 
+    xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
+    if((xiclass==XED_ICLASS_JMP) || (xiclass==XED_ICLASS_JMP_FAR)) {
+      // this jump represents a tailcall 
+      void *tailcall_target = x86_get_branch_target(ins, xptr);
+      if(tailcall_target != NULL) {
+	return (void *)((char *)tailcall_target-offset);
+      }
+    }
+  }
+  return NULL;
+}
 
 void 
 process_range(long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
@@ -235,7 +293,6 @@ process_range(long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
   char *end = (char *) vend;
   vector<void *> fstarts;
   entries_in_range(ins + offset, end + offset, fstarts);
-  
   void **fstart = &fstarts[0];
   char *guidepost = RELOCATE(*fstart, offset);
 
@@ -272,7 +329,6 @@ process_range(long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
       //----------------------------------------------------------------
       fstart++; guidepost = RELOCATE(*fstart, offset);
     }
-
     xed_decoded_inst_zero_keep_mode(xptr);
     xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
 

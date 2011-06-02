@@ -91,6 +91,7 @@ using namespace SymtabAPI;
 #define SECTION_TEXT   ".text"
 #define SECTION_PLT    ".plt"
 #define SECTION_GOT    ".got"
+#define DYNINST_INST    ".dyninstInst"
 
 #define PATHSCALE_EXCEPTION_HANDLER_PREFIX "Handler."
 #define USE_PATHSCALE_SYMBOL_FILTER
@@ -385,8 +386,22 @@ note_code_ranges(Symtab *syms, DiscoverFnTy fn_discovery)
   note_section(syms, SECTION_TEXT, fn_discovery);
   note_section(syms, SECTION_GOT,  DiscoverFnTy_None);
   note_section(syms, SECTION_FINI, fn_discovery);
+  note_section(syms, DYNINST_INST, DiscoverFnTy_None);
 }
 
+static bool
+in_section(Symtab *syms, const char *sname, void* addr)
+{
+  Region *s;
+  if(syms->findRegion(s, sname) && s)
+  {
+    char *start = (char *)s->getRegionAddr();
+    char *end = start + s->getRegionSize();
+    if((char *)addr >= start && (char *)addr <= end)
+      return true;
+  }
+  return false;
+}
 
 static void 
 dump_symbols(Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
@@ -403,9 +418,22 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
     Symbol *s = symvec[i];
     Symbol::SymbolLinkage sl = s->getLinkage();
     if (report_symbol(s) && s->getAddr() != 0) 
+    {
       add_function_entry((void *) s->getAddr(), &s->getName(), 
 			 ((sl & Symbol::SL_GLOBAL) ||
 			  (sl & Symbol::SL_WEAK)));
+
+      if(in_section(syms, DYNINST_INST, (void *) s->getAddr()) == true)
+        continue;
+      void *tailcall_addr = 
+	tailcall_target((void *)s->getAddr(), 
+			(long)syms->mem_image() - syms->imageOffset());
+      if (tailcall_addr) {
+	add_function_entry(tailcall_addr, &s->getName(), 
+			   ((sl & Symbol::SL_GLOBAL) ||
+			    (sl & Symbol::SL_WEAK)));
+      }
+    }
   }
 
   process_code_ranges();
