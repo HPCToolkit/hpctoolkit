@@ -61,6 +61,22 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 
   if ((op0_name == XED_OPERAND_REG0)) { 
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
+    // check for lea OFFSET(sp),sp == arithmetic on sp
+    if (x86_isReg_SP(regname)) {
+      xed_operand_enum_t op1 = xed_operand_name(xed_inst_operand(xi, 1));
+      if (op1 == XED_OPERAND_AGEN) {
+	if (x86_isReg_SP(xed_decoded_inst_get_base_reg(xptr, 0))) {
+	  long offset = xed_decoded_inst_get_memory_displacement(xptr, 0);
+	  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
+			iarg->current->ra_status, iarg->current->sp_ra_pos - offset, 
+			iarg->current->bp_ra_pos,
+			iarg->current->bp_status,
+			iarg->current->sp_bp_pos - offset,
+			iarg->current->bp_bp_pos,
+			iarg->current);
+	}
+      }
+    }
     if (x86_isReg_BP(regname)) {
       //=======================================================================
       // action: clobbering the base pointer; begin a new SP_RELATIVE interval 
