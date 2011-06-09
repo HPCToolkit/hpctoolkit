@@ -208,7 +208,8 @@ main(int argc, char* argv[])
       if (the_text_fp == NULL)
         err(1, "open failed on: %s", buf);
     }
-  } else {
+  }
+  else {
     // At most one format when writing to stdout.
     if (do_binary)
       the_binary_fd = 1;
@@ -217,6 +218,11 @@ main(int argc, char* argv[])
     else
       the_text_fp = stdout;
   }
+
+  //
+  // Finished with option processing, begin real work
+  //
+  process_range_init();
 
   setup_segv_handler();
   if ( ! setjmp(segv_recover) ) {

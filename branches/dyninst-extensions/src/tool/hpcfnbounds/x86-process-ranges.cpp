@@ -251,15 +251,13 @@ x86_get_branch_target(void *ins, xed_decoded_inst_t *xptr)
 }
 
 
-void* tailcall_target(void *addr, long offset)
+void* tailcall_target(void* addr, long offset)
 {
   xed_decoded_inst_t xedd;
   xed_decoded_inst_t *xptr = &xedd;
   xed_error_enum_t xed_error;
   char *ins = (char *)addr +offset;
 
-  // FIXME: consolidate initialization later
-  xed_tables_init();
   xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
   xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
 
