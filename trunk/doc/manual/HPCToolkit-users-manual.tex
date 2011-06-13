@@ -1209,6 +1209,28 @@ The most common causes for unusually high overhead are the following:
 % ===========================================================================
 % ===========================================================================
 
+\section{When executing \hpcviewer, it complains can not create "Java Virtual Machine"}
+The error message indicates that JVM cannot be instantiated. This can be caused if we set memory requirement too high.
+If this is the case, try to reduce the memory requirement by modifying \texttt{hpcviewer.ini} file which is located in HPCToolkit installation directory.
+By default, the content of the file is as follows:
+\begin{verbatim}
+-consoleLog
+-vmargs
+-Dosgi.requiredJavaVersion=1.5
+-XX:MaxPermSize=256m
+-Xms40m
+-Xmx1812m
+\end{verbatim}
+ and decrease the value of maximum memory to:
+\begin{verbatim}
+-Xmx1024m
+\end{verbatim}
+
+
+
+% ===========================================================================
+% ===========================================================================
+
 \section{\hpcviewer{} attributes performance information only to functions and not to source code loops and lines! Why?}
 \label{sec:troubleshooting:debug-info}
 
