@@ -77,6 +77,10 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 	}
       }
     }
+    if (x86_isReg_AX(regname)) {
+      // handle dyninst lea #RA_OFF(%sp), %ax
+      // chg RA_SP_REL to RA_P_AXnSP
+    }
     if (x86_isReg_BP(regname)) {
       //=======================================================================
       // action: clobbering the base pointer; begin a new SP_RELATIVE interval 

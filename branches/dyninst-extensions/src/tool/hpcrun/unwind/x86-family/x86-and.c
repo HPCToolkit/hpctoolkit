@@ -67,6 +67,8 @@ process_and(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
     if (x86_isReg_SP(reg0)) {
       //-----------------------------------------------------------------------
       // we are adjusting the stack pointer via 'and' instruction
+      // FIXME: there are more cases now. If RA_P_AXnSP state, then
+      //        change to RA_P_AX
       //-----------------------------------------------------------------------
 	next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), 
 		      RA_BP_FRAME, iarg->current->sp_ra_pos, iarg->current->bp_ra_pos,

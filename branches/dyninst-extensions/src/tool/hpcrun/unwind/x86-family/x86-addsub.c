@@ -91,6 +91,8 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
 	  // 9 December 2007 -- John Mellor-Crummey
 	  //-------------------------------------------------------------------
 	}
+	// change change dyninst related stuff
+	//
 	next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), 
 		      istatus, iarg->current->sp_ra_pos + immedv, iarg->current->bp_ra_pos, 
 		      iarg->current->bp_status, iarg->current->sp_bp_pos + immedv, 
@@ -127,6 +129,9 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
 	  //
 	  // 9 December 2007 -- John Mellor-Crummey
 	  //-------------------------------------------------------------------
+	  //
+	  // FIXME: Need to check if state is one of the dyninst states
+	  //
 	  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), RA_BP_FRAME, 
 			iarg->current->sp_ra_pos, iarg->current->bp_ra_pos, 
 			iarg->current->bp_status, iarg->current->sp_bp_pos, 

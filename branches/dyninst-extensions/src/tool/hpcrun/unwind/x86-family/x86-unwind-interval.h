@@ -55,7 +55,9 @@
  * type declarations 
  ************************************************************************************/
 typedef enum {
-  RA_SP_RELATIVE, RA_STD_FRAME, RA_BP_FRAME, RA_REGISTER, POISON
+  RA_SP_RELATIVE, RA_STD_FRAME, RA_BP_FRAME, RA_REGISTER,
+  RA_P_AX, RA_P_AXnSP, RA_P_SP, // For dyninst generated code
+  POISON,
 } ra_loc;
 
 typedef enum {

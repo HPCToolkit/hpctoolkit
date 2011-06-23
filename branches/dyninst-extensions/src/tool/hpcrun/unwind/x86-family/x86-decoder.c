@@ -80,6 +80,5 @@ static xed_state_t xed_machine_state =
 void x86_family_decoder_init()
 {
   x86_decoder_settings.xed_settings = xed_machine_state;
-
   xed_tables_init();
 }

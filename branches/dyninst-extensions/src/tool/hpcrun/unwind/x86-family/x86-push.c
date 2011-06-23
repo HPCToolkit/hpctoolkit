@@ -86,7 +86,9 @@ process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
       sp_bp_pos = 0;
     }
   }
-
+  //
+  // FIXME: adjust AX related offsets
+  //
   next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), iarg->current->ra_status, 
 		iarg->current->sp_ra_pos + size, iarg->current->bp_ra_pos, bp_status,
 		sp_bp_pos, iarg->current->bp_bp_pos, iarg->current);
@@ -118,6 +120,9 @@ process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
     if (x86_isReg_BP(regname)) bp_status = BP_UNCHANGED;
   }
 
+  //
+  // FIXME: add AX related offsets
+  //
   next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), iarg->current->ra_status, 
 		iarg->current->sp_ra_pos + size, iarg->current->bp_ra_pos, bp_status, 
 		iarg->current->sp_bp_pos + size, iarg->current->bp_bp_pos, iarg->current);

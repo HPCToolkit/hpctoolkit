@@ -51,6 +51,10 @@
 #include <lib/isa-lean/x86/instruction-set.h>
 
 
+//
+// FIXME: take care of AX hosed when in RA_P_AXnSP
+//   e.g. mov ANYTHING, %ax will conditionally change state
+//
 unwind_interval *
 process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
 {
@@ -97,6 +101,10 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	  hw_tmp->state = 
 	    HW_NEW_STATE(hw_tmp->state, HW_BP_SAVED);
 	}
+      }
+      else if (x86_isReg_AX(reg1)) {
+	// check to see if in state RA_P_AX, or RA_P_AXnSP
+	// if so, convert to RA_P_SP [compute ea offset to store]
       }
     }
   } else if ((op1_name == XED_OPERAND_MEM0) && (op0_name == XED_OPERAND_REG0)) { 
