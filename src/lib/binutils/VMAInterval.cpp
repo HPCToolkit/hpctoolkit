@@ -445,20 +445,25 @@ VMAIntervalSet::fromString(const char* formattedstr)
 {
   const char* s = formattedstr;
   const char* p = formattedstr;
+
+  // ignore leading whitespace
   if (!p || p[0] == '\0') { return; }
   
   // skip '{'
   DIAG_Assert(*p == '{', DIAG_UnexpectedInput << "'" << s << "'");
   p++;
+  // INVARIANT: q points to either next interval or close of set
 
   // find intervals: p points to '[' and q points to ')'
   const char* q = p;
   while ( (p = strchr(q, '[')) ) {
     VMAInterval vmaint(p);
     insert(vmaint); // the overloaded insert
-    q = strchr(p, ')'); // q point
+
+    // post-INVARIANT: q points to either next interval or close of set
+    q = strchr(p, ')');
+    q++;
   }
-  q++;
   
   // skip '}'
   DIAG_Assert(*q == '}', DIAG_UnexpectedInput << "'" << s << "'");
