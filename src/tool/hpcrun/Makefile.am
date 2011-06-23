@@ -194,7 +194,9 @@ MY_BASE_FILES =			\
         cct/cct_ctxt.c			\
 	cct/cct.c               	\
 	\
-        trampoline/common/trampoline.c \
+        cct2metrics.c                   \
+        \
+        trampoline/common/trampoline.c  \
         \
 	lush/lush-backtrace.h lush/lush-backtrace.c \
 	lush/lush.h lush/lush.c	\

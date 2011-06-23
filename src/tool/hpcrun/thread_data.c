@@ -146,6 +146,12 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   td->epoch->csdata_ctxt = copy_thr_ctxt(thr_ctxt);
 
   // ----------------------------------------
+  // cct2metrics map: associate a metric_set with
+  //                  a cct node
+  // ----------------------------------------
+  hpcrun_cct2metrics_init(&(td->cct2metrics_map));
+
+  // ----------------------------------------
   // backtrace buffer
   // ----------------------------------------
   td->btbuf_cur = NULL;

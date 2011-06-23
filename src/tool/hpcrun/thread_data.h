@@ -61,6 +61,7 @@
 #include "sample_sources_registered.h"
 #include "newmem.h"
 #include "epoch.h"
+#include "cct2metrics.h"
 
 #include <lush/lush-pthread.i>
 #include <unwind/common/backtrace.h>
@@ -141,6 +142,12 @@ typedef struct thread_data_t {
   // epoch: loadmap + cct + cct_ctxt
   // ----------------------------------------
   epoch_t* epoch;
+
+  // ----------------------------------------
+  // cct2metrics map: associate a metric_set with
+  //                  a cct node
+  // ----------------------------------------
+  cct2metrics_t* cct2metrics_map;
 
   // ----------------------------------------
   // backtrace buffer

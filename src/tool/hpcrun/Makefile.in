@@ -232,12 +232,13 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/sync.c sample_sources_registered.c \
 	segv_handler.c system_server.c thread_data.c thread_use.c \
 	trace.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c messages/debug-flag.c messages/messages-sync.c \
+	cct2metrics.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	messages/debug-flag.c messages/messages-sync.c \
 	messages/messages-async.c messages/fmt.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
@@ -283,15 +284,16 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-thread_data.lo libhpcrun_la-thread_use.lo \
 	libhpcrun_la-trace.lo libhpcrun_la-write_data.lo \
 	libhpcrun_la-cct_bundle.lo libhpcrun_la-cct_ctxt.lo \
-	libhpcrun_la-cct.lo libhpcrun_la-trampoline.lo \
-	libhpcrun_la-lush-backtrace.lo libhpcrun_la-lush.lo \
-	libhpcrun_la-lush-pthread.lo libhpcrun_la-lush-support-rt.lo \
-	libhpcrun_la-lushi-cb.lo libhpcrun_la-fnbounds_common.lo \
-	libhpcrun_la-mem.lo libhpcrun_la-debug-flag.lo \
-	libhpcrun_la-messages-sync.lo libhpcrun_la-messages-async.lo \
-	libhpcrun_la-fmt.lo libhpcrun_la-executable-path.lo \
-	libhpcrun_la-ip-normalized.lo libhpcrun_la-tokenize.lo \
-	libhpcrun_la-unlink.lo $(am__objects_7)
+	libhpcrun_la-cct.lo libhpcrun_la-cct2metrics.lo \
+	libhpcrun_la-trampoline.lo libhpcrun_la-lush-backtrace.lo \
+	libhpcrun_la-lush.lo libhpcrun_la-lush-pthread.lo \
+	libhpcrun_la-lush-support-rt.lo libhpcrun_la-lushi-cb.lo \
+	libhpcrun_la-fnbounds_common.lo libhpcrun_la-mem.lo \
+	libhpcrun_la-debug-flag.lo libhpcrun_la-messages-sync.lo \
+	libhpcrun_la-messages-async.lo libhpcrun_la-fmt.lo \
+	libhpcrun_la-executable-path.lo libhpcrun_la-ip-normalized.lo \
+	libhpcrun_la-tokenize.lo libhpcrun_la-unlink.lo \
+	$(am__objects_7)
 am__objects_9 = libhpcrun_la-fnbounds_dynamic.lo \
 	libhpcrun_la-openmp.lo libhpcrun_la-hpcrun_dlfns.lo \
 	libhpcrun_la-custom-init-dynamic.lo
@@ -364,12 +366,13 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/sync.c sample_sources_registered.c \
 	segv_handler.c system_server.c thread_data.c thread_use.c \
 	trace.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c messages/debug-flag.c messages/messages-sync.c \
+	cct2metrics.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	messages/debug-flag.c messages/messages-sync.c \
 	messages/messages-async.c messages/fmt.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
@@ -421,6 +424,7 @@ am__objects_27 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-write_data.$(OBJEXT) \
 	libhpcrun_o-cct_bundle.$(OBJEXT) \
 	libhpcrun_o-cct_ctxt.$(OBJEXT) libhpcrun_o-cct.$(OBJEXT) \
+	libhpcrun_o-cct2metrics.$(OBJEXT) \
 	libhpcrun_o-trampoline.$(OBJEXT) \
 	libhpcrun_o-lush-backtrace.$(OBJEXT) \
 	libhpcrun_o-lush.$(OBJEXT) libhpcrun_o-lush-pthread.$(OBJEXT) \
@@ -807,7 +811,7 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/retcnt.c sample-sources/sync.c \
 	sample_sources_registered.c segv_handler.c system_server.c \
 	thread_data.c thread_use.c trace.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
 	trampoline/common/trampoline.c lush/lush-backtrace.h \
 	lush/lush-backtrace.c lush/lush.h lush/lush.c \
 	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
@@ -1244,6 +1248,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libagent_tbb_la-lush-support-rt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-backtrace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct2metrics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct_bundle.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct_ctxt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct_insert_backtrace.Plo@am__quote@
@@ -1326,6 +1331,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_mpi_la-mpi-overrides.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-backtrace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct2metrics.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct_bundle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct_ctxt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct_insert_backtrace.Po@am__quote@
@@ -1758,6 +1764,13 @@ libhpcrun_la-cct.lo: cct/cct.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cct/cct.c' object='libhpcrun_la-cct.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-cct.lo `test -f 'cct/cct.c' || echo '$(srcdir)/'`cct/cct.c
+
+libhpcrun_la-cct2metrics.lo: cct2metrics.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-cct2metrics.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-cct2metrics.Tpo -c -o libhpcrun_la-cct2metrics.lo `test -f 'cct2metrics.c' || echo '$(srcdir)/'`cct2metrics.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-cct2metrics.Tpo $(DEPDIR)/libhpcrun_la-cct2metrics.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cct2metrics.c' object='libhpcrun_la-cct2metrics.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-cct2metrics.lo `test -f 'cct2metrics.c' || echo '$(srcdir)/'`cct2metrics.c
 
 libhpcrun_la-trampoline.lo: trampoline/common/trampoline.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-trampoline.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-trampoline.Tpo -c -o libhpcrun_la-trampoline.lo `test -f 'trampoline/common/trampoline.c' || echo '$(srcdir)/'`trampoline/common/trampoline.c
@@ -2542,6 +2555,20 @@ libhpcrun_o-cct.obj: cct/cct.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cct/cct.c' object='libhpcrun_o-cct.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-cct.obj `if test -f 'cct/cct.c'; then $(CYGPATH_W) 'cct/cct.c'; else $(CYGPATH_W) '$(srcdir)/cct/cct.c'; fi`
+
+libhpcrun_o-cct2metrics.o: cct2metrics.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-cct2metrics.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-cct2metrics.Tpo -c -o libhpcrun_o-cct2metrics.o `test -f 'cct2metrics.c' || echo '$(srcdir)/'`cct2metrics.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-cct2metrics.Tpo $(DEPDIR)/libhpcrun_o-cct2metrics.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cct2metrics.c' object='libhpcrun_o-cct2metrics.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-cct2metrics.o `test -f 'cct2metrics.c' || echo '$(srcdir)/'`cct2metrics.c
+
+libhpcrun_o-cct2metrics.obj: cct2metrics.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-cct2metrics.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-cct2metrics.Tpo -c -o libhpcrun_o-cct2metrics.obj `if test -f 'cct2metrics.c'; then $(CYGPATH_W) 'cct2metrics.c'; else $(CYGPATH_W) '$(srcdir)/cct2metrics.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-cct2metrics.Tpo $(DEPDIR)/libhpcrun_o-cct2metrics.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cct2metrics.c' object='libhpcrun_o-cct2metrics.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-cct2metrics.obj `if test -f 'cct2metrics.c'; then $(CYGPATH_W) 'cct2metrics.c'; else $(CYGPATH_W) '$(srcdir)/cct2metrics.c'; fi`
 
 libhpcrun_o-trampoline.o: trampoline/common/trampoline.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-trampoline.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-trampoline.Tpo -c -o libhpcrun_o-trampoline.o `test -f 'trampoline/common/trampoline.c' || echo '$(srcdir)/'`trampoline/common/trampoline.c
