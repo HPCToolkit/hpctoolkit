@@ -106,6 +106,13 @@
 typedef struct cct_node_t cct_node_t;
 
 //
+// In order to associate data with a given calling context,
+// cct nodes need an id type (abstract)
+//
+
+typedef cct_node_t* cct_node_id_t;
+
+//
 // Interface procedures
 //
 

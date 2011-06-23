@@ -72,7 +72,13 @@
 
 typedef hpcrun_metricVal_t cct_metric_data_t;
 
-typedef void metric_upd_proc_t(int metric_id, cct_metric_data_t* loc, cct_metric_data_t datum);
+//
+// following typedef accomplishes
+// metric_set_t* == array of metric values
+//
+typedef hpcrun_metricVal_t metric_set_t;
+
+typedef void metric_upd_proc_t(int metric_id, metric_set_t* loc, cct_metric_data_t datum);
 
 typedef cct_metric_data_t (*metric_bin_fn)(cct_metric_data_t v1, cct_metric_data_t v2);
 
