@@ -66,6 +66,16 @@
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
+//*************************** Concrete Data Types ***************************
+
+//
+// following typedef accomplishes
+// metric_set_t* == array of metric values, but it does this abstractly
+// so that clients of the metric datatype must use the interface.
+//
+struct  metric_set_t {
+  hpcrun_metricVal_t v1;
+};
 
 //*************************** Forward Declarations **************************
 
@@ -311,4 +321,34 @@ hpcrun_set_metric_name(int metric_id, char* name)
   hpcrun_get_num_metrics();
   id2metric[metric_id]->name        = name;
   id2metric[metric_id]->description = name;
+}
+
+//
+// Metric set interface
+//
+
+metric_set_t*
+hpcrun_metric_set_new(void)
+{
+  return NULL;
+}
+
+//
+// return an lvalue from metric_set_t*
+//
+cct_metric_data_t*
+hpcrun_metric_set_loc(metric_set_t* s, int id)
+{
+  return &(s->v1) + id;
+}
+
+//
+// copy a metric set
+//
+void
+hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
+			     metric_set_t* set,
+			     int num_metrics)
+{
+  memcpy((char*) dest, (char*) set, num_metrics * sizeof(cct_metric_data_t));
 }

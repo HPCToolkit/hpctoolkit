@@ -72,11 +72,9 @@
 
 typedef hpcrun_metricVal_t cct_metric_data_t;
 
+// abstract the metric set
 //
-// following typedef accomplishes
-// metric_set_t* == array of metric values
-//
-typedef hpcrun_metricVal_t metric_set_t;
+typedef struct metric_set_t metric_set_t;
 
 typedef void metric_upd_proc_t(int metric_id, metric_set_t* loc, cct_metric_data_t datum);
 
@@ -116,18 +114,31 @@ void hpcrun_set_metric_info(int metric_id, const char* name);
 
 void hpcrun_set_metric_name(int metric_id, char* name);
 
+// metric set operations
+
+cct_metric_data_t* hpcrun_metric_set_loc(metric_set_t* s, int id);
+
+//
+// copy a metric set
+//
+extern void hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
+					 metric_set_t* set,
+					 int num_metrics);
+
+
 static inline void
 cct_metric_data_increment(int metric_id,
-			  cct_metric_data_t* x,
+			  metric_set_t* x,
 			  cct_metric_data_t incr)
 {
   metric_desc_t* minfo = hpcrun_id2metric(metric_id);
+  cct_metric_data_t* loc = hpcrun_metric_set_loc(x, metric_id);
   
   switch (minfo->flags.fields.valFmt) {
     case MetricFlags_ValFmt_Int:
-      x->i += incr.i; break;
+      loc->i += incr.i; break;
     case MetricFlags_ValFmt_Real:
-      x->r += incr.r; break;
+      loc->r += incr.r; break;
     default:
       assert(false);
   }

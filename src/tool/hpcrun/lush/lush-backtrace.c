@@ -252,7 +252,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   if (doMetricIdleness) {
     //lush_agentid_t aid = aidMetricIdleness;
     int mid = lush_agents->metric_idleness;
-    cct_metric_data_increment(mid, hpcrun_cct_metrics(node) + mid,
+    cct_metric_data_increment(mid, hpcrun_get_metric_set(node),
 			      (cct_metric_data_t){.r = incrMetricIdleness});
   }
 

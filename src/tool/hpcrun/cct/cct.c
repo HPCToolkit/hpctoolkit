@@ -86,6 +86,7 @@
 
 #include "cct.h"
 #include "cct_addr.h"
+#include "cct2metrics.h"
 
 //***************************** concrete data structure definition **********
 
@@ -274,8 +275,8 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   tmp->lm_ip = (hpcfmt_vma_t) (uintptr_t) (addr->ip_norm).lm_ip;
 
   tmp->num_metrics = my_arg->num_metrics;
-  memcpy(tmp->metrics, hpcrun_cct_metrics(node),
-	 my_arg->num_metrics * sizeof(cct_metric_data_t));
+  hpcrun_metric_set_dense_copy(tmp->metrics, hpcrun_get_metric_set(node),
+			       my_arg->num_metrics);
   hpcrun_fmt_cct_node_fwrite(tmp, flags, my_arg->fs);
 }
 
