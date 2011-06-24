@@ -45,10 +45,13 @@ hpcrun_cct2metrics_init(cct2metrics_t** map)
 // if there are no metrics for the node, then
 // create a metric set, and return it.
 //
+
+extern cct_metric_data_t* hpcrun_cct_metrics(cct_node_t* node); // ** TEMPORARY
+
 metric_set_t*
 hpcrun_get_metric_set(cct_node_id_t cct_id)
 {
-  return NULL;
+  return (metric_set_t*) hpcrun_cct_metrics((cct_node_t*)cct_id);
 }
 
 //

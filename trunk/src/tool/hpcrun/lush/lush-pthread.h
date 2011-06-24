@@ -911,8 +911,9 @@ lushPthr_mutexLock_post_ty3(lushPthr_t* restrict x,
     cct_node_t* node = (cct_node_t*)syncData->cct_node;
     int mid = lush_agents->metric_idleness;
     double idleness = x->idleness;
-    cct_metric_data_increment(mid, hpcrun_cct_metrics(node) + mid,
-                             (cct_metric_data_t){.r = idleness});
+    cct_metric_data_increment(mid,
+			      hpcrun_get_metric_set(node),
+			      (cct_metric_data_t){.r = idleness});
   }
 }
 
