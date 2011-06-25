@@ -75,7 +75,12 @@ MYSOURCES = \
 	software-instructions.html \
 	\
 	info-acks.html \
-	info-people.html \
+	info-people.html
+
+MYSOURCES_TGT = $(addprefix $(srcdir)/, $(MYSOURCES))
+
+MYDATA = \
+	$(MYSOURCES) \
 	\
 	hpctoolkit.org.sitemap.txt \
 	\
@@ -97,9 +102,30 @@ MYSOURCES = \
 # Automake rules
 #############################################################################
 
-nobase_dist_doc_DATA = $(MYSOURCES)
+BUILT_SOURCES = $(MYSOURCES)
+
+nobase_dist_doc_DATA = $(MYDATA)
 
 #############################################################################
 # Other rules
 #############################################################################
 
+MY_AWKVARS= \
+  -v varhdr="`cat $(srcdir)/style/header-hpctoolkit.html`" \
+  -v varftr="`cat $(srcdir)/style/footer-hpctoolkit.html`"
+
+MY_AWKPROG = '\
+  BEGIN { } \
+  /@header-hpctoolkit@/ { printf "%s", varhdr ; next; } \
+  /@footer-hpctoolkit@/ { printf "%s", varftr ; next; } \
+  { print; } \
+  END { } \
+  '
+
+hpc: $(MYSOURCES_TGT)
+
+$(srcdir)/%.html : $(srcdir)/%.html.in
+	$(AWK) $(MY_AWKVARS) $(MY_AWKPROG) $< > $@
+
+#$(MY_HTMLTGT): %.html : style/header.html %.html.in style/footer.html
+#	cat $^ > $@

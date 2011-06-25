@@ -280,7 +280,11 @@ MYSOURCES = \
 	software-instructions.html \
 	\
 	info-acks.html \
-	info-people.html \
+	info-people.html
+
+MYSOURCES_TGT = $(addprefix $(srcdir)/, $(MYSOURCES))
+MYDATA = \
+	$(MYSOURCES) \
 	\
 	hpctoolkit.org.sitemap.txt \
 	\
@@ -301,8 +305,26 @@ MYSOURCES = \
 #############################################################################
 # Automake rules
 #############################################################################
-nobase_dist_doc_DATA = $(MYSOURCES)
-all: all-am
+BUILT_SOURCES = $(MYSOURCES)
+nobase_dist_doc_DATA = $(MYDATA)
+
+#############################################################################
+# Other rules
+#############################################################################
+MY_AWKVARS = \
+  -v varhdr="`cat $(srcdir)/style/header-hpctoolkit.html`" \
+  -v varftr="`cat $(srcdir)/style/footer-hpctoolkit.html`"
+
+MY_AWKPROG = '\
+  BEGIN { } \
+  /@header-hpctoolkit@/ { printf "%s", varhdr ; next; } \
+  /@footer-hpctoolkit@/ { printf "%s", varftr ; next; } \
+  { print; } \
+  END { } \
+  '
+
+all: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -402,13 +424,15 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-check: check-am
+check: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) check-am
 all-am: Makefile $(DATA)
 installdirs:
 	for dir in "$(DESTDIR)$(docdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
-install: install-am
+install: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-am
 install-exec: install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
@@ -433,6 +457,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
 clean-am: clean-generic clean-libtool mostlyclean-am
@@ -499,7 +524,7 @@ ps-am:
 
 uninstall-am: uninstall-nobase_dist_docDATA
 
-.MAKE: install-am install-strip
+.MAKE: all check install install-am install-strip
 
 .PHONY: all all-am check check-am clean clean-generic clean-libtool \
 	distclean distclean-generic distclean-libtool distdir dvi \
@@ -515,9 +540,13 @@ uninstall-am: uninstall-nobase_dist_docDATA
 	uninstall-nobase_dist_docDATA
 
 
-#############################################################################
-# Other rules
-#############################################################################
+hpc: $(MYSOURCES_TGT)
+
+$(srcdir)/%.html : $(srcdir)/%.html.in
+	$(AWK) $(MY_AWKVARS) $(MY_AWKPROG) $< > $@
+
+#$(MY_HTMLTGT): %.html : style/header.html %.html.in style/footer.html
+#	cat $^ > $@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
