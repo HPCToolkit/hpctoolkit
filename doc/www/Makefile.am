@@ -77,7 +77,11 @@ MYSOURCES = \
 	info-acks.html \
 	info-people.html
 
-MYSOURCES_TGT = $(addprefix $(srcdir)/, $(MYSOURCES))
+MYSOURCES_IN = \
+	$(abs_srcdir)/publications.html.in
+
+MYSOURCES_TGT = \
+	$(addprefix $(srcdir)/, $(MYSOURCES))
 
 MYDATA = \
 	$(MYSOURCES) \
@@ -102,7 +106,8 @@ MYDATA = \
 # Automake rules
 #############################################################################
 
-BUILT_SOURCES = $(MYSOURCES)
+# N.B.: Do not include $(MYSOURCES_IN) b/c it depends on bib2xhtml
+BUILT_SOURCES = $(MYSOURCES_TGT)
 
 nobase_dist_doc_DATA = $(MYDATA)
 
@@ -122,7 +127,22 @@ MY_AWKPROG = '\
   END { } \
   '
 
-hpc: $(MYSOURCES_TGT)
+MY_PUBS = $(abs_top_srcdir)/doc/manual/texmf/bibtex/bib/pubs.bib
+
+# Note: bib2xhtml supports 'pdf' and 'url' fields.
+BIB2XHTML_ROOT = /opt/tallent/bib2xhtml
+
+hpc: $(MYSOURCES_IN) $(MYSOURCES_TGT)
+
+$(abs_srcdir)/publications.html.in : # $(MY_PUBS) # avoid auto regeneration
+	@echo "*** BIB2XHTML_ROOT=$(BIB2XHTML_ROOT) ***"
+	cd $(BIB2XHTML_ROOT) && \
+	  ./bib2xhtml -s unsort -i -d pubs-overview     $(MY_PUBS) $@ && \
+	  ./bib2xhtml -s unsort -i -d pubs-hpctoolkit-a $(MY_PUBS) $@ && \
+	  ./bib2xhtml -s unsort -i -d pubs-hpctoolkit-b $(MY_PUBS) $@ && \
+	  ./bib2xhtml -s unsort -i -d pubs-prediction   $(MY_PUBS) $@
+
+.PHONY : $(abs_srcdir)/publications.html.in
 
 $(srcdir)/%.html : $(srcdir)/%.html.in
 	$(AWK) $(MY_AWKVARS) $(MY_AWKPROG) $< > $@
