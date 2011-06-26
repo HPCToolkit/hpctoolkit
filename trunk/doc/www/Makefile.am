@@ -127,25 +127,34 @@ MY_AWKPROG = '\
   END { } \
   '
 
+MY_VARSRCS = \
+	$(srcdir)/style/header-hpctoolkit.html \
+	$(srcdir)/style/footer-hpctoolkit.html
+
 MY_PUBS = $(abs_top_srcdir)/doc/manual/texmf/bibtex/bib/pubs.bib
 
 # Note: bib2xhtml supports 'pdf' and 'url' fields.
 BIB2XHTML_ROOT = /opt/tallent/bib2xhtml
+BIB2XHTML = $(BIB2XHTML_ROOT)/bib2xhtml
 
 hpc: $(MYSOURCES_IN) $(MYSOURCES_TGT)
 
 $(abs_srcdir)/publications.html.in : # $(MY_PUBS) # avoid auto regeneration
 	@echo "*** BIB2XHTML_ROOT=$(BIB2XHTML_ROOT) ***"
-	cd $(BIB2XHTML_ROOT) && \
-	  ./bib2xhtml -s unsort -i -d pubs-overview     $(MY_PUBS) $@ && \
-	  ./bib2xhtml -s unsort -i -d pubs-hpctoolkit-a $(MY_PUBS) $@ && \
-	  ./bib2xhtml -s unsort -i -d pubs-hpctoolkit-b $(MY_PUBS) $@ && \
-	  ./bib2xhtml -s unsort -i -d pubs-prediction   $(MY_PUBS) $@
+	@if test -x $(BIB2XHTML) ; then \
+	  cd $(BIB2XHTML_ROOT) && \
+	    $(BIB2XHTML) -s unsort -i -d pubs-overview     $(MY_PUBS) $@ && \
+	    $(BIB2XHTML) -s unsort -i -d pubs-hpctoolkit-a $(MY_PUBS) $@ && \
+	    $(BIB2XHTML) -s unsort -i -d pubs-hpctoolkit-b $(MY_PUBS) $@ && \
+	    $(BIB2XHTML) -s unsort -i -d pubs-prediction   $(MY_PUBS) $@ ; \
+	else \
+	  echo "*** Cannot run $(BIB2XHTML) ***" ; \
+	fi
 
-.PHONY : $(abs_srcdir)/publications.html.in
-
-$(srcdir)/%.html : $(srcdir)/%.html.in
+$(srcdir)/%.html : $(srcdir)/%.html.in $(MY_VARSRCS)
 	$(AWK) $(MY_AWKVARS) $(MY_AWKPROG) $< > $@
+
+.PHONY : hpc $(abs_srcdir)/publications.html.in
 
 #$(MY_HTMLTGT): %.html : style/header.html %.html.in style/footer.html
 #	cat $^ > $@
