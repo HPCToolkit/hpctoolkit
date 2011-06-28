@@ -194,7 +194,8 @@ do
 	    memleak_wrap="${libhpcrun_dir}/libhpcrun_memleak_wrap.a"
 	    test -f "$memleak_wrap" || die "unable to find: $memleak_wrap"
 	    extra_hpc_files="$extra_hpc_files $memleak_wrap"
-	    extra_wrap_names="$extra_wrap_names calloc free malloc realloc posix_memalign"
+	    extra_wrap_names="$extra_wrap_names posix_memalign memalign valloc"
+	    extra_wrap_names="$extra_wrap_names calloc free malloc realloc"
 	    undef_names="$undef_names malloc"
 	    shift
 	    ;;
