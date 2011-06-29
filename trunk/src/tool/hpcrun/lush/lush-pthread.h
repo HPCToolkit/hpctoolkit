@@ -912,7 +912,7 @@ lushPthr_mutexLock_post_ty3(lushPthr_t* restrict x,
     int mid = lush_agents->metric_idleness;
     double idleness = x->idleness;
     cct_metric_data_increment(mid,
-			      hpcrun_get_metric_set(node),
+			      node,
 			      (cct_metric_data_t){.r = idleness});
   }
 }
