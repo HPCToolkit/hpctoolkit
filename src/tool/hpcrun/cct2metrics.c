@@ -3,12 +3,13 @@
 //
 #include <stdbool.h>
 
+#include <messages/messages.h>
+#include <memory/hpcrun-malloc.h>
 #include <hpcrun/metrics.h>
 #include <cct/cct.h>
 #include <hpcrun/cct2metrics.h>
 #include <hpcrun/thread_data.h>
 #include <lib/prof-lean/splay-macros.h>
-#include <messages/messages.h>
 
 //
 // ***** The splay tree node *****
@@ -31,7 +32,7 @@ struct cct2metrics_t {
 // interface functions implicitly reference this map
 // 
 
-#define tl_map TD_GET(cct2metrics_map)
+#define the_map TD_GET(cct2metrics_map)
 
 //
 // ******** initialization
@@ -48,7 +49,27 @@ hpcrun_cct2metrics_init(cct2metrics_t** map)
 {
   *map = NULL;
 }
+//
+// ******* Internal operations: **********
+// mapping implemented as a splay tree 
+//
 
+static cct2metrics_t*
+splay(cct2metrics_t* map, cct_node_id_t node)
+{
+  REGULAR_SPLAY_TREE(cct2metrics_t, map, node, node, left, right);
+  return map;
+}
+
+static cct2metrics_t*
+cct2metrics_new(cct_node_id_t node, metric_set_t* metrics)
+{
+  cct2metrics_t* rv = hpcrun_malloc(sizeof(cct2metrics_t));
+  rv->node = node;
+  rv->metrics = metrics;
+  rv->left = rv->right = NULL;
+  return rv;
+}
 // ******** Interface operations **********
 // 
 //
@@ -75,12 +96,19 @@ hpcrun_reify_metric_set(cct_node_id_t cct_id)
 }
 
 //
-// get metric set for a node (NULL value is ok).
+// get metric set for a node (NULL return value means no metrics associated).
 //
 metric_set_t*
 hpcrun_get_metric_set(cct_node_id_t cct_id)
 {
-  return (metric_set_t*) hpcrun_cct_metrics((cct_node_t*)cct_id);
+  cct2metrics_t* map = the_map;
+  if (! map) return NULL;
+
+  map = splay(map, cct_id);
+  the_map = map;
+
+  if (map->node == cct_id) return map->metrics;
+  return NULL;
 }
 
 //
@@ -89,11 +117,8 @@ hpcrun_get_metric_set(cct_node_id_t cct_id)
 bool
 hpcrun_has_metric_set(cct_node_id_t cct_id)
 {
-  return (hpcrun_cct_metrics(cct_id) != NULL);
+  return (hpcrun_get_metric_set(cct_id) != NULL);
 }
-
-// *** TEMPORARY
-extern void cct_node_metrics_sb(cct_node_t* node, metric_set_t* metrics);
 
 //
 // associate a metric set with a cct node
@@ -101,5 +126,29 @@ extern void cct_node_metrics_sb(cct_node_t* node, metric_set_t* metrics);
 void
 cct2metrics_assoc(cct_node_id_t node, metric_set_t* metrics)
 {
-  cct_node_metrics_sb(node, metrics);
+  cct2metrics_t* map = the_map;
+  if (! map) {
+    map = cct2metrics_new(node, metrics);
+  }
+  else {
+    cct2metrics_t* new = cct2metrics_new(node, metrics);
+    map = splay(map, node);
+    if (map->node == node) {
+      EMSG("CCT2METRICS map assoc invariant violated");
+    }
+    else {
+      if (map->node < node) {
+        new->left = map->left;
+        new->right = map;
+        map->left = NULL;
+      }
+      else {
+        new->left = map;
+        new->right = map->right;
+        map->right = NULL;
+      }
+      map = new;
+    }
+  }
+  the_map = map;
 }

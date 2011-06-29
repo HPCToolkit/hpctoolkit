@@ -116,8 +116,6 @@ struct cct_node_t {
   // left and right pointers for splay tree of siblings
   cct_node_t* left;
   cct_node_t* right;
-
-  metric_set_t* metrics;
 };
 
 //
@@ -160,8 +158,6 @@ cct_node_create(cct_addr_t* addr, cct_node_t* parent)
   node->children = NULL;
   node->left = NULL;
   node->right = NULL;
-
-  node->metrics = NULL;
 
   return node;
 }
@@ -322,27 +318,6 @@ bool
 hpcrun_cct_is_leaf(cct_node_t* node)
 {
   return (node->children == NULL);
-}
-
-//
-// *** TEMPORARY
-// *** NO LONGER IN INTERFACE ***
-// *** ONLY PRESENT FOR INTERMEDIATE VERSIONS
-//
-metric_set_t*
-hpcrun_cct_metrics(cct_node_t* x)
-{
-  return x->metrics;
-}
-
-//
-// set the value of the metric set pointer
-// ** TEMPORARY **
-//
-void
-cct_node_metrics_sb(cct_node_t* node, metric_set_t* metrics)
-{
-  node->metrics = metrics;
 }
 
 //
