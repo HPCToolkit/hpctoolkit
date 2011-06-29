@@ -107,7 +107,7 @@ hpcrun_cct_insert_backtrace(cct_bundle_t* cct, cct_node_t* treenode,
     lush_assoc_info__set_assoc(hpcrun_cct_addr(path)->as_info, LUSH_ASSOC_1_to_1);
   }
   hpcrun_get_metric_proc(metric_id)(metric_id,
-				    hpcrun_get_metric_set(path),
+				    hpcrun_reify_metric_set(path),
 				    datum);
   return path;
 }

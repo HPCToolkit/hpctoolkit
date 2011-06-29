@@ -117,11 +117,7 @@ struct cct_node_t {
   cct_node_t* left;
   cct_node_t* right;
 
-  // ---------------------------------------------------------
-  // metrics (variable-sized array N.B.: MUST APPEAR AT END OF STRUCTURE!)
-  // ---------------------------------------------------------
-  
-  cct_metric_data_t metrics[]; // variable-sized array
+  metric_set_t* metrics;
 };
 
 //
@@ -140,8 +136,7 @@ new_persistent_id()
 static cct_node_t*
 cct_node_create(cct_addr_t* addr, cct_node_t* parent)
 {
-  size_t sz = (sizeof(cct_node_t)
-	       + sizeof(cct_metric_data_t)*hpcrun_get_num_metrics());
+  size_t sz = sizeof(cct_node_t);
   cct_node_t *node;
 
   // FIXME: when multiple epochs really work, this will always be freeable.
@@ -165,6 +160,8 @@ cct_node_create(cct_addr_t* addr, cct_node_t* parent)
   node->children = NULL;
   node->left = NULL;
   node->right = NULL;
+
+  node->metrics = NULL;
 
   return node;
 }
@@ -309,12 +306,6 @@ hpcrun_cct_parent(cct_node_t* x)
   return x->parent;
 }
 
-cct_metric_data_t*
-hpcrun_cct_metrics(cct_node_t* x)
-{
-  return &(x->metrics[0]);
-}
-
 int32_t
 hpcrun_cct_persistent_id(cct_node_t* x)
 {
@@ -331,6 +322,27 @@ bool
 hpcrun_cct_is_leaf(cct_node_t* node)
 {
   return (node->children == NULL);
+}
+
+//
+// *** TEMPORARY
+// *** NO LONGER IN INTERFACE ***
+// *** ONLY PRESENT FOR INTERMEDIATE VERSIONS
+//
+metric_set_t*
+hpcrun_cct_metrics(cct_node_t* x)
+{
+  return x->metrics;
+}
+
+//
+// set the value of the metric set pointer
+// ** TEMPORARY **
+//
+void
+cct_node_metrics_sb(cct_node_t* node, metric_set_t* metrics)
+{
+  node->metrics = metrics;
 }
 
 //

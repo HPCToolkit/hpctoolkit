@@ -76,7 +76,7 @@ typedef hpcrun_metricVal_t cct_metric_data_t;
 //
 typedef struct metric_set_t metric_set_t;
 
-typedef void metric_upd_proc_t(int metric_id, metric_set_t* loc, cct_metric_data_t datum);
+typedef void metric_upd_proc_t(int metric_id, metric_set_t* set, cct_metric_data_t datum);
 
 typedef cct_metric_data_t (*metric_bin_fn)(cct_metric_data_t v1, cct_metric_data_t v2);
 
@@ -116,8 +116,10 @@ void hpcrun_set_metric_name(int metric_id, char* name);
 
 // metric set operations
 
-cct_metric_data_t* hpcrun_metric_set_loc(metric_set_t* s, int id);
-
+extern metric_set_t* hpcrun_metric_set_new(void);
+extern cct_metric_data_t* hpcrun_metric_set_loc(metric_set_t* s, int id);
+extern void hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
+				  hpcrun_metricVal_t incr);
 //
 // copy a metric set
 //
@@ -125,23 +127,5 @@ extern void hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
 					 metric_set_t* set,
 					 int num_metrics);
 
-
-static inline void
-cct_metric_data_increment(int metric_id,
-			  metric_set_t* x,
-			  cct_metric_data_t incr)
-{
-  metric_desc_t* minfo = hpcrun_id2metric(metric_id);
-  cct_metric_data_t* loc = hpcrun_metric_set_loc(x, metric_id);
-  
-  switch (minfo->flags.fields.valFmt) {
-    case MetricFlags_ValFmt_Int:
-      loc->i += incr.i; break;
-    case MetricFlags_ValFmt_Real:
-      loc->r += incr.r; break;
-    default:
-      assert(false);
-  }
-}
 
 #endif // METRICS_H

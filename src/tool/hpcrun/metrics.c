@@ -82,6 +82,9 @@ struct  metric_set_t {
 // number of metrics requested
 static int n_metrics = 0;
 
+// Dense array holding "0" values for nodes with no metrics
+static hpcrun_metricVal_t* null_metrics;
+
 // information about tracked metrics
 static metric_list_t* metric_data = NULL;
 
@@ -169,6 +172,15 @@ hpcrun_get_num_metrics()
     }
   }
   has_set_max_metrics = true;
+
+  // *** TEMPORARY ***
+  // *** create a "NULL METRICS" dense array for use with
+  // *** metric set dense copy
+
+  null_metrics = (hpcrun_metricVal_t*) hpcrun_metric_set_new();
+  for (int i = 0; i < n_metrics; i++) {
+    null_metrics[i].bits = 0;
+  }
   return n_metrics;
 }
 
@@ -197,9 +209,13 @@ hpcrun_get_metric_data()
 }
 
 
+// *** FIXME? metric finalization may not be necessary
+// when metric set repr changes
+//
 metric_upd_proc_t*
 hpcrun_get_metric_proc(int metric_id)
 {
+  hpcrun_get_num_metrics(); // ensure that metrics are finalized
   return metric_proc_tbl[metric_id];
 }
 
@@ -293,7 +309,7 @@ hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 				  MetricFlags_ValFmt_t valFmt, size_t period)
 {
   hpcrun_set_metric_info_w_fn(metric_id, name, valFmt, period,
-			      cct_metric_data_increment);
+			      hpcrun_metric_std_inc);
 }
 
 
@@ -330,7 +346,7 @@ hpcrun_set_metric_name(int metric_id, char* name)
 metric_set_t*
 hpcrun_metric_set_new(void)
 {
-  return NULL;
+  return hpcrun_malloc(n_metrics * sizeof(hpcrun_metricVal_t));
 }
 
 //
@@ -342,6 +358,23 @@ hpcrun_metric_set_loc(metric_set_t* s, int id)
   return &(s->v1) + id;
 }
 
+
+void
+hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
+		      hpcrun_metricVal_t incr)
+{
+  metric_desc_t* minfo = hpcrun_id2metric(metric_id);
+  hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(set, metric_id);
+  switch (minfo->flags.fields.valFmt) {
+    case MetricFlags_ValFmt_Int:
+      loc->i += incr.i; break;
+    case MetricFlags_ValFmt_Real:
+      loc->r += incr.r; break;
+    default:
+      assert(false);
+  }
+}
+
 //
 // copy a metric set
 //
@@ -350,5 +383,6 @@ hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
 			     metric_set_t* set,
 			     int num_metrics)
 {
-  memcpy((char*) dest, (char*) set, num_metrics * sizeof(cct_metric_data_t));
+  metric_set_t* actual = set ? set : (metric_set_t*) null_metrics;
+  memcpy((char*) dest, (char*) actual, num_metrics * sizeof(cct_metric_data_t));
 }
