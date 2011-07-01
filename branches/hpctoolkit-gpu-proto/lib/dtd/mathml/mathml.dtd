@@ -1,0 +1,1368 @@
+<!-- ************************************************************************ -->
+<!-- Content model definition for content, presentation                       -->
+<!-- and browser interface elements of MathML                                 -->
+<!--                                                                          -->
+<!-- $Id: mathml.dtd,v 1.9 2000/02/09 12:36:56 davidc Exp $                 -->
+<!--                                                                          -->
+<!-- Initial draft (syntax = XML) 1997-05-09                                  -->
+<!--   Stephen Buswell                                                        -->
+<!-- Revised 1997-05-14  by Robert Miner                                      -->
+<!--   Robert Miner                                                           -->
+<!-- Revised 1997-06-29 and 1997-07-02                                        -->
+<!--   Stephen Buswell                                                        -->
+<!-- Revised 1997-12-15d                                                      -->
+<!--   Stephen Buswell                                                        -->
+<!-- Revised 1998-02-08                                                       -->
+<!--   Stephen Buswell                                                        -->
+<!-- Revised 1998-04-04                                                       -->
+<!--   Stephen Buswell                                                        -->
+<!-- Entities and small revisions 1999-02-21                                  -->
+<!--   David Carlisle                                                         -->
+<!-- Added attribute definitionURL to ci and cn 1999-10-11                    -->
+<!--   Nico Poppelier                                                         -->
+<!-- Additions for MathML 2  1999-12-16                                       -->
+<!--   David Carlisle                                                         -->
+<!-- Namespace support 2000-01-14                                             -->
+<!--   David Carlisle                                                         -->
+<!--                                                                          -->
+<!-- Became W3C Recommendation 7 April 1998                                   -->
+<!-- ************************************************************************ -->
+
+<!-- ************************************************************************ -->
+<!-- Support for variable namespace prefix                                    -->
+<!-- ************************************************************************ -->
+
+<!ENTITY % mathml-colon               ''>
+<!ENTITY % mathml-prefix              ''>
+<!ENTITY % mathml-xlink               'xlink'>
+
+<!ENTITY % mathml-mspace              '%mathml-prefix;%mathml-colon;mspace' >
+<!ENTITY % mathml-mprescripts         '%mathml-prefix;%mathml-colon;mprescripts' >
+<!ENTITY % mathml-none                '%mathml-prefix;%mathml-colon;none' >
+<!ENTITY % mathml-malignmark          '%mathml-prefix;%mathml-colon;malignmark' >
+<!ENTITY % mathml-maligngroup         '%mathml-prefix;%mathml-colon;maligngroup' >
+<!ENTITY % mathml-mchar               '%mathml-prefix;%mathml-colon;mchar' >
+<!ENTITY % mathml-mglyph              '%mathml-prefix;%mathml-colon;mglyph' >
+<!ENTITY % mathml-sep                 '%mathml-prefix;%mathml-colon;sep' >
+<!ENTITY % mathml-inverse             '%mathml-prefix;%mathml-colon;inverse' >
+<!ENTITY % mathml-ident               '%mathml-prefix;%mathml-colon;ident' >
+<!ENTITY % mathml-compose             '%mathml-prefix;%mathml-colon;compose' >
+<!ENTITY % mathml-exp                 '%mathml-prefix;%mathml-colon;exp' >
+<!ENTITY % mathml-abs                 '%mathml-prefix;%mathml-colon;abs' >
+<!ENTITY % mathml-arg                 '%mathml-prefix;%mathml-colon;arg' >
+<!ENTITY % mathml-real                '%mathml-prefix;%mathml-colon;real' >
+<!ENTITY % mathml-imaginary           '%mathml-prefix;%mathml-colon;imaginary' >
+<!ENTITY % mathml-conjugate           '%mathml-prefix;%mathml-colon;conjugate' >
+<!ENTITY % mathml-factorial           '%mathml-prefix;%mathml-colon;factorial' >
+<!ENTITY % mathml-minus               '%mathml-prefix;%mathml-colon;minus' >
+<!ENTITY % mathml-quotient            '%mathml-prefix;%mathml-colon;quotient' >
+<!ENTITY % mathml-divide              '%mathml-prefix;%mathml-colon;divide' >
+<!ENTITY % mathml-power               '%mathml-prefix;%mathml-colon;power' >
+<!ENTITY % mathml-rem                 '%mathml-prefix;%mathml-colon;rem' >
+<!ENTITY % mathml-plus                '%mathml-prefix;%mathml-colon;plus' >
+<!ENTITY % mathml-max                 '%mathml-prefix;%mathml-colon;max' >
+<!ENTITY % mathml-min                 '%mathml-prefix;%mathml-colon;min' >
+<!ENTITY % mathml-times               '%mathml-prefix;%mathml-colon;times' >
+<!ENTITY % mathml-gcd                 '%mathml-prefix;%mathml-colon;gcd' >
+<!ENTITY % mathml-root                '%mathml-prefix;%mathml-colon;root' >
+<!ENTITY % mathml-exists              '%mathml-prefix;%mathml-colon;exists' >
+<!ENTITY % mathml-forall              '%mathml-prefix;%mathml-colon;forall' >
+<!ENTITY % mathml-and                 '%mathml-prefix;%mathml-colon;and' >
+<!ENTITY % mathml-or                  '%mathml-prefix;%mathml-colon;or' >
+<!ENTITY % mathml-xor                 '%mathml-prefix;%mathml-colon;xor' >
+<!ENTITY % mathml-not                 '%mathml-prefix;%mathml-colon;not' >
+<!ENTITY % mathml-implies             '%mathml-prefix;%mathml-colon;implies' >
+<!ENTITY % mathml-divergence          '%mathml-prefix;%mathml-colon;divergence' >
+<!ENTITY % mathml-grad                '%mathml-prefix;%mathml-colon;grad' >
+<!ENTITY % mathml-curl                '%mathml-prefix;%mathml-colon;curl' >
+<!ENTITY % mathml-laplacian           '%mathml-prefix;%mathml-colon;laplacian' >
+<!ENTITY % mathml-log                 '%mathml-prefix;%mathml-colon;log' >
+<!ENTITY % mathml-int                 '%mathml-prefix;%mathml-colon;int' >
+<!ENTITY % mathml-diff                '%mathml-prefix;%mathml-colon;diff' >
+<!ENTITY % mathml-partialdiff         '%mathml-prefix;%mathml-colon;partialdiff' >
+<!ENTITY % mathml-ln                  '%mathml-prefix;%mathml-colon;ln' >
+<!ENTITY % mathml-card                '%mathml-prefix;%mathml-colon;card' >
+<!ENTITY % mathml-setdiff             '%mathml-prefix;%mathml-colon;setdiff' >
+<!ENTITY % mathml-union               '%mathml-prefix;%mathml-colon;union' >
+<!ENTITY % mathml-intersect           '%mathml-prefix;%mathml-colon;intersect' >
+<!ENTITY % mathml-sum                 '%mathml-prefix;%mathml-colon;sum' >
+<!ENTITY % mathml-product             '%mathml-prefix;%mathml-colon;product' >
+<!ENTITY % mathml-limit               '%mathml-prefix;%mathml-colon;limit' >
+<!ENTITY % mathml-sin                 '%mathml-prefix;%mathml-colon;sin' >
+<!ENTITY % mathml-cos                 '%mathml-prefix;%mathml-colon;cos' >
+<!ENTITY % mathml-tan                 '%mathml-prefix;%mathml-colon;tan' >
+<!ENTITY % mathml-sec                 '%mathml-prefix;%mathml-colon;sec' >
+<!ENTITY % mathml-csc                 '%mathml-prefix;%mathml-colon;csc' >
+<!ENTITY % mathml-cot                 '%mathml-prefix;%mathml-colon;cot' >
+<!ENTITY % mathml-sinh                '%mathml-prefix;%mathml-colon;sinh' >
+<!ENTITY % mathml-cosh                '%mathml-prefix;%mathml-colon;cosh' >
+<!ENTITY % mathml-tanh                '%mathml-prefix;%mathml-colon;tanh' >
+<!ENTITY % mathml-sech                '%mathml-prefix;%mathml-colon;sech' >
+<!ENTITY % mathml-csch                '%mathml-prefix;%mathml-colon;csch' >
+<!ENTITY % mathml-coth                '%mathml-prefix;%mathml-colon;coth' >
+<!ENTITY % mathml-arcsin              '%mathml-prefix;%mathml-colon;arcsin' >
+<!ENTITY % mathml-arccos              '%mathml-prefix;%mathml-colon;arccos' >
+<!ENTITY % mathml-arctan              '%mathml-prefix;%mathml-colon;arctan' >
+<!ENTITY % mathml-mean                '%mathml-prefix;%mathml-colon;mean' >
+<!ENTITY % mathml-sdev                '%mathml-prefix;%mathml-colon;sdev' >
+<!ENTITY % mathml-variance            '%mathml-prefix;%mathml-colon;variance' >
+<!ENTITY % mathml-median              '%mathml-prefix;%mathml-colon;median' >
+<!ENTITY % mathml-mode                '%mathml-prefix;%mathml-colon;mode' >
+<!ENTITY % mathml-moment              '%mathml-prefix;%mathml-colon;moment' >
+<!ENTITY % mathml-determinant         '%mathml-prefix;%mathml-colon;determinant' >
+<!ENTITY % mathml-transpose           '%mathml-prefix;%mathml-colon;transpose' >
+<!ENTITY % mathml-vectorproduct       '%mathml-prefix;%mathml-colon;vectorproduct' >
+<!ENTITY % mathml-scalarproduct       '%mathml-prefix;%mathml-colon;scalarproduct' >
+<!ENTITY % mathml-outerproduct        '%mathml-prefix;%mathml-colon;outerproduct' >
+<!ENTITY % mathml-selector            '%mathml-prefix;%mathml-colon;selector' >
+<!ENTITY % mathml-neq                 '%mathml-prefix;%mathml-colon;neq' >
+<!ENTITY % mathml-eq                  '%mathml-prefix;%mathml-colon;eq' >
+<!ENTITY % mathml-equivalent          '%mathml-prefix;%mathml-colon;equivalent' >
+<!ENTITY % mathml-approx              '%mathml-prefix;%mathml-colon;approx' >
+<!ENTITY % mathml-gt                  '%mathml-prefix;%mathml-colon;gt' >
+<!ENTITY % mathml-lt                  '%mathml-prefix;%mathml-colon;lt' >
+<!ENTITY % mathml-geq                 '%mathml-prefix;%mathml-colon;geq' >
+<!ENTITY % mathml-leq                 '%mathml-prefix;%mathml-colon;leq' >
+<!ENTITY % mathml-in                  '%mathml-prefix;%mathml-colon;in' >
+<!ENTITY % mathml-notin               '%mathml-prefix;%mathml-colon;notin' >
+<!ENTITY % mathml-notsubset           '%mathml-prefix;%mathml-colon;notsubset' >
+<!ENTITY % mathml-notprsubset         '%mathml-prefix;%mathml-colon;notprsubset' >
+<!ENTITY % mathml-subset              '%mathml-prefix;%mathml-colon;subset' >
+<!ENTITY % mathml-prsubset            '%mathml-prefix;%mathml-colon;prsubset' >
+<!ENTITY % mathml-tendsto             '%mathml-prefix;%mathml-colon;tendsto' >
+<!ENTITY % mathml-ci                  '%mathml-prefix;%mathml-colon;ci' >
+<!ENTITY % mathml-csymbol             '%mathml-prefix;%mathml-colon;csymbol' >
+<!ENTITY % mathml-cn                  '%mathml-prefix;%mathml-colon;cn' >
+<!ENTITY % mathml-apply               '%mathml-prefix;%mathml-colon;apply' >
+<!ENTITY % mathml-reln                '%mathml-prefix;%mathml-colon;reln' >
+<!ENTITY % mathml-lambda              '%mathml-prefix;%mathml-colon;lambda' >
+<!ENTITY % mathml-condition           '%mathml-prefix;%mathml-colon;condition' >
+<!ENTITY % mathml-declare             '%mathml-prefix;%mathml-colon;declare' >
+<!ENTITY % mathml-semantics           '%mathml-prefix;%mathml-colon;semantics' >
+<!ENTITY % mathml-annotation          '%mathml-prefix;%mathml-colon;annotation' >
+<!ENTITY % mathml-annotation-xml      '%mathml-prefix;%mathml-colon;annotation-xml' >
+<!ENTITY % mathml-interval            '%mathml-prefix;%mathml-colon;interval' >
+<!ENTITY % mathml-set                 '%mathml-prefix;%mathml-colon;set' >
+<!ENTITY % mathml-list                '%mathml-prefix;%mathml-colon;list' >
+<!ENTITY % mathml-vector              '%mathml-prefix;%mathml-colon;vector' >
+<!ENTITY % mathml-matrix              '%mathml-prefix;%mathml-colon;matrix' >
+<!ENTITY % mathml-matrixrow           '%mathml-prefix;%mathml-colon;matrixrow' >
+<!ENTITY % mathml-fn                  '%mathml-prefix;%mathml-colon;fn' >
+<!ENTITY % mathml-lowlimit            '%mathml-prefix;%mathml-colon;lowlimit' >
+<!ENTITY % mathml-uplimit             '%mathml-prefix;%mathml-colon;uplimit' >
+<!ENTITY % mathml-bvar                '%mathml-prefix;%mathml-colon;bvar' >
+<!ENTITY % mathml-degree              '%mathml-prefix;%mathml-colon;degree' >
+<!ENTITY % mathml-logbase             '%mathml-prefix;%mathml-colon;logbase' >
+<!ENTITY % mathml-mstyle              '%mathml-prefix;%mathml-colon;mstyle' >
+<!ENTITY % mathml-merror              '%mathml-prefix;%mathml-colon;merror' >
+<!ENTITY % mathml-mphantom            '%mathml-prefix;%mathml-colon;mphantom' >
+<!ENTITY % mathml-mrow                '%mathml-prefix;%mathml-colon;mrow' >
+<!ENTITY % mathml-mfrac               '%mathml-prefix;%mathml-colon;mfrac' >
+<!ENTITY % mathml-msqrt               '%mathml-prefix;%mathml-colon;msqrt' >
+<!ENTITY % mathml-menclose            '%mathml-prefix;%mathml-colon;menclose' >
+<!ENTITY % mathml-mroot               '%mathml-prefix;%mathml-colon;mroot' >
+<!ENTITY % mathml-msub                '%mathml-prefix;%mathml-colon;msub' >
+<!ENTITY % mathml-msup                '%mathml-prefix;%mathml-colon;msup' >
+<!ENTITY % mathml-msubsup             '%mathml-prefix;%mathml-colon;msubsup' >
+<!ENTITY % mathml-mmultiscripts       '%mathml-prefix;%mathml-colon;mmultiscripts' >
+<!ENTITY % mathml-munder              '%mathml-prefix;%mathml-colon;munder' >
+<!ENTITY % mathml-mover               '%mathml-prefix;%mathml-colon;mover' >
+<!ENTITY % mathml-munderover          '%mathml-prefix;%mathml-colon;munderover' >
+<!ENTITY % mathml-mtable              '%mathml-prefix;%mathml-colon;mtable' >
+<!ENTITY % mathml-mtr                 '%mathml-prefix;%mathml-colon;mtr' >
+<!ENTITY % mathml-mlabeledtr          '%mathml-prefix;%mathml-colon;mlabeledtr' >
+<!ENTITY % mathml-mtd                 '%mathml-prefix;%mathml-colon;mtd' >
+<!ENTITY % mathml-maction             '%mathml-prefix;%mathml-colon;maction' >
+<!ENTITY % mathml-mfenced             '%mathml-prefix;%mathml-colon;mfenced' >
+<!ENTITY % mathml-mpadded             '%mathml-prefix;%mathml-colon;mpadded' >
+<!ENTITY % mathml-mi                  '%mathml-prefix;%mathml-colon;mi' >
+<!ENTITY % mathml-mn                  '%mathml-prefix;%mathml-colon;mn' >
+<!ENTITY % mathml-mo                  '%mathml-prefix;%mathml-colon;mo' >
+<!ENTITY % mathml-mtext               '%mathml-prefix;%mathml-colon;mtext' >
+<!ENTITY % mathml-ms                  '%mathml-prefix;%mathml-colon;ms' >
+<!ENTITY % mathml-math                '%mathml-prefix;%mathml-colon;math' >
+
+<!-- ************************************************************************ -->
+<!-- Attributes shared by all elements                                        -->
+<!-- ************************************************************************ -->
+
+<!ENTITY % att-xmlns
+                                     'xmlns%mathml-colon;%mathml-prefix;
+                                      CDATA #FIXED 
+                                     "http://www.w3.org/1998/Math/MathML"' >
+<!ENTITY  % att-global
+  '%att-xmlns;
+   xmlns:%mathml-xlink;               CDATA #IMPLIED
+   %mathml-xlink;:href                CDATA #IMPLIED
+   class                              CDATA #IMPLIED
+   style                              CDATA #IMPLIED
+   id                                 ID    #IMPLIED
+   xref                               IDREF #IMPLIED
+   other                              CDATA #IMPLIED' >
+
+<!-- ************************************************************************ -->
+<!-- Presentation element set                                                 -->
+<!-- ************************************************************************ -->
+
+<!-- Attribute definitions -->
+
+<!ENTITY  % att-fontsize             'fontsize   CDATA             #IMPLIED' >
+<!ENTITY  % att-fontweight           'fontweight (normal | bold)   #IMPLIED' >
+<!ENTITY  % att-fontstyle            'fontstyle  (normal | italic) #IMPLIED' >
+<!ENTITY  % att-fontfamily           'fontfamily CDATA             #IMPLIED' >
+<!ENTITY  % att-color                'color      CDATA             #IMPLIED' >
+
+<!ENTITY  % att-fontinfo             '%att-fontsize;
+                                      %att-fontweight;
+                                      %att-fontstyle;
+                                      %att-fontfamily;
+                                      %att-color;' >
+
+<!ENTITY  % att-form                 'form          (prefix | infix | postfix) #IMPLIED' >
+<!ENTITY  % att-fence                'fence         (true | false)             #IMPLIED' >
+<!ENTITY  % att-separator            'separator     (true | false)             #IMPLIED' >
+<!ENTITY  % att-lspace               'lspace        CDATA                      #IMPLIED' >
+<!ENTITY  % att-rspace               'rspace        CDATA                      #IMPLIED' >
+<!ENTITY  % att-stretchy             'stretchy      (true | false)             #IMPLIED' >
+<!ENTITY  % att-symmetric            'symmetric     (true | false)             #IMPLIED' >
+<!ENTITY  % att-maxsize              'maxsize       CDATA                      #IMPLIED' >
+<!ENTITY  % att-minsize              'minsize       CDATA                      #IMPLIED' >
+<!ENTITY  % att-largeop              'largeop       (true | false)             #IMPLIED' >
+<!ENTITY  % att-movablelimits        'movablelimits (true | false)             #IMPLIED' >
+<!ENTITY  % att-accent               'accent        (true | false)             #IMPLIED' >
+
+<!ENTITY  % att-opinfo               '%att-form;
+                                      %att-fence;
+                                      %att-separator;
+                                      %att-lspace;
+                                      %att-rspace;
+                                      %att-stretchy;
+                                      %att-symmetric;
+                                      %att-maxsize;
+                                      %att-minsize;
+                                      %att-largeop;
+                                      %att-movablelimits;
+                                      %att-accent;' >
+
+<!ENTITY  % att-width                'width  CDATA #IMPLIED' >
+<!ENTITY  % att-height               'height CDATA #IMPLIED' >
+<!ENTITY  % att-depth                'depth  CDATA #IMPLIED' >
+
+<!ENTITY  % att-sizeinfo             '%att-width;
+                                      %att-height;
+                                      %att-depth;' >
+
+<!ENTITY  % att-lquote               'lquote CDATA #IMPLIED' >
+<!ENTITY  % att-rquote               'rquote CDATA #IMPLIED' >
+
+<!ENTITY  % att-linethickness        'linethickness CDATA #IMPLIED' >
+
+<!ENTITY  % att-scriptlevel          'scriptlevel          CDATA          #IMPLIED' >
+<!ENTITY  % att-displaystyle         'displaystyle         (true | false) #IMPLIED' >
+<!ENTITY  % att-scriptsizemultiplier 'scriptsizemultiplier CDATA          #IMPLIED' >
+<!ENTITY  % att-scriptminsize        'scriptminsize        CDATA          #IMPLIED' >
+<!ENTITY  % att-background           'background           CDATA          #IMPLIED' >
+
+<!ENTITY  % att-open                 'open       CDATA #IMPLIED' >
+<!ENTITY  % att-close                'close      CDATA #IMPLIED' >
+<!ENTITY  % att-separators           'separators CDATA #IMPLIED' >
+
+<!ENTITY  % att-subscriptshift       'subscriptshift   CDATA #IMPLIED' >
+<!ENTITY  % att-superscriptshift     'superscriptshift CDATA #IMPLIED' >
+
+<!ENTITY  % att-accentunder          'accentunder (true | false) #IMPLIED' >
+
+<!ENTITY  % att-align                'align          CDATA #IMPLIED' >
+<!ENTITY  % att-rowalign             'rowalign       CDATA #IMPLIED' >
+<!ENTITY  % att-columnalign          'columnalign    CDATA #IMPLIED' >
+<!ENTITY  % att-columnwidth          'columnwidth    CDATA #IMPLIED' >
+<!ENTITY  % att-groupalign           'groupalign     CDATA #IMPLIED' >
+<!ENTITY  % att-alignmentscope       'alignmentscope CDATA #IMPLIED' >
+
+<!ENTITY  % att-rowspacing           'rowspacing    CDATA                   #IMPLIED' >
+<!ENTITY  % att-columnspacing        'columnspacing CDATA                   #IMPLIED' >
+<!ENTITY  % att-rowlines             'rowlines      CDATA                   #IMPLIED' >
+<!ENTITY  % att-columnlines          'columnlines   CDATA                   #IMPLIED' >
+<!ENTITY  % att-frame                'frame         (none | solid | dashed) #IMPLIED' >
+<!ENTITY  % att-framespacing         'framespacing  CDATA                   #IMPLIED' >
+<!ENTITY  % att-equalrows            'equalrows     CDATA                   #IMPLIED' >
+<!ENTITY  % att-equalcolumns         'equalcolumns  CDATA                   #IMPLIED' >
+
+<!ENTITY  % att-tableinfo            '%att-align;
+                                      %att-rowalign;
+                                      %att-columnalign;
+                                      %att-columnwidth;
+                                      %att-groupalign;
+                                      %att-alignmentscope;
+                                      %att-rowspacing;
+                                      %att-columnspacing;
+                                      %att-rowlines;
+                                      %att-columnlines;
+                                      %att-frame;
+                                      %att-framespacing;
+                                      %att-equalrows;
+                                      %att-equalcolumns;
+                                      %att-displaystyle;' >
+
+<!ENTITY  % att-rowspan              'rowspan    CDATA #IMPLIED' >
+<!ENTITY  % att-columnspan           'columnspan CDATA #IMPLIED' >
+
+<!ENTITY  % att-edge                 'edge (left | right)  #IMPLIED' >
+
+<!ENTITY  % att-actiontype           'actiontype CDATA #IMPLIED' >
+<!ENTITY  % att-selection            'selection  CDATA #IMPLIED' >
+
+<!ENTITY  % att-name                 'name CDATA #IMPLIED' >
+<!ENTITY  % att-alt                  'alt CDATA  #IMPLIED' >
+<!ENTITY  % att-index                'index CDATA  #IMPLIED' >
+
+<!-- Presentation schemata with content -->
+
+<!ENTITY  % ptoken                   '%mathml-mi; | %mathml-mn; | %mathml-mo; |
+                                      %mathml-mtext; | %mathml-ms;' >
+
+<!ATTLIST %mathml-mi;                 %att-fontinfo;
+                                      %att-global; >
+
+<!ATTLIST %mathml-mn;                 %att-fontinfo;
+                                      %att-global; >
+
+<!ATTLIST %mathml-mo;                 %att-fontinfo;
+                                      %att-opinfo;
+                                      %att-global; >
+
+<!ATTLIST %mathml-mtext;              %att-fontinfo;
+                                      %att-global; >
+
+<!ATTLIST %mathml-ms;                 %att-fontinfo;
+                                      %att-lquote;
+                                      %att-rquote;
+                                      %att-global; >
+
+<!-- Empty presentation schemata -->
+
+<!ENTITY  % petoken                  '%mathml-mspace;' >
+<!ELEMENT %mathml-mspace;             EMPTY >
+
+<!ATTLIST %mathml-mspace;             %att-sizeinfo;
+                                      %att-global; >
+
+<!-- Presentation: general layout schemata -->
+
+<!ENTITY % pgenschema                '%mathml-mrow;|%mathml-mfrac;|%mathml-msqrt;|
+                                      %mathml-mroot;|%mathml-menclose;|
+                                      %mathml-mstyle;|%mathml-merror;|%mathml-mpadded;|
+                                      %mathml-mphantom;|%mathml-mfenced;' >
+
+<!ATTLIST %mathml-mrow;               %att-global; >
+
+<!ATTLIST %mathml-mfrac;              %att-linethickness;
+                                      %att-global; >
+
+<!ATTLIST %mathml-msqrt;              %att-global; >
+
+<!ATTLIST %mathml-menclose;           %att-global;
+                                      notation CDATA "longdiv" >
+
+<!ATTLIST %mathml-mroot;              %att-global; >
+
+<!ATTLIST %mathml-mstyle;             %att-fontinfo;
+                                      %att-opinfo;
+                                      %att-lquote;
+                                      %att-rquote;
+                                      %att-linethickness;
+                                      %att-scriptlevel;
+                                      %att-scriptsizemultiplier;
+                                      %att-scriptminsize;
+                                      %att-background;
+                                      %att-open;
+                                      %att-close;
+                                      %att-separators;
+                                      %att-subscriptshift;
+                                      %att-superscriptshift;
+                                      %att-accentunder;
+                                      %att-tableinfo;
+                                      %att-rowspan;
+                                      %att-columnspan;
+                                      %att-edge;
+                                      %att-actiontype;
+                                      %att-selection;
+                                      %att-global; >
+
+<!ATTLIST %mathml-merror;             %att-global; >
+
+<!ATTLIST %mathml-mpadded;            %att-sizeinfo;
+                                      %att-lspace;
+                                      %att-global; >
+
+<!ATTLIST %mathml-mphantom;           %att-global; >
+
+<!ATTLIST %mathml-mfenced;            %att-open;
+                                      %att-close;
+                                      %att-separators;
+                                      %att-global; >
+
+<!-- Presentation layout schemata: scripts and limits -->
+
+<!ENTITY  % pscrschema               '%mathml-msub;|%mathml-msup;|%mathml-msubsup;|
+                                      %mathml-munder;|%mathml-mover;|
+                                      %mathml-munderover;|%mathml-mmultiscripts;' >
+
+<!ATTLIST %mathml-msub;               %att-subscriptshift;
+                                      %att-global; >
+
+<!ATTLIST %mathml-msup;               %att-superscriptshift;
+                                      %att-global; >
+
+<!ATTLIST %mathml-msubsup;            %att-subscriptshift;
+                                      %att-superscriptshift;
+                                      %att-global; >
+
+<!ATTLIST %mathml-munder;             %att-accentunder;
+                                      %att-global; >
+
+<!ATTLIST %mathml-mover;              %att-accent;
+                                      %att-global; >
+
+<!ATTLIST %mathml-munderover;         %att-accent;
+                                      %att-accentunder;
+                                      %att-global; >
+
+<!ATTLIST %mathml-mmultiscripts;      %att-subscriptshift;
+                                      %att-superscriptshift;
+                                      %att-global; >
+
+<!-- Presentation layout schemata: empty elements for scripts -->
+
+<!ENTITY  % pscreschema              '%mathml-mprescripts;|
+                                      %mathml-none;' >
+
+<!ELEMENT %mathml-mprescripts;        EMPTY >
+<!ATTLIST %mathml-mprescripts;        %att-xmlns; >
+
+<!ELEMENT %mathml-none;               EMPTY >
+<!ATTLIST %mathml-none;               %att-xmlns; >
+
+<!-- Presentation layout schemata: tables -->
+
+<!ENTITY  % ptabschema               '%mathml-mtable;|%mathml-mtr;|
+                                      %mathml-mlabeledtr;|%mathml-mtd;' >
+
+<!ATTLIST %mathml-mtable;             %att-tableinfo;
+                                      %att-global; >
+
+<!ATTLIST %mathml-mtr;                %att-rowalign;
+                                      %att-columnalign;
+                                      %att-groupalign;
+                                      %att-global; >
+
+<!ATTLIST %mathml-mlabeledtr;         %att-rowalign;
+                                      %att-columnalign;
+                                      %att-groupalign;
+                                      %att-global; >
+
+<!ATTLIST %mathml-mtd;                %att-rowalign;
+                                      %att-columnalign;
+                                      %att-groupalign;
+                                      %att-rowspan;
+                                      %att-columnspan;
+                                      %att-global; >
+
+<!ENTITY  % plschema                 '%pgenschema;|%pscrschema;|%ptabschema;' >
+
+<!-- Empty presentation layout schemata -->
+
+<!ENTITY  % peschema                 '%mathml-maligngroup; | 
+                                      %mathml-malignmark;' >
+
+<!ELEMENT %mathml-malignmark;         EMPTY >
+
+<!ATTLIST %mathml-malignmark;         %att-edge; >
+
+<!ELEMENT %mathml-maligngroup;        EMPTY >
+<!ATTLIST %mathml-maligngroup;        %att-groupalign;
+                                      %att-global; >
+
+<!ELEMENT %mathml-mchar;         EMPTY >
+<!ATTLIST %mathml-mchar;         %att-name; >
+
+<!ELEMENT %mathml-mglyph;         EMPTY >
+<!ATTLIST %mathml-mglyph;         %att-alt;
+                                  %att-fontfamily;
+                                  %att-index; >
+
+<!-- Presentation action schemata -->
+
+<!ENTITY  % pactions                 '%mathml-maction;' >
+<!ATTLIST %mathml-maction;            %att-actiontype;
+                                      %att-selection;
+                                      %att-global; >
+
+<!-- The following entity for substitution into content constructs -->
+<!-- excludes elements that are not valid as expressions.          -->
+
+<!ENTITY  % PresInCont               '%ptoken; | %petoken; |
+                                      %plschema; | %peschema; | %pactions;' >
+
+<!-- Presentation entity: all presentation constructs -->
+
+<!ENTITY  % Presentation             '%ptoken; | %petoken; | %pscreschema; |
+                                      %plschema; | %peschema; | %pactions;'>
+
+<!-- ************************************************************************ -->
+<!-- Content element set                                                      -->
+<!-- ************************************************************************ -->
+
+<!-- Attribute definitions -->
+
+<!ENTITY  % att-base                 'base CDATA "10"' >
+<!ENTITY  % att-closure              'closure CDATA "closed"' >
+<!ENTITY  % att-definition           'definitionURL CDATA ""' >
+<!ENTITY  % att-encoding             'encoding CDATA ""' >
+<!ENTITY  % att-nargs                'nargs CDATA "1"' >
+<!ENTITY  % att-occurrence           'occurrence CDATA "function-model"' >
+<!ENTITY  % att-order                'order CDATA "numeric"' >
+<!ENTITY  % att-scope                'scope CDATA "local"' >
+<!ENTITY  % att-type                 'type CDATA #IMPLIED' >
+
+<!-- Content elements: leaf nodes -->
+
+<!ENTITY  % ctoken                   '%mathml-csymbol;|%mathml-ci; | %mathml-cn;' >
+
+<!ATTLIST %mathml-ci;                 %att-type;
+                                      %att-definition;
+                                      %att-global; >
+
+<!ATTLIST %mathml-csymbol;            %att-encoding;
+                                      %att-type;
+                                      %att-definition;
+                                      %att-global; >
+
+<!ATTLIST %mathml-cn;                 %att-type;
+                                      %att-base;
+                                      %att-definition;
+                                      %att-global; >
+
+<!-- Content elements: specials -->
+
+<!ENTITY  % cspecial                 '%mathml-apply; | %mathml-reln; |
+                                      %mathml-lambda;' >
+
+<!ATTLIST %mathml-apply;              %att-global; >
+
+<!ATTLIST %mathml-reln;               %att-global; >
+
+<!ATTLIST %mathml-lambda;             %att-global; >
+
+<!-- Content elements: others -->
+
+<!ENTITY  % cother                   '%mathml-condition; | %mathml-declare; |
+                                      %mathml-sep;' >
+
+<!ATTLIST %mathml-condition;          %att-global; >
+
+<!ATTLIST %mathml-declare;            %att-type;
+                                      %att-scope;
+                                      %att-nargs;
+                                      %att-occurrence;
+                                      %att-definition;
+                                      %att-encoding;
+                                      %att-global; >
+
+<!ELEMENT %mathml-sep;                EMPTY >
+<!ATTLIST %mathml-sep;                %att-xmlns; >
+
+<!-- Content elements: semantic mapping -->
+
+<!ENTITY  % csemantics               '%mathml-semantics; | %mathml-annotation; |
+                                      %mathml-annotation;-xml' >
+
+<!ATTLIST %mathml-semantics;          %att-definition;
+                                      %att-encoding;
+                                      %att-global; >
+
+<!ATTLIST %mathml-annotation;         %att-encoding;
+                                      %att-global; >
+
+<!ATTLIST %mathml-annotation-xml;     %att-encoding;
+                                      %att-global; >
+
+<!-- Content elements: constructors -->
+
+<!ENTITY  % cconstructor             '%mathml-interval; | %mathml-list; |
+                                      %mathml-matrix; | %mathml-matrixrow; |
+                                      %mathml-set; | %mathml-vector;' >
+
+<!ATTLIST %mathml-interval;           %att-closure;
+                                      %att-global; >
+
+<!ATTLIST %mathml-set;                %att-type;
+                                      %att-global; >
+
+<!ATTLIST %mathml-list;               %att-order;
+                                      %att-global; >
+
+<!ATTLIST %mathml-vector;             %att-global; >
+
+<!ATTLIST %mathml-matrix;             %att-global; >
+
+<!ATTLIST %mathml-matrixrow;          %att-global; >
+
+<!-- Content elements: operators -->
+
+<!ENTITY  % cfuncop1ary              '%mathml-inverse; | %mathml-ident;' >
+
+<!ELEMENT %mathml-inverse;            EMPTY >
+<!ATTLIST %mathml-inverse;            %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % cfuncopnary              '%mathml-fn; | %mathml-compose;' >
+
+<!ATTLIST %mathml-fn;                 %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-ident;              EMPTY >
+<!ATTLIST %mathml-ident;              %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-compose;            EMPTY >
+<!ATTLIST %mathml-compose;            %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % carithop1ary             '%mathml-abs; | %mathml-conjugate; |
+                                      %mathml-exp; | %mathml-factorial; |
+                                      %mathml-arg; |
+                                      %mathml-real; | %mathml-imaginary;' >
+
+<!ELEMENT %mathml-exp;                EMPTY >
+<!ATTLIST %mathml-exp;                %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-abs;                EMPTY >
+<!ATTLIST %mathml-abs;                %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-arg;                EMPTY >
+<!ATTLIST %mathml-arg;                %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-real;               EMPTY >
+<!ATTLIST %mathml-real;               %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-imaginary;          EMPTY >
+<!ATTLIST %mathml-imaginary;          %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-conjugate;          EMPTY >
+<!ATTLIST %mathml-conjugate;          %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-factorial;          EMPTY >
+<!ATTLIST %mathml-factorial;          %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % carithop1or2ary          '%mathml-minus;' >
+
+<!ELEMENT %mathml-minus;              EMPTY >
+<!ATTLIST %mathml-minus;              %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % carithop2ary             '%mathml-quotient; |
+                                      %mathml-divide; |
+                                      %mathml-power; | %mathml-rem;' >
+
+<!ELEMENT %mathml-quotient;           EMPTY >
+<!ATTLIST %mathml-quotient;           %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-divide;             EMPTY >
+<!ATTLIST %mathml-divide;             %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-power;              EMPTY >
+<!ATTLIST %mathml-power;              %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-rem;                EMPTY >
+<!ATTLIST %mathml-rem;                %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % carithopnary             '%mathml-plus; | %mathml-times; |
+                                      %mathml-max; | %mathml-min; | %mathml-gcd;' >
+
+<!ELEMENT %mathml-plus;               EMPTY >
+<!ATTLIST %mathml-plus;               %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-max;                EMPTY >
+<!ATTLIST %mathml-max;                %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-min;                EMPTY >
+<!ATTLIST %mathml-min;                %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-times;              EMPTY >
+<!ATTLIST %mathml-times;              %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-gcd;                EMPTY >
+<!ATTLIST %mathml-gcd;                %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % carithoproot             '%mathml-root;' >
+
+<!ELEMENT %mathml-root;               EMPTY >
+<!ATTLIST %mathml-root;               %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % clogicopquant            '%mathml-exists; | %mathml-forall;' >
+
+<!ELEMENT %mathml-exists;             EMPTY >
+<!ATTLIST %mathml-exists;             %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-forall;             EMPTY >
+<!ATTLIST %mathml-forall;             %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % clogicopnary             '%mathml-and; | %mathml-or; | %mathml-xor;' >
+
+<!ELEMENT %mathml-and;                EMPTY >
+<!ATTLIST %mathml-and;                %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-or;                 EMPTY >
+<!ATTLIST %mathml-or;                 %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-xor;                EMPTY >
+<!ATTLIST %mathml-xor;                %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % clogicop1ary             '%mathml-not;' >
+
+<!ELEMENT %mathml-not;                EMPTY >
+<!ATTLIST %mathml-not;                %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % clogicop2ary             '%mathml-implies;' >
+
+<!ELEMENT %mathml-implies;            EMPTY >
+<!ATTLIST %mathml-implies;            %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % ccalcop                  '%mathml-log; | %mathml-int; |
+                                      %mathml-diff; | %mathml-partialdiff; |
+                                      %mathml-divergence; |
+                                      %mathml-grad; | %mathml-curl; |
+                                      %mathml-laplacian;' >
+
+<!ELEMENT %mathml-divergence;         EMPTY >
+<!ATTLIST %mathml-divergence;         %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-grad;               EMPTY >
+<!ATTLIST %mathml-grad;               %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-curl;               EMPTY >
+<!ATTLIST %mathml-curl;               %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-laplacian;          EMPTY >
+<!ATTLIST %mathml-laplacian;          %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-log;                EMPTY >
+<!ATTLIST %mathml-log;                %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-int;                EMPTY >
+<!ATTLIST %mathml-int;                %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-diff;               EMPTY >
+<!ATTLIST %mathml-diff;               %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-partialdiff;        EMPTY >
+<!ATTLIST %mathml-partialdiff;        %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % ccalcop1ary              '%mathml-ln;' >
+
+<!ELEMENT %mathml-ln;                 EMPTY >
+<!ATTLIST %mathml-ln;                 %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % csetop1ary               '%mathml-card;' >
+
+
+<!ELEMENT %mathml-card;               EMPTY >
+<!ATTLIST %mathml-card;               %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % csetop2ary               '%mathml-setdiff;' >
+
+<!ELEMENT %mathml-setdiff;            EMPTY >
+<!ATTLIST %mathml-setdiff;            %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % csetopnary               '%mathml-union; | %mathml-intersect;' >
+
+<!ELEMENT %mathml-union;              EMPTY >
+<!ATTLIST %mathml-union;              %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-intersect;          EMPTY >
+<!ATTLIST %mathml-intersect;          %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % cseqop                   '%mathml-sum; | %mathml-product; | %mathml-limit;' >
+
+<!ELEMENT %mathml-sum;                EMPTY >
+<!ATTLIST %mathml-sum;                %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-product;            EMPTY >
+<!ATTLIST %mathml-product;            %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-limit;              EMPTY >
+<!ATTLIST %mathml-limit;              %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % ctrigop                  '%mathml-sin; | %mathml-cos; |
+                                      %mathml-tan; | %mathml-sec; | %mathml-csc; |
+                                      %mathml-cot; | %mathml-sinh; |
+                                      %mathml-cosh; | %mathml-tanh; |
+                                      %mathml-sech; | %mathml-csch; |
+                                      %mathml-coth; | %mathml-arcsin; |
+                                      %mathml-arccos; | %mathml-arctan;' >
+
+<!ELEMENT %mathml-sin;                EMPTY >
+<!ATTLIST %mathml-sin;                %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-cos;                EMPTY >
+<!ATTLIST %mathml-cos;                %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-tan;                EMPTY >
+<!ATTLIST %mathml-tan;                %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-sec;                EMPTY >
+<!ATTLIST %mathml-sec;                %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-csc;                EMPTY >
+<!ATTLIST %mathml-csc;                %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-cot;                EMPTY >
+<!ATTLIST %mathml-cot;                %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-sinh;               EMPTY >
+<!ATTLIST %mathml-sinh;               %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-cosh;               EMPTY >
+<!ATTLIST %mathml-cosh;               %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-tanh;               EMPTY >
+<!ATTLIST %mathml-tanh;               %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-sech;               EMPTY >
+<!ATTLIST %mathml-sech;               %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-csch;               EMPTY >
+<!ATTLIST %mathml-csch;               %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-coth;               EMPTY >
+<!ATTLIST %mathml-coth;               %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-arcsin;             EMPTY >
+<!ATTLIST %mathml-arcsin;             %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-arccos;             EMPTY >
+<!ATTLIST %mathml-arccos;             %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-arctan;             EMPTY >
+<!ATTLIST %mathml-arctan;             %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % cstatopnary              '%mathml-mean; | %mathml-sdev; |
+                                      %mathml-variance; | %mathml-median; |
+                                      %mathml-mode;' >
+
+<!ELEMENT %mathml-mean;               EMPTY >
+<!ATTLIST %mathml-mean;               %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-sdev;               EMPTY >
+<!ATTLIST %mathml-sdev;               %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-variance;           EMPTY >
+<!ATTLIST %mathml-variance;           %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-median;             EMPTY >
+<!ATTLIST %mathml-median;             %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-mode;               EMPTY >
+<!ATTLIST %mathml-mode;               %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % cstatopmoment            '%mathml-moment;' >
+
+<!ELEMENT %mathml-moment;             EMPTY >
+<!ATTLIST %mathml-moment;             %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % clalgop1ary              '%mathml-determinant; |
+                                      %mathml-transpose;' >
+
+<!ELEMENT %mathml-determinant;        EMPTY >
+<!ATTLIST %mathml-determinant;        %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-transpose;          EMPTY >
+<!ATTLIST %mathml-transpose;          %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % clalgop2ary              '%mathml-vectorproduct; |
+                                      %mathml-scalarproduct; |
+                                      %mathml-outerproduct;' >
+
+<!ELEMENT %mathml-vectorproduct;      EMPTY >
+<!ATTLIST %mathml-vectorproduct;      %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-scalarproduct;      EMPTY >
+<!ATTLIST %mathml-scalarproduct;      %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-outerproduct;       EMPTY >
+<!ATTLIST %mathml-outerproduct;       %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % clalgopnary              '%mathml-selector;' >
+
+<!ELEMENT %mathml-selector;           EMPTY >
+<!ATTLIST %mathml-selector;           %att-definition;
+                                      %att-global; >
+
+<!-- Content elements: relations -->
+
+<!ENTITY  % cgenrel2ary              '%mathml-neq;' >
+
+<!ELEMENT %mathml-neq;                EMPTY >
+<!ATTLIST %mathml-neq;                %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % cgenrelnary              '%mathml-eq; | %mathml-leq; |
+                                      %mathml-lt; | %mathml-geq; |
+                                      %mathml-gt;| %mathml-equivalent; |
+                                      %mathml-approx;' >
+
+<!ELEMENT %mathml-eq;                 EMPTY >
+<!ATTLIST %mathml-eq;                 %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-equivalent;         EMPTY >
+<!ATTLIST %mathml-equivalent;         %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-approx;             EMPTY >
+<!ATTLIST %mathml-approx;             %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-gt;                 EMPTY >
+<!ATTLIST %mathml-gt;                 %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-lt;                 EMPTY >
+<!ATTLIST %mathml-lt;                 %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-geq;                EMPTY >
+<!ATTLIST %mathml-geq;                %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-leq;                EMPTY >
+<!ATTLIST %mathml-leq;                %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % csetrel2ary              '%mathml-in; | %mathml-notin; |
+                                      %mathml-notsubset; |
+                                      %mathml-notprsubset;' >
+
+<!ELEMENT %mathml-in;                 EMPTY >
+<!ATTLIST %mathml-in;                 %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-notin;              EMPTY >
+<!ATTLIST %mathml-notin;              %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-notsubset;          EMPTY >
+<!ATTLIST %mathml-notsubset;          %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-notprsubset;        EMPTY >
+<!ATTLIST %mathml-notprsubset;        %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % csetrelnary              '%mathml-subset; | %mathml-prsubset;' >
+
+<!ELEMENT %mathml-subset;             EMPTY >
+<!ATTLIST %mathml-subset;             %att-definition;
+                                      %att-global; >
+
+<!ELEMENT %mathml-prsubset;           EMPTY >
+<!ATTLIST %mathml-prsubset;           %att-definition;
+                                      %att-global; >
+
+<!ENTITY  % cseqrel2ary              '%mathml-tendsto;' >
+
+<!ELEMENT %mathml-tendsto;            EMPTY >
+<!ATTLIST %mathml-tendsto;            %att-definition;
+                                      %att-type;
+                                      %att-global; >
+
+<!-- Content elements: quantifiers -->
+
+<!ENTITY  % cquantifier              '%mathml-lowlimit; |
+                                      %mathml-uplimit; | %mathml-bvar; |
+                                      %mathml-degree; | %mathml-logbase;' >
+
+<!ATTLIST %mathml-lowlimit;           %att-global; >
+
+<!ATTLIST %mathml-uplimit;            %att-global; >
+
+<!ATTLIST %mathml-bvar;               %att-global; >
+
+<!ATTLIST %mathml-degree;             %att-global; >
+
+<!ATTLIST %mathml-logbase;            %att-global; >
+
+<!-- Operator groups -->
+
+<!ENTITY  % cop1ary                  '%cfuncop1ary; | %carithop1ary; | %clogicop1ary; |
+                                      %ccalcop1ary; | %ctrigop; | %clalgop1ary; |
+                                      %csetop1ary;' >
+
+<!ENTITY  % cop2ary                  '%carithop2ary; | %clogicop2ary;|
+                                      %clalgop2ary; | %csetop2ary;' >
+
+<!ENTITY  % copnary                  '%cfuncopnary; | %carithopnary; | %clogicopnary; |
+                                      %csetopnary; | %cstatopnary; | %clalgopnary;' >
+
+<!ENTITY  % copmisc                  '%carithoproot; | %carithop1or2ary; | %ccalcop; |
+                                      %cseqop; | %cstatopmoment; | %clogicopquant;' >
+
+<!-- Relation groups -->
+
+<!ENTITY  % crel2ary                 '%cgenrel2ary; | %csetrel2ary; | %cseqrel2ary;' >
+
+<!ENTITY  % crelnary                 '%cgenrelnary; | %csetrelnary;' >
+
+<!-- Content constructs: all -->
+
+<!ENTITY  % Content                  '%ctoken; | %cspecial; | %cother; | %csemantics; |
+                                      %cconstructor; | %cquantifier; |
+                                      %cop1ary; |%cop2ary; |%copnary; |%copmisc; |
+                                      %crel2ary; |%crelnary;' >
+
+<!-- Content constructs for substitution in presentation structures -->
+
+<!ENTITY  % ContInPres               '%mathml-ci; |%mathml-csymbol;| %mathml-cn;|
+                                      %mathml-apply; | %mathml-fn; |
+                                      %mathml-lambda; | %mathml-reln; |
+                                      %mathml-interval; | %mathml-list; |
+                                      %mathml-matrix; | %mathml-matrixrow; |
+                                      %mathml-set; | %mathml-vector; |
+                                      %mathml-semantics; |%mathml-declare;' >
+
+<!-- ************************************************************************ -->
+<!-- Recursive definition for content of expressions.                         -->
+<!-- Include presentation constructs at lowest level so presentation          -->
+<!-- layout schemata hold presentation or content elements.                   -->
+<!-- Include content constructs at lowest level so content elements           -->
+<!-- hold PCDATA or presentation elements at leaf level (for permitted        -->
+<!-- substitutable elements in context)                                       -->
+<!-- ************************************************************************ -->
+
+<!ENTITY  % ContentExpression        '(%Content; | %PresInCont;)*' >
+<!ENTITY  % PresExpression           '(%Presentation; | %ContInPres;)*' >
+<!ENTITY  % MathExpression           '(%PresInCont; | %ContInPres;)*' >
+
+<!-- PCDATA or MathML character elements -->
+<!ENTITY  % MathMLCharacters           '#PCDATA |
+                                        %mathml-mchar; |
+                                        %mathml-mglyph; ' >
+
+<!-- Content elements: tokens                       -->
+<!-- (may contain embedded presentation constructs) -->
+
+<!ELEMENT %mathml-ci;                 (%MathMLCharacters; | %PresInCont;)* >
+<!ELEMENT %mathml-csymbol;            (%MathMLCharacters; | %PresInCont;)* >
+<!ELEMENT %mathml-cn;                 (%MathMLCharacters; | %mathml-sep; | %PresInCont;)* >
+
+<!-- Content elements: special -->
+
+<!ELEMENT %mathml-apply;              (%ContentExpression;) >
+<!ELEMENT %mathml-reln;               (%ContentExpression;) >
+<!ELEMENT %mathml-lambda;             (%ContentExpression;) >
+
+<!-- Content elements: other -->
+
+<!ELEMENT %mathml-condition;          (%ContentExpression;) >
+<!ELEMENT %mathml-declare;            (%ContentExpression;) >
+
+<!-- Content elements: semantics -->
+
+<!ELEMENT %mathml-semantics;          (%ContentExpression;) >
+<!ELEMENT %mathml-annotation;         (#PCDATA) >
+<!ELEMENT %mathml-annotation-xml;     ANY >
+
+<!-- Content elements: constructors -->
+
+<!ELEMENT %mathml-interval;           (%ContentExpression;) >
+<!ELEMENT %mathml-set;                (%ContentExpression;) >
+<!ELEMENT %mathml-list;               (%ContentExpression;) >
+<!ELEMENT %mathml-vector;             (%ContentExpression;) >
+<!ELEMENT %mathml-matrix;             (%ContentExpression;) >
+<!ELEMENT %mathml-matrixrow;          (%ContentExpression;) >
+
+<!-- Content elements: operator (user-defined) -->
+
+<!ELEMENT %mathml-fn;                 (%ContentExpression;) >
+
+<!-- Content elements: quantifiers -->
+
+<!ELEMENT %mathml-lowlimit;           (%ContentExpression;) >
+<!ELEMENT %mathml-uplimit;            (%ContentExpression;) >
+<!ELEMENT %mathml-bvar;               (%ContentExpression;) >
+<!ELEMENT %mathml-degree;             (%ContentExpression;) >
+<!ELEMENT %mathml-logbase;            (%ContentExpression;) >
+
+<!-- ************************************************************************ -->
+<!-- Presentation layout schemata contain tokens,                             -->
+<!-- layout and content schemata.                                             -->
+<!-- ************************************************************************ -->
+
+<!ELEMENT %mathml-mstyle;             (%PresExpression;) >
+<!ELEMENT %mathml-merror;             (%PresExpression;) >
+<!ELEMENT %mathml-mphantom;           (%PresExpression;) >
+<!ELEMENT %mathml-mrow;               (%PresExpression;) >
+<!ELEMENT %mathml-mfrac;              (%PresExpression;) >
+<!ELEMENT %mathml-msqrt;              (%PresExpression;) >
+<!ELEMENT %mathml-menclose;           (%PresExpression;) >
+<!ELEMENT %mathml-mroot;              (%PresExpression;) >
+<!ELEMENT %mathml-msub;               (%PresExpression;) >
+<!ELEMENT %mathml-msup;               (%PresExpression;) >
+<!ELEMENT %mathml-msubsup;            (%PresExpression;) >
+<!ELEMENT %mathml-mmultiscripts;      (%PresExpression;) >
+<!ELEMENT %mathml-munder;             (%PresExpression;) >
+<!ELEMENT %mathml-mover;              (%PresExpression;) >
+<!ELEMENT %mathml-munderover;         (%PresExpression;) >
+<!ELEMENT %mathml-mtable;             (%PresExpression;) >
+<!ELEMENT %mathml-mtr;                (%PresExpression;) >
+<!ELEMENT %mathml-mlabeledtr;         (%PresExpression;) >
+<!ELEMENT %mathml-mtd;                (%PresExpression;) >
+<!ELEMENT %mathml-maction;            (%PresExpression;) >
+<!ELEMENT %mathml-mfenced;            (%PresExpression;) >
+<!ELEMENT %mathml-mpadded;            (%PresExpression;) >
+
+<!-- Presentation elements contain PCDATA or malignmark constructs. -->
+
+<!ELEMENT %mathml-mi;                 (%MathMLCharacters; |
+                                       %mathml-malignmark;)* >
+<!ELEMENT %mathml-mn;                 (%MathMLCharacters; |
+                                       %mathml-malignmark;)* >
+<!ELEMENT %mathml-mo;                 (%MathMLCharacters; |
+                                       %mathml-malignmark;)* >
+<!ELEMENT %mathml-mtext;              (%MathMLCharacters; |
+                                       %mathml-malignmark;)* >
+<!ELEMENT %mathml-ms;                 (%MathMLCharacters; |
+                                       %mathml-malignmark;)* >
+
+<!-- ************************************************************************ -->
+<!-- Browser interface definition                                             -->
+<!-- ************************************************************************ -->
+
+<!-- Attributes for top-level element 'math' -->
+
+<!ENTITY  % att-macros               'macros CDATA #IMPLIED' >
+<!ENTITY  % att-mode                 'mode   CDATA #IMPLIED' >
+
+<!ENTITY  % att-topinfo              '%att-global;
+                                      %att-macros;
+                                      %att-mode;' >
+
+<!-- Attributes for browser interface element -->
+
+<!ENTITY  % att-baseline             'baseline CDATA #IMPLIED' >
+<!ENTITY  % att-overflow             'overflow (scroll|elide|truncate|scale) "scroll"' >
+<!ENTITY  % att-altimg               'altimg CDATA #IMPLIED' >
+<!ENTITY  % att-alttext              'alttext CDATA #IMPLIED' >
+
+<!ENTITY  % att-browif               '%att-type;
+                                      %att-name;
+                                      %att-height;
+                                      %att-width;
+                                      %att-baseline;
+                                      %att-overflow;
+                                      %att-altimg;
+                                      %att-alttext;' >
+
+<!-- ************************************************************************ -->
+<!-- The top-level element 'math' contains MathML encoded mathematics.        -->
+<!-- The 'math' element has the browser info attributes iff it is             -->
+<!-- also the browser interface element.                                      -->
+<!-- ************************************************************************ -->
+
+<!ELEMENT %mathml-math;               (%MathExpression;) >
+
+<!ATTLIST %mathml-math;               %att-topinfo;
+                                      %att-browif; >
+
+<!-- id parsing:chars -->
+<!-- ************************************************************************ -->
+<!-- Entity sets from ISO Technical Report 9573-13                            -->
+<!-- ************************************************************************ -->
+
+<!ENTITY  % ent-isoamsa PUBLIC
+    "-//W3C//ENTITIES Added Math Symbols: Arrow Relations for MathML 2.0//EN"
+    "isoamsa.ent" >
+%ent-isoamsa;
+
+<!ENTITY  % ent-isoamsb PUBLIC
+    "-//W3C//ENTITIES Added Math Symbols: Binary Operators for MathML 2.0//EN"
+    "isoamsb.ent" >
+%ent-isoamsb;
+
+<!ENTITY  % ent-isoamsc PUBLIC
+    "-//W3C//ENTITIES Added Math Symbols: Delimiters for MathML 2.0//EN"
+    "isoamsc.ent" >
+%ent-isoamsc;
+
+<!ENTITY  % ent-isoamsn PUBLIC
+    "-//W3C//ENTITIES Added Math Symbols: Negated Relations for MathML 2.0//EN"
+    "isoamsn.ent" >
+%ent-isoamsn;
+
+<!ENTITY  % ent-isoamso PUBLIC
+    "-//W3C//ENTITIES Added Math Symbols: Ordinary for MathML 2.0//EN"
+    "isoamso.ent" >
+%ent-isoamso;
+
+<!ENTITY  % ent-isoamsr PUBLIC
+    "-//W3C//ENTITIES Added Math Symbols: Relations for MathML 2.0//EN"
+    "isoamsr.ent" >
+%ent-isoamsr;
+
+<!ENTITY  % ent-isogrk3 PUBLIC
+    "-//W3C//ENTITIES Greek Symbols for MathML 2.0//EN"
+    "isogrk3.ent" >
+%ent-isogrk3;
+
+<!ENTITY  % ent-isomfrk PUBLIC
+    "-//W3C//ENTITIES Math Alphabets: Fraktur for MathML 2.0//EN"
+    "isomfrk.ent" >
+%ent-isomfrk;
+
+<!ENTITY  % ent-isomopf PUBLIC
+    "-//W3C//ENTITIES Math Alphabets: Open Face for MathML 2.0//EN"
+    "isomopf.ent" >
+%ent-isomopf;
+
+<!ENTITY  % ent-isomscr PUBLIC
+    "-//W3C//ENTITIES Math Alphabets: Script for MathML 2.0//EN"
+    "isomscr.ent" >
+%ent-isomscr;
+
+<!ENTITY  % ent-isotech PUBLIC
+    "-//W3C//ENTITIES General Technical for MathML 2.0//EN"
+    "isotech.ent" >
+%ent-isotech;
+
+<!-- ************************************************************************ -->
+<!-- Entity sets from informative annex to                                    -->
+<!-- ISO Standard 8879:1986 (the SGML standard)                               -->
+<!-- ************************************************************************ -->
+
+<!ENTITY  % ent-isobox  PUBLIC
+    "-//W3C//ENTITIES Box and Line Drawing for MathML 2.0//EN"
+    "isobox.ent" >
+%ent-isobox;
+
+<!ENTITY  % ent-isocyr1 PUBLIC
+    "-//W3C//ENTITIES Russian Cyrillic for MathML 2.0//EN"
+    "isocyr1.ent" >
+%ent-isocyr1;
+
+<!ENTITY  % ent-isocyr2 PUBLIC
+    "-//W3C//ENTITIES Non-Russian Cyrillic for MathML 2.0//EN"
+    "isocyr2.ent" >
+%ent-isocyr2;
+
+<!ENTITY  % ent-isodia  PUBLIC
+    "-//W3C//ENTITIES Diacritical Marks for MathML 2.0//EN"
+    "isodia.ent" >
+%ent-isodia;
+
+
+<!ENTITY  % ent-isolat1 PUBLIC
+    "-//W3C//ENTITIES Added Latin 1 for MathML 2.0//EN"
+    "isolat1.ent" >
+%ent-isolat1;
+
+<!ENTITY  % ent-isolat2 PUBLIC
+    "-//W3C//ENTITIES Added Latin 2 for MathML 2.0//EN"
+    "isolat2.ent" >
+%ent-isolat2;
+
+<!ENTITY  % ent-isonum PUBLIC
+    "-//W3C//ENTITIES Numeric and Special Graphic for MathML 2.0//EN"
+    "isonum.ent" >
+%ent-isonum;
+
+<!ENTITY  % ent-isopub PUBLIC
+    "-//W3C//ENTITIES Publishing for MathML 2.0//EN"
+    "isopub.ent" >
+%ent-isopub;
+
+<!-- ************************************************************************ -->
+<!-- MathML aliases for characters defined above                              -->
+<!-- ************************************************************************ -->
+
+<!ENTITY  % ent-mmlalias  PUBLIC
+    "-//W3C//ENTITIES Aiases for MathML 2.0//EN"
+    "mmlalias.ent" >
+%ent-mmlalias;
+
+<!-- ************************************************************************ -->
+<!-- New characters defined by MathML                                         -->
+<!-- ************************************************************************ -->
+
+<!ENTITY  % ent-mmlextra PUBLIC
+    "-//W3C//ENTITIES Extra for MathML 2.0//EN"
+    "mmlextra.ent" >
+%ent-mmlextra;
+
+<!-- end of DTD fragment -->

@@ -1,0 +1,112 @@
+#!/bin/sh
+# Testing: set -x: line by line (set -n: syntax)
+# set -x
+
+# $Id: hpcautotouch 86 2008-06-04 18:42:06Z eraxxon $
+
+## **************************************************************************
+##
+## File: 
+##    $Source$
+##    cf. README.auto
+##
+## Author:
+##    Written by Nathan Tallent, Rice University.
+##    
+## **************************************************************************
+
+#############################################################################
+
+HPCAUTOTOUCH_VERSION="1.0"
+
+#############################################################################
+
+# Note: All function names are prefixed with 'f_' in order to make
+# function calls very clear.
+
+cmd="$0"
+error_pfx="*Error*"
+
+opt_dir="."
+
+f_usage()
+{
+  p="printf"
+  $p "\n"
+  $p "Usage:\n"
+  $p "  ${cmd} [OPTIONS] [<directory>]\n"
+  $p "\n"
+  $p "  Touches certain Autoconf/make output files to ensure that an\n"
+  $p "  invocation of 'make' will not cause autoconf/automake to be rerun\n"
+  $p "  and therefore require that it be installed on the user's system.  A\n"
+  $p "  common problem with CVS is that the relative timestamps between\n"
+  $p "  Autoconf/make output files are not preserved, thereby creating build\n"
+  $p "  headaches for users without the current version of Autoconf/make.\n"
+  $p "\n"
+  $p "  Options: Defaults are shown in square brackets [].\n"
+  $p "    -h, --help   : Print help, then exit\n"
+  $p "    -v, --version: Print version, then exit\n"
+  $p "\n"
+}
+
+
+# args: ($1..$n): all arguments given to this script
+f_getoptions()
+{
+  # parse argument list
+  while [ $# -ge 0 ]; do
+    case $1 in
+      --version | -v )
+         echo "version: ${HPCAUTOTOUCH_VERSION}" ; exit 0 ;;
+      --help | --h* | -h )
+         f_usage; exit 0 ;; 
+      -* ) 
+         printf "${error_pfx} Invalid option '$1'\n";
+         f_usage; exit 1;
+         ;;
+      * )   
+         break ;;
+    esac
+    shift
+  done
+
+  if [ -n "$1" ]; then 
+    opt_dir="$1"
+  fi
+
+  #echo "dir = $opt_dir"
+}
+
+#############################################################################
+# Main
+#############################################################################
+# $n: argument n, with $0 being the command name
+# $*: all arguments from $1 to $n
+
+f_getoptions $*
+
+TOUCH=
+if test -x /bin/touch ; then
+  TOUCH=/bin/touch
+elif test -x /usr/bin/touch ; then
+  TOUCH=/usr/bin/touch
+else
+  echo "Could not find touch!"
+  exit 1
+fi
+
+# Results in an error if no file found
+#find . -name aclocal.m4  | xargs ${TOUCH}
+
+DIR=${opt_dir}
+PRUNE='-name ".svn" -type d -prune -o'
+#PRN='-print'
+
+# We sleep for a moment to ensure relative timestamp differences
+find ${DIR} ${PRUNE} -name aclocal.m4   -exec ${TOUCH} '{}' \; ${PRN}
+sleep 1
+#find ${DIR} ${PRUNE} -name config.h.in  -exec ${TOUCH} '{}' \; ${PRN}
+find ${DIR} ${PRUNE} -name configure    -exec ${TOUCH} '{}' \; ${PRN}
+sleep 1
+find ${DIR} ${PRUNE} -name Makefile.in  -exec ${TOUCH} '{}' \; ${PRN}
+
