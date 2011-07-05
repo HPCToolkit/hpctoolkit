@@ -56,8 +56,10 @@
 #include <string.h>
 #include <ucontext.h>
 
+#ifndef _XOPEN_SOURCE
 /* definition for posix memalign */
 #define _XOPEN_SOURCE 600
+#endif
 #include <stdlib.h>
 
 /* definition for valloc, memalign */

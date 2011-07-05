@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 //
-// PAPI sample source simple oo interface
+// CUPTI synchronous sampling via PAPI sample source simple oo interface
 //
 
 /******************************************************************************
@@ -65,7 +65,7 @@
 
 #include <pthread.h>
 
-#if 0
+#if 1
 #include <cuda.h>
 #include <cupti.h>
 #else
@@ -189,16 +189,9 @@ METHOD_FN(start)
 
   TMSG(CUDA,"start called");
 
-  // FIXME - static is unsafe here;
-  static cuda_sample_source_state_t cuda_sample_source_state;
-  thread_data_t *td = hpcrun_get_thread_data();
-
-  cuda_sample_source_state.td = td;
-  cuda_sample_source_state.self = self;
-
   cuptiErr = cuptiSubscribe(&subscriber, 
 			    (CUpti_CallbackFunc)hpcrun_cuda_kernel_callback, 
-			    (void *) &cuda_sample_source_state);
+			    (void *) NULL);
   check_cupti_error(cuptiErr, "cuptiSubscribe");
 
   cuptiErr = cuptiEnableCallback(1, subscriber, CUPTI_CB_DOMAIN_RUNTIME_API, 
@@ -238,23 +231,6 @@ METHOD_FN(stop)
     TMSG(CUDA,"*WARNING* PAPI CUDA stop called on event set that has not been started");
     return;
   }
-
-#if 0
-  TMSG(CUDA,"stop w event set = %d",eventSet);
-  long_long *values = (long_long *) alloca(sizeof(long_long) * (nevents+2));
-  int ret = PAPI_stop(eventSet, values);
-  if (ret != PAPI_OK){
-    EMSG("Failed to stop papi f eventset %d. Return code = %d ==> %s",
-	 eventSet,ret,PAPI_strerror(ret));
-  }
-#endif
-
-#if 0
-  // FIXME - need to have subscriber handle available
-  CUpti_SubscriberHandle subscriber;
-  int cuptiErr = cuptiUnsubscribe(subscriber);
-  check_cupti_error(cuptiErr, "cuptiUnsubscribe");
-#endif
 
   TD_GET(ss_state)[self->evset_idx] = STOP;
 }
@@ -375,24 +351,6 @@ METHOD_FN(gen_event_set,int lush_metrics)
     }
   }
 
-#if 0
-  for (i = 0; i < nevents; i++) {
-    int evcode = self->evl.events[i].event;
-    long thresh = self->evl.events[i].thresh;
-
-    TMSG(CUDA, "PAPI_overflow(eventSet=%d, evcode=%x, thresh=%d)", 
-	 eventSet, evcode, thresh);
-    ret = PAPI_overflow(eventSet, evcode, thresh, OVERFLOW_MODE,
-			papi_event_handler);
-    TMSG(CUDA,"PAPI_overflow = %d", ret);
-    if (ret != PAPI_OK) {
-      EMSG("failure in PAPI gen_event_set(): PAPI_overflow() returned: %s (%d)",
-	   PAPI_strerror(ret), ret);
-      event_fatal_error(evcode, ret);
-    }
-  }
-#endif
-
   thread_data_t *td = hpcrun_get_thread_data();
   td->eventSet[self->evset_idx] = eventSet;
 }
@@ -410,9 +368,11 @@ METHOD_FN(display_events)
   printf("Name\t\t\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
 
-  PAPI_component_info_t *pci = PAPI_get_component_info(1);
+#ifdef PAPI_COMPONENT_STUFF_FIGURED_OUT
+  const PAPI_component_info_t *pci = PAPI_get_component_info(1);
   printf("PAPI component name '%s' '%s' '%s' '%s'\n", pci->name, pci->version, 
 	 pci->support_version, pci->kernel_version);
+#endif // PAPI_COMPONENT_STUFF_FIGURED_OUT
 
   num_total = 0;
   ev = PAPI_NATIVE_MASK |  PAPI_COMPONENT_MASK(PAPI_CUDA_COMPONENT_ID);
@@ -478,30 +438,26 @@ check_cupti_error(int err, char *cuptifunc)
   if (err != CUPTI_SUCCESS) {
     const char *errstr;                                     
     cuptiGetResultString(err, &errstr);                    
-#if 0
+#ifdef CUPTI_ERRORS_UNMYSTIFIED
     hpcrun_abort("error: CUDA CUPTI API function '%s' "
 		 "failed with message '%s' \n", cuptifunc, errstr);
-#endif
+#endif // CUPTI_ERRORS_UNMYSTIFIED
   }
 }
 
 
 void CUPTIAPI
-hpcrun_cuda_kernel_callback(void *userdata, 
+hpcrun_cuda_kernel_callback(void *userdata,
 			    CUpti_CallbackDomain domain,
 			    CUpti_CallbackId cbid, 
 			    const CUpti_CallbackData *cbInfo)
 {
-  cuda_sample_source_state_t *cuda_sample_source_state = 
-    (cuda_sample_source_state_t*) userdata;
+  thread_data_t* td = hpcrun_get_thread_data();
+  sample_source_t* self = &obj_name();
 
-  thread_data_t *td = cuda_sample_source_state->td; 
-  sample_source_t* self = cuda_sample_source_state->self; 
   int nevents  = self->evl.nevents;
   int cudaEventSet = td->eventSet[self->evset_idx];
   
-  CUptiResult cuptiErr;
-     
   // This callback is enabled only for kernel launch; anything else is an error.
   if (cbid != CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020) {
     hpcrun_abort("CUDA CUPTI callback seen for unexpected "
@@ -511,10 +467,10 @@ hpcrun_cuda_kernel_callback(void *userdata,
   if (cbInfo->callbackSite == CUPTI_API_ENTER) {
     cudaThreadSynchronize();
 
-#if 0
+#ifdef CUPTI_EVENT_STUFF_DEMYSTIFIED
     cuptiErr = cuptiEventGroupEnable(traceData->eventData->eventGroup);
     check_cupti_error(cuptiErr, "cuptiEventGroupEnable");
-#else
+#else // ! CUPTI_EVENT_STUFF_DEMYSTIFIED
 
   TMSG(CUDA,"starting CUDA monitoring w event set %d",cudaEventSet);
   int ret = PAPI_start(cudaEventSet);
@@ -523,12 +479,12 @@ hpcrun_cuda_kernel_callback(void *userdata,
 	 PAPI_strerror(ret), ret);
   }  
 
-#endif
+#endif // CUPTI_EVENT_STUFF_DEMYSTIFIED
   }
     
   if (cbInfo->callbackSite == CUPTI_API_EXIT) {
     cudaThreadSynchronize();
-#if 0
+#ifdef CUPTI_EVENT_STUFF_DEMYSTIFIED
     size_t bytesRead = sizeof (uint64_t);
     cuptiErr = cuptiEventGroupReadEvent(traceData->eventData->eventGroup, 
                                         CUPTI_EVENT_READ_FLAG_NONE, 
@@ -538,14 +494,14 @@ hpcrun_cuda_kernel_callback(void *userdata,
       
     cuptiErr = cuptiEventGroupDisable(traceData->eventData->eventGroup);
     check_cupti_error(cuptiErr, "cuptiEventGroupDisable");
-#else
+#else // ! CUPTI_EVENT_STUFF_DEMYSTIFIED
     long_long *eventValues = 
       (long_long *) alloca(sizeof(long_long) * (nevents+2));
 
     TMSG(CUDA,"stopping CUDA monitoring w event set %d",cudaEventSet);
     PAPI_stop(cudaEventSet, eventValues);
     TMSG(CUDA,"stopped CUDA monitoring w event set %d",cudaEventSet);
-#endif
+#endif // CUPTI_EVENT_STUFF_DEMYSTIFIED
 
     ucontext_t uc;
     TMSG(CUDA,"getting context in CUDA event handler");
@@ -556,18 +512,14 @@ hpcrun_cuda_kernel_callback(void *userdata,
     {
       {
 	int i;
-	int my_events[MAX_EVENTS];
-	int my_event_count = 1; // FIXME
-
-	// for (i = 0; i < my_event_count; i++) 
+	for (i = 0; i < nevents; i++) 
 	{
-	  // int metric_id = hpcrun_event2metric(&_cuda_obj, my_events[i]);
-	  int metric_id = 0; // FIXME
+	  int metric_id = hpcrun_event2metric(&_cuda_obj, i);
 
-	  // EEMSG("sampling call path for metric_id = %d", metric_id);
+	  TMSG(CUDA, "sampling call path for metric_id = %d", metric_id);
 	  hpcrun_sample_callpath(&uc, metric_id, eventValues[i]/*metricIncr*/, 
 				 CUPTI_LAUNCH_CALLBACK_DEPTH/*skipInner*/, 0/*isSync*/);
-	  // EEMSG("sampled call path for metric_id = %d", metric_id);
+	  TMSG(CUDA, "sampled call path for metric_id = %d", metric_id);
 	}
       }
     }
@@ -576,6 +528,3 @@ hpcrun_cuda_kernel_callback(void *userdata,
     TMSG(CUDA,"unblocked async event in CUDA event handler");
   }
 }
-
-
-
