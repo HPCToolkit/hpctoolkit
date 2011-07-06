@@ -5,20 +5,30 @@ SymtabAPI Build Notes
 Home: http://www.paradyn.org/
       http://www.dyninst.org/
 
-Download: ftp://ftp.cs.wisc.edu/paradyn/releases/release5.2/symtab_src_2.1.tar.gz
+Download: ftp://ftp.cs.wisc.edu/paradyn/releases/release7.0/symtab_src_7.0.1.tar.gz
 
 License: LGPL
 
-Prereqs: libdwarf libelf libxml2
+Prereqs: libdwarf libelf libxml2 libunwind
 
-cd src/core
-edit make.config.local
-export DYNINST_ROOT and PLATFORM
+Now uses autoconf but not automake.
+Does not support vpath build or parallel make.
+
+export PLATFORM=platform
+cd symtabAPI/src/dyninst
+./configure CC=CC CFLAGS=flags CXX=CXX CXXFLAGS=flags  \
+    --prefix=prefix  \
+    --bindir=bindir  \
+    --includedir=includedir  \
+    --libdir=libdir  \
+    --with-libelf-incdir=incdir  \
+    --with-libelf-libdir=libdir  \
+    ...
 make
-copy include and lib files
 
-No configure script, need to edit make.config.local in src/core.
-Need to set DYNINST_ROOT and PLATFORM in environment for build.
-No install target, need to manually copy include files from
-src/include and libraries from PLATFORM.
+Some compilers don't support tr1/unordered_map.  In that case, disable
+unordered_map in dyntypes.h via a conditional patch.
+
+Make copies files to includedir, libdir, etc, so don't need make
+install.
 
