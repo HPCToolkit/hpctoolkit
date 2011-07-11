@@ -471,12 +471,6 @@ hpcrun_cuda_kernel_callback(void *userdata,
       EMSG("CUDA monitoring failed to start. PAPI_start failed with %s (%d)", 
 	   PAPI_strerror(ret), ret);
     }  
-    TMSG(CUDA,"starting CUDA monitoring w event set %d",cudaEventSet);
-    ret = PAPI_start(cudaEventSet);
-    if (ret != PAPI_OK){
-      EMSG("CUDA monitoring failed to start. PAPI_start failed with %s (%d)", 
-	   PAPI_strerror(ret), ret);
-    }  
   }
     
   if (cbInfo->callbackSite == CUPTI_API_EXIT) {
