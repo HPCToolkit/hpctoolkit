@@ -1,0 +1,135 @@
+#! /usr/bin/env perl
+# -*-Mode: perl;-*-
+
+# make sure we execute perl
+#eval '(exit $?0)' && eval 'exec perl -S $0 ${1+"$@"}'
+#& eval 'exec perl -S $0 $argv:q'
+#if 0;
+
+# $Id$
+
+###############################################################################
+#
+#  File:
+#     makedtdstring
+#
+#  Description:
+#     turn a DTD into a string
+#
+#  History:
+#     15 Oct 1999 -- John Mellor-Crummey -- created 
+#
+###############################################################################
+
+# set perl to flush the buffer after each print
+use strict;
+use warnings;
+
+use FileHandle;
+STDOUT->autoflush(1); 
+
+use Getopt::Std;
+
+###############################################################################
+
+my $the_program = "makedtdstrings";
+my $the_usage = 
+"Usage: 
+  ${the_program} <dtd-file>
+
+Converts <dtd-file> into a header file and sends output to stdout.
+
+  -h : print help
+";
+
+#[-o <header-file>]
+
+###############################################################################
+# argument parsing 
+###############################################################################
+
+my $options = 'h';
+
+my %opts = ();
+getopts($options, \%opts);
+
+if (defined($opts{'h'})) {
+    printUsageAndExit();
+}
+
+###############################################################################
+# driver
+###############################################################################
+
+my $numArgs = scalar(@ARGV);
+
+if ($numArgs != 1) {
+    printErrorAndExit("Invalid number of arguments!\n")
+}
+
+my $inputfile = $ARGV[0];
+
+
+#foreach $arg (@ARGV) {
+#    push(@inputfiles, $arg); 
+#};
+
+#foreach $file (@inputfiles) {
+#    outputstring($file);
+#};
+
+outputstring($inputfile);
+
+###############################################################################
+
+sub outputstring
+{
+    my ($file) = @_;
+    unless (open(READ_FILE, "<$file")) { 
+	print "unable to open input file ", $file, ".\n";
+	return;
+    };
+    #$out = $file;
+    #$out =~ s/\.dtd$//;
+    #$out .= ".h";
+    #unless (open(WRITE_FILE, ">$out")) { 
+    #   print "unable to open output file ", $out, ".\n";
+    #   return;
+    #};
+    
+    my $prev = -1;
+    print STDOUT "\"";
+    while (<READ_FILE>) {
+	my $line = $_;
+	chomp($line);
+	$line =~ s/"/\\"/g; # escape quotes
+	printf STDOUT "%s\\n", $line;
+    };
+    printf STDOUT "\";\n";
+    
+    close(READ_FILE);
+    #close(WRITE_FILE);
+    #printf "result in file %s.\n",  $out; 
+}
+
+
+###############################################################################
+
+# printUsageAndExit
+sub printUsageAndExit 
+{
+  my ($command) = @_; # not used now
+  print STDOUT ${the_usage};
+  exit(-1);
+}
+
+# printErrorAndExit
+sub printErrorAndExit 
+{
+  my ($msg) = @_;
+  if (defined($msg)) {
+    print STDOUT "${msg}";
+  }
+  print STDOUT "Try `${the_program} -h' for more information.\n";
+  exit(-1);
+}
