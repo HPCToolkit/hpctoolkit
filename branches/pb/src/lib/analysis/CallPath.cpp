@@ -73,6 +73,7 @@ using std::string;
 
 #include <typeinfo>
 
+#include <sstream>
 
 //*************************** User Include Files ****************************
 
@@ -98,6 +99,11 @@ using namespace xml;
 #include <lib/support/Logic.hpp>
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
+
+#include <lib/prof/CallPath-Profile.pb.h>
+#include <lib/prof/Struct-Tree.pb.h>
+#include <lib/prof/CCT-Tree.pb.h>
+#include <lib/prof/Metric-Mgr.pb.h>
 
 
 //*************************** Forward Declarations ***************************
@@ -211,6 +217,277 @@ readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args)
   }
 }
 
+
+Prof::CallPath::Profile*
+readPB(std::istream* is)
+{
+  ::google::protobuf::io::ZeroCopyInputStream* intermediate = new 
+::google::protobuf::io::IstreamInputStream(is);
+  ::google::protobuf::io::CodedInputStream* cis = new 
+::google::protobuf::io::CodedInputStream(intermediate);
+  cis->SetTotalBytesLimit(0x7FFFFFFF,0x7FFFFFFF);
+  uint32_t size=0;
+  int lm=0;
+  Prof::CallPath::Profile* prof = Prof::CallPath::Profile::make(0);
+  // Reads in the name
+  Name::Name whoami;
+  cis->ReadVarint32(&size);
+  lm=cis->PushLimit(size);
+  whoami.MergeFromCodedStream(cis);
+  cis->PopLimit(lm);
+  // Reads in the section header  
+  Head::SectionHeader secHead;
+  cis->ReadVarint32(&size);
+  lm=cis->PushLimit(size);
+  secHead.MergeFromCodedStream(cis);
+  cis->PopLimit(lm);
+  // MetricTable Setter
+  std::map<int,int> partnerMap;
+  Head::SectionHeader::MetricTable mTable = secHead.m_table();
+  Head::SectionHeader::MetricDBTable mDBTable = secHead.m_db_table();
+  for (int i = 0; i < mTable.m_list_size(); i++){    
+    Head::SectionHeader::MetricTable::Metric* metric = 
+mTable.mutable_m_list(i);//FIXME parsing of formula not implemented
+    Prof::Metric::ADesc* aDesc = NULL;
+    if (metric->metric_formula_list_size() == 1){
+      aDesc = new Prof::Metric::DerivedDesc
+	(metric->basename(), "", new Prof::Metric::Plus(NULL,0));
+    }
+    else if (metric->metric_formula_list_size() == 2){
+      aDesc = new Prof::Metric::DerivedIncrDesc
+(metric->basename(), "", new Prof::Metric::MinIncr(0,0));
+    }
+    else if (metric->metric_formula_list_size() != 0){
+      printf("NOPE Metric Formula List ERROR CallPath.cpp ERROR\n");
+    }
+    if (metric->info().nv_list_size() == 2){
+      std::stringstream ss
+(metric->mutable_info()->mutable_nv_list(1)->value());
+      uint64_t x;
+      ss >> x;
+      aDesc = new Prof::Metric::SampledDesc
+(metric->mutable_basename()->c_str(), "", x, false, "", "", "");
+    }
+    if(metric->has_partner()){
+      partnerMap.insert(std::pair<int,int>(metric->id(),i));
+    }
+    aDesc->id(metric->id());
+    aDesc->computedType((Prof::Metric::ADesc::ComputedTy)metric->value());
+    aDesc->type((Prof::Metric::ADesc::ADescTy)metric->type());
+    aDesc->isVisible(metric->show());
+    aDesc->doDispPercent(metric->show_percent());
+    aDesc->nameBase(metric->basename());
+    aDesc->namePfx(metric->prefix());
+    aDesc->nameSfx(metric->suffix());
+    while(prof->metricMgr()->size()!=aDesc->id()){//there may be a better way
+      prof->metricMgr()->insert(new Prof::Metric::DerivedDesc(StrUtil::toStr(i), "", new Prof::Metric::Plus(NULL,0),false));
+                                                  //this is to acount for
+    }                                             //metrics not printed
+    prof->metricMgr()->insert(aDesc);
+  }
+  // MetricDBTable Setter
+  for (int i = 0; i < mDBTable.metric_db_list_size(); i++){
+    Prof::Metric::ADesc* aDesc;
+    aDesc = prof->metricMgr()->metric(i);
+    aDesc->dbId(mDBTable.mutable_metric_db_list(i)->db_id());
+    aDesc->dbNumMetrics(mDBTable.mutable_metric_db_list(i)->db_num_metrics());
+  }
+  for (int i =0; i < mTable.m_list().size(); i++) {
+    if(mTable.m_list(i).partner()!=0){
+      prof->metricMgr()->metric(mTable.m_list(i).id())->partner(prof->
+	       metricMgr()->metric(partnerMap.find(mTable.m_list(i).partner())
+               ->second));
+    }
+  }
+  // TraceDBTable Setter
+  if (secHead.t_db_table().trace_db_list().size() != 0){
+    prof->traceMinTime(secHead.t_db_table().trace_db_list(0).db_min_time());
+    prof->traceMaxTime(secHead.t_db_table().trace_db_list(0).db_max_time());
+  }
+  // Structure Tree
+  /*StructTree::Root structTreeRoot;
+  cis->ReadVarint32(&size);
+  lm=cis->PushLimit(size);
+  structTreeRoot.MergeFromCodedStream(cis);
+  cis->PopLimit(lm);
+  prof->structure(new Prof::Struct::Tree(""));
+  prof->structure()->root(new Prof::Struct::Root(&structTreeRoot, NULL));
+  std::map<int,Prof::Struct::ACodeNode*> struct_node_map;
+  makeStructMap(struct_node_map,prof->structure()->root());*/
+  StructTree::Type structType;
+  cis->ReadVarint32(&size);
+  lm=cis->PushLimit(size);
+  structType.MergeFromCodedStream(cis);
+  cis->PopLimit(lm);
+  std::map<int,Prof::Struct::ANode*> struct_node_map;
+  while(structType.type() != 9){
+    // Reading next node
+    Prof::Struct::ANode* anode = NULL;
+    cis->ReadVarint32(&size);
+    lm=cis->PushLimit(size);
+    switch(structType.type()){
+      case Prof::Struct::ANode::TyRoot:{
+	StructTree::Root root;
+	root.MergeFromCodedStream(cis);
+	anode=new Prof::Struct::Root(&root,NULL);
+	prof->structure(new Prof::Struct::Tree(""));
+	prof->structure()->root(dynamic_cast<Prof::Struct::Root*>(anode));
+	break;
+      }
+      case Prof::Struct::ANode::TyGroup:{
+	  StructTree::Root::Group group;
+	  group.MergeFromCodedStream(cis);
+	  anode=new Prof::Struct::Group(&group,struct_node_map.find
+					(group.parent_id())->second);
+	  break;
+      }
+      case Prof::Struct::ANode::TyLM:{
+	  StructTree::Root::LM lm;
+	  lm.MergeFromCodedStream(cis);
+	  anode=new Prof::Struct::LM(&lm,struct_node_map.find
+					(lm.parent_id())->second);
+	  break;
+      }
+      case Prof::Struct::ANode::TyFile:{
+	  StructTree::Root::File file;
+	  file.MergeFromCodedStream(cis);
+	  anode=new Prof::Struct::File(&file,struct_node_map.find
+					(file.parent_id())->second);
+	  break;
+      }
+      case Prof::Struct::ANode::TyProc:{
+	  StructTree::Root::Proc proc;
+	  proc.MergeFromCodedStream(cis);
+	  anode=new Prof::Struct::Proc(&proc,struct_node_map.find
+					(proc.parent_id())->second);
+	  break;
+      }
+      case Prof::Struct::ANode::TyAlien:{
+	  StructTree::Root::Alien alien;
+	  alien.MergeFromCodedStream(cis);
+	  anode=new Prof::Struct::Alien(&alien,struct_node_map.find
+					(alien.parent_id())->second);
+	  break;
+      }
+      case Prof::Struct::ANode::TyLoop:{
+	  StructTree::Root::Loop loop;
+	  loop.MergeFromCodedStream(cis);
+	  anode=new Prof::Struct::Loop(&loop,struct_node_map.find
+					(loop.parent_id())->second);
+	  break;
+      }
+      case Prof::Struct::ANode::TyStmt:{
+	  StructTree::Root::Stmt stmt;
+	  stmt.MergeFromCodedStream(cis);
+	  anode=new Prof::Struct::Stmt(&stmt,struct_node_map.find
+					(stmt.parent_id())->second);
+	  break;
+      }
+      case Prof::Struct::ANode::TyRef:{
+	  StructTree::Root::Ref ref;
+	  ref.MergeFromCodedStream(cis);
+	  anode=new Prof::Struct::Ref(&ref,struct_node_map.find
+					(ref.parent_id())->second);
+	  break;
+      }
+      default:{
+	printf("Number incompatible with currently defined types, sir.");
+	break;
+      }
+    }
+    struct_node_map.insert(std::pair<int,Prof::Struct::ANode*>((int)anode->id(),anode));
+    cis->PopLimit(lm);
+    // Reading next type
+    cis->ReadVarint32(&size);
+    lm=cis->PushLimit(size);
+    structType.MergeFromCodedStream(cis);
+    cis->PopLimit(lm);
+  }	
+  // CCT Tree
+  Nodes::GenNode gnode;
+  cis->ReadVarint32(&size);
+  lm=cis->PushLimit(size);
+  gnode.MergeFromCodedStream(cis);
+  cis->PopLimit(lm);
+  typedef std::map<int,Prof::CCT::ANode*> n_map;
+  n_map nodeMap;
+  typedef std::pair<int,Prof::CCT::ANode*> special;
+  std::map<int,Prof::Struct::ACodeNode*>::iterator it;
+  /*for(it=struct_node_map.begin();it!=struct_node_map.end();std::advance(it,1)){
+    printf("%d\n",it->first);
+  }*/
+  while(gnode.type() != 9){
+    // Reading next node
+    Prof::CCT::ANode* anode = NULL;
+    Prof::CCT::ANode* parentNode=nodeMap.find(gnode.parent_id())->second;
+    Prof::Struct::ACodeNode* structNode;
+    if(gnode.type()==Prof::CCT::ANode::TyRoot||struct_node_map.find(gnode.
+                                   static_scope_id())==struct_node_map.end()) {
+      structNode=NULL;
+    }
+    else {
+      structNode=dynamic_cast<Prof::Struct::ACodeNode*>(struct_node_map.
+					find(gnode.static_scope_id())->second);
+    }
+    switch(gnode.type()){
+      case Prof::CCT::ANode::TyRoot:{
+	anode=new Prof::CCT::Root(&gnode,NULL,NULL);
+	prof->cct()->root(anode);
+	break;
+      }
+      case Prof::CCT::ANode::TyProcFrm:{
+	anode=new Prof::CCT::ProcFrm(&gnode,parentNode,structNode);
+	  break;
+      }
+      case Prof::CCT::ANode::TyProc:{
+	anode=new Prof::CCT::Proc(&gnode,parentNode,structNode);
+	break;
+      }
+      case Prof::CCT::ANode::TyLoop:{
+	anode=new Prof::CCT::Loop(&gnode,parentNode,structNode);
+	break;
+      }
+      case Prof::CCT::ANode::TyCall:{
+        anode=new Prof::CCT::Call(&gnode,parentNode,structNode); 
+	break;
+      }
+      case Prof::CCT::ANode::TyStmt:{
+        anode=new Prof::CCT::Stmt(&gnode,parentNode,structNode); 
+	break;
+      }
+      default:{
+	printf("Number incompatible with currently defined types, sir.");
+	break;
+      }
+    }
+    if(gnode.type()>=0&&gnode.type()<=5){
+      nodeMap.insert(special((int)anode->id(),anode));
+    }
+
+    cis->ReadVarint32(&size);
+    lm=cis->PushLimit(size);
+    gnode.Clear();
+    gnode.MergeFromCodedStream(cis);
+    cis->PopLimit(lm);
+  }
+  return prof;
+}
+
+
+void
+makeStructMap(std::map<int,Prof::Struct::ACodeNode*>& s_map,
+Prof::Struct::ANode* subRoot)
+{
+  if(subRoot){
+    typedef std::pair<int,Prof::Struct::ACodeNode*> idNodePair; 
+    s_map.insert(idNodePair(subRoot->id(),
+dynamic_cast<Prof::Struct::ACodeNode*>(subRoot)));
+    for (Prof::Struct::ANodeSortedChildIterator it(subRoot, Prof::Struct::ANodeSortedIterator::cmpByName); it.current(); it++){
+      makeStructMap(s_map,dynamic_cast<Prof::Struct::ANode*>(it.current()));
+    }
+  }
+}
+       
 
 } // namespace CallPath
 
@@ -1046,15 +1323,33 @@ makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args)
 
   // 3. Create 'experiment.xml'
   string experiment_fnm = db_dir + "/" + args.out_db_experiment;
+  string experiment_fnm2 = db_dir + "/test123";
+  string experiment_fnm3 = db_dir + "/test.xml";
+  string experiment_fnm4 = db_dir + "/debug";
   std::ostream* os = IOUtil::OpenOStream(experiment_fnm.c_str());
+  std::ostream* os1 = IOUtil::OpenOStream(experiment_fnm2.c_str());
+  std::ostream* os2 = IOUtil::OpenOStream(experiment_fnm3.c_str());
+  std::ostream* os3 = IOUtil::OpenOStream(experiment_fnm4.c_str());
   bool prettyPrint = (Diagnostics_GetDiagnosticFilterLevel() >= 5);
-  Analysis::CallPath::write(prof, *os, args.title, prettyPrint);
+  //writes XML to experiment.xml
+  Analysis::CallPath::write(&prof, *os, args.title, prettyPrint);
   IOUtil::CloseStream(os);
+  //writes PB to test123
+  Analysis::CallPath::writePB(prof, os1, args.title,2);
+                 //change 0 to 2 if you don't want to print the stmts and loops
+  IOUtil::CloseStream(os1);
+  //writes Debug PB to debug
+  Analysis::CallPath::writePB(prof, os3, args.title,3);
+  IOUtil::CloseStream(os3);
+  //reads PB test123 and writes XML to test.xml
+  Analysis::CallPath::write(readPB(IOUtil::OpenIStream(
+experiment_fnm2.c_str())),*os2,args.title, prettyPrint);
+  IOUtil::CloseStream(os2);
 }
 
 
 void
-write(Prof::CallPath::Profile& prof, std::ostream& os,
+write(Prof::CallPath::Profile* prof, std::ostream& os,
       const string& title, bool prettyPrint)
 {
   static const char* experimentDTD =
@@ -1071,17 +1366,16 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   }
 
   uint metricBegId = 0;
-  uint metricEndId = prof.metricMgr()->size();
+  uint metricEndId = prof->metricMgr()->size();
 
   if (true /* CCT::Tree::OFlg_VisibleMetricsOnly*/) {
-    Metric::ADesc* mBeg = prof.metricMgr()->findFirstVisible();
-    Metric::ADesc* mEnd = prof.metricMgr()->findLastVisible();
+    Metric::ADesc* mBeg = prof->metricMgr()->findFirstVisible();
+    Metric::ADesc* mEnd = prof->metricMgr()->findLastVisible();
     metricBegId = (mBeg) ? mBeg->id()     : Metric::Mgr::npos;
     metricEndId = (mEnd) ? mEnd->id() + 1 : Metric::Mgr::npos;
   }
 
-  string name = (title.empty()) ? prof.name() : title;
-
+  string name = (title.empty()) ? prof->name() : title;
   os << "<?xml version=\"1.0\"?>" << std::endl;
   os << "<!DOCTYPE HPCToolkitExperiment [\n" << experimentDTD << "]>"
      << std::endl;
@@ -1096,7 +1390,7 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   // 
   // ------------------------------------------------------------
   os << "<SecHeader>\n";
-  prof.writeXML_hdr(os, metricBegId, metricEndId, oFlags);
+  prof->writeXML_hdr(os, metricBegId, metricEndId, oFlags);
   os << "  <Info/>\n";
   os << "</SecHeader>\n";
   os.flush();
@@ -1105,12 +1399,65 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   // 
   // ------------------------------------------------------------
   os << "<SecCallPathProfileData>\n";
-  prof.cct()->writeXML(os, metricBegId, metricEndId, oFlags);
+  prof->cct()->writeXML(os, metricBegId, metricEndId, oFlags);
   os << "</SecCallPathProfileData>\n";
 
   os << "</SecCallPathProfile>\n";
   os << "</HPCToolkitExperiment>\n";
   os.flush();
+}
+
+
+void
+writePB(Prof::CallPath::Profile& prof, std::ostream* os, const string& title,
+int prettyPrint)
+{ 
+  using namespace Prof;
+  uint metricBegId = 0;
+  uint metricEndId = prof.metricMgr()->size();
+
+  if (true /* CCT::Tree::OFlg_VisibleMetricsOnly*/){
+    Metric::ADesc* mBeg = prof.metricMgr()->findFirstVisible();
+    Metric::ADesc* mEnd = prof.metricMgr()->findLastVisible();
+    metricBegId = (mBeg) ? mBeg->id()     : Metric::Mgr::npos;
+    metricEndId = (mEnd) ? mEnd->id() + 1 : Metric::Mgr::npos;
+  }
+
+  string name = (title.empty()) ? prof.name() : title;
+
+  google::protobuf::io::ZeroCopyOutputStream* intermediate =
+    new ::google::protobuf::io::OstreamOutputStream(os);
+  google::protobuf::io::CodedOutputStream* cos =
+    new ::google::protobuf::io::CodedOutputStream(intermediate);
+  //---------------Writes the Name of Experiment-------------------
+  Name::Name n;
+  n.set_name(name);
+  n.set_version("2.0");//hpctoolkit version number here
+  if(prettyPrint%2 == 0){
+    cos->WriteVarint32(n.ByteSize());
+    n.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(n.DebugString());
+  }
+  //---------------Write Metric Mgr Information------------------
+  prof.writePB_hdr(cos, metricBegId, metricEndId,prettyPrint%2);
+  //----------------Writes the Structure Tree--------------------
+  prof.structure()->writePB(cos, prettyPrint); 
+  //-------------------Writes the CCT Tree-----------------------
+  prof.cct()->writePB(cos, metricBegId, metricEndId,prettyPrint%2);
+  Nodes::GenNode type;
+  type.set_type(9);
+  type.set_parent_id(0);
+  if(prettyPrint%2 == 0){
+    cos->WriteVarint32(type.ByteSize());
+    type.SerializeToCodedStream(cos);   
+  }
+  else{
+    cos->WriteString(type.DebugString()); 
+  } 
+  delete cos;
+  delete intermediate;
 }
 
 } // namespace CallPath

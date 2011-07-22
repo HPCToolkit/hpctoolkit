@@ -72,6 +72,7 @@ include $(top_srcdir)/src/Makeinclude.config
 
 MYSOURCES = \
 	Metric-Mgr.hpp Metric-Mgr.cpp \
+	Metric-Mgr.pb.h Metric-Mgr.pb.cpp\
 	Metric-ADesc.hpp Metric-ADesc.cpp \
 	Metric-IData.hpp Metric-IData.cpp \
 	Metric-AExpr.hpp Metric-AExpr.cpp \
@@ -81,20 +82,23 @@ MYSOURCES = \
 	LoadMap.hpp LoadMap.cpp \
 	\
 	Struct-Tree.hpp Struct-Tree.cpp \
+	Struct-Tree.pb.h Struct-Tree.pb.cpp\
 	Struct-TreeIterator.hpp Struct-TreeIterator.cpp \
 	\
 	CCT-Tree.hpp CCT-Tree.cpp \
+	CCT-Tree.pb.h CCT-Tree.pb.cpp \
 	CCT-TreeIterator.hpp CCT-TreeIterator.cpp \
 	CCT-Merge.hpp CCT-Merge.cpp \
 	\
 	Flat-ProfileData.hpp Flat-ProfileData.cpp \
 	\
-	CallPath-Profile.hpp CallPath-Profile.cpp
+	CallPath-Profile.hpp CallPath-Profile.cpp\
+	CallPath-Profile.pb.h CallPath-Profile.pb.cpp
 
 
 # GNU binutils flags are needed for HPCLIB_ISA.
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

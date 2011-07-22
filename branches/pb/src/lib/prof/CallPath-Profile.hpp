@@ -301,11 +301,14 @@ public:
   std::ostream&
   writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
 	       uint oFlags, const char* pfx = "") const;
+
+  void
+  writePB_hdr(google::protobuf::io::CodedOutputStream* cos,
+	      uint metricBeg,uint metricEnd,int prettyPrint);
   
   std::ostream&
   writeXML_hdr(std::ostream& os, uint oFlags = 0, const char* pfx = "") const
   { return writeXML_hdr(os, 0, m_mMgr->size(), oFlags, pfx); }
-
 
   // TODO: move Analysis::CallPath::write() here?
   //std::ostream& writeXML_cct(...) const;
@@ -317,6 +320,18 @@ public:
   ddump() const;
 
   static const int StructMetricIdFlg = 0;
+
+  void
+  traceMinTime(uint64_t min){
+    m_traceMinTime=min;
+  }
+
+
+  void
+  traceMaxTime(uint64_t max){
+    m_traceMaxTime=max;
+  }
+
 
 private:
   void
@@ -331,7 +346,6 @@ private:
 
   void
   merge_fixTrace(const CCT::MergeEffectList* mrgEffects);
-
 
 private:
   std::string m_name;

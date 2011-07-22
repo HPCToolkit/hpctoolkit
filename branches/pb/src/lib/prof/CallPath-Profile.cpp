@@ -458,7 +458,8 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     return;
   }
 
-  for (Struct::ANodeIterator it(root, filter); it.Current(); ++it) {
+  //for (Struct::ANodeIterator it(root, filter); it.Current(); ++it) {
+  for (Struct::ANodeSortedIterator it(root, Struct::ANodeSortedIterator::cmpById,filter,false); it.current(); it++) {
     Struct::ANode* strct = it.current();
     
     uint id = strct->id();
@@ -643,6 +644,127 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   }
 
   return os;
+}
+
+
+void
+Profile::writePB_hdr(google::protobuf::io::CodedOutputStream* cos, 
+		     uint metricBeg, uint metricEnd, int prettyPrint) 
+{
+  typedef std::map<uint, string> UIntToStringMap;
+  Head::SectionHeader secHead;
+  UIntToStringMap metricIdToFormula;
+  Head::SectionHeader::MetricTable* mTable = secHead.mutable_m_table();
+  for (uint i = metricBeg; i < metricEnd; i++){
+    const Metric::ADesc* m = m_mMgr->metric(i);
+    const Metric::SampledDesc* mSmpl = 
+dynamic_cast<const Metric::SampledDesc*>(m);
+    bool isDrvd = false;
+    Metric::IDBExpr* mDrvdExpr = NULL;
+    if (typeid(*m) == typeid(Metric::DerivedDesc)){
+      isDrvd = true;
+      mDrvdExpr = static_cast<const Metric::DerivedDesc*>(m)->expr();
+    }
+    else if (typeid(*m) == typeid(Metric::DerivedIncrDesc)){
+      isDrvd = true;
+      mDrvdExpr = static_cast<const Metric::DerivedIncrDesc*>(m)->expr();
+    }
+    // Metric
+    Head::SectionHeader::MetricTable::Metric* metric=mTable->add_m_list();
+    metric->set_id(i);
+    metric->set_name(m->name());
+    metric->set_basename(m->nameBase());
+    metric->set_suffix(m->nameSfx());
+    metric->set_prefix(m->namePfx());
+    metric->set_value(m->computedType());
+    metric->set_type(m->type());
+    if (m->partner()){
+      metric->set_partner(m->partner()->id());  
+    }
+    metric->set_show((m->isVisible()) ? true : false);
+    metric->set_show_percent((m->doDispPercent()) ? true : false);
+    // MetricFormula
+    if (isDrvd){
+      // 0. retrieve combine formula (each DerivedIncrDesc corresponds
+      // to an 'accumulator')
+      string combineFrm;
+      if (mDrvdExpr){
+	combineFrm = mDrvdExpr->combineString1();
+	if (mDrvdExpr->hasAccum2()){
+	  uint mId = mDrvdExpr->accum2Id();
+	  string frm = mDrvdExpr->combineString2();
+	  metricIdToFormula.insert(std::make_pair(mId, frm));
+	}
+      }
+      else{
+	// must represent accumulator 2
+	uint mId = m->id();
+	UIntToStringMap::iterator it = metricIdToFormula.find(mId);
+	DIAG_Assert((it != metricIdToFormula.end()), DIAG_UnexpectedInput);
+	combineFrm = it->second;
+      }
+      Head::SectionHeader::MetricTable::Metric::MetricFormula* mForm= 
+metric->add_metric_formula_list();
+      // 1. MetricFormula: combine
+      mForm->set_type(true);
+      mForm->set_formula(combineFrm);
+
+      // 2. MetricFormula: finalize
+      if (mDrvdExpr){
+	Head::SectionHeader::MetricTable::Metric::MetricFormula* mForm2= 
+metric->add_metric_formula_list();
+	mForm2->set_type(false);
+	mForm2->set_formula(mDrvdExpr->finalizeString());
+      }
+    }
+    // Info
+    Head::SectionHeader::Info* info = metric->mutable_info();
+    Head::SectionHeader::Info::NameValue* nv=info->add_nv_list();
+    nv->set_name("units");
+    nv->set_value("events");
+    if (mSmpl){
+      Head::SectionHeader::Info::NameValue* nv2=info->add_nv_list();
+      nv2->set_name("period");
+      std::ostringstream oss;
+      oss<<mSmpl->period()<<std::dec;
+      nv2->set_value(oss.str());
+    }
+  }
+  // -------------------------------------------------------
+  //
+  // -------------------------------------------------------
+  Head::SectionHeader::MetricDBTable* mDBTable = secHead.mutable_m_db_table();
+  for (uint i = 0; i < m_mMgr->size(); i++) {
+    const Metric::ADesc* m = m_mMgr->metric(i);
+    if (m->hasDBInfo()){
+      Head::SectionHeader::MetricDBTable::MetricDB* metricDB=mDBTable->
+add_metric_db_list();
+      metricDB->set_id(i);
+      metricDB->set_name(m->name());
+      metricDB->set_db_glob(m->dbFileGlob());
+      metricDB->set_db_id(m->dbId());
+      metricDB->set_db_num_metrics(m->dbNumMetrics());
+      metricDB->set_db_header_sz(HPCMETRICDB_FMT_HeaderLen);
+    }
+  }
+
+  if (!traceFileNameSet().empty()) {
+    Head::SectionHeader::TraceDBTable* tDBTable = secHead.mutable_t_db_table();
+    Head::SectionHeader::TraceDBTable::TraceDB* traceDB=tDBTable->
+add_trace_db_list();
+    traceDB->set_id(0);
+    traceDB->set_db_glob(HPCRUN_TraceFnmSfx);
+    traceDB->set_db_min_time(m_traceMinTime);
+    traceDB->set_db_max_time(m_traceMaxTime);
+    traceDB->set_db_header_sz(HPCTRACE_FMT_HeaderLen);
+  }
+  if(prettyPrint ==0){
+    cos->WriteVarint32(secHead.ByteSize());
+    secHead.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(secHead.DebugString());
+  }
 }
 
 

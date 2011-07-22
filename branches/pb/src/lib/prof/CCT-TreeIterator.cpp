@@ -317,6 +317,16 @@ ANodeSortedIterator::cmpByDynInfo(const void* a, const void* b)
 	   << "\n\ty: " << y->toStringMe(Prof::CCT::Tree::OFlg_Debug));
 }
 
+  //PB added method for testing
+int
+ANodeSortedIterator::cmpById(const void* a, const void* b)
+{
+  ANode* x = (*(ANode**)a);
+  ANode* y = (*(ANode**)b);
+  return x->id()-y->id();
+}
+  //end of PB method added for testing
+
 
 //***************************************************************************
 // ANodeSortedChildIterator

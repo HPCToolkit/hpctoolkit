@@ -72,12 +72,22 @@
 
 #include <climits>
  
+//********************** Protocol Buffers Include Files *********************
+
+#include <google/protobuf/stubs/common.h>
+#include <google/protobuf/io/zero_copy_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <google/protobuf/io/coded_stream.h>
+
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
 
 #include <lib/support/diagnostics.h>
 
+#include "Metric-Mgr.pb.h"
+
+#include "CCT-Tree.pb.h"
 
 //*************************** Forward Declarations **************************
 
@@ -263,6 +273,8 @@ public:
 		  uint mEndId = Metric::IData::npos,
 		  int oFlags = 0, const char* pfx = "") const;
 
+  void
+  writeMetricsPB(Nodes::GenNode* node,uint beg,uint end,int prettyPrint = 0);
 
   std::ostream&
   dumpMetrics(std::ostream& os = std::cerr, int oFlags = 0,

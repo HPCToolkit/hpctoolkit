@@ -76,6 +76,8 @@ using std::set;
 
 #include <typeinfo>
 
+#include <sstream>
+
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
@@ -247,7 +249,14 @@ Tree::writeXML(std::ostream& os, uint metricBeg, uint metricEnd,
   }
   return os;
 }
-
+void
+Tree::writePB(google::protobuf::io::CodedOutputStream* cos,uint beg,uint end,
+	      int prettyPrint)
+{
+  if (m_root){
+    m_root->writePB(cos, 0,beg,end, prettyPrint,0);
+  }
+}
 
 std::ostream& 
 Tree::dump(std::ostream& os, uint oFlags) const
@@ -697,7 +706,6 @@ ANode::pruneChildrenByNodeId(const uint8_t* prunedNodes)
   }
 }
 
-
 bool
 ANode::deleteChaff(ANode* x, uint8_t* deletedNodes)
 {
@@ -951,6 +959,198 @@ ANode::mergeDeep_fixInsert(int newMetrics, MergeContext& mrgCtxt)
 }
 
 //**********************************************************************
+//  Constructors - Reading from input
+//**********************************************************************
+/*
+Root::Root(Nodes::Root* root,ANode* parent,
+	   Prof::Struct::ACodeNode* anode):ANode(TyRoot,parent)
+{
+  id(root->id());
+  m_name = root->name();
+  m_strct=anode;
+  for(int i=0;i<root->metric_values().size();i++) 
+  {
+    demandMetric(root->metric_values(i).name())=root->metric_values(i).value();
+  }
+}
+*/
+/*
+ProcFrm::ProcFrm(Nodes::ProcFrm* procfrm, ANode* parent,
+	    Prof::Struct::ACodeNode* anode)
+            :AProcNode(TyProcFrm,parent,anode)
+{
+  id(procfrm->id());
+  for(int i=0;i<procfrm->metric_values().size();i++) 
+  {
+    demandMetric(procfrm->metric_values(i).name())=procfrm->metric_values(i).value();
+  }
+}
+*/
+/*
+Proc::Proc(Nodes::Proc* proc, ANode* parent,
+	   Prof::Struct::ACodeNode* anode)
+           :AProcNode(TyProc,parent, anode)
+{
+  id(proc->id());
+  for(int i=0;i<proc->metric_values().size();i++) 
+  {
+    demandMetric(proc->metric_values(i).name())=proc->metric_values(i).value();
+  }
+}
+*/
+/*
+Loop::Loop(Nodes::Loop* loop, ANode* parent,
+	   Prof::Struct::ACodeNode* anode):ANode(TyLoop,parent)
+{
+  id(loop->id());
+  m_strct=anode;
+  for(int i=0;i<loop->metric_values().size();i++) 
+  {
+    demandMetric(loop->metric_values(i).name())=loop->metric_values(i).value();
+  }
+}
+*/
+/*
+Call::Call(Nodes::Call* call, ANode* parent,
+	   Prof::Struct::ACodeNode* anode):ADynNode(TyCall,parent,anode,0)
+{
+  id(call->id());
+  for(int i=0;i<call->metric_values().size();i++) 
+  {
+    demandMetric(call->metric_values(i).name())=call->metric_values(i).value();
+  }
+  
+  //nameDyn
+  /string nameD=call->name_debug();
+  //int a=nameD.find(") ip(");
+  //char assocI[a-7];
+  //nameD.copy(assocI,a-7,7);//idk what to do with assocInfo_str()
+  //int b=nameD.find(", ",a);
+  //char lmId[b-a-5];
+  //nameD.copy(lmId,b-a-5,a+5);
+  //int c=nameD.find(") lip(",b);
+  //char lmIP[c-b-2];
+  //nameD.copy(lmIP,c-b-2,b+2);
+  //char lip[nameD.length()-2-c-6];
+  //nameD.copy(lip,nameD.length()-2-c-6,c+6);//idk what to do with lip_str()
+  //std::stringstream ss(lmId);
+  //uint lmId_uint;
+  //ss>>lmId_uint;
+  //lmId_real((LoadMap::LMId_t)lmId_uint);
+  //int vma;
+  //sscanf (lmIP,"%x",&vma);
+  //ADynNode::lmIP((VMA)vma,0);
+  
+}
+*/
+/*
+Stmt::Stmt(Nodes::Stmt* stmt, ANode* parent,
+	   Prof::Struct::ACodeNode* anode):ADynNode(TyStmt,parent,anode,0)
+{
+  id(stmt->id());
+  cpId(stmt->trace_id());
+  for(int i=0;i<stmt->metric_values().size();i++) 
+  {
+    demandMetric(stmt->metric_values(i).name())=stmt->metric_values(i).value();
+  }
+  
+  //nameDyn
+  //string nameD=stmt->name_debug();
+  //int a=nameD.find(") ip(");
+  //char assocI[a-7];
+  //nameD.copy(assocI,a-7,7);//idk what to do with assocInfo_str()
+  //int b=nameD.find(", ",a);
+  //char lmId[b-a-5];
+  //nameD.copy(lmId,b-a-5,a+5);
+  //int c=nameD.find(") lip(",b);
+  //char lmIP[c-b-2];
+  //nameD.copy(lmIP,c-b-2,b+2);
+  //char lip[nameD.length()-2-c-6];
+  //nameD.copy(lip,nameD.length()-2-c-6,c+6);//idk what to do with lip_str()
+  //std::stringstream ss(lmId);
+  //uint lmId_uint;
+  //ss>>lmId_uint;
+  //lmId_real((LoadMap::LMId_t)lmId_uint);
+  //int vma;
+  //sscanf (lmIP,"%x",&vma);
+  //ADynNode::lmIP((VMA)vma,0);
+  
+}
+*/
+
+Root::Root(Nodes::GenNode* root,ANode* parent,
+	   Prof::Struct::ACodeNode* anode):ANode(TyRoot,parent)
+{
+  id(root->id());
+  m_name = root->name();
+  m_strct=anode;
+  for(int i=0;i<root->metric_values().size();i++) 
+  {
+    demandMetric(root->metric_values(i).name())=root->metric_values(i).value();
+  }
+}
+
+
+ProcFrm::ProcFrm(Nodes::GenNode* procfrm, ANode* parent,
+	    Prof::Struct::ACodeNode* anode)
+            :AProcNode(TyProcFrm,parent,anode)
+{
+  id(procfrm->id());
+  for(int i=0;i<procfrm->metric_values().size();i++) 
+  {
+    demandMetric(procfrm->metric_values(i).name())=procfrm->metric_values(i).value();
+  }
+}
+
+
+Proc::Proc(Nodes::GenNode* proc, ANode* parent,
+	   Prof::Struct::ACodeNode* anode)
+           :AProcNode(TyProc,parent, anode)
+{
+  id(proc->id());
+  for(int i=0;i<proc->metric_values().size();i++) 
+  {
+    demandMetric(proc->metric_values(i).name())=proc->metric_values(i).value();
+  }
+}
+
+
+Loop::Loop(Nodes::GenNode* loop, ANode* parent,
+	   Prof::Struct::ACodeNode* anode):ANode(TyLoop,parent)
+{
+  id(loop->id());
+  m_strct=anode;
+  for(int i=0;i<loop->metric_values().size();i++) 
+  {
+    demandMetric(loop->metric_values(i).name())=loop->metric_values(i).value();
+  }
+}
+
+
+Call::Call(Nodes::GenNode* call, ANode* parent,
+	   Prof::Struct::ACodeNode* anode):ADynNode(TyCall,parent,anode,0)
+{
+  id(call->id());
+  for(int i=0;i<call->metric_values().size();i++) 
+  {
+    demandMetric(call->metric_values(i).name())=call->metric_values(i).value();
+  }
+}
+
+
+Stmt::Stmt(Nodes::GenNode* stmt, ANode* parent,
+	   Prof::Struct::ACodeNode* anode):ADynNode(TyStmt,parent,anode,0)
+{
+  id(stmt->id());
+  cpId(stmt->trace_id());
+  for(int i=0;i<stmt->metric_values().size();i++) 
+  {
+    demandMetric(stmt->metric_values(i).name())=stmt->metric_values(i).value();
+  }
+}
+
+
+//**********************************************************************
 // 
 //**********************************************************************
 
@@ -963,7 +1163,7 @@ ANode::makeDensePreorderIds(uint nextId)
   id(nextId);
   nextId++;
   
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByStructureInfo);
+  for (ANodeSortedChildIterator it(this,ANodeSortedIterator::cmpByStructureInfo);
        it.current(); it++) {
     CCT::ANode* n = it.current();
     nextId = n->makeDensePreorderIds(nextId);
@@ -1051,6 +1251,27 @@ ANode::toStringMe(uint oFlags) const
   return self;
 }
 
+// Parent function that serializes data to pb coded output stream
+void
+ANode::toPBMe(google::protobuf::io::CodedOutputStream* cos, int parent_id, 
+	      uint metricBeg, uint metricEnd, int prettyPrint,int depth)
+{
+  Nodes::GenNode gnode;
+  gnode.set_static_scope_id((m_strct) ? m_strct->id() : 0);
+  gnode.set_id(m_id);
+  gnode.set_parent_id(parent_id);
+  gnode.set_type(this->type());
+  gnode.set_depth(depth);
+  writeMetricsPB(&gnode, metricBeg, metricEnd, prettyPrint);
+  if (prettyPrint == 0) {
+    cos->WriteVarint32(gnode.ByteSize());
+    gnode.SerializeToCodedStream(cos);
+  }
+  else {
+    cos->WriteString(gnode.DebugString());
+  }
+}
+
 
 string 
 ADynNode::assocInfo_str() const
@@ -1107,6 +1328,29 @@ Root::toStringMe(uint oFlags) const
   return self;
 }
 
+// Function that serializes data to pb coded output stream
+void
+Root::toPBMe(google::protobuf::io::CodedOutputStream* cos,int parent_id, 
+	     uint metricBeg, uint metricEnd, int prettyPrint,int depth)
+{
+  Nodes::GenNode rnode;
+  rnode.set_static_scope_id((m_strct) ? m_strct->id() : 1);
+  rnode.set_id(m_id);
+  rnode.set_parent_id(parent_id);
+  rnode.set_type(this->type());
+  rnode.set_depth(depth);
+  //rnode.set_name(m_name);
+  writeMetricsPB(&rnode,metricBeg, metricEnd, prettyPrint);
+  if (prettyPrint == 0){
+    cos->WriteVarint32(rnode.ByteSize());
+    rnode.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(rnode.DebugString());
+  }
+
+}
+
 
 string
 ProcFrm::toStringMe(uint oFlags) const
@@ -1130,6 +1374,29 @@ ProcFrm::toStringMe(uint oFlags) const
   }
 
   return self; 
+}
+
+// Function that serializes data to pb coded output stream
+void
+ProcFrm::toPBMe(google::protobuf::io::CodedOutputStream* cos,int parent_id, 
+		uint metricBeg, uint metricEnd, int prettyPrint, int depth)
+{
+  Nodes::GenNode pfnode;
+  pfnode.set_static_scope_id((m_strct) ? m_strct->id() : 0);
+  pfnode.set_id(m_id);
+  pfnode.set_parent_id(parent_id);
+  pfnode.set_type(this->type());
+  pfnode.set_depth(depth);
+  pfnode.set_load_module(lmId());
+  pfnode.set_file(fileId());
+  writeMetricsPB(&pfnode, metricBeg, metricEnd, prettyPrint);
+  if (prettyPrint == 0){
+    cos->WriteVarint32(pfnode.ByteSize());
+    pfnode.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(pfnode.DebugString());
+  }
 }
 
 
@@ -1158,6 +1425,29 @@ Proc::toStringMe(uint oFlags) const
   return self; 
 }
 
+// Function that serializes data to pb coded output stream
+void
+Proc::toPBMe(google::protobuf::io::CodedOutputStream* cos,int parent_id,
+	     uint metricBeg, uint metricEnd, int prettyPrint,int depth)
+{
+  Nodes::GenNode pnode;
+  pnode.set_static_scope_id((m_strct) ? m_strct->id() : 0);
+  pnode.set_id(m_id);
+  pnode.set_parent_id(parent_id);
+  pnode.set_type(this->type());
+  pnode.set_depth(depth);
+  pnode.set_load_module(lmId());
+  pnode.set_file(fileId());
+  writeMetricsPB(&pnode, metricBeg, metricEnd, prettyPrint);
+  if (prettyPrint == 0){
+    cos->WriteVarint32(pnode.ByteSize());
+    pnode.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(pnode.DebugString());
+  }
+}
+
 
 string 
 Loop::toStringMe(uint oFlags) const
@@ -1166,6 +1456,26 @@ Loop::toStringMe(uint oFlags) const
   return self;
 }
 
+// Function that serializes data to pb coded output stream
+void
+Loop::toPBMe(google::protobuf::io::CodedOutputStream* cos, int parent_id, 
+	     uint metricBeg, uint metricEnd, int prettyPrint, int depth)
+{
+  Nodes::GenNode lnode;
+  lnode.set_static_scope_id((m_strct) ? m_strct->id() : 0);
+  lnode.set_id(m_id);
+  lnode.set_parent_id(parent_id);
+  lnode.set_type(this->type());
+  lnode.set_depth(depth);
+  writeMetricsPB(&lnode, metricBeg, metricEnd, prettyPrint);
+  if (prettyPrint == 0){
+    cos->WriteVarint32(lnode.ByteSize());
+    lnode.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(lnode.DebugString());
+  }
+}
 
 string
 Call::toStringMe(uint oFlags) const
@@ -1175,6 +1485,28 @@ Call::toStringMe(uint oFlags) const
     self += " n=\"" + nameDyn() + "\"";
   }
   return self;
+}
+
+// Function that serializes data to pb coded output stream
+void
+Call::toPBMe(google::protobuf::io::CodedOutputStream* cos,int parent_id, 
+	     uint metricBeg, uint metricEnd, int prettyPrint, int depth)
+{
+  Nodes::GenNode cnode;
+  cnode.set_static_scope_id((m_strct) ? m_strct->id() : 0);
+  cnode.set_id(m_id);
+  cnode.set_parent_id(parent_id);
+  cnode.set_type(this->type());
+  cnode.set_depth(depth);
+  //cnode.set_name_debug(nameDyn());
+  writeMetricsPB(&cnode, metricBeg, metricEnd, prettyPrint);
+  if (prettyPrint == 0){
+    cos->WriteVarint32(cnode.ByteSize());
+    cnode.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(cnode.DebugString());
+  }
 }
 
 
@@ -1191,6 +1523,30 @@ Stmt::toStringMe(uint oFlags) const
   return self;
 }
 
+// Function that serializes data to pb coded output stream
+void
+Stmt::toPBMe(google::protobuf::io::CodedOutputStream* cos,int parent_id, 
+	     uint metricBeg, uint metricEnd, int prettyPrint, int depth)
+{
+  Nodes::GenNode snode;
+  snode.set_static_scope_id((m_strct) ? m_strct->id() : 0);
+  snode.set_id(m_id);
+  snode.set_parent_id(parent_id);
+  snode.set_type(this->type());
+  snode.set_depth(depth);
+  snode.set_file(m_strct->ancestorFile()->id());
+  snode.set_line_range(m_strct->begLine());
+  //snode.set_name_debug(nameDyn());
+  writeMetricsPB(&snode,metricBeg, metricEnd, prettyPrint);
+  snode.set_trace_id(cpId());
+  if (prettyPrint == 0){
+    cos->WriteVarint32(snode.ByteSize());
+    snode.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(snode.DebugString());
+  }
+}
 
 std::ostream&
 ANode::writeXML(ostream& os, uint metricBeg, uint metricEnd,
@@ -1204,7 +1560,7 @@ ANode::writeXML(ostream& os, uint metricBeg, uint metricEnd,
   
   bool doPost = writeXML_pre(os, metricBeg, metricEnd, oFlags, pfx);
   string prefix = pfx + indent;
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByStructureInfo);
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpById);//Changed for testing purposes
        it.current(); it++) {
     ANode* n = it.current();
     n->writeXML(os, metricBeg, metricEnd, oFlags, prefix.c_str());
@@ -1215,6 +1571,44 @@ ANode::writeXML(ostream& os, uint metricBeg, uint metricEnd,
   return os;
 }
 
+// Iterates to coded output stream based of ANodetype
+void
+ANode::writePB(google::protobuf::io::CodedOutputStream* cos,int parent_id,
+	       uint metricBeg, uint metricEnd, int prettyPrint, int depth)
+{
+  switch (type()){
+  case ANode::TyRoot:
+    dynamic_cast<Root*>(this)->toPBMe(cos, parent_id, metricBeg, metricEnd, 
+				      prettyPrint,depth);
+    break;
+  case ANode::TyProcFrm:
+    dynamic_cast<ProcFrm*>(this)->toPBMe(cos, parent_id, metricBeg, metricEnd, 
+				      prettyPrint,depth);
+    break;
+  case ANode::TyProc:
+    dynamic_cast<Proc*>(this)->toPBMe(cos, parent_id, metricBeg, metricEnd, 
+				      prettyPrint,depth);
+    break;
+  case ANode::TyLoop:
+    dynamic_cast<Loop*>(this)->toPBMe(cos, parent_id, metricBeg, metricEnd, 
+				      prettyPrint,depth);
+    break;
+  case ANode::TyCall:
+    dynamic_cast<Call*>(this)->toPBMe(cos, parent_id, metricBeg, metricEnd, 
+				      prettyPrint,depth);
+    break;
+  case ANode::TyStmt:
+    dynamic_cast<Stmt*>(this)->toPBMe(cos, parent_id, metricBeg, metricEnd, 
+				      prettyPrint,depth);
+    break;
+  default:
+    printf("\n ERROR: Unexpected Type of ANode in ANode::writePB \n");
+  }
+  for (ANodeSortedChildIterator it(this,ANodeSortedIterator::cmpByStructureInfo);it.current();it++){
+    ANode* n = it.current();
+    n->writePB(cos, this->id(), metricBeg, metricEnd, prettyPrint,depth+1);
+  }
+}
 
 std::ostream&
 ANode::dump(ostream& os, uint oFlags, const char* pfx) const 

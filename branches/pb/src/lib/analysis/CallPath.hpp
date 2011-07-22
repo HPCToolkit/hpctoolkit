@@ -107,6 +107,12 @@ read(const string& prof_fnm, uint groupId, uint rFlags = 0)
   return read(prof_fnm.c_str(), groupId, rFlags);
 }
 
+Prof::CallPath::Profile*
+readPB(std::istream* input);
+
+void
+makeStructMap (std::map<int,Prof::Struct::ACodeNode*>& s_map,
+Prof::Struct::ANode* subRoot);
 
 void
 readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args);
@@ -182,8 +188,12 @@ void
 makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args);
 
 void 
-write(Prof::CallPath::Profile& prof, std::ostream& os, 
+write(Prof::CallPath::Profile* prof, std::ostream& os, 
       const std::string& title, bool prettyPrint = true);
+
+void
+writePB(Prof::CallPath::Profile& prof, std::ostream *os, 
+	const string& title, int prettyPrint = 0);
 
 } // namespace CallPath
 

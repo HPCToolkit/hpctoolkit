@@ -508,19 +508,21 @@ AM_CONDITIONAL([UNW_MIPS], [test "$UNWINDER" = mips])
 # FIXME: Now that we use libtool to build all HPCToolkit libraries, we
 # may not need this HOST_AR stuff.  (Remove from here and makefiles.)
 
+PROTOBUF="${HOME}/pkgs/protobuf" # FIXME: temporary for protocol buffers
+
 # General settings for internal libraries
 HOST_CFLAGS=""
-HOST_CXXFLAGS=""
+HOST_CXXFLAGS="-I${PROTOBUF}/include" #FIXME
 HOST_AR=""
 HOST_LIBTREPOSITORY=""
 HOST_LINK_NO_START_FILES="-nostartfiles"
 
 # Specific settings for programs
 HOST_HPCRUN_LDFLAGS=""
-HOST_HPCSTRUCT_LDFLAGS="-lm"
-HOST_HPCPROF_LDFLAGS="-lm"
-HOST_HPCPROF_FLAT_LDFLAGS="-lm"
-HOST_HPCPROFTT_LDFLAGS="-lm"
+HOST_HPCSTRUCT_LDFLAGS="-L${PROTOBUF}/lib -lprotobuf -lm" #FIXME
+HOST_HPCPROF_LDFLAGS="-L${PROTOBUF}/lib -lprotobuf -lm" #FIXME
+HOST_HPCPROF_FLAT_LDFLAGS="-L${PROTOBUF}/lib -lprotobuf -lm" #FIXME
+HOST_HPCPROFTT_LDFLAGS="-L${PROTOBUF}/lib -lprotobuf -lm" #FIXME
 HOST_XPROF_LDFLAGS=""
 my_demangle_ldflags=""
 

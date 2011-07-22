@@ -66,6 +66,13 @@ using std::string;
 
 #include <typeinfo>
 
+//********************** Protocol Buffers Include Files *********************
+
+#include <google/protobuf/stubs/common.h>
+#include <google/protobuf/io/zero_copy_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <google/protobuf/io/coded_stream.h>
+
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
@@ -76,6 +83,8 @@ using std::string;
 #include <lib/xml/xml.hpp>
 
 #include <lib/support/diagnostics.h>
+
+#include "CCT-Tree.pb.h"
 
 //*************************** Forward Declarations **************************
 
@@ -119,8 +128,25 @@ IData::writeMetricsXML(std::ostream& os, uint mBegId, uint mEndId,
       wasMetricWritten = true;
     }
   }
-
   return os;
+}
+
+
+void
+IData::writeMetricsPB(Nodes::GenNode* node,uint beg,uint end,int prettyPrint)
+{
+  if (beg == IData::npos) {
+    beg = 0;
+  }
+  end = std::min(numMetrics(), end);
+  for (uint i = beg; i < end; i++) {
+    if (hasMetric(i)) {
+      double m = metric(i);
+      Nodes::Metric* met=node->add_metric_values();
+      met->set_name(i);
+      met->set_value(m);
+    }
+  }
 }
 
 

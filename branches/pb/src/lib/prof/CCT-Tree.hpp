@@ -73,9 +73,18 @@
 
 #include <cstring> // for memcpy
 
+//********************** Protocol Buffers Include Files *********************
+
+#include <google/protobuf/stubs/common.h>
+#include <google/protobuf/io/zero_copy_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <google/protobuf/io/coded_stream.h>
+
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
+
+#include "CCT-Tree.pb.h"
 
 #include "CCT-Merge.hpp"
 
@@ -222,10 +231,14 @@ public:
 	   uint metricBeg = Metric::IData::npos,
 	   uint metricEnd = Metric::IData::npos,
 	   uint oFlags = 0) const;
+  
+  void
+  writePB(google::protobuf::io::CodedOutputStream* cos,uint beg,uint end,
+	  int prettyPrint = 0);
 
   std::ostream&
   dump(std::ostream& os = std::cerr, uint oFlags = 0) const;
-  
+    
   void
   ddump() const;
 
@@ -606,11 +619,19 @@ public:
   virtual std::string
   toStringMe(uint oFlags = 0) const;
 
+  void
+  toPBMe(google::protobuf::io::CodedOutputStream* cos, int parent_id,
+	 uint metricBeg, uint metricEnd, int prettyPrint = 0,int depth =0);
+
   std::ostream&
   writeXML(std::ostream& os,
 	   uint metricBeg = Metric::IData::npos,
 	   uint metricEnd = Metric::IData::npos,
 	   uint oFlags = 0, const char* pfx = "") const;
+
+  void
+  writePB(google::protobuf::io::CodedOutputStream* cos,int parent_id,
+	  uint metricBeg,uint metricEnd,int prettyPrint = 0, int depth =0);
 
   std::ostream&
   dump(std::ostream& os = std::cerr, uint oFlags = 0, const char* pfx = "") const;
@@ -1072,6 +1093,8 @@ public:
       m_name((nm) ? nm : "")
   { }
 
+  Root(Nodes::GenNode *root,ANode *parent,Prof::Struct::ACodeNode* anode);
+
   virtual ~Root()
   { }
 
@@ -1081,6 +1104,10 @@ public:
   // Dump contents for inspection
   virtual std::string
   toStringMe(uint oFlags = 0) const;
+
+  void
+  toPBMe(google::protobuf::io::CodedOutputStream* cos, int parent_id,
+	 uint metricBeg, uint metricEnd, int prettyPrint = 0,int depth =0);
   
 protected:
 private:
@@ -1108,7 +1135,7 @@ public:
   ProcFrm(const ProcFrm& x)
     : AProcNode(x)
   { }
-
+  ProcFrm(Nodes::GenNode* procFrm,ANode* parent,Prof::Struct::ACodeNode* anode);
 
   // -------------------------------------------------------
   // Static structure (NOTE: m_strct is always Struct::Proc)
@@ -1137,6 +1164,10 @@ public:
   virtual std::string
   toStringMe(uint oFlags = 0) const;
 
+  void
+  toPBMe(google::protobuf::io::CodedOutputStream* cos, int parent_id,
+	 uint metricBeg, uint metricEnd, int prettyPrint = 0,int depth =0);
+
   virtual std::string
   codeName() const;
 
@@ -1159,7 +1190,7 @@ public:
   
   virtual ~Proc()
   { }
-  
+  Proc(Nodes::GenNode* proc,ANode* parent,Prof::Struct::ACodeNode* anode);
 
   // -------------------------------------------------------
   // Static structure (NOTE: m_strct is either Struct::Proc or Struct::Alien)
@@ -1176,6 +1207,10 @@ public:
 
   virtual std::string
   toStringMe(uint oFlags = 0) const;
+
+  void
+  toPBMe(google::protobuf::io::CodedOutputStream* cos, int parent_id,
+	 uint metricBeg, uint metricEnd, int prettyPrint = 0,int depth =0);
 
 private:
 };
@@ -1196,10 +1231,14 @@ public:
 
   virtual ~Loop()
   { }
-
+  Loop(Nodes::GenNode* loop,ANode* parent,Prof::Struct::ACodeNode* anode);
   // Dump contents for inspection
   virtual std::string
   toStringMe(uint oFlags = 0) const;
+
+  void
+  toPBMe(google::protobuf::io::CodedOutputStream* cos, int parent_id,
+	 uint metricBeg, uint metricEnd, int prettyPrint = 0,int depth =0);
   
 private:
 };
@@ -1229,7 +1268,7 @@ public:
   
   virtual ~Call()
   { }
-  
+  Call(Nodes::GenNode* call,ANode* parent,Prof::Struct::ACodeNode* anode);
   // Node data
   virtual VMA
   lmIP() const
@@ -1249,6 +1288,10 @@ public:
   // Dump contents for inspection
   virtual std::string
   toStringMe(uint oFlags = 0) const;
+
+  void
+  toPBMe(google::protobuf::io::CodedOutputStream* cos, int parent_id,
+	 uint metricBeg, uint metricEnd, int prettyPrint = 0,int depth =0);
 
 };
 
@@ -1277,7 +1320,7 @@ class Stmt
   
   virtual ~Stmt()
   { }
-
+  Stmt(Nodes::GenNode* stmt,ANode* parent,Prof::Struct::ACodeNode* anode);
   Stmt&
   operator=(const Stmt& x)
   {
@@ -1290,6 +1333,10 @@ class Stmt
   // Dump contents for inspection
   virtual std::string
   toStringMe(uint oFlags = 0) const;
+
+  void
+  toPBMe(google::protobuf::io::CodedOutputStream* cos, int parent_id,
+	 uint metricBeg, uint metricEnd, int prettyPrint = 0,int depth =0);
 };
 
 

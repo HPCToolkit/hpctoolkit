@@ -74,6 +74,12 @@ using std::string;
 
 #include <cstring> // for 'strcmp'
 
+//********************** Protocol Buffers Include Files *********************
+
+#include <google/protobuf/stubs/common.h>
+#include <google/protobuf/io/zero_copy_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <google/protobuf/io/coded_stream.h>
 
 //*************************** User Include Files ****************************
 
@@ -149,6 +155,24 @@ Tree::writeXML(ostream& os, uint oFlags) const
     m_root->writeXML(os, oFlags);
   }
   return os;
+}
+
+void
+Tree::writePB(google::protobuf::io::CodedOutputStream* cos, int outFlag)
+{
+  if (m_root){
+    m_root->makePB(cos, outFlag);
+  }
+
+  StructTree::Type type;
+  type.set_type(9);
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(type.ByteSize());
+    type.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(type.DebugString());
+  }
 }
 
 
@@ -1447,12 +1471,128 @@ Group::toXML(uint oFlags) const
 }
 
 
+void
+Group::makePB(google::protobuf::io::CodedOutputStream* cos, int outFlag)
+{
+  toPB(cos,outFlag);
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName); it.current(); it++) {
+    ANode* scope = it.current();
+    if(scope){
+      switch(scope->type()){
+        case ANode::TyGroup:
+	  dynamic_cast<Group*>(scope)->makePB(cos,outFlag);
+	  break;
+        case ANode::TyLM:
+	  dynamic_cast<LM*>(scope)->makePB(cos,outFlag);
+	  break;
+        case ANode::TyFile:
+          dynamic_cast<File*>(scope)->makePB(cos,outFlag);
+          break;
+        case ANode::TyProc:
+          dynamic_cast<Proc*>(scope)->makePB(cos,outFlag);
+          break;
+        case ANode::TyAlien:
+  	  dynamic_cast<Alien*>(scope)->makePB(cos,outFlag);
+          break;
+        case ANode::TyLoop:
+  	  if(outFlag/2!=1){
+	    dynamic_cast<Loop*>(scope)->makePB(cos,outFlag);
+  	  }
+          break;
+        case ANode::TyStmt:
+	  if(outFlag/2!=1){
+	    dynamic_cast<Stmt*>(scope)->toPB(cos,outFlag);
+	  }
+          break;
+        default:
+          printf("Group has an incorrect child type:  %d\n",type());
+      }
+    }
+  }
+}
+
+
+void
+Group::toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag)
+{
+  StructTree::Type type;
+  type.set_type(this->type());
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(type.ByteSize());
+    type.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(type.DebugString());
+  }
+  StructTree::Root::Group group;
+  group.set_id(id());
+  group.set_name(name().c_str());
+  group.set_parent_id((parent())?parent()->id():0);
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(group.ByteSize());
+    group.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(group.DebugString());
+  }
+}
+
+
 string
 LM::toXML(uint oFlags) const
 {
   string self = ANode::toXML(oFlags)
     + " n" + MakeAttrStr(m_name) + " " + XMLVMAIntervals(oFlags);
   return self;
+}
+
+
+void
+LM::makePB(google::protobuf::io::CodedOutputStream* cos, int outFlag)
+{
+  toPB(cos,outFlag);
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName); it.current(); it++) {
+    ANode* scope = it.current();
+    if(scope){
+      switch(scope->type()){
+        case ANode::TyGroup:
+          dynamic_cast<Group*>(scope)->makePB(cos,outFlag);
+          break;
+        case ANode::TyFile:
+          dynamic_cast<File*>(scope)->makePB(cos,outFlag);
+          break;
+        default:
+          printf("LM has an incorrect child type:  %d\n",type());
+      }
+    }
+  }
+}
+
+
+void
+LM::toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag)
+{
+  StructTree::Type type;
+  type.set_type(this->type());
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(type.ByteSize());
+    type.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(type.DebugString());
+  }
+  StructTree::Root::LM lm;
+  lm.set_id(id());
+  lm.set_name(name().c_str());
+  lm.set_parent_id((parent())?parent()->id():0);
+  lm.set_vma_intervals(m_vmaSet.toString());
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(lm.ByteSize());
+    lm.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(lm.DebugString());
+  }
 }
 
 
@@ -1464,15 +1604,138 @@ File::toXML(uint oFlags) const
 }
 
 
+void
+File::makePB(google::protobuf::io::CodedOutputStream* cos, int outFlag)
+{
+  toPB(cos,outFlag);
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName); it.current(); it++) {
+    ANode* scope = it.current();
+    if(scope){
+      switch(scope->type()){
+        case ANode::TyGroup:
+          dynamic_cast<Group*>(scope)->makePB(cos,outFlag);
+          break;
+        case ANode::TyProc:
+          dynamic_cast<Proc*>(scope)->makePB(cos,outFlag);
+          break;
+        case ANode::TyLoop:
+	  if(outFlag/2!=1){
+	    dynamic_cast<Loop*>(scope)->makePB(cos,outFlag);
+  	  }
+          break;
+        case ANode::TyStmt:
+	  if(outFlag/2!=1){
+	    dynamic_cast<Stmt*>(scope)->toPB(cos,outFlag);
+ 	  }
+          break;
+        default:
+          printf("File has an incorrect child type:  %d\n",type());
+      }
+    }
+  }
+}
+
+
+void
+File::toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag)
+{
+  StructTree::Type type;
+  type.set_type(this->type());
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(type.ByteSize());
+    type.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(type.DebugString());
+  }
+  StructTree::Root::File file;
+  file.set_id(id());
+  file.set_name(name().c_str());
+  file.set_parent_id((parent())?parent()->id():0);
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(file.ByteSize());
+    file.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(file.DebugString());
+  }
+}
+
+
 string
 Proc::toXML(uint oFlags) const
 {
   string self = ANode::toXML(oFlags) + " n" + MakeAttrStr(m_name);
-  if (!m_linkname.empty() && m_name != m_linkname) { // print if different
+  if (!m_linkname.empty() && m_name != m_linkname) { 
     self = self + " ln" + MakeAttrStr(m_linkname);
   }
   self = self + " " + XMLLineRange(oFlags) + " " + XMLVMAIntervals(oFlags);
   return self;
+}
+
+
+void
+Proc::makePB(google::protobuf::io::CodedOutputStream* cos, int outFlag)
+{
+  toPB(cos,outFlag);
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName); it.current(); it++) {
+    ANode* scope = it.current();
+    if(scope){
+      switch(scope->type()){
+        case ANode::TyGroup:
+          dynamic_cast<Group*>(scope)->makePB(cos,outFlag);
+          break;
+        case ANode::TyAlien:  
+  	    dynamic_cast<Alien*>(scope)->makePB(cos,outFlag);
+          break;
+        case ANode::TyLoop: 
+  	  if(outFlag/2!=1){
+	    dynamic_cast<Loop*>(scope)->makePB(cos,outFlag);
+  	  }
+          break;
+        case ANode::TyStmt:
+  	  if(outFlag/2!=1){
+	    dynamic_cast<Stmt*>(scope)->toPB(cos,outFlag);
+	  }
+          break;
+        default:
+          printf("Proc has an incorrect child type:  %d\n",type());
+      }
+    }
+  }
+}
+
+
+void
+Proc::toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag)
+{
+  StructTree::Type type;
+  type.set_type(this->type());
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(type.ByteSize());
+    type.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(type.DebugString());
+  }
+  StructTree::Root::Proc proc;
+  proc.set_id(id());
+  proc.set_name(name().c_str());
+  proc.set_parent_id((parent())?parent()->id():0);
+  proc.set_vma_intervals(m_vmaSet.toString());
+  proc.set_link_name(m_linkname);
+  string line = StrUtil::toStr(begLine());
+  if (begLine() != endLine()){
+    line += "-" + StrUtil::toStr(endLine());
+  }
+  proc.set_line_range(line);
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(proc.ByteSize());
+    proc.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(proc.DebugString());
+  }
 }
 
 
@@ -1486,11 +1749,139 @@ Alien::toXML(uint oFlags) const
 }
 
 
+void
+Alien::makePB(google::protobuf::io::CodedOutputStream* cos, int outFlag)
+{
+  toPB(cos,outFlag);
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName); it.current(); it++) {
+    ANode* scope = it.current();
+    if(scope){
+      switch(scope->type()){
+        case ANode::TyGroup:
+          dynamic_cast<Group*>(scope)->makePB(cos,outFlag);
+          break;
+        case ANode::TyAlien:
+  	  dynamic_cast<Alien*>(scope)->makePB(cos,outFlag);
+          break;
+        case ANode::TyLoop:
+  	  if(outFlag/2!=1){
+	    dynamic_cast<Loop*>(scope)->makePB(cos,outFlag);
+	  }
+          break;
+        case ANode::TyStmt:
+ 	  if(outFlag/2!=1){
+	    dynamic_cast<Stmt*>(scope)->toPB(cos,outFlag);
+ 	  }
+          break;
+        default:
+          printf("Alien has an incorrect child type:  %d\n",type());
+      }
+    }
+  }
+}
+
+
+void
+Alien::toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag)
+{
+  StructTree::Type type;
+  type.set_type(this->type());
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(type.ByteSize());
+    type.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(type.DebugString());
+  }
+  StructTree::Root::Alien alien;
+  alien.set_id(id());
+  alien.set_name(name().c_str());
+  alien.set_parent_id((parent())?parent()->id():0);
+  alien.set_vma_intervals(m_vmaSet.toString());
+  alien.set_file_name(fileName());
+  string line = StrUtil::toStr(begLine());
+  if (begLine() != endLine()){
+    line += "-" + StrUtil::toStr(endLine());
+  }
+  alien.set_line_range(line);
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(alien.ByteSize());
+    alien.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(alien.DebugString());
+  }
+}
+
+
 string
 Loop::toXML(uint oFlags) const
 {
   string self = ACodeNode::toXML(oFlags);
   return self;
+}
+
+
+void
+Loop::makePB(google::protobuf::io::CodedOutputStream* cos, int outFlag)
+{
+  toPB(cos,outFlag);
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName); it.current(); it++) {
+    ANode* scope = it.current();
+    if(scope){
+      switch(scope->type()){
+        case ANode::TyGroup:
+          dynamic_cast<Group*>(scope)->makePB(cos,outFlag);
+          break;
+        case ANode::TyAlien:
+   	    dynamic_cast<Alien*>(scope)->makePB(cos,outFlag);
+          break;
+        case ANode::TyLoop:
+	  if(outFlag/2!=1){
+	    dynamic_cast<Loop*>(scope)->makePB(cos,outFlag);
+	  }
+          break;
+        case ANode::TyStmt:
+	  if(outFlag/2!=1){
+	    dynamic_cast<Stmt*>(scope)->toPB(cos,outFlag);
+	  }
+          break;
+        default:
+          printf("Loop has an incorrect child type:  %d\n",type());
+      }
+    }
+  }
+}
+
+
+void
+Loop::toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag)
+{
+  StructTree::Type type;
+  type.set_type(this->type());
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(type.ByteSize());
+    type.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(type.DebugString());
+  }
+  StructTree::Root::Loop loop;
+  loop.set_id(id());
+  loop.set_vma_intervals(m_vmaSet.toString());
+  loop.set_parent_id((parent())?parent()->id():0);
+  string line = StrUtil::toStr(begLine());
+  if (begLine() != endLine()){
+    line += "-" + StrUtil::toStr(endLine());
+  }
+  loop.set_line_range(line);
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(loop.ByteSize());
+    loop.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(loop.DebugString());
+  }
 }
 
 
@@ -1502,12 +1893,76 @@ Stmt::toXML(uint oFlags) const
 }
 
 
+void
+Stmt::toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag)
+{
+  StructTree::Type type;
+  type.set_type(this->type());
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(type.ByteSize());
+    type.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(type.DebugString());
+  }
+  StructTree::Root::Stmt stmt;
+  stmt.set_id(id());
+  stmt.set_vma_intervals(m_vmaSet.toString());
+  stmt.set_parent_id((parent())?parent()->id():0);
+  string line = StrUtil::toStr(begLine());
+  if (begLine() != endLine()){
+    line += "-" + StrUtil::toStr(endLine());
+  }
+  stmt.set_line_range(line);
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(stmt.ByteSize());
+    stmt.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(stmt.DebugString());
+  }
+}
+
+
 string
 Ref::toXML(uint oFlags) const
 {
   string self = ACodeNode::toXML(oFlags)
     + " b" + MakeAttrNum(begPos) + " e" + MakeAttrNum(endPos);
   return self;
+}
+
+
+void
+Ref::toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag)
+{
+  StructTree::Type type;
+  type.set_type(this->type());
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(type.ByteSize());
+    type.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(type.DebugString());
+  }
+  StructTree::Root::Ref ref;
+  ref.set_id(id());
+  ref.set_vma_intervals(m_vmaSet.toString());
+  ref.set_parent_id((parent())?parent()->id():0);
+  string line = StrUtil::toStr(begLine());
+  if (begLine() != endLine()){
+    line += "-" + StrUtil::toStr(endLine());
+  }
+  ref.set_line_range(line);
+  ref.set_begin(begPos);
+  ref.set_end(endPos);  
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(ref.ByteSize());
+    ref.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(ref.DebugString());
+  }
 }
 
 
@@ -1598,6 +2053,54 @@ Root::writeXML(ostream& os, uint oFlags, const char* pfx) const
     ANode::writeXML_post(os, oFlags, pfx);
   }
   return os;
+}
+
+
+void
+Root::makePB(google::protobuf::io::CodedOutputStream* cos, int outFlag)
+{
+  toPB(cos,outFlag);
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName); it.current(); it++) {
+    ANode* scope = it.current();
+    if(scope){
+      switch(scope->type()){
+        case ANode::TyGroup:
+          dynamic_cast<Group*>(scope)->makePB(cos,outFlag);
+          break;
+        case ANode::TyLM:
+          dynamic_cast<LM*>(scope)->makePB(cos,outFlag);
+          break;
+        default:
+          printf("Root has an incorrect child type: %d\n",type());
+      }
+    }
+  }
+}
+
+
+void
+Root::toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag)
+{
+  StructTree::Type type;
+  type.set_type(this->type());
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(type.ByteSize());
+    type.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(type.DebugString());
+  }
+  StructTree::Root root;
+  root.set_id(id());
+  root.set_name(name().c_str());
+  root.set_parent_id((parent())?parent()->id():0);
+  if(outFlag%2 == 0){
+    cos->WriteVarint32(root.ByteSize());
+    root.SerializeToCodedStream(cos);
+  }
+  else{
+    cos->WriteString(root.DebugString());
+  }
 }
 
 
@@ -1961,7 +2464,86 @@ Ref::RelocateRef()
     }
   }
 }
+//***************************************************************************
+Root::Root(StructTree::Root* root, ANode* parent): ANode(ANode::TyRoot,parent)
+{
+  m_id=root->id();
+  m_name=root->name();
+}
 
+
+Group::Group(StructTree::Root::Group* group, ANode* parent)
+:ACodeNode(ANode::TyGroup,parent)
+{
+  m_id=group->id();
+  m_name=group->name();
+}
+
+
+LM::LM(StructTree::Root::LM* lm, ANode* parent): ACodeNode(ANode::TyLM,parent)
+{
+  m_id=lm->id();
+  m_name=lm->name();
+  m_vmaSet.fromString(lm->mutable_vma_intervals()->c_str());
+}
+
+
+File::File(StructTree::Root::File* file, ANode* parent)
+:ACodeNode(ANode::TyFile,parent)
+{
+  m_id=file->id();
+  m_name=file->name();
+}
+
+
+Proc::Proc(StructTree::Root::Proc* proc, ANode* parent)
+:ACodeNode(ANode::TyProc,parent)
+{
+  m_id=proc->id();
+  m_name=proc->name();
+  m_vmaSet.fromString(proc->mutable_vma_intervals()->c_str());
+  m_linkname = proc->link_name();
+  std::stringstream ss(proc->line_range());
+  int x;
+  ss >> x;
+  begLine(x);
+}
+
+
+Alien::Alien(StructTree::Root::Alien* alien, ANode* parent):ACodeNode(ANode::TyAlien,parent)
+{
+  m_id=alien->id();
+  m_name=alien->name();
+  m_vmaSet.fromString(alien->mutable_vma_intervals()->c_str());
+  std::stringstream ss(alien->line_range());
+  int x;
+  ss >> x;
+  begLine(x);
+}
+
+
+Loop::Loop(StructTree::Root::Loop* loop, ANode* parent)
+:ACodeNode(ANode::TyLoop,parent)
+{
+  m_id=loop->id();
+  m_vmaSet.fromString(loop->mutable_vma_intervals()->c_str());
+  std::stringstream ss(loop->line_range());
+  int x;
+  ss >> x;
+  begLine(x);
+}
+
+
+Stmt::Stmt(StructTree::Root::Stmt* stmt, ANode* parent)
+:ACodeNode(ANode::TyStmt,parent)
+{
+  m_id=stmt->id();
+  m_vmaSet.fromString(stmt->mutable_vma_intervals()->c_str());
+  std::stringstream ss(stmt->line_range());
+  int x;
+  ss >> x;
+  begLine(x);
+}
 //***************************************************************************
 
 } // namespace Struct

@@ -239,6 +239,8 @@ public:
   // multiple runs and multiple processes.
   static int cmpByDynInfo(const void* x, const void* y);
 
+  static int cmpById(const void* x, const void* y);
+
 public: 
   ANodeSortedIterator(const ANode* node,
 		      cmp_fptr_t compare_fn,

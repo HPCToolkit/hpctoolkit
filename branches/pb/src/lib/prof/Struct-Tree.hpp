@@ -63,6 +63,7 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+#include <sstream>
 
 #include <string>
 #include <list>
@@ -76,6 +77,7 @@
 #include <include/uint.h>
 
 #include "Metric-IData.hpp"
+#include "Struct-Tree.pb.h"
 
 #include <lib/binutils/VMAInterval.hpp>
 
@@ -194,6 +196,10 @@ public:
   std::ostream&
   writeXML(std::ostream& os = std::cerr, uint oFlags = 0) const;
 
+  void
+  writePB(google::protobuf::io::CodedOutputStream* cos,int outFlag = 0);
+
+
   // Dump contents for inspection (use flags from ANode)
   std::ostream&
   dump(std::ostream& os = std::cerr, uint oFlags = 0) const;
@@ -210,8 +216,6 @@ private:
 void
 writeXML(std::ostream& os, const Prof::Struct::Tree& strctTree,
 	 bool prettyPrint = true);
-
-
 } // namespace Struct
 } // namespace Prof
 
@@ -331,6 +335,10 @@ public:
   uint
   id() const
   { return m_id; }
+
+  void
+  id(uint m)
+  { m_id=m; }
 
   static const uint Id_NULL = 0;
 
@@ -824,6 +832,8 @@ protected:
   operator=(const Root& x);
 
 public:
+  Root(StructTree::Root* root, ANode* parent);
+
   Root(const char* nm)
     : ANode(TyRoot, NULL)
   {
@@ -898,6 +908,12 @@ public:
 	   const char* pre = "") const;
 
   void
+  makePB(google::protobuf::io::CodedOutputStream* cos,int outFlag);
+
+  void
+  toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag);
+
+  void
   CSV_TreeDump(std::ostream& os = std::cout) const;
 
   // --------------------------------------------------------
@@ -951,6 +967,8 @@ public:
     Ctor(nm, parent);
   }
 
+  Group(StructTree::Root::Group* group, ANode* parent);
+
   Group(const std::string& nm, ANode* parent,
 	     int begLn = ln_NULL, int endLn = ln_NULL)
     : ACodeNode(TyGroup, parent, begLn, endLn, 0, 0)
@@ -978,6 +996,11 @@ public:
   virtual std::string
   toXML(uint oFlags = 0) const;
 
+  void
+  makePB(google::protobuf::io::CodedOutputStream* cos,int outFlag);
+
+  void
+  toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag);
   // --------------------------------------------------------
   // debugging
   // --------------------------------------------------------
@@ -1014,6 +1037,8 @@ public:
   {
     Ctor(nm, parent);
   }
+
+  LM(StructTree::Root::LM* lm, ANode* parent);
 
   LM(const std::string& nm, ANode* parent)
     : ACodeNode(TyLM, parent, ln_NULL, ln_NULL, 0, 0)
@@ -1136,6 +1161,12 @@ public:
   virtual std::string
   toXML(uint oFlags = 0) const;
 
+  void
+  makePB(google::protobuf::io::CodedOutputStream* cos,int outFlag);
+
+  void
+  toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag);
+
   virtual std::ostream&
   writeXML(std::ostream& os = std::cout, uint oFlags = 0,
 	   const char* pre = "") const;
@@ -1233,6 +1264,8 @@ public:
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
+  File(StructTree::Root::File* file, ANode* parent);
+
   File(const char* filenm, ANode *parent,
        SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyFile, parent, begLn, endLn, 0, 0)
@@ -1306,6 +1339,13 @@ public:
   virtual std::string
   toXML(uint oFlags = 0) const;
 
+  void
+  makePB(google::protobuf::io::CodedOutputStream* cos,int outFlag);
+
+  void
+  toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag);
+
+
   virtual void
   CSV_dump(const Root &root, std::ostream& os = std::cout,
 	   const char* file_name = NULL, const char* proc_name = NULL,
@@ -1353,6 +1393,8 @@ public:
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
+  Proc(StructTree::Root::Proc* proc, ANode* parent);
+
   Proc(const char* name, ACodeNode* parent, const char* linkname, bool hasSym,
        SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyProc, parent, begLn, endLn, 0, 0)
@@ -1443,6 +1485,12 @@ public:
   virtual std::string
   toXML(uint oFlags = 0) const;
 
+  void
+  makePB(google::protobuf::io::CodedOutputStream* cos,int outFlag);
+
+  void
+  toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag);
+
   virtual void
   CSV_dump(const Root &root, std::ostream& os = std::cout,
 	   const char* file_name = NULL, const char* proc_name = NULL,
@@ -1493,6 +1541,8 @@ public:
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
+  Alien(StructTree::Root::Alien* alien, ANode* parent);
+
   Alien(ACodeNode* parent, const char* filenm, const char* procnm,
 	     SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyAlien, parent, begLn, endLn, 0, 0)
@@ -1551,6 +1601,12 @@ public:
   virtual std::string
   toXML(uint oFlags = 0) const;
 
+  void
+  makePB(google::protobuf::io::CodedOutputStream* cos,int outFlag);
+
+  void
+  toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag);
+
   virtual void
   CSV_dump(const Root &root, std::ostream& os = std::cout,
 	   const char* file_name = NULL, const char* proc_name = NULL,
@@ -1583,6 +1639,8 @@ public:
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
+  Loop(StructTree::Root::Loop* loop, ANode* parent);
+
   Loop(ACodeNode* parent,
 	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyLoop, parent, begLn, endLn, 0, 0)
@@ -1615,6 +1673,12 @@ public:
   virtual std::string
   toXML(uint oFlags = 0) const;
 
+  void
+  makePB(google::protobuf::io::CodedOutputStream* cos,int outFlag);
+
+  void
+  toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag);
+
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
 	 const char* pre = "") const;
@@ -1633,6 +1697,8 @@ public:
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
+  Stmt(StructTree::Root::Stmt* stmt, ANode* parent);
+
   Stmt(ACodeNode* parent, SrcFile::ln begLn, SrcFile::ln endLn,
        VMA begVMA = 0, VMA endVMA = 0)
     : ACodeNode(TyStmt, parent, begLn, endLn, begVMA, endVMA),
@@ -1686,6 +1752,9 @@ public:
   virtual std::string
   toXML(uint oFlags = 0) const;
 
+  void
+  toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag);
+
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
 	 const char* pre = "") const;
@@ -1702,6 +1771,18 @@ private:
 // ----------------------------------------------------------------------
 class Ref: public ACodeNode {
 public:
+  Ref(StructTree::Root::Ref* ref, ANode* parent):ACodeNode(ANode::TyRef,parent)
+  {
+    m_id=ref->id();
+    m_vmaSet.fromString(ref->mutable_vma_intervals()->c_str());
+    std::stringstream ss(ref->line_range());
+    int x;
+    ss >> x;
+    begLine(x);
+    begPos = ref->begin();
+    endPos = ref->end();
+  }
+
   Ref(ACodeNode* parent, int _begPos, int _endPos, const char* refName);
   // parent->type() == TyStmt
 
@@ -1726,6 +1807,9 @@ public:
 
   virtual std::string
   toXML(uint oFlags = 0) const;
+
+  void
+  toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag);
 
   // --------------------------------------------------------
   // debugging
