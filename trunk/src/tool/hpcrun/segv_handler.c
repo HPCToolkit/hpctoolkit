@@ -127,10 +127,15 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
 int
 hpcrun_setup_segv()
 {
-  int ret = monitor_sigaction(SIGSEGV, &hpcrun_sigsegv_handler, 0, NULL);
+  int ret = monitor_sigaction(SIGBUS, &hpcrun_sigsegv_handler, 0, NULL);
+  if (ret != 0) {
+    EMSG("Unable to install SIGBUS handler", __FILE__, __LINE__);
+  }
 
+  ret = monitor_sigaction(SIGSEGV, &hpcrun_sigsegv_handler, 0, NULL);
   if (ret != 0) {
     EMSG("Unable to install SIGSEGV handler", __FILE__, __LINE__);
   }
+
   return ret;
 }
