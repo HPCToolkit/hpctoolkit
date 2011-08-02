@@ -159,9 +159,11 @@ METHOD_FN(process_event_list,int lush_metrics)
   if (_p) {
     n_events = atoi(_p+1);
   }
+#ifdef OLD_DEFAULT
   if (! n_events ) {
     n_events = 1;
   }
+#endif // OLD_DEFAULT
   for (int i = 0; i < n_events; i++) {
     int n = hpcrun_new_metric();
     hpcrun_set_metric_info(n, "RENAME");

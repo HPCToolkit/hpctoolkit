@@ -84,8 +84,34 @@ typedef struct metric_proc_map_t {
   struct metric_proc_map_t* next;
   metric_upd_proc_t*        proc;
   int                       id;
+  int                       kind_idx;     // metrics are divided into "kinds"
+  int                       offset;
 } metric_proc_map_t;
 
+//
+// To accomodate block sparse representation,
+// use 'kinds' == dense subarrays of metrics
+//
+// Sample use:
+// Std metrics = 1 class,
+// CUDA metrics = another class
+//
+// To use the mechanism, call hpcrun_metrics_new_kind.
+// Then each call to hpcrun_new_metric will yield a slot in the
+// new metric kind subarray.
+//
+// For complicated metric assignment, hpcrun_switch_metric_kind(kind),
+// and hpcrun_get_new_metric_of_kind(kind) enable fine-grain control
+// of metric sloc allocation
+//
+// Default case is 1 kind ("STD")
+//
+// Future expansion to permit different strategies is possible, but
+// unimplemented at this time
+
+typedef struct kind_info_t kind_info_t;
+
+kind_info_t* hpcrun_metrics_new_kind();
 
 bool hpcrun_metrics_finalized(void);
 
@@ -101,6 +127,7 @@ metric_desc_p_tbl_t* hpcrun_get_metric_tbl(void);
 
 metric_upd_proc_t* hpcrun_get_metric_proc(int metric_id);
 
+// get a new metric from the cached kind
 int hpcrun_new_metric(void);
 
 void hpcrun_set_metric_info_w_fn(int metric_id, const char* name,

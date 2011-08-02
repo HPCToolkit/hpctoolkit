@@ -77,7 +77,7 @@ struct  metric_set_t {
   hpcrun_metricVal_t v1;
 };
 
-//*************************** Forward Declarations **************************
+//*************************** Local Data **************************
 
 // number of metrics requested
 static int n_metrics = 0;
@@ -103,6 +103,53 @@ static metric_desc_t** id2metric;
 //    2) metric info is written out in metric_tbl form
 //
 static metric_desc_p_tbl_t metric_tbl;
+
+//
+// To accomodate block sparse representation,
+// use 'kinds' == dense subarrays of metrics
+//
+// Sample use:
+// Std metrics = 1 class,
+// CUDA metrics = another class
+//
+// To use the mechanism, call hpcrun_metrics_new_kind.
+// Then each call to hpcrun_new_metric will yield a slot in the
+// new metric kind subarray.
+//
+// For complicated metric assignment, hpcrun_metrics_switch_kind(kind),
+// and hpcrun_new_metric_of_kind(kind) enable fine-grain control
+// of metric sloc allocation
+//
+// Default case is 1 kind.
+//
+// Future expansion to permit different strategies is possible, but
+// unimplemented at this time
+
+struct kind_info_t {
+  int idx;     // current index in kind
+  kind_info_t* link; // all kinds linked together in singly linked list
+};
+
+static kind_info_t kinds = {.idx = 0, .link = NULL };
+static kind_info_t* current_kind = &kinds;
+static kind_info_t* current_insert = &kinds;
+
+kind_info_t*
+hpcrun_metrics_new_kind(void)
+{
+  kind_info_t* rv = (kind_info_t*) hpcrun_malloc(sizeof(kind_info_t));
+  *rv = (kind_info_t) {.idx = 0, .link = NULL};
+  current_insert->link = rv;
+  current_insert = rv;
+  current_kind = rv;
+  return rv;
+}
+
+void
+hpcrun_metrics_switch_kind(kind_info_t* kind)
+{
+  current_kind = kind;
+}
 
 //
 // local table of metric update functions
@@ -219,9 +266,11 @@ hpcrun_get_metric_proc(int metric_id)
   return metric_proc_tbl[metric_id];
 }
 
-
+//
+// Allocate new metric of a particular kind
+//
 int
-hpcrun_new_metric()
+hpcrun_new_metric_of_kind(kind_info_t* kind)
 {
   if (has_set_max_metrics) {
     return 0;
@@ -240,8 +289,11 @@ hpcrun_new_metric()
   n->next = metric_data;
   n->id   = n_metrics;
   metric_data = n;
-  n_metrics++;
 
+  kind->idx++;
+
+  n_metrics++;
+  
   //
   // No preallocation for metric_proc tbl
   //
@@ -254,6 +306,11 @@ hpcrun_new_metric()
   return metric_data->id;
 }
 
+int
+hpcrun_new_metric(void)
+{
+  return hpcrun_new_metric_of_kind(current_kind);
+}
 
 void
 hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
