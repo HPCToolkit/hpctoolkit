@@ -67,18 +67,30 @@
 // macros
 //*****************************************************************************
 
+#define EMSG           hpcrun_emsg
+#define AMSG           hpcrun_amsg
+
+#ifdef NO_HPCRUN_MSGS
+#define PMSG_LIMIT(C) 
+#define STDERR_MSG(...)
+#define EEMSG(...)      
+#define PMSG(f,...)    
+#define TMSG(f,...)    
+#define ETMSG(f,...)   
+#define NMSG(f,...)    
+#define ENMSG(f, ...)  
+#else // ! NO_HPCRUN_MSGS
 #define PMSG_LIMIT(C) if (hpcrun_below_pmsg_threshold()) C
 
 #define STDERR_MSG(...) hpcrun_stderr_log_msg(false,__VA_ARGS__)
-#define EMSG            hpcrun_emsg
 #define EEMSG(...)      hpcrun_stderr_log_msg(true,__VA_ARGS__)
 
-#define AMSG           hpcrun_amsg
 #define PMSG(f,...)    hpcrun_pmsg(DBG_PREFIX(f), NULL, __VA_ARGS__)
 #define TMSG(f,...)    hpcrun_pmsg(DBG_PREFIX(f), #f, __VA_ARGS__)
 #define ETMSG(f,...)   hpcrun_pmsg_stderr(true,DBG_PREFIX(f), #f, __VA_ARGS__)
 #define NMSG(f,...)    hpcrun_nmsg(DBG_PREFIX(f), #f, __VA_ARGS__)
 #define ENMSG(f, ...)  hpcrun_nmsg_stderr(true, DBG_PREFIX(f), #f, __VA_ARGS__)
+#endif // NO_HPCRUN_MSGS
 
 #define EXIT_ON_ERROR(r,e,...) hpcrun_exit_on_error(r,e,__VA_ARGS__)
 

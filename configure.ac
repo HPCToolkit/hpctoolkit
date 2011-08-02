@@ -1,5 +1,4 @@
 dnl -*-Mode: autoconf;-*-
-
 dnl * BeginRiceCopyright *****************************************************
 dnl
 dnl $HeadURL$
@@ -989,6 +988,8 @@ AC_MSG_CHECKING([for libmonitor])
 case "${LIBMONITOR}" in
   /* )
     LIBMONITOR_INC="${LIBMONITOR}/include"
+    LIBMONITOR_BIN=${LIBMONITOR}/bin
+    LIBMONITOR_LIB=${LIBMONITOR}/lib
     if test -f "${LIBMONITOR_INC}/monitor.h" ; then :
     else
         AC_MSG_ERROR([invalid libmonitor directory: $LIBMONITOR])
@@ -999,6 +1000,38 @@ case "${LIBMONITOR}" in
     fi
     if test -f "${LIBMONITOR_LIB}/libmonitor_wrap.a" ; then
         OPT_LIBMONITOR_STATIC=yes
+dnl
+dnl  ** The following lines (commented out) of configure script implement
+dnl  ** a fragile solution to the problem of inconsistent configuration
+dnl  ** between libmonitor and hpclink.
+dnl
+dnl  ** The current configure presumes all possible monitor override features
+dnl  ** are enabled. Consequently, all possible wrap names are listed
+dnl
+dnl  ** To achieve congruence with the actual overrides configured in libmonitor,
+dnl  ** the libmonitor configuration information would need to be available to
+dnl  ** the hpctoolkit configure mechanism.
+dnl
+dnl  ** *AT THE PRESENT TIME*, the exact right information is present in the
+dnl  ** monitor-link script. The commented out lines below take advantage of
+dnl  ** the monitor-link script to accomplish configuration congruence.
+dnl
+dnl  ** To use the fragile congruence solution: uncomment the next 2 lines
+dnl
+dnl	MONLINK=$LIBMONITOR_BIN/monitor-link
+dnl	LIBMONITOR_WRAP_NAMES=`sed -n -e '/^monitor_wrap_names=/{s/^monitor_wrap_names=//;p}' $MONLINK`
+dnl
+dnl
+dnl  *** And comment out the following lines
+dnl
+        LIBMONITOR_WRAP_NAMES="main exit _exit dlopen dlclose fork vfork system \
+           execl execlp execle execv execvp execve pthread_exit                \
+	   pthread_create signal sigaction sigprocmask pthread_sigmask         \
+	   MPI_Init mpi_init mpi_init_ mpi_init__                              \
+	   MPI_Init_thread mpi_init_thread mpi_init_thread_ mpi_init_thread__  \
+	   MPI_Finalize mpi_finalize mpi_finalize_ mpi_finalize__              \ 
+	   MPI_Comm_rank mpi_comm_rank mpi_comm_rank_ mpi_comm_rank__          \
+	   _mp_init"
     fi
     LIBMONITOR_COPY=yes
     LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
@@ -1018,6 +1051,7 @@ AC_SUBST([LIBMONITOR_INC])
 AC_SUBST([LIBMONITOR_LIB])
 AC_SUBST([LIBMONITOR_COPY])
 AC_SUBST([LIBMONITOR_RUN_DIR])
+AC_SUBST([LIBMONITOR_WRAP_NAMES])
 
 
 #-------------------------------------------------

@@ -673,6 +673,7 @@ OPT_LIBUNWIND_LIBPATH
 OPT_LIBUNWIND_IFLAGS
 OPT_HAVE_LIBUNWIND_FALSE
 OPT_HAVE_LIBUNWIND_TRUE
+LIBMONITOR_WRAP_NAMES
 LIBMONITOR_RUN_DIR
 LIBMONITOR_COPY
 LIBMONITOR_LIB
@@ -16849,6 +16850,8 @@ $as_echo_n "checking for libmonitor... " >&6; }
 case "${LIBMONITOR}" in
   /* )
     LIBMONITOR_INC="${LIBMONITOR}/include"
+    LIBMONITOR_BIN=${LIBMONITOR}/bin
+    LIBMONITOR_LIB=${LIBMONITOR}/lib
     if test -f "${LIBMONITOR_INC}/monitor.h" ; then :
     else
         as_fn_error $? "invalid libmonitor directory: $LIBMONITOR" "$LINENO" 5
@@ -16859,6 +16862,14 @@ case "${LIBMONITOR}" in
     fi
     if test -f "${LIBMONITOR_LIB}/libmonitor_wrap.a" ; then
         OPT_LIBMONITOR_STATIC=yes
+        LIBMONITOR_WRAP_NAMES="main exit _exit dlopen dlclose fork vfork system \
+           execl execlp execle execv execvp execve pthread_exit                \
+	   pthread_create signal sigaction sigprocmask pthread_sigmask         \
+	   MPI_Init mpi_init mpi_init_ mpi_init__                              \
+	   MPI_Init_thread mpi_init_thread mpi_init_thread_ mpi_init_thread__  \
+	   MPI_Finalize mpi_finalize mpi_finalize_ mpi_finalize__              \
+	   MPI_Comm_rank mpi_comm_rank mpi_comm_rank_ mpi_comm_rank__          \
+	   _mp_init"
     fi
     LIBMONITOR_COPY=yes
     LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
@@ -16874,6 +16885,7 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBMONITOR" >&5
 $as_echo "$LIBMONITOR" >&6; }
+
 
 
 

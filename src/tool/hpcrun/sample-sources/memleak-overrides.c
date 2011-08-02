@@ -81,7 +81,8 @@
 #include <monitor-exts/monitor_ext.h>
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-macros.h>
-
+#include <utilities/arch/inline-asm-gctxt.h>
+#include <utilities/arch/mcontext.h>
 
 
 /******************************************************************************
@@ -520,7 +521,11 @@ MONITOR_EXT_WRAP_NAME(posix_memalign)(void **memptr, size_t alignment,
   int ret;
 
   memleak_initialize();
+#ifdef USE_SYS_GCTXT
   getcontext(&uc);
+#else // ! USE_SYS_GCTXT
+  INLINE_ASM_GCTXT(posix_memalign, uc);
+#endif // USE_SYS_GCTXT
   *memptr = memleak_malloc_helper("posix_memalign", bytes, alignment, 0, &uc, &ret);
   return ret;
 }
@@ -532,7 +537,13 @@ MONITOR_EXT_WRAP_NAME(memalign)(size_t boundary, size_t bytes)
   ucontext_t uc;
 
   memleak_initialize();
+
+#ifdef USE_SYS_GCTXT
   getcontext(&uc);
+#else // ! USE_SYS_GCTXT
+  INLINE_ASM_GCTXT(memalign, uc);
+#endif // USE_SYS_GCTXT
+
   return memleak_malloc_helper("memalign", bytes, boundary, 0, &uc, NULL);
 }
 
@@ -543,18 +554,33 @@ MONITOR_EXT_WRAP_NAME(valloc)(size_t bytes)
   ucontext_t uc;
 
   memleak_initialize();
+
+#ifdef USE_SYS_GCTXT
   getcontext(&uc);
+#else // ! USE_SYS_GCTXT
+  INLINE_ASM_GCTXT(valloc, uc);
+#endif // USE_SYS_GCTXT
+
   return memleak_malloc_helper("valloc", bytes, memleak_pagesize, 0, &uc, NULL);
 }
 
+
+extern void LMALLOC;
 
 void *
 MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 {
   ucontext_t uc;
+  //  mcontext_t* mc = GET_MCONTEXT(&uc);
 
   memleak_initialize();
+
+#ifdef USE_SYS_GCTXT
   getcontext(&uc);
+#else // ! USE_SYS_GCTXT
+  INLINE_ASM_GCTXT(malloc, uc);
+#endif // USE_SYS_GCTXT
+  
   return memleak_malloc_helper("malloc", bytes, 0, 0, &uc, NULL);
 }
 
@@ -565,7 +591,13 @@ MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
   ucontext_t uc;
 
   memleak_initialize();
+
+#ifdef USE_SYS_GCTXT
   getcontext(&uc);
+#else // ! USE_SYS_GCTXT
+  INLINE_ASM_GCTXT(calloc, uc);
+#endif // USE_SYS_GCTXT
+
   return memleak_malloc_helper("calloc", nmemb * bytes, 0, 1, &uc, NULL);
 }
 
@@ -618,7 +650,13 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
   }
 
   // realloc(NULL, bytes) means malloc(bytes)
+
+#ifdef USE_SYS_GCTXT
   getcontext(&uc);
+#else // ! USE_SYS_GCTXT
+  INLINE_ASM_GCTXT(realloc, uc);
+#endif // USE_SYS_GCTXT
+
   if (ptr == NULL) {
     return memleak_malloc_helper("realloc/malloc", bytes, 0, 0, &uc, NULL);
   }
