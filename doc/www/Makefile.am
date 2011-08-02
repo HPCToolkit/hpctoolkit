@@ -115,9 +115,11 @@ nobase_dist_doc_DATA = $(MYDATA)
 # Other rules
 #############################################################################
 
+# For MacOS add/remove: | tr '\n' ' '
+
 MY_AWKVARS= \
-  -v varhdr="`cat $(srcdir)/style/header-hpctoolkit.html`" \
-  -v varftr="`cat $(srcdir)/style/footer-hpctoolkit.html`"
+  -v varhdr="`cat $(srcdir)/style/header-hpctoolkit.html | tr '\n' ' '`" \
+  -v varftr="`cat $(srcdir)/style/footer-hpctoolkit.html | tr '\n' ' '`"
 
 MY_AWKPROG = '\
   BEGIN { } \
