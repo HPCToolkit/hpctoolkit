@@ -72,7 +72,7 @@ papi_extra_libs='@papi_extra_libs@'
 
 # FIXME: The wrap list should come from monitor.
 
-monitor_wrap_names=@LIBMONITOR_WRAP_NAMES@
+monitor_wrap_names='@LIBMONITOR_WRAP_NAMES@'
 
 # monitor_wrap_names='main exit _exit dlopen dlclose fork vfork system
 #   execl execlp execle execv execvp execve pthread_exit
