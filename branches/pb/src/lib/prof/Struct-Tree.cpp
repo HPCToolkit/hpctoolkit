@@ -1495,10 +1495,8 @@ Group::makePB(google::protobuf::io::CodedOutputStream* cos, int outFlag)
   	  dynamic_cast<Alien*>(scope)->makePB(cos,outFlag);
           break;
         case ANode::TyLoop:
-  	  if(outFlag/2!=1){
-	    dynamic_cast<Loop*>(scope)->makePB(cos,outFlag);
-  	  }
-          break;
+ 	    dynamic_cast<Loop*>(scope)->makePB(cos,outFlag);
+           break;
         case ANode::TyStmt:
 	  if(outFlag/2!=1){
 	    dynamic_cast<Stmt*>(scope)->toPB(cos,outFlag);
@@ -1611,6 +1609,7 @@ File::makePB(google::protobuf::io::CodedOutputStream* cos, int outFlag)
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName); it.current(); it++) {
     ANode* scope = it.current();
     if(scope){
+      // FIXME - makePB should be a virtual function
       switch(scope->type()){
         case ANode::TyGroup:
           dynamic_cast<Group*>(scope)->makePB(cos,outFlag);
@@ -1619,9 +1618,7 @@ File::makePB(google::protobuf::io::CodedOutputStream* cos, int outFlag)
           dynamic_cast<Proc*>(scope)->makePB(cos,outFlag);
           break;
         case ANode::TyLoop:
-	  if(outFlag/2!=1){
 	    dynamic_cast<Loop*>(scope)->makePB(cos,outFlag);
-  	  }
           break;
         case ANode::TyStmt:
 	  if(outFlag/2!=1){
@@ -1689,9 +1686,7 @@ Proc::makePB(google::protobuf::io::CodedOutputStream* cos, int outFlag)
   	    dynamic_cast<Alien*>(scope)->makePB(cos,outFlag);
           break;
         case ANode::TyLoop: 
-  	  if(outFlag/2!=1){
 	    dynamic_cast<Loop*>(scope)->makePB(cos,outFlag);
-  	  }
           break;
         case ANode::TyStmt:
   	  if(outFlag/2!=1){
@@ -1764,9 +1759,7 @@ Alien::makePB(google::protobuf::io::CodedOutputStream* cos, int outFlag)
   	  dynamic_cast<Alien*>(scope)->makePB(cos,outFlag);
           break;
         case ANode::TyLoop:
-  	  if(outFlag/2!=1){
-	    dynamic_cast<Loop*>(scope)->makePB(cos,outFlag);
-	  }
+ 	    dynamic_cast<Loop*>(scope)->makePB(cos,outFlag);
           break;
         case ANode::TyStmt:
  	  if(outFlag/2!=1){
@@ -1796,7 +1789,9 @@ Alien::toPB(google::protobuf::io::CodedOutputStream* cos,int outFlag)
   StructTree::Root::Alien alien;
   alien.set_id(id());
   alien.set_name(name().c_str());
-  alien.set_parent_id((parent())?parent()->id():0);
+  ANode *ancProc=ancestorProc();
+  DIAG_Assert(ancProc, "");
+  alien.set_parent_id(ancProc->id());
   alien.set_vma_intervals(m_vmaSet.toString());
   alien.set_file_name(fileName());
   string line = StrUtil::toStr(begLine());
@@ -1825,7 +1820,9 @@ Loop::toXML(uint oFlags) const
 void
 Loop::makePB(google::protobuf::io::CodedOutputStream* cos, int outFlag)
 {
-  toPB(cos,outFlag);
+  if(outFlag/2!=1){
+    toPB(cos,outFlag);
+  }
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName); it.current(); it++) {
     ANode* scope = it.current();
     if(scope){
@@ -1837,9 +1834,7 @@ Loop::makePB(google::protobuf::io::CodedOutputStream* cos, int outFlag)
    	    dynamic_cast<Alien*>(scope)->makePB(cos,outFlag);
           break;
         case ANode::TyLoop:
-	  if(outFlag/2!=1){
-	    dynamic_cast<Loop*>(scope)->makePB(cos,outFlag);
-	  }
+	  dynamic_cast<Loop*>(scope)->makePB(cos,outFlag);
           break;
         case ANode::TyStmt:
 	  if(outFlag/2!=1){

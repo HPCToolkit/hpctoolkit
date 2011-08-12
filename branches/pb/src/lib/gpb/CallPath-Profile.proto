@@ -1,0 +1,8 @@
+package Name;
+option java_package = "Protobuf";
+option java_outer_classname = "NameVersionPB";
+message Name
+{
+	optional string name =1;
+	optional string version=2;	
+}

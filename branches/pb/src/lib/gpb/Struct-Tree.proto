@@ -1,0 +1,74 @@
+package StructTree;
+option java_package = "Protobuf";
+option java_outer_classname = "StructTreePB";
+
+message Root
+{
+	message Group
+	{
+		optional int32 id =1;
+		optional string name =2;
+		required int32 parent_id =3;
+	}
+	message LM
+	{
+		optional int32 id =1;
+		optional string name =2;
+		required int32 parent_id =3;
+		optional string vma_intervals =4;
+	}
+	message File
+	{
+		optional int32 id =1;
+		optional string name =2;
+		required int32 parent_id =3;
+	}
+	message Proc
+	{
+		optional int32 id =1;
+		optional string name =2;
+		required int32 parent_id =3;
+		optional string vma_intervals =4;
+		optional string line_range =5;
+		optional string link_name =6;
+	}
+	message Alien
+	{
+		optional int32 id =1;
+		optional string name =2;
+		required int32 parent_id =3;
+		optional string vma_intervals =4;
+		optional string line_range =5;
+		optional string file_name =6;
+	}
+	message Loop
+	{
+		optional int32 id =1;
+		required int32 parent_id =2;
+		optional string vma_intervals =3;
+		optional string line_range =4;
+	}
+	message Stmt
+	{
+		optional int32 id =1;
+		required int32 parent_id =2;
+		optional string vma_intervals =3;
+		optional string line_range =4;
+	}
+	message Ref
+	{
+		optional int32 id =1;
+		required int32 parent_id =2;
+		optional string vma_intervals =3;
+		optional string line_range =4;
+		optional uint32 begin =5;
+		optional uint32 end =6;
+	}
+	optional string name =1;
+	optional int32 id =2;
+	required int32 parent_id =3;
+}
+message Type
+{
+	required int32 type =1;
+}

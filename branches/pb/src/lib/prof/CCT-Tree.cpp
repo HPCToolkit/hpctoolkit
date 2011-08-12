@@ -1387,7 +1387,6 @@ ProcFrm::toPBMe(google::protobuf::io::CodedOutputStream* cos,int parent_id,
   pfnode.set_parent_id(parent_id);
   pfnode.set_type(this->type());
   pfnode.set_depth(depth);
-  pfnode.set_load_module(lmId());
   pfnode.set_file(fileId());
   writeMetricsPB(&pfnode, metricBeg, metricEnd, prettyPrint);
   if (prettyPrint == 0){
@@ -1436,7 +1435,6 @@ Proc::toPBMe(google::protobuf::io::CodedOutputStream* cos,int parent_id,
   pnode.set_parent_id(parent_id);
   pnode.set_type(this->type());
   pnode.set_depth(depth);
-  pnode.set_load_module(lmId());
   pnode.set_file(fileId());
   writeMetricsPB(&pnode, metricBeg, metricEnd, prettyPrint);
   if (prettyPrint == 0){
@@ -1467,6 +1465,7 @@ Loop::toPBMe(google::protobuf::io::CodedOutputStream* cos, int parent_id,
   lnode.set_parent_id(parent_id);
   lnode.set_type(this->type());
   lnode.set_depth(depth);
+  lnode.set_line_range(m_strct->begLine());
   writeMetricsPB(&lnode, metricBeg, metricEnd, prettyPrint);
   if (prettyPrint == 0){
     cos->WriteVarint32(lnode.ByteSize());

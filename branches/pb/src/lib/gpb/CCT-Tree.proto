@@ -1,0 +1,88 @@
+package Nodes;
+option java_package = "Protobuf";
+option java_outer_classname = "CCTTreePB";
+message GenNode
+{
+	optional int32 id=1;
+	optional int32 static_scope_id=2;
+	required int32 parent_id=3;
+	optional int32 name=4;
+	repeated Metric metric_values = 5;
+	required int32 type=6;
+	optional int32 trace_id=7;
+	optional int32 depth=8;
+	optional int32 file=9;
+	optional int32 line_range=10;
+}
+/*
+message Call
+{
+	optional int32 id = 1;
+	optional int32 static_scope_id = 2;
+	required int32 parent_id = 3;
+	optional int32 name=4;
+	repeated Metric metric_values = 5;
+	optional string name_debug = 6;//ask about nameDyn()
+}
+
+message ProcFrm
+{
+        optional int32 id = 1;
+        optional int32 static_scope_id = 2;
+        required int32 parent_id = 3;
+	optional int32 name=4;
+	repeated Metric metric_values = 5;
+        optional int32 name_debug = 6;
+}
+
+message Proc
+{
+	optional int32 id = 1;
+	optional int32 static_scope_id=2;
+	required int32 parent_id = 3;
+	optional int32 name=4;
+	repeated Metric metric_values = 5;
+	optional int32 name_debug = 6;
+}
+
+message Loop
+{
+	optional int32 id = 1;
+	optional int32 static_scope_id = 2;
+	required int32 parent_id = 3;
+	optional int32 name=4;
+	repeated Metric metric_values = 5;
+}
+
+message Stmt
+{
+	optional int32 id = 1;
+	optional int32 static_scope_id = 2;
+	optional int32 parent_id=3;
+	optional int32 name=4;
+	repeated Metric metric_values = 5;
+	optional string name_debug =6;//ask about nameDyn()
+	optional int32 trace_id = 7;//going to need to change this elsewhere: it
+}
+
+message Root
+{
+	optional int32 id=1;
+	optional int32 static_scope_id=2;
+	required int32 parent_id=3;
+	optional int32 name=4;
+	repeated Metric metric_values = 5;
+	optional string name_debug=6;
+}
+
+message Type
+{
+	required uint32 type = 1;
+}
+*/
+message Metric
+{
+	required int32 name = 1;
+	required double value = 2;
+	//required int32 parent_id = 3;
+}

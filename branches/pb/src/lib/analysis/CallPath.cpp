@@ -1323,28 +1323,31 @@ makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args)
 
   // 3. Create 'experiment.xml'
   string experiment_fnm = db_dir + "/" + args.out_db_experiment;
-  string experiment_fnm2 = db_dir + "/test123";
-  string experiment_fnm3 = db_dir + "/test.xml";
-  string experiment_fnm4 = db_dir + "/debug";
+  string experiment_fnm2 = db_dir + "/experiment.pb";
   std::ostream* os = IOUtil::OpenOStream(experiment_fnm.c_str());
   std::ostream* os1 = IOUtil::OpenOStream(experiment_fnm2.c_str());
-  std::ostream* os2 = IOUtil::OpenOStream(experiment_fnm3.c_str());
-  std::ostream* os3 = IOUtil::OpenOStream(experiment_fnm4.c_str());
   bool prettyPrint = (Diagnostics_GetDiagnosticFilterLevel() >= 5);
   //writes XML to experiment.xml
   Analysis::CallPath::write(&prof, *os, args.title, prettyPrint);
   IOUtil::CloseStream(os);
-  //writes PB to test123
+  //writes PB to experiment.pb
   Analysis::CallPath::writePB(prof, os1, args.title,2);
                  //change 0 to 2 if you don't want to print the stmts and loops
   IOUtil::CloseStream(os1);
-  //writes Debug PB to debug
+  
+  /* 
+  string experiment_fnm3 = db_dir + "/test.xml";
+  string experiment_fnm4 = db_dir + "/debug";
+  std::ostream* os2 = IOUtil::OpenOStream(experiment_fnm3.c_str());
+  std::ostream* os3 = IOUtil::OpenOStream(experiment_fnm4.c_str());
+ //writes Debug PB to debug
   Analysis::CallPath::writePB(prof, os3, args.title,3);
   IOUtil::CloseStream(os3);
   //reads PB test123 and writes XML to test.xml
   Analysis::CallPath::write(readPB(IOUtil::OpenIStream(
 experiment_fnm2.c_str())),*os2,args.title, prettyPrint);
   IOUtil::CloseStream(os2);
+  */
 }
 
 

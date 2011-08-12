@@ -1,0 +1,112 @@
+package Head;
+option java_package = "Protobuf";
+option java_outer_classname = "SectionHeaderPB";
+
+message SectionHeader
+{
+	message Info
+	{
+		message NameValue
+		{
+			required string name = 1;
+			required string value = 2;
+			optional string type = 3;
+		}
+		optional string name = 1;
+		repeated NameValue nv_list = 2;
+	}
+	message MetricTable
+	{
+		message Metric
+		{
+			message MetricFormula
+			{
+				optional bool type =1; // combine & finalize, finalize is default
+				required string formula =2;
+				//optional Info info =3;
+				//optional int32 id =4;
+			}
+			optional bool show_percent =1 [default = true];
+			repeated MetricFormula metric_formula_list =2;
+			optional Info info =3;
+			required int32 id =4;
+			optional string name =5;
+			optional int32 value =6 [default = 0];//enum
+			optional int32 type =7 [default = 0];//enum
+			optional int32 partner =8;
+			optional int32 fmt =9;
+			optional bool show =10 [default = true];
+			optional string basename=11;
+			optional string suffix=12;
+			optional string prefix=13;
+			
+		}
+		repeated Metric m_list =1;
+	}
+	message MetricDBTable
+	{
+		message MetricDB
+		{
+			required int32 id =1;
+			required string name =2;
+			optional string db_glob =3;
+			optional int32 db_num_metrics =4;
+			optional int32 db_header_sz =5;
+			optional int32 db_id = 6;
+		}
+		repeated MetricDB metric_db_list =1;
+	}
+	message TraceDBTable
+	{
+		message TraceDB
+		{
+			required int32 id =1;
+			optional string db_glob =2;
+			optional uint64 db_min_time =3;
+			optional uint64 db_max_time =4;
+			optional int32 db_header_sz =5;
+		}
+		repeated TraceDB trace_db_list =1;
+	}
+	message LoadModuleTable
+	{
+		message LoadModule
+		{
+			required int32 id =1;
+			required string name =2;
+			optional Info info =3;
+		}
+		repeated LoadModule load_module_list =1;
+	}
+	message FileTable
+	{
+		message File
+		{
+			required int32 id =1;
+			required string name =2;
+			optional Info info =3;
+		}
+		repeated File file_list =1;
+	}
+	message ProcedureTable
+	{
+		message Procedure
+		{
+			required int32 id =1;
+			required string name =2;
+			optional Info info =3;
+		}
+		repeated Procedure procedure_list =1;
+	}
+
+	optional MetricTable m_table =1;
+	optional MetricDBTable m_db_table =2;
+	optional TraceDBTable t_db_table =3;
+	optional LoadModuleTable lm_table =4;
+	optional FileTable f_table =5;
+	optional ProcedureTable p_table =6;
+	repeated Info info_list =7;
+	optional int32 id=8;
+	optional string name=9;
+
+}
