@@ -119,6 +119,7 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
   }
   else {
     // pass segv to another handler
+    TMSG(SEGV, "NON unwind segv encountered");
     return 1; // monitor_real_abort(); // TEST
   }
 }

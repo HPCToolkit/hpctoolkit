@@ -120,10 +120,10 @@ hpcrun_trampoline_advance(void)
   thread_data_t* td = hpcrun_get_thread_data();
   cct_node_t* node = td->tramp_cct_node;
   TMSG(TRAMP, "Advance from node %p...", node);
-  node = hpcrun_cct_parent(node);
-  TMSG(TRAMP, " ... to node %p", node);
+  cct_node_t* parent = (node) ? hpcrun_cct_parent(node) : NULL;
+  TMSG(TRAMP, " ... to node %p", parent);
   td->tramp_frame++;
-  return node;
+  return parent;
 }
 
 
@@ -174,8 +174,15 @@ hpcrun_trampoline_handler(void)
 
   hpcrun_retcnt_inc(td->tramp_cct_node, 1);
 
+  TMSG(TRAMP, "About to advance trampoline ...");
   cct_node_t* n = hpcrun_trampoline_advance();
-  hpcrun_trampoline_insert(n);
+  TMSG(TRAMP, "... Trampoline advaned to %p", n);
+  if (n)
+    hpcrun_trampoline_insert(n);
+  else {
+    EMSG("NULL trampoline advance !!, trampoline removed");
+    hpcrun_trampoline_remove();
+  }
 
   hpcrun_async_unblock();
   return ra; // our assembly code caller will return to ra
