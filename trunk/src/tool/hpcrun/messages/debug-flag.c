@@ -108,6 +108,8 @@ static pmsg_category all_list_entries [] = {
  E(_TST_CTL),
  E(UNW),
  // E(UITREE),
+ E(TRAMP),
+ E(SEGV),
  E(MPI),
  E(INTV2),
  E(INTV_ERR),
