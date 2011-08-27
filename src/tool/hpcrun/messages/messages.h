@@ -98,10 +98,6 @@
 
 
 
-//*****************************************************************************
-// forward declarations
-//*****************************************************************************
-
 void messages_init();
 void messages_fini(void);
 
@@ -128,6 +124,7 @@ void hpcrun_abort_w_info(void (*info)(void),const char *fmt,...);
 int hpcrun_below_pmsg_threshold(void);
 void hpcrun_up_pmsg_count(void);
 
-
+void unlimit_msgs(void);
+void limit_msgs(void);
 
 #endif // messages_h
