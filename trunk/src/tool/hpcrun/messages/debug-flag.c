@@ -76,7 +76,7 @@
 #include "monitor.h"
 #include <utilities/tokenize.h>
 
-
+extern void unlimit_msgs(void);
 
 //*****************************************************************************
 // global variables 
@@ -254,7 +254,7 @@ debug_flag_set_all(int v)
 
 
 static void
-debug_flag_set_list(flag_list_t *flag_list,int v)
+debug_flag_set_list(flag_list_t *flag_list, int v)
 {
   for (int i=0; i < flag_list->n_entries; i++){
     debug_flag_set(flag_list->entries[i], v);
@@ -293,9 +293,10 @@ debug_flag_process_string(char *in, int debug_initialization)
   }
 
   for (char *f=start_tok(in); more_tok(); f = next_tok()){
+    unlimit_msgs();
     if (strcmp(f,"ALL") == 0){
       debug_flag_set_list(&all_list, 1);
-      return;
+      continue;
     }
     if (debug_initialization) {
       fprintf(stderr, "\tprocessing debug flag token %s\n", f);
@@ -306,7 +307,8 @@ debug_flag_process_string(char *in, int debug_initialization)
 	fprintf(stderr, "\tdebug flag token value = %d\n\n", ii);
       }
       debug_flag_set(ii,1);
-    } else {
+    }
+    else {
       fprintf(stderr, "\tdebug flag token %s not recognized\n\n", f);
     }
   }
