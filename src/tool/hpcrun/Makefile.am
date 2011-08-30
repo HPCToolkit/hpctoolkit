@@ -209,6 +209,7 @@ MY_BASE_FILES =			\
 	fnbounds/fnbounds_common.c	\
 	\
 	memory/mem.c			\
+        memory/mmap.c                   \
 	\
 	messages/debug-flag.c	        \
 	messages/messages-sync.c	\
@@ -345,7 +346,7 @@ libhpcrun_wrap_a_CPPFLAGS =		\
 $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
 	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
 		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
-	
+
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
