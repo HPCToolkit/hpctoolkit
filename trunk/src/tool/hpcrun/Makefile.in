@@ -238,7 +238,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	lush/lush-pthread.c lush/lush-support-rt.h \
 	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
 	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	messages/debug-flag.c messages/messages-sync.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
 	messages/messages-async.c messages/fmt.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
@@ -289,11 +289,11 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-lush.lo libhpcrun_la-lush-pthread.lo \
 	libhpcrun_la-lush-support-rt.lo libhpcrun_la-lushi-cb.lo \
 	libhpcrun_la-fnbounds_common.lo libhpcrun_la-mem.lo \
-	libhpcrun_la-debug-flag.lo libhpcrun_la-messages-sync.lo \
-	libhpcrun_la-messages-async.lo libhpcrun_la-fmt.lo \
-	libhpcrun_la-executable-path.lo libhpcrun_la-ip-normalized.lo \
-	libhpcrun_la-tokenize.lo libhpcrun_la-unlink.lo \
-	$(am__objects_7)
+	libhpcrun_la-mmap.lo libhpcrun_la-debug-flag.lo \
+	libhpcrun_la-messages-sync.lo libhpcrun_la-messages-async.lo \
+	libhpcrun_la-fmt.lo libhpcrun_la-executable-path.lo \
+	libhpcrun_la-ip-normalized.lo libhpcrun_la-tokenize.lo \
+	libhpcrun_la-unlink.lo $(am__objects_7)
 am__objects_9 = libhpcrun_la-fnbounds_dynamic.lo \
 	libhpcrun_la-openmp.lo libhpcrun_la-hpcrun_dlfns.lo \
 	libhpcrun_la-custom-init-dynamic.lo
@@ -372,7 +372,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	lush/lush-pthread.c lush/lush-support-rt.h \
 	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
 	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	messages/debug-flag.c messages/messages-sync.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
 	messages/messages-async.c messages/fmt.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
@@ -431,7 +431,8 @@ am__objects_27 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-lush-support-rt.$(OBJEXT) \
 	libhpcrun_o-lushi-cb.$(OBJEXT) \
 	libhpcrun_o-fnbounds_common.$(OBJEXT) \
-	libhpcrun_o-mem.$(OBJEXT) libhpcrun_o-debug-flag.$(OBJEXT) \
+	libhpcrun_o-mem.$(OBJEXT) libhpcrun_o-mmap.$(OBJEXT) \
+	libhpcrun_o-debug-flag.$(OBJEXT) \
 	libhpcrun_o-messages-sync.$(OBJEXT) \
 	libhpcrun_o-messages-async.$(OBJEXT) libhpcrun_o-fmt.$(OBJEXT) \
 	libhpcrun_o-executable-path.$(OBJEXT) \
@@ -818,12 +819,13 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
 	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
 	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c $(am__append_5)
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/tokenize.h \
+	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	$(am__append_5)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_dynamic.c	\
 	monitor-exts/openmp.c		\
@@ -1286,6 +1288,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-messages-async.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-messages-sync.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-metrics.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-mmap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-mpi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-name.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-none.Plo@am__quote@
@@ -1367,6 +1370,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-messages-async.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-messages-sync.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-metrics.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-mmap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-mpi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-name.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-none.Po@am__quote@
@@ -1828,6 +1832,13 @@ libhpcrun_la-mem.lo: memory/mem.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='memory/mem.c' object='libhpcrun_la-mem.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-mem.lo `test -f 'memory/mem.c' || echo '$(srcdir)/'`memory/mem.c
+
+libhpcrun_la-mmap.lo: memory/mmap.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-mmap.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-mmap.Tpo -c -o libhpcrun_la-mmap.lo `test -f 'memory/mmap.c' || echo '$(srcdir)/'`memory/mmap.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-mmap.Tpo $(DEPDIR)/libhpcrun_la-mmap.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='memory/mmap.c' object='libhpcrun_la-mmap.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-mmap.lo `test -f 'memory/mmap.c' || echo '$(srcdir)/'`memory/mmap.c
 
 libhpcrun_la-debug-flag.lo: messages/debug-flag.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-debug-flag.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-debug-flag.Tpo -c -o libhpcrun_la-debug-flag.lo `test -f 'messages/debug-flag.c' || echo '$(srcdir)/'`messages/debug-flag.c
@@ -2682,6 +2693,20 @@ libhpcrun_o-mem.obj: memory/mem.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='memory/mem.c' object='libhpcrun_o-mem.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-mem.obj `if test -f 'memory/mem.c'; then $(CYGPATH_W) 'memory/mem.c'; else $(CYGPATH_W) '$(srcdir)/memory/mem.c'; fi`
+
+libhpcrun_o-mmap.o: memory/mmap.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-mmap.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-mmap.Tpo -c -o libhpcrun_o-mmap.o `test -f 'memory/mmap.c' || echo '$(srcdir)/'`memory/mmap.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-mmap.Tpo $(DEPDIR)/libhpcrun_o-mmap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='memory/mmap.c' object='libhpcrun_o-mmap.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-mmap.o `test -f 'memory/mmap.c' || echo '$(srcdir)/'`memory/mmap.c
+
+libhpcrun_o-mmap.obj: memory/mmap.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-mmap.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-mmap.Tpo -c -o libhpcrun_o-mmap.obj `if test -f 'memory/mmap.c'; then $(CYGPATH_W) 'memory/mmap.c'; else $(CYGPATH_W) '$(srcdir)/memory/mmap.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-mmap.Tpo $(DEPDIR)/libhpcrun_o-mmap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='memory/mmap.c' object='libhpcrun_o-mmap.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-mmap.obj `if test -f 'memory/mmap.c'; then $(CYGPATH_W) 'memory/mmap.c'; else $(CYGPATH_W) '$(srcdir)/memory/mmap.c'; fi`
 
 libhpcrun_o-debug-flag.o: messages/debug-flag.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-debug-flag.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-debug-flag.Tpo -c -o libhpcrun_o-debug-flag.o `test -f 'messages/debug-flag.c' || echo '$(srcdir)/'`messages/debug-flag.c

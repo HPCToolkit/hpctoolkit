@@ -68,6 +68,7 @@
 #include <lush/lush-pthread.h>
 #include <messages/messages.h>
 #include <trampoline/common/trampoline.h>
+#include <memory/mmap.h>
 
 //***************************************************************************
 
@@ -291,7 +292,7 @@ hpcrun_init_pthread_key(void)
 void
 hpcrun_set_thread_data(thread_data_t *td)
 {
-  NMSG(THREAD_SPECIFIC,"setting td");
+  TMSG(THREAD_SPECIFIC,"setting td");
   pthread_setspecific(_hpcrun_key,(void *) td);
 }
 
@@ -304,12 +305,11 @@ hpcrun_set_thread0_data(void)
 }
 
 
-// FIXME: use hpcrun_malloc ??
 thread_data_t *
 hpcrun_allocate_thread_data(void)
 {
-  NMSG(THREAD_SPECIFIC,"malloc thread data");
-  return malloc(sizeof(thread_data_t));
+  TMSG(THREAD_SPECIFIC,"malloc thread data");
+  return hpcrun_mmap_anon(sizeof(thread_data_t));
 }
 
 

@@ -104,6 +104,7 @@
 #include "write_data.h"
 
 #include <memory/hpcrun-malloc.h>
+#include <memory/mmap.h>
 
 #include <monitor-exts/monitor_ext.h>
 
@@ -189,6 +190,7 @@ hpcrun_init_internal(bool is_child)
   hpcrun_initLoadmap();
 
   hpcrun_memory_reinit();
+  hpcrun_mmap_init();
   hpcrun_thread_data_init(0, NULL, is_child);
 
   // WARNING: a perfmon bug requires us to fork off the fnbounds
@@ -310,6 +312,7 @@ hpcrun_init_thread_support()
 void*
 hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
 {
+  hpcrun_mmap_init();
   thread_data_t *td = hpcrun_allocate_thread_data();
   td->suspend_sampling = 1; // begin: protect against spurious signals
 
@@ -602,14 +605,8 @@ monitor_thread_pre_create(void)
   thr_ctxt->parent = epoch->csdata_ctxt;
   TMSG(THREAD_CTXT, "context = %d, parent = %d", hpcrun_cct_persistent_id(thr_ctxt->context),
        thr_ctxt->parent ? hpcrun_cct_persistent_id(thr_ctxt->parent->context) : -1);
-#if 0
-  if (ENABLED(THREAD_CTXT)) {
-    TMSG(THREAD_CTXT,"Dumping context node %d", hpcrun_get_persistent_id(thr_ctxt->context));
-    cct_dump_path(thr_ctxt->context);
-    DISABLE(IN_THREAD_CTXT);
-  }
-#endif
-    DISABLE(IN_THREAD_CTXT);
+  
+  
 
  fini:
 
