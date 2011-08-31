@@ -45,6 +45,7 @@
 #
 #     -h, --help
 #     --memleak
+#     --datacentric
 #     -u, --undefined  <symbol>
 #     -v, --verbose
 #     -V, --version
@@ -143,6 +144,7 @@ Options: Informational
 
 Options: Linking
   --memleak            Include HPCToolkit's memory leak detection libraries.
+  --datacentric        Include HPCToolkit's datacentric (IBS-based) data collection
 
   -u <symbol>, --undefined <symbol>
                        Pass <symbol> to the linker as an undefined symbol.
@@ -197,6 +199,15 @@ do
 	    memleak_wrap="${libhpcrun_dir}/libhpcrun_memleak_wrap.a"
 	    test -f "$memleak_wrap" || die "unable to find: $memleak_wrap"
 	    extra_hpc_files="$extra_hpc_files $memleak_wrap"
+	    extra_wrap_names="$extra_wrap_names posix_memalign memalign valloc"
+	    extra_wrap_names="$extra_wrap_names calloc free malloc realloc"
+	    undef_names="$undef_names malloc"
+	    shift
+	    ;;
+	-datacentric | --datacentric )
+	    datacentric_wrap="${libhpcrun_dir}/libhpcrun_datacentric_wrap.a"
+	    test -f "$datacentric_wrap" || die "unable to find: $datacentric_wrap"
+	    extra_hpc_files="$extra_hpc_files $datacentric_wrap"
 	    extra_wrap_names="$extra_wrap_names posix_memalign memalign valloc"
 	    extra_wrap_names="$extra_wrap_names calloc free malloc realloc"
 	    undef_names="$undef_names malloc"

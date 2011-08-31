@@ -218,6 +218,11 @@ typedef struct thread_data_t {
   void* trace_buffer;
 
   // ----------------------------------------
+  // pointer to generic IBS data structure
+  // ----------------------------------------
+  void* ibs_ptr;
+
+  // ----------------------------------------
   // debug stuff
   // ----------------------------------------
   bool debug1;
