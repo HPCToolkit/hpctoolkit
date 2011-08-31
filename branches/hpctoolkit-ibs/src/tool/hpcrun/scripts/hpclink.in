@@ -1,0 +1,380 @@
+#!/bin/sh
+# set -x
+#
+#------------------------------------
+# Part of HPCToolkit (hpctoolkit.org)
+#------------------------------------
+#
+# Copyright (c) 2002-2010, Rice University.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+# * Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in the
+#   documentation and/or other materials provided with the distribution.
+#
+# * Neither the name of Rice University (RICE) nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# This software is provided by RICE and contributors "as is" and any
+# express or implied warranties, including, but not limited to, the
+# implied warranties of merchantability and fitness for a particular
+# purpose are disclaimed. In no event shall RICE or contributors be
+# liable for any direct, indirect, incidental, special, exemplary, or
+# consequential damages (including, but not limited to, procurement of
+# substitute goods or services; loss of use, data, or profits; or
+# business interruption) however caused and on any theory of liability,
+# whether in contract, strict liability, or tort (including negligence
+# or otherwise) arising in any way out of the use of this software, even
+# if advised of the possibility of such damage.
+#
+# $HeadURL$
+# $Id$
+#
+# hpclink -- link application with libhpcrun, libmonitor, PAPI and
+# Xed2 statically by editing the compile line.
+#
+# Usage: hpclink [options] compiler file ...
+#
+#     -h, --help
+#     --memleak
+#     -u, --undefined  <symbol>
+#     -v, --verbose
+#     -V, --version
+#
+#  where <symbol> is a symbol name passed to the linker (may be used
+#  multiple times).
+#
+
+VERSION='@PACKAGE_VERSION@'
+
+# If this script can't find its own install prefix, or if the script
+# is moved elsewhere, then set HPCTOOLKIT here.
+# HPCTOOLKIT='@prefix@'
+
+# Relative paths are relative to HPCTOOLKIT.
+ext_libs_dir='@hpc_ext_libs_dir@'
+hpcfnbounds_dir='libexec/hpctoolkit'
+libhpcrun_dir='lib/hpctoolkit'
+libmonitor_dir='@LIBMONITOR_RUN_DIR@'
+xed2_dir='@XED2_RUN_DIR@'
+
+# Absolute path or empty.
+papi_dir='@OPT_PAPI_LIBPATH@'
+papi_extra_libs='@papi_extra_libs@'
+
+# FIXME: The wrap list should come from monitor.
+
+monitor_wrap_names='@LIBMONITOR_WRAP_NAMES@'
+
+# monitor_wrap_names='main exit _exit dlopen dlclose fork vfork system
+#   execl execlp execle execv execvp execve pthread_exit
+#   pthread_create signal sigaction sigprocmask pthread_sigmask
+#   MPI_Init mpi_init mpi_init_ mpi_init__
+#   MPI_Init_thread mpi_init_thread mpi_init_thread_ mpi_init_thread__
+#   MPI_Finalize mpi_finalize mpi_finalize_ mpi_finalize__
+#   MPI_Comm_rank mpi_comm_rank mpi_comm_rank_ mpi_comm_rank__
+#   _mp_init'
+
+extra_wrap_names='@hpclink_extra_wrap_names@'
+extra_hpc_files=
+
+# Set to -m64 on 64-bit version (for gcc).
+# NM_FLAGS='-m64'
+
+CC=gcc
+hello="_hpc_hello_$$"
+nm_addrs="_hpc_nm_addrs_$$"
+cmd_out="_hpc_output_$$"
+
+# Space-separated list of symbol names to force undefined.
+undef_names=
+
+# Space-separated list of libs (without -l) not to repeat on command line.
+no_repeat_list='hugetlbfs'
+
+##################################################
+
+cleanup()
+{
+    rm -f _hpc_*$$*
+}
+
+die()
+{
+    echo "$0: error: $*" 1>&2
+    cleanup
+    exit 1
+}
+
+usage()
+{
+    cat <<EOF
+Usage: hpclink [options] <link-command>
+
+hpclink links HPCToolkit's performance measurement library into a
+statically linked application.  (hpcrun's method for injecting its library
+into a dynamically linked application will not work with a statically
+linked applications.)
+
+To link with hpclink, supply your application's normal link line as
+<link-command>, which typically has the following form:
+  <compiler> [link-options] <object-files> <libraries>
+
+To control HPCToolkit's performance measurement library during an
+application's execution, use the following environment variables:
+  HPCRUN_EVENT_LIST=<event1>[@<period1>];...;<eventN>[@<periodN>]
+                            : Sampling event list; hpcrun -e/--event
+  HPCRUN_TRACE=1            : Enable tracing; hpcrun -t/--trace
+  HPCRUN_OUT_PATH=<outpath> : Set output directory; hpcrun -o/--output
+
+Options: Informational
+  -v, --verbose        Verbose. Displays the original and modified command
+                       lines.
+  -V, --version        Print version information.
+  -h, --help           Print help.
+
+Options: Linking
+  --memleak            Include HPCToolkit's memory leak detection libraries.
+
+  -u <symbol>, --undefined <symbol>
+                       Pass <symbol> to the linker as an undefined symbol.
+                       This is to force the linker to pull in a reference
+                       for that symbol.  May be used multiple times.
+EOF
+    exit 0
+}
+
+hpc_path_to_root=..
+@export_hpctoolkit@
+
+# Relative paths are relative to HPCTOOLKIT.
+case "$ext_libs_dir" in
+    /* ) ;;
+    * )  ext_libs_dir="${HPCTOOLKIT}/${ext_libs_dir}" ;;
+esac
+case "$hpcfnbounds_dir" in
+    /* ) ;;
+    * )  hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
+esac
+case "$libhpcrun_dir" in
+    /* ) ;;
+    * )  libhpcrun_dir="${HPCTOOLKIT}/${libhpcrun_dir}" ;;
+esac
+case "$libmonitor_dir" in
+    /* ) ;;
+    * )  libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
+esac
+case "$xed2_dir" in
+    /* ) ;;
+    * )  xed2_dir="${HPCTOOLKIT}/${xed2_dir}" ;;
+esac
+
+hpcfnbounds="${hpcfnbounds_dir}/hpcfnbounds"
+test -x "$hpcfnbounds" || die "missing hpcfnbounds: $hpcfnbounds"
+
+LD_LIBRARY_PATH="${ext_libs_dir}:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH
+
+#
+# Step 1 -- Parse linker options, our options first.
+#
+verbose=no
+while test "x$1" != x
+do
+    case "$1" in
+	-h | --help )
+	    usage
+	    ;;
+	-memleak | --memleak )
+	    memleak_wrap="${libhpcrun_dir}/libhpcrun_memleak_wrap.a"
+	    test -f "$memleak_wrap" || die "unable to find: $memleak_wrap"
+	    extra_hpc_files="$extra_hpc_files $memleak_wrap"
+	    extra_wrap_names="$extra_wrap_names posix_memalign memalign valloc"
+	    extra_wrap_names="$extra_wrap_names calloc free malloc realloc"
+	    undef_names="$undef_names malloc"
+	    shift
+	    ;;
+	-u | --undefined )
+	    test "x$2" != x || die "missing argument for -u"
+	    undef_names="${undef_names} $2"
+	    shift ; shift
+	    ;;
+	-v | --verbose )
+	    verbose=yes
+	    shift
+	    ;;
+	-V | --version )
+	    echo "hpclink: A member of HPCToolkit, version $VERSION"
+	    exit 0
+	    ;;
+	-- )
+	    shift
+	    break
+	    ;;
+	-* )
+	    die "unknown option: $1"
+	    ;;
+	* )
+	    break
+	    ;;
+    esac
+done
+
+#
+# Must have a compiler command and at least one argument.
+#
+test "x$2" != x || usage
+command="$1"
+shift
+
+#
+# Read the command line for: -l<lib> and -o <file> arguments.
+# It's important not to change the command line here.
+#
+appl_libs=
+appl_out=a.out
+prev_arg=no
+for arg in "$@"
+do
+    if test "x$prev_arg" = x-o ; then
+	appl_out="$arg"
+    else
+	case "$arg" in
+	    -l?* )
+		copy=yes
+		for lib in $no_repeat_list ; do
+		    if test "x$arg" = "x-l$lib" ; then
+			copy=no
+			break
+		    fi
+		done
+		if test "$copy" = yes ; then
+		    appl_libs="$appl_libs $arg"
+		fi
+		;;
+	esac
+    fi
+    prev_arg="$arg"
+done
+
+#
+# Step 2 -- Build the new compile line.
+#
+#   undef-args, wrap-args, $@, libhpcrun.o, nm-addrs, libhpcrun_wrap.a,
+#   libmonitor, PAPI, Xed2, -lpthread, -ldl, repeat-application-libs.
+#
+if test "$verbose" = yes ; then
+    echo "original command line: $command $@"
+    echo
+fi
+
+undef_args=
+for name in $undef_names
+do
+    undef_args="${undef_args} -Wl,-u,${name}"
+done
+
+wrap_args=
+for name in $monitor_wrap_names $extra_wrap_names
+do
+    wrap_args="${wrap_args} -Wl,--wrap,${name}"
+done
+set -- $undef_args $wrap_args "$@"
+
+libhpcrun="${libhpcrun_dir}/libhpcrun.o"
+test -f "$libhpcrun" || die "no such file: $libhpcrun"
+set -- "$@" "$libhpcrun" "${nm_addrs}.o"
+
+libhpcrun_wrap="${libhpcrun_dir}/libhpcrun_wrap.a"
+test -f "$libhpcrun_wrap" || die "no such file: $libhpcrun_wrap"
+set -- "$@" "$libhpcrun_wrap" $extra_hpc_files
+
+libmonitor="${libmonitor_dir}/libmonitor_wrap.a"
+test -f "$libmonitor" || die "no such file: $libmonitor"
+set -- "$@" "$libmonitor"
+
+if test -d "$papi_dir" ; then
+    set -- "$@" "-L${papi_dir}" -lpapi $papi_extra_libs
+fi
+
+if test -d "$xed2_dir" ; then
+    set -- "$@" "-L${xed2_dir}" -lxed
+fi
+
+# FIXME: shouldn't always need pthread, and shoudn't ever need dl.
+set -- "$@" -lpthread -ldl -lrt
+set -- "$@" $appl_libs
+
+#
+# Step 3 -- Link with dummy nm file.
+#
+rm -f "${hello}.c" "$hello"
+cat <<EOF > "${hello}.c"
+int main(int argc, char **argv)
+{
+    return (0);
+}
+EOF
+$CC -o "$hello" "${hello}.c"
+
+rm -f "${nm_addrs}.c" "${nm_addrs}.o"
+$hpcfnbounds -c "$hello" > "${nm_addrs}.c" || die "hpcfnbounds failed on $hello"
+$CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
+
+#
+# Some compiler scripts add extra function calls to the end of the
+# link line that fail to trigger --wrap.  So, if the first compile
+# fails with undefined references to __wrap_foo, then add those names
+# to the undef list and try again.  Do the same for an undefined
+# reference to 'main' (gfortran does some bad things).
+#
+$command "$@" >"$cmd_out" 2>&1
+if test $? -ne 0 || test ! -f "$appl_out"
+then
+    exec <"$cmd_out"
+    while read line
+    do
+        if echo "$line" | grep -E -i -e 'undef.*__wrap_' >/dev/null 2>&1
+	then
+	    name=`expr "$line" : '.*\(__wrap_[A-Za-z0-9_]*\)'`
+	    set -- "-Wl,-u,${name}" "$@"
+	elif echo "$line" | grep -E -i -e 'undef.*main' >/dev/null 2>&1
+	then
+	    set -- "-Wl,-u,main" "$@"
+	fi
+    done
+    $command "$@" || die "compile #1 failed: $command $@"
+    test -f "$appl_out" || die "compile #1 failed: $command $@"
+fi
+
+# Require the output to be statically linked.
+if file "$appl_out" | grep -i static >/dev/null ; then :
+else
+    mv -f "$appl_out" "${appl_out}.failed"
+    die "program not statically linked (maybe forgot -static): $appl_out"
+fi
+
+#
+# Step 4 -- Link with real nm file.
+#
+if test "$verbose" = yes ; then
+    echo "new command line: $command $@"
+    echo
+fi
+
+rm -f "${nm_addrs}.c" "${nm_addrs}.o"
+$hpcfnbounds -c "$appl_out" > "${nm_addrs}.c" || die "hpcfnbounds failed on $appl_out"
+$CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
+$command "$@" || die "compile #2 failed: $command $@"
+test -f "$appl_out" || die "compile #2 failed: $command $@"
+
+cleanup
+exit 0

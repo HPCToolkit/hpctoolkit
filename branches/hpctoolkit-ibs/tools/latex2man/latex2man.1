@@ -1,0 +1,1100 @@
+'\" t
+.\" Manual page created with latex2man on Di 11. Nov 08:21:27 CET 2008
+.\" NOTE: This file is generated, DO NOT EDIT.
+.de Vb
+.ft CW
+.nf
+..
+.de Ve
+.ft R
+
+.fi
+..
+.TH "LATEX2MAN" "1" "2008/11/11" "Documentation Tools " "Documentation Tools "
+.SH NAME
+
+.PP
+Latex2man
+is a tool to translate UNIX manual pages written with 
+LaTeXinto a format understood by the UNIX \fIman\fP(1)\-command.
+Alternatively HTML, TexInfo, or LaTeX code can be produced too. 
+Output of parts of the text may be suppressed using the conditional text 
+feature (for this, LaTeX generation may be used). 
+.PP
+.SH SYNOPSIS
+
+.PP
+latex2man
+[\fB\-t\fP\fItransfile\fP]
+[\fB\-HMTL\fP]
+[\fB\-h\fP]
+[\fB\-V\fP]
+[\fB\-C\fP\fIname\fP]
+[\fB\-a\fP\fIchar\fP]
+\fIinfile\fP
+\fIoutfile\fP
+.PP
+.SH DESCRIPTION
+
+Latex2man
+reads the file \fIinfile\fP
+and writes \fIoutfile\fP\&.
+The 
+input must be a LaTeX document using the latex2man
+LaTeXpackage. 
+Latex2man
+translates that document into the \fItroff\fP(1)
+format using 
+the \fB\-man\fP
+macro package. 
+.PP
+Using the \fB\-H\fP
+option, HTML code can be produced, instead of 
+\fItroff\fP(1)\&.
+.PP
+Using the \fB\-T\fP
+option, TexInfo code can be produced, instead of 
+\fItroff\fP(1)\&.
+.PP
+Using the \fB\-M\fP
+option, \fItroff\fP(1)
+input is produced. 
+.PP
+Using the \fB\-L\fP
+option, LaTeX ouput can be produced, instead of 
+\fItroff\fP(1)\&.
+.PP
+.SH OPTIONS
+
+.TP
+\fB\-t\fP\fItransfile\fP
+ Translation for user defined LaTeX macros. 
+.TP
+\fB\-M\fP
+ Produce output suitable for the \fIman\fP(1)
+command (default). 
+.TP
+\fB\-H\fP
+ Instead of producing output suitable for the \fIman\fP(1)
+command, HTML code is produced (despite the name of the command). 
+.TP
+\fB\-T\fP
+ Instead of producing output suitable for the \fIman\fP(1)
+command, TexInfo code is produced (despite the name of the command). The 
+generated \&.texi\-file
+may be processed with \fImakeinfo\fP(1)
+(to produce an \&.info\-file)
+which in turn may be installed using 
+\fIinstall\-info\fP(1)\&.
+The Info tags @dircategory and 
+@direntry are provided. 
+.TP
+\fB\-L\fP
+ The LaTeX source is written to the \fIoutfile\fP\&.
+This is 
+useful in conjunction with the \fB\-C\fP\fIname\fP
+option. 
+.TP
+\fB\-C\fP\fIname\fP
+ Output the conditional text for \fIname\fP\&.
+If more 
+than one name should be given use quotes: \fB\-C\fP\fI\&'name1 name2 ...\&'\fP
+.br
+The following names are defined automatically: 
+.RS
+.TP
+.B *
+\fB\-H\fP defines HTML
+.TP
+.B *
+\fB\-T\fP defines TEXI
+.TP
+.B *
+\fB\-M\fP defines MAN
+.TP
+.B *
+\fB\-L\fP defines LATEX
+.RE
+.RS
+.PP
+.RE
+.TP
+\fB\-a\fP\fIchar\fP
+ Is used only in conjunction with \-T.
+.br
+Background:
+.br
+TexInfo ignores all blanks before the first word on a new line. In order 
+to produce some additional space before that word (using \\SP) some 
+character has to be printed before the additional space. By default this 
+is a \&. (dot). The \fIchar\fP
+specifies an alternative for that first 
+character. Giving a blank to 
+\fB\-a\fP
+supresses the indentation of a line.
+.br
+Note: only for the first \\SP of a series that \fIchar\fP
+is printed. 
+.TP
+\fB\-h\fP
+ Show a help text. 
+.TP
+\fB\-V\fP
+ Show version information. 
+.PP
+.SH FILES
+
+.PP
+.TP
+latex2man.tex
+ The LaTeX file containing this Man\-page. 
+.TP
+latex2man.sty
+ The LaTeX package defining the environments and 
+commands. 
+.TP
+latex2man.cfg
+ The configuration file for Latex2man
+LaTeX\-package.
+.TP
+latex2man.trans
+ File containing example translations of user 
+defined LaTeX macros. 
+.TP
+fancyheadings.sty
+ A LaTeX package used to typeset head\- and 
+foot lines. 
+.TP
+fancyhdr.sty
+ A LaTeX package used to typeset head\- and foot 
+lines. 
+.TP
+rcsinfo.sty
+ A LaTeX package used to extract and use RCS version 
+control information in LaTeX documents. 
+.PP
+.SH SEE ALSO
+
+.PP
+LaTeX,TexInfo, \fItroff\fP(1),
+\fIgroff\fP(1),
+\fImakeinfo\fP(1)\&.
+.PP
+.SH LaTeX COMMANDS
+
+.PP
+The LaTeX package latex2man
+is used to write the Man\-pages with 
+LaTeX\&.Since we translate into other text formats, not all LaTeX stuff can 
+be translated. 
+.PP
+.SS PACKAGE OPTIONS
+The latex2man
+package accepts the following options: 
+.PP
+.TP
+fancy 
+use the LaTeX package fancyheadings\&.
+.TP
+fancyhdr 
+use the LaTeX package fancyhdr\&.
+.TP
+nofancy 
+neither the LaTeX package fancyheadings
+nor 
+fancyhdr
+are used. 
+.PP
+The default option may be specified in the file latex2man.cfg\&.
+.PP
+.SS PACKAGE SPECIFIC ENVIRONMENTS
+.PP
+The following environments are provided by the package: 
+.TP
+\\begin{Name}{chapter}{name}{author}{info}{title}  
+The 
+Name
+environment takes five arguments: 1.  the Man\-page chapter, 
+2.  the name of the Man\-page, 3.  the author, 4.  some short information 
+about the tool printed in the footline of the Man\-page, and 5.  a text 
+which is used as title, for HTML and LaTeX (it\&'s ignored for output of 
+the Man\-page or TeXinfo. The Name
+environment must be the first 
+environment in the document. Processing starts with this environment. Any 
+text before this is ignored (exception: the setVersion and 
+setDate commands). (Note: all arguments of \\begin{Name} must 
+be written on one line). 
+.TP
+\\begin{Table}[width]{columns} 
+The Table
+environment takes two arguments: the first optional one specifies 
+a width of the last column, the second one gives the number of columns. 
+For example: 
+.PP
+\\begin{Table}[2cm]{3} 
+.br
+Here & am & I \\\\\\hline 
+.br
+A 1 & A 2 & A 3 1 2 3 4 5 A 3 1 2 3 4 5 \\\\ 
+.br
+B 1 & B 2 & B 3 \\\\ 
+.br
+\\end{Table} 
+.PP
+will be typeset as: 
+.PP
+.TS
+tab(&);
+l l lw(2cm).
+T{
+Here 
+T}&T{
+am 
+T}&T{
+I 
+T}
+_
+T{
+A 1 
+T}&T{
+A 2 
+T}&T{
+A 3 1 2 3 4 5 A 3 1 2 3 4 5
+T}
+T{
+B 1 
+T}&T{
+B 2 
+T}&T{
+B 3 
+T}
+.TE
+.PP
+If no optional \fIwidth\fP
+argument is given, all entries are 
+typeset left justified. 
+The \fIwidth\fP
+is a length measured absolutly in \fIcm\fP\&.
+Processing with LaTeX a p{width} column is typeset 
+as last column. The translation to \fItroff\fP(1)
+commands 
+results in a lw(width)
+column specification. Translating 
+to HTML and TexInfo ignores the \fIwidth\fP
+parameter. 
+.PP
+\\hline may be used. 
+.PP
+If the Man\-page is formatted with \fItroff\fP(1)
+and tables are used, the 
+\fItbl\fP(1)
+preprocessor should be called, usually by giving 
+a \fB\-t\fP
+to the call of \fItroff\fP(1)\&.
+When viewing the generated 
+manula page using \fIman\fP(1),
+\fItbl\fP(1)
+is called automatically. 
+.TP
+\\begin{Description} 
+is the same as \\begin{description} 
+.TP
+\\begin{Description}[label] 
+is similar to 
+\\begin{description}, but the item labels have at minimum the size 
+of the (optional) word \fIlabel\fP\&.
+The difference is visible only 
+in the DVI and PDF\-output, not in the troff, TexInfo or HTML output. 
+.RS
+.TP
+a 
+|a \\begin{description} 
+.TP
+ab 
+|ab 
+.TP
+abc 
+|abc 
+.RE
+.RS
+.PP
+.RS
+.RE
+.TP
+a 
+|a \\begin{Description} 
+.TP
+ab 
+|ab 
+.TP
+abc 
+|abc 
+.RE
+.RS
+.PP
+.RS
+.RE
+.TP
+a 
+|a \\begin{Description}[aa] 
+.TP
+ab 
+|ab 
+.TP
+abc 
+|abc 
+.RE
+.RS
+.PP
+.RE
+.PP
+.SS ACCEPTED LaTeX ENVIRONMENTS
+.PP
+The following environments are accepted: 
+.RE
+.TP
+.B *
+description
+.TP
+.B *
+enumerate
+.TP
+.B *
+itemize
+.TP
+.B *
+verbatim
+.TP
+.B *
+center
+.PP
+They may be nested: 
+.TP
+.B *
+Itemize and nested center: 
+.ce 100
+A centered line.
+.br
+Another centered line. 
+.ce 0
+
+.TP
+.B *
+Another item an nested enumerate 
+.RS
+.TP
+1.
+a 
+.TP
+2.
+b 
+.RE
+.RS
+.PP
+.RE
+.PP
+.SS PACKAGE SPECIFIC MACROS
+.PP
+The following commands are provided: 
+.RE
+.TP
+\\Opt{option} 
+Option: \\Opt{\-o} will be typeset as \fB\-o\fP\&.
+.TP
+\\Arg{argument} 
+Argument: \\Arg{filename} will be typeset as 
+\fIfilename\fP\&.
+.TP
+\\OptArg{option}{argument} 
+Option with Argument:
+.br
+\\OptArg{\-o}{filename} will be typeset as \fB\-o\fP\fIfilename\fP\&.
+.TP
+\\OptoArg{option}{argument} 
+Option with optional Argument:
+.br
+\\OptoArg{\-o}{filename} will be 
+typeset as \fB\-o\fP[\fIfilename\fP]\&.
+.TP
+\\oOpt{option} 
+Optional option, e.g.  \\oOpt{\-o} will be 
+typeset as [\fB\-o\fP]\&.
+.TP
+\\oArg{argument} 
+Optional argument, e.g.  \\oArg{filename} 
+will be typeset as [\fIfilename\fP]\&.
+.TP
+\\oOptArg{option}{argument} 
+Optional option with argument, e.g.
+.br
+\\oOptArg{\-o}{filename} will be typeset as [\fB\-o\fP\fIfilename\fP]\&.
+.TP
+\\oOptoArg{option}{argument} 
+Optional option with optional 
+argument, e.g.  
+\\oOptoArg{\-o}{filename} will be typeset as [\fB\-o\fP[\fIfilename\fP]]\&.
+.TP
+\\File{filename} 
+used to typeset filenames, e.g.  
+\\File{filename} will be typeset as filename\&.
+.TP
+\\Prog{prog} 
+used to typeset program names, e.g.  
+\\Prog{latex2man} will be typeset as latex2man\&.
+.TP
+\\Cmd{command}{chapter} 
+used to typeset references to other 
+commands, e.g.  \\Cmd{latex2man}{1} will be typeset as 
+\fIlatex2man\fP(1)\&.
+.TP
+\\Bar 
+is typeset as |\&.
+.TP
+\\Bs 
+(BackSlash) is typeset as \\\&.
+.TP
+\\Tilde 
+is typeset as a ~\&.
+.TP
+\\Dots 
+is typeset as \&...
+
+.TP
+\\Bullet 
+us typeset as *\&.
+.TP
+\\setVersion{\&.\&.} 
+set \&.. as version information. 
+.TP
+\\setVersionWord{\&.\&.} 
+set \&.. for the word \fIVersion:\fP
+in 
+the footline. The default is \\setVersionWord{Version:}\&. 
+.TP
+\\Version 
+returns the version information. 
+.TP
+\\setDate{\&.\&.} 
+sets \&.. as date information. 
+.TP
+\\Date 
+returns the date information. 
+.TP
+\\Email{\&.\&.} 
+use to mark an Email address:
+.br
+\\Email{Juergen.Vollmer@informatik\-vollmer.de} is typeset as:
+.br
+\fBJuergen.Vollmer@informatik\-vollmer.de\fP\&.
+.TP
+\\URL{\&.\&.} 
+use to mark an URL: 
+\\URL{http://www.foo.de/\\Tilde vollmer} is typeset as 
+\fBhttp://www.foo.de/~vollmer\fP\&.
+.TP
+\\LatexManEnd 
+the input file is read and processed until reading 
+end\-of\-file or \\LatexManEnd (at the beginning of a line). 
+LaTeXignores this command. 
+.TP
+\\Lbr, \\Rbr 
+is typeset as [ and ] (these variants are 
+needed only somtimes like in item[FooBar\\LBr xx \\Lbr]\&. Usually 
+[ ] will work. 
+.TP
+\\LBr, \\RBr 
+is typeset as { and } (these variants are 
+needed when using { or } as arguments to macros. 
+.TP
+\\Circum 
+is typeset as ^\&.
+.TP
+\\Percent 
+is typeset as %\&.
+.TP
+\\TEXbr 
+If processed with LaTeX causes a linebreak (i.e.  is 
+equivalent to \\\\).In the output of latex2man
+this macro is 
+ignored. 
+.TP
+\\TEXIbr 
+If TexInfo output is generated, causes a linebreak (i.e.  is 
+equivalent to \\\\),otherwise ignored. 
+.TP
+\\MANbr 
+If Man\-Page output is generated, causes a linebreak (i.e.  is 
+equivalent to \\\\),otherwise ignored. 
+.TP
+\\HTMLbr 
+If HTML output is generated, causes a linebreak (i.e.  is 
+equivalent to \\\\),otherwise ignored. 
+.TP
+\\medskip 
+An empty line. 
+.TP
+\\SP 
+Produces some extra space, works also at the beginning of lines. 
+The code of the second line looks like: 
+\\SP abc \\SP\\SP xx\\\\:
+.br
+abc \fB \fP\fB \fP\fB \fPxx
+.br
+\fB \fPabc \fB \fP\fB \fPxx
+.br
+\fB \fP\fB \fPabc \fB \fPxx 
+.PP
+Note: Due to some ``problems\&'' with TexInfo, the lines starting with 
+\\SP
+have a leading \&. (dot) in the TexInfo output, 
+see \fB\-a\fP\fIchar\fP\&.
+.PP
+.SS ACCEPTED MACROS FROM THE RCSINFO PACKAGE
+.PP
+.TP
+\\rcsInfo $Id ...$ 
+if the LaTeX package rcsinfo
+is used, 
+this command is used to extract the date of the Man\-page. 
+.TP
+\\rcsInfoLongDate 
+if the LaTeX package rcsinfo
+is used, this 
+command is used to typeset the date coded in the $Id ..$ string. 
+.PP
+.SS ACCEPTED LaTeX MACROS
+.PP
+The following standard LaTeX commands are accepted: 
+.TP
+\\section{\&.\&.} 
+The section
+macro takes one argument: the 
+name of the Man\-page section. Each Man\-page consists of several sections. 
+Usually there are the following sections in a Man\-page: \fIName\fP
+(special handling as environment, c.f.  above), \fISynopsis\fP,
+\fIDescription\fP,
+\fIOptions\fP,
+\fIFiles\fP,
+\fISee Also\fP,
+\fIDiagnostics\fP,
+\fIReturn Values\fP,
+\fIBugs\fP,
+\fIAuthor\fP,
+\fIversion\fP,
+etc. 
+.PP
+\fISynopsis\fP
+must be the first section after the Name
+environment. 
+.PP
+Note: Do not use LaTeX\-macrosin section names. 
+.TP
+\\subsection{\&.\&.} 
+works as well as 
+.TP
+\\subsubsection{\&.\&.} 
+those. 
+.TP
+\\emph{\&.\&.} 
+\\emph{example} is typeset as \fIexample\fP\&.
+.TP
+\\textbf{\&.\&.} 
+\\textbf{example} is typeset as \fBexample\fP\&.
+.TP
+\\texttt{\&.\&.} 
+\\textt{example} is typeset as example\&.
+.TP
+\\underline{\&.\&.} 
+\\underline{example} is typeset as 
+.ul
+example of underline
+\&.
+.TP
+\\date{\&.\&.} 
+uses \&.. as date. 
+.TP
+\\verb+..+ 
+but only + is allowed as delimiter. 
+.TP
+$<$ is typeset as <\&. 
+.TP
+$>$ is typeset as >\&. 
+.TP
+$<=$ is typeset as <=\&. 
+.TP
+$>=$ is typeset as >=\&. 
+.TP
+$=$ is typeset as =\&. 
+.TP
+$<>$ is typeset as <>\&. 
+.TP
+$\\ge$ 
+is typeset as $>=$.
+.TP
+$\\le$ 
+is typeset as $<=$.
+.TP
+$\\leftarrow$ 
+is typeset as $<--$.
+.TP
+$\\Leftarrow$ 
+is typeset as $<==$.
+.TP
+$\\rightarrow$ 
+is typeset as $-->$.
+.TP
+$\\Rightarrow$ 
+is typeset as $==>$.
+.TP
+\\{ is typeset as {\&. 
+.TP
+\\} is typeset as }\&. 
+.TP
+\\$ is typeset as $\&. 
+.TP
+\\$ is typeset as $,should be used inside macro 
+arguments. 
+.TP
+\\_ is typeset as _\&. 
+.TP
+\\& is typeset as &\&. 
+.TP
+\\# is typeset as #\&. 
+.TP
+\\% is typeset as %\&. 
+.TP
+\\, 
+is typeset as smaller blank \- \- (between the two \-) 
+.TP
+\\\- 
+is used to mark hyphenation in a word. 
+.TP
+\\\\ is typeset as a linebreak or marks the end of a column in the 
+Table
+environment. 
+.TP
+\\ (a \\ followed by a blank) is typeset as a blank, 
+although it cannot be used at the beginning of a line to make indentation 
+(see the \\SP
+command). 
+.TP
+~ is typeset as a blank. 
+.TP
+\\copyright 
+is typeset as (C)\&.
+.TP
+\\noindent 
+.TP
+\\hline 
+inside a Table
+environment. 
+.TP
+\\item 
+inside a itemize,
+enumerate,
+or 
+description
+environment. 
+.TP
+\\today 
+11 November 2008(see also the rcsinfo
+LaTeXpackage). 
+.TP
+\\ss,\\"a, ... 
+\\ss = ß, \\"a= ä, \\"o= ö, \\"u= ü, 
+\\"A= Ä, \\"O= Ö, \\"U= Ü. It is allowed to surround these 
+macros in { and } in all places, even inside other macros, e.g. 
+.Vb
+     \\textbf{\\"a\\"o\\"u\\"A\\"O\\"U\\ss}
+     \\textbf{\\"a}{\\"o}{\\"u}{\\"A}{\\"O}{\\"U}{\\ss}}
+     \\textbf{äöüÄÖÜß}
+.Ve
+.PP
+\fBäöüÄÖÜß äöüÄÖÜß äöüÄÖÜß\fP
+.PP
+If these letters are used in their LATIN\-1 8\-bit coding, they are 
+translated into the equivalent letter of the desired output format. 
+E.g. Ä
+becomes &Auml;
+in HTML and @"A
+in texinfo. 
+.PP
+.SS CONDITIONAL TEXT
+.PP
+latex2man
+preprocesses the LaTeX input to allow text to be used 
+conditionally. A special sort of LaTeX comment is used for that purpose. 
+.TP
+.B *
+%@% IF \fIcondition\fP %@%
+.TP
+.B *
+%@% ELSE %@% 
+.TP
+.B *
+%@% END\-IF %@% 
+.PP
+A line must contain only such a comment and nothing else. \fIcondition\fP
+is 
+a boolean expression containing ``names\&'' and operators. The names given with 
+the \fB\-C\fP\fIname\fP
+option have the value ``true\&'', while all other names 
+occuring in the expression are assumed to be ``false\&''\&. If the evaluation of 
+the boolean expression results in the value ``true\&'', the text in the 
+``then\&''\-part is used and the text in the optional ``else\&''\-part is skipped 
+(and vice versa). The IF/ELSE/END\-IF
+may be nested. As boolean 
+operators the following are allowed: 
+.PP
+.TS
+tab(&);
+l l.
+T{
+||T}&T{
+boolean or 
+T}
+T{
+&&T}&T{
+boolean and 
+T}
+T{
+! 
+T}&T{
+negation 
+.TE
+.PP
+( and ) for grouping are allowed. 
+.PP
+For example:
+.br
+%@% IF abc %@%
+.br
+abc set
+.br
+%@%  IF xyz %@%
+.br
+xyz set
+.br
+%@%  ELSE %@%
+.br
+xyz NOT set
+.br
+%@%  END\-IF %@%
+.br
+%@% ELSE %@%
+.br
+abc NOT set
+.br
+%@%  IF xyz || !XYZ %@%
+.br
+xyz OR !XYZ set
+.br
+%@%  ELSE %@%
+.br
+xyz OR !XYZ NOT set
+.br
+%@%  END\-IF %@%
+.br
+%@% END\-IF %@%
+.PP
+Run this manual page through latex2man
+with e.g.  
+\fB\-C\fP\fI\&'abc XYZ\&'\fP
+and have a look to the generated output. 
+(If simply running the LaTeX\-document through LaTeX,all lines are shown in the 
+\&.dvi file).
+.br
+abc NOT set
+.br
+xyz OR !XYZ set
+.br
+.PP
+To check the conditional text feature, when latex2man
+is called with 
+.TP
+\fB\-C\fP\fIHTML\fP
+ the lines 1a, 2b, 3b, and 4b; 
+.TP
+\fB\-C\fP\fITEXI\fP
+ the lines 1b, 2a, 3b, and 4b; 
+.TP
+\fB\-C\fP\fIMAN\fP
+ the lines 1b, 2b, 3a, and 4b; 
+.TP
+\fB\-C\fP\fILATEX\fP
+ the lines 1b, 2b, 3b, and 4a; 
+.TP
+calling LaTeX without preprocessing 
+all lines 
+.PP
+should be shown: 
+.PP
+1b. The HTML conditional was not set. 
+.PP
+2b. The TEXI conditional was not set. 
+.PP
+3a. This text occurs only when viewing the MAN output 
+.PP
+4b. The LATEX conditional was not set. 
+.PP
+.SS TRANSLATION OF USER DEFINED MACROS
+.PP
+The user macro translation file (given by the [\fB\-t\fP\fItransfile\fP])
+contains 
+Perl
+commands specifying the translation of LaTeX macros defined by 
+the user. These macros may have none, one or two arguments. The following code 
+is expected: 
+.PP
+.TP
+.B *
+Comments start with a # up to the end of the line. 
+.TP
+.B *
+For a macro \\foo with no arguments, the following code must be 
+specified: 
+.RS
+.TP
+Translation to Man\-Pages 
+$manMacro{'foo'} = '...'; 
+.TP
+Translation to HTML 
+$htmlMacro{'foo'} = '...'; 
+.TP
+Translation to TexInfo 
+$texiMacro{'foo'} = '...'; 
+.RE
+.RS
+.PP
+where \&... is the translation. 
+.PP
+.RE
+.TP
+.B *
+For a macro \\foo{..} with one argument, the following code must be 
+specified: 
+.RS
+.TP
+Translation to Man\-Pages 
+$manMacro1a{'foo'} = '...';
+.br 
+$manMacro1b{'foo'} = '...'; 
+.TP
+Translation to HTML 
+$htmlMacro1a{'foo'} = '...';
+.br 
+$htmlMacro1b{'foo'} = '...'; 
+.RS
+.PP
+.RE
+.TP
+Translation to TexInfo 
+$texiMacro1a{'foo'} = '...';
+.br 
+$texiMacro1b{'foo'} = '...'; 
+.RE
+.RS
+.PP
+where \&... is the translation. The 1a code is used before the 
+argument, while 1b is typeset after the argument is set. 
+.PP
+.RE
+.TP
+.B *
+For a macro \\foo{..}{..} with two arguments, the following code 
+must be specified: 
+.RS
+.TP
+Translation to Man\-Pages 
+$manMacro2a{'foo'} = '...';
+.br 
+$manMacro2b{'foo'} = '...';
+.br 
+$manMacro2c{'foo'} = '...'; 
+.TP
+Translation to HTML 
+$htmlMacro2a{'foo'} = '...';
+.br 
+$htmlMacro2b{'foo'} = '...';
+.br 
+$htmlMacro2c{'foo'} = '...'; 
+.TP
+Translation to TexInfo 
+$texiMacro2a{'foo'} = '...';
+.br 
+$texiMacro2b{'foo'} = '...';
+.br 
+$texiMacro2c{'foo'} = '...'; 
+.RE
+.RS
+.PP
+where \&... is the translation. The 2a code is used before the 
+first argument, 2b between the two arguments and 2c is 
+typeset after the second argument is set. 
+.RE
+.TP
+.B *
+The file latex2man.trans contains some example code.
+.PP
+.SS VERBATIM ENVIRONMENT
+.PP
+.Vb
+This
+    {is}
+        \\texttt{a}
+                  $test$
+                         _of_
+verbatim
+<this is no HTML tag> and no @* TexInfo command
+.Ve
+.PP
+.SS SUBSECTION WORKS
+.PP
+This is a \\subsection\&. 
+.PP
+.SS Subsubsection works
+.PP
+This is a \\subsubsection\&. 
+.PP
+.SS Subsubsection still works
+.PP
+This is another \\subsubsection\&. 
+.PP
+.SS GENERAL REMARKS
+.PP
+.TP
+1.
+Empty lines are typeset as paragraph separators. 
+.TP
+2.
+The arguments of the LaTeX commands must not be split over several 
+lines. 
+.TP
+3.
+Do not nest calls to macros. 
+.TP
+4.
+Except the mentioned environment and macros, the usage of other LaTeX  
+environments or macros are not translated. Their usage will cause garbage 
+in the output. 
+.TP
+5.
+latex2man requires Perl version >= 5.0004_03.
+.TP
+6.
+If you want to install the system with the distributed Makefile,
+you need GNU\-make\&.
+If you don\&'t have it, you should execute the 
+steps shown in the Makefile
+manually. 
+.PP
+.SS SOME BUG FIX TESTS
+.PP
+.TP
+Leading . and \&' 
+Now leading \&. and \&' in generation troff output should work propperly, 
+since a \\& is added. Therfore the \\Dot macro has been deleted.
+.br
+Thanks to \fBFrank.Schilder@Mathematik.Tu\-Ilmenau.De\fP\&.
+.br
+Testcase 1: 
+.RS
+.TP
+\&'\\n\&' 
+\&.\&.\&. 
+.RE
+.RS
+.PP
+Testcase 2:
+.br
+\&.foobar
+Testcase 3:
+.br
+\&...
+.PP
+abc \&...
+abc \&. efg \&' 123 
+.PP
+.RE
+.TP
+%in verbatim 
+A % in a \\verb and verbatim\-environment was not 
+emitted correctly. Thanks to Aleksey Nogin \fBnogin@cs.caltech.edu\fP
+for the bug report and bug fix. 
+.PP
+% abc 
+.PP
+.Vb
+   % abc %
+.Ve
+.PP
+but ignore comments following this: 
+.PP
+.SH REQUIREMENTS
+
+.PP
+.TP
+Perl 
+latex2man
+requires Perl version >= 5.0004_03. 
+.TP
+Make 
+If you want to install the system with the distributed 
+Makefile,
+you need GNU\-make\&.
+If you don\&'t have it, you 
+should execute the steps shown in the Makefile
+manually. 
+.TP
+LaTeX LaTeX2e is required. 
+.PP
+.SH CHANGES
+
+Please check the file \fBlatex2man\-CHANGES\fP
+for the list of changes. 
+.PP
+.SH VERSION
+
+.PP
+Version: 1.23 of 2008/11/11\&.
+.PP
+.SH LICENSE AND COPYRIGHT
+
+.PP
+.TP
+Copyright 
+(C)1998, Dr. Jürgen Vollmer, Viktoriastraße 15, 
+D\-76133 Karlsruhe, Germany, \fBJuergen.Vollmer@informatik\-vollmer.de\fP
+.PP
+The actual version of Latex2man
+may be found on my homepage
+.br
+\fBhttp://www.informatik\-vollmer.de/software/latex2man.html\fP\&.
+.PP
+.TP
+License 
+This program can be redistributed and/or modified under the 
+terms of the LaTeX Project Public License Distributed from CTAN archives 
+in directory macros/latex/base/lppl.txt;
+either version 1 of the 
+License, or any later version. 
+.PP
+.TP
+Misc 
+If you find this software useful, please send me a postcard from 
+the place where you are living. 
+.PP
+.SH AUTHOR
+
+.PP
+Dr. Jürgen Vollmer 
+.br
+Viktoriastraße 15 
+.br
+D\-76133 Karlsruhe 
+.br
+Email: \fBJuergen.Vollmer@informatik\-vollmer.de\fP
+.br
+WWW: \fBhttp://www.informatik\-vollmer.de\fP\&.
+.PP
+.\" NOTE: This file is generated, DO NOT EDIT.

@@ -1,0 +1,49 @@
+How to install latex2man:
+
+Requirements:
+ - Latex2man requires Perl version >= 5.0004_03.
+ - LaTeX2e
+ - If you want to install the system with the distributed Makefile, you need
+   GNU-make. If you don't have it, you should execute the steps shown
+   in the Makefile manually.
+
+Installation:
+ - Edit the Makefile and set
+	BIN_DIR		= $(HOME)/bin
+	MAN_DIR		= $(HOME)/man
+	HTML_DIR	= $(HOME)/public_html
+	INFO_DIR	= $(HOME)/info
+	TEX_DIR		= $(HOME)/tex/inputs
+	CFG_DIR		= $(HOME)/tex/inputs
+   to your needs
+ - If you do not have pdflatex installed, remove in the "all" goal,
+   the sub goal "$(BASE).pdf".
+ - Edit latex2man and set in the first line
+   	#!/usr/local/bin/perl
+   to the correct path
+ - make install
+
+That's it.
+
+The following files should be part of this package:
+	latex2man/latex2man
+	latex2man/latex2man.tex
+	latex2man/latex2man.cfg
+	latex2man/latex2man.sty
+	latex2man/latex2man.trans
+	latex2man/latex2man.1
+	latex2man/latex2man.txt
+	latex2man/latex2man.html
+	latex2man/latex2man.texi
+	latex2man/latex2man.info
+	latex2man/latex2man.pdf
+	latex2man/Makefile
+	latex2man/README
+	latex2man/INSTALL
+	latex2man/CHANGES
+	latex2man/THIS-IS-VERSION-x.y
+
+Juergen
+
+$Id: INSTALL,v 1.7 2000/03/13 10:25:48 vollmer Entwurf $
+
