@@ -49,7 +49,9 @@
 
 using namespace std;
 
-void add_variable_entry(void *address, const string *comment, bool isglobal);
+void add_variable_entry(void *address, const string *comment, 
+			const string *declFile, unsigned int declLine,
+			bool isglobal);
 void dump_variables();
 
 int binary_fmt_fd(void);

@@ -302,7 +302,8 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec)
   for (unsigned int i = 0; i < symvec.size(); i++) {
     Symbol *s = symvec[i];
     if(s->getAddr() != 0)
-      add_variable_entry((void *) s->getAddr(), &s->getName(), 1);
+      add_variable_entry((void *) s->getAddr(), &s->getName(), 
+			 &s->getFileName(), s->getLineNum(), 1);
 //    printf("  %s: %p\n", s->getName().c_str(), (void *)s->getAddr());
   }
 
@@ -380,16 +381,13 @@ dump_file_info(const char *filename)
   syms->getAllSymbolsByType(symvec, Symbol::ST_OBJECT);
 
 
-
-//std::vector<localVar *> vars;
-//syms->findLocalVariable(vars, "matrix_a");
-//vars[0]->getLineNum();
+#if 0
 for(unsigned int i=0; i<symvec.size(); i++)
 {
   printf("%s, %s, %x\n", symvec[i]->getName().c_str(), symvec[i]->getFileName().c_str(), symvec[i]->getLineNum());
 }
 printf("\n\n\n\n");
-
+#endif
 
 
 

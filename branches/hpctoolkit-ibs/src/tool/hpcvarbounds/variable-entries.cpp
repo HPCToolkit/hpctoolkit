@@ -66,10 +66,13 @@ using namespace std;
 
 class Variable {
 public:
-  Variable(void *_address, string *_comment, bool _isvisible);
+  Variable(void *_address, string *_comment, string *_declFile,
+	   unsigned int declLine, bool _isvisible);
   void AppendComment(const string *c);
   void *address;
   string *comment;
+  string *declFile;
+  unsigned int declLine;
   bool isvisible;
   int operator<(Variable *right);
 };
@@ -79,8 +82,10 @@ public:
  * forward declarations
  *****************************************************************************/
 
-static void new_variable_entry(void *addr, string *comment, bool isvisible);
-static void dump_variable_entry(void *addr, const char *comment);
+static void new_variable_entry(void *addr, string *comment, string *declFile,
+			       unsigned int declLine, bool isvisible);
+static void dump_variable_entry(void *addr, const char *comment,
+				const char *declFile, unsigned int declLine);
 static void end_of_variable_entries(void);
 
 
@@ -116,19 +121,20 @@ dump_variables()
     if (v->comment) {
       name = v->comment->c_str();
     }
-    dump_variable_entry(v->address, name);
+    dump_variable_entry(v->address, name, v->declFile->c_str(), v->declLine);
   }
   end_of_variable_entries();
 }
 
 void 
-add_variable_entry(void *addr, const string *comment, bool isvisible)
+add_variable_entry(void *addr, const string *comment, const string *declFile,
+		   unsigned int declLine, bool isvisible)
 {
   VariableSet::iterator it = variable_entries.find(addr); 
 
   if (it == variable_entries.end()) {
     new_variable_entry(addr, comment ? new string(*comment) : NULL, 
-		       isvisible);
+		       new string(*declFile), declLine, isvisible);
   } else {
     Variable *v = (*it).second;
     if (comment) {
@@ -156,7 +162,8 @@ long num_variable_entries(void)
 // The binary format is buffered.
 //
 static void
-dump_variable_entry(void *addr, const char *comment)
+dump_variable_entry(void *addr, const char *comment, const char *declFile,
+		    unsigned int declLine)
 {
   num_entries_total++;
 
@@ -172,11 +179,11 @@ dump_variable_entry(void *addr, const char *comment)
   if (c_fmt_fp() != NULL) {
     if (num_entries_total > 1)
       fprintf(c_fmt_fp(), ",\n");
-    fprintf(c_fmt_fp(), "   %p /* %s */", addr, comment);
+    fprintf(c_fmt_fp(), "   %p /* %s */ %s / %u /", addr, comment, declFile, declLine);
   }
 
   if (text_fmt_fp() != NULL) {
-    fprintf(text_fmt_fp(), "%p    %s\n", addr, comment);
+    fprintf(text_fmt_fp(), "%p    %s    %s    %u\n", addr, comment, declFile, declLine);
   }
 }
 
@@ -195,17 +202,21 @@ end_of_variable_entries(void)
 
 
 static void 
-new_variable_entry(void *addr, string *comment, bool isvisible)
+new_variable_entry(void *addr, string *comment, string *declFile,
+		   unsigned int declLine, bool isvisible)
 {
-  Variable *f = new Variable(addr, comment, isvisible);
+  Variable *f = new Variable(addr, comment, declFile, declLine, isvisible);
   variable_entries.insert(pair<void*, Variable*>(addr, f));
 }
 
 
-Variable::Variable(void *_address, string *_comment, bool _isvisible)
+Variable::Variable(void *_address, string *_comment, string *_declFile,
+		   unsigned int _declLine, bool _isvisible)
 { 
   address = _address; 
   comment = _comment; 
+  declFile = _declFile;
+  declLine = _declLine;
   isvisible = _isvisible; 
 }
 
