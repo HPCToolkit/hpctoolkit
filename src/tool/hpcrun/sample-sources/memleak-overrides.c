@@ -422,33 +422,29 @@ memleak_malloc_helper(const char *name, size_t bytes, size_t align,
 {
   void *sys_ptr, *appl_ptr;
   leakinfo_t *info_ptr;
+  char *inactive_mesg = "inactive";
   int active, loc;
   size_t size;
 
   TMSG(MEMLEAK, "%s: bytes: %ld", name, bytes);
 
-  // do the real malloc, aligned or not
-  active = leak_detection_enabled && hpcrun_memleak_active();
+  // do the real malloc, aligned or not.  note: we can't track malloc
+  // inside dlopen, that would lead to deadlock.
+  active = 1;
+  if (! (leak_detection_enabled && hpcrun_memleak_active())) {
+    active = 0;
+  } else if (TD_GET(inside_dlfcn)) {
+    active = 0;
+    inactive_mesg = "unable to monitor: inside dlfcn";
+  }
   size = bytes + (active ? leakinfo_size : 0);
   if (align != 0) {
-
     // there is no __libc_posix_memalign(), so we use __libc_memalign()
     // instead, or else use dlsym().
-#if 0
-    errno = real_posix_memalign(&sys_ptr, align, size);
-    if (errno != 0) {
-      sys_ptr = NULL;
-    }
-    if (ret != NULL) {
-      *ret = errno;
-    }
-#else
     sys_ptr = real_memalign(align, size);
     if (ret != NULL) {
       *ret = (sys_ptr == NULL) ? errno : 0;
     }
-#endif
-
   } else {
     sys_ptr = real_malloc(size);
   }
@@ -458,8 +454,8 @@ memleak_malloc_helper(const char *name, size_t bytes, size_t align,
 
   // inactive or failed malloc
   if (! active) {
-    TMSG(MEMLEAK, "%s: bytes: %ld, sys: %p (inactive)",
-	 name, bytes, sys_ptr);
+    TMSG(MEMLEAK, "%s: bytes: %ld, sys: %p (%s)",
+	 name, bytes, sys_ptr, inactive_mesg);
     return sys_ptr;
   }
   if (sys_ptr == NULL) {
@@ -640,7 +636,8 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
   ucontext_t uc;
   leakinfo_t *info_ptr;
   void *ptr2, *appl_ptr, *sys_ptr;
-  int loc, loc2;
+  char *inactive_mesg = "inactive";
+  int loc, loc2, active;
 
   memleak_initialize();
   TMSG(MEMLEAK, "realloc: ptr: %p bytes: %ld", ptr, bytes);
@@ -649,14 +646,13 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
     return real_realloc(ptr, bytes);
   }
 
-  // realloc(NULL, bytes) means malloc(bytes)
-
 #ifdef USE_SYS_GCTXT
   getcontext(&uc);
 #else // ! USE_SYS_GCTXT
   INLINE_ASM_GCTXT(realloc, uc);
 #endif // USE_SYS_GCTXT
 
+  // realloc(NULL, bytes) means malloc(bytes)
   if (ptr == NULL) {
     return memleak_malloc_helper("realloc/malloc", bytes, 0, 0, &uc, NULL);
   }
@@ -673,13 +669,22 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
 
   // if inactive, then do real_realloc() and return.
   // but if there used to be a header, then must slide user data.
-  if (! hpcrun_memleak_active()) {
+  // again, can't track malloc inside dlopen.
+  active = 1;
+  if (! (leak_detection_enabled && hpcrun_memleak_active())) {
+    active = 0;
+  } else if (TD_GET(inside_dlfcn)) {
+    active = 0;
+    inactive_mesg = "unable to monitor: inside dlfcn";
+  }
+  if (! active) {
     if (loc == MEMLEAK_LOC_HEAD) {
       // slide left
       memmove(sys_ptr, ptr, bytes);
     }
     appl_ptr = real_realloc(sys_ptr, bytes);
-    TMSG(MEMLEAK, "realloc: bytes: %ld ptr: %p (inactive)", bytes, appl_ptr);
+    TMSG(MEMLEAK, "realloc: bytes: %ld ptr: %p (%s)",
+	 bytes, appl_ptr, inactive_mesg);
     return appl_ptr;
   }
 
