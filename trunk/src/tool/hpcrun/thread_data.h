@@ -222,6 +222,14 @@ typedef struct thread_data_t {
   // ----------------------------------------
   bool debug1;
 
+  // ----------------------------------------
+  // miscellaneous
+  // ----------------------------------------
+  // True if this thread is inside dlopen or dlclose.  A synchronous
+  // override that is called from dlopen (eg, malloc) must skip this
+  // sample or else deadlock on the dlopen lock.
+  bool inside_dlfcn;
+
 } thread_data_t;
 
 static const size_t HPCRUN_TraceBufferSz = HPCIO_RWBufferSz;

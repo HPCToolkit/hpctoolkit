@@ -209,6 +209,11 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   // debug support
   // ----------------------------------------
   td->debug1 = false;
+
+  // ----------------------------------------
+  // miscellaneous
+  // ----------------------------------------
+  td->inside_dlfcn = false;
 }
 
 
