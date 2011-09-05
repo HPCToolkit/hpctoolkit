@@ -96,6 +96,8 @@
 
 #include <lib/support-lean/timer.h>
 
+#include <hpcrun/sample-sources/data-splay.h>
+
 /******************************************************************************
  * special includes from libpfm for IBS
  *****************************************************************************/
@@ -652,6 +654,14 @@ ibsop_signal_handler(int sig, siginfo_t* siginfo, void* context)
 	  if(!is_kernel((void *)linear_addr)){
 	    hpcrun_sample_callpath(context, metrics[0], linear_addr, 0, 0);
 	    hpcrun_sample_callpath(context, metrics[1], linear_addr, 0, 0);
+	    /* lookup the address in the splay tree, which is used to asscociate IBS samples
+	       to allocation samples */
+	    struct datainfo_s *allocdata = splay_lookup((void *)linear_addr);
+ 	    if(allocdata == NULL)
+	      TMSG(IBS_SAMPLE, "touch %p but no data allocation point", (void *)linear_addr);
+	    else
+	      TMSG(IBS_SAMPLE, "touch %p, allocation(%p, %p)", (void *)linear_addr, 
+	  	    allocdata->start, allocdata->end);
 	  }
 	  else
 	    TMSG(IBS_SAMPLE, "this is a kernel address");

@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/sample-sources/memleak.h $
-// $Id: memleak.h 3328 2010-12-23 23:39:09Z xl10 $
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/sample-sources/datac-splay.h $
+// $Id: datac-splay.h 3575 2011-08-02 23:52:25Z xl10 $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -44,29 +44,15 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//
-// MEMLEAK sample source public interface:
-//
-//  The allocate/free wrappers for the MEMLEAK sample source are not 
-//  housed with the rest of the MEMLEAK code. They will be separate 
-//  so that they are not linked into all executables. 
-//
-//  To avoid exposing the details of the MEMLEAK handler via global variables,
-//  the following procedural interfaces are provided.
-//
-//
 
-#ifndef sample_source_datacentric_h
-#define sample_source_datacentric_h
-
-/******************************************************************************
- * local includes 
- *****************************************************************************/
 
 #include <cct/cct.h>
-#include <lib/prof-lean/splay-macros.h>
 
-/*
+/******************************************************************************
+ * type definitions
+ *****************************************************************************/
+
+
 typedef struct datainfo_s {
   long magic;
   void *start;
@@ -75,18 +61,16 @@ typedef struct datainfo_s {
   struct datainfo_s *left;
   struct datainfo_s *right;
 }datainfo_t;
-*/
+
 
 /******************************************************************************
- * interface operations
+ * interface definitions
  *****************************************************************************/
 
-int hpcrun_datacentric_alloc_id();
-int hpcrun_datacentric_active();
-void hpcrun_datacentric_alloc_inc(cct_node_t* node, int incr);
-void hpcrun_datacentric_alloc_dec(cct_node_t* node, int decr);
+struct datainfo_s *splay(struct datainfo_s *root, void *key);
 
-// to associate samples to allocation point
-//struct datainfo_s *splay_lookup(void *p);
+void splay_insert(struct datainfo_s *node);
 
-#endif // sample_source_datacentric_h
+struct datainfo_s *splay_delete(void *start, void *end);
+
+struct datainfo_s *splay_lookup(void *p);

@@ -179,6 +179,7 @@ MY_BASE_FILES =			\
         sample-sources/common.c         \
 	sample-sources/itimer.c		\
 	sample-sources/memleak.c	\
+	sample-sources/data-splay.c	\
         sample-sources/datacentric.c    \
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \

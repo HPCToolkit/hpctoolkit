@@ -76,6 +76,7 @@
  *****************************************************************************/
 
 #include <sample-sources/datacentric.h>
+#include <sample-sources/data-splay.h>
 #include <messages/messages.h>
 #include <sample_event.h>
 #include <monitor-exts/monitor_ext.h>
@@ -89,15 +90,18 @@
  * type definitions
  *****************************************************************************/
 
+/*
 typedef struct datainfo_s {
   long magic;
   void *start;
   void *end;
+  cct_node_t *allocnode;
   struct datainfo_s *left;
   struct datainfo_s *right;
 }datainfo_t;
+*/
 
-datainfo_t datainfo_NULL = {.magic = 0};
+datainfo_t datainfo_NULL = {.magic = 0, .allocnode = NULL, .start = NULL};
 
 typedef int posix_memalign_fcn(void **, size_t, size_t);
 typedef void *memalign_fcn(size_t, size_t);
@@ -113,7 +117,7 @@ typedef void *realloc_fcn(void *, size_t);
  * macros
  *****************************************************************************/
 
-#define DATACENTRIC_USE_HYBRID_LAYOUT 1
+#define DATACENTRIC_USE_HYBRID_LAYOUT 0
 
 #define DATACENTRIC_MAGIC 0x68706374
 #define DATACENTRIC_DEFAULT_PAGESIZE  4096
@@ -153,8 +157,8 @@ extern realloc_fcn        real_realloc;
 static int datacentric_enabled = 0; // default is off
 static int datacentric_init = 0;    // default is uninitialized
 
-static struct datainfo_s *datacentric_tree_root = NULL;
-static spinlock_t datacentric_memtree_lock = SPINLOCK_UNLOCKED;
+//static struct datainfo_s *datacentric_tree_root = NULL;
+//static spinlock_t datacentric_memtree_lock = SPINLOCK_UNLOCKED;
 
 static int datainfo_size = sizeof(struct datainfo_s);
 static long datacentric_pagesize = DATACENTRIC_DEFAULT_PAGESIZE;
@@ -172,9 +176,10 @@ static char *loc_name[4] = {
 
 
 /******************************************************************************
- * splay operations
+ * splay operations (move to data-splay.c)
  *****************************************************************************/
 
+#if 0
 static struct datainfo_s *
 splay(struct datainfo_s *root, void *key)
 {
@@ -294,6 +299,7 @@ splay_lookup(void *p)
     return datacentric_tree_root;
   return NULL;
 }
+#endif
 
 /******************************************************************************
  * private operations
@@ -437,13 +443,16 @@ datacentric_add_datainfo(const char *name, void *sys_ptr, void *appl_ptr,
 
   if (hpcrun_datacentric_active()) {
     hpcrun_async_block();
-    hpcrun_sample_callpath(uc, hpcrun_datacentric_alloc_id(), bytes, 0, 1);
+    info_ptr->allocnode =
+	hpcrun_sample_callpath(uc, hpcrun_datacentric_alloc_id(), bytes, 0, 1);
     hpcrun_async_unblock();
     loc_str = loc_name[loc];
   } else {
+    info_ptr->allocnode = NULL;
     loc_str = "inactive";
   }
   if (loc == DATACENTRIC_LOC_FOOT) {
+    TMSG(MEMLEAK, "insert the datainfo to the splay tree");
     splay_insert(info_ptr);
   }
 
