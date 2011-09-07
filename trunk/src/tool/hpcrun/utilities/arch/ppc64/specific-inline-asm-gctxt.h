@@ -23,8 +23,7 @@
   asm volatile ("movq %%rsp, %0"               \
                 : "=m" (UC_REG_SP(uc)))
 #else // for now, "inline asm" getcontext turns into syscall getcontext
-#define INLINE_ASM_GCTXT(LABEL, uc)
-    getcontext(&uc)
+#define INLINE_ASM_GCTXT(LABEL, uc)  getcontext(&uc)
 #endif // ppc code unknown
 
 
