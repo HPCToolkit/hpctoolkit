@@ -62,4 +62,16 @@ cct_metric_data_increment(int metric_id,
   hpcrun_metric_std_inc(metric_id, set, incr);
 }
 
+static inline void 
+cct_metric_data_update(int metric_id,
+		       cct_node_t* x,
+		       cct_metric_data_t val)
+{
+  if( ! hpcrun_has_metric_set(x)) {
+    cct2metrics_assoc(x, hpcrun_metric_set_new());
+  }
+  metric_set_t* set = hpcrun_get_metric_set(x);
+  metric_upd_proc_t *fn = hpcrun_get_metric_proc(metric_id);
+  (*fn)(metric_id, set, val);
+}
 #endif // CCT2METRICS_H

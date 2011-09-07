@@ -525,6 +525,7 @@ ibsfetch_signal_handler(int sig, siginfo_t* siginfo, void* context)
   int ret;
   int fd;
   struct over_args *ov;
+  cct_node_t *node = NULL;
 
   /* extract thread private data */
   thread_data_t *td = hpcrun_get_thread_data();
@@ -561,24 +562,31 @@ ibsfetch_signal_handler(int sig, siginfo_t* siginfo, void* context)
       pfm_read_pmds(fd, ov->pd, 1);
       fetchdata = ov->pd[0].reg_value;
       ibsfetchdata = (ibsfetchctl_t *)(&fetchdata);
-      hpcrun_sample_callpath(context, metrics[0], 1, 0, 0);
+      node = hpcrun_sample_callpath(context, metrics[0], 1, 0, 0);
+      assert(node != NULL);
+
       if(ibsfetchdata->reg.ibsfetchcomp == 1)
       {
-         hpcrun_sample_callpath(context, metrics[1], 1, 0, 0);
+//         hpcrun_sample_callpath(context, metrics[1], 1, 0, 0);
+	 cct_metric_data_increment(metrics[1], node, (cct_metric_data_t){.i = 1});
       }
       if(ibsfetchdata->reg.ibsicmiss == 1)
       {
-         hpcrun_sample_callpath(context, metrics[2], 1, 0, 0);
+//         hpcrun_sample_callpath(context, metrics[2], 1, 0, 0);
+	 cct_metric_data_increment(metrics[2], node, (cct_metric_data_t){.i = 1});
       }
       if(ibsfetchdata->reg.ibsl1tlbmiss == 1)
       {
-         hpcrun_sample_callpath(context, metrics[3], 1, 0, 0);
+//         hpcrun_sample_callpath(context, metrics[3], 1, 0, 0);
+	 cct_metric_data_increment(metrics[3], node, (cct_metric_data_t){.i = 1});
       }
       if(ibsfetchdata->reg.ibsl2tlbmiss == 1)
       {
-         hpcrun_sample_callpath(context, metrics[4], 1, 0, 0);
+//         hpcrun_sample_callpath(context, metrics[4], 1, 0, 0);
+	 cct_metric_data_increment(metrics[4], node, (cct_metric_data_t){.i = 1});
       }
-      hpcrun_sample_callpath(context, metrics[5], ibsfetchdata->reg.ibsfetchlat, 0, 0);
+//      hpcrun_sample_callpath(context, metrics[5], ibsfetchdata->reg.ibsfetchlat, 0, 0);
+      cct_metric_data_increment(metrics[5], node, (cct_metric_data_t){.i = ibsfetchdata->reg.ibsfetchlat});
     }
   }
 

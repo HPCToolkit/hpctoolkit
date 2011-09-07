@@ -560,6 +560,7 @@ ibsop_signal_handler(int sig, siginfo_t* siginfo, void* context)
   int fd;
   int lat = 0;
   struct over_args *ov;
+  cct_node_t *node = NULL;
 
   /* extract thread private data */
   thread_data_t *td = hpcrun_get_thread_data();
@@ -611,7 +612,8 @@ ibsop_signal_handler(int sig, siginfo_t* siginfo, void* context)
 	 (opdata3->reg.ibsstop == 1))
       {
 	/* this is the first metric logging routine, must keep it to unwind the call stack */
-	hpcrun_sample_callpath(context, metrics[2], 1, 0, 0);
+	node = hpcrun_sample_callpath(context, metrics[2], 1, 0, 0);
+ 	assert(node != NULL);
 	
 	/* NB data are avail only when load and dc miss */
 	if((opdata3->reg.ibsldop == 1) && (opdata3->reg.ibsdcmiss == 1))
@@ -623,27 +625,34 @@ ibsop_signal_handler(int sig, siginfo_t* siginfo, void* context)
 
 	  /* read from local DRAM */
 	  if((opdata2->reg.nbibsreqsrc == 0x3) && (opdata2->reg.nbibsreqdstproc == 0x0))
-            hpcrun_sample_callpath(context, metrics[7], 1, 0, 0);
+	    cct_metric_data_increment(metrics[7], node, (cct_metric_data_t){.i = 1});
+//            hpcrun_sample_callpath(context, metrics[7], 1, 0, 0);
 	  /* read from remote DRAM */
           if((opdata2->reg.nbibsreqsrc == 0x3) && (opdata2->reg.nbibsreqdstproc == 0x1))
-            hpcrun_sample_callpath(context, metrics[8], 1, 0, 0);
+	    cct_metric_data_increment(metrics[8], node, (cct_metric_data_t){.i = 1});
+//            hpcrun_sample_callpath(context, metrics[8], 1, 0, 0);
 	  /* read from local L3 cache */
           if(((opdata2->reg.nbibsreqsrc == 0x1) && (opdata2->reg.nbibsreqdstproc == 0x0)) ||
 	  /* read from L1 or L2 of a local core */
 	     ((opdata2->reg.nbibsreqsrc == 0x2) && (opdata2->reg.nbibsreqdstproc == 0x0)))
-            hpcrun_sample_callpath(context, metrics[9], 1, 0, 0);
+	    cct_metric_data_increment(metrics[9], node, (cct_metric_data_t){.i = 1});
+//            hpcrun_sample_callpath(context, metrics[9], 1, 0, 0);
 	  /* read from L1, L2, L3 of a remote core */
           if((opdata2->reg.nbibsreqsrc == 0X2) && (opdata2->reg.nbibsreqdstproc == 0x1))
-            hpcrun_sample_callpath(context, metrics[10], 1, 0, 0);
+	    cct_metric_data_increment(metrics[10], node, (cct_metric_data_t){.i = 1});
+//            hpcrun_sample_callpath(context, metrics[10], 1, 0, 0);
 	}
 	if(opdata3->reg.ibsdcmiss == 1)
-	  hpcrun_sample_callpath(context, metrics[3], 1, 0, 0);
+	  cct_metric_data_increment(metrics[3], node, (cct_metric_data_t){.i = 1});
+//	  hpcrun_sample_callpath(context, metrics[3], 1, 0, 0);
 
 	if(opdata3->reg.ibsdcl1tlbmiss == 1)
-	  hpcrun_sample_callpath(context, metrics[5], 1, 0, 0);
+	  cct_metric_data_increment(metrics[5], node, (cct_metric_data_t){.i = 1});
+//	  hpcrun_sample_callpath(context, metrics[5], 1, 0, 0);
 
 	if(opdata3->reg.ibsdcl2tlbmiss == 1)
-	  hpcrun_sample_callpath(context, metrics[6], 1, 0, 0);
+	  cct_metric_data_increment(metrics[6], node, (cct_metric_data_t){.i = 1});
+//	  hpcrun_sample_callpath(context, metrics[6], 1, 0, 0);
 
 	/* log effective address */
 	if(opdata3->reg.ibsdclinaddrvalid)
@@ -652,8 +661,10 @@ ibsop_signal_handler(int sig, siginfo_t* siginfo, void* context)
 	  pfm_read_pmds(fd, ov->pd, 1);
 	  linear_addr = ov->pd[0].reg_value;
 	  if(!is_kernel((void *)linear_addr)){
-	    hpcrun_sample_callpath(context, metrics[0], linear_addr, 0, 0);
-	    hpcrun_sample_callpath(context, metrics[1], linear_addr, 0, 0);
+	    cct_metric_data_update(metrics[0], node, (cct_metric_data_t){.p = (void *)linear_addr});
+	    cct_metric_data_update(metrics[1], node, (cct_metric_data_t){.p = (void *)linear_addr});
+//	    hpcrun_sample_callpath(context, metrics[0], linear_addr, 0, 0);
+//	    hpcrun_sample_callpath(context, metrics[1], linear_addr, 0, 0);
 	    /* lookup the address in the splay tree, which is used to asscociate IBS samples
 	       to allocation samples */
 	    struct datainfo_s *allocdata = splay_lookup((void *)linear_addr);
@@ -671,7 +682,8 @@ ibsop_signal_handler(int sig, siginfo_t* siginfo, void* context)
 	if((opdata3->reg.ibsldop == 1) && (opdata3->reg.ibsdcmiss == 1)){
 	  lat = opdata3->reg.ibsdcmisslat;
 	  if(lat > 0)
-	    hpcrun_sample_callpath(context, metrics[4], lat, 0, 0);
+	    cct_metric_data_increment(metrics[4], node, (cct_metric_data_t){.i = lat});
+//	    hpcrun_sample_callpath(context, metrics[4], lat, 0, 0);
 	}
       }
 #if 0
