@@ -16,6 +16,7 @@ set --  \
     CC="$CC"  CFLAGS="$CFLAGS"  \
     CXX="$CXX"  CXXFLAGS="$CXXFLAGS"  \
     --enable-transcoder-iconv  \
+    --without-curl  \
     --prefix="$prefix"  "$@"
 if test -n "$is_cross_compile" ; then
     set -- --host="$host" "$@"
