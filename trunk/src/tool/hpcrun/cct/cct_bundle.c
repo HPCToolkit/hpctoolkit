@@ -89,7 +89,10 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   // insert the creation context in the cct, and attach all call paths
   // to the call context prefix node instead of the top of the tree.
   //
-  if (ctxt) {
+  // NOTE: special -dd flag NO_THREAD_CTXT, when active, will disable
+  //       insertion of the creation context
+  //
+  if (DISABLED(NO_THREAD_CTXT) && ctxt) {
     hpcrun_walk_path(ctxt->context, l_insert_path, (cct_op_arg_t) &(bundle->tree_root));
   }
   bundle->partial_unw_root = hpcrun_cct_new_partial();
