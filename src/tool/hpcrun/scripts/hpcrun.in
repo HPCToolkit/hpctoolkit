@@ -235,6 +235,12 @@ do
 	    export MONITOR_DEBUG=1
 	    ;;
 
+	-mp | --memleak-prob )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_MEMLEAK_PROB="$1"
+	    shift
+	    ;;
+
 	-ms | --memsize )
 	    arg_ok "$1" || die "missing argument for $arg"
 	    export HPCRUN_MEMSIZE="$1"
