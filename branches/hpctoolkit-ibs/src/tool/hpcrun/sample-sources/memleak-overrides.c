@@ -50,8 +50,13 @@
  * standard include files
  *****************************************************************************/
 
+#define __USE_XOPEN_EXTENDED
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdint.h>
 #include <string.h>
 #include <ucontext.h>
@@ -119,6 +124,9 @@ typedef void *realloc_fcn(void *, size_t);
 #define MEMLEAK_MAGIC 0x68706374
 #define MEMLEAK_DEFAULT_PAGESIZE  4096
 
+#define HPCRUN_MEMLEAK_PROB  "HPCRUN_MEMLEAK_PROB"
+#define DEFAULT_PROB  0.1
+
 #ifdef HPCRUN_STATIC_LINK
 #define real_posix_memalign   __real_posix_memalign
 #define real_memalign   __real_memalign
@@ -153,6 +161,8 @@ extern realloc_fcn        real_realloc;
 
 static int leak_detection_enabled = 0; // default is off
 static int leak_detection_init = 0;    // default is uninitialized
+static int use_memleak_prob = 0;
+static float memleak_prob = 0.0;
 
 static struct leakinfo_s *memleak_tree_root = NULL;
 static spinlock_t memtree_lock = SPINLOCK_UNLOCKED;
@@ -256,10 +266,37 @@ splay_delete(void *memblock)
  * private operations
  *****************************************************************************/
 
+// Accept 0.ddd as floating point or x/y as fraction.
+static float
+string_to_prob(char *str)
+{
+  int x, y;
+  float ans;
+
+  if (strchr(str, '/') != NULL) {
+    if (sscanf(str, "%d/%d", &x, &y) == 2 && y > 0) {
+      ans = (float)x / (float)y;
+    } else {
+      ans = DEFAULT_PROB;
+    }
+  } else {
+    if (sscanf(str, "%f", &ans) < 1) {
+      ans = DEFAULT_PROB;
+    }
+  }
+
+  return ans;
+}
+
 
 static void
 memleak_initialize(void)
 {
+  struct timeval tv;
+  char *prob_str;
+  unsigned int seed;
+  int fd;
+
   if (leak_detection_init)
     return;
 
@@ -268,6 +305,25 @@ memleak_initialize(void)
 #else
   memleak_pagesize = MEMLEAK_DEFAULT_PAGESIZE;
 #endif
+
+  // If we are sampling the mallocs, then read the probability and
+  // seed the random number generator.
+  prob_str = getenv(HPCRUN_MEMLEAK_PROB);
+  if (prob_str != NULL) {
+    use_memleak_prob = 1;
+    memleak_prob = string_to_prob(prob_str);
+    TMSG(MEMLEAK, "sampling mallocs with prob = %f", memleak_prob);
+
+    seed = 0;
+    fd = open("/dev/urandom", O_RDONLY);
+    if (fd >= 0) {
+      read(fd, &seed, sizeof(seed));
+      close(fd);
+    }
+    gettimeofday(&tv, NULL);
+    seed += (getpid() << 16) + (tv.tv_usec << 4);
+    srandom(seed);
+  }
 
   // unconditionally enable leak detection for now
   leak_detection_enabled = 1;
@@ -422,33 +478,32 @@ memleak_malloc_helper(const char *name, size_t bytes, size_t align,
 {
   void *sys_ptr, *appl_ptr;
   leakinfo_t *info_ptr;
+  char *inactive_mesg = "inactive";
   int active, loc;
   size_t size;
 
   TMSG(MEMLEAK, "%s: bytes: %ld", name, bytes);
 
-  // do the real malloc, aligned or not
-  active = leak_detection_enabled && hpcrun_memleak_active();
+  // do the real malloc, aligned or not.  note: we can't track malloc
+  // inside dlopen, that would lead to deadlock.
+  active = 1;
+  if (! (leak_detection_enabled && hpcrun_memleak_active())) {
+    active = 0;
+  } else if (TD_GET(inside_dlfcn)) {
+    active = 0;
+    inactive_mesg = "unable to monitor: inside dlfcn";
+  } else if (use_memleak_prob && (random()/(float)RAND_MAX > memleak_prob)) {
+    active = 0;
+    inactive_mesg = "not sampled";
+  }
   size = bytes + (active ? leakinfo_size : 0);
   if (align != 0) {
-
     // there is no __libc_posix_memalign(), so we use __libc_memalign()
     // instead, or else use dlsym().
-#if 0
-    errno = real_posix_memalign(&sys_ptr, align, size);
-    if (errno != 0) {
-      sys_ptr = NULL;
-    }
-    if (ret != NULL) {
-      *ret = errno;
-    }
-#else
     sys_ptr = real_memalign(align, size);
     if (ret != NULL) {
       *ret = (sys_ptr == NULL) ? errno : 0;
     }
-#endif
-
   } else {
     sys_ptr = real_malloc(size);
   }
@@ -458,8 +513,8 @@ memleak_malloc_helper(const char *name, size_t bytes, size_t align,
 
   // inactive or failed malloc
   if (! active) {
-    TMSG(MEMLEAK, "%s: bytes: %ld, sys: %p (inactive)",
-	 name, bytes, sys_ptr);
+    TMSG(MEMLEAK, "%s: bytes: %ld, sys: %p (%s)",
+	 name, bytes, sys_ptr, inactive_mesg);
     return sys_ptr;
   }
   if (sys_ptr == NULL) {
@@ -640,7 +695,8 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
   ucontext_t uc;
   leakinfo_t *info_ptr;
   void *ptr2, *appl_ptr, *sys_ptr;
-  int loc, loc2;
+  char *inactive_mesg = "inactive";
+  int loc, loc2, active;
 
   memleak_initialize();
   TMSG(MEMLEAK, "realloc: ptr: %p bytes: %ld", ptr, bytes);
@@ -649,14 +705,13 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
     return real_realloc(ptr, bytes);
   }
 
-  // realloc(NULL, bytes) means malloc(bytes)
-
 #ifdef USE_SYS_GCTXT
   getcontext(&uc);
 #else // ! USE_SYS_GCTXT
   INLINE_ASM_GCTXT(realloc, uc);
 #endif // USE_SYS_GCTXT
 
+  // realloc(NULL, bytes) means malloc(bytes)
   if (ptr == NULL) {
     return memleak_malloc_helper("realloc/malloc", bytes, 0, 0, &uc, NULL);
   }
@@ -673,13 +728,25 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
 
   // if inactive, then do real_realloc() and return.
   // but if there used to be a header, then must slide user data.
-  if (! hpcrun_memleak_active()) {
+  // again, can't track malloc inside dlopen.
+  active = 1;
+  if (! (leak_detection_enabled && hpcrun_memleak_active())) {
+    active = 0;
+  } else if (TD_GET(inside_dlfcn)) {
+    active = 0;
+    inactive_mesg = "unable to monitor: inside dlfcn";
+  } else if (use_memleak_prob && (random()/(float)RAND_MAX > memleak_prob)) {
+    active = 0;
+    inactive_mesg = "not sampled";
+  }
+  if (! active) {
     if (loc == MEMLEAK_LOC_HEAD) {
       // slide left
       memmove(sys_ptr, ptr, bytes);
     }
     appl_ptr = real_realloc(sys_ptr, bytes);
-    TMSG(MEMLEAK, "realloc: bytes: %ld ptr: %p (inactive)", bytes, appl_ptr);
+    TMSG(MEMLEAK, "realloc: bytes: %ld ptr: %p (%s)",
+	 bytes, appl_ptr, inactive_mesg);
     return appl_ptr;
   }
 

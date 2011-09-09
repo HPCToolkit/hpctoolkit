@@ -112,7 +112,7 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
       monitor_real_abort();
     }
 
-    hpcrun_bt_dump(td->btbuf_cur, "SEGV");
+    hpcrun_bt_dump(&(td->bt), "SEGV");
 
     (*hpcrun_get_real_siglongjmp())(it->jb, 9);
     return 0;

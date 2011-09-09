@@ -217,17 +217,17 @@ hpcrun_get_num_metrics()
       TMSG(METRICS_FINALIZE, "metric_proc[%d] = %p", l->id, l->proc);
       metric_proc_tbl[l->id] = l->proc;
     }
-  }
-  has_set_max_metrics = true;
-
   // *** TEMPORARY ***
   // *** create a "NULL METRICS" dense array for use with
   // *** metric set dense copy
 
-  null_metrics = (hpcrun_metricVal_t*) hpcrun_metric_set_new();
-  for (int i = 0; i < n_metrics; i++) {
-    null_metrics[i].bits = 0;
+    null_metrics = (hpcrun_metricVal_t*) hpcrun_metric_set_new();
+    for (int i = 0; i < n_metrics; i++) {
+      null_metrics[i].bits = 0;
+    }
   }
+  has_set_max_metrics = true;
+
   return n_metrics;
 }
 

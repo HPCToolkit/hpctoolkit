@@ -85,6 +85,9 @@ typedef struct backtrace_t {
   frame_t* beg;    // base memory chunk
   frame_t* end;    // the last available slot
   frame_t* cur;    // current insertion position
+  bool     tramp;  // true if trampoline encountered
+  bool     troll;  // true if any frames are successful trolls
+  int      n_trolls; // # of trolled frames
 } backtrace_t;
 
 typedef struct bt_iter_t {
@@ -96,49 +99,47 @@ typedef struct bt_iter_t {
 // interface functions
 //***************************************************************************
 
-typedef bool bt_fn(backtrace_t* bt, ucontext_t* context);
+int hpcrun_filter_sample(int len, frame_t* start, frame_t* last);
+frame_t* hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
+			    int skip);
+bool hpcrun_generate_backtrace(backtrace_info_t* bt,
+			       ucontext_t* context, int skipInner);
+bool hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
+				   ucontext_t* context, int skipInner);
+
+//
+// New backtrace ops
+//
+
+//
+// typedefs for bt gen in place mutation
+//
 typedef void* bt_fn_arg;
 typedef void (*bt_mut_fn)(backtrace_t* bt, bt_fn_arg arg);
 
-bool hpcrun_backtrace_std(backtrace_t* bt, ucontext_t* context);
-
-int hpcrun_filter_sample(int len, frame_t* start, frame_t* last);
-
-frame_t* hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
-			    int skip);
-
-void hpcrun_bt_dump(frame_t* unwind, const char* tag);
 
 frame_t* hpcrun_bt_reset(backtrace_t* bt);
-
 void     hpcrun_bt_init(backtrace_t* bt, size_t size);
-
-frame_t* hpcrun_bt_push(backtrace_t* bt, frame_t* frame);
-
 frame_t* hpcrun_bt_beg(backtrace_t* bt);
-
-frame_t* hpcrun_bt_last(backtrace_t* bt);
-
-frame_t* hpcrun_bt_cur(backtrace_t* bt);
-
 size_t   hpcrun_bt_len(backtrace_t* bt);
-
+frame_t* hpcrun_bt_cur(backtrace_t* bt);
+bool     hpcrun_bt_tramp(backtrace_t* bt);
+bool     hpcrun_bt_troll(backtrace_t* bt);
+int      hpcrun_bt_n_trolls(backtrace_t* bt);
+frame_t* hpcrun_bt_last(backtrace_t* bt);
 bool     hpcrun_bt_empty(backtrace_t* bt);
+frame_t* hpcrun_bt_push(backtrace_t* bt, frame_t* frame);
+frame_t* hpcrun_bt_pull_inner(backtrace_t* bt);
+frame_t* hpcrun_bt_pull_outer(backtrace_t* bt);
 
 bool     hpcrun_backtrace_std(backtrace_t* bt, ucontext_t* context);
 
 void hpcrun_bt_modify_leaf_addr(backtrace_t* bt, ip_normalized_t ip_norm);
-
 void hpcrun_bt_add_leaf_child(backtrace_t* bt, ip_normalized_t ip_norm);
-
 void hpcrun_dump_bt(backtrace_t* bt);
+bool hpcrun_gen_bt(ucontext_t* context, bt_mut_fn bt_fn, bt_fn_arg bt_arg);
+bool hpcrun_dbg_gen_bt(backtrace_t* bt, ucontext_t* context, bt_mut_fn bt_fn, bt_fn_arg bt_arg);
 
-bool hpcrun_generate_backtrace(backtrace_info_t* bt,
-			       ucontext_t* context, int skipInner);
-
-bool hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
-			       ucontext_t* context, int skipInner);
-
-bool hpcrun_gen_bt(ucontext_t* context, bool* has_tramp, bt_mut_fn bt_fn, bt_fn_arg bt_arg);
+void hpcrun_bt_dump(backtrace_t* bt, const char* tag);
 
 #endif // hpcrun_backtrace_h

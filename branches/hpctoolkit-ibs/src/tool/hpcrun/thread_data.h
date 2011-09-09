@@ -153,6 +153,7 @@ typedef struct thread_data_t {
   // backtrace buffer
   // ----------------------------------------
 
+#ifdef OLD_BT_BUFFER
   // btbuf_beg                                                  btbuf_end
   // |                                                            |
   // v low VMAs                                                   v
@@ -170,7 +171,7 @@ typedef struct thread_data_t {
                        // adjust the portion of the backtrace that is recorded)
   frame_t* btbuf_end;  // end of the current backtrace buffer
   frame_t* btbuf_sav;  // innermost frame in cached backtrace
-
+#endif // OLD_BT_BUFFER
 
   backtrace_t bt;     // backtrace used for unwinding
 
@@ -180,9 +181,12 @@ typedef struct thread_data_t {
   bool    tramp_present;   // TRUE if a trampoline installed; FALSE otherwise
   void*   tramp_retn_addr; // return address that the trampoline replaced
   void*   tramp_loc;       // current (stack) location of the trampoline
+#ifndef OLD_BT
   frame_t* cached_bt;         // the latest backtrace (start)
   frame_t* cached_bt_end;     // the latest backtrace (end)
   frame_t* cached_bt_buf_end; // the end of the cached backtrace buffer
+#endif // OLD_BT
+  backtrace_t new_cached_bt;      // current backtrace, for trampoline to use
   frame_t* tramp_frame;       // (cached) frame assoc. w/ cur. trampoline loc.
   cct_node_t* tramp_cct_node; // cct node associated with the trampoline
 
@@ -226,6 +230,14 @@ typedef struct thread_data_t {
   // debug stuff
   // ----------------------------------------
   bool debug1;
+
+  // ----------------------------------------
+  // miscellaneous
+  // ----------------------------------------
+  // True if this thread is inside dlopen or dlclose.  A synchronous
+  // override that is called from dlopen (eg, malloc) must skip this
+  // sample or else deadlock on the dlopen lock.
+  bool inside_dlfcn;
 
 } thread_data_t;
 

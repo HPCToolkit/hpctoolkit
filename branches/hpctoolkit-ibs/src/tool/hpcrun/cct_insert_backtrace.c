@@ -48,6 +48,7 @@
 #include <stdbool.h>
 #include <ucontext.h>
 
+#include <hpcrun/cct_insert_backtrace.h>
 #include <cct/cct_bundle.h>
 #include <cct/cct.h>
 #include <messages/messages.h>
@@ -162,19 +163,13 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   return n;
 }
 
-#if 0 // TODO: tallent: Use Mike's improved code; retire prior routines
+#if 1 // TODO: tallent: Use Mike's improved code; retire prior routines
 
 static cct_node_t*
 help_hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
 	       int metricId, uint64_t metricIncr,
 	       bt_mut_fn bt_fn, bt_fn_arg bt_arg);
 
-//
-// utility routine that does 3 things:
-//   1) Generate a std backtrace
-//   2) Modifies the backtrace according to a passed in function
-//   3) enters the generated backtrace in the cct
-//
 cct_node_t*
 hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
 	      int metricId, uint64_t metricIncr,
@@ -194,6 +189,64 @@ hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
   }
 
   // N.B.: for lush_backtrace() it may be that n = NULL
+
+  return n;
+}
+
+//
+// utility routine that does 3 things:
+//   1) Generate a std backtrace
+//   2) Modifies the backtrace according to a passed in function
+//   3) enters the generated backtrace in the cct
+//
+static cct_node_t*
+help_hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
+	       int metricId, uint64_t metricIncr,
+	       bt_mut_fn bt_fn, bt_fn_arg bt_arg)
+{
+  bool tramp_found;
+
+  thread_data_t* td = hpcrun_get_thread_data();
+  backtrace_t* bt = &(TD_GET(bt));
+
+  bool partial_unw = false;
+  if (! hpcrun_gen_bt(context, bt_fn, bt_arg)) {
+    if (ENABLED(NO_PARTIAL_UNW)){
+      return NULL;
+    }
+
+    TMSG(PARTIAL_UNW, "recording partial unwind from graceful failure, "
+	 "len partial unw = %d", hpcrun_bt_len(bt));
+    hpcrun_stats_num_samples_partial_inc();
+    partial_unw = true;
+  }
+
+  // FIXME: OLD_BT_BUF
+  frame_t* bt_beg = hpcrun_bt_beg(bt);
+  tramp_found = hpcrun_bt_tramp(bt);
+
+  //
+  // If this backtrace is generated from sampling in a thread,
+  // take off the top 'monitor_pthread_main' node
+  //
+  if (! partial_unw && cct->ctxt) {
+    hpcrun_bt_pull_outer(bt);
+  }
+  // FIXME: OLD_BT_BUF
+  frame_t* bt_last = hpcrun_bt_last(bt);
+
+  cct_node_t* n = hpcrun_cct_record_backtrace(cct, partial_unw,
+					      bt_beg, bt_last, tramp_found,
+					      metricId, metricIncr);
+  if (hpcrun_bt_troll(bt)) hpcrun_stats_trolled_inc();
+  hpcrun_stats_frames_total_inc((long)(hpcrun_bt_len(bt)));
+  hpcrun_stats_trolled_frames_inc((long) hpcrun_bt_n_trolls(bt));
+
+  if (ENABLED(USE_TRAMP)){
+    hpcrun_trampoline_remove();
+    td->tramp_frame = td->cached_bt;
+    hpcrun_trampoline_insert(n);
+  }
 
   return n;
 }

@@ -636,7 +636,7 @@ help_simulate_segv(bool no_backtrace)
     return;
   }
   if (hpcrun_below_pmsg_threshold()) {
-    hpcrun_bt_dump(TD_GET(btbuf_cur), "DROP");
+    hpcrun_bt_dump(&TD_GET(bt), "DROP");
   }
 
   hpcrun_up_pmsg_count();

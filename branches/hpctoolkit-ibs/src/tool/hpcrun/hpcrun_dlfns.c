@@ -63,6 +63,7 @@
 #include "hpcrun_dlfns.h"
 #include "fnbounds_interface.h"
 #include "sample_event.h"
+#include "thread_data.h"
 
 #include <messages/messages.h>
 
@@ -169,6 +170,7 @@ hpcrun_pre_dlopen(const char *path, int flags)
 {
   hpcrun_dlopen_write_lock();
   atomic_add_i64(&num_dlopen_pending, 1L);
+  TD_GET(inside_dlfcn) = true;
 }
 
 
@@ -183,6 +185,7 @@ hpcrun_dlopen(const char *module_name, int flags, void *handle)
   hpcrun_dlopen_downgrade_lock();
   fnbounds_map_open_dsos();
   atomic_add_i64(&num_dlopen_pending, -1L);
+  TD_GET(inside_dlfcn) = false;
   hpcrun_dlopen_read_unlock();
 }
 
@@ -191,6 +194,7 @@ void
 hpcrun_dlclose(void *handle)
 {
   hpcrun_dlopen_write_lock();
+  TD_GET(inside_dlfcn) = true;
 }
 
 
@@ -203,5 +207,6 @@ hpcrun_post_dlclose(void *handle, int ret)
 {
   TMSG(LOADMAP, "dlclose: handle = %p", handle);
   fnbounds_unmap_closed_dsos();
+  TD_GET(inside_dlfcn) = false;
   hpcrun_dlopen_write_unlock();
 }

@@ -129,7 +129,7 @@ enum _local_const {
 /******************************************************************************
  * local inline functions
  *****************************************************************************/
-inline pid_t
+static inline pid_t
 gettid()
 {
         return (pid_t)syscall(__NR_gettid);

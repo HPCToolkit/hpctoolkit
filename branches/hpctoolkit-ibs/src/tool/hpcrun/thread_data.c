@@ -155,10 +155,12 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   // ----------------------------------------
   // backtrace buffer
   // ----------------------------------------
+#ifdef OLD_BT_BUF
   td->btbuf_cur = NULL;
   td->btbuf_beg = hpcrun_malloc(sizeof(frame_t) * BACKTRACE_INIT_SZ);
   td->btbuf_end = td->btbuf_beg + BACKTRACE_INIT_SZ;
   td->btbuf_sav = td->btbuf_end;  // FIXME: is this needed?
+#endif // OLD_BT_BUF
 
   hpcrun_bt_init(&(td->bt), NEW_BACKTRACE_INIT_SZ);
 
@@ -209,9 +211,14 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   // debug support
   // ----------------------------------------
   td->debug1 = false;
+
+  // ----------------------------------------
+  // miscellaneous
+  // ----------------------------------------
+  td->inside_dlfcn = false;
 }
 
-
+#ifdef OLD_BT_BUF
 void
 hpcrun_cached_bt_adjust_size(size_t n)
 {
@@ -264,7 +271,6 @@ hpcrun_expand_btbuf(void)
   return newbt+recsz;
 }
 
-
 void
 hpcrun_ensure_btbuf_avail(void)
 {
@@ -274,6 +280,7 @@ hpcrun_ensure_btbuf_avail(void)
     td->btbuf_sav = td->btbuf_end;
   }
 }
+#endif // OLD_BT_BUF
 
 
 static pthread_key_t _hpcrun_key;

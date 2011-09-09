@@ -96,8 +96,40 @@ static void lush_lip2str(char* buf, size_t len, lush_lip_t* lip);
 // interface functions
 //***************************************************************************
 
+//
+// FIXME: upgrade to lush
+//
+void
+hpcrun_bt_dump(backtrace_t* bt, const char* tag)
+{
+  const char* mytag = (tag) ? tag : "";
+
+  char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
+  char lip_str[LUSH_LIP_STR_MIN_LEN];
+
+  EMSG("-- begin new backtrace (innermost first) [%s] ----------", mytag);
+  for (frame_t* f = bt->beg; f < bt->cur; f++) {
+    lush_assoc_info2str(as_str, sizeof(as_str), f->as_info);
+    lush_lip2str(lip_str, sizeof(lip_str), f->lip);
+
+    unw_word_t ip;
+    hpcrun_unw_get_ip_unnorm_reg(&(f->cursor), &ip);
+
+    load_module_t* lm = hpcrun_loadmap_findById(f->ip_norm.lm_id);
+    const char* lm_name = (lm) ? lm->name : "(null)";
+
+    EMSG("%s: ip = %p (%p), load module = %s | lip %s", as_str,
+	 ip, f->ip_norm.lm_ip, lm_name, lip_str);
+  }
+  EMSG("-- end new backtrace                   [%s] ----------", mytag);
+  if (bt->tramp)
+    EMSG("-- (backtrace abbreviated by trampoline)    ----------", mytag);
+  // FIXME? track rest of unwind via tramp node?
+}
+
+#ifdef OLD_BT_BUF
 void 
-hpcrun_bt_dump(frame_t* unwind, const char* tag)
+hpcrun_old_bt_dump(frame_t* unwind, const char* tag)
 {
   static const int msg_limit = 100;
   int msg_cnt = 0;
@@ -147,136 +179,7 @@ hpcrun_bt_dump(frame_t* unwind, const char* tag)
 
   PMSG_LIMIT(EMSG("-- end backtrace ------------------------------------\n"));
 }
-
-frame_t*
-hpcrun_bt_reset(backtrace_t* bt)
-{
-  bt->cur = bt->beg;
-  bt->len = 0;
-  return bt->cur;
-}
-
-void
-hpcrun_bt_init(backtrace_t* bt, size_t size)
-{
-  bt->beg   = (frame_t*) hpcrun_malloc(sizeof(frame_t) * size);
-  bt->end   = bt->beg + (size - 1);
-  bt->size  = size;
-  hpcrun_bt_reset(bt);
-}
-
-frame_t*
-hpcrun_bt_push(backtrace_t* bt, frame_t* frame)
-{
-  TMSG(BT, "pushing frame onto bt");
-  if (bt->cur > bt->end) {
-    
-    TMSG(BT, "-- push requires allocate new block and copy");
-    size_t size = 2 * bt->size;
-    // reallocate & copy
-    frame_t* new = hpcrun_malloc(sizeof(frame_t) * size);
-    memcpy(new, (void*) bt->beg, bt->len * sizeof(frame_t));
-
-    bt->beg  = new;
-    bt->size = size;
-    bt->cur  = new + bt->len;
-    bt->end  = new + (size - 1);
-  }
-  *(bt->cur) = *frame;
-  frame_t* rv = bt->cur;
-  bt->cur++;
-  bt->len++;
-  TMSG(BT, "after push, len(bt) = %d", bt->len);
-  return rv;
-}
-
-frame_t*
-hpcrun_bt_beg(backtrace_t* bt)
-{
-  return bt->beg;
-}
-
-frame_t*
-hpcrun_bt_last(backtrace_t* bt)
-{
-  return (bt->beg + bt->len -1);
-}
-
-size_t
-hpcrun_bt_len(backtrace_t* bt)
-{
-  return bt->len;
-}
-
-bool
-hpcrun_bt_empty(backtrace_t* bt)
-{
-  return (bt->len == 0);
-}
-
-frame_t*
-hpcrun_bt_cur(backtrace_t* bt)
-{
-  return bt->cur;
-}
-
-//
-// Some sample backtrace mutator functions
-//
-
-void
-hpcrun_bt_modify_leaf_addr(backtrace_t* bt, ip_normalized_t ip_norm)
-{
-  bt->beg->ip_norm = ip_norm;
-}
-
-void
-hpcrun_bt_add_leaf_child(backtrace_t* bt, ip_normalized_t ip_norm)
-{
-  if (bt->cur > bt->end) {
-    TMSG(BT, "adding a leaf child of ip ==> lm_id = %d and lm_ip = %p", 
-	 ip_norm.lm_id, ip_norm.lm_ip);
-  }
-  if (bt->cur > bt->end) {
-    
-    TMSG(BT, "-- bt is full, reallocate and copy current data");
-    size_t size = 2 * bt->size;
-    // reallocate & copy
-    frame_t* new = hpcrun_malloc(sizeof(frame_t) * size);
-    memmove(new, (void*) bt->beg, bt->len * sizeof(frame_t));
-
-    bt->beg  = new;
-    bt->size = size;
-    bt->cur  = new + bt->len;
-    bt->end  = new + (size - 1);
-  }
-  TMSG(BT, "BEFORE copy, innermost ip ==> lm_id = %d and lm_ip = %p", 
-       bt->beg->ip_norm.lm_id, bt->beg->ip_norm.lm_ip);
-  memcpy((void*)(bt->beg + 1), (void*) bt->beg, bt->len * sizeof(frame_t));
-  TMSG(BT, "AFTER copy, innermost ip ==> lm_id = %d and lm_ip = %p", 
-       (bt->beg + 1)->ip_norm.lm_id, (bt->beg + 1)->ip_norm.lm_ip);
-  bt->cur++;
-  bt->len++;
-  bt->beg->ip_norm = ip_norm;
-  TMSG(BT, "Leaf child added, new ip ==> lm_id = %d and lm_ip = %p", 
-       bt->beg->ip_norm.lm_id, bt->beg->ip_norm.lm_ip);
-}
-
-void
-hpcrun_bt_skip_inner(backtrace_t* bt, void* skip)
-{
-  size_t realskip = (size_t) skip;
-  bt->beg += realskip;
-}
-
-void
-hpcrun_dump_bt(backtrace_t* bt)
-{
-  for(frame_t* _f = bt->beg; _f < bt->beg + bt->len; _f++) {
-    TMSG(BT, "ip_norm.lm_id = %d, and ip_norm.lm_ip = %p ", _f->ip_norm.lm_id,
-	 _f->ip_norm.lm_ip);
-  }
-}
+#endif // OLD_BT_BUF
 
 //---------------------------------------------------------------------------
 // function: hpcrun_filter_sample
@@ -326,6 +229,7 @@ hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner,
 // Also, return (via reference params) backtrace beginning, backtrace end,
 //  and whether or not a trampoline was found.
 //
+#if 0
 bool
 hpcrun_generate_backtrace(backtrace_info_t* bt,
 			  ucontext_t* context, int skipInner)
@@ -487,6 +391,36 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
 
   return true;
 }
+#endif
+
+static void
+skip_inner_fn(backtrace_t* bt, void* skip)
+{
+  size_t iskip = (size_t) skip;
+  if (bt->tramp) return; // no skip inner if trampoline involved
+  for (int i = 0; i < iskip && (! hpcrun_bt_empty(bt)); i++) {
+    hpcrun_bt_pull_inner(bt);
+  }
+  
+}
+
+//
+// implement using new backtrace data structure
+//
+bool
+hpcrun_generate_backtrace(backtrace_info_t* bt_i,
+			  ucontext_t* context, int skipInner)
+{
+  uintptr_t arg = (uintptr_t) skipInner;
+  bool ret = hpcrun_gen_bt(context, skip_inner_fn, (bt_fn_arg) arg);
+  backtrace_t* bt = &(TD_GET(bt));
+  bt_i->begin = bt->beg;
+  bt_i->last  = bt->cur - 1;
+  bt_i->has_tramp = bt->tramp;
+  bt_i->trolled   = bt->troll;
+  bt_i->n_trolls  = bt->n_trolls;
+  return ret;
+}
 
 // debug variant of above routine
 //
@@ -497,6 +431,7 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
 //  and whether or not a trampoline was found.
 //
 
+#ifdef OLD_BT_BUF
 bool
 hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
 			      ucontext_t* context, int skipInner)
@@ -635,6 +570,7 @@ hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
 
   return true;
 }
+#endif // OLD_BT_BUF
 
 #if 0
 bool
@@ -663,11 +599,183 @@ hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
 #endif // 0 for old dbg backtrace
 
 //
+// New operations
+//
+
+frame_t*
+hpcrun_bt_reset(backtrace_t* bt)
+{
+  bt->cur = bt->beg;
+  bt->len = 0;
+  bt->tramp = false;
+  bt->troll = false;
+  bt->n_trolls = 0;
+  return bt->cur;
+}
+
+void
+hpcrun_bt_init(backtrace_t* bt, size_t size)
+{
+  bt->beg   = (frame_t*) hpcrun_malloc(sizeof(frame_t) * size);
+  bt->end   = bt->beg + (size - 1);
+  bt->size  = size;
+  hpcrun_bt_reset(bt);
+}
+
+frame_t*
+hpcrun_bt_push(backtrace_t* bt, frame_t* frame)
+{
+  TMSG(BT, "pushing frame onto bt");
+  if (bt->cur > bt->end) {
+    
+    TMSG(BT, "-- push requires allocate new block and copy");
+    size_t size = 2 * bt->size;
+    // reallocate & copy
+    frame_t* new = hpcrun_malloc(sizeof(frame_t) * size);
+    memcpy(new, (void*) bt->beg, bt->len * sizeof(frame_t));
+
+    bt->beg  = new;
+    bt->size = size;
+    bt->cur  = new + bt->len;
+    bt->end  = new + (size - 1);
+  }
+  *(bt->cur) = *frame;
+  bt->cur++;
+  bt->len++;
+  TMSG(BT, "after push, len(bt) = %d", bt->len);
+  return bt->cur - 1;
+}
+
+frame_t*
+hpcrun_bt_pull_inner(backtrace_t* bt)
+{
+  if (! bt->len) return NULL;
+  bt->beg++;
+  bt->len--;
+  return bt->beg - 1;
+}
+
+frame_t*
+hpcrun_bt_pull_outer(backtrace_t* bt)
+{
+  if (! bt->len) return NULL;
+  bt->len--;
+  return bt->beg + bt->len;
+}
+
+frame_t*
+hpcrun_bt_beg(backtrace_t* bt)
+{
+  return bt->beg;
+}
+
+frame_t*
+hpcrun_bt_last(backtrace_t* bt)
+{
+  return (bt->beg + bt->len -1);
+}
+
+size_t
+hpcrun_bt_len(backtrace_t* bt)
+{
+  return bt->len;
+}
+
+bool
+hpcrun_bt_empty(backtrace_t* bt)
+{
+  return (bt->len == 0);
+}
+
+frame_t*
+hpcrun_bt_cur(backtrace_t* bt)
+{
+  return bt->cur;
+}
+
+bool
+hpcrun_bt_tramp(backtrace_t* bt)
+{
+  return bt->tramp;
+}
+
+bool
+hpcrun_bt_troll(backtrace_t* bt)
+{
+  return bt->troll;
+}
+
+int
+hpcrun_bt_n_trolls(backtrace_t* bt)
+{
+  return bt->n_trolls;
+}
+
+//
+// Some sample backtrace mutator functions
+//
+
+void
+hpcrun_bt_modify_leaf_addr(backtrace_t* bt, ip_normalized_t ip_norm)
+{
+  bt->beg->ip_norm = ip_norm;
+}
+
+void
+hpcrun_bt_add_leaf_child(backtrace_t* bt, ip_normalized_t ip_norm)
+{
+  if (bt->cur > bt->end) {
+    TMSG(BT, "adding a leaf child of ip ==> lm_id = %d and lm_ip = %p", 
+	 ip_norm.lm_id, ip_norm.lm_ip);
+  }
+  if (bt->cur > bt->end) {
+    
+    TMSG(BT, "-- bt is full, reallocate and copy current data");
+    size_t size = 2 * bt->size;
+    // reallocate & copy
+    frame_t* new = hpcrun_malloc(sizeof(frame_t) * size);
+    memmove(new, (void*) bt->beg, bt->len * sizeof(frame_t));
+
+    bt->beg  = new;
+    bt->size = size;
+    bt->cur  = new + bt->len;
+    bt->end  = new + (size - 1);
+  }
+  TMSG(BT, "BEFORE copy, innermost ip ==> lm_id = %d and lm_ip = %p", 
+       bt->beg->ip_norm.lm_id, bt->beg->ip_norm.lm_ip);
+  memcpy((void*)(bt->beg + 1), (void*) bt->beg, bt->len * sizeof(frame_t));
+  TMSG(BT, "AFTER copy, innermost ip ==> lm_id = %d and lm_ip = %p", 
+       (bt->beg + 1)->ip_norm.lm_id, (bt->beg + 1)->ip_norm.lm_ip);
+  bt->cur++;
+  bt->len++;
+  bt->beg->ip_norm = ip_norm;
+  TMSG(BT, "Leaf child added, new ip ==> lm_id = %d and lm_ip = %p", 
+       bt->beg->ip_norm.lm_id, bt->beg->ip_norm.lm_ip);
+}
+
+void
+hpcrun_bt_skip_inner(backtrace_t* bt, void* skip)
+{
+  size_t realskip = (size_t) skip;
+  bt->beg += realskip;
+}
+
+void
+hpcrun_dump_bt(backtrace_t* bt)
+{
+  for(frame_t* f = bt->beg; f < bt->beg + bt->len; f++) {
+    TMSG(BT, "ip_norm.lm_id = %d, and ip_norm.lm_ip = %p ", f->ip_norm.lm_id,
+	 f->ip_norm.lm_ip);
+  }
+}
+
+//
 // generate a backtrace, store it in thread-local data
 // return success/failure
 //
+
 bool
-hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
+hpcrun_gen_bt(ucontext_t* context,
 	      bt_mut_fn bt_fn, bt_fn_arg bt_arg)
 {
   int  backtrace_trolled = 0;
@@ -728,8 +836,15 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
 					       .ra_loc = NULL}));
     
     ret = hpcrun_unw_step(&cursor);
-    backtrace_trolled = backtrace_trolled || (ret == STEP_TROLL);
+    // FIXME: mfagan Probably don't need both n_trolls and troll flag
+    if (ret == STEP_TROLL) {
+      bt->troll = true;
+      bt->n_trolls++;
+      backtrace_trolled = true;
+    }
     if (ret <= 0) {
+      if (ret == STEP_ERROR)
+	hpcrun_stats_num_samples_dropped_inc();
       break;
     }
     prev->ra_loc = hpcrun_unw_get_ra_loc(&cursor);
@@ -739,10 +854,13 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
     hpcrun_up_pmsg_count();
   }
 				    
+#if 0
   frame_t* bt_beg  = hpcrun_bt_beg(bt);
 
   size_t new_frame_count = hpcrun_bt_len(bt);
+#endif
 
+#if 0
   if (tramp_found) {
     TMSG(BACKTRACE, "tramp stop: conjoining backtraces");
     //
@@ -770,27 +888,11 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
 
     td->cached_bt_end = td->cached_bt + new_frame_count;
   }
+#endif
 
   // let clients know if a trampoline was found or not
-  *has_tramp = tramp_found;
+  bt->tramp = tramp_found;
 
-#if 0 // no sample filtering
-  if (! ENABLED(NO_SAMPLE_FILTERING)) {
-    frame_t* beg_frame  = td->cached_bt;
-    frame_t* last_frame = td->cached_bt_end - 1;
-    int num_frames      = last_frame - beg_frame + 1;
-	
-    if (hpcrun_filter_sample(num_frames, beg_frame, last_frame)){
-      TMSG(SAMPLE_FILTER, "filter sample of length %d", num_frames);
-      frame_t *fr = beg_frame;
-      for (int i = 0; i < num_frames; i++, fr++){
-	TMSG(SAMPLE_FILTER,"  frame ip[%d] ==> lm_id = %d and lm_ip = %p", i, fr->ip_norm.lm_id, fr->ip_norm.lm_ip);
-      }
-      hpcrun_stats_num_samples_filtered_inc();
-      return false;
-    }
-  }
-#endif // no sample filtering
   //
   // mutate the backtrace according to the passed in mutator function
   //  (bt_fn == NULL means no mutation is necessary)

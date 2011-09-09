@@ -147,6 +147,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   lush_cursor_t cursor;
   lush_init_unw(&cursor, lush_agents, context);
   
+#ifdef OLD_BT_BUF
   // FIXME: unwind/common/backtrace.c
   thread_data_t* td = hpcrun_get_thread_data();
   td->btbuf_cur   = td->btbuf_beg;  // innermost
@@ -257,7 +258,8 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   }
 
   // FIXME: register active return
-
+#endif // OLD_BT_BUF
+  cct_node_t* node = NULL;
   return node;
 }
 

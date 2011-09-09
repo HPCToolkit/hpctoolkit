@@ -183,13 +183,16 @@ hpcrun_sample_callpath(void *context, int metricId,
 
   hpcrun_set_handling_sample(td);
 
+#ifdef OLD_BT_BUF
   td->btbuf_cur = NULL;
+#endif // OLD_BT_BUF
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
 
     if (epoch != NULL) {
       if (ENABLED(DEBUG_PARTIAL_UNW)){
 	EMSG("PARTIAL UNW debug sampler invoked @ sample %d", hpcrun_stats_num_samples_attempted());
+	// FIXME: OLD_BT_BUF alter _dbg to use newer stuff
 	node = hpcrun_dbg_sample_callpath(epoch, context, metricId, metricIncr,
 					  skipInner, isSync);
       }
@@ -198,13 +201,14 @@ hpcrun_sample_callpath(void *context, int metricId,
 					   skipInner, isSync);
       }
       if (ENABLED(DUMP_BACKTRACES)) {
-	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
+	hpcrun_bt_dump(&(td->bt), "UNWIND");
       }
     }
   }
   else {
     cct_bundle_t* cct = &(td->epoch->csdata);
-    node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
+    backtrace_t* bt = &(TD_GET(bt));
+    node = record_partial_unwind(cct, hpcrun_bt_beg(bt), hpcrun_bt_last(bt),
 				 metricId, metricIncr);
     hpcrun_cleanup_partial_unwind();
   }
@@ -287,7 +291,7 @@ help_hpcrun_sample_callpath(epoch_t *epoch, void *context,
 }
 
 
-#if 0 // TODO: tallent: Use Mike's improved code; retire prior routines
+#if 1 // TODO: tallent: Use Mike's improved code; retire prior routines
 static cct_node_t*
 help_hpcrun_sample_callpath_w_bt(epoch_t *epoch, void *context,
 				 int metricId, uint64_t metricIncr,
@@ -338,27 +342,46 @@ hpcrun_sample_callpath_w_bt(void *context,
   if (ljmp == 0) {
 
     if (epoch != NULL) {
-      node = help_hpcrun_sample_callpath_w_bt(epoch, context, metricId, metricIncr,
-					      bt_fn, arg, isSync);
-
-      if (trace_isactive()) {
-	void* pc = hpcrun_context_pc(context);
-	cct_bundle_t* cct = &(td->epoch->csdata); 
-	void* func_start_pc = NULL;
-	void* func_end_pc   = NULL;
-
-	fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc); 
-
-	frame_t frm = {.ip = func_start_pc};
-	cct_node_t* func_proxy = hpcrun_cct_get_child(cct, node->parent, &frm);
-	func_proxy->persistent_id |= HPCRUN_FMT_RetainIdFlag; 
-
-	trace_append(func_proxy->persistent_id);
+      if (ENABLED(DEBUG_PARTIAL_UNW)){
+	EMSG("PARTIAL UNW debug sampler invoked @ sample %d", hpcrun_stats_num_samples_attempted());
+	// FIXME: OLD_BT_BUF alter _dbg to use newer stuff
+	node = hpcrun_dbg_sample_callpath_w_bt(epoch, context, metricId, metricIncr,
+					       bt_fn, arg, isSync);
+      }
+      else {
+	node = help_hpcrun_sample_callpath_w_bt(epoch, context, metricId, metricIncr,
+						bt_fn, arg, isSync);
       }
       if (ENABLED(DUMP_BACKTRACES)) {
-	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
+	hpcrun_bt_dump(&(td->bt), "UNWIND");
       }
     }
+  }
+  else {
+    cct_bundle_t* cct = &(td->epoch->csdata);
+    backtrace_t* bt = &(TD_GET(bt));
+    node = record_partial_unwind(cct, hpcrun_bt_beg(bt), hpcrun_bt_last(bt),
+				 metricId, metricIncr);
+    hpcrun_cleanup_partial_unwind();
+  }
+
+  if (trace_isactive()) {
+    void* pc = hpcrun_context_pc(context);
+
+    void *func_start_pc = NULL, *func_end_pc = NULL;
+    load_module_t* lm = NULL;
+    fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc, &lm);
+
+    ip_normalized_t pc_proxy = hpcrun_normalize_ip(func_start_pc, lm);
+
+    cct_addr_t frm = { .ip_norm = pc_proxy };
+    cct_node_t* func_proxy = 
+      hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);
+
+    // modify the persistent id
+    hpcrun_cct_persistent_id_trace_mutate(func_proxy); 
+
+    trace_append(hpcrun_cct_persistent_id(func_proxy));
   }
   else {
     hpcrun_cleanup_partial_unwind();
@@ -366,7 +389,6 @@ hpcrun_sample_callpath_w_bt(void *context,
 
   hpcrun_clear_handling_sample(td);
   if (TD_GET(mem_low) || ENABLED(FLUSH_EVERY_SAMPLE)) {
-    hpcrun_finalize_current_loadmap();
     hpcrun_flush_epochs();
     hpcrun_reclaim_freeable_mem();
   }
@@ -374,6 +396,7 @@ hpcrun_sample_callpath_w_bt(void *context,
   hpcrun_dlopen_read_unlock();
 #endif
   
+  TMSG(SAMPLE,"done w sample");
   return node;
 }
 
