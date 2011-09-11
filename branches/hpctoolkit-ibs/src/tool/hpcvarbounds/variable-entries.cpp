@@ -66,10 +66,11 @@ using namespace std;
 
 class Variable {
 public:
-  Variable(void *_address, string *_comment, string *_declFile,
-	   unsigned int declLine, bool _isvisible);
+  Variable(void *_address, long _size, string *_comment, string *_declFile,
+	   unsigned int _declLine, bool _isvisible);
   void AppendComment(const string *c);
   void *address;
+  long size;
   string *comment;
   string *declFile;
   unsigned int declLine;
@@ -82,9 +83,9 @@ public:
  * forward declarations
  *****************************************************************************/
 
-static void new_variable_entry(void *addr, string *comment, string *declFile,
+static void new_variable_entry(void *addr, long size, string *comment, string *declFile,
 			       unsigned int declLine, bool isvisible);
-static void dump_variable_entry(void *addr, const char *comment,
+static void dump_variable_entry(void *addr, long size, const char *comment,
 				const char *declFile, unsigned int declLine);
 static void end_of_variable_entries(void);
 
@@ -99,7 +100,7 @@ static VariableSet variable_entries;
 
 #define ADDR_BUF_SIZE  1024
 
-static void *addr_buf[ADDR_BUF_SIZE];
+static void *addr_buf[2*ADDR_BUF_SIZE];
 static long num_entries_in_buf = 0;
 static long num_entries_total = 0;
 
@@ -121,19 +122,19 @@ dump_variables()
     if (v->comment) {
       name = v->comment->c_str();
     }
-    dump_variable_entry(v->address, name, v->declFile->c_str(), v->declLine);
+    dump_variable_entry(v->address, v->size, name, v->declFile->c_str(), v->declLine);
   }
   end_of_variable_entries();
 }
 
 void 
-add_variable_entry(void *addr, const string *comment, const string *declFile,
+add_variable_entry(void *addr, long size, const string *comment, const string *declFile,
 		   unsigned int declLine, bool isvisible)
 {
   VariableSet::iterator it = variable_entries.find(addr); 
 
   if (it == variable_entries.end()) {
-    new_variable_entry(addr, comment ? new string(*comment) : NULL, 
+    new_variable_entry(addr, size, comment ? new string(*comment) : NULL, 
 		       new string(*declFile), declLine, isvisible);
   } else {
     Variable *v = (*it).second;
@@ -162,28 +163,32 @@ long num_variable_entries(void)
 // The binary format is buffered.
 //
 static void
-dump_variable_entry(void *addr, const char *comment, const char *declFile,
+dump_variable_entry(void *addr, long size, const char *comment, const char *declFile,
 		    unsigned int declLine)
 {
-  num_entries_total++;
+  num_entries_total += 2;
 
   if (binary_fmt_fd() >= 0) {
     addr_buf[num_entries_in_buf] = addr;
     num_entries_in_buf++;
-    if (num_entries_in_buf == ADDR_BUF_SIZE) {
+    addr_buf[num_entries_in_buf] = (void *) size;
+    num_entries_in_buf++;
+    if (num_entries_in_buf == 2 * ADDR_BUF_SIZE) {
       write(binary_fmt_fd(), addr_buf, num_entries_in_buf * sizeof(void *));
       num_entries_in_buf = 0;
     }
   }
 
   if (c_fmt_fp() != NULL) {
-    if (num_entries_total > 1)
+    if (num_entries_total > 2)
       fprintf(c_fmt_fp(), ",\n");
-    fprintf(c_fmt_fp(), "   %p /* %s */ %s / %u /", addr, comment, declFile, declLine);
+    fprintf(c_fmt_fp(), "   %p, /* %s / %s / %u */\n", addr, comment, declFile, declLine);
+    fprintf(c_fmt_fp(), "   %ld /* %s */", size, comment);
   }
 
   if (text_fmt_fp() != NULL) {
     fprintf(text_fmt_fp(), "%p    %s    %s    %u\n", addr, comment, declFile, declLine);
+    fprintf(text_fmt_fp(), "%ld: for %s\n", size, comment);
   }
 }
 
@@ -202,18 +207,19 @@ end_of_variable_entries(void)
 
 
 static void 
-new_variable_entry(void *addr, string *comment, string *declFile,
+new_variable_entry(void *addr, long size, string *comment, string *declFile,
 		   unsigned int declLine, bool isvisible)
 {
-  Variable *f = new Variable(addr, comment, declFile, declLine, isvisible);
+  Variable *f = new Variable(addr, size,  comment, declFile, declLine, isvisible);
   variable_entries.insert(pair<void*, Variable*>(addr, f));
 }
 
 
-Variable::Variable(void *_address, string *_comment, string *_declFile,
+Variable::Variable(void *_address, long size_, string *_comment, string *_declFile,
 		   unsigned int _declLine, bool _isvisible)
 { 
   address = _address; 
+  size = size_;
   comment = _comment; 
   declFile = _declFile;
   declLine = _declLine;

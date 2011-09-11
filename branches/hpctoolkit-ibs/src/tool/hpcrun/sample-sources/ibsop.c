@@ -91,6 +91,7 @@
 
 #include <utilities/tokenize.h>
 #include <utilities/arch/context-pc.h>
+#include <utilities/ip-normalized.h>
 
 #include <unwind/common/unwind.h>
 
@@ -149,8 +150,8 @@ void
 addr_max(int metric_id, metric_set_t* set, cct_metric_data_t datum);
 void 
 metric_add(int metric_id, metric_set_t* set, cct_metric_data_t datum);
-//void 
-//update_bt(backtrace_t*, void*);
+void 
+update_bt(backtrace_t*, void*);
 
 /******************************************************************************
  * local variables
@@ -612,7 +613,9 @@ ibsop_signal_handler(int sig, siginfo_t* siginfo, void* context)
 	 (opdata3->reg.ibsstop == 1))
       {
 	/* this is the first metric logging routine, must keep it to unwind the call stack */
-	node = hpcrun_sample_callpath(context, metrics[2], 1, 0, 0);
+	node = hpcrun_sample_callpath_w_bt(context, metrics[2], 1, 
+					   update_bt, (void *)ip, 0);
+//	node = hpcrun_sample_callpath(context, metrics[2], 1, 0, 0);
  	assert(node != NULL);
 	
 	/* NB data are avail only when load and dc miss */
@@ -740,14 +743,16 @@ bool is_kernel(void* addr)
   return ((uint64_t)addr >> bit);
 }
 
-#if 0
+#if 1
 void update_bt(backtrace_t* bt, void* ibs_addr)
 {
+  ip_normalized_t norm_ip = 
+	hpcrun_normalize_ip(ibs_addr, NULL);
   if(is_kernel(ibs_addr)){
-    hpcrun_bt_add_leaf_child(bt, ibs_addr);
+    hpcrun_bt_add_leaf_child(bt, norm_ip);
   }
   else{
-    hpcrun_bt_modify_leaf_addr(bt, ibs_addr);
+    hpcrun_bt_modify_leaf_addr(bt, norm_ip);
   }
 }
 #endif

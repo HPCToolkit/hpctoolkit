@@ -49,10 +49,11 @@
 
 using namespace std;
 
-void add_variable_entry(void *address, const string *comment, 
+void add_variable_entry(void *address, long size, const string *comment, 
 			const string *declFile, unsigned int declLine,
 			bool isglobal);
 void dump_variables();
+long num_variable_entries();
 
 int binary_fmt_fd(void);
 FILE *c_fmt_fp(void);

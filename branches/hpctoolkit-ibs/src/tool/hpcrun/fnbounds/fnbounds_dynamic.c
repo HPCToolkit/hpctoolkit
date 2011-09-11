@@ -88,6 +88,7 @@
 // local includes
 //*********************************************************************
 
+#include "sample-sources/data-splay.h"
 #include "fnbounds_interface.h"
 
 #include "dylib.h"
@@ -110,6 +111,8 @@
 
 // FIXME:tallent: more spaghetti includes
 #include <hpcfnbounds/fnbounds-file-header.h>
+#include <hpcvarbounds/varbounds-file-header.h>
+#include "memory/mmap.h"
 
 #include <lib/prof-lean/spinlock.h>
 
@@ -171,6 +174,9 @@ static dso_info_t *
 fnbounds_compute(const char *filename, void *start, void *end);
 
 static void
+varbounds_compute(const char *filename, void *start, void *end);
+
+static void
 fnbounds_map_executable();
 
 
@@ -178,6 +184,7 @@ static const char *
 mybasename(const char *string);
 
 static char *nm_command = 0;
+static char *var_command = 0;
 
 
 //*********************************************************************
@@ -207,6 +214,7 @@ fnbounds_init()
     result = fnbounds_tmpdir_create();
     if (result == 0) {
       nm_command = getenv("HPCRUN_FNBOUNDS_CMD");
+      var_command = getenv("HPCRUN_VARBOUNDS_CMD");
   
       fnbounds_map_executable();
       fnbounds_map_open_dsos();
@@ -285,6 +293,10 @@ fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
   load_module_t *lm = hpcrun_loadmap_findByAddr(start, end);
   if (!lm) {
     dso_info_t *dso = fnbounds_compute(module_name, start, end);
+    /* compute the variable bounds */
+    if (var_command) {
+      varbounds_compute(module_name, start, end);
+    }
     if (dso) {
       hpcrun_loadmap_map(dso);
     }
@@ -513,6 +525,70 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
   return dso;
 }
 
+
+static void
+varbounds_compute(const char *incoming_filename, void *start, void *end)
+{
+  char filename[PATH_MAX];
+  char command[MAXPATHLEN+1024];
+  char dlname[MAXPATHLEN];
+  int  logfile_fd = messages_logfile_fd();
+
+  if (var_command == NULL || incoming_filename == NULL)
+    return;
+
+  realpath(incoming_filename, filename);
+  sprintf(dlname, VARBOUNDS_BINARY_FORMAT, fnbounds_tmpdir_get(), 
+	  mybasename(filename));
+
+  sprintf(command, "%s -b %s %s %s 1>&%d 2>&%d\n",
+	  var_command, ENABLED(DL_BOUND_SCRIPT_DEBUG) ? "-t -v" : "",
+	  filename, fnbounds_tmpdir_get(), logfile_fd, logfile_fd);
+
+  int failure = system_server_execute_command(command);
+  if (failure) {
+    EMSG("fnbounds server command failed for file %s, aborting", filename);
+
+#if HARSH_SS_FAILURE
+    monitor_real_exit(1);
+#endif // HARSH_SS_FAILURE
+    return;
+  }
+
+  long map_size = 0;
+  struct fnbounds_file_header fh;
+  void **nm_table = (void **)fnbounds_read_nm_file(dlname, &map_size, &fh);
+  if (nm_table == NULL) {
+    EMSG("varbounds computed bogus symbols for file %s", filename);
+
+#if HARSH_SS_FAILURE
+    monitor_real_exit(1);
+#endif // HARSH_SS_FAILURE
+    return;
+  }
+
+  if (fh.num_entries < 1) {
+    EMSG("varbounds returns no symbols for file %s", filename);
+    return;
+  }
+  /* add what we got to the splay tree */
+  int i;
+  for (i = 0; i < fh.num_entries; i+=2) {
+
+    if(nm_table[i+1] == 0)
+      continue;
+
+    struct datainfo_s *node = hpcrun_mmap_anon(sizeof(struct datainfo_s));
+    node->magic = 0;
+    node->start = nm_table[i];
+    node->end   = nm_table[i] + (long)nm_table[i+1];
+    node->allocnode = NULL;
+    node->left = NULL;
+    node->right = NULL;
+    splay_insert(node);
+//    TMSG(MEMLEAK, "add static data [%p, %p) to the splay tree", node->start, node->end);
+  }
+}
 
 // fnbounds_get_loadModule(): Given the (unnormalized) IP 'ip',
 // attempt to return the enclosing load module.  Note that the

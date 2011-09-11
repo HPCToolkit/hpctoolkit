@@ -59,6 +59,10 @@
 #include <loadmap.h>
 #include <files.h>
 
+#include "sample-sources/data-splay.h"
+#include "memory/mmap.h"
+#include "messages/messages.h"
+
 //*********************************************************************
 
 //-------------------------------------------------------------------------
@@ -69,7 +73,9 @@
 // TODO:tallent: abstract with hpcfnbounds (cf. dump_file_symbols())
 // and fnbounds_read_nm_file()
 extern unsigned long hpcrun_nm_addrs[];
+extern unsigned long hpcrun_var_addrs[];
 extern unsigned long hpcrun_nm_addrs_len;
+extern unsigned long hpcrun_var_addrs_len;
 extern unsigned long hpcrun_reference_offset;
 extern int           hpcrun_is_relocatable;
 
@@ -91,6 +97,23 @@ fnbounds_init()
     hpcrun_dso_make(files_executable_pathname(), (void*)hpcrun_nm_addrs, 
 		    &fh, lm_beg_fn, lm_end_fn, lm_size);
   hpcrun_loadmap_map(dso);
+
+  /* add the static data to the splay tree */
+  int i;
+  for (i = 0; i < hpcrun_var_addrs_len; i += 2) {
+    if (hpcrun_var_addrs[i+1] == 0)
+      continue;
+    
+    struct datainfo_s *node = hpcrun_mmap_anon(sizeof(struct datainfo_s));
+    node->magic = 0;
+    node->start = (void *)hpcrun_var_addrs[i];
+    node->end = (void *)(hpcrun_var_addrs[i] + hpcrun_var_addrs[i+1]);
+    node->allocnode = NULL;
+    node->left = NULL;
+    node->right = NULL;
+    splay_insert(node);
+    TMSG(MEMLEAK, "add static data [%p, %p) to the splay tree", node->start, node->end);
+  }
 
   return 0;
 }

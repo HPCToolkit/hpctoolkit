@@ -53,6 +53,7 @@ VERSION='@PACKAGE_VERSION@'
 
 # Relative paths are relative to HPCTOOLKIT.
 hpcfnbounds_dir='libexec/hpctoolkit'
+hpcvarbounds_dir='libexec/hpctoolkit'
 hpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
@@ -68,6 +69,10 @@ hpc_path_to_root=..
 case "$hpcfnbounds_dir" in
     /* ) ;;
     * ) hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
+esac
+case "$hpcvarbounds_dir" in
+    /* ) ;;
+    * ) hpcvarbounds_dir="${HPCTOOLKIT}/${hpcvarbounds_dir}" ;;
 esac
 case "$hpcrun_dir" in
     /* ) ;;
@@ -209,7 +214,8 @@ do
 	    arg_ok "$1" || die "missing argument for $arg"
 	    case "$1" in
 		MEMLEAK* ) memleak_preload="${hpcrun_dir}/libhpcrun_memleak.so" ;;
-		DATACENTRIC* ) datacentric_preload="${hpcrun_dir}/libhpcrun_datacentric.so" ;;
+		DATACENTRIC* ) datacentric_preload="${hpcrun_dir}/libhpcrun_datacentric.so" 
+                               export HPCRUN_VARBOUNDS_CMD="${hpcvarbounds_dir}/hpcvarbounds";;
 		MPI* )     mpi_preload="${hpcrun_dir}/libhpcrun_mpi.so" ;;
 	    esac
 	    case "$HPCRUN_EVENT_LIST" in

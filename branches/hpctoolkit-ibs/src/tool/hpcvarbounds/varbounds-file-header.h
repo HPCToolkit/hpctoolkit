@@ -60,6 +60,7 @@
 #define VARBOUNDS_C_FORMAT       "%s/%s.varbounds.c"
 #define VARBOUNDS_TEXT_FORMAT    "%s/%s.varbounds.txt"
 
+#define VARBOUNDS_BINARY_FORMAT  "%s/%s.varbounds.bin"
 //
 // The extra info in the binary file of function addresses, written by
 // hpcfnbounds-bin and read in the main process.  We call it "header",

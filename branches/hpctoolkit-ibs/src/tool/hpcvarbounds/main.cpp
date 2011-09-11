@@ -301,8 +301,10 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec)
 {
   for (unsigned int i = 0; i < symvec.size(); i++) {
     Symbol *s = symvec[i];
+    string dummy;
+    dummy.empty();
     if(s->getAddr() != 0)
-      add_variable_entry((void *) s->getAddr(), &s->getName(), 
+      add_variable_entry((void *) s->getAddr(), s->getSize(), &s->getName(), 
 			 &s->getFileName(), s->getLineNum(), 1);
 //    printf("  %s: %p\n", s->getName().c_str(), (void *)s->getAddr());
   }
@@ -335,23 +337,23 @@ dump_header_info(int is_relocatable, uintptr_t ref_offset)
     fh.zero_pad = 0;
     fh.reference_offset = ref_offset;
     fh.magic = VARBOUNDS_MAGIC;
-//    fh.num_entries = num_variable_entries();
+    fh.num_entries = num_variable_entries();
     fh.is_relocatable = is_relocatable;
     write(binary_fmt_fd(), &fh, sizeof(fh));
   }
 
   if (c_fmt_fp() != NULL) {
-    fprintf(c_fmt_fp(), "unsigned long hpcrun_reference_offset = %"PRIuPTR";\n",
-            ref_offset);
-    fprintf(c_fmt_fp(), "int hpcrun_is_relocatable = %d;\n", is_relocatable);
-    fprintf(c_fmt_fp(), "int hpcrun_is_stripped = %d;\n", 0);
+//    fprintf(c_fmt_fp(), "unsigned long hpcrun_reference_offset = %"PRIuPTR";\n",
+//            ref_offset);
+//    fprintf(c_fmt_fp(), "int hpcrun_is_relocatable = %d;\n", is_relocatable);
+//    fprintf(c_fmt_fp(), "int hpcrun_is_stripped = %d;\n", 0);
   }
 
-//  if (text_fmt_fp() != NULL) {
-//    fprintf(text_fmt_fp(), "num symbols = %ld, relocatable = %d,"
-//           " image_offset = 0x%"PRIxPTR"\n",
-//            num_function_entries(), is_relocatable, ref_offset);
-//  }
+  if (text_fmt_fp() != NULL) {
+    fprintf(text_fmt_fp(), "num symbols = %ld, relocatable = %d,"
+           " image_offset = 0x%"PRIxPTR"\n",
+            num_variable_entries(), is_relocatable, ref_offset);
+  }
 }
 
 static void

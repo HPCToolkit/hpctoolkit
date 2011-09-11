@@ -63,6 +63,7 @@ VERSION='@PACKAGE_VERSION@'
 # Relative paths are relative to HPCTOOLKIT.
 ext_libs_dir='@hpc_ext_libs_dir@'
 hpcfnbounds_dir='libexec/hpctoolkit'
+hpcvarbounds_dir='libexec/hpctoolkit'
 libhpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 xed2_dir='@XED2_RUN_DIR@'
@@ -93,6 +94,7 @@ extra_hpc_files=
 CC=gcc
 hello="_hpc_hello_$$"
 nm_addrs="_hpc_nm_addrs_$$"
+var_addrs="_hpc_var_addrs_$$"
 cmd_out="_hpc_output_$$"
 
 # Space-separated list of symbol names to force undefined.
@@ -166,6 +168,10 @@ case "$hpcfnbounds_dir" in
     /* ) ;;
     * )  hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
 esac
+case "$hpcvarbounds_dir" in
+    /* ) ;;
+    * )  hpcvarbounds_dir="${HPCTOOLKIT}/${hpcvarbounds_dir}" ;;
+esac
 case "$libhpcrun_dir" in
     /* ) ;;
     * )  libhpcrun_dir="${HPCTOOLKIT}/${libhpcrun_dir}" ;;
@@ -182,6 +188,9 @@ esac
 hpcfnbounds="${hpcfnbounds_dir}/hpcfnbounds"
 test -x "$hpcfnbounds" || die "missing hpcfnbounds: $hpcfnbounds"
 
+hpcvarbounds="${hpcvarbounds_dir}/hpcvarbounds"
+test -x "$hpcvarbounds" || die "missing hpcvarbounds: $hpcvarbounds"
+
 LD_LIBRARY_PATH="${ext_libs_dir}:${LD_LIBRARY_PATH}"
 export LD_LIBRARY_PATH
 
@@ -189,6 +198,7 @@ export LD_LIBRARY_PATH
 # Step 1 -- Parse linker options, our options first.
 #
 verbose=no
+datacentric=no
 while test "x$1" != x
 do
     case "$1" in
@@ -211,6 +221,7 @@ do
 	    extra_wrap_names="$extra_wrap_names posix_memalign memalign valloc"
 	    extra_wrap_names="$extra_wrap_names calloc free malloc realloc"
 	    undef_names="$undef_names malloc"
+	    datacentric=yes
 	    shift
 	    ;;
 	-u | --undefined )
@@ -302,7 +313,7 @@ set -- $undef_args $wrap_args "$@"
 
 libhpcrun="${libhpcrun_dir}/libhpcrun.o"
 test -f "$libhpcrun" || die "no such file: $libhpcrun"
-set -- "$@" "$libhpcrun" "${nm_addrs}.o"
+set -- "$@" "$libhpcrun" "${nm_addrs}.o" "${var_addrs}.o"
 
 libhpcrun_wrap="${libhpcrun_dir}/libhpcrun_wrap.a"
 test -f "$libhpcrun_wrap" || die "no such file: $libhpcrun_wrap"
@@ -337,8 +348,20 @@ EOF
 $CC -o "$hello" "${hello}.c"
 
 rm -f "${nm_addrs}.c" "${nm_addrs}.o"
+rm -f "${var_addrs}.c" "${var_addrs}.o"
 $hpcfnbounds -c "$hello" > "${nm_addrs}.c" || die "hpcfnbounds failed on $hello"
+if test "$datacentric" = yes ; then
+    $hpcvarbounds -c "$hello" > "${var_addrs}.c" || die "hpcvarbounds failed on $hello"
+fi
+if test "$datacentric" = no ; then
+cat <<EOF > "${var_addrs}.c"
+unsigned long hpcrun_var_addrs[] = {};
+unsigned long hpcrun_var_addrs_len = 0;
+EOF
+fi
+
 $CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
+$CC $NM_FLAGS -c -o "${var_addrs}.o" "${var_addrs}.c"
 
 #
 # Some compiler scripts add extra function calls to the end of the
@@ -382,8 +405,20 @@ if test "$verbose" = yes ; then
 fi
 
 rm -f "${nm_addrs}.c" "${nm_addrs}.o"
+rm -f "${var_addrs}.c" "${var_addrs}.o"
 $hpcfnbounds -c "$appl_out" > "${nm_addrs}.c" || die "hpcfnbounds failed on $appl_out"
+if test "$datacentric" = yes ; then
+    $hpcvarbounds -c "$appl_out" > "${var_addrs}.c" || die "hpcvarbounds failed on $appl_out"
+fi
+if test "$datacentric" = no ; then
+cat <<EOF > "${var_addrs}.c"
+unsigned long hpcrun_var_addrs[] = {};
+unsigned long hpcrun_var_addrs_len = 0;
+EOF
+fi
 $CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
+$CC $NM_FLAGS -c -o "${var_addrs}.o" "${var_addrs}.c"
+
 $command "$@" || die "compile #2 failed: $command $@"
 test -f "$appl_out" || die "compile #2 failed: $command $@"
 
