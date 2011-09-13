@@ -748,12 +748,13 @@ bool is_kernel(void* addr)
 #if 1
 void update_bt(backtrace_t* bt, void* ibs_addr)
 {
-  ip_normalized_t norm_ip = 
-	hpcrun_normalize_ip(ibs_addr, NULL);
   if(is_kernel(ibs_addr)){
-    hpcrun_bt_add_leaf_child(bt, norm_ip);
+    return;
+//    hpcrun_bt_add_leaf_child(bt, norm_ip);
   }
   else{
+    ip_normalized_t norm_ip = 
+	hpcrun_normalize_ip(ibs_addr, NULL);
     hpcrun_bt_modify_leaf_addr(bt, norm_ip);
   }
 }

@@ -580,13 +580,13 @@ varbounds_compute(const char *incoming_filename, void *start, void *end)
 
     struct datainfo_s *node = hpcrun_mmap_anon(sizeof(struct datainfo_s));
     node->magic = 0;
-    node->start = nm_table[i];
-    node->end   = nm_table[i] + (long)nm_table[i+1];
+    node->start = nm_table[i] + (long)start;
+    node->end   = node->start + (long)nm_table[i+1];
     node->allocnode = NULL;
     node->left = NULL;
     node->right = NULL;
     splay_insert(node);
-//    TMSG(MEMLEAK, "add static data [%p, %p) to the splay tree", node->start, node->end);
+    TMSG(MEMLEAK, "add static data [%p, %p) to the splay tree", node->start, node->end);
   }
 }
 
