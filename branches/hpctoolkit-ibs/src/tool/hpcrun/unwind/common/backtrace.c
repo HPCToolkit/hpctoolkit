@@ -127,83 +127,6 @@ hpcrun_bt_dump(backtrace_t* bt, const char* tag)
   // FIXME? track rest of unwind via tramp node?
 }
 
-#ifdef OLD_BT_BUF
-void 
-hpcrun_old_bt_dump(frame_t* unwind, const char* tag)
-{
-  static const int msg_limit = 100;
-  int msg_cnt = 0;
-
-  char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
-  char lip_str[LUSH_LIP_STR_MIN_LEN];
-
-  const char* mytag = (tag) ? tag : "";
-  PMSG_LIMIT(EMSG("-- begin new backtrace (innermost first) [%s] ----------", mytag));
-
-  thread_data_t* td = hpcrun_get_thread_data();
-  if (unwind) {
-    for (frame_t* x = td->btbuf_beg; x < unwind; ++x) {
-      lush_assoc_info2str(as_str, sizeof(as_str), x->as_info);
-      lush_lip2str(lip_str, sizeof(lip_str), x->lip);
-
-      unw_word_t ip;
-      hpcrun_unw_get_ip_unnorm_reg(&(x->cursor), &ip);
-
-      load_module_t* lm = hpcrun_loadmap_findById(x->ip_norm.lm_id);
-      const char* lm_name = (lm) ? lm->name : "(null)";
-
-      PMSG_LIMIT(EMSG("%s: ip = %p (%p), load module = %s | lip %s", as_str, ip, x->ip_norm.lm_ip, lm_name, lip_str));
-
-      msg_cnt++;
-      if (msg_cnt > msg_limit) {
-        PMSG_LIMIT(EMSG("!!! message limit !!!"));
-        break;
-      }
-    }
-  }
-
-  if (msg_cnt <= msg_limit && td->btbuf_sav != td->btbuf_end) {
-    PMSG_LIMIT(EMSG("-- begin cached backtrace ---------------------------"));
-    for (frame_t* x = td->btbuf_sav; x < td->btbuf_end; ++x) {
-      lush_assoc_info2str(as_str, sizeof(as_str), x->as_info);
-      lush_lip2str(lip_str, sizeof(lip_str), x->lip);
-      PMSG_LIMIT(EMSG("%s: ip.lm_id = %d | ip.lm_ip = %p | lip %s", as_str,
-		      x->ip_norm.lm_id, x->ip_norm.lm_ip, lip_str));
-      msg_cnt++;
-      if (msg_cnt > msg_limit) {
-        PMSG_LIMIT(EMSG("!!! message limit !!!"));
-        break;
-      }
-    }
-  }
-
-  PMSG_LIMIT(EMSG("-- end backtrace ------------------------------------\n"));
-}
-#endif // OLD_BT_BUF
-
-//---------------------------------------------------------------------------
-// function: hpcrun_filter_sample
-//
-// purpose:
-//     ignore any samples that aren't rooted at designated call sites in 
-//     monitor that should be at the base of all process and thread call 
-//     stacks. 
-//
-// implementation notes:
-//     to support this, in monitor we define a pair of labels surrounding the 
-//     call site of interest. it is possible to get a sample between the pair 
-//     of labels that is outside the call. in that case, the length of the 
-//     sample's callstack would be 1, and we ignore it.
-//-----------------------------------------------------------------------------
-int
-hpcrun_filter_sample(int len, frame_t* start, frame_t* last)
-{
-  unw_word_t ip_unnorm;
-  hpcrun_unw_get_ip_unnorm_reg(&last->cursor, &ip_unnorm);
-  return ( !(monitor_in_start_func_narrow(ip_unnorm) 
-	     && (len > 1)) );
-}
-
 frame_t*
 hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
 		   int skip)
@@ -572,31 +495,6 @@ hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
 }
 #endif // OLD_BT_BUF
 
-#if 0
-bool
-hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
-			      ucontext_t* context, int skipInner)
-{
-  thread_data_t* td = hpcrun_get_thread_data();
-
-  if (td->debug1) {
-    EMSG("2nd call to generated failing backtrace causes exit");
-    exit(0);
-  }
-  EMSG("Failing backtrace simulated");
-  td->debug1 = true;
-
-  bool rv = hpcrun_generate_backtrace(bt, context, skipInner);
-  if (!rv) return false;
-
-  size_t len = bt->last - bt->begin + 1;
-  EMSG("Length of recorded backtrace = %d", len);
-  bt->last -= (len > 2) ? 2 : 1;
-  bt->has_tramp   = false;
-
-  return false;
-}
-#endif // 0 for old dbg backtrace
 
 //
 // New operations

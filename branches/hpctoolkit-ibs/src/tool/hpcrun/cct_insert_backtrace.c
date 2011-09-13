@@ -127,6 +127,7 @@ hpcrun_cct_insert_bt(cct_bundle_t* cct, cct_node_t* node,
 }
 
 
+#ifdef OLD_BT_BUF
 //-----------------------------------------------------------------------------
 // function: hpcrun_backtrace2cct
 // purpose:
@@ -162,8 +163,7 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
   return n;
 }
-
-#if 1 // TODO: tallent: Use Mike's improved code; retire prior routines
+#endif // OLD_BT_BUF
 
 static cct_node_t*
 help_hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
@@ -250,8 +250,6 @@ help_hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
 
   return n;
 }
-
-#endif
 
 cct_node_t*
 hpcrun_cct_record_backtrace(cct_bundle_t* cct, bool partial,

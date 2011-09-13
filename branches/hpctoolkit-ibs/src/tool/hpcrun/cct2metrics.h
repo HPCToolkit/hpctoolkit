@@ -55,10 +55,12 @@ cct_metric_data_increment(int metric_id,
 			  cct_metric_data_t incr)
 {
   if (! hpcrun_has_metric_set(x)) {
+    TMSG(CCT2METRICS, "New metric set required to increment metric id %d for node %p", metric_id, x);
     cct2metrics_assoc(x, hpcrun_metric_set_new());
   }
   metric_set_t* set = hpcrun_get_metric_set(x);
   
+  TMSG(CCT2METRICS, "calling std increment for id %d", metric_id);
   hpcrun_metric_std_inc(metric_id, set, incr);
 }
 

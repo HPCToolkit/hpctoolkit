@@ -420,7 +420,9 @@ void
 hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
 		      hpcrun_metricVal_t incr)
 {
+  TMSG(METRICS, "Std increment of metric id %d", metric_id);
   metric_desc_t* minfo = hpcrun_id2metric(metric_id);
+  TMSG(METRICS, "increment metric named %s", minfo->name);
   hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(set, metric_id);
   switch (minfo->flags.fields.valFmt) {
     case MetricFlags_ValFmt_Int:

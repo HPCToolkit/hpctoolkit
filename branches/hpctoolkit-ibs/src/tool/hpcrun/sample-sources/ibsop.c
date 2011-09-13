@@ -590,7 +590,7 @@ ibsop_signal_handler(int sig, siginfo_t* siginfo, void* context)
     ret = read(fd, &msg, sizeof(msg));
   }
   else {
-    TMSG(ITIMER_HANDLER,"IBS op sample event");
+    TMSG(IBS_SAMPLE,"op sample event");
 
     /* read the msr directly to get the performance data */
     data2 = data3 = 0;
@@ -689,16 +689,17 @@ ibsop_signal_handler(int sig, siginfo_t* siginfo, void* context)
 //	    hpcrun_sample_callpath(context, metrics[4], lat, 0, 0);
 	}
       }
-#if 0
       else // this is NOT a memory access, just restart IBS
       {
+	TMSG(IBS_SAMPLE, "NOT a memory access");
+#if 0
 	if(pfm_restart(fd)){
 	  EMSG("Fail to restart IBS");
 	  monitor_real_abort();
 	}
 	return 0;
-      }
 #endif
+      }
     }
   }
   if (hpcrun_is_sampling_disabled()) {
@@ -711,6 +712,7 @@ ibsop_signal_handler(int sig, siginfo_t* siginfo, void* context)
     monitor_real_abort();
   }
 
+  TMSG(IBS_SAMPLE, "Done with sample");
   return 0; /* tell monitor that the signal has been handled */
 }
 

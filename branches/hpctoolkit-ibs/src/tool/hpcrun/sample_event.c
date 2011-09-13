@@ -183,9 +183,6 @@ hpcrun_sample_callpath(void *context, int metricId,
 
   hpcrun_set_handling_sample(td);
 
-#ifdef OLD_BT_BUF
-  td->btbuf_cur = NULL;
-#endif // OLD_BT_BUF
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
 
@@ -259,12 +256,15 @@ hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context,
   /* check to see if shared library loadmap (of current epoch) has changed out from under us */
   epoch = hpcrun_check_for_new_loadmap(epoch);
 
+#ifdef OLD_BT_BUF
   cct_node_t* n = hpcrun_dbg_backtrace2cct(&(epoch->csdata),
 					   context,
 					   metricId, metricIncr,
 					   skipInner);
 
   return n;
+#endif // OLD_BT_BUF
+  return NULL;
 }
 
 
@@ -345,8 +345,8 @@ hpcrun_sample_callpath_w_bt(void *context,
       if (ENABLED(DEBUG_PARTIAL_UNW)){
 	EMSG("PARTIAL UNW debug sampler invoked @ sample %d", hpcrun_stats_num_samples_attempted());
 	// FIXME: OLD_BT_BUF alter _dbg to use newer stuff
-	node = hpcrun_dbg_sample_callpath_w_bt(epoch, context, metricId, metricIncr,
-					       bt_fn, arg, isSync);
+	node = help_hpcrun_sample_callpath_w_bt(epoch, context, metricId, metricIncr,
+						bt_fn, arg, isSync);
       }
       else {
 	node = help_hpcrun_sample_callpath_w_bt(epoch, context, metricId, metricIncr,

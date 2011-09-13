@@ -152,6 +152,7 @@ static pmsg_category all_list_entries [] = {
  E(UNW_STRATEGY),
  E(BACKTRACE),
  E(SUSPENDED_SAMPLE),
+ E(IBS_SAMPLE),
  // E(MMAP),
  // E(MALLOC),
  // E(CSP_MALLOC),
