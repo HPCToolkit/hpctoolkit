@@ -163,10 +163,35 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
   return n;
 }
+#else
+//
+// FIXME: no backtrace routines anymore !!!
+//
+static void
+skip_inner_fn(backtrace_t* bt, void* skip)
+{
+  size_t iskip = (size_t) skip;
+  if (bt->tramp) return; // no skip inner if trampoline involved
+  for (int i = 0; i < iskip && (! hpcrun_bt_empty(bt)); i++) {
+    hpcrun_bt_pull_inner(bt);
+  }
+}
+
+cct_node_t*
+hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context, 
+		     int metricId,
+		     uint64_t metricIncr,
+		     int skipInner, int isSync)
+{
+  uintptr_t the_skip = skipInner;
+  return hpcrun_bt2cct(cct, context,
+		       metricId, metricIncr,
+		       skip_inner_fn, (bt_fn_arg) the_skip, isSync);
+}
 #endif // OLD_BT_BUF
 
 static cct_node_t*
-help_hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
+help_hpcrun_bt2cct(cct_bundle_t* cct, ucontext_t* context,
 	       int metricId, uint64_t metricIncr,
 	       bt_mut_fn bt_fn, bt_fn_arg bt_arg);
 
@@ -182,6 +207,7 @@ hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
     n = lush_backtrace2cct(cct, context, metricId, metricIncr, skipInner,
 			   isSync);
 #endif
+    n = NULL;
   }
   else {
     TMSG(LUSH,"regular (NON-lush) bt2cct invoked");

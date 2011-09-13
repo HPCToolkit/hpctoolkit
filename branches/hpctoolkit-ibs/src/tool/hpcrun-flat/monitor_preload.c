@@ -157,7 +157,11 @@ monitor_fini_thread(void* data)
   if (opt_debug >= 1) {
     fprintf(stderr, "fini_thread(TID=0x%lx) callback from monitor received\n", (long)pthread_self());
   }
+#ifdef OLD_FINI_THREAD
   fini_thread((hpcrun_profiles_desc_t **)(&data), 1 /*is_thread*/);
+#else
+  fini_thread(data, 1);
+#endif
 }
 
 

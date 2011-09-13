@@ -324,7 +324,6 @@ skip_inner_fn(backtrace_t* bt, void* skip)
   for (int i = 0; i < iskip && (! hpcrun_bt_empty(bt)); i++) {
     hpcrun_bt_pull_inner(bt);
   }
-  
 }
 
 //
@@ -656,6 +655,7 @@ hpcrun_bt_skip_inner(backtrace_t* bt, void* skip)
 {
   size_t realskip = (size_t) skip;
   bt->beg += realskip;
+  bt->len -= realskip;
 }
 
 void
@@ -752,11 +752,8 @@ hpcrun_gen_bt(ucontext_t* context,
     hpcrun_up_pmsg_count();
   }
 				    
-#if 0
   frame_t* bt_beg  = hpcrun_bt_beg(bt);
-
   size_t new_frame_count = hpcrun_bt_len(bt);
-#endif
 
 #if 0
   if (tramp_found) {
@@ -786,10 +783,10 @@ hpcrun_gen_bt(ucontext_t* context,
 
     td->cached_bt_end = td->cached_bt + new_frame_count;
   }
-#endif
 
   // let clients know if a trampoline was found or not
   bt->tramp = tramp_found;
+#endif
 
   //
   // mutate the backtrace according to the passed in mutator function

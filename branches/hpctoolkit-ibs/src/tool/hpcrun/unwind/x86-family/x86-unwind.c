@@ -583,7 +583,8 @@ unw_step_std(hpcrun_unw_cursor_t* cursor)
       unw_res = unw_step_bp(cursor);
       if (unw_res == STEP_STOP_WEAK) unw_res = STEP_STOP; 
     }
-  } else {
+  }
+  else {
     TMSG(UNW_STRATEGY,"--STD_FRAME: STARTing with BP");
     unw_res = unw_step_bp(cursor);
     if (unw_res == STEP_ERROR || unw_res == STEP_STOP_WEAK) {
