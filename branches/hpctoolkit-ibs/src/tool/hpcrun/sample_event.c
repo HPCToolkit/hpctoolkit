@@ -383,9 +383,6 @@ hpcrun_sample_callpath_w_bt(void *context,
 
     trace_append(hpcrun_cct_persistent_id(func_proxy));
   }
-  else {
-    hpcrun_cleanup_partial_unwind();
-  }
 
   hpcrun_clear_handling_sample(td);
   if (TD_GET(mem_low) || ENABLED(FLUSH_EVERY_SAMPLE)) {

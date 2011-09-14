@@ -129,9 +129,9 @@ typedef enum {
   STEP_STOP_WEAK = 3
 } step_state;
 
+extern const char* stepstate2str(step_state s);
 
-step_state
-hpcrun_unw_step(hpcrun_unw_cursor_t* c);
+extern step_state hpcrun_unw_step(hpcrun_unw_cursor_t* c);
 
 
 //***************************************************************************

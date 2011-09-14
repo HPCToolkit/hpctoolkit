@@ -640,7 +640,7 @@ hpcrun_bt_add_leaf_child(backtrace_t* bt, ip_normalized_t ip_norm)
   }
   TMSG(BT, "BEFORE copy, innermost ip ==> lm_id = %d and lm_ip = %p", 
        bt->beg->ip_norm.lm_id, bt->beg->ip_norm.lm_ip);
-  memcpy((void*)(bt->beg + 1), (void*) bt->beg, bt->len * sizeof(frame_t));
+  memmove((void*)(bt->beg + 1), (void*) bt->beg, bt->len * sizeof(frame_t));
   TMSG(BT, "AFTER copy, innermost ip ==> lm_id = %d and lm_ip = %p", 
        (bt->beg + 1)->ip_norm.lm_id, (bt->beg + 1)->ip_norm.lm_ip);
   bt->cur++;
@@ -734,6 +734,8 @@ hpcrun_gen_bt(ucontext_t* context,
 					       .ra_loc = NULL}));
     
     ret = hpcrun_unw_step(&cursor);
+    TMSG(BT, "unw step f cursor %s(%p) = %s", hpcrun_loadmap_findById(ip_norm.lm_id)->name,
+	 ip_norm.lm_ip, stepstate2str(ret));
     // FIXME: mfagan Probably don't need both n_trolls and troll flag
     if (ret == STEP_TROLL) {
       bt->troll = true;
@@ -742,7 +744,7 @@ hpcrun_gen_bt(ucontext_t* context,
     }
     if (ret <= 0) {
       if (ret == STEP_ERROR)
-	hpcrun_stats_num_samples_dropped_inc();
+	TMSG(BT, "step error => partial unwind"), hpcrun_stats_num_samples_dropped_inc();
       break;
     }
     prev->ra_loc = hpcrun_unw_get_ra_loc(&cursor);
@@ -752,8 +754,10 @@ hpcrun_gen_bt(ucontext_t* context,
     hpcrun_up_pmsg_count();
   }
 				    
+#if OLD_TRAMP
   frame_t* bt_beg  = hpcrun_bt_beg(bt);
   size_t new_frame_count = hpcrun_bt_len(bt);
+#endif
 
 #if 0
   if (tramp_found) {
