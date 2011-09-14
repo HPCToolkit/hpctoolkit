@@ -104,8 +104,10 @@ frame_t* hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner,
 			    int skip);
 bool hpcrun_generate_backtrace(backtrace_info_t* bt,
 			       ucontext_t* context, int skipInner);
+#ifdef OLD_DBG_BACKTRACE
 bool hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
 				   ucontext_t* context, int skipInner);
+#endif
 
 //
 // New backtrace ops

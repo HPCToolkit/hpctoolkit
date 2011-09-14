@@ -307,7 +307,11 @@ hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   thread_data_t* td = hpcrun_get_thread_data();
   backtrace_info_t bt;
 
+#ifdef OLD_DBG_BACKTRACE
   if (! hpcrun_dbg_generate_backtrace(&bt, context, skipInner)) {
+#else
+  if (false) {
+#endif
     if (ENABLED(NO_PARTIAL_UNW)){
       return NULL;
     }
