@@ -155,8 +155,7 @@ Options: Profiling (Defaults shown in curly brackets {})
                        {hpctoolkit-<command>-measurements[-<jobid>]}
 
                        Bug: Without a <jobid> or an output option, multiple
-                       profiles of the sls
-ame <command> will be placed in the
+                       profiles of the same <command> will be placed in the
                        same output directory.
 
 NOTES:
