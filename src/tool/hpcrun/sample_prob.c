@@ -57,7 +57,7 @@
 #include <messages/messages.h>
 #include "sample_prob.h"
 
-#define HPCRUN_SAMPLE_PROB  "HPCRUN_SAMPLE_PROB"
+#define HPCRUN_SAMPLE_PROB  "HPCRUN_PROCESS_FRACTION"
 #define DEFAULT_PROB  0.1
 
 #define HASH_PRIME  2001001003
