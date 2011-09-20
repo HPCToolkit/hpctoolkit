@@ -131,9 +131,11 @@ To link with hpclink, supply your application's normal link line as
 To control HPCToolkit's performance measurement library during an
 application's execution, use the following environment variables:
   HPCRUN_EVENT_LIST=<event1>[@<period1>];...;<eventN>[@<periodN>]
-                            : Sampling event list; hpcrun -e/--event
-  HPCRUN_TRACE=1            : Enable tracing; hpcrun -t/--trace
-  HPCRUN_OUT_PATH=<outpath> : Set output directory; hpcrun -o/--output
+                             : Sampling event list; hpcrun -e/--event
+  HPCRUN_TRACE=1             : Enable tracing; hpcrun -t/--trace
+  HPCRUN_PROCESS_FRACTION=<f>: Measure only a fraction <f> of the execution's
+                               processes; hpcrun -f/-fp/--process-fraction
+  HPCRUN_OUT_PATH=<outpath>  : Set output directory; hpcrun -o/--output
 
 Options: Informational
   -v, --verbose        Verbose. Displays the original and modified command

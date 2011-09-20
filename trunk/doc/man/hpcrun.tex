@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2011/02/22}
+\setDate{ 2011/09/19}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -94,31 +94,44 @@ Default values for an option's optional arguments are shown in \{\}.
 \subsection{Options: Informational}
 
 \begin{Description}
-\item[\Opt{-l}, \Opt{-L}, \Opt{--list-events-short}] List available events. (N.B.: some may not be profilable)
-\item[\Opt{-V}, \Opt{--version}] Print version information.
-\item[\Opt{-h}, \Opt{--help}] Print help.
-\item[\Opt{-l}, \Opt{-L}, \Opt{--list-events}] List available events. (N.B.: some may not be profilable)
+\item[\Opt{-l}, \Opt{-L}, \Opt{--list-events}]
+List available events. (N.B.: some may not be profilable)
+
+\item[\Opt{-V}, \Opt{--version}]
+Print version information.
+
+\item[\Opt{-h}, \Opt{--help}]
+Print help.
 \end{Description}
 
 \subsection{Options: Profiling}
 
 \begin{Description}
-  \item[\OptArg{-e}{event\Lbr@period\Rbr}, \OptArg{--event}{event\Lbr@period\Rbr}] 
-   An event to profile and its corresponding sample period. \Arg{event} may be either a PAPI, native processor event, or WALLCLOCK (microseconds).  May pass multiple times as implementations permits.  \{\verb+WALLCLOCK@5000+\}
-  \begin{itemize}
-    \item It is recommended to always specify the sampling period for each profiling event.
-    \item The special event WALLCLOCK may be used to profile the `wall clock.'  It may be used only \emph{once} and cannot be used with another event. Its period is in microseconds.
-    \item Hardware and drivers 1) limit the maximum number of events that can be monitored simultaneously, and 2) forbid certain combinations of events. 
-    \item See the ``Sample sources'' under \textbf{NOTES} for additional details.
-  \end{itemize}
 
-  \item[\OptArg{-o}{outpath}, \OptArg{--output}{outpath}]
-  Directory for output data.
-  \{\verb+hpctoolkit-<command>-measurements[-<jobid>]+\}
+\item[\OptArg{-e}{event\Lbr@period\Rbr}, \OptArg{--event}{event\Lbr@period\Rbr}]
+An event to profile and its corresponding sample period. \Arg{event} may be either a PAPI, native processor event, or WALLCLOCK (microseconds).  May pass multiple times as implementations permits.  \{\verb+WALLCLOCK@5000+\}
+\begin{itemize}
+  \item It is recommended to always specify the sampling period for each profiling event.
+  \item The special event WALLCLOCK may be used to profile the `wall clock.'  It may be used only \emph{once} and cannot be used with another event. Its period is in microseconds.
+  \item Hardware and drivers 1) limit the maximum number of events that can be monitored simultaneously, and 2) forbid certain combinations of events. 
+  \item See the ``Sample sources'' under \textbf{NOTES} for additional details.
+\end{itemize}
 
-  \begin{itemize}
-  Bug: Without a \Arg{jobid} or an output option, multiple profiles of the same <command> will be placed in the same output directory.
-  \end{itemize}
+\item[\Opt{-t}, \Opt{--trace}]
+Generate a call path trace (in addition to a call path profile).
+
+\item[\OptArg{-f}{frac}, \OptArg{-fp}{frac}, \OptArg{--process-fraction}{frac}]
+Measure only a fraction \Arg{frac} of the execution's processes.
+For each process, enable measurement (of all threads) with probability \Arg{frac}; \Arg{frac} is a real number (0.10) or a fraction (1/10) between 0 and 1.
+(To minimize perturbations, when a process is disabled, all threads in a process still receive sampling interrupts, but they are ignored.)
+
+\item[\OptArg{-o}{outpath}, \OptArg{--output}{outpath}]
+Directory for output data.
+\{\verb+hpctoolkit-<command>-measurements[-<jobid>]+\}
+
+\begin{itemize}
+ Bug: Without a \Arg{jobid} or an output option, multiple profiles of the same <command> will be placed in the same output directory.
+\end{itemize}
 
 \end{Description}
 
