@@ -149,6 +149,12 @@ Options: Profiling (Defaults shown in curly brackets {})
   -t, --trace          Generate a call path trace (in addition to a call
                        path profile).
 
+  -f <frac>, -fp <frac>, --process-fraction <frac>
+                       Measure only a fraction <frac> of the execution's
+                       processes.  For each process, enable measurement
+                       (of all threads) with probability <frac>; <frac> is a
+                       real number (0.10) or a fraction (1/10) between 0 and 1.
+
   -o <outpath>, --output <outpath>
                        Directory for output data.
                        {hpctoolkit-<command>-measurements[-<jobid>]}
@@ -194,10 +200,10 @@ do
     arg="$1" ; shift
     case "$arg" in
 
-	-a | --agent )
-	    arg_ok "$1" || die "missing argument for $arg"
-	    export HPCRUN_OPT_LUSH_AGENTS="$1"
-	    shift
+	# --------------------------------------------------
+
+	-md | --monitor-debug )
+	    export MONITOR_DEBUG=1
 	    ;;
 
 	-d | --debug )
@@ -209,6 +215,25 @@ do
 	    export HPCRUN_DEBUG_FLAGS="$HPCRUN_DEBUG_FLAGS $1"
 	    shift
 	    ;;
+
+	-h | -help | --help )
+	    usage
+	    ;;
+
+	-V | --version )
+	    echo "hpcrun: A member of HPCToolkit, version $VERSION"
+	    exit 0
+	    ;;
+
+	# --------------------------------------------------
+
+	-a | --agent )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_OPT_LUSH_AGENTS="$1"
+	    shift
+	    ;;
+
+	# --------------------------------------------------
 
 	-e | --event )
 	    arg_ok "$1" || die "missing argument for $arg"
@@ -225,27 +250,29 @@ do
 	    shift
 	    ;;
 
-	-h | -help | --help )
-	    usage
-	    ;;
-
 	-L | -l | --list-events )
 	    export HPCRUN_EVENT_LIST=LIST
 	    ;;
 
-	-lm | --low-memsize )
+	# --------------------------------------------------
+
+	-t | --trace )
+	    export HPCRUN_TRACE=1
+	    ;;
+
+	# --------------------------------------------------
+
+	-o | --output )
 	    arg_ok "$1" || die "missing argument for $arg"
-	    export HPCRUN_LOW_MEMSIZE="$1"
+	    export HPCRUN_OUT_PATH="$1"
 	    shift
 	    ;;
 
-	-md | --monitor-debug )
-	    export MONITOR_DEBUG=1
-	    ;;
+	# --------------------------------------------------
 
-	-mp | --memleak-prob )
+	-lm | --low-memsize )
 	    arg_ok "$1" || die "missing argument for $arg"
-	    export HPCRUN_MEMLEAK_PROB="$1"
+	    export HPCRUN_LOW_MEMSIZE="$1"
 	    shift
 	    ;;
 
@@ -255,30 +282,27 @@ do
 	    shift
 	    ;;
 
-	-o | --output )
-	    arg_ok "$1" || die "missing argument for $arg"
-	    export HPCRUN_OUT_PATH="$1"
-	    shift
-	    ;;
+	# --------------------------------------------------
 
 	-q | --quiet )
 	    export HPCRUN_QUIET=1
 	    ;;
 
-	-sp | --sample-prob )
+	# --------------------------------------------------
+
+	-f | -fp | --process-fraction )
 	    arg_ok "$1" || die "missing argument for $arg"
-	    export HPCRUN_SAMPLE_PROB="$1"
+	    export HPCRUN_PROCESS_FRACTION="$1"
 	    shift
 	    ;;
 
-	-t | --trace )
-	    export HPCRUN_TRACE=1
+	-mp | --memleak-prob )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_MEMLEAK_PROB="$1"
+	    shift
 	    ;;
 
-	-V | --version )
-	    echo "hpcrun: A member of HPCToolkit, version $VERSION"
-	    exit 0
-	    ;;
+	# --------------------------------------------------
 
 	-- )
 	    break
