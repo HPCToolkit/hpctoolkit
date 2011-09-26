@@ -415,7 +415,7 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
   void*  pc = cursor->pc_unnorm;
   unwind_interval* uw = (unwind_interval *)cursor->intvl;
   
-  TMSG(UNW,"step_sp: bp=%p, sp=%p, pc=%p", bp, sp, pc);
+  TMSG(UNW,"step_sp: cursor { bp=%p, sp=%p, pc=%p }", bp, sp, pc);
   if (MYDBG) { dump_ui(uw, 0); }
 
   void** next_bp = NULL;
@@ -423,12 +423,12 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
   void*  ra_loc  = (void*) next_sp;
   void*  next_pc  = *next_sp;
 
-  TMSG(UNW,"sp potential advance cursor: next_sp=%p ==> next_pc = %p",
+  TMSG(UNW,"  step_sp: potential next cursor next_sp=%p ==> next_pc = %p",
        next_sp, next_pc);
 
   if (uw->bp_status == BP_UNCHANGED){
     next_bp = bp;
-    TMSG(UNW,"sp unwind step has BP_UNCHANGED ==> next_bp=%p", next_bp);
+    TMSG(UNW,"  step_sp: unwind step has BP_UNCHANGED ==> next_bp=%p", next_bp);
   } else {
     //-----------------------------------------------------------
     // reload the candidate value for the caller's BP from the 
@@ -436,9 +436,9 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
     // information produced by binary analysis
     //-----------------------------------------------------------
     next_bp = (void **)(sp + uw->sp_bp_pos);
-    TMSG(UNW,"sp unwind next_bp loc = %p", next_bp);
+    TMSG(UNW,"  step_sp: unwind next_bp loc = %p", next_bp);
     next_bp  = *next_bp; 
-    TMSG(UNW,"sp unwind next_bp val = %p", next_bp);
+    TMSG(UNW,"  step_sp: sp unwind next_bp val = %p", next_bp);
 
     //-----------------------------------------------------------
     // if value of BP reloaded from the save area does not point 
@@ -456,7 +456,7 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
     if (((unsigned long) next_bp < (unsigned long) sp) && 
         ((unsigned long) bp > (unsigned long) sp)){
       next_bp = bp;
-      TMSG(UNW,"sp unwind bp sanity check fails."
+      TMSG(UNW,"  step_sp: unwind bp sanity check fails."
 	   " Resetting next_bp to current bp = %p", next_bp);
     }
   }
@@ -467,11 +467,11 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
 
   if (! cursor->intvl){
     if (((void *)next_sp) >= monitor_stack_bottom()){
-      TMSG(UNW,"No next interval, and next_sp >= stack bottom,"
+      TMSG(UNW,"  step_sp: STEP_STOP_WEAK, no next interval and next_sp >= stack bottom,"
 	   " so stop unwind ...");
       return STEP_STOP_WEAK;
     } else {
-      TMSG(UNW,"No next interval, step fails");
+      TMSG(UNW,"  sp STEP_ERROR: no next interval, step fails");
       return STEP_ERROR;
     }
   } else {
@@ -490,7 +490,8 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
     cursor->pc_norm   = next_pc_norm;
   }
 
-  TMSG(UNW,"==== sp advance ok ===");
+  TMSG(UNW,"  step_sp: STEP_OK, has_intvl=%d, bp=%p, sp=%p, pc=%p",
+	   cursor->intvl != NULL, next_bp, next_sp, next_pc);
   return STEP_OK;
 }
 
@@ -510,18 +511,17 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
   pc = cursor->pc_unnorm;
   uw = (unwind_interval *)cursor->intvl;
 
-  TMSG(UNW,"cursor in ==> bp=%p, sp=%p, pc=%p", bp, sp, pc);
-  TMSG(UNW,"unwind interval in below:");
+  TMSG(UNW,"step_bp: cursor { bp=%p, sp=%p, pc=%p }", bp, sp, pc);
   if (MYDBG) { dump_ui(uw, 0); }
 
   if (!(sp <= (void*) bp)) {
-    TMSG(UNW_STRATEGY_ERROR,"bp unwind attempted, but incoming bp(%p) was not"
+    TMSG(UNW_STRATEGY_ERROR,"  step_bp: STEP_ERROR, unwind attempted, but incoming bp(%p) was not"
 	 " >= sp(%p)", bp, sp);
     return STEP_ERROR;
   }
   if (DISABLED(OMP_SKIP_MSB)) {
     if (!((void *)bp < monitor_stack_bottom())) {
-      TMSG(UNW_STRATEGY_ERROR,"bp unwind attempted, but incoming bp(%p) was not"
+      TMSG(UNW_STRATEGY_ERROR,"  step_bp: STEP_ERROR, unwind attempted, but incoming bp(%p) was not"
 	   " between sp (%p) and monitor stack bottom (%p)", 
 	   bp, sp, monitor_stack_bottom());
       return STEP_ERROR;
@@ -542,11 +542,11 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
 						    next_pc, &next_pc_norm);
     if (! uw){
       if (((void *)next_sp) >= monitor_stack_bottom()) {
-        TMSG(UNW_STRATEGY,"BP advance reaches monitor_stack_bottom,"
+        TMSG(UNW,"  step_bp: STEP_STOP_WEAK, next_sp >= monitor_stack_bottom,"
 	     " next_sp = %p", next_sp);
         return STEP_STOP_WEAK;
       }
-      TMSG(UNW_STRATEGY,"BP cannot build interval for next_pc(%p)", next_pc);
+      TMSG(UNW,"  step_bp: STEP_ERROR, cannot build interval for next_pc(%p)", next_pc);
       return STEP_ERROR;
     }
     else {
@@ -557,7 +557,7 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
       cursor->pc_norm   = next_pc_norm;
       
       cursor->intvl = (splay_interval_t *)uw;
-      TMSG(UNW,"cursor advances ==>has_intvl=%d, bp=%p, sp=%p, pc=%p",
+      TMSG(UNW,"  step_bp: STEP_OK, has_intvl=%d, bp=%p, sp=%p, pc=%p",
 	   cursor->intvl != NULL, next_bp, next_sp, next_pc);
       return STEP_OK;
     }
