@@ -251,7 +251,7 @@ METHOD_FN(stop)
 
   rc = setitimer(HPCRUN_PROFILE_TIMER, &zerotimer, NULL);
 
-  TMSG(ITIMER_CTL,"stopping itimer");
+  TMSG(ITIMER_CTL,"stopping itimer, ret = %d", rc);
   TD_GET(ss_state)[self->evset_idx] = STOP;
 }
 
