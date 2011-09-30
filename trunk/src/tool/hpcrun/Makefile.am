@@ -186,6 +186,7 @@ MY_BASE_FILES =			\
 	sample_sources_registered.c	\
 	segv_handler.c			\
 	system_server.c			\
+	term_handler.c			\
 	thread_data.c			\
 	thread_use.c			\
 	trace.c				\

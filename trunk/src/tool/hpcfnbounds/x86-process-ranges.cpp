@@ -240,7 +240,10 @@ process_range(long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
   char *guidepost = RELOCATE(*fstart, offset);
 
   xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
+
+#ifdef DEBUG
   xed_iclass_enum_t prev_xiclass = XED_ICLASS_INVALID;
+#endif
 
   while (ins < end) {
 
@@ -391,7 +394,10 @@ process_range(long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
     default:
       break;
     }
+
+#ifdef DEBUG
     prev_xiclass = xiclass;
+#endif
 
     ins += xed_decoded_inst_get_length(xptr);
   }
@@ -930,12 +936,16 @@ xed_next(char* ins)
   xed_decoded_inst_t xedd_tmp;
   xed_decoded_inst_t* xptr = &xedd_tmp;
   xed_error_enum_t xed_error;
+  int offset = 0;
 
   xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
   xed_decoded_inst_zero_keep_mode(xptr);
 
   xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
-  return ins + xed_decoded_inst_get_length(xptr);
+  if (xed_error == XED_ERROR_NONE) {
+    offset = xed_decoded_inst_get_length(xptr);
+  }
+  return ins + offset;
 }
 
 static bool
@@ -1288,9 +1298,13 @@ void x86_dump_ins(void *ins)
   xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
   xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
 
-  xed_format_xed(xptr, inst_buf, sizeof(inst_buf), (uint64_t) ins);
-  printf("(%p, %d bytes, %s) %s \n" , ins, xed_decoded_inst_get_length(xptr),
-         xed_iclass_enum_t2str(xed_decoded_inst_get_iclass(xptr)), inst_buf);
+  if (xed_error == XED_ERROR_NONE) {
+    xed_format_xed(xptr, inst_buf, sizeof(inst_buf), (uint64_t) ins);
+    printf("(%p, %d bytes, %s) %s \n" , ins, xed_decoded_inst_get_length(xptr),
+	   xed_iclass_enum_t2str(xed_decoded_inst_get_iclass(xptr)), inst_buf);
+  } else {
+    printf("x86_dump_ins: xed decode addr=%p, error = %d\n", ins, xed_error);
+  }
 }
 
 // #define DEBUG_ADDSUB

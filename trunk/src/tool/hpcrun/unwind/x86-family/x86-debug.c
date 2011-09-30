@@ -80,7 +80,8 @@ x86_dump_intervals(char  *addr)
 
   intervals = x86_build_intervals(s, e - s, 0);
 
-  for(u = (unwind_interval *)intervals.first; u; u = (unwind_interval *)(u->common).next) {
+  for(u = (unwind_interval *)intervals.first; u; 
+      u = (unwind_interval *)(u->common).next) {
     dump_ui_dbg(u);
   }
 }
@@ -97,11 +98,17 @@ x86_dump_ins(void *ins)
 
   xed_decoded_inst_zero_set_mode(xptr, &x86_decoder_settings.xed_settings);
   xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
-
-  xed_format_xed(xptr, inst_buf, sizeof(inst_buf), 
-		 (xed_uint64_t)(uintptr_t)ins);
-  sprintf(errbuf, "(%p, %d bytes, %s) %s \n" , ins, xed_decoded_inst_get_length(xptr), 
-	 xed_iclass_enum_t2str(iclass(xptr)), inst_buf);
+  
+  if (xed_error == XED_ERROR_NONE) {
+    xed_format_xed(xptr, inst_buf, sizeof(inst_buf), 
+		   (xed_uint64_t)(uintptr_t)ins);
+    sprintf(errbuf, "(%p, %d bytes, %s) %s \n" , ins, 
+	    xed_decoded_inst_get_length(xptr), 
+	    xed_iclass_enum_t2str(iclass(xptr)), inst_buf);
+  } else {
+    sprintf(errbuf, "x86_dump_ins: xed decode error addr=%p, code = %d\n", 
+	    ins, (int) xed_error);
+  }
 
   EMSG(errbuf);
   fprintf(stderr, errbuf);

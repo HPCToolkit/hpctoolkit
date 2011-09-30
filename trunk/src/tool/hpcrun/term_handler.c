@@ -45,71 +45,54 @@
 // ******************************************************* EndRiceCopyright *
 
 //***************************************************************************
-//
-// File: 
-//   $HeadURL$
-//
-// Purpose:
-//   Spin lock
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
-// Author:
-//   [...]
-//
+// system include files 
 //***************************************************************************
 
-#ifndef prof_lean_spinlock_h
-#define prof_lean_spinlock_h
-
-#include <stdbool.h>
-
-#include "atomic-op.h"
-
-/*
- * Simple spin lock.
- *
- */
-
-typedef struct spinlock_s {
-	volatile long thelock;
-} spinlock_t;
-
-#define SPINLOCK_UNLOCKED_VALUE (0L)
-#define SPINLOCK_LOCKED_VALUE (1L)
-#define INITIALIZE_SPINLOCK(x) { .thelock = (x) }
-
-#define SPINLOCK_UNLOCKED INITIALIZE_SPINLOCK(SPINLOCK_UNLOCKED_VALUE)
-#define SPINLOCK_LOCKED INITIALIZE_SPINLOCK(SPINLOCK_LOCKED_VALUE)
+#include <sys/types.h>
+#include <stddef.h>
+#include <ucontext.h>
+#include <signal.h>
 
 
-static inline void 
-spinlock_lock(spinlock_t *l)
+//***************************************************************************
+// libmonitor include files
+//***************************************************************************
+
+#include <monitor.h>
+
+
+//***************************************************************************
+// user include files 
+//***************************************************************************
+
+#include "term_handler.h"
+#include <messages/messages.h>
+#include <utilities/arch/context-pc.h>
+
+
+//***************************************************************************
+// catch SIGTERM
+//***************************************************************************
+
+static int
+hpcrun_term_handler(int sig, siginfo_t* siginfo, void* context)
 {
-  /* test-and-test-and-set lock */
-  for(;;) {
-    while (l->thelock != SPINLOCK_UNLOCKED_VALUE); 
+   void* pc = hpcrun_context_pc(context);
+   EEMSG("hpcrun_term_handler: aborting execution on SIGTERM,"
+	 " context pc = %p\n", pc);
+   monitor_real_abort();
+   return 0;
+}
 
-    if (fetch_and_store(&l->thelock, SPINLOCK_LOCKED_VALUE) == SPINLOCK_UNLOCKED_VALUE) {
-      return; 
-    }
+
+int
+hpcrun_setup_term()
+{
+  int ret = monitor_sigaction(SIGTERM, &hpcrun_term_handler, 0, NULL);
+  if (ret != 0) {
+    EMSG("hpcrun_setup_term: unable to install SIGTERM handler", 
+	 __FILE__, __LINE__);
   }
+
+  return ret;
 }
-
-
-static inline void 
-spinlock_unlock(spinlock_t *l)
-{
-  l->thelock = SPINLOCK_UNLOCKED_VALUE;
-}
-
-
-static inline bool 
-spinlock_is_locked(spinlock_t *l)
-{
-  return (l->thelock != SPINLOCK_UNLOCKED_VALUE);
-}
-
-
-#endif // prof_lean_spinlock_h
