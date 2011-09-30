@@ -44,72 +44,10 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File: 
-//   $HeadURL$
-//
-// Purpose:
-//   Spin lock
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
-// Author:
-//   [...]
-//
-//***************************************************************************
+#ifndef TERM_HANDLER_H
+#define TERM_HANDLER_H
 
-#ifndef prof_lean_spinlock_h
-#define prof_lean_spinlock_h
+int
+hpcrun_setup_term();
 
-#include <stdbool.h>
-
-#include "atomic-op.h"
-
-/*
- * Simple spin lock.
- *
- */
-
-typedef struct spinlock_s {
-	volatile long thelock;
-} spinlock_t;
-
-#define SPINLOCK_UNLOCKED_VALUE (0L)
-#define SPINLOCK_LOCKED_VALUE (1L)
-#define INITIALIZE_SPINLOCK(x) { .thelock = (x) }
-
-#define SPINLOCK_UNLOCKED INITIALIZE_SPINLOCK(SPINLOCK_UNLOCKED_VALUE)
-#define SPINLOCK_LOCKED INITIALIZE_SPINLOCK(SPINLOCK_LOCKED_VALUE)
-
-
-static inline void 
-spinlock_lock(spinlock_t *l)
-{
-  /* test-and-test-and-set lock */
-  for(;;) {
-    while (l->thelock != SPINLOCK_UNLOCKED_VALUE); 
-
-    if (fetch_and_store(&l->thelock, SPINLOCK_LOCKED_VALUE) == SPINLOCK_UNLOCKED_VALUE) {
-      return; 
-    }
-  }
-}
-
-
-static inline void 
-spinlock_unlock(spinlock_t *l)
-{
-  l->thelock = SPINLOCK_UNLOCKED_VALUE;
-}
-
-
-static inline bool 
-spinlock_is_locked(spinlock_t *l)
-{
-  return (l->thelock != SPINLOCK_UNLOCKED_VALUE);
-}
-
-
-#endif // prof_lean_spinlock_h
+#endif

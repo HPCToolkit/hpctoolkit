@@ -96,6 +96,7 @@
 #include "sample_sources_all.h"
 #include "segv_handler.h"
 #include "sample_prob.h"
+#include "term_handler.h"
 
 #include "epoch.h"
 #include "thread_data.h"

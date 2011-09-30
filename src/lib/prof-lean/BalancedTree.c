@@ -110,7 +110,7 @@ BalancedTree_init(BalancedTree_t* tree,
   tree->nodeDataSz = nodeDataSz;
 
   QueuingRWLock_init(&tree->lock);
-  tree->spinlock = SPINLOCK_UNLOCKED;
+  spinlock_unlock(&tree->spinlock);
 }
 
 

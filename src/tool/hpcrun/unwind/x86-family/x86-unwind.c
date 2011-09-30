@@ -226,14 +226,14 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   cursor->sp 	    = MCONTEXT_SP(mc);
   cursor->ra_loc    = NULL;
 
-  TMSG(UNW, "init: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
+  TMSG(UNW, "unw_init: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
 
   cursor->flags = 0; // trolling_used
   cursor->intvl = hpcrun_addr_to_interval(cursor->pc_unnorm,
 					  cursor->pc_unnorm, &cursor->pc_norm);
   if (!cursor->intvl) {
-    EMSG("init cursor could NOT build an interval for initial pc = %p",
+    EMSG("unw_init: cursor could NOT build an interval for initial pc = %p",
 	 cursor->pc_unnorm);
     cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, NULL);
   }
@@ -268,7 +268,7 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
   // demarcated with a fence. 
   //-----------------------------------------------------------
   if (hpcrun_check_fence(cursor->pc_unnorm)){
-    TMSG(UNW,"current pc in monitor fence", cursor->pc_unnorm);
+    TMSG(UNW,"unw_step: STEP_STOP, current pc in monitor fence pc=%p\n", cursor->pc_unnorm);
     return STEP_STOP;
   }
 
@@ -281,7 +281,7 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
   int unw_res;
 
   if (!uw){
-    TMSG(UNW, "Invalid unw interval for cursor");
+    TMSG(UNW, "unw_step: STEP_TROLL invalid unw interval for cursor, trolling ...");
     update_cursor_with_troll(cursor, 0);
     return STEP_TROLL;
   }
@@ -300,18 +300,17 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
     break;
 
   default:
-    EMSG("error: ILLEGAL UNWIND INTERVAL");
+    EMSG("unw_step: ILLEGAL UNWIND INTERVAL");
     dump_ui((unwind_interval *)cursor->intvl, 0);
     assert(0);
   }
   if (unw_res == STEP_STOP_WEAK) unw_res = STEP_STOP; 
 
-  if (unw_res != -1) {
-    //TMSG(UNW,"=========== unw_step Succeeds ============== ");
+  if (unw_res != STEP_ERROR) {
     return unw_res;
   }
   
-  PMSG_LIMIT(TMSG(TROLL,"error: unw_step: pc=%p, bp=%p, sp=%p", pc, bp, sp));
+  PMSG_LIMIT(TMSG(TROLL,"unw_step: STEP_ERROR, pc=%p, bp=%p, sp=%p", pc, bp, sp));
   dump_ui_troll(uw);
 
   if (ENABLED(TROLL_WAIT)) {
@@ -515,13 +514,13 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
   if (MYDBG) { dump_ui(uw, 0); }
 
   if (!(sp <= (void*) bp)) {
-    TMSG(UNW_STRATEGY_ERROR,"  step_bp: STEP_ERROR, unwind attempted, but incoming bp(%p) was not"
+    TMSG(UNW,"  step_bp: STEP_ERROR, unwind attempted, but incoming bp(%p) was not"
 	 " >= sp(%p)", bp, sp);
     return STEP_ERROR;
   }
   if (DISABLED(OMP_SKIP_MSB)) {
     if (!((void *)bp < monitor_stack_bottom())) {
-      TMSG(UNW_STRATEGY_ERROR,"  step_bp: STEP_ERROR, unwind attempted, but incoming bp(%p) was not"
+      TMSG(UNW,"  step_bp: STEP_ERROR, unwind attempted, but incoming bp(%p) was not"
 	   " between sp (%p) and monitor stack bottom (%p)", 
 	   bp, sp, monitor_stack_bottom());
       return STEP_ERROR;
@@ -715,7 +714,16 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
 static int 
 hpcrun_check_fence(void* ip)
 {
-  return monitor_in_start_func_wide(ip);
+ int pb = monitor_unwind_process_bottom_frame(ip);
+ int tb = monitor_unwind_thread_bottom_frame(ip);
+ int result = (tb | pb);
+ 
+ if (result != 0) {
+   TMSG(UNW,"unw_step: STEP_STOP fence encountered = %s", 
+	(pb ?  "PROCESS" : "THREAD"));
+ }
+ 
+ return result;
 }
 
 
