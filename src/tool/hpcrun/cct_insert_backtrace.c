@@ -300,8 +300,10 @@ help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   hpcrun_stats_trolled_frames_inc((long) bt.n_trolls);
 
   if (ENABLED(USE_TRAMP)){
+    TMSG(TRAMP, "--NEW SAMPLE--: Remove old trampoline");
     hpcrun_trampoline_remove();
     td->tramp_frame = td->cached_bt;
+    TMSG(TRAMP, "--NEW SAMPLE--: Insert new trampoline");
     hpcrun_trampoline_insert(n);
   }
 

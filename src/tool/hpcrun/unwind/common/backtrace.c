@@ -81,6 +81,8 @@
 #include <memory/hpcrun-malloc.h>
 #include <dbg_backtrace.h>
 
+extern void hpcrun_trampoline(void); // trampoline function, needed only for debug
+
 //***************************************************************************
 // local constants & macros
 //***************************************************************************
@@ -377,8 +379,9 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       else {
 	// we have encountered a trampoline in the middle of an unwind.
 	bt->has_tramp = (tramp_found = true);
-	
+	TMSG(TRAMP, "--CURRENT UNWIND FINDS TRAMPOLINE @ (sp:%p, bp:%p", cursor.sp, cursor.bp);
 	// no need to unwind further. the outer frames are already known.
+	ret = STEP_STOP;
 	break;
       }
     }
@@ -413,7 +416,7 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
 
   bt->begin        = bt_beg;         // returned backtrace begin
                                      // is buffer beginning
-  bt->last         = bt_last;        // returned backtrace end is
+  bt->last         = bt_last;        // returned backtrace last is
                                      // last recorded element
 
   frame_t* bt_end  = bt_last + 1;    // outermost, exclusive
@@ -424,54 +427,55 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
     return false;
   }
 
-  if (tramp_found) {
-    TMSG(BACKTRACE, "tramp stop: conjoining backtraces");
-    //
-    // join current backtrace fragment to previous trampoline-marked prefix
-    // and make this new conjoined backtrace the cached-backtrace
-    //
-    frame_t* prefix = td->tramp_frame + 1; // skip top frame
-    size_t old_frame_count = td->cached_bt_end - prefix;
+  if (ENABLED(USE_TRAMP)) {
+    if (tramp_found) {
+      TMSG(BACKTRACE, "tramp stop: conjoining backtraces");
+      TMSG(TRAMP, " FOUND TRAMP: constructing cached backtrace");
+      //
+      // join current backtrace fragment to previous trampoline-marked prefix
+      // and make this new conjoined backtrace the cached-backtrace
+      //
+      frame_t* prefix = td->tramp_frame;
+      TMSG(TRAMP, "Check: tramp prefix ra_loc = %p, addr@ra_loc = %p (?= %p tramp), retn_addr = %p",
+	   prefix->ra_loc, *((void**) prefix->ra_loc), hpcrun_trampoline, td->tramp_retn_addr);
+      size_t old_frame_count = td->cached_bt_end - prefix;
+      TMSG(TRAMP, "Check: Old frame count = %d ?= %d (computed frame count)",
+	   old_frame_count, td->cached_frame_count);
 
-    hpcrun_cached_bt_adjust_size(new_frame_count + old_frame_count);
+      size_t n_cached_frames = new_frame_count - 1;
+      hpcrun_cached_bt_adjust_size(n_cached_frames + old_frame_count);
+      TMSG(TRAMP, "cached trace size = (new frames) %d + (old frames) %d = %d",
+	   n_cached_frames, old_frame_count, n_cached_frames + old_frame_count);
+      // put the old prefix in place
+      memmove(td->cached_bt + n_cached_frames, prefix,
+	      sizeof(frame_t) * old_frame_count);
 
-    // put the old prefix in place
-    memmove(td->cached_bt + new_frame_count, prefix, 
-	   sizeof(frame_t) * old_frame_count);
+      // put the new suffix in place
+      memcpy(td->cached_bt, bt_beg, sizeof(frame_t) * n_cached_frames);
 
-    // put the new suffix in place
-    memcpy(td->cached_bt, bt_beg, sizeof(frame_t) * new_frame_count);
+      // update the length of the conjoined backtrace
+      td->cached_bt_end = td->cached_bt + n_cached_frames + old_frame_count;
+      // maintain invariants
+      td->cached_frame_count = n_cached_frames + old_frame_count;
+      td->tramp_frame = td->cached_bt + n_cached_frames;
+      TMSG(TRAMP, "Check: tramp prefix ra_loc = %p, addr@ra_loc = %p (?= %p tramp), retn_addr = %p",
+	   prefix->ra_loc, *((void**) prefix->ra_loc), hpcrun_trampoline, td->tramp_retn_addr);
+    }
+    else {
+      TMSG(TRAMP, "No tramp found: cached backtrace size = %d", new_frame_count);
+      hpcrun_cached_bt_adjust_size(new_frame_count);
+      size_t n_cached_frames = new_frame_count - 1;
+      TMSG(TRAMP, "Confirm: ra_loc(last bt frame) = %p", (bt_beg + n_cached_frames)->ra_loc);
+      memmove(td->cached_bt, bt_beg, sizeof(frame_t) * n_cached_frames);
 
-    // update the length of the conjoined backtrace
-    td->cached_bt_end = td->cached_bt + new_frame_count + old_frame_count;
-  }
-  else {
-    hpcrun_cached_bt_adjust_size(new_frame_count);
-    memmove(td->cached_bt, bt_beg, sizeof(frame_t) * new_frame_count);
-
-    td->cached_bt_end = td->cached_bt + new_frame_count;
-  }
-
-#if 0 // no more filtering samples
-  if (! ENABLED(NO_SAMPLE_FILTERING)) {
-    frame_t* beg_frame  = td->cached_bt;
-    frame_t* last_frame = td->cached_bt_end - 1;
-    int num_frames      = last_frame - beg_frame + 1;
-	
-    if (hpcrun_filter_sample(num_frames, beg_frame, last_frame)){
-      TMSG(PARTIAL_UNW, "PRE_FILTER frame count = %d", (*retn_bt_end - *retn_bt_beg) + 1);
-      TMSG(SAMPLE_FILTER, "filter sample of length %d", num_frames);
-      frame_t *fr = beg_frame;
-      for (int i = 0; i < num_frames; i++, fr++){
-	TMSG(SAMPLE_FILTER,"  frame ip[%d] ==> lm_id = %d and lm_ip = %p", i, fr->ip_norm.lm_id, fr->ip_norm.lm_ip);
-      }
-      hpcrun_stats_num_samples_filtered_inc();
-
-      return false; // filtered sample ==> no cct entry
+      td->cached_bt_end = td->cached_bt + n_cached_frames;
+      td->cached_frame_count = n_cached_frames;
+    }
+    if (ENABLED(TRAMP)) {
+      TMSG(TRAMP, "Dump cached backtrace from backtrace construction");
+      hpcrun_trampoline_bt_dump();
     }
   }
-#endif // no filtering samples
-
   if (skipInner) {
     if (ENABLED(USE_TRAMP)){
       //

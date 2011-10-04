@@ -180,6 +180,7 @@ typedef struct thread_data_t {
   bool    tramp_present;   // TRUE if a trampoline installed; FALSE otherwise
   void*   tramp_retn_addr; // return address that the trampoline replaced
   void*   tramp_loc;       // current (stack) location of the trampoline
+  size_t  cached_frame_count; // (sanity check) length of cached frame list
   frame_t* cached_bt;         // the latest backtrace (start)
   frame_t* cached_bt_end;     // the latest backtrace (end)
   frame_t* cached_bt_buf_end; // the end of the cached backtrace buffer
