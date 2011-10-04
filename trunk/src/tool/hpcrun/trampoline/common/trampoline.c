@@ -85,10 +85,23 @@ extern void hpcrun_trampoline_end();
 //******************************************************************************
 
 void
+hpcrun_trampoline_bt_dump(void)
+{
+  thread_data_t* td = hpcrun_get_thread_data();
+
+  TMSG(TRAMP, "Num frames cached = %d ?= %d (cached_counter)",
+       td->cached_bt_end - td->cached_bt, td->cached_frame_count);
+  for (frame_t* f = td->cached_bt; f < td->cached_bt_end; f++) {
+    TMSG(TRAMP, "ra loc = %p, ra@loc = %p", f->ra_loc, *((void**) f->ra_loc));
+  }
+}
+
+void
 hpcrun_init_trampoline_info(void)
 {
   thread_data_t* td   = hpcrun_get_thread_data();
 
+  TMSG(TRAMP, "INIT called, tramp state zeroed");
   td->tramp_present   = false;
   td->tramp_retn_addr = NULL;
   td->tramp_loc       = NULL;
@@ -123,6 +136,9 @@ hpcrun_trampoline_advance(void)
   cct_node_t* parent = (node) ? hpcrun_cct_parent(node) : NULL;
   TMSG(TRAMP, " ... to node %p", parent);
   td->tramp_frame++;
+  TMSG(TRAMP, "cached frame count reduced from %d to %d", td->cached_frame_count,
+       td->cached_frame_count - 1);
+  (td->cached_frame_count)--;
   return parent;
 }
 
@@ -132,15 +148,23 @@ hpcrun_trampoline_insert(cct_node_t* node)
 {
   TMSG(TRAMP, "insert into node %p", node);
   thread_data_t* td = hpcrun_get_thread_data();
+  if (! td->tramp_frame) {
+    TMSG(TRAMP, " **No tramp frame: init tramp info");
+    hpcrun_init_trampoline_info();
+    return;
+  }
   void* addr        = td->tramp_frame->ra_loc;
   if (! addr) {
+    TMSG(TRAMP, " **Tramp frame ra loc = NULL");
     hpcrun_init_trampoline_info();
     return;
   }
 
+  TMSG(TRAMP, "Stack addr for retn addr = %p", addr);
   // save location where trampoline was placed
   td->tramp_loc       = addr;
 
+  TMSG(TRAMP, "Actual return addr @ %p = %p", addr, *((void**) addr));
   // save the return address overwritten with trampoline address 
   td->tramp_retn_addr = *((void**) addr);
 
@@ -153,9 +177,16 @@ hpcrun_trampoline_insert(cct_node_t* node)
 void
 hpcrun_trampoline_remove(void)
 {
-  TMSG(TRAMP,"removed");
   thread_data_t* td = hpcrun_get_thread_data();
   if (td->tramp_present){
+    TMSG(TRAMP, "removing live trampoline from %p", td->tramp_loc);
+    TMSG(TRAMP, "confirm trampoline @ location: ra@tramp loc = %p == %p (tramp)",
+	 *((void**)td->tramp_loc), hpcrun_trampoline);
+    if (*((void**)td->tramp_loc) != hpcrun_trampoline) {
+      EMSG("INTERNAL ERROR: purported trampoline location does NOT have a trampoline:"
+	   " loc %p: %p != %p", td->tramp_loc, *((void**)td->tramp_loc), hpcrun_trampoline);
+      return;
+    }
     *((void**)td->tramp_loc) = td->tramp_retn_addr;
   }
   hpcrun_init_trampoline_info();
@@ -172,11 +203,12 @@ hpcrun_trampoline_handler(void)
   // get the address where we need to return
   void* ra = td->tramp_retn_addr;
 
+  TMSG(TRAMP, " --real return addr returned to hpcrun_trampoline = %p", ra);
   hpcrun_retcnt_inc(td->tramp_cct_node, 1);
 
   TMSG(TRAMP, "About to advance trampoline ...");
   cct_node_t* n = hpcrun_trampoline_advance();
-  TMSG(TRAMP, "... Trampoline advaned to %p", n);
+  TMSG(TRAMP, "... Trampoline advanced to %p", n);
   if (n)
     hpcrun_trampoline_insert(n);
   else {
