@@ -67,6 +67,7 @@
 #include <unwind/common/backtrace.h>
 
 #include <lib/prof-lean/hpcio.h>
+#include <lib/prof-lean/hpcio-buffer.h>
 
 typedef struct {
   sigjmp_buf jb;
@@ -215,8 +216,8 @@ typedef struct thread_data_t {
   // IO support
   // ----------------------------------------
   FILE* hpcrun_file;
-  FILE* trace_file;
   void* trace_buffer;
+  hpcio_outbuf_t trace_outbuf;
 
   // ----------------------------------------
   // debug stuff

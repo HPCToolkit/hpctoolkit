@@ -202,7 +202,6 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   // IO support
   // ----------------------------------------
   td->hpcrun_file  = NULL;
-  td->trace_file   = NULL;
   td->trace_buffer = NULL;
 
   // ----------------------------------------

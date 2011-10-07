@@ -78,6 +78,7 @@ MYSOURCES = \
 	\
 	hpcfmt.h hpcfmt.c \
 	hpcio.h hpcio.c \
+	hpcio-buffer.c \
 	\
 	atomic.h \
 	atomic-op.h atomic-op.i \

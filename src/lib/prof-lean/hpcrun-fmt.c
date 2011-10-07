@@ -79,6 +79,7 @@
 #include <include/gcc-attr.h>
 
 #include "hpcio.h"
+#include "hpcio-buffer.h"
 #include "hpcfmt.h"
 #include "hpcrun-fmt.h"
 
@@ -215,6 +216,53 @@ hpctrace_fmt_hdr_fprint(FILE* fs)
 {
   fprintf(fs, "%s\n", HPCTRACE_FMT_Magic);
   fprintf(fs, "[hdr:...]\n");
+
+  return HPCFMT_OK;
+}
+
+
+//***************************************************************************
+// hpctrace in new outbuf format
+//***************************************************************************
+
+// Write the trace header to the outbuf.
+// Returns: HPCFMT_OK on success, else HPCFMT_ERR.
+int
+hpctrace_fmt_hdr_outbuf(hpcio_outbuf_t* outbuf)
+{
+  ssize_t ret;
+
+  hpcio_outbuf_write(outbuf, HPCTRACE_FMT_Magic, HPCTRACE_FMT_MagicLen);
+  hpcio_outbuf_write(outbuf, HPCTRACE_FMT_Version, HPCTRACE_FMT_VersionLen);
+  ret = hpcio_outbuf_write(outbuf, HPCTRACE_FMT_Endian, HPCTRACE_FMT_EndianLen);
+  if (ret != HPCTRACE_FMT_EndianLen) {
+    return HPCFMT_ERR;
+  }
+
+  return HPCFMT_OK;
+}
+
+
+// Append the trace record to the outbuf.
+// Returns: HPCFMT_OK on success, else HPCFMT_ERR.
+int
+hpctrace_fmt_append_outbuf(hpcio_outbuf_t* outbuf, uint64_t usec, uint32_t cpid)
+{
+  unsigned char buf[20];
+  int shift, k;
+
+  k = 0;
+  for (shift = 56; shift >= 0; shift -= 8) {
+    buf[k] = (usec >> shift) & 0xff;
+    k++;
+  }
+  for (shift = 24; shift >= 0; shift -= 8) {
+    buf[k] = (cpid >> shift) & 0xff;
+    k++;
+  }
+  if (hpcio_outbuf_write(outbuf, buf, k) != k) {
+    return HPCFMT_ERR;
+  }
 
   return HPCFMT_OK;
 }
