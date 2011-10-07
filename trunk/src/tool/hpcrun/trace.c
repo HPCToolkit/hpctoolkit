@@ -62,6 +62,7 @@
 #include "env.h"
 #include "files.h"
 #include "monitor.h"
+#include "string.h"
 #include "trace.h"
 #include "thread_data.h"
 #include "sample_prob.h"
@@ -71,7 +72,9 @@
 #include <messages/messages.h>
 
 #include <lib/prof-lean/hpcfmt.h>
+#include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcio.h>
+#include <lib/prof-lean/hpcio-buffer.h>
 
 
 //*********************************************************************
@@ -125,28 +128,31 @@ void
 trace_open()
 {
   if (tracing) {
-    char trace_file[PATH_MAX];
-    files_trace_name(trace_file, 0, PATH_MAX);
-
     thread_data_t *td = hpcrun_get_thread_data();
+    char trace_file[PATH_MAX];
+    int ret, flags;
+
+    // Options for open.  In the case of fractional sampling, we still
+    // open /dev/null and write to it.  I think unlocked is ok here.
+    // At any rate, locks only protect against threads, they don't
+    // help with signal handlers (that's much harder).
+
+    flags = HPCIO_OUTBUF_UNLOCKED;
     if (hpcrun_sample_prob_active()) {
-      td->trace_file = hpcio_fopen_w(trace_file, 0);
+      files_trace_name(trace_file, 0, PATH_MAX);
+      flags |= HPCIO_OUTBUF_EXCL;
     } else {
-      td->trace_file = hpcio_fopen_w("/dev/null", 2);
+      strcpy(trace_file, "/dev/null");
+      flags |= HPCIO_OUTBUF_NULL;
     }
-    trace_file_validate(td->trace_file != 0, "open");
-
     td->trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
-    int ret = setvbuf(td->trace_file, td->trace_buffer, _IOFBF,
-		      HPCRUN_TraceBufferSz);
-    if (ret != 0) {
-      EMSG("Error setting buffer for trace file");
-    }
 
-    if (! hpcrun_sample_prob_active())
-      return;
+    ret = hpcio_outbuf_open(trace_file, &td->trace_outbuf,
+			    td->trace_buffer, HPCRUN_TraceBufferSz, flags);
+    trace_file_validate(ret == HPCFMT_OK, "open");
 
-    hpctrace_fmt_hdr_fwrite(td->trace_file);
+    ret = hpctrace_fmt_hdr_outbuf(&td->trace_outbuf);
+    trace_file_validate(ret == HPCFMT_OK, "write header to");
   }
 }
 
@@ -168,9 +174,9 @@ trace_append(unsigned int call_path_id)
     }
     td->trace_max_time_us = microtime;
 
-    int ret1 = hpcfmt_int8_fwrite(microtime, td->trace_file);
-    int ret2 = hpcfmt_int4_fwrite((uint32_t)call_path_id, td->trace_file);
-    trace_file_validate(ret1 == HPCFMT_OK && ret2 == HPCFMT_OK, "append");
+    ret = hpctrace_fmt_append_outbuf(&td->trace_outbuf, microtime,
+				     (uint32_t)call_path_id);
+    trace_file_validate(ret == HPCFMT_OK, "append");
   }
 }
 
@@ -179,13 +185,11 @@ void
 trace_close()
 {
   if (tracing) {
-    int ret;
     thread_data_t *td = hpcrun_get_thread_data();
-    ret = fflush(td->trace_file);
-    trace_file_validate(ret == 0, "flush");
 
-    ret = hpcio_fclose(td->trace_file);
-    trace_file_validate(ret == 0, "close");
+    int ret = hpcio_outbuf_close(&td->trace_outbuf);
+    trace_file_validate(ret == HPCFMT_OK, "close");
+
     int rank = monitor_mpi_comm_rank();
     if (rank >= 0 && hpcrun_sample_prob_active()) {
       char old_fnm[PATH_MAX];
