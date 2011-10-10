@@ -294,7 +294,7 @@ hpcrun_dump_bt(backtrace_t* bt)
 //     of labels that is outside the call. in that case, the length of the 
 //     sample's callstack would be 1, and we ignore it.
 //-----------------------------------------------------------------------------
-int
+bool
 hpcrun_filter_sample(int len, frame_t* start, frame_t* last)
 {
   unw_word_t ip_unnorm;
@@ -321,16 +321,19 @@ hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner,
   return x_inner;
 }
 
-
 //
 // Generate a backtrace, store it in the thread local data
 // Return true/false success code
 // Also, return (via reference params) backtrace beginning, backtrace end,
 //  and whether or not a trampoline was found.
 //
+// NOTE: This routine will stop the backtrace if a trampoline is encountered,
+//       but it will NOT update the trampoline data structures.
+//
 bool
-hpcrun_generate_backtrace(backtrace_info_t* bt,
-			  ucontext_t* context, int skipInner)
+hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
+					ucontext_t* context,
+					int skipInner)
 {
   bt->has_tramp = false;
   bt->trolled  = false;
@@ -365,7 +368,7 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       // drop the sample. 
       // FIXME: sharpen the information to indicate why the sample is 
       //        being dropped.
-      hpcrun_unw_throw();
+      hpcrun_unw_drop();
     }
 
     if (hpcrun_trampoline_at_entry((void*) ip)) {
@@ -374,7 +377,7 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
 	// record a return. for now, simply do nothing ...
 	// FIXME: with a bit more effort, we could charge 
 	//        the sample to the return address in the caller. 
-	hpcrun_unw_throw();
+	hpcrun_unw_drop();
       }
       else {
 	// we have encountered a trampoline in the middle of an unwind.
@@ -414,18 +417,51 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
   frame_t* bt_beg  = td->btbuf_beg;      // innermost, inclusive
   frame_t* bt_last = td->btbuf_cur - 1; // outermost, inclusive
 
-  bt->begin        = bt_beg;         // returned backtrace begin
-                                     // is buffer beginning
-  bt->last         = bt_last;        // returned backtrace last is
-                                     // last recorded element
+  if (skipInner) {
+    if (ENABLED(USE_TRAMP)){
+      //
+      // FIXME: For the moment, ignore skipInner issues with trampolines.
+      //        Eventually, this will need to be addressed
+      //
+      TMSG(TRAMP, "WARNING: backtrace detects skipInner != 0 (skipInner = %d)", 
+	   skipInner);
+    }
+    // adjust the returned backtrace according to the skipInner
+    bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
+  }
 
-  frame_t* bt_end  = bt_last + 1;    // outermost, exclusive
-  size_t new_frame_count = bt_end - bt_beg;
-
+  bt->begin = bt_beg;         // returned backtrace begin
+                              // is buffer beginning
+  bt->last  = bt_last;        // returned backtrace last is
+                             // last recorded element
   // soft error mandates returning false
   if (! (ret == STEP_STOP)) {
     return false;
   }
+  return true;
+}
+
+//
+// Do all of the raw backtrace generation, plus
+// update the trampoline cached backtrace.
+//
+bool
+hpcrun_generate_backtrace(backtrace_info_t* bt,
+			  ucontext_t* context, int skipInner)
+{
+  bool ret = hpcrun_generate_backtrace_no_trampoline(bt,
+						     context,
+						     skipInner);
+  if (! ret ) return false;
+
+  thread_data_t* td = hpcrun_get_thread_data();
+
+  bool tramp_found = bt->has_tramp;
+  frame_t* bt_beg  = bt->begin;
+  frame_t* bt_last = bt->last;
+
+  frame_t* bt_end  = bt_last + 1;    // outermost, exclusive
+  size_t new_frame_count = bt_end - bt_beg;
 
   if (ENABLED(USE_TRAMP)) {
     if (tramp_found) {
@@ -475,18 +511,6 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       TMSG(TRAMP, "Dump cached backtrace from backtrace construction");
       hpcrun_trampoline_bt_dump();
     }
-  }
-  if (skipInner) {
-    if (ENABLED(USE_TRAMP)){
-      //
-      // FIXME: For the moment, ignore skipInner issues with trampolines.
-      //        Eventually, this will need to be addressed
-      //
-      EMSG("WARNING: backtrace detects skipInner != 0 (skipInner = %d)", 
-	   skipInner);
-    }
-    // adjust the returned backtrace according to the skipInner
-    bt->begin = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
   }
 
   return true;

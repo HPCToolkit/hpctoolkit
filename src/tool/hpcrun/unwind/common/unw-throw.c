@@ -80,6 +80,19 @@
 
 static int DEBUG_NO_LONGJMP = 0;
 
+//
+// Actually drop a sample, as opposed to recording a partial unwind
+//
+void
+hpcrun_unw_drop(void)
+{
+  thread_data_t* td = hpcrun_get_thread_data();
+  td->btbuf_cur = td->btbuf_beg; // flush any collected backtrace frames
+
+  sigjmp_buf_t *it = &(td->bad_unwind);
+  (*hpcrun_get_real_siglongjmp())(it->jb, 9);
+}
+
 void
 hpcrun_unw_throw(void)
 {

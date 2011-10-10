@@ -59,13 +59,14 @@
 #include <trampoline/common/trampoline.h>
 #include "frame.h"
 #include <unwind/common/backtrace_info.h>
+#include "cct_insert_backtrace.h"
 
 static cct_node_t*
 cct_insert_raw_backtrace(cct_node_t* cct,
                             frame_t* path_beg, frame_t* path_end)
 {
   if ( (path_beg < path_end) || (!cct)) {
-    return NULL;
+    return cct;
   }
   for(; path_beg >= path_end; path_beg--){
     cct_addr_t tmp = (cct_addr_t) {.as_info = path_beg->as_info, .ip_norm = path_beg->ip_norm, .lip = path_beg->lip};
@@ -154,7 +155,9 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   }
   else {
     TMSG(LUSH,"regular (NON-lush) backtrace2cct invoked");
-    n = help_hpcrun_backtrace2cct(cct, context, metricId, metricIncr, skipInner);
+    n = help_hpcrun_backtrace2cct(cct, context,
+				  metricId, metricIncr,
+				  skipInner);
   }
 
   // N.B.: for lush_backtrace() it may be that n = NULL
@@ -288,8 +291,9 @@ help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   // If this backtrace is generated from sampling in a thread,
   // take off the top 'monitor_pthread_main' node
   //
-  if (! partial_unw && cct->ctxt) {
-      bt_last--;
+  if (cct->ctxt && ! partial_unw && ! tramp_found) {
+    TMSG(TRAMP, "Thread correction, back off outermost backtrace entry");
+    bt_last--;
   }
   cct_node_t* n = hpcrun_cct_record_backtrace(cct, partial_unw,
 					      bt_beg, bt_last, tramp_found,

@@ -13,6 +13,7 @@
  E(SYNC_CTL),
  E(UNW),
  E(LUNW), // LUSH unwind
+ E(UNW_SEGV_STOP), // will cause real abort is unw has a segv
  E(UITREE),
  E(UITREE_VERIFY),
  E(UITREE_LOOKUP),

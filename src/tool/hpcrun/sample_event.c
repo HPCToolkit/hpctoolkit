@@ -279,7 +279,8 @@ help_hpcrun_sample_callpath(epoch_t *epoch, void *context,
   epoch = hpcrun_check_for_new_loadmap(epoch);
 
   cct_node_t* n =
-    hpcrun_backtrace2cct(&(epoch->csdata), context, metricId, metricIncr, skipInner, isSync);
+    hpcrun_backtrace2cct(&(epoch->csdata), context, metricId, metricIncr,
+			 skipInner, isSync);
 
   // FIXME: n == -1 if sample is filtered
 
