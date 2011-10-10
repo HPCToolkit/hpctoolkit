@@ -97,6 +97,10 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
     // print context
     // -----------------------------------------------------
     void* ctxt_pc = hpcrun_context_pc(context);
+    if (ENABLED(UNW_SEGV_STOP)){
+      EMSG("Unwind segv abort enabled ... Aborting!!, context pc = %p", ctxt_pc);
+      monitor_real_abort();
+    }
 
     PMSG_LIMIT(EMSG("error: segv: context-pc=%p", ctxt_pc));
     // TODO: print more context details

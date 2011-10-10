@@ -47,6 +47,7 @@
 #ifndef UNW_THROW_H
 #define UNW_THROW_H
 
-void hpcrun_unw_throw(void);
+extern void hpcrun_unw_throw(void);
+extern void hpcrun_unw_drop(void);
 
 #endif // UNW_THROW_H

@@ -592,8 +592,8 @@ monitor_thread_pre_create(void)
     EMSG("error: monitor_thread_pre_create: getcontext = %d", ret);
     goto fini;
   }
+  
   int metric_id = 0; // FIXME: obtain index of first metric
-  ENABLE(IN_THREAD_CTXT);
   cct_node_t* n = hpcrun_sample_callpath(&context, metric_id, 0/*metricIncr*/,
 					 1/*skipInner*/, 1/*isSync*/);
 
