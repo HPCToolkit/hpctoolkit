@@ -260,7 +260,9 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
     nxt_sp = *sp;
   }
   else {
-    assert(0);
+    // assert(0);
+    EMSG("unwind failure computing SP at pc: %p, sp: %p", pc, sp);
+    return STEP_ERROR;
   }
 
 
@@ -280,7 +282,9 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
     nxt_pc = getNxtPCFromSP(nxt_sp);
   }
   else {
-    assert(0);
+    // assert(0);
+    EMSG("unwind failure computing RA at pc: %p, sp: %p", pc, sp);
+    return STEP_ERROR;
   }
 
 
