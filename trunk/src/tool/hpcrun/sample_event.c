@@ -76,6 +76,8 @@
 #include "write_data.h"
 #include "cct_insert_backtrace.h"
 
+#include <monitor.h>
+
 #include <messages/messages.h>
 
 #include <lib/prof-lean/atomic-op.h>
@@ -151,15 +153,21 @@ hpcrun_sample_callpath(void *context, int metricId,
 		       uint64_t metricIncr,
 		       int skipInner, int isSync)
 {
+  if (monitor_block_shootdown()) {
+    monitor_unblock_shootdown();
+    return NULL;
+  }
+
   hpcrun_stats_num_samples_total_inc();
 
   if (hpcrun_is_sampling_disabled()) {
     TMSG(SAMPLE,"global suspension");
     hpcrun_all_sources_stop();
+    monitor_unblock_shootdown();
     return NULL;
   }
 
-  // Synchronous unwinds (pthread_create) must wait until they aquire
+  // Synchronous unwinds (pthread_create) must wait until they acquire
   // the read lock, but async samples give up if not avail.
   // This only applies in the dynamic case.
 #ifndef HPCRUN_STATIC_LINK
@@ -169,6 +177,7 @@ hpcrun_sample_callpath(void *context, int metricId,
   else if (! hpcrun_dlopen_read_lock()) {
     TMSG(SAMPLE, "skipping sample for dlopen lock");
     hpcrun_stats_num_samples_blocked_dlopen_inc();
+    monitor_unblock_shootdown();
     return NULL;
   }
 #endif
@@ -209,7 +218,6 @@ hpcrun_sample_callpath(void *context, int metricId,
     hpcrun_cleanup_partial_unwind();
   }
 
-
   if (trace_isactive()) {
     void* pc = hpcrun_context_pc(context);
 
@@ -239,6 +247,8 @@ hpcrun_sample_callpath(void *context, int metricId,
 #endif
   
   TMSG(SAMPLE,"done w sample");
+  monitor_unblock_shootdown();
+
   return node;
 }
 
@@ -301,17 +311,22 @@ hpcrun_sample_callpath_w_bt(void *context,
 			    uint64_t metricIncr, 
 			    bt_mut_fn bt_fn, bt_fn_arg arg,
 			    int isSync)
-
 {
+  if (monitor_block_shootdown()) {
+    monitor_unblock_shootdown();
+    return NULL;
+  }
+
   hpcrun_stats_num_samples_total_inc();
 
   if (hpcrun_is_sampling_disabled()) {
     TMSG(SAMPLE,"global suspension");
     hpcrun_all_sources_stop();
+    monitor_unblock_shootdown();
     return NULL;
   }
 
-  // Synchronous unwinds (pthread_create) must wait until they aquire
+  // Synchronous unwinds (pthread_create) must wait until they acquire
   // the read lock, but async samples give up if not avail.
   // This only applies in the dynamic case.
 #ifndef HPCRUN_STATIC_LINK
@@ -321,6 +336,7 @@ hpcrun_sample_callpath_w_bt(void *context,
   else if (! hpcrun_dlopen_read_lock()) {
     TMSG(SAMPLE, "skipping sample for dlopen lock");
     hpcrun_stats_num_samples_blocked_dlopen_inc();
+    monitor_unblock_shootdown();
     return NULL;
   }
 #endif
@@ -374,6 +390,8 @@ hpcrun_sample_callpath_w_bt(void *context,
 #ifndef HPCRUN_STATIC_LINK
   hpcrun_dlopen_read_unlock();
 #endif
+
+  monitor_unblock_shootdown();
   
   return node;
 }
