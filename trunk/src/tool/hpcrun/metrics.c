@@ -245,6 +245,8 @@ hpcrun_id2metric(int id)
 metric_desc_p_tbl_t*
 hpcrun_get_metric_tbl()
 {
+  hpcrun_get_num_metrics(); // make sure metric table finalized
+                            // in case of no samples
   return &metric_tbl;
 }
 
