@@ -281,6 +281,7 @@ write_epochs(FILE* fs, epoch_t* epoch)
 
     metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl();
 
+    TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
     hpcrun_fmt_metricTbl_fwrite(metric_tbl, fs);
 
     TMSG(DATA_WRITE, "Done writing metric data");

@@ -473,8 +473,10 @@ hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags)
   if (!fs) return HPCRUN_ERR;
 
   hpcfmt_int8_fwrite((uint64_t) hpcrun_cct_num_nodes(cct), fs);
+  TMSG(DATA_WRITE, "num cct nodes = %d", hpcrun_cct_num_nodes(cct));
 
   hpcfmt_uint_t num_metrics = hpcrun_get_num_metrics();
+  TMSG(DATA_WRITE, "num metrics in a cct node = %d", num_metrics);
   
   hpcrun_fmt_cct_node_t tmp_node;
 
