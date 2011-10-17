@@ -23,6 +23,7 @@ fi
 set -- \
     --prefix="$prefix" \
     --enable-targets="${targets}" \
+    --disable-werror \
     "$@"
 if test -n "${is_cross_compile}" ; then
     set -- --host="${host}" "$@"
