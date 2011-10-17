@@ -1,0 +1,369 @@
+Disable zlib from binutils.  This is only used for reading compressed
+debug sections.  We don't use it and it causes problems on some
+systems (intrepid).
+
+
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/configure version-binutils-2.20.1/binutils-2.20.1/bfd/configure
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/configure	2010-11-08 01:31:00.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/configure	2011-10-17 11:59:52.000000000 -0500
+@@ -13585,73 +13585,7 @@
+ 
+ # Link in zlib if we can.  This allows us to read compressed debug sections.
+ # This is used only by compress.c.
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing zlibVersion" >&5
+-$as_echo_n "checking for library containing zlibVersion... " >&6; }
+-if test "${ac_cv_search_zlibVersion+set}" = set; then :
+-  $as_echo_n "(cached) " >&6
+-else
+-  ac_func_search_save_LIBS=$LIBS
+-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-
+-/* Override any GCC internal prototype to avoid an error.
+-   Use char because int might match the return type of a GCC
+-   builtin and then its argument prototype would still apply.  */
+-#ifdef __cplusplus
+-extern "C"
+-#endif
+-char zlibVersion ();
+-int
+-main ()
+-{
+-return zlibVersion ();
+-  ;
+-  return 0;
+-}
+-_ACEOF
+-for ac_lib in '' z; do
+-  if test -z "$ac_lib"; then
+-    ac_res="none required"
+-  else
+-    ac_res=-l$ac_lib
+-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+-  fi
+-  if ac_fn_c_try_link "$LINENO"; then :
+-  ac_cv_search_zlibVersion=$ac_res
+-fi
+-rm -f core conftest.err conftest.$ac_objext \
+-    conftest$ac_exeext
+-  if test "${ac_cv_search_zlibVersion+set}" = set; then :
+-  break
+-fi
+-done
+-if test "${ac_cv_search_zlibVersion+set}" = set; then :
+-
+-else
+-  ac_cv_search_zlibVersion=no
+-fi
+-rm conftest.$ac_ext
+-LIBS=$ac_func_search_save_LIBS
+-fi
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_zlibVersion" >&5
+-$as_echo "$ac_cv_search_zlibVersion" >&6; }
+-ac_res=$ac_cv_search_zlibVersion
+-if test "$ac_res" != no; then :
+-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+-  for ac_header in zlib.h
+-do :
+-  ac_fn_c_check_header_mongrel "$LINENO" "zlib.h" "ac_cv_header_zlib_h" "$ac_includes_default"
+-if test "x$ac_cv_header_zlib_h" = x""yes; then :
+-  cat >>confdefs.h <<_ACEOF
+-#define HAVE_ZLIB_H 1
+-_ACEOF
+-
+-fi
+-
+-done
+-
+-fi
+-
++# Disable zlib by not searching for it.
+ 
+ # If we are configured native, pick a core file support file.
+ COREFILE=
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/configure.in version-binutils-2.20.1/binutils-2.20.1/bfd/configure.in
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/configure.in	2010-11-08 01:31:00.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/configure.in	2011-10-17 11:49:34.000000000 -0500
+@@ -225,7 +225,7 @@
+ 
+ # Link in zlib if we can.  This allows us to read compressed debug sections.
+ # This is used only by compress.c.
+-AC_SEARCH_LIBS(zlibVersion, z, [AC_CHECK_HEADERS(zlib.h)])
++# Disable zlib by not searching for it.
+ 
+ # If we are configured native, pick a core file support file.
+ COREFILE=
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/binutils/configure version-binutils-2.20.1/binutils-2.20.1/binutils/configure
+--- version-binutils-2.20.1.orig/binutils-2.20.1/binutils/configure	2010-11-08 01:30:56.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/binutils/configure	2011-10-17 12:01:02.000000000 -0500
+@@ -12951,73 +12951,7 @@
+ # Link in zlib if we can.  This allows us to read compressed debug
+ # sections.  This is used only by readelf.c (objdump uses bfd for
+ # reading compressed sections).
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing zlibVersion" >&5
+-$as_echo_n "checking for library containing zlibVersion... " >&6; }
+-if test "${ac_cv_search_zlibVersion+set}" = set; then :
+-  $as_echo_n "(cached) " >&6
+-else
+-  ac_func_search_save_LIBS=$LIBS
+-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-
+-/* Override any GCC internal prototype to avoid an error.
+-   Use char because int might match the return type of a GCC
+-   builtin and then its argument prototype would still apply.  */
+-#ifdef __cplusplus
+-extern "C"
+-#endif
+-char zlibVersion ();
+-int
+-main ()
+-{
+-return zlibVersion ();
+-  ;
+-  return 0;
+-}
+-_ACEOF
+-for ac_lib in '' z; do
+-  if test -z "$ac_lib"; then
+-    ac_res="none required"
+-  else
+-    ac_res=-l$ac_lib
+-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+-  fi
+-  if ac_fn_c_try_link "$LINENO"; then :
+-  ac_cv_search_zlibVersion=$ac_res
+-fi
+-rm -f core conftest.err conftest.$ac_objext \
+-    conftest$ac_exeext
+-  if test "${ac_cv_search_zlibVersion+set}" = set; then :
+-  break
+-fi
+-done
+-if test "${ac_cv_search_zlibVersion+set}" = set; then :
+-
+-else
+-  ac_cv_search_zlibVersion=no
+-fi
+-rm conftest.$ac_ext
+-LIBS=$ac_func_search_save_LIBS
+-fi
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_zlibVersion" >&5
+-$as_echo "$ac_cv_search_zlibVersion" >&6; }
+-ac_res=$ac_cv_search_zlibVersion
+-if test "$ac_res" != no; then :
+-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+-  for ac_header in zlib.h
+-do :
+-  ac_fn_c_check_header_mongrel "$LINENO" "zlib.h" "ac_cv_header_zlib_h" "$ac_includes_default"
+-if test "x$ac_cv_header_zlib_h" = x""yes; then :
+-  cat >>confdefs.h <<_ACEOF
+-#define HAVE_ZLIB_H 1
+-_ACEOF
+-
+-fi
+-
+-done
+-
+-fi
+-
++# Disable zlib by not searching for it.
+ 
+ 
+ case "${host}" in
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/binutils/configure.in version-binutils-2.20.1/binutils-2.20.1/binutils/configure.in
+--- version-binutils-2.20.1.orig/binutils-2.20.1/binutils/configure.in	2010-11-08 01:30:56.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/binutils/configure.in	2011-10-17 11:50:02.000000000 -0500
+@@ -200,7 +200,7 @@
+ # Link in zlib if we can.  This allows us to read compressed debug
+ # sections.  This is used only by readelf.c (objdump uses bfd for
+ # reading compressed sections).
+-AC_SEARCH_LIBS(zlibVersion, z, [AC_CHECK_HEADERS(zlib.h)])
++# Disable zlib by not searching for it.
+ 
+ BFD_BINARY_FOPEN
+ 
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/gold/configure version-binutils-2.20.1/binutils-2.20.1/gold/configure
+--- version-binutils-2.20.1.orig/binutils-2.20.1/gold/configure	2010-11-08 01:30:08.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/gold/configure	2011-10-17 12:06:50.000000000 -0500
+@@ -6371,74 +6371,8 @@
+ 
+ 
+ # Link in zlib if we can.  This allows us to write compressed sections.
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing zlibVersion" >&5
+-$as_echo_n "checking for library containing zlibVersion... " >&6; }
+-if test "${ac_cv_search_zlibVersion+set}" = set; then :
+-  $as_echo_n "(cached) " >&6
+-else
+-  ac_func_search_save_LIBS=$LIBS
+-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-
+-/* Override any GCC internal prototype to avoid an error.
+-   Use char because int might match the return type of a GCC
+-   builtin and then its argument prototype would still apply.  */
+-#ifdef __cplusplus
+-extern "C"
+-#endif
+-char zlibVersion ();
+-int
+-main ()
+-{
+-return zlibVersion ();
+-  ;
+-  return 0;
+-}
+-_ACEOF
+-for ac_lib in '' z; do
+-  if test -z "$ac_lib"; then
+-    ac_res="none required"
+-  else
+-    ac_res=-l$ac_lib
+-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+-  fi
+-  if ac_fn_c_try_link "$LINENO"; then :
+-  ac_cv_search_zlibVersion=$ac_res
+-fi
+-rm -f core conftest.err conftest.$ac_objext \
+-    conftest$ac_exeext
+-  if test "${ac_cv_search_zlibVersion+set}" = set; then :
+-  break
+-fi
+-done
+-if test "${ac_cv_search_zlibVersion+set}" = set; then :
+-
+-else
+-  ac_cv_search_zlibVersion=no
+-fi
+-rm conftest.$ac_ext
+-LIBS=$ac_func_search_save_LIBS
+-fi
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_zlibVersion" >&5
+-$as_echo "$ac_cv_search_zlibVersion" >&6; }
+-ac_res=$ac_cv_search_zlibVersion
+-if test "$ac_res" != no; then :
+-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+-  for ac_header in zlib.h
+-do :
+-  ac_fn_c_check_header_mongrel "$LINENO" "zlib.h" "ac_cv_header_zlib_h" "$ac_includes_default"
+-if test "x$ac_cv_header_zlib_h" = x""yes; then :
+-  cat >>confdefs.h <<_ACEOF
+-#define HAVE_ZLIB_H 1
+-_ACEOF
+-
+-fi
+-
+-done
+-
+-fi
+-
+- if test "$ac_cv_search_zlibVersion" != "no"; then
++# Disable zlib by not searching for it.
++ if test x = y; then
+   HAVE_ZLIB_TRUE=
+   HAVE_ZLIB_FALSE='#'
+ else
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/gold/configure.ac version-binutils-2.20.1/binutils-2.20.1/gold/configure.ac
+--- version-binutils-2.20.1.orig/binutils-2.20.1/gold/configure.ac	2010-11-08 01:30:08.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/gold/configure.ac	2011-10-17 11:54:43.000000000 -0500
+@@ -324,8 +324,8 @@
+ AC_REPLACE_FUNCS(pread ftruncate mremap ffsll)
+ 
+ # Link in zlib if we can.  This allows us to write compressed sections.
+-AC_SEARCH_LIBS(zlibVersion, z, [AC_CHECK_HEADERS(zlib.h)])
+-AM_CONDITIONAL(HAVE_ZLIB, test "$ac_cv_search_zlibVersion" != "no")
++# Disable zlib by not searching for it.
++AM_CONDITIONAL(HAVE_ZLIB, [test x = y])
+ 
+ dnl We have to check these in C, not C++, because autoconf generates
+ dnl tests which have no type information, and current glibc provides
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/ld/configure version-binutils-2.20.1/binutils-2.20.1/ld/configure
+--- version-binutils-2.20.1.orig/binutils-2.20.1/ld/configure	2010-11-08 01:30:23.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/ld/configure	2011-10-17 12:09:22.000000000 -0500
+@@ -12701,73 +12701,7 @@
+ 
+ # Link in zlib if we can.  This is needed only for the bootstrap tests
+ # right now, since those tests use libbfd, which depends on zlib.
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing zlibVersion" >&5
+-$as_echo_n "checking for library containing zlibVersion... " >&6; }
+-if test "${ac_cv_search_zlibVersion+set}" = set; then :
+-  $as_echo_n "(cached) " >&6
+-else
+-  ac_func_search_save_LIBS=$LIBS
+-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-
+-/* Override any GCC internal prototype to avoid an error.
+-   Use char because int might match the return type of a GCC
+-   builtin and then its argument prototype would still apply.  */
+-#ifdef __cplusplus
+-extern "C"
+-#endif
+-char zlibVersion ();
+-int
+-main ()
+-{
+-return zlibVersion ();
+-  ;
+-  return 0;
+-}
+-_ACEOF
+-for ac_lib in '' z; do
+-  if test -z "$ac_lib"; then
+-    ac_res="none required"
+-  else
+-    ac_res=-l$ac_lib
+-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+-  fi
+-  if ac_fn_c_try_link "$LINENO"; then :
+-  ac_cv_search_zlibVersion=$ac_res
+-fi
+-rm -f core conftest.err conftest.$ac_objext \
+-    conftest$ac_exeext
+-  if test "${ac_cv_search_zlibVersion+set}" = set; then :
+-  break
+-fi
+-done
+-if test "${ac_cv_search_zlibVersion+set}" = set; then :
+-
+-else
+-  ac_cv_search_zlibVersion=no
+-fi
+-rm conftest.$ac_ext
+-LIBS=$ac_func_search_save_LIBS
+-fi
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_zlibVersion" >&5
+-$as_echo "$ac_cv_search_zlibVersion" >&6; }
+-ac_res=$ac_cv_search_zlibVersion
+-if test "$ac_res" != no; then :
+-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+-  for ac_header in zlib.h
+-do :
+-  ac_fn_c_check_header_mongrel "$LINENO" "zlib.h" "ac_cv_header_zlib_h" "$ac_includes_default"
+-if test "x$ac_cv_header_zlib_h" = x""yes; then :
+-  cat >>confdefs.h <<_ACEOF
+-#define HAVE_ZLIB_H 1
+-_ACEOF
+-
+-fi
+-
+-done
+-
+-fi
+-
++# Disable zlib by not searching for it.
+ 
+ # When converting linker scripts into strings for use in emulation
+ # files, use astring.sed if the compiler supports ANSI string
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/ld/configure.in version-binutils-2.20.1/binutils-2.20.1/ld/configure.in
+--- version-binutils-2.20.1.orig/binutils-2.20.1/ld/configure.in	2010-11-08 01:30:23.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/ld/configure.in	2011-10-17 11:55:06.000000000 -0500
+@@ -155,7 +155,7 @@
+ 
+ # Link in zlib if we can.  This is needed only for the bootstrap tests
+ # right now, since those tests use libbfd, which depends on zlib.
+-AC_SEARCH_LIBS(zlibVersion, z, [AC_CHECK_HEADERS(zlib.h)])
++# Disable zlib by not searching for it.
+ 
+ # When converting linker scripts into strings for use in emulation
+ # files, use astring.sed if the compiler supports ANSI string
