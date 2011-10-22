@@ -280,7 +280,7 @@ private:
 
 #define DBG_CDS  0 /* debug coalesceDuplicateStmts */
 
-static string OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm;
+static const string& OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm;
 
 
 //****************************************************************************
