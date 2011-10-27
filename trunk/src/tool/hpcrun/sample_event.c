@@ -130,9 +130,9 @@ record_partial_unwind(cct_bundle_t* cct,
   }
   TMSG(PARTIAL_UNW, "recording partial unwind from segv");
   hpcrun_stats_num_samples_partial_inc();
-  return hpcrun_cct_record_backtrace(cct, true,
-				     bt_beg, bt_last, false,
-				     metricId, metricIncr);
+  return hpcrun_cct_record_backtrace_w_metric(cct, true,
+					      bt_beg, bt_last, false,
+					      metricId, metricIncr);
 }
 
 //***************************************************************************
