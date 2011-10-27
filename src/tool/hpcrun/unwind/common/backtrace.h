@@ -136,6 +136,9 @@ void hpcrun_dump_bt(backtrace_t* bt);
 bool hpcrun_generate_backtrace(backtrace_info_t* bt,
 			       ucontext_t* context, int skipInner);
 
+bool hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
+					     ucontext_t* context, int skipInner);
+
 bool hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
 			       ucontext_t* context, int skipInner);
 

@@ -87,7 +87,7 @@
 #include "hpcrun_stats.h"
 #include "name.h"
 #include "custom-init.h"
-
+#include "cct_insert_backtrace.h"
 #include "metrics.h"
 
 #include "sample_event.h"
@@ -592,13 +592,33 @@ monitor_thread_pre_create(void)
     EMSG("error: monitor_thread_pre_create: getcontext = %d", ret);
     goto fini;
   }
-  
+#ifndef HPCRUN_STATIC_LINK
+  //
+  // (Dynamic case only)
+  // Obtaining the pthread context MUST wait until the dlopen
+  // read lock is available.
+  //
+  while (! hpcrun_dlopen_read_lock()) ;
+#endif
+  backtrace_info_t bt;
+  static const int PTHREAD_CTXT_SKIP_INNER = 1;
+  if (! hpcrun_generate_backtrace_no_trampoline(&bt, &context,
+						PTHREAD_CTXT_SKIP_INNER)) {
+    EMSG("Internal error: unable to obtain pthread context");
+    goto fini;
+  }
+  cct_node_t* n = hpcrun_cct_record_backtrace(&(TD_GET(epoch)->csdata), false,
+					      bt.begin, bt.last, bt.has_tramp);
+
+
+#if 0
   int metric_id = 0; // FIXME: obtain index of first metric
   cct_node_t* n = hpcrun_sample_callpath(&context, metric_id, 0/*metricIncr*/,
 					 1/*skipInner*/, 1/*isSync*/);
+#endif
 
-  TMSG(THREAD,"before lush malloc");
-  TMSG(MALLOC," -thread_precreate: lush malloc");
+  TMSG(THREAD, "before lush malloc");
+  TMSG(MALLOC, " -thread_precreate: lush malloc");
   epoch_t* epoch = hpcrun_get_epoch();
   thr_ctxt = hpcrun_malloc(sizeof(cct_ctxt_t));
   TMSG(THREAD,"after lush malloc, thr_ctxt = %p",thr_ctxt);

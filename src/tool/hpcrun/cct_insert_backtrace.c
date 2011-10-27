@@ -83,9 +83,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 // See usage in header.
 cct_node_t*
 hpcrun_cct_insert_backtrace(cct_bundle_t* cct, cct_node_t* treenode,
-			    int metric_id,
-			    frame_t* path_beg, frame_t* path_end,
-			    cct_metric_data_t datum)
+			    frame_t* path_beg, frame_t* path_end)
 {
   if (! treenode) treenode = cct->tree_root;
 
@@ -107,6 +105,17 @@ hpcrun_cct_insert_backtrace(cct_bundle_t* cct, cct_node_t* treenode,
     // INVARIANT: path->as_info should be either M-to-1 or 1-to-M
     lush_assoc_info__set_assoc(hpcrun_cct_addr(path)->as_info, LUSH_ASSOC_1_to_1);
   }
+  return path;
+}
+// See usage in header.
+cct_node_t*
+hpcrun_cct_insert_backtrace_w_metric(cct_bundle_t* cct, cct_node_t* treenode,
+				     int metric_id,
+				     frame_t* path_beg, frame_t* path_end,
+				     cct_metric_data_t datum)
+{
+  cct_node_t* path = hpcrun_cct_insert_backtrace(cct, treenode, path_beg, path_end);
+
   hpcrun_get_metric_proc(metric_id)(metric_id,
 				    hpcrun_reify_metric_set(path),
 				    datum);
@@ -123,7 +132,7 @@ hpcrun_cct_insert_bt(cct_bundle_t* cct, cct_node_t* node,
 		     backtrace_t* bt,
 		     cct_metric_data_t datum)
 {
-  return hpcrun_cct_insert_backtrace(cct, node, metricId, hpcrun_bt_last(bt), hpcrun_bt_beg(bt), datum);
+  return hpcrun_cct_insert_backtrace_w_metric(cct, node, metricId, hpcrun_bt_last(bt), hpcrun_bt_beg(bt), datum);
 }
 
 
@@ -205,8 +214,7 @@ hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
 
 cct_node_t*
 hpcrun_cct_record_backtrace(cct_bundle_t* cct, bool partial,
-			    frame_t* bt_beg, frame_t* bt_last, bool tramp_found,
-			    int metricId, uint64_t metricIncr)
+			    frame_t* bt_beg, frame_t* bt_last, bool tramp_found)
 {
   thread_data_t* td = hpcrun_get_thread_data();
   cct_node_t* cct_cursor = NULL;
@@ -218,9 +226,29 @@ hpcrun_cct_record_backtrace(cct_bundle_t* cct, bool partial,
     cct_cursor = cct->partial_unw_root;
   }
 
-  return hpcrun_cct_insert_backtrace(cct, cct_cursor, metricId,
-				     bt_last, bt_beg,
-				     (cct_metric_data_t){.i = metricIncr});
+  return hpcrun_cct_insert_backtrace(cct, cct_cursor,
+				     bt_last, bt_beg);
+
+}
+
+cct_node_t*
+hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
+				     frame_t* bt_beg, frame_t* bt_last, bool tramp_found,
+				     int metricId, uint64_t metricIncr)
+{
+  thread_data_t* td = hpcrun_get_thread_data();
+  cct_node_t* cct_cursor = NULL;
+  if (tramp_found) {
+    // start insertion below caller's frame, which is marked with the trampoline
+    cct_cursor = hpcrun_cct_parent(td->tramp_cct_node);
+  }
+  if (partial) {
+    cct_cursor = cct->partial_unw_root;
+  }
+
+  return hpcrun_cct_insert_backtrace_w_metric(cct, cct_cursor, metricId,
+					      bt_last, bt_beg,
+					      (cct_metric_data_t){.i = metricIncr});
 
 }
 
@@ -243,9 +271,9 @@ hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
     }
   }
 
-  cct_node_t* n = hpcrun_cct_record_backtrace(cct, true,
-					      bt.begin, bt.last, bt.has_tramp,
-					      metricId, metricIncr);
+  cct_node_t* n = hpcrun_cct_record_backtrace_w_metric(cct, true,
+						       bt.begin, bt.last, bt.has_tramp,
+						       metricId, metricIncr);
 
   hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));
   hpcrun_stats_trolled_frames_inc((long) bt.n_trolls);
@@ -295,9 +323,9 @@ help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
     TMSG(TRAMP, "Thread correction, back off outermost backtrace entry");
     bt_last--;
   }
-  cct_node_t* n = hpcrun_cct_record_backtrace(cct, partial_unw,
-					      bt_beg, bt_last, tramp_found,
-					      metricId, metricIncr);
+  cct_node_t* n = hpcrun_cct_record_backtrace_w_metric(cct, partial_unw,
+						       bt_beg, bt_last, tramp_found,
+						       metricId, metricIncr);
 
   if (bt.trolled) hpcrun_stats_trolled_inc();
   hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));
