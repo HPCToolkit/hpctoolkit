@@ -252,6 +252,76 @@ hpcrun_sample_callpath(void *context, int metricId,
   return node;
 }
 
+cct_node_t*
+hpcrun_gen_thread_ctxt(void *context)
+{
+  if (monitor_block_shootdown()) {
+    monitor_unblock_shootdown();
+    return NULL;
+  }
+
+  hpcrun_stats_num_samples_total_inc();
+
+  if (hpcrun_is_sampling_disabled()) {
+    TMSG(SAMPLE,"global suspension");
+    hpcrun_all_sources_stop();
+    monitor_unblock_shootdown();
+    return NULL;
+  }
+
+  // Synchronous unwinds (pthread_create) must wait until they acquire
+  // the read lock, but async samples give up if not avail.
+  // This only applies in the dynamic case.
+#ifndef HPCRUN_STATIC_LINK
+  while (! hpcrun_dlopen_read_lock()) ;
+#endif
+
+  thread_data_t* td = hpcrun_get_thread_data();
+  sigjmp_buf_t* it = &(td->bad_unwind);
+  cct_node_t* node = NULL;
+  epoch_t* epoch = td->epoch;
+
+  hpcrun_set_handling_sample(td);
+
+  td->btbuf_cur = NULL;
+  int ljmp = sigsetjmp(it->jb, 1);
+  backtrace_info_t bt;
+  if (ljmp == 0) {
+    if (epoch != NULL) {
+      static const int PTHREAD_CTXT_SKIP_INNER = 1;
+      if (! hpcrun_generate_backtrace_no_trampoline(&bt, context,
+						    PTHREAD_CTXT_SKIP_INNER)) {
+	EMSG("Internal error: unable to obtain backtrace for pthread context");
+	return NULL;
+      }
+    }
+    node = hpcrun_cct_record_backtrace(&(epoch->csdata), false,
+						   bt.begin, bt.last, bt.has_tramp);
+  }
+  // FIXME: What to do when thread context is partial ?
+#if 0
+  else {
+    cct_bundle_t* cct = &(td->epoch->csdata);
+    node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
+				 metricId, metricIncr);
+    hpcrun_cleanup_partial_unwind();
+  }
+#endif
+  hpcrun_clear_handling_sample(td);
+  if (TD_GET(mem_low) || ENABLED(FLUSH_EVERY_SAMPLE)) {
+    hpcrun_flush_epochs();
+    hpcrun_reclaim_freeable_mem();
+  }
+#ifndef HPCRUN_STATIC_LINK
+  hpcrun_dlopen_read_unlock();
+#endif
+  
+  TMSG(THREAD,"done w pthread ctxt");
+  monitor_unblock_shootdown();
+
+  return node;
+}
+
 static cct_node_t*
 hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context,
 			   int metricId,
