@@ -79,6 +79,7 @@ MYSOURCES = \
 	hpcproftt.tex \
 	hpcsummary.tex \
 	\
+	hpctraceviewer.tex \
 	hpcviewer.tex
 
 MYLATEX2MAN = @abs_top_srcdir@/tools/latex2man/latex2man
@@ -105,6 +106,7 @@ man_MANS = \
 	hpcprof-flat.1hpctoolkit \
 	hpcproftt.1hpctoolkit \
 	hpcsummary.1hpctoolkit \
+	hpctraceviewer.1hpctoolkit \
 	hpcviewer.1hpctoolkit
 
 wwwmandir = $(docdir)/man
