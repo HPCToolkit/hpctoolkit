@@ -116,13 +116,15 @@ hpcrun_enable_sampling(void)
   private_hpcrun_sampling_disabled = false;
 }
 
-void hpcrun_drop_sample(void);
+extern void hpcrun_drop_sample(void);
 
-cct_node_t* hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
+extern cct_node_t* hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
 				   int skipInner, int isSync);
 
-cct_node_t* hpcrun_sample_callpath_w_bt(void *context,
-					int metricId, uint64_t metricIncr, 
-					bt_mut_fn bt_fn, bt_fn_arg arg,
-					int isSync);
+extern cct_node_t* hpcrun_gen_thread_ctxt(void *context);
+
+extern cct_node_t* hpcrun_sample_callpath_w_bt(void *context,
+					       int metricId, uint64_t metricIncr, 
+					       bt_mut_fn bt_fn, bt_fn_arg arg,
+					       int isSync);
 #endif // sample_event_h
