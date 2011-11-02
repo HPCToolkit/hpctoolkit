@@ -594,11 +594,6 @@ monitor_thread_pre_create(void)
     goto fini;
   }
   
-#if 0  
-  int metric_id = 0; // FIXME: obtain index of first metric
-  cct_node_t* n = hpcrun_sample_callpath(&context, metric_id, 0/*metricIncr*/,
-					 1/*skipInner*/, 1/*isSync*/);
-#endif
   cct_node_t* n = hpcrun_gen_thread_ctxt(&context);
 
   TMSG(THREAD,"before lush malloc");

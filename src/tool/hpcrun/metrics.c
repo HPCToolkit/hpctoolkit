@@ -402,6 +402,8 @@ hpcrun_set_metric_name(int metric_id, char* name)
 // Metric set interface
 //
 
+
+
 metric_set_t*
 hpcrun_metric_set_new(void)
 {

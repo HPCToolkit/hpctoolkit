@@ -70,6 +70,7 @@
 #include <messages/messages.h>
 #include <hpcrun/sample_event.h>
 #include <sample-sources/retcnt.h>
+#include <monitor.h>
 
 
 //******************************************************************************
@@ -127,11 +128,20 @@ hpcrun_trampoline_at_entry(void* addr)
 }
 
 
-cct_node_t*
+static bool
+ok_to_advance(void* target, void* current)
+{
+  return (target > current) && (target < monitor_stack_bottom());
+}
+
+static cct_node_t*
 hpcrun_trampoline_advance(void)
 {
   thread_data_t* td = hpcrun_get_thread_data();
   cct_node_t* node = td->tramp_cct_node;
+  void* current_frame_sp = td->tramp_frame->ra_loc;
+  if (! td->cached_frame_count ) return NULL;
+
   TMSG(TRAMP, "Advance from node %p...", node);
   cct_node_t* parent = (node) ? hpcrun_cct_parent(node) : NULL;
   TMSG(TRAMP, " ... to node %p", parent);
@@ -139,9 +149,26 @@ hpcrun_trampoline_advance(void)
   TMSG(TRAMP, "cached frame count reduced from %d to %d", td->cached_frame_count,
        td->cached_frame_count - 1);
   (td->cached_frame_count)--;
-  return parent;
+  if ( ! td->cached_frame_count ) {
+    TMSG(TRAMP, "**cached frame count = 0");
+  }
+  else if (! ok_to_advance (td->tramp_frame->ra_loc, current_frame_sp) ) {
+    EMSG("Encountered bad advance of trampoline ( target > stack_bottom or target < current\n"
+	 "%p(target) %p(current) %p(bottom)",
+	 td->tramp_frame->ra_loc, current_frame_sp, monitor_stack_bottom());
+  }
+  else if (! parent) {
+    TMSG(TRAMP, "No parent node, trampoline self-removes");
+  }
+  else {
+    TMSG(TRAMP, "... Trampoline advanced to %p", parent);
+    hpcrun_trampoline_insert(parent);
+    return parent;
+  }
+  TMSG(TRAMP,"*** trampoline self-removes ***");
+  hpcrun_init_trampoline_info();
+  return NULL;
 }
-
 
 void 
 hpcrun_trampoline_insert(cct_node_t* node)
@@ -173,7 +200,6 @@ hpcrun_trampoline_insert(cct_node_t* node)
   td->tramp_present = true;
 }
 
-
 void
 hpcrun_trampoline_remove(void)
 {
@@ -185,13 +211,13 @@ hpcrun_trampoline_remove(void)
     if (*((void**)td->tramp_loc) != hpcrun_trampoline) {
       EMSG("INTERNAL ERROR: purported trampoline location does NOT have a trampoline:"
 	   " loc %p: %p != %p", td->tramp_loc, *((void**)td->tramp_loc), hpcrun_trampoline);
-      return;
     }
-    *((void**)td->tramp_loc) = td->tramp_retn_addr;
+    else {
+      *((void**)td->tramp_loc) = td->tramp_retn_addr;
+    }
   }
   hpcrun_init_trampoline_info();
 }
-
 
 void*
 hpcrun_trampoline_handler(void)
@@ -207,6 +233,7 @@ hpcrun_trampoline_handler(void)
   hpcrun_retcnt_inc(td->tramp_cct_node, 1);
 
   TMSG(TRAMP, "About to advance trampoline ...");
+#if OLD_TRAMP_ADV
   cct_node_t* n = hpcrun_trampoline_advance();
   TMSG(TRAMP, "... Trampoline advanced to %p", n);
   if (n)
@@ -215,7 +242,8 @@ hpcrun_trampoline_handler(void)
     EMSG("NULL trampoline advance !!, trampoline removed");
     hpcrun_trampoline_remove();
   }
-
+#endif
+  hpcrun_trampoline_advance();
   hpcrun_async_unblock();
   return ra; // our assembly code caller will return to ra
 }
