@@ -105,6 +105,10 @@ The annotations highlight \hpctraceviewer{}'s four principal window panes: \trac
   The horizontal time axis is exactly aligned with the Trace View's time axis; and the colors are consistent across both views.
   This view has its own \crosshair{} that corresponds to the currently selected time and call path depth.
 
+\item \textbf{\summaryview} (left, bottom):
+  The view shows for the whole time range dislayed, the proportion of each subroutine in a certain time.
+  Similar to Depth view, the time range in Summary reflects to the time range in the Trace view. 
+
 \item \textbf{\callview} (right, top):
   This view shows two things: (1) the current call path depth that defines the hierarchical slice shown in the Trace View; and (2) the actual call path for the point selected by the Trace View's \crosshair{}.
   (To easily coordinate the call path depth value with the call path, the Call Path View currently suppresses details such as loop structure and call sites; we may use indentation or other techniques to display this in the future.)
