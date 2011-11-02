@@ -175,14 +175,14 @@ hpcrun_sample_callpath(void *context, int metricId,
     while (! hpcrun_dlopen_read_lock()) ;
   }
   else if (! hpcrun_dlopen_read_lock()) {
-    TMSG(SAMPLE, "skipping sample for dlopen lock");
+    TMSG(SAMPLE_CALLPATH, "skipping sample for dlopen lock");
     hpcrun_stats_num_samples_blocked_dlopen_inc();
     monitor_unblock_shootdown();
     return NULL;
   }
 #endif
 
-  TMSG(SAMPLE, "attempting sample");
+  TMSG(SAMPLE_CALLPATH, "attempting sample");
   hpcrun_stats_num_samples_attempted_inc();
 
   thread_data_t* td = hpcrun_get_thread_data();
@@ -246,11 +246,13 @@ hpcrun_sample_callpath(void *context, int metricId,
   hpcrun_dlopen_read_unlock();
 #endif
   
-  TMSG(SAMPLE,"done w sample");
+  TMSG(SAMPLE_CALLPATH,"done w sample, return %p", node);
   monitor_unblock_shootdown();
 
   return node;
 }
+
+static int const PTHREAD_CTXT_SKIP_INNER = 1;
 
 cct_node_t*
 hpcrun_gen_thread_ctxt(void *context)
@@ -260,10 +262,8 @@ hpcrun_gen_thread_ctxt(void *context)
     return NULL;
   }
 
-  hpcrun_stats_num_samples_total_inc();
-
   if (hpcrun_is_sampling_disabled()) {
-    TMSG(SAMPLE,"global suspension");
+    TMSG(THREAD_CTXT,"global suspension");
     hpcrun_all_sources_stop();
     monitor_unblock_shootdown();
     return NULL;
@@ -288,15 +288,22 @@ hpcrun_gen_thread_ctxt(void *context)
   backtrace_info_t bt;
   if (ljmp == 0) {
     if (epoch != NULL) {
-      static const int PTHREAD_CTXT_SKIP_INNER = 1;
       if (! hpcrun_generate_backtrace_no_trampoline(&bt, context,
 						    PTHREAD_CTXT_SKIP_INNER)) {
 	EMSG("Internal error: unable to obtain backtrace for pthread context");
 	return NULL;
       }
     }
+  //
+  // If this backtrace is generated from sampling in a thread,
+  // take off the top 'monitor_pthread_main' node
+  //
+    if ((epoch->csdata).ctxt && ! bt.has_tramp) {
+    TMSG(THREAD_CTXT, "Thread correction, back off outermost backtrace entry");
+    bt.last--;
+  }
     node = hpcrun_cct_record_backtrace(&(epoch->csdata), false,
-						   bt.begin, bt.last, bt.has_tramp);
+				       bt.begin, bt.last, bt.has_tramp);
   }
   // FIXME: What to do when thread context is partial ?
 #if 0
@@ -352,7 +359,7 @@ help_hpcrun_sample_callpath(epoch_t *epoch, void *context,
 {
   void* pc = hpcrun_context_pc(context);
 
-  TMSG(SAMPLE,"taking profile sample @ %p",pc);
+  TMSG(SAMPLE_CALLPATH, "%s taking profile sample @ %p", __func__, pc);
   TMSG(SAMPLE_METRIC_DATA, "--metric data for sample (as a uint64_t) = %"PRIu64"", metricIncr);
 
   /* check to see if shared library loadmap (of current epoch) has changed out from under us */

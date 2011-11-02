@@ -178,7 +178,7 @@ METHOD_FN(thread_fini_action)
   int retval = PAPI_unregister_thread();
   char msg[] = "!!NOT PAPI_OK!! (code = -9999999)\n";
   snprintf(msg, sizeof(msg)-1, "!!NOT PAPI_OK!! (code = %d)", retval);
-  TMSG(PAPI, "unregister thread returns %s", retval == PAPI_OK, "PAPI_OK", msg);
+  TMSG(PAPI, "unregister thread returns %s", retval == PAPI_OK? "PAPI_OK" : msg);
 }
 
 static void

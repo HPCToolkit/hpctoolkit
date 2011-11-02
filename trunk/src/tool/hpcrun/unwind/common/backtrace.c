@@ -335,6 +335,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 					ucontext_t* context,
 					int skipInner)
 {
+  TMSG(BT, "Generate backtrace (no tramp), skip inner = %d", skipInner);
   bt->has_tramp = false;
   bt->trolled  = false;
   bt->n_trolls = 0;
@@ -426,8 +427,10 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
       TMSG(TRAMP, "WARNING: backtrace detects skipInner != 0 (skipInner = %d)", 
 	   skipInner);
     }
+    TMSG(BT, "* BEFORE Skip inner correction, bt_beg = %p", bt_beg);
     // adjust the returned backtrace according to the skipInner
     bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
+    TMSG(BT, "* AFTER Skip inner correction, bt_beg = %p", bt_beg);
   }
 
   bt->begin = bt_beg;         // returned backtrace begin
@@ -436,8 +439,10 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
                              // last recorded element
   // soft error mandates returning false
   if (! (ret == STEP_STOP)) {
+    TMSG(BT, "** Soft Failure **");
     return false;
   }
+  TMSG(BT, "succeeds");
   return true;
 }
 

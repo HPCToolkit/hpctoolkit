@@ -65,11 +65,15 @@ static cct_node_t*
 cct_insert_raw_backtrace(cct_node_t* cct,
                             frame_t* path_beg, frame_t* path_end)
 {
+  TMSG(BT_INSERT, "%s : start", __func__);
   if ( (path_beg < path_end) || (!cct)) {
+    TMSG(BT_INSERT, "No insert effect, cct = %p, path_beg = %p, path_end = %p",
+	 cct, path_beg, path_end);
     return cct;
   }
   for(; path_beg >= path_end; path_beg--){
     cct_addr_t tmp = (cct_addr_t) {.as_info = path_beg->as_info, .ip_norm = path_beg->ip_norm, .lip = path_beg->lip};
+    TMSG(BT_INSERT, "inserting addr (%d, %p)", tmp.ip_norm.lm_id, tmp.ip_norm.lm_ip);
     cct = hpcrun_cct_insert_addr(cct, &tmp);
   }
   return cct;
@@ -163,7 +167,7 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 			   isSync);
   }
   else {
-    TMSG(LUSH,"regular (NON-lush) backtrace2cct invoked");
+    TMSG(BT_INSERT,"regular (NON-lush) backtrace2cct invoked");
     n = help_hpcrun_backtrace2cct(cct, context,
 				  metricId, metricIncr,
 				  skipInner);
@@ -236,6 +240,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
 				     frame_t* bt_beg, frame_t* bt_last, bool tramp_found,
 				     int metricId, uint64_t metricIncr)
 {
+  TMSG(BT_INSERT, "Record backtrace w metric to id %d, incr = %d", metricId, metricIncr);
   thread_data_t* td = hpcrun_get_thread_data();
   cct_node_t* cct_cursor = NULL;
   if (tramp_found) {
@@ -320,7 +325,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   // take off the top 'monitor_pthread_main' node
   //
   if (cct->ctxt && ! partial_unw && ! tramp_found) {
-    TMSG(TRAMP, "Thread correction, back off outermost backtrace entry");
+    TMSG(THREAD_CTXT, "Thread correction, back off outermost backtrace entry");
     bt_last--;
   }
   cct_node_t* n = hpcrun_cct_record_backtrace_w_metric(cct, partial_unw,
