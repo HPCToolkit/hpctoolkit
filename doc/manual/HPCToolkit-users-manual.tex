@@ -1209,6 +1209,16 @@ The most common causes for unusually high overhead are the following:
 % ===========================================================================
 % ===========================================================================
 
+\section{Fail to run \hpcviewer{}: executable launcher was unable to locate its companion shared library}
+
+Although this error mostly incurrs on Windows platform, but it can happen in other environment. 
+The cause of this issue is that the permission of one of Eclipse launcher libary (org.eclipse.equinox.launcher.*) is too restricted. 
+To fix this, set the permission of the library to 0755, and launch again the viewer.
+
+
+% ===========================================================================
+% ===========================================================================
+
 \section{When executing \hpcviewer, it complains can not create "Java Virtual Machine"}
 The error message indicates that JVM cannot be instantiated. This can be caused if we set memory requirement too high.
 If this is the case, try to reduce the memory requirement by modifying \texttt{hpcviewer.ini} file which is located in HPCToolkit installation directory.
