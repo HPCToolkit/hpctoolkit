@@ -105,6 +105,7 @@ User's Manual [<a href="manual/HPCToolkit-users-manual.pdf">pdf</a>]
 <ul>
   <li>
     <a href="man/hpcviewer.html">hpcviewer</a>
+    <a href="man/hpctraceviewer.html">hpctraceviewer</a>
   </li>
 </ul>
 </li>
