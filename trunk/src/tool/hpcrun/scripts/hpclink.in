@@ -281,13 +281,13 @@ fi
 undef_args=
 for name in $undef_names
 do
-    undef_args="${undef_args} -Wl,-u,${name}"
+    undef_args="${undef_args} -Wl,--undefined=${name}"
 done
 
 wrap_args=
 for name in $monitor_wrap_names $extra_wrap_names
 do
-    wrap_args="${wrap_args} -Wl,--wrap,${name}"
+    wrap_args="${wrap_args} -Wl,--wrap=${name}"
 done
 set -- $undef_args $wrap_args "$@"
 
@@ -347,10 +347,10 @@ then
         if echo "$line" | grep -E -i -e 'undef.*__wrap_' >/dev/null 2>&1
 	then
 	    name=`expr "$line" : '.*\(__wrap_[A-Za-z0-9_]*\)'`
-	    set -- "-Wl,-u,${name}" "$@"
+	    set -- "-Wl,--undefined=${name}" "$@"
 	elif echo "$line" | grep -E -i -e 'undef.*main' >/dev/null 2>&1
 	then
-	    set -- "-Wl,-u,main" "$@"
+	    set -- "-Wl,--undefined=main" "$@"
 	fi
     done
     $command "$@" || die "compile #1 failed: $command $@"
