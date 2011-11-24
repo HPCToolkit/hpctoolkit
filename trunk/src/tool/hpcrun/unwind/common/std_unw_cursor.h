@@ -54,6 +54,7 @@
 //*************************** User Include Files ****************************
 
 #include "unwind-cfg.h"
+#include <unwind/common/fence_enum.h>
 
 //*************************** Forward Declarations **************************
 
@@ -86,6 +87,8 @@ typedef struct hpcrun_unw_cursor_t {
   void *ra;
 
   void *ra_loc;  // for trampolines
+
+  fence_enum_t fence; // Details on which fence stopped an unwind
 
   UNW_CURSOR_INTERVAL_t intvl;
 

@@ -82,6 +82,8 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
 {
   bundle->top = hpcrun_cct_new();
   bundle->tree_root = bundle->top;
+
+  bundle->thread_root = bundle->tree_root;
   bundle->ctxt = ctxt;
   bundle->num_nodes = 0;
   //
@@ -93,7 +95,7 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   //       insertion of the creation context
   //
   if (DISABLED(NO_THREAD_CTXT) && ctxt) {
-    hpcrun_walk_path(ctxt->context, l_insert_path, (cct_op_arg_t) &(bundle->tree_root));
+    hpcrun_walk_path(ctxt->context, l_insert_path, (cct_op_arg_t) &(bundle->thread_root));
   }
   bundle->partial_unw_root = hpcrun_cct_new_partial();
 }
