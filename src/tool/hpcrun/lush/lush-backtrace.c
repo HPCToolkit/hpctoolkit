@@ -238,14 +238,14 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
   frame_t* bt_beg = td->btbuf_beg;      // innermost, inclusive 
   frame_t* bt_end = td->btbuf_cur - 1; // outermost, inclusive
-  cct_node_t* cct_cursor = NULL;
+  cct_node_t* cct_cursor = cct->tree_root;
 
   if (skipInner) {
     bt_beg = hpcrun_skip_chords(bt_end, bt_beg, skipInner);
   }
 
   cct_node_t* node = NULL;
-  node = hpcrun_cct_insert_backtrace_w_metric(cct, cct_cursor, metricId,
+  node = hpcrun_cct_insert_backtrace_w_metric(cct_cursor, metricId,
 					      bt_end, bt_beg,
 					      (cct_metric_data_t){.i = metricIncr});
 

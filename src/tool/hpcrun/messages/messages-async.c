@@ -152,6 +152,13 @@ hpcrun_pmsg(pmsg_category flag, const char *tag, const char *fmt, ...)
 #endif
     return;
   }
+#define THE_THREAD 1
+#define SPECIAL_DEBUG
+#ifdef SPECIAL_DEBUG
+  if ( getenv("OT") && (TD_GET(id) != THE_THREAD)) {
+    return;
+  }
+#endif
   va_list_box box;
   va_list_box_start(box, fmt);
   hpcrun_write_msg_to_log(false, true, tag, fmt, &box);

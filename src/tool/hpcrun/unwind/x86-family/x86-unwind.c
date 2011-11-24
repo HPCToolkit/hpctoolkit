@@ -84,6 +84,7 @@
 #include <unwind/common/unwind.h>
 #include <unwind/common/backtrace.h>
 #include <unwind/common/unw-throw.h>
+#include <unwind/common/fence_enum.h>
 #include "splay.h"
 #include "ui_tree.h"
 #include <utilities/arch/mcontext.h>
@@ -128,7 +129,7 @@ static int DEBUG_NO_LONGJMP = 0;
 static void 
 update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset);
 
-static int 
+static fence_enum_t
 hpcrun_check_fence(void* ip);
 
 static void 
@@ -258,20 +259,31 @@ hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* cursor)
   return cursor->ra_loc;
 }
 
+static bool
+fence_stop(fence_enum_t fence)
+{
+  return (fence == FENCE_MAIN) || (fence == FENCE_THREAD);
+}
 
 static step_state
 hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
 {
 
+  cursor->fence = hpcrun_check_fence(cursor->pc_unnorm);
   //-----------------------------------------------------------
   // check if we have reached the end of our unwind, which is
   // demarcated with a fence. 
   //-----------------------------------------------------------
+  if (fence_stop(cursor->fence)) {
+    TMSG(UNW,"unw_step: STEP_STOP, current pc in monitor fence pc=%p\n", cursor->pc_unnorm);
+    return STEP_STOP;
+  }
+#ifdef OLD_FENCE
   if (hpcrun_check_fence(cursor->pc_unnorm)){
     TMSG(UNW,"unw_step: STEP_STOP, current pc in monitor fence pc=%p\n", cursor->pc_unnorm);
     return STEP_STOP;
   }
-
+#endif
   // current frame  
   void** bp = cursor->bp;
   void*  sp = cursor->sp;
@@ -710,10 +722,16 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
   hpcrun_unw_throw();
 }
 
-
-static int 
+static fence_enum_t
 hpcrun_check_fence(void* ip)
 {
+  fence_enum_t rv = FENCE_NONE;
+  if (monitor_unwind_process_bottom_frame(ip))
+    rv = FENCE_MAIN;
+  else if (monitor_unwind_thread_bottom_frame(ip))
+    rv = FENCE_THREAD;
+
+#ifdef OLD_FENCE
  int pb = monitor_unwind_process_bottom_frame(ip);
  int tb = monitor_unwind_thread_bottom_frame(ip);
  int result = (tb | pb);
@@ -724,6 +742,10 @@ hpcrun_check_fence(void* ip)
  }
  
  return result;
+#endif
+   if (ENABLED(FENCE_UNW) && rv != FENCE_NONE)
+     TMSG(FENCE_UNW, "%s", fence_enum_name(rv));
+   return rv;
 }
 
 

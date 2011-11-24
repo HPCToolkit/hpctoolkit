@@ -98,6 +98,12 @@ static void lush_lip2str(char* buf, size_t len, lush_lip_t* lip);
 // interface functions
 //***************************************************************************
 
+void
+hpcrun_show_backtrace(char* label, frame_t* beg, frame_t* end)
+{
+  ;
+}
+
 void 
 hpcrun_bt_dump(frame_t* unwind, const char* tag)
 {
@@ -339,6 +345,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
   bt->has_tramp = false;
   bt->trolled  = false;
   bt->n_trolls = 0;
+  bt->fence = FENCE_BAD;
 
   bool tramp_found = false;
 
@@ -385,6 +392,8 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 	bt->has_tramp = (tramp_found = true);
 	TMSG(TRAMP, "--CURRENT UNWIND FINDS TRAMPOLINE @ (sp:%p, bp:%p", cursor.sp, cursor.bp);
 	// no need to unwind further. the outer frames are already known.
+
+	bt->fence = FENCE_TRAMP;
 	ret = STEP_STOP;
 	break;
       }
@@ -410,11 +419,15 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
       if (ret == STEP_ERROR) {
 	hpcrun_stats_num_samples_dropped_inc();
       }
+      else { // STEP_STOP
+	bt->fence = cursor.fence;
+      }
       break;
     }
     prev->ra_loc = hpcrun_unw_get_ra_loc(&cursor);
   }
 
+  TMSG(FENCE, "backtrace generation detects fence = %s", fence_enum_name(bt->fence));
   frame_t* bt_beg  = td->btbuf_beg;      // innermost, inclusive
   frame_t* bt_last = td->btbuf_cur - 1; // outermost, inclusive
 
