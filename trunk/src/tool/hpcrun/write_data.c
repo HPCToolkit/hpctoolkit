@@ -148,23 +148,12 @@ lazy_open_data_file(void)
     return fs;
   }
 
-  /* Generate a filename */
-  char fnm[HPCRUN_FNM_SZ];
-
   int rank = monitor_mpi_comm_rank();
   if (rank < 0) rank = 0;
-  files_profile_name(fnm, rank, HPCRUN_FNM_SZ);
-
-  TMSG(DATA_WRITE, "Filename = %s", fnm);
-
-  /* Open file for writing; fail if the file already exists. */
-  if (hpcrun_sample_prob_active()) {
-    fs = hpcio_fopen_w(fnm, /* overwrite */ 0);
-  } else {
-    fs = hpcio_fopen_w("/dev/null", 2);
-  }
+  int fd = hpcrun_open_profile_file(rank, td->id);
+  fs = fdopen(fd, "w");
   if (fs == NULL) {
-    EEMSG("HPCToolkit: %s: unable to open: %s", __func__, fnm);
+    EEMSG("HPCToolkit: %s: unable to open profile file", __func__);
     return NULL;
   }
   td->hpcrun_file = fs;
@@ -206,8 +195,8 @@ lazy_open_data_file(void)
 
   TMSG(DATA_WRITE,"writing file header");
   hpcrun_fmt_hdr_fwrite(fs,
-                        HPCRUN_FMT_NV_prog, files_executable_name(),
-                        HPCRUN_FMT_NV_progPath, files_executable_pathname(),
+                        HPCRUN_FMT_NV_prog, hpcrun_files_executable_name(),
+                        HPCRUN_FMT_NV_progPath, hpcrun_files_executable_pathname(),
 			HPCRUN_FMT_NV_envPath, getenv("PATH"),
                         HPCRUN_FMT_NV_jobId, jobIdStr,
                         HPCRUN_FMT_NV_mpiRank, mpiRankStr,
