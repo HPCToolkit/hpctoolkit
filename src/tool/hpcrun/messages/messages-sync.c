@@ -87,7 +87,6 @@
 #include "thread_data.h"
 #include "thread_use.h"
 #include "monitor.h"
-#include "sample_prob.h"
 
 #include <messages/debug-flag.h>
 #include <messages/messages.h>
@@ -148,23 +147,14 @@ messages_logfile_create()
 {
   if (hpcrun_get_disabled()) return;
 
-  // get name for log file 
-  char log_name[PATH_MAX];
-  files_log_name(log_name, 0, PATH_MAX);
-
   // open log file
-  if (! hpcrun_sample_prob_active()) {
-    // Output files turned off.
-    log_file_fd = open("/dev/null", O_RDWR);
-  }
-  else if (getenv("HPCRUN_LOG_STDERR") != NULL) {
+  if (getenv("HPCRUN_LOG_STDERR") != NULL) {
     // HPCRUN_LOG_STDERR variable set ==> log goes to stderr
     log_file_fd = 2;
   }
   else {
     // Normal case of opening .log file.
-    log_file_fd = open(log_name, O_RDWR | O_CREAT,
-		       S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    log_file_fd = hpcrun_open_log_file();
   }
   if (log_file_fd == -1) {
     log_file_fd = 2; // cannot open log_file ==> revert to stderr
@@ -190,12 +180,8 @@ messages_fini(void)
     // it should be.
     //----------------------------------------------------------------------
     int rank = monitor_mpi_comm_rank();
-    if (rank >= 0 && hpcrun_sample_prob_active()) {
-      char old[PATH_MAX];
-      char new[PATH_MAX];
-      files_log_name(old, 0, PATH_MAX);
-      files_log_name(new, rank, PATH_MAX);
-      rename(old, new);
+    if (rank >= 0) {
+      hpcrun_rename_log_file(rank);
     }
   }
 }

@@ -69,21 +69,18 @@ typedef struct hpcio_outbuf_s {
 
 //***************************************************************************
 
-// Flags for hpcio_outbuf_open().
+// Flags for hpcio_outbuf_attach().
 
-#define HPCIO_OUTBUF_EXCL      0x1
-#define HPCIO_OUTBUF_TRUNC     0x2
-#define HPCIO_OUTBUF_NULL      0x4
-#define HPCIO_OUTBUF_LOCKED    0x8
-#define HPCIO_OUTBUF_UNLOCKED  0x10
+#define HPCIO_OUTBUF_LOCKED    0x1
+#define HPCIO_OUTBUF_UNLOCKED  0x2
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
 int
-hpcio_outbuf_open(const char *name, hpcio_outbuf_t *outbuf, /* out */
-		  void *buf_start, size_t buf_size, int flags);
+hpcio_outbuf_attach(hpcio_outbuf_t *outbuf /* out */, int fd,
+		    void *buf_start, size_t buf_size, int flags);
 
 ssize_t
 hpcio_outbuf_write(hpcio_outbuf_t *outbuf, const void *data, size_t size);

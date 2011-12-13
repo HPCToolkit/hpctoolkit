@@ -88,7 +88,7 @@ fnbounds_init()
   fh.is_relocatable = hpcrun_is_relocatable;
 
   dso_info_t *dso =
-    hpcrun_dso_make(files_executable_pathname(), (void*)hpcrun_nm_addrs, 
+    hpcrun_dso_make(hpcrun_files_executable_pathname(), (void*)hpcrun_nm_addrs, 
 		    &fh, lm_beg_fn, lm_end_fn, lm_size);
   hpcrun_loadmap_map(dso);
 

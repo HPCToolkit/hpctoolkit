@@ -406,7 +406,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_set_using_threads(false);
 
-  files_set_executable(process_name);
+  hpcrun_files_set_executable(process_name);
 
   hpcrun_registered_sources_init();
 
@@ -426,10 +426,10 @@ monitor_init_process(int *argc, char **argv, void* data)
   hpcrun_process_sample_source_none();
 
   if (!hpcrun_get_disabled()) {
-    files_set_directory();
+    hpcrun_files_set_directory();
   }
 
-  TMSG(PROCESS,"files_set_executable called w process name = %s", process_name);
+  TMSG(PROCESS,"hpcrun_files_set_executable called w process name = %s", process_name);
 
   TMSG(PROCESS,"init");
 

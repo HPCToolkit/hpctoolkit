@@ -139,35 +139,18 @@ outbuf_flush_buffer(hpcio_outbuf_t *outbuf)
 
 //*************************** Interface Functions ***************************
 
-// Open the file and fill in the outbuf struct.  The client supplies
-// the buffer (for now).
+// Attach the file descriptor to the buffer, initialize and fill in
+// the outbuf struct.  The client supplies the buffer and fd.
 //
 // Returns: HPCFMT_OK on success, else HPCFMT_ERR.
 //
 int
-hpcio_outbuf_open(const char *name, hpcio_outbuf_t *outbuf, /* out */
-		  void *buf_start, size_t buf_size, int flags)
+hpcio_outbuf_attach(hpcio_outbuf_t *outbuf /* out */, int fd,
+		    void *buf_start, size_t buf_size, int flags)
 {
-  // Open fills in the outbuf struct, so there is no magic number
+  // Attach fills in the outbuf struct, so there is no magic number
   // and locks don't exist.
-  if (outbuf == NULL || buf_start == NULL || buf_size == 0) {
-    return HPCFMT_ERR;
-  }
-
-  // flags for overwrite, exclusive, etc.
-  if (flags & HPCIO_OUTBUF_EXCL) {
-    // exclusive, must not already exist
-    outbuf->fd = open(name, O_WRONLY | O_CREAT | O_EXCL, 0644);
-  }
-  else if (flags & HPCIO_OUTBUF_NULL) {
-    // options specific to /dev/null (for fractional sampling)
-    outbuf->fd = open(name, O_WRONLY);
-  }
-  else {
-    // overwrite (truncate) file if exists (default)
-    outbuf->fd = open(name, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-  }
-  if (outbuf->fd < 0) {
+  if (outbuf == NULL || fd < 0 || buf_start == NULL || buf_size == 0) {
     return HPCFMT_ERR;
   }
 
@@ -175,6 +158,7 @@ hpcio_outbuf_open(const char *name, hpcio_outbuf_t *outbuf, /* out */
   outbuf->buf_start = buf_start;
   outbuf->buf_size = buf_size;
   outbuf->in_use = 0;
+  outbuf->fd = fd;
   outbuf->flags = flags;
   outbuf->use_lock = (flags & HPCIO_OUTBUF_LOCKED);
   spinlock_unlock(&outbuf->lock);
