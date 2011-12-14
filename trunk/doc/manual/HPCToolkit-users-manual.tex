@@ -1219,9 +1219,13 @@ To fix this, set the permission of the library to 0755, and launch again the vie
 % ===========================================================================
 % ===========================================================================
 
-\section{When executing \hpcviewer, it complains can not create "Java Virtual Machine"}
-The error message indicates that JVM cannot be instantiated. This can be caused if we set memory requirement too high.
-If this is the case, try to reduce the memory requirement by modifying \texttt{hpcviewer.ini} file which is located in HPCToolkit installation directory.
+\section{When executing \hpcviewer, it complains cannot create ``Java Virtual Machine"}
+The error message indicates that your machine cannot instantiate the JVM 
+with the default size specified for the Java heap. 
+If you encounter this problem, we recommend that you edit the 
+\texttt{hpcviewer.ini} 
+file which is located in HPCToolkit installation directory to reduce the
+Java heap size.
 By default, the content of the file is as follows:
 \begin{verbatim}
 -consoleLog
@@ -1231,7 +1235,8 @@ By default, the content of the file is as follows:
 -Xms40m
 -Xmx1812m
 \end{verbatim}
- and decrease the value of maximum memory to:
+You can decrease the maximum size of the Java heap from 1812MB to 1GB
+ by changing the {\tt Xmx} specification in the \texttt{hpcviewer.ini} file as follows:
 \begin{verbatim}
 -Xmx1024m
 \end{verbatim}
