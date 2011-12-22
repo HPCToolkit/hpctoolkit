@@ -406,6 +406,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
     hpcrun_unw_get_ip_norm_reg(&td->btbuf_cur->cursor,
 			       &td->btbuf_cur->ip_norm);
     td->btbuf_cur->ra_loc = NULL;
+    td->btbuf_cur->the_function = cursor.the_function;
     frame_t* prev = td->btbuf_cur;
     td->btbuf_cur++;
     unw_len++;
