@@ -227,6 +227,12 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   cursor->sp 	    = MCONTEXT_SP(mc);
   cursor->ra_loc    = NULL;
 
+  void* func_start_pc = NULL;
+  void* func_end_pc = NULL;
+  load_module_t* lm = NULL;
+  fnbounds_enclosing_addr(cursor->pc_unnorm, &func_start_pc, &func_end_pc, &lm);
+  cursor->the_function = hpcrun_normalize_ip(func_start_pc, lm);
+
   TMSG(UNW, "unw_init: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
 
@@ -270,11 +276,6 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
 {
 
   cursor->fence = hpcrun_check_fence(cursor->pc_unnorm);
-
-  void *func_start_pc = NULL, *func_end_pc = NULL;
-  load_module_t* lm = NULL;
-  fnbounds_enclosing_addr(cursor->pc_unnorm, &func_start_pc, &func_end_pc, &lm);
-  cursor->the_function = hpcrun_normalize_ip(func_start_pc, lm);
 
   //-----------------------------------------------------------
   // check if we have reached the end of our unwind, which is
@@ -320,6 +321,12 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
   if (unw_res == STEP_STOP_WEAK) unw_res = STEP_STOP; 
 
   if (unw_res != STEP_ERROR) {
+
+    void *func_start_pc = NULL, *func_end_pc = NULL;
+    load_module_t* lm = NULL;
+    fnbounds_enclosing_addr(cursor->pc_unnorm, &func_start_pc, &func_end_pc, &lm);
+    cursor->the_function = hpcrun_normalize_ip(func_start_pc, lm);
+
     return unw_res;
   }
   
@@ -708,12 +715,19 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
       cursor->pc_norm   = next_pc_norm;
 
       cursor->flags = 1; // trolling_used
+
+      void *func_start_pc = NULL, *func_end_pc = NULL;
+      load_module_t* lm = NULL;
+      fnbounds_enclosing_addr(cursor->pc_unnorm, &func_start_pc, &func_end_pc, &lm);
+      cursor->the_function = hpcrun_normalize_ip(func_start_pc, lm);
+
       return; // success!
     }
     PMSG_LIMIT(PMSG(TROLL, "No interval found for trolled pc, dropping sample,"
 		    " cursor pc = %p", cursor->pc_unnorm));
     // fall through for error handling
-  } else {
+  }
+  else {
     PMSG_LIMIT(PMSG(TROLL, "Troll failed: dropping sample, cursor pc = %p", 
 		    cursor->pc_unnorm));
     PMSG_LIMIT(PMSG(TROLL,"TROLL FAILURE pc = %p", cursor->pc_unnorm));
