@@ -126,6 +126,8 @@
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
 
+extern void hpcrun_set_compact_recursion_mode(bool mode);
+
 //***************************************************************************
 // constants
 //***************************************************************************
@@ -205,6 +207,9 @@ hpcrun_init_internal(bool is_child)
 
   trace_init(); // this must go after thread initialization
   trace_open();
+
+  // apply compress_recursion control
+  hpcrun_set_compact_recursion_mode(getenv("HPCRUN_COMPACT_RECURSION") != NULL);
 
   // Initialize logical unwinding agents (LUSH)
   if (opts.lush_agent_paths[0] != '\0') {

@@ -253,14 +253,19 @@ MY_PPC_FILES = \
 	unwind/common/default_validation_summary.c \
         trampoline/ppc64/ppc64-tramp.s \
         \
-        utilities/arch/ppc64/ppc64-context-pc.c
+        utilities/arch/ppc64/ppc64-context-pc.c \
+        \
+        utilities/arch/ppc64/ppc64-compact-recursion-mode.c
+
+
 
 
 MY_X86_FILES = \
         trampoline/x86-family/x86-tramp.S \
         \
-        utilities/arch/x86-family/x86-context-pc.c
-
+        utilities/arch/x86-family/x86-context-pc.c \
+        \
+        utilities/arch/x86-family/x86-compact-recursion-mode.c
 
 MY_PAPI_FILES = 			\
 	sample-sources/papi.c

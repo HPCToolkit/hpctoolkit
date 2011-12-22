@@ -96,6 +96,10 @@ hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context,
 			   int metricId, uint64_t metricIncr,
 			   int skipInner, int isSync);
 
+//***************************************************************************
+
+//************************* Local helper routines ***************************
+
 // ------------------------------------------------------------
 // recover from SEGVs and partial unwinds
 // ------------------------------------------------------------
@@ -134,6 +138,8 @@ record_partial_unwind(cct_bundle_t* cct,
 					      bt_beg, bt_last, false,
 					      metricId, metricIncr);
 }
+
+
 
 //***************************************************************************
 
