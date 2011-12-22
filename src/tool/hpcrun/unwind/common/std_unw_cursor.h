@@ -55,6 +55,7 @@
 
 #include "unwind-cfg.h"
 #include <unwind/common/fence_enum.h>
+#include <utilities/ip-normalized.h>
 
 //*************************** Forward Declarations **************************
 
@@ -91,6 +92,8 @@ typedef struct hpcrun_unw_cursor_t {
   fence_enum_t fence; // Details on which fence stopped an unwind
 
   UNW_CURSOR_INTERVAL_t intvl;
+
+  ip_normalized_t the_function; // (normalized) ip for function
 
   //NOTE: will fail if HPC_UWN_LITE defined
   ip_normalized_t pc_norm;

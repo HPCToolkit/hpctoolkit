@@ -57,10 +57,17 @@
 #include <thread_data.h>
 #include <hpcrun_stats.h>
 #include <trampoline/common/trampoline.h>
+#include <utilities/ip-normalized.h>
 #include "frame.h"
 #include <unwind/common/backtrace_info.h>
 #include <unwind/common/fence_enum.h>
 #include "cct_insert_backtrace.h"
+
+//
+// local variable records the on/off state of
+// special recursive compression:
+//
+static bool compact_recursion = false;
 
 static cct_node_t*
 cct_insert_raw_backtrace(cct_node_t* cct,
@@ -72,10 +79,19 @@ cct_insert_raw_backtrace(cct_node_t* cct,
 	 cct, path_beg, path_end);
     return cct;
   }
+  ip_normalized_t parent_routine = ip_normalized_NULL;
   for(; path_beg >= path_end; path_beg--){
-    cct_addr_t tmp = (cct_addr_t) {.as_info = path_beg->as_info, .ip_norm = path_beg->ip_norm, .lip = path_beg->lip};
-    TMSG(BT_INSERT, "inserting addr (%d, %p)", tmp.ip_norm.lm_id, tmp.ip_norm.lm_ip);
-    cct = hpcrun_cct_insert_addr(cct, &tmp);
+    if ( compact_recursion &&
+	 ! (path_beg == path_end) &&
+	 ip_normalized_eq(&(path_beg->cursor.the_function), &(parent_routine))) {
+      TMSG(REC_COMPRESS, "recursive routine compression!");
+    }
+    else {
+      cct_addr_t tmp = (cct_addr_t) {.as_info = path_beg->as_info, .ip_norm = path_beg->ip_norm, .lip = path_beg->lip};
+      TMSG(BT_INSERT, "inserting addr (%d, %p)", tmp.ip_norm.lm_id, tmp.ip_norm.lm_ip);
+      cct = hpcrun_cct_insert_addr(cct, &tmp);
+    }
+    parent_routine = path_beg->cursor.the_function;
   }
   return cct;
 }
@@ -84,6 +100,15 @@ static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 			  int metricId, uint64_t metricIncr,
 			  int skipInner);
+
+//
+// 
+void
+hpcrun_real_compact_recursion_mode(bool mode)
+{
+  TMSG(REC_COMPRESS, "compact_recursion set to %s", mode ? "true" : "false");
+  compact_recursion = mode;
+}
 
 // See usage in header.
 cct_node_t*
@@ -117,6 +142,7 @@ hpcrun_cct_insert_backtrace(cct_node_t* treenode, frame_t* path_beg, frame_t* pa
   }
   return path;
 }
+
 // See usage in header.
 cct_node_t*
 hpcrun_cct_insert_backtrace_w_metric(cct_node_t* treenode,

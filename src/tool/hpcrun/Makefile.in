@@ -249,8 +249,10 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	os/linux/dylib.c unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
+	utilities/arch/ppc64/ppc64-compact-recursion-mode.c \
 	trampoline/x86-family/x86-tramp.S \
 	utilities/arch/x86-family/x86-context-pc.c \
+	utilities/arch/x86-family/x86-compact-recursion-mode.c \
 	sample-sources/papi.c sample-sources/upc.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/common/splay.c unwind/common/stack_troll.c \
@@ -304,10 +306,12 @@ am__objects_10 = libhpcrun_la-dylib.lo
 am__objects_12 = libhpcrun_la-default_validation_summary.lo
 @HOST_CPU_MIPS_TRUE@am__objects_13 = $(am__objects_12)
 am__objects_14 = libhpcrun_la-default_validation_summary.lo \
-	libhpcrun_la-ppc64-tramp.lo libhpcrun_la-ppc64-context-pc.lo
+	libhpcrun_la-ppc64-tramp.lo libhpcrun_la-ppc64-context-pc.lo \
+	libhpcrun_la-ppc64-compact-recursion-mode.lo
 @HOST_CPU_PPC_TRUE@am__objects_15 = $(am__objects_14)
 am__objects_16 = libhpcrun_la-x86-tramp.lo \
-	libhpcrun_la-x86-context-pc.lo
+	libhpcrun_la-x86-context-pc.lo \
+	libhpcrun_la-x86-compact-recursion-mode.lo
 @HOST_CPU_X86_FAMILY_TRUE@am__objects_17 = $(am__objects_16)
 am__objects_18 = libhpcrun_la-papi.lo
 @OPT_PAPI_DYNAMIC_TRUE@am__objects_19 = $(am__objects_18)
@@ -386,8 +390,10 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
+	utilities/arch/ppc64/ppc64-compact-recursion-mode.c \
 	trampoline/x86-family/x86-tramp.S \
 	utilities/arch/x86-family/x86-context-pc.c \
+	utilities/arch/x86-family/x86-compact-recursion-mode.c \
 	sample-sources/papi.c sample-sources/upc.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/common/splay.c unwind/common/stack_troll.c \
@@ -451,10 +457,12 @@ am__objects_29 = libhpcrun_o-default_validation_summary.$(OBJEXT)
 @HOST_CPU_MIPS_TRUE@am__objects_30 = $(am__objects_29)
 am__objects_31 = libhpcrun_o-default_validation_summary.$(OBJEXT) \
 	libhpcrun_o-ppc64-tramp.$(OBJEXT) \
-	libhpcrun_o-ppc64-context-pc.$(OBJEXT)
+	libhpcrun_o-ppc64-context-pc.$(OBJEXT) \
+	libhpcrun_o-ppc64-compact-recursion-mode.$(OBJEXT)
 @HOST_CPU_PPC_TRUE@am__objects_32 = $(am__objects_31)
 am__objects_33 = libhpcrun_o-x86-tramp.$(OBJEXT) \
-	libhpcrun_o-x86-context-pc.$(OBJEXT)
+	libhpcrun_o-x86-context-pc.$(OBJEXT) \
+	libhpcrun_o-x86-compact-recursion-mode.$(OBJEXT)
 @HOST_CPU_X86_FAMILY_TRUE@am__objects_34 = $(am__objects_33)
 am__objects_35 = libhpcrun_o-papi.$(OBJEXT)
 @OPT_PAPI_STATIC_TRUE@am__objects_36 = $(am__objects_35)
@@ -854,12 +862,16 @@ MY_PPC_FILES = \
 	unwind/common/default_validation_summary.c \
         trampoline/ppc64/ppc64-tramp.s \
         \
-        utilities/arch/ppc64/ppc64-context-pc.c
+        utilities/arch/ppc64/ppc64-context-pc.c \
+        \
+        utilities/arch/ppc64/ppc64-compact-recursion-mode.c
 
 MY_X86_FILES = \
         trampoline/x86-family/x86-tramp.S \
         \
-        utilities/arch/x86-family/x86-context-pc.c
+        utilities/arch/x86-family/x86-context-pc.c \
+        \
+        utilities/arch/x86-family/x86-compact-recursion-mode.c
 
 MY_PAPI_FILES = \
 	sample-sources/papi.c
@@ -1302,6 +1314,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-none.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-openmp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-papi.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ppc64-compact-recursion-mode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ppc64-context-pc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ppc64-unwind-interval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ppc64-unwind.Plo@am__quote@
@@ -1330,6 +1343,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-32bit-main.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-all.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-cold-path.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-compact-recursion-mode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-context-pc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-intel11-f90main.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-linux-dlresolver.Plo@am__quote@
@@ -1385,6 +1399,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-name.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-none.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ppc64-compact-recursion-mode.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ppc64-context-pc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ppc64-unwind-interval.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ppc64-unwind.Po@am__quote@
@@ -1413,6 +1428,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-32bit-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-all.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-cold-path.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-compact-recursion-mode.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-context-pc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-intel11-f90main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-linux-dlresolver.Po@am__quote@
@@ -1971,12 +1987,26 @@ libhpcrun_la-ppc64-context-pc.lo: utilities/arch/ppc64/ppc64-context-pc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ppc64-context-pc.lo `test -f 'utilities/arch/ppc64/ppc64-context-pc.c' || echo '$(srcdir)/'`utilities/arch/ppc64/ppc64-context-pc.c
 
+libhpcrun_la-ppc64-compact-recursion-mode.lo: utilities/arch/ppc64/ppc64-compact-recursion-mode.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ppc64-compact-recursion-mode.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ppc64-compact-recursion-mode.Tpo -c -o libhpcrun_la-ppc64-compact-recursion-mode.lo `test -f 'utilities/arch/ppc64/ppc64-compact-recursion-mode.c' || echo '$(srcdir)/'`utilities/arch/ppc64/ppc64-compact-recursion-mode.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-ppc64-compact-recursion-mode.Tpo $(DEPDIR)/libhpcrun_la-ppc64-compact-recursion-mode.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/arch/ppc64/ppc64-compact-recursion-mode.c' object='libhpcrun_la-ppc64-compact-recursion-mode.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ppc64-compact-recursion-mode.lo `test -f 'utilities/arch/ppc64/ppc64-compact-recursion-mode.c' || echo '$(srcdir)/'`utilities/arch/ppc64/ppc64-compact-recursion-mode.c
+
 libhpcrun_la-x86-context-pc.lo: utilities/arch/x86-family/x86-context-pc.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-x86-context-pc.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-x86-context-pc.Tpo -c -o libhpcrun_la-x86-context-pc.lo `test -f 'utilities/arch/x86-family/x86-context-pc.c' || echo '$(srcdir)/'`utilities/arch/x86-family/x86-context-pc.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-x86-context-pc.Tpo $(DEPDIR)/libhpcrun_la-x86-context-pc.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/arch/x86-family/x86-context-pc.c' object='libhpcrun_la-x86-context-pc.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-x86-context-pc.lo `test -f 'utilities/arch/x86-family/x86-context-pc.c' || echo '$(srcdir)/'`utilities/arch/x86-family/x86-context-pc.c
+
+libhpcrun_la-x86-compact-recursion-mode.lo: utilities/arch/x86-family/x86-compact-recursion-mode.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-x86-compact-recursion-mode.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-x86-compact-recursion-mode.Tpo -c -o libhpcrun_la-x86-compact-recursion-mode.lo `test -f 'utilities/arch/x86-family/x86-compact-recursion-mode.c' || echo '$(srcdir)/'`utilities/arch/x86-family/x86-compact-recursion-mode.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-x86-compact-recursion-mode.Tpo $(DEPDIR)/libhpcrun_la-x86-compact-recursion-mode.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/arch/x86-family/x86-compact-recursion-mode.c' object='libhpcrun_la-x86-compact-recursion-mode.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-x86-compact-recursion-mode.lo `test -f 'utilities/arch/x86-family/x86-compact-recursion-mode.c' || echo '$(srcdir)/'`utilities/arch/x86-family/x86-compact-recursion-mode.c
 
 libhpcrun_la-papi.lo: sample-sources/papi.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-papi.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-papi.Tpo -c -o libhpcrun_la-papi.lo `test -f 'sample-sources/papi.c' || echo '$(srcdir)/'`sample-sources/papi.c
@@ -2930,6 +2960,20 @@ libhpcrun_o-ppc64-context-pc.obj: utilities/arch/ppc64/ppc64-context-pc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ppc64-context-pc.obj `if test -f 'utilities/arch/ppc64/ppc64-context-pc.c'; then $(CYGPATH_W) 'utilities/arch/ppc64/ppc64-context-pc.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/ppc64/ppc64-context-pc.c'; fi`
 
+libhpcrun_o-ppc64-compact-recursion-mode.o: utilities/arch/ppc64/ppc64-compact-recursion-mode.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ppc64-compact-recursion-mode.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ppc64-compact-recursion-mode.Tpo -c -o libhpcrun_o-ppc64-compact-recursion-mode.o `test -f 'utilities/arch/ppc64/ppc64-compact-recursion-mode.c' || echo '$(srcdir)/'`utilities/arch/ppc64/ppc64-compact-recursion-mode.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ppc64-compact-recursion-mode.Tpo $(DEPDIR)/libhpcrun_o-ppc64-compact-recursion-mode.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/arch/ppc64/ppc64-compact-recursion-mode.c' object='libhpcrun_o-ppc64-compact-recursion-mode.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ppc64-compact-recursion-mode.o `test -f 'utilities/arch/ppc64/ppc64-compact-recursion-mode.c' || echo '$(srcdir)/'`utilities/arch/ppc64/ppc64-compact-recursion-mode.c
+
+libhpcrun_o-ppc64-compact-recursion-mode.obj: utilities/arch/ppc64/ppc64-compact-recursion-mode.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ppc64-compact-recursion-mode.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-ppc64-compact-recursion-mode.Tpo -c -o libhpcrun_o-ppc64-compact-recursion-mode.obj `if test -f 'utilities/arch/ppc64/ppc64-compact-recursion-mode.c'; then $(CYGPATH_W) 'utilities/arch/ppc64/ppc64-compact-recursion-mode.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/ppc64/ppc64-compact-recursion-mode.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ppc64-compact-recursion-mode.Tpo $(DEPDIR)/libhpcrun_o-ppc64-compact-recursion-mode.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/arch/ppc64/ppc64-compact-recursion-mode.c' object='libhpcrun_o-ppc64-compact-recursion-mode.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ppc64-compact-recursion-mode.obj `if test -f 'utilities/arch/ppc64/ppc64-compact-recursion-mode.c'; then $(CYGPATH_W) 'utilities/arch/ppc64/ppc64-compact-recursion-mode.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/ppc64/ppc64-compact-recursion-mode.c'; fi`
+
 libhpcrun_o-x86-context-pc.o: utilities/arch/x86-family/x86-context-pc.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-context-pc.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-context-pc.Tpo -c -o libhpcrun_o-x86-context-pc.o `test -f 'utilities/arch/x86-family/x86-context-pc.c' || echo '$(srcdir)/'`utilities/arch/x86-family/x86-context-pc.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-x86-context-pc.Tpo $(DEPDIR)/libhpcrun_o-x86-context-pc.Po
@@ -2943,6 +2987,20 @@ libhpcrun_o-x86-context-pc.obj: utilities/arch/x86-family/x86-context-pc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/arch/x86-family/x86-context-pc.c' object='libhpcrun_o-x86-context-pc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-context-pc.obj `if test -f 'utilities/arch/x86-family/x86-context-pc.c'; then $(CYGPATH_W) 'utilities/arch/x86-family/x86-context-pc.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/x86-family/x86-context-pc.c'; fi`
+
+libhpcrun_o-x86-compact-recursion-mode.o: utilities/arch/x86-family/x86-compact-recursion-mode.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-compact-recursion-mode.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-compact-recursion-mode.Tpo -c -o libhpcrun_o-x86-compact-recursion-mode.o `test -f 'utilities/arch/x86-family/x86-compact-recursion-mode.c' || echo '$(srcdir)/'`utilities/arch/x86-family/x86-compact-recursion-mode.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-x86-compact-recursion-mode.Tpo $(DEPDIR)/libhpcrun_o-x86-compact-recursion-mode.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/arch/x86-family/x86-compact-recursion-mode.c' object='libhpcrun_o-x86-compact-recursion-mode.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-compact-recursion-mode.o `test -f 'utilities/arch/x86-family/x86-compact-recursion-mode.c' || echo '$(srcdir)/'`utilities/arch/x86-family/x86-compact-recursion-mode.c
+
+libhpcrun_o-x86-compact-recursion-mode.obj: utilities/arch/x86-family/x86-compact-recursion-mode.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-compact-recursion-mode.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-compact-recursion-mode.Tpo -c -o libhpcrun_o-x86-compact-recursion-mode.obj `if test -f 'utilities/arch/x86-family/x86-compact-recursion-mode.c'; then $(CYGPATH_W) 'utilities/arch/x86-family/x86-compact-recursion-mode.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/x86-family/x86-compact-recursion-mode.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-x86-compact-recursion-mode.Tpo $(DEPDIR)/libhpcrun_o-x86-compact-recursion-mode.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/arch/x86-family/x86-compact-recursion-mode.c' object='libhpcrun_o-x86-compact-recursion-mode.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-compact-recursion-mode.obj `if test -f 'utilities/arch/x86-family/x86-compact-recursion-mode.c'; then $(CYGPATH_W) 'utilities/arch/x86-family/x86-compact-recursion-mode.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/x86-family/x86-compact-recursion-mode.c'; fi`
 
 libhpcrun_o-papi.o: sample-sources/papi.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-papi.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-papi.Tpo -c -o libhpcrun_o-papi.o `test -f 'sample-sources/papi.c' || echo '$(srcdir)/'`sample-sources/papi.c

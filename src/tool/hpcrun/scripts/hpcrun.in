@@ -158,6 +158,11 @@ Options: Profiling (Defaults shown in curly brackets {})
                        profiles of the same <command> will be placed in the
                        same output directory.
 
+  -C, --compact_recursion
+                       Instead of recording each instance of a recursive call,
+                       record only the top-level call.
+                       NOTE: should not use the RETCNT sample source in this mode.
+
 NOTES:
 * hpcrun uses preloaded shared libraries to initiate profiling.  For this
   reason, it cannot be used to profile setuid programs.
@@ -258,6 +263,12 @@ do
 	    arg_ok "$1" || die "missing argument for $arg"
 	    export HPCRUN_OUT_PATH="$1"
 	    shift
+	    ;;
+
+	# --------------------------------------------------
+
+	-C | --compact_recursion )
+	    export HPCRUN_COMPACT_RECURSION=1
 	    ;;
 
 	# --------------------------------------------------

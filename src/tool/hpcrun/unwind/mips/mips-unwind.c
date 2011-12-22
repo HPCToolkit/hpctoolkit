@@ -406,8 +406,10 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   if (MYDBG) { ui_dump(UI_ARG(intvl)); }
 }
 
+// --FIXME--: add advanced fence processing and enclosing function to cursor here
+//
 
-int 
+oint 
 hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 {
   // current frame:

@@ -85,6 +85,7 @@
 #include <unwind/common/backtrace.h>
 #include <unwind/common/unw-throw.h>
 #include <unwind/common/fence_enum.h>
+#include <fnbounds/fnbounds_interface.h>
 #include "splay.h"
 #include "ui_tree.h"
 #include <utilities/arch/mcontext.h>
@@ -97,7 +98,6 @@
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
 #include "main.h"
-
 
 
 //****************************************************************************
@@ -270,6 +270,12 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
 {
 
   cursor->fence = hpcrun_check_fence(cursor->pc_unnorm);
+
+  void *func_start_pc = NULL, *func_end_pc = NULL;
+  load_module_t* lm = NULL;
+  fnbounds_enclosing_addr(cursor->pc_unnorm, &func_start_pc, &func_end_pc, &lm);
+  cursor->the_function = hpcrun_normalize_ip(func_start_pc, lm);
+
   //-----------------------------------------------------------
   // check if we have reached the end of our unwind, which is
   // demarcated with a fence. 
@@ -278,12 +284,7 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
     TMSG(UNW,"unw_step: STEP_STOP, current pc in monitor fence pc=%p\n", cursor->pc_unnorm);
     return STEP_STOP;
   }
-#ifdef OLD_FENCE
-  if (hpcrun_check_fence(cursor->pc_unnorm)){
-    TMSG(UNW,"unw_step: STEP_STOP, current pc in monitor fence pc=%p\n", cursor->pc_unnorm);
-    return STEP_STOP;
-  }
-#endif
+
   // current frame  
   void** bp = cursor->bp;
   void*  sp = cursor->sp;
@@ -731,18 +732,6 @@ hpcrun_check_fence(void* ip)
   else if (monitor_unwind_thread_bottom_frame(ip))
     rv = FENCE_THREAD;
 
-#ifdef OLD_FENCE
- int pb = monitor_unwind_process_bottom_frame(ip);
- int tb = monitor_unwind_thread_bottom_frame(ip);
- int result = (tb | pb);
- 
- if (result != 0) {
-   TMSG(UNW,"unw_step: STEP_STOP fence encountered = %s", 
-	(pb ?  "PROCESS" : "THREAD"));
- }
- 
- return result;
-#endif
    if (ENABLED(FENCE_UNW) && rv != FENCE_NONE)
      TMSG(FENCE_UNW, "%s", fence_enum_name(rv));
    return rv;
