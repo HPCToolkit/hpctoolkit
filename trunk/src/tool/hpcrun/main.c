@@ -523,18 +523,17 @@ monitor_post_fork(pid_t child, void* data)
 //
 // On some systems, taking a signal inside MPI_Init breaks MPI_Init.
 // So, turn off sampling (not just block) within MPI_Init, with the
-// control variable MPI_RISKY to bypass this.
+// control variable MPI_RISKY to bypass this.  This is a problem on
+// IBM BlueGene and Cray XK6 (interlagos).
 //
 void
 monitor_mpi_pre_init(void)
 {
+  TMSG(MPI, "Pre MPI_Init");
   if (! ENABLED(MPI_RISKY)) {
-    TMSG(MPI,"Pre_init");
-#if defined(HOST_SYSTEM_IBM_BLUEGENE)
-    TMSG(MPI,"Stopping Sample Sources");
     // Turn sampling off.
+    TMSG(MPI, "Stopping Sample Sources");
     SAMPLE_SOURCES(stop);
-#endif
   }
 }
 
@@ -542,13 +541,11 @@ monitor_mpi_pre_init(void)
 void
 monitor_init_mpi(int *argc, char ***argv)
 {
-  TMSG(MPI,"Init MPI");
+  TMSG(MPI, "Post MPI_Init");
   if (! ENABLED(MPI_RISKY)) {
-#if defined(HOST_SYSTEM_IBM_BLUEGENE)
     // Turn sampling back on.
     TMSG(MPI, "Restart Sample Sources");
     SAMPLE_SOURCES(start);
-#endif
   }
 }
 
