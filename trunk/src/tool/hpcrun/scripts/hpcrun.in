@@ -268,7 +268,7 @@ do
 	# --------------------------------------------------
 
 	-C | --compact_recursion )
-	    export HPCRUN_COMPACT_RECURSION=1
+	    export HPCRUN_COLLAPSE_RECURSION=1
 	    ;;
 
 	# --------------------------------------------------
