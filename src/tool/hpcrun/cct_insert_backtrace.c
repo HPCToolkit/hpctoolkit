@@ -67,7 +67,7 @@
 // local variable records the on/off state of
 // special recursive compression:
 //
-static bool compact_recursion = false;
+static bool collapse_recursion = false;
 
 static cct_node_t*
 cct_insert_raw_backtrace(cct_node_t* cct,
@@ -81,12 +81,12 @@ cct_insert_raw_backtrace(cct_node_t* cct,
   }
   ip_normalized_t parent_routine = ip_normalized_NULL;
   for(; path_beg >= path_end; path_beg--){
-    if ( compact_recursion &&
-	 ! (path_beg == path_end) &&
-	 ip_normalized_eq(&(path_beg->cursor.the_function), &(parent_routine))) {
+    if ( collapse_recursion &&
+	 (path_beg >= path_end + 1) && 
+         ip_normalized_eq(&(path_beg->cursor.the_function), &(parent_routine)) &&
+	 ip_normalized_eq(&(path_beg->cursor.the_function), &((path_beg-1)->cursor.the_function))) { 
       TMSG(REC_COMPRESS, "recursive routine compression!");
-    }
-    else {
+    } else {
       cct_addr_t tmp = (cct_addr_t) {.as_info = path_beg->as_info, .ip_norm = path_beg->ip_norm, .lip = path_beg->lip};
       TMSG(BT_INSERT, "inserting addr (%d, %p)", tmp.ip_norm.lm_id, tmp.ip_norm.lm_ip);
       cct = hpcrun_cct_insert_addr(cct, &tmp);
@@ -104,10 +104,10 @@ help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 //
 // 
 void
-hpcrun_real_compact_recursion_mode(bool mode)
+hpcrun_real_collapse_recursion_mode(bool mode)
 {
-  TMSG(REC_COMPRESS, "compact_recursion set to %s", mode ? "true" : "false");
-  compact_recursion = mode;
+  TMSG(REC_COMPRESS, "collapse_recursion set to %s", mode ? "true" : "false");
+  collapse_recursion = mode;
 }
 
 // See usage in header.
