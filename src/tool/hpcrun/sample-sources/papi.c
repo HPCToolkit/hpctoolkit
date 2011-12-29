@@ -128,6 +128,13 @@ METHOD_FN(init)
 	PAPI_VER_CURRENT, ret);
     exit(1);
   }
+
+  // Tell PAPI to count events in all contexts (user, kernel, etc).
+  ret = PAPI_set_domain(PAPI_DOM_ALL);
+  if (ret != PAPI_OK) {
+    EMSG("warning: PAPI_set_domain(PAPI_DOM_ALL) failed: %d", ret);
+  }
+
   self->state = INIT;
 }
 
