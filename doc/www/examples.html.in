@@ -27,10 +27,24 @@
 
 <h1>HPCToolkit Examples</h1>
 
-<p><i>(Coming soon.)</i>
+<p>
+<ul>
+<li>
+Chombo AMR Framework: amrGodunov3D on 1024 cores of a Cray XE6:
+ <a href=http://hpctoolkit.org/examples/hpctoolkit-chombo-crayxe6-1024pe-trace.tgz>hpctoolkit-chombo-crayxe6-1024pe-trace.tgz</a> (78M)
 
-<p>For now, see the <a href="documentation.html">documentation</a>.
+<br />
+<br />
 
+The compressed tar file contains data for hpcviewer and hpctraceviewer interfaces.
+You can use hpcviewer to explore where the code spends its time with top-down, bottom-up, and flat views of the performance data.
+hpcviewer's top-down view of the calling context tree enables you to drill down and see what is important. hpcviewer's bottom-up view enables you to assess the cost of individual functions to their multiple invocation sites.
+You can use hpctraceviewer to see how the execution unfolds over time at multiple levels of abstraction.
+For details about how to use the hpcviewer and hpctraceviewer user interfaces, see Chapters 5 and 6 of the <a href=./manual/HPCToolkit-users-manual.pdf>HPCToolkit User's Manual</a>.
+</li>
+
+</ul>
+</p>
 
 <!-- 
 <p>This page contains links that will enable you to download a copy of 
@@ -77,7 +91,7 @@ Using Parameterized Models. In Proceedings of the Joint International Conference
 </ul>
 -->
 
-<p>[<span class="lastupdated">Page last updated: 2011/06/25</span>]
+<p>[<span class="lastupdated">Page last updated: 2011/12/30</span>]
 </p>
 
 <!-- ********************************************************************** -->

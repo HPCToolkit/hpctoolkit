@@ -182,6 +182,32 @@ Contents:
 ------------------------------------------------------------
 
 ----------------------------------------
+HPCToolkit Version 5.2.1: [2011.12.30]
+----------------------------------------
+
+A performance enhancement and maintenance release.
+
+- hpcrun
+  - instead of discarding partial unwinds, record them in a special subtree
+  - create option for compressing call paths with (simple) recursive
+    function invocations
+  - rework representation of call path profile metrics to support
+    collection of tends or hundreds of metrics per run
+  - program PAPI events to count during system calls
+  - correct several subtle monitoring problems
+  - improve performance of memory leak detection
+
+- hpcviewer includes key performance enhancements:
+  - rapidly render scatter plots of metric values over all "MPI ranks"
+    (or threads)
+  - several bug fixes
+
+- hpctraceviewer
+  - significantly enhance rendering performance
+  - several bug fixes
+
+
+----------------------------------------
 HPCToolkit Version 5.1.0: [2011.05.27]
 ----------------------------------------
 

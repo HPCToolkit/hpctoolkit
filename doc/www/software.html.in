@@ -38,13 +38,13 @@
 
   <tr>
     <td width="50%">
-      <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-5.1.0-release.tar.gz</a> (source)
+      <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-5.2.1-release.tar.gz</a> (source)
       <br />
-      <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-externals-5.1.0-release.tar.gz</a> (source)
+      <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-externals-5.2.1-release.tar.gz</a> (source)
       <br />
-      <a href="https://outreach.scidac.gov/frs/?group_id=22">hpcviewer-5.1.0-release-&lt;platform&gt;.tgz</a> (platform-specific build)
+      <a href="https://outreach.scidac.gov/frs/?group_id=22">hpcviewer-5.2.1-release-&lt;platform&gt;.tgz</a> (platform-specific build)
       <br />
-      <a href="https://outreach.scidac.gov/frs/?group_id=22">hpctraceviewer-5.1.0-release-&lt;platform&gt;.tgz</a> (platform-specific build)
+      <a href="https://outreach.scidac.gov/frs/?group_id=22">hpctraceviewer-5.2.1-release-&lt;platform&gt;.tgz</a> (platform-specific build)
     </td>
     <td>
     </td>
@@ -75,7 +75,7 @@
 <li>To obtain a snapshot of the latest version of 'trunk':
   <table cellpadding="2" cellspacing="2" border="1" width="100%">
   <tr>
-  <td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/trunk/?root=hpctoolkit">hpctoolkit</a> (trunk)
+  <td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/trunk/?root=hpctoolkit">hpctoolkit</a>
   </td>
   <td><code>svn co https://outreach.scidac.gov/svn/hpctoolkit/trunk hpctoolkit</code>
   </td>
@@ -90,11 +90,25 @@
 
   <tr>
   <td>
-    <a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpcviewer</a> (trunk)
+    <a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpcviewer</a>
     <br />
-    <a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpctraceviewer</a> (trunk)
+    <a href="http://www.eclipse.org/rcp">(based on Eclipse RCP)</a>
   </td>
-  <td><code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk hpcviewer</code>
+  <td><code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk/edu.rice.cs.hpc.data</code>
+      <br />
+      <code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk/edu.rice.cs.hpc.viewer</code>
+  </td>
+  </tr>
+
+  <tr>
+  <td>
+    <a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpctraceviewer</a>
+    <br />
+    <a href="http://www.eclipse.org/rcp">(based on Eclipse RCP)</a>
+  </td>
+  <td><code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk/edu.rice.cs.hpc.data</code>
+      <br />
+      <code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk/edu.rice.cs.hpc.traceviewer</code>
   </td>
   </tr>
 
@@ -139,7 +153,7 @@
 </p>
 
 
-<p>[<span class="lastupdated">Page last updated: 2011/06/25</span>]
+<p>[<span class="lastupdated">Page last updated: 2011/12/30</span>]
 </p>
 
 <!-- ********************************************************************** -->

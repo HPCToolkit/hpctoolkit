@@ -20,9 +20,7 @@
 
 <!-- ********************************************************************** -->
 
-<!-- HPCToolkit Image (height = 71 pixels) --> <img style="position: absolute; top: 0px; left: 0px" src="style/header.gif" alt="hpctoolkit" /> <div style="position: relative; margin-top: 60px; width: 100%; text-align: right;"> <p style="margin: 0px; font-size: small;">   [ <a href="index.html">Home</a>   | <a href="overview.html">Overview</a>   | <a href="publications.html">Publications</a> ]   &bull;   [ <a href="software.html">Software/Downloads</a>   | <a href="documentation.html">Documentation/Questions</a> ]   
-&bull;   [ <a href="examples.html">Examples</a> ]
-&bull;   [ <a href="info-people.html">People</a> |     <a href="info-acks.html">Acks</a> ] </p> </div> <div style="width: 100%;">   <hr /> </div> 
+<!-- HPCToolkit Image (height = 71 pixels) --> <img style="position: absolute; top: 0px; left: 0px" src="style/header.gif" alt="hpctoolkit" /> <div style="position: relative; margin-top: 60px; width: 100%; text-align: right;"> <p style="margin: 0px; font-size: small;">   [ <a href="index.html">Home</a>   | <a href="overview.html">Overview</a>   | <a href="publications.html">Publications</a> ]   &bull;   [ <a href="examples.html">Examples</a> ]   &bull;   [ <a href="software.html">Software/Downloads</a>   | <a href="documentation.html">Documentation/Questions</a> ]   &bull;   [ <a href="info-people.html">People</a> |     <a href="info-acks.html">Acks</a> ] </p> </div> <div style="width: 100%;">   <hr /> </div> 
 <!-- ********************************************************************** -->
 
 <h1>Obtaining and Building HPCToolkit Software</h1>
@@ -39,13 +37,13 @@
 
   <tr>
     <td width="50%">
-      <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-5.1.0-release.tar.gz</a> (source)
+      <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-5.2.1-release.tar.gz</a> (source)
       <br />
-      <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-externals-5.1.0-release.tar.gz</a> (source)
+      <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-externals-5.2.1-release.tar.gz</a> (source)
       <br />
-      <a href="https://outreach.scidac.gov/frs/?group_id=22">hpcviewer-5.1.0-release-&lt;platform&gt;.tgz</a> (platform-specific build)
+      <a href="https://outreach.scidac.gov/frs/?group_id=22">hpcviewer-5.2.1-release-&lt;platform&gt;.tgz</a> (platform-specific build)
       <br />
-      <a href="https://outreach.scidac.gov/frs/?group_id=22">hpctraceviewer-5.1.0-release-&lt;platform&gt;.tgz</a> (platform-specific build)
+      <a href="https://outreach.scidac.gov/frs/?group_id=22">hpctraceviewer-5.2.1-release-&lt;platform&gt;.tgz</a> (platform-specific build)
     </td>
     <td>
     </td>
@@ -76,7 +74,7 @@
 <li>To obtain a snapshot of the latest version of 'trunk':
   <table cellpadding="2" cellspacing="2" border="1" width="100%">
   <tr>
-  <td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/trunk/?root=hpctoolkit">hpctoolkit</a> (trunk)
+  <td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/trunk/?root=hpctoolkit">hpctoolkit</a>
   </td>
   <td><code>svn co https://outreach.scidac.gov/svn/hpctoolkit/trunk hpctoolkit</code>
   </td>
@@ -91,11 +89,25 @@
 
   <tr>
   <td>
-    <a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpcviewer</a> (trunk)
+    <a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpcviewer</a>
     <br />
-    <a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpctraceviewer</a> (trunk)
+    <a href="http://www.eclipse.org/rcp">(based on Eclipse RCP)</a>
   </td>
-  <td><code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk hpcviewer</code>
+  <td><code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk/edu.rice.cs.hpc.data</code>
+      <br />
+      <code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk/edu.rice.cs.hpc.viewer</code>
+  </td>
+  </tr>
+
+  <tr>
+  <td>
+    <a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpctraceviewer</a>
+    <br />
+    <a href="http://www.eclipse.org/rcp">(based on Eclipse RCP)</a>
+  </td>
+  <td><code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk/edu.rice.cs.hpc.data</code>
+      <br />
+      <code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk/edu.rice.cs.hpc.traceviewer</code>
   </td>
   </tr>
 
@@ -140,12 +152,12 @@
 </p>
 
 
-<p>[<span class="lastupdated">Page last updated: 2011/06/25</span>]
+<p>[<span class="lastupdated">Page last updated: 2011/12/30</span>]
 </p>
 
 <!-- ********************************************************************** -->
 
-<div style="width: 100%; font-size: small;">   <hr />   <p style="margin: 0px; font-size: small;">     &copy;2000-2011 <a href="http://www.rice.edu">Rice University</a>     &bull;     <a href="http://www.cs.rice.edu">Rice Computer Science</a>   </p>   <a href="http://validator.w3.org/check/referer">     <img src="http://www.w3.org/Icons/valid-xhtml10-blue" alt="" height="15" /></a>   <a href="http://jigsaw.w3.org/css-validator/check/referer">     <img src="http://www.w3.org/Icons/valid-css-blue" alt="" height="15" /></a> </div> 
+<div style="width: 100%; font-size: small;">   <hr />   <p style="margin: 0px; font-size: small;">     &copy;2000-2012 <a href="http://www.rice.edu">Rice University</a>     &bull;     <a href="http://www.cs.rice.edu">Rice Computer Science</a>   </p>   <a href="http://validator.w3.org/check/referer">     <img src="http://www.w3.org/Icons/valid-xhtml10-blue" alt="" height="15" /></a>   <a href="http://jigsaw.w3.org/css-validator/check/referer">     <img src="http://www.w3.org/Icons/valid-css-blue" alt="" height="15" /></a> </div> 
 <!-- ********************************************************************** -->
 
 
