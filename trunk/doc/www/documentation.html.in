@@ -105,6 +105,8 @@ User's Manual [<a href="manual/HPCToolkit-users-manual.pdf">pdf</a>]
 <ul>
   <li>
     <a href="man/hpcviewer.html">hpcviewer</a>
+  </li>
+  <li>
     <a href="man/hpctraceviewer.html">hpctraceviewer</a>
   </li>
 </ul>
@@ -116,7 +118,7 @@ User's Manual [<a href="manual/HPCToolkit-users-manual.pdf">pdf</a>]
 <h2>Questions, Problems, Bugs</h2>
 
 <div class="indent">
-<p>When contacting us or submitting a bug report, please tell us the following:</p>
+<p>Note: When contacting us or submitting a bug report using any of the means listed below, please tell us the following:</p>
 <ol>
   <li>
     System information: OS/architecture (<code>uname -a</code>), compiler (<code>gcc -v</code>), PAPI (version), Java (<code>java -version</code>).
@@ -155,7 +157,7 @@ Submit a <a href="https://outreach.scidac.gov/tracker/?group_id=87">bug report</
 
 
 
-<p>[<span class="lastupdated">Page last updated: 2011/06/25</span>]
+<p>[<span class="lastupdated">Page last updated: 2011/12/30</span>]
 </p>
 
 <!-- ********************************************************************** -->
