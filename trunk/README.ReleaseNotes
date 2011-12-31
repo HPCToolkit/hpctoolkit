@@ -192,10 +192,12 @@ A performance enhancement and maintenance release.
   - create option for compressing call paths with (simple) recursive
     function invocations
   - rework representation of call path profile metrics to support
-    collection of tends or hundreds of metrics per run
+    collection of tens or hundreds of metrics per run
   - program PAPI events to count during system calls
   - correct several subtle monitoring problems
   - improve performance of memory leak detection
+  - fix how hpcrun opens files to be robust on systems where gethostid
+    or getpid don't behave as expected
 
 - hpcviewer includes key performance enhancements:
   - rapidly render scatter plots of metric values over all "MPI ranks"
