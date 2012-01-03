@@ -1,0 +1,108 @@
+John's patch to connect the root to all unreachable nodes within a
+basic block.  This was causing hpcstruct to miss loops.
+
+diff -Naurb version-0.4pre.orig/src/OpenAnalysis/CFG/ManagerCFG.cpp version-0.4pre/src/OpenAnalysis/CFG/ManagerCFG.cpp
+--- version-0.4pre.orig/src/OpenAnalysis/CFG/ManagerCFG.cpp	2010-08-27 15:17:34.000000000 -0500
++++ version-0.4pre/src/OpenAnalysis/CFG/ManagerCFG.cpp	2012-01-01 23:20:59.000000000 -0600
+@@ -97,6 +97,9 @@
+     mCFG->connect(*return_nodes, final);
+     // finalize control flow for unstructured constructs
+     HandleDelayedBranches();
++    // connect all unreachable nodes to the unique entry
++    FixUniqueEntry();
++
+     return mCFG;
+ 
+   }
+@@ -1099,6 +1102,24 @@
+ 
+ 
+ void
++ManagerCFGStandard::FixUniqueEntry()
++{
++  OA_ptr<NodeInterface> entry = mCFG->getEntry(); 
++  OA_ptr<NodesIteratorInterface>  nodes = mCFG->getCFGNodesIterator();
++
++  for( ; nodes->isValid(); ++(*nodes)) {
++    OA_ptr<NodeInterface> node = nodes->currentCFGNode();
++    OA_ptr<EdgesIteratorInterface> incoming_edges = node->getCFGIncomingEdgesIterator();
++
++    if (incoming_edges->isValid()) continue;
++
++    if (entry != node) 
++      mCFG->connect(entry, node, FALLTHROUGH_EDGE);
++  }
++}
++
++
++void
+ ManagerCFGStandard::createBasicCFG()
+ {
+   // Create and populate the block_list.
+diff -Naurb version-0.4pre.orig/src/OpenAnalysis/CFG/ManagerCFG.hpp version-0.4pre/src/OpenAnalysis/CFG/ManagerCFG.hpp
+--- version-0.4pre.orig/src/OpenAnalysis/CFG/ManagerCFG.hpp	2010-08-27 15:17:34.000000000 -0500
++++ version-0.4pre/src/OpenAnalysis/CFG/ManagerCFG.hpp	2012-01-01 23:20:59.000000000 -0600
+@@ -152,6 +152,7 @@
+ //  void processBlock(OA_ptr<CFGStandard::Node> );
+   void createBasicCFG();
+ //  void processBlock();
++  void FixUniqueEntry();
+ 
+  
+ 
+diff -Naurb version-0.4pre.orig/src/OpenAnalysis/Utils/NestedSCR.cpp version-0.4pre/src/OpenAnalysis/Utils/NestedSCR.cpp
+--- version-0.4pre.orig/src/OpenAnalysis/Utils/NestedSCR.cpp	2008-06-24 14:18:47.000000000 -0500
++++ version-0.4pre/src/OpenAnalysis/Utils/NestedSCR.cpp	2012-01-01 23:20:59.000000000 -0600
+@@ -629,6 +629,8 @@
+ void 
+ NestedSCR::dump(std::ostream& os)
+ {
++  os << "RIFG for Tarjan intervals\n";
++  rifg->dump(os);
+   os << "Tarjan interval tree: node-id (level,type) : IntervalIndex\n";
+   os << std::setfill(' ');
+   DumpSubTree(os, DFNUM_ROOT, 0 /* Indent */);
+diff -Naurb version-0.4pre.orig/src/OpenAnalysis/Utils/RIFG.cpp version-0.4pre/src/OpenAnalysis/Utils/RIFG.cpp
+--- version-0.4pre.orig/src/OpenAnalysis/Utils/RIFG.cpp	2007-12-12 22:22:51.000000000 -0600
++++ version-0.4pre/src/OpenAnalysis/Utils/RIFG.cpp	2012-01-01 23:20:59.000000000 -0600
+@@ -161,6 +161,28 @@
+ }
+ 
+ 
++void 
++RIFG::dump(std::ostream& os)
++{
++  os << "digraph DGraph {" << endl;
++  for (OA_ptr<NodesIterator> ni = getNodesIterator(); ni->isValid(); ++(*ni)) {
++    string shape ="";
++    if (ni->current() == getSource() || ni->current() == getSink()) 
++      shape =" shape=\"diamond\""; 
++    os << ni->current() << " [ label=\"" << ni->current() << "\"" << shape <<" ];" << endl;
++  }
++
++  for (OA_ptr<NodesIterator> ni = getNodesIterator(); ni->isValid(); ++(*ni)) {
++    for (OA_ptr<OutgoingEdgesIterator> oe = getOutgoingEdgesIterator(ni->current());
++	 oe->isValid(); 
++	 ++(*oe)) {
++      os << ni->current() << " -> " << getEdgeSink(oe->current()) << ";" << endl;
++    }
++  }
++  os << "}" << endl;
++}
++
++
+ //***************************************************************************
+ // 
+ //***************************************************************************
+diff -Naurb version-0.4pre.orig/src/OpenAnalysis/Utils/RIFG.hpp version-0.4pre/src/OpenAnalysis/Utils/RIFG.hpp
+--- version-0.4pre.orig/src/OpenAnalysis/Utils/RIFG.hpp	2007-12-12 22:22:51.000000000 -0600
++++ version-0.4pre/src/OpenAnalysis/Utils/RIFG.hpp	2012-01-01 23:20:59.000000000 -0600
+@@ -201,6 +201,8 @@
+   
+   void dumpNode(std::ostream& os, NodeId nid);
+ 
++  void dump(std::ostream& os);
++
+ 
+   // helper methods to find the source and sink of a DGraph.  These
+   // may be used with the constructor, e.g.:
