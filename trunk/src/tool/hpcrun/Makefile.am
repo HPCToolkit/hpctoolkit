@@ -174,6 +174,7 @@ MY_BASE_FILES =			\
 	loadmap.c			\
 	metrics.c			\
 	name.c				\
+	rank.c				\
 	sample_event.c			\
 	sample_prob.c			\
 	sample_sources_all.c		\
@@ -190,6 +191,7 @@ MY_BASE_FILES =			\
 	thread_data.c			\
 	thread_use.c			\
 	trace.c				\
+	weak.c				\
 	write_data.c		        \
 	\
 	cct/cct_bundle.c		\
@@ -256,8 +258,6 @@ MY_PPC_FILES = \
         utilities/arch/ppc64/ppc64-context-pc.c \
         \
         utilities/arch/ppc64/ppc64-compact-recursion-mode.c
-
-
 
 
 MY_X86_FILES = \
