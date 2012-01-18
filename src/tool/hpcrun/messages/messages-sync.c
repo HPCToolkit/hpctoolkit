@@ -84,6 +84,7 @@
 #include "fname_max.h"
 #include "files.h"
 #include "name.h"
+#include "rank.h"
 #include "thread_data.h"
 #include "thread_use.h"
 #include "monitor.h"
@@ -179,7 +180,7 @@ messages_fini(void)
     // missing the MPI rank. fix that now by renaming the log file to what 
     // it should be.
     //----------------------------------------------------------------------
-    int rank = monitor_mpi_comm_rank();
+    int rank = hpcrun_get_rank();
     if (rank >= 0) {
       hpcrun_rename_log_file(rank);
     }

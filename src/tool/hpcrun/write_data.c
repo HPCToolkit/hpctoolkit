@@ -56,11 +56,11 @@
 // local includes
 //*****************************************************************************
 
-#include "monitor.h"
 #include "fname_max.h"
 #include "backtrace.h"
 #include "files.h"
 #include "epoch.h"
+#include "rank.h"
 #include "thread_data.h"
 #include "cct_bundle.h"
 #include "hpcrun_return_codes.h"
@@ -148,8 +148,10 @@ lazy_open_data_file(void)
     return fs;
   }
 
-  int rank = monitor_mpi_comm_rank();
-  if (rank < 0) rank = 0;
+  int rank = hpcrun_get_rank();
+  if (rank < 0) {
+    rank = 0;
+  }
   int fd = hpcrun_open_profile_file(rank, td->id);
   fs = fdopen(fd, "w");
   if (fs == NULL) {
@@ -170,9 +172,7 @@ lazy_open_data_file(void)
 
   char mpiRankStr[bufSZ];
   mpiRankStr[0] = '\0';
-  if (monitor_mpi_comm_rank() >= 0) {
-    snprintf(mpiRankStr, bufSZ, "%d", rank);
-  }
+  snprintf(mpiRankStr, bufSZ, "%d", rank);
 
   char tidStr[bufSZ];
   snprintf(tidStr, bufSZ, "%d", td->id);

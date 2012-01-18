@@ -62,6 +62,7 @@
 #include "env.h"
 #include "files.h"
 #include "monitor.h"
+#include "rank.h"
 #include "string.h"
 #include "trace.h"
 #include "thread_data.h"
@@ -176,7 +177,7 @@ trace_close()
     int ret = hpcio_outbuf_close(&td->trace_outbuf);
     trace_file_validate(ret == HPCFMT_OK, "close");
 
-    int rank = monitor_mpi_comm_rank();
+    int rank = hpcrun_get_rank();
     if (rank >= 0) {
       hpcrun_rename_trace_file(rank, td->id);
     }
