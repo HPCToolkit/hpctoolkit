@@ -1,0 +1,103 @@
+Workaround some problems related to side threads created by Cray UPC
+compiler on DMAPP interconnect.
+
+1. Fix a bug where monitor failed to reinit the child correctly in the
+case that a process forks and then creates a side thread all in an
+init constructor before main.
+
+2. Workaround a problem where side threads don't respond to signals.
+In this case, we have to skip the fini-thread callback because calling
+fini-thread after fini-process causes hpcrun to abort.  But the side
+threads from Cray DMAPP take no samples anyway.
+
+3. Lower the shootdown timeout to 20.
+
+This is not a full solution, just the best workaround that I can do.
+
+
+Index: libmonitor-premain/src/pthread.c
+===================================================================
+--- libmonitor-premain/src/pthread.c	(revision 126)
++++ libmonitor-premain/src/pthread.c	(working copy)
+@@ -77,7 +77,7 @@
+  */
+ 
+ #define MONITOR_TN_ARRAY_SIZE  150
+-#define MONITOR_SHOOTDOWN_TIMEOUT  60
++#define MONITOR_SHOOTDOWN_TIMEOUT  20
+ 
+ /*
+  *  On some systems, pthread_equal() and pthread_cleanup_push/pop()
+@@ -190,6 +190,7 @@
+ volatile static char monitor_has_used_threads = 0;
+ volatile static char monitor_has_reached_main = 0;
+ volatile static char monitor_thread_support_done = 0;
++volatile static char monitor_block_fini_thread = 0;
+ 
+ extern void monitor_thread_fence1;
+ extern void monitor_thread_fence2;
+@@ -545,7 +546,9 @@
+ 		if (tn->tn_fini_started) {
+ 		    num_started++;
+ 		} else {
+-		    (*real_pthread_kill)(tn->tn_self, sig);
++		    int ret = (*real_pthread_kill)(tn->tn_self, sig);
++		    MONITOR_DEBUG("pthread_kill: tid: %d, ret: %d\n",
++				  tn->tn_tid, ret);
+ 		    num_unstarted++;
+ 		}
+ 		if (tn->tn_fini_done)
+@@ -567,6 +570,7 @@
+ 		   && num_unstarted > 0) {
+ 	    MONITOR_DEBUG("warning: timeout exceeded (%d), giving up\n",
+ 			  MONITOR_SHOOTDOWN_TIMEOUT);
++	    monitor_block_fini_thread = 1;
+ 	    break;
+ 	}
+ 
+@@ -828,7 +832,18 @@
+ 	return;
+     }
+ 
+-    if (tn->tn_appl_started && !tn->tn_fini_started) {
++    if (monitor_block_fini_thread) {
++	/*
++	 * FIXME: On some systems (eg, Cray UPC/DMAPP), some side
++	 * threads seem to be resistant to signals.  In this case,
++	 * calling fini-thread after fini-process causes hpcrun to
++	 * abort.  So, I guess it's better to skip fini-thread.
++	 */
++	MONITOR_DEBUG("warning: skipping monitor_fini_thread for tid: %d\n",
++		      tn->tn_tid);
++	tn->tn_fini_done = 1;
++    }
++    else if (tn->tn_appl_started && !tn->tn_fini_started) {
+ 	tn->tn_fini_started = 1;
+ 	MONITOR_DEBUG("calling monitor_fini_thread(data = %p), tid = %d ...\n",
+ 		      tn->tn_user_data, tn->tn_tid);
+Index: libmonitor-premain/src/main.c
+===================================================================
+--- libmonitor-premain/src/main.c	(revision 126)
++++ libmonitor-premain/src/main.c	(working copy)
+@@ -236,15 +236,16 @@
+ 	monitor_reset_thread_list(&monitor_main_tn);
+ 	monitor_main_tn.tn_user_data = user_data;
+     }
+-    if (!is_fork || monitor_has_reached_main) {
++    monitor_fini_library_called = 0;
++    monitor_fini_process_done = 0;
++    monitor_fini_process_cookie = 0;
++
++    if (monitor_has_reached_main) {
+ 	MONITOR_DEBUG1("calling monitor_init_process() ...\n");
+ 	monitor_main_tn.tn_user_data =
+ 	    monitor_init_process(&monitor_argc, monitor_argv, user_data);
++	monitor_thread_release();
+     }
+-    monitor_fini_library_called = 0;
+-    monitor_fini_process_done = 0;
+-    monitor_fini_process_cookie = 0;
+-    monitor_thread_release();
+ }
+ 
+ /*
