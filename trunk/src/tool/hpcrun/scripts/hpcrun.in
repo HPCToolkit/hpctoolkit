@@ -158,10 +158,13 @@ Options: Profiling (Defaults shown in curly brackets {})
                        profiles of the same <command> will be placed in the
                        same output directory.
 
-  -C, --compact_recursion
-                       Instead of recording each instance of a recursive call,
-                       record only the top-level call.
-                       NOTE: should not use the RETCNT sample source in this mode.
+  -r, --retain-recursion
+                       Normally, hpcrun will collapse (simple) recursive call chains
+                       to a single node. This option disables that behavior: all
+                       elements of a recursive call chain are recorded
+                       NOTE: If the user employs the RETCNT sample source, then this
+                             option is enabled: RETCNT implies *all* elements of
+                             call chains, including recursive elements, are recorded.
 
 NOTES:
 * hpcrun uses preloaded shared libraries to initiate profiling.  For this
@@ -267,8 +270,8 @@ do
 
 	# --------------------------------------------------
 
-	-C | --compact_recursion )
-	    export HPCRUN_COLLAPSE_RECURSION=1
+	-r | --retain-recursion )
+	    export HPCRUN_RETAIN_RECURSION=1
 	    ;;
 
 	# --------------------------------------------------

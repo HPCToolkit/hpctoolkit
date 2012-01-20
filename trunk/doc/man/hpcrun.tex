@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2011/09/19}
+\setDate{ 2012/01/12}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -124,6 +124,16 @@ Generate a call path trace (in addition to a call path profile).
 Measure only a fraction \Arg{frac} of the execution's processes.
 For each process, enable measurement (of all threads) with probability \Arg{frac}; \Arg{frac} is a real number (0.10) or a fraction (1/10) between 0 and 1.
 (To minimize perturbations, when a process is disabled, all threads in a process still receive sampling interrupts, but they are ignored.)
+
+\item[\Opt{-r}, \Opt{--retain-recursion}]
+Normally, hpcrun will collapse (simple) recursive call chains
+to a single node. This option disables that behavior: all
+elements of a recursive call chain are recorded
+NOTE: If the user employs the RETCNT sample source, then this
+      option is enabled: RETCNT implies *all* elements of
+      call chains, including recursive elements, are recorded.
+
+
 
 \item[\OptArg{-o}{outpath}, \OptArg{--output}{outpath}]
 Directory for output data.
