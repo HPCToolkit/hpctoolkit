@@ -84,6 +84,7 @@
 
 #include <lib/prof-lean/hpcrun-metric.h>
 
+extern void hpcrun_set_retain_recursion_mode(bool mode);
 
 //***************************************************************************
 
@@ -106,7 +107,7 @@ static const int IRRELEVANT = 0;
 static void
 METHOD_FN(init)
 {
-  self->state = INIT; // no actual init actions necessary for RETCNT
+  self->state = INIT;
 }
 
 static void
@@ -178,6 +179,9 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
+  TMSG(REC_COMPRESS, "RETCNT event ==> retain recursion");
+  hpcrun_set_retain_recursion_mode(true); // make sure all recursion elements are retained
+                                          // whenever RETCNT is used.
   thread_data_t *td = hpcrun_get_thread_data();
   td->eventSet[self->evset_idx] = 0xDEAD;
 }
