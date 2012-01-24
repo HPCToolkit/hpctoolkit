@@ -144,6 +144,10 @@ Options: Profiling (Defaults shown in curly brackets {})
   -t, --trace          Generate a call path trace (in addition to a call
                        path profile).
 
+  -ds, --delay-sampling
+                       Delay starting sampling until the application calls
+                       hpctoolkit_sampling_start().
+
   -f <frac>, -fp <frac>, --process-fraction <frac>
                        Measure only a fraction <frac> of the execution's
                        processes.  For each process, enable measurement
@@ -252,6 +256,10 @@ do
 
 	-L | -l | --list-events )
 	    export HPCRUN_EVENT_LIST=LIST
+	    ;;
+
+	-ds | --delay-sampling )
+	    export HPCRUN_DELAY_SAMPLING=1
 	    ;;
 
 	# --------------------------------------------------
@@ -409,7 +417,7 @@ fi
 # Enable core files.
 ulimit -S -c unlimited >/dev/null 2>&1
 
-hpc_ld_library_path="$papi_libdir"
+hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}"
 hpc_ld_preload="${memleak_preload} ${hpcrun_dir}/libhpcrun.so"
 hpc_ld_preload="${hpc_ld_preload} ${mpi_preload}"
 hpc_ld_preload="${hpc_ld_preload} ${libmonitor_dir}/libmonitor.so"

@@ -81,17 +81,23 @@ pkglibexecdir = $(libexecdir)/$(PACKAGE)
 bin_SCRIPTS = scripts/hpcsummary
 pkglibexec_SCRIPTS = scripts/hpclog
 
+include_HEADERS = hpctoolkit.h
+
 pkglib_LTLIBRARIES =
 if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcrun.la
   pkglib_LTLIBRARIES += libhpcrun_memleak.la
+  pkglib_LTLIBRARIES += libhpctoolkit.la
   bin_SCRIPTS += scripts/hpcrun
 endif
 
+pkglib_PROGRAMS =
+pkglib_LIBRARIES =
 if OPT_ENABLE_HPCRUN_STATIC
-  pkglib_PROGRAMS = libhpcrun.o
-  pkglib_LIBRARIES = libhpcrun_wrap.a
+  pkglib_PROGRAMS  += libhpcrun.o
+  pkglib_LIBRARIES += libhpcrun_wrap.a
   pkglib_LIBRARIES += libhpcrun_memleak_wrap.a
+  pkglib_LIBRARIES += libhpctoolkit.a
   bin_SCRIPTS += scripts/hpclink
 endif
 
@@ -186,6 +192,7 @@ MY_BASE_FILES =			\
         sample-sources/sync.c           \
 	sample_sources_registered.c	\
 	segv_handler.c			\
+	start-stop.c			\
 	system_server.c			\
 	term_handler.c			\
 	thread_data.c			\
@@ -308,6 +315,12 @@ libhpcrun_memleak_la_SOURCES = 		\
 libhpcrun_memleak_wrap_a_SOURCES = 	\
 	sample-sources/memleak-overrides.c
 
+libhpctoolkit_la_SOURCES = 		\
+	hpctoolkit.c
+
+libhpctoolkit_a_SOURCES = 		\
+	hpctoolkit.c
+
 libhpcrun_mpi_la_SOURCES = 		\
 	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
 
@@ -327,6 +340,15 @@ libhpcrun_memleak_la_CPPFLAGS =		\
 	$(MY_INCLUDE_DIRS)
 
 libhpcrun_memleak_wrap_a_CPPFLAGS =	\
+	-DHPCRUN_STATIC_LINK		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpctoolkit_la_CPPFLAGS =		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpctoolkit_a_CPPFLAGS =		\
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
