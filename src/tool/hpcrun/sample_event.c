@@ -71,6 +71,7 @@
 #include "splay-interval.h"
 #include "sample_event.h"
 #include "sample_sources_all.h"
+#include "start-stop.h"
 #include "ui_tree.h"
 #include "validate_return_addr.h"
 #include "write_data.h"
@@ -161,6 +162,12 @@ hpcrun_sample_callpath(void *context, int metricId,
 {
   if (monitor_block_shootdown()) {
     monitor_unblock_shootdown();
+    return NULL;
+  }
+
+  // Sampling turned off by the user application.
+  // This doesn't count as a sample for the summary stats.
+  if (! hpctoolkit_sampling_is_active()) {
     return NULL;
   }
 

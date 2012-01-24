@@ -86,6 +86,7 @@
 #include "hpcrun_return_codes.h"
 #include "hpcrun_stats.h"
 #include "name.h"
+#include "start-stop.h"
 #include "custom-init.h"
 #include "cct_insert_backtrace.h"
 
@@ -228,11 +229,11 @@ hpcrun_init_internal(bool is_child)
   // tallent: this is harmless, but should really only occur for pthread agent
   lushPthr_processInit();
 
-
   hpcrun_setup_segv();
   hpcrun_unw_init();
 
   hpcrun_stats_reinit();
+  hpcrun_start_stop_internal_init();
 
   // sample source setup
 
