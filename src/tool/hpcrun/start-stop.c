@@ -114,3 +114,17 @@ hpctoolkit_sampling_stop(void)
   sampling_is_active = 0;
   dont_reinit = 1;
 }
+
+
+// Fortran aliases
+
+// FIXME: The Fortran functions really need a separate API with
+// different names to handle arguments and return values.  But
+// hpctoolkit_sampling_start() and _stop() are void->void, so they're
+// a special case.
+
+void hpctoolkit_sampling_start_ (void) __attribute__ ((alias ("hpctoolkit_sampling_start")));
+void hpctoolkit_sampling_start__(void) __attribute__ ((alias ("hpctoolkit_sampling_start")));
+
+void hpctoolkit_sampling_stop_ (void) __attribute__ ((alias ("hpctoolkit_sampling_stop")));
+void hpctoolkit_sampling_stop__(void) __attribute__ ((alias ("hpctoolkit_sampling_stop")));
