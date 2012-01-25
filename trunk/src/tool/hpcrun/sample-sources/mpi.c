@@ -225,7 +225,7 @@ hpcrun_mpi_inc(cct_node_t* node, int incr)
     TMSG(MEMLEAK, "\tmpi (cct node %p): metric[%d] += %d",
 	 node, hpmpi_metric_id, incr);
     cct_metric_data_increment(hpmpi_metric_id,
-			      hpcrun_cct_metrics(node) + hpmpi_metric_id,
+			       node,
 			      (cct_metric_data_t){.i = incr});
   }
 }
