@@ -433,7 +433,12 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
     prev->ra_loc = hpcrun_unw_get_ra_loc(&cursor);
   }
 
+#if 0
+  // FIXME - this should be fixed so that fence is always initialized in the cursor so
+  // it ends up initialized in bt. presently, it is uninitialized for ppc64.
   TMSG(FENCE, "backtrace generation detects fence = %s", fence_enum_name(bt->fence));
+#endif
+
   frame_t* bt_beg  = td->btbuf_beg;      // innermost, inclusive
   frame_t* bt_last = td->btbuf_cur - 1; // outermost, inclusive
 
