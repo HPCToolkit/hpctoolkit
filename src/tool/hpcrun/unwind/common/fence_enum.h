@@ -20,6 +20,8 @@ static char* fence_enum_names[] = {
 static inline char*
 fence_enum_name(fence_enum_t f)
 {
+  if (f < FENCE_NONE || f > FENCE_BAD)
+    return "FENCE_UNINITIALIZED!!";
   return fence_enum_names[f];
 }
 
