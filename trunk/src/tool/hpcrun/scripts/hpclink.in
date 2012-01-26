@@ -71,19 +71,9 @@ papi_dir='@OPT_PAPI_LIBPATH@'
 papi_extra_libs='@papi_extra_libs@'
 
 # FIXME: The wrap list should come from monitor.
+hpctk_wrap_names='@LIBMONITOR_WRAP_NAMES@  @hpclink_extra_wrap_names@'
 
-monitor_wrap_names='@LIBMONITOR_WRAP_NAMES@'
-
-# monitor_wrap_names='main exit _exit dlopen dlclose fork vfork system
-#   execl execlp execle execv execvp execve pthread_exit
-#   pthread_create signal sigaction sigprocmask pthread_sigmask
-#   MPI_Init mpi_init mpi_init_ mpi_init__
-#   MPI_Init_thread mpi_init_thread mpi_init_thread_ mpi_init_thread__
-#   MPI_Finalize mpi_finalize mpi_finalize_ mpi_finalize__
-#   MPI_Comm_rank mpi_comm_rank mpi_comm_rank_ mpi_comm_rank__
-#   _mp_init'
-
-extra_wrap_names='@hpclink_extra_wrap_names@'
+extra_wrap_names=
 extra_hpc_files=
 
 # Set to -m64 on 64-bit version (for gcc).
@@ -144,6 +134,10 @@ Options: Informational
   -h, --help           Print help.
 
 Options: Linking
+  -dw, --double-wrap   Double quote the linker wrap options (-Wl,-Wl instead
+                       of -Wl).  Used to work around problems with the 
+                       Berkeley UPC compiler script (rarely needed).
+
   --memleak            Include HPCToolkit's memory leak detection libraries.
 
   -u <symbol>, --undefined <symbol>
@@ -188,12 +182,17 @@ export LD_LIBRARY_PATH
 #
 # Step 1 -- Parse linker options, our options first.
 #
+double_wrap=no
 verbose=no
 while test "x$1" != x
 do
     case "$1" in
 	-h | --help )
 	    usage
+	    ;;
+	-dw | --double-wrap )
+	    double_wrap=yes
+	    shift
 	    ;;
 	-memleak | --memleak )
 	    memleak_wrap="${libhpcrun_dir}/libhpcrun_memleak_wrap.a"
@@ -278,16 +277,23 @@ if test "$verbose" = yes ; then
     echo
 fi
 
+# Work around a problem with the Berkeley UPC compiler script.
+if test "$double_wrap" = yes ; then
+    linker_prefix=-Wl,-Wl
+else
+    linker_prefix=-Wl
+fi
+
 undef_args=
 for name in $undef_names
 do
-    undef_args="${undef_args} -Wl,--undefined=${name}"
+    undef_args="${undef_args} ${linker_prefix},--undefined=${name}"
 done
 
 wrap_args=
-for name in $monitor_wrap_names $extra_wrap_names
+for name in $hpctk_wrap_names $extra_wrap_names
 do
-    wrap_args="${wrap_args} -Wl,--wrap=${name}"
+    wrap_args="${wrap_args} ${linker_prefix},--wrap=${name}"
 done
 set -- $undef_args $wrap_args "$@"
 
@@ -347,10 +353,10 @@ then
         if echo "$line" | grep -E -i -e 'undef.*__wrap_' >/dev/null 2>&1
 	then
 	    name=`expr "$line" : '.*\(__wrap_[A-Za-z0-9_]*\)'`
-	    set -- "-Wl,--undefined=${name}" "$@"
+	    set -- "${linker_prefix},--undefined=${name}" "$@"
 	elif echo "$line" | grep -E -i -e 'undef.*main' >/dev/null 2>&1
 	then
-	    set -- "-Wl,--undefined=main" "$@"
+	    set -- "${linker_prefix},--undefined=main" "$@"
 	fi
     done
     $command "$@" || die "compile #1 failed: $command $@"
