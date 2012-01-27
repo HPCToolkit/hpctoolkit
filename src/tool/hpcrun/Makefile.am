@@ -459,7 +459,6 @@ if OPT_ENABLE_UPC
   libhpcrun_la_CPPFLAGS += $(OPT_UPC_IFLAGS)
   libhpcrun_o_CPPFLAGS  += $(OPT_UPC_IFLAGS)
   libhpcrun_la_LDFLAGS  += $(OPT_UPC_LDFLAGS)
-  libhpcrun_o_LDFLAGS   += $(OPT_UPC_LDFLAGS)
 endif
 
 if OPT_ENABLE_LUSH_PTHREADS
