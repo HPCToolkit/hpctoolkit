@@ -132,11 +132,10 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @OPT_ENABLE_UPC_TRUE@am__append_41 = $(OPT_UPC_IFLAGS)
 @OPT_ENABLE_UPC_TRUE@am__append_42 = $(OPT_UPC_IFLAGS)
 @OPT_ENABLE_UPC_TRUE@am__append_43 = $(OPT_UPC_LDFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_44 = $(OPT_UPC_LDFLAGS)
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_44 = -DLUSH_PTHREADS
 @OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_45 = -DLUSH_PTHREADS
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_46 = -DLUSH_PTHREADS
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_47 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_48 = libagent-pthread.la \
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_46 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_47 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -780,8 +779,8 @@ PYTHON = python
 bin_SCRIPTS = scripts/hpcsummary $(am__append_2) $(am__append_5)
 pkglibexec_SCRIPTS = scripts/hpclog
 include_HEADERS = hpctoolkit.h
-pkglib_LTLIBRARIES = $(am__append_1) $(am__append_6) $(am__append_47) \
-	$(am__append_48)
+pkglib_LTLIBRARIES = $(am__append_1) $(am__append_6) $(am__append_46) \
+	$(am__append_47)
 pkglib_LIBRARIES = $(am__append_4)
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
@@ -947,7 +946,7 @@ libhpcrun_wrap_a_SOURCES = \
 
 libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_11) $(am__append_18) $(am__append_25) \
-	$(am__append_34) $(am__append_41) $(am__append_45) \
+	$(am__append_34) $(am__append_41) $(am__append_44) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_13) $(am__append_20) $(am__append_29) \
@@ -970,7 +969,7 @@ libhpcrun_mpi_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(MY_INCLUDE_DIRS) $(am__append_12) $(am__append_19) \
 	$(am__append_26) $(am__append_37) $(am__append_42) \
-	$(am__append_46) $(UNW_INCLUDE_DIRS)
+	$(am__append_45) $(UNW_INCLUDE_DIRS)
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
@@ -994,7 +993,7 @@ libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-all
 
 libhpcrun_o_LDFLAGS = $(am__append_28) $(am__append_38) \
-	$(am__append_44) $(UNW_LD_FLAGS)
+	$(UNW_LD_FLAGS)
 MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_32) \
 	$(UNW_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)

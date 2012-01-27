@@ -70,6 +70,8 @@ xed2_dir='@XED2_RUN_DIR@'
 papi_dir='@OPT_PAPI_LIBPATH@'
 papi_extra_libs='@papi_extra_libs@'
 
+upc_libs='@OPT_UPC_LDFLAGS@'
+
 # FIXME: The wrap list should come from monitor.
 hpctk_wrap_names='@LIBMONITOR_WRAP_NAMES@  @hpclink_extra_wrap_names@'
 
@@ -270,7 +272,7 @@ done
 # Step 2 -- Build the new compile line.
 #
 #   undef-args, wrap-args, $@, libhpcrun.o, nm-addrs, libhpcrun_wrap.a,
-#   libmonitor, PAPI, Xed2, -lpthread, -ldl, repeat-application-libs.
+#   libmonitor, PAPI, UPC, Xed2, -lpthread, -ldl, repeat-application-libs.
 #
 if test "$verbose" = yes ; then
     echo "original command line: $command $@"
@@ -316,6 +318,8 @@ fi
 if test -d "$xed2_dir" ; then
     set -- "$@" "-L${xed2_dir}" -lxed
 fi
+
+set -- "$@" $upc_libs
 
 # FIXME: shouldn't always need pthread, and shoudn't ever need dl.
 set -- "$@" -lpthread -ldl -lrt
