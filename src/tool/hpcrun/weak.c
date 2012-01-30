@@ -58,9 +58,17 @@
 //
 //***************************************************************************
 
+#include <stdint.h>
+
 
 int __attribute__ ((weak))
 dmapp_get_jobinfo(void *ptr)
 {
   return -1;
 }
+
+
+// Technically, gasnet_node_t is unsigned 32-bit, but we need to allow
+// -1 to indicate unknown.
+
+int32_t __attribute__ ((weak)) gasneti_mynode = -1;
