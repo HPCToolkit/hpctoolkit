@@ -51,19 +51,18 @@
 //
 // Purpose:
 // This file generalizes how hpcrun computes the 'rank' of a process,
-// eg: MPI, dmapp, gasnet, etc.  For now, we only do MPI and dmapp,
-// but this will likely expand in the future.
+// eg: MPI, dmapp, gasnet, etc.
 //
 // For now, this API acts passively, that is, it waits for something
 // else in hpcrun to ask what is the rank.  But we may need to
-// generalize this to actively find the rank by overriding functions
-// such as gasnet_init().
+// generalize this to actively find the rank in some cases.
 //
 // Note: we kinda assume that all methods (if available) return
 // consistent answers.
 //
 //***************************************************************************
 
+#include <stdint.h>
 #include <monitor.h>
 #include "rank.h"
 
@@ -76,6 +75,8 @@ struct jobinfo {
 };
 
 int dmapp_get_jobinfo(struct jobinfo *info);
+
+extern int32_t gasneti_mynode;
 
 
 //***************************************************************************
@@ -106,6 +107,18 @@ hpcrun_get_rank(void)
     if (rank >= 0) {
       return rank;
     }
+  }
+#endif
+
+  // Gasnet stores the rank in a global variable and <gasnet.h> makes
+  // heavy use of macros.  So, there is no gasnet_mynode() function to
+  // call.  We can catch the variable statically via hpclink, but
+  // basically there's no hope for the dynamic case.
+  //
+#ifdef HPCRUN_STATIC_LINK
+  rank = (int) gasneti_mynode;
+  if (rank >= 0) {
+    return rank;
   }
 #endif
 
