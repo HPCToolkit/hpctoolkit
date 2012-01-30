@@ -74,6 +74,7 @@
 #include <hpcrun/epoch.h>
 #include <monitor.h>
 #include <hpcrun/sample_event.h>
+#include <fnbounds/fnbounds_interface.h>
 
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
