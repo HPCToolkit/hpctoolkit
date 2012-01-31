@@ -182,6 +182,16 @@ Contents:
 ------------------------------------------------------------
 
 ----------------------------------------
+HPCToolkit Version 5.x (upcoming)
+----------------------------------------
+
+- hpcrun
+  - add an API for the application to start and stop sampling
+  - get the process rank for gasnet and dmapp programs (static only)
+  - have hpcrun compress recursive calls by default
+
+
+----------------------------------------
 HPCToolkit Version 5.2.1: [2011.12.30]
 ----------------------------------------
 
