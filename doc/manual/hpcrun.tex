@@ -1,0 +1,392 @@
+% -*- Mode: latex; -*-
+% $HeadURL$
+% $Id$
+
+This chapter describes the mechanics of using \hpcrun{} and \hpclink{}
+to profile an application and collect performance data.  For advice on
+choosing sampling events, scaling studies, etc, see
+Chapter~\ref{chpt:effective-performance-analysis} on {\it Effective
+Strategies for Analyzing Program Performance}.
+
+\section{Using \hpcrun{}}
+
+The \hpcrun{} launch script is used to run an application and collect
+performance data for {\it dynamically linked\/} binaries.  For
+dynamically linked programs, this requires no change to the program
+source and no change to the build procedure.  You should build your
+application natively at full optimization.  \hpcrun{} inserts its
+profiling code into the application at runtime via \verb|LD_PRELOAD|.
+
+The basic options for \hpcrun{} are {\tt -e} (or {\tt --event}) to
+specify a sampling source and rate and {\tt -t} (or {\tt --trace}) to
+turn on tracing.  Sample sources are specified as `{\tt event@period}'
+where {\tt event} is the name of the source and {\tt period} is the
+period (threshold) for that event, and this option may be used
+multiple times.  Note that a higher period implies a lower rate of
+sampling.  The basic syntax for profiling an application with
+\hpcrun{} is:
+
+\begin{quote}
+\begin{verbatim}
+hpcrun -t -e event@period ... app arg ...
+\end{verbatim}
+\end{quote}
+
+For example, to profile an application and sample every 15,000,000
+total cycles and every 400,000 L2 cache misses you would use:
+
+\begin{quote}
+\begin{verbatim}
+hpcrun -e PAPI_TOT_CYC@15000000 -e PAPI_L2_TCM@400000 app arg ...
+\end{verbatim}
+\end{quote}
+
+The units for the {\tt WALLCLOCK} sample source are in microseconds,
+so to sample an application with tracing every 5,000 microseconds
+(200~times/second), you would use:
+
+\begin{quote}
+\begin{verbatim}
+hpcrun -t -e WALLCLOCK@5000 app arg ...
+\end{verbatim}
+\end{quote}
+
+\hpcrun{} stores its raw performance data in a {\it measurements}
+directory with the program name in the directory name.  On systems
+with a batch job scheduler (eg, PBS) the name of the job is appended
+to the directory name.
+
+\begin{quote}
+\begin{verbatim}
+hpctoolkit-app-measurements[-jobid]
+\end{verbatim}
+\end{quote}
+
+It is best to use a different measurements directory for each run.
+So, if you're using \hpcrun{} on a local workstation without a job
+launcher, you can use the `{\tt -o dirname}' option to specify an
+alternate directory name.
+
+For programs that use their own launch script (eg, {\tt mpirun} or
+{\tt mpiexec} for MPI), put the application's run script on the
+outside (first) and \hpcrun{} on the inside (second) on the command
+line.  For example,
+
+\begin{quote}
+\begin{verbatim}
+mpirun -n 4 hpcrun -e PAPI_TOT_CYC@15000000 mpiapp arg ...
+\end{verbatim}
+\end{quote}
+
+Note that \hpcrun{} is intended for profiling dynamically linked {\it
+binaries}.  It will not work well if used to launch a shell script.
+At best, you would be profiling the shell interpreter, not the script
+commands, and sometimes this will fail outright.
+
+It is possible to use \hpcrun{} to launch a statically linked binary,
+but there are two problems with this.  First, it is still necessary to
+build the binary with \hpclink{}.  Second, static binaries are
+commonly used on parallel clusters that require running the binary
+directly and do not accept a launch script.  However, if your system
+allows it, and if the binary was produced with \hpclink, then
+\hpcrun{} will set the correct environment variables for profiling
+statically or dynamically linked binaries.  All that \hpcrun{} really
+does is set some environment variables (including \verb|LD_PRELOAD|)
+and {\tt exec} the binary.
+
+% ===========================================================================
+
+\section{Using \hpclink{}}
+
+For now, see Chapter~\ref{chpt:statically-linked-apps} on {\it
+Monitoring Statically Linked Applications}.
+
+% ===========================================================================
+
+\section{Sample Sources}
+
+This section covers the details of some individual sample sources.  To
+see a list of the available sample sources and events that \hpcrun{}
+supports, use `{\tt hpcrun -L}' (dynamic) or set
+`\verb|HPCRUN_EVENT_LIST=LIST|' (static).  Note that on systems with
+separate compute nodes, you will likely need to run this on one of the
+compute nodes.
+
+\subsection{PAPI}
+
+PAPI, the Performance API, is a library for providing access to the
+hardware performance counters.  This is an attempt to provide a
+consistent, high-level interface to the low-level performance
+counters.  PAPI is available from the University of Tennessee at:
+
+\begin{quote}
+\url{http://icl.cs.utk.edu/papi/}
+\end{quote}
+
+PAPI focuses mostly on in-core CPU events: cycles, cache misses,
+floating point operations, mispredicted branches, etc.  For example,
+the following command samples total cycles and L2 cache misses.
+
+\begin{quote}
+\begin{verbatim}
+hpcrun -e PAPI_TOT_CYC@15000000 -e PAPI_L2_TCM@400000 app arg ...
+\end{verbatim}
+\end{quote}
+
+The precise set of PAPI preset and native events is highly system
+dependent.  Commonly, there are events for machine cycles, cache
+misses, floating point operations and other more system specific
+events.  However, there are restrictions both on how many events can
+be sampled at one time and on what events may be sampled together and
+both restrictions are system dependent.  Table~\ref{tab:papi-events}
+contains a list of commonly available PAPI events.
+
+To see what PAPI events are available on your system, use the
+\verb|papi_avail| command from the {\tt bin} directory in your PAPI
+installation.  The event must be both available and not derived to be
+usable for sampling.  The command \verb|papi_native_avail| displays
+the machine's native events.  Note that on systems with separate
+compute nodes, you normally need to run \verb|papi_avail| on one of
+the compute nodes.
+
+\begin{table}
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\verb|PAPI_BR_INS| & Branch instructions \\
+\hline
+\verb|PAPI_BR_MSP| & Conditional branch instructions mispredicted \\
+\hline
+\verb|PAPI_FP_INS| & Floating point instructions \\
+\hline
+\verb|PAPI_L1_DCA| & Level 1 data cache accesses \\
+\hline
+\verb|PAPI_L1_DCM| & Level 1 data cache misses \\
+\hline
+\verb|PAPI_L1_ICH| & Level 1 instruction cache hits \\
+\hline
+\verb|PAPI_L1_ICM| & Level 1 instruction cache misses \\
+\hline
+\verb|PAPI_L2_DCA| & Level 2 data cache accesses \\
+\hline
+\verb|PAPI_L2_ICM| & Level 2 instruction cache misses \\
+\hline
+\verb|PAPI_L2_TCM| & Level 2 cache misses \\
+\hline
+\verb|PAPI_LD_INS| & Load instructions \\
+\hline
+\verb|PAPI_SR_INS| & Store instructions \\
+\hline
+\verb|PAPI_TLB_DM| & Data translation lookaside buffer misses \\
+\hline
+\verb|PAPI_TOT_CYC| & Total cycles \\
+\hline
+\verb|PAPI_TOT_IIS| & Instructions issued \\
+\hline
+\verb|PAPI_TOT_INS| & Instructions completed \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Some commonly available PAPI events.
+The exact set of available events is system dependent.}
+\label{tab:papi-events}
+\end{table}
+
+When selecting the period for PAPI events, aim for a rate of
+approximately a few hundred samples per second.  So, roughly several
+million or tens of million for total cycles or a few hundred thousand
+for cache misses.  PAPI and \hpcrun{} will tolerate sampling rates as
+high as 1,000 or even 10,000 samples per second (or more).  But rates
+higher than a few thousand samples per second will only drive up the
+overhead and distort the running of your program.  It won't give more
+accurate results.
+
+Earlier versions of PAPI required a separate patch (perfmon or
+perfctr) for the Linux kernel.  But beginning with kernel 2.6.32,
+support for accessing the performance counters (perf events) is now
+built in to the standard Linux kernel.  This means that on kernels
+2.6.32 or later, PAPI can be compiled and run entirely in user land
+without patching the kernel.  PAPI is highly recommended and well
+worth building if it is not already installed on your system.
+
+\subsection{Wallclock}
+
+The {\tt WALLCLOCK} sample source is based on the \verb|ITIMER_PROF|
+interval timer.  Normally, \verb|PAPI_TOT_CYC| is just as good as {\tt
+WALLCLOCK} and often better, but {\tt WALLCLOCK} can be used on
+systems where PAPI is not available.  The units are in microseconds,
+so the following example will sample {\tt app} approximately 200
+times per second.
+
+\begin{quote}
+\begin{verbatim}
+hpcrun -e WALLCLOCK@5000 app arg ...
+\end{verbatim}
+\end{quote}
+
+Note that the maximum interrupt rate from itimer is limited by the
+system's Hz rate, commonly 1,000 cycles per second, but may be lower.
+That is, {\tt WALLCLOCK@10} will not generate any higher sampling rate
+than {\tt WALLCLOCK@1000}.  However, on IBM BlueGene, itimer is not
+bound by the Hz rate and so sampling rates faster than 1,000 per
+second are possible.
+
+Do not use both PAPI and {\tt WALLCLOCK} events at the same time.
+That would cause PAPI samples to be interrupted by itimer signals and
+vice versa, and \hpcrun{} is not equipped to handle this case.
+
+\subsection{Memleak}
+
+The {\tt MEMLEAK} sample source records the number of bytes allocated
+and freed by the program along with their dynamic context.  {\tt
+MEMLEAK} is a synchronous sample source.  That is, it does not
+generate asynchronous interrupts.  Instead, it overrides the malloc
+family of functions ({\tt malloc}, {\tt calloc}, {\tt realloc} and
+{\tt free} plus {\tt memalign}, {\tt posix\_memalign} and {\tt
+valloc}).  For example,
+
+\begin{quote}
+\begin{verbatim}
+hpcrun -e MEMLEAK app arg ...
+\end{verbatim}
+\end{quote}
+
+{\tt MEMLEAK} allows you to find locations in your program that
+allocate memory that is never freed.  But note that failure to free a
+memory location does not necessarily imply that location has leaked
+(missing a pointer to the memory).  It is common for programs to
+allocate memory that is used throughout the lifetime of the process
+and not explicitly free it.
+
+If a program allocates and frees many small regions, the {\tt MEMLEAK}
+source may result in a high overhead.  In this case, you may reduce
+the overhead by using the memleak probability option to record only a
+fraction of the mallocs.  For example, to monitor 10\% of the mallocs,
+use:
+
+\begin{quote}
+\begin{tabular}{@{}cl}
+(dynamic) & \verb|hpcrun -e MEMLEAK --memleak-prob 0.10 app arg ...| \\
+(static)  & \verb|export HPCRUN_EVENT_LIST=MEMLEAK| \\
+& \verb|export HPCRUN_MEMLEAK_PROB=0.10| \\
+& \verb|app arg ...|
+\end{tabular}
+\end{quote}
+
+It might appear that if you monitor only 10\% of the program's
+mallocs, then you would have only a 10\% chance of finding the leak.
+But if a program leaks memory, then it's likely that it does so many
+times, all from the same source location.  And you only have to find
+that location once.  So, this option can be a useful tool if the
+overhead of recording all mallocs is prohibitive.
+
+% ===========================================================================
+
+\section{Process Fraction}
+
+Although \hpcrun{} can profile parallel jobs with thousands or tens of
+thousands of processes, there are two scaling problems that become
+prohibitive beyond a few thousand cores.  First, \hpcrun{} writes the
+measurement data for all of the processes into a single directory.
+This results in one file per process plus one file per thread (two
+files per thread if using tracing).  Unix file systems are not
+equipped to handle directories with many tens or hundreds of thousands
+of files.  Second, the sheer volume of data can overwhelm the viewer
+when the size of the database far exceeds the amount of memory on the
+machine.
+
+The solution is to sample only a fraction of the processes.  That is,
+you can run an application on many thousands of cores but record data
+for only a few hundred processes.  The other processes run the
+application but do not record any measurement data.  This is what the
+process fraction option ({\tt -f} or {\tt --process-fraction}) does.
+For example, to monitor 10\% of the processes, use:
+
+\begin{quote}
+\begin{tabular}{@{}cl}
+(dynamic) & \verb|hpcrun -f 0.10 -e event@period app arg ...| \\
+(dynamic) & \verb|hpcrun -f 1/10 -e event@period app arg ...| \\
+(static)  & \verb|export HPCRUN_EVENT_LIST='event@period'| \\
+& \verb|export HPCRUN_PROCESS_FRACTION=0.10| \\
+& \verb|app arg ...|
+\end{tabular}
+\end{quote}
+
+With this option, each process generates a random number and records
+its measurement data with the given probability.  The process fraction
+(probability) may be written as a decimal number (0.10) or as a
+fraction (1/10) between 0 and 1.  So, in the above example, all three
+cases would record data for approximately 10\% of the processes.  Aim
+for a number of processes in the hundreds.
+
+% ===========================================================================
+
+\section{Starting and Stopping Sampling}
+
+\HPCToolkit{} supports an API for the application to start and stop
+sampling.  This is useful if the application wants to profile only a
+subset of the program and ignore the rest.  This interface is process
+wide, not thread specific.  And technically, when sampling is turned
+off, \hpcrun{} continues to receive interrupts, but it doesn't unwind
+the call stack or record samples.  This API supports the following
+functions.
+
+\begin{quote}
+\begin{verbatim}
+void hpctoolkit_sampling_start(void);
+void hpctoolkit_sampling_stop(void);
+\end{verbatim}
+\end{quote}
+
+To use this interface, put the above function calls into your program
+where you want sampling to start and stop.  Remember, starting and
+stopping apply process wide.  For C/C++, include the following header
+file from the \HPCToolkit{} {\tt include} directory.
+
+\begin{quote}
+\begin{verbatim}
+#include <hpctoolkit.h>
+\end{verbatim}
+\end{quote}
+
+Compile your application with {\tt libhpctoolkit} with {\tt -I} and
+{\tt -L} options for the include and library paths.  For example,
+
+\begin{quote}
+\begin{verbatim}
+gcc -I /path/to/hpctoolkit/include app.c ... \
+    -L /path/to/hpctoolkit/lib/hpctoolkit -lhpctoolkit ...
+\end{verbatim}
+\end{quote}
+
+The {\tt libhpctoolkit} library provides weak symbol no-op definitions
+for the start and stop functions.  For dynamically linked programs, be
+sure to include {\tt -lhpctoolkit} on the link line (otherwise your
+program won't link).  For statically linked programs, \hpclink{} adds
+strong symbol definitions for these functions.  So, {\tt -lhpctoolkit}
+is not necessary in the static case, but it doesn't hurt.
+
+To run the program, set the \verb|LD_LIBRARY_PATH| environment
+variable to include the \HPCToolkit{} {\tt lib/hpctoolkit} directory.
+This step is only needed for dynamically linked programs.
+
+\begin{quote}
+\begin{verbatim}
+export LD_LIBRARY_PATH=/path/to/hpctoolkit/lib/hpctoolkit
+\end{verbatim}
+\end{quote}
+
+Note that sampling is initially turned on until the program turns it
+off.  If you want it initially turned off, then use the {\tt -ds} (or
+{\tt --delay-sampling}) option for \hpcrun{} (dynamic) or set the
+\verb|HPCRUN_DELAY_SAMPLING| environment variable (static).
+
+\begin{quote}
+\begin{tabular}{@{}cl}
+(dynamic) & \verb|hpcrun -ds -e event@period app arg ...|  \\
+(static)  & \verb|export HPCRUN_EVENT_LIST='event@period'| \\
+& \verb|export HPCRUN_DELAY_SAMPLING=1| \\
+& \verb|app arg ...|
+\end{tabular}
+\end{quote}
+
