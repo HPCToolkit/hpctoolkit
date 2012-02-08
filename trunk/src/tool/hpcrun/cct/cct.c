@@ -299,25 +299,25 @@ hpcrun_cct_new_partial(void)
 cct_node_t*
 hpcrun_cct_parent(cct_node_t* x)
 {
-  return x->parent;
+  return x? x->parent : NULL;
 }
 
 int32_t
 hpcrun_cct_persistent_id(cct_node_t* x)
 {
-  return x->persistent_id;
+  return x ? x->persistent_id : -1;
 }
 
 cct_addr_t*
 hpcrun_cct_addr(cct_node_t* node)
 {
-  return &(node->addr);
+  return node ? &(node->addr) : NULL;
 }
 
 bool
 hpcrun_cct_is_leaf(cct_node_t* node)
 {
-  return (node->children == NULL);
+  return node ? (node->children == NULL) : false;
 }
 
 //
