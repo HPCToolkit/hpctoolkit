@@ -115,7 +115,7 @@ hpcrun_bt_dump(frame_t* unwind, const char* tag)
   char lip_str[LUSH_LIP_STR_MIN_LEN];
 
   const char* mytag = (tag) ? tag : "";
-  PMSG_LIMIT(EMSG("-- begin new backtrace (innermost first) [%s] ----------", mytag));
+  EMSG("-- begin new backtrace (innermost first) [%s] ----------", mytag);
 
   thread_data_t* td = hpcrun_get_thread_data();
   if (unwind) {
@@ -129,32 +129,32 @@ hpcrun_bt_dump(frame_t* unwind, const char* tag)
       load_module_t* lm = hpcrun_loadmap_findById(x->ip_norm.lm_id);
       const char* lm_name = (lm) ? lm->name : "(null)";
 
-      PMSG_LIMIT(EMSG("%s: ip = %p (%p), load module = %s | lip %s", as_str, ip, x->ip_norm.lm_ip, lm_name, lip_str));
+      EMSG("%s: ip = %p (%p), load module = %s | lip %s", as_str, ip, x->ip_norm.lm_ip, lm_name, lip_str);
 
       msg_cnt++;
       if (msg_cnt > msg_limit) {
-        PMSG_LIMIT(EMSG("!!! message limit !!!"));
+        EMSG("!!! message limit !!!");
         break;
       }
     }
   }
 
   if (msg_cnt <= msg_limit && td->btbuf_sav != td->btbuf_end) {
-    PMSG_LIMIT(EMSG("-- begin cached backtrace ---------------------------"));
+    EMSG("-- begin cached backtrace ---------------------------");
     for (frame_t* x = td->btbuf_sav; x < td->btbuf_end; ++x) {
       lush_assoc_info2str(as_str, sizeof(as_str), x->as_info);
       lush_lip2str(lip_str, sizeof(lip_str), x->lip);
-      PMSG_LIMIT(EMSG("%s: ip.lm_id = %d | ip.lm_ip = %p | lip %s", as_str,
-		      x->ip_norm.lm_id, x->ip_norm.lm_ip, lip_str));
+      EMSG("%s: ip.lm_id = %d | ip.lm_ip = %p | lip %s", as_str,
+	   x->ip_norm.lm_id, x->ip_norm.lm_ip, lip_str);
       msg_cnt++;
       if (msg_cnt > msg_limit) {
-        PMSG_LIMIT(EMSG("!!! message limit !!!"));
+        EMSG("!!! message limit !!!");
         break;
       }
     }
   }
 
-  PMSG_LIMIT(EMSG("-- end backtrace ------------------------------------\n"));
+  EMSG("-- end backtrace ------------------------------------\n");
 }
 
 frame_t*

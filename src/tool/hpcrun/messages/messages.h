@@ -71,7 +71,6 @@
 #define AMSG           hpcrun_amsg
 
 #ifdef NO_HPCRUN_MSGS
-#define PMSG_LIMIT(C) 
 #define STDERR_MSG(...)
 #define EEMSG(...)      
 #define PMSG(f,...)    
@@ -80,13 +79,13 @@
 #define NMSG(f,...)    
 #define ENMSG(f, ...)  
 #else // ! NO_HPCRUN_MSGS
-#define PMSG_LIMIT(C) if (hpcrun_below_pmsg_threshold()) C
 
 #define STDERR_MSG(...) hpcrun_stderr_log_msg(false,__VA_ARGS__)
 #define EEMSG(...)      hpcrun_stderr_log_msg(true,__VA_ARGS__)
 
 #define PMSG(f,...)    hpcrun_pmsg(DBG_PREFIX(f), NULL, __VA_ARGS__)
-#define TMSG(f,...)    hpcrun_pmsg(DBG_PREFIX(f), #f, __VA_ARGS__)
+#define TMSG(f,...) if (debug_flag_get(DBG_PREFIX(f))) hpcrun_pmsg(#f, __VA_ARGS__)
+
 #define ETMSG(f,...)   hpcrun_pmsg_stderr(true,DBG_PREFIX(f), #f, __VA_ARGS__)
 #define NMSG(f,...)    hpcrun_nmsg(DBG_PREFIX(f), #f, __VA_ARGS__)
 #define ENMSG(f, ...)  hpcrun_nmsg_stderr(true, DBG_PREFIX(f), #f, __VA_ARGS__)
@@ -110,7 +109,7 @@ void hpcrun_amsg(const char *fmt,...);
 void hpcrun_emsg(const char *fmt,...);
 void hpcrun_emsg_valist(const char *fmt, va_list_box* box);
 void hpcrun_nmsg(pmsg_category flag, const char* tag, const char *fmt,...);
-void hpcrun_pmsg(pmsg_category flag, const char* tag, const char *fmt,...);
+extern void hpcrun_pmsg(const char* tag, const char *fmt,...);
 
 void hpcrun_pmsg_stderr(bool echo_stderr,pmsg_category flag, const char* tag, 
 			const char *fmt,...);

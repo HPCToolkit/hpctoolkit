@@ -141,17 +141,9 @@ hpcrun_emsg(const char *fmt,...)
   hpcrun_write_msg_to_log(false, true, NULL, fmt, &box);
 }
 
-
 void
-hpcrun_pmsg(pmsg_category flag, const char *tag, const char *fmt, ...)
+hpcrun_pmsg(const char *tag, const char *fmt, ...)
 {
-  if (debug_flag_get(flag) == 0){
-#if DEBUG_PMSG_ASYNC
-    hpcrun_emsg("PMSG flag in = %d (%s), flag ctl = %d --> NOPRINT",
-		flag, tbl[flag], debug_flag_get(flag));
-#endif
-    return;
-  }
 #define THE_THREAD 1
 #define SPECIAL_DEBUG
 #ifdef SPECIAL_DEBUG

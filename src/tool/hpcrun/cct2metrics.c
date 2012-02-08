@@ -136,9 +136,10 @@ hpcrun_get_metric_set(cct_node_id_t cct_id)
   THREAD_LOCAL_MAP() = map;
   TMSG(CCT2METRICS, " -- After Splay map = %p", cct_id, map);
 
-  if (map->node == cct_id) return ( TMSG(CCT2METRICS, " -- found %p,"
-                                         " returning metrics", map->node),
-                                    map->metrics );
+  if (map->node == cct_id) {
+    TMSG(CCT2METRICS, " -- found %p, returning metrics", map->node);
+    return map->metrics;
+  }
   TMSG(CCT2METRICS, " -- cct_id NOT, found. Return NULL");
   return NULL;
 }

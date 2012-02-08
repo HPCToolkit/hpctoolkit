@@ -102,7 +102,7 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
       monitor_real_abort();
     }
 
-    PMSG_LIMIT(EMSG("error: segv: context-pc=%p", ctxt_pc));
+    EMSG("error: segv: context-pc=%p", ctxt_pc);
     // TODO: print more context details
 
     // -----------------------------------------------------
