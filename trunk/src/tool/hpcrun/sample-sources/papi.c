@@ -322,7 +322,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
   eventSet = PAPI_NULL;
   TMSG(PAPI,"create event set");
   ret = PAPI_create_eventset(&eventSet);
-  PMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret, eventSet);
+  TMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret, eventSet);
   if (ret != PAPI_OK) {
     hpcrun_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s", 
 		 ret, PAPI_strerror(ret));

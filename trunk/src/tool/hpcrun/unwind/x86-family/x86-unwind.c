@@ -318,7 +318,7 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
     return unw_res;
   }
   
-  PMSG_LIMIT(TMSG(TROLL,"unw_step: STEP_ERROR, pc=%p, bp=%p, sp=%p", pc, bp, sp));
+  TMSG(TROLL,"unw_step: STEP_ERROR, pc=%p, bp=%p, sp=%p", pc, bp, sp);
   dump_ui_troll(uw);
 
   if (ENABLED(TROLL_WAIT)) {
@@ -683,8 +683,8 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
 
     next_sp += 1;
     if ( next_sp <= cursor->sp){
-      PMSG_LIMIT(PMSG(TROLL,"Something weird happened! trolling from %p"
-		      " resulted in sp not advancing", cursor->pc_unnorm));
+      TMSG(TROLL,"Something weird happened! trolling from %p"
+	   " resulted in sp not advancing", cursor->pc_unnorm);
       hpcrun_unw_throw();
     }
 
@@ -692,9 +692,9 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
     cursor->intvl = hpcrun_addr_to_interval(((char *)next_pc) + offset,
 					    next_pc, &next_pc_norm);
     if (cursor->intvl) {
-      PMSG_LIMIT(PMSG(TROLL,"Trolling advances cursor to pc = %p, sp = %p", 
-		      next_pc, next_sp));
-      PMSG_LIMIT(PMSG(TROLL,"TROLL SUCCESS pc = %p", cursor->pc_unnorm));
+      TMSG(TROLL,"Trolling advances cursor to pc = %p, sp = %p", 
+	   next_pc, next_sp);
+      TMSG(TROLL,"TROLL SUCCESS pc = %p", cursor->pc_unnorm);
 
       cursor->pc_unnorm = next_pc;
       cursor->bp        = next_bp;
@@ -706,14 +706,14 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
 
       return; // success!
     }
-    PMSG_LIMIT(PMSG(TROLL, "No interval found for trolled pc, dropping sample,"
-		    " cursor pc = %p", cursor->pc_unnorm));
+    TMSG(TROLL, "No interval found for trolled pc, dropping sample,"
+	 " cursor pc = %p", cursor->pc_unnorm);
     // fall through for error handling
   }
   else {
-    PMSG_LIMIT(PMSG(TROLL, "Troll failed: dropping sample, cursor pc = %p", 
-		    cursor->pc_unnorm));
-    PMSG_LIMIT(PMSG(TROLL,"TROLL FAILURE pc = %p", cursor->pc_unnorm));
+    TMSG(TROLL, "Troll failed: dropping sample, cursor pc = %p", 
+	 cursor->pc_unnorm);
+    TMSG(TROLL,"TROLL FAILURE pc = %p", cursor->pc_unnorm);
     // fall through for error handling
   }
   // assert(0);
