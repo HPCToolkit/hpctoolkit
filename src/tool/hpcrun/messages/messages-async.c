@@ -304,4 +304,3 @@ limit_msgs(void)
 {
   check_limit = true;
 }
-

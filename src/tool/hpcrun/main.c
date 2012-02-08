@@ -609,8 +609,6 @@ monitor_thread_pre_create(void)
   thr_ctxt->parent = epoch->csdata_ctxt;
   TMSG(THREAD_CTXT, "context = %d, parent = %d", hpcrun_cct_persistent_id(thr_ctxt->context),
        thr_ctxt->parent ? hpcrun_cct_persistent_id(thr_ctxt->parent->context) : -1);
-  
-  
 
  fini:
 
