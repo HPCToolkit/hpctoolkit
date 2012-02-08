@@ -152,8 +152,8 @@ Contents:
 
 - When processing in parallel measurements for a *dynamically linked
   binary*, hpcprof-mpi may abort with an MPI error.  The problem is
-  that GNU binutils does not always return the debug information for a
-  given object code address.  We are working on a patch.
+  that GNU binutils does not always return the same debug information
+  for a given object code address.  We are working on a patch.
 
   Workarounds:
   1) Use hpcprof or hpcprof-mpi with one MPI process.
