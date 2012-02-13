@@ -452,7 +452,7 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
   sprintf(dlname, FNBOUNDS_BINARY_FORMAT, fnbounds_tmpdir_get(), 
 	  mybasename(filename));
 
-  sprintf(command, "%s -b %s %s %s 1>&%d 2>&%d\n",
+  sprintf(command, "'%s' -b %s '%s' %s 1>&%d 2>&%d\n",
 	  nm_command, ENABLED(DL_BOUND_SCRIPT_DEBUG) ? "-t -v" : "",
 	  filename, fnbounds_tmpdir_get(), logfile_fd, logfile_fd);
   TMSG(DL_BOUND, "system command = %s", command);
