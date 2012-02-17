@@ -243,13 +243,7 @@ MEMLEAK} is a synchronous sample source.  That is, it does not
 generate asynchronous interrupts.  Instead, it overrides the malloc
 family of functions ({\tt malloc}, {\tt calloc}, {\tt realloc} and
 {\tt free} plus {\tt memalign}, {\tt posix\_memalign} and {\tt
-valloc}).  For example,
-
-\begin{quote}
-\begin{verbatim}
-hpcrun -e MEMLEAK app arg ...
-\end{verbatim}
-\end{quote}
+valloc}).
 
 {\tt MEMLEAK} allows you to find locations in your program that
 allocate memory that is never freed.  But note that failure to free a
@@ -257,6 +251,19 @@ memory location does not necessarily imply that location has leaked
 (missing a pointer to the memory).  It is common for programs to
 allocate memory that is used throughout the lifetime of the process
 and not explicitly free it.
+
+To include this source, use the {\tt MEMLEAK} event (no period).
+{\tt MEMLEAK} uses a separate library, so in the static case, use the
+{\tt --memleak} option to add this library.  For example,
+
+\begin{quote}
+\begin{tabular}{@{}cl}
+(dynamic) & \verb|hpcrun -e MEMLEAK app arg ...| \\
+(static)  & \verb|hpclink --memleak gcc -g -O -static -o app file.c ...| \\
+& \verb|export HPCRUN_EVENT_LIST=MEMLEAK| \\
+& \verb|app arg ...|
+\end{tabular}
+\end{quote}
 
 If a program allocates and frees many small regions, the {\tt MEMLEAK}
 source may result in a high overhead.  In this case, you may reduce
