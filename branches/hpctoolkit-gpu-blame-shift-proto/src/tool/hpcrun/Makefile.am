@@ -279,6 +279,8 @@ MY_CPP_DEFINES =			\
 	-DINLINE_FN=1
 
 MY_INCLUDE_DIRS =			\
+	-I/usr/local/cuda/extras/CUPTI/include/	\
+	-I/usr/local/cuda/include	\
         -I$(top_srcdir)/src/tool        \
 	-I$(srcdir)/messages	        \
 	-I$(srcdir)/fnbounds		\
@@ -291,7 +293,7 @@ MY_INCLUDE_DIRS =			\
 	$(HPC_IFLAGS)			\
 	-I$(HPCFNBOUNDS_INC)		\
 	-I$(LIBMONITOR_INC)		\
-	-I$(SYMTABAPI_INC)
+	-I$(SYMTABAPI_INC)		
 
 
 MY_MIPS_INCLUDE_DIRS = \
