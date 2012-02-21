@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- -*- coding: utf-8 -*- -->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!-- ********************************************************************** -->
+
+<head>
+  <!-- meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" /> -->
+
+  <title>HPCToolkit Overview</title>
+
+  <link rel="stylesheet" type="text/css" href="style/style.css" />
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+@header-hpctoolkit@
+
+<!-- ********************************************************************** -->
+
+<h1>The HPCToolkit Elevator Speech</h1>
+
+
+<p>HPCToolkit is an integrated suite of tools for measurement and analysis of program performance on computers ranging from multicore desktop systems to the nation's largest supercomputers.
+HPCToolkit provides accurate measurements of a program's work, resource consumption, and inefficiency, correlates these metrics with the program's source code, works with multilingual, fully optimized binaries, has very low measurement overhead, and scales to large parallel systems.
+HPCToolkit's measurements provide support for analyzing a program execution cost, inefficiency, and scaling characteristics both within and across nodes of a parallel system.
+</p>
+
+<p>HPCToolkit works by sampling an execution of a multithreaded and/or multiprocess program using hardware performance counters, unwinding thread call stacks, and attributing the metric value associated with a sample event in a thread to the calling context of the thread/process in which the event occurred.
+Sampling has several advantages over instrumentation for measuring program performance: it requires no modification of source code, it avoids potential blind spots (such as code available in only binary form), and it has lower overhead.
+HPCToolkit typically adds only 1% to 5% measurement overhead to an execution for reasonable sampling rates.
+Sampling using performance counters enables fine-grain measurement and attribution of detailed costs including metrics such as operation counts, pipeline stalls, cache misses, and inter-cache communication in multicore and multisocket configurations.
+Such detailed measurements are essential for understanding the performance characteristics of applications on modern multicore microprocessors that employ instruction-level parallelism, out-of-order execution, and complex memory hierarchies.
+HPCToolkit also supports computing derived metrics such as cycles per instruction, waste, and relative efficiency to provide insight into a program's shortcomings.
+</p>
+
+<p>A unique capability of HPCToolkit is its nearly flawless ability to unwind a thread's call stack.
+Unwinding is often a difficult and error-prone task with highly optimized code.
+</p>
+
+<p>HPCToolkit assembles performance measurements into a call path profile that associates the costs of each function call with its full calling context.
+In addition, HPCToolkit uses binary analysis to attribute program performance metrics with uniquely detailed precision -- full dynamic calling contexts augmented with information about call sites, source lines, loops and inlined code.
+Measurements can be analyzed in a variety of ways: top-down in a calling context tree, which associates costs with the full calling context in which they are incurred; bottom-up in a view that apportions costs associated with a function to each of the contexts in which the function is called; and in a flat view that aggregates all costs associated with a function independent of calling context.
+This multiplicity of perspectives is essential to understanding a program's performance for tuning under various circumstances.
+</p>
+
+<p>By working at the machine-code level, HPCToolkit accurately measures and attributes costs in executions of multilingual programs, even if they are linked with libraries available only in binary form.
+HPCToolkit supports performance analysis of fully optimized code -- the only form of a program worth measuring; it even measures and attributes performance metrics to shared libraries that are dynamically loaded at run time.
+The low overhead of HPCToolkit's sampling-based measurement is particularly important for parallel programs because measurement overhead can distort program behavior.
+</p>
+
+<p>HPCToolkit is also especially good at pinpointing scaling losses in parallel codes, both within multicore nodes and across the nodes in a parallel system.
+Using differential analysis of call path profiles collected on different numbers of threads or processes enables one to quantify scalability losses and pinpoint their causes to individual lines of code executed in particular calling contexts.
+We have used this technique to quantify scaling losses in leading science applications (e.g., FLASH, MILC, and PFLOTRAN) across thousands of processor cores on Cray XT and IBM Blue Gene/P systems and associate them with individual lines of source code in full calling context, as well as to quantify scaling losses in science applications (e.g., S3D) within nodes at the loop nest level due to competition for memory bandwidth in multicore processors.
+</p>
+
+<p>HPCToolkit is deployed on several DOE leadership class machines, including Blue Gene/P (Intrepid) at Argonne's Leadership Computing Facility and Cray XT systems at ORNL and NERSC (Jaguar, JaguarPF, and Franklin).
+It is also deployed on the NSF TeraGrid system at TACC (Ranger).
+</p>
+
+
+<!--
+<p>Some screen shots are shown below.
+<img src="fig/hpcviewer-annotated-screenshot.jpg" alt="hpcviewer screenshot">
+-->
+
+<!-- ********************************************************************** -->
+
+<p>[<span class="lastupdated">Page last updated: 2011/06/25</span>]
+</p>
+
+<!-- ********************************************************************** -->
+
+@footer-hpctoolkit@
+
+<!-- ********************************************************************** -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: "<span class=\"lastupdated\">Page last updated: " -->
+<!-- time-stamp-format: "%:y/%02m/%02d" -->
+<!-- time-stamp-end: "</span>" -->
+<!-- time-stamp-line-limit: 10000 -->
+<!-- End: -->
