@@ -232,6 +232,10 @@ typedef struct thread_data_t {
   // sample or else deadlock on the dlopen lock.
   bool inside_dlfcn;
 
+
+  // True if this thread is at CuXXXXSynchronize.
+  bool is_thread_at_cuda_sync;
+
 } thread_data_t;
 
 static const size_t HPCRUN_TraceBufferSz = HPCIO_RWBufferSz;

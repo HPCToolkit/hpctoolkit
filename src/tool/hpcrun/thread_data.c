@@ -213,6 +213,7 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   // miscellaneous
   // ----------------------------------------
   td->inside_dlfcn = false;
+  td->is_thread_at_cuda_sync = false;
 }
 
 
