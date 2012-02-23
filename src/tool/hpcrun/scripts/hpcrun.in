@@ -5,7 +5,7 @@
 # Part of HPCToolkit (hpctoolkit.org)
 #------------------------------------
 #
-# Copyright (c) 2002-2010, Rice University.
+# Copyright (c) 2002-2012, Rice University.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -196,8 +196,7 @@ arg_ok()
 # LD_PRELOAD should be delayed until we launch the program, but the
 # others can be set now.
 
-mpi_preload=
-memleak_preload=
+preload_list=
 HPCRUN_DEBUG_FLAGS=
 HPCRUN_EVENT_LIST=
 
@@ -244,8 +243,9 @@ do
 	-e | --event )
 	    arg_ok "$1" || die "missing argument for $arg"
 	    case "$1" in
-		MEMLEAK* ) memleak_preload="${hpcrun_dir}/libhpcrun_memleak.so" ;;
-		MPI* )     mpi_preload="${hpcrun_dir}/libhpcrun_mpi.so" ;;
+		IO* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_io.so" ;;
+		MEMLEAK* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_memleak.so" ;;
+		MPI* )     preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_mpi.so" ;;
 	    esac
 	    case "$HPCRUN_EVENT_LIST" in
 		'' ) HPCRUN_EVENT_LIST="$1" ;;
@@ -418,12 +418,11 @@ fi
 ulimit -S -c unlimited >/dev/null 2>&1
 
 hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}"
-hpc_ld_preload="${memleak_preload} ${hpcrun_dir}/libhpcrun.so"
-hpc_ld_preload="${hpc_ld_preload} ${mpi_preload}"
-hpc_ld_preload="${hpc_ld_preload} ${libmonitor_dir}/libmonitor.so"
+preload_list="${libmonitor_dir}/libmonitor.so ${preload_list}"
+preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
 
 export HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds"
 export LD_LIBRARY_PATH="${hpc_ld_library_path}:${LD_LIBRARY_PATH}"
-export LD_PRELOAD="${hpc_ld_preload} ${LD_PRELOAD}"
+export LD_PRELOAD="${preload_list} ${LD_PRELOAD}"
 
 exec "$@"
