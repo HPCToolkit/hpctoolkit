@@ -58,6 +58,7 @@
 #include "fnbounds_interface.h"
 #include "main.h"
 #include "metrics_types.h"
+#include "cct2metrics.h"
 #include "metrics.h"
 #include "segv_handler.h"
 #include "epoch.h"
@@ -154,6 +155,11 @@ hpcrun_drop_sample(void)
   (*hpcrun_get_real_siglongjmp())(it->jb, 9);
 }
 
+// #define DEBUG_IDLE_NODE 1
+
+#ifdef DEBUG_IDLE_NODE
+static bool local_idle = false;
+#endif // DEBUG_IDLE_NODE
 
 cct_node_t*
 hpcrun_sample_callpath(void *context, int metricId,
@@ -230,6 +236,15 @@ hpcrun_sample_callpath(void *context, int metricId,
 				 metricId, metricIncr);
     hpcrun_cleanup_partial_unwind();
   }
+
+#ifdef DEBUG_IDLE_NODE
+  if (! local_idle) {
+    cct_bundle_t* cct = &(td->epoch->csdata);
+    cct_node_t* n = hpcrun_cct_bundle_get_idle_node(cct);
+    hpcrun_metric_std_inc(0, hpcrun_reify_metric_set(n), (hpcrun_metricVal_t) (uint64_t) 1);
+    local_idle = true;
+  }
+#endif // DEBUG_IDLE_NODE  
 
   if (trace_isactive()) {
     void* pc = hpcrun_context_pc(context);

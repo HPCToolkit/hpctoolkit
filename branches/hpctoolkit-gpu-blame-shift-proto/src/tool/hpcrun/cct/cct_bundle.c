@@ -74,6 +74,16 @@ l_insert_path(cct_node_t* node, cct_op_arg_t arg, size_t level)
   cct_node_t** tree = (cct_node_t**) arg;
   *tree = hpcrun_cct_insert_addr(*tree, addr);
 }
+
+//
+// "Special" routine to serve as a placeholder for "idle" resource
+//
+
+void
+hpcrun_special_IDLE(void)
+{
+}
+
 //
 // Interface procedures
 //
@@ -102,6 +112,7 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
     hpcrun_walk_path(ctxt->context, l_insert_path, (cct_op_arg_t) &(bundle->thread_root));
   }
   bundle->partial_unw_root = hpcrun_cct_new_partial();
+  bundle->special_idle_node = hpcrun_cct_new_special(hpcrun_special_IDLE);
 }
 //
 // Write to file for cct bundle: 
@@ -113,6 +124,9 @@ hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl)
 
   cct_node_t* final = bndl->tree_root;
   cct_node_t* partial_insert = final;
+
+  // attach special node to root
+  hpcrun_cct_insert_node(bndl->partial_unw_root, bndl->special_idle_node);
 
   //
   // attach partial unwinds at appointed slot
@@ -139,4 +153,10 @@ hpcrun_empty_cct(cct_bundle_t* cct)
     TMSG(CCT, "cct %p is empty", cct);
   }
   return rv;
+}
+
+cct_node_t*
+hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct)
+{
+  return cct->special_idle_node;
 }

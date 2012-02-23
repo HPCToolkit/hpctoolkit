@@ -293,6 +293,16 @@ hpcrun_cct_new_partial(void)
   return cct_node_create(&(ADDR(PARTIAL_ROOT)), NULL);
 }
 
+cct_node_t*
+hpcrun_cct_new_special(void* addr)
+{
+  ip_normalized_t tmp_ip = hpcrun_normalize_ip(addr, NULL);
+
+  cct_addr_t tmp = NON_LUSH_ADDR_INI(tmp_ip.lm_id, tmp_ip.lm_ip);
+
+  return cct_node_create(&tmp, NULL);
+}
+
 // 
 // ********** Accessor functions
 // 
