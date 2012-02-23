@@ -794,12 +794,14 @@ cudaError_t cudaDeviceSynchronize(void){
   return ret;
 }
 
+
 void CUPTIAPI
 EventInsertionCallback( void *userdata, CUpti_CallbackDomain domain,
                          CUpti_CallbackId cbid, const CUpti_CallbackData *cbInfo){
 
 	//CUptiResult cuptiErr;
 	cudaError_t err;
+	static uint32_t streamId = 0;	 	 	
 
 	switch(domain){
 		case CUPTI_CB_DOMAIN_RUNTIME_API:
@@ -807,29 +809,51 @@ EventInsertionCallback( void *userdata, CUpti_CallbackDomain domain,
 			//printf("\ncall back CUPTI_CB_DOMAIN_RUNTIME_API");
 
 			switch(cbid){
-				case CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020:
-				case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyAsync_v3020:
-				case CUPTI_RUNTIME_TRACE_CBID_cudaMemsetAsync_v3020:
-			 	// what about case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyAsync_v3020
-			 	//case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy_v3020:
-				//case CUPTI_RUNTIME_TRACE_CBID_cudaMemset_v3020:
+				case CUPTI_RUNTIME_TRACE_CBID_cudaConfigureCall_v3020: {
 					if(cbInfo->callbackSite == CUPTI_API_ENTER){
+						// We cannot allow this thread to take samples since we will be holding a lock which is also needed in the async signal handler
+						hpcrun_async_block();
 						// let no other GPU work get ahead of me
 						spinlock_lock(&g_gpu_lock);
+					 	// Get stream id
+						cudaConfigureCall_v3020_params *params = (cudaConfigureCall_v3020_params *) cbInfo->functionParams;
+						cuptiGetStreamId(cbInfo->context,(CUstream) params->stream, &streamId);
+					} 
+				}
+				break;
+				
+				case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyAsync_v3020:
+					if(cbInfo->callbackSite == CUPTI_API_ENTER){
+						 // We cannot allow this thread to take samples since we will be holding a lock which is also needed in the async signal handler
+						 hpcrun_async_block();
+						// let no other GPU work get ahead of me
+						spinlock_lock(&g_gpu_lock);
+						//TODO: this should change, we should create streams for mem copies.
+						cudaMemcpyAsync_v3020_params *params =  (cudaMemcpyAsync_v3020_params *) cbInfo->functionParams;
+						cuptiGetStreamId(cbInfo->context,(CUstream) params->stream, &streamId);
 					} else {
-
+						goto  MEMCPY_EXIT;
+					} 
+					break;
+			 	// what about case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyAsync_v3020
+				// case CUPTI_RUNTIME_TRACE_CBID_cudaMemsetAsync_v3020:
+			 	//case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy_v3020:
+				//case CUPTI_RUNTIME_TRACE_CBID_cudaMemset_v3020:
+				case CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020:
+					if(cbInfo->callbackSite == CUPTI_API_EXIT){
 						// Get CCT node (i.e., kernel launcher)
 						ucontext_t context;
+MEMCPY_EXIT:
 						getcontext(&context);
 						//cct_node_t *node = hpcrun_gen_thread_ctxt(&context);
-						 hpcrun_async_block();
 //volatile int de=1;
 //while (de);
 						cct_node_t *node =  hpcrun_sample_callpath(&context, cpu_idle_metric_id, 1, 0/*skipInner*/, 1/*isSync*/);
-						hpcrun_async_unblock();
-					 	// Get stream id
-					 	//cudaStream_t stream;
-						uint32_t streamId = 0;	 	 	
+						
+						// Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
+						node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 3);
+    						
+
 						// Create a new Cuda Event
 
 						event_list_node  * event_node = create_and_insert_event(streamId, node);
@@ -840,6 +864,8 @@ EventInsertionCallback( void *userdata, CUpti_CallbackDomain domain,
 						CHECK_CU_ERROR(err,"cudaEventRecord");
 						// let other things be queued into GPU
 						spinlock_unlock(&g_gpu_lock);
+						// safe to take async samples now
+						hpcrun_async_unblock();
 					}
 					break;
 				default:
