@@ -86,6 +86,7 @@ include_HEADERS = hpctoolkit.h
 pkglib_LTLIBRARIES =
 if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcrun.la
+  pkglib_LTLIBRARIES += libhpcrun_io.la
   pkglib_LTLIBRARIES += libhpcrun_memleak.la
   pkglib_LTLIBRARIES += libhpctoolkit.la
   bin_SCRIPTS += scripts/hpcrun
@@ -96,6 +97,7 @@ pkglib_LIBRARIES =
 if OPT_ENABLE_HPCRUN_STATIC
   pkglib_PROGRAMS  += libhpcrun.o
   pkglib_LIBRARIES += libhpcrun_wrap.a
+  pkglib_LIBRARIES += libhpcrun_io_wrap.a
   pkglib_LIBRARIES += libhpcrun_memleak_wrap.a
   pkglib_LIBRARIES += libhpctoolkit.a
   bin_SCRIPTS += scripts/hpclink
@@ -185,6 +187,7 @@ MY_BASE_FILES =			\
 	sample_prob.c			\
 	sample_sources_all.c		\
         sample-sources/common.c         \
+	sample-sources/io.c		\
 	sample-sources/itimer.c		\
 	sample-sources/memleak.c	\
 	sample-sources/none.c           \
@@ -309,6 +312,12 @@ libhpcrun_la_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_DYNAMIC_FILES)
 
+libhpcrun_io_la_SOURCES = 		\
+	sample-sources/io-over.c
+
+libhpcrun_io_wrap_a_SOURCES = 		\
+	sample-sources/io-over.c
+
 libhpcrun_memleak_la_SOURCES = 		\
 	sample-sources/memleak-overrides.c
 
@@ -331,7 +340,17 @@ libhpcrun_o_SOURCES = 			\
 libhpcrun_wrap_a_SOURCES =		\
 	monitor-exts/openmp.c
 
+
 libhpcrun_la_CPPFLAGS =			\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_io_la_CPPFLAGS =		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_io_wrap_a_CPPFLAGS =		\
+	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
@@ -374,6 +393,8 @@ $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_io_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -384,11 +405,14 @@ libhpcrun_o_LDADD   = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt
 
+libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic	\
+	-Wl,--strip-debug
+
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-Wl,--strip-all
+	-Wl,--strip-debug
 
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-Wl,--strip-all
+	-Wl,--strip-debug
 
 libhpcrun_o_LDFLAGS =
 
@@ -403,6 +427,8 @@ if HOST_CPU_MIPS
   libhpcrun_o_SOURCES   += $(MY_MIPS_FILES)
   libhpcrun_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_o_CPPFLAGS  += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_io_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_io_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
@@ -419,6 +445,8 @@ if HOST_CPU_PPC
   libhpcrun_o_SOURCES   += $(MY_PPC_FILES)
   libhpcrun_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_io_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_io_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
@@ -435,6 +463,8 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
   libhpcrun_la_LDFLAGS  += $(XED2_LIB)/libxed.a
   libhpcrun_o_LDFLAGS   += $(XED2_LIB)/libxed.a
+  libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_io_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
@@ -486,6 +516,8 @@ libhpcrun_la_SOURCES  +=  $(UNW_SOURCE_FILES)
 libhpcrun_o_SOURCES   +=  $(UNW_SOURCE_FILES)
 libhpcrun_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS  += $(UNW_INCLUDE_DIRS)
+libhpcrun_io_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
+libhpcrun_io_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)

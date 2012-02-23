@@ -5,7 +5,7 @@
 # Part of HPCToolkit (hpctoolkit.org)
 #------------------------------------
 #
-# Copyright (c) 2002-2010, Rice University.
+# Copyright (c) 2002-2012, Rice University.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -140,6 +140,8 @@ Options: Linking
                        of -Wl).  Used to work around problems with the 
                        Berkeley UPC compiler script (rarely needed).
 
+  --io                 Include the IO bytes read and written library.
+
   --memleak            Include HPCToolkit's memory leak detection libraries.
 
   -u <symbol>, --undefined <symbol>
@@ -194,6 +196,14 @@ do
 	    ;;
 	-dw | --double-wrap )
 	    double_wrap=yes
+	    shift
+	    ;;
+	-io | --io )
+	    io_wrap="${libhpcrun_dir}/libhpcrun_io_wrap.a"
+	    test -f "$io_wrap" || die "unable to find: $io_wrap"
+	    extra_hpc_files="$extra_hpc_files $io_wrap"
+	    extra_wrap_names="$extra_wrap_names fread fwrite"
+	    undef_names="$undef_names fwrite"
 	    shift
 	    ;;
 	-memleak | --memleak )
