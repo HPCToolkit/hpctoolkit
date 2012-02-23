@@ -392,6 +392,80 @@ note_code_ranges(Symtab *syms, DiscoverFnTy fn_discovery)
   note_section(syms, SECTION_FINI, fn_discovery);
 }
 
+// collect function start addresses from eh_frame info
+// (part of the DWARF info)
+// enter these start addresses into the reachable function
+// data structure
+
+static void
+seed_dwarf_info(int dwarf_fd)
+{
+  Dwarf_Debug dbg = NULL;
+  Dwarf_Error err;
+  Dwarf_Handler errhand = NULL;
+  Dwarf_Ptr errarg = NULL;
+
+  // Unless disabled, add eh_frame info to function entries
+  if(getenv("EH_NO")) {
+    close(dwarf_fd);
+    return;
+  }
+
+  if ( ! DWARF_OK(dwarf_init(dwarf_fd, DW_DLC_READ,
+                             errhand, errarg,
+                             &dbg, &err))) {
+    fprintf(stderr, "dwarf init failed !!\n");
+    return;
+  }
+
+  Dwarf_Cie* cie_data = NULL;
+  Dwarf_Signed cie_element_count = 0;
+  Dwarf_Fde* fde_data = NULL;
+  Dwarf_Signed fde_element_count = 0;
+
+  int fres =
+    dwarf_get_fde_list_eh(dbg, &cie_data,
+                          &cie_element_count, &fde_data,
+                          &fde_element_count, &err);
+  if ( ! DWARF_OK(fres)) {
+    fprintf(stderr, "failed to get eh_frame element from DWARF\n");
+    return;
+  }
+
+  for (int i = 0; i < fde_element_count; i++) {
+    Dwarf_Addr low_pc = 0;
+    Dwarf_Unsigned func_length = 0;
+    Dwarf_Ptr fde_bytes = NULL;
+    Dwarf_Unsigned fde_bytes_length = 0;
+    Dwarf_Off cie_offset = 0;
+    Dwarf_Signed cie_index = 0;
+    Dwarf_Off fde_offset = 0;
+
+    int fres = dwarf_get_fde_range(fde_data[i],
+                                   &low_pc, &func_length,
+                                   &fde_bytes,
+                                   &fde_bytes_length,
+                                   &cie_offset, &cie_index,
+                                   &fde_offset, &err);
+    if (fres == DW_DLV_ERROR) {
+      fprintf(stderr, " error on dwarf_get_fde_range\n");
+      return;
+    }
+    if (fres == DW_DLV_NO_ENTRY) {
+      fprintf(stderr, " NO_ENTRY error on dwarf_get_fde_range\n");
+      return;
+    }
+    if(getenv("EH_SHOW")) {
+      fprintf(stderr, " ---potential fn start = %p\n", reinterpret_cast<void*>(low_pc));
+    }
+
+    add_function_entry(reinterpret_cast<void*>(low_pc), NULL, false, 0);
+  }
+  if ( ! DWARF_OK(dwarf_finish(dbg, &err))) {
+    fprintf(stderr, "dwarf finish fails ???\n");
+  }
+  close(dwarf_fd);
+}
 
 static void 
 dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
@@ -413,69 +487,7 @@ dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy 
 			  (sl & Symbol::SL_WEAK)));
   }
 
-  // Add dwarf debug info
-
-  Dwarf_Debug dbg = NULL;
-  Dwarf_Error err;
-  Dwarf_Handler errhand = NULL;
-  Dwarf_Ptr errarg = NULL;
-
-  if ( ! DWARF_OK(dwarf_init(dwarf_fd, DW_DLC_READ,
-                             errhand, errarg,
-                             &dbg, &err))) {
-    fprintf(stderr, "dwarf init failed !!\n");
-  }
-
-  Dwarf_Cie* cie_data = NULL;
-  Dwarf_Signed cie_element_count = 0;
-  Dwarf_Fde* fde_data = NULL;
-  Dwarf_Signed fde_element_count = 0;
-
-  int fres =
-    dwarf_get_fde_list_eh(dbg, &cie_data,
-                          &cie_element_count, &fde_data,
-                          &fde_element_count, &err);
-  if ( ! DWARF_OK(fres)) {
-    fprintf(stderr, "failed to get eh_frame element from DWARF\n");
-  }
-
-  for (int i = 0; i < fde_element_count; i++) {
-    //    printf("element %d\n", i);
-    Dwarf_Addr low_pc = 0;
-    Dwarf_Unsigned func_length = 0;
-    Dwarf_Ptr fde_bytes = NULL;
-    Dwarf_Unsigned fde_bytes_length = 0;
-    Dwarf_Off cie_offset = 0;
-    Dwarf_Signed cie_index = 0;
-    Dwarf_Off fde_offset = 0;
-
-    int fres = dwarf_get_fde_range(fde_data[i],
-                                   &low_pc, &func_length,
-                                   &fde_bytes,
-                                   &fde_bytes_length,
-                                   &cie_offset, &cie_index,
-                                   &fde_offset, &err);
-    if (fres == DW_DLV_ERROR) {
-      fprintf(stderr, " error on dwarf_get_fde_range\n");
-    }
-    if (fres == DW_DLV_NO_ENTRY) {
-      fprintf(stderr, " error on dwarf_get_fde_range\n");
-    }
-    if(getenv("EH_SHOW")) {
-      fprintf(stderr, " ---potential fn start = %p\n", reinterpret_cast<void*>(low_pc));
-    }
-
-    // Unless disabled, add eh_frame info to function entries
-    if(getenv("EH_NO"))
-      continue;
-
-    add_function_entry(reinterpret_cast<void*>(low_pc), NULL, false, 0);
-
-  }
-  if ( ! DWARF_OK(dwarf_finish(dbg, &err))) {
-    fprintf(stderr, "dwarf finish fails ???\n");
-  }
-  close(dwarf_fd);
+  seed_dwarf_info(dwarf_fd);
 
   process_code_ranges();
 

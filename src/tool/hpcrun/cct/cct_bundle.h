@@ -58,18 +58,22 @@
 typedef struct cct_bundle_t {
 
   cct_node_t* top;                // top level tree (at creation)
+
   cct_node_t* tree_root;          // main cct for full unwinds from samples
                                   // that terminate in main:
                                   //    1) All unthreaded cases
                                   //    2) All threaded cases where thread stack
                                   //       has been synthetically attached to main
                                   //       (as in some implementations of OpenMP)
+
   cct_node_t* thread_root;        // root for full unwinds that terminate in 'pthread_create'
 
-                                  // thread root is tree obtained from inserting
-                                  // the creation context in the tree root
   cct_node_t* partial_unw_root;   // adjunct tree for partial unwinds
+
+  cct_node_t* special_idle_node;  // node to signify "idle" resource (used by trace facility).
+
   cct_ctxt_t* ctxt;               // creation context for bundle
+
   unsigned long num_nodes;        // utility to count nodes. NB: MIGHT go away
 } cct_bundle_t;
 
@@ -87,5 +91,6 @@ extern int hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t*
 // utility functions
 //
 extern bool hpcrun_empty_cct(cct_bundle_t* cct);
+extern cct_node_t* hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct);
 
 #endif // CCT_BUNDLE_H

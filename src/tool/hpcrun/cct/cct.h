@@ -121,6 +121,7 @@ typedef cct_node_t* cct_node_id_t;
 //
 extern cct_node_t* hpcrun_cct_new(void);
 extern cct_node_t* hpcrun_cct_new_partial(void);
+extern cct_node_t* hpcrun_cct_new_special(void* addr);
 // 
 // Accessor functions
 // 

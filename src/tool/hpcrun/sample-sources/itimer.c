@@ -57,6 +57,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #include <signal.h>
 #include <sys/time.h>           /* setitimer() */
@@ -368,7 +369,6 @@ event_list_node * create_and_insert_event(int stream_id, cct_node_t *launcher_cc
 
 #endif // ENABLE_CUDA
 
-
 static void
 METHOD_FN(init)
 {
@@ -425,7 +425,6 @@ METHOD_FN(init)
 	g_stream_array = (stream_node *) hpcrun_malloc(sizeof(stream_node) * MAX_STREAMS);
 	memset(g_stream_array, 0, sizeof(stream_node) * MAX_STREAMS);
 	g_unfinished_stream_list_head = NULL;
-
 
 #endif // ENABLE_CUDA
 
