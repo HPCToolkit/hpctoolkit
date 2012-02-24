@@ -194,8 +194,8 @@ myinstall-exec: myinstall-libhpcrunso myinstall-libhpcrun-static
 MYKEEPSYMS = $(addprefix -K , $(MY_INTERCEPTED_SYMS_LibHPCRunSO))
 
 myinstall-libhpcrunso:
-	rm -f $(pkglibdir)/libhpcrun-flat.a
-	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(pkglibdir)/libhpcrun-flat.so
+	rm -f $(DESTDIR)$(pkglibdir)/libhpcrun-flat.a
+	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(DESTDIR)$(pkglibdir)/libhpcrun-flat.so
 
 myinstall-libhpcrun-static: 
 #	mv $(bindir)/libhpcrun-static.o $(libdir)/.

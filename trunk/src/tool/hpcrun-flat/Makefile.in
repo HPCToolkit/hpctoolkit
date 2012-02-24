@@ -983,8 +983,8 @@ install-exec-hook: myinstall-exec
 myinstall-exec: myinstall-libhpcrunso myinstall-libhpcrun-static
 
 myinstall-libhpcrunso:
-	rm -f $(pkglibdir)/libhpcrun-flat.a
-	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(pkglibdir)/libhpcrun-flat.so
+	rm -f $(DESTDIR)$(pkglibdir)/libhpcrun-flat.a
+	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(DESTDIR)$(pkglibdir)/libhpcrun-flat.so
 
 myinstall-libhpcrun-static: 
 #	mv $(bindir)/libhpcrun-static.o $(libdir)/.

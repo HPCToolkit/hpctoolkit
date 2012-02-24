@@ -75,7 +75,7 @@ MYSCRIPTS = \
 	config/hpcplatform \
 	config/config.guess
 
-MYMONITORDIR = $(pkglibdir)/monitor
+MYMONITORDIR = $(DESTDIR)$(pkglibdir)/monitor
 
 #############################################################################
 # Automake rules
@@ -110,7 +110,7 @@ dist_doc_DATA = $(MYDATA)
 # It's up to configure to decide if the library exists, whether to
 # copy it and where to put it, so we don't treat errors as fatal here.
 #
-EXT_LIBS_DIR = $(prefix)/@hpc_ext_libs_dir@
+EXT_LIBS_DIR = $(DESTDIR)$(prefix)/@hpc_ext_libs_dir@
 
 define copy-libs
     @if test "$1" = yes ; then \
