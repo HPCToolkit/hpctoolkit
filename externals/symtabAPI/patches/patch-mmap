@@ -1,0 +1,32 @@
+Change mmap() flags MAP_SHARED to MAP_PRIVATE.  The pvfs file system
+on intrepid has problems with MAP_SHARED and we only read the file,
+we never try to write it back.
+
+Symtab calls mmap() with PROT_READ and MAP_SHARED which doesn't really
+make any sense.
+
+
+diff -Naurb symtabAPI.orig/src/dyninst/common/src/MappedFile.C symtabAPI/src/dyninst/common/src/MappedFile.C
+--- symtabAPI.orig/src/dyninst/common/src/MappedFile.C	2011-04-07 14:51:50.000000000 -0500
++++ symtabAPI/src/dyninst/common/src/MappedFile.C	2012-02-24 17:33:11.000000000 -0600
+@@ -316,7 +316,7 @@
+ #else
+ 
+    int mmap_prot  = PROT_READ;
+-   int mmap_flags = MAP_SHARED;
++   int mmap_flags = MAP_PRIVATE;
+ 
+ #if defined(os_vxworks)   
+    // VxWorks kernel modules have relocations which need to be
+diff -Naurb symtabAPI.orig/src/dyninst/common/src/mmtimer.c symtabAPI/src/dyninst/common/src/mmtimer.c
+--- symtabAPI.orig/src/dyninst/common/src/mmtimer.c	2011-04-07 14:51:50.000000000 -0500
++++ symtabAPI/src/dyninst/common/src/mmtimer.c	2012-02-24 17:36:18.000000000 -0600
+@@ -83,7 +83,7 @@
+ 		close( fd );
+ 		return 0;
+ 		}
+-	 if( ( mmdev_timer_addr = (volatile unsigned long int *)mmap( 0, getpagesize(), PROT_READ, MAP_SHARED, fd, 0 ) ) == NULL ) {
++	 if( ( mmdev_timer_addr = (volatile unsigned long int *)mmap( 0, getpagesize(), PROT_READ, MAP_PRIVATE, fd, 0 ) ) == NULL ) {
+ 	 	close( fd );
+ 	 	return 0;
+ 		}
