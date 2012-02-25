@@ -95,6 +95,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/thread_data.h>
+#include <hpcrun/trace.h>
 
 #include <lush/lush-backtrace.h>
 #include <messages/messages.h>
@@ -177,6 +178,8 @@
 
 
 #define MAX_STREAMS 100
+#define NUM_GPU_DEVICES 2
+#define GET_STREAM_ID(x) ((x) - g_stream_array)
 
 #define fprintf(...) do{}while(0)
 #define fflush(...) do{}while(0)
@@ -207,6 +210,7 @@ itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
 
 typedef struct event_list_node {
 	cudaEvent_t event;
+	cudaEvent_t event_start;
 	cct_node_t *launcher_cct;
         struct event_list_node * next;
         struct event_list_node * next_free_node;
@@ -217,17 +221,16 @@ typedef struct event_list_node {
  *   this is for GPU purpose only
  */
 typedef struct stream_node {
+	cudaEvent_t stream_start_event;
         struct event_list_node *latest_event_node;
         struct event_list_node *unfinished_event_node;
         struct stream_node *next_unfinished_stream;
 }stream_node;
 
 
-
-
 void CUPTIAPI
 EventInsertionCallback(void *userdata, CUpti_CallbackDomain domain,
-			 CUpti_CallbackId cbid, const CUpti_CallbackData *cbInfo);
+			 CUpti_CallbackId cbid, const void *cbInfo);
 
 #endif //ENABLE_CUDA
 /******************************************************************************
@@ -260,6 +263,7 @@ static uint64_t g_num_threads_at_sync;
 static stream_node * g_stream_array;
 static stream_node * g_unfinished_stream_list_head;
 static event_list_node * g_free_event_nodes_head;
+
 #endif //ENABLE_CUDA
 
 
@@ -274,57 +278,106 @@ uint32_t cleanup_finished_events() {
         stream_node *prev_stream=NULL;
         stream_node *next_stream=NULL;
         stream_node *cur_stream = g_unfinished_stream_list_head;
-	
+#ifdef DEBUG
 	if (cur_stream) {
 		fprintf(stderr,"\n Something to query in stream");
 	}
+#endif
         while(cur_stream != NULL) {
 // DELETE ME
 //while(de);
 		assert(cur_stream->unfinished_event_node && " Can't point unfinished stream to null");
                 next_stream = cur_stream->next_unfinished_stream;
 
-		event_list_node * current_event = cur_stream->unfinished_event_node;
-	 	while(current_event)
-		{
-                	//cudaError_t err_cuda = cudaErrorNotReady;
-			fprintf(stderr,"\n cudaEventQuery on  %p",current_event->event);
-			//fflush(stdout);
-                	cudaError_t err_cuda = cudaEventQuery(current_event->event);
-			if ( err_cuda == cudaSuccess )
-			{
-				fprintf(stderr,"\n cudaEventQuery success %p",current_event->event);
-				event_list_node * to_free = current_event;
-				current_event = current_event->next;
-				// Add to_free to fre list 
-				ADD_TO_FREE_EVENTS_LIST(to_free);
-			}
-			else
-			{
-				fprintf(stderr,"\n cudaEventQuery failed %p",current_event->event);
-				break;
-			}
-			//fflush(stdout);
-			
-		}
-	
-		cur_stream->unfinished_event_node = current_event;
-                if(current_event == NULL) {
-			// set oldest and newest pointers to null
-	                cur_stream->latest_event_node = NULL;
-			if( prev_stream == NULL){
-				g_unfinished_stream_list_head = next_stream;
-			} else {
-				prev_stream->next_unfinished_stream = next_stream;
-			}
-                } else  {
-                        num_unfinished_streams++;
-			prev_stream = cur_stream;
-                } 
-                cur_stream = next_stream;
-        }
-	fprintf(stderr,"\n UNDONE = %d",num_unfinished_streams);
-        return num_unfinished_streams;
+								event_list_node * current_event = cur_stream->unfinished_event_node;
+								while(current_event)
+								{
+										
+												//cudaError_t err_cuda = cudaErrorNotReady;
+												fprintf(stderr,"\n cudaEventQuery on  %p",current_event->event);
+												//fflush(stdout);
+												cudaError_t err_cuda = cudaEventQuery(current_event->event);
+												if ( err_cuda == cudaSuccess )
+												{
+																fprintf(stderr,"\n cudaEventQuery success %p",current_event->event);
+																cct_node_t *launcher_cct = current_event->launcher_cct;
+																hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
+																// record start time
+																float elapsedTime; // in millisec with 0.5 microsec resolution as per CUDA
+																err_cuda = cudaEventElapsedTime(&elapsedTime, cur_stream->stream_start_event, current_event->event_start);
+																if(err_cuda != cudaSuccess )
+																	fprintf(stderr,"\n cudaEventElapsedTime failed %p",current_event->event_start);
+																uint64_t micro_time = elapsedTime * 1000;	
+#if 1
+															fprintf(stderr,"\n started at  :  %lu",micro_time);
+#endif
+																// TODO : START TRACE WITH  with IDLE MARKER .. This should go away after trace viewer changes
+																cct_bundle_t *bundle = &(TD_GET(epoch)->csdata);
+																cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
+																hpcrun_cct_persistent_id_trace_mutate(idl);
+																gpu_trace_append_with_time(0, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(idl), micro_time-1);
+
+																gpu_trace_append_with_time(/*gpu_number*/0, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(launcher_cct), micro_time );
+																// record end time
+																// TODO : WE JUST NEED TO PUT IDLE MARKER
+																err_cuda = cudaEventElapsedTime(&elapsedTime, cur_stream->stream_start_event, current_event->event);
+																if(err_cuda != cudaSuccess )
+																	fprintf(stderr,"\n cudaEventElapsedTime failed %p",current_event->event);
+																micro_time = elapsedTime * 1000;	
+#if 1
+															fprintf(stderr,"\n Ended  at  :  %lu",micro_time);
+#endif
+																gpu_trace_append_with_time(/*gpu_number*/0, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(launcher_cct), micro_time );
+
+
+																// TODO : WE JUST NEED TO PUT IDLE MARKER
+																gpu_trace_append_with_time(/*gpu_number*/0, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(idl), micro_time + 1 );
+#if 1
+																cudaEventElapsedTime(&elapsedTime, current_event->event_start, current_event->event);
+																micro_time = elapsedTime * 1000;
+																fprintf(stderr,"\n Length of Event :  %lu",micro_time);
+
+#endif
+
+																event_list_node * to_free = current_event;
+																current_event = current_event->next;
+																// Add to_free to fre list 
+																ADD_TO_FREE_EVENTS_LIST(to_free);
+												}
+												else
+												{
+																fprintf(stderr,"\n cudaEventQuery failed %p",current_event->event);
+																break;
+												}
+												//fflush(stdout);
+								}
+
+								cur_stream->unfinished_event_node = current_event;
+								if(current_event == NULL) {
+												// set oldest and newest pointers to null
+												cur_stream->latest_event_node = NULL;
+												if( prev_stream == NULL){
+																g_unfinished_stream_list_head = next_stream;
+												} else {
+																prev_stream->next_unfinished_stream = next_stream;
+												}
+								} else  {
+
+#if 0
+												// Insert the unfinished activity into the trace ( we are sure we had a IDLE MARKER behind us)
+												cct_node_t *launcher_cct = current_event->launcher_cct;
+												hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
+                                                                                                gpu_trace_append(/*gpu_number*/0, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(launcher_cct));
+#endif
+												num_unfinished_streams++;
+												prev_stream = cur_stream;
+								} 
+								cur_stream = next_stream;
+				}
+#ifdef DEBUG
+				fprintf(stderr,"\n UNDONE = %d",num_unfinished_streams);
+#endif
+				return num_unfinished_streams;
 }
 
 
@@ -341,7 +394,9 @@ event_list_node * create_and_insert_event(int stream_id, cct_node_t *launcher_cc
 	 	event_node = (event_list_node *)hpcrun_malloc(sizeof(event_list_node));
 	}
         //cudaError_t err =  cudaEventCreateWithFlags(&(event_node->event),cudaEventDisableTiming);
-        cudaError_t err =  cudaEventCreate(&(event_node->event));
+        cudaError_t err =  cudaEventCreate(&(event_node->event_start));
+	CHECK_CU_ERROR(err,"cudaEventCreate");
+        err =  cudaEventCreate(&(event_node->event));
 	CHECK_CU_ERROR(err,"cudaEventCreate");
         event_node->launcher_cct = launcher_cct;
         event_node->next = NULL;
@@ -412,10 +467,10 @@ METHOD_FN(init)
 	// TODO: enable just the ones you need
   	cuptiErr = cuptiEnableDomain(1 /*enable*/, subscriber, CUPTI_CB_DOMAIN_RUNTIME_API);
   	CHECK_CUPTI_ERROR(cuptiErr, "cuptiEnableDomain");
-#if 0
 	// Enable resource APIs
   	cuptiErr = cuptiEnableDomain(1 /*enable*/, subscriber, CUPTI_CB_DOMAIN_RESOURCE);
   	CHECK_CUPTI_ERROR(cuptiErr, "cuptiEnableDomain");
+#if 0
 	// Enable synchronization  APIs
   	cuptiErr = cuptiEnableDomain(1 /*enable*/, subscriber, CUPTI_CB_DOMAIN_SYNCHRONIZE);
   	CHECK_CUPTI_ERROR(cuptiErr, "cuptiEnableDomain");
@@ -794,20 +849,25 @@ cudaError_t cudaDeviceSynchronize(void){
   return ret;
 }
 
-
 void CUPTIAPI
 EventInsertionCallback( void *userdata, CUpti_CallbackDomain domain,
-                         CUpti_CallbackId cbid, const CUpti_CallbackData *cbInfo){
+                         CUpti_CallbackId cbid, const void *cbData){
 
 	//CUptiResult cuptiErr;
 	cudaError_t err;
-	static uint32_t streamId = 0;	 	 	
+	uint32_t streamId = 0;	 	 	
+	static cudaStream_t active_stream; 
+	static event_list_node  * event_node;
+	const CUpti_CallbackData *cbInfo; 
+	const CUpti_ResourceData *cbRDInfo; 
+  uint32_t new_streamId;
+
 
 	switch(domain){
 		case CUPTI_CB_DOMAIN_RUNTIME_API:
 			//TMSG(ITIMER_HANDLER,"call back CUPTI_CB_DOMAIN_RUNTIME_API");
 			//printf("\ncall back CUPTI_CB_DOMAIN_RUNTIME_API");
-
+			cbInfo = (const CUpti_CallbackData *)cbData;
 			switch(cbid){
 				case CUPTI_RUNTIME_TRACE_CBID_cudaConfigureCall_v3020: {
 					if(cbInfo->callbackSite == CUPTI_API_ENTER){
@@ -817,12 +877,12 @@ EventInsertionCallback( void *userdata, CUpti_CallbackDomain domain,
 						spinlock_lock(&g_gpu_lock);
 					 	// Get stream id
 						cudaConfigureCall_v3020_params *params = (cudaConfigureCall_v3020_params *) cbInfo->functionParams;
-						cuptiGetStreamId(cbInfo->context,(CUstream) params->stream, &streamId);
+						active_stream = params->stream;
 					} 
 				}
 				break;
 				
-				case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyAsync_v3020:
+				case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyAsync_v3020: 
 					if(cbInfo->callbackSite == CUPTI_API_ENTER){
 						 // We cannot allow this thread to take samples since we will be holding a lock which is also needed in the async signal handler
 						 hpcrun_async_block();
@@ -830,37 +890,51 @@ EventInsertionCallback( void *userdata, CUpti_CallbackDomain domain,
 						spinlock_lock(&g_gpu_lock);
 						//TODO: this should change, we should create streams for mem copies.
 						cudaMemcpyAsync_v3020_params *params =  (cudaMemcpyAsync_v3020_params *) cbInfo->functionParams;
-						cuptiGetStreamId(cbInfo->context,(CUstream) params->stream, &streamId);
+						active_stream = params->stream;
+						// Get CCT node (i.e., kernel launcher)
+						ucontext_t context;
+						getcontext(&context);
+						//cct_node_t *node = hpcrun_gen_thread_ctxt(&context);
+						cct_node_t *node =  hpcrun_sample_callpath(&context, cpu_idle_metric_id, 1, 0/*skipInner*/, 1/*isSync*/);
+						// Create a new Cuda Event
+						cuptiGetStreamId(cbInfo->context,(CUstream) active_stream, &streamId);
+						event_node = create_and_insert_event(streamId, node);
+						// Insert the event in the stream
+					   	err = cudaEventRecord (event_node->event_start, active_stream);							
+						CHECK_CU_ERROR(err,"cudaEventRecord");
 					} else {
-						goto  MEMCPY_EXIT;
+                                                err = cudaEventRecord (event_node->event, active_stream);
+                                                CHECK_CU_ERROR(err,"cudaEventRecord");
+                                                // let other things be queued into GPU
+                                                spinlock_unlock(&g_gpu_lock);
+                                                // safe to take async samples now
+                                                hpcrun_async_unblock();
 					} 
 					break;
-			 	// what about case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyAsync_v3020
 				// case CUPTI_RUNTIME_TRACE_CBID_cudaMemsetAsync_v3020:
 			 	//case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy_v3020:
 				//case CUPTI_RUNTIME_TRACE_CBID_cudaMemset_v3020:
 				case CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020:
-					if(cbInfo->callbackSite == CUPTI_API_EXIT){
+					if(cbInfo->callbackSite == CUPTI_API_ENTER){
 						// Get CCT node (i.e., kernel launcher)
 						ucontext_t context;
-MEMCPY_EXIT:
 						getcontext(&context);
 						//cct_node_t *node = hpcrun_gen_thread_ctxt(&context);
-//volatile int de=1;
-//while (de);
 						cct_node_t *node =  hpcrun_sample_callpath(&context, cpu_idle_metric_id, 1, 0/*skipInner*/, 1/*isSync*/);
 						
 						// Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
 						node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 3);
     						
-
+						// Get stream Id
+						cuptiGetStreamId(cbInfo->context,(CUstream) active_stream, &streamId);
 						// Create a new Cuda Event
-
-						event_list_node  * event_node = create_and_insert_event(streamId, node);
-
-						// Insert the event in the stream
-					   	/////TODO:err = cudaEventRecord (event_node->event, stream);							
-					   	err = cudaEventRecord (event_node->event,0);							
+						cuptiGetStreamId(cbInfo->context,(CUstream) active_stream, &streamId);
+						event_node = create_and_insert_event(streamId, node);
+						// Insert the start event in the stream
+					   	err = cudaEventRecord (event_node->event_start, active_stream);							
+						CHECK_CU_ERROR(err,"cudaEventRecord");
+					} else {  // CUPTI_API_EXIT
+					   	err = cudaEventRecord (event_node->event, active_stream);							
 						CHECK_CU_ERROR(err,"cudaEventRecord");
 						// let other things be queued into GPU
 						spinlock_unlock(&g_gpu_lock);
@@ -871,15 +945,44 @@ MEMCPY_EXIT:
 				default:
 					break;
 			}
-
-
 			break;
-#if 0
-		case CUPTI_CB_DOMAIN_SYNCHRONIZE:
-			TMSG(ITIMER_HANDLER,"call back CUPTI_CB_DOMAIN_SYNCHRONIZE");
-			printf("\ncall back CUPTI_CB_DOMAIN_SYNCHRONIZE");
+
+		case CUPTI_CB_DOMAIN_RESOURCE:
+			TMSG(ITIMER_HANDLER,"call back CUPTI_CB_DOMAIN_RESOURCE");
+			printf("\ncall back CUPTI_CB_DOMAIN_RESOURCE");
+			/*
+ 				*FIXME: checkout what happens if a stream is being destroyed while another thread
+								is providing work to it.
+				*/ 		
+			cbRDInfo = (const CUpti_ResourceData *)cbData;
+			switch (cbid) {
+				case CUPTI_CBID_RESOURCE_STREAM_CREATED:
+    						cuptiGetStreamId(cbRDInfo->context, cbRDInfo->resourceHandle.stream, &new_streamId);
+						printf("\nStream is getting created: %d\n",new_streamId);
+						// Initialize and Record an event to indicate the start of this stream.
+						// No need to wait for it since we query only the events posted after this and this will be complete when the latter posted ones are complete.
+					        err =  cudaEventCreate(&(g_stream_array[new_streamId].stream_start_event));
+        					CHECK_CU_ERROR(err,"cudaEventCreate");
+						err = cudaEventRecord (g_stream_array[new_streamId].stream_start_event, cbRDInfo->resourceHandle.stream);
+                                                CHECK_CU_ERROR(err,"cudaEventRecord");
+						
+
+						gpu_trace_open(0,new_streamId);
+						cct_bundle_t *bundle = &(TD_GET(epoch)->csdata);
+						cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
+						hpcrun_cct_persistent_id_trace_mutate(idl);
+						gpu_trace_append(0, new_streamId, hpcrun_cct_persistent_id(idl));
+						
+						
+						break;
+				case CUPTI_CBID_RESOURCE_STREAM_DESTROY_STARTING:
+						cuptiGetStreamId(cbRDInfo->context, cbRDInfo->resourceHandle.stream, &new_streamId);
+						printf("\nStream is getting destroyed: %d\n",new_streamId);
+						gpu_trace_close(0,new_streamId);
+						break;
+				default: break;
+  		}
 			break;
-#endif
 		default:
 			printf("\ncall back DEF");
 			break;
@@ -951,81 +1054,84 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     static uint32_t num_unfinshed_streams = 0;
     static stream_node * unfinished_event_list_head = 0;
 
-    // if last cleanup happened (due to some other thread) less that metric_incr/2 time ago, then we will not do cleanup, but instead use its results
-    if(cur_time_us - last_cleanup_time  < metric_incr * 0.5 )
-    {
-        // reuse the last time recorded num_unfinshed_streams and unfinished_event_list_head
-    }
-    else
-    {  
-	//TODO: CUDA blocks thread from making cudaEventQuery() call if the thread is at SYNC
-	// Hence we will not call cleanup if we know we are at SYNC
-	if(is_threads_at_sync)
-	{
-		//fprintf(stderr,"\n Thread at sync");
-		fflush(stderr);
-		unfinished_event_list_head = g_unfinished_stream_list_head;
-		num_unfinshed_streams = 0;
-		for(stream_node  * unfinished_stream = g_unfinished_stream_list_head; unfinished_stream ; unfinished_stream = unfinished_stream->next_unfinished_stream)
-			num_unfinshed_streams ++;
-		fprintf(stderr,".%d",num_unfinshed_streams);
-	}
-	else
-	{
-		//fprintf(stderr,"\n Thread NOT at sync");
-		fprintf(stderr,"*");
-		//fflush(stderr);
-        	// do cleanup 
-  	      	last_cleanup_time = cur_time_us;
-        	num_unfinshed_streams = cleanup_finished_events();
-		unfinished_event_list_head = g_unfinished_stream_list_head;
-	}
-    }
+		// if last cleanup happened (due to some other thread) less that metric_incr/2 time ago, then we will not do cleanup, but instead use its results
+		if(cur_time_us - last_cleanup_time  < metric_incr * 0.5 )
+		{
+						// reuse the last time recorded num_unfinshed_streams and unfinished_event_list_head
+		}
+		else
+		{  
+						//TODO: CUDA blocks thread from making cudaEventQuery() call if the thread is at SYNC
+						// Hence we will not call cleanup if we know we are at SYNC
+						if(is_threads_at_sync)
+						{
+										//fprintf(stderr,"\n Thread at sync");
+										fflush(stderr);
+										unfinished_event_list_head = g_unfinished_stream_list_head;
+										num_unfinshed_streams = 0;
+										for(stream_node  * unfinished_stream = g_unfinished_stream_list_head; unfinished_stream ; unfinished_stream = unfinished_stream->next_unfinished_stream)
+														num_unfinshed_streams ++;
 
-    if(num_unfinshed_streams) 
-    {
-        // GPU is busy if we are here
+#ifdef DEBUG
+										fprintf(stderr,".%d",num_unfinshed_streams);
+#endif
+						}
+						else
+						{
+										//fprintf(stderr,"\n Thread NOT at sync");
+										//fprintf(stderr,"*");
+										//fflush(stderr);
+										// do cleanup 
+										last_cleanup_time = cur_time_us;
+										num_unfinshed_streams = cleanup_finished_events();
+										unfinished_event_list_head = g_unfinished_stream_list_head;
+						}
+		}
 
-	if(is_threads_at_sync)
-	{
-		// CPU is idle
-		
-		// Increment CPU idleness by metric_incr
-    		cct_metric_data_increment(cpu_idle_metric_id, node, (cct_metric_data_t){.r = metric_incr} );
-		// Increment CPU idle cause by metric_incr/num_unfinshed_streams for each of unfinshed_streams
-		for(stream_node  * unfinished_stream = unfinished_event_list_head; unfinished_stream ; unfinished_stream = unfinished_stream->next_unfinished_stream)
-    			cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t){.r = metric_incr * 1.0 / num_unfinshed_streams} );
-	}
-	else 
-	{
-		// CPU - GPU overlap
-		
-		// Increment cpu_overlap by metric_incr
-    		cct_metric_data_increment(cpu_overlap_metric_id, node, (cct_metric_data_t){.r = metric_incr} );
-		// Increment gpu_overlap by metric_incr/num_unfinshed_streams for each of the unfinshed streams
-		for(stream_node * unfinished_stream = unfinished_event_list_head; unfinished_stream ; unfinished_stream = unfinished_stream->next_unfinished_stream)
-    			cct_metric_data_increment(gpu_overlap_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t){.r = metric_incr * 1.0 / num_unfinshed_streams} );
-		
-	}
-    }
-    else 
-    {
-	// GPU is idle
-	
-	// Increment gpu_ilde by metric_incr
-    	cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t){.r = metric_incr} );
+		if(num_unfinshed_streams) 
+		{
+						// GPU is busy if we are here
 
-    }
-    spinlock_unlock(&g_gpu_lock);
+						if(is_threads_at_sync)
+						{
+										// CPU is idle
+
+										// Increment CPU idleness by metric_incr
+										cct_metric_data_increment(cpu_idle_metric_id, node, (cct_metric_data_t){.r = metric_incr} );
+										// Increment CPU idle cause by metric_incr/num_unfinshed_streams for each of unfinshed_streams
+										for(stream_node  * unfinished_stream = unfinished_event_list_head; unfinished_stream ; unfinished_stream = unfinished_stream->next_unfinished_stream) 
+														cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t){.r = metric_incr * 1.0 / num_unfinshed_streams} );
+						}
+						else 
+						{
+										// CPU - GPU overlap
+
+										// Increment cpu_overlap by metric_incr
+										cct_metric_data_increment(cpu_overlap_metric_id, node, (cct_metric_data_t){.r = metric_incr} );
+										// Increment gpu_overlap by metric_incr/num_unfinshed_streams for each of the unfinshed streams
+										for(stream_node * unfinished_stream = unfinished_event_list_head; unfinished_stream ; unfinished_stream = unfinished_stream->next_unfinished_stream) 
+														cct_metric_data_increment(gpu_overlap_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t){.r = metric_incr * 1.0 / num_unfinshed_streams} );
+
+						}
+		}
+		else 
+		{
+						// GPU is idle
+
+						// Increment gpu_ilde by metric_incr
+						cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t){.r = metric_incr} );
+					
+		}
+		spinlock_unlock(&g_gpu_lock);
 #endif // ENABLE_CUDA
-    //DELETE ME
-    //fprintf(stderr,"\n Sample end");
+		//DELETE ME
+		//fprintf(stderr,"\n Sample end");
 
-  }
-  if (hpcrun_is_sampling_disabled()) {
-    TMSG(SPECIAL, "No itimer restart, due to disabled sampling");
-    return 0;
-  }
+	}
+	if (hpcrun_is_sampling_disabled()) {
+					TMSG(SPECIAL, "No itimer restart, due to disabled sampling");
+					return 0;
+	}
 
 #ifdef RESET_ITIMER_EACH_SAMPLE
   METHOD_CALL(&_itimer_obj, start);
