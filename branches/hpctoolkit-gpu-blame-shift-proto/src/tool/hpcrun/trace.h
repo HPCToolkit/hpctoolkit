@@ -46,6 +46,7 @@
 
 #ifndef trace_h
 #define trace_h
+#include<stdint.h>
 
 void trace_init();
 void trace_open();
@@ -54,4 +55,8 @@ void trace_close();
 
 int trace_isactive();
 
+void gpu_trace_open(int gpu_number, int stream_id);
+void gpu_trace_append_with_time(int gpu_device_num, int stream_num, unsigned int call_path_id, uint64_t microtime);
+void gpu_trace_append(int gpu_number, int stream_id, unsigned int cpid);
+void gpu_trace_close(int gpu_number, int stream_id);
 #endif // trace_h
