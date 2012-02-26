@@ -192,38 +192,33 @@ gpu_trace_append_with_time(int gpu_device_num, int stream_num, unsigned int call
 {
 
 	if (tracing && hpcrun_sample_prob_active()) {
-		thread_data_t *td = hpcrun_get_thread_data();
-		td->trace_max_time_us = td->trace_min_time_us + microtime;
 
 		uint32_t id = (gpu_device_num*10)+stream_num;
-		int ret = hpctrace_fmt_append_outbuf(&(gpu_trace_file_array[id].trace_outbuf), td->trace_min_time_us + microtime,
+		int ret = hpctrace_fmt_append_outbuf(&(gpu_trace_file_array[id].trace_outbuf), microtime,
 				(uint32_t)call_path_id);  
-		trace_file_validate(ret == HPCFMT_OK, "append");
+		//trace_file_validate(ret == HPCFMT_OK, "append");
 	}
 }
 
-void
+uint64_t
 gpu_trace_append(int gpu_device_num, int stream_num, unsigned int call_path_id)
 {
 	//call_path_id = 140;
 	if (tracing && hpcrun_sample_prob_active()) {
-		thread_data_t *td = hpcrun_get_thread_data();
 		struct timeval tv;
 		int ret = gettimeofday(&tv, NULL);
 		assert(ret == 0 && "in trace_append: gettimeofday failed!");
 		uint64_t microtime = ((uint64_t)tv.tv_usec 
 				+ (((uint64_t)tv.tv_sec) * 1000000));
 
-		// Called only once hence we can set this.
-		td->trace_min_time_us = microtime;
-		td->trace_max_time_us = microtime;
-
 		//printf("\nappending gpu trace");
 		uint32_t id = (gpu_device_num*10)+stream_num;
 		ret = hpctrace_fmt_append_outbuf(&(gpu_trace_file_array[id].trace_outbuf), microtime,
 				(uint32_t)call_path_id);
 		trace_file_validate(ret == HPCFMT_OK, "append");
+		return microtime;
 	}
+	return 0;
 }
 
 
