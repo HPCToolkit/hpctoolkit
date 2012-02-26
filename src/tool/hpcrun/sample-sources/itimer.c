@@ -187,6 +187,16 @@
 #define ADD_TO_FREE_EVENTS_LIST(node_ptr) do { (node_ptr)->next_free_node = g_free_event_nodes_head; \
 				g_free_event_nodes_head = (node_ptr); }while(0)
 
+
+
+///TODO: evaluate this option : FORCE CLEANUP
+#define SYNCHRONOUS_CLEANUP do{  hpcrun_async_block(); \
+                spinlock_lock(&g_gpu_lock); \
+		cleanup_finished_events(); \
+                spinlock_unlock(&g_gpu_lock);\
+                hpcrun_async_unblock(); } while(0)
+
+
 #endif                          //ENABLE_CUDA
 
 
@@ -221,6 +231,7 @@ typedef struct event_list_node {
  */
 typedef struct stream_node {
     cudaEvent_t stream_start_event;
+    uint64_t start_time;
     struct event_list_node *latest_event_node;
     struct event_list_node *unfinished_event_node;
     struct stream_node *next_unfinished_stream;
@@ -253,6 +264,8 @@ static sigset_t sigset_itimer;
 
 #ifdef ENABLE_CUDA
 static spinlock_t g_gpu_lock = SPINLOCK_UNLOCKED;
+//Lock for wrapped synchronous calls
+static spinlock_t g_cuda_lock = SPINLOCK_UNLOCKED;
 static uint64_t g_num_threads_at_sync;
 
 static stream_node *g_stream_array;
@@ -309,9 +322,11 @@ uint32_t cleanup_finished_events()
                 cct_bundle_t *bundle = &(TD_GET(epoch)->csdata);
                 cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
                 hpcrun_cct_persistent_id_trace_mutate(idl);
-                gpu_trace_append_with_time(0, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(idl), micro_time - 1);
 
-                gpu_trace_append_with_time( /*gpu_number */ 0, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(launcher_cct), micro_time);
+		uint64_t stream_start_time = g_stream_array[GET_STREAM_ID(cur_stream)].start_time;
+                gpu_trace_append_with_time(0, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(idl), stream_start_time + micro_time - 1);
+
+                gpu_trace_append_with_time( /*gpu_number */ 0, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(launcher_cct), stream_start_time + micro_time);
                 // record end time
                 // TODO : WE JUST NEED TO PUT IDLE MARKER
                 err_cuda = cudaEventElapsedTime(&elapsedTime, cur_stream->stream_start_event, current_event->event);
@@ -321,11 +336,11 @@ uint32_t cleanup_finished_events()
 #if 1
                 fprintf(stderr, "\n Ended  at  :  %lu", micro_time);
 #endif
-                gpu_trace_append_with_time( /*gpu_number */ 0, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(launcher_cct), micro_time);
+                gpu_trace_append_with_time( /*gpu_number */ 0, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(launcher_cct), stream_start_time + micro_time);
 
 
                 // TODO : WE JUST NEED TO PUT IDLE MARKER
-                gpu_trace_append_with_time( /*gpu_number */ 0, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(idl), micro_time + 1);
+                gpu_trace_append_with_time( /*gpu_number */ 0, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(idl), stream_start_time + micro_time + 1);
 #if 1
                 cudaEventElapsedTime(&elapsedTime, current_event->event_start, current_event->event);
                 micro_time = elapsedTime * 1000;
@@ -676,7 +691,7 @@ static void METHOD_FN(gen_event_set, int lush_metrics)
 
 cudaError_t cudaThreadSynchronize(void)
 {
-    spinlock_lock(&g_gpu_lock);
+    spinlock_lock(&g_cuda_lock);
     static cudaError_t(*cudaThreadSynchronizeReal) (void) = NULL;
     void *handle;
     char *error;
@@ -695,17 +710,18 @@ cudaError_t cudaThreadSynchronize(void)
     }
 
     TD_GET(is_thread_at_cuda_sync) = true;
-    spinlock_unlock(&g_gpu_lock);
+    spinlock_unlock(&g_cuda_lock);
     printf("\n calling cudaThreadSynchronize\n");
     cudaError_t ret = cudaThreadSynchronizeReal();
     printf("\n Done  cudaThreadSynchronize\n");
+SYNCHRONOUS_CLEANUP;
     TD_GET(is_thread_at_cuda_sync) = false;
     return ret;
 }
 
 cudaError_t cudaStreamSynchronize(cudaStream_t stream)
 {
-    spinlock_lock(&g_gpu_lock);
+    spinlock_lock(&g_cuda_lock);
     static cudaError_t(*cudaStreamSynchronizeReal) (cudaStream_t) = NULL;
     void *handle;
     char *error;
@@ -724,11 +740,12 @@ cudaError_t cudaStreamSynchronize(cudaStream_t stream)
     }
 
     TD_GET(is_thread_at_cuda_sync) = true;
-    spinlock_unlock(&g_gpu_lock);
+    spinlock_unlock(&g_cuda_lock);
 
     fprintf(stderr, "\n calling cudaStreamSynchronize\n");
     cudaError_t ret = cudaStreamSynchronizeReal(stream);
     fprintf(stderr, "\n Done  cudaStreamSynchronize\n");
+SYNCHRONOUS_CLEANUP;
     TD_GET(is_thread_at_cuda_sync) = false;
     return ret;
 }
@@ -736,7 +753,7 @@ cudaError_t cudaStreamSynchronize(cudaStream_t stream)
 
 cudaError_t cudaEventSynchronize(cudaEvent_t event)
 {
-    spinlock_lock(&g_gpu_lock);
+    spinlock_lock(&g_cuda_lock);
 
     static cudaError_t(*cudaEventSynchronizeReal) (cudaEvent_t) = NULL;
     void *handle;
@@ -756,18 +773,19 @@ cudaError_t cudaEventSynchronize(cudaEvent_t event)
     }
 
     TD_GET(is_thread_at_cuda_sync) = true;
-    spinlock_unlock(&g_gpu_lock);
+    spinlock_unlock(&g_cuda_lock);
 
     fprintf(stderr, "\n calling cudaEventSynchronize\n");
     cudaError_t ret = cudaEventSynchronizeReal(event);
     fprintf(stderr, "\n Done  cudaEventSynchronize\n");
+SYNCHRONOUS_CLEANUP;
     TD_GET(is_thread_at_cuda_sync) = false;
     return ret;
 }
 
 cudaError_t cudaStreamWaitEvent(cudaStream_t stream, cudaEvent_t event, unsigned int flags)
 {
-    spinlock_lock(&g_gpu_lock);
+    spinlock_lock(&g_cuda_lock);
 
     static cudaError_t(*cudaStreamWaitEventReal) (cudaStream_t, cudaEvent_t, unsigned int) = NULL;
     void *handle;
@@ -787,11 +805,12 @@ cudaError_t cudaStreamWaitEvent(cudaStream_t stream, cudaEvent_t event, unsigned
     }
 
     TD_GET(is_thread_at_cuda_sync) = true;
-    spinlock_unlock(&g_gpu_lock);
+    spinlock_unlock(&g_cuda_lock);
 
     fprintf(stderr, "\n calling cudaStreamWaitEvent\n");
     cudaError_t ret = cudaStreamWaitEventReal(stream, event, flags);
     fprintf(stderr, "\n Done  cudaStreamWaitEvent\n");
+SYNCHRONOUS_CLEANUP;
     TD_GET(is_thread_at_cuda_sync) = false;
     return ret;
 }
@@ -801,7 +820,7 @@ cudaError_t cudaStreamWaitEvent(cudaStream_t stream, cudaEvent_t event, unsigned
 
 cudaError_t cudaDeviceSynchronize(void)
 {
-    spinlock_lock(&g_gpu_lock);
+    spinlock_lock(&g_cuda_lock);
 
     static cudaError_t(*cudaDeviceSynchronizeReal) (void) = NULL;
     void *handle;
@@ -821,11 +840,12 @@ cudaError_t cudaDeviceSynchronize(void)
     }
 
     TD_GET(is_thread_at_cuda_sync) = true;
-    spinlock_unlock(&g_gpu_lock);
+    spinlock_unlock(&g_cuda_lock);
 
     fprintf(stderr, "\n calling cudaDeviceSynchronize\n");
     cudaError_t ret = cudaDeviceSynchronizeReal();
     fprintf(stderr, "\n Done  cudaDeviceSynchronize\n");
+SYNCHRONOUS_CLEANUP;
     TD_GET(is_thread_at_cuda_sync) = false;
     return ret;
 }
@@ -959,7 +979,7 @@ void CUPTIAPI EventInsertionCallback(void *userdata, CUpti_CallbackDomain domain
             cct_bundle_t *bundle = &(TD_GET(epoch)->csdata);
             cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
             hpcrun_cct_persistent_id_trace_mutate(idl);
-            gpu_trace_append(0, new_streamId, hpcrun_cct_persistent_id(idl));
+            g_stream_array[new_streamId].start_time = gpu_trace_append(0, new_streamId, hpcrun_cct_persistent_id(idl));
 
 
             break;
@@ -967,11 +987,7 @@ void CUPTIAPI EventInsertionCallback(void *userdata, CUpti_CallbackDomain domain
             cuptiGetStreamId(cbRDInfo->context, cbRDInfo->resourceHandle.stream, &new_streamId);
             printf("\nStream is getting destroyed: %d\n", new_streamId);
 ///TODO: evaluate this option : FORCE CLEANUP
-                spinlock_lock(&g_gpu_lock);
-                hpcrun_async_block();
-		cleanup_finished_events();
-                spinlock_unlock(&g_gpu_lock);
-                hpcrun_async_unblock();
+SYNCHRONOUS_CLEANUP;
 
 
             gpu_trace_close(0, new_streamId);
