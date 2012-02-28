@@ -266,13 +266,13 @@ Please note that a list of examples below provides <code>configure</code> comman
   <code>mkdir BUILD &amp;&amp; cd BUILD</code><br />
   <code>../configure [CC=&lt;<i>c-compiler</i>&gt;] 
                      [CXX=&lt;<i>c++-compiler</i>&gt;] \<br />
-  &nbsp;&nbsp;&nbsp;&nbsp; [--prefix=&lt;<i>externals-install-path</i>&gt;</code>] <br />
+  &nbsp;&nbsp;&nbsp;&nbsp; [--prefix=&lt;<i>hpctoolkit-externals-install</i>&gt;</code>] <br />
   <code>make install</code><br />
   <code>make distclean</code><br />
 </div>
 
 <p>Externals is <i>not</i> persistent as HPCToolkit will copy everything it needs from the installation.
-  Thus, the installation path <code>&lt;externals-install-path&gt;</code> should be a local path and not something like <code>/usr</code>.
+  Thus, the installation path <code>&lt;hpctoolkit-externals-install&gt;</code> should be a local path and not something like <code>/usr</code>.
   If <code>--prefix</code> is not supplied it will automatically be set to <code>./&lt;Autoconf-host&gt;</code>.
 </p>
 
@@ -294,19 +294,19 @@ Please note that a list of examples below provides <code>configure</code> comman
   <code>../configure [CC=&lt;<i>c-compiler</i>&gt;]
                      [CXX=&lt;<i>c++-compiler</i>&gt;]
                      [MPICXX=&lt;<i>mpi-c++-compiler</i>&gt;] \<br />
-  &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>install-path</i>&gt; \<br />
-  &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>externals-install-path</i>&gt; \<br />
-   &nbsp;&nbsp;&nbsp;&nbsp; [--with-papi=&lt;<i>papi-install-path</i>&gt;]</code><br />
+  &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>hpctoolkit-install</i>&gt; \<br />
+  &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals-install</i>&gt; \<br />
+   &nbsp;&nbsp;&nbsp;&nbsp; [--with-papi=&lt;<i>papi-install</i>&gt;]</code><br />
   <code>make install</code><br />
 </div>
 
-<p>The above commands will build HPCToolkit and install it into <code>&lt;<i>install-path</i>&gt;</code>.
+<p>The above commands will build HPCToolkit and install it into <code>&lt;<i>hpctoolkit-install</i>&gt;</code>.
 </p>
 
 <p>To specify a C and C++ compiler other than <code>gcc</code> and <code>g++</code>, use <code>CC</code> and <code>CXX</code>.
   To enable MPI support, (1) ensure a working <code>mpicxx</code> or <code>mpiCC</code> is in your shell's path; or (2) use <code>MPICXX</code>.
   (Naturally, <code>CXX</code> and <code>MPICXX</code> should be compatible; typically <code>MPICXX</code> is a wrapper for <code>CXX</code>.)
-  To enable PAPI-based measurements, use the <code>--with-papi</code> option; it takes as an argument the path of your PAPI installation, <code>&lt;<i>papi-install-path</i>&gt;</code>.
+  To enable PAPI-based measurements, use the <code>--with-papi</code> option; it takes as an argument the path of your PAPI installation, <code>&lt;<i>papi-install</i>&gt;</code>.
 </p>
 
 <p>Because the HPCToolkit installation is self-contained, it may be renamed or moved to another location.
@@ -326,10 +326,10 @@ Please note that a list of examples below provides <code>configure</code> comman
 
   <li> To install <span class="hpctool">hpcviewer</span> or <span class="hpctool">hpctraceviewer</span> in an HPCToolkit installation, unpack the tarball and execute the following commands:
     <div class="indent">
-      <code>./&lt;<i>hpcviewer</i>&gt;/install &lt;<i>install-path</i>&gt;</code><br />
-      <code>./&lt;<i>hpctraceviewer</i>&gt;/install &lt;<i>install-path</i>&gt;</code>
+      <code>cd &lt;<i>hpcviewer</i>&gt; &amp;&amp; ./install &lt;<i>hpctoolkit-install</i>&gt;</code><br />
+      <code>cd &lt;<i>hpctraceviewer</i>&gt; &amp;&amp; ./install &lt;<i>hpctoolkit-install</i>&gt;</code>
     </div>
-    Here, <code>&lt;<i>hpcviewer</i>&gt;</code> and <code>&lt;<i>hpctraceviewer</i>&gt;</code> are the directories created by unpacking the respective tarballs; and <code>&lt;<i>install-path</i>&gt;</code> is the above HPCToolkit installation directory.
+    Here, <code>&lt;<i>hpcviewer</i>&gt;</code> and <code>&lt;<i>hpctraceviewer</i>&gt;</code> are the directories created by unpacking the respective tarballs; and <code>&lt;<i>hpctoolkit-install</i>&gt;</code> is the above HPCToolkit installation directory.
   </li>
 
   </ul>
@@ -358,7 +358,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 	  <dd><code>../configure \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; HPC_LT_LDFLAGS="-all-static -L../../lib/stubs-gcc_s" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; HPCPROFMPI_LT_LDFLAGS="-L/bgsys/drivers/ppcfloor/gnu-linux/powerpc-bgp-linux/lib -lstdc++" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>install-path</i>&gt; \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>hpctoolkit-install</i>&gt; \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/powerpc32-linux
 	      </code>
           </dd>
@@ -382,7 +382,7 @@ Please note that a list of examples below provides <code>configure</code> comman
           <dt>HPCToolkit</dt>
 	  <dd><code>../configure MPICXX="CC" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; HPC_LT_LDFLAGS="-all-static -L../../lib/stubs-gcc_s" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>install-path</i>&gt; \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>hpctoolkit-install</i>&gt; \<br />
               &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/x86_64-linux \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/opt/xt-tools/papi/3.7.2/v23
 	      </code>
@@ -402,9 +402,9 @@ Please note that a list of examples below provides <code>configure</code> comman
 
           <dt>HPCToolkit</dt>
 	  <dd><code>../configure CC="gcc -m32" CXX="g++ -m32" MPICXX="mpicxx -m32" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --host=i686-linux --prefix=&lt;<i>install-path</i>&gt; \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --host=i686-linux --prefix=&lt;<i>hpctoolkit-install</i>&gt; \<br />
               &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/i686-linux \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=&lt;<i>papi-install-path</i>&gt; \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=&lt;<i>papi-install</i>&gt; \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --disable-hpcrun-static
 	      </code>
           </dd>
@@ -525,7 +525,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2011/06/25</span>]
+<p>[<span class="lastupdated">Page last updated: 2012/02/27</span>]
 </p>
 
 <!-- ********************************************************************** -->
