@@ -986,7 +986,8 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
             node_malloc = it1->second;
           }
           else {
-            DIAG_Throw("Cannot find malloc node for node " << nodeFmt.id);
+            itMalloc->first->setMallocNodeNum(0);
+//            DIAG_Throw("Cannot find malloc node for node " << nodeFmt.id);
           }
         }
       }

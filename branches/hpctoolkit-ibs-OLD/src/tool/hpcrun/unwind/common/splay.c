@@ -56,6 +56,7 @@
 #include "splay-interval.h"
 
 #include <messages/messages.h>
+#include <assert.h>
 
 //---------------------------------------------------------------------
 // private operations

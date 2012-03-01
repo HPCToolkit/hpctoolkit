@@ -103,7 +103,6 @@ extern realloc_fcn real_realloc;
 
 static int datacentric_enabled = 0; // default is off
 static int datacentric_uninit = 1;  // default is uninitialized
-pthread_mutex_t mutex_splay = PTHREAD_MUTEX_INITIALIZER;//lock for splay tree
 //static struct splay_interval_s *root;
 
 int insert_splay_tree(interval_tree_node*, void*, size_t, int32_t);
@@ -129,9 +128,9 @@ MONITOR_EXT_WRAP_NAME(free)(void* ptr)
 
   if(hpcrun_datacentric_active()) {
     hpcrun_async_block();
-    pthread_mutex_lock(&mutex_splay);
+//    spinlock_lock(&splaylock);
     delete_node = delete_splay_tree(ptr);
-    pthread_mutex_unlock(&mutex_splay);
+//    spinlock_unlock(&splaylock);
     hpcrun_async_unblock();
   }
   real_free(ptr);
@@ -148,9 +147,15 @@ MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 //  {
 //    return h;
 //  }
+  if (hpcrun_is_in_init_thread()){
+    h = real_malloc(bytes);
+    return h;
+  }
   if (hpcrun_datacentric_active()) {
     ucontext_t uc;
     getcontext(&uc);
+
+    assert(&uc != NULL);
 
     // attribute malloc to call path 
     hpcrun_async_block();
@@ -175,11 +180,11 @@ MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
       EMSG("unbelievable, node is NULL");
       exit(0);
     }
-    pthread_mutex_lock(&mutex_splay);
+//    spinlock_lock(&splaylock);
     if(insert_splay_tree(node, h, bytes, cct_node->persistent_id)<0)
       EMSG("malloc:insert_splay_tree error");
     /*unblock async sampling*/
-    pthread_mutex_unlock(&mutex_splay);
+//    spinlock_unlock(&splaylock);
     hpcrun_async_unblock();
   } else {
     TMSG(IBS_SAMPLE, "malloc %d bytes (call path not logged)", bytes); 
@@ -190,7 +195,7 @@ MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 
 
 void *
-MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
+MONITOR_EXT_WRAP_NAME(callocc)(size_t nmemb, size_t bytes)
 {
   interval_tree_node* footer;
 
@@ -220,11 +225,11 @@ MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
       TMSG(IBS_SAMPLE, "unbelievable, node is NULL");
       exit(0);
     }
-    pthread_mutex_lock(&mutex_splay);
+//    spinlock_lock(&splaylock);
     if(insert_splay_tree(node, h, nmemb*bytes, cct_node->persistent_id)<0)
       TMSG(IBS_SAMPLE, "calloc:insert_splay_tree error");
     /*unblock async sampling*/
-    pthread_mutex_unlock(&mutex_splay);
+//    spinlock_unlock(&splaylock);
     hpcrun_async_unblock();
   } else {
     h = real_calloc(1, nmemb*bytes);
@@ -264,11 +269,11 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
       TMSG(IBS_SAMPLE, "unbelievable, node is NULL");
       exit(0);
     }
-    pthread_mutex_lock(&mutex_splay);
+//    spinlock_lock(&splaylock);
     if(insert_splay_tree(node, h, bytes, cct_node->persistent_id)<0)
       TMSG(IBS_SAMPLE, "realloc:insert_splay_tree error");
     /*unblock async sampling*/
-    pthread_mutex_unlock(&mutex_splay);
+//    spinlock_unlock(&splaylock);
     hpcrun_async_unblock();
   } else {
     h = real_realloc(ptr, bytes);

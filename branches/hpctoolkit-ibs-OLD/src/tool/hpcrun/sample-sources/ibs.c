@@ -129,7 +129,7 @@ enum _local_const {
  *****************************************************************************/
 
 
-inline pid_t
+pid_t
 gettid(void)
 {
         return (pid_t)syscall(__NR_gettid);
@@ -167,6 +167,8 @@ struct over_args {
         pid_t tid;
         pthread_t self;
 	int count;                                                                
+        // workaround
+        pfmlib_reg_t tmppc;
 };                                                                                  
  
 struct over_args fd2ov[MAX_FD];    
@@ -264,7 +266,7 @@ METHOD_FN(start)
     EMSG("error in write pmd");
     hpcrun_ssfail_start("IBS");
   }
- 
+  
   ov->load_args.load_pid=gettid();
  
   if(pfm_load_context(ov->fd, &ov->load_args)){
@@ -313,7 +315,7 @@ METHOD_FN(start)
     EMSG("cannot set SIGIO");
     hpcrun_ssfail_start("IBS");
   }
- 
+
   if(pfm_self_start(ov->fd)==-1){
     EMSG("start error");
     hpcrun_ssfail_start("IBS");

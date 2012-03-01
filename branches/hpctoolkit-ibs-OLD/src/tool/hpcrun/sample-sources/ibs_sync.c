@@ -342,7 +342,9 @@ int insert_splay_tree(interval_tree_node* node,  void* start, size_t size, int32
 interval_tree_node* splaytree_lookup(void* p)
 {
   interval_tree_node* result_node = hpcrun_malloc(sizeof(interval_tree_node));
+  pthread_mutex_lock(&mutex_splay);
   result_node = interval_tree_lookup(&root, p);
+  pthread_mutex_unlock(&mutex_splay);
   return result_node;
 }
 

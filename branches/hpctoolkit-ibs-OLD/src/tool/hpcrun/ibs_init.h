@@ -3,11 +3,13 @@
 #include "splay-interval.h"
 #include "splay.h"
 #include <cct/cct.h>
+
 /*this is used to check whether hpcrun is init*/
 //inline bool hpcrun_is_initialized();
 
 /*create static data table*/
 //void bss_partition(int);
+bool hpcrun_is_in_init_thread();
 
 int hpcrun_dc_malloc_id();
 int hpcrun_dc_calloc_id();

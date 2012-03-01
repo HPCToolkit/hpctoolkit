@@ -217,9 +217,10 @@ METHOD_FN(start)
     pfm_find_event_bycode (self->evl.events[i].event, &desc);
     pfm_get_event_name(desc, event_name, 1024);
     TMSG(IBS_SAMPLE,"start: event name is %s", cycle_events[i].full_name);//event_name);
-    if(pfm_find_full_event(cycle_events[i].full_name, &ov->inp.pfp_events[i])!= PFMLIB_SUCCESS)
+    int pfm_val = pfm_find_full_event(cycle_events[i].full_name, &ov->inp.pfp_events[i]);
+    if(pfm_val != PFMLIB_SUCCESS)
     {
-      EMSG("find full event is wrong");
+      EMSG("find full event is wrong %d", pfm_val);
       exit(1);
     }
     /* these two steps set cycle accounting */
@@ -342,7 +343,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   char *event;
   int i, ret;
   int num_lush_metrics = 0;
- 
 #ifdef OLD_SS
   char *evlist = self->evl.evl_spec;
 #endif
