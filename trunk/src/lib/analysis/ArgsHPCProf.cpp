@@ -130,9 +130,8 @@ Options: Source Structure Correlation:\n\
                        Default is 'sum'; hpcprof-mpi always computes 'sum'.\n\
   -I <path>, --include <path>\n\
                        Use <path> when searching for source files. For a\n\
-                       recursive search, append a '*' after the last slash,\n\
-                       e.g., '/mypath/*' (quote or escape to protect from\n\
-                       the shell.) May pass multiple times.\n\
+                       recursive search, append a + after the last slash,\n\
+                       e.g., /mypath/+ . You use multiple -I options.\n\
   -S <file>, --structure <file>\n\
                        Use hpcstruct structure file <file> for correlation.\n\
                        May pass multiple times (e.g., for shared libraries).\n\
