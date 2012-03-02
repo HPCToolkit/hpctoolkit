@@ -292,6 +292,11 @@ BinUtil::TextSeg::ctor_initProcs()
 	if (!dbg->name.empty()) {
 	  procNm = dbg->name;
 	}
+	// It is possible that a procedure name is in symbol table not
+	// in dwarf section
+  	else if (!symNm.empty()) {
+	  procNm = symNm;
+  	}
 
 #if 1
 	// Remove capability below... the DWARF sizes can be wrong!!
