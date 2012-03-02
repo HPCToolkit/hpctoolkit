@@ -1395,7 +1395,7 @@ public:
 
   virtual const std::string&
   name() const
-  { return m_name; }
+  { return (m_name.empty() ? m_linkname : m_name); }
 
   virtual std::string
   codeName() const;
