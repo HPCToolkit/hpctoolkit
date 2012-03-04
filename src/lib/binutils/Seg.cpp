@@ -288,14 +288,15 @@ BinUtil::TextSeg::ctor_initProcs()
       //
       // N.B. exploits the fact that the symbol table is sorted by vma
       VMA endVMA_approx = findProcEnd(i);
+
       if (dbg) {
 	if (!dbg->name.empty()) {
 	  procNm = dbg->name;
-	}
-	// It is possible that a procedure name is in symbol table not
-	// in dwarf section
-  	else if (!symNm.empty()) {
-	  procNm = symNm;
+	} else if (!symNm.empty()) {
+          // sometimes a procedure name is in the symbol table even
+          // though it is not in the dwarf section. this case occurs
+          // when gcc outlines routines from OpenMP parallel sections.
+          procNm = symNm;
   	}
 
 #if 1
