@@ -132,6 +132,8 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   // ----------------------------------------
   td->id = id;
 
+  td->idle = 0; // begin at work
+
   // ----------------------------------------
   // sample sources
   // ----------------------------------------
