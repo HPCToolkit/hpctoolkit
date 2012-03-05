@@ -91,6 +91,12 @@
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
+#include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/atomic.h>
+
+#include <omp.h>
+#include "/home/xl10/support/gcc-4.6.2/libgomp/libgomp_g.h"
+#include <dlfcn.h>
 
 /******************************************************************************
  * macros
@@ -104,14 +110,38 @@
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
+typedef struct
+{
+  /* Make sure total/generation is in a mostly read cacheline, while
+     awaited in a separate cacheline.  */
+  unsigned total __attribute__((aligned (64)));
+  unsigned generation;
+  unsigned awaited __attribute__((aligned (64)));
+} gomp_barrier_t;
 
 static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
 static int  event_is_derived(int ev_code);
 static void event_fatal_error(int ev_code, int papi_ret);
 
+void idle_fn();
+void work_fn();
+void start_fn();
+void end_fn();
+
 /******************************************************************************
  * local variables
  *****************************************************************************/
+static uint64_t work = 1L;// by default work is 1 (1 thread)
+static uint64_t num_thread = 1L;// by default num_thread is 1 (1 thread)
+
+static int idle_metric_id = -1;
+static int work_metric_id = -1;
+static int cyc_metric_id = 0;
+
+static spinlock_t vallock = SPINLOCK_UNLOCKED;
+static spinlock_t barlock = SPINLOCK_UNLOCKED;
+static spinlock_t startlock = SPINLOCK_UNLOCKED;
+static spinlock_t endlock = SPINLOCK_UNLOCKED;
 
 static void
 METHOD_FN(init)
@@ -135,7 +165,11 @@ METHOD_FN(init)
     EMSG("warning: PAPI_set_domain(PAPI_DOM_ALL) failed: %d", ret);
   }
 
+  GOMP_barrier_callback_register(idle_fn, work_fn);
+  GOMP_start_callback_register(start_fn, end_fn);
+
   self->state = INIT;
+  
 }
 
 static void
@@ -309,7 +343,19 @@ METHOD_FN(process_event_list, int lush_metrics)
 					MetricFlags_ValFmt_Real,
 					self->evl.events[i].thresh);
     }
+    if(strcmp(buffer, "PAPI_TOT_CYC") == 0) {
+      cyc_metric_id = metric_id; // record the CYC metric id
+      idle_metric_id = hpcrun_new_metric();
+      hpcrun_set_metric_info_and_period(idle_metric_id, "p_idleness",
+		    MetricFlags_ValFmt_Real,
+		    self->evl.events[i].thresh);
+      work_metric_id = hpcrun_new_metric();
+      hpcrun_set_metric_info_and_period(work_metric_id, "p_work",
+		    MetricFlags_ValFmt_Int,
+		    self->evl.events[i].thresh);
+    }
   }
+
 }
 
 static void
@@ -505,7 +551,212 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
     TMSG(PAPI_SAMPLE,"sampling call path for metric_id = %d", metric_id);
 
-    hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
+    cct_node_t *node = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 			   0/*skipInner*/, 0/*isSync*/);
+    // if the metric is PAPI_TOT_CYC, measure the idleness
+    if(work < 1) continue;//no threads working
+    thread_data_t *td = hpcrun_get_thread_data();
+//    spinlock_lock(&vallock);
+    double work_l = (double)work;
+    double idle_l = (double)(omp_get_max_threads())-work_l;
+//    spinlock_unlock(&vallock);
+    if(cyc_metric_id == metric_id && td->idle == 0) { // if thread is not idle
+      cct_metric_data_increment(idle_metric_id, node, (cct_metric_data_t){.r = idle_l/work_l});
+      cct_metric_data_increment(work_metric_id, node, (cct_metric_data_t){.i = 1});
+    }
   }
 }
+
+/********************** query idle & work ************************/
+/* because we directly use the shared variable to count idleness and work
+   so we do not need any special query functions to report idlenss and work */
+/********************** wrap the barrier functions **************************/
+
+#if 0
+static void(*GOMP_parallel_start_real)(void(*)(void*), void*, unsigned) = NULL;
+static void(*GOMP_barrier_real)(void) = NULL;
+static void(*GOMP_parallel_end_real)(void) = NULL;
+static void(*GOMP_loop_end_real)(void) = NULL;
+
+void
+GOMP_barrier (void)
+{
+  hpcrun_async_block();
+  atomic_add_i64(&idle, 1L);
+printf("barrier: idle is %d\n", idle);
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->idle = 1;
+  //log the barrier synchronuous sample
+  ucontext_t uc;
+  getcontext(&uc);
+  hpcrun_sample_callpath(&uc, cyc_metric_id, 0, 0, 1);
+  hpcrun_async_unblock();
+
+  spinlock_lock(&barlock);
+  void *handle;
+
+  if(!GOMP_barrier_real) {
+    handle = dlopen("libgomp.so", RTLD_LAZY);
+    if(!handle) {
+      printf("wrong in dlopen for barrier\n");
+      exit(1);
+    }
+    GOMP_barrier_real = dlsym(handle, "GOMP_barrier");
+  }
+  spinlock_unlock(&barlock);
+  GOMP_barrier_real();
+
+  hpcrun_async_block();
+  atomic_add_i64(&idle, -1L);
+printf("idle is %d\n", idle);
+  td->idle = 0;
+  hpcrun_sample_callpath(&uc, cyc_metric_id, 0, 0, 1);
+  hpcrun_async_unblock();
+}
+
+void 
+GOMP_parallel_start(void (*fn) (void *), void *data, unsigned num_threads)
+{
+  hpcrun_async_block();
+  fetch_and_store_i64(&idle, 0);
+printf("parallel start idle =%d\n", idle);
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->idle = 0;
+  hpcrun_async_unblock();
+
+  spinlock_lock(&startlock);
+  void *handle;
+
+  if(!GOMP_parallel_start_real) {
+    handle = dlopen("libgomp.so", RTLD_LAZY);
+    if(!handle) {
+      printf("wrong in dlopen for barrier\n");
+      exit(1);
+    }
+    GOMP_parallel_start_real = dlsym(handle, "GOMP_parallel_start");
+  }
+  spinlock_unlock(&startlock);
+  GOMP_parallel_start_real(fn, data, num_threads);
+printf("in parallel start %d\n", omp_get_num_threads());
+}
+
+void 
+GOMP_parallel_end(void)
+{
+  spinlock_lock(&endlock);
+  int thread_num = omp_get_num_threads();
+  hpcrun_async_block();
+  fetch_and_store_i64(&idle, thread_num-1);
+  printf("in end we have %d\n", idle);
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->idle = 1;
+  hpcrun_async_block();
+  void *handle;
+
+  if(!GOMP_parallel_end_real) {
+    handle = dlopen("libgomp.so", RTLD_LAZY);
+    if(!handle) {
+      printf("wrong in dlopen for barrier\n");
+      exit(1);
+    }
+    GOMP_parallel_end_real = dlsym(handle, "GOMP_parallel_end");
+  }
+  spinlock_unlock(&endlock);
+  GOMP_parallel_end_real();
+}
+
+void
+GOMP_loop_end(void)
+{
+  void *handle;
+//  printf("I am in loop end\n");
+
+  if(!GOMP_loop_end_real) {
+    handle = dlopen("libgomp.so", RTLD_LAZY);
+    if(!handle) {
+      printf("wrong in dlopen for loop end\n");
+      exit(1);
+    }
+    GOMP_loop_end_real = dlsym(handle, "GOMP_loop_end");
+  }
+  GOMP_loop_end_real();
+}
+#endif
+
+void idle_fn()
+{
+//  printf("I am in idle\n");
+  hpcrun_async_block();
+  atomic_add_i64(&work, -1L);
+//  printf("work is %d\n", work);
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->idle = 1;
+  ucontext_t uc;
+  getcontext(&uc);
+  hpcrun_sample_callpath(&uc, cyc_metric_id, 0, 0, 1);
+  hpcrun_async_unblock();
+}
+
+void work_fn()
+{
+//  printf("I am in work\n");
+  hpcrun_async_block();
+  atomic_add_i64(&work, 1L);
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->idle = 0;
+  ucontext_t uc;
+  getcontext(&uc);
+  hpcrun_sample_callpath(&uc, cyc_metric_id, 0, 0, 1);
+  hpcrun_async_unblock();
+}
+
+void start_fn()
+{
+  hpcrun_async_block();
+  atomic_add_i64(&num_thread, 1L);
+  atomic_add_i64(&work, 1L);
+//printf("I am in start %d\n", num_thread);
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->idle = 0;
+  hpcrun_async_unblock();
+}
+
+void end_fn()
+{
+//  printf("here here here I am in end\n");
+  hpcrun_async_block();
+  fetch_and_store_i64(&work, 1L); //team is destroyed, now I have one thread working
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->idle = 0;
+  hpcrun_async_unblock();
+}
+
+/******************* intel omp implementation ******************/
+#if 0
+void
+__kmpc_barrier (void *i)
+{
+//  spinlock_lock(&vallock);
+//  if(idle != omp_get_num_threads()) idle++;
+  if(work != 0) work--;
+printf("kmpc idle is %d, work is %d\n", idle, work);
+//  spinlock_unlock(&vallock);
+  static void(*kmpc_barrier_real)(void*) = NULL;
+  void *handle;
+
+  if(!kmpc_barrier_real) {
+    handle = dlopen("libiomp5.so", RTLD_LAZY);
+    if(!handle) {
+      printf("wrong in dlopen for barrier\n");
+      exit(1);
+    }
+    kmpc_barrier_real = dlsym(handle, "__kmpc_barrier");
+  }
+  kmpc_barrier_real(i);
+//  spinlock_lock(&vallock);
+  if(idle !=0 ) idle--;
+//  if(work < omp_get_num_threads()) work++;
+printf("kmpc idle is %d, work is %d\n", idle, work);
+//  spinlock_unlock(&vallock);
+}
+#endif
