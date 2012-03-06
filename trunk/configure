@@ -679,8 +679,10 @@ LIBMONITOR_COPY
 LIBMONITOR_LIB
 LIBMONITOR_INC
 LIBELF_COPY
+LIBELF_INC
 LIBELF_LIB
 LIBDWARF_COPY
+LIBDWARF_INC
 LIBDWARF_LIB
 GNUBINUTILS_LDLIBS
 GNUBINUTILS_LDFLAGS
@@ -16769,9 +16771,11 @@ case "${LIBDWARF}" in
 esac
 
 LIBDWARF_LIB="${LIBDWARF}/lib"
+LIBDWARF_INC="${LIBDWARF}/include"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBDWARF" >&5
 $as_echo "$LIBDWARF" >&6; }
+
 
 
 
@@ -16818,9 +16822,11 @@ case "${LIBELF}" in
 esac
 
 LIBELF_LIB="${LIBELF}/lib"
+LIBELF_INC="${LIBELF}/include"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBELF" >&5
 $as_echo "$LIBELF" >&6; }
+
 
 
 
