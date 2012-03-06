@@ -83,6 +83,7 @@
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
+#include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
@@ -483,8 +484,9 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int my_events[MAX_EVENTS];
   int my_event_count = MAX_EVENTS;
 
-  // Must check for async block first and avoid any MSG if true.
-  if (hpcrun_async_is_blocked(pc)) {
+  // If the interrupt came from inside our code, then drop the sample
+  // and return and avoid any MSG.
+  if (! hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
     return;
   }
@@ -508,4 +510,5 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 			   0/*skipInner*/, 0/*isSync*/);
   }
+  hpcrun_safe_exit();
 }

@@ -59,40 +59,11 @@
 
 //***************************************************************************
 
-// Whenever a thread enters csprof synchronously via a monitor
-// callback, don't allow it to reenter asynchronously via a signal
-// handler.  Too much of csprof is not signal-handler safe to allow
-// this.  For example, printing debug messages could deadlock if the
-// signal hits while holding the MSG lock.
-//
-// This block is only needed per-thread, so the "suspend_sampling"
-// thread data is a convenient place to store this.
-
-static inline void
-hpcrun_async_block(void)
-{
-  TD_GET(suspend_sampling) = 1;
-}
-
-
-static inline void
-hpcrun_async_unblock(void)
-{
-  TD_GET(suspend_sampling) = 0;
-}
-
-
-static inline int
-hpcrun_async_is_blocked(void* pc)
-{
-  return ( (! hpcrun_td_avail()) 
-	   || (TD_GET(suspend_sampling) && !ENABLED(ASYNC_RISKY))
-	   || hpcrun_trampoline_interior(pc)
-	   || hpcrun_trampoline_at_entry(pc) );
-}
-
+// The async blocks are now superseded by the hpcrun_safe_enter() and
+// hpcrun_safe_exit() functions.  See: safe-sampling.h
 
 //***************************************************************************
+
 
 extern bool private_hpcrun_sampling_disabled; // private!
 
