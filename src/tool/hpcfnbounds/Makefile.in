@@ -216,8 +216,10 @@ LIBDWARF_COPY = @LIBDWARF_COPY@
 #############################################################################
 # Local settings
 #############################################################################
+LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_COPY = @LIBELF_COPY@
+LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB = @LIBELF_LIB@
 LIBMONITOR_COPY = @LIBMONITOR_COPY@
 LIBMONITOR_INC = @LIBMONITOR_INC@
@@ -379,7 +381,7 @@ MYSOURCES = \
 	function-entries.cpp \
 	intervals.cpp
 
-MYCPPFLAGS = $(HPC_IFLAGS) -I$(SYMTABAPI_INC)
+MYCPPFLAGS = $(HPC_IFLAGS) -I$(SYMTABAPI_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC)
 MYCXXFLAGS = @HOST_CXXFLAGS@
 MYLDFLAGS = \
 	-L$(SYMTABAPI_LIB) -lsymtabAPI -lcommon	\
