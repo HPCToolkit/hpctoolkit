@@ -44,8 +44,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//
-//
 
 #ifndef THREAD_DATA_H
 #define THREAD_DATA_H
@@ -107,9 +105,6 @@ typedef struct {
        This is a collection of files:
          trace_file
          hpcrun_file
-
-    suspend_sample
-       Stands on its own
 
     lushPthr_t
        lush items can stand alone
@@ -197,10 +192,6 @@ typedef struct thread_data_t {
   int              splay_lock;
   int              fnbounds_lock;
 
-  // stand-alone flag to suspend sampling during some synchronous
-  // calls to an hpcrun mechanism
-  int              suspend_sampling;
-
   // ----------------------------------------
   // Logical unwinding
   // ----------------------------------------
@@ -227,6 +218,9 @@ typedef struct thread_data_t {
   // ----------------------------------------
   // miscellaneous
   // ----------------------------------------
+  // Set to 1 while inside hpcrun code for safe sampling.
+  int inside_hpcrun;
+
   // True if this thread is inside dlopen or dlclose.  A synchronous
   // override that is called from dlopen (eg, malloc) must skip this
   // sample or else deadlock on the dlopen lock.

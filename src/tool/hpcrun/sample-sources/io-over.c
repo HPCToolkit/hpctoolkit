@@ -61,11 +61,6 @@
 // of the function in the trace viewer.
 //
 // TODO list:
-// 1. Need to generalize the async blocks to cover all entry/exit
-// points: both sync and async.  We can get away with fread and fwrite
-// because our code mostly doesn't use them.  But to cover read, write
-// and other functions that we use requires keeping track of all entry
-// and exit points in our code.
 //
 // 2. In the second sample (after the real function), want to record
 // the sample without doing a full unwind (which is the same path as
@@ -97,8 +92,8 @@
  * local include files
  *****************************************************************************/
 
-#include <handling_sample.h>
 #include <main.h>
+#include <safe-sampling.h>
 #include <sample_event.h>
 #include <thread_data.h>
 
@@ -147,31 +142,25 @@ MONITOR_EXT_WRAP_NAME(fread)(void *ptr, size_t size, size_t count, FILE *stream)
 {
   ucontext_t uc;
   size_t ret;
-  int do_sample;
 
-  // FIXME: need to generalize the async blocks.
-  do_sample = hpcrun_is_initialized() && ! hpcrun_is_handling_sample()
-      && ! hpcrun_async_is_blocked(NULL) && ! TD_GET(inside_dlfcn);
-
-  // we insert samples before and after the slow functions to make the
-  // traces look better.
-  if (do_sample) {
-    hpcrun_async_block();
-    getcontext(&uc);
-    hpcrun_sample_callpath(&uc, hpcrun_metric_id_read(), 0, 0, 1);
-    hpcrun_async_unblock();
+  if (! hpcrun_safe_enter()) {
+    return real_fread(ptr, size, count, stream);
   }
 
+  // insert samples before and after the slow functions to make the
+  // traces look better.
+  getcontext(&uc);
+  hpcrun_sample_callpath(&uc, hpcrun_metric_id_read(), 0, 0, 1);
+
+  hpcrun_safe_exit();
   ret = real_fread(ptr, size, count, stream);
+  hpcrun_safe_enter();
 
   // FIXME: the second sample should not do a full unwind.
-  if (do_sample) {
-    hpcrun_async_block();
-    TMSG(IO, "fread: size: %ld, count: %ld, bytes: %ld, actual: %ld",
-	 size, count, count*size, ret*size);
-    hpcrun_sample_callpath(&uc, hpcrun_metric_id_read(), ret*size, 0, 1);
-    hpcrun_async_unblock();
-  }
+  TMSG(IO, "fread: size: %ld, count: %ld, bytes: %ld, actual: %ld",
+       size, count, count*size, ret*size);
+  hpcrun_sample_callpath(&uc, hpcrun_metric_id_read(), ret*size, 0, 1);
+  hpcrun_safe_exit();
 
   return ret;
 }
@@ -183,31 +172,25 @@ MONITOR_EXT_WRAP_NAME(fwrite)(const void *ptr, size_t size, size_t count,
 {
   ucontext_t uc;
   size_t ret;
-  int do_sample;
 
-  // FIXME: need to generalize the async blocks.
-  do_sample = hpcrun_is_initialized() && ! hpcrun_is_handling_sample()
-      && ! hpcrun_async_is_blocked(NULL) && ! TD_GET(inside_dlfcn);
-
-  // we insert samples before and after the slow functions to make the
-  // traces look better.
-  if (do_sample) {
-    hpcrun_async_block();
-    getcontext(&uc);
-    hpcrun_sample_callpath(&uc, hpcrun_metric_id_write(), 0, 0, 1);
-    hpcrun_async_unblock();
+  if (! hpcrun_safe_enter()) {
+    return real_fwrite(ptr, size, count, stream);
   }
 
+  // insert samples before and after the slow functions to make the
+  // traces look better.
+  getcontext(&uc);
+  hpcrun_sample_callpath(&uc, hpcrun_metric_id_write(), 0, 0, 1);
+
+  hpcrun_safe_exit();
   ret = real_fwrite(ptr, size, count, stream);
+  hpcrun_safe_enter();
 
   // FIXME: the second sample should not do a full unwind.
-  if (do_sample) {
-    hpcrun_async_block();
-    TMSG(IO, "fwrite: size: %ld, count: %ld, bytes: %ld, actual: %ld",
-	 size, count, count*size, ret*size);
-    hpcrun_sample_callpath(&uc, hpcrun_metric_id_write(), ret*size, 0, 1);
-    hpcrun_async_unblock();
-  }
+  TMSG(IO, "fwrite: size: %ld, count: %ld, bytes: %ld, actual: %ld",
+       size, count, count*size, ret*size);
+  hpcrun_sample_callpath(&uc, hpcrun_metric_id_write(), ret*size, 0, 1);
+  hpcrun_safe_exit();
 
   return ret;
 }
