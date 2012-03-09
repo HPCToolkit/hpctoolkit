@@ -98,12 +98,13 @@
 #include <omp.h>
 #include "/home/xl10/support/gcc-4.6.2/libgomp/libgomp_g.h"
 #include <dlfcn.h>
+#include <hpcrun/loadmap.h>
 
 /******************************************************************************
  * macros
  *****************************************************************************/
 
-
+#define OMPstr "gomp"
 
 /******************************************************************************
  * forward declarations 
@@ -120,10 +121,12 @@ static void process_blame_for_sample(cct_node_t *node, int metric_value);
  * local variables
  *****************************************************************************/
 static uint64_t work = 1L;// by default work is 1 (1 thread)
-static uint64_t num_thread = 1L;// by default num_thread is 1 (1 thread)
 
 static int idle_metric_id = -1;
 static int work_metric_id = -1;
+static int overhead_metric_id = -1;
+
+static int omp_lm_id = -1;
 
 static bs_fn_entry_t bs_entry;
 
@@ -190,6 +193,10 @@ METHOD_FN(process_event_list, int lush_metrics)
 	work_metric_id = hpcrun_new_metric();
 	hpcrun_set_metric_info_and_period(work_metric_id, "p_work",
 			MetricFlags_ValFmt_Int, 1);
+
+	overhead_metric_id = hpcrun_new_metric();
+	hpcrun_set_metric_info_and_period(overhead_metric_id, "p_overhead",
+			MetricFlags_ValFmt_Int, 1);
 }
 
 static void
@@ -218,6 +225,22 @@ METHOD_FN(display_events)
 /******************************************************************************
  * private operations 
  *****************************************************************************/
+// for dynamically loaded case, think the overhead comes from the non-idle samples
+// in the openmp library
+static int
+is_overhead(cct_node_t *node)
+{
+  cct_addr_t *addr = hpcrun_cct_addr(node);
+  load_module_t *lm = hpcrun_loadmap_findById(addr->ip_norm.lm_id);
+  if(lm->id == omp_lm_id) return 1;
+  if(strstr(lm->name, OMPstr))
+  {
+    omp_lm_id = addr->ip_norm.lm_id;
+    return 1;
+  }
+  else
+    return 0;
+}
 
 static void
 process_blame_for_sample(cct_node_t *node, int metric_value)
@@ -227,8 +250,11 @@ process_blame_for_sample(cct_node_t *node, int metric_value)
                 double work_l = (double) work;
 		double idle_l = (double)(omp_get_max_threads())- work_l;
 		cct_metric_data_increment(idle_metric_id, node, (cct_metric_data_t){.r = idle_l/work_l});
-		cct_metric_data_increment(work_metric_id, node, (cct_metric_data_t){.i = metric_value});
-	}
+                if(is_overhead(node))
+		  cct_metric_data_increment(overhead_metric_id, node, (cct_metric_data_t){.i = metric_value});
+		else
+		  cct_metric_data_increment(work_metric_id, node, (cct_metric_data_t){.i = metric_value});
+  }
 }
 
 void idle_fn()
@@ -258,7 +284,6 @@ void work_fn()
 void start_fn()
 {
   hpcrun_async_block();
-  atomic_add_i64(&num_thread, 1L);
   atomic_add_i64(&work, 1L);
   thread_data_t *td = hpcrun_get_thread_data();
   td->idle = 0;
