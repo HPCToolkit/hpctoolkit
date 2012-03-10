@@ -260,28 +260,32 @@ process_blame_for_sample(cct_node_t *node, int metric_value)
 
 void idle_fn()
 {
-  hpcrun_async_block();
   atomic_add_i64(&work, -1L);
   thread_data_t *td = hpcrun_get_thread_data();
   td->idle = 1;
-  ucontext_t uc;
-  getcontext(&uc);
-  if(trace_isactive())
+
+  if(trace_isactive()) {
+    hpcrun_async_block();
+    ucontext_t uc;
+    getcontext(&uc);
     hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1);
-  hpcrun_async_unblock();
+    hpcrun_async_unblock();
+  }
 }
 
 void work_fn()
 {
-  hpcrun_async_block();
   atomic_add_i64(&work, 1L);
   thread_data_t *td = hpcrun_get_thread_data();
   td->idle = 0;
-  ucontext_t uc;
-  getcontext(&uc);
-  if(trace_isactive())
+
+  if(trace_isactive()) {
+    hpcrun_async_block();
+    ucontext_t uc;
+    getcontext(&uc);
     hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1);
-  hpcrun_async_unblock();
+    hpcrun_async_unblock();
+  }
 }
 
 void start_fn()
