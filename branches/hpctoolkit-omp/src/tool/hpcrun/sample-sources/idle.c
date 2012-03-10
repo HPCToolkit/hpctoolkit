@@ -99,6 +99,7 @@
 #include "/home/xl10/support/gcc-4.6.2/libgomp/libgomp_g.h"
 #include <dlfcn.h>
 #include <hpcrun/loadmap.h>
+#include <hpcrun/trace.h>
 
 /******************************************************************************
  * macros
@@ -265,7 +266,8 @@ void idle_fn()
   td->idle = 1;
   ucontext_t uc;
   getcontext(&uc);
-  hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1);
+  if(trace_isactive())
+    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1);
   hpcrun_async_unblock();
 }
 
@@ -277,7 +279,8 @@ void work_fn()
   td->idle = 0;
   ucontext_t uc;
   getcontext(&uc);
-  hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1);
+  if(trace_isactive())
+    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1);
   hpcrun_async_unblock();
 }
 
