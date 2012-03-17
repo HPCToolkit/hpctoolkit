@@ -202,8 +202,8 @@ do
 	    io_wrap="${libhpcrun_dir}/libhpcrun_io_wrap.a"
 	    test -f "$io_wrap" || die "unable to find: $io_wrap"
 	    extra_hpc_files="$extra_hpc_files $io_wrap"
-	    extra_wrap_names="$extra_wrap_names fread fwrite"
-	    undef_names="$undef_names fwrite"
+	    extra_wrap_names="$extra_wrap_names read write fread fwrite"
+	    undef_names="$undef_names write fwrite"
 	    shift
 	    ;;
 	-memleak | --memleak )
