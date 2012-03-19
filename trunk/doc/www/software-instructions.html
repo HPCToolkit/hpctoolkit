@@ -346,7 +346,25 @@ Please note that a list of examples below provides <code>configure</code> comman
 <p><strong>N.B.:</strong> The commands are designed to replace the respective commands in the <a href="#building-installing">above build instructions</a>.</p>
   <ul>
 
-    <li><p>BlueGene/P:</p>
+
+    <li><p>Blue Gene/Q:</p>
+	<dl class="indent">
+          <dt>HPCToolkit's Externals</dt>
+	  <dd><code>../configure --prefix=`pwd`/../powerpc64-linux
+	      </code>
+  	  </dd>
+
+          <dt>HPCToolkit</dt>
+	  <dd><code>../configure \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; HPCPROFMPI_LT_LDFLAGS="-all-static" \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>install-path</i>&gt; \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/powerpc64-linux
+	      </code>
+          </dd>
+	</dl>
+    </li>
+
+    <li><p>Blue Gene/P:</p>
 	<dl class="indent">
           <dt>HPCToolkit's Externals</dt>
 	  <dd><code>../configure --prefix=`pwd`/../powerpc32-linux

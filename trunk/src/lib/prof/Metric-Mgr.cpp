@@ -132,7 +132,8 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
 
 
 uint
-Mgr::makeSummaryMetrics(bool needMultiOccurance, uint srcBegId, uint srcEndId)
+Mgr::makeSummaryMetrics(bool needMultiOccurance, bool needStatistics, 
+                        uint srcBegId, uint srcEndId)
 {
   StringToADescVecMap nmToMetricMap;
 
@@ -179,11 +180,14 @@ Mgr::makeSummaryMetrics(bool needMultiOccurance, uint srcBegId, uint srcEndId)
 
       Metric::ADesc* mNew =
 	makeSummaryMetric("Sum",  m, mVec);
-      makeSummaryMetric("Mean",   m, mVec);
-      makeSummaryMetric("StdDev", m, mVec);
-      makeSummaryMetric("CfVar",  m, mVec);
-      makeSummaryMetric("Min",    m, mVec);
-      makeSummaryMetric("Max",    m, mVec);
+
+      if (needStatistics) {
+        makeSummaryMetric("Mean",   m, mVec);
+        makeSummaryMetric("StdDev", m, mVec);
+        makeSummaryMetric("CfVar",  m, mVec);
+        makeSummaryMetric("Min",    m, mVec);
+        makeSummaryMetric("Max",    m, mVec);
+      }
 
       if (firstId == Mgr::npos) {
 	firstId = mNew->id();
@@ -198,7 +202,7 @@ Mgr::makeSummaryMetrics(bool needMultiOccurance, uint srcBegId, uint srcEndId)
 
 
 uint
-Mgr::makeSummaryMetricsIncr(uint srcBegId, uint srcEndId)
+Mgr::makeSummaryMetricsIncr(bool needStatistics, uint srcBegId, uint srcEndId)
 {
   if (srcBegId == Mgr::npos) {
     srcBegId = 0;
@@ -214,11 +218,14 @@ Mgr::makeSummaryMetricsIncr(uint srcBegId, uint srcEndId)
 
     Metric::ADesc* mNew =
       makeSummaryMetricIncr("Sum",  m);
-    makeSummaryMetricIncr("Mean",   m);
-    makeSummaryMetricIncr("StdDev", m);
-    makeSummaryMetricIncr("CfVar",  m);
-    makeSummaryMetricIncr("Min",    m);
-    makeSummaryMetricIncr("Max",    m);
+
+    if (needStatistics) {
+      makeSummaryMetricIncr("Mean",   m);
+      makeSummaryMetricIncr("StdDev", m);
+      makeSummaryMetricIncr("CfVar",  m);
+      makeSummaryMetricIncr("Min",    m);
+      makeSummaryMetricIncr("Max",    m);
+    }
     
     if (firstId == Mgr::npos) {
       firstId = mNew->id();

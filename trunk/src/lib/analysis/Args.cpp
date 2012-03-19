@@ -103,6 +103,8 @@ Args::Ctor()
 
   prof_metrics = Analysis::Args::MetricSet_NULL;
 
+  prof_computeStatistics = false;
+
   profflat_computeFinalMetricValues = true;
 
   // -------------------------------------------------------
