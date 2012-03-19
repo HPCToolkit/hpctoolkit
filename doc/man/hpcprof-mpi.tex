@@ -114,6 +114,18 @@ Use '\Bs'\ to escape instances of '=' within a path. May pass multiple times.
 Use this option when a profile or binary contains references to files that have been relocated, such as might occur with a file system change.
 \end{Description}
 
+\subsection{Options: Statistics}
+
+\begin{Description}
+\item[\OptArg{--stats}{ }]
+Compute extra summary statistics for each measured metric.
+Without using this flag, hpcprof will compute only a Sum for each measured metric.                   
+Specifying this flag will also cause hpcprof to compute
+Mean, StdDev (standard deviation), CoefVar (coefficient of variation), Min, Max
+for each metric as well.
+\end{Description}
+
+
 \subsection{Options: Output}
 
 \begin{Description}

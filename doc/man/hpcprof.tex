@@ -103,6 +103,7 @@ May pass multiple times.
 Note: With multiple search-directory arguments, it may be the case that file \Arg{f} exists within more than one search directory.
 In this case, the ambiguity is resolved in favor of the search directory that appears first on the command line.
 
+
 \item[\OptArg{-M}{metric}, \OptArg{--metric}{metric}]
 Specify the set of metrics to compute.
 \Arg{metric} is one of the following:
@@ -123,6 +124,17 @@ Substitute instances of \Arg{old-path} with \Arg{new-path}; apply to all paths (
 Use '\Bs'\ to escape instances of '=' within a path. May pass multiple times.
   
 Use this option when a profile or binary contains references to files that have been relocated, such as might occur with a file system change.
+\end{Description}
+
+\subsection{Options: Statistics}
+
+\begin{Description}
+\item[\OptArg{--stats}{ }]
+Compute extra summary statistics for each measured metric. 
+Without using this flag, hpcprof will compute only a Sum for each measured metric. 
+Specifying this flag will also cause hpcprof to compute 
+Mean, StdDev (standard deviation), CoefVar (coefficient of variation), Min, Max 
+for each metric as well.
 \end{Description}
 
 \subsection{Options: Output}
