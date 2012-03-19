@@ -243,6 +243,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 
   bool doDispPercent = true;
   bool isPercent = false;
+  bool isVisible = false;
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
@@ -250,6 +251,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   Metric::AExpr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::Plus(opands, mOpands.size());
+    isVisible = true;
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::Mean(opands, mOpands.size());
@@ -284,7 +286,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   const string& mDesc = mSrc->description();
 
   DerivedDesc* m =
-    new DerivedDesc(mNmFmt, mDesc, expr, true/*isVisible*/, true/*isSortKey*/,
+    new DerivedDesc(mNmFmt, mDesc, expr, isVisible, true/*isSortKey*/,
 		    doDispPercent, isPercent);
   m->nameBase(mNmBase);
   m->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
@@ -331,6 +333,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 {
   bool doDispPercent = true;
   bool isPercent = false;
+  bool isVisible = false;
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
@@ -338,6 +341,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   Metric::AExprIncr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::SumIncr(Metric::IData::npos, mSrc->id());
+    isVisible = true;
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::MeanIncr(Metric::IData::npos, mSrc->id());
@@ -372,7 +376,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   const string& mDesc = mSrc->description();
 
   DerivedIncrDesc* m =
-    new DerivedIncrDesc(mNmFmt, mDesc, expr, true/*isVisible*/,
+    new DerivedIncrDesc(mNmFmt, mDesc, expr, isVisible,
 			true/*isSortKey*/, doDispPercent, isPercent);
   m->nameBase(mNmBase);
   m->zeroDBInfo(); // clear
