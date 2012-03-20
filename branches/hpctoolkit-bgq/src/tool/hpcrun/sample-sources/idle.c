@@ -85,6 +85,7 @@
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
 #include <hpcrun/sample_sources_registered.h>
+#include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/trace.h>
@@ -122,9 +123,6 @@ static uint64_t work = 1L;// by default work is 1 (1 thread)
 
 static int idle_metric_id = -1;
 static int work_metric_id = -1;
-static int always_metric_id = -1;
-
-static int omp_lm_id = -1;
 
 static bs_fn_entry_t bs_entry;
 static bool idleness_measurement_enabled = false;
@@ -192,11 +190,8 @@ METHOD_FN(process_event_list, int lush_metrics)
   work_metric_id = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(work_metric_id, "work",
 				    MetricFlags_ValFmt_Int, 1);
-  always_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(always_metric_id, "!Always",
-				    MetricFlags_ValFmt_Int, 1);
-  TMSG(IDLE, "Metric ids = idle (%d), work(%d), always(%d)",
-       idle_metric_id, work_metric_id, always_metric_id);
+  TMSG(IDLE, "Metric ids = idle (%d), work(%d)",
+       idle_metric_id, work_metric_id);
   init_hack();
 
 }
@@ -227,31 +222,12 @@ METHOD_FN(display_events)
 /******************************************************************************
  * private operations 
  *****************************************************************************/
-// for dynamically loaded case, think the overhead comes from the non-idle samples
-// in the openmp library
-static int
-is_overhead(cct_node_t *node)
-{
-  cct_addr_t *addr = hpcrun_cct_addr(node);
-  load_module_t *lm = hpcrun_loadmap_findById(addr->ip_norm.lm_id);
-  if(lm->id == omp_lm_id) return 1;
-  if(strstr(lm->name, OMPstr))
-  {
-    omp_lm_id = addr->ip_norm.lm_id;
-    return 1;
-  }
-  else
-    return 0;
-}
 
 static void
 process_blame_for_sample(cct_node_t *node, int metric_value)
 {
   // hack to check results
   metric_value = 1;
-  TMSG(IDLE, "Log !Always count");
-  cct_metric_data_increment(always_metric_id, node,
-			    (cct_metric_data_t){.i = 1});
   thread_data_t *td = hpcrun_get_thread_data();
   if (td->idle == 0) { // if thread is not idle
     double work_l = 1.0;
@@ -280,20 +256,17 @@ blame_shift_idle(void)
   TMSG(IDLE, "blame shift idle after td->idle incr = %d", td->idle);
 
   // get a tracing sample out
-  if (! trace_isactive()) return;
-  hpcrun_async_block();
-
   if(trace_isactive()) {
-    hpcrun_async_block();
+    if ( ! hpcrun_safe_enter()) return;
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1);
-    hpcrun_async_unblock();
+    hpcrun_safe_exit();
   }
 }
 
 void
- blame_shift_work(void)
+blame_shift_work(void)
 {
   if (! idleness_measurement_enabled) return;
   thread_data_t *td = hpcrun_get_thread_data();
@@ -304,15 +277,12 @@ void
   atomic_add_i64(&work, 1L);
 
   // get a tracing sample out
-  if (! trace_isactive()) return;
-  hpcrun_async_block();
-
   if(trace_isactive()) {
-    hpcrun_async_block();
+    if ( ! hpcrun_safe_enter()) return;
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1);
-    hpcrun_async_unblock();
+    hpcrun_safe_exit();
   }
 }
 
