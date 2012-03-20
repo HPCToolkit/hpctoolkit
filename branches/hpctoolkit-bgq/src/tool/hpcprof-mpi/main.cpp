@@ -128,7 +128,7 @@ makeThreadMetrics(Prof::CallPath::Profile& profGbl,
 		  int myRank, int numRanks, int rootRank);
 
 static uint
-makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
+makeDerivedMetricDescs(const Analysis::Args& args, Prof::CallPath::Profile& profGbl,
 		       uint& mDrvdBeg, uint& mDrvdEnd,
 		       uint& mXDrvdBeg, uint& mXDrvdEnd,
 		       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap,
@@ -537,7 +537,7 @@ makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
 
   vector<VMAIntervalSet*> groupIdToGroupMetricsMap(nArgs.groupMax + 1, NULL);
 
-  makeDerivedMetricDescs(profGbl, mDrvdBeg, mDrvdEnd, mXDrvdBeg, mXDrvdEnd,
+  makeDerivedMetricDescs(args, profGbl, mDrvdBeg, mDrvdEnd, mXDrvdBeg, mXDrvdEnd,
 			 groupIdToGroupMetricsMap, groupIdToGroupSizeMap,
 			 myRank, rootRank);
 
@@ -650,13 +650,15 @@ makeThreadMetrics(Prof::CallPath::Profile& profGbl,
 
 
 static uint
-makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
+makeDerivedMetricDescs(const Analysis::Args& args, Prof::CallPath::Profile& profGbl,
 		       uint& mDrvdBeg, uint& mDrvdEnd,
 		       uint& mXDrvdBeg, uint& mXDrvdEnd,
 		       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap,
 		       const vector<uint>& groupIdToGroupSizeMap,
 		       int myRank, int rootRank)
 {
+  bool computeStatistics = args.prof_computeStatistics; 
+
   Prof::Metric::Mgr& mMgrGbl = *(profGbl.metricMgr());
 
   uint numSrc = mMgrGbl.size();
@@ -669,7 +671,7 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // official set of derived metrics
   // -------------------------------------------------------
-  mDrvdBeg = mMgrGbl.makeSummaryMetricsIncr(mSrcBeg, mSrcEnd);
+  mDrvdBeg = mMgrGbl.makeSummaryMetricsIncr(computeStatistics, mSrcBeg, mSrcEnd);
   if (mDrvdBeg != Prof::Metric::Mgr::npos) {
     mDrvdEnd = mMgrGbl.size();
     numDrvd = (mDrvdEnd - mDrvdBeg);
@@ -717,7 +719,7 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // make temporary set of extra derived metrics (for reduction)
   // -------------------------------------------------------
-  mXDrvdBeg = mMgrGbl.makeSummaryMetricsIncr(mSrcBeg, mSrcEnd);
+  mXDrvdBeg = mMgrGbl.makeSummaryMetricsIncr(computeStatistics, mSrcBeg, mSrcEnd);
   if (mXDrvdBeg != Prof::Metric::Mgr::npos) {
     mXDrvdEnd = mMgrGbl.size();
   }

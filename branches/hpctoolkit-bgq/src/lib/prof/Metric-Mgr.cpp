@@ -132,7 +132,8 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
 
 
 uint
-Mgr::makeSummaryMetrics(bool needMultiOccurance, uint srcBegId, uint srcEndId)
+Mgr::makeSummaryMetrics(bool needMultiOccurance, bool needStatistics, 
+                        uint srcBegId, uint srcEndId)
 {
   StringToADescVecMap nmToMetricMap;
 
@@ -179,11 +180,14 @@ Mgr::makeSummaryMetrics(bool needMultiOccurance, uint srcBegId, uint srcEndId)
 
       Metric::ADesc* mNew =
 	makeSummaryMetric("Sum",  m, mVec);
-      makeSummaryMetric("Mean",   m, mVec);
-      makeSummaryMetric("StdDev", m, mVec);
-      makeSummaryMetric("CfVar",  m, mVec);
-      makeSummaryMetric("Min",    m, mVec);
-      makeSummaryMetric("Max",    m, mVec);
+
+      if (needStatistics) {
+        makeSummaryMetric("Mean",   m, mVec);
+        makeSummaryMetric("StdDev", m, mVec);
+        makeSummaryMetric("CfVar",  m, mVec);
+        makeSummaryMetric("Min",    m, mVec);
+        makeSummaryMetric("Max",    m, mVec);
+      }
 
       if (firstId == Mgr::npos) {
 	firstId = mNew->id();
@@ -198,7 +202,7 @@ Mgr::makeSummaryMetrics(bool needMultiOccurance, uint srcBegId, uint srcEndId)
 
 
 uint
-Mgr::makeSummaryMetricsIncr(uint srcBegId, uint srcEndId)
+Mgr::makeSummaryMetricsIncr(bool needStatistics, uint srcBegId, uint srcEndId)
 {
   if (srcBegId == Mgr::npos) {
     srcBegId = 0;
@@ -214,11 +218,14 @@ Mgr::makeSummaryMetricsIncr(uint srcBegId, uint srcEndId)
 
     Metric::ADesc* mNew =
       makeSummaryMetricIncr("Sum",  m);
-    makeSummaryMetricIncr("Mean",   m);
-    makeSummaryMetricIncr("StdDev", m);
-    makeSummaryMetricIncr("CfVar",  m);
-    makeSummaryMetricIncr("Min",    m);
-    makeSummaryMetricIncr("Max",    m);
+
+    if (needStatistics) {
+      makeSummaryMetricIncr("Mean",   m);
+      makeSummaryMetricIncr("StdDev", m);
+      makeSummaryMetricIncr("CfVar",  m);
+      makeSummaryMetricIncr("Min",    m);
+      makeSummaryMetricIncr("Max",    m);
+    }
     
     if (firstId == Mgr::npos) {
       firstId = mNew->id();
@@ -243,6 +250,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 
   bool doDispPercent = true;
   bool isPercent = false;
+  bool isVisible = false;
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
@@ -250,6 +258,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   Metric::AExpr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::Plus(opands, mOpands.size());
+    isVisible = true;
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::Mean(opands, mOpands.size());
@@ -284,7 +293,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   const string& mDesc = mSrc->description();
 
   DerivedDesc* m =
-    new DerivedDesc(mNmFmt, mDesc, expr, true/*isVisible*/, true/*isSortKey*/,
+    new DerivedDesc(mNmFmt, mDesc, expr, isVisible, true/*isSortKey*/,
 		    doDispPercent, isPercent);
   m->nameBase(mNmBase);
   m->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
@@ -331,6 +340,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 {
   bool doDispPercent = true;
   bool isPercent = false;
+  bool isVisible = false;
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
@@ -338,6 +348,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   Metric::AExprIncr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::SumIncr(Metric::IData::npos, mSrc->id());
+    isVisible = true;
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::MeanIncr(Metric::IData::npos, mSrc->id());
@@ -372,7 +383,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   const string& mDesc = mSrc->description();
 
   DerivedIncrDesc* m =
-    new DerivedIncrDesc(mNmFmt, mDesc, expr, true/*isVisible*/,
+    new DerivedIncrDesc(mNmFmt, mDesc, expr, isVisible,
 			true/*isSortKey*/, doDispPercent, isPercent);
   m->nameBase(mNmBase);
   m->zeroDBInfo(); // clear

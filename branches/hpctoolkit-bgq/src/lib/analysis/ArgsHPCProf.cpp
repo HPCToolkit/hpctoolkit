@@ -142,6 +142,10 @@ Options: Source Structure Correlation:\n\
                        instances of '=' within a path. May pass multiple\n\
                        times.\n\
 \n\
+Options: Statistics:\n\
+  --stats              Cause hpcprof to compute order statistics for all \n\
+                       measured metrics.\n\
+\n\
 Options: Special:\n\
   --force-metric       Force hpcprof to show all thread-level metrics,\n\
                        regardless of their number.\n\
@@ -187,6 +191,10 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
      NULL},
 
   { 'N', "normalize",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
+
+  // Statistics options
+  {  0 , "stats",           CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // Special options
@@ -306,6 +314,9 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
 	verb = (int)CmdLineParser::toLong(arg);
       }
       Diagnostics_SetDiagnosticFilterLevel(verb);
+    }
+    if (parser.isOpt("stats")) {
+      prof_computeStatistics = true;
     }
 
     // Check for agent options

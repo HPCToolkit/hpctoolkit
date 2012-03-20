@@ -199,9 +199,6 @@ METHOD_FN(process_event_list, int lush_metrics)
        idle_metric_id, work_metric_id, always_metric_id);
   init_hack();
 
-	overhead_metric_id = hpcrun_new_metric();
-	hpcrun_set_metric_info_and_period(overhead_metric_id, "p_overhead",
-			MetricFlags_ValFmt_Int, 1);
 }
 
 static void

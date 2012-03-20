@@ -105,6 +105,7 @@
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
+#include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/thread_data.h>
@@ -176,17 +177,17 @@ trim_event_desc(char *desc)
 static int
 hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
 {
-  int do_sample = 1;
   int64_t counter, threshold;
   int ev, k;
 
   BGP_UPC_Stop();
 
-  // Check for async block and avoid any MSG if true.
+  // If the interrupt came from inside our code, then drop the sample
+  // and return and avoid any MSG.
   // FIXME: NULL is bogus here and should be the program counter.
-  if (hpcrun_async_is_blocked(NULL)) {
+  int safe = hpcrun_safe_enter_async(NULL);
+  if (! safe) {
     hpcrun_stats_num_samples_blocked_async_inc();
-    do_sample = 0;
   }
 
   for (k = 0; k < myself->evl.nevents; k++) {
@@ -194,7 +195,7 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
     counter = BGP_UPC_Read_Counter_Value(ev, BGP_UPC_READ_EXCLUSIVE);
     threshold = myself->evl.events[k].thresh;
     if (counter >= threshold) {
-      if (do_sample) {
+      if (safe) {
 	hpcrun_sample_callpath(context, myself->evl.events[k].metric_id,
 			       1, 0, 0);
       }
@@ -205,6 +206,10 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
 
   if (! hpcrun_is_sampling_disabled()) {
     BGP_UPC_Start(0);
+  }
+
+  if (safe) {
+    hpcrun_safe_exit();
   }
 
   // Tell monitor this was our signal.

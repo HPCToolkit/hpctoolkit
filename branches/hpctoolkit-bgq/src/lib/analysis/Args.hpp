@@ -159,6 +159,8 @@ public:
   doSummaryMetrics(MetricSet x)
   { return (x == MetricSet_ThreadAndSum || x == MetricSet_SumOnly); }
 
+  bool prof_computeStatistics;
+
   MetricSet prof_metrics;
 
   // TODO: Currently this is always true even though we only need to
