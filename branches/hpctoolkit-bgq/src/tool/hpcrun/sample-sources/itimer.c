@@ -94,6 +94,8 @@
 
 #include <lib/support-lean/timer.h>
 
+#include <sample-sources/blame-shift.h>
+
 /******************************************************************************
  * macros
  *****************************************************************************/
@@ -412,8 +414,9 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 #endif
 
     int metric_id = hpcrun_event2metric(&_itimer_obj, ITIMER_EVENT);
-    hpcrun_sample_callpath(context, metric_id, metric_incr,
+    cct_node_t *node = hpcrun_sample_callpath(context, metric_id, metric_incr,
 			   0/*skipInner*/, 0/*isSync*/);
+    blame_shift_apply(node, metric_incr);
   }
   if (hpcrun_is_sampling_disabled()) {
     TMSG(SPECIAL, "No itimer restart, due to disabled sampling");
