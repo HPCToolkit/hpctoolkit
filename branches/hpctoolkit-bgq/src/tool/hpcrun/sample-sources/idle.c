@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/branches/hpctoolkit-omp/src/tool/hpcrun/sample-sources/papi.c $
-// $Id: papi.c 3691 2012-03-05 21:21:08Z xl10 $
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/branches/hpctoolkit-omp/src/tool/hpcrun/sample-sources/idle.c $
+// $Id: idle.c 3691 2012-03-05 21:21:08Z xl10 $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -44,32 +44,21 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//
-// PAPI sample source simple oo interface
-//
 
 /******************************************************************************
  * system includes
  *****************************************************************************/
 
-#include <alloca.h>
-#include <assert.h>
-#include <ctype.h>
-#include <papi.h>
-#include <setjmp.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <ucontext.h>
-#include <stdbool.h>
-
 #include <pthread.h>
+
+
 
 /******************************************************************************
  * libmonitor
  *****************************************************************************/
 
 #include <monitor.h>
+
 
 
 /******************************************************************************
@@ -82,33 +71,29 @@
 #include "blame-shift.h"
 
 #include <hpcrun/hpcrun_options.h>
-#include <hpcrun/hpcrun_stats.h>
+
 #include <hpcrun/metrics.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/trace.h>
-#include <utilities/tokenize.h>
 #include <messages/messages.h>
-#include <lush/lush-backtrace.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include <utilities/tokenize.h>
 
-#include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/atomic.h>
 
-#include <omp.h>
-//
-// include omp registration stuff
-//
-#include <hpcrun/loadmap.h>
-#include <hpcrun/trace.h>
+
 
 /******************************************************************************
  * macros
  *****************************************************************************/
 
-#define OMPstr "gomp"
+// elide debugging support for performance
+#undef TMSG
+#define TMSG(...)
+
+
 
 /******************************************************************************
  * forward declarations 
@@ -116,16 +101,29 @@
 
 static void process_blame_for_sample(cct_node_t *node, int metric_value);
 
+static void init_hack(void);
+
+
+
 /******************************************************************************
  * local variables
  *****************************************************************************/
-static uint64_t work = 1L;// by default work is 1 (1 thread)
+static uint64_t active_worker_count = 1L;// by default is 1 (1 thread)
 
 static int idle_metric_id = -1;
 static int work_metric_id = -1;
 
 static bs_fn_entry_t bs_entry;
 static bool idleness_measurement_enabled = false;
+
+double total_threads; 
+
+
+
+/******************************************************************************
+ * sample source interface 
+ *****************************************************************************/
+
 static void
 METHOD_FN(init)
 {
@@ -138,31 +136,37 @@ METHOD_FN(thread_init)
 {
 }
 
+
 static void
 METHOD_FN(thread_init_action)
 {
 }
+
 
 static void
 METHOD_FN(start)
 {
 }
 
+
 static void
 METHOD_FN(thread_fini_action)
 {
 }
+
 
 static void
 METHOD_FN(stop)
 {
 }
 
+
 static void
 METHOD_FN(shutdown)
 {
   self->state = UNINIT;
 }
+
 
 // Return true if IDLE recognizes the name
 static bool
@@ -171,7 +175,7 @@ METHOD_FN(supports_event,const char *ev_str)
   return (strstr(ev_str, "IDLE") != NULL);
 }
  
-extern void init_hack(void);
+
 
 static void
 METHOD_FN(process_event_list, int lush_metrics)
@@ -196,10 +200,12 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 }
 
+
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
 }
+
 
 static void
 METHOD_FN(display_events)
@@ -210,6 +216,8 @@ METHOD_FN(display_events)
   printf("\n");
 }
 
+
+
 /***************************************************************************
  * object
  ***************************************************************************/
@@ -219,6 +227,8 @@ METHOD_FN(display_events)
 
 #include "ss_obj.h"
 
+
+
 /******************************************************************************
  * private operations 
  *****************************************************************************/
@@ -226,33 +236,47 @@ METHOD_FN(display_events)
 static void
 process_blame_for_sample(cct_node_t *node, int metric_value)
 {
-  // hack to check results
-  metric_value = 1;
+  // metric_value = 1;
   thread_data_t *td = hpcrun_get_thread_data();
-  if (td->idle == 0) { // if thread is not idle
-    double work_l = 1.0;
-    if (! work) {
-      EMSG("Timing anomaly: work_l set to 1.0 !!");
-    }
-    else {
-      work_l = (double) work;
-    }
-    //		double idle_l = (double)(omp_get_max_threads())- work_l;
-    double idle_l = (double)(atoi(getenv("OMP_NUM_THREADS"))) - work_l;
+  if (td->idle == 0) { // if this thread is not idle
+    // capture active_worker_count into a local variable to make sure that the count doesn't change
+    // between the time we test it and the time we use the value
+    long workers = active_worker_count;
+    double working_threads = (workers > 0 ? workers : 1.0 );
+
+    double idle_threads = (total_threads - working_threads);
 		
-    cct_metric_data_increment(idle_metric_id, node, (cct_metric_data_t){.r = (idle_l/work_l) * ((double) metric_value)});
+    cct_metric_data_increment(idle_metric_id, node, (cct_metric_data_t){.r = (idle_threads / working_threads) * ((double) metric_value)});
     cct_metric_data_increment(work_metric_id, node, (cct_metric_data_t){.i = metric_value});
   }
 }
+
+
+static void 
+init_hack()
+{
+  active_worker_count = atoi(getenv("OMP_NUM_THREADS"));
+  total_threads = active_worker_count;
+
+  TMSG(IDLE, "init_hack called, work = %d", active_worker_count);
+}
+
+
+
+/******************************************************************************
+ * interface operations 
+ *****************************************************************************/
 
 void
 blame_shift_idle(void)
 {
   if (! idleness_measurement_enabled) return;
+
   thread_data_t *td = hpcrun_get_thread_data();
   if (td->idle++ > 0) return;
-  TMSG(IDLE, "blame shift idle work BEFORE decr: %ld", work);
-  atomic_add_i64(&work, -1L);
+
+  TMSG(IDLE, "blame shift idle work BEFORE decr: %ld", active_worker_count);
+  atomic_add_i64(&active_worker_count, -1L);
   TMSG(IDLE, "blame shift idle after td->idle incr = %d", td->idle);
 
   // get a tracing sample out
@@ -265,16 +289,18 @@ blame_shift_idle(void)
   }
 }
 
+
 void
 blame_shift_work(void)
 {
   if (! idleness_measurement_enabled) return;
+
   thread_data_t *td = hpcrun_get_thread_data();
   TMSG(IDLE, "blame shift idle before td->idle decr = %d", td->idle);
-  if (--td->idle > 0)return;
+  if (--td->idle > 0) return;
 
-  TMSG(IDLE, "blame shift work, work BEFORE incr: %ld", work);
-  atomic_add_i64(&work, 1L);
+  TMSG(IDLE, "blame shift work, work BEFORE incr: %ld", active_worker_count);
+  atomic_add_i64(&active_worker_count, 1L);
 
   // get a tracing sample out
   if(trace_isactive()) {
@@ -286,8 +312,3 @@ blame_shift_work(void)
   }
 }
 
-void init_hack()
-{
-  work = atoi(getenv("OMP_NUM_THREADS"));
-  TMSG(IDLE, "init_hack called, work = %d", work);
-}
