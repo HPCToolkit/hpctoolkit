@@ -236,7 +236,6 @@ METHOD_FN(display_events)
 static void
 process_blame_for_sample(cct_node_t *node, int metric_value)
 {
-  // metric_value = 1;
   thread_data_t *td = hpcrun_get_thread_data();
   if (td->idle == 0) { // if this thread is not idle
     // capture active_worker_count into a local variable to make sure that the count doesn't change
