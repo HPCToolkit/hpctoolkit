@@ -131,9 +131,15 @@ METHOD_FN(init)
   }
 
   // Tell PAPI to count events in all contexts (user, kernel, etc).
-  ret = PAPI_set_domain(PAPI_DOM_ALL);
-  if (ret != PAPI_OK) {
-    EMSG("warning: PAPI_set_domain(PAPI_DOM_ALL) failed: %d", ret);
+  // FIXME: PAPI_DOM_ALL causes some syscalls to fail which then
+  // breaks some applications.  For example, this breaks some Gemini
+  // (GNI) functions called from inside gasnet_init() or MPI_Init() on
+  // the Cray XE (hopper).
+  if (ENABLED(SYSCALL_RISKY)) {
+    ret = PAPI_set_domain(PAPI_DOM_ALL);
+    if (ret != PAPI_OK) {
+      EMSG("warning: PAPI_set_domain(PAPI_DOM_ALL) failed: %d", ret);
+    }
   }
 
   self->state = INIT;
