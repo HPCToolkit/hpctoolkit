@@ -56,9 +56,11 @@
 // Note:
 // (1) The actions are process-wide.
 //
-// (2) Sample sources still run while stopped, we just don't unwind
-// and don't record samples.  Actually turning an interrupt sample
-// source off requires being in each thread which is more complicated.
+// (2) The start and stop functions turn the sample sources on and off
+// in the current thread.  The sources in the other threads continue
+// to run but don't unwind and don't record samples.  Stopping
+// sampling in all threads is more complicated because it would have
+// to be done in a signal handler which can't really be done safely.
 //
 // (3) Sampling is initally on.  If you want it initially off, then
 // set HPCRUN_DELAY_SAMPLING in the environment.
@@ -67,6 +69,7 @@
 
 #include <stdlib.h>
 
+#include "sample_sources_all.h"
 #include "start-stop.h"
 
 static int sampling_is_active = 1;
@@ -105,6 +108,9 @@ hpctoolkit_sampling_start(void)
 {
   sampling_is_active = 1;
   dont_reinit = 1;
+  if (! SAMPLE_SOURCES(started)) {
+    SAMPLE_SOURCES(start);
+  }
 }
 
 
@@ -113,6 +119,9 @@ hpctoolkit_sampling_stop(void)
 {
   sampling_is_active = 0;
   dont_reinit = 1;
+  if (SAMPLE_SOURCES(started)) {
+    SAMPLE_SOURCES(stop);
+  }
 }
 
 
