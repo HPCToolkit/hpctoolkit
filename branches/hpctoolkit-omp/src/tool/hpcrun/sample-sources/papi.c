@@ -521,7 +521,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
     cct_node_t *node = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 			   0/*skipInner*/, 0/*isSync*/);
-    if (cyc_metric_id == metric_id) {
+    if (cyc_metric_id == metric_id && node) {
       blame_shift_apply(node, 1);
     }
 
