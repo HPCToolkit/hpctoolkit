@@ -137,8 +137,7 @@ hpcrun_safe_enter(void)
 // return.
 //
 // Use the program counter address (pc) to test if the interrupt came
-// inside the trampoline assembler code.  Init has always completed
-// before async is turned on, so we don't need to test for that.
+// from inside the trampoline assembler code.
 //
 // Returns: true if safe, ie, not already inside our code.
 //
@@ -148,7 +147,8 @@ hpcrun_safe_enter_async(void *pc)
   thread_data_t *td;
   int prev;
 
-  if (hpcrun_trampoline_interior(pc) || hpcrun_trampoline_at_entry(pc)) {
+  if (hpcrun_trampoline_interior(pc) || hpcrun_trampoline_at_entry(pc)
+      || ! hpcrun_td_avail()) {
     return 0;
   }
   td = hpcrun_get_thread_data();
