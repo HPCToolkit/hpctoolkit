@@ -1,0 +1,25 @@
+Having a static const in an inlined function caused files that used it
+and were compiled with g++ to have their binaries labeled as type GNU/Linux rather than
+SYSV because the storage location for the static const gets labeled with attribute
+@gnu_unique_object.
+
+Eliminating the static const variable in the inlined function lets compiled binaries be 
+labeled as type SYSV. This means that executables into which they are linked will now 
+also be labeled as SYSV, which means that they can run on BG/Q.
+
+
+diff -Naurb xerces-c-3.1.1.orig/src/xercesc/util/PlatformUtils.hpp xerces-c-3.1.1/src/xercesc/util/PlatformUtils.hpp
+--- xerces-c-3.1.1.orig/src/xercesc/util/PlatformUtils.hpp	2012-03-24 19:36:13.296590000 +0000
++++ xerces-c-3.1.1/src/xercesc/util/PlatformUtils.hpp	2012-03-24 20:10:34.229214000 +0000
+@@ -804,9 +804,9 @@
+     //    per-architecture basis. In the absense of that we
+     //    take an educated guess.
+ #ifdef XML_PLATFORM_NEW_BLOCK_ALIGNMENT
+-    static const XMLSize_t alignment = XML_PLATFORM_NEW_BLOCK_ALIGNMENT;
++    const XMLSize_t alignment = XML_PLATFORM_NEW_BLOCK_ALIGNMENT;
+ #else
+-    static const XMLSize_t alignment = (sizeof(void*) >= sizeof(double)) ? sizeof(void*) : sizeof(double);
++    const XMLSize_t alignment = (sizeof(void*) >= sizeof(double)) ? sizeof(void*) : sizeof(double);
+ #endif
+ 
+     //    Calculate current alignment of pointer
