@@ -99,7 +99,7 @@
  * forward declarations 
  *****************************************************************************/
 
-static void process_blame_for_sample(cct_node_t *node, int metric_value);
+static void idle_metric_process_blame_for_sample(cct_node_t *node, int metric_value);
 
 static void init_hack(void);
 
@@ -115,6 +115,7 @@ static int work_metric_id = -1;
 
 static bs_fn_entry_t bs_entry;
 static bool idleness_measurement_enabled = false;
+static bool idleness_blame_information_source_present = false;
 
 double total_threads; 
 
@@ -146,6 +147,13 @@ METHOD_FN(thread_init_action)
 static void
 METHOD_FN(start)
 {
+  if (idleness_blame_information_source_present == false) {
+    STDERR_MSG("HPCToolkit: IDLE metric specified without a plugin that measures "
+        "idleness and work.\n" 
+        "For dynamic binaries, specify an appropriate plugin with an argument to hpcrun.\n"
+	"For static binaries, specify an appropriate plugin with an argument to hpclink.\n");
+    exit(1);
+  }
 }
 
 
@@ -182,7 +190,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 {
   TMSG(IDLE, "Process event list");
   idleness_measurement_enabled = true;
-  bs_entry.fn = process_blame_for_sample;
+  bs_entry.fn = idle_metric_process_blame_for_sample;
   bs_entry.next = 0;
 
   blame_shift_register(&bs_entry);
@@ -234,7 +242,7 @@ METHOD_FN(display_events)
  *****************************************************************************/
 
 static void
-process_blame_for_sample(cct_node_t *node, int metric_value)
+idle_metric_process_blame_for_sample(cct_node_t *node, int metric_value)
 {
   thread_data_t *td = hpcrun_get_thread_data();
   if (td->idle == 0) { // if this thread is not idle
@@ -267,7 +275,14 @@ init_hack()
  *****************************************************************************/
 
 void
-blame_shift_idle(void)
+idle_metric_register_blame_source()
+{
+   idleness_blame_information_source_present = true;
+}
+
+
+void
+idle_metric_blame_shift_idle(void)
 {
   if (! idleness_measurement_enabled) return;
 
@@ -290,7 +305,7 @@ blame_shift_idle(void)
 
 
 void
-blame_shift_work(void)
+idle_metric_blame_shift_work(void)
 {
   if (! idleness_measurement_enabled) return;
 

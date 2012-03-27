@@ -116,7 +116,7 @@ static void event_fatal_error(int ev_code, int papi_ret);
 /******************************************************************************
  * local variables
  *****************************************************************************/
-static int cyc_metric_id = 0;
+static int cyc_metric_id = -1; /* initialized to an illegal metric id */
 
 static void
 METHOD_FN(init)
@@ -301,6 +301,12 @@ METHOD_FN(process_event_list, int lush_metrics)
     hpcrun_set_metric_info_and_period(metric_id, strdup(buffer),
 				      MetricFlags_ValFmt_Int,
 				      self->evl.events[i].thresh);
+
+
+    // blame shifting needs to know if there is a cycles metric
+    if (strcmp(buffer, "PAPI_TOT_CYC") == 0) {
+      cyc_metric_id = metric_id;
+    }
 
     // FIXME:LUSH: need a more flexible metric interface
     if (num_lush_metrics > 0 && strcmp(buffer, "PAPI_TOT_CYC") == 0) {
@@ -513,6 +519,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
     cct_node_t *node = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 			   0/*skipInner*/, 0/*isSync*/);
+
     if (cyc_metric_id == metric_id) {
       blame_shift_apply(node, hpcrun_id2metric(metric_id)->period);
     }
