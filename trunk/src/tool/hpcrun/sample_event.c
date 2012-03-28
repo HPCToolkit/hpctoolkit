@@ -231,7 +231,7 @@ hpcrun_sample_callpath(void *context, int metricId,
     hpcrun_cleanup_partial_unwind();
   }
 
-  if (trace_isactive()) {
+  if (hpcrun_trace_isactive()) {
     void* pc = hpcrun_context_pc(context);
 
     void *func_start_pc = NULL, *func_end_pc = NULL;
@@ -247,7 +247,7 @@ hpcrun_sample_callpath(void *context, int metricId,
     // modify the persistent id
     hpcrun_cct_persistent_id_trace_mutate(func_proxy); 
 
-    trace_append(hpcrun_cct_persistent_id(func_proxy));
+    hpcrun_trace_append(hpcrun_cct_persistent_id(func_proxy));
   }
 
   hpcrun_clear_handling_sample(td);
@@ -448,7 +448,7 @@ hpcrun_sample_callpath_w_bt(void *context,
       node = help_hpcrun_sample_callpath_w_bt(epoch, context, metricId, metricIncr,
 					      bt_fn, arg, isSync);
 
-      if (trace_isactive()) {
+      if (hpcrun_trace_isactive()) {
 	void* pc = hpcrun_context_pc(context);
 	cct_bundle_t* cct = &(td->epoch->csdata); 
 	void* func_start_pc = NULL;
@@ -460,7 +460,7 @@ hpcrun_sample_callpath_w_bt(void *context,
 	cct_node_t* func_proxy = hpcrun_cct_get_child(cct, node->parent, &frm);
 	func_proxy->persistent_id |= HPCRUN_FMT_RetainIdFlag; 
 
-	trace_append(func_proxy->persistent_id);
+	hpcrun_trace_append(func_proxy->persistent_id);
       }
       if (ENABLED(DUMP_BACKTRACES)) {
 	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
