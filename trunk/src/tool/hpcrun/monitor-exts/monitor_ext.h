@@ -56,7 +56,11 @@
 
 #ifdef HPCRUN_STATIC_LINK
 
-#define MONITOR_EXT_WRAP_NAME(name)   __wrap_ ## name
+#define MONITOR_EXT_CONCAT(x, y) x ## y
+
+// N.B.: the 'name' argument to MONITOR_EXT_WRAP_NAME() will be macro
+// expanded once because of MONITOR_EXT_CONCAT()
+#define MONITOR_EXT_WRAP_NAME(name)  MONITOR_EXT_CONCAT(__wrap_, name)
 #define MONITOR_EXT_GET_NAME(var, name)  var = & name
 #define MONITOR_EXT_GET_NAME_WRAP(var, name)  var = & __real_ ## name
 
