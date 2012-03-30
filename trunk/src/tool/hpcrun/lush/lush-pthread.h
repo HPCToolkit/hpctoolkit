@@ -158,16 +158,17 @@ lushPthr_endSmplIdleness(lushPthr_t* x)
 static inline cct_node_t*
 lushPthr_attribToCallPath(uint64_t idlenessIncr)
 {
+  sample_val_t smpl;
+
   hpcrun_safe_enter();
 
   ucontext_t context;
   getcontext(&context); // FIXME: check for errors
-  cct_node_t* n = 
-    hpcrun_sample_callpath(&context, lush_agents->metric_time,
-			   0/*metricIncr*/, 1/*skipInner*/, 1/*isSync*/);
+  smpl = hpcrun_sample_callpath(&context, lush_agents->metric_time,
+				0/*metricIncr*/, 1/*skipInner*/, 1/*isSync*/);
   hpcrun_safe_exit();
 
-  return n;
+  return smpl.sample_node;
 }
 
 
