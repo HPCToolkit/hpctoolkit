@@ -89,7 +89,23 @@ hpcrun_enable_sampling(void)
 
 extern void hpcrun_drop_sample(void);
 
-extern cct_node_t* hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
+
+typedef struct sample_val_s {
+  cct_node_t* sample_node; // CCT leaf representing innermost call path frame
+  cct_node_t* trace_node;  // CCT leaf representing trace record
+} sample_val_t;
+
+
+static inline void
+hpcrun_sample_val_init(sample_val_t* x)
+{
+  //memset(x, 0, sizeof(*x));
+  x->sample_node = 0;
+  x->trace_node = 0;
+}
+
+
+extern sample_val_t hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
 				   int skipInner, int isSync);
 
 extern cct_node_t* hpcrun_gen_thread_ctxt(void *context);
