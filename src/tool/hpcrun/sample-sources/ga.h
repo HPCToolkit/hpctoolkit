@@ -44,58 +44,11 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/*
- * Macros for extending monitor's overrides.
- */
+#ifndef _HPCRUN_GA_H_
+#define _HPCRUN_GA_H_
 
-#ifndef _MONITOR_EXT_H_
-#define _MONITOR_EXT_H_
+int hpcrun_ga_metricId_bytes();
+int hpcrun_ga_metricId_get();
+int hpcrun_ga_metricId_put();
 
-#include <pthread.h>
-#  include <messages/messages.h>
-
-#ifdef HPCRUN_STATIC_LINK
-
-#define MONITOR_EXT_CONCAT(x, y) x ## y
-
-// N.B.: the 'name' argument to MONITOR_EXT_WRAP_NAME() will be macro
-// expanded once because of MONITOR_EXT_CONCAT()
-#define MONITOR_EXT_WRAP_NAME(name)  MONITOR_EXT_CONCAT(__wrap_, name)
-#define MONITOR_EXT_GET_NAME(var, name)  var = & name
-#define MONITOR_EXT_GET_NAME_WRAP(var, name)  var = & __real_ ## name
-
-#define MONITOR_EXT_DECLARE_REAL_FN(type, realname) \
-    extern type MONITOR_EXT_CONCAT(__, realname); \
-    static type * realname = NULL
-
-#else  /* HPCRUN DYNAMIC */
-
-#include <dlfcn.h>
-
-#ifndef RTLD_NEXT
-#define RTLD_NEXT  ((void *) -1L)
 #endif
-
-#define MONITOR_EXT_GET_DLSYM(var, name)  do {		\
-    if (var == NULL) {					\
-	const char *err_str;				\
-	dlerror();					\
-	var = dlsym(RTLD_NEXT, #name );			\
-	err_str = dlerror();				\
-	if (var == NULL) {				\
-	    hpcrun_abort("dlsym(%s) failed: %s", #name , err_str); \
-	}						\
-	TMSG(MONITOR_EXTS, "%s() = %p", #name , var);	\
-    }							\
-} while (0)
-
-#define MONITOR_EXT_WRAP_NAME(name)  name
-#define MONITOR_EXT_GET_NAME(var, name)  MONITOR_EXT_GET_DLSYM(var, name)
-#define MONITOR_EXT_GET_NAME_WRAP(var, name)  MONITOR_EXT_GET_DLSYM(var, name)
-
-#define MONITOR_EXT_DECLARE_REAL_FN(type, realname) \
-    static type * realname = NULL
-
-#endif  /* HPCRUN_STATIC_LINK */
-
-#endif  /* ! _MONITOR_EXT_H_ */

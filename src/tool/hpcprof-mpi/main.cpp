@@ -701,8 +701,8 @@ makeDerivedMetricDescs(const Analysis::Args& args, Prof::CallPath::Profile& prof
 	dynamic_cast<Prof::Metric::DerivedIncrDesc*>(m);
       DIAG_Assert(mm, DIAG_UnexpectedInput);
     
-      // N.B.: groupIdToGroupSizeMap is only initialized for rootRank  
-      uint numInputs = groupIdToGroupSizeMap[groupId];
+      // N.B.: groupIdToGroupSizeMap is only initialized for rootRank
+      uint numInputs = groupIdToGroupSizeMap[groupId]; // / 3; // FIXME:threads
       if (mm->expr()) {
         mm->expr()->numSrcFxd(numInputs);
       }

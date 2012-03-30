@@ -625,8 +625,8 @@ OPT_ENABLE_LUSH_FALSE
 OPT_ENABLE_LUSH_TRUE
 F77_SYMBOLS
 MPIF77
-OPT_ENABLE_MPIP_FALSE
-OPT_ENABLE_MPIP_TRUE
+OPT_ENABLE_MPI_WRAP_FALSE
+OPT_ENABLE_MPI_WRAP_TRUE
 OPT_ENABLE_MPI_FALSE
 OPT_ENABLE_MPI_TRUE
 OPT_ENABLE_HPCRUN_DYNAMIC_FALSE
@@ -1538,7 +1538,7 @@ Optional Features:
   --enable-hpcrun-static  build hpcrun for statically linked executables
                           (default yes)
   --enable-mpi            Enable MPI support (uses MPICXX variable)
-  --enable-mpi-wrapper    Enable MPI wrapper support (uses MPIF77 variable)
+  --enable-mpi-wrapper    Enable MPI wrapper support (uses MPIF77 and CFLAGS)
   --enable-lush           use lush backtrace in hpcrun
   --enable-lush-pthreads  enable lush pthreads (temp)
   --enable-bluegene       Enable BlueGene/P support
@@ -17536,8 +17536,8 @@ fi
 # enable-mpi:
 #-------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build MPI versions (hpcprof-mpi)" >&5
-$as_echo_n "checking whether to build MPI versions (hpcprof-mpi)... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build MPI-based analysis tools (e.g., hpcprof-mpi)" >&5
+$as_echo_n "checking whether to build MPI-based analysis tools (e.g., hpcprof-mpi)... " >&6; }
 
 OPT_REQ_ENABLE_MPI="auto" # yes, no, auto
 
@@ -17582,23 +17582,23 @@ fi
 # enable-mpi-wrapper: check MPI compiler
 #-------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build MPI versions (MPI wrapper)" >&5
-$as_echo_n "checking whether to build MPI versions (MPI wrapper)... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build MPI monitoring support" >&5
+$as_echo_n "checking whether to build MPI monitoring support... " >&6; }
 
-OPT_REQ_ENABLE_MPIP="no" # yes, no, auto
+OPT_REQ_ENABLE_MPI_WRAP="no" # yes, no, auto
 
 # Check whether --enable-mpi-wrapper was given.
 if test "${enable_mpi_wrapper+set}" = set; then :
   enableval=$enable_mpi_wrapper; case "${enableval}" in
-     yes) OPT_REQ_ENABLE_MPIP="yes" ;;
-     no)  OPT_REQ_ENABLE_MPIP="no" ;;
+     yes) OPT_REQ_ENABLE_MPI_WRAP="yes" ;;
+     no)  OPT_REQ_ENABLE_MPI_WRAP="no" ;;
      *)   as_fn_error $? "bad value ${enableval} for --enable-mpi-wrapper" "$LINENO" 5 ;;
    esac
 fi
 
 
-OPT_ENABLE_MPIP=no
-if test "${OPT_REQ_ENABLE_MPIP}" != "no" ; then
+OPT_ENABLE_MPI_WRAP=no
+if test "${OPT_REQ_ENABLE_MPI_WRAP}" != "no" ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether can compile MPI code with CFLAGS='$CFLAGS'" >&5
 $as_echo_n "checking whether can compile MPI code with CFLAGS='$CFLAGS'... " >&6; }
 
@@ -17620,7 +17620,7 @@ else
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
-  OPT_ENABLE_MPIP=$ans
+  OPT_ENABLE_MPI_WRAP=$ans
   ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -17629,20 +17629,20 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_MPIP} (request: ${OPT_REQ_ENABLE_MPIP})" >&5
-$as_echo "${OPT_ENABLE_MPIP} (request: ${OPT_REQ_ENABLE_MPIP})" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_MPI_WRAP} (request: ${OPT_REQ_ENABLE_MPI_WRAP})" >&5
+$as_echo "${OPT_ENABLE_MPI_WRAP} (request: ${OPT_REQ_ENABLE_MPI_WRAP})" >&6; }
 
 
-if test "${OPT_REQ_ENABLE_MPIP}" = "yes" -a "${OPT_ENABLE_MPIP}" = no ; then
+if test "${OPT_REQ_ENABLE_MPI_WRAP}" = "yes" -a "${OPT_ENABLE_MPI_WRAP}" = no ; then
   as_fn_error $? "MPI wrapper support requested but MPI compiler is invalid!" "$LINENO" 5
 fi
 
- if test "${OPT_ENABLE_MPIP}" = "yes"; then
-  OPT_ENABLE_MPIP_TRUE=
-  OPT_ENABLE_MPIP_FALSE='#'
+ if test "${OPT_ENABLE_MPI_WRAP}" = "yes"; then
+  OPT_ENABLE_MPI_WRAP_TRUE=
+  OPT_ENABLE_MPI_WRAP_FALSE='#'
 else
-  OPT_ENABLE_MPIP_TRUE='#'
-  OPT_ENABLE_MPIP_FALSE=
+  OPT_ENABLE_MPI_WRAP_TRUE='#'
+  OPT_ENABLE_MPI_WRAP_FALSE=
 fi
 
 
@@ -17650,7 +17650,7 @@ fi
 # enable-mpi-wrapper: check F77 symbols
 #-------------------------------------------------
 
-if test "${OPT_ENABLE_MPIP}" = "yes" ; then
+if test "${OPT_ENABLE_MPI_WRAP}" = "yes" ; then
 
   if test -z "${MPIF77}" ; then
     for ac_prog in mpif77 mpxlf_r mpixlf77 mpxlf cmpifc xlf f77 g77 pgf77 fort ifc
@@ -18333,8 +18333,8 @@ if test -z "${OPT_ENABLE_MPI_TRUE}" && test -z "${OPT_ENABLE_MPI_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_MPI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${OPT_ENABLE_MPIP_TRUE}" && test -z "${OPT_ENABLE_MPIP_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_ENABLE_MPIP\" was never defined.
+if test -z "${OPT_ENABLE_MPI_WRAP_TRUE}" && test -z "${OPT_ENABLE_MPI_WRAP_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_MPI_WRAP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_LUSH_TRUE}" && test -z "${OPT_ENABLE_LUSH_FALSE}"; then
@@ -20979,8 +20979,8 @@ $as_echo "$as_me:   hpcrun?:      ${enable_hpcrun_mesg}" >&6;}
 $as_echo "$as_me:   hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   mpi support?: ${OPT_ENABLE_MPI}" >&5
 $as_echo "$as_me:   mpi support?: ${OPT_ENABLE_MPI}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   mpi wrapper support?: ${OPT_ENABLE_MPIP}" >&5
-$as_echo "$as_me:   mpi wrapper support?: ${OPT_ENABLE_MPIP}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}" >&5
+$as_echo "$as_me:   mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun/lush?: ${opt_enable_lush}" >&5
 $as_echo "$as_me:   hpcrun/lush?: ${opt_enable_lush}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5

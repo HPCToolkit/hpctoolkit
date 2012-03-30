@@ -154,6 +154,8 @@ Options: Linking
 
   --io                 Include the IO bytes read and written library.
 
+  --ga                 Include GA (Global Arrays) wrappers.
+
   --memleak            Include HPCToolkit's memory leak detection libraries.
 
   --plugin name        Add the libraries and wrapped symbols specified by
@@ -227,6 +229,14 @@ do
 	    extra_hpc_files="$extra_hpc_files $io_wrap"
 	    extra_wrap_names="$extra_wrap_names fread fwrite"
 	    undef_names="$undef_names fwrite"
+	    shift
+	    ;;
+	-ga | --ga )
+	    ga_wrap="${libhpcrun_dir}/libhpcrun_ga_wrap.a"
+	    test -f "$ga_wrap" || die "unable to find: $ga_wrap"
+	    extra_hpc_files="$extra_hpc_files $ga_wrap"
+	    extra_wrap_names="$extra_wrap_names pnga_brdcst pnga_get pnga_put"
+	    undef_names="$undef_names pnga_put"
 	    shift
 	    ;;
 	-memleak | --memleak )
