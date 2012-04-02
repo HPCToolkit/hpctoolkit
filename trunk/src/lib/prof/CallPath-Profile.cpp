@@ -1022,7 +1022,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   if (rFlags & RFlg_NoMetricSfx) {
     m_sfx = "";
-    //if (!tidStr.empty()) { m_sfx = "[" + tidStr + "]"; } // FIXME:threads
+    //if (!tidStr.empty()) { m_sfx = "[" + tidStr + "]"; } // TODO:threads
   }
 
   metric_desc_t* m_lst = metricTbl.lst;
