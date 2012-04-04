@@ -75,7 +75,6 @@ papi_extra_libs='@papi_extra_libs@'
 
 upc_libs='@OPT_UPC_LDFLAGS@'
 
-# FIXME: The wrap list should come from monitor.
 hpctk_wrap_names='@LIBMONITOR_WRAP_NAMES@  @hpclink_extra_wrap_names@'
 
 extra_wrap_names=
