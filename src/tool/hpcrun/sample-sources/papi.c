@@ -93,6 +93,7 @@
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
+#include <utilities/defer-cntxt.h>
 
 /******************************************************************************
  * macros
@@ -193,6 +194,10 @@ METHOD_FN(thread_fini_action)
   int retval = PAPI_unregister_thread();
   char msg[] = "!!NOT PAPI_OK!! (code = -9999999)\n";
   snprintf(msg, sizeof(msg)-1, "!!NOT PAPI_OK!! (code = %d)", retval);
+  
+  thread_data_t *td = hpcrun_get_thread_data();
+  if(td->defer_flag)
+    resolve_cntxt_fini();
   TMSG(PAPI, "unregister thread returns %s", retval == PAPI_OK? "PAPI_OK" : msg);
 }
 
@@ -264,6 +269,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   int i, ret;
   int num_lush_metrics = 0;
 
+  register_callback();
   char* evlist = METHOD_CALL(self, get_event_str);
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
     char name[1024];
@@ -519,11 +525,20 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
     TMSG(PAPI_SAMPLE,"sampling call path for metric_id = %d", metric_id);
 
+    // check whether we need to defer the context creation
+    if(need_defer_cntxt()) {
+      //call specific hpcrun_sample_callpath
+    }
+    
+    thread_data_t *td = hpcrun_get_thread_data();
+    if(td->defer_flag) {
+      resolve_cntxt();
+    }
+  
     cct_node_t *node = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 			   0/*skipInner*/, 0/*isSync*/);
     if (cyc_metric_id == metric_id && node) {
       blame_shift_apply(node, 1);
     }
-
   }
 }

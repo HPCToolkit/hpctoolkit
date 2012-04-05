@@ -112,10 +112,9 @@
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
-
 static void idle_fn();
 static void work_fn();
-static void start_fn();
+static void start_fn(int rank);
 static void end_fn();
 
 static void process_blame_for_sample(cct_node_t *node, int metric_value);
@@ -262,6 +261,7 @@ METHOD_FN(display_events)
 /******************************************************************************
  * private operations 
  *****************************************************************************/
+
 void normalize_fn(cct_node_t *node, cct_op_arg_t arg, size_t level)
 {
   if(hpcrun_cct_is_leaf(node)) {
@@ -353,7 +353,7 @@ void work_fn()
   }
 }
 
-void start_fn()
+void start_fn(int rank)
 {
   hpcrun_async_block();
   atomic_add_i64(&work, 1L);
@@ -370,3 +370,4 @@ void end_fn()
   td->idle = 0;
   hpcrun_async_unblock();
 }
+

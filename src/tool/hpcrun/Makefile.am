@@ -235,7 +235,8 @@ MY_BASE_FILES =			\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c \
-	utilities/unlink.h utilities/unlink.c
+	utilities/unlink.h utilities/unlink.c \
+	utilities/defer-cntxt.h utilities/defer-cntxt.c
 
 ################################################################### 
 # Laksono: we have to add mpi profiler if and only if the option
