@@ -68,6 +68,7 @@
 
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcio-buffer.h>
+#include <cuda.h>
 
 typedef struct {
   sigjmp_buf jb;
@@ -235,6 +236,8 @@ typedef struct thread_data_t {
 
   // True if this thread is at CuXXXXSynchronize.
   bool is_thread_at_cuda_sync;
+  uint64_t active_stream;
+  void * event_node;
 
 } thread_data_t;
 
