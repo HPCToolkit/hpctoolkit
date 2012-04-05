@@ -103,7 +103,7 @@ static void trace_file_validate(int valid, char *op);
 // local variables 
 //*********************************************************************
 
-static int tracing = 1;
+static int tracing = 0;
 
 static gpu_trace_file_t *gpu_trace_file_array;
 #define GPU_TRACE_FILE_OFFSET 2
@@ -174,7 +174,6 @@ gpu_trace_open(int gpu_device_num, int stream_num)
     // locks).  At any rate, locks only protect against threads, they
     // don't help with signal handlers (that's much harder).
     fd = hpcrun_open_trace_file(id + GPU_TRACE_FILE_OFFSET);
-printf("\nopened the trace file\n");
     trace_file_validate(fd >= 0, "open");
     gpu_trace_file_array[id].trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
 printf("\nmallocced trace_buffer\n");
