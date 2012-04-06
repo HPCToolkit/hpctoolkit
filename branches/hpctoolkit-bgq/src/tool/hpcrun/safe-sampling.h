@@ -148,9 +148,11 @@ hpcrun_safe_enter_async(void *pc)
   thread_data_t *td;
   int prev;
 
-  if (hpcrun_trampoline_interior(pc) || hpcrun_trampoline_at_entry(pc)) {
+  if (hpcrun_trampoline_interior(pc) || hpcrun_trampoline_at_entry(pc)
+      || ! hpcrun_td_avail()) {
     return 0;
   }
+
   td = hpcrun_get_thread_data();
   prev = td->inside_hpcrun;
   td->inside_hpcrun = 1;

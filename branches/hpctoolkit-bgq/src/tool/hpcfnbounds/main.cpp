@@ -328,6 +328,14 @@ matches_prefix(string s, const char *pre, int n)
 
 
 static bool 
+matches_contains(string s, const char *substring)
+{
+  const char *sc = s.c_str();
+  return strstr(sc, substring) != 0;
+}
+
+
+static bool 
 pathscale_filter(Symbol *sym)
 {
   bool result = false;
@@ -611,6 +619,25 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
 
 
   syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
+
+#ifdef __PPC64__
+  {
+    //-----------------------------------------------------------------
+    // collect addresses of trampolines for long distance calls as per
+    // ppc64 abi. empirically, the linker on BG/Q enters these symbols
+    // with the type NOTYPE and a name that contains the substring 
+    // "long_branch"
+    //-----------------------------------------------------------------
+    vector<Symbol *> vec;
+    syms->getAllSymbolsByType(vec, Symbol::ST_NOTYPE);
+    for (unsigned int i = 0; i < vec.size(); i++) {
+      Symbol *s = vec[i];
+      if (matches_contains(s->getName(), "long_branch") && s->getAddr() != 0)
+	add_function_entry((void *) s->getAddr(), &s->getName(), true);
+    }
+  }
+#endif
+
   if (syms->getObjectType() != obj_Unknown) {
     dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery);
     relocatable = syms->isExec() ? 0 : 1;
