@@ -321,6 +321,31 @@ hpcrun_cct_is_leaf(cct_node_t* node)
 }
 
 //
+//  link prefix with root, return the new root
+//
+cct_node_t *
+hpcrun_cct_copy_prefix(cct_node_t *prefix, cct_node_t *root)
+{
+  cct_node_t *node = (cct_node_t *)hpcrun_malloc(sizeof(cct_node_t));
+  memcpy(node, prefix, sizeof(cct_node_t));
+  node->persistent_id = new_persistent_id();
+  node->left = node->right = NULL;
+  node->children = root;
+  root->parent = node;
+  
+  while(prefix->parent != NULL) {
+    prefix = prefix->parent;
+    cct_node_t *cursor = (cct_node_t *)hpcrun_malloc(sizeof(cct_node_t));
+    cursor->persistent_id = new_persistent_id();
+    cursor->left = cursor->right = NULL;
+    cursor->children = node;
+    node->parent = cursor;
+    node = cursor;
+  }
+  
+  return node;
+}
+//
 // ********** Mutator functions: modify a given cct
 //
 

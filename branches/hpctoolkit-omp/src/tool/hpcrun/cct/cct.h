@@ -129,7 +129,7 @@ extern cct_node_t* hpcrun_cct_parent(cct_node_t* node);
 extern int32_t hpcrun_cct_persistent_id(cct_node_t* node);
 extern cct_addr_t* hpcrun_cct_addr(cct_node_t* node);
 extern bool hpcrun_cct_is_leaf(cct_node_t* node);
-
+extern cct_node_t* hpcrun_cct_copy_prefix(cct_node_t *prefix, cct_node_t *root);
 //
 // Mutator functions: modify a given cct
 //
