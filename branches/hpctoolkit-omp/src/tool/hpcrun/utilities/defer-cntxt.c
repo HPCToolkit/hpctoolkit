@@ -49,31 +49,33 @@
 /******************************************************************************
  * type definition 
  *****************************************************************************/
-typedef struct record_s {
+typdef struct record_t record_t;
+
+struct record_t {
   uint64_t region_id;
   uint64_t use_count;
   cct_node_t *node;
-  struct record_s *left;
-  struct record_s *right;
-} record_t;
+  record_t *left;
+  record_t *right;
+};
 
 /******************************************************************************
  * splay tree operation for record map *
  *****************************************************************************/
-static struct record_s *record_tree_root = NULL;
+static record_t *record_tree_root = NULL;
 static spinlock_t record_tree_lock = SPINLOCK_UNLOCKED;
 
-static struct record_s *
-r_splay(struct record_s *root, uint64_t key)
+static record_t *
+r_splay(record_t *root, uint64_t key)
 {
   REGULAR_SPLAY_TREE(record_s, root, key, region_id, left, right);
   return root;
 }
 
-static struct record_s *
+static record_t *
 r_splay_lookup(uint64_t id)
 {
-  struct record_s *record;
+  record_t *record;
   spinlock_lock(&record_tree_lock);
   record_tree_root = r_splay(record_tree_root, id);
   if(record_tree_root->region_id != id) {
@@ -85,7 +87,7 @@ r_splay_lookup(uint64_t id)
 }
 
 static void
-r_splay_insert(struct record_s *node)
+r_splay_insert(record_t *node)
 {
   uint64_t region_id = node->region_id;
 
@@ -111,12 +113,12 @@ r_splay_insert(struct record_s *node)
   spinlock_unlock(&record_tree_lock);
 }
 
-static struct record_s *
+static record_t *
 r_splay_delete(uint64_t region_id)
 {
 // no need to use spin lock in delete because we only call delete in update function where
 // tree is already locked
-  struct record_s *result = NULL;
+  record_t *result = NULL;
 
   if(record_tree_root == NULL) {
     return NULL;
@@ -168,11 +170,11 @@ printf("I am hererererere for delete\n");fflush(stdout);
  * private operations 
  *****************************************************************************/
 
-struct record_s *
+record_t *
 new_record(uint64_t region_id)
 {
-  struct record_s *record;
-  record = (struct record_s *)hpcrun_malloc(sizeof(struct record_s));
+  record_t *record;
+  record = (record_t *)hpcrun_malloc(sizeof(record_t));
   record->region_id = region_id;
   record->use_count = 0;
   record->node = NULL;
@@ -188,7 +190,7 @@ void start_team_fn(int rank)
   // create new record entry for a new region
   uint64_t region_id = GOMP_get_region_id();
   assert(region_id >0);
-  struct record_s *record = new_record(region_id);
+  record_t *record = new_record(region_id);
   r_splay_insert(record);
   hpcrun_async_unblock();
 }
@@ -196,7 +198,7 @@ void start_team_fn(int rank)
 void end_team_fn()
 {
   uint64_t region_id = GOMP_get_region_id();
-  struct record_s *record = r_splay_lookup(region_id);
+  record_t *record = r_splay_lookup(region_id);
   printf("region is %d\n", region_id); fflush(stdout);
   assert(record);
   // insert resolved root to the corresponding record entry
@@ -227,6 +229,24 @@ int need_defer_cntxt()
   return 0;
 }
 
+static cct_node_t*
+is_resolved(uint64_t id)
+{
+  r_splay_lookup(id)
+}
+
+
+static void
+omp_resolve(cct_node_t* cct, walk_arg_t arg)
+{
+  if (prefix = is_resolved(my_region_id)) {
+    full_tree = cct_join_prefix(prefix, unique_child_cct(cct));
+    cct_merge(cct_bundle_processs_stop, full_tree);
+    // put remaining cct nodes back on free list
+    r_splay_count_update(td->region_id, -1L);
+  }
+}
+
 void resolve_cntxt()
 {
   thread_data_t *td = hpcrun_get_thread_data();
@@ -234,12 +254,12 @@ void resolve_cntxt()
   if((td->region_id != GOMP_get_region_id()) && (td->region_id != 0) && 
      (omp_get_thread_num() != 0)) {
     printf("I want to resolve the context for region %d\n", td->region_id);
-    r_splay_count_update(td->region_id, -1L);
+    foreach_child(hpcrun_get_tbd_cct(), omp_resolve, NULL);
   }
   // update the use count when come into a new omp region
   if((td->region_id != GOMP_get_region_id()) && (GOMP_get_region_id() != 0) &&
-     (omp_get_thread_num() != 0))
-  {  
+     (omp_get_thread_num() != 0)) {
+    hpcrun_cct_insert_addr(hpcrun_get_tbd_cct(), &(ADDR2(UNRESOLVED, GOMP_get_region_id())));
     r_splay_count_update(GOMP_get_region_id(), 1L);
   }
   td->region_id = GOMP_get_region_id();
@@ -250,6 +270,6 @@ void resolve_cntxt_fini()
   thread_data_t *td = hpcrun_get_thread_data();
   if(td->region_id > 0) {
     printf("fini, resolve for region %d\n", td->region_id);
+    foreach_child(hpcrun_get_tbd_cct(), omp_resolve, NULL);
   }
-  r_splay_count_update(td->region_id, -1L);
 }

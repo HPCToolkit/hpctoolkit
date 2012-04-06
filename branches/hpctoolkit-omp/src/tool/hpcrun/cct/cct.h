@@ -98,7 +98,7 @@
 #define PARTIAL_ROOT HPCRUN_FMT_LMId_NULL, HPCRUN_FMT_LMIp_Flag1
 #define ADDR_I(L)     NON_LUSH_ADDR_INI(L)
 #define ADDR(L)      (cct_addr_t) NON_LUSH_ADDR_INI(L)
-
+#define ADDR2(id, ip) (cct_addr_t) NON_LUSH_ADDR_INI(id, ip)
 //***************************************************************************
 // Calling context tree node (abstract data type)
 //***************************************************************************
@@ -121,6 +121,7 @@ typedef cct_node_t* cct_node_id_t;
 //
 extern cct_node_t* hpcrun_cct_new(void);
 extern cct_node_t* hpcrun_cct_new_partial(void);
+extern cct_node_t* hpcrun_cct_top_new(uint16_t lmid, uintptr_t lmip);
 // 
 // Accessor functions
 // 
@@ -221,5 +222,9 @@ int hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags);
 // Utilities
 //
 extern size_t hpcrun_cct_num_nodes(cct_node_t* cct);
-
+//
+// look up addr in the set of cct's children
+// return the found node or NULL
+//
+extern cct_node_t* hpcrun_cct_find_addr(cct_node_t* cct, cct_addr_t* addr);
 #endif // cct_h

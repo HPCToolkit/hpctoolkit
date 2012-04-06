@@ -293,6 +293,11 @@ hpcrun_cct_new_partial(void)
   return cct_node_create(&(ADDR(PARTIAL_ROOT)), NULL);
 }
 
+cct_node_t*
+hpcrun_cct_top_new(uint16_t lmid, uintptr_t lmip)
+{
+  return cct_node_create(&(ADDR2(lmid, lmip)), NULL);
+}
 // 
 // ********** Accessor functions
 // 
@@ -529,4 +534,14 @@ hpcrun_cct_num_nodes(cct_node_t* cct)
   size_t n = 0;
   hpcrun_cct_walk_node_1st(cct, l_count, &n);
   return n;
+}
+
+//
+// look up addr in the set of cct's children
+// return the found node or NULL
+//
+cct_node_t*
+hpcrun_cct_find_addr(cct_node_t* cct, cct_addr_t* addr)
+{
+  
 }

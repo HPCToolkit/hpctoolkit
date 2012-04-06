@@ -158,7 +158,8 @@ hpcrun_drop_sample(void)
 cct_node_t*
 hpcrun_sample_callpath(void *context, int metricId,
 		       uint64_t metricIncr,
-		       int skipInner, int isSync)
+		       int skipInner, int isSync,
+		       void* arg // misc hook for plugin/hook data)
 {
   if (monitor_block_shootdown()) {
     monitor_unblock_shootdown();
@@ -217,7 +218,7 @@ hpcrun_sample_callpath(void *context, int metricId,
       }
       else {
 	node = help_hpcrun_sample_callpath(epoch, context, metricId, metricIncr,
-					   skipInner, isSync);
+					   skipInner, isSync, arg);
       }
       if (ENABLED(DUMP_BACKTRACES)) {
 	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
@@ -231,6 +232,10 @@ hpcrun_sample_callpath(void *context, int metricId,
     hpcrun_cleanup_partial_unwind();
   }
 
+  //
+  // FIXME: need to correct some trace ids when cct merging
+  //        of deferred trees happens.
+  //
   if (trace_isactive()) {
     void* pc = hpcrun_context_pc(context);
 
@@ -368,7 +373,7 @@ static cct_node_t*
 help_hpcrun_sample_callpath(epoch_t *epoch, void *context,
 			    int metricId,
 			    uint64_t metricIncr, 
-			    int skipInner, int isSync)
+			    int skipInner, int isSync, void* arg)
 {
   void* pc = hpcrun_context_pc(context);
 
@@ -380,7 +385,7 @@ help_hpcrun_sample_callpath(epoch_t *epoch, void *context,
 
   cct_node_t* n =
     hpcrun_backtrace2cct(&(epoch->csdata), context, metricId, metricIncr,
-			 skipInner, isSync);
+			 skipInner, isSync, arg);
 
   // FIXME: n == -1 if sample is filtered
 

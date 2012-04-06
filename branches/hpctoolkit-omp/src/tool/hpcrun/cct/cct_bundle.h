@@ -69,6 +69,7 @@ typedef struct cct_bundle_t {
                                   // thread root is tree obtained from inserting
                                   // the creation context in the tree root
   cct_node_t* partial_unw_root;   // adjunct tree for partial unwinds
+  cct_node_t* unresolved_root;    // special collection of ccts for omp deferred context
   cct_ctxt_t* ctxt;               // creation context for bundle
   unsigned long num_nodes;        // utility to count nodes. NB: MIGHT go away
 } cct_bundle_t;

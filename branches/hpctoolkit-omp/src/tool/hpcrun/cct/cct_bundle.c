@@ -51,7 +51,7 @@
 #include <cct/cct_addr.h>
 #include <messages/messages.h>
 #include <hpcrun/hpcrun_return_codes.h>
-
+#include <hpcrun/unresolved.h>
 //
 // convenient constant cct_addr_t's
 //
@@ -102,6 +102,7 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
     hpcrun_walk_path(ctxt->context, l_insert_path, (cct_op_arg_t) &(bundle->thread_root));
   }
   bundle->partial_unw_root = hpcrun_cct_new_partial();
+  bundle->unresolved_root = hpcrun_cct_top_new(UNRESOLVED_ROOT, 0);
 }
 //
 // Write to file for cct bundle: 
