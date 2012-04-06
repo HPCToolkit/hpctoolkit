@@ -80,6 +80,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 
+#include <cct/cct.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
@@ -94,6 +95,7 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 #include <utilities/defer-cntxt.h>
+#include <hpcrun/unresolved.h>
 
 /******************************************************************************
  * macros
@@ -535,8 +537,14 @@ papi_event_handler(int event_set, void *pc, long long ovec,
       resolve_cntxt();
     }
   
+    omp_arg_t omp_arg;
+    omp_arg.tbd = false;
+    if (TD_GET(region_id) > 0) {
+      omp_arg.tbd = true;
+      omp_arg.region_id = TD_GET(region_id);
+    }
     cct_node_t *node = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
-			   0/*skipInner*/, 0/*isSync*/);
+					      0/*skipInner*/, 0/*isSync*/, (void*) &omp_arg);
     if (cyc_metric_id == metric_id && node) {
       blame_shift_apply(node, 1);
     }

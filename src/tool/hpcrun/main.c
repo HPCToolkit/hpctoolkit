@@ -343,7 +343,7 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   // start the sample sources
   SAMPLE_SOURCES(start);
 
-  return (void *)epoch;
+  return (void*) epoch;
 }
 
 
