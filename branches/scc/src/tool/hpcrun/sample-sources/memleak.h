@@ -69,9 +69,10 @@
  * interface operations
  *****************************************************************************/
 
-int hpcrun_memleak_alloc_id();
-int hpcrun_memleak_active();
-void hpcrun_alloc_inc(cct_node_t* node, int incr);
-void hpcrun_free_inc(cct_node_t* node, int incr);
+int hpcrun_rcce_receive_id();
+int hpcrun_rcce_receive_tsc_id();
+int rcce_active();
+void hpcrun_receive_tsc_inc(cct_node_t* node, int incr);
+void hpcrun_receive_freq_inc(cct_node_t* node, int incr);
 
 #endif // sample_source_memleak_h

@@ -82,10 +82,9 @@
 
 #include <messages/messages.h>
 
-static int alloc_metric_id = -1;
-static int free_metric_id = -1;
-
-
+static int receive_metric_id = -1;
+static int receive_tsc_metric_id = -1;
+static int receive_freq_id = -1;
 
 /******************************************************************************
  * method definitions
@@ -97,8 +96,9 @@ METHOD_FN(init)
   self->state = INIT; 
 
   // reset static variables to their virgin state
-  alloc_metric_id = -1;
-  free_metric_id = -1;
+  receive_metric_id = -1;
+  receive_tsc_metric_id = -1;
+  receive_freq_id = -1;
 }
 
 
@@ -117,7 +117,7 @@ METHOD_FN(thread_init_action)
 static void
 METHOD_FN(start)
 {
-  TMSG(MEMLEAK,"starting MEMLEAK");
+  TMSG(MEMLEAK,"starting RCCE");
 
   TD_GET(ss_state)[self->evset_idx] = START;
 }
@@ -131,7 +131,7 @@ METHOD_FN(thread_fini_action)
 static void
 METHOD_FN(stop)
 {
-  TMSG(MEMLEAK,"stopping MEMLEAK");
+  TMSG(MEMLEAK,"stopping RCCE");
   TD_GET(ss_state)[self->evset_idx] = STOP;
 }
 
@@ -147,7 +147,7 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return (strstr(ev_str,"MEMLEAK") != NULL);
+  return (strstr(ev_str,"RCCE") != NULL);
 }
  
 
@@ -156,14 +156,15 @@ METHOD_FN(supports_event,const char *ev_str)
 static void
 METHOD_FN(process_event_list,int lush_metrics)
 {
-  alloc_metric_id = hpcrun_new_metric();
-  free_metric_id = hpcrun_new_metric();
+  receive_metric_id = hpcrun_new_metric();
+  receive_freq_id = hpcrun_new_metric();
+  receive_tsc_metric_id = hpcrun_new_metric();
 
-  TMSG(MEMLEAK, "Setting up metrics for memory leak detection");
+  TMSG(MEMLEAK, "Setting up metrics for RCCE wrapper");
 
-  hpcrun_set_metric_info(alloc_metric_id, "Bytes Allocated");
-
-  hpcrun_set_metric_info(free_metric_id, "Bytes Freed");
+  hpcrun_set_metric_info(receive_metric_id, "Bytes Received");
+  hpcrun_set_metric_info(receive_freq_id, "Receive Frequency");
+  hpcrun_set_metric_info(receive_tsc_metric_id, "CYCLE for Receive");
 }
 
 
@@ -186,11 +187,11 @@ static void
 METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
-  printf("Available memory leak detection events\n");
+  printf("Available RCCE wrapper events\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("MEMLEAK\t\tThe number of bytes allocated and freed per dynamic context\n");
+  printf("MEMLEAK\t\tThe number of bytes transfered per dynamic context\n");
   printf("\n");
 }
 
@@ -202,7 +203,7 @@ METHOD_FN(display_events)
 // sync class is "SS_SOFTWARE" so that both synchronous and asynchronous sampling is possible
 // 
 
-#define ss_name memleak
+#define ss_name rcce
 #define ss_cls SS_SOFTWARE
 
 #include "ss_obj.h"
@@ -220,14 +221,25 @@ METHOD_FN(display_events)
 //        Consequently, the interaction with metrics must be done procedurally
 
 int
-hpcrun_memleak_alloc_id() 
+hpcrun_rcce_receive_id() 
 {
-  return alloc_metric_id;
+  return receive_metric_id;
 }
 
+int
+hpcrun_rcce_receive_tsc_id()
+{
+  return receive_tsc_metric_id;
+}
 
 int
-hpcrun_memleak_active() 
+hpcrun_rcce_receive_freq_id()
+{
+  return receive_freq_id;
+}
+
+int
+hpcrun_rcce_active() 
 {
   if (hpcrun_is_initialized()) {
     return (TD_GET(ss_state)[obj_name().evset_idx] == START);
@@ -238,27 +250,27 @@ hpcrun_memleak_active()
 
 
 void
-hpcrun_alloc_inc(cct_node_t* node, int incr)
+hpcrun_receive_tsc_inc(cct_node_t* node, int incr)
 {
   if (node != NULL) {
-    TMSG(MEMLEAK, "\talloc (cct node %p): metric[%d] += %d", 
-	 node, alloc_metric_id, incr);
-    cct_metric_data_increment(alloc_metric_id,
-			      hpcrun_cct_metrics(node) + alloc_metric_id,
+    TMSG(MEMLEAK, "\treceive (cct node %p): metric[%d] += %d", 
+	 node, receive_metric_id, incr);
+    
+    cct_metric_data_increment(receive_tsc_metric_id,
+			      hpcrun_cct_metrics(node) + receive_tsc_metric_id,
 			      (cct_metric_data_t){.i = incr});
   }
 }
 
-
 void
-hpcrun_free_inc(cct_node_t* node, int incr)
+hpcrun_receive_freq_inc(cct_node_t* node, int incr)
 {
   if (node != NULL) {
-    TMSG(MEMLEAK, "\tfree (cct node %p): metric[%d] += %d", 
-	 node, free_metric_id, incr);
+    TMSG(MEMLEAK, "\treceive (cct node %p): metric[%d] += %d", 
+	 node, receive_metric_id, incr);
     
-    cct_metric_data_increment(free_metric_id,
-			      hpcrun_cct_metrics(node) + free_metric_id,
+    cct_metric_data_increment(receive_freq_id,
+			      hpcrun_cct_metrics(node) + receive_freq_id,
 			      (cct_metric_data_t){.i = incr});
   }
 }

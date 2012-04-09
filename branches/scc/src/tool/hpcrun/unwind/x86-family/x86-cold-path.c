@@ -129,7 +129,7 @@ hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
       TMSG(COLD_CODE,"potential cold code jmp detected in routine starting @"
 	   " %p (location in routine = %p)",iarg->beg,ins);
       void *beg, *end;
-      if (fnbounds_enclosing_addr(branch_target, &beg, &end, NULL)) {
+      if (! fnbounds_enclosing_addr(branch_target, &beg, &end, NULL)) {
 	EMSG("Weird result! jmp @ %p branch_target %p has no function bounds",
 	      ins, branch_target);
 	return false;

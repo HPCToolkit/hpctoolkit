@@ -70,6 +70,7 @@
 #include <string.h>    // for strcmp, strerror
 #include <stdlib.h>    // for getenv
 #include <errno.h>     // for errno
+#include <stdbool.h>   
 #include <sys/mman.h>
 #include <sys/param.h> // for PATH_MAX
 #include <sys/stat.h>  // mkdir
@@ -130,7 +131,7 @@
 //*********************************************************************
 
 // FIXME: tmproot should be overridable with an option.
-static char *tmproot = "/tmp";
+static char *tmproot = "/shared/tmp";
 
 static char fnbounds_tmpdir[PATH_MAX];
 
@@ -218,32 +219,33 @@ fnbounds_init()
 }
 
 
-int
-fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm)
+bool
+fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
 {
   FNBOUNDS_LOCK;
 
-  int ret = 1; // failure unless otherwise reset to 0 below
+  bool ret = false; // failure unless otherwise reset to 0 below
   
-  load_module_t *lm_ = fnbounds_get_loadModule(ip);
-  dso_info_t *dso = (lm_) ? lm_->dso_info : NULL;
+  load_module_t* lm_ = fnbounds_get_loadModule(ip);
+  dso_info_t* dso = (lm_) ? lm_->dso_info : NULL;
   
   if (dso && dso->nsymbols > 0) {
-    void *ip_norm = ip;
+    void* ip_norm = ip;
     if (dso->is_relocatable) {
-      ip_norm = (void *) (((unsigned long) ip_norm) - dso->start_to_ref_dist);
+      ip_norm = (void*) (((unsigned long) ip_norm) - dso->start_to_ref_dist);
     }
 
      // no dso table means no enclosing addr
 
     if (dso->table) {
       // N.B.: works on normalized IPs
-      ret = fnbounds_table_lookup(dso->table, dso->nsymbols, ip_norm, 
-				  (void **) start, (void **) end);
+      int rv = fnbounds_table_lookup(dso->table, dso->nsymbols, ip_norm, 
+				     (void**) start, (void**) end);
 
+      ret = (rv == 0);
       // Convert 'start' and 'end' into unnormalized IPs since they are
       // currently normalized.
-      if (ret == 0 && dso->is_relocatable) {
+      if (rv == 0 && dso->is_relocatable) {
 	*start = PERFORM_RELOCATION(*start, dso->start_to_ref_dist);
 	*end   = PERFORM_RELOCATION(*end  , dso->start_to_ref_dist);
       }
@@ -449,10 +451,29 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
   realpath(incoming_filename, filename);
   sprintf(dlname, FNBOUNDS_BINARY_FORMAT, fnbounds_tmpdir_get(), 
 	  mybasename(filename));
+  //add by xl
+  int PROC_NAME_LEN=100;
+  char *process_name;
+  char buf[PROC_NAME_LEN];
+  int len = readlink("/proc/self/exe", buf, PROC_NAME_LEN - 1);
+  if (len > 1) {
+    buf[len] = 0;
+    process_name = buf;
+  }
+  if(strcmp(process_name, filename) != 0)
+  {
+    sprintf(command, "%s%s -b %s %s %s 1>&%d 2>&%d\n",
+          nm_command, ".orig", ENABLED(DL_BOUND_SCRIPT_DEBUG) ? "-t -v" : "",
+          filename, fnbounds_tmpdir_get(), logfile_fd, logfile_fd);
+  }
 
-  sprintf(command, "%s -b %s %s %s 1>&%d 2>&%d\n",
+  else
+    sprintf(command, "%s %s\n", nm_command, fnbounds_tmpdir_get());
+#if 0
+    sprintf(command, "%s -b %s %s %s 1>&%d 2>&%d\n",
 	  nm_command, ENABLED(DL_BOUND_SCRIPT_DEBUG) ? "-t -v" : "",
 	  filename, fnbounds_tmpdir_get(), logfile_fd, logfile_fd);
+#endif
   TMSG(DL_BOUND, "system command = %s", command);
 
   int failure = system_server_execute_command(command);
@@ -570,7 +591,7 @@ fnbounds_tmpdir_create()
   int i, result;
   // try multiple times to create a temporary directory 
   // with the aim of avoiding failure
-  for (i = 0; i < 10; i++) {
+  for (i = 0; i < 50; i++) {
     sprintf(fnbounds_tmpdir,"%s/%d-%d", tmproot, (int) getpid(),i);
     result = mkdir(fnbounds_tmpdir, 0777);
     if (result == 0) break;
@@ -580,6 +601,9 @@ fnbounds_tmpdir_create()
     EMSG("fatal error: unable to make temporary directory %s (error = %s)\n", 
           fnbounds_tmpdir, strerror_r(errno, buffer, 1024));
   } 
+  result = chmod(fnbounds_tmpdir, 0777);
+  if(result !=0)
+    EMSG("fatal error: unable to set the permission for the tmp directory");
   return result;
 }
 

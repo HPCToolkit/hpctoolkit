@@ -60,7 +60,7 @@ fnbounds_init();
 // return the bounds [start, end) of the function that contains 'ip'.
 // Also return the load module that contains 'ip' to make
 // normalization easy.  All IPs are *unnormalized.*
-int
+bool
 fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm);
 
 void

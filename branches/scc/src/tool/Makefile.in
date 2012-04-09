@@ -293,7 +293,7 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 # Automake rules
 #############################################################################
-SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpclump misc \
+SUBDIRS = misc \
 	$(am__append_1) $(am__append_2) $(am__append_3)
 all: all-recursive
 

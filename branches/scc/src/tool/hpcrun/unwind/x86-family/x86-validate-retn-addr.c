@@ -170,7 +170,7 @@ confirm_call(void *addr, void *routine)
 
 
 static bool
-confirm_indirect_call_specific(void *addr, size_t offset, void **call_ins)
+confirm_indirect_call_specific(void* addr, size_t offset, void** call_ins)
 {
   void *callee;
   if ( ! confirm_call_fetch_addr(addr, offset, &callee)) {
@@ -184,9 +184,8 @@ confirm_indirect_call_specific(void *addr, size_t offset, void **call_ins)
   return (callee == NULL);
 }
 
-
 static bool
-confirm_indirect_call(void *addr, void **call_ins)
+confirm_indirect_call(void* addr, void** call_ins)
 {
   TMSG(VALIDATE_UNW,"trying to confirm an indirect call preceeding %p", addr);
   for (size_t i=1;i <= 7;i++) {
@@ -201,7 +200,7 @@ static validation_status
 contains_tail_call_to_f(void *callee, void *target_fn)
 {
   void *routine_start, *routine_end;
-  if (fnbounds_enclosing_addr(callee, &routine_start, &routine_end, NULL)) {
+  if (! fnbounds_enclosing_addr(callee, &routine_start, &routine_end, NULL)) {
     TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid",callee);
     return status_is_wrong(); // hard error: callee is nonsense
   }
@@ -347,53 +346,45 @@ confirm_plt_call(void *addr, void *callee)
 // interface operations 
 //****************************************************************************
 validation_status
-deep_validate_return_addr(void *addr, void *generic)
+deep_validate_return_addr(void* addr, void* generic)
 {
-  hpcrun_unw_cursor_t *cursor = (hpcrun_unw_cursor_t *)generic;
+  hpcrun_unw_cursor_t* cursor = (hpcrun_unw_cursor_t*) generic;
 
   TMSG(VALIDATE_UNW,"validating unwind step from %p ==> %p",cursor->pc_unnorm,
        addr);
-  void *beg, *end;
-  if (fnbounds_enclosing_addr(addr, &beg, &end, NULL)) {
+
+  void* dont_care;
+  if (! fnbounds_enclosing_addr(addr, &dont_care, &dont_care, NULL)) {
     TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid", addr);
     return status_is_wrong();
   }
-#if 0
-  //----------------------------------------------------------------------
-  // this case causes unwinds from vdso to fail unnecessarily, so skip
-  // it - bowden and johnmc
-  // ----------------------------------------------------------------------
-  if (fnbounds_enclosing_addr(cursor->pc_unnorm, &beg, &end, NULL)) {
-    TMSG(VALIDATE_UNW,"***The pc in the unwind cursor (= %p) does not have function bounds\n"
-         "***INTERNAL ERROR: please check arguments",cursor->pc_unnorm);
-    return status_is_wrong();
+
+  void* callee;
+  if (fnbounds_enclosing_addr(cursor->pc_unnorm, &callee, &dont_care, NULL)) {
+    TMSG(VALIDATE_UNW, "beginning of my routine = %p", callee);
+    if (confirm_call(addr, callee)) {
+      TMSG(VALIDATE_UNW, "Instruction preceeding %p is a call to this routine. Unwind confirmed", addr);
+      return UNW_ADDR_CONFIRMED;
+    }
+    validation_status result = confirm_plt_call(addr, callee);
+    if (result != UNW_ADDR_WRONG) {
+      TMSG(VALIDATE_UNW,
+	   "Instruction preceeding %p is a call through the PLT to this routine. Unwind confirmed",
+	   addr);
+      return result;
+    }
+    result = confirm_tail_call(addr, callee);
+    if (result != UNW_ADDR_WRONG) {
+      TMSG(VALIDATE_UNW,"Instruction preceeding %p is a call to a routine that has tail calls. Unwind is LIKELY ok", addr);
+      return result;
+    }
   }
-#endif
-  void *callee = beg;
-  TMSG(VALIDATE_UNW,"beginning of my routine = %p", callee);
-  if (confirm_call(addr, callee)) {
-    TMSG(VALIDATE_UNW,"Instruction preceeding %p is a call to this routine. Unwind confirmed",addr);
-    return UNW_ADDR_CONFIRMED;
-  }
-  validation_status result = confirm_plt_call(addr, callee);
-  if (result != UNW_ADDR_WRONG) {
-    TMSG(VALIDATE_UNW,"Instruction preceeding %p is a call through the PLT to this routine. Unwind confirmed",addr);
-    return result;
-  }
-  void *call_ins;
+  void* call_ins;
   if (confirm_indirect_call(addr, &call_ins)){
-#if 0
-    x86_mark_indirect_for_validation(addr, call_ins, callee); 
-#endif
-    TMSG(VALIDATE_UNW,"Instruction preceeding %p is an indirect call. Unwind is LIKELY ok",addr);
+    TMSG(VALIDATE_UNW,"Instruction preceeding %p is an indirect call. Unwind is LIKELY ok", addr);
     return UNW_ADDR_PROBABLE_INDIRECT;
   }
-  result = confirm_tail_call(addr, callee);
-  if (result != UNW_ADDR_WRONG) {
-    TMSG(VALIDATE_UNW,"Instruction preceeding %p is a call to a routine that has tail calls. Unwind is LIKELY ok",addr);
-    return result;
-  }
-  TMSG(VALIDATE_UNW,"Unwind addr %p is NOT confirmed",addr);
+  TMSG(VALIDATE_UNW,"Unwind addr %p is NOT confirmed", addr);
   return status_is_wrong();
 }
 
@@ -418,5 +409,3 @@ validate_return_addr(void *addr, void *generic)
 
   return UNW_ADDR_PROBABLE;
 }
-
-

@@ -298,9 +298,10 @@ validateTroll(void* addr, void* arg)
   dylib_find_proc(addr, &proc_beg, &mod_beg);
   isInCode = (mod_beg || proc_beg);
 #else
-  void *proc_beg = NULL, *proc_end = NULL;
-  int ret = fnbounds_enclosing_addr(addr, &proc_beg, &proc_end, NULL);
-  isInCode = (ret == 0) && proc_beg;
+  void* proc_beg = NULL;
+  void* proc_end = NULL;
+  bool ret = fnbounds_enclosing_addr(addr, &proc_beg, &proc_end, NULL);
+  isInCode = ret && proc_beg;
 #endif
   
   if (isInCode && isAfterCall(addr)) {

@@ -200,7 +200,6 @@ hpcrun_addr_to_interval_locked(void *addr)
   interval_status istat;
   interval_tree_node *p, *q;
   splay_interval_t *ans;
-  int ret;
 
   /* See if addr is already in the tree. */
   p = interval_tree_lookup(&ui_tree_root, addr);
@@ -218,9 +217,9 @@ hpcrun_addr_to_interval_locked(void *addr)
    * the insert first, but in that case, it's not really a failure.
    */
   UI_TREE_UNLOCK;
-  ret = fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end, &lm);
+  bool ret = fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end, &lm);
   UI_TREE_LOCK;
-  if (ret != SUCCESS) {
+  if (! ret) {
     TMSG(UITREE, "BAD fnbounds_enclosing_addr failed: addr %p", addr);
     return (NULL);
   }
