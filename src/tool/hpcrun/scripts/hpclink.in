@@ -226,7 +226,7 @@ do
 	    io_wrap="${libhpcrun_dir}/libhpcrun_io_wrap.a"
 	    test -f "$io_wrap" || die "unable to find: $io_wrap"
 	    extra_hpc_files="$extra_hpc_files $io_wrap"
-	    extra_wrap_names="$extra_wrap_names fread fwrite"
+	    extra_wrap_names="$extra_wrap_names read write fread fwrite"
 	    undef_names="$undef_names fwrite"
 	    shift
 	    ;;
@@ -298,6 +298,7 @@ do
     test $? -eq 0 || die "bad plugin config file: $conf_file"
     hpclink_files=
     hpclink_wrap_names=
+    hpclink_undefined_names=
     . "$conf_file"
     for file in $hpclink_files ; do
 	case "$file" in
@@ -309,7 +310,9 @@ do
 	extra_plugin_files="$extra_plugin_files $abs_file"
     done
     $verb "plugin wrap names: $hpclink_wrap_names"
+    $verb "plugin undefined names: $hpclink_undefined_names"
     extra_wrap_names="$extra_wrap_names $hpclink_wrap_names"
+    undef_names="$undef_names $hpclink_undefined_names"
 done
 
 #

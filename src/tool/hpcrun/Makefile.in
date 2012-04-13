@@ -850,6 +850,8 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 # Local settings
 #############################################################################
 PYTHON = python
+plugin_srcdir = $(srcdir)/plugins
+plugin_instdir = $(pkglibdir)/plugins
 bin_SCRIPTS = scripts/hpcsummary $(am__append_2) $(am__append_5)
 pkglibexec_SCRIPTS = scripts/hpclog
 include_HEADERS = hpctoolkit.h
@@ -859,6 +861,7 @@ pkglib_LIBRARIES = $(am__append_4)
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
+PLUGIN_CONFIG_FILES = ga io memleak
 UNW_COMMON_FILES = \
 	unwind/common/backtrace.c	\
         unwind/common/unw-throw.c       \
@@ -3795,7 +3798,8 @@ info: info-am
 info-am:
 
 install-data-am: install-includeHEADERS
-
+	@$(NORMAL_INSTALL)
+	$(MAKE) $(AM_MAKEFLAGS) install-data-hook
 install-dvi: install-dvi-am
 
 install-dvi-am:
@@ -3846,24 +3850,25 @@ uninstall-am: uninstall-binSCRIPTS uninstall-includeHEADERS \
 	uninstall-pkglibLIBRARIES uninstall-pkglibLTLIBRARIES \
 	uninstall-pkglibPROGRAMS uninstall-pkglibexecSCRIPTS
 
-.MAKE: install-am install-strip
+.MAKE: install-am install-data-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
 	clean-libtool clean-pkglibLIBRARIES clean-pkglibLTLIBRARIES \
 	clean-pkglibPROGRAMS ctags distclean distclean-compile \
 	distclean-generic distclean-libtool distclean-tags distdir dvi \
 	dvi-am html html-am info info-am install install-am \
-	install-binSCRIPTS install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-includeHEADERS install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-pkglibLIBRARIES install-pkglibLTLIBRARIES \
-	install-pkglibPROGRAMS install-pkglibexecSCRIPTS install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-binSCRIPTS uninstall-includeHEADERS \
+	install-binSCRIPTS install-data install-data-am \
+	install-data-hook install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am \
+	install-includeHEADERS install-info install-info-am \
+	install-man install-pdf install-pdf-am install-pkglibLIBRARIES \
+	install-pkglibLTLIBRARIES install-pkglibPROGRAMS \
+	install-pkglibexecSCRIPTS install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags uninstall uninstall-am \
+	uninstall-binSCRIPTS uninstall-includeHEADERS \
 	uninstall-pkglibLIBRARIES uninstall-pkglibLTLIBRARIES \
 	uninstall-pkglibPROGRAMS uninstall-pkglibexecSCRIPTS
 
@@ -3893,6 +3898,18 @@ endef
 $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
 	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
 		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
+
+#-----------------------------------------------------------
+# local hooks
+#-----------------------------------------------------------
+
+# Install the plugin config files.
+
+install-data-hook:
+	mkdir -p "$(DESTDIR)$(plugin_instdir)"
+	-for file in $(PLUGIN_CONFIG_FILES) ; do \
+	    cp -f "$(plugin_srcdir)/$$file" "$(DESTDIR)$(plugin_instdir)/$$file" ; \
+	done
 
 %.cpp.pp : %.cpp
 	$(CXXCPP) $(MYCPPFLAGS_0_CXX) $< > $@

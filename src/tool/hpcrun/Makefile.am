@@ -94,6 +94,8 @@ PYTHON = python
 #-----------------------------------------------------------
 
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
+plugin_srcdir = $(srcdir)/plugins
+plugin_instdir = $(pkglibdir)/plugins
 
 bin_SCRIPTS = scripts/hpcsummary
 pkglibexec_SCRIPTS = scripts/hpclog
@@ -140,6 +142,8 @@ XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
+
+PLUGIN_CONFIG_FILES = ga io memleak
 
 UNW_COMMON_FILES = \
 	unwind/common/backtrace.c	\
@@ -604,7 +608,6 @@ libhpcrun_la_SOURCES += utilities/last_func.c
 libhpcrun_o_SOURCES  += utilities/last_func.c
 
 
-
 #-----------------------------------------------------------
 # whirled peas, LUSH-style
 #-----------------------------------------------------------
@@ -654,6 +657,19 @@ endif
   libagent_tbb_la_SOURCES  = $(MY_AGENT_TBB_SOURCES)
   libagent_tbb_la_CFLAGS   = $(MY_AGENT_TBB_CFLAGS)
 endif
+
+
+#-----------------------------------------------------------
+# local hooks
+#-----------------------------------------------------------
+
+# Install the plugin config files.
+
+install-data-hook:
+	mkdir -p "$(DESTDIR)$(plugin_instdir)"
+	-for file in $(PLUGIN_CONFIG_FILES) ; do \
+	    cp -f "$(plugin_srcdir)/$$file" "$(DESTDIR)$(plugin_instdir)/$$file" ; \
+	done
 
 
 #############################################################################
