@@ -356,6 +356,7 @@ static event_list_node *g_finished_event_nodes_tail;
 static active_kernel_node  *g_free_active_kernel_nodes_head;
 static event_list_node  dummy_event_node = {.event_end = 0, .event_start = 0, .event_end_time = 0, .event_end_time = 0, .launcher_cct = 0};
 
+static int wall_clock_metric_id;
 static int cpu_idle_metric_id;
 static int gpu_activity_time_metric_id;
 static int cpu_idle_cause_metric_id;
@@ -365,6 +366,7 @@ static int gpu_overlap_metric_id;
 
 static uint64_t g_start_of_world_time;
 static cudaEvent_t g_start_of_world_event;
+static g_stream0_not_initialized = true;
 
 #endif                          //ENABLE_CUDA
 
@@ -488,7 +490,7 @@ static inline event_list_node  *  EnterCudaSync(uint64_t  * syncStart){
 }
 
 
-static void attribute_shared_blame_on_kernels(event_list_node * recorded_node, uint64_t recorded_time, const uint32_t stream_mask){
+static uint64_t  attribute_shared_blame_on_kernels(event_list_node * recorded_node, uint64_t recorded_time, const uint32_t stream_mask){
 
 	// if recorded_node is not dummy_event_node decrement its ref count
 	if(recorded_node != & dummy_event_node)
@@ -627,69 +629,74 @@ static void attribute_shared_blame_on_kernels(event_list_node * recorded_node, u
 
 
 	// now attribute blame on the sorted list
+	uint64_t last_kernel_end_time = 0;
 	if(sorted_active_kernels_begin){
-	active_kernel_node * current = sorted_active_kernels_begin;
-	uint64_t last_time = recorded_time;
-	do{
-		uint64_t new_time = current->event_time;
+		active_kernel_node * current = sorted_active_kernels_begin;
+		uint64_t last_time = recorded_time;
+		do{
+			uint64_t new_time = current->event_time;
 
-		assert(new_time >= last_time);
+			assert(new_time >= last_time);
 
-		if ( num_active_kernels && (new_time > last_time ) ){
-			//blame all 
-			active_kernel_node * blame_node = current->prev;
-			do{
-				assert ( blame_node->event_type == KERNEL_START );
+			if ( num_active_kernels && (new_time > last_time ) ){
+				//blame all 
+				active_kernel_node * blame_node = current->prev;
+				do{
+					assert ( blame_node->event_type == KERNEL_START );
 
-				cct_metric_data_increment(cpu_idle_cause_metric_id, blame_node->launcher_cct, (cct_metric_data_t) {
-                                              .r = (new_time - last_time)  * 1.0 / num_active_kernels } );
-				blame_node = blame_node->prev;
-			}while(blame_node != sorted_active_kernels_begin->prev);
-		}
-
-		last_time = new_time;
-	
-		if( current->event_type == KERNEL_START ) {
-			num_active_kernels++;			
-			current = current->next;
-		} else {
-			current->start_node->prev->next = current->start_node->next;
-			current->start_node->next->prev = current->start_node->prev;
-			if(current->start_node == sorted_active_kernels_begin)
-				sorted_active_kernels_begin = current->start_node->next;	
-			ADD_TO_FREE_ACTIVE_KERNEL_NODE_LIST((current->start_node));
-
-			// If I am the last one then Just free and break;
-			if ( current->next == current){
-				ADD_TO_FREE_ACTIVE_KERNEL_NODE_LIST(current);
-				break;
+					cct_metric_data_increment(cpu_idle_cause_metric_id, blame_node->launcher_cct, (cct_metric_data_t) {
+							.r = (new_time - last_time)  * 1.0 / num_active_kernels } );
+					blame_node = blame_node->prev;
+				}while(blame_node != sorted_active_kernels_begin->prev);
 			}
 
-			current->prev->next = current->next;
-			current->next->prev = current->prev;
-			if(current == sorted_active_kernels_begin)
-				sorted_active_kernels_begin = current->next;	
-			num_active_kernels--;
-			active_kernel_node * to_free = current;
-			current = current->next;
-			ADD_TO_FREE_ACTIVE_KERNEL_NODE_LIST(to_free);
-		
-		}
+			last_time = new_time;
 
-		
+			if( current->event_type == KERNEL_START ) {
+				num_active_kernels++;			
+				current = current->next;
+			} else {
+				current->start_node->prev->next = current->start_node->next;
+				current->start_node->next->prev = current->start_node->prev;
+				if(current->start_node == sorted_active_kernels_begin)
+					sorted_active_kernels_begin = current->start_node->next;	
+				ADD_TO_FREE_ACTIVE_KERNEL_NODE_LIST((current->start_node));
 
-	}while(current != sorted_active_kernels_begin->prev);	 
+				// If I am the last one then Just free and break;
+				if ( current->next == current){
+					last_kernel_end_time = new_time;
+					ADD_TO_FREE_ACTIVE_KERNEL_NODE_LIST(current);
+					break;
+				}
+
+				current->prev->next = current->next;
+				current->next->prev = current->prev;
+				if(current == sorted_active_kernels_begin)
+					sorted_active_kernels_begin = current->next;	
+				num_active_kernels--;
+				active_kernel_node * to_free = current;
+				current = current->next;
+				ADD_TO_FREE_ACTIVE_KERNEL_NODE_LIST(to_free);
+
+			}
+
+
+
+		}while(current != sorted_active_kernels_begin->prev);	 
 	}
+	return last_kernel_end_time;
+
 }
 
-static inline void LeaveCudaSync(event_list_node  * recorded_node, uint64_t syncStart, const uint32_t stream_mask){
+static inline uint64_t LeaveCudaSync(event_list_node  * recorded_node, uint64_t syncStart, const uint32_t stream_mask){
 //caller does	HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
 
 	// Cleanup events so that when I goto wait anybody in the queue will be the ones I have not seen and finished after my timer started.
 	cleanup_finished_events();
 	
-	attribute_shared_blame_on_kernels(recorded_node, syncStart, stream_mask); 
+	uint64_t last_kernel_end_time = attribute_shared_blame_on_kernels(recorded_node, syncStart, stream_mask); 
 	atomic_add_i64(&g_num_threads_at_sync, -1L);
+	return last_kernel_end_time;
 //caller does	HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
 }
 
@@ -1063,11 +1070,13 @@ static void METHOD_FN(shutdown)
 
 
 #ifdef ENABLE_CUDA
-    fprintf(stderr, "\n MAY BE BROKEN FOR MULTITHREADED");
-    uint32_t streamId;
-    streamId = SplayGetStreamId(stream_to_id_tree_root, 0);
-    SYNCHRONOUS_CLEANUP;
-    gpu_trace_close(0, streamId);
+    if (!g_stream0_not_initialized) {
+        fprintf(stderr, "\n MAY BE BROKEN FOR MULTITHREADED");
+        uint32_t streamId;
+        streamId = SplayGetStreamId(stream_to_id_tree_root, 0);
+        SYNCHRONOUS_CLEANUP;
+        gpu_trace_close(0, streamId);
+    }
 #endif
 
 
@@ -1129,6 +1138,7 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     hpcrun_pre_allocate_metrics(1 + lush_metrics);
 
     int metric_id = hpcrun_new_metric();
+    wall_clock_metric_id = metric_id;
     METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
 
 
@@ -1245,6 +1255,9 @@ cudaError_t cudaThreadSynchronize(void)
    getcontext(&context);
    cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
    cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+   // Since we were asyn blocked increase the time by syncEnd - syncStart
+   cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+   
    
    hpcrun_async_unblock();
 
@@ -1303,6 +1316,8 @@ cudaError_t cudaStreamSynchronize(cudaStream_t stream)
    getcontext(&context);
    cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
    cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+   // Since we were asyn blocked increase the time by syncEnd - syncStart
+   cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
    
    hpcrun_async_unblock();
     TD_GET(is_thread_at_cuda_sync) = false;
@@ -1356,6 +1371,8 @@ cudaError_t cudaEventSynchronize(cudaEvent_t event)
    getcontext(&context);
    cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
    cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+   // Since we were asyn blocked increase the time by syncEnd - syncStart
+   cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
    
 
    hpcrun_async_unblock();
@@ -1410,6 +1427,8 @@ cudaError_t cudaStreamWaitEvent(cudaStream_t stream, cudaEvent_t event, unsigned
    getcontext(&context);
    cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
    cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+   // Since we were asyn blocked increase the time by syncEnd - syncStart
+   cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
    
    hpcrun_async_unblock();
    
@@ -1465,6 +1484,8 @@ cudaError_t cudaDeviceSynchronize(void)
    getcontext(&context);
    cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
    cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+   // Since we were asyn blocked increase the time by syncEnd - syncStart
+   cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
  
     hpcrun_async_unblock();
 
@@ -1474,7 +1495,6 @@ cudaError_t cudaDeviceSynchronize(void)
 
 
 void CreateStream0IfNot(cudaStream_t stream){
-    static g_stream0_not_initialized = true;
     // if stream is 0 and if it is not created, then create one:
     HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
     if((uint64_t) stream == 0 && g_stream0_not_initialized) { 
@@ -1821,7 +1841,7 @@ cudaError_t cudaMalloc(void ** devPtr, size_t size)
     cudaError_t ret = cudaMallocReal(devPtr,size);
     
     spinlock_lock(&g_gpu_lock);
-    LeaveCudaSync(recorded_node,syncStart,ALL_STREAMS_MASK);
+    uint64_t last_kernel_end_time = LeaveCudaSync(recorded_node,syncStart,ALL_STREAMS_MASK);
     spinlock_unlock(&g_gpu_lock);
     
     struct timeval tv;
@@ -1830,9 +1850,27 @@ cudaError_t cudaMalloc(void ** devPtr, size_t size)
     // Get CCT node (i.e., kernel launcher)
     ucontext_t context;
     getcontext(&context);
+
     cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
-    cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
-    
+
+    // if the end of last kernel was sooner than the end of cudaMalloc(), the remaining time was wasted in Mallocing ... which is GPU idle time.
+    // Hence 
+    // CPU_idle_time = LastKernelEndTime - syncStart
+    // GPU_idle_time = syncEnd - LastKernelEndTime
+    // Sadly there can be some skew :(, hence let us take the non-zero value only.
+    uint64_t cpu_idle_time = last_kernel_end_time == 0 ? 0: last_kernel_end_time  - syncStart;
+    assert(cpu_idle_time >= 0); // TODO: can become -ve if last_kernel_end_time  < syncStart 
+    uint64_t gpu_idle_time = last_kernel_end_time == 0 ? syncEnd - syncStart : syncEnd - last_kernel_end_time;
+    assert(gpu_idle_time >= 0); // TODO: can become -ve if isyncEnd < last_kernel_end_time
+    cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (cpu_idle_time)});
+    cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (gpu_idle_time)});
+
+   // Since we were asyn blocked increase the time by syncEnd - syncStart
+   cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+
+
+
+ 
     hpcrun_async_unblock();
     
     TD_GET(is_thread_at_cuda_sync) = false;
@@ -1882,7 +1920,7 @@ cudaError_t cudaFree(void * devPtr)
     cudaError_t ret = cudaFreeReal(devPtr);
     
     spinlock_lock(&g_gpu_lock);
-    LeaveCudaSync(recorded_node,syncStart,ALL_STREAMS_MASK);
+    uint64_t last_kernel_end_time = LeaveCudaSync(recorded_node,syncStart,ALL_STREAMS_MASK);
     spinlock_unlock(&g_gpu_lock);
     
     struct timeval tv;
@@ -1892,8 +1930,24 @@ cudaError_t cudaFree(void * devPtr)
     ucontext_t context;
     getcontext(&context);
     cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
-    cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+
+
+    // if the end of last kernel was sooner than the end of cudaFree(), the remaining time was wasted in Freeing ... which is GPU idle time.
+    // Hence 
+    // CPU_idle_time = LastKernelEndTime - syncStart
+    // GPU_idle_time = syncEnd - LastKernelEndTime
+    // Sadly there can be some skew :(, hence let us take the non-zero value only.
+    uint64_t cpu_idle_time = last_kernel_end_time == 0 ? 0: last_kernel_end_time  - syncStart;
+    assert(cpu_idle_time >= 0); // TODO: can become -ve if last_kernel_end_time  < syncStart 
+    uint64_t gpu_idle_time = last_kernel_end_time == 0 ? syncEnd - syncStart : syncEnd - last_kernel_end_time;
+    assert(gpu_idle_time >= 0); // TODO: can become -ve if isyncEnd < last_kernel_end_time
+ 
+    cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (cpu_idle_time)});
+    cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (gpu_idle_time)});
     
+   // Since we were asyn blocked increase the time by syncEnd - syncStart
+   cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+
     hpcrun_async_unblock();
     
     TD_GET(is_thread_at_cuda_sync) = false;
@@ -2023,8 +2077,15 @@ cudaError_t cudaMemcpy(void * dst, const void * src, size_t count, enum cudaMemc
     ucontext_t context;
     getcontext(&context);
     cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
+    // this is both CPU and GPU idleness since one could have used cudaMemcpyAsync
     cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+    cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
     
+   // Since we were asyn blocked increase the time by syncEnd - syncStart
+   cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+
+
+
     hpcrun_async_unblock();
     
     TD_GET(is_thread_at_cuda_sync) = false;
