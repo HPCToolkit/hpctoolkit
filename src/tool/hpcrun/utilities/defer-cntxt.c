@@ -232,7 +232,7 @@ int need_defer_cntxt()
 static cct_node_t*
 is_resolved(uint64_t id)
 {
-  r_splay_lookup(id)
+  r_splay_lookup(id);
 }
 
 
