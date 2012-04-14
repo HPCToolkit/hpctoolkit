@@ -273,8 +273,8 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   tmp->id = hpcrun_cct_persistent_id(node);
   tmp->id_parent = parent ? hpcrun_cct_persistent_id(parent) : 0;
 
-  // if leaf, chg sign of id when written out
-  if (hpcrun_cct_is_leaf(node)) {
+  // if no children, chg sign of id when written out
+  if (hpcrun_cct_no_children(node)) {
     tmp->id = - tmp->id;
   }
   if (flags.fields.isLogicalUnwind){
@@ -345,6 +345,17 @@ bool
 hpcrun_cct_is_leaf(cct_node_t* node)
 {
   return node ? (node->is_leaf) || (!(node->children)) : false;
+}
+
+//
+// NOTE: having no children is not exactly the same as being a leaf
+//       A leaf represents a full path. There might be full paths
+//       that are a prefix of other full paths. So, a "leaf" can have children
+//
+bool
+hpcrun_cct_no_children(cct_node_t* node)
+{
+  return node ? ! node->children : false;
 }
 
 bool
