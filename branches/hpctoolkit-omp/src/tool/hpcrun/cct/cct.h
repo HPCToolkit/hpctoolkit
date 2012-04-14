@@ -98,7 +98,8 @@
 #define PARTIAL_ROOT HPCRUN_FMT_LMId_NULL, HPCRUN_FMT_LMIp_Flag1
 #define ADDR_I(L)     NON_LUSH_ADDR_INI(L)
 #define ADDR(L)      (cct_addr_t) NON_LUSH_ADDR_INI(L)
-#define ADDR2(id, ip) (cct_addr_t) NON_LUSH_ADDR_INI(id, ip)
+#define ADDR2_I(id, ip) NON_LUSH_ADDR_INI(id, ip)
+#define ADDR2(id, ip) (cct_addr_t) ADDR2_I(id, ip)
 //***************************************************************************
 // Calling context tree node (abstract data type)
 //***************************************************************************
@@ -130,7 +131,8 @@ extern cct_node_t* hpcrun_cct_parent(cct_node_t* node);
 extern int32_t hpcrun_cct_persistent_id(cct_node_t* node);
 extern cct_addr_t* hpcrun_cct_addr(cct_node_t* node);
 extern bool hpcrun_cct_is_leaf(cct_node_t* node);
-extern cct_node_t* hpcrun_cct_copy_prefix(cct_node_t *prefix, cct_node_t *root);
+extern bool hpcrun_cct_is_root(cct_node_t* node);
+
 //
 // Mutator functions: modify a given cct
 //
@@ -144,6 +146,11 @@ extern cct_node_t* hpcrun_cct_copy_prefix(cct_node_t *prefix, cct_node_t *root);
 //
 extern cct_node_t* hpcrun_cct_insert_addr(cct_node_t* cct, cct_addr_t* addr);
 
+//
+// 2nd fundamental mutator: mark a node as "terminal". That is,
+//   it is the last node of a path
+//
+extern void hpcrun_cct_terminate_path(cct_node_t* node);
 //
 // Special purpose mutator:
 // This operation is somewhat akin to concatenation.
@@ -214,6 +221,11 @@ void hpcrun_cct_walk_node_1st(cct_node_t* cct,
 // path nodes in list reverse order
 //
 extern void hpcrun_walk_path(cct_node_t* node, cct_op_t op, cct_op_arg_t arg);
+
+//
+// utility walker for cct sets (part of the substructure of a cct)
+//
+extern void hpcrun_cct_walkset(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg);
 //
 // Writing operation
 //
@@ -227,4 +239,19 @@ extern size_t hpcrun_cct_num_nodes(cct_node_t* cct);
 // return the found node or NULL
 //
 extern cct_node_t* hpcrun_cct_find_addr(cct_node_t* cct, cct_addr_t* addr);
+//
+// Merging operation: Given 2 ccts : CCT_A, CCT_B,
+//    merge means add all paths in CCT_B that are NOT in CCT_A
+//    to CCT_A. For paths that are common, perform the merge operation on
+//    each common node, using auxiliary arg merge_arg
+//
+//    NOTE: this merge operation presumes
+//       cct_addr_data(CCT_A) == cct_addr_data(CCT_B)
+//
+typedef void* merge_op_arg_t;
+typedef void (*merge_op_t)(cct_node_t* a, cct_node_t*b, merge_op_arg_t arg);
+
+extern void hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
+			     merge_op_t merge, merge_op_arg_t arg);
+
 #endif // cct_h
