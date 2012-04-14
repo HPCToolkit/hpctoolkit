@@ -457,7 +457,7 @@ memleak_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
   if (hpcrun_memleak_active()) {
     hpcrun_async_block();
     info_ptr->context =
-      hpcrun_sample_callpath(uc, hpcrun_memleak_alloc_id(), bytes, 0, 1);
+      hpcrun_sample_callpath(uc, hpcrun_memleak_alloc_id(), bytes, 0, 1, NULL);
     hpcrun_async_unblock();
     loc_str = loc_name[loc];
   } else {

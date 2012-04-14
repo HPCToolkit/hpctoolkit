@@ -158,7 +158,7 @@ MONITOR_EXT_WRAP_NAME(fread)(void *ptr, size_t size, size_t count, FILE *stream)
   if (do_sample) {
     hpcrun_async_block();
     getcontext(&uc);
-    hpcrun_sample_callpath(&uc, hpcrun_metric_id_read(), 0, 0, 1);
+    hpcrun_sample_callpath(&uc, hpcrun_metric_id_read(), 0, 0, 1, NULL);
     hpcrun_async_unblock();
   }
 
@@ -169,7 +169,7 @@ MONITOR_EXT_WRAP_NAME(fread)(void *ptr, size_t size, size_t count, FILE *stream)
     hpcrun_async_block();
     TMSG(IO, "fread: size: %ld, count: %ld, bytes: %ld, actual: %ld",
 	 size, count, count*size, ret*size);
-    hpcrun_sample_callpath(&uc, hpcrun_metric_id_read(), ret*size, 0, 1);
+    hpcrun_sample_callpath(&uc, hpcrun_metric_id_read(), ret*size, 0, 1, NULL);
     hpcrun_async_unblock();
   }
 
@@ -194,7 +194,7 @@ MONITOR_EXT_WRAP_NAME(fwrite)(const void *ptr, size_t size, size_t count,
   if (do_sample) {
     hpcrun_async_block();
     getcontext(&uc);
-    hpcrun_sample_callpath(&uc, hpcrun_metric_id_write(), 0, 0, 1);
+    hpcrun_sample_callpath(&uc, hpcrun_metric_id_write(), 0, 0, 1, NULL);
     hpcrun_async_unblock();
   }
 
@@ -205,7 +205,7 @@ MONITOR_EXT_WRAP_NAME(fwrite)(const void *ptr, size_t size, size_t count,
     hpcrun_async_block();
     TMSG(IO, "fwrite: size: %ld, count: %ld, bytes: %ld, actual: %ld",
 	 size, count, count*size, ret*size);
-    hpcrun_sample_callpath(&uc, hpcrun_metric_id_write(), ret*size, 0, 1);
+    hpcrun_sample_callpath(&uc, hpcrun_metric_id_write(), ret*size, 0, 1, NULL);
     hpcrun_async_unblock();
   }
 

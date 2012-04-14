@@ -102,7 +102,7 @@ cct_insert_raw_backtrace(cct_node_t* cct,
 static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 			  int metricId, uint64_t metricIncr,
-			  int skipInner);
+			  int skipInner, void *arg);
 
 //
 // 
@@ -305,7 +305,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
 
   omp_arg_t* omp_arg = (omp_arg_t*) arg;
   if (arg && omp_arg->tbd) {
-    cct_cursor = find_addr(hpcrun_get_tbd_cct(), omp_arg->region_id);
+    cct_cursor = hpcrun_cct_find_addr(hpcrun_get_tbd_cct(), &(ADDR2(UNRESOLVED, omp_arg->region_id)));
   }
 
   TMSG(FENCE, "sanity check cursor = %p", cct_cursor);
@@ -337,7 +337,7 @@ hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
   cct_node_t* n = hpcrun_cct_record_backtrace_w_metric(cct, true, bt.fence == FENCE_THREAD,
 						       bt.begin, bt.last, bt.has_tramp,
-						       metricId, metricIncr);
+						       metricId, metricIncr, NULL);
 
   hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));
   hpcrun_stats_trolled_frames_inc((long) bt.n_trolls);
