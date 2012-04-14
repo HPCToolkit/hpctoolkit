@@ -119,7 +119,7 @@ hpcrun_enable_sampling(void)
 extern void hpcrun_drop_sample(void);
 
 extern cct_node_t* hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
-				   int skipInner, int isSync);
+				   int skipInner, int isSync, void *arg);
 
 extern cct_node_t* hpcrun_gen_thread_ctxt(void *context);
 

@@ -90,7 +90,7 @@
 static cct_node_t*
 help_hpcrun_sample_callpath(epoch_t *epoch, void *context,
 			    int metricId, uint64_t metricIncr,
-			    int skipInner, int isSync);
+			    int skipInner, int isSync, void *arg);
 
 static cct_node_t*
 hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context,
@@ -137,7 +137,7 @@ record_partial_unwind(cct_bundle_t* cct,
   hpcrun_stats_num_samples_partial_inc();
   return hpcrun_cct_record_backtrace_w_metric(cct, true, false,
 					      bt_beg, bt_last, false,
-					      metricId, metricIncr);
+					      metricId, metricIncr, NULL);
 }
 
 
@@ -159,7 +159,7 @@ cct_node_t*
 hpcrun_sample_callpath(void *context, int metricId,
 		       uint64_t metricIncr,
 		       int skipInner, int isSync,
-		       void* arg // misc hook for plugin/hook data)
+		       void* arg )// misc hook for plugin/hook data
 {
   if (monitor_block_shootdown()) {
     monitor_unblock_shootdown();

@@ -331,7 +331,7 @@ void idle_fn()
     hpcrun_async_block();
     ucontext_t uc;
     getcontext(&uc);
-    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1);
+    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1, NULL);
     hpcrun_async_unblock();
   }
 }
@@ -348,7 +348,7 @@ void work_fn()
     hpcrun_async_block();
     ucontext_t uc;
     getcontext(&uc);
-    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1);
+    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1, NULL);
     hpcrun_async_unblock();
   }
 }

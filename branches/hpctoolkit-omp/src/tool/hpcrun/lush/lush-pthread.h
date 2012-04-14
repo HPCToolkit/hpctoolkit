@@ -163,7 +163,7 @@ lushPthr_attribToCallPath(uint64_t idlenessIncr)
   getcontext(&context); // FIXME: check for errors
   cct_node_t* n = 
     hpcrun_sample_callpath(&context, lush_agents->metric_time,
-			   0/*metricIncr*/, 1/*skipInner*/, 1/*isSync*/);
+			   0/*metricIncr*/, 1/*skipInner*/, 1/*isSync*/, NULL);
   hpcrun_async_unblock();
 
   return n;

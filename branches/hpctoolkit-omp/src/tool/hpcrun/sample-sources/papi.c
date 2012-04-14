@@ -527,24 +527,26 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
     TMSG(PAPI_SAMPLE,"sampling call path for metric_id = %d", metric_id);
 
+    cct_node_t *node = NULL;
     // check whether we need to defer the context creation
     if(need_defer_cntxt()) {
-      //call specific hpcrun_sample_callpath
-    }
-    
-    thread_data_t *td = hpcrun_get_thread_data();
-    if(td->defer_flag) {
-      resolve_cntxt();
-    }
+      thread_data_t *td = hpcrun_get_thread_data();
+      if(td->defer_flag) {
+        resolve_cntxt();
+      }
   
-    omp_arg_t omp_arg;
-    omp_arg.tbd = false;
-    if (TD_GET(region_id) > 0) {
-      omp_arg.tbd = true;
-      omp_arg.region_id = TD_GET(region_id);
-    }
-    cct_node_t *node = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
+      omp_arg_t omp_arg;
+      omp_arg.tbd = false;
+      if (TD_GET(region_id) > 0) {
+        omp_arg.tbd = true;
+        omp_arg.region_id = TD_GET(region_id);
+      }
+      node = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 					      0/*skipInner*/, 0/*isSync*/, (void*) &omp_arg);
+    }
+    else
+      node = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
+					      0/*skipInner*/, 0/*isSync*/, NULL);
     if (cyc_metric_id == metric_id && node) {
       blame_shift_apply(node, 1);
     }
