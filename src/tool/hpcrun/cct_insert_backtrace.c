@@ -94,6 +94,7 @@ cct_insert_raw_backtrace(cct_node_t* cct,
     }
     parent_routine = path_beg->the_function;
   }
+  hpcrun_cct_terminate_path(cct);
   return cct;
 }
 
