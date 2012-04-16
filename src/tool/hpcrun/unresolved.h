@@ -20,4 +20,9 @@ hpcrun_get_tbd_cct(void)
   return (TD_GET(epoch)->csdata).unresolved_root;
 }
 
+static inline cct_node_t*
+hpcrun_get_process_stop_cct(void)
+{
+  return (TD_GET(epoch)->csdata).tree_root;
+}
 #endif // UNRESOLVED_H
