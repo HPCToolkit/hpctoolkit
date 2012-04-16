@@ -44,6 +44,8 @@
 
 #include <lib/prof-lean/splay-macros.h>
 
+#include <hpcrun/cct2metrics.h>
+#include <hpcrun/metrics.h>
 #include <utilities/defer-cntxt.h>
 #include <hpcrun/unresolved.h>
 
@@ -197,21 +199,20 @@ void start_team_fn(int rank)
 
 void end_team_fn()
 {
+  hpcrun_async_block();
   uint64_t region_id = GOMP_get_region_id();
   struct record_t *record = r_splay_lookup(region_id);
-  printf("region is %d\n", region_id); fflush(stdout);
   assert(record);
   // insert resolved root to the corresponding record entry
   if(record->use_count > 0) {
-    hpcrun_async_block();
     ucontext_t uc;
     getcontext(&uc);
     cct_node_t *node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1, NULL);
     node = hpcrun_cct_parent(node);
     record->node = node;
     assert(record->node);
-    hpcrun_async_unblock();
   }
+  hpcrun_async_unblock();
 }
 
 void register_callback()
@@ -233,32 +234,69 @@ int need_defer_cntxt()
 static cct_node_t*
 is_resolved(uint64_t id)
 {
+  struct record_t *record = r_splay_lookup(id);
+  if(! record) return NULL;
   return r_splay_lookup(id)->node;
 }
 
-
-#if 0
 static void
-omp_resolve(cct_node_t* cct, walk_arg_t arg)
+merge_metrics(cct_node_t *a, cct_node_t *b, merge_op_arg_t arg)
 {
-  cct_node_t *prefix;
-  if (prefix = is_resolved(my_region_id)) {
-    full_tree = cct_join_prefix(prefix, unique_child_cct(cct));
-    cct_merge(cct_bundle_processs_stop, full_tree);
-    // put remaining cct nodes back on free list
-    r_splay_count_update(td->region_id, -1L);
+  cct_metric_data_t *mdata_a, *mdata_b;
+  metric_desc_t *mdesc;
+  metric_set_t* mset_a = hpcrun_get_metric_set(a);
+  metric_set_t* mset_b = hpcrun_get_metric_set(b);
+  int num = hpcrun_get_num_metrics();
+  int i;
+  for (i = 0; i < num; i++) {
+    mdata_a = hpcrun_metric_set_loc(mset_a, i);
+    mdata_b = hpcrun_metric_set_loc(mset_b, i);
+    mdesc = hpcrun_id2metric(i);
+    if(mdesc->flags.fields.valFmt == MetricFlags_ValFmt_Int) {
+      mdata_a->i += mdata_b->i;
+    }
+    else if(mdesc->flags.fields.valFmt == MetricFlags_ValFmt_Real) {
+      mdata_a->r += mdata_b->r;
+    }
+    else {
+      printf("in merge_op: what's the metric type\n");
+      exit(1);
+    }
   }
 }
-#endif
+
+static void
+merge_op(cct_node_t *cct, cct_op_arg_t arg, size_t l)
+{
+  cct_node_t *prefix = (cct_node_t *) arg;
+  hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
+  
+}
+
+static void
+omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
+{
+  cct_node_t *prefix;
+  uint64_t my_region_id = (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip;
+printf(" try to resolve region %d\n", my_region_id);
+  if (prefix = is_resolved(my_region_id)) {
+    prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_process_stop_cct());
+    hpcrun_cct_walkset(hpcrun_cct_children(cct), merge_op, (cct_op_arg_t) prefix);
+    r_splay_count_update(my_region_id, -1L);
+    // put remaining cct nodes back on free list
+    hpcrun_cct_remove_node(cct);
+  }
+}
 
 void resolve_cntxt()
 {
+  hpcrun_async_block();
   thread_data_t *td = hpcrun_get_thread_data();
   // resolve the trees at the end of one parallel region
   if((td->region_id != GOMP_get_region_id()) && (td->region_id != 0) && 
      (omp_get_thread_num() != 0)) {
-    printf("I want to resolve the context for region %d\n", td->region_id);
-//    foreach_child(hpcrun_get_tbd_cct(), omp_resolve, NULL);
+    printf("I want to resolve the context when I come out from region %d\n", td->region_id);
+    hpcrun_cct_walkset(hpcrun_cct_children(hpcrun_get_tbd_cct()), omp_resolve, NULL);
   }
   // update the use count when come into a new omp region
   if((td->region_id != GOMP_get_region_id()) && (GOMP_get_region_id() != 0) &&
@@ -267,13 +305,16 @@ void resolve_cntxt()
     r_splay_count_update(GOMP_get_region_id(), 1L);
   }
   td->region_id = GOMP_get_region_id();
+  hpcrun_async_unblock();
 }
 
 void resolve_cntxt_fini()
 {
+  hpcrun_async_block();
   thread_data_t *td = hpcrun_get_thread_data();
   if(td->region_id > 0) {
-    printf("fini, resolve for region %d\n", td->region_id);
-//    foreach_child(hpcrun_get_tbd_cct(), omp_resolve, NULL);
+    printf("fini, last region is %d\n", td->region_id);
+    hpcrun_cct_walkset(hpcrun_cct_children(hpcrun_get_tbd_cct()), omp_resolve, NULL);
   }
+  hpcrun_async_unblock();
 }

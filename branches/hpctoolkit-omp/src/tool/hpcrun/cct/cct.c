@@ -329,6 +329,12 @@ hpcrun_cct_parent(cct_node_t* x)
   return x? x->parent : NULL;
 }
 
+cct_node_t*
+hpcrun_cct_children(cct_node_t* x)
+{
+  return x? x->children : NULL;
+}
+
 int32_t
 hpcrun_cct_persistent_id(cct_node_t* x)
 {
@@ -412,6 +418,34 @@ hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
     found->right = NULL;
   }
   return new;
+}
+
+// insert a path to the root and return the path in the root
+cct_node_t*
+hpcrun_cct_insert_path(cct_node_t *path, cct_node_t *root)
+{
+  if(!path || ! path->parent) return root;
+  root = hpcrun_cct_insert_path(path->parent, root);
+  return hpcrun_cct_insert_addr(root, &(path->addr));
+}
+
+// remove the sub-tree rooted at cct from the CCT
+void
+hpcrun_cct_remove_node(cct_node_t *cct)
+{
+  if(cct->left)
+    cct->left->right = cct->right;
+  if(cct->right)
+    cct->right->left = cct->left;
+  if(cct->parent->children == cct) {
+    if(cct->left)
+      cct->parent->children = cct->left;
+    else if(cct->right)
+      cct->parent->children = cct->right;
+    else
+      cct->parent->children = NULL;
+  }
+  cct->parent = NULL;
 }
 
 //
