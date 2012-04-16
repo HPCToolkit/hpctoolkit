@@ -276,16 +276,25 @@ merge_op(cct_node_t *cct, cct_op_arg_t arg, size_t l)
 static void
 omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
 {
+  bool* res = (bool*) a;
+  *res = false;
   cct_node_t *prefix;
   uint64_t my_region_id = (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip;
-printf(" try to resolve region %d\n", my_region_id);
+  printf(" try to resolve region %d\n", my_region_id);
   if (prefix = is_resolved(my_region_id)) {
     prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_process_stop_cct());
-    hpcrun_cct_walkset(hpcrun_cct_children(cct), merge_op, (cct_op_arg_t) prefix);
+    hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
     r_splay_count_update(my_region_id, -1L);
-    // put remaining cct nodes back on free list
-    hpcrun_cct_remove_node(cct);
+    *res = true;
   }
+}
+
+static void
+omp_resolve_and_free(cct_node_t* cct, cct_op_arg_t a, size_t l)
+{
+  omp_resolve(cct, a, l);
+  bool* res = (bool*) a;
+  if (*res) hpcrun_cct_delete_self(cct);
 }
 
 void resolve_cntxt()
@@ -296,7 +305,8 @@ void resolve_cntxt()
   if((td->region_id != GOMP_get_region_id()) && (td->region_id != 0) && 
      (omp_get_thread_num() != 0)) {
     printf("I want to resolve the context when I come out from region %d\n", td->region_id);
-    hpcrun_cct_walkset(hpcrun_cct_children(hpcrun_get_tbd_cct()), omp_resolve, NULL);
+    bool res = false;
+    hpcrun_cct_walkset(hpcrun_get_tbd_cct(), omp_resolve_and_free, (cct_op_arg_t) &res);
   }
   // update the use count when come into a new omp region
   if((td->region_id != GOMP_get_region_id()) && (GOMP_get_region_id() != 0) &&
@@ -314,7 +324,8 @@ void resolve_cntxt_fini()
   thread_data_t *td = hpcrun_get_thread_data();
   if(td->region_id > 0) {
     printf("fini, last region is %d\n", td->region_id);
-    hpcrun_cct_walkset(hpcrun_cct_children(hpcrun_get_tbd_cct()), omp_resolve, NULL);
+    bool res = false;
+    hpcrun_cct_walkset(hpcrun_get_tbd_cct(), omp_resolve_and_free, (cct_op_arg_t) &res);
   }
   hpcrun_async_unblock();
 }
