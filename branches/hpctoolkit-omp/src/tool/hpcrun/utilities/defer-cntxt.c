@@ -207,8 +207,8 @@ void end_team_fn()
   if(record->use_count > 0) {
     ucontext_t uc;
     getcontext(&uc);
-    cct_node_t *node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1, NULL);
-    node = hpcrun_cct_parent(node);
+    cct_node_t *node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, NULL);
+//    node = hpcrun_cct_parent(node);
     record->node = node;
     assert(record->node);
   }
@@ -321,11 +321,7 @@ void resolve_cntxt()
 void resolve_cntxt_fini()
 {
   hpcrun_async_block();
-  thread_data_t *td = hpcrun_get_thread_data();
-  if(td->region_id > 0) {
-    printf("fini, last region is %d\n", td->region_id);
-    bool res = false;
-    hpcrun_cct_walkset(hpcrun_get_tbd_cct(), omp_resolve_and_free, (cct_op_arg_t) &res);
-  }
+  bool res = false;
+  hpcrun_cct_walkset(hpcrun_get_tbd_cct(), omp_resolve_and_free, (cct_op_arg_t) &res);
   hpcrun_async_unblock();
 }
