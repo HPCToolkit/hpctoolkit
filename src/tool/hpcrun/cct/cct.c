@@ -429,22 +429,18 @@ hpcrun_cct_insert_path(cct_node_t *path, cct_node_t *root)
   return hpcrun_cct_insert_addr(root, &(path->addr));
 }
 
-// remove the sub-tree rooted at cct from the CCT
+// remove the sub-tree rooted at cct from it's parent
+//
+// TODO: actual freelist manipulation required
+//       for now, do nothing
+//
 void
-hpcrun_cct_remove_node(cct_node_t *cct)
+hpcrun_cct_delete_self(cct_node_t *cct)
 {
-  if(cct->left)
-    cct->left->right = cct->right;
-  if(cct->right)
-    cct->right->left = cct->left;
-  if(cct->parent->children == cct) {
-    if(cct->left)
-      cct->parent->children = cct->left;
-    else if(cct->right)
-      cct->parent->children = cct->right;
-    else
-      cct->parent->children = NULL;
-  }
+  if (cct->left) cct->left->right = cct->right;
+  if (cct->right) cct->right->left = cct->left;
+  if (cct->parent->children == cct)
+    cct->parent->children = cct->left ? cct->left : cct->right;
   cct->parent = NULL;
 }
 
@@ -545,7 +541,7 @@ hpcrun_cct_walk_node_1st_w_level(cct_node_t* cct, cct_op_t op, cct_op_arg_t arg,
 void
 hpcrun_cct_walkset(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg)
 {
-  walkset_l(cct, fn, arg, 0);
+  walkset_l(cct->children, fn, arg, 0);
 }
 
 //
@@ -668,7 +664,7 @@ hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
     cct_b->children = cct_a->children;
   else {
     mjarg_t local = (mjarg_t) {.targ = cct_a, .fn = merge, .arg = arg};
-    hpcrun_cct_walkset(cct_b->children, merge_or_join, (cct_op_arg_t) &local);
+    hpcrun_cct_walkset(cct_b, merge_or_join, (cct_op_arg_t) &local);
   }
 }
 

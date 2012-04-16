@@ -133,7 +133,7 @@ extern int32_t hpcrun_cct_persistent_id(cct_node_t* node);
 extern cct_addr_t* hpcrun_cct_addr(cct_node_t* node);
 extern bool hpcrun_cct_is_leaf(cct_node_t* node);
 extern cct_node_t* hpcrun_cct_insert_path(cct_node_t *path, cct_node_t *root);
-extern void hpcrun_cct_remove_node(cct_node_t *node);
+extern void hpcrun_cct_delete_self(cct_node_t *node);
 //
 // NOTE: having no children is not exactly the same as being a leaf
 //       A leaf represents a full path. There might be full paths
