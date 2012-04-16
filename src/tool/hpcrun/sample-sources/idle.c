@@ -181,9 +181,11 @@ METHOD_FN(stop)
 {
   //scale the requested core idleness here
   thread_data_t *td = hpcrun_get_thread_data();
-  cct_node_t *root;
+  cct_node_t *root, *unresolved_root;
   root = td->epoch->csdata.top;
+  unresolved_root = td->epoch->csdata.unresolved_root;
   hpcrun_cct_walk_node_1st(root, normalize_fn, NULL);
+  hpcrun_cct_walk_node_1st(unresolved_root, normalize_fn, NULL);
 }
 
 static void
