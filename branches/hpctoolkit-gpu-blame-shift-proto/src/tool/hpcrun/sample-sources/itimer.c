@@ -656,6 +656,7 @@ static uint64_t  attribute_shared_blame_on_kernels(event_list_node * recorded_no
 				num_active_kernels++;			
 				current = current->next;
 			} else {
+ 				last_kernel_end_time = new_time;
 				current->start_node->prev->next = current->start_node->next;
 				current->start_node->next->prev = current->start_node->prev;
 				if(current->start_node == sorted_active_kernels_begin)
@@ -664,7 +665,6 @@ static uint64_t  attribute_shared_blame_on_kernels(event_list_node * recorded_no
 
 				// If I am the last one then Just free and break;
 				if ( current->next == current){
-					last_kernel_end_time = new_time;
 					ADD_TO_FREE_ACTIVE_KERNEL_NODE_LIST(current);
 					break;
 				}
