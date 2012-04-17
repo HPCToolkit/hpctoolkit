@@ -47,8 +47,8 @@
 #ifndef _HPCRUN_GA_H_
 #define _HPCRUN_GA_H_
 
-int hpcrun_ga_metricId_bytes();
-int hpcrun_ga_metricId_get();
-int hpcrun_ga_metricId_put();
+int hpcrun_ga_metricId_bytesXfer();
+int hpcrun_ga_metricId_onesidedOp();
+int hpcrun_ga_metricId_collectiveOp();
 
 #endif

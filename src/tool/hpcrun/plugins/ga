@@ -1,3 +1,4 @@
+# -*-Mode: sh;-*-
 #
 # The GA sample source as an hpclink plugin.  These two command
 # lines are equivalent ways of linking in the GA overrides.
@@ -7,6 +8,8 @@
 #
 
 hpclink_files='../libhpcrun_ga_wrap.a'
-hpclink_wrap_names='pnga_brdcst pnga_get pnga_put'
+hpclink_wrap_names='pnga_brdcst \
+    pnga_get pnga_put pnga_acc \
+    pnga_nbget pnga_nbput pnga_nbacc pnga_nbwait'
 hpclink_undefined_names='pnga_put'
 
