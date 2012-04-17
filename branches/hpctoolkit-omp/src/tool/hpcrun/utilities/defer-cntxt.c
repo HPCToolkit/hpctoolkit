@@ -77,7 +77,6 @@ r_splay(struct record_t *root, uint64_t key)
 static struct record_t *
 r_splay_lookup(uint64_t id)
 {
-  struct record_t *record;
   spinlock_lock(&record_tree_lock);
   record_tree_root = r_splay(record_tree_root, id);
   if(record_tree_root->region_id != id) {
@@ -159,9 +158,9 @@ r_splay_count_update(uint64_t region_id, uint64_t val)
     return;
   } else {
     record_tree_root->use_count += val;
-printf("I am value %d (%d) for region %d\n", record_tree_root->use_count, val, region_id);
+    TMSG(DEFER_CTXT, "I am value %d (%d) for region %d", record_tree_root->use_count, val, region_id);
     if((record_tree_root->use_count == 0)) {
-printf("I am hererererere for delete\n");fflush(stdout);
+      TMSG(DEFER_CTXT, "I am here for delete");
       r_splay_delete(record_tree_root->region_id);
     }
   }
@@ -239,6 +238,9 @@ is_resolved(uint64_t id)
   return r_splay_lookup(id)->node;
 }
 
+//
+// TODO: add trace correction info here
+//
 static void
 merge_metrics(cct_node_t *a, cct_node_t *b, merge_op_arg_t arg)
 {
@@ -259,18 +261,10 @@ merge_metrics(cct_node_t *a, cct_node_t *b, merge_op_arg_t arg)
       mdata_a->r += mdata_b->r;
     }
     else {
-      printf("in merge_op: what's the metric type\n");
-      exit(1);
+      TMSG(DEFER_CTXT, "in merge_op: what's the metric type");
+      monitor_real_exit(1);
     }
   }
-}
-
-static void
-merge_op(cct_node_t *cct, cct_op_arg_t arg, size_t l)
-{
-  cct_node_t *prefix = (cct_node_t *) arg;
-  hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
-  
 }
 
 static void
@@ -280,7 +274,7 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
   *res = false;
   cct_node_t *prefix;
   uint64_t my_region_id = (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip;
-  printf(" try to resolve region %d\n", my_region_id);
+  TMSG(DEFER_CTXT, " try to resolve region %d", my_region_id);
   if (prefix = is_resolved(my_region_id)) {
     prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_process_stop_cct());
     hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
@@ -295,6 +289,7 @@ omp_resolve_and_free(cct_node_t* cct, cct_op_arg_t a, size_t l)
   omp_resolve(cct, a, l);
   bool* res = (bool*) a;
   if (*res) hpcrun_cct_delete_self(cct);
+  // correct trace (buffer) now using locally constructed translation table.
 }
 
 void resolve_cntxt()
@@ -304,7 +299,7 @@ void resolve_cntxt()
   // resolve the trees at the end of one parallel region
   if((td->region_id != GOMP_get_region_id()) && (td->region_id != 0) && 
      (omp_get_thread_num() != 0)) {
-    printf("I want to resolve the context when I come out from region %d\n", td->region_id);
+    TMSG(DEFER_CTXT, "I want to resolve the context when I come out from region %d", td->region_id);
     bool res = false;
     hpcrun_cct_walkset(hpcrun_get_tbd_cct(), omp_resolve_and_free, (cct_op_arg_t) &res);
   }
