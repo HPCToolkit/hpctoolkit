@@ -71,9 +71,9 @@
 // local variables
 //***************************************************************************
 
-static int metricId_bytes = -1;
-static int metricId_get = -1;
-static int metricId_put = -1;
+static int metricId_bytesXfer  = -1;
+static int metricId_onesidedOp = -1;
+static int metricId_collectiveOp = -1;
 
 
 //***************************************************************************
@@ -85,9 +85,9 @@ METHOD_FN(init)
 {
   TMSG(GA, "init");
   self->state = INIT;
-  metricId_bytes = -1;
-  metricId_get = -1;
-  metricId_put = -1;
+  metricId_bytesXfer = -1;
+  metricId_onesidedOp = -1;
+  metricId_collectiveOp = -1;
 }
 
 
@@ -153,13 +153,12 @@ static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
   TMSG(GA, "create GA metrics");
-  metricId_bytes = hpcrun_new_metric();
-  metricId_get = hpcrun_new_metric();
-  metricId_put = hpcrun_new_metric();
-  hpcrun_set_metric_info(metricId_bytes, "GA bytes");
-  hpcrun_set_metric_info(metricId_get, "GA get");
-  hpcrun_set_metric_info(metricId_put, "GA put");
-  TMSG(GA, "metric id read: %d, write: %d", metricId_get, metricId_put);
+  metricId_bytesXfer = hpcrun_new_metric();
+  metricId_onesidedOp = hpcrun_new_metric();
+  metricId_collectiveOp = hpcrun_new_metric();
+  hpcrun_set_metric_info(metricId_bytesXfer, "GA bytes xfr");
+  hpcrun_set_metric_info(metricId_onesidedOp, "GA #onesided");
+  hpcrun_set_metric_info(metricId_collectiveOp, "GA #collective");
 }
 
 
@@ -203,19 +202,19 @@ METHOD_FN(display_events)
 //***************************************************************************
 
 int
-hpcrun_ga_metricId_bytes()
+hpcrun_ga_metricId_bytesXfer()
 {
-  return metricId_bytes;
+  return metricId_bytesXfer;
 }
 
 int
-hpcrun_ga_metricId_get()
+hpcrun_ga_metricId_onesidedOp()
 {
-  return metricId_get;
+  return metricId_onesidedOp;
 }
 
 int
-hpcrun_ga_metricId_put()
+hpcrun_ga_metricId_collectiveOp()
 {
-  return metricId_put;
+  return metricId_collectiveOp;
 }

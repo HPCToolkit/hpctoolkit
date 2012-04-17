@@ -87,7 +87,7 @@ OSUtil_pid()
 }
 
 
-const char* 
+const char*
 OSUtil_jobid()
 {
   char* jid = NULL;
