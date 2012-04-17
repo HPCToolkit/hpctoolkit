@@ -121,15 +121,6 @@ struct cct_node_t {
 };
 
 //
-// cache of info from most recent splay
-//
-static struct {
-  cct_node_t* node;
-  bool found;
-  cct_addr_t* addr;
-} splay_cache;
-
-//
 // ******************* Local Routines ********************
 //
 static uint32_t 
@@ -327,12 +318,6 @@ cct_node_t*
 hpcrun_cct_parent(cct_node_t* x)
 {
   return x? x->parent : NULL;
-}
-
-cct_node_t*
-hpcrun_cct_children(cct_node_t* x)
-{
-  return x? x->children : NULL;
 }
 
 int32_t
@@ -649,6 +634,13 @@ typedef struct {
   merge_op_arg_t arg;
 } mjarg_t;
 
+static void
+attach_to_a(cct_node_t* node, cct_op_arg_t arg, size_t l)
+{
+  cct_node_t* targ = (cct_node_t*) arg;
+  node->parent = targ;
+}
+
 //
 // The merging operation main code
 //
@@ -660,8 +652,10 @@ hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
   if (hpcrun_cct_is_leaf (cct_a) && hpcrun_cct_is_leaf(cct_b)) {
     merge(cct_a, cct_b, arg);
   }
-  if (! cct_b->children)
-    cct_b->children = cct_a->children;
+  if (! cct_a->children){
+    cct_a->children = cct_b->children;
+    hpcrun_cct_walkset(cct_b, attach_to_a, (cct_op_arg_t) cct_a);
+  }
   else {
     mjarg_t local = (mjarg_t) {.targ = cct_a, .fn = merge, .arg = arg};
     hpcrun_cct_walkset(cct_b, merge_or_join, (cct_op_arg_t) &local);
@@ -676,38 +670,11 @@ merge_or_join(cct_node_t* n, cct_op_arg_t a, size_t l)
 {
   mjarg_t* the_arg = (mjarg_t*) a;
   cct_node_t* targ = the_arg->targ;
-  if (cct_child_find_cache(targ, hpcrun_cct_addr(n)))
-    hpcrun_cct_merge(splay_cache.node, n, the_arg->fn, the_arg->arg);
+  cct_node_t* tmp = NULL;
+  if (tmp = cct_child_find_cache(targ, hpcrun_cct_addr(n)))
+    hpcrun_cct_merge(tmp, n, the_arg->fn, the_arg->arg);
   else
     cct_disjoint_union_cached(targ, n);
-}
-
-static cct_addr_t dc = ADDR2_I(-1, -1);
-
-static void
-help_cct_child_find_set_cache(cct_node_t* cct, cct_addr_t* addr)
-{
-  splay_cache.node  = NULL;
-  splay_cache.found = false;
-  splay_cache.addr = &dc;
-
-  if ( ! cct) return;
-
-  cct_node_t* found    = splay(cct->children, addr);
-    //
-    // !! SPECIAL CASE for cct splay !!
-    // !! The splay tree (represented by the root) is the data structure for the set
-    // !! of children of the parent. Consequently, when the splay operation changes the root,
-    // !! the parent's children pointer must point to the NEW root node
-    // !! NOT the old (pre-splay) root node
-    //
-
-  cct->children = found;
-  if (found) {
-    splay_cache.node = found;
-    splay_cache.addr = &(found->addr);
-    splay_cache.found = found && cct_addr_eq(addr, &(found->addr));
-  }
 }
 
 //
@@ -717,8 +684,7 @@ help_cct_child_find_set_cache(cct_node_t* cct, cct_addr_t* addr)
 static cct_node_t*
 cct_child_find_cache(cct_node_t* cct, cct_addr_t* addr)
 {
-  help_cct_child_find_set_cache(cct, addr);
-  return splay_cache.found ? splay_cache.node : NULL;
+  return hpcrun_cct_find_addr(cct, addr);
 }
 
 //
@@ -728,18 +694,37 @@ cct_child_find_cache(cct_node_t* cct, cct_addr_t* addr)
 static void
 cct_disjoint_union_cached(cct_node_t* target, cct_node_t* src)
 {
-  src->parent = target;
-  if (splay_cache.node) {
-    if (cct_addr_lt(hpcrun_cct_addr(src), splay_cache.addr)) {
-      src->left = splay_cache.node->left;
-      src->right = splay_cache.node;
-      splay_cache.node->left = NULL;
-    }
-    else { // src addr > addr(splay(target))
-      src->left = splay_cache.node;
-      src->right = splay_cache.node->right;
-      splay_cache.node->right = NULL;
-    }
+  
+  if ( ! target) {
+    if ( src) EMSG("WARNING: cct disjoin union called w null target!!");
+    return;
+  }
+    
+  cct_addr_t* addr = hpcrun_cct_addr(src);
+  cct_node_t* found    = splay(target->children, addr);
+    //
+    // !! SPECIAL CASE for cct splay !!
+    // !! The splay tree (represented by the root) is the data structure for the set
+    // !! of children of the parent. Consequently, when the splay operation changes the root,
+    // !! the parent's children pointer must point to the NEW root node
+    // !! NOT the old (pre-splay) root node
+    //
+  if (!found) {
+    target->children = src;
+    src->parent = target;
+    return;
+  }
+
+  if (cct_addr_lt(addr, &(found->addr))){
+    src->left = found->left;
+    src->right = found;
+    found->left = NULL;
+  }
+  else { // addr > addr of found
+    src->left = found;
+    src->right = found->right;
+    found->right = NULL;
   }
   target->children = src;
+  src->parent = target;
 }
