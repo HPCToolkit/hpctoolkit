@@ -79,7 +79,7 @@ r_splay_lookup(uint64_t id)
 {
   spinlock_lock(&record_tree_lock);
   record_tree_root = r_splay(record_tree_root, id);
-  if(record_tree_root->region_id != id) {
+  if(!record_tree_root || record_tree_root->region_id != id) {
     spinlock_unlock(&record_tree_lock);
     return NULL;
   }
@@ -190,7 +190,7 @@ void start_team_fn(int rank)
   hpcrun_async_block();
   // create new record entry for a new region
   uint64_t region_id = GOMP_get_region_id();
-  assert(region_id >0);
+//  assert(region_id >0);
   struct record_t *record = new_record(region_id);
   r_splay_insert(record);
   hpcrun_async_unblock();
@@ -201,15 +201,20 @@ void end_team_fn()
   hpcrun_async_block();
   uint64_t region_id = GOMP_get_region_id();
   struct record_t *record = r_splay_lookup(region_id);
-  assert(record);
+//  assert(record);
   // insert resolved root to the corresponding record entry
-  if(record->use_count > 0) {
-    ucontext_t uc;
-    getcontext(&uc);
-    cct_node_t *node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, NULL);
+  if(record) {
+    if(record->use_count > 0) {
+      ucontext_t uc;
+      getcontext(&uc);
+      cct_node_t *node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, NULL);
 //    node = hpcrun_cct_parent(node);
-    record->node = node;
-    assert(record->node);
+      record->node = node;
+//    assert(record->node);
+    }
+    else {
+      r_splay_count_update(record->region_id, 0L);
+    }
   }
   hpcrun_async_unblock();
 }
@@ -222,7 +227,7 @@ void register_callback()
 int need_defer_cntxt()
 {
   // master thread does not need to defer the context
-  if(GOMP_get_region_id() > 0 && omp_get_thread_num() != 0) {
+  if(ENABLED(SET_DEFER_CTXT) && GOMP_get_region_id() > 0 && omp_get_thread_num() != 0) {
     thread_data_t *td = hpcrun_get_thread_data();
     td->defer_flag = 1;
     return 1;
