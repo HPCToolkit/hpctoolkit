@@ -1,0 +1,134 @@
+Put the line info table into a splay tree for faster lookup in
+lookup_address_in_line_info_table() in dwarf2.c.  For some BlueGene
+binaries, this speeds up hpcstruct from 15 min to 45 sec.
+
+This patch replaces the body of just one function.  I (krentel) have
+run the old and new algorithms side by side and verified that they
+produce identical answers.  However, the overall output of hpcstruct
+is still different (why?).  But the output is equivalent by the
+hpcstruct-normalize.pl script.  This often happens with binutils.
+
+
+diff -Narub version-binutils-2.20.1.orig/binutils-2.20.1/bfd/dwarf2.c version-binutils-2.20.1/binutils-2.20.1/bfd/dwarf2.c
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/dwarf2.c	2012-04-17 16:12:32.000000000 -0500
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/dwarf2.c	2012-04-18 14:58:52.000000000 -0500
+@@ -1284,6 +1284,9 @@
+ struct line_info
+ {
+   struct line_info* prev_line;
++  struct line_info* succ_line;
++  struct line_info* left;
++  struct line_info* right;
+   bfd_vma address;
+   char *filename;
+   unsigned int line;
+@@ -1309,6 +1312,7 @@
+   struct fileinfo* files;
+   struct line_info* last_line;  /* largest VMA */
+   struct line_info* lcl_head;   /* local head; used in 'add_line_info' */
++  struct line_info* splay_root;
+ };
+ /* Return TRUE if NEW_LINE should sort after LINE.  */
+ 
+@@ -1574,6 +1578,7 @@
+   table->files = NULL;
+   table->last_line = NULL;
+   table->lcl_head = NULL;
++  table->splay_root = NULL;
+ 
+   line_ptr = stash->dwarf_line_buffer + unit->line_offset;
+ 
+@@ -1902,6 +1907,59 @@
+   return table;
+ }
+ 
++/*
++ * Put the line info table into a splay tree.  The line info table is
++ * a linear list of VMA addresses (with duplicates) with 'last_line'
++ * pointing to the highest address and 'prev_line' pointing to the
++ * next lower address.
++ *
++ * We build the tree with non-duplicate addresses with only the
++ * "highest" (first in high to low order) duplicate address in the
++ * tree.  Note: succ_line needs to be the successor in the original
++ * list, not just the successor in the tree.  That is, succ_line is
++ * not always in the splay tree.
++ *
++ * Note: we assume (as always in binutils) that the program builds the
++ * entire line info table before doing any lookups.
++ */
++static struct line_info *
++line_info_splay(struct line_info *root, bfd_vma addr)
++{
++  REGULAR_SPLAY_TREE(line_info, root, addr, address, left, right);
++  return root;
++}
++
++static void
++make_line_info_splay_tree(struct line_info_table *table)
++{
++  struct line_info *root, *p, *q;
++
++  if (table == NULL || table->last_line == NULL)
++    return;
++
++  /* Build the splay tree as a linear chain of right pointers with
++   * 'last_line' at the bottom of the chain and the lowest address at
++   * the root.  Then, let the splay ops reshape the tree.
++   */
++  root = table->last_line;
++  root->succ_line = NULL;
++  root->left = NULL;
++  root->right = NULL;
++  q = root;
++  for (p = root->prev_line; p != NULL; p = p->prev_line)
++    {
++      p->succ_line = q;
++      if (p->address < root->address)
++        {
++	  p->left = NULL;
++	  p->right = root;
++	  root = p;
++	}
++      q = p;
++    }
++  table->splay_root = root;
++}
++
+ /* If ADDR is within TABLE set the output parameters and return TRUE,
+    otherwise return FALSE.  The output parameters, FILENAME_PTR and
+    LINENUMBER_PTR, are pointers to the objects to be filled in.  */
+@@ -1921,12 +1979,28 @@
+   struct line_info *each_line;
+   struct line_info *succ = NULL;
+ 
+-  for (each_line = table->last_line;
+-       each_line;
+-       succ = each_line, each_line = each_line->prev_line) {
+-    if (addr >= each_line->address)
+-      break;
++  /* This case never happens, but test for it anyway. */
++  if (table == NULL) {
++    *filename_ptr = NULL;
++    return FALSE;
++  }
++
++  /* Build the splay tree on demand, but wait for at least one entry. */
++  if (table->splay_root == NULL && table->last_line != NULL)
++    make_line_info_splay_tree(table);
++
++  each_line = NULL;
++  if (table->splay_root != NULL)
++    {
++      table->splay_root = line_info_splay(table->splay_root, addr);
++      each_line = table->splay_root;
++      if (addr < each_line->address && each_line->left != NULL)
++        {
++	  each_line->left = line_info_splay(each_line->left, each_line->address);
++	  each_line = each_line->left;
++	}
+   }
++  succ = (each_line != NULL) ? each_line->succ_line : NULL;
+ 
+   if (each_line
+       && !(each_line->end_sequence || each_line == table->last_line))
