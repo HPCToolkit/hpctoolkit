@@ -262,7 +262,7 @@ isInsn_STW(uint32_t insn, int Rs, int Ra)
 static inline bool 
 isInsn_STD(uint32_t insn, int Rs, int Ra)
 {
-  // stdu Rs Ra: store Rs at (Ra + D); set Ra to (Ra + D)
+  // std Rs Ra: store Rs at (Ra + D); set Ra to (Ra + D)
   const int D = 0x0;
   return (insn & (PPC_INSN_DS_MASK)) == PPC_INSN_DS(PPC_OP_STD, Rs, Ra, D);
 }
@@ -344,7 +344,14 @@ isInsn_BLR(uint32_t insn)
 
 static inline int 
 getRADispFromSPDisp(int sp_disp) 
-{ return sp_disp + (sizeof(void*)); }
+{ 
+#ifdef __PPC64__
+  int disp = sp_disp + 2 * (sizeof(void*)); 
+#else
+  int disp = sp_disp + (sizeof(void*)); 
+#endif
+  return disp;
+}
 
 
 static inline int
@@ -516,7 +523,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 	     ui->ra_arg >= PPC_REG_R0 &&
 	     isInsn_STD(*cur_insn, ui->ra_arg, PPC_REG_SP)) {
       int sp_disp = getSPDispFromUI(ui);
-      int ra_disp = PPC_OPND_DISP(*cur_insn);
+      int ra_disp = PPC_OPND_DISP_DS(*cur_insn);
       if (getRADispFromSPDisp(sp_disp) == ra_disp) {
         nxt_ui = new_ui(nextInsn(cur_insn), 
 			ui->sp_ty, RATy_SPRel, ui->sp_arg, ra_disp, ui);
@@ -556,8 +563,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     //   (may come before or after storing of RA)
     //--------------------------------------------------
     else if (isInsn_STDU(*cur_insn, PPC_REG_SP, PPC_REG_SP)) {
-      int sp_disp = - (PPC_OPND_DISP(*cur_insn) & 
-		       ((~0) << 2)); // clear the low two bits
+      int sp_disp = - PPC_OPND_DISP_DS(*cur_insn);  
       int ra_arg = ((ui->ra_ty == RATy_SPRel) ? 
 		    ui->ra_arg + sp_disp : ui->ra_arg);
       nxt_ui = new_ui(nextInsn(cur_insn), 
