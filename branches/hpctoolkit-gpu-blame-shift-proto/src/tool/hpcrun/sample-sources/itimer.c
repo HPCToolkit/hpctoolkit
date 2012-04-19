@@ -366,7 +366,7 @@ static int gpu_overlap_metric_id;
 
 static uint64_t g_start_of_world_time;
 static cudaEvent_t g_start_of_world_event;
-static g_stream0_not_initialized = true;
+static bool g_stream0_not_initialized = true;
 
 #endif                          //ENABLE_CUDA
 
@@ -515,7 +515,8 @@ static uint64_t  attribute_shared_blame_on_kernels(event_list_node * recorded_no
 
 		cur->ref_count--;
 
-		if ( cur->event_end_time <= recorded_time || ( cur->stream_id != cur->stream_id & stream_mask) ){
+		if ( (cur->event_end_time <= recorded_time) ||
+		     (cur->stream_id != (cur->stream_id & stream_mask))) {
 			if( cur->ref_count == 0) {
 				prev->next = cur->next;
 				event_list_node * to_free = cur;
