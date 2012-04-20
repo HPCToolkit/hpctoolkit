@@ -143,25 +143,37 @@ public:
   // Attribution/Correlation arguments: special
   // -------------------------------------------------------
 
-  // TODO: Flag for ThreadMetrics; flag for SummaryMetrics; name of Sum Set
-  enum MetricSet {
-    MetricSet_NULL,
-    MetricSet_ThreadOnly,
-    MetricSet_ThreadAndSum,
-    MetricSet_SumOnly
+  enum MetricFlg {
+    MetricFlg_NULL     = 0,
+    MetricFlg_Thread   = (1 << 1),
+    MetricFlg_StatsSum = (1 << 2),
+    MetricFlg_StatsAll = (1 << 3)
   };
 
-  static bool
-  doThreadMetrics(MetricSet x)
-  { return (x == MetricSet_ThreadOnly || x == MetricSet_ThreadAndSum); }
+  static inline bool
+  MetricFlg_isSet(uint flags, MetricFlg x)
+  { return (flags & x); }
 
-  static bool
-  doSummaryMetrics(MetricSet x)
-  { return (x == MetricSet_ThreadAndSum || x == MetricSet_SumOnly); }
+  static inline void
+  MetricFlg_set(uint& flags, MetricFlg x)
+  { flags |= x; }
 
-  bool prof_computeStatistics;
+  static inline void
+  MetricFlg_clear(uint& flags, MetricFlg x)
+  { flags &= ~x; }
 
-  MetricSet prof_metrics;
+  static inline bool
+  MetricFlg_isThread(uint flags)
+  { return MetricFlg_isSet(flags, MetricFlg_Thread); }
+
+  static inline bool
+  MetricFlg_isSum(uint flags)
+  {
+    return (MetricFlg_isSet(flags,  MetricFlg_StatsSum)
+	    || MetricFlg_isSet(flags, MetricFlg_StatsAll));
+  }
+
+  uint prof_metrics;
 
   // TODO: Currently this is always true even though we only need to
   // compute final metric values for (1) hpcproftt (flat) and (2)
