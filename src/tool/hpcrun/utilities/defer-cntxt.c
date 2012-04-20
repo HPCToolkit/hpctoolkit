@@ -185,12 +185,19 @@ new_record(uint64_t region_id)
   return record;
 }
 
+//
+// only master and sub-master thread execute start_team_fn and end_team_fn
+//
 void start_team_fn(int rank)
 {
   hpcrun_async_block();
+  // mark the real master thread (the one with process stop)
+  if(omp_get_level() == 1 && omp_get_thread_num() == 0) {
+    thread_data_t *td = hpcrun_get_thread_data();
+    td->master = 1;
+  }
   // create new record entry for a new region
   uint64_t region_id = GOMP_get_region_id();
-//  assert(region_id >0);
   struct record_t *record = new_record(region_id);
   r_splay_insert(record);
   hpcrun_async_unblock();
@@ -199,18 +206,33 @@ void start_team_fn(int rank)
 void end_team_fn()
 {
   hpcrun_async_block();
+  cct_node_t *node = NULL;
   uint64_t region_id = GOMP_get_region_id();
   struct record_t *record = r_splay_lookup(region_id);
-//  assert(record);
   // insert resolved root to the corresponding record entry
   if(record) {
     if(record->use_count > 0) {
       ucontext_t uc;
       getcontext(&uc);
-      cct_node_t *node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, NULL);
-//    node = hpcrun_cct_parent(node);
+      //
+      // for side thread or master thread in the nested region, unwind to the dummy root 
+      // with outer most region attached to the tbd root
+      //
+      if(! TD_GET(master)) { //the sub-master thread in nested regions
+        omp_arg_t omp_arg;
+        omp_arg.tbd = false;
+        if(TD_GET(region_id) > 0) {
+	  omp_arg.tbd = true;
+	  omp_arg.region_id = TD_GET(region_id);
+        }
+        node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, (void *)&omp_arg);
+      }
+      //
+      // for master thread in the outer-most region, a normal unwind to the process stop 
+      //
+      else
+        node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, NULL);
       record->node = node;
-//    assert(record->node);
     }
     else {
       r_splay_count_update(record->region_id, 0L);
@@ -227,7 +249,7 @@ void register_callback()
 int need_defer_cntxt()
 {
   // master thread does not need to defer the context
-  if(ENABLED(SET_DEFER_CTXT) && GOMP_get_region_id() > 0 && omp_get_thread_num() != 0) {
+  if(ENABLED(SET_DEFER_CTXT) && GOMP_get_region_id() > 0 && !TD_GET(master)) {//omp_get_thread_num() != 0) {
     thread_data_t *td = hpcrun_get_thread_data();
     td->defer_flag = 1;
     return 1;
@@ -314,7 +336,9 @@ void resolve_cntxt()
     hpcrun_cct_insert_addr(hpcrun_get_tbd_cct(), &(ADDR2(UNRESOLVED, GOMP_get_region_id())));
     r_splay_count_update(GOMP_get_region_id(), 1L);
   }
-  td->region_id = GOMP_get_region_id();
+  // td->region_id represents the out-most parallel region id
+  if(omp_get_thread_num() != 0)
+    td->region_id = GOMP_get_region_id();
   hpcrun_async_unblock();
 }
 
