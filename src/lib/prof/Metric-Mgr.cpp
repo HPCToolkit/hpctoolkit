@@ -250,7 +250,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 
   bool doDispPercent = true;
   bool isPercent = false;
-  bool isVisible = false;
+  bool isVisible = true;
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
@@ -258,7 +258,6 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   Metric::AExpr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::Plus(opands, mOpands.size());
-    isVisible = true;
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::Mean(opands, mOpands.size());
@@ -340,7 +339,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 {
   bool doDispPercent = true;
   bool isPercent = false;
-  bool isVisible = false;
+  bool isVisible = true;
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
@@ -348,7 +347,6 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   Metric::AExprIncr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::SumIncr(Metric::IData::npos, mSrc->id());
-    isVisible = true;
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::MeanIncr(Metric::IData::npos, mSrc->id());
