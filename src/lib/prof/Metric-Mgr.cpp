@@ -132,7 +132,7 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
 
 
 uint
-Mgr::makeSummaryMetrics(bool needMultiOccurance, bool needStatistics, 
+Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
                         uint srcBegId, uint srcEndId)
 {
   StringToADescVecMap nmToMetricMap;
@@ -181,7 +181,7 @@ Mgr::makeSummaryMetrics(bool needMultiOccurance, bool needStatistics,
       Metric::ADesc* mNew =
 	makeSummaryMetric("Sum",  m, mVec);
 
-      if (needStatistics) {
+      if (needAllStats) {
         makeSummaryMetric("Mean",   m, mVec);
         makeSummaryMetric("StdDev", m, mVec);
         makeSummaryMetric("CfVar",  m, mVec);
@@ -202,7 +202,7 @@ Mgr::makeSummaryMetrics(bool needMultiOccurance, bool needStatistics,
 
 
 uint
-Mgr::makeSummaryMetricsIncr(bool needStatistics, uint srcBegId, uint srcEndId)
+Mgr::makeSummaryMetricsIncr(bool needAllStats, uint srcBegId, uint srcEndId)
 {
   if (srcBegId == Mgr::npos) {
     srcBegId = 0;
@@ -219,7 +219,7 @@ Mgr::makeSummaryMetricsIncr(bool needStatistics, uint srcBegId, uint srcEndId)
     Metric::ADesc* mNew =
       makeSummaryMetricIncr("Sum",  m);
 
-    if (needStatistics) {
+    if (needAllStats) {
       makeSummaryMetricIncr("Mean",   m);
       makeSummaryMetricIncr("StdDev", m);
       makeSummaryMetricIncr("CfVar",  m);

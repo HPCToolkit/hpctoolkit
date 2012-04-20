@@ -145,8 +145,7 @@ realmain(int argc, char* const* argv)
 
 static void
 makeDerivedMetrics(Prof::Metric::Mgr& metricMgr,
-		   Analysis::Args::MetricSet metricSet, 
-                   bool computeStatistics);
+		   uint /*Analysis::Args::MetricFlg*/ metrics);
 
 static int
 main_srcCorrelation(const Args& args)
@@ -159,7 +158,7 @@ main_srcCorrelation(const Args& args)
   //-------------------------------------------------------
   Prof::Metric::Mgr metricMgr;
   metricMgr.makeRawMetrics(args.profileFiles);
-  makeDerivedMetrics(metricMgr, args.prof_metrics, args.prof_computeStatistics);
+  makeDerivedMetrics(metricMgr, args.prof_metrics);
 
   //-------------------------------------------------------
   // Correlate metrics with program structure and Generate output
@@ -224,14 +223,17 @@ main_rawData(const std::vector<string>& profileFiles)
 
 static void
 makeDerivedMetrics(Prof::Metric::Mgr& metricMgr,
-		   Analysis::Args::MetricSet metricSet, bool computeStatistics)
+		   uint /*Analysis::Args::MetricFlg*/ metrics)
 {
-  if (Analysis::Args::doSummaryMetrics(metricSet)) {
-    bool needMultiOccurance = (Analysis::Args::doThreadMetrics(metricSet));
-    metricMgr.makeSummaryMetrics(needMultiOccurance, computeStatistics);
+  if (Analysis::Args::MetricFlg_isSum(metrics)) {
+    bool needAllStats =
+      Analysis::Args::MetricFlg_isSet(metrics,
+				      Analysis::Args::MetricFlg_StatsAll);
+    bool needMultiOccurance = Analysis::Args::MetricFlg_isThread(metrics);
+    metricMgr.makeSummaryMetrics(needAllStats, needMultiOccurance);
   }
   
-  if (metricSet == Analysis::Args::MetricSet_SumOnly) {
+  if (!Analysis::Args::MetricFlg_isThread(metrics)) {
     using namespace Prof;
 
     for (uint i = 0; i < metricMgr.size(); i++) {
