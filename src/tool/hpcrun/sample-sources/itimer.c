@@ -68,7 +68,7 @@
  * GPU support
  *****************************************************************************/
 #define ENABLE_CUDA
-#define CUDA_RT_API
+//#define CUDA_RT_API
 
 #ifdef ENABLE_CUDA
 #include <cuda.h>
@@ -1101,7 +1101,7 @@ static void PopulateEntryPointesToWrappedCuDriverCalls(){
         exit(1);
     }
     
-    for(int i = 0 ; i < CUDA_MAX_APIS; i++){
+    for(int i = 0 ; i < CU_MAX_APIS; i++){
         cuDriverFunctionPointer[i].generic = dlsym(handle, cuDriverFunctionPointer[i].functionName);
         if ((error = dlerror()) != NULL) {
             fprintf(stderr, "%s\n", error);
