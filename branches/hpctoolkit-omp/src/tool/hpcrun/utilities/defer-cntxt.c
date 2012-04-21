@@ -294,6 +294,18 @@ merge_metrics(cct_node_t *a, cct_node_t *b, merge_op_arg_t arg)
   }
 }
 
+bool is_partial_resolve(cct_node_t *prefix)
+{
+  //go up the path to check whether there is a node with UNRESOLVED tag
+  cct_node_t *node = prefix;
+  while(node) {
+    if(hpcrun_cct_addr(node)->ip_norm.lm_id == (uint16_t)UNRESOLVED)
+      return true;
+    node = hpcrun_cct_parent(node);
+  }
+  return false;
+}
+
 static void
 omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
 {
@@ -303,7 +315,12 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
   uint64_t my_region_id = (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip;
   TMSG(DEFER_CTXT, " try to resolve region %d", my_region_id);
   if (prefix = is_resolved(my_region_id)) {
-    prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_process_stop_cct());
+    if(!is_partial_resolve(prefix)) {
+      prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_process_stop_cct());
+    }
+    else {
+      prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_tbd_cct());
+    }
     hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
     r_splay_count_update(my_region_id, -1L);
     *res = true;
