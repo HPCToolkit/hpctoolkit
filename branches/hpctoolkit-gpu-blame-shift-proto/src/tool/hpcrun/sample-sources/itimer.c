@@ -68,7 +68,7 @@
  * GPU support
  *****************************************************************************/
 #define ENABLE_CUDA
-#define CUDA_RT_API
+//#define CUDA_RT_API
 
 #ifdef ENABLE_CUDA
 #include <cuda.h>
@@ -963,7 +963,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
 #ifdef CUDA_RT_API                            
                         CUDA_SAFE_CALL(cudaEventElapsedTime(&elapsedTime, g_start_of_world_event, current_event->event_end));
 #else
-                        CU_SAFE_CALLcu(EventElapsedTime(&elapsedTime, g_start_of_world_event, current_event->event_end));
+                        CU_SAFE_CALL(cuEventElapsedTime(&elapsedTime, g_start_of_world_event, current_event->event_end));
 #endif
                         assert(elapsedTime > 0 );
                         uint64_t micro_time_end = ((uint64_t)elapsedTime) * 1000 + g_start_of_world_time;
