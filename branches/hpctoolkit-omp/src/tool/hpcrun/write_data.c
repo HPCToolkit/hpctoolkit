@@ -139,9 +139,12 @@ static const uint32_t default_ra_to_callsite_distance =
 //***************************************************************************
 
 static FILE *
-lazy_open_data_file(void)
+lazy_open_data_file(thread_data_t *thread_data)
 {
-  thread_data_t* td = hpcrun_get_thread_data();
+  thread_data_t* td =NULL;
+  if(thread_data) td = thread_data;
+  else
+    td = hpcrun_get_thread_data();
 
   FILE* fs = td->hpcrun_file;
   if (fs) {
@@ -325,7 +328,7 @@ write_epochs(FILE* fs, epoch_t* epoch)
 void
 hpcrun_flush_epochs(void)
 {
-  FILE *fs = lazy_open_data_file();
+  FILE *fs = lazy_open_data_file(NULL);
   if (fs == NULL)
     return;
 
@@ -336,10 +339,35 @@ hpcrun_flush_epochs(void)
 int
 hpcrun_write_profile_data(epoch_t *epoch)
 {
+  thread_data_t *td = hpcrun_get_thread_data();
+  if(td->defer_write)
+    return HPCRUN_OK;
+
   TMSG(DATA_WRITE,"Writing hpcrun profile data");
-  FILE* fs = lazy_open_data_file();
+  FILE* fs = lazy_open_data_file(NULL);
   if (fs == NULL)
     return HPCRUN_ERR;
+
+  write_epochs(fs, epoch);
+
+  TMSG(DATA_WRITE,"closing file");
+  hpcio_fclose(fs);
+  TMSG(DATA_WRITE,"Done!");
+
+  return HPCRUN_OK;
+}
+
+int
+hpcrun_write_other_profile_data(epoch_t *epoch, thread_data_t *thread_data)
+{
+  thread_data_t *td = thread_data;
+  if(td->defer_write)
+    return HPCRUN_OK;
+
+  TMSG(DATA_WRITE,"Writing hpcrun profile data");
+  FILE* fs = lazy_open_data_file(td);
+  if (fs == NULL)
+    return HPCRUN_OK;
 
   write_epochs(fs, epoch);
 

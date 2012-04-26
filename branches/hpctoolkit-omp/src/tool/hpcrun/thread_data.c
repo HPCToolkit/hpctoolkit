@@ -140,6 +140,8 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   
   td->master = 0;
 
+  td->defer_write = 0;
+
   // ----------------------------------------
   // sample sources
   // ----------------------------------------

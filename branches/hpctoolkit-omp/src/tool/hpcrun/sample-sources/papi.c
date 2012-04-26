@@ -168,6 +168,8 @@ METHOD_FN(thread_init_action)
     EEMSG("PAPI_register_thread NOT ok, retval = %d", retval);
     monitor_real_abort();
   }
+  // at the beginning of one thread, try to resolve any other threads
+  resolve_other_cntxt(false);
   TMSG(PAPI, "register thread ok");
 }
 
@@ -223,6 +225,9 @@ METHOD_FN(stop)
     TMSG(PAPI,"*WARNING* Stop called on event set that has not been started");
     return;
   }
+
+  if(td->master)
+    resolve_other_cntxt(true);
 
   TMSG(PAPI,"stop w event set = %d",eventSet);
   long_long *values = (long_long *) alloca(sizeof(long_long) * (nevents+2));

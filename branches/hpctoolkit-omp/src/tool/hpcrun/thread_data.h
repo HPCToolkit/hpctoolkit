@@ -132,6 +132,8 @@ typedef struct thread_data_t {
   int defer_flag; //whether should defer the context creation
 
   int master; // whether the thread is the master thread
+ 
+  int defer_write; // whether should defer the write
 
   // ----------------------------------------
   // hpcrun_malloc() memory data structures

@@ -48,6 +48,7 @@
 #include <hpcrun/metrics.h>
 #include <utilities/defer-cntxt.h>
 #include <hpcrun/unresolved.h>
+#include <hpcrun/write_data.h>
 
 /******************************************************************************
  * type definition 
@@ -60,6 +61,85 @@ struct record_t {
   struct record_t *left;
   struct record_t *right;
 };
+
+struct entry_t {
+  thread_data_t *td;
+  struct entry_t *prev;
+  struct entry_t *next;
+  bool flag;
+};
+
+uint64_t is_partial_resolve(cct_node_t *prefix);
+/******************************************************************************
+ * entry variables and operations for delayed write *
+ *****************************************************************************/
+
+static struct entry_t *unresolved_list = NULL;
+static struct entry_t *free_list = NULL;
+
+static spinlock_t unresolved_list_lock = SPINLOCK_UNLOCKED;
+static spinlock_t free_list_lock = SPINLOCK_UNLOCKED;
+
+static struct entry_t *
+new_dw_entry()
+{
+  struct entry_t *entry = NULL;
+  spinlock_lock(&free_list_lock);
+  if(free_list) {
+    entry = free_list;
+    free_list = free_list->next;
+    free_list->prev = NULL;
+    entry->prev = entry->next = NULL;
+    entry->td = NULL;
+    entry->flag = false;
+  }
+  else {
+    entry = (struct entry_t*)hpcrun_malloc(sizeof(struct entry_t));
+    entry->prev = entry->next = NULL;
+    entry->td = NULL;
+    entry->flag = false;
+  }
+  spinlock_unlock(&free_list_lock);
+  return entry;
+}
+
+static void
+delete_dw_entry(struct entry_t* entry)
+{
+  // detach from the unresolved list
+  spinlock_lock(&unresolved_list_lock);
+  if(entry->prev) entry->prev->next = entry->next;
+  if(entry->next) entry->next->prev = entry->prev;
+  spinlock_unlock(&unresolved_list_lock);
+  // insert to the head of the free list
+  spinlock_lock(&free_list_lock);
+  if(!free_list) {
+    free_list = entry;
+    spinlock_unlock(&free_list_lock);
+    return;
+  }
+  entry->prev = NULL;
+  entry->next = free_list;
+  free_list->prev = entry;
+  free_list = entry;
+  spinlock_unlock(&free_list_lock);
+}
+
+static void
+insert_dw_entry(struct entry_t* entry)
+{
+  spinlock_lock(&unresolved_list_lock);
+  if(!unresolved_list) {
+    unresolved_list = entry;
+    spinlock_unlock(&unresolved_list_lock);
+    return;
+  }
+  entry->prev = NULL;
+  entry->next = unresolved_list;
+  unresolved_list->prev = entry;
+  unresolved_list = entry;
+  spinlock_unlock(&unresolved_list_lock);
+}
 
 /******************************************************************************
  * splay tree operation for record map *
@@ -226,6 +306,11 @@ void end_team_fn()
 	  omp_arg.region_id = TD_GET(region_id);
         }
         node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, (void *)&omp_arg);
+        // make sure the outer region should be unwound
+        uint64_t unresolved_region_id = is_partial_resolve(node);
+        if(unresolved_region_id) {
+     	  r_splay_count_update(unresolved_region_id, 1L);
+        }
       }
       //
       // for master thread in the outer-most region, a normal unwind to the process stop 
@@ -275,11 +360,13 @@ merge_metrics(cct_node_t *a, cct_node_t *b, merge_op_arg_t arg)
   metric_desc_t *mdesc;
   metric_set_t* mset_a = hpcrun_get_metric_set(a);
   metric_set_t* mset_b = hpcrun_get_metric_set(b);
+  if(!mset_a || !mset_b) return;
   int num = hpcrun_get_num_metrics();
   int i;
   for (i = 0; i < num; i++) {
     mdata_a = hpcrun_metric_set_loc(mset_a, i);
     mdata_b = hpcrun_metric_set_loc(mset_b, i);
+    if(!mdata_a || !mdata_b) continue;
     mdesc = hpcrun_id2metric(i);
     if(mdesc->flags.fields.valFmt == MetricFlags_ValFmt_Int) {
       mdata_a->i += mdata_b->i;
@@ -294,36 +381,45 @@ merge_metrics(cct_node_t *a, cct_node_t *b, merge_op_arg_t arg)
   }
 }
 
-bool is_partial_resolve(cct_node_t *prefix)
+uint64_t is_partial_resolve(cct_node_t *prefix)
 {
   //go up the path to check whether there is a node with UNRESOLVED tag
   cct_node_t *node = prefix;
   while(node) {
     if(hpcrun_cct_addr(node)->ip_norm.lm_id == (uint16_t)UNRESOLVED)
-      return true;
+      return (uint64_t)(hpcrun_cct_addr(node)->ip_norm.lm_ip);
     node = hpcrun_cct_parent(node);
   }
-  return false;
+  return 0;
 }
 
 static void
 omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
 {
-  bool* res = (bool*) a;
-  *res = false;
+  thread_data_t *td = NULL;
+  if(a) 
+    td = (thread_data_t*) a;
   cct_node_t *prefix;
   uint64_t my_region_id = (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip;
   TMSG(DEFER_CTXT, " try to resolve region %d", my_region_id);
   if (prefix = is_resolved(my_region_id)) {
+    // delete cct from its original parent before merging
+    hpcrun_cct_delete_self(cct);
     if(!is_partial_resolve(prefix)) {
-      prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_process_stop_cct());
+      if(!td)
+        prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_process_stop_cct());
+      else
+        prefix = hpcrun_cct_insert_path(prefix, (td->epoch->csdata).tree_root);
     }
     else {
-      prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_tbd_cct());
+      if(!td)
+        prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_tbd_cct());
+      else
+        prefix = hpcrun_cct_insert_path(prefix, (td->epoch->csdata).unresolved_root);
     }
     hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
+    // must delete it when not used considering the performance
     r_splay_count_update(my_region_id, -1L);
-    *res = true;
   }
 }
 
@@ -331,9 +427,6 @@ static void
 omp_resolve_and_free(cct_node_t* cct, cct_op_arg_t a, size_t l)
 {
   omp_resolve(cct, a, l);
-  bool* res = (bool*) a;
-  if (*res) hpcrun_cct_delete_self(cct);
-  // correct trace (buffer) now using locally constructed translation table.
 }
 
 void resolve_cntxt()
@@ -344,8 +437,7 @@ void resolve_cntxt()
   if((td->region_id != GOMP_get_region_id()) && (td->region_id != 0) && 
      (omp_get_thread_num() != 0)) {
     TMSG(DEFER_CTXT, "I want to resolve the context when I come out from region %d", td->region_id);
-    bool res = false;
-    hpcrun_cct_walkset(hpcrun_get_tbd_cct(), omp_resolve_and_free, (cct_op_arg_t) &res);
+    hpcrun_cct_walkset(hpcrun_get_tbd_cct(), omp_resolve_and_free, NULL);
   }
   // update the use count when come into a new omp region
   if((td->region_id != GOMP_get_region_id()) && (GOMP_get_region_id() != 0) &&
@@ -359,10 +451,64 @@ void resolve_cntxt()
   hpcrun_async_unblock();
 }
 
+static void
+tbd_test(cct_node_t* cct, cct_op_arg_t a, size_t l)
+{
+  thread_data_t *td = (thread_data_t *)a;
+  if(hpcrun_cct_addr(cct)->ip_norm.lm_id == (uint16_t)UNRESOLVED) {
+    TMSG(DEFER_CTXT, "I cannot resolve region %d", (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip);
+    td->defer_write = 1;
+  }
+}
+
+void resolve_other_cntxt(bool fini_flag)
+{
+  //
+  // try to resolve any entry
+  // entry is a local pointer
+  //
+  struct entry_t *entry = unresolved_list;
+  while(entry) {
+    if(entry->flag) {
+      entry = entry->next;
+      continue;
+    }
+    entry->flag = true;
+    hpcrun_cct_walkset((entry->td->epoch->csdata).unresolved_root, omp_resolve_and_free, (cct_op_arg_t)(entry->td));
+    entry->td->defer_write = 0;
+    // if at stop point, write out what we have (no need to check tbd again)
+    if(!fini_flag)
+      hpcrun_cct_walkset((entry->td->epoch->csdata).unresolved_root, tbd_test, (cct_op_arg_t)(entry->td));
+    if(!entry->td->defer_write) {
+      thread_data_t *td = hpcrun_get_thread_data();
+      cct2metrics_t* store_cct2metrics_map = td->cct2metrics_map;
+      td->cct2metrics_map = entry->td->cct2metrics_map;
+      hpcrun_write_other_profile_data(entry->td->epoch, entry->td);
+      td->cct2metrics_map = store_cct2metrics_map;
+      struct entry_t *tmp_entry = entry;
+      entry = entry->next;
+      delete_dw_entry(tmp_entry);
+    }
+    else {
+      entry->flag = false;
+      entry = entry->next;
+    }
+  }
+}
+
 void resolve_cntxt_fini()
 {
   hpcrun_async_block();
-  bool res = false;
-  hpcrun_cct_walkset(hpcrun_get_tbd_cct(), omp_resolve_and_free, (cct_op_arg_t) &res);
+  thread_data_t *td = hpcrun_get_thread_data();
+  hpcrun_cct_walkset(hpcrun_get_tbd_cct(), omp_resolve_and_free, NULL);
+  hpcrun_cct_walkset(hpcrun_get_tbd_cct(), tbd_test, (cct_op_arg_t)td);
+  if(td->defer_write) {
+    struct entry_t* entry = new_dw_entry();
+    entry->td = td;
+    insert_dw_entry(entry);
+  }
+//  if(td->master) {
+//    resolve_other_cntxt();
+//  }
   hpcrun_async_unblock();
 }
