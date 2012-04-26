@@ -317,6 +317,17 @@ hpcrun_init_thread_support()
   SAMPLE_SOURCES(thread_init);
 }
 
+// DEBUG support
+static void
+logit(cct_node_t* n, cct_op_arg_t arg, size_t l)
+{
+  int iarg = (int) arg;
+  TMSG(THREAD_CTXT, "thr %d -- %d: lm-id: %d  lm-ip: %p",
+       iarg,
+       hpcrun_cct_persistent_id(n),
+       hpcrun_cct_addr(n)->ip_norm.lm_id,
+       hpcrun_cct_addr(n)->ip_norm.lm_ip);
+}
 
 void*
 hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
@@ -326,6 +337,11 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   td->suspend_sampling = 1; // begin: protect against spurious signals
 
   hpcrun_set_thread_data(td);
+  if (! thr_ctxt) EMSG("Thread id %d passes null context", id);
+  
+  if (ENABLED(THREAD_CTXT))
+      hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) id);
+  //
   hpcrun_thread_data_init(id, thr_ctxt, 0);
 
   epoch_t* epoch = TD_GET(epoch);

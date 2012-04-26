@@ -507,8 +507,5 @@ void resolve_cntxt_fini()
     entry->td = td;
     insert_dw_entry(entry);
   }
-//  if(td->master) {
-//    resolve_other_cntxt();
-//  }
   hpcrun_async_unblock();
 }
