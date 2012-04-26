@@ -387,6 +387,8 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     TMSG(FENCE, "bt last thread correction made");
     TMSG(THREAD_CTXT, "Thread correction, back off outermost backtrace entry");
     bt_last--;
+    // FOR OMP only, temporary solution to remove GOMP_thread_start
+    if (DISABLED(KEEP_GOMP_START)) bt_last--;
   }
   cct_node_t* n = hpcrun_cct_record_backtrace_w_metric(bundle, partial_unw, bt.fence == FENCE_THREAD,
 						       bt_beg, bt_last, tramp_found,
