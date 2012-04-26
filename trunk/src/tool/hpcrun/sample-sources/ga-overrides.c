@@ -94,6 +94,7 @@
 
 //   armci/gaf2c/typesf2c.h:F2C_INTEGER_C_TYPE
 typedef long Integer; // word size
+typedef Integer logical;
 
 // global/src/globalp.h
 #define GA_OFFSET   1000
@@ -169,8 +170,7 @@ extern global_array_t *GA;
 // macros
 //***************************************************************************
 
-#define GA_SYNC_SMPL_PERIOD 37 /* if !0, sample synchronously */
-
+#define GA_SYNC_SMPL_PERIOD 293 /* if !0, sample synchronously */
 
 // FIXME: hpcrun_sample_callpath() should also return a metric_set_t*!
 
@@ -213,6 +213,13 @@ extern global_array_t *GA;
     /*TMSG(GA, "ga_sampleAfter_bytes: %d", num_bytes); */		\
     hpcrun_metric_std_inc(metricIdBytes, metricVec,			\
 			  (cct_metric_data_t){.i = num_bytes});		\
+    /* **************************************** */			\
+    int idx = ga_getDataIdx(ga_hndl);					\
+    if (idx >= 0) {							\
+      metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(idx);	\
+      hpcrun_metric_std_inc(desc->metricId, metricVec,			\
+			    (cct_metric_data_t){.i = num_bytes});	\
+    }									\
   }
 
 #define collect0() {}
@@ -222,6 +229,58 @@ extern global_array_t *GA;
 //  hpcrun_trace_append(hpcrun_cct_persistent_id(smpl->trace_node));
 //}
 
+static inline int
+ga_getDataIdx(Integer ga_hndl)
+{
+  return (int) GA[ga_hndl].lock;
+}
+
+static inline void
+ga_setDataIdx(Integer g_a, int idx)
+{
+  Integer ga_hndl = GA_OFFSET + g_a;
+  GA[ga_hndl].lock = idx;
+}
+
+
+//***************************************************************************
+// bookkeeping
+//***************************************************************************
+
+
+typedef logical ga_create_fn_t(Integer type, Integer ndim,
+			       Integer *dims, char* name,
+			       Integer *chunk, Integer *g_a);
+
+MONITOR_EXT_DECLARE_REAL_FN(ga_create_fn_t, real_pnga_create);
+
+logical
+MONITOR_EXT_WRAP_NAME(pnga_create)(Integer type, Integer ndim,
+				   Integer *dims, char* name,
+				   Integer *chunk, Integer *g_a)
+{
+  MONITOR_EXT_GET_NAME_WRAP(real_pnga_create, pnga_create);
+
+  // collective
+  logical ret = real_pnga_create(type, ndim, dims, name, chunk, g_a);
+
+  int idx = -1;
+#if (GA_DataCentric_Prototype)
+  idx = hpcrun_ga_dataIdx_new(name);
+#endif
+
+  ga_setDataIdx(*g_a, idx);
+  
+  return ret;
+}
+
+// ga_destroy
+
+// ga_pgroup_create, ga_pgroup_destroy, ga_pgroup_get_default, ga_pgroup_set_default, ga_nodeid, ga_cluster_proc_nodeid
+// ga_release / ga_release_update
+// ga_error
+
+// ga_read_inc
 
 //***************************************************************************
 // collectives: brdcst
@@ -244,6 +303,68 @@ MONITOR_EXT_WRAP_NAME(pnga_brdcst)(Integer type, void *buf, Integer len, Integer
 
   real_pnga_brdcst(type, buf, len, originator);
 }
+
+
+typedef void ga_gop_fn_t(Integer type, void *x, Integer n, char *op);
+
+MONITOR_EXT_DECLARE_REAL_FN(ga_gop_fn_t, real_pnga_gop);
+
+void
+MONITOR_EXT_WRAP_NAME(pnga_gop)(Integer type, void *x, Integer n, char *op)
+{
+  MONITOR_EXT_GET_NAME_WRAP(real_pnga_gop, pnga_gop);
+
+  int mId_collectiveOp = hpcrun_ga_metricId_collectiveOp();
+  int mId_bytes = hpcrun_ga_metricId_bytesXfer();
+  ifSample(smpl, metricVec,
+	   collectMetric(metricVec, mId_collectiveOp, 1/*metricIncr*/),
+	   collectMetric(metricVec, mId_bytes, 8/*metricIncr*/));
+  // FIXME: # bytes depends on type
+
+  real_pnga_gop(type, x, n, op);
+}
+
+
+typedef void ga_sync_fn_t();
+
+MONITOR_EXT_DECLARE_REAL_FN(ga_sync_fn_t, real_pnga_sync);
+
+void
+MONITOR_EXT_WRAP_NAME(pnga_sync)()
+{
+  MONITOR_EXT_GET_NAME_WRAP(real_pnga_sync, pnga_sync);
+
+  int mId_collectiveOp = hpcrun_ga_metricId_collectiveOp();
+  ifSample(smpl, metricVec,
+	   collectMetric(metricVec, mId_collectiveOp, 1/*metricIncr*/),
+	   collect0());
+
+  real_pnga_sync();
+}
+
+
+typedef void ga_zero_fn_t(Integer g_a);
+
+MONITOR_EXT_DECLARE_REAL_FN(ga_zero_fn_t, real_pnga_zero);
+
+void
+MONITOR_EXT_WRAP_NAME(pnga_zero)(Integer g_a)
+{
+  MONITOR_EXT_GET_NAME_WRAP(real_pnga_zero, pnga_zero);
+
+  int mId_collectiveOp = hpcrun_ga_metricId_collectiveOp();
+  ifSample(smpl, metricVec,
+	   collectMetric(metricVec, mId_collectiveOp, 1/*metricIncr*/),
+	   collect0());
+
+  real_pnga_zero(g_a);
+}
+
+
+// TODO: ga_pgroup_dgop, ga_pgroup_sync
+
+typedef void ga_pgroup_gop_fn_t(Integer p_grp, Integer type, void *x, Integer n, char *op);
+typedef void ga_pgroup_sync_fn_t(Integer grp_id);
 
 
 //***************************************************************************
@@ -368,6 +489,7 @@ MONITOR_EXT_WRAP_NAME(pnga_nbacc)(Integer g_a, Integer *lo, Integer *hi, void *b
 }
 
 
+#if 0
 MONITOR_EXT_DECLARE_REAL_FN(ga_nbwait_fn_t, real_pnga_nbwait);
 
 void
@@ -379,7 +501,7 @@ MONITOR_EXT_WRAP_NAME(pnga_nbwait)(Integer *nbhandle)
 
   real_pnga_nbwait(nbhandle);
 }
-
+#endif
 
 
 //***************************************************************************

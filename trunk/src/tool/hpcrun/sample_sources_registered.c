@@ -84,6 +84,12 @@ hpcrun_source_can_process(char *event)
   return NULL;
 }
 
+
+// hpcrun_registered_sources_init(): This routine initializes all
+// samples sources.  It is necessary because a sample source, even if
+// unused, may need to initialized to list available events.
+// Cf. SAMPLE_SOURCES(init), which only initializes used sample
+// sources.
 void
 hpcrun_registered_sources_init(void)
 {
