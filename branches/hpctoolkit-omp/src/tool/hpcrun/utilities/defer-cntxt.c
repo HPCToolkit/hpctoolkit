@@ -141,6 +141,17 @@ insert_dw_entry(struct entry_t* entry)
   spinlock_unlock(&unresolved_list_lock);
 }
 
+static struct entry_t*
+fetch_dw_entry(struct entry_t **pointer)
+{
+  if(!(*pointer)) return NULL;
+  spinlock_lock(&unresolved_list_lock);
+  while((*pointer) && (*pointer)->flag) (*pointer) = (*pointer)->next;
+  if((*pointer)) (*pointer)->flag = true;
+  spinlock_unlock(&unresolved_list_lock);
+  return (*pointer);
+}
+
 /******************************************************************************
  * splay tree operation for record map *
  *****************************************************************************/
@@ -467,13 +478,11 @@ void resolve_other_cntxt(bool fini_flag)
   // try to resolve any entry
   // entry is a local pointer
   //
-  struct entry_t *entry = unresolved_list;
-  while(entry) {
-    if(entry->flag) {
-      entry = entry->next;
-      continue;
-    }
-    entry->flag = true;
+  spinlock_lock(&unresolved_list_lock);
+  struct entry_t *pointer = unresolved_list;
+  spinlock_unlock(&unresolved_list_lock);
+  struct entry_t *entry = NULL;
+  while(entry = fetch_dw_entry(&pointer)) {
     hpcrun_cct_walkset((entry->td->epoch->csdata).unresolved_root, omp_resolve_and_free, (cct_op_arg_t)(entry->td));
     entry->td->defer_write = 0;
     // if at stop point, write out what we have (no need to check tbd again)
@@ -485,13 +494,12 @@ void resolve_other_cntxt(bool fini_flag)
       td->cct2metrics_map = entry->td->cct2metrics_map;
       hpcrun_write_other_profile_data(entry->td->epoch, entry->td);
       td->cct2metrics_map = store_cct2metrics_map;
-      struct entry_t *tmp_entry = entry;
-      entry = entry->next;
-      delete_dw_entry(tmp_entry);
+      pointer = pointer->next;
+      delete_dw_entry(entry);
     }
     else {
+      pointer = pointer->next;
       entry->flag = false;
-      entry = entry->next;
     }
   }
 }
