@@ -75,6 +75,13 @@ static int metricId_bytesXfer  = -1;
 static int metricId_onesidedOp = -1;
 static int metricId_collectiveOp = -1;
 
+#if (GA_DataCentric_Prototype)
+static int metricId_dataTblIdx_next = -1;
+static int metricId_dataTblIdx_max = -1; // exclusive upper bound
+
+metricId_dataDesc_t hpcrun_ga_metricId_dataTbl[hpcrun_ga_metricId_dataTblSz];
+#endif // GA_DataCentric_Prototype
+
 
 //***************************************************************************
 // method definitions
@@ -88,6 +95,10 @@ METHOD_FN(init)
   metricId_bytesXfer = -1;
   metricId_onesidedOp = -1;
   metricId_collectiveOp = -1;
+#if (GA_DataCentric_Prototype)
+  metricId_dataTblIdx_next = 0;
+  metricId_dataTblIdx_max = hpcrun_ga_metricId_dataTblSz;
+#endif
 }
 
 
@@ -154,11 +165,22 @@ METHOD_FN(process_event_list, int lush_metrics)
 {
   TMSG(GA, "create GA metrics");
   metricId_bytesXfer = hpcrun_new_metric();
-  metricId_onesidedOp = hpcrun_new_metric();
-  metricId_collectiveOp = hpcrun_new_metric();
   hpcrun_set_metric_info(metricId_bytesXfer, "GA bytes xfr");
+
+  metricId_onesidedOp = hpcrun_new_metric();
   hpcrun_set_metric_info(metricId_onesidedOp, "GA #onesided");
+
+  metricId_collectiveOp = hpcrun_new_metric();
   hpcrun_set_metric_info(metricId_collectiveOp, "GA #collective");
+
+#if (GA_DataCentric_Prototype)
+  for (int i = 0; i < hpcrun_ga_metricId_dataTblSz; ++i) {
+    metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(i);
+    desc->metricId = hpcrun_new_metric();
+    snprintf(desc->name, hpcrun_ga_metricId_dataStrLen, "ga-data-%d", i);
+    hpcrun_set_metric_info(desc->metricId, desc->name);
+  }
+#endif
 }
 
 
@@ -218,3 +240,25 @@ hpcrun_ga_metricId_collectiveOp()
 {
   return metricId_collectiveOp;
 }
+
+#if (GA_DataCentric_Prototype)
+int
+hpcrun_ga_dataIdx_new(const char* name)
+{
+  if (metricId_dataTblIdx_next < metricId_dataTblIdx_max) {
+    int idx = metricId_dataTblIdx_next;
+    metricId_dataTblIdx_next++;
+
+    metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(idx);
+    strncpy(desc->name, name, hpcrun_ga_metricId_dataStrLen);
+    //hpcrun_set_metric_name(desc->metricId, desc->name);
+
+    TMSG(GA, "hpcrun_ga_dataIdx_new: %s -> metric %d", name, desc->metricId);
+
+    return idx;
+  }
+  else {
+    return -1;
+  }
+}
+#endif // GA_DataCentric_Prototype

@@ -51,4 +51,32 @@ int hpcrun_ga_metricId_bytesXfer();
 int hpcrun_ga_metricId_onesidedOp();
 int hpcrun_ga_metricId_collectiveOp();
 
-#endif
+#define GA_DataCentric_Prototype 1
+
+
+#if (GA_DataCentric_Prototype)
+
+#define hpcrun_ga_metricId_dataTblSz 20
+#define hpcrun_ga_metricId_dataStrLen 32
+
+typedef struct metricId_dataDesc {
+  int metricId;
+  char name[hpcrun_ga_metricId_dataStrLen];
+} metricId_dataDesc_t;
+
+extern metricId_dataDesc_t hpcrun_ga_metricId_dataTbl[];
+
+static inline metricId_dataDesc_t*
+hpcrun_ga_metricId_dataTbl_find(int idx)
+{
+  return &hpcrun_ga_metricId_dataTbl[idx];
+}
+
+int
+hpcrun_ga_dataIdx_new(const char* name);
+
+#endif // GA_DataCentric_Prototype
+
+
+
+#endif // _HPCRUN_GA_H_

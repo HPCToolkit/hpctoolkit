@@ -235,9 +235,11 @@ do
 	    test -f "$ga_wrap" || die "unable to find: $ga_wrap"
 	    extra_hpc_files="$extra_hpc_files $ga_wrap"
 	    extra_wrap_names="$extra_wrap_names \
-                pnga_brdcst \
+                pnga_create \
+                pnga_brdcst pnga_gop pnga_sync pnga_zero \
                 pnga_get pnga_put pnga_acc \
-                pnga_nbget pnga_nbput pnga_nbacc pnga_nbwait"
+                pnga_nbget pnga_nbput pnga_nbacc"
+                # pnga_nbwait
 	    undef_names="$undef_names pnga_put"
 	    shift
 	    ;;
