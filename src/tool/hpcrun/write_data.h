@@ -50,6 +50,7 @@
 #include "epoch.h"
 
 extern int hpcrun_write_profile_data(epoch_t *epoch);
+extern int hpcrun_write_other_profile_data(epoch_t *epoch, thread_data_t *thread_data);
 extern void hpcrun_flush_epochs(void);
 
 #endif // WRITE_DATA_H

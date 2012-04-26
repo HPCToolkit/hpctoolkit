@@ -424,7 +424,7 @@ hpcrun_cct_delete_self(cct_node_t *cct)
 {
   if (cct->left) cct->left->right = cct->right;
   if (cct->right) cct->right->left = cct->left;
-  if (cct->parent->children == cct)
+  if (cct->parent && cct->parent->children == cct)
     cct->parent->children = cct->left ? cct->left : cct->right;
   cct->parent = NULL;
 }
@@ -526,6 +526,7 @@ hpcrun_cct_walk_node_1st_w_level(cct_node_t* cct, cct_op_t op, cct_op_arg_t arg,
 void
 hpcrun_cct_walkset(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg)
 {
+  if(!cct->children) return;
   walkset_l(cct->children, fn, arg, 0);
 }
 

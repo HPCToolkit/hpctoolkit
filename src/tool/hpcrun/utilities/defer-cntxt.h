@@ -14,5 +14,6 @@ int  need_defer_cntxt();
 /* resolve the contexts */
 void resolve_cntxt();
 void resolve_cntxt_fini();
+void resolve_other_cntxt(bool fini_flag);
 
 #endif
