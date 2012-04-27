@@ -328,6 +328,7 @@ void end_team_fn()
       //
       else
         node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, NULL);
+
       record->node = node;
     }
     else {
@@ -428,6 +429,11 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
       else
         prefix = hpcrun_cct_insert_path(prefix, (td->epoch->csdata).unresolved_root);
     }
+    // adjust the callsite of the prefix in side threads to make sure they are the same as
+    // in the master thread. With this operation, all sides threads and the master thread
+    // will have the unified view for parallel regions (this only works for GOMP)
+    if (DISABLED(KEEP_GOMP_START))
+      hpcrun_cct_addr(prefix)->ip_norm.lm_ip -= 5L;
     hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
     // must delete it when not used considering the performance
     r_splay_count_update(my_region_id, -1L);
