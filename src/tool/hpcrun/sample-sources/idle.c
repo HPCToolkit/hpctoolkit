@@ -317,7 +317,7 @@ process_blame_for_sample(cct_node_t *node, int metric_value)
 		  cct_metric_data_increment(overhead_metric_id, node, (cct_metric_data_t){.i = metric_value});
 		else
 		  cct_metric_data_increment(work_metric_id, node, (cct_metric_data_t){.i = metric_value});
-  		cct_metric_data_increment(count_metric_id, node, (cct_metric_data_t){.i = 1});
+  		cct_metric_data_increment(count_metric_id, node, (cct_metric_data_t){.i = metric_value});
   }
 }
 
