@@ -355,6 +355,7 @@ enum cudaRuntimeAPIIndex  {
     CUDA_FREE,
     CUDA_MEMCPY_ASYNC,
     CUDA_MEMCPY,
+    CUDA_EVENT_ELAPSED_TIME,
     CUDA_MAX_APIS
 };
 
@@ -374,6 +375,7 @@ typedef struct cudaRuntimeFunctionPointer{
         cudaError_t(*cudaFreeReal) (void *);
         cudaError_t(*cudaMemcpyAsyncReal) (void * dst, const void * src, size_t count, enum cudaMemcpyKind kind, cudaStream_t);
         cudaError_t(*cudaMemcpyReal) (void * dst, const void * src, size_t count, enum cudaMemcpyKind kind);
+	cudaError_t(*cudaEventElapsedTimeReal)(float * ms, cudaEvent_t start, cudaEvent_t end);
     };
     const char * functionName;
 } cudaRuntimeFunctionPointer_t;
@@ -391,7 +393,8 @@ cudaRuntimeFunctionPointer_t  	cudaRuntimeFunctionPointer[] = {
     {0, "cudaMalloc"},
     {0, "cudaFree"},
     {0, "cudaMemcpyAsync"},
-    {0, "cudaMemcpy"}
+    {0, "cudaMemcpy"},
+    {0, "cudaEventElapsedTime"}
 };
 
 #else // Driver API
@@ -411,6 +414,9 @@ enum cuDriverAPIIndex  {
     CU_MEMCPY_D_TO_H_ASYNC,
     CU_MEMCPY_D_TO_H,    
     
+
+    CU_EVENT_ELAPSED_TIME,
+
     CU_MAX_APIS
 };
 
@@ -431,6 +437,9 @@ typedef struct cuDriverFunctionPointer{
         CUresult (*cuMemcpyHtoDReal) (CUdeviceptr dstDevice, const void * srcHost, size_t ByteCount); 
         CUresult (*cuMemcpyDtoHAsyncReal) (void * dstHost, CUdeviceptr srcDevice, size_t ByteCount, CUstream hStream) ; 
         CUresult (*cuMemcpyDtoHReal) (void * dstHost, CUdeviceptr srcDevice, size_t ByteCount);                
+	
+	CUresult (*cuEventElapsedTimeReal)(float * pMilliseconds, CUevent hStart, CUevent hEnd);	
+
     };
     const char * functionName;
 } cuDriverFunctionPointer_t;
@@ -447,8 +456,8 @@ cuDriverFunctionPointer_t  	cuDriverFunctionPointer[] = {
     {0, "cuMemcpyHtoDAsync_v2"},
     {0, "cuMemcpyHtoD_v2"},
     {0, "cuMemcpyDtoHAsync_v2"},
-    {0, "cuMemcpyDtoH_v2"}
-    
+    {0, "cuMemcpyDtoH_v2"},
+    {0, "cuEventElapsedTime"}
 };
 
 #endif
@@ -937,9 +946,9 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                         //FIX ME: deleting Elapsed time to handle context destruction.... 
                         //static uint64_t deleteMeTime = 0;
 #ifdef CUDA_RT_API            
-                        CUDA_SAFE_CALL(cudaEventElapsedTime(&elapsedTime, g_start_of_world_event, current_event->event_start));
+                        CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_SYNCHRONIZE].cudaEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_start));
 #else
-                        CU_SAFE_CALL(cuEventElapsedTime(&elapsedTime, g_start_of_world_event, current_event->event_start));
+                        CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_ELAPSED_TIME].cuEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_start));
                         
 #endif                
                         assert(elapsedTime > 0 );
@@ -961,9 +970,9 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                         // TODO : WE JUST NEED TO PUT IDLE MARKER
                         
 #ifdef CUDA_RT_API                            
-                        CUDA_SAFE_CALL(cudaEventElapsedTime(&elapsedTime, g_start_of_world_event, current_event->event_end));
+                        CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_SYNCHRONIZE].cudaEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_end));
 #else
-                        CU_SAFE_CALL(cuEventElapsedTime(&elapsedTime, g_start_of_world_event, current_event->event_end));
+                        CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_ELAPSED_TIME].cuEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_end));
 #endif
                         assert(elapsedTime > 0 );
                         uint64_t micro_time_end = ((uint64_t)elapsedTime) * 1000 + g_start_of_world_time;
@@ -2236,6 +2245,14 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 return ret;
                 
             }
+
+	    cudaError_t cudaEventElapsedTime(float * ms, cudaEvent_t start, cudaEvent_t end){
+		hpcrun_async_block();
+                cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_EVENT_SYNCHRONIZE].cudaEventElapsedTimeReal(ms, start, end);
+		hpcrun_async_unblock();
+                return ret;
+	    }
+
 #else // Driver APIs
             
             
@@ -2708,6 +2725,14 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 TD_GET(is_thread_at_cuda_sync) = false;
                 return ret;            
             }
+
+	    CUresult cuEventElapsedTime(float * pMilliseconds, CUevent hStart, CUevent hEnd) {
+		
+                hpcrun_async_block();
+		CUresult ret = cuDriverFunctionPointer[CU_EVENT_ELAPSED_TIME].cuEventElapsedTimeReal(pMilliseconds, hStart, hEnd);
+                hpcrun_async_unblock();
+		return ret;
+	    }
             
             
 #endif // end of CUDA_RT_API
