@@ -449,22 +449,24 @@ omp_resolve_and_free(cct_node_t* cct, cct_op_arg_t a, size_t l)
 void resolve_cntxt()
 {
   hpcrun_async_block();
+  uint64_t current_region_id = GOMP_get_region_id();
+  int current_thread_num = omp_get_thread_num();
+  cct_node_t* tbd_cct = hpcrun_get_tbd_cct();
   thread_data_t *td = hpcrun_get_thread_data();
   // resolve the trees at the end of one parallel region
-  if((td->region_id != GOMP_get_region_id()) && (td->region_id != 0) && 
-     (omp_get_thread_num() != 0)) {
+  if((td->region_id != current_region_id) && (td->region_id != 0) && 
+     (current_thread_num != 0)) {
     TMSG(DEFER_CTXT, "I want to resolve the context when I come out from region %d", td->region_id);
-    hpcrun_cct_walkset(hpcrun_get_tbd_cct(), omp_resolve_and_free, NULL);
+    hpcrun_cct_walkset(tbd_cct, omp_resolve_and_free, NULL);
   }
   // update the use count when come into a new omp region
-  if((td->region_id != GOMP_get_region_id()) && (GOMP_get_region_id() != 0) &&
-     (omp_get_thread_num() != 0)) {
-    hpcrun_cct_insert_addr(hpcrun_get_tbd_cct(), &(ADDR2(UNRESOLVED, GOMP_get_region_id())));
-    r_splay_count_update(GOMP_get_region_id(), 1L);
+  if((td->region_id != current_region_id) && (current_region_id != 0) &&
+     (current_thread_num != 0)) {
+    hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, current_region_id)));
+    r_splay_count_update(current_region_id, 1L);
   }
   // td->region_id represents the out-most parallel region id
-  if(omp_get_thread_num() != 0)
-    td->region_id = GOMP_get_region_id();
+  if(current_thread_num != 0)    td->region_id = current_region_id;
   hpcrun_async_unblock();
 }
 
