@@ -68,7 +68,7 @@
  * GPU support
  *****************************************************************************/
 #define ENABLE_CUDA
-//#define CUDA_RT_API
+#define CUDA_RT_API
 
 #ifdef ENABLE_CUDA
 #include <cuda.h>
@@ -946,7 +946,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                         //FIX ME: deleting Elapsed time to handle context destruction.... 
                         //static uint64_t deleteMeTime = 0;
 #ifdef CUDA_RT_API            
-                        CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_SYNCHRONIZE].cudaEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_start));
+                        CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_ELAPSED_TIME].cudaEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_start));
 #else
                         CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_ELAPSED_TIME].cuEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_start));
                         
@@ -970,7 +970,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                         // TODO : WE JUST NEED TO PUT IDLE MARKER
                         
 #ifdef CUDA_RT_API                            
-                        CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_SYNCHRONIZE].cudaEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_end));
+                        CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_ELAPSED_TIME].cudaEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_end));
 #else
                         CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_ELAPSED_TIME].cuEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_end));
 #endif
@@ -2248,7 +2248,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
 
 	    cudaError_t cudaEventElapsedTime(float * ms, cudaEvent_t start, cudaEvent_t end){
 		hpcrun_async_block();
-                cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_EVENT_SYNCHRONIZE].cudaEventElapsedTimeReal(ms, start, end);
+                cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_EVENT_ELAPSED_TIME].cudaEventElapsedTimeReal(ms, start, end);
 		hpcrun_async_unblock();
                 return ret;
 	    }
