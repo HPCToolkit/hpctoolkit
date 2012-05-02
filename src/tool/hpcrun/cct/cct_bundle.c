@@ -80,7 +80,7 @@ l_insert_path(cct_node_t* node, cct_op_arg_t arg, size_t level)
 //
 
 void
-hpcrun_special_IDLE(void)
+GPU_IDLE(void)
 {
 }
 
@@ -112,7 +112,7 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
     hpcrun_walk_path(ctxt->context, l_insert_path, (cct_op_arg_t) &(bundle->thread_root));
   }
   bundle->partial_unw_root = hpcrun_cct_new_partial();
-  bundle->special_idle_node = hpcrun_cct_new_special(hpcrun_special_IDLE);
+  bundle->special_idle_node = hpcrun_cct_new_special(GPU_IDLE);
 }
 //
 // Write to file for cct bundle: 
