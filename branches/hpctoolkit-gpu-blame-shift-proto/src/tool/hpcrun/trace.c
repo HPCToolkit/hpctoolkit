@@ -106,7 +106,7 @@ static void trace_file_validate(int valid, char *op);
 static int tracing = 0;
 
 static gpu_trace_file_t *gpu_trace_file_array;
-#define GPU_TRACE_FILE_OFFSET 2
+#define GPU_TRACE_FILE_OFFSET 0
 #define MAX_STREAMS 100
 #define NUM_GPU_DEVICES 2
 //*********************************************************************
@@ -156,8 +156,24 @@ trace_open()
   }
 }
 
+int
+hpcrun_stream_open_trace_file(int thread)
+{
+  int ret;
+
+  spinlock_lock(&files_lock);
+  hpcrun_files_init();
+	/*FIXME : you are passsing 0 everytime? */
+  ret = hpcrun_open_file(hpcrun_get_rank(), thread, HPCRUN_TraceFnmSfx, FILES_EARLY);
+  spinlock_unlock(&files_lock);
+
+  return ret;
+}
+
+
+
 void 
-gpu_trace_open(int gpu_device_num, int stream_num)
+gpu_trace_open(stream_data_t *st, int gpu_device_num, int stream_num)
 {
   // With fractional sampling, if this process is inactive, then don't
   // open an output file, not even /dev/null.
@@ -169,38 +185,46 @@ gpu_trace_open(int gpu_device_num, int stream_num)
 		*/
 		
     int fd, ret;
-		uint32_t id = ((gpu_device_num * 10) + stream_num); 
+		uint32_t id = ((gpu_device_num) + stream_num); 
     // I think unlocked is ok here (we don't overlap any system
     // locks).  At any rate, locks only protect against threads, they
     // don't help with signal handlers (that's much harder).
-    fd = hpcrun_open_trace_file(id + GPU_TRACE_FILE_OFFSET);
+    fd = hpcrun_stream_open_trace_file(id + GPU_TRACE_FILE_OFFSET);
     trace_file_validate(fd >= 0, "open");
     gpu_trace_file_array[id].trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
-printf("\nmallocced trace_buffer\n");
+//printf("\nmallocced trace_buffer\n");
     ret = hpcio_outbuf_attach(&(gpu_trace_file_array[id].trace_outbuf), fd, gpu_trace_file_array[id].trace_buffer,
 			      HPCRUN_TraceBufferSz, HPCIO_OUTBUF_UNLOCKED);
     trace_file_validate(ret == HPCFMT_OK, "open");
 
     ret = hpctrace_fmt_hdr_outbuf(&(gpu_trace_file_array[id].trace_outbuf));
     trace_file_validate(ret == HPCFMT_OK, "write header to");
+		if(st->trace_min_time_us == 0) {
+			struct timeval tv;
+			gettimeofday(&tv, NULL);
+			st->trace_min_time_us = ((uint64_t)tv.tv_usec
+                                                 + (((uint64_t)tv.tv_sec) * 1000000));
+		}
   }
 }
 
 void
-gpu_trace_append_with_time(int gpu_device_num, int stream_num, unsigned int call_path_id, uint64_t microtime)
+gpu_trace_append_with_time(stream_data_t *st, int gpu_device_num, int stream_num, unsigned int call_path_id, uint64_t microtime)
 {
-
 	if (tracing && hpcrun_sample_prob_active()) {
-
 		uint32_t id = (gpu_device_num*10)+stream_num;
 		int ret = hpctrace_fmt_append_outbuf(&(gpu_trace_file_array[id].trace_outbuf), microtime,
 				(uint32_t)call_path_id);  
-		//trace_file_validate(ret == HPCFMT_OK, "append");
+		//printf("\nPrinting the time %lu and %u is the cct-id", microtime, (uint32_t)call_path_id);
+		trace_file_validate(ret == HPCFMT_OK, "append");
+		if(st->trace_max_time_us < microtime) {
+			st->trace_max_time_us = microtime;
+		}
 	}
 }
 
 uint64_t
-gpu_trace_append(int gpu_device_num, int stream_num, unsigned int call_path_id)
+gpu_trace_append(stream_data_t *st, int gpu_device_num, int stream_num, unsigned int call_path_id)
 {
 	//call_path_id = 140;
 	if (tracing && hpcrun_sample_prob_active()) {
@@ -210,10 +234,14 @@ gpu_trace_append(int gpu_device_num, int stream_num, unsigned int call_path_id)
 		uint64_t microtime = ((uint64_t)tv.tv_usec 
 				+ (((uint64_t)tv.tv_sec) * 1000000));
 
+		if(st->trace_max_time_us < microtime) {
+      st->trace_max_time_us = microtime;
+    }
 		//printf("\nappending gpu trace");
 		uint32_t id = (gpu_device_num*10)+stream_num;
 		ret = hpctrace_fmt_append_outbuf(&(gpu_trace_file_array[id].trace_outbuf), microtime,
 				(uint32_t)call_path_id);
+		//printf("\nPrinting the time %lu and %u is the cct-id", microtime, (uint32_t)call_path_id);
 		trace_file_validate(ret == HPCFMT_OK, "append");
 		return microtime;
 	}
@@ -239,6 +267,9 @@ trace_append(unsigned int call_path_id)
     }
     td->trace_max_time_us = microtime;
 
+		/*static int cur_cnt=0;
+		if((cur_cnt++)%10 == 0)
+			printf("\nCPU: id is %u",call_path_id);*/
     ret = hpctrace_fmt_append_outbuf(&td->trace_outbuf, microtime,
 				     (uint32_t)call_path_id);
     trace_file_validate(ret == HPCFMT_OK, "append");
@@ -247,7 +278,7 @@ trace_append(unsigned int call_path_id)
 
 
 void
-gpu_trace_close(int gpu_number, int stream_id)
+gpu_trace_close(stream_data_t *st, int gpu_number, int stream_id)
 {
   if (tracing && hpcrun_sample_prob_active()) {
     //thread_data_t *td = hpcrun_get_thread_data();

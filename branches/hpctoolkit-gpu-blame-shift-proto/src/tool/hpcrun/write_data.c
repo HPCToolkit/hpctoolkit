@@ -185,9 +185,11 @@ lazy_open_data_file(void)
 
   char traceMinTimeStr[bufSZ];
   snprintf(traceMinTimeStr, bufSZ, "%"PRIu64, td->trace_min_time_us);
+	//printf("\nThe start time  is %x for THREAD %d",td->trace_min_time_us, td->id);
 
   char traceMaxTimeStr[bufSZ];
   snprintf(traceMaxTimeStr, bufSZ, "%"PRIu64, td->trace_max_time_us);
+	//printf("\nThe end time  is %x for stream %d",td->trace_max_time_us, td->id);
 
   //
   // ==== file hdr =====
@@ -349,3 +351,5 @@ hpcrun_write_profile_data(epoch_t *epoch)
 
   return HPCRUN_OK;
 }
+
+#include "write_stream_data.c"

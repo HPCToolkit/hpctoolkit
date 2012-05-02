@@ -69,7 +69,7 @@
 //
 static bool retain_recursion = false;
 
-static cct_node_t*
+cct_node_t*
 cct_insert_raw_backtrace(cct_node_t* cct,
                             frame_t* path_beg, frame_t* path_end)
 {
@@ -94,6 +94,7 @@ cct_insert_raw_backtrace(cct_node_t* cct,
     }
     parent_routine = path_beg->the_function;
   }
+	//printf("\nthe cct value is %p",cct);
   return cct;
 }
 

@@ -103,6 +103,41 @@
 // Calling context tree node (abstract data type)
 //***************************************************************************
 
+typedef struct {
+  hpcfmt_uint_t num_metrics;
+  FILE* fs;
+  epoch_flags_t flags;
+  hpcrun_fmt_cct_node_t* tmp_node;
+} write_arg_t;
+
+
+struct cct_node_t {
+
+  // ---------------------------------------------------------
+  // a persistent node id is assigned for each node. this id
+  // is used both to reassemble a tree when reading it from 
+  // a file as well as to identify call paths. a call path
+  // can simply be represented by the node id of the deepest
+  // node in the path.
+  // ---------------------------------------------------------
+  int32_t persistent_id;
+  
+ // bundle abstract address components into a data type
+
+  cct_addr_t addr;
+  
+  // ---------------------------------------------------------
+  // tree structure
+  // ---------------------------------------------------------
+
+  // parent node and the beginning of the child list
+  struct cct_node_t* parent;
+  struct cct_node_t* children;
+
+  // left and right pointers for splay tree of siblings
+  struct cct_node_t* left;
+  struct cct_node_t* right;
+};
 typedef struct cct_node_t cct_node_t;
 
 //

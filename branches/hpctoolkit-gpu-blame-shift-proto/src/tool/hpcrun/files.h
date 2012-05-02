@@ -49,11 +49,21 @@
 
 //*****************************************************************************
 
+#include <lib/prof-lean/spinlock.h>
+#include <lib/support-lean/OSUtil.h>
+
+#define FILES_EARLY  0x1
+#define FILES_LATE   0x2
+extern spinlock_t files_lock;
 void hpcrun_files_set_directory();
 void hpcrun_files_set_executable(char *execname);   
 const char *hpcrun_files_executable_pathname();
 const char *hpcrun_files_executable_name();
 
+int
+hpcrun_open_file(int rank, int thread, const char *suffix, int flags);
+void
+hpcrun_files_init(void);
 int hpcrun_open_log_file(void);
 int hpcrun_open_trace_file(int thread);
 int hpcrun_open_profile_file(int rank, int thread);

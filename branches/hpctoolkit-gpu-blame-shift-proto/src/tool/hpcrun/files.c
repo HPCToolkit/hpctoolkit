@@ -128,8 +128,6 @@
 #include "loadmap.h"
 #include "sample_prob.h"
 
-#include <lib/prof-lean/spinlock.h>
-#include <lib/support-lean/OSUtil.h>
 
 
 //***************************************************************
@@ -142,8 +140,6 @@
 #define FILES_RANDOM_GEN  4
 #define FILES_MAX_GEN     11
 
-#define FILES_EARLY  0x1
-#define FILES_LATE   0x2
 
 struct fileid {
   int  done;
@@ -177,7 +173,7 @@ static char executable_pathname[PATH_MAX] = {'\0'};
 // These variables are protected by the files lock.
 // Opening or renaming a file must acquire the lock.
 
-static spinlock_t files_lock = SPINLOCK_UNLOCKED;
+spinlock_t files_lock = SPINLOCK_UNLOCKED;
 static pid_t mypid = 0;
 static struct fileid earlyid;
 static struct fileid lateid;
@@ -194,7 +190,7 @@ static int log_rename_ret = 0;
 // internal functions require that the lock is already held.
 
 // Reset the file ids on first use (pid 0) or after fork.
-static void
+void
 hpcrun_files_init(void)
 {
   pid_t cur_pid = getpid();
@@ -253,7 +249,7 @@ hpcrun_files_next_id(struct fileid *id)
 
 // Returns: file descriptor, else die on failure.
 //
-static int
+int
 hpcrun_open_file(int rank, int thread, const char *suffix, int flags)
 {
   char name[PATH_MAX];
@@ -452,6 +448,7 @@ hpcrun_open_trace_file(int thread)
 
   spinlock_lock(&files_lock);
   hpcrun_files_init();
+	/*FIXME : you are passsing 0 everytime? */
   ret = hpcrun_open_file(0, thread, HPCRUN_TraceFnmSfx, FILES_EARLY);
   spinlock_unlock(&files_lock);
 

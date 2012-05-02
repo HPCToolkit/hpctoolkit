@@ -125,11 +125,6 @@ static metric_desc_p_tbl_t metric_tbl;
 // Future expansion to permit different strategies is possible, but
 // unimplemented at this time
 
-struct kind_info_t {
-  int idx;     // current index in kind
-  kind_info_t* link; // all kinds linked together in singly linked list
-};
-
 static kind_info_t kinds = {.idx = 0, .link = NULL };
 static kind_info_t* current_kind = &kinds;
 static kind_info_t* current_insert = &kinds;
@@ -447,3 +442,5 @@ hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
   metric_set_t* actual = set ? set : (metric_set_t*) null_metrics;
   memcpy((char*) dest, (char*) actual, num_metrics * sizeof(cct_metric_data_t));
 }
+
+#include "stream_metrics.c"
