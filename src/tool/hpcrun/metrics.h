@@ -109,6 +109,11 @@ typedef struct metric_proc_map_t {
 // Future expansion to permit different strategies is possible, but
 // unimplemented at this time
 
+
+struct kind_info_t {
+  int idx;     // current index in kind
+  struct kind_info_t* link; // all kinds linked together in singly linked list
+};
 typedef struct kind_info_t kind_info_t;
 
 kind_info_t* hpcrun_metrics_new_kind();

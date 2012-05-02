@@ -345,3 +345,4 @@ hpcrun_threaded_data(void)
   hpcrun_td_avail        = &thread_specific_td_avail;
 }
 
+#include "stream_data.c"
