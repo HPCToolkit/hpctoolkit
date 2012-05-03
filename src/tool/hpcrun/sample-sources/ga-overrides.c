@@ -182,6 +182,8 @@ extern global_array_t *GA;
     if (hpcrun_safe_enter()) {						\
       ucontext_t uc;							\
       getcontext(&uc);							\
+      /* N.B.: when tracing, this call generates a trace record */	\
+      /*  traceMetricId, traceMetricIncr */				\
       sample_val_t smplVal =						\
 	hpcrun_sample_callpath(&uc, 0/*metricId*/, 0/*mIncr*/,		\
 			       0/*skipInner*/, 1/*isSync*/);		\
@@ -296,7 +298,7 @@ MONITOR_EXT_WRAP_NAME(pnga_brdcst)(Integer type, void *buf, Integer len, Integer
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_brdcst, pnga_brdcst);
 
   int mId_collectiveOp = hpcrun_ga_metricId_collectiveOp();
-  int mId_bytes = hpcrun_ga_metricId_bytesXfer();
+  int mId_bytes = hpcrun_ga_metricId_bytesXfr();
   ifSample(smpl, metricVec,
 	   collectMetric(metricVec, mId_collectiveOp, 1/*metricIncr*/),
 	   collectMetric(metricVec, mId_bytes, len/*metricIncr*/));
@@ -315,7 +317,7 @@ MONITOR_EXT_WRAP_NAME(pnga_gop)(Integer type, void *x, Integer n, char *op)
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_gop, pnga_gop);
 
   int mId_collectiveOp = hpcrun_ga_metricId_collectiveOp();
-  int mId_bytes = hpcrun_ga_metricId_bytesXfer();
+  int mId_bytes = hpcrun_ga_metricId_bytesXfr();
   ifSample(smpl, metricVec,
 	   collectMetric(metricVec, mId_collectiveOp, 1/*metricIncr*/),
 	   collectMetric(metricVec, mId_bytes, 8/*metricIncr*/));
@@ -384,7 +386,7 @@ MONITOR_EXT_WRAP_NAME(pnga_get)(Integer g_a, Integer* lo, Integer* hi, void* buf
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_get, pnga_get);
 
   int mId_onesided = hpcrun_ga_metricId_onesidedOp();
-  int mId_bytes = hpcrun_ga_metricId_bytesXfer();
+  int mId_bytes = hpcrun_ga_metricId_bytesXfr();
   ifSample(smpl, metricVec,
 	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
 	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
@@ -401,7 +403,7 @@ MONITOR_EXT_WRAP_NAME(pnga_put)(Integer g_a, Integer* lo, Integer* hi, void* buf
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_put, pnga_put);
 
   int mId_onesided = hpcrun_ga_metricId_onesidedOp();
-  int mId_bytes = hpcrun_ga_metricId_bytesXfer(); 
+  int mId_bytes = hpcrun_ga_metricId_bytesXfr(); 
   ifSample(smpl, metricVec,
 	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
 	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
@@ -418,7 +420,7 @@ MONITOR_EXT_WRAP_NAME(pnga_acc)(Integer g_a, Integer *lo, Integer *hi, void *buf
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_acc, pnga_acc);
 
   int mId_onesided = hpcrun_ga_metricId_onesidedOp();
-  int mId_bytes = hpcrun_ga_metricId_bytesXfer();
+  int mId_bytes = hpcrun_ga_metricId_bytesXfr();
   ifSample(smpl, metricVec,
 	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
 	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
@@ -446,7 +448,7 @@ MONITOR_EXT_WRAP_NAME(pnga_nbget)(Integer g_a, Integer *lo, Integer *hi, void *b
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_nbget, pnga_nbget);
 
   int mId_onesided = hpcrun_ga_metricId_onesidedOp();
-  int mId_bytes = hpcrun_ga_metricId_bytesXfer();
+  int mId_bytes = hpcrun_ga_metricId_bytesXfr();
   ifSample(smpl, metricVec,
 	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
 	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
@@ -463,7 +465,7 @@ MONITOR_EXT_WRAP_NAME(pnga_nbput)(Integer g_a, Integer *lo, Integer *hi, void *b
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_nbput, pnga_nbput);
 
   int mId_onesided = hpcrun_ga_metricId_onesidedOp();
-  int mId_bytes = hpcrun_ga_metricId_bytesXfer();
+  int mId_bytes = hpcrun_ga_metricId_bytesXfr();
   ifSample(smpl, metricVec,
 	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
 	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
@@ -480,7 +482,7 @@ MONITOR_EXT_WRAP_NAME(pnga_nbacc)(Integer g_a, Integer *lo, Integer *hi, void *b
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_nbacc, pnga_nbacc);
 
   int mId_onesided = hpcrun_ga_metricId_onesidedOp();
-  int mId_bytes = hpcrun_ga_metricId_bytesXfer();
+  int mId_bytes = hpcrun_ga_metricId_bytesXfr();
   ifSample(smpl, metricVec,
 	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
 	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
