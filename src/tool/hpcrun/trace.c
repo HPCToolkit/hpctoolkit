@@ -164,7 +164,11 @@ hpcrun_stream_open_trace_file(int thread)
   spinlock_lock(&files_lock);
   hpcrun_files_init();
 	/*FIXME : you are passsing 0 everytime? */
-  ret = hpcrun_open_file(hpcrun_get_rank(), thread, HPCRUN_TraceFnmSfx, FILES_EARLY);
+	int rank = hpcrun_get_rank();
+	if(rank < 0) {
+		rank = 0;
+	}
+  ret = hpcrun_open_file(rank, thread, HPCRUN_TraceFnmSfx, FILES_EARLY);
   spinlock_unlock(&files_lock);
 
   return ret;

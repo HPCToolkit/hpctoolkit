@@ -86,6 +86,9 @@ static FILE * open_stream_data_file(stream_data_t *st)
  * that this is bigger than the number of processes
  */
 	int rank = hpcrun_get_rank();//td->rank;//st->device_id; 
+	if (rank < 0) {
+		rank = 0;
+	}
   int fd = hpcrun_open_profile_file(rank, st->id);
 
   f = fdopen(fd, "w");

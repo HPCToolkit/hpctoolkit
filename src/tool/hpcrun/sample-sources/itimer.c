@@ -369,6 +369,7 @@ enum cudaRuntimeAPIIndex  {
     CUDA_FREE,
     CUDA_MEMCPY_ASYNC,
     CUDA_MEMCPY,
+    CUDA_MEMCPY_2D,
     CUDA_EVENT_ELAPSED_TIME,
     CUDA_MAX_APIS
 };
@@ -389,6 +390,7 @@ typedef struct cudaRuntimeFunctionPointer{
         cudaError_t(*cudaFreeReal) (void *);
         cudaError_t(*cudaMemcpyAsyncReal) (void * dst, const void * src, size_t count, enum cudaMemcpyKind kind, cudaStream_t);
         cudaError_t(*cudaMemcpyReal) (void * dst, const void * src, size_t count, enum cudaMemcpyKind kind);
+        cudaError_t(*cudaMemcpy2DReal) (void * dst, size_t dpitch, const void * src, size_t spitch, size_t width, size_t height, enum cudaMemcpyKind kind);
 	cudaError_t(*cudaEventElapsedTimeReal)(float * ms, cudaEvent_t start, cudaEvent_t end);
     };
     const char * functionName;
@@ -408,6 +410,7 @@ cudaRuntimeFunctionPointer_t  	cudaRuntimeFunctionPointer[] = {
     {0, "cudaFree"},
     {0, "cudaMemcpyAsync"},
     {0, "cudaMemcpy"},
+    {0, "cudaMemcpy2D"},
     {0, "cudaEventElapsedTime"}
 };
 
@@ -2211,6 +2214,56 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 return ret;
             }
             
+
+						cudaError_t cudaMemcpy2D(void * dst, size_t dpitch, const void * src, size_t spitch, size_t width, size_t height, enum cudaMemcpyKind kind)
+            {
+                
+                hpcrun_async_block();
+                
+                // Get CCT node (i.e., kernel launcher)
+                ucontext_t context;
+                getcontext(&context);
+                cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
+                // Enter into the trace
+                hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
+                trace_append(hpcrun_cct_persistent_id(launcher_cct));
+                
+                
+                TD_GET(is_thread_at_cuda_sync) = true;
+                
+                spinlock_lock(&g_gpu_lock);
+                uint64_t syncStart;
+                event_list_node  *  recorded_node = EnterCudaSync(& syncStart);
+                spinlock_unlock(&g_gpu_lock);
+                
+                cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_2D].cudaMemcpy2DReal(dst,dpitch,src,spitch,width,height,kind);
+                
+                spinlock_lock(&g_gpu_lock);
+                LeaveCudaSync(recorded_node,syncStart,ALL_STREAMS_MASK);
+                spinlock_unlock(&g_gpu_lock);
+                
+                struct timeval tv;
+                gettimeofday(&tv, NULL);
+                uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000)); 
+                
+                // this is both CPU and GPU idleness since one could have used cudaMemcpyAsync
+                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+                cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+                
+                // Since we were asyn blocked increase the time by syncEnd - syncStart
+                cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
+                
+                
+                // Enter into the trace
+                trace_append(hpcrun_cct_persistent_id(launcher_cct));
+                
+                hpcrun_async_unblock();
+                
+                TD_GET(is_thread_at_cuda_sync) = false;
+                return ret;
+                
+            }
+
             
             cudaError_t cudaMemcpy(void * dst, const void * src, size_t count, enum cudaMemcpyKind kind)
             {
