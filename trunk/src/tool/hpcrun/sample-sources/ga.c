@@ -71,7 +71,7 @@
 // local variables
 //***************************************************************************
 
-static int metricId_bytesXfer  = -1;
+static int metricId_bytesXfr  = -1;
 static int metricId_onesidedOp = -1;
 static int metricId_collectiveOp = -1;
 
@@ -92,7 +92,7 @@ METHOD_FN(init)
 {
   TMSG(GA, "init");
   self->state = INIT;
-  metricId_bytesXfer = -1;
+  metricId_bytesXfr = -1;
   metricId_onesidedOp = -1;
   metricId_collectiveOp = -1;
 #if (GA_DataCentric_Prototype)
@@ -164,8 +164,8 @@ static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
   TMSG(GA, "create GA metrics");
-  metricId_bytesXfer = hpcrun_new_metric();
-  hpcrun_set_metric_info(metricId_bytesXfer, "GA bytes xfr");
+  metricId_bytesXfr = hpcrun_new_metric();
+  hpcrun_set_metric_info(metricId_bytesXfr, "GA bytes xfr");
 
   metricId_onesidedOp = hpcrun_new_metric();
   hpcrun_set_metric_info(metricId_onesidedOp, "GA #onesided");
@@ -224,9 +224,9 @@ METHOD_FN(display_events)
 //***************************************************************************
 
 int
-hpcrun_ga_metricId_bytesXfer()
+hpcrun_ga_metricId_bytesXfr()
 {
-  return metricId_bytesXfer;
+  return metricId_bytesXfr;
 }
 
 int
