@@ -588,9 +588,23 @@ hpctrace_fmt_hdr_fprint(FILE* fs);
 // [hpctrace] trace record/datum
 //***************************************************************************
 
-int
-hpctrace_fmt_datum_outbuf(hpcio_outbuf_t* outbuf, uint64_t usec, uint32_t cpid);
+typedef struct hpctrace_fmt_datum_t {
+  uint64_t time; // microseconds
+  uint32_t cpId; // call path id (CCT leaf id)
+} hpctrace_fmt_datum_t;
 
+int
+hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* datum, FILE* fs);
+
+int
+hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* datum, hpcio_outbuf_t* outbuf);
+
+// N.B.: not async safe
+int
+hpctrace_fmt_datum_fwrite(hpctrace_fmt_datum_t* datum, FILE* outfs);
+
+int
+hpctrace_fmt_datum_fprint(hpctrace_fmt_datum_t* datum, FILE* fs);
 
 
 //***************************************************************************

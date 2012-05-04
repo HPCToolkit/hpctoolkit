@@ -741,26 +741,70 @@ hpctrace_fmt_hdr_fprint(FILE* fs)
 }
 
 
+//***************************************************************************
+// [hpctrace] datum (trace record)
+//***************************************************************************
+
+int
+hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* datum, FILE* fs)
+{
+  int ret = HPCFMT_OK;
+  
+  ret = hpcfmt_int8_fread(&(datum->time), fs);
+  if (ret != HPCFMT_OK) {
+    return ret; // can be HPCFMT_EOF
+  }
+
+  HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(datum->cpId), fs));
+
+  return HPCFMT_OK;
+}
+
+
 // Append the trace record to the outbuf.
 // Returns: HPCFMT_OK on success, else HPCFMT_ERR.
 int
-hpctrace_fmt_datum_outbuf(hpcio_outbuf_t* outbuf, uint64_t usec, uint32_t cpid)
+hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* datum, hpcio_outbuf_t* outbuf)
 {
   unsigned char buf[20];
   int shift, k;
 
   k = 0;
+
+  uint64_t time = datum->time;
   for (shift = 56; shift >= 0; shift -= 8) {
-    buf[k] = (usec >> shift) & 0xff;
+    buf[k] = (time >> shift) & 0xff;
     k++;
   }
+
+  uint64_t cpId = datum->cpId;
   for (shift = 24; shift >= 0; shift -= 8) {
-    buf[k] = (cpid >> shift) & 0xff;
+    buf[k] = (cpId >> shift) & 0xff;
     k++;
   }
+
   if (hpcio_outbuf_write(outbuf, buf, k) != k) {
     return HPCFMT_ERR;
   }
+
+  return HPCFMT_OK;
+}
+
+
+int
+hpctrace_fmt_datum_fwrite(hpctrace_fmt_datum_t* datum, FILE* outfs)
+{
+  hpcfmt_int8_fwrite(datum->time, outfs);
+  hpcfmt_int4_fwrite(datum->cpId, outfs);
+
+  return HPCFMT_OK;
+}
+
+
+int
+hpctrace_fmt_datum_fprint(hpctrace_fmt_datum_t* datum, FILE* fs)
+{
+  fprintf(fs, "(%"PRIu64", %u)\n", datum->time, datum->cpId);
 
   return HPCFMT_OK;
 }
