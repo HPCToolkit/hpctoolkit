@@ -588,10 +588,13 @@ hpctrace_fmt_hdr_fprint(FILE* fs);
 // [hpctrace] trace record/datum
 //***************************************************************************
 
+#define HPCRUN_FMT_MetricId_NULL (UINT32_MAX)
+
 typedef struct hpctrace_fmt_datum_t {
   uint64_t time; // microseconds
-  uint32_t cpId; // call path id (CCT leaf id)
+  uint32_t cpId; // call path id (CCT leaf id); cf. HPCRUN_FMT_CCTNodeId_NULL
 } hpctrace_fmt_datum_t;
+
 
 int
 hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* datum, FILE* fs);
