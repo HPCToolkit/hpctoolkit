@@ -766,7 +766,8 @@ hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* datum, FILE* fs)
 int
 hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* datum, hpcio_outbuf_t* outbuf)
 {
-  unsigned char buf[20];
+  const int bufSZ = sizeof(hpctrace_fmt_datum_t);
+  unsigned char buf[bufSZ];
   int shift, k;
 
   k = 0;
@@ -777,7 +778,7 @@ hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* datum, hpcio_outbuf_t* outbuf)
     k++;
   }
 
-  uint64_t cpId = datum->cpId;
+  uint32_t cpId = datum->cpId;
   for (shift = 24; shift >= 0; shift -= 8) {
     buf[k] = (cpId >> shift) & 0xff;
     k++;
