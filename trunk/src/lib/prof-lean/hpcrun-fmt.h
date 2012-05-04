@@ -163,93 +163,6 @@ hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc);
 
 
 //***************************************************************************
-// hdr (trace, located here for now)
-//***************************************************************************
-
-static const char HPCTRACE_FMT_Magic[]   = "HPCRUN-trace______"; // 18 bytes
-static const char HPCTRACE_FMT_Version[] = "01.00";              // 5 bytes
-static const char HPCTRACE_FMT_Endian[]  = "b";                  // 1 byte
-
-#define HPCTRACE_FMT_MagicLenX   (sizeof(HPCTRACE_FMT_Magic) - 1)
-#define HPCTRACE_FMT_VersionLenX (sizeof(HPCTRACE_FMT_Version) - 1)
-#define HPCTRACE_FMT_EndianLenX  (sizeof(HPCTRACE_FMT_Endian) - 1)
-
-static const int HPCTRACE_FMT_MagicLen   = HPCTRACE_FMT_MagicLenX;
-static const int HPCTRACE_FMT_VersionLen = HPCTRACE_FMT_VersionLenX;
-static const int HPCTRACE_FMT_EndianLen  = HPCTRACE_FMT_EndianLenX;
-
-static const int HPCTRACE_FMT_HeaderLen = 
-  (HPCTRACE_FMT_MagicLenX + HPCTRACE_FMT_VersionLenX + HPCTRACE_FMT_EndianLenX);
-
-
-int
-hpctrace_fmt_hdr_fread(FILE* infs);
-
-int
-hpctrace_fmt_hdr_fwrite(FILE* fs);
-
-int
-hpctrace_fmt_hdr_fprint(FILE* fs);
-
-
-//***************************************************************************
-// hpctrace in new outbuf format
-//***************************************************************************
-
-// write trace header to outbuf
-int
-hpctrace_fmt_hdr_outbuf(hpcio_outbuf_t* outbuf);
-
-// append trace record to outbuf
-int
-hpctrace_fmt_append_outbuf(hpcio_outbuf_t* outbuf, uint64_t usec, uint32_t cpid);
-
-
-//***************************************************************************
-// hdr (hpcprof-metricdb, located here for now)
-//***************************************************************************
-
-static const char HPCMETRICDB_FMT_Magic[]   = "HPCPROF-metricdb__"; // 18 bytes
-static const char HPCMETRICDB_FMT_Version[] = "00.10";              // 5 bytes
-static const char HPCMETRICDB_FMT_Endian[]  = "b";                  // 1 byte
-
-#define HPCMETRICDB_FMT_MagicLenX   (sizeof(HPCMETRICDB_FMT_Magic) - 1)
-#define HPCMETRICDB_FMT_VersionLenX (sizeof(HPCMETRICDB_FMT_Version) - 1)
-#define HPCMETRICDB_FMT_EndianLenX  (sizeof(HPCMETRICDB_FMT_Endian) - 1)
-
-static const int HPCMETRICDB_FMT_MagicLen   = HPCMETRICDB_FMT_MagicLenX;
-static const int HPCMETRICDB_FMT_VersionLen = HPCMETRICDB_FMT_VersionLenX;
-static const int HPCMETRICDB_FMT_EndianLen  = HPCMETRICDB_FMT_EndianLenX;
-
-static const int HPCMETRICDB_FMT_HeaderLen = 
-  (HPCMETRICDB_FMT_MagicLenX + HPCMETRICDB_FMT_VersionLenX
-   + HPCMETRICDB_FMT_EndianLenX);
-
-
-
-typedef struct hpcmetricDB_fmt_hdr_t {
-
-  char versionStr[sizeof(HPCMETRICDB_FMT_Version)];
-  double version;
-  char endian;
-
-  uint32_t numNodes;
-  uint32_t numMetrics;
-
-} hpcmetricDB_fmt_hdr_t;
-
-
-int
-hpcmetricDB_fmt_hdr_fread(hpcmetricDB_fmt_hdr_t* hdr, FILE* infs);
-
-int
-hpcmetricDB_fmt_hdr_fwrite(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
-
-int
-hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
-
-
-//***************************************************************************
 // epoch-hdr
 //***************************************************************************
 
@@ -632,6 +545,100 @@ hpcrun_fmt_lip_fwrite(lush_lip_t* x, FILE* fs);
 
 extern int 
 hpcrun_fmt_lip_fprint(lush_lip_t* x, FILE* fs, const char* pre);
+
+
+//***************************************************************************
+// hpctrace (located here for now)
+//***************************************************************************
+
+//***************************************************************************
+// [hpctrace] hdr
+//***************************************************************************
+
+static const char HPCTRACE_FMT_Magic[]   = "HPCRUN-trace______"; // 18 bytes
+static const char HPCTRACE_FMT_Version[] = "01.00";              // 5 bytes
+static const char HPCTRACE_FMT_Endian[]  = "b";                  // 1 byte
+
+#define HPCTRACE_FMT_MagicLenX   (sizeof(HPCTRACE_FMT_Magic) - 1)
+#define HPCTRACE_FMT_VersionLenX (sizeof(HPCTRACE_FMT_Version) - 1)
+#define HPCTRACE_FMT_EndianLenX  (sizeof(HPCTRACE_FMT_Endian) - 1)
+
+static const int HPCTRACE_FMT_MagicLen   = HPCTRACE_FMT_MagicLenX;
+static const int HPCTRACE_FMT_VersionLen = HPCTRACE_FMT_VersionLenX;
+static const int HPCTRACE_FMT_EndianLen  = HPCTRACE_FMT_EndianLenX;
+
+static const int HPCTRACE_FMT_HeaderLen = 
+  (HPCTRACE_FMT_MagicLenX + HPCTRACE_FMT_VersionLenX + HPCTRACE_FMT_EndianLenX);
+
+
+int
+hpctrace_fmt_hdr_fread(FILE* infs);
+
+int
+hpctrace_fmt_hdr_outbuf(hpcio_outbuf_t* outbuf);
+
+// N.B.: not async safe
+int
+hpctrace_fmt_hdr_fwrite(FILE* fs);
+
+int
+hpctrace_fmt_hdr_fprint(FILE* fs);
+
+//***************************************************************************
+// [hpctrace] trace record/datum
+//***************************************************************************
+
+int
+hpctrace_fmt_datum_outbuf(hpcio_outbuf_t* outbuf, uint64_t usec, uint32_t cpid);
+
+
+
+//***************************************************************************
+// hpcprof-metricdb (located here for now)
+//***************************************************************************
+
+//***************************************************************************
+// [hpcprof-metricdb] hdr
+//***************************************************************************
+
+static const char HPCMETRICDB_FMT_Magic[]   = "HPCPROF-metricdb__"; // 18 bytes
+static const char HPCMETRICDB_FMT_Version[] = "00.10";              // 5 bytes
+static const char HPCMETRICDB_FMT_Endian[]  = "b";                  // 1 byte
+
+#define HPCMETRICDB_FMT_MagicLenX   (sizeof(HPCMETRICDB_FMT_Magic) - 1)
+#define HPCMETRICDB_FMT_VersionLenX (sizeof(HPCMETRICDB_FMT_Version) - 1)
+#define HPCMETRICDB_FMT_EndianLenX  (sizeof(HPCMETRICDB_FMT_Endian) - 1)
+
+static const int HPCMETRICDB_FMT_MagicLen   = HPCMETRICDB_FMT_MagicLenX;
+static const int HPCMETRICDB_FMT_VersionLen = HPCMETRICDB_FMT_VersionLenX;
+static const int HPCMETRICDB_FMT_EndianLen  = HPCMETRICDB_FMT_EndianLenX;
+
+static const int HPCMETRICDB_FMT_HeaderLen = 
+  (HPCMETRICDB_FMT_MagicLenX + HPCMETRICDB_FMT_VersionLenX
+   + HPCMETRICDB_FMT_EndianLenX);
+
+
+
+typedef struct hpcmetricDB_fmt_hdr_t {
+
+  char versionStr[sizeof(HPCMETRICDB_FMT_Version)];
+  double version;
+  char endian;
+
+  uint32_t numNodes;
+  uint32_t numMetrics;
+
+} hpcmetricDB_fmt_hdr_t;
+
+
+int
+hpcmetricDB_fmt_hdr_fread(hpcmetricDB_fmt_hdr_t* hdr, FILE* infs);
+
+int
+hpcmetricDB_fmt_hdr_fwrite(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
+
+int
+hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
 
 
 //***************************************************************************

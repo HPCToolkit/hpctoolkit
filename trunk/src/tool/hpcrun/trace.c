@@ -161,8 +161,8 @@ hpcrun_trace_append(unsigned int call_path_id)
     }
     td->trace_max_time_us = microtime;
 
-    ret = hpctrace_fmt_append_outbuf(&td->trace_outbuf, microtime,
-				     (uint32_t)call_path_id);
+    ret = hpctrace_fmt_datum_outbuf(&td->trace_outbuf, microtime,
+				    (uint32_t)call_path_id);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "append");
   }
 }
