@@ -489,6 +489,9 @@ void CUPTIAPI EventInsertionCallback(void *userdata, CUpti_CallbackDomain domain
 
 static struct itimerval itimer;
 
+
+//static uint64_t idt = 0;
+
 static const struct itimerval zerotimer = {
     .it_interval = {
 	    .tv_sec = 0L,
@@ -915,6 +918,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 ADD_TO_FREE_ACTIVE_KERNEL_NODE_LIST(dummy_kernel_node);
                 
             }
+
             return last_kernel_end_time;
             
         }
@@ -1512,8 +1516,8 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
 						/*creating a dummy metric for stream ccts*/
             hpcrun_set_metric_info_and_period(stream_special_metric_id, "STREAM SPECIAL (us)", MetricFlags_ValFmt_Int, 1);
             hpcrun_set_metric_info_and_period(metric_id, "WALLCLOCK (us)", MetricFlags_ValFmt_Int, sample_period);
-            hpcrun_set_metric_info_and_period(cpu_idle_metric_id, "CPU_IDLE", MetricFlags_ValFmt_Real, 1);
-            hpcrun_set_metric_info_and_period(gpu_idle_metric_id, "GPU_IDLE_CAUSE", MetricFlags_ValFmt_Real, 1);
+            hpcrun_set_metric_info_and_period(cpu_idle_metric_id, "CPU_IDLE", MetricFlags_ValFmt_Int, 1);
+            hpcrun_set_metric_info_and_period(gpu_idle_metric_id, "GPU_IDLE_CAUSE", MetricFlags_ValFmt_Int, 1);
             hpcrun_set_metric_info_and_period(cpu_idle_cause_metric_id, "CPU_IDLE_CAUSE", MetricFlags_ValFmt_Real, 1);
             hpcrun_set_metric_info_and_period(cpu_overlap_metric_id, "OVERLAPPED_CPU", MetricFlags_ValFmt_Real, 1);
             hpcrun_set_metric_info_and_period(gpu_overlap_metric_id, "OVERLAPPED_GPU", MetricFlags_ValFmt_Real, 1);
@@ -1643,7 +1647,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 struct timeval tv;
                 gettimeofday(&tv, NULL);
                 uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000));
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 // Since we were asyn blocked increase the time by syncEnd - syncStart
                 cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 
@@ -1698,7 +1702,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 gettimeofday(&tv, NULL);
                 uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000));
                 
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 // Since we were asyn blocked increase the time by syncEnd - syncStart
                 cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 
@@ -1747,7 +1751,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 gettimeofday(&tv, NULL);
                 uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000));
                 
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 // Since we were asyn blocked increase the time by syncEnd - syncStart
                 cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 
@@ -1795,7 +1799,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 gettimeofday(&tv, NULL);
                 uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000));
                 
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 // Since we were asyn blocked increase the time by syncEnd - syncStart
                 cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 
@@ -1842,7 +1846,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 gettimeofday(&tv, NULL);
                 uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000)); 
                 
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 // Since we were asyn blocked increase the time by syncEnd - syncStart
                 cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 
@@ -2069,9 +2073,12 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 uint64_t cpu_idle_time = last_kernel_end_time == 0 ? 0: last_kernel_end_time  - syncStart;
                 assert(cpu_idle_time >= 0); // TODO: can become -ve if last_kernel_end_time  < syncStart 
                 uint64_t gpu_idle_time = last_kernel_end_time == 0 ? syncEnd - syncStart : syncEnd - last_kernel_end_time;
+//idt += gpu_idle_time;
+//printf("\n gpu_idle_time = %lu .. %lu",gpu_idle_time,idt);
+ 
                 assert(gpu_idle_time >= 0); // TODO: can become -ve if isyncEnd < last_kernel_end_time
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (cpu_idle_time)});
-                cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (gpu_idle_time)});
+                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (cpu_idle_time)});
+                cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (gpu_idle_time)});
                 
                 // Since we were asyn blocked increase the time by syncEnd - syncStart
                 cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
@@ -2137,10 +2144,12 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 uint64_t cpu_idle_time = last_kernel_end_time == 0 ? 0: last_kernel_end_time  - syncStart;
                 assert(cpu_idle_time >= 0); // TODO: can become -ve if last_kernel_end_time  < syncStart 
                 uint64_t gpu_idle_time = last_kernel_end_time == 0 ? syncEnd - syncStart : syncEnd - last_kernel_end_time;
+//idt += gpu_idle_time;
+//printf("\n gpu_idle_time = %lu .. %lu",gpu_idle_time,idt);
                 assert(gpu_idle_time >= 0); // TODO: can become -ve if isyncEnd < last_kernel_end_time
                 
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (cpu_idle_time)});
-                cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (gpu_idle_time)});
+                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (cpu_idle_time)});
+                cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (gpu_idle_time)});
                 
                 // Since we were asyn blocked increase the time by syncEnd - syncStart
                 cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
@@ -2247,9 +2256,11 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000)); 
                 
                 // this is both CPU and GPU idleness since one could have used cudaMemcpyAsync
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
-                cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
+                cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 
+//idt += syncEnd - syncStart;
+//printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
                 // Since we were asyn blocked increase the time by syncEnd - syncStart
                 cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 
@@ -2297,8 +2308,10 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000)); 
                 
                 // this is both CPU and GPU idleness since one could have used cudaMemcpyAsync
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
-                cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
+                cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
+//idt += syncEnd - syncStart;
+//printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
                 
                 // Since we were asyn blocked increase the time by syncEnd - syncStart
                 cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
@@ -2365,7 +2378,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 gettimeofday(&tv, NULL);
                 uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000));
                 
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 // Since we were asyn blocked increase the time by syncEnd - syncStart
                 cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 
@@ -2411,7 +2424,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 gettimeofday(&tv, NULL);
                 uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000));
                 
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 // Since we were asyn blocked increase the time by syncEnd - syncStart
                 cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 
@@ -2698,8 +2711,10 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000)); 
                 
                 // this is both CPU and GPU idleness since one could have used cudaMemcpyAsync
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
-                cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
+                cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
+//idt += syncEnd - syncStart;
+//printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
                 
                 // Since we were asyn blocked increase the time by syncEnd - syncStart
                 cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
@@ -2801,8 +2816,8 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000)); 
                 
                 // this is both CPU and GPU idleness since one could have used cudaMemcpyAsync
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
-                cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.r = (syncEnd - syncStart)});
+                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
+                cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 
                 // Since we were asyn blocked increase the time by syncEnd - syncStart
                 cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
@@ -2929,7 +2944,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                             
                             // Increment CPU idleness by metric_incr
                             cct_metric_data_increment(cpu_idle_metric_id, node, (cct_metric_data_t) {
-                                .r = metric_incr});
+                                .i = metric_incr});
 #ifdef NOT_DEFERED
                             // Increment CPU idle cause by metric_incr/num_unfinshed_streams for each of unfinshed_streams
                             for (stream_node * unfinished_stream = unfinished_event_list_head; unfinished_stream; unfinished_stream = unfinished_stream->next_unfinished_stream)
@@ -2953,8 +2968,11 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                         
                         // Increment gpu_ilde by metric_incr
                         cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
-                            .r = metric_incr}
+                            .i = metric_incr}
                                                   );
+
+//idt += metric_incr;
+//printf("\n gpu_idle_time = %lu, %lu",metric_incr, idt);
                         
                     }
                     spinlock_unlock(&g_gpu_lock);
