@@ -226,6 +226,37 @@ spinlock_lock(&g_gpu_lock);} while(0)
 hpcrun_async_unblock();} while(0)
 
 
+
+#define SYNC_PROLOGUE(ctxt, launch_node, start_time, rec_node) \
+    hpcrun_async_block();      \
+    ucontext_t ctxt;           \
+    getcontext(&ctxt);         \
+    cct_node_t * launch_node = hpcrun_sample_callpath(&ctxt, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ ); \
+    hpcrun_cct_persistent_id_trace_mutate(launch_node);     \
+    trace_append(hpcrun_cct_persistent_id(launch_node));    \
+    TD_GET(is_thread_at_cuda_sync) = true;                      \
+    spinlock_lock(&g_gpu_lock);                                 \
+    uint64_t start_time;                                         \
+    event_list_node  *  rec_node = EnterCudaSync(& start_time); \
+    spinlock_unlock(&g_gpu_lock)       
+
+
+
+#define SYNC_EPILOGUE(ctxt, launch_node, start_time, rec_node, mask, end_time)      \
+    spinlock_lock(&g_gpu_lock);                                     \
+    LeaveCudaSync(rec_node,start_time,mask);                        \
+    spinlock_unlock(&g_gpu_lock);                                   \
+    struct timeval tv;                                              \
+    gettimeofday(&tv, NULL);                                        \
+    uint64_t end_time  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000)); \
+    cct_metric_data_increment(cpu_idle_metric_id, launch_node, (cct_metric_data_t) {.i = (end_time - start_time)});  \
+    cct_metric_data_increment(wall_clock_metric_id, launch_node, (cct_metric_data_t) {.i = (end_time - start_time)});    \
+    trace_append(hpcrun_cct_persistent_id(launch_node));            \
+    hpcrun_async_unblock();                                         \
+    TD_GET(is_thread_at_cuda_sync) = false
+
+
+
 #define GET_NEW_TREE_NODE(node_ptr) do {						\
 if (g_free_tree_nodes_head) {							\
 node_ptr = g_free_tree_nodes_head;					\
@@ -277,10 +308,10 @@ enum _cuda_const{
 static int itimer_signal_handler(int sig, siginfo_t * siginfo, void *context);
 
 /*struct kind_info_t {
-  int idx;     // current index in kind
-  kind_info_t* link; // all kinds linked together in singly linked list
-}kind_info_t;
-*/
+ int idx;     // current index in kind
+ kind_info_t* link; // all kinds linked together in singly linked list
+ }kind_info_t;
+ */
 
 
 #ifdef ENABLE_CUDA
@@ -391,7 +422,7 @@ typedef struct cudaRuntimeFunctionPointer{
         cudaError_t(*cudaMemcpyAsyncReal) (void * dst, const void * src, size_t count, enum cudaMemcpyKind kind, cudaStream_t);
         cudaError_t(*cudaMemcpyReal) (void * dst, const void * src, size_t count, enum cudaMemcpyKind kind);
         cudaError_t(*cudaMemcpy2DReal) (void * dst, size_t dpitch, const void * src, size_t spitch, size_t width, size_t height, enum cudaMemcpyKind kind);
-	cudaError_t(*cudaEventElapsedTimeReal)(float * ms, cudaEvent_t start, cudaEvent_t end);
+        cudaError_t(*cudaEventElapsedTimeReal)(float * ms, cudaEvent_t start, cudaEvent_t end);
     };
     const char * functionName;
 } cudaRuntimeFunctionPointer_t;
@@ -431,9 +462,9 @@ enum cuDriverAPIIndex  {
     CU_MEMCPY_D_TO_H_ASYNC,
     CU_MEMCPY_D_TO_H,    
     
-
+    
     CU_EVENT_ELAPSED_TIME,
-
+    
     CU_MAX_APIS
 };
 
@@ -454,9 +485,9 @@ typedef struct cuDriverFunctionPointer{
         CUresult (*cuMemcpyHtoDReal) (CUdeviceptr dstDevice, const void * srcHost, size_t ByteCount); 
         CUresult (*cuMemcpyDtoHAsyncReal) (void * dstHost, CUdeviceptr srcDevice, size_t ByteCount, CUstream hStream) ; 
         CUresult (*cuMemcpyDtoHReal) (void * dstHost, CUdeviceptr srcDevice, size_t ByteCount);                
-	
-	CUresult (*cuEventElapsedTimeReal)(float * pMilliseconds, CUevent hStart, CUevent hEnd);	
-
+        
+        CUresult (*cuEventElapsedTimeReal)(float * pMilliseconds, CUevent hStart, CUevent hEnd);	
+        
     };
     const char * functionName;
 } cuDriverFunctionPointer_t;
@@ -575,11 +606,11 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
         CloseAllStreams(root->right);
         uint32_t streamId;
         streamId = root->id;
-
-                gpu_trace_close(g_stream_array[streamId].st, DEVICE_ID, streamId);
-                hpcrun_stream_finalize(g_stream_array[streamId].st);
-
-
+        
+        gpu_trace_close(g_stream_array[streamId].st, DEVICE_ID, streamId);
+        hpcrun_stream_finalize(g_stream_array[streamId].st);
+        
+        
         //gpu_trace_close(DEVICE_ID, streamId);
 		//hpcrun_stream_finalize(g_stream_array[streamId].st);
 		g_stream_array[streamId].st = NULL;
@@ -918,7 +949,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 ADD_TO_FREE_ACTIVE_KERNEL_NODE_LIST(dummy_kernel_node);
                 
             }
-
+            
             return last_kernel_end_time;
             
         }
@@ -982,17 +1013,15 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
 #endif                
                         assert(elapsedTime > 0 );
                         
-                        uint64_t micro_time_start = ((uint64_t)elapsedTime) * 1000 + g_start_of_world_time;
-                        
+                        uint64_t micro_time_start = (uint64_t)(((double)elapsedTime) * 1000) + g_start_of_world_time;
 #if 0
                         fprintf(stderr, "\n started at  :  %lu", micro_time_start);
 #endif
-						// TODO : START TRACE WITH  with IDLE MARKER .. This should go away after trace viewer changes
-						cct_bundle_t *bundle = &(cur_stream->st->epoch->csdata); //&(TD_GET(epoch)->csdata);
-						cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
-						hpcrun_cct_persistent_id_trace_mutate(idl);
+                        
 						
-						gpu_trace_append_with_time(cur_stream->st, DEVICE_ID, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(idl), micro_time_start - 1);
+                        
+                        
+						gpu_trace_append_with_time(cur_stream->st, DEVICE_ID, GET_STREAM_ID(cur_stream),  cur_stream->st->idle_node_id, micro_time_start - 1);
 						
 						cct_node_t *stream_cct = current_event->stream_launcher_cct;
 						hpcrun_cct_persistent_id_trace_mutate(stream_cct);
@@ -1009,29 +1038,29 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                         CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_ELAPSED_TIME].cuEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_end));
 #endif
                         assert(elapsedTime > 0 );
-                        uint64_t micro_time_end = ((uint64_t)elapsedTime) * 1000 + g_start_of_world_time;
+                        uint64_t micro_time_end = (uint64_t)(((double)elapsedTime) * 1000) + g_start_of_world_time;
 #if 0
                         fprintf(stderr, "\n Ended  at  :  %lu", micro_time_end);
 #endif
-												
-												//printf("\n adding stream_cct:%x with id:%d",stream_cct, hpcrun_cct_persistent_id(stream_cct)); 
+                        
+                        //printf("\n adding stream_cct:%x with id:%d",stream_cct, hpcrun_cct_persistent_id(stream_cct)); 
                         gpu_trace_append_with_time(cur_stream->st, DEVICE_ID, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(stream_cct),  micro_time_end);
                         
                         // TODO : WE JUST NEED TO PUT IDLE MARKER
-                        gpu_trace_append_with_time(cur_stream->st, DEVICE_ID, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(idl),  micro_time_end + 1);
+                        gpu_trace_append_with_time(cur_stream->st, DEVICE_ID, GET_STREAM_ID(cur_stream),  cur_stream->st->idle_node_id,  micro_time_end + 1);
 #if 0
                         
                         err_cuda = cudaEventElapsedTime(&elapsedTime, current_event->event_start, current_event->event_end);
                         //fprintf(stderr, "\n Length of Event :  %f", elapsedTime);
                         
 #endif
-  
+                        
                         assert(micro_time_start <= micro_time_end );
                         
                         // Add the kernel execution time to the gpu_activity_time_metric_id
                         cct_metric_data_increment(gpu_activity_time_metric_id,current_event->launcher_cct, (cct_metric_data_t) {
                             .i = (micro_time_end - micro_time_start) });
-  
+                        
                         event_list_node *deferred_node = current_event;
                         current_event = current_event->next;
                         // Add to_free to fre list 
@@ -1380,10 +1409,10 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
 #if 1            
 #ifdef ENABLE_CUDA
             if (fetch_and_add(&g_active_threads, -1L) == 1L) {
-								/*FIXME: REVISIT to see how this interacts with the finalize in hpcrun
- 									* right now, this causes a hang.
- 									*/ 			
-                			SYNCHRONOUS_CLEANUP;
+                /*FIXME: REVISIT to see how this interacts with the finalize in hpcrun
+                 * right now, this causes a hang.
+                 */ 			
+                SYNCHRONOUS_CLEANUP;
                 // Walk the stream splay tree and close each trace.
                 CloseAllStreams(stream_to_id_tree_root);
                 stream_to_id_tree_root = NULL;
@@ -1490,9 +1519,9 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
 #endif
             
 #ifdef ENABLE_CUDA
-           
-						/*Creating a dummy metric for stream ccts*/
- 						stream_special_metric_id = hpcrun_new_metric();
+            
+            /*Creating a dummy metric for stream ccts*/
+            stream_special_metric_id = hpcrun_new_metric();
             // Create metrics for CPU/GPU blame shifting
             // cpu_idle_metric_id a.k.a CPU_IDLE measures the time when CPU is idle waiting for GPU to finish 
             cpu_idle_metric_id = hpcrun_new_metric();
@@ -1513,7 +1542,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
             gpu_activity_time_metric_id = hpcrun_new_metric();
             
             TMSG(ITIMER_CTL, "setting metric itimer period = %ld", sample_period);
-						/*creating a dummy metric for stream ccts*/
+            /*creating a dummy metric for stream ccts*/
             hpcrun_set_metric_info_and_period(stream_special_metric_id, "STREAM SPECIAL (us)", MetricFlags_ValFmt_Int, 1);
             hpcrun_set_metric_info_and_period(metric_id, "WALLCLOCK (us)", MetricFlags_ValFmt_Int, sample_period);
             hpcrun_set_metric_info_and_period(cpu_idle_metric_id, "CPU_IDLE", MetricFlags_ValFmt_Int, 1);
@@ -1595,16 +1624,19 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                         monitor_enable_new_threads();
                     }
                     
-                        struct timeval tv;
-                        gettimeofday(&tv, NULL);
+                    struct timeval tv;
+                    gettimeofday(&tv, NULL);
                     g_stream_array[new_streamId].st = hpcrun_stream_data_alloc_init(DEVICE_ID, new_streamId);
                     gpu_trace_open(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId);
-
+                    
 					/*FIXME: convert below 4 lines to a macro*/
 					cct_bundle_t *bundle = &(g_stream_array[new_streamId].st->epoch->csdata);
 					cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
 					hpcrun_cct_persistent_id_trace_mutate(idl);
-					gpu_trace_append(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId, hpcrun_cct_persistent_id(idl));
+                    // store the persistent id one time
+                    g_stream_array[new_streamId].st->idle_node_id = hpcrun_cct_persistent_id(idl);
+                    
+					gpu_trace_append(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId, g_stream_array[new_streamId].st->idle_node_id);
 					
                     g_stream0_not_initialized = false;
                 }
@@ -1612,104 +1644,32 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 
             }
             
-            
+                            
             
 #ifdef CUDA_RT_API
             cudaError_t cudaThreadSynchronize(void) {
-                hpcrun_async_block();
-                
-                // Get CCT node (i.e., kernel launcher)
-                ucontext_t context;
-                getcontext(&context);
-                cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
-                // Enter into the trace
-                hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                
-                
-                TD_GET(is_thread_at_cuda_sync) = true;
-                
-                spinlock_lock(&g_gpu_lock);
-                uint64_t syncStart;
-                event_list_node  *  recorded_node = EnterCudaSync(& syncStart);
-                spinlock_unlock(&g_gpu_lock);
-                
-                
+
+                SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+                                            
                 cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_THREAD_SYNCHRONIZE].cudaThreadSynchronizeReal();
                 
-                spinlock_lock(&g_gpu_lock);
-                LeaveCudaSync(recorded_node,syncStart,ALL_STREAMS_MASK);
-                spinlock_unlock(&g_gpu_lock);
-                
-                
-                
-                struct timeval tv;
-                gettimeofday(&tv, NULL);
-                uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000));
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
-                // Since we were asyn blocked increase the time by syncEnd - syncStart
-                cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
-                
-                
-                // Enter into the trace
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                hpcrun_async_unblock();
-                
-                TD_GET(is_thread_at_cuda_sync) = false;
+                SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd); 
                 return ret;
             }
             
             cudaError_t cudaStreamSynchronize(cudaStream_t stream)
             {
                 fprintf(stderr,"\n %s","cudaStreamSynchronize");
-                hpcrun_async_block();
-                
-                
-                // Get CCT node (i.e., kernel launcher)
-                ucontext_t context;
-                getcontext(&context);
-                cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
-                // Enter into the trace
-                hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                
-                
-                
-                TD_GET(is_thread_at_cuda_sync) = true;
-                
-                spinlock_lock(&g_gpu_lock);
-                uint64_t syncStart;
-                event_list_node  *  recorded_node = EnterCudaSync(& syncStart);
-                spinlock_unlock(&g_gpu_lock);
+
+                SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
                 
                 cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_STREAM_SYNCHRONIZE].cudaStreamSynchronizeReal(stream);
-                //TODO:get stream
-                //CUcontext ctx;
-                //cuCtxGetCurrent(&ctx); 
+
                 uint32_t streamId;
-                //cuptiGetStreamId(ctx,stream,&streamId);
-                //TODO: delete me
                 streamId = SplayGetStreamId(stream_to_id_tree_root, stream);
+
                 
-                spinlock_lock(&g_gpu_lock);
-                LeaveCudaSync(recorded_node,syncStart, streamId);
-                spinlock_unlock(&g_gpu_lock);
-                
-                struct timeval tv;
-                gettimeofday(&tv, NULL);
-                uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000));
-                
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
-                // Since we were asyn blocked increase the time by syncEnd - syncStart
-                cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
-                
-                // Enter into the trace
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                hpcrun_async_unblock();
-                TD_GET(is_thread_at_cuda_sync) = false;
+                SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, streamId, syncEnd); 
                 return ret;
             }
             
@@ -1719,96 +1679,30 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
             cudaError_t cudaEventSynchronize(cudaEvent_t event)
             {
                 fprintf(stderr,"\n %s","cudaEventSynchronize");
-                hpcrun_async_block();
-                // Get CCT node (i.e., kernel launcher)
-                ucontext_t context;
-                getcontext(&context);
-                cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
-                // Enter into the trace
-                hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                
-                
-                
-                
-                
-                TD_GET(is_thread_at_cuda_sync) = true;
-                
-                
-                spinlock_lock(&g_gpu_lock);
-                uint64_t syncStart;
-                event_list_node  *  recorded_node = EnterCudaSync(& syncStart);
-                spinlock_unlock(&g_gpu_lock);
-                
+
+                SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+                                
                 cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_EVENT_SYNCHRONIZE].cudaEventSynchronizeReal(event);
                 
-                spinlock_lock(&g_gpu_lock);
-                LeaveCudaSync(recorded_node,syncStart,ALL_STREAMS_MASK);
-                spinlock_unlock(&g_gpu_lock);
                 
-                struct timeval tv;
-                gettimeofday(&tv, NULL);
-                uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000));
-                
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
-                // Since we were asyn blocked increase the time by syncEnd - syncStart
-                cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
-                
-                
-                // Enter into the trace
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                hpcrun_async_unblock();
-                TD_GET(is_thread_at_cuda_sync) = false;
+                SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd); 
+
                 return ret;
             }
             
             cudaError_t cudaStreamWaitEvent(cudaStream_t stream, cudaEvent_t event, unsigned int flags)
             {
                 fprintf(stderr,"\n %s","cudaStreamWaitEvent");
-                hpcrun_async_block();
-                
-                // Get CCT node (i.e., kernel launcher)
-                ucontext_t context;
-                getcontext(&context);
-                cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
-                // Enter into the trace
-                hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                
-                
-                TD_GET(is_thread_at_cuda_sync) = true;
-                
-                spinlock_lock(&g_gpu_lock);
-                uint64_t syncStart;
-                event_list_node  *  recorded_node = EnterCudaSync(& syncStart);
-                spinlock_unlock(&g_gpu_lock);
+
+                SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
                 
                 cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_STREAM_WAIT_EVENT].cudaStreamWaitEventReal(stream, event, flags);
                 
                 uint32_t streamId;
                 streamId = SplayGetStreamId(stream_to_id_tree_root, stream);
+                                
+                SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, streamId, syncEnd); 
                 
-                
-                spinlock_lock(&g_gpu_lock);
-                LeaveCudaSync(recorded_node,syncStart,streamId);
-                spinlock_unlock(&g_gpu_lock);
-                struct timeval tv;
-                gettimeofday(&tv, NULL);
-                uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000));
-                
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
-                // Since we were asyn blocked increase the time by syncEnd - syncStart
-                cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
-                
-                // Enter into the trace
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                hpcrun_async_unblock();
-                
-                TD_GET(is_thread_at_cuda_sync) = false;
                 return ret;
             }
             
@@ -1818,44 +1712,13 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
             cudaError_t cudaDeviceSynchronize(void)
             {
                 fprintf(stderr,"\n %s","cudaDeviceSynchronize");
-                hpcrun_async_block();
-                // Get CCT node (i.e., kernel launcher)
-                ucontext_t context;
-                getcontext(&context);
-                cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
-                // Enter into the trace
-                hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                
-                
-                TD_GET(is_thread_at_cuda_sync) = true;
-                
-                spinlock_lock(&g_gpu_lock);
-                uint64_t syncStart;
-                event_list_node  *  recorded_node = EnterCudaSync(& syncStart);
-                spinlock_unlock(&g_gpu_lock);
+
+                SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
                 
                 cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_DEVICE_SYNCHRONIZE].cudaDeviceSynchronizeReal();
                 
-                spinlock_lock(&g_gpu_lock);
-                LeaveCudaSync(recorded_node,syncStart,ALL_STREAMS_MASK);
-                spinlock_unlock(&g_gpu_lock);
-                
-                struct timeval tv;
-                gettimeofday(&tv, NULL);
-                uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000)); 
-                
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
-                // Since we were asyn blocked increase the time by syncEnd - syncStart
-                cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
-                
-                // Enter into the trace
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                hpcrun_async_unblock();
-                
-                TD_GET(is_thread_at_cuda_sync) = false;
+                SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd); 
+
                 return ret;
             }
             
@@ -1871,7 +1734,6 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 fprintf(stderr,"\n stream = %p ", TD_GET(active_stream)); 
                 hpcrun_async_unblock();
                 
-                //TODO: tetsing , need to figure out correct implementation
                 CreateStream0IfNot(stream);
                 
                 
@@ -1887,7 +1749,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
 #if 1
                 uint32_t streamId = 0;
                 event_list_node *event_node;
-
+                
                 streamId = SplayGetStreamId(stream_to_id_tree_root, (cudaStream_t) (TD_GET(active_stream)));
                 // We cannot allow this thread to take samples since we will be holding a lock which is also needed in the async signal handler
                 // let no other GPU work get ahead of me
@@ -1907,7 +1769,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 //node =  hpcrun_cct_parent(hpcrun_cct_parent(hpcrun_cct_parent(node)));
                 //node =  hpcrun_cct_parent(hpcrun_cct_parent(node));
 				
-
+                
                 /* FIXME: we are about to insert the cct into the stream 
 				 * we use the context above, then get teh backtrace, insert the backtrace
 				 * to the stream->epoch->csdata
@@ -1958,10 +1820,10 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
 				
 				
                 struct timeval tv;
-								gettimeofday(&tv, NULL);
+                gettimeofday(&tv, NULL);
                 gpu_trace_close(g_stream_array[streamId].st, DEVICE_ID, streamId);
                 hpcrun_stream_finalize(g_stream_array[streamId].st);
-								g_stream_array[streamId].st = NULL;
+                g_stream_array[streamId].st = NULL;
                 
                 cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_STREAM_DESTROY].cudaStreamDestroyReal(stream);
                 
@@ -2022,7 +1884,9 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
 				cct_bundle_t *bundle = &(g_stream_array[new_streamId].st->epoch->csdata);
 				cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
 				hpcrun_cct_persistent_id_trace_mutate(idl);
-				gpu_trace_append(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId, hpcrun_cct_persistent_id(idl));   
+                // store the persistent id one time.
+                g_stream_array[new_streamId].st->idle_node_id = hpcrun_cct_persistent_id(idl);
+				gpu_trace_append(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId, g_stream_array[new_streamId].st->idle_node_id);   
                 
                 
                 return ret;
@@ -2037,22 +1901,8 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
             {
                 
                 fprintf(stderr,"\n %s","cudaMalloc");
-                hpcrun_async_block();
-                // Get CCT node (i.e., kernel launcher)
-                ucontext_t context;
-                getcontext(&context);
-                cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
-                // Enter into the trace
-                hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                TD_GET(is_thread_at_cuda_sync) = true;
-                
-                
-                spinlock_lock(&g_gpu_lock);
-                uint64_t syncStart;
-                event_list_node  *  recorded_node = EnterCudaSync(& syncStart);
-                spinlock_unlock(&g_gpu_lock);
+
+                SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
                 
                 cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MALLOC].cudaMallocReal(devPtr,size);
                 
@@ -2070,12 +1920,18 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 // CPU_idle_time = LastKernelEndTime - syncStart
                 // GPU_idle_time = syncEnd - LastKernelEndTime
                 // Sadly there can be some skew :(, hence let us take the non-zero value only.
+
+                // if the end time of last kernel was higher than syncEnd due to clock skew, make it equal to syncEnd
+                if ( last_kernel_end_time > syncEnd)
+                    last_kernel_end_time = syncEnd;
+                
+                
                 uint64_t cpu_idle_time = last_kernel_end_time == 0 ? 0: last_kernel_end_time  - syncStart;
                 assert(cpu_idle_time >= 0); // TODO: can become -ve if last_kernel_end_time  < syncStart 
                 uint64_t gpu_idle_time = last_kernel_end_time == 0 ? syncEnd - syncStart : syncEnd - last_kernel_end_time;
-//idt += gpu_idle_time;
-//printf("\n gpu_idle_time = %lu .. %lu",gpu_idle_time,idt);
- 
+                //idt += gpu_idle_time;
+                //printf("\n gpu_idle_time = %lu .. %lu",gpu_idle_time,idt);
+                
                 assert(gpu_idle_time >= 0); // TODO: can become -ve if isyncEnd < last_kernel_end_time
                 cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (cpu_idle_time)});
                 cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (gpu_idle_time)});
@@ -2104,26 +1960,8 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 
                 
                 fprintf(stderr,"\n %s","cudaFree");
-                hpcrun_async_block();
-                // Get CCT node (i.e., kernel launcher)
-                ucontext_t context;
-                getcontext(&context);
-                cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
-                // Enter into the trace
-                hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                
-                
-                
-                
-                TD_GET(is_thread_at_cuda_sync) = true;
-                
-                
-                spinlock_lock(&g_gpu_lock);
-                uint64_t syncStart;
-                event_list_node  *  recorded_node = EnterCudaSync(& syncStart);
-                spinlock_unlock(&g_gpu_lock);
+
+                SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
                 
                 cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_FREE].cudaFreeReal(devPtr);
                 
@@ -2141,11 +1979,17 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 // CPU_idle_time = LastKernelEndTime - syncStart
                 // GPU_idle_time = syncEnd - LastKernelEndTime
                 // Sadly there can be some skew :(, hence let us take the non-zero value only.
+
+                
+                // if the end time of last kernel was higher than syncEnd due to clock skew, make it equal to syncEnd
+                if ( last_kernel_end_time > syncEnd)
+                    last_kernel_end_time = syncEnd;
+                
                 uint64_t cpu_idle_time = last_kernel_end_time == 0 ? 0: last_kernel_end_time  - syncStart;
                 assert(cpu_idle_time >= 0); // TODO: can become -ve if last_kernel_end_time  < syncStart 
                 uint64_t gpu_idle_time = last_kernel_end_time == 0 ? syncEnd - syncStart : syncEnd - last_kernel_end_time;
-//idt += gpu_idle_time;
-//printf("\n gpu_idle_time = %lu .. %lu",gpu_idle_time,idt);
+                //idt += gpu_idle_time;
+                //printf("\n gpu_idle_time = %lu .. %lu",gpu_idle_time,idt);
                 assert(gpu_idle_time >= 0); // TODO: can become -ve if isyncEnd < last_kernel_end_time
                 
                 cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (cpu_idle_time)});
@@ -2169,7 +2013,6 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 
                 
 #if 1
-                //TODO: tetsing , need to figure out correct implementation
                 CreateStream0IfNot(stream);
                 
                 
@@ -2223,27 +2066,11 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 return ret;
             }
             
-
-						cudaError_t cudaMemcpy2D(void * dst, size_t dpitch, const void * src, size_t spitch, size_t width, size_t height, enum cudaMemcpyKind kind)
+            
+            cudaError_t cudaMemcpy2D(void * dst, size_t dpitch, const void * src, size_t spitch, size_t width, size_t height, enum cudaMemcpyKind kind)
             {
                 
-                hpcrun_async_block();
-                
-                // Get CCT node (i.e., kernel launcher)
-                ucontext_t context;
-                getcontext(&context);
-                cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
-                // Enter into the trace
-                hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                
-                TD_GET(is_thread_at_cuda_sync) = true;
-                
-                spinlock_lock(&g_gpu_lock);
-                uint64_t syncStart;
-                event_list_node  *  recorded_node = EnterCudaSync(& syncStart);
-                spinlock_unlock(&g_gpu_lock);
+                SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
                 
                 cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_2D].cudaMemcpy2DReal(dst,dpitch,src,spitch,width,height,kind);
                 
@@ -2259,8 +2086,8 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 
-//idt += syncEnd - syncStart;
-//printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
+                //idt += syncEnd - syncStart;
+                //printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
                 // Since we were asyn blocked increase the time by syncEnd - syncStart
                 cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 
@@ -2274,28 +2101,12 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 return ret;
                 
             }
-
+            
             
             cudaError_t cudaMemcpy(void * dst, const void * src, size_t count, enum cudaMemcpyKind kind)
             {
                 
-                hpcrun_async_block();
-                
-                // Get CCT node (i.e., kernel launcher)
-                ucontext_t context;
-                getcontext(&context);
-                cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
-                // Enter into the trace
-                hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                
-                TD_GET(is_thread_at_cuda_sync) = true;
-                
-                spinlock_lock(&g_gpu_lock);
-                uint64_t syncStart;
-                event_list_node  *  recorded_node = EnterCudaSync(& syncStart);
-                spinlock_unlock(&g_gpu_lock);
+                SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
                 
                 cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY].cudaMemcpyReal(dst,src,count,kind);
                 
@@ -2310,8 +2121,8 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 // this is both CPU and GPU idleness since one could have used cudaMemcpyAsync
                 cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
-//idt += syncEnd - syncStart;
-//printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
+                //idt += syncEnd - syncStart;
+                //printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
                 
                 // Since we were asyn blocked increase the time by syncEnd - syncStart
                 cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
@@ -2326,114 +2137,41 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 return ret;
                 
             }
-
-	    cudaError_t cudaEventElapsedTime(float * ms, cudaEvent_t start, cudaEvent_t end){
-		hpcrun_async_block();
+            
+            cudaError_t cudaEventElapsedTime(float * ms, cudaEvent_t start, cudaEvent_t end){
+                hpcrun_async_block();
                 cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_EVENT_ELAPSED_TIME].cudaEventElapsedTimeReal(ms, start, end);
-		hpcrun_async_unblock();
+                hpcrun_async_unblock();
                 return ret;
-	    }
-
+            }
+            
 #else // Driver APIs
             
             
             
             CUresult cuStreamSynchronize(CUstream stream)
             {
-                hpcrun_async_block();
-                
-                
-                // Get CCT node (i.e., kernel launcher)
-                ucontext_t context;
-                getcontext(&context);
-                cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
-                // Enter into the trace
-                hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                
-                
-                
-                TD_GET(is_thread_at_cuda_sync) = true;
-                
-                spinlock_lock(&g_gpu_lock);
-                uint64_t syncStart;
-                event_list_node  *  recorded_node = EnterCudaSync(& syncStart);
-                spinlock_unlock(&g_gpu_lock);
+                SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
                 
                 CUresult ret = cuDriverFunctionPointer[CU_STREAM_SYNCHRONIZE].cuStreamSynchronizeReal(stream);
-                //TODO:get stream
-                //CUcontext ctx;
-                //cuCtxGetCurrent(&ctx); 
+
                 uint32_t streamId;
-                //cuptiGetStreamId(ctx,stream,&streamId);
-                //TODO: delete me
                 streamId = SplayGetStreamId(stream_to_id_tree_root, stream);
+
+                SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, streamId, syncEnd); 
                 
-                spinlock_lock(&g_gpu_lock);
-                LeaveCudaSync(recorded_node,syncStart, streamId);
-                spinlock_unlock(&g_gpu_lock);
-                
-                struct timeval tv;
-                gettimeofday(&tv, NULL);
-                uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000));
-                
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
-                // Since we were asyn blocked increase the time by syncEnd - syncStart
-                cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
-                
-                // Enter into the trace
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                hpcrun_async_unblock();
-                TD_GET(is_thread_at_cuda_sync) = false;
                 return ret;
             }
             
             
             CUresult cuEventSynchronize(CUevent event)
             {
-                hpcrun_async_block();
-                // Get CCT node (i.e., kernel launcher)
-                ucontext_t context;
-                getcontext(&context);
-                cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
-                // Enter into the trace
-                hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                
-                
-                
-                
-                
-                TD_GET(is_thread_at_cuda_sync) = true;
-                
-                
-                spinlock_lock(&g_gpu_lock);
-                uint64_t syncStart;
-                event_list_node  *  recorded_node = EnterCudaSync(& syncStart);
-                spinlock_unlock(&g_gpu_lock);
+                SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
                 
                 CUresult ret = cuDriverFunctionPointer[CU_EVENT_SYNCHRONIZE].cuEventSynchronizeReal(event);
-                
-                spinlock_lock(&g_gpu_lock);
-                LeaveCudaSync(recorded_node,syncStart,ALL_STREAMS_MASK);
-                spinlock_unlock(&g_gpu_lock);
-                
-                struct timeval tv;
-                gettimeofday(&tv, NULL);
-                uint64_t syncEnd  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000));
-                
-                cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
-                // Since we were asyn blocked increase the time by syncEnd - syncStart
-                cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
-                
-                
-                // Enter into the trace
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                hpcrun_async_unblock();
-                TD_GET(is_thread_at_cuda_sync) = false;
+
+                SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd); 
+
                 return ret;
             }
             
@@ -2498,12 +2236,12 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 
                 uint32_t streamId;
                 streamId = SplayGetStreamId(stream_to_id_tree_root, stream);
-									
-								struct timeval tv;
-								gettimeofday(&tv, NULL);
+                
+                struct timeval tv;
+                gettimeofday(&tv, NULL);
                 gpu_trace_close(g_stream_array[streamId].st, DEVICE_ID, streamId);
                 hpcrun_stream_finalize(g_stream_array[streamId].st);
-								g_stream_array[streamId].st = NULL;
+                g_stream_array[streamId].st = NULL;
                 
                 
                 cudaError_t ret = cuDriverFunctionPointer[CU_STREAM_DESTROY].cuStreamDestroyReal(stream);
@@ -2564,7 +2302,10 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
 				cct_bundle_t *bundle = &(g_stream_array[new_streamId].st->epoch->csdata);
 				cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
 				hpcrun_cct_persistent_id_trace_mutate(idl);
-				gpu_trace_append(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId, hpcrun_cct_persistent_id(idl)); 
+                // Store the persistent id for the idle node one time.
+                g_stream_array[new_streamId].st->idle_node_id = hpcrun_cct_persistent_id(idl);
+                
+                gpu_trace_append(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId,  g_stream_array[new_streamId].st->idle_node_id); 
                 
                 
                 //cuptiGetStreamId(cbRDInfo->context, cbRDInfo->resourceHandle.stream, &new_streamId);
@@ -2682,23 +2423,7 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
             CUresult cuMemcpyHtoD (CUdeviceptr dstDevice, const void * srcHost, size_t ByteCount) {
                 
                 
-                hpcrun_async_block();
-                
-                // Get CCT node (i.e., kernel launcher)
-                ucontext_t context;
-                getcontext(&context);
-                cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
-                // Enter into the trace
-                hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                
-                TD_GET(is_thread_at_cuda_sync) = true;
-                
-                spinlock_lock(&g_gpu_lock);
-                uint64_t syncStart;
-                event_list_node  *  recorded_node = EnterCudaSync(& syncStart);
-                spinlock_unlock(&g_gpu_lock);
+                SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
                 
                 CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_H_TO_D].cuMemcpyHtoDReal(dstDevice, srcHost, ByteCount);
                 
@@ -2713,8 +2438,8 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 // this is both CPU and GPU idleness since one could have used cudaMemcpyAsync
                 cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
                 cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
-//idt += syncEnd - syncStart;
-//printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
+                //idt += syncEnd - syncStart;
+                //printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
                 
                 // Since we were asyn blocked increase the time by syncEnd - syncStart
                 cct_metric_data_increment(wall_clock_metric_id, launcher_cct, (cct_metric_data_t) {.i = (syncEnd - syncStart)});
@@ -2786,24 +2511,9 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 return ret;            
             }
             
-            CUresult cuMemcpyDtoH (void * dstHost, CUdeviceptr srcDevice, size_t ByteCount) {
-                hpcrun_async_block();
-                
-                // Get CCT node (i.e., kernel launcher)
-                ucontext_t context;
-                getcontext(&context);
-                cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ );
-                // Enter into the trace
-                hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
-                trace_append(hpcrun_cct_persistent_id(launcher_cct));
-                
-                
-                TD_GET(is_thread_at_cuda_sync) = true;
-                
-                spinlock_lock(&g_gpu_lock);
-                uint64_t syncStart;
-                event_list_node  *  recorded_node = EnterCudaSync(& syncStart);
-                spinlock_unlock(&g_gpu_lock);
+            CUresult cuMemcpyDtoH (void * dstHost, CUdeviceptr srcDevice, size_t ByteCount) {                
+
+                SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
                 
                 CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_D_TO_H].cuMemcpyDtoHReal(dstHost, srcDevice, ByteCount);
                 
@@ -2831,18 +2541,18 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                 TD_GET(is_thread_at_cuda_sync) = false;
                 return ret;            
             }
-
-	    CUresult cuEventElapsedTime(float * pMilliseconds, CUevent hStart, CUevent hEnd) {
-		
+            
+            CUresult cuEventElapsedTime(float * pMilliseconds, CUevent hStart, CUevent hEnd) {
+                
                 hpcrun_async_block();
-		CUresult ret = cuDriverFunctionPointer[CU_EVENT_ELAPSED_TIME].cuEventElapsedTimeReal(pMilliseconds, hStart, hEnd);
+                CUresult ret = cuDriverFunctionPointer[CU_EVENT_ELAPSED_TIME].cuEventElapsedTimeReal(pMilliseconds, hStart, hEnd);
                 hpcrun_async_unblock();
-		return ret;
-	    }
+                return ret;
+            }
             
             
 #endif // end of CUDA_RT_API
-                     
+            
 #endif                          //ENABLE_CUDA
             
             static void METHOD_FN(display_events)
@@ -2970,9 +2680,9 @@ static struct stream_to_id_map * splay (struct stream_to_id_map * root, cudaStre
                         cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
                             .i = metric_incr}
                                                   );
-
-//idt += metric_incr;
-//printf("\n gpu_idle_time = %lu, %lu",metric_incr, idt);
+                        
+                        //idt += metric_incr;
+                        //printf("\n gpu_idle_time = %lu, %lu",metric_incr, idt);
                         
                     }
                     spinlock_unlock(&g_gpu_lock);

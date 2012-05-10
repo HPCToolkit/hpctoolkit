@@ -92,6 +92,12 @@ typedef struct stream_data_t {
   // IO support
   // ----------------------------------------
   FILE* hpcrun_file;
+
+  // ----------------------------------------
+  // IDLE NODE persistent id
+  // ----------------------------------------
+  int32_t idle_node_id;
+
 } stream_data_t;
 
 //---------stream_data.c---------------------
