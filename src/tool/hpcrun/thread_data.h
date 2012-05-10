@@ -68,7 +68,9 @@
 
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcio-buffer.h>
+#ifdef ENABLE_CUDA
 #include <cuda.h>
+#endif
 
 typedef struct {
   sigjmp_buf jb;
@@ -233,11 +235,12 @@ typedef struct thread_data_t {
   // sample or else deadlock on the dlopen lock.
   bool inside_dlfcn;
 
-
+#ifdef ENABLE_CUDA
   // True if this thread is at CuXXXXSynchronize.
   bool is_thread_at_cuda_sync;
   uint64_t active_stream;
   void * event_node;
+#endif
 
 } thread_data_t;
 

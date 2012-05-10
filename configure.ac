@@ -1911,6 +1911,134 @@ AC_SUBST(OPT_UPC_LDFLAGS)
 
 
 #-------------------------------------------------
+# Option: --with-cuda=PATH
+#-------------------------------------------------
+
+# CUDA support for CPU-GPU-Blame-shifting
+# CUDA default install path is /usr/local/cuda
+# Include files will be in CUDADIR/include
+# CUDA 64 bit libraries under CUDADIR/lib64 and 32 bit in CUDADIR/lib
+# We need CUPTI for callbacks which is in CUDADIR/extras/CUPTI
+# CUPTI 64 bit libraries under CUPTIDIR/lib64 and 32 bit in CUPTIDIR/lib
+
+
+if test "${host_sizeof_voidp}" = "4"; then
+    CUDA_LIB_SEARCH_ORDER="lib32 lib"
+else
+    CUDA_LIB_SEARCH_ORDER="lib64 lib"
+fi
+
+
+OPT_HAVE_CUDA=no
+OPT_CUDA=
+OPT_CUDA_INCPATH=
+OPT_CUDA_LDFLAGS=
+OPT_CUDA_LIBPATH=
+OPT_CUPTI_INCPATH=
+OPT_CUPTI_LIBPATH=
+OPT_CUPTI_LDFLAGS=
+
+AC_ARG_WITH([cuda],
+  AS_HELP_STRING([--with-cuda=PATH],
+                 [use given CUDA installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_CUDA=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cuda requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUDA=${withval}
+   fi])
+
+if test "$OPT_HAVE_CUDA" = "yes" ; then
+ AC_ARG_WITH([cuda-include],
+  AS_HELP_STRING([--with-cuda-include=PATH],
+                 [use given CUDA include (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cuda-include requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUDA_INCPATH=${withval}
+  fi],
+
+     [if test -f ${OPT_CUDA}/include/cuda.h; then
+         OPT_CUDA_INCPATH=${OPT_CUDA}/include
+     else
+         AC_MSG_ERROR(['${OPT_CUDA}/include/cuda.h' not found])
+     fi])  
+
+ AC_ARG_WITH([cupti-include],
+  AS_HELP_STRING([--with-cupti-include=PATH],
+                 [use given CUPTI include (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cupti-include requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUPTI_INCPATH=${withval}
+   fi],
+
+    [if test -f ${OPT_CUDA}/extras/CUPTI/include/cupti.h; then
+         OPT_CUPTI_INCPATH=${withval}/extras/CUPTI/include
+      else
+        AC_MSG_ERROR(['${OPT_CUDA}/extras/CUPTI/include/cupti.h' not found])
+      fi])
+
+  OPT_CUDA_IFLAGS="-I${OPT_CUDA_INCPATH} -I${OPT_CUPTI_INCPATH}"
+
+  AC_ARG_WITH([cuda-lib],
+  AS_HELP_STRING([--with-cuda-lib=PATH],
+                 [use given CUDA lib (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cuda-lib requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUDA_LIBPATH=${withval}
+   fi], 
+  
+   [for lib in ${CUDA_LIB_SEARCH_ORDER} ; do
+    if test -f "${OPT_CUDA}/${lib}/libcudart.so" 
+    then
+      OPT_CUDA_LIBPATH="${OPT_CUDA}/${lib}"
+      break
+    fi
+  done 
+     if test  -z "${OPT_CUDA_LIBPATH}" ; then
+       AC_MSG_ERROR([libcudart.so not found])
+     fi
+   ] )
+
+  AC_ARG_WITH([cupti-lib],
+  AS_HELP_STRING([--with-cupti-lib=PATH],
+                 [use given CUPTI lib (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cupti-lib requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUPTI_LIBPATH=${withval}
+   fi], 
+  
+   [for lib in ${CUDA_LIB_SEARCH_ORDER} ; do
+    if test -f "${OPT_CUDA}/extras/CUPTI/${lib}/libcupti.so" 
+    then
+      OPT_CUPTI_LIBPATH="${OPT_CUDA}/extras/CUPTI/${lib}"
+      break
+    fi
+  done 
+     if test  -z "${OPT_CUPTI_LIBPATH}" ; then
+       AC_MSG_ERROR([libcupti.so not found])
+     fi
+   ] )
+
+  OPT_CUDA_LDFLAGS="-L${OPT_CUDA_LIBPATH} -lcudart -L${OPT_CUPTI_LIBPATH} -lcupti"
+
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_CUDA], [test "$OPT_HAVE_CUDA" = yes])
+
+AC_SUBST([OPT_CUDA])
+AC_SUBST([OPT_CUDA_IFLAGS])
+AC_SUBST([OPT_CUDA_LDFLAGS])
+
+#-------------------------------------------------
 # with-objcopy
 #-------------------------------------------------
 
@@ -2117,5 +2245,6 @@ AC_MSG_NOTICE([  symtabAPI:    ${SYMTABAPI}])
 AC_MSG_NOTICE([  xed2:         ${XED2}])
 AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
+AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
 

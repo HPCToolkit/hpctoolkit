@@ -279,8 +279,6 @@ MY_CPP_DEFINES =			\
 	-DINLINE_FN=1
 
 MY_INCLUDE_DIRS =			\
-	-I/usr/local/cuda/extras/CUPTI/include/	\
-	-I/usr/local/cuda/include	\
         -I$(top_srcdir)/src/tool        \
 	-I$(srcdir)/messages	        \
 	-I$(srcdir)/fnbounds		\
@@ -478,6 +476,13 @@ if UNW_PPC64
   UNW_SOURCE_FILES = $(UNW_PPC64_FILES)
   UNW_INCLUDE_DIRS = $(UNW_PPC64_INCLUDE_DIRS)
   UNW_LD_FLAGS     = $(UNW_PPC64_LD_FLAGS)
+endif
+
+if OPT_ENABLE_CUDA
+  libhpcrun_la_SOURCES  += sample-sources/gpu_blame.c
+  libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
+  libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS)
+  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
 endif
 
 #
