@@ -593,8 +593,16 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     //--------------------------------------------------
     else if (isInsn_ADDI(*cur_insn, PPC_REG_SP, PPC_REG_SP)
 	     && (PPC_OPND_DISP(*cur_insn) == getSPDispFromUI(ui))) {
+      int sp_disp = - PPC_OPND_DISP(*cur_insn);  
+      int ra_arg = ((ui->ra_ty == RATy_SPRel) ? 
+		    ui->ra_arg + sp_disp : ui->ra_arg);
+#if 0
+      // debug return address offset not being adjusted properly.
+      // now fixed.
+      printf("addi: ra_ty=%d, sp_disp = %d, ui->ra_arg = %d, ra_arg = %d\n", ui->ra_ty, sp_disp, ui->ra_arg, ra_arg);
+#endif
       nxt_ui = new_ui(nextInsn(cur_insn), 
-		      SPTy_Reg, ui->ra_ty, PPC_REG_SP, ui->ra_arg, ui);
+		      SPTy_Reg, ui->ra_ty, PPC_REG_SP, ra_arg, ui);
       ui = nxt_ui;
     }
     else if (isInsn_MR(*cur_insn, PPC_REG_SP)) {
