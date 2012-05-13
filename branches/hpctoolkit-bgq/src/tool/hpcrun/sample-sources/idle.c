@@ -298,7 +298,7 @@ idle_metric_blame_shift_idle(void)
     if ( ! hpcrun_safe_enter()) return;
     ucontext_t uc;
     getcontext(&uc);
-    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1);
+    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 1, 1);
     hpcrun_safe_exit();
   }
 }
@@ -321,7 +321,7 @@ idle_metric_blame_shift_work(void)
     if ( ! hpcrun_safe_enter()) return;
     ucontext_t uc;
     getcontext(&uc);
-    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1);
+    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 1, 1);
     hpcrun_safe_exit();
   }
 }
