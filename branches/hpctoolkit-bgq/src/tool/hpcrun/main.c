@@ -254,8 +254,10 @@ hpcrun_init_internal(bool is_child)
   TMSG(EPOCH,"process init setting up initial epoch/loadmap");
   hpcrun_epoch_init(NULL);
 
-#if 0
+#if 1
 {
+  // temporary debugging code for BG/Q
+
   extern void ppc64_dump_intervals(char *addr2);
   char *addr1 = getenv("ADDR1");
   char *addr2 = getenv("ADDR2");
