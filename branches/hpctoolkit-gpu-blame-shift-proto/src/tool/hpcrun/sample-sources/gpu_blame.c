@@ -70,7 +70,7 @@
 /******************************************************************************
  * GPU support
  *****************************************************************************/
-//#define CUDA_RT_API
+#define CUDA_RT_API
 #define DEVICE_ID 0
 
 /******************************************************************************
@@ -346,7 +346,8 @@ enum cudaRuntimeAPIIndex {
     CUDA_EVENT_ELAPSED_TIME,
     CUDA_EVENT_CREATE,
     CUDA_EVENT_RECORD,
-
+    CUDA_EVENT_DESTROY,
+    
     CUDA_MAX_APIS
 };
 
@@ -370,6 +371,7 @@ typedef struct cudaRuntimeFunctionPointer {
         cudaError_t(*cudaEventElapsedTimeReal) (float *ms, cudaEvent_t start, cudaEvent_t end);
         cudaError_t(*cudaEventCreateReal) (cudaEvent_t * event);
         cudaError_t(*cudaEventRecordReal) (cudaEvent_t event, cudaStream_t stream);
+        cudaError_t(*cudaEventDestroyReal) (cudaEvent_t event);
 
     };
     const char *functionName;
@@ -393,6 +395,8 @@ cudaRuntimeFunctionPointer_t cudaRuntimeFunctionPointer[] = {
     {0, "cudaEventElapsedTime"},
     {0, "cudaEventCreate"},
     {0, "cudaEventRecord"},
+    {0, "cudaEventDestroy"}
+    
 };
 
 #else                           // Driver API
@@ -406,6 +410,7 @@ enum cuDriverAPIIndex {
 
     CU_EVENT_CREATE,
     CU_EVENT_RECORD,
+    CU_EVENT_DESTROY,
 
     CU_MEMCPY_H_TO_D_ASYNC,
     CU_MEMCPY_H_TO_D,
@@ -429,7 +434,8 @@ typedef struct cuDriverFunctionPointer {
 
         CUresult(*cuEventCreateReal) (CUevent * phEvent, unsigned int Flags);
         CUresult(*cuEventRecordReal) (CUevent hEvent, CUstream hStream);
-
+        CUresult(*cuEventDestroyReal)(CUevent  event);
+        
         CUresult(*cuMemcpyHtoDAsyncReal) (CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount, CUstream hStream);
         CUresult(*cuMemcpyHtoDReal) (CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount);
         CUresult(*cuMemcpyDtoHAsyncReal) (void *dstHost, CUdeviceptr srcDevice, size_t ByteCount, CUstream hStream);
@@ -450,6 +456,7 @@ cuDriverFunctionPointer_t cuDriverFunctionPointer[] = {
     {0, "cuCtxDestroy"},
     {0, "cuEventCreate"},
     {0, "cuEventRecord"},
+    {0, "cuEventDestroy"},
     {0, "cuMemcpyHtoDAsync_v2"},
     {0, "cuMemcpyHtoD_v2"},
     {0, "cuMemcpyDtoHAsync_v2"},
@@ -957,8 +964,18 @@ static uint32_t cleanup_finished_events() {
 
                 event_list_node *deferred_node = current_event;
                 current_event = current_event->next;
-                // Add to_free to fre list 
 
+                // Destroy the events
+#ifdef CUDA_RT_API
+                CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_DESTROY].cudaEventDestroyReal(deferred_node->event_start));
+                CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_DESTROY].cudaEventDestroyReal(deferred_node->event_end));
+#else                           // Driver API
+                CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_DESTROY].cuEventDestroyReal(deferred_node->event_start));
+                CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_DESTROY].cuEventDestroyReal(deferred_node->event_end));
+#endif
+                
+                
+                // Add to_free to fre list                 
                 if (g_num_threads_at_sync) {
                     // some threads are waiting, hence add this kernel for deferred blaming
                     deferred_node->ref_count = g_num_threads_at_sync;
@@ -1004,24 +1021,6 @@ static event_list_node *create_and_insert_event(int stream_id, cct_node_t * laun
     if (g_free_event_nodes_head) {
         // get from free list
         event_node = g_free_event_nodes_head;
-        // Destroy those old used ones 
-        assert(event_node->event_start);
-
-#ifdef CUDA_RT_API
-        CUDA_SAFE_CALL(cudaEventDestroy(event_node->event_start));
-#else                           // Driver API
-        ////////TODO: FIX ME CANT DELETE IF STREAM IS DELETED       err =  cuEventDestroy(event_node->event_start);
-        ///CHECK_CU_ERROR(err, "cudaEventDestroy");
-#endif
-
-        assert(event_node->event_end);
-
-#ifdef CUDA_RT_API
-        CUDA_SAFE_CALL(cudaEventDestroy(event_node->event_end));
-#else                           // Driver API
-        ///// TODO: FIX ME: CANT DELETE AFTER STREAM IS DELETED        err = cuEventDestroy(event_node->event_end);
-        ///     CHECK_CU_ERROR(err, "cudaEventDestroy");
-#endif
         g_free_event_nodes_head = g_free_event_nodes_head->next_free_node;
     } else {
         // allocate new node
@@ -1589,6 +1588,16 @@ cudaError_t cudaEventRecord(cudaEvent_t event, cudaStream_t stream) {
     TD_GET(is_thread_at_cuda_sync) = false;
     return ret;
 }
+    
+
+cudaError_t cudaEventDestroy(cudaEvent_t  event) {
+    TD_GET(is_thread_at_cuda_sync) = true;
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_EVENT_DESTROY].cudaEventDestroyReal(event);
+    TD_GET(is_thread_at_cuda_sync) = false;
+    return ret;
+}
+
+
 
 #else                           // Driver APIs
 
@@ -1772,7 +1781,7 @@ CUresult cuEventCreate(CUevent * phEvent, unsigned int Flags) {
 
     TD_GET(is_thread_at_cuda_sync) = true;
 
-    cudaError_t ret = cuDriverFunctionPointer[CU_EVENT_CREATE].cuEventCreateReal(phEvent, Flags);
+    CUresult ret = cuDriverFunctionPointer[CU_EVENT_CREATE].cuEventCreateReal(phEvent, Flags);
 
     TD_GET(is_thread_at_cuda_sync) = false;
 
@@ -1784,12 +1793,21 @@ CUresult cuEventRecord(CUevent hEvent, CUstream hStream) {
 
     TD_GET(is_thread_at_cuda_sync) = true;
 
-    cudaError_t ret = cuDriverFunctionPointer[CU_EVENT_RECORD].cuEventRecordReal(hEvent, hStream);
+    CUresult ret = cuDriverFunctionPointer[CU_EVENT_RECORD].cuEventRecordReal(hEvent, hStream);
 
     TD_GET(is_thread_at_cuda_sync) = false;
 
     return ret;
 }
+    
+    
+CUresult cuEventDestroy(CUevent  event) {
+    TD_GET(is_thread_at_cuda_sync) = true;
+    CUresult ret = cuDriverFunctionPointer[CU_EVENT_DESTROY].cuEventDestroyReal(event);
+    TD_GET(is_thread_at_cuda_sync) = false;
+    return ret;
+}
+
 
 CUresult cuMemcpyHtoDAsync(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount, CUstream hStream) {
 
@@ -1956,6 +1974,8 @@ CUresult cuEventElapsedTime(float *pMilliseconds, CUevent hStart, CUevent hEnd) 
     return ret;
 }
 
+    
+    
 #endif                          // end of CUDA_RT_API
 
 void gpu_blame_shift_itimer_signal_handler(cct_node_t * node, uint64_t cur_time_us, uint64_t metric_incr) {
