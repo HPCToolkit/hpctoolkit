@@ -56,9 +56,9 @@
 
 extern void gpu_blame_shift_init();
 extern void gpu_blame_shift_thread_init();
-extern void gpu_blame_shift_thread_fini_action();        
+extern void gpu_blame_shift_thread_fini_action();
 extern void gpu_blame_shift_process_event_list(int metric_id);
-extern void gpu_blame_shift_itimer_signal_handler(cct_node_t *node, uint64_t cur_time_us, uint64_t metric_incr);
+extern void gpu_blame_shift_itimer_signal_handler(cct_node_t * node, uint64_t cur_time_us, uint64_t metric_incr);
 
 #endif
 #endif
