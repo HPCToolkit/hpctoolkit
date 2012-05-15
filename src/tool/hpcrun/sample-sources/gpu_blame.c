@@ -425,7 +425,7 @@ enum cuDriverAPIIndex {
 typedef struct cuDriverFunctionPointer {
     union {
         CUresult(*generic) (void);
-        CUresult(*cuStreamCreateReal) (CUstream phStream, unsigned int Flags);
+        CUresult(*cuStreamCreateReal) (CUstream * phStream, unsigned int Flags);
         CUresult(*cuStreamDestroyReal) (CUstream hStream);
         CUresult(*cuStreamSynchronizeReal) (CUstream hStream);
         CUresult(*cuEventSynchronizeReal) (CUevent event);
@@ -502,6 +502,9 @@ static int gpu_idle_metric_id;
 static int cpu_overlap_metric_id;
 static int gpu_overlap_metric_id;
 static int stream_special_metric_id;
+static int h_to_d_data_xfer_metric_id;
+static int d_to_h_data_xfer_metric_id;
+
 
 static uint64_t g_start_of_world_time;
 
@@ -1167,6 +1170,14 @@ void gpu_blame_shift_process_event_list(int metric_id) {
     // gpu_activity_time_metric_id a.k.a. GPU_ACTIVITY_TIME accounts the absolute running time of a kernel (CCT node which launched it)
     gpu_activity_time_metric_id = hpcrun_new_metric();
 
+    
+    // h_to_d_data_xfer_metric_id is the number of bytes xfered from CPU to GPU
+    h_to_d_data_xfer_metric_id = hpcrun_new_metric();
+
+    // d_to_h_data_xfer_metric_id is the number of bytes xfered from GPU to CPU
+    d_to_h_data_xfer_metric_id = hpcrun_new_metric();
+
+    
     /*creating a dummy metric for stream ccts */
     hpcrun_set_metric_info_and_period(stream_special_metric_id, "STREAM SPECIAL (us)", MetricFlags_ValFmt_Int, 1);
     hpcrun_set_metric_info_and_period(cpu_idle_metric_id, "CPU_IDLE", MetricFlags_ValFmt_Int, 1);
@@ -1175,6 +1186,11 @@ void gpu_blame_shift_process_event_list(int metric_id) {
     hpcrun_set_metric_info_and_period(cpu_overlap_metric_id, "OVERLAPPED_CPU", MetricFlags_ValFmt_Real, 1);
     hpcrun_set_metric_info_and_period(gpu_overlap_metric_id, "OVERLAPPED_GPU", MetricFlags_ValFmt_Real, 1);
     hpcrun_set_metric_info_and_period(gpu_activity_time_metric_id, "GPU_ACTIVITY_TIME", MetricFlags_ValFmt_Int, 1);
+
+    hpcrun_set_metric_info_and_period(h_to_d_data_xfer_metric_id, "H_TO_D_BYTES", MetricFlags_ValFmt_Int, 1);
+    hpcrun_set_metric_info_and_period(d_to_h_data_xfer_metric_id, "D_TO_H_BYTES", MetricFlags_ValFmt_Int, 1);
+
+
 }
 
 #ifdef CUDA_RT_API
@@ -1459,6 +1475,19 @@ cudaError_t cudaFree(void *devPtr) {
 
 }
 
+inline static void increment_mem_xfer_metric(size_t count, enum cudaMemcpyKind kind, cct_node_t *node){
+    switch(kind){
+        case cudaMemcpyDeviceToHost:
+            cct_metric_data_increment(d_to_h_data_xfer_metric_id, node, (cct_metric_data_t) {.i = (count)});
+            break;
+        case cudaMemcpyHostToDevice:
+            cct_metric_data_increment(h_to_d_data_xfer_metric_id, node, (cct_metric_data_t) {.i = (count)});
+            break;
+        default : break;
+            
+    }
+}
+    
 cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count, enum cudaMemcpyKind kind, cudaStream_t stream) {
 
     CreateStream0IfNot(stream);
@@ -1478,7 +1507,7 @@ cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count, enum cudaM
     cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ );
     // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
     // TODO: Get correct level .. 3 worked but not on S3D
-    node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
+    //node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
 
     /* FIXME: we are about to insert the cct into the stream 
      * we use the context above, then get teh backtrace, insert the backtrace
@@ -1497,8 +1526,15 @@ cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count, enum cudaM
 
     fprintf(stderr, "\n end  on stream = %p ", stream);
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end, stream));
+    
+    
+    // Increment bytes transferred metric
+    increment_mem_xfer_metric(count, kind, node);
+    
+
     // enable monitoring new threads
     monitor_enable_new_threads();
+
     // let other things be queued into GPU
     // safe to take async samples now
     HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
@@ -1530,6 +1566,10 @@ cudaError_t cudaMemcpy2D(void *dst, size_t dpitch, const void *src, size_t spitc
     //idt += syncEnd - syncStart;
     //printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
 
+    
+    // Increment bytes transferred metric
+    increment_mem_xfer_metric(height * width, kind, launcher_cct);
+    
     hpcrun_async_unblock();
 
     TD_GET(is_thread_at_cuda_sync) = false;
@@ -1559,6 +1599,9 @@ cudaError_t cudaMemcpy(void *dst, const void *src, size_t count, enum cudaMemcpy
                               .i = (syncEnd - syncStart)});
     //idt += syncEnd - syncStart;
     //printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
+
+    // Increment bytes transferred metric
+    increment_mem_xfer_metric(count, kind, launcher_cct);
 
     hpcrun_async_unblock();
 
@@ -1827,9 +1870,14 @@ CUresult cuMemcpyHtoDAsync(CUdeviceptr dstDevice, const void *srcHost, size_t By
     ucontext_t context;
     getcontext(&context);
     cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ );
+    
+    // increment H to D bytes    
+    cct_metric_data_increment(h_to_d_data_xfer_metric_id, node, (cct_metric_data_t) {.i = (ByteCount)});
+
+    
     // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
     // TODO: Get correct level .. 3 worked but not on S3D
-    node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
+    // node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
 
     /* FIXME: we are about to insert the cct into the stream 
      * we use the context above, then get teh backtrace, insert the backtrace
@@ -1879,6 +1927,10 @@ CUresult cuMemcpyHtoD(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCou
                               .i = (syncEnd - syncStart)});
     cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {
                               .i = (syncEnd - syncStart)});
+
+    // increment H to D bytes    
+    cct_metric_data_increment(h_to_d_data_xfer_metric_id, launcher_cct, (cct_metric_data_t) {.i = (ByteCount)});
+
     //idt += syncEnd - syncStart;
     //printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
 
@@ -1908,8 +1960,13 @@ CUresult cuMemcpyDtoHAsync(void *dstHost, CUdeviceptr srcDevice, size_t ByteCoun
     cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ );
     // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
     // TODO: Get correct level .. 3 worked but not on S3D
-    node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
+    //node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
 
+    
+    // increment D to H bytes    
+    cct_metric_data_increment(d_to_h_data_xfer_metric_id, node, (cct_metric_data_t) {.i = (ByteCount)});
+
+    
     /* FIXME: we are about to insert the cct into the stream 
      * we use the context above, then get teh backtrace, insert the backtrace
      * to the stream->epoch->csdata
@@ -1925,7 +1982,7 @@ CUresult cuMemcpyDtoHAsync(void *dstHost, CUdeviceptr srcDevice, size_t ByteCoun
 
     CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_RECORD].cuEventRecordReal(event_node->event_start, hStream));
 
-    CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_D_TO_H_ASYNC].cuMemcpyHtoDAsyncReal(dstHost, srcDevice, ByteCount, hStream);
+    CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_D_TO_H_ASYNC].cuMemcpyDtoHAsyncReal(dstHost, srcDevice, ByteCount, hStream);
 
     CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_RECORD].cuEventRecordReal(event_node->event_end, hStream));
 
@@ -1960,6 +2017,10 @@ CUresult cuMemcpyDtoH(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount) {
     cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {
                               .i = (syncEnd - syncStart)});
 
+    // increment D to H bytes    
+    cct_metric_data_increment(d_to_h_data_xfer_metric_id, launcher_cct , (cct_metric_data_t) {.i = (ByteCount)});
+
+    
     hpcrun_async_unblock();
 
     TD_GET(is_thread_at_cuda_sync) = false;
