@@ -133,6 +133,9 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   td->id = id;
 
   td->idle = 0; // begin at work
+ 
+  td->lockwait = 0;
+  td->lockid = NULL;
 
   td->region_id = 0;
 
