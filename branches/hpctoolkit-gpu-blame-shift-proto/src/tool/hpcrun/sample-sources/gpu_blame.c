@@ -62,7 +62,8 @@
 #include <signal.h>
 #include <sys/time.h>           /* setitimer() */
 #include <cuda.h>
-#include <cupti.h>
+#include <cuda_runtime.h>
+//#include <cupti.h>
 #include <dlfcn.h>
 #include <ucontext.h>           /* struct ucontext */
 
@@ -70,7 +71,7 @@
 /******************************************************************************
  * GPU support
  *****************************************************************************/
-#define CUDA_RT_API
+//#define CUDA_RT_API
 #define DEVICE_ID 0
 
 
@@ -494,7 +495,7 @@ cuDriverFunctionPointer_t  	cuDriverFunctionPointer[] = {
 #endif
 
 static uint32_t cleanup_finished_events();
-void CUPTIAPI EventInsertionCallback(void *userdata, CUpti_CallbackDomain domain, CUpti_CallbackId cbid, const void *cbInfo);
+//void CUPTIAPI EventInsertionCallback(void *userdata, CUpti_CallbackDomain domain, CUpti_CallbackId cbid, const void *cbInfo);
 
 /******************************************************************************
  * local variables
