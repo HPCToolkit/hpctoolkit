@@ -127,6 +127,9 @@ typedef struct thread_data_t {
 
   int idle; // indicate whether the thread is idle
 
+  int lockwait; // if thread is in work & lockwait state, it is waiting for a lock
+  void *lockid; // pointer pointing to the lock
+
   uint64_t region_id; // record the parallel region the thread is currently in
 
   int defer_flag; //whether should defer the context creation

@@ -338,9 +338,20 @@ void end_team_fn()
   hpcrun_async_unblock();
 }
 
+void start_task_fn(void **pointer)
+{
+  hpcrun_async_block();
+  // record the task creation context into task structure (in omp runtime)
+  ucontext_t uc;
+  getcontext(&uc);
+  *pointer = (void *)hpcrun_sample_callpath(&uc, 0, 0, 0, 1, NULL);
+  hpcrun_async_unblock();
+}
+
 void register_callback()
 {
   GOMP_team_callback_register(start_team_fn, end_team_fn);
+//  GOMP_task_callback_register(start_task_fn);
 }
 
 int need_defer_cntxt()
@@ -467,6 +478,9 @@ void resolve_cntxt()
   }
   // td->region_id represents the out-most parallel region id
   if(current_thread_num != 0)    td->region_id = current_region_id;
+
+//  void* task_context = GOMP_get_task_context();
+//  TMSG(DEFER_CTXT, "task context is %p", task_context);
   hpcrun_async_unblock();
 }
 

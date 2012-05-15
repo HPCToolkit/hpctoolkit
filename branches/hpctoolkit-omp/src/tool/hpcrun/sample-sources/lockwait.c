@@ -102,43 +102,29 @@
 #include <dlfcn.h>
 #include <hpcrun/loadmap.h>
 #include <hpcrun/trace.h>
+#include <utilities/defer-cntxt.h>
+#include <hpcrun/unresolved.h>
 
 /******************************************************************************
  * macros
  *****************************************************************************/
 
-#define OMPstr "gomp"
-
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
-static void idle_fn();
-static void work_fn();
-static void start_fn(int rank);
-static void end_fn();
+static void lock_fn(void *lock);
+static void unlock_fn(void *lock);
 
-static void process_blame_for_sample(cct_node_t *node, int metric_value);
-void normalize_fn(cct_node_t *node, cct_op_arg_t arg, size_t level);
+static void process_lockwait_blame_for_sample(cct_node_t *node, int metric_value);
 
 /******************************************************************************
  * local variables
  *****************************************************************************/
-static uint64_t work = 1L;// by default work is 1 (1 thread)
-static uint64_t thread_num = 1L;// by default thread is 1 (master thread)
-// record the max thread number active concurrently
-// use it to normalize the idleness at the end of measurement
-static uint64_t max_thread_num = 1L;
-
-static int idle_metric_id = -1;//idle for requested cores
-static int core_idle_metric_id = -1;//idle for all hardware cores
-static int thread_idle_metric_id = -1;//idle for all threads
-static int work_metric_id = -1;
-static int overhead_metric_id = -1;
-static int count_metric_id = -1;
-
-static int omp_lm_id = -1;
+static int lockwait_metric_id = -1;
 
 static bs_fn_entry_t bs_entry;
+
+static int period = 0;
 
 static void
 METHOD_FN(init)
@@ -155,11 +141,6 @@ METHOD_FN(thread_init)
 static void
 METHOD_FN(thread_init_action)
 {
-  // temporirily put stuffs here without considering helper threads
-  // FIXME
-  atomic_add_i64(&thread_num, 1L);
-  if(thread_num > max_thread_num)
-    fetch_and_store_i64(&max_thread_num, thread_num);
 }
 
 static void
@@ -170,22 +151,11 @@ METHOD_FN(start)
 static void
 METHOD_FN(thread_fini_action)
 {
-  // temporirily put stuffs here without considering helper threads
-  // FIXME
-  atomic_add_i64(&thread_num, -1L);
-  atomic_add_i64(&work, -1L);
 }
 
 static void
 METHOD_FN(stop)
 {
-  //scale the requested core idleness here
-  thread_data_t *td = hpcrun_get_thread_data();
-  cct_node_t *root, *unresolved_root;
-  root = td->epoch->csdata.top;
-  unresolved_root = td->epoch->csdata.unresolved_root;
-  hpcrun_cct_walk_node_1st(root, normalize_fn, NULL);
-  hpcrun_cct_walk_node_1st(unresolved_root, normalize_fn, NULL);
 }
 
 static void
@@ -194,46 +164,25 @@ METHOD_FN(shutdown)
   self->state = UNINIT;
 }
 
-// Return true if IDLE recognizes the name
+// Return true if LOCKWAIT recognizes the name
 static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return (strstr(ev_str, "IDLE") != NULL);
+  return (strstr(ev_str, "LOCKWAIT") != NULL);
 }
  
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-        bs_entry.fn = process_blame_for_sample;
+        bs_entry.fn = process_lockwait_blame_for_sample;
         bs_entry.next = 0;
 
-	GOMP_barrier_callback_register(idle_fn, work_fn);
-	GOMP_start_callback_register(start_fn, end_fn);
+	GOMP_lock_fn_register(lock_fn, unlock_fn);
 
 	blame_shift_register(&bs_entry);
 
-	idle_metric_id = hpcrun_new_metric();
-	hpcrun_set_metric_info_and_period(idle_metric_id, "p_req_core_idleness",
-			MetricFlags_ValFmt_Real, 1);
-
-	core_idle_metric_id = hpcrun_new_metric();
-	hpcrun_set_metric_info_and_period(core_idle_metric_id, "p_all_core_idleness",
-			MetricFlags_ValFmt_Real, 1);
-
-	thread_idle_metric_id = hpcrun_new_metric();
-	hpcrun_set_metric_info_and_period(thread_idle_metric_id, "p_all_thread_idleness",
-			MetricFlags_ValFmt_Real, 1);
-
-	work_metric_id = hpcrun_new_metric();
-	hpcrun_set_metric_info_and_period(work_metric_id, "p_work",
-			MetricFlags_ValFmt_Int, 1);
-
-	overhead_metric_id = hpcrun_new_metric();
-	hpcrun_set_metric_info_and_period(overhead_metric_id, "p_overhead",
-			MetricFlags_ValFmt_Int, 1);
-
-	count_metric_id = hpcrun_new_metric();
-	hpcrun_set_metric_info_and_period(count_metric_id, "count_helper",
+	lockwait_metric_id = hpcrun_new_metric();
+	hpcrun_set_metric_info_and_period(lockwait_metric_id, "LOCKWAIT",
 			MetricFlags_ValFmt_Int, 1);
 }
 
@@ -255,121 +204,79 @@ METHOD_FN(display_events)
  * object
  ***************************************************************************/
 
-#define ss_name idle
+#define ss_name lockwait
 #define ss_cls SS_SOFTWARE
 
 #include "ss_obj.h"
 
 /******************************************************************************
- * private operations 
+ * blame samples
  *****************************************************************************/
 
-void normalize_fn(cct_node_t *node, cct_op_arg_t arg, size_t level)
+void process_lockwait_blame_for_sample(cct_node_t *node, int metric_value)
 {
-  if(hpcrun_cct_is_leaf(node)) {
-    metric_set_t *set = hpcrun_get_metric_set(node);
-    if(set) {
-      cct_metric_data_t *mdata_idle  = hpcrun_metric_set_loc(set, idle_metric_id);
-      cct_metric_data_t *mdata_count = hpcrun_metric_set_loc(set, count_metric_id);
-      assert(mdata_idle);
-      assert(mdata_count);
-      mdata_idle->r *= (double)max_thread_num;
-      mdata_idle->r -= (double)mdata_count->i;
+  if(period == 0) period = metric_value;
+  thread_data_t *td = hpcrun_get_thread_data();
+  if(td->lockwait && td->lockid && (td->idle == 0)) {
+    int32_t *lock = (int32_t *)td->lockid;
+    if (!((*lock)>>31)) {
+      atomic_add_i32(lock, 2);
     }
   }
 }
-// for dynamically loaded case, think the overhead comes from the non-idle samples
-// in the openmp library
-static int
-is_overhead(cct_node_t *node)
+
+/******************************************************************************
+ * private operations 
+ *****************************************************************************/
+
+void lock_fn(void *lock)
 {
-  cct_addr_t *addr = hpcrun_cct_addr(node);
-  load_module_t *lm = hpcrun_loadmap_findById(addr->ip_norm.lm_id);
-  if(!lm) return 0;
-  if(lm->id == omp_lm_id) return 1;
-  if(strstr(lm->name, OMPstr))
-  {
-    omp_lm_id = addr->ip_norm.lm_id;
-    return 1;
+  int32_t rd;
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->lockwait = 1;
+  td->lockid = lock;
+  // lock is 32 bit int
+  int32_t *l = (int32_t *)lock;
+  if(!__sync_bool_compare_and_swap(l, 0, 1)) {
+    rd = ((*l)>>1)<<1;
+    while(!__sync_bool_compare_and_swap(l, rd, rd|1)) {
+      rd = ((*l)>>1)<<1;
+    }
   }
-  else
-    return 0;
+  td->lockwait = 0;
+  td->lockid = NULL;
 }
 
-static void
-process_blame_for_sample(cct_node_t *node, int metric_value)
+void unlock_fn(void *lock)
 {
-  thread_data_t *td = hpcrun_get_thread_data();
-  if (td->idle == 0) { // if thread is not idle
-                double work_l = (double) work;
-		double idle_l = 1.0;
-		cct_metric_data_increment(idle_metric_id, node, 
-					  (cct_metric_data_t){.r = (idle_l/work_l)*metric_value});
-
-                idle_l = (double)(omp_get_num_procs()) - work_l;
-		cct_metric_data_increment(core_idle_metric_id, node, 
-					  (cct_metric_data_t){.r = (idle_l/work_l)*metric_value});
-		
-		idle_l = (double)(thread_num) - work_l;
-		cct_metric_data_increment(thread_idle_metric_id, node, 
-					  (cct_metric_data_t){.r = (idle_l/work_l)*metric_value});
-                if(is_overhead(node))
-		  cct_metric_data_increment(overhead_metric_id, node, (cct_metric_data_t){.i = metric_value});
-		else if (!td->lockwait)
-		  cct_metric_data_increment(work_metric_id, node, (cct_metric_data_t){.i = metric_value});
-  		cct_metric_data_increment(count_metric_id, node, (cct_metric_data_t){.i = metric_value});
+  int32_t *l = (int32_t *)lock;
+  int val = __sync_lock_test_and_set(l, 0);
+  if(val>>31) {
+    // this marks as overflow
   }
-}
-
-void idle_fn()
-{
-  hpcrun_async_block();
-  atomic_add_i64(&work, -1L);
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->idle = 1;
-  hpcrun_async_unblock();
-
-  if(trace_isactive()) {
-    hpcrun_async_block();
+  else {
+    val = val >> 1;
+  }
+  if(val > 0) {
+    if(period > 0)
+      val = val * period;
     ucontext_t uc;
     getcontext(&uc);
-    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1, NULL);
-    hpcrun_async_unblock();
+    if(need_defer_cntxt()) {
+      omp_arg_t omp_arg;
+      omp_arg.tbd = false;
+      if(TD_GET(region_id) > 0) {
+ 	omp_arg.tbd = true;
+ 	omp_arg.region_id = TD_GET(region_id);
+      }
+      hpcrun_async_block();
+      hpcrun_sample_callpath(&uc, lockwait_metric_id, val, 0, 1,(void *) &omp_arg);
+      hpcrun_async_unblock();
+    }
+    else {
+      hpcrun_async_block();
+      hpcrun_sample_callpath(&uc, lockwait_metric_id, val, 0, 1, NULL);
+      hpcrun_async_unblock();
+    }
   }
 }
-
-void work_fn()
-{
-  hpcrun_async_block();
-  atomic_add_i64(&work, 1L);
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->idle = 0;
-  hpcrun_async_unblock();
-
-  if(trace_isactive()) {
-    hpcrun_async_block();
-    ucontext_t uc;
-    getcontext(&uc);
-    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1, NULL);
-    hpcrun_async_unblock();
-  }
-}
-
-void start_fn(int rank)
-{
-  hpcrun_async_block();
-  atomic_add_i64(&work, 1L);
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->idle = 0;
-  hpcrun_async_unblock();
-}
-
-void end_fn()
-{
-  hpcrun_async_block();
-  fetch_and_store_i64(&work, 1L); //team is destroyed, now I have one thread working
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->idle = 0;
-  hpcrun_async_unblock();
-}
-
