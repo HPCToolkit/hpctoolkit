@@ -1,0 +1,21 @@
+Fix an off by one error in Object-elf.C.  The code tried to access the
+entry just past the last valid member of the regions_ vector.  This
+led to a segfault because it picked up an invalid region pointer and
+then tried to get the region name using it.
+
+Thanks to: Gary Mohr at Bull for tracking down the problem and
+providing a patch.
+
+
+diff -Naurb symtabAPI.orig/src/dyninst/symtabAPI/src/Object-elf.C symtabAPI/src/dyninst/symtabAPI/src/Object-elf.C
+--- symtabAPI.orig/src/dyninst/symtabAPI/src/Object-elf.C	2011-04-07 14:52:22.000000000 -0500
++++ symtabAPI/src/dyninst/symtabAPI/src/Object-elf.C	2012-05-16 14:19:51.000000000 -0500
+@@ -2066,7 +2066,7 @@
+             continue;
+ 
+          Region *sec;
+-         if(secNumber >= 1 && secNumber <= regions_.size()) {
++         if(secNumber >= 1 && secNumber < regions_.size()) {
+             sec = regions_[secNumber];
+          } else {
+             sec = NULL;
