@@ -6,7 +6,7 @@
 */
 
 /* register the functions in runtime (OMP) to support lazy resolution */
-void register_callback();
+void register_defer_callback();
 
 /* check whether the lazy resolution is needed */
 int  need_defer_cntxt();

@@ -307,6 +307,10 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
   if (arg && omp_arg->tbd) {
     cct_cursor = hpcrun_cct_find_addr(hpcrun_get_tbd_cct(), &(ADDR2(UNRESOLVED, omp_arg->region_id)));
   }
+  // this is for omp task
+  if(arg && omp_arg->context) {
+    cct_cursor = (cct_node_t *)omp_arg->context; 
+  }
 
   TMSG(FENCE, "sanity check cursor = %p", cct_cursor);
   TMSG(FENCE, "further sanity check: bt_last frame = (%d, %p)", bt_last->ip_norm.lm_id, bt_last->ip_norm.lm_ip);

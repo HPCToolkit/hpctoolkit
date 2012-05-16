@@ -95,6 +95,7 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 #include <utilities/defer-cntxt.h>
+#include <utilities/task-cntxt.h>
 #include <hpcrun/unresolved.h>
 
 /******************************************************************************
@@ -276,7 +277,10 @@ METHOD_FN(process_event_list, int lush_metrics)
   int i, ret;
   int num_lush_metrics = 0;
 
-  register_callback();
+  if(ENABLED(SET_DEFER_CTXT))
+    register_defer_callback();
+  if(ENABLED(SET_TASK_CTXT))
+    register_task_callback();
   char* evlist = METHOD_CALL(self, get_event_str);
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
     char name[1024];
@@ -534,7 +538,18 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
     cct_node_t *node = NULL;
     // check whether we need to defer the context creation
-    if(need_defer_cntxt()) {
+    void *task_context = NULL;
+    if(task_context = need_task_cntxt()) {
+      omp_arg_t omp_arg;
+      omp_arg.tbd = false;
+      omp_arg.region_id = 0;
+      // copy the task creation context to local thread
+      omp_arg.context = copy_task_cntxt(task_context);
+      
+      node = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
+					      0/*skipInner*/, 0/*isSync*/, (void*) &omp_arg);
+    }
+    else if(need_defer_cntxt()) {
       thread_data_t *td = hpcrun_get_thread_data();
       if(td->defer_flag) {
         resolve_cntxt();
@@ -542,6 +557,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   
       omp_arg_t omp_arg;
       omp_arg.tbd = false;
+      omp_arg.context = NULL;
       if (TD_GET(region_id) > 0) {
         omp_arg.tbd = true;
         omp_arg.region_id = TD_GET(region_id);
