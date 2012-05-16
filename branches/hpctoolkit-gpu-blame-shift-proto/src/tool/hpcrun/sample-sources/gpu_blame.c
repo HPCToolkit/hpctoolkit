@@ -70,7 +70,6 @@
 /******************************************************************************
  * GPU support
  *****************************************************************************/
-#define CUDA_RT_API
 #define DEVICE_ID 0
 
 /******************************************************************************
@@ -265,13 +264,8 @@ enum _cuda_const {
 
 typedef struct event_list_node {
 
-#ifdef CUDA_RT_API
     cudaEvent_t event_end;
     cudaEvent_t event_start;
-#else                           // Driver API
-    CUevent event_end;
-    CUevent event_start;
-#endif
 
     uint64_t event_start_time;
     uint64_t event_end_time;
@@ -314,11 +308,8 @@ typedef struct stream_node {
 } stream_node;
 
 typedef struct stream_to_id_map {
-#ifdef CUDA_RT_API
     cudaStream_t stream;
-#else                           // Driver API
-    CUstream stream;
-#endif
+
     uint32_t id;
     struct stream_to_id_map *left;
     struct stream_to_id_map *right;
@@ -326,7 +317,6 @@ typedef struct stream_to_id_map {
 
 stream_to_id_map stream_to_id[MAX_STREAMS];
 
-#ifdef CUDA_RT_API
 
 enum cudaRuntimeAPIIndex {
     CUDA_THREAD_SYNCHRONIZE,
@@ -399,7 +389,6 @@ cudaRuntimeFunctionPointer_t cudaRuntimeFunctionPointer[] = {
     
 };
 
-#else                           // Driver API
 enum cuDriverAPIIndex {
     CU_STREAM_CREATE,
     CU_STREAM_DESTROY,
@@ -464,7 +453,6 @@ cuDriverFunctionPointer_t cuDriverFunctionPointer[] = {
     {0, "cuEventElapsedTime"}
 };
 
-#endif
 
 static uint32_t cleanup_finished_events();
 //void CUPTIAPI EventInsertionCallback(void *userdata, CUpti_CallbackDomain domain, CUpti_CallbackId cbid, const void *cbInfo);
@@ -508,21 +496,13 @@ static int d_to_h_data_xfer_metric_id;
 
 static uint64_t g_start_of_world_time;
 
-#ifdef CUDA_RT_API
 static cudaEvent_t g_start_of_world_event;
-#else                           // Driver API
-static CUevent g_start_of_world_event;
-#endif
 
 static bool g_stream0_not_initialized = true;
 
 // ******* METHOD DEFINITIONS ***********
 
-#ifdef CUDA_RT_API
 static struct stream_to_id_map *splay(struct stream_to_id_map *root, cudaStream_t key) {
-#else
-static struct stream_to_id_map *splay(struct stream_to_id_map *root, CUstream key) {
-#endif
     REGULAR_SPLAY_TREE(stream_to_id_map, root, key, stream, left, right);
     return root;
 }
@@ -545,11 +525,7 @@ static void CloseAllStreams(struct stream_to_id_map *root) {
     g_stream_array[streamId].st = NULL;
 }
 
-#ifdef CUDA_RT_API
 static uint32_t SplayGetStreamId(struct stream_to_id_map *root, cudaStream_t key) {
-#else                           // Driver API
-static uint32_t SplayGetStreamId(struct stream_to_id_map *root, cudaStream_t key) {
-#endif
     spinlock_lock(&g_stream_id_lock);
     REGULAR_SPLAY_TREE(stream_to_id_map, root, key, stream, left, right);
     stream_to_id_tree_root = root;
@@ -559,12 +535,7 @@ static uint32_t SplayGetStreamId(struct stream_to_id_map *root, cudaStream_t key
 
 }
 
-#ifdef CUDA_RT_API
-
 static stream_to_id_map *splay_insert(cudaStream_t stream_ip)
-#else                           // Driver API
-static stream_to_id_map *splay_insert(CUstream stream_ip)
-#endif
 {
 
     spinlock_lock(&g_stream_id_lock);
@@ -595,11 +566,7 @@ static stream_to_id_map *splay_insert(CUstream stream_ip)
     return stream_to_id_tree_root;
 }
 
-#ifdef CUDA_RT_API
 static struct stream_to_id_map *splay_delete(cudaStream_t stream)
-#else
-static struct stream_to_id_map *splay_delete(CUstream stream)
-#endif
 {
     struct stream_to_id_map *result = NULL;
 
@@ -897,11 +864,7 @@ static uint32_t cleanup_finished_events() {
             //fprintf(stderr, "\n cudaEventQuery on  %p", current_event->event_end);
             //fflush(stdout);
 
-#ifdef CUDA_RT_API
             cudaError_t err_cuda = cudaEventQuery(current_event->event_end);
-#else
-            CUresult err_cuda = cuEventQuery(current_event->event_end);
-#endif
 
             if (err_cuda == cudaSuccess) {
                 //fprintf(stderr, "\n cudaEventQuery success %p", current_event->event_end);
@@ -912,12 +875,8 @@ static uint32_t cleanup_finished_events() {
 
                 //FIX ME: deleting Elapsed time to handle context destruction.... 
                 //static uint64_t deleteMeTime = 0;
-#ifdef CUDA_RT_API
                 CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_ELAPSED_TIME].cudaEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_start));
-#else
-                CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_ELAPSED_TIME].cuEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_start));
 
-#endif
                 assert(elapsedTime > 0);
 
                 uint64_t micro_time_start = (uint64_t) (((double) elapsedTime) * 1000) + g_start_of_world_time;
@@ -936,11 +895,8 @@ static uint32_t cleanup_finished_events() {
                 // record end time
                 // TODO : WE JUST NEED TO PUT IDLE MARKER
 
-#ifdef CUDA_RT_API
                 CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_ELAPSED_TIME].cudaEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_end));
-#else
-                CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_ELAPSED_TIME].cuEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_end));
-#endif
+
                 assert(elapsedTime > 0);
                 uint64_t micro_time_end = (uint64_t) (((double) elapsedTime) * 1000) + g_start_of_world_time;
 #if 0
@@ -968,14 +924,6 @@ static uint32_t cleanup_finished_events() {
                 event_list_node *deferred_node = current_event;
                 current_event = current_event->next;
 
-                // Destroy the events
-#ifdef CUDA_RT_API
-                CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_DESTROY].cudaEventDestroyReal(deferred_node->event_start));
-                CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_DESTROY].cudaEventDestroyReal(deferred_node->event_end));
-#else                           // Driver API
-                CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_DESTROY].cuEventDestroyReal(deferred_node->event_start));
-                CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_DESTROY].cuEventDestroyReal(deferred_node->event_end));
-#endif
                 
                 
                 // Add to_free to fre list                 
@@ -1025,23 +973,15 @@ static event_list_node *create_and_insert_event(int stream_id, cct_node_t * laun
         // get from free list
         event_node = g_free_event_nodes_head;
         g_free_event_nodes_head = g_free_event_nodes_head->next_free_node;
+
     } else {
         // allocate new node
         event_node = (event_list_node *) hpcrun_malloc(sizeof(event_list_node));
     }
     //cudaError_t err =  cudaEventCreateWithFlags(&(event_node->event_end),cudaEventDisableTiming);
 
-#ifdef CUDA_RT_API
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_CREATE].cudaEventCreateReal(&(event_node->event_start)));
-#else
-    CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_CREATE].cuEventCreateReal(&(event_node->event_start), CU_EVENT_DEFAULT));
-#endif
-
-#ifdef CUDA_RT_API
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_CREATE].cudaEventCreateReal(&(event_node->event_end)));
-#else
-    CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_CREATE].cuEventCreateReal(&(event_node->event_end), CU_EVENT_DEFAULT));
-#endif
 
     event_node->stream_launcher_cct = stream_launcher_cct;
     event_node->launcher_cct = launcher_cct;
@@ -1060,7 +1000,6 @@ static event_list_node *create_and_insert_event(int stream_id, cct_node_t * laun
     return event_node;
 }
 
-#ifdef CUDA_RT_API
 static void PopulateEntryPointesToWrappedCudaRuntimeCalls() {
     void *handle;
     char *error;
@@ -1079,7 +1018,7 @@ static void PopulateEntryPointesToWrappedCudaRuntimeCalls() {
         }
     }
 }
-#else
+
 static void PopulateEntryPointesToWrappedCuDriverCalls() {
     void *handle;
     char *error;
@@ -1098,14 +1037,10 @@ static void PopulateEntryPointesToWrappedCuDriverCalls() {
         }
     }
 }
-#endif
 
 static void PopulateEntryPointesToWrappedCalls() {
-#ifdef CUDA_RT_API
     PopulateEntryPointesToWrappedCudaRuntimeCalls();
-#else
     PopulateEntryPointesToWrappedCuDriverCalls();
-#endif
 }
 
 void gpu_blame_shift_init() {
@@ -1193,11 +1128,7 @@ void gpu_blame_shift_process_event_list(int metric_id) {
 
 }
 
-#ifdef CUDA_RT_API
 void CreateStream0IfNot(cudaStream_t stream) {
-#else
-void CreateStream0IfNot(CUstream stream) {
-#endif                          // if stream is 0 and if it is not created, then create one:
     HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
     if ((uint64_t) stream == 0 && g_stream0_not_initialized) {
         uint32_t new_streamId;
@@ -1210,11 +1141,7 @@ void CreateStream0IfNot(CUstream stream) {
             // Initialize and Record an event to indicate the start of this stream.
             // No need to wait for it since we query only the events posted after this and this will be complete when the latter posted ones are complete.
 
-#ifdef CUDA_RT_API
             CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_CREATE].cudaEventCreateReal(&g_start_of_world_event));
-#else
-            CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_CREATE].cuEventCreateReal(&g_start_of_world_event, CU_EVENT_DEFAULT));
-#endif
 
             // record time
 
@@ -1223,11 +1150,7 @@ void CreateStream0IfNot(CUstream stream) {
             g_start_of_world_time = ((uint64_t) tv.tv_usec + (((uint64_t) tv.tv_sec) * 1000000));
 
             // record in stream 0       
-#ifdef CUDA_RT_API
             CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(g_start_of_world_event, 0));
-#else
-            CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_RECORD].cuEventRecordReal(g_start_of_world_event, 0));
-#endif
 
             // enable monitoring new threads
             monitor_enable_new_threads();
@@ -1253,7 +1176,6 @@ void CreateStream0IfNot(CUstream stream) {
 
 }
 
-#ifdef CUDA_RT_API
 cudaError_t cudaThreadSynchronize(void) {
 
     SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
@@ -1335,6 +1257,12 @@ cudaError_t cudaLaunch(const char *entry) {
     // We cannot allow this thread to take samples since we will be holding a lock which is also needed in the async signal handler
     // let no other GPU work get ahead of me
     HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
+    
+    // In case cudaLaunch causes dlopn, async block may get enabled, as a safety net set is_thread_at_cuda_sync so that we dont call any cuda calls
+    TD_GET(is_thread_at_cuda_sync) = true;                      
+
+    
+    
     // And disable tracking new threads from CUDA
     monitor_disable_new_threads();
     // Get CCT node (i.e., kernel launcher)
@@ -1368,6 +1296,12 @@ cudaError_t cudaLaunch(const char *entry) {
 
     fprintf(stderr, "\n end  on stream = %p ", TD_GET(active_stream));
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end, (cudaStream_t) TD_GET(active_stream)));
+
+    
+    // safe to make cuda calls from signal handler 
+    TD_GET(is_thread_at_cuda_sync) = false;                      
+
+    
     // enable monitoring new threads
     monitor_enable_new_threads();
     // let other things be queued into GPU
@@ -1417,8 +1351,14 @@ cudaError_t cudaStreamCreate(cudaStream_t * stream) {
 
     HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
     if (g_start_of_world_time == 0) {
+        
         // And disable tracking new threads from CUDA
         monitor_disable_new_threads();
+        
+        
+        // In case cudaLaunch causes dlopn, async block may get enabled, as a safety net set is_thread_at_cuda_sync so that we dont call any cuda calls
+        TD_GET(is_thread_at_cuda_sync) = true;                      
+        
 
         // Initialize and Record an event to indicate the start of this stream.
         // No need to wait for it since we query only the events posted after this and this will be complete when the latter posted ones are complete.
@@ -1433,6 +1373,12 @@ cudaError_t cudaStreamCreate(cudaStream_t * stream) {
         // record in stream 0       
         CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(g_start_of_world_event, 0));
 
+        
+        // Ok to call cuda functions from the signal handler
+        TD_GET(is_thread_at_cuda_sync) = false;                      
+        
+        
+        
         // enable monitoring new threads
         monitor_enable_new_threads();
     }
@@ -1501,6 +1447,10 @@ cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count, enum cudaM
     HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
     // And disable tracking new threads from CUDA
     monitor_disable_new_threads();
+    
+    // In case cudaLaunch causes dlopn, async block may get enabled, as a safety net set is_thread_at_cuda_sync so that we dont call any cuda calls
+    TD_GET(is_thread_at_cuda_sync) = true;                      
+    
     // Get CCT node (i.e., kernel launcher)
     ucontext_t context;
     getcontext(&context);
@@ -1531,6 +1481,9 @@ cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count, enum cudaM
     // Increment bytes transferred metric
     increment_mem_xfer_metric(count, kind, node);
     
+
+    // Ok to call cuda functions from the signal handler
+    TD_GET(is_thread_at_cuda_sync) = false;                      
 
     // enable monitoring new threads
     monitor_enable_new_threads();
@@ -1642,8 +1595,6 @@ cudaError_t cudaEventDestroy(cudaEvent_t  event) {
 
 
 
-#else                           // Driver APIs
-
 CUresult cuStreamSynchronize(CUstream stream) {
     SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
 
@@ -1651,7 +1602,7 @@ CUresult cuStreamSynchronize(CUstream stream) {
 
     hpcrun_async_block();
     uint32_t streamId;
-    streamId = SplayGetStreamId(stream_to_id_tree_root, stream);
+    streamId = SplayGetStreamId(stream_to_id_tree_root, (cudaStream_t)stream);
     hpcrun_async_unblock();
 
     SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, streamId, syncEnd);
@@ -1673,12 +1624,17 @@ CUresult cuLaunchGridAsync(CUfunction f, int grid_width, int grid_height, CUstre
     uint32_t streamId = 0;
     event_list_node *event_node;
 
-    streamId = SplayGetStreamId(stream_to_id_tree_root, hStream);
+    streamId = SplayGetStreamId(stream_to_id_tree_root, (cudaStream_t)hStream);
     // We cannot allow this thread to take samples since we will be holding a lock which is also needed in the async signal handler
     // let no other GPU work get ahead of me
     HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
     // And disable tracking new threads from CUDA
     monitor_disable_new_threads();
+
+    // In case cudaLaunch causes dlopn, async block may get enabled, as a safety net set is_thread_at_cuda_sync so that we dont call any cuda calls
+    TD_GET(is_thread_at_cuda_sync) = true;                      
+    
+    
     // Get CCT node (i.e., kernel launcher)
     ucontext_t context;
     getcontext(&context);
@@ -1704,11 +1660,15 @@ CUresult cuLaunchGridAsync(CUfunction f, int grid_width, int grid_height, CUstre
     // Insert the event in the stream
     //      assert(TD_GET(active_stream));
 
-    CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_RECORD].cuEventRecordReal(event_node->event_start, hStream));
+    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
 
     CUresult ret = cuDriverFunctionPointer[CU_LAUNCH_GRID_ASYNC].cuLaunchGridAsyncReal(f, grid_width, grid_height, hStream);
 
-    CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_RECORD].cuEventRecordReal(event_node->event_end, hStream));
+    CU_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end, (cudaStream_t)hStream));
+
+    
+    // Ok to call cuda functions from the signal handler
+    TD_GET(is_thread_at_cuda_sync) = false;                      
 
     // enable monitoring new threads
     monitor_enable_new_threads();
@@ -1724,7 +1684,7 @@ CUresult cuStreamDestroy(CUstream stream) {
     hpcrun_async_block();
 
     uint32_t streamId;
-    streamId = SplayGetStreamId(stream_to_id_tree_root, stream);
+    streamId = SplayGetStreamId(stream_to_id_tree_root, (cudaStream_t)stream);
 
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -1735,7 +1695,7 @@ CUresult cuStreamDestroy(CUstream stream) {
     cudaError_t ret = cuDriverFunctionPointer[CU_STREAM_DESTROY].cuStreamDestroyReal(stream);
 
     // Delete splay tree entry
-    splay_delete(stream);
+    splay_delete((cudaStream_t)stream);
     hpcrun_async_unblock();
     return ret;
 
@@ -1755,11 +1715,14 @@ CUresult cuStreamCreate(CUstream * phStream, unsigned int Flags) {
     if (g_start_of_world_time == 0) {
         // And disable tracking new threads from CUDA
         monitor_disable_new_threads();
+        
+        // In case cudaLaunch causes dlopn, async block may get enabled, as a safety net set is_thread_at_cuda_sync so that we dont call any cuda calls
+        TD_GET(is_thread_at_cuda_sync) = true;    
 
         // Initialize and Record an event to indicate the start of this stream.
         // No need to wait for it since we query only the events posted after this and this will be complete when the latter posted ones are complete.
 
-        CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_CREATE].cuEventCreateReal(&g_start_of_world_event, CU_EVENT_DEFAULT));
+        CU_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_CREATE].cudaEventCreateReal(&g_start_of_world_event));
 
         // record time
 
@@ -1769,8 +1732,11 @@ CUresult cuStreamCreate(CUstream * phStream, unsigned int Flags) {
 
         // record in stream 0    
 
-        CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_RECORD].cuEventRecordReal(g_start_of_world_event, 0));
+        CU_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(g_start_of_world_event, 0));
 
+        // Ok to call cuda functions from the signal handler
+        TD_GET(is_thread_at_cuda_sync) = false; 
+        
         // enable monitoring new threads
         monitor_enable_new_threads();
     }
@@ -1796,6 +1762,19 @@ CUresult cuStreamCreate(CUstream * phStream, unsigned int Flags) {
 
 }
 
+
+static void destroy_all_events_in_free_event_list(){
+
+    event_list_node * cur = g_free_event_nodes_head;
+
+    while(cur){
+        CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_DESTROY].cudaEventDestroyReal(cur->event_start));
+        CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_DESTROY].cudaEventDestroyReal(cur->event_end));
+        cur = cur->next_free_node;
+    }
+    
+}
+
 CUresult cuCtxDestroy(CUcontext ctx) {
 
     SYNCHRONOUS_CLEANUP;
@@ -1804,13 +1783,25 @@ CUresult cuCtxDestroy(CUcontext ctx) {
     if (g_start_of_world_time != 0) {
         // And disable tracking new threads from CUDA
         monitor_disable_new_threads();
+        
+        // In case cudaLaunch causes dlopn, async block may get enabled, as a safety net set is_thread_at_cuda_sync so that we dont call any cuda calls
+        TD_GET(is_thread_at_cuda_sync) = true; 
 
         // Walk the stream splay tree and close each trace.
         CloseAllStreams(stream_to_id_tree_root);
         stream_to_id_tree_root = NULL;
 
-        CU_SAFE_CALL(cuEventDestroy(g_start_of_world_event));
+        CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_DESTROY].cudaEventDestroyReal(g_start_of_world_event));
         g_start_of_world_time = 0;
+        
+        
+        // Destroy all events in g_free_event_nodes_head
+        destroy_all_events_in_free_event_list();
+        
+        
+        // Ok to call cuda functions from the signal handler
+        TD_GET(is_thread_at_cuda_sync) = false; 
+        
         // enable monitoring new threads
         monitor_enable_new_threads();
     }
@@ -1860,12 +1851,16 @@ CUresult cuMemcpyHtoDAsync(CUdeviceptr dstDevice, const void *srcHost, size_t By
     uint32_t streamId = 0;
     event_list_node *event_node;
 
-    streamId = SplayGetStreamId(stream_to_id_tree_root, hStream);
+    streamId = SplayGetStreamId(stream_to_id_tree_root, (cudaStream_t)hStream);
     // We cannot allow this thread to take samples since we will be holding a lock which is also needed in the async signal handler
     // let no other GPU work get ahead of me
     HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
     // And disable tracking new threads from CUDA
     monitor_disable_new_threads();
+
+    // In case cudaLaunch causes dlopn, async block may get enabled, as a safety net set is_thread_at_cuda_sync so that we dont call any cuda calls
+    TD_GET(is_thread_at_cuda_sync) = true; 
+    
     // Get CCT node (i.e., kernel launcher)
     ucontext_t context;
     getcontext(&context);
@@ -1892,12 +1887,16 @@ CUresult cuMemcpyHtoDAsync(CUdeviceptr dstDevice, const void *srcHost, size_t By
     //      assert(TD_GET(active_stream));
     fprintf(stderr, "\n start on stream = %p ", stream);
 
-    CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_RECORD].cuEventRecordReal(event_node->event_start, hStream));
+    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
 
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_H_TO_D_ASYNC].cuMemcpyHtoDAsyncReal(dstDevice, srcHost, ByteCount, hStream);
 
-    CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_RECORD].cuEventRecordReal(event_node->event_end, hStream));
+    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end,(cudaStream_t) hStream));
 
+    // Ok to call cuda functions from the signal handler
+    TD_GET(is_thread_at_cuda_sync) = false; 
+
+    
     // enable monitoring new threads
     monitor_enable_new_threads();
     // let other things be queued into GPU
@@ -1954,6 +1953,11 @@ CUresult cuMemcpyDtoHAsync(void *dstHost, CUdeviceptr srcDevice, size_t ByteCoun
     HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
     // And disable tracking new threads from CUDA
     monitor_disable_new_threads();
+    
+
+    // In case cudaLaunch causes dlopn, async block may get enabled, as a safety net set is_thread_at_cuda_sync so that we dont call any cuda calls
+    TD_GET(is_thread_at_cuda_sync) = true; 
+    
     // Get CCT node (i.e., kernel launcher)
     ucontext_t context;
     getcontext(&context);
@@ -1980,12 +1984,17 @@ CUresult cuMemcpyDtoHAsync(void *dstHost, CUdeviceptr srcDevice, size_t ByteCoun
     //      assert(TD_GET(active_stream));
     fprintf(stderr, "\n start on stream = %p ", stream);
 
-    CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_RECORD].cuEventRecordReal(event_node->event_start, hStream));
-
+    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
+    
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_D_TO_H_ASYNC].cuMemcpyDtoHAsyncReal(dstHost, srcDevice, ByteCount, hStream);
 
-    CU_SAFE_CALL(cuDriverFunctionPointer[CU_EVENT_RECORD].cuEventRecordReal(event_node->event_end, hStream));
+    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end,(cudaStream_t) hStream));
 
+
+    // Ok to call cuda functions from the signal handler
+    TD_GET(is_thread_at_cuda_sync) = false; 
+
+    
     // enable monitoring new threads
     monitor_enable_new_threads();
     // let other things be queued into GPU
@@ -2037,8 +2046,6 @@ CUresult cuEventElapsedTime(float *pMilliseconds, CUevent hStart, CUevent hEnd) 
 
     
     
-#endif                          // end of CUDA_RT_API
-
 void gpu_blame_shift_itimer_signal_handler(cct_node_t * node, uint64_t cur_time_us, uint64_t metric_incr) {
     // If we are already in a cuda API, then we can't call cleanup_finished_events() since CUDA could have taken the same lock. Hence we just return.
 
