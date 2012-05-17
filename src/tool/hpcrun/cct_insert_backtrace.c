@@ -59,6 +59,7 @@
 #include <hpcrun_stats.h>
 #include <trampoline/common/trampoline.h>
 #include <utilities/ip-normalized.h>
+#include <utilities/task-cntxt.h>
 #include "frame.h"
 #include <unwind/common/backtrace_info.h>
 #include <unwind/common/fence_enum.h>
@@ -310,6 +311,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
   // this is for omp task
   if(arg && omp_arg->context) {
     cct_cursor = (cct_node_t *)omp_arg->context; 
+    hack_task_context(&bt_beg, &bt_last);
   }
 
   TMSG(FENCE, "sanity check cursor = %p", cct_cursor);

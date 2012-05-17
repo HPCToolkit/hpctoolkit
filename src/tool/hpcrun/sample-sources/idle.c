@@ -313,7 +313,7 @@ process_blame_for_sample(cct_node_t *node, int metric_value)
 		idle_l = (double)(thread_num) - work_l;
 		cct_metric_data_increment(thread_idle_metric_id, node, 
 					  (cct_metric_data_t){.r = (idle_l/work_l)*metric_value});
-                if(is_overhead(node))
+                if(is_overhead(node) || (td->overhead > 0))
 		  cct_metric_data_increment(overhead_metric_id, node, (cct_metric_data_t){.i = metric_value});
 		else if (!td->lockwait)
 		  cct_metric_data_increment(work_metric_id, node, (cct_metric_data_t){.i = metric_value});

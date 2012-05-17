@@ -134,6 +134,8 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
 
   td->idle = 0; // begin at work
  
+  td->overhead = 0; // begin at not in overhead
+
   td->lockwait = 0;
   td->lockid = NULL;
 
