@@ -126,6 +126,8 @@ typedef struct thread_data_t {
   int id;
 
   int idle; // indicate whether the thread is idle
+  
+  int overhead; // indicate whether the thread is overhead
 
   int lockwait; // if thread is in work & lockwait state, it is waiting for a lock
   void *lockid; // pointer pointing to the lock

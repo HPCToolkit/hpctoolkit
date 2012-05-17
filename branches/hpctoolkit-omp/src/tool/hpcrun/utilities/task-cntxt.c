@@ -53,11 +53,43 @@
 
 #include "/home/xl10/support/gcc-4.6.2/libgomp/libgomp_g.h"
 
+/******************************************************************************
+ * macros
+ *****************************************************************************/
+
+#define OMPstr "gomp"
+
+/******************************************************************************
+ * forward declaration
+ *****************************************************************************/
+
+void* need_task_cntxt();
+void *copy_task_cntxt(void*);
+
+/******************************************************************************
+ * local functions
+ *****************************************************************************/
+
 void start_task_fn(void** pointer)
 {
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->overhead ++;
   ucontext_t uc;
   getcontext(&uc);
-  if(need_defer_cntxt()) {
+  void *parent_task_cntxt = NULL;
+  if(parent_task_cntxt = need_task_cntxt()) {
+    omp_arg_t omp_arg;
+    omp_arg.tbd = false;
+    omp_arg.region_id = 0;
+    // copy the task creation context to local thread
+    omp_arg.context = copy_task_cntxt(parent_task_cntxt);
+
+    hpcrun_async_block();
+    *pointer = hpcrun_sample_callpath(&uc, 0, 0, 0, 1, (void*) &omp_arg);
+    hpcrun_async_unblock();
+ 
+  }
+  else if(need_defer_cntxt()) {
     omp_arg_t omp_arg;
     omp_arg.tbd = false;
     omp_arg.context = NULL;
@@ -76,6 +108,7 @@ void start_task_fn(void** pointer)
     *pointer = (void *)hpcrun_sample_callpath(&uc, 0, 0, 0, 1, NULL);
     hpcrun_async_unblock();
   }
+  td->overhead --;
 }
 
 void register_task_callback()
@@ -96,4 +129,20 @@ void *copy_task_cntxt(void* creation_context)
 {
   return hpcrun_cct_insert_path((cct_node_t *)creation_context,
 				hpcrun_get_top_cct());
+}
+
+// It is a hack
+// skip all frames above the task frame
+// this assumes that there is no parallel regions in the task function
+void hack_task_context(frame_t **bt_beg, frame_t **bt_last)
+{
+  frame_t *bt_p = *bt_beg;
+  while(bt_p < *bt_last) {
+    load_module_t *lm = hpcrun_loadmap_findById(bt_p->ip_norm.lm_id);
+ 
+    if(strstr(lm->name, OMPstr))
+      break;
+    bt_p++;
+  }
+  *bt_last = --bt_p;
 }

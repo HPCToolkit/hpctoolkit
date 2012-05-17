@@ -265,6 +265,7 @@ void unlock_fn(void *lock)
     if(need_defer_cntxt()) {
       omp_arg_t omp_arg;
       omp_arg.tbd = false;
+      omp_arg.context = NULL;
       if(TD_GET(region_id) > 0) {
  	omp_arg.tbd = true;
  	omp_arg.region_id = TD_GET(region_id);
