@@ -236,25 +236,33 @@ void lock_fn(void *lock)
   td->lockwait = 1;
   td->lockid = lock;
   // lock is 32 bit int
-  int32_t *l = (int32_t *)lock;
+  volatile int32_t *l = (volatile int32_t *)lock;
   if(!__sync_bool_compare_and_swap(l, 0, 1)) {
-    rd = ((*l)>>1)<<1;
-    while(!__sync_bool_compare_and_swap(l, rd, rd|1)) {
-      rd = ((*l)>>1)<<1;
+    for (;;) {
+      while ((rd = (*l)) & 1);
+      // post-condition: low order bit of rd == 0 (lock available)
+      if (__sync_bool_compare_and_swap(l, rd, rd | 1)) break;
     }
+#if 0
+    rd = ((*l)>>1)<<1;
+    while (!__sync_bool_compare_and_swap(l, rd, rd|1)) {
+       rd = ((*l)>>1)<<1;
+     }
+#endif
   }
   td->lockwait = 0;
   td->lockid = NULL;
 }
 
+#define OVERFLOW(val) ((val) < 0)
+
 void unlock_fn(void *lock)
 {
   int32_t *l = (int32_t *)lock;
-  int val = __sync_lock_test_and_set(l, 0);
-  if(val>>31) {
-    // this marks as overflow
-  }
-  else {
+  int val = __sync_fetch_and_and(l, 0);
+  if(OVERFLOW(val)) {
+    val = INT_MAX; 
+  } else {
     val = val >> 1;
   }
   if(val > 0) {
@@ -281,3 +289,4 @@ void unlock_fn(void *lock)
     }
   }
 }
+
