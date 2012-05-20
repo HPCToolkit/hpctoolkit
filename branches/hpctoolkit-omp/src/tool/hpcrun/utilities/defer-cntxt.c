@@ -89,7 +89,7 @@ new_dw_entry()
   if(free_list) {
     entry = free_list;
     free_list = free_list->next;
-    free_list->prev = NULL;
+    if(free_list) free_list->prev = NULL;
     entry->prev = entry->next = NULL;
     entry->td = NULL;
     entry->flag = false;
@@ -107,6 +107,7 @@ new_dw_entry()
 static void
 delete_dw_entry(struct entry_t* entry)
 {
+#if 0
   // detach from the unresolved list
   spinlock_lock(&unresolved_list_lock);
   if(entry->prev) entry->prev->next = entry->next;
@@ -124,6 +125,7 @@ delete_dw_entry(struct entry_t* entry)
   free_list->prev = entry;
   free_list = entry;
   spinlock_unlock(&free_list_lock);
+#endif
 }
 
 static void
@@ -145,8 +147,11 @@ insert_dw_entry(struct entry_t* entry)
 static struct entry_t*
 fetch_dw_entry(struct entry_t **pointer)
 {
-  if(!(*pointer)) return NULL;
   spinlock_lock(&unresolved_list_lock);
+  if(!(*pointer)) {
+    spinlock_unlock(&unresolved_list_lock);
+    return NULL;
+  }
   while((*pointer) && (*pointer)->flag) (*pointer) = (*pointer)->next;
   if((*pointer)) (*pointer)->flag = true;
   spinlock_unlock(&unresolved_list_lock);
@@ -313,6 +318,7 @@ void end_team_fn()
       if(! TD_GET(master)) { //the sub-master thread in nested regions
         omp_arg_t omp_arg;
         omp_arg.tbd = false;
+    	omp_arg.context = NULL;
         if(TD_GET(region_id) > 0) {
 	  omp_arg.tbd = true;
 	  omp_arg.region_id = TD_GET(region_id);
@@ -488,6 +494,7 @@ void resolve_other_cntxt(bool fini_flag)
   // try to resolve any entry
   // entry is a local pointer
   //
+  hpcrun_async_block();
   spinlock_lock(&unresolved_list_lock);
   struct entry_t *pointer = unresolved_list;
   spinlock_unlock(&unresolved_list_lock);
@@ -512,6 +519,7 @@ void resolve_other_cntxt(bool fini_flag)
       entry->flag = false;
     }
   }
+  hpcrun_async_unblock();
 }
 
 void resolve_cntxt_fini()
