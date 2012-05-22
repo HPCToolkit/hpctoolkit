@@ -288,15 +288,19 @@ new_record(uint64_t region_id)
 void start_team_fn(int rank)
 {
   hpcrun_async_block();
+  thread_data_t *td = hpcrun_get_thread_data();
   // mark the real master thread (the one with process stop)
   if(omp_get_level() == 1 && omp_get_thread_num() == 0) {
-    thread_data_t *td = hpcrun_get_thread_data();
     td->master = 1;
   }
   // create new record entry for a new region
   uint64_t region_id = GOMP_get_region_id();
   struct record_t *record = new_record(region_id);
   r_splay_insert(record);
+
+  if(td->outer_region_id == 0) {
+    td->outer_region_id = GOMP_get_outer_region_id();
+  }
   hpcrun_async_unblock();
 }
 
@@ -460,6 +464,7 @@ void resolve_cntxt()
   int current_thread_num = omp_get_thread_num();
   cct_node_t* tbd_cct = hpcrun_get_tbd_cct();
   thread_data_t *td = hpcrun_get_thread_data();
+  uint64_t outer_region_id = td->outer_region_id;
   // resolve the trees at the end of one parallel region
   if((td->region_id != current_region_id) && (td->region_id != 0) && 
      (current_thread_num != 0)) {
@@ -467,13 +472,19 @@ void resolve_cntxt()
     hpcrun_cct_walkset(tbd_cct, omp_resolve_and_free, NULL);
   }
   // update the use count when come into a new omp region
-  if((td->region_id != current_region_id) && (current_region_id != 0) &&
-     (current_thread_num != 0)) {
-    hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, current_region_id)));
-    r_splay_count_update(current_region_id, 1L);
+  if((td->region_id != current_region_id) && (current_region_id != 0)) {
+    if (current_thread_num != 0) {
+      hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, current_region_id)));
+      r_splay_count_update(current_region_id, 1L);
+    }
+    else if(outer_region_id > 0) {
+      hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, outer_region_id)));
+      r_splay_count_update(outer_region_id, 1L);
+    }
   }
   // td->region_id represents the out-most parallel region id
   if(current_thread_num != 0)    td->region_id = current_region_id;
+  else if (outer_region_id > 0)  td->region_id = outer_region_id;
 
   hpcrun_async_unblock();
 }
