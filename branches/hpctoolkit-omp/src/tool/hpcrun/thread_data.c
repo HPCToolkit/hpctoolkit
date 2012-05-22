@@ -141,6 +141,8 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
 
   td->region_id = 0;
 
+  td->outer_region_id = 0;
+
   td->defer_flag = 0;
   
   td->master = 0;
