@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -80,6 +80,7 @@
 #include <hpcrun/hpcrun_stats.h>
 
 #include <hpcrun/metrics.h>
+#include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/thread_data.h>
@@ -226,32 +227,63 @@ static void METHOD_FN(thread_init_action)
     TMSG(ITIMER_CTL, "thread action (noop)");
 }
 
-static void METHOD_FN(start)
+// Factor out the body of the start method so we can restart itimer
+// without messages in the case that we are interrupting our own code.
+// safe = 1 if not inside our code, so ok to print debug messages
+//
+static void
+hpcrun_restart_itimer(sample_source_t *self, int safe)
 {
-    if (!hpcrun_td_avail()) {
-        TMSG(ITIMER_CTL, "Thread data unavailable ==> sampling suspended");
-        return;                 // in the unlikely event that we are trying to start, but thread data is unavailable,
-        // assume that all sample source ops are suspended.
+  int ret;
+
+  // if thread data is unavailable, assume that all sample source ops
+  // are suspended.
+  if (! hpcrun_td_avail()) {
+    if (safe) {
+      TMSG(ITIMER_CTL, "Thread data unavailable ==> sampling suspended");
     }
-    
-    TMSG(ITIMER_CTL, "starting itimer w value = (%d,%d), interval = (%d,%d)", itimer.it_value.tv_sec, itimer.it_value.tv_usec, itimer.it_interval.tv_sec, itimer.it_interval.tv_usec);
-    
-    if (setitimer(HPCRUN_PROFILE_TIMER, &itimer, NULL) != 0) {
-        TMSG(ITIMER_CTL, "setitimer failed to start!!");
-        EMSG("setitimer failed (%d): %s", errno, strerror(errno));
-        hpcrun_ssfail_start("itimer");
+    return;
+  }
+
+  if (safe) {
+    TMSG(ITIMER_CTL,"starting itimer: value = (%d,%d), interval = (%d,%d)",
+	 itimer.it_value.tv_sec,
+	 itimer.it_value.tv_usec,
+	 itimer.it_interval.tv_sec,
+	 itimer.it_interval.tv_usec);
+  }
+
+  ret = setitimer(HPCRUN_PROFILE_TIMER, &itimer, NULL);
+  if (ret != 0) {
+    if (safe) {
+      TMSG(ITIMER_CTL, "setitimer failed to start!!");
+      EMSG("setitimer failed (%d): %s", errno, strerror(errno));
     }
+    hpcrun_ssfail_start("itimer");
+  }
+
 #ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
-    int ret = time_getTimeReal(&TD_GET(last_time_us));
-    if (ret != 0) {
-        EMSG("time_getTimeReal (clock_gettime) failed!");
-        abort();
+  ret = time_getTimeReal(&TD_GET(last_time_us));
+  if (ret != 0) {
+    if (safe) {
+      EMSG("time_getTimeReal (clock_gettime) failed!");
     }
+    monitor_real_abort();
+  }
 #endif
-    
-    TD_GET(ss_state)[self->evset_idx] = START;
-    
+
+  TD_GET(ss_state)[self->evset_idx] = START;
 }
+
+static void
+METHOD_FN(start)
+{
+  hpcrun_restart_itimer(self, 1);
+}
+
+
+
+
 
 static void METHOD_FN(thread_fini_action)
 {
@@ -485,44 +517,53 @@ static void METHOD_FN(display_events)
 
 static int itimer_signal_handler(int sig, siginfo_t * siginfo, void *context)
 {
-    // Must check for async block first and avoid any MSG if true.
+  sample_source_t *self = &_itimer_obj;
+
+  // If the interrupt came from inside our code, then drop the sample
+  // and return and avoid any MSG.
     void *pc = hpcrun_context_pc(context);
-    if (hpcrun_async_is_blocked(pc)) {
-        if (ENABLED(ITIMER_CTL)) {
-            ;                   // message to stderr here for debug
-        }
-        hpcrun_stats_num_samples_blocked_async_inc();
-    } else {
-        TMSG(ITIMER_HANDLER, "Itimer sample event");
+  if (! hpcrun_safe_enter_async(pc)) {
+    hpcrun_stats_num_samples_blocked_async_inc();
+    if (! hpcrun_is_sampling_disabled()) {
+      hpcrun_restart_itimer(self, 0);
+    }
+    // tell monitor the signal has been handled.
+    return 0;
+  }
+
+  TMSG(ITIMER_HANDLER,"Itimer sample event");
         
-        uint64_t metric_incr = 1; // default: one time unit
+  uint64_t metric_incr = 1; // default: one time unit
+
 #ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
-        uint64_t cur_time_us;
-        int ret = time_getTimeReal(&cur_time_us);
-        if (ret != 0) {
-            EMSG("time_getTimeReal (clock_gettime) failed!");
-            abort();
-        }
-        metric_incr = cur_time_us - TD_GET(last_time_us);
+  uint64_t cur_time_us = 0;
+  int ret = time_getTimeReal(&cur_time_us);
+  if (ret != 0) {
+    EMSG("time_getTimeReal (clock_gettime) failed!");
+    monitor_real_abort();
+  }
+  metric_incr = cur_time_us - TD_GET(last_time_us);
 #endif
         
-        int metric_id = hpcrun_event2metric(&_itimer_obj, ITIMER_EVENT);
+  int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
         cct_node_t *node = hpcrun_sample_callpath(context, metric_id, metric_incr,
-                                                  0 /*skipInner */ , 0 /*isSync */ );
-        
+			 0/*skipInner*/, 0/*isSync*/).sample_node;
+
 #ifdef ENABLE_CUDA
         if(is_wallclock_cpu_gpu_idle) {
             gpu_blame_shift_itimer_signal_handler(node, cur_time_us, metric_incr);                    
         }
 #endif //ENABLE_CUDA                     
-    }
     if (hpcrun_is_sampling_disabled()) {
         TMSG(SPECIAL, "No itimer restart, due to disabled sampling");
-        return 0;
-    }
+  }
+  else {
 #ifdef RESET_ITIMER_EACH_SAMPLE
-    METHOD_CALL(&_itimer_obj, start);
+    hpcrun_restart_itimer(self, 1);
 #endif
+  }
+
+  hpcrun_safe_exit();
     
     return 0;                   /* tell monitor that the signal has been handled */
 }

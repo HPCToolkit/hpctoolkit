@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,21 +44,23 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef trace_h
-#define trace_h
+#ifndef hpcrun_trace_h
+#define hpcrun_trace_h
 #include<stdint.h>
 #include "files.h"
 #include "stream.h"
 
-void trace_init();
-void trace_open();
-void trace_append(unsigned int cpid);
-void trace_close();
+void hpcrun_trace_init();
+void hpcrun_trace_open();
+void hpcrun_trace_append(unsigned int cpid);
+void hpcrun_trace_close();
 
-int trace_isactive();
-
+int hpcrun_trace_isactive();
 void gpu_trace_open(stream_data_t *st, int gpu_number, int stream_id);
 void gpu_trace_append_with_time(stream_data_t *st, int gpu_device_num, int stream_num, unsigned int call_path_id, uint64_t microtime);
 uint64_t gpu_trace_append(stream_data_t *st, int gpu_number, int stream_id, unsigned int cpid);
 void gpu_trace_close(stream_data_t *st, int gpu_number, int stream_id);
-#endif // trace_h
+
+#endif // hpcrun_trace_h
+
+

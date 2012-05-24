@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -120,9 +120,10 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   // Wipe the thread data with a bogus bit pattern, but save the
   // memstore so we can reuse it in the child after fork.  This must
   // come first.
-  td->suspend_sampling = 1;
+  td->inside_hpcrun = 1;
   memstore = td->memstore;
   memset(td, 0xfe, sizeof(thread_data_t));
+  td->inside_hpcrun = 1;
   td->memstore = memstore;
   hpcrun_make_memstore(&td->memstore, is_child);
   td->mem_low = 0;
@@ -183,8 +184,6 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   hpcrun_init_handling_sample(td, 0, id);
   td->splay_lock    = 0;
   td->fnbounds_lock = 0;
-
-  // N.B.: suspend_sampling is already set!
 
   // ----------------------------------------
   // Logical unwinding

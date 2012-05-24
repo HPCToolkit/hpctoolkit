@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -572,11 +572,26 @@ PathFindMgr::resolve(std::string& path)
 }
 
 
+//-----------------------------------------------------------
+// PathFindMgr::isRecursivePath
+//
+// Description
+//   If the last two characters on a path are '/*' or '/+' 
+//   then treat this as a path that needs to be recursively
+//   expanded. The '+' was added as a superior alternative to
+//   '*' because it sidesteps problems with quoting '*' to avoid
+//   interaction with shell expansion when wrapper scripts
+//   are employed.
+//
+// Modification history:
+//   2012/03/02 - johnmc
+//-----------------------------------------------------------
 int 
 PathFindMgr::isRecursivePath(const char* path)
 {
   int l = strlen(path);
-  if (l > PathFindMgr::RecursivePathSfxLn && path[l - 1] == '*' &&
+  if (l > PathFindMgr::RecursivePathSfxLn && 
+      (path[l - 1] == '*' || path[l - 1] == '+') &&
       path[l - 2] == '/') {
     return 1;
   }

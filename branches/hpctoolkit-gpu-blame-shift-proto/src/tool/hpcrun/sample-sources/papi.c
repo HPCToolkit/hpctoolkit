@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -83,6 +83,7 @@
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
+#include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
@@ -130,9 +131,15 @@ METHOD_FN(init)
   }
 
   // Tell PAPI to count events in all contexts (user, kernel, etc).
-  ret = PAPI_set_domain(PAPI_DOM_ALL);
-  if (ret != PAPI_OK) {
-    EMSG("warning: PAPI_set_domain(PAPI_DOM_ALL) failed: %d", ret);
+  // FIXME: PAPI_DOM_ALL causes some syscalls to fail which then
+  // breaks some applications.  For example, this breaks some Gemini
+  // (GNI) functions called from inside gasnet_init() or MPI_Init() on
+  // the Cray XE (hopper).
+  if (ENABLED(SYSCALL_RISKY)) {
+    ret = PAPI_set_domain(PAPI_DOM_ALL);
+    if (ret != PAPI_OK) {
+      EMSG("warning: PAPI_set_domain(PAPI_DOM_ALL) failed: %d", ret);
+    }
   }
 
   self->state = INIT;
@@ -483,8 +490,9 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int my_events[MAX_EVENTS];
   int my_event_count = MAX_EVENTS;
 
-  // Must check for async block first and avoid any MSG if true.
-  if (hpcrun_async_is_blocked(pc)) {
+  // If the interrupt came from inside our code, then drop the sample
+  // and return and avoid any MSG.
+  if (! hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
     return;
   }
@@ -508,4 +516,5 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 			   0/*skipInner*/, 0/*isSync*/);
   }
+  hpcrun_safe_exit();
 }

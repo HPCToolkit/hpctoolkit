@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -412,8 +412,8 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
 
   while ( !feof(infs) ) {
     // 1. Read trace record (exit on EOF)
-    uint64_t timestamp;
-    ret = hpcfmt_int8_fread(&timestamp, infs);
+    hpctrace_fmt_datum_t datum;
+    ret = hpctrace_fmt_datum_fread(&datum, infs);
     if (ret == HPCFMT_EOF) {
       break;
     }
@@ -421,23 +421,18 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
       DIAG_Throw("error reading trace file '" << m_traceFileName << "'");
     }
     
-    uint cctId_old;
-    ret = hpcfmt_int4_fread(&cctId_old, infs);
-    if (ret != HPCFMT_OK) {
-      DIAG_Throw("error reading trace file '" << m_traceFileName << "'");
-    }
-
     // 2. Translate cct id
-    uint cctId_new = cctId_old;
+    uint cctId_old = datum.cpId;
+    uint cctId_new = datum.cpId;
     UIntToUIntMap::iterator it = cpIdMap.find(cctId_old);
     if (it != cpIdMap.end()) {
       cctId_new = it->second;
       DIAG_MsgIf(0, "  " << cctId_old << " -> " << cctId_new);
     }
+    datum.cpId = cctId_new;
 
     // 3. Write new trace record
-    hpcfmt_int8_fwrite(timestamp, outfs);
-    hpcfmt_int4_fwrite(cctId_new, outfs);
+    hpctrace_fmt_datum_fwrite(&datum, outfs);
   }
 
   hpcio_fclose(infs);
@@ -1022,6 +1017,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   if (rFlags & RFlg_NoMetricSfx) {
     m_sfx = "";
+    //if (!tidStr.empty()) { m_sfx = "[" + tidStr + "]"; } // TODO:threads
   }
 
   metric_desc_t* m_lst = metricTbl.lst;

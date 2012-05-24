@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -138,10 +138,10 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
 
   if (nArgs.paths->size() == 1 && !args.hpcprof_isMetricArg) {
-    args.prof_metrics = Analysis::Args::MetricSet_ThreadOnly;
+    args.prof_metrics = Analysis::Args::MetricFlg_Thread;
   }
 
-  if (Analysis::Args::doThreadMetrics(args.prof_metrics)
+  if (Analysis::Args::MetricFlg_isThread(args.prof_metrics)
       && nArgs.paths->size() > 16
       && !args.hpcprof_forceMetrics) {
     DIAG_Throw("You have requested thread-level metrics for " << nArgs.paths->size() << " profile files.  Because this may result in an unusable database, to continue you must use the --force-metric option.");
@@ -162,7 +162,7 @@ realmain(int argc, char* const* argv)
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
   uint rFlags = 0;
-  if (Analysis::Args::doSummaryMetrics(args.prof_metrics)) {
+  if (Analysis::Args::MetricFlg_isSum(args.prof_metrics)) {
     rFlags |= Prof::CallPath::Profile::RFlg_MakeInclExcl;
   }
   uint mrgFlags = (Prof::CCT::MrgFlg_NormalizeTraceFileY);
@@ -187,7 +187,7 @@ realmain(int argc, char* const* argv)
   // 2a. Create summary metrics for canonical CCT
   // -------------------------------------------------------
 
-  if (Analysis::Args::doSummaryMetrics(args.prof_metrics)) {
+  if (Analysis::Args::MetricFlg_isSum(args.prof_metrics)) {
     makeMetrics(*prof, args, nArgs);
   }
 
@@ -195,13 +195,13 @@ realmain(int argc, char* const* argv)
   // 2b. Prune and normalize canonical CCT
   // -------------------------------------------------------
 
-  if (Analysis::Args::doSummaryMetrics(args.prof_metrics)) {
+  if (Analysis::Args::MetricFlg_isSum(args.prof_metrics)) {
     Analysis::CallPath::pruneBySummaryMetrics(*prof, NULL);
   }
 
   Analysis::CallPath::normalize(*prof, args.agent, args.doNormalizeTy);
 
-  if (Analysis::Args::doSummaryMetrics(args.prof_metrics)) {
+  if (Analysis::Args::MetricFlg_isSum(args.prof_metrics)) {
     // Apply after all CCT pruning/normalization is completed.
     //TODO: Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
   }
@@ -262,16 +262,20 @@ makeMetrics(Prof::CallPath::Profile& prof,
   uint numDrvd = 0;
   uint mDrvdBeg = 0, mDrvdEnd = 0; // [ )
   
+  bool needAllStats =
+    Analysis::Args::MetricFlg_isSet(args.prof_metrics,
+				    Analysis::Args::MetricFlg_StatsAll);
   bool needMultiOccurance =
-    (Analysis::Args::doThreadMetrics(args.prof_metrics));
+    Analysis::Args::MetricFlg_isThread(args.prof_metrics);
 
-  mDrvdBeg = mMgr.makeSummaryMetrics(needMultiOccurance, mSrcBeg, mSrcEnd);
+  mDrvdBeg = mMgr.makeSummaryMetrics(needAllStats, needMultiOccurance,
+                                     mSrcBeg, mSrcEnd);
   if (mDrvdBeg != Prof::Metric::Mgr::npos) {
     mDrvdEnd = mMgr.size();
     numDrvd = (mDrvdEnd - mDrvdBeg);
   }
 
-  if (args.prof_metrics == Analysis::Args::MetricSet_SumOnly) {
+  if (!Analysis::Args::MetricFlg_isThread(args.prof_metrics)) {
     for (uint mId = mSrcBeg; mId < mSrcEnd; ++mId) {
       Prof::Metric::ADesc* m = mMgr.metric(mId);
       m->isVisible(false);

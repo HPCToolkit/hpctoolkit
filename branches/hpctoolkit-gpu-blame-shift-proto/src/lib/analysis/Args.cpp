@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -101,7 +101,7 @@ Args::Ctor()
 
   doNormalizeTy = true;
 
-  prof_metrics = Analysis::Args::MetricSet_NULL;
+  prof_metrics = Analysis::Args::MetricFlg_NULL;
 
   profflat_computeFinalMetricValues = true;
 

@@ -156,6 +156,12 @@ exit(-1);                                                     \
 #define fprintf(...) do{}while(0)
 #define fflush(...) do{}while(0)
 
+
+//FIX ME
+#define hpcrun_async_block() do{hpcrun_safe_enter_async(NULL);}while(0)
+#define hpcrun_async_unblock() do{hpcrun_safe_exit();}while(0)
+
+
 #define ADD_TO_FREE_EVENTS_LIST(node_ptr) do { (node_ptr)->next_free_node = g_free_event_nodes_head; \
 g_free_event_nodes_head = (node_ptr); }while(0)
 
@@ -175,7 +181,7 @@ hpcrun_async_unblock();} while(0)
 hpcrun_async_block();      \
 ucontext_t ctxt;           \
 getcontext(&ctxt);         \
-cct_node_t * launch_node = hpcrun_sample_callpath(&ctxt, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ ); \
+cct_node_t * launch_node = hpcrun_sample_callpath(&ctxt, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ ).sample_node; \
 hpcrun_cct_persistent_id_trace_mutate(launch_node);     \
 trace_append(hpcrun_cct_persistent_id(launch_node));    \
 TD_GET(is_thread_at_cuda_sync) = true;                      \
@@ -201,7 +207,7 @@ TD_GET(is_thread_at_cuda_sync) = false
 hpcrun_async_block();      \
 ucontext_t ctxt;           \
 getcontext(&ctxt);         \
-cct_node_t * launch_node = hpcrun_sample_callpath(&ctxt, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ ); \
+cct_node_t * launch_node = hpcrun_sample_callpath(&ctxt, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ ).sample_node; \
 TD_GET(is_thread_at_cuda_sync) = true;                      \
 spinlock_lock(&g_gpu_lock);                                 \
 uint64_t start_time;                                        \
@@ -1269,7 +1275,7 @@ cudaError_t cudaLaunch(const char *entry) {
     ucontext_t context;
     getcontext(&context);
     // skipping 2 inner for LAMMPS
-    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 2 /*skipInner */ , 1 /*isSync */ );
+    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 2 /*skipInner */ , 1 /*isSync */ ).sample_node;
     // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
     // TODO: Get correct level .. 3 worked but not on S3D
     ////node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
@@ -1454,7 +1460,7 @@ cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count, enum cudaM
     // Get CCT node (i.e., kernel launcher)
     ucontext_t context;
     getcontext(&context);
-    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ );
+    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ ).sample_node;
     // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
     // TODO: Get correct level .. 3 worked but not on S3D
     //node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
@@ -1639,7 +1645,7 @@ CUresult cuLaunchGridAsync(CUfunction f, int grid_width, int grid_height, CUstre
     ucontext_t context;
     getcontext(&context);
     // skipping 2 inner for LAMMPS
-    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 2 /*skipInner */ , 1 /*isSync */ );
+    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 2 /*skipInner */ , 1 /*isSync */ ).sample_node;
     // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
     // TODO: Get correct level .. 3 worked but not on S3D
     ////node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
@@ -1864,7 +1870,7 @@ CUresult cuMemcpyHtoDAsync(CUdeviceptr dstDevice, const void *srcHost, size_t By
     // Get CCT node (i.e., kernel launcher)
     ucontext_t context;
     getcontext(&context);
-    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ );
+    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ ).sample_node;
     
     // increment H to D bytes    
     cct_metric_data_increment(h_to_d_data_xfer_metric_id, node, (cct_metric_data_t) {.i = (ByteCount)});
@@ -1961,7 +1967,7 @@ CUresult cuMemcpyDtoHAsync(void *dstHost, CUdeviceptr srcDevice, size_t ByteCoun
     // Get CCT node (i.e., kernel launcher)
     ucontext_t context;
     getcontext(&context);
-    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ );
+    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ ).sample_node;
     // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
     // TODO: Get correct level .. 3 worked but not on S3D
     //node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);

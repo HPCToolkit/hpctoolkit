@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -90,6 +90,17 @@
 
 //***************************** concrete data structure definition **********
 
+
+
+//
+// cache of info from most recent splay
+//
+static struct {
+  cct_node_t* node;
+  bool found;
+  cct_addr_t* addr;
+} splay_cache;
+
 //
 // ******************* Local Routines ********************
 //
@@ -130,6 +141,8 @@ cct_node_create(cct_addr_t* addr, cct_node_t* parent)
   node->children = NULL;
   node->left = NULL;
   node->right = NULL;
+
+  node->is_leaf = false;
 
   return node;
 }
@@ -179,6 +192,15 @@ walk_child_lrs(cct_node_t* cct,
   wf(cct, op, arg, level);
 }
 
+static void
+walkset_l(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg, size_t level)
+{
+  if (! cct) return;
+  walkset_l(cct->left, fn, arg, level);
+  walkset_l(cct->right, fn, arg, level);
+  fn(cct, arg, level);
+}
+
 //
 // walker op used by counting utility
 //
@@ -204,13 +226,6 @@ walk_path_l(cct_node_t* node, cct_op_t op, cct_op_arg_t arg, size_t level)
 // Writing helpers
 //
 
-/*typedef struct {
-  hpcfmt_uint_t num_metrics;
-  FILE* fs;
-  epoch_flags_t flags;
-  hpcrun_fmt_cct_node_t* tmp_node;
-} write_arg_t;
-*/
 static void
 lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
 {
@@ -223,8 +238,8 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   tmp->id = hpcrun_cct_persistent_id(node);
   tmp->id_parent = parent ? hpcrun_cct_persistent_id(parent) : 0;
 
-  // if leaf, chg sign of id when written out
-  if (hpcrun_cct_is_leaf(node)) {
+  // if no children, chg sign of id when written out
+  if (hpcrun_cct_no_children(node)) {
     tmp->id = - tmp->id;
   }
   if (flags.fields.isLogicalUnwind){
@@ -275,6 +290,12 @@ hpcrun_cct_new_special(void* addr)
   return cct_node_create(&tmp, NULL);
 }
 
+cct_node_t*
+hpcrun_cct_top_new(uint16_t lmid, uintptr_t lmip)
+{
+  return cct_node_create(&(ADDR2(lmid, lmip)), NULL);
+}
+
 // 
 // ********** Accessor functions
 // 
@@ -299,7 +320,24 @@ hpcrun_cct_addr(cct_node_t* node)
 bool
 hpcrun_cct_is_leaf(cct_node_t* node)
 {
-  return node ? (node->children == NULL) : false;
+  return node ? (node->is_leaf) || (!(node->children)) : false;
+}
+
+//
+// NOTE: having no children is not exactly the same as being a leaf
+//       A leaf represents a full path. There might be full paths
+//       that are a prefix of other full paths. So, a "leaf" can have children
+//
+bool
+hpcrun_cct_no_children(cct_node_t* node)
+{
+  return node ? ! node->children : false;
+}
+
+bool
+hpcrun_cct_is_root(cct_node_t* node)
+{
+  return ! node->parent;
 }
 
 // Walks up in the CCT until the node's load module id changes n times, if we hit NULL before that, we return the original node.
@@ -334,7 +372,8 @@ cct_node_t * hpcrun_get_cct_node_n_levels_up_in_load_module(cct_node_t *node, ui
 cct_node_t*
 hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
 {
-  assert(node); // no insertion into empty node...
+  if ( ! node)
+    return NULL;
 
   cct_node_t* found    = splay(node->children, frm);
     //
@@ -368,6 +407,16 @@ hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
     found->right = NULL;
   }
   return new;
+}
+
+//
+// 2nd fundamental mutator: mark a node as "terminal". That is,
+//   it is the last node of a path
+//
+void
+hpcrun_cct_terminate_path(cct_node_t* node)
+{
+  node->is_leaf = true;
 }
 
 //
@@ -452,6 +501,15 @@ hpcrun_cct_walk_node_1st_w_level(cct_node_t* cct, cct_op_t op, cct_op_arg_t arg,
 }
 
 //
+// utility walker for cct sets (part of the substructure of a cct)
+//
+void
+hpcrun_cct_walkset(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg)
+{
+  walkset_l(cct, fn, arg, 0);
+}
+
+//
 // Special routine to walk a path represented by a cct node.
 // The actual path represented by a node is list reversal of the nodes
 //  linked by the parent link. So walking a path means visiting the
@@ -504,4 +562,149 @@ hpcrun_cct_num_nodes(cct_node_t* cct)
   size_t n = 0;
   hpcrun_cct_walk_node_1st(cct, l_count, &n);
   return n;
+}
+
+//
+// look up addr in the set of cct's children
+// return the found node or NULL
+//
+cct_node_t*
+hpcrun_cct_find_addr(cct_node_t* cct, cct_addr_t* addr)
+{
+  if ( ! cct)
+    return NULL;
+
+  cct_node_t* found    = splay(cct->children, addr);
+    //
+    // !! SPECIAL CASE for cct splay !!
+    // !! The splay tree (represented by the root) is the data structure for the set
+    // !! of children of the parent. Consequently, when the splay operation changes the root,
+    // !! the parent's children pointer must point to the NEW root node
+    // !! NOT the old (pre-splay) root node
+    //
+
+  cct->children = found;
+ 
+  if (found && cct_addr_eq(addr, &(found->addr))){
+    return found;
+  }
+  return NULL;
+}
+
+//
+// Merging operation: Given 2 ccts : CCT_A, CCT_B,
+//    merge means add all paths in CCT_B that are NOT in CCT_A
+//    to CCT_A. For paths that are common, perform the merge operation on
+//    each common node, using auxiliary arg merge_arg
+//
+//    NOTE: this merge operation presumes
+//       cct_addr_data(CCT_A) == cct_addr_data(CCT_B)
+//
+
+//
+// Helpers & datatypes for cct_merge operation
+//
+static void merge_or_join(cct_node_t* n, cct_op_arg_t a, size_t l);
+static cct_node_t* cct_child_find_cache(cct_node_t* cct, cct_addr_t* addr);
+static void cct_disjoint_union_cached(cct_node_t* target, cct_node_t* src);
+
+typedef struct {
+  cct_node_t* targ;
+  merge_op_t fn;
+  merge_op_arg_t arg;
+} mjarg_t;
+
+//
+// The merging operation main code
+//
+
+void
+hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
+		 merge_op_t merge, merge_op_arg_t arg)
+{
+  if (hpcrun_cct_is_leaf (cct_a) && hpcrun_cct_is_leaf(cct_b)) {
+    merge(cct_a, cct_b, arg);
+  }
+  if (! cct_b->children)
+    cct_b->children = cct_a->children;
+  else {
+    mjarg_t local = (mjarg_t) {.targ = cct_a, .fn = merge, .arg = arg};
+    hpcrun_cct_walkset(cct_b->children, merge_or_join, (cct_op_arg_t) &local);
+  }
+}
+
+//
+// merge helper functions (forward declared above)
+//
+static void
+merge_or_join(cct_node_t* n, cct_op_arg_t a, size_t l)
+{
+  mjarg_t* the_arg = (mjarg_t*) a;
+  cct_node_t* targ = the_arg->targ;
+  if (cct_child_find_cache(targ, hpcrun_cct_addr(n)))
+    hpcrun_cct_merge(splay_cache.node, n, the_arg->fn, the_arg->arg);
+  else
+    cct_disjoint_union_cached(targ, n);
+}
+
+static cct_addr_t dc = ADDR2_I(-1, -1);
+
+static void
+help_cct_child_find_set_cache(cct_node_t* cct, cct_addr_t* addr)
+{
+  splay_cache.node  = NULL;
+  splay_cache.found = false;
+  splay_cache.addr = &dc;
+
+  if ( ! cct) return;
+
+  cct_node_t* found    = splay(cct->children, addr);
+    //
+    // !! SPECIAL CASE for cct splay !!
+    // !! The splay tree (represented by the root) is the data structure for the set
+    // !! of children of the parent. Consequently, when the splay operation changes the root,
+    // !! the parent's children pointer must point to the NEW root node
+    // !! NOT the old (pre-splay) root node
+    //
+
+  cct->children = found;
+  if (found) {
+    splay_cache.node = found;
+    splay_cache.addr = &(found->addr);
+    splay_cache.found = found && cct_addr_eq(addr, &(found->addr));
+  }
+}
+
+//
+// Differs from the main accessor by setting the splay cache as a side
+// effect
+//
+static cct_node_t*
+cct_child_find_cache(cct_node_t* cct, cct_addr_t* addr)
+{
+  help_cct_child_find_set_cache(cct, addr);
+  return splay_cache.found ? splay_cache.node : NULL;
+}
+
+//
+// This procedure assumes that cct_child_find_cache has been
+// called, and that no other intervening splay operations have been called
+//
+static void
+cct_disjoint_union_cached(cct_node_t* target, cct_node_t* src)
+{
+  src->parent = target;
+  if (splay_cache.node) {
+    if (cct_addr_lt(hpcrun_cct_addr(src), splay_cache.addr)) {
+      src->left = splay_cache.node->left;
+      src->right = splay_cache.node;
+      splay_cache.node->left = NULL;
+    }
+    else { // src addr > addr(splay(target))
+      src->left = splay_cache.node;
+      src->right = splay_cache.node->right;
+      splay_cache.node->right = NULL;
+    }
+  }
+  target->children = src;
 }

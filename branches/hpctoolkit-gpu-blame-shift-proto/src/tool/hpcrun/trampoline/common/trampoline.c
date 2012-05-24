@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -68,6 +68,7 @@
 #include <hpcrun/thread_data.h>
 #include <cct/cct.h>
 #include <messages/messages.h>
+#include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <sample-sources/retcnt.h>
 #include <monitor.h>
@@ -222,7 +223,9 @@ hpcrun_trampoline_remove(void)
 void*
 hpcrun_trampoline_handler(void)
 {
-  hpcrun_async_block();
+  // probably not possible to get here from inside our code.
+  hpcrun_safe_enter();
+
   TMSG(TRAMP, "Trampoline fired!");
   thread_data_t* td = hpcrun_get_thread_data();
 
@@ -244,6 +247,7 @@ hpcrun_trampoline_handler(void)
   }
 #endif
   hpcrun_trampoline_advance();
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
+
   return ra; // our assembly code caller will return to ra
 }

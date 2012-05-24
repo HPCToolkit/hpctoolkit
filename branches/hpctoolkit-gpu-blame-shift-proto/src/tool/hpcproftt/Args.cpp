@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -141,11 +141,13 @@ Options: Source Structure Correlation:\n\
                        with single quotes or backslash.) May pass multiple\n\
                        times to logically OR additional globs.\n\
   -M <metric>, --metric <metric>\n\
-                       Specify the set of metrics computed. <metric> is one\n\
-                       of the following:\n\
-                         sum:  Show (only) summary metrics\n\
-                               (Sum, Mean, StdDev, CoefVar, Min, Max)\n\
-                         sum+: Show thread and summary metrics\n\
+                       Specify metrics to compute, where <metric> is one of\n\
+                       the following:\n\
+                         sum:   sum over threads/processes\n\
+                         stats: sum, mean, standard dev, coef of var, min, &\n\
+                                max over threads/processes\n\
+                         thread: per-thread metrics\n\
+                       Default: {thread}. May pass multiple times.\n\
   -I <path>, --include <path>\n\
                        Use <path> when searching for source files. For a\n\
                        recursive search, append a '*' after the last slash,\n\
@@ -195,7 +197,7 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 , "srcannot",        CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
 
-  { 'M', "metric",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
+  { 'M', "metric",          CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
 
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
@@ -309,7 +311,7 @@ Args::Ctor()
 
 
   // Analysis::Args
-  prof_metrics = Analysis::Args::MetricSet_ThreadOnly;
+  prof_metrics = Analysis::Args::MetricFlg_Thread;
   profflat_computeFinalMetricValues = true;
 
   out_db_experiment = "";
@@ -463,8 +465,16 @@ Args::parse(int argc, const char* const argv[])
     }
 
     if (parser.isOpt("metric")) {
-      string opt = parser.getOptArg("metric");
-      parseArg_metric(this, opt, "--metric/-M option");
+      prof_metrics = Analysis::Args::MetricFlg_NULL;
+
+      string str = parser.getOptArg("metric");
+
+      std::vector<std::string> metricVec;
+      StrUtil::tokenize_str(str, CLP_SEPARATOR, metricVec);
+
+      for (uint i = 0; i < metricVec.size(); ++i) {
+	parseArg_metric(this, metricVec[i], "--metric/-M option");
+      }
     }
     
     // Check for other options: Object correlation options
@@ -569,17 +579,30 @@ Args::parseArg_object(Args* args, const string& value, const char* errTag)
 }
 
 
+// Cf. lib/analysis/ArgsHPCProf::parseArg_metric()
 void
 Args::parseArg_metric(Args* args, const string& value, const char* errTag)
 {
-  if (value == "sum") {
+  if (value == "thread") {
     if (args) {
-      args->prof_metrics = Analysis::Args::MetricSet_SumOnly;
+      Analysis::Args::MetricFlg_set(args->prof_metrics,
+				    Analysis::Args::MetricFlg_Thread);
     }
   }
-  else if (value == "sum+") {
+  else if (value == "sum") {
     if (args) {
-      args->prof_metrics = Analysis::Args::MetricSet_ThreadAndSum;
+      Analysis::Args::MetricFlg_clear(args->prof_metrics,
+				      Analysis::Args::MetricFlg_StatsAll);
+      Analysis::Args::MetricFlg_set(args->prof_metrics,
+				    Analysis::Args::MetricFlg_StatsSum);
+    }
+  }
+  else if (value == "stats") {
+    if (args) {
+      Analysis::Args::MetricFlg_clear(args->prof_metrics,
+				      Analysis::Args::MetricFlg_StatsSum);
+      Analysis::Args::MetricFlg_set(args->prof_metrics,
+				    Analysis::Args::MetricFlg_StatsAll);
     }
   }
   else {
