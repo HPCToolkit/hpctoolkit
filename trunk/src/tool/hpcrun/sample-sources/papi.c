@@ -122,12 +122,13 @@ METHOD_FN(init)
   int ret = PAPI_library_init(PAPI_VER_CURRENT);
   TMSG(PAPI,"PAPI_library_init = %d", ret);
   TMSG(PAPI,"PAPI_VER_CURRENT =  %d", PAPI_VER_CURRENT);
-  if (ret != PAPI_VER_CURRENT){
-    STDERR_MSG("Fatal error: PAPI_library_init() failed with version mismatch.\n"
-        "HPCToolkit was compiled with version 0x%x but run on version 0x%x.\n"
-        "Check the HPCToolkit installation and try again.",
-	PAPI_VER_CURRENT, ret);
-    exit(1);
+
+  // Delay reporting PAPI_library_init() errors.  This allows running
+  // with other events if PAPI is not available.
+  if (ret < 0) {
+    hpcrun_save_papi_error(HPCRUN_PAPI_ERROR_UNAVAIL);
+  } else if (ret != PAPI_VER_CURRENT) {
+    hpcrun_save_papi_error(HPCRUN_PAPI_ERROR_VERSION);
   }
 
   // Tell PAPI to count events in all contexts (user, kernel, etc).
