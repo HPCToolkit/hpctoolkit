@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -108,7 +108,7 @@ store_conditional(volatile unsigned long* ptr, unsigned long val)
 #define CAS_BODY                                                            \
   for(;;) {                                                                 \
     prev = load_linked(ptr);                                                \
-    if (prev != old || store_conditional(ptr, new)) break;                  \
+    if (prev != oldval || store_conditional(ptr, newval)) break;            \
   }
 #endif
 
@@ -116,7 +116,7 @@ store_conditional(volatile unsigned long* ptr, unsigned long val)
 #if defined(CAS_BODY) 
 
 static inline unsigned long
-compare_and_swap(volatile void *ptr, unsigned long old, unsigned long new)
+compare_and_swap(volatile void *ptr, unsigned long oldval, unsigned long newval)
 {
   unsigned long prev;
   CAS_BODY;
@@ -132,7 +132,7 @@ compare_and_swap(volatile void *ptr, unsigned long old, unsigned long new)
 
 
 static inline int32_t
-compare_and_swap_i32(volatile int32_t *ptr, int32_t old, int32_t new)
+compare_and_swap_i32(volatile int32_t *ptr, int32_t oldval, int32_t newval)
 {
   int32_t prev;
 #if defined (CAS4_BODY)
@@ -193,7 +193,7 @@ atomic_add_i64(volatile long* addr, long val)
 #if defined(FAS_BODY)
 
 static inline unsigned long
-fetch_and_store(volatile long* ptr, unsigned long new)
+fetch_and_store(volatile long* ptr, unsigned long newval)
 {
   unsigned long prev;
   FAS_BODY;
@@ -202,7 +202,7 @@ fetch_and_store(volatile long* ptr, unsigned long new)
 
 
 static inline unsigned long
-fetch_and_store_i32(volatile int32_t* ptr, int32_t new)
+fetch_and_store_i32(volatile int32_t* ptr, int32_t newval)
 {
   int32_t prev;
   FAS_BODY;
@@ -211,18 +211,18 @@ fetch_and_store_i32(volatile int32_t* ptr, int32_t new)
 
 // FIXME: hack to correspond to atomic-op-gcc
 static inline unsigned long
-fetch_and_store_i64(volatile int64_t* ptr, int64_t new)
+fetch_and_store_i64(volatile int64_t* ptr, int64_t newval)
 {
-  return fetch_and_store(ptr, new);
+  return fetch_and_store(ptr, newval);
 }
 
 #else
 
 static inline long
-fetch_and_store(volatile long* addr, long new)
+fetch_and_store(volatile long* addr, long newval)
 {
   long result;
-  read_modify_write(long, addr, new, result);
+  read_modify_write(long, addr, newval, result);
   return result;
 }
 

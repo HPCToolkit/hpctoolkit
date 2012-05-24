@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -56,9 +56,17 @@
 
 #ifdef HPCRUN_STATIC_LINK
 
-#define MONITOR_EXT_WRAP_NAME(name)   __wrap_ ## name
+#define MONITOR_EXT_CONCAT(x, y) x ## y
+
+// N.B.: the 'name' argument to MONITOR_EXT_WRAP_NAME() will be macro
+// expanded once because of MONITOR_EXT_CONCAT()
+#define MONITOR_EXT_WRAP_NAME(name)  MONITOR_EXT_CONCAT(__wrap_, name)
 #define MONITOR_EXT_GET_NAME(var, name)  var = & name
 #define MONITOR_EXT_GET_NAME_WRAP(var, name)  var = & __real_ ## name
+
+#define MONITOR_EXT_DECLARE_REAL_FN(type, realname) \
+    extern type MONITOR_EXT_CONCAT(__, realname); \
+    static type * realname = NULL
 
 #else  /* HPCRUN DYNAMIC */
 
@@ -84,6 +92,9 @@
 #define MONITOR_EXT_WRAP_NAME(name)  name
 #define MONITOR_EXT_GET_NAME(var, name)  MONITOR_EXT_GET_DLSYM(var, name)
 #define MONITOR_EXT_GET_NAME_WRAP(var, name)  MONITOR_EXT_GET_DLSYM(var, name)
+
+#define MONITOR_EXT_DECLARE_REAL_FN(type, realname) \
+    static type * realname = NULL
 
 #endif  /* HPCRUN_STATIC_LINK */
 

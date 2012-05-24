@@ -11,7 +11,7 @@ dnl Information about sources of support for research and development of
 dnl HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 dnl --------------------------------------------------------------------------
 dnl
-dnl Copyright ((c)) 2002-2011, Rice University
+dnl Copyright ((c)) 2002-2012, Rice University
 dnl All rights reserved.
 dnl
 dnl Redistribution and use in source and binary forms, with or without
@@ -238,6 +238,8 @@ LT_INIT()
 AC_SUBST([LIBTOOL_DEPS])
 
 AM_PROG_AS()
+AC_PROG_AWK
+AC_PROG_SED
 
 AC_PROG_CXXCPP()
 
@@ -996,46 +998,17 @@ case "${LIBMONITOR}" in
     LIBMONITOR_LIB=${LIBMONITOR}/lib
     if test -f "${LIBMONITOR_INC}/monitor.h" ; then :
     else
-        AC_MSG_ERROR([invalid libmonitor directory: $LIBMONITOR])
+      AC_MSG_ERROR([invalid libmonitor directory: $LIBMONITOR])
     fi
     LIBMONITOR_LIB="${LIBMONITOR}/lib"
     if test -f "${LIBMONITOR_LIB}/libmonitor.so" ; then
-        OPT_LIBMONITOR_DYNAMIC=yes
+      OPT_LIBMONITOR_DYNAMIC=yes
     fi
-    if test -f "${LIBMONITOR_LIB}/libmonitor_wrap.a" ; then
-        OPT_LIBMONITOR_STATIC=yes
-dnl
-dnl  ** The following lines (commented out) of configure script implement
-dnl  ** a fragile solution to the problem of inconsistent configuration
-dnl  ** between libmonitor and hpclink.
-dnl
-dnl  ** The current configure presumes all possible monitor override features
-dnl  ** are enabled. Consequently, all possible wrap names are listed
-dnl
-dnl  ** To achieve congruence with the actual overrides configured in libmonitor,
-dnl  ** the libmonitor configuration information would need to be available to
-dnl  ** the hpctoolkit configure mechanism.
-dnl
-dnl  ** *AT THE PRESENT TIME*, the exact right information is present in the
-dnl  ** monitor-link script. The commented out lines below take advantage of
-dnl  ** the monitor-link script to accomplish configuration congruence.
-dnl
-dnl  ** To use the fragile congruence solution: uncomment the next 2 lines
-dnl
-dnl	MONLINK=$LIBMONITOR_BIN/monitor-link
-dnl	LIBMONITOR_WRAP_NAMES=`sed -n -e '/^monitor_wrap_names=/{s/^monitor_wrap_names=//;p}' $MONLINK`
-dnl
-dnl
-dnl  *** And comment out the following lines
-dnl
-        LIBMONITOR_WRAP_NAMES="main exit _exit dlopen dlclose fork vfork system \
-           execl execlp execle execv execvp execve pthread_exit                \
-	   pthread_create signal sigaction sigprocmask pthread_sigmask         \
-	   MPI_Init mpi_init mpi_init_ mpi_init__                              \
-	   MPI_Init_thread mpi_init_thread mpi_init_thread_ mpi_init_thread__  \
-	   MPI_Finalize mpi_finalize mpi_finalize_ mpi_finalize__              \ 
-	   MPI_Comm_rank mpi_comm_rank mpi_comm_rank_ mpi_comm_rank__          \
-	   _mp_init"
+    wrap_file="${LIBMONITOR_LIB}/libmonitor_wrap.a"
+    if test -f "$wrap_file" ; then
+      OPT_LIBMONITOR_STATIC=yes
+      LIBMONITOR_WRAP_NAMES=`nm "$wrap_file" | grep __wrap_ |
+        $SED -e 's/.*__wrap_//' | tr '\n' ' '`
     fi
     LIBMONITOR_COPY=yes
     LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
@@ -1050,6 +1023,9 @@ dnl
 esac
 
 AC_MSG_RESULT([$LIBMONITOR])
+
+echo "libmonitor wrap names:" >&AS_MESSAGE_LOG_FD
+echo "$LIBMONITOR_WRAP_NAMES" >&AS_MESSAGE_LOG_FD
 
 AC_SUBST([LIBMONITOR_INC])
 AC_SUBST([LIBMONITOR_LIB])
@@ -1603,7 +1579,7 @@ AM_CONDITIONAL([OPT_ENABLE_HPCRUN_DYNAMIC],
 # enable-mpi:
 #-------------------------------------------------
 
-AC_MSG_CHECKING([whether to build MPI versions (hpcprof-mpi)])
+AC_MSG_CHECKING([whether to build MPI-based analysis tools (e.g., hpcprof-mpi)])
 
 OPT_REQ_ENABLE_MPI="auto" # yes, no, auto
 
@@ -1638,21 +1614,21 @@ AM_CONDITIONAL(OPT_ENABLE_MPI, test "${OPT_ENABLE_MPI}" = "yes")
 # enable-mpi-wrapper: check MPI compiler
 #-------------------------------------------------
 
-AC_MSG_CHECKING([whether to build MPI versions (MPI wrapper)])
+AC_MSG_CHECKING([whether to build MPI monitoring support])
 
-OPT_REQ_ENABLE_MPIP="no" # yes, no, auto
+OPT_REQ_ENABLE_MPI_WRAP="no" # yes, no, auto
 
 AC_ARG_ENABLE([mpi-wrapper],
   AS_HELP_STRING([--enable-mpi-wrapper],
-                 [Enable MPI wrapper support (uses MPIF77 variable)]),
+                 [Enable MPI wrapper support (uses MPIF77 and CFLAGS)]),
   [case "${enableval}" in
-     yes) OPT_REQ_ENABLE_MPIP="yes" ;;
-     no)  OPT_REQ_ENABLE_MPIP="no" ;;
+     yes) OPT_REQ_ENABLE_MPI_WRAP="yes" ;;
+     no)  OPT_REQ_ENABLE_MPI_WRAP="no" ;;
      *)   AC_MSG_ERROR([bad value ${enableval} for --enable-mpi-wrapper]) ;;
    esac])
 
-OPT_ENABLE_MPIP=no
-if test "${OPT_REQ_ENABLE_MPIP}" != "no" ; then
+OPT_ENABLE_MPI_WRAP=no
+if test "${OPT_REQ_ENABLE_MPI_WRAP}" != "no" ; then
   AC_MSG_CHECKING([whether can compile MPI code with CFLAGS='$CFLAGS'])
 
   AC_LANG_PUSH([C])
@@ -1661,24 +1637,24 @@ if test "${OPT_REQ_ENABLE_MPIP}" != "no" ; then
         [ans=yes],
         [ans=no])
 
-  OPT_ENABLE_MPIP=$ans
+  OPT_ENABLE_MPI_WRAP=$ans
   AC_LANG_POP
 fi
 
-AC_MSG_RESULT([${OPT_ENABLE_MPIP} (request: ${OPT_REQ_ENABLE_MPIP})])
+AC_MSG_RESULT([${OPT_ENABLE_MPI_WRAP} (request: ${OPT_REQ_ENABLE_MPI_WRAP})])
 
 
-if test "${OPT_REQ_ENABLE_MPIP}" = "yes" -a "${OPT_ENABLE_MPIP}" = no ; then
+if test "${OPT_REQ_ENABLE_MPI_WRAP}" = "yes" -a "${OPT_ENABLE_MPI_WRAP}" = no ; then
   AC_MSG_ERROR([MPI wrapper support requested but MPI compiler is invalid!])
 fi
 
-AM_CONDITIONAL(OPT_ENABLE_MPIP, test "${OPT_ENABLE_MPIP}" = "yes")
+AM_CONDITIONAL(OPT_ENABLE_MPI_WRAP, test "${OPT_ENABLE_MPI_WRAP}" = "yes")
 
 #-------------------------------------------------
 # enable-mpi-wrapper: check F77 symbols
 #-------------------------------------------------
 
-if test "${OPT_ENABLE_MPIP}" = "yes" ; then
+if test "${OPT_ENABLE_MPI_WRAP}" = "yes" ; then
 
   if test -z "${MPIF77}" ; then
     AC_CHECK_PROGS(MPIF77, mpif77 mpxlf_r mpixlf77 mpxlf cmpifc xlf f77 g77 pgf77 fort ifc, mpif77)
@@ -2180,7 +2156,7 @@ AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
 AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])
 AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
-AC_MSG_NOTICE([  mpi wrapper support?: ${OPT_ENABLE_MPIP}])
+AC_MSG_NOTICE([  mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  CC:        '${CC}'])

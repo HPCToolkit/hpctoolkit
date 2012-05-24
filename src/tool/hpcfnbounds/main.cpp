@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -463,7 +463,7 @@ seed_dwarf_info(int dwarf_fd)
       fprintf(stderr, " ---potential fn start = %p\n", reinterpret_cast<void*>(low_pc));
     }
 
-    if (low_pc != NULL) add_function_entry(reinterpret_cast<void*>(low_pc), NULL, false, 0); 
+    add_function_entry(reinterpret_cast<void*>(low_pc), NULL, false, 0);
   }
   if ( ! DWARF_OK(dwarf_finish(dbg, &err))) {
     fprintf(stderr, "dwarf finish fails ???\n");
@@ -572,7 +572,13 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
 
   assert_file_is_readable(filename);
 
-  Symtab::openFile(syms, sfile);
+  if ( ! Symtab::openFile(syms, sfile) ) {
+    fprintf(stderr,
+	    "!!! INTERNAL hpcfnbounds-bin error !!!\n"
+	    "  -- file %s is readable, but Symtab::openFile fails !\n",
+	    filename);
+    exit(1);
+  }
   int relocatable = 0;
 
   // open for dwarf usage

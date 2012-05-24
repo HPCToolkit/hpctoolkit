@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -94,7 +94,7 @@ cct_insert_raw_backtrace(cct_node_t* cct,
     }
     parent_routine = path_beg->the_function;
   }
-	//printf("\nthe cct value is %p",cct);
+  hpcrun_cct_terminate_path(cct);
   return cct;
 }
 

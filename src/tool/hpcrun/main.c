@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -89,6 +89,7 @@
 #include "start-stop.h"
 #include "custom-init.h"
 #include "cct_insert_backtrace.h"
+#include "safe-sampling.h"
 
 #include "metrics.h"
 
@@ -206,8 +207,8 @@ hpcrun_init_internal(bool is_child)
   hpcrun_options__init(&opts);
   hpcrun_options__getopts(&opts);
 
-  trace_init(); // this must go after thread initialization
-  trace_open();
+  hpcrun_trace_init(); // this must go after thread initialization
+  hpcrun_trace_open();
 
   // Decide whether to retain full single recursion, or collapse recursive calls to
   // first instance of recursive call
@@ -257,7 +258,7 @@ hpcrun_init_internal(bool is_child)
 
   hpcrun_enable_sampling();
   // NOTE: hack to ensure that sample source start can be delayed until mpi_init
-  if (! getenv("HPCRUN_MPI_ONLY")) {
+  if (hpctoolkit_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
       SAMPLE_SOURCES(start);
   }
   hpcrun_is_initialized_private = true;
@@ -323,7 +324,7 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
 {
   hpcrun_mmap_init();
   thread_data_t *td = hpcrun_allocate_thread_data();
-  td->suspend_sampling = 1; // begin: protect against spurious signals
+  td->inside_hpcrun = 1;  // safe enter, disable signals
 
   hpcrun_set_thread_data(td);
   hpcrun_thread_data_init(id, thr_ctxt, 0);
@@ -451,7 +452,8 @@ monitor_init_process(int *argc, char **argv, void* data)
     EEMSG("TST debug ctl is active!");
     STDERR_MSG("Std Err message appears");
   }
-  hpcrun_async_unblock();
+
+  hpcrun_safe_exit();
 
   return data;
 }
@@ -460,13 +462,13 @@ monitor_init_process(int *argc, char **argv, void* data)
 void
 monitor_fini_process(int how, void* data)
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
 
   hpcrun_fini_internal();
-  trace_close();
+  hpcrun_trace_close();
   fnbounds_fini();
 
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 
@@ -478,7 +480,7 @@ monitor_pre_fork(void)
   if (! hpcrun_is_initialized()) {
     return NULL;
   }
-  hpcrun_async_block();
+  hpcrun_safe_enter();
 
   TMSG(PRE_FORK,"pre_fork call");
 
@@ -489,9 +491,10 @@ monitor_pre_fork(void)
   }
 
   TMSG(PRE_FORK,"finished pre_fork call");
-  hpcrun_async_unblock();
-
   from_fork.is_child = true;
+
+  hpcrun_safe_exit();
+
   return (void *)(&from_fork);
 }
 
@@ -502,7 +505,7 @@ monitor_post_fork(pid_t child, void* data)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_async_block();
+  hpcrun_safe_enter();
 
   TMSG(POST_FORK,"Post fork call");
 
@@ -514,7 +517,7 @@ monitor_post_fork(pid_t child, void* data)
   }
 
   TMSG(POST_FORK,"Finished post fork");
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 
@@ -531,24 +534,30 @@ monitor_post_fork(pid_t child, void* data)
 void
 monitor_mpi_pre_init(void)
 {
+  hpcrun_safe_enter();
+
   TMSG(MPI, "Pre MPI_Init");
   if (! ENABLED(MPI_RISKY)) {
     // Turn sampling off.
     TMSG(MPI, "Stopping Sample Sources");
     SAMPLE_SOURCES(stop);
   }
+  hpcrun_safe_exit();
 }
 
 
 void
 monitor_init_mpi(int *argc, char ***argv)
 {
+  hpcrun_safe_enter();
+
   TMSG(MPI, "Post MPI_Init");
   if (! ENABLED(MPI_RISKY)) {
     // Turn sampling back on.
     TMSG(MPI, "Restart Sample Sources");
     SAMPLE_SOURCES(start);
   }
+  hpcrun_safe_exit();
 }
 
 
@@ -559,14 +568,14 @@ monitor_init_mpi(int *argc, char ***argv)
 void
 monitor_init_thread_support(void)
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
 
   TMSG(THREAD,"REALLY init_thread_support ---");
   hpcrun_init_thread_support();
   hpcrun_set_using_threads(1);
   TMSG(THREAD,"Init thread support done");
 
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 
@@ -578,11 +587,11 @@ monitor_thread_pre_create(void)
   if (! hpcrun_is_initialized() || hpcrun_get_disabled()) {
     return NULL;
   }
+  hpcrun_safe_enter();
 
   // INVARIANTS at this point:
   //   1. init-process has occurred.
   //   2. current execution context is either the spawning process or thread.
-  hpcrun_async_block();
   TMSG(THREAD,"pre create");
 
   // -------------------------------------------------------
@@ -613,7 +622,8 @@ monitor_thread_pre_create(void)
  fini:
 
   TMSG(THREAD,"->finish pre create");
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
+
   return thr_ctxt;
 }
 
@@ -624,12 +634,12 @@ monitor_thread_post_create(void* data)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_async_block();
+  hpcrun_safe_enter();
 
   TMSG(THREAD,"post create");
   TMSG(THREAD,"done post create");
 
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 
@@ -640,8 +650,8 @@ monitor_init_thread(int tid, void* data)
   void* thread_data = hpcrun_thread_init(tid, (cct_ctxt_t*)data);
   TMSG(THREAD,"back from init thread %d",tid);
 
-  trace_open();
-  hpcrun_async_unblock();
+  hpcrun_trace_open();
+  hpcrun_safe_exit();
 
   return thread_data;
 }
@@ -650,14 +660,14 @@ monitor_init_thread(int tid, void* data)
 void
 monitor_fini_thread(void* init_thread_data)
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
 
   epoch_t *epoch = (epoch_t *)init_thread_data;
 
   hpcrun_thread_fini(epoch);
-  trace_close();
+  hpcrun_trace_close();
 
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 
@@ -725,10 +735,10 @@ hpcrun_get_real_siglongjmp(void)
 void
 MONITOR_EXT_WRAP_NAME(longjmp)(jmp_buf buf, int val)
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
   MONITOR_EXT_GET_NAME_WRAP(real_longjmp, longjmp);
 
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
   (*real_longjmp)(buf, val);
 
   // Never reached, but silence a compiler warning.
@@ -740,10 +750,10 @@ MONITOR_EXT_WRAP_NAME(longjmp)(jmp_buf buf, int val)
 void
 MONITOR_EXT_WRAP_NAME(siglongjmp)(sigjmp_buf buf, int val)
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
   hpcrun_get_real_siglongjmp();
 
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
   (*real_siglongjmp)(buf, val);
 
   // Never reached, but silence a compiler warning.
@@ -1085,10 +1095,9 @@ monitor_pre_dlopen(const char *path, int flags)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_async_block();
-
+  hpcrun_safe_enter();
   hpcrun_pre_dlopen(path, flags);
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 
@@ -1098,10 +1107,9 @@ monitor_dlopen(const char *path, int flags, void* handle)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_async_block();
-
+  hpcrun_safe_enter();
   hpcrun_dlopen(path, flags, handle);
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 
@@ -1111,10 +1119,9 @@ monitor_dlclose(void* handle)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_async_block();
-
+  hpcrun_safe_enter();
   hpcrun_dlclose(handle);
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 
@@ -1124,10 +1131,9 @@ monitor_post_dlclose(void* handle, int ret)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_async_block();
-
+  hpcrun_safe_enter();
   hpcrun_post_dlclose(handle, ret);
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 #endif /* ! HPCRUN_STATIC_LINK */

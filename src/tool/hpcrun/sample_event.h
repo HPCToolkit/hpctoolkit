@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -59,40 +59,11 @@
 
 //***************************************************************************
 
-// Whenever a thread enters csprof synchronously via a monitor
-// callback, don't allow it to reenter asynchronously via a signal
-// handler.  Too much of csprof is not signal-handler safe to allow
-// this.  For example, printing debug messages could deadlock if the
-// signal hits while holding the MSG lock.
-//
-// This block is only needed per-thread, so the "suspend_sampling"
-// thread data is a convenient place to store this.
-
-static inline void
-hpcrun_async_block(void)
-{
-  TD_GET(suspend_sampling) = 1;
-}
-
-
-static inline void
-hpcrun_async_unblock(void)
-{
-  TD_GET(suspend_sampling) = 0;
-}
-
-
-static inline int
-hpcrun_async_is_blocked(void* pc)
-{
-  return ( (! hpcrun_td_avail()) 
-	   || (TD_GET(suspend_sampling) && !ENABLED(ASYNC_RISKY))
-	   || hpcrun_trampoline_interior(pc)
-	   || hpcrun_trampoline_at_entry(pc) );
-}
-
+// The async blocks are now superseded by the hpcrun_safe_enter() and
+// hpcrun_safe_exit() functions.  See: safe-sampling.h
 
 //***************************************************************************
+
 
 extern bool private_hpcrun_sampling_disabled; // private!
 
@@ -118,7 +89,23 @@ hpcrun_enable_sampling(void)
 
 extern void hpcrun_drop_sample(void);
 
-extern cct_node_t* hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
+
+typedef struct sample_val_s {
+  cct_node_t* sample_node; // CCT leaf representing innermost call path frame
+  cct_node_t* trace_node;  // CCT leaf representing trace record
+} sample_val_t;
+
+
+static inline void
+hpcrun_sample_val_init(sample_val_t* x)
+{
+  //memset(x, 0, sizeof(*x));
+  x->sample_node = 0;
+  x->trace_node = 0;
+}
+
+
+extern sample_val_t hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
 				   int skipInner, int isSync);
 
 extern cct_node_t* hpcrun_gen_thread_ctxt(void *context);

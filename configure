@@ -630,8 +630,8 @@ OPT_ENABLE_LUSH_FALSE
 OPT_ENABLE_LUSH_TRUE
 F77_SYMBOLS
 MPIF77
-OPT_ENABLE_MPIP_FALSE
-OPT_ENABLE_MPIP_TRUE
+OPT_ENABLE_MPI_WRAP_FALSE
+OPT_ENABLE_MPI_WRAP_TRUE
 OPT_ENABLE_MPI_FALSE
 OPT_ENABLE_MPI_TRUE
 OPT_ENABLE_HPCRUN_DYNAMIC_FALSE
@@ -1546,7 +1546,7 @@ Optional Features:
   --enable-hpcrun-static  build hpcrun for statically linked executables
                           (default yes)
   --enable-mpi            Enable MPI support (uses MPICXX variable)
-  --enable-mpi-wrapper    Enable MPI wrapper support (uses MPIF77 variable)
+  --enable-mpi-wrapper    Enable MPI wrapper support (uses MPIF77 and CFLAGS)
   --enable-lush           use lush backtrace in hpcrun
   --enable-lush-pthreads  enable lush pthreads (temp)
   --enable-bluegene       Enable BlueGene/P support
@@ -15337,6 +15337,117 @@ else
 fi
 
 
+for ac_prog in gawk mawk nawk awk
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_prog_AWK+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$AWK"; then
+  ac_cv_prog_AWK="$AWK" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_AWK="$ac_prog"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+AWK=$ac_cv_prog_AWK
+if test -n "$AWK"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $AWK" >&5
+$as_echo "$AWK" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  test -n "$AWK" && break
+done
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for a sed that does not truncate output" >&5
+$as_echo_n "checking for a sed that does not truncate output... " >&6; }
+if test "${ac_cv_path_SED+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+            ac_script=s/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/
+     for ac_i in 1 2 3 4 5 6 7; do
+       ac_script="$ac_script$as_nl$ac_script"
+     done
+     echo "$ac_script" 2>/dev/null | sed 99q >conftest.sed
+     { ac_script=; unset ac_script;}
+     if test -z "$SED"; then
+  ac_path_SED_found=false
+  # Loop through the user's path and test for each of PROGNAME-LIST
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_prog in sed gsed; do
+    for ac_exec_ext in '' $ac_executable_extensions; do
+      ac_path_SED="$as_dir/$ac_prog$ac_exec_ext"
+      { test -f "$ac_path_SED" && $as_test_x "$ac_path_SED"; } || continue
+# Check for GNU ac_path_SED and select it if it is found.
+  # Check for GNU $ac_path_SED
+case `"$ac_path_SED" --version 2>&1` in
+*GNU*)
+  ac_cv_path_SED="$ac_path_SED" ac_path_SED_found=:;;
+*)
+  ac_count=0
+  $as_echo_n 0123456789 >"conftest.in"
+  while :
+  do
+    cat "conftest.in" "conftest.in" >"conftest.tmp"
+    mv "conftest.tmp" "conftest.in"
+    cp "conftest.in" "conftest.nl"
+    $as_echo '' >> "conftest.nl"
+    "$ac_path_SED" -f conftest.sed < "conftest.nl" >"conftest.out" 2>/dev/null || break
+    diff "conftest.out" "conftest.nl" >/dev/null 2>&1 || break
+    as_fn_arith $ac_count + 1 && ac_count=$as_val
+    if test $ac_count -gt ${ac_path_SED_max-0}; then
+      # Best one so far, save it but keep looking for a better one
+      ac_cv_path_SED="$ac_path_SED"
+      ac_path_SED_max=$ac_count
+    fi
+    # 10*(2^10) chars as input seems more than enough
+    test $ac_count -gt 10 && break
+  done
+  rm -f conftest.in conftest.tmp conftest.nl conftest.out;;
+esac
+
+      $ac_path_SED_found && break 3
+    done
+  done
+  done
+IFS=$as_save_IFS
+  if test -z "$ac_cv_path_SED"; then
+    as_fn_error $? "no acceptable sed could be found in \$PATH" "$LINENO" 5
+  fi
+else
+  ac_cv_path_SED=$SED
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_path_SED" >&5
+$as_echo "$ac_cv_path_SED" >&6; }
+ SED="$ac_cv_path_SED"
+  rm -f conftest.sed
+
 
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
@@ -16875,22 +16986,17 @@ case "${LIBMONITOR}" in
     LIBMONITOR_LIB=${LIBMONITOR}/lib
     if test -f "${LIBMONITOR_INC}/monitor.h" ; then :
     else
-        as_fn_error $? "invalid libmonitor directory: $LIBMONITOR" "$LINENO" 5
+      as_fn_error $? "invalid libmonitor directory: $LIBMONITOR" "$LINENO" 5
     fi
     LIBMONITOR_LIB="${LIBMONITOR}/lib"
     if test -f "${LIBMONITOR_LIB}/libmonitor.so" ; then
-        OPT_LIBMONITOR_DYNAMIC=yes
+      OPT_LIBMONITOR_DYNAMIC=yes
     fi
-    if test -f "${LIBMONITOR_LIB}/libmonitor_wrap.a" ; then
-        OPT_LIBMONITOR_STATIC=yes
-        LIBMONITOR_WRAP_NAMES="main exit _exit dlopen dlclose fork vfork system \
-           execl execlp execle execv execvp execve pthread_exit                \
-	   pthread_create signal sigaction sigprocmask pthread_sigmask         \
-	   MPI_Init mpi_init mpi_init_ mpi_init__                              \
-	   MPI_Init_thread mpi_init_thread mpi_init_thread_ mpi_init_thread__  \
-	   MPI_Finalize mpi_finalize mpi_finalize_ mpi_finalize__              \
-	   MPI_Comm_rank mpi_comm_rank mpi_comm_rank_ mpi_comm_rank__          \
-	   _mp_init"
+    wrap_file="${LIBMONITOR_LIB}/libmonitor_wrap.a"
+    if test -f "$wrap_file" ; then
+      OPT_LIBMONITOR_STATIC=yes
+      LIBMONITOR_WRAP_NAMES=`nm "$wrap_file" | grep __wrap_ |
+        $SED -e 's/.*__wrap_//' | tr '\n' ' '`
     fi
     LIBMONITOR_COPY=yes
     LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
@@ -16906,6 +17012,9 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBMONITOR" >&5
 $as_echo "$LIBMONITOR" >&6; }
+
+echo "libmonitor wrap names:" >&5
+echo "$LIBMONITOR_WRAP_NAMES" >&5
 
 
 
@@ -17551,8 +17660,8 @@ fi
 # enable-mpi:
 #-------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build MPI versions (hpcprof-mpi)" >&5
-$as_echo_n "checking whether to build MPI versions (hpcprof-mpi)... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build MPI-based analysis tools (e.g., hpcprof-mpi)" >&5
+$as_echo_n "checking whether to build MPI-based analysis tools (e.g., hpcprof-mpi)... " >&6; }
 
 OPT_REQ_ENABLE_MPI="auto" # yes, no, auto
 
@@ -17597,23 +17706,23 @@ fi
 # enable-mpi-wrapper: check MPI compiler
 #-------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build MPI versions (MPI wrapper)" >&5
-$as_echo_n "checking whether to build MPI versions (MPI wrapper)... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build MPI monitoring support" >&5
+$as_echo_n "checking whether to build MPI monitoring support... " >&6; }
 
-OPT_REQ_ENABLE_MPIP="no" # yes, no, auto
+OPT_REQ_ENABLE_MPI_WRAP="no" # yes, no, auto
 
 # Check whether --enable-mpi-wrapper was given.
 if test "${enable_mpi_wrapper+set}" = set; then :
   enableval=$enable_mpi_wrapper; case "${enableval}" in
-     yes) OPT_REQ_ENABLE_MPIP="yes" ;;
-     no)  OPT_REQ_ENABLE_MPIP="no" ;;
+     yes) OPT_REQ_ENABLE_MPI_WRAP="yes" ;;
+     no)  OPT_REQ_ENABLE_MPI_WRAP="no" ;;
      *)   as_fn_error $? "bad value ${enableval} for --enable-mpi-wrapper" "$LINENO" 5 ;;
    esac
 fi
 
 
-OPT_ENABLE_MPIP=no
-if test "${OPT_REQ_ENABLE_MPIP}" != "no" ; then
+OPT_ENABLE_MPI_WRAP=no
+if test "${OPT_REQ_ENABLE_MPI_WRAP}" != "no" ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether can compile MPI code with CFLAGS='$CFLAGS'" >&5
 $as_echo_n "checking whether can compile MPI code with CFLAGS='$CFLAGS'... " >&6; }
 
@@ -17635,7 +17744,7 @@ else
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
-  OPT_ENABLE_MPIP=$ans
+  OPT_ENABLE_MPI_WRAP=$ans
   ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -17644,20 +17753,20 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_MPIP} (request: ${OPT_REQ_ENABLE_MPIP})" >&5
-$as_echo "${OPT_ENABLE_MPIP} (request: ${OPT_REQ_ENABLE_MPIP})" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_MPI_WRAP} (request: ${OPT_REQ_ENABLE_MPI_WRAP})" >&5
+$as_echo "${OPT_ENABLE_MPI_WRAP} (request: ${OPT_REQ_ENABLE_MPI_WRAP})" >&6; }
 
 
-if test "${OPT_REQ_ENABLE_MPIP}" = "yes" -a "${OPT_ENABLE_MPIP}" = no ; then
+if test "${OPT_REQ_ENABLE_MPI_WRAP}" = "yes" -a "${OPT_ENABLE_MPI_WRAP}" = no ; then
   as_fn_error $? "MPI wrapper support requested but MPI compiler is invalid!" "$LINENO" 5
 fi
 
- if test "${OPT_ENABLE_MPIP}" = "yes"; then
-  OPT_ENABLE_MPIP_TRUE=
-  OPT_ENABLE_MPIP_FALSE='#'
+ if test "${OPT_ENABLE_MPI_WRAP}" = "yes"; then
+  OPT_ENABLE_MPI_WRAP_TRUE=
+  OPT_ENABLE_MPI_WRAP_FALSE='#'
 else
-  OPT_ENABLE_MPIP_TRUE='#'
-  OPT_ENABLE_MPIP_FALSE=
+  OPT_ENABLE_MPI_WRAP_TRUE='#'
+  OPT_ENABLE_MPI_WRAP_FALSE=
 fi
 
 
@@ -17665,7 +17774,7 @@ fi
 # enable-mpi-wrapper: check F77 symbols
 #-------------------------------------------------
 
-if test "${OPT_ENABLE_MPIP}" = "yes" ; then
+if test "${OPT_ENABLE_MPI_WRAP}" = "yes" ; then
 
   if test -z "${MPIF77}" ; then
     for ac_prog in mpif77 mpxlf_r mpixlf77 mpxlf cmpifc xlf f77 g77 pgf77 fort ifc
@@ -18451,8 +18560,8 @@ if test -z "${OPT_ENABLE_MPI_TRUE}" && test -z "${OPT_ENABLE_MPI_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_MPI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${OPT_ENABLE_MPIP_TRUE}" && test -z "${OPT_ENABLE_MPIP_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_ENABLE_MPIP\" was never defined.
+if test -z "${OPT_ENABLE_MPI_WRAP_TRUE}" && test -z "${OPT_ENABLE_MPI_WRAP_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_MPI_WRAP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_LUSH_TRUE}" && test -z "${OPT_ENABLE_LUSH_FALSE}"; then
@@ -21101,8 +21210,8 @@ $as_echo "$as_me:   hpcrun?:      ${enable_hpcrun_mesg}" >&6;}
 $as_echo "$as_me:   hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   mpi support?: ${OPT_ENABLE_MPI}" >&5
 $as_echo "$as_me:   mpi support?: ${OPT_ENABLE_MPI}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   mpi wrapper support?: ${OPT_ENABLE_MPIP}" >&5
-$as_echo "$as_me:   mpi wrapper support?: ${OPT_ENABLE_MPIP}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}" >&5
+$as_echo "$as_me:   mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun/lush?: ${opt_enable_lush}" >&5
 $as_echo "$as_me:   hpcrun/lush?: ${opt_enable_lush}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5

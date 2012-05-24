@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -117,22 +117,13 @@ Options: General:\n\
   -h, --help           Print this help.\n\
   --debug [<n>]        Debug: use debug level <n>. {1}\n\
 \n\
-Options: Source Structure Correlation:\n\
+Options: Source Code and Static Structure:\n\
   --name <name>, --title <name>\n\
                        Set the database's name (title) to <name>.\n\
-  -M <metric>, --metric <metric>\n\
-                       Specify the set of metrics computed by hpcprof.\n\
-                       <metric> is one of the following:\n\
-                         sum:    Show (only) summary metrics\n\
-                                 (Sum, Mean, StdDev, CoefVar, Min, Max)\n\
-                         sum+:   Show thread and summary metrics\n\
-                         thread: Show only thread metrics\n\
-                       Default is 'sum'; hpcprof-mpi always computes 'sum'.\n\
   -I <path>, --include <path>\n\
                        Use <path> when searching for source files. For a\n\
-                       recursive search, append a '*' after the last slash,\n\
-                       e.g., '/mypath/*' (quote or escape to protect from\n\
-                       the shell.) May pass multiple times.\n\
+                       recursive search, append a + after the last slash,\n\
+                       e.g., /mypath/+ . You use multiple -I options.\n\
   -S <file>, --structure <file>\n\
                        Use hpcstruct structure file <file> for correlation.\n\
                        May pass multiple times (e.g., for shared libraries).\n\
@@ -143,7 +134,16 @@ Options: Source Structure Correlation:\n\
                        instances of '=' within a path. May pass multiple\n\
                        times.\n\
 \n\
-Options: Special:\n\
+Options: Metrics:\n\
+  -M <metric>, --metric <metric>\n\
+                       Specify metrics to compute, where <metric> is one of\n\
+                       the following:\n\
+                         sum:   sum over threads/processes\n\
+                         stats: sum, mean, standard dev, coef of var, min, &\n\
+                                max over threads/processes\n\
+                         thread: per-thread metrics\n\
+                       Default: {sum}. May pass multiple times.\n\
+                       hpcprof-mpi does not compute 'thread'.\n\
   --force-metric       Force hpcprof to show all thread-level metrics,\n\
                        regardless of their number.\n\
 \n\
@@ -171,13 +171,10 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
   {  0 , "agent-pthread",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
 
-  // Source structure correlation options
-  {  0 , "name",            CLP::ARG_REQ,  CLP::DUPOPT_CLOB, CLP_SEPARATOR,
+  // Source Code and Static Structure
+  {  0 , "name",            CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
-  {  0 , "title",           CLP::ARG_REQ,  CLP::DUPOPT_CLOB, CLP_SEPARATOR,
-     NULL },
-
-  { 'M', "metric",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
+  {  0 , "title",           CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
@@ -190,7 +187,9 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
   { 'N', "normalize",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
-  // Special options
+  // Metrics
+  { 'M', "metric",          CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
+     NULL },
   {  0 , "force-metric",    CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
 
@@ -228,7 +227,7 @@ ArgsHPCProf::ArgsHPCProf()
   Diagnostics_SetDiagnosticFilterLevel(1);
 
   // Analysis::Args
-  prof_metrics = Analysis::Args::MetricSet_SumOnly;
+  prof_metrics = Analysis::Args::MetricFlg_StatsSum;
 
   db_makeMetricDB = true;
 }
@@ -323,7 +322,7 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
       agent = "agent-pthread";
     }
 
-    // Check for other options: Correlation options
+    // Check for other options: Source code and static structure
     if (parser.isOpt("name")) {
       title = parser.getOptArg("name");
     }
@@ -369,10 +368,20 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
       }
     }
 
+    // Check for other options: Metrics
     if (parser.isOpt("metric")) {
-      string opt = parser.getOptArg("metric");
-      parseArg_metric(opt, "--metric/-M option");
+      prof_metrics = Analysis::Args::MetricFlg_NULL;
+
+      string str = parser.getOptArg("metric");
+
+      std::vector<std::string> metricVec;
+      StrUtil::tokenize_str(str, CLP_SEPARATOR, metricVec);
+
+      for (uint i = 0; i < metricVec.size(); ++i) {
+	parseArg_metric(metricVec[i], "--metric/-M option");
+      }
     }
+    // N.B.: hpcprof checks for "force-metric": src/tool/hpcprof/Args.cpp
     
     // Check for other options: Output options
     bool isDbDirSet = false;
@@ -448,16 +457,22 @@ ArgsHPCProf::parseArg_norm(const string& value, const char* errTag)
 void
 ArgsHPCProf::parseArg_metric(const std::string& value, const char* errTag)
 {
-  if (value == "sum") {
-    prof_metrics = Analysis::Args::MetricSet_SumOnly;
-  }
-  else if (value == "sum+") {
+  if (value == "thread") {
     // TODO: issue error with hpcprof-mpi
-    prof_metrics = Analysis::Args::MetricSet_ThreadAndSum;
+    Analysis::Args::MetricFlg_set(prof_metrics,
+				  Analysis::Args::MetricFlg_Thread);
   }
-  else if (value == "thread") {
-    // TODO: issue error with hpcprof-mpi
-    prof_metrics = Analysis::Args::MetricSet_ThreadOnly;
+  else if (value == "sum") {
+    Analysis::Args::MetricFlg_clear(prof_metrics,
+				    Analysis::Args::MetricFlg_StatsAll);
+    Analysis::Args::MetricFlg_set(prof_metrics,
+				  Analysis::Args::MetricFlg_StatsSum);
+  }
+  else if (value == "stats") {
+    Analysis::Args::MetricFlg_clear(prof_metrics,
+				    Analysis::Args::MetricFlg_StatsSum);
+    Analysis::Args::MetricFlg_set(prof_metrics,
+				  Analysis::Args::MetricFlg_StatsAll);
   }
   else {
     ARG_ERROR(errTag << ": Unexpected value received: '" << value << "'");
@@ -522,3 +537,4 @@ ArgsHPCProf::makeDBDirName(const std::string& profileArg)
 //***************************************************************************
 
 } // namespace Analysis
+
