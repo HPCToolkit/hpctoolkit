@@ -122,33 +122,85 @@ fi
 AC_SUBST([svn_revision])
 
 #------------------------------------------------------------
-# Compiler issues
+# Cross compile
 #------------------------------------------------------------
 
 # is_cross_compile: non-empty string if cross-compiling
 
 is_cross_compile=""
 if test "x$build" != "x$host" ; then
-   is_cross_compile=${host}
+    is_cross_compile="${host}"
 fi
 
-# Warn if not using GNU gcc and g++.  Some packages don't build
-# cleanly without gcc.  For example, binutils fails with icc.
-# It's a pain to robustly identify GNU gcc/g++: Intel icc defines
-# __GNUC__ and Ubuntu g++ --version doesn't display "GCC".
+#------------------------------------------------------------
+# Compiler path and version
+#------------------------------------------------------------
+
+# Find the location and version of the C and C++ compilers.  Warn if
+# not using GNU gcc/g++.  Some packages don't build cleanly without
+# GNU.  For example, binutils fails with icc.
+#
+# It's a pain to robustly identify GNU gcc/g++.  Intel icc defines
+# __GNUC__ and SuSE and Ubuntu 'g++ --version' don't display "GCC".
+#
+# FIXME: the --version option works with GNU and Intel.  We could
+# extend this to PGI, IBM, etc, but we probably don't build cleanly
+# with those compilers.
+
+CC_VERSION='unknown non-gnu'
+version=`$CC --version 2>/dev/null`
+if echo "$version" | grep -i copyright >/dev/null ; then
+    CC_VERSION=`echo "$version" | head -1`
+fi
+
+CC_PATH=
+base=`echo $CC | awk '{ print $1 }'`
+case "$base" in
+    /* ) CC_PATH="$base" ;;
+    * )  AC_PATH_PROG([CC_PATH], [$base]) ;;
+esac
+if test "x$CC_PATH" = x ; then
+    CC_PATH=unknown
+fi
 
 warn_non_gcc=no
-$CC --version 2>&1 | grep -i 'free software found' >/dev/null 2>&1
+echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
 if test $? -ne 0 ; then
     warn_non_gcc=yes
     AC_MSG_WARN([Not using the GNU C compiler.])
 fi
 
-$CXX --version 2>&1 | grep -i 'free software found' >/dev/null 2>&1
+CXX_VERSION='unknown non-gnu'
+version=`$CXX --version 2>/dev/null`
+if echo "$version" | grep -i copyright >/dev/null ; then
+    CXX_VERSION=`echo "$version" | head -1`
+fi
+
+CXX_PATH=
+base=`echo $CXX | awk '{ print $1 }'`
+case "$base" in
+    /* ) CXX_PATH="$base" ;;
+    * )  AC_PATH_PROG([CXX_PATH], [$base]) ;;
+esac
+if test "x$CXX_PATH" = x ; then
+    CXX_PATH=unknown
+fi
+
+echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
 if test $? -ne 0 ; then
     warn_non_gcc=yes
     AC_MSG_WARN([Not using the GNU C++ compiler.])
 fi
+
+AC_MSG_NOTICE([C compiler: $CC_VERSION])
+AC_MSG_NOTICE([C++ compiler: $CXX_VERSION])
+
+AC_SUBST([CC_PATH])
+AC_SUBST([CXX_PATH])
+
+#------------------------------------------------------------
+# CXX tr1/unordered_map
+#------------------------------------------------------------
 
 # Test if CXX supports <tr1/unordered_map>.  SymtabAPI uses this with
 # gcc 4.3 and later, but some installations (biou) are missing this.
@@ -1052,32 +1104,24 @@ AC_MSG_NOTICE([------------------])
 AC_MSG_NOTICE([Externals summary])
 AC_MSG_NOTICE([------------------])
 
-if test "$warn_non_gcc" = yes ; then
-    AC_MSG_WARN([Not using the GNU C or C++ compiler.])
-    AC_MSG_WARN([This is not necessarily an error, but some packages may not])
-    AC_MSG_WARN([compile cleanly without gcc or g++.  If the build fails, try])
-    AC_MSG_WARN([using GNU gcc and g++ before reporting an error.])
-    AC_MSG_NOTICE([--------------------------])
-fi
-
-if test "$warn_wordsize_mismatch" = yes ; then
-    AC_MSG_WARN([Host wordsize mismatch.])
-    AC_MSG_WARN([Either CC ($wordsize_cc) and CXX ($wordsize_cxx) generate different wordsizes,])
-    AC_MSG_WARN([or they do not match the host wordsize ($wordsize), or they generate])
-    AC_MSG_WARN([different wordsizes with and without CFLAGS.  If you are])
-    AC_MSG_WARN([using a CFLAGS option to reset the wordsize, then put this])
-    AC_MSG_WARN([option in CC with something like CC='gcc -m${wordsize}'.])
-    AC_MSG_NOTICE([--------------------------])
-fi
-
 AC_MSG_NOTICE([svn revision: $svn_revision])
 AC_MSG_NOTICE([prefix: $prefix])
 AC_MSG_NOTICE([build: $build])
 AC_MSG_NOTICE([host:  $host])
-AC_MSG_NOTICE([CC:  '$CC',  CFLAGS:   '$CFLAGS'])
-AC_MSG_NOTICE([CXX: '$CXX',  CXXFLAGS: '$CXXFLAGS'])
+
+AC_MSG_NOTICE([C compiler: $CC_VERSION])
+AC_MSG_NOTICE([Path: $CC_PATH])
+AC_MSG_NOTICE([CC:     '$CC'])
+AC_MSG_NOTICE([CFLAGS: '$CFLAGS'])
+
+AC_MSG_NOTICE([C++ compiler: $CXX_VERSION])
+AC_MSG_NOTICE([Path: $CXX_PATH])
+AC_MSG_NOTICE([CXX:      '$CXX'])
+AC_MSG_NOTICE([CXXFLAGS: '$CXXFLAGS'])
+
 AC_MSG_NOTICE([AR:  '$AR'])
 AC_MSG_NOTICE([wordsize: $wordsize bits])
+
 AC_MSG_NOTICE([binutils: $binutils_avail])
 AC_MSG_NOTICE([libdwarf: $libdwarf_avail])
 AC_MSG_NOTICE([libelf: $libelf_avail])
@@ -1091,3 +1135,20 @@ AC_MSG_NOTICE([xed2: $xed2_avail])
 AC_MSG_NOTICE([xerces: $xerces_avail])
 AC_MSG_NOTICE([mpi: $with_mpi])
 
+if test "$warn_non_gcc" = yes ; then
+    AC_MSG_NOTICE([])
+    AC_MSG_WARN([Not using the GNU C or C++ compiler.])
+    AC_MSG_WARN([This is not necessarily an error, but some packages may not])
+    AC_MSG_WARN([compile cleanly without gcc or g++.  If the build fails, try])
+    AC_MSG_WARN([using GNU gcc and g++ before reporting an error.])
+fi
+
+if test "$warn_wordsize_mismatch" = yes ; then
+    AC_MSG_NOTICE([])
+    AC_MSG_WARN([Host wordsize mismatch.])
+    AC_MSG_WARN([Either CC ($wordsize_cc) and CXX ($wordsize_cxx) generate different wordsizes,])
+    AC_MSG_WARN([or they do not match the host wordsize ($wordsize), or they generate])
+    AC_MSG_WARN([different wordsizes with and without CFLAGS.  If you are])
+    AC_MSG_WARN([using a CFLAGS option to reset the wordsize, then put this])
+    AC_MSG_WARN([option in CC with something like CC='gcc -m${wordsize}'.])
+fi

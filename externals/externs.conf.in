@@ -4,6 +4,10 @@
 
 ext_version='@svn_revision@'
 
+ext_cc_path='@CC_PATH@'
+ext_cxx_path='@CXX_PATH@'
+ext_wordsize='@wordsize@'
+
 ext_binutils_prefix='@binutils_prefix@'
 ext_libdwarf_prefix='@libdwarf_prefix@'
 ext_libelf_prefix='@libelf_prefix@'

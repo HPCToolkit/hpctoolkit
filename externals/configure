@@ -626,6 +626,8 @@ GREP
 CPP
 gnu_make
 have_tr1_map
+CXX_PATH
+CC_PATH
 svn_revision
 host_vendor
 build_vendor
@@ -3402,35 +3404,167 @@ fi
 
 
 #------------------------------------------------------------
-# Compiler issues
+# Cross compile
 #------------------------------------------------------------
 
 # is_cross_compile: non-empty string if cross-compiling
 
 is_cross_compile=""
 if test "x$build" != "x$host" ; then
-   is_cross_compile=${host}
+    is_cross_compile="${host}"
 fi
 
-# Warn if not using GNU gcc and g++.  Some packages don't build
-# cleanly without gcc.  For example, binutils fails with icc.
-# It's a pain to robustly identify GNU gcc/g++: Intel icc defines
-# __GNUC__ and Ubuntu g++ --version doesn't display "GCC".
+#------------------------------------------------------------
+# Compiler path and version
+#------------------------------------------------------------
+
+# Find the location and version of the C and C++ compilers.  Warn if
+# not using GNU gcc/g++.  Some packages don't build cleanly without
+# GNU.  For example, binutils fails with icc.
+#
+# It's a pain to robustly identify GNU gcc/g++.  Intel icc defines
+# __GNUC__ and SuSE and Ubuntu 'g++ --version' don't display "GCC".
+#
+# FIXME: the --version option works with GNU and Intel.  We could
+# extend this to PGI, IBM, etc, but we probably don't build cleanly
+# with those compilers.
+
+CC_VERSION='unknown non-gnu'
+version=`$CC --version 2>/dev/null`
+if echo "$version" | grep -i copyright >/dev/null ; then
+    CC_VERSION=`echo "$version" | head -1`
+fi
+
+CC_PATH=
+base=`echo $CC | awk '{ print $1 }'`
+case "$base" in
+    /* ) CC_PATH="$base" ;;
+    * )  # Extract the first word of "$base", so it can be a program name with args.
+set dummy $base; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_path_CC_PATH+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $CC_PATH in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_CC_PATH="$CC_PATH" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_CC_PATH="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+CC_PATH=$ac_cv_path_CC_PATH
+if test -n "$CC_PATH"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $CC_PATH" >&5
+$as_echo "$CC_PATH" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+ ;;
+esac
+if test "x$CC_PATH" = x ; then
+    CC_PATH=unknown
+fi
 
 warn_non_gcc=no
-$CC --version 2>&1 | grep -i 'free software found' >/dev/null 2>&1
+echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
 if test $? -ne 0 ; then
     warn_non_gcc=yes
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU C compiler." >&5
 $as_echo "$as_me: WARNING: Not using the GNU C compiler." >&2;}
 fi
 
-$CXX --version 2>&1 | grep -i 'free software found' >/dev/null 2>&1
+CXX_VERSION='unknown non-gnu'
+version=`$CXX --version 2>/dev/null`
+if echo "$version" | grep -i copyright >/dev/null ; then
+    CXX_VERSION=`echo "$version" | head -1`
+fi
+
+CXX_PATH=
+base=`echo $CXX | awk '{ print $1 }'`
+case "$base" in
+    /* ) CXX_PATH="$base" ;;
+    * )  # Extract the first word of "$base", so it can be a program name with args.
+set dummy $base; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_path_CXX_PATH+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $CXX_PATH in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_CXX_PATH="$CXX_PATH" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_CXX_PATH="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+CXX_PATH=$ac_cv_path_CXX_PATH
+if test -n "$CXX_PATH"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $CXX_PATH" >&5
+$as_echo "$CXX_PATH" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+ ;;
+esac
+if test "x$CXX_PATH" = x ; then
+    CXX_PATH=unknown
+fi
+
+echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
 if test $? -ne 0 ; then
     warn_non_gcc=yes
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU C++ compiler." >&5
 $as_echo "$as_me: WARNING: Not using the GNU C++ compiler." >&2;}
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: C compiler: $CC_VERSION" >&5
+$as_echo "$as_me: C compiler: $CC_VERSION" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: C++ compiler: $CXX_VERSION" >&5
+$as_echo "$as_me: C++ compiler: $CXX_VERSION" >&6;}
+
+
+
+
+#------------------------------------------------------------
+# CXX tr1/unordered_map
+#------------------------------------------------------------
 
 # Test if CXX supports <tr1/unordered_map>.  SymtabAPI uses this with
 # gcc 4.3 and later, but some installations (biou) are missing this.
@@ -6024,36 +6158,6 @@ $as_echo "$as_me: Externals summary" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: ------------------" >&5
 $as_echo "$as_me: ------------------" >&6;}
 
-if test "$warn_non_gcc" = yes ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU C or C++ compiler." >&5
-$as_echo "$as_me: WARNING: Not using the GNU C or C++ compiler." >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: This is not necessarily an error, but some packages may not" >&5
-$as_echo "$as_me: WARNING: This is not necessarily an error, but some packages may not" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: compile cleanly without gcc or g++.  If the build fails, try" >&5
-$as_echo "$as_me: WARNING: compile cleanly without gcc or g++.  If the build fails, try" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using GNU gcc and g++ before reporting an error." >&5
-$as_echo "$as_me: WARNING: using GNU gcc and g++ before reporting an error." >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: --------------------------" >&5
-$as_echo "$as_me: --------------------------" >&6;}
-fi
-
-if test "$warn_wordsize_mismatch" = yes ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Host wordsize mismatch." >&5
-$as_echo "$as_me: WARNING: Host wordsize mismatch." >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Either CC ($wordsize_cc) and CXX ($wordsize_cxx) generate different wordsizes," >&5
-$as_echo "$as_me: WARNING: Either CC ($wordsize_cc) and CXX ($wordsize_cxx) generate different wordsizes," >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: or they do not match the host wordsize ($wordsize), or they generate" >&5
-$as_echo "$as_me: WARNING: or they do not match the host wordsize ($wordsize), or they generate" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: different wordsizes with and without CFLAGS.  If you are" >&5
-$as_echo "$as_me: WARNING: different wordsizes with and without CFLAGS.  If you are" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using a CFLAGS option to reset the wordsize, then put this" >&5
-$as_echo "$as_me: WARNING: using a CFLAGS option to reset the wordsize, then put this" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: option in CC with something like CC='gcc -m${wordsize}'." >&5
-$as_echo "$as_me: WARNING: option in CC with something like CC='gcc -m${wordsize}'." >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: --------------------------" >&5
-$as_echo "$as_me: --------------------------" >&6;}
-fi
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: svn revision: $svn_revision" >&5
 $as_echo "$as_me: svn revision: $svn_revision" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: prefix: $prefix" >&5
@@ -6062,14 +6166,30 @@ $as_echo "$as_me: prefix: $prefix" >&6;}
 $as_echo "$as_me: build: $build" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: host:  $host" >&5
 $as_echo "$as_me: host:  $host" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: CC:  '$CC',  CFLAGS:   '$CFLAGS'" >&5
-$as_echo "$as_me: CC:  '$CC',  CFLAGS:   '$CFLAGS'" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: CXX: '$CXX',  CXXFLAGS: '$CXXFLAGS'" >&5
-$as_echo "$as_me: CXX: '$CXX',  CXXFLAGS: '$CXXFLAGS'" >&6;}
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: C compiler: $CC_VERSION" >&5
+$as_echo "$as_me: C compiler: $CC_VERSION" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Path: $CC_PATH" >&5
+$as_echo "$as_me: Path: $CC_PATH" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: CC:     '$CC'" >&5
+$as_echo "$as_me: CC:     '$CC'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: CFLAGS: '$CFLAGS'" >&5
+$as_echo "$as_me: CFLAGS: '$CFLAGS'" >&6;}
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: C++ compiler: $CXX_VERSION" >&5
+$as_echo "$as_me: C++ compiler: $CXX_VERSION" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Path: $CXX_PATH" >&5
+$as_echo "$as_me: Path: $CXX_PATH" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: CXX:      '$CXX'" >&5
+$as_echo "$as_me: CXX:      '$CXX'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: CXXFLAGS: '$CXXFLAGS'" >&5
+$as_echo "$as_me: CXXFLAGS: '$CXXFLAGS'" >&6;}
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: AR:  '$AR'" >&5
 $as_echo "$as_me: AR:  '$AR'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: wordsize: $wordsize bits" >&5
 $as_echo "$as_me: wordsize: $wordsize bits" >&6;}
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: binutils: $binutils_avail" >&5
 $as_echo "$as_me: binutils: $binutils_avail" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: libdwarf: $libdwarf_avail" >&5
@@ -6095,3 +6215,32 @@ $as_echo "$as_me: xerces: $xerces_avail" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: mpi: $with_mpi" >&5
 $as_echo "$as_me: mpi: $with_mpi" >&6;}
 
+if test "$warn_non_gcc" = yes ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+$as_echo "$as_me: " >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU C or C++ compiler." >&5
+$as_echo "$as_me: WARNING: Not using the GNU C or C++ compiler." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: This is not necessarily an error, but some packages may not" >&5
+$as_echo "$as_me: WARNING: This is not necessarily an error, but some packages may not" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: compile cleanly without gcc or g++.  If the build fails, try" >&5
+$as_echo "$as_me: WARNING: compile cleanly without gcc or g++.  If the build fails, try" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using GNU gcc and g++ before reporting an error." >&5
+$as_echo "$as_me: WARNING: using GNU gcc and g++ before reporting an error." >&2;}
+fi
+
+if test "$warn_wordsize_mismatch" = yes ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+$as_echo "$as_me: " >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Host wordsize mismatch." >&5
+$as_echo "$as_me: WARNING: Host wordsize mismatch." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Either CC ($wordsize_cc) and CXX ($wordsize_cxx) generate different wordsizes," >&5
+$as_echo "$as_me: WARNING: Either CC ($wordsize_cc) and CXX ($wordsize_cxx) generate different wordsizes," >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: or they do not match the host wordsize ($wordsize), or they generate" >&5
+$as_echo "$as_me: WARNING: or they do not match the host wordsize ($wordsize), or they generate" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: different wordsizes with and without CFLAGS.  If you are" >&5
+$as_echo "$as_me: WARNING: different wordsizes with and without CFLAGS.  If you are" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using a CFLAGS option to reset the wordsize, then put this" >&5
+$as_echo "$as_me: WARNING: using a CFLAGS option to reset the wordsize, then put this" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: option in CC with something like CC='gcc -m${wordsize}'." >&5
+$as_echo "$as_me: WARNING: option in CC with something like CC='gcc -m${wordsize}'." >&2;}
+fi
