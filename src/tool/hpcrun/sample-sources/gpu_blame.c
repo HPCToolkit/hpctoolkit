@@ -220,7 +220,7 @@ static void PopulateEntryPointesToWrappedCalls() {
 }
 
 
-void CloseAllStreams(struct stream_to_id_map_t *root) {
+void CloseAllStreams(stream_to_id_map_t *root) {
     
     if (!root)
         return;

@@ -164,14 +164,14 @@ g_free_tree_nodes_head = (node_ptr); }while(0)
 #define ADD_TO_FREE_ACTIVE_KERNEL_NODE_LIST(node_ptr) do { (node_ptr)->next_free_node = g_free_active_kernel_nodes_head; \
 g_free_active_kernel_nodes_head = (node_ptr); }while(0)
 
-#define HPCRUN_ASYNC_BLOCK_SPIN_LOCK  do{hpcrun_async_block(); \
+#define HPCRUN_ASYNC_BLOCK_SPIN_LOCK  do{hpcrun_safe_enter_async(NULL); \
 spinlock_lock(&g_gpu_lock);} while(0)
 
 #define HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK  do{spinlock_unlock(&g_gpu_lock); \
-hpcrun_async_unblock();} while(0)
+hpcrun_safe_exit();} while(0)
 
 #define OLD_SYNC_PROLOGUE(ctxt, launch_node, start_time, rec_node) \
-hpcrun_async_block();      \
+hpcrun_safe_enter_async(NULL);      \
 ucontext_t ctxt;           \
 getcontext(&ctxt);         \
 cct_node_t * launch_node = hpcrun_sample_callpath(&ctxt, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ ).sample_node; \
@@ -193,11 +193,11 @@ uint64_t end_time  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000));
 cct_metric_data_increment(cpu_idle_metric_id, launch_node, (cct_metric_data_t) {.i = (end_time - start_time)});  \
 cct_metric_data_increment(wall_clock_metric_id, launch_node, (cct_metric_data_t) {.i = (end_time - start_time)});    \
 trace_append(hpcrun_cct_persistent_id(launch_node));            \
-hpcrun_async_unblock();                                         \
+hpcrun_safe_exit();                                         \
 TD_GET(is_thread_at_cuda_sync) = false
 
 #define SYNC_PROLOGUE(ctxt, launch_node, start_time, rec_node) \
-hpcrun_async_block();      \
+hpcrun_safe_enter_async(NULL);      \
 ucontext_t ctxt;           \
 getcontext(&ctxt);         \
 cct_node_t * launch_node = hpcrun_sample_callpath(&ctxt, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ ).sample_node; \
@@ -206,10 +206,10 @@ spinlock_lock(&g_gpu_lock);                                 \
 uint64_t start_time;                                        \
 event_list_node_t  *  rec_node = EnterCudaSync(& start_time); \
 spinlock_unlock(&g_gpu_lock);                               \
-hpcrun_async_unblock();
+hpcrun_safe_exit();
 
 #define SYNC_EPILOGUE(ctxt, launch_node, start_time, rec_node, mask, end_time)      \
-hpcrun_async_block();\
+hpcrun_safe_enter_async(NULL);\
 spinlock_lock(&g_gpu_lock);\
 uint64_t last_kernel_end_time = LeaveCudaSync(rec_node,start_time,mask);\
 spinlock_unlock(&g_gpu_lock);\
@@ -221,7 +221,7 @@ uint64_t cpu_idle_time = last_kernel_end_time == 0 ? 0: last_kernel_end_time  - 
 uint64_t gpu_idle_time = last_kernel_end_time == 0 ? end_time - start_time : end_time - last_kernel_end_time;\
 cct_metric_data_increment(cpu_idle_metric_id, launch_node, (cct_metric_data_t) {.i = (cpu_idle_time)});\
 cct_metric_data_increment(gpu_idle_metric_id, launch_node, (cct_metric_data_t) {.i = (gpu_idle_time)});\
-hpcrun_async_unblock();\
+hpcrun_safe_exit();\
 TD_GET(is_thread_at_cuda_sync) = false
 
 #define GET_NEW_TREE_NODE(node_ptr) do {						\
@@ -856,10 +856,10 @@ cudaError_t cudaStreamSynchronize(cudaStream_t stream) {
 
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_STREAM_SYNCHRONIZE].cudaStreamSynchronizeReal(stream);
 
-    hpcrun_async_block();
+    hpcrun_safe_enter_async(NULL);
     uint32_t streamId;
     streamId = SplayGetStreamId(stream_to_id_tree_root, stream);
-    hpcrun_async_unblock();
+    hpcrun_safe_exit();
 
     SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, streamId, syncEnd);
     return ret;
@@ -880,10 +880,10 @@ cudaError_t cudaStreamWaitEvent(cudaStream_t stream, cudaEvent_t event, unsigned
 
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_STREAM_WAIT_EVENT].cudaStreamWaitEventReal(stream, event, flags);
 
-    hpcrun_async_block();
+    hpcrun_safe_enter_async(NULL);
     uint32_t streamId;
     streamId = SplayGetStreamId(stream_to_id_tree_root, stream);
-    hpcrun_async_unblock();
+    hpcrun_safe_exit();
 
     SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, streamId, syncEnd);
 
@@ -980,7 +980,7 @@ cudaError_t cudaStreamDestroy(cudaStream_t stream) {
 
     SYNCHRONOUS_CLEANUP;
 
-    hpcrun_async_block();
+    hpcrun_safe_enter_async(NULL);
 
     uint32_t streamId;
 
@@ -996,7 +996,7 @@ cudaError_t cudaStreamDestroy(cudaStream_t stream) {
 
     // Delete splay tree entry
     splay_delete(stream);
-    hpcrun_async_unblock();
+    hpcrun_safe_exit();
     return ret;
 
 }
@@ -1166,7 +1166,7 @@ cudaError_t cudaMemcpy2D(void *dst, size_t dpitch, const void *src, size_t spitc
 
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_2D].cudaMemcpy2DReal(dst, dpitch, src, spitch, width, height, kind);
 
-    hpcrun_async_block();
+    hpcrun_safe_enter_async(NULL);
     spinlock_lock(&g_gpu_lock);
     LeaveCudaSync(recorded_node, syncStart, ALL_STREAMS_MASK);
     spinlock_unlock(&g_gpu_lock);
@@ -1188,7 +1188,7 @@ cudaError_t cudaMemcpy2D(void *dst, size_t dpitch, const void *src, size_t spitc
     // Increment bytes transferred metric
     increment_mem_xfer_metric(height * width, kind, launcher_cct);
     
-    hpcrun_async_unblock();
+    hpcrun_safe_exit();
 
     TD_GET(is_thread_at_cuda_sync) = false;
     return ret;
@@ -1201,7 +1201,7 @@ cudaError_t cudaMemcpy(void *dst, const void *src, size_t count, enum cudaMemcpy
 
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY].cudaMemcpyReal(dst, src, count, kind);
 
-    hpcrun_async_block();
+    hpcrun_safe_enter_async(NULL);
     spinlock_lock(&g_gpu_lock);
     LeaveCudaSync(recorded_node, syncStart, ALL_STREAMS_MASK);
     spinlock_unlock(&g_gpu_lock);
@@ -1221,7 +1221,7 @@ cudaError_t cudaMemcpy(void *dst, const void *src, size_t count, enum cudaMemcpy
     // Increment bytes transferred metric
     increment_mem_xfer_metric(count, kind, launcher_cct);
 
-    hpcrun_async_unblock();
+    hpcrun_safe_exit();
 
     TD_GET(is_thread_at_cuda_sync) = false;
     return ret;
@@ -1265,10 +1265,10 @@ CUresult cuStreamSynchronize(CUstream stream) {
 
     CUresult ret = cuDriverFunctionPointer[CU_STREAM_SYNCHRONIZE].cuStreamSynchronizeReal(stream);
 
-    hpcrun_async_block();
+    hpcrun_safe_enter_async(NULL);
     uint32_t streamId;
     streamId = SplayGetStreamId(stream_to_id_tree_root, (cudaStream_t)stream);
-    hpcrun_async_unblock();
+    hpcrun_safe_exit();
 
     SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, streamId, syncEnd);
 
@@ -1346,7 +1346,7 @@ CUresult cuLaunchGridAsync(CUfunction f, int grid_width, int grid_height, CUstre
 CUresult cuStreamDestroy(CUstream stream) {
 
     SYNCHRONOUS_CLEANUP;
-    hpcrun_async_block();
+    hpcrun_safe_enter_async(NULL);
 
     uint32_t streamId;
     streamId = SplayGetStreamId(stream_to_id_tree_root, (cudaStream_t)stream);
@@ -1361,7 +1361,7 @@ CUresult cuStreamDestroy(CUstream stream) {
 
     // Delete splay tree entry
     splay_delete((cudaStream_t)stream);
-    hpcrun_async_unblock();
+    hpcrun_safe_exit();
     return ret;
 
 }
@@ -1577,7 +1577,7 @@ CUresult cuMemcpyHtoD(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCou
 
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_H_TO_D].cuMemcpyHtoDReal(dstDevice, srcHost, ByteCount);
 
-    hpcrun_async_block();
+    hpcrun_safe_enter_async(NULL);
     spinlock_lock(&g_gpu_lock);
     LeaveCudaSync(recorded_node, syncStart, ALL_STREAMS_MASK);
     spinlock_unlock(&g_gpu_lock);
@@ -1598,7 +1598,7 @@ CUresult cuMemcpyHtoD(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCou
     //idt += syncEnd - syncStart;
     //printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
 
-    hpcrun_async_unblock();
+    hpcrun_safe_exit();
 
     TD_GET(is_thread_at_cuda_sync) = false;
     return ret;
@@ -1675,7 +1675,7 @@ CUresult cuMemcpyDtoH(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount) {
 
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_D_TO_H].cuMemcpyDtoHReal(dstHost, srcDevice, ByteCount);
 
-    hpcrun_async_block();
+    hpcrun_safe_enter_async(NULL);
 
     spinlock_lock(&g_gpu_lock);
     LeaveCudaSync(recorded_node, syncStart, ALL_STREAMS_MASK);
@@ -1695,7 +1695,7 @@ CUresult cuMemcpyDtoH(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount) {
     cct_metric_data_increment(d_to_h_data_xfer_metric_id, launcher_cct , (cct_metric_data_t) {.i = (ByteCount)});
 
     
-    hpcrun_async_unblock();
+    hpcrun_safe_exit();
 
     TD_GET(is_thread_at_cuda_sync) = false;
     return ret;
