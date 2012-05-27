@@ -108,6 +108,9 @@ if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcrun_ga.la
   pkglib_LTLIBRARIES += libhpcrun_io.la
   pkglib_LTLIBRARIES += libhpcrun_memleak.la
+if OPT_ENABLE_CUDA
+  pkglib_LTLIBRARIES += libhpcrun_gpu.la
+endif
   pkglib_LTLIBRARIES += libhpctoolkit.la
   bin_SCRIPTS += scripts/hpcrun
 endif
@@ -120,6 +123,9 @@ if OPT_ENABLE_HPCRUN_STATIC
   pkglib_LIBRARIES += libhpcrun_ga_wrap.a
   pkglib_LIBRARIES += libhpcrun_io_wrap.a
   pkglib_LIBRARIES += libhpcrun_memleak_wrap.a
+if OPT_ENABLE_CUDA
+  pkglib_LIBRARIES += libhpcrun_gpu_wrap.a
+endif
   pkglib_LIBRARIES += libhpctoolkit.a
   bin_SCRIPTS += scripts/hpclink
 endif
@@ -144,6 +150,9 @@ XED2_LIB = @XED2_LIB@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
 PLUGIN_CONFIG_FILES = ga io memleak
+if OPT_ENABLE_CUDA
+    PLUGIN_CONFIG_FILES += gpu
+endif
 
 UNW_COMMON_FILES = \
 	unwind/common/backtrace.c	\
@@ -364,6 +373,12 @@ libhpcrun_memleak_la_SOURCES = 		\
 libhpcrun_memleak_wrap_a_SOURCES = 	\
 	sample-sources/memleak-overrides.c
 
+libhpcrun_gpu_la_SOURCES = 		\
+	sample-sources/gpu_blame-overrides.c
+
+libhpcrun_gpu_wrap_a_SOURCES = 	\
+	sample-sources/gpu_blame-overrides.c
+
 libhpcrun_mpi_la_SOURCES = 		\
 	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
 
@@ -421,6 +436,15 @@ libhpcrun_memleak_wrap_a_CPPFLAGS =	\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
+libhpcrun_gpu_la_CPPFLAGS =		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_gpu_wrap_a_CPPFLAGS =	\
+	-DHPCRUN_STATIC_LINK		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
 libhpcrun_mpi_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
@@ -454,6 +478,8 @@ libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_gpu_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_gpu_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 
@@ -474,6 +500,9 @@ libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic	\
 	-Wl,--strip-debug
 
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
+	-Wl,--strip-debug
+
+libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
 
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
@@ -503,6 +532,8 @@ if HOST_CPU_MIPS
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_gpu_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_gpu_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 endif
 
@@ -523,6 +554,8 @@ if HOST_CPU_PPC
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_gpu_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_gpu_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
@@ -543,6 +576,8 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_gpu_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_gpu_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   MY_AGENT_INCLUDE_DIRS += $(MY_X86_INCLUDE_DIRS)
 endif
@@ -594,6 +629,16 @@ if OPT_ENABLE_CUDA
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS)
   libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
+
+  libhpcrun_gpu_la_CPPFLAGS += -DENABLE_CUDA
+  libhpcrun_gpu_la_CFLAGS  += $(OPT_CUDA_IFLAGS)
+  libhpcrun_gpu_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
+
+  libhpcrun_gpu_wrap_a_CPPFLAGS += -DENABLE_CUDA
+  libhpcrun_gpu_wrap_a_CFLAGS  += $(OPT_CUDA_IFLAGS)
+#libhpcrun_gpu_wrap_a_LDFLAGS += $(OPT_CUDA_LDFLAGS)
+
+
 endif
 
 libhpcrun_la_SOURCES  +=  $(UNW_SOURCE_FILES)
@@ -606,6 +651,8 @@ libhpcrun_io_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_io_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
+libhpcrun_gpu_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
+libhpcrun_gpu_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_la_LDFLAGS  += $(UNW_LD_FLAGS)
 libhpcrun_o_LDFLAGS   += $(UNW_LD_FLAGS)

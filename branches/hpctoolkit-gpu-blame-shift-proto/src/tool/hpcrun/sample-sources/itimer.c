@@ -187,9 +187,6 @@ static long period = DEFAULT_PERIOD;
 
 static sigset_t sigset_itimer;
 
-static bool is_wallclock_cpu_gpu_idle = false;
-static bool is_wallclock_present = false;
-
 
 // ******* METHOD DEFINITIONS ***********
 
@@ -205,21 +202,15 @@ static void METHOD_FN(init)
     if (ret) {
         EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d", ret);
     }
-    
-#ifdef ENABLE_CUDA
-    gpu_blame_shift_init();
-#endif      // ENABLE_CUDA
-    
+#ifdef ENABLE_CUDA    
+    g_cpu_gpu_proxy_count ++;
+#endif    
     self->state = INIT;                                    
 }
 
 static void METHOD_FN(thread_init)
 {
-#ifdef ENABLE_CUDA
-    gpu_blame_shift_thread_init();
-#else
     TMSG(ITIMER_CTL, "thread init (no action needed)");
-#endif
 }
 
 static void METHOD_FN(thread_init_action)
@@ -287,10 +278,6 @@ METHOD_FN(start)
 
 static void METHOD_FN(thread_fini_action)
 {
-    
-#ifdef ENABLE_CUDA
-    gpu_blame_shift_thread_fini_action();
-#endif            
     TMSG(ITIMER_CTL, "thread action (noop)");
 }
 
@@ -308,10 +295,6 @@ static void METHOD_FN(shutdown)
 {
     
     
-#ifdef ENABLE_CUDA
-     gpu_blame_shift_shutdown();
-#endif
-    
     TMSG(ITIMER_CTL, "shutodown itimer");
     METHOD_CALL(self, stop);    // make sure stop has been called
     
@@ -326,11 +309,7 @@ static void METHOD_FN(shutdown)
 static bool METHOD_FN(supports_event, const char *ev_str)
 {
     
-#ifdef ENABLE_CUDA
-    return ((strstr(ev_str, "WALLCLOCK_CPU_GPU_IDLE") != NULL) || (strstr(ev_str, "WALLCLOCK") != NULL));
-#else
     return (strstr(ev_str, "WALLCLOCK") != NULL);
-#endif
 }
 
 
@@ -340,111 +319,44 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     
     TMSG(ITIMER_CTL, "process event list, lush_metrics = %d", lush_metrics);
     // fetch the event string for the sample source
-    char *_p = METHOD_CALL(self, get_event_str);
+    char* _p = METHOD_CALL(self, get_event_str);
     
-    char *event;
-    int metric_id;
+    //
+    // EVENT: Only 1 wallclock event
+    //
+    char* event = start_tok(_p);
     
-    for (event = start_tok(_p); more_tok(); event = next_tok()) {
-        
-        if(is_wallclock_present && (strncmp(event, "WALLCLOCK_CPU_GPU_IDLE", strlen("WALLCLOCK_CPU_GPU_IDLE")) != 0)){
-            EMSG("MULTIPLE WALLCLOCK events detected! Using first event spec: %s", event);
-            continue;
-        }
-        
-        if(strncmp(event, "WALLCLOCK_CPU_GPU_IDLE", strlen("WALLCLOCK_CPU_GPU_IDLE")) != 0) {
-
-            char name[1024];            // local buffer needed for extract_ev_threshold
-            
-            TMSG(ITIMER_CTL, "checking event spec = %s", event);
-            
-            
-            // extract event threshold
-            hpcrun_extract_ev_thresh(event, sizeof(name), name, &period, DEFAULT_PERIOD);
-            
-            // store event threshold
-            METHOD_CALL(self, store_event, ITIMER_EVENT, period);
-            TMSG(OPTIONS, "wallclock period set to %ld", period);
-            
-            // set up file local variables for sample source control
-            int seconds = period / 1000000;
-            int microseconds = period % 1000000;
-            
-            TMSG(OPTIONS, "init timer w sample_period = %ld, seconds = %ld, usec = %ld", period, seconds, microseconds);
-            
-            // signal once after the given delay
-            itimer.it_value.tv_sec = seconds;
-            itimer.it_value.tv_usec = microseconds;
-            
-            // macros define whether automatic restart or not
-            itimer.it_interval.tv_sec = AUTOMATIC_ITIMER_RESET_SECONDS(seconds);
-            itimer.it_interval.tv_usec = AUTOMATIC_ITIMER_RESET_MICROSECONDS(microseconds);
-            
-            // handle metric allocation
-            hpcrun_pre_allocate_metrics(1 + lush_metrics);
-            
-            metric_id = hpcrun_new_metric();
-            METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
-            
-            
-            
-            is_wallclock_present = true;
-        }
-
-    }
-
-    for (event = start_tok(_p); more_tok(); event = next_tok()) {
-        if(strncmp(event, "WALLCLOCK_CPU_GPU_IDLE", strlen("WALLCLOCK_CPU_GPU_IDLE")) != 0){
-            continue;
-        }
-        
-        if(is_wallclock_cpu_gpu_idle){
-            EMSG("MULTIPLE WALLCLOCK_CPU_GPU_IDLE events detected!");
-            continue;
-        }
-        
-        if(is_wallclock_present) {
-            EMSG("BOTH WALLCLOCK_CPU_GPU_IDLE and WALLCLOCK events detected! Using WALLCLOCK's sampling frequency");
-        }
-        
-        if(!is_wallclock_present){
-            char name[1024];            // local buffer needed for extract_ev_threshold
-            
-            TMSG(ITIMER_CTL, "checking event spec = %s", event);
-            
-            
-            // extract event threshold
-            hpcrun_extract_ev_thresh(event, sizeof(name), name, &period, DEFAULT_PERIOD);
-            
-            // store event threshold
-            METHOD_CALL(self, store_event, ITIMER_EVENT, period);
-            TMSG(OPTIONS, "wallclock period set to %ld", period);
-            
-            // set up file local variables for sample source control
-            int seconds = period / 1000000;
-            int microseconds = period % 1000000;
-            
-            TMSG(OPTIONS, "init timer w sample_period = %ld, seconds = %ld, usec = %ld", period, seconds, microseconds);
-            
-            // signal once after the given delay
-            itimer.it_value.tv_sec = seconds;
-            itimer.it_value.tv_usec = microseconds;
-            
-            // macros define whether automatic restart or not
-            itimer.it_interval.tv_sec = AUTOMATIC_ITIMER_RESET_SECONDS(seconds);
-            itimer.it_interval.tv_usec = AUTOMATIC_ITIMER_RESET_MICROSECONDS(microseconds);
-            
-            // handle metric allocation
-            hpcrun_pre_allocate_metrics(1 + lush_metrics);
-            
-            metric_id = hpcrun_new_metric();
-            METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
-        
-        }
-        
-        is_wallclock_cpu_gpu_idle = true;
-    }
+    char name[1024]; // local buffer needed for extract_ev_threshold
     
+    TMSG(ITIMER_CTL,"checking event spec = %s",event);
+    
+    // extract event threshold
+    hpcrun_extract_ev_thresh(event, sizeof(name), name, &period, DEFAULT_PERIOD);
+    
+    // store event threshold
+    METHOD_CALL(self, store_event, ITIMER_EVENT, period);
+    TMSG(OPTIONS,"wallclock period set to %ld",period);
+    
+    // set up file local variables for sample source control
+    int seconds = period / 1000000;
+    int microseconds = period % 1000000;
+    
+    TMSG(OPTIONS,"init timer w sample_period = %ld, seconds = %ld, usec = %ld",
+         period, seconds, microseconds);
+    
+    // signal once after the given delay
+    itimer.it_value.tv_sec = seconds;
+    itimer.it_value.tv_usec = microseconds;
+    
+    // macros define whether automatic restart or not
+    itimer.it_interval.tv_sec  =  AUTOMATIC_ITIMER_RESET_SECONDS(seconds);
+    itimer.it_interval.tv_usec =  AUTOMATIC_ITIMER_RESET_MICROSECONDS(microseconds);
+    
+    // handle metric allocation
+    hpcrun_pre_allocate_metrics(1 + lush_metrics);
+    
+    int metric_id = hpcrun_new_metric();
+    METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
     
     // set metric information in metric table
     
@@ -453,32 +365,29 @@ static void METHOD_FN(process_event_list, int lush_metrics)
 #else
 # define sample_period period
 #endif
-
+    
     TMSG(ITIMER_CTL, "setting metric itimer period = %ld", sample_period);
-    hpcrun_set_metric_info_and_period(metric_id, "WALLCLOCK (us)", MetricFlags_ValFmt_Int, sample_period);
-
-    
-    
-    
-#ifdef ENABLE_CUDA            
-    if(is_wallclock_cpu_gpu_idle) {
-        gpu_blame_shift_process_event_list(metric_id);            
-    }
-
-#endif                          // ENABLE_CUDA
-    
+    hpcrun_set_metric_info_and_period(metric_id, "WALLCLOCK (us)",
+                                      MetricFlags_ValFmt_Int,
+                                      sample_period);
     if (lush_metrics == 1) {
         int mid_idleness = hpcrun_new_metric();
         lush_agents->metric_time = metric_id;
         lush_agents->metric_idleness = mid_idleness;
         
-        hpcrun_set_metric_info_and_period(mid_idleness, "idleness (us)", MetricFlags_ValFmt_Real, sample_period);
+        hpcrun_set_metric_info_and_period(mid_idleness, "idleness (us)",
+                                          MetricFlags_ValFmt_Real,
+                                          sample_period);
     }
     
-    
+    event = next_tok();
+    if (more_tok()) {
+        EMSG("MULTIPLE WALLCLOCK events detected! Using first event spec: %s");
+    }
     // 
     thread_data_t *td = hpcrun_get_thread_data();
     td->eventSet[self->evset_idx] = 0xDEAD;
+
 }
 
 //
@@ -498,7 +407,6 @@ static void METHOD_FN(display_events)
     printf("Name\t\tDescription\n");
     printf("---------------------------------------------------------------------------\n");
     printf("WALLCLOCK\tWall clock time used by the process in microseconds\n");
-    printf("WALLCLOCK_CPU_GPU_IDLE\tCPU GPU idleness\n");
     printf("\n");
 }
 
@@ -550,7 +458,7 @@ static int itimer_signal_handler(int sig, siginfo_t * siginfo, void *context)
 			 0/*skipInner*/, 0/*isSync*/).sample_node;
 
 #ifdef ENABLE_CUDA
-        if(is_wallclock_cpu_gpu_idle) {
+        if(g_cpu_gpu_enabled) {
             gpu_blame_shift_itimer_signal_handler(node, cur_time_us, metric_incr);                    
         }
 #endif //ENABLE_CUDA                     
