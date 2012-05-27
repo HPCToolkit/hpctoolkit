@@ -59,16 +59,13 @@
 #define MAX_STREAMS (100)
 #define DEVICE_ID (0)
 
-//FIX ME
-#define hpcrun_async_block() do{hpcrun_safe_enter_async(NULL);}while(0)
-#define hpcrun_async_unblock() do{hpcrun_safe_exit();}while(0)
 
 ///TODO: evaluate this option : FORCE CLEANUP
-#define SYNCHRONOUS_CLEANUP do{  hpcrun_async_block(); 		\
+#define SYNCHRONOUS_CLEANUP do{  hpcrun_safe_enter_async(NULL); 		\
 spinlock_lock(&g_gpu_lock); 			\
 cleanup_finished_events(); 			\
 spinlock_unlock(&g_gpu_lock);			\
-hpcrun_async_unblock(); } while(0)
+hpcrun_safe_exit(); } while(0)
 
 
 // Visible types
