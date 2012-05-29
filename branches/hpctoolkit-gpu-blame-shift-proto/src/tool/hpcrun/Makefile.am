@@ -374,10 +374,14 @@ libhpcrun_memleak_wrap_a_SOURCES = 	\
 	sample-sources/memleak-overrides.c
 
 libhpcrun_gpu_la_SOURCES = 		\
-	sample-sources/gpu_blame-overrides.c
+	sample-sources/gpu_blame-overrides.c \
+	sample-sources/gpu_blame-driver-overrides-generated.c \
+	sample-sources/gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_gpu_wrap_a_SOURCES = 	\
-	sample-sources/gpu_blame-overrides.c
+	sample-sources/gpu_blame-overrides.c  \
+	sample-sources/gpu_blame-driver-overrides-generated.c \
+	sample-sources/gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_mpi_la_SOURCES = 		\
 	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
@@ -453,6 +457,16 @@ $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
 	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
 		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
 
+
+if OPT_ENABLE_CUDA
+$(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c: $(srcdir)/sample-sources/make-cuda-wrappers.py sample-sources/cuda_driver_dummy.c
+	$(CC) $(OPT_CUDA_IFLAGS)  -E -B -c $(srcdir)/sample-sources/cuda_driver_dummy.c -o $(srcdir)/sample-sources/cuda_driver_apis.h
+	$(PYTHON) $(srcdir)/sample-sources/make-cuda-wrappers.py driver  $(srcdir)/sample-sources/cuda_driver_apis.h  $(srcdir)/sample-sources/gpu_blame-cuda-driver-header.h  $(srcdir)/sample-sources/gpu_blame-cuda-driver-table.c $(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c
+
+$(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c: $(srcdir)/sample-sources/make-cuda-wrappers.py sample-sources/cuda_runtime_dummy.c
+	$(CC) $(OPT_CUDA_IFLAGS) -E -B -c $(srcdir)/sample-sources/cuda_runtime_dummy.c  -o  $(srcdir)/sample-sources/cuda_runtime_apis.h 
+	$(PYTHON) $(srcdir)/sample-sources/make-cuda-wrappers.py runtime $(srcdir)/sample-sources/cuda_runtime_apis.h  $(srcdir)/sample-sources/gpu_blame-cuda-runtime-header.h  $(srcdir)/sample-sources/gpu_blame-cuda-runtime-table.c $(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c
+endif
 
 libhpctoolkit_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
@@ -625,7 +639,7 @@ if UNW_PPC64
 endif
 
 if OPT_ENABLE_CUDA
-  libhpcrun_la_SOURCES  += sample-sources/gpu_blame.c
+  libhpcrun_la_SOURCES  += sample-sources/gpu_blame.c sample-sources/gpu_blame-cuda-driver-table.c sample-sources/gpu_blame-cuda-runtime-table.c
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS)
   libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)

@@ -53,6 +53,9 @@
 #include <dlfcn.h>
 
 #ifdef ENABLE_CUDA
+
+#include "gpu_blame-cuda-runtime-header.h"
+#include "gpu_blame-cuda-driver-header.h"
 //
 // Blame shiting interface
 //
@@ -98,7 +101,7 @@ typedef struct stream_node_t {
 
 
 
-
+/*
 enum cudaRuntimeAPIIndex {
     CUDA_THREAD_SYNCHRONIZE,
     CUDA_STREAM_SYNCHRONIZE,
@@ -195,6 +198,7 @@ typedef struct cuDriverFunctionPointer {
     };
     const char *functionName;
 } cuDriverFunctionPointer_t;
+*/
 
 typedef struct stream_to_id_map_t {
     cudaStream_t stream;
