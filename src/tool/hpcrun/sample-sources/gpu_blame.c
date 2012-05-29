@@ -105,7 +105,7 @@
 
 // ******* Global Variables ***********
 
-
+/*
 cudaRuntimeFunctionPointer_t  cudaRuntimeFunctionPointer[] = {
     {0, "cudaThreadSynchronize"},
     {0, "cudaStreamSynchronize"},
@@ -144,6 +144,7 @@ cuDriverFunctionPointer_t cuDriverFunctionPointer[] = {
     {0, "cuMemcpyDtoH_v2"},
     {0, "cuEventElapsedTime"}
 };
+*/
 
 stream_to_id_map_t stream_to_id[MAX_STREAMS];
 

@@ -170,32 +170,6 @@ spinlock_lock(&g_gpu_lock);} while(0)
 #define HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK  do{spinlock_unlock(&g_gpu_lock); \
 hpcrun_safe_exit();} while(0)
 
-#define OLD_SYNC_PROLOGUE(ctxt, launch_node, start_time, rec_node) \
-hpcrun_safe_enter_async(NULL);      \
-ucontext_t ctxt;           \
-getcontext(&ctxt);         \
-cct_node_t * launch_node = hpcrun_sample_callpath(&ctxt, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ ).sample_node; \
-hpcrun_cct_persistent_id_trace_mutate(launch_node);     \
-trace_append(hpcrun_cct_persistent_id(launch_node));    \
-TD_GET(is_thread_at_cuda_sync) = true;                      \
-spinlock_lock(&g_gpu_lock);                                 \
-uint64_t start_time;                                         \
-event_list_node_t  *  rec_node = EnterCudaSync(& start_time); \
-spinlock_unlock(&g_gpu_lock)
-
-#define OLD_SYNC_EPILOGUE(ctxt, launch_node, start_time, rec_node, mask, end_time)      \
-spinlock_lock(&g_gpu_lock);                                     \
-LeaveCudaSync(rec_node,start_time,mask);                        \
-spinlock_unlock(&g_gpu_lock);                                   \
-struct timeval tv;                                              \
-gettimeofday(&tv, NULL);                                        \
-uint64_t end_time  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000)); \
-cct_metric_data_increment(cpu_idle_metric_id, launch_node, (cct_metric_data_t) {.i = (end_time - start_time)});  \
-cct_metric_data_increment(wall_clock_metric_id, launch_node, (cct_metric_data_t) {.i = (end_time - start_time)});    \
-trace_append(hpcrun_cct_persistent_id(launch_node));            \
-hpcrun_safe_exit();                                         \
-TD_GET(is_thread_at_cuda_sync) = false
-
 #define SYNC_PROLOGUE(ctxt, launch_node, start_time, rec_node) \
 hpcrun_safe_enter_async(NULL);      \
 ucontext_t ctxt;           \
@@ -657,7 +631,7 @@ uint32_t cleanup_finished_events() {
             //fprintf(stderr, "\n cudaEventQuery on  %p", current_event->event_end);
             //fflush(stdout);
 
-            cudaError_t err_cuda = cudaEventQuery(current_event->event_end);
+            cudaError_t err_cuda = cudaRuntimeFunctionPointer[CUDA_EVENT_QUERY].cudaEventQueryReal(current_event->event_end);
 
             if (err_cuda == cudaSuccess) {
                 //fprintf(stderr, "\n cudaEventQuery success %p", current_event->event_end);
@@ -934,7 +908,7 @@ cudaError_t cudaLaunch(const char *entry) {
     ucontext_t context;
     getcontext(&context);
     // skipping 2 inner for LAMMPS
-    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 2 /*skipInner */ , 1 /*isSync */ ).sample_node;
+    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ ).sample_node;
     // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
     // TODO: Get correct level .. 3 worked but not on S3D
     ////node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
@@ -1164,7 +1138,7 @@ cudaError_t cudaMemcpy2D(void *dst, size_t dpitch, const void *src, size_t spitc
 
     SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
 
-    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_2D].cudaMemcpy2DReal(dst, dpitch, src, spitch, width, height, kind);
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY2_D].cudaMemcpy2DReal(dst, dpitch, src, spitch, width, height, kind);
 
     hpcrun_safe_enter_async(NULL);
     spinlock_lock(&g_gpu_lock);
@@ -1304,7 +1278,7 @@ CUresult cuLaunchGridAsync(CUfunction f, int grid_width, int grid_height, CUstre
     ucontext_t context;
     getcontext(&context);
     // skipping 2 inner for LAMMPS
-    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 2 /*skipInner */ , 1 /*isSync */ ).sample_node;
+    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ ).sample_node;
     // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
     // TODO: Get correct level .. 3 worked but not on S3D
     ////node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
@@ -1357,7 +1331,7 @@ CUresult cuStreamDestroy(CUstream stream) {
     hpcrun_stream_finalize(g_stream_array[streamId].st);
     g_stream_array[streamId].st = NULL;
 
-    cudaError_t ret = cuDriverFunctionPointer[CU_STREAM_DESTROY].cuStreamDestroyReal(stream);
+    cudaError_t ret = cuDriverFunctionPointer[CU_STREAM_DESTROY_V2].cuStreamDestroy_v2Real(stream);
 
     // Delete splay tree entry
     splay_delete((cudaStream_t)stream);
@@ -1472,7 +1446,7 @@ CUresult cuCtxDestroy(CUcontext ctx) {
     }
     HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
 
-    CUresult ret = cuDriverFunctionPointer[CU_CTX_DESTROY].cuCtxDestroyReal(ctx);
+    CUresult ret = cuDriverFunctionPointer[CU_CTX_DESTROY_V2].cuCtxDestroy_v2Real(ctx);
     return ret;
 }
 
@@ -1502,7 +1476,7 @@ CUresult cuEventRecord(CUevent hEvent, CUstream hStream) {
     
 CUresult cuEventDestroy(CUevent  event) {
     TD_GET(is_thread_at_cuda_sync) = true;
-    CUresult ret = cuDriverFunctionPointer[CU_EVENT_DESTROY].cuEventDestroyReal(event);
+    CUresult ret = cuDriverFunctionPointer[CU_EVENT_DESTROY_V2].cuEventDestroy_v2Real(event);
     TD_GET(is_thread_at_cuda_sync) = false;
     return ret;
 }
@@ -1554,7 +1528,7 @@ CUresult cuMemcpyHtoDAsync(CUdeviceptr dstDevice, const void *srcHost, size_t By
 
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
 
-    CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_H_TO_D_ASYNC].cuMemcpyHtoDAsyncReal(dstDevice, srcHost, ByteCount, hStream);
+    CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_HTO_D_ASYNC_V2].cuMemcpyHtoDAsync_v2Real(dstDevice, srcHost, ByteCount, hStream);
 
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end,(cudaStream_t) hStream));
 
@@ -1575,7 +1549,7 @@ CUresult cuMemcpyHtoD(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCou
 
     SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
 
-    CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_H_TO_D].cuMemcpyHtoDReal(dstDevice, srcHost, ByteCount);
+    CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_HTO_D_V2].cuMemcpyHtoD_v2Real(dstDevice, srcHost, ByteCount);
 
     hpcrun_safe_enter_async(NULL);
     spinlock_lock(&g_gpu_lock);
@@ -1651,7 +1625,7 @@ CUresult cuMemcpyDtoHAsync(void *dstHost, CUdeviceptr srcDevice, size_t ByteCoun
 
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
     
-    CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_D_TO_H_ASYNC].cuMemcpyDtoHAsyncReal(dstHost, srcDevice, ByteCount, hStream);
+    CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_DTO_H_ASYNC_V2].cuMemcpyDtoHAsync_v2Real(dstHost, srcDevice, ByteCount, hStream);
 
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end,(cudaStream_t) hStream));
 
@@ -1673,7 +1647,7 @@ CUresult cuMemcpyDtoH(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount) {
 
     SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
 
-    CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_D_TO_H].cuMemcpyDtoHReal(dstHost, srcDevice, ByteCount);
+    CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_DTO_H_V2].cuMemcpyDtoH_v2Real(dstHost, srcDevice, ByteCount);
 
     hpcrun_safe_enter_async(NULL);
 
