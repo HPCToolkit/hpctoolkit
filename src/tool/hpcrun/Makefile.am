@@ -459,11 +459,20 @@ $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
 
 
 if OPT_ENABLE_CUDA
-$(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c: $(srcdir)/sample-sources/make-cuda-wrappers.py sample-sources/cuda_driver_dummy.c
+
+sample-sources/gpu_blame-overrides.c: $(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c $(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c
+
+sample-sources/gpu_blame.c: $(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c $(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c
+
+sample-sources/gpu_blame-cuda-driver-table.c: $(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c $(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c
+
+sample-sources/gpu_blame-cuda-runtime-table.c: $(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c $(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c
+
+$(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c: $(srcdir)/sample-sources/make-cuda-wrappers.py
 	$(CC) $(OPT_CUDA_IFLAGS)  -E -B -c $(srcdir)/sample-sources/cuda_driver_dummy.c -o $(srcdir)/sample-sources/cuda_driver_apis.h
 	$(PYTHON) $(srcdir)/sample-sources/make-cuda-wrappers.py driver  $(srcdir)/sample-sources/cuda_driver_apis.h  $(srcdir)/sample-sources/gpu_blame-cuda-driver-header.h  $(srcdir)/sample-sources/gpu_blame-cuda-driver-table.c $(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c
 
-$(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c: $(srcdir)/sample-sources/make-cuda-wrappers.py sample-sources/cuda_runtime_dummy.c
+$(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c: $(srcdir)/sample-sources/make-cuda-wrappers.py
 	$(CC) $(OPT_CUDA_IFLAGS) -E -B -c $(srcdir)/sample-sources/cuda_runtime_dummy.c  -o  $(srcdir)/sample-sources/cuda_runtime_apis.h 
 	$(PYTHON) $(srcdir)/sample-sources/make-cuda-wrappers.py runtime $(srcdir)/sample-sources/cuda_runtime_apis.h  $(srcdir)/sample-sources/gpu_blame-cuda-runtime-header.h  $(srcdir)/sample-sources/gpu_blame-cuda-runtime-table.c $(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c
 endif

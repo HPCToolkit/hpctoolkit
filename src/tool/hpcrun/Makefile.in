@@ -4066,11 +4066,19 @@ $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
 	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
 		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
 
-@OPT_ENABLE_CUDA_TRUE@$(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c: $(srcdir)/sample-sources/make-cuda-wrappers.py sample-sources/cuda_driver_dummy.c
+@OPT_ENABLE_CUDA_TRUE@sample-sources/gpu_blame-overrides.c: $(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c $(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c
+
+@OPT_ENABLE_CUDA_TRUE@sample-sources/gpu_blame.c: $(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c $(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c
+
+@OPT_ENABLE_CUDA_TRUE@sample-sources/gpu_blame-cuda-driver-table.c: $(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c $(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c
+
+@OPT_ENABLE_CUDA_TRUE@sample-sources/gpu_blame-cuda-runtime-table.c: $(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c $(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c
+
+@OPT_ENABLE_CUDA_TRUE@$(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c: $(srcdir)/sample-sources/make-cuda-wrappers.py
 @OPT_ENABLE_CUDA_TRUE@	$(CC) $(OPT_CUDA_IFLAGS)  -E -B -c $(srcdir)/sample-sources/cuda_driver_dummy.c -o $(srcdir)/sample-sources/cuda_driver_apis.h
 @OPT_ENABLE_CUDA_TRUE@	$(PYTHON) $(srcdir)/sample-sources/make-cuda-wrappers.py driver  $(srcdir)/sample-sources/cuda_driver_apis.h  $(srcdir)/sample-sources/gpu_blame-cuda-driver-header.h  $(srcdir)/sample-sources/gpu_blame-cuda-driver-table.c $(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c
 
-@OPT_ENABLE_CUDA_TRUE@$(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c: $(srcdir)/sample-sources/make-cuda-wrappers.py sample-sources/cuda_runtime_dummy.c
+@OPT_ENABLE_CUDA_TRUE@$(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c: $(srcdir)/sample-sources/make-cuda-wrappers.py
 @OPT_ENABLE_CUDA_TRUE@	$(CC) $(OPT_CUDA_IFLAGS) -E -B -c $(srcdir)/sample-sources/cuda_runtime_dummy.c  -o  $(srcdir)/sample-sources/cuda_runtime_apis.h 
 @OPT_ENABLE_CUDA_TRUE@	$(PYTHON) $(srcdir)/sample-sources/make-cuda-wrappers.py runtime $(srcdir)/sample-sources/cuda_runtime_apis.h  $(srcdir)/sample-sources/gpu_blame-cuda-runtime-header.h  $(srcdir)/sample-sources/gpu_blame-cuda-runtime-table.c $(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c
 
