@@ -155,11 +155,6 @@ METHOD_FN(thread_init)
 static void
 METHOD_FN(thread_init_action)
 {
-  // temporirily put stuffs here without considering helper threads
-  // FIXME
-  atomic_add_i64(&thread_num, 1L);
-  if(thread_num > max_thread_num)
-    fetch_and_store_i64(&max_thread_num, thread_num);
 }
 
 static void
@@ -170,10 +165,6 @@ METHOD_FN(start)
 static void
 METHOD_FN(thread_fini_action)
 {
-  // temporirily put stuffs here without considering helper threads
-  // FIXME
-  atomic_add_i64(&thread_num, -1L);
-  atomic_add_i64(&work, -1L);
 }
 
 static void
@@ -358,6 +349,10 @@ void work_fn()
 void start_fn(int rank)
 {
   hpcrun_async_block();
+  atomic_add_i64(&thread_num, 1L);
+  if(thread_num > max_thread_num)
+    fetch_and_store_i64(&max_thread_num, thread_num);
+
   atomic_add_i64(&work, 1L);
   thread_data_t *td = hpcrun_get_thread_data();
   td->idle = 0;
@@ -367,9 +362,8 @@ void start_fn(int rank)
 void end_fn()
 {
   hpcrun_async_block();
-  fetch_and_store_i64(&work, 1L); //team is destroyed, now I have one thread working
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->idle = 0;
+  atomic_add_i64(&thread_num, -1L);
+  atomic_add_i64(&work, -1L);
   hpcrun_async_unblock();
 }
 
