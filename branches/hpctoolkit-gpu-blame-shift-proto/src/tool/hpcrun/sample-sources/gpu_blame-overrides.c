@@ -921,7 +921,7 @@ cudaError_t cudaLaunch(const char *entry) {
      * we use the context above, then get teh backtrace, insert the backtrace
      * to the stream->epoch->csdata
      */
-    cct_node_t *stream_cct = stream_backtrace2cct(g_stream_array[streamId].st, &context);
+    cct_node_t *stream_cct = stream_duplicate_cpu_node(g_stream_array[streamId].st, &context, node);
 
     // Create a new Cuda Event
     //cuptiGetStreamId(ctx, (CUstream) TD_GET(active_stream), &streamId);
@@ -1102,7 +1102,7 @@ cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count, enum cudaM
      * we use the context above, then get teh backtrace, insert the backtrace
      * to the stream->epoch->csdata
      */
-    cct_node_t *stream_cct = stream_backtrace2cct(g_stream_array[streamId].st, &context);
+    cct_node_t *stream_cct = stream_duplicate_cpu_node(g_stream_array[streamId].st, &context, node);
 
     // Create a new Cuda Event
     //cuptiGetStreamId(ctx, (CUstream) TD_GET(active_stream), &streamId);
@@ -1291,7 +1291,7 @@ CUresult cuLaunchGridAsync(CUfunction f, int grid_width, int grid_height, CUstre
      * we use the context above, then get teh backtrace, insert the backtrace
      * to the stream->epoch->csdata
      */
-    cct_node_t *stream_cct = stream_backtrace2cct(g_stream_array[streamId].st, &context);
+    cct_node_t *stream_cct = stream_duplicate_cpu_node(g_stream_array[streamId].st, &context, node);
 
     // Create a new Cuda Event
     //cuptiGetStreamId(ctx, (CUstream) TD_GET(active_stream), &streamId);
@@ -1517,7 +1517,7 @@ CUresult cuMemcpyHtoDAsync(CUdeviceptr dstDevice, const void *srcHost, size_t By
      * we use the context above, then get teh backtrace, insert the backtrace
      * to the stream->epoch->csdata
      */
-    cct_node_t *stream_cct = stream_backtrace2cct(g_stream_array[streamId].st, &context);
+    cct_node_t *stream_cct = stream_duplicate_cpu_node(g_stream_array[streamId].st, &context, node);
 
     // Create a new Cuda Event
     //cuptiGetStreamId(ctx, (CUstream) TD_GET(active_stream), &streamId);
@@ -1614,7 +1614,7 @@ CUresult cuMemcpyDtoHAsync(void *dstHost, CUdeviceptr srcDevice, size_t ByteCoun
      * we use the context above, then get teh backtrace, insert the backtrace
      * to the stream->epoch->csdata
      */
-    cct_node_t *stream_cct = stream_backtrace2cct(g_stream_array[streamId].st, &context);
+    cct_node_t *stream_cct = stream_duplicate_cpu_node(g_stream_array[streamId].st, &context, node);
 
     // Create a new Cuda Event
     //cuptiGetStreamId(ctx, (CUstream) TD_GET(active_stream), &streamId);
