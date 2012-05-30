@@ -96,14 +96,7 @@ stream_data_t *hpcrun_stream_data_alloc_init(int device_id, int id)
 	st->metrics->metric_proc_tbl = NULL;
 	st->metrics->proc_map = NULL;
 
-
-  st->btbuf_cur = NULL;
-  st->btbuf_beg = hpcrun_malloc(sizeof(frame_t) * BACKTRACE_INIT_SZ);
-  st->btbuf_end = st->btbuf_beg + BACKTRACE_INIT_SZ;
-  st->btbuf_sav = st->btbuf_end;  // FIXME: is this needed?
-
   hpcrun_bt_init(&(st->bt), NEW_BACKTRACE_INIT_SZ);
-
 
   st->trace_min_time_us = 0;
   st->trace_max_time_us = 0;
@@ -153,142 +146,18 @@ metric_set_t* hpcrun_stream_reify_metric_set(stream_data_t *st, cct_node_id_t cc
 }
 
 
-cct_node_t *stream_backtrace2cct(stream_data_t *st, ucontext_t *context) {
-  backtrace_info_t bt;
-	//volatile int DEBUGGING_WAIT=1;
-	//while(DEBUGGING_WAIT);
-  if (! hpcrun_generate_stream_backtrace(st, context, &bt, 0)) {
-    if (ENABLED(NO_PARTIAL_UNW)){
-      return NULL;
-    }
-  }
-  frame_t* bt_beg = bt.begin;
-  frame_t* bt_last = bt.last;
-  //bool tramp_found = bt.has_tramp;
-  // If this backtrace is generated from sampling in a thread,
-  // take off the top 'monitor_pthread_main' node
-  /*if (cct->ctxt && ! partial_unw && ! tramp_found && (bt.fence == FENCE_THREAD)) {
-    TMSG(FENCE, "bt last thread correction made");
-    TMSG(THREAD_CTXT, "Thread correction, back off outermost backtrace entry");
-    bt_last--;
-  }*/
+cct_node_t *stream_duplicate_cpu_node(stream_data_t *st, ucontext_t *context, cct_node_t *node) {
 	cct_bundle_t* cct= &(st->epoch->csdata);
-	//volatile int DEBUGGING_WAIT=1;
-	//while(DEBUGGING_WAIT);
-  cct_node_t* n = cct_insert_raw_backtrace(cct->tree_root, bt_last, bt_beg);
-	//printf("\nAdding a cct node for stream, adding metric data : %x",n);
+  cct_node_t* n = hpcrun_walk_path(node, l_insert_path, (cct_op_arg_t) &(cct->tree_root));
 	hpcrun_stream_get_num_metrics(st);
-  //hpcrun_stream_get_metric_proc(st, st->stream_special_metric_id)(st->stream_special_metric_id, hpcrun_stream_reify_metric_set(st, n), (cct_metric_data_t){.i = 424242});
 	stream_cct_metric_data_increment(st, st->stream_special_metric_id, n, (cct_metric_data_t) {.i = 42});
-	//fprintf(stdout, "How to check if this cct came out correctly %p\n",n);
 	return n;
 }
-
-int
-hpcrun_generate_stream_backtrace(stream_data_t *st, ucontext_t *context, backtrace_info_t *bt, int skipInner) {
-				hpcrun_unw_cursor_t cursor;
-				hpcrun_unw_init_cursor(&cursor, context);
-				st->btbuf_cur   = st->btbuf_beg; // innermost
-				st->btbuf_sav   = st->btbuf_end;
-				int unw_len = 0;
-				step_state ret = STEP_ERROR;;
-				while (true) {
-								unw_word_t ip;
-								hpcrun_unw_get_ip_unnorm_reg(&cursor, &ip);
-								hpcrun_ensure_stream_btbuf_avail(st);
-								st->btbuf_cur->cursor = cursor;
-								hpcrun_unw_get_ip_norm_reg(&st->btbuf_cur->cursor,
-																&st->btbuf_cur->ip_norm);
-								st->btbuf_cur->ra_loc = NULL;
-								void *func_start_pc = NULL, *func_end_pc = NULL;
-								load_module_t* lm = NULL;
-								fnbounds_enclosing_addr(cursor.pc_unnorm, &func_start_pc, &func_end_pc, &lm);
-								st->btbuf_cur->the_function = hpcrun_normalize_ip(func_start_pc, lm);
-								frame_t* prev = st->btbuf_cur;
-								st->btbuf_cur++;
-								unw_len++;
-								ret = hpcrun_unw_step(&cursor);
-								if (ret == STEP_TROLL) {
-												bt->trolled = true;
-												bt->n_trolls++;
-								}
-								if (ret <= 0) {
-												if (ret == STEP_ERROR) {
-																//hpcrun_stats_num_samples_dropped_inc();
-												}
-												else { // STEP_STOP
-																bt->fence = cursor.fence;
-												}
-												break;
-								}
-								prev->ra_loc = hpcrun_unw_get_ra_loc(&cursor);
-				}
-				frame_t* bt_beg  = st->btbuf_beg;      // innermost, inclusive
-				frame_t* bt_last = st->btbuf_cur - 1; // outermost, inclusive
-
-				//skipInner = 3;
-				if(skipInner) {
-								bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
-				}
-				bt->begin = bt_beg;
-				bt->last = bt_last;
-				if (! (ret == STEP_STOP)) {
-								TMSG(BT, "** Soft Failure **");
-								return false;
-				}
-				TMSG(BT, "succeeds");
-				return true;
-}
-
 
 void 
 hpcrun_stream_finalize(stream_data_t *st) {
 	hpcrun_write_stream_profile_data(st);
 }
-
-frame_t*
-hpcrun_expand_stream_btbuf(stream_data_t *st)
-{
-  frame_t* unwind = st->btbuf_cur;
-
-  /* how big is the current buffer? */
-  size_t sz = st->btbuf_end - st->btbuf_beg;
-  size_t newsz = sz*2;
-  /* how big is the current backtrace? */
-  size_t btsz = st->btbuf_end - st->btbuf_sav;
-  /* how big is the backtrace we're recording? */
-  size_t recsz = unwind - st->btbuf_beg;
-  /* get new buffer */
-  TMSG(EPOCH," epoch_expand_buffer");
-  frame_t *newbt = hpcrun_malloc(newsz*sizeof(frame_t));
-
-  if(st->btbuf_sav > st->btbuf_end) {
-    EMSG("Invariant btbuf_sav > btbuf_end violated");
-    monitor_real_abort();
-  }
-
-  /* copy frames from old to new */
-  memcpy(newbt, st->btbuf_beg, recsz*sizeof(frame_t));
-  memcpy(newbt+newsz-btsz, st->btbuf_end-btsz, btsz*sizeof(frame_t));
-
-  /* setup new pointers */
-  st->btbuf_beg = newbt;
-  st->btbuf_end = newbt+newsz;
-  st->btbuf_sav = newbt+newsz-btsz;
-
-  /* return new unwind pointer */
-  return newbt+recsz;
-}
-
-void
-hpcrun_ensure_stream_btbuf_avail(stream_data_t *st)
-{
-  if (st->btbuf_cur == st->btbuf_end) {
-    st->btbuf_cur = hpcrun_expand_stream_btbuf(st);
-    st->btbuf_sav = st->btbuf_end;
-  }
-}
-
 
 
 

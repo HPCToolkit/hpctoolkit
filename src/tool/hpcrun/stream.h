@@ -102,7 +102,7 @@ typedef struct stream_data_t {
 
 //---------stream_data.c---------------------
 stream_data_t *hpcrun_stream_data_alloc_init(int device_id, int id);
-cct_node_t *stream_backtrace2cct(stream_data_t *st, ucontext_t *context);
+cct_node_t *stream_duplicate_cpu_node(stream_data_t *st, ucontext_t *context, cct_node_t *n);
 void hpcrun_stream_finalize(stream_data_t *st);
 int hpcrun_generate_stream_backtrace(stream_data_t *st, ucontext_t *context, backtrace_info_t *bt, int skipInner);
 extern cct_node_t* hpcrun_cct_insert_backtrace(cct_node_t* cct, frame_t* path_beg, frame_t* path_end);
@@ -151,6 +151,8 @@ bool
 hpcrun_stream_has_metric_set(stream_data_t *st, cct_node_id_t cct_id);
 
 void stream_cct2metrics_assoc(stream_data_t *st, cct_node_id_t node, metric_set_t* metrics);
+
+
 #endif
 
 
