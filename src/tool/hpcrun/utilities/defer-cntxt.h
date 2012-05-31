@@ -1,6 +1,7 @@
 #ifndef defer_cntxt_h
 #define defer_cntxt_h
 
+#include <hpcrun/thread_data.h>
 /*
  * this interface is used for lazy callpath resolution 
 */

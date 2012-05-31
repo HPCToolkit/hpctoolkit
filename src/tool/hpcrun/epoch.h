@@ -76,6 +76,7 @@ typedef void epoch_t_setter(epoch_t* s);
 extern void hpcrun_reset_epoch(epoch_t* epoch);
 
 epoch_t* hpcrun_check_for_new_loadmap(epoch_t *);
+void hpcrun_epoch_reuse_init(cct_ctxt_t* ctxt);
 void hpcrun_epoch_init(cct_ctxt_t* ctxt);
 void hpcrun_epoch_reset(void);
 

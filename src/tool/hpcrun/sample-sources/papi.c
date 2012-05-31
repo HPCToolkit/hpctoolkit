@@ -95,6 +95,7 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 #include <utilities/defer-cntxt.h>
+#include <utilities/defer-write.h>
 #include <utilities/task-cntxt.h>
 #include <hpcrun/unresolved.h>
 
@@ -169,8 +170,15 @@ METHOD_FN(thread_init_action)
     EEMSG("PAPI_register_thread NOT ok, retval = %d", retval);
     monitor_real_abort();
   }
-  // at the beginning of one thread, try to resolve any other threads
-  resolve_other_cntxt(false);
+
+  if(ENABLED(SET_DEFER_WRITE)) {
+    thread_data_t *td = hpcrun_get_thread_data();
+    td->defer_write = 1;
+  }
+  else {
+    // at the beginning of one thread, try to resolve any other threads
+    resolve_other_cntxt(false);
+  }
   TMSG(PAPI, "register thread ok");
 }
 
@@ -203,6 +211,9 @@ METHOD_FN(thread_fini_action)
   thread_data_t *td = hpcrun_get_thread_data();
   if(td->defer_flag)
     resolve_cntxt_fini();
+  else  if(ENABLED(SET_DEFER_WRITE)) {
+    add_defer_td(td);
+  }
   TMSG(PAPI, "unregister thread returns %s", retval == PAPI_OK? "PAPI_OK" : msg);
 }
 
@@ -227,9 +238,6 @@ METHOD_FN(stop)
     return;
   }
 
-  if(td->master)
-    resolve_other_cntxt(true);
-
   TMSG(PAPI,"stop w event set = %d",eventSet);
   long_long *values = (long_long *) alloca(sizeof(long_long) * (nevents+2));
   int ret = PAPI_stop(eventSet, values);
@@ -247,6 +255,9 @@ METHOD_FN(shutdown)
 {
   METHOD_CALL(self, stop); // make sure stop has been called
   PAPI_shutdown();
+
+  // only called at process fini
+  resolve_other_cntxt(true);
 
   self->state = UNINIT;
 }

@@ -142,6 +142,7 @@ typedef struct thread_data_t {
  
   int defer_write; // whether should defer the write
 
+  void (*scale_fn)(void*);
   // ----------------------------------------
   // hpcrun_malloc() memory data structures
   // ----------------------------------------
@@ -268,6 +269,7 @@ void           	hpcrun_set_thread0_data(void);
 void           	hpcrun_unthreaded_data(void);
 void           	hpcrun_threaded_data(void);
 
+void           hpcrun_thread_data_reuse_init(cct_ctxt_t* thr_ctxt);
 void           hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child);
 void           hpcrun_cached_bt_adjust_size(size_t n);
 

@@ -47,6 +47,7 @@
 #include <hpcrun/cct2metrics.h>
 #include <hpcrun/metrics.h>
 #include <utilities/defer-cntxt.h>
+#include <utilities/defer-write.h>
 #include <hpcrun/unresolved.h>
 #include <hpcrun/write_data.h>
 
@@ -63,100 +64,7 @@ struct record_t {
   struct record_t *right;
 };
 
-struct entry_t {
-  thread_data_t *td;
-  struct entry_t *prev;
-  struct entry_t *next;
-  bool flag;
-};
-
 uint64_t is_partial_resolve(cct_node_t *prefix);
-/******************************************************************************
- * entry variables and operations for delayed write *
- *****************************************************************************/
-
-static struct entry_t *unresolved_list = NULL;
-static struct entry_t *free_list = NULL;
-
-static spinlock_t unresolved_list_lock = SPINLOCK_UNLOCKED;
-static spinlock_t free_list_lock = SPINLOCK_UNLOCKED;
-
-static struct entry_t *
-new_dw_entry()
-{
-  struct entry_t *entry = NULL;
-  spinlock_lock(&free_list_lock);
-  if(free_list) {
-    entry = free_list;
-    free_list = free_list->next;
-    if(free_list) free_list->prev = NULL;
-    entry->prev = entry->next = NULL;
-    entry->td = NULL;
-    entry->flag = false;
-  }
-  else {
-    entry = (struct entry_t*)hpcrun_malloc(sizeof(struct entry_t));
-    entry->prev = entry->next = NULL;
-    entry->td = NULL;
-    entry->flag = false;
-  }
-  spinlock_unlock(&free_list_lock);
-  return entry;
-}
-
-static void
-delete_dw_entry(struct entry_t* entry)
-{
-#if 0
-  // detach from the unresolved list
-  spinlock_lock(&unresolved_list_lock);
-  if(entry->prev) entry->prev->next = entry->next;
-  if(entry->next) entry->next->prev = entry->prev;
-  spinlock_unlock(&unresolved_list_lock);
-  // insert to the head of the free list
-  spinlock_lock(&free_list_lock);
-  if(!free_list) {
-    free_list = entry;
-    spinlock_unlock(&free_list_lock);
-    return;
-  }
-  entry->prev = NULL;
-  entry->next = free_list;
-  free_list->prev = entry;
-  free_list = entry;
-  spinlock_unlock(&free_list_lock);
-#endif
-}
-
-static void
-insert_dw_entry(struct entry_t* entry)
-{
-  spinlock_lock(&unresolved_list_lock);
-  if(!unresolved_list) {
-    unresolved_list = entry;
-    spinlock_unlock(&unresolved_list_lock);
-    return;
-  }
-  entry->prev = NULL;
-  entry->next = unresolved_list;
-  unresolved_list->prev = entry;
-  unresolved_list = entry;
-  spinlock_unlock(&unresolved_list_lock);
-}
-
-static struct entry_t*
-fetch_dw_entry(struct entry_t **pointer)
-{
-  spinlock_lock(&unresolved_list_lock);
-  if(!(*pointer)) {
-    spinlock_unlock(&unresolved_list_lock);
-    return NULL;
-  }
-  while((*pointer) && (*pointer)->flag) (*pointer) = (*pointer)->next;
-  if((*pointer)) (*pointer)->flag = true;
-  spinlock_unlock(&unresolved_list_lock);
-  return (*pointer);
-}
 
 /******************************************************************************
  * splay tree operation for record map *
@@ -506,16 +414,15 @@ void resolve_other_cntxt(bool fini_flag)
   // entry is a local pointer
   //
   hpcrun_async_block();
-  spinlock_lock(&unresolved_list_lock);
-  struct entry_t *pointer = unresolved_list;
-  spinlock_unlock(&unresolved_list_lock);
+  struct entry_t *pointer = NULL;
   struct entry_t *entry = NULL;
+  set_dw_pointer(&pointer);
   while(entry = fetch_dw_entry(&pointer)) {
     hpcrun_cct_walkset((entry->td->epoch->csdata).unresolved_root, omp_resolve_and_free, (cct_op_arg_t)(entry->td));
     entry->td->defer_write = 0;
     // if at stop point, write out what we have (no need to check tbd again)
-    if(!fini_flag)
-      hpcrun_cct_walkset((entry->td->epoch->csdata).unresolved_root, tbd_test, (cct_op_arg_t)(entry->td));
+    if(!fini_flag) entry->td->defer_write = 1;
+//      hpcrun_cct_walkset((entry->td->epoch->csdata).unresolved_root, tbd_test, (cct_op_arg_t)(entry->td));
     if(!entry->td->defer_write) {
       thread_data_t *td = hpcrun_get_thread_data();
       cct2metrics_t* store_cct2metrics_map = td->cct2metrics_map;
@@ -533,12 +440,14 @@ void resolve_other_cntxt(bool fini_flag)
   hpcrun_async_unblock();
 }
 
+// resolve at the thread fini
 void resolve_cntxt_fini()
 {
   hpcrun_async_block();
   thread_data_t *td = hpcrun_get_thread_data();
   hpcrun_cct_walkset(hpcrun_get_tbd_cct(), omp_resolve_and_free, NULL);
-  hpcrun_cct_walkset(hpcrun_get_tbd_cct(), tbd_test, (cct_op_arg_t)td);
+  if(!td->defer_write)
+    hpcrun_cct_walkset(hpcrun_get_tbd_cct(), tbd_test, (cct_op_arg_t)td);
   if(td->defer_write) {
     struct entry_t* entry = new_dw_entry();
     entry->td = td;

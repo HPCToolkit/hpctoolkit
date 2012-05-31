@@ -146,8 +146,10 @@ lazy_open_data_file(thread_data_t *thread_data)
   else
     td = hpcrun_get_thread_data();
 
+TMSG(SET_DEFER_CTXT, "in open data file %d(%d)", td->id, td->defer_write);
   FILE* fs = td->hpcrun_file;
   if (fs) {
+TMSG(SET_DEFER_CTXT, "in open data file but return %d(%d)", td->id, td->defer_write);
     return fs;
   }
 
@@ -343,6 +345,7 @@ hpcrun_write_profile_data(epoch_t *epoch)
   if(td->defer_write)
     return HPCRUN_OK;
 
+  if(td->scale_fn) td->scale_fn((void*)td);
   TMSG(DATA_WRITE,"Writing hpcrun profile data");
   FILE* fs = lazy_open_data_file(NULL);
   if (fs == NULL)
@@ -361,9 +364,10 @@ int
 hpcrun_write_other_profile_data(epoch_t *epoch, thread_data_t *thread_data)
 {
   thread_data_t *td = thread_data;
-  if(td->defer_write)
+  if(!td && td->defer_write)
     return HPCRUN_OK;
 
+  if(td->scale_fn) td->scale_fn((void*)td);
   TMSG(DATA_WRITE,"Writing hpcrun profile data");
   FILE* fs = lazy_open_data_file(td);
   if (fs == NULL)

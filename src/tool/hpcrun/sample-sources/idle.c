@@ -118,6 +118,7 @@ static void start_fn(int rank);
 static void end_fn();
 
 static void process_blame_for_sample(cct_node_t *node, int metric_value);
+void scale_fn(void *);
 void normalize_fn(cct_node_t *node, cct_op_arg_t arg, size_t level);
 
 /******************************************************************************
@@ -172,11 +173,16 @@ METHOD_FN(stop)
 {
   //scale the requested core idleness here
   thread_data_t *td = hpcrun_get_thread_data();
+  if(!td->scale_fn)
+    td->scale_fn = scale_fn;
+#if 0
+  thread_data_t *td = hpcrun_get_thread_data();
   cct_node_t *root, *unresolved_root;
   root = td->epoch->csdata.top;
   unresolved_root = td->epoch->csdata.unresolved_root;
   hpcrun_cct_walk_node_1st(root, normalize_fn, NULL);
   hpcrun_cct_walk_node_1st(unresolved_root, normalize_fn, NULL);
+#endif
 }
 
 static void
@@ -255,6 +261,18 @@ METHOD_FN(display_events)
  * private operations 
  *****************************************************************************/
 
+void
+scale_fn(void *thread_data)
+{
+TMSG(SET_DEFER_CTXT, "max thread is %d", max_thread_num);
+  thread_data_t *td = (thread_data_t *)thread_data;
+  cct_node_t *root, *unresolved_root;
+  root = td->epoch->csdata.top;
+  unresolved_root = td->epoch->csdata.unresolved_root;
+  hpcrun_cct_walk_node_1st(root, normalize_fn, NULL);
+  hpcrun_cct_walk_node_1st(unresolved_root, normalize_fn, NULL);
+}
+
 void normalize_fn(cct_node_t *node, cct_op_arg_t arg, size_t level)
 {
   if(hpcrun_cct_is_leaf(node)) {
@@ -294,6 +312,7 @@ process_blame_for_sample(cct_node_t *node, int metric_value)
   if (td->idle == 0) { // if thread is not idle
                 double work_l = (double) work;
 		double idle_l = 1.0;
+  		if(work_l < 1.0) work_l = 1.0; // make sure the divider is not zero
 		cct_metric_data_increment(idle_metric_id, node, 
 					  (cct_metric_data_t){.r = (idle_l/work_l)*metric_value});
 
@@ -359,11 +378,13 @@ void start_fn(int rank)
   hpcrun_async_unblock();
 }
 
+// block samples at thread fini
+// no need to unblock because it will be reset by reused thread
 void end_fn()
 {
   hpcrun_async_block();
   atomic_add_i64(&thread_num, -1L);
   atomic_add_i64(&work, -1L);
-  hpcrun_async_unblock();
+//  hpcrun_async_unblock();
 }
 
