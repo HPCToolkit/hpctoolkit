@@ -76,8 +76,8 @@ static int metricId_onesidedOp = -1;
 static int metricId_collectiveOp = -1;
 
 #if (GA_DataCentric_Prototype)
-static int metricId_dataTblIdx_next = -1;
-static int metricId_dataTblIdx_max = -1; // exclusive upper bound
+int metricId_dataTblIdx_next = -1;
+int metricId_dataTblIdx_max = -1; // exclusive upper bound
 
 metricId_dataDesc_t hpcrun_ga_metricId_dataTbl[hpcrun_ga_metricId_dataTblSz];
 #endif // GA_DataCentric_Prototype
