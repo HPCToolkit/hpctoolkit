@@ -421,8 +421,8 @@ void resolve_other_cntxt(bool fini_flag)
     hpcrun_cct_walkset((entry->td->epoch->csdata).unresolved_root, omp_resolve_and_free, (cct_op_arg_t)(entry->td));
     entry->td->defer_write = 0;
     // if at stop point, write out what we have (no need to check tbd again)
-    if(!fini_flag) entry->td->defer_write = 1;
-//      hpcrun_cct_walkset((entry->td->epoch->csdata).unresolved_root, tbd_test, (cct_op_arg_t)(entry->td));
+    if(!fini_flag) 
+      hpcrun_cct_walkset((entry->td->epoch->csdata).unresolved_root, tbd_test, (cct_op_arg_t)(entry->td));
     if(!entry->td->defer_write) {
       thread_data_t *td = hpcrun_get_thread_data();
       cct2metrics_t* store_cct2metrics_map = td->cct2metrics_map;
