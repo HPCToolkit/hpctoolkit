@@ -378,13 +378,11 @@ void start_fn(int rank)
   hpcrun_async_unblock();
 }
 
-// block samples at thread fini
-// no need to unblock because it will be reset by reused thread
 void end_fn()
 {
   hpcrun_async_block();
   atomic_add_i64(&thread_num, -1L);
   atomic_add_i64(&work, -1L);
-//  hpcrun_async_unblock();
+  hpcrun_async_unblock();
 }
 
