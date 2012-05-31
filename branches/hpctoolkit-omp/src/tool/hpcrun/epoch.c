@@ -69,6 +69,19 @@ hpcrun_reset_epoch(epoch_t* epoch)
 }
 
 void
+hpcrun_epoch_reuse_init(cct_ctxt_t* ctxt)
+{
+  TMSG(EPOCH,"reuse init");
+  thread_data_t* td    = hpcrun_get_thread_data();
+  epoch_t*       epoch = td->epoch;
+
+  hpcrun_cct_bundle_reuse_init(&(epoch->csdata), ctxt);
+
+//  epoch->loadmap = hpcrun_getLoadmap();
+//  epoch->next  = NULL;
+}
+
+void
 hpcrun_epoch_init(cct_ctxt_t* ctxt)
 {
   TMSG(EPOCH,"init");

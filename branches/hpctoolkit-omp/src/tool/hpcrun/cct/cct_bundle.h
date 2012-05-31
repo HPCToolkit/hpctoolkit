@@ -78,6 +78,7 @@ typedef struct cct_bundle_t {
 // Interface procedures
 //
 
+extern void hpcrun_cct_bundle_reuse_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt);
 extern void hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt);
 //
 // IO for cct bundle

@@ -127,6 +127,9 @@
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
 
+#include <utilities/defer-cntxt.h>
+#include <utilities/defer-write.h>
+
 extern void hpcrun_set_retain_recursion_mode(bool mode);
 
 //***************************************************************************
@@ -332,8 +335,13 @@ logit(cct_node_t* n, cct_op_arg_t arg, size_t l)
 void*
 hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
 {
-  hpcrun_mmap_init();
-  thread_data_t *td = hpcrun_allocate_thread_data();
+  bool reuse_flag = true;
+  thread_data_t *td = NULL;
+  if(!(td=get_reuse_td())) {
+    hpcrun_mmap_init();
+    td = hpcrun_allocate_thread_data();
+    reuse_flag = false;
+  }
   td->suspend_sampling = 1; // begin: protect against spurious signals
 
   hpcrun_set_thread_data(td);
@@ -342,7 +350,10 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   if (ENABLED(THREAD_CTXT))
       hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) id);
   //
-  hpcrun_thread_data_init(id, thr_ctxt, 0);
+  if(!reuse_flag)
+    hpcrun_thread_data_init(id, thr_ctxt, 0);
+  else
+    hpcrun_thread_data_reuse_init(thr_ctxt);
 
   epoch_t* epoch = TD_GET(epoch);
 
@@ -351,7 +362,10 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
 
   // set up initial 'epoch'
   TMSG(EPOCH,"process init setting up initial epoch/loadmap");
-  hpcrun_epoch_init(thr_ctxt);
+  if(!reuse_flag)
+    hpcrun_epoch_init(thr_ctxt);
+  else
+    hpcrun_epoch_reuse_init(thr_ctxt);
 
   // sample sources take thread specific action prior to start (often is a 'registration' action);
   SAMPLE_SOURCES(thread_init_action);
@@ -383,7 +397,8 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-    hpcrun_write_profile_data(epoch);
+    if(DISABLED(SET_DEFER_WRITE))
+      hpcrun_write_profile_data(epoch);
   }
 }
 
