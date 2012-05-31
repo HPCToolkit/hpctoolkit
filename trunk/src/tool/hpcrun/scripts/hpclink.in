@@ -240,7 +240,7 @@ do
                 pnga_get pnga_put pnga_acc \
                 pnga_nbget pnga_nbput pnga_nbacc"
                 # pnga_nbwait
-	    undef_names="$undef_names pnga_put"
+	    undef_names="$undef_names pnga_create"
 	    shift
 	    ;;
 	-memleak | --memleak )

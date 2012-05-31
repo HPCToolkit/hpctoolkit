@@ -59,6 +59,9 @@ int hpcrun_ga_metricId_collectiveOp();
 #define hpcrun_ga_metricId_dataTblSz 20
 #define hpcrun_ga_metricId_dataStrLen 32
 
+extern int metricId_dataTblIdx_next;
+extern int metricId_dataTblIdx_max; // exclusive upper bound
+
 typedef struct metricId_dataDesc {
   int metricId;
   char name[hpcrun_ga_metricId_dataStrLen];
@@ -74,6 +77,12 @@ hpcrun_ga_metricId_dataTbl_find(int idx)
 
 int
 hpcrun_ga_dataIdx_new(const char* name);
+
+static inline int
+hpcrun_ga_dataIdx_isValid(int idx)
+{
+  return ((idx >= 0) && (idx < metricId_dataTblIdx_next));
+}
 
 #endif // GA_DataCentric_Prototype
 

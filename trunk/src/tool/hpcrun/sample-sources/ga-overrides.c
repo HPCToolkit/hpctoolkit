@@ -175,10 +175,12 @@ extern global_array_t *GA;
 // FIXME: hpcrun_sample_callpath() should also return a metric_set_t*!
 
 #define ifSample(smplVal, metricVec, do1, do2)				\
-  lushPthr_t* x__x = &TD_GET(pthr_metrics);				\
-  x__x->doIdlenessCnt++;						\
-  if (x__x->doIdlenessCnt == GA_SYNC_SMPL_PERIOD) {			\
-    x__x->doIdlenessCnt = 0;						\
+{									\
+  thread_data_t* td = hpcrun_get_thread_data();				\
+  lushPthr_t* cnt = &td->pthr_metrics;					\
+  cnt->doIdlenessCnt++;							\
+  if (cnt->doIdlenessCnt == GA_SYNC_SMPL_PERIOD) {			\
+    cnt->doIdlenessCnt = 0;						\
     if (hpcrun_safe_enter()) {						\
       ucontext_t uc;							\
       getcontext(&uc);							\
@@ -194,35 +196,43 @@ extern global_array_t *GA;
 									\
       hpcrun_safe_exit();						\
     }									\
-  }
+  }									\
+}
 
-#define collectMetric(metricVec, metricId, metricIncr)			\
-  {									\
+
+#define collectMetric(metricVec, metricId, metricIncr) 			\
+{									\
+  if (metricId >= 0) {							\
     uint64_t mIncr = GA_SYNC_SMPL_PERIOD * metricIncr;			\
     hpcrun_metric_std_inc(metricId, metricVec,				\
 			  (cct_metric_data_t){.i = mIncr});		\
-  }
+  }									\
+}
+
 
 #define collectBytesXfr(metricVec, metricIdBytes, g_a, lo, hi)		\
-  {									\
-    Integer ga_hndl = GA_OFFSET + g_a;					\
-    int ga_ndim = GA[ga_hndl].ndim;					\
-    /* char* ga_name = GA[ga_hndl].name; */				\
-    int ga_elemsize = GA[ga_hndl].elemsize;				\
-    Integer num_elems = 0;						\
-    gam_CountElems(ga_ndim, lo, hi, &num_elems);			\
-    int num_bytes = num_elems * ga_elemsize * GA_SYNC_SMPL_PERIOD;	\
-    /*TMSG(GA, "ga_sampleAfter_bytes: %d", num_bytes); */		\
+{									\
+  Integer ga_hndl = GA_OFFSET + g_a;					\
+  int ga_ndim = GA[ga_hndl].ndim;					\
+  /* char* ga_name = GA[ga_hndl].name; */				\
+  int ga_elemsize = GA[ga_hndl].elemsize;				\
+  Integer num_elems = 0;						\
+  gam_CountElems(ga_ndim, lo, hi, &num_elems);				\
+  int num_bytes = num_elems * ga_elemsize * GA_SYNC_SMPL_PERIOD;	\
+  /*TMSG(GA, "ga_sampleAfter_bytes: %d", num_bytes); */			\
+  if (metricIdBytes >= 0) {						\
     hpcrun_metric_std_inc(metricIdBytes, metricVec,			\
 			  (cct_metric_data_t){.i = num_bytes});		\
-    /* **************************************** */			\
-    int idx = ga_getDataIdx(ga_hndl);					\
-    if (idx >= 0) {							\
-      metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(idx);	\
-      hpcrun_metric_std_inc(desc->metricId, metricVec,			\
-			    (cct_metric_data_t){.i = num_bytes});	\
-    }									\
-  }
+  }									\
+  /* **************************************** */			\
+  int idx = ga_getDataIdx(ga_hndl);					\
+  if (hpcrun_ga_dataIdx_isValid(idx)) {					\
+    metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(idx);	\
+    hpcrun_metric_std_inc(desc->metricId, metricVec,			\
+			  (cct_metric_data_t){.i = num_bytes});		\
+  }									\
+}
+
 
 #define collect0() {}
 
