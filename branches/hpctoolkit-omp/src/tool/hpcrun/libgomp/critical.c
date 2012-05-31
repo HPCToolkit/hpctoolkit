@@ -144,3 +144,9 @@ initialize_critical (void)
 #endif
 }
 #endif
+
+void GOMP_lock_fn_register(void (*lock_fn)(void*), void (*unlock_fn)(void*))
+{
+  gomp_lock_fn_register(lock_fn, unlock_fn);
+}
+

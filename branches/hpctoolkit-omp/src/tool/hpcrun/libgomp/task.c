@@ -43,6 +43,7 @@ gomp_init_task (struct gomp_task *task, struct gomp_task *parent_task,
   task->in_tied_task = false;
   task->children = NULL;
   gomp_sem_init (&task->taskwait_sem, 0);
+  task->creation_context = NULL;
 }
 
 /* Clean up a task, after completing it.  */
@@ -71,6 +72,26 @@ gomp_clear_parent (struct gomp_task *children)
     while (task != children);
 }
 
+void *
+GOMP_get_task_context()
+{
+  struct gomp_thread *thr = gomp_thread ();
+  if( !thr) return NULL;
+  
+  struct gomp_task *task = thr->task;
+  if( !task) return NULL;
+  
+  return task->creation_context;
+}
+
+static void (*gomp_create_task)(void **) = NULL;
+
+void
+GOMP_task_callback_register(void (*fn)(void **))
+{
+  gomp_create_task = fn;
+}
+ 
 /* Called when encountering an explicit task directive.  If IF_CLAUSE is
    false, then we must not delay in executing the task.  If UNTIED is true,
    then the task may be executed by any member of the team.  */
@@ -133,6 +154,7 @@ GOMP_task (void (*fn) (void *), void *data, void (*cpyfn) (void *, void *),
       arg = (char *) (((uintptr_t) (task + 1) + arg_align - 1)
 		      & ~(uintptr_t) (arg_align - 1));
       gomp_init_task (task, parent, gomp_icv (false));
+      if(gomp_create_task) gomp_create_task(&(task->creation_context));
       task->kind = GOMP_TASK_IFFALSE;
       task->in_tied_task = parent->in_tied_task;
       thr->task = task;

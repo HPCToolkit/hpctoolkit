@@ -28,6 +28,7 @@
 #include "libgomp.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 /* This attribute contains PTHREAD_CREATE_DETACHED.  */
 pthread_attr_t gomp_thread_attr;
@@ -35,6 +36,7 @@ pthread_attr_t gomp_thread_attr;
 /* This key is for the thread destructor.  */
 pthread_key_t gomp_thread_destructor;
 
+gomp_mutex_t gomp_parallel_region_id_lock;
 
 /* This is the libgomp per-thread data structure.  */
 #ifdef HAVE_TLS
@@ -60,9 +62,95 @@ struct gomp_thread_start_data
 /* This function is a pthread_create entry point.  This contains the idle
    loop in which a thread waits to be called up to become part of a team.  */
 
+static int rank = 0;
+static void(*start_fn)(int) = NULL;
+static void(*start_team_fn)(int) = NULL;
+static void(*end_fn)(void) = NULL;
+static void(*end_team_fn)(void) = NULL;
+static void(*pending_exit)(void) = NULL;
+
+void
+gomp_start_callback_register(void (*new_start_fn) (int), void (*new_end_fn)(void))
+{
+  start_fn = new_start_fn;
+  end_fn   = new_end_fn;
+}
+
+void
+gomp_team_callback_register(void (*new_team_start_fn) (int), void(*new_team_end_fn)(void))
+{
+  start_team_fn = new_team_start_fn;
+  end_team_fn = new_team_end_fn;
+}
+
+void GOMP_start_callback_register(void (*new_start_fn) (int), void (*new_end_fn) (void))
+{
+  gomp_start_callback_register(new_start_fn, new_end_fn);
+}
+
+void GOMP_team_callback_register(void (*new_team_start_fn) (int), void (*new_team_end_fn) (void))
+{
+  gomp_team_callback_register(new_team_start_fn, new_team_end_fn);
+}
+
+void GOMP_pending_exit_callback_register(void (*new_pending_exit) (void))
+{
+  pending_exit = new_pending_exit;
+}
+
+uint64_t 
+gomp_get_region_id()
+{
+  struct gomp_thread *thr = NULL;
+
+#if 0
+#ifdef HAVE_TLS
+  thr = &gomp_tls_data;
+#else
+  thr = pthread_getspecific (gomp_tls_key);
+#endif
+#endif
+  
+  thr = gomp_thread ();
+  if (thr == NULL) return 0;
+  if (!thr->ts.team) return 0;
+
+  return thr->ts.team->region_id;
+}
+
+uint64_t
+GOMP_get_region_id()
+{
+  return gomp_get_region_id();
+}
+
+uint64_t 
+gomp_get_outer_region_id()
+{
+  struct gomp_thread *thr;
+
+#ifdef HAVE_TLS
+  thr = &gomp_tls_data;
+#else
+  thr = pthread_getspecific (gomp_tls_key);
+#endif
+
+  if (thr == 0) return 0;
+  if (!thr->ts.team) return 0;
+
+  return thr->ts.team->outer_region_id;
+}
+
+uint64_t
+GOMP_get_outer_region_id()
+{
+  return gomp_get_outer_region_id();
+}
+
 static void *
 gomp_thread_start (void *xdata)
 {
+  if(start_fn) start_fn(rank);
   struct gomp_thread_start_data *data = xdata;
   struct gomp_thread *thr;
   struct gomp_thread_pool *pool;
@@ -100,6 +188,13 @@ gomp_thread_start (void *xdata)
       local_fn (local_data);
       gomp_team_barrier_wait (&team->barrier);
       gomp_finish_task (task);
+      /* after gomp_barrier_wait_last, team can be destroyed by the *
+	 master thread, so set the team to be NULL in the local     *
+         thread in order to avoid the bogus region_id               */
+      gomp_thread()->ts.team = NULL;
+
+      if(pending_exit) pending_exit();
+
       gomp_barrier_wait_last (&team->barrier);
     }
   else
@@ -126,6 +221,7 @@ gomp_thread_start (void *xdata)
     }
 
   gomp_sem_destroy (&thr->release);
+  if(end_fn) end_fn();
   return NULL;
 }
 
@@ -135,6 +231,7 @@ gomp_thread_start (void *xdata)
 struct gomp_team *
 gomp_new_team (unsigned nthreads)
 {
+  static volatile uint64_t gomp_parallel_region_id = 1;
   struct gomp_team *team;
   size_t size;
   int i;
@@ -142,6 +239,9 @@ gomp_new_team (unsigned nthreads)
   size = sizeof (*team) + nthreads * (sizeof (team->ordered_release[0])
 				      + sizeof (team->implicit_task[0]));
   team = gomp_malloc (size);
+
+  team->region_id = 0;
+  team->outer_region_id = 0;
 
   team->work_share_chunk = 8;
 #ifdef HAVE_SYNC_BUILTINS
@@ -168,6 +268,16 @@ gomp_new_team (unsigned nthreads)
   team->task_queue = NULL;
   team->task_count = 0;
   team->task_running_count = 0;
+  
+
+  team->outer_region_id = gomp_get_region_id();
+#ifdef HAVE_SYNC_BUILTINS
+  team->region_id = __sync_fetch_and_add (&gomp_parallel_region_id, 1);
+#else
+  gomp_mutex_lock (&gomp_parallel_region_id_lock);
+  team->region_id = gomp_parallel_region_id++;
+  gomp_mutex_unlock (&gomp_parallel_region_id_lock);
+#endif
 
   return team;
 }
@@ -252,6 +362,7 @@ void
 gomp_team_start (void (*fn) (void *), void *data, unsigned nthreads,
 		 struct gomp_team *team)
 {
+
   struct gomp_thread_start_data *start_data;
   struct gomp_thread *thr, *nthr;
   struct gomp_task *task;
@@ -290,6 +401,9 @@ gomp_team_start (void (*fn) (void *), void *data, unsigned nthreads,
   thr->ts.static_trip = 0;
   thr->task = &team->implicit_task[0];
   gomp_init_task (thr->task, task, icv);
+
+  // be careful to put this callback function (after the team init)
+  if(start_team_fn) start_team_fn(++rank);
 
   if (nthreads == 1)
     return;
@@ -457,6 +571,7 @@ gomp_team_start (void (*fn) (void *), void *data, unsigned nthreads,
 void
 gomp_team_end (void)
 {
+  if(end_team_fn) end_team_fn();
   struct gomp_thread *thr = gomp_thread ();
   struct gomp_team *team = thr->ts.team;
 
@@ -533,6 +648,7 @@ initialize_team (void)
   thr = &initial_thread_tls_data;
 #endif
   gomp_sem_init (&thr->release, 0);
+  gomp_mutex_init (&gomp_parallel_region_id_lock);
 }
 
 static void __attribute__((destructor))
