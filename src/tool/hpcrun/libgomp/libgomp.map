@@ -112,10 +112,15 @@ GOMP_1.0 {
 	GOMP_atomic_end;
 	GOMP_atomic_start;
 	GOMP_barrier;
+	GOMP_barrier_callback_register;
+  	GOMP_start_callback_register;
+	GOMP_team_callback_register;
+        GOMP_pending_exit_callback_register;
 	GOMP_critical_end;
 	GOMP_critical_name_end;
 	GOMP_critical_name_start;
 	GOMP_critical_start;
+	GOMP_lock_fn_register;
 	GOMP_loop_dynamic_next;
 	GOMP_loop_dynamic_start;
 	GOMP_loop_end;
@@ -150,10 +155,14 @@ GOMP_1.0 {
 	GOMP_single_copy_end;
 	GOMP_single_copy_start;
 	GOMP_single_start;
+	GOMP_get_region_id;
+	GOMP_get_outer_region_id;
 };
 
 GOMP_2.0 {
   global:
+	GOMP_get_task_context;
+	GOMP_task_callback_register;
 	GOMP_task;
 	GOMP_taskwait;
 	GOMP_loop_ull_dynamic_next;

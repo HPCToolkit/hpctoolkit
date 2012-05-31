@@ -48,3 +48,14 @@ gomp_mutex_unlock_slow (gomp_mutex_t *mutex)
 {
   futex_wake (mutex, 1);
 }
+
+void (*gomp_monitor_lock)(void *lock) = NULL;
+void (*gomp_monitor_unlock)(void *lock) = NULL;
+
+void 
+gomp_lock_fn_register(void (*lock_fn)(void*), void (*unlock_fn)(void*))
+{
+  gomp_monitor_lock = lock_fn;
+  gomp_monitor_unlock = unlock_fn;
+}
+

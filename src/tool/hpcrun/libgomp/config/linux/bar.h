@@ -66,6 +66,8 @@ extern void gomp_team_barrier_wait_end (gomp_barrier_t *,
 					gomp_barrier_state_t);
 extern void gomp_team_barrier_wake (gomp_barrier_t *, int);
 
+extern void gomp_barrier_callback_register(void(*new_idle_fn)(void), void(*new_work_fn)(void));
+
 static inline gomp_barrier_state_t
 gomp_barrier_wait_start (gomp_barrier_t *bar)
 {

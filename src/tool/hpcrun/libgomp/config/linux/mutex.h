@@ -30,6 +30,8 @@
 #define GOMP_MUTEX_H 1
 
 typedef int gomp_mutex_t;
+extern void (*gomp_monitor_lock)(void *lock);
+extern void (*gomp_monitor_unlock)(void *lock);
 
 #define GOMP_MUTEX_INIT_0 1
 
@@ -41,8 +43,11 @@ static inline void gomp_mutex_init (gomp_mutex_t *mutex)
 extern void gomp_mutex_lock_slow (gomp_mutex_t *mutex);
 static inline void gomp_mutex_lock (gomp_mutex_t *mutex)
 {
-  if (!__sync_bool_compare_and_swap (mutex, 0, 1))
-    gomp_mutex_lock_slow (mutex);
+  if(gomp_monitor_lock) gomp_monitor_lock(mutex);
+  else {
+    if (!__sync_bool_compare_and_swap (mutex, 0, 1))
+      gomp_mutex_lock_slow (mutex);
+  }
 }
 
 extern void gomp_mutex_unlock_slow (gomp_mutex_t *mutex);
@@ -58,13 +63,18 @@ static inline void gomp_mutex_unlock (gomp_mutex_t *mutex)
      mutex unlock, are encouraged to include
      "config/linux/ia64/mutex.h" in a target specific mutex.h instead
      of using this file.  */
-  int val = __sync_lock_test_and_set (mutex, 0);
-  if (__builtin_expect (val > 1, 0))
-    gomp_mutex_unlock_slow (mutex);
+  if(gomp_monitor_unlock) gomp_monitor_unlock(mutex);
+  else {
+    int val = __sync_lock_test_and_set (mutex, 0);
+    if (__builtin_expect (val > 1, 0))
+      gomp_mutex_unlock_slow (mutex);
+  }
 }
 
 static inline void gomp_mutex_destroy (gomp_mutex_t *mutex)
 {
 }
+
+extern void gomp_lock_fn_register(void (*lock_fn)(void*), void (*unlock_fn)(void*));
 
 #endif /* GOMP_MUTEX_H */

@@ -29,10 +29,13 @@
 #include <limits.h>
 #include "wait.h"
 
+static void(*idle_fn)(void) = NULL;
+static void(*work_fn)(void) = NULL;
 
 void
 gomp_barrier_wait_end (gomp_barrier_t *bar, gomp_barrier_state_t state)
 {
+  if(idle_fn) idle_fn();
   if (__builtin_expect ((state & 1) != 0, 0))
     {
       /* Next time we'll be awaiting TOTAL threads again.  */
@@ -49,8 +52,10 @@ gomp_barrier_wait_end (gomp_barrier_t *bar, gomp_barrier_state_t state)
 	do_wait ((int *) &bar->generation, generation);
       while (bar->generation == generation);
     }
+  if(work_fn) work_fn();
 }
 
+#include <stdio.h>
 void
 gomp_barrier_wait (gomp_barrier_t *bar)
 {
@@ -81,6 +86,7 @@ gomp_team_barrier_wake (gomp_barrier_t *bar, int count)
 void
 gomp_team_barrier_wait_end (gomp_barrier_t *bar, gomp_barrier_state_t state)
 {
+  if(idle_fn) idle_fn();
   unsigned int generation;
 
   if (__builtin_expect ((state & 1) != 0, 0))
@@ -92,13 +98,16 @@ gomp_team_barrier_wait_end (gomp_barrier_t *bar, gomp_barrier_state_t state)
       atomic_write_barrier ();
       if (__builtin_expect (team->task_count, 0))
 	{
+          if(work_fn) work_fn();
 	  gomp_barrier_handle_tasks (state);
+          if(idle_fn) idle_fn();
 	  state &= ~1;
 	}
       else
 	{
 	  bar->generation = state + 3;
 	  futex_wake ((int *) &bar->generation, INT_MAX);
+  	  if(work_fn) work_fn();
 	  return;
 	}
     }
@@ -107,12 +116,23 @@ gomp_team_barrier_wait_end (gomp_barrier_t *bar, gomp_barrier_state_t state)
   do
     {
       do_wait ((int *) &bar->generation, generation);
-      if (__builtin_expect (bar->generation & 1, 0))
+      if (__builtin_expect (bar->generation & 1, 0)) {
+        if(work_fn) work_fn();
 	gomp_barrier_handle_tasks (state);
+  	if(idle_fn) idle_fn();
+      }
       if ((bar->generation & 2))
 	generation |= 2;
     }
   while (bar->generation != state + 4);
+  if(work_fn) work_fn();
+}
+
+void
+gomp_barrier_callback_register(void (*new_idle_fn) (void), void(*new_work_fn) (void))
+{
+  idle_fn = new_idle_fn;
+  work_fn = new_work_fn;
 }
 
 void
@@ -120,3 +140,4 @@ gomp_team_barrier_wait (gomp_barrier_t *bar)
 {
   gomp_team_barrier_wait_end (bar, gomp_barrier_wait_start (bar));
 }
+

@@ -252,6 +252,7 @@ struct gomp_task
   bool in_taskwait;
   bool in_tied_task;
   gomp_sem_t taskwait_sem;
+  void* creation_context;
 };
 
 /* This structure describes a "team" of threads.  These are the threads
@@ -260,6 +261,11 @@ struct gomp_task
 
 struct gomp_team
 {
+  /* the outer-most id for the team creation */
+  uint64_t outer_region_id; 
+  /* the id for the team creation */
+  uint64_t region_id; 
+
   /* This is the number of threads in the current team.  */
   unsigned nthreads;
 

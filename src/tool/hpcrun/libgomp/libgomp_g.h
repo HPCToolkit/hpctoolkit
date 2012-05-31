@@ -33,6 +33,7 @@
 /* barrier.c */
 
 extern void GOMP_barrier (void);
+extern void GOMP_barrier_callback_register(void(*)(void), void(*)(void));
 
 /* critical.c */
 
@@ -42,6 +43,7 @@ extern void GOMP_critical_name_start (void **);
 extern void GOMP_critical_name_end (void **);
 extern void GOMP_atomic_start (void);
 extern void GOMP_atomic_end (void);
+extern void GOMP_lock_fn_register(void (*)(void*), void (*)(void*));
 
 /* loop.c */
 
@@ -160,9 +162,16 @@ extern void GOMP_parallel_end (void);
 
 /* team.c */
 
+extern void* GOMP_get_task_context();
+extern void GOMP_task_callback_register(void (*)(void **));
 extern void GOMP_task (void (*) (void *), void *, void (*) (void *, void *),
 		       long, long, bool, unsigned);
 extern void GOMP_taskwait (void);
+extern void GOMP_start_callback_register(void (*) (int), void (*) (void));
+extern void GOMP_team_callback_register(void (*) (int), void (*) (void));
+extern void GOMP_pending_exit_callback_register(void(*)(void));
+extern uint64_t GOMP_get_region_id();
+extern uint64_t GOMP_get_outer_region_id();
 
 /* sections.c */
 

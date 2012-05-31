@@ -39,3 +39,9 @@ GOMP_barrier (void)
 
   gomp_team_barrier_wait (&team->barrier);
 }
+
+void
+GOMP_barrier_callback_register(void(*new_idle_fn)(void), void(*new_work_fn)(void))
+{
+  gomp_barrier_callback_register(new_idle_fn, new_work_fn);
+}
