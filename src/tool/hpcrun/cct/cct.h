@@ -215,7 +215,7 @@ extern void hpcrun_cct_persistent_id_trace_mutate(cct_node_t* x);
 //
 //     typedefs for walking functions
 typedef void* cct_op_arg_t;
-typedef cct_node_t *(*cct_op_t)(cct_node_t* cct, cct_op_arg_t arg, size_t level);
+typedef void (*cct_op_t)(cct_node_t* cct, cct_op_arg_t arg, size_t level);
 
 //
 //     general walking functions: (client may select starting level)
@@ -266,7 +266,7 @@ void hpcrun_cct_walk_node_1st(cct_node_t* cct,
 //  linked by the parent link. So walking a path involves touching the
 // path nodes in list reverse order
 //
-extern cct_node_t *hpcrun_walk_path(cct_node_t* node, cct_op_t op, cct_op_arg_t arg);
+extern void hpcrun_walk_path(cct_node_t* node, cct_op_t op, cct_op_arg_t arg);
 
 //
 // utility walker for cct sets (part of the substructure of a cct)

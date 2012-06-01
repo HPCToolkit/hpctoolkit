@@ -65,7 +65,7 @@ static cct_addr_t root = ADDR_I(CCT_ROOT);
 //
 // helper for inserting creation contexts
 //
-cct_node_t *
+void
 l_insert_path(cct_node_t* node, cct_op_arg_t arg, size_t level)
 {
   cct_addr_t* addr = hpcrun_cct_addr(node);
@@ -73,7 +73,6 @@ l_insert_path(cct_node_t* node, cct_op_arg_t arg, size_t level)
 
   cct_node_t** tree = (cct_node_t**) arg;
   *tree = hpcrun_cct_insert_addr(*tree, addr);
-	return *tree;
 }
 
 //
