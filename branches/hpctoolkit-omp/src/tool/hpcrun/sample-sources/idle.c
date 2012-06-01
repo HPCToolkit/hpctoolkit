@@ -386,6 +386,14 @@ void start_fn(int rank)
     resolve_other_cntxt(false);
   }
 
+  if(trace_isactive()) {
+    hpcrun_async_block();
+    ucontext_t uc;
+    getcontext(&uc);
+    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1, NULL);
+    hpcrun_async_unblock();
+  }
+
   hpcrun_async_unblock();
 }
 
@@ -400,6 +408,14 @@ void end_fn()
     resolve_cntxt_fini();
   else  if(ENABLED(SET_DEFER_WRITE)) {
     add_defer_td(td);
+  }
+
+  if(trace_isactive()) {
+    hpcrun_async_block();
+    ucontext_t uc;
+    getcontext(&uc);
+    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1, NULL);
+    hpcrun_async_unblock();
   }
 
   hpcrun_async_unblock();

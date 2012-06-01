@@ -126,6 +126,7 @@ trace_open()
   // open an output file, not even /dev/null.
   if (tracing && hpcrun_sample_prob_active()) {
     thread_data_t *td = hpcrun_get_thread_data();
+    if(td->trace_buffer) return;
     int fd, ret;
 
     // I think unlocked is ok here (we don't overlap any system
@@ -185,6 +186,21 @@ trace_close()
 }
 
 
+void
+trace_other_close(void *thread_data)
+{
+  if (tracing && hpcrun_sample_prob_active()) {
+    thread_data_t *td = (thread_data_t *)thread_data;
+
+    int ret = hpcio_outbuf_close(&td->trace_outbuf);
+    trace_file_validate(ret == HPCFMT_OK, "close");
+
+    int rank = hpcrun_get_rank();
+    if (rank >= 0) {
+      hpcrun_rename_trace_file(rank, td->id);
+    }
+  }
+}
 //*********************************************************************
 // private operations
 //*********************************************************************
