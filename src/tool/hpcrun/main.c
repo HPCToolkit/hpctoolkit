@@ -687,7 +687,8 @@ monitor_fini_thread(void* init_thread_data)
   epoch_t *epoch = (epoch_t *)init_thread_data;
 
   hpcrun_thread_fini(epoch);
-  trace_close();
+  if(!TD_GET(defer_write))
+    trace_close();
 
   hpcrun_async_unblock();
   TD_GET(reuse) = 1;

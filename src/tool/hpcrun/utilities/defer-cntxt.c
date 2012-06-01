@@ -428,6 +428,7 @@ void resolve_other_cntxt(bool fini_flag)
       cct2metrics_t* store_cct2metrics_map = td->cct2metrics_map;
       td->cct2metrics_map = entry->td->cct2metrics_map;
       hpcrun_write_other_profile_data(entry->td->epoch, entry->td);
+      trace_other_close((void *)entry->td);
       td->cct2metrics_map = store_cct2metrics_map;
       pointer = pointer->next;
       delete_dw_entry(entry);

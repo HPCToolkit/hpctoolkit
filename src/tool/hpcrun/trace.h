@@ -51,6 +51,7 @@ void trace_init();
 void trace_open();
 void trace_append(unsigned int cpid);
 void trace_close();
+void trace_other_close(void *thread_data);
 
 int trace_isactive();
 
