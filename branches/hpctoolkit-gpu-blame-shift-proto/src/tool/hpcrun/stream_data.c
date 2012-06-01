@@ -149,10 +149,11 @@ metric_set_t* hpcrun_stream_reify_metric_set(stream_data_t *st, cct_node_id_t cc
 cct_node_t *stream_duplicate_cpu_node(stream_data_t *st, ucontext_t *context, cct_node_t *node) {
 	cct_bundle_t* cct= &(st->epoch->csdata);
         cct_node_t * tmp_root = cct->tree_root;
-  cct_node_t* n = hpcrun_walk_path(node, l_insert_path, (cct_op_arg_t) &(tmp_root));
+        cct_node_t* n = NULL;
+        hpcrun_walk_path(node, l_insert_path, (cct_op_arg_t) &(tmp_root));
 	hpcrun_stream_get_num_metrics(st);
-	stream_cct_metric_data_increment(st, st->stream_special_metric_id, n, (cct_metric_data_t) {.i = 42});
-	return n;
+	stream_cct_metric_data_increment(st, st->stream_special_metric_id, tmp_root, (cct_metric_data_t) {.i = 42});
+	return tmp_root;
 }
 
 void 

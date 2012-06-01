@@ -93,6 +93,6 @@ extern int hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t*
 extern bool hpcrun_empty_cct(cct_bundle_t* cct);
 extern cct_node_t* hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct);
 
-cct_node_t *l_insert_path(cct_node_t* node, cct_op_arg_t arg, size_t level);
+void l_insert_path(cct_node_t* node, cct_op_arg_t arg, size_t level);
 
 #endif // CCT_BUNDLE_H

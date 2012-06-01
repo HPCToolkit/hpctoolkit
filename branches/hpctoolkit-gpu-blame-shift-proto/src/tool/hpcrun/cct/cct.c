@@ -214,12 +214,12 @@ l_count(cct_node_t* n, cct_op_arg_t arg, size_t level)
 //
 // Special purpose path walking helper
 //
-cct_node_t *
+void
 walk_path_l(cct_node_t* node, cct_op_t op, cct_op_arg_t arg, size_t level)
 {
-  if (! node) return NULL;
+  if (! node) return;
   walk_path_l(node->parent, op, arg, level+1);
-  return (op(node, arg, level));
+  op(node, arg, level);
 }
 
 //
@@ -516,10 +516,10 @@ hpcrun_cct_walkset(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg)
 // path nodes in list reverse order
 //
 
-cct_node_t *
+void
 hpcrun_walk_path(cct_node_t* node, cct_op_t op, cct_op_arg_t arg)
 {
-  return walk_path_l(node, op, arg, 0);
+  walk_path_l(node, op, arg, 0);
 }
 
 //
