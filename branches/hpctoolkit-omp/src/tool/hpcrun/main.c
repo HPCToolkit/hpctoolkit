@@ -397,7 +397,8 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-    if(DISABLED(SET_DEFER_WRITE))
+//    if(DISABLED(SET_DEFER_WRITE))
+    if(!TD_GET(defer_write)) 
       hpcrun_write_profile_data(epoch);
   }
 }
@@ -689,6 +690,7 @@ monitor_fini_thread(void* init_thread_data)
   trace_close();
 
   hpcrun_async_unblock();
+  TD_GET(reuse) = 1;
 }
 
 

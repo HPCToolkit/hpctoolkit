@@ -143,6 +143,10 @@ typedef struct thread_data_t {
   int defer_write; // whether should defer the write
 
   void (*scale_fn)(void*);
+
+  int reuse; // mark whether the td is ready for reuse
+
+  int add_to_pool;
   // ----------------------------------------
   // hpcrun_malloc() memory data structures
   // ----------------------------------------
