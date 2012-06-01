@@ -103,6 +103,8 @@
 #include <hpcrun/loadmap.h>
 #include <hpcrun/trace.h>
 
+#include <utilities/defer-write.h>
+#include <utilities/defer-cntxt.h>
 /******************************************************************************
  * macros
  *****************************************************************************/
@@ -375,6 +377,15 @@ void start_fn(int rank)
   atomic_add_i64(&work, 1L);
   thread_data_t *td = hpcrun_get_thread_data();
   td->idle = 0;
+
+  if(ENABLED(SET_DEFER_WRITE)) {
+    td->defer_write = 1;
+  }
+  else {
+    // at the beginning of one thread, try to resolve any other threads
+    resolve_other_cntxt(false);
+  }
+
   hpcrun_async_unblock();
 }
 
@@ -383,6 +394,14 @@ void end_fn()
   hpcrun_async_block();
   atomic_add_i64(&thread_num, -1L);
   atomic_add_i64(&work, -1L);
+
+  thread_data_t *td = hpcrun_get_thread_data();
+  if(td->defer_flag)
+    resolve_cntxt_fini();
+  else  if(ENABLED(SET_DEFER_WRITE)) {
+    add_defer_td(td);
+  }
+
   hpcrun_async_unblock();
 }
 

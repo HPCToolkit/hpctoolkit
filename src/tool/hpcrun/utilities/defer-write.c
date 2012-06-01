@@ -104,6 +104,7 @@ get_reuse_td()
   }
   entry->flag = true;
   spinlock_unlock(&unresolved_list_lock);
+  while(!entry->td->reuse) ;
   return entry->td;
 }
 
@@ -175,5 +176,6 @@ add_defer_td(thread_data_t *td)
   struct entry_t *entry = new_dw_entry();
   entry->td = td;
   insert_dw_entry(entry);
+  td->add_to_pool = 1;
 }
 

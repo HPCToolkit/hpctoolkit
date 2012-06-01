@@ -449,9 +449,10 @@ void resolve_cntxt_fini()
   if(!td->defer_write)
     hpcrun_cct_walkset(hpcrun_get_tbd_cct(), tbd_test, (cct_op_arg_t)td);
   if(td->defer_write) {
-    struct entry_t* entry = new_dw_entry();
-    entry->td = td;
-    insert_dw_entry(entry);
+    add_defer_td(td);
+//    struct entry_t* entry = new_dw_entry();
+//    entry->td = td;
+//    insert_dw_entry(entry);
   }
   hpcrun_async_unblock();
 }

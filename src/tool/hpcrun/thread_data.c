@@ -146,6 +146,9 @@ hpcrun_thread_data_reuse_init(cct_ctxt_t* thr_ctxt)
 
   td->defer_write = 0; 
 
+  td->reuse = 0;
+ 
+  td->add_to_pool = 0;
   // ----------------------------------------
   // sample sources
   // ----------------------------------------
@@ -273,6 +276,10 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   td->defer_write = 0;
 
   td->scale_fn = NULL;
+
+  td->reuse = 0;
+
+  td->add_to_pool = 0;
   // ----------------------------------------
   // sample sources
   // ----------------------------------------
