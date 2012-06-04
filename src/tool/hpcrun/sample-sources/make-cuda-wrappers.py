@@ -244,6 +244,7 @@ def WriteDriverFunctionWrapper(file, funcSig):
 
         fp.write('\t' + sig[0] +  sig[1] + ' (' + sig[2] + ') {\n' )
 	fp.write('TD_GET(is_thread_at_cuda_sync) = true;\n')
+        #fp.write('printf("\\n%s on","' +sig[1] +'");fflush(stdout);')
 	fp.write('CUresult ret = cuDriverFunctionPointer[' +FuncNameToEnum(sig[1]) + '].' + sig[1] + 'Real(')
 
         args = sig[2].split(',')
@@ -260,8 +261,12 @@ def WriteDriverFunctionWrapper(file, funcSig):
 
         fp.write( ');\n')
 	fp.write('TD_GET(is_thread_at_cuda_sync) = false;\n')
+        #fp.write('printf("\\n%s off","' +sig[1] +'");fflush(stdout);')
 	fp.write('return ret;\n')
         fp.write('}\n')
+#    fp.write('''
+##endif
+#''')  
     fp.close();
 
 
