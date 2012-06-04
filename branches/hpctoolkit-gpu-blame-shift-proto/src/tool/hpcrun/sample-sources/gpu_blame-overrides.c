@@ -636,7 +636,7 @@ uint32_t cleanup_finished_events() {
             if (err_cuda == cudaSuccess) {
                 //fprintf(stderr, "\n cudaEventQuery success %p", current_event->event_end);
                 cct_node_t *launcher_cct = current_event->launcher_cct;
-                hpcrun_cct_persistent_id_trace_mutate(launcher_cct);
+               
                 // record start time
                 float elapsedTime;      // in millisec with 0.5 microsec resolution as per CUDA
 
@@ -647,42 +647,28 @@ uint32_t cleanup_finished_events() {
                 assert(elapsedTime > 0);
 
                 uint64_t micro_time_start = (uint64_t) (((double) elapsedTime) * 1000) + g_start_of_world_time;
-#if 0
-                fprintf(stderr, "\n started at  :  %lu", micro_time_start);
-#endif
-
-                gpu_trace_append_with_time(cur_stream->st, DEVICE_ID, GET_STREAM_ID(cur_stream), cur_stream->st->idle_node_id, micro_time_start - 1);
-
-                cct_node_t *stream_cct = current_event->stream_launcher_cct;
-                hpcrun_cct_persistent_id_trace_mutate(stream_cct);
-
-                //printf("\n adding stream_cct:%x with id:%d",stream_cct, hpcrun_cct_persistent_id(stream_cct)); 
-                gpu_trace_append_with_time(cur_stream->st, DEVICE_ID, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(stream_cct), micro_time_start);
-
-                // record end time
-                // TODO : WE JUST NEED TO PUT IDLE MARKER
 
                 CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_ELAPSED_TIME].cudaEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_end));
 
                 assert(elapsedTime > 0);
                 uint64_t micro_time_end = (uint64_t) (((double) elapsedTime) * 1000) + g_start_of_world_time;
-#if 0
-                fprintf(stderr, "\n Ended  at  :  %lu", micro_time_end);
-#endif
-
-                //printf("\n adding stream_cct:%x with id:%d",stream_cct, hpcrun_cct_persistent_id(stream_cct)); 
-                gpu_trace_append_with_time(cur_stream->st, DEVICE_ID, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(stream_cct), micro_time_end);
-
-                // TODO : WE JUST NEED TO PUT IDLE MARKER
-                gpu_trace_append_with_time(cur_stream->st, DEVICE_ID, GET_STREAM_ID(cur_stream), cur_stream->st->idle_node_id, micro_time_end + 1);
-#if 0
-
-                err_cuda = cudaEventElapsedTime(&elapsedTime, current_event->event_start, current_event->event_end);
-                //fprintf(stderr, "\n Length of Event :  %f", elapsedTime);
-
-#endif
 
                 assert(micro_time_start <= micro_time_end);
+
+                if(hpcrun_trace_isactive()) {
+                	gpu_trace_append_with_time(cur_stream->st, DEVICE_ID, GET_STREAM_ID(cur_stream), cur_stream->st->idle_node_id, micro_time_start - 1);
+
+                	cct_node_t *stream_cct = current_event->stream_launcher_cct;
+
+                	hpcrun_cct_persistent_id_trace_mutate(stream_cct);
+
+                	gpu_trace_append_with_time(cur_stream->st, DEVICE_ID, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(stream_cct), micro_time_start);
+
+                	gpu_trace_append_with_time(cur_stream->st, DEVICE_ID, GET_STREAM_ID(cur_stream), hpcrun_cct_persistent_id(stream_cct), micro_time_end);
+
+                	gpu_trace_append_with_time(cur_stream->st, DEVICE_ID, GET_STREAM_ID(cur_stream), cur_stream->st->idle_node_id, micro_time_end + 1);
+		}
+
 
                 // Add the kernel execution time to the gpu_activity_time_metric_id
                 cct_metric_data_increment(gpu_activity_time_metric_id, current_event->launcher_cct, (cct_metric_data_t) {
@@ -798,17 +784,20 @@ void CreateStream0IfNot(cudaStream_t stream) {
         struct timeval tv;
         gettimeofday(&tv, NULL);
         g_stream_array[new_streamId].st = hpcrun_stream_data_alloc_init(DEVICE_ID, new_streamId);
-        gpu_trace_open(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId);
 
-        /*FIXME: convert below 4 lines to a macro */
-        cct_bundle_t *bundle = &(g_stream_array[new_streamId].st->epoch->csdata);
-        cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
-        hpcrun_cct_persistent_id_trace_mutate(idl);
-        // store the persistent id one time
-        g_stream_array[new_streamId].st->idle_node_id = hpcrun_cct_persistent_id(idl);
+	if(hpcrun_trace_isactive()) {
+		gpu_trace_open(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId);
 
-        gpu_trace_append(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId, g_stream_array[new_streamId].st->idle_node_id);
+		/*FIXME: convert below 4 lines to a macro */
+		cct_bundle_t *bundle = &(g_stream_array[new_streamId].st->epoch->csdata);
+		cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
+		hpcrun_cct_persistent_id_trace_mutate(idl);
+		// store the persistent id one time
+		g_stream_array[new_streamId].st->idle_node_id = hpcrun_cct_persistent_id(idl);
 
+		gpu_trace_append(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId, g_stream_array[new_streamId].st->idle_node_id);
+
+	}
         g_stream0_not_initialized = false;
     }
     HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
@@ -960,9 +949,9 @@ cudaError_t cudaStreamDestroy(cudaStream_t stream) {
 
     streamId = SplayGetStreamId(stream_to_id_tree_root, stream);
 
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    gpu_trace_close(g_stream_array[streamId].st, DEVICE_ID, streamId);
+    if(hpcrun_trace_isactive())
+    	gpu_trace_close(g_stream_array[streamId].st, DEVICE_ID, streamId);
+
     hpcrun_stream_finalize(g_stream_array[streamId].st);
     g_stream_array[streamId].st = NULL;
 
@@ -1024,16 +1013,18 @@ cudaError_t cudaStreamCreate(cudaStream_t * stream) {
     HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
 
     g_stream_array[new_streamId].st = hpcrun_stream_data_alloc_init(DEVICE_ID, new_streamId);
-    gpu_trace_open(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId);
+    if(hpcrun_trace_isactive()) {
+    	gpu_trace_open(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId);
 
-    /*FIXME: convert below 4 lines to a macro */
-    cct_bundle_t *bundle = &(g_stream_array[new_streamId].st->epoch->csdata);
-    cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
-    hpcrun_cct_persistent_id_trace_mutate(idl);
-    // store the persistent id one time.
-    g_stream_array[new_streamId].st->idle_node_id = hpcrun_cct_persistent_id(idl);
-    gpu_trace_append(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId, g_stream_array[new_streamId].st->idle_node_id);
+	    /*FIXME: convert below 4 lines to a macro */
+	    cct_bundle_t *bundle = &(g_stream_array[new_streamId].st->epoch->csdata);
+	    cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
+	    hpcrun_cct_persistent_id_trace_mutate(idl);
+	    // store the persistent id one time.
+	    g_stream_array[new_streamId].st->idle_node_id = hpcrun_cct_persistent_id(idl);
+	    gpu_trace_append(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId, g_stream_array[new_streamId].st->idle_node_id);
 
+    }
     return ret;
 }
 
@@ -1325,9 +1316,9 @@ CUresult cuStreamDestroy(CUstream stream) {
     uint32_t streamId;
     streamId = SplayGetStreamId(stream_to_id_tree_root, (cudaStream_t)stream);
 
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    gpu_trace_close(g_stream_array[streamId].st, DEVICE_ID, streamId);
+    if(hpcrun_trace_isactive()) 
+        gpu_trace_close(g_stream_array[streamId].st, DEVICE_ID, streamId);
+
     hpcrun_stream_finalize(g_stream_array[streamId].st);
     g_stream_array[streamId].st = NULL;
 
@@ -1382,17 +1373,21 @@ CUresult cuStreamCreate(CUstream * phStream, unsigned int Flags) {
     HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
 
     g_stream_array[new_streamId].st = hpcrun_stream_data_alloc_init(DEVICE_ID, new_streamId);
-    gpu_trace_open(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId);
 
-    /*FIXME: convert below 4 lines to a macro */
-    cct_bundle_t *bundle = &(g_stream_array[new_streamId].st->epoch->csdata);
-    cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
-    hpcrun_cct_persistent_id_trace_mutate(idl);
-    // Store the persistent id for the idle node one time.
-    g_stream_array[new_streamId].st->idle_node_id = hpcrun_cct_persistent_id(idl);
 
-    gpu_trace_append(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId, g_stream_array[new_streamId].st->idle_node_id);
+    if(hpcrun_trace_isactive()){
+    	gpu_trace_open(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId);
 
+    	/*FIXME: convert below 4 lines to a macro */
+    	cct_bundle_t *bundle = &(g_stream_array[new_streamId].st->epoch->csdata);
+    	cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
+    	hpcrun_cct_persistent_id_trace_mutate(idl);
+    	// Store the persistent id for the idle node one time.
+    	g_stream_array[new_streamId].st->idle_node_id = hpcrun_cct_persistent_id(idl);
+
+    	gpu_trace_append(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId, g_stream_array[new_streamId].st->idle_node_id);
+
+    }
     //cuptiGetStreamId(cbRDInfo->context, cbRDInfo->resourceHandle.stream, &new_streamId);
     //SYNCHRONOUS_CLEANUP;
     //gpu_trace_close(0, new_streamId);
