@@ -342,8 +342,6 @@ int
 hpcrun_write_profile_data(epoch_t *epoch)
 {
   thread_data_t *td = hpcrun_get_thread_data();
-  if(td->defer_write)
-    return HPCRUN_OK;
 
   if(td->scale_fn) td->scale_fn((void*)td);
   TMSG(DATA_WRITE,"Writing hpcrun profile data");
@@ -364,8 +362,6 @@ int
 hpcrun_write_other_profile_data(epoch_t *epoch, thread_data_t *thread_data)
 {
   thread_data_t *td = thread_data;
-  if(!td && td->defer_write)
-    return HPCRUN_OK;
 
   if(td->scale_fn) td->scale_fn((void*)td);
   TMSG(DATA_WRITE,"Writing hpcrun profile data");

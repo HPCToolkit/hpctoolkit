@@ -147,6 +147,8 @@ typedef struct thread_data_t {
   int reuse; // mark whether the td is ready for reuse
 
   int add_to_pool;
+
+  int omp_thread;
   // ----------------------------------------
   // hpcrun_malloc() memory data structures
   // ----------------------------------------

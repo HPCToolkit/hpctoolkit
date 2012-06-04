@@ -122,6 +122,7 @@ r_splay_insert(struct record_t *node)
 static struct record_t *
 r_splay_delete(uint64_t region_id)
 {
+TMSG(SET_DEFER_CTXT, "delete region %d", region_id);
 // no need to use spin lock in delete because we only call delete in update function where
 // tree is already locked
   struct record_t *result = NULL;
@@ -221,6 +222,7 @@ void end_team_fn()
   // insert resolved root to the corresponding record entry
   if(record) {
     if(record->use_count > 0) {
+TMSG(SET_DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
       ucontext_t uc;
       getcontext(&uc);
       //
@@ -356,6 +358,7 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
     hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
     // must delete it when not used considering the performance
     r_splay_count_update(my_region_id, -1L);
+TMSG(SET_DEFER_CTXT, "resolve region %d", my_region_id);
   }
 }
 
@@ -397,63 +400,32 @@ void resolve_cntxt()
   hpcrun_async_unblock();
 }
 
+#if 1
 static void
 tbd_test(cct_node_t* cct, cct_op_arg_t a, size_t l)
 {
   thread_data_t *td = (thread_data_t *)a;
   if(hpcrun_cct_addr(cct)->ip_norm.lm_id == (uint16_t)UNRESOLVED) {
-    TMSG(DEFER_CTXT, "I cannot resolve region %d", (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip);
+    TMSG(SET_DEFER_CTXT, "I cannot resolve region %d", (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip);
     td->defer_write = 1;
   }
 }
-
-void resolve_other_cntxt(bool fini_flag)
-{
-  //
-  // try to resolve any entry
-  // entry is a local pointer
-  //
-  hpcrun_async_block();
-  struct entry_t *pointer = NULL;
-  struct entry_t *entry = NULL;
-  set_dw_pointer(&pointer);
-  while(entry = fetch_dw_entry(&pointer)) {
-    hpcrun_cct_walkset((entry->td->epoch->csdata).unresolved_root, omp_resolve_and_free, (cct_op_arg_t)(entry->td));
-    entry->td->defer_write = 0;
-    // if at stop point, write out what we have (no need to check tbd again)
-    if(!fini_flag) 
-      hpcrun_cct_walkset((entry->td->epoch->csdata).unresolved_root, tbd_test, (cct_op_arg_t)(entry->td));
-    if(!entry->td->defer_write) {
-      thread_data_t *td = hpcrun_get_thread_data();
-      cct2metrics_t* store_cct2metrics_map = td->cct2metrics_map;
-      td->cct2metrics_map = entry->td->cct2metrics_map;
-      hpcrun_write_other_profile_data(entry->td->epoch, entry->td);
-      trace_other_close((void *)entry->td);
-      td->cct2metrics_map = store_cct2metrics_map;
-      pointer = pointer->next;
-      delete_dw_entry(entry);
-    }
-    else {
-      pointer = pointer->next;
-      entry->flag = false;
-    }
-  }
-  hpcrun_async_unblock();
-}
+#endif
 
 // resolve at the thread fini
 void resolve_cntxt_fini()
 {
   hpcrun_async_block();
-  thread_data_t *td = hpcrun_get_thread_data();
   hpcrun_cct_walkset(hpcrun_get_tbd_cct(), omp_resolve_and_free, NULL);
-  if(!td->defer_write)
-    hpcrun_cct_walkset(hpcrun_get_tbd_cct(), tbd_test, (cct_op_arg_t)td);
-  if(td->defer_write) {
-    add_defer_td(td);
-//    struct entry_t* entry = new_dw_entry();
-//    entry->td = td;
-//    insert_dw_entry(entry);
-  }
+  hpcrun_async_unblock();
+}
+
+void resolve_other_cntxt(thread_data_t *thread_data)
+{
+  hpcrun_async_block();
+  thread_data_t *td = thread_data;
+  if(!td) return;
+  hpcrun_cct_walkset((td->epoch->csdata).unresolved_root, omp_resolve_and_free, (cct_op_arg_t)td);
+  hpcrun_cct_walkset((td->epoch->csdata).unresolved_root, tbd_test, (cct_op_arg_t)td);
   hpcrun_async_unblock();
 }
