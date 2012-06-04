@@ -19,4 +19,5 @@ void insert_dw_entry(struct entry_t* entry);
 struct entry_t *fetch_dw_entry(struct entry_t **pointer);
 void set_dw_pointer(struct entry_t **pointer);
 void add_defer_td(thread_data_t *td);
+void write_other_td();
 #endif

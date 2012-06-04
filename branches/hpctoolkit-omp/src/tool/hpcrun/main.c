@@ -336,8 +336,8 @@ void*
 hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
 {
   bool reuse_flag = true;
-  thread_data_t *td = NULL;
-  if(!(td=get_reuse_td())) {
+  thread_data_t *td = get_reuse_td();
+  if(!td) {
     hpcrun_mmap_init();
     td = hpcrun_allocate_thread_data();
     reuse_flag = false;
@@ -354,6 +354,7 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
     hpcrun_thread_data_init(id, thr_ctxt, 0);
   else
     hpcrun_thread_data_reuse_init(thr_ctxt);
+TMSG(SET_DEFER_CTXT, "real id %d, reuse id %d", td->id, id);
 
   epoch_t* epoch = TD_GET(epoch);
 
@@ -396,9 +397,10 @@ hpcrun_thread_fini(epoch_t *epoch)
     if (hpcrun_get_disabled()) {
       return;
     }
-
-//    if(DISABLED(SET_DEFER_WRITE))
-    if(!TD_GET(defer_write)) 
+    
+    // only omp threads set defer_write. Other threads (helper threads or
+    // native pthreads) don't delay the write out
+    if (!TD_GET(defer_write))
       hpcrun_write_profile_data(epoch);
   }
 }

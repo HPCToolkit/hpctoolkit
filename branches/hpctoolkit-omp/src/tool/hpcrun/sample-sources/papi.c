@@ -210,19 +210,6 @@ METHOD_FN(thread_fini_action)
   char msg[] = "!!NOT PAPI_OK!! (code = -9999999)\n";
   snprintf(msg, sizeof(msg)-1, "!!NOT PAPI_OK!! (code = %d)", retval);
   
-  thread_data_t *td = hpcrun_get_thread_data();
-  if((td->defer_write) && (!td->add_to_pool)) {
-    add_defer_td(td);
-    td->add_to_pool = 1;
-  } 
-#if 0
-  thread_data_t *td = hpcrun_get_thread_data();
-  if(td->defer_flag)
-    resolve_cntxt_fini();
-  else  if(ENABLED(SET_DEFER_WRITE)) {
-    add_defer_td(td);
-  }
-#endif
   TMSG(PAPI, "unregister thread returns %s", retval == PAPI_OK? "PAPI_OK" : msg);
 }
 
@@ -264,9 +251,6 @@ METHOD_FN(shutdown)
 {
   METHOD_CALL(self, stop); // make sure stop has been called
   PAPI_shutdown();
-
-  // only called at process fini
-  resolve_other_cntxt(true);
 
   self->state = UNINIT;
 }

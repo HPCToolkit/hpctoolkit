@@ -89,8 +89,6 @@ new_dw_entry()
 thread_data_t *
 get_reuse_td()
 {
-  if(DISABLED(SET_DEFER_WRITE))
-    return NULL;
   spinlock_lock(&unresolved_list_lock);
   if(!unresolved_list) {
     spinlock_unlock(&unresolved_list_lock);
@@ -176,6 +174,31 @@ add_defer_td(thread_data_t *td)
   struct entry_t *entry = new_dw_entry();
   entry->td = td;
   insert_dw_entry(entry);
-  td->add_to_pool = 1;
 }
 
+void
+write_other_td()
+{
+  spinlock_lock(&unresolved_list_lock);
+  struct entry_t *entry = unresolved_list;
+  spinlock_unlock(&unresolved_list_lock);
+  while(entry) {
+    if(entry->flag) {
+      entry = entry->next;
+      continue;
+    }
+    entry->flag = true;
+    thread_data_t *td = hpcrun_get_thread_data();
+    if(entry->td->defer_flag)
+      resolve_other_cntxt(entry->td);
+
+    // write out a given td
+    cct2metrics_t* store_cct2metrics_map = td->cct2metrics_map;
+    td->cct2metrics_map = entry->td->cct2metrics_map;
+    hpcrun_write_other_profile_data(entry->td->epoch, entry->td);
+    trace_other_close((void *)entry->td);
+    td->cct2metrics_map = store_cct2metrics_map;
+ 
+    entry = entry->next;
+  }
+}

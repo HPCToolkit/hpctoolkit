@@ -168,6 +168,12 @@ METHOD_FN(start)
 static void
 METHOD_FN(thread_fini_action)
 {
+  thread_data_t *td = hpcrun_get_thread_data();
+  if(!td->omp_thread) return;
+  if(!td->add_to_pool) {
+    td->add_to_pool = 1;
+    add_defer_td(td);
+  }
 }
 
 static void
@@ -190,6 +196,8 @@ METHOD_FN(stop)
 static void
 METHOD_FN(shutdown)
 {
+  write_other_td();
+
   self->state = UNINIT;
 }
 
@@ -272,7 +280,7 @@ TMSG(SET_DEFER_CTXT, "max thread is %d", max_thread_num);
   root = td->epoch->csdata.top;
   unresolved_root = td->epoch->csdata.unresolved_root;
   hpcrun_cct_walk_node_1st(root, normalize_fn, NULL);
-  hpcrun_cct_walk_node_1st(unresolved_root, normalize_fn, NULL);
+//  hpcrun_cct_walk_node_1st(unresolved_root, normalize_fn, NULL);
 }
 
 void normalize_fn(cct_node_t *node, cct_op_arg_t arg, size_t level)
@@ -377,14 +385,8 @@ void start_fn(int rank)
   atomic_add_i64(&work, 1L);
   thread_data_t *td = hpcrun_get_thread_data();
   td->idle = 0;
-
-  if(ENABLED(SET_DEFER_WRITE)) {
-    td->defer_write = 1;
-  }
-  else {
-    // at the beginning of one thread, try to resolve any other threads
-    resolve_other_cntxt(false);
-  }
+  td->omp_thread = 1;
+  td->defer_write = 1;
 
   if(trace_isactive()) {
     hpcrun_async_block();
@@ -404,11 +406,8 @@ void end_fn()
   atomic_add_i64(&work, -1L);
 
   thread_data_t *td = hpcrun_get_thread_data();
-  if(td->defer_flag)
-    resolve_cntxt_fini();
-  else  if(ENABLED(SET_DEFER_WRITE)) {
-    add_defer_td(td);
-  }
+  td->add_to_pool = 1;
+  add_defer_td(td);
 
   if(trace_isactive()) {
     hpcrun_async_block();
