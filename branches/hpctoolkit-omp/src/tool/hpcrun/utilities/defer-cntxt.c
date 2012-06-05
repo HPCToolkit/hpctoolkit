@@ -220,9 +220,8 @@ void end_team_fn()
   uint64_t region_id = GOMP_get_region_id();
   struct record_t *record = r_splay_lookup(region_id);
   // insert resolved root to the corresponding record entry
-  if(record) {
+  if(record && (record->region_id == region_id)) {
     if(record->use_count > 0) {
-TMSG(SET_DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
       ucontext_t uc;
       getcontext(&uc);
       //
@@ -238,6 +237,7 @@ TMSG(SET_DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
 	  omp_arg.region_id = TD_GET(region_id);
         }
         node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, (void *)&omp_arg);
+TMSG(SET_DEFER_CTXT, "unwind the callstack for region %d to %d", record->region_id, TD_GET(region_id));
         // make sure the outer region should be unwound
         uint64_t unresolved_region_id = is_partial_resolve(node);
         if(unresolved_region_id) {
@@ -247,8 +247,10 @@ TMSG(SET_DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
       //
       // for master thread in the outer-most region, a normal unwind to the process stop 
       //
-      else
+      else {
         node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, NULL);
+TMSG(SET_DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
+      }
 
       record->node = node;
     }
@@ -334,10 +336,11 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
     td = (thread_data_t*) a;
   cct_node_t *prefix;
   uint64_t my_region_id = (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip;
-  TMSG(DEFER_CTXT, " try to resolve region %d", my_region_id);
+  TMSG(SET_DEFER_CTXT, " try to resolve region %d", my_region_id);
   if (prefix = is_resolved(my_region_id)) {
     // delete cct from its original parent before merging
     hpcrun_cct_delete_self(cct);
+TMSG(SET_DEFER_CTXT, "delete from the tbd region %d", hpcrun_cct_addr(cct)->ip_norm.lm_ip);
     if(!is_partial_resolve(prefix)) {
       if(!td)
         prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_process_stop_cct());
@@ -375,27 +378,21 @@ void resolve_cntxt()
   int current_thread_num = omp_get_thread_num();
   cct_node_t* tbd_cct = hpcrun_get_tbd_cct();
   thread_data_t *td = hpcrun_get_thread_data();
-  uint64_t outer_region_id = td->outer_region_id;
+  uint64_t outer_region_id = td->outer_region_id; // current outer region
+  if(outer_region_id == 0) outer_region_id = current_region_id;
   // resolve the trees at the end of one parallel region
-  if((td->region_id != current_region_id) && (td->region_id != 0) && 
-     (current_thread_num != 0)) {
+  if((td->region_id != outer_region_id) && (td->region_id != 0)){
     TMSG(DEFER_CTXT, "I want to resolve the context when I come out from region %d", td->region_id);
     hpcrun_cct_walkset(tbd_cct, omp_resolve_and_free, NULL);
   }
   // update the use count when come into a new omp region
-  if((td->region_id != current_region_id) && (current_region_id != 0)) {
-    if (current_thread_num != 0) {
-      hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, current_region_id)));
-      r_splay_count_update(current_region_id, 1L);
-    }
-    else if(outer_region_id > 0) {
-      hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, outer_region_id)));
-      r_splay_count_update(outer_region_id, 1L);
-    }
+  if((td->region_id != outer_region_id) && (outer_region_id != 0)) {
+TMSG(SET_DEFER_CTXT, "insert tbd %d", outer_region_id);
+    hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, outer_region_id)));
+    r_splay_count_update(outer_region_id, 1L);
   }
   // td->region_id represents the out-most parallel region id
-  if(current_thread_num != 0)    td->region_id = current_region_id;
-  else if (outer_region_id > 0)  td->region_id = outer_region_id;
+  td->region_id = outer_region_id;
 
   hpcrun_async_unblock();
 }

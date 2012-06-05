@@ -427,6 +427,7 @@ hpcrun_cct_delete_self(cct_node_t *cct)
   if (cct->parent && cct->parent->children == cct)
     cct->parent->children = cct->left ? cct->left : cct->right;
   cct->parent = NULL;
+  cct->left=cct->right = NULL;
 }
 
 //
