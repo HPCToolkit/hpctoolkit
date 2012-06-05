@@ -339,8 +339,9 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
   TMSG(SET_DEFER_CTXT, " try to resolve region %d", my_region_id);
   if (prefix = is_resolved(my_region_id)) {
     // delete cct from its original parent before merging
-    hpcrun_cct_delete_self(cct);
+//    hpcrun_cct_delete_self(cct);
 TMSG(SET_DEFER_CTXT, "delete from the tbd region %d", hpcrun_cct_addr(cct)->ip_norm.lm_ip);
+    hpcrun_cct_addr(cct)->ip_norm.lm_ip = 0; //indicate this is deleted
     if(!is_partial_resolve(prefix)) {
       if(!td)
         prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_process_stop_cct());
@@ -360,7 +361,7 @@ TMSG(SET_DEFER_CTXT, "delete from the tbd region %d", hpcrun_cct_addr(cct)->ip_n
       hpcrun_cct_addr(prefix)->ip_norm.lm_ip -= 5L;
     hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
     // must delete it when not used considering the performance
-    r_splay_count_update(my_region_id, -1L);
+//    r_splay_count_update(my_region_id, -1L);
 TMSG(SET_DEFER_CTXT, "resolve region %d", my_region_id);
   }
 }
@@ -423,6 +424,6 @@ void resolve_other_cntxt(thread_data_t *thread_data)
   thread_data_t *td = thread_data;
   if(!td) return;
   hpcrun_cct_walkset((td->epoch->csdata).unresolved_root, omp_resolve_and_free, (cct_op_arg_t)td);
-  hpcrun_cct_walkset((td->epoch->csdata).unresolved_root, tbd_test, (cct_op_arg_t)td);
+//  hpcrun_cct_walkset((td->epoch->csdata).unresolved_root, tbd_test, (cct_op_arg_t)td);
   hpcrun_async_unblock();
 }
