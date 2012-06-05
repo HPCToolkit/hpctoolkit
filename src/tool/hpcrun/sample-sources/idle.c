@@ -170,6 +170,7 @@ METHOD_FN(thread_fini_action)
 {
   thread_data_t *td = hpcrun_get_thread_data();
   if(!td->omp_thread) return;
+//  if(td->defer_flag) resolve_cntxt_fini();
   if(!td->add_to_pool) {
     td->add_to_pool = 1;
     add_defer_td(td);
@@ -387,6 +388,8 @@ void start_fn(int rank)
   td->idle = 0;
   td->omp_thread = 1;
   td->defer_write = 1;
+
+//  if(td->defer_flag) resolve_cntxt_fini();
 
   if(trace_isactive()) {
     hpcrun_async_block();
