@@ -165,177 +165,6 @@ hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc)
 
 
 //***************************************************************************
-// hdr (trace, located here for now)
-//***************************************************************************
-
-int
-hpctrace_fmt_hdr_fread(FILE* infs)
-{
-  char tag[HPCTRACE_FMT_MagicLen + 1];
-  char version[HPCTRACE_FMT_VersionLen + 1];
-  char endian[HPCTRACE_FMT_EndianLen + 1];
-
-  int nr = fread(tag, 1, HPCTRACE_FMT_MagicLen, infs);
-  tag[HPCTRACE_FMT_MagicLen] = '\0';
-
-  if (nr != HPCTRACE_FMT_MagicLen) {
-    return HPCFMT_ERR;
-  }
-  if (strcmp(tag, HPCTRACE_FMT_Magic) != 0) {
-    return HPCFMT_ERR;
-  }
-
-  nr = fread(&version, 1, HPCTRACE_FMT_VersionLen, infs);
-  version[HPCTRACE_FMT_VersionLen] = '\0';
-  if (nr != HPCTRACE_FMT_VersionLen) {
-    return HPCFMT_ERR;
-  }
-
-  nr = fread(&endian, 1, HPCTRACE_FMT_EndianLen, infs);
-  if (nr != HPCTRACE_FMT_EndianLen) {
-    return HPCFMT_ERR;
-  }
-
-  return HPCFMT_OK;
-}
-
-
-int
-hpctrace_fmt_hdr_fwrite(FILE* fs)
-{
-  fwrite(HPCTRACE_FMT_Magic,   1, HPCTRACE_FMT_MagicLen, fs);
-  fwrite(HPCTRACE_FMT_Version, 1, HPCTRACE_FMT_VersionLen, fs);
-  fwrite(HPCTRACE_FMT_Endian,  1, HPCTRACE_FMT_EndianLen, fs);
-
-  return HPCFMT_OK;
-}
-
-
-int
-hpctrace_fmt_hdr_fprint(FILE* fs)
-{
-  fprintf(fs, "%s\n", HPCTRACE_FMT_Magic);
-  fprintf(fs, "[hdr:...]\n");
-
-  return HPCFMT_OK;
-}
-
-
-//***************************************************************************
-// hpctrace in new outbuf format
-//***************************************************************************
-
-// Write the trace header to the outbuf.
-// Returns: HPCFMT_OK on success, else HPCFMT_ERR.
-int
-hpctrace_fmt_hdr_outbuf(hpcio_outbuf_t* outbuf)
-{
-  ssize_t ret;
-
-  hpcio_outbuf_write(outbuf, HPCTRACE_FMT_Magic, HPCTRACE_FMT_MagicLen);
-  hpcio_outbuf_write(outbuf, HPCTRACE_FMT_Version, HPCTRACE_FMT_VersionLen);
-  ret = hpcio_outbuf_write(outbuf, HPCTRACE_FMT_Endian, HPCTRACE_FMT_EndianLen);
-  if (ret != HPCTRACE_FMT_EndianLen) {
-    return HPCFMT_ERR;
-  }
-
-  return HPCFMT_OK;
-}
-
-
-// Append the trace record to the outbuf.
-// Returns: HPCFMT_OK on success, else HPCFMT_ERR.
-int
-hpctrace_fmt_append_outbuf(hpcio_outbuf_t* outbuf, uint64_t usec, uint32_t cpid)
-{
-  unsigned char buf[20];
-  int shift, k;
-
-  k = 0;
-  for (shift = 56; shift >= 0; shift -= 8) {
-    buf[k] = (usec >> shift) & 0xff;
-    k++;
-  }
-  for (shift = 24; shift >= 0; shift -= 8) {
-    buf[k] = (cpid >> shift) & 0xff;
-    k++;
-  }
-  if (hpcio_outbuf_write(outbuf, buf, k) != k) {
-    return HPCFMT_ERR;
-  }
-
-  return HPCFMT_OK;
-}
-
-
-//***************************************************************************
-// hdr (hpcprof-metricdb, located here for now)
-//***************************************************************************
-
-int
-hpcmetricDB_fmt_hdr_fread(hpcmetricDB_fmt_hdr_t* hdr, FILE* infs)
-{
-  char tag[HPCMETRICDB_FMT_MagicLen + 1];
-  char version[HPCMETRICDB_FMT_VersionLen + 1];
-  char endian[HPCMETRICDB_FMT_EndianLen + 1];
-
-  int nr = fread(tag, 1, HPCMETRICDB_FMT_MagicLen, infs);
-  tag[HPCMETRICDB_FMT_MagicLen] = '\0';
-
-  if (nr != HPCMETRICDB_FMT_MagicLen) {
-    return HPCFMT_ERR;
-  }
-  if (strcmp(tag, HPCMETRICDB_FMT_Magic) != 0) {
-    return HPCFMT_ERR;
-  }
-
-  nr = fread(&version, 1, HPCMETRICDB_FMT_VersionLen, infs);
-  version[HPCMETRICDB_FMT_VersionLen] = '\0';
-  if (nr != HPCMETRICDB_FMT_VersionLen) {
-    return HPCFMT_ERR;
-  }
-  hdr->version = atof(hdr->versionStr);
-
-  nr = fread(&endian, 1, HPCMETRICDB_FMT_EndianLen, infs);
-  if (nr != HPCMETRICDB_FMT_EndianLen) {
-    return HPCFMT_ERR;
-  }
-
-  HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(hdr->numNodes), infs));
-  HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(hdr->numMetrics), infs));
-
-  return HPCFMT_OK;
-}
-
-
-int
-hpcmetricDB_fmt_hdr_fwrite(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs)
-{
-  fwrite(HPCMETRICDB_FMT_Magic,   1, HPCMETRICDB_FMT_MagicLen, outfs);
-  fwrite(HPCMETRICDB_FMT_Version, 1, HPCMETRICDB_FMT_VersionLen, outfs);
-  fwrite(HPCMETRICDB_FMT_Endian,  1, HPCMETRICDB_FMT_EndianLen, outfs);
-
-  hpcfmt_int4_fwrite(hdr->numNodes, outfs);
-  hpcfmt_int4_fwrite(hdr->numMetrics, outfs);
-
-  return HPCFMT_OK;
-}
-
-
-int
-hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs)
-{
-  fprintf(outfs, "%s\n", HPCMETRICDB_FMT_Magic);
-  fprintf(outfs, "[hdr:...]\n");
-
-  fprintf(outfs, "(num-nodes:   %u)\n", hdr->numNodes);
-  fprintf(outfs, "(num-metrics: %u)\n", hdr->numMetrics);
-
-  return HPCFMT_OK;
-}
-
-
-//***************************************************************************
 // epoch-hdr
 //***************************************************************************
 
@@ -831,4 +660,224 @@ hpcrun_fmt_lip_fprint(lush_lip_t* x, FILE* fs, const char* pre)
   return HPCFMT_OK;
 }
 
+
 //***************************************************************************
+// hpctrace (located here for now)
+//***************************************************************************
+
+//***************************************************************************
+// [hpctrace] hdr
+//***************************************************************************
+
+int
+hpctrace_fmt_hdr_fread(FILE* infs)
+{
+  char tag[HPCTRACE_FMT_MagicLen + 1];
+  char version[HPCTRACE_FMT_VersionLen + 1];
+  char endian[HPCTRACE_FMT_EndianLen + 1];
+
+  int nr = fread(tag, 1, HPCTRACE_FMT_MagicLen, infs);
+  tag[HPCTRACE_FMT_MagicLen] = '\0';
+
+  if (nr != HPCTRACE_FMT_MagicLen) {
+    return HPCFMT_ERR;
+  }
+  if (strcmp(tag, HPCTRACE_FMT_Magic) != 0) {
+    return HPCFMT_ERR;
+  }
+
+  nr = fread(&version, 1, HPCTRACE_FMT_VersionLen, infs);
+  version[HPCTRACE_FMT_VersionLen] = '\0';
+  if (nr != HPCTRACE_FMT_VersionLen) {
+    return HPCFMT_ERR;
+  }
+
+  nr = fread(&endian, 1, HPCTRACE_FMT_EndianLen, infs);
+  if (nr != HPCTRACE_FMT_EndianLen) {
+    return HPCFMT_ERR;
+  }
+
+  return HPCFMT_OK;
+}
+
+
+// Writer based on outbuf.
+// Returns: HPCFMT_OK on success, else HPCFMT_ERR.
+int
+hpctrace_fmt_hdr_outbuf(hpcio_outbuf_t* outbuf)
+{
+  ssize_t ret;
+
+  hpcio_outbuf_write(outbuf, HPCTRACE_FMT_Magic, HPCTRACE_FMT_MagicLen);
+  hpcio_outbuf_write(outbuf, HPCTRACE_FMT_Version, HPCTRACE_FMT_VersionLen);
+  ret = hpcio_outbuf_write(outbuf, HPCTRACE_FMT_Endian, HPCTRACE_FMT_EndianLen);
+  if (ret != HPCTRACE_FMT_EndianLen) {
+    return HPCFMT_ERR;
+  }
+
+  return HPCFMT_OK;
+}
+
+
+// N.B.: not async safe
+int
+hpctrace_fmt_hdr_fwrite(FILE* fs)
+{
+  fwrite(HPCTRACE_FMT_Magic,   1, HPCTRACE_FMT_MagicLen, fs);
+  fwrite(HPCTRACE_FMT_Version, 1, HPCTRACE_FMT_VersionLen, fs);
+  fwrite(HPCTRACE_FMT_Endian,  1, HPCTRACE_FMT_EndianLen, fs);
+
+  return HPCFMT_OK;
+}
+
+
+int
+hpctrace_fmt_hdr_fprint(FILE* fs)
+{
+  fprintf(fs, "%s\n", HPCTRACE_FMT_Magic);
+  fprintf(fs, "[hdr:...]\n");
+
+  return HPCFMT_OK;
+}
+
+
+//***************************************************************************
+// [hpctrace] datum (trace record)
+//***************************************************************************
+
+int
+hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* datum, FILE* fs)
+{
+  int ret = HPCFMT_OK;
+  
+  ret = hpcfmt_int8_fread(&(datum->time), fs);
+  if (ret != HPCFMT_OK) {
+    return ret; // can be HPCFMT_EOF
+  }
+
+  HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(datum->cpId), fs));
+
+  return HPCFMT_OK;
+}
+
+
+// Append the trace record to the outbuf.
+// Returns: HPCFMT_OK on success, else HPCFMT_ERR.
+int
+hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* datum, hpcio_outbuf_t* outbuf)
+{
+  const int bufSZ = sizeof(hpctrace_fmt_datum_t);
+  unsigned char buf[bufSZ];
+  int shift, k;
+
+  k = 0;
+
+  uint64_t time = datum->time;
+  for (shift = 56; shift >= 0; shift -= 8) {
+    buf[k] = (time >> shift) & 0xff;
+    k++;
+  }
+
+  uint32_t cpId = datum->cpId;
+  for (shift = 24; shift >= 0; shift -= 8) {
+    buf[k] = (cpId >> shift) & 0xff;
+    k++;
+  }
+
+  if (hpcio_outbuf_write(outbuf, buf, k) != k) {
+    return HPCFMT_ERR;
+  }
+
+  return HPCFMT_OK;
+}
+
+
+int
+hpctrace_fmt_datum_fwrite(hpctrace_fmt_datum_t* datum, FILE* outfs)
+{
+  hpcfmt_int8_fwrite(datum->time, outfs);
+  hpcfmt_int4_fwrite(datum->cpId, outfs);
+
+  return HPCFMT_OK;
+}
+
+
+int
+hpctrace_fmt_datum_fprint(hpctrace_fmt_datum_t* datum, FILE* fs)
+{
+  fprintf(fs, "(%"PRIu64", %u)\n", datum->time, datum->cpId);
+
+  return HPCFMT_OK;
+}
+
+
+//***************************************************************************
+// hpcprof-metricdb (located here for now)
+//***************************************************************************
+
+//***************************************************************************
+// [hpcprof-metricdb] hdr
+//***************************************************************************
+
+int
+hpcmetricDB_fmt_hdr_fread(hpcmetricDB_fmt_hdr_t* hdr, FILE* infs)
+{
+  char tag[HPCMETRICDB_FMT_MagicLen + 1];
+  char version[HPCMETRICDB_FMT_VersionLen + 1];
+  char endian[HPCMETRICDB_FMT_EndianLen + 1];
+
+  int nr = fread(tag, 1, HPCMETRICDB_FMT_MagicLen, infs);
+  tag[HPCMETRICDB_FMT_MagicLen] = '\0';
+
+  if (nr != HPCMETRICDB_FMT_MagicLen) {
+    return HPCFMT_ERR;
+  }
+  if (strcmp(tag, HPCMETRICDB_FMT_Magic) != 0) {
+    return HPCFMT_ERR;
+  }
+
+  nr = fread(&version, 1, HPCMETRICDB_FMT_VersionLen, infs);
+  version[HPCMETRICDB_FMT_VersionLen] = '\0';
+  if (nr != HPCMETRICDB_FMT_VersionLen) {
+    return HPCFMT_ERR;
+  }
+  hdr->version = atof(hdr->versionStr);
+
+  nr = fread(&endian, 1, HPCMETRICDB_FMT_EndianLen, infs);
+  if (nr != HPCMETRICDB_FMT_EndianLen) {
+    return HPCFMT_ERR;
+  }
+
+  HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(hdr->numNodes), infs));
+  HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(hdr->numMetrics), infs));
+
+  return HPCFMT_OK;
+}
+
+
+int
+hpcmetricDB_fmt_hdr_fwrite(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs)
+{
+  fwrite(HPCMETRICDB_FMT_Magic,   1, HPCMETRICDB_FMT_MagicLen, outfs);
+  fwrite(HPCMETRICDB_FMT_Version, 1, HPCMETRICDB_FMT_VersionLen, outfs);
+  fwrite(HPCMETRICDB_FMT_Endian,  1, HPCMETRICDB_FMT_EndianLen, outfs);
+
+  hpcfmt_int4_fwrite(hdr->numNodes, outfs);
+  hpcfmt_int4_fwrite(hdr->numMetrics, outfs);
+
+  return HPCFMT_OK;
+}
+
+
+int
+hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs)
+{
+  fprintf(outfs, "%s\n", HPCMETRICDB_FMT_Magic);
+  fprintf(outfs, "[hdr:...]\n");
+
+  fprintf(outfs, "(num-nodes:   %u)\n", hdr->numNodes);
+  fprintf(outfs, "(num-metrics: %u)\n", hdr->numMetrics);
+
+  return HPCFMT_OK;
+}
+

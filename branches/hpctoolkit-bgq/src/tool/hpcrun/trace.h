@@ -44,14 +44,14 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef trace_h
-#define trace_h
+#ifndef hpcrun_trace_h
+#define hpcrun_trace_h
 
-void trace_init();
-void trace_open();
-void trace_append(unsigned int cpid);
-void trace_close();
+void hpcrun_trace_init();
+void hpcrun_trace_open();
+void hpcrun_trace_append(unsigned int cpid);
+void hpcrun_trace_close();
 
-int trace_isactive();
+int hpcrun_trace_isactive();
 
-#endif // trace_h
+#endif // hpcrun_trace_h

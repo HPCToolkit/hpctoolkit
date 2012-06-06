@@ -207,8 +207,8 @@ hpcrun_init_internal(bool is_child)
   hpcrun_options__init(&opts);
   hpcrun_options__getopts(&opts);
 
-  trace_init(); // this must go after thread initialization
-  trace_open();
+  hpcrun_trace_init(); // this must go after thread initialization
+  hpcrun_trace_open();
 
   // Decide whether to retain full single recursion, or collapse recursive calls to
   // first instance of recursive call
@@ -254,7 +254,7 @@ hpcrun_init_internal(bool is_child)
   TMSG(EPOCH,"process init setting up initial epoch/loadmap");
   hpcrun_epoch_init(NULL);
 
-#if 1
+#if 0
 {
   // temporary debugging code for BG/Q
 
@@ -284,7 +284,7 @@ hpcrun_init_internal(bool is_child)
 
   hpcrun_enable_sampling();
   // NOTE: hack to ensure that sample source start can be delayed until mpi_init
-  if (! getenv("HPCRUN_MPI_ONLY")) {
+  if (hpctoolkit_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
       SAMPLE_SOURCES(start);
   }
   hpcrun_is_initialized_private = true;
@@ -491,7 +491,7 @@ monitor_fini_process(int how, void* data)
   hpcrun_safe_enter();
 
   hpcrun_fini_internal();
-  trace_close();
+  hpcrun_trace_close();
   fnbounds_fini();
 
   hpcrun_safe_exit();
@@ -676,7 +676,7 @@ monitor_init_thread(int tid, void* data)
   void* thread_data = hpcrun_thread_init(tid, (cct_ctxt_t*)data);
   TMSG(THREAD,"back from init thread %d",tid);
 
-  trace_open();
+  hpcrun_trace_open();
   hpcrun_safe_exit();
 
   return thread_data;
@@ -691,7 +691,7 @@ monitor_fini_thread(void* init_thread_data)
   epoch_t *epoch = (epoch_t *)init_thread_data;
 
   hpcrun_thread_fini(epoch);
-  trace_close();
+  hpcrun_trace_close();
 
   hpcrun_safe_exit();
 }

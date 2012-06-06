@@ -72,11 +72,30 @@ include $(top_srcdir)/src/Makeinclude.config
 
 PYTHON = python
 
+
 #############################################################################
 # Automake rules
 #############################################################################
 
+# FIXME: tallent: hpcrun's build is highly parameterized and therefore
+# will be more complex than other parts of HPCToolkit.  However, this
+# makefile is surely more convoluted than necessary.  Sorting it out
+# would take more time than I have right now.
+#
+# An initial list of parameters:
+# - statically vs. dynamically linked app
+# - unwinder selection
+# - logical unwinding plugins
+# - system, language, problem-specific sample sources
+# - architecture/system/mpi-specific code (unwinder, sample sources, etc)
+
+#-----------------------------------------------------------
+# build targets
+#-----------------------------------------------------------
+
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
+plugin_srcdir = $(srcdir)/plugins
+plugin_instdir = $(pkglibdir)/plugins
 
 bin_SCRIPTS = scripts/hpcsummary
 pkglibexec_SCRIPTS = scripts/hpclog
@@ -86,6 +105,7 @@ include_HEADERS = hpctoolkit.h
 pkglib_LTLIBRARIES =
 if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcrun.la
+  pkglib_LTLIBRARIES += libhpcrun_ga.la
   pkglib_LTLIBRARIES += libhpcrun_io.la
   pkglib_LTLIBRARIES += libhpcrun_memleak.la
   pkglib_LTLIBRARIES += libhpctoolkit.la
@@ -97,15 +117,24 @@ pkglib_LIBRARIES =
 if OPT_ENABLE_HPCRUN_STATIC
   pkglib_PROGRAMS  += libhpcrun.o
   pkglib_LIBRARIES += libhpcrun_wrap.a
+  pkglib_LIBRARIES += libhpcrun_ga_wrap.a
   pkglib_LIBRARIES += libhpcrun_io_wrap.a
   pkglib_LIBRARIES += libhpcrun_memleak_wrap.a
   pkglib_LIBRARIES += libhpctoolkit.a
+if HOST_CPU_PPC
+  pkglib_LIBRARIES += libibm_xlomp_wrappers.a
+endif
   bin_SCRIPTS += scripts/hpclink
 endif
 
-if OPT_ENABLE_MPIP
+if OPT_ENABLE_MPI_WRAP
   pkglib_LTLIBRARIES += libhpcrun_mpi.la
 endif
+
+
+#-----------------------------------------------------------
+# source files, part 1
+#-----------------------------------------------------------
 
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
@@ -117,12 +146,17 @@ XED2_LIB = @XED2_LIB@
 
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
+PLUGIN_CONFIG_FILES = ga io memleak
+if HOST_CPU_PPC
+  PLUGIN_CONFIG_FILES += ibm-xlomp
+endif
+
 UNW_COMMON_FILES = \
 	unwind/common/backtrace.c	\
         unwind/common/unw-throw.c       \
 	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\
-	unwind/common/ui_tree.c         
+	unwind/common/ui_tree.c
 
 UNW_X86_FILES = \
        $(UNW_COMMON_FILES) \
@@ -167,7 +201,7 @@ UNW_MIPS_INCLUDE_DIRS = \
 
 UNW_MIPS_LD_FLAGS =
 
-MY_BASE_FILES =			\
+MY_BASE_FILES =				\
 	utilities/first_func.c		\
 	\
 	main.h main.c			\
@@ -188,7 +222,8 @@ MY_BASE_FILES =			\
 	sample_sources_all.c		\
 	sample-sources/blame-shift.c	\
         sample-sources/common.c         \
-	sample-sources/io.c		\
+	sample-sources/ga.c		\
+	sample-sources/io.c 		\
 	sample-sources/itimer.c		\
 	sample-sources/idle.c		\
 	sample-sources/memleak.c	\
@@ -237,14 +272,11 @@ MY_BASE_FILES =			\
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c
 
-################################################################### 
-# Laksono: we have to add mpi profiler if and only if the option
-#   	    --enable-mpi-profile is set
-################################################################### 
-if OPT_ENABLE_MPIP
+if OPT_ENABLE_MPI_WRAP
 MY_BASE_FILES +=  			\
 	sample-sources/mpi.c
 endif
+
 
 MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_dynamic.c	\
@@ -314,6 +346,20 @@ libhpcrun_la_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_DYNAMIC_FILES)
 
+libhpcrun_o_SOURCES = 			\
+	$(MY_BASE_FILES)		\
+	$(MY_STATIC_FILES)
+
+
+libhpcrun_wrap_a_SOURCES =		\
+	monitor-exts/openmp.c
+
+libhpcrun_ga_la_SOURCES = 		\
+	sample-sources/ga-overrides.c
+
+libhpcrun_ga_wrap_a_SOURCES = 		\
+	sample-sources/ga-overrides.c
+
 libhpcrun_io_la_SOURCES = 		\
 	sample-sources/io-over.c
 
@@ -326,24 +372,44 @@ libhpcrun_memleak_la_SOURCES = 		\
 libhpcrun_memleak_wrap_a_SOURCES = 	\
 	sample-sources/memleak-overrides.c
 
+libhpcrun_mpi_la_SOURCES = 		\
+	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
+
+libibm_xlomp_wrappers_a_SOURCES =              \
+        plugins/ibm-xlomp-wrappers.c
+
 libhpctoolkit_la_SOURCES = 		\
 	hpctoolkit.c
 
 libhpctoolkit_a_SOURCES = 		\
 	hpctoolkit.c
 
-libhpcrun_mpi_la_SOURCES = 		\
-	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
 
-libhpcrun_o_SOURCES = 			\
-	$(MY_BASE_FILES)		\
-	$(MY_STATIC_FILES)
-
-libhpcrun_wrap_a_SOURCES =		\
-	monitor-exts/openmp.c
-
+#-----------------------------------------------------------
+# cppflags
+#-----------------------------------------------------------
 
 libhpcrun_la_CPPFLAGS =			\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_o_CPPFLAGS =			\
+	-DHPCRUN_STATIC_LINK		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+
+libhpcrun_wrap_a_CPPFLAGS =		\
+	-DHPCRUN_STATIC_LINK		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_ga_la_CPPFLAGS =		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_ga_wrap_a_CPPFLAGS =		\
+	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
@@ -365,6 +431,15 @@ libhpcrun_memleak_wrap_a_CPPFLAGS =	\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
+libhpcrun_mpi_la_CPPFLAGS =		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+$(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
+	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
+		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
+
+
 libhpctoolkit_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
@@ -374,38 +449,36 @@ libhpctoolkit_a_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
-libhpcrun_mpi_la_CPPFLAGS =		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
 
-libhpcrun_o_CPPFLAGS =			\
-	-DHPCRUN_STATIC_LINK		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
-
-libhpcrun_wrap_a_CPPFLAGS =		\
-	-DHPCRUN_STATIC_LINK		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
-
-$(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
-	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
-		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
+#-----------------------------------------------------------
+# cflags
+#-----------------------------------------------------------
 
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS)
+
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_ga_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
+
+#-----------------------------------------------------------
+# ldflags
+#-----------------------------------------------------------
+
 libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 libhpcrun_o_LDADD   = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt
+
+libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic	\
+	-Wl,--strip-debug
 
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic	\
 	-Wl,--strip-debug
@@ -418,6 +491,11 @@ libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
 
 libhpcrun_o_LDFLAGS =
 
+
+#-----------------------------------------------------------
+# whirled peas
+#-----------------------------------------------------------
+
 if HOST_OS_LINUX
   libhpcrun_la_SOURCES += $(MY_LINUX_DYNAMIC_FILES)
 endif
@@ -429,6 +507,8 @@ if HOST_CPU_MIPS
   libhpcrun_o_SOURCES   += $(MY_MIPS_FILES)
   libhpcrun_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_o_CPPFLAGS  += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_ga_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
@@ -447,6 +527,8 @@ if HOST_CPU_PPC
   libhpcrun_o_SOURCES   += $(MY_PPC_FILES)
   libhpcrun_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_ga_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
@@ -465,6 +547,8 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
   libhpcrun_la_LDFLAGS  += $(XED2_LIB)/libxed.a
   libhpcrun_o_LDFLAGS   += $(XED2_LIB)/libxed.a
+  libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
@@ -498,6 +582,11 @@ if OPT_ENABLE_LUSH_PTHREADS
   libhpcrun_o_CPPFLAGS  += -DLUSH_PTHREADS
 endif
 
+
+#-----------------------------------------------------------
+# source files, part 2.3
+#-----------------------------------------------------------
+
 if UNW_X86
   UNW_SOURCE_FILES = $(UNW_X86_FILES)
   UNW_INCLUDE_DIRS = $(UNW_X86_INCLUDE_DIRS)
@@ -510,14 +599,12 @@ if UNW_PPC64
   UNW_LD_FLAGS     = $(UNW_PPC64_LD_FLAGS)
 endif
 
-#
-# Update various components with unwind stuff
-#
-
 libhpcrun_la_SOURCES  +=  $(UNW_SOURCE_FILES)
 libhpcrun_o_SOURCES   +=  $(UNW_SOURCE_FILES)
 libhpcrun_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS  += $(UNW_INCLUDE_DIRS)
+libhpcrun_ga_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
+libhpcrun_ga_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_io_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_io_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
@@ -531,7 +618,9 @@ libhpcrun_la_SOURCES += utilities/last_func.c
 libhpcrun_o_SOURCES  += utilities/last_func.c
 
 
-# FIXME: This is specific to Rice.
+#-----------------------------------------------------------
+# whirled peas, LUSH-style
+#-----------------------------------------------------------
 
 MY_AGENT_RTSUPPORT = lush/lush-support-rt.h lush/lush-support-rt.c
 
@@ -578,6 +667,19 @@ endif
   libagent_tbb_la_SOURCES  = $(MY_AGENT_TBB_SOURCES)
   libagent_tbb_la_CFLAGS   = $(MY_AGENT_TBB_CFLAGS)
 endif
+
+
+#-----------------------------------------------------------
+# local hooks
+#-----------------------------------------------------------
+
+# Install the plugin config files.
+
+install-data-hook:
+	mkdir -p "$(DESTDIR)$(plugin_instdir)"
+	-for file in $(PLUGIN_CONFIG_FILES) ; do \
+	    cp -f "$(plugin_srcdir)/$$file" "$(DESTDIR)$(plugin_instdir)/$$file" ; \
+	done
 
 
 #############################################################################

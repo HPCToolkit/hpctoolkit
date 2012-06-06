@@ -326,14 +326,12 @@ matches_prefix(string s, const char *pre, int n)
   return strncmp(sc, pre, n) == 0;
 }
 
-
 static bool 
 matches_contains(string s, const char *substring)
 {
   const char *sc = s.c_str();
   return strstr(sc, substring) != 0;
 }
-
 
 static bool 
 pathscale_filter(Symbol *sym)

@@ -126,18 +126,25 @@ METHOD_FN(init)
   int ret = PAPI_library_init(PAPI_VER_CURRENT);
   TMSG(PAPI,"PAPI_library_init = %d", ret);
   TMSG(PAPI,"PAPI_VER_CURRENT =  %d", PAPI_VER_CURRENT);
-  if (ret != PAPI_VER_CURRENT){
-    STDERR_MSG("Fatal error: PAPI_library_init() failed with version mismatch.\n"
-        "HPCToolkit was compiled with version 0x%x but run on version 0x%x.\n"
-        "Check the HPCToolkit installation and try again.",
-	PAPI_VER_CURRENT, ret);
-    exit(1);
+
+  // Delay reporting PAPI_library_init() errors.  This allows running
+  // with other events if PAPI is not available.
+  if (ret < 0) {
+    hpcrun_save_papi_error(HPCRUN_PAPI_ERROR_UNAVAIL);
+  } else if (ret != PAPI_VER_CURRENT) {
+    hpcrun_save_papi_error(HPCRUN_PAPI_ERROR_VERSION);
   }
 
   // Tell PAPI to count events in all contexts (user, kernel, etc).
-  ret = PAPI_set_domain(PAPI_DOM_ALL);
-  if (ret != PAPI_OK) {
-    EMSG("warning: PAPI_set_domain(PAPI_DOM_ALL) failed: %d", ret);
+  // FIXME: PAPI_DOM_ALL causes some syscalls to fail which then
+  // breaks some applications.  For example, this breaks some Gemini
+  // (GNI) functions called from inside gasnet_init() or MPI_Init() on
+  // the Cray XE (hopper).
+  if (ENABLED(SYSCALL_RISKY)) {
+    ret = PAPI_set_domain(PAPI_DOM_ALL);
+    if (ret != PAPI_OK) {
+      EMSG("warning: PAPI_set_domain(PAPI_DOM_ALL) failed: %d", ret);
+    }
   }
 
   self->state = INIT;
@@ -517,11 +524,11 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
     TMSG(PAPI_SAMPLE,"sampling call path for metric_id = %d", metric_id);
 
-    cct_node_t *node = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
+    sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 			   0/*skipInner*/, 0/*isSync*/);
 
     if (cyc_metric_id == metric_id) {
-      blame_shift_apply(node, hpcrun_id2metric(metric_id)->period);
+      blame_shift_apply(sv.sample_node, hpcrun_id2metric(metric_id)->period);
     }
   }
   hpcrun_safe_exit();

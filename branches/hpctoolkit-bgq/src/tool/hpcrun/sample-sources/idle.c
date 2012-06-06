@@ -294,7 +294,7 @@ idle_metric_blame_shift_idle(void)
   TMSG(IDLE, "blame shift idle after td->idle incr = %d", td->idle);
 
   // get a tracing sample out
-  if(trace_isactive()) {
+  if(hpcrun_trace_isactive()) {
     if ( ! hpcrun_safe_enter()) return;
     ucontext_t uc;
     getcontext(&uc);
@@ -317,7 +317,7 @@ idle_metric_blame_shift_work(void)
   atomic_add_i64(&active_worker_count, 1L);
 
   // get a tracing sample out
-  if(trace_isactive()) {
+  if(hpcrun_trace_isactive()) {
     if ( ! hpcrun_safe_enter()) return;
     ucontext_t uc;
     getcontext(&uc);

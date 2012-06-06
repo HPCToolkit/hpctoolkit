@@ -98,7 +98,8 @@
 #define PARTIAL_ROOT HPCRUN_FMT_LMId_NULL, HPCRUN_FMT_LMIp_Flag1
 #define ADDR_I(L)     NON_LUSH_ADDR_INI(L)
 #define ADDR(L)      (cct_addr_t) NON_LUSH_ADDR_INI(L)
-
+#define ADDR2_I(id, ip) NON_LUSH_ADDR_INI(id, ip)
+#define ADDR2(id, ip) (cct_addr_t) ADDR2_I(id, ip)
 //***************************************************************************
 // Calling context tree node (abstract data type)
 //***************************************************************************
@@ -121,6 +122,7 @@ typedef cct_node_t* cct_node_id_t;
 //
 extern cct_node_t* hpcrun_cct_new(void);
 extern cct_node_t* hpcrun_cct_new_partial(void);
+extern cct_node_t* hpcrun_cct_top_new(uint16_t lmid, uintptr_t lmip);
 // 
 // Accessor functions
 // 
@@ -129,6 +131,13 @@ extern cct_node_t* hpcrun_cct_parent(cct_node_t* node);
 extern int32_t hpcrun_cct_persistent_id(cct_node_t* node);
 extern cct_addr_t* hpcrun_cct_addr(cct_node_t* node);
 extern bool hpcrun_cct_is_leaf(cct_node_t* node);
+//
+// NOTE: having no children is not exactly the same as being a leaf
+//       A leaf represents a full path. There might be full paths
+//       that are a prefix of other full paths. So, a "leaf" can have children
+//
+extern bool hpcrun_cct_no_children(cct_node_t* node);
+extern bool hpcrun_cct_is_root(cct_node_t* node);
 
 //
 // Mutator functions: modify a given cct
@@ -143,6 +152,11 @@ extern bool hpcrun_cct_is_leaf(cct_node_t* node);
 //
 extern cct_node_t* hpcrun_cct_insert_addr(cct_node_t* cct, cct_addr_t* addr);
 
+//
+// 2nd fundamental mutator: mark a node as "terminal". That is,
+//   it is the last node of a path
+//
+extern void hpcrun_cct_terminate_path(cct_node_t* node);
 //
 // Special purpose mutator:
 // This operation is somewhat akin to concatenation.
@@ -213,6 +227,11 @@ void hpcrun_cct_walk_node_1st(cct_node_t* cct,
 // path nodes in list reverse order
 //
 extern void hpcrun_walk_path(cct_node_t* node, cct_op_t op, cct_op_arg_t arg);
+
+//
+// utility walker for cct sets (part of the substructure of a cct)
+//
+extern void hpcrun_cct_walkset(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg);
 //
 // Writing operation
 //
@@ -221,5 +240,24 @@ int hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags);
 // Utilities
 //
 extern size_t hpcrun_cct_num_nodes(cct_node_t* cct);
+//
+// look up addr in the set of cct's children
+// return the found node or NULL
+//
+extern cct_node_t* hpcrun_cct_find_addr(cct_node_t* cct, cct_addr_t* addr);
+//
+// Merging operation: Given 2 ccts : CCT_A, CCT_B,
+//    merge means add all paths in CCT_B that are NOT in CCT_A
+//    to CCT_A. For paths that are common, perform the merge operation on
+//    each common node, using auxiliary arg merge_arg
+//
+//    NOTE: this merge operation presumes
+//       cct_addr_data(CCT_A) == cct_addr_data(CCT_B)
+//
+typedef void* merge_op_arg_t;
+typedef void (*merge_op_t)(cct_node_t* a, cct_node_t*b, merge_op_arg_t arg);
+
+extern void hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
+			     merge_op_t merge, merge_op_arg_t arg);
 
 #endif // cct_h

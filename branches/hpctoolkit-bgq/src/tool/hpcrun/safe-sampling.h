@@ -137,8 +137,7 @@ hpcrun_safe_enter(void)
 // return.
 //
 // Use the program counter address (pc) to test if the interrupt came
-// inside the trampoline assembler code.  Init has always completed
-// before async is turned on, so we don't need to test for that.
+// from inside the trampoline assembler code.
 //
 // Returns: true if safe, ie, not already inside our code.
 //

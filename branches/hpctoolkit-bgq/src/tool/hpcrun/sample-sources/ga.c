@@ -44,69 +44,82 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/******************************************************************************
- * system includes
- *****************************************************************************/
+//***************************************************************************
+// system includes
+//***************************************************************************
 
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
 
-/******************************************************************************
- * local includes
- *****************************************************************************/
+//***************************************************************************
+// local includes
+//***************************************************************************
 
 #include <sample-sources/simple_oo.h>
 #include <sample-sources/sample_source_obj.h>
 #include <sample-sources/common.h>
-#include <sample-sources/io.h>
+#include <sample-sources/ga.h>
 
 #include <hpcrun/metrics.h>
 #include <hpcrun/thread_data.h>
 #include <messages/messages.h>
 
 
-/******************************************************************************
- * local variables
- *****************************************************************************/
+//***************************************************************************
+// local variables
+//***************************************************************************
 
-static int metric_id_read = -1;
-static int metric_id_write = -1;
+static int metricId_bytesXfr  = -1;
+static int metricId_onesidedOp = -1;
+static int metricId_collectiveOp = -1;
+
+#if (GA_DataCentric_Prototype)
+int metricId_dataTblIdx_next = -1;
+int metricId_dataTblIdx_max = -1; // exclusive upper bound
+
+metricId_dataDesc_t hpcrun_ga_metricId_dataTbl[hpcrun_ga_metricId_dataTblSz];
+#endif // GA_DataCentric_Prototype
 
 
-/******************************************************************************
- * method definitions
- *****************************************************************************/
+//***************************************************************************
+// method definitions
+//***************************************************************************
 
 static void
 METHOD_FN(init)
 {
-  TMSG(IO, "init");
+  TMSG(GA, "init");
   self->state = INIT;
-  metric_id_read = -1;
-  metric_id_write = -1;
+  metricId_bytesXfr = -1;
+  metricId_onesidedOp = -1;
+  metricId_collectiveOp = -1;
+#if (GA_DataCentric_Prototype)
+  metricId_dataTblIdx_next = 0;
+  metricId_dataTblIdx_max = hpcrun_ga_metricId_dataTblSz;
+#endif
 }
 
 
 static void
 METHOD_FN(thread_init)
 {
-  TMSG(IO, "thread init (no-op)");
+  TMSG(GA, "thread init (no-op)");
 }
 
 
 static void
 METHOD_FN(thread_init_action)
 {
-  TMSG(IO, "thread init action (no-op)");
+  TMSG(GA, "thread init action (no-op)");
 }
 
 
 static void
 METHOD_FN(start)
 {
-  TMSG(IO, "starting IO sample source");
+  TMSG(GA, "starting GA sample source");
   TD_GET(ss_state)[self->evset_idx] = START;
 }
 
@@ -114,14 +127,14 @@ METHOD_FN(start)
 static void
 METHOD_FN(thread_fini_action)
 {
-  TMSG(IO, "thread fini action (no-op)");
+  TMSG(GA, "thread fini action (no-op)");
 }
 
 
 static void
 METHOD_FN(stop)
 {
-  TMSG(IO, "stopping IO sample source");
+  TMSG(GA, "stopping GA sample source");
   TD_GET(ss_state)[self->evset_idx] = STOP;
 }
 
@@ -129,7 +142,7 @@ METHOD_FN(stop)
 static void
 METHOD_FN(shutdown)
 {
-  TMSG(IO, "shutdown IO sample source");
+  TMSG(GA, "shutdown GA sample source");
   METHOD_CALL(self, stop);
   self->state = UNINIT;
 }
@@ -140,29 +153,41 @@ METHOD_FN(supports_event, const char *ev_str)
 {
   // FIXME: this message comes too early and goes to stderr instead of
   // the log file.
-  // TMSG(IO, "test support event: %s", ev_str);
-  return strncasecmp(ev_str, "IO", 2) == 0;
+  // TMSG(GA, "test support event: %s", ev_str);
+  return strncasecmp(ev_str, "GA", 2) == 0;
 }
 
 
-// IO metrics: bytes read and bytes written.
+// GA metrics: bytes read and bytes written.
 
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-  TMSG(IO, "create metrics for IO bytes read and bytes written");
-  metric_id_read = hpcrun_new_metric();
-  metric_id_write = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric_id_read,  "IO Bytes Read");
-  hpcrun_set_metric_info(metric_id_write, "IO Bytes Written");
-  TMSG(IO, "metric id read: %d, write: %d", metric_id_read, metric_id_write);
+  TMSG(GA, "create GA metrics");
+  metricId_bytesXfr = hpcrun_new_metric();
+  hpcrun_set_metric_info(metricId_bytesXfr, "GA bytes xfr");
+
+  metricId_onesidedOp = hpcrun_new_metric();
+  hpcrun_set_metric_info(metricId_onesidedOp, "GA #onesided");
+
+  metricId_collectiveOp = hpcrun_new_metric();
+  hpcrun_set_metric_info(metricId_collectiveOp, "GA #collective");
+
+#if (GA_DataCentric_Prototype)
+  for (int i = 0; i < hpcrun_ga_metricId_dataTblSz; ++i) {
+    metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(i);
+    desc->metricId = hpcrun_new_metric();
+    snprintf(desc->name, hpcrun_ga_metricId_dataStrLen, "ga-data-%d", i);
+    hpcrun_set_metric_info(desc->metricId, desc->name);
+  }
+#endif
 }
 
 
 static void
 METHOD_FN(gen_event_set, int lush_metrics)
 {
-  TMSG(IO, "gen event set (no-op)");
+  TMSG(GA, "gen event set (no-op)");
   thread_data_t *td = hpcrun_get_thread_data();
   td->eventSet[self->evset_idx] = 0xDEAD;
 }
@@ -172,40 +197,68 @@ static void
 METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
-  printf("Available IO events\n");
+  printf("Available Global Arrays events\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("IO\t\tThe number of bytes read and written per dynamic context\n");
+  printf("GA\t\tCollect Global Arrays metrics\n");
   printf("\n");
 }
 
 
-/***************************************************************************
- * object
- ***************************************************************************/
+//***************************************************************************
+// object
+//***************************************************************************
 
 // sync class is "SS_SOFTWARE" so that both synchronous and
 // asynchronous sampling is possible
 
-#define ss_name io
+#define ss_name ga
 #define ss_cls SS_SOFTWARE
 
 #include "ss_obj.h"
 
 
-// ***************************************************************************
-//  Interface functions
-// ***************************************************************************
+//***************************************************************************
+// interface functions
+//***************************************************************************
 
 int
-hpcrun_metric_id_read(void)
+hpcrun_ga_metricId_bytesXfr()
 {
-  return metric_id_read;
+  return metricId_bytesXfr;
 }
 
 int
-hpcrun_metric_id_write(void)
+hpcrun_ga_metricId_onesidedOp()
 {
-  return metric_id_write;
+  return metricId_onesidedOp;
 }
+
+int
+hpcrun_ga_metricId_collectiveOp()
+{
+  return metricId_collectiveOp;
+}
+
+#if (GA_DataCentric_Prototype)
+int
+hpcrun_ga_dataIdx_new(const char* name)
+{
+  if (metricId_dataTblIdx_next < metricId_dataTblIdx_max) {
+    int idx = metricId_dataTblIdx_next;
+    metricId_dataTblIdx_next++;
+
+    metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(idx);
+    strncpy(desc->name, name, hpcrun_ga_metricId_dataStrLen);
+    //hpcrun_set_metric_name(desc->metricId, desc->name);
+
+    TMSG(GA, "hpcrun_ga_dataIdx_new: %s -> metric %d", name, desc->metricId);
+
+    return idx;
+  }
+  else {
+    return -1;
+  }
+}
+#endif // GA_DataCentric_Prototype

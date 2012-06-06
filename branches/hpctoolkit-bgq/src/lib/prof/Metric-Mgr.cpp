@@ -132,7 +132,7 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
 
 
 uint
-Mgr::makeSummaryMetrics(bool needMultiOccurance, bool needStatistics, 
+Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
                         uint srcBegId, uint srcEndId)
 {
   StringToADescVecMap nmToMetricMap;
@@ -181,7 +181,7 @@ Mgr::makeSummaryMetrics(bool needMultiOccurance, bool needStatistics,
       Metric::ADesc* mNew =
 	makeSummaryMetric("Sum",  m, mVec);
 
-      if (needStatistics) {
+      if (needAllStats) {
         makeSummaryMetric("Mean",   m, mVec);
         makeSummaryMetric("StdDev", m, mVec);
         makeSummaryMetric("CfVar",  m, mVec);
@@ -202,7 +202,7 @@ Mgr::makeSummaryMetrics(bool needMultiOccurance, bool needStatistics,
 
 
 uint
-Mgr::makeSummaryMetricsIncr(bool needStatistics, uint srcBegId, uint srcEndId)
+Mgr::makeSummaryMetricsIncr(bool needAllStats, uint srcBegId, uint srcEndId)
 {
   if (srcBegId == Mgr::npos) {
     srcBegId = 0;
@@ -219,7 +219,7 @@ Mgr::makeSummaryMetricsIncr(bool needStatistics, uint srcBegId, uint srcEndId)
     Metric::ADesc* mNew =
       makeSummaryMetricIncr("Sum",  m);
 
-    if (needStatistics) {
+    if (needAllStats) {
       makeSummaryMetricIncr("Mean",   m);
       makeSummaryMetricIncr("StdDev", m);
       makeSummaryMetricIncr("CfVar",  m);
@@ -250,7 +250,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 
   bool doDispPercent = true;
   bool isPercent = false;
-  bool isVisible = false;
+  bool isVisible = true;
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
@@ -258,7 +258,6 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   Metric::AExpr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::Plus(opands, mOpands.size());
-    isVisible = true;
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::Mean(opands, mOpands.size());
@@ -340,7 +339,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 {
   bool doDispPercent = true;
   bool isPercent = false;
-  bool isVisible = false;
+  bool isVisible = true;
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
@@ -348,7 +347,6 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   Metric::AExprIncr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::SumIncr(Metric::IData::npos, mSrc->id());
-    isVisible = true;
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::MeanIncr(Metric::IData::npos, mSrc->id());

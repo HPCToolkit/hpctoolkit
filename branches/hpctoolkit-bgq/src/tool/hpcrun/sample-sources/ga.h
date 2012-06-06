@@ -44,95 +44,48 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File: 
-//   $HeadURL$
-//
-// Purpose:
-//   OS Utilities
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
-// Author:
-//   Nathan Tallent, John Mellor-Crummey, Rice University.
-//
-//***************************************************************************
+#ifndef _HPCRUN_GA_H_
+#define _HPCRUN_GA_H_
 
-//************************* System Include Files ****************************
+int hpcrun_ga_metricId_bytesXfr();
+int hpcrun_ga_metricId_onesidedOp();
+int hpcrun_ga_metricId_collectiveOp();
 
-#include <stdlib.h>
+#define GA_DataCentric_Prototype 1
 
-#include <sys/types.h> // getpid()
 
-#define __USE_XOPEN_EXTENDED // for gethostid()
-#include <unistd.h>
+#if (GA_DataCentric_Prototype)
 
-//*************************** User Include Files ****************************
+#define hpcrun_ga_metricId_dataTblSz 20
+#define hpcrun_ga_metricId_dataStrLen 32
 
-#include "OSUtil.h"
+extern int metricId_dataTblIdx_next;
+extern int metricId_dataTblIdx_max; // exclusive upper bound
 
-//*************************** Forward Declarations **************************
+typedef struct metricId_dataDesc {
+  int metricId;
+  char name[hpcrun_ga_metricId_dataStrLen];
+} metricId_dataDesc_t;
 
-//***************************************************************************
-// 
-//***************************************************************************
+extern metricId_dataDesc_t hpcrun_ga_metricId_dataTbl[];
 
-uint
-OSUtil_pid()
+static inline metricId_dataDesc_t*
+hpcrun_ga_metricId_dataTbl_find(int idx)
 {
-  pid_t pid = getpid();
-  return (uint)pid;
+  return &hpcrun_ga_metricId_dataTbl[idx];
 }
 
+int
+hpcrun_ga_dataIdx_new(const char* name);
 
-const char*
-OSUtil_jobid()
+static inline int
+hpcrun_ga_dataIdx_isValid(int idx)
 {
-  char* jid = NULL;
-
-  // Cobalt
-  jid = getenv("COBALT_JOBID");
-  if (jid) {
-    return jid;
-  }
-
-  // PBS
-  jid = getenv("PBS_JOBID");
-  if (jid) {
-    return jid;
-  }
-
-  // SLURM
-  jid = getenv("SLURM_JOB_ID");
-  if (jid) {
-    return jid;
-  }
-
-  // Sun Grid Engine
-  jid = getenv("JOB_ID");
-  if (jid) {
-    return jid;
-  }
-
-  return jid;
+  return ((idx >= 0) && (idx < metricId_dataTblIdx_next));
 }
 
+#endif // GA_DataCentric_Prototype
 
-#define OSUtil_hostid_NULL (-1)
 
-long
-OSUtil_hostid()
-{
-  static long hostid = OSUtil_hostid_NULL;
 
-  if (hostid == OSUtil_hostid_NULL) {
-    // gethostid returns a 32-bit id.  treat it as unsigned 
-    // to prevent useless sign extension
-    hostid = (uint32_t) gethostid();
-  }
-
-  return hostid;
-}
-
+#endif // _HPCRUN_GA_H_

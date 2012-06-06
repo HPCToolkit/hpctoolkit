@@ -155,20 +155,23 @@ hpcrun_drop_sample(void)
 }
 
 
-cct_node_t*
+sample_val_t
 hpcrun_sample_callpath(void *context, int metricId,
 		       uint64_t metricIncr,
 		       int skipInner, int isSync)
 {
+  sample_val_t ret;
+  hpcrun_sample_val_init(&ret);
+
   if (monitor_block_shootdown()) {
     monitor_unblock_shootdown();
-    return NULL;
+    return ret;
   }
 
   // Sampling turned off by the user application.
   // This doesn't count as a sample for the summary stats.
   if (! hpctoolkit_sampling_is_active()) {
-    return NULL;
+    return ret;
   }
 
   hpcrun_stats_num_samples_total_inc();
@@ -177,7 +180,7 @@ hpcrun_sample_callpath(void *context, int metricId,
     TMSG(SAMPLE,"global suspension");
     hpcrun_all_sources_stop();
     monitor_unblock_shootdown();
-    return NULL;
+    return ret;
   }
 
   // Synchronous unwinds (pthread_create) must wait until they acquire
@@ -191,7 +194,7 @@ hpcrun_sample_callpath(void *context, int metricId,
     TMSG(SAMPLE_CALLPATH, "skipping sample for dlopen lock");
     hpcrun_stats_num_samples_blocked_dlopen_inc();
     monitor_unblock_shootdown();
-    return NULL;
+    return ret;
   }
 #endif
 
@@ -231,7 +234,9 @@ hpcrun_sample_callpath(void *context, int metricId,
     hpcrun_cleanup_partial_unwind();
   }
 
-  if (trace_isactive()) {
+  ret.sample_node = node;
+
+  if (hpcrun_trace_isactive()) {
     void* pc = hpcrun_context_pc(context);
 
     void *func_start_pc = NULL, *func_end_pc = NULL;
@@ -244,10 +249,12 @@ hpcrun_sample_callpath(void *context, int metricId,
     cct_node_t* func_proxy = 
       hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);
 
-    // modify the persistent id
-    hpcrun_cct_persistent_id_trace_mutate(func_proxy); 
+    ret.trace_node = func_proxy;
 
-    trace_append(hpcrun_cct_persistent_id(func_proxy));
+    // modify the persistent id
+    hpcrun_cct_persistent_id_trace_mutate(func_proxy);
+
+    hpcrun_trace_append(hpcrun_cct_persistent_id(func_proxy));
   }
 
   hpcrun_clear_handling_sample(td);
@@ -259,10 +266,10 @@ hpcrun_sample_callpath(void *context, int metricId,
   hpcrun_dlopen_read_unlock();
 #endif
   
-  TMSG(SAMPLE_CALLPATH,"done w sample, return %p", node);
+  TMSG(SAMPLE_CALLPATH,"done w sample, return %p", ret.sample_node);
   monitor_unblock_shootdown();
 
-  return node;
+  return ret;
 }
 
 static int const PTHREAD_CTXT_SKIP_INNER = 1;
@@ -448,7 +455,7 @@ hpcrun_sample_callpath_w_bt(void *context,
       node = help_hpcrun_sample_callpath_w_bt(epoch, context, metricId, metricIncr,
 					      bt_fn, arg, isSync);
 
-      if (trace_isactive()) {
+      if (hpcrun_trace_isactive()) {
 	void* pc = hpcrun_context_pc(context);
 	cct_bundle_t* cct = &(td->epoch->csdata); 
 	void* func_start_pc = NULL;
@@ -460,7 +467,7 @@ hpcrun_sample_callpath_w_bt(void *context,
 	cct_node_t* func_proxy = hpcrun_cct_get_child(cct, node->parent, &frm);
 	func_proxy->persistent_id |= HPCRUN_FMT_RetainIdFlag; 
 
-	trace_append(func_proxy->persistent_id);
+	hpcrun_trace_append(func_proxy->persistent_id);
       }
       if (ENABLED(DUMP_BACKTRACES)) {
 	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
