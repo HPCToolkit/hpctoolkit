@@ -69,7 +69,6 @@
 
 /*
  * Simple spin lock.
- *
  */
 
 typedef struct spinlock_s {
@@ -84,6 +83,14 @@ typedef struct spinlock_s {
 #define SPINLOCK_LOCKED INITIALIZE_SPINLOCK(SPINLOCK_LOCKED_VALUE)
 
 
+/*
+ * Note: powerpc needs two memory barriers: isync at the end of _lock
+ * and lwsync at the beginning of _unlock.  See JohnMC's Comp 422
+ * slides on "IBM Power Weak Memory Model."
+ *
+ * Technically, the isync could be moved to the assembly code for
+ * fetch_and_store().
+ */
 static inline void 
 spinlock_lock(spinlock_t *l)
 {
@@ -92,15 +99,23 @@ spinlock_lock(spinlock_t *l)
     while (l->thelock != SPINLOCK_UNLOCKED_VALUE); 
 
     if (fetch_and_store(&l->thelock, SPINLOCK_LOCKED_VALUE) == SPINLOCK_UNLOCKED_VALUE) {
-      return; 
+      break;
     }
   }
+
+#if defined(__powerpc__)
+  __asm__ __volatile__ ("isync\n");
+#endif
 }
 
 
 static inline void 
 spinlock_unlock(spinlock_t *l)
 {
+#if defined(__powerpc__)
+  __asm__ __volatile__ ("lwsync\n");
+#endif
+
   l->thelock = SPINLOCK_UNLOCKED_VALUE;
 }
 
