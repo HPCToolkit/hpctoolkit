@@ -59,6 +59,8 @@
 #include <string.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 
 #include <signal.h>
 #include <sys/time.h>           /* setitimer() */
@@ -153,6 +155,8 @@ exit(-1);                                                     \
 #define fflush(...) do{}while(0)
 
 
+
+#define HPCRUN_GPU_SHMSZ (1<<10)
 
 
 #define ADD_TO_FREE_EVENTS_LIST(node_ptr) do { (node_ptr)->next_free_node = g_free_event_nodes_head; \
@@ -249,6 +253,15 @@ typedef struct active_kernel_node_t {
 
 
 
+typedef struct IPC_data_t {
+    uint32_t device_id;
+    uint64_t outstanding_kernels;
+    spinlock_t ipc_lock;
+} IPC_data_t;
+
+IPC_data_t * ipc_data;
+
+
 
 //void CUPTIAPI EventInsertionCallback(void *userdata, CUpti_CallbackDomain domain, CUpti_CallbackId cbid, const void *cbInfo);
 
@@ -285,6 +298,41 @@ static cudaEvent_t g_start_of_world_event;
 static bool g_stream0_not_initialized = true;
 
 // ******* METHOD DEFINITIONS ***********
+
+
+
+// TODO: need to unmap and get new if the context/device changes
+static inline void create_shared_memory(){
+
+    int device_id; 
+    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_GET_DEVICE].cudaGetDeviceReal(&device_id));
+    
+    int shmid;
+    key_t key = 0xcafeba00 | device_id;
+    char *shm;
+    
+    if ((shmid = shmget(key, sizeof(IPC_data_t), IPC_CREAT | 0666)) < 0) {
+        perror("shmget");
+        exit(1);
+    }
+    /*
+     *      * Now we attach the segment to our data space.
+     *           */
+    if ((shm = shmat(shmid, NULL, 0)) == (char *) -1) {
+        perror("shmat");
+        exit(1);
+    }
+    ipc_data = (IPC_data_t *) shm;
+ 
+    /* NOTE: When a new shared memory segment is created, its contents are initialized to
+     zero values as per http://www.kernel.org/doc/man-pages/online/pages/man2/shmget.2.html
+    */
+ 
+    ipc_data->device_id = device_id;
+    
+    printf("\n Shared mem created for device %d", device_id);
+}
+
 
 static struct stream_to_id_map_t *splay(struct stream_to_id_map_t *root, cudaStream_t key) {
     REGULAR_SPLAY_TREE(stream_to_id_map_t, root, key, stream, left, right);
@@ -634,6 +682,13 @@ uint32_t cleanup_finished_events() {
             cudaError_t err_cuda = cudaRuntimeFunctionPointer[CUDA_EVENT_QUERY].cudaEventQueryReal(current_event->event_end);
 
             if (err_cuda == cudaSuccess) {
+                
+                // Decrement   ipc_data->outstanding_kernels
+                atomic_add_i64( &(ipc_data->outstanding_kernels), -1L);
+                
+
+                
+                
                 //fprintf(stderr, "\n cudaEventQuery success %p", current_event->event_end);
                 cct_node_t *launcher_cct = current_event->launcher_cct;
                
@@ -760,6 +815,9 @@ void CreateStream0IfNot(cudaStream_t stream) {
         new_streamId = splay_insert(0)->id;
         fprintf(stderr, "\n Stream id = %d", new_streamId);
         if (g_start_of_world_time == 0) {
+            
+            
+            
             // And disable tracking new threads from CUDA
             monitor_disable_new_threads();
 
@@ -776,6 +834,12 @@ void CreateStream0IfNot(cudaStream_t stream) {
 
             // record in stream 0       
             CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(g_start_of_world_event, 0));
+            
+            // This is a good time to create the shared memory 
+            // FIX ME: DEVICE_ID should be derived
+            if(ipc_data == NULL)
+                create_shared_memory();
+
 
             // enable monitoring new threads
             monitor_enable_new_threads();
@@ -919,6 +983,10 @@ cudaError_t cudaLaunch(const char *entry) {
     //      assert(TD_GET(active_stream));
     fprintf(stderr, "\n start on stream = %p ", TD_GET(active_stream));
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t) TD_GET(active_stream)));
+    
+    
+    
+    atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
 
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_LAUNCH].cudaLaunchReal(entry);
 
@@ -980,6 +1048,8 @@ cudaError_t cudaStreamCreate(cudaStream_t * stream) {
     HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
     if (g_start_of_world_time == 0) {
         
+        
+        
         // And disable tracking new threads from CUDA
         monitor_disable_new_threads();
         
@@ -1005,7 +1075,12 @@ cudaError_t cudaStreamCreate(cudaStream_t * stream) {
         // Ok to call cuda functions from the signal handler
         TD_GET(is_thread_at_cuda_sync) = false;                      
         
-        
+
+        // This is a good time to create the shared memory 
+        // FIX ME: DEVICE_ID should be derived
+        if(ipc_data == NULL)
+            create_shared_memory();
+
         
         // enable monitoring new threads
         monitor_enable_new_threads();
@@ -1102,6 +1177,10 @@ cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count, enum cudaM
     //      assert(TD_GET(active_stream));
     fprintf(stderr, "\n start on stream = %p ", stream);
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, stream));
+    
+    //Increment     outstanding_kernels
+    atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
+
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_ASYNC].cudaMemcpyAsyncReal(dst, src, count, kind, stream);
 
     fprintf(stderr, "\n end  on stream = %p ", stream);
@@ -1291,6 +1370,9 @@ CUresult cuLaunchGridAsync(CUfunction f, int grid_width, int grid_height, CUstre
     //      assert(TD_GET(active_stream));
 
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
+    
+    //Increment     outstanding_kernels
+    atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
 
     CUresult ret = cuDriverFunctionPointer[CU_LAUNCH_GRID_ASYNC].cuLaunchGridAsyncReal(f, grid_width, grid_height, hStream);
 
@@ -1343,6 +1425,10 @@ CUresult cuStreamCreate(CUstream * phStream, unsigned int Flags) {
 
     HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
     if (g_start_of_world_time == 0) {
+        
+
+        
+        
         // And disable tracking new threads from CUDA
         monitor_disable_new_threads();
         
@@ -1366,7 +1452,13 @@ CUresult cuStreamCreate(CUstream * phStream, unsigned int Flags) {
 
         // Ok to call cuda functions from the signal handler
         TD_GET(is_thread_at_cuda_sync) = false; 
+
         
+        // This is a good time to create the shared memory 
+        // FIX ME: DEVICE_ID should be derived
+        if(ipc_data == NULL)
+            create_shared_memory();
+
         // enable monitoring new threads
         monitor_enable_new_threads();
     }
@@ -1522,6 +1614,10 @@ CUresult cuMemcpyHtoDAsync(CUdeviceptr dstDevice, const void *srcHost, size_t By
     fprintf(stderr, "\n start on stream = %p ", stream);
 
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
+    
+    //Increment     outstanding_kernels
+    atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
+
 
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_HTO_D_ASYNC_V2].cuMemcpyHtoDAsync_v2Real(dstDevice, srcHost, ByteCount, hStream);
 
@@ -1620,6 +1716,9 @@ CUresult cuMemcpyDtoHAsync(void *dstHost, CUdeviceptr srcDevice, size_t ByteCoun
 
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
     
+    //Increment     outstanding_kernels
+    atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
+    
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_DTO_H_ASYNC_V2].cuMemcpyDtoHAsync_v2Real(dstHost, srcDevice, ByteCount, hStream);
 
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end,(cudaStream_t) hStream));
@@ -1705,6 +1804,7 @@ void gpu_blame_shift_itimer_signal_handler(cct_node_t * node, uint64_t cur_time_
     num_unfinshed_streams = cleanup_finished_events();
     unfinished_event_list_head = g_unfinished_stream_list_head;
 
+    // TODO: if some kernel is running in some process , the we need to handle it by checking ipc_data->outstanding_kernels
     if (num_unfinshed_streams) {
         // CPU - GPU overlap
 
@@ -1712,21 +1812,23 @@ void gpu_blame_shift_itimer_signal_handler(cct_node_t * node, uint64_t cur_time_
         cct_metric_data_increment(cpu_overlap_metric_id, node, (cct_metric_data_t) {
                                   .r = metric_incr}
         );
+        
         // Increment gpu_overlap by metric_incr/num_unfinshed_streams for each of the unfinshed streams
         for (stream_node_t * unfinished_stream = unfinished_event_list_head; unfinished_stream; unfinished_stream = unfinished_stream->next_unfinished_stream)
             cct_metric_data_increment(gpu_overlap_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t) {
                                       .r = metric_incr * 1.0 / num_unfinshed_streams}
         );
     } else {
-        // GPU is idle
-
-        // Increment gpu_ilde by metric_incr
-        cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
-                                  .i = metric_incr}
-        );
-
-        //idt += metric_incr;
-        //printf("\n gpu_idle_time = %lu, %lu",metric_incr, idt);
+        
+        
+        // GPU is idle iff   ipc_data->outstanding_kernels == 0 
+        // If ipc_data is NULL, then this process has not made GPU calls so, we are blind and declare GPU idle w/o checking status of other processes
+        // There is no better solution yet since we dont know which GPU card we should be looking for idleness. 
+        if ( !ipc_data || ipc_data->outstanding_kernels == 0) { // GPU device is truely idle i.e. no other process is keeping it busy
+            // Increment gpu_ilde by metric_incr
+            cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
+                                  .i = metric_incr});
+        }
 
     }
     spinlock_unlock(&g_gpu_lock);
