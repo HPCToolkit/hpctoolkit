@@ -114,6 +114,11 @@ static void event_fatal_error(int ev_code, int papi_ret);
  * local variables
  *****************************************************************************/
 
+// Special case to make PAPI_library_init() a soft failure.
+// Make sure that we call no other PAPI functions.
+//
+static int papi_unavail = 0;
+
 static void
 METHOD_FN(init)
 {
@@ -127,8 +132,10 @@ METHOD_FN(init)
   // with other events if PAPI is not available.
   if (ret < 0) {
     hpcrun_save_papi_error(HPCRUN_PAPI_ERROR_UNAVAIL);
+    papi_unavail = 1;
   } else if (ret != PAPI_VER_CURRENT) {
     hpcrun_save_papi_error(HPCRUN_PAPI_ERROR_VERSION);
+    papi_unavail = 1;
   }
 
   // Tell PAPI to count events in all contexts (user, kernel, etc).
@@ -136,6 +143,7 @@ METHOD_FN(init)
   // breaks some applications.  For example, this breaks some Gemini
   // (GNI) functions called from inside gasnet_init() or MPI_Init() on
   // the Cray XE (hopper).
+  //
   if (ENABLED(SYSCALL_RISKY)) {
     ret = PAPI_set_domain(PAPI_DOM_ALL);
     if (ret != PAPI_OK) {
@@ -150,6 +158,8 @@ static void
 METHOD_FN(thread_init)
 {
   TMSG(PAPI, "thread init");
+  if (papi_unavail) { return; }
+
   int retval = PAPI_thread_init(pthread_self);
   if (retval != PAPI_OK) {
     EEMSG("PAPI_thread_init NOT ok, retval = %d", retval);
@@ -162,6 +172,8 @@ static void
 METHOD_FN(thread_init_action)
 {
   TMSG(PAPI, "register thread");
+  if (papi_unavail) { return; }
+
   int retval = PAPI_register_thread();
   if (retval != PAPI_OK) {
     EEMSG("PAPI_register_thread NOT ok, retval = %d", retval);
@@ -173,6 +185,9 @@ METHOD_FN(thread_init_action)
 static void
 METHOD_FN(start)
 {
+  TMSG(PAPI, "start");
+  if (papi_unavail) { return; }
+
   thread_data_t *td = hpcrun_get_thread_data();
   int eventSet = td->eventSet[self->evset_idx];
 
@@ -190,6 +205,8 @@ static void
 METHOD_FN(thread_fini_action)
 {
   TMSG(PAPI, "unregister thread");
+  if (papi_unavail) { return; }
+
   int retval = PAPI_unregister_thread();
   char msg[] = "!!NOT PAPI_OK!! (code = -9999999)\n";
   snprintf(msg, sizeof(msg)-1, "!!NOT PAPI_OK!! (code = %d)", retval);
@@ -199,11 +216,12 @@ METHOD_FN(thread_fini_action)
 static void
 METHOD_FN(stop)
 {
-  thread_data_t *td = hpcrun_get_thread_data();
+  TMSG(PAPI, "stop");
+  if (papi_unavail) { return; }
 
+  thread_data_t *td = hpcrun_get_thread_data();
   int eventSet = td->eventSet[self->evset_idx];
   int nevents  = self->evl.nevents;
-
   source_state_t my_state = TD_GET(ss_state)[self->evset_idx];
 
   if (my_state == STOP) {
@@ -230,6 +248,9 @@ METHOD_FN(stop)
 static void
 METHOD_FN(shutdown)
 {
+  TMSG(PAPI, "shutdown");
+  if (papi_unavail) { return; }
+
   METHOD_CALL(self, stop); // make sure stop has been called
   PAPI_shutdown();
 
@@ -239,8 +260,11 @@ METHOD_FN(shutdown)
 // Return true if PAPI recognizes the name, whether supported or not.
 // We'll handle unsupported events later.
 static bool
-METHOD_FN(supports_event,const char *ev_str)
+METHOD_FN(supports_event, const char *ev_str)
 {
+  TMSG(PAPI, "supports event");
+  if (papi_unavail) { return false; }
+
   if (self->state == UNINIT){
     METHOD_CALL(self, init);
   }
@@ -256,6 +280,9 @@ METHOD_FN(supports_event,const char *ev_str)
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
+  TMSG(PAPI, "process event list");
+  if (papi_unavail) { return; }
+
   char *event;
   int i, ret;
   int num_lush_metrics = 0;
@@ -327,8 +354,10 @@ METHOD_FN(gen_event_set,int lush_metrics)
   int ret;
   int eventSet;
 
+  TMSG(PAPI, "gen event set");
+  if (papi_unavail) { return; }
+
   eventSet = PAPI_NULL;
-  TMSG(PAPI,"create event set");
   ret = PAPI_create_eventset(&eventSet);
   TMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret, eventSet);
   if (ret != PAPI_OK) {
@@ -378,6 +407,12 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t    Profilable\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
+
+  if (papi_unavail) {
+    printf("PAPI is not available.  Probably, the kernel doesn't support PAPI,\n"
+	   "or else maybe HPCToolkit is out of sync with PAPI.\n\n");
+    return;
+  }
 
   num_total = 0;
   num_prof = 0;

@@ -164,14 +164,14 @@ hpcrun_display_papi_error(void)
 {
   if (papi_error == HPCRUN_PAPI_ERROR_UNAVAIL) {
     STDERR_MSG("%s: PAPI_library_init() failed as unavailable.\n"
-        "Probably, this kernel is missing a module for accessing the hardware\n"
-        "performance counters (perf_events, perfmon or perfctr).",
+        "Probably, the kernel is missing a module for accessing the hardware\n"
+        "performance counters (perf_events, perfmon or perfctr).\n",
 	warning);
   }
   else if (papi_error == HPCRUN_PAPI_ERROR_VERSION) {
     STDERR_MSG("%s: PAPI_library_init() failed with version mismatch.\n"
         "Probably, HPCToolkit is out of sync with PAPI, or else PAPI is\n"
-	"out of sync with the kernel.",
+	"out of sync with the kernel.\n",
 	warning);
   }
 }
