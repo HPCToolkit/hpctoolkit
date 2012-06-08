@@ -122,7 +122,7 @@ r_splay_insert(struct record_t *node)
 static struct record_t *
 r_splay_delete(uint64_t region_id)
 {
-TMSG(SET_DEFER_CTXT, "delete region %d", region_id);
+  TMSG(DEFER_CTXT, "delete region %d", region_id);
 // no need to use spin lock in delete because we only call delete in update function where
 // tree is already locked
   struct record_t *result = NULL;
@@ -237,7 +237,7 @@ void end_team_fn()
 	  omp_arg.region_id = TD_GET(region_id);
         }
         node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, (void *)&omp_arg);
-TMSG(SET_DEFER_CTXT, "unwind the callstack for region %d to %d", record->region_id, TD_GET(region_id));
+        TMSG(DEFER_CTXT, "unwind the callstack for region %d to %d", record->region_id, TD_GET(region_id));
         // make sure the outer region should be unwound
         uint64_t unresolved_region_id = is_partial_resolve(node);
         if(unresolved_region_id) {
@@ -249,7 +249,7 @@ TMSG(SET_DEFER_CTXT, "unwind the callstack for region %d to %d", record->region_
       //
       else {
         node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, NULL);
-TMSG(SET_DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
+        TMSG(DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
       }
 
       record->node = node;
@@ -336,12 +336,11 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
     td = (thread_data_t*) a;
   cct_node_t *prefix;
   uint64_t my_region_id = (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip;
-  TMSG(SET_DEFER_CTXT, " try to resolve region %d", my_region_id);
+  TMSG(DEFER_CTXT, " try to resolve region %d", my_region_id);
   if (prefix = is_resolved(my_region_id)) {
     // delete cct from its original parent before merging
-//    hpcrun_cct_delete_self(cct);
-TMSG(SET_DEFER_CTXT, "delete from the tbd region %d", hpcrun_cct_addr(cct)->ip_norm.lm_ip);
-    hpcrun_cct_addr(cct)->ip_norm.lm_ip = 0; //indicate this is deleted
+    hpcrun_cct_delete_self(cct);
+    TMSG(DEFER_CTXT, "delete from the tbd region %d", hpcrun_cct_addr(cct)->ip_norm.lm_ip);
     if(!is_partial_resolve(prefix)) {
       if(!td)
         prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_process_stop_cct());
@@ -362,7 +361,7 @@ TMSG(SET_DEFER_CTXT, "delete from the tbd region %d", hpcrun_cct_addr(cct)->ip_n
     hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
     // must delete it when not used considering the performance
 //    r_splay_count_update(my_region_id, -1L);
-TMSG(SET_DEFER_CTXT, "resolve region %d", my_region_id);
+    TMSG(DEFER_CTXT, "resolve region %d", my_region_id);
   }
 }
 
@@ -376,7 +375,6 @@ void resolve_cntxt()
 {
   hpcrun_async_block();
   uint64_t current_region_id = GOMP_get_region_id();
-  int current_thread_num = omp_get_thread_num();
   cct_node_t* tbd_cct = hpcrun_get_tbd_cct();
   thread_data_t *td = hpcrun_get_thread_data();
   uint64_t outer_region_id = td->outer_region_id; // current outer region
@@ -388,7 +386,6 @@ void resolve_cntxt()
   }
   // update the use count when come into a new omp region
   if((td->region_id != outer_region_id) && (outer_region_id != 0)) {
-TMSG(SET_DEFER_CTXT, "insert tbd %d", outer_region_id);
     hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, outer_region_id)));
     r_splay_count_update(outer_region_id, 1L);
   }
@@ -398,7 +395,7 @@ TMSG(SET_DEFER_CTXT, "insert tbd %d", outer_region_id);
   hpcrun_async_unblock();
 }
 
-#if 1
+#if 0
 static void
 tbd_test(cct_node_t* cct, cct_op_arg_t a, size_t l)
 {

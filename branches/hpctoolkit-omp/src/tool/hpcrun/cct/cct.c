@@ -405,6 +405,28 @@ hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
   return new;
 }
 
+cct_node_t*
+hpcrun_cct_delete_addr(cct_node_t* node, cct_addr_t* frm)
+{
+  if(!node) return NULL;
+
+  cct_node_t* found = splay(node->children, frm);
+
+  node->children = found;
+
+  if(!found || !cct_addr_eq(frm, &(found->addr))) 
+    return NULL;
+
+  if(node->children->left == NULL) {
+    node->children = node->children->right;
+    return found;
+  }
+  node->children->left = splay(node->children->left, frm);
+  node->children->left->right = node->children->right;
+  node->children = node->children->left;
+  return found;
+}
+
 // insert a path to the root and return the path in the root
 cct_node_t*
 hpcrun_cct_insert_path(cct_node_t *path, cct_node_t *root)
@@ -422,12 +444,7 @@ hpcrun_cct_insert_path(cct_node_t *path, cct_node_t *root)
 void
 hpcrun_cct_delete_self(cct_node_t *cct)
 {
-  if (cct->left) cct->left->right = cct->right;
-  if (cct->right) cct->right->left = cct->left;
-  if (cct->parent && cct->parent->children == cct)
-    cct->parent->children = cct->left ? cct->left : cct->right;
-  cct->parent = NULL;
-  cct->left=cct->right = NULL;
+  hpcrun_cct_delete_addr(cct->parent, &cct->addr);
 }
 
 //
