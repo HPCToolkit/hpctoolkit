@@ -62,40 +62,33 @@ struct gomp_thread_start_data
 /* This function is a pthread_create entry point.  This contains the idle
    loop in which a thread waits to be called up to become part of a team.  */
 
-static int rank = 0;
-static void(*start_fn)(int) = NULL;
-static void(*start_team_fn)(int) = NULL;
+static void(*start_fn)(void) = NULL;
+static void(*start_team_fn)(void) = NULL;
 static void(*end_fn)(void) = NULL;
 static void(*end_team_fn)(void) = NULL;
-static void(*pending_exit)(void) = NULL;
 
 void
-gomp_start_callback_register(void (*new_start_fn) (int), void (*new_end_fn)(void))
+gomp_start_callback_register(void (*new_start_fn) (void), void (*new_end_fn)(void))
 {
   start_fn = new_start_fn;
   end_fn   = new_end_fn;
 }
 
 void
-gomp_team_callback_register(void (*new_team_start_fn) (int), void(*new_team_end_fn)(void))
+gomp_team_callback_register(void (*new_team_start_fn) (void), void(*new_team_end_fn)(void))
 {
   start_team_fn = new_team_start_fn;
   end_team_fn = new_team_end_fn;
 }
 
-void GOMP_start_callback_register(void (*new_start_fn) (int), void (*new_end_fn) (void))
+void GOMP_start_callback_register(void (*new_start_fn) (void), void (*new_end_fn) (void))
 {
   gomp_start_callback_register(new_start_fn, new_end_fn);
 }
 
-void GOMP_team_callback_register(void (*new_team_start_fn) (int), void (*new_team_end_fn) (void))
+void GOMP_team_callback_register(void (*new_team_start_fn) (void), void (*new_team_end_fn) (void))
 {
   gomp_team_callback_register(new_team_start_fn, new_team_end_fn);
-}
-
-void GOMP_pending_exit_callback_register(void (*new_pending_exit) (void))
-{
-  pending_exit = new_pending_exit;
 }
 
 uint64_t 
@@ -150,7 +143,7 @@ GOMP_get_outer_region_id()
 static void *
 gomp_thread_start (void *xdata)
 {
-  if(start_fn) start_fn(rank);
+  if(start_fn) start_fn();
   struct gomp_thread_start_data *data = xdata;
   struct gomp_thread *thr;
   struct gomp_thread_pool *pool;
@@ -193,7 +186,6 @@ gomp_thread_start (void *xdata)
          thread in order to avoid the bogus region_id               */
       gomp_thread()->ts.team = NULL;
 
-      if(pending_exit) pending_exit();
       if(end_fn) end_fn();
 
       gomp_barrier_wait_last (&team->barrier);
@@ -404,7 +396,7 @@ gomp_team_start (void (*fn) (void *), void *data, unsigned nthreads,
   gomp_init_task (thr->task, task, icv);
 
   // be careful to put this callback function (after the team init)
-  if(start_team_fn) start_team_fn(++rank);
+  if(start_team_fn) start_team_fn();
 
   if (nthreads == 1)
     return;

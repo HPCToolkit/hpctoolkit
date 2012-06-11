@@ -115,7 +115,6 @@ GOMP_1.0 {
 	GOMP_barrier_callback_register;
   	GOMP_start_callback_register;
 	GOMP_team_callback_register;
-        GOMP_pending_exit_callback_register;
 	GOMP_critical_end;
 	GOMP_critical_name_end;
 	GOMP_critical_name_start;

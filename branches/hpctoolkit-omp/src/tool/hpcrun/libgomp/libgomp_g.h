@@ -167,9 +167,8 @@ extern void GOMP_task_callback_register(void (*)(void **));
 extern void GOMP_task (void (*) (void *), void *, void (*) (void *, void *),
 		       long, long, bool, unsigned);
 extern void GOMP_taskwait (void);
-extern void GOMP_start_callback_register(void (*) (int), void (*) (void));
-extern void GOMP_team_callback_register(void (*) (int), void (*) (void));
-extern void GOMP_pending_exit_callback_register(void(*)(void));
+extern void GOMP_start_callback_register(void (*) (void), void (*) (void));
+extern void GOMP_team_callback_register(void (*) (void), void (*) (void));
 extern uint64_t GOMP_get_region_id();
 extern uint64_t GOMP_get_outer_region_id();
 
