@@ -354,7 +354,7 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
     hpcrun_thread_data_init(id, thr_ctxt, 0);
   else
     hpcrun_thread_data_reuse_init(thr_ctxt);
-TMSG(SET_DEFER_CTXT, "real id %d, reuse id %d", td->id, id);
+  TMSG(DEFER_CTXT, "real id %d, reuse id %d", td->id, id);
 
   epoch_t* epoch = TD_GET(epoch);
 

@@ -146,10 +146,10 @@ lazy_open_data_file(thread_data_t *thread_data)
   else
     td = hpcrun_get_thread_data();
 
-TMSG(SET_DEFER_CTXT, "in open data file %d(%d)", td->id, td->defer_write);
+  TMSG(DEFER_CTXT, "in open data file %d(%d)", td->id, td->defer_write);
   FILE* fs = td->hpcrun_file;
   if (fs) {
-TMSG(SET_DEFER_CTXT, "in open data file but return %d(%d)", td->id, td->defer_write);
+  TMSG(DEFER_CTXT, "in open data file but return %d(%d)", td->id, td->defer_write);
     return fs;
   }
 

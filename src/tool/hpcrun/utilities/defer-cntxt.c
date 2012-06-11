@@ -197,7 +197,7 @@ new_record(uint64_t region_id)
 //
 // only master and sub-master thread execute start_team_fn and end_team_fn
 //
-void start_team_fn(int rank)
+void start_team_fn()
 {
   hpcrun_async_block();
   thread_data_t *td = hpcrun_get_thread_data();

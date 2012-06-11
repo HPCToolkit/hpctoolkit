@@ -116,7 +116,7 @@
  *****************************************************************************/
 static void idle_fn();
 static void work_fn();
-static void start_fn(int rank);
+static void start_fn();
 static void end_fn();
 
 static void process_blame_for_sample(cct_node_t *node, int metric_value);
@@ -378,7 +378,7 @@ void work_fn()
   }
 }
 
-void start_fn(int rank)
+void start_fn()
 {
   hpcrun_async_block();
   atomic_add_i64(&thread_num, 1L);
