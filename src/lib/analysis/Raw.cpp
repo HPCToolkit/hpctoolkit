@@ -177,17 +177,19 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
       DIAG_Throw("error opening trace file '" << filenm << "'");
     }
 
-    int ret = hpctrace_fmt_hdr_fread(fs);
+    hpctrace_fmt_hdr_t hdr;
+    
+    int ret = hpctrace_fmt_hdr_fread(&hdr, fs);
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading trace file '" << filenm << "'");
     }
 
-    hpctrace_fmt_hdr_fprint(stdout);
+    hpctrace_fmt_hdr_fprint(&hdr, stdout);
 
     // Read trace records and exit on EOF
     while ( !feof(fs) ) {
       hpctrace_fmt_datum_t datum;
-      ret = hpctrace_fmt_datum_fread(&datum, fs);
+      ret = hpctrace_fmt_datum_fread(&datum, hdr.flags, fs);
       if (ret == HPCFMT_EOF) {
 	break;
       }
@@ -195,7 +197,7 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
 	DIAG_Throw("error reading trace file '" << filenm << "'");
       }
 
-      hpctrace_fmt_datum_fprint(&datum, stdout);
+      hpctrace_fmt_datum_fprint(&datum, hdr.flags, stdout);
     }
 
     hpcio_fclose(fs);

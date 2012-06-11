@@ -1990,6 +1990,31 @@ AC_SUBST(OPT_UPC_LDFLAGS)
 
 
 #-------------------------------------------------
+# enable-data-centric-tracing: data-centric tracing
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether to enable data-centric tracing])
+
+OPT_ENABLE_DATACENTRIC_TRACE="no"
+
+AC_ARG_ENABLE([data-centric-tracing],
+  AS_HELP_STRING([--enable-data-centric-tracing],
+                 [Enable data-centric tracing (prototype)]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_DATACENTRIC_TRACE="yes" ;;
+     no)  OPT_ENABLE_DATACENTRIC_TRACE="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-data-centric-tracing]) ;;
+   esac],
+  [OPT_ENABLE_DATACENTRIC_TRACE=no])
+
+AC_MSG_RESULT([${OPT_ENABLE_DATACENTRIC_TRACE}])
+
+if test "${OPT_ENABLE_DATACENTRIC_TRACE}" = "yes" ; then
+  AC_DEFINE([DATACENTRIC_TRACE], [1], [Data-centric tracing])
+fi
+
+
+#-------------------------------------------------
 # with-objcopy
 #-------------------------------------------------
 
@@ -2171,6 +2196,7 @@ AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])
 AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
 AC_MSG_NOTICE([  mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
+AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
 AC_MSG_NOTICE([  Path:      $CC_PATH])
