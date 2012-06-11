@@ -194,6 +194,7 @@ gomp_thread_start (void *xdata)
       gomp_thread()->ts.team = NULL;
 
       if(pending_exit) pending_exit();
+      if(end_fn) end_fn();
 
       gomp_barrier_wait_last (&team->barrier);
     }
@@ -218,10 +219,10 @@ gomp_thread_start (void *xdata)
 	  thr->fn = NULL;
 	}
       while (local_fn);
+      if(end_fn) end_fn();
     }
 
   gomp_sem_destroy (&thr->release);
-  if(end_fn) end_fn();
   return NULL;
 }
 
@@ -571,7 +572,6 @@ gomp_team_start (void (*fn) (void *), void *data, unsigned nthreads,
 void
 gomp_team_end (void)
 {
-  if(end_team_fn) end_team_fn();
   struct gomp_thread *thr = gomp_thread ();
   struct gomp_team *team = thr->ts.team;
 
@@ -580,6 +580,7 @@ gomp_team_end (void)
   gomp_fini_work_share (thr->ts.work_share);
 
   gomp_end_task ();
+  if(end_team_fn) end_team_fn();
   thr->ts = team->prev_ts;
 
   if (__builtin_expect (thr->ts.team != NULL, 0))
