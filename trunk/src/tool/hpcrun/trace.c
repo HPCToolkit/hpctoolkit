@@ -54,10 +54,11 @@
 #include <limits.h>
 
 
-
 //*********************************************************************
 // local includes 
 //*********************************************************************
+
+#include <include/hpctoolkit-config.h>
 
 #include "env.h"
 #include "files.h"
@@ -80,7 +81,6 @@
 //*********************************************************************
 // type declarations
 //*********************************************************************
-
 
 
 //*********************************************************************
@@ -138,14 +138,21 @@ hpcrun_trace_open()
 			      HPCRUN_TraceBufferSz, HPCIO_OUTBUF_UNLOCKED);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "open");
 
-    ret = hpctrace_fmt_hdr_outbuf(&td->trace_outbuf);
+    hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
+#ifdef DATACENTRIC_TRACE
+    flags.fields.isDataCentric = true;
+#else
+    flags.fields.isDataCentric = false;
+#endif
+
+    ret = hpctrace_fmt_hdr_outbuf(flags, &td->trace_outbuf);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "write header to");
   }
 }
 
 
 void
-hpcrun_trace_append(unsigned int call_path_id)
+hpcrun_trace_append(uint call_path_id, uint metric_id)
 {
   if (tracing && hpcrun_sample_prob_active()) {
     struct timeval tv;
@@ -164,7 +171,16 @@ hpcrun_trace_append(unsigned int call_path_id)
     hpctrace_fmt_datum_t trace_datum;
     trace_datum.time = microtime;
     trace_datum.cpId = (uint32_t)call_path_id;
-    ret = hpctrace_fmt_datum_outbuf(&trace_datum, &td->trace_outbuf);
+    trace_datum.metricId = (uint32_t)metric_id;
+
+    hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
+#ifdef DATACENTRIC_TRACE
+    flags.fields.isDataCentric = true;
+#else
+    flags.fields.isDataCentric = false;
+#endif
+
+    ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, &td->trace_outbuf);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "append");
   }
 }

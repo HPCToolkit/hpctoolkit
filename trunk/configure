@@ -883,6 +883,7 @@ enable_lush_pthreads
 enable_bluegene
 with_upc
 with_upc_lib
+enable_data_centric_tracing
 with_objcopy
 enable_hpc_binutils
 enable_devtools
@@ -1544,6 +1545,8 @@ Optional Features:
   --enable-lush           use lush backtrace in hpcrun
   --enable-lush-pthreads  enable lush pthreads (temp)
   --enable-bluegene       Enable BlueGene/P support
+  --enable-data-centric-tracing
+                          Enable data-centric tracing (prototype)
   --enable-hpc-binutils   Enable extra HPCToolkit GNU binutils functionality
   --enable-devtools       Build development tools (enable debugging)
 
@@ -18288,6 +18291,37 @@ fi
 
 
 #-------------------------------------------------
+# enable-data-centric-tracing: data-centric tracing
+#-------------------------------------------------
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable data-centric tracing" >&5
+$as_echo_n "checking whether to enable data-centric tracing... " >&6; }
+
+OPT_ENABLE_DATACENTRIC_TRACE="no"
+
+# Check whether --enable-data-centric-tracing was given.
+if test "${enable_data_centric_tracing+set}" = set; then :
+  enableval=$enable_data_centric_tracing; case "${enableval}" in
+     yes) OPT_ENABLE_DATACENTRIC_TRACE="yes" ;;
+     no)  OPT_ENABLE_DATACENTRIC_TRACE="no" ;;
+     *) as_fn_error $? "bad value ${enableval} for --enable-data-centric-tracing" "$LINENO" 5 ;;
+   esac
+else
+  OPT_ENABLE_DATACENTRIC_TRACE=no
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_DATACENTRIC_TRACE}" >&5
+$as_echo "${OPT_ENABLE_DATACENTRIC_TRACE}" >&6; }
+
+if test "${OPT_ENABLE_DATACENTRIC_TRACE}" = "yes" ; then
+
+$as_echo "#define DATACENTRIC_TRACE 1" >>confdefs.h
+
+fi
+
+
+#-------------------------------------------------
 # with-objcopy
 #-------------------------------------------------
 
@@ -21286,6 +21320,8 @@ $as_echo "$as_me:   mpi support?: ${OPT_ENABLE_MPI}" >&6;}
 $as_echo "$as_me:   mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun/lush?: ${opt_enable_lush}" >&5
 $as_echo "$as_me:   hpcrun/lush?: ${opt_enable_lush}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}" >&5
+$as_echo "$as_me:   datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   C compiler: $CC_VERSION" >&5
