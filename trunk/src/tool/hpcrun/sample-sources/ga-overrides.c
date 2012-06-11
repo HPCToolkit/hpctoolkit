@@ -66,6 +66,7 @@
 #include <stdio.h>
 #include <ucontext.h>
 #include <unistd.h>
+#include <limits.h>
 
 
 //***************************************************************************
@@ -98,6 +99,8 @@ typedef Integer logical;
 
 // global/src/globalp.h
 #define GA_OFFSET   1000
+
+#define G_A_NULL (INT_MAX - GA_OFFSET) /* tallent*/
 
 // global/src/gacommon.h
 #define GA_MAX_DIM 7
@@ -174,7 +177,7 @@ extern global_array_t *GA;
 
 // FIXME: hpcrun_sample_callpath() should also return a metric_set_t*!
 
-#define ifSample(smplVal, metricVec, do1, do2)				\
+#define ifSample(g_a, smplVal, metricVec, do1, do2)			\
 {									\
   thread_data_t* td = hpcrun_get_thread_data();				\
   lushPthr_t* cnt = &td->pthr_metrics;					\
@@ -184,10 +187,21 @@ extern global_array_t *GA;
     if (hpcrun_safe_enter()) {						\
       ucontext_t uc;							\
       getcontext(&uc);							\
+									\
       /* N.B.: when tracing, this call generates a trace record */	\
-      /*  traceMetricId, traceMetricIncr */				\
+      uint traceMetricId = HPCRUN_FMT_MetricId_NULL;			\
+      /* ignore increment for now */					\
+      if (g_a != G_A_NULL) {						\
+        Integer ga_hndl = GA_OFFSET + g_a;				\
+	int idx = ga_getDataIdx(ga_hndl);				\
+	if (idx >= 0) {							\
+	  metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(idx); \
+	  traceMetricId = desc->metricId;				\
+	}								\
+      }									\
+									\
       sample_val_t smplVal =						\
-	hpcrun_sample_callpath(&uc, 0/*metricId*/, 0/*mIncr*/,		\
+	hpcrun_sample_callpath(&uc, traceMetricId, 0/*metricIncr*/,	\
 			       0/*skipInner*/, 1/*isSync*/);		\
       metric_set_t* metricVec =						\
 	metricVec = hpcrun_get_metric_set(smplVal.sample_node);		\
@@ -309,7 +323,7 @@ MONITOR_EXT_WRAP_NAME(pnga_brdcst)(Integer type, void *buf, Integer len, Integer
 
   int mId_collectiveOp = hpcrun_ga_metricId_collectiveOp();
   int mId_bytes = hpcrun_ga_metricId_bytesXfr();
-  ifSample(smpl, metricVec,
+  ifSample(G_A_NULL, smpl, metricVec,
 	   collectMetric(metricVec, mId_collectiveOp, 1/*metricIncr*/),
 	   collectMetric(metricVec, mId_bytes, len/*metricIncr*/));
 
@@ -328,7 +342,7 @@ MONITOR_EXT_WRAP_NAME(pnga_gop)(Integer type, void *x, Integer n, char *op)
 
   int mId_collectiveOp = hpcrun_ga_metricId_collectiveOp();
   int mId_bytes = hpcrun_ga_metricId_bytesXfr();
-  ifSample(smpl, metricVec,
+  ifSample(G_A_NULL, smpl, metricVec,
 	   collectMetric(metricVec, mId_collectiveOp, 1/*metricIncr*/),
 	   collectMetric(metricVec, mId_bytes, 8/*metricIncr*/));
   // FIXME: # bytes depends on type
@@ -347,7 +361,7 @@ MONITOR_EXT_WRAP_NAME(pnga_sync)()
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_sync, pnga_sync);
 
   int mId_collectiveOp = hpcrun_ga_metricId_collectiveOp();
-  ifSample(smpl, metricVec,
+  ifSample(G_A_NULL, smpl, metricVec,
 	   collectMetric(metricVec, mId_collectiveOp, 1/*metricIncr*/),
 	   collect0());
 
@@ -365,7 +379,7 @@ MONITOR_EXT_WRAP_NAME(pnga_zero)(Integer g_a)
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_zero, pnga_zero);
 
   int mId_collectiveOp = hpcrun_ga_metricId_collectiveOp();
-  ifSample(smpl, metricVec,
+  ifSample(g_a, smpl, metricVec,
 	   collectMetric(metricVec, mId_collectiveOp, 1/*metricIncr*/),
 	   collect0());
 
@@ -397,7 +411,7 @@ MONITOR_EXT_WRAP_NAME(pnga_get)(Integer g_a, Integer* lo, Integer* hi, void* buf
 
   int mId_onesided = hpcrun_ga_metricId_onesidedOp();
   int mId_bytes = hpcrun_ga_metricId_bytesXfr();
-  ifSample(smpl, metricVec,
+  ifSample(g_a, smpl, metricVec,
 	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
 	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
 
@@ -414,7 +428,7 @@ MONITOR_EXT_WRAP_NAME(pnga_put)(Integer g_a, Integer* lo, Integer* hi, void* buf
 
   int mId_onesided = hpcrun_ga_metricId_onesidedOp();
   int mId_bytes = hpcrun_ga_metricId_bytesXfr(); 
-  ifSample(smpl, metricVec,
+  ifSample(g_a, smpl, metricVec,
 	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
 	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
 
@@ -431,7 +445,7 @@ MONITOR_EXT_WRAP_NAME(pnga_acc)(Integer g_a, Integer *lo, Integer *hi, void *buf
 
   int mId_onesided = hpcrun_ga_metricId_onesidedOp();
   int mId_bytes = hpcrun_ga_metricId_bytesXfr();
-  ifSample(smpl, metricVec,
+  ifSample(g_a, smpl, metricVec,
 	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
 	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
 
@@ -459,7 +473,7 @@ MONITOR_EXT_WRAP_NAME(pnga_nbget)(Integer g_a, Integer *lo, Integer *hi, void *b
 
   int mId_onesided = hpcrun_ga_metricId_onesidedOp();
   int mId_bytes = hpcrun_ga_metricId_bytesXfr();
-  ifSample(smpl, metricVec,
+  ifSample(g_a, smpl, metricVec,
 	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
 	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
 
@@ -476,7 +490,7 @@ MONITOR_EXT_WRAP_NAME(pnga_nbput)(Integer g_a, Integer *lo, Integer *hi, void *b
 
   int mId_onesided = hpcrun_ga_metricId_onesidedOp();
   int mId_bytes = hpcrun_ga_metricId_bytesXfr();
-  ifSample(smpl, metricVec,
+  ifSample(g_a, smpl, metricVec,
 	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
 	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
 
@@ -493,7 +507,7 @@ MONITOR_EXT_WRAP_NAME(pnga_nbacc)(Integer g_a, Integer *lo, Integer *hi, void *b
 
   int mId_onesided = hpcrun_ga_metricId_onesidedOp();
   int mId_bytes = hpcrun_ga_metricId_bytesXfr();
-  ifSample(smpl, metricVec,
+  ifSample(g_a, smpl, metricVec,
 	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
 	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
 
