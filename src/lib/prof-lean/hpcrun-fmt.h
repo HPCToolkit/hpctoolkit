@@ -558,7 +558,7 @@ hpcrun_fmt_lip_fprint(lush_lip_t* x, FILE* fs, const char* pre);
 
 // Header sizes:
 // - version 1.00: 24 bytes
-// - version 1.01: 32 bytes (includes flags)
+// - version 1.01: 32 bytes: 24 + sizeof(hpctrace_hdr_flags_t)
 
 static const char HPCTRACE_FMT_Magic[]   = "HPCRUN-trace______"; // 18 bytes
 static const char HPCTRACE_FMT_Version[] = "01.01";              // 5 bytes
