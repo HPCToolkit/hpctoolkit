@@ -149,19 +149,21 @@ r_splay_delete(uint64_t region_id)
   return result;
 }
 
-static void
+// if found the record, return true. Otherwise, return false
+static bool
 r_splay_count_update(uint64_t region_id, uint64_t val)
 {
+  TMSG(DEFER_CTXT, "update region %d with %d", region_id, val);
   spinlock_lock(&record_tree_lock);
   record_tree_root = r_splay(record_tree_root, region_id);
 
   if(!record_tree_root){
     spinlock_unlock(&record_tree_lock);
-    return;
+    return false;
   }
   if(record_tree_root->region_id != region_id) {
     spinlock_unlock(&record_tree_lock);
-    return;
+    return false;
   } else {
     record_tree_root->use_count += val;
     TMSG(DEFER_CTXT, "I am value %d (%d) for region %d", record_tree_root->use_count, val, region_id);
@@ -171,6 +173,7 @@ r_splay_count_update(uint64_t region_id, uint64_t val)
     }
   }
   spinlock_unlock(&record_tree_lock);
+  return true;
 }
 
 /******************************************************************************
@@ -238,11 +241,6 @@ void end_team_fn()
         }
         node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, (void *)&omp_arg);
         TMSG(DEFER_CTXT, "unwind the callstack for region %d to %d", record->region_id, TD_GET(region_id));
-        // make sure the outer region should be unwound
-        uint64_t unresolved_region_id = is_partial_resolve(node);
-        if(unresolved_region_id) {
-     	  r_splay_count_update(unresolved_region_id, 1L);
-        }
       }
       //
       // for master thread in the outer-most region, a normal unwind to the process stop 
@@ -336,12 +334,15 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
     td = (thread_data_t*) a;
   cct_node_t *prefix;
   uint64_t my_region_id = (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip;
-  TMSG(DEFER_CTXT, " try to resolve region %d", my_region_id);
+  TMSG(DEFER_CTXT, "try to resolve region %d", my_region_id);
+  uint64_t partial_region_id = 0;
   if (prefix = is_resolved(my_region_id)) {
+    TMSG(DEFER_CTXT, "resolve region %d to %d", my_region_id, is_partial_resolve(prefix));
     // delete cct from its original parent before merging
     hpcrun_cct_delete_self(cct);
     TMSG(DEFER_CTXT, "delete from the tbd region %d", hpcrun_cct_addr(cct)->ip_norm.lm_ip);
-    if(!is_partial_resolve(prefix)) {
+    partial_region_id = is_partial_resolve(prefix);
+    if(partial_region_id == 0) {
       if(!td)
         prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_process_stop_cct());
       else
@@ -352,6 +353,7 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
         prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_tbd_cct());
       else
         prefix = hpcrun_cct_insert_path(prefix, (td->epoch->csdata).unresolved_root);
+      r_splay_count_update(partial_region_id, 1L);
     }
     // adjust the callsite of the prefix in side threads to make sure they are the same as
     // in the master thread. With this operation, all sides threads and the master thread
@@ -360,7 +362,7 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
       hpcrun_cct_addr(prefix)->ip_norm.lm_ip -= 5L;
     hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
     // must delete it when not used considering the performance
-//    r_splay_count_update(my_region_id, -1L);
+    r_splay_count_update(my_region_id, -1L);
     TMSG(DEFER_CTXT, "resolve region %d", my_region_id);
   }
 }
@@ -374,7 +376,7 @@ omp_resolve_and_free(cct_node_t* cct, cct_op_arg_t a, size_t l)
 void resolve_cntxt()
 {
   hpcrun_async_block();
-  uint64_t current_region_id = GOMP_get_region_id();
+  uint64_t current_region_id = GOMP_get_region_id(); //inner-most region id
   cct_node_t* tbd_cct = hpcrun_get_tbd_cct();
   thread_data_t *td = hpcrun_get_thread_data();
   uint64_t outer_region_id = td->outer_region_id; // current outer region
@@ -386,8 +388,17 @@ void resolve_cntxt()
   }
   // update the use count when come into a new omp region
   if((td->region_id != outer_region_id) && (outer_region_id != 0)) {
-    hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, outer_region_id)));
-    r_splay_count_update(outer_region_id, 1L);
+    // end_team_fn occurs at master thread, side threads may still 
+    // in a barrier waiting for work. Now the master thread may delete
+    // the record if no samples taken in it. But side threads may take 
+    // samples in the waiting region (which has the same region id with
+    // the end_team_fn) after the region record is deleted.
+    // solution: consider such sample not in openmp region (need no
+    // defer cntxt) 
+    if(r_splay_count_update(outer_region_id, 1L))
+      hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, outer_region_id)));
+    else
+      outer_region_id = 0;
   }
   // td->region_id represents the out-most parallel region id
   td->region_id = outer_region_id;
