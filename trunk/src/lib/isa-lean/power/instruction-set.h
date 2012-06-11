@@ -122,6 +122,7 @@
 
 
 #define PPC_OPND_DISP(x)     (((int16_t)((x) & 0x0000ffff)))
+#define PPC_OPND_DISP_DS(x)  (((int16_t)((x) & 0x0000fffc)))
 
 
 //***************************************************************************
@@ -129,20 +130,25 @@
 //***************************************************************************
 
 #define PPC_OP_D_MASK    0xfc000000  /* opcode */
+#define PPC_OP_DS_MASK   0xfc000003  /* opcode, extra-opc */
 #define PPC_OP_X_MASK    0xfc0007fe  /* opcode, extra-opc */
 #define PPC_OP_XFX_MASK  0xfc0007fe  /* opcode, extra-opc */
 #define PPC_OP_XFX_SPR_MASK (PPC_OP_XFX_MASK | PPC_OPND_REG_SPR_MASK)
 
 #define PPC_OP_LWZ    0x80000000 /* D-form */
+
 #define PPC_OP_STW    0x90000000 /* D-form */
+#define PPC_OP_STD    0xf8000000 /* DS-form */
+
 #define PPC_OP_STWU   0x94000000 /* D-form */
+#define PPC_OP_STDU   0xf8000001 /* DS-form */
 
 #define PPC_OP_ADDI   0x38000000 /* D-form */
 #define PPC_OP_ADDIS  0x3c000000 /* D-form */ 
 #define PPC_OP_LIS    PPC_OP_ADDIS /* D-form: lis Rx,v = addis Rx,0,v */
 
-
 #define PPC_OP_STWUX  0x7c00016e /* X-form */
+#define PPC_OP_STDUX  0x7c00016a /* X-form */
 
 #define PPC_OP_OR     0x7c000378 /* X-form */
 #define PPC_OP_MR     PPC_OP_OR  /* X-form: mr Rx Ry = or Rx Ry Ry */
@@ -164,6 +170,7 @@
 //***************************************************************************
 
 #define PPC_INSN_D_MASK   0xffff0000 /* opcode RS, RA */
+#define PPC_INSN_DS_MASK  0xffff0003 /* opcode RS, RA , extra-opc */
 #define PPC_INSN_X_MASK   0xfffffffe /* opcode RS, RA, RB, extra-opc */
 #define PPC_INSN_XFX_MASK 0xfffffffe /* opcode RS, SPR, extra-opc */
 
@@ -171,6 +178,11 @@
   ((opc) | ((RS) << PPC_OPND_REG_S_SHIFT) \
          | ((RA) << PPC_OPND_REG_A_SHIFT) \
          | (D))
+
+#define PPC_INSN_DS(opc, RS, RA, D) \
+  ((opc) | ((RS) << PPC_OPND_REG_S_SHIFT) \
+         | ((RA) << PPC_OPND_REG_A_SHIFT) \
+         | ((D) << 2))
 
 #define PPC_INSN_X(opc, RS, RA, RB, Rc) \
   ((opc) | ((RS) << PPC_OPND_REG_S_SHIFT) \

@@ -121,6 +121,9 @@ if OPT_ENABLE_HPCRUN_STATIC
   pkglib_LIBRARIES += libhpcrun_io_wrap.a
   pkglib_LIBRARIES += libhpcrun_memleak_wrap.a
   pkglib_LIBRARIES += libhpctoolkit.a
+if HOST_CPU_PPC
+  pkglib_LIBRARIES += libibm_xlomp_wrappers.a
+endif
   bin_SCRIPTS += scripts/hpclink
 endif
 
@@ -144,6 +147,9 @@ XED2_LIB = @XED2_LIB@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
 PLUGIN_CONFIG_FILES = ga io memleak
+if HOST_CPU_PPC
+  PLUGIN_CONFIG_FILES += ibm-xlomp
+endif
 
 UNW_COMMON_FILES = \
 	unwind/common/backtrace.c	\
@@ -214,10 +220,12 @@ MY_BASE_FILES =				\
 	sample_event.c			\
 	sample_prob.c			\
 	sample_sources_all.c		\
+	sample-sources/blame-shift.c	\
         sample-sources/common.c         \
 	sample-sources/ga.c		\
 	sample-sources/io.c 		\
 	sample-sources/itimer.c		\
+	sample-sources/idle.c		\
 	sample-sources/memleak.c	\
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \
@@ -367,6 +375,8 @@ libhpcrun_memleak_wrap_a_SOURCES = 	\
 libhpcrun_mpi_la_SOURCES = 		\
 	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
 
+libibm_xlomp_wrappers_a_SOURCES =              \
+        plugins/ibm-xlomp-wrappers.c
 
 libhpctoolkit_la_SOURCES = 		\
 	hpctoolkit.c
