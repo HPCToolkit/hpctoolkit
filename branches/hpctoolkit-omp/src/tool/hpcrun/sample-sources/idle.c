@@ -278,7 +278,6 @@ METHOD_FN(display_events)
 void
 scale_fn(void *thread_data)
 {
-TMSG(SET_DEFER_CTXT, "max thread is %d", max_thread_num);
   thread_data_t *td = (thread_data_t *)thread_data;
   cct_node_t *root, *unresolved_root;
   root = td->epoch->csdata.top;
