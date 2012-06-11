@@ -69,6 +69,7 @@
 #include <ucontext.h>
 
 /* definition for posix memalign */
+#undef _XOPEN_SOURCE         // avoid complaint about redefinition
 #define _XOPEN_SOURCE 600
 #include <stdlib.h>
 

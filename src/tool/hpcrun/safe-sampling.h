@@ -151,6 +151,7 @@ hpcrun_safe_enter_async(void *pc)
       || ! hpcrun_td_avail()) {
     return 0;
   }
+
   td = hpcrun_get_thread_data();
   prev = td->inside_hpcrun;
   td->inside_hpcrun = 1;

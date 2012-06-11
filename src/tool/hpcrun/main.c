@@ -254,6 +254,32 @@ hpcrun_init_internal(bool is_child)
   TMSG(EPOCH,"process init setting up initial epoch/loadmap");
   hpcrun_epoch_init(NULL);
 
+#if 0
+{
+  // temporary debugging code for BG/Q
+
+  extern void ppc64_dump_intervals(char *addr2);
+  char *addr1 = getenv("ADDR1");
+  char *addr2 = getenv("ADDR2");
+ 
+  if (addr1 != NULL) {
+    addr1 = (char *) atol(addr1);
+    fprintf(stderr,"address 1 = %p\n", addr1);
+    ppc64_dump_intervals(addr1);
+    fflush(NULL);
+  }
+
+  if (addr2 != NULL) {
+    addr2 = (char *) atol(addr2);
+    fprintf(stderr,"address 2 = %p\n", addr2);
+    ppc64_dump_intervals(addr2);
+    fflush(NULL);
+  }
+  if (addr1 || addr2) monitor_real_exit(0);
+}
+#endif
+
+
   // start the sampling process
 
   hpcrun_enable_sampling();

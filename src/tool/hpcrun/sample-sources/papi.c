@@ -87,6 +87,8 @@
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
+
+#include <sample-sources/blame-shift.h>
 #include <utilities/tokenize.h>
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
@@ -110,9 +112,11 @@ static void papi_event_handler(int event_set, void *pc, long long ovec, void *co
 static int  event_is_derived(int ev_code);
 static void event_fatal_error(int ev_code, int papi_ret);
 
+
 /******************************************************************************
  * local variables
  *****************************************************************************/
+static int cyc_metric_id = -1; /* initialized to an illegal metric id */
 
 // Special case to make PAPI_library_init() a soft failure.
 // Make sure that we call no other PAPI functions.
@@ -332,6 +336,12 @@ METHOD_FN(process_event_list, int lush_metrics)
 				      MetricFlags_ValFmt_Int,
 				      self->evl.events[i].thresh);
 
+
+    // blame shifting needs to know if there is a cycles metric
+    if (strcmp(buffer, "PAPI_TOT_CYC") == 0) {
+      cyc_metric_id = metric_id;
+    }
+
     // FIXME:LUSH: need a more flexible metric interface
     if (num_lush_metrics > 0 && strcmp(buffer, "PAPI_TOT_CYC") == 0) {
       // there should be one lush metric; its source is the last event
@@ -549,8 +559,12 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
     TMSG(PAPI_SAMPLE,"sampling call path for metric_id = %d", metric_id);
 
-    hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
+    sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 			   0/*skipInner*/, 0/*isSync*/);
+
+    if (cyc_metric_id == metric_id) {
+      blame_shift_apply(sv.sample_node, hpcrun_id2metric(metric_id)->period);
+    }
   }
   hpcrun_safe_exit();
 }

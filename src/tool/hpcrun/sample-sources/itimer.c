@@ -95,6 +95,8 @@
 
 #include <lib/support-lean/timer.h>
 
+#include <sample-sources/blame-shift.h>
+
 /******************************************************************************
  * macros
  *****************************************************************************/
@@ -154,6 +156,9 @@ enum _local_const {
 
 static int
 itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
+
+static int
+term_signal_handler(int sig, siginfo_t* siginfo, void* context);
 
 
 /******************************************************************************
@@ -382,6 +387,7 @@ static void
 METHOD_FN(gen_event_set, int lush_metrics)
 {
   monitor_sigaction(HPCRUN_PROFILE_SIGNAL, &itimer_signal_handler, 0, NULL);
+  monitor_sigaction(SIGTERM, &term_signal_handler, 0, NULL);
 }
 
 static void
@@ -408,6 +414,15 @@ METHOD_FN(display_events)
 /******************************************************************************
  * private operations 
  *****************************************************************************/
+static int
+term_signal_handler(int sig, siginfo_t* siginfo, void* context)
+{
+  void* pc = hpcrun_context_pc(context);
+  EMSG("TERM signal handler fired; interrupted at PC %p. Aborting!", pc);
+  monitor_real_abort();
+  return 0; /* avoid compiler warnings */
+}
+
 
 static int
 itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
@@ -441,8 +456,9 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 #endif
 
   int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
-  hpcrun_sample_callpath(context, metric_id, metric_incr,
-			 0/*skipInner*/, 0/*isSync*/);
+  sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_incr,
+					    0/*skipInner*/, 0/*isSync*/);
+  blame_shift_apply(sv.sample_node, metric_incr * sample_period);
 
   if (hpcrun_is_sampling_disabled()) {
     TMSG(SPECIAL, "No itimer restart, due to disabled sampling");
