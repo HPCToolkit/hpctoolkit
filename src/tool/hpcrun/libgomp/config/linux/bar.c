@@ -55,7 +55,6 @@ gomp_barrier_wait_end (gomp_barrier_t *bar, gomp_barrier_state_t state)
   if(work_fn) work_fn();
 }
 
-#include <stdio.h>
 void
 gomp_barrier_wait (gomp_barrier_t *bar)
 {
