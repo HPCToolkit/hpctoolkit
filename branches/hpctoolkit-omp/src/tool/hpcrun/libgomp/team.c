@@ -28,7 +28,6 @@
 #include "libgomp.h"
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 /* This attribute contains PTHREAD_CREATE_DETACHED.  */
 pthread_attr_t gomp_thread_attr;
