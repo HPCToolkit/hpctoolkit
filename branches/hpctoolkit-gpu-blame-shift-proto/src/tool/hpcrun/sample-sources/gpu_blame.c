@@ -171,6 +171,7 @@ struct stream_to_id_map_t *stream_to_id_tree_root = NULL;
 
 stream_node_t g_stream_array[MAX_STREAMS];
 spinlock_t g_gpu_lock = SPINLOCK_UNLOCKED;
+bool g_do_shared_blaming = false;
 
 // ******* METHOD DEFINITIONS ***********
 
@@ -242,11 +243,16 @@ void CloseAllStreams(stream_to_id_map_t *root) {
 
 static void METHOD_FN(init)
 {
+    char * shared_blaming_env;    
     TMSG(CPU_GPU_BLAME_CTL, "setting up CPU_GPU_BLAME");
     g_unfinished_stream_list_head = NULL;
     g_finished_event_nodes_tail = &dummy_event_node;
     dummy_event_node.next = g_finished_event_nodes_tail;
     PopulateEntryPointesToWrappedCalls();
+    shared_blaming_env = getenv("HPCRUN_ENABLE_SHARED_GPU_BLAMING");
+    if(shared_blaming_env)
+        g_do_shared_blaming = atoi(shared_blaming_env);
+    
     self->state = INIT;                                    
 }
 
