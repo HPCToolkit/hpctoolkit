@@ -312,15 +312,15 @@ static inline void create_shared_memory(){
     char *shm;
     
     if ((shmid = shmget(key, sizeof(IPC_data_t), IPC_CREAT | 0666)) < 0) {
-        perror("shmget");
-        exit(1);
+	EEMSG("Failed to shmget() on device %d, retval = %d", device_id, shmid);
+    	monitor_real_abort();
     }
     /*
      *      * Now we attach the segment to our data space.
      *           */
     if ((shm = shmat(shmid, NULL, 0)) == (char *) -1) {
-        perror("shmat");
-        exit(1);
+	EEMSG("Failed to shmat() on device %d, retval = %d", device_id, shm);
+    	monitor_real_abort();
     }
     ipc_data = (IPC_data_t *) shm;
  
@@ -684,7 +684,8 @@ uint32_t cleanup_finished_events() {
             if (err_cuda == cudaSuccess) {
                 
                 // Decrement   ipc_data->outstanding_kernels
-                atomic_add_i64( &(ipc_data->outstanding_kernels), -1L);
+                if(g_do_shared_blaming)
+                    atomic_add_i64( &(ipc_data->outstanding_kernels), -1L);
                 
 
                 
@@ -837,7 +838,7 @@ void CreateStream0IfNot(cudaStream_t stream) {
             
             // This is a good time to create the shared memory 
             // FIX ME: DEVICE_ID should be derived
-            if(ipc_data == NULL)
+            if(g_do_shared_blaming && ipc_data == NULL)
                 create_shared_memory();
 
 
@@ -986,7 +987,8 @@ cudaError_t cudaLaunch(const char *entry) {
     
     
     
-    atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
+    if(g_do_shared_blaming)
+        atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
 
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_LAUNCH].cudaLaunchReal(entry);
 
@@ -1078,7 +1080,7 @@ cudaError_t cudaStreamCreate(cudaStream_t * stream) {
 
         // This is a good time to create the shared memory 
         // FIX ME: DEVICE_ID should be derived
-        if(ipc_data == NULL)
+        if(g_do_shared_blaming && ipc_data == NULL)
             create_shared_memory();
 
         
@@ -1179,7 +1181,8 @@ cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count, enum cudaM
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, stream));
     
     //Increment     outstanding_kernels
-    atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
+    if(g_do_shared_blaming)
+        atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
 
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_ASYNC].cudaMemcpyAsyncReal(dst, src, count, kind, stream);
 
@@ -1372,7 +1375,8 @@ CUresult cuLaunchGridAsync(CUfunction f, int grid_width, int grid_height, CUstre
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
     
     //Increment     outstanding_kernels
-    atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
+    if(g_do_shared_blaming)
+        atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
 
     CUresult ret = cuDriverFunctionPointer[CU_LAUNCH_GRID_ASYNC].cuLaunchGridAsyncReal(f, grid_width, grid_height, hStream);
 
@@ -1456,7 +1460,7 @@ CUresult cuStreamCreate(CUstream * phStream, unsigned int Flags) {
         
         // This is a good time to create the shared memory 
         // FIX ME: DEVICE_ID should be derived
-        if(ipc_data == NULL)
+        if(g_do_shared_blaming && ipc_data == NULL)
             create_shared_memory();
 
         // enable monitoring new threads
@@ -1616,7 +1620,8 @@ CUresult cuMemcpyHtoDAsync(CUdeviceptr dstDevice, const void *srcHost, size_t By
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
     
     //Increment     outstanding_kernels
-    atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
+    if(g_do_shared_blaming)
+        atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
 
 
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_HTO_D_ASYNC_V2].cuMemcpyHtoDAsync_v2Real(dstDevice, srcHost, ByteCount, hStream);
@@ -1717,7 +1722,8 @@ CUresult cuMemcpyDtoHAsync(void *dstHost, CUdeviceptr srcDevice, size_t ByteCoun
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
     
     //Increment     outstanding_kernels
-    atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
+    if(g_do_shared_blaming)
+        atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
     
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_DTO_H_ASYNC_V2].cuMemcpyDtoHAsync_v2Real(dstHost, srcDevice, ByteCount, hStream);
 
@@ -1824,10 +1830,16 @@ void gpu_blame_shift_itimer_signal_handler(cct_node_t * node, uint64_t cur_time_
         // GPU is idle iff   ipc_data->outstanding_kernels == 0 
         // If ipc_data is NULL, then this process has not made GPU calls so, we are blind and declare GPU idle w/o checking status of other processes
         // There is no better solution yet since we dont know which GPU card we should be looking for idleness. 
-        if ( !ipc_data || ipc_data->outstanding_kernels == 0) { // GPU device is truely idle i.e. no other process is keeping it busy
+        if(g_do_shared_blaming){
+            if ( !ipc_data || ipc_data->outstanding_kernels == 0) { // GPU device is truely idle i.e. no other process is keeping it busy
+                // Increment gpu_ilde by metric_incr
+                cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
+                                  .i = metric_incr});
+            }
+        } else {
             // Increment gpu_ilde by metric_incr
             cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
-                                  .i = metric_incr});
+                .i = metric_incr});            
         }
 
     }

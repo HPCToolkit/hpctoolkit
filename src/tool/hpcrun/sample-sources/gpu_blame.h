@@ -238,7 +238,7 @@ extern spinlock_t g_gpu_lock;
 
 
 extern uint64_t g_active_threads;
-
+extern bool g_do_shared_blaming;
 
 extern uint64_t g_active_threads;
 extern stream_node_t *g_unfinished_stream_list_head;
