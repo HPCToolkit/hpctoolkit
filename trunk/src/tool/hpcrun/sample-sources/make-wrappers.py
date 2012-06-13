@@ -1119,8 +1119,8 @@ def GenerateWrappers():
     olist.append("  ucontext_t uc;\n");
     olist.append("  if (hpcrun_safe_enter()) {\n");
     olist.append("    getcontext(&uc);\n");
-    olist.append("    cct_node_t * cct = hpcrun_sample_callpath(&uc, hpcrun_mpi_metric_id(), bytes, 0, 1);\n");
-    olist.append("    TMSG(MPI, \"cct: %p, bytes: %d\", cct, bytes);\n");
+    olist.append("    sample_val_t sampleVal = hpcrun_sample_callpath(&uc, hpcrun_mpi_metric_id(), bytes, 0, 1);\n");
+    olist.append("    TMSG(MPI, \"sample: %p, bytes: %d\", sampleVal.sample_node, bytes);\n");
     olist.append("    hpcrun_safe_exit();\n");
     olist.append("  }\n");
     olist.append("}\n");
