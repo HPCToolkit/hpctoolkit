@@ -90,28 +90,30 @@
 //***************************************************************************
 
 // FIXME: temporarily import GA declarations.  Unfortunately, some of
-// these declarations are only in source-tree (as opposed to
-// installed) header files, so currently there is no clean solution.
+// these declarations are only in the source tree (as opposed to
+// the installation), so currently there is no clean solution.
 
-//   armci/gaf2c/typesf2c.h:F2C_INTEGER_C_TYPE
+// ${GA-install}/include/typesf2c.h
+// ${GA-build}/armci/gaf2c/typesf2c.h
+// ${GA-src}/armci/gaf2c/typesf2c.h.in [F2C_INTEGER_C_TYPE]
 typedef long Integer; // word size
 typedef Integer logical;
 
-// global/src/globalp.h
-#define GA_OFFSET   1000
-
-#define G_A_NULL (INT_MAX - GA_OFFSET) /* tallent*/
-
-// global/src/gacommon.h
-#define GA_MAX_DIM 7
-
-// global/src/gaconfig.h
-#define MAXDIM  GA_MAX_DIM
-
-// armci/src/include/armci.h
+// ${GA-install}/include/armci.h
+// ${GA-src}/armci/src/include/armci.h
 typedef long armci_size_t;
 
-// global/src/base.h: global_array_t and GA
+// ${GA-install}/include/gacommon.h
+// ${GA-src}/global/src/gacommon.h
+#define GA_MAX_DIM 7
+
+// ${GA-src}/global/src/gaconfig.h
+#define MAXDIM  GA_MAX_DIM
+
+// ${GA-src}/global/src/globalp.h
+#define GA_OFFSET   1000
+
+// ${GA-src}/global/src/base.h
 #define FNAM        31              /* length of array names   */
 
 typedef Integer C_Integer;
@@ -156,9 +158,9 @@ typedef struct {
        C_Integer rstrctd_id;        /* rank of processor in restricted list */
        C_Integer *rank_rstrctd;     /* ranks of processors with data        */
 
-  // ENABLE_CHECKPOINT !!!
-  //int record_id;               /* record id for writing ga to disk     */
-
+#ifdef DO_CKPT
+       int record_id;               /* record id for writing ga to disk     */
+#endif
 } global_array_t;
 
 extern global_array_t *GA;
@@ -167,6 +169,9 @@ extern global_array_t *GA;
   int _d;                                                            \
   for(_d=0,*pelems=1; _d< ndim;_d++)  *pelems *= hi[_d]-lo[_d]+1;    \
 }
+
+// tallent
+#define G_A_NULL (INT_MAX - GA_OFFSET)
 
 
 //***************************************************************************
@@ -192,14 +197,14 @@ extern global_array_t *GA;
       uint traceMetricId = HPCRUN_FMT_MetricId_NULL;			\
       /* ignore increment for now */					\
       if (g_a != G_A_NULL) {						\
-        Integer ga_hndl = GA_OFFSET + g_a;				\
-	int idx = ga_getDataIdx(ga_hndl);				\
-	if (idx >= 0) {							\
-	  metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(idx); \
-	  traceMetricId = desc->metricId;				\
-	}								\
+	Integer ga_hndl = GA_OFFSET + g_a;				\
+      	int idx = ga_getDataIdx(ga_hndl);				\
+      	if (hpcrun_ga_dataIdx_isValid(idx)) {				\
+      	  metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(idx); \
+      	  traceMetricId = desc->metricId;				\
+      	}								\
       }									\
-									\
+      									\
       sample_val_t smplVal =						\
 	hpcrun_sample_callpath(&uc, traceMetricId, 0/*metricIncr*/,	\
 			       0/*skipInner*/, 1/*isSync*/);		\
