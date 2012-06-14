@@ -235,6 +235,7 @@ hpcrun_get_num_metrics()
 metric_desc_t*
 hpcrun_id2metric(int metric_id)
 {
+  hpcrun_get_num_metrics(); 
   if ((0 <= metric_id) && (metric_id < n_metrics)) {
     return id2metric[metric_id];
   }
