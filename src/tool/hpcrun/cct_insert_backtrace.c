@@ -154,9 +154,15 @@ hpcrun_cct_insert_backtrace_w_metric(cct_node_t* treenode,
 {
   cct_node_t* path = hpcrun_cct_insert_backtrace(treenode, path_beg, path_end);
 
-  hpcrun_get_metric_proc(metric_id)(metric_id,
-				    hpcrun_reify_metric_set(path),
-				    datum);
+  metric_set_t* mset = hpcrun_reify_metric_set(path);
+
+  metric_upd_proc_t* upd_proc = hpcrun_get_metric_proc(metric_id);
+  if (upd_proc) {
+    upd_proc(metric_id, mset, datum);
+  }
+
+  // POST-INVARIANT: metric set has been allocated for 'path'
+
   return path;
 }
 
