@@ -151,6 +151,7 @@ hpcrun_thread_data_reuse_init(cct_ctxt_t* thr_ctxt)
   td->add_to_pool = 0;
 
   td->omp_thread = 0;
+  td->last_bar_time_us = 0;
   // ----------------------------------------
   // sample sources
   // ----------------------------------------
@@ -284,6 +285,7 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   td->add_to_pool = 0;
 
   td->omp_thread = 0;
+  td->last_bar_time_us = 0;
   // ----------------------------------------
   // sample sources
   // ----------------------------------------

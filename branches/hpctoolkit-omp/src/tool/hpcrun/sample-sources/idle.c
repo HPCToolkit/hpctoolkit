@@ -105,6 +105,8 @@
 
 #include <utilities/defer-write.h>
 #include <utilities/defer-cntxt.h>
+
+#include <lib/support-lean/timer.h>
 /******************************************************************************
  * macros
  *****************************************************************************/
@@ -344,6 +346,43 @@ process_blame_for_sample(cct_node_t *node, int metric_value)
   }
 }
 
+// take synchronous samples when the time difference is
+// larger than DIFF_TIME_THRES
+#define DIFF_TIME_THRES 5000
+static void 
+idle(bool thres_check)
+{
+  uint64_t cur_bar_time_us;
+  int ret = time_getTimeReal(&cur_bar_time_us);
+  if (ret != 0) {
+    EMSG("time_getTimeReal (clock_gettime) failed!");
+    abort();
+  }
+  uint64_t diff_time = cur_bar_time_us - TD_GET(last_bar_time_us);
+
+  if(thres_check && diff_time < DIFF_TIME_THRES) return;
+  hpcrun_async_block();
+  ucontext_t uc;
+  getcontext(&uc);
+  hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1, NULL);
+  hpcrun_async_unblock();
+  ret = time_getTimeReal(&TD_GET(last_bar_time_us));
+  if (ret != 0) {
+    EMSG("time_getTimeReal (clock_gettime) failed!");
+    abort();
+  }
+}
+
+static void 
+thread_create_exit()
+{
+  hpcrun_async_block();
+  ucontext_t uc;
+  getcontext(&uc);
+  hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1, NULL);
+  hpcrun_async_unblock();
+}
+
 void idle_fn()
 {
   hpcrun_async_block();
@@ -353,11 +392,10 @@ void idle_fn()
   hpcrun_async_unblock();
 
   if(trace_isactive()) {
+    idle(true);
+    // block samples between idle_fn and work_fn
+    // it will be unblocked at work_fn()
     hpcrun_async_block();
-    ucontext_t uc;
-    getcontext(&uc);
-    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1, NULL);
-    hpcrun_async_unblock();
   }
 }
 
@@ -370,12 +408,9 @@ void work_fn()
   hpcrun_async_unblock();
 
   if(trace_isactive()) {
-    hpcrun_async_block();
-    ucontext_t uc;
-    getcontext(&uc);
-    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1, NULL);
-    hpcrun_async_unblock();
+    idle(true);
   }
+  hpcrun_async_unblock();
 }
 
 void start_fn()
@@ -394,11 +429,12 @@ void start_fn()
 //  if(td->defer_flag) resolve_cntxt_fini();
 
   if(trace_isactive()) {
-    hpcrun_async_block();
-    ucontext_t uc;
-    getcontext(&uc);
-    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1, NULL);
-    hpcrun_async_unblock();
+    thread_create_exit();
+    int ret = time_getTimeReal(&TD_GET(last_bar_time_us));
+    if (ret != 0) {
+      EMSG("time_getTimeReal (clock_gettime) failed!");
+      abort();
+    }  
   }
 
   hpcrun_async_unblock();
@@ -415,11 +451,7 @@ void end_fn()
   add_defer_td(td);
 
   if(trace_isactive()) {
-    hpcrun_async_block();
-    ucontext_t uc;
-    getcontext(&uc);
-    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1, NULL);
-    hpcrun_async_unblock();
+    thread_create_exit();
   }
 
   hpcrun_async_unblock();

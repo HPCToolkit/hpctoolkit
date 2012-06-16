@@ -149,6 +149,7 @@ typedef struct thread_data_t {
   int add_to_pool;
 
   int omp_thread;
+  uint64_t last_bar_time_us;
   // ----------------------------------------
   // hpcrun_malloc() memory data structures
   // ----------------------------------------
