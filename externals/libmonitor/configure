@@ -6,7 +6,9 @@
 #
 
 PKG_NAME=libmonitor
-src=libmonitor-0.x-r124
+src=libmonitor-0.x-r140
+
+client_signals='SIGBUS, SIGSEGV, SIGPROF, 36'
 
 . ../build-utils/configure.inc
 pre_configure
@@ -14,7 +16,10 @@ prefix="$libmonitor_prefix"
 
 set -- CC="$CC"  \
     CFLAGS="$CFLAGS"  \
-    --prefix="$prefix" "$@"
+    --prefix="$prefix"  \
+    --enable-client-signals="$client_signals"  \
+    "$@"
+
 if test -n "${is_cross_compile}" ; then
     set -- --host="${host}" "$@"
 fi
