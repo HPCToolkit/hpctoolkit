@@ -74,9 +74,19 @@ l_insert_path(cct_node_t* node, cct_op_arg_t arg, size_t level)
   cct_node_t** tree = (cct_node_t**) arg;
   *tree = hpcrun_cct_insert_addr(*tree, addr);
 }
+
+//
+// "Special" routine to serve as a placeholder for "idle" resource
+//
+void
+hpcrun_special_idle(void)
+{
+}
+
 //
 // Interface procedures
 //
+
 void
 hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
 {
