@@ -150,6 +150,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   // FIXME: unwind/common/backtrace.c
   thread_data_t* td = hpcrun_get_thread_data();
   td->btbuf_cur   = td->btbuf_beg;  // innermost
+
   td->btbuf_sav   = td->btbuf_end;
 
   // ---------------------------------------------------------
