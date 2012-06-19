@@ -172,7 +172,7 @@ In \depthview{} a user can specify a new \crosshair{} time and a new time range.
 \subsection{\summaryview}
 \label{sec:summaryview}
 
-\summaryview{} presents the proportion of number of calls of time $t$ across the current displayed rank of proceses $[p_1,p_2]$. 
+\summaryview{} presents the proportion of number of calls of time $t$ across the current displayed rank of proces $p$. 
 Similar to \depthview, the time range in \summaryview{} is always consistent with the time range in \traceview{}.
 
 
@@ -182,7 +182,7 @@ Similar to \depthview, the time range in \summaryview{} is always consistent wit
 \label{sec:callview}
 
 \begin{figure}[t]
-\centering{\includegraphics[scale=.6]{fig/hpctraceviewer-callpath-legend.png}}
+\centering{\includegraphics{fig/hpctraceviewer-callpath-legend.png}}
 \caption{An annotated screenshot of \hpctraceviewer{}'s \callview.}
 \label{fig:hpctraceviewer-callpath-legend}
 \end{figure}
@@ -200,6 +200,30 @@ In this view, the user can select the depth dimension of \traceview{} by either 
 The \miniview{} shows, relative to the process/time dimensions, the portion of the execution shown by the \traceview.
 In \miniview{}, the user can select a new process/time $(p_a,t_a),(p_b,t_b)$ dimensions by clicking the first process/time position $(p_a,t_a)$ and then drag the cursor to the second position $(p_b,t_b)$.
 The user can also moving the current selected region to another region by clicking the white rectangle and drag it to the new place.
+
+
+% ===========================================================================
+% ===========================================================================
+
+
+\section{Menus}
+\hpctraceviewer{} provides three main menus:
+\begin{itemize}
+ \item \textbf{File} menu which contains two sub menus:
+ \begin{itemize}
+   \item \textbf{Open database}: to load a database experiment directory. The directory has to contain \texttt{experiment.xml} (CCT and metric information) or \texttt{callpath.xml} (uniquely CCT information), and \texttt{*.hpctrace} or \texttt{experiment.mt} files which provide trace information.
+   \item \textbf{Exit}: to quit the application.
+ \end{itemize}
+ \item \textbf{View} menu to enhance appearance which contains two sub menus:
+ \begin{itemize}
+   \item \textbf{Show procedure-color mapping}: to open a window which shows customized mapping between a procedure pattern and a color. \hpctraceviewer{} allows users to customize assignment of a pattern of procedure names with a specific color.
+   \item \textbf{Show trace record count}: to enable/disabe the display of the number of records on the trace view. This feature can be useful to identify blocking procedures (such as I/O operations).
+ \end{itemize}
+ \item \textbf{Window} menu to manage the layout of the application. The menu only provide one sub menu:
+ \begin{itemize}
+  \item \textbf{Reset layout}: to reset the layout to the original one.
+ \end{itemize}
+\end{itemize}
 
 
 % ===========================================================================
