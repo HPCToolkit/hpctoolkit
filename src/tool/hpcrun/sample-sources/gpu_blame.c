@@ -172,6 +172,9 @@ struct stream_to_id_map_t *stream_to_id_tree_root = NULL;
 stream_node_t g_stream_array[MAX_STREAMS];
 spinlock_t g_gpu_lock = SPINLOCK_UNLOCKED;
 bool g_do_shared_blaming = false;
+int g_shmid = -1;
+IPC_data_t * ipc_data;
+uint32_t g_cuda_launch_skip_inner = 0;
 
 // ******* METHOD DEFINITIONS ***********
 
@@ -244,6 +247,7 @@ void CloseAllStreams(stream_to_id_map_t *root) {
 static void METHOD_FN(init)
 {
     char * shared_blaming_env;    
+    char * cuda_launch_skip_inner_env;    
     TMSG(CPU_GPU_BLAME_CTL, "setting up CPU_GPU_BLAME");
     g_unfinished_stream_list_head = NULL;
     g_finished_event_nodes_tail = &dummy_event_node;
@@ -252,7 +256,13 @@ static void METHOD_FN(init)
     shared_blaming_env = getenv("HPCRUN_ENABLE_SHARED_GPU_BLAMING");
     if(shared_blaming_env)
         g_do_shared_blaming = atoi(shared_blaming_env);
-    
+
+    cuda_launch_skip_inner_env = getenv("HPCRUN_CUDA_LAUNCH_SKIP_INNER");
+    if(cuda_launch_skip_inner_env)
+        g_cuda_launch_skip_inner = atoi(cuda_launch_skip_inner_env);
+   
+
+ 
     self->state = INIT;                                    
 }
 
@@ -309,7 +319,19 @@ static void METHOD_FN(stop)
 static void METHOD_FN(shutdown)
 {
     
-    
+	//uint64_t shared_page_leeches  = 0;
+	if (g_do_shared_blaming){
+		//shared_page_leeches = fetch_and_add(&(ipc_data->leeches), -1L);	
+		if( shmdt(ipc_data) != 0) {
+			EMSG("\n Failed to shmdt() a shared page");
+		}
+		//if(shared_page_leeches == 1) {  // I was the last one;
+			if( shmctl(g_shmid, IPC_RMID, NULL) != 0)
+				EMSG("\n Failed to shmctl() the  leech on the shared page");
+			else
+				TMSG(CPU_GPU_BLAME_CTL, "\n deleted the leech");
+		//}
+	}    
 #if 0
     if (!g_stream0_not_initialized) {
         fprintf(stderr, "\n MAY BE BROKEN FOR MULTITHREADED");

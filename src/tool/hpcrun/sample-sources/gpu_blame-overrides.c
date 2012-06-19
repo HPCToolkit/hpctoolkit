@@ -61,6 +61,7 @@
 #include <stdbool.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <unistd.h>
 
 #include <signal.h>
 #include <sys/time.h>           /* setitimer() */
@@ -253,16 +254,6 @@ typedef struct active_kernel_node_t {
 
 
 
-typedef struct IPC_data_t {
-    uint32_t device_id;
-    uint64_t outstanding_kernels;
-    spinlock_t ipc_lock;
-} IPC_data_t;
-
-IPC_data_t * ipc_data;
-
-
-
 //void CUPTIAPI EventInsertionCallback(void *userdata, CUpti_CallbackDomain domain, CUpti_CallbackId cbid, const void *cbInfo);
 
 /******************************************************************************
@@ -299,7 +290,19 @@ static bool g_stream0_not_initialized = true;
 
 // ******* METHOD DEFINITIONS ***********
 
+static inline uint64_t get_shared_key(int device_id){
+	char name[200] = {0};
+	uint32_t i = 0;
+	gethostname(name, 200);
+ 	// some crude hash function
+	uint64_t hash = 0xcafeba00;
+        int c;
 
+        while (c = name[i++])
+            hash = c + (hash << 6) + (hash << 16) - hash;
+
+        return (hash << 8)| device_id;
+}
 
 // TODO: need to unmap and get new if the context/device changes
 static inline void create_shared_memory(){
@@ -307,18 +310,17 @@ static inline void create_shared_memory(){
     int device_id; 
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_GET_DEVICE].cudaGetDeviceReal(&device_id));
     
-    int shmid;
-    key_t key = 0xcafeba00 | device_id;
+    key_t key = 0xbebebe00 | device_id; //get_shared_key(device_id);
     char *shm;
     
-    if ((shmid = shmget(key, sizeof(IPC_data_t), IPC_CREAT | 0666)) < 0) {
-	EEMSG("Failed to shmget() on device %d, retval = %d", device_id, shmid);
+    if ((g_shmid = shmget(key, sizeof(IPC_data_t), IPC_CREAT | 0666)) < 0) {
+	EEMSG("Failed to shmget() on device %d, retval = %d", device_id, g_shmid);
     	monitor_real_abort();
     }
     /*
      *      * Now we attach the segment to our data space.
      *           */
-    if ((shm = shmat(shmid, NULL, 0)) == (char *) -1) {
+    if ((shm = shmat(g_shmid, NULL, 0)) == (char *) -1) {
 	EEMSG("Failed to shmat() on device %d, retval = %d", device_id, shm);
     	monitor_real_abort();
     }
@@ -328,8 +330,9 @@ static inline void create_shared_memory(){
      zero values as per http://www.kernel.org/doc/man-pages/online/pages/man2/shmget.2.html
     */
  
-    ipc_data->device_id = device_id;
-    
+    //ipc_data->device_id = device_id;
+    //atomic_add_i64( &(ipc_data->leeches), 1L); 
+    //printf("\n Shared mem created for device %d..leech = %lu", device_id, ipc_data->leeches);
     printf("\n Shared mem created for device %d", device_id);
 }
 
@@ -962,7 +965,7 @@ cudaError_t cudaLaunch(const char *entry) {
     ucontext_t context;
     getcontext(&context);
     // skipping 2 inner for LAMMPS
-    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ ).sample_node;
+    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, g_cuda_launch_skip_inner /*skipInner */ , 1 /*isSync */ ).sample_node;
     // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
     // TODO: Get correct level .. 3 worked but not on S3D
     ////node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);

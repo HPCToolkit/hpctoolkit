@@ -46,7 +46,8 @@
 
 #ifndef __GPU_BLAME_H__
 #define __GPU_BLAME_H__
-
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #include <hpcrun/cct/cct.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -209,7 +210,15 @@ typedef struct stream_to_id_map_t {
 } stream_to_id_map_t;
 
 
+typedef struct IPC_data_t {
+    uint32_t device_id;
+    //uint64_t leeches;
+    uint64_t outstanding_kernels;
+    spinlock_t ipc_lock;
+} IPC_data_t;
 
+extern IPC_data_t * ipc_data;
+extern int g_shmid;
 
 // Visible global variables
 extern stream_node_t *g_unfinished_stream_list_head;
@@ -239,6 +248,7 @@ extern spinlock_t g_gpu_lock;
 
 extern uint64_t g_active_threads;
 extern bool g_do_shared_blaming;
+extern uint32_t g_cuda_launch_skip_inner;
 
 extern uint64_t g_active_threads;
 extern stream_node_t *g_unfinished_stream_list_head;
