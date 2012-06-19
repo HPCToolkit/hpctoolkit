@@ -331,11 +331,8 @@ for a number of processes in the hundreds.
 \section{Starting and Stopping Sampling}
 
 \HPCToolkit{} supports an API for the application to start and stop
-sampling.  This is useful if the application wants to profile only a
-subset of the program and ignore the rest.  This interface is process
-wide, not thread specific.  And technically, when sampling is turned
-off, \hpcrun{} continues to receive interrupts, but it doesn't unwind
-the call stack or record samples.  This API supports the following
+sampling.  This is useful if you want to profile only a subset of a
+program and ignore the rest.  The API supports the following
 functions.
 
 \begin{quote}
@@ -344,6 +341,36 @@ void hpctoolkit_sampling_start(void);
 void hpctoolkit_sampling_stop(void);
 \end{verbatim}
 \end{quote}
+
+For example, suppose that your program has three major phases: it
+reads input from a file, performs some numerical computation on the
+data and then writes the output to another file.  And suppose that you
+want to profile only the compute phase and skip the read and write
+phases.  In that case, you could stop sampling at the beginning of the
+program, restart it before the compute phase and stop it again at the
+end of the compute phase.
+
+This interface is process wide, not thread specific.  That is, it
+affects all threads of a process.  Note that when you turn sampling on
+or off, you should do so uniformly across all processes, normally at
+the same point in the program.  Enabling sampling in only a subset of
+the processes would likely produce skewed and misleading results.
+
+And for technical reasons, when sampling is turned off in a threaded
+process, interrupts are disabled only for the current thread.  Other
+threads continue to receive interrupts, but they don't unwind the call
+stack or record samples.  So, another use for this interface is to
+protect syscalls that are sensitive to being interrupted with signals.
+For example, some Gemini interconnect (GNI) functions called from
+inside \verb|gasnet_init()| or \verb|MPI_Init()| on Cray XE systems
+will fail if they are interrupted by a signal.  As a workaround, you
+could turn sampling off around those functions.
+
+Also, you should use this interface only at the top level for major
+phases of your program.  That is, the granularity of turning sampling
+on and off should be much larger than the time between samples.
+Turning sampling on and off down inside an inner loop will likely
+produce skewed and misleading results.
 
 To use this interface, put the above function calls into your program
 where you want sampling to start and stop.  Remember, starting and
