@@ -121,6 +121,9 @@ extern void hpcrun_drop_sample(void);
 extern cct_node_t* hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
 				   int skipInner, int isSync, void *arg);
 
+extern cct_node_t* hpcrun_sample_callpath_idle(void *context, int metricId, uint64_t metricIncr, 
+				   int skipInner, int isSync, void *arg);
+
 extern cct_node_t* hpcrun_gen_thread_ctxt(void *context);
 
 extern cct_node_t* hpcrun_sample_callpath_w_bt(void *context,
