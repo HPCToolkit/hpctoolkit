@@ -270,6 +270,127 @@ hpcrun_sample_callpath(void *context, int metricId,
   return node;
 }
 
+//
+// "Special" routine to serve as a placeholder for "idle" resource
+//
+void
+hpcrun_special_IDLE(void)
+{
+}
+
+// FIXME: should not be a separated function from 
+// hpcrun_sample_callpath
+cct_node_t*
+hpcrun_sample_callpath_idle(void *context, int metricId,
+		       uint64_t metricIncr,
+		       int skipInner, int isSync,
+		       void* arg )// misc hook for plugin/hook data
+{
+  if (monitor_block_shootdown()) {
+    monitor_unblock_shootdown();
+    return NULL;
+  }
+
+  // Sampling turned off by the user application.
+  // This doesn't count as a sample for the summary stats.
+  if (! hpctoolkit_sampling_is_active()) {
+    return NULL;
+  }
+
+  hpcrun_stats_num_samples_total_inc();
+
+  if (hpcrun_is_sampling_disabled()) {
+    TMSG(SAMPLE,"global suspension");
+    hpcrun_all_sources_stop();
+    monitor_unblock_shootdown();
+    return NULL;
+  }
+
+  // Synchronous unwinds (pthread_create) must wait until they acquire
+  // the read lock, but async samples give up if not avail.
+  // This only applies in the dynamic case.
+#ifndef HPCRUN_STATIC_LINK
+  if (isSync) {
+    while (! hpcrun_dlopen_read_lock()) ;
+  }
+  else if (! hpcrun_dlopen_read_lock()) {
+    TMSG(SAMPLE_CALLPATH, "skipping sample for dlopen lock");
+    hpcrun_stats_num_samples_blocked_dlopen_inc();
+    monitor_unblock_shootdown();
+    return NULL;
+  }
+#endif
+
+  TMSG(SAMPLE_CALLPATH, "attempting sample");
+  hpcrun_stats_num_samples_attempted_inc();
+
+  thread_data_t* td = hpcrun_get_thread_data();
+  sigjmp_buf_t* it = &(td->bad_unwind);
+  cct_node_t* node = NULL;
+  epoch_t* epoch = td->epoch;
+
+  hpcrun_set_handling_sample(td);
+
+  td->btbuf_cur = NULL;
+  int ljmp = sigsetjmp(it->jb, 1);
+  if (ljmp == 0) {
+
+    if (epoch != NULL) {
+      if (ENABLED(DEBUG_PARTIAL_UNW)){
+	EMSG("PARTIAL UNW debug sampler invoked @ sample %d", hpcrun_stats_num_samples_attempted());
+	node = hpcrun_dbg_sample_callpath(epoch, context, metricId, metricIncr,
+					  skipInner, isSync);
+      }
+      else {
+	node = help_hpcrun_sample_callpath(epoch, context, metricId, metricIncr,
+					   skipInner, isSync, arg);
+      }
+      if (ENABLED(DUMP_BACKTRACES)) {
+	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
+      }
+    }
+  }
+  else {
+    cct_bundle_t* cct = &(td->epoch->csdata);
+    node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
+				 metricId, metricIncr);
+    hpcrun_cleanup_partial_unwind();
+  }
+
+  //
+  // FIXME: need to correct some trace ids when cct merging
+  //        of deferred trees happens.
+  //
+  if (trace_isactive()) {
+    void* pc = &hpcrun_special_IDLE;
+
+    ip_normalized_t pc_proxy = hpcrun_normalize_ip(pc, NULL);
+
+    cct_addr_t frm = { .ip_norm = pc_proxy };
+    cct_node_t* idle_proxy = 
+      hpcrun_cct_insert_addr((node), &frm);
+
+    // modify the persistent id
+    hpcrun_cct_persistent_id_trace_mutate(idle_proxy); 
+
+    trace_append(hpcrun_cct_persistent_id(idle_proxy));
+  }
+
+  hpcrun_clear_handling_sample(td);
+  if (TD_GET(mem_low) || ENABLED(FLUSH_EVERY_SAMPLE)) {
+    hpcrun_flush_epochs();
+    hpcrun_reclaim_freeable_mem();
+  }
+#ifndef HPCRUN_STATIC_LINK
+  hpcrun_dlopen_read_unlock();
+#endif
+  
+  TMSG(SAMPLE_CALLPATH,"done w sample, return %p", node);
+  monitor_unblock_shootdown();
+
+  return node;
+}
+
 static int const PTHREAD_CTXT_SKIP_INNER = 1;
 
 cct_node_t*

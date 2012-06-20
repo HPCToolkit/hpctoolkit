@@ -74,6 +74,7 @@ l_insert_path(cct_node_t* node, cct_op_arg_t arg, size_t level)
   cct_node_t** tree = (cct_node_t**) arg;
   *tree = hpcrun_cct_insert_addr(*tree, addr);
 }
+
 //
 // Interface procedures
 //

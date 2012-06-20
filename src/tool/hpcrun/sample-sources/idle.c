@@ -364,7 +364,7 @@ idle(bool thres_check)
   hpcrun_async_block();
   ucontext_t uc;
   getcontext(&uc);
-  hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1, NULL);
+  hpcrun_sample_callpath_idle(&uc, idle_metric_id, 0, 2, 1, NULL);
   hpcrun_async_unblock();
   ret = time_getTimeReal(&TD_GET(last_bar_time_us));
   if (ret != 0) {
