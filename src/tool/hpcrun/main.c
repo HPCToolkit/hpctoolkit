@@ -348,7 +348,7 @@ hpcrun_init_thread_support()
 static void
 logit(cct_node_t* n, cct_op_arg_t arg, size_t l)
 {
-  int iarg = (int) arg;
+  int iarg = (int) (intptr_t) arg;
   TMSG(THREAD_CTXT, "thr %d -- %d: lm-id: %d  lm-ip: %p",
        iarg,
        hpcrun_cct_persistent_id(n),
@@ -367,7 +367,7 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   if (! thr_ctxt) EMSG("Thread id %d passes null context", id);
   
   if (ENABLED(THREAD_CTXT))
-      hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) id);
+    hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (intptr_t) id);
   //
   hpcrun_thread_data_init(id, thr_ctxt, 0);
 
