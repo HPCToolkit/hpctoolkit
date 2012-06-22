@@ -262,6 +262,9 @@ void unlock_fn(void *lock)
 
   // __sync_lock_test_and_set is used in libgomp
   // we also find it is faster than __sync_fetch_and_and
+  // FIXME: we need to test the semantics of test_and_set to make sure it gives
+  // the same value as fetch_and_and, the gcc spec said it may igore 0 that passed 
+  // to it.
 //  int val = __sync_fetch_and_and(l, 0);
   int val = __sync_lock_test_and_set(l, 0);
 
