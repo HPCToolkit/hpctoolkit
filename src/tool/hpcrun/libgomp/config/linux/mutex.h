@@ -43,12 +43,13 @@ static inline void gomp_mutex_init (gomp_mutex_t *mutex)
 extern void gomp_mutex_lock_slow (gomp_mutex_t *mutex);
 static inline void gomp_mutex_lock (gomp_mutex_t *mutex)
 {
-  if(gomp_monitor_lock) gomp_monitor_lock(mutex);
-  else {
-    if (!__sync_bool_compare_and_swap (mutex, 0, 1))
+  if (!__sync_bool_compare_and_swap (mutex, 0, 1)) {
+    if(gomp_monitor_lock) gomp_monitor_lock(mutex);
+    else
       gomp_mutex_lock_slow (mutex);
   }
 }
+
 
 extern void gomp_mutex_unlock_slow (gomp_mutex_t *mutex);
 static inline void gomp_mutex_unlock (gomp_mutex_t *mutex)
