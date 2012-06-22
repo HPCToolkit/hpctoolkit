@@ -259,7 +259,12 @@ void lock_fn(void *lock)
 void unlock_fn(void *lock)
 {
   int32_t *l = (int32_t *)lock;
-  int val = __sync_fetch_and_and(l, 0);
+
+  // __sync_lock_test_and_set is used in libgomp
+  // we also find it is faster than __sync_fetch_and_and
+//  int val = __sync_fetch_and_and(l, 0);
+  int val = __sync_lock_test_and_set(l, 0);
+
   if(OVERFLOW(val)) {
     val = INT_MAX; 
   } else {
