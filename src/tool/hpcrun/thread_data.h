@@ -139,6 +139,7 @@ typedef struct thread_data_t {
   int defer_flag; //whether should defer the context creation
 
   int master; // whether the thread is the master thread
+  int team_master; // whether the thread is the team master thread
  
   int defer_write; // whether should defer the write
 

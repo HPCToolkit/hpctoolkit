@@ -175,7 +175,6 @@ r_splay_count_update(uint64_t region_id, uint64_t val)
   spinlock_unlock(&record_tree_lock);
   return true;
 }
-
 /******************************************************************************
  * private operations 
  *****************************************************************************/
@@ -256,6 +255,12 @@ void end_team_fn()
       r_splay_count_update(record->region_id, 0L);
     }
   }
+  // FIXME: not using team_master but use another routine to 
+  // resolve team_master's tbd. Only with tasking, a team_master
+  // need to resolve itself
+  TD_GET(team_master) = 1;
+  resolve_cntxt_fini();
+  TD_GET(team_master) = 0;
   hpcrun_async_unblock();
 }
 
@@ -358,12 +363,20 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
     // adjust the callsite of the prefix in side threads to make sure they are the same as
     // in the master thread. With this operation, all sides threads and the master thread
     // will have the unified view for parallel regions (this only works for GOMP)
-    if (DISABLED(KEEP_GOMP_START))
-      hpcrun_cct_addr(prefix)->ip_norm.lm_ip -= 5L;
-    hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
-    // must delete it when not used considering the performance
-    r_splay_count_update(my_region_id, -1L);
-    TMSG(DEFER_CTXT, "resolve region %d", my_region_id);
+    if(TD_GET(team_master)) {
+      cct_node_t *sibling = hpcrun_cct_insert_addr(hpcrun_cct_parent(prefix), 
+			    &(ADDR2(hpcrun_cct_addr(prefix)->ip_norm.lm_id, 
+				hpcrun_cct_addr(prefix)->ip_norm.lm_ip-5L)));
+      hpcrun_cct_merge(sibling, cct, merge_metrics, NULL);
+    }
+    else {
+      if (DISABLED(KEEP_GOMP_START))
+        hpcrun_cct_addr(prefix)->ip_norm.lm_ip -= 5L;
+      hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
+      // must delete it when not used considering the performance
+      r_splay_count_update(my_region_id, -1L);
+      TMSG(DEFER_CTXT, "resolve region %d", my_region_id);
+    }
   }
 }
 

@@ -85,7 +85,7 @@ void start_task_fn(void** pointer)
     omp_arg.context = copy_task_cntxt(parent_task_cntxt);
 
     hpcrun_async_block();
-    *pointer = hpcrun_sample_callpath(&uc, 0, 0, 0, 1, (void*) &omp_arg);
+    *pointer = hpcrun_sample_callpath(&uc, 0, 0, 1, 1, (void*) &omp_arg);
     hpcrun_async_unblock();
  
   }
@@ -99,13 +99,13 @@ void start_task_fn(void** pointer)
     }
     hpcrun_async_block();
     // record the task creation context into task structure (in omp runtime)
-    *pointer = (void *)hpcrun_sample_callpath(&uc, 0, 0, 0, 1, (void*) &omp_arg);
+    *pointer = (void *)hpcrun_sample_callpath(&uc, 0, 0, 1, 1, (void*) &omp_arg);
     hpcrun_async_unblock();
   }
   else {
     hpcrun_async_block();
     // record the task creation context into task structure (in omp runtime)
-    *pointer = (void *)hpcrun_sample_callpath(&uc, 0, 0, 0, 1, NULL);
+    *pointer = (void *)hpcrun_sample_callpath(&uc, 0, 0, 1, 1, NULL);
     hpcrun_async_unblock();
   }
   td->overhead --;
@@ -127,7 +127,11 @@ void* need_task_cntxt()
 
 void *copy_task_cntxt(void* creation_context)
 {
-  return hpcrun_cct_insert_path((cct_node_t *)creation_context,
+  if(ENABLED(SET_DEFER_CTXT) && (is_partial_resolve((cct_node_t *)creation_context) > 0))
+    return hpcrun_cct_insert_path((cct_node_t *)creation_context,
+				hpcrun_get_tbd_cct());
+  else
+    return hpcrun_cct_insert_path((cct_node_t *)creation_context,
 				hpcrun_get_top_cct());
 }
 
