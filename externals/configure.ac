@@ -34,7 +34,7 @@ dnl
 dnl  $Id$
 dnl
 
-AC_INIT([hpctoolkit-externals], [5.2.1], [hpctoolkit-forum@rice.edu],
+AC_INIT([hpctoolkit-externals], [5.3.0], [hpctoolkit-forum@rice.edu],
         [hpctoolkit-externals], [http://hpctoolkit.org/])
 AC_COPYRIGHT([Copyright (c) 2008-2012, Rice University.
 See the file LICENSE for details.])
@@ -1104,7 +1104,7 @@ AC_MSG_NOTICE([------------------])
 AC_MSG_NOTICE([Externals summary])
 AC_MSG_NOTICE([------------------])
 
-AC_MSG_NOTICE([svn revision: $svn_revision])
+AC_MSG_NOTICE([version: $PACKAGE_VERSION])
 AC_MSG_NOTICE([prefix: $prefix])
 AC_MSG_NOTICE([build: $build])
 AC_MSG_NOTICE([host:  $host])
