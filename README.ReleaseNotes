@@ -182,13 +182,30 @@ Contents:
 ------------------------------------------------------------
 
 ----------------------------------------
-HPCToolkit Version 5.x (upcoming)
+HPCToolkit Version 5.3.0 [2012.06.25]
 ----------------------------------------
 
 - hpcrun
+  - add an IO sample source to count the number of bytes read and written
+  - add a Global Arrays sample source
   - add an API for the application to start and stop sampling
   - get the process rank for gasnet and dmapp programs (static only)
   - have hpcrun compress recursive calls by default
+  - early support for a plugin feature
+  - strengthen the async blocks to better handle the case of running
+    sync and async sample sources in the same run
+  - add a check that hpctoolkit and externals use the same C/C++ compilers.
+    this should all but eliminate the 'GLIBCXX not found' errors
+
+- externals
+  - binutils: put the line info table into a splay tree.  for some
+    BlueGene binaries, this speeds up hpcstruct by as much as 20x
+  - libmonitor: update to rev 140.  this better handles signals and
+    the side threads from the Cray UPC compiler
+  - open analysis: bug fix to avoid missing some loops
+  - symtabAPI: fix an off-by-one error that sometimes caused a
+    segfault (thanks to Gary Mohr at Bull)
+  - xerces: fix a compilation bug on BlueGene
 
 
 ----------------------------------------
