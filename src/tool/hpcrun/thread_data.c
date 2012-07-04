@@ -140,7 +140,7 @@ hpcrun_thread_data_reuse_init(cct_ctxt_t* thr_ctxt)
 
   td->region_id = 0;
 
-  td->outer_region_id = 0;
+  td->outer_region_id = NULL;
 
   td->master = 0;
   td->team_master = 0;
@@ -271,7 +271,7 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
 
   td->region_id = 0;
 
-  td->outer_region_id = 0;
+  td->outer_region_id = NULL;
 
   td->defer_flag = 0;
   
