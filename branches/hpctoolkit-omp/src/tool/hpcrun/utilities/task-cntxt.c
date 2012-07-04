@@ -72,6 +72,7 @@ void *copy_task_cntxt(void*);
 
 void start_task_fn(void** pointer)
 {
+  init_region_id(true);
   thread_data_t *td = hpcrun_get_thread_data();
   td->overhead ++;
   ucontext_t uc;

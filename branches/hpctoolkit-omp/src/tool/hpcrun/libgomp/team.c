@@ -35,7 +35,7 @@ pthread_attr_t gomp_thread_attr;
 /* This key is for the thread destructor.  */
 pthread_key_t gomp_thread_destructor;
 
-gomp_mutex_t gomp_parallel_region_id_lock;
+//gomp_mutex_t gomp_parallel_region_id_lock;
 
 /* This is the libgomp per-thread data structure.  */
 #ifdef HAVE_TLS
@@ -90,7 +90,7 @@ void GOMP_team_callback_register(void (*new_team_start_fn) (void), void (*new_te
   gomp_team_callback_register(new_team_start_fn, new_team_end_fn);
 }
 
-uint64_t 
+uint64_t* 
 gomp_get_region_id()
 {
   struct gomp_thread *thr = NULL;
@@ -104,19 +104,19 @@ gomp_get_region_id()
 #endif
   
   thr = gomp_thread ();
-  if (thr == NULL) return 0;
-  if (!thr->ts.team) return 0;
+  if (thr == NULL) return NULL;
+  if (!thr->ts.team) return NULL;
 
-  return thr->ts.team->region_id;
+  return &(thr->ts.team->region_id);
 }
 
-uint64_t
+uint64_t*
 GOMP_get_region_id()
 {
   return gomp_get_region_id();
 }
 
-uint64_t 
+uint64_t* 
 gomp_get_outer_region_id()
 {
   struct gomp_thread *thr;
@@ -127,13 +127,13 @@ gomp_get_outer_region_id()
   thr = pthread_getspecific (gomp_tls_key);
 #endif
 
-  if (thr == 0) return 0;
-  if (!thr->ts.team) return 0;
+  if (thr == 0) return NULL;
+  if (!thr->ts.team) return NULL;
 
   return thr->ts.team->outer_region_id;
 }
 
-uint64_t
+uint64_t*
 GOMP_get_outer_region_id()
 {
   return gomp_get_outer_region_id();
@@ -223,7 +223,7 @@ gomp_thread_start (void *xdata)
 struct gomp_team *
 gomp_new_team (unsigned nthreads)
 {
-  static volatile uint64_t gomp_parallel_region_id = 1;
+//  static volatile uint64_t gomp_parallel_region_id = 1;
   struct gomp_team *team;
   size_t size;
   int i;
@@ -233,7 +233,7 @@ gomp_new_team (unsigned nthreads)
   team = gomp_malloc (size);
 
   team->region_id = 0;
-  team->outer_region_id = 0;
+  team->outer_region_id = NULL;
 
   team->work_share_chunk = 8;
 #ifdef HAVE_SYNC_BUILTINS
@@ -263,12 +263,14 @@ gomp_new_team (unsigned nthreads)
   
 
   team->outer_region_id = gomp_get_region_id();
+#if 0
 #ifdef HAVE_SYNC_BUILTINS
   team->region_id = __sync_fetch_and_add (&gomp_parallel_region_id, 1);
 #else
   gomp_mutex_lock (&gomp_parallel_region_id_lock);
   team->region_id = gomp_parallel_region_id++;
   gomp_mutex_unlock (&gomp_parallel_region_id_lock);
+#endif
 #endif
 
   return team;
@@ -640,7 +642,7 @@ initialize_team (void)
   thr = &initial_thread_tls_data;
 #endif
   gomp_sem_init (&thr->release, 0);
-  gomp_mutex_init (&gomp_parallel_region_id_lock);
+//  gomp_mutex_init (&gomp_parallel_region_id_lock);
 }
 
 static void __attribute__((destructor))

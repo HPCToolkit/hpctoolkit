@@ -261,8 +261,8 @@ struct gomp_task
 
 struct gomp_team
 {
-  /* the outer-most id for the team creation */
-  uint64_t outer_region_id; 
+  /* point to the outer-most id for the team creation */
+  uint64_t* outer_region_id; 
   /* the id for the team creation */
   uint64_t region_id; 
 

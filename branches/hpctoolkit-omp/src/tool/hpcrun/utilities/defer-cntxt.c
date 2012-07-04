@@ -193,6 +193,53 @@ new_record(uint64_t region_id)
   return record;
 }
 
+static volatile uint64_t gomp_parallel_region_id = 1;
+
+static bool
+set_outer_most_region_id()
+{
+  uint64_t tmp_region_id = 0;
+  thread_data_t *td = hpcrun_get_thread_data();
+  if(!td->outer_region_id) return false;
+  if(td->outer_region_id && (*td->outer_region_id == 0)) {
+    tmp_region_id =  __sync_fetch_and_add (&gomp_parallel_region_id, 1);
+    if(__sync_bool_compare_and_swap(td->outer_region_id, 0, tmp_region_id)) {
+      struct record_t *record = new_record(*td->outer_region_id);
+      r_splay_insert(record);
+    }
+  }
+  return true;
+}
+
+static bool
+set_inner_most_region_id()
+{
+  uint64_t tmp_region_id = 0;
+  uint64_t* region_id = GOMP_get_region_id();
+  if((omp_get_thread_num() > 0) && region_id && (*region_id == 0)) {
+    tmp_region_id =  __sync_fetch_and_add (&gomp_parallel_region_id, 1);
+    if(__sync_bool_compare_and_swap(region_id, 0, tmp_region_id)) {
+      struct record_t *record = new_record(*region_id);
+      r_splay_insert(record);
+    }
+  }
+  return true;
+}
+
+void
+init_region_id(bool task_flag)
+{
+  // create new record entry for a new region
+  
+  if(task_flag) {
+    set_outer_most_region_id();
+    set_inner_most_region_id();
+  }
+  else {
+    if(!set_outer_most_region_id())
+      set_inner_most_region_id();
+  }
+}
 //
 // only master and sub-master thread execute start_team_fn and end_team_fn
 //
@@ -204,14 +251,12 @@ void start_team_fn()
   if(omp_get_level() == 1 && omp_get_thread_num() == 0) {
     td->master = 1;
   }
-  // create new record entry for a new region
-  uint64_t region_id = GOMP_get_region_id();
-  struct record_t *record = new_record(region_id);
-  r_splay_insert(record);
-
-  if(td->outer_region_id == 0) {
+  if(td->outer_region_id == NULL) {
     td->outer_region_id = GOMP_get_outer_region_id();
   }
+  // update the outer most region id
+  else if(omp_get_level() == 2)
+    td->outer_region_id = GOMP_get_outer_region_id();
   hpcrun_async_unblock();
 }
 
@@ -219,7 +264,7 @@ void end_team_fn()
 {
   hpcrun_async_block();
   cct_node_t *node = NULL;
-  uint64_t region_id = GOMP_get_region_id();
+  uint64_t region_id = *(GOMP_get_region_id());
   struct record_t *record = r_splay_lookup(region_id);
   // insert resolved root to the corresponding record entry
   if(record && (record->region_id == region_id)) {
@@ -272,9 +317,10 @@ void register_defer_callback()
 int need_defer_cntxt()
 {
   // master thread does not need to defer the context
-  if(ENABLED(SET_DEFER_CTXT) && GOMP_get_region_id() > 0 && !TD_GET(master)) {//omp_get_thread_num() != 0) {
+  if(ENABLED(SET_DEFER_CTXT) && GOMP_get_region_id() != NULL && !TD_GET(master)) {//omp_get_thread_num() != 0) {
     thread_data_t *td = hpcrun_get_thread_data();
     td->defer_flag = 1;
+    init_region_id(false);
     return 1;
   }
   return 0;
@@ -389,10 +435,14 @@ omp_resolve_and_free(cct_node_t* cct, cct_op_arg_t a, size_t l)
 void resolve_cntxt()
 {
   hpcrun_async_block();
-  uint64_t current_region_id = GOMP_get_region_id(); //inner-most region id
+  uint64_t current_region_id = *(GOMP_get_region_id()); //inner-most region id
   cct_node_t* tbd_cct = hpcrun_get_tbd_cct();
   thread_data_t *td = hpcrun_get_thread_data();
-  uint64_t outer_region_id = td->outer_region_id; // current outer region
+  uint64_t outer_region_id = 0;
+  // no outer region in the first level
+  if(omp_get_level() == 1 && td->outer_region_id) td->outer_region_id = NULL;
+  if(td->outer_region_id)
+    outer_region_id = *(td->outer_region_id); // current outer region
   if(outer_region_id == 0) outer_region_id = current_region_id;
   // resolve the trees at the end of one parallel region
   if((td->region_id != outer_region_id) && (td->region_id != 0)){
