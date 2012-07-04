@@ -227,18 +227,14 @@ set_inner_most_region_id()
 }
 
 void
-init_region_id(bool task_flag)
+init_region_id()
 {
   // create new record entry for a new region
-  
-  if(task_flag) {
-    set_outer_most_region_id();
+  // always try to create the outer-most region's ID, if cannot,
+  // create the inner-most region (which is also the outer-most region
+  // in the current thread)
+  if(!set_outer_most_region_id())
     set_inner_most_region_id();
-  }
-  else {
-    if(!set_outer_most_region_id())
-      set_inner_most_region_id();
-  }
 }
 //
 // only master and sub-master thread execute start_team_fn and end_team_fn
@@ -320,7 +316,7 @@ int need_defer_cntxt()
   if(ENABLED(SET_DEFER_CTXT) && GOMP_get_region_id() != NULL && !TD_GET(master)) {//omp_get_thread_num() != 0) {
     thread_data_t *td = hpcrun_get_thread_data();
     td->defer_flag = 1;
-    init_region_id(false);
+    init_region_id();
     return 1;
   }
   return 0;
