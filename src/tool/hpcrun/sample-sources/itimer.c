@@ -427,6 +427,12 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     // check whether we need to defer the context creation
     void *task_context = NULL;
     if(task_context = need_task_cntxt()) {
+      if(need_defer_cntxt()) {
+        thread_data_t *td = hpcrun_get_thread_data();
+        if(td->defer_flag)
+          resolve_cntxt();
+      }
+
       omp_arg_t omp_arg;
       omp_arg.tbd = false;
       omp_arg.region_id = 0;

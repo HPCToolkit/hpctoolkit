@@ -72,7 +72,6 @@ void *copy_task_cntxt(void*);
 
 void start_task_fn(void** pointer)
 {
-  init_region_id(true);
   thread_data_t *td = hpcrun_get_thread_data();
   td->overhead ++;
   ucontext_t uc;
@@ -91,13 +90,18 @@ void start_task_fn(void** pointer)
  
   }
   else if(need_defer_cntxt()) {
+    //make sure we assign an ID for the region that task is in
+    init_region_id();
+
     omp_arg_t omp_arg;
     omp_arg.tbd = false;
     omp_arg.context = NULL;
-    if(TD_GET(region_id) > 0) {
-      omp_arg.tbd = true;
-      omp_arg.region_id = TD_GET(region_id);
-    }
+    // start_task_fn is always called in a parallel region
+    // after calling resolve_cntxt(), td->region_id is the region ID of
+    // the outer most region in the current thread
+    resolve_cntxt();
+    omp_arg.tbd = true;
+    omp_arg.region_id = TD_GET(region_id);
     hpcrun_async_block();
     // record the task creation context into task structure (in omp runtime)
     *pointer = (void *)hpcrun_sample_callpath(&uc, 0, 0, 1, 1, (void*) &omp_arg);

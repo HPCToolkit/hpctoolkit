@@ -19,5 +19,6 @@ void resolve_other_cntxt(thread_data_t *thread_data);
 
 uint64_t is_partial_resolve(cct_node_t *prefix);
 
-void init_region_id(bool task_flag);
+//deferred region ID assignment
+void init_region_id();
 #endif
