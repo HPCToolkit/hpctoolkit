@@ -1,0 +1,96 @@
+Add support functions to return the start addresses of main() and
+the pthread start routine for the current thread.
+
+   void *monitor_get_addr_main(void);
+   void *monitor_get_addr_thread_start(void);
+
+These functions are available in monitor_init_process() and
+monitor_init_thread().
+
+
+Index: libmonitor-main/src/pthread.c
+===================================================================
+--- libmonitor-main/src/pthread.c	(revision 140)
++++ libmonitor-main/src/pthread.c	(working copy)
+@@ -52,6 +52,7 @@
+  *    monitor_in_start_func_narrow
+  *    monitor_real_pthread_sigmask
+  *    monitor_broadcast_signal
++ *    monitor_get_addr_thread_start
+  */
+ 
+ #include "config.h"
+@@ -661,6 +662,19 @@
+ }
+ 
+ /*
++ *  Returns: the address of the pthread start routine for the current
++ *  thread, or else NULL on error.
++ */
++void *
++monitor_get_addr_thread_start(void)
++{
++    struct monitor_thread_node *tn;
++
++    tn = monitor_get_tn();
++    return (tn == NULL) ? NULL : tn->tn_start_routine;
++}
++
++/*
+  *  Returns: 1 if address is at the bottom of the thread's call stack,
+  *  else 0.
+  */
+Index: libmonitor-main/src/main.c
+===================================================================
+--- libmonitor-main/src/main.c	(revision 140)
++++ libmonitor-main/src/main.c	(working copy)
+@@ -44,6 +44,7 @@
+  *    monitor_real_exit
+  *    monitor_real_sigprocmask
+  *    monitor_real_fork
++ *    monitor_get_addr_main
+  */
+ 
+ #include "config.h"
+@@ -418,6 +419,15 @@
+ }
+ 
+ /*
++ *  Returns: the address of the application's main() function.
++ */
++void *
++monitor_get_addr_main(void)
++{
++    return real_main;
++}
++
++/*
+  *----------------------------------------------------------------------
+  *  EXTERNAL OVERRIDES and their helper functions
+  *----------------------------------------------------------------------
+@@ -613,6 +623,12 @@
+ }
+ 
+ void * __attribute__ ((weak))
++monitor_get_addr_thread_start(void)
++{
++    return NULL;
++}
++
++void * __attribute__ ((weak))
+ monitor_stack_bottom(void)
+ {
+     return (monitor_main_tn.tn_stack_bottom);
+Index: libmonitor-main/src/monitor.h
+===================================================================
+--- libmonitor-main/src/monitor.h	(revision 140)
++++ libmonitor-main/src/monitor.h	(working copy)
+@@ -89,6 +89,8 @@
+ 			     int flags, struct sigaction *act);
+ extern int monitor_broadcast_signal(int sig);
+ extern int monitor_is_threaded(void);
++extern void *monitor_get_addr_main(void);
++extern void *monitor_get_addr_thread_start(void);
+ extern void *monitor_get_user_data(void);
+ extern int monitor_get_thread_num(void);
+ extern void *monitor_stack_bottom(void);
