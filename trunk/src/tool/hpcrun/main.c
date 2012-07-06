@@ -154,11 +154,24 @@ int lush_metrics = 0; // FIXME: global variable for now
 
 static hpcrun_options_t opts;
 static bool hpcrun_is_initialized_private = false;
+static void* main_addr = NULL;
+static void* main_lower = NULL;
+static void* main_upper = (void*) (intptr_t) -1;
 
+//
+// Local functions
+//
+static void
+setup_main_bounds_check(void* main_addr)
+{
+  if (! main_addr) return;
+  load_module_t* lm = NULL;
+  fnbounds_enclosing_addr(main_addr, &main_lower, &main_upper, &lm);
+}
 
-//***************************************************************************
-// inline functions
-//***************************************************************************
+//
+// *** Accessor functions ****
+//
 
 bool
 hpcrun_is_initialized()
@@ -166,7 +179,17 @@ hpcrun_is_initialized()
   return hpcrun_is_initialized_private;
 }
 
+void*
+hpcrun_get_addr_main(void)
+{
+  return main_addr;
+}
 
+bool
+hpcrun_inbounds_main(void* addr)
+{
+  return (main_lower <= addr) && (addr <= main_upper);
+}
 
 //***************************************************************************
 // *** Important note about libmonitor callbacks ***
@@ -204,6 +227,10 @@ hpcrun_init_internal(bool is_child)
   // processing below. Also, fnbounds_init must be done after the
   // memory allocator is initialized.
   fnbounds_init();
+
+  main_addr = monitor_get_addr_main();
+  setup_main_bounds_check(main_addr);
+
   hpcrun_options__init(&opts);
   hpcrun_options__getopts(&opts);
 
