@@ -61,6 +61,8 @@
 #include <stdbool.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <fcntl.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 #include <signal.h>
@@ -121,7 +123,7 @@ if (err != CUDA_SUCCESS)                                              \
 {                                                                   \
 printf ("%s:%d: error %d for CUDA Driver API function '%s'\n",    \
 __FILE__, __LINE__, err, cufunc);                         \
-exit(-1);                                                         \
+monitor_real_abort();                                                         \
 }
 
 #define CHECK_CUPTI_ERROR(err, cuptifunc)                               \
@@ -131,7 +133,7 @@ const char *errstr;                                               \
 cuptiGetResultString(err, &errstr);                               \
 printf ("%s:%d:Error %s for CUPTI API function '%s'.\n",          \
 __FILE__, __LINE__, errstr, cuptifunc);                   \
-exit(-1);                                                         \
+monitor_real_abort();                                                         \
 }
 
 #define CU_SAFE_CALL( call ) do {                                         \
@@ -139,7 +141,7 @@ CUresult err = call;                                                     \
 if( CUDA_SUCCESS != err) {                                               \
 fprintf(stderr, "Cuda driver error %d in call at file '%s' in line %i.\n",   \
 err, __FILE__, __LINE__ );                                   \
-exit(-1);                                                     \
+monitor_real_abort();                                                         \
 } } while (0)
 
 #define CUDA_SAFE_CALL( call) do {                                        \
@@ -147,7 +149,7 @@ cudaError_t err = call;                                                    \
 if( cudaSuccess != err) {                                                \
 fprintf(stderr, "Cuda error in call at file '%s' in line %i : %s.\n", \
 __FILE__, __LINE__, cudaGetErrorString( err) );              \
-exit(-1);                                                     \
+monitor_real_abort();                                                         \
 } } while (0)
 
 #define GET_STREAM_ID(x) ((x) - g_stream_array)
@@ -288,6 +290,8 @@ static cudaEvent_t g_start_of_world_event;
 
 static bool g_stream0_not_initialized = true;
 
+IPC_data_t dummy_ipc;
+
 // ******* METHOD DEFINITIONS ***********
 
 static inline uint64_t get_shared_key(int device_id){
@@ -303,7 +307,7 @@ static inline uint64_t get_shared_key(int device_id){
 
         return (hash << 8)| device_id;
 }
-
+#if 0
 // TODO: need to unmap and get new if the context/device changes
 static inline void create_shared_memory(){
 
@@ -335,7 +339,41 @@ static inline void create_shared_memory(){
     //printf("\n Shared mem created for device %d..leech = %lu", device_id, ipc_data->leeches);
     printf("\n Shared mem created for device %d", device_id);
 }
+#else
+static inline void create_shared_memory() {
+	
+    int device_id; 
+    char shared_key[100];
+    int fd ;
+    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_GET_DEVICE].cudaGetDeviceReal(&device_id));
+    sprintf(shared_key, "/gpublame%d",device_id);
+    if ( (fd = shm_open(shared_key, O_RDWR | O_CREAT, 0666)) < 0 ) {
+	EEMSG("Failed to shm_open (%s) on device %d, retval = %d", shared_key, device_id, g_shmid);
+    	monitor_real_abort();
+    }
+    if ( ftruncate(fd, sizeof(IPC_data_t)) < 0 ) {
+	EEMSG("Failed to ftruncate() on device %d",device_id);
+    	monitor_real_abort();
+    }
 
+   if( (ipc_data = mmap(NULL, sizeof(IPC_data_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 )) == MAP_FAILED ) {
+	EEMSG("Failed to mmap() on device %d",device_id);
+    	monitor_real_abort();
+    }
+/*
+    printf("\n CREATED SHM %d", device_id);
+    fflush(stdout);
+    ipc_data->outstanding_kernels += 1;
+    ipc_data->outstanding_kernels -= 1;
+    printf("\n Access Success");
+    fflush(stdout);
+    //sleep(10);
+    //ipc_data = &dummy_ipc;
+    //monitor_real_abort();
+*/
+    
+}
+#endif
 
 static struct stream_to_id_map_t *splay(struct stream_to_id_map_t *root, cudaStream_t key) {
     REGULAR_SPLAY_TREE(stream_to_id_map_t, root, key, stream, left, right);
@@ -1077,8 +1115,6 @@ cudaError_t cudaStreamCreate(cudaStream_t * stream) {
         CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(g_start_of_world_event, 0));
 
         
-        // Ok to call cuda functions from the signal handler
-        TD_GET(is_thread_at_cuda_sync) = false;                      
         
 
         // This is a good time to create the shared memory 
@@ -1087,6 +1123,9 @@ cudaError_t cudaStreamCreate(cudaStream_t * stream) {
             create_shared_memory();
 
         
+        // Ok to call cuda functions from the signal handler
+        TD_GET(is_thread_at_cuda_sync) = false;                      
+
         // enable monitoring new threads
         monitor_enable_new_threads();
     }
@@ -1457,14 +1496,15 @@ CUresult cuStreamCreate(CUstream * phStream, unsigned int Flags) {
 
         CU_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(g_start_of_world_event, 0));
 
-        // Ok to call cuda functions from the signal handler
-        TD_GET(is_thread_at_cuda_sync) = false; 
 
         
         // This is a good time to create the shared memory 
         // FIX ME: DEVICE_ID should be derived
         if(g_do_shared_blaming && ipc_data == NULL)
             create_shared_memory();
+
+        // Ok to call cuda functions from the signal handler
+        TD_GET(is_thread_at_cuda_sync) = false; 
 
         // enable monitoring new threads
         monitor_enable_new_threads();
@@ -1817,11 +1857,13 @@ void gpu_blame_shift_itimer_signal_handler(cct_node_t * node, uint64_t cur_time_
     if (num_unfinshed_streams) {
         // CPU - GPU overlap
 
+//printf("\n cpu_overlap_metric_id = %d\n", cpu_overlap_metric_id);
         // Increment cpu_overlap by metric_incr
         cct_metric_data_increment(cpu_overlap_metric_id, node, (cct_metric_data_t) {
                                   .r = metric_incr}
         );
         
+//printf("\n gpu_overlap_metric_id= %d\n", gpu_overlap_metric_id);
         // Increment gpu_overlap by metric_incr/num_unfinshed_streams for each of the unfinshed streams
         for (stream_node_t * unfinished_stream = unfinished_event_list_head; unfinished_stream; unfinished_stream = unfinished_stream->next_unfinished_stream)
             cct_metric_data_increment(gpu_overlap_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t) {
@@ -1840,6 +1882,7 @@ void gpu_blame_shift_itimer_signal_handler(cct_node_t * node, uint64_t cur_time_
                                   .i = metric_incr});
             }
         } else {
+//printf("\n gpu_idle_metric_id = %d\n", gpu_idle_metric_id);
             // Increment gpu_ilde by metric_incr
             cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
                 .i = metric_incr});            

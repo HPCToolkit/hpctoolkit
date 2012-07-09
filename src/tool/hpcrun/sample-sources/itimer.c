@@ -458,7 +458,7 @@ static int itimer_signal_handler(int sig, siginfo_t * siginfo, void *context)
 			 0/*skipInner*/, 0/*isSync*/).sample_node;
 
 #ifdef ENABLE_CUDA
-        if(g_cpu_gpu_enabled) {
+        if(g_cpu_gpu_enabled && hpcrun_metrics_finalized() ) {
             gpu_blame_shift_itimer_signal_handler(node, cur_time_us, metric_incr);                    
         }
 #endif //ENABLE_CUDA                     
