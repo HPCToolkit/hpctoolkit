@@ -188,14 +188,14 @@ static void PopulateEntryPointesToWrappedCudaRuntimeCalls() {
     handle = dlopen("libcudart.so", RTLD_LAZY);
     if (!handle) {
         fputs(dlerror(), stderr);
-        exit(1);
+	monitor_real_abort();
     }
     
     for (int i = 0; i < CUDA_MAX_APIS; i++) {
         cudaRuntimeFunctionPointer[i].generic = dlsym(handle, cudaRuntimeFunctionPointer[i].functionName);
         if ((error = dlerror()) != NULL) {
             fprintf(stderr, "%s\n", error);
-            exit(1);
+            monitor_real_abort();
         }
     }
 }
@@ -207,14 +207,14 @@ static void PopulateEntryPointesToWrappedCuDriverCalls() {
     handle = dlopen("libcuda.so", RTLD_LAZY);
     if (!handle) {
         fputs(dlerror(), stderr);
-        exit(1);
+        monitor_real_abort();
     }
     
     for (int i = 0; i < CU_MAX_APIS; i++) {
         cuDriverFunctionPointer[i].generic = dlsym(handle, cuDriverFunctionPointer[i].functionName);
         if ((error = dlerror()) != NULL) {
             fprintf(stderr, "%s\n", error);
-            exit(1);
+            monitor_real_abort();
         }
     }
 }
@@ -319,8 +319,12 @@ static void METHOD_FN(stop)
 static void METHOD_FN(shutdown)
 {
     
+	char shared_key[100];
+	int index = 0;
+	int ret_val;
 	//uint64_t shared_page_leeches  = 0;
 	if (g_do_shared_blaming){
+#if 0
 		//shared_page_leeches = fetch_and_add(&(ipc_data->leeches), -1L);	
 		if( shmdt(ipc_data) != 0) {
 			EMSG("\n Failed to shmdt() a shared page");
@@ -331,6 +335,12 @@ static void METHOD_FN(shutdown)
 			else
 				TMSG(CPU_GPU_BLAME_CTL, "\n deleted the leech");
 		//}
+#else
+		for(index =0 ; index < 3 ; index ++){
+			sprintf(shared_key,"/gpublame%d", index);
+			while( shm_unlink(shared_key) != -1) ;
+		}
+#endif
 	}    
 #if 0
     if (!g_stream0_not_initialized) {
