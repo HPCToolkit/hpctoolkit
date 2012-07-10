@@ -231,19 +231,55 @@ than {\tt WALLCLOCK@1000}.  However, on IBM BlueGene, itimer is not
 bound by the Hz rate and so sampling rates faster than 1,000 per
 second are possible.
 
-Do not use both PAPI and {\tt WALLCLOCK} events at the same time.
-That would cause PAPI samples to be interrupted by itimer signals and
-vice versa, and \hpcrun{} is not equipped to handle this case.
+We recommend against using both PAPI and {\tt WALLCLOCK} events in the
+same run.  Technically, this is now possible and \hpcrun{} won't fall
+over.  However, PAPI samples would be interrupted by itimer signals
+and vice versa, and this would lead to many dropped samples and
+possibly distorted results.
+
+\subsection{IO}
+
+The {\tt IO} sample source counts the number of bytes read and
+written.  This displays two metrics in the viewer: ``IO Bytes Read''
+and ``IO Bytes Written.''  The {\tt IO} source is a synchronous sample
+source.  That is, it does not generate asynchronous interrupts.
+Instead, it overrides the functions {\tt read}, {\tt write}, {\tt
+fread} and {\tt fwrite} and records the number of bytes read or
+written along with their dynamic context.
+
+To include this source, use the {\tt IO} event (no period).  In the
+static case, two steps are needed.  Use the {\tt --io} option for
+\hpclink{} to link in the {\tt IO} library and use the {\tt IO} event
+to activate the {\tt IO} source at runtime.  For example,
+
+\begin{quote}
+\begin{tabular}{@{}cl}
+(dynamic) & \verb|hpcrun -e IO app arg ...| \\
+(static)  & \verb|hpclink --io gcc -g -O -static -o app file.c ...| \\
+& \verb|export HPCRUN_EVENT_LIST=IO| \\
+& \verb|app arg ...|
+\end{tabular}
+\end{quote}
+
+The {\tt IO} source is mainly used to find where your program reads or
+writes large amounts of data.  However, it is also useful for tracing
+a program that spends much time in {\tt read} and {\tt write}.  The
+hardware performance counters (PAPI) do not advance while running in
+the kernel, so the trace viewer may misrepresent the amount of time
+spent in syscalls such as {\tt read} and {\tt write}.  By adding the
+{\tt IO} source, \hpcrun{} overrides {\tt read} and {\tt write} and
+thus is able to more accurately count the time spent in these
+functions.
 
 \subsection{Memleak}
 
-The {\tt MEMLEAK} sample source records the number of bytes allocated
-and freed by the program along with their dynamic context.  {\tt
-MEMLEAK} is a synchronous sample source.  That is, it does not
-generate asynchronous interrupts.  Instead, it overrides the malloc
-family of functions ({\tt malloc}, {\tt calloc}, {\tt realloc} and
-{\tt free} plus {\tt memalign}, {\tt posix\_memalign} and {\tt
-valloc}).
+The {\tt MEMLEAK} sample source counts the number of bytes allocated
+and freed.  Like {\tt IO}, {\tt MEMLEAK} is a synchronous sample
+source and does not generate asynchronous interrupts.  Instead, it
+overrides the malloc family of functions ({\tt malloc}, {\tt calloc},
+{\tt realloc} and {\tt free} plus {\tt memalign}, {\tt
+posix\_memalign} and {\tt valloc}) and records the number of bytes
+allocated and freed along with their dynamic context.
 
 {\tt MEMLEAK} allows you to find locations in your program that
 allocate memory that is never freed.  But note that failure to free a
@@ -253,8 +289,10 @@ allocate memory that is used throughout the lifetime of the process
 and not explicitly free it.
 
 To include this source, use the {\tt MEMLEAK} event (no period).
-{\tt MEMLEAK} uses a separate library, so in the static case, use the
-{\tt --memleak} option to add this library.  For example,
+Again, two steps are needed in the static case.  Use the {\tt
+--memleak} option for \hpclink{} to link in the {\tt MEMLEAK} library
+and use the {\tt MEMLEAK} event to activate it at runtime.  For
+example,
 
 \begin{quote}
 \begin{tabular}{@{}cl}
