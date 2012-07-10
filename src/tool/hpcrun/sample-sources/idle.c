@@ -332,10 +332,11 @@ process_blame_for_sample(cct_node_t *node, int metric_value)
 					  (cct_metric_data_t){.r = (idle_l/work_l)*metric_value});
 
                 idle_l = (double)(omp_get_num_procs()) - work_l;
+  		if(idle_l < 0.0) idle_l = 0.0;
 		cct_metric_data_increment(core_idle_metric_id, node, 
 					  (cct_metric_data_t){.r = (idle_l/work_l)*metric_value});
 		
-		idle_l = (double)(thread_num) - work_l;
+		idle_l = (double)(omp_get_num_threads()) - work_l;
 		cct_metric_data_increment(thread_idle_metric_id, node, 
 					  (cct_metric_data_t){.r = (idle_l/work_l)*metric_value});
                 if(is_overhead(node) || (td->overhead > 0))
