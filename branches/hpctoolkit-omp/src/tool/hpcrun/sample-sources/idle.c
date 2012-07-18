@@ -98,7 +98,8 @@
 #include <lib/prof-lean/atomic.h>
 
 #include <omp.h>
-#include "/home/xl10/support/gcc-4.6.2/libgomp/libgomp_g.h"
+//#include "/home/xl10/support/gcc-4.6.2/libgomp/libgomp_g.h"
+#include "hpcrun/libgomp/libgomp_g.h"
 #include <dlfcn.h>
 #include <hpcrun/loadmap.h>
 #include <hpcrun/trace.h>
