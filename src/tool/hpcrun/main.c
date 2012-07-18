@@ -165,6 +165,9 @@ static void
 setup_main_bounds_check(void* main_addr)
 {
   if (! main_addr) return;
+#ifdef __PPC64__
+  main_addr = *((void**) main_addr);
+#endif
   load_module_t* lm = NULL;
   fnbounds_enclosing_addr(main_addr, &main_lower, &main_upper, &lm);
 }
@@ -230,6 +233,7 @@ hpcrun_init_internal(bool is_child)
 
   main_addr = monitor_get_addr_main();
   setup_main_bounds_check(main_addr);
+  TMSG(MAIN_BOUNDS, "main addr %p ==> lower %p, upper %p", main_addr, main_lower, main_upper);
 
   hpcrun_options__init(&opts);
   hpcrun_options__getopts(&opts);
