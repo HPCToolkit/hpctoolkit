@@ -51,7 +51,8 @@
 #include <hpcrun/unresolved.h>
 #include <hpcrun/write_data.h>
 
-#include "/home/xl10/support/gcc-4.6.2/libgomp/libgomp_g.h"
+//#include "/home/xl10/support/gcc-4.6.2/libgomp/libgomp_g.h"
+#include "hpcrun/libgomp/libgomp_g.h"
 /******************************************************************************
  * type definition 
  *****************************************************************************/
