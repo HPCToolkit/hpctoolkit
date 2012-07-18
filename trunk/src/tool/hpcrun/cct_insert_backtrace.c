@@ -393,9 +393,8 @@ help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
        ! tramp_found &&
        (bt_last == bt_beg || 
 	! hpcrun_inbounds_main(hpcrun_frame_get_unnorm(bt_last - 1)))) {
-    EMSG("Insert check for 'main' fails!");
     hpcrun_bt_dump(TD_GET(btbuf_cur), "WRONG MAIN");
-    hpcrun_stats_num_samples_partial_inc();
+    hpcrun_stats_num_samples_dropped_inc();
     partial_unw = true;
   }
 
