@@ -130,6 +130,9 @@ time_getTimeCPU(uint64_t* time)
 inline static int
 time_getTimeReal(uint64_t* time)
 {
+  // In contrast to CLOCK_MONOTONIC{_HR}, CLOCK_REALTIME{_HR} is
+  // affected by NTP (network time protocol) and can move forward/backward
+  
 #ifdef CLOCK_REALTIME_HR
   return time_getTime_us(CLOCK_REALTIME_HR, time);
 #else
