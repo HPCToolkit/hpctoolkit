@@ -1816,7 +1816,7 @@ No hpcstruct =
 %% --------------------------------------------------
 
 %% ../configure --prefix=<hpctoolkit-install> \
-%%   --with-externals=<eternals-install> \
+%%   --with-externals=<externals-install> \
 %%   [--with-papi=<papi-install>] \
 %%   --enable-lush --with-cilk=<cilk-install>
 
@@ -1825,6 +1825,7 @@ No hpcstruct =
 %% --------------------------------------------------
 
 %% export PATH=<hpctoolkit-install>/src/tool/misc:${PATH}
+%% Build Cilk app with modified Cilk compiler
 
 %% hpcrun --agent <hpctoolkit-install>/lib/hpctoolkit/libagent-cilk.so \
 %%        -e WALLCLOCK@5000 \
