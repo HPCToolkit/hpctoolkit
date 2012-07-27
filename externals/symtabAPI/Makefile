@@ -13,7 +13,7 @@ PREREQS = libdwarf libelf libunwind libxml2
 
 FETCH_TARFILE = symtab_src_7.0.1.tar.gz
 
-INSTALL_CMD = true
+INSTALL_CMD = ./install
 
 PLATFORM := $(SYMTABAPI_PLATFORM)
 export PLATFORM

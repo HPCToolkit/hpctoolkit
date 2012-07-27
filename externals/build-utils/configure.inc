@@ -52,8 +52,13 @@ ORIG_PKG_DIR=`pwd`
 
 die()
 {
-    echo "===> ($PKG_NAME) $0: $*"
+    echo "===> ($PKG_NAME) $0: error: $*"
     exit 1
+}
+
+warn()
+{
+    echo "===> ($PKG_NAME) $0: warning: $*"
 }
 
 pre_fetch()
@@ -110,6 +115,19 @@ make_work_dir()
     work="${1:-work}"
     test -d "$work" && rm -rf "$work"
     mkdir -p "$work"
+}
+
+reset_perms()
+{
+    utils_dir="$1"
+
+    echo "resetting permissions on: $utils_dir"
+    if test -d "$utils_dir" ; then
+	find "$utils_dir" -type d -exec chmod a+rx {} \;
+	chmod -R a+r "$utils_dir"
+    else
+	warn "not a directory: $utils_dir"
+    fi
 }
 
 #
