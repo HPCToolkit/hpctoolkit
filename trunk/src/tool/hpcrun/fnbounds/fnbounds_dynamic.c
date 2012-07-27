@@ -130,8 +130,8 @@
 // local variables
 //*********************************************************************
 
-// FIXME: tmproot should be overridable with an option.
-static char *tmproot = "/tmp";
+
+static char* tmproot = "/tmp";
 
 static char fnbounds_tmpdir[PATH_MAX];
 
@@ -200,6 +200,9 @@ static char *nm_command = 0;
 int 
 fnbounds_init()
 {
+  char* tmpdir = getenv("TMPDIR");
+  if (tmpdir) tmproot = tmpdir;
+
   if (hpcrun_get_disabled()) return 0;
 
   int result = system_server_start();
@@ -274,7 +277,6 @@ fnbounds_map_open_dsos()
   dylib_map_open_dsos();
 }
 
-
 bool
 fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
 {
@@ -347,13 +349,26 @@ fnbounds_fini()
   fnbounds_tmpdir_remove();
 }
 
-
 void
 fnbounds_release_lock(void)
 {
   FNBOUNDS_UNLOCK;  
 }
 
+fnbounds_table_t
+fnbounds_fetch_executable_table(void)
+{
+  char exename[PATH_MAX];
+  realpath("/proc/self/exe", exename);
+  TMSG(INTERVALS_PRINT, "name of loadmap = %s", exename);
+  load_module_t* exe_lm = hpcrun_loadmap_findByName(exename);
+  TMSG(INTERVALS_PRINT, "load module found = %p", exe_lm);
+  if (!exe_lm) return (fnbounds_table_t) {.table = (void**) NULL, .len = 0};
+  TMSG(INTERVALS_PRINT, "dso info for load module = %p", exe_lm->dso_info);
+  if (! exe_lm->dso_info) return (fnbounds_table_t) {.table = (void**) NULL, .len = 0};
+  return (fnbounds_table_t)
+    { .table = exe_lm->dso_info->table, .len = exe_lm->dso_info->nsymbols};
+}
 
 //*********************************************************************
 // private operations

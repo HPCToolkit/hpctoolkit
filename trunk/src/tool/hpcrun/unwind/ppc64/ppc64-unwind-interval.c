@@ -655,7 +655,7 @@ ppc64_print_interval_set(unw_interval_t *beg_ui)
 
 
 void 
-ppc64_dump_intervals(char  *addr)
+ppc64_dump_intervals(void* addr)
 {
   void *s, *e;
   interval_status intervals;
@@ -668,4 +668,10 @@ ppc64_dump_intervals(char  *addr)
   intervals = ppc64_build_intervals(s, (unsigned int) llen);
 
   ppc64_print_interval_set((unw_interval_t *) intervals.first);
+}
+
+void
+hpcrun_dump_intervals(void* addr)
+{
+  ppc64_dump_intervals(addr);
 }
