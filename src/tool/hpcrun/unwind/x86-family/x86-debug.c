@@ -70,7 +70,7 @@ x86_fnbounds(void* addr)
 }
 
 void
-x86_dump_intervals(char  *addr) 
+x86_dump_intervals(void* addr) 
 {
   void *s, *e;
   unwind_interval *u;
@@ -86,6 +86,11 @@ x86_dump_intervals(char  *addr)
   }
 }
 
+void
+hpcrun_dump_intervals(void* addr)
+{
+  x86_dump_intervals(addr);
+}
 
 void
 x86_dump_ins(void *ins)
