@@ -53,6 +53,8 @@
 using namespace std; // For compatibility with non-std C headers
 #endif
 
+#include <unistd.h>
+
 //*************************** User Include Files ****************************
 
 #include "pathfind.h"
