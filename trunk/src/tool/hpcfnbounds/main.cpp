@@ -48,6 +48,8 @@
 // system includes
 //*****************************************************************************
 
+#include <unistd.h>
+
 #include <vector>
 #include <string>
 
