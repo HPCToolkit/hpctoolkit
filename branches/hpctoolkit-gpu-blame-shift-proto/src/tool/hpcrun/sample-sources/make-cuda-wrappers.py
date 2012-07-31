@@ -60,7 +60,9 @@ runtimeSkipList = [
 'cudaFree',
 'cudaMemcpy',
 'cudaMemcpy2D',
-'cudaMemcpyAsync']
+'cudaMemcpyAsync',
+'cudaMemcpyToArray',
+'cudaMemcpyToArrayAsync']
 
 
 

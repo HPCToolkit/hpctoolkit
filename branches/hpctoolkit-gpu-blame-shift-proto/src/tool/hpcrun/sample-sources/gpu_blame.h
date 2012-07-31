@@ -235,6 +235,7 @@ extern int cpu_idle_metric_id;
 extern int gpu_activity_time_metric_id;
 extern int cpu_idle_cause_metric_id;
 extern int gpu_idle_metric_id;
+extern int gpu_overload_potential_metric_id;
 extern int cpu_overlap_metric_id;
 extern int gpu_overlap_metric_id;
 extern int stream_special_metric_id;

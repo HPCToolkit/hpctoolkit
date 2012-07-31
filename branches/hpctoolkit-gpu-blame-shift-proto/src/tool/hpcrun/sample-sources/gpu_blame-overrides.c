@@ -1249,6 +1249,74 @@ cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count, enum cudaM
     return ret;
 }
 
+
+
+cudaError_t cudaMemcpyToArrayAsync	(	struct cudaArray * 	dst, size_t 	wOffset, size_t 	hOffset, const void * 	src, size_t 	count, enum cudaMemcpyKind 	kind, cudaStream_t 	stream ){	
+    CreateStream0IfNot(stream);
+
+    uint32_t streamId = 0;
+    event_list_node_t *event_node;
+
+    streamId = SplayGetStreamId(stream_to_id_tree_root, stream);
+    // We cannot allow this thread to take samples since we will be holding a lock which is also needed in the async signal handler
+    // let no other GPU work get ahead of me
+    HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
+    // And disable tracking new threads from CUDA
+    monitor_disable_new_threads();
+
+    // In case cudaLaunch causes dlopn, async block may get enabled, as a safety net set is_thread_at_cuda_sync so that we dont call any cuda calls
+    TD_GET(is_thread_at_cuda_sync) = true;
+
+    // Get CCT node (i.e., kernel launcher)
+    ucontext_t context;
+    getcontext(&context);
+    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ ).sample_node;
+    // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
+    // TODO: Get correct level .. 3 worked but not on S3D
+    //node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
+
+    /* FIXME: we are about to insert the cct into the stream 
+     * we use the context above, then get teh backtrace, insert the backtrace
+     * to the stream->epoch->csdata
+     */
+    cct_node_t *stream_cct = stream_duplicate_cpu_node(g_stream_array[streamId].st, &context, node);
+
+    // Create a new Cuda Event
+    //cuptiGetStreamId(ctx, (CUstream) TD_GET(active_stream), &streamId);
+    event_node = create_and_insert_event(streamId, node, stream_cct);
+    // Insert the event in the stream
+    //      assert(TD_GET(active_stream));
+    fprintf(stderr, "\n start on stream = %p ", stream);
+    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, stream));
+
+    //Increment     outstanding_kernels
+    if(g_do_shared_blaming)
+        atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
+
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_TO_ARRAY_ASYNC].cudaMemcpyToArrayAsyncReal(dst, wOffset, hOffset, src, count, kind, stream);
+
+    fprintf(stderr, "\n end  on stream = %p ", stream);
+    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end, stream));
+
+
+    // Increment bytes transferred metric
+    increment_mem_xfer_metric(count, kind, node);
+
+
+    // Ok to call cuda functions from the signal handler
+    TD_GET(is_thread_at_cuda_sync) = false;
+
+    // enable monitoring new threads
+    monitor_enable_new_threads();
+
+    // let other things be queued into GPU
+    // safe to take async samples now
+    HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
+
+    return ret;
+}
+
+
 cudaError_t cudaMemcpy2D(void *dst, size_t dpitch, const void *src, size_t spitch, size_t width, size_t height, enum cudaMemcpyKind kind) {
 
     SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
@@ -1316,6 +1384,40 @@ cudaError_t cudaMemcpy(void *dst, const void *src, size_t count, enum cudaMemcpy
     return ret;
 
 }
+
+
+cudaError_t cudaMemcpyToArray	(	struct cudaArray * 	dst, size_t 	wOffset, size_t 	hOffset, const void * 	src, size_t 	count, enum cudaMemcpyKind 	kind){
+
+    SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_TO_ARRAY].cudaMemcpyToArrayReal(dst, wOffset, hOffset, src, count, kind);
+
+    hpcrun_safe_enter_async(NULL);
+    spinlock_lock(&g_gpu_lock);
+    LeaveCudaSync(recorded_node, syncStart, ALL_STREAMS_MASK);
+    spinlock_unlock(&g_gpu_lock);
+
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    uint64_t syncEnd = ((uint64_t) tv.tv_usec + (((uint64_t) tv.tv_sec) * 1000000));
+
+    // this is both CPU and GPU idleness since one could have used cudaMemcpyAsync
+    cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {
+                              .i = (syncEnd - syncStart)});
+    cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {
+                              .i = (syncEnd - syncStart)});
+    //idt += syncEnd - syncStart;
+    //printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
+
+    // Increment bytes transferred metric
+    increment_mem_xfer_metric(count, kind, launcher_cct);
+
+    hpcrun_safe_exit();
+
+    TD_GET(is_thread_at_cuda_sync) = false;
+    return ret;
+}
+
 
 cudaError_t cudaEventElapsedTime(float *ms, cudaEvent_t start, cudaEvent_t end) {
 
