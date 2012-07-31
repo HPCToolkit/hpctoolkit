@@ -155,6 +155,7 @@ int cpu_idle_metric_id;
 int gpu_activity_time_metric_id;
 int cpu_idle_cause_metric_id;
 int gpu_idle_metric_id;
+int gpu_overload_potential_metric_id;
 int cpu_overlap_metric_id;
 int gpu_overlap_metric_id;
 int stream_special_metric_id;
@@ -396,6 +397,8 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     // d_to_h_data_xfer_metric_id is the number of bytes xfered from GPU to CPU
     d_to_h_data_xfer_metric_id = hpcrun_new_metric();
     
+   // Accumulates the time between last kernel end to current Sync point as a potential GPU overload factor
+    //gpu_overload_potential_metric_id =  hpcrun_new_metric(); 
     
     hpcrun_set_metric_info_and_period(cpu_idle_metric_id, "CPU_IDLE", MetricFlags_ValFmt_Int, 1);
     hpcrun_set_metric_info_and_period(gpu_idle_metric_id, "GPU_IDLE_CAUSE", MetricFlags_ValFmt_Int, 1);
@@ -406,6 +409,7 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     
     hpcrun_set_metric_info_and_period(h_to_d_data_xfer_metric_id, "H_TO_D_BYTES", MetricFlags_ValFmt_Int, 1);
     hpcrun_set_metric_info_and_period(d_to_h_data_xfer_metric_id, "D_TO_H_BYTES", MetricFlags_ValFmt_Int, 1);
+    //hpcrun_set_metric_info_and_period(gpu_overload_potential_metric_id, "GPU_OVERLOAD_POTENTIAL", MetricFlags_ValFmt_Int, 1);
 
     // 
     thread_data_t *td = hpcrun_get_thread_data();
