@@ -1,0 +1,71 @@
+John's patch to fix the treatment of 'D' symbols on powerpc.
+
+
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/elf.c version-binutils-2.20.1/binutils-2.20.1/bfd/elf.c
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/elf.c	2010-11-08 01:31:00.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/elf.c	2012-08-01 23:37:55.000000000 -0500
+@@ -7300,6 +7300,11 @@
+   asymbol **p;
+   enum { nothing_seen, symbol_seen, file_after_symbol_seen } state;
+ 
++  asection *opd_section = NULL;
++  unsigned long section_vma = section->vma;   // bfd_section_vma(section);
++  unsigned long section_size = section->size; // bfd_section_size(section);
++  unsigned long mach = bfd_get_mach(abfd);
++
+   /* create a new cache entry */
+   elf_function_cache_entry_t *e = (elf_function_cache_entry_t *)  
+     malloc(sizeof(elf_function_cache_entry_t));
+@@ -7310,6 +7315,10 @@
+   e->next = elf_function_cache_entry_list;
+   elf_function_cache_entry_list = e;
+ 	
++  if (mach == bfd_mach_ppc64) {
++    opd_section = bfd_get_section_by_name(abfd, ".opd");
++  }
++	
+   state = nothing_seen;
+   for (p = symbols; *p != NULL; p++) {
+     elf_symbol_type *q = (elf_symbol_type *) *p;
+@@ -7329,7 +7338,6 @@
+ 	/* if necessary, delete any old mapping for a function at this address */
+ 	e->root = splay_delete(e->root, (bfd_vma) q->symbol.value);
+ 
+-
+ 	/* associate a prior file symbol with the address of 
+ 	   the first function in the file */
+ 	if (file && 
+@@ -7341,9 +7349,32 @@
+ 	}
+ 
+ 	/* insert a new mapping between function and this address */
+-	struct splay_node_s *node = splay_node_new((bfd_vma) q->symbol.value, q, file_symbol);
++	struct splay_node_s *node =
++	  splay_node_new((bfd_vma) q->symbol.value, q, file_symbol);
+ 	e->root = splay_insert(e->root, node);
++      }
++      else if (mach == bfd_mach_ppc64
++	       && bfd_get_section(&q->symbol) == opd_section) {
++	/* recover function address from symbol according to the PPC64 ABI */
++	file_ptr s_offset = q->symbol.value;
++	bfd_vma fn_addr;
++	elf_symbol_type *file_symbol = NULL;
++	bfd_get_section_contents(abfd, opd_section, &fn_addr, 
++				 s_offset, sizeof(fn_addr));
+ 
++	/* if the function symbol is in the target section */
++	if (section_vma <= fn_addr && fn_addr - section_vma <= section_size) {
++	  /* compute the relative offset of the symbol in the section */
++	  bfd_vma rel_fn_addr = fn_addr - section_vma;
++
++	  /* if necessary, delete any old mapping for a function at this address */
++	  e->root = splay_delete(e->root, (bfd_vma) rel_fn_addr);
++
++	  /* insert a new mapping between function and this address */
++	  struct splay_node_s *node = 
++	    splay_node_new((bfd_vma) rel_fn_addr, q, file_symbol);
++	  e->root = splay_insert(e->root, node);
++	}
+       }
+       break;
+     }
