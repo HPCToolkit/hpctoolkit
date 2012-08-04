@@ -21,4 +21,5 @@ uint64_t is_partial_resolve(cct_node_t *prefix);
 
 //deferred region ID assignment
 void init_region_id();
+
 #endif
