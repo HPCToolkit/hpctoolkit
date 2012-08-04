@@ -260,6 +260,7 @@ void start_team_fn()
 void end_team_fn()
 {
   hpcrun_async_block();
+  uint64_t zero_metric_incr = 0LL;
   cct_node_t *node = NULL;
   uint64_t region_id = *(GOMP_get_region_id());
   struct record_t *record = r_splay_lookup(region_id);
@@ -280,18 +281,21 @@ void end_team_fn()
 	  omp_arg.tbd = true;
 	  omp_arg.region_id = TD_GET(region_id);
         }
-        node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, (void *)&omp_arg);
+        node = hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 2, 1, (void *)&omp_arg);
         TMSG(DEFER_CTXT, "unwind the callstack for region %d to %d", record->region_id, TD_GET(region_id));
       }
       //
       // for master thread in the outer-most region, a normal unwind to the process stop 
       //
       else {
-        node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, NULL);
+        node = hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 2, 1, NULL);
         TMSG(DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
       }
 
-      record->node = node;
+      cct_node_t *sibling = hpcrun_cct_insert_addr(hpcrun_cct_parent(node), 
+			    &(ADDR2(hpcrun_cct_addr(node)->ip_norm.lm_id, 
+				hpcrun_cct_addr(node)->ip_norm.lm_ip-5L)));
+      record->node = sibling;
     }
     else {
       r_splay_count_update(record->region_id, 0L);
@@ -300,9 +304,11 @@ void end_team_fn()
   // FIXME: not using team_master but use another routine to 
   // resolve team_master's tbd. Only with tasking, a team_master
   // need to resolve itself
-  TD_GET(team_master) = 1;
-  resolve_cntxt_fini();
-  TD_GET(team_master) = 0;
+  if(ENABLED(SET_TASK_CTXT)) {
+    TD_GET(team_master) = 1;
+    resolve_cntxt_fini();
+    TD_GET(team_master) = 0;
+  }
   hpcrun_async_unblock();
 }
 
@@ -328,7 +334,7 @@ is_resolved(uint64_t id)
 {
   struct record_t *record = r_splay_lookup(id);
   if(! record) return NULL;
-  return r_splay_lookup(id)->node;
+  return record->node;
 }
 
 //
@@ -397,24 +403,21 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
         prefix = hpcrun_cct_insert_path(prefix, (td->epoch->csdata).tree_root);
     }
     else {
-      if(!td)
+      if(!td) {
         prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_tbd_cct());
-      else
+      }
+      else {
         prefix = hpcrun_cct_insert_path(prefix, (td->epoch->csdata).unresolved_root);
+      }
       r_splay_count_update(partial_region_id, 1L);
     }
     // adjust the callsite of the prefix in side threads to make sure they are the same as
     // in the master thread. With this operation, all sides threads and the master thread
     // will have the unified view for parallel regions (this only works for GOMP)
     if(TD_GET(team_master)) {
-      cct_node_t *sibling = hpcrun_cct_insert_addr(hpcrun_cct_parent(prefix), 
-			    &(ADDR2(hpcrun_cct_addr(prefix)->ip_norm.lm_id, 
-				hpcrun_cct_addr(prefix)->ip_norm.lm_ip-5L)));
-      hpcrun_cct_merge(sibling, cct, merge_metrics, NULL);
+      hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
     }
     else {
-      if (DISABLED(KEEP_GOMP_START))
-        hpcrun_cct_addr(prefix)->ip_norm.lm_ip -= 5L;
       hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
       // must delete it when not used considering the performance
       r_splay_count_update(my_region_id, -1L);
@@ -478,7 +481,6 @@ tbd_test(cct_node_t* cct, cct_op_arg_t a, size_t l)
 }
 #endif
 
-// resolve at the thread fini
 void resolve_cntxt_fini()
 {
   hpcrun_async_block();

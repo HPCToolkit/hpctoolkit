@@ -173,7 +173,6 @@ METHOD_FN(thread_fini_action)
 {
   thread_data_t *td = hpcrun_get_thread_data();
   if(!td->omp_thread) return;
-  // resolve before reuse
   // it is necessary because it can resolve/partial resolve
   // the region (temporal concern)
   if(td->defer_flag) resolve_cntxt_fini();

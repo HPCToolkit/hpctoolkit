@@ -73,6 +73,7 @@ void *copy_task_cntxt(void*);
 
 void start_task_fn(void** pointer)
 {
+  uint64_t zero_metric_incr = 0LL;
   thread_data_t *td = hpcrun_get_thread_data();
   td->overhead ++;
   ucontext_t uc;
@@ -86,7 +87,7 @@ void start_task_fn(void** pointer)
     omp_arg.context = copy_task_cntxt(parent_task_cntxt);
 
     hpcrun_async_block();
-    *pointer = hpcrun_sample_callpath(&uc, 0, 0, 1, 1, (void*) &omp_arg);
+    *pointer = hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1, (void*) &omp_arg);
     hpcrun_async_unblock();
  
   }
@@ -105,13 +106,13 @@ void start_task_fn(void** pointer)
     omp_arg.region_id = TD_GET(region_id);
     hpcrun_async_block();
     // record the task creation context into task structure (in omp runtime)
-    *pointer = (void *)hpcrun_sample_callpath(&uc, 0, 0, 1, 1, (void*) &omp_arg);
+    *pointer = (void *)hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1, (void*) &omp_arg);
     hpcrun_async_unblock();
   }
   else {
     hpcrun_async_block();
     // record the task creation context into task structure (in omp runtime)
-    *pointer = (void *)hpcrun_sample_callpath(&uc, 0, 0, 1, 1, NULL);
+    *pointer = (void *)hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1, NULL);
     hpcrun_async_unblock();
   }
   td->overhead --;
