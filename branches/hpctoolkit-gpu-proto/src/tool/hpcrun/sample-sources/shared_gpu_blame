@@ -1,0 +1,82 @@
+#ifndef __PROCESS_DEVICE_SYNCH__
+#define __PROCESS_DEVICE_SYNCH__
+#include <sys/time.h>
+#include <unistd.h>
+#include <stdio.h>
+
+struct device_sync_epoch {
+	struct timeval tstart;
+	struct timeval tend;
+	int num_procs_to_examine;
+};
+
+#define NOT_AT_SYNC -1
+#define DEVICE_SYNC 0
+#define NUM_PROCS 32
+struct device_sync_structure {
+	int processID;
+	struct device_sync_epoch *should_examine[NUM_PROCS];
+	struct device_sync_epoch *epoch_list;
+	//-1: not at synch; 0: device_synch: non-zero represents the stream Id on which sync 
+	int at_stream_sync;
+};
+struct device_sync_structure proc_sync_list[NUM_PROCS];
+
+void init_device_sync_structure() {
+	int i,j;
+	for(i=0;i<NUM_PROCS;++i) {
+		proc_sync_list[i].processID = i;
+		proc_sync_list[i].epoch_list = NULL;
+		for(j=0;j<NUM_PROCS;++j) 
+			//when a process goes into device_synch,it should
+			//then note down the other processes which are at synch
+			proc_sync_list[i].should_examine[j] = NULL;
+	}
+	proc_sync_list[i].at_stream_sync = NOT_AT_SYNC;	
+}
+
+void register_device_sync_begin(struct timeval *start, int processID) {
+	/*
+	enter my device _sync time
+	if some process is waiting then most probably i will wait for their kernel
+	then put my start time into their examine queue (at my slot in their should_examine)
+	this way their kernel will get blamed on coming out
+	good for now: maybe there is a better way; references work the same way
+	*/	
+
+}
+
+void register_device_sync_end(struct timeval *end, int processID) {
+	/*
+	add an end in my synch list
+	
+	*/
+}
+
+float get_blame_fraction(struct timeval *kernel_start, struct timeval *kernel_end, int processID) {
+	return 1.0f;
+}
+
+void clean_up_sync_epoch() {
+}
+
+int main(int argc, char *argv[]) {
+	printf("The number of processes is %d\n",atoi(argv[1]));
+	struct timeval process_sync_start, process_sync_end, kernel_start, kernel_end;
+	gettimeofday(&kernel_start, NULL);
+	printf("The kernel has started running\n");
+	sleep(1);
+	gettimeofday(&process_sync_start, NULL);
+	register_device_sync_begin(&process_sync_start, 0);
+	printf("The process has started the sync phase\n");
+	gettimeofday(&kernel_end, NULL);
+	printf("The kernel execution ended\n");
+	gettimeofday(&process_sync_end, NULL);
+	register_device_sync_end(&process_sync_end, 0);
+	printf("The process has ended the sync phase\n");
+	float frac = get_blame_fraction(&kernel_start, &kernel_end, 0);
+	printf("The blame fraction is %f\n",frac);
+	return 0;
+}
+
+#endif
