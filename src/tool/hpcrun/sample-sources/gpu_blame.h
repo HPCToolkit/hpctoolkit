@@ -60,7 +60,7 @@
 //
 // Blame shiting interface
 //
-#define MAX_STREAMS (100)
+#define MAX_STREAMS (500)
 #define DEVICE_ID (0)
 
 
@@ -100,7 +100,13 @@ typedef struct stream_node_t {
 } stream_node_t;
 
 
-
+/* states for accounting overload potential */
+enum overloadPotentialState{
+	START_STATE=0,
+	WORKING_STATE,
+	SYNC_STATE,
+	OVERLOADABLE_STATE
+};
 
 /*
 enum cudaRuntimeAPIIndex {
