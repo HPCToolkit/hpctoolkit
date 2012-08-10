@@ -178,6 +178,7 @@ spinlock_lock(&g_gpu_lock);} while(0)
 hpcrun_safe_exit();} while(0)
 
 #define SYNC_PROLOGUE(ctxt, launch_node, start_time, rec_node) \
+TD_GET(overload_state) = SYNC_STATE;                      \
 hpcrun_safe_enter_async(NULL);      \
 ucontext_t ctxt;           \
 getcontext(&ctxt);         \
@@ -1033,6 +1034,8 @@ cudaError_t cudaLaunch(const char *entry) {
 
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_LAUNCH].cudaLaunchReal(entry);
 
+TD_GET(overload_state) = WORKING_STATE;                      
+
     fprintf(stderr, "\n end  on stream = %p ", TD_GET(active_stream));
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end, (cudaStream_t) TD_GET(active_stream)));
 
@@ -1129,7 +1132,6 @@ cudaError_t cudaStreamCreate(cudaStream_t * stream) {
         // enable monitoring new threads
         monitor_enable_new_threads();
     }
-    HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
 
     g_stream_array[new_streamId].st = hpcrun_stream_data_alloc_init(DEVICE_ID, new_streamId);
     if(hpcrun_trace_isactive()) {
@@ -1144,6 +1146,8 @@ cudaError_t cudaStreamCreate(cudaStream_t * stream) {
 	    gpu_trace_append(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId, g_stream_array[new_streamId].st->idle_node_id);
 
     }
+
+    HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
     return ret;
 }
 
@@ -1228,6 +1232,8 @@ cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count, enum cudaM
 
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_ASYNC].cudaMemcpyAsyncReal(dst, src, count, kind, stream);
 
+TD_GET(overload_state) = WORKING_STATE;                      
+
     fprintf(stderr, "\n end  on stream = %p ", stream);
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end, stream));
     
@@ -1294,6 +1300,8 @@ cudaError_t cudaMemcpyToArrayAsync	(	struct cudaArray * 	dst, size_t 	wOffset, s
         atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
 
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_TO_ARRAY_ASYNC].cudaMemcpyToArrayAsyncReal(dst, wOffset, hOffset, src, count, kind, stream);
+
+TD_GET(overload_state) = WORKING_STATE;                      
 
     fprintf(stderr, "\n end  on stream = %p ", stream);
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end, stream));
@@ -1524,6 +1532,8 @@ CUresult cuLaunchGridAsync(CUfunction f, int grid_width, int grid_height, CUstre
 
     CUresult ret = cuDriverFunctionPointer[CU_LAUNCH_GRID_ASYNC].cuLaunchGridAsyncReal(f, grid_width, grid_height, hStream);
 
+TD_GET(overload_state) = WORKING_STATE;                      
+
     CU_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end, (cudaStream_t)hStream));
 
     
@@ -1611,7 +1621,6 @@ CUresult cuStreamCreate(CUstream * phStream, unsigned int Flags) {
         // enable monitoring new threads
         monitor_enable_new_threads();
     }
-    HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
 
     g_stream_array[new_streamId].st = hpcrun_stream_data_alloc_init(DEVICE_ID, new_streamId);
 
@@ -1629,6 +1638,8 @@ CUresult cuStreamCreate(CUstream * phStream, unsigned int Flags) {
     	gpu_trace_append(g_stream_array[new_streamId].st, DEVICE_ID, new_streamId, g_stream_array[new_streamId].st->idle_node_id);
 
     }
+
+    HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
     //cuptiGetStreamId(cbRDInfo->context, cbRDInfo->resourceHandle.stream, &new_streamId);
     //SYNCHRONOUS_CLEANUP;
     //gpu_trace_close(0, new_streamId);
@@ -1771,6 +1782,8 @@ CUresult cuMemcpyHtoDAsync(CUdeviceptr dstDevice, const void *srcHost, size_t By
 
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_HTO_D_ASYNC_V2].cuMemcpyHtoDAsync_v2Real(dstDevice, srcHost, ByteCount, hStream);
 
+TD_GET(overload_state) = WORKING_STATE;                      
+
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end,(cudaStream_t) hStream));
 
     // Ok to call cuda functions from the signal handler
@@ -1872,6 +1885,8 @@ CUresult cuMemcpyDtoHAsync(void *dstHost, CUdeviceptr srcDevice, size_t ByteCoun
     
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_DTO_H_ASYNC_V2].cuMemcpyDtoHAsync_v2Real(dstHost, srcDevice, ByteCount, hStream);
 
+TD_GET(overload_state) = WORKING_STATE;                      
+
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end,(cudaStream_t) hStream));
 
 
@@ -1972,6 +1987,20 @@ void gpu_blame_shift_itimer_signal_handler(cct_node_t * node, uint64_t cur_time_
                                       .r = metric_incr * 1.0 / num_unfinshed_streams}
         );
     } else {
+
+
+	/*** Code to account for Overload factor ***/
+	if(TD_GET(overload_state) == WORKING_STATE) {
+		TD_GET(overload_state) = OVERLOADABLE_STATE;
+	}
+	
+	if(TD_GET(overload_state) == OVERLOADABLE_STATE) {
+                // Increment gpu_overload_potential_metric_id  by metric_incr
+                cct_metric_data_increment(gpu_overload_potential_metric_id, node, (cct_metric_data_t) {
+                                  .i = metric_incr});
+	}
+	
+	                      
         
         
         // GPU is idle iff   ipc_data->outstanding_kernels == 0 
