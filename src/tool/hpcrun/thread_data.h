@@ -232,6 +232,8 @@ typedef struct thread_data_t {
 #ifdef ENABLE_CUDA
   // True if this thread is at CuXXXXSynchronize.
   bool is_thread_at_cuda_sync;
+  // maintains state to account for overload potential	
+  uint8_t overload_state;
   uint64_t active_stream;
   void * event_node;
 #endif

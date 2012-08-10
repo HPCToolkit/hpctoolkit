@@ -214,6 +214,7 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   td->inside_dlfcn = false;
 #ifdef ENABLE_CUDA
   td->is_thread_at_cuda_sync = false;
+  td->overload_state = 0;
 #endif
 }
 
