@@ -100,12 +100,14 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   // If there is a creation context (ie, this is a pthread),
   // then the creation context gets special treatment.
   //
-  // If the -dd flag SKIP_THREAD_CTXT is *set*, then
-  // do NOT insert the calling context into the cct.
-  // Instead, attach all thread-stopped call paths
+  // If the -dd flag ATTACH_THREAD_CTXT is *set*, then
+  // attach all thread-stopped call paths
   // to the call context prefix node instead of the top of the tree.
   //
-  if (DISABLED(SKIP_THREAD_CTXT) && ctxt) {
+  // By default (ATTACH_THREAD_CTXT is *cleared*), then attach
+  // all thread-stopped call paths to thread root.
+  // 
+  if (ENABLED(ATTACH_THREAD_CTXT) && ctxt) {
     hpcrun_walk_path(ctxt->context, l_insert_path, (cct_op_arg_t) &(bundle->thread_root));
   }
   bundle->partial_unw_root = hpcrun_cct_new_partial();
