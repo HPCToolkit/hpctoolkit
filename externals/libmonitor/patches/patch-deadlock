@@ -1,0 +1,100 @@
+Add client support functions monitor_disable_new_threads() and
+monitor_enable_new_threads() to disable and reenable monitoring of
+side threads.
+
+This allows hpcrun to work around a problem where CUDA creates a side
+thread and blocks until that thread finishes initializing, thus
+leading to deadlock.
+
+
+diff -Naurb libmonitor-0.x-r140.orig/src/monitor.h libmonitor-0.x-r140/src/monitor.h
+--- libmonitor-0.x-r140.orig/src/monitor.h	2012-08-17 13:51:28.000000000 -0500
++++ libmonitor-0.x-r140/src/monitor.h	2012-08-17 13:59:02.000000000 -0500
+@@ -103,6 +103,8 @@
+ extern int monitor_mpi_comm_rank(void);
+ extern int monitor_block_shootdown(void);
+ extern void monitor_unblock_shootdown(void);
++extern void monitor_disable_new_threads(void);
++extern void monitor_enable_new_threads(void);
+ 
+ /*
+  *  Special access to wrapped functions for the application.
+diff -Naurb libmonitor-0.x-r140.orig/src/pthread.c libmonitor-0.x-r140/src/pthread.c
+--- libmonitor-0.x-r140.orig/src/pthread.c	2012-08-17 13:51:28.000000000 -0500
++++ libmonitor-0.x-r140/src/pthread.c	2012-08-17 13:59:02.000000000 -0500
+@@ -810,6 +810,37 @@
+ }
+ 
+ /*
++ *  Allow the client to ignore some new threads.  This is mostly
++ *  useful for library calls that we call that create new threads.
++ *  PAPI cuda does this.
++ */
++void
++monitor_disable_new_threads(void)
++{
++    struct monitor_thread_node *tn;
++
++    tn = monitor_get_tn();
++    if (tn == NULL) {
++	MONITOR_DEBUG1("unable to find thread node\n");
++	return;
++    }
++    tn->tn_ignore_threads = 1;
++}
++
++void
++monitor_enable_new_threads(void)
++{
++    struct monitor_thread_node *tn;
++
++    tn = monitor_get_tn();
++    if (tn == NULL) {
++	MONITOR_DEBUG1("unable to find thread node\n");
++	return;
++    }
++    tn->tn_ignore_threads = 0;
++}
++
++/*
+  *----------------------------------------------------------------------
+  *  PTHREAD_CREATE OVERRIDE and HELPER FUNCTIONS
+  *----------------------------------------------------------------------
+@@ -989,12 +1020,26 @@
+     if (! monitor_has_used_threads) {
+ 	monitor_thread_list_init();
+ 	monitor_has_used_threads = 1;
++    }
++
++    /*
++     * If we are ignoring this thread, then call the real
++     * pthread_create(), don't put it on the thread list and don't
++     * give any callbacks.
++     */
++    tn = monitor_get_tn();
++    if (tn != NULL && tn->tn_ignore_threads) {
++	MONITOR_DEBUG1("ignoring this new thread\n");
++	return (*real_pthread_create)(thread, attr, start_routine, arg);
++    }
++
+ 	/*
+ 	 * Normally, we run thread_support here, on the first call to
+ 	 * pthread_create().  But if we're here early, before
+ 	 * libc_start_main, then defer thread_support until after
+ 	 * init_process in libc_start_main.
+ 	 */
++    if (! monitor_thread_support_done) {
+ 	if (monitor_has_reached_main) {
+ 	    monitor_call_thread_support();
+ 	} else {
+diff -Naurb libmonitor-0.x-r140.orig/src/pthread_h.h libmonitor-0.x-r140/src/pthread_h.h
+--- libmonitor-0.x-r140.orig/src/pthread_h.h	2012-06-15 13:51:02.000000000 -0500
++++ libmonitor-0.x-r140/src/pthread_h.h	2012-08-17 13:59:02.000000000 -0500
+@@ -63,6 +63,7 @@
+     void  *tn_user_data;
+     void  *tn_stack_bottom;
+     char   tn_is_main;
++    char   tn_ignore_threads;
+     volatile char  tn_appl_started;
+     volatile char  tn_fini_started;
+     volatile char  tn_fini_done;
