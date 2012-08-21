@@ -426,4 +426,18 @@ export HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds"
 export LD_LIBRARY_PATH="${hpc_ld_library_path}:${LD_LIBRARY_PATH}"
 export LD_PRELOAD="${preload_list} ${LD_PRELOAD}"
 
+#
+# test for viability of HPCRUN_TMPDIR, TMPDIR
+#
+bad_tmp_dir ()
+{
+   if [ -n $1 ] && touch $1/hpcrun-chk$$ 2> /dev/null; then
+       rm -f $1/hpcrun-chk$$
+       return 1
+   fi
+}
+
+bad_tmp_dir $HPCRUN_TMPDIR && bad_tmp_dir $TMPDIR && bad_tmp_dir /tmp && \
+    echo cannot write to designated temporary directory ; exit 1
+
 exec "$@"
