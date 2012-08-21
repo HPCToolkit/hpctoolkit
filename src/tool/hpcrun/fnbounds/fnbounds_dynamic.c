@@ -200,8 +200,12 @@ static char *nm_command = 0;
 int 
 fnbounds_init()
 {
-  char* tmpdir = getenv("TMPDIR");
+  char* tmpdir = getenv("HPCRUN_TMPDIR");
   if (tmpdir) tmproot = tmpdir;
+  else {
+    tmpdir = getenv("TMPDIR");
+    if (tmpdir) tmproot = tmpdir;
+  }
 
   if (hpcrun_get_disabled()) return 0;
 
