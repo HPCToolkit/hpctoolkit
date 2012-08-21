@@ -581,6 +581,8 @@ namespace Util {
 void
 copyTraceFiles(const std::string& dstDir, const std::set<string>& srcFiles)
 {
+  bool tryMove = true;
+
   for (std::set<string>::iterator it = srcFiles.begin();
        it != srcFiles.end(); ++it) {
 
@@ -589,19 +591,48 @@ copyTraceFiles(const std::string& dstDir, const std::set<string>& srcFiles)
     const string  srcFnm1 = x + "." + HPCPROF_TmpFnmSfx;
     const string& srcFnm2 = x;
     const string  dstFnm = dstDir + "/" + FileUtil::basename(x);
-    try {
-      if (FileUtil::isReadable(srcFnm1)) {
-	DIAG_Msg(2, "trace (mv): '" << srcFnm1 << "' -> '" << dstFnm << "'");
-	FileUtil::move(dstFnm, srcFnm1);
+
+    // Note: the source and destination directories may be on
+    // different mount points.  For the trace.tmp files, we try move
+    // first (faster), if that fails, try copy and delete.  If any
+    // move fails, then always copy (so only one failed move).
+
+    if (FileUtil::isReadable(srcFnm1)) {
+      // trace.tmp exists: try move, then copy and delete
+      bool copyDone = false;
+      if (tryMove) {
+	try {
+	  DIAG_Msg(2, "trace (mv): '" << srcFnm1 << "' -> '" << dstFnm << "'");
+	  FileUtil::move(dstFnm, srcFnm1);
+	  copyDone = true;
+	}
+	catch (const Diagnostics::Exception& ex) {
+	  DIAG_Msg(2, "trace mv failed, trying cp");
+	  tryMove = false;
+	}
       }
-      else {
+      if (! copyDone) {
+	try {
+	  DIAG_Msg(2, "trace (cp): '" << srcFnm1 << "' -> '" << dstFnm << "'");
+	  FileUtil::copy(dstFnm, srcFnm1);
+	  FileUtil::remove(srcFnm1.c_str());
+	}
+	catch (const Diagnostics::Exception& ex) {
+	  DIAG_EMsg("While copying trace files ['"
+		    << srcFnm1 << "' -> '" << dstFnm << "']:" << ex.message());
+	}
+      }
+    }
+    else {
+      // no trace.tmp file: always copy (keep original)
+      try {
 	DIAG_Msg(2, "trace (cp): '" << srcFnm2 << "' -> '" << dstFnm << "'");
 	FileUtil::copy(dstFnm, srcFnm2);
       }
-    }
-    catch (const Diagnostics::Exception& ex) {
-      DIAG_EMsg("While copying trace files ['"
-		<< srcFnm2 << "' -> '" << dstFnm << "']:" << ex.message());
+      catch (const Diagnostics::Exception& ex) {
+	DIAG_EMsg("While copying trace files ['"
+		  << srcFnm2 << "' -> '" << dstFnm << "']:" << ex.message());
+      }
     }
   }
 }
