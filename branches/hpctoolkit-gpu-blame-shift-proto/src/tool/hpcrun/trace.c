@@ -107,7 +107,8 @@ static int tracing = 0;
 
 static gpu_trace_file_t *gpu_trace_file_array;
 #define GPU_TRACE_FILE_OFFSET 0
-#define MAX_STREAMS 100
+// TODO: just use one #define from gpu_blame.h
+#define MAX_STREAMS (500)
 #define NUM_GPU_DEVICES 2
 //*********************************************************************
 // interface operations
