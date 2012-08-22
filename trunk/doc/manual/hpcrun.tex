@@ -462,3 +462,54 @@ off.  If you want it initially turned off, then use the {\tt -ds} (or
 \end{tabular}
 \end{quote}
 
+% ===========================================================================
+
+\section{Platform-Specific Notes}
+
+\subsection{Cray XE and XK}
+
+When using dynamically linked binaries on Cray XE and XK systems, you
+should add the {\tt HPCTOOLKIT} environment variable to your launch
+script.  Set {\tt HPCTOOLKIT} to the top-level \HPCToolkit{} install
+prefix (the directory containing the {\tt bin}, {\tt lib} and {\tt
+libexec} subdirectories) and export it to the environment.  This is
+only needed for running dynamically linked binaries.  For example:
+
+\begin{quote}
+\begin{verbatim}
+#!/bin/sh
+#PBS -l mppwidth=#nodes
+#PBS -l walltime=00:30:00
+#PBS -V
+
+export HPCTOOLKIT=/path/to/hpctoolkit/install/directory
+export CRAY_ROOTFS=DSL
+
+cd $PBS_O_WORKDIR
+aprun -n #nodes hpcrun -e event@period dynamic-app arg ...
+\end{verbatim}
+\end{quote}
+% $
+
+If {\tt HPCTOOLKIT} is not set, you may see errors such as the
+following in your job's error log.
+
+\begin{quote}
+\begin{verbatim}
+/var/spool/alps/103526/hpcrun: Unable to find HPCTOOLKIT root directory.
+Please set HPCTOOLKIT to the install prefix, either in this script,
+or in your environment, and try again.
+\end{verbatim}
+\end{quote}
+
+The problem is that the Cray job launcher copies the {\tt hpcrun}
+script to a directory somewhere below {\tt /var/spool/alps/}\ and runs
+it from there.  By moving {\tt hpcrun} to a different directory, this
+breaks {\tt hpcrun}'s method for finding its own install directory.
+The solution is to add {\tt HPCTOOLKIT} to your environment so that
+{\tt hpcrun} can find its install directory.
+
+Your system may have a module installed for {\tt hpctoolkit} with the
+correct settings for {\tt PATH}, {\tt HPCTOOLKIT}, etc.  In that case,
+the easiest solution is to load the {\tt hpctoolkit} module.  Try
+``{\tt module show hpctoolkit}'' to see if it sets {\tt HPCTOOLKIT}.
