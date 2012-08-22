@@ -17,10 +17,10 @@ source and no change to the build procedure.  You should build your
 application natively at full optimization.  \hpcrun{} inserts its
 profiling code into the application at runtime via \verb|LD_PRELOAD|.
 
-The basic options for \hpcrun{} are {\tt -e} (or {\tt --event}) to
-specify a sampling source and rate and {\tt -t} (or {\tt --trace}) to
-turn on tracing.  Sample sources are specified as `{\tt event@period}'
-where {\tt event} is the name of the source and {\tt period} is the
+The basic options for \hpcrun{} are \verb|-e| (or \verb|--event|) to
+specify a sampling source and rate and \verb|-t| (or \verb|--trace|) to
+turn on tracing.  Sample sources are specified as `\verb|event@period|'
+where \verb|event| is the name of the source and \verb|period| is the
 period (threshold) for that event, and this option may be used
 multiple times.  Note that a higher period implies a lower rate of
 sampling.  The basic syntax for profiling an application with
@@ -41,7 +41,7 @@ hpcrun -e PAPI_TOT_CYC@15000000 -e PAPI_L2_TCM@400000 app arg ...
 \end{verbatim}
 \end{quote}
 
-The units for the {\tt WALLCLOCK} sample source are in microseconds,
+The units for the \verb|WALLCLOCK| sample source are in microseconds,
 so to sample an application with tracing every 5,000 microseconds
 (200~times/second), you would use:
 
@@ -64,11 +64,11 @@ hpctoolkit-app-measurements[-jobid]
 
 It is best to use a different measurements directory for each run.
 So, if you're using \hpcrun{} on a local workstation without a job
-launcher, you can use the `{\tt -o dirname}' option to specify an
+launcher, you can use the `\verb|-o dirname|' option to specify an
 alternate directory name.
 
-For programs that use their own launch script (eg, {\tt mpirun} or
-{\tt mpiexec} for MPI), put the application's run script on the
+For programs that use their own launch script (eg, \verb|mpirun| or
+\verb|mpiexec| for MPI), put the application's run script on the
 outside (first) and \hpcrun{} on the inside (second) on the command
 line.  For example,
 
@@ -92,7 +92,7 @@ allows it, and if the binary was produced with \hpclink, then
 \hpcrun{} will set the correct environment variables for profiling
 statically or dynamically linked binaries.  All that \hpcrun{} really
 does is set some environment variables (including \verb|LD_PRELOAD|)
-and {\tt exec} the binary.
+and \verb|exec| the binary.
 
 % ===========================================================================
 
@@ -107,7 +107,7 @@ Monitoring Statically Linked Applications}.
 
 This section covers the details of some individual sample sources.  To
 see a list of the available sample sources and events that \hpcrun{}
-supports, use `{\tt hpcrun -L}' (dynamic) or set
+supports, use `\verb|hpcrun -L|' (dynamic) or set
 `\verb|HPCRUN_EVENT_LIST=LIST|' (static).  Note that on systems with
 separate compute nodes, you will likely need to run this on one of the
 compute nodes.
@@ -142,7 +142,7 @@ both restrictions are system dependent.  Table~\ref{tab:papi-events}
 contains a list of commonly available PAPI events.
 
 To see what PAPI events are available on your system, use the
-\verb|papi_avail| command from the {\tt bin} directory in your PAPI
+\verb|papi_avail| command from the \verb|bin| directory in your PAPI
 installation.  The event must be both available and not derived to be
 usable for sampling.  The command \verb|papi_native_avail| displays
 the machine's native events.  Note that on systems with separate
@@ -211,11 +211,11 @@ worth building if it is not already installed on your system.
 
 \subsection{Wallclock}
 
-The {\tt WALLCLOCK} sample source is based on the \verb|ITIMER_PROF|
-interval timer.  Normally, \verb|PAPI_TOT_CYC| is just as good as {\tt
-WALLCLOCK} and often better, but {\tt WALLCLOCK} can be used on
+The \verb|WALLCLOCK| sample source is based on the \verb|ITIMER_PROF|
+interval timer.  Normally, \verb|PAPI_TOT_CYC| is just as good as
+\verb|WALLCLOCK| and often better, but \verb|WALLCLOCK| can be used on
 systems where PAPI is not available.  The units are in microseconds,
-so the following example will sample {\tt app} approximately 200
+so the following example will sample \verb|app| approximately 200
 times per second.
 
 \begin{quote}
@@ -226,12 +226,12 @@ hpcrun -e WALLCLOCK@5000 app arg ...
 
 Note that the maximum interrupt rate from itimer is limited by the
 system's Hz rate, commonly 1,000 cycles per second, but may be lower.
-That is, {\tt WALLCLOCK@10} will not generate any higher sampling rate
-than {\tt WALLCLOCK@1000}.  However, on IBM BlueGene, itimer is not
+That is, \verb|WALLCLOCK@10| will not generate any higher sampling rate
+than \verb|WALLCLOCK@1000|.  However, on IBM BlueGene, itimer is not
 bound by the Hz rate and so sampling rates faster than 1,000 per
 second are possible.
 
-We recommend against using both PAPI and {\tt WALLCLOCK} events in the
+We recommend against using both PAPI and \verb|WALLCLOCK| events in the
 same run.  Technically, this is now possible and \hpcrun{} won't fall
 over.  However, PAPI samples would be interrupted by itimer signals
 and vice versa, and this would lead to many dropped samples and
@@ -239,18 +239,18 @@ possibly distorted results.
 
 \subsection{IO}
 
-The {\tt IO} sample source counts the number of bytes read and
+The \verb|IO| sample source counts the number of bytes read and
 written.  This displays two metrics in the viewer: ``IO Bytes Read''
-and ``IO Bytes Written.''  The {\tt IO} source is a synchronous sample
+and ``IO Bytes Written.''  The \verb|IO| source is a synchronous sample
 source.  That is, it does not generate asynchronous interrupts.
-Instead, it overrides the functions {\tt read}, {\tt write}, {\tt
-fread} and {\tt fwrite} and records the number of bytes read or
+Instead, it overrides the functions \verb|read|, \verb|write|, \verb|fread|
+and \verb|fwrite| and records the number of bytes read or
 written along with their dynamic context.
 
-To include this source, use the {\tt IO} event (no period).  In the
-static case, two steps are needed.  Use the {\tt --io} option for
-\hpclink{} to link in the {\tt IO} library and use the {\tt IO} event
-to activate the {\tt IO} source at runtime.  For example,
+To include this source, use the \verb|IO| event (no period).  In the
+static case, two steps are needed.  Use the \verb|--io| option for
+\hpclink{} to link in the \verb|IO| library and use the \verb|IO| event
+to activate the \verb|IO| source at runtime.  For example,
 
 \begin{quote}
 \begin{tabular}{@{}cl}
@@ -261,37 +261,37 @@ to activate the {\tt IO} source at runtime.  For example,
 \end{tabular}
 \end{quote}
 
-The {\tt IO} source is mainly used to find where your program reads or
+The \verb|IO| source is mainly used to find where your program reads or
 writes large amounts of data.  However, it is also useful for tracing
-a program that spends much time in {\tt read} and {\tt write}.  The
+a program that spends much time in \verb|read| and \verb|write|.  The
 hardware performance counters (PAPI) do not advance while running in
 the kernel, so the trace viewer may misrepresent the amount of time
-spent in syscalls such as {\tt read} and {\tt write}.  By adding the
-{\tt IO} source, \hpcrun{} overrides {\tt read} and {\tt write} and
+spent in syscalls such as \verb|read| and \verb|write|.  By adding the
+\verb|IO| source, \hpcrun{} overrides \verb|read| and \verb|write| and
 thus is able to more accurately count the time spent in these
 functions.
 
 \subsection{Memleak}
 
-The {\tt MEMLEAK} sample source counts the number of bytes allocated
-and freed.  Like {\tt IO}, {\tt MEMLEAK} is a synchronous sample
+The \verb|MEMLEAK| sample source counts the number of bytes allocated
+and freed.  Like \verb|IO|, \verb|MEMLEAK| is a synchronous sample
 source and does not generate asynchronous interrupts.  Instead, it
-overrides the malloc family of functions ({\tt malloc}, {\tt calloc},
-{\tt realloc} and {\tt free} plus {\tt memalign}, {\tt
-posix\_memalign} and {\tt valloc}) and records the number of bytes
+overrides the malloc family of functions (\verb|malloc|, \verb|calloc|,
+\verb|realloc| and \verb|free| plus \verb|memalign|, \verb|posix_memalign|
+and \verb|valloc|) and records the number of bytes
 allocated and freed along with their dynamic context.
 
-{\tt MEMLEAK} allows you to find locations in your program that
+\verb|MEMLEAK| allows you to find locations in your program that
 allocate memory that is never freed.  But note that failure to free a
 memory location does not necessarily imply that location has leaked
 (missing a pointer to the memory).  It is common for programs to
 allocate memory that is used throughout the lifetime of the process
 and not explicitly free it.
 
-To include this source, use the {\tt MEMLEAK} event (no period).
-Again, two steps are needed in the static case.  Use the {\tt
---memleak} option for \hpclink{} to link in the {\tt MEMLEAK} library
-and use the {\tt MEMLEAK} event to activate it at runtime.  For
+To include this source, use the \verb|MEMLEAK| event (no period).
+Again, two steps are needed in the static case.  Use the \verb|--memleak|
+option for \hpclink{} to link in the \verb|MEMLEAK| library
+and use the \verb|MEMLEAK| event to activate it at runtime.  For
 example,
 
 \begin{quote}
@@ -303,7 +303,7 @@ example,
 \end{tabular}
 \end{quote}
 
-If a program allocates and frees many small regions, the {\tt MEMLEAK}
+If a program allocates and frees many small regions, the \verb|MEMLEAK|
 source may result in a high overhead.  In this case, you may reduce
 the overhead by using the memleak probability option to record only a
 fraction of the mallocs.  For example, to monitor 10\% of the mallocs,
@@ -344,7 +344,7 @@ The solution is to sample only a fraction of the processes.  That is,
 you can run an application on many thousands of cores but record data
 for only a few hundred processes.  The other processes run the
 application but do not record any measurement data.  This is what the
-process fraction option ({\tt -f} or {\tt --process-fraction}) does.
+process fraction option (\verb|-f| or \verb|--process-fraction|) does.
 For example, to monitor 10\% of the processes, use:
 
 \begin{quote}
@@ -413,7 +413,7 @@ produce skewed and misleading results.
 To use this interface, put the above function calls into your program
 where you want sampling to start and stop.  Remember, starting and
 stopping apply process wide.  For C/C++, include the following header
-file from the \HPCToolkit{} {\tt include} directory.
+file from the \HPCToolkit{} \verb|include| directory.
 
 \begin{quote}
 \begin{verbatim}
@@ -421,8 +421,8 @@ file from the \HPCToolkit{} {\tt include} directory.
 \end{verbatim}
 \end{quote}
 
-Compile your application with {\tt libhpctoolkit} with {\tt -I} and
-{\tt -L} options for the include and library paths.  For example,
+Compile your application with \verb|libhpctoolkit| with \verb|-I| and
+\verb|-L| options for the include and library paths.  For example,
 
 \begin{quote}
 \begin{verbatim}
@@ -431,15 +431,15 @@ gcc -I /path/to/hpctoolkit/include app.c ... \
 \end{verbatim}
 \end{quote}
 
-The {\tt libhpctoolkit} library provides weak symbol no-op definitions
+The \verb|libhpctoolkit| library provides weak symbol no-op definitions
 for the start and stop functions.  For dynamically linked programs, be
-sure to include {\tt -lhpctoolkit} on the link line (otherwise your
+sure to include \verb|-lhpctoolkit| on the link line (otherwise your
 program won't link).  For statically linked programs, \hpclink{} adds
-strong symbol definitions for these functions.  So, {\tt -lhpctoolkit}
+strong symbol definitions for these functions.  So, \verb|-lhpctoolkit|
 is not necessary in the static case, but it doesn't hurt.
 
 To run the program, set the \verb|LD_LIBRARY_PATH| environment
-variable to include the \HPCToolkit{} {\tt lib/hpctoolkit} directory.
+variable to include the \HPCToolkit{} \verb|lib/hpctoolkit| directory.
 This step is only needed for dynamically linked programs.
 
 \begin{quote}
@@ -449,8 +449,8 @@ export LD_LIBRARY_PATH=/path/to/hpctoolkit/lib/hpctoolkit
 \end{quote}
 
 Note that sampling is initially turned on until the program turns it
-off.  If you want it initially turned off, then use the {\tt -ds} (or
-{\tt --delay-sampling}) option for \hpcrun{} (dynamic) or set the
+off.  If you want it initially turned off, then use the \verb|-ds| (or
+\verb|--delay-sampling|) option for \hpcrun{} (dynamic) or set the
 \verb|HPCRUN_DELAY_SAMPLING| environment variable (static).
 
 \begin{quote}
@@ -463,16 +463,53 @@ off.  If you want it initially turned off, then use the {\tt -ds} (or
 \end{quote}
 
 % ===========================================================================
+\section{Environment Variables for \hpcrun{}}
+\label{sec:env-vars}
+For most systems, \hpcrun{} requires no special environment variable settings.
+There are two situations, however, where \hpcrun{}, to function correctly,
+\emph{must} refer to environment variables. These environment variables, and
+corresponding situations are:
+\begin{description}
+  \item{\verb|HPCTOOLKIT|} To function correctly, \hpcrun{} must know
+       the location of the \HPCToolkit{} top-level installation directory.
+       The \hpcrun{} script uses elements of the installation \verb|lib| and
+       \verb|libexec| subdirectories. For most systems, the 
+       installation procedure ensures that \hpcrun{} can find the requisite
+       components. Some parallel job launchers, however, will \emph{copy} the
+       \hpcrun{} script to a different location from the installed base. If your
+       system uses this copying mechanism, you must set the \verb|HPCTOOLKIT|
+       environment variable to the top-level installation directory.
+  \item{\verb|HPCRUN_TMPDIR|} While profiling a program, \hpcrun{} must
+       write some internal data to temporary files. By default, these files
+       are written to \verb|/tmp|. On some systems, however, you may not
+       have permission to write to \verb|/tmp|. If this is the case on your system,
+       you should set the \verb|HPCRUN_TMPDIR| environment variable to a directory
+       where you have write permission. {\bf CAUTION:} Your home directory is \emph{not}
+       a good choice, as some of \hpcrun{}'s temporary files can get large.
+
+       NOTE: You do not strictly have to use \verb|HPCRUN_TMPDIR|. If you set the
+       commonly-used Unix environment \verb|TMPDIR|, \hpcrun{} will use it for
+       temporary files if \verb|HPCRUN_TMPDIR| is not set.
+\end{description}
+
+{\bf Note to system administrators:} if a module system is available, then constructing
+an \HPCToolkit{} module to handle these environment variables would be convenient for
+usres.
 
 \section{Platform-Specific Notes}
 
+%
+% system specific notes for titan, & tmpdir ? keenland?
+%
 \subsection{Cray XE and XK}
 
-When using dynamically linked binaries on Cray XE and XK systems, you
-should add the {\tt HPCTOOLKIT} environment variable to your launch
-script.  Set {\tt HPCTOOLKIT} to the top-level \HPCToolkit{} install
-prefix (the directory containing the {\tt bin}, {\tt lib} and {\tt
-libexec} subdirectories) and export it to the environment.  This is
+Cray XE and XK systems have copying-style parallel job launchers referred
+to in section~\ref{sec:env-vars}.
+Consequently, when using dynamically linked binaries on Cray XE and XK systems, you
+should add the \verb|HPCTOOLKIT| environment variable to your launch
+script.  Set \verb|HPCTOOLKIT| to the top-level \HPCToolkit{} install
+prefix (the directory containing the \verb|bin|, \verb|lib| and
+\verb|libexec| subdirectories) and export it to the environment.  This is
 only needed for running dynamically linked binaries.  For example:
 
 \begin{quote}
@@ -491,7 +528,7 @@ aprun -n #nodes hpcrun -e event@period dynamic-app arg ...
 \end{quote}
 % $
 
-If {\tt HPCTOOLKIT} is not set, you may see errors such as the
+If \verb|HPCTOOLKIT| is not set, you may see errors such as the
 following in your job's error log.
 
 \begin{quote}
@@ -502,14 +539,14 @@ or in your environment, and try again.
 \end{verbatim}
 \end{quote}
 
-The problem is that the Cray job launcher copies the {\tt hpcrun}
-script to a directory somewhere below {\tt /var/spool/alps/}\ and runs
-it from there.  By moving {\tt hpcrun} to a different directory, this
-breaks {\tt hpcrun}'s method for finding its own install directory.
-The solution is to add {\tt HPCTOOLKIT} to your environment so that
-{\tt hpcrun} can find its install directory.
+The problem is that the Cray job launcher copies the \hpcrun{}
+script to a directory somewhere below \verb|/var/spool/alps/|\ and runs
+it from there.  By moving \hpcrun{} to a different directory, this
+breaks \hpcrun{}'s method for finding its own install directory.
+The solution is to add \verb|HPCTOOLKIT| to your environment so that
+\hpcrun{} can find its install directory.
 
-Your system may have a module installed for {\tt hpctoolkit} with the
-correct settings for {\tt PATH}, {\tt HPCTOOLKIT}, etc.  In that case,
-the easiest solution is to load the {\tt hpctoolkit} module.  Try
-``{\tt module show hpctoolkit}'' to see if it sets {\tt HPCTOOLKIT}.
+Your system may have a module installed for \verb|hpctoolkit| with the
+correct settings for \verb|PATH|, \verb|HPCTOOLKIT|, etc.  In that case,
+the easiest solution is to load the \verb|hpctoolkit| module.  Try
+``\verb|module show hpctoolkit|'' to see if it sets \verb|HPCTOOLKIT|.
