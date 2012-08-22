@@ -180,52 +180,6 @@ uint32_t g_cuda_launch_skip_inner = 0;
 // ******* METHOD DEFINITIONS ***********
 
 
-
-
-static void PopulateEntryPointesToWrappedCudaRuntimeCalls() {
-    void *handle;
-    char *error;
-    
-    handle = dlopen("libcudart.so", RTLD_LAZY);
-    if (!handle) {
-        fputs(dlerror(), stderr);
-	monitor_real_abort();
-    }
-    
-    for (int i = 0; i < CUDA_MAX_APIS; i++) {
-        cudaRuntimeFunctionPointer[i].generic = dlsym(handle, cudaRuntimeFunctionPointer[i].functionName);
-        if ((error = dlerror()) != NULL) {
-            fprintf(stderr, "%s\n", error);
-            monitor_real_abort();
-        }
-    }
-}
-
-static void PopulateEntryPointesToWrappedCuDriverCalls() {
-    void *handle;
-    char *error;
-    
-    handle = dlopen("libcuda.so", RTLD_LAZY);
-    if (!handle) {
-        fputs(dlerror(), stderr);
-        monitor_real_abort();
-    }
-    
-    for (int i = 0; i < CU_MAX_APIS; i++) {
-        cuDriverFunctionPointer[i].generic = dlsym(handle, cuDriverFunctionPointer[i].functionName);
-        if ((error = dlerror()) != NULL) {
-            fprintf(stderr, "%s\n", error);
-            monitor_real_abort();
-        }
-    }
-}
-
-static void PopulateEntryPointesToWrappedCalls() {
-    PopulateEntryPointesToWrappedCudaRuntimeCalls();
-    PopulateEntryPointesToWrappedCuDriverCalls();
-}
-
-
 void CloseAllStreams(stream_to_id_map_t *root) {
     
     if (!root)
@@ -253,7 +207,6 @@ static void METHOD_FN(init)
     g_unfinished_stream_list_head = NULL;
     g_finished_event_nodes_tail = &dummy_event_node;
     dummy_event_node.next = g_finished_event_nodes_tail;
-    PopulateEntryPointesToWrappedCalls();
     shared_blaming_env = getenv("HPCRUN_ENABLE_SHARED_GPU_BLAMING");
     if(shared_blaming_env)
         g_do_shared_blaming = atoi(shared_blaming_env);

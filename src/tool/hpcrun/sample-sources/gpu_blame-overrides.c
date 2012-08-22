@@ -295,6 +295,46 @@ IPC_data_t dummy_ipc;
 
 // ******* METHOD DEFINITIONS ***********
 
+
+
+/******************** CONSTRUCTORS ********************/
+
+
+static void PopulateEntryPointesToWrappedCudaRuntimeCalls() {
+    char *error;
+
+    for (int i = 0; i < CUDA_MAX_APIS; i++) {
+	dlerror(); // null out the prev err
+        cudaRuntimeFunctionPointer[i].generic = dlsym(RTLD_NEXT, cudaRuntimeFunctionPointer[i].functionName);
+        if ((error = dlerror()) != NULL) {
+            fprintf(stderr, "%s\n", error);
+            monitor_real_abort();
+        }
+    }
+}
+
+static void PopulateEntryPointesToWrappedCuDriverCalls() {
+    char *error;
+
+    for (int i = 0; i < CU_MAX_APIS; i++) {
+	dlerror(); // null out the prev err
+        cuDriverFunctionPointer[i].generic = dlsym(RTLD_NEXT, cuDriverFunctionPointer[i].functionName);
+        if ((error = dlerror()) != NULL) {
+            fprintf(stderr, "%s\n", error);
+            monitor_real_abort();
+        }
+    }
+}
+
+__attribute__((constructor))
+static void PopulateEntryPointesToWrappedCalls() {
+    PopulateEntryPointesToWrappedCudaRuntimeCalls();
+    PopulateEntryPointesToWrappedCuDriverCalls();
+}
+
+/******************** END CONSTRUCTORS ****/
+
+
 static inline uint64_t get_shared_key(int device_id){
 	char name[200] = {0};
 	uint32_t i = 0;
