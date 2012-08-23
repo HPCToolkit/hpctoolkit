@@ -64,6 +64,22 @@ struct stream_metrics_data_t {
 	metric_proc_map_t* proc_map;
 };
 
+extern	int n_metrics;
+extern	hpcrun_metricVal_t* null_metrics;
+extern	metric_list_t* metric_data;
+extern	bool has_set_max_metrics;
+extern	metric_list_t* pre_alloc;
+extern	metric_desc_t** id2metric;
+extern	metric_desc_p_tbl_t metric_tbl;
+extern	struct kind_info_t kinds;
+extern	kind_info_t* current_kind;
+extern	kind_info_t* current_insert;
+extern	metric_upd_proc_t** metric_proc_tbl;
+extern	metric_proc_map_t* proc_map;
+
+
+
+
 typedef struct stream_data_t {
   int device_id;
   int id;
@@ -80,8 +96,6 @@ typedef struct stream_data_t {
 	//metrics: this is needed otherwise 
 	//hpcprof does not pick them up
 	cct2metrics_t* cct2metrics_map;
-	struct stream_metrics_data_t *metrics;	
-	int stream_special_metric_id;
 
   // ----------------------------------------
   // tracing
@@ -108,31 +122,6 @@ int hpcrun_generate_stream_backtrace(stream_data_t *st, ucontext_t *context, bac
 extern cct_node_t* hpcrun_cct_insert_backtrace(cct_node_t* cct, frame_t* path_beg, frame_t* path_end);
 frame_t* hpcrun_expand_stream_btbuf(stream_data_t *st);
 void hpcrun_ensure_stream_btbuf_avail(stream_data_t *st);
-
-//-----------stream_metrics.c------------
-kind_info_t* hpcrun_stream_metrics_new_kind();
-bool hpcrun_stream_metrics_finalized(stream_data_t *st);
-void hpcrun_stream_pre_allocate_metrics(stream_data_t *st, size_t num);
-int hpcrun_stream_get_num_metrics(stream_data_t *st);
-metric_desc_t* hpcrun_stream_id2metric(stream_data_t *st, int id);
-metric_list_t* hpcrun_stream_get_metric_data(stream_data_t *st);
-metric_desc_p_tbl_t* hpcrun_stream_get_metric_tbl(stream_data_t *st);
-metric_upd_proc_t* hpcrun_stream_get_metric_proc(stream_data_t *st, int metric_id);
-int hpcrun_stream_new_metric(stream_data_t *st);
-void hpcrun_stream_set_metric_info_w_fn(stream_data_t *st, int metric_id, const char* name,
-				 MetricFlags_ValFmt_t valFmt, size_t period,
-				 metric_upd_proc_t upd_fn);
-void hpcrun_stream_set_metric_info_and_period(stream_data_t *st, int metric_id, const char* name,
-				       MetricFlags_ValFmt_t valFmt, size_t period);
-void hpcrun_stream_set_metric_info(stream_data_t *st, int metric_id, const char* name);
-void hpcrun_stream_et_metric_name(stream_data_t *st, int metric_id, char* name);
-metric_set_t* hpcrun_stream_metric_set_new(stream_data_t *st);
-cct_metric_data_t* hpcrun_stream_metric_set_loc(metric_set_t* s, int id);
-void hpcrun_stream_metric_std_inc(stream_data_t *st, int metric_id, metric_set_t* set,
-				  hpcrun_metricVal_t incr);
-void hpcrun_stream_metric_set_dense_copy(stream_data_t *st, cct_metric_data_t* dest,
-					 metric_set_t* set,
-					 int num_metrics);
 
 //---------------write_Stream_data.c-------------
 
