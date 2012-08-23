@@ -201,10 +201,14 @@ int
 fnbounds_init()
 {
   char* tmpdir = getenv("HPCRUN_TMPDIR");
-  if (tmpdir) tmproot = tmpdir;
+  if (tmpdir != NULL && *tmpdir != 0) {
+    tmproot = tmpdir;
+  }
   else {
     tmpdir = getenv("TMPDIR");
-    if (tmpdir) tmproot = tmpdir;
+    if (tmpdir != NULL && *tmpdir != 0) {
+      tmproot = tmpdir;
+    }
   }
 
   if (hpcrun_get_disabled()) return 0;
