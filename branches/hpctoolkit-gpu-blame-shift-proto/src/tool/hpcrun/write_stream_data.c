@@ -180,7 +180,7 @@ stream_lwrite(stream_data_t *st, cct_node_t* node, cct_op_arg_t arg, size_t leve
     tmp->lm_ip = (hpcfmt_vma_t) (uintptr_t) (addr->ip_norm).lm_ip;
     
     tmp->num_metrics = my_arg->num_metrics;
-    hpcrun_stream_metric_set_dense_copy(st, tmp->metrics, hpcrun_stream_get_metric_set(st, node),
+    hpcrun_metric_set_dense_copy(tmp->metrics, hpcrun_get_metric_set(node),
                                  my_arg->num_metrics);
     hpcrun_fmt_cct_node_fwrite(tmp, flags, my_arg->fs);
 }
@@ -217,7 +217,7 @@ hpcrun_stream_cct_fwrite(stream_data_t *st, cct_node_t* cct, FILE* fs, epoch_fla
     hpcfmt_int8_fwrite((uint64_t) hpcrun_cct_num_nodes(cct), fs);
     TMSG(DATA_WRITE, "num cct nodes = %d", hpcrun_cct_num_nodes(cct));
     
-    hpcfmt_uint_t num_metrics = hpcrun_stream_get_num_metrics(st);
+    hpcfmt_uint_t num_metrics = hpcrun_get_num_metrics();
     TMSG(DATA_WRITE, "num metrics in a cct node = %d", num_metrics);
     
     hpcrun_fmt_cct_node_t tmp_node;
@@ -270,7 +270,7 @@ write_stream_epoch(FILE* f, stream_data_t *st)
 									"TODO:epoch-name","TODO:epoch-value",
 									NULL);
 
-	metric_desc_p_tbl_t *metric_tbl = hpcrun_stream_get_metric_tbl(st);//hpcrun_get_metric_tbl();//hpcrun_stream_get_metric_tbl(st);
+	metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl();
 
 	TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
 	hpcrun_fmt_metricTbl_fwrite(metric_tbl, f);

@@ -57,12 +57,6 @@
 
 //***************************************************************************
 
-/*struct kind_info_t {
-  int idx;     // current index in kind
-  struct kind_info_t* link; // all kinds linked together in singly linked list
-}kind_info_t;
-*/
-
 stream_data_t *hpcrun_stream_data_alloc_init(int device_id, int id)
 {
 	stream_data_t *st = hpcrun_mmap_anon(sizeof(stream_data_t));
@@ -77,24 +71,10 @@ stream_data_t *hpcrun_stream_data_alloc_init(int device_id, int id)
   st->epoch = hpcrun_malloc(sizeof(epoch_t));
 	st->epoch->csdata_ctxt = copy_thr_ctxt(TD_GET(epoch)->csdata.ctxt); //copy_thr_ctxt(thr_ctxt);
   hpcrun_cct_bundle_init(&(st->epoch->csdata), (st->epoch->csdata).ctxt);
- // hpcrun_cct_bundle_init(&(st->epoch->csdata), NULL);
   st->epoch->loadmap = hpcrun_getLoadmap();
   st->epoch->next  = NULL;
 
 	hpcrun_cct2metrics_init(&(st->cct2metrics_map)); //this just does st->map = NULL;
-
-	st->metrics = (struct stream_metrics_data_t *)hpcrun_malloc(sizeof(struct stream_metrics_data_t));
-
-	st->metrics->n_metrics = 0;
-	st->metrics->metric_data = NULL;
-	st->metrics->has_set_max_metrics = false;
-	st->metrics->pre_alloc = NULL;
-	st->metrics->kinds = (kind_info_t *)hpcrun_malloc(sizeof(kind_info_t));
-	st->metrics->kinds->idx =0; st->metrics->kinds->link = NULL;
-	st->metrics->current_kind = st->metrics->kinds;
-	st->metrics->current_insert = st->metrics->kinds;
-	st->metrics->metric_proc_tbl = NULL;
-	st->metrics->proc_map = NULL;
 
   hpcrun_bt_init(&(st->bt), NEW_BACKTRACE_INIT_SZ);
 
@@ -102,10 +82,6 @@ stream_data_t *hpcrun_stream_data_alloc_init(int device_id, int id)
   st->trace_max_time_us = 0;
   st->hpcrun_file  = NULL;
 
-	/*FIXME: need to look at golden number later*/
-	hpcrun_stream_pre_allocate_metrics(st, 1/*GOLDEN NUMBER*/);
- 	st->stream_special_metric_id = hpcrun_stream_new_metric(st);
-  hpcrun_stream_set_metric_info_and_period(st, st->stream_special_metric_id, "STREAM SPECIAL (us)", MetricFlags_ValFmt_Int, 1);
 	return st;	
 }
 
@@ -121,7 +97,7 @@ metric_set_t* hpcrun_stream_reify_metric_set(stream_data_t *st, cct_node_id_t cc
 		}
 	}
 	if(rv == NULL) {
-		rv = hpcrun_malloc(st->metrics->n_metrics * sizeof(hpcrun_metricVal_t));
+		rv = hpcrun_malloc(n_metrics * sizeof(hpcrun_metricVal_t));
 		if(!map) {
 			map = cct2metrics_new(cct_id, rv); 
 		} else {
@@ -151,8 +127,6 @@ cct_node_t *stream_duplicate_cpu_node(stream_data_t *st, ucontext_t *context, cc
         cct_node_t * tmp_root = cct->tree_root;
         cct_node_t* n = NULL;
         hpcrun_walk_path(node, l_insert_path, (cct_op_arg_t) &(tmp_root));
-	hpcrun_stream_get_num_metrics(st);
-	stream_cct_metric_data_increment(st, st->stream_special_metric_id, tmp_root, (cct_metric_data_t) {.i = 42});
 	return tmp_root;
 }
 
