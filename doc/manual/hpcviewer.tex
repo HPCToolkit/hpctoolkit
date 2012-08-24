@@ -33,44 +33,51 @@ The possible options are as follows:
  \item \texttt{-debug}: Log additional information about plug-in dependency problems.
 \end{itemize}
 
+
 % ===========================================================================
 % ===========================================================================
 
-%% \section{Installing \hpcviewer{}}
+\begin{comment}
+\section{Installing \hpcviewer{}}
 
-%% \subsection{Requirements}
-%% \begin{itemize}
-%%  \item Java Runtime Environment (JRE) 1.5 or greater.
-%%    Use the Sun or IBM version; we have had problems with OpenJDK.
+\subsection{Requirements}
+\begin{itemize}
+ \item Java Runtime Environment (JRE) 1.5 or greater.
+   Use the Oracle or IBM version; we have had problems with OpenJDK.
+   Specifically we recommend Oracle on x86 platforms, and IBM java on POWER.
+   Take special note on POWER systems: we require the 64-bit java, even on a 32-bit
+   platform.
 
-%%  \item On Linux, GTK+ is required.
-%% \end{itemize}
-
-
-%% \subsection{Generic Instructions}
-%% \begin{enumerate}
-%%   \item Download \hpcviewer{} package that is suitable for your platform from 
-%%     \begin{quote}
-%%       \url{https://outreach.scidac.gov/frs/?group\_id=22} 
-%%     \end{quote}
-%%   \item Untar the tarball into a temporary directory (Linux) or an installation directory (Windows and Mac).
-%% \end{enumerate}
+ \item On Linux, GTK+ is required.
+\end{itemize}
 
 
-%% \subsection{Linux-specific Instructions}
+\subsection{Generic Instructions}
+\begin{enumerate}
+  \item Download \hpcviewer{} package that is suitable for your platform from 
+    \begin{quote}
+      \url{https://outreach.scidac.gov/frs/?group\_id=22} 
+    \end{quote}
+  \item Untar the tarball into a temporary directory (Linux) or an installation directory (Windows and Mac).
+\end{enumerate}
 
-%% To install \hpcviewer{} in an \HPCToolkit{} installation, unpack the tarball and execute the following command:
-%% \begin{quote}
-%% \begin{verbatim}
-%%   ./<hpcviewer>/install <install-path>
-%% \end{verbatim}
-%% \end{quote}
-%% Here, \mytt{<hpcviewer>} is the directory created by unpacking the tarball; and 
-%% \mytt{<install-path>} is the same directory passed to the \texttt{--prefix} option of \HPCToolkit{}'s \texttt{configure} script.
 
-%% Typically one compiles and installs \HPCToolkit{} before installing \hpcviewer{}, but this is not necessary.
-%% Note, however, that if \hpcviewer{} is installed first, the \mytt{install} script will issue a warning and request confirmation.
+\subsection{Linux-specific Instructions}
 
+To install \hpcviewer{} in an \HPCToolkit{} installation, unpack the tarball and execute the following command:
+\begin{quote}
+\begin{verbatim}
+  ./<hpcviewer>/install [-j <path-to-java>] <install-path>
+\end{verbatim}
+\end{quote}
+Here, \mytt{<hpcviewer>} is the directory created by unpacking the tarball; and 
+\mytt{<install-path>} is the same directory passed to the \texttt{--prefix} option of \HPCToolkit{}'s \texttt{configure} script.
+The optional \mytt{-j} flag configures the java to be used with \mytt{<hpcviewer>}. If the \mytt{-j} flag is unspecified,
+then the java found on the path will be used.
+
+Typically one compiles and installs \HPCToolkit{} before installing \hpcviewer{}, but this is not necessary.
+Note, however, that if \hpcviewer{} is installed first, the \mytt{install} script will issue a warning and request confirmation.
+\end{comment}
 
 % ===========================================================================
 % ===========================================================================
