@@ -1511,6 +1511,58 @@ Even if both calls map to the same source line, it may be wrong to coalesce them
 By design, \HPCToolkit{} does not attempt to coalesce distinct calls to the same function because it might be incorrect to do so; instead, it independently reports each call site that appears in the machine code.
 If the compiler duplicated calls as it replicated code during optimization, multiple call sites may be reported by \hpcviewer{} when only one appeared in the source code.
 
+% ===========================================================================
+% ===========================================================================
+
+\section{I get a message about ``unable to write to tmp directory''}
+
+While profiling a program, \hpcrun{} must write some internal data to temporary files.
+By default, these files are written to \verb|/tmp|. On some systems, however, you may not
+have permission to write to \verb|/tmp|. If this is the case on your system, then
+you will see the message
+\begin{quote}
+\begin{verbatim}
+    hpcrun: unable to write to tmp directory: /tmp
+    please set HPCRUN_TMPDIR or TMPDIR and try again
+\end{verbatim}
+\end{quote}
+
+To correct this problem, you should set the \verb|HPCRUN_TMPDIR| (or, if you prefer, \verb|TMPDIR|)
+environment variable to a directory
+where you have write permission. {\bf CAUTION:} Your home directory is \emph{not}
+a good choice, as some of \hpcrun{}'s temporary files can get large.
+
+See section~\ref{sec:env-vars} for a bit more detail.
+
+% ===========================================================================
+% ===========================================================================
+\section{I get a message about ``Unable to find HPCTOOLKIT root directory''}
+
+On some systems, you might see a message like this:
+\begin{quote}
+\begin{verbatim}
+/path/to/copy/of/hpcrun: Unable to find HPCTOOLKIT root directory.
+Please set HPCTOOLKIT to the install prefix, either in this script,
+or in your environment, and try again.
+\end{verbatim}
+\end{quote}
+
+
+The problem is that the system job launcher copies the \hpcrun{}
+script from its install directory to a launch directory and runs
+it from there.  When the system launcher moves \hpcrun{} to a different directory, this
+breaks \hpcrun{}'s method for finding its own install directory.
+The solution is to add \verb|HPCTOOLKIT| to your environment so that
+\hpcrun{} can find its install directory. See section~\ref{sec:env-vars} for
+general notes on environment variables for \hpcrun{}. Also, see section~\ref{sec:platform-specific},
+as this problem occurs on Cray XE and XK systems.
+
+Note: Your system may have a module installed for \verb|hpctoolkit| with the
+correct settings for \verb|PATH|, \verb|HPCTOOLKIT|, etc.  In that case,
+the easiest solution is to load the \verb|hpctoolkit| module.  If there is
+such a module, Try
+``\verb|module show hpctoolkit|'' to see if it sets \verb|HPCTOOLKIT|.
+
 
 % ===========================================================================
 % ===========================================================================
