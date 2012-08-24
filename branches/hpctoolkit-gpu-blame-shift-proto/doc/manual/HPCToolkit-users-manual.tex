@@ -121,7 +121,7 @@ Nathan Tallent\\
 \\
 Rice University\\
 \\
-For \HPCToolkit{} 5.2.1 ($Revision$)
+For \HPCToolkit{} 5.3.0 ($Revision$)
 }
 
 %\date{}
@@ -885,7 +885,7 @@ To isolate code that is an impediment to scalable performance, one can use the {
 % ***************************************************************************
 
 \chapter{\hpctraceviewer{}'s User Interface}
-\label{chpt:hpcviewer-interface}
+\label{chpt:hpctraceviewer-interface}
 
 \input{hpctraceviewer}
 
@@ -1816,7 +1816,7 @@ No hpcstruct =
 %% --------------------------------------------------
 
 %% ../configure --prefix=<hpctoolkit-install> \
-%%   --with-externals=<eternals-install> \
+%%   --with-externals=<externals-install> \
 %%   [--with-papi=<papi-install>] \
 %%   --enable-lush --with-cilk=<cilk-install>
 
@@ -1825,6 +1825,7 @@ No hpcstruct =
 %% --------------------------------------------------
 
 %% export PATH=<hpctoolkit-install>/src/tool/misc:${PATH}
+%% Build Cilk app with modified Cilk compiler
 
 %% hpcrun --agent <hpctoolkit-install>/lib/hpctoolkit/libagent-cilk.so \
 %%        -e WALLCLOCK@5000 \

@@ -229,10 +229,11 @@ hpcrun_get_num_metrics()
 
 
 metric_desc_t*
-hpcrun_id2metric(int id)
+hpcrun_id2metric(int metric_id)
 {
-  if ((0 <= id) && (id < n_metrics)) {
-    return id2metric[id];
+  hpcrun_get_num_metrics(); 
+  if ((0 <= metric_id) && (metric_id < n_metrics)) {
+    return id2metric[metric_id];
   }
   return NULL;
 }
@@ -261,7 +262,12 @@ metric_upd_proc_t*
 hpcrun_get_metric_proc(int metric_id)
 {
   hpcrun_get_num_metrics(); // ensure that metrics are finalized
-  return metric_proc_tbl[metric_id];
+
+  if ((0 <= metric_id) && (metric_id < n_metrics)) {
+    return metric_proc_tbl[metric_id];
+  }
+
+  return NULL;
 }
 
 //
@@ -390,8 +396,11 @@ void
 hpcrun_set_metric_name(int metric_id, char* name)
 {
   hpcrun_get_num_metrics();
-  id2metric[metric_id]->name        = name;
-  id2metric[metric_id]->description = name;
+
+  if ((0 <= metric_id) && (metric_id < n_metrics)) {
+    id2metric[metric_id]->name        = name;
+    id2metric[metric_id]->description = name;
+  }
 }
 
 //
@@ -412,7 +421,10 @@ hpcrun_metric_set_new(void)
 cct_metric_data_t*
 hpcrun_metric_set_loc(metric_set_t* s, int id)
 {
-  return &(s->v1) + id;
+  if (s && (0 <= id) && (id < n_metrics)) {
+    return &(s->v1) + id;
+  }
+  return NULL;
 }
 
 
@@ -421,6 +433,10 @@ hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
 		      hpcrun_metricVal_t incr)
 {
   metric_desc_t* minfo = hpcrun_id2metric(metric_id);
+  if (!minfo) {
+    return;
+  }
+
   hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(set, metric_id);
   switch (minfo->flags.fields.valFmt) {
     case MetricFlags_ValFmt_Int:

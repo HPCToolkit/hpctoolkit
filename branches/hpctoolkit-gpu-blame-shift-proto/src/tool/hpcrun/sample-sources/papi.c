@@ -87,6 +87,8 @@
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
+
+#include <sample-sources/blame-shift.h>
 #include <utilities/tokenize.h>
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
@@ -110,9 +112,16 @@ static void papi_event_handler(int event_set, void *pc, long long ovec, void *co
 static int  event_is_derived(int ev_code);
 static void event_fatal_error(int ev_code, int papi_ret);
 
+
 /******************************************************************************
  * local variables
  *****************************************************************************/
+static int cyc_metric_id = -1; /* initialized to an illegal metric id */
+
+// Special case to make PAPI_library_init() a soft failure.
+// Make sure that we call no other PAPI functions.
+//
+static int papi_unavail = 0;
 
 static void
 METHOD_FN(init)
@@ -122,12 +131,15 @@ METHOD_FN(init)
   int ret = PAPI_library_init(PAPI_VER_CURRENT);
   TMSG(PAPI,"PAPI_library_init = %d", ret);
   TMSG(PAPI,"PAPI_VER_CURRENT =  %d", PAPI_VER_CURRENT);
-  if (ret != PAPI_VER_CURRENT){
-    STDERR_MSG("Fatal error: PAPI_library_init() failed with version mismatch.\n"
-        "HPCToolkit was compiled with version 0x%x but run on version 0x%x.\n"
-        "Check the HPCToolkit installation and try again.",
-	PAPI_VER_CURRENT, ret);
-    exit(1);
+
+  // Delay reporting PAPI_library_init() errors.  This allows running
+  // with other events if PAPI is not available.
+  if (ret < 0) {
+    hpcrun_save_papi_error(HPCRUN_PAPI_ERROR_UNAVAIL);
+    papi_unavail = 1;
+  } else if (ret != PAPI_VER_CURRENT) {
+    hpcrun_save_papi_error(HPCRUN_PAPI_ERROR_VERSION);
+    papi_unavail = 1;
   }
 
   // Tell PAPI to count events in all contexts (user, kernel, etc).
@@ -135,6 +147,7 @@ METHOD_FN(init)
   // breaks some applications.  For example, this breaks some Gemini
   // (GNI) functions called from inside gasnet_init() or MPI_Init() on
   // the Cray XE (hopper).
+  //
   if (ENABLED(SYSCALL_RISKY)) {
     ret = PAPI_set_domain(PAPI_DOM_ALL);
     if (ret != PAPI_OK) {
@@ -149,6 +162,8 @@ static void
 METHOD_FN(thread_init)
 {
   TMSG(PAPI, "thread init");
+  if (papi_unavail) { return; }
+
   int retval = PAPI_thread_init(pthread_self);
   if (retval != PAPI_OK) {
     EEMSG("PAPI_thread_init NOT ok, retval = %d", retval);
@@ -161,6 +176,8 @@ static void
 METHOD_FN(thread_init_action)
 {
   TMSG(PAPI, "register thread");
+  if (papi_unavail) { return; }
+
   int retval = PAPI_register_thread();
   if (retval != PAPI_OK) {
     EEMSG("PAPI_register_thread NOT ok, retval = %d", retval);
@@ -172,6 +189,9 @@ METHOD_FN(thread_init_action)
 static void
 METHOD_FN(start)
 {
+  TMSG(PAPI, "start");
+  if (papi_unavail) { return; }
+
   thread_data_t *td = hpcrun_get_thread_data();
   int eventSet = td->eventSet[self->evset_idx];
 
@@ -189,6 +209,8 @@ static void
 METHOD_FN(thread_fini_action)
 {
   TMSG(PAPI, "unregister thread");
+  if (papi_unavail) { return; }
+
   int retval = PAPI_unregister_thread();
   char msg[] = "!!NOT PAPI_OK!! (code = -9999999)\n";
   snprintf(msg, sizeof(msg)-1, "!!NOT PAPI_OK!! (code = %d)", retval);
@@ -198,11 +220,12 @@ METHOD_FN(thread_fini_action)
 static void
 METHOD_FN(stop)
 {
-  thread_data_t *td = hpcrun_get_thread_data();
+  TMSG(PAPI, "stop");
+  if (papi_unavail) { return; }
 
+  thread_data_t *td = hpcrun_get_thread_data();
   int eventSet = td->eventSet[self->evset_idx];
   int nevents  = self->evl.nevents;
-
   source_state_t my_state = TD_GET(ss_state)[self->evset_idx];
 
   if (my_state == STOP) {
@@ -229,6 +252,9 @@ METHOD_FN(stop)
 static void
 METHOD_FN(shutdown)
 {
+  TMSG(PAPI, "shutdown");
+  if (papi_unavail) { return; }
+
   METHOD_CALL(self, stop); // make sure stop has been called
   PAPI_shutdown();
 
@@ -238,8 +264,11 @@ METHOD_FN(shutdown)
 // Return true if PAPI recognizes the name, whether supported or not.
 // We'll handle unsupported events later.
 static bool
-METHOD_FN(supports_event,const char *ev_str)
+METHOD_FN(supports_event, const char *ev_str)
 {
+  TMSG(PAPI, "supports event");
+  if (papi_unavail) { return false; }
+
   if (self->state == UNINIT){
     METHOD_CALL(self, init);
   }
@@ -255,6 +284,9 @@ METHOD_FN(supports_event,const char *ev_str)
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
+  TMSG(PAPI, "process event list");
+  if (papi_unavail) { return; }
+
   char *event;
   int i, ret;
   int num_lush_metrics = 0;
@@ -304,6 +336,12 @@ METHOD_FN(process_event_list, int lush_metrics)
 				      MetricFlags_ValFmt_Int,
 				      self->evl.events[i].thresh);
 
+
+    // blame shifting needs to know if there is a cycles metric
+    if (strcmp(buffer, "PAPI_TOT_CYC") == 0) {
+      cyc_metric_id = metric_id;
+    }
+
     // FIXME:LUSH: need a more flexible metric interface
     if (num_lush_metrics > 0 && strcmp(buffer, "PAPI_TOT_CYC") == 0) {
       // there should be one lush metric; its source is the last event
@@ -326,8 +364,10 @@ METHOD_FN(gen_event_set,int lush_metrics)
   int ret;
   int eventSet;
 
+  TMSG(PAPI, "gen event set");
+  if (papi_unavail) { return; }
+
   eventSet = PAPI_NULL;
-  TMSG(PAPI,"create event set");
   ret = PAPI_create_eventset(&eventSet);
   TMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret, eventSet);
   if (ret != PAPI_OK) {
@@ -377,6 +417,12 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t    Profilable\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
+
+  if (papi_unavail) {
+    printf("PAPI is not available.  Probably, the kernel doesn't support PAPI,\n"
+	   "or else maybe HPCToolkit is out of sync with PAPI.\n\n");
+    return;
+  }
 
   num_total = 0;
   num_prof = 0;
@@ -513,8 +559,12 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
     TMSG(PAPI_SAMPLE,"sampling call path for metric_id = %d", metric_id);
 
-    hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
+    sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 			   0/*skipInner*/, 0/*isSync*/);
+
+    if (cyc_metric_id == metric_id) {
+      blame_shift_apply(sv.sample_node, hpcrun_id2metric(metric_id)->period);
+    }
   }
   hpcrun_safe_exit();
 }

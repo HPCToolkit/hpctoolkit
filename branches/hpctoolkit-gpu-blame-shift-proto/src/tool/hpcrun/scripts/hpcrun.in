@@ -352,7 +352,7 @@ if test -z "$1" ; then
 fi
 
 #------------------------------------------------------------
-# Launch Program
+# Pre-Launch Sanity Checks
 #------------------------------------------------------------
 
 # Find the command on PATH.  We need to run file and nm on the binary,
@@ -407,6 +407,42 @@ if test -x "$command" ; then
 	fi
     fi
 fi
+
+# Verify that we can write to tmpdir: HPCRUN_TMPDIR, TMPDIR or /tmp,
+# and fail now with a useful message if not.  Note: we use the same
+# algorithm as inside hpcfnbounds: if HPCRUN_TMPDIR or TMPDIR is set,
+# then commit to that directory and not try the next if it fails.
+
+test_tmp_dir()
+{
+    tmp_file="$1/hpcrun-tmp-file-$$"
+    tmp_dir="$1"
+
+    if touch "$tmp_file" >/dev/null 2>&1 ; then
+	tmp_ans=yes
+	rm -f "$tmp_file"
+    else
+	tmp_ans=no
+    fi
+}
+
+if test -n "$HPCRUN_TMPDIR" ; then
+    test_tmp_dir "$HPCRUN_TMPDIR"
+elif test -n "$TMPDIR" ; then
+    test_tmp_dir "$TMPDIR"
+else
+    test_tmp_dir /tmp
+fi
+
+if test "$tmp_ans" = no ; then
+    echo "hpcrun: unable to write to tmp directory: $tmp_dir" 1>&2
+    echo "please set HPCRUN_TMPDIR or TMPDIR and try again" 1>&2
+    exit 1
+fi
+
+#------------------------------------------------------------
+# Final Environ Settings and Exec the Binary
+#------------------------------------------------------------
 
 # Add OMP_SKIP_MSB to HPCRUN_DEBUG_FLAGS if the binary contains
 # _mp_init.

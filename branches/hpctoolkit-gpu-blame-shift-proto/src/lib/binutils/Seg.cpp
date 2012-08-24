@@ -292,7 +292,8 @@ BinUtil::TextSeg::ctor_initProcs()
       if (dbg) {
 	if (!dbg->name.empty()) {
 	  procNm = dbg->name;
-	} else if (!symNm.empty()) {
+	}
+	else if (!symNm.empty()) {
           // sometimes a procedure name is in the symbol table even
           // though it is not in the dwarf section. this case occurs
           // when gcc outlines routines from OpenMP parallel sections.
@@ -320,7 +321,7 @@ BinUtil::TextSeg::ctor_initProcs()
       }
       
       // We now have a valid procedure.  Initilize with [begVMA, endVMA),
-      // but note tohis is changed after disassembly.
+      // but note this is changed after disassembly.
       proc = new Proc(this, procNm, symNm, procType, begVMA, endVMA, size);
       m_procs.push_back(proc);
       m_lm->insertProc(VMAInterval(begVMA, endVMA), proc);

@@ -397,7 +397,8 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
   }
   ret = setvbuf(infs, infsBuf, _IOFBF, HPCIO_RWBufferSz);
   DIAG_AssertWarn(ret == 0, inFnm << ": Profile::merge_fixTrace: setvbuf!");
-  ret = hpctrace_fmt_hdr_fread(infs);
+  hpctrace_fmt_hdr_t hdr;
+  ret = hpctrace_fmt_hdr_fread(&hdr, infs);
   DIAG_AssertWarn(ret == HPCFMT_OK, inFnm << ": Profile::merge_fixTrace: hpctrace_fmt_hdr_fread!");
 
   const string& outFnm = traceFileNameTmp;
@@ -407,13 +408,13 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
   }
   ret = setvbuf(outfs, outfsBuf, _IOFBF, HPCIO_RWBufferSz);
   DIAG_AssertWarn(ret == 0, outFnm << ": Profile::merge_fixTrace: setvbuf!");
-  ret = hpctrace_fmt_hdr_fwrite(outfs);
+  ret = hpctrace_fmt_hdr_fwrite(hdr.flags, outfs);
   DIAG_AssertWarn(ret == HPCFMT_OK, outFnm << ": Profile::merge_fixTrace: hpctrace_fmt_hdr_fwrite!");
 
   while ( !feof(infs) ) {
     // 1. Read trace record (exit on EOF)
     hpctrace_fmt_datum_t datum;
-    ret = hpctrace_fmt_datum_fread(&datum, infs);
+    ret = hpctrace_fmt_datum_fread(&datum, hdr.flags, infs);
     if (ret == HPCFMT_EOF) {
       break;
     }
@@ -432,7 +433,7 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
     datum.cpId = cctId_new;
 
     // 3. Write new trace record
-    hpctrace_fmt_datum_fwrite(&datum, outfs);
+    hpctrace_fmt_datum_fwrite(&datum, hdr.flags, outfs);
   }
 
   hpcio_fclose(infs);

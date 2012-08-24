@@ -50,9 +50,11 @@
 #include "files.h"
 #include "stream.h"
 
+#include <include/uint.h>
+
 void hpcrun_trace_init();
 void hpcrun_trace_open();
-void hpcrun_trace_append(unsigned int cpid);
+void hpcrun_trace_append(uint call_path_id, uint metric_id);
 void hpcrun_trace_close();
 
 int hpcrun_trace_isactive();
