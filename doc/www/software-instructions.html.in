@@ -70,15 +70,19 @@ The following prerequisites apply to our default source code distribution.
       <td></td>
     </tr>
     <tr>
-      <td>Linux + Power64</td>
+      <td>Linux + ppc64</td>
       <td></td>
     </tr>
     <tr>
-      <td>Cray XT/XE (CNL + x86_64)</td>
+      <td>Cray XT/XE/XK (CNL + x86_64)</td>
       <td>Compute Node Linux &ge; 2.1</td>
     </tr>
     <tr>
-      <td>IBM Blue Gene/P (BG/P kernel + Power32)</td>
+      <td>IBM Blue Gene/Q (BG/Q kernel + ppc64)</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>IBM Blue Gene/P (BG/P kernel + ppc32)</td>
       <td>BG/P kernel &ge; V1R3M0</td>
     </tr>
 
@@ -125,6 +129,12 @@ Some vendor compilers that support GNU extensions also work.
       </ul>
     </li>
 
+    <li>Linux-POWER, Blue Gene/Q:
+      <ul class="noindent">
+        <li>GCC C++/C 4.x</li>
+      </ul>
+    </li>
+    
     <li>Linux-POWER, Blue Gene/P:
       <ul class="noindent">
         <li>GCC C++/C 4.x</li>
@@ -162,7 +172,8 @@ To use <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctrace
 <li>
 <p>Highly recommended: To collect measurements based on hardware performance monitoring unit (PMU) information, <a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> &ge; 3.5 is required.
 Without PAPI, HPCToolkit can only collect measurements based on an operating system timer.
-(Exception: On IBM Blue Gene/P, PAPI is not required.)
+(Exception: On IBM Blue Gene/P, PAPI is not required. On this system, HPCToolkit uses 
+IBM's native Universal Performance Counters directly.)
 </p>
 
 <p>There are currently three ways to support PAPI on Linux-based OSs:</p>
@@ -179,7 +190,7 @@ Without PAPI, HPCToolkit can only collect measurements based on an operating sys
     </li>
 
     <li><p>Apply the <a href="http://perfmon2.sourceforge.net">perfmon2</a> kernel patch.
-         As of this writing, perfmon2 supports vanilla kernels through 2.6.29.
+         As of this writing, perfmon2 supports vanilla kernels through 2.6.30.
 	 (Unfortunately, development has stopped because of perf_events.)
        </p>
      </li>
@@ -194,7 +205,7 @@ Without PAPI, HPCToolkit can only collect measurements based on an operating sys
 
 <li>
 <p>Minor requirement: To build HPCToolkit's man pages, a variant of Perl 5 is required.
-We have succssfully used versions 5.6.x, 5.8.x.
+We have succssfully used versions 5.6.x - 5.10.x.
 </p>
 </li>
 
@@ -347,7 +358,28 @@ Please note that a list of examples below provides <code>configure</code> comman
 <p><strong>N.B.:</strong> The commands are designed to replace the respective commands in the <a href="#building-installing">above build instructions</a>.</p>
   <ul>
 
-    <li><p>BlueGene/P:</p>
+
+    <li><p>Blue Gene/Q:</p>
+        <dl class="indent">
+          <dt>HPCToolkit's Externals</dt>
+          <dd><code>../configure --prefix=`pwd`/../powerpc64-linux
+              </code>
+          </dd>
+
+          <dt>HPCToolkit</dt>
+          <dd><code>../configure \<br />
+              &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>install-path</i>&gt; \<br />
+              &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/powerpc64-linux \<br />
+              &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=&lt;<i>papi-install-directory</i>&gt; \<br />
+              &nbsp;&nbsp;&nbsp;&nbsp; HPCPROFMPI_LT_LDFLAGS="-all-static" \<br />
+              &nbsp;&nbsp;&nbsp;&nbsp; MPICXX=/bgsys/drivers/ppcfloor/comm/gcc/bin/mpicxx <br />
+
+              </code>
+          </dd>
+        </dl>
+    </li>
+
+    <li><p>Blue Gene/P:</p>
 	<dl class="indent">
           <dt>HPCToolkit's Externals</dt>
 	  <dd><code>../configure --prefix=`pwd`/../powerpc32-linux
@@ -366,7 +398,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 	</dl>
     </li>
 
-    <li><p>Cray XT/XE:</p>
+    <li><p>Cray XT/XE/XK:</p>
 	<dl class="indent">
           <dt>N.B.: Use the GNU programming environment, e.g.:</dt>
 	  <dd><code>
@@ -526,7 +558,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2012/02/27</span>]
+<p>[<span class="lastupdated">Page last updated: 2012/07/18</span>]
 </p>
 
 <!-- ********************************************************************** -->

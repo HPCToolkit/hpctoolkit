@@ -123,6 +123,8 @@ typedef struct thread_data_t {
   // ----------------------------------------
   int id;
 
+  int idle; // indicate whether the thread is idle
+
   // ----------------------------------------
   // hpcrun_malloc() memory data structures
   // ----------------------------------------

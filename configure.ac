@@ -82,7 +82,7 @@ m4_include(config/hpc-mpiutils.m4)
 # Initialization: 
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [5.2.1],
+AC_INIT([hpctoolkit], [5.3.0],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -801,7 +801,11 @@ AC_SUBST([hpc_ext_libs_dir])
 #-------------------------------------------------
 
 # External's minimum svn rev number, or else a fatal error.
-EXTERNALS_MIN_REV=3616
+EXTERNALS_MIN_REV=3872
+
+ext_cc_path=unknown
+ext_cxx_path=unknown
+ext_wordsize=unknown
 
 AC_ARG_WITH([dummy-blank-line], [AS_HELP_STRING([], [])])
 AC_ARG_WITH([externals],
@@ -831,6 +835,91 @@ else
   AC_MSG_WARN([not using --with-externals])
   use_externals=no
   externals_mesg=no
+fi
+
+
+#-------------------------------------------------
+# Check consistency of C, C++ and wordsize
+#-------------------------------------------------
+
+# Verify that toolkit and externals use the same C and C++ compilers
+# and that they produce the same wordsize.  This is especially
+# important for C++ and libstdc++.  For now, give a pass if externals
+# isn't new enough to export these variables.
+
+CC_VERSION='unknown non-gnu'
+version=`$CC --version 2>/dev/null`
+if echo "$version" | grep -i copyright >/dev/null ; then
+  CC_VERSION=`echo "$version" | head -1`
+fi
+
+CC_PATH=
+base=`echo $CC | awk '{ print $1 }'`
+case "$base" in
+  /* ) CC_PATH="$base" ;;
+  * )  AC_PATH_PROG([CC_PATH], [$base]) ;;
+esac
+if test "x$CC_PATH" = x ; then
+  CC_PATH=unknown
+fi
+
+warn_non_gcc=no
+echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
+if test $? -ne 0 ; then
+  warn_non_gcc=yes
+  AC_MSG_WARN([Not using the GNU C compiler.])
+fi
+
+CXX_VERSION='unknown non-gnu'
+version=`$CXX --version 2>/dev/null`
+if echo "$version" | grep -i copyright >/dev/null ; then
+  CXX_VERSION=`echo "$version" | head -1`
+fi
+
+CXX_PATH=
+base=`echo $CXX | awk '{ print $1 }'`
+case "$base" in
+  /* ) CXX_PATH="$base" ;;
+  * )  AC_PATH_PROG([CXX_PATH], [$base]) ;;
+esac
+if test "x$CXX_PATH" = x ; then
+  CXX_PATH=unknown
+fi
+
+echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
+if test $? -ne 0 ; then
+  warn_non_gcc=yes
+  AC_MSG_WARN([Not using the GNU C++ compiler.])
+fi
+
+AC_MSG_NOTICE([C compiler: $CC_VERSION])
+AC_MSG_NOTICE([C++ compiler: $CXX_VERSION])
+
+warn_compiler_mismatch=no
+if test "$ext_cc_path" != unknown && test "$ext_cc_path" != "$CC_PATH"
+then
+  warn_compiler_mismatch=yes
+  AC_MSG_WARN([The C compiler does not match the one used to build \
+hpctoolkit-externals.])
+fi
+if test "$ext_cxx_path" != unknown && test "$ext_cxx_path" != "$CXX_PATH"
+then
+  warn_compiler_mismatch=yes
+  AC_MSG_WARN([The C++ compiler does not match the one used to build \
+hpctoolkit-externals.])
+fi
+
+host_wordsize=unknown
+case "$host_sizeof_voidp" in
+  4 ) host_wordsize=32 ;;
+  8 ) host_wordsize=64 ;;
+  * ) AC_MSG_WARN([unable to determine host wordsize]) ;;
+esac
+
+if test "$ext_wordsize" != unknown && test "$host_wordsize" != "$ext_wordsize"
+then
+  AC_MSG_ERROR([mismatched wordsize: hpctoolkit is configured for \
+${host_wordsize}-bit but externals is ${ext_wordsize}-bit])
 fi
 
 
@@ -1489,7 +1578,6 @@ AC_MSG_RESULT([$enable_hpcrun_mesg])
 AM_CONDITIONAL([OPT_ENABLE_HPCRUN], [test "${OPT_ENABLE_HPCRUN}" = yes])
 
 
-
 # Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
 # hpcfnbounds.
 #
@@ -1498,22 +1586,37 @@ AM_CONDITIONAL([OPT_ENABLE_HPCRUN], [test "${OPT_ENABLE_HPCRUN}" = yes])
 # should not be responsible for configuring runtime paths for
 # libstdc++.
 #
-# FIXME -- Is there an Autoconf macro for this?
+# Try --print-file-name first.  If that doesn't work, then try ldd.
+# If --print-file-name works, then its answer is more reliable because
+# it doesn't depend on LD_LIBRARY_PATH.  But if you use CC= without
+# setting LD_LIBRARY_PATH, then ldd will give the wrong answer.
 #
-if test -n "${is_cross_compile}" ; then
-  # For now, assume GCC.  We cannot use the more general test because
-  # 'ldd' cannot execute in cross-compile mode.
-  HPCRUN_LIBCXX_PATH=`${CXX} -print-file-name=libstdc++.so`
-else
-  src="/tmp/hello.$$.cc"
-  obj="/tmp/hello.$$.out"
-  cat <<EOF > "$src"
+# Of course, --print-file-name and libstdc++.so are GNU-specific.
+# (Intel icc seems to support both, but computes an answer based on
+# LD_LIBRARY_PATH, which can't be right.)  Is there a better option
+# here?
+
+HPCRUN_LIBCXX_PATH=`${CXX} -print-file-name=libstdc++.so`
+
+case "$HPCRUN_LIBCXX_PATH" in
+  /* ) ;;
+  * )
+    src="hpc_hello.$$.cc"
+    obj="hpc_hello.$$.out"
+    rm -f "$src" "$obj"
+    cat <<"EOF" >"$src"
 main(){}
 EOF
-  ${CXX} -o "$obj" "$src"
-  HPCRUN_LIBCXX_PATH=`ldd $obj | $AWK '/libstdc\+\+/ {print $3}'`
-  rm -f "$src" "$obj"
-fi
+    ${CXX} -o "$obj" "$src"
+    HPCRUN_LIBCXX_PATH=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
+    rm -f "$src" "$obj"
+    ;;
+esac
+
+case "$HPCRUN_LIBCXX_PATH" in
+  /* ) AC_MSG_NOTICE([found libstdc++.so at $HPCRUN_LIBCXX_PATH]) ;;
+  * )  AC_MSG_WARN([unable to find libstdc++.so]) ;;
+esac
 
 HPCRUN_LIBCXX_PATH=`dirname $HPCRUN_LIBCXX_PATH`
 
@@ -1977,6 +2080,32 @@ AC_SUBST([OPT_CUDA_IFLAGS])
 AC_SUBST([OPT_CUDA_LDFLAGS])
 
 #-------------------------------------------------
+# enable-data-centric-tracing: data-centric tracing
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether to enable data-centric tracing])
+
+OPT_ENABLE_DATACENTRIC_TRACE="no"
+
+AC_ARG_ENABLE([data-centric-tracing],
+  AS_HELP_STRING([--enable-data-centric-tracing],
+                 [Enable data-centric tracing (prototype)]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_DATACENTRIC_TRACE="yes" ;;
+     no)  OPT_ENABLE_DATACENTRIC_TRACE="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-data-centric-tracing]) ;;
+   esac],
+  [OPT_ENABLE_DATACENTRIC_TRACE=no])
+
+AC_MSG_RESULT([${OPT_ENABLE_DATACENTRIC_TRACE}])
+
+if test "${OPT_ENABLE_DATACENTRIC_TRACE}" = "yes" ; then
+  AC_DEFINE([DATACENTRIC_TRACE], [1], [Data-centric tracing])
+fi
+
+
+
+#-------------------------------------------------
 # with-objcopy
 #-------------------------------------------------
 
@@ -2158,9 +2287,14 @@ AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])
 AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
 AC_MSG_NOTICE([  mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
+AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([])
+AC_MSG_NOTICE([  C compiler: $CC_VERSION])
+AC_MSG_NOTICE([  Path:      $CC_PATH])
 AC_MSG_NOTICE([  CC:        '${CC}'])
 AC_MSG_NOTICE([  CFLAGS:    '${CFLAGS} ${HOST_CFLAGS}'])
+AC_MSG_NOTICE([  C++ compiler: $CXX_VERSION])
+AC_MSG_NOTICE([  Path:      $CXX_PATH])
 AC_MSG_NOTICE([  CXX:       '${CXX}'])
 AC_MSG_NOTICE([  CXXFLAGS:  '${CXXFLAGS} ${HOST_CXXFLAGS}'])
 AC_MSG_NOTICE([  CCAS:      '${CCAS}'])
@@ -2186,3 +2320,18 @@ AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
 
+if test "$warn_non_gcc" = yes ; then
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([Not using the GNU C or C++ compiler.])
+  AC_MSG_WARN([This is not necessarily an error, but some parts of hpctoolkit])
+  AC_MSG_WARN([may not compile cleanly without gcc or g++.  If the build fails,])
+  AC_MSG_WARN([try using GNU gcc and g++ before reporting an error.])
+fi
+
+if test "$warn_compiler_mismatch" = yes ; then
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([Mismatched C or C++ compiler.])
+  AC_MSG_WARN([The C or C++ compiler does not match the one used to build])
+  AC_MSG_WARN([hpctoolkit-externals.  Check the externals configure summary])
+  AC_MSG_WARN([and try again with the same compilers.])
+fi

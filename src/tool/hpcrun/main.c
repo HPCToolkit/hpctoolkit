@@ -60,7 +60,6 @@
 #include <linux/unistd.h>
 #endif
 
-
 //***************************************************************************
 // libmonitor include files
 //***************************************************************************
@@ -81,6 +80,7 @@
 #include "loadmap.h"
 #include "files.h"
 #include "fnbounds_interface.h"
+#include "fnbounds_table_interface.h"
 #include "hpcrun_dlfns.h"
 #include "hpcrun_options.h"
 #include "hpcrun_return_codes.h"
@@ -129,6 +129,7 @@
 #include <messages/debug-flag.h>
 
 extern void hpcrun_set_retain_recursion_mode(bool mode);
+extern void hpcrun_dump_intervals(void* addr);
 
 //***************************************************************************
 // constants
@@ -154,11 +155,27 @@ int lush_metrics = 0; // FIXME: global variable for now
 
 static hpcrun_options_t opts;
 static bool hpcrun_is_initialized_private = false;
+static void* main_addr = NULL;
+static void* main_lower = NULL;
+static void* main_upper = (void*) (intptr_t) -1;
 
+//
+// Local functions
+//
+static void
+setup_main_bounds_check(void* main_addr)
+{
+  if (! main_addr) return;
+#ifdef __PPC64__
+  main_addr = *((void**) main_addr);
+#endif
+  load_module_t* lm = NULL;
+  fnbounds_enclosing_addr(main_addr, &main_lower, &main_upper, &lm);
+}
 
-//***************************************************************************
-// inline functions
-//***************************************************************************
+//
+// *** Accessor functions ****
+//
 
 bool
 hpcrun_is_initialized()
@@ -166,7 +183,17 @@ hpcrun_is_initialized()
   return hpcrun_is_initialized_private;
 }
 
+void*
+hpcrun_get_addr_main(void)
+{
+  return main_addr;
+}
 
+bool
+hpcrun_inbounds_main(void* addr)
+{
+  return (main_lower <= addr) && (addr <= main_upper);
+}
 
 //***************************************************************************
 // *** Important note about libmonitor callbacks ***
@@ -187,6 +214,21 @@ hpcrun_is_initialized()
 //***************************************************************************
 
 //------------------------------------
+// ** local routines & data to support interval dumping **
+//------------------------------------
+
+static sigjmp_buf ivd_jb;
+
+siglongjmp_fcn* hpcrun_get_real_siglongjmp(void);
+
+static int
+dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
+{
+  (*hpcrun_get_real_siglongjmp())(ivd_jb, 9);
+  return 0;
+}
+
+//------------------------------------
 // process level 
 //------------------------------------
 
@@ -204,6 +246,11 @@ hpcrun_init_internal(bool is_child)
   // processing below. Also, fnbounds_init must be done after the
   // memory allocator is initialized.
   fnbounds_init();
+
+  main_addr = monitor_get_addr_main();
+  setup_main_bounds_check(main_addr);
+  TMSG(MAIN_BOUNDS, "main addr %p ==> lower %p, upper %p", main_addr, main_lower, main_upper);
+
   hpcrun_options__init(&opts);
   hpcrun_options__getopts(&opts);
 
@@ -233,6 +280,28 @@ hpcrun_init_internal(bool is_child)
   hpcrun_setup_segv();
   hpcrun_unw_init();
 
+  if (getenv("HPCRUN_ONLY_DUMP_INTERVALS")) {
+    fnbounds_table_t table = fnbounds_fetch_executable_table();
+    TMSG(INTERVALS_PRINT, "table data = %p", table.table);
+    TMSG(INTERVALS_PRINT, "table length = %d", table.len);
+
+    if (monitor_sigaction(SIGSEGV, &dump_interval_handler, 0, NULL)) {
+      fprintf(stderr, "Could not install dump interval segv handler\n");
+      monitor_real_exit(1);
+    }
+
+    for (void** e = table.table; e < table.table + table.len - 1; e++) {
+      fprintf(stderr, "======== %p Intervals ========\n", *e);
+      if (e > table.table || ! sigsetjmp(ivd_jb, 1)) 
+	hpcrun_dump_intervals(*e);
+      else
+	fprintf(stderr, "--Error: skipped--\n");
+      fprintf(stderr, "\n");
+      fflush(stderr);
+    }
+    exit(0);
+  }
+
   hpcrun_stats_reinit();
   hpcrun_start_stop_internal_init();
 
@@ -253,6 +322,31 @@ hpcrun_init_internal(bool is_child)
   
   TMSG(EPOCH,"process init setting up initial epoch/loadmap");
   hpcrun_epoch_init(NULL);
+
+#ifdef SPECIAL_DUMP_INTERVALS 
+  {
+    // temporary debugging code for x86 / ppc64
+
+    extern void hpcrun_dump_intervals(void* addr2);
+    char* addr1 = getenv("ADDR1");
+    char* addr2 = getenv("ADDR2");
+ 
+    if (addr1 != NULL) {
+      addr1 = (void*) (uintptr_t) strtol(addr1, NULL, 0);
+      fprintf(stderr,"address 1 = %p\n", addr1);
+      hpcrun_dump_intervals(addr1);
+      fflush(NULL);
+    }
+
+    if (addr2 != NULL) {
+      addr2 = (void*) (uintptr_t) strtol(addr2, NULL, 0);
+      fprintf(stderr,"address 2 = %p\n", addr2);
+      hpcrun_dump_intervals(addr2);
+      fflush(NULL);
+    }
+    if (addr1 || addr2) monitor_real_exit(0);
+  }
+#endif
 
   // start the sampling process
 
@@ -318,6 +412,17 @@ hpcrun_init_thread_support()
   SAMPLE_SOURCES(thread_init);
 }
 
+// DEBUG support
+static void
+logit(cct_node_t* n, cct_op_arg_t arg, size_t l)
+{
+  int iarg = (int) (intptr_t) arg;
+  TMSG(THREAD_CTXT, "thr %d -- %d: lm-id: %d  lm-ip: %p",
+       iarg,
+       hpcrun_cct_persistent_id(n),
+       hpcrun_cct_addr(n)->ip_norm.lm_id,
+       hpcrun_cct_addr(n)->ip_norm.lm_ip);
+}
 
 void*
 hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
@@ -327,6 +432,11 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   td->inside_hpcrun = 1;  // safe enter, disable signals
 
   hpcrun_set_thread_data(td);
+  if (! thr_ctxt) EMSG("Thread id %d passes null context", id);
+  
+  if (ENABLED(THREAD_CTXT))
+    hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (intptr_t) id);
+  //
   hpcrun_thread_data_init(id, thr_ctxt, 0);
 
   epoch_t* epoch = TD_GET(epoch);

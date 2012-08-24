@@ -95,6 +95,13 @@ fnbounds_init()
   return 0;
 }
 
+fnbounds_table_t
+fnbounds_fetch_executable_table(void)
+{
+  
+  return (fnbounds_table_t)
+    { .table = (void**) hpcrun_nm_addrs, .len = hpcrun_nm_addrs_len};
+}
 
 int
 fnbounds_query(void *pc)

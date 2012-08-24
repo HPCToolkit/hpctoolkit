@@ -260,7 +260,7 @@ hpcrun_sample_callpath(void *context, int metricId,
     // modify the persistent id
     hpcrun_cct_persistent_id_trace_mutate(func_proxy);
 
-    hpcrun_trace_append(hpcrun_cct_persistent_id(func_proxy));
+    hpcrun_trace_append(hpcrun_cct_persistent_id(func_proxy), metricId);
   }
 
   hpcrun_clear_handling_sample(td);

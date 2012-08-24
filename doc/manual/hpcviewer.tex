@@ -466,14 +466,21 @@ The window has two main parts:
   For instance, the function \texttt{avg()} which computes the average of some metrics, need to have two arguments.
 \end{itemize}
 
-\item \textbf{Options}:
+\item \textbf{Advanced options}:
 \begin{itemize}
 
-\item \textit{Display the metric percentage}.
+\item \textit{Augment metric value display with a percentage relative to column total}.
   When this box is checked, each scope's derived metric value will be augmented with a percentage value, which for scope \textit{s} is computed as the 100 * (\textit{s}'s derived metric value) / (the derived metric value computed by applying the metric formula to the aggregate values of the input metrics) the entire execution).
   Such a computation can lead to nonsensical results for some derived metric formulae.
   For instance, if the derived metric is computed as a ratio of two other metrics, the aforementioned computation that compares the scope's ratio with the ratio for the entire program won't yield a meaningful result.
   To avoid a confusing metric display, think before you use this button to annotate a metric with its percent of total.
+
+\item \textit{Default format}. This option will set the metric value with a scientific notation format which is the default format.
+
+\item \textit{Display metric value as percent}. This option will set the metric value with percent format. For instance, if the metric has a value 12.345678, with this option, it's displayed as 12.34\%.
+
+\item \textit{Custom format}. This option will set the metric value with your customized format. The format is equivalent to Java's Formatter class, or similar to C's printf format. For example, the format "\texttt{\%6.2f}" will display 6 digit floating-points with 2 digit precision.
+
 \end{itemize}
 
 \end{itemize}
@@ -637,7 +644,7 @@ If you want to display more than five, you need to close an existing open databa
 \item \textbf{Merge database...}
   Merging two database that are currently in the viewer. If \hpcviewer{} has more than two
 open database, then you need to choose which database you want to merge.
-Currently \hpcviewer{} doesn't support storing a merged databse into a file.
+Currently \hpcviewer{} doesn't support storing a merged database into a file.
 
 \item \textbf{Preferences...}
   Display the settings dialog box.
@@ -653,8 +660,9 @@ Currently \hpcviewer{} doesn't support storing a merged databse into a file.
 % ==========================================================
 % ==========================================================
 
-\subsection{Advanced}
-All actions in this menu are intended primarily for tool developer use.
+\subsection{View}
+All actions in this menu are intended primarily for tool developer use. 
+By default, the menu is hidden. Once you open a database, the menu is then shown.
 
 \begin{itemize}
  \item \textbf{Show database raw's XML}
