@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2012/01/12}
+\setDate{ 2012/08/24}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -145,8 +145,39 @@ Directory for output data.
 
 \end{Description}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Environment Variables}
+For most systems, \Prog{hpcrun} requires no special environment variable settings.
+There are two situations, however, where \Prog{hpcrun}, to function correctly,
+\emph{must} refer to environment variables. These environment variables, and
+corresponding situations are:
+\begin{Description}
+  \item[\verb+HPCTOOLKIT+] To function correctly, \Prog{hpcrun} must know
+       the location of the \Prog{HPCToolkit} top-level installation directory.
+       The \Prog{hpcrun} script uses elements of the installation \File{lib} and
+       \File{libexec} subdirectories. For most systems, the 
+       installation procedure ensures that \Prog{hpcrun} can find the requisite
+       components. Some parallel job launchers, however, will \emph{copy} the
+       \Prog{hpcrun} script to a different location from the installed base. If your
+       system uses this copying mechanism, you must set the \verb+HPCTOOLKIT+
+       environment variable to the top-level installation directory.
+  \item[\verb+HPCRUN_TMPDIR+] While profiling a program, \Prog{hpcrun} must
+       write some internal data to temporary files. By default, these files
+       are written to \File{/tmp}. On some systems, however, you may not
+       have permission to write to \File{/tmp}. If this is the case on your system,
+       you should set the \verb+HPCRUN_TMPDIR+x environment variable to a directory
+       where you have write permission. \\
+       \textbf{CAUTION:} Your home directory is \emph{not}
+       a good choice, as some of \Prog{hpcrun}'s temporary files can get large.
+
+       NOTE: You do not strictly have to use \verb+HPCRUN_TMPDIR+. If you set the
+       commonly-used Unix environment \verb+TMPDIR+, \Prog{hpcrun} will use it for
+       temporary files if \verb+HPCRUN_TMPDIR+ is not set.
+\end{Description}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Examples}
 
 Assume we wish to profile the application \texttt{zoo}.
@@ -227,7 +258,41 @@ However, on Linux one can get quite close to the kernel Hz rate by setting the i
 For example, if the Hz rate is 1000 microseconds, one can use 500 microseconds (or just 1) and obtain about 999 interrupts per second.
 \end{itemize}
 
+\subsection{Platform-specific notes}
+\subsubsection{Cray XE and XK}
+When using dynamically linked binaries on Cray XE and XK systems, you
+should add the \verb+HPCTOOLKIT+ environment variable to your launch
+script.  Set \verb+HPCTOOLKIT+ to the top-level \verb+HPCToolkit+ install
+prefix (the directory containing the \File{bin}, \File{lib} and
+\File{libexec} subdirectories) and export it to the environment.  This is
+only needed for running dynamically linked binaries.  For example:
 
+\begin{verbatim}
+#!/bin/sh
+#PBS -l mppwidth=#nodes
+#PBS -l walltime=00:30:00
+#PBS -V
+
+export HPCTOOLKIT=/path/to/hpctoolkit/install/directory
+
+    ...Rest of Script...
+\end{verbatim}
+
+If \verb+HPCTOOLKIT+ is not set, you may see errors such as the
+following in your job's error log.
+
+\begin{verbatim}
+/var/spool/alps/103526/hpcrun: Unable to find HPCTOOLKIT root directory.
+Please set HPCTOOLKIT to the install prefix, either in this script,
+or in your environment, and try again.
+\end{verbatim}
+
+The problem is that the Cray job launcher copies the \Prog{hpcrun}
+script to a directory somewhere below \File{/var/spool/alps/} and runs
+it from there.  By moving \Prog{hpcrun} to a different directory, this
+breaks \Prog{hpcrun}'s method for finding its own install directory.
+The solution is to add \verb+HPCTOOLKIT+ to your environment so that
+\Prog{hpcrun} can find its install directory.
 
 \subsection{Miscellaneous}
 
