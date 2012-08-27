@@ -38,13 +38,13 @@
 
   <tr>
     <td width="50%">
-      <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-5.2.1-release.tar.gz</a> (source)
+      <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-5.3.1-release.tar.gz</a> (source)
       <br />
-      <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-externals-5.2.1-release.tar.gz</a> (source)
+      <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-externals-5.3.1-release.tar.gz</a> (source)
       <br />
-      <a href="https://outreach.scidac.gov/frs/?group_id=22">hpcviewer-5.2.1-release-&lt;platform&gt;.tgz</a> (platform-specific build)
+      <a href="https://outreach.scidac.gov/frs/?group_id=22">hpcviewer-5.3.1-release-&lt;platform&gt;.tgz</a> (platform-specific build)
       <br />
-      <a href="https://outreach.scidac.gov/frs/?group_id=22">hpctraceviewer-5.2.1-release-&lt;platform&gt;.tgz</a> (platform-specific build)
+      <a href="https://outreach.scidac.gov/frs/?group_id=22">hpctraceviewer-5.3.1-release-&lt;platform&gt;.tgz</a> (platform-specific build)
     </td>
     <td>
     </td>
@@ -153,7 +153,7 @@
 </p>
 
 
-<p>[<span class="lastupdated">Page last updated: 2011/12/30</span>]
+<p>[<span class="lastupdated">Page last updated: 2012/08/27</span>]
 </p>
 
 <!-- ********************************************************************** -->
