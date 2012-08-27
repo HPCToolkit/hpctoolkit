@@ -157,7 +157,7 @@ Some vendor compilers that support GNU extensions also work.
 
 <li>
 <p>To use <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> (HPCToolkit's interactive presentation tools) on MacOS, Windows, or Linux, a Java runtime environment (JRE) &ge; 1.5 is required.
-Use the Sun or IBM version; we have had problems with OpenJDK.
+Use the Oracle or IBM version; we have had problems with OpenJDK.
 </p>
 
 <p>
@@ -337,10 +337,13 @@ Please note that a list of examples below provides <code>configure</code> comman
 
   <li> To install <span class="hpctool">hpcviewer</span> or <span class="hpctool">hpctraceviewer</span> in an HPCToolkit installation, unpack the tarball and execute the following commands:
     <div class="indent">
-      <code>cd &lt;<i>hpcviewer</i>&gt; &amp;&amp; ./install &lt;<i>hpctoolkit-install</i>&gt;</code><br />
-      <code>cd &lt;<i>hpctraceviewer</i>&gt; &amp;&amp; ./install &lt;<i>hpctoolkit-install</i>&gt;</code>
+      <code>cd &lt;<i>hpcviewer</i>&gt; &amp;&amp; ./install [ -j &lt;path-to-java&gt; ] &lt;<i>hpctoolkit-install</i>&gt;</code><br />
+      <code>cd &lt;<i>hpctraceviewer</i>&gt; &amp;&amp; ./install [ -j &lt;path-to-java&gt; ] &lt;<i>hpctoolkit-install</i>&gt;</code>
     </div>
-    Here, <code>&lt;<i>hpcviewer</i>&gt;</code> and <code>&lt;<i>hpctraceviewer</i>&gt;</code> are the directories created by unpacking the respective tarballs; and <code>&lt;<i>hpctoolkit-install</i>&gt;</code> is the above HPCToolkit installation directory.
+    Here, <code>&lt;<i>hpcviewer</i>&gt;</code> and <code>&lt;<i>hpctraceviewer</i>&gt;</code> are the directories created by unpacking the respective tarballs; and <code>&lt;<i>hpctoolkit-install</i>&gt;</code> is the above HPCToolkit installation directory.<br />
+
+  The optional flag -j &lt;path-to-java&gt; allows the specification of an appropriate java to be used with
+  <span class="hpctool">hpcviewer</span> or <span class="hpctool">hpctraceviewer</span>. 
   </li>
 
   </ul>
@@ -557,7 +560,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2012/07/18</span>]
+<p>[<span class="lastupdated">Page last updated: 2012/08/27</span>]
 </p>
 
 <!-- ********************************************************************** -->
