@@ -387,7 +387,6 @@ static void
 METHOD_FN(gen_event_set, int lush_metrics)
 {
   monitor_sigaction(HPCRUN_PROFILE_SIGNAL, &itimer_signal_handler, 0, NULL);
-  monitor_sigaction(SIGTERM, &term_signal_handler, 0, NULL);
 }
 
 static void
@@ -414,16 +413,6 @@ METHOD_FN(display_events)
 /******************************************************************************
  * private operations 
  *****************************************************************************/
-static int
-term_signal_handler(int sig, siginfo_t* siginfo, void* context)
-{
-  void* pc = hpcrun_context_pc(context);
-  EMSG("TERM signal handler fired; interrupted at PC %p. Aborting!", pc);
-  monitor_real_abort();
-  return 0; /* avoid compiler warnings */
-}
-
-
 static int
 itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
