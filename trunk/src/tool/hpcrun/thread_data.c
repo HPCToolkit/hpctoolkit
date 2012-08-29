@@ -72,39 +72,127 @@
 
 //***************************************************************************
 
+enum _local_int_const {
+  BACKTRACE_INIT_SZ     = 32,
+  NEW_BACKTRACE_INIT_SZ = 32
+};
+
+
+//***************************************************************************
+// 
+//***************************************************************************
 
 static thread_data_t _local_td;
 
-static thread_data_t *
-local_td(void)
+static pthread_key_t _hpcrun_key;
+
+void
+hpcrun_init_pthread_key(void)
+{
+  TMSG(THREAD_SPECIFIC,"creating _hpcrun_key");
+  int bad = pthread_key_create(&_hpcrun_key, NULL);
+  if (bad){
+    EMSG("pthread_key_create returned non-zero = %d",bad);
+  }
+}
+
+
+void
+hpcrun_set_thread0_data(void)
+{
+  TMSG(THREAD_SPECIFIC,"set thread0 data");
+  hpcrun_set_thread_data(&_local_td);
+}
+
+
+void
+hpcrun_set_thread_data(thread_data_t *td)
+{
+  TMSG(THREAD_SPECIFIC,"setting td");
+  pthread_setspecific(_hpcrun_key, (void *) td);
+}
+
+
+//***************************************************************************
+
+static thread_data_t*
+hpcrun_get_thread_data_local(void)
 {
   return &_local_td;
 }
 
 
 static bool
-local_true(void)
+hpcrun_get_thread_data_local_avail(void)
 {
   return true;
 }
 
 
-thread_data_t* (*hpcrun_get_thread_data)(void)  = &local_td;
-bool           (*hpcrun_td_avail)(void)         = &local_true;
+static thread_data_t*
+hpcrun_get_thread_data_specific(void)
+{
+  thread_data_t *ret = (thread_data_t *) pthread_getspecific(_hpcrun_key);
+  if (!ret){
+    monitor_real_abort();
+  }
+  return ret;
+}
+
+
+static bool
+hpcrun_get_thread_data_specific_avail(void)
+{
+  thread_data_t *ret = (thread_data_t *) pthread_getspecific(_hpcrun_key);
+  return !(ret == NULL);
+}
+
+
+thread_data_t* (*hpcrun_get_thread_data)(void) = &hpcrun_get_thread_data_local;
+bool           (*hpcrun_td_avail)(void)        = &hpcrun_get_thread_data_local_avail;
+
+#if 0
+static inline
+thread_data_t*
+hpcrun_get_thread_data()
+{
+  if (hpcrun_use_thread_data_local) {
+    return hpcrun_get_thread_data_local();
+  }
+  else {
+    return hpcrun_get_thread_data_specific();
+  }
+}
+#endif
+
 
 void
 hpcrun_unthreaded_data(void)
 {
-  hpcrun_get_thread_data = &local_td;
-  hpcrun_td_avail        = &local_true;
-
+  hpcrun_get_thread_data = &hpcrun_get_thread_data_local;
+  hpcrun_td_avail        = &hpcrun_get_thread_data_local_avail;
 }
 
 
-enum _local_int_const {
-  BACKTRACE_INIT_SZ     = 32,
-  NEW_BACKTRACE_INIT_SZ = 32
-};
+void
+hpcrun_threaded_data(void)
+{
+  assert(hpcrun_get_thread_data == &hpcrun_get_thread_data_local);
+  hpcrun_get_thread_data = &hpcrun_get_thread_data_specific;
+  hpcrun_td_avail        = &hpcrun_get_thread_data_specific_avail;
+}
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+thread_data_t*
+hpcrun_allocate_thread_data(void)
+{
+  TMSG(THREAD_SPECIFIC,"malloc thread data");
+  return hpcrun_mmap_anon(sizeof(thread_data_t));
+}
 
 
 void
@@ -217,6 +305,10 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
 }
 
 
+//***************************************************************************
+// 
+//***************************************************************************
+
 void
 hpcrun_cached_bt_adjust_size(size_t n)
 {
@@ -278,70 +370,5 @@ hpcrun_ensure_btbuf_avail(void)
     td->btbuf_cur = hpcrun_expand_btbuf();
     td->btbuf_sav = td->btbuf_end;
   }
-}
-
-
-static pthread_key_t _hpcrun_key;
-
-void
-hpcrun_init_pthread_key(void)
-{
-  TMSG(THREAD_SPECIFIC,"creating _hpcrun_key");
-  int bad = pthread_key_create(&_hpcrun_key, NULL);
-  if (bad){
-    EMSG("pthread_key_create returned non-zero = %d",bad);
-  }
-}
-
-
-void
-hpcrun_set_thread_data(thread_data_t *td)
-{
-  TMSG(THREAD_SPECIFIC,"setting td");
-  pthread_setspecific(_hpcrun_key,(void *) td);
-}
-
-
-void
-hpcrun_set_thread0_data(void)
-{
-  TMSG(THREAD_SPECIFIC,"set thread0 data");
-  hpcrun_set_thread_data(&_local_td);
-}
-
-
-thread_data_t *
-hpcrun_allocate_thread_data(void)
-{
-  TMSG(THREAD_SPECIFIC,"malloc thread data");
-  return hpcrun_mmap_anon(sizeof(thread_data_t));
-}
-
-
-static bool
-thread_specific_td_avail(void)
-{
-  thread_data_t *ret = (thread_data_t *) pthread_getspecific(_hpcrun_key);
-  return !(ret == NULL);
-}
-
-
-thread_data_t *
-thread_specific_td(void)
-{
-  thread_data_t *ret = (thread_data_t *) pthread_getspecific(_hpcrun_key);
-  if (!ret){
-    monitor_real_abort();
-  }
-  return ret;
-}
-
-
-void
-hpcrun_threaded_data(void)
-{
-  assert(hpcrun_get_thread_data == &local_td);
-  hpcrun_get_thread_data = &thread_specific_td;
-  hpcrun_td_avail        = &thread_specific_td_avail;
 }
 
