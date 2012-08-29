@@ -157,9 +157,6 @@ enum _local_const {
 static int
 itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
 
-static int
-term_signal_handler(int sig, siginfo_t* siginfo, void* context);
-
 
 /******************************************************************************
  * local variables
