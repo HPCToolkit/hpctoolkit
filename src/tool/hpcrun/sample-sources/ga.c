@@ -65,21 +65,28 @@
 #include <hpcrun/metrics.h>
 #include <hpcrun/thread_data.h>
 #include <messages/messages.h>
+#include <utilities/tokenize.h>
 
 
 //***************************************************************************
 // local variables
 //***************************************************************************
 
-static int metricId_bytesXfr  = -1;
-static int metricId_onesidedOp = -1;
-static int metricId_collectiveOp = -1;
+const static long periodDefault = 293;
+
+uint64_t hpcrun_ga_period = 0;
+
+int hpcrun_ga_metricId_onesidedOp    = -1;
+int hpcrun_ga_metricId_collectiveOp  = -1;
+int hpcrun_ga_metricId_latency       = -1;
+int hpcrun_ga_metricId_latencyExcess = -1;
+int hpcrun_ga_metricId_bytesXfr      = -1;
 
 #if (GA_DataCentric_Prototype)
-int metricId_dataTblIdx_next = -1;
-int metricId_dataTblIdx_max = -1; // exclusive upper bound
+int hpcrun_ga_metricId_dataTblIdx_next = -1;
+int hpcrun_ga_metricId_dataTblIdx_max  = -1; // exclusive upper bound
 
-metricId_dataDesc_t hpcrun_ga_metricId_dataTbl[hpcrun_ga_metricId_dataTblSz];
+hpcrun_ga_metricId_dataDesc_t hpcrun_ga_metricId_dataTbl[hpcrun_ga_metricId_dataTblSz];
 #endif // GA_DataCentric_Prototype
 
 
@@ -92,12 +99,16 @@ METHOD_FN(init)
 {
   TMSG(GA, "init");
   self->state = INIT;
-  metricId_bytesXfr = -1;
-  metricId_onesidedOp = -1;
-  metricId_collectiveOp = -1;
+
+  hpcrun_ga_metricId_onesidedOp    = -1;
+  hpcrun_ga_metricId_collectiveOp  = -1;
+  hpcrun_ga_metricId_latency       = -1;
+  hpcrun_ga_metricId_latencyExcess = -1;
+  hpcrun_ga_metricId_bytesXfr      = -1;
+
 #if (GA_DataCentric_Prototype)
-  metricId_dataTblIdx_next = 0;
-  metricId_dataTblIdx_max = hpcrun_ga_metricId_dataTblSz;
+  hpcrun_ga_metricId_dataTblIdx_next = 0;
+  hpcrun_ga_metricId_dataTblIdx_max = hpcrun_ga_metricId_dataTblSz;
 #endif
 }
 
@@ -158,24 +169,43 @@ METHOD_FN(supports_event, const char *ev_str)
 }
 
 
-// GA metrics: bytes read and bytes written.
-
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
   TMSG(GA, "create GA metrics");
-  metricId_bytesXfr = hpcrun_new_metric();
-  hpcrun_set_metric_info(metricId_bytesXfr, "GA bytes xfr");
 
-  metricId_onesidedOp = hpcrun_new_metric();
-  hpcrun_set_metric_info(metricId_onesidedOp, "GA #onesided");
+  char* evStr = METHOD_CALL(self, get_event_str);
 
-  metricId_collectiveOp = hpcrun_new_metric();
-  hpcrun_set_metric_info(metricId_collectiveOp, "GA #collective");
+  hpcrun_ga_period = periodDefault;
+  char evName[32];
+  hpcrun_extract_ev_thresh(evStr, sizeof(evName), evName,
+			   (long*)&hpcrun_ga_period, periodDefault);
+  
+  TMSG(GA, "GA: %s sampling period: %"PRIu64, evName, hpcrun_ga_period);
+
+  // number of one-sided operations
+  hpcrun_ga_metricId_onesidedOp = hpcrun_new_metric();
+  hpcrun_set_metric_info(hpcrun_ga_metricId_onesidedOp, "1-sided op");
+
+  // number of collective operations
+  hpcrun_ga_metricId_collectiveOp = hpcrun_new_metric();
+  hpcrun_set_metric_info(hpcrun_ga_metricId_collectiveOp, "collective op");
+
+  // exposed latency
+  hpcrun_ga_metricId_latency = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(hpcrun_ga_metricId_latency, "latency (us)",
+				    MetricFlags_ValFmt_Real, 1);
+
+  // exposed excess latency
+  //hpcrun_ga_metricId_latencyExcess = hpcrun_new_metric();
+  //hpcrun_set_metric_info(hpcrun_ga_metricId_latencyExcess, "exs lat (us)");
+
+  hpcrun_ga_metricId_bytesXfr = hpcrun_new_metric();
+  hpcrun_set_metric_info(hpcrun_ga_metricId_bytesXfr, "bytes xfr");
 
 #if (GA_DataCentric_Prototype)
   for (int i = 0; i < hpcrun_ga_metricId_dataTblSz; ++i) {
-    metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(i);
+    hpcrun_ga_metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(i);
     desc->metricId = hpcrun_new_metric();
     snprintf(desc->name, hpcrun_ga_metricId_dataStrLen, "ga-data-%d", i);
     hpcrun_set_metric_info(desc->metricId, desc->name);
@@ -201,7 +231,8 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("GA\t\tCollect Global Arrays metrics\n");
+  printf("GA\t\tCollect Global Arrays metrics by sampling GA operations;\n");
+  printf("\t\tconfigurable sample period (default %ld ops/sample)\n", periodDefault);
   printf("\n");
 }
 
@@ -223,33 +254,15 @@ METHOD_FN(display_events)
 // interface functions
 //***************************************************************************
 
-int
-hpcrun_ga_metricId_bytesXfr()
-{
-  return metricId_bytesXfr;
-}
-
-int
-hpcrun_ga_metricId_onesidedOp()
-{
-  return metricId_onesidedOp;
-}
-
-int
-hpcrun_ga_metricId_collectiveOp()
-{
-  return metricId_collectiveOp;
-}
-
 #if (GA_DataCentric_Prototype)
 int
 hpcrun_ga_dataIdx_new(const char* name)
 {
-  if (metricId_dataTblIdx_next < metricId_dataTblIdx_max) {
-    int idx = metricId_dataTblIdx_next;
-    metricId_dataTblIdx_next++;
+  if (hpcrun_ga_metricId_dataTblIdx_next < hpcrun_ga_metricId_dataTblIdx_max) {
+    int idx = hpcrun_ga_metricId_dataTblIdx_next;
+    hpcrun_ga_metricId_dataTblIdx_next++;
 
-    metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(idx);
+    hpcrun_ga_metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(idx);
     strncpy(desc->name, name, hpcrun_ga_metricId_dataStrLen);
     //hpcrun_set_metric_name(desc->metricId, desc->name);
 

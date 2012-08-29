@@ -84,6 +84,8 @@
 #include <monitor-exts/monitor_ext.h>
 #include <sample-sources/ga.h>
 
+#include <lib/support-lean/timer.h>
+
 
 //***************************************************************************
 // type definitions
@@ -92,6 +94,8 @@
 // FIXME: temporarily import GA declarations.  Unfortunately, some of
 // these declarations are only in the source tree (as opposed to
 // the installation), so currently there is no clean solution.
+
+// Need: field for a profiler
 
 // ${GA-install}/include/typesf2c.h
 // ${GA-build}/armci/gaf2c/typesf2c.h
@@ -178,93 +182,164 @@ extern global_array_t *GA;
 // macros
 //***************************************************************************
 
-#define GA_SYNC_SMPL_PERIOD 293 /* if !0, sample synchronously */
+#define def_isSampled_blocking()					\
+  def_isSampled();							\
+  def_timeBeg(isSampled);
 
-// FIXME: hpcrun_sample_callpath() should also return a metric_set_t*!
 
-#define ifSample(g_a, smplVal, metricVec, do1, do2)			\
-{									\
-  thread_data_t* td = hpcrun_get_thread_data();				\
-  lushPthr_t* cnt = &td->pthr_metrics;					\
-  cnt->doIdlenessCnt++;							\
-  if (cnt->doIdlenessCnt == GA_SYNC_SMPL_PERIOD) {			\
-    cnt->doIdlenessCnt = 0;						\
-    if (hpcrun_safe_enter()) {						\
-      ucontext_t uc;							\
-      getcontext(&uc);							\
-									\
-      /* N.B.: when tracing, this call generates a trace record */	\
-      uint traceMetricId = HPCRUN_FMT_MetricId_NULL;			\
-      /* ignore increment for now */					\
-      if (g_a != G_A_NULL) {						\
-	Integer ga_hndl = GA_OFFSET + g_a;				\
-      	int idx = ga_getDataIdx(ga_hndl);				\
-      	if (hpcrun_ga_dataIdx_isValid(idx)) {				\
-      	  metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(idx); \
-      	  traceMetricId = desc->metricId;				\
-      	}								\
-      }									\
-      									\
-      sample_val_t smplVal =						\
-	hpcrun_sample_callpath(&uc, traceMetricId, 0/*metricIncr*/,	\
-			       0/*skipInner*/, 1/*isSync*/);		\
-      metric_set_t* metricVec =						\
-	metricVec = hpcrun_get_metric_set(smplVal.sample_node);		\
-      do1; /* may use smplVal and metricVec */				\
-      do2; /* may use smplVal and metricVec */				\
-									\
-      hpcrun_safe_exit();						\
+#define def_isSampled_nonblocking()					\
+  def_isSampled();							\
+  def_timeBeg(isSampled);
+
+
+#define def_isSampled()							\
+  bool isSampled = false;						\
+  thread_data_t* threadData = hpcrun_get_thread_data();			\
+  {									\
+    lushPthr_t* xxx = &threadData->pthr_metrics;			\
+    xxx->doIdlenessCnt++;						\
+    if (xxx->doIdlenessCnt == hpcrun_ga_period) {			\
+      xxx->doIdlenessCnt = 0;						\
+      isSampled = true;							\
     }									\
-  }									\
-}
+  }
 
 
-#define collectMetric(metricVec, metricId, metricIncr) 			\
+#define def_timeBeg(isSampled)						\
+  uint64_t timeBeg = 0;      						\
+  if (isSampled) {							\
+    timeBeg = time_getTSC(); /* cycles */				\
+  }
+
+
+//***************************************************************************
+
+#define doSample_1sided_blocking(g_a, lo, hi)				\
+  if (isSampled) {							\
+    double latency = timeElapsed(timeBeg);				\
+    uint64_t nbytes = bytesXfr(g_a, lo, hi);				\
+									\
+    doSample(g_a,							\
+	     doMetric(hpcrun_ga_metricId_onesidedOp, 1, i),		\
+	     doMetric(hpcrun_ga_metricId_latency, latency, r),		\
+	     doMetric(hpcrun_ga_metricId_bytesXfr, nbytes, i),		\
+	     doMetric(dataMetricId, nbytes, i));			\
+  }
+
+
+#define doSample_1sided_nonblocking(g_a, lo, hi)			\
+  if (isSampled) {							\
+    double latency = timeElapsed(timeBeg);				\
+    uint64_t nbytes = bytesXfr(g_a, lo, hi);				\
+									\
+    /* record time, cctNode, metricVec in nbhandle */			\
+    /* complete in: wait or sync */					\
+									\
+    doSample(g_a,							\
+	     doMetric(hpcrun_ga_metricId_onesidedOp, 1, i),		\
+	     doMetric(hpcrun_ga_metricId_latency, latency, r),		\
+	     doMetric(hpcrun_ga_metricId_bytesXfr, nbytes, i),		\
+	     doMetric(dataMetricId, nbytes, i));			\
+  }
+
+
+#define doSample_collective_blocking()					\
+  if (isSampled) {							\
+    double latency = timeElapsed(timeBeg);				\
+									\
+    doSample(G_A_NULL,							\
+	     doMetric(hpcrun_ga_metricId_collectiveOp, 1, i),		\
+	     doMetric(hpcrun_ga_metricId_latency, latency, r),		\
+	     do0(),							\
+	     do0());							\
+  }
+
+
+#define doSample(g_a, do1, do2, do3, do4)				\
 {									\
-  if (metricId >= 0) {							\
-    uint64_t mIncr = GA_SYNC_SMPL_PERIOD * metricIncr;			\
-    hpcrun_metric_std_inc(metricId, metricVec,				\
-			  (cct_metric_data_t){.i = mIncr});		\
+  if (hpcrun_safe_enter()) {						\
+    ucontext_t uc;							\
+    getcontext(&uc);							\
+									\
+    hpcrun_ga_metricId_dataDesc_t* ga_desc = NULL;			\
+    uint dataMetricId = HPCRUN_FMT_MetricId_NULL;			\
+									\
+    if (g_a != G_A_NULL) {						\
+      int idx = ga_getDataIdx(g_a);					\
+      if (hpcrun_ga_dataIdx_isValid(idx)) {				\
+	ga_desc = hpcrun_ga_metricId_dataTbl_find(idx);			\
+	dataMetricId = ga_desc->metricId;				\
+      }									\
+    }									\
+      									\
+    /* N.B.: when tracing, this call generates a trace record */	\
+    /* TODO: should return a 'metric_set_t*' */				\
+    sample_val_t smplVal =						\
+      hpcrun_sample_callpath(&uc, dataMetricId, 0/*metricIncr*/,	\
+			     0/*skipInner*/, 1/*isSync*/);		\
+    									\
+    /* namespace: g_a, ga_desc, dataMetricId, smplVal, metricVec */	\
+    metric_set_t* metricVec =						\
+      metricVec = hpcrun_get_metric_set(smplVal.sample_node);		\
+    do1;								\
+    do2;								\
+    do3;								\
+    do4;								\
+    									\
+    hpcrun_safe_exit();							\
   }									\
 }
 
 
-#define collectBytesXfr(metricVec, metricIdBytes, g_a, lo, hi)		\
+#define doMetric(metricIdExpr, metricIncr, type)			\
 {									\
-  Integer ga_hndl = GA_OFFSET + g_a;					\
-  int ga_ndim = GA[ga_hndl].ndim;					\
-  /* char* ga_name = GA[ga_hndl].name; */				\
-  int ga_elemsize = GA[ga_hndl].elemsize;				\
-  Integer num_elems = 0;						\
-  gam_CountElems(ga_ndim, lo, hi, &num_elems);				\
-  int num_bytes = num_elems * ga_elemsize * GA_SYNC_SMPL_PERIOD;	\
-  /*TMSG(GA, "ga_sampleAfter_bytes: %d", num_bytes); */			\
-  if (metricIdBytes >= 0) {						\
-    hpcrun_metric_std_inc(metricIdBytes, metricVec,			\
-			  (cct_metric_data_t){.i = num_bytes});		\
-  }									\
-  /* **************************************** */			\
-  int idx = ga_getDataIdx(ga_hndl);					\
-  if (hpcrun_ga_dataIdx_isValid(idx)) {					\
-    metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(idx);	\
-    hpcrun_metric_std_inc(desc->metricId, metricVec,			\
-			  (cct_metric_data_t){.i = num_bytes});		\
+  int mId = (metricIdExpr); /* eval only once */			\
+  if (mId >= 0 && mId != HPCRUN_FMT_MetricId_NULL) {			\
+    /*TMSG(GA, "doMetric: %d", nbytes); */				\
+    hpcrun_metric_std_inc(mId, metricVec,				\
+	   (cct_metric_data_t){.type = metricIncr * hpcrun_ga_period}); \
   }									\
 }
 
 
-#define collect0() {}
+#define do0() {}
 
-// trace sample
-//if (smpl->trace_node) {
-//  hpcrun_trace_append(hpcrun_cct_persistent_id(smpl->trace_node));
-//}
+
+//***************************************************************************
+
+// timeElapsed: returns time in us but with ns resolution
+static inline double
+timeElapsed(uint64_t timeBeg)
+{
+  const double mhz = 2100; // FIXME;
+  uint64_t timeEnd = time_getTSC();
+  return ((double)(timeEnd - timeBeg) / mhz);
+}
+
+
+static inline uint
+bytesXfr(Integer g_a, Integer* lo, Integer* hi)
+{
+  // TODO: can this information be communicated from the runtime
+  // rather than being (re?)computed here?
+  Integer ga_hndl = GA_OFFSET + g_a;
+  uint ga_ndim = GA[ga_hndl].ndim;
+  uint ga_elemsize = GA[ga_hndl].elemsize;
+  Integer num_elems = 0;
+  gam_CountElems(ga_ndim, lo, hi, &num_elems);
+  uint num_bytes = num_elems * ga_elemsize;
+  return num_bytes;
+}
+
 
 static inline int
-ga_getDataIdx(Integer ga_hndl)
+ga_getDataIdx(Integer g_a)
 {
+  // FIXME: use a profiling slot rather than 'lock'
+  Integer ga_hndl = GA_OFFSET + g_a;
   return (int) GA[ga_hndl].lock;
 }
+
 
 static inline void
 ga_setDataIdx(Integer g_a, int idx)
@@ -278,6 +353,12 @@ ga_setDataIdx(Integer g_a, int idx)
 // bookkeeping
 //***************************************************************************
 
+// There are two basic interface:
+//   1. pnga_create()
+//   2. pnga_create_handle()
+//      pnga_set_array_name() [optional]
+//      pnga_set_*
+//      pnga_allocate()
 
 typedef logical ga_create_fn_t(Integer type, Integer ndim,
 			       Integer *dims, char* name,
@@ -305,6 +386,33 @@ MONITOR_EXT_WRAP_NAME(pnga_create)(Integer type, Integer ndim,
   return ret;
 }
 
+
+typedef Integer ga_create_handle_fn_t();
+
+MONITOR_EXT_DECLARE_REAL_FN(ga_create_handle_fn_t, real_pnga_create_handle);
+
+Integer
+MONITOR_EXT_WRAP_NAME(pnga_create_handle)()
+{
+  MONITOR_EXT_GET_NAME_WRAP(real_pnga_create_handle, pnga_create_handle);
+
+  // collective
+  Integer g_a = real_pnga_create_handle();
+
+  int idx = -1;
+#if (GA_DataCentric_Prototype)
+  char* name = "(unknown)";
+  idx = hpcrun_ga_dataIdx_new(name);
+#endif
+
+  ga_setDataIdx(g_a, idx);
+  
+  return g_a;
+}
+
+// TODO: void pnga_set_array_name(Integer g_a, char *array_name);
+
+
 // ga_destroy
 
 // ga_pgroup_create, ga_pgroup_destroy, ga_pgroup_get_default, ga_pgroup_set_default, ga_nodeid, ga_cluster_proc_nodeid
@@ -312,90 +420,6 @@ MONITOR_EXT_WRAP_NAME(pnga_create)(Integer type, Integer ndim,
 // ga_error
 
 // ga_read_inc
-
-//***************************************************************************
-// collectives: brdcst
-//***************************************************************************
-
-typedef void ga_brdcst_fn_t(Integer type, void *buf, Integer len, Integer originator);
-
-MONITOR_EXT_DECLARE_REAL_FN(ga_brdcst_fn_t, real_pnga_brdcst);
-
-void
-MONITOR_EXT_WRAP_NAME(pnga_brdcst)(Integer type, void *buf, Integer len, Integer originator)
-{
-  MONITOR_EXT_GET_NAME_WRAP(real_pnga_brdcst, pnga_brdcst);
-
-  int mId_collectiveOp = hpcrun_ga_metricId_collectiveOp();
-  int mId_bytes = hpcrun_ga_metricId_bytesXfr();
-  ifSample(G_A_NULL, smpl, metricVec,
-	   collectMetric(metricVec, mId_collectiveOp, 1/*metricIncr*/),
-	   collectMetric(metricVec, mId_bytes, len/*metricIncr*/));
-
-  real_pnga_brdcst(type, buf, len, originator);
-}
-
-
-typedef void ga_gop_fn_t(Integer type, void *x, Integer n, char *op);
-
-MONITOR_EXT_DECLARE_REAL_FN(ga_gop_fn_t, real_pnga_gop);
-
-void
-MONITOR_EXT_WRAP_NAME(pnga_gop)(Integer type, void *x, Integer n, char *op)
-{
-  MONITOR_EXT_GET_NAME_WRAP(real_pnga_gop, pnga_gop);
-
-  int mId_collectiveOp = hpcrun_ga_metricId_collectiveOp();
-  int mId_bytes = hpcrun_ga_metricId_bytesXfr();
-  ifSample(G_A_NULL, smpl, metricVec,
-	   collectMetric(metricVec, mId_collectiveOp, 1/*metricIncr*/),
-	   collectMetric(metricVec, mId_bytes, 8/*metricIncr*/));
-  // FIXME: # bytes depends on type
-
-  real_pnga_gop(type, x, n, op);
-}
-
-
-typedef void ga_sync_fn_t();
-
-MONITOR_EXT_DECLARE_REAL_FN(ga_sync_fn_t, real_pnga_sync);
-
-void
-MONITOR_EXT_WRAP_NAME(pnga_sync)()
-{
-  MONITOR_EXT_GET_NAME_WRAP(real_pnga_sync, pnga_sync);
-
-  int mId_collectiveOp = hpcrun_ga_metricId_collectiveOp();
-  ifSample(G_A_NULL, smpl, metricVec,
-	   collectMetric(metricVec, mId_collectiveOp, 1/*metricIncr*/),
-	   collect0());
-
-  real_pnga_sync();
-}
-
-
-typedef void ga_zero_fn_t(Integer g_a);
-
-MONITOR_EXT_DECLARE_REAL_FN(ga_zero_fn_t, real_pnga_zero);
-
-void
-MONITOR_EXT_WRAP_NAME(pnga_zero)(Integer g_a)
-{
-  MONITOR_EXT_GET_NAME_WRAP(real_pnga_zero, pnga_zero);
-
-  int mId_collectiveOp = hpcrun_ga_metricId_collectiveOp();
-  ifSample(g_a, smpl, metricVec,
-	   collectMetric(metricVec, mId_collectiveOp, 1/*metricIncr*/),
-	   collect0());
-
-  real_pnga_zero(g_a);
-}
-
-
-// TODO: ga_pgroup_dgop, ga_pgroup_sync
-
-typedef void ga_pgroup_gop_fn_t(Integer p_grp, Integer type, void *x, Integer n, char *op);
-typedef void ga_pgroup_sync_fn_t(Integer grp_id);
 
 
 //***************************************************************************
@@ -413,14 +437,12 @@ void
 MONITOR_EXT_WRAP_NAME(pnga_get)(Integer g_a, Integer* lo, Integer* hi, void* buf, Integer* ld)
 {
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_get, pnga_get);
-
-  int mId_onesided = hpcrun_ga_metricId_onesidedOp();
-  int mId_bytes = hpcrun_ga_metricId_bytesXfr();
-  ifSample(g_a, smpl, metricVec,
-	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
-	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
+  
+  def_isSampled_blocking();
 
   real_pnga_get(g_a, lo, hi, buf, ld);
+
+  doSample_1sided_blocking(g_a, lo, hi);
 }
 
 
@@ -431,13 +453,11 @@ MONITOR_EXT_WRAP_NAME(pnga_put)(Integer g_a, Integer* lo, Integer* hi, void* buf
 {
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_put, pnga_put);
 
-  int mId_onesided = hpcrun_ga_metricId_onesidedOp();
-  int mId_bytes = hpcrun_ga_metricId_bytesXfr(); 
-  ifSample(g_a, smpl, metricVec,
-	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
-	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
+  def_isSampled_blocking();
 
   real_pnga_put(g_a, lo, hi, buf, ld);
+
+  doSample_1sided_blocking(g_a, lo, hi);
 }
 
 
@@ -448,14 +468,15 @@ MONITOR_EXT_WRAP_NAME(pnga_acc)(Integer g_a, Integer *lo, Integer *hi, void *buf
 {
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_acc, pnga_acc);
 
-  int mId_onesided = hpcrun_ga_metricId_onesidedOp();
-  int mId_bytes = hpcrun_ga_metricId_bytesXfr();
-  ifSample(g_a, smpl, metricVec,
-	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
-	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
+  def_isSampled_blocking();
 
   real_pnga_acc(g_a, lo, hi, buf, ld, alpha);
+
+  doSample_1sided_blocking(g_a, lo, hi);
 }
+
+
+// ngai_get_common: (pnga_get, pnga_nbget, pnga_get_field, pnga_nbget_field)
 
 
 //***************************************************************************
@@ -476,13 +497,11 @@ MONITOR_EXT_WRAP_NAME(pnga_nbget)(Integer g_a, Integer *lo, Integer *hi, void *b
 {
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_nbget, pnga_nbget);
 
-  int mId_onesided = hpcrun_ga_metricId_onesidedOp();
-  int mId_bytes = hpcrun_ga_metricId_bytesXfr();
-  ifSample(g_a, smpl, metricVec,
-	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
-	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
+  def_isSampled_nonblocking();
 
   real_pnga_nbget(g_a, lo, hi, buf, ld, nbhandle);
+
+  doSample_1sided_nonblocking(g_a, lo, hi);
 }
 
 
@@ -493,13 +512,11 @@ MONITOR_EXT_WRAP_NAME(pnga_nbput)(Integer g_a, Integer *lo, Integer *hi, void *b
 {
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_nbput, pnga_nbput);
 
-  int mId_onesided = hpcrun_ga_metricId_onesidedOp();
-  int mId_bytes = hpcrun_ga_metricId_bytesXfr();
-  ifSample(g_a, smpl, metricVec,
-	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
-	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
+  def_isSampled_nonblocking();
 
   real_pnga_nbput(g_a, lo, hi, buf, ld, nbhandle);
+
+  doSample_1sided_nonblocking(g_a, lo, hi);
 }
 
 
@@ -510,17 +527,14 @@ MONITOR_EXT_WRAP_NAME(pnga_nbacc)(Integer g_a, Integer *lo, Integer *hi, void *b
 {
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_nbacc, pnga_nbacc);
 
-  int mId_onesided = hpcrun_ga_metricId_onesidedOp();
-  int mId_bytes = hpcrun_ga_metricId_bytesXfr();
-  ifSample(g_a, smpl, metricVec,
-	   collectMetric(metricVec, mId_onesided, 1/*metricIncr*/),
-	   collectBytesXfr(metricVec, mId_bytes, g_a, lo, hi));
+  def_isSampled_nonblocking();
 
   real_pnga_nbacc(g_a, lo, hi, buf, ld, alpha, nbhandle);
+
+  doSample_1sided_nonblocking(g_a, lo, hi);
 }
 
 
-#if 0
 MONITOR_EXT_DECLARE_REAL_FN(ga_nbwait_fn_t, real_pnga_nbwait);
 
 void
@@ -528,15 +542,82 @@ MONITOR_EXT_WRAP_NAME(pnga_nbwait)(Integer *nbhandle)
 {
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_nbwait, pnga_nbwait);
 
-  //ifSample(smpl, metricVec, collect0(), collect0());
+  // FIXME: measure only if tagged
+  def_isSampled();
+  def_timeBeg(isSampled);
 
   real_pnga_nbwait(nbhandle);
+
+  if (isSampled) {
+    double latency = timeElapsed(timeBeg);
+    doSample(G_A_NULL, 
+	     doMetric(hpcrun_ga_metricId_latency, latency, r),
+	     do0(), do0(), do0());
+  }
 }
-#endif
 
 
 //***************************************************************************
-// 
+// collectives: brdcst
 //***************************************************************************
 
-// ngai_get_common: (pnga_get, pnga_nbget, pnga_get_field, pnga_nbget_field)
+typedef void ga_brdcst_fn_t(Integer type, void *buf, Integer len, Integer originator);
+
+MONITOR_EXT_DECLARE_REAL_FN(ga_brdcst_fn_t, real_pnga_brdcst);
+
+void
+MONITOR_EXT_WRAP_NAME(pnga_brdcst)(Integer type, void *buf, Integer len, Integer originator)
+{
+  MONITOR_EXT_GET_NAME_WRAP(real_pnga_brdcst, pnga_brdcst);
+
+  def_isSampled_blocking();
+  
+  real_pnga_brdcst(type, buf, len, originator);
+
+  doSample_collective_blocking();
+}
+
+
+typedef void ga_gop_fn_t(Integer type, void *x, Integer n, char *op);
+
+MONITOR_EXT_DECLARE_REAL_FN(ga_gop_fn_t, real_pnga_gop);
+
+void
+MONITOR_EXT_WRAP_NAME(pnga_gop)(Integer type, void *x, Integer n, char *op)
+{
+  MONITOR_EXT_GET_NAME_WRAP(real_pnga_gop, pnga_gop);
+
+  def_isSampled_blocking();
+
+  real_pnga_gop(type, x, n, op);
+
+  doSample_collective_blocking();
+}
+
+
+typedef void ga_sync_fn_t();
+
+MONITOR_EXT_DECLARE_REAL_FN(ga_sync_fn_t, real_pnga_sync);
+
+void
+MONITOR_EXT_WRAP_NAME(pnga_sync)()
+{
+  MONITOR_EXT_GET_NAME_WRAP(real_pnga_sync, pnga_sync);
+
+  def_isSampled_blocking();
+
+  real_pnga_sync();
+
+  doSample_collective_blocking();
+}
+
+
+// TODO: ga_pgroup_sync
+typedef void ga_pgroup_sync_fn_t(Integer grp_id);
+
+
+// TODO: ga_pgroup_dgop
+typedef void ga_pgroup_gop_fn_t(Integer p_grp, Integer type, void *x, Integer n, char *op);
+
+
+//***************************************************************************
