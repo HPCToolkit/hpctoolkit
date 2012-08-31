@@ -123,7 +123,7 @@ Options: Source Code and Static Structure:\n\
   -I <path>, --include <path>\n\
                        Use <path> when searching for source files. For a\n\
                        recursive search, append a + after the last slash,\n\
-                       e.g., /mypath/+ . You use multiple -I options.\n\
+                       e.g., /mypath/+ . May use multiple -I options.\n\
   -S <file>, --structure <file>\n\
                        Use hpcstruct structure file <file> for correlation.\n\
                        May pass multiple times (e.g., for shared libraries).\n\
