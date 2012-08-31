@@ -150,8 +150,8 @@ Options: Source Structure Correlation:\n\
                        Default: {thread}. May pass multiple times.\n\
   -I <path>, --include <path>\n\
                        Use <path> when searching for source files. For a\n\
-                       recursive search, append a '*' after the last slash,\n\
-                       e.g., '/mypath/*'. (Quote or escape to protect from\n\
+                       recursive search, append a '+' after the last slash,\n\
+                       e.g., '/mypath/+'. (Quote or escape to protect from\n\
                        shell.) May pass multiple times.\n\
   -S <file>, --structure <file>\n\
                        Use hpcstruct structure file <file> for correlation.\n\
