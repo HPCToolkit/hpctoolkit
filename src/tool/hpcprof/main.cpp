@@ -74,6 +74,7 @@ using std::string;
 #include "Args.hpp"
 
 #include <lib/analysis/CallPath.hpp>
+#include <lib/analysis/Model.hpp>
 #include <lib/analysis/Util.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -227,6 +228,11 @@ realmain(int argc, char* const* argv)
   if (!args.db_makeMetricDB) {
     prof->metricMgr()->zeroDBInfo();
   }
+
+#if 1
+  Model::Mdl* model = Model::Mdl::make(*prof);
+  model->dump(std::cout);
+#endif
 
   Analysis::CallPath::makeDatabase(*prof, args);
 
