@@ -32,6 +32,7 @@
 typedef int gomp_mutex_t;
 extern void (*gomp_monitor_lock)(void *lock);
 extern void (*gomp_monitor_unlock)(void *lock);
+extern void (*gomp_monitor_unlock1)(void *lock);
 
 #define GOMP_MUTEX_INIT_0 1
 
@@ -41,17 +42,26 @@ static inline void gomp_mutex_init (gomp_mutex_t *mutex)
 }
 
 extern void gomp_mutex_lock_slow (gomp_mutex_t *mutex);
+extern void gomp_set_lock_state(gomp_mutex_t *mutex);
+extern void gomp_unset_lock_state(gomp_mutex_t *mutex);
+
 static inline void gomp_mutex_lock (gomp_mutex_t *mutex)
 {
+  gomp_set_lock_state(mutex);
+
   if (!__sync_bool_compare_and_swap (mutex, 0, 1)) {
     if(gomp_monitor_lock) gomp_monitor_lock(mutex);
-    else
+    else {
       gomp_mutex_lock_slow (mutex);
+    }
   }
+
+  gomp_unset_lock_state(mutex);
 }
 
-
 extern void gomp_mutex_unlock_slow (gomp_mutex_t *mutex);
+extern void gomp_mutex_unlock (gomp_mutex_t *mutex);
+#if 0
 static inline void gomp_mutex_unlock (gomp_mutex_t *mutex)
 {
   /* Warning: By definition __sync_lock_test_and_set() does not have
@@ -70,12 +80,15 @@ static inline void gomp_mutex_unlock (gomp_mutex_t *mutex)
     if (__builtin_expect (val > 1, 0))
       gomp_mutex_unlock_slow (mutex);
   }
+  if(gomp_monitor_unlock1) gomp_monitor_unlock1(mutex);
 }
+#endif
 
 static inline void gomp_mutex_destroy (gomp_mutex_t *mutex)
 {
 }
 
-extern void gomp_lock_fn_register(void (*lock_fn)(void*), void (*unlock_fn)(void*));
+extern void gomp_lock_fn_register(void (*lock_fn)(void*), void (*unlock_fn)(void*), 
+				  void (*lock_fn1)(void*));
 
 #endif /* GOMP_MUTEX_H */

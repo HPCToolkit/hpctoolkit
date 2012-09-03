@@ -43,7 +43,8 @@ extern void GOMP_critical_name_start (void **);
 extern void GOMP_critical_name_end (void **);
 extern void GOMP_atomic_start (void);
 extern void GOMP_atomic_end (void);
-extern void GOMP_lock_fn_register(void (*)(void*), void (*)(void*));
+extern void GOMP_lock_fn_register(void (*)(void*), void (*)(void*), void (*)(void*));
+extern void* GOMP_get_lockwait();
 
 /* loop.c */
 

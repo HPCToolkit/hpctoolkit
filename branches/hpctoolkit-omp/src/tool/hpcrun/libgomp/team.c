@@ -156,6 +156,8 @@ gomp_thread_start (void *xdata)
   thr = &local_thr;
   pthread_setspecific (gomp_tls_key, thr);
 #endif
+  thr->thread_state = BUSY;
+  thr->lock_wait = NULL;
   gomp_sem_init (&thr->release, 0);
 
   /* Extract what we need from data.  */

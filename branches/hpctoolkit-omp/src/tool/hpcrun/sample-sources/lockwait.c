@@ -109,17 +109,33 @@
 /******************************************************************************
  * macros
  *****************************************************************************/
+#define N (128*1024)
+#define INDEX_MASK ((N)-1)
+
+/******************************************************************************
+ * data type
+ *****************************************************************************/
+struct lockBlame {
+  uint32_t sample_count;
+  uint32_t lockid;
+};
+
+typedef union lockData {
+  uint64_t all;
+  struct lockBlame parts; //[0] is id, [1] is counter
+}lockData;
 
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
 static void lock_fn(void *lock);
 static void unlock_fn(void *lock);
+static void unlock_fn1(void *lock);
 
 static void process_lockwait_blame_for_sample(cct_node_t *node, int metric_value);
 
 /******************************************************************************
- * local variables
+ * global variables
  *****************************************************************************/
 static int lockwait_metric_id = -1;
 
@@ -127,10 +143,39 @@ static bs_fn_entry_t bs_entry;
 
 static int period = 0;
 
+volatile lockData table[N];
+
+// helper functions
+void 
+init_lock_table()
+{
+  int i;
+  for(i = 0; i < N; i++)
+    table[i].all = 0ULL;
+}
+
+uint32_t lockIndex(void *addr) 
+{
+  return (uint32_t)((uint64_t)addr >> 2) & INDEX_MASK;
+}
+
+uint32_t lockID(void *addr)
+{
+  return (uint32_t) ((uint64_t)addr) >> 2;
+}
+
+uint64_t initVal(void *addr)
+{
+  return (uint64_t)((((uint64_t)addr >> 2) << 32) | 1);
+}
+
+//private functions
+
 static void
 METHOD_FN(init)
 {
   self->state = INIT;
+  init_lock_table();
 }
 
 
@@ -178,7 +223,8 @@ METHOD_FN(process_event_list, int lush_metrics)
         bs_entry.fn = process_lockwait_blame_for_sample;
         bs_entry.next = 0;
 
-	GOMP_lock_fn_register(lock_fn, unlock_fn);
+//	GOMP_lock_fn_register(lock_fn, unlock_fn);
+	GOMP_lock_fn_register(NULL, NULL, unlock_fn1);
 
 	blame_shift_register(&bs_entry);
 
@@ -222,6 +268,26 @@ void process_lockwait_blame_for_sample(cct_node_t *node, int metric_value)
     int32_t *lock = (int32_t *)td->lockid;
     if (!((*lock)>>31)) {
       atomic_add_i32(lock, 2);
+    }
+  }
+  void *lock = GOMP_get_lockwait();
+  // this is a sample in the lockwait
+  if (lock && td->idle == 0) {
+    lockData newval;
+    uint32_t index = lockIndex(lock);
+    uint32_t lockid = lockID(lock);
+    lockData oldval = table[index];
+
+    if(oldval.parts.lockid == lockid) {
+      newval.all = oldval.all + 1;
+      table[index].all = newval.all;
+    } else {
+      if(oldval.parts.lockid == 0) {
+	newval.all = initVal(lock);
+	table[index].all = newval.all;
+      }
+      else {
+      }
     }
   }
 }
@@ -299,3 +365,39 @@ void unlock_fn(void *lock)
   }
 }
 
+void unlock_fn1(void *lock)
+{
+  uint64_t val = 0;
+  uint32_t index = lockIndex(lock);
+  uint32_t lockid = lockID(lock);
+  lockData oldval = table[index];
+  if(oldval.parts.lockid != lockid)
+    return;
+  else {
+    table[index].all = 0;
+    val = (uint64_t)oldval.parts.sample_count;
+  }
+  if(val > 0) {
+    if(period > 0)
+      val = val * period;
+    ucontext_t uc;
+    getcontext(&uc);
+    if(need_defer_cntxt()) {
+      omp_arg_t omp_arg;
+      omp_arg.tbd = false;
+      omp_arg.context = NULL;
+      if(TD_GET(region_id) > 0) {
+ 	omp_arg.tbd = true;
+ 	omp_arg.region_id = TD_GET(region_id);
+      }
+      hpcrun_async_block();
+      hpcrun_sample_callpath(&uc, lockwait_metric_id, val, 0, 1,(void *) &omp_arg);
+      hpcrun_async_unblock();
+    }
+    else {
+      hpcrun_async_block();
+      hpcrun_sample_callpath(&uc, lockwait_metric_id, val, 0, 1, NULL);
+      hpcrun_async_unblock();
+    }
+  }
+}
