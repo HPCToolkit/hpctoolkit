@@ -292,7 +292,9 @@ void end_team_fn()
         TMSG(DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
       }
 
-      cct_node_t *sibling = hpcrun_cct_insert_addr(hpcrun_cct_parent(node), 
+      cct_node_t *sibling = NULL;
+      if(node)
+        sibling = hpcrun_cct_insert_addr(hpcrun_cct_parent(node), 
 			    &(ADDR2(hpcrun_cct_addr(node)->ip_norm.lm_id, 
 				hpcrun_cct_addr(node)->ip_norm.lm_ip-5L)));
       record->node = sibling;

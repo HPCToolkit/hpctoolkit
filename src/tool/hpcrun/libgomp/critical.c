@@ -145,8 +145,21 @@ initialize_critical (void)
 }
 #endif
 
-void GOMP_lock_fn_register(void (*lock_fn)(void*), void (*unlock_fn)(void*))
+void GOMP_lock_fn_register(void (*lock_fn)(void*), void (*unlock_fn)(void*), void (*unlock_fn1)(void*))
 {
-  gomp_lock_fn_register(lock_fn, unlock_fn);
+  gomp_lock_fn_register(lock_fn, unlock_fn, unlock_fn1);
 }
 
+void*
+GOMP_get_lockwait()
+{
+  struct gomp_thread *thr = NULL;
+
+  thr = gomp_thread ();
+  if (thr == NULL) return NULL;
+
+  if(thr->thread_state == LOCKWAIT && thr->lock_wait)
+    return thr->lock_wait;
+
+  return NULL;
+}

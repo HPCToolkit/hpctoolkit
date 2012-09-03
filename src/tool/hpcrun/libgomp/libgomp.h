@@ -327,8 +327,16 @@ struct gomp_team
 /* This structure contains all data that is private to libgomp and is
    allocated per thread.  */
 
+enum gomp_thread_state_type {
+  BUSY,
+  IDLE,
+  LOCKWAIT
+};
+
 struct gomp_thread
 {
+  enum gomp_thread_state_type thread_state;
+  void *lock_wait;
   /* This is the function that the thread should run upon launch.  */
   void (*fn) (void *data);
   void *data;
