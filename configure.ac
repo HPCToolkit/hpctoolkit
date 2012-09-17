@@ -1884,6 +1884,25 @@ AC_SUBST([hpclink_extra_wrap_names])
 
 
 #-------------------------------------------------
+# enable-xop: support for AMD XOP instructions
+#-------------------------------------------------
+
+AC_ARG_ENABLE([xop],
+  AS_HELP_STRING([--enable-xop],
+      [include support for decoding AMD XOP instructions, x86-64 only
+      (default no)]),
+  [],
+  [enable_xop=no])
+
+AC_MSG_CHECKING([whether to support AMD XOP instructions])
+AC_MSG_RESULT([$enable_xop])
+
+if test "x$enable_xop" = xyes ; then
+  AC_DEFINE([ENABLE_XOP], [1], [Support for AMD XOP instructions])
+fi
+
+
+#-------------------------------------------------
 # enable-bluegene: BG/* support
 #-------------------------------------------------
 

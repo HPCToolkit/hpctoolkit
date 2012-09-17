@@ -880,6 +880,7 @@ enable_mpi_wrapper
 enable_lush
 with_cilk
 enable_lush_pthreads
+enable_xop
 enable_bluegene
 with_upc
 with_upc_lib
@@ -1544,6 +1545,8 @@ Optional Features:
   --enable-mpi-wrapper    Enable MPI wrapper support (uses MPIF77 and CFLAGS)
   --enable-lush           use lush backtrace in hpcrun
   --enable-lush-pthreads  enable lush pthreads (temp)
+  --enable-xop            include support for decoding AMD XOP instructions,
+                          x86-64 only (default no)
   --enable-bluegene       Enable BlueGene/P support
   --enable-data-centric-tracing
                           Enable data-centric tracing (prototype)
@@ -18161,6 +18164,30 @@ fi
 
 
 
+
+
+#-------------------------------------------------
+# enable-xop: support for AMD XOP instructions
+#-------------------------------------------------
+
+# Check whether --enable-xop was given.
+if test "${enable_xop+set}" = set; then :
+  enableval=$enable_xop;
+else
+  enable_xop=no
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to support AMD XOP instructions" >&5
+$as_echo_n "checking whether to support AMD XOP instructions... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_xop" >&5
+$as_echo "$enable_xop" >&6; }
+
+if test "x$enable_xop" = xyes ; then
+
+$as_echo "#define ENABLE_XOP 1" >>confdefs.h
+
+fi
 
 
 #-------------------------------------------------
