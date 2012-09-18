@@ -183,6 +183,24 @@ Contents:
 
 
 ----------------------------------------
+HPCToolkit Version 5.3.2 [2012.09.18]
+----------------------------------------
+
+Fix a few show-stopper problems related to recent upgrades on jaguarpf
+(interlagos) at ORNL since 5.3.1.
+
+- hpcrun
+  - add support for decoding the AMD XOP instructions.  this was
+    causing many unwind failures on jaguarpf.
+  - fixed a bug in hpcrun-flat that was breaking the build with
+    PAPI 5.0
+
+- externals
+  - fixed symtabAPI to handle the new STT_GNU_IFUNC symbols in the
+    latest glibc.  this was breaking hpclink on jaguarpf.
+
+
+----------------------------------------
 HPCToolkit Version 5.3.1 [2012.08.27]
 ----------------------------------------
 
