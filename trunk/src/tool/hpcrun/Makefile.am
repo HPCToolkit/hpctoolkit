@@ -161,7 +161,8 @@ UNW_COMMON_FILES = \
 UNW_X86_FILES = \
        $(UNW_COMMON_FILES) \
 	unwind/x86-family/x86-all.c			\
-	unwind/x86-family/x86-cold-path.c		\
+	unwind/x86-family/amd-xop.c                     \
+ 	unwind/x86-family/x86-cold-path.c		\
 	unwind/x86-family/x86-validate-retn-addr.c	\
 	unwind/x86-family/x86-unwind-interval.c		\
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
