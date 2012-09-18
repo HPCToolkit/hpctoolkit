@@ -50,6 +50,7 @@
 
 #include <stdbool.h>
 
+#include <include/hpctoolkit-config.h>
 #include "splay-interval.h"
 #include "x86-unwind-interval.h"
 
@@ -60,6 +61,10 @@
 #include "x86-unwind-analysis.h"
 #include "x86-unwind-interval-fixup.h"
 #include "x86-interval-arg.h"
+
+#if defined(ENABLE_XOP) && defined (HOST_CPU_x86_64)
+#include "amd-xop.h"
+#endif // ENABLE_XOP and HOST_CPU_x86_64
 
 #include <messages/messages.h>
 
@@ -86,6 +91,8 @@ build_intervals(char *ins, unsigned int len)
   return x86_build_intervals(ins, len, 0);
 }
 
+
+extern void x86_dump_ins(void* addr);
 
 interval_status 
 x86_build_intervals(void *ins, unsigned int len, int noisy)
@@ -134,10 +141,24 @@ x86_build_intervals(void *ins, unsigned int len, int noisy)
   if (noisy) dump_ui(iarg.current, true);
 
   while (iarg.ins < end) {
+    if (noisy) {
+      x86_dump_ins(iarg.ins);
+    }
     xed_decoded_inst_zero_keep_mode(xptr);
     xed_error = xed_decode(xptr, (uint8_t*) iarg.ins, 15);
 
     if (xed_error != XED_ERROR_NONE) {
+#if defined(ENABLE_XOP) && defined (HOST_CPU_x86_64)
+      amd_decode_t decode_res;
+      adv_amd_decode(&decode_res, iarg.ins);
+      if (decode_res.success) {
+	if (decode_res.weak) {
+	  // keep count of successes that are not robust
+	}
+	iarg.ins += decode_res.len;
+	continue;
+      }
+#endif // ENABLE_XOP and HOST_CPU_x86_64
       error_count++; /* note the error      */
       iarg.ins++;         /* skip this byte      */
       continue;      /* continue onward ... */
@@ -260,4 +281,15 @@ x86_coalesce_unwind_intervals(unwind_interval *ui)
   first->has_tail_calls = routine_has_tail_calls;
 
   return;
+}
+
+//*************************** Debug stuff ****************************
+
+static interval_status d_istat;
+
+interval_status*
+d_build_intervals(void* b, unsigned l)
+{
+  d_istat = build_intervals(b, l);
+  return &d_istat;
 }
