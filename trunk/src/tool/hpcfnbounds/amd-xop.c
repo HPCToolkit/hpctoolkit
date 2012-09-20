@@ -79,7 +79,7 @@ static const uc xop_op4_tbl[] = {
 };
 
 #define Table_spec(t) t, sizeof(t)
-#define Opc_in_tbl(t) opc_in_table(seq, Table_spec(t))
+#define Opc_in_tbl(t) opc_in_table(opc, Table_spec(t))
 
 static bool
 default_false(void* seq)
@@ -88,10 +88,8 @@ default_false(void* seq)
 }
 
 static inline bool
-opc_in_table(void* seq, const uc opc_tbl[], const size_t len)
+opc_in_table(uc opc, const uc opc_tbl[], const size_t len)
 {
-  apm_t* in = seq;
-  uc opc = in->opc;
   for(size_t i=0; i < len; i++)
     if (opc == opc_tbl[i]) return true;
   return false;
@@ -100,12 +98,27 @@ opc_in_table(void* seq, const uc opc_tbl[], const size_t len)
 static bool
 xop_op4(void* seq)
 {
+  apm_t* in = seq;
+  uc opc = in->opc;
+
   return Opc_in_tbl(xop_op4_tbl);
 }
 
 static bool
 vex_op4(void* seq)
 {
+  apm_t* in = seq;
+  uc opc = in->opc;
+
+  return Opc_in_tbl(vex_op4_tbl);
+}
+
+static bool
+vex5_op4(void* seq)
+{
+  apm_c5_t* in = seq;
+  uc opc = in->opc;
+
   return Opc_in_tbl(vex_op4_tbl);
 }
 
@@ -114,22 +127,39 @@ op4_imm(void* seq)
 {
   uc* in = seq;
 
-  bool (*op4_opc)(void* seq) = default_false;
+  bool has4 = false;
+  if (*in == 0xc4)
+    has4 = vex_op4(seq);
+  if (*in == 0xc5)
+    has4 = vex5_op4(seq);
+  if (*in == 0x8f)
+    has4 = xop_op4(seq);
 
-  if (in[0] == 0xc4) op4_opc = vex_op4;
-  if (in[0] == 0x8f) op4_opc = xop_op4;
-
-  return op4_opc(seq) ? 0 : 1;
+  return has4 ? 1 : 0;
 }
 
 static size_t
 disp_size(void* seq)
 {
-  apm_t* in = seq;
+  uc* escape = seq;
   size_t rv = 0;
-  if (in->mod == 0) rv = 4;
-  else if (in->mod == 1) rv = 1;
-  else if (in->mod == 2) rv = 4;
+  uc mod = 0xff;
+  uc r_m = 0xff;
+
+  if ((*escape == 0xc4) || (*escape == 0x8f)) {
+    apm_t* in = seq;
+    mod = in->mod;
+    r_m = in->r_m;
+  }
+  if (*escape == 0xc5) {
+    apm_c5_t* in = seq;
+    mod = in->mod;
+    r_m = in->r_m;
+  }
+
+  if ((mod == 0) && (r_m == 5)) rv = 4;
+  else if (mod == 1) rv = 1;
+  else if (mod == 2) rv = 4;
 
   return rv;
 }
@@ -137,16 +167,42 @@ disp_size(void* seq)
 static size_t
 sib_byte(void* seq)
 {
-  apm_t* in = seq;
+  uc* escape = seq;
+  uc r_m = 0xff;
+  uc mod = 0xff;
 
-  return (in->mod != 3) && (in->r_m == 4) ? 1 : 0;
+  if ((*escape == 0xc4) || (*escape == 0x8f)) {
+    apm_t* in = seq;
+    mod = in->mod;
+    r_m = in->r_m;
+  }
+  if (*escape == 0xc5) {
+    apm_c5_t* in = seq;
+    mod = in->mod;
+    r_m = in->r_m;
+  }
+
+  return (mod != 3) && (r_m == 4) ? 1 : 0;
+}
+
+static size_t
+escape_len(void* seq)
+{
+  uc* escape = seq;
+
+  if ((*escape == 0xc4) || (*escape == 0x8f))
+    return sizeof(apm_t);
+  if (*escape == 0xc5)
+    return sizeof(apm_c5_t);
+
+  return 1;
 }
 
 static inline size_t
 ins_len(void* seq)
 {
   // length of instruction = size of escape seq + #immediate bytes + # disp bytes + # sib bytes
-  return sizeof(apm_t) + op4_imm(seq) + disp_size(seq) + sib_byte(seq);
+  return escape_len(seq) + op4_imm(seq) + disp_size(seq) + sib_byte(seq);
 }
 
 static const uc prefix_tbl[] = {
