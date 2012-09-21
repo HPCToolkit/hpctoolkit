@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2011/02/22}
+\setDate{ 2012/04/18}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -89,7 +89,7 @@ Print help.
 Debug: use debug level \Arg{n}. \{1\}
 \end{Description}
 
-\subsection{Options: Source Structure Correlation}
+\subsection{Options: Source Code and Static Structure}
 
 \begin{Description}
 \item[\OptArg{--name}{name}, \OptArg{--title}{name}]
@@ -103,17 +103,6 @@ May pass multiple times.
 Note: With multiple search-directory arguments, it may be the case that file \Arg{f} exists within more than one search directory.
 In this case, the ambiguity is resolved in favor of the search directory that appears first on the command line.
 
-\item[\OptArg{-M}{metric}, \OptArg{--metric}{metric}]
-Specify the set of metrics to compute.
-\Arg{metric} is one of the following:
-  \begin{itemize}
-  \item[sum]    Show (only) summary metrics: Sum, Mean, StdDev (standard deviation), CoefVar (coefficient of variation), Min, Max
-  \item[sum+]   Show thread and summary metrics
-  \item[thread] Show only thread metrics
-  \end{itemize}
-Default is 'sum'.
-(\Cmd{hpcprof-mpi}{1} always computes 'sum'.)
-
 \item[\OptArg{-S}{file}, \OptArg{--structure}{file}]
 Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for correlation.
 May pass multiple times (e.g., for shared libraries).
@@ -123,6 +112,23 @@ Substitute instances of \Arg{old-path} with \Arg{new-path}; apply to all paths (
 Use '\Bs'\ to escape instances of '=' within a path. May pass multiple times.
   
 Use this option when a profile or binary contains references to files that have been relocated, such as might occur with a file system change.
+\end{Description}
+
+\subsection{Options: Metrics}
+
+\begin{Description}
+
+\item[\OptArg{-M}{metric}, \OptArg{--metric}{metric}]
+Specify the set of metrics to compute, where \Arg{metric} is one of the following:
+  \begin{itemize}
+  \item[sum] Sum over threads/processes
+  \item[stats] Sum, Mean, StdDev (standard deviation), CoefVar (coefficient of variation), Min, Max over threads/processes
+  \item[thread] per-thread/process metrics
+  \end{itemize}
+Default is 'sum'.
+May pass multiple times.
+(\Cmd{hpcprof-mpi}{1} does not compute 'thread'.)
+
 \end{Description}
 
 \subsection{Options: Output}

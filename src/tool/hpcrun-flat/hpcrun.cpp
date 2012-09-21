@@ -422,7 +422,7 @@ list_available_events_helper(Args::EventList_t listType)
   os << "Nodes in this System    : " << hwinfo->nnodes << "\n";
   os << "Total CPU's             : " << hwinfo->totalcpus << "\n";
   os << "Number Hardware Counters: " << dl_PAPI_get_opt(PAPI_MAX_HWCTRS, NULL) << "\n";
-  os << "Max Multiplex Counters  : " << PAPI_MPX_DEF_DEG << "\n";
+  os << "Max Multiplex Counters  : " << dl_PAPI_get_opt(PAPI_MAX_MPX_CTRS, NULL) << "\n";
   os << SEPARATOR_MAJOR;
 
   // -------------------------------------------------------

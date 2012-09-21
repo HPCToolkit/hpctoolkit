@@ -30,6 +30,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/thread_data.h>
+#include <hpcrun/safe-sampling.h>
 #include <hpcrun/cct/cct.h>
 #include <messages/messages.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
@@ -242,10 +243,10 @@ init_region_id()
 //
 void start_team_fn()
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
   thread_data_t *td = hpcrun_get_thread_data();
   // mark the real master thread (the one with process stop)
-  if(omp_get_level() == 1 && omp_get_thread_num() == 0) {
+  if (omp_get_level() == 1 && omp_get_thread_num() == 0) {
     td->master = 1;
   }
   if(td->outer_region_id == NULL) {
@@ -254,12 +255,12 @@ void start_team_fn()
   // update the outer most region id
   else if(omp_get_level() == 2)
     td->outer_region_id = GOMP_get_outer_region_id();
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 void end_team_fn()
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
   uint64_t zero_metric_incr = 0LL;
   cct_node_t *node = NULL;
   uint64_t region_id = *(GOMP_get_region_id());
@@ -281,14 +282,14 @@ void end_team_fn()
 	  omp_arg.tbd = true;
 	  omp_arg.region_id = TD_GET(region_id);
         }
-        node = hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 2, 1, (void *)&omp_arg);
+        node = hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 2, 1, (void *)&omp_arg).sample_node;
         TMSG(DEFER_CTXT, "unwind the callstack for region %d to %d", record->region_id, TD_GET(region_id));
       }
       //
       // for master thread in the outer-most region, a normal unwind to the process stop 
       //
       else {
-        node = hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 2, 1, NULL);
+        node = hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 2, 1, NULL).sample_node;
         TMSG(DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
       }
 
@@ -311,7 +312,7 @@ void end_team_fn()
     resolve_cntxt_fini();
     TD_GET(team_master) = 0;
   }
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 void register_defer_callback()
@@ -392,7 +393,7 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
   uint64_t my_region_id = (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip;
   TMSG(DEFER_CTXT, "try to resolve region %d", my_region_id);
   uint64_t partial_region_id = 0;
-  if (prefix = is_resolved(my_region_id)) {
+  if ((prefix = is_resolved(my_region_id))) {
     TMSG(DEFER_CTXT, "resolve region %d to %d", my_region_id, is_partial_resolve(prefix));
     // delete cct from its original parent before merging
     hpcrun_cct_delete_self(cct);
@@ -436,7 +437,7 @@ omp_resolve_and_free(cct_node_t* cct, cct_op_arg_t a, size_t l)
 
 void resolve_cntxt()
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
   uint64_t current_region_id = *(GOMP_get_region_id()); //inner-most region id
   cct_node_t* tbd_cct = hpcrun_get_tbd_cct();
   thread_data_t *td = hpcrun_get_thread_data();
@@ -468,7 +469,7 @@ void resolve_cntxt()
   // td->region_id represents the out-most parallel region id
   td->region_id = outer_region_id;
 
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 #if 0
@@ -485,17 +486,17 @@ tbd_test(cct_node_t* cct, cct_op_arg_t a, size_t l)
 
 void resolve_cntxt_fini()
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
   hpcrun_cct_walkset(hpcrun_get_tbd_cct(), omp_resolve_and_free, NULL);
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 void resolve_other_cntxt(thread_data_t *thread_data)
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
   thread_data_t *td = thread_data;
   if(!td) return;
   hpcrun_cct_walkset((td->epoch->csdata).unresolved_root, omp_resolve_and_free, (cct_op_arg_t)td);
 //  hpcrun_cct_walkset((td->epoch->csdata).unresolved_root, tbd_test, (cct_op_arg_t)td);
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }

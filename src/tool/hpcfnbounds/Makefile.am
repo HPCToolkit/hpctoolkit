@@ -70,8 +70,10 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
 
+LIBELF_INC   = @LIBELF_INC@
 LIBELF_LIB   = @LIBELF_LIB@
 
 SYMTABAPI_INC = @SYMTABAPI_INC@
@@ -87,7 +89,7 @@ MYSOURCES = \
 	function-entries.cpp \
 	intervals.cpp
 
-MYCPPFLAGS = $(HPC_IFLAGS) -I$(SYMTABAPI_INC)
+MYCPPFLAGS = $(HPC_IFLAGS) -I$(SYMTABAPI_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC)
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
 
@@ -113,7 +115,7 @@ hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcfnbounds_bin_LDFLAGS  = $(MYLDFLAGS)
 
 if HOST_CPU_X86_FAMILY
-  hpcfnbounds_bin_SOURCES  += x86-process-ranges.cpp
+  hpcfnbounds_bin_SOURCES  += x86-process-ranges.cpp amd-xop.c
   hpcfnbounds_bin_CPPFLAGS += -I$(XED2_INC)
   hpcfnbounds_bin_LDFLAGS  += $(XED2_LIB)/libxed.a
 else

@@ -54,10 +54,11 @@
 #include <limits.h>
 
 
-
 //*********************************************************************
 // local includes 
 //*********************************************************************
+
+#include <include/hpctoolkit-config.h>
 
 #include "env.h"
 #include "files.h"
@@ -82,12 +83,11 @@
 //*********************************************************************
 
 
-
 //*********************************************************************
 // forward declarations 
 //*********************************************************************
 
-static void trace_file_validate(int valid, char *op);
+static void hpcrun_trace_file_validate(int valid, char *op);
 
 
 
@@ -103,15 +103,15 @@ static int tracing = 0;
 // interface operations
 //*********************************************************************
 
-int 
-trace_isactive()
+int
+hpcrun_trace_isactive()
 {
   return tracing;
 }
 
 
-void 
-trace_init()
+void
+hpcrun_trace_init()
 {
   if (getenv(HPCRUN_TRACE)) {
     tracing = 1;
@@ -119,8 +119,8 @@ trace_init()
 }
 
 
-void 
-trace_open()
+void
+hpcrun_trace_open()
 {
   // With fractional sampling, if this process is inactive, then don't
   // open an output file, not even /dev/null.
@@ -133,26 +133,33 @@ trace_open()
     // locks).  At any rate, locks only protect against threads, they
     // don't help with signal handlers (that's much harder).
     fd = hpcrun_open_trace_file(td->id);
-    trace_file_validate(fd >= 0, "open");
+    hpcrun_trace_file_validate(fd >= 0, "open");
     td->trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
     ret = hpcio_outbuf_attach(&td->trace_outbuf, fd, td->trace_buffer,
 			      HPCRUN_TraceBufferSz, HPCIO_OUTBUF_UNLOCKED);
-    trace_file_validate(ret == HPCFMT_OK, "open");
+    hpcrun_trace_file_validate(ret == HPCFMT_OK, "open");
 
-    ret = hpctrace_fmt_hdr_outbuf(&td->trace_outbuf);
-    trace_file_validate(ret == HPCFMT_OK, "write header to");
+    hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
+#ifdef DATACENTRIC_TRACE
+    flags.fields.isDataCentric = true;
+#else
+    flags.fields.isDataCentric = false;
+#endif
+
+    ret = hpctrace_fmt_hdr_outbuf(flags, &td->trace_outbuf);
+    hpcrun_trace_file_validate(ret == HPCFMT_OK, "write header to");
   }
 }
 
 
 void
-trace_append(unsigned int call_path_id)
+hpcrun_trace_append(uint call_path_id, uint metric_id)
 {
   if (tracing && hpcrun_sample_prob_active()) {
     struct timeval tv;
     int ret = gettimeofday(&tv, NULL);
     assert(ret == 0 && "in trace_append: gettimeofday failed!");
-    uint64_t microtime = ((uint64_t)tv.tv_usec 
+    uint64_t microtime = ((uint64_t)tv.tv_usec
 			  + (((uint64_t)tv.tv_sec) * 1000000));
 
     thread_data_t *td = hpcrun_get_thread_data();
@@ -162,21 +169,32 @@ trace_append(unsigned int call_path_id)
     }
     td->trace_max_time_us = microtime;
 
-    ret = hpctrace_fmt_append_outbuf(&td->trace_outbuf, microtime,
-				     (uint32_t)call_path_id);
-    trace_file_validate(ret == HPCFMT_OK, "append");
+    hpctrace_fmt_datum_t trace_datum;
+    trace_datum.time = microtime;
+    trace_datum.cpId = (uint32_t)call_path_id;
+    trace_datum.metricId = (uint32_t)metric_id;
+
+    hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
+#ifdef DATACENTRIC_TRACE
+    flags.fields.isDataCentric = true;
+#else
+    flags.fields.isDataCentric = false;
+#endif
+
+    ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, &td->trace_outbuf);
+    hpcrun_trace_file_validate(ret == HPCFMT_OK, "append");
   }
 }
 
 
 void
-trace_close()
+hpcrun_trace_close()
 {
   if (tracing && hpcrun_sample_prob_active()) {
     thread_data_t *td = hpcrun_get_thread_data();
 
     int ret = hpcio_outbuf_close(&td->trace_outbuf);
-    trace_file_validate(ret == HPCFMT_OK, "close");
+    hpcrun_trace_file_validate(ret == HPCFMT_OK, "close");
 
     int rank = hpcrun_get_rank();
     if (rank >= 0) {
@@ -193,7 +211,7 @@ trace_other_close(void *thread_data)
     thread_data_t *td = (thread_data_t *)thread_data;
 
     int ret = hpcio_outbuf_close(&td->trace_outbuf);
-    trace_file_validate(ret == HPCFMT_OK, "close");
+    hpcrun_trace_file_validate(ret == HPCFMT_OK, "close");
 
     int rank = hpcrun_get_rank();
     if (rank >= 0) {
@@ -207,7 +225,7 @@ trace_other_close(void *thread_data)
 
 
 static void
-trace_file_validate(int valid, char *op)
+hpcrun_trace_file_validate(int valid, char *op)
 {
   if (!valid) {
     EMSG("unable to %s trace file\n", op);

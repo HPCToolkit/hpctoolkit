@@ -84,6 +84,7 @@
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
+#include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
@@ -285,7 +286,7 @@ scale_fn(void *thread_data)
   root = td->epoch->csdata.top;
   unresolved_root = td->epoch->csdata.unresolved_root;
   hpcrun_cct_walk_node_1st(root, normalize_fn, NULL);
-//  hpcrun_cct_walk_node_1st(unresolved_root, normalize_fn, NULL);
+//  hpcrun_cct_walk_node_1st(unresolved_root, normalize_fn, null);
 }
 
 void normalize_fn(cct_node_t *node, cct_op_arg_t arg, size_t level)
@@ -348,7 +349,7 @@ process_blame_for_sample(cct_node_t *node, int metric_value)
 }
 
 // take synchronous samples when the time difference is
-// larger than DIFF_TIME_THRES
+// larger than diff_time_thres
 #define DIFF_TIME_THRES 5000
 static void 
 idle(bool thres_check)
@@ -362,11 +363,11 @@ idle(bool thres_check)
   uint64_t diff_time = cur_bar_time_us - TD_GET(last_bar_time_us);
 
   if(thres_check && diff_time < DIFF_TIME_THRES) return;
-  hpcrun_async_block();
+  hpcrun_safe_enter();
   ucontext_t uc;
   getcontext(&uc);
   hpcrun_sample_callpath_idle(&uc, idle_metric_id, 0, 2, 1, NULL);
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
   ret = time_getTimeReal(&TD_GET(last_bar_time_us));
   if (ret != 0) {
     EMSG("time_getTimeReal (clock_gettime) failed!");
@@ -377,46 +378,46 @@ idle(bool thres_check)
 static void 
 thread_create_exit()
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
   ucontext_t uc;
   getcontext(&uc);
   hpcrun_sample_callpath(&uc, idle_metric_id, 0, 0, 1, NULL);
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 void idle_fn()
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
   atomic_add_i64(&work, -1L);
   thread_data_t *td = hpcrun_get_thread_data();
   td->idle = 1;
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 
-  if(trace_isactive()) {
+  if(hpcrun_trace_isactive()) {
     idle(true);
     // block samples between idle_fn and work_fn
     // it will be unblocked at work_fn()
-    hpcrun_async_block();
+    hpcrun_safe_enter();
   }
 }
 
 void work_fn()
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
   atomic_add_i64(&work, 1L);
   thread_data_t *td = hpcrun_get_thread_data();
   td->idle = 0;
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 
-  if(trace_isactive()) {
+  if(hpcrun_trace_isactive()) {
     idle(true);
   }
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 void start_fn()
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
   atomic_add_i64(&thread_num, 1L);
   if(thread_num > max_thread_num)
     fetch_and_store_i64(&max_thread_num, thread_num);
@@ -429,7 +430,7 @@ void start_fn()
 
 //  if(td->defer_flag) resolve_cntxt_fini();
 
-  if(trace_isactive()) {
+  if(hpcrun_trace_isactive()) {
     thread_create_exit();
     int ret = time_getTimeReal(&TD_GET(last_bar_time_us));
     if (ret != 0) {
@@ -438,12 +439,12 @@ void start_fn()
     }  
   }
 
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 void end_fn()
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
   atomic_add_i64(&thread_num, -1L);
   atomic_add_i64(&work, -1L);
 
@@ -451,10 +452,9 @@ void end_fn()
   td->add_to_pool = 1;
   add_defer_td(td);
 
-  if(trace_isactive()) {
+  if(hpcrun_trace_isactive()) {
     thread_create_exit();
   }
 
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
-

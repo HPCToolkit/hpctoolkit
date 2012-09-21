@@ -101,7 +101,7 @@ Args::Ctor()
 
   doNormalizeTy = true;
 
-  prof_metrics = Analysis::Args::MetricSet_NULL;
+  prof_metrics = Analysis::Args::MetricFlg_NULL;
 
   profflat_computeFinalMetricValues = true;
 

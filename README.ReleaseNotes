@@ -181,14 +181,92 @@ Contents:
 2. Revision History
 ------------------------------------------------------------
 
+
 ----------------------------------------
-HPCToolkit Version 5.x (upcoming)
+HPCToolkit Version 5.3.2 [2012.09.18]
+----------------------------------------
+
+Fix a few show-stopper problems related to recent upgrades on jaguarpf
+(interlagos) at ORNL since 5.3.1.
+
+- hpcrun
+  - add support for decoding the AMD XOP instructions.  this was
+    causing many unwind failures on jaguarpf.
+  - fixed a bug in hpcrun-flat that was breaking the build with
+    PAPI 5.0
+
+- externals
+  - fixed symtabAPI to handle the new STT_GNU_IFUNC symbols in the
+    latest glibc.  this was breaking hpclink on jaguarpf.
+
+
+----------------------------------------
+HPCToolkit Version 5.3.1 [2012.08.27]
+----------------------------------------
+
+- hpcrun 
+  - add documentation about environment variable HPCTOOLKIT, needed for
+    use on Cray XE6/XK6
+  - add support to use HPCRUN_TMPDIR or TMPDIR. On Cray platforms,
+    /tmp is unavailable
+  - don't try to integrate calling context trees for threads into the 
+    calling context tree for the main thread.
+  - miscellaneous changes to satisfy stricter dependence checking by gcc 4.7 
+    and include files that omit unistd.h on Debian Linux
+  - ensure that partial unwinds are properly categorized
+  - address portability issues with idleness sample source, which supports 
+    blame shifting for OpenMP 
+
+- hpcprof
+  - handle case when measurements directory and database directory are on
+    different file systems. in this case, files can't be simply unlinked and
+    relinked.
+
+- hpctraceviewer
+  - add support for filtering out threads and processes that are not of 
+    interest. 
+  - add -j option to install script to enable installer to curry a path
+    for the java required into the hpctraceviewer script
+  - fix memory leak for SWT native objects
+
+- hpcviewer
+  - support a mix of flattening and zooming in flat view
+  - add new formatting options for derived metrics
+  - add -j option to install script to enable installer to curry a path
+    for the java required into the hpctraceviewer script
+
+- externals
+  - fixed problem with GNU binutils on 64-bit PowerPC that caused performance
+    data to be misattributed because function "D" symbols were overlooked
+  - added support to disable thread tracking (needed for CUDA support)
+
+- update documentation
+
+----------------------------------------
+HPCToolkit Version 5.3.0 [2012.06.25]
 ----------------------------------------
 
 - hpcrun
+  - add an IO sample source to count the number of bytes read and written
+  - add a Global Arrays sample source
   - add an API for the application to start and stop sampling
   - get the process rank for gasnet and dmapp programs (static only)
   - have hpcrun compress recursive calls by default
+  - early support for a plugin feature
+  - strengthen the async blocks to better handle the case of running
+    sync and async sample sources in the same run
+  - add a check that hpctoolkit and externals use the same C/C++ compilers.
+    this should all but eliminate the 'GLIBCXX not found' errors
+
+- externals
+  - binutils: put the line info table into a splay tree.  for some
+    BlueGene binaries, this speeds up hpcstruct by as much as 20x
+  - libmonitor: update to rev 140.  this better handles signals and
+    the side threads from the Cray UPC compiler
+  - open analysis: bug fix to avoid missing some loops
+  - symtabAPI: fix an off-by-one error that sometimes caused a
+    segfault (thanks to Gary Mohr at Bull)
+  - xerces: fix a compilation bug on BlueGene
 
 
 ----------------------------------------

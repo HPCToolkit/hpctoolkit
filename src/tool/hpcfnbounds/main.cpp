@@ -48,6 +48,8 @@
 // system includes
 //*****************************************************************************
 
+#include <unistd.h>
+
 #include <vector>
 #include <string>
 
@@ -65,6 +67,11 @@
 #include <fcntl.h>
 #include <setjmp.h>
 #include <signal.h>
+
+//*****************************************************************************
+// HPCToolkit Externals Include
+//*****************************************************************************
+#include <libdwarf.h>
 
 //*****************************************************************************
 // local includes
@@ -98,7 +105,7 @@ using namespace SymtabAPI;
 
 #define STRLEN(s) (sizeof(s) - 1)
 
-
+#define DWARF_OK(e) (DW_DLV_OK == (e))
 
 //*****************************************************************************
 // forward declarations
@@ -321,6 +328,14 @@ matches_prefix(string s, const char *pre, int n)
   return strncmp(sc, pre, n) == 0;
 }
 
+#ifdef __PPC64__
+static bool 
+matches_contains(string s, const char *substring)
+{
+  const char *sc = s.c_str();
+  return strstr(sc, substring) != 0;
+}
+#endif
 
 static bool 
 pathscale_filter(Symbol *sym)
@@ -387,9 +402,83 @@ note_code_ranges(Symtab *syms, DiscoverFnTy fn_discovery)
   note_section(syms, SECTION_FINI, fn_discovery);
 }
 
+// collect function start addresses from eh_frame info
+// (part of the DWARF info)
+// enter these start addresses into the reachable function
+// data structure
+
+static void
+seed_dwarf_info(int dwarf_fd)
+{
+  Dwarf_Debug dbg = NULL;
+  Dwarf_Error err;
+  Dwarf_Handler errhand = NULL;
+  Dwarf_Ptr errarg = NULL;
+
+  // Unless disabled, add eh_frame info to function entries
+  if(getenv("EH_NO")) {
+    close(dwarf_fd);
+    return;
+  }
+
+  if ( ! DWARF_OK(dwarf_init(dwarf_fd, DW_DLC_READ,
+                             errhand, errarg,
+                             &dbg, &err))) {
+    fprintf(stderr, "dwarf init failed !!\n");
+    return;
+  }
+
+  Dwarf_Cie* cie_data = NULL;
+  Dwarf_Signed cie_element_count = 0;
+  Dwarf_Fde* fde_data = NULL;
+  Dwarf_Signed fde_element_count = 0;
+
+  int fres =
+    dwarf_get_fde_list_eh(dbg, &cie_data,
+                          &cie_element_count, &fde_data,
+                          &fde_element_count, &err);
+  if ( ! DWARF_OK(fres)) {
+    fprintf(stderr, "failed to get eh_frame element from DWARF\n");
+    return;
+  }
+
+  for (int i = 0; i < fde_element_count; i++) {
+    Dwarf_Addr low_pc = 0;
+    Dwarf_Unsigned func_length = 0;
+    Dwarf_Ptr fde_bytes = NULL;
+    Dwarf_Unsigned fde_bytes_length = 0;
+    Dwarf_Off cie_offset = 0;
+    Dwarf_Signed cie_index = 0;
+    Dwarf_Off fde_offset = 0;
+
+    int fres = dwarf_get_fde_range(fde_data[i],
+                                   &low_pc, &func_length,
+                                   &fde_bytes,
+                                   &fde_bytes_length,
+                                   &cie_offset, &cie_index,
+                                   &fde_offset, &err);
+    if (fres == DW_DLV_ERROR) {
+      fprintf(stderr, " error on dwarf_get_fde_range\n");
+      return;
+    }
+    if (fres == DW_DLV_NO_ENTRY) {
+      fprintf(stderr, " NO_ENTRY error on dwarf_get_fde_range\n");
+      return;
+    }
+    if(getenv("EH_SHOW")) {
+      fprintf(stderr, " ---potential fn start = %p\n", reinterpret_cast<void*>(low_pc));
+    }
+
+    add_function_entry(reinterpret_cast<void*>(low_pc), NULL, false, 0);
+  }
+  if ( ! DWARF_OK(dwarf_finish(dbg, &err))) {
+    fprintf(stderr, "dwarf finish fails ???\n");
+  }
+  close(dwarf_fd);
+}
 
 static void 
-dump_symbols(Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
+dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
 {
   note_code_ranges(syms, fn_discovery);
 
@@ -408,6 +497,8 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
 			  (sl & Symbol::SL_WEAK)));
   }
 
+  seed_dwarf_info(dwarf_fd);
+
   process_code_ranges();
 
   //-----------------------------------------------------------------
@@ -418,14 +509,14 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
 
 
 static void 
-dump_file_symbols(Symtab *syms, vector<Symbol *> &symvec,
+dump_file_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
 		  DiscoverFnTy fn_discovery)
 {
   if (c_fmt_fp() != NULL) {
     fprintf(c_fmt_fp(), "unsigned long hpcrun_nm_addrs[] = {\n");
   }
 
-  dump_symbols(syms, symvec, fn_discovery);
+  dump_symbols(dwarf_fd, syms, symvec, fn_discovery);
 
   if (c_fmt_fp() != NULL) {
     fprintf(c_fmt_fp(), "};\nunsigned long hpcrun_nm_addrs_len = "
@@ -487,8 +578,17 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
 
   assert_file_is_readable(filename);
 
-  Symtab::openFile(syms, sfile);
+  if ( ! Symtab::openFile(syms, sfile) ) {
+    fprintf(stderr,
+	    "!!! INTERNAL hpcfnbounds-bin error !!!\n"
+	    "  -- file %s is readable, but Symtab::openFile fails !\n",
+	    filename);
+    exit(1);
+  }
   int relocatable = 0;
+
+  // open for dwarf usage
+  int dwarf_fd = open(filename, O_RDONLY);
 
 #ifdef USE_SYMTABAPI_EXCEPTION_BLOCKS 
   //-----------------------------------------------------------------
@@ -521,8 +621,27 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
 
 
   syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
+
+#ifdef __PPC64__
+  {
+    //-----------------------------------------------------------------
+    // collect addresses of trampolines for long distance calls as per
+    // ppc64 abi. empirically, the linker on BG/Q enters these symbols
+    // with the type NOTYPE and a name that contains the substring 
+    // "long_branch"
+    //-----------------------------------------------------------------
+    vector<Symbol *> vec;
+    syms->getAllSymbolsByType(vec, Symbol::ST_NOTYPE);
+    for (unsigned int i = 0; i < vec.size(); i++) {
+      Symbol *s = vec[i];
+      if (matches_contains(s->getName(), "long_branch") && s->getAddr() != 0)
+	add_function_entry((void *) s->getAddr(), &s->getName(), true);
+    }
+  }
+#endif
+
   if (syms->getObjectType() != obj_Unknown) {
-    dump_file_symbols(syms, symvec, fn_discovery);
+    dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery);
     relocatable = syms->isExec() ? 0 : 1;
     image_offset = syms->imageOffset();
   }

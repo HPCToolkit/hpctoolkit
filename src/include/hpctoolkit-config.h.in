@@ -1,5 +1,11 @@
 /* src/include/hpctoolkit-config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Data-centric tracing */
+#undef DATACENTRIC_TRACE
+
+/* Support for AMD XOP instructions */
+#undef ENABLE_XOP
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 

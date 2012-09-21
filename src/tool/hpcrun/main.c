@@ -60,7 +60,6 @@
 #include <linux/unistd.h>
 #endif
 
-
 //***************************************************************************
 // libmonitor include files
 //***************************************************************************
@@ -81,6 +80,7 @@
 #include "loadmap.h"
 #include "files.h"
 #include "fnbounds_interface.h"
+#include "fnbounds_table_interface.h"
 #include "hpcrun_dlfns.h"
 #include "hpcrun_options.h"
 #include "hpcrun_return_codes.h"
@@ -89,6 +89,7 @@
 #include "start-stop.h"
 #include "custom-init.h"
 #include "cct_insert_backtrace.h"
+#include "safe-sampling.h"
 
 #include "metrics.h"
 
@@ -131,6 +132,7 @@
 #include <utilities/defer-write.h>
 
 extern void hpcrun_set_retain_recursion_mode(bool mode);
+extern void hpcrun_dump_intervals(void* addr);
 
 //***************************************************************************
 // constants
@@ -156,11 +158,27 @@ int lush_metrics = 0; // FIXME: global variable for now
 
 static hpcrun_options_t opts;
 static bool hpcrun_is_initialized_private = false;
+static void* main_addr = NULL;
+static void* main_lower = NULL;
+static void* main_upper = (void*) (intptr_t) -1;
 
+//
+// Local functions
+//
+static void
+setup_main_bounds_check(void* main_addr)
+{
+  if (! main_addr) return;
+#ifdef __PPC64__
+  main_addr = *((void**) main_addr);
+#endif
+  load_module_t* lm = NULL;
+  fnbounds_enclosing_addr(main_addr, &main_lower, &main_upper, &lm);
+}
 
-//***************************************************************************
-// inline functions
-//***************************************************************************
+//
+// *** Accessor functions ****
+//
 
 bool
 hpcrun_is_initialized()
@@ -168,7 +186,17 @@ hpcrun_is_initialized()
   return hpcrun_is_initialized_private;
 }
 
+void*
+hpcrun_get_addr_main(void)
+{
+  return main_addr;
+}
 
+bool
+hpcrun_inbounds_main(void* addr)
+{
+  return (main_lower <= addr) && (addr <= main_upper);
+}
 
 //***************************************************************************
 // *** Important note about libmonitor callbacks ***
@@ -189,6 +217,21 @@ hpcrun_is_initialized()
 //***************************************************************************
 
 //------------------------------------
+// ** local routines & data to support interval dumping **
+//------------------------------------
+
+static sigjmp_buf ivd_jb;
+
+siglongjmp_fcn* hpcrun_get_real_siglongjmp(void);
+
+static int
+dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
+{
+  (*hpcrun_get_real_siglongjmp())(ivd_jb, 9);
+  return 0;
+}
+
+//------------------------------------
 // process level 
 //------------------------------------
 
@@ -206,11 +249,16 @@ hpcrun_init_internal(bool is_child)
   // processing below. Also, fnbounds_init must be done after the
   // memory allocator is initialized.
   fnbounds_init();
+
+  main_addr = monitor_get_addr_main();
+  setup_main_bounds_check(main_addr);
+  TMSG(MAIN_BOUNDS, "main addr %p ==> lower %p, upper %p", main_addr, main_lower, main_upper);
+
   hpcrun_options__init(&opts);
   hpcrun_options__getopts(&opts);
 
-  trace_init(); // this must go after thread initialization
-  trace_open();
+  hpcrun_trace_init(); // this must go after thread initialization
+  hpcrun_trace_open();
 
   // Decide whether to retain full single recursion, or collapse recursive calls to
   // first instance of recursive call
@@ -235,6 +283,28 @@ hpcrun_init_internal(bool is_child)
   hpcrun_setup_segv();
   hpcrun_unw_init();
 
+  if (getenv("HPCRUN_ONLY_DUMP_INTERVALS")) {
+    fnbounds_table_t table = fnbounds_fetch_executable_table();
+    TMSG(INTERVALS_PRINT, "table data = %p", table.table);
+    TMSG(INTERVALS_PRINT, "table length = %d", table.len);
+
+    if (monitor_sigaction(SIGSEGV, &dump_interval_handler, 0, NULL)) {
+      fprintf(stderr, "Could not install dump interval segv handler\n");
+      monitor_real_exit(1);
+    }
+
+    for (void** e = table.table; e < table.table + table.len - 1; e++) {
+      fprintf(stderr, "======== %p Intervals ========\n", *e);
+      if (e > table.table || ! sigsetjmp(ivd_jb, 1)) 
+	hpcrun_dump_intervals(*e);
+      else
+	fprintf(stderr, "--Error: skipped--\n");
+      fprintf(stderr, "\n");
+      fflush(stderr);
+    }
+    exit(0);
+  }
+
   hpcrun_stats_reinit();
   hpcrun_start_stop_internal_init();
 
@@ -256,11 +326,36 @@ hpcrun_init_internal(bool is_child)
   TMSG(EPOCH,"process init setting up initial epoch/loadmap");
   hpcrun_epoch_init(NULL);
 
+#ifdef SPECIAL_DUMP_INTERVALS 
+  {
+    // temporary debugging code for x86 / ppc64
+
+    extern void hpcrun_dump_intervals(void* addr2);
+    char* addr1 = getenv("ADDR1");
+    char* addr2 = getenv("ADDR2");
+ 
+    if (addr1 != NULL) {
+      addr1 = (void*) (uintptr_t) strtol(addr1, NULL, 0);
+      fprintf(stderr,"address 1 = %p\n", addr1);
+      hpcrun_dump_intervals(addr1);
+      fflush(NULL);
+    }
+
+    if (addr2 != NULL) {
+      addr2 = (void*) (uintptr_t) strtol(addr2, NULL, 0);
+      fprintf(stderr,"address 2 = %p\n", addr2);
+      hpcrun_dump_intervals(addr2);
+      fflush(NULL);
+    }
+    if (addr1 || addr2) monitor_real_exit(0);
+  }
+#endif
+
   // start the sampling process
 
   hpcrun_enable_sampling();
   // NOTE: hack to ensure that sample source start can be delayed until mpi_init
-  if (! getenv("HPCRUN_MPI_ONLY")) {
+  if (hpctoolkit_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
       SAMPLE_SOURCES(start);
   }
   hpcrun_is_initialized_private = true;
@@ -324,7 +419,7 @@ hpcrun_init_thread_support()
 static void
 logit(cct_node_t* n, cct_op_arg_t arg, size_t l)
 {
-  int iarg = (int) arg;
+  int iarg = (int) (intptr_t) arg;
   TMSG(THREAD_CTXT, "thr %d -- %d: lm-id: %d  lm-ip: %p",
        iarg,
        hpcrun_cct_persistent_id(n),
@@ -342,13 +437,13 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
     td = hpcrun_allocate_thread_data();
     reuse_flag = false;
   }
-  td->suspend_sampling = 1; // begin: protect against spurious signals
+  td->inside_hpcrun = 1;  // safe enter, disable signals
 
   hpcrun_set_thread_data(td);
   if (! thr_ctxt) EMSG("Thread id %d passes null context", id);
   
   if (ENABLED(THREAD_CTXT))
-      hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) id);
+    hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (uintptr_t) id);
   //
   if(!reuse_flag)
     hpcrun_thread_data_init(id, thr_ctxt, 0);
@@ -485,7 +580,8 @@ monitor_init_process(int *argc, char **argv, void* data)
     EEMSG("TST debug ctl is active!");
     STDERR_MSG("Std Err message appears");
   }
-  hpcrun_async_unblock();
+
+  hpcrun_safe_exit();
 
   return data;
 }
@@ -494,13 +590,13 @@ monitor_init_process(int *argc, char **argv, void* data)
 void
 monitor_fini_process(int how, void* data)
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
 
   hpcrun_fini_internal();
-  trace_close();
+  hpcrun_trace_close();
   fnbounds_fini();
 
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 
@@ -512,7 +608,7 @@ monitor_pre_fork(void)
   if (! hpcrun_is_initialized()) {
     return NULL;
   }
-  hpcrun_async_block();
+  hpcrun_safe_enter();
 
   TMSG(PRE_FORK,"pre_fork call");
 
@@ -523,9 +619,10 @@ monitor_pre_fork(void)
   }
 
   TMSG(PRE_FORK,"finished pre_fork call");
-  hpcrun_async_unblock();
-
   from_fork.is_child = true;
+
+  hpcrun_safe_exit();
+
   return (void *)(&from_fork);
 }
 
@@ -536,7 +633,7 @@ monitor_post_fork(pid_t child, void* data)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_async_block();
+  hpcrun_safe_enter();
 
   TMSG(POST_FORK,"Post fork call");
 
@@ -548,7 +645,7 @@ monitor_post_fork(pid_t child, void* data)
   }
 
   TMSG(POST_FORK,"Finished post fork");
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 
@@ -565,24 +662,30 @@ monitor_post_fork(pid_t child, void* data)
 void
 monitor_mpi_pre_init(void)
 {
+  hpcrun_safe_enter();
+
   TMSG(MPI, "Pre MPI_Init");
   if (! ENABLED(MPI_RISKY)) {
     // Turn sampling off.
     TMSG(MPI, "Stopping Sample Sources");
     SAMPLE_SOURCES(stop);
   }
+  hpcrun_safe_exit();
 }
 
 
 void
 monitor_init_mpi(int *argc, char ***argv)
 {
+  hpcrun_safe_enter();
+
   TMSG(MPI, "Post MPI_Init");
   if (! ENABLED(MPI_RISKY)) {
     // Turn sampling back on.
     TMSG(MPI, "Restart Sample Sources");
     SAMPLE_SOURCES(start);
   }
+  hpcrun_safe_exit();
 }
 
 
@@ -593,14 +696,14 @@ monitor_init_mpi(int *argc, char ***argv)
 void
 monitor_init_thread_support(void)
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
 
   TMSG(THREAD,"REALLY init_thread_support ---");
   hpcrun_init_thread_support();
   hpcrun_set_using_threads(1);
   TMSG(THREAD,"Init thread support done");
 
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 
@@ -612,11 +715,11 @@ monitor_thread_pre_create(void)
   if (! hpcrun_is_initialized() || hpcrun_get_disabled()) {
     return NULL;
   }
+  hpcrun_safe_enter();
 
   // INVARIANTS at this point:
   //   1. init-process has occurred.
   //   2. current execution context is either the spawning process or thread.
-  hpcrun_async_block();
   TMSG(THREAD,"pre create");
 
   // -------------------------------------------------------
@@ -647,7 +750,8 @@ monitor_thread_pre_create(void)
  fini:
 
   TMSG(THREAD,"->finish pre create");
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
+
   return thr_ctxt;
 }
 
@@ -658,12 +762,12 @@ monitor_thread_post_create(void* data)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_async_block();
+  hpcrun_safe_enter();
 
   TMSG(THREAD,"post create");
   TMSG(THREAD,"done post create");
 
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 
@@ -674,8 +778,8 @@ monitor_init_thread(int tid, void* data)
   void* thread_data = hpcrun_thread_init(tid, (cct_ctxt_t*)data);
   TMSG(THREAD,"back from init thread %d",tid);
 
-  trace_open();
-  hpcrun_async_unblock();
+  hpcrun_trace_open();
+  hpcrun_safe_exit();
 
   return thread_data;
 }
@@ -684,15 +788,15 @@ monitor_init_thread(int tid, void* data)
 void
 monitor_fini_thread(void* init_thread_data)
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
 
   epoch_t *epoch = (epoch_t *)init_thread_data;
 
   hpcrun_thread_fini(epoch);
   if(!TD_GET(defer_write))
-    trace_close();
+    hpcrun_trace_close();
 
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
   TD_GET(reuse) = 1;
 }
 
@@ -761,10 +865,10 @@ hpcrun_get_real_siglongjmp(void)
 void
 MONITOR_EXT_WRAP_NAME(longjmp)(jmp_buf buf, int val)
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
   MONITOR_EXT_GET_NAME_WRAP(real_longjmp, longjmp);
 
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
   (*real_longjmp)(buf, val);
 
   // Never reached, but silence a compiler warning.
@@ -776,10 +880,10 @@ MONITOR_EXT_WRAP_NAME(longjmp)(jmp_buf buf, int val)
 void
 MONITOR_EXT_WRAP_NAME(siglongjmp)(sigjmp_buf buf, int val)
 {
-  hpcrun_async_block();
+  hpcrun_safe_enter();
   hpcrun_get_real_siglongjmp();
 
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
   (*real_siglongjmp)(buf, val);
 
   // Never reached, but silence a compiler warning.
@@ -1121,10 +1225,9 @@ monitor_pre_dlopen(const char *path, int flags)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_async_block();
-
+  hpcrun_safe_enter();
   hpcrun_pre_dlopen(path, flags);
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 
@@ -1134,10 +1237,9 @@ monitor_dlopen(const char *path, int flags, void* handle)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_async_block();
-
+  hpcrun_safe_enter();
   hpcrun_dlopen(path, flags, handle);
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 
@@ -1147,10 +1249,9 @@ monitor_dlclose(void* handle)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_async_block();
-
+  hpcrun_safe_enter();
   hpcrun_dlclose(handle);
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 
@@ -1160,10 +1261,9 @@ monitor_post_dlclose(void* handle, int ret)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_async_block();
-
+  hpcrun_safe_enter();
   hpcrun_post_dlclose(handle, ret);
-  hpcrun_async_unblock();
+  hpcrun_safe_exit();
 }
 
 #endif /* ! HPCRUN_STATIC_LINK */

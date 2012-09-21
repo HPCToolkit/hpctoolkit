@@ -44,15 +44,17 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef trace_h
-#define trace_h
+#ifndef hpcrun_trace_h
+#define hpcrun_trace_h
 
-void trace_init();
-void trace_open();
-void trace_append(unsigned int cpid);
-void trace_close();
+#include <include/uint.h>
 void trace_other_close(void *thread_data);
 
-int trace_isactive();
+void hpcrun_trace_init();
+void hpcrun_trace_open();
+void hpcrun_trace_append(uint call_path_id, uint metric_id);
+void hpcrun_trace_close();
 
-#endif // trace_h
+int hpcrun_trace_isactive();
+
+#endif // hpcrun_trace_h
