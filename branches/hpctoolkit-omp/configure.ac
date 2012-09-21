@@ -82,7 +82,7 @@ m4_include(config/hpc-mpiutils.m4)
 # Initialization: 
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [5.2.1],
+AC_INIT([hpctoolkit], [5.3.2],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -238,6 +238,8 @@ LT_INIT()
 AC_SUBST([LIBTOOL_DEPS])
 
 AM_PROG_AS()
+AC_PROG_AWK
+AC_PROG_SED
 
 AC_PROG_CXXCPP()
 
@@ -799,7 +801,11 @@ AC_SUBST([hpc_ext_libs_dir])
 #-------------------------------------------------
 
 # External's minimum svn rev number, or else a fatal error.
-EXTERNALS_MIN_REV=3616
+EXTERNALS_MIN_REV=3872
+
+ext_cc_path=unknown
+ext_cxx_path=unknown
+ext_wordsize=unknown
 
 AC_ARG_WITH([dummy-blank-line], [AS_HELP_STRING([], [])])
 AC_ARG_WITH([externals],
@@ -829,6 +835,91 @@ else
   AC_MSG_WARN([not using --with-externals])
   use_externals=no
   externals_mesg=no
+fi
+
+
+#-------------------------------------------------
+# Check consistency of C, C++ and wordsize
+#-------------------------------------------------
+
+# Verify that toolkit and externals use the same C and C++ compilers
+# and that they produce the same wordsize.  This is especially
+# important for C++ and libstdc++.  For now, give a pass if externals
+# isn't new enough to export these variables.
+
+CC_VERSION='unknown non-gnu'
+version=`$CC --version 2>/dev/null`
+if echo "$version" | grep -i copyright >/dev/null ; then
+  CC_VERSION=`echo "$version" | head -1`
+fi
+
+CC_PATH=
+base=`echo $CC | awk '{ print $1 }'`
+case "$base" in
+  /* ) CC_PATH="$base" ;;
+  * )  AC_PATH_PROG([CC_PATH], [$base]) ;;
+esac
+if test "x$CC_PATH" = x ; then
+  CC_PATH=unknown
+fi
+
+warn_non_gcc=no
+echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
+if test $? -ne 0 ; then
+  warn_non_gcc=yes
+  AC_MSG_WARN([Not using the GNU C compiler.])
+fi
+
+CXX_VERSION='unknown non-gnu'
+version=`$CXX --version 2>/dev/null`
+if echo "$version" | grep -i copyright >/dev/null ; then
+  CXX_VERSION=`echo "$version" | head -1`
+fi
+
+CXX_PATH=
+base=`echo $CXX | awk '{ print $1 }'`
+case "$base" in
+  /* ) CXX_PATH="$base" ;;
+  * )  AC_PATH_PROG([CXX_PATH], [$base]) ;;
+esac
+if test "x$CXX_PATH" = x ; then
+  CXX_PATH=unknown
+fi
+
+echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
+if test $? -ne 0 ; then
+  warn_non_gcc=yes
+  AC_MSG_WARN([Not using the GNU C++ compiler.])
+fi
+
+AC_MSG_NOTICE([C compiler: $CC_VERSION])
+AC_MSG_NOTICE([C++ compiler: $CXX_VERSION])
+
+warn_compiler_mismatch=no
+if test "$ext_cc_path" != unknown && test "$ext_cc_path" != "$CC_PATH"
+then
+  warn_compiler_mismatch=yes
+  AC_MSG_WARN([The C compiler does not match the one used to build \
+hpctoolkit-externals.])
+fi
+if test "$ext_cxx_path" != unknown && test "$ext_cxx_path" != "$CXX_PATH"
+then
+  warn_compiler_mismatch=yes
+  AC_MSG_WARN([The C++ compiler does not match the one used to build \
+hpctoolkit-externals.])
+fi
+
+host_wordsize=unknown
+case "$host_sizeof_voidp" in
+  4 ) host_wordsize=32 ;;
+  8 ) host_wordsize=64 ;;
+  * ) AC_MSG_WARN([unable to determine host wordsize]) ;;
+esac
+
+if test "$ext_wordsize" != unknown && test "$host_wordsize" != "$ext_wordsize"
+then
+  AC_MSG_ERROR([mismatched wordsize: hpctoolkit is configured for \
+${host_wordsize}-bit but externals is ${ext_wordsize}-bit])
 fi
 
 
@@ -913,10 +1004,12 @@ case "${LIBDWARF}" in
 esac
 
 LIBDWARF_LIB="${LIBDWARF}/lib"
+LIBDWARF_INC="${LIBDWARF}/include"
 
 AC_MSG_RESULT([$LIBDWARF])
 
 AC_SUBST([LIBDWARF_LIB])
+AC_SUBST([LIBDWARF_INC])
 AC_SUBST([LIBDWARF_COPY])
 
 
@@ -959,10 +1052,12 @@ case "${LIBELF}" in
 esac
 
 LIBELF_LIB="${LIBELF}/lib"
+LIBELF_INC="${LIBELF}/include"
 
 AC_MSG_RESULT([$LIBELF])
 
 AC_SUBST([LIBELF_LIB])
+AC_SUBST([LIBELF_INC])
 AC_SUBST([LIBELF_COPY])
 
 
@@ -992,46 +1087,17 @@ case "${LIBMONITOR}" in
     LIBMONITOR_LIB=${LIBMONITOR}/lib
     if test -f "${LIBMONITOR_INC}/monitor.h" ; then :
     else
-        AC_MSG_ERROR([invalid libmonitor directory: $LIBMONITOR])
+      AC_MSG_ERROR([invalid libmonitor directory: $LIBMONITOR])
     fi
     LIBMONITOR_LIB="${LIBMONITOR}/lib"
     if test -f "${LIBMONITOR_LIB}/libmonitor.so" ; then
-        OPT_LIBMONITOR_DYNAMIC=yes
+      OPT_LIBMONITOR_DYNAMIC=yes
     fi
-    if test -f "${LIBMONITOR_LIB}/libmonitor_wrap.a" ; then
-        OPT_LIBMONITOR_STATIC=yes
-dnl
-dnl  ** The following lines (commented out) of configure script implement
-dnl  ** a fragile solution to the problem of inconsistent configuration
-dnl  ** between libmonitor and hpclink.
-dnl
-dnl  ** The current configure presumes all possible monitor override features
-dnl  ** are enabled. Consequently, all possible wrap names are listed
-dnl
-dnl  ** To achieve congruence with the actual overrides configured in libmonitor,
-dnl  ** the libmonitor configuration information would need to be available to
-dnl  ** the hpctoolkit configure mechanism.
-dnl
-dnl  ** *AT THE PRESENT TIME*, the exact right information is present in the
-dnl  ** monitor-link script. The commented out lines below take advantage of
-dnl  ** the monitor-link script to accomplish configuration congruence.
-dnl
-dnl  ** To use the fragile congruence solution: uncomment the next 2 lines
-dnl
-dnl	MONLINK=$LIBMONITOR_BIN/monitor-link
-dnl	LIBMONITOR_WRAP_NAMES=`sed -n -e '/^monitor_wrap_names=/{s/^monitor_wrap_names=//;p}' $MONLINK`
-dnl
-dnl
-dnl  *** And comment out the following lines
-dnl
-        LIBMONITOR_WRAP_NAMES="main exit _exit dlopen dlclose fork vfork system \
-           execl execlp execle execv execvp execve pthread_exit                \
-	   pthread_create signal sigaction sigprocmask pthread_sigmask         \
-	   MPI_Init mpi_init mpi_init_ mpi_init__                              \
-	   MPI_Init_thread mpi_init_thread mpi_init_thread_ mpi_init_thread__  \
-	   MPI_Finalize mpi_finalize mpi_finalize_ mpi_finalize__              \ 
-	   MPI_Comm_rank mpi_comm_rank mpi_comm_rank_ mpi_comm_rank__          \
-	   _mp_init"
+    wrap_file="${LIBMONITOR_LIB}/libmonitor_wrap.a"
+    if test -f "$wrap_file" ; then
+      OPT_LIBMONITOR_STATIC=yes
+      LIBMONITOR_WRAP_NAMES=`nm "$wrap_file" | grep __wrap_ |
+        $SED -e 's/.*__wrap_//' | tr '\n' ' '`
     fi
     LIBMONITOR_COPY=yes
     LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
@@ -1046,6 +1112,9 @@ dnl
 esac
 
 AC_MSG_RESULT([$LIBMONITOR])
+
+echo "libmonitor wrap names:" >&AS_MESSAGE_LOG_FD
+echo "$LIBMONITOR_WRAP_NAMES" >&AS_MESSAGE_LOG_FD
 
 AC_SUBST([LIBMONITOR_INC])
 AC_SUBST([LIBMONITOR_LIB])
@@ -1509,7 +1578,6 @@ AC_MSG_RESULT([$enable_hpcrun_mesg])
 AM_CONDITIONAL([OPT_ENABLE_HPCRUN], [test "${OPT_ENABLE_HPCRUN}" = yes])
 
 
-
 # Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
 # hpcfnbounds.
 #
@@ -1518,22 +1586,37 @@ AM_CONDITIONAL([OPT_ENABLE_HPCRUN], [test "${OPT_ENABLE_HPCRUN}" = yes])
 # should not be responsible for configuring runtime paths for
 # libstdc++.
 #
-# FIXME -- Is there an Autoconf macro for this?
+# Try --print-file-name first.  If that doesn't work, then try ldd.
+# If --print-file-name works, then its answer is more reliable because
+# it doesn't depend on LD_LIBRARY_PATH.  But if you use CC= without
+# setting LD_LIBRARY_PATH, then ldd will give the wrong answer.
 #
-if test -n "${is_cross_compile}" ; then
-  # For now, assume GCC.  We cannot use the more general test because
-  # 'ldd' cannot execute in cross-compile mode.
-  HPCRUN_LIBCXX_PATH=`${CXX} -print-file-name=libstdc++.so`
-else
-  src="/tmp/hello.$$.cc"
-  obj="/tmp/hello.$$.out"
-  cat <<EOF > "$src"
+# Of course, --print-file-name and libstdc++.so are GNU-specific.
+# (Intel icc seems to support both, but computes an answer based on
+# LD_LIBRARY_PATH, which can't be right.)  Is there a better option
+# here?
+
+HPCRUN_LIBCXX_PATH=`${CXX} -print-file-name=libstdc++.so`
+
+case "$HPCRUN_LIBCXX_PATH" in
+  /* ) ;;
+  * )
+    src="hpc_hello.$$.cc"
+    obj="hpc_hello.$$.out"
+    rm -f "$src" "$obj"
+    cat <<"EOF" >"$src"
 main(){}
 EOF
-  ${CXX} -o "$obj" "$src"
-  HPCRUN_LIBCXX_PATH=`ldd $obj | $AWK '/libstdc\+\+/ {print $3}'`
-  rm -f "$src" "$obj"
-fi
+    ${CXX} -o "$obj" "$src"
+    HPCRUN_LIBCXX_PATH=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
+    rm -f "$src" "$obj"
+    ;;
+esac
+
+case "$HPCRUN_LIBCXX_PATH" in
+  /* ) AC_MSG_NOTICE([found libstdc++.so at $HPCRUN_LIBCXX_PATH]) ;;
+  * )  AC_MSG_WARN([unable to find libstdc++.so]) ;;
+esac
 
 HPCRUN_LIBCXX_PATH=`dirname $HPCRUN_LIBCXX_PATH`
 
@@ -1599,7 +1682,7 @@ AM_CONDITIONAL([OPT_ENABLE_HPCRUN_DYNAMIC],
 # enable-mpi:
 #-------------------------------------------------
 
-AC_MSG_CHECKING([whether to build MPI versions (hpcprof-mpi)])
+AC_MSG_CHECKING([whether to build MPI-based analysis tools (e.g., hpcprof-mpi)])
 
 OPT_REQ_ENABLE_MPI="auto" # yes, no, auto
 
@@ -1634,21 +1717,21 @@ AM_CONDITIONAL(OPT_ENABLE_MPI, test "${OPT_ENABLE_MPI}" = "yes")
 # enable-mpi-wrapper: check MPI compiler
 #-------------------------------------------------
 
-AC_MSG_CHECKING([whether to build MPI versions (MPI wrapper)])
+AC_MSG_CHECKING([whether to build MPI monitoring support])
 
-OPT_REQ_ENABLE_MPIP="no" # yes, no, auto
+OPT_REQ_ENABLE_MPI_WRAP="no" # yes, no, auto
 
 AC_ARG_ENABLE([mpi-wrapper],
   AS_HELP_STRING([--enable-mpi-wrapper],
-                 [Enable MPI wrapper support (uses MPIF77 variable)]),
+                 [Enable MPI wrapper support (uses MPIF77 and CFLAGS)]),
   [case "${enableval}" in
-     yes) OPT_REQ_ENABLE_MPIP="yes" ;;
-     no)  OPT_REQ_ENABLE_MPIP="no" ;;
+     yes) OPT_REQ_ENABLE_MPI_WRAP="yes" ;;
+     no)  OPT_REQ_ENABLE_MPI_WRAP="no" ;;
      *)   AC_MSG_ERROR([bad value ${enableval} for --enable-mpi-wrapper]) ;;
    esac])
 
-OPT_ENABLE_MPIP=no
-if test "${OPT_REQ_ENABLE_MPIP}" != "no" ; then
+OPT_ENABLE_MPI_WRAP=no
+if test "${OPT_REQ_ENABLE_MPI_WRAP}" != "no" ; then
   AC_MSG_CHECKING([whether can compile MPI code with CFLAGS='$CFLAGS'])
 
   AC_LANG_PUSH([C])
@@ -1657,24 +1740,24 @@ if test "${OPT_REQ_ENABLE_MPIP}" != "no" ; then
         [ans=yes],
         [ans=no])
 
-  OPT_ENABLE_MPIP=$ans
+  OPT_ENABLE_MPI_WRAP=$ans
   AC_LANG_POP
 fi
 
-AC_MSG_RESULT([${OPT_ENABLE_MPIP} (request: ${OPT_REQ_ENABLE_MPIP})])
+AC_MSG_RESULT([${OPT_ENABLE_MPI_WRAP} (request: ${OPT_REQ_ENABLE_MPI_WRAP})])
 
 
-if test "${OPT_REQ_ENABLE_MPIP}" = "yes" -a "${OPT_ENABLE_MPIP}" = no ; then
+if test "${OPT_REQ_ENABLE_MPI_WRAP}" = "yes" -a "${OPT_ENABLE_MPI_WRAP}" = no ; then
   AC_MSG_ERROR([MPI wrapper support requested but MPI compiler is invalid!])
 fi
 
-AM_CONDITIONAL(OPT_ENABLE_MPIP, test "${OPT_ENABLE_MPIP}" = "yes")
+AM_CONDITIONAL(OPT_ENABLE_MPI_WRAP, test "${OPT_ENABLE_MPI_WRAP}" = "yes")
 
 #-------------------------------------------------
 # enable-mpi-wrapper: check F77 symbols
 #-------------------------------------------------
 
-if test "${OPT_ENABLE_MPIP}" = "yes" ; then
+if test "${OPT_ENABLE_MPI_WRAP}" = "yes" ; then
 
   if test -z "${MPIF77}" ; then
     AC_CHECK_PROGS(MPIF77, mpif77 mpxlf_r mpixlf77 mpxlf cmpifc xlf f77 g77 pgf77 fort ifc, mpif77)
@@ -1801,6 +1884,25 @@ AC_SUBST([hpclink_extra_wrap_names])
 
 
 #-------------------------------------------------
+# enable-xop: support for AMD XOP instructions
+#-------------------------------------------------
+
+AC_ARG_ENABLE([xop],
+  AS_HELP_STRING([--enable-xop],
+      [include support for decoding AMD XOP instructions, x86-64 only
+      (default no)]),
+  [],
+  [enable_xop=no])
+
+AC_MSG_CHECKING([whether to support AMD XOP instructions])
+AC_MSG_RESULT([$enable_xop])
+
+if test "x$enable_xop" = xyes ; then
+  AC_DEFINE([ENABLE_XOP], [1], [Support for AMD XOP instructions])
+fi
+
+
+#-------------------------------------------------
 # enable-bluegene: BG/* support
 #-------------------------------------------------
 
@@ -1904,6 +2006,31 @@ AC_MSG_RESULT([$opt_upc_mesg])
 AM_CONDITIONAL([OPT_ENABLE_UPC], [test "$OPT_UPC" = yes])
 AC_SUBST(OPT_UPC_IFLAGS)
 AC_SUBST(OPT_UPC_LDFLAGS)
+
+
+#-------------------------------------------------
+# enable-data-centric-tracing: data-centric tracing
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether to enable data-centric tracing])
+
+OPT_ENABLE_DATACENTRIC_TRACE="no"
+
+AC_ARG_ENABLE([data-centric-tracing],
+  AS_HELP_STRING([--enable-data-centric-tracing],
+                 [Enable data-centric tracing (prototype)]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_DATACENTRIC_TRACE="yes" ;;
+     no)  OPT_ENABLE_DATACENTRIC_TRACE="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-data-centric-tracing]) ;;
+   esac],
+  [OPT_ENABLE_DATACENTRIC_TRACE=no])
+
+AC_MSG_RESULT([${OPT_ENABLE_DATACENTRIC_TRACE}])
+
+if test "${OPT_ENABLE_DATACENTRIC_TRACE}" = "yes" ; then
+  AC_DEFINE([DATACENTRIC_TRACE], [1], [Data-centric tracing])
+fi
 
 
 #-------------------------------------------------
@@ -2086,11 +2213,16 @@ AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
 AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])
 AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
-AC_MSG_NOTICE([  mpi wrapper support?: ${OPT_ENABLE_MPIP}])
+AC_MSG_NOTICE([  mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
+AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([])
+AC_MSG_NOTICE([  C compiler: $CC_VERSION])
+AC_MSG_NOTICE([  Path:      $CC_PATH])
 AC_MSG_NOTICE([  CC:        '${CC}'])
 AC_MSG_NOTICE([  CFLAGS:    '${CFLAGS} ${HOST_CFLAGS}'])
+AC_MSG_NOTICE([  C++ compiler: $CXX_VERSION])
+AC_MSG_NOTICE([  Path:      $CXX_PATH])
 AC_MSG_NOTICE([  CXX:       '${CXX}'])
 AC_MSG_NOTICE([  CXXFLAGS:  '${CXXFLAGS} ${HOST_CXXFLAGS}'])
 AC_MSG_NOTICE([  CCAS:      '${CCAS}'])
@@ -2115,3 +2247,18 @@ AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
 
+if test "$warn_non_gcc" = yes ; then
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([Not using the GNU C or C++ compiler.])
+  AC_MSG_WARN([This is not necessarily an error, but some parts of hpctoolkit])
+  AC_MSG_WARN([may not compile cleanly without gcc or g++.  If the build fails,])
+  AC_MSG_WARN([try using GNU gcc and g++ before reporting an error.])
+fi
+
+if test "$warn_compiler_mismatch" = yes ; then
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([Mismatched C or C++ compiler.])
+  AC_MSG_WARN([The C or C++ compiler does not match the one used to build])
+  AC_MSG_WARN([hpctoolkit-externals.  Check the externals configure summary])
+  AC_MSG_WARN([and try again with the same compilers.])
+fi

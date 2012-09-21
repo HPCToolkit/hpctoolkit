@@ -177,17 +177,19 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
       DIAG_Throw("error opening trace file '" << filenm << "'");
     }
 
-    int ret = hpctrace_fmt_hdr_fread(fs);
+    hpctrace_fmt_hdr_t hdr;
+    
+    int ret = hpctrace_fmt_hdr_fread(&hdr, fs);
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading trace file '" << filenm << "'");
     }
 
-    hpctrace_fmt_hdr_fprint(stdout);
+    hpctrace_fmt_hdr_fprint(&hdr, stdout);
 
+    // Read trace records and exit on EOF
     while ( !feof(fs) ) {
-      // Read trace record (exit on EOF)
-      uint64_t timestamp;
-      ret = hpcfmt_int8_fread(&timestamp, fs);
+      hpctrace_fmt_datum_t datum;
+      ret = hpctrace_fmt_datum_fread(&datum, hdr.flags, fs);
       if (ret == HPCFMT_EOF) {
 	break;
       }
@@ -195,13 +197,7 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
 	DIAG_Throw("error reading trace file '" << filenm << "'");
       }
 
-      uint cctId;
-      ret = hpcfmt_int4_fread(&cctId, fs);
-      if (ret != HPCFMT_OK) {
-	DIAG_Throw("error reading trace file '" << filenm << "'");
-      }
-
-      fprintf(stdout, "(%"PRIu64", %u)\n", timestamp, cctId);
+      hpctrace_fmt_datum_fprint(&datum, hdr.flags, stdout);
     }
 
     hpcio_fclose(fs);

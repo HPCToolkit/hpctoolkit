@@ -121,6 +121,15 @@ struct cct_node_t {
 };
 
 //
+// cache of info from most recent splay
+//
+static struct {
+  cct_node_t* node;
+  bool found;
+  cct_addr_t* addr;
+} splay_cache;
+
+//
 // ******************* Local Routines ********************
 //
 static uint32_t 
@@ -128,7 +137,10 @@ new_persistent_id()
 {
   // by default, all persistent ids are even; odd ids signify that we need 
   // to retain them as call path ids associated with a trace.
-  static long global_persistent_id = 2;
+  // Furthermore, global ids start at 12: 0,1 are special ids, 2-11 are for
+  // users (and conceivably hpcrun).
+  //
+  static long global_persistent_id = 12;
   uint32_t myid = (int) fetch_and_add(&global_persistent_id, 2); 
   return myid;
 }
@@ -690,7 +702,7 @@ merge_or_join(cct_node_t* n, cct_op_arg_t a, size_t l)
   mjarg_t* the_arg = (mjarg_t*) a;
   cct_node_t* targ = the_arg->targ;
   cct_node_t* tmp = NULL;
-  if (tmp = cct_child_find_cache(targ, hpcrun_cct_addr(n)))
+  if ((tmp = cct_child_find_cache(targ, hpcrun_cct_addr(n))))
     hpcrun_cct_merge(tmp, n, the_arg->fn, the_arg->arg);
   else
     cct_disjoint_union_cached(targ, n);

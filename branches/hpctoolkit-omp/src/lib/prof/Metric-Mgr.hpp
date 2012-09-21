@@ -108,11 +108,13 @@ public:
   // ------------------------------------------------------------
 
   uint
-  makeSummaryMetrics(bool needMultiOccurance,
+  makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
 		     uint srcBegId = Mgr::npos, uint srcEndId = Mgr::npos);
 
   uint
-  makeSummaryMetricsIncr(uint srcBegId = Mgr::npos, uint srcEndId = Mgr::npos);
+  makeSummaryMetricsIncr(bool needAllStats,
+			 uint srcBegId = Mgr::npos,
+                         uint srcEndId = Mgr::npos);
 
 
   // ------------------------------------------------------------

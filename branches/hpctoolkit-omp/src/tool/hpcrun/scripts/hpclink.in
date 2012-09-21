@@ -52,6 +52,9 @@
 #  where <symbol> is a symbol name passed to the linker (may be used
 #  multiple times).
 #
+#------------------------------------------------------------
+# Values from configure
+#------------------------------------------------------------
 
 VERSION='@PACKAGE_VERSION@'
 
@@ -72,7 +75,6 @@ papi_extra_libs='@papi_extra_libs@'
 
 upc_libs='@OPT_UPC_LDFLAGS@'
 
-# FIXME: The wrap list should come from monitor.
 hpctk_wrap_names='@LIBMONITOR_WRAP_NAMES@  @hpclink_extra_wrap_names@'
 
 extra_wrap_names=
@@ -92,7 +94,7 @@ undef_names=
 # Space-separated list of libs (without -l) not to repeat on command line.
 no_repeat_list='hugetlbfs'
 
-##################################################
+#------------------------------------------------------------
 
 cleanup()
 {
@@ -105,6 +107,15 @@ die()
     cleanup
     exit 1
 }
+
+mesg()
+{
+    echo "hpclink: $*"
+}
+
+#------------------------------------------------------------
+# Usage Message
+#------------------------------------------------------------
 
 usage()
 {
@@ -142,7 +153,12 @@ Options: Linking
 
   --io                 Include the IO bytes read and written library.
 
+  --ga                 Include GA (Global Arrays) wrappers.
+
   --memleak            Include HPCToolkit's memory leak detection libraries.
+
+  --plugin name        Add the libraries and wrapped symbols specified by
+                       the plugin 'name' in the plugins directory.
 
   -u <symbol>, --undefined <symbol>
                        Pass <symbol> to the linker as an undefined symbol.
@@ -151,6 +167,10 @@ Options: Linking
 EOF
     exit 0
 }
+
+#------------------------------------------------------------
+# Find path to this script
+#------------------------------------------------------------
 
 hpc_path_to_root=..
 @export_hpctoolkit@
@@ -183,11 +203,15 @@ test -x "$hpcfnbounds" || die "missing hpcfnbounds: $hpcfnbounds"
 LD_LIBRARY_PATH="${ext_libs_dir}:${LD_LIBRARY_PATH}"
 export LD_LIBRARY_PATH
 
-#
+#------------------------------------------------------------
 # Step 1 -- Parse linker options, our options first.
-#
+#------------------------------------------------------------
+
 double_wrap=no
+my_plugin_list=
 verbose=no
+verb=:
+
 while test "x$1" != x
 do
     case "$1" in
@@ -202,8 +226,21 @@ do
 	    io_wrap="${libhpcrun_dir}/libhpcrun_io_wrap.a"
 	    test -f "$io_wrap" || die "unable to find: $io_wrap"
 	    extra_hpc_files="$extra_hpc_files $io_wrap"
-	    extra_wrap_names="$extra_wrap_names fread fwrite"
+	    extra_wrap_names="$extra_wrap_names read write fread fwrite"
 	    undef_names="$undef_names fwrite"
+	    shift
+	    ;;
+	-ga | --ga )
+	    ga_wrap="${libhpcrun_dir}/libhpcrun_ga_wrap.a"
+	    test -f "$ga_wrap" || die "unable to find: $ga_wrap"
+	    extra_hpc_files="$extra_hpc_files $ga_wrap"
+	    extra_wrap_names="$extra_wrap_names \
+                pnga_create \
+                pnga_brdcst pnga_gop pnga_sync pnga_zero \
+                pnga_get pnga_put pnga_acc \
+                pnga_nbget pnga_nbput pnga_nbacc"
+                # pnga_nbwait
+	    undef_names="$undef_names pnga_create"
 	    shift
 	    ;;
 	-memleak | --memleak )
@@ -215,6 +252,11 @@ do
 	    undef_names="$undef_names malloc"
 	    shift
 	    ;;
+	-plugin | --plugin )
+	    test "x$2" != x || die "missing argument for --plugin"
+	    my_plugin_list="${my_plugin_list} $2"
+	    shift ; shift
+	    ;;
 	-u | --undefined )
 	    test "x$2" != x || die "missing argument for -u"
 	    undef_names="${undef_names} $2"
@@ -222,6 +264,7 @@ do
 	    ;;
 	-v | --verbose )
 	    verbose=yes
+	    verb=mesg
 	    shift
 	    ;;
 	-V | --version )
@@ -239,6 +282,42 @@ do
 	    break
 	    ;;
     esac
+done
+
+#
+# Add plugin files: hpclink --plugin name
+# Plugin name and hpclink_files can be absolute path or relative to
+# the plugins directory.
+#
+extra_plugin_files=
+for plugin in $my_plugin_list
+do
+    $verb "plugin: $plugin"
+    case "$plugin" in
+	/* ) conf_file="$plugin" ;;
+	* )  conf_file="${libhpcrun_dir}/plugins/${plugin}" ;;
+    esac
+    my_plugin_dir=`dirname "$conf_file"`
+    test -f "$conf_file" || die "missing plugin config file: $conf_file"
+    file "$conf_file" | grep text >/dev/null 2>&1
+    test $? -eq 0 || die "bad plugin config file: $conf_file"
+    hpclink_files=
+    hpclink_wrap_names=
+    hpclink_undefined_names=
+    . "$conf_file"
+    for file in $hpclink_files ; do
+	case "$file" in
+	    /* ) abs_file="$file" ;;
+	    * )  abs_file="${my_plugin_dir}/${file}" ;;
+	esac
+	test -f "$abs_file" || die "missing plugin file: $abs_file"
+	$verb "plugin file: $abs_file"
+	extra_plugin_files="$extra_plugin_files $abs_file"
+    done
+    $verb "plugin wrap names: $hpclink_wrap_names"
+    $verb "plugin undefined names: $hpclink_undefined_names"
+    extra_wrap_names="$extra_wrap_names $hpclink_wrap_names"
+    undef_names="$undef_names $hpclink_undefined_names"
 done
 
 #
@@ -278,12 +357,15 @@ do
     prev_arg="$arg"
 done
 
-#
+#------------------------------------------------------------
 # Step 2 -- Build the new compile line.
-#
-#   undef-args, wrap-args, $@, libhpcrun.o, nm-addrs, libhpcrun_wrap.a,
-#   libmonitor, PAPI, UPC, Xed2, -lpthread, -ldl, repeat-application-libs.
-#
+#------------------------------------------------------------
+
+# New compile line:
+# undef-args, wrap-args, $@, libhpcrun.o, nm-addrs, libhpcrun_wrap.a,
+# libmonitor, plugin libraries, PAPI, UPC, Xed2, -lpthread, -ldl,
+# repeat-application-libs.
+
 if test "$verbose" = yes ; then
     echo "original command line: $command $@"
     echo
@@ -307,11 +389,11 @@ for name in $hpctk_wrap_names $extra_wrap_names
 do
     wrap_args="${wrap_args} ${linker_prefix},--wrap=${name}"
 done
-set -- $undef_args $wrap_args "$@"
 
 libhpcrun="${libhpcrun_dir}/libhpcrun.o"
 test -f "$libhpcrun" || die "no such file: $libhpcrun"
-set -- "$@" "$libhpcrun" "${nm_addrs}.o"
+set -- $undef_args $wrap_args $libhpcrun "$@"
+set -- "$@" "${nm_addrs}.o"
 
 libhpcrun_wrap="${libhpcrun_dir}/libhpcrun_wrap.a"
 test -f "$libhpcrun_wrap" || die "no such file: $libhpcrun_wrap"
@@ -319,7 +401,7 @@ set -- "$@" "$libhpcrun_wrap" $extra_hpc_files
 
 libmonitor="${libmonitor_dir}/libmonitor_wrap.a"
 test -f "$libmonitor" || die "no such file: $libmonitor"
-set -- "$@" "$libmonitor"
+set -- "$@" "$libmonitor" $extra_plugin_files
 
 if test -d "$papi_dir" ; then
     set -- "$@" "-L${papi_dir}" -lpapi $papi_extra_libs
@@ -335,9 +417,10 @@ set -- "$@" $upc_libs
 set -- "$@" -lpthread -ldl -lrt
 set -- "$@" $appl_libs
 
-#
+#------------------------------------------------------------
 # Step 3 -- Link with dummy nm file.
-#
+#------------------------------------------------------------
+
 rm -f "${hello}.c" "$hello"
 cat <<EOF > "${hello}.c"
 int main(int argc, char **argv)
@@ -384,9 +467,10 @@ else
     die "program not statically linked (maybe forgot -static): $appl_out"
 fi
 
-#
+#------------------------------------------------------------
 # Step 4 -- Link with real nm file.
-#
+#------------------------------------------------------------
+
 if test "$verbose" = yes ; then
     echo "new command line: $command $@"
     echo

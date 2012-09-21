@@ -130,7 +130,6 @@ int
 system_server_start()
 {
   int ret;
-  extern int __libc_system(char *);
 
   // ---------------------------------------------------------------------------
   // set up pipes for communication between client and server

@@ -84,6 +84,7 @@
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
+#include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
@@ -296,7 +297,8 @@ void process_lockwait_blame_for_sample(cct_node_t *node, int metric_value)
  * private operations 
  *****************************************************************************/
 
-void lock_fn(void *lock)
+void
+lock_fn(void *lock)
 {
   int32_t rd;
   thread_data_t *td = hpcrun_get_thread_data();
@@ -353,14 +355,14 @@ void unlock_fn(void *lock)
  	omp_arg.tbd = true;
  	omp_arg.region_id = TD_GET(region_id);
       }
-      hpcrun_async_block();
+      hpcrun_safe_enter();
       hpcrun_sample_callpath(&uc, lockwait_metric_id, val, 0, 1,(void *) &omp_arg);
-      hpcrun_async_unblock();
+      hpcrun_safe_exit();
     }
     else {
-      hpcrun_async_block();
+      hpcrun_safe_enter();
       hpcrun_sample_callpath(&uc, lockwait_metric_id, val, 0, 1, NULL);
-      hpcrun_async_unblock();
+      hpcrun_safe_exit();
     }
   }
 }
@@ -390,14 +392,14 @@ void unlock_fn1(void *lock)
  	omp_arg.tbd = true;
  	omp_arg.region_id = TD_GET(region_id);
       }
-      hpcrun_async_block();
+      hpcrun_safe_enter();
       hpcrun_sample_callpath(&uc, lockwait_metric_id, val, 0, 1,(void *) &omp_arg);
-      hpcrun_async_unblock();
+      hpcrun_safe_exit();
     }
     else {
-      hpcrun_async_block();
+      hpcrun_safe_enter();
       hpcrun_sample_callpath(&uc, lockwait_metric_id, val, 0, 1, NULL);
-      hpcrun_async_unblock();
+      hpcrun_safe_exit();
     }
   }
 }

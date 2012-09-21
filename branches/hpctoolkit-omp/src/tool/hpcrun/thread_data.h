@@ -44,8 +44,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//
-//
 
 #ifndef THREAD_DATA_H
 #define THREAD_DATA_H
@@ -107,9 +105,6 @@ typedef struct {
        This is a collection of files:
          trace_file
          hpcrun_file
-
-    suspend_sample
-       Stands on its own
 
     lushPthr_t
        lush items can stand alone
@@ -224,10 +219,6 @@ typedef struct thread_data_t {
   int              splay_lock;
   int              fnbounds_lock;
 
-  // stand-alone flag to suspend sampling during some synchronous
-  // calls to an hpcrun mechanism
-  int              suspend_sampling;
-
   // ----------------------------------------
   // Logical unwinding
   // ----------------------------------------
@@ -254,6 +245,9 @@ typedef struct thread_data_t {
   // ----------------------------------------
   // miscellaneous
   // ----------------------------------------
+  // Set to 1 while inside hpcrun code for safe sampling.
+  int inside_hpcrun;
+
   // True if this thread is inside dlopen or dlclose.  A synchronous
   // override that is called from dlopen (eg, malloc) must skip this
   // sample or else deadlock on the dlopen lock.
@@ -261,22 +255,34 @@ typedef struct thread_data_t {
 
 } thread_data_t;
 
+
 static const size_t HPCRUN_TraceBufferSz = HPCIO_RWBufferSz;
+
+
+void hpcrun_init_pthread_key(void);
+void hpcrun_set_thread0_data(void);
+void hpcrun_set_thread_data(thread_data_t *td);
+
 
 #define TD_GET(field) hpcrun_get_thread_data()->field
 
-extern thread_data_t *(*hpcrun_get_thread_data)(void);
-extern bool          (*hpcrun_td_avail)(void);
+extern thread_data_t* (*hpcrun_get_thread_data)(void);
+extern bool           (*hpcrun_td_avail)(void);
 
-thread_data_t *hpcrun_allocate_thread_data(void);
-void           hpcrun_init_pthread_key(void);
+void hpcrun_unthreaded_data(void);
+void hpcrun_threaded_data(void);
 
+
+thread_data_t*
+hpcrun_allocate_thread_data(void);
+
+void
+hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child);
+
+
+void     hpcrun_cached_bt_adjust_size(size_t n);
 frame_t* hpcrun_expand_btbuf(void);
-void           	hpcrun_ensure_btbuf_avail(void);
-void           	hpcrun_set_thread_data(thread_data_t *td);
-void           	hpcrun_set_thread0_data(void);
-void           	hpcrun_unthreaded_data(void);
-void           	hpcrun_threaded_data(void);
+void     hpcrun_ensure_btbuf_avail(void);
 
 void           hpcrun_thread_data_reuse_init(cct_ctxt_t* thr_ctxt);
 void           hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child);

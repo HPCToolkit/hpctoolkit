@@ -44,6 +44,7 @@
 
 #include <lib/prof-lean/splay-macros.h>
 
+#include <hpcrun/safe-sampling.h>
 #include <hpcrun/cct2metrics.h>
 #include <hpcrun/metrics.h>
 #include <utilities/task-cntxt.h>
@@ -79,16 +80,16 @@ void start_task_fn(void** pointer)
   ucontext_t uc;
   getcontext(&uc);
   void *parent_task_cntxt = NULL;
-  if(parent_task_cntxt = need_task_cntxt()) {
+  if ((parent_task_cntxt = need_task_cntxt())) {
     omp_arg_t omp_arg;
     omp_arg.tbd = false;
     omp_arg.region_id = 0;
     // copy the task creation context to local thread
     omp_arg.context = copy_task_cntxt(parent_task_cntxt);
 
-    hpcrun_async_block();
-    *pointer = hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1, (void*) &omp_arg);
-    hpcrun_async_unblock();
+    hpcrun_safe_enter();
+    *pointer = hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1, (void*) &omp_arg).sample_node;
+    hpcrun_safe_exit();
  
   }
   else if(need_defer_cntxt()) {
@@ -104,16 +105,16 @@ void start_task_fn(void** pointer)
     resolve_cntxt();
     omp_arg.tbd = true;
     omp_arg.region_id = TD_GET(region_id);
-    hpcrun_async_block();
+    hpcrun_safe_enter();
     // record the task creation context into task structure (in omp runtime)
-    *pointer = (void *)hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1, (void*) &omp_arg);
-    hpcrun_async_unblock();
+    *pointer = (void *)hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1, (void*) &omp_arg).sample_node;
+    hpcrun_safe_exit();
   }
   else {
-    hpcrun_async_block();
+    hpcrun_safe_enter();
     // record the task creation context into task structure (in omp runtime)
-    *pointer = (void *)hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1, NULL);
-    hpcrun_async_unblock();
+    *pointer = (void *)hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1, NULL).sample_node;
+    hpcrun_safe_exit();
   }
   td->overhead --;
 }

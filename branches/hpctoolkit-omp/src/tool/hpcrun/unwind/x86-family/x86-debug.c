@@ -60,17 +60,18 @@ typedef struct {
   void* end;
 } fnbounds_t;
 
+static fnbounds_t local;
 
-fnbounds_t
+fnbounds_t*
 x86_fnbounds(void* addr)
 {
-  fnbounds_t local;
+  //  fnbounds_t local;
   fnbounds_enclosing_addr(addr, &local.begin, &local.end, NULL);
-  return local;
+  return &local;
 }
 
 void
-x86_dump_intervals(char  *addr) 
+x86_dump_intervals(void* addr) 
 {
   void *s, *e;
   unwind_interval *u;
@@ -86,6 +87,11 @@ x86_dump_intervals(char  *addr)
   }
 }
 
+void
+hpcrun_dump_intervals(void* addr)
+{
+  x86_dump_intervals(addr);
+}
 
 void
 x86_dump_ins(void *ins)
@@ -105,7 +111,8 @@ x86_dump_ins(void *ins)
     sprintf(errbuf, "(%p, %d bytes, %s) %s \n" , ins, 
 	    xed_decoded_inst_get_length(xptr), 
 	    xed_iclass_enum_t2str(iclass(xptr)), inst_buf);
-  } else {
+  }
+  else {
     sprintf(errbuf, "x86_dump_ins: xed decode error addr=%p, code = %d\n", 
 	    ins, (int) xed_error);
   }
@@ -115,3 +122,19 @@ x86_dump_ins(void *ins)
   fflush(stderr);
 }
 
+void
+hpcrun_dump_intervals_noisy(void* addr)
+{
+  void *s, *e;
+  unwind_interval *u;
+  interval_status intervals;
+
+  fnbounds_enclosing_addr(addr, &s, &e, NULL);
+
+  intervals = x86_build_intervals(s, e - s, 1);
+
+  for(u = (unwind_interval *)intervals.first; u; 
+      u = (unwind_interval *)(u->common).next) {
+    dump_ui_dbg(u);
+  }
+}

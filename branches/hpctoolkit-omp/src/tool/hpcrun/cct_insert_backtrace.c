@@ -66,6 +66,11 @@
 #include "cct_insert_backtrace.h"
 
 //
+// Misc externals (not in an include file)
+//
+extern bool hpcrun_inbounds_main(void* addr);
+
+//
 // local variable records the on/off state of
 // special recursive compression:
 //
@@ -156,9 +161,15 @@ hpcrun_cct_insert_backtrace_w_metric(cct_node_t* treenode,
 {
   cct_node_t* path = hpcrun_cct_insert_backtrace(treenode, path_beg, path_end);
 
-  hpcrun_get_metric_proc(metric_id)(metric_id,
-				    hpcrun_reify_metric_set(path),
-				    datum);
+  metric_set_t* mset = hpcrun_reify_metric_set(path);
+
+  metric_upd_proc_t* upd_proc = hpcrun_get_metric_proc(metric_id);
+  if (upd_proc) {
+    upd_proc(metric_id, mset, datum);
+  }
+
+  // POST-INVARIANT: metric set has been allocated for 'path'
+
   return path;
 }
 
@@ -384,6 +395,20 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
   frame_t* bt_last = bt.last;
 
   tramp_found = bt.has_tramp;
+
+  //
+  // Check to make sure node below monitor_main is "main" node
+  //
+  // TMSG(GENERIC1, "tmain chk");
+  if ( bt.fence == FENCE_MAIN &&
+       ! partial_unw &&
+       ! tramp_found &&
+       (bt_last == bt_beg || 
+	! hpcrun_inbounds_main(hpcrun_frame_get_unnorm(bt_last - 1)))) {
+    hpcrun_bt_dump(TD_GET(btbuf_cur), "WRONG MAIN");
+    hpcrun_stats_num_samples_dropped_inc();
+    partial_unw = true;
+  }
 
   //
   // If this backtrace is generated from sampling in a thread,

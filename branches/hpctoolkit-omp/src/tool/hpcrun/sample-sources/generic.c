@@ -82,6 +82,7 @@
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
+#include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
@@ -481,9 +482,10 @@ METHOD_FN(display_events)
 static int
 generic_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
-  // Must check for async block first and avoid any MSG if true.
+  // If the interrupt came from inside our code, then drop the sample
+  // and return and avoid any MSG.
   void* pc = hpcrun_context_pc(context);
-  if (hpcrun_async_is_blocked(pc)) {
+  if (! hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
   }
   else {
@@ -537,7 +539,7 @@ generic_signal_handler(int sig, siginfo_t* siginfo, void* context)
   //
   monitor_real_sigprocmask(SIG_UNBLOCK, &sigset_generic, NULL);
 
-  // always return 0 to tell tell monitor that the signal has been handled
+  // always return 0 to tell monitor that the signal has been handled
   return 0;
 }
 
