@@ -194,10 +194,23 @@ METHOD_FN(start)
 
   thread_data_t *td = hpcrun_get_thread_data();
   int eventSet = td->eventSet[self->evset_idx];
+  source_state_t my_state = TD_GET(ss_state)[self->evset_idx];
+
+  // make PAPI start idempotent.  the application can turn on sampling
+  // anywhere via the start-stop interface, so we can't control what
+  // state PAPI is in.
+
+  if (my_state == START) {
+    return;
+  }
 
   TMSG(PAPI,"starting PAPI w event set %d",eventSet);
   int ret = PAPI_start(eventSet);
-  if (ret != PAPI_OK){
+  if (ret == PAPI_EISRUN) {
+    // this case should not happen, but maybe it's not fatal
+    EMSG("PAPI returned EISRUN, but state was not START");
+  }
+  else if (ret != PAPI_OK) {
     EMSG("PAPI_start failed with %s (%d)", PAPI_strerror(ret), ret);
     hpcrun_ssfail_start("PAPI");
   }

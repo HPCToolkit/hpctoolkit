@@ -473,44 +473,52 @@ corresponding situations are:
   \item{\verb|HPCTOOLKIT|} To function correctly, \hpcrun{} must know
        the location of the \HPCToolkit{} top-level installation directory.
        The \hpcrun{} script uses elements of the installation \verb|lib| and
-       \verb|libexec| subdirectories. For most systems, the 
-       installation procedure ensures that \hpcrun{} can find the requisite
-       components. Some parallel job launchers, however, will \emph{copy} the
-       \hpcrun{} script to a different location from the installed base. If your
-       system uses this copying mechanism, you must set the \verb|HPCTOOLKIT|
-       environment variable to the top-level installation directory.
-  \item{\verb|HPCRUN_TMPDIR|} While profiling a program, \hpcrun{} must
-       write some internal data to temporary files. By default, these files
-       are written to \verb|/tmp|. On some systems, however, you may not
+       \verb|libexec| subdirectories. On most systems, the 
+       \hpcrun{} can find the requisite
+       components relative to its own location in the file system. 
+       However, some parallel job launchers \emph{copy} the
+       \hpcrun{} script to a different location as they launch a job. If your
+       system does this, you must set the \verb|HPCTOOLKIT|
+       environment variable to the location of the \HPCToolkit{} top-level installation directory 
+       before launching a job.
+  \item{\verb|HPCRUN_TMPDIR|} While profiling a dynamically-linked executable, \hpcrun{} needs
+       to write some internal data to temporary files. By default, these files
+       are written to \verb|/tmp|. However, on some platforms (e.g, a Cray XK6), you may not
        have permission to write to \verb|/tmp|. If this is the case on your system,
        you should set the \verb|HPCRUN_TMPDIR| environment variable to a directory
-       where you have write permission. {\bf CAUTION:} Your home directory is \emph{not}
-       a good choice, as some of \hpcrun{}'s temporary files can get large.
+       where you have write permission. If your system has a shared scratch parallel file system, 
+       setting \verb|HPCRUN_TMPDIR| to point to a subdirectory of your's there would be a good choice.
 
-       NOTE: You do not strictly have to use \verb|HPCRUN_TMPDIR|. If you set the
-       commonly-used Unix environment \verb|TMPDIR|, \hpcrun{} will use it for
-       temporary files if \verb|HPCRUN_TMPDIR| is not set.
+       NOTE: You do not strictly have to use \verb|HPCRUN_TMPDIR|.  If \verb|HPCRUN_TMPDIR| is not set, 
+       \hpcrun{} will place its temporary files in a directory pointed to by 
+       the commonly-used Unix environment variable \verb|TMPDIR|. If  \verb|TMPDIR| is not set either,
+       then HPCToolkit will attempt to write its temporary files in /tmp.
 \end{description}
 
-{\bf Note to system administrators:} if a module system is available, then constructing
-an \HPCToolkit{} module to handle these environment variables would be convenient for
-usres.
+{\bf Note to system administrators:} if your system provides a module system for configuring 
+software packages, then constructing
+a module for \HPCToolkit{} to initialize these environment variables to appropriate settings
+would be convenient for users.
 
 \section{Platform-Specific Notes}
 
 %
 % system specific notes for titan, & tmpdir ? keenland?
 %
-\subsection{Cray XE and XK}
+\subsection{Cray XE6 and XK6}
 
-Cray XE and XK systems have copying-style parallel job launchers referred
-to in section~\ref{sec:env-vars}.
-Consequently, when using dynamically linked binaries on Cray XE and XK systems, you
+The ALPS job launcher used on Cray XE6 and XK6 systems copies 
+programs to a special staging area before launching them,
+as described in Section~\ref{sec:env-vars}.
+Consequently, when using \hpcrun{} to monitor dynamically linked binaries on Cray XE6 and XK6 systems, you
 should add the \verb|HPCTOOLKIT| environment variable to your launch
-script.  Set \verb|HPCTOOLKIT| to the top-level \HPCToolkit{} install
-prefix (the directory containing the \verb|bin|, \verb|lib| and
-\verb|libexec| subdirectories) and export it to the environment.  This is
-only needed for running dynamically linked binaries.  For example:
+script.  
+Set \verb|HPCTOOLKIT| to the top-level \HPCToolkit{} installation directory
+(the directory containing the \verb|bin|, \verb|lib| and
+\verb|libexec| subdirectories) and export it to the environment.  
+(If launching statically-linked binaries created using \hpclink{}, this step is unnecessary, but harmless.)
+Below we show a skeletal job script that sets the \verb|HPCTOOLKIT| environment variable  before monitoring 
+a dynamically-linked executable with \hpcrun{}: 
 
 \begin{quote}
 \begin{verbatim}

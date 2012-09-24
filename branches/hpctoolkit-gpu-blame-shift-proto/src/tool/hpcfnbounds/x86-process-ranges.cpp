@@ -48,18 +48,23 @@
  * system include files
  *****************************************************************************/
 
+
 #include <stdio.h>
 #include <assert.h>
 #include <string>
 
+#include <include/hpctoolkit-config.h>
 
 /******************************************************************************
- * XED include files
+ * XED include files, and conditionally the amd extended ops (amd-xop)
  *****************************************************************************/
 
 extern "C" {
 #include <include/hpctoolkit-config.h>
 #include <xed-interface.h>
+#if defined(ENABLE_XOP) && defined (HOST_CPU_x86_64)
+#include "amd-xop.h"
+#endif // ENABLE_XOP
 
 // debug callable routines  -- only callable after xed_tables_init has been called
 // 
@@ -280,6 +285,17 @@ process_range(long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
     xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
 
     if (xed_error != XED_ERROR_NONE) {
+#if defined(ENABLE_XOP) && defined (HOST_CPU_x86_64)
+      amd_decode_t decode_res;
+      adv_amd_decode(&decode_res, (uint8_t*) ins);
+      if (decode_res.success) {
+	if (decode_res.weak) {
+	  // keep count of successes that are not robust
+	}
+	ins += decode_res.len;
+	continue;
+      }
+#endif // ENABLE_XOP && HOST_CPU_x86_64
       last_bad = ins;
       error_count++; /* note the error      */
       ins++;         /* skip this byte      */

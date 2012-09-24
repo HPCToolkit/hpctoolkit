@@ -120,7 +120,7 @@ AExpr::dump_opands(std::ostream& os, AExpr** opands, uint sz, const char* sep)
 std::ostream&
 Const::dumpMe(std::ostream& os) const
 {
-  os << "(" << m_c << ")";
+  os << m_c;
   return os;
 }
 
@@ -142,7 +142,7 @@ Neg::eval(const Metric::IData& mdata) const
 std::ostream&
 Neg::dumpMe(std::ostream& os) const
 {
-  os << "(-";
+  os << "-(";
   m_expr->dumpMe(os);
   os << ")";
   return os;
@@ -270,9 +270,9 @@ Plus::eval(const Metric::IData& mdata) const
 std::ostream&
 Plus::dumpMe(std::ostream& os) const
 {
-  os << "(";
+  if (m_sz > 1) { os << "("; }
   dump_opands(os, m_opands, m_sz, " + ");
-  os << ")";
+  if (m_sz > 1) { os << ")"; }
   return os;
 }
 
@@ -307,9 +307,9 @@ Times::eval(const Metric::IData& mdata) const
 std::ostream&
 Times::dumpMe(std::ostream& os) const
 {
-  os << "(";
+  if (m_sz > 1) { os << "("; }
   dump_opands(os, m_opands, m_sz, " * ");
-  os << ")";
+  if (m_sz > 1) { os << ")"; }
   return os;
 }
 

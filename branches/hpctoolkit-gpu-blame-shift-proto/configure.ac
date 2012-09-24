@@ -82,7 +82,7 @@ m4_include(config/hpc-mpiutils.m4)
 # Initialization: 
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [5.3.0],
+AC_INIT([hpctoolkit], [5.3.2],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -1881,6 +1881,25 @@ AC_MSG_NOTICE([lush pthreads: $enable_lush_pthreads])
 AM_CONDITIONAL([OPT_ENABLE_LUSH_PTHREADS], [test "$enable_lush_pthreads" = yes])
 
 AC_SUBST([hpclink_extra_wrap_names])
+
+
+#-------------------------------------------------
+# enable-xop: support for AMD XOP instructions
+#-------------------------------------------------
+
+AC_ARG_ENABLE([xop],
+  AS_HELP_STRING([--enable-xop],
+      [include support for decoding AMD XOP instructions, x86-64 only
+      (default no)]),
+  [],
+  [enable_xop=no])
+
+AC_MSG_CHECKING([whether to support AMD XOP instructions])
+AC_MSG_RESULT([$enable_xop])
+
+if test "x$enable_xop" = xyes ; then
+  AC_DEFINE([ENABLE_XOP], [1], [Support for AMD XOP instructions])
+fi
 
 
 #-------------------------------------------------
