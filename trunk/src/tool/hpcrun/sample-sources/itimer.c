@@ -53,6 +53,7 @@
  *****************************************************************************/
 
 #include <errno.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,6 +62,13 @@
 #include <signal.h>
 #include <sys/time.h>           /* setitimer() */
 #include <ucontext.h>           /* struct ucontext */
+#include <time.h>
+#include <unistd.h>
+
+#include <include/hpctoolkit-config.h>
+#ifdef ENABLE_CLOCK_REALTIME
+#include <sys/syscall.h>
+#endif
 
 
 /******************************************************************************
@@ -73,6 +81,7 @@
 /******************************************************************************
  * local includes
  *****************************************************************************/
+
 #include "sample_source_obj.h"
 #include "common.h"
 
@@ -97,50 +106,45 @@
 
 #include <sample-sources/blame-shift.h>
 
+
 /******************************************************************************
  * macros
  *****************************************************************************/
 
-#if defined(CATAMOUNT)
-#   define HPCRUN_PROFILE_SIGNAL           SIGALRM
-#   define HPCRUN_PROFILE_TIMER            ITIMER_REAL
-#else
-#  define HPCRUN_PROFILE_SIGNAL            SIGPROF
-#  define HPCRUN_PROFILE_TIMER             ITIMER_PROF
-#endif
+#define IDLE_METRIC_NAME     "idleness (usec)"
 
-#define SECONDS_PER_HOUR                   3600
+#define ITIMER_EVENT_NAME    "WALLCLOCK"
+#define ITIMER_METRIC_NAME   "WALLCLOCK (usec)"
+#define ITIMER_SIGNAL         SIGPROF
+#define ITIMER_TYPE           ITIMER_PROF
+
+#define REALTIME_EVENT_NAME   "REALTIME"
+#define REALTIME_METRIC_NAME  "REALTIME (usec)"
+#define REALTIME_SIGNAL       (SIGRTMIN + 3)
+
+#ifdef  ENABLE_CLOCK_REALTIME
+#define REALTIME_CLOCK_TYPE     CLOCK_REALTIME
+#define REALTIME_NOTIFY_METHOD  SIGEV_THREAD_ID
+
+// the man pages cite sigev_notify_thread_id in struct sigevent,
+// but often the only name is a hidden union name.
+#ifndef sigev_notify_thread_id
+#define sigev_notify_thread_id  _sigev_un._tid
+#endif
+#endif  // clock realtime
 
 #if !defined(HOST_SYSTEM_IBM_BLUEGENE)
-#  define USE_ELAPSED_TIME_FOR_WALLCLOCK
+#define USE_ELAPSED_TIME_FOR_WALLCLOCK
 #endif
 
-#define RESET_ITIMER_EACH_SAMPLE
-
-#if defined(RESET_ITIMER_EACH_SAMPLE)
-
-#  if defined(HOST_SYSTEM_IBM_BLUEGENE)
-  //--------------------------------------------------------------------------
-  // Blue Gene/P compute node support for itimer incorrectly delivers SIGALRM
-  // in one-shot mode. To sidestep this problem, we use itimer in 
-  // interval mode, but with an interval so long that we never expect to get 
-  // a repeat interrupt before resetting it. 
-  //--------------------------------------------------------------------------
-#    define AUTOMATIC_ITIMER_RESET_SECONDS(x)            (SECONDS_PER_HOUR) 
-#    define AUTOMATIC_ITIMER_RESET_MICROSECONDS(x)       (0)
-#  else  // !defined(HOST_SYSTEM_IBM_BLUEGENE)
-#    define AUTOMATIC_ITIMER_RESET_SECONDS(x)            (0) 
-#    define AUTOMATIC_ITIMER_RESET_MICROSECONDS(x)       (0)
-#  endif // !defined(HOST_SYSTEM_IBM_BLUEGENE)
-
-#else  // !defined(RESET_ITIMER_EACH_SAMPLE)
-
-#  define AUTOMATIC_ITIMER_RESET_SECONDS(x)              (x)
-#  define AUTOMATIC_ITIMER_RESET_MICROSECONDS(x)         (x)
-
-#endif // !defined(RESET_ITIMER_EACH_SAMPLE)
+#ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
+#define sample_period 1
+#else
+#define sample_period period
+#endif
 
 #define DEFAULT_PERIOD  5000L
+
 
 /******************************************************************************
  * local constants
@@ -149,6 +153,7 @@
 enum _local_const {
   ITIMER_EVENT = 0    // itimer has only 1 event
 };
+
 
 /******************************************************************************
  * forward declarations 
@@ -162,51 +167,91 @@ itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
  * local variables
  *****************************************************************************/
 
-static struct itimerval itimer;
+static bool use_itimer = false;
+static bool use_realtime = false;
 
-static const struct itimerval zerotimer = {
-  .it_interval = {
-    .tv_sec  = 0L,
-    .tv_usec = 0L
-  },
-
-  .it_value    = {
-    .tv_sec  = 0L,
-    .tv_usec = 0L
-  }
-
-};
+static char *the_event_name = "unknown";
+static char *the_metric_name = "unknown";
+static int   the_signal_num = 0;
 
 static long period = DEFAULT_PERIOD;
 
-static sigset_t sigset_itimer;
+static struct itimerval itval_start;
+static struct itimerval itval_stop;
 
-// ******* METHOD DEFINITIONS ***********
-static void
-METHOD_FN(init)
+static struct itimerspec itspec_start;
+static struct itimerspec itspec_stop;
+
+static sigset_t timer_mask;
+
+
+/******************************************************************************
+ * internal helper functions
+ *****************************************************************************/
+
+// Helper functions return the result of the syscall, so 0 on success,
+// or else -1 on failure.  We handle errors in the caller.
+
+static int
+hpcrun_create_real_timer(thread_data_t *td)
 {
-  TMSG(ITIMER_CTL, "setting up itimer interrupt");
-  sigemptyset(&sigset_itimer);
-  sigaddset(&sigset_itimer, HPCRUN_PROFILE_SIGNAL);
+  int ret = 0;
 
-  int ret = monitor_real_sigprocmask(SIG_UNBLOCK, &sigset_itimer, NULL);
+#ifdef ENABLE_CLOCK_REALTIME
+  if (! td->timer_init) {
+    memset(&td->sigev, 0, sizeof(td->sigev));
+    td->sigev.sigev_notify = REALTIME_NOTIFY_METHOD;
+    td->sigev.sigev_signo = REALTIME_SIGNAL;
+    td->sigev.sigev_value.sival_ptr = &td->timerid;
+    td->sigev.sigev_notify_thread_id = syscall(SYS_gettid);
 
-  if (ret){
-    EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
+    ret = timer_create(REALTIME_CLOCK_TYPE, &td->sigev, &td->timerid);
+    if (ret == 0) {
+      td->timer_init = true;
+    }
   }
-  self->state = INIT;
+#endif
+
+  return ret;
 }
 
-static void
-METHOD_FN(thread_init)
+static int
+hpcrun_delete_real_timer(thread_data_t *td)
 {
-  TMSG(ITIMER_CTL, "thread init (no action needed)");
+  int ret = 0;
+
+#ifdef ENABLE_CLOCK_REALTIME
+  if (td->timer_init) {
+    ret = timer_delete(td->timerid);
+  }
+  td->timer_init = false;
+#endif
+
+  return ret;
 }
 
-static void
-METHOD_FN(thread_init_action)
+static int
+hpcrun_start_timer(thread_data_t *td)
 {
-  TMSG(ITIMER_CTL, "thread action (noop)");
+#ifdef ENABLE_CLOCK_REALTIME
+  if (use_realtime) {
+    return timer_settime(td->timerid, 0, &itspec_start, NULL);
+  }
+#endif
+
+  return setitimer(ITIMER_TYPE, &itval_start, NULL);
+}
+
+static int
+hpcrun_stop_timer(thread_data_t *td)
+{
+#ifdef ENABLE_CLOCK_REALTIME
+  if (use_realtime) {
+    return timer_settime(td->timerid, 0, &itspec_stop, NULL);
+  }
+#endif
+
+  return setitimer(ITIMER_TYPE, &itval_stop, NULL);
 }
 
 // Factor out the body of the start method so we can restart itimer
@@ -214,7 +259,7 @@ METHOD_FN(thread_init_action)
 // safe = 1 if not inside our code, so ok to print debug messages
 //
 static void
-hpcrun_restart_itimer(sample_source_t *self, int safe)
+hpcrun_restart_timer(sample_source_t *self, int safe)
 {
   int ret;
 
@@ -226,16 +271,18 @@ hpcrun_restart_itimer(sample_source_t *self, int safe)
     }
     return;
   }
+  thread_data_t *td = hpcrun_get_thread_data();
 
   if (safe) {
-    TMSG(ITIMER_CTL,"starting itimer: value = (%d,%d), interval = (%d,%d)",
-	 itimer.it_value.tv_sec,
-	 itimer.it_value.tv_usec,
-	 itimer.it_interval.tv_sec,
-	 itimer.it_interval.tv_usec);
+    TMSG(ITIMER_HANDLER, "starting %s: value = (%d,%d), interval = (%d,%d)",
+	 the_event_name,
+	 itval_start.it_value.tv_sec,
+	 itval_start.it_value.tv_usec,
+	 itval_start.it_interval.tv_sec,
+	 itval_start.it_interval.tv_usec);
   }
 
-  ret = setitimer(HPCRUN_PROFILE_TIMER, &itimer, NULL);
+  ret = hpcrun_start_timer(td);
   if (ret != 0) {
     if (safe) {
       TMSG(ITIMER_CTL, "setitimer failed to start!!");
@@ -257,38 +304,88 @@ hpcrun_restart_itimer(sample_source_t *self, int safe)
   TD_GET(ss_state)[self->evset_idx] = START;
 }
 
+
+/******************************************************************************
+ * method definitions
+ *****************************************************************************/
+
+static void
+METHOD_FN(init)
+{
+  TMSG(ITIMER_CTL, "init");
+  self->state = INIT;
+}
+
+static void
+METHOD_FN(thread_init)
+{
+  TMSG(ITIMER_CTL, "thread init");
+}
+
+static void
+METHOD_FN(thread_init_action)
+{
+  TMSG(ITIMER_CTL, "thread init action");
+}
+
 static void
 METHOD_FN(start)
 {
-  hpcrun_restart_itimer(self, 1);
+  TMSG(ITIMER_CTL, "start %s", the_event_name);
+
+  // the realtime clock needs an extra step to create the timer
+  if (use_realtime) {
+    thread_data_t *td = hpcrun_get_thread_data();
+    if (hpcrun_create_real_timer(td) != 0) {
+      EEMSG("Unable to create the timer for %s", REALTIME_EVENT_NAME);
+      hpcrun_ssfail_start(REALTIME_EVENT_NAME);
+    }
+  }
+
+  // itimer is process-wide, so reopen the signal at start time
+  if (use_itimer) {
+    monitor_real_pthread_sigmask(SIG_UNBLOCK, &timer_mask, NULL);
+  }
+
+  hpcrun_restart_timer(self, 1);
 }
 
 static void
 METHOD_FN(thread_fini_action)
 {
-  TMSG(ITIMER_CTL, "thread action (noop)");
+  TMSG(ITIMER_CTL, "thread fini action");
 }
 
 static void
 METHOD_FN(stop)
 {
-  int rc;
+  TMSG(ITIMER_CTL, "stop %s", the_event_name);
 
-  rc = setitimer(HPCRUN_PROFILE_TIMER, &zerotimer, NULL);
+  // itimer is process-wide, so it's worth blocking the signal in the
+  // current thread at stop time.
+  if (use_itimer) {
+    monitor_real_pthread_sigmask(SIG_BLOCK, &timer_mask, NULL);
+  }
 
-  TMSG(ITIMER_CTL,"stopping itimer, ret = %d", rc);
+  thread_data_t *td = hpcrun_get_thread_data();
+  int rc = hpcrun_stop_timer(td);
+  if (rc != 0) {
+    EMSG("stop %s failed, errno: %d", the_event_name, errno);
+  }
+
   TD_GET(ss_state)[self->evset_idx] = STOP;
 }
 
 static void
 METHOD_FN(shutdown)
 {
-  TMSG(ITIMER_CTL, "shutodown itimer");
   METHOD_CALL(self, stop); // make sure stop has been called
+  TMSG(ITIMER_CTL, "shutdown %s", the_event_name);
 
-  int ret = monitor_real_sigprocmask(SIG_BLOCK, &sigset_itimer, NULL);
-  if (ret){
-    EMSG("WARNING: process fini could not block SIGPROF, ret = %d",ret);
+  // delete the realtime timer to avoid a timer leak
+  if (use_realtime) {
+    thread_data_t *td = hpcrun_get_thread_data();
+    hpcrun_delete_real_timer(td);
   }
 
   self->state = UNINIT;
@@ -297,25 +394,49 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-  return (strstr(ev_str,"WALLCLOCK") != NULL);
+  return strstr(ev_str, ITIMER_EVENT_NAME) != NULL
+      || strstr(ev_str, REALTIME_EVENT_NAME) != NULL;
 }
  
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-
-  TMSG(ITIMER_CTL, "process event list, lush_metrics = %d", lush_metrics);
-  // fetch the event string for the sample source
-  char* _p = METHOD_CALL(self, get_event_str);
-  
-  //
-  // EVENT: Only 1 wallclock event
-  //
-  char* event = start_tok(_p);
-
   char name[1024]; // local buffer needed for extract_ev_threshold
 
+  TMSG(ITIMER_CTL, "process event list, lush_metrics = %d", lush_metrics);
+
+  // fetch the event string for the sample source
+  char* evlist = METHOD_CALL(self, get_event_str);
+  char* event = start_tok(evlist);
+
   TMSG(ITIMER_CTL,"checking event spec = %s",event);
+
+  if (strstr(event, REALTIME_EVENT_NAME) != NULL) {
+#ifdef ENABLE_CLOCK_REALTIME
+    use_realtime = true;
+    the_event_name = REALTIME_EVENT_NAME;
+    the_metric_name = REALTIME_METRIC_NAME;
+    the_signal_num = REALTIME_SIGNAL;
+#else
+    EEMSG("Event %s is not available on this system.", REALTIME_EVENT_NAME);
+    hpcrun_ssfail_unknown(event);
+#endif
+  }
+  if (strstr(event, ITIMER_EVENT_NAME) != NULL) {
+    use_itimer = true;
+    the_event_name = ITIMER_EVENT_NAME;
+    the_metric_name = ITIMER_METRIC_NAME;
+    the_signal_num = ITIMER_SIGNAL;
+  }
+  if (use_itimer && use_realtime) {
+    EEMSG("Can't use both %s and %s events at the same time.",
+	  ITIMER_EVENT_NAME, REALTIME_EVENT_NAME);
+    hpcrun_ssfail_conflict("timer", event);
+  }
+  if (!use_itimer && !use_realtime) {
+    // should never get here if supports_event is true
+    hpcrun_ssfail_unknown(event);
+  }
 
   // extract event threshold
   hpcrun_extract_ev_thresh(event, sizeof(name), name, &period, DEFAULT_PERIOD);
@@ -328,16 +449,32 @@ METHOD_FN(process_event_list, int lush_metrics)
   int seconds = period / 1000000;
   int microseconds = period % 1000000;
 
-  TMSG(OPTIONS,"init timer w sample_period = %ld, seconds = %ld, usec = %ld",
-       period, seconds, microseconds);
+  TMSG(ITIMER_CTL, "init %s sample_period = %ld, seconds = %d, usec = %d",
+       the_event_name, period, seconds, microseconds);
 
-  // signal once after the given delay
-  itimer.it_value.tv_sec = seconds;
-  itimer.it_value.tv_usec = microseconds;
+  itval_start.it_value.tv_sec = seconds;
+  itval_start.it_value.tv_usec = microseconds;
+  itval_start.it_interval.tv_sec = 0;
+  itval_start.it_interval.tv_usec = 0;
 
-  // macros define whether automatic restart or not
-  itimer.it_interval.tv_sec  =  AUTOMATIC_ITIMER_RESET_SECONDS(seconds);
-  itimer.it_interval.tv_usec =  AUTOMATIC_ITIMER_RESET_MICROSECONDS(microseconds);
+  itspec_start.it_value.tv_sec = seconds;
+  itspec_start.it_value.tv_nsec = 1000 * microseconds;
+  itspec_start.it_interval.tv_sec = 0;
+  itspec_start.it_interval.tv_nsec = 0;
+
+  // older versions of BG/P incorrectly delivered SIGALRM when
+  // interval is zero. I (krentel) believe this is no longer
+  // necessary, but it can't really hurt.
+#ifdef HOST_SYSTEM_IBM_BLUEGENE
+  itval_start.it_interval.tv_sec = 3600;
+  itspec_start.it_interval.tv_sec = 3600;
+#endif
+
+  memset(&itval_stop, 0, sizeof(itval_stop));
+  memset(&itspec_stop, 0, sizeof(itspec_stop));
+
+  sigemptyset(&timer_mask);
+  sigaddset(&timer_mask, the_signal_num);
 
   // handle metric allocation
   hpcrun_pre_allocate_metrics(1 + lush_metrics);
@@ -346,15 +483,8 @@ METHOD_FN(process_event_list, int lush_metrics)
   METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
 
   // set metric information in metric table
-
-#ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
-# define sample_period 1
-#else
-# define sample_period period
-#endif
-
-  TMSG(ITIMER_CTL, "setting metric itimer period = %ld", sample_period);
-  hpcrun_set_metric_info_and_period(metric_id, "WALLCLOCK (us)",
+  TMSG(ITIMER_CTL, "setting metric timer period = %ld", sample_period);
+  hpcrun_set_metric_info_and_period(metric_id, the_metric_name,
 				    MetricFlags_ValFmt_Int,
 				    sample_period);
   if (lush_metrics == 1) {
@@ -362,16 +492,17 @@ METHOD_FN(process_event_list, int lush_metrics)
     lush_agents->metric_time = metric_id;
     lush_agents->metric_idleness = mid_idleness;
 
-    hpcrun_set_metric_info_and_period(mid_idleness, "idleness (us)",
+    hpcrun_set_metric_info_and_period(mid_idleness, IDLE_METRIC_NAME,
 				      MetricFlags_ValFmt_Real,
 				      sample_period);
   }
 
   event = next_tok();
   if (more_tok()) {
-    EMSG("MULTIPLE WALLCLOCK events detected! Using first event spec: %s");
+    EEMSG("Can't use multiple timer events in the same run.");
+    hpcrun_ssfail_conflict("timer", event);
   }
-  // 
+
   thread_data_t *td = hpcrun_get_thread_data();
   td->eventSet[self->evset_idx] = 0xDEAD;
 }
@@ -383,20 +514,33 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(gen_event_set, int lush_metrics)
 {
-  monitor_sigaction(HPCRUN_PROFILE_SIGNAL, &itimer_signal_handler, 0, NULL);
+  monitor_sigaction(the_signal_num, &itimer_signal_handler, 0, NULL);
 }
 
 static void
 METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
-  printf("Available itimer events\n");
+  printf("Available Timer events\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("WALLCLOCK\tWall clock time used by the process in microseconds\n");
+  printf("%s\tWall clock time used by the process in microseconds.\n"
+	 "\t\tBased on ITIMER_PROF, so does not count time blocked in\n"
+	 "\t\tthe kernel.  May not be suitable for threaded programs.\n",
+	 ITIMER_EVENT_NAME);
+  printf("\n");
+  printf("%s\tReal clock time used by the thread in microseconds.\n"
+	 "\t\tBased on the CLOCK_REALTIME timer with the SIGEV_THREAD_ID\n"
+	 "\t\textension.  Includes time blocked in the kernel, but may\n"
+	 "\t\tnot be available on all systems (eg, Blue Gene).\n",
+	 REALTIME_EVENT_NAME);
+  printf("\n");
+  printf("Note: don't use both %s and %s in the same run.\n",
+	 ITIMER_EVENT_NAME, REALTIME_EVENT_NAME);
   printf("\n");
 }
+
 
 /***************************************************************************
  * object
@@ -407,9 +551,11 @@ METHOD_FN(display_events)
 
 #include "ss_obj.h"
 
+
 /******************************************************************************
  * private operations 
  *****************************************************************************/
+
 static int
 itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
@@ -421,7 +567,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   if (! hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
     if (! hpcrun_is_sampling_disabled()) {
-      hpcrun_restart_itimer(self, 0);
+      hpcrun_restart_timer(self, 0);
     }
     // tell monitor the signal has been handled.
     return 0;
@@ -447,12 +593,10 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   blame_shift_apply(sv.sample_node, metric_incr * sample_period);
 
   if (hpcrun_is_sampling_disabled()) {
-    TMSG(SPECIAL, "No itimer restart, due to disabled sampling");
+    TMSG(ITIMER_HANDLER, "No itimer restart, due to disabled sampling");
   }
   else {
-#ifdef RESET_ITIMER_EACH_SAMPLE
-    hpcrun_restart_itimer(self, 1);
-#endif
+    hpcrun_restart_timer(self, 1);
   }
 
   hpcrun_safe_exit();
