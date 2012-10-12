@@ -81,12 +81,6 @@ static const uc xop_op4_tbl[] = {
 #define Table_spec(t) t, sizeof(t)
 #define Opc_in_tbl(t) opc_in_table(opc, Table_spec(t))
 
-static bool
-default_false(void* seq)
-{
-  return false;
-}
-
 static inline bool
 opc_in_table(uc opc, const uc opc_tbl[], const size_t len)
 {
