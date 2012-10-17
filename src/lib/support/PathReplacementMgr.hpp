@@ -84,30 +84,26 @@ public:
   singleton();
 
 
-  // Searches through the list of paths to see if any portion of
-  // 'original' needs to be replaced. If a substring of 'original' is
-  // found to be in 'pathReplacement', we update that portion of the
-  // string with the associated new path.
+  // replace(): Given 'path', search through the list of
+  //   replacement-path pairs looking for a match.  If a prefix of
+  //   'path' matches an 'old-path', replace that matched substring
+  //   with the corresponding 'new-path'.  Stops after first match.
   //
-  // @param original: The file path we want to update
-  // @return: A new path that is the updated equivalent of 'original'
-  //          if any portion of it needed updating, otherwise we return
-  //          'original'.
+  // @param path: The path upon which to perform replacement
+  // @return: The updated path.
   std::string
-  getReplacedPath(const std::string& original) const;
+  replace(const std::string& path) const;
 
   
   // Adds an old path and its associated new path as a pair to the
   // pathReplacement vector and then sorts the list in descending
   // order of size
   //  
-  // @param originalPath: The original partial path
-  // @param newPath: The new partial path to replace originalPath.
-  //
-  // **note** - "partial path" can mean any substring of a path, from
-  //   a single file name to a full path.
+  // @param oldPath: The original partial path, which can be any
+  //   substring of a path.
+  // @param newPath: The new partial path to replace oldPath.
   void
-  addPath(const std::string& originalPath, const std::string& newPath);
+  addPath(const std::string& oldPath, const std::string& newPath);
 
 public:
   typedef std::pair<std:: string, std::string> StringPair;
