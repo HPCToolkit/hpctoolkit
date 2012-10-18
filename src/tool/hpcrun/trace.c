@@ -152,7 +152,7 @@ hpcrun_trace_open()
 
 
 void
-hpcrun_trace_append(uint call_path_id, uint metric_id)
+hpcrun_trace_append(uint call_path_id, uint metric_id, int cpu)
 {
   if (tracing && hpcrun_sample_prob_active()) {
     struct timeval tv;

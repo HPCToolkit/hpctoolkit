@@ -51,7 +51,7 @@
 
 void hpcrun_trace_init();
 void hpcrun_trace_open();
-void hpcrun_trace_append(uint call_path_id, uint metric_id);
+void hpcrun_trace_append(uint call_path_id, uint metric_id, int cpu);
 void hpcrun_trace_close();
 
 int hpcrun_trace_isactive();
