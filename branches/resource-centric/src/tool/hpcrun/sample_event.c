@@ -84,7 +84,6 @@
 #include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
-
 //*************************** Forward Declarations **************************
 
 static cct_node_t*
@@ -158,7 +157,7 @@ hpcrun_drop_sample(void)
 sample_val_t
 hpcrun_sample_callpath(void *context, int metricId,
 		       uint64_t metricIncr,
-		       int skipInner, int isSync)
+		       int skipInner, int isSync, int cpu)
 {
   sample_val_t ret;
   hpcrun_sample_val_init(&ret);
@@ -254,7 +253,7 @@ hpcrun_sample_callpath(void *context, int metricId,
     // modify the persistent id
     hpcrun_cct_persistent_id_trace_mutate(func_proxy);
 
-    hpcrun_trace_append(hpcrun_cct_persistent_id(func_proxy), metricId);
+    hpcrun_trace_append(hpcrun_cct_persistent_id(func_proxy), metricId, cpu);
   }
 
   hpcrun_clear_handling_sample(td);

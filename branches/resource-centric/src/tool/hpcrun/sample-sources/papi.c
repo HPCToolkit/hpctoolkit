@@ -94,6 +94,7 @@
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
+#include <trace.h>
 
 /******************************************************************************
  * macros
@@ -108,7 +109,8 @@
  * forward declarations 
  *****************************************************************************/
 
-static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
+static void papi_event_handler(int event_set, void *pc, void *data_addr,
+			       unsigned long t, unsigned long cpu, long long ovec, void *context);
 static int  event_is_derived(int ev_code);
 static void event_fatal_error(int ev_code, int papi_ret);
 
@@ -542,13 +544,20 @@ event_fatal_error(int ev_code, int papi_ret)
 }
 
 static void
-papi_event_handler(int event_set, void *pc, long long ovec,
+papi_event_handler(int event_set, void *pc, void *data_addr, unsigned long t, unsigned long cpu, long long ovec,
                    void *context)
 {
   int i;
   int my_events[MAX_EVENTS];
   int my_event_count = MAX_EVENTS;
 
+//printf("pc is %p, data_addr is %p, time is %ld, cpu is %ld\n", pc, data_addr, t, cpu);
+  // create the trace file
+  if(ENABLED(CPU_CENTRIC)) {
+    // 4 is hard coded here for power 7 as SMT4
+    cpu = cpu / 4; 
+    // create the cpu-centric data structures
+  }
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
   if (! hpcrun_safe_enter_async(pc)) {
@@ -573,7 +582,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     TMSG(PAPI_SAMPLE,"sampling call path for metric_id = %d", metric_id);
 
     sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
-			   0/*skipInner*/, 0/*isSync*/);
+			   0/*skipInner*/, 0/*isSync*/, (int)cpu);
 
     if (cyc_metric_id == metric_id) {
       blame_shift_apply(sv.sample_node, hpcrun_id2metric(metric_id)->period);
