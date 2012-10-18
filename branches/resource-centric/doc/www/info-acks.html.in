@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- -*- coding: utf-8 -*- -->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!-- ********************************************************************** -->
+
+<head>
+  <!-- meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" /> -->
+
+  <title>HPCToolkit Acknowledgments</title>
+
+  <link rel="stylesheet" type="text/css" href="style/style.css" />
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+@header-hpctoolkit@
+
+<!-- ********************************************************************** -->
+
+
+<h1>HPCToolkit Funding Acknowledgments</h1>
+
+<!-- See README.License -->
+
+<p>Research and development of HPCToolkit is currently supported by:
+</p>
+<ul>
+
+<li>DOE <a href="http://cscads.rice.edu/">Center for Scalable Application Development Software</a>, cooperative agreement number DE-FC02-07ER25800;
+</li>
+
+<li>DOE <a href="http://www.peri-scidac.org/">Performance Engineering Research Institute</a>, cooperative agreement number DE-FC02-06ER25762;
+</li>
+
+<li>DARPA <a href="http://pace.rice.edu/">Platform Aware Compilation Environment</a>, AFRL Contract FA8650-09-C-7915;
+</li>
+
+<li><a href="http://www.amd.com">Advanced Micro Devices</a>; and
+</li>
+
+<li><a href="http://westerngeco.com/">WesternGeco</a>.
+</li>
+<p>The HPCToolkit project benefitted from an NSF MRI award (NSF CNS 08-21727) 
+that supported the acquisition of a system used by this project.</p>
+
+
+
+
+
+</ul>
+
+
+
+<!-- <p>Development of HPCToolkit was supported in part though the <a href="http://lacsi.lanl.gov/">Los Alamos Computer Science Institute</a> (LACSI) Contract No. 03891-001-99 49, the Department of Energy Accelerated Strategic Computing Initiative (LLNL Subcontract B347884), the <a href="http://ncsa.uiuc.edu/">National Computational Science Alliance's PACI Program</a> (Subaward 768), and the Department of Defense CEWES ERDC MSRC Programming Environment and Training program. -->
+
+<p>[<span class="lastupdated">Page last updated: 2012/06/27</span>]
+</p>
+
+
+<!-- ********************************************************************** -->
+
+@footer-hpctoolkit@
+
+<!-- ********************************************************************** -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: "<span class=\"lastupdated\">Page last updated: " -->
+<!-- time-stamp-format: "%:y/%02m/%02d" -->
+<!-- time-stamp-end: "</span>" -->
+<!-- time-stamp-line-limit: 10000 -->
+<!-- End: -->
