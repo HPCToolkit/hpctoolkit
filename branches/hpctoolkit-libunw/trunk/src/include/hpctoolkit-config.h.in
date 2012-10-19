@@ -1,0 +1,140 @@
+/* src/include/hpctoolkit-config.h.in.  Generated from configure.ac by autoheader.  */
+
+/* Data-centric tracing */
+#undef DATACENTRIC_TRACE
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
+/* HPCToolkit binutils */
+#undef HAVE_HPC_GNUBINUTILS
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* Monitor library */
+#undef HAVE_MONITOR
+
+/* HOST OS: 32 and 64 bit OS libraries */
+#undef HAVE_OS_MULTILIB
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if the system has the type `uint'. */
+#undef HAVE_UINT
+
+/* C compiler supports type "uint" */
+#undef HAVE_UINT_LANG_C
+
+/* Define to 1 if the system has the type `ulong'. */
+#undef HAVE_ULONG
+
+/* C compiler supports type "ulong" */
+#undef HAVE_ULONG_LANG_C
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Define to 1 if the system has the type `ushort'. */
+#undef HAVE_USHORT
+
+/* C compiler supports type "ushort" */
+#undef HAVE_USHORT_LANG_C
+
+/* C compiler supports type "voidp" */
+#undef HAVE_VOIDP_LANG_C
+
+/* HOST CPU: x86 (32-bit) */
+#undef HOST_CPU_x86
+
+/* HOST CPU: x86-64 */
+#undef HOST_CPU_x86_64
+
+/* HOST OS: IRIX */
+#undef HOST_OS_IRIX
+
+/* HOST OS: Linux */
+#undef HOST_OS_LINUX
+
+/* HOST OS: MacOS */
+#undef HOST_OS_MACOS
+
+/* HOST OS: Solaris */
+#undef HOST_OS_SOLARIS
+
+/* HOST OS: Tru64 */
+#undef HOST_OS_TRU64
+
+/* HOST platform: MIPS64LE_LINUX */
+#undef HOST_PLATFORM_MIPS64LE_LINUX
+
+/* IBM BlueGene/P support */
+#undef HOST_SYSTEM_IBM_BLUEGENE
+
+/* HPCToolkit version */
+#undef HPCTOOLKIT_VERSION
+
+/* HPCToolkit version string */
+#undef HPCTOOLKIT_VERSION_STRING
+
+/* Define to the sub-directory in which libtool stores uninstalled libraries.
+   */
+#undef LT_OBJDIR
+
+/* Define to 1 if your C compiler doesn't accept -c and -o together. */
+#undef NO_MINUS_C_MINUS_O
+
+/* Standard C headers */
+#undef NO_STD_CHEADERS
+
+/* Name of package */
+#undef PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* The size of `void*', as computed by sizeof. */
+#undef SIZEOF_VOIDP
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Version number of package */
+#undef VERSION
+
+/* Fix pthread.h */
+#undef __thread

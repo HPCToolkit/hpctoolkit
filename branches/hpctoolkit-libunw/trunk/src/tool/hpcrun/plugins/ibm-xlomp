@@ -1,0 +1,2 @@
+hpclink_files=../libibm_xlomp_wrappers.a
+hpclink_wrap_names='_xlsmpSyncRegionItemL2Fence _xlsmpSyncWorkShareItemL2 pthread_cond_wait pthread_yield _xlsmpBarrier_TPO _xlsmpWSDoSetup_TPO  _xlsmp_DynamicChunkCall'

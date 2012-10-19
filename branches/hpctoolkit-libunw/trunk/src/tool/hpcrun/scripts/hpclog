@@ -1,0 +1,63 @@
+#!/bin/sh
+# -*- Mode:Shell-script -*-
+
+function dolog (){
+
+    fn=${1:-"(stdin)"}
+    SF=/tmp/$$.s
+    LF=/tmp/$$.l
+    DF=/tmp/$$.d
+    echo % 
+    echo % assessing call stack unwinding failures in log file $fn
+    echo %
+    sed -n '
+        /samples/          w '$SF'
+        /UNW STEP FAILURE/ s/^.*cursor pc = \(0x[0-9a-f]*\),.*$/S \1/p
+        /TROLL FAILURE/    s/^.*pc = \(0x[0-9a-f]*\).*$/F \1/p
+        /advances/         w '$LF'
+    ' "$@" | awk '
+        $1 == "S" {troll[$2]++}
+        $1 == "F" {fail[$2]++}
+                  {tot++}
+        END {if (tot)
+                 for (a in troll)
+                     printf("%s\t%d\t(troll failure = %d)\n",a,troll[a],fail[a])
+    	 else
+                 printf("no failures found\n")
+            }
+    ' | sort -n -r --key=2 > $DF
+    echo trolling success = $(cat $LF | wc -l) | cat $SF - $DF
+    rm -f $SF $LF $DF
+}
+
+function _help (){
+    fname=$(basename $0)
+    cat <<EOF
+This script analyzes hpcrun log files and produces a summary of dropped samples, and trolling events. 
+The summary is written to stdout.
+
+To use this script:
+
+ EITHER supply a list of hpcrun log files on the command line:
+
+   $fname FILE1.log ... FILEn.log
+
+ OR supply a log file from stdin
+
+   cat FILE1.log | $fname
+EOF
+}
+
+if [ "$*" == --help  ]; then
+    _help
+    exit 0
+fi
+
+if [ -n "$*" ]; then
+    for f in "$@"; do
+        dolog "$f"
+	echo
+    done
+else
+    dolog
+fi
