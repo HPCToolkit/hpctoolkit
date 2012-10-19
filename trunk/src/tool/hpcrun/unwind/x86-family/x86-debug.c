@@ -48,6 +48,10 @@
 
 #include <stdint.h>
 
+//*************************** configuration ****************************
+
+#include <include/hpctoolkit-config.h>
+
 //*************************** User Include Files ****************************
 
 #include "x86-unwind-analysis.h"
