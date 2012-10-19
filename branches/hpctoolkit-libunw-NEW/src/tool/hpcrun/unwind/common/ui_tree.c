@@ -287,7 +287,7 @@ hpcrun_addr_to_interval_locked(void *addr)
  * tree, and move the deleted nodes to the unwind free list.
  */
 void
-hpcrun_delete_ui_range(void *start, void *end)
+hpcrun_delete_ui_range(void* start, void* end)
 {
   interval_tree_node *del_tree;
 

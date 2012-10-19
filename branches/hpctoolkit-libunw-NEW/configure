@@ -631,6 +631,7 @@ OPT_ENABLE_MPI_FALSE
 OPT_ENABLE_MPI_TRUE
 OPT_ENABLE_HPCRUN_DYNAMIC_FALSE
 OPT_ENABLE_HPCRUN_DYNAMIC_TRUE
+HPCLINK_LD_FLAGS
 OPT_ENABLE_HPCRUN_STATIC_FALSE
 OPT_ENABLE_HPCRUN_STATIC_TRUE
 HPCRUN_LIBCXX_PATH
@@ -666,6 +667,14 @@ OA_IFLAGS
 OPT_INSTALL_MONITOR
 HPC_MONITOR
 MONITOR
+UNW_LIBUNW_FALSE
+UNW_LIBUNW_TRUE
+UNW_MIPS_FALSE
+UNW_MIPS_TRUE
+UNW_PPC64_FALSE
+UNW_PPC64_TRUE
+UNW_X86_FALSE
+UNW_X86_TRUE
 OPT_LIBUNWIND_LIBA
 OPT_LIBUNWIND_LIBSO
 OPT_LIBUNWIND_LDFLAGS
@@ -703,12 +712,6 @@ HOST_LIBTREPOSITORY
 HOST_AR
 HOST_CXXFLAGS
 HOST_CFLAGS
-UNW_MIPS_FALSE
-UNW_MIPS_TRUE
-UNW_PPC64_FALSE
-UNW_PPC64_TRUE
-UNW_X86_FALSE
-UNW_X86_TRUE
 HOST_CPU_X86_FAMILY_FALSE
 HOST_CPU_X86_FAMILY_TRUE
 HOST_CPU_X86_64_FALSE
@@ -16410,35 +16413,6 @@ else
 fi
 
 
-#
-# set up automake choice of unwinder
-#
-
- if test "$UNWINDER" = x86-family; then
-  UNW_X86_TRUE=
-  UNW_X86_FALSE='#'
-else
-  UNW_X86_TRUE='#'
-  UNW_X86_FALSE=
-fi
-
- if test "$UNWINDER" = ppc64; then
-  UNW_PPC64_TRUE=
-  UNW_PPC64_FALSE='#'
-else
-  UNW_PPC64_TRUE='#'
-  UNW_PPC64_FALSE=
-fi
-
- if test "$UNWINDER" = mips; then
-  UNW_MIPS_TRUE=
-  UNW_MIPS_FALSE='#'
-else
-  UNW_MIPS_TRUE='#'
-  UNW_MIPS_FALSE=
-fi
-
-
 #-------------------------------------------------
 # Host-specific compiler settings
 #-------------------------------------------------
@@ -17193,8 +17167,8 @@ echo "$LIBMONITOR_WRAP_NAMES" >&5
 # with-libunwind
 #-------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether configured with libunwind" >&5
-$as_echo_n "checking whether configured with libunwind... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether configured to use libunwind instead of native" >&5
+$as_echo_n "checking whether configured to use libunwind instead of native... " >&6; }
 
 OPT_HAVE_LIBUNWIND=no
 OPT_LIBUNWIND=
@@ -17214,13 +17188,12 @@ fi
 
 # Check whether --with-libunwind was given.
 if test "${with_libunwind+set}" = set; then :
-  withval=$with_libunwind; if test $withval != no; then
-     OPT_HAVE_LIBUNWIND=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       as_fn_error $? "--with-libunwind requires absolute path as argument; given '${withval}'" "$LINENO" 5
-     fi
-     OPT_LIBUNWIND=${withval}
-   fi
+  withval=$with_libunwind; case $withval in
+      yes) : ;;
+      /*) OPT_LIBUNWIND=${withval} ;;
+      *) as_fn_error $? "--with-libunwind requires absolute path as argument; given '${withval}'" "$LINENO" 5 ;;
+   esac
+   UNWINDER=libunw
 fi
 
 
@@ -17229,9 +17202,25 @@ fi
 if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes (${OPT_LIBUNWIND_LIBSO})" >&5
 $as_echo "yes (${OPT_LIBUNWIND_LIBSO})" >&6; }
+
+  OPT_LIBUNWIND_IFLAGS="-I$OPT_LIBUNWIND/include"
+  OPT_LIBUNWIND_LIBPATH="$OPT_LIBUNWIND"
+
+  lib_unw_arch=$host_cpu
+#
+# Attach architecture code to -l on LIBUNWIND_LDFLAGS
+#
+  OPT_LIBUNWIND_LDFLAGS="-L$OPT_LIBUNWIND/lib -lunwind -lunwind-$lib_unw_arch"
+
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
+fi
+
+if test -z "$HPCLINK_LD_FLAGS"; then
+   HPCLINK_LD_FLAGS="$OPT_LIBUNWIND_LDFLAGS"
+else
+   HPCLINK_LD_FLAGS="$HPCLINK_LD_FLAGS $OPT_LIBUNWIND_LDFLAGS"
 fi
 
  if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
@@ -17247,6 +17236,42 @@ fi
 
 
 
+
+#
+# set up automake choice of unwinder
+#
+
+ if test "$UNWINDER" = x86-family; then
+  UNW_X86_TRUE=
+  UNW_X86_FALSE='#'
+else
+  UNW_X86_TRUE='#'
+  UNW_X86_FALSE=
+fi
+
+ if test "$UNWINDER" = ppc64; then
+  UNW_PPC64_TRUE=
+  UNW_PPC64_FALSE='#'
+else
+  UNW_PPC64_TRUE='#'
+  UNW_PPC64_FALSE=
+fi
+
+ if test "$UNWINDER" = mips; then
+  UNW_MIPS_TRUE=
+  UNW_MIPS_FALSE='#'
+else
+  UNW_MIPS_TRUE='#'
+  UNW_MIPS_FALSE=
+fi
+
+ if test "$UNWINDER" = libunw; then
+  UNW_LIBUNW_TRUE=
+  UNW_LIBUNW_FALSE='#'
+else
+  UNW_LIBUNW_TRUE='#'
+  UNW_LIBUNW_FALSE=
+fi
 
 
 #-------------------------------------------------
@@ -17814,6 +17839,7 @@ else
   OPT_ENABLE_HPCRUN_STATIC_TRUE='#'
   OPT_ENABLE_HPCRUN_STATIC_FALSE=
 fi
+
 
 
 
@@ -18622,6 +18648,14 @@ if test -z "${HOST_CPU_X86_FAMILY_TRUE}" && test -z "${HOST_CPU_X86_FAMILY_FALSE
   as_fn_error $? "conditional \"HOST_CPU_X86_FAMILY\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${IS_HOST_AR_TRUE}" && test -z "${IS_HOST_AR_FALSE}"; then
+  as_fn_error $? "conditional \"IS_HOST_AR\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_HAVE_LIBUNWIND_TRUE}" && test -z "${OPT_HAVE_LIBUNWIND_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_HAVE_LIBUNWIND\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${UNW_X86_TRUE}" && test -z "${UNW_X86_FALSE}"; then
   as_fn_error $? "conditional \"UNW_X86\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -18634,12 +18668,8 @@ if test -z "${UNW_MIPS_TRUE}" && test -z "${UNW_MIPS_FALSE}"; then
   as_fn_error $? "conditional \"UNW_MIPS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${IS_HOST_AR_TRUE}" && test -z "${IS_HOST_AR_FALSE}"; then
-  as_fn_error $? "conditional \"IS_HOST_AR\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_HAVE_LIBUNWIND_TRUE}" && test -z "${OPT_HAVE_LIBUNWIND_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_HAVE_LIBUNWIND\" was never defined.
+if test -z "${UNW_LIBUNW_TRUE}" && test -z "${UNW_LIBUNW_FALSE}"; then
+  as_fn_error $? "conditional \"UNW_LIBUNW\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PAPI_DYNAMIC_TRUE}" && test -z "${OPT_PAPI_DYNAMIC_FALSE}"; then

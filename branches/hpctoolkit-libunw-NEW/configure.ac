@@ -494,14 +494,6 @@ AM_CONDITIONAL([HOST_CPU_X86],    [test "${HOST_CPU_X86}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86_64], [test "${HOST_CPU_X86_64}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86_FAMILY], [test "${HOST_CPU_X86_FAMILY}" = yes])
 
-#
-# set up automake choice of unwinder
-#
-
-AM_CONDITIONAL([UNW_X86], [test "$UNWINDER" = x86-family])
-AM_CONDITIONAL([UNW_PPC64], [test "$UNWINDER" = ppc64])
-AM_CONDITIONAL([UNW_MIPS], [test "$UNWINDER" = mips])
-
 #-------------------------------------------------
 # Host-specific compiler settings
 #-------------------------------------------------
@@ -1127,7 +1119,7 @@ AC_SUBST([LIBMONITOR_WRAP_NAMES])
 # with-libunwind
 #-------------------------------------------------
 
-AC_MSG_CHECKING([whether configured with libunwind])
+AC_MSG_CHECKING([whether configured to use libunwind instead of native])
 
 OPT_HAVE_LIBUNWIND=no
 OPT_LIBUNWIND=
@@ -1147,21 +1139,36 @@ fi
 AC_ARG_WITH([libunwind],
   AS_HELP_STRING([--with-libunwind=PATH],
                  [use given LIBUNWIND installation (absolute path) with hpcrun (default is NO)]),
-  [if test $withval != no; then
-     OPT_HAVE_LIBUNWIND=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       AC_MSG_ERROR([--with-libunwind requires absolute path as argument; given '${withval}'])
-     fi
-     OPT_LIBUNWIND=${withval}
-   fi],
+  [case $withval in
+      yes) : ;;
+      /*) OPT_LIBUNWIND=${withval} ;;
+      *) AC_MSG_ERROR([--with-libunwind requires absolute path as argument; given '${withval}']) ;;
+   esac
+   UNWINDER=libunw],
   [])
 
 # Check for LIBUNWIND > .9xxx [skip for now]
 
 if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then 
   AC_MSG_RESULT([yes (${OPT_LIBUNWIND_LIBSO})])
+
+  OPT_LIBUNWIND_IFLAGS="-I$OPT_LIBUNWIND/include"
+  OPT_LIBUNWIND_LIBPATH="$OPT_LIBUNWIND"
+
+  lib_unw_arch=$host_cpu
+#
+# Attach architecture code to -l on LIBUNWIND_LDFLAGS
+#
+  OPT_LIBUNWIND_LDFLAGS="-L$OPT_LIBUNWIND/lib -lunwind -lunwind-$lib_unw_arch"
+
 else
   AC_MSG_RESULT([no])
+fi
+
+if test -z "$HPCLINK_LD_FLAGS"; then
+   HPCLINK_LD_FLAGS="$OPT_LIBUNWIND_LDFLAGS"
+else
+   HPCLINK_LD_FLAGS="$HPCLINK_LD_FLAGS $OPT_LIBUNWIND_LDFLAGS"
 fi
 
 AM_CONDITIONAL(OPT_HAVE_LIBUNWIND, test "${OPT_HAVE_LIBUNWIND}" = "yes")
@@ -1171,6 +1178,14 @@ AC_SUBST(OPT_LIBUNWIND_LDFLAGS)
 AC_SUBST(OPT_LIBUNWIND_LIBSO)
 AC_SUBST(OPT_LIBUNWIND_LIBA)
 
+#
+# set up automake choice of unwinder
+#
+
+AM_CONDITIONAL([UNW_X86], [test "$UNWINDER" = x86-family])
+AM_CONDITIONAL([UNW_PPC64], [test "$UNWINDER" = ppc64])
+AM_CONDITIONAL([UNW_MIPS], [test "$UNWINDER" = mips])
+AM_CONDITIONAL([UNW_LIBUNW], [test "$UNWINDER" = libunw])
 
 #-------------------------------------------------
 # with-monitor
@@ -1664,6 +1679,7 @@ fi
 AC_MSG_RESULT([${OPT_ENABLE_HPCRUN_STATIC}])
 AM_CONDITIONAL(OPT_ENABLE_HPCRUN_STATIC, test "${OPT_ENABLE_HPCRUN_STATIC}" = "yes")
 
+AC_SUBST(HPCLINK_LD_FLAGS)
 
 AC_MSG_CHECKING([whether to build hpcrun for dynamically linked executables])
 

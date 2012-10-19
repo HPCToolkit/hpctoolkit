@@ -151,9 +151,12 @@ if HOST_CPU_PPC
   PLUGIN_CONFIG_FILES += ibm-xlomp
 endif
 
-UNW_COMMON_FILES = \
+UNW_UNIV_FILES = \
 	unwind/common/backtrace.c	\
-        unwind/common/unw-throw.c       \
+        unwind/common/unw-throw.c
+
+UNW_COMMON_FILES = \
+        $(UNW_UNIV_FILES)               \
 	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\
 	unwind/common/ui_tree.c
@@ -190,6 +193,22 @@ UNW_PPC64_INCLUDE_DIRS = \
         -I$(srcdir)/unwind/ppc64
 
 UNW_PPC64_LD_FLAGS =
+
+# generic libunwind uwinder
+# NOTE: the unwinder code is specific to the
+#  unwind implementation (which wraps libunwind)
+# The IFLAGS and LDFLAGS related to the libunwind
+# library component are handled via the LIBUNWIND
+# configuration
+
+UNW_LIBUNW_FILES = \
+       $(UNW_UNIV_FILES) \
+       unwind/generic-libunwind/libunw-unwind.c
+
+UNW_LIBUNW_INCLUDE_DIRS = \
+       -I$(srcdir)/unwind/generic-libunwind
+
+UNW_LIBUNW_LD_FLAGS = 
 
 UNW_MIPS_FILES = \
         $(UNW_COMMON_FILES) \
@@ -326,6 +345,7 @@ MY_INCLUDE_DIRS =			\
 	-I$(srcdir)/unwind/common	\
 	-I$(srcdir)/utilities		\
 	$(HPC_IFLAGS)			\
+	$(OPT_LIBUNWIND_IFLAGS)         \
 	-I$(HPCFNBOUNDS_INC)		\
 	-I$(LIBMONITOR_INC)		\
 	-I$(SYMTABAPI_INC)
@@ -340,7 +360,6 @@ MY_PPC_INCLUDE_DIRS = 		\
 
 MY_X86_INCLUDE_DIRS =		\
         -I$(srcdir)/utilities/arch/x86-family
-
 
 libhpcrun_la_SOURCES = 			\
 	$(MY_BASE_FILES)		\
@@ -475,7 +494,8 @@ libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 libhpcrun_o_LDADD   = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt
+	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt \
+        $(OPT_LIBUNWIND_LDFLAGS)
 
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic	\
 	-Wl,--strip-debug
@@ -489,7 +509,7 @@ libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
 
-libhpcrun_o_LDFLAGS =
+libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS)
 
 
 #-----------------------------------------------------------
@@ -597,6 +617,12 @@ if UNW_PPC64
   UNW_SOURCE_FILES = $(UNW_PPC64_FILES)
   UNW_INCLUDE_DIRS = $(UNW_PPC64_INCLUDE_DIRS)
   UNW_LD_FLAGS     = $(UNW_PPC64_LD_FLAGS)
+endif
+
+if UNW_LIBUNW
+    UNW_SOURCE_FILES = $(UNW_LIBUNW_FILES)
+    UNW_INCLUDE_DIRS = $(UNW_LIBUNW_INCLUDE_DIRS)
+    UNW_LD_FLAGS     = $(UNW_LIBUNW_LD_FLAGS)
 endif
 
 libhpcrun_la_SOURCES  +=  $(UNW_SOURCE_FILES)
