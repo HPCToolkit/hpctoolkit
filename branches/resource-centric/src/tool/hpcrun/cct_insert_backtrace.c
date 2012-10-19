@@ -159,7 +159,11 @@ hpcrun_cct_insert_backtrace_w_metric(cct_node_t* treenode,
 {
   cct_node_t* path = hpcrun_cct_insert_backtrace(treenode, path_beg, path_end);
 
-  metric_set_t* mset = hpcrun_reify_metric_set(path);
+  metric_set_t *mset;
+  if(TD_GET(cpu_id) >= 0)
+    mset = hpcrun_reify_cpu_metric_set(path, TD_GET(cpu_id));
+  else
+    mset = hpcrun_reify_metric_set(path);
 
   metric_upd_proc_t* upd_proc = hpcrun_get_metric_proc(metric_id);
   if (upd_proc) {

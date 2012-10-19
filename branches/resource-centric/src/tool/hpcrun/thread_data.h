@@ -122,6 +122,8 @@ typedef struct thread_data_t {
   // ----------------------------------------
   int id;
 
+  int cpu_id;
+
   int idle; // indicate whether the thread is idle
 
   // ----------------------------------------

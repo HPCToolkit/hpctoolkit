@@ -87,6 +87,7 @@
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
+#include <hpcrun/cpu_data.h>
 
 #include <sample-sources/blame-shift.h>
 #include <utilities/tokenize.h>
@@ -556,7 +557,17 @@ papi_event_handler(int event_set, void *pc, void *data_addr, unsigned long t, un
   if(ENABLED(CPU_CENTRIC)) {
     // 4 is hard coded here for power 7 as SMT4
     cpu = cpu / 4; 
+    TD_GET(cpu_id) = cpu;
     // create the cpu-centric data structures
+    hpcrun_set_cpu_trace_lock(cpu);
+    hpcrun_allocate_cpu_data(cpu);
+    if(hpcrun_trace_isactive()) {
+      hpcrun_trace_open(cpu, 0 /*cpu-centric*/);
+    }
+    hpcrun_unset_cpu_trace_lock(cpu);
+  }
+  else {
+    cpu = -1;
   }
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.

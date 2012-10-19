@@ -458,6 +458,18 @@ hpcrun_open_trace_file(int thread)
   return ret;
 }
 
+int
+hpcrun_open_cpu_trace_file(int cpu)
+{
+  int ret;
+  
+  spinlock_lock(&files_lock);
+  hpcrun_files_init();
+  ret = hpcrun_open_file(0, cpu, HPCRUN_CPUTraceFnmSfx, FILES_EARLY);
+  spinlock_unlock(&files_lock);
+
+  return ret;
+}
 
 // Returns: file descriptor for profile (hpcrun) file.
 int
@@ -474,6 +486,17 @@ hpcrun_open_profile_file(int rank, int thread)
   return ret;
 }
 
+hpcrun_open_cpu_profile_file(int rank, int cpu)
+{
+  int ret;
+
+  spinlock_lock(&files_lock);
+  hpcrun_files_init();
+  ret = hpcrun_open_file(rank, cpu, HPCRUN_CPUProfileFnmSfx, FILES_LATE);
+  spinlock_unlock(&files_lock);
+
+  return ret;
+}
 
 // Note: we use the log file as the lock for the file names, so we
 // need to rename the log file as the first late action.  Since this
@@ -511,6 +534,20 @@ hpcrun_rename_trace_file(int rank, int thread)
   spinlock_lock(&files_lock);
   hpcrun_rename_log_file_early(rank);
   ret = hpcrun_rename_file(rank, thread, HPCRUN_TraceFnmSfx);
+  spinlock_unlock(&files_lock);
+
+  return ret;
+}
+
+// Returns: 0 on success, else -1 on failure.
+int
+hpcrun_rename_cpu_trace_file(int rank, int cpu)
+{
+  int ret;
+
+  spinlock_lock(&files_lock);
+  hpcrun_rename_log_file_early(rank);
+  ret = hpcrun_rename_file(rank, cpu, HPCRUN_CPUTraceFnmSfx);
   spinlock_unlock(&files_lock);
 
   return ret;

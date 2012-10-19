@@ -62,6 +62,7 @@
 #include "epoch.h"
 #include "rank.h"
 #include "thread_data.h"
+#include "cpu_data.h"
 #include "cct_bundle.h"
 #include "hpcrun_return_codes.h"
 #include "write_data.h"
@@ -139,11 +140,18 @@ static const uint32_t default_ra_to_callsite_distance =
 //***************************************************************************
 
 static FILE *
-lazy_open_data_file(void)
+lazy_open_data_file(int id)
 {
   thread_data_t* td = hpcrun_get_thread_data();
+  cpu_data_t *cd = NULL;
+  if(id >= 0)
+    cd = hpcrun_get_cpu_data(id);
 
-  FILE* fs = td->hpcrun_file;
+  FILE* fs;
+  if(id >= 0)
+    fs = cd->hpcrun_file;
+  else
+    fs = td->hpcrun_file;
   if (fs) {
     return fs;
   }
@@ -152,7 +160,11 @@ lazy_open_data_file(void)
   if (rank < 0) {
     rank = 0;
   }
-  int fd = hpcrun_open_profile_file(rank, td->id);
+  int fd;
+  if(id >= 0)
+    fd = hpcrun_open_cpu_profile_file(rank, id);
+  else
+    fd = hpcrun_open_profile_file(rank, td->id);
   fs = fdopen(fd, "w");
   if (fs == NULL) {
     EEMSG("HPCToolkit: %s: unable to open profile file", __func__);
@@ -175,7 +187,10 @@ lazy_open_data_file(void)
   snprintf(mpiRankStr, bufSZ, "%d", rank);
 
   char tidStr[bufSZ];
-  snprintf(tidStr, bufSZ, "%d", td->id);
+  if(id >= 0)
+    snprintf(tidStr, bufSZ, "%d", id);
+  else
+    snprintf(tidStr, bufSZ, "%d", td->id);
 
   char hostidStr[bufSZ];
   snprintf(hostidStr, bufSZ, "%lx", OSUtil_hostid());
@@ -325,7 +340,7 @@ write_epochs(FILE* fs, epoch_t* epoch)
 void
 hpcrun_flush_epochs(void)
 {
-  FILE *fs = lazy_open_data_file();
+  FILE *fs = lazy_open_data_file(-1);
   if (fs == NULL)
     return;
 
@@ -337,7 +352,7 @@ int
 hpcrun_write_profile_data(epoch_t *epoch)
 {
   TMSG(DATA_WRITE,"Writing hpcrun profile data");
-  FILE* fs = lazy_open_data_file();
+  FILE* fs = lazy_open_data_file(-1);
   if (fs == NULL)
     return HPCRUN_ERR;
 
@@ -345,6 +360,30 @@ hpcrun_write_profile_data(epoch_t *epoch)
 
   TMSG(DATA_WRITE,"closing file");
   hpcio_fclose(fs);
+  TMSG(DATA_WRITE,"Done!");
+
+  return HPCRUN_OK;
+}
+
+int
+hpcrun_write_cpu_profile_data()
+{
+  TMSG(DATA_WRITE,"Writing cpuhpcrun profile data");
+  int i;
+  for (i = 0; i < hpcrun_get_max_cpu(); i++) {
+    cpu_data_t *cpu_data = hpcrun_get_cpu_data(i);
+    if(!cpu_data) continue;
+    epoch_t *epoch = cpu_data->epoch;
+    FILE* fs = lazy_open_data_file(cpu_data->id);
+    if (fs == NULL)
+      return HPCRUN_ERR;
+
+    TD_GET(cct2metrics_map) = cpu_data->cct2metrics_map;
+    write_epochs(fs, epoch);
+
+    TMSG(DATA_WRITE,"closing file");
+    hpcio_fclose(fs);
+  }
   TMSG(DATA_WRITE,"Done!");
 
   return HPCRUN_OK;

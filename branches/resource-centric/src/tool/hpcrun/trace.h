@@ -50,9 +50,10 @@
 #include <include/uint.h>
 
 void hpcrun_trace_init();
-void hpcrun_trace_open();
+void hpcrun_trace_open(int cpu, int flag /* 0 cpu-centric, 1 thread-centric */);
 void hpcrun_trace_append(uint call_path_id, uint metric_id, int cpu);
 void hpcrun_trace_close();
+void hpcrun_cpu_trace_close();
 
 int hpcrun_trace_isactive();
 
