@@ -264,13 +264,17 @@ hpcrun_sample_callpath(void *context, int metricId,
     cct_addr_t frm = { .ip_norm = pc_proxy };
     cct_node_t* func_proxy = 
       hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);
+
+    hpcrun_set_cpu_trace_lock(cpu);
     cct_node_t* cpu_func_proxy = 
       hpcrun_cct_insert_addr(hpcrun_cct_parent(cpu_node), &frm);
+    hpcrun_unset_cpu_trace_lock(cpu);
 
     ret.trace_node = func_proxy;
 
     // modify the persistent id
     hpcrun_cct_persistent_id_trace_mutate(func_proxy);
+    hpcrun_cct_persistent_id_trace_mutate(cpu_func_proxy);
 
     hpcrun_trace_append(hpcrun_cct_persistent_id(func_proxy), metricId, -1);
     hpcrun_set_cpu_trace_lock(cpu);
