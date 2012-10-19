@@ -56,9 +56,12 @@ const char *hpcrun_files_executable_name();
 
 int hpcrun_open_log_file(void);
 int hpcrun_open_trace_file(int thread);
+int hpcrun_open_cpu_trace_file(int cpu);
 int hpcrun_open_profile_file(int rank, int thread);
+int hpcrun_open_cpu_profile_file(int rank, int cpu);
 int hpcrun_rename_log_file(int rank);
 int hpcrun_rename_trace_file(int rank, int thread);
+int hpcrun_rename_cpu_trace_file(int rank, int cpu);
 
 //*****************************************************************************
 

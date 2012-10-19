@@ -11,6 +11,7 @@
 #include <cct/cct.h>
 #include <hpcrun/cct2metrics.h>
 #include <hpcrun/thread_data.h>
+#include <hpcrun/cpu_data.h>
 #include <lib/prof-lean/splay-macros.h>
 
 //
@@ -122,6 +123,18 @@ hpcrun_reify_metric_set(cct_node_id_t cct_id)
   return rv;
 }
 
+metric_set_t*
+hpcrun_reify_cpu_metric_set(cct_node_id_t cct_id, int cpu)
+{
+  TMSG(CCT2METRICS, "REIFY: %p", cct_id);
+  metric_set_t* rv = hpcrun_get_cpu_metric_set(cct_id, cpu);
+  TMSG(CCT2METRICS, " -- Metric set found = %p", rv);
+  if (rv) return rv;
+  TMSG(CCT2METRICS, " -- Metric set was null, allocating new metric set");
+  cct2metrics_assoc_cpu(cct_id, rv = hpcrun_metric_set_new(), cpu);
+  TMSG(CCT2METRICS, "REIFY returns %p", rv);
+  return rv;
+}
 //
 // get metric set for a node (NULL return value means no metrics associated).
 //
@@ -144,6 +157,26 @@ hpcrun_get_metric_set(cct_node_id_t cct_id)
   return NULL;
 }
 
+metric_set_t*
+hpcrun_get_cpu_metric_set(cct_node_id_t cct_id, int cpu)
+{
+  cpu_data_t *cpu_data = hpcrun_get_cpu_data(cpu);
+  if( !cpu_data) return NULL;
+  cct2metrics_t* map = cpu_data->cct2metrics_map;
+  TMSG(CCT2METRICS, "GET_METRIC_SET for %p, using map %p", cct_id, map);
+  if (! map) return NULL;
+
+  map = splay(map, cct_id);
+  cpu_data->cct2metrics_map = map;
+  TMSG(CCT2METRICS, " -- After Splay map = %p", cct_id, map);
+
+  if (map->node == cct_id) {
+    TMSG(CCT2METRICS, " -- found %p, returning metrics", map->node);
+    return map->metrics;
+  }
+  TMSG(CCT2METRICS, " -- cct_id NOT, found. Return NULL");
+  return NULL;
+}
 //
 // check to see if node already has metrics
 //
@@ -153,6 +186,11 @@ hpcrun_has_metric_set(cct_node_id_t cct_id)
   return (hpcrun_get_metric_set(cct_id) != NULL);
 }
 
+bool
+hpcrun_has_cpu_metric_set(cct_node_id_t cct_id, int cpu)
+{
+  return (hpcrun_get_cpu_metric_set(cct_id, cpu) != NULL);
+}
 //
 // associate a metric set with a cct node
 //
@@ -193,4 +231,44 @@ cct2metrics_assoc(cct_node_id_t node, metric_set_t* metrics)
   THREAD_LOCAL_MAP() = map;
   TMSG(CCT2METRICS, "METRICS_ASSOC final, THREAD_LOCAL_MAP = %p", THREAD_LOCAL_MAP());
   if (ENABLED(CCT2METRICS)) splay_tree_dump(THREAD_LOCAL_MAP());
+}
+void
+cct2metrics_assoc_cpu(cct_node_id_t node, metric_set_t* metrics, int cpu)
+{
+  cpu_data_t *cpu_data = hpcrun_get_cpu_data(cpu);
+  if( !cpu_data) return;
+  cct2metrics_t* map = cpu_data->cct2metrics_map;
+  TMSG(CCT2METRICS, "CCT2METRICS_ASSOC for %p, using map %p", node, map);
+  if (! map) {
+    map = cct2metrics_new(node, metrics);
+    TMSG(CCT2METRICS, " -- new map created: %p", map);
+  }
+  else {
+    cct2metrics_t* new = cct2metrics_new(node, metrics);
+    map = splay(map, node);
+    TMSG(CCT2METRICS, " -- map after splay = %p,"
+         " node sought = %p, mapnode = %p", map, node, map->node);
+    if (map->node == node) {
+      EMSG("CCT2METRICS map assoc invariant violated");
+    }
+    else {
+      if (map->node < node) {
+        TMSG(CCT2METRICS, " -- less-than insert %p < %p", map->node, node);
+        new->left = map;
+        new->right = map->right;
+        map->right = NULL;
+      }
+      else {
+        TMSG(CCT2METRICS, " -- greater-than insert %p > %p", map->node, node);
+        new->left = map->left;
+        new->right = map;
+        map->left = NULL;
+      }
+      map = new;
+      TMSG(CCT2METRICS, " -- new map after insertion %p.(%p, %p)", map->node, map->left, map->right);
+    }
+  }
+  cpu_data->cct2metrics_map = map;
+  TMSG(CCT2METRICS, "METRICS_ASSOC final, THREAD_LOCAL_MAP = %p", cpu_data->cct2metrics_map);
+  if (ENABLED(CCT2METRICS)) splay_tree_dump(cpu_data->cct2metrics_map);
 }

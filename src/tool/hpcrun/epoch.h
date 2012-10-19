@@ -77,6 +77,7 @@ extern void hpcrun_reset_epoch(epoch_t* epoch);
 
 epoch_t* hpcrun_check_for_new_loadmap(epoch_t *);
 void hpcrun_epoch_init(cct_ctxt_t* ctxt);
+void hpcrun_cpu_epoch_init(int cpu);
 void hpcrun_epoch_reset(void);
 
 #endif // EPOCH_H

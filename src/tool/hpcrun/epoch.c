@@ -55,6 +55,7 @@
 #include "loadmap.h"
 #include "name.h"
 #include "thread_data.h"
+#include "cpu_data.h"
 #include "hpcrun_return_codes.h"
 #include "monitor.h"
 #include <trampoline/common/trampoline.h>
@@ -76,6 +77,19 @@ hpcrun_epoch_init(cct_ctxt_t* ctxt)
   epoch_t*       epoch = td->epoch;
 
   hpcrun_cct_bundle_init(&(epoch->csdata), ctxt);
+
+  epoch->loadmap = hpcrun_getLoadmap();
+  epoch->next  = NULL;
+}
+
+void
+hpcrun_cpu_epoch_init(int cpu)
+{
+  TMSG(EPOCH,"init");
+  cpu_data_t* cpu_data    = hpcrun_get_cpu_data(cpu);
+  epoch_t*       epoch = cpu_data->epoch;
+
+  hpcrun_cct_bundle_init(&(epoch->csdata), NULL);
 
   epoch->loadmap = hpcrun_getLoadmap();
   epoch->next  = NULL;

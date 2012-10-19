@@ -36,18 +36,22 @@ extern void hpcrun_cct2metrics_init(cct2metrics_t** map);
 // create a metric set, and return it.
 //
 extern metric_set_t* hpcrun_reify_metric_set(cct_node_id_t cct_id);
+extern metric_set_t* hpcrun_reify_cpu_metric_set(cct_node_id_t cct_id, int cpu);
 
 //
 // get metric set for a node (NULL value is ok).
 //
 extern metric_set_t* hpcrun_get_metric_set(cct_node_id_t cct_id);
+extern metric_set_t* hpcrun_get_cpu_metric_set(cct_node_id_t cct_id, int cpu);
 
 //
 // check to see if node already has metrics
 //
 extern bool hpcrun_has_metric_set(cct_node_id_t cct_id);
+extern bool hpcrun_has_cpu_metric_set(cct_node_id_t cct_id, int cpu);
 
 extern void cct2metrics_assoc(cct_node_t* node, metric_set_t* metrics);
+extern void cct2metrics_assoc_cpu(cct_node_t* node, metric_set_t* metrics, int cpu);
 
 static inline void
 cct_metric_data_increment(int metric_id,

@@ -237,6 +237,7 @@ MY_BASE_FILES =				\
 	system_server.c			\
 	term_handler.c			\
 	thread_data.c			\
+	cpu_data.c			\
 	thread_use.c			\
 	trace.c				\
 	weak.c				\

@@ -92,8 +92,14 @@ extern "C" {
 // hpcrun profile filename suffix
 static const char HPCRUN_ProfileFnmSfx[] = "hpcrun";
 
+// hpcrun cpu profile filename suffix
+static const char HPCRUN_CPUProfileFnmSfx[] = "cpuhpcrun";
+
 // hpcrun trace filename suffix
 static const char HPCRUN_TraceFnmSfx[] = "hpctrace";
+
+// hpcrun cpu trace filename suffix
+static const char HPCRUN_CPUTraceFnmSfx[] = "cpuhpctrace";
 
 // hpcrun log filename suffix
 static const char HPCRUN_LogFnmSfx[] = "log";

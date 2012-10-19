@@ -255,7 +255,7 @@ hpcrun_init_internal(bool is_child)
   hpcrun_options__getopts(&opts);
 
   hpcrun_trace_init(); // this must go after thread initialization
-  hpcrun_trace_open();
+  hpcrun_trace_open(-1, 1);
 
   // Decide whether to retain full single recursion, or collapse recursive calls to
   // first instance of recursive call
@@ -391,6 +391,7 @@ hpcrun_fini_internal()
     fnbounds_fini();
 
     hpcrun_write_profile_data(epoch);
+    hpcrun_write_cpu_profile_data();
 
     hpcrun_stats_print_summary();
     
@@ -576,6 +577,7 @@ monitor_fini_process(int how, void* data)
 
   hpcrun_fini_internal();
   hpcrun_trace_close();
+  hpcrun_cpu_trace_close();
   fnbounds_fini();
 
   hpcrun_safe_exit();
@@ -760,7 +762,7 @@ monitor_init_thread(int tid, void* data)
   void* thread_data = hpcrun_thread_init(tid, (cct_ctxt_t*)data);
   TMSG(THREAD,"back from init thread %d",tid);
 
-  hpcrun_trace_open();
+  hpcrun_trace_open(-1, 1);
   hpcrun_safe_exit();
 
   return thread_data;

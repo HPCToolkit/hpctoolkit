@@ -67,6 +67,7 @@
 #include "string.h"
 #include "trace.h"
 #include "thread_data.h"
+#include "cpu_data.h"
 #include "sample_prob.h"
 
 #include <memory/hpcrun-malloc.h>
@@ -120,33 +121,59 @@ hpcrun_trace_init()
 
 
 void
-hpcrun_trace_open()
+hpcrun_trace_open(int cpu, int flag)
 {
   // With fractional sampling, if this process is inactive, then don't
   // open an output file, not even /dev/null.
   if (tracing && hpcrun_sample_prob_active()) {
-    thread_data_t *td = hpcrun_get_thread_data();
-    int fd, ret;
+    if(flag == 1) {
+      thread_data_t *td = hpcrun_get_thread_data();
+      int fd, ret;
 
-    // I think unlocked is ok here (we don't overlap any system
-    // locks).  At any rate, locks only protect against threads, they
-    // don't help with signal handlers (that's much harder).
-    fd = hpcrun_open_trace_file(td->id);
-    hpcrun_trace_file_validate(fd >= 0, "open");
-    td->trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
-    ret = hpcio_outbuf_attach(&td->trace_outbuf, fd, td->trace_buffer,
+      // I think unlocked is ok here (we don't overlap any system
+      // locks).  At any rate, locks only protect against threads, they
+      // don't help with signal handlers (that's much harder).
+      fd = hpcrun_open_trace_file(td->id);
+      hpcrun_trace_file_validate(fd >= 0, "open");
+      td->trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
+      ret = hpcio_outbuf_attach(&td->trace_outbuf, fd, td->trace_buffer,
 			      HPCRUN_TraceBufferSz, HPCIO_OUTBUF_UNLOCKED);
-    hpcrun_trace_file_validate(ret == HPCFMT_OK, "open");
+      hpcrun_trace_file_validate(ret == HPCFMT_OK, "open");
 
-    hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
+      hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
 #ifdef DATACENTRIC_TRACE
-    flags.fields.isDataCentric = true;
+      flags.fields.isDataCentric = true;
 #else
-    flags.fields.isDataCentric = false;
+      flags.fields.isDataCentric = false;
 #endif
 
-    ret = hpctrace_fmt_hdr_outbuf(flags, &td->trace_outbuf);
-    hpcrun_trace_file_validate(ret == HPCFMT_OK, "write header to");
+      ret = hpctrace_fmt_hdr_outbuf(flags, &td->trace_outbuf);
+      hpcrun_trace_file_validate(ret == HPCFMT_OK, "write header to");
+    }
+    else {
+      // create a cpu-centric trace file
+      int fd, ret;
+      if(cpu < 0) return;
+      cpu_data_t *cpu_data = hpcrun_get_cpu_data(cpu);
+      // the trace buffer has been already allocated and attached
+      if(cpu_data->trace_buffer) return;
+      fd = hpcrun_open_cpu_trace_file(cpu);
+      hpcrun_trace_file_validate(fd >= 0, "cpu_open");
+      cpu_data->trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
+      ret = hpcio_outbuf_attach(&cpu_data->trace_outbuf, fd, cpu_data->trace_buffer,
+			      HPCRUN_TraceBufferSz, HPCIO_OUTBUF_UNLOCKED);
+      hpcrun_trace_file_validate(ret == HPCFMT_OK, "cpu_open");
+
+      hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
+#ifdef DATACENTRIC_TRACE
+      flags.fields.isDataCentric = true;
+#else
+      flags.fields.isDataCentric = false;
+#endif
+
+      ret = hpctrace_fmt_hdr_outbuf(flags, &cpu_data->trace_outbuf);
+      hpcrun_trace_file_validate(ret == HPCFMT_OK, "cpu: write header to");
+    }
   }
 }
 
@@ -180,8 +207,17 @@ hpcrun_trace_append(uint call_path_id, uint metric_id, int cpu)
     flags.fields.isDataCentric = false;
 #endif
 
-    ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, &td->trace_outbuf);
-    hpcrun_trace_file_validate(ret == HPCFMT_OK, "append");
+    if(cpu < 0) {
+      ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, &td->trace_outbuf);
+      hpcrun_trace_file_validate(ret == HPCFMT_OK, "append");
+    }
+
+    // append to cpu-centric file
+    else {
+      cpu_data_t *cpu_data = hpcrun_get_cpu_data(cpu);
+      ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, &cpu_data->trace_outbuf);
+      hpcrun_trace_file_validate(ret == HPCFMT_OK, "cpu append");
+    }
   }
 }
 
@@ -203,6 +239,27 @@ hpcrun_trace_close()
 }
 
 
+/*
+ * at the process fini, write out the cpu trace file
+ * */
+void
+hpcrun_cpu_trace_close()
+{
+  if (tracing ) {
+    cpu_data_t *cpu_data = NULL;
+    int i;
+    for (i = 0; i < hpcrun_get_max_cpu(); i++) {
+      if((cpu_data = hpcrun_get_cpu_data(i)) == NULL) continue;
+      int ret = hpcio_outbuf_close(&cpu_data->trace_outbuf);
+      hpcrun_trace_file_validate(ret == HPCFMT_OK, "close");
+
+      int rank = hpcrun_get_rank();
+      if (rank >= 0) {
+        hpcrun_rename_cpu_trace_file(rank, cpu_data->id);
+      }
+    }
+  }
+}
 //*********************************************************************
 // private operations
 //*********************************************************************

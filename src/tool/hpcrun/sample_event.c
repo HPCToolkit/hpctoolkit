@@ -62,6 +62,7 @@
 #include "segv_handler.h"
 #include "epoch.h"
 #include "thread_data.h"
+#include "cpu_data.h"
 #include "trace.h"
 #include "handling_sample.h"
 #include "interval-interface.h"
@@ -203,33 +204,49 @@ hpcrun_sample_callpath(void *context, int metricId,
   thread_data_t* td = hpcrun_get_thread_data();
   sigjmp_buf_t* it = &(td->bad_unwind);
   cct_node_t* node = NULL;
+  cct_node_t* cpu_node = NULL;
   epoch_t* epoch = td->epoch;
+
+  // get the epoch from cpu_data_t
+  cpu_data_t *cpu_data = hpcrun_get_cpu_data(cpu);
+  epoch_t *cpu_epoch = cpu_data->epoch;
 
   hpcrun_set_handling_sample(td);
 
   td->btbuf_cur = NULL;
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
+    hpcrun_set_cpu_trace_lock(cpu);
 
     if (epoch != NULL) {
       if (ENABLED(DEBUG_PARTIAL_UNW)){
 	EMSG("PARTIAL UNW debug sampler invoked @ sample %d", hpcrun_stats_num_samples_attempted());
 	node = hpcrun_dbg_sample_callpath(epoch, context, metricId, metricIncr,
 					  skipInner, isSync);
+	cpu_node = hpcrun_dbg_sample_callpath(cpu_epoch, context, metricId, metricIncr,
+					  skipInner, isSync);
       }
       else {
 	node = help_hpcrun_sample_callpath(epoch, context, metricId, metricIncr,
+					   skipInner, isSync);
+	cpu_node = help_hpcrun_sample_callpath(cpu_epoch, context, metricId, metricIncr,
 					   skipInner, isSync);
       }
       if (ENABLED(DUMP_BACKTRACES)) {
 	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
       }
     }
+    hpcrun_unset_cpu_trace_lock(cpu);
   }
   else {
     cct_bundle_t* cct = &(td->epoch->csdata);
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
 				 metricId, metricIncr);
+    hpcrun_set_cpu_trace_lock(cpu);
+    cct = &(cpu_epoch->csdata);
+    cpu_node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
+				 metricId, metricIncr);
+    hpcrun_unset_cpu_trace_lock(cpu);
     hpcrun_cleanup_partial_unwind();
   }
 
@@ -247,13 +264,18 @@ hpcrun_sample_callpath(void *context, int metricId,
     cct_addr_t frm = { .ip_norm = pc_proxy };
     cct_node_t* func_proxy = 
       hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);
+    cct_node_t* cpu_func_proxy = 
+      hpcrun_cct_insert_addr(hpcrun_cct_parent(cpu_node), &frm);
 
     ret.trace_node = func_proxy;
 
     // modify the persistent id
     hpcrun_cct_persistent_id_trace_mutate(func_proxy);
 
-    hpcrun_trace_append(hpcrun_cct_persistent_id(func_proxy), metricId, cpu);
+    hpcrun_trace_append(hpcrun_cct_persistent_id(func_proxy), metricId, -1);
+    hpcrun_set_cpu_trace_lock(cpu);
+    hpcrun_trace_append(hpcrun_cct_persistent_id(cpu_func_proxy), metricId, cpu);
+    hpcrun_unset_cpu_trace_lock(cpu);
   }
 
   hpcrun_clear_handling_sample(td);
