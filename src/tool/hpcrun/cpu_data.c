@@ -156,12 +156,14 @@ hpcrun_init_cpu_trace_lock()
 void
 hpcrun_set_cpu_trace_lock(int cpu)
 {
+  if(cpu < 0) return;
   spinlock_lock(&cpu_trace_lock[cpu]);
 }
 
 void
 hpcrun_unset_cpu_trace_lock(int cpu)
 {
+  if(cpu < 0) return;
   spinlock_unlock(&cpu_trace_lock[cpu]);
 }
 //***************************************************************************

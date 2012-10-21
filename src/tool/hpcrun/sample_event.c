@@ -130,6 +130,7 @@ record_partial_unwind(cct_bundle_t* cct,
 		      frame_t* bt_beg, frame_t* bt_last,
 		      int metricId, uint64_t metricIncr)
 {
+  if(!cct) return NULL;
   if (ENABLED(NO_PARTIAL_UNW)){
     return NULL;
   }
@@ -208,8 +209,11 @@ hpcrun_sample_callpath(void *context, int metricId,
   epoch_t* epoch = td->epoch;
 
   // get the epoch from cpu_data_t
-  cpu_data_t *cpu_data = hpcrun_get_cpu_data(cpu);
-  epoch_t *cpu_epoch = cpu_data->epoch;
+  epoch_t *cpu_epoch = NULL;
+  if(cpu >= 0) {
+    cpu_data_t *cpu_data = hpcrun_get_cpu_data(cpu);
+    cpu_epoch = cpu_data->epoch;
+  }
 
   hpcrun_set_handling_sample(td);
 
@@ -243,7 +247,8 @@ hpcrun_sample_callpath(void *context, int metricId,
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
 				 metricId, metricIncr);
     hpcrun_set_cpu_trace_lock(cpu);
-    cct = &(cpu_epoch->csdata);
+    if(cpu >= 0)
+      cct = &(cpu_epoch->csdata);
     cpu_node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
 				 metricId, metricIncr);
     hpcrun_unset_cpu_trace_lock(cpu);
@@ -265,21 +270,23 @@ hpcrun_sample_callpath(void *context, int metricId,
     cct_node_t* func_proxy = 
       hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);
 
-    hpcrun_set_cpu_trace_lock(cpu);
-    cct_node_t* cpu_func_proxy = 
-      hpcrun_cct_insert_addr(hpcrun_cct_parent(cpu_node), &frm);
-    hpcrun_unset_cpu_trace_lock(cpu);
 
     ret.trace_node = func_proxy;
 
     // modify the persistent id
     hpcrun_cct_persistent_id_trace_mutate(func_proxy);
-    hpcrun_cct_persistent_id_trace_mutate(cpu_func_proxy);
-
     hpcrun_trace_append(hpcrun_cct_persistent_id(func_proxy), metricId, -1);
-    hpcrun_set_cpu_trace_lock(cpu);
-    hpcrun_trace_append(hpcrun_cct_persistent_id(cpu_func_proxy), metricId, cpu);
-    hpcrun_unset_cpu_trace_lock(cpu);
+
+    if(cpu >= 0) {
+      hpcrun_set_cpu_trace_lock(cpu);
+      cct_node_t* cpu_func_proxy = 
+        hpcrun_cct_insert_addr(hpcrun_cct_parent(cpu_node), &frm);
+
+      hpcrun_cct_persistent_id_trace_mutate(cpu_func_proxy);
+
+      hpcrun_trace_append(hpcrun_cct_persistent_id(cpu_func_proxy), metricId, cpu);
+      hpcrun_unset_cpu_trace_lock(cpu);
+    }
   }
 
   hpcrun_clear_handling_sample(td);
@@ -380,6 +387,7 @@ hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context,
 			   uint64_t metricIncr, 
 			   int skipInner, int isSync)
 {
+  if(!epoch) return NULL;
   void* pc = hpcrun_context_pc(context);
 
   TMSG(DEBUG_PARTIAL_UNW, "hpcrun take profile sample @ %p",pc);
@@ -402,6 +410,7 @@ help_hpcrun_sample_callpath(epoch_t *epoch, void *context,
 			    uint64_t metricIncr, 
 			    int skipInner, int isSync)
 {
+  if(!epoch) return NULL;
   void* pc = hpcrun_context_pc(context);
 
   TMSG(SAMPLE_CALLPATH, "%s taking profile sample @ %p", __func__, pc);

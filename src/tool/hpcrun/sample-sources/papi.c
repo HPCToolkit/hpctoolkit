@@ -96,6 +96,7 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 #include <trace.h>
+#include "env.h"
 
 /******************************************************************************
  * macros
@@ -552,11 +553,15 @@ papi_event_handler(int event_set, void *pc, void *data_addr, unsigned long t, un
   int my_events[MAX_EVENTS];
   int my_event_count = MAX_EVENTS;
 
+  char *smt_factor;
+
 //printf("pc is %p, data_addr is %p, time is %ld, cpu is %ld\n", pc, data_addr, t, cpu);
   // create the trace file
   if(ENABLED(CPU_CENTRIC)) {
-    // 4 is hard coded here for power 7 as SMT4
-    cpu = cpu / 4; 
+    // FIXME: use HPCRUN_SMT environmental variable to compute the physical core no. 
+    if((smt_factor=getenv(HPCRUN_SMT))) {
+      cpu = cpu / atoi(smt_factor);
+    }
     TD_GET(cpu_id) = cpu;
     // create the cpu-centric data structures
     hpcrun_set_cpu_trace_lock(cpu);

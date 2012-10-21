@@ -89,4 +89,6 @@ extern const char* HPCRUN_EVENT_LIST;
 extern const char* HPCRUN_MEMSIZE;
 extern const char* HPCRUN_LOW_MEMSIZE;
 
+extern const char* HPCRUN_SMT;
+
 #endif /* hpcrun_env_h */

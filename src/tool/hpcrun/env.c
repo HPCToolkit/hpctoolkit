@@ -55,3 +55,5 @@ const char* PAPI_EVENT_LIST        = "PAPI_EVENT_LIST";
 const char* HPCRUN_EVENT_LIST      = "HPCRUN_EVENT_LIST";
 const char* HPCRUN_MEMSIZE         = "HPCRUN_MEMSIZE";
 const char* HPCRUN_LOW_MEMSIZE     = "HPCRUN_LOW_MEMSIZE";
+
+const char* HPCRUN_SMT             = "HPCRUN_SMT";
