@@ -675,6 +675,10 @@ UNW_PPC64_FALSE
 UNW_PPC64_TRUE
 UNW_X86_FALSE
 UNW_X86_TRUE
+LIBUNWIND_HPCLINK_LIBS
+LIBUNWIND_RUN_DIR
+LIBUNWIND_LIB
+LIBUNWIND_COPY
 OPT_LIBUNWIND_LIBA
 OPT_LIBUNWIND_LIBSO
 OPT_LIBUNWIND_LDFLAGS
@@ -17177,6 +17181,9 @@ OPT_LIBUNWIND_LIBPATH=
 OPT_LIBUNWIND_LDFLAGS=
 OPT_LIBUNWIND_LIBSO=
 OPT_LIBUNWIND_LIBA=
+LIBUNWIND_COPY=no
+LIBUNWIND_RUN_DIR=
+LIBUNWIND_HPCLINK_LIBS=
 
 if test "$use_externals" = yes ; then
   OPT_LIBUNWIND="$ext_libunwind_prefix"
@@ -17193,24 +17200,39 @@ if test "${with_libunwind+set}" = set; then :
       /*) OPT_LIBUNWIND=${withval} ;;
       *) as_fn_error $? "--with-libunwind requires absolute path as argument; given '${withval}'" "$LINENO" 5 ;;
    esac
+   OPT_HAVE_LIBUNWIND=yes
    UNWINDER=libunw
 fi
 
 
 # Check for LIBUNWIND > .9xxx [skip for now]
 
+# Check for libunwind sanity
+if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
+  if ! test -f "$OPT_LIBUNWIND/include/libunwind.h"; then
+     as_fn_error $? "libunwind required, but specified library path is invalid (no libunwind.h)" "$LINENO" 5
+  fi
+  if test ! \( -f "$OPT_LIBUNWIND/lib/libunwind.so" -o -f "$OPT_LIBUNWIND/lib/libunwind.a" \) ; then
+     as_fn_error $? "libunwind required, but specified library path is invalid (no libunwind.a or libunwind.so)" "$LINENO" 5
+  fi
+fi
+
 if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes (${OPT_LIBUNWIND_LIBSO})" >&5
 $as_echo "yes (${OPT_LIBUNWIND_LIBSO})" >&6; }
 
+  LIBUNWIND_COPY=yes
+  LIBUNWIND_LIB="$OPT_LIBUNWIND/lib"
+  LIBUNWIND_RUN_DIR="$hpc_ext_libs_dir"
   OPT_LIBUNWIND_IFLAGS="-I$OPT_LIBUNWIND/include"
   OPT_LIBUNWIND_LIBPATH="$OPT_LIBUNWIND"
 
   lib_unw_arch=$host_cpu
+  LIBUNWIND_HPCLINK_LIBS="-lunwind-$lib_unw_arch -lunwind"
 #
 # Attach architecture code to -l on LIBUNWIND_LDFLAGS
 #
-  OPT_LIBUNWIND_LDFLAGS="-L$OPT_LIBUNWIND/lib -lunwind -lunwind-$lib_unw_arch"
+  OPT_LIBUNWIND_LDFLAGS="-L$OPT_LIBUNWIND/lib $LIBUNWIND_HPCLINK_LIBS"
 
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -17230,6 +17252,10 @@ else
   OPT_HAVE_LIBUNWIND_TRUE='#'
   OPT_HAVE_LIBUNWIND_FALSE=
 fi
+
+
+
+
 
 
 

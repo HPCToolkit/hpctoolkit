@@ -203,7 +203,8 @@ UNW_PPC64_LD_FLAGS =
 
 UNW_LIBUNW_FILES = \
        $(UNW_UNIV_FILES) \
-       unwind/generic-libunwind/libunw-unwind.c
+       unwind/generic-libunwind/libunw-unwind.c \
+       unwind/common/default_validation_summary.c
 
 UNW_LIBUNW_INCLUDE_DIRS = \
        -I$(srcdir)/unwind/generic-libunwind

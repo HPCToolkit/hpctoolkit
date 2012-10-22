@@ -1128,6 +1128,9 @@ OPT_LIBUNWIND_LIBPATH=
 OPT_LIBUNWIND_LDFLAGS=
 OPT_LIBUNWIND_LIBSO=
 OPT_LIBUNWIND_LIBA=
+LIBUNWIND_COPY=no
+LIBUNWIND_RUN_DIR=
+LIBUNWIND_HPCLINK_LIBS=
 
 if test "$use_externals" = yes ; then
   OPT_LIBUNWIND="$ext_libunwind_prefix"
@@ -1144,22 +1147,37 @@ AC_ARG_WITH([libunwind],
       /*) OPT_LIBUNWIND=${withval} ;;
       *) AC_MSG_ERROR([--with-libunwind requires absolute path as argument; given '${withval}']) ;;
    esac
+   OPT_HAVE_LIBUNWIND=yes
    UNWINDER=libunw],
   [])
 
 # Check for LIBUNWIND > .9xxx [skip for now]
 
+# Check for libunwind sanity
+if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
+  if ! test -f "$OPT_LIBUNWIND/include/libunwind.h"; then
+     AC_MSG_ERROR([libunwind required, but specified library path is invalid (no libunwind.h)])
+  fi
+  if test ! \( -f "$OPT_LIBUNWIND/lib/libunwind.so" -o -f "$OPT_LIBUNWIND/lib/libunwind.a" \) ; then
+     AC_MSG_ERROR([libunwind required, but specified library path is invalid (no libunwind.a or libunwind.so)])
+  fi
+fi
+
 if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then 
   AC_MSG_RESULT([yes (${OPT_LIBUNWIND_LIBSO})])
 
+  LIBUNWIND_COPY=yes
+  LIBUNWIND_LIB="$OPT_LIBUNWIND/lib"
+  LIBUNWIND_RUN_DIR="$hpc_ext_libs_dir"
   OPT_LIBUNWIND_IFLAGS="-I$OPT_LIBUNWIND/include"
   OPT_LIBUNWIND_LIBPATH="$OPT_LIBUNWIND"
 
   lib_unw_arch=$host_cpu
+  LIBUNWIND_HPCLINK_LIBS="-lunwind-$lib_unw_arch -lunwind"
 #
 # Attach architecture code to -l on LIBUNWIND_LDFLAGS
 #
-  OPT_LIBUNWIND_LDFLAGS="-L$OPT_LIBUNWIND/lib -lunwind -lunwind-$lib_unw_arch"
+  OPT_LIBUNWIND_LDFLAGS="-L$OPT_LIBUNWIND/lib $LIBUNWIND_HPCLINK_LIBS"
 
 else
   AC_MSG_RESULT([no])
@@ -1177,6 +1195,10 @@ AC_SUBST(OPT_LIBUNWIND_LIBPATH)
 AC_SUBST(OPT_LIBUNWIND_LDFLAGS)
 AC_SUBST(OPT_LIBUNWIND_LIBSO)
 AC_SUBST(OPT_LIBUNWIND_LIBA)
+AC_SUBST(LIBUNWIND_COPY)
+AC_SUBST(LIBUNWIND_LIB)
+AC_SUBST(LIBUNWIND_RUN_DIR)
+AC_SUBST(LIBUNWIND_HPCLINK_LIBS)
 
 #
 # set up automake choice of unwinder

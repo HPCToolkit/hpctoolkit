@@ -361,7 +361,8 @@ am__objects_18 = libhpcrun_la-papi.lo
 am__objects_20 = libhpcrun_la-upc.lo
 @OPT_ENABLE_UPC_TRUE@am__objects_21 = $(am__objects_20)
 am__objects_22 = libhpcrun_la-backtrace.lo libhpcrun_la-unw-throw.lo
-am__objects_23 = $(am__objects_22) libhpcrun_la-libunw-unwind.lo
+am__objects_23 = $(am__objects_22) libhpcrun_la-libunw-unwind.lo \
+	libhpcrun_la-default_validation_summary.lo
 am__objects_24 = $(am__objects_22) libhpcrun_la-splay.lo \
 	libhpcrun_la-stack_troll.lo libhpcrun_la-ui_tree.lo
 am__objects_25 = $(am__objects_24) libhpcrun_la-ppc64-unwind.lo \
@@ -541,7 +542,8 @@ am__objects_39 = libhpcrun_o-upc.$(OBJEXT)
 @OPT_ENABLE_UPC_TRUE@am__objects_40 = $(am__objects_39)
 am__objects_41 = libhpcrun_o-backtrace.$(OBJEXT) \
 	libhpcrun_o-unw-throw.$(OBJEXT)
-am__objects_42 = $(am__objects_41) libhpcrun_o-libunw-unwind.$(OBJEXT)
+am__objects_42 = $(am__objects_41) libhpcrun_o-libunw-unwind.$(OBJEXT) \
+	libhpcrun_o-default_validation_summary.$(OBJEXT)
 am__objects_43 = $(am__objects_41) libhpcrun_o-splay.$(OBJEXT) \
 	libhpcrun_o-stack_troll.$(OBJEXT) \
 	libhpcrun_o-ui_tree.$(OBJEXT)
@@ -720,6 +722,10 @@ LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIBTOOL_DEPS = @LIBTOOL_DEPS@
+LIBUNWIND_COPY = @LIBUNWIND_COPY@
+LIBUNWIND_HPCLINK_LIBS = @LIBUNWIND_HPCLINK_LIBS@
+LIBUNWIND_LIB = @LIBUNWIND_LIB@
+LIBUNWIND_RUN_DIR = @LIBUNWIND_RUN_DIR@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -935,7 +941,8 @@ UNW_PPC64_LD_FLAGS =
 # configuration
 UNW_LIBUNW_FILES = \
        $(UNW_UNIV_FILES) \
-       unwind/generic-libunwind/libunw-unwind.c
+       unwind/generic-libunwind/libunw-unwind.c \
+       unwind/common/default_validation_summary.c
 
 UNW_LIBUNW_INCLUDE_DIRS = \
        -I$(srcdir)/unwind/generic-libunwind
