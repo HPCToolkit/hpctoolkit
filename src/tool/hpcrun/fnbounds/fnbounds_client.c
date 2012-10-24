@@ -312,7 +312,7 @@ shutdown_server(void)
   fdin = -1;
   client_status = SYSERV_INACTIVE;
 
-  TMSG(SYSTEM_SERVER, "shutdown");
+  TMSG(SYSTEM_SERVER, "syserv shutdown");
 }
 
 
@@ -334,7 +334,7 @@ launch_server(void)
   }
 
   if (pipe(sendfd) != 0 || pipe(recvfd) != 0) {
-    EMSG("SYSTEM_SERVER ERROR: launch failed: pipe failed");
+    EMSG("SYSTEM_SERVER ERROR: syserv launch failed: pipe failed");
     return -1;
   }
 
@@ -344,7 +344,7 @@ launch_server(void)
     //
     // fork failed
     //
-    EMSG("SYSTEM_SERVER ERROR: launch failed: fork failed");
+    EMSG("SYSTEM_SERVER ERROR: syserv launch failed: fork failed");
     return -1;
   }
   else if (pid == 0) {
@@ -410,7 +410,7 @@ launch_server(void)
   child_pid = pid;
   client_status = SYSERV_ACTIVE;
 
-  TMSG(SYSTEM_SERVER, "launch: success, child: %d", (int) child_pid);
+  TMSG(SYSTEM_SERVER, "syserv launch: success, child: %d", (int) child_pid);
   return 0;
 }
 
@@ -419,7 +419,7 @@ launch_server(void)
 int
 hpcrun_syserv_init(void)
 {
-  TMSG(SYSTEM_SERVER, "%s", __func__);
+  TMSG(SYSTEM_SERVER, "syserv init");
 
   server = getenv("HPCRUN_FNBOUNDS_CMD");
   if (server == NULL) {
@@ -428,7 +428,7 @@ hpcrun_syserv_init(void)
   }
 
   if (monitor_sigaction(SIGPIPE, &hpcrun_sigpipe_handler, 0, NULL) != 0) {
-    EMSG("unable to install handler for SIGPIPE");
+    EMSG("SYSTEM_SERVER ERROR: unable to install handler for SIGPIPE");
   }
 
   return launch_server();
@@ -445,7 +445,7 @@ hpcrun_syserv_fini(void)
   }
   shutdown_server();
 
-  TMSG(SYSTEM_SERVER, "%s", __func__);
+  TMSG(SYSTEM_SERVER, "syserv fini");
 }
 
 

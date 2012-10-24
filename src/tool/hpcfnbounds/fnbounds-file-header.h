@@ -44,9 +44,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//
-//
-
 #ifndef _FNBOUNDS_FILE_HEADER_
 #define _FNBOUNDS_FILE_HEADER_
 
@@ -60,6 +57,11 @@
 #define FNBOUNDS_C_FORMAT       "%s/%s.fnbounds.c"
 #define FNBOUNDS_TEXT_FORMAT    "%s/%s.fnbounds.txt"
 
+
+// All of this is now superseded by syserv.h and this entire file will
+// go away when we remove the old system server.
+
+#if 0
 //
 // The extra info in the binary file of function addresses, written by
 // hpcfnbounds-bin and read in the main process.  We call it "header",
@@ -75,5 +77,6 @@ struct fnbounds_file_header {
   uint64_t reference_offset;
   int32_t  is_relocatable; // boolean
 };
+#endif
 
 #endif
