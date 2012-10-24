@@ -49,6 +49,8 @@
 
 using namespace std;
 
+void function_entries_reinit();
+
 void add_function_entry(void *address, const string *comment, bool isglobal, 
 			int call_count = 0);
 void add_stripped_function_entry(void *function_entry, int call_count = 0);

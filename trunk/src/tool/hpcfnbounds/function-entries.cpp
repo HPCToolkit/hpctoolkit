@@ -56,6 +56,7 @@
 #include "function-entries.h"
 #include "process-ranges.h"
 #include "intervals.h"
+#include "server.h"
 
 #include <map>
 #include <set>
@@ -111,6 +112,27 @@ static long num_entries_total = 0;
 /******************************************************************************
  * interface operations 
  *****************************************************************************/
+
+// Free the function_entries map, the Function objects in the map, the
+// excluded_function_entries set and cbranges intervals.
+//
+void
+function_entries_reinit(void)
+{
+  FunctionSet::iterator it;
+
+  for (it = function_entries.begin(); it != function_entries.end(); it++) {
+    Function *f = it->second;
+    delete f->comment;
+    delete f;
+  }
+  function_entries.clear();
+  excluded_function_entries.clear();
+  cbranges.clear();
+  num_entries_in_buf = 0;
+  num_entries_total = 0;
+}
+
 
 void
 exclude_function_entry(void *addr)
@@ -249,6 +271,11 @@ static void
 dump_function_entry(void *addr, const char *comment)
 {
   num_entries_total++;
+
+  if (server_mode()) {
+    syserv_add_addr(addr, function_entries.size());
+    return;
+  }
 
   if (binary_fmt_fd() >= 0) {
     addr_buf[num_entries_in_buf] = addr;

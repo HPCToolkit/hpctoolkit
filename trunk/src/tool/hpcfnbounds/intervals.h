@@ -52,5 +52,6 @@ private:
 public:
   void insert(void *start, void *end); 
   std::pair<void *const, void *> *contains(void * i); 
+  void clear();
   void dump(); 
 };

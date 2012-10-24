@@ -84,10 +84,10 @@ XED2_LIB = @XED2_LIB@
 
 MYSOURCES = \
 	main.cpp \
-	\
 	code-ranges.cpp \
 	function-entries.cpp \
-	intervals.cpp
+	intervals.cpp \
+	server.cpp
 
 MYCPPFLAGS = $(HPC_IFLAGS) -I$(SYMTABAPI_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC)
 

@@ -281,6 +281,7 @@ endif
 
 
 MY_DYNAMIC_FILES = 			\
+	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
 	monitor-exts/openmp.c		\
 	hpcrun_dlfns.c                  \
