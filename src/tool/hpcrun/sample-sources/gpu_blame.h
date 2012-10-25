@@ -97,6 +97,11 @@ typedef struct stream_node_t {
     struct event_list_node_t *latest_event_node;
     struct event_list_node_t *unfinished_event_node;
     struct stream_node_t *next_unfinished_stream;
+    // ----------------------------------------
+    // IDLE NODE persistent id for this stream
+    // ----------------------------------------
+    int32_t idle_node_id;
+    
 } stream_node_t;
 
 
