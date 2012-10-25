@@ -149,109 +149,6 @@ static FILE * open_stream_data_file(stream_data_t *st)
   return f;
 }
 
-typedef void (*stream_cct_op_t)(stream_data_t *st, cct_node_t* cct, cct_op_arg_t arg, size_t level);
-
-static void
-stream_lwrite(stream_data_t *st, cct_node_t* node, cct_op_arg_t arg, size_t level)
-{
-    write_arg_t* my_arg = (write_arg_t*) arg;
-    hpcrun_fmt_cct_node_t* tmp = my_arg->tmp_node;
-    cct_node_t* parent = hpcrun_cct_parent(node);
-    epoch_flags_t flags = my_arg->flags;
-    cct_addr_t* addr    = hpcrun_cct_addr(node);
-    
-    tmp->id = hpcrun_cct_persistent_id(node);
-    tmp->id_parent = parent ? hpcrun_cct_persistent_id(parent) : 0;
-    
-    // if leaf, chg sign of id when written out
-    if (hpcrun_cct_is_leaf(node)) {
-        tmp->id = - tmp->id;
-    }
-    if (flags.fields.isLogicalUnwind){
-        tmp->as_info = addr->as_info;
-        lush_lip_init(&tmp->lip);
-        if (addr->lip) {
-            memcpy(&(tmp->lip), &(addr->lip), sizeof(lush_lip_t));
-        }
-    }
-    tmp->lm_id = (addr->ip_norm).lm_id;
-    
-    // double casts to avoid warnings when pointer is < 64 bits 
-    tmp->lm_ip = (hpcfmt_vma_t) (uintptr_t) (addr->ip_norm).lm_ip;
-    
-    tmp->num_metrics = my_arg->num_metrics;
-    hpcrun_metric_set_dense_copy(tmp->metrics, hpcrun_get_metric_set(node),
-                                 my_arg->num_metrics);
-    hpcrun_fmt_cct_node_fwrite(tmp, flags, my_arg->fs);
-}
-
-
-static void
-stream_walk_child_lrs(stream_data_t *st, cct_node_t* cct, 
-               stream_cct_op_t op, cct_op_arg_t arg, size_t level,
-               void (*wf)(stream_data_t *st, cct_node_t* n, stream_cct_op_t o, cct_op_arg_t a, size_t l))
-{
-    if (!cct) return;
-    
-    stream_walk_child_lrs(st, cct->left, op, arg, level, wf);
-    stream_walk_child_lrs(st, cct->right, op, arg, level, wf);
-    wf(st, cct, op, arg, level);
-}
-
-
-void
-hpcrun_stream_cct_walk_node_1st_w_level(stream_data_t *st, cct_node_t* cct, stream_cct_op_t op, cct_op_arg_t arg, size_t level)
-{
-    if (!cct) return;
-    op(st, cct, arg, level);
-    stream_walk_child_lrs(st, cct->children, op, arg, level+1,
-                   hpcrun_stream_cct_walk_node_1st_w_level);
-}
-
-
-int
-hpcrun_stream_cct_fwrite(stream_data_t *st, cct_node_t* cct, FILE* fs, epoch_flags_t flags)
-{
-    if (!fs) return HPCRUN_ERR;
-    
-    hpcfmt_int8_fwrite((uint64_t) hpcrun_cct_num_nodes(cct), fs);
-    TMSG(DATA_WRITE, "num cct nodes = %d", hpcrun_cct_num_nodes(cct));
-    
-    hpcfmt_uint_t num_metrics = hpcrun_get_num_metrics();
-    TMSG(DATA_WRITE, "num metrics in a cct node = %d", num_metrics);
-    
-    hpcrun_fmt_cct_node_t tmp_node;
-    
-    write_arg_t write_arg = {
-        .num_metrics = num_metrics,
-        .fs          = fs,
-        .flags       = flags,
-        .tmp_node    = &tmp_node,
-    };
-    
-    hpcrun_metricVal_t metrics[num_metrics];
-    tmp_node.metrics = &(metrics[0]);
-    
-    hpcrun_stream_cct_walk_node_1st_w_level(st, cct, stream_lwrite, &write_arg, 0);
-    
-    return HPCRUN_OK;
-}
-
-
-int 
-hpcrun_stream_cct_bundle_fwrite(stream_data_t *st, FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl)
-{
-    if (!fs) { return HPCRUN_ERR; }
-    
-    cct_node_t* final = bndl->tree_root;
-    cct_node_t* partial_insert = final;
-    hpcrun_cct_insert_node(bndl->partial_unw_root, bndl->special_idle_node);
-    hpcrun_cct_insert_node(partial_insert, bndl->partial_unw_root);
- 
-    return hpcrun_stream_cct_fwrite(st, bndl->top, fs, flags);
-}
-
-
 static int
 write_stream_epoch(FILE* f, stream_data_t *st)
 {
@@ -301,7 +198,7 @@ write_stream_epoch(FILE* f, stream_data_t *st)
 
 	/*FIXME: hpcrun_cct_bundle_fwrite does a lot more than just writing out to file
  */
-	int ret = hpcrun_stream_cct_bundle_fwrite(st, f, stream_epoch_flags, cct);
+	int ret = hpcrun_cct_bundle_fwrite(f, stream_epoch_flags, cct);
 	if(ret != HPCRUN_OK) {
 					TMSG(DATA_WRITE, "Error writing tree %#lx", cct);
 					TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", cct->num_nodes);
