@@ -69,20 +69,18 @@ stream_data_t *hpcrun_stream_data_alloc_init(int device_id, int id)
 	st->device_id = device_id;
   st->id = id;
   st->epoch = hpcrun_malloc(sizeof(epoch_t));
-	st->epoch->csdata_ctxt = copy_thr_ctxt(TD_GET(epoch)->csdata.ctxt); //copy_thr_ctxt(thr_ctxt);
+  st->epoch->csdata_ctxt = copy_thr_ctxt(TD_GET(epoch)->csdata.ctxt); //copy_thr_ctxt(thr_ctxt);
   hpcrun_cct_bundle_init(&(st->epoch->csdata), (st->epoch->csdata).ctxt);
   st->epoch->loadmap = hpcrun_getLoadmap();
   st->epoch->next  = NULL;
+  hpcrun_cct2metrics_init(&(st->cct2metrics_map)); //this just does st->map = NULL;
 
-	hpcrun_cct2metrics_init(&(st->cct2metrics_map)); //this just does st->map = NULL;
-
-  hpcrun_bt_init(&(st->bt), NEW_BACKTRACE_INIT_SZ);
 
   st->trace_min_time_us = 0;
   st->trace_max_time_us = 0;
   st->hpcrun_file  = NULL;
 
-	return st;	
+  return st;	
 }
 
 //duplicate of the function from cct2metrics.c

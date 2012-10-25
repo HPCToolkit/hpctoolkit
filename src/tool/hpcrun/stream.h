@@ -54,15 +54,10 @@ typedef struct stream_data_t {
   // epoch: loadmap + cct + cct_ctxt
   // ----------------------------------------
   epoch_t* epoch;
-	frame_t* btbuf_cur;  // current frame when actively constructing a backtrace
-  frame_t* btbuf_beg;
-	frame_t* btbuf_end;  
-	frame_t* btbuf_sav;
-	backtrace_t bt; 
 
-	//metrics: this is needed otherwise 
-	//hpcprof does not pick them up
-	cct2metrics_t* cct2metrics_map;
+  //metrics: this is needed otherwise 
+  //hpcprof does not pick them up
+  cct2metrics_t* cct2metrics_map;
 
   // ----------------------------------------
   // tracing
@@ -80,10 +75,6 @@ typedef struct stream_data_t {
 stream_data_t *hpcrun_stream_data_alloc_init(int device_id, int id);
 cct_node_t *stream_duplicate_cpu_node(stream_data_t *st, ucontext_t *context, cct_node_t *n);
 void hpcrun_stream_finalize(stream_data_t *st);
-int hpcrun_generate_stream_backtrace(stream_data_t *st, ucontext_t *context, backtrace_info_t *bt, int skipInner);
-extern cct_node_t* hpcrun_cct_insert_backtrace(cct_node_t* cct, frame_t* path_beg, frame_t* path_end);
-frame_t* hpcrun_expand_stream_btbuf(stream_data_t *st);
-void hpcrun_ensure_stream_btbuf_avail(stream_data_t *st);
 
 //---------------write_Stream_data.c-------------
 
