@@ -149,69 +149,6 @@ static FILE * open_stream_data_file(stream_data_t *st)
   return f;
 }
 
-static int
-write_stream_epoch(FILE* f, stream_data_t *st)
-{
-  //uint32_t num_epochs = 0;
-  if (! hpcrun_sample_prob_active())
-    return HPCRUN_OK;
-	epoch_t* current_epoch = st->epoch;
-
-	stream_epoch_flags.fields.isLogicalUnwind = hpcrun_isLogicalUnwind();
-	TMSG(LUSH,"epoch lush flag set to %s", stream_epoch_flags.fields.isLogicalUnwind ? "true" : "false");
-
-	TMSG(DATA_WRITE,"epoch flags = %"PRIx64"", stream_epoch_flags.bits);
-	hpcrun_fmt_epochHdr_fwrite(f, stream_epoch_flags,
-									stream_default_measurement_granularity,
-									stream_default_ra_to_callsite_distance,
-									"TODO:epoch-name","TODO:epoch-value",
-									NULL);
-
-	metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl();
-
-	TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
-	hpcrun_fmt_metricTbl_fwrite(metric_tbl, f);
-
-	TMSG(DATA_WRITE, "Done writing metric data");
-	TMSG(DATA_WRITE, "Preparing to write loadmap");
-
-	hpcrun_loadmap_t* current_loadmap = current_epoch->loadmap;
-
-	hpcfmt_int4_fwrite(current_loadmap->size, f);
-
-	// N.B.: Write in reverse order to obtain nicely ascending LM ids.
-	for (load_module_t* lm_src = current_loadmap->lm_end;
-									(lm_src); lm_src = lm_src->prev) {
-					loadmap_entry_t lm_entry;
-					lm_entry.id = lm_src->id;
-					lm_entry.name = lm_src->name;
-					lm_entry.flags = 0;
-
-					hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, f);
-	}
-
-	TMSG(DATA_WRITE, "Done writing loadmap");
-
-	cct_bundle_t* cct      = &(current_epoch->csdata);
-	//int i= (rand()) % 100;
-	//hpcrun_get_metric_proc(0)(0, hpcrun_reify_metric_set(cct), (cct_metric_data_t){.i = i});
-
-	/*FIXME: hpcrun_cct_bundle_fwrite does a lot more than just writing out to file
- */
-	int ret = hpcrun_cct_bundle_fwrite(f, stream_epoch_flags, cct);
-	if(ret != HPCRUN_OK) {
-					TMSG(DATA_WRITE, "Error writing tree %#lx", cct);
-					TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", cct->num_nodes);
-					EMSG("could not save profile data to hpcrun file");
-					perror("write_profile_data");
-					ret = HPCRUN_ERR; // FIXME: return this value now
-	}
-	else {
-					TMSG(DATA_WRITE, "saved profile data to hpcrun file ");
-	}
-	return HPCRUN_OK;
-}
-
 
 int
 hpcrun_write_stream_profile_data(stream_data_t *st)
@@ -222,7 +159,7 @@ hpcrun_write_stream_profile_data(stream_data_t *st)
   if (f == NULL)
     return HPCRUN_ERR;
 
-  write_stream_epoch(f, st);
+  write_epochs(f, st->epoch);
 
   TMSG(DATA_WRITE,"closing file");
   hpcio_fclose(f);
