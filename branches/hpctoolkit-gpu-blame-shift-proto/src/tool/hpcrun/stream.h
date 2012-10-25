@@ -44,41 +44,8 @@
 #include "loadmap.h"
 #include "sample_prob.h"
 
-/*struct kind_info_t {
-  int idx;     // current index in kind
-  kind_info_t* link; // all kinds linked together in singly linked list
-};*/
-
-struct stream_metrics_data_t {
-	int n_metrics;
-	hpcrun_metricVal_t* null_metrics;
-	metric_list_t* metric_data;
-	bool has_set_max_metrics;
-	metric_list_t* pre_alloc;
-	metric_desc_t** id2metric;
-	metric_desc_p_tbl_t metric_tbl;
-	struct kind_info_t *kinds;
-	kind_info_t* current_kind;
-	kind_info_t* current_insert;
-	metric_upd_proc_t** metric_proc_tbl;
-	metric_proc_map_t* proc_map;
-};
 
 extern	int n_metrics;
-extern	hpcrun_metricVal_t* null_metrics;
-extern	metric_list_t* metric_data;
-extern	bool has_set_max_metrics;
-extern	metric_list_t* pre_alloc;
-extern	metric_desc_t** id2metric;
-extern	metric_desc_p_tbl_t metric_tbl;
-extern	struct kind_info_t kinds;
-extern	kind_info_t* current_kind;
-extern	kind_info_t* current_insert;
-extern	metric_upd_proc_t** metric_proc_tbl;
-extern	metric_proc_map_t* proc_map;
-
-
-
 
 typedef struct stream_data_t {
   int device_id;
@@ -107,11 +74,6 @@ typedef struct stream_data_t {
   // ----------------------------------------
   FILE* hpcrun_file;
 
-  // ----------------------------------------
-  // IDLE NODE persistent id
-  // ----------------------------------------
-  int32_t idle_node_id;
-
 } stream_data_t;
 
 //---------stream_data.c---------------------
@@ -126,21 +88,6 @@ void hpcrun_ensure_stream_btbuf_avail(stream_data_t *st);
 //---------------write_Stream_data.c-------------
 
 int hpcrun_write_stream_profile_data(stream_data_t *st);
-
-//---------------cct2metrics------------
-
-void stream_cct_metric_data_increment(stream_data_t *st, int metric_id,
-			  cct_node_t* x,
-			  cct_metric_data_t incr);
-
-metric_set_t*
-hpcrun_stream_get_metric_set(stream_data_t *st, cct_node_id_t cct_id);
-
-bool
-hpcrun_stream_has_metric_set(stream_data_t *st, cct_node_id_t cct_id);
-
-void stream_cct2metrics_assoc(stream_data_t *st, cct_node_id_t node, metric_set_t* metrics);
-
 
 #endif
 
