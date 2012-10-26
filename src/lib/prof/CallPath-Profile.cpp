@@ -1508,12 +1508,14 @@ Profile::canonicalize(uint rFlags)
 
   if (root_dyn && root_dyn->isPrimarySynthRoot()) {
     splicePoint = root;
+#if 0 // keep monitor_main for xl10 use
     if (rFlags & RFlg_HpcrunData) {
       // hpcrun generates CCTs in the form diagrammed above
       if (splicePoint->childCount() == 1) {
 	splicePoint = splicePoint->firstChild();
       }
     }
+#endif
   }
 
   // ------------------------------------------------------------
