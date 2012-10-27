@@ -34,6 +34,7 @@
 
 #include <ucontext.h>
 
+#include <include/hpctoolkit-config.h>
 
 //************************************************
 // external includes
@@ -223,8 +224,9 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* c)
     c->sp = c->bp = NULL;
     c->intvl = &(c->real_intvl);
     c->intvl->lm = NULL;
-
+    TMSG(UNW, "(libunw) step gives pc=%p", c->pc_unnorm);
     ret = (ret < 0) ? STEP_ERROR : ret;
+    TMSG(UNW, "(libunw) step ret=%d", ret);
   }
   return ret;
 }

@@ -374,6 +374,7 @@ HOST_CPU_PPC=no
 HOST_CPU_X86=no
 HOST_CPU_X86_64=no
 HOST_CPU_X86_FAMILY=no
+HOST_CPU_IA64=no
 
 case "${host}" in
   # Linux
@@ -405,7 +406,10 @@ case "${host}" in
   ia64*-*-linux*)
     # __ia64 && __linux
     HOST_OS="Linux"
-    AC_DEFINE([HOST_OS_LINUX], [1], [HOST OS: Linux])
+    HOST_CPU_IA64=yes
+    UNWINDER=libunw
+    AC_DEFINE([HOST_CPU_IA64], [1], [HOST CPU: ia64 (itanium)])
+    AC_DEFINE([HOST_OS_LINUX], [], [])
     ;;
 
   mips64*-*-linux*)
@@ -493,6 +497,7 @@ AM_CONDITIONAL([HOST_CPU_PPC],    [test "${HOST_CPU_PPC}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86],    [test "${HOST_CPU_X86}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86_64], [test "${HOST_CPU_X86_64}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86_FAMILY], [test "${HOST_CPU_X86_FAMILY}" = yes])
+AM_CONDITIONAL([HOST_CPU_IA64], [test "$HOST_CPU_IA64" = yes])
 
 #-------------------------------------------------
 # Host-specific compiler settings
@@ -1119,6 +1124,10 @@ AC_SUBST([LIBMONITOR_WRAP_NAMES])
 # with-libunwind
 #-------------------------------------------------
 
+#
+# ### FIXME: rationalize this: libunw chosen EITHER when ia64 or when --with-libunwind is set
+# ###        current configure will NOT do the right thing if libunw turned off but arch=ia64
+#
 AC_MSG_CHECKING([whether configured to use libunwind instead of native])
 
 OPT_HAVE_LIBUNWIND=no
@@ -1203,7 +1212,8 @@ AC_SUBST(LIBUNWIND_HPCLINK_LIBS)
 #
 # set up automake choice of unwinder
 #
-
+# -- NOTE: ia64 ALWAYS uses libunw
+#
 AM_CONDITIONAL([UNW_X86], [test "$UNWINDER" = x86-family])
 AM_CONDITIONAL([UNW_PPC64], [test "$UNWINDER" = ppc64])
 AM_CONDITIONAL([UNW_MIPS], [test "$UNWINDER" = mips])

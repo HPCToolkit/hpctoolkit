@@ -716,6 +716,8 @@ HOST_LIBTREPOSITORY
 HOST_AR
 HOST_CXXFLAGS
 HOST_CFLAGS
+HOST_CPU_IA64_FALSE
+HOST_CPU_IA64_TRUE
 HOST_CPU_X86_FAMILY_FALSE
 HOST_CPU_X86_FAMILY_TRUE
 HOST_CPU_X86_64_FALSE
@@ -16219,6 +16221,7 @@ HOST_CPU_PPC=no
 HOST_CPU_X86=no
 HOST_CPU_X86_64=no
 HOST_CPU_X86_FAMILY=no
+HOST_CPU_IA64=no
 
 case "${host}" in
   # Linux
@@ -16260,8 +16263,12 @@ $as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
   ia64*-*-linux*)
     # __ia64 && __linux
     HOST_OS="Linux"
+    HOST_CPU_IA64=yes
+    UNWINDER=libunw
 
-$as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
+$as_echo "#define HOST_CPU_IA64 1" >>confdefs.h
+
+    $as_echo "#define HOST_OS_LINUX /**/" >>confdefs.h
 
     ;;
 
@@ -16414,6 +16421,14 @@ fi
 else
   HOST_CPU_X86_FAMILY_TRUE='#'
   HOST_CPU_X86_FAMILY_FALSE=
+fi
+
+ if test "$HOST_CPU_IA64" = yes; then
+  HOST_CPU_IA64_TRUE=
+  HOST_CPU_IA64_FALSE='#'
+else
+  HOST_CPU_IA64_TRUE='#'
+  HOST_CPU_IA64_FALSE=
 fi
 
 
@@ -17171,6 +17186,10 @@ echo "$LIBMONITOR_WRAP_NAMES" >&5
 # with-libunwind
 #-------------------------------------------------
 
+#
+# ### FIXME: rationalize this: libunw chosen EITHER when ia64 or when --with-libunwind is set
+# ###        current configure will NOT do the right thing if libunw turned off but arch=ia64
+#
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether configured to use libunwind instead of native" >&5
 $as_echo_n "checking whether configured to use libunwind instead of native... " >&6; }
 
@@ -17266,7 +17285,8 @@ fi
 #
 # set up automake choice of unwinder
 #
-
+# -- NOTE: ia64 ALWAYS uses libunw
+#
  if test "$UNWINDER" = x86-family; then
   UNW_X86_TRUE=
   UNW_X86_FALSE='#'
@@ -18672,6 +18692,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HOST_CPU_X86_FAMILY_TRUE}" && test -z "${HOST_CPU_X86_FAMILY_FALSE}"; then
   as_fn_error $? "conditional \"HOST_CPU_X86_FAMILY\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HOST_CPU_IA64_TRUE}" && test -z "${HOST_CPU_IA64_FALSE}"; then
+  as_fn_error $? "conditional \"HOST_CPU_IA64\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${IS_HOST_AR_TRUE}" && test -z "${IS_HOST_AR_FALSE}"; then

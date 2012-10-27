@@ -326,6 +326,10 @@ MY_X86_FILES = \
         \
         utilities/arch/x86-family/x86-context-pc.c
 
+MY_IA64_FILES = \
+        trampoline/ia64/ia64-tramp.s \
+        utilities/arch/ia64/ia64-context-pc.c
+
 MY_PAPI_FILES = 			\
 	sample-sources/papi.c
 
@@ -361,6 +365,9 @@ MY_PPC_INCLUDE_DIRS = 		\
 
 MY_X86_INCLUDE_DIRS =		\
         -I$(srcdir)/utilities/arch/x86-family
+
+MY_IA64_INCLUDE_DIRS =         \
+        -I$(srcdir)/utilities/arch/ia64
 
 libhpcrun_la_SOURCES = 			\
 	$(MY_BASE_FILES)		\
@@ -576,6 +583,20 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   MY_AGENT_INCLUDE_DIRS += $(MY_X86_INCLUDE_DIRS)
+endif
+
+if HOST_CPU_IA64
+  libhpcrun_la_SOURCES  += $(MY_IA64_FILES)
+  libhpcrun_o_SOURCES   += $(MY_IA64_FILES)
+  libhpcrun_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+  libhpcrun_o_CPPFLAGS  += $(MY_IA64_INCLUDE_DIRS)
+  libhpcrun_ga_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+  libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+  libhpcrun_io_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+  libhpcrun_io_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+  libhpcrun_memleak_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+  libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+  libhpcrun_mpi_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
 endif
 
 if OPT_PAPI_DYNAMIC

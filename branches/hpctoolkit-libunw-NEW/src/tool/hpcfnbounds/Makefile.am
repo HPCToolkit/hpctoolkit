@@ -82,10 +82,23 @@ SYMTABAPI_LIB = @SYMTABAPI_LIB@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 
+#PROXY_SOURCES = \
+#     main-proxy.cpp
+
+if HOST_CPU_IA64
+    main_file = main-alt.cpp
+    code_ranges_file = code-ranges-alt.cpp
+    generic_process_ranges_file = process-ranges-alt.cpp
+else
+    main_file = main.cpp
+    code_ranges_file = code-ranges.cpp
+    generic_process_ranges_file = generic-process-ranges.cpp
+endif
+
 MYSOURCES = \
-	main.cpp \
+	$(main_file) \
 	\
-	code-ranges.cpp \
+        $(code_ranges_file) \
 	function-entries.cpp \
 	intervals.cpp
 
@@ -119,7 +132,7 @@ if HOST_CPU_X86_FAMILY
   hpcfnbounds_bin_CPPFLAGS += -I$(XED2_INC)
   hpcfnbounds_bin_LDFLAGS  += $(XED2_LIB)/libxed.a
 else
-  hpcfnbounds_bin_SOURCES += generic-process-ranges.cpp
+  hpcfnbounds_bin_SOURCES += $(generic_process_ranges_file)
 endif
 
 MOSTLYCLEANFILES = $(MYCLEAN)
