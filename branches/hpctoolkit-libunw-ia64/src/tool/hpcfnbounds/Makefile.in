@@ -91,19 +91,19 @@ am__hpcfnbounds_bin_SOURCES_DIST = main.cpp main-alt.cpp \
 	code-ranges.cpp code-ranges-alt.cpp function-entries.cpp \
 	intervals.cpp x86-process-ranges.cpp \
 	generic-process-ranges.cpp process-ranges-alt.cpp
-@HOST_CPU_IA64_FALSE@am__objects_1 = hpcfnbounds_bin-main.$(OBJEXT)
-@HOST_CPU_IA64_TRUE@am__objects_1 =  \
-@HOST_CPU_IA64_TRUE@	hpcfnbounds_bin-main-alt.$(OBJEXT)
-@HOST_CPU_IA64_FALSE@am__objects_2 =  \
-@HOST_CPU_IA64_FALSE@	hpcfnbounds_bin-code-ranges.$(OBJEXT)
-@HOST_CPU_IA64_TRUE@am__objects_2 =  \
-@HOST_CPU_IA64_TRUE@	hpcfnbounds_bin-code-ranges-alt.$(OBJEXT)
+@USE_OLD_FNBOUNDS_FALSE@am__objects_1 =  \
+@USE_OLD_FNBOUNDS_FALSE@	hpcfnbounds_bin-main.$(OBJEXT)
+@USE_OLD_FNBOUNDS_TRUE@am__objects_1 =  \
+@USE_OLD_FNBOUNDS_TRUE@	hpcfnbounds_bin-main-alt.$(OBJEXT)
+@USE_OLD_FNBOUNDS_FALSE@am__objects_2 =  \
+@USE_OLD_FNBOUNDS_FALSE@	hpcfnbounds_bin-code-ranges.$(OBJEXT)
+@USE_OLD_FNBOUNDS_TRUE@am__objects_2 = hpcfnbounds_bin-code-ranges-alt.$(OBJEXT)
 am__objects_3 = $(am__objects_1) $(am__objects_2) \
 	hpcfnbounds_bin-function-entries.$(OBJEXT) \
 	hpcfnbounds_bin-intervals.$(OBJEXT)
 @HOST_CPU_X86_FAMILY_TRUE@am__objects_4 = hpcfnbounds_bin-x86-process-ranges.$(OBJEXT)
-@HOST_CPU_IA64_FALSE@am__objects_5 = hpcfnbounds_bin-generic-process-ranges.$(OBJEXT)
-@HOST_CPU_IA64_TRUE@am__objects_5 = hpcfnbounds_bin-process-ranges-alt.$(OBJEXT)
+@USE_OLD_FNBOUNDS_FALSE@am__objects_5 = hpcfnbounds_bin-generic-process-ranges.$(OBJEXT)
+@USE_OLD_FNBOUNDS_TRUE@am__objects_5 = hpcfnbounds_bin-process-ranges-alt.$(OBJEXT)
 @HOST_CPU_X86_FAMILY_FALSE@am__objects_6 = $(am__objects_5)
 am_hpcfnbounds_bin_OBJECTS = $(am__objects_3) $(am__objects_4) \
 	$(am__objects_6)
@@ -390,15 +390,15 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-@HOST_CPU_IA64_FALSE@main_file = main.cpp
+@USE_OLD_FNBOUNDS_FALSE@main_file = main.cpp
 
 #PROXY_SOURCES = \
 #     main-proxy.cpp
-@HOST_CPU_IA64_TRUE@main_file = main-alt.cpp
-@HOST_CPU_IA64_FALSE@code_ranges_file = code-ranges.cpp
-@HOST_CPU_IA64_TRUE@code_ranges_file = code-ranges-alt.cpp
-@HOST_CPU_IA64_FALSE@generic_process_ranges_file = generic-process-ranges.cpp
-@HOST_CPU_IA64_TRUE@generic_process_ranges_file = process-ranges-alt.cpp
+@USE_OLD_FNBOUNDS_TRUE@main_file = main-alt.cpp
+@USE_OLD_FNBOUNDS_FALSE@code_ranges_file = code-ranges.cpp
+@USE_OLD_FNBOUNDS_TRUE@code_ranges_file = code-ranges-alt.cpp
+@USE_OLD_FNBOUNDS_FALSE@generic_process_ranges_file = generic-process-ranges.cpp
+@USE_OLD_FNBOUNDS_TRUE@generic_process_ranges_file = process-ranges-alt.cpp
 MYSOURCES = \
 	$(main_file) \
 	\

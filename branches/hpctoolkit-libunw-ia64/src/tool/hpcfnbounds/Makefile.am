@@ -85,7 +85,7 @@ XED2_LIB = @XED2_LIB@
 #PROXY_SOURCES = \
 #     main-proxy.cpp
 
-if HOST_CPU_IA64
+if USE_OLD_FNBOUNDS
     main_file = main-alt.cpp
     code_ranges_file = code-ranges-alt.cpp
     generic_process_ranges_file = process-ranges-alt.cpp
