@@ -410,7 +410,7 @@ launch_server(void)
   child_pid = pid;
   client_status = SYSERV_ACTIVE;
 
-  TMSG(SYSTEM_SERVER, "syserv launch: success, child: %d", (int) child_pid);
+  TMSG(SYSTEM_SERVER, "syserv launch: success, server: %d", (int) child_pid);
   return 0;
 }
 
@@ -547,6 +547,8 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
   TMSG(SYSTEM_SERVER, "addr: %p, symbols: %ld, offset: 0x%lx, reloc: %d",
        addr, (long) fh->num_entries, (long) fh->reference_offset,
        (int) fh->is_relocatable);
+  TMSG(SYSTEM_SERVER, "rusage memsize: before: %ld Meg, after: %ld Meg",
+       fh->old_memsize / 1024, fh->new_memsize / 1024);
 
   return addr;
 }

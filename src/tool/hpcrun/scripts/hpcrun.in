@@ -205,6 +205,12 @@ do
     arg="$1" ; shift
     case "$arg" in
 
+	# temp option to run new fnbounds server with debugging
+	-fnb | --fnb )
+	    export NEW_SYSTEM_SERVER=1
+	    export HPCRUN_DEBUG_FLAGS="$HPCRUN_DEBUG_FLAGS SYSTEM_SERVER"
+	    ;;
+
 	# --------------------------------------------------
 
 	-md | --monitor-debug )
