@@ -76,6 +76,8 @@
 //***************************************************************************
 
 #include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #include <err.h>
 #include <errno.h>
 #include <setjmp.h>
@@ -302,6 +304,7 @@ signal_handler_init(void)
 static void
 do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
 {
+  struct rusage usage;
   int ret;
   long k;
 
@@ -329,9 +332,19 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
     memset(&fnb_hdr, 0, sizeof(fnb_hdr));
     code_ranges_reinit();
     function_entries_reinit();
-    dump_file_info(inbuf, fn_discovery);
 
+    // send before and after rusage maxrss to track memory leaks
+    if (getrusage(RUSAGE_SELF, &usage) == 0) {
+      fnb_hdr.old_memsize = usage.ru_maxrss;
+    } else {
+      fnb_hdr.old_memsize = -1;
+    }
+
+    dump_file_info(inbuf, fn_discovery);
     jmpbuf_ok = 0;
+
+    // pad list of addrs in case there are fewer function addrs than
+    // size of map.
     fnb_hdr.num_entries = total_num_addrs;
     for (k = total_num_addrs; k < max_num_addrs; k++) {
       syserv_add_addr(NULL, 0);
@@ -342,6 +355,12 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
 	errx(1, "write to fdout failed");
       }
       num_addrs = 0;
+    }
+
+    if (getrusage(RUSAGE_SELF, &usage) == 0) {
+      fnb_hdr.new_memsize = usage.ru_maxrss;
+    } else {
+      fnb_hdr.new_memsize = -1;
     }
 
     fnb_hdr.magic = FNBOUNDS_MAGIC;

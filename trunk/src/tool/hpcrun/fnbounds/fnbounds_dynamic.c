@@ -217,7 +217,7 @@ fnbounds_init()
   if (hpcrun_get_disabled()) return 0;
 
   if (getenv("NEW_SYSTEM_SERVER") != NULL) {
-    AMSG("using new fnbounds server");
+    TMSG(SYSTEM_SERVER, "using new fnbounds server");
     use_new_server = 1;
     hpcrun_syserv_init();
     fnbounds_map_executable();
