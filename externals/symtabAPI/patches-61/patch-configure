@@ -1,0 +1,139 @@
+Pass CC, CXX and flags to symtab's make.config.local.in via autoconf
+substitution.  This avoids the need to sed-edit make.config.
+Fix bug in configure's test for libdwarf.  Use -L for libdwarf
+and libelf libdirs, not the libdwarf libdir twice.
+
+diff -Narub symtabAPI.orig/src/dyninst/autodyninst/make.config.local.in symtabAPI/src/dyninst/autodyninst/make.config.local.in
+--- symtabAPI.orig/src/dyninst/autodyninst/make.config.local.in	2009-12-08 12:02:48.000000000 -0600
++++ symtabAPI/src/dyninst/autodyninst/make.config.local.in	2011-02-25 15:45:24.000000000 -0600
+@@ -3,6 +3,11 @@
+ BUILD_MARK=
+ BUILD_NUM=-576
+ 
++HPC_CC = @CC@
++HPC_CXX = @CXX@
++HPC_CFLAGS = @CFLAGS@
++HPC_CXXFLAGS = @CXXFLAGS@
++
+ #Are any alternatives to g++ available?
+ 
+ M_intel_cc = @_ICC_@
+diff -Narub symtabAPI.orig/src/dyninst/configure symtabAPI/src/dyninst/configure
+--- symtabAPI.orig/src/dyninst/configure	2009-12-08 12:02:56.000000000 -0600
++++ symtabAPI/src/dyninst/configure	2011-02-25 15:52:27.000000000 -0600
+@@ -274,7 +274,7 @@
+ PACKAGE_BUGREPORT='bugs@dyninst.org'
+ 
+ ac_default_prefix=`pwd`/..
+-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT _ICC_ _ICPC_ _PGC_ _PGCXX_ _CC_ _CXX_ USE_TCL83 TCLTK_INC_DIR TCLTK_LIB_DIR build build_cpu build_vendor build_os host host_cpu host_vendor host_os LIBELF_INC_DIR LIBELF_LIB_DIR LIBELF_STATIC LIBELF_DYNAMIC LIBDWARF_INC_DIR LIBDWARF_LIB_DIR LIBDWARF_STATIC LIBDWARF_DYNAMIC LIBXML2_INC_DIR LIBXML2_LIB_DIR LIBIBERTY_LIB_DIR LIBIBERTY_STATIC LIBIBERTY_DYNAMIC LIBUNWIND_INC_DIR LIBUNWIND_LIB_DIR LIBFLEX_LIB_DIR NASM STACKPROT MMTIMER TESTSUITE LIBOBJS LTLIBOBJS'
++ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT _ICC_ _ICPC_ _PGC_ _PGCXX_ _CC_ _CXX_ USE_TCL83 TCLTK_INC_DIR TCLTK_LIB_DIR build build_cpu build_vendor build_os host host_cpu host_vendor host_os LIBELF_INC_DIR LIBELF_LIB_DIR LIBELF_STATIC LIBELF_DYNAMIC LIBDWARF_INC_DIR LIBDWARF_LIB_DIR LIBDWARF_STATIC LIBDWARF_DYNAMIC LIBXML2_INC_DIR LIBXML2_LIB_DIR LIBIBERTY_LIB_DIR LIBIBERTY_STATIC LIBIBERTY_DYNAMIC LIBUNWIND_INC_DIR LIBUNWIND_LIB_DIR LIBFLEX_LIB_DIR NASM STACKPROT MMTIMER TESTSUITE LIBOBJS LTLIBOBJS'
+ ac_subst_files=''
+ 
+ # Initialize some variables set by options.
+@@ -715,6 +715,14 @@
+ ac_env_target_alias_value=$target_alias
+ ac_cv_env_target_alias_set=${target_alias+set}
+ ac_cv_env_target_alias_value=$target_alias
++ac_env_CC_set=${CC+set}
++ac_env_CC_value=$CC
++ac_cv_env_CC_set=${CC+set}
++ac_cv_env_CC_value=$CC
++ac_env_CFLAGS_set=${CFLAGS+set}
++ac_env_CFLAGS_value=$CFLAGS
++ac_cv_env_CFLAGS_set=${CFLAGS+set}
++ac_cv_env_CFLAGS_value=$CFLAGS
+ ac_env_CXX_set=${CXX+set}
+ ac_env_CXX_value=$CXX
+ ac_cv_env_CXX_set=${CXX+set}
+@@ -828,6 +836,8 @@
+   --with-libflex-libdir   Absolute path to flex library
+ 
+ Some influential environment variables:
++  CC          C compiler
++  CFLAGS      C flags
+   CXX         C++ compiler command
+   CXXFLAGS    C++ compiler flags
+   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
+@@ -1324,6 +1334,9 @@
+ fi
+ 
+ 
++
++
++
+ ac_ext=cc
+ ac_cpp='$CXXCPP $CPPFLAGS'
+ ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+@@ -3050,8 +3063,8 @@
+ 
+   else
+     LIBS_HOLD=$LIBS
+-    if test "$LIBDWARF_LIB_DIR" != "" ; then
+-      LIBS="-L$LIBDWARF_LIB_DIR -L$LIBDWARF_LIB_DIR"
++    if test "$LIBELF_LIB_DIR" != "" ; then
++      LIBS="-L$LIBDWARF_LIB_DIR -L$LIBELF_LIB_DIR"
+ 
+ echo "$as_me:$LINENO: checking for dwarf_add_arange in -ldwarf" >&5
+ echo $ECHO_N "checking for dwarf_add_arange in -ldwarf... $ECHO_C" >&6
+@@ -4777,6 +4790,8 @@
+ s,@ECHO_N@,$ECHO_N,;t t
+ s,@ECHO_T@,$ECHO_T,;t t
+ s,@LIBS@,$LIBS,;t t
++s,@CC@,$CC,;t t
++s,@CFLAGS@,$CFLAGS,;t t
+ s,@CXX@,$CXX,;t t
+ s,@CXXFLAGS@,$CXXFLAGS,;t t
+ s,@LDFLAGS@,$LDFLAGS,;t t
+diff -Narub symtabAPI.orig/src/dyninst/configure.in symtabAPI/src/dyninst/configure.in
+--- symtabAPI.orig/src/dyninst/configure.in	2009-12-08 12:02:56.000000000 -0600
++++ symtabAPI/src/dyninst/configure.in	2011-02-25 15:15:43.000000000 -0600
+@@ -9,6 +9,9 @@
+ AC_CONFIG_AUX_DIR([autodyninst])
+ AC_CONFIG_MACRO_DIR([autodyninst])
+ 
++AC_ARG_VAR(CC, [C compiler])
++AC_ARG_VAR(CFLAGS, [C flags])
++
+ AC_PROG_CXX(g++)
+ AC_PATH_PROG(_ICC_, icc)
+ AC_PATH_PROG(_ICPC_, icpc)
+@@ -107,7 +110,7 @@
+             [AS_HELP_STRING([--with-libdwarf-libdir],[LIBDWARF library directory])],
+             [LIBDWARF_LIB_DIR="${withval}";],)
+    PD_CHECK_INC_DIR($LIBDWARF_INC_DIR,[libdwarf.h])
+-   PD_CHECK_LIB_DIR($LIBDWARF_LIB_DIR,[dwarf],[dwarf_add_arange],$LIBDWARF_LIB_DIR,[-lelf])
++   PD_CHECK_LIB_DIR($LIBDWARF_LIB_DIR,[dwarf],[dwarf_add_arange],$LIBELF_LIB_DIR,[-lelf])
+    PD_CHECK_LIB_TYPE($LIBDWARF_LIB_DIR, dwarf)
+    LIBDWARF_STATIC="$LIB_TYPE_STATIC"
+    LIBDWARF_DYNAMIC="$LIB_TYPE_DYNAMIC"
+diff -Narub symtabAPI.orig/src/dyninst/make.config symtabAPI/src/dyninst/make.config
+--- symtabAPI.orig/src/dyninst/make.config	2009-12-08 12:03:19.000000000 -0600
++++ symtabAPI/src/dyninst/make.config	2011-02-25 15:41:57.000000000 -0600
+@@ -100,12 +100,12 @@
+ # But if the file doesn't exist there (i.e. if the user hasn't checked them out
+ # with cvs), then we should look in a backup location.  That's what this vrble
+ # is about.  It's used several times below in this file.
+-GCC      ?= gcc
+-GXX      ?= g++
++GCC      = $(HPC_CC)
++GXX      = $(HPC_CXX)
+ LINKER   = ld
+ AS      	= as
+-CC       ?= $(GCC)
+-CXX      ?= $(GXX)
++CC       = $(HPC_CC)
++CXX      = $(HPC_CXX)
+ LEX      = flex
+ RANLIB   = ranlib
+ AR       = ar
+@@ -466,8 +466,8 @@
+ endif
+ 
+ # flags for normal (non-kludge) files, with common warnings
+-CFLAGS		= $(IFLAGS) $(UNIFIED_DEF) $(OPT_FLAG) $(COMMON_WARNINGS) $(ARCH_FLAGS)
+-CXXFLAGS	= $(IFLAGS) $(UNIFIED_DEF) $(OPT_FLAG) $(COMMON_WARNINGS) $(STDINT_MACROS) $(ARCH_FLAGS)
++CFLAGS		= $(HPC_CFLAGS) $(IFLAGS) $(UNIFIED_DEF) $(OPT_FLAG) $(COMMON_WARNINGS) $(ARCH_FLAGS)
++CXXFLAGS	= $(HPC_CXXFLAGS) $(IFLAGS) $(UNIFIED_DEF) $(OPT_FLAG) $(COMMON_WARNINGS) $(STDINT_MACROS) $(ARCH_FLAGS)
+ LDFLAGS		= $(ARCH_FLAGS)
+ 
+ # flags for kludge files, won't have warnings generated

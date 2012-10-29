@@ -899,6 +899,8 @@ AC_MSG_CHECKING([symtabAPI])
 symtabAPI_avail=no
 symtabAPI_prefix=no
 symtabAPI_platform=no
+use_symtab_61=no
+avail_version=
 cookie="symtabAPI/${nobuild_cookie}"
 rm -f "$cookie"
 
@@ -923,6 +925,8 @@ case "$with_symtabAPI" in
 		;;
 	    *ia64* )
 		symtabAPI_platform=ia64-unknown-linux2.4
+		use_symtab_61=yes
+		avail_version=6.1
 		;;
 	    *mips64* )
 		symtabAPI_platform=mips64_linux
@@ -935,7 +939,7 @@ case "$with_symtabAPI" in
 		;;
 	esac
 	if test "$symtabAPI_platform" != no ; then
-	    symtabAPI_avail=build
+	    symtabAPI_avail="build $avail_version"
 	    symtabAPI_prefix="$symtabAPI_local_prefix"
 	else
 	    echo "not available on this platform" > "$cookie"
@@ -962,6 +966,7 @@ AC_MSG_RESULT([$symtabAPI_avail])
 
 AC_SUBST([symtabAPI_prefix])
 AC_SUBST([symtabAPI_platform])
+AC_SUBST([use_symtab_61])
 
 #------------------------------------------------------------
 # XED: --with-xed2=PATH

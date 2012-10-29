@@ -1,0 +1,53 @@
+#!/bin/sh
+#
+#  SymtabAPI 6.1 configure.
+#
+#  $Id$
+#
+
+PKG_NAME=symtabAPI
+src=symtabAPI
+work=symtabAPI/src/dyninst
+dyntypes=symtabAPI/src/dyninst/dynutil/h/dyntypes.h
+tr1_patch=patches-61/cond-patch-tr1
+
+. ../build-utils/configure.inc
+pre_configure
+prefix="$symtabAPI_prefix"
+
+if test "$have_tr1_map" = no ; then
+    grep DISABLE_TR1_MAP "$dyntypes"
+    if test $? -ne 0 ; then
+	echo "disabling use of tr1 unordered map in dyntypes.h"
+	patch -d "$src" -p1 <"$tr1_patch"
+    fi
+fi
+
+cd "$work" || die "unable to cd: $work"
+
+set -- \
+    CC="$CC"  CFLAGS="$CFLAGS" \
+    CXX="$CXX"  CXXFLAGS="$CXXFLAGS" \
+    --prefix="$prefix" \
+    --bindir="${prefix}/bin" \
+    --includedir="${prefix}/include" \
+    --libdir="${prefix}/lib" \
+    --with-libdwarf-incdir="$libdwarf_inc" \
+    --with-libdwarf-libdir="$libdwarf_lib" \
+    --with-libelf-incdir="$libelf_inc" \
+    --with-libelf-libdir="$libelf_lib" \
+    --with-libunwind-incdir="$libunwind_inc" \
+    --with-libunwind-libdir="$libunwind_lib" \
+    --with-libxml2-incdir="$libxml2_inc" \
+    --with-libxml2-libdir="$libxml2_lib" \
+    "$@"
+
+if test -n "$is_cross_compile" ; then
+    set -- --host="$host" "$@"
+fi
+
+echo ./configure "$@"
+./configure "$@"
+test $? -eq 0 || die "configure failed"
+
+post_configure

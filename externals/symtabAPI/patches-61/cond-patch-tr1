@@ -1,0 +1,20 @@
+Disable using tr1/unordered_map in dyntypes.h.  This version of GCC
+from configure doesn't support it, so fall back to ext/hash_map.
+This works around a problem on some systems, eg, module at05 on biou,
+that are version >= 4.3 but don't have unordered map.
+
+diff -Naurb symtabAPI.orig/src/dyninst/dynutil/h/dyntypes.h symtabAPI/src/dyninst/dynutil/h/dyntypes.h
+--- symtabAPI.orig/src/dyninst/dynutil/h/dyntypes.h	2009-12-08 12:03:01.000000000 -0600
++++ symtabAPI/src/dyninst/dynutil/h/dyntypes.h	2011-03-10 15:11:06.000000000 -0600
+@@ -55,8 +55,9 @@
+   #include <functional>
+   #define DECLTHROW(x) throw(x)
+   //***************** GCC ***********************
+-   #if (__GNUC__ > 4) || \
+-      (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
++  // DISABLE_TR1_MAP: This version of GCC doesn't support
++  // tr1/unordered_map, so we have to fall back on ext/hash_map.
++   #if 0
+       //**************** GCC >= 4.3.0 ***********
+       #include <tr1/unordered_set>
+       #include <tr1/unordered_map>

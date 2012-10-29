@@ -602,6 +602,7 @@ with_mpi
 xerces_platform
 xerces_prefix
 xed2_prefix
+use_symtab_61
 symtabAPI_platform
 symtabAPI_prefix
 open_analysis_prefix
@@ -4780,6 +4781,8 @@ $as_echo_n "checking symtabAPI... " >&6; }
 symtabAPI_avail=no
 symtabAPI_prefix=no
 symtabAPI_platform=no
+use_symtab_61=no
+avail_version=
 cookie="symtabAPI/${nobuild_cookie}"
 rm -f "$cookie"
 
@@ -4804,6 +4807,8 @@ case "$with_symtabAPI" in
 		;;
 	    *ia64* )
 		symtabAPI_platform=ia64-unknown-linux2.4
+		use_symtab_61=yes
+		avail_version=6.1
 		;;
 	    *mips64* )
 		symtabAPI_platform=mips64_linux
@@ -4816,7 +4821,7 @@ case "$with_symtabAPI" in
 		;;
 	esac
 	if test "$symtabAPI_platform" != no ; then
-	    symtabAPI_avail=build
+	    symtabAPI_avail="build $avail_version"
 	    symtabAPI_prefix="$symtabAPI_local_prefix"
 	else
 	    echo "not available on this platform" > "$cookie"
@@ -4841,6 +4846,7 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $symtabAPI_avail" >&5
 $as_echo "$symtabAPI_avail" >&6; }
+
 
 
 

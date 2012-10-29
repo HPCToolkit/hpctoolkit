@@ -9,6 +9,7 @@ CXX = @CXX@
 CXXFLAGS = @CXXFLAGS@
 
 SYMTABAPI_PLATFORM = @symtabAPI_platform@
+USE_SYMTAB_61 = @use_symtab_61@
 
 BUILD = @build@
 HOST = @host@
