@@ -1,0 +1,47 @@
+John's patch to fix a memleak in the CFG that affected hpcstruct.
+
+
+diff -Naurb version-0.4pre.orig/src/OpenAnalysis/CFG/CFG.cpp version-0.4pre/src/OpenAnalysis/CFG/CFG.cpp
+--- version-0.4pre.orig/src/OpenAnalysis/CFG/CFG.cpp	2007-12-12 22:22:49.000000000 -0600
++++ version-0.4pre/src/OpenAnalysis/CFG/CFG.cpp	2012-10-29 17:16:23.000000000 -0500
+@@ -718,7 +718,7 @@
+  * \brief Destructor for CFGStandard
+  */
+ {
+-  // FIXME: should iterate through all nodes and edges to delete them
++  // DGraphImplement layer handles deletion of nodes and edges 
+   
+   mEntry = NULL;
+   mExit = NULL;
+diff -Naurb version-0.4pre.orig/src/OpenAnalysis/Utils/DGraph/DGraphImplement.cpp version-0.4pre/src/OpenAnalysis/Utils/DGraph/DGraphImplement.cpp
+--- version-0.4pre.orig/src/OpenAnalysis/Utils/DGraph/DGraphImplement.cpp	2007-12-12 22:22:50.000000000 -0600
++++ version-0.4pre/src/OpenAnalysis/Utils/DGraph/DGraphImplement.cpp	2012-10-29 17:16:23.000000000 -0500
+@@ -691,6 +691,15 @@
+           mEdgeSet = new std::set<OA_ptr<EdgeInterface> >;
+         }
+ 
++        DGraphImplement::~DGraphImplement()
++        {
++	  OA_ptr<NodesIteratorInterface> nodesIter = getNodesIterator();
++	  for (; nodesIter->isValid(); ++(*nodesIter)) {
++	    OA_ptr<NodeInterface> n = nodesIter->current();
++	    removeNode(n);
++	  }
++	}
++
+ // temporary workaround until expression graphs have been 
+ // properly factored out (specialized) from DGraphImplement
+ OA_ptr<NodeInterface> DGraphImplement::getExprGraphRootNode() const {
+diff -Naurb version-0.4pre.orig/src/OpenAnalysis/Utils/DGraph/DGraphImplement.hpp version-0.4pre/src/OpenAnalysis/Utils/DGraph/DGraphImplement.hpp
+--- version-0.4pre.orig/src/OpenAnalysis/Utils/DGraph/DGraphImplement.hpp	2009-02-25 21:07:23.000000000 -0600
++++ version-0.4pre/src/OpenAnalysis/Utils/DGraph/DGraphImplement.hpp	2012-10-29 17:23:44.000000000 -0500
+@@ -210,8 +210,7 @@
+ 
+         DGraphImplement(); 
+         
+-        ~DGraphImplement() { } 
+-
++       ~DGraphImplement(); 
+ 
+         OA_ptr<NodesIteratorInterface> getNodesIterator() const;
+         OA_ptr<NodesIteratorInterface> getEntryNodesIterator() const;
