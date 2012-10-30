@@ -65,6 +65,7 @@
 #include <fcntl.h>
 #include <setjmp.h>
 #include <signal.h>
+#include <unistd.h>
 
 //*****************************************************************************
 // HPCToolkit Externals Include

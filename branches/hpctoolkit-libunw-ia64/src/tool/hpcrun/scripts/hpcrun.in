@@ -55,6 +55,7 @@ VERSION='@PACKAGE_VERSION@'
 hpcfnbounds_dir='libexec/hpctoolkit'
 hpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
+libunwind_dir='@LIBUNWIND_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
 
 #------------------------------------------------------------
@@ -77,10 +78,19 @@ case "$libmonitor_dir" in
     /* ) ;;
     * ) libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
 esac
+case "$libunwind_dir" in
+    /* ) ;;
+    * )  libunwind_dir="${HPCTOOLKIT}/${libunwind_dir}" ;;
+esac
 case "$papi_libdir" in
     /* ) ;;
     * ) papi_libdir="${HPCTOOLKIT}/${papi_libdir}" ;;
 esac
+
+#
+# Once hpcrun_dir is completely set, set
+#
+ext_dir="$hpcrun_dir"/ext-libs
 
 #------------------------------------------------------------
 # Usage Message
@@ -418,7 +428,7 @@ fi
 # Enable core files.
 ulimit -S -c unlimited >/dev/null 2>&1
 
-hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}"
+hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}"
 preload_list="${libmonitor_dir}/libmonitor.so ${preload_list}"
 preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
 
