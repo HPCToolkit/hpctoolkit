@@ -171,8 +171,9 @@ messages_fini(void)
   if (log_file_fd != 2) {
     int rv = close(log_file_fd);
     if (rv) {
-      static char close_err[] = "An error occurred during the close of the log file! Be warned!\n";
-      write(2, close_err, strlen(close_err));
+      char *mesg = "hpctoolkit warning: unable to access log file "
+                   "(maybe application closed the file descriptor)\n";
+      write(2, mesg, strlen(mesg));
     }
     //----------------------------------------------------------------------
     // if this is an execution of an MPI program, we opened the log file 

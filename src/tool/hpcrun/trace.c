@@ -193,7 +193,9 @@ hpcrun_trace_close()
     thread_data_t *td = hpcrun_get_thread_data();
 
     int ret = hpcio_outbuf_close(&td->trace_outbuf);
-    hpcrun_trace_file_validate(ret == HPCFMT_OK, "close");
+    if (ret != HPCFMT_OK) {
+      EMSG("unable to flush and close trace file");
+    }
 
     int rank = hpcrun_get_rank();
     if (rank >= 0) {

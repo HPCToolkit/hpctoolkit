@@ -388,12 +388,10 @@ hpcrun_fini_internal()
       return;
     }
 
-    fnbounds_fini();
-
     hpcrun_write_profile_data(epoch);
-
+    hpcrun_trace_close();
+    fnbounds_fini();
     hpcrun_stats_print_summary();
-    
     messages_fini();
   }
 }
@@ -479,6 +477,7 @@ hpcrun_thread_fini(epoch_t *epoch)
     }
 
     hpcrun_write_profile_data(epoch);
+    hpcrun_trace_close();
   }
 }
 
@@ -575,8 +574,6 @@ monitor_fini_process(int how, void* data)
   hpcrun_safe_enter();
 
   hpcrun_fini_internal();
-  hpcrun_trace_close();
-  fnbounds_fini();
 
   hpcrun_safe_exit();
 }
@@ -773,9 +770,7 @@ monitor_fini_thread(void* init_thread_data)
   hpcrun_safe_enter();
 
   epoch_t *epoch = (epoch_t *)init_thread_data;
-
   hpcrun_thread_fini(epoch);
-  hpcrun_trace_close();
 
   hpcrun_safe_exit();
 }
