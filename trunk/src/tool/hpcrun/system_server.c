@@ -306,11 +306,13 @@ system_server_execute_command(const char *command)
 }
 
 
+#if 0
 int 
 system(__const char *command) 
 {
   return system_server_execute_command(command);  
 }
+#endif
 
 
 void
