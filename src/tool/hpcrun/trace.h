@@ -58,10 +58,10 @@ void hpcrun_trace_append(uint call_path_id, uint metric_id);
 void hpcrun_trace_close();
 
 int hpcrun_trace_isactive();
-void gpu_trace_open(stream_data_t *st, int gpu_number, int stream_id);
-void gpu_trace_append_with_time(stream_data_t *st, int gpu_device_num, int stream_num, unsigned int call_path_id, uint64_t microtime);
-uint64_t gpu_trace_append(stream_data_t *st, int gpu_number, int stream_id, unsigned int cpid);
-void gpu_trace_close(stream_data_t *st, int gpu_number, int stream_id);
+void gpu_trace_open(core_profile_trace_data_t *st, int stream_id);
+void gpu_trace_append_with_time(core_profile_trace_data_t *st,int stream_num, unsigned int call_path_id, uint64_t microtime);
+uint64_t gpu_trace_append(core_profile_trace_data_t *st,int stream_id, unsigned int cpid);
+void gpu_trace_close(core_profile_trace_data_t *st,int stream_id);
 
 #endif // hpcrun_trace_h
 

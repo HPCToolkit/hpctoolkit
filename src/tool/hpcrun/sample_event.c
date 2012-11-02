@@ -210,7 +210,7 @@ hpcrun_sample_callpath(void *context, int metricId,
   thread_data_t* td = hpcrun_get_thread_data();
   sigjmp_buf_t* it = &(td->bad_unwind);
   cct_node_t* node = NULL;
-  epoch_t* epoch = td->epoch;
+  epoch_t* epoch = td->core_profile_trace_data.epoch;
 
   hpcrun_set_handling_sample(td);
 
@@ -234,7 +234,7 @@ hpcrun_sample_callpath(void *context, int metricId,
     }
   }
   else {
-    cct_bundle_t* cct = &(td->epoch->csdata);
+    cct_bundle_t* cct = &(td->core_profile_trace_data.epoch->csdata);
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
 				 metricId, metricIncr);
     hpcrun_cleanup_partial_unwind();
@@ -305,7 +305,7 @@ hpcrun_gen_thread_ctxt(void *context)
   thread_data_t* td = hpcrun_get_thread_data();
   sigjmp_buf_t* it = &(td->bad_unwind);
   cct_node_t* node = NULL;
-  epoch_t* epoch = td->epoch;
+  epoch_t* epoch = td->core_profile_trace_data.epoch;
 
   hpcrun_set_handling_sample(td);
 

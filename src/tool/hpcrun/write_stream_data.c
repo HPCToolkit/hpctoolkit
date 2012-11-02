@@ -72,7 +72,7 @@ static const uint32_t stream_default_ra_to_callsite_distance =
 //*****************************************************************************
 // structs and types
 //*****************************************************************************
-static FILE * open_stream_data_file(stream_data_t *st)
+static FILE * open_stream_data_file(core_profile_trace_data_t *st)
 {
   thread_data_t* td = hpcrun_get_thread_data();
 
@@ -151,7 +151,7 @@ static FILE * open_stream_data_file(stream_data_t *st)
 
 
 int
-hpcrun_write_stream_profile_data(stream_data_t *st)
+hpcrun_write_stream_profile_data(core_profile_trace_data_t *st)
 {
 	//printf("\nABOUT TO WRITE THE STREAM PROFILE DATA");
   TMSG(DATA_WRITE,"Writing stream hpcrun profile data");

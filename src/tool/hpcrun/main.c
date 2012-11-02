@@ -263,7 +263,7 @@ hpcrun_init_internal(bool is_child)
 
   // Initialize logical unwinding agents (LUSH)
   if (opts.lush_agent_paths[0] != '\0') {
-    epoch_t* epoch = TD_GET(epoch);
+    epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
     TMSG(MALLOC," -init_internal-: lush allocation");
     lush_agents = (lush_agent_pool_t*)hpcrun_malloc(sizeof(lush_agent_pool_t));
     hpcrun_logicalUnwind(true);
@@ -367,7 +367,7 @@ hpcrun_fini_internal()
   TMSG(FINI, "process");
 
   hpcrun_unthreaded_data();
-  epoch_t *epoch = TD_GET(epoch);
+  epoch_t *epoch = TD_GET(core_profile_trace_data.epoch);
 
   if (hpcrun_is_initialized()) {
     hpcrun_is_initialized_private = false;
@@ -439,7 +439,7 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   //
   hpcrun_thread_data_init(id, thr_ctxt, 0);
 
-  epoch_t* epoch = TD_GET(epoch);
+  epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 
   // handle event sets for sample sources
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
@@ -721,7 +721,7 @@ monitor_thread_pre_create(void)
 
   TMSG(THREAD,"before lush malloc");
   TMSG(MALLOC," -thread_precreate: lush malloc");
-  epoch_t* epoch = hpcrun_get_epoch();
+  epoch_t* epoch = hpcrun_get_thread_epoch();
   thr_ctxt = hpcrun_malloc(sizeof(cct_ctxt_t));
   TMSG(THREAD,"after lush malloc, thr_ctxt = %p",thr_ctxt);
   thr_ctxt->context = n;
