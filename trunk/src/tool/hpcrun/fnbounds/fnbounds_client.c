@@ -93,10 +93,12 @@
 #define STAND_ALONE_CLIENT
 #define EMSG(...)
 #define TMSG(...)
-#define SAMPLE_SOURCES(...)
+#define SAMPLE_SOURCES(...)  zero_fcn()
+#define dup2(...)  zero_fcn()
 #define hpcrun_set_disabled()
 #define monitor_real_fork  fork
 #define monitor_sigaction(...)  0
+int zero_fcn(void) { return 0; }
 #endif
 
 //***************************************************************************
@@ -108,6 +110,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -321,6 +325,7 @@ static int
 launch_server(void)
 {
   int sendfd[2], recvfd[2];
+  bool sampling_is_running;
   pid_t pid;
 
   // already running
@@ -338,6 +343,12 @@ launch_server(void)
     return -1;
   }
 
+  // some sample sources need to be stopped in the parent, or else
+  // they cause problems in the child.
+  sampling_is_running = SAMPLE_SOURCES(started);
+  if (sampling_is_running) {
+    SAMPLE_SOURCES(stop);
+  }
   pid = monitor_real_fork();
 
   if (pid < 0) {
@@ -352,21 +363,18 @@ launch_server(void)
     // child process: disable profiling, dup the log file fd onto
     // stderr and exec hpcfnbounds in server mode.
     //
-    SAMPLE_SOURCES(stop);
     hpcrun_set_disabled();
 
     close(sendfd[1]);
     close(recvfd[0]);
 
     // dup the hpcrun log file fd onto stdout and stderr.
-#if !defined(STAND_ALONE_CLIENT)
     if (dup2(messages_logfile_fd(), 1) < 0) {
       warn("dup of log fd onto stdout failed");
     }
     if (dup2(messages_logfile_fd(), 2) < 0) {
       warn("dup of log fd onto stderr failed");
     }
-#endif
 
     //
     // Copy the environment and omit LD_PRELOAD.  For most programs,
@@ -411,6 +419,12 @@ launch_server(void)
   client_status = SYSERV_ACTIVE;
 
   TMSG(SYSTEM_SERVER, "syserv launch: success, server: %d", (int) child_pid);
+
+  // restart sample sources
+  if (sampling_is_running) {
+    SAMPLE_SOURCES(start);
+  }
+
   return 0;
 }
 

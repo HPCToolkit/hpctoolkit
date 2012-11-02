@@ -60,6 +60,7 @@
 
 #include <include/hpctoolkit-config.h>
 
+#include "disabled.h"
 #include "env.h"
 #include "files.h"
 #include "monitor.h"
@@ -122,6 +123,11 @@ hpcrun_trace_init()
 void
 hpcrun_trace_open()
 {
+  if (hpcrun_get_disabled()) {
+    tracing = 0;
+    return;
+  }
+
   // With fractional sampling, if this process is inactive, then don't
   // open an output file, not even /dev/null.
   if (tracing && hpcrun_sample_prob_active()) {
