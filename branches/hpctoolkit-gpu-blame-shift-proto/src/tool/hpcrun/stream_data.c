@@ -81,43 +81,6 @@ core_profile_trace_data_t *hpcrun_stream_data_alloc_init(int id)
   return st;	
 }
 
-//duplicate of the function from cct2metrics.c
-metric_set_t* hpcrun_stream_reify_metric_set(core_profile_trace_data_t *st, cct_node_id_t cct_id) {
-	metric_set_t* rv = NULL;
-	cct2metrics_t* map = st->cct2metrics_map;
-
-	if(map) {
-		map = stream_cct_metrics_splay(map, cct_id);
-		if(map->node == cct_id) {
-  		rv = map->metrics;
-		}
-	}
-	if(rv == NULL) {
-		rv = hpcrun_malloc(n_metrics * sizeof(hpcrun_metricVal_t));
-		if(!map) {
-			map = cct2metrics_new(cct_id, rv); 
-		} else {
-			cct2metrics_t* new = cct2metrics_new(cct_id, rv);
-    	map = stream_cct_metrics_splay(map, cct_id);
-			if (map->node == cct_id) { //WHAT? FIXME
-      	EMSG("CCT2METRICS map assoc invariant violated");
-    	}
-    	else {
-      	if (map->node < cct_id) {
-        	new->left = map; new->right = map->right; map->right = NULL;
-      	}
-      	else {
-        	new->left = map->left; new->right = map; map->left = NULL;
-      	}
-      	map = new;
-    	}
-		}
-	}
-	st->cct2metrics_map = map;
-  return rv;
-}
-
-
 cct_node_t *stream_duplicate_cpu_node(core_profile_trace_data_t *st, ucontext_t *context, cct_node_t *node) {
 	cct_bundle_t* cct= &(st->epoch->csdata);
         cct_node_t * tmp_root = cct->tree_root;
@@ -128,7 +91,7 @@ cct_node_t *stream_duplicate_cpu_node(core_profile_trace_data_t *st, ucontext_t 
 
 void 
 hpcrun_stream_finalize(core_profile_trace_data_t *st) {
-	hpcrun_write_stream_profile_data(st);
+	hpcrun_write_profile_data(st);
 }
 
 

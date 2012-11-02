@@ -53,16 +53,13 @@
 #include <include/uint.h>
 
 void hpcrun_trace_init();
-void hpcrun_trace_open();
-void hpcrun_trace_append(uint call_path_id, uint metric_id);
-void hpcrun_trace_close();
+void hpcrun_trace_open(core_profile_trace_data_t * cptd);
+void hpcrun_trace_append(core_profile_trace_data_t * cptd, uint call_path_id, uint metric_id);
+void hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_path_id, uint metric_id, uint64_t microtime);
+void hpcrun_trace_close(core_profile_trace_data_t * cptd);
 
 int hpcrun_trace_isactive();
-void gpu_trace_open(core_profile_trace_data_t *st, int stream_id);
-void gpu_trace_append_with_time(core_profile_trace_data_t *st,int stream_num, unsigned int call_path_id, uint64_t microtime);
-uint64_t gpu_trace_append(core_profile_trace_data_t *st,int stream_id, unsigned int cpid);
-void gpu_trace_close(core_profile_trace_data_t *st,int stream_id);
-
+void gpu_trace_open(core_profile_trace_data_t *st);
 #endif // hpcrun_trace_h
 
 

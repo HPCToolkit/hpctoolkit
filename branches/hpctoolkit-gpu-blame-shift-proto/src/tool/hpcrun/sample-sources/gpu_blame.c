@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+/// -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -190,7 +190,7 @@ void CloseAllStreams(stream_to_id_map_t *root) {
     uint32_t streamId;
     streamId = root->id;
     
-    gpu_trace_close(g_stream_array[streamId].st, streamId);
+    hpcrun_trace_close(g_stream_array[streamId].st);
     hpcrun_stream_finalize(g_stream_array[streamId].st);
     
     //gpu_trace_close(DEVICE_ID, streamId);

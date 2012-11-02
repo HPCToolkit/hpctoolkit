@@ -81,13 +81,6 @@
 //*********************************************************************
 // type declarations
 //*********************************************************************
-typedef struct gpu_trace_file_ptr {
-		int gpu_number;
-		int stream_id;
-  	void* trace_buffer;
-  	hpcio_outbuf_t trace_outbuf;
-		int file_id; 
-} gpu_trace_file_t;
 
 
 
@@ -105,11 +98,6 @@ static void hpcrun_trace_file_validate(int valid, char *op);
 
 static int tracing = 0;
 
-static gpu_trace_file_t *gpu_trace_file_array;
-#define GPU_TRACE_FILE_OFFSET 0
-// TODO: just use one #define from gpu_blame.h
-#define MAX_STREAMS (500)
-#define NUM_GPU_DEVICES 2
 //*********************************************************************
 // interface operations
 //*********************************************************************
@@ -125,30 +113,27 @@ void
 hpcrun_trace_init()
 {
   if (getenv(HPCRUN_TRACE)) {
-					tracing = 1;
-					gpu_trace_file_array = (gpu_trace_file_t *)hpcrun_malloc(sizeof(gpu_trace_file_t)*MAX_STREAMS*NUM_GPU_DEVICES);
-					memset(gpu_trace_file_array, 0, sizeof(gpu_trace_file_t)*MAX_STREAMS*NUM_GPU_DEVICES);
+      tracing = 1;
   }
 }
 
 
 void
-hpcrun_trace_open()
+hpcrun_trace_open(core_profile_trace_data_t * cptd)
 {
   // With fractional sampling, if this process is inactive, then don't
   // open an output file, not even /dev/null.
   if (tracing && hpcrun_sample_prob_active()) {
-    thread_data_t *td = hpcrun_get_thread_data();
 	
-		    int fd, ret;
+    int fd, ret;
 
     // I think unlocked is ok here (we don't overlap any system
     // locks).  At any rate, locks only protect against threads, they
     // don't help with signal handlers (that's much harder).
-    fd = hpcrun_open_trace_file(td->core_profile_trace_data.id);
+    fd = hpcrun_open_trace_file(cptd->id);
     hpcrun_trace_file_validate(fd >= 0, "open");
-    td->trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
-    ret = hpcio_outbuf_attach(&td->trace_outbuf, fd, td->trace_buffer,
+    cptd->trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
+    ret = hpcio_outbuf_attach(&cptd->trace_outbuf, fd, cptd->trace_buffer,
 			      HPCRUN_TraceBufferSz, HPCIO_OUTBUF_UNLOCKED);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "open");
 
@@ -159,141 +144,66 @@ hpcrun_trace_open()
     flags.fields.isDataCentric = false;
 #endif
 
-    ret = hpctrace_fmt_hdr_outbuf(flags, &td->trace_outbuf);
+    ret = hpctrace_fmt_hdr_outbuf(flags, &cptd->trace_outbuf);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "write header to");
   }
 }
-
-int
-hpcrun_stream_open_trace_file(int thread)
-{
-  int ret;
-
-  spinlock_lock(&files_lock);
-  hpcrun_files_init();
-	/*FIXME : you are passsing 0 everytime? */
-	int rank = hpcrun_get_rank();
-	if(rank < 0) {
-		rank = 0;
-	}
-  ret = hpcrun_open_file(rank, thread, HPCRUN_TraceFnmSfx, FILES_EARLY);
-  spinlock_unlock(&files_lock);
-
-  return ret;
-}
-
-
 
 void 
-gpu_trace_open(core_profile_trace_data_t *st, int stream_num)
+gpu_trace_open(core_profile_trace_data_t *cptd)
 {
-  // With fractional sampling, if this process is inactive, then don't
-  // open an output file, not even /dev/null.
-  if (tracing && hpcrun_sample_prob_active()) {
-    //thread_data_t *td = hpcrun_get_thread_data();
-		/*
- 		* instead of getting the thread data, we have to get the gpu_trace_file
-		* contents associated with the above stream_num
-		*/
-		
-    int fd, ret;
-		uint32_t id =  stream_num; 
-    // I think unlocked is ok here (we don't overlap any system
-    // locks).  At any rate, locks only protect against threads, they
-    // don't help with signal handlers (that's much harder).
-    fd = hpcrun_stream_open_trace_file(id + GPU_TRACE_FILE_OFFSET);
-    hpcrun_trace_file_validate(fd >= 0, "open");
-    gpu_trace_file_array[id].trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
-//printf("\nmallocced trace_buffer\n");
-    ret = hpcio_outbuf_attach(&(gpu_trace_file_array[id].trace_outbuf), fd, gpu_trace_file_array[id].trace_buffer,
-			      HPCRUN_TraceBufferSz, HPCIO_OUTBUF_UNLOCKED);
-    hpcrun_trace_file_validate(ret == HPCFMT_OK, "open");
-    hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
-#ifdef DATACENTRIC_TRACE
-        flags.fields.isDataCentric = true;
-#else
-	    flags.fields.isDataCentric = false;
-#endif
-    ret = hpctrace_fmt_hdr_outbuf(flags, &(gpu_trace_file_array[id].trace_outbuf));
-    hpcrun_trace_file_validate(ret == HPCFMT_OK, "write header to");
-		if(st->trace_min_time_us == 0) {
+    // Special handle gpu_trace_open since we want to show empty streams
+    if (tracing && hpcrun_sample_prob_active()) {
+        hpcrun_trace_open(cptd);
+		if(cptd->trace_min_time_us == 0) {
 			struct timeval tv;
 			gettimeofday(&tv, NULL);
-			st->trace_min_time_us = ((uint64_t)tv.tv_usec
-                                                 + (((uint64_t)tv.tv_sec) * 1000000));
+			cptd->trace_min_time_us = ((uint64_t)tv.tv_usec
+                                     + (((uint64_t)tv.tv_sec) * 1000000));
 		}
-  }
-}
-
-void
-gpu_trace_append_with_time(core_profile_trace_data_t *st, int stream_num, unsigned int call_path_id, uint64_t microtime)
-{
-	if (tracing && hpcrun_sample_prob_active()) {
-		uint32_t id = stream_num;
-
-
-
-    hpctrace_fmt_datum_t trace_datum;
-    trace_datum.time = microtime;
-    trace_datum.cpId = (uint32_t)call_path_id;
-
-    hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
-#ifdef DATACENTRIC_TRACE
-        flags.fields.isDataCentric = true;
-#else
-	    flags.fields.isDataCentric = false;
-#endif
-
-    int ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, &(gpu_trace_file_array[id].trace_outbuf));
-    hpcrun_trace_file_validate(ret == HPCFMT_OK, "append");
-
-		if(st->trace_max_time_us < microtime) {
-			st->trace_max_time_us = microtime;
-		}
-	}
-}
-
-uint64_t
-gpu_trace_append(core_profile_trace_data_t *st, int stream_num, unsigned int call_path_id)
-{
-	//call_path_id = 140;
-	if (tracing && hpcrun_sample_prob_active()) {
-		struct timeval tv;
-		int ret = gettimeofday(&tv, NULL);
-		assert(ret == 0 && "in trace_append: gettimeofday failed!");
-    uint64_t microtime = ((uint64_t)tv.tv_usec
-				+ (((uint64_t)tv.tv_sec) * 1000000));
-
-		if(st->trace_max_time_us < microtime) {
-      st->trace_max_time_us = microtime;
     }
-		//printf("\nappending gpu trace");
-		uint32_t id = stream_num;
-
-    hpctrace_fmt_datum_t trace_datum;
-    trace_datum.time = microtime;
-    trace_datum.cpId = (uint32_t)call_path_id;
-
-    hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
-#ifdef DATACENTRIC_TRACE
-        flags.fields.isDataCentric = true;
-#else
-	    flags.fields.isDataCentric = false;
-#endif
-
-    ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, &(gpu_trace_file_array[id].trace_outbuf));
-    hpcrun_trace_file_validate(ret == HPCFMT_OK, "append");
-
-
-		return microtime;
-	}
-	return 0;
 }
 
 
+static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint64_t microtime)
+{
+    if (cptd->trace_min_time_us == 0) {
+        cptd->trace_min_time_us = microtime;
+    }
+    
+    // TODO: should we need this check???
+    if(cptd->trace_max_time_us < microtime) {
+        cptd->trace_max_time_us = microtime;
+    }
+    
+    hpctrace_fmt_datum_t trace_datum;
+    trace_datum.time = microtime;
+    trace_datum.cpId = (uint32_t)call_path_id;
+    //TODO: was not in GPU version
+    trace_datum.metricId = (uint32_t)metric_id;
+    
+    hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
+#ifdef DATACENTRIC_TRACE
+    flags.fields.isDataCentric = true;
+#else
+    flags.fields.isDataCentric = false;
+#endif
+    
+    int ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, &cptd->trace_outbuf);
+    hpcrun_trace_file_validate(ret == HPCFMT_OK, "append");
+}
 
 void
-hpcrun_trace_append(uint call_path_id, uint metric_id)
+hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_path_id, uint metric_id, uint64_t microtime)
+{
+	if (tracing && hpcrun_sample_prob_active()) {
+        hpcrun_trace_append_with_time_real(st, call_path_id, metric_id, microtime);
+	}
+}
+
+
+void
+hpcrun_trace_append(core_profile_trace_data_t *cptd, uint call_path_id, uint metric_id)
 {
   if (tracing && hpcrun_sample_prob_active()) {
     struct timeval tv;
@@ -302,68 +212,22 @@ hpcrun_trace_append(uint call_path_id, uint metric_id)
     uint64_t microtime = ((uint64_t)tv.tv_usec
 			  + (((uint64_t)tv.tv_sec) * 1000000));
 
-    thread_data_t *td = hpcrun_get_thread_data();
-
-    if (td->core_profile_trace_data.trace_min_time_us == 0) {
-      td->core_profile_trace_data.trace_min_time_us = microtime;
-    }
-    td->core_profile_trace_data.trace_max_time_us = microtime;
-
-    hpctrace_fmt_datum_t trace_datum;
-    trace_datum.time = microtime;
-    trace_datum.cpId = (uint32_t)call_path_id;
-    trace_datum.metricId = (uint32_t)metric_id;
-
-    hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
-#ifdef DATACENTRIC_TRACE
-    flags.fields.isDataCentric = true;
-#else
-    flags.fields.isDataCentric = false;
-#endif
-
-    ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, &td->trace_outbuf);
-    hpcrun_trace_file_validate(ret == HPCFMT_OK, "append");
+    hpcrun_trace_append_with_time_real(cptd, call_path_id, metric_id, microtime);
   }
 
 }
 
-
 void
-gpu_trace_close(core_profile_trace_data_t *st, int stream_id)
+hpcrun_trace_close(core_profile_trace_data_t * cptd)
 {
   if (tracing && hpcrun_sample_prob_active()) {
-    //thread_data_t *td = hpcrun_get_thread_data();
 
-		uint32_t id =  stream_id;
-    int ret = hpcio_outbuf_close(&(gpu_trace_file_array[id].trace_outbuf));
-    hpcrun_trace_file_validate(ret == HPCFMT_OK, "close");
-
-/*
- * we need to redo this renaming as john discussed.
- * for now lets manually rename
-
-*/
-    //int rank = hpcrun_get_rank();
-    //if (rank >= 0) {
-      //hpcrun_rename_trace_file(0, id+GPU_TRACE_FILE_OFFSET);
-    //}
-  }
-}
-
-
-
-void
-hpcrun_trace_close()
-{
-  if (tracing && hpcrun_sample_prob_active()) {
-    thread_data_t *td = hpcrun_get_thread_data();
-
-    int ret = hpcio_outbuf_close(&td->trace_outbuf);
+    int ret = hpcio_outbuf_close(&cptd->trace_outbuf);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "close");
 
     int rank = hpcrun_get_rank();
     if (rank >= 0) {
-      hpcrun_rename_trace_file(rank, td->core_profile_trace_data.id);
+      hpcrun_rename_trace_file(rank, cptd->id);
     }
   }
 }

@@ -49,7 +49,7 @@
 
 #include "epoch.h"
 
-extern int hpcrun_write_profile_data(epoch_t *epoch);
-extern void hpcrun_flush_epochs(void);
+extern int hpcrun_write_profile_data(core_profile_trace_data_t * cptd);
+extern void hpcrun_flush_epochs(core_profile_trace_data_t * cptd);
 
 #endif // WRITE_DATA_H

@@ -53,10 +53,6 @@ core_profile_trace_data_t *hpcrun_stream_data_alloc_init(int id);
 cct_node_t *stream_duplicate_cpu_node(core_profile_trace_data_t *st, ucontext_t *context, cct_node_t *n);
 void hpcrun_stream_finalize(core_profile_trace_data_t *st);
 
-//---------------write_Stream_data.c-------------
-
-int hpcrun_write_stream_profile_data(core_profile_trace_data_t *st);
-
 #endif
 
 
