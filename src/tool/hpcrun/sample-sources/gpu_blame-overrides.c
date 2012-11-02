@@ -83,15 +83,13 @@
  * local includes
  *****************************************************************************/
 #include "common.h"
-
-#include "stream.h"
 #include "gpu_blame.h"
 
-//#include "stream_data.h"
-//#include <hpcrun/write_stream_data.h>
-
 #include <hpcrun/hpcrun_options.h>
+#include <hpcrun/write_data.h>
+#include <hpcrun/safe-sampling.h>
 #include <hpcrun/hpcrun_stats.h>
+#include <hpcrun/memory/mmap.h>
 
 #include <hpcrun/metrics.h>
 #include <hpcrun/sample_event.h>
@@ -256,8 +254,7 @@ typedef struct active_kernel_node_t {
 } active_kernel_node_t;
 
 
-
-//void CUPTIAPI EventInsertionCallback(void *userdata, CUpti_CallbackDomain domain, CUpti_CallbackId cbid, const void *cbInfo);
+    
 
 /******************************************************************************
  * global variables
@@ -268,8 +265,6 @@ typedef struct active_kernel_node_t {
  * local variables
  *****************************************************************************/
 
-//Lock for wrapped synchronous calls
-static spinlock_t g_cuda_lock = SPINLOCK_UNLOCKED;
 // TODO.. Karthiks CCT fix needed, 32 since I assume max of 32 CPU threads
 static uint32_t g_stream_id = 32;
 static uint32_t stream_to_id_index = 0;
@@ -335,6 +330,7 @@ static void PopulateEntryPointesToWrappedCalls() {
 /******************** END CONSTRUCTORS ****/
 
 
+#if 0
 static inline uint64_t get_shared_key(int device_id){
 	char name[200] = {0};
 	uint32_t i = 0;
@@ -348,7 +344,6 @@ static inline uint64_t get_shared_key(int device_id){
 
         return (hash << 8)| device_id;
 }
-#if 0
 // TODO: need to unmap and get new if the context/device changes
 static inline void create_shared_memory(){
 
@@ -462,6 +457,42 @@ static stream_to_id_map_t *splay_insert(cudaStream_t stream_ip)
     spinlock_unlock(&g_stream_id_lock);
     return stream_to_id_tree_root;
 }
+
+static inline core_profile_trace_data_t *hpcrun_stream_data_alloc_init(int id) {
+    core_profile_trace_data_t *st = hpcrun_mmap_anon(sizeof(core_profile_trace_data_t));
+    // FIXME: revisit to perform this memstore operation appropriately.
+    //memstore = td->memstore;
+    memset(st, 0xfe, sizeof(core_profile_trace_data_t));
+    //td->memstore = memstore;
+    //hpcrun_make_memstore(&td->memstore, is_child);
+    st->id = id;
+    st->epoch = hpcrun_malloc(sizeof(epoch_t));
+    st->epoch->csdata_ctxt = copy_thr_ctxt(TD_GET(core_profile_trace_data.epoch)->csdata.ctxt); //copy_thr_ctxt(thr_ctxt);
+    hpcrun_cct_bundle_init(&(st->epoch->csdata), (st->epoch->csdata).ctxt);
+    st->epoch->loadmap = hpcrun_getLoadmap();
+    st->epoch->next  = NULL;
+    hpcrun_cct2metrics_init(&(st->cct2metrics_map)); //this just does st->map = NULL;
+    
+    
+    st->trace_min_time_us = 0;
+    st->trace_max_time_us = 0;
+    st->hpcrun_file  = NULL;
+    
+    return st;
+}
+
+static inline  cct_node_t *stream_duplicate_cpu_node(core_profile_trace_data_t *st, ucontext_t *context, cct_node_t *node) {
+    cct_bundle_t* cct= &(st->epoch->csdata);
+    cct_node_t * tmp_root = cct->tree_root;
+    hpcrun_walk_path(node, l_insert_path, (cct_op_arg_t) &(tmp_root));
+    return tmp_root;
+}
+
+
+inline void hpcrun_stream_finalize(core_profile_trace_data_t *st) {
+	hpcrun_write_profile_data(st);
+}
+
 
 static struct stream_to_id_map_t *splay_delete(cudaStream_t stream)
 {
@@ -773,7 +804,7 @@ uint32_t cleanup_finished_events() {
                 
                 
                 //fprintf(stderr, "\n cudaEventQuery success %p", current_event->event_end);
-                cct_node_t *launcher_cct = current_event->launcher_cct;
+                //cct_node_t *launcher_cct = current_event->launcher_cct;
                
                 // record start time
                 float elapsedTime;      // in millisec with 0.5 microsec resolution as per CUDA
@@ -933,7 +964,7 @@ void CreateStream0IfNot(cudaStream_t stream) {
         g_stream_array[new_streamId].st = hpcrun_stream_data_alloc_init(new_streamId);
 
 	if(hpcrun_trace_isactive()) {
-		gpu_trace_open(g_stream_array[new_streamId].st);
+		hpcrun_trace_open(g_stream_array[new_streamId].st);
 
 		/*FIXME: convert below 4 lines to a macro */
 		cct_bundle_t *bundle = &(g_stream_array[new_streamId].st->epoch->csdata);
@@ -1175,7 +1206,7 @@ cudaError_t cudaStreamCreate(cudaStream_t * stream) {
 
     g_stream_array[new_streamId].st = hpcrun_stream_data_alloc_init(new_streamId);
     if(hpcrun_trace_isactive()) {
-    	gpu_trace_open(g_stream_array[new_streamId].st);
+    	hpcrun_trace_open(g_stream_array[new_streamId].st);
 
 	    /*FIXME: convert below 4 lines to a macro */
 	    cct_bundle_t *bundle = &(g_stream_array[new_streamId].st->epoch->csdata);
@@ -1666,7 +1697,7 @@ CUresult cuStreamCreate(CUstream * phStream, unsigned int Flags) {
 
 
     if(hpcrun_trace_isactive()){
-    	gpu_trace_open(g_stream_array[new_streamId].st);
+    	hpcrun_trace_open(g_stream_array[new_streamId].st);
 
     	/*FIXME: convert below 4 lines to a macro */
     	cct_bundle_t *bundle = &(g_stream_array[new_streamId].st->epoch->csdata);
@@ -1924,8 +1955,8 @@ CUresult cuMemcpyDtoHAsync(void *dstHost, CUdeviceptr srcDevice, size_t ByteCoun
         atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
     
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_DTO_H_ASYNC_V2].cuMemcpyDtoHAsync_v2Real(dstHost, srcDevice, ByteCount, hStream);
-
-TD_GET(overload_state) = WORKING_STATE;                      
+    
+    TD_GET(overload_state) = WORKING_STATE;                      
 
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end,(cudaStream_t) hStream));
 
@@ -2062,5 +2093,6 @@ void gpu_blame_shift_itimer_signal_handler(cct_node_t * node, uint64_t cur_time_
     }
     spinlock_unlock(&g_gpu_lock);
 }
+
 
 #endif

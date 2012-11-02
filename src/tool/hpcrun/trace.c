@@ -89,7 +89,7 @@
 //*********************************************************************
 
 static void hpcrun_trace_file_validate(int valid, char *op);
-
+static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint64_t microtime);
 
 
 //*********************************************************************
@@ -146,52 +146,15 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd)
 
     ret = hpctrace_fmt_hdr_outbuf(flags, &cptd->trace_outbuf);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "write header to");
+    if(cptd->trace_min_time_us == 0) {
+      struct timeval tv;
+      gettimeofday(&tv, NULL);
+      cptd->trace_min_time_us = ((uint64_t)tv.tv_usec
+                                 + (((uint64_t)tv.tv_sec) * 1000000));
+    }
   }
 }
 
-void 
-gpu_trace_open(core_profile_trace_data_t *cptd)
-{
-    // Special handle gpu_trace_open since we want to show empty streams
-    if (tracing && hpcrun_sample_prob_active()) {
-        hpcrun_trace_open(cptd);
-		if(cptd->trace_min_time_us == 0) {
-			struct timeval tv;
-			gettimeofday(&tv, NULL);
-			cptd->trace_min_time_us = ((uint64_t)tv.tv_usec
-                                     + (((uint64_t)tv.tv_sec) * 1000000));
-		}
-    }
-}
-
-
-static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint64_t microtime)
-{
-    if (cptd->trace_min_time_us == 0) {
-        cptd->trace_min_time_us = microtime;
-    }
-    
-    // TODO: should we need this check???
-    if(cptd->trace_max_time_us < microtime) {
-        cptd->trace_max_time_us = microtime;
-    }
-    
-    hpctrace_fmt_datum_t trace_datum;
-    trace_datum.time = microtime;
-    trace_datum.cpId = (uint32_t)call_path_id;
-    //TODO: was not in GPU version
-    trace_datum.metricId = (uint32_t)metric_id;
-    
-    hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
-#ifdef DATACENTRIC_TRACE
-    flags.fields.isDataCentric = true;
-#else
-    flags.fields.isDataCentric = false;
-#endif
-    
-    int ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, &cptd->trace_outbuf);
-    hpcrun_trace_file_validate(ret == HPCFMT_OK, "append");
-}
 
 void
 hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_path_id, uint metric_id, uint64_t microtime)
@@ -236,6 +199,34 @@ hpcrun_trace_close(core_profile_trace_data_t * cptd)
 //*********************************************************************
 // private operations
 //*********************************************************************
+
+static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint64_t microtime)
+{
+    if (cptd->trace_min_time_us == 0) {
+        cptd->trace_min_time_us = microtime;
+    }
+    
+    // TODO: should we need this check???
+    if(cptd->trace_max_time_us < microtime) {
+        cptd->trace_max_time_us = microtime;
+    }
+    
+    hpctrace_fmt_datum_t trace_datum;
+    trace_datum.time = microtime;
+    trace_datum.cpId = (uint32_t)call_path_id;
+    //TODO: was not in GPU version
+    trace_datum.metricId = (uint32_t)metric_id;
+    
+    hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
+#ifdef DATACENTRIC_TRACE
+    flags.fields.isDataCentric = true;
+#else
+    flags.fields.isDataCentric = false;
+#endif
+    
+    int ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, &cptd->trace_outbuf);
+    hpcrun_trace_file_validate(ret == HPCFMT_OK, "append");
+}
 
 
 static void
