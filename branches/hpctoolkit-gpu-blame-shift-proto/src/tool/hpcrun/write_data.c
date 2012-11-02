@@ -143,7 +143,7 @@ lazy_open_data_file(void)
 {
   thread_data_t* td = hpcrun_get_thread_data();
 
-  FILE* fs = td->hpcrun_file;
+  FILE* fs = td->core_profile_trace_data.hpcrun_file;
   if (fs) {
     return fs;
   }
@@ -152,13 +152,13 @@ lazy_open_data_file(void)
   if (rank < 0) {
     rank = 0;
   }
-  int fd = hpcrun_open_profile_file(rank, td->id);
+  int fd = hpcrun_open_profile_file(rank, td->core_profile_trace_data.id);
   fs = fdopen(fd, "w");
   if (fs == NULL) {
     EEMSG("HPCToolkit: %s: unable to open profile file", __func__);
     return NULL;
   }
-  td->hpcrun_file = fs;
+  td->core_profile_trace_data.hpcrun_file = fs;
 
   if (! hpcrun_sample_prob_active())
     return fs;
@@ -175,7 +175,7 @@ lazy_open_data_file(void)
   snprintf(mpiRankStr, bufSZ, "%d", rank);
 
   char tidStr[bufSZ];
-  snprintf(tidStr, bufSZ, "%d", td->id);
+  snprintf(tidStr, bufSZ, "%d", td->core_profile_trace_data.id);
 
   char hostidStr[bufSZ];
   snprintf(hostidStr, bufSZ, "%lx", OSUtil_hostid());
@@ -184,11 +184,11 @@ lazy_open_data_file(void)
   snprintf(pidStr, bufSZ, "%u", OSUtil_pid());
 
   char traceMinTimeStr[bufSZ];
-  snprintf(traceMinTimeStr, bufSZ, "%"PRIu64, td->trace_min_time_us);
+  snprintf(traceMinTimeStr, bufSZ, "%"PRIu64, td->core_profile_trace_data.trace_min_time_us);
 	//printf("\nThe start time  is %x for THREAD %d",td->trace_min_time_us, td->id);
 
   char traceMaxTimeStr[bufSZ];
-  snprintf(traceMaxTimeStr, bufSZ, "%"PRIu64, td->trace_max_time_us);
+  snprintf(traceMaxTimeStr, bufSZ, "%"PRIu64, td->core_profile_trace_data.trace_max_time_us);
 	//printf("\nThe end time  is %x for stream %d",td->trace_max_time_us, td->id);
 
   //
@@ -331,7 +331,7 @@ hpcrun_flush_epochs(void)
   if (fs == NULL)
     return;
 
-  write_epochs(fs, TD_GET(epoch));
+  write_epochs(fs, TD_GET(core_profile_trace_data.epoch));
   hpcrun_epoch_reset();
 }
 

@@ -57,19 +57,17 @@
 
 //***************************************************************************
 
-stream_data_t *hpcrun_stream_data_alloc_init(int device_id, int id)
+core_profile_trace_data_t *hpcrun_stream_data_alloc_init(int id)
 {
-	stream_data_t *st = hpcrun_mmap_anon(sizeof(stream_data_t));
+	core_profile_trace_data_t *st = hpcrun_mmap_anon(sizeof(core_profile_trace_data_t));
   // FIXME: revisit to perform this memstore operation appropriately.
   //memstore = td->memstore;
-  memset(st, 0xfe, sizeof(stream_data_t));
+  memset(st, 0xfe, sizeof(core_profile_trace_data_t));
   //td->memstore = memstore;
   //hpcrun_make_memstore(&td->memstore, is_child);
-
-	st->device_id = device_id;
   st->id = id;
   st->epoch = hpcrun_malloc(sizeof(epoch_t));
-  st->epoch->csdata_ctxt = copy_thr_ctxt(TD_GET(epoch)->csdata.ctxt); //copy_thr_ctxt(thr_ctxt);
+  st->epoch->csdata_ctxt = copy_thr_ctxt(TD_GET(core_profile_trace_data.epoch)->csdata.ctxt); //copy_thr_ctxt(thr_ctxt);
   hpcrun_cct_bundle_init(&(st->epoch->csdata), (st->epoch->csdata).ctxt);
   st->epoch->loadmap = hpcrun_getLoadmap();
   st->epoch->next  = NULL;
@@ -84,7 +82,7 @@ stream_data_t *hpcrun_stream_data_alloc_init(int device_id, int id)
 }
 
 //duplicate of the function from cct2metrics.c
-metric_set_t* hpcrun_stream_reify_metric_set(stream_data_t *st, cct_node_id_t cct_id) {
+metric_set_t* hpcrun_stream_reify_metric_set(core_profile_trace_data_t *st, cct_node_id_t cct_id) {
 	metric_set_t* rv = NULL;
 	cct2metrics_t* map = st->cct2metrics_map;
 
@@ -120,7 +118,7 @@ metric_set_t* hpcrun_stream_reify_metric_set(stream_data_t *st, cct_node_id_t cc
 }
 
 
-cct_node_t *stream_duplicate_cpu_node(stream_data_t *st, ucontext_t *context, cct_node_t *node) {
+cct_node_t *stream_duplicate_cpu_node(core_profile_trace_data_t *st, ucontext_t *context, cct_node_t *node) {
 	cct_bundle_t* cct= &(st->epoch->csdata);
         cct_node_t * tmp_root = cct->tree_root;
         cct_node_t* n = NULL;
@@ -129,7 +127,7 @@ cct_node_t *stream_duplicate_cpu_node(stream_data_t *st, ucontext_t *context, cc
 }
 
 void 
-hpcrun_stream_finalize(stream_data_t *st) {
+hpcrun_stream_finalize(core_profile_trace_data_t *st) {
 	hpcrun_write_stream_profile_data(st);
 }
 

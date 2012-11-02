@@ -60,6 +60,7 @@
 #include "newmem.h"
 #include "epoch.h"
 #include "cct2metrics.h"
+#include "core_profile_trace_data.h"
 
 #include <lush/lush-pthread.i>
 #include <unwind/common/backtrace.h>
@@ -118,11 +119,6 @@ typedef struct {
 
 
 typedef struct thread_data_t {
-  // ----------------------------------------
-  // normalized thread id (monitor-generated)
-  // ----------------------------------------
-  int id;
-
   int idle; // indicate whether the thread is idle
 
   // ----------------------------------------
@@ -138,17 +134,16 @@ typedef struct thread_data_t {
   source_state_t ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
 
   uint64_t       last_time_us; // microseconds
-
+   
   // ----------------------------------------
+  // core_profile_trace_data contains the following
   // epoch: loadmap + cct + cct_ctxt
-  // ----------------------------------------
-  epoch_t* epoch;
-
-  // ----------------------------------------
   // cct2metrics map: associate a metric_set with
-  //                  a cct node
+  // tracing: trace_min_time_us and trace_max_time_us
+  // IO support file handle: hpcrun_file;
   // ----------------------------------------
-  cct2metrics_t* cct2metrics_map;
+
+  core_profile_trace_data_t core_profile_trace_data;
 
   // ----------------------------------------
   // backtrace buffer
@@ -202,16 +197,10 @@ typedef struct thread_data_t {
   // ----------------------------------------
   lushPthr_t     pthr_metrics;
 
-  // ----------------------------------------
-  // tracing
-  // ----------------------------------------
-  uint64_t trace_min_time_us;
-  uint64_t trace_max_time_us;
 
   // ----------------------------------------
   // IO support
   // ----------------------------------------
-  FILE* hpcrun_file;
   void* trace_buffer;
   hpcio_outbuf_t trace_outbuf;
 
@@ -273,6 +262,6 @@ void     hpcrun_ensure_btbuf_avail(void);
 
 
 // utilities to match previous api
-#define hpcrun_get_epoch()  TD_GET(epoch)
+#define hpcrun_get_thread_epoch()  TD_GET(core_profile_trace_data.epoch)
 
 #endif // !defined(THREAD_DATA_H)

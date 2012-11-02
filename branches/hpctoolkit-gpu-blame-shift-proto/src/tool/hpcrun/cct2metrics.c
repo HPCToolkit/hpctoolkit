@@ -26,7 +26,7 @@
 // interface functions implicitly reference this map
 // 
 
-#define THREAD_LOCAL_MAP() TD_GET(cct2metrics_map)
+#define THREAD_LOCAL_MAP() TD_GET(core_profile_trace_data.cct2metrics_map)
 
 //
 // ******** initialization

@@ -61,8 +61,6 @@
 // Blame shiting interface
 //
 #define MAX_STREAMS (500)
-#define DEVICE_ID (0)
-
 
 ///TODO: evaluate this option : FORCE CLEANUP
 #define SYNCHRONOUS_CLEANUP do{  hpcrun_safe_enter_async(NULL); 		\
@@ -93,7 +91,7 @@ typedef struct event_list_node_t {
 
 
 typedef struct stream_node_t {
-    struct stream_data_t *st;
+    struct core_profile_trace_data_t *st;
     struct event_list_node_t *latest_event_node;
     struct event_list_node_t *unfinished_event_node;
     struct stream_node_t *next_unfinished_stream;

@@ -190,7 +190,7 @@ void CloseAllStreams(stream_to_id_map_t *root) {
     uint32_t streamId;
     streamId = root->id;
     
-    gpu_trace_close(g_stream_array[streamId].st, DEVICE_ID, streamId);
+    gpu_trace_close(g_stream_array[streamId].st, streamId);
     hpcrun_stream_finalize(g_stream_array[streamId].st);
     
     //gpu_trace_close(DEVICE_ID, streamId);

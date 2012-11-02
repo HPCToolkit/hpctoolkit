@@ -43,42 +43,19 @@
 #include "hpcrun_return_codes.h"
 #include "loadmap.h"
 #include "sample_prob.h"
-
+#include "core_profile_trace_data.h"
 
 extern	int n_metrics;
 
-typedef struct stream_data_t {
-  int device_id;
-  int id;
-  // ----------------------------------------
-  // epoch: loadmap + cct + cct_ctxt
-  // ----------------------------------------
-  epoch_t* epoch;
-
-  //metrics: this is needed otherwise 
-  //hpcprof does not pick them up
-  cct2metrics_t* cct2metrics_map;
-
-  // ----------------------------------------
-  // tracing
-  // ----------------------------------------
-  uint64_t trace_min_time_us;
-  uint64_t trace_max_time_us;
-  // ----------------------------------------
-  // IO support
-  // ----------------------------------------
-  FILE* hpcrun_file;
-
-} stream_data_t;
 
 //---------stream_data.c---------------------
-stream_data_t *hpcrun_stream_data_alloc_init(int device_id, int id);
-cct_node_t *stream_duplicate_cpu_node(stream_data_t *st, ucontext_t *context, cct_node_t *n);
-void hpcrun_stream_finalize(stream_data_t *st);
+core_profile_trace_data_t *hpcrun_stream_data_alloc_init(int id);
+cct_node_t *stream_duplicate_cpu_node(core_profile_trace_data_t *st, ucontext_t *context, cct_node_t *n);
+void hpcrun_stream_finalize(core_profile_trace_data_t *st);
 
 //---------------write_Stream_data.c-------------
 
-int hpcrun_write_stream_profile_data(stream_data_t *st);
+int hpcrun_write_stream_profile_data(core_profile_trace_data_t *st);
 
 #endif
 
