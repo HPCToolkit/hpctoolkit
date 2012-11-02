@@ -48,6 +48,7 @@
 #define WRITE_DATA_H
 
 #include "epoch.h"
+#include "core_profile_trace_data.h"
 
 extern int hpcrun_write_profile_data(core_profile_trace_data_t * cptd);
 extern void hpcrun_flush_epochs(core_profile_trace_data_t * cptd);

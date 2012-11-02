@@ -48,7 +48,7 @@
 #define hpcrun_trace_h
 #include<stdint.h>
 #include "files.h"
-#include "stream.h"
+#include "core_profile_trace_data.h"
 
 #include <include/uint.h>
 

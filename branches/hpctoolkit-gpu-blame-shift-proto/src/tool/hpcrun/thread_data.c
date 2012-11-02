@@ -387,5 +387,3 @@ hpcrun_ensure_btbuf_avail(void)
   }
 }
 
-
-#include "stream_data.c"
