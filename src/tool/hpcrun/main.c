@@ -571,6 +571,10 @@ monitor_init_process(int *argc, char **argv, void* data)
 void
 monitor_fini_process(int how, void* data)
 {
+  if (hpcrun_get_disabled()) {
+    return;
+  }
+
   hpcrun_safe_enter();
 
   hpcrun_fini_internal();
@@ -767,6 +771,10 @@ monitor_init_thread(int tid, void* data)
 void
 monitor_fini_thread(void* init_thread_data)
 {
+  if (hpcrun_get_disabled()) {
+    return;
+  }
+
   hpcrun_safe_enter();
 
   epoch_t *epoch = (epoch_t *)init_thread_data;
