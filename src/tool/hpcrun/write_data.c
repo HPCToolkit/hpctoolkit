@@ -139,11 +139,10 @@ static const uint32_t default_ra_to_callsite_distance =
 //***************************************************************************
 
 static FILE *
-lazy_open_data_file(void)
+lazy_open_data_file(core_profile_trace_data_t * cptd)
 {
-  thread_data_t* td = hpcrun_get_thread_data();
 
-  FILE* fs = td->core_profile_trace_data.hpcrun_file;
+  FILE* fs = cptd->hpcrun_file;
   if (fs) {
     return fs;
   }
@@ -152,13 +151,13 @@ lazy_open_data_file(void)
   if (rank < 0) {
     rank = 0;
   }
-  int fd = hpcrun_open_profile_file(rank, td->core_profile_trace_data.id);
+  int fd = hpcrun_open_profile_file(rank, cptd->id);
   fs = fdopen(fd, "w");
   if (fs == NULL) {
     EEMSG("HPCToolkit: %s: unable to open profile file", __func__);
     return NULL;
   }
-  td->core_profile_trace_data.hpcrun_file = fs;
+  cptd->hpcrun_file = fs;
 
   if (! hpcrun_sample_prob_active())
     return fs;
@@ -175,7 +174,7 @@ lazy_open_data_file(void)
   snprintf(mpiRankStr, bufSZ, "%d", rank);
 
   char tidStr[bufSZ];
-  snprintf(tidStr, bufSZ, "%d", td->core_profile_trace_data.id);
+  snprintf(tidStr, bufSZ, "%d", cptd->id);
 
   char hostidStr[bufSZ];
   snprintf(hostidStr, bufSZ, "%lx", OSUtil_hostid());
@@ -184,11 +183,11 @@ lazy_open_data_file(void)
   snprintf(pidStr, bufSZ, "%u", OSUtil_pid());
 
   char traceMinTimeStr[bufSZ];
-  snprintf(traceMinTimeStr, bufSZ, "%"PRIu64, td->core_profile_trace_data.trace_min_time_us);
+  snprintf(traceMinTimeStr, bufSZ, "%"PRIu64, cptd->trace_min_time_us);
 	//printf("\nThe start time  is %x for THREAD %d",td->trace_min_time_us, td->id);
 
   char traceMaxTimeStr[bufSZ];
-  snprintf(traceMaxTimeStr, bufSZ, "%"PRIu64, td->core_profile_trace_data.trace_max_time_us);
+  snprintf(traceMaxTimeStr, bufSZ, "%"PRIu64, cptd->trace_max_time_us);
 	//printf("\nThe end time  is %x for stream %d",td->trace_max_time_us, td->id);
 
   //
@@ -325,25 +324,25 @@ write_epochs(FILE* fs, epoch_t* epoch)
 
 
 void
-hpcrun_flush_epochs(void)
+hpcrun_flush_epochs(core_profile_trace_data_t * cptd)
 {
-  FILE *fs = lazy_open_data_file();
+  FILE *fs = lazy_open_data_file(cptd);
   if (fs == NULL)
     return;
 
-  write_epochs(fs, TD_GET(core_profile_trace_data.epoch));
+  write_epochs(fs, cptd->epoch);
   hpcrun_epoch_reset();
 }
 
 int
-hpcrun_write_profile_data(epoch_t *epoch)
+hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
 {
   TMSG(DATA_WRITE,"Writing hpcrun profile data");
-  FILE* fs = lazy_open_data_file();
+  FILE* fs = lazy_open_data_file(cptd);
   if (fs == NULL)
     return HPCRUN_ERR;
 
-  write_epochs(fs, epoch);
+  write_epochs(fs, cptd->epoch);
 
   TMSG(DATA_WRITE,"closing file");
   hpcio_fclose(fs);
@@ -352,4 +351,3 @@ hpcrun_write_profile_data(epoch_t *epoch)
   return HPCRUN_OK;
 }
 
-#include "write_stream_data.c"

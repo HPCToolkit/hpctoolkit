@@ -199,12 +199,6 @@ typedef struct thread_data_t {
 
 
   // ----------------------------------------
-  // IO support
-  // ----------------------------------------
-  void* trace_buffer;
-  hpcio_outbuf_t trace_outbuf;
-
-  // ----------------------------------------
   // debug stuff
   // ----------------------------------------
   bool debug1;

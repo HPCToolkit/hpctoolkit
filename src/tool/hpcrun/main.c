@@ -255,7 +255,7 @@ hpcrun_init_internal(bool is_child)
   hpcrun_options__getopts(&opts);
 
   hpcrun_trace_init(); // this must go after thread initialization
-  hpcrun_trace_open();
+  hpcrun_trace_open(&(TD_GET(core_profile_trace_data)));
 
   // Decide whether to retain full single recursion, or collapse recursive calls to
   // first instance of recursive call
@@ -390,7 +390,7 @@ hpcrun_fini_internal()
 
     fnbounds_fini();
 
-    hpcrun_write_profile_data(epoch);
+    hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
 
     hpcrun_stats_print_summary();
     
@@ -478,7 +478,7 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-    hpcrun_write_profile_data(epoch);
+    hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
   }
 }
 
@@ -575,7 +575,7 @@ monitor_fini_process(int how, void* data)
   hpcrun_safe_enter();
 
   hpcrun_fini_internal();
-  hpcrun_trace_close();
+  hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
   fnbounds_fini();
 
   hpcrun_safe_exit();
@@ -760,7 +760,7 @@ monitor_init_thread(int tid, void* data)
   void* thread_data = hpcrun_thread_init(tid, (cct_ctxt_t*)data);
   TMSG(THREAD,"back from init thread %d",tid);
 
-  hpcrun_trace_open();
+  hpcrun_trace_open(&(TD_GET(core_profile_trace_data)));
   hpcrun_safe_exit();
 
   return thread_data;
@@ -775,7 +775,7 @@ monitor_fini_thread(void* init_thread_data)
   epoch_t *epoch = (epoch_t *)init_thread_data;
 
   hpcrun_thread_fini(epoch);
-  hpcrun_trace_close();
+  hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
 
   hpcrun_safe_exit();
 }

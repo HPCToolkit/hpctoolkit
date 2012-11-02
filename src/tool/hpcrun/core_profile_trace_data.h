@@ -25,7 +25,8 @@ typedef struct core_profile_trace_data_t {
   // IO support
   // ----------------------------------------
   FILE* hpcrun_file;
-
+  void* trace_buffer;
+  hpcio_outbuf_t trace_outbuf;
 } core_profile_trace_data_t;
 
 

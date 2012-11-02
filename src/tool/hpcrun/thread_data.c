@@ -224,6 +224,8 @@ static inline void core_profile_trace_data_init(core_profile_trace_data_t * cptd
   // IO support
   // ----------------------------------------
   cptd->hpcrun_file  = NULL;
+  cptd->trace_buffer = NULL;
+    
 }
 
 void
@@ -301,11 +303,6 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   lushPthr_init(&td->pthr_metrics);
   lushPthr_thread_init(&td->pthr_metrics);
 
-
-  // ----------------------------------------
-  // IO support
-  // ----------------------------------------
-  td->trace_buffer = NULL;
 
   // ----------------------------------------
   // debug support
