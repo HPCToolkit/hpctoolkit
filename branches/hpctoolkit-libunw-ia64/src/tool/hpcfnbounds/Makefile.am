@@ -82,18 +82,10 @@ SYMTABAPI_LIB = @SYMTABAPI_LIB@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 
-#PROXY_SOURCES = \
-#     main-proxy.cpp
 
-if USE_OLD_FNBOUNDS
-    main_file = main-alt.cpp
-    code_ranges_file = code-ranges-alt.cpp
-    generic_process_ranges_file = process-ranges-alt.cpp
-else
-    main_file = main.cpp
-    code_ranges_file = code-ranges.cpp
-    generic_process_ranges_file = generic-process-ranges.cpp
-endif
+main_file = main.cpp
+code_ranges_file = code-ranges.cpp
+generic_process_ranges_file = generic-process-ranges.cpp
 
 MYSOURCES = \
 	$(main_file) \

@@ -210,7 +210,6 @@ AC_ARG_ENABLE([develop],
 
 AC_MSG_RESULT([${OPT_ENABLE_DEVELOP}])
 AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
-AM_CONDITIONAL(USE_OLD_FNBOUNDS, false)
 
 #----------------------------------------------------------------------------
 # Prerequisites: compilers, tools, system libraries

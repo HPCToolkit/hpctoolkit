@@ -779,8 +779,6 @@ CPPFLAGS
 LDFLAGS
 CXXFLAGS
 CXX
-USE_OLD_FNBOUNDS_FALSE
-USE_OLD_FNBOUNDS_TRUE
 OPT_ENABLE_DEVELOP_FALSE
 OPT_ENABLE_DEVELOP_TRUE
 HPCPROFMPI_LT_LDFLAGS
@@ -3852,14 +3850,6 @@ $as_echo "${OPT_ENABLE_DEVELOP}" >&6; }
 else
   OPT_ENABLE_DEVELOP_TRUE='#'
   OPT_ENABLE_DEVELOP_FALSE=
-fi
-
- if false; then
-  USE_OLD_FNBOUNDS_TRUE=
-  USE_OLD_FNBOUNDS_FALSE='#'
-else
-  USE_OLD_FNBOUNDS_TRUE='#'
-  USE_OLD_FNBOUNDS_FALSE=
 fi
 
 
@@ -18662,10 +18652,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_DEVELOP_TRUE}" && test -z "${OPT_ENABLE_DEVELOP_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_DEVELOP\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${USE_OLD_FNBOUNDS_TRUE}" && test -z "${USE_OLD_FNBOUNDS_FALSE}"; then
-  as_fn_error $? "conditional \"USE_OLD_FNBOUNDS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${AMDEP_TRUE}" && test -z "${AMDEP_FALSE}"; then
