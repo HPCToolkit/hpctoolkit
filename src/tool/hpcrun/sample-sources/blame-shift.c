@@ -10,7 +10,7 @@ blame_shift_register(bs_fn_entry_t *entry)
 }
 
 void 
-blame_shift_apply(cct_node_t *node, int metric_value)
+blame_shift_apply(cct_node_t *node, uint64_t metric_value)
 {
    bs_fn_entry_t *fn = bs_fns;
    while(fn != 0) {

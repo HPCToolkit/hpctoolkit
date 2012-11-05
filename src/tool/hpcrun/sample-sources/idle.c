@@ -123,7 +123,7 @@ static void work_fn();
 static void start_fn();
 static void end_fn();
 
-static void process_blame_for_sample(cct_node_t *node, int metric_value);
+static void process_blame_for_sample(cct_node_t *node, uint64_t metric_value);
 void scale_fn(void *);
 void normalize_fn(cct_node_t *node, cct_op_arg_t arg, size_t level);
 
@@ -162,6 +162,8 @@ METHOD_FN(thread_init)
 static void
 METHOD_FN(thread_init_action)
 {
+  thread_data_t *td = hpcrun_get_thread_data();
+  if(td->defer_flag) resolve_cntxt_fini();
 }
 
 static void
@@ -176,7 +178,7 @@ METHOD_FN(thread_fini_action)
   if(!td->omp_thread) return;
   // it is necessary because it can resolve/partial resolve
   // the region (temporal concern)
-  if(td->defer_flag) resolve_cntxt_fini();
+//  if(td->defer_flag) resolve_cntxt_fini();
   if(!td->add_to_pool) {
     td->add_to_pool = 1;
     add_defer_td(td);
@@ -322,7 +324,7 @@ is_overhead(cct_node_t *node)
 }
 
 static void
-process_blame_for_sample(cct_node_t *node, int metric_value)
+process_blame_for_sample(cct_node_t *node, uint64_t metric_value)
 {
   thread_data_t *td = hpcrun_get_thread_data();
   if (td->idle == 0) { // if thread is not idle
