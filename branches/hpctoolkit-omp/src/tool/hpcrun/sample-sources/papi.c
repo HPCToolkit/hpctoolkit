@@ -642,7 +642,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
       sv = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 				  0/*skipInner*/, 0/*isSync*/, NULL);
     if (cyc_metric_id == metric_id && sv.sample_node) {
-      blame_shift_apply(sv.sample_node, hpcrun_id2metric(metric_id)->period);
+      blame_shift_apply(sv.sample_node, (uint64_t)(hpcrun_id2metric(metric_id)->period));
     }
   }
   hpcrun_safe_exit();

@@ -261,7 +261,6 @@ void start_team_fn()
 void end_team_fn()
 {
   hpcrun_safe_enter();
-  uint64_t zero_metric_incr = 0LL;
   cct_node_t *node = NULL;
   uint64_t region_id = *(GOMP_get_region_id());
   struct record_t *record = r_splay_lookup(region_id);
@@ -282,14 +281,14 @@ void end_team_fn()
 	  omp_arg.tbd = true;
 	  omp_arg.region_id = TD_GET(region_id);
         }
-        node = hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 2, 1, (void *)&omp_arg).sample_node;
+        node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, (void *)&omp_arg).sample_node;
         TMSG(DEFER_CTXT, "unwind the callstack for region %d to %d", record->region_id, TD_GET(region_id));
       }
       //
       // for master thread in the outer-most region, a normal unwind to the process stop 
       //
       else {
-        node = hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 2, 1, NULL).sample_node;
+        node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, NULL).sample_node;
         TMSG(DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
       }
 
@@ -346,6 +345,8 @@ is_resolved(uint64_t id)
 static void
 merge_metrics(cct_node_t *a, cct_node_t *b, merge_op_arg_t arg)
 {
+  // if two nodes are the same, no need to merge
+  if(a == b) return;
   cct_metric_data_t *mdata_a, *mdata_b;
   metric_desc_t *mdesc;
   metric_set_t* mset_a = hpcrun_get_metric_set(a);
