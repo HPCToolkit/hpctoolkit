@@ -81,6 +81,8 @@
 #include "process-ranges.h"
 #include "function-entries.h"
 #include "fnbounds-file-header.h"
+#include "server.h"
+#include "syserv-mesg.h"
 #include "Symtab.h"
 #include "Symbol.h"
 
@@ -112,7 +114,6 @@ using namespace SymtabAPI;
 //*****************************************************************************
 
 static void usage(char *command, int status);
-static void dump_file_info(const char *filename, DiscoverFnTy fn_discovery);
 static void setup_segv_handler(void);
 
 //*****************************************************************************
@@ -122,6 +123,7 @@ static void setup_segv_handler(void);
 // We write() the binary format to a file descriptor and fprintf() the
 // text and classic C formats to a FILE pointer.
 //
+static int   is_server_mode = 0;
 static int   the_binary_fd = -1;
 static FILE *the_c_fp = NULL;
 static FILE *the_text_fp = NULL;
@@ -146,6 +148,7 @@ main(int argc, char* argv[])
   DiscoverFnTy fn_discovery = DiscoverFnTy_Aggressive;
   char buf[PATH_MAX], *object_file, *output_dir, *base;
   int num_fmts = 0, do_binary = 0, do_c = 0, do_text = 0;
+  int fdin, fdout;
   int n;
 
   for (n = 1; n < argc; n++) {
@@ -161,6 +164,14 @@ main(int argc, char* argv[])
     else if (strcmp(argv[n], "-h") == 0 || strcmp(argv[n], "--help") == 0) {
       usage(argv[0], 0);
     }
+    else if (strcmp(argv[n], "-s") == 0) {
+      is_server_mode = 1;
+      if (argc < n + 3 || sscanf(argv[n+1], "%d", &fdin) < 1
+	  || sscanf(argv[n+2], "%d", &fdout) < 1) {
+	errx(1, "missing file descriptors for server mode");
+      }
+      n += 2;
+    }
     else if (strcmp(argv[n], "-t") == 0) {
       do_text = 1;
     }
@@ -171,6 +182,12 @@ main(int argc, char* argv[])
       break;
   }
   num_fmts = do_binary + do_c + do_text;
+
+  // Run as the system server.
+  if (server_mode()) {
+    system_server(fn_discovery, fdin, fdout);
+    exit(0);
+  }
 
   // Must specify at least the object file.
   if (n >= argc) {
@@ -241,6 +258,13 @@ main(int argc, char* argv[])
 
 
 int
+server_mode(void)
+{
+  return is_server_mode;
+}
+
+
+int
 binary_fmt_fd(void)
 {
   return (the_binary_fd);
@@ -287,6 +311,7 @@ usage(char *command, int status)
     "\t-c\twrite output in C source code\n"
     "\t-d\tdon't perform function discovery on stripped code\n"
     "\t-h\tprint this help message and exit\n"
+    "\t-s fdin fdout\trun in server mode\n"
     "\t-t\twrite output in text format\n"
     "\t-v\tturn on verbose output in hpcfnbounds script\n\n"
     "Multiple output formats (-b, -c, -t) may be specified in one run.\n"
@@ -536,6 +561,11 @@ dump_header_info(int is_relocatable, uintptr_t ref_offset)
 {
   struct fnbounds_file_header fh;
 
+  if (server_mode()) {
+    syserv_add_header(is_relocatable, ref_offset);
+    return;
+  }
+
   if (binary_fmt_fd() >= 0) {
     memset(&fh, 0, sizeof(fh));
     fh.zero_pad = 0;
@@ -566,13 +596,13 @@ assert_file_is_readable(const char *filename)
   struct stat sbuf;
   int ret = stat(filename, &sbuf);
   if (ret != 0 || !S_ISREG(sbuf.st_mode)) {
-    fprintf(stderr, "hpcfnbounds: unable to open file %s", filename);
+    fprintf(stderr, "hpcfnbounds: unable to open file: %s\n", filename);
     exit(-1);
   } 
 }
 
 
-static void 
+void 
 dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
 {
   Symtab *syms;
@@ -623,7 +653,6 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
   }
 #endif // USE_SYMTABAPI_EXCEPTION_BLOCKS 
 
-
   syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
 
 #ifdef __PPC64__
@@ -650,6 +679,22 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
     image_offset = syms->imageOffset();
   }
   dump_header_info(relocatable, image_offset);
+
+  //-----------------------------------------------------------------
+  // free as many of the Symtab objects as we can
+  //-----------------------------------------------------------------
+
+  close(dwarf_fd);
+
+  // this causes a spew of 'Aggregate w/out symbols' errors.
+#if 0
+  for (unsigned int i = 0; i < symvec.size(); i++) {
+    syms->deleteSymbol(symvec[i]);
+  }
+#endif
+
+  // this actually increases the memory leak.  wtf !!
+#if 0
+  Symtab::closeSymtab(syms);
+#endif
 }
-
-

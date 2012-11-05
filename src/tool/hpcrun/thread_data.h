@@ -52,9 +52,11 @@
 // (there is just 1 thread).
 
 #include <setjmp.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "sample_sources_registered.h"
 #include "newmem.h"
@@ -132,6 +134,10 @@ typedef struct thread_data_t {
   // ----------------------------------------
   int            eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
   source_state_t ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
+
+  struct sigevent sigev;   // POSIX real-time timer
+  timer_t        timerid;
+  bool           timer_init;
 
   uint64_t       last_time_us; // microseconds
    

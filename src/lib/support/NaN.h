@@ -55,13 +55,11 @@
 
 //****************************************************************************
 
-extern double c_FP_NAN_d;
+extern const double c_FP_NAN_d;
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
-
-void NaN_init();
 
 bool c_isnan_d(double x);
 

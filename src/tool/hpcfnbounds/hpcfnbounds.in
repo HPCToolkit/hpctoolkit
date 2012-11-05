@@ -40,12 +40,14 @@ esac
 # hpcfnbounds is run on, whether it succeeds, etc, to go in hpcrun
 # logfile.
 #
+server=no
 verbose=no
 base=
 dir=
 for arg in "$@"
 do
     case "$arg" in
+	-s ) server=yes ;;
 	-v ) verbose=yes ;;
 	-* ) ;;
 	* )
@@ -57,6 +59,13 @@ do
 	    ;;
     esac
 done
+
+# FIXME: integrate server and verbose.
+
+if test "$server" = yes ; then
+    export LD_LIBRARY_PATH="${ext_libs_dir}:${libcxx_path}"
+    exec "${hpcfnbounds_dir}/hpcfnbounds-bin" "$@"
+fi
 
 if test "$verbose" = yes ; then
     echo "hpcfnbounds $@"
