@@ -56,6 +56,8 @@ enum DiscoverFnTy {
   DiscoverFnTy_None
 };
 
+void code_ranges_reinit();
+
 bool consider_possible_fn_address(void *addr);
 long offset_for_fn(void *addr);
 

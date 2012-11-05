@@ -89,6 +89,7 @@
 //*********************************************************************
 
 #include "fnbounds_interface.h"
+#include "client.h"
 
 #include "dylib.h"
 
@@ -110,6 +111,7 @@
 
 // FIXME:tallent: more spaghetti includes
 #include <hpcfnbounds/fnbounds-file-header.h>
+#include <hpcfnbounds/syserv-mesg.h>
 
 #include <lib/prof-lean/spinlock.h>
 
@@ -130,6 +132,7 @@
 // local variables
 //*********************************************************************
 
+static int use_new_server = 0;
 
 static char* tmproot = "/tmp";
 
@@ -173,7 +176,6 @@ fnbounds_compute(const char *filename, void *start, void *end);
 static void
 fnbounds_map_executable();
 
-
 static const char *
 mybasename(const char *string);
 
@@ -210,15 +212,23 @@ fnbounds_init()
       tmproot = tmpdir;
     }
   }
+  nm_command = getenv("HPCRUN_FNBOUNDS_CMD");
 
   if (hpcrun_get_disabled()) return 0;
+
+  if (getenv("NEW_SYSTEM_SERVER") != NULL) {
+    TMSG(SYSTEM_SERVER, "using new fnbounds server");
+    use_new_server = 1;
+    hpcrun_syserv_init();
+    fnbounds_map_executable();
+    fnbounds_map_open_dsos();
+    return 0;
+  }
 
   int result = system_server_start();
   if (result == 0) {
     result = fnbounds_tmpdir_create();
     if (result == 0) {
-      nm_command = getenv("HPCRUN_FNBOUNDS_CMD");
-  
       fnbounds_map_executable();
       fnbounds_map_open_dsos();
     }
@@ -353,6 +363,11 @@ fnbounds_fini()
 {
   if (hpcrun_get_disabled()) return;
 
+  if (use_new_server) {
+    hpcrun_syserv_fini();
+    return;
+  }
+
   system_server_shutdown();
   fnbounds_tmpdir_remove();
 }
@@ -472,6 +487,30 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
     return (NULL);
 
   realpath(incoming_filename, filename);
+
+  //---------------------------------------------------------------
+  // Try to support both old and new system servers for now.
+  // The indenting is temporarily out of whack (sorry).
+  //---------------------------------------------------------------
+
+  struct fnbounds_file_header fh;
+  void **nm_table;
+  long map_size;
+
+  if (use_new_server) {
+
+  nm_table = (void **) hpcrun_syserv_query(filename, &fh);
+  if (nm_table == NULL) {
+    return hpcrun_dso_make(filename, NULL, NULL, start, end, 0);
+  }
+  map_size = fh.mmap_size;
+
+  } else {
+
+  //---------------------------------------------------------------
+  // Old system server.
+  //---------------------------------------------------------------
+
   sprintf(dlname, FNBOUNDS_BINARY_FORMAT, fnbounds_tmpdir_get(), 
 	  mybasename(filename));
 
@@ -490,9 +529,8 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
     return hpcrun_dso_make(filename, NULL, NULL, start, end, 0);
   }
 
-  long map_size = 0;
-  struct fnbounds_file_header fh;
-  void **nm_table = (void **)fnbounds_read_nm_file(dlname, &map_size, &fh);
+  map_size = 0;
+  nm_table = (void **)fnbounds_read_nm_file(dlname, &map_size, &fh);
   if (nm_table == NULL) {
     EMSG("fnbounds computed bogus symbols for file %s, (all intervals poisoned)", filename);
 
@@ -502,6 +540,12 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
 
     return hpcrun_dso_make(filename, NULL, NULL, start, end, 0);
   }
+
+  }  // end of old system server
+
+  //---------------------------------------------------------------
+  // End of the dual system servers.
+  //---------------------------------------------------------------
 
   if (fh.num_entries < 1) {
     EMSG("fnbounds returns no symbols for file %s, (all intervals poisoned)", filename);

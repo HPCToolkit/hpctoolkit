@@ -208,6 +208,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     hpcrun_ga_metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(i);
     desc->metricId = hpcrun_new_metric();
     snprintf(desc->name, hpcrun_ga_metricId_dataStrLen, "ga-data-%d", i);
+    desc->name[hpcrun_ga_metricId_dataStrLen - 1] = '\0';
     hpcrun_set_metric_info(desc->metricId, desc->name);
   }
 #endif
@@ -264,6 +265,7 @@ hpcrun_ga_dataIdx_new(const char* name)
 
     hpcrun_ga_metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(idx);
     strncpy(desc->name, name, hpcrun_ga_metricId_dataStrLen);
+    desc->name[hpcrun_ga_metricId_dataStrLen - 1] = '\0';
     //hpcrun_set_metric_name(desc->metricId, desc->name);
 
     TMSG(GA, "hpcrun_ga_dataIdx_new: %s -> metric %d", name, desc->metricId);

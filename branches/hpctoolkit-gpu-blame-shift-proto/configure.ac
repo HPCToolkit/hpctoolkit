@@ -1903,6 +1903,53 @@ fi
 
 
 #-------------------------------------------------
+# check for POSIX real-time timers
+#-------------------------------------------------
+
+# POSIX timer_create() and CLOCK_REALTIME go back to at least 2001, so
+# they're pretty safe.  But we also need the SIGEV_THREAD_ID notify
+# method, the SYS_gettid syscall and the _sigev_un._tid field in
+# struct sigevent.  These are Linux extensions and may not compile on
+# all systems.
+
+AC_MSG_CHECKING([for CLOCK_REALTIME and SIGEV_THREAD_ID])
+
+AC_LANG_PUSH([C])
+ORIG_LIBS="$LIBS"
+LIBS="-lrt"
+
+AC_LINK_IFELSE([
+#include <sys/syscall.h>
+#include <signal.h>
+#include <time.h>
+#include <unistd.h>
+#ifndef sigev_notify_thread_id
+#define sigev_notify_thread_id _sigev_un._tid
+#endif
+int main()
+{
+  struct sigevent sigev;
+  timer_t timerid;
+  sigev.sigev_notify = SIGEV_THREAD_ID;
+  sigev.sigev_signo = SIGRTMIN + 3;
+  sigev.sigev_value.sival_ptr = &timerid;
+  sigev.sigev_notify_thread_id = syscall(SYS_gettid);
+  return timer_create(CLOCK_REALTIME, &sigev, &timerid);
+}
+], [ans=yes], [ans=no])
+
+LIBS="$ORIG_LIBS"
+AC_LANG_POP
+
+AC_MSG_RESULT([$ans])
+
+if test "$ans" = yes ; then
+  AC_DEFINE([ENABLE_CLOCK_REALTIME], [1],
+            [Support for CLOCK_REALTIME and SIGEV_THREAD_ID])
+fi
+
+
+#-------------------------------------------------
 # enable-bluegene: BG/* support
 #-------------------------------------------------
 

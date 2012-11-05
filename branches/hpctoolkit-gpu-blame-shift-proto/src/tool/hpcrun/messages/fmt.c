@@ -127,6 +127,7 @@ cvt_s(int code, va_list_box *box,
       unsigned char flags[], int width, int precision)
 {
   char *str = va_arg(box->ap, char *);
+  if (str == NULL) { str = "(null)"; }
 
   hpcrun_msg_puts(str, strlen(str), put, cl, flags,
            width, precision);

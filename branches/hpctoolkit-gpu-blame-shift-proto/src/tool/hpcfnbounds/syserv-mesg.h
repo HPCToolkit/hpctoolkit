@@ -44,14 +44,51 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <map>
+// This file defines the API for messages over the pipe between the
+// hpcrun client (hpcrun/fnbounds/fnbounds_client.c) and the new
+// fnbounds server (server.cpp).
+//
+// Note: none of these structs needs to be platform-independent
+// because they're only used between processes within a single node
+// (same for the old server).
 
-class intervals {
-private:
-  std::map<void *, void *> mymap;
-public:
-  void insert(void *start, void *end); 
-  std::pair<void *const, void *> *contains(void * i); 
-  void clear();
-  void dump(); 
+//***************************************************************************
+
+#ifndef _SYSERV_MESG_H_
+#define _SYSERV_MESG_H_
+
+#include <stdint.h>
+
+#define SYSERV_MAGIC    0x00f8f8f8
+#define FNBOUNDS_MAGIC  0x00f9f9f9
+
+enum {
+  SYSERV_ACK = 1,
+  SYSERV_QUERY,
+  SYSERV_EXIT,
+  SYSERV_OK,
+  SYSERV_ERR
 };
+
+struct syserv_mesg {
+  int32_t  magic;
+  int32_t  type;
+  int64_t  len;
+};
+
+// also used to carry around fnbounds info inside hpcrun
+// (could be separate)
+
+struct fnbounds_file_header {
+  uint64_t  zero_pad;
+  uint64_t  magic;
+  uint64_t  mmap_size;
+  uint64_t  num_entries;
+  uint64_t  reference_offset;
+  int32_t   is_relocatable;
+  int32_t   status;
+  long      old_memsize;
+  long      new_memsize;
+};
+
+#endif  // _SYSERV_MESG_H_
