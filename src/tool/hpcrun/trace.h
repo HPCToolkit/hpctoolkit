@@ -59,7 +59,6 @@ void hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int c
 void hpcrun_trace_close(core_profile_trace_data_t * cptd);
 
 int hpcrun_trace_isactive();
-void gpu_trace_open(core_profile_trace_data_t *st);
 #endif // hpcrun_trace_h
 
 

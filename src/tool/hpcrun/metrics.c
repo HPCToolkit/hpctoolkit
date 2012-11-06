@@ -80,29 +80,29 @@ struct  metric_set_t {
 //*************************** Local Data **************************
 
 // number of metrics requested
-/*static*/ int n_metrics = 0;
+static int n_metrics = 0;
 
 // Dense array holding "0" values for nodes with no metrics
-/*static*/ hpcrun_metricVal_t* null_metrics;
+static hpcrun_metricVal_t* null_metrics;
 
 // information about tracked metrics
-/*static*/ metric_list_t* metric_data = NULL;
+static metric_list_t* metric_data = NULL;
 
 // flag to indicate that metric allocation is finalized
-/*static*/ bool has_set_max_metrics = false;
+static bool has_set_max_metrics = false;
 
 // some sample sources will pre-allocate some metrics ...
-/*static*/ metric_list_t* pre_alloc = NULL;
+static metric_list_t* pre_alloc = NULL;
 
 // need an index-->metric desc mapping, so that samples will increment metrics correctly
-/*static*/ metric_desc_t** id2metric;
+static metric_desc_t** id2metric;
 
 // local metric_tbl serves 2 purposes:
 //    1) mapping from metric_id ==> metric desc, so that samples will increment correct metric slot
 //       in the cct node
 //    2) metric info is written out in metric_tbl form
 //
-/*static*/ metric_desc_p_tbl_t metric_tbl;
+static metric_desc_p_tbl_t metric_tbl;
 
 //
 // To accomodate block sparse representation,
@@ -125,19 +125,14 @@ struct  metric_set_t {
 // Future expansion to permit different strategies is possible, but
 // unimplemented at this time
 
-/*static*/ kind_info_t kinds = {.idx = 0, .link = NULL };
-/*static*/ kind_info_t* current_kind = &kinds;
-/*static*/ kind_info_t* current_insert = &kinds;
+struct kind_info_t {
+  int idx;     // current index in kind
+  kind_info_t* link; // all kinds linked together in singly linked list
+};
 
-//
-// local table of metric update functions
-// (indexed by metric id)
-//
-
-/*static*/ metric_upd_proc_t** metric_proc_tbl = NULL;
-
-/*static*/ metric_proc_map_t* proc_map = NULL;
-
+static kind_info_t kinds = {.idx = 0, .link = NULL };
+static kind_info_t* current_kind = &kinds;
+static kind_info_t* current_insert = &kinds;
 
 kind_info_t*
 hpcrun_metrics_new_kind(void)
@@ -155,6 +150,15 @@ hpcrun_metrics_switch_kind(kind_info_t* kind)
 {
   current_kind = kind;
 }
+
+//
+// local table of metric update functions
+// (indexed by metric id)
+//
+
+static metric_upd_proc_t** metric_proc_tbl = NULL;
+
+static metric_proc_map_t* proc_map = NULL;
 
 
 //***************************************************************************
@@ -459,4 +463,3 @@ hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
   metric_set_t* actual = set ? set : (metric_set_t*) null_metrics;
   memcpy((char*) dest, (char*) actual, num_metrics * sizeof(cct_metric_data_t));
 }
-
