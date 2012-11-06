@@ -825,17 +825,17 @@ uint32_t cleanup_finished_events() {
                 assert(micro_time_start <= micro_time_end);
 
                 if(hpcrun_trace_isactive()) {
-                	hpcrun_trace_append_with_time(cur_stream->st, cur_stream->idle_node_id, /*TODO what to pass*/ 0, micro_time_start - 1);
+                	hpcrun_trace_append_with_time(cur_stream->st, cur_stream->idle_node_id, HPCRUN_FMT_MetricId_NULL /* null metric id */, micro_time_start - 1);
 
                 	cct_node_t *stream_cct = current_event->stream_launcher_cct;
 
                 	hpcrun_cct_persistent_id_trace_mutate(stream_cct);
 
-                	hpcrun_trace_append_with_time(cur_stream->st, hpcrun_cct_persistent_id(stream_cct), /*TODO what to pass*/ 0, micro_time_start);
+                	hpcrun_trace_append_with_time(cur_stream->st, hpcrun_cct_persistent_id(stream_cct), HPCRUN_FMT_MetricId_NULL /* null metric id */, micro_time_start);
 
-                	hpcrun_trace_append_with_time(cur_stream->st, hpcrun_cct_persistent_id(stream_cct), /*TODO what to pass*/ 0, micro_time_end);
+                	hpcrun_trace_append_with_time(cur_stream->st, hpcrun_cct_persistent_id(stream_cct), HPCRUN_FMT_MetricId_NULL /* null metric id */, micro_time_end);
 
-                	hpcrun_trace_append_with_time(cur_stream->st, cur_stream->idle_node_id, /*TODO what to pass*/ 0, micro_time_end + 1);
+                	hpcrun_trace_append_with_time(cur_stream->st, cur_stream->idle_node_id, HPCRUN_FMT_MetricId_NULL /* null metric id */, micro_time_end + 1);
 		}
 
 
@@ -973,7 +973,7 @@ void CreateStream0IfNot(cudaStream_t stream) {
 		// store the persistent id one time
 		g_stream_array[new_streamId].idle_node_id = hpcrun_cct_persistent_id(idl);
 
-		hpcrun_trace_append(g_stream_array[new_streamId].st, g_stream_array[new_streamId].idle_node_id, /*TODO what to pass*/ 0);
+		hpcrun_trace_append(g_stream_array[new_streamId].st, g_stream_array[new_streamId].idle_node_id, HPCRUN_FMT_MetricId_NULL /* null metric id */);
 
 	}
         g_stream0_not_initialized = false;
@@ -1214,7 +1214,7 @@ cudaError_t cudaStreamCreate(cudaStream_t * stream) {
 	    hpcrun_cct_persistent_id_trace_mutate(idl);
 	    // store the persistent id one time.
 	    g_stream_array[new_streamId].idle_node_id = hpcrun_cct_persistent_id(idl);
-	    hpcrun_trace_append(g_stream_array[new_streamId].st, g_stream_array[new_streamId].idle_node_id, /*TODO what to pass*/ 0);
+	    hpcrun_trace_append(g_stream_array[new_streamId].st, g_stream_array[new_streamId].idle_node_id, HPCRUN_FMT_MetricId_NULL /* null metric id */);
 
     }
 
@@ -1706,7 +1706,7 @@ CUresult cuStreamCreate(CUstream * phStream, unsigned int Flags) {
     	// Store the persistent id for the idle node one time.
     	g_stream_array[new_streamId].idle_node_id = hpcrun_cct_persistent_id(idl);
 
-    	hpcrun_trace_append(g_stream_array[new_streamId].st, g_stream_array[new_streamId].idle_node_id,/*TODO what to pass*/ 0);
+    	hpcrun_trace_append(g_stream_array[new_streamId].st, g_stream_array[new_streamId].idle_node_id, HPCRUN_FMT_MetricId_NULL /* null metric id */);
 
     }
 

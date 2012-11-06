@@ -105,7 +105,6 @@
 #include <lib/support-lean/timer.h>
 
 #include <sample-sources/blame-shift.h>
-#include <lib/prof-lean/splay-macros.h>
 
 #ifdef ENABLE_CUDA
 #include "gpu_blame.h"

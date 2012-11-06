@@ -217,7 +217,7 @@ l_count(cct_node_t* n, cct_op_arg_t arg, size_t level)
 //
 // Special purpose path walking helper
 //
-void
+static void
 walk_path_l(cct_node_t* node, cct_op_t op, cct_op_arg_t arg, size_t level)
 {
   if (! node) return;
@@ -228,6 +228,14 @@ walk_path_l(cct_node_t* node, cct_op_t op, cct_op_arg_t arg, size_t level)
 //
 // Writing helpers
 //
+
+typedef struct {
+  hpcfmt_uint_t num_metrics;
+  FILE* fs;
+  epoch_flags_t flags;
+  hpcrun_fmt_cct_node_t* tmp_node;
+} write_arg_t;
+
 
 static void
 lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
@@ -341,23 +349,6 @@ bool
 hpcrun_cct_is_root(cct_node_t* node)
 {
   return ! node->parent;
-}
-
-// Walks up in the CCT until the node's load module id changes n times, if we hit NULL before that, we return the original node.
-cct_node_t * hpcrun_get_cct_node_n_levels_up_in_load_module(cct_node_t *node, uint32_t level) 
-{
-        uint16_t prev_load_module_id = node->addr.ip_norm.lm_id;
-        cct_node_t * cur_node = node;
-        while( cur_node && level ) {
-                cur_node = hpcrun_cct_parent(cur_node);
-                if ( cur_node->addr.ip_norm.lm_id != prev_load_module_id ) {
-                        level --;
-                        prev_load_module_id = cur_node->addr.ip_norm.lm_id;
-                }
-
-        }
-        return cur_node ? cur_node : node;
-
 }
 
 

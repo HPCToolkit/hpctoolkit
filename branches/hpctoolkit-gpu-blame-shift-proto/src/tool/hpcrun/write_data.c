@@ -184,11 +184,9 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
 
   char traceMinTimeStr[bufSZ];
   snprintf(traceMinTimeStr, bufSZ, "%"PRIu64, cptd->trace_min_time_us);
-	//printf("\nThe start time  is %x for THREAD %d",td->trace_min_time_us, td->id);
 
   char traceMaxTimeStr[bufSZ];
   snprintf(traceMaxTimeStr, bufSZ, "%"PRIu64, cptd->trace_max_time_us);
-	//printf("\nThe end time  is %x for stream %d",td->trace_max_time_us, td->id);
 
   //
   // ==== file hdr =====
