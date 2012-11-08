@@ -60,6 +60,7 @@
 
 #include <include/hpctoolkit-config.h>
 
+#include "disabled.h"
 #include "env.h"
 #include "files.h"
 #include "monitor.h"
@@ -122,6 +123,11 @@ hpcrun_trace_init()
 void
 hpcrun_trace_open()
 {
+  if (hpcrun_get_disabled()) {
+    tracing = 0;
+    return;
+  }
+
   // With fractional sampling, if this process is inactive, then don't
   // open an output file, not even /dev/null.
   if (tracing && hpcrun_sample_prob_active()) {
@@ -193,7 +199,9 @@ hpcrun_trace_close()
     thread_data_t *td = hpcrun_get_thread_data();
 
     int ret = hpcio_outbuf_close(&td->trace_outbuf);
-    hpcrun_trace_file_validate(ret == HPCFMT_OK, "close");
+    if (ret != HPCFMT_OK) {
+      EMSG("unable to flush and close trace file");
+    }
 
     int rank = hpcrun_get_rank();
     if (rank >= 0) {

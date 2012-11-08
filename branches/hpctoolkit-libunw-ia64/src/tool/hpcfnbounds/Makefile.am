@@ -89,10 +89,10 @@ generic_process_ranges_file = generic-process-ranges.cpp
 
 MYSOURCES = \
 	$(main_file) \
-	\
         $(code_ranges_file) \
 	function-entries.cpp \
-	intervals.cpp
+	intervals.cpp \
+	server.cpp
 
 MYCPPFLAGS = $(HPC_IFLAGS) -I$(SYMTABAPI_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC)
 
@@ -120,7 +120,7 @@ hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcfnbounds_bin_LDFLAGS  = $(MYLDFLAGS)
 
 if HOST_CPU_X86_FAMILY
-  hpcfnbounds_bin_SOURCES  += x86-process-ranges.cpp
+  hpcfnbounds_bin_SOURCES  += x86-process-ranges.cpp amd-xop.c
   hpcfnbounds_bin_CPPFLAGS += -I$(XED2_INC)
   hpcfnbounds_bin_LDFLAGS  += $(XED2_LIB)/libxed.a
 else

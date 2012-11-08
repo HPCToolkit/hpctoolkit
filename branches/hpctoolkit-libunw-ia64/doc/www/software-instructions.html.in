@@ -74,7 +74,7 @@ The following prerequisites apply to our default source code distribution.
       <td></td>
     </tr>
     <tr>
-      <td>Cray XT/XE (CNL + x86_64)</td>
+      <td>Cray XT/XE/XK (CNL + x86_64)</td>
       <td>Compute Node Linux &ge; 2.1</td>
     </tr>
     <tr>
@@ -158,7 +158,7 @@ Some vendor compilers that support GNU extensions also work.
 
 <li>
 <p>To use <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> (HPCToolkit's interactive presentation tools) on MacOS, Windows, or Linux, a Java runtime environment (JRE) &ge; 1.5 is required.
-Use the Sun or IBM version; we have had problems with OpenJDK.
+Use the Oracle or IBM version; we have had problems with OpenJDK.
 </p>
 
 <p>
@@ -280,7 +280,7 @@ Please note that a list of examples below provides <code>configure</code> comman
                      [CXX=&lt;<i>c++-compiler</i>&gt;] \<br />
   &nbsp;&nbsp;&nbsp;&nbsp; [--prefix=&lt;<i>hpctoolkit-externals-install</i>&gt;</code>] <br />
   <code>make install</code><br />
-  <code>make distclean</code><br />
+  <code>make clean</code><br />
 </div>
 
 <p>Externals is <i>not</i> persistent as HPCToolkit will copy everything it needs from the installation.
@@ -336,12 +336,26 @@ Please note that a list of examples below provides <code>configure</code> comman
   (This is the only option on Windows or MacOS.)
   </li>
 
+  <!--
   <li> To install <span class="hpctool">hpcviewer</span> or <span class="hpctool">hpctraceviewer</span> in an HPCToolkit installation, unpack the tarball and execute the following commands:
     <div class="indent">
       <code>cd &lt;<i>hpcviewer</i>&gt; &amp;&amp; ./install &lt;<i>hpctoolkit-install</i>&gt;</code><br />
       <code>cd &lt;<i>hpctraceviewer</i>&gt; &amp;&amp; ./install &lt;<i>hpctoolkit-install</i>&gt;</code>
     </div>
     Here, <code>&lt;<i>hpcviewer</i>&gt;</code> and <code>&lt;<i>hpctraceviewer</i>&gt;</code> are the directories created by unpacking the respective tarballs; and <code>&lt;<i>hpctoolkit-install</i>&gt;</code> is the above HPCToolkit installation directory.
+  </li>
+
+  -->
+
+  <li> To install <span class="hpctool">hpcviewer</span> or <span class="hpctool">hpctraceviewer</span> in an HPCToolkit installation, unpack the tarball and execute the following commands:
+    <div class="indent">
+      <code>cd &lt;<i>hpcviewer</i>&gt; &amp;&amp; ./install [ -j &lt;path-to-java&gt; ] &lt;<i>hpctoolkit-install</i>&gt;</code><br />
+      <code>cd &lt;<i>hpctraceviewer</i>&gt; &amp;&amp; ./install [ -j &lt;path-to-java&gt; ] &lt;<i>hpctoolkit-install</i>&gt;</code>
+    </div>
+    Here, <code>&lt;<i>hpcviewer</i>&gt;</code> and <code>&lt;<i>hpctraceviewer</i>&gt;</code> are the directories created by unpacking the respective tarballs; and <code>&lt;<i>hpctoolkit-install</i>&gt;</code> is the above HPCToolkit installation directory.<br />
+
+  The optional flag -j &lt;path-to-java&gt; allows the specification of an appropriate java to be used with
+  <span class="hpctool">hpcviewer</span> or <span class="hpctool">hpctraceviewer</span>. 
   </li>
 
   </ul>
@@ -358,7 +372,6 @@ Please note that a list of examples below provides <code>configure</code> comman
 <p><strong>N.B.:</strong> The commands are designed to replace the respective commands in the <a href="#building-installing">above build instructions</a>.</p>
   <ul>
 
-
     <li><p>Blue Gene/Q:</p>
         <dl class="indent">
           <dt>HPCToolkit's Externals</dt>
@@ -368,14 +381,15 @@ Please note that a list of examples below provides <code>configure</code> comman
 
           <dt>HPCToolkit</dt>
           <dd><code>../configure \<br />
+              &nbsp;&nbsp;&nbsp;&nbsp; MPICXX=/bgsys/drivers/ppcfloor/comm/gcc/bin/mpicxx \<br />
+              &nbsp;&nbsp;&nbsp;&nbsp; HPCPROFMPI_LT_LDFLAGS="-all-static" \<br />
               &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>install-path</i>&gt; \<br />
               &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/powerpc64-linux \<br />
-              &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=&lt;<i>papi-install-directory</i>&gt; \<br />
-              &nbsp;&nbsp;&nbsp;&nbsp; HPCPROFMPI_LT_LDFLAGS="-all-static" \<br />
-              &nbsp;&nbsp;&nbsp;&nbsp; MPICXX=/bgsys/drivers/ppcfloor/comm/gcc/bin/mpicxx <br />
-
+              &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/soft/perftools/papi
               </code>
           </dd>
+	  <dt>&nbsp;</dt>
+	  <dt>Note: The paths for <code>MPICXX</code> and PAPI may be different on your system.</dt>
         </dl>
     </li>
 
@@ -395,10 +409,12 @@ Please note that a list of examples below provides <code>configure</code> comman
 	      &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/powerpc32-linux
 	      </code>
           </dd>
+	  <dt>&nbsp;</dt>
+	  <dt>Note: PAPI is not available on Blue Gene/P.</dt>
 	</dl>
     </li>
 
-    <li><p>Cray XT/XE:</p>
+    <li><p>Cray XT/XE/XK:</p>
 	<dl class="indent">
           <dt>N.B.: Use the GNU programming environment, e.g.:</dt>
 	  <dd><code>
@@ -413,13 +429,20 @@ Please note that a list of examples below provides <code>configure</code> comman
 	  </dd>
 
           <dt>HPCToolkit</dt>
-	  <dd><code>../configure MPICXX="CC" \<br />
+	  <dd><code>../configure \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; MPICXX="CC" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; HPC_LT_LDFLAGS="-all-static -L../../lib/stubs-gcc_s" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>hpctoolkit-install</i>&gt; \<br />
               &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/x86_64-linux \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/opt/xt-tools/papi/3.7.2/v23
+	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/opt/cray/papi/4.3.0.1/perf_events/no-cuda
 	      </code>
           </dd>
+	  <dt>&nbsp;</dt>
+	  <dt>Note: On systems with AMD CPUs with the new XOP instructions,
+	      add the option '<code>--enable-xop</code>'.
+	      The AMD Interlagos CPUs (6200 series) use these instructions.
+	      Currently, Jaguar at ORNL uses these CPUs, but Hopper at NERSC does not.
+	  </dt>
 	</dl>
     </li>
 
@@ -558,7 +581,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2012/02/27</span>]
+<p>[<span class="lastupdated">Page last updated: 2012/09/18</span>]
 </p>
 
 <!-- ********************************************************************** -->

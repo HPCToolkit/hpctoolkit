@@ -108,7 +108,7 @@ static void init_hack(void);
 /******************************************************************************
  * local variables
  *****************************************************************************/
-static uint64_t active_worker_count = 1L;// by default is 1 (1 thread)
+static uintptr_t active_worker_count = 1;// by default is 1 (1 thread)
 
 static int idle_metric_id = -1;
 static int work_metric_id = -1;
@@ -290,7 +290,7 @@ idle_metric_blame_shift_idle(void)
   if (td->idle++ > 0) return;
 
   TMSG(IDLE, "blame shift idle work BEFORE decr: %ld", active_worker_count);
-  atomic_add_i64(&active_worker_count, -1L);
+  atomic_add(&active_worker_count, -1L);
   TMSG(IDLE, "blame shift idle after td->idle incr = %d", td->idle);
 
   // get a tracing sample out
@@ -314,7 +314,7 @@ idle_metric_blame_shift_work(void)
   if (--td->idle > 0) return;
 
   TMSG(IDLE, "blame shift work, work BEFORE incr: %ld", active_worker_count);
-  atomic_add_i64(&active_worker_count, 1L);
+  atomic_add(&active_worker_count, 1);
 
   // get a tracing sample out
   if(hpcrun_trace_isactive()) {

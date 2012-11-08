@@ -64,4 +64,11 @@ typedef struct frame_t {
   lush_lip_t* lip;
 } frame_t;
 
+static inline
+void*
+hpcrun_frame_get_unnorm(frame_t* frame)
+{
+  return frame->cursor.pc_unnorm;
+}
+
 #endif // FRAME_H

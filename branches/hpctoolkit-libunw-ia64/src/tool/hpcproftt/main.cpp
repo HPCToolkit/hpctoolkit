@@ -150,7 +150,6 @@ makeDerivedMetrics(Prof::Metric::Mgr& metricMgr,
 static int
 main_srcCorrelation(const Args& args)
 {
-  NaN_init();
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
   //-------------------------------------------------------

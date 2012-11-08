@@ -82,7 +82,7 @@ m4_include(config/hpc-mpiutils.m4)
 # Initialization: 
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [5.3.0],
+AC_INIT([hpctoolkit], [5.3.2],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -357,6 +357,11 @@ HPC_DEF_CXXCMP()
 
 UNWINDER=no
 
+#---------------------------------------
+# set specific libunw variable
+#---------------------------------------
+USE_LIBUNW=no
+
 #-------------------------------------------------
 # Host-specific defines
 #-------------------------------------------------
@@ -426,6 +431,7 @@ case "${host}" in
     HOST_CPU_PPC=yes
     UNWINDER=ppc64
     AC_DEFINE([HOST_OS_LINUX], [1], [HOST OS: Linux])
+    AC_DEFINE([HOST_CPU_PPC], [1], [HOST CPU: PowerPC (ppc)])
     ;;
 
   # MacOS
@@ -435,6 +441,7 @@ case "${host}" in
     HOST_CPU_PPC=yes
     UNWINDER=ppc64
     AC_DEFINE([HOST_OS_MACOS], [1], [HOST OS: MacOS])
+    AC_DEFINE([HOST_CPU_PPC], [1], [HOST CPU: PowerPC (ppc)])
     ;;
 
   i386*-*-darwin* | i686*-*-darwin*)
@@ -797,7 +804,7 @@ AC_SUBST([hpc_ext_libs_dir])
 #-------------------------------------------------
 
 # External's minimum svn rev number, or else a fatal error.
-EXTERNALS_MIN_REV=3646
+EXTERNALS_MIN_REV=3872
 
 ext_cc_path=unknown
 ext_cxx_path=unknown
@@ -1158,6 +1165,10 @@ AC_ARG_WITH([libunwind],
    OPT_HAVE_LIBUNWIND=yes
    UNWINDER=libunw],
   [])
+
+if test "$UNWINDER" = "libunw"; then
+   AC_DEFINE([USE_LIBUNW], [1], [libunwind is the specified unwinder])
+fi
 
 # Check for LIBUNWIND > .9xxx [skip for now]
 
@@ -1929,6 +1940,72 @@ AC_MSG_NOTICE([lush pthreads: $enable_lush_pthreads])
 AM_CONDITIONAL([OPT_ENABLE_LUSH_PTHREADS], [test "$enable_lush_pthreads" = yes])
 
 AC_SUBST([hpclink_extra_wrap_names])
+
+
+#-------------------------------------------------
+# enable-xop: support for AMD XOP instructions
+#-------------------------------------------------
+
+AC_ARG_ENABLE([xop],
+  AS_HELP_STRING([--enable-xop],
+      [include support for decoding AMD XOP instructions, x86-64 only
+      (default no)]),
+  [],
+  [enable_xop=no])
+
+AC_MSG_CHECKING([whether to support AMD XOP instructions])
+AC_MSG_RESULT([$enable_xop])
+
+if test "x$enable_xop" = xyes ; then
+  AC_DEFINE([ENABLE_XOP], [1], [Support for AMD XOP instructions])
+fi
+
+
+#-------------------------------------------------
+# check for POSIX real-time timers
+#-------------------------------------------------
+
+# POSIX timer_create() and CLOCK_REALTIME go back to at least 2001, so
+# they're pretty safe.  But we also need the SIGEV_THREAD_ID notify
+# method, the SYS_gettid syscall and the _sigev_un._tid field in
+# struct sigevent.  These are Linux extensions and may not compile on
+# all systems.
+
+AC_MSG_CHECKING([for CLOCK_REALTIME and SIGEV_THREAD_ID])
+
+AC_LANG_PUSH([C])
+ORIG_LIBS="$LIBS"
+LIBS="-lrt"
+
+AC_LINK_IFELSE([
+#include <sys/syscall.h>
+#include <signal.h>
+#include <time.h>
+#include <unistd.h>
+#ifndef sigev_notify_thread_id
+#define sigev_notify_thread_id _sigev_un._tid
+#endif
+int main()
+{
+  struct sigevent sigev;
+  timer_t timerid;
+  sigev.sigev_notify = SIGEV_THREAD_ID;
+  sigev.sigev_signo = SIGRTMIN + 3;
+  sigev.sigev_value.sival_ptr = &timerid;
+  sigev.sigev_notify_thread_id = syscall(SYS_gettid);
+  return timer_create(CLOCK_REALTIME, &sigev, &timerid);
+}
+], [ans=yes], [ans=no])
+
+LIBS="$ORIG_LIBS"
+AC_LANG_POP
+
+AC_MSG_RESULT([$ans])
+
+if test "$ans" = yes ; then
+  AC_DEFINE([ENABLE_CLOCK_REALTIME], [1],
+            [Support for CLOCK_REALTIME and SIGEV_THREAD_ID])
+fi
 
 
 #-------------------------------------------------

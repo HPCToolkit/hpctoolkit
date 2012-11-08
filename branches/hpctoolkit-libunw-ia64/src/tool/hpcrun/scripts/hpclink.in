@@ -424,7 +424,7 @@ fi
 set -- "$@" $upc_libs
 
 # FIXME: shouldn't always need pthread, and shoudn't ever need dl.
-set -- "$@" -lpthread -ldl -lrt
+set -- "$@" -ldl -lrt -lpthread
 set -- "$@" $appl_libs
 
 #------------------------------------------------------------

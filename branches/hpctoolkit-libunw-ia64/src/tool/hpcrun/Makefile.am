@@ -164,7 +164,8 @@ UNW_COMMON_FILES = \
 UNW_X86_FILES = \
        $(UNW_COMMON_FILES) \
 	unwind/x86-family/x86-all.c			\
-	unwind/x86-family/x86-cold-path.c		\
+	unwind/x86-family/amd-xop.c                     \
+ 	unwind/x86-family/x86-cold-path.c		\
 	unwind/x86-family/x86-validate-retn-addr.c	\
 	unwind/x86-family/x86-unwind-interval.c		\
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
@@ -172,6 +173,7 @@ UNW_X86_FILES = \
 	unwind/x86-family/x86-unwind-support.c		\
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
+	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c
@@ -299,6 +301,7 @@ endif
 
 
 MY_DYNAMIC_FILES = 			\
+	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
 	monitor-exts/openmp.c		\
 	hpcrun_dlfns.c                  \

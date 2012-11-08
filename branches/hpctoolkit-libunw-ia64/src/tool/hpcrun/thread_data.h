@@ -52,9 +52,11 @@
 // (there is just 1 thread).
 
 #include <setjmp.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "sample_sources_registered.h"
 #include "newmem.h"
@@ -133,6 +135,10 @@ typedef struct thread_data_t {
   // ----------------------------------------
   int            eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
   source_state_t ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
+
+  struct sigevent sigev;   // POSIX real-time timer
+  timer_t        timerid;
+  bool           timer_init;
 
   uint64_t       last_time_us; // microseconds
 
@@ -230,25 +236,35 @@ typedef struct thread_data_t {
 
 } thread_data_t;
 
+
 static const size_t HPCRUN_TraceBufferSz = HPCIO_RWBufferSz;
+
+
+void hpcrun_init_pthread_key(void);
+void hpcrun_set_thread0_data(void);
+void hpcrun_set_thread_data(thread_data_t *td);
+
 
 #define TD_GET(field) hpcrun_get_thread_data()->field
 
-extern thread_data_t *(*hpcrun_get_thread_data)(void);
-extern bool          (*hpcrun_td_avail)(void);
+extern thread_data_t* (*hpcrun_get_thread_data)(void);
+extern bool           (*hpcrun_td_avail)(void);
 
-thread_data_t *hpcrun_allocate_thread_data(void);
-void           hpcrun_init_pthread_key(void);
+void hpcrun_unthreaded_data(void);
+void hpcrun_threaded_data(void);
 
+
+thread_data_t*
+hpcrun_allocate_thread_data(void);
+
+void
+hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child);
+
+
+void     hpcrun_cached_bt_adjust_size(size_t n);
 frame_t* hpcrun_expand_btbuf(void);
-void           	hpcrun_ensure_btbuf_avail(void);
-void           	hpcrun_set_thread_data(thread_data_t *td);
-void           	hpcrun_set_thread0_data(void);
-void           	hpcrun_unthreaded_data(void);
-void           	hpcrun_threaded_data(void);
+void     hpcrun_ensure_btbuf_avail(void);
 
-void           hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child);
-void           hpcrun_cached_bt_adjust_size(size_t n);
 
 // utilities to match previous api
 #define hpcrun_get_epoch()  TD_GET(epoch)
