@@ -1191,13 +1191,9 @@ if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
   OPT_LIBUNWIND_IFLAGS="-I$OPT_LIBUNWIND/include"
   OPT_LIBUNWIND_LIBPATH="$OPT_LIBUNWIND"
 
-#
-# Attach architecture code to -l on LIBUNWIND_LDFLAGS
-#
-  lib_unw_arch=$host_cpu
-  LIBUNWIND_HPCLINK_LIBS=" -lunwind -lunwind-$lib_unw_arch"
+  LIBUNWIND_HPCLINK_LIBS=" -lunwind -lunwind-generic"
 
-  OPT_LIBUNWIND_LDFLAGS="-L$OPT_LIBUNWIND_LIBPATH $LIBUNWIND_HPCLINK_LIBS"
+  OPT_LIBUNWIND_LDFLAGS="-L$LIBUNWIND_LIB $LIBUNWIND_HPCLINK_LIBS"
 
 else
   AC_MSG_RESULT([no])
