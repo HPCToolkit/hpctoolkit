@@ -211,7 +211,6 @@ AC_ARG_ENABLE([develop],
 AC_MSG_RESULT([${OPT_ENABLE_DEVELOP}])
 AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
 
-
 #----------------------------------------------------------------------------
 # Prerequisites: compilers, tools, system libraries
 #----------------------------------------------------------------------------
@@ -358,6 +357,11 @@ HPC_DEF_CXXCMP()
 
 UNWINDER=no
 
+#---------------------------------------
+# set specific libunw variable
+#---------------------------------------
+USE_LIBUNW=no
+
 #-------------------------------------------------
 # Host-specific defines
 #-------------------------------------------------
@@ -374,6 +378,7 @@ HOST_CPU_PPC=no
 HOST_CPU_X86=no
 HOST_CPU_X86_64=no
 HOST_CPU_X86_FAMILY=no
+HOST_CPU_IA64=no
 
 case "${host}" in
   # Linux
@@ -405,7 +410,10 @@ case "${host}" in
   ia64*-*-linux*)
     # __ia64 && __linux
     HOST_OS="Linux"
-    AC_DEFINE([HOST_OS_LINUX], [1], [HOST OS: Linux])
+    HOST_CPU_IA64=yes
+    UNWINDER=libunw
+    AC_DEFINE([HOST_CPU_IA64], [1], [HOST CPU: ia64 (itanium)])
+    AC_DEFINE([HOST_OS_LINUX], [], [])
     ;;
 
   mips64*-*-linux*)
@@ -423,6 +431,7 @@ case "${host}" in
     HOST_CPU_PPC=yes
     UNWINDER=ppc64
     AC_DEFINE([HOST_OS_LINUX], [1], [HOST OS: Linux])
+    AC_DEFINE([HOST_CPU_PPC], [1], [HOST CPU: PowerPC (ppc)])
     ;;
 
   # MacOS
@@ -432,6 +441,7 @@ case "${host}" in
     HOST_CPU_PPC=yes
     UNWINDER=ppc64
     AC_DEFINE([HOST_OS_MACOS], [1], [HOST OS: MacOS])
+    AC_DEFINE([HOST_CPU_PPC], [1], [HOST CPU: PowerPC (ppc)])
     ;;
 
   i386*-*-darwin* | i686*-*-darwin*)
@@ -493,14 +503,7 @@ AM_CONDITIONAL([HOST_CPU_PPC],    [test "${HOST_CPU_PPC}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86],    [test "${HOST_CPU_X86}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86_64], [test "${HOST_CPU_X86_64}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86_FAMILY], [test "${HOST_CPU_X86_FAMILY}" = yes])
-
-#
-# set up automake choice of unwinder
-#
-
-AM_CONDITIONAL([UNW_X86], [test "$UNWINDER" = x86-family])
-AM_CONDITIONAL([UNW_PPC64], [test "$UNWINDER" = ppc64])
-AM_CONDITIONAL([UNW_MIPS], [test "$UNWINDER" = mips])
+AM_CONDITIONAL([HOST_CPU_IA64], [test "$HOST_CPU_IA64" = yes])
 
 #-------------------------------------------------
 # Host-specific compiler settings
@@ -1127,7 +1130,11 @@ AC_SUBST([LIBMONITOR_WRAP_NAMES])
 # with-libunwind
 #-------------------------------------------------
 
-AC_MSG_CHECKING([whether configured with libunwind])
+#
+# ### FIXME: rationalize this: libunw chosen EITHER when ia64 or when --with-libunwind is set
+# ###        current configure will NOT do the right thing if libunw turned off but arch=ia64
+#
+AC_MSG_CHECKING([whether configured to use libunwind instead of native])
 
 OPT_HAVE_LIBUNWIND=no
 OPT_LIBUNWIND=
@@ -1136,6 +1143,9 @@ OPT_LIBUNWIND_LIBPATH=
 OPT_LIBUNWIND_LDFLAGS=
 OPT_LIBUNWIND_LIBSO=
 OPT_LIBUNWIND_LIBA=
+LIBUNWIND_COPY=no
+LIBUNWIND_RUN_DIR=
+LIBUNWIND_HPCLINK_LIBS=
 
 if test "$use_externals" = yes ; then
   OPT_LIBUNWIND="$ext_libunwind_prefix"
@@ -1147,21 +1157,52 @@ fi
 AC_ARG_WITH([libunwind],
   AS_HELP_STRING([--with-libunwind=PATH],
                  [use given LIBUNWIND installation (absolute path) with hpcrun (default is NO)]),
-  [if test $withval != no; then
-     OPT_HAVE_LIBUNWIND=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       AC_MSG_ERROR([--with-libunwind requires absolute path as argument; given '${withval}'])
-     fi
-     OPT_LIBUNWIND=${withval}
-   fi],
+  [case $withval in
+      yes) : ;;
+      /*) OPT_LIBUNWIND=${withval} ;;
+      *) AC_MSG_ERROR([--with-libunwind requires absolute path as argument; given '${withval}']) ;;
+   esac
+   OPT_HAVE_LIBUNWIND=yes
+   UNWINDER=libunw],
   [])
+
+if test "$UNWINDER" = "libunw"; then
+   AC_DEFINE([USE_LIBUNW], [1], [libunwind is the specified unwinder])
+fi
 
 # Check for LIBUNWIND > .9xxx [skip for now]
 
+# Check for libunwind sanity
+if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
+  if ! test -f "$OPT_LIBUNWIND/include/libunwind.h"; then
+     AC_MSG_ERROR([libunwind required, but specified library path is invalid (no libunwind.h)])
+  fi
+  if test ! \( -f "$OPT_LIBUNWIND/lib/libunwind.so" -o -f "$OPT_LIBUNWIND/lib/libunwind.a" \) ; then
+     AC_MSG_ERROR([libunwind required, but specified library path is invalid (no libunwind.a or libunwind.so)])
+  fi
+fi
+
 if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then 
   AC_MSG_RESULT([yes (${OPT_LIBUNWIND_LIBSO})])
+
+  LIBUNWIND_COPY=yes
+  LIBUNWIND_LIB="$OPT_LIBUNWIND/lib"
+  LIBUNWIND_RUN_DIR="$hpc_ext_libs_dir"
+  OPT_LIBUNWIND_IFLAGS="-I$OPT_LIBUNWIND/include"
+  OPT_LIBUNWIND_LIBPATH="$OPT_LIBUNWIND"
+
+  LIBUNWIND_HPCLINK_LIBS=" -lunwind -lunwind-generic"
+
+  OPT_LIBUNWIND_LDFLAGS="-L$LIBUNWIND_LIB $LIBUNWIND_HPCLINK_LIBS"
+
 else
   AC_MSG_RESULT([no])
+fi
+
+if test -z "$HPCLINK_LD_FLAGS"; then
+   HPCLINK_LD_FLAGS="$OPT_LIBUNWIND_LDFLAGS"
+else
+   HPCLINK_LD_FLAGS="$HPCLINK_LD_FLAGS $OPT_LIBUNWIND_LDFLAGS"
 fi
 
 AM_CONDITIONAL(OPT_HAVE_LIBUNWIND, test "${OPT_HAVE_LIBUNWIND}" = "yes")
@@ -1170,7 +1211,20 @@ AC_SUBST(OPT_LIBUNWIND_LIBPATH)
 AC_SUBST(OPT_LIBUNWIND_LDFLAGS)
 AC_SUBST(OPT_LIBUNWIND_LIBSO)
 AC_SUBST(OPT_LIBUNWIND_LIBA)
+AC_SUBST(LIBUNWIND_COPY)
+AC_SUBST(LIBUNWIND_LIB)
+AC_SUBST(LIBUNWIND_RUN_DIR)
+AC_SUBST(LIBUNWIND_HPCLINK_LIBS)
 
+#
+# set up automake choice of unwinder
+#
+# -- NOTE: ia64 ALWAYS uses libunw
+#
+AM_CONDITIONAL([UNW_X86], [test "$UNWINDER" = x86-family])
+AM_CONDITIONAL([UNW_PPC64], [test "$UNWINDER" = ppc64])
+AM_CONDITIONAL([UNW_MIPS], [test "$UNWINDER" = mips])
+AM_CONDITIONAL([UNW_LIBUNW], [test "$UNWINDER" = libunw])
 
 #-------------------------------------------------
 # with-monitor
@@ -1664,6 +1718,7 @@ fi
 AC_MSG_RESULT([${OPT_ENABLE_HPCRUN_STATIC}])
 AM_CONDITIONAL(OPT_ENABLE_HPCRUN_STATIC, test "${OPT_ENABLE_HPCRUN_STATIC}" = "yes")
 
+AC_SUBST(HPCLINK_LD_FLAGS)
 
 AC_MSG_CHECKING([whether to build hpcrun for dynamically linked executables])
 

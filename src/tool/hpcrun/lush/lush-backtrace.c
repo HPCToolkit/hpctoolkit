@@ -120,14 +120,14 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
   bool     doMetricIdleness = false;
   double   incrMetricIdleness = 0.0;
-  lush_agentid_t aidMetricIdleness = lush_agentid_NULL; // list of agents
+  // lush_agentid_t aidMetricIdleness; // = lush_agentid_NULL; // list of agents
 
   if (metricId == lush_agents->metric_time) {
     lush_agentid_t aid = 1; // TODO: multiple agents
     if (lush_agents->LUSHI_do_metric[aid](metricIncr, 
 					  &doMetric, &doMetricIdleness,
 					  &incrMetric, &incrMetricIdleness)) {
-      aidMetricIdleness = aid; // case 1
+      //aidMetricIdleness = aid; // case 1
     }
   }
 
@@ -251,7 +251,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 					      (cct_metric_data_t){.i = metricIncr});
 
   if (doMetricIdleness) {
-    //lush_agentid_t aid = aidMetricIdleness;
+    // lush_agentid_t aid = aidMetricIdleness;
     int mid = lush_agents->metric_idleness;
     cct_metric_data_increment(mid, node,
 			      (cct_metric_data_t){.r = incrMetricIdleness});

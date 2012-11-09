@@ -631,6 +631,7 @@ OPT_ENABLE_MPI_FALSE
 OPT_ENABLE_MPI_TRUE
 OPT_ENABLE_HPCRUN_DYNAMIC_FALSE
 OPT_ENABLE_HPCRUN_DYNAMIC_TRUE
+HPCLINK_LD_FLAGS
 OPT_ENABLE_HPCRUN_STATIC_FALSE
 OPT_ENABLE_HPCRUN_STATIC_TRUE
 HPCRUN_LIBCXX_PATH
@@ -666,6 +667,18 @@ OA_IFLAGS
 OPT_INSTALL_MONITOR
 HPC_MONITOR
 MONITOR
+UNW_LIBUNW_FALSE
+UNW_LIBUNW_TRUE
+UNW_MIPS_FALSE
+UNW_MIPS_TRUE
+UNW_PPC64_FALSE
+UNW_PPC64_TRUE
+UNW_X86_FALSE
+UNW_X86_TRUE
+LIBUNWIND_HPCLINK_LIBS
+LIBUNWIND_RUN_DIR
+LIBUNWIND_LIB
+LIBUNWIND_COPY
 OPT_LIBUNWIND_LIBA
 OPT_LIBUNWIND_LIBSO
 OPT_LIBUNWIND_LDFLAGS
@@ -703,12 +716,8 @@ HOST_LIBTREPOSITORY
 HOST_AR
 HOST_CXXFLAGS
 HOST_CFLAGS
-UNW_MIPS_FALSE
-UNW_MIPS_TRUE
-UNW_PPC64_FALSE
-UNW_PPC64_TRUE
-UNW_X86_FALSE
-UNW_X86_TRUE
+HOST_CPU_IA64_FALSE
+HOST_CPU_IA64_TRUE
 HOST_CPU_X86_FAMILY_FALSE
 HOST_CPU_X86_FAMILY_TRUE
 HOST_CPU_X86_64_FALSE
@@ -3845,7 +3854,6 @@ else
   OPT_ENABLE_DEVELOP_TRUE='#'
   OPT_ENABLE_DEVELOP_FALSE=
 fi
-
 
 
 #----------------------------------------------------------------------------
@@ -16199,6 +16207,11 @@ MYcxxcmp()
 
 UNWINDER=no
 
+#---------------------------------------
+# set specific libunw variable
+#---------------------------------------
+USE_LIBUNW=no
+
 #-------------------------------------------------
 # Host-specific defines
 #-------------------------------------------------
@@ -16215,6 +16228,7 @@ HOST_CPU_PPC=no
 HOST_CPU_X86=no
 HOST_CPU_X86_64=no
 HOST_CPU_X86_FAMILY=no
+HOST_CPU_IA64=no
 
 case "${host}" in
   # Linux
@@ -16256,8 +16270,12 @@ $as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
   ia64*-*-linux*)
     # __ia64 && __linux
     HOST_OS="Linux"
+    HOST_CPU_IA64=yes
+    UNWINDER=libunw
 
-$as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
+$as_echo "#define HOST_CPU_IA64 1" >>confdefs.h
+
+    $as_echo "#define HOST_OS_LINUX /**/" >>confdefs.h
 
     ;;
 
@@ -16282,6 +16300,9 @@ $as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
 
 $as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
 
+
+$as_echo "#define HOST_CPU_PPC 1" >>confdefs.h
+
     ;;
 
   # MacOS
@@ -16292,6 +16313,9 @@ $as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
     UNWINDER=ppc64
 
 $as_echo "#define HOST_OS_MACOS 1" >>confdefs.h
+
+
+$as_echo "#define HOST_CPU_PPC 1" >>confdefs.h
 
     ;;
 
@@ -16412,33 +16436,12 @@ else
   HOST_CPU_X86_FAMILY_FALSE=
 fi
 
-
-#
-# set up automake choice of unwinder
-#
-
- if test "$UNWINDER" = x86-family; then
-  UNW_X86_TRUE=
-  UNW_X86_FALSE='#'
+ if test "$HOST_CPU_IA64" = yes; then
+  HOST_CPU_IA64_TRUE=
+  HOST_CPU_IA64_FALSE='#'
 else
-  UNW_X86_TRUE='#'
-  UNW_X86_FALSE=
-fi
-
- if test "$UNWINDER" = ppc64; then
-  UNW_PPC64_TRUE=
-  UNW_PPC64_FALSE='#'
-else
-  UNW_PPC64_TRUE='#'
-  UNW_PPC64_FALSE=
-fi
-
- if test "$UNWINDER" = mips; then
-  UNW_MIPS_TRUE=
-  UNW_MIPS_FALSE='#'
-else
-  UNW_MIPS_TRUE='#'
-  UNW_MIPS_FALSE=
+  HOST_CPU_IA64_TRUE='#'
+  HOST_CPU_IA64_FALSE=
 fi
 
 
@@ -17196,8 +17199,12 @@ echo "$LIBMONITOR_WRAP_NAMES" >&5
 # with-libunwind
 #-------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether configured with libunwind" >&5
-$as_echo_n "checking whether configured with libunwind... " >&6; }
+#
+# ### FIXME: rationalize this: libunw chosen EITHER when ia64 or when --with-libunwind is set
+# ###        current configure will NOT do the right thing if libunw turned off but arch=ia64
+#
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether configured to use libunwind instead of native" >&5
+$as_echo_n "checking whether configured to use libunwind instead of native... " >&6; }
 
 OPT_HAVE_LIBUNWIND=no
 OPT_LIBUNWIND=
@@ -17206,6 +17213,9 @@ OPT_LIBUNWIND_LIBPATH=
 OPT_LIBUNWIND_LDFLAGS=
 OPT_LIBUNWIND_LIBSO=
 OPT_LIBUNWIND_LIBA=
+LIBUNWIND_COPY=no
+LIBUNWIND_RUN_DIR=
+LIBUNWIND_HPCLINK_LIBS=
 
 if test "$use_externals" = yes ; then
   OPT_LIBUNWIND="$ext_libunwind_prefix"
@@ -17217,24 +17227,57 @@ fi
 
 # Check whether --with-libunwind was given.
 if test "${with_libunwind+set}" = set; then :
-  withval=$with_libunwind; if test $withval != no; then
-     OPT_HAVE_LIBUNWIND=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       as_fn_error $? "--with-libunwind requires absolute path as argument; given '${withval}'" "$LINENO" 5
-     fi
-     OPT_LIBUNWIND=${withval}
-   fi
+  withval=$with_libunwind; case $withval in
+      yes) : ;;
+      /*) OPT_LIBUNWIND=${withval} ;;
+      *) as_fn_error $? "--with-libunwind requires absolute path as argument; given '${withval}'" "$LINENO" 5 ;;
+   esac
+   OPT_HAVE_LIBUNWIND=yes
+   UNWINDER=libunw
 fi
 
 
+if test "$UNWINDER" = "libunw"; then
+
+$as_echo "#define USE_LIBUNW 1" >>confdefs.h
+
+fi
+
 # Check for LIBUNWIND > .9xxx [skip for now]
+
+# Check for libunwind sanity
+if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
+  if ! test -f "$OPT_LIBUNWIND/include/libunwind.h"; then
+     as_fn_error $? "libunwind required, but specified library path is invalid (no libunwind.h)" "$LINENO" 5
+  fi
+  if test ! \( -f "$OPT_LIBUNWIND/lib/libunwind.so" -o -f "$OPT_LIBUNWIND/lib/libunwind.a" \) ; then
+     as_fn_error $? "libunwind required, but specified library path is invalid (no libunwind.a or libunwind.so)" "$LINENO" 5
+  fi
+fi
 
 if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes (${OPT_LIBUNWIND_LIBSO})" >&5
 $as_echo "yes (${OPT_LIBUNWIND_LIBSO})" >&6; }
+
+  LIBUNWIND_COPY=yes
+  LIBUNWIND_LIB="$OPT_LIBUNWIND/lib"
+  LIBUNWIND_RUN_DIR="$hpc_ext_libs_dir"
+  OPT_LIBUNWIND_IFLAGS="-I$OPT_LIBUNWIND/include"
+  OPT_LIBUNWIND_LIBPATH="$OPT_LIBUNWIND"
+
+  LIBUNWIND_HPCLINK_LIBS=" -lunwind -lunwind-generic"
+
+  OPT_LIBUNWIND_LDFLAGS="-L$LIBUNWIND_LIB $LIBUNWIND_HPCLINK_LIBS"
+
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
+fi
+
+if test -z "$HPCLINK_LD_FLAGS"; then
+   HPCLINK_LD_FLAGS="$OPT_LIBUNWIND_LDFLAGS"
+else
+   HPCLINK_LD_FLAGS="$HPCLINK_LD_FLAGS $OPT_LIBUNWIND_LDFLAGS"
 fi
 
  if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
@@ -17250,6 +17293,47 @@ fi
 
 
 
+
+
+
+
+
+#
+# set up automake choice of unwinder
+#
+# -- NOTE: ia64 ALWAYS uses libunw
+#
+ if test "$UNWINDER" = x86-family; then
+  UNW_X86_TRUE=
+  UNW_X86_FALSE='#'
+else
+  UNW_X86_TRUE='#'
+  UNW_X86_FALSE=
+fi
+
+ if test "$UNWINDER" = ppc64; then
+  UNW_PPC64_TRUE=
+  UNW_PPC64_FALSE='#'
+else
+  UNW_PPC64_TRUE='#'
+  UNW_PPC64_FALSE=
+fi
+
+ if test "$UNWINDER" = mips; then
+  UNW_MIPS_TRUE=
+  UNW_MIPS_FALSE='#'
+else
+  UNW_MIPS_TRUE='#'
+  UNW_MIPS_FALSE=
+fi
+
+ if test "$UNWINDER" = libunw; then
+  UNW_LIBUNW_TRUE=
+  UNW_LIBUNW_FALSE='#'
+else
+  UNW_LIBUNW_TRUE='#'
+  UNW_LIBUNW_FALSE=
+fi
 
 
 #-------------------------------------------------
@@ -17817,6 +17901,7 @@ else
   OPT_ENABLE_HPCRUN_STATIC_TRUE='#'
   OPT_ENABLE_HPCRUN_STATIC_FALSE=
 fi
+
 
 
 
@@ -18719,6 +18804,18 @@ if test -z "${HOST_CPU_X86_FAMILY_TRUE}" && test -z "${HOST_CPU_X86_FAMILY_FALSE
   as_fn_error $? "conditional \"HOST_CPU_X86_FAMILY\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${HOST_CPU_IA64_TRUE}" && test -z "${HOST_CPU_IA64_FALSE}"; then
+  as_fn_error $? "conditional \"HOST_CPU_IA64\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${IS_HOST_AR_TRUE}" && test -z "${IS_HOST_AR_FALSE}"; then
+  as_fn_error $? "conditional \"IS_HOST_AR\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_HAVE_LIBUNWIND_TRUE}" && test -z "${OPT_HAVE_LIBUNWIND_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_HAVE_LIBUNWIND\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${UNW_X86_TRUE}" && test -z "${UNW_X86_FALSE}"; then
   as_fn_error $? "conditional \"UNW_X86\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -18731,12 +18828,8 @@ if test -z "${UNW_MIPS_TRUE}" && test -z "${UNW_MIPS_FALSE}"; then
   as_fn_error $? "conditional \"UNW_MIPS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${IS_HOST_AR_TRUE}" && test -z "${IS_HOST_AR_FALSE}"; then
-  as_fn_error $? "conditional \"IS_HOST_AR\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_HAVE_LIBUNWIND_TRUE}" && test -z "${OPT_HAVE_LIBUNWIND_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_HAVE_LIBUNWIND\" was never defined.
+if test -z "${UNW_LIBUNW_TRUE}" && test -z "${UNW_LIBUNW_FALSE}"; then
+  as_fn_error $? "conditional \"UNW_LIBUNW\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PAPI_DYNAMIC_TRUE}" && test -z "${OPT_PAPI_DYNAMIC_FALSE}"; then

@@ -72,7 +72,7 @@ pkglibexec_PROGRAMS = hpcfnbounds-bin$(EXEEXT)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_1 = x86-process-ranges.cpp amd-xop.c
 @HOST_CPU_X86_FAMILY_TRUE@am__append_2 = -I$(XED2_INC)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_3 = $(XED2_LIB)/libxed.a
-@HOST_CPU_X86_FAMILY_FALSE@am__append_4 = generic-process-ranges.cpp
+@HOST_CPU_X86_FAMILY_FALSE@am__append_4 = $(generic_process_ranges_file)
 subdir = src/tool/hpcfnbounds
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -90,16 +90,18 @@ PROGRAMS = $(pkglibexec_PROGRAMS)
 am__hpcfnbounds_bin_SOURCES_DIST = main.cpp code-ranges.cpp \
 	function-entries.cpp intervals.cpp server.cpp \
 	x86-process-ranges.cpp amd-xop.c generic-process-ranges.cpp
-am__objects_1 = hpcfnbounds_bin-main.$(OBJEXT) \
-	hpcfnbounds_bin-code-ranges.$(OBJEXT) \
+am__objects_1 = hpcfnbounds_bin-main.$(OBJEXT)
+am__objects_2 = hpcfnbounds_bin-code-ranges.$(OBJEXT)
+am__objects_3 = $(am__objects_1) $(am__objects_2) \
 	hpcfnbounds_bin-function-entries.$(OBJEXT) \
 	hpcfnbounds_bin-intervals.$(OBJEXT) \
 	hpcfnbounds_bin-server.$(OBJEXT)
-@HOST_CPU_X86_FAMILY_TRUE@am__objects_2 = hpcfnbounds_bin-x86-process-ranges.$(OBJEXT) \
+@HOST_CPU_X86_FAMILY_TRUE@am__objects_4 = hpcfnbounds_bin-x86-process-ranges.$(OBJEXT) \
 @HOST_CPU_X86_FAMILY_TRUE@	hpcfnbounds_bin-amd-xop.$(OBJEXT)
-@HOST_CPU_X86_FAMILY_FALSE@am__objects_3 = hpcfnbounds_bin-generic-process-ranges.$(OBJEXT)
-am_hpcfnbounds_bin_OBJECTS = $(am__objects_1) $(am__objects_2) \
-	$(am__objects_3)
+am__objects_5 = hpcfnbounds_bin-generic-process-ranges.$(OBJEXT)
+@HOST_CPU_X86_FAMILY_FALSE@am__objects_6 = $(am__objects_5)
+am_hpcfnbounds_bin_OBJECTS = $(am__objects_3) $(am__objects_4) \
+	$(am__objects_6)
 hpcfnbounds_bin_OBJECTS = $(am_hpcfnbounds_bin_OBJECTS)
 hpcfnbounds_bin_LDADD = $(LDADD)
 hpcfnbounds_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -208,6 +210,7 @@ HOST_HPCSTRUCT_LDFLAGS = @HOST_HPCSTRUCT_LDFLAGS@
 HOST_LIBTREPOSITORY = @HOST_LIBTREPOSITORY@
 HOST_LINK_NO_START_FILES = @HOST_LINK_NO_START_FILES@
 HOST_XPROF_LDFLAGS = @HOST_XPROF_LDFLAGS@
+HPCLINK_LD_FLAGS = @HPCLINK_LD_FLAGS@
 HPCPROFMPI_LT_LDFLAGS = @HPCPROFMPI_LT_LDFLAGS@
 HPCRUN_LIBCXX_PATH = @HPCRUN_LIBCXX_PATH@
 HPCTOOLKIT_PLATFORM = @HPCTOOLKIT_PLATFORM@
@@ -243,6 +246,10 @@ LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIBTOOL_DEPS = @LIBTOOL_DEPS@
+LIBUNWIND_COPY = @LIBUNWIND_COPY@
+LIBUNWIND_HPCLINK_LIBS = @LIBUNWIND_HPCLINK_LIBS@
+LIBUNWIND_LIB = @LIBUNWIND_LIB@
+LIBUNWIND_RUN_DIR = @LIBUNWIND_RUN_DIR@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -387,9 +394,12 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
+main_file = main.cpp
+code_ranges_file = code-ranges.cpp
+generic_process_ranges_file = generic-process-ranges.cpp
 MYSOURCES = \
-	main.cpp \
-	code-ranges.cpp \
+	$(main_file) \
+        $(code_ranges_file) \
 	function-entries.cpp \
 	intervals.cpp \
 	server.cpp
