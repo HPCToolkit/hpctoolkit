@@ -67,6 +67,7 @@
 #include <fcntl.h>
 #include <setjmp.h>
 #include <signal.h>
+#include <unistd.h>
 
 //*****************************************************************************
 // HPCToolkit Externals Include
@@ -128,6 +129,8 @@ static int   the_binary_fd = -1;
 static FILE *the_c_fp = NULL;
 static FILE *the_text_fp = NULL;
 
+static bool verbose = false; // additional verbosity
+
 static jmp_buf segv_recover; // handle longjmp "restart" from segv
 
 //*****************************************************************
@@ -142,6 +145,7 @@ static jmp_buf segv_recover; // handle longjmp "restart" from segv
 // open the files or set to stdout.  We allow multiple formats, but
 // only one to stdout.
 //
+
 int 
 main(int argc, char* argv[])
 {
@@ -176,7 +180,7 @@ main(int argc, char* argv[])
       do_text = 1;
     }
     else if (strcmp(argv[n], "-v") == 0) {
-      // Ignored at this layer, used in hpcfnbounds script.
+      verbose = true;
     }
     else
       break;
@@ -449,7 +453,7 @@ seed_dwarf_info(int dwarf_fd)
   if ( ! DWARF_OK(dwarf_init(dwarf_fd, DW_DLC_READ,
                              errhand, errarg,
                              &dbg, &err))) {
-    fprintf(stderr, "dwarf init failed !!\n");
+    if (verbose) fprintf(stderr, "dwarf init failed !!\n");
     return;
   }
 
@@ -463,7 +467,7 @@ seed_dwarf_info(int dwarf_fd)
                           &cie_element_count, &fde_data,
                           &fde_element_count, &err);
   if ( ! DWARF_OK(fres)) {
-    fprintf(stderr, "failed to get eh_frame element from DWARF\n");
+    if (verbose) fprintf(stderr, "failed to get eh_frame element from DWARF\n");
     return;
   }
 

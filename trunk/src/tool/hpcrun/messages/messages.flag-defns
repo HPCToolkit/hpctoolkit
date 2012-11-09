@@ -13,7 +13,8 @@
  E(SYNC_CTL),
  E(UNW),
  E(LUNW), // LUSH unwind
- E(UNW_SEGV_STOP), // will cause real abort is unw has a segv
+ E(LIBUNW_TRACE), // trace libunwind version of init_cursor
+ E(UNW_SEGV_STOP), // will cause real abort if unw has a segv
  E(UITREE),
  E(UITREE_VERIFY),
  E(UITREE_LOOKUP),
