@@ -46,6 +46,7 @@ BUILD_DIR ?=  work
 
 FETCH_CMD ?=    true
 PATCH_CMD ?= 	default
+POST_FETCH_CMD ?= none
 CONFIG_CMD ?=   ./configure
 BUILD_CMD ?=	$(MAKE) -C "$(BUILD_DIR)"
 INSTALL_CMD ?=  $(MAKE) -C "$(BUILD_DIR)" install
@@ -104,6 +105,10 @@ refetch:
 				patch -d "$(SRC_DIR)" -p1 <"$$p" || exit 2 ;  \
 			fi ;  \
 		done ;  \
+	fi
+	@if test "x$(POST_FETCH_CMD)" != xnone ; then  \
+		echo ; echo "===> ($(PKG_NAME)) post fetch ..." ;  \
+		$(POST_FETCH_CMD) ;  \
 	fi
 	touch $(FETCH_COOKIE)
 
