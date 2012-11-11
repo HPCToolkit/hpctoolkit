@@ -6,7 +6,7 @@
 #
 
 PKG_NAME=libdwarf
-SRC=dwarf-20110113/libdwarf
+SRC=dwarf-20120410/libdwarf
 WORK=work
 
 . ../build-utils/configure.inc

@@ -10,7 +10,7 @@
 #
 
 PKG_NAME=libdwarf
-SRC=dwarf-20110113/libdwarf
+SRC=dwarf-20120410/libdwarf
 
 . ../build-utils/configure.inc
 pre_configure
@@ -28,7 +28,7 @@ elf_inc="${libelfdir}/include"
 
 set -- \
     CC="$CC" \
-    CFLAGS="-g -O2 -fPIC -I${elf_inc} $CFLAGS"  \
+    CFLAGS="$CFLAGS -fPIC -I${elf_inc}"  \
     CPPFLAGS="-I${elf_inc}"  \
     LDFLAGS="-L${libelf_lib}"  \
     --prefix="$prefix"  \
