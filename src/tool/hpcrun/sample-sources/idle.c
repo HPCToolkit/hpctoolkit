@@ -162,8 +162,8 @@ METHOD_FN(thread_init)
 static void
 METHOD_FN(thread_init_action)
 {
-  thread_data_t *td = hpcrun_get_thread_data();
-  if(td->defer_flag) resolve_cntxt_fini();
+//  thread_data_t *td = hpcrun_get_thread_data();
+//  if(td->defer_flag) resolve_cntxt_fini();
 }
 
 static void
@@ -178,7 +178,7 @@ METHOD_FN(thread_fini_action)
   if(!td->omp_thread) return;
   // it is necessary because it can resolve/partial resolve
   // the region (temporal concern)
-//  if(td->defer_flag) resolve_cntxt_fini();
+  if(td->defer_flag) resolve_cntxt_fini();
   if(!td->add_to_pool) {
     td->add_to_pool = 1;
     add_defer_td(td);
