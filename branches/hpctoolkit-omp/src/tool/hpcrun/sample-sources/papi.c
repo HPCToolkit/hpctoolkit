@@ -582,8 +582,10 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
+  monitor_block_shootdown();
   if (! hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
+    monitor_unblock_shootdown();
     return;
   }
 
@@ -645,5 +647,6 @@ papi_event_handler(int event_set, void *pc, long long ovec,
       blame_shift_apply(sv.sample_node, (uint64_t)(hpcrun_id2metric(metric_id)->period));
     }
   }
+  monitor_unblock_shootdown();
   hpcrun_safe_exit();
 }
