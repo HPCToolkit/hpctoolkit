@@ -76,9 +76,7 @@
 // client for testing hpcfnbounds in server mode.
 //
 // Todo:
-// 1. The server has a memory leak in the symtabAPI code.  We could
-// call getrusage() and restart the server above some threshold (or
-// else fix symtabAPI).
+// 1. The memory leak is fixed in symtab 8.0.
 //
 // 2. Kill Zombies!  If the server exits, it will persist as a zombie.
 // That's mostly harmless, but we could clean them up with waitpid().
@@ -561,8 +559,7 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
   TMSG(SYSTEM_SERVER, "addr: %p, symbols: %ld, offset: 0x%lx, reloc: %d",
        addr, (long) fh->num_entries, (long) fh->reference_offset,
        (int) fh->is_relocatable);
-  TMSG(SYSTEM_SERVER, "rusage memsize: before: %ld Meg, after: %ld Meg",
-       fh->old_memsize / 1024, fh->new_memsize / 1024);
+  TMSG(SYSTEM_SERVER, "server memsize: %ld Meg", fh->memsize / 1024);
 
   return addr;
 }

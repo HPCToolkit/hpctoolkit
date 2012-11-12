@@ -686,15 +686,5 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
 
   close(dwarf_fd);
 
-  // this causes a spew of 'Aggregate w/out symbols' errors.
-#if 0
-  for (unsigned int i = 0; i < symvec.size(); i++) {
-    syms->deleteSymbol(symvec[i]);
-  }
-#endif
-
-  // this actually increases the memory leak.  wtf !!
-#if 0
   Symtab::closeSymtab(syms);
-#endif
 }
