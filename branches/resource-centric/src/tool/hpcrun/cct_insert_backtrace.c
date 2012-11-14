@@ -62,6 +62,8 @@
 #include <unwind/common/backtrace_info.h>
 #include <unwind/common/fence_enum.h>
 #include "cct_insert_backtrace.h"
+#include "thread_tags.h"
+#include "trace.h"
 
 //
 // Misc externals (not in an include file)
@@ -83,6 +85,19 @@ cct_insert_raw_backtrace(cct_node_t* cct,
     TMSG(BT_INSERT, "No insert effect, cct = %p, path_beg = %p, path_end = %p",
 	 cct, path_beg, path_end);
     return cct;
+  }
+  // for resource centric: insert the dummy root to indicate the cpu id if necessary
+  if((TD_GET(cpu_id) >= 0) && hpcrun_trace_isactive()) {
+    void *pc = get_thread_func(TD_GET(id));
+    if(pc) {
+      ip_normalized_t pc_proxy = hpcrun_normalize_ip(pc, NULL);
+      cct_addr_t frm = {.ip_norm = pc_proxy};
+      cct = hpcrun_cct_insert_addr(cct, &frm);
+    }
+    else {
+      // for debug
+      ;
+    }
   }
   ip_normalized_t parent_routine = ip_normalized_NULL;
   for(; path_beg >= path_end; path_beg--){
