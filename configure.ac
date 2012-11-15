@@ -1440,18 +1440,26 @@ AC_ARG_WITH([symtabAPI],
 
 AC_MSG_CHECKING([for symtabAPI])
 
+SYMTABAPI_COPY=no
+SYMTABAPI_COPY_DYN=no
+SYMTABAPI_LIB_LIST=
+
 case "${SYMTABAPI}" in
   /* )
-    if test -f "${SYMTABAPI}/include/Symtab.h" ; then :
+    if test -f "${SYMTABAPI}/include/Symtab.h" && \
+       test -f "${SYMTABAPI}/lib/libsymtabAPI.so"
+    then :
     else
         AC_MSG_ERROR([invalid symtabAPI directory: $SYMTABAPI])
     fi
     SYMTABAPI_COPY=yes
-    SYMTABAPI_RUN_DIR="$hpc_ext_libs_dir"
+    SYMTABAPI_LIB_LIST='-lsymtabAPI -lcommon'
+    if test -f "${SYMTABAPI}/lib/libdynElf.so" ; then
+      SYMTABAPI_COPY_DYN=yes
+      SYMTABAPI_LIB_LIST="$SYMTABAPI_LIB_LIST -ldynDwarf -ldynElf"
+    fi
     ;;
   no )
-    SYMTABAPI_COPY=no
-    SYMTABAPI_RUN_DIR=no
     ;;
   * )
     AC_MSG_ERROR([symtabAPI directory must be absolute path: $SYMTABAPI])
@@ -1465,8 +1473,9 @@ AC_MSG_RESULT([$SYMTABAPI])
 
 AC_SUBST([SYMTABAPI_INC])
 AC_SUBST([SYMTABAPI_LIB])
+AC_SUBST([SYMTABAPI_LIB_LIST])
 AC_SUBST([SYMTABAPI_COPY])
-AC_SUBST([SYMTABAPI_RUN_DIR])
+AC_SUBST([SYMTABAPI_COPY_DYN])
 
 
 #-------------------------------------------------

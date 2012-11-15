@@ -48,8 +48,6 @@
 // system includes
 //*****************************************************************************
 
-#include <unistd.h>
-
 #include <vector>
 #include <string>
 
@@ -371,7 +369,7 @@ pathscale_filter(Symbol *sym)
 {
   bool result = false;
   // filter out function symbols for exception handlers
-  if (matches_prefix(sym->getName(), 
+  if (matches_prefix(sym->getMangledName(), 
 		     PATHSCALE_EXCEPTION_HANDLER_PREFIX, 
 		     STRLEN(PATHSCALE_EXCEPTION_HANDLER_PREFIX))) 
     result = true;
@@ -401,8 +399,8 @@ code_range_comment(string &name, string section, const char *which)
 static void
 note_code_range(Region *s, long memaddr, DiscoverFnTy discover)
 {
-  char *start = (char *) s->getRegionAddr();
-  char *end = start + s->getRegionSize();
+  char *start = (char *) s->getDiskOffset();
+  char *end = start + s->getDiskSize();
   string ntmp;
   new_code_range(start, end, memaddr, discover);
 
@@ -520,8 +518,8 @@ dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy 
   for (unsigned int i = 0; i < symvec.size(); i++) {
     Symbol *s = symvec[i];
     Symbol::SymbolLinkage sl = s->getLinkage();
-    if (report_symbol(s) && s->getAddr() != 0) 
-      add_function_entry((void *) s->getAddr(), &s->getName(), 
+    if (report_symbol(s) && s->getOffset() != 0) 
+      add_function_entry((void *) s->getOffset(), &s->getMangledName(), 
 			 ((sl & Symbol::SL_GLOBAL) ||
 			  (sl & Symbol::SL_WEAK)));
   }
@@ -667,8 +665,8 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
     syms->getAllSymbolsByType(vec, Symbol::ST_NOTYPE);
     for (unsigned int i = 0; i < vec.size(); i++) {
       Symbol *s = vec[i];
-      if (matches_contains(s->getName(), "long_branch") && s->getAddr() != 0)
-	add_function_entry((void *) s->getAddr(), &s->getName(), true);
+      if (matches_contains(s->getMangledName(), "long_branch") && s->getOffset() != 0)
+	add_function_entry((void *) s->getOffset(), &s->getMangledName(), true);
     }
   }
 #endif

@@ -78,18 +78,14 @@ LIBELF_LIB   = @LIBELF_LIB@
 
 SYMTABAPI_INC = @SYMTABAPI_INC@
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
+SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 
-
-main_file = main.cpp
-code_ranges_file = code-ranges.cpp
-generic_process_ranges_file = generic-process-ranges.cpp
-
 MYSOURCES = \
-	$(main_file) \
-        $(code_ranges_file) \
+	main.cpp \
+	code-ranges.cpp \
 	function-entries.cpp \
 	intervals.cpp \
 	server.cpp
@@ -99,7 +95,7 @@ MYCPPFLAGS = $(HPC_IFLAGS) -I$(SYMTABAPI_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC)
 MYCXXFLAGS = @HOST_CXXFLAGS@
 
 MYLDFLAGS = \
-	-L$(SYMTABAPI_LIB) -lsymtabAPI -lcommon	\
+	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
 	-L$(LIBDWARF_LIB) -ldwarf		\
 	-L$(LIBELF_LIB) -lelf
 
@@ -124,7 +120,7 @@ if HOST_CPU_X86_FAMILY
   hpcfnbounds_bin_CPPFLAGS += -I$(XED2_INC)
   hpcfnbounds_bin_LDFLAGS  += $(XED2_LIB)/libxed.a
 else
-  hpcfnbounds_bin_SOURCES += $(generic_process_ranges_file)
+  hpcfnbounds_bin_SOURCES += generic-process-ranges.cpp
 endif
 
 MOSTLYCLEANFILES = $(MYCLEAN)
