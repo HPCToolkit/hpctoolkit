@@ -649,8 +649,9 @@ XED2_RUN_DIR
 XED2_COPY
 XED2_LIB
 XED2_INC
-SYMTABAPI_RUN_DIR
+SYMTABAPI_COPY_DYN
 SYMTABAPI_COPY
+SYMTABAPI_LIB_LIST
 SYMTABAPI_LIB
 SYMTABAPI_INC
 papi_extra_libs
@@ -17583,18 +17584,26 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for symtabAPI" >&5
 $as_echo_n "checking for symtabAPI... " >&6; }
 
+SYMTABAPI_COPY=no
+SYMTABAPI_COPY_DYN=no
+SYMTABAPI_LIB_LIST=
+
 case "${SYMTABAPI}" in
   /* )
-    if test -f "${SYMTABAPI}/include/Symtab.h" ; then :
+    if test -f "${SYMTABAPI}/include/Symtab.h" && \
+       test -f "${SYMTABAPI}/lib/libsymtabAPI.so"
+    then :
     else
         as_fn_error $? "invalid symtabAPI directory: $SYMTABAPI" "$LINENO" 5
     fi
     SYMTABAPI_COPY=yes
-    SYMTABAPI_RUN_DIR="$hpc_ext_libs_dir"
+    SYMTABAPI_LIB_LIST='-lsymtabAPI -lcommon'
+    if test -f "${SYMTABAPI}/lib/libdynElf.so" ; then
+      SYMTABAPI_COPY_DYN=yes
+      SYMTABAPI_LIB_LIST="$SYMTABAPI_LIB_LIST -ldynDwarf -ldynElf"
+    fi
     ;;
   no )
-    SYMTABAPI_COPY=no
-    SYMTABAPI_RUN_DIR=no
     ;;
   * )
     as_fn_error $? "symtabAPI directory must be absolute path: $SYMTABAPI" "$LINENO" 5
@@ -17606,6 +17615,7 @@ SYMTABAPI_LIB="${SYMTABAPI}/lib"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $SYMTABAPI" >&5
 $as_echo "$SYMTABAPI" >&6; }
+
 
 
 

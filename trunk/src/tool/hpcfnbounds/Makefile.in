@@ -72,7 +72,7 @@ pkglibexec_PROGRAMS = hpcfnbounds-bin$(EXEEXT)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_1 = x86-process-ranges.cpp amd-xop.c
 @HOST_CPU_X86_FAMILY_TRUE@am__append_2 = -I$(XED2_INC)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_3 = $(XED2_LIB)/libxed.a
-@HOST_CPU_X86_FAMILY_FALSE@am__append_4 = $(generic_process_ranges_file)
+@HOST_CPU_X86_FAMILY_FALSE@am__append_4 = generic-process-ranges.cpp
 subdir = src/tool/hpcfnbounds
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -90,18 +90,16 @@ PROGRAMS = $(pkglibexec_PROGRAMS)
 am__hpcfnbounds_bin_SOURCES_DIST = main.cpp code-ranges.cpp \
 	function-entries.cpp intervals.cpp server.cpp \
 	x86-process-ranges.cpp amd-xop.c generic-process-ranges.cpp
-am__objects_1 = hpcfnbounds_bin-main.$(OBJEXT)
-am__objects_2 = hpcfnbounds_bin-code-ranges.$(OBJEXT)
-am__objects_3 = $(am__objects_1) $(am__objects_2) \
+am__objects_1 = hpcfnbounds_bin-main.$(OBJEXT) \
+	hpcfnbounds_bin-code-ranges.$(OBJEXT) \
 	hpcfnbounds_bin-function-entries.$(OBJEXT) \
 	hpcfnbounds_bin-intervals.$(OBJEXT) \
 	hpcfnbounds_bin-server.$(OBJEXT)
-@HOST_CPU_X86_FAMILY_TRUE@am__objects_4 = hpcfnbounds_bin-x86-process-ranges.$(OBJEXT) \
+@HOST_CPU_X86_FAMILY_TRUE@am__objects_2 = hpcfnbounds_bin-x86-process-ranges.$(OBJEXT) \
 @HOST_CPU_X86_FAMILY_TRUE@	hpcfnbounds_bin-amd-xop.$(OBJEXT)
-am__objects_5 = hpcfnbounds_bin-generic-process-ranges.$(OBJEXT)
-@HOST_CPU_X86_FAMILY_FALSE@am__objects_6 = $(am__objects_5)
-am_hpcfnbounds_bin_OBJECTS = $(am__objects_3) $(am__objects_4) \
-	$(am__objects_6)
+@HOST_CPU_X86_FAMILY_FALSE@am__objects_3 = hpcfnbounds_bin-generic-process-ranges.$(OBJEXT)
+am_hpcfnbounds_bin_OBJECTS = $(am__objects_1) $(am__objects_2) \
+	$(am__objects_3)
 hpcfnbounds_bin_OBJECTS = $(am_hpcfnbounds_bin_OBJECTS)
 hpcfnbounds_bin_LDADD = $(LDADD)
 hpcfnbounds_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -295,9 +293,10 @@ SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 SYMTABAPI_COPY = @SYMTABAPI_COPY@
+SYMTABAPI_COPY_DYN = @SYMTABAPI_COPY_DYN@
 SYMTABAPI_INC = @SYMTABAPI_INC@
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
-SYMTABAPI_RUN_DIR = @SYMTABAPI_RUN_DIR@
+SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 VERSION = @VERSION@
 XED2_COPY = @XED2_COPY@
 XED2_INC = @XED2_INC@
@@ -394,12 +393,9 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-main_file = main.cpp
-code_ranges_file = code-ranges.cpp
-generic_process_ranges_file = generic-process-ranges.cpp
 MYSOURCES = \
-	$(main_file) \
-        $(code_ranges_file) \
+	main.cpp \
+	code-ranges.cpp \
 	function-entries.cpp \
 	intervals.cpp \
 	server.cpp
@@ -407,7 +403,7 @@ MYSOURCES = \
 MYCPPFLAGS = $(HPC_IFLAGS) -I$(SYMTABAPI_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC)
 MYCXXFLAGS = @HOST_CXXFLAGS@
 MYLDFLAGS = \
-	-L$(SYMTABAPI_LIB) -lsymtabAPI -lcommon	\
+	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
 	-L$(LIBDWARF_LIB) -ldwarf		\
 	-L$(LIBELF_LIB) -lelf
 
