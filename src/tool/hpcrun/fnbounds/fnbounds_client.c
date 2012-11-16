@@ -95,6 +95,7 @@
 #define dup2(...)  zero_fcn()
 #define hpcrun_set_disabled()
 #define monitor_real_fork  fork
+#define monitor_real_execve  execve
 #define monitor_sigaction(...)  0
 int zero_fcn(void) { return 0; }
 #endif
@@ -374,34 +375,19 @@ launch_server(void)
       warn("dup of log fd onto stderr failed");
     }
 
-    //
-    // Copy the environment and omit LD_PRELOAD.  For most programs,
-    // unsetenv(LD_PRELAOD) would work.  But unsetenv() doesn't work
-    // inside bash (why!?).  Also, copying the environ is safer than
-    // modifying it in place if environ happens to be read-only.
-    //
-    char **newenv;
-    int n, k;
-    for (n = 0; environ[n] != NULL; n++) {
-    }
-    newenv = mmap_anon((n + 2) * sizeof(char *));
-    if (newenv == MAP_FAILED) {
-      err(1, "hpcrun system server: mmap failed");
-    }
-    n = 0;
-    for (k = 0; environ[k] != NULL; k++) {
-      if (strstr(environ[k], "LD_PRELOAD") == NULL) {
-	newenv[n] = environ[k];
-	n++;
-      }
-    }
-    newenv[n] = NULL;
-
-    char fdin_str[20], fdout_str[20];
+    // make the command line and exec
+    char *arglist[8];
+    char fdin_str[10], fdout_str[10];
     sprintf(fdin_str,  "%d", sendfd[0]);
     sprintf(fdout_str, "%d", recvfd[1]);
 
-    execle(server, server, "-s", fdin_str, fdout_str, NULL, newenv);
+    arglist[0] = server;
+    arglist[1] = "-s";
+    arglist[2] = fdin_str;
+    arglist[3] = fdout_str;
+    arglist[4] = NULL;
+
+    monitor_real_execve(server, arglist, environ);
     err(1, "hpcrun system server: exec(%s) failed", server);
   }
 

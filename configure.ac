@@ -804,7 +804,7 @@ AC_SUBST([hpc_ext_libs_dir])
 #-------------------------------------------------
 
 # External's minimum svn rev number, or else a fatal error.
-EXTERNALS_MIN_REV=3872
+EXTERNALS_MIN_REV=4009
 
 ext_cc_path=unknown
 ext_cxx_path=unknown
