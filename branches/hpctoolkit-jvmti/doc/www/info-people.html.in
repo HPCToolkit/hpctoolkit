@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- -*- coding: utf-8 -*- -->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!-- ********************************************************************** -->
+
+<head>
+  <!-- meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" /> -->
+
+  <title>HPCToolkit Project Contact Information</title>
+
+  <link rel="stylesheet" type="text/css" href="style/style.css" />
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+@header-hpctoolkit@
+
+<!-- ********************************************************************** -->
+
+<h1>People</h1>
+
+<h2>Project Lead</h2>
+<ul>
+  <li><a href="http://www.cs.rice.edu/~johnmc">John Mellor-Crummey</a>
+  <br />
+  Department of Computer Science - MS 132 // Rice University // P.O. Box 1892 // Houston, TX 77251-1892
+  </li>
+</ul>
+
+<h2>Project Team (alphabetical)</h2>
+<ul>
+  <li><a href="http://www.ruf.rice.edu/~la5/">Laksono Adhianto</a></li>
+  <li><a href="http://www.cs.rice.edu/~mc29/">Milind Chabbi</a></li>
+  <li><a href="http://www.cs.rice.edu/~mfagan">Mike Fagan</a></li>
+  <li><a href="http://www.cs.rice.edu/~krentel">Mark Krentel</a></li>
+  <li><a href="http://www.cs.rice.edu/~xl10">Xu Liu</a></li>
+  <li><a href="http://www.cs.rice.edu/~ksm2">Karthik Murthy</a></li>
+  <li><a href="http://www.cs.rice.edu/~tallent">Nathan Tallent</a></li>
+</ul>
+
+<h2>Past Contributors (alphabetical)</h2>
+<ul>
+<li><a href="http://www.renci.org/~rjf/">Rob Fowler</a></li>
+<li>Nathan Froyd</li>
+<li><a href="http://ft.ornl.gov/~gmarin/">Gabriel Marin</a></li>
+<!--<li>Jason Eckhardt</li>-->
+<!--<li>Monika Mevenkamp</li>-->
+<!--<li>Xuesong Yuan</li>-->
+</ul>
+
+<p>[<span class="lastupdated">Page last updated: 2011/06/25</span>]
+</p>
+
+<!-- ********************************************************************** -->
+
+@footer-hpctoolkit@
+
+<!-- ********************************************************************** -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: "<span class=\"lastupdated\">Page last updated: " -->
+<!-- time-stamp-format: "%:y/%02m/%02d" -->
+<!-- time-stamp-end: "</span>" -->
+<!-- time-stamp-line-limit: 10000 -->
+<!-- End: -->
