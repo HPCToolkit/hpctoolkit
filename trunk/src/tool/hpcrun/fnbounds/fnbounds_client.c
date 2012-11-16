@@ -575,7 +575,7 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
     mem_warning = 1;
   }
   if (num_queries >= MIN_NUM_QUERIES && fh->memsize > mem_limit) {
-    EMSG("SYSTEM_SERVER: warning: restarting server, memory usage: %ld Meg",
+    EMSG("SYSTEM_SERVER: warning: memory usage: %ld Meg, restart server",
 	 fh->memsize / 1024);
     shutdown_server();
   }
