@@ -127,6 +127,10 @@ int zero_fcn(void) { return 0; }
 #include "syserv-mesg.h"
 #endif
 
+// Limit on memory use at which we restart the server in Meg.
+#define SERVER_MEM_LIMIT  80
+#define MIN_NUM_QUERIES   12
+
 #define SUCCESS   0
 #define FAILURE  -1
 #define END_OF_FILE  -2
@@ -144,6 +148,11 @@ static int fdin = -1;
 
 static pid_t my_pid;
 static pid_t child_pid;
+
+// rusage units are Kbytes.
+static long mem_limit = SERVER_MEM_LIMIT * 1024;
+static int  num_queries = 0;
+static int  mem_warning = 0;
 
 extern char **environ;
 
@@ -401,6 +410,8 @@ launch_server(void)
   my_pid = getpid();
   child_pid = pid;
   client_status = SYSERV_ACTIVE;
+  num_queries = 0;
+  mem_warning = 0;
 
   TMSG(SYSTEM_SERVER, "syserv launch: success, server: %d", (int) child_pid);
 
@@ -424,6 +435,14 @@ hpcrun_syserv_init(void)
     EMSG("SYSTEM_SERVER ERROR: unable to get HPCRUN_FNBOUNDS_CMD");
     return -1;
   }
+
+  // limit on server memory usage in Meg
+  char *str = getenv("HPCRUN_SERVER_MEMSIZE");
+  long size;
+  if (str == NULL || sscanf(str, "%ld", &size) < 1) {
+    size = SERVER_MEM_LIMIT;
+  }
+  mem_limit = size * 1024;
 
   if (monitor_sigaction(SIGPIPE, &hpcrun_sigpipe_handler, 0, NULL) != 0) {
     EMSG("SYSTEM_SERVER ERROR: unable to install handler for SIGPIPE");
@@ -546,6 +565,20 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
        addr, (long) fh->num_entries, (long) fh->reference_offset,
        (int) fh->is_relocatable);
   TMSG(SYSTEM_SERVER, "server memsize: %ld Meg", fh->memsize / 1024);
+
+  // Restart the server if it's done a minimum number of queries and
+  // has exceeded its memory limit.  Issue a warning at 60%.
+  num_queries++;
+  if (!mem_warning && fh->memsize > (6 * mem_limit)/10) {
+    EMSG("SYSTEM_SERVER: warning: memory usage: %ld Meg",
+	 fh->memsize / 1024);
+    mem_warning = 1;
+  }
+  if (num_queries >= MIN_NUM_QUERIES && fh->memsize > mem_limit) {
+    EMSG("SYSTEM_SERVER: warning: restarting server, memory usage: %ld Meg",
+	 fh->memsize / 1024);
+    shutdown_server();
+  }
 
   return addr;
 }
