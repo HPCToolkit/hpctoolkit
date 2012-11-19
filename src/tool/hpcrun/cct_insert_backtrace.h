@@ -69,7 +69,7 @@
 //              ^ path_end                        ^ path_beg
 //              ^ bt_beg                                       ^ bt_end
 //
-cct_node_t* hpcrun_cct_insert_backtrace(cct_node_t* cct, frame_t* path_beg, frame_t* path_end);
+extern cct_node_t* hpcrun_cct_insert_backtrace(cct_node_t* cct, frame_t* path_beg, frame_t* path_end);
 
 extern cct_node_t* hpcrun_cct_insert_backtrace_w_metric(cct_node_t* cct,
 							int metric_id,
@@ -97,8 +97,6 @@ extern cct_node_t* hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* conte
                                             int metricId, uint64_t metricIncr,
                                             int skipInner);
 
-/* for stream purposes
- */
 extern cct_node_t* cct_insert_raw_backtrace(cct_node_t* cct,
                             frame_t* path_beg, frame_t* path_end);
 #endif // CCT_INSERT_BACKTRACE_H
