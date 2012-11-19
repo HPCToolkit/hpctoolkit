@@ -210,7 +210,6 @@ void
 add_function_entry(void *addr, const string *comment, bool isvisible, 
 		   int call_count)
 {
-
   FunctionSet::iterator it = function_entries.find(addr); 
 
   if (it == function_entries.end()) {
