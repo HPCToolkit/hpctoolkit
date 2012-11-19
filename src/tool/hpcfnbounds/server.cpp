@@ -69,9 +69,7 @@
 // 4. The server runs outside of hpcrun and libmonitor.
 //
 // Todo:
-// 1. There is a residual memory leak in the symtabAPI code.  If it
-// becomes a problem, then we could call getrusage() and restart the
-// server above some threshold (or else fix symtabAPI).
+// 1. The memory leak is fixed in symtab 8.0.
 
 //***************************************************************************
 
@@ -304,7 +302,6 @@ signal_handler_init(void)
 static void
 do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
 {
-  struct rusage usage;
   int ret;
   long k;
 
@@ -333,13 +330,6 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
     code_ranges_reinit();
     function_entries_reinit();
 
-    // send before and after rusage maxrss to track memory leaks
-    if (getrusage(RUSAGE_SELF, &usage) == 0) {
-      fnb_hdr.old_memsize = usage.ru_maxrss;
-    } else {
-      fnb_hdr.old_memsize = -1;
-    }
-
     dump_file_info(inbuf, fn_discovery);
     jmpbuf_ok = 0;
 
@@ -357,10 +347,13 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
       num_addrs = 0;
     }
 
+    // add rusage maxrss to allow client to track memory usage.
+    // units are Kbytes
+    struct rusage usage;
     if (getrusage(RUSAGE_SELF, &usage) == 0) {
-      fnb_hdr.new_memsize = usage.ru_maxrss;
+      fnb_hdr.memsize = usage.ru_maxrss;
     } else {
-      fnb_hdr.new_memsize = -1;
+      fnb_hdr.memsize = -1;
     }
 
     fnb_hdr.magic = FNBOUNDS_MAGIC;

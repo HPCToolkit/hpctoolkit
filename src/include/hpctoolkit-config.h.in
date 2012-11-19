@@ -69,6 +69,12 @@
 /* C compiler supports type "voidp" */
 #undef HAVE_VOIDP_LANG_C
 
+/* HOST CPU: ia64 (itanium) */
+#undef HOST_CPU_IA64
+
+/* HOST CPU: PowerPC (ppc) */
+#undef HOST_CPU_PPC
+
 /* HOST CPU: x86 (32-bit) */
 #undef HOST_CPU_x86
 
@@ -138,6 +144,9 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* libunwind is the specified unwinder */
+#undef USE_LIBUNW
 
 /* Version number of package */
 #undef VERSION

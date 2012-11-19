@@ -281,7 +281,7 @@ hpcrun_sample_callpath(void *context, int metricId,
 static int const PTHREAD_CTXT_SKIP_INNER = 1;
 
 cct_node_t*
-hpcrun_gen_thread_ctxt(void *context)
+hpcrun_gen_thread_ctxt(void* context)
 {
   if (monitor_block_shootdown()) {
     monitor_unblock_shootdown();
@@ -316,6 +316,7 @@ hpcrun_gen_thread_ctxt(void *context)
     if (epoch != NULL) {
       if (! hpcrun_generate_backtrace_no_trampoline(&bt, context,
 						    PTHREAD_CTXT_SKIP_INNER)) {
+	hpcrun_clear_handling_sample(td); // restore state
 	EMSG("Internal error: unable to obtain backtrace for pthread context");
 	return NULL;
       }

@@ -68,6 +68,8 @@ hpcfnbounds_dir='libexec/hpctoolkit'
 libhpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 xed2_dir='@XED2_RUN_DIR@'
+libunwind_dir='@LIBUNWIND_RUN_DIR@'
+libunwind_hpclink_libs='@LIBUNWIND_HPCLINK_LIBS@'
 
 # Absolute path or empty.
 papi_dir='@OPT_PAPI_LIBPATH@'
@@ -195,6 +197,10 @@ esac
 case "$xed2_dir" in
     /* ) ;;
     * )  xed2_dir="${HPCTOOLKIT}/${xed2_dir}" ;;
+esac
+case "$libunwind_dir" in
+    /* ) ;;
+    * )  libunwind_dir="${HPCTOOLKIT}/${libunwind_dir}" ;;
 esac
 
 hpcfnbounds="${hpcfnbounds_dir}/hpcfnbounds"
@@ -409,6 +415,10 @@ fi
 
 if test -d "$xed2_dir" ; then
     set -- "$@" "-L${xed2_dir}" -lxed
+fi
+
+if test -d "$libunwind_dir" ; then
+    set -- "$@" "-L$libunwind_dir" $libunwind_hpclink_libs
 fi
 
 set -- "$@" $upc_libs

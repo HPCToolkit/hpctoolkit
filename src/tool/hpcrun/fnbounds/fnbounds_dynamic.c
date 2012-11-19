@@ -78,6 +78,8 @@
 #include <unistd.h>    // getpid
 #include <fcntl.h>
 
+#include <include/hpctoolkit-config.h>
+
 //*********************************************************************
 // external libraries
 //*********************************************************************
@@ -216,7 +218,7 @@ fnbounds_init()
 
   if (hpcrun_get_disabled()) return 0;
 
-  if (getenv("NEW_SYSTEM_SERVER") != NULL) {
+  if (getenv("OLD_SYSTEM_SERVER") == NULL) {
     TMSG(SYSTEM_SERVER, "using new fnbounds server");
     use_new_server = 1;
     hpcrun_syserv_init();
@@ -238,7 +240,6 @@ fnbounds_init()
   }
   return result;
 }
-
 
 bool
 fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)

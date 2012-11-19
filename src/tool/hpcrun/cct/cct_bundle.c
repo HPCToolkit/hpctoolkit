@@ -97,6 +97,7 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   bundle->thread_root = bundle->tree_root;
   bundle->ctxt = ctxt;
   bundle->num_nodes = 0;
+  // FIXME: change to omp style here
   //
   // If there is a creation context (ie, this is a pthread),
   // then the creation context gets special treatment.

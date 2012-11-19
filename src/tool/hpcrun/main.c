@@ -73,6 +73,8 @@
 
 #include <include/uint.h>
 
+#include <include/hpctoolkit-config.h>
+
 #include "main.h"
 
 #include "disabled.h"
@@ -129,7 +131,9 @@
 #include <messages/debug-flag.h>
 
 extern void hpcrun_set_retain_recursion_mode(bool mode);
+#ifndef USE_LIBUNW
 extern void hpcrun_dump_intervals(void* addr);
+#endif // ! USE_LIBUNW
 
 //***************************************************************************
 // constants
@@ -166,7 +170,7 @@ static void
 setup_main_bounds_check(void* main_addr)
 {
   if (! main_addr) return;
-#ifdef __PPC64__
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
   main_addr = *((void**) main_addr);
 #endif
   load_module_t* lm = NULL;
@@ -280,6 +284,8 @@ hpcrun_init_internal(bool is_child)
   hpcrun_setup_segv();
   hpcrun_unw_init();
 
+
+#ifndef USE_LIBUNW
   if (getenv("HPCRUN_ONLY_DUMP_INTERVALS")) {
     fnbounds_table_t table = fnbounds_fetch_executable_table();
     TMSG(INTERVALS_PRINT, "table data = %p", table.table);
@@ -301,6 +307,7 @@ hpcrun_init_internal(bool is_child)
     }
     exit(0);
   }
+#endif // ! USE_LIBUNW
 
   hpcrun_stats_reinit();
   hpcrun_start_stop_internal_init();
