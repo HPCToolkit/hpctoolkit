@@ -76,9 +76,7 @@
 // client for testing hpcfnbounds in server mode.
 //
 // Todo:
-// 1. The server has a memory leak in the symtabAPI code.  We could
-// call getrusage() and restart the server above some threshold (or
-// else fix symtabAPI).
+// 1. The memory leak is fixed in symtab 8.0.
 //
 // 2. Kill Zombies!  If the server exits, it will persist as a zombie.
 // That's mostly harmless, but we could clean them up with waitpid().
@@ -97,6 +95,7 @@
 #define dup2(...)  zero_fcn()
 #define hpcrun_set_disabled()
 #define monitor_real_fork  fork
+#define monitor_real_execve  execve
 #define monitor_sigaction(...)  0
 int zero_fcn(void) { return 0; }
 #endif
@@ -128,6 +127,10 @@ int zero_fcn(void) { return 0; }
 #include "syserv-mesg.h"
 #endif
 
+// Limit on memory use at which we restart the server in Meg.
+#define SERVER_MEM_LIMIT  80
+#define MIN_NUM_QUERIES   12
+
 #define SUCCESS   0
 #define FAILURE  -1
 #define END_OF_FILE  -2
@@ -145,6 +148,11 @@ static int fdin = -1;
 
 static pid_t my_pid;
 static pid_t child_pid;
+
+// rusage units are Kbytes.
+static long mem_limit = SERVER_MEM_LIMIT * 1024;
+static int  num_queries = 0;
+static int  mem_warning = 0;
 
 extern char **environ;
 
@@ -376,34 +384,19 @@ launch_server(void)
       warn("dup of log fd onto stderr failed");
     }
 
-    //
-    // Copy the environment and omit LD_PRELOAD.  For most programs,
-    // unsetenv(LD_PRELAOD) would work.  But unsetenv() doesn't work
-    // inside bash (why!?).  Also, copying the environ is safer than
-    // modifying it in place if environ happens to be read-only.
-    //
-    char **newenv;
-    int n, k;
-    for (n = 0; environ[n] != NULL; n++) {
-    }
-    newenv = mmap_anon((n + 2) * sizeof(char *));
-    if (newenv == MAP_FAILED) {
-      err(1, "hpcrun system server: mmap failed");
-    }
-    n = 0;
-    for (k = 0; environ[k] != NULL; k++) {
-      if (strstr(environ[k], "LD_PRELOAD") == NULL) {
-	newenv[n] = environ[k];
-	n++;
-      }
-    }
-    newenv[n] = NULL;
-
-    char fdin_str[20], fdout_str[20];
+    // make the command line and exec
+    char *arglist[8];
+    char fdin_str[10], fdout_str[10];
     sprintf(fdin_str,  "%d", sendfd[0]);
     sprintf(fdout_str, "%d", recvfd[1]);
 
-    execle(server, server, "-s", fdin_str, fdout_str, NULL, newenv);
+    arglist[0] = server;
+    arglist[1] = "-s";
+    arglist[2] = fdin_str;
+    arglist[3] = fdout_str;
+    arglist[4] = NULL;
+
+    monitor_real_execve(server, arglist, environ);
     err(1, "hpcrun system server: exec(%s) failed", server);
   }
 
@@ -417,6 +410,8 @@ launch_server(void)
   my_pid = getpid();
   child_pid = pid;
   client_status = SYSERV_ACTIVE;
+  num_queries = 0;
+  mem_warning = 0;
 
   TMSG(SYSTEM_SERVER, "syserv launch: success, server: %d", (int) child_pid);
 
@@ -440,6 +435,14 @@ hpcrun_syserv_init(void)
     EMSG("SYSTEM_SERVER ERROR: unable to get HPCRUN_FNBOUNDS_CMD");
     return -1;
   }
+
+  // limit on server memory usage in Meg
+  char *str = getenv("HPCRUN_SERVER_MEMSIZE");
+  long size;
+  if (str == NULL || sscanf(str, "%ld", &size) < 1) {
+    size = SERVER_MEM_LIMIT;
+  }
+  mem_limit = size * 1024;
 
   if (monitor_sigaction(SIGPIPE, &hpcrun_sigpipe_handler, 0, NULL) != 0) {
     EMSG("SYSTEM_SERVER ERROR: unable to install handler for SIGPIPE");
@@ -561,8 +564,21 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
   TMSG(SYSTEM_SERVER, "addr: %p, symbols: %ld, offset: 0x%lx, reloc: %d",
        addr, (long) fh->num_entries, (long) fh->reference_offset,
        (int) fh->is_relocatable);
-  TMSG(SYSTEM_SERVER, "rusage memsize: before: %ld Meg, after: %ld Meg",
-       fh->old_memsize / 1024, fh->new_memsize / 1024);
+  TMSG(SYSTEM_SERVER, "server memsize: %ld Meg", fh->memsize / 1024);
+
+  // Restart the server if it's done a minimum number of queries and
+  // has exceeded its memory limit.  Issue a warning at 60%.
+  num_queries++;
+  if (!mem_warning && fh->memsize > (6 * mem_limit)/10) {
+    EMSG("SYSTEM_SERVER: warning: memory usage: %ld Meg",
+	 fh->memsize / 1024);
+    mem_warning = 1;
+  }
+  if (num_queries >= MIN_NUM_QUERIES && fh->memsize > mem_limit) {
+    EMSG("SYSTEM_SERVER: warning: memory usage: %ld Meg, restart server",
+	 fh->memsize / 1024);
+    shutdown_server();
+  }
 
   return addr;
 }

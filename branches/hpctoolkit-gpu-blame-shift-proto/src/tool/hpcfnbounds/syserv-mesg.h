@@ -87,8 +87,7 @@ struct fnbounds_file_header {
   uint64_t  reference_offset;
   int32_t   is_relocatable;
   int32_t   status;
-  long      old_memsize;
-  long      new_memsize;
+  long      memsize;
 };
 
 #endif  // _SYSERV_MESG_H_
