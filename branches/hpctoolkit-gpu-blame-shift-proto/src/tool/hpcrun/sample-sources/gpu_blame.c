@@ -179,6 +179,9 @@ uint32_t g_cuda_launch_skip_inner = 0;
 
 // ******* METHOD DEFINITIONS ***********
 
+void hpcrun_set_gpu_proxy_present() {
+    g_cpu_gpu_proxy_count ++;
+}
 
 void CloseAllStreams(stream_to_id_map_t *root) {
     

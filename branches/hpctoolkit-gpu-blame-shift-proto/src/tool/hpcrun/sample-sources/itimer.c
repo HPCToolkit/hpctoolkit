@@ -317,7 +317,7 @@ METHOD_FN(init)
 {
   TMSG(ITIMER_CTL, "init");
 #ifdef ENABLE_CUDA    
-    g_cpu_gpu_proxy_count ++;
+  hpcrun_set_gpu_proxy_present();
 #endif
   self->state = INIT;
 }

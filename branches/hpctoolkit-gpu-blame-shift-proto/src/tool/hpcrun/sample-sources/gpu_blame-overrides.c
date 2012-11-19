@@ -117,37 +117,37 @@
 // MACROS for error checking CUDA/CUPTI APIs
 
 #define CHECK_CU_ERROR(err, cufunc)                                     \
-if (err != CUDA_SUCCESS)                                              \
-{                                                                   \
-printf ("%s:%d: error %d for CUDA Driver API function '%s'\n",    \
-__FILE__, __LINE__, err, cufunc);                         \
-monitor_real_abort();                                                         \
+if (err != CUDA_SUCCESS)                                                \
+{                                                                       \
+printf ("%s:%d: error %d for CUDA Driver API function '%s'\n",          \
+__FILE__, __LINE__, err, cufunc);                                       \
+monitor_real_abort();                                                   \
 }
 
 #define CHECK_CUPTI_ERROR(err, cuptifunc)                               \
-if (err != CUPTI_SUCCESS)                                             \
-{                                                                   \
-const char *errstr;                                               \
-cuptiGetResultString(err, &errstr);                               \
-printf ("%s:%d:Error %s for CUPTI API function '%s'.\n",          \
-__FILE__, __LINE__, errstr, cuptifunc);                   \
-monitor_real_abort();                                                         \
+if (err != CUPTI_SUCCESS)                                               \
+{                                                                       \
+const char *errstr;                                                     \
+cuptiGetResultString(err, &errstr);                                     \
+printf ("%s:%d:Error %s for CUPTI API function '%s'.\n",                \
+__FILE__, __LINE__, errstr, cuptifunc);                                 \
+monitor_real_abort();                                                   \
 }
 
-#define CU_SAFE_CALL( call ) do {                                         \
-CUresult err = call;                                                     \
-if( CUDA_SUCCESS != err) {                                               \
+#define CU_SAFE_CALL( call ) do {                                            \
+CUresult err = call;                                                         \
+if( CUDA_SUCCESS != err) {                                                   \
 fprintf(stderr, "Cuda driver error %d in call at file '%s' in line %i.\n",   \
-err, __FILE__, __LINE__ );                                   \
-monitor_real_abort();                                                         \
+err, __FILE__, __LINE__ );                                                   \
+monitor_real_abort();                                                        \
 } } while (0)
 
-#define CUDA_SAFE_CALL( call) do {                                        \
-cudaError_t err = call;                                                    \
+#define CUDA_SAFE_CALL( call) do {                                       \
+cudaError_t err = call;                                                  \
 if( cudaSuccess != err) {                                                \
-fprintf(stderr, "Cuda error in call at file '%s' in line %i : %s.\n", \
-__FILE__, __LINE__, cudaGetErrorString( err) );              \
-monitor_real_abort();                                                         \
+fprintf(stderr, "Cuda error in call at file '%s' in line %i : %s.\n",    \
+__FILE__, __LINE__, cudaGetErrorString( err) );                          \
+monitor_real_abort();                                                    \
 } } while (0)
 
 #define GET_STREAM_ID(x) ((x) - g_stream_array)
@@ -175,51 +175,51 @@ spinlock_lock(&g_gpu_lock);} while(0)
 #define HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK  do{spinlock_unlock(&g_gpu_lock); \
 hpcrun_safe_exit();} while(0)
 
-#define SYNC_PROLOGUE(ctxt, launch_node, start_time, rec_node) \
-TD_GET(overload_state) = SYNC_STATE;                      \
-hpcrun_safe_enter_async(NULL);      \
-ucontext_t ctxt;           \
-getcontext(&ctxt);         \
+#define SYNC_PROLOGUE(ctxt, launch_node, start_time, rec_node)                                                                   \
+TD_GET(overload_state) = SYNC_STATE;                                                                                             \
+hpcrun_safe_enter_async(NULL);                                                                                                   \
+ucontext_t ctxt;                                                                                                                 \
+getcontext(&ctxt);                                                                                                               \
 cct_node_t * launch_node = hpcrun_sample_callpath(&ctxt, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ ).sample_node; \
-TD_GET(is_thread_at_cuda_sync) = true;                      \
-spinlock_lock(&g_gpu_lock);                                 \
-uint64_t start_time;                                        \
-event_list_node_t  *  rec_node = EnterCudaSync(& start_time); \
-spinlock_unlock(&g_gpu_lock);                               \
+TD_GET(is_thread_at_cuda_sync) = true;                                                                                           \
+spinlock_lock(&g_gpu_lock);                                                                                                      \
+uint64_t start_time;                                                                                                             \
+event_list_node_t  *  rec_node = EnterCudaSync(& start_time);                                                                    \
+spinlock_unlock(&g_gpu_lock);                                                                                                    \
 hpcrun_safe_exit();
 
-#define SYNC_EPILOGUE(ctxt, launch_node, start_time, rec_node, mask, end_time)      \
-hpcrun_safe_enter_async(NULL);\
-spinlock_lock(&g_gpu_lock);\
-uint64_t last_kernel_end_time = LeaveCudaSync(rec_node,start_time,mask);\
-spinlock_unlock(&g_gpu_lock);\
-struct timeval tv;\
-gettimeofday(&tv, NULL);\
-uint64_t end_time  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000)); \
-if ( last_kernel_end_time > end_time) {last_kernel_end_time = end_time;}\
-uint64_t cpu_idle_time = last_kernel_end_time == 0 ? 0: last_kernel_end_time  - start_time;\
-uint64_t gpu_idle_time = last_kernel_end_time == 0 ? end_time - start_time : end_time - last_kernel_end_time;\
-cct_metric_data_increment(cpu_idle_metric_id, launch_node, (cct_metric_data_t) {.i = (cpu_idle_time)});\
-cct_metric_data_increment(gpu_idle_metric_id, launch_node, (cct_metric_data_t) {.i = (gpu_idle_time)});\
-hpcrun_safe_exit();\
+#define SYNC_EPILOGUE(ctxt, launch_node, start_time, rec_node, mask, end_time)                                \
+hpcrun_safe_enter_async(NULL);                                                                                \
+spinlock_lock(&g_gpu_lock);                                                                                   \
+uint64_t last_kernel_end_time = LeaveCudaSync(rec_node,start_time,mask);                                      \
+spinlock_unlock(&g_gpu_lock);                                                                                 \
+struct timeval tv;                                                                                            \
+gettimeofday(&tv, NULL);                                                                                      \
+uint64_t end_time  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000));                              \
+if ( last_kernel_end_time > end_time) {last_kernel_end_time = end_time;}                                      \
+uint64_t cpu_idle_time = last_kernel_end_time == 0 ? 0: last_kernel_end_time  - start_time;                   \
+uint64_t gpu_idle_time = last_kernel_end_time == 0 ? end_time - start_time : end_time - last_kernel_end_time; \
+cct_metric_data_increment(cpu_idle_metric_id, launch_node, (cct_metric_data_t) {.i = (cpu_idle_time)});       \
+cct_metric_data_increment(gpu_idle_metric_id, launch_node, (cct_metric_data_t) {.i = (gpu_idle_time)});       \
+hpcrun_safe_exit();                                                                                           \
 TD_GET(is_thread_at_cuda_sync) = false
 
-#define GET_NEW_TREE_NODE(node_ptr) do {						\
-if (g_free_tree_nodes_head) {							\
+#define GET_NEW_TREE_NODE(node_ptr) do {				\
+if (g_free_tree_nodes_head) {						\
 node_ptr = g_free_tree_nodes_head;					\
 g_free_tree_nodes_head = g_free_tree_nodes_head->next_free_node;	\
-} else {									\
+} else {								\
 node_ptr = (tree_node *) hpcrun_malloc(sizeof(tree_node));		\
-}										\
+}									\
 } while(0)
 
-#define GET_NEW_ACTIVE_KERNEL_NODE(node_ptr) do {							\
-if (g_free_active_kernel_nodes_head) {								\
+#define GET_NEW_ACTIVE_KERNEL_NODE(node_ptr) do {					\
+if (g_free_active_kernel_nodes_head) {							\
 node_ptr = g_free_active_kernel_nodes_head;						\
 g_free_active_kernel_nodes_head = g_free_active_kernel_nodes_head->next_free_node;	\
-} else {											\
-node_ptr = (active_kernel_node_t *) hpcrun_malloc(sizeof(active_kernel_node_t));		\
-}												\
+} else {										\
+node_ptr = (active_kernel_node_t *) hpcrun_malloc(sizeof(active_kernel_node_t));	\
+}											\
 } while(0)
 
 
@@ -1328,7 +1328,7 @@ TD_GET(overload_state) = WORKING_STATE;
 
 
 
-cudaError_t cudaMemcpyToArrayAsync	(	struct cudaArray * 	dst, size_t 	wOffset, size_t 	hOffset, const void * 	src, size_t 	count, enum cudaMemcpyKind 	kind, cudaStream_t 	stream ){	
+cudaError_t cudaMemcpyToArrayAsync(struct cudaArray * dst, size_t wOffset, size_t hOffset, const void * src, size_t count, enum cudaMemcpyKind 	kind, cudaStream_t stream ){	
     CreateStream0IfNot(stream);
 
     uint32_t streamId = 0;
@@ -1372,7 +1372,7 @@ cudaError_t cudaMemcpyToArrayAsync	(	struct cudaArray * 	dst, size_t 	wOffset, s
 
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_TO_ARRAY_ASYNC].cudaMemcpyToArrayAsyncReal(dst, wOffset, hOffset, src, count, kind, stream);
 
-TD_GET(overload_state) = WORKING_STATE;                      
+    TD_GET(overload_state) = WORKING_STATE;                      
 
     fprintf(stderr, "\n end  on stream = %p ", stream);
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end, stream));
@@ -1452,7 +1452,6 @@ cudaError_t cudaMemcpy(void *dst, const void *src, size_t count, enum cudaMemcpy
     cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {
                               .i = (syncEnd - syncStart)});
     //idt += syncEnd - syncStart;
-    //printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
 
     // Increment bytes transferred metric
     increment_mem_xfer_metric(count, kind, launcher_cct);
@@ -1486,7 +1485,6 @@ cudaError_t cudaMemcpyToArray	(	struct cudaArray * 	dst, size_t 	wOffset, size_t
     cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {
                               .i = (syncEnd - syncStart)});
     //idt += syncEnd - syncStart;
-    //printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
 
     // Increment bytes transferred metric
     increment_mem_xfer_metric(count, kind, launcher_cct);
