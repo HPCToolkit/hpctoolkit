@@ -171,7 +171,7 @@ extern struct stream_to_id_map_t *stream_to_id_tree_root;
 
 
 // Visible function declarations
-extern void gpu_blame_shift_itimer_signal_handler(cct_node_t * node, uint64_t cur_time_us, uint64_t metric_incr);
+extern void gpu_blame_shifter(int metric_id, cct_node_t * node, int  metric_incr);
 extern void CloseAllStreams(struct stream_to_id_map_t *root); 
 extern uint32_t cleanup_finished_events();
 extern void hpcrun_stream_finalize(core_profile_trace_data_t *cptd);

@@ -10,11 +10,11 @@ blame_shift_register(bs_fn_entry_t *entry)
 }
 
 void 
-blame_shift_apply(cct_node_t *node, int metric_value)
+blame_shift_apply(int metric_id, cct_node_t *node, int metric_incr)
 {
    bs_fn_entry_t *fn = bs_fns;
    while(fn != 0) {
-	fn->fn(node, metric_value);
+	fn->fn(metric_id, node, metric_incr);
 	fn = fn->next;
    }
 }

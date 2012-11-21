@@ -104,39 +104,7 @@
 // Calling context tree node (abstract data type)
 //***************************************************************************
 
-
-struct cct_node_t {
-
-  // ---------------------------------------------------------
-  // a persistent node id is assigned for each node. this id
-  // is used both to reassemble a tree when reading it from 
-  // a file as well as to identify call paths. a call path
-  // can simply be represented by the node id of the deepest
-  // node in the path.
-  // ---------------------------------------------------------
-  int32_t persistent_id;
-  
- // bundle abstract address components into a data type
-
-  cct_addr_t addr;
-
-  bool is_leaf;
-
-  
-  // ---------------------------------------------------------
-  // tree structure
-  // ---------------------------------------------------------
-
-  // parent node and the beginning of the child list
-  struct cct_node_t* parent;
-  struct cct_node_t* children;
-
-  // left and right pointers for splay tree of siblings
-  struct cct_node_t* left;
-  struct cct_node_t* right;
-};
 typedef struct cct_node_t cct_node_t;
-
 //
 // In order to associate data with a given calling context,
 // cct nodes need an id type (abstract)
@@ -199,6 +167,8 @@ extern void hpcrun_cct_terminate_path(cct_node_t* node);
 //
 //
 extern cct_node_t* hpcrun_cct_insert_node(cct_node_t* target, cct_node_t* src);
+
+extern void hpcrun_cct_insert_path(cct_node_t ** root, cct_node_t* path);
 
 // special mutator to support tracing
 extern void hpcrun_cct_persistent_id_trace_mutate(cct_node_t* x);

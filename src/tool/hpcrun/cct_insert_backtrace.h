@@ -96,7 +96,4 @@ extern cct_node_t* hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 extern cct_node_t* hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
                                             int metricId, uint64_t metricIncr,
                                             int skipInner);
-
-extern cct_node_t* cct_insert_raw_backtrace(cct_node_t* cct,
-                            frame_t* path_beg, frame_t* path_end);
 #endif // CCT_INSERT_BACKTRACE_H

@@ -69,15 +69,21 @@
 
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcio-buffer.h>
-#ifdef ENABLE_CUDA
-#include <cuda.h>
-#endif
 
 typedef struct {
   sigjmp_buf jb;
 } sigjmp_buf_t;
 
-
+typedef struct gpu_data_t {
+  // True if this thread is at CuXXXXSynchronize.
+  bool is_thread_at_cuda_sync;
+  // maintains state to account for overload potential  
+  uint8_t overload_state;
+  // current active stream
+  uint64_t active_stream;
+  // last examined event
+  void * event_node;
+} gpu_data_t;
 /* ******
    TODO:
 
@@ -221,12 +227,7 @@ typedef struct thread_data_t {
   bool inside_dlfcn;
 
 #ifdef ENABLE_CUDA
-  // True if this thread is at CuXXXXSynchronize.
-  bool is_thread_at_cuda_sync;
-  // maintains state to account for overload potential	
-  uint8_t overload_state;
-  uint64_t active_stream;
-  void * event_node;
+  gpu_data_t gpu_data;
 #endif
 
 } thread_data_t;

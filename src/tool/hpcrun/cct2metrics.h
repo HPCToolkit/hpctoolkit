@@ -14,16 +14,6 @@
 // ******** Typedef ********
 //
 //
-struct cct2metrics_t {
-  cct_node_id_t node;
-  metric_set_t* metrics;
-  //
-  // left and right pointers for splay tree of siblings
-  //
-  struct cct2metrics_t* right;
-  struct cct2metrics_t* left;
-};
-
 typedef struct cct2metrics_t cct2metrics_t;
 //
 // ******** initialization
@@ -61,9 +51,7 @@ extern bool hpcrun_has_metric_set(cct_node_id_t cct_id);
 
 extern void cct2metrics_assoc(cct_node_t* node, metric_set_t* metrics);
 
-extern cct2metrics_t* cct2metrics_new(cct_node_id_t node, metric_set_t* metrics);
-
-cct2metrics_t* stream_cct_metrics_splay(cct2metrics_t* map, cct_node_id_t node);
+//extern cct2metrics_t* cct2metrics_new(cct_node_id_t node, metric_set_t* metrics);
 
 static inline void
 cct_metric_data_increment(int metric_id,

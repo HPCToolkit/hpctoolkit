@@ -382,7 +382,7 @@ METHOD_FN(process_event_list, int lush_metrics)
       //
         hpcrun_set_metric_info_and_period(metric_id, NAME_FOR_EVENT_METRIC(event, i),
                                           HPCRUN_MetricFlag_Async, // This is the correct flag value for almost all events
-                                          thresh);
+                                          thresh, metric_property_none);
       }
       else { // NON STANDARD METRIC
         // For a metric that updates in a NON standard fashion, use
