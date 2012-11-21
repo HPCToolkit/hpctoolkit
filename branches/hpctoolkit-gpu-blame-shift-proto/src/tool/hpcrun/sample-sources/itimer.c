@@ -492,7 +492,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   TMSG(ITIMER_CTL, "setting metric timer period = %ld", sample_period);
   hpcrun_set_metric_info_and_period(metric_id, the_metric_name,
 				    MetricFlags_ValFmt_Int,
-				    sample_period);
+				    sample_period, metric_property_time);
   if (lush_metrics == 1) {
     int mid_idleness = hpcrun_new_metric();
     lush_agents->metric_time = metric_id;
@@ -500,7 +500,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     hpcrun_set_metric_info_and_period(mid_idleness, IDLE_METRIC_NAME,
 				      MetricFlags_ValFmt_Real,
-				      sample_period);
+				      sample_period, metric_property_time);
   }
 
   event = next_tok();
@@ -565,6 +565,7 @@ METHOD_FN(display_events)
 static int
 itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
+  static bool metrics_finalized = false;
   sample_source_t *self = &_itimer_obj;
 
   // If the interrupt came from inside our code, then drop the sample
@@ -579,11 +580,19 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     return 0;
   }
 
+  // Ensure metrics are finalized.
+  if (!metrics_finalized) {
+    hpcrun_finalize_metrics();
+    metrics_finalized = true;
+  }
+
   TMSG(ITIMER_HANDLER,"Itimer sample event");
+
+
 
   uint64_t metric_incr = 1; // default: one time unit
 
-#ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
+#if defined (USE_ELAPSED_TIME_FOR_WALLCLOCK) 
   uint64_t cur_time_us = 0;
   int ret = time_getTimeReal(&cur_time_us);
   if (ret != 0) {
@@ -596,12 +605,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
   sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_incr,
 					    0/*skipInner*/, 0/*isSync*/);
-  blame_shift_apply(sv.sample_node, metric_incr * sample_period);
-#ifdef ENABLE_CUDA
-        if(g_cpu_gpu_enabled && hpcrun_metrics_finalized() ) {
-            gpu_blame_shift_itimer_signal_handler(sv.sample_node, cur_time_us, metric_incr);
-        }
-#endif //ENABLE_CUDA 
+  blame_shift_apply(metric_id, sv.sample_node, metric_incr);
 
   if (hpcrun_is_sampling_disabled()) {
     TMSG(ITIMER_HANDLER, "No itimer restart, due to disabled sampling");

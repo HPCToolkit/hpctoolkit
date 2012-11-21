@@ -1,9 +1,12 @@
 #ifndef CORE_PROFILE_TRACE_DATA_H
 #define CORE_PROFILE_TRACE_DATA_H
 
+#include <stdint.h>
+#include <stdio.h>
+#include <lib/prof-lean/hpcio-buffer.h>
+
 #include "epoch.h"
 #include "cct2metrics.h"
-
 
 typedef struct core_profile_trace_data_t {
   int id;

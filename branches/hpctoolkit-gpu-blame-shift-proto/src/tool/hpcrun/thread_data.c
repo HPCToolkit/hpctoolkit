@@ -228,6 +228,15 @@ static inline void core_profile_trace_data_init(core_profile_trace_data_t * cptd
     
 }
 
+
+#ifdef ENABLE_CUDA
+static inline void gpu_data_init(gpu_data_t * gpu_data)
+{
+  gpu_data->is_thread_at_cuda_sync = false;
+  gpu_data->overload_state = 0;
+}
+#endif
+
 void
 hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
 {
@@ -315,8 +324,7 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   // ----------------------------------------
   td->inside_dlfcn = false;
 #ifdef ENABLE_CUDA
-  td->is_thread_at_cuda_sync = false;
-  td->overload_state = 0;
+  gpu_data_init(&(td->gpu_data));
 #endif
 }
 

@@ -155,11 +155,6 @@ hpcrun_drop_sample(void)
   (*hpcrun_get_real_siglongjmp())(it->jb, 9);
 }
 
-// #define DEBUG_IDLE_NODE 1
-
-#ifdef DEBUG_IDLE_NODE
-static bool local_idle = false;
-#endif // DEBUG_IDLE_NODE
 
 sample_val_t
 hpcrun_sample_callpath(void *context, int metricId,

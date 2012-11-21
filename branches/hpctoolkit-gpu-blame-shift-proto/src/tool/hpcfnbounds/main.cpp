@@ -423,7 +423,7 @@ static void
 note_code_ranges(Symtab *syms, DiscoverFnTy fn_discovery)
 {
   //TODO: instead of just considering specific segments below
-  //      we shoud consider all segments marked executable.
+  //      perhaps we should consider all segments marked executable.
   //      binaries could include "bonus" segments we don't
   //      know about explicitly as having code within.
   note_section(syms, SECTION_INIT, fn_discovery);

@@ -90,7 +90,36 @@
 
 //***************************** concrete data structure definition **********
 
+struct cct_node_t {
 
+  // ---------------------------------------------------------
+  // a persistent node id is assigned for each node. this id
+  // is used both to reassemble a tree when reading it from 
+  // a file as well as to identify call paths. a call path
+  // can simply be represented by the node id of the deepest
+  // node in the path.
+  // ---------------------------------------------------------
+  int32_t persistent_id;
+  
+ // bundle abstract address components into a data type
+
+  cct_addr_t addr;
+
+  bool is_leaf;
+
+  
+  // ---------------------------------------------------------
+  // tree structure
+  // ---------------------------------------------------------
+
+  // parent node and the beginning of the child list
+  struct cct_node_t* parent;
+  struct cct_node_t* children;
+
+  // left and right pointers for splay tree of siblings
+  struct cct_node_t* left;
+  struct cct_node_t* right;
+};
 
 //
 // cache of info from most recent splay
@@ -515,6 +544,33 @@ hpcrun_walk_path(cct_node_t* node, cct_op_t op, cct_op_arg_t arg)
 {
   walk_path_l(node, op, arg, 0);
 }
+
+
+//
+// helper for inserting creation contexts
+//
+static void
+l_insert_path(cct_node_t* node, cct_op_arg_t arg, size_t level)
+{
+  // convenient constant cct_addr_t's
+  static cct_addr_t root = ADDR_I(CCT_ROOT);
+
+  cct_addr_t* addr = hpcrun_cct_addr(node);
+  if (cct_addr_eq(addr, &root)) return;
+
+  cct_node_t** tree = (cct_node_t**) arg;
+  *tree = hpcrun_cct_insert_addr(*tree, addr);
+}
+
+
+// Inserts cct path pointed by 'path' into a cct rooted at 'root'
+
+void
+hpcrun_cct_insert_path(cct_node_t ** root, cct_node_t* path)
+{
+  hpcrun_walk_path(path, l_insert_path, (cct_op_arg_t) root);
+}
+
 
 //
 // Writing operation

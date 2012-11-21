@@ -17,6 +17,16 @@
 //
 // ***** The splay tree node *****
 //
+struct cct2metrics_t {
+  cct_node_id_t node;
+  metric_set_t* metrics;
+  //
+  // left and right pointers for splay tree of siblings
+  //
+  struct cct2metrics_t* right;
+  struct cct2metrics_t* left;
+};
+
 
 
 //
@@ -73,16 +83,6 @@ splay_tree_dump(cct2metrics_t* map)
 }
 
 
-cct2metrics_t*
-stream_cct_metrics_splay(cct2metrics_t* map, cct_node_id_t node)
-{
-  TMSG(CCT2METRICS, "splay map = %p, node = %p", map, node);
-  REGULAR_SPLAY_TREE(cct2metrics_t, map, node, node, left, right);
-  TMSG(CCT2METRICS, "new map = %p, top node = %p", map, map->node);
-  return map;
-}
-
-
 static cct2metrics_t*
 splay(cct2metrics_t* map, cct_node_id_t node)
 {
@@ -92,7 +92,7 @@ splay(cct2metrics_t* map, cct_node_id_t node)
   return map;
 }
 
-cct2metrics_t*
+static cct2metrics_t*
 cct2metrics_new(cct_node_id_t node, metric_set_t* metrics)
 {
   cct2metrics_t* rv = hpcrun_malloc(sizeof(cct2metrics_t));

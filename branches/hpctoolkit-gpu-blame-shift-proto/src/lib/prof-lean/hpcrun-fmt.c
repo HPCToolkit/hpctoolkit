@@ -251,6 +251,7 @@ const metric_desc_t metricDesc_NULL = {
   .flags.bits_big[0] = 0,
   .flags.bits_big[1] = 0,
   .period        = 0,
+  .properties = {.time = 0,.cycles = 0},
   .formula       = NULL,
   .format        = NULL,
 };
@@ -364,6 +365,10 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs,
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->period), fs));
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->formula), fs, alloc));
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->format), fs, alloc));
+
+  // These two aren't written into the hpcrun file; hence manually set them.
+  x->properties.time = 0;
+  x->properties.cycles = 0;
 
   return HPCFMT_OK;
 }

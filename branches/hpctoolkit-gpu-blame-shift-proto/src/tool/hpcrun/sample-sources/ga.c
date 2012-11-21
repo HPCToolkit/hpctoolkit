@@ -194,7 +194,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   // exposed latency
   hpcrun_ga_metricId_latency = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(hpcrun_ga_metricId_latency, "latency (us)",
-				    MetricFlags_ValFmt_Real, 1);
+				    MetricFlags_ValFmt_Real, 1, metric_property_none);
 
   // exposed excess latency
   //hpcrun_ga_metricId_latencyExcess = hpcrun_new_metric();

@@ -52,28 +52,10 @@
 #include <messages/messages.h>
 #include <hpcrun/hpcrun_return_codes.h>
 
-//
-// convenient constant cct_addr_t's
-//
-
-static cct_addr_t root = ADDR_I(CCT_ROOT);
 
 //
 // Private Operations
 //
-
-//
-// helper for inserting creation contexts
-//
-void
-l_insert_path(cct_node_t* node, cct_op_arg_t arg, size_t level)
-{
-  cct_addr_t* addr = hpcrun_cct_addr(node);
-  if (cct_addr_eq(addr, &root)) return;
-
-  cct_node_t** tree = (cct_node_t**) arg;
-  *tree = hpcrun_cct_insert_addr(*tree, addr);
-}
 
 //
 // "Special" routine to serve as a placeholder for "idle" resource
@@ -84,9 +66,12 @@ GPU_IDLE(void)
 {
 }
 
+
+
 //
 // Interface procedures
 //
+
 
 void
 hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
@@ -110,7 +95,7 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   // all thread-stopped call paths to thread root.
   // 
   if (ENABLED(ATTACH_THREAD_CTXT) && ctxt) {
-    hpcrun_walk_path(ctxt->context, l_insert_path, (cct_op_arg_t) &(bundle->thread_root));
+    hpcrun_cct_insert_path(&(bundle->thread_root), ctxt->context);
   }
   bundle->partial_unw_root = hpcrun_cct_new_partial();
   bundle->special_idle_node = hpcrun_cct_new_special(GPU_IDLE);

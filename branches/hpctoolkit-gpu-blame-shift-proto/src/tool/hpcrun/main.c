@@ -1214,7 +1214,9 @@ monitor_pre_dlopen(const char *path, int flags)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_safe_enter();
+  if (! hpcrun_safe_enter()) {
+    return;
+  }
   hpcrun_pre_dlopen(path, flags);
   hpcrun_safe_exit();
 }
@@ -1226,7 +1228,9 @@ monitor_dlopen(const char *path, int flags, void* handle)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_safe_enter();
+  if (! hpcrun_safe_enter()) {
+    return;
+  }
   hpcrun_dlopen(path, flags, handle);
   hpcrun_safe_exit();
 }

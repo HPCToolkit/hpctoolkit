@@ -245,7 +245,8 @@ def WriteDriverFunctionWrapper(file, funcSig):
         if sig[1] in driverSkipList: continue
 
         fp.write('\t' + sig[0] +  sig[1] + ' (' + sig[2] + ') {\n' )
-	fp.write('TD_GET(is_thread_at_cuda_sync) = true;\n')
+	fp.write('TD_GET(gpu_data.is_thread_at_cuda_sync) = true;\n')
+	fp.write('monitor_disable_new_threads();\n')
         #fp.write('printf("\\n%s on","' +sig[1] +'");fflush(stdout);')
 	fp.write('CUresult ret = cuDriverFunctionPointer[' +FuncNameToEnum(sig[1]) + '].' + sig[1] + 'Real(')
 
@@ -262,7 +263,8 @@ def WriteDriverFunctionWrapper(file, funcSig):
             
 
         fp.write( ');\n')
-	fp.write('TD_GET(is_thread_at_cuda_sync) = false;\n')
+	fp.write('monitor_enable_new_threads();\n')
+	fp.write('TD_GET(gpu_data.is_thread_at_cuda_sync) = false;\n')
         #fp.write('printf("\\n%s off","' +sig[1] +'");fflush(stdout);')
 	fp.write('return ret;\n')
         fp.write('}\n')
@@ -289,7 +291,8 @@ def WriteRuntimeFunctionWrapper(file, funcSig):
         if sig[1] in runtimeSkipList: continue
 
         fp.write('\t' + sig[0] +   sig[1] + ' (' + sig[2] + ') {\n' )
-        fp.write('TD_GET(is_thread_at_cuda_sync) = true;\n')
+        fp.write('TD_GET(gpu_data.is_thread_at_cuda_sync) = true;\n')
+	fp.write('monitor_disable_new_threads();\n')
         #fp.write('printf("\\n%s on","' +sig[1] +'");')
         fp.write('cudaError_t ret = cudaRuntimeFunctionPointer[' +FuncNameToEnum(sig[1]) + '].' + sig[1] + 'Real(') 
  
@@ -306,7 +309,8 @@ def WriteRuntimeFunctionWrapper(file, funcSig):
             
  
         fp.write( ');\n')
-        fp.write('TD_GET(is_thread_at_cuda_sync) = false;\n')
+	fp.write('monitor_enable_new_threads();\n')
+        fp.write('TD_GET(gpu_data.is_thread_at_cuda_sync) = false;\n')
         #fp.write('printf("\\n%s off","' +sig[1] +'");')
         fp.write('return ret;\n')
         fp.write('}\n')
