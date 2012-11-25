@@ -110,6 +110,8 @@ stream_to_id_map_t stream_to_id[MAX_STREAMS];
 int g_cpu_gpu_proxy_count = 0; 
 bool g_cpu_gpu_enabled = false;
 
+
+// Various CPU-GPU metrics
 int cpu_idle_metric_id;
 int gpu_activity_time_metric_id;
 int cpu_idle_cause_metric_id;
@@ -201,7 +203,7 @@ METHOD_FN(start)
 {
     TMSG(CPU_GPU_BLAME_CTL,"starting CPU_GPU_BLAME");
     if (!g_cpu_gpu_proxy_count) {
-        EMSG("Either pass -e WALLCLOKC or -e PAPI_TOT_CYC to enable CPU_GPU_BLAME");
+        EMSG("Either pass -e WALLCLOCK or -e REALTIME to enable CPU_GPU_BLAME");
         monitor_real_abort();
     }
     g_cpu_gpu_enabled = true;
