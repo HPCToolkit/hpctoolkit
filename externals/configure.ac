@@ -360,6 +360,7 @@ AC_MSG_CHECKING([install directory])
 
 if test "x$enable_subdirs" = xyes ; then
     binutils_local_prefix="${prefix}/binutils"
+    boost_local_prefix="${prefix}/boost"
     libdwarf_local_prefix="${prefix}/libdwarf"
     libelf_local_prefix="${prefix}/libelf"
     libmonitor_local_prefix="${prefix}/libmonitor"
@@ -373,6 +374,7 @@ if test "x$enable_subdirs" = xyes ; then
     enable_subdirs_mesg=separate
 else
     binutils_local_prefix="$prefix"
+    boost_local_prefix="$prefix"
     libdwarf_local_prefix="$prefix"
     libelf_local_prefix="$prefix"
     libmonitor_local_prefix="$prefix"
@@ -396,7 +398,7 @@ AC_MSG_RESULT([$enable_subdirs_mesg])
 # directories.  Just copy regular files and the patches subdir, don't
 # copy other subdirs.
 
-packages='binutils libdwarf libelf libmonitor libunwind libxml2
+packages='binutils boost libdwarf libelf libmonitor libunwind libxml2
 old-monitor open-analysis symtabAPI xed2 xerces'
 
 if test "x$srcdir" != x.
@@ -490,6 +492,49 @@ if test "x$binutils_avail" != xbuild && test "x$binutils_avail" != xno ; then
 fi
 
 AC_SUBST([binutils_prefix])
+
+#------------------------------------------------------------
+# Boost: --with-boost=PATH
+#------------------------------------------------------------
+
+AC_ARG_WITH([boost],
+    [AS_HELP_STRING([--with-boost=PATH],
+	[path to boost install directory (default build)])],
+    [],
+    [with_boost=build])
+
+AC_MSG_CHECKING([boost])
+
+boost_avail=no
+boost_prefix=no
+cookie="boost/${nobuild_cookie}"
+rm -f "$cookie"
+
+case "$with_boost" in
+    build | yes )
+	boost_avail=build
+	boost_prefix="$boost_local_prefix"
+	;;
+    /* )
+	if test -f "${with_boost}/include/boost/functional/hash.hpp" ; then
+	    boost_avail="$with_boost"
+	    boost_prefix="$with_boost"
+	else
+	    AC_MSG_ERROR([invalid boost directory: $with_boost])
+	fi
+	echo "installed in: $with_boost" > "$cookie"
+	;;
+    no )
+	echo "not available" > "$cookie"
+	;;
+    * )
+	AC_MSG_ERROR([boost directory must be absolute path: $with_boost])
+	;;
+esac
+
+AC_MSG_RESULT([$boost_avail])
+
+AC_SUBST([boost_prefix])
 
 #------------------------------------------------------------
 # Libdwarf: --with-libdwarf=PATH
@@ -1130,6 +1175,7 @@ AC_MSG_NOTICE([AR:  '$AR'])
 AC_MSG_NOTICE([wordsize: $wordsize bits])
 
 AC_MSG_NOTICE([binutils: $binutils_avail])
+AC_MSG_NOTICE([boost: $boost_avail])
 AC_MSG_NOTICE([libdwarf: $libdwarf_avail])
 AC_MSG_NOTICE([libelf: $libelf_avail])
 AC_MSG_NOTICE([libmonitor: $libmonitor_avail])

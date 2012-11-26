@@ -38,7 +38,7 @@ NAME = @PACKAGE_NAME@
 VERSION = @PACKAGE_VERSION@
 TARNAME = @PACKAGE_TARNAME@
 
-PACKAGES = binutils libdwarf libelf libmonitor libunwind libxml2  \
+PACKAGES = binutils boost libdwarf libelf libmonitor libunwind libxml2  \
 	old-monitor open-analysis symtabAPI xed2 xerces
 
 DIST_FILES = LICENSE Makefile.conf.in Makefile.in README*  \

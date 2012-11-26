@@ -1,0 +1,26 @@
+==================
+Boost Build Notes
+==================
+
+Home: http://www.boost.org/
+
+Download: http://www.boost.org/users/history/
+
+License: Boost Software License
+
+For now, we only install the boost header files, not build any
+libraries.
+
+The full boost package is quite large (50 Meg tar file, 450 Meg
+unpacked).  This boost-headers tar file is the original tar file minus
+the doc, libs, status and tools subdirectories.  SymtabAPI only uses
+boost header files, not any libraries.  So, this saves considerable
+time and space.
+
+This is version 1.51.0.  Beginning with version 1.52.0, boost changed
+the boost::result_of component to use the new C++11 decltype keyword.
+According to Boost, this is "a key piece of library infrastructure"
+and they "have found this change to be moderately disruptive."
+SymtabAPI is conservative in their use of boost (they use 1.42.0).
+So, we'll stay pre-1.52.0 until they advance.
+

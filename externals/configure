@@ -620,6 +620,7 @@ libelf_prefix
 libdwarf_lib
 libdwarf_inc
 libdwarf_prefix
+boost_prefix
 binutils_prefix
 wordsize
 EGREP
@@ -695,6 +696,7 @@ enable_wordsize
 enable_subdirs
 with_dummy_blank_line
 with_binutils
+with_boost
 with_libdwarf
 with_libelf
 with_libmonitor
@@ -1344,6 +1346,7 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
 
   --with-binutils=PATH    path to binutils install directory (default build)
+  --with-boost=PATH       path to boost install directory (default build)
   --with-libdwarf=PATH    path to libdwarf install directory (default build)
   --with-libelf=PATH      path to libelf install directory (default build)
   --with-libmonitor=PATH  path to libmonitor install directory (default build)
@@ -4189,6 +4192,7 @@ $as_echo_n "checking install directory... " >&6; }
 
 if test "x$enable_subdirs" = xyes ; then
     binutils_local_prefix="${prefix}/binutils"
+    boost_local_prefix="${prefix}/boost"
     libdwarf_local_prefix="${prefix}/libdwarf"
     libelf_local_prefix="${prefix}/libelf"
     libmonitor_local_prefix="${prefix}/libmonitor"
@@ -4202,6 +4206,7 @@ if test "x$enable_subdirs" = xyes ; then
     enable_subdirs_mesg=separate
 else
     binutils_local_prefix="$prefix"
+    boost_local_prefix="$prefix"
     libdwarf_local_prefix="$prefix"
     libelf_local_prefix="$prefix"
     libmonitor_local_prefix="$prefix"
@@ -4226,7 +4231,7 @@ $as_echo "$enable_subdirs_mesg" >&6; }
 # directories.  Just copy regular files and the patches subdir, don't
 # copy other subdirs.
 
-packages='binutils libdwarf libelf libmonitor libunwind libxml2
+packages='binutils boost libdwarf libelf libmonitor libunwind libxml2
 old-monitor open-analysis symtabAPI xed2 xerces'
 
 if test "x$srcdir" != x.
@@ -4331,6 +4336,54 @@ if test "x$binutils_avail" != xbuild && test "x$binutils_avail" != xno ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using non-patched binutils version" >&5
 $as_echo "$as_me: WARNING: using non-patched binutils version" >&2;}
 fi
+
+
+
+#------------------------------------------------------------
+# Boost: --with-boost=PATH
+#------------------------------------------------------------
+
+
+# Check whether --with-boost was given.
+if test "${with_boost+set}" = set; then :
+  withval=$with_boost;
+else
+  with_boost=build
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking boost" >&5
+$as_echo_n "checking boost... " >&6; }
+
+boost_avail=no
+boost_prefix=no
+cookie="boost/${nobuild_cookie}"
+rm -f "$cookie"
+
+case "$with_boost" in
+    build | yes )
+	boost_avail=build
+	boost_prefix="$boost_local_prefix"
+	;;
+    /* )
+	if test -f "${with_boost}/include/boost/functional/hash.hpp" ; then
+	    boost_avail="$with_boost"
+	    boost_prefix="$with_boost"
+	else
+	    as_fn_error $? "invalid boost directory: $with_boost" "$LINENO" 5
+	fi
+	echo "installed in: $with_boost" > "$cookie"
+	;;
+    no )
+	echo "not available" > "$cookie"
+	;;
+    * )
+	as_fn_error $? "boost directory must be absolute path: $with_boost" "$LINENO" 5
+	;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $boost_avail" >&5
+$as_echo "$boost_avail" >&6; }
 
 
 
@@ -6198,6 +6251,8 @@ $as_echo "$as_me: wordsize: $wordsize bits" >&6;}
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: binutils: $binutils_avail" >&5
 $as_echo "$as_me: binutils: $binutils_avail" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: boost: $boost_avail" >&5
+$as_echo "$as_me: boost: $boost_avail" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: libdwarf: $libdwarf_avail" >&5
 $as_echo "$as_me: libdwarf: $libdwarf_avail" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: libelf: $libelf_avail" >&5

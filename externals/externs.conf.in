@@ -1,5 +1,6 @@
 #
-#  Install prefixes for external prerequisites.
+#  This file exports externals's config to hpctoolkit.
+#  It is rewritten on configure.
 #
 
 ext_version='@svn_revision@'
@@ -9,6 +10,7 @@ ext_cxx_path='@CXX_PATH@'
 ext_wordsize='@wordsize@'
 
 ext_binutils_prefix='@binutils_prefix@'
+ext_boost_prefix='@boost_prefix@'
 ext_libdwarf_prefix='@libdwarf_prefix@'
 ext_libelf_prefix='@libelf_prefix@'
 ext_libmonitor_prefix='@libmonitor_prefix@'

@@ -21,6 +21,7 @@ is_cross_compile="@is_cross_compile@"
 wordsize="@wordsize@"
 
 binutils_prefix="@binutils_prefix@"
+boost_prefix="@boost_prefix@"
 libdwarf_prefix="@libdwarf_prefix@"
 libelf_prefix="@libelf_prefix@"
 libmonitor_prefix="@libmonitor_prefix@"

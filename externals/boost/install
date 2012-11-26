@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+#  Boost install
+#
+#  $Id$
+#
+
+PKG_NAME=boost
+src=boost_1_51_0
+
+. ../build-utils/configure.inc
+pre_install
+prefix="$boost_prefix"
+include="$prefix/include"
+
+mkdir -p "$include" || die "unable to mkdir: $include"
+
+echo "copying boost files (quietly) ..."
+cd "$src" || die "unable to cd: $src"
+tar cf - boost | ( cd "$include" && tar xf - )
+test $? -eq 0 || die "tar copy failed"
+
+post_install
