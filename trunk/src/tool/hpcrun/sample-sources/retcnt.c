@@ -48,6 +48,7 @@
 // RETCNT sample source simple oo interface
 //
 
+
 /******************************************************************************
  * system includes
  *****************************************************************************/
@@ -79,6 +80,8 @@
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/thread_data.h>
 #include <cct/cct.h>
+
+#if defined (HOST_CPU_x86_64)
 
 #include <messages/messages.h>
 
@@ -226,3 +229,12 @@ hpcrun_retcnt_inc(cct_node_t* node, int incr)
 			    node,
 			    (cct_metric_data_t){.i = incr});
 }
+
+#else
+
+void
+hpcrun_retcnt_inc(cct_node_t* node, int incr)
+{
+}
+
+#endif
