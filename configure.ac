@@ -1581,6 +1581,52 @@ AC_SUBST([XERCES_LIB])
 #----------------------------------------------------------------------------
 
 #-------------------------------------------------
+# with-java: option to build hpcjava
+#-------------------------------------------------
+AC_MSG_CHECKING([whether to build hpcrun for Java programs])
+OPT_WITH_JAVA=no
+OPT_CILK_ROOT=
+
+AC_ARG_WITH([java],
+  AS_HELP_STRING([--with-java=PATH],
+                 [use given Java SDK installation for jvmti agents]),
+  [if test $withval != no; then
+     OPT_WITH_JAVA=yes
+     OPT_JAVA_ROOT=${withval}
+   else
+     OPT_WITH_JAVA=no
+   fi],
+  [])
+
+OPT_JAVA_IFLAGS="-I${OPT_JAVA_ROOT}/include -I${OPT_JAVA_ROOT}/include/linux"
+OPT_ENABLE_JAVA=no
+if test "${OPT_WITH_JAVA}" != "no" ; then
+  AC_MSG_CHECKING([whether can compile jvmti code with CFLAGS='$OPT_JAVA_IFLAGS'])
+
+  AC_LANG_PUSH([C])
+  CFLAGS="$CFLAGS $OPT_JAVA_IFLAGS"
+  AC_COMPILE_IFELSE([#include <jvmti.h>],
+        [ans=yes],
+        [ans=no])
+
+  OPT_ENABLE_JAVA=$ans
+  AC_LANG_POP
+fi
+
+AC_MSG_RESULT([${OPT_ENABLE_JAVA} (request: ${OPT_WITH_JAVA})])
+
+
+if test "${OPT_WITH_JAVA}" = "yes" -a "${OPT_ENABLE_JAVA}" = no ; then
+  AC_MSG_ERROR([Java support requested but Java directory is invalid!])
+fi
+
+AM_CONDITIONAL(OPT_ENABLE_JAVA, test "${OPT_ENABLE_JAVA}" = "yes")
+
+AM_CONDITIONAL([OPT_WITH_JAVA], [test "$OPT_WITH_JAVA" = yes])
+AC_SUBST([OPT_JAVA_IFLAGS])
+AC_MSG_RESULT([${OPT_WITH_JAVA}])
+
+#-------------------------------------------------
 # enable-hpcrun-flat: Only build hpcrun if on Linux and PAPI is present
 #-------------------------------------------------
 
@@ -2257,6 +2303,7 @@ AC_CONFIG_FILES([ \
   src/Makefile \
   src/tool/Makefile \
   src/tool/hpcfnbounds/Makefile \
+  src/tool/hpcjava/Makefile \
   src/tool/hpclump/Makefile \
   src/tool/hpcprof/Makefile \
   src/tool/hpcprof-mpi/Makefile \
@@ -2323,6 +2370,7 @@ AC_MSG_NOTICE([  host:   $host])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
 AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])
+AC_MSG_NOTICE([  Java support?: ${OPT_ENABLE_JAVA}])
 AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
 AC_MSG_NOTICE([  mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])

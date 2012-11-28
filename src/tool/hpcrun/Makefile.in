@@ -276,32 +276,32 @@ libagent_tbb_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 libhpcrun_la_DEPENDENCIES = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	disabled.c cct_insert_backtrace.c env.c epoch.c files.c \
-	handling_sample.c hpcrun_options.c hpcrun_stats.c loadmap.c \
-	metrics.c name.c rank.c sample_event.c sample_prob.c \
-	sample_sources_all.c sample-sources/blame-shift.c \
-	sample-sources/common.c sample-sources/ga.c \
-	sample-sources/io.c sample-sources/itimer.c \
-	sample-sources/idle.c sample-sources/memleak.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c system_server.c term_handler.c \
-	thread_data.c thread_use.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	sample-sources/mpi.c fnbounds/fnbounds_client.c \
-	fnbounds/fnbounds_dynamic.c monitor-exts/openmp.c \
-	hpcrun_dlfns.c custom-init-dynamic.c os/linux/dylib.c \
-	unwind/common/default_validation_summary.c \
+	handling_sample.c hpcrun_java.c hpcrun_options.c \
+	hpcrun_stats.c loadmap.c metrics.c name.c rank.c \
+	sample_event.c sample_prob.c sample_sources_all.c \
+	sample-sources/blame-shift.c sample-sources/common.c \
+	sample-sources/ga.c sample-sources/io.c \
+	sample-sources/itimer.c sample-sources/idle.c \
+	sample-sources/memleak.c sample-sources/none.c \
+	sample-sources/retcnt.c sample-sources/sync.c \
+	sample_sources_registered.c segv_handler.c start-stop.c \
+	system_server.c term_handler.c thread_data.c thread_use.c \
+	trace.c weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c \
+	cct/cct.c cct2metrics.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c sample-sources/mpi.c \
+	fnbounds/fnbounds_client.c fnbounds/fnbounds_dynamic.c \
+	monitor-exts/openmp.c hpcrun_dlfns.c custom-init-dynamic.c \
+	os/linux/dylib.c unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
 	trampoline/x86-family/x86-tramp.S \
@@ -333,16 +333,16 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-disabled.lo libhpcrun_la-cct_insert_backtrace.lo \
 	libhpcrun_la-env.lo libhpcrun_la-epoch.lo \
 	libhpcrun_la-files.lo libhpcrun_la-handling_sample.lo \
-	libhpcrun_la-hpcrun_options.lo libhpcrun_la-hpcrun_stats.lo \
-	libhpcrun_la-loadmap.lo libhpcrun_la-metrics.lo \
-	libhpcrun_la-name.lo libhpcrun_la-rank.lo \
-	libhpcrun_la-sample_event.lo libhpcrun_la-sample_prob.lo \
-	libhpcrun_la-sample_sources_all.lo libhpcrun_la-blame-shift.lo \
-	libhpcrun_la-common.lo libhpcrun_la-ga.lo libhpcrun_la-io.lo \
-	libhpcrun_la-itimer.lo libhpcrun_la-idle.lo \
-	libhpcrun_la-memleak.lo libhpcrun_la-none.lo \
-	libhpcrun_la-retcnt.lo libhpcrun_la-sync.lo \
-	libhpcrun_la-sample_sources_registered.lo \
+	libhpcrun_la-hpcrun_java.lo libhpcrun_la-hpcrun_options.lo \
+	libhpcrun_la-hpcrun_stats.lo libhpcrun_la-loadmap.lo \
+	libhpcrun_la-metrics.lo libhpcrun_la-name.lo \
+	libhpcrun_la-rank.lo libhpcrun_la-sample_event.lo \
+	libhpcrun_la-sample_prob.lo libhpcrun_la-sample_sources_all.lo \
+	libhpcrun_la-blame-shift.lo libhpcrun_la-common.lo \
+	libhpcrun_la-ga.lo libhpcrun_la-io.lo libhpcrun_la-itimer.lo \
+	libhpcrun_la-idle.lo libhpcrun_la-memleak.lo \
+	libhpcrun_la-none.lo libhpcrun_la-retcnt.lo \
+	libhpcrun_la-sync.lo libhpcrun_la-sample_sources_registered.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-start-stop.lo \
 	libhpcrun_la-system_server.lo libhpcrun_la-term_handler.lo \
 	libhpcrun_la-thread_data.lo libhpcrun_la-thread_use.lo \
@@ -455,30 +455,30 @@ libhpctoolkit_la_OBJECTS = $(am_libhpctoolkit_la_OBJECTS)
 PROGRAMS = $(pkglib_PROGRAMS)
 am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	disabled.c cct_insert_backtrace.c env.c epoch.c files.c \
-	handling_sample.c hpcrun_options.c hpcrun_stats.c loadmap.c \
-	metrics.c name.c rank.c sample_event.c sample_prob.c \
-	sample_sources_all.c sample-sources/blame-shift.c \
-	sample-sources/common.c sample-sources/ga.c \
-	sample-sources/io.c sample-sources/itimer.c \
-	sample-sources/idle.c sample-sources/memleak.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c system_server.c term_handler.c \
-	thread_data.c thread_use.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	sample-sources/mpi.c fnbounds/fnbounds_static.c \
-	custom-init-static.c \
+	handling_sample.c hpcrun_java.c hpcrun_options.c \
+	hpcrun_stats.c loadmap.c metrics.c name.c rank.c \
+	sample_event.c sample_prob.c sample_sources_all.c \
+	sample-sources/blame-shift.c sample-sources/common.c \
+	sample-sources/ga.c sample-sources/io.c \
+	sample-sources/itimer.c sample-sources/idle.c \
+	sample-sources/memleak.c sample-sources/none.c \
+	sample-sources/retcnt.c sample-sources/sync.c \
+	sample_sources_registered.c segv_handler.c start-stop.c \
+	system_server.c term_handler.c thread_data.c thread_use.c \
+	trace.c weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c \
+	cct/cct.c cct2metrics.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c sample-sources/mpi.c \
+	fnbounds/fnbounds_static.c custom-init-static.c \
 	unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
@@ -513,6 +513,7 @@ am__objects_31 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-env.$(OBJEXT) libhpcrun_o-epoch.$(OBJEXT) \
 	libhpcrun_o-files.$(OBJEXT) \
 	libhpcrun_o-handling_sample.$(OBJEXT) \
+	libhpcrun_o-hpcrun_java.$(OBJEXT) \
 	libhpcrun_o-hpcrun_options.$(OBJEXT) \
 	libhpcrun_o-hpcrun_stats.$(OBJEXT) \
 	libhpcrun_o-loadmap.$(OBJEXT) libhpcrun_o-metrics.$(OBJEXT) \
@@ -773,6 +774,7 @@ OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
 OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
+OPT_JAVA_IFLAGS = @OPT_JAVA_IFLAGS@
 OPT_LIBUNWIND_IFLAGS = @OPT_LIBUNWIND_IFLAGS@
 OPT_LIBUNWIND_LDFLAGS = @OPT_LIBUNWIND_LDFLAGS@
 OPT_LIBUNWIND_LIBA = @OPT_LIBUNWIND_LIBA@
@@ -992,28 +994,29 @@ UNW_MIPS_INCLUDE_DIRS = \
 UNW_MIPS_LD_FLAGS = 
 MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	cct_insert_backtrace.c env.c epoch.c files.c handling_sample.c \
-	hpcrun_options.c hpcrun_stats.c loadmap.c metrics.c name.c \
-	rank.c sample_event.c sample_prob.c sample_sources_all.c \
-	sample-sources/blame-shift.c sample-sources/common.c \
-	sample-sources/ga.c sample-sources/io.c \
-	sample-sources/itimer.c sample-sources/idle.c \
-	sample-sources/memleak.c sample-sources/none.c \
-	sample-sources/retcnt.c sample-sources/sync.c \
-	sample_sources_registered.c segv_handler.c start-stop.c \
-	system_server.c term_handler.c thread_data.c thread_use.c \
-	trace.c weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c \
-	cct/cct.c cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c $(am__append_9)
+	hpcrun_java.c hpcrun_options.c hpcrun_stats.c loadmap.c \
+	metrics.c name.c rank.c sample_event.c sample_prob.c \
+	sample_sources_all.c sample-sources/blame-shift.c \
+	sample-sources/common.c sample-sources/ga.c \
+	sample-sources/io.c sample-sources/itimer.c \
+	sample-sources/idle.c sample-sources/memleak.c \
+	sample-sources/none.c sample-sources/retcnt.c \
+	sample-sources/sync.c sample_sources_registered.c \
+	segv_handler.c start-stop.c system_server.c term_handler.c \
+	thread_data.c thread_use.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/tokenize.h \
+	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	$(am__append_9)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -1569,6 +1572,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ga.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-handling_sample.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_dlfns.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_java.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_options.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_stats.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ia64-context-pc.Plo@am__quote@
@@ -1664,6 +1668,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-fnbounds_static.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ga.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-handling_sample.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun_java.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun_options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun_stats.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ia64-context-pc.Po@am__quote@
@@ -1980,6 +1985,13 @@ libhpcrun_la-handling_sample.lo: handling_sample.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='handling_sample.c' object='libhpcrun_la-handling_sample.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-handling_sample.lo `test -f 'handling_sample.c' || echo '$(srcdir)/'`handling_sample.c
+
+libhpcrun_la-hpcrun_java.lo: hpcrun_java.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-hpcrun_java.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-hpcrun_java.Tpo -c -o libhpcrun_la-hpcrun_java.lo `test -f 'hpcrun_java.c' || echo '$(srcdir)/'`hpcrun_java.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-hpcrun_java.Tpo $(DEPDIR)/libhpcrun_la-hpcrun_java.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcrun_java.c' object='libhpcrun_la-hpcrun_java.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-hpcrun_java.lo `test -f 'hpcrun_java.c' || echo '$(srcdir)/'`hpcrun_java.c
 
 libhpcrun_la-hpcrun_options.lo: hpcrun_options.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-hpcrun_options.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-hpcrun_options.Tpo -c -o libhpcrun_la-hpcrun_options.lo `test -f 'hpcrun_options.c' || echo '$(srcdir)/'`hpcrun_options.c
@@ -2729,6 +2741,20 @@ libhpcrun_o-handling_sample.obj: handling_sample.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='handling_sample.c' object='libhpcrun_o-handling_sample.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-handling_sample.obj `if test -f 'handling_sample.c'; then $(CYGPATH_W) 'handling_sample.c'; else $(CYGPATH_W) '$(srcdir)/handling_sample.c'; fi`
+
+libhpcrun_o-hpcrun_java.o: hpcrun_java.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-hpcrun_java.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-hpcrun_java.Tpo -c -o libhpcrun_o-hpcrun_java.o `test -f 'hpcrun_java.c' || echo '$(srcdir)/'`hpcrun_java.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-hpcrun_java.Tpo $(DEPDIR)/libhpcrun_o-hpcrun_java.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcrun_java.c' object='libhpcrun_o-hpcrun_java.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-hpcrun_java.o `test -f 'hpcrun_java.c' || echo '$(srcdir)/'`hpcrun_java.c
+
+libhpcrun_o-hpcrun_java.obj: hpcrun_java.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-hpcrun_java.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-hpcrun_java.Tpo -c -o libhpcrun_o-hpcrun_java.obj `if test -f 'hpcrun_java.c'; then $(CYGPATH_W) 'hpcrun_java.c'; else $(CYGPATH_W) '$(srcdir)/hpcrun_java.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-hpcrun_java.Tpo $(DEPDIR)/libhpcrun_o-hpcrun_java.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcrun_java.c' object='libhpcrun_o-hpcrun_java.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-hpcrun_java.obj `if test -f 'hpcrun_java.c'; then $(CYGPATH_W) 'hpcrun_java.c'; else $(CYGPATH_W) '$(srcdir)/hpcrun_java.c'; fi`
 
 libhpcrun_o-hpcrun_options.o: hpcrun_options.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-hpcrun_options.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-hpcrun_options.Tpo -c -o libhpcrun_o-hpcrun_options.o `test -f 'hpcrun_options.c' || echo '$(srcdir)/'`hpcrun_options.c

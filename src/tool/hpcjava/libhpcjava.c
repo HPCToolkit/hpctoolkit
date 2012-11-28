@@ -7,6 +7,8 @@
 
 #include <sys/time.h>
 
+#include "hpcrun_java.h"
+
 
 static int debug = 0;
 static int can_get_line_numbers = 1;
@@ -142,7 +144,7 @@ static void JNICALL cb_compiled_method_load(jvmtiEnv * jvmti,
                         fprintf(stderr,"gettimeofday fail");
                 }
 
-		fprintf(stderr, "load: t=%d, declaring_class=%p, class=%s, "
+		fprintf(stderr, "load: t=%ld, declaring_class=%p, class=%s, "
 			"method=%s, signature=%s, addr=%p, size=%i \n",  tv.tv_usec,
 			declaring_class, class_signature, method_name,
 			method_signature, code_addr, code_size);
@@ -187,8 +189,8 @@ static void JNICALL cb_dynamic_code_generated(jvmtiEnv * jvmti_env,
 	/* shut up compiler warning */
 	jvmti_env = jvmti_env;
 	if (debug) {
-	/*	fprintf(stderr, "dyncode: name=%s, addr=%p, size=%i \n",
-			name, code_addr, code_size); */
+		fprintf(stderr, "dyncode: name=%s, addr=%p, size=%i \n",
+			name, code_addr, code_size); 
 	}
 }
 
