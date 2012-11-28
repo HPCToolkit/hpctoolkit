@@ -72,8 +72,8 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpclump misc \
-	hpcrun-flat hpcrun hpcfnbounds hpcprof-mpi
+DIST_SUBDIRS = hpcjava hpcstruct hpcprof hpcprof-flat hpcproftt \
+	hpclump misc hpcrun-flat hpcrun hpcfnbounds hpcprof-mpi
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -197,6 +197,7 @@ OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
 OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
+OPT_JAVA_IFLAGS = @OPT_JAVA_IFLAGS@
 OPT_LIBUNWIND_IFLAGS = @OPT_LIBUNWIND_IFLAGS@
 OPT_LIBUNWIND_LDFLAGS = @OPT_LIBUNWIND_LDFLAGS@
 OPT_LIBUNWIND_LIBA = @OPT_LIBUNWIND_LIBA@
@@ -306,8 +307,8 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 # Automake rules
 #############################################################################
-SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpclump misc \
-	$(am__append_1) $(am__append_2) $(am__append_3)
+SUBDIRS = hpcjava hpcstruct hpcprof hpcprof-flat hpcproftt hpclump \
+	misc $(am__append_1) $(am__append_2) $(am__append_3)
 all: all-recursive
 
 .SUFFIXES:

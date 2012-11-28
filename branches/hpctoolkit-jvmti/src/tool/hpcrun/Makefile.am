@@ -233,6 +233,7 @@ MY_BASE_FILES =				\
 	epoch.c				\
 	files.c				\
 	handling_sample.c		\
+	hpcrun_java.c		\
 	hpcrun_options.c		\
 	hpcrun_stats.c			\
 	loadmap.c			\

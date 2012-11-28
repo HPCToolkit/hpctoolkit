@@ -639,6 +639,11 @@ OPT_ENABLE_HPCRUN_FALSE
 OPT_ENABLE_HPCRUN_TRUE
 OPT_ENABLE_HPCRUN_FLAT_FALSE
 OPT_ENABLE_HPCRUN_FLAT_TRUE
+OPT_JAVA_IFLAGS
+OPT_WITH_JAVA_FALSE
+OPT_WITH_JAVA_TRUE
+OPT_ENABLE_JAVA_FALSE
+OPT_ENABLE_JAVA_TRUE
 XERCES_LIB
 XERCES_COPY
 XERCES_LDLIBS
@@ -882,6 +887,7 @@ with_papi
 with_symtabAPI
 with_xed2
 with_xerces
+with_java
 enable_hpcrun_flat
 enable_hpcrun
 enable_hpcrun_static
@@ -1585,6 +1591,7 @@ Optional Packages:
   --with-symtabAPI=PATH   path to symtabAPI install directory
   --with-xed2=PATH        path to xed2 install directory
   --with-xerces=PATH      use given XercesC installation
+  --with-java=PATH        use given Java SDK installation for jvmti agents
   --with-cilk=PATH        use given (MIT) Cilk installation for LUSH agents
   --with-upc=PATH         path to IBM BlueGene UPC installation
   --with-upc-lib=LIBRARY  path to UPC library(s), absolute or relative to
@@ -17732,6 +17739,88 @@ $as_echo "${XERCES}" >&6; }
 #----------------------------------------------------------------------------
 
 #-------------------------------------------------
+# with-java: option to build hpcjava
+#-------------------------------------------------
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build hpcrun for Java programs" >&5
+$as_echo_n "checking whether to build hpcrun for Java programs... " >&6; }
+OPT_WITH_JAVA=no
+OPT_CILK_ROOT=
+
+
+# Check whether --with-java was given.
+if test "${with_java+set}" = set; then :
+  withval=$with_java; if test $withval != no; then
+     OPT_WITH_JAVA=yes
+     OPT_JAVA_ROOT=${withval}
+   else
+     OPT_WITH_JAVA=no
+   fi
+fi
+
+
+OPT_JAVA_IFLAGS="-I${OPT_JAVA_ROOT}/include -I${OPT_JAVA_ROOT}/include/linux"
+OPT_ENABLE_JAVA=no
+if test "${OPT_WITH_JAVA}" != "no" ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether can compile jvmti code with CFLAGS='$OPT_JAVA_IFLAGS'" >&5
+$as_echo_n "checking whether can compile jvmti code with CFLAGS='$OPT_JAVA_IFLAGS'... " >&6; }
+
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+  CFLAGS="$CFLAGS $OPT_JAVA_IFLAGS"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <jvmti.h>
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ans=yes
+else
+  ans=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  OPT_ENABLE_JAVA=$ans
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_JAVA} (request: ${OPT_WITH_JAVA})" >&5
+$as_echo "${OPT_ENABLE_JAVA} (request: ${OPT_WITH_JAVA})" >&6; }
+
+
+if test "${OPT_WITH_JAVA}" = "yes" -a "${OPT_ENABLE_JAVA}" = no ; then
+  as_fn_error $? "Java support requested but Java directory is invalid!" "$LINENO" 5
+fi
+
+ if test "${OPT_ENABLE_JAVA}" = "yes"; then
+  OPT_ENABLE_JAVA_TRUE=
+  OPT_ENABLE_JAVA_FALSE='#'
+else
+  OPT_ENABLE_JAVA_TRUE='#'
+  OPT_ENABLE_JAVA_FALSE=
+fi
+
+
+ if test "$OPT_WITH_JAVA" = yes; then
+  OPT_WITH_JAVA_TRUE=
+  OPT_WITH_JAVA_FALSE='#'
+else
+  OPT_WITH_JAVA_TRUE='#'
+  OPT_WITH_JAVA_FALSE=
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_WITH_JAVA}" >&5
+$as_echo "${OPT_WITH_JAVA}" >&6; }
+
+#-------------------------------------------------
 # enable-hpcrun-flat: Only build hpcrun if on Linux and PAPI is present
 #-------------------------------------------------
 
@@ -18633,7 +18722,7 @@ fi
 ac_config_headers="$ac_config_headers src/include/hpctoolkit-config.h"
 
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcjava/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
 
 
 
@@ -18848,6 +18937,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PAPI_STATIC_TRUE}" && test -z "${OPT_PAPI_STATIC_FALSE}"; then
   as_fn_error $? "conditional \"OPT_PAPI_STATIC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_JAVA_TRUE}" && test -z "${OPT_ENABLE_JAVA_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_JAVA\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_WITH_JAVA_TRUE}" && test -z "${OPT_WITH_JAVA_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_WITH_JAVA\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_HPCRUN_FLAT_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_FLAT_FALSE}"; then
@@ -19871,6 +19968,7 @@ do
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "src/tool/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/Makefile" ;;
     "src/tool/hpcfnbounds/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcfnbounds/Makefile" ;;
+    "src/tool/hpcjava/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcjava/Makefile" ;;
     "src/tool/hpclump/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpclump/Makefile" ;;
     "src/tool/hpcprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof/Makefile" ;;
     "src/tool/hpcprof-mpi/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-mpi/Makefile" ;;
@@ -21514,6 +21612,8 @@ $as_echo "$as_me: " >&6;}
 $as_echo "$as_me:   hpcrun?:      ${enable_hpcrun_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}" >&5
 $as_echo "$as_me:   hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   Java support?: ${OPT_ENABLE_JAVA}" >&5
+$as_echo "$as_me:   Java support?: ${OPT_ENABLE_JAVA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   mpi support?: ${OPT_ENABLE_MPI}" >&5
 $as_echo "$as_me:   mpi support?: ${OPT_ENABLE_MPI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}" >&5

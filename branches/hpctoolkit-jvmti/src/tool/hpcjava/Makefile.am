@@ -2,8 +2,8 @@
 
 ## * BeginRiceCopyright *****************************************************
 ##
-## $HeadURL$
-## $Id$
+## $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/branches/hpctoolkit-jvmti/src/tool/hpcrun/Makefile.am $
+## $Id: Makefile.am 4003 2012-11-09 05:17:55Z mfagan $
 ##
 ## --------------------------------------------------------------------------
 ## Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 #############################################################################
 ##
 ## File:
-##   $HeadURL$
+##   $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/branches/hpctoolkit-jvmti/src/tool/hpcrun/Makefile.am $
 ##
 ## Description:
 ##   *Process with automake to produce Makefile.in*
@@ -61,43 +61,92 @@
 AUTOMAKE_OPTIONS = foreign
 
 #############################################################################
+# Common settings
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.config
+
+#############################################################################
 # Local settings
 #############################################################################
+
+PYTHON = python
+
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-SUBDIRS = \
-	hpcjava \
-	hpcstruct \
-	hpcprof \
-	hpcprof-flat \
-	hpcproftt \
-	\
-	hpclump \
-	\
-	misc
 
+#-----------------------------------------------------------
+# build targets
+#-----------------------------------------------------------
 
-if OPT_ENABLE_HPCRUN_FLAT
-  SUBDIRS += hpcrun-flat
+pkglibexecdir = $(libexecdir)/$(PACKAGE)
+plugin_srcdir = $(srcdir)/plugins
+plugin_instdir = $(pkglibdir)/plugins
+
+pkglib_LTLIBRARIES =
+if OPT_ENABLE_HPCRUN_DYNAMIC
+  pkglib_LTLIBRARIES += libhpcjava.la
 endif
 
-if OPT_ENABLE_HPCRUN
-  SUBDIRS += \
-	hpcrun \
-	hpcfnbounds
-endif
+pkglib_PROGRAMS =
+pkglib_LIBRARIES =
 
-if OPT_ENABLE_MPI
-  SUBDIRS += hpcprof-mpi 
-endif
 
-#if OPT_ENABLE_DEVTOOLS
-#  SUBDIRS += hpclump
-#endif
+#-----------------------------------------------------------
+# source files, part 1
+#-----------------------------------------------------------
 
-#############################################################################
-# Other rules
-#############################################################################
+LIBMONITOR_INC = @LIBMONITOR_INC@
+LIBMONITOR_LIB = @LIBMONITOR_LIB@
+PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@
+PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
+SYMTABAPI_INC =  @SYMTABAPI_INC@
+XED2_INC = @XED2_INC@
+XED2_LIB = @XED2_LIB@
+
+
+MY_DYNAMIC_FILES = 			\
+	libhpcjava.c		
+
+
+MY_INCLUDE_DIRS =					\
+        -I$(top_srcdir)/src/tool/			\
+        -I$(top_srcdir)/src/tool/hpcrun        		\
+        -I$(top_srcdir)/src/tool/hpcrun/messages        \
+        -I$(top_srcdir)/src/tool/hpcrun/memory 		\
+        -I$(top_srcdir)/src/tool/hpcrun/unwind/common	\
+	$(HPC_IFLAGS)					\
+	$(OPT_JAVA_IFLAGS)				\
+	$(OPT_LIBUNWIND_IFLAGS)         
+
+
+libhpcjava_la_SOURCES = 			\
+	$(MY_DYNAMIC_FILES)
+
+
+#-----------------------------------------------------------
+# cppflags
+#-----------------------------------------------------------
+
+libhpcjava_la_CPPFLAGS =			\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+
+#-----------------------------------------------------------
+# cflags
+#-----------------------------------------------------------
+
+libhpcjava_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+
+
+#-----------------------------------------------------------
+# ldflags
+#-----------------------------------------------------------
+
+libhpcjava_la_LDFLAGS = -Wl,-Bsymbolic	\
+	-Wl,--strip-debug
+
