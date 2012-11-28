@@ -233,7 +233,6 @@ MY_BASE_FILES =				\
 	epoch.c				\
 	files.c				\
 	handling_sample.c		\
-	hpcrun_java.c		\
 	hpcrun_options.c		\
 	hpcrun_stats.c			\
 	loadmap.c			\
@@ -300,6 +299,10 @@ MY_BASE_FILES +=  			\
 	sample-sources/mpi.c
 endif
 
+if OPT_ENABLE_JAVA
+MY_BASE_FILES +=  			\
+	hpcrun_java.c		
+endif
 
 MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_client.c	\
