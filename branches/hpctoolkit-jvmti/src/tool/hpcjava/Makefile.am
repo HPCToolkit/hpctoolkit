@@ -150,3 +150,27 @@ libhpcjava_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcjava_la_LDFLAGS = -Wl,-Bsymbolic	\
 	-Wl,--strip-debug
 
+
+#############################################################################
+# Other rules
+#############################################################################
+#
+############################################################
+# Install
+############################################################
+#
+# Note: *-local and *-hook are special automake versions of the
+# regular target. *-hook runs *after* install has completed
+
+install-exec-hook: myinstall-exec
+
+myinstall-exec: myinstall-libhpcjavaso 
+
+
+MYKEEPSYMS = $(addprefix -K , $(MY_INTERCEPTED_SYMS_LibHPCJavaSO))
+
+myinstall-libhpcjavaso:
+	rm -f $(DESTDIR)$(pkglibdir)/libhpjava.a
+	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(DESTDIR)$(pkglibdir)/libhpcjava.so
+
+

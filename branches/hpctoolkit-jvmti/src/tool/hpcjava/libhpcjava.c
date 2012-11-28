@@ -157,6 +157,8 @@ static void JNICALL cb_compiled_method_load(jvmtiEnv * jvmti,
 	strncpy(buf, class_signature, cnt - 1);
 	strncat(buf, method_name, cnt - strlen(buf) - 1);
 	strncat(buf, method_signature, cnt - strlen(buf) - 1);
+	void *code_addr_end = code_addr + code_size;
+	hpcjava_add_address_interval(code_addr, code_addr_end);
 	}
 
 cleanup:
