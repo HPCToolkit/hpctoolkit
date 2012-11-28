@@ -69,7 +69,6 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 
 SUBDIRS = \
-	hpcjava \
 	hpcstruct \
 	hpcprof \
 	hpcprof-flat \
@@ -79,6 +78,9 @@ SUBDIRS = \
 	\
 	misc
 
+if OPT_ENABLE_JAVA
+  SUBDIRS += hpcjava
+endif
 
 if OPT_ENABLE_HPCRUN_FLAT
   SUBDIRS += hpcrun-flat
