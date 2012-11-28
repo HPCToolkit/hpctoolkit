@@ -216,6 +216,15 @@ hpcrun_ssfail_derived(char *source, char *event)
 }
 
 void
+hpcrun_ssfail_all_derived(char *source)
+{
+  EEMSG("%s: All %s events are derived.  To use proxy sampling,\n"
+	"at least one event must support hardware overflow (eg, PAPI_TOT_CYC).\n",
+	prefix, source);
+  exit(1);
+}
+
+void
 hpcrun_ssfail_conflict(char *source, char *event)
 {
   EEMSG("%s: %s event %s cannot be profiled in this sequence.\n"
