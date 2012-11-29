@@ -9,9 +9,11 @@
 
 #include "hpcrun_java.h"
 
+typedef void fct_add_interval(void*,void*);
 
 static int debug = 0;
 static int can_get_line_numbers = 1;
+static fct_add_interval *fct_add_interval_ptr = NULL;
 
 /**
  * Handle an error or a warning, return 0 if the checked error is 
@@ -97,6 +99,12 @@ static void JNICALL cb_compiled_method_load(jvmtiEnv * jvmti,
 	char * source_filename = NULL;
 	struct debug_line_info * debug_line = NULL;
  	jvmtiError err;
+
+	/* 
+ 	 * check if we can access to functions in hpcrun.so
+ 	 *  if dlopen fails or the function is not found, we just do nothing
+ 	 *  
+ 	 * */
 
 	/* shut up compiler warning */
 	compile_info = compile_info;

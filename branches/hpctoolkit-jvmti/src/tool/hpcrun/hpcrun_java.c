@@ -80,6 +80,7 @@
 //***************************************************************************
 // Header files
 //***************************************************************************
+#include <stdio.h>
 #include <memory/hpcrun-malloc.h>
 #include <messages/messages.h>
 
@@ -102,7 +103,8 @@ void hpcjava_unwind_init()
  */
 void hpcjava_add_address_interval(void *addr_start, void *addr_end)
 {
-  TMSG(UITREE_LOOKUP, "Adding a java interval address: addr %p - %p", (void*)addr_start, (void*) addr_end);
+  fprintf(stderr, "Adding a java interval address: addr %p - %p\n", (void*)addr_start, (void*) addr_end);
+  TMSG(JAVA, "Adding a java interval address: addr %p - %p", (void*)addr_start, (void*) addr_end);
   interval_tree_node *p = (interval_tree_node*) hpcrun_malloc(sizeof(interval_tree_node));
   if (addr_start == NULL || addr_end == NULL) {
     return;
@@ -120,9 +122,9 @@ void hpcjava_add_address_interval(void *addr_start, void *addr_end)
   int ret = interval_tree_insert(&ui_java_tree_root, p);
 
   if (ret != 0 ) {
-    TMSG(UITREE_LOOKUP, "Fail to insert into java tree: addr %p - %p", (void*)addr_start, (void*) addr_end);
+    TMSG(JAVA, "Fail to insert into java tree: addr %p - %p", (void*)addr_start, (void*) addr_end);
   } else {
-    TMSG(UITREE_LOOKUP, "insert into java tree: addr %p - %p", (void*)addr_start, (void*) addr_end);
+    TMSG(JAVA, "insert into java tree: addr %p - %p", (void*)addr_start, (void*) addr_end);
   }
 }
 
