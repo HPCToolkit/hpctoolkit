@@ -107,8 +107,9 @@ SYMTABAPI_INC =  @SYMTABAPI_INC@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 
+#	$(top_srcdir)/src/tool/hpcrun/hpcrun_java.c	
 
-MY_DYNAMIC_FILES = 			\
+MY_DYNAMIC_FILES = 					\
 	libhpcjava.c		
 
 
