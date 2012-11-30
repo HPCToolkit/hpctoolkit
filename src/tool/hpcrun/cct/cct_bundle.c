@@ -111,8 +111,6 @@ hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl)
   cct_node_t* final = bndl->tree_root;
   cct_node_t* partial_insert = final;
 
-  // attach special node to root
-  hpcrun_cct_insert_node(bndl->partial_unw_root, bndl->special_idle_node);
 
   //
   // attach partial unwinds at appointed slot
@@ -148,5 +146,9 @@ hpcrun_empty_cct(cct_bundle_t* cct)
 cct_node_t*
 hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct)
 {
+  // attach special node to root if not already attached
+  if (! hpcrun_cct_parent(cct->special_idle_node))
+    hpcrun_cct_insert_node(cct->partial_unw_root, cct->special_idle_node);
+
   return cct->special_idle_node;
 }

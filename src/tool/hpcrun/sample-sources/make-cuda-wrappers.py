@@ -76,6 +76,7 @@ def WritecuDriverFunctionPointerTable(file, funcNames):
 #};
     fp = open(file,'w')
     fp.write('''
+// GENERATED FILE DON'T EDIT
 #include "gpu_blame-cuda-driver-header.h"
 #include<cuda.h>
 #include<cuda_runtime_api.h>
@@ -94,6 +95,7 @@ def WritecuRuntimeFunctionPointerTable(file, funcNames):
 #};
     fp = open(file,'w')
     fp.write('''
+// GENERATED FILE DON'T EDIT
 #include<cuda.h>
 #include<cuda_runtime_api.h>
 #include "gpu_blame-cuda-runtime-header.h"
@@ -130,6 +132,7 @@ def WriteDriverFunctionPointerHeader(file, funcSig):
 
     fp = open(file,'w')
     fp.write('''
+// GENERATED FILE DON'T EDIT
 #ifndef __CU_DRIVER_HEADER_H__
 #define __CU_DRIVER_HEADER_H__
 #include<cuda.h>
@@ -187,6 +190,7 @@ def WriteRuntimeFunctionPointerHeader(file, funcSig):
 
     fp = open(file,'w')
     fp.write('''
+// GENERATED FILE DON'T EDIT
 #ifndef __CUDA_RUNTIME_HEADER_H__
 #define __CUDA_RUNTIME_HEADER_H__
 #include<cuda.h>
@@ -234,6 +238,7 @@ extern cudaRuntimeFunctionPointer_t cudaRuntimeFunctionPointer[];
 def WriteDriverFunctionWrapper(file, funcSig):
     fp = open(file,'w')
     fp.write('''
+// GENERATED FILE DON'T EDIT
 #include <stdbool.h>
 #include <hpcrun/thread_data.h>
 #include<cuda.h>
@@ -279,6 +284,7 @@ def WriteDriverFunctionWrapper(file, funcSig):
 def WriteRuntimeFunctionWrapper(file, funcSig):
     fp = open(file,'w')
     fp.write('''
+// GENERATED FILE DON'T EDIT
 #include <stdbool.h>
 #include <hpcrun/thread_data.h>
 #include<cuda.h>

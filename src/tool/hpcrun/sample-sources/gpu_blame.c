@@ -157,11 +157,7 @@ void CloseAllStreams(stream_to_id_map_t *root) {
     uint32_t streamId;
     streamId = root->id;
     
-    hpcrun_trace_close(g_stream_array[streamId].st);
     hpcrun_stream_finalize(g_stream_array[streamId].st);
-    
-    //gpu_trace_close(DEVICE_ID, streamId);
-    //hpcrun_stream_finalize(g_stream_array[streamId].st);
     g_stream_array[streamId].st = NULL;
 }
 
@@ -217,18 +213,6 @@ METHOD_FN(start)
 static void METHOD_FN(thread_fini_action)
 {
     TMSG(CPU_GPU_BLAME_CTL, "thread action ");
-    
-#if 1
-    if (fetch_and_add(&g_active_threads, -1L) == 1L) {
-        /*FIXME: REVISIT to see how this interacts with the finalize in hpcrun
-         * right now, this causes a hang.
-         */
-        SYNCHRONOUS_CLEANUP;
-        // Walk the stream splay tree and close each trace.
-        CloseAllStreams(stream_to_id_tree_root);
-        stream_to_id_tree_root = NULL;
-    }
-#endif
 }
 
 static void METHOD_FN(stop)
@@ -272,7 +256,14 @@ static void METHOD_FN(shutdown)
         gpu_trace_close(DEVICE_ID, streamId);
     }
 #endif
-    
+        
+    if (stream_to_id_tree_root) {
+        SYNCHRONOUS_CLEANUP;
+        // Walk the stream splay tree and close each trace.
+        CloseAllStreams(stream_to_id_tree_root);
+        stream_to_id_tree_root = NULL;
+    }
+
     TMSG(CPU_GPU_BLAME_CTL, "shutodown CPU_GPU_BLAME_CTL");
     METHOD_CALL(self, stop);    // make sure stop has been called
     
