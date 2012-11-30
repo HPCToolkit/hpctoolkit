@@ -7,13 +7,13 @@
 
 #include <sys/time.h>
 
-#include "hpcrun_java.h"
+#include <ui_tree_java.h>
+//#include <hpcrun/unwind/common/ui_tree_java.h>
 
 typedef void fct_add_interval(void*,void*);
 
 static int debug = 0;
 static int can_get_line_numbers = 1;
-static fct_add_interval *fct_add_interval_ptr = NULL;
 
 /**
  * Handle an error or a warning, return 0 if the checked error is 
@@ -123,10 +123,22 @@ static void JNICALL cb_compiled_method_load(jvmtiEnv * jvmti,
 			err = (*jvmti)->GetSourceFileName(jvmti,
 				declaring_class, &source_filename);
 			if (err ==  JVMTI_ERROR_NONE) {
-				debug_line =
+			   int i;
+			   for (i=0; i<map_length; i++) {
+			   	const void *seg_start = map[i].start_address;
+				const void *seg_end;
+				if (i<map_length-1) {
+				   seg_end = map[i+1].start_address;
+				} else {
+				   seg_end = code_addr + code_size;
+				}
+				hpcjava_add_address_interval(seg_start, seg_end);
+			   }			   	
+			/*	debug_line =
 					create_debug_line_info(map_length, map,
 						entry_count, table_ptr,
 						source_filename);
+			 */
 			} else if (err != JVMTI_ERROR_ABSENT_INFORMATION) {
 				handle_error(err, "GetSourceFileName()", 1);
 			}
@@ -165,7 +177,7 @@ static void JNICALL cb_compiled_method_load(jvmtiEnv * jvmti,
 	strncpy(buf, class_signature, cnt - 1);
 	strncat(buf, method_name, cnt - strlen(buf) - 1);
 	strncat(buf, method_signature, cnt - strlen(buf) - 1);
-	void *code_addr_end = code_addr + code_size;
+	const void *code_addr_end = code_addr + code_size;
 	hpcjava_add_address_interval(code_addr, code_addr_end);
 	}
 
@@ -217,6 +229,8 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
 
 	/* shut up compiler warning */
 	reserved = reserved;
+
+	hpcjava_interval_tree_init();
 
 	if (options && !strcmp("version", options)) {
 		return -1;
@@ -284,4 +298,6 @@ JNIEXPORT void JNICALL Agent_OnUnload(JavaVM * jvm)
 {
 	/* shut up compiler warning */
 	jvm = jvm;
+
+	hpcjava_delete_ui();
 }

@@ -85,7 +85,8 @@
 //***************************************************************************
 
 void hpcjava_unwind_init();
-void hpcjava_add_address_interval(void *addr_start, void *addr_end);
+void hpcjava_add_address_interval(const void *addr_start, const void *addr_end);
 splay_interval_t *hpcjava_get_interval(void *addr);
+void hpcjava_unwind_finalize();
 
 #endif /* hpcrun_java_h */
