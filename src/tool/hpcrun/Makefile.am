@@ -301,7 +301,8 @@ endif
 
 if OPT_ENABLE_JAVA
 MY_BASE_FILES +=  			\
-	hpcrun_java.c		
+	unwind/common/ui_tree_java.c
+#	hpcrun_java.c		
 endif
 
 MY_DYNAMIC_FILES = 			\

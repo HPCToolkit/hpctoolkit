@@ -88,11 +88,30 @@
 #include "splay.h"
 #include "loadmap.h"
 
-static interval_tree_node *ui_java_tree_root = NULL;
+static interval_tree_node *ui_java_tree_root 	= NULL;
+static load_module_t	  *ui_lm_java_ptr	= NULL;
+
+static hpcj_remove_leaf(interval_tree_node *node)
+{
+  if (node != NULL)
+  {
+     hpcj_remove_leaf(node->prev);
+     hpcj_remove_leaf(node->next);
+     free(node);
+  }
+  
+}
 
 void hpcjava_unwind_init()
 {
-  ui_java_tree_root = NULL;
+  ui_java_tree_root 	= NULL;
+  ui_lm_java_ptr	= (load_module_t*) hpcrun_malloc(sizeof(load_module_t));
+  ui_lm_java_ptr->id 	= 0;
+}
+
+
+void hpcjava_unwind_finalize()
+{
 }
 
 /*
@@ -101,11 +120,12 @@ void hpcjava_unwind_init()
  *  addr_start: the start of java's virtual memory address
  *  addr_end:   the end
  */
-void hpcjava_add_address_interval(void *addr_start, void *addr_end)
+void hpcjava_add_address_interval(const void *addr_start, const void *addr_end)
 {
-  fprintf(stderr, "Adding a java interval address: addr %p - %p\n", (void*)addr_start, (void*) addr_end);
   TMSG(JAVA, "Adding a java interval address: addr %p - %p", (void*)addr_start, (void*) addr_end);
+
   interval_tree_node *p = (interval_tree_node*) hpcrun_malloc(sizeof(interval_tree_node));
+
   if (addr_start == NULL || addr_end == NULL) {
     return;
   }
@@ -113,8 +133,7 @@ void hpcjava_add_address_interval(void *addr_start, void *addr_end)
   /* create an interval address node */
   p->start  = addr_start;
   p->end    = addr_end;
-  p->lm     = (load_module_t*) hpcrun_malloc(sizeof(load_module_t));
-  p->lm->id = 0;
+  p->lm     = ui_lm_java_ptr;
 
   /* add temporary load module for java  */
   p->lm->name = "javatmp.jo";
@@ -128,7 +147,7 @@ void hpcjava_add_address_interval(void *addr_start, void *addr_end)
   }
 }
 
-splay_interval_t *hpcjava_get_interval(void *addr)
+interval_tree_node* hpcjava_get_interval(void *addr)
 {
   return interval_tree_lookup(&ui_java_tree_root, addr);
 }
