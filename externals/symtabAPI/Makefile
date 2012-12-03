@@ -6,28 +6,30 @@
 include ../Makefile.conf
 
 PKG_NAME = symtabAPI
-SRC_DIR =  symtabAPI
-BUILD_DIR = symtabAPI/src/dyninst
 
-PREREQS = libdwarf libelf libunwind libxml2
+PREREQS = boost libdwarf libelf libunwind libxml2
 
 PLATFORM := $(SYMTABAPI_PLATFORM)
 export PLATFORM
 
 # SymtabAPI dropped support for ia64 after 6.1.
 
-INSTALL_CMD = ./install
-
 ifeq ($(USE_SYMTAB_61),yes)
 
 FETCH_TARFILE = symtab_src_6.1.tar.gz
+SRC_DIR =   symtabAPI
+BUILD_DIR = symtabAPI/src/dyninst
 PATCH_DIR = patches-61
 CONFIG_CMD = ./configure-61
+INSTALL_CMD = ./install-61
 
 else
 
-FETCH_TARFILE = symtab_src_7.0.1.tar.gz
+FETCH_TARFILE = symtabAPI-8.0.tgz
+SRC_DIR =   SymtabAPI-8.0
+BUILD_DIR = SymtabAPI-8.0
 PATCH_DIR = patches
+POST_FETCH_CMD = ./post-fetch
 CONFIG_CMD = ./configure
 
 endif

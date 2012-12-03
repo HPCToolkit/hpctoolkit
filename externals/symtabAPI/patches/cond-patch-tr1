@@ -3,10 +3,11 @@ from configure doesn't support it, so fall back to ext/hash_map.
 This works around a problem on some systems, eg, module at05 on biou,
 that are version >= 4.3 but don't have unordered map.
 
-diff -Naurb symtabAPI.orig/src/dyninst/dynutil/h/dyntypes.h symtabAPI/src/dyninst/dynutil/h/dyntypes.h
---- symtabAPI.orig/src/dyninst/dynutil/h/dyntypes.h	2011-04-07 14:52:00.000000000 -0500
-+++ symtabAPI/src/dyninst/dynutil/h/dyntypes.h	2011-04-12 00:01:34.000000000 -0500
-@@ -54,8 +54,9 @@
+
+diff -Naurb SymtabAPI-8.0.orig/dynutil/h/dyntypes.h SymtabAPI-8.0/dynutil/h/dyntypes.h
+--- SymtabAPI-8.0.orig/dynutil/h/dyntypes.h	2012-11-20 15:32:26.000000000 -0600
++++ SymtabAPI-8.0/dynutil/h/dyntypes.h	2012-11-29 18:19:54.000000000 -0600
+@@ -55,8 +55,9 @@
    #include <functional>
    #define DECLTHROW(x) throw(x)
    //***************** GCC ***********************

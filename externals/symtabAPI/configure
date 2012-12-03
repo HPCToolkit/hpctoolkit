@@ -6,22 +6,12 @@
 #
 
 PKG_NAME=symtabAPI
-src=symtabAPI
-work=symtabAPI/src/dyninst
-dyntypes=symtabAPI/src/dyninst/dynutil/h/dyntypes.h
-tr1_patch=patches/cond-patch-tr1
+src=SymtabAPI-8.0
+work="$src"
 
 . ../build-utils/configure.inc
 pre_configure
 prefix="$symtabAPI_prefix"
-
-if test "$have_tr1_map" = no ; then
-    grep DISABLE_TR1_MAP "$dyntypes"
-    if test $? -ne 0 ; then
-	echo "disabling use of tr1 unordered map in dyntypes.h"
-	patch -d "$src" -p1 <"$tr1_patch"
-    fi
-fi
 
 cd "$work" || die "unable to cd: $work"
 
@@ -32,14 +22,13 @@ set -- \
     --bindir="${prefix}/bin" \
     --includedir="${prefix}/include" \
     --libdir="${prefix}/lib" \
+    --with-boost="$boost_prefix" \
     --with-libdwarf-incdir="$libdwarf_inc" \
     --with-libdwarf-libdir="$libdwarf_lib" \
     --with-libelf-incdir="$libelf_inc" \
     --with-libelf-libdir="$libelf_lib" \
-    --with-libunwind-incdir="$libunwind_inc" \
-    --with-libunwind-libdir="$libunwind_lib" \
-    --with-libxml2-incdir="$libxml2_inc" \
-    --with-libxml2-libdir="$libxml2_lib" \
+    --with-default-component=SymtabAPI \
+    --disable-testsuite \
     "$@"
 
 if test -n "$is_cross_compile" ; then
@@ -48,6 +37,20 @@ fi
 
 echo ./configure "$@"
 ./configure "$@"
+test $? -eq 0 || die "configure failed"
+
+# Symtab configure doesn't fully save CC, CXX and flags from the
+# config line, so we force them into make.config.local.
+
+echo "adding CC, CXX and flags to make.config.local ..."
+cat <<EOF >>"${symtabAPI_platform}/make.config.local"
+
+# CC, CXX and flags from externals's top-level configure
+HPC_CC = $CC
+HPC_CXX = $CXX
+HPC_CFLAGS = $CFLAGS
+HPC_CXXFLAGS = $CXXFLAGS
+EOF
 test $? -eq 0 || die "configure failed"
 
 post_configure

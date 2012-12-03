@@ -5,17 +5,18 @@ SymtabAPI Build Notes
 Home: http://www.paradyn.org/
       http://www.dyninst.org/
 
-Download: ftp://ftp.cs.wisc.edu/paradyn/releases/release7.0/symtab_src_7.0.1.tar.gz
+Download: ftp://ftp.cs.wisc.edu/paradyn/releases/
 
 License: LGPL
 
-Prereqs: libdwarf libelf libxml2 libunwind
+Prereqs: boost libdwarf libelf (libxml2 libunwind)
 
 Now uses autoconf but not automake.
 Does not support vpath build or parallel make.
 
 export PLATFORM=platform
-cd symtabAPI/src/dyninst
+cd SymtabAPI-8.0
+
 ./configure CC=CC CFLAGS=flags CXX=CXX CXXFLAGS=flags  \
     --prefix=prefix  \
     --bindir=bindir  \
@@ -23,12 +24,20 @@ cd symtabAPI/src/dyninst
     --libdir=libdir  \
     --with-libelf-incdir=incdir  \
     --with-libelf-libdir=libdir  \
+    --with-default-component=SymtabAPI  \
+    --disable-testsuite  \
     ...
 make
+make install
 
-Some compilers don't support tr1/unordered_map.  In that case, disable
-unordered_map in dyntypes.h via a conditional patch.
+Beginning with symtabAPI 8.0, the boost headers are separate and no
+longer in the symtab source tree.  For now, they only use boost
+headers, no libs.
 
-Make copies files to includedir, libdir, etc, so don't need make
-install.
+Symtab configure uses CC, CXX and flags for config tests, but doesn't
+fully pass them to make, so we force them into make.config.local.
+
+Some compilers don't support tr1/unordered_map (old module at05 on
+biou).  In that case, disable unordered_map in dyntypes.h via a
+conditional patch.
 

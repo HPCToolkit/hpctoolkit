@@ -1,10 +1,11 @@
 Force symtab to use our strdup demangle hack.
 The GNU demangler segfaults on the bwaves Intel binary.
 
-diff -Naurb symtabAPI.orig/src/dyninst/configure symtabAPI/src/dyninst/configure
---- symtabAPI.orig/src/dyninst/configure	2011-04-26 16:24:37.000000000 -0500
-+++ symtabAPI/src/dyninst/configure	2011-04-26 17:03:29.000000000 -0500
-@@ -3743,6 +3743,10 @@
+
+diff -Naurb SymtabAPI-8.0.orig/configure SymtabAPI-8.0/configure
+--- SymtabAPI-8.0.orig/configure	2012-11-30 00:08:54.000000000 -0600
++++ SymtabAPI-8.0/configure	2012-11-30 00:25:02.000000000 -0600
+@@ -5839,6 +5839,10 @@
     fi
  fi
  
@@ -15,10 +16,10 @@ diff -Naurb symtabAPI.orig/src/dyninst/configure symtabAPI/src/dyninst/configure
  
  
  
-diff -Naurb symtabAPI.orig/src/dyninst/configure.in symtabAPI/src/dyninst/configure.in
---- symtabAPI.orig/src/dyninst/configure.in	2011-04-26 16:24:37.000000000 -0500
-+++ symtabAPI/src/dyninst/configure.in	2011-04-26 16:58:55.000000000 -0500
-@@ -196,6 +196,10 @@
+diff -Naurb SymtabAPI-8.0.orig/configure.in SymtabAPI-8.0/configure.in
+--- SymtabAPI-8.0.orig/configure.in	2012-11-30 00:08:54.000000000 -0600
++++ SymtabAPI-8.0/configure.in	2012-11-30 00:11:21.000000000 -0600
+@@ -298,6 +298,10 @@
     fi
  fi
  
@@ -29,28 +30,24 @@ diff -Naurb symtabAPI.orig/src/dyninst/configure.in symtabAPI/src/dyninst/config
  AC_SUBST(GNU_DEMANGLER)
  AC_SUBST(USE_LIBERTY)
  AC_SUBST(LINK_LIBERTY)
-diff -Naurb symtabAPI.orig/src/dyninst/make.config symtabAPI/src/dyninst/make.config
---- symtabAPI.orig/src/dyninst/make.config	2011-04-26 16:24:37.000000000 -0500
-+++ symtabAPI/src/dyninst/make.config	2011-04-26 17:02:24.000000000 -0500
-@@ -763,21 +763,11 @@
- 
- ifdef USE_LIBERTY
- CAP_DEF += -Dcap_liberty
--ifdef LINK_LIBERTY
--ifdef LIBIBERTY_LIB
--DEMANGLER_LINK = -L$(LIBIBERTY_LIB) -liberty
--else
--DEMANGLER_LINK = -liberty
--endif
--else
--ifdef LIBIBERTY_LIB
--DEMANGLER_EXEC_LINK = -L$(LIBIBERTY_LIB) -liberty
--else
--DEMANGLER_EXEC_LINK = -liberty
--endif
--endif
+diff -Naurb SymtabAPI-8.0.orig/make.config SymtabAPI-8.0/make.config
+--- SymtabAPI-8.0.orig/make.config	2012-11-30 00:08:54.000000000 -0600
++++ SymtabAPI-8.0/make.config	2012-11-30 00:24:22.000000000 -0600
+@@ -794,7 +794,7 @@
+ CAP_DEF += -Dcap_gnu_demangler
  endif
  
+-ifdef USE_LIBERTY
++ifdef NOT_DEFINED
+ CAP_DEF += -Dcap_liberty
+ ifdef LINK_LIBERTY
+ ifdef LIBIBERTY_LIB
+@@ -812,6 +812,11 @@
+ endif
+ endif
+ 
++# Force symtab to use our strdup demangle hack.
++CAP_DEF += -Dcap_liberty
 +DEMANGLER_LINK =
 +DEMANGLER_EXEC_LINK =
 +
