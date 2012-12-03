@@ -123,6 +123,7 @@ static void JNICALL cb_compiled_method_load(jvmtiEnv * jvmti,
 			err = (*jvmti)->GetSourceFileName(jvmti,
 				declaring_class, &source_filename);
 			if (err ==  JVMTI_ERROR_NONE) {
+			/*
 			   int i;
 			   for (i=0; i<map_length; i++) {
 			   	const void *seg_start = map[i].start_address;
@@ -133,7 +134,8 @@ static void JNICALL cb_compiled_method_load(jvmtiEnv * jvmti,
 				   seg_end = code_addr + code_size;
 				}
 				hpcjava_add_address_interval(seg_start, seg_end);
-			   }			   	
+			   }	
+			*/		   	
 			/*	debug_line =
 					create_debug_line_info(map_length, map,
 						entry_count, table_ptr,

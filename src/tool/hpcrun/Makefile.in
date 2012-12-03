@@ -1021,7 +1021,6 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
 	utilities/unlink.c $(am__append_9) $(am__append_10)
-#	hpcrun_java.c		
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -1184,7 +1183,8 @@ libhpctoolkit_a_CPPFLAGS = \
 #-----------------------------------------------------------
 # cflags
 #-----------------------------------------------------------
-libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+@OPT_ENABLE_JAVA_TRUE@HPCJAVA_FLAGS = -DOPT_ENABLE_JAVA
+libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(HPCJAVA_FLAGS)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)

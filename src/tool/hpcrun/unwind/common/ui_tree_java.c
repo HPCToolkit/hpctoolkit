@@ -57,16 +57,17 @@
 #include <assert.h>
 #include <string.h>
 
+#include <loadmap.h>
 #include <memory/hpcrun-malloc.h>
+#include <messages/messages.h>
+#include <lib/prof-lean/spinlock.h>
+
 #include "fnbounds_interface.h"
 #include "splay.h"
 #include "splay-interval.h"
 #include "thread_data.h"
 #include "ui_tree_java.h"
 
-#include <messages/messages.h>
-
-#include <lib/prof-lean/spinlock.h>
 
 
 #define UI_TREE_JAVA_LOCK  do {	 \
@@ -81,6 +82,8 @@
 } while (0)
 
 
+static const char *jo_filename = "java-app.jo";
+
 // Locks both the UI tree and the UI free list.
 static spinlock_t ui_tree_lock;
 
@@ -88,9 +91,8 @@ static interval_tree_node *ui_tree_root = NULL;
 static interval_tree_node *ui_free_list = NULL;
 static size_t the_ui_size = 0;
 
-static load_module_t      *ui_lm_java_ptr       = NULL;
-
 static void free_ui_java_tree_locked(interval_tree_node *tree);
+static void free_ui_java_node_locked(interval_tree_node *node);
 
 //---------------------------------------------------------------------
 // interface operations
@@ -103,8 +105,10 @@ hpcjava_interval_tree_init(void)
   TMSG(JAVA, "init unwind_java interval tree");
 
   ui_tree_root = NULL;
-  ui_lm_java_ptr        = (load_module_t*) hpcjava_ui_malloc(sizeof(load_module_t));
-  ui_lm_java_ptr->id    = 0;
+
+  dso_info_t *dso_info  = hpcrun_dso_make(jo_filename, NULL, NULL,
+			  0, 0, 0 );
+  hpcrun_loadmap_map(dso_info);
 
   UI_TREE_JAVA_UNLOCK;
 }
@@ -151,6 +155,23 @@ hpcjava_ui_malloc(size_t ui_size)
   return (ans);
 }
 
+/*
+ * look for an interval for a given address
+ * 
+ * Note: if an interval is not found, it's either:
+ * 	- Java's code is not jitted yet. In this case the result will be
+ * 	  incorrect and there's no way to get an interval
+ *	- it isn't a Java byte code
+ * */
+splay_interval_t *
+hpcjava_get_interval(void *addr)
+{
+  interval_tree_node *p = interval_tree_lookup(&ui_tree_root, addr);
+  if (p != NULL) {
+    TMSG(JAVA, "found in Java unwind tree: addr %p", addr);
+  }
+  return (splay_interval_t *)p;
+}
 
 /*
  * Lookup the instruction pointer 'addr' in the interval tree and
@@ -194,17 +215,7 @@ hpcjava_add_address_interval(const void *addr_start, const void *addr_end)
 splay_interval_t *
 hpcjava_addr_to_interval_locked(const void *addr_start, const void *addr_end)
 {
-  void *fcn_start, *fcn_end;
-  interval_status istat;
-  interval_tree_node *p, *q;
-
-  /* See if addr is already in the tree. */
-  /*
-  p = interval_tree_lookup(&ui_tree_root, addr_start);
-  if (p != NULL) {
-    TMSG(JAVA_LOOKUP, "found in unwind_java tree: addr %p", addr_start);
-    return (splay_interval_t *)p;
-  } */
+  interval_tree_node *p;
 
   /*
    * Get list of new intervals to insert into the tree.
@@ -218,11 +229,22 @@ hpcjava_addr_to_interval_locked(const void *addr_start, const void *addr_end)
   TMSG(JAVA, "begin unwind_java insert addr %p to %p",
        addr_start, addr_end);
 
+  load_module_t *lm = hpcrun_loadmap_findByName(jo_filename);
+
   /* create an interval address node */
   p = hpcjava_ui_malloc(sizeof(interval_tree_node));
   p->start  = addr_start;
   p->end    = addr_end;
-  p->lm     = ui_lm_java_ptr;
+  p->lm     = lm;
+
+  /* adjust the load module bound */
+  dso_info_t *dso = lm->dso_info;
+
+  if ( dso->end_addr < addr_end)
+	 dso->end_addr = addr_end;
+
+  if ( (dso->start_addr == 0) || (dso->start_addr > addr_start) )
+	 dso->start_addr = addr_start;
 
   if (interval_tree_insert(&ui_tree_root, p) != 0) {
       TMSG(JAVA, "BAD unwind_java interval [%p, %p) insert failed",
@@ -230,7 +252,8 @@ hpcjava_addr_to_interval_locked(const void *addr_start, const void *addr_end)
       free_ui_java_node_locked(p);
   }
 
-  TMSG(JAVA, "end unwind_java insert, add addr [%p, %p]", addr_start, addr_end);
+  TMSG(JAVA, "end unwind_java lm bound [%p, %p]", 
+	p->lm->dso_info->start_addr, p->lm->dso_info->end_addr);
   return (p);
 }
 
@@ -278,7 +301,7 @@ free_ui_java_tree_locked(interval_tree_node *tree)
 }
 
 
-void
+static void
 free_ui_java_node_locked(interval_tree_node *node)
 {
   RIGHT(node) = ui_free_list;
