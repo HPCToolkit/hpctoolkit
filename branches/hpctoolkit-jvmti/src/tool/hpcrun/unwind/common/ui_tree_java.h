@@ -56,6 +56,7 @@
 #include "splay-interval.h"
 #include "splay.h"
 
+splay_interval_t * hpcjava_get_interval(void *addr);
 void hpcjava_interval_tree_init(void);
 void hpcjava_release_splay_lock(void);
 void *hpcjava_ui_malloc(size_t ui_size);

@@ -302,7 +302,6 @@ endif
 if OPT_ENABLE_JAVA
 MY_BASE_FILES +=  			\
 	unwind/common/ui_tree_java.c
-#	hpcrun_java.c		
 endif
 
 MY_DYNAMIC_FILES = 			\
@@ -489,7 +488,12 @@ libhpctoolkit_a_CPPFLAGS =		\
 # cflags
 #-----------------------------------------------------------
 
-libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+if OPT_ENABLE_JAVA
+HPCJAVA_FLAGS = -DOPT_ENABLE_JAVA
+endif
+
+libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(HPCJAVA_FLAGS)
+
 libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS)
 
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
