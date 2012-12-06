@@ -50,7 +50,7 @@
  *
  * Note: the external functions assume the tree is not yet locked.
  *
- * $Id: ui_tree.c 4003 2012-11-09 05:17:55Z mfagan $
+ * $Id$
  */
 
 #include <sys/types.h>
@@ -66,7 +66,8 @@
 #include "splay.h"
 #include "splay-interval.h"
 #include "thread_data.h"
-#include "ui_tree_java.h"
+#include "fnbounds_java.h"
+#include "safe-sampling.h"
 
 
 
@@ -94,6 +95,7 @@ static size_t the_ui_size = 0;
 static void free_ui_java_tree_locked(interval_tree_node *tree);
 static void free_ui_java_node_locked(interval_tree_node *node);
 
+static load_module_t *lm_java = NULL;
 //---------------------------------------------------------------------
 // interface operations
 //---------------------------------------------------------------------
@@ -108,7 +110,7 @@ hpcjava_interval_tree_init(void)
 
   dso_info_t *dso_info  = hpcrun_dso_make(jo_filename, NULL, NULL,
 			  0, 0, 0 );
-  hpcrun_loadmap_map(dso_info);
+  lm_java = hpcrun_loadmap_map(dso_info);
 
   UI_TREE_JAVA_UNLOCK;
 }
@@ -196,10 +198,14 @@ hpcjava_get_interval(void *addr)
 splay_interval_t *
 hpcjava_add_address_interval(const void *addr_start, const void *addr_end)
 {
-  UI_TREE_JAVA_LOCK;
+  if (!hpcrun_safe_enter()) {
+    return;
+  }
+  //UI_TREE_JAVA_LOCK;
   splay_interval_t *intvl = hpcjava_addr_to_interval_locked(addr_start, addr_end);
-  UI_TREE_JAVA_UNLOCK;
+  //UI_TREE_JAVA_UNLOCK;
   
+  hpcrun_safe_exit();
   return intvl;
 }
 
@@ -229,18 +235,16 @@ hpcjava_addr_to_interval_locked(const void *addr_start, const void *addr_end)
   TMSG(JAVA, "begin unwind_java insert addr %p to %p",
        addr_start, addr_end);
 
-  load_module_t *lm = hpcrun_loadmap_findByName(jo_filename);
-
   /* create an interval address node */
   p = hpcjava_ui_malloc(sizeof(interval_tree_node));
   p->start  = addr_start;
   p->end    = addr_end;
-  p->lm     = lm;
+  p->lm     = lm_java;
 
   /* adjust the load module bound */
-  dso_info_t *dso = lm->dso_info;
+  dso_info_t *dso = lm_java->dso_info;
 
-  if ( dso->end_addr < addr_end)
+  if ( (dso->end_addr == 0) ||dso->end_addr < addr_end)
 	 dso->end_addr = addr_end;
 
   if ( (dso->start_addr == 0) || (dso->start_addr > addr_start) )
