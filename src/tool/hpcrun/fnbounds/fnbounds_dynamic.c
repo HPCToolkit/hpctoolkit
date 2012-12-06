@@ -117,6 +117,10 @@
 
 #include <lib/prof-lean/spinlock.h>
 
+#ifdef OPT_ENABLE_JAVA
+#include "fnbounds/fnbounds_java.h"
+#endif
+
 
 //*********************************************************************
 // local types
@@ -247,11 +251,26 @@ fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
   FNBOUNDS_LOCK;
 
   bool ret = false; // failure unless otherwise reset to 0 below
+  load_module_t* lm_ = NULL;
   
-  load_module_t* lm_ = fnbounds_get_loadModule(ip);
+#ifdef OPT_ENABLE_JAVA
+  /* look at Java unwind interval tree */
+  interval_tree_node *p = hpcjava_get_interval(ip);
+  if (p != NULL) {
+    TMSG(LOADMAP, "found in unwind java tree: addr %p", ip);
+    *start = p->start;
+    *end   = p->end;
+    lm_    = p->lm;
+    ret = true;
+  }
+#endif
+
+  if (!ret) 
+  {
+  lm_ = fnbounds_get_loadModule(ip);
   dso_info_t* dso = (lm_) ? lm_->dso_info : NULL;
   
-  if (dso && dso->nsymbols > 0) {
+  if (!ret && dso && dso->nsymbols > 0) {
     void* ip_norm = ip;
     if (dso->is_relocatable) {
       ip_norm = (void*) (((unsigned long) ip_norm) - dso->start_to_ref_dist);
@@ -272,6 +291,7 @@ fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
 	*end   = PERFORM_RELOCATION(*end  , dso->start_to_ref_dist);
       }
     }
+  }
   }
 
   if (lm) {

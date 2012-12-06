@@ -64,10 +64,6 @@
 #include "thread_data.h"
 #include "ui_tree.h"
 
-#ifdef OPT_ENABLE_JAVA
-#include "ui_tree_java.h"
-#endif
-
 #include <messages/messages.h>
 
 #include <lib/prof-lean/spinlock.h>
@@ -221,18 +217,6 @@ hpcrun_addr_to_interval_locked(void *addr)
    * the lock could cause the insert to fail if another thread does
    * the insert first, but in that case, it's not really a failure.
    */
-#ifdef OPT_ENABLE_JAVA
-  /* look at Java unwind interval tree */
-  p = hpcjava_get_interval(addr);
-  if (p != NULL) {
-    TMSG(UITREE_LOOKUP, "found in unwind java tree: addr %p", addr);
-    fcn_end   = p->end;
-    fcn_start = p->start;
-
-    /* temporary goto */
-    goto lbl_build_interval;
-  }
-#endif
 
   UI_TREE_UNLOCK;
   bool ret = fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end, &lm);
@@ -248,8 +232,6 @@ hpcrun_addr_to_interval_locked(void *addr)
     return (NULL);
   }
 
-/* temporary goto label */
-lbl_build_interval:
   istat = build_intervals(fcn_start, fcn_end - fcn_start);
   if (istat.first == NULL) {
     TMSG(UITREE, "BAD build_intervals failed: fcn range %p to %p",

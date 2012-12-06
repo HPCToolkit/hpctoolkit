@@ -7,8 +7,7 @@
 
 #include <sys/time.h>
 
-#include <ui_tree_java.h>
-//#include <hpcrun/unwind/common/ui_tree_java.h>
+#include <fnbounds/fnbounds_java.h>
 
 typedef void fct_add_interval(void*,void*);
 
@@ -212,6 +211,12 @@ static void JNICALL cb_dynamic_code_generated(jvmtiEnv * jvmti_env,
 {
 	/* shut up compiler warning */
 	jvmti_env = jvmti_env;
+
+	/* adding the interval to the java ui tree
+ 	 */ 	 
+	const void *code_addr_end = code_addr + code_size;
+	hpcjava_add_address_interval(code_addr, code_addr_end);
+
 	if (debug) {
 		fprintf(stderr, "dyncode: name=%s, addr=%p, size=%i \n",
 			name, code_addr, code_size); 
