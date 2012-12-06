@@ -301,7 +301,7 @@ endif
 
 if OPT_ENABLE_JAVA
 MY_BASE_FILES +=  			\
-	unwind/common/ui_tree_java.c
+	fnbounds/fnbounds_java.c
 endif
 
 MY_DYNAMIC_FILES = 			\
