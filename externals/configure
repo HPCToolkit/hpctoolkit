@@ -693,7 +693,6 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_wordsize
-enable_subdirs
 with_dummy_blank_line
 with_binutils
 with_boost
@@ -1339,7 +1338,6 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-wordsize=NUM   host wordsize in bits, 32 or 64, only needed if
                           autoconf computes the wrong value
-  --enable-subdirs        install packages into separate subdirs (default yes)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -4180,59 +4178,6 @@ $as_echo "$as_me: WARNING: option in CC with something like CC='gcc -m${wordsize
 fi
 
 #------------------------------------------------------------
-# Install directory: --enable-subdirs
-#------------------------------------------------------------
-
-# Install packages into: (1) a single, unified directory with shared
-# bin, include, lib dirs, or (2) separate subidrs, one for each
-# package.  Old monitor always uses a separate subdir due to name
-# conflicts.
-
-# Check whether --enable-subdirs was given.
-if test "${enable_subdirs+set}" = set; then :
-  enableval=$enable_subdirs;
-else
-  enable_subdirs=yes
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking install directory" >&5
-$as_echo_n "checking install directory... " >&6; }
-
-if test "x$enable_subdirs" = xyes ; then
-    binutils_local_prefix="${prefix}/binutils"
-    boost_local_prefix="${prefix}/boost"
-    libdwarf_local_prefix="${prefix}/libdwarf"
-    libelf_local_prefix="${prefix}/libelf"
-    libmonitor_local_prefix="${prefix}/libmonitor"
-    libunwind_local_prefix="${prefix}/libunwind"
-    libxml2_local_prefix="${prefix}/libxml2"
-    old_monitor_local_prefix="${prefix}/old-monitor"
-    open_analysis_local_prefix="${prefix}/open-analysis"
-    symtabAPI_local_prefix="${prefix}/symtabAPI"
-    xed2_local_prefix="${prefix}/xed2"
-    xerces_local_prefix="${prefix}/xerces"
-    enable_subdirs_mesg=separate
-else
-    binutils_local_prefix="$prefix"
-    boost_local_prefix="$prefix"
-    libdwarf_local_prefix="$prefix"
-    libelf_local_prefix="$prefix"
-    libmonitor_local_prefix="$prefix"
-    libunwind_local_prefix="$prefix"
-    libxml2_local_prefix="$prefix"
-    old_monitor_local_prefix="${prefix}/old-monitor"
-    open_analysis_local_prefix="$prefix"
-    symtabAPI_local_prefix="$prefix"
-    xed2_local_prefix="$prefix"
-    xerces_local_prefix="$prefix"
-    enable_subdirs_mesg=shared
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_subdirs_mesg" >&5
-$as_echo "$enable_subdirs_mesg" >&6; }
-
-#------------------------------------------------------------
 # Copy skeleton directories
 #------------------------------------------------------------
 
@@ -4289,6 +4234,27 @@ $as_echo_n "checking copying package directories... " >&6; }
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: done" >&5
 $as_echo "done" >&6; }
 fi
+
+#------------------------------------------------------------
+# Install prefixes
+#------------------------------------------------------------
+
+# Install each package into a separate subdirectory of the global
+# prefix.  This is only for packages that we build here.  Packages
+# given by --with-pkg=PATH are left in place.
+
+binutils_local_prefix="${prefix}/binutils"
+boost_local_prefix="${prefix}/boost"
+libdwarf_local_prefix="${prefix}/libdwarf"
+libelf_local_prefix="${prefix}/libelf"
+libmonitor_local_prefix="${prefix}/libmonitor"
+libunwind_local_prefix="${prefix}/libunwind"
+libxml2_local_prefix="${prefix}/libxml2"
+old_monitor_local_prefix="${prefix}/old-monitor"
+open_analysis_local_prefix="${prefix}/open-analysis"
+symtabAPI_local_prefix="${prefix}/symtabAPI"
+xed2_local_prefix="${prefix}/xed2"
+xerces_local_prefix="${prefix}/xerces"
 
 #------------------------------------------------------------
 # Binutils: --with-binutils=PATH
