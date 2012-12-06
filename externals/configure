@@ -4159,15 +4159,24 @@ wordsize_cxxflags=`get_wordsize`
 
 rm -f "$srcfile" "$objfile"
 
-warn_wordsize_mismatch=no
 if test "$wordsize" != "$wordsize_cc" \
     || test "$wordsize" != "$wordsize_cxx" \
     || test "$wordsize" != "$wordsize_cflags" \
     || test "$wordsize" != "$wordsize_cxxflags"
 then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: CC or CXX generate inconsistent wordsizes" >&5
-$as_echo "$as_me: WARNING: CC or CXX generate inconsistent wordsizes" >&2;}
-    warn_wordsize_mismatch=yes
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: CC or CXX generate inconsistent wordsizes." >&5
+$as_echo "$as_me: WARNING: CC or CXX generate inconsistent wordsizes." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Either CC ($wordsize_cc) and CXX ($wordsize_cxx) generate different wordsizes," >&5
+$as_echo "$as_me: WARNING: Either CC ($wordsize_cc) and CXX ($wordsize_cxx) generate different wordsizes," >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: or they do not match the host wordsize ($wordsize), or they generate" >&5
+$as_echo "$as_me: WARNING: or they do not match the host wordsize ($wordsize), or they generate" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: different wordsizes with and without CFLAGS.  If you are" >&5
+$as_echo "$as_me: WARNING: different wordsizes with and without CFLAGS.  If you are" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using a CFLAGS option to reset the wordsize, then put this" >&5
+$as_echo "$as_me: WARNING: using a CFLAGS option to reset the wordsize, then put this" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: option in CC with something like CC='gcc -m${wordsize}'." >&5
+$as_echo "$as_me: WARNING: option in CC with something like CC='gcc -m${wordsize}'." >&2;}
+    as_fn_error $? "CC or CXX generate inconsistent wordsizes." "$LINENO" 5
 fi
 
 #------------------------------------------------------------
@@ -6287,21 +6296,4 @@ $as_echo "$as_me: WARNING: This is not necessarily an error, but some packages m
 $as_echo "$as_me: WARNING: compile cleanly without gcc or g++.  If the build fails, try" >&2;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using GNU gcc and g++ before reporting an error." >&5
 $as_echo "$as_me: WARNING: using GNU gcc and g++ before reporting an error." >&2;}
-fi
-
-if test "$warn_wordsize_mismatch" = yes ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
-$as_echo "$as_me: " >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Host wordsize mismatch." >&5
-$as_echo "$as_me: WARNING: Host wordsize mismatch." >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Either CC ($wordsize_cc) and CXX ($wordsize_cxx) generate different wordsizes," >&5
-$as_echo "$as_me: WARNING: Either CC ($wordsize_cc) and CXX ($wordsize_cxx) generate different wordsizes," >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: or they do not match the host wordsize ($wordsize), or they generate" >&5
-$as_echo "$as_me: WARNING: or they do not match the host wordsize ($wordsize), or they generate" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: different wordsizes with and without CFLAGS.  If you are" >&5
-$as_echo "$as_me: WARNING: different wordsizes with and without CFLAGS.  If you are" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using a CFLAGS option to reset the wordsize, then put this" >&5
-$as_echo "$as_me: WARNING: using a CFLAGS option to reset the wordsize, then put this" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: option in CC with something like CC='gcc -m${wordsize}'." >&5
-$as_echo "$as_me: WARNING: option in CC with something like CC='gcc -m${wordsize}'." >&2;}
 fi

@@ -331,14 +331,18 @@ wordsize_cxxflags=`get_wordsize`
 
 rm -f "$srcfile" "$objfile"
 
-warn_wordsize_mismatch=no
 if test "$wordsize" != "$wordsize_cc" \
     || test "$wordsize" != "$wordsize_cxx" \
     || test "$wordsize" != "$wordsize_cflags" \
     || test "$wordsize" != "$wordsize_cxxflags"
 then
-    AC_MSG_WARN([CC or CXX generate inconsistent wordsizes])
-    warn_wordsize_mismatch=yes
+    AC_MSG_WARN([CC or CXX generate inconsistent wordsizes.])
+    AC_MSG_WARN([Either CC ($wordsize_cc) and CXX ($wordsize_cxx) generate different wordsizes,])
+    AC_MSG_WARN([or they do not match the host wordsize ($wordsize), or they generate])
+    AC_MSG_WARN([different wordsizes with and without CFLAGS.  If you are])
+    AC_MSG_WARN([using a CFLAGS option to reset the wordsize, then put this])
+    AC_MSG_WARN([option in CC with something like CC='gcc -m${wordsize}'.])
+    AC_MSG_ERROR([CC or CXX generate inconsistent wordsizes.])
 fi
 
 #------------------------------------------------------------
@@ -1194,14 +1198,4 @@ if test "$warn_non_gcc" = yes ; then
     AC_MSG_WARN([This is not necessarily an error, but some packages may not])
     AC_MSG_WARN([compile cleanly without gcc or g++.  If the build fails, try])
     AC_MSG_WARN([using GNU gcc and g++ before reporting an error.])
-fi
-
-if test "$warn_wordsize_mismatch" = yes ; then
-    AC_MSG_NOTICE([])
-    AC_MSG_WARN([Host wordsize mismatch.])
-    AC_MSG_WARN([Either CC ($wordsize_cc) and CXX ($wordsize_cxx) generate different wordsizes,])
-    AC_MSG_WARN([or they do not match the host wordsize ($wordsize), or they generate])
-    AC_MSG_WARN([different wordsizes with and without CFLAGS.  If you are])
-    AC_MSG_WARN([using a CFLAGS option to reset the wordsize, then put this])
-    AC_MSG_WARN([option in CC with something like CC='gcc -m${wordsize}'.])
 fi
