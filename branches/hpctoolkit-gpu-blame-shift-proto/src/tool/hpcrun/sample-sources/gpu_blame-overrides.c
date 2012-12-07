@@ -177,7 +177,7 @@ hpcrun_safe_exit();} while(0)
 
 #define SYNC_PROLOGUE(ctxt, launch_node, start_time, rec_node)                                                                   \
 TD_GET(gpu_data.overload_state) = SYNC_STATE;                                                                                    \
-hpcrun_safe_enter();                                                                                                   \
+hpcrun_safe_enter();                                                                                                             \
 ucontext_t ctxt;                                                                                                                 \
 getcontext(&ctxt);                                                                                                               \
 cct_node_t * launch_node = hpcrun_sample_callpath(&ctxt, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ ).sample_node; \
@@ -189,7 +189,7 @@ spinlock_unlock(&g_gpu_lock);                                                   
 hpcrun_safe_exit();
 
 #define SYNC_EPILOGUE(ctxt, launch_node, start_time, rec_node, mask, end_time)                                \
-hpcrun_safe_enter();                                                                                \
+hpcrun_safe_enter();                                                                                          \
 spinlock_lock(&g_gpu_lock);                                                                                   \
 uint64_t last_kernel_end_time = LeaveCudaSync(rec_node,start_time,mask);                                      \
 spinlock_unlock(&g_gpu_lock);                                                                                 \
@@ -204,22 +204,22 @@ cct_metric_data_increment(gpu_idle_metric_id, launch_node, (cct_metric_data_t) {
 hpcrun_safe_exit();                                                                                           \
 TD_GET(gpu_data.is_thread_at_cuda_sync) = false
 
-#define GET_NEW_TREE_NODE(node_ptr) do {				            \
-if (g_free_tree_nodes_head) {						                \
-node_ptr = g_free_tree_nodes_head;					                \
-g_free_tree_nodes_head = g_free_tree_nodes_head->next_free_node;	\
-} else {								                            \
-node_ptr = (tree_node *) hpcrun_malloc(sizeof(tree_node));		    \
-}									                                \
+#define GET_NEW_TREE_NODE(node_ptr) do {                          \
+if (g_free_tree_nodes_head) {                                     \
+node_ptr = g_free_tree_nodes_head;                                \
+g_free_tree_nodes_head = g_free_tree_nodes_head->next_free_node;  \
+} else {                                                          \
+node_ptr = (tree_node *) hpcrun_malloc(sizeof(tree_node));        \
+}                                                                 \
 } while(0)
 
-#define GET_NEW_ACTIVE_KERNEL_NODE(node_ptr) do {					                \
-if (g_free_active_kernel_nodes_head) {							                    \
-node_ptr = g_free_active_kernel_nodes_head;						                    \
-g_free_active_kernel_nodes_head = g_free_active_kernel_nodes_head->next_free_node;	\
-} else {										                                    \
-node_ptr = (active_kernel_node_t *) hpcrun_malloc(sizeof(active_kernel_node_t));	\
-}											                                        \
+#define GET_NEW_ACTIVE_KERNEL_NODE(node_ptr) do {                                      \
+if (g_free_active_kernel_nodes_head) {                                                 \
+node_ptr = g_free_active_kernel_nodes_head;                                            \
+g_free_active_kernel_nodes_head = g_free_active_kernel_nodes_head->next_free_node;     \
+} else {                                                                               \
+node_ptr = (active_kernel_node_t *) hpcrun_malloc(sizeof(active_kernel_node_t));       \
+}                                                                                      \
 } while(0)
 
 
@@ -505,11 +505,11 @@ static cct_node_t *stream_duplicate_cpu_node(core_profile_trace_data_t *st, ucon
 }
 
 
-inline void hpcrun_stream_finalize(core_profile_trace_data_t *st) {
+inline void hpcrun_stream_finalize(void * st) {
     if(hpcrun_trace_isactive()) 
       hpcrun_trace_close(st);
  
-    hpcrun_write_profile_data(st);
+    hpcrun_write_profile_data((core_profile_trace_data_t *) st);
 }
 
 
@@ -1009,6 +1009,8 @@ void CreateStream0IfNot(cudaStream_t stream) {
             hpcrun_trace_append(g_stream_array[new_streamId].st, g_stream_array[new_streamId].idle_node_id, HPCRUN_FMT_MetricId_NULL /* null metric id */);
             
         }
+
+        g_stream_array[new_streamId].aux_cleanup_info = hpcrun_process_aux_cleanup_add(hpcrun_stream_finalize, g_stream_array[new_streamId].st);
         g_stream0_not_initialized = false;
     }
     HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
@@ -1191,6 +1193,10 @@ cudaError_t cudaStreamDestroy(cudaStream_t stream) {
     streamId = SplayGetStreamId(stream_to_id_tree_root, stream);
     
     hpcrun_stream_finalize(g_stream_array[streamId].st);
+
+    // remove from hpcrun process auxiliary cleanup list 
+    hpcrun_process_aux_cleanup_remove(g_stream_array[streamId].aux_cleanup_info);
+
     g_stream_array[streamId].st = NULL;
     
     monitor_disable_new_threads();
@@ -1275,6 +1281,7 @@ cudaError_t cudaStreamCreate(cudaStream_t * stream) {
         
     }
     
+    g_stream_array[new_streamId].aux_cleanup_info = hpcrun_process_aux_cleanup_add(hpcrun_stream_finalize, g_stream_array[new_streamId].st);
     HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
     return ret;
 }
@@ -1726,6 +1733,10 @@ CUresult cuStreamDestroy(CUstream stream) {
     
     
     hpcrun_stream_finalize(g_stream_array[streamId].st);
+
+    // remove from hpcrun process auxiliary cleanup list 
+    hpcrun_process_aux_cleanup_remove(g_stream_array[streamId].aux_cleanup_info);
+
     g_stream_array[streamId].st = NULL;
     
     monitor_disable_new_threads();
@@ -1812,10 +1823,8 @@ CUresult cuStreamCreate(CUstream * phStream, unsigned int Flags) {
         
     }
     
+    g_stream_array[new_streamId].aux_cleanup_info = hpcrun_process_aux_cleanup_add(hpcrun_stream_finalize, g_stream_array[new_streamId].st);
     HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
-    //cuptiGetStreamId(cbRDInfo->context, cbRDInfo->resourceHandle.stream, &new_streamId);
-    //SYNCHRONOUS_CLEANUP;
-    //gpu_trace_close(0, new_streamId);
     
     return ret;
     

@@ -58,6 +58,7 @@
 #include "gpu_blame-cuda-runtime-header.h"
 #include "gpu_blame-cuda-driver-header.h"
 #include <hpcrun/core_profile_trace_data.h>
+#include <hpcrun/main.h>
 
 //
 // Blame shiting interface
@@ -65,10 +66,10 @@
 #define MAX_STREAMS (500)
 
 ///TODO: evaluate this option : FORCE CLEANUP
-#define SYNCHRONOUS_CLEANUP do{  hpcrun_safe_enter_async(NULL); 		\
-spinlock_lock(&g_gpu_lock); 			                                \
-cleanup_finished_events(); 			                                    \
-spinlock_unlock(&g_gpu_lock);		 	                                \
+#define SYNCHRONOUS_CLEANUP do{  hpcrun_safe_enter_async(NULL);\
+spinlock_lock(&g_gpu_lock);                                    \
+cleanup_finished_events();                                     \
+spinlock_unlock(&g_gpu_lock);                                  \
 hpcrun_safe_exit(); } while(0)
 
 
@@ -114,6 +115,8 @@ typedef struct stream_node_t {
     struct event_list_node_t *unfinished_event_node;
     // pointer to the next stream which has activities pending
     struct stream_node_t *next_unfinished_stream;
+    // used to remove from hpcrun cleanup list if stream is explicitly destroyed
+    hpcrun_aux_cleanup_t * aux_cleanup_info;
     // IDLE NODE persistent id for this stream
     int32_t idle_node_id;
     
@@ -207,7 +210,7 @@ extern uint32_t g_cuda_launch_skip_inner;
 extern void gpu_blame_shifter(int metric_id, cct_node_t * node, int  metric_incr);
 extern void CloseAllStreams(struct stream_to_id_map_t *root); 
 extern uint32_t cleanup_finished_events();
-extern void hpcrun_stream_finalize(core_profile_trace_data_t *cptd);
+extern void hpcrun_stream_finalize(void  *cptd);
 extern void hpcrun_set_gpu_proxy_present();
 
 #endif
