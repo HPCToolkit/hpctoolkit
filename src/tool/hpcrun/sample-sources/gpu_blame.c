@@ -158,6 +158,10 @@ void CloseAllStreams(stream_to_id_map_t *root) {
     streamId = root->id;
     
     hpcrun_stream_finalize(g_stream_array[streamId].st);
+
+    // remove from hpcrun process auxiliary cleanup list 
+    hpcrun_process_aux_cleanup_remove(g_stream_array[streamId].aux_cleanup_info);
+
     g_stream_array[streamId].st = NULL;
 }
 
@@ -256,13 +260,14 @@ static void METHOD_FN(shutdown)
         gpu_trace_close(DEVICE_ID, streamId);
     }
 #endif
-        
+#if 0        
     if (stream_to_id_tree_root) {
         SYNCHRONOUS_CLEANUP;
         // Walk the stream splay tree and close each trace.
         CloseAllStreams(stream_to_id_tree_root);
         stream_to_id_tree_root = NULL;
     }
+#endif
 
     TMSG(CPU_GPU_BLAME_CTL, "shutodown CPU_GPU_BLAME_CTL");
     METHOD_CALL(self, stop);    // make sure stop has been called

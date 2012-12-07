@@ -56,4 +56,9 @@ typedef void siglongjmp_fcn(sigjmp_buf, int);
 
 siglongjmp_fcn *hpcrun_get_real_siglongjmp(void);
 
+typedef struct hpcrun_aux_cleanup_t  hpcrun_aux_cleanup_t;
+
+hpcrun_aux_cleanup_t * hpcrun_process_aux_cleanup_add( void (*func) (void *), void * arg);
+void hpcrun_process_aux_cleanup_remove(hpcrun_aux_cleanup_t * node);
+
 #endif  // ! main_h
