@@ -21,7 +21,7 @@ SRC_DIR =   symtabAPI
 BUILD_DIR = symtabAPI/src/dyninst
 PATCH_DIR = patches-61
 CONFIG_CMD = ./configure-61
-INSTALL_CMD = ./install-61
+INSTALL_CMD = true
 
 else
 

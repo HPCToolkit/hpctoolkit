@@ -2,6 +2,9 @@
 #  This file passes configure variables to Makefiles.
 #  It is rewritten on configure.
 #
+MAKEFILE_CONF = yes
+
+PREFIX = @prefix@
 
 CC = @CC@
 CFLAGS = @CFLAGS@

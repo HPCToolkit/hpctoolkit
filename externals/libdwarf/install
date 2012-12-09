@@ -20,7 +20,5 @@ cp "$WORK/libdwarf.so" "$prefix/lib/" || die "unable to install libdwarf.so"
 cp "$SRC/dwarf.h" "$prefix/include/"  || die "unable to install dwarf.h"
 cp "$SRC/libdwarf.h" "$prefix/include/" || die "unable to install libdwarf.h"
 
-reset_perms "$prefix"
-
 post_install
 

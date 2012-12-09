@@ -34,6 +34,10 @@
 #  $Id$
 #
 
+ifneq ($(MAKEFILE_CONF),yes)
+include ../Makefile.conf
+endif
+
 FETCH_COOKIE =   .fetch-done
 CONFIG_COOKIE =  .config-done
 BUILD_COOKIE =   .build-done
@@ -43,6 +47,7 @@ BAK = .bak
 
 PATCH_DIR ?=  patches
 BUILD_DIR ?=  work
+INSTALL_SUBDIR ?= $(PKG_NAME)
 
 FETCH_CMD ?=    true
 PATCH_CMD ?= 	default
@@ -152,6 +157,9 @@ reinstall: build
 	@test x != "x$(INSTALL_CMD)"
 	@rm -f $(INSTALL_COOKIE)
 	$(INSTALL_CMD)
+	@echo "resetting permissions on: $(INSTALL_SUBDIR)"
+	-find "$(PREFIX)/$(INSTALL_SUBDIR)" -type d -exec chmod a+rx {} \;
+	-chmod -R a+r "$(PREFIX)/$(INSTALL_SUBDIR)"
 	touch $(INSTALL_COOKIE)
 	@echo "$(PKG_NAME) build complete"
 
