@@ -99,6 +99,7 @@ refetch:
 		echo "missing FETCH_CMD" ;  \
 		exit 2 ;  \
 	fi
+	-ls -l "$(SRC_DIR)"
 	@if test "x$(PATCH_CMD)" != xdefault ; then  \
 		echo ; echo "===> ($(PKG_NAME)) patching ..." ;  \
 		$(PATCH_CMD) ;  \

@@ -95,20 +95,20 @@ fi
 #
 case "$the_file" in
     *.tar )
-	echo tar xvf "$the_file"
-	tar -x -v -f "$the_file"
+	echo tar xf "$the_file"
+	tar -x -f "$the_file"
 	test $? -eq 0 || die "unable to untar: $the_file"
 	;;
 
     *.tar.gz | *.tgz )
-	echo tar xvzf "$the_file"
-	tar -x -v -z -f "$the_file"
+	echo tar xzf "$the_file"
+	tar -x -z -f "$the_file"
 	test $? -eq 0 || die "unable to untar: $the_file"
 	;;
 
     *.tar.bz | *.tar.bz2 | *.tbz )
-	echo tar xvjf "$the_file"
-	tar -x -v -j -f "$the_file"
+	echo tar xjf "$the_file"
+	tar -x -j -f "$the_file"
 	test $? -eq 0 || die "unable to untar: $the_file"
 	;;
 
