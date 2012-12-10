@@ -105,6 +105,7 @@
 
 #include "epoch.h"
 #include "thread_data.h"
+#include "threadmgr.h"
 #include "thread_use.h"
 #include "trace.h"
 #include "write_data.h"
@@ -768,6 +769,8 @@ monitor_init_thread(int tid, void* data)
   void* thread_data = hpcrun_thread_init(tid, (cct_ctxt_t*)data);
   TMSG(THREAD,"back from init thread %d",tid);
 
+  hpcrun_threadmgr_thread_new();
+
   hpcrun_trace_open();
   hpcrun_safe_exit();
 
@@ -778,6 +781,8 @@ monitor_init_thread(int tid, void* data)
 void
 monitor_fini_thread(void* init_thread_data)
 {
+  hpcrun_threadmgr_thread_delete();
+
   if (hpcrun_get_disabled()) {
     return;
   }

@@ -73,6 +73,10 @@ typedef enum {
   HARD_STOP
 } source_state_t;
 
+typedef struct {
+  void *ptr;
+} source_info_t;
+
 typedef enum {
   SS_HARDWARE,    // use sample counters or other hardware.
                   // NOTE: *Currently limited to only 1 hardware class sample source*

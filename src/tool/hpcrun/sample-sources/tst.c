@@ -326,9 +326,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   if (more_tok()) {
     EMSG("MULTIPLE _TST events detected! Using first event spec: %s");
   }
-  // 
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->eventSet[self->evset_idx] = 0xDEAD;
 }
 
 //

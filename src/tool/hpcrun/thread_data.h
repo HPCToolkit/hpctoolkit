@@ -133,9 +133,8 @@ typedef struct thread_data_t {
   // ----------------------------------------
   // sample sources
   // ----------------------------------------
-  int            eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
   source_state_t ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
-  long long      prev_values[MAX_EVENTS];
+  source_info_t  ss_info[MAX_POSSIBLE_SAMPLE_SOURCES];
 
   struct sigevent sigev;   // POSIX real-time timer
   timer_t        timerid;
