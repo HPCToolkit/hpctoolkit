@@ -502,9 +502,6 @@ METHOD_FN(process_event_list, int lush_metrics)
     EEMSG("Can't use multiple timer events in the same run.");
     hpcrun_ssfail_conflict("timer", event);
   }
-
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->eventSet[self->evset_idx] = 0xDEAD;
 }
 
 //

@@ -259,6 +259,7 @@ MY_BASE_FILES =				\
 	term_handler.c			\
 	thread_data.c			\
 	thread_use.c			\
+	threadmgr.c			\
 	trace.c				\
 	weak.c				\
 	write_data.c		        \

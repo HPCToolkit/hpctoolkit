@@ -163,8 +163,6 @@ static void
 METHOD_FN(gen_event_set, int lush_metrics)
 {
   TMSG(IO, "gen event set (no-op)");
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->eventSet[self->evset_idx] = 0xDEAD;
 }
 
 

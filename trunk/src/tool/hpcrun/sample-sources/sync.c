@@ -178,8 +178,6 @@ METHOD_FN(process_event_list,int lush_metrics)
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->eventSet[self->evset_idx] = 0xDEAD; 
 }
 
 
