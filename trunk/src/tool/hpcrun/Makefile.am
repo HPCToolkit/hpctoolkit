@@ -165,7 +165,7 @@ UNW_X86_FILES = \
        $(UNW_COMMON_FILES) \
 	unwind/x86-family/x86-all.c			\
 	unwind/x86-family/amd-xop.c                     \
- 	unwind/x86-family/x86-cold-path.c		\
+	unwind/x86-family/x86-cold-path.c		\
 	unwind/x86-family/x86-validate-retn-addr.c	\
 	unwind/x86-family/x86-unwind-interval.c		\
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
@@ -334,8 +334,11 @@ MY_IA64_FILES = \
         trampoline/ia64/ia64-tramp.s \
         utilities/arch/ia64/ia64-context-pc.c
 
-MY_PAPI_FILES = 			\
-	sample-sources/papi.c
+if OPT_PAPI_COMPONENT
+MY_PAPI_FILES = sample-sources/papi-c.c
+else
+MY_PAPI_FILES = sample-sources/papi.c
+endif
 
 MY_UPC_FILES = sample-sources/upc.c
 

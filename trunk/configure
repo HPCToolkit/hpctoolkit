@@ -654,6 +654,8 @@ SYMTABAPI_COPY
 SYMTABAPI_LIB_LIST
 SYMTABAPI_LIB
 SYMTABAPI_INC
+OPT_PAPI_COMPONENT_FALSE
+OPT_PAPI_COMPONENT_TRUE
 papi_extra_libs
 OPT_PAPI_LIBPATH
 OPT_PAPI_LDFLAGS
@@ -879,6 +881,7 @@ with_libunwind
 with_monitor
 with_open_analysis
 with_papi
+enable_papi_c
 with_symtabAPI
 with_xed2
 with_xerces
@@ -1547,6 +1550,8 @@ Optional Features:
   --enable-fast-install[=PKGS]
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --enable-papi-c         use new papi component sample source, requires papi
+                          5.1 or later
   --enable-hpcrun-flat    build hpcrun-flat (default yes)
   --enable-hpcrun         build hpcrun (default yes)
   --enable-hpcrun-static  build hpcrun for statically linked executables
@@ -17564,6 +17569,82 @@ fi
 
 
 
+# Option to use the new papi-c.c sample source file.  This is mostly
+# temporary until the new file integrates both component and
+# non-component PAPI.  Requires PAPI 5.1 or later.
+
+# Check whether --enable-papi-c was given.
+if test "${enable_papi_c+set}" = set; then :
+  enableval=$enable_papi_c; use_papi_c="$enableval"
+else
+  use_papi_c=check
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use new papi component" >&5
+$as_echo_n "checking whether to use new papi component... " >&6; }
+
+case "$use_papi_c" in
+  no | check ) ;;
+  * ) use_papi_c=yes ;;
+esac
+
+if test "$OPT_HAVE_PAPI" = no ; then
+  use_papi_c=no
+fi
+
+if test "$use_papi_c" = check ; then
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS"
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include "papi.h"
+int main()
+{
+  return PAPI_get_eventset_component(0);
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  use_papi_c=yes
+else
+  use_papi_c=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_papi_c" >&5
+$as_echo "$use_papi_c" >&6; }
+
+ if test "$use_papi_c" = yes; then
+  OPT_PAPI_COMPONENT_TRUE=
+  OPT_PAPI_COMPONENT_FALSE='#'
+else
+  OPT_PAPI_COMPONENT_TRUE='#'
+  OPT_PAPI_COMPONENT_FALSE=
+fi
+
+
 
 #-------------------------------------------------
 # Option: --with-symtabAPI=PATH
@@ -18848,6 +18929,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PAPI_STATIC_TRUE}" && test -z "${OPT_PAPI_STATIC_FALSE}"; then
   as_fn_error $? "conditional \"OPT_PAPI_STATIC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_PAPI_COMPONENT_TRUE}" && test -z "${OPT_PAPI_COMPONENT_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_PAPI_COMPONENT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_HPCRUN_FLAT_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_FLAT_FALSE}"; then
