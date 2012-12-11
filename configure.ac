@@ -1422,6 +1422,51 @@ AC_SUBST(OPT_PAPI_LDFLAGS)
 AC_SUBST(OPT_PAPI_LIBPATH)
 AC_SUBST([papi_extra_libs])
 
+# Option to use the new papi-c.c sample source file.  This is mostly
+# temporary until the new file integrates both component and
+# non-component PAPI.  Requires PAPI 5.1 or later.
+
+AC_ARG_ENABLE([papi-c],
+  AS_HELP_STRING([--enable-papi-c],
+      [use new papi component sample source, requires papi 5.1 or later]),
+  [use_papi_c="$enableval"],
+  [use_papi_c=check])
+
+AC_MSG_CHECKING([whether to use new papi component])
+
+case "$use_papi_c" in
+  no | check ) ;;
+  * ) use_papi_c=yes ;;
+esac
+
+if test "$OPT_HAVE_PAPI" = no ; then
+  use_papi_c=no
+fi
+
+if test "$use_papi_c" = check ; then
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS"
+  AC_LANG_PUSH([C])
+
+  AC_LINK_IFELSE([
+#include "papi.h"
+int main()
+{
+  return PAPI_get_eventset_component(0);
+}
+], [use_papi_c=yes], [use_papi_c=no])
+
+  AC_LANG_POP
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
+fi
+
+AC_MSG_RESULT([$use_papi_c])
+
+AM_CONDITIONAL(OPT_PAPI_COMPONENT, [test "$use_papi_c" = yes])
+
 
 #-------------------------------------------------
 # Option: --with-symtabAPI=PATH
