@@ -414,6 +414,11 @@ hpcrun_files_set_directory()
   }
 }
 
+char *
+hpcrun_get_directory()
+{
+  return output_directory;
+}
 
 void 
 hpcrun_files_set_executable(char *execname)
