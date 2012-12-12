@@ -53,5 +53,7 @@ symtabAPI_platform="@symtabAPI_platform@"
 xerces_platform="@xerces_platform@"
 have_tr1_map="@have_tr1_map@"
 
+cflags_fpic='@cflags_fpic@'
+
 opt_with_mpi="@with_mpi@"
 

@@ -44,4 +44,17 @@ for x in ${to_copy} ; do
     cp ${x} ${dir_to} || die "unable to install: ${x}"
 done
 
+#
+# Libiberty doesn't obey --libdir and always installs into a multilib
+# directory (lib64 or lib32).  Instead of hacking their Makefile, we
+# just copy the libraries.
+#
+cd "$prefix" || die "unable to cd: $prefix"
+for lib in lib64/lib* lib32/lib* ; do
+    if test -f "$lib" ; then
+	echo "cp $lib to lib"
+	cp -f "$lib" lib
+    fi
+done
+
 post_install

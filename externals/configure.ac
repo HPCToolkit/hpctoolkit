@@ -223,6 +223,46 @@ have_tr1_map="$ans"
 AC_SUBST([have_tr1_map])
 
 #------------------------------------------------------------
+# CFLAGS for -fPIC
+#------------------------------------------------------------
+
+# Try C flags for PIC.  GNU and Intel use -fPIC, PGI uses -fpic.
+
+AC_MSG_CHECKING([for option for PIC])
+
+cflags_fpic=
+
+ORIG_CFLAGS="$CFLAGS"
+AC_LANG_PUSH([C])
+
+for flag in -fPIC -fpic
+do
+    CFLAGS="$ORIG_CFLAGS $flag"
+    AC_COMPILE_IFELSE([
+int foo(int x)
+{
+    return x + 2;
+}
+],  [ans=yes], [ans=no])
+
+    if test "$ans" = yes ; then
+	cflags_fpic="$flag"
+	break
+    fi
+done
+
+AC_LANG_POP
+CFLAGS="$ORIG_CFLAGS"
+
+AC_MSG_RESULT([$cflags_fpic])
+
+if test "x$cflags_fpic" = x ; then
+    AC_MSG_WARN([unable to find CFLAGS to support PIC])
+fi
+
+AC_SUBST([cflags_fpic])
+
+#------------------------------------------------------------
 # GNU make
 #------------------------------------------------------------
 

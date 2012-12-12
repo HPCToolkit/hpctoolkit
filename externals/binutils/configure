@@ -14,6 +14,10 @@ prefix="$binutils_prefix"
 
 targets='mips64-sgi-irix6, alpha-*-linux-gnu, alpha-*-osf, sparc32-*-elf, sparc64-*-solaris2, i386-*-linux-gnu, x86_64-*-linux-gnu, ia64-*-linux-gnu, powerpc64-*-linux-gnu'
 
+# Some other packages want to use libbfd or libiberty in a shared
+# library, so add -fPIC to CFLAGS.
+CFLAGS="$CFLAGS $cflags_fpic"
+
 export CC="$CC"
 export CFLAGS="$CFLAGS"
 if test -n "${AR}"; then
@@ -22,6 +26,7 @@ fi
 
 set -- \
     --prefix="$prefix" \
+    --libdir="${prefix}/lib" \
     --enable-targets="${targets}" \
     --disable-werror \
     "$@"
