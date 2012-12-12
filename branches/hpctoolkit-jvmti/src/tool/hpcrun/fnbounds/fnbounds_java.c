@@ -67,7 +67,6 @@
 #include "splay-interval.h"
 #include "thread_data.h"
 #include "fnbounds_java.h"
-#include "safe-sampling.h"
 
 
 
@@ -198,14 +197,10 @@ hpcjava_get_interval(void *addr)
 splay_interval_t *
 hpcjava_add_address_interval(const void *addr_start, const void *addr_end)
 {
-  if (!hpcrun_safe_enter()) {
-    return;
-  }
   //UI_TREE_JAVA_LOCK;
   splay_interval_t *intvl = hpcjava_addr_to_interval_locked(addr_start, addr_end);
   //UI_TREE_JAVA_UNLOCK;
   
-  hpcrun_safe_exit();
   return intvl;
 }
 
