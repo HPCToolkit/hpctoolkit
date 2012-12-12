@@ -50,6 +50,8 @@
 //*****************************************************************************
 
 void hpcrun_files_set_directory();
+char * hpcrun_get_directory();
+
 void hpcrun_files_set_executable(char *execname);   
 const char *hpcrun_files_executable_pathname();
 const char *hpcrun_files_executable_name();
