@@ -112,11 +112,13 @@ MY_DYNAMIC_FILES = 					\
 
 
 MY_INCLUDE_DIRS =					\
+	-I/home/la5/pkgs/externals/oprofile/include/		\
         -I$(top_srcdir)/src/tool/			\
         -I$(top_srcdir)/src/tool/hpcrun        		\
         -I$(top_srcdir)/src/tool/hpcrun/messages        \
         -I$(top_srcdir)/src/tool/hpcrun/memory 		\
         -I$(top_srcdir)/src/tool/hpcrun/unwind/common	\
+        -I$(top_srcdir)/src/tool/hpcrun/unwind/generic-libunwind \
 	$(HPC_IFLAGS)					\
 	$(OPT_JAVA_IFLAGS)				\
 	$(OPT_LIBUNWIND_IFLAGS)         
@@ -139,7 +141,7 @@ libhpcjava_la_CPPFLAGS =			\
 # cflags
 #-----------------------------------------------------------
 
-libhpcjava_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcjava_la_CFLAGS = -I/home/la5/pkgs/externals/oprofile/include/ $(CFLAGS) $(HOST_CFLAGS)
 
 
 #-----------------------------------------------------------
@@ -147,7 +149,7 @@ libhpcjava_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 #-----------------------------------------------------------
 
 libhpcjava_la_LDFLAGS = -Wl,-Bsymbolic	\
-	-Wl,--strip-debug
+	-Wl,--strip-debug -lopagent
 
 
 #############################################################################
