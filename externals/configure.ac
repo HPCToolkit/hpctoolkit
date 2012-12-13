@@ -394,7 +394,7 @@ fi
 # copy other subdirs.
 
 packages='binutils boost libdwarf libelf libmonitor libunwind libxml2
-old-monitor open-analysis symtabAPI xed2 xerces'
+old-monitor open-analysis oprofile symtabAPI xed2 xerces'
 
 if test "x$srcdir" != x.
 then
@@ -458,6 +458,7 @@ libunwind_local_prefix="${prefix}/libunwind"
 libxml2_local_prefix="${prefix}/libxml2"
 old_monitor_local_prefix="${prefix}/old-monitor"
 open_analysis_local_prefix="${prefix}/open-analysis"
+oprofile_local_prefix="${prefix}/oprofile"
 symtabAPI_local_prefix="${prefix}/symtabAPI"
 xed2_local_prefix="${prefix}/xed2"
 xerces_local_prefix="${prefix}/xerces"
@@ -946,6 +947,53 @@ AC_MSG_RESULT([$open_analysis_avail])
 AC_SUBST([open_analysis_prefix])
 
 #------------------------------------------------------------
+# Oprofile: --with-oprofile=PATH
+#------------------------------------------------------------
+
+AC_ARG_WITH([oprofile],
+    [AS_HELP_STRING([--with-oprofile=PATH],
+	[path to oprofile install directory (default build)])],
+    [],
+    [with_oprofile=no])
+
+AC_MSG_CHECKING([oprofile])
+
+oprofile_avail=no
+oprofile_prefix=no
+cookie="oprofile/${nobuild_cookie}"
+rm -f "$cookie"
+
+case "$with_oprofile" in
+    build | yes )
+	oprofile_avail=build
+	oprofile_prefix="$oprofile_local_prefix"
+	;;
+    /* )
+	if test ! -x "${with_oprofile}/bin/opjitconv" ; then
+	    AC_MSG_ERROR([invalid oprofile directory: $with_oprofile])
+	fi
+	if test ! -f "${with_oprofile}/lib/libopagent.so" \
+	    && test ! -f "${with_oprofile}/lib/oprofile/libopagent.so"
+	then
+	    AC_MSG_ERROR([invalid oprofile directory: $with_oprofile])
+	fi
+	oprofile_avail="$with_oprofile"
+	oprofile_prefix="$with_oprofile"
+	echo "installed in: $with_oprofile" > "$cookie"
+	;;
+    no )
+	echo "not available" > "$cookie"
+	;;
+    * )
+	AC_MSG_ERROR([oprofile directory must be absolute path: $with_oprofile])
+	;;
+esac
+
+AC_MSG_RESULT([$oprofile_avail])
+
+AC_SUBST([oprofile_prefix])
+
+#------------------------------------------------------------
 # SymtabAPI: --with-symtabAPI=PATH
 #------------------------------------------------------------
 
@@ -1199,6 +1247,7 @@ AC_MSG_NOTICE([libunwind: $libunwind_avail])
 AC_MSG_NOTICE([libxml2: $libxml2_avail])
 AC_MSG_NOTICE([old-monitor: $old_monitor_avail])
 AC_MSG_NOTICE([open-analysis: $open_analysis_avail])
+AC_MSG_NOTICE([oprofile: $oprofile_avail])
 AC_MSG_NOTICE([symtabAPI: $symtabAPI_avail])
 AC_MSG_NOTICE([xed2: $xed2_avail])
 AC_MSG_NOTICE([xerces: $xerces_avail])

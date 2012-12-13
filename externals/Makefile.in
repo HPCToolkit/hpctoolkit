@@ -39,7 +39,7 @@ VERSION = @PACKAGE_VERSION@
 TARNAME = @PACKAGE_TARNAME@
 
 PACKAGES = binutils boost libdwarf libelf libmonitor libunwind libxml2  \
-	old-monitor open-analysis symtabAPI xed2 xerces
+	old-monitor open-analysis oprofile symtabAPI xed2 xerces
 
 DIST_FILES = LICENSE Makefile.conf.in Makefile.in README*  \
 	configure configure.ac externs.conf.in options.conf.in  \
@@ -56,6 +56,7 @@ all install install-all: begin-build $(PACKAGES)
 	@echo "Externals build complete at `date`"
 
 libdwarf: libelf
+oprofile: binutils
 symtabAPI: boost libdwarf libelf libunwind libxml2
 
 #

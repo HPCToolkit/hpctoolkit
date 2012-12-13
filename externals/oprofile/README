@@ -1,0 +1,39 @@
+=====================
+Oprofile Build Notes
+=====================
+
+Home: http://oprofile.sourceforge.net/about/
+
+Download: http://oprofile.sourceforge.net/download/
+
+License: GPL and LGPL
+
+Prereqs: binutils (libbfd and libiberty)
+
+Uses Autoconf and Automake, supports vpath and parallel builds.
+
+../configure \
+    CC=  CFLAGS=  CXX=  CXXFLAGS=  \
+    CPPFLAGS="-I /path/to/binutils/include" \
+    --prefix=/path/to/prefix \
+    --with-binutils=/path/to/binutils \
+    --disable-gui \
+    --without-java
+make
+make install
+
+Our Java support only needs libopagent and opjitconv (and libutil as
+prereq).  Other parts of oprofile need kernel access which would be
+awkward for us.
+
+Libopagent and opjitconv are all C, not C++.  But we configure with
+both CC and CXX so that configure doesn't pick a default CXX that is
+inconsistent with our CC.
+
+Oprofile uses libiberty but doesn't have an option for an alternate
+install path (only looks in /usr).  But setting CPPFLAGS works.
+
+Libopagent uses libiberty for a shared library.  So we now build
+binutils with -fPIC for oprofile.  Libiberty is a common library, but
+it's not always built with -fPIC, so we use our binutils.
+

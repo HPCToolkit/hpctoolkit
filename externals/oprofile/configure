@@ -1,0 +1,43 @@
+#!/bin/sh
+#
+#  Oprofile configure
+#
+#  $Id$
+#
+
+PKG_NAME=oprofile
+src=oprofile-0.9.8
+
+. ../build-utils/configure.inc
+pre_configure
+prefix="$oprofile_prefix"
+
+binutils="$binutils_prefix"
+
+# We only use CC, but also set CXX for consistency.
+# We use CPPFLAGS for libiberty.h.
+
+set --  \
+    CC="$CC"  \
+    CFLAGS="$CFLAGS"  \
+    CXX="$CXX"  \
+    CXXFLAGS="$CXXFLAGS"  \
+    CPPFLAGS="-I ${binutils}/include"  \
+    --prefix="$prefix"  \
+    --with-binutils="$binutils"  \
+    --disable-gui  \
+    --without-java \
+    "$@"
+
+if test -n "$is_cross_compile" ; then
+    set -- --host="$host" "$@"
+fi
+
+make_work_dir
+cd work || die "unable to cd: work"
+
+echo configure "$@"
+../${src}/configure "$@"
+test $? -eq 0 || die "configure failed"
+
+post_configure

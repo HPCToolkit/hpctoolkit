@@ -1,0 +1,28 @@
+#!/bin/sh
+#
+#  Oprofile build
+#
+#  $Id$
+#
+
+PKG_NAME=oprofile
+src=oprofile-0.9.8
+
+pkg_list='libutil libopagent opjitconv'
+
+. ../build-utils/configure.inc
+pre_build
+
+cd work || die "unable to cd: work"
+work_dir=`pwd`
+
+#
+# Build only a subset of packages.
+#
+for pkg in $pkg_list ; do
+    echo "building $pkg"
+    cd "${work_dir}/$pkg" || die "unable to cd: ${work_dir}/$pkg"
+    $MAKE || die "unable to build $pkg"
+done
+
+post_build

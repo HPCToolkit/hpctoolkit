@@ -605,6 +605,7 @@ xed2_prefix
 use_symtab_61
 symtabAPI_platform
 symtabAPI_prefix
+oprofile_prefix
 open_analysis_prefix
 old_monitor_prefix
 libxml2_lib
@@ -704,6 +705,7 @@ with_libunwind
 with_libxml2
 with_old_monitor
 with_open_analysis
+with_oprofile
 with_symtabAPI
 with_xed2
 with_xerces
@@ -1356,6 +1358,7 @@ Optional Packages:
   --with-open-analysis=PATH
                           path to open analysis install directory (default
                           build)
+  --with-oprofile=PATH    path to oprofile install directory (default build)
   --with-symtabAPI=PATH   path to symtabAPI install directory (default build)
   --with-xed2=PATH        path to xed2 install directory (default build)
   --with-xerces=PATH      path to xerces/c install directory (default build)
@@ -4249,7 +4252,7 @@ fi
 # copy other subdirs.
 
 packages='binutils boost libdwarf libelf libmonitor libunwind libxml2
-old-monitor open-analysis symtabAPI xed2 xerces'
+old-monitor open-analysis oprofile symtabAPI xed2 xerces'
 
 if test "x$srcdir" != x.
 then
@@ -4315,6 +4318,7 @@ libunwind_local_prefix="${prefix}/libunwind"
 libxml2_local_prefix="${prefix}/libxml2"
 old_monitor_local_prefix="${prefix}/old-monitor"
 open_analysis_local_prefix="${prefix}/open-analysis"
+oprofile_local_prefix="${prefix}/oprofile"
 symtabAPI_local_prefix="${prefix}/symtabAPI"
 xed2_local_prefix="${prefix}/xed2"
 xerces_local_prefix="${prefix}/xerces"
@@ -4850,6 +4854,58 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $open_analysis_avail" >&5
 $as_echo "$open_analysis_avail" >&6; }
+
+
+
+#------------------------------------------------------------
+# Oprofile: --with-oprofile=PATH
+#------------------------------------------------------------
+
+
+# Check whether --with-oprofile was given.
+if test "${with_oprofile+set}" = set; then :
+  withval=$with_oprofile;
+else
+  with_oprofile=no
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking oprofile" >&5
+$as_echo_n "checking oprofile... " >&6; }
+
+oprofile_avail=no
+oprofile_prefix=no
+cookie="oprofile/${nobuild_cookie}"
+rm -f "$cookie"
+
+case "$with_oprofile" in
+    build | yes )
+	oprofile_avail=build
+	oprofile_prefix="$oprofile_local_prefix"
+	;;
+    /* )
+	if test ! -x "${with_oprofile}/bin/opjitconv" ; then
+	    as_fn_error $? "invalid oprofile directory: $with_oprofile" "$LINENO" 5
+	fi
+	if test ! -f "${with_oprofile}/lib/libopagent.so" \
+	    && test ! -f "${with_oprofile}/lib/oprofile/libopagent.so"
+	then
+	    as_fn_error $? "invalid oprofile directory: $with_oprofile" "$LINENO" 5
+	fi
+	oprofile_avail="$with_oprofile"
+	oprofile_prefix="$with_oprofile"
+	echo "installed in: $with_oprofile" > "$cookie"
+	;;
+    no )
+	echo "not available" > "$cookie"
+	;;
+    * )
+	as_fn_error $? "oprofile directory must be absolute path: $with_oprofile" "$LINENO" 5
+	;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $oprofile_avail" >&5
+$as_echo "$oprofile_avail" >&6; }
 
 
 
@@ -6305,6 +6361,8 @@ $as_echo "$as_me: libxml2: $libxml2_avail" >&6;}
 $as_echo "$as_me: old-monitor: $old_monitor_avail" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: open-analysis: $open_analysis_avail" >&5
 $as_echo "$as_me: open-analysis: $open_analysis_avail" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: oprofile: $oprofile_avail" >&5
+$as_echo "$as_me: oprofile: $oprofile_avail" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: symtabAPI: $symtabAPI_avail" >&5
 $as_echo "$as_me: symtabAPI: $symtabAPI_avail" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: xed2: $xed2_avail" >&5
