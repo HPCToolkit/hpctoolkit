@@ -1,0 +1,486 @@
+#!/bin/sh
+# set -x
+#
+#------------------------------------
+# Part of HPCToolkit (hpctoolkit.org)
+#------------------------------------
+#
+# Copyright (c) 2002-2012, Rice University.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+# * Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in the
+#   documentation and/or other materials provided with the distribution.
+#
+# * Neither the name of Rice University (RICE) nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# This software is provided by RICE and contributors "as is" and any
+# express or implied warranties, including, but not limited to, the
+# implied warranties of merchantability and fitness for a particular
+# purpose are disclaimed. In no event shall RICE or contributors be
+# liable for any direct, indirect, incidental, special, exemplary, or
+# consequential damages (including, but not limited to, procurement of
+# substitute goods or services; loss of use, data, or profits; or
+# business interruption) however caused and on any theory of liability,
+# whether in contract, strict liability, or tort (including negligence
+# or otherwise) arising in any way out of the use of this software, even
+# if advised of the possibility of such damage.
+#
+# $HeadURL$
+# $Id$
+#
+# hpcrun -- set the environ variables for profiling with HPCToolkit
+# and launch the program.  See 'hpcrun -h' for a list of options.
+
+#------------------------------------------------------------
+# Values from configure
+#------------------------------------------------------------
+
+# If this script can't find its own install prefix, or if the script
+# is moved elsewhere, then set HPCTOOLKIT here.
+# HPCTOOLKIT='@prefix@'
+
+VERSION='@PACKAGE_VERSION@'
+
+# Relative paths are relative to HPCTOOLKIT.
+hpcfnbounds_dir='libexec/hpctoolkit'
+hpcrun_dir='lib/hpctoolkit'
+libmonitor_dir='@LIBMONITOR_RUN_DIR@'
+libunwind_dir='@LIBUNWIND_RUN_DIR@'
+papi_libdir='@OPT_PAPI_LIBPATH@'
+
+#------------------------------------------------------------
+# Find path to this script
+#------------------------------------------------------------
+
+hpc_path_to_root=..
+@export_hpctoolkit@
+
+# Relative paths are relative to HPCTOOLKIT.
+case "$hpcfnbounds_dir" in
+    /* ) ;;
+    * ) hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
+esac
+case "$hpcrun_dir" in
+    /* ) ;;
+    * ) hpcrun_dir="${HPCTOOLKIT}/${hpcrun_dir}" ;;
+esac
+case "$libmonitor_dir" in
+    /* ) ;;
+    * ) libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
+esac
+case "$libunwind_dir" in
+    /* ) ;;
+    * )  libunwind_dir="${HPCTOOLKIT}/${libunwind_dir}" ;;
+esac
+case "$papi_libdir" in
+    /* ) ;;
+    * ) papi_libdir="${HPCTOOLKIT}/${papi_libdir}" ;;
+esac
+
+#
+# Once hpcrun_dir is completely set, set
+#
+ext_dir="$hpcrun_dir"/ext-libs
+
+#------------------------------------------------------------
+# Usage Message
+#------------------------------------------------------------
+
+die()
+{
+    cat <<EOF 1>&2
+hpcrun: $*
+use 'hpcrun -h' for a summary of options
+EOF
+    exit 1
+}
+
+usage()
+{
+    cat <<EOF
+Usage:
+  hpcrun [profiling-options] <command> [command-arguments]
+  hpcrun [info-options]
+
+hpcrun profiles the execution of an arbitrary command <command> using
+statistical sampling (rather than instrumentation).  It collects
+per-thread call path profiles that represent the full calling context of
+sample points.  Sample points may be generated from multiple simultaneous
+sampling sources.  hpcrun profiles complex applications that use forks,
+execs, threads, and dynamic linking/unlinking; it may be used in conjuction
+with parallel process launchers such as MPICH's mpiexec and SLURM's srun.
+
+To profile a statically linked executable, make sure to link with hpclink.
+
+To configure hpcrun's sampling sources, specify events and periods using
+the -e/--event option.  For an event 'e' and period 'p', after every 'p'
+instances of 'e', a sample is generated that causes hpcrun to inspect the
+and record information about the monitored <command>.
+
+When <command> terminates, a profile measurement databse will be written to
+the directory:
+  hpctoolkit-<command>-measurements[-<jobid>]
+where <jobid> is a PBS or Sun Grid Engine job identifier.
+
+hpcrun enables a user to abort a process and write the partial profiling
+data to disk by sending the Interrupt signal (SIGINT or Ctrl-C).  This can
+be extremely useful on long-running or misbehaving applications.
+
+Options: Informational
+  -l, -L --list-events List available events. (N.B.: some may not be
+                       profilable)
+  -V, --version        Print version information.
+  -h, --help           Print help.
+
+Options: Profiling (Defaults shown in curly brackets {})
+  -e <event>[@<period>], --event <event>[@<period>]
+                       An event to profile and its corresponding sample
+                       period. <event> may be either a PAPI, native
+                       processor event or WALLCLOCK (microseconds).  May pass
+                       multiple times as implementations permit.
+                       {WALLCLOCK@5000}.
+                       N.B.: WALLCLOCK and hardware events cannot be mixed.
+
+  -t, --trace          Generate a call path trace (in addition to a call
+                       path profile).
+
+  -ds, --delay-sampling
+                       Delay starting sampling until the application calls
+                       hpctoolkit_sampling_start().
+
+  -f <frac>, -fp <frac>, --process-fraction <frac>
+                       Measure only a fraction <frac> of the execution's
+                       processes.  For each process, enable measurement
+                       (of all threads) with probability <frac>; <frac> is a
+                       real number (0.10) or a fraction (1/10) between 0 and 1.
+
+  -o <outpath>, --output <outpath>
+                       Directory for output data.
+                       {hpctoolkit-<command>-measurements[-<jobid>]}
+
+                       Bug: Without a <jobid> or an output option, multiple
+                       profiles of the same <command> will be placed in the
+                       same output directory.
+
+  -r, --retain-recursion
+                       Normally, hpcrun will collapse (simple) recursive call chains
+                       to a single node. This option disables that behavior: all
+                       elements of a recursive call chain are recorded
+                       NOTE: If the user employs the RETCNT sample source, then this
+                             option is enabled: RETCNT implies *all* elements of
+                             call chains, including recursive elements, are recorded.
+
+NOTES:
+* hpcrun uses preloaded shared libraries to initiate profiling.  For this
+  reason, it cannot be used to profile setuid programs.
+* hpcrun may not be able to profile programs that themselves use preloading.
+
+EOF
+    exit 0
+}
+
+#------------------------------------------------------------
+# Command Line Options
+#------------------------------------------------------------
+
+# Return success (0) if $1 is not empty and not the next option.
+arg_ok()
+{
+    case "x$1" in
+	x | x-* ) return 1 ;;
+	* ) return 0 ;;
+    esac
+}
+
+# Process options and export environ variables.  LD_LIBRARY_PATH and
+# LD_PRELOAD should be delayed until we launch the program, but the
+# others can be set now.
+
+preload_list=
+HPCRUN_DEBUG_FLAGS=
+HPCRUN_EVENT_LIST=
+
+while test "x$1" != x
+do
+    arg="$1" ; shift
+    case "$arg" in
+
+	# temp option to run new fnbounds server with debugging
+	-fnb | --fnb )
+	    unset  OLD_SYSTEM_SERVER
+	    export HPCRUN_DEBUG_FLAGS="$HPCRUN_DEBUG_FLAGS SYSTEM_SERVER"
+	    ;;
+
+	# temp option to run old fnbounds server
+	-ofnb | --ofnb )
+	    export OLD_SYSTEM_SERVER=1
+	    ;;
+
+	# --------------------------------------------------
+
+	-md | --monitor-debug )
+	    export MONITOR_DEBUG=1
+	    ;;
+
+	-d | --debug )
+	    export HPCRUN_WAIT=1
+	    ;;
+
+	-dd | --dynamic-debug )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_DEBUG_FLAGS="$HPCRUN_DEBUG_FLAGS $1"
+	    shift
+	    ;;
+
+	-h | -help | --help )
+	    usage
+	    ;;
+
+	-V | --version )
+	    echo "hpcrun: A member of HPCToolkit, version $VERSION"
+	    exit 0
+	    ;;
+
+	# --------------------------------------------------
+
+	-a | --agent )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_OPT_LUSH_AGENTS="$1"
+	    shift
+	    ;;
+
+	# --------------------------------------------------
+
+	-e | --event )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    case "$1" in
+	        GA* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_ga.so" ;;
+		IO* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_io.so" ;;
+		MEMLEAK* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_memleak.so" ;;
+		MPI* )     preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_mpi.so" ;;
+	    esac
+	    case "$HPCRUN_EVENT_LIST" in
+		'' ) HPCRUN_EVENT_LIST="$1" ;;
+		* )  HPCRUN_EVENT_LIST="$HPCRUN_EVENT_LIST $1" ;;
+	    esac
+	    shift
+	    ;;
+
+	-L | -l | --list-events )
+	    export HPCRUN_EVENT_LIST=LIST
+	    ;;
+
+	-ds | --delay-sampling )
+	    export HPCRUN_DELAY_SAMPLING=1
+	    ;;
+
+	# --------------------------------------------------
+
+	-t | --trace )
+	    export HPCRUN_TRACE=1
+	    ;;
+
+	# --------------------------------------------------
+
+	-o | --output )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_OUT_PATH="$1"
+	    shift
+	    ;;
+
+	# --------------------------------------------------
+
+	-r | --retain-recursion )
+	    export HPCRUN_RETAIN_RECURSION=1
+	    ;;
+
+	# --------------------------------------------------
+
+	-lm | --low-memsize )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_LOW_MEMSIZE="$1"
+	    shift
+	    ;;
+
+	-ms | --memsize )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_MEMSIZE="$1"
+	    shift
+	    ;;
+
+	# --------------------------------------------------
+
+	-q | --quiet )
+	    export HPCRUN_QUIET=1
+	    ;;
+
+	# --------------------------------------------------
+
+	-f | -fp | --process-fraction )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_PROCESS_FRACTION="$1"
+	    shift
+	    ;;
+
+	-mp | --memleak-prob )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_MEMLEAK_PROB="$1"
+	    shift
+	    ;;
+
+	# --------------------------------------------------
+
+	-- )
+	    break
+	    ;;
+
+	-* )
+	    die "unknown or invalid option: $arg"
+	    ;;
+
+	* )
+	    set -- "$arg" "$@"
+	    break
+	    ;;
+    esac
+done
+
+# Add default sampling source if needed.
+case "$HPCRUN_EVENT_LIST" in
+    '' ) HPCRUN_EVENT_LIST='WALLCLOCK@5000' ;;
+    RETCNT ) HPCRUN_EVENT_LIST='WALLCLOCK@5000 RETCNT' ;;
+esac
+export HPCRUN_EVENT_LIST
+
+# There must be a command to run, unless -L is set.
+if test -z "$1" ; then
+    if test "$HPCRUN_EVENT_LIST" = LIST ; then
+	set -- /bin/ls
+    else
+	die "no command to profile"
+    fi
+fi
+
+#------------------------------------------------------------
+# Pre-Launch Sanity Checks
+#------------------------------------------------------------
+
+# Find the command on PATH.  We need to run file and nm on the binary,
+# so we need an actual path.
+
+command="$1"
+case "$command" in
+    */* ) ;;
+    * )
+	OLDIFS="$IFS"
+	IFS=:
+	for dir in $PATH ; do
+	    if test -x "${dir}/${command}" ; then
+		command="${dir}/${command}"
+		break
+	    fi
+	done
+	IFS="$OLDIFS"
+	;;
+esac
+
+# Sanity checks before launch.
+
+if test -x "$command" ; then
+    #
+    # For dynamic binaries, verify that the application and libhpcrun
+    # have the same wordsize, both 32-bit or both 64-bit.
+    #
+    cmd_file_out=`file -L "$command"`
+    echo "$cmd_file_out" | grep -E -i -e 'elf.*dynamic' >/dev/null 2>&1
+    if test $? -eq 0 ; then
+	appl_bit=`expr "$cmd_file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
+	file_out=`file -L "${hpcrun_dir}/libhpcrun.so"`
+	hpcrun_bit=`expr "$file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
+	if test "$appl_bit" != "$hpcrun_bit" ; then
+	    echo "hpcrun: cannot profile application: $command" 1>&2
+	    echo "application is $appl_bit but hpctoolkit is $hpcrun_bit" 1>&2
+	    exit 1
+	fi
+    fi
+    #
+    # For static binaries, verify that hpcrun is linked in.  Use
+    # strings instead of nm to handle stripped binaries.
+    #
+    echo "$cmd_file_out" | grep -E -i -e 'elf.*static' >/dev/null 2>&1
+    if test $? -eq 0 ; then
+	strings "$command" 2>&1 | grep -e hpcrun >/dev/null 2>&1
+	if test $? -ne 0 ; then
+	    echo "hpcrun: static binary is missing libhpcrun: $command" 1>&2
+	    echo "rebuild the application with hpclink" 1>&2
+	    exit 1
+	fi
+    fi
+fi
+
+# Verify that we can write to tmpdir: HPCRUN_TMPDIR, TMPDIR or /tmp,
+# and fail now with a useful message if not.  Note: we use the same
+# algorithm as inside hpcfnbounds: if HPCRUN_TMPDIR or TMPDIR is set,
+# then commit to that directory and not try the next if it fails.
+
+test_tmp_dir()
+{
+    tmp_file="$1/hpcrun-tmp-file-$$"
+    tmp_dir="$1"
+
+    if touch "$tmp_file" >/dev/null 2>&1 ; then
+	tmp_ans=yes
+	rm -f "$tmp_file"
+    else
+	tmp_ans=no
+    fi
+}
+
+if test -n "$HPCRUN_TMPDIR" ; then
+    test_tmp_dir "$HPCRUN_TMPDIR"
+elif test -n "$TMPDIR" ; then
+    test_tmp_dir "$TMPDIR"
+else
+    test_tmp_dir /tmp
+fi
+
+if test "x$OLD_SYSTEM_SERVER" != x && test "$tmp_ans" = no ; then
+    echo "hpcrun: unable to write to tmp directory: $tmp_dir" 1>&2
+    echo "please set HPCRUN_TMPDIR or TMPDIR and try again" 1>&2
+    exit 1
+fi
+
+#------------------------------------------------------------
+# Final Environ Settings and Exec the Binary
+#------------------------------------------------------------
+
+# Add OMP_SKIP_MSB to HPCRUN_DEBUG_FLAGS if the binary contains
+# _mp_init.
+
+nm "$command" 2>/dev/null | grep -e ' _mp_init' >/dev/null 2>&1
+if test $? -eq 0 ; then
+    export HPCRUN_DEBUG_FLAGS="$HPCRUN_DEBUG_FLAGS OMP_SKIP_MSB"
+fi
+
+# Enable core files.
+ulimit -S -c unlimited >/dev/null 2>&1
+
+hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}"
+preload_list="${libmonitor_dir}/libmonitor.so ${preload_list}"
+preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
+
+export HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds"
+export LD_LIBRARY_PATH="${hpc_ld_library_path}:${LD_LIBRARY_PATH}"
+export LD_PRELOAD="${preload_list} ${LD_PRELOAD}"
+
+exec "$@"
