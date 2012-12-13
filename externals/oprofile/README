@@ -14,11 +14,12 @@ Uses Autoconf and Automake, supports vpath and parallel builds.
 
 ../configure \
     CC=  CFLAGS=  CXX=  CXXFLAGS=  \
-    CPPFLAGS="-I /path/to/binutils/include" \
+    CPPFLAGS="-I/path/to/binutils/include" \
+    LDFLAGS="-L/path/to/binutils/lib" \
     --prefix=/path/to/prefix \
-    --with-binutils=/path/to/binutils \
-    --disable-gui \
-    --without-java
+    --disable-gui  \
+    --without-java \
+    --without-kernel
 make
 make install
 
@@ -31,7 +32,7 @@ both CC and CXX so that configure doesn't pick a default CXX that is
 inconsistent with our CC.
 
 Oprofile uses libiberty but doesn't have an option for an alternate
-install path (only looks in /usr).  But setting CPPFLAGS works.
+install path (only looks in /usr).  Use CPPFLAGS and LDFLAGS instead.
 
 Libopagent uses libiberty for a shared library.  So we now build
 binutils with -fPIC for oprofile.  Libiberty is a common library, but

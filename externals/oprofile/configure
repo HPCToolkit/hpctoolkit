@@ -15,18 +15,19 @@ prefix="$oprofile_prefix"
 binutils="$binutils_prefix"
 
 # We only use CC, but also set CXX for consistency.
-# We use CPPFLAGS for libiberty.h.
+# We use CPPFLAGS and LDFLAGS for libbfd and libiberty.
 
 set --  \
     CC="$CC"  \
     CFLAGS="$CFLAGS"  \
     CXX="$CXX"  \
     CXXFLAGS="$CXXFLAGS"  \
-    CPPFLAGS="-I ${binutils}/include"  \
+    CPPFLAGS="-I${binutils}/include"  \
+    LDFLAGS="-L${binutils}/lib"  \
     --prefix="$prefix"  \
-    --with-binutils="$binutils"  \
     --disable-gui  \
     --without-java \
+    --without-kernel \
     "$@"
 
 if test -n "$is_cross_compile" ; then
