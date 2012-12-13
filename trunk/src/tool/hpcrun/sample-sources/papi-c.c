@@ -255,9 +255,16 @@ static int some_overflow;
 static void
 METHOD_FN(init)
 {
-  PAPI_set_debug(0x3ff);
+  // PAPI_set_debug(0x3ff);
 
+  // **NOTE: some papi components may start threads, so
+  //         hpcrun must ignore these threads to ensure that PAPI_library_init
+  //         succeeds
+  //
+  monitor_disable_new_threads();
   int ret = PAPI_library_init(PAPI_VER_CURRENT);
+  monitor_enable_new_threads();
+
   TMSG(PAPI,"PAPI_library_init = %d", ret);
   TMSG(PAPI,"PAPI_VER_CURRENT =  %d", PAPI_VER_CURRENT);
 
