@@ -4,8 +4,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <limits.h>  // PATH_MAX
 
 #include <sys/time.h>
+
+#include "thread_data.h"
+#include "rank.h"
 
 #include "files.h"
 #include <fnbounds/fnbounds_java.h>
@@ -18,6 +22,7 @@ typedef void fct_add_interval(void*,void*);
 static int debug = 0;
 static int can_get_line_numbers = 1;
 static struct timeval time_start;
+static char file_dump[PATH_MAX] = {'\0'};
 
 static op_agent_t agent_hdl;
 
@@ -35,6 +40,10 @@ static int handle_error(jvmtiError err, char const * msg, int severe)
 }
 
 
+/**
+ * create debug information (if exist) from a given java map 
+ *
+ */
 static struct debug_line_info *
 create_debug_line_info(jint map_length, jvmtiAddrLocationMap const * map,
 		       jint entry_count, jvmtiLineNumberEntry* table_ptr,
@@ -294,7 +303,6 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
 	jvmtiJlocationFormat format;
 	jvmtiError error;
 	jint res = 0;
-	char *dir_collect = getenv("HPCRUN_JAVA_DATA_DIR");
 
 	/************* hpcrun critical section ************/
 	if (!hpcrun_safe_enter()) {
@@ -314,12 +322,20 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
 
         gettimeofday(&time_start, NULL);
 
-	if (dir_collect == NULL)
-		dir_collect = "/tmp/";
+	int rank = hpcrun_get_rank();
+	rank = (rank<0? 0:rank);
+	thread_data_t* td = hpcrun_get_thread_data();
 
-	char *hpc_dir = hpcrun_get_directory();
-	printf("hpc_dir: %s\n", hpc_dir );
-        agent_hdl = op_open_agent(hpc_dir);
+	int ret = snprintf(file_dump,PATH_MAX,"%s/java-%d-%d.dump",hpcrun_get_directory(), rank, td->id);
+ 	if (ret >= PATH_MAX) {
+		perror("java dump filenaem is too long\n");
+		res = -1;
+		goto finalize;
+	}
+	if (debug)
+		fprintf(stderr,"Rank %d Java file to dump: %s\n", rank,file_dump);
+
+        agent_hdl = op_open_agent(file_dump);
         if (!agent_hdl) {
                 perror("Error: op_open_agent()");
                 res = -1;
