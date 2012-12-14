@@ -501,21 +501,38 @@ $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
 
 if OPT_ENABLE_CUDA
 
-sample-sources/gpu_blame-overrides.c: $(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c $(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c
+generated_file_base = $(srcdir)/sample-sources
 
-sample-sources/gpu_blame.c: $(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c $(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c
+generated_cuda_driver_files = $(addprefix $(generated_file_base), gpu_blame-cuda-runtime-header.h gpu_blame-cuda-driver-table.c gpu_blame-driver-overrides-generated.c)
+generated_cuda_driver_api_files = $(addprefix $(generated_file_base), cuda_driver_apis.h) 
+generated_cuda_runtime_files = $(addprefix $(generated_file_base), gpu_blame-cuda-runtime-header.h gpu_blame-cuda-runtime-table.c pu_blame-runtime-overrides-generated.c)
+generated_cuda_runtime_api_files = $(addprefix $(generated_file_base), cuda_runtime_apis.h) 
 
-sample-sources/gpu_blame-cuda-driver-table.c: $(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c $(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c
+BUILT_SOURCES = $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files) 
 
-sample-sources/gpu_blame-cuda-runtime-table.c: $(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c $(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c
+CLEANFILES  =  $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
 
-$(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c: $(srcdir)/sample-sources/make-cuda-wrappers.py
-	$(CC) $(OPT_CUDA_IFLAGS)  -E -B -c $(srcdir)/sample-sources/cuda_driver_dummy.c -o $(srcdir)/sample-sources/cuda_driver_apis.h
-	$(PYTHON) $(srcdir)/sample-sources/make-cuda-wrappers.py driver  $(srcdir)/sample-sources/cuda_driver_apis.h  $(srcdir)/sample-sources/gpu_blame-cuda-driver-header.h  $(srcdir)/sample-sources/gpu_blame-cuda-driver-table.c $(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c
+$(generated_cuda_runtime_api_files) : $(generated_file_base)/cuda_runtime_dummy.c 
+	$(CC) $(OPT_CUDA_IFLAGS) -E -B -c $(generated_file_base)/cuda_runtime_dummy.c  -o  $(generated_file_base)/cuda_runtime_apis.h 
 
-$(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c: $(srcdir)/sample-sources/make-cuda-wrappers.py
-	$(CC) $(OPT_CUDA_IFLAGS) -E -B -c $(srcdir)/sample-sources/cuda_runtime_dummy.c  -o  $(srcdir)/sample-sources/cuda_runtime_apis.h 
-	$(PYTHON) $(srcdir)/sample-sources/make-cuda-wrappers.py runtime $(srcdir)/sample-sources/cuda_runtime_apis.h  $(srcdir)/sample-sources/gpu_blame-cuda-runtime-header.h  $(srcdir)/sample-sources/gpu_blame-cuda-runtime-table.c $(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c
+$(generated_cuda_runtime_files) : $(generated_file_base)/make-cuda-wrappers.py 
+	$(PYTHON) $(generated_file_base)/make-cuda-wrappers.py runtime $(generated_cuda_runtime_api_files) $(generated_cuda_runtime_files)
+
+$(generated_file_base)/gpu_blame-cuda-runtime-header.h  $(generated_file_base)/gpu_blame-cuda-runtime-table.c
+
+$(generated_file_base)/gpu_blame-cuda-runtime-table.c $(generated_file_base)/gpu_blame-runtime-overrides-generated.c
+
+
+$(generated_cuda_driver_api_files) :  $(generated_file_base)/cuda_driver_dummy.c
+	$(CC) $(OPT_CUDA_IFLAGS)  -E -B -c $(generated_file_base)/cuda_driver_dummy.c -o $(generated_file_base)/cuda_driver_apis.h
+
+$(generated_cuda_driver_files) : $(generated_file_base)/make-cuda-wrappers.py 
+        $(PYTHON) $(generated_file_base)/make-cuda-wrappers.py driver $(generated_cuda_driver_files) $(generated_cuda_driver_api_files)
+
+$(generated_file_base)/gpu_blame-cuda-driver-header.h : $(generated_file_base)/gpu_blame-cuda-driver-table.c 
+
+$(generated_file_base)/gpu_blame-cuda-driver-table.c : $(generated_file_base)/gpu_blame-driver-overrides-generated.c
+
 endif
 
 libhpctoolkit_la_CPPFLAGS =		\
