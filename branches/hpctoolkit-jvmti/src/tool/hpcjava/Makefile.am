@@ -148,8 +148,9 @@ libhpcjava_la_CFLAGS = -I/home/la5/pkgs/externals/oprofile/include/ $(CFLAGS) $(
 # ldflags
 #-----------------------------------------------------------
 
-libhpcjava_la_LDFLAGS = -Wl,-Bsymbolic	\
-	-Wl,--strip-debug -lopagent
+#libhpcjava_la_LDFLAGS = -Wl,-Bsymbolic	\
+#	-Wl,--strip-debug -lopagent
+libhpcjava_la_LDFLAGS = -lopagent
 
 
 #############################################################################
