@@ -27,7 +27,6 @@ typedef void fct_add_interval(void*,void*);
 
 static int debug = 0;
 static int can_get_line_numbers = 1;
-static bool no_hpcrun = false;
 
 static struct timeval time_start;
 static char file_dump[PATH_MAX] = {'\0'};
@@ -120,7 +119,7 @@ static void JNICALL cb_compiled_method_load(jvmtiEnv * jvmti,
  	jvmtiError err;
 
 	/************* hpcrun critical section ************/
-  	if (!no_hpcrun && !hpcrun_safe_enter()) {
+  	if (!hpcrun_safe_enter()) {
     		return;
   	}
 
@@ -191,8 +190,8 @@ static void JNICALL cb_compiled_method_load(jvmtiEnv * jvmti,
 	strncat(buf, method_name, cnt - strlen(buf) - 1);
 	strncat(buf, method_signature, cnt - strlen(buf) - 1);
 	const void *code_addr_end = code_addr + code_size;
-	if (!no_hpcrun)
-		hpcjava_add_address_interval(code_addr, code_addr_end);
+
+	hpcjava_add_address_interval(code_addr, code_addr_end);
 
         if (op_write_native_code(agent_hdl, buf,
                                  (uint64_t)(uintptr_t) code_addr,
@@ -218,8 +217,7 @@ cleanup2:
 	free(debug_line);
 	
 	/************* end hpcrun critical section ************/
-	if (!no_hpcrun)
-  		hpcrun_safe_exit();
+  	hpcrun_safe_exit();
 }
 
 
@@ -234,7 +232,7 @@ static void JNICALL cb_compiled_method_unload(jvmtiEnv * jvmti_env,
 	jmethodID method, void const * code_addr)
 {
 	/************* hpcrun critical section ************/
-	if (!no_hpcrun && !hpcrun_safe_enter()) {
+	if (!hpcrun_safe_enter()) {
     		return ;
   	}
 
@@ -248,8 +246,7 @@ static void JNICALL cb_compiled_method_unload(jvmtiEnv * jvmti_env,
                 perror("Error: op_unload_native_code()");
 
 	/************* end hpcrun critical section ************/
-	if (!no_hpcrun)
-		hpcrun_safe_exit();
+	hpcrun_safe_exit();
 }
 
 /**
@@ -267,7 +264,7 @@ static void JNICALL cb_dynamic_code_generated(jvmtiEnv * jvmti_env,
 	char const * name, void const * code_addr, jint code_size)
 {
 	/************* hpcrun critical section ************/
-	if (!no_hpcrun && !hpcrun_safe_enter()) {
+	if (!hpcrun_safe_enter()) {
     		return ;
   	}
 
@@ -277,8 +274,7 @@ static void JNICALL cb_dynamic_code_generated(jvmtiEnv * jvmti_env,
 	/* adding the interval to the java ui tree
  	 */ 	 
 	const void *code_addr_end = code_addr + code_size;
-	if (!no_hpcrun)
-		hpcjava_add_address_interval(code_addr, code_addr_end);
+	hpcjava_add_address_interval(code_addr, code_addr_end);
 
 	if (debug) {
 		fprintf(stderr, "dyncode: name=%s, addr=%p, size=%i \n",
@@ -290,8 +286,7 @@ static void JNICALL cb_dynamic_code_generated(jvmtiEnv * jvmti_env,
                 perror("Error: op_write_native_code()");
 	
 	/************* end hpcrun critical section ************/
-	if (!no_hpcrun)
-		hpcrun_safe_exit();
+	hpcrun_safe_exit();
 }
 
 /***
@@ -354,23 +349,16 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
 	jint res = 0;
 	int ret;
 
-	/* check if we run in self-mode or with hpcrun */
-	if (options && !strcmp("self", options)) {
-		no_hpcrun = true;
-		printf("Running without hpcrun ... \n");
-	}
-	printf("arguments: %s with hpcrun: %d\n", options, no_hpcrun);
 	
 	/************* hpcrun critical section ************/
-	if (!no_hpcrun && !hpcrun_safe_enter()) {
+	if (!hpcrun_safe_enter()) {
     		return 0;
   	}
 
 	/* shut up compiler warning */
 	reserved = reserved;
 
-	if (!no_hpcrun)
-		hpcjava_interval_tree_init();
+	hpcjava_interval_tree_init();
 
 	if (options && !strcmp("debug", options))
 		debug = 1;
@@ -380,14 +368,12 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
 
         gettimeofday(&time_start, NULL);
 
-	if (!no_hpcrun) {
-		int rank = hpcrun_get_rank();
-		rank = (rank<0? 0:rank);
-		thread_data_t* td = hpcrun_get_thread_data();
-		ret = snprintf(file_dump,PATH_MAX,"%s/java-%d-%d.dump",hpcrun_get_directory(), rank, td->id);
-	} else {
-		ret = snprintf(file_dump,PATH_MAX,"%s/java-%d.dump",hpcrun_get_directory(), getpid());
-	}
+	int rank = hpcrun_get_rank();
+	rank = (rank<0? 0:rank);
+	thread_data_t* td = hpcrun_get_thread_data();
+	int thread_id = (td==NULL? 0 : td->id);
+	ret = snprintf(file_dump,PATH_MAX,"%s/java-%d-%d.dump",hpcrun_get_directory(), rank, thread_id);
+
  	if (ret >= PATH_MAX) {
 		perror("java dump filenaem is too long\n");
 		res = -1;
@@ -466,8 +452,7 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
 
 finalize:
 	/************* end hpcrun critical section ************/
-	if (!no_hpcrun)
-  		hpcrun_safe_exit();
+  	hpcrun_safe_exit();
 
 	return res;
 }
@@ -476,21 +461,20 @@ finalize:
 JNIEXPORT void JNICALL Agent_OnUnload(JavaVM * jvm)
 {
 	/************* hpcrun critical section ************/
-	if (!no_hpcrun && !hpcrun_safe_enter()) {
+	if (!hpcrun_safe_enter()) {
     		return ;
   	}
 
 	/* shut up compiler warning */
 	jvm = jvm;
 
-	if (!no_hpcrun)
-		hpcjava_delete_ui();
+	hpcjava_delete_ui();
+
 	if (op_close_agent(agent_hdl))
                 perror("Error: op_close_agent()");
 
 	libhpcjava_fini();
 
 	/************* end hpcrun critical section ************/
-	if (!no_hpcrun)
-  		hpcrun_safe_exit();
+  	hpcrun_safe_exit();
 }
