@@ -1,0 +1,146 @@
+Remove popt from configure and make.  Libopagent and opjitconv don't
+use it.  Some systems (biou) don't have the popt devel package and
+this was breaking the build.  So, it's either add popt to externals
+or remove it from oprofile.
+
+
+diff -Naurb oprofile-0.9.8.orig/configure oprofile-0.9.8/configure
+--- oprofile-0.9.8.orig/configure	2012-08-27 13:59:51.000000000 -0500
++++ oprofile-0.9.8/configure	2012-12-19 14:27:33.526771382 -0600
+@@ -17642,6 +17642,7 @@
+ done
+ 
+ 
++if false ; then
+ 
+ { $as_echo "$as_me:$LINENO: checking for poptGetContext in -lpopt" >&5
+ $as_echo_n "checking for poptGetContext in -lpopt... " >&6; }
+@@ -17721,6 +17722,7 @@
+    { (exit 1); exit 1; }; }
+ fi
+ 
++fi
+ 
+ 
+ for ac_header in libiberty.h
+@@ -18758,6 +18760,7 @@
+ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+ 
+ 
++if false ; then
+ 
+ { $as_echo "$as_me:$LINENO: checking popt prototype" >&5
+ $as_echo_n "checking popt prototype... " >&6; }
+@@ -18817,6 +18820,7 @@
+ CXXFLAGS="$SAVE_CXXFLAGS"
+ 
+ 
++fi
+ 
+ { $as_echo "$as_me:$LINENO: checking whether to use included sstream" >&5
+ $as_echo_n "checking whether to use included sstream... " >&6; }
+@@ -20949,7 +20953,7 @@
+ 		CPPFLAGS="$CPPFLAGS $QT_INCLUDES"
+ 
+ 		cat > conftest.$ac_ext <<EOF
+-#line 20952 "configure"
++#line 20956 "configure"
+ #include "confdefs.h"
+ #include <qglobal.h>
+ "%%%"QT_VERSION_STR"%%%"
+@@ -21343,7 +21347,7 @@
+ LIBS="$ORIG_SAVE_LIBS"
+ LIBERTY_LIBS="-liberty $DL_LIB $INTL_LIB"
+ BFD_LIBS="-lbfd -liberty $DL_LIB $INTL_LIB $Z_LIB"
+-POPT_LIBS="-lpopt"
++POPT_LIBS=
+ 
+ 
+ 
+diff -Naurb oprofile-0.9.8.orig/configure.ac oprofile-0.9.8/configure.ac
+--- oprofile-0.9.8.orig/configure.ac	2012-08-27 13:59:13.000000000 -0500
++++ oprofile-0.9.8/configure.ac	2012-12-19 14:25:19.614916259 -0600
+@@ -151,7 +151,9 @@
+ dnl advanced glibc features which we need but may not be present
+ AC_CHECK_FUNCS(sched_setaffinity perfmonctl)
+ 
++if false ; then
+ AC_CHECK_LIB(popt, poptGetContext,, AC_MSG_ERROR([popt library not found]))
++fi
+ AX_BINUTILS
+ # Now we can restore original flag values, and may as well do the
+ # AC_SUBST, too.
+@@ -166,7 +168,9 @@
+ 
+ AC_LANG_CPLUSPLUS
+ 
++if false ; then
+ AX_POPT_CONST
++fi
+ AX_CHECK_SSTREAM
+ 
+ dnl bfd.h pre 1998 check only for gnu 2.xx series, so gcc 3.0 can't compile it
+@@ -259,7 +263,7 @@
+ LIBS="$ORIG_SAVE_LIBS"
+ LIBERTY_LIBS="-liberty $DL_LIB $INTL_LIB"
+ BFD_LIBS="-lbfd -liberty $DL_LIB $INTL_LIB $Z_LIB"
+-POPT_LIBS="-lpopt"
++POPT_LIBS=
+ AC_SUBST(LIBERTY_LIBS)
+ AC_SUBST(BFD_LIBS)
+ AC_SUBST(POPT_LIBS)
+diff -Naurb oprofile-0.9.8.orig/libutil/Makefile.am oprofile-0.9.8/libutil/Makefile.am
+--- oprofile-0.9.8.orig/libutil/Makefile.am	2012-08-27 13:59:15.000000000 -0500
++++ oprofile-0.9.8/libutil/Makefile.am	2012-12-19 14:18:30.180874432 -0600
+@@ -11,7 +11,6 @@
+ 	op_fileio.c \
+ 	op_get_time.c \
+ 	op_libiberty.c \
+-	op_popt.c \
+ 	op_string.c \
+ 	op_cpufreq.c \
+ 	op_deviceio.h \
+@@ -22,7 +21,6 @@
+ 	op_file.h \
+ 	op_get_time.h \
+ 	op_list.h \
+-	op_popt.h \
+ 	op_string.h \
+ 	op_cpufreq.h \
+ 	op_version.c \
+diff -Naurb oprofile-0.9.8.orig/libutil/Makefile.in oprofile-0.9.8/libutil/Makefile.in
+--- oprofile-0.9.8.orig/libutil/Makefile.in	2012-08-27 13:59:50.000000000 -0500
++++ oprofile-0.9.8/libutil/Makefile.in	2012-12-19 14:27:32.348783457 -0600
+@@ -63,7 +63,7 @@
+ libutil_a_LIBADD =
+ am_libutil_a_OBJECTS = op_deviceio.$(OBJEXT) op_lockfile.$(OBJEXT) \
+ 	op_file.$(OBJEXT) op_fileio.$(OBJEXT) op_get_time.$(OBJEXT) \
+-	op_libiberty.$(OBJEXT) op_popt.$(OBJEXT) op_string.$(OBJEXT) \
++	op_libiberty.$(OBJEXT) op_string.$(OBJEXT) \
+ 	op_cpufreq.$(OBJEXT) op_version.$(OBJEXT) \
+ 	op_growable_buffer.$(OBJEXT)
+ libutil_a_OBJECTS = $(am_libutil_a_OBJECTS)
+@@ -286,7 +286,6 @@
+ 	op_fileio.c \
+ 	op_get_time.c \
+ 	op_libiberty.c \
+-	op_popt.c \
+ 	op_string.c \
+ 	op_cpufreq.c \
+ 	op_deviceio.h \
+@@ -297,7 +296,6 @@
+ 	op_file.h \
+ 	op_get_time.h \
+ 	op_list.h \
+-	op_popt.h \
+ 	op_string.h \
+ 	op_cpufreq.h \
+ 	op_version.c \
+@@ -361,7 +359,6 @@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/op_growable_buffer.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/op_libiberty.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/op_lockfile.Po@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/op_popt.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/op_string.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/op_version.Po@am__quote@
+ 
