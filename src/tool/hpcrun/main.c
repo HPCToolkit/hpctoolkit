@@ -130,6 +130,10 @@
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
 
+#ifdef OPT_ENABLE_JAVA
+#include <hpcjava/libhpcjava.h>
+#endif
+
 extern void hpcrun_set_retain_recursion_mode(bool mode);
 #ifndef USE_LIBUNW
 extern void hpcrun_dump_intervals(void* addr);
