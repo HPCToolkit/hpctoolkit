@@ -66,12 +66,6 @@ AUTOMAKE_OPTIONS = foreign
 
 include $(top_srcdir)/src/Makeinclude.config
 
-#############################################################################
-# Local settings
-#############################################################################
-
-PYTHON = python
-
 
 #############################################################################
 # Automake rules
@@ -89,6 +83,7 @@ plugin_instdir = $(pkglibdir)/plugins
 pkglib_LTLIBRARIES =
 if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcjava.la
+  pkglib_LTLIBRARIES += libhpcjavaself.la
 endif
 
 pkglib_PROGRAMS =
@@ -123,8 +118,11 @@ MY_INCLUDE_DIRS =					\
 	$(OPT_JAVA_IFLAGS)				\
 	$(OPT_LIBUNWIND_IFLAGS)         
 
-
 libhpcjava_la_SOURCES = 			\
+	$(MY_DYNAMIC_FILES)
+
+libhpcjavaself_la_SOURCES = 			\
+	hpcrun_dummy.c				\
 	$(MY_DYNAMIC_FILES)
 
 
@@ -136,12 +134,18 @@ libhpcjava_la_CPPFLAGS =			\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
+libhpcjavaself_la_CPPFLAGS =			\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
 
 #-----------------------------------------------------------
 # cflags
 #-----------------------------------------------------------
 
 libhpcjava_la_CFLAGS = -I/home/la5/pkgs/externals/oprofile/include/ $(CFLAGS) $(HOST_CFLAGS)
+
+libhpcjavaself_la_CFLAGS = -I/home/la5/pkgs/externals/oprofile/include/ $(CFLAGS) $(HOST_CFLAGS)
 
 
 #-----------------------------------------------------------
@@ -152,11 +156,8 @@ libhpcjava_la_CFLAGS = -I/home/la5/pkgs/externals/oprofile/include/ $(CFLAGS) $(
 #	-Wl,--strip-debug -lopagent
 libhpcjava_la_LDFLAGS = -lopagent
 
+libhpcjavaself_la_LDFLAGS = -lopagent
 
-#############################################################################
-# Other rules
-#############################################################################
-#
 ############################################################
 # Install
 ############################################################
@@ -166,7 +167,8 @@ libhpcjava_la_LDFLAGS = -lopagent
 
 install-exec-hook: myinstall-exec
 
-myinstall-exec: myinstall-libhpcjavaso 
+myinstall-exec: myinstall-libhpcjavaso \
+		myinstall-libhpcjavaselfso
 
 
 MYKEEPSYMS = $(addprefix -K , $(MY_INTERCEPTED_SYMS_LibHPCJavaSO))
@@ -174,5 +176,9 @@ MYKEEPSYMS = $(addprefix -K , $(MY_INTERCEPTED_SYMS_LibHPCJavaSO))
 myinstall-libhpcjavaso:
 	rm -f $(DESTDIR)$(pkglibdir)/libhpjava.a
 	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(DESTDIR)$(pkglibdir)/libhpcjava.so
+
+myinstall-libhpcjavaselfso:
+	rm -f $(DESTDIR)$(pkglibdir)/libhpjavaself.a
+	@OPT_OBJCOPY@ $(DESTDIR)$(pkglibdir)/libhpcjavaself.so
 
 
