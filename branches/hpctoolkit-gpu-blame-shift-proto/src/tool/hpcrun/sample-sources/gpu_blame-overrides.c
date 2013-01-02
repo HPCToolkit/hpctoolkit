@@ -2101,19 +2101,10 @@ void gpu_blame_shifter(int metric_id, cct_node_t * node,  int metric_dc) {
         return;
     
     spinlock_lock(&g_gpu_lock);
-    // when was the last cleanup done
-    static uint64_t last_cleanup_time = 0;
-    static uint32_t num_unfinshed_streams = 0;
-    static stream_node_t *unfinished_event_list_head = 0;
+    uint32_t num_unfinshed_streams = 0;
+    stream_node_t *unfinished_event_list_head = 0;
     
     // if last cleanup happened (due to some other thread) less that metric_incr/2 time ago, then we will not do cleanup, but instead use its results
-#if ENABLE_CLEANUP_OPTIMIZATION
-    if (cur_time_us - last_cleanup_time < metric_incr * 0.5) {
-        // reuse the last time recorded num_unfinshed_streams and unfinished_event_list_head
-    } else
-#endif                          //ENABLE_CLEANUP_OPTIMIZATION
-        // do cleanup
-        last_cleanup_time = cur_time_us;
     num_unfinshed_streams = cleanup_finished_events();
     unfinished_event_list_head = g_unfinished_stream_list_head;
     
