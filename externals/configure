@@ -13,7 +13,7 @@
 # This configure script is free software; the Free Software Foundation
 # gives unlimited permission to copy, distribute and modify it.
 #
-# Copyright (c) 2008-2012, Rice University.
+# Copyright (c) 2008-2013, Rice University.
 # See the file LICENSE for details.
 ## -------------------- ##
 ## M4sh Initialization. ##
@@ -1451,7 +1451,7 @@ Copyright (C) 2010 Free Software Foundation, Inc.
 This configure script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it.
 
-Copyright (c) 2008-2012, Rice University.
+Copyright (c) 2008-2013, Rice University.
 See the file LICENSE for details.
 _ACEOF
   exit
