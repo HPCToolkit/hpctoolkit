@@ -204,6 +204,27 @@ cct_metric_data_increment(gpu_idle_metric_id, launch_node, (cct_metric_data_t) {
 hpcrun_safe_exit();                                                                                           \
 TD_GET(gpu_data.is_thread_at_cuda_sync) = false
 
+#define SYNC_MEMCPY_PROLOGUE(ctxt, launch_node, start_time, rec_node) SYNC_PROLOGUE(ctxt, launch_node, start_time, rec_node)
+
+#define SYNC_MEMCPY_EPILOGUE(ctxt, launch_node, start_time, rec_node, mask, end_time, bytes, direction)       \
+hpcrun_safe_enter();                                                                                          \
+spinlock_lock(&g_gpu_lock);                                                                                   \
+uint64_t last_kernel_end_time = LeaveCudaSync(rec_node,start_time,mask);                                      \
+spinlock_unlock(&g_gpu_lock);                                                                                 \
+struct timeval tv;                                                                                            \
+gettimeofday(&tv, NULL);                                                                                      \
+uint64_t end_time  = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000));                              \
+if ( last_kernel_end_time > end_time) {last_kernel_end_time = end_time;}                                      \
+uint64_t cpu_idle_time = end_time  - start_time;                                                              \
+uint64_t gpu_idle_time = last_kernel_end_time == 0 ? end_time - start_time : end_time - last_kernel_end_time; \
+cct_metric_data_increment(cpu_idle_metric_id, launch_node, (cct_metric_data_t) {.i = (cpu_idle_time)});       \
+cct_metric_data_increment(gpu_idle_metric_id, launch_node, (cct_metric_data_t) {.i = (gpu_idle_time)});       \
+increment_mem_xfer_metric(bytes, direction, launch_node);                                                     \
+hpcrun_safe_exit();                                                                                           \
+TD_GET(gpu_data.is_thread_at_cuda_sync) = false
+
+
+
 #define GET_NEW_TREE_NODE(node_ptr) do {                          \
 if (g_free_tree_nodes_head) {                                     \
 node_ptr = g_free_tree_nodes_head;                                \
@@ -1470,37 +1491,14 @@ cudaError_t cudaMemcpyToArrayAsync(struct cudaArray * dst, size_t wOffset, size_
 
 cudaError_t cudaMemcpy2D(void *dst, size_t dpitch, const void *src, size_t spitch, size_t width, size_t height, enum cudaMemcpyKind kind) {
     
-    SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
     
     monitor_disable_new_threads();
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY2_D].cudaMemcpy2DReal(dst, dpitch, src, spitch, width, height, kind);
     monitor_enable_new_threads();
+   
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (height * width), kind); 
     
-    hpcrun_safe_enter();
-    spinlock_lock(&g_gpu_lock);
-    LeaveCudaSync(recorded_node, syncStart, ALL_STREAMS_MASK);
-    spinlock_unlock(&g_gpu_lock);
-    
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    uint64_t syncEnd = ((uint64_t) tv.tv_usec + (((uint64_t) tv.tv_sec) * 1000000));
-    
-    // this is both CPU and GPU idleness since one could have used cudaMemcpyAsync
-    cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {
-        .i = (syncEnd - syncStart)});
-    cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {
-        .i = (syncEnd - syncStart)});
-    
-    //idt += syncEnd - syncStart;
-    //printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
-    
-    
-    // Increment bytes transferred metric
-    increment_mem_xfer_metric(height * width, kind, launcher_cct);
-    
-    hpcrun_safe_exit();
-    
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
     return ret;
     
 }
@@ -1508,34 +1506,13 @@ cudaError_t cudaMemcpy2D(void *dst, size_t dpitch, const void *src, size_t spitc
 
 cudaError_t cudaMemcpy(void *dst, const void *src, size_t count, enum cudaMemcpyKind kind) {
     
-    SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
     
     monitor_disable_new_threads();
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY].cudaMemcpyReal(dst, src, count, kind);
     monitor_enable_new_threads();
     
-    hpcrun_safe_enter();
-    spinlock_lock(&g_gpu_lock);
-    LeaveCudaSync(recorded_node, syncStart, ALL_STREAMS_MASK);
-    spinlock_unlock(&g_gpu_lock);
-    
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    uint64_t syncEnd = ((uint64_t) tv.tv_usec + (((uint64_t) tv.tv_sec) * 1000000));
-    
-    // this is both CPU and GPU idleness since one could have used cudaMemcpyAsync
-    cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {
-        .i = (syncEnd - syncStart)});
-    cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {
-        .i = (syncEnd - syncStart)});
-    //idt += syncEnd - syncStart;
-    
-    // Increment bytes transferred metric
-    increment_mem_xfer_metric(count, kind, launcher_cct);
-    
-    hpcrun_safe_exit();
-    
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind); 
     return ret;
     
 }
@@ -1543,33 +1520,13 @@ cudaError_t cudaMemcpy(void *dst, const void *src, size_t count, enum cudaMemcpy
 
 cudaError_t cudaMemcpyToArray	(	struct cudaArray * 	dst, size_t 	wOffset, size_t 	hOffset, const void * 	src, size_t 	count, enum cudaMemcpyKind 	kind){
     
-    SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+
     monitor_disable_new_threads();
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_TO_ARRAY].cudaMemcpyToArrayReal(dst, wOffset, hOffset, src, count, kind);
     monitor_enable_new_threads();
     
-    hpcrun_safe_enter();
-    spinlock_lock(&g_gpu_lock);
-    LeaveCudaSync(recorded_node, syncStart, ALL_STREAMS_MASK);
-    spinlock_unlock(&g_gpu_lock);
-    
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    uint64_t syncEnd = ((uint64_t) tv.tv_usec + (((uint64_t) tv.tv_sec) * 1000000));
-    
-    // this is both CPU and GPU idleness since one could have used cudaMemcpyAsync
-    cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {
-        .i = (syncEnd - syncStart)});
-    cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {
-        .i = (syncEnd - syncStart)});
-    //idt += syncEnd - syncStart;
-    
-    // Increment bytes transferred metric
-    increment_mem_xfer_metric(count, kind, launcher_cct);
-    
-    hpcrun_safe_exit();
-    
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind); 
     return ret;
 }
 
@@ -2007,36 +1964,13 @@ CUresult cuMemcpyHtoDAsync(CUdeviceptr dstDevice, const void *srcHost, size_t By
 
 CUresult cuMemcpyHtoD(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount) {
     
-    SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
     
     monitor_disable_new_threads();
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_HTO_D_V2].cuMemcpyHtoD_v2Real(dstDevice, srcHost, ByteCount);
     monitor_enable_new_threads();
     
-    hpcrun_safe_enter();
-    spinlock_lock(&g_gpu_lock);
-    LeaveCudaSync(recorded_node, syncStart, ALL_STREAMS_MASK);
-    spinlock_unlock(&g_gpu_lock);
-    
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    uint64_t syncEnd = ((uint64_t) tv.tv_usec + (((uint64_t) tv.tv_sec) * 1000000));
-    
-    // this is both CPU and GPU idleness since one could have used cudaMemcpyAsync
-    cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {
-        .i = (syncEnd - syncStart)});
-    cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {
-        .i = (syncEnd - syncStart)});
-    
-    // increment H to D bytes
-    cct_metric_data_increment(h_to_d_data_xfer_metric_id, launcher_cct, (cct_metric_data_t) {.i = (ByteCount)});
-    
-    //idt += syncEnd - syncStart;
-    //printf("\n gpu_idle_time = %lu .. %lu",syncEnd - syncStart,idt);
-    
-    hpcrun_safe_exit();
-    
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, ByteCount, cudaMemcpyHostToDevice); 
     return ret;
     
 }
@@ -2116,35 +2050,13 @@ CUresult cuMemcpyDtoHAsync(void *dstHost, CUdeviceptr srcDevice, size_t ByteCoun
 
 CUresult cuMemcpyDtoH(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount) {
     
-    SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
     
     monitor_disable_new_threads();
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_DTO_H_V2].cuMemcpyDtoH_v2Real(dstHost, srcDevice, ByteCount);
     monitor_enable_new_threads();
     
-    hpcrun_safe_enter();
-    
-    spinlock_lock(&g_gpu_lock);
-    LeaveCudaSync(recorded_node, syncStart, ALL_STREAMS_MASK);
-    spinlock_unlock(&g_gpu_lock);
-    
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    uint64_t syncEnd = ((uint64_t) tv.tv_usec + (((uint64_t) tv.tv_sec) * 1000000));
-    
-    // this is both CPU and GPU idleness since one could have used cudaMemcpyAsync
-    cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {
-        .i = (syncEnd - syncStart)});
-    cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {
-        .i = (syncEnd - syncStart)});
-    
-    // increment D to H bytes
-    cct_metric_data_increment(d_to_h_data_xfer_metric_id, launcher_cct , (cct_metric_data_t) {.i = (ByteCount)});
-    
-    
-    hpcrun_safe_exit();
-    
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, ByteCount, cudaMemcpyDeviceToHost); 
     return ret;
 }
 
