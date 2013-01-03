@@ -172,6 +172,9 @@ static void METHOD_FN(init)
     char * cuda_launch_skip_inner_env;    
     TMSG(CPU_GPU_BLAME_CTL, "setting up CPU_GPU_BLAME");
     g_unfinished_stream_list_head = NULL;
+		//active threads represents the total number of threads in the system
+		//including the main thread 
+		g_active_threads = 1;
     g_finished_event_nodes_tail = &dummy_event_node;
     dummy_event_node.next = g_finished_event_nodes_tail;
     shared_blaming_env = getenv("HPCRUN_ENABLE_SHARED_GPU_BLAMING");
@@ -209,10 +212,6 @@ METHOD_FN(start)
     g_cpu_gpu_enabled = true;
     TD_GET(ss_state)[self->evset_idx] = START;
 }
-
-
-
-
 
 static void METHOD_FN(thread_fini_action)
 {

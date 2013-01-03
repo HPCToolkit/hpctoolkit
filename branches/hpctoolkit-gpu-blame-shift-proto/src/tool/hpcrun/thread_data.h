@@ -83,6 +83,12 @@ typedef struct gpu_data_t {
   uint64_t active_stream;
   // last examined event
   void * event_node;
+  // maintain the total number of threads (global: think shared
+  // blaming) at synchronize (could be device/stream/...)
+  uint64_t accum_num_sync_threads;
+	// holds the number of times the above accum_num_sync_threads
+	// is updated
+  uint64_t accum_num_samples;
 } gpu_data_t;
 /* ******
    TODO:

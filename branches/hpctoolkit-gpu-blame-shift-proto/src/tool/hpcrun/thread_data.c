@@ -234,6 +234,8 @@ static inline void gpu_data_init(gpu_data_t * gpu_data)
 {
   gpu_data->is_thread_at_cuda_sync = false;
   gpu_data->overload_state = 0;
+  gpu_data->accum_num_sync_threads = 0;
+  gpu_data->accum_num_sync_threads = 0;
 }
 #endif
 

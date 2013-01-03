@@ -159,6 +159,10 @@ monitor_real_abort();                                                    \
 
 #define HPCRUN_GPU_SHMSZ (1<<10)
 
+#define SHARED_BLAMING_INITIALISED (ipc_data != NULL)
+
+#define INCR_SHARED_BLAMING_DS(field)  do{ if(SHARED_BLAMING_INITIALISED) atomic_add_i64(&(ipc_data->field), 1L); }while(0) 
+#define DECR_SHARED_BLAMING_DS(field)  do{ if(SHARED_BLAMING_INITIALISED) atomic_add_i64(&(ipc_data->field), -1L); }while(0) 
 
 #define ADD_TO_FREE_EVENTS_LIST(node_ptr) do { (node_ptr)->next_free_node = g_free_event_nodes_head; \
 g_free_event_nodes_head = (node_ptr); }while(0)
@@ -177,6 +181,8 @@ hpcrun_safe_exit();} while(0)
 
 #define SYNC_PROLOGUE(ctxt, launch_node, start_time, rec_node)                                                                   \
 TD_GET(gpu_data.overload_state) = SYNC_STATE;                                                                                    \
+TD_GET(gpu_data.accum_num_sync_threads) = 0;                                                                                     \
+TD_GET(gpu_data.accum_num_samples) = 0;                                                                                          \
 hpcrun_safe_enter();                                                                                                             \
 ucontext_t ctxt;                                                                                                                 \
 getcontext(&ctxt);                                                                                                               \
@@ -186,12 +192,15 @@ spinlock_lock(&g_gpu_lock);                                                     
 uint64_t start_time;                                                                                                             \
 event_list_node_t  *  rec_node = EnterCudaSync(& start_time);                                                                    \
 spinlock_unlock(&g_gpu_lock);                                                                                                    \
-hpcrun_safe_exit();
+INCR_SHARED_BLAMING_DS(num_threads_at_sync_all_procs);                                                                           \
+hpcrun_safe_exit();                                                                                                             
 
 #define SYNC_EPILOGUE(ctxt, launch_node, start_time, rec_node, mask, end_time)                                \
 hpcrun_safe_enter();                                                                                          \
 spinlock_lock(&g_gpu_lock);                                                                                   \
 uint64_t last_kernel_end_time = LeaveCudaSync(rec_node,start_time,mask);                                      \
+TD_GET(gpu_data.accum_num_sync_threads) = 0;                                                                  \
+TD_GET(gpu_data.accum_num_samples) = 0;                                                                       \
 spinlock_unlock(&g_gpu_lock);                                                                                 \
 struct timeval tv;                                                                                            \
 gettimeofday(&tv, NULL);                                                                                      \
@@ -202,7 +211,8 @@ uint64_t gpu_idle_time = last_kernel_end_time == 0 ? end_time - start_time : end
 cct_metric_data_increment(cpu_idle_metric_id, launch_node, (cct_metric_data_t) {.i = (cpu_idle_time)});       \
 cct_metric_data_increment(gpu_idle_metric_id, launch_node, (cct_metric_data_t) {.i = (gpu_idle_time)});       \
 hpcrun_safe_exit();                                                                                           \
-TD_GET(gpu_data.is_thread_at_cuda_sync) = false
+DECR_SHARED_BLAMING_DS(num_threads_at_sync_all_procs);                                                        \
+TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
 
 #define SYNC_MEMCPY_PROLOGUE(ctxt, launch_node, start_time, rec_node) SYNC_PROLOGUE(ctxt, launch_node, start_time, rec_node)
 
@@ -297,8 +307,6 @@ static uint64_t g_num_threads_at_sync;
 
 static event_list_node_t *g_free_event_nodes_head;
 static active_kernel_node_t *g_free_active_kernel_nodes_head;
-
-
 
 
 static uint64_t g_start_of_world_time;
@@ -595,7 +603,7 @@ static inline event_list_node_t *EnterCudaSync(uint64_t * syncStart) {
 
 // blame all kernels finished during the sync time
 
-static uint64_t attribute_shared_blame_on_kernels(event_list_node_t * recorded_node, uint64_t recorded_time, const uint32_t stream_mask) {
+static uint64_t attribute_shared_blame_on_kernels(event_list_node_t * recorded_node, uint64_t recorded_time, const uint32_t stream_mask, double scaling_factor) {
     
     // if recorded_node is not dummy_event_node decrement its ref count
     if (recorded_node != &dummy_event_node)
@@ -757,7 +765,7 @@ static uint64_t attribute_shared_blame_on_kernels(event_list_node_t * recorded_n
                     assert(blame_node->event_type == KERNEL_START);
                     
                     cct_metric_data_increment(cpu_idle_cause_metric_id, blame_node->launcher_cct, (cct_metric_data_t) {
-                        .r = (new_time - last_time) * 1.0 / num_active_kernels}
+                        .r = (new_time - last_time) * (scaling_factor) / num_active_kernels}
                                               );
                     blame_node = blame_node->prev;
                 } while (blame_node != sorted_active_kernels_begin->prev);
@@ -810,8 +818,11 @@ static inline uint64_t LeaveCudaSync(event_list_node_t * recorded_node, uint64_t
     
     // Cleanup events so that when I goto wait anybody in the queue will be the ones I have not seen and finished after my timer started.
     cleanup_finished_events();
-    
-    uint64_t last_kernel_end_time = attribute_shared_blame_on_kernels(recorded_node, syncStart, stream_mask);
+   	
+		double scaling_factor = 1.0; 
+		if(SHARED_BLAMING_INITIALISED && TD_GET(gpu_data.accum_num_samples))
+			scaling_factor *= ((double)TD_GET(gpu_data.accum_num_sync_threads))/TD_GET(gpu_data.accum_num_samples);	
+    uint64_t last_kernel_end_time = attribute_shared_blame_on_kernels(recorded_node, syncStart, stream_mask, scaling_factor);
     atomic_add_i64(&g_num_threads_at_sync, -1L);
     return last_kernel_end_time;
     //caller does       HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
@@ -842,8 +853,7 @@ uint32_t cleanup_finished_events() {
             if (err_cuda == cudaSuccess) {
                 
                 // Decrement   ipc_data->outstanding_kernels
-                if(g_do_shared_blaming)
-                    atomic_add_i64( &(ipc_data->outstanding_kernels), -1L);
+								DECR_SHARED_BLAMING_DS(outstanding_kernels);
                 
                 
                 
@@ -1178,8 +1188,7 @@ cudaError_t cudaLaunch(const char *entry) {
     
     
     
-    if(g_do_shared_blaming)
-        atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
+		INCR_SHARED_BLAMING_DS(outstanding_kernels);
     
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_LAUNCH].cudaLaunchReal(entry);
     
@@ -1390,8 +1399,7 @@ cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count, enum cudaM
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, stream));
     
     //Increment     outstanding_kernels
-    if(g_do_shared_blaming)
-        atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
+		INCR_SHARED_BLAMING_DS(outstanding_kernels);
     
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_ASYNC].cudaMemcpyAsyncReal(dst, src, count, kind, stream);
     
@@ -1460,8 +1468,7 @@ cudaError_t cudaMemcpyToArrayAsync(struct cudaArray * dst, size_t wOffset, size_
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, stream));
     
     //Increment     outstanding_kernels
-    if(g_do_shared_blaming)
-        atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
+		INCR_SHARED_BLAMING_DS(outstanding_kernels);
     
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_TO_ARRAY_ASYNC].cudaMemcpyToArrayAsyncReal(dst, wOffset, hOffset, src, count, kind, stream);
     
@@ -1658,8 +1665,7 @@ CUresult cuLaunchGridAsync(CUfunction f, int grid_width, int grid_height, CUstre
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
     
     //Increment     outstanding_kernels
-    if(g_do_shared_blaming)
-        atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
+		INCR_SHARED_BLAMING_DS(outstanding_kernels);
     
     CUresult ret = cuDriverFunctionPointer[CU_LAUNCH_GRID_ASYNC].cuLaunchGridAsyncReal(f, grid_width, grid_height, hStream);
     
@@ -1938,8 +1944,7 @@ CUresult cuMemcpyHtoDAsync(CUdeviceptr dstDevice, const void *srcHost, size_t By
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
     
     //Increment     outstanding_kernels
-    if(g_do_shared_blaming)
-        atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
+		INCR_SHARED_BLAMING_DS(outstanding_kernels);
     
     
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_HTO_D_ASYNC_V2].cuMemcpyHtoDAsync_v2Real(dstDevice, srcHost, ByteCount, hStream);
@@ -2024,8 +2029,7 @@ CUresult cuMemcpyDtoHAsync(void *dstHost, CUdeviceptr srcDevice, size_t ByteCoun
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
     
     //Increment     outstanding_kernels
-    if(g_do_shared_blaming)
-        atomic_add_i64( &(ipc_data->outstanding_kernels), 1L);
+		INCR_SHARED_BLAMING_DS(outstanding_kernels);
     
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_DTO_H_ASYNC_V2].cuMemcpyDtoHAsync_v2Real(dstHost, srcDevice, ByteCount, hStream);
     
@@ -2096,9 +2100,14 @@ void gpu_blame_shifter(int metric_id, cct_node_t * node,  int metric_dc) {
     // If we are already in a cuda API, then we can't call cleanup_finished_events() since CUDA could have taken the same lock. Hence we just return.
     
     bool is_threads_at_sync = TD_GET(gpu_data.is_thread_at_cuda_sync);
-    
-    if (is_threads_at_sync)
+  
+    if (is_threads_at_sync) {
+		    if(SHARED_BLAMING_INITIALISED) {
+			      TD_GET(gpu_data.accum_num_sync_threads) += ipc_data->num_threads_at_sync_all_procs; 
+			      TD_GET(gpu_data.accum_num_samples) += 1;
+        } 
         return;
+    }
     
     spinlock_lock(&g_gpu_lock);
     uint32_t num_unfinshed_streams = 0;
@@ -2120,12 +2129,22 @@ void gpu_blame_shifter(int metric_id, cct_node_t * node,  int metric_dc) {
         
         //printf("\n gpu_overlap_metric_id= %d\n", gpu_overlap_metric_id);
         // Increment gpu_overlap by metric_incr/num_unfinshed_streams for each of the unfinshed streams
-        for (stream_node_t * unfinished_stream = unfinished_event_list_head; unfinished_stream; unfinished_stream = unfinished_stream->next_unfinished_stream)
+        for (stream_node_t * unfinished_stream = unfinished_event_list_head; unfinished_stream; unfinished_stream = unfinished_stream->next_unfinished_stream) {
             cct_metric_data_increment(gpu_overlap_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t) {
                 .r = metric_incr * 1.0 / num_unfinshed_streams}
                                       );
+
+						//SHARED BLAMING: kernels need to be blamed for idleness on other procs/threads.
+						if(SHARED_BLAMING_INITIALISED && ipc_data->num_threads_at_sync_all_procs && !g_num_threads_at_sync) {
+								//TODO: FIXME: the local threads at sync need to be removed, /T has to be done while adding metric
+								//increment (either one of them).
+							 cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t) {
+                .r = metric_incr / g_active_threads}
+                                      );
+						}
+         }
+
     } else {
-        
         
         /*** Code to account for Overload factor ***/
         if(TD_GET(gpu_data.overload_state) == WORKING_STATE) {
@@ -2137,9 +2156,6 @@ void gpu_blame_shifter(int metric_id, cct_node_t * node,  int metric_dc) {
             cct_metric_data_increment(gpu_overload_potential_metric_id, node, (cct_metric_data_t) {
                 .i = metric_incr});
         }
-        
-        
-        
         
         // GPU is idle iff   ipc_data->outstanding_kernels == 0 
         // If ipc_data is NULL, then this process has not made GPU calls so, we are blind and declare GPU idle w/o checking status of other processes

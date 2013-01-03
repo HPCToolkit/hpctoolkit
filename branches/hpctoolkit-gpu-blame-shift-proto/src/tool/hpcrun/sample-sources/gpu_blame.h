@@ -149,10 +149,12 @@ typedef struct IPC_data_t {
     uint32_t device_id;
     //uint64_t leeches;
     uint64_t outstanding_kernels;
+		uint64_t num_threads_at_sync_all_procs; 
     spinlock_t ipc_lock;
 } IPC_data_t;
 
 extern IPC_data_t * ipc_data;
+
 extern int g_shmid;
 
 // Visible global variables
