@@ -220,6 +220,8 @@ TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
 hpcrun_safe_enter();                                                                                          \
 spinlock_lock(&g_gpu_lock);                                                                                   \
 uint64_t last_kernel_end_time = LeaveCudaSync(rec_node,start_time,mask);                                      \
+TD_GET(gpu_data.accum_num_sync_threads) = 0;                                                                  \
+TD_GET(gpu_data.accum_num_samples) = 0;                                                                       \
 spinlock_unlock(&g_gpu_lock);                                                                                 \
 struct timeval tv;                                                                                            \
 gettimeofday(&tv, NULL);                                                                                      \
@@ -231,6 +233,7 @@ cct_metric_data_increment(cpu_idle_metric_id, launch_node, (cct_metric_data_t) {
 cct_metric_data_increment(gpu_idle_metric_id, launch_node, (cct_metric_data_t) {.i = (gpu_idle_time)});       \
 increment_mem_xfer_metric(bytes, direction, launch_node);                                                     \
 hpcrun_safe_exit();                                                                                           \
+DECR_SHARED_BLAMING_DS(num_threads_at_sync_all_procs);                                                        \
 TD_GET(gpu_data.is_thread_at_cuda_sync) = false
 
 
@@ -365,11 +368,11 @@ static void PopulateEntryPointesToWrappedCalls() {
 
 #if 0
 static inline uint64_t get_shared_key(int device_id){
-	char name[200] = {0};
-	uint32_t i = 0;
-	gethostname(name, 200);
- 	// some crude hash function
-	uint64_t hash = 0xcafeba00;
+  char name[200] = {0};
+  uint32_t i = 0;
+  gethostname(name, 200);
+   // some crude hash function
+  uint64_t hash = 0xcafeba00;
     int c;
     
     while (c = name[i++])
@@ -390,14 +393,14 @@ static inline void create_shared_memory(){
     
     if ((g_shmid = shmget(key, sizeof(IPC_data_t), IPC_CREAT | 0666)) < 0) {
         EEMSG("Failed to shmget() on device %d, retval = %d", device_id, g_shmid);
-    	monitor_real_abort();
+        monitor_real_abort();
     }
     /*
      *      * Now we attach the segment to our data space.
      *           */
     if ((shm = shmat(g_shmid, NULL, 0)) == (char *) -1) {
         EEMSG("Failed to shmat() on device %d, retval = %d", device_id, shm);
-    	monitor_real_abort();
+        monitor_real_abort();
     }
     ipc_data = (IPC_data_t *) shm;
     
@@ -412,7 +415,7 @@ static inline void create_shared_memory(){
 }
 #else
 static inline void create_shared_memory() {
-	
+  
     int device_id;
     char shared_key[100];
     int fd ;
@@ -422,16 +425,16 @@ static inline void create_shared_memory() {
     sprintf(shared_key, "/gpublame%d",device_id);
     if ( (fd = shm_open(shared_key, O_RDWR | O_CREAT, 0666)) < 0 ) {
         EEMSG("Failed to shm_open (%s) on device %d, retval = %d", shared_key, device_id, g_shmid);
-    	monitor_real_abort();
+        monitor_real_abort();
     }
     if ( ftruncate(fd, sizeof(IPC_data_t)) < 0 ) {
         EEMSG("Failed to ftruncate() on device %d",device_id);
-    	monitor_real_abort();
+        monitor_real_abort();
     }
     
     if( (ipc_data = mmap(NULL, sizeof(IPC_data_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 )) == MAP_FAILED ) {
         EEMSG("Failed to mmap() on device %d",device_id);
-    	monitor_real_abort();
+        monitor_real_abort();
     }
     /*
      printf("\n CREATED SHM %d", device_id);
@@ -818,10 +821,10 @@ static inline uint64_t LeaveCudaSync(event_list_node_t * recorded_node, uint64_t
     
     // Cleanup events so that when I goto wait anybody in the queue will be the ones I have not seen and finished after my timer started.
     cleanup_finished_events();
-   	
-		double scaling_factor = 1.0; 
-		if(SHARED_BLAMING_INITIALISED && TD_GET(gpu_data.accum_num_samples))
-			scaling_factor *= ((double)TD_GET(gpu_data.accum_num_sync_threads))/TD_GET(gpu_data.accum_num_samples);	
+     
+    double scaling_factor = 1.0; 
+    if(SHARED_BLAMING_INITIALISED && TD_GET(gpu_data.accum_num_samples))
+      scaling_factor *= ((double)TD_GET(gpu_data.accum_num_sync_threads))/TD_GET(gpu_data.accum_num_samples);  
     uint64_t last_kernel_end_time = attribute_shared_blame_on_kernels(recorded_node, syncStart, stream_mask, scaling_factor);
     atomic_add_i64(&g_num_threads_at_sync, -1L);
     return last_kernel_end_time;
@@ -853,7 +856,7 @@ uint32_t cleanup_finished_events() {
             if (err_cuda == cudaSuccess) {
                 
                 // Decrement   ipc_data->outstanding_kernels
-								DECR_SHARED_BLAMING_DS(outstanding_kernels);
+                DECR_SHARED_BLAMING_DS(outstanding_kernels);
                 
                 
                 
@@ -880,17 +883,17 @@ uint32_t cleanup_finished_events() {
                 assert(micro_time_start <= micro_time_end);
                 
                 if(hpcrun_trace_isactive()) {
-                	hpcrun_trace_append_with_time(cur_stream->st, cur_stream->idle_node_id, HPCRUN_FMT_MetricId_NULL /* null metric id */, micro_time_start - 1);
+                  hpcrun_trace_append_with_time(cur_stream->st, cur_stream->idle_node_id, HPCRUN_FMT_MetricId_NULL /* null metric id */, micro_time_start - 1);
                     
-                	cct_node_t *stream_cct = current_event->stream_launcher_cct;
+                  cct_node_t *stream_cct = current_event->stream_launcher_cct;
                     
-                	hpcrun_cct_persistent_id_trace_mutate(stream_cct);
+                  hpcrun_cct_persistent_id_trace_mutate(stream_cct);
                     
-                	hpcrun_trace_append_with_time(cur_stream->st, hpcrun_cct_persistent_id(stream_cct), HPCRUN_FMT_MetricId_NULL /* null metric id */, micro_time_start);
+                  hpcrun_trace_append_with_time(cur_stream->st, hpcrun_cct_persistent_id(stream_cct), HPCRUN_FMT_MetricId_NULL /* null metric id */, micro_time_start);
                     
-                	hpcrun_trace_append_with_time(cur_stream->st, hpcrun_cct_persistent_id(stream_cct), HPCRUN_FMT_MetricId_NULL /* null metric id */, micro_time_end);
+                  hpcrun_trace_append_with_time(cur_stream->st, hpcrun_cct_persistent_id(stream_cct), HPCRUN_FMT_MetricId_NULL /* null metric id */, micro_time_end);
                     
-                	hpcrun_trace_append_with_time(cur_stream->st, cur_stream->idle_node_id, HPCRUN_FMT_MetricId_NULL /* null metric id */, micro_time_end + 1);
+                  hpcrun_trace_append_with_time(cur_stream->st, cur_stream->idle_node_id, HPCRUN_FMT_MetricId_NULL /* null metric id */, micro_time_end + 1);
                 }
                 
                 
@@ -1188,7 +1191,7 @@ cudaError_t cudaLaunch(const char *entry) {
     
     
     
-		INCR_SHARED_BLAMING_DS(outstanding_kernels);
+    INCR_SHARED_BLAMING_DS(outstanding_kernels);
     
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_LAUNCH].cudaLaunchReal(entry);
     
@@ -1299,15 +1302,15 @@ cudaError_t cudaStreamCreate(cudaStream_t * stream) {
     
     g_stream_array[new_streamId].st = hpcrun_stream_data_alloc_init(new_streamId);
     if(hpcrun_trace_isactive()) {
-    	hpcrun_trace_open(g_stream_array[new_streamId].st);
+      hpcrun_trace_open(g_stream_array[new_streamId].st);
         
-	    /*FIXME: convert below 4 lines to a macro */
-	    cct_bundle_t *bundle = &(g_stream_array[new_streamId].st->epoch->csdata);
-	    cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
-	    hpcrun_cct_persistent_id_trace_mutate(idl);
-	    // store the persistent id one time.
-	    g_stream_array[new_streamId].idle_node_id = hpcrun_cct_persistent_id(idl);
-	    hpcrun_trace_append(g_stream_array[new_streamId].st, g_stream_array[new_streamId].idle_node_id, HPCRUN_FMT_MetricId_NULL /* null metric id */);
+      /*FIXME: convert below 4 lines to a macro */
+      cct_bundle_t *bundle = &(g_stream_array[new_streamId].st->epoch->csdata);
+      cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
+      hpcrun_cct_persistent_id_trace_mutate(idl);
+      // store the persistent id one time.
+      g_stream_array[new_streamId].idle_node_id = hpcrun_cct_persistent_id(idl);
+      hpcrun_trace_append(g_stream_array[new_streamId].st, g_stream_array[new_streamId].idle_node_id, HPCRUN_FMT_MetricId_NULL /* null metric id */);
         
     }
     
@@ -1399,7 +1402,7 @@ cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count, enum cudaM
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, stream));
     
     //Increment     outstanding_kernels
-		INCR_SHARED_BLAMING_DS(outstanding_kernels);
+    INCR_SHARED_BLAMING_DS(outstanding_kernels);
     
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_ASYNC].cudaMemcpyAsyncReal(dst, src, count, kind, stream);
     
@@ -1427,7 +1430,7 @@ cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count, enum cudaM
 }
 
 
-cudaError_t cudaMemcpyToArrayAsync(struct cudaArray * dst, size_t wOffset, size_t hOffset, const void * src, size_t count, enum cudaMemcpyKind 	kind, cudaStream_t stream ){
+cudaError_t cudaMemcpyToArrayAsync(struct cudaArray * dst, size_t wOffset, size_t hOffset, const void * src, size_t count, enum cudaMemcpyKind   kind, cudaStream_t stream ){
     CreateStream0IfNot(stream);
     
     uint32_t streamId = 0;
@@ -1468,7 +1471,7 @@ cudaError_t cudaMemcpyToArrayAsync(struct cudaArray * dst, size_t wOffset, size_
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, stream));
     
     //Increment     outstanding_kernels
-		INCR_SHARED_BLAMING_DS(outstanding_kernels);
+    INCR_SHARED_BLAMING_DS(outstanding_kernels);
     
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_TO_ARRAY_ASYNC].cudaMemcpyToArrayAsyncReal(dst, wOffset, hOffset, src, count, kind, stream);
     
@@ -1525,7 +1528,7 @@ cudaError_t cudaMemcpy(void *dst, const void *src, size_t count, enum cudaMemcpy
 }
 
 
-cudaError_t cudaMemcpyToArray	(	struct cudaArray * 	dst, size_t 	wOffset, size_t 	hOffset, const void * 	src, size_t 	count, enum cudaMemcpyKind 	kind){
+cudaError_t cudaMemcpyToArray  (  struct cudaArray *   dst, size_t   wOffset, size_t   hOffset, const void *   src, size_t   count, enum cudaMemcpyKind   kind){
     
     SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
 
@@ -1665,7 +1668,7 @@ CUresult cuLaunchGridAsync(CUfunction f, int grid_width, int grid_height, CUstre
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
     
     //Increment     outstanding_kernels
-		INCR_SHARED_BLAMING_DS(outstanding_kernels);
+    INCR_SHARED_BLAMING_DS(outstanding_kernels);
     
     CUresult ret = cuDriverFunctionPointer[CU_LAUNCH_GRID_ASYNC].cuLaunchGridAsyncReal(f, grid_width, grid_height, hStream);
     
@@ -1773,16 +1776,16 @@ CUresult cuStreamCreate(CUstream * phStream, unsigned int Flags) {
     
     
     if(hpcrun_trace_isactive()){
-    	hpcrun_trace_open(g_stream_array[new_streamId].st);
+      hpcrun_trace_open(g_stream_array[new_streamId].st);
         
-    	/*FIXME: convert below 4 lines to a macro */
-    	cct_bundle_t *bundle = &(g_stream_array[new_streamId].st->epoch->csdata);
-    	cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
-    	hpcrun_cct_persistent_id_trace_mutate(idl);
-    	// Store the persistent id for the idle node one time.
-    	g_stream_array[new_streamId].idle_node_id = hpcrun_cct_persistent_id(idl);
+      /*FIXME: convert below 4 lines to a macro */
+      cct_bundle_t *bundle = &(g_stream_array[new_streamId].st->epoch->csdata);
+      cct_node_t *idl = hpcrun_cct_bundle_get_idle_node(bundle);
+      hpcrun_cct_persistent_id_trace_mutate(idl);
+      // Store the persistent id for the idle node one time.
+      g_stream_array[new_streamId].idle_node_id = hpcrun_cct_persistent_id(idl);
         
-    	hpcrun_trace_append(g_stream_array[new_streamId].st, g_stream_array[new_streamId].idle_node_id, HPCRUN_FMT_MetricId_NULL /* null metric id */);
+      hpcrun_trace_append(g_stream_array[new_streamId].st, g_stream_array[new_streamId].idle_node_id, HPCRUN_FMT_MetricId_NULL /* null metric id */);
         
     }
     
@@ -1944,7 +1947,7 @@ CUresult cuMemcpyHtoDAsync(CUdeviceptr dstDevice, const void *srcHost, size_t By
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
     
     //Increment     outstanding_kernels
-		INCR_SHARED_BLAMING_DS(outstanding_kernels);
+    INCR_SHARED_BLAMING_DS(outstanding_kernels);
     
     
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_HTO_D_ASYNC_V2].cuMemcpyHtoDAsync_v2Real(dstDevice, srcHost, ByteCount, hStream);
@@ -2029,7 +2032,7 @@ CUresult cuMemcpyDtoHAsync(void *dstHost, CUdeviceptr srcDevice, size_t ByteCoun
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
     
     //Increment     outstanding_kernels
-		INCR_SHARED_BLAMING_DS(outstanding_kernels);
+    INCR_SHARED_BLAMING_DS(outstanding_kernels);
     
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_DTO_H_ASYNC_V2].cuMemcpyDtoHAsync_v2Real(dstHost, srcDevice, ByteCount, hStream);
     
@@ -2102,9 +2105,9 @@ void gpu_blame_shifter(int metric_id, cct_node_t * node,  int metric_dc) {
     bool is_threads_at_sync = TD_GET(gpu_data.is_thread_at_cuda_sync);
   
     if (is_threads_at_sync) {
-		    if(SHARED_BLAMING_INITIALISED) {
-			      TD_GET(gpu_data.accum_num_sync_threads) += ipc_data->num_threads_at_sync_all_procs; 
-			      TD_GET(gpu_data.accum_num_samples) += 1;
+        if(SHARED_BLAMING_INITIALISED) {
+            TD_GET(gpu_data.accum_num_sync_threads) += ipc_data->num_threads_at_sync_all_procs; 
+            TD_GET(gpu_data.accum_num_samples) += 1;
         } 
         return;
     }
@@ -2134,14 +2137,14 @@ void gpu_blame_shifter(int metric_id, cct_node_t * node,  int metric_dc) {
                 .r = metric_incr * 1.0 / num_unfinshed_streams}
                                       );
 
-						//SHARED BLAMING: kernels need to be blamed for idleness on other procs/threads.
-						if(SHARED_BLAMING_INITIALISED && ipc_data->num_threads_at_sync_all_procs && !g_num_threads_at_sync) {
-								//TODO: FIXME: the local threads at sync need to be removed, /T has to be done while adding metric
-								//increment (either one of them).
-							 cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t) {
+            //SHARED BLAMING: kernels need to be blamed for idleness on other procs/threads.
+            if(SHARED_BLAMING_INITIALISED && ipc_data->num_threads_at_sync_all_procs && !g_num_threads_at_sync) {
+                //TODO: FIXME: the local threads at sync need to be removed, /T has to be done while adding metric
+                //increment (either one of them).
+               cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t) {
                 .r = metric_incr / g_active_threads}
                                       );
-						}
+            }
          }
 
     } else {
