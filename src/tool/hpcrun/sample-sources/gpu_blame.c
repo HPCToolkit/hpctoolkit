@@ -172,9 +172,9 @@ static void METHOD_FN(init)
     char * cuda_launch_skip_inner_env;    
     TMSG(CPU_GPU_BLAME_CTL, "setting up CPU_GPU_BLAME");
     g_unfinished_stream_list_head = NULL;
-		//active threads represents the total number of threads in the system
-		//including the main thread 
-		g_active_threads = 1;
+    //active threads represents the total number of threads in the system
+    //including the main thread 
+    g_active_threads = 1;
     g_finished_event_nodes_tail = &dummy_event_node;
     dummy_event_node.next = g_finished_event_nodes_tail;
     shared_blaming_env = getenv("HPCRUN_ENABLE_SHARED_GPU_BLAMING");
@@ -184,8 +184,6 @@ static void METHOD_FN(init)
     cuda_launch_skip_inner_env = getenv("HPCRUN_CUDA_LAUNCH_SKIP_INNER");
     if(cuda_launch_skip_inner_env)
         g_cuda_launch_skip_inner = atoi(cuda_launch_skip_inner_env);
-   
-
  
     self->state = INIT;                                    
 }
@@ -226,51 +224,8 @@ static void METHOD_FN(stop)
 
 static void METHOD_FN(shutdown)
 {
-    
-	char shared_key[100];
-	int index = 0;
-	int ret_val;
-	//uint64_t shared_page_leeches  = 0;
-	if (g_do_shared_blaming){
-#if 0
-		//shared_page_leeches = fetch_and_add(&(ipc_data->leeches), -1L);	
-		if( shmdt(ipc_data) != 0) {
-			EMSG("\n Failed to shmdt() a shared page");
-		}
-		//if(shared_page_leeches == 1) {  // I was the last one;
-			if( shmctl(g_shmid, IPC_RMID, NULL) != 0)
-				EMSG("\n Failed to shmctl() the  leech on the shared page");
-			else
-				TMSG(CPU_GPU_BLAME_CTL, "\n deleted the leech");
-		//}
-#else
-		for(index =0 ; index < 3 ; index ++){
-			sprintf(shared_key,"/gpublame%d", index);
-			while( shm_unlink(shared_key) != -1) ;
-		}
-#endif
-	}    
-#if 0
-    if (!g_stream0_not_initialized) {
-        fprintf(stderr, "\n MAY BE BROKEN FOR MULTITHREADED");
-        uint32_t streamId;
-        streamId = SplayGetStreamId(stream_to_id_tree_root, 0);
-        SYNCHRONOUS_CLEANUP;
-        gpu_trace_close(DEVICE_ID, streamId);
-    }
-#endif
-#if 0        
-    if (stream_to_id_tree_root) {
-        SYNCHRONOUS_CLEANUP;
-        // Walk the stream splay tree and close each trace.
-        CloseAllStreams(stream_to_id_tree_root);
-        stream_to_id_tree_root = NULL;
-    }
-#endif
-
     TMSG(CPU_GPU_BLAME_CTL, "shutodown CPU_GPU_BLAME_CTL");
     METHOD_CALL(self, stop);    // make sure stop has been called
-    
     self->state = UNINIT;
 }
 

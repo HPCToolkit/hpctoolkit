@@ -156,6 +156,7 @@ monitor_real_abort();                                                    \
 #define fflush(...) do{}while(0)
 
 
+#define MAX_SHARED_KEY_LENGTH (100)
 
 #define HPCRUN_GPU_SHMSZ (1<<10)
 
@@ -414,10 +415,18 @@ static inline void create_shared_memory(){
     printf("\n Shared mem created for device %d", device_id);
 }
 #else
+
+static char shared_key[MAX_SHARED_KEY_LENGTH];
+
+static void destroy_shared_memory(void * p) {
+    // we should munmap, but I will not do since we dont do it in so many other places in hpcrun
+    // munmap(ipc_data);
+    shm_unlink(shared_key);    
+}
+
 static inline void create_shared_memory() {
   
     int device_id;
-    char shared_key[100];
     int fd ;
     monitor_disable_new_threads();
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_GET_DEVICE].cudaGetDeviceReal(&device_id));
@@ -436,19 +445,11 @@ static inline void create_shared_memory() {
         EEMSG("Failed to mmap() on device %d",device_id);
         monitor_real_abort();
     }
-    /*
-     printf("\n CREATED SHM %d", device_id);
-     fflush(stdout);
-     ipc_data->outstanding_kernels += 1;
-     ipc_data->outstanding_kernels -= 1;
-     printf("\n Access Success");
-     fflush(stdout);
-     //sleep(10);
-     //ipc_data = &dummy_ipc;
-     //monitor_real_abort();
-     */
+
+    hpcrun_process_aux_cleanup_add(destroy_shared_memory, NULL /*nothing to pass*/);
     
 }
+
 #endif
 
 // Get the stream id given a cudaStream

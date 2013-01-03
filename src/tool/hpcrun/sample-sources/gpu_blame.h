@@ -125,10 +125,10 @@ typedef struct stream_node_t {
 
 /* states for accounting overload potential */
 enum overloadPotentialState{
-	START_STATE=0,
-	WORKING_STATE,
-	SYNC_STATE,
-	OVERLOADABLE_STATE
+    START_STATE=0,
+    WORKING_STATE,
+    SYNC_STATE,
+    OVERLOADABLE_STATE
 };
 
 
@@ -147,10 +147,8 @@ typedef struct stream_to_id_map_t {
 
 typedef struct IPC_data_t {
     uint32_t device_id;
-    //uint64_t leeches;
     uint64_t outstanding_kernels;
-		uint64_t num_threads_at_sync_all_procs; 
-    spinlock_t ipc_lock;
+    uint64_t num_threads_at_sync_all_procs; 
 } IPC_data_t;
 
 extern IPC_data_t * ipc_data;
