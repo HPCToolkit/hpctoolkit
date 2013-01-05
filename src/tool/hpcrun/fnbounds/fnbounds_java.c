@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/branches/hpctoolkit-jvmti/src/tool/hpcrun/unwind_java/common/ui_tree.c $
-// $Id: ui_tree.c 4003 2012-11-09 05:17:55Z mfagan $
+// $HeadURL$
+// $Id$ 
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -82,8 +82,6 @@
 } while (0)
 
 
-static const char *jo_filename = "java-app.jo";
-
 // Locks both the UI tree and the UI free list.
 static spinlock_t ui_tree_lock;
 
@@ -100,8 +98,14 @@ static load_module_t *lm_java = NULL;
 //---------------------------------------------------------------------
 
 
+/***
+ * Initialize java interval tree
+ * 
+ * @param jo_filename : filename of the .jo file
+ *
+ ***/
 void
-hpcjava_interval_tree_init(void)
+hpcjava_interval_tree_init(const char *jo_filename)
 {
   TMSG(JAVA, "init unwind_java interval tree");
 
