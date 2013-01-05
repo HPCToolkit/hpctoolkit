@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/branches/hpctoolkit-jvmti/src/tool/hpcrun/unwind/common/ui_tree.h $
-// $Id: ui_tree.h 3680 2012-02-25 22:14:00Z krentel $
+// $HeadURL$
+// $Id$ 
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -49,15 +49,15 @@
  *
  */
 
-#ifndef _UI_TREE_JAVA_H_
-#define _UI_TREE_JAVA_H_
+#ifndef _FNBOUNDS_JAVA_H_
+#define _FNBOUNDS_JAVA_H_
 
 #include <sys/types.h>
 #include "splay-interval.h"
 #include "splay.h"
 
 splay_interval_t * hpcjava_get_interval(void *addr);
-void hpcjava_interval_tree_init(void);
+void hpcjava_interval_tree_init(const char *jo_filename);
 void hpcjava_release_splay_lock(void);
 void *hpcjava_ui_malloc(size_t ui_size);
 
@@ -69,4 +69,4 @@ void free_ui_node_locked(interval_tree_node *node);
 
 void hpcjava_print_interval_tree(void);
 
-#endif  /* !_UI_TREE_JAVA_H_ */
+#endif  /* !_FNBOUNDS_JAVA_H_ */

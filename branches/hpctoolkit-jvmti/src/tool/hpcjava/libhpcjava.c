@@ -1,3 +1,49 @@
+// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$ 
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2012, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
 #include <stdio.h>
 #include <jvmti.h>
 #include <string.h>
@@ -355,19 +401,19 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
     		return 0;
   	}
 
-	/* shut up compiler warning */
-	reserved = reserved;
-
-	hpcjava_interval_tree_init();
-
 	if (options && !strcmp("debug", options))
 		debug = 1;
 
 	if (debug)
 		fprintf(stderr, "jvmti hpcjava: agent activated\n");
 
+	/* shut up compiler warning */
+	reserved = reserved;
+
+	/* record time start (to be used for opjitconv) */
         gettimeofday(&time_start, NULL);
 
+	/* prepare the name of the .dump and  .jo file */
 	int rank = hpcrun_get_rank();
 	rank = (rank<0? 0:rank);
 	thread_data_t* td = hpcrun_get_thread_data();
@@ -382,6 +428,12 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
 	if (debug)
 		fprintf(stderr,"Java file to dump: %s\n", file_dump);
 
+	/* initialize Java's tree interval */
+	char file_dump_jo[PATH_MAX] = {'\0'};
+	snprintf(file_dump_jo,PATH_MAX,"%s.jo",file_dump);
+	hpcjava_interval_tree_init(file_dump_jo);
+
+	/* prepare java dump file */
         agent_hdl = op_open_agent(file_dump);
         if (!agent_hdl) {
                 perror("Error: op_open_agent()");
