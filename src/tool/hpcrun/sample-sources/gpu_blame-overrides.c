@@ -1295,34 +1295,6 @@ cudaError_t cudaStreamCreate(cudaStream_t * stream) {
     return ret;
 }
 
-
-cudaError_t cudaMalloc(void **devPtr, size_t size) {
-    
-    SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
-    monitor_disable_new_threads();
-    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MALLOC].cudaMallocReal(devPtr, size);
-    monitor_enable_new_threads();
-    
-    SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd);
-    
-    return ret;
-    
-}
-
-
-cudaError_t cudaFree(void *devPtr) {
-    
-    SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
-    monitor_disable_new_threads();
-    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_FREE].cudaFreeReal(devPtr);
-    monitor_enable_new_threads();
-    
-    SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd);
-    return ret;
-    
-}
-
-
 inline static void increment_mem_xfer_metric(size_t count, enum cudaMemcpyKind kind, cct_node_t *node){
     switch(kind){
         case cudaMemcpyDeviceToHost:
@@ -1334,6 +1306,299 @@ inline static void increment_mem_xfer_metric(size_t count, enum cudaMemcpyKind k
         default : break;
             
     }
+}
+
+
+cudaError_t cudaMalloc(void **devPtr, size_t size) {
+    
+    SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MALLOC].cudaMallocReal(devPtr, size);
+    monitor_enable_new_threads();
+    
+    SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd);
+    
+    return ret;
+}
+
+cudaError_t cudaMalloc3D (struct cudaPitchedPtr* pitchedDevPtr, struct cudaExtent extent) {
+    SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MALLOC3_D].cudaMalloc3DReal(pitchedDevPtr, extent);
+    monitor_enable_new_threads();
+    SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd);
+    return ret;
+}
+
+cudaError_t cudaMalloc3DArray (struct cudaArray** array, const struct cudaChannelFormatDesc* desc, struct cudaExtent extent, unsigned int flags ) {
+    SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MALLOC3_D_ARRAY].cudaMalloc3DArrayReal(array, desc, extent, flags);
+    monitor_enable_new_threads();
+    SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd);
+    return ret;
+}
+
+cudaError_t cudaMemcpy3D (const struct cudaMemcpy3DParms *p) {
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY3_D].cudaMemcpy3DReal(p);
+    monitor_enable_new_threads();
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (p->extent.width * p->extent.height * p->extent.depth), (p->kind));
+    return ret;
+}
+
+cudaError_t cudaMemcpy3DPeer (const struct cudaMemcpy3DPeerParms *p) {
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY3_D_PEER].cudaMemcpy3DPeerReal(p);
+    monitor_enable_new_threads();
+    assert(0 && "NYI"); // Dont know KIND
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (p->extent.width * p->extent.height * p->extent.depth), (0));
+    return ret;
+}
+
+cudaError_t cudaMemcpy3DAsync (const struct cudaMemcpy3DParms *p, cudaStream_t stream ) {
+    ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, 0);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY3_D_ASYNC].cudaMemcpy3DAsyncReal(p, stream);
+    monitor_enable_new_threads();
+    ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, (p->extent.width * p->extent.height * p->extent.depth), (p->kind));
+    return ret;
+    
+}
+
+cudaError_t cudaMemcpy3DPeerAsync (const struct cudaMemcpy3DPeerParms *p, cudaStream_t stream ) {
+    ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, 0);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY3_D_PEER_ASYNC].cudaMemcpy3DPeerAsyncReal(p, stream);
+    monitor_enable_new_threads();
+    assert(0 && "NYI"); // Dont know KIND
+    ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, (p->extent.width * p->extent.height * p->extent.depth), (0));
+    return ret;
+}
+
+cudaError_t cudaMemcpyPeer (void *dst, int dstDevice, const void *src, int srcDevice, size_t count) {
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_PEER].cudaMemcpyPeerReal(dst, dstDevice, src, srcDevice, count);
+    monitor_enable_new_threads();
+    assert(0 && "NYI"); // Dont know KIND
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, 0);
+    return ret;
+}
+
+cudaError_t cudaMemcpyFromArray (void *dst, const struct cudaArray *src, size_t wOffset, size_t hOffset, size_t count, enum cudaMemcpyKind kind) {
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_FROM_ARRAY].cudaMemcpyFromArrayReal(dst, src, wOffset, hOffset, count, kind);
+    monitor_enable_new_threads();
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind);
+    return ret;
+}
+
+cudaError_t cudaMemcpyArrayToArray (struct cudaArray *dst, size_t wOffsetDst, size_t hOffsetDst, const struct cudaArray *src, size_t wOffsetSrc, size_t hOffsetSrc, size_t count, enum cudaMemcpyKind kind ) {
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_ARRAY_TO_ARRAY].cudaMemcpyArrayToArrayReal(dst, wOffsetDst, hOffsetDst, src, wOffsetSrc, hOffsetSrc, count, kind);
+    monitor_enable_new_threads();
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind);
+    return ret;
+}
+
+cudaError_t cudaMemcpy2DToArray (struct cudaArray *dst, size_t wOffset, size_t hOffset, const void *src, size_t spitch, size_t width, size_t height, enum cudaMemcpyKind kind) {
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY2_D_TO_ARRAY].cudaMemcpy2DToArrayReal(dst, wOffset, hOffset, src, spitch, width, height, kind);
+    monitor_enable_new_threads();
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (width * height) , kind);
+    return ret;
+}
+
+cudaError_t cudaMemcpy2DFromArray (void *dst, size_t dpitch, const struct cudaArray *src, size_t wOffset, size_t hOffset, size_t width, size_t height, enum cudaMemcpyKind kind) {
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY2_D_FROM_ARRAY].cudaMemcpy2DFromArrayReal(dst, dpitch, src, wOffset, hOffset, width, height, kind);
+    monitor_enable_new_threads();
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (width * height), kind);
+    return ret;
+}
+
+cudaError_t cudaMemcpy2DArrayToArray (struct cudaArray *dst, size_t wOffsetDst, size_t hOffsetDst, const struct cudaArray *src, size_t wOffsetSrc, size_t hOffsetSrc, size_t width, size_t height, enum cudaMemcpyKind kind ) {
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY2_D_ARRAY_TO_ARRAY].cudaMemcpy2DArrayToArrayReal(dst, wOffsetDst, hOffsetDst, src, wOffsetSrc, hOffsetSrc, width, height, kind);
+    monitor_enable_new_threads();
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (width * height), kind);
+    return ret;
+}
+
+cudaError_t cudaMemcpyToSymbol (const char *symbol, const void *src, size_t count, size_t offset , enum cudaMemcpyKind kind ) {
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_TO_SYMBOL].cudaMemcpyToSymbolReal(symbol, src, count, offset, kind);
+    monitor_enable_new_threads();
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind);
+    return ret;
+}
+
+cudaError_t cudaMemcpyFromSymbol (void *dst, const char *symbol, size_t count, size_t offset , enum cudaMemcpyKind kind ) {
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_FROM_SYMBOL].cudaMemcpyFromSymbolReal(dst, symbol, count, offset, kind);
+    monitor_enable_new_threads();
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind);
+    return ret;
+}
+
+cudaError_t cudaMemcpyPeerAsync (void *dst, int dstDevice, const void *src, int srcDevice, size_t count, cudaStream_t stream ) {
+    ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, 0);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_PEER_ASYNC].cudaMemcpyPeerAsyncReal(dst, dstDevice, src, srcDevice, count, stream);
+    monitor_enable_new_threads();
+    assert(0 && "NYI");
+    ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, count, 0 /* dont know */);
+    return ret;
+}
+
+cudaError_t cudaMemcpyFromArrayAsync (void *dst, const struct cudaArray *src, size_t wOffset, size_t hOffset, size_t count, enum cudaMemcpyKind kind, cudaStream_t stream ) {
+    ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, 0);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_FROM_ARRAY_ASYNC].cudaMemcpyFromArrayAsyncReal(dst, src, wOffset, hOffset, count, kind, stream);
+    monitor_enable_new_threads();
+    ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, count, kind);
+    return ret;
+}
+
+cudaError_t cudaMemcpy2DAsync (void *dst, size_t dpitch, const void *src, size_t spitch, size_t width, size_t height, enum cudaMemcpyKind kind, cudaStream_t stream ) {
+    ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, 0);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY2_D_ASYNC].cudaMemcpy2DAsyncReal(dst, dpitch, src, spitch, width, height, kind, stream);
+    monitor_enable_new_threads();
+    ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, (width * height), kind);
+    return ret;
+}
+
+cudaError_t cudaMemcpy2DToArrayAsync (struct cudaArray *dst, size_t wOffset, size_t hOffset, const void *src, size_t spitch, size_t width, size_t height, enum cudaMemcpyKind kind, cudaStream_t stream ) {
+    ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, 0);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY2_D_TO_ARRAY_ASYNC].cudaMemcpy2DToArrayAsyncReal(dst, wOffset, hOffset, src, spitch, width, height, kind, stream);
+    monitor_enable_new_threads();
+    ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, (width * height), kind);
+    return ret;
+}
+
+cudaError_t cudaMemcpy2DFromArrayAsync (void *dst, size_t dpitch, const struct cudaArray *src, size_t wOffset, size_t hOffset, size_t width, size_t height, enum cudaMemcpyKind kind, cudaStream_t stream ) {
+    ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, 0);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY2_D_FROM_ARRAY_ASYNC].cudaMemcpy2DFromArrayAsyncReal(dst, dpitch, src, wOffset, hOffset, width, height, kind, stream);
+    monitor_enable_new_threads();
+    ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, (width * height), kind);
+    return ret;
+}
+
+cudaError_t cudaMemcpyToSymbolAsync (const char *symbol, const void *src, size_t count, size_t offset, enum cudaMemcpyKind kind, cudaStream_t stream ) {
+    ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, 0);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_TO_SYMBOL_ASYNC].cudaMemcpyToSymbolAsyncReal(symbol, src, count, offset, kind, stream);
+    monitor_enable_new_threads();
+    ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, count, kind);
+    return ret;
+}
+
+cudaError_t cudaMemcpyFromSymbolAsync (void *dst, const char *symbol, size_t count, size_t offset, enum cudaMemcpyKind kind, cudaStream_t stream ) {
+    ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, 0);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_FROM_SYMBOL_ASYNC].cudaMemcpyFromSymbolAsyncReal(dst, symbol, count, offset, kind, stream);
+    monitor_enable_new_threads();
+    ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, count, kind);
+    return ret;
+}
+
+cudaError_t cudaMemset (void *devPtr, int value, size_t count) {
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMSET].cudaMemsetReal(devPtr, value, count);
+    monitor_enable_new_threads();
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, 0, cudaMemcpyHostToDevice);
+    return ret;
+}
+
+cudaError_t cudaMemset2D (void *devPtr, size_t pitch, int value, size_t width, size_t height) {
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMSET2_D].cudaMemset2DReal(devPtr, pitch, value, width, height);
+    monitor_enable_new_threads();
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, 0, cudaMemcpyHostToDevice);
+    return ret;
+}
+
+cudaError_t cudaMemset3D (struct cudaPitchedPtr pitchedDevPtr, int value, struct cudaExtent extent) {
+    SYNC_MEMCPY_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMSET3_D].cudaMemset3DReal(pitchedDevPtr, value, extent);
+    monitor_enable_new_threads();
+    SYNC_MEMCPY_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, 0, cudaMemcpyHostToDevice);
+    return ret;
+}
+
+cudaError_t cudaMemsetAsync (void *devPtr, int value, size_t count, cudaStream_t stream ) {
+    ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, 0);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMSET_ASYNC].cudaMemsetAsyncReal(devPtr, value, count, stream);
+    monitor_enable_new_threads();
+    ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, 0, cudaMemcpyHostToDevice);
+    return ret;
+}
+
+cudaError_t cudaMemset2DAsync (void *devPtr, size_t pitch, int value, size_t width, size_t height, cudaStream_t stream ) {
+    ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, 0);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMSET2_D_ASYNC].cudaMemset2DAsyncReal(devPtr, pitch, value, width, height, stream);
+    monitor_enable_new_threads();
+    ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, 0, cudaMemcpyHostToDevice);
+    return ret;
+}
+
+cudaError_t cudaMemset3DAsync (struct cudaPitchedPtr pitchedDevPtr, int value, struct cudaExtent extent, cudaStream_t stream ) {
+    ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, 0);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMSET3_D_ASYNC].cudaMemset3DAsyncReal(pitchedDevPtr, value, extent, stream);
+    monitor_enable_new_threads();
+    ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, 0, cudaMemcpyHostToDevice);
+    return ret;
+}
+
+cudaError_t cudaMallocArray (struct cudaArray **array, const struct cudaChannelFormatDesc *desc, size_t width, size_t height, unsigned int flags){
+    SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MALLOC_ARRAY].cudaMallocArrayReal(array, desc, width, height, flags);
+    monitor_enable_new_threads();
+    SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd);
+
+    return ret;
+}
+
+cudaError_t cudaFree(void *devPtr) {
+    
+    SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_FREE].cudaFreeReal(devPtr);
+    monitor_enable_new_threads();
+    SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd);
+    return ret;
+    
+}
+
+cudaError_t cudaFreeArray (struct cudaArray *array) {
+    
+    SYNC_PROLOGUE(context, launcher_cct, syncStart, recorded_node);
+    monitor_disable_new_threads();
+    cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_FREE_ARRAY].cudaFreeArrayReal(array);
+    monitor_enable_new_threads();
+    SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd);
+    return ret;
+    
 }
 
 
