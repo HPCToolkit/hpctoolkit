@@ -238,6 +238,40 @@ DECR_SHARED_BLAMING_DS(num_threads_at_sync_all_procs);                          
 TD_GET(gpu_data.is_thread_at_cuda_sync) = false
 
 
+#define ASYNC_KERNEL_PROLOGUE(streamId, event_node, context, cct_node, stream, skip_inner)                                              \
+CreateStream0IfNot(stream);                                                                                                             \
+uint32_t streamId = 0;                                                                                                                  \
+event_list_node_t *event_node;                                                                                                          \
+streamId = SplayGetStreamId(stream_to_id_tree_root, stream);                                                                            \
+HPCRUN_ASYNC_BLOCK_SPIN_LOCK;                                                                                                           \
+TD_GET(gpu_data.is_thread_at_cuda_sync) = true;                                                                                         \
+ucontext_t context;                                                                                                                     \
+getcontext(&context);                                                                                                                   \
+cct_node_t *cct_node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, skip_inner /*skipInner */ , 1 /*isSync */ ).sample_node; \
+cct_node_t *stream_cct = stream_duplicate_cpu_node(g_stream_array[streamId].st, &context, cct_node);                                    \
+monitor_disable_new_threads();                                                                                                          \
+event_node = create_and_insert_event(streamId, cct_node, stream_cct);                                                                   \
+CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, stream));                     \
+INCR_SHARED_BLAMING_DS(outstanding_kernels)
+
+
+#define ASYNC_KERNEL_EPILOGUE(event_node, stream)                                                                 \
+TD_GET(gpu_data.overload_state) = WORKING_STATE;                                                                  \
+CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end, stream)); \
+monitor_enable_new_threads();                                                                                     \
+TD_GET(gpu_data.is_thread_at_cuda_sync) = false;                                                                  \
+HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK
+
+#define ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, skip_inner)    ASYNC_KERNEL_PROLOGUE(streamId, event_node, context, cct_node, stream, skip_inner)
+
+#define ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, count, kind)                                          \
+TD_GET(gpu_data.overload_state) = WORKING_STATE;                                                                  \
+CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end, stream)); \
+monitor_enable_new_threads();                                                                                     \
+increment_mem_xfer_metric(count, kind, cct_node);                                                                 \
+TD_GET(gpu_data.is_thread_at_cuda_sync) = false;                                                                  \
+HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK
+
 
 #define GET_NEW_TREE_NODE(node_ptr) do {                          \
 if (g_free_tree_nodes_head) {                                     \
@@ -421,7 +455,7 @@ static char shared_key[MAX_SHARED_KEY_LENGTH];
 static void destroy_shared_memory(void * p) {
     // we should munmap, but I will not do since we dont do it in so many other places in hpcrun
     // munmap(ipc_data);
-    shm_unlink(shared_key);    
+    shm_unlink((char *)shared_key);
 }
 
 static inline void create_shared_memory() {
@@ -446,7 +480,7 @@ static inline void create_shared_memory() {
         monitor_real_abort();
     }
 
-    hpcrun_process_aux_cleanup_add(destroy_shared_memory, NULL /*nothing to pass*/);
+    hpcrun_process_aux_cleanup_add(destroy_shared_memory, (void *) shared_key);
     
 }
 
@@ -1140,78 +1174,19 @@ cudaError_t cudaConfigureCall(dim3 grid, dim3 block, size_t mem, cudaStream_t st
     TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
     
     TD_GET(gpu_data.active_stream) = (uint64_t) stream;
-    
-    CreateStream0IfNot(stream);
-    
+        
     return ret;
 }
 
 
 cudaError_t cudaLaunch(const char *entry) {
-    uint32_t streamId = 0;
-    event_list_node_t *event_node;
     
-    streamId = SplayGetStreamId(stream_to_id_tree_root, (cudaStream_t) (TD_GET(gpu_data.active_stream)));
-    // We cannot allow this thread to take samples since we will be holding a lock which is also needed in the async signal handler
-    // let no other GPU work get ahead of me
-    HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
-    
-    // In case cudaLaunch causes dlopn, async block may get enabled, as a safety net set gpu_data.is_thread_at_cuda_sync so that we dont call any cuda calls
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = true;
-    
-    
-    
-    // Get CCT node (i.e., kernel launcher)
-    ucontext_t context;
-    getcontext(&context);
-    // skipping 2 inner for LAMMPS
-    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, g_cuda_launch_skip_inner /*skipInner */ , 1 /*isSync */ ).sample_node;
-    // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
-    // TODO: Get correct level .. 3 worked but not on S3D
-    ////node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
-    
-    // correct node is not simple to find ....
-    //node =  hpcrun_cct_parent(hpcrun_cct_parent(hpcrun_cct_parent(node)));
-    //node =  hpcrun_cct_parent(hpcrun_cct_parent(node));
-    
-    /* FIXME: we are about to insert the cct into the stream
-     * we use the context above, then get the backtrace, insert the backtrace
-     * to the stream->epoch->csdata
-     */
-    cct_node_t *stream_cct = stream_duplicate_cpu_node(g_stream_array[streamId].st, &context, node);
-    
-    // Create a new Cuda Event
-    //cuptiGetStreamId(ctx, (CUstream) TD_GET(gpu_data.active_stream), &streamId);
-    event_node = create_and_insert_event(streamId, node, stream_cct);
-    // Insert the event in the stream
-    //      assert(TD_GET(hpu_data.active_stream));
-    fprintf(stderr, "\n start on stream = %p ", TD_GET(gpu_data.active_stream));
-    // And disable tracking new threads from CUDA
-    monitor_disable_new_threads();
-    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t) TD_GET(gpu_data.active_stream)));
-    
-    
-    
-    INCR_SHARED_BLAMING_DS(outstanding_kernels);
+    ASYNC_KERNEL_PROLOGUE(streamId, event_node, context, cct_node, ((cudaStream_t) (TD_GET(gpu_data.active_stream))), g_cuda_launch_skip_inner);
     
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_LAUNCH].cudaLaunchReal(entry);
     
-    TD_GET(gpu_data.overload_state) = WORKING_STATE;
-    
-    fprintf(stderr, "\n end  on stream = %p ", TD_GET(gpu_data.active_stream));
-    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end, (cudaStream_t) TD_GET(gpu_data.active_stream)));
-    // enable monitoring new threads
-    monitor_enable_new_threads();
-    
-    
-    // safe to make cuda calls from signal handler
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
-    
-    
-    // let other things be queued into GPU
-    // safe to take async samples now
-    HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
-    
+    ASYNC_KERNEL_EPILOGUE(event_node, ((cudaStream_t) (TD_GET(gpu_data.active_stream))));
+
     return ret;
 }
 
@@ -1364,138 +1339,23 @@ inline static void increment_mem_xfer_metric(size_t count, enum cudaMemcpyKind k
 
 cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count, enum cudaMemcpyKind kind, cudaStream_t stream) {
     
-    CreateStream0IfNot(stream);
-    
-    uint32_t streamId = 0;
-    event_list_node_t *event_node;
-    
-    streamId = SplayGetStreamId(stream_to_id_tree_root, stream);
-    // We cannot allow this thread to take samples since we will be holding a lock which is also needed in the async signal handler
-    // let no other GPU work get ahead of me
-    HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
-    
-    // In case cudaLaunch causes dlopn, async block may get enabled, as a safety net set gpu_data.is_thread_at_cuda_sync so that we dont call any cuda calls
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = true;
-    
-    // Get CCT node (i.e., kernel launcher)
-    ucontext_t context;
-    getcontext(&context);
-    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ ).sample_node;
-    // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
-    // TODO: Get correct level .. 3 worked but not on S3D
-    //node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
-    
-    /* FIXME: we are about to insert the cct into the stream
-     * we use the context above, then get teh backtrace, insert the backtrace
-     * to the stream->epoch->csdata
-     */
-    cct_node_t *stream_cct = stream_duplicate_cpu_node(g_stream_array[streamId].st, &context, node);
-    
-    // And disable tracking new threads from CUDA
-    monitor_disable_new_threads();
-    
-    // Create a new Cuda Event
-    //cuptiGetStreamId(ctx, (CUstream) TD_GET(gpu_data.active_stream), &streamId);
-    event_node = create_and_insert_event(streamId, node, stream_cct);
-    // Insert the event in the stream
-    //      assert(TD_GET(gpu_data.active_stream));
-    fprintf(stderr, "\n start on stream = %p ", stream);
-    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, stream));
-    
-    //Increment     outstanding_kernels
-    INCR_SHARED_BLAMING_DS(outstanding_kernels);
+    ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, 0);
     
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_ASYNC].cudaMemcpyAsyncReal(dst, src, count, kind, stream);
     
-    TD_GET(gpu_data.overload_state) = WORKING_STATE;
-    
-    fprintf(stderr, "\n end  on stream = %p ", stream);
-    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end, stream));
-    
-    // enable monitoring new threads
-    monitor_enable_new_threads();
-    
-    // Increment bytes transferred metric
-    increment_mem_xfer_metric(count, kind, node);
-    
-    
-    // Ok to call cuda functions from the signal handler
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
-    
-    
-    // let other things be queued into GPU
-    // safe to take async samples now
-    HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
+    ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, count, kind);
     
     return ret;
 }
 
 
 cudaError_t cudaMemcpyToArrayAsync(struct cudaArray * dst, size_t wOffset, size_t hOffset, const void * src, size_t count, enum cudaMemcpyKind   kind, cudaStream_t stream ){
-    CreateStream0IfNot(stream);
     
-    uint32_t streamId = 0;
-    event_list_node_t *event_node;
-    
-    streamId = SplayGetStreamId(stream_to_id_tree_root, stream);
-    // We cannot allow this thread to take samples since we will be holding a lock which is also needed in the async signal handler
-    // let no other GPU work get ahead of me
-    HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
-    
-    // In case cudaLaunch causes dlopn, async block may get enabled, as a safety net set gpu_data.is_thread_at_cuda_sync so that we dont call any cuda calls
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = true;
-    
-    // Get CCT node (i.e., kernel launcher)
-    ucontext_t context;
-    getcontext(&context);
-    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ ).sample_node;
-    // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
-    // TODO: Get correct level .. 3 worked but not on S3D
-    //node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
-    
-    /* FIXME: we are about to insert the cct into the stream
-     * we use the context above, then get teh backtrace, insert the backtrace
-     * to the stream->epoch->csdata
-     */
-    cct_node_t *stream_cct = stream_duplicate_cpu_node(g_stream_array[streamId].st, &context, node);
-    
-    // Create a new Cuda Event
-    //cuptiGetStreamId(ctx, (CUstream) TD_GET(gpu_data.active_stream), &streamId);
-    event_node = create_and_insert_event(streamId, node, stream_cct);
-    // Insert the event in the stream
-    //      assert(TD_GET(gpu_data.active_stream));
-    fprintf(stderr, "\n start on stream = %p ", stream);
-    
-    // And disable tracking new threads from CUDA
-    monitor_disable_new_threads();
-    
-    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, stream));
-    
-    //Increment     outstanding_kernels
-    INCR_SHARED_BLAMING_DS(outstanding_kernels);
+    ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, 0);
     
     cudaError_t ret = cudaRuntimeFunctionPointer[CUDA_MEMCPY_TO_ARRAY_ASYNC].cudaMemcpyToArrayAsyncReal(dst, wOffset, hOffset, src, count, kind, stream);
-    
-    TD_GET(gpu_data.overload_state) = WORKING_STATE;
-    
-    fprintf(stderr, "\n end  on stream = %p ", stream);
-    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end, stream));
-    
-    // enable monitoring new threads
-    monitor_enable_new_threads();
-    
-    // Increment bytes transferred metric
-    increment_mem_xfer_metric(count, kind, node);
-    
-    
-    // Ok to call cuda functions from the signal handler
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
-    
-    
-    // let other things be queued into GPU
-    // safe to take async samples now
-    HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
-    
+
+    ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, count, kind);
     return ret;
 }
 
@@ -1627,65 +1487,13 @@ CUresult cuEventSynchronize(CUevent event) {
 
 
 CUresult cuLaunchGridAsync(CUfunction f, int grid_width, int grid_height, CUstream hStream) {
-    uint32_t streamId = 0;
-    event_list_node_t *event_node;
-    
-    streamId = SplayGetStreamId(stream_to_id_tree_root, (cudaStream_t)hStream);
-    // We cannot allow this thread to take samples since we will be holding a lock which is also needed in the async signal handler
-    // let no other GPU work get ahead of me
-    HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
-    
-    // In case cudaLaunch causes dlopn, async block may get enabled, as a safety net set gpu_data.is_thread_at_cuda_sync so that we dont call any cuda calls
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = true;
-    
-    
-    // Get CCT node (i.e., kernel launcher)
-    ucontext_t context;
-    getcontext(&context);
-    // skipping 2 inner for LAMMPS
-    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ ).sample_node;
-    // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
-    // TODO: Get correct level .. 3 worked but not on S3D
-    ////node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
-    
-    // correct node is not simple to find ....
-    //node =  hpcrun_cct_parent(hpcrun_cct_parent(hpcrun_cct_parent(node)));
-    //node =  hpcrun_cct_parent(hpcrun_cct_parent(node));
-    
-    /* FIXME: we are about to insert the cct into the stream
-     * we use the context above, then get teh backtrace, insert the backtrace
-     * to the stream->epoch->csdata
-     */
-    cct_node_t *stream_cct = stream_duplicate_cpu_node(g_stream_array[streamId].st, &context, node);
-    
-    // Create a new Cuda Event
-    //cuptiGetStreamId(ctx, (CUstream) TD_GET(gpu_data.active_stream), &streamId);
-    event_node = create_and_insert_event(streamId, node, stream_cct);
-    // Insert the event in the stream
-    //      assert(TD_GET(gpu_data.active_stream));
-    // And disable tracking new threads from CUDA
-    monitor_disable_new_threads();
-    
-    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
-    
-    //Increment     outstanding_kernels
-    INCR_SHARED_BLAMING_DS(outstanding_kernels);
+
+    ASYNC_KERNEL_PROLOGUE(streamId, event_node, context, cct_node, ((cudaStream_t)hStream), 0);
     
     CUresult ret = cuDriverFunctionPointer[CU_LAUNCH_GRID_ASYNC].cuLaunchGridAsyncReal(f, grid_width, grid_height, hStream);
-    
-    TD_GET(gpu_data.overload_state) = WORKING_STATE;
-    
-    CU_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end, (cudaStream_t)hStream));
-    
-    // enable monitoring new threads
-    monitor_enable_new_threads();
-    
-    // Ok to call cuda functions from the signal handler
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
-    
-    // let other things be queued into GPU
-    // safe to take async samples now
-    HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
+
+    ASYNC_KERNEL_EPILOGUE(event_node, ((cudaStream_t)hStream));
+
     return ret;
 }
 
@@ -1903,69 +1711,12 @@ CUresult cuEventDestroy(CUevent  event) {
 
 CUresult cuMemcpyHtoDAsync(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount, CUstream hStream) {
     
-    //TODO: tetsing , need to figure out correct implementation
-    CreateStream0IfNot(hStream);
-    
-    uint32_t streamId = 0;
-    event_list_node_t *event_node;
-    
-    streamId = SplayGetStreamId(stream_to_id_tree_root, (cudaStream_t)hStream);
-    // We cannot allow this thread to take samples since we will be holding a lock which is also needed in the async signal handler
-    // let no other GPU work get ahead of me
-    HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
-    
-    // In case cudaLaunch causes dlopn, async block may get enabled, as a safety net set gpu_data.is_thread_at_cuda_sync so that we dont call any cuda calls
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = true;
-    
-    // Get CCT node (i.e., kernel launcher)
-    ucontext_t context;
-    getcontext(&context);
-    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ ).sample_node;
-    
-    // increment H to D bytes
-    cct_metric_data_increment(h_to_d_data_xfer_metric_id, node, (cct_metric_data_t) {.i = (ByteCount)});
-    
-    
-    // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
-    // TODO: Get correct level .. 3 worked but not on S3D
-    // node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
-    
-    /* FIXME: we are about to insert the cct into the stream
-     * we use the context above, then get teh backtrace, insert the backtrace
-     * to the stream->epoch->csdata
-     */
-    cct_node_t *stream_cct = stream_duplicate_cpu_node(g_stream_array[streamId].st, &context, node);
-    
-    // Create a new Cuda Event
-    //cuptiGetStreamId(ctx, (CUstream) TD_GET(gpu_data.active_stream), &streamId);
-    event_node = create_and_insert_event(streamId, node, stream_cct);
-    // Insert the event in the stream
-    //      assert(TD_GET(gpu_data.active_stream));
-    fprintf(stderr, "\n start on stream = %p ", stream);
-    // And disable tracking new threads from CUDA
-    monitor_disable_new_threads();
-    
-    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
-    
-    //Increment     outstanding_kernels
-    INCR_SHARED_BLAMING_DS(outstanding_kernels);
-    
-    
+    ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, ((cudaStream_t)hStream), 0);
+
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_HTO_D_ASYNC_V2].cuMemcpyHtoDAsync_v2Real(dstDevice, srcHost, ByteCount, hStream);
     
-    TD_GET(gpu_data.overload_state) = WORKING_STATE;
+    ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, ((cudaStream_t)hStream), ByteCount, cudaMemcpyHostToDevice);
     
-    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end,(cudaStream_t) hStream));
-    
-    // enable monitoring new threads
-    monitor_enable_new_threads();
-    // Ok to call cuda functions from the signal handler
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
-    
-    
-    // let other things be queued into GPU
-    // safe to take async samples now
-    HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
     return ret;
     
 }
@@ -1986,71 +1737,12 @@ CUresult cuMemcpyHtoD(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCou
 
 
 CUresult cuMemcpyDtoHAsync(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount, CUstream hStream) {
-    //TODO: tetsing , need to figure out correct implementation
-    CreateStream0IfNot(hStream);
     
-    uint32_t streamId = 0;
-    event_list_node_t *event_node;
-    
-    streamId = SplayGetStreamId(stream_to_id_tree_root, hStream);
-    // We cannot allow this thread to take samples since we will be holding a lock which is also needed in the async signal handler
-    // let no other GPU work get ahead of me
-    HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
-    
-    
-    // In case cudaLaunch causes dlopn, async block may get enabled, as a safety net set gpu_data.is_thread_at_cuda_sync so that we dont call any cuda calls
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = true;
-    
-    // Get CCT node (i.e., kernel launcher)
-    ucontext_t context;
-    getcontext(&context);
-    cct_node_t *node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, 0 /*skipInner */ , 1 /*isSync */ ).sample_node;
-    // Launcher CCT node will be 3 levels above in the loaded module ( Handler -> CUpti -> Cuda -> Launcher )
-    // TODO: Get correct level .. 3 worked but not on S3D
-    //node = hpcrun_get_cct_node_n_levels_up_in_load_module(node, 0);
-    
-    
-    // increment D to H bytes
-    cct_metric_data_increment(d_to_h_data_xfer_metric_id, node, (cct_metric_data_t) {.i = (ByteCount)});
-    
-    
-    /* FIXME: we are about to insert the cct into the stream
-     * we use the context above, then get teh backtrace, insert the backtrace
-     * to the stream->epoch->csdata
-     */
-    cct_node_t *stream_cct = stream_duplicate_cpu_node(g_stream_array[streamId].st, &context, node);
-    
-    // Create a new Cuda Event
-    //cuptiGetStreamId(ctx, (CUstream) TD_GET(gpu_data.active_stream), &streamId);
-    event_node = create_and_insert_event(streamId, node, stream_cct);
-    // Insert the event in the stream
-    //      assert(TD_GET(gpu_data.active_stream));
-    fprintf(stderr, "\n start on stream = %p ", stream);
-    
-    // And disable tracking new threads from CUDA
-    monitor_disable_new_threads();
-    
-    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_start, (cudaStream_t)hStream));
-    
-    //Increment     outstanding_kernels
-    INCR_SHARED_BLAMING_DS(outstanding_kernels);
+    ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, ((cudaStream_t)hStream), 0);
     
     CUresult ret = cuDriverFunctionPointer[CU_MEMCPY_DTO_H_ASYNC_V2].cuMemcpyDtoHAsync_v2Real(dstHost, srcDevice, ByteCount, hStream);
     
-    TD_GET(gpu_data.overload_state) = WORKING_STATE;
-    
-    CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[CUDA_EVENT_RECORD].cudaEventRecordReal(event_node->event_end,(cudaStream_t) hStream));
-    
-    // enable monitoring new threads
-    monitor_enable_new_threads();
-    
-    // Ok to call cuda functions from the signal handler
-    TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
-    
-    
-    // let other things be queued into GPU
-    // safe to take async samples now
-    HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
+    ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, ((cudaStream_t)hStream), ByteCount, cudaMemcpyDeviceToHost);
     
     return ret;
 }
