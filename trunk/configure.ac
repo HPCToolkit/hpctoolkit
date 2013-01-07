@@ -2021,11 +2021,11 @@ fi
 # struct sigevent.  These are Linux extensions and may not compile on
 # all systems.
 
-AC_MSG_CHECKING([for CLOCK_REALTIME and SIGEV_THREAD_ID])
-
 AC_LANG_PUSH([C])
 ORIG_LIBS="$LIBS"
 LIBS="-lrt"
+
+AC_MSG_CHECKING([for CLOCK_REALTIME and SIGEV_THREAD_ID])
 
 AC_LINK_IFELSE([
 #include <sys/syscall.h>
@@ -2047,15 +2047,33 @@ int main()
 }
 ], [ans=yes], [ans=no])
 
-LIBS="$ORIG_LIBS"
-AC_LANG_POP
-
 AC_MSG_RESULT([$ans])
+
+# If CLOCK_REALTIME exists, then also try CLOCK_THREAD_CPUTIME_ID.
 
 if test "$ans" = yes ; then
   AC_DEFINE([ENABLE_CLOCK_REALTIME], [1],
             [Support for CLOCK_REALTIME and SIGEV_THREAD_ID])
+
+  AC_MSG_CHECKING([for CLOCK_THREAD_CPUTIME_ID])
+  AC_LINK_IFELSE([
+#include <sys/time.h>
+#include <time.h>
+int main()
+{
+  clockid_t clock = CLOCK_THREAD_CPUTIME_ID;
+  return 0;
+}
+], [ans=yes], [ans=no])
+  AC_MSG_RESULT([$ans])
+
+  if test "$ans" = yes ; then
+    AC_DEFINE([ENABLE_CLOCK_CPUTIME], [1], [Support for CLOCK_THREAD_CPUTIME_ID])
+  fi
 fi
+
+LIBS="$ORIG_LIBS"
+AC_LANG_POP
 
 
 #-------------------------------------------------

@@ -3,6 +3,9 @@
 /* Data-centric tracing */
 #undef DATACENTRIC_TRACE
 
+/* Support for CLOCK_THREAD_CPUTIME_ID */
+#undef ENABLE_CLOCK_CPUTIME
+
 /* Support for CLOCK_REALTIME and SIGEV_THREAD_ID */
 #undef ENABLE_CLOCK_REALTIME
 
