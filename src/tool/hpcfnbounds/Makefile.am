@@ -70,6 +70,8 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+BOOST_INC = @BOOST_INC@
+
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
 
@@ -90,7 +92,8 @@ MYSOURCES = \
 	intervals.cpp \
 	server.cpp
 
-MYCPPFLAGS = $(HPC_IFLAGS) -I$(SYMTABAPI_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC)
+MYCPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
+	-I$(SYMTABAPI_INC)
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
 
