@@ -974,6 +974,43 @@ AC_SUBST([GNUBINUTILS_LDLIBS])
 
 
 #-------------------------------------------------
+# Option: --with-boost=PATH
+#-------------------------------------------------
+
+BOOST=no
+if test "$use_externals" = yes ; then
+  BOOST="$ext_boost_prefix"
+fi
+
+AC_ARG_WITH([boost],
+  [AS_HELP_STRING([--with-boost=PATH],
+      [path to boost install directory])],
+  [BOOST="$withval"],
+  [])
+
+AC_MSG_CHECKING([for boost])
+
+case "$BOOST" in
+  /* )
+    if test ! -f "${BOOST}/include/boost/shared_ptr.hpp" ; then
+      AC_MSG_ERROR([invalid boost directory: $BOOST])
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([boost directory must be absolute path: $BOOST])
+    ;;
+esac
+
+AC_MSG_RESULT([$BOOST])
+
+BOOST_INC="${BOOST}/include"
+
+AC_SUBST([BOOST_INC])
+
+
+#-------------------------------------------------
 # Option: --with-libdwarf=PATH
 #-------------------------------------------------
 
@@ -2409,6 +2446,7 @@ AC_MSG_NOTICE([  HPC_LT_LDFLAGS:        '${HPC_LT_LDFLAGS}'])
 AC_MSG_NOTICE([  HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  binutils:     ${GNUBINUTILS}])
+AC_MSG_NOTICE([  boost:        ${BOOST}])
 AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
 AC_MSG_NOTICE([  libelf:       ${LIBELF}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
