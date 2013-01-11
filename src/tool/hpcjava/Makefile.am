@@ -173,9 +173,10 @@ myinstall-exec: myinstall-libhpcjavaso \
 
 MYKEEPSYMS = $(addprefix -K , $(MY_INTERCEPTED_SYMS_LibHPCJavaSO))
 
+#@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(DESTDIR)$(pkglibdir)/libhpcjava.so
 myinstall-libhpcjavaso:
 	rm -f $(DESTDIR)$(pkglibdir)/libhpjava.a
-	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(DESTDIR)$(pkglibdir)/libhpcjava.so
+	@OPT_OBJCOPY@ $(DESTDIR)$(pkglibdir)/libhpcjava.so
 
 myinstall-libhpcjavaselfso:
 	rm -f $(DESTDIR)$(pkglibdir)/libhpjavaself.a
