@@ -159,6 +159,8 @@ the compute nodes.
 \hline
 \verb|PAPI_FP_INS| & Floating point instructions \\
 \hline
+\verb|PAPI_FP_OPS| & Floating point operations \\
+\hline
 \verb|PAPI_L1_DCA| & Level 1 data cache accesses \\
 \hline
 \verb|PAPI_L1_DCM| & Level 1 data cache misses \\
@@ -209,8 +211,53 @@ built in to the standard Linux kernel.  This means that on kernels
 without patching the kernel.  PAPI is highly recommended and well
 worth building if it is not already installed on your system.
 
-\subsection{Wallclock}
+\paragraph{Proxy Sampling}
 
+\HPCToolkit{} now supports proxy sampling for derived PAPI events.
+Normally, for \HPCToolkit{} to use a PAPI event, the event must not be
+derived and must support hardware interrupts.  However, for events
+that cannot trigger interrupts directly, it is still possible to
+sample on another event and then read the counters for the derived
+events and this is how proxy sampling works.  The native events serve
+as a proxy for the derived events.
+
+To use proxy sampling, specify the \hpcrun{} command line as usual and
+be sure to include at least one non-derived PAPI event.  The derived
+events will be counted automatically during the native samples.
+Normally, you would use \verb|PAPI_TOT_CYC| as the native event, but
+really this works as long as the event set contains at least one
+non-derived PAPI event.  Proxy sampling only applies to PAPI events,
+you can't use itimer as the native event.
+
+For example, on newer Intel CPUs, often the floating point events are
+all derived and cannot be sampled directly.  In that case, you could
+count flops by using cycles a proxy event with a command line such as
+the following.  The period for derived events is ignored and may be
+omitted.
+
+\begin{quote}
+\begin{verbatim}
+hpcrun -e PAPI_TOT_CYC@6000000 -e PAPI_FP_OPS app arg ...
+\end{verbatim}
+\end{quote}
+
+Attribution of proxy samples is not as accurate as regular samples.
+The problem, of course, is that the event that triggered the sample
+may not be related to the derived counter.  The total count of events
+should be accurate, but their location at the leaves in the Calling
+Context tree may not be very accurate.  However, the higher up the
+CCT, the more accurate the attribution becomes.  For example, suppose
+you profile a loop of mixed integer and floating point operations and
+sample on \verb|PAPI_TOT_CYC| directly and count \verb|PAPI_FP_OPS|
+via proxy sampling.  The attribution of flops to individual statements
+within the loop is likely to be off.  But as long as the loop is long
+enough, the count for the loop as a whole (and up the tree) should be
+accurate.
+
+\subsection{Wallclock, Realtime and Cputime}
+
+\HPCToolkit{} supports three timer sample sources: \verb|WALLCLOCK|,
+\verb|REALTIME| and \verb|CPUTIME|.
 The \verb|WALLCLOCK| sample source is based on the \verb|ITIMER_PROF|
 interval timer.  Normally, \verb|PAPI_TOT_CYC| is just as good as
 \verb|WALLCLOCK| and often better, but \verb|WALLCLOCK| can be used on
@@ -227,15 +274,40 @@ hpcrun -e WALLCLOCK@5000 app arg ...
 Note that the maximum interrupt rate from itimer is limited by the
 system's Hz rate, commonly 1,000 cycles per second, but may be lower.
 That is, \verb|WALLCLOCK@10| will not generate any higher sampling rate
-than \verb|WALLCLOCK@1000|.  However, on IBM BlueGene, itimer is not
+than \verb|WALLCLOCK@1000|.  However, on IBM Blue Gene, itimer is not
 bound by the Hz rate and so sampling rates faster than 1,000 per
 second are possible.
 
-We recommend against using both PAPI and \verb|WALLCLOCK| events in the
-same run.  Technically, this is now possible and \hpcrun{} won't fall
-over.  However, PAPI samples would be interrupted by itimer signals
-and vice versa, and this would lead to many dropped samples and
-possibly distorted results.
+Also, the \verb|WALLCLOCK| (itimer) signal is not thread-specific and
+may not work well in threaded programs.  In particular, the number of
+samples per thread may vary wildly, although this is very system
+dependent.  We recommend not using \verb|WALLCLOCK| in threaded
+programs, except possibly on Blue Gene.  Use \verb|REALTIME|,
+\verb|CPUTIME| or \verb|PAPI_TOT_CYC| instead.
+
+The \verb|REALTIME| and \verb|CPUTIME| sources are based on the POSIX
+timers \verb|CLOCK_REALTIME| and \verb|CLOCK_THREAD_CPUTIME_ID| with
+the Linux \verb|SIGEV_THREAD_ID| extension.  \verb|REALTIME| counts
+real (wall clock) time, whether the process is running or not, and
+\verb|CPUTIME| only counts time when the CPU is running.  Both units
+are in microseconds.
+
+\verb|REALTIME| and \verb|CPUTIME| are not available on all systems
+(in particular, not on Blue Gene), but they have important advantages
+over itimer.  These timers are thread-specific and will give a much
+more consistent number of samples in a threaded process.  Also,
+compared to itimer, \verb|REALTIME| includes time when the process is
+not running and so can identify times when the process is blocked
+waiting on a syscall.  However, \verb|REALTIME| could also break some
+applications that don't handle interrupted syscalls well.  In that
+case, consider using \verb|CPUTIME| instead.
+
+{\it Note:} do not use more than one timer event in the same run.
+Also, we recommend not using both PAPI and a timer event together.
+Technically, this is now possible and \hpcrun{} won't fall over.
+However, PAPI samples would be interrupted by timer signals and vice
+versa, and this would lead to many dropped samples and possibly
+distorted results.
 
 \subsection{IO}
 
