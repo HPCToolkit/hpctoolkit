@@ -53,6 +53,8 @@
 #define _FNBOUNDS_JAVA_H_
 
 #include <sys/types.h>
+#include <jni.h> 
+#include <jvmti.h> 
 #include "splay-interval.h"
 #include "splay.h"
 
@@ -68,5 +70,9 @@ void hpcjava_delete_ui();
 void free_ui_node_locked(interval_tree_node *node);
 
 void hpcjava_print_interval_tree(void);
+void hpcjava_set_jvmti(JavaVM *jvm, jvmtiEnv *jvmti);
+
+void hpcjava_attach_thread(JavaVM *vm, jvmtiEnv *jvmti, JNIEnv *jenv);
+void hpcjava_detach_thread();
 
 #endif  /* !_FNBOUNDS_JAVA_H_ */

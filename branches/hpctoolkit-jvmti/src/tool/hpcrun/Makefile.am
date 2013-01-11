@@ -362,6 +362,10 @@ MY_INCLUDE_DIRS =			\
 	-I$(LIBMONITOR_INC)		\
 	-I$(SYMTABAPI_INC)
 
+if OPT_ENABLE_JAVA
+MY_INCLUDE_DIRS +=  			\
+	-I$(top_srcdir)/src/tool/hpcjava
+endif
 
 MY_MIPS_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/mips

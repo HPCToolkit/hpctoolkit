@@ -62,12 +62,16 @@
 #include <messages/messages.h>
 #include <lib/prof-lean/spinlock.h>
 
+#include <jni.h>
+
 #include "fnbounds_interface.h"
 #include "splay.h"
 #include "splay-interval.h"
 #include "thread_data.h"
 #include "fnbounds_java.h"
+#include "safe-sampling.h"
 
+#include "java_asgct.h"
 
 
 #define UI_TREE_JAVA_LOCK  do {	 \
@@ -81,6 +85,10 @@
   TD_GET(splay_lock) = 0;	   \
 } while (0)
 
+#define JAVA_MAX_FRAMES 256
+
+static void free_ui_java_tree_locked(interval_tree_node *tree);
+static void free_ui_java_node_locked(interval_tree_node *node);
 
 // Locks both the UI tree and the UI free list.
 static spinlock_t ui_tree_lock;
@@ -89,10 +97,12 @@ static interval_tree_node *ui_tree_root = NULL;
 static interval_tree_node *ui_free_list = NULL;
 static size_t the_ui_size = 0;
 
-static void free_ui_java_tree_locked(interval_tree_node *tree);
-static void free_ui_java_node_locked(interval_tree_node *node);
-
 static load_module_t *lm_java = NULL;
+
+static JavaVM 	*java_vm;
+static jvmtiEnv *java_jvmti;
+static JNIEnv *java_env;
+
 //---------------------------------------------------------------------
 // interface operations
 //---------------------------------------------------------------------
@@ -160,6 +170,105 @@ hpcjava_ui_malloc(size_t ui_size)
   return (ans);
 }
 
+
+void 
+hpcjava_set_jvmti(JavaVM *jvm, jvmtiEnv *jvmti)
+{
+  java_vm = jvm;
+  java_jvmti = jvmti;
+}
+
+void 
+hpcjava_attach_thread(JavaVM *vm, jvmtiEnv *jvmti, JNIEnv *jenv)
+{
+  jint res;
+  hpcjava_set_jvmti(vm, jvmti);
+  java_env = jenv;
+
+  res = (*vm)->AttachCurrentThread(vm, (void **)&java_env, NULL);
+  TMSG(JAVA, "AttachCurrentThread: %d", res);
+}
+
+void
+hpcjava_detach_thread()
+{
+  (*java_vm)->DetachCurrentThread(java_vm);
+}
+
+/***
+ * Asynchronous Java to get call stack
+ * 
+ * return list of call stacks
+ ***/
+static int
+hpcjava_get_async_call_trace(void **callstack, int count)
+{
+  ASGCT_CallTrace trace;
+  ucontext_t uContext;
+
+  ASGCT_CallFrame storage[JAVA_MAX_FRAMES]; 
+  trace.frames = storage;
+  trace.env_id = java_env;
+
+  getcontext(&uContext);
+
+  AsyncGetCallTrace(&trace, count, &uContext);
+  if (trace.num_frames>0) 
+  {
+    if (trace.frames != NULL)
+    {
+      TMSG(JAVA, "frames AsyncGetCallTrace: %d", trace.num_frames);
+      int i;
+      for (i=0; i<trace.num_frames; i++)
+      {
+	if (trace.frames[i].method_id != NULL && trace.frames[i].lineno>=0)
+	  TMSG(JAVA, "%d l. %d: %p", i, trace.frames[i].lineno, trace.frames[i].method_id);
+      }
+    } else
+    {
+      TMSG(JAVA, "null frames from AsyncGetCallTrace");
+    }
+  } else 
+  {
+    TMSG(JAVA, "AsyncGetCallTrace: %d frames", trace.num_frames);
+  }
+  *callstack = trace.frames;
+  return trace.num_frames;
+}
+
+static jvmtiFrameInfo java_frames[JAVA_MAX_FRAMES];
+
+/****
+ * Synchronous Java get call stack
+ * return the current call strack of the current thread
+ */
+static int
+hpjava_get_call_trace(void **callstack, int count)
+{
+  jvmtiError err;
+  
+  err = (*java_jvmti)->GetStackTrace(java_jvmti, NULL, 0, JAVA_MAX_FRAMES, 
+					java_frames, &count);
+  if (err == JVMTI_ERROR_NONE && count > 0)
+  {
+    unsigned char *methodName;
+    unsigned char *signatureName;
+    int i;
+    for (i=0; i<count; i++) {
+      err = (*java_jvmti)->GetMethodName(java_jvmti, java_frames[i].method, 
+                       &methodName, &signatureName, NULL);
+      if (err == JVMTI_ERROR_NONE) {
+        printf("%d method %p: %s\n", i, java_frames[i].method, methodName);
+	(*java_jvmti)->Deallocate(java_jvmti, methodName);
+	(*java_jvmti)->Deallocate(java_jvmti, signatureName);
+      } 
+    }
+  }
+  return err;
+}
+
+
+
 /*
  * look for an interval for a given address
  * 
@@ -173,7 +282,18 @@ hpcjava_get_interval(void *addr)
 {
   interval_tree_node *p = interval_tree_lookup(&ui_tree_root, addr);
   if (p != NULL) {
+    void *bt;
+    /************* hpcrun critical section ************/
+    /*if (!hpcrun_safe_enter()) {
+        return;
+     } */
+
+    hpcjava_get_async_call_trace(&bt, 20);
+
     TMSG(JAVA, "found in Java unwind tree: addr %p", addr);
+
+    /************* end hpcrun critical section ************/
+    //hpcrun_safe_exit();
   }
   return (splay_interval_t *)p;
 }
