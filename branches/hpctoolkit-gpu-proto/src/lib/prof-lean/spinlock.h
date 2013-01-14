@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -69,38 +69,61 @@
 
 /*
  * Simple spin lock.
- *
  */
 
-typedef volatile long spinlock_t;
-#define SPINLOCK_UNLOCKED ((spinlock_t) 0L)
-#define SPINLOCK_LOCKED ((spinlock_t) 1L)
+typedef struct spinlock_s {
+	volatile long thelock;
+} spinlock_t;
 
+#define SPINLOCK_UNLOCKED_VALUE (0L)
+#define SPINLOCK_LOCKED_VALUE (1L)
+#define INITIALIZE_SPINLOCK(x) { .thelock = (x) }
+
+#define SPINLOCK_UNLOCKED INITIALIZE_SPINLOCK(SPINLOCK_UNLOCKED_VALUE)
+#define SPINLOCK_LOCKED INITIALIZE_SPINLOCK(SPINLOCK_LOCKED_VALUE)
+
+
+/*
+ * Note: powerpc needs two memory barriers: isync at the end of _lock
+ * and lwsync at the beginning of _unlock.  See JohnMC's Comp 422
+ * slides on "IBM Power Weak Memory Model."
+ *
+ * Technically, the isync could be moved to the assembly code for
+ * fetch_and_store().
+ */
 static inline void 
 spinlock_lock(spinlock_t *l)
 {
   /* test-and-test-and-set lock */
   for(;;) {
-    while (*l != SPINLOCK_UNLOCKED); 
+    while (l->thelock != SPINLOCK_UNLOCKED_VALUE); 
 
-    if (fetch_and_store(l, SPINLOCK_LOCKED) == SPINLOCK_UNLOCKED) {
-      return; 
+    if (fetch_and_store(&l->thelock, SPINLOCK_LOCKED_VALUE) == SPINLOCK_UNLOCKED_VALUE) {
+      break;
     }
   }
+
+#if defined(__powerpc__)
+  __asm__ __volatile__ ("isync\n");
+#endif
 }
 
 
 static inline void 
 spinlock_unlock(spinlock_t *l)
 {
-  *l = SPINLOCK_UNLOCKED;
+#if defined(__powerpc__)
+  __asm__ __volatile__ ("lwsync\n");
+#endif
+
+  l->thelock = SPINLOCK_UNLOCKED_VALUE;
 }
 
 
 static inline bool 
 spinlock_is_locked(spinlock_t *l)
 {
-  return (*l != SPINLOCK_UNLOCKED);
+  return (l->thelock != SPINLOCK_UNLOCKED_VALUE);
 }
 
 

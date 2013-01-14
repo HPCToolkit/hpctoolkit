@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2011, Rice University
+## Copyright ((c)) 2002-2013, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -75,7 +75,7 @@ MYSCRIPTS = \
 	config/hpcplatform \
 	config/config.guess
 
-MYMONITORDIR = $(pkglibdir)/monitor
+MYMONITORDIR = $(DESTDIR)$(pkglibdir)/monitor
 
 #############################################################################
 # Automake rules
@@ -110,7 +110,7 @@ dist_doc_DATA = $(MYDATA)
 # It's up to configure to decide if the library exists, whether to
 # copy it and where to put it, so we don't treat errors as fatal here.
 #
-EXT_LIBS_DIR = $(prefix)/@hpc_ext_libs_dir@
+EXT_LIBS_DIR = $(DESTDIR)$(prefix)/@hpc_ext_libs_dir@
 
 define copy-libs
     @if test "$1" = yes ; then \
@@ -128,6 +128,7 @@ install-data-local: myinstall-monitor
 	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libsymtabAPI*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libcommon*)
+	$(call copy-libs,$(SYMTABAPI_COPY_DYN),$(SYMTABAPI_LIB),libdyn*)
 	$(call copy-libs,$(XED2_COPY),$(XED2_LIB),libxed*)
 	$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
 

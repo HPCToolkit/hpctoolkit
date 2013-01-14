@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -115,8 +115,6 @@ static int
 realmain(int argc, char* const* argv)
 {
   Args args(argc, argv);  // exits if error on command line
-
-  NaN_init();
 
   //-------------------------------------------------------
   // Create metric descriptors (and for conf file, rest of the args)

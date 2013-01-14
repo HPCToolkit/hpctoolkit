@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -47,6 +47,7 @@
 #ifndef UNW_THROW_H
 #define UNW_THROW_H
 
-void hpcrun_unw_throw(void);
+extern void hpcrun_unw_throw(void);
+extern void hpcrun_unw_drop(void);
 
 #endif // UNW_THROW_H

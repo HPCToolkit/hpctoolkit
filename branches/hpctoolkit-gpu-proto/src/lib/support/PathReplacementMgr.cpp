@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -60,6 +60,9 @@
 //************************* System Include Files ****************************
 
 #include <algorithm>
+#include <string>
+using std::string;
+
 #include <cstring>
 
 //*************************** User Include Files ****************************
@@ -93,21 +96,24 @@ PathReplacementMgr::singleton()
 }
 
 
-std::string
-PathReplacementMgr::getReplacedPath(const std::string& original) const
+string
+PathReplacementMgr::replace(const string& path) const
 {
   for (size_t i = 0; i < m_pathReplacement.size(); i++) {
-    StringPair temp = m_pathReplacement[i];
-    size_t found = strncmp(original.c_str(), temp.first.c_str(),
-			   temp.first.length());
-    
-    if (found == 0) {
-      std::string newPath = original;
-      newPath.replace(0, temp.first.size(), temp.second);
+    const StringPair& x = m_pathReplacement[i];
+    const string& x_old = x.first;
+    const string& x_new = x.second;
+
+    // Alternative: match substring instead of prefix
+    // size_t pos = path.find(x_old); if (pos != string::npos) {}
+
+    if (path.compare(0, x_old.size(), x_old) == 0) {
+      string newPath = path;
+      newPath.replace(0, x_old.size(), x_new);
       return newPath;
     }
   }
-  return original;
+  return path;
 }
 
 
@@ -126,12 +132,10 @@ compare_as_strings(const PathReplacementMgr::StringPair& a,
 
 
 void
-PathReplacementMgr::addPath(const std::string& originalPath,
-			    const std::string& newPath)
+PathReplacementMgr::addPath(const string& oldPath, const string& newPath)
 {
-  StringPair temp(originalPath, newPath);
-  m_pathReplacement.push_back(temp);
-  stable_sort(m_pathReplacement.begin(), m_pathReplacement.end(),
-	      compare_as_strings);
+  m_pathReplacement.push_back(StringPair(oldPath, newPath));
+  std::stable_sort(m_pathReplacement.begin(), m_pathReplacement.end(),
+		   compare_as_strings);
 }
 

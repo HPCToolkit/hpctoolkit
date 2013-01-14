@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -88,13 +88,20 @@ fnbounds_init()
   fh.is_relocatable = hpcrun_is_relocatable;
 
   dso_info_t *dso =
-    hpcrun_dso_make(files_executable_pathname(), (void*)hpcrun_nm_addrs, 
+    hpcrun_dso_make(hpcrun_files_executable_pathname(), (void*)hpcrun_nm_addrs, 
 		    &fh, lm_beg_fn, lm_end_fn, lm_size);
   hpcrun_loadmap_map(dso);
 
   return 0;
 }
 
+fnbounds_table_t
+fnbounds_fetch_executable_table(void)
+{
+  
+  return (fnbounds_table_t)
+    { .table = (void**) hpcrun_nm_addrs, .len = hpcrun_nm_addrs_len};
+}
 
 int
 fnbounds_query(void *pc)

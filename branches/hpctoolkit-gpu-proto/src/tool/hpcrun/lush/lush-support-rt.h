@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -254,10 +254,10 @@ lush_cursor_get_ip_norm(lush_cursor_t* cursor)
 }
 
 
-static inline unw_word_t
+static inline void*
 lush_cursor_get_ip_unnorm(lush_cursor_t* cursor)
 {
-  unw_word_t ip_unnorm;
+  void* ip_unnorm;
   if (hpcrun_unw_get_ip_unnorm_reg(&cursor->pcursor, &ip_unnorm) < 0) {
     // FIXME
   }

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -59,9 +59,15 @@ typedef struct cct_bundle_t {
 
   cct_node_t* top;                // top level tree (at creation)
   cct_node_t* tree_root;          // main cct for full unwinds from samples
-                                  // in unthreaded case tree_root = top,
-                                  // in threaded case, it is the tree obtained from inserting
-                                  // the creation context
+                                  // that terminate in main:
+                                  //    1) All unthreaded cases
+                                  //    2) All threaded cases where thread stack
+                                  //       has been synthetically attached to main
+                                  //       (as in some implementations of OpenMP)
+  cct_node_t* thread_root;        // root for full unwinds that terminate in 'pthread_create'
+
+                                  // thread root is tree obtained from inserting
+                                  // the creation context in the tree root
   cct_node_t* partial_unw_root;   // adjunct tree for partial unwinds
   cct_ctxt_t* ctxt;               // creation context for bundle
   unsigned long num_nodes;        // utility to count nodes. NB: MIGHT go away

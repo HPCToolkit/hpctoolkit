@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -48,6 +48,10 @@
 
 #include <stdint.h>
 
+//*************************** configuration ****************************
+
+#include <include/hpctoolkit-config.h>
+
 //*************************** User Include Files ****************************
 
 #include "x86-unwind-analysis.h"
@@ -60,17 +64,18 @@ typedef struct {
   void* end;
 } fnbounds_t;
 
+static fnbounds_t local;
 
-fnbounds_t
+fnbounds_t*
 x86_fnbounds(void* addr)
 {
-  fnbounds_t local;
+  //  fnbounds_t local;
   fnbounds_enclosing_addr(addr, &local.begin, &local.end, NULL);
-  return local;
+  return &local;
 }
 
 void
-x86_dump_intervals(char  *addr) 
+x86_dump_intervals(void* addr) 
 {
   void *s, *e;
   unwind_interval *u;
@@ -80,11 +85,17 @@ x86_dump_intervals(char  *addr)
 
   intervals = x86_build_intervals(s, e - s, 0);
 
-  for(u = (unwind_interval *)intervals.first; u; u = (unwind_interval *)(u->common).next) {
+  for(u = (unwind_interval *)intervals.first; u; 
+      u = (unwind_interval *)(u->common).next) {
     dump_ui_dbg(u);
   }
 }
 
+void
+hpcrun_dump_intervals(void* addr)
+{
+  x86_dump_intervals(addr);
+}
 
 void
 x86_dump_ins(void *ins)
@@ -97,14 +108,47 @@ x86_dump_ins(void *ins)
 
   xed_decoded_inst_zero_set_mode(xptr, &x86_decoder_settings.xed_settings);
   xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
-
-  xed_format_xed(xptr, inst_buf, sizeof(inst_buf), 
-		 (xed_uint64_t)(uintptr_t)ins);
-  sprintf(errbuf, "(%p, %d bytes, %s) %s \n" , ins, xed_decoded_inst_get_length(xptr), 
-	 xed_iclass_enum_t2str(iclass(xptr)), inst_buf);
-
+  
+  if (xed_error == XED_ERROR_NONE) {
+    xed_format_xed(xptr, inst_buf, sizeof(inst_buf), 
+		   (xed_uint64_t)(uintptr_t)ins);
+    sprintf(errbuf, "(%p, %d bytes, %s) %s \n" , ins, 
+	    xed_decoded_inst_get_length(xptr), 
+	    xed_iclass_enum_t2str(iclass(xptr)), inst_buf);
+  }
+  else {
+#if defined(ENABLE_XOP) && defined (HOST_CPU_x86_64)
+    amd_decode_t decode_res;
+    adv_amd_decode(&decode_res, ins);
+    if (decode_res.success) {
+      if (decode_res.weak)
+	sprintf(errbuf, "(%p, %d bytes) weak AMD XOP \n", ins, (int) decode_res.len);
+      else
+	sprintf(errbuf, "(%p, %d bytes) robust AMD XOP \n", ins, (int) decode_res.len);
+    }
+    else
+#endif // ENABLE_XOP and HOST_CPU_x86_64
+      sprintf(errbuf, "x86_dump_ins: xed decode error addr=%p, code = %d\n", 
+	      ins, (int) xed_error);
+  }
   EMSG(errbuf);
   fprintf(stderr, errbuf);
   fflush(stderr);
 }
 
+void
+hpcrun_dump_intervals_noisy(void* addr)
+{
+  void *s, *e;
+  unwind_interval *u;
+  interval_status intervals;
+
+  fnbounds_enclosing_addr(addr, &s, &e, NULL);
+
+  intervals = x86_build_intervals(s, e - s, 1);
+
+  for(u = (unwind_interval *)intervals.first; u; 
+      u = (unwind_interval *)(u->common).next) {
+    dump_ui_dbg(u);
+  }
+}

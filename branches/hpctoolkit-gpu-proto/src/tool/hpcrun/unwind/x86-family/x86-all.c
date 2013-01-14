@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -54,9 +54,7 @@
 
 
 #include "x86-addsub.c"
-#if 1
 #include "x86-and.c"
-#endif
 #include "x86-build-intervals.c"
 #include "x86-call.c"
 #include "x86-canonical.c"

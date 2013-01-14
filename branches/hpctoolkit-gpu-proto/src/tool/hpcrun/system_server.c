@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -130,7 +130,6 @@ int
 system_server_start()
 {
   int ret;
-  extern int __libc_system(char *);
 
   // ---------------------------------------------------------------------------
   // set up pipes for communication between client and server
@@ -242,7 +241,10 @@ system_server_shutdown()
   if (server_pid != 0) {
     int ret = write(WRITE_FD(CLIENT_TO_SERVER), &server_done, 
 		    sizeof(server_done));
-    EXIT_ON_ERROR(ret, sizeof(server_done), "system server shutdown failed");
+    if (ret != sizeof(server_done)) {
+      EMSG("%s: write failed: size: %d, ret: %d",
+	   __func__, sizeof(server_done), ret);
+    }
   }
 }
  
@@ -304,11 +306,13 @@ system_server_execute_command(const char *command)
 }
 
 
+#if 0
 int 
 system(__const char *command) 
 {
   return system_server_execute_command(command);  
 }
+#endif
 
 
 void

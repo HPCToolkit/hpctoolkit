@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -97,8 +97,12 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
     // print context
     // -----------------------------------------------------
     void* ctxt_pc = hpcrun_context_pc(context);
+    if (ENABLED(UNW_SEGV_STOP)){
+      EMSG("Unwind segv abort enabled ... Aborting!!, context pc = %p", ctxt_pc);
+      monitor_real_abort();
+    }
 
-    PMSG_LIMIT(EMSG("error: segv: context-pc=%p", ctxt_pc));
+    EMSG("error: segv: context-pc=%p", ctxt_pc);
     // TODO: print more context details
 
     // -----------------------------------------------------
@@ -119,6 +123,7 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
   }
   else {
     // pass segv to another handler
+    TMSG(SEGV, "NON unwind segv encountered");
     return 1; // monitor_real_abort(); // TEST
   }
 }
@@ -127,10 +132,15 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
 int
 hpcrun_setup_segv()
 {
-  int ret = monitor_sigaction(SIGSEGV, &hpcrun_sigsegv_handler, 0, NULL);
+  int ret = monitor_sigaction(SIGBUS, &hpcrun_sigsegv_handler, 0, NULL);
+  if (ret != 0) {
+    EMSG("Unable to install SIGBUS handler", __FILE__, __LINE__);
+  }
 
+  ret = monitor_sigaction(SIGSEGV, &hpcrun_sigsegv_handler, 0, NULL);
   if (ret != 0) {
     EMSG("Unable to install SIGSEGV handler", __FILE__, __LINE__);
   }
+
   return ret;
 }

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,14 +44,16 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef trace_h
-#define trace_h
+#ifndef hpcrun_trace_h
+#define hpcrun_trace_h
 
-void trace_init();
-void trace_open();
-void trace_append(unsigned int cpid);
-void trace_close();
+#include <include/uint.h>
 
-int trace_isactive();
+void hpcrun_trace_init();
+void hpcrun_trace_open();
+void hpcrun_trace_append(uint call_path_id, uint metric_id);
+void hpcrun_trace_close();
 
-#endif // trace_h
+int hpcrun_trace_isactive();
+
+#endif // hpcrun_trace_h

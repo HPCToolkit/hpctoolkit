@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -48,6 +48,8 @@
 #include <vector>
 
 using namespace std;
+
+void function_entries_reinit();
 
 void add_function_entry(void *address, const string *comment, bool isglobal, 
 			int call_count = 0);

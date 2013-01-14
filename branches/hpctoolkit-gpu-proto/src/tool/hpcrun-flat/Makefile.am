@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2011, Rice University
+## Copyright ((c)) 2002-2013, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -194,8 +194,8 @@ myinstall-exec: myinstall-libhpcrunso myinstall-libhpcrun-static
 MYKEEPSYMS = $(addprefix -K , $(MY_INTERCEPTED_SYMS_LibHPCRunSO))
 
 myinstall-libhpcrunso:
-	rm -f $(pkglibdir)/libhpcrun-flat.a
-	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(pkglibdir)/libhpcrun-flat.so
+	rm -f $(DESTDIR)$(pkglibdir)/libhpcrun-flat.a
+	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(DESTDIR)$(pkglibdir)/libhpcrun-flat.so
 
 myinstall-libhpcrun-static: 
 #	mv $(bindir)/libhpcrun-static.o $(libdir)/.

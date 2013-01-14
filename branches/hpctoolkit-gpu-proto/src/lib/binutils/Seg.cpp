@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -288,10 +288,17 @@ BinUtil::TextSeg::ctor_initProcs()
       //
       // N.B. exploits the fact that the symbol table is sorted by vma
       VMA endVMA_approx = findProcEnd(i);
+
       if (dbg) {
 	if (!dbg->name.empty()) {
 	  procNm = dbg->name;
 	}
+	else if (!symNm.empty()) {
+          // sometimes a procedure name is in the symbol table even
+          // though it is not in the dwarf section. this case occurs
+          // when gcc outlines routines from OpenMP parallel sections.
+          procNm = symNm;
+  	}
 
 #if 1
 	// Remove capability below... the DWARF sizes can be wrong!!
@@ -314,7 +321,7 @@ BinUtil::TextSeg::ctor_initProcs()
       }
       
       // We now have a valid procedure.  Initilize with [begVMA, endVMA),
-      // but note tohis is changed after disassembly.
+      // but note this is changed after disassembly.
       proc = new Proc(this, procNm, symNm, procType, begVMA, endVMA, size);
       m_procs.push_back(proc);
       m_lm->insertProc(VMAInterval(begVMA, endVMA), proc);

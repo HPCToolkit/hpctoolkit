@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2011/02/22}
+\setDate{ 2012/04/19}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -150,13 +150,14 @@ Annotate source files with path names that match file glob \Arg{glob}.
 (Protect glob characters from shell with single quotes or backslash.)
 May pass multiple times to logically OR additional globs.
 
-\item[\OptoArg{-M}{metric}, \OptoArg{--metric}{metric}] 
-Specify the set of metrics to compute.
-\Arg{metric} is one of the following:
+\item[\OptArg{-M}{metric}, \OptArg{--metric}{metric}]
+Specify the set of metrics to compute, where \Arg{metric} is one of the following:
   \begin{itemize}
-  \item[sum]    Show (only) summary metrics: Sum, Mean, StdDev (standard deviation), CoefVar (coefficient of variation), Min, Max
-  \item[sum+]   Show thread and summary metrics
+  \item[sum] Sum over threads/processes
+  \item[stats] Sum, Mean, StdDev (standard deviation), CoefVar (coefficient of variation), Min, Max over threads/processes
+  \item[thread] per-thread/process metrics
   \end{itemize}
+Default is 'thread'.
 
 \item[\OptArg{-I}{dir}, \OptArg{--include}{dir}]
 Use \Arg{dir} as a search directory to find source files.
@@ -245,7 +246,7 @@ Version: \Version\ of \Date.
 \section{License and Copyright}
 
 \begin{description}
-\item[Copyright] \copyright\ 2002-2011, Rice University.
+\item[Copyright] \copyright\ 2002-2013, Rice University.
 \item[License] See \File{README.License}.
 \end{description}
 

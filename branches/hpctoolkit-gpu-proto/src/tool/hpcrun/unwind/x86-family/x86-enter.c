@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -77,7 +77,7 @@ process_enter(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *ia
       break;
     }
   }
-  PMSG(INTV,"new interval from ENTER");
+  TMSG(INTV,"new interval from ENTER");
   next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
 		RA_STD_FRAME,
 		iarg->current->sp_ra_pos + offset, 8, BP_SAVED,

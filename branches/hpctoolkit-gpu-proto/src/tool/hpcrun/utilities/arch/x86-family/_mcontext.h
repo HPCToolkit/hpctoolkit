@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -79,6 +79,11 @@
 
 
 #define MCONTEXT_REG(mctxt, reg) (mctxt->gregs[reg])
+
+#define LV_MCONTEXT_PC(mctxt)         MCONTEXT_REG(mctxt, REG_INST_PTR)
+#define LV_MCONTEXT_BP(mctxt)         MCONTEXT_REG(mctxt, REG_BASE_PTR)
+#define LV_MCONTEXT_SP(mctxt)         MCONTEXT_REG(mctxt, REG_STACK_PTR)
+
 #define MCONTEXT_PC(mctxt) ((void *)  MCONTEXT_REG(mctxt, REG_INST_PTR))
 #define MCONTEXT_BP(mctxt) ((void **) MCONTEXT_REG(mctxt, REG_BASE_PTR))
 #define MCONTEXT_SP(mctxt) ((void **) MCONTEXT_REG(mctxt, REG_STACK_PTR))

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -260,7 +260,7 @@ lush_step_bichord(lush_cursor_t* cursor)
   lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_END_PCHORD);
   lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_END_LCHORD);
 
-  unw_word_t ip_unnorm = lush_cursor_get_ip_unnorm(cursor);
+  void* ip_unnorm = lush_cursor_get_ip_unnorm(cursor);
   ip_normalized_t ip_norm = lush_cursor_get_ip_norm(cursor);
   lush_agentid_t first_aid = lush_agentid_NULL;
 

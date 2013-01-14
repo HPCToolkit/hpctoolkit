@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -59,8 +59,16 @@ typedef struct frame_t {
   hpcrun_unw_cursor_t cursor;       // hold a copy of the cursor for this frame
   lush_assoc_info_t as_info;
   ip_normalized_t ip_norm;
+  ip_normalized_t the_function;     // enclosing function of ip_norm
   void* ra_loc;
   lush_lip_t* lip;
 } frame_t;
+
+static inline
+void*
+hpcrun_frame_get_unnorm(frame_t* frame)
+{
+  return frame->cursor.pc_unnorm;
+}
 
 #endif // FRAME_H

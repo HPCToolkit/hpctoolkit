@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -280,7 +280,7 @@ private:
 
 #define DBG_CDS  0 /* debug coalesceDuplicateStmts */
 
-static string OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm;
+static const string& OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm;
 
 
 //****************************************************************************

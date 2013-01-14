@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -56,11 +56,11 @@
 // local includes
 //*****************************************************************************
 
-#include "monitor.h"
 #include "fname_max.h"
 #include "backtrace.h"
 #include "files.h"
 #include "epoch.h"
+#include "rank.h"
 #include "thread_data.h"
 #include "cct_bundle.h"
 #include "hpcrun_return_codes.h"
@@ -148,23 +148,14 @@ lazy_open_data_file(void)
     return fs;
   }
 
-  /* Generate a filename */
-  char fnm[HPCRUN_FNM_SZ];
-
-  int rank = monitor_mpi_comm_rank();
-  if (rank < 0) rank = 0;
-  files_profile_name(fnm, rank, HPCRUN_FNM_SZ);
-
-  TMSG(DATA_WRITE, "Filename = %s", fnm);
-
-  /* Open file for writing; fail if the file already exists. */
-  if (hpcrun_sample_prob_active()) {
-    fs = hpcio_fopen_w(fnm, /* overwrite */ 0);
-  } else {
-    fs = hpcio_fopen_w("/dev/null", 2);
+  int rank = hpcrun_get_rank();
+  if (rank < 0) {
+    rank = 0;
   }
+  int fd = hpcrun_open_profile_file(rank, td->id);
+  fs = fdopen(fd, "w");
   if (fs == NULL) {
-    EEMSG("HPCToolkit: %s: unable to open: %s", __func__, fnm);
+    EEMSG("HPCToolkit: %s: unable to open profile file", __func__);
     return NULL;
   }
   td->hpcrun_file = fs;
@@ -181,9 +172,7 @@ lazy_open_data_file(void)
 
   char mpiRankStr[bufSZ];
   mpiRankStr[0] = '\0';
-  if (monitor_mpi_comm_rank() >= 0) {
-    snprintf(mpiRankStr, bufSZ, "%d", rank);
-  }
+  snprintf(mpiRankStr, bufSZ, "%d", rank);
 
   char tidStr[bufSZ];
   snprintf(tidStr, bufSZ, "%d", td->id);
@@ -206,8 +195,8 @@ lazy_open_data_file(void)
 
   TMSG(DATA_WRITE,"writing file header");
   hpcrun_fmt_hdr_fwrite(fs,
-                        HPCRUN_FMT_NV_prog, files_executable_name(),
-                        HPCRUN_FMT_NV_progPath, files_executable_pathname(),
+                        HPCRUN_FMT_NV_prog, hpcrun_files_executable_name(),
+                        HPCRUN_FMT_NV_progPath, hpcrun_files_executable_pathname(),
 			HPCRUN_FMT_NV_envPath, getenv("PATH"),
                         HPCRUN_FMT_NV_jobId, jobIdStr,
                         HPCRUN_FMT_NV_mpiRank, mpiRankStr,
@@ -281,6 +270,7 @@ write_epochs(FILE* fs, epoch_t* epoch)
 
     metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl();
 
+    TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
     hpcrun_fmt_metricTbl_fwrite(metric_tbl, fs);
 
     TMSG(DATA_WRITE, "Done writing metric data");

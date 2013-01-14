@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2011/02/22}
+\setDate{ 2012/09/21}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -62,7 +62,7 @@ GUI usage:\\
 \section{Description}
 
 The Java-based \Prog{hpcviewer} interactively presents program-performance Experiment databases in a top-down fashion.
-Since Experiment databases are self-contained, they may be relocated from a cluster for visulization on a laptop or workstation.
+Since Experiment databases are self-contained, they may be relocated from a cluster for visualization on a laptop or workstation.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
@@ -156,6 +156,32 @@ Entities in the tree view of the navigation pane are sorted at each level of the
 \end{itemize}
 
 
+\subsection{Thread-Centric Plots}
+
+\Prog{hpcviewer} can display plot graphs of thread-level metric
+values.  This is useful for quickly assessing load imbalance across
+processes and threads.
+
+To create a graph, use the calling context view and select a scope by
+left-clicking a line in the navigation pane.
+Then, right-click the selected scope to show the context menu.  (This
+menu begins with `Zoom-in' and `Zoom-out.')
+At the bottom of the context menu is a list of metrics that
+\Prog{hpcviewer} can graph.
+Each metric contains a sub-menu that lists the three different types
+of graphs that \Prog{hpcviewer} can plot.
+The \emph{Plot} graph sorts the processes by process and thread
+number.
+The \emph{Sorted plot} graph sorts the processes by metric value.
+And the \emph{Histogram} graph shows a bar graph of the
+frequency of metric values.
+
+Note: currently, these plot graphs are available only with databases
+created by \Prog{hpcprof-mpi} and not by \Prog{hpcprof}.
+See the section on ``\emph{Plotting Graphs of Thread-level Metric Values}''
+in the User's Manual for more description and a view of a plot graph.
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %\section{Arguments}
 
@@ -179,7 +205,7 @@ Version: \Version\ of \Date.
 \section{License and Copyright}
 
 \begin{description}
-\item[Copyright] \copyright\ 2002-2011, Rice University.
+\item[Copyright] \copyright\ 2002-2013, Rice University.
 \item[License] See \File{README.License}.
 \end{description}
 

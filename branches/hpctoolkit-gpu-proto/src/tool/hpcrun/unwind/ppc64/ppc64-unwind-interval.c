@@ -1,3 +1,4 @@
+
 // -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
@@ -12,7 +13,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -259,6 +260,15 @@ isInsn_STW(uint32_t insn, int Rs, int Ra)
 
 
 static inline bool 
+isInsn_STD(uint32_t insn, int Rs, int Ra)
+{
+  // std Rs Ra: store Rs at (Ra + D); set Ra to (Ra + D)
+  const int D = 0x0;
+  return (insn & (PPC_INSN_DS_MASK)) == PPC_INSN_DS(PPC_OP_STD, Rs, Ra, D);
+}
+
+
+static inline bool 
 isInsn_LWZ(uint32_t insn, int Rt, int Ra)
 {
   const int D = 0x0;
@@ -276,12 +286,30 @@ isInsn_STWU(uint32_t insn, int Rs, int Ra)
 
 
 static inline bool 
+isInsn_STDU(uint32_t insn, int Rs, int Ra)
+{
+  // stdu Rs Ra: store Rs at (Ra + D); set Ra to (Ra + D)
+  const int D = 0x0;
+  return (insn & (PPC_INSN_DS_MASK)) == PPC_INSN_DS(PPC_OP_STDU, Rs, Ra, D);
+}
+
+
+static inline bool 
 isInsn_STWUX(uint32_t insn, int Ra)
 {   
   // stwux Rs Ra Rb: store Rs at (Ra + Rb); set Ra to (Ra + Rb)
   const int Rs = 0, Rb = 0, Rc = 0x0;
   return ((insn & (PPC_OP_X_MASK | PPC_OPND_REG_A_MASK))
 	  == PPC_INSN_X(PPC_OP_STWUX, Rs, Ra, Rb, Rc));
+}
+
+static inline bool 
+isInsn_STDUX(uint32_t insn, int Ra)
+{   
+  // stdux Rs Ra Rb: store Rs at (Ra + Rb); set Ra to (Ra + Rb)
+  const int Rs = 0, Rb = 0, Rc = 0x0;
+  return ((insn & (PPC_OP_X_MASK | PPC_OPND_REG_A_MASK))
+	  == PPC_INSN_X(PPC_OP_STDUX, Rs, Ra, Rb, Rc));
 }
 
 
@@ -307,14 +335,23 @@ isInsn_MR(uint32_t insn, int Ra)
 
 static inline bool 
 isInsn_BLR(uint32_t insn)
-{ return (insn == PPC_OP_BLR); }
+{ 
+  return (insn == PPC_OP_BLR); 
+}
 
 
 //***************************************************************************
 
 static inline int 
 getRADispFromSPDisp(int sp_disp) 
-{ return sp_disp + (sizeof(void*)); }
+{ 
+#ifdef __PPC64__
+  int disp = sp_disp + 2 * (sizeof(void*)); 
+#else
+  int disp = sp_disp + (sizeof(void*)); 
+#endif
+  return disp;
+}
 
 
 static inline int
@@ -461,7 +498,6 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 		      ui->sp_ty, RATy_Reg, ui->sp_arg, PPC_REG_LR, ui);
       ui = nxt_ui;
     }
-
     //--------------------------------------------------
     // store return address into parent's frame
     //   (may come before or after frame allocation)
@@ -471,6 +507,23 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 	     isInsn_STW(*cur_insn, ui->ra_arg, PPC_REG_SP)) {
       int sp_disp = getSPDispFromUI(ui);
       int ra_disp = PPC_OPND_DISP(*cur_insn);
+      if (getRADispFromSPDisp(sp_disp) == ra_disp) {
+        nxt_ui = new_ui(nextInsn(cur_insn), 
+			ui->sp_ty, RATy_SPRel, ui->sp_arg, ra_disp, ui);
+        ui = nxt_ui;
+
+	canon_ui = nxt_ui;
+      }
+    }
+    //--------------------------------------------------
+    // store return address into parent's frame
+    //   (may come before or after frame allocation)
+    //--------------------------------------------------
+    else if (ui->ra_ty == RATy_Reg && 
+	     ui->ra_arg >= PPC_REG_R0 &&
+	     isInsn_STD(*cur_insn, ui->ra_arg, PPC_REG_SP)) {
+      int sp_disp = getSPDispFromUI(ui);
+      int ra_disp = PPC_OPND_DISP_DS(*cur_insn);
       if (getRADispFromSPDisp(sp_disp) == ra_disp) {
         nxt_ui = new_ui(nextInsn(cur_insn), 
 			ui->sp_ty, RATy_SPRel, ui->sp_arg, ra_disp, ui);
@@ -491,13 +544,26 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 	ui = nxt_ui;
       }
     }
-
     //--------------------------------------------------
     // allocate frame: adjust SP and store parent's SP
     //   (may come before or after storing of RA)
     //--------------------------------------------------
     else if (isInsn_STWU(*cur_insn, PPC_REG_SP, PPC_REG_SP)) {
       int sp_disp = - PPC_OPND_DISP(*cur_insn);
+      int ra_arg = ((ui->ra_ty == RATy_SPRel) ? 
+		    ui->ra_arg + sp_disp : ui->ra_arg);
+      nxt_ui = new_ui(nextInsn(cur_insn), 
+		      SPTy_SPRel, ui->ra_ty, sp_disp, ra_arg, ui);
+      ui = nxt_ui;
+
+      canon_ui = nxt_ui;
+    }
+    //--------------------------------------------------
+    // allocate frame: adjust SP and store parent's SP
+    //   (may come before or after storing of RA)
+    //--------------------------------------------------
+    else if (isInsn_STDU(*cur_insn, PPC_REG_SP, PPC_REG_SP)) {
+      int sp_disp = - PPC_OPND_DISP_DS(*cur_insn);  
       int ra_arg = ((ui->ra_ty == RATy_SPRel) ? 
 		    ui->ra_arg + sp_disp : ui->ra_arg);
       nxt_ui = new_ui(nextInsn(cur_insn), 
@@ -514,13 +580,29 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 
       canon_ui = nxt_ui;
     }
+    else if (isInsn_STDUX(*cur_insn, PPC_REG_SP)) {
+      int sp_disp = -1; // N.B. currently we do not track this
+      nxt_ui = new_ui(nextInsn(cur_insn),
+		      SPTy_SPRel, ui->ra_ty, sp_disp, ui->ra_arg, ui);
+      ui = nxt_ui;
+
+      canon_ui = nxt_ui;
+    }
     //--------------------------------------------------
     // deallocate frame: reset SP to parents's SP
     //--------------------------------------------------
     else if (isInsn_ADDI(*cur_insn, PPC_REG_SP, PPC_REG_SP)
 	     && (PPC_OPND_DISP(*cur_insn) == getSPDispFromUI(ui))) {
+      int sp_disp = - PPC_OPND_DISP(*cur_insn);  
+      int ra_arg = ((ui->ra_ty == RATy_SPRel) ? 
+		    ui->ra_arg + sp_disp : ui->ra_arg);
+#if 0
+      // debug return address offset not being adjusted properly.
+      // now fixed.
+      printf("addi: ra_ty=%d, sp_disp = %d, ui->ra_arg = %d, ra_arg = %d\n", ui->ra_ty, sp_disp, ui->ra_arg, ra_arg);
+#endif
       nxt_ui = new_ui(nextInsn(cur_insn), 
-		      SPTy_Reg, ui->ra_ty, PPC_REG_SP, ui->ra_arg, ui);
+		      SPTy_Reg, ui->ra_ty, PPC_REG_SP, ra_arg, ui);
       ui = nxt_ui;
     }
     else if (isInsn_MR(*cur_insn, PPC_REG_SP)) {
@@ -532,7 +614,6 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 	ui = nxt_ui;
       }
     }
-
     //--------------------------------------------------
     // interior returns/epilogues
     //--------------------------------------------------
@@ -573,8 +654,8 @@ ppc64_print_interval_set(unw_interval_t *beg_ui)
 }
 
 
-static void GCC_ATTR_UNUSED
-ppc64_dump_intervals(char  *addr)
+void 
+ppc64_dump_intervals(void* addr)
 {
   void *s, *e;
   interval_status intervals;
@@ -587,4 +668,10 @@ ppc64_dump_intervals(char  *addr)
   intervals = ppc64_build_intervals(s, (unsigned int) llen);
 
   ppc64_print_interval_set((unw_interval_t *) intervals.first);
+}
+
+void
+hpcrun_dump_intervals(void* addr)
+{
+  ppc64_dump_intervals(addr);
 }

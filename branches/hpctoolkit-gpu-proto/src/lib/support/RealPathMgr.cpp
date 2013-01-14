@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -130,7 +130,7 @@ RealPathMgr::realpath(string& pathNm) const
     // -------------------------------------------------------
     string pathNm_orig = pathNm;
 
-    pathNm = PathReplacementMgr::singleton().getReplacedPath(pathNm);
+    pathNm = PathReplacementMgr::singleton().replace(pathNm);
     it = m_cache.find(pathNm);
 
     if (it != m_cache.end()) {

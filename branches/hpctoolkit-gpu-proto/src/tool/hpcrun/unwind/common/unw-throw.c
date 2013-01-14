@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -80,13 +80,26 @@
 
 static int DEBUG_NO_LONGJMP = 0;
 
+//
+// Actually drop a sample, as opposed to recording a partial unwind
+//
+void
+hpcrun_unw_drop(void)
+{
+  thread_data_t* td = hpcrun_get_thread_data();
+  td->btbuf_cur = td->btbuf_beg; // flush any collected backtrace frames
+
+  sigjmp_buf_t *it = &(td->bad_unwind);
+  (*hpcrun_get_real_siglongjmp())(it->jb, 9);
+}
+
 void
 hpcrun_unw_throw(void)
 {
   if (DEBUG_NO_LONGJMP) return;
 
   if (hpcrun_below_pmsg_threshold()) {
-    hpcrun_bt_dump(TD_GET(btbuf_cur), "DROP");
+    hpcrun_bt_dump(TD_GET(btbuf_cur), "PARTIAL");
   }
 
   hpcrun_up_pmsg_count();

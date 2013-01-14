@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -183,8 +183,8 @@ BinUtil::Dbg::LM::ddump() const
 
 // Should have function type of 'bfd_forall_dbg_funcinfo_fn_t'
 int 
-BinUtil::Dbg::LM::bfd_dbgInfoCallback(void* callback_obj, 
-				       void* parent, void* funcinfo)
+BinUtil::Dbg::LM::bfd_dbgInfoCallback(void* callback_obj,
+				      void* parent, void* funcinfo)
 {
 #if defined(HAVE_HPC_GNUBINUTILS)
   Dbg::LM* lminfo = (Dbg::LM*)callback_obj;

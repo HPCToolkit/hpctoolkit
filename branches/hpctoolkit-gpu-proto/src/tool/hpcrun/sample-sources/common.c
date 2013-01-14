@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -140,9 +140,41 @@ hpcrun_event2metric(sample_source_t* ss, int event_idx)
 // Sample Source Failure Messages (ssfail)
 // **********************************************************
 
-
 static char *prefix = "HPCToolkit fatal error";
+static char *warning = "HPCToolkit warning";
 static char *hpcrun_L = "See 'hpcrun -L <program>' for a list of available events.";
+static int papi_error = 0;
+
+
+// Special case to treat failure in PAPI init as a soft error.
+// If PAPI_library_init() fails, delay printing an error message until
+// after trying all other sample sources.
+//
+// This is useful on ranger where PAPI is not compiled into the kernel
+// on the login nodes, but we can still run with WALLCLOCK there.
+//
+void
+hpcrun_save_papi_error(int error)
+{
+  papi_error = error;
+}
+
+static void
+hpcrun_display_papi_error(void)
+{
+  if (papi_error == HPCRUN_PAPI_ERROR_UNAVAIL) {
+    STDERR_MSG("%s: PAPI_library_init() failed as unavailable.\n"
+        "Probably, the kernel is missing a module for accessing the hardware\n"
+        "performance counters (perf_events, perfmon or perfctr).\n",
+	warning);
+  }
+  else if (papi_error == HPCRUN_PAPI_ERROR_VERSION) {
+    STDERR_MSG("%s: PAPI_library_init() failed with version mismatch.\n"
+        "Probably, HPCToolkit is out of sync with PAPI, or else PAPI is\n"
+	"out of sync with the kernel.\n",
+	warning);
+  }
+}
 
 // The none and unknown event failures happen before we set up the log
 // file, so we can only write to stderr.
@@ -160,6 +192,8 @@ hpcrun_ssfail_none(void)
 void
 hpcrun_ssfail_unknown(char *event)
 {
+  hpcrun_display_papi_error();
+
   STDERR_MSG("%s: event %s is unknown or unsupported.\n%s",
 	     prefix, event, hpcrun_L);
   exit(1);
@@ -178,6 +212,15 @@ hpcrun_ssfail_derived(char *source, char *event)
 {
   EEMSG("%s: %s event %s is a derived event and thus cannot be profiled.\n%s",
 	prefix, source, event, hpcrun_L);
+  exit(1);
+}
+
+void
+hpcrun_ssfail_all_derived(char *source)
+{
+  EEMSG("%s: All %s events are derived.  To use proxy sampling,\n"
+	"at least one event must support hardware overflow (eg, PAPI_TOT_CYC).\n",
+	prefix, source);
   exit(1);
 }
 

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -84,17 +84,17 @@ enum trampoline_constants {
 // *****************************************************************************
 
 
-void hpcrun_init_trampoline_info(void);
+extern void hpcrun_init_trampoline_info(void);
 
 // returns true if address is in the assembly language trampoline code, else false.
 
-bool hpcrun_trampoline_interior(void* addr);
-bool hpcrun_trampoline_at_entry(void* addr);
+extern bool hpcrun_trampoline_interior(void* addr);
+extern bool hpcrun_trampoline_at_entry(void* addr);
 
-void* hpcrun_trampoline_handler(void);
+extern void* hpcrun_trampoline_handler(void);
 
-void hpcrun_trampoline_insert(cct_node_t* node);
-void hpcrun_trampoline_remove(void);
-cct_node_t* hpcrun_trampoline_advance(void);
+extern void hpcrun_trampoline_insert(cct_node_t* node);
+extern void hpcrun_trampoline_remove(void);
+extern void hpcrun_trampoline_bt_dump(void);
 
 #endif // trampoline_h

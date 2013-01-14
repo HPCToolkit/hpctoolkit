@@ -5,7 +5,7 @@
 # Part of HPCToolkit (hpctoolkit.org)
 #------------------------------------
 #
-# Copyright (c) 2002-2010, Rice University.
+# Copyright (c) 2002-2013, Rice University.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,7 @@ VERSION='@PACKAGE_VERSION@'
 hpcfnbounds_dir='libexec/hpctoolkit'
 hpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
+libunwind_dir='@LIBUNWIND_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
 
 #------------------------------------------------------------
@@ -77,10 +78,19 @@ case "$libmonitor_dir" in
     /* ) ;;
     * ) libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
 esac
+case "$libunwind_dir" in
+    /* ) ;;
+    * )  libunwind_dir="${HPCTOOLKIT}/${libunwind_dir}" ;;
+esac
 case "$papi_libdir" in
     /* ) ;;
     * ) papi_libdir="${HPCTOOLKIT}/${papi_libdir}" ;;
 esac
+
+#
+# Once hpcrun_dir is completely set, set
+#
+ext_dir="$hpcrun_dir"/ext-libs
 
 #------------------------------------------------------------
 # Usage Message
@@ -144,6 +154,16 @@ Options: Profiling (Defaults shown in curly brackets {})
   -t, --trace          Generate a call path trace (in addition to a call
                        path profile).
 
+  -ds, --delay-sampling
+                       Delay starting sampling until the application calls
+                       hpctoolkit_sampling_start().
+
+  -f <frac>, -fp <frac>, --process-fraction <frac>
+                       Measure only a fraction <frac> of the execution's
+                       processes.  For each process, enable measurement
+                       (of all threads) with probability <frac>; <frac> is a
+                       real number (0.10) or a fraction (1/10) between 0 and 1.
+
   -o <outpath>, --output <outpath>
                        Directory for output data.
                        {hpctoolkit-<command>-measurements[-<jobid>]}
@@ -151,6 +171,14 @@ Options: Profiling (Defaults shown in curly brackets {})
                        Bug: Without a <jobid> or an output option, multiple
                        profiles of the same <command> will be placed in the
                        same output directory.
+
+  -r, --retain-recursion
+                       Normally, hpcrun will collapse (simple) recursive call chains
+                       to a single node. This option disables that behavior: all
+                       elements of a recursive call chain are recorded
+                       NOTE: If the user employs the RETCNT sample source, then this
+                             option is enabled: RETCNT implies *all* elements of
+                             call chains, including recursive elements, are recorded.
 
 NOTES:
 * hpcrun uses preloaded shared libraries to initiate profiling.  For this
@@ -178,8 +206,7 @@ arg_ok()
 # LD_PRELOAD should be delayed until we launch the program, but the
 # others can be set now.
 
-mpi_preload=
-memleak_preload=
+preload_list=
 HPCRUN_DEBUG_FLAGS=
 HPCRUN_EVENT_LIST=
 
@@ -188,10 +215,21 @@ do
     arg="$1" ; shift
     case "$arg" in
 
-	-a | --agent )
-	    arg_ok "$1" || die "missing argument for $arg"
-	    export HPCRUN_OPT_LUSH_AGENTS="$1"
-	    shift
+	# temp option to run new fnbounds server with debugging
+	-fnb | --fnb )
+	    unset  OLD_SYSTEM_SERVER
+	    export HPCRUN_DEBUG_FLAGS="$HPCRUN_DEBUG_FLAGS SYSTEM_SERVER"
+	    ;;
+
+	# temp option to run old fnbounds server
+	-ofnb | --ofnb )
+	    export OLD_SYSTEM_SERVER=1
+	    ;;
+
+	# --------------------------------------------------
+
+	-md | --monitor-debug )
+	    export MONITOR_DEBUG=1
 	    ;;
 
 	-d | --debug )
@@ -204,11 +242,32 @@ do
 	    shift
 	    ;;
 
+	-h | -help | --help )
+	    usage
+	    ;;
+
+	-V | --version )
+	    echo "hpcrun: A member of HPCToolkit, version $VERSION"
+	    exit 0
+	    ;;
+
+	# --------------------------------------------------
+
+	-a | --agent )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_OPT_LUSH_AGENTS="$1"
+	    shift
+	    ;;
+
+	# --------------------------------------------------
+
 	-e | --event )
 	    arg_ok "$1" || die "missing argument for $arg"
 	    case "$1" in
-		MEMLEAK* ) memleak_preload="${hpcrun_dir}/libhpcrun_memleak.so" ;;
-		MPI* )     mpi_preload="${hpcrun_dir}/libhpcrun_mpi.so" ;;
+	        GA* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_ga.so" ;;
+		IO* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_io.so" ;;
+		MEMLEAK* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_memleak.so" ;;
+		MPI* )     preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_mpi.so" ;;
 	    esac
 	    case "$HPCRUN_EVENT_LIST" in
 		'' ) HPCRUN_EVENT_LIST="$1" ;;
@@ -217,22 +276,40 @@ do
 	    shift
 	    ;;
 
-	-h | -help | --help )
-	    usage
-	    ;;
-
 	-L | -l | --list-events )
 	    export HPCRUN_EVENT_LIST=LIST
 	    ;;
+
+	-ds | --delay-sampling )
+	    export HPCRUN_DELAY_SAMPLING=1
+	    ;;
+
+	# --------------------------------------------------
+
+	-t | --trace )
+	    export HPCRUN_TRACE=1
+	    ;;
+
+	# --------------------------------------------------
+
+	-o | --output )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_OUT_PATH="$1"
+	    shift
+	    ;;
+
+	# --------------------------------------------------
+
+	-r | --retain-recursion )
+	    export HPCRUN_RETAIN_RECURSION=1
+	    ;;
+
+	# --------------------------------------------------
 
 	-lm | --low-memsize )
 	    arg_ok "$1" || die "missing argument for $arg"
 	    export HPCRUN_LOW_MEMSIZE="$1"
 	    shift
-	    ;;
-
-	-md | --monitor-debug )
-	    export MONITOR_DEBUG=1
 	    ;;
 
 	-ms | --memsize )
@@ -241,30 +318,27 @@ do
 	    shift
 	    ;;
 
-	-o | --output )
-	    arg_ok "$1" || die "missing argument for $arg"
-	    export HPCRUN_OUT_PATH="$1"
-	    shift
-	    ;;
+	# --------------------------------------------------
 
 	-q | --quiet )
 	    export HPCRUN_QUIET=1
 	    ;;
 
-	-sp | --sample-prob )
+	# --------------------------------------------------
+
+	-f | -fp | --process-fraction )
 	    arg_ok "$1" || die "missing argument for $arg"
-	    export HPCRUN_SAMPLE_PROB="$1"
+	    export HPCRUN_PROCESS_FRACTION="$1"
 	    shift
 	    ;;
 
-	-t | --trace )
-	    export HPCRUN_TRACE=1
+	-mp | --memleak-prob )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_MEMLEAK_PROB="$1"
+	    shift
 	    ;;
 
-	-V | --version )
-	    echo "hpcrun: A member of HPCToolkit, version $VERSION"
-	    exit 0
-	    ;;
+	# --------------------------------------------------
 
 	-- )
 	    break
@@ -298,7 +372,7 @@ if test -z "$1" ; then
 fi
 
 #------------------------------------------------------------
-# Launch Program
+# Pre-Launch Sanity Checks
 #------------------------------------------------------------
 
 # Find the command on PATH.  We need to run file and nm on the binary,
@@ -354,6 +428,42 @@ if test -x "$command" ; then
     fi
 fi
 
+# Verify that we can write to tmpdir: HPCRUN_TMPDIR, TMPDIR or /tmp,
+# and fail now with a useful message if not.  Note: we use the same
+# algorithm as inside hpcfnbounds: if HPCRUN_TMPDIR or TMPDIR is set,
+# then commit to that directory and not try the next if it fails.
+
+test_tmp_dir()
+{
+    tmp_file="$1/hpcrun-tmp-file-$$"
+    tmp_dir="$1"
+
+    if touch "$tmp_file" >/dev/null 2>&1 ; then
+	tmp_ans=yes
+	rm -f "$tmp_file"
+    else
+	tmp_ans=no
+    fi
+}
+
+if test -n "$HPCRUN_TMPDIR" ; then
+    test_tmp_dir "$HPCRUN_TMPDIR"
+elif test -n "$TMPDIR" ; then
+    test_tmp_dir "$TMPDIR"
+else
+    test_tmp_dir /tmp
+fi
+
+if test "x$OLD_SYSTEM_SERVER" != x && test "$tmp_ans" = no ; then
+    echo "hpcrun: unable to write to tmp directory: $tmp_dir" 1>&2
+    echo "please set HPCRUN_TMPDIR or TMPDIR and try again" 1>&2
+    exit 1
+fi
+
+#------------------------------------------------------------
+# Final Environ Settings and Exec the Binary
+#------------------------------------------------------------
+
 # Add OMP_SKIP_MSB to HPCRUN_DEBUG_FLAGS if the binary contains
 # _mp_init.
 
@@ -365,13 +475,12 @@ fi
 # Enable core files.
 ulimit -S -c unlimited >/dev/null 2>&1
 
-hpc_ld_library_path="$papi_libdir"
-hpc_ld_preload="${memleak_preload} ${hpcrun_dir}/libhpcrun.so"
-hpc_ld_preload="${hpc_ld_preload} ${mpi_preload}"
-hpc_ld_preload="${hpc_ld_preload} ${libmonitor_dir}/libmonitor.so"
+hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}"
+preload_list="${libmonitor_dir}/libmonitor.so ${preload_list}"
+preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
 
 export HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds"
 export LD_LIBRARY_PATH="${hpc_ld_library_path}:${LD_LIBRARY_PATH}"
-export LD_PRELOAD="${hpc_ld_preload} ${LD_PRELOAD}"
+export LD_PRELOAD="${preload_list} ${LD_PRELOAD}"
 
 exec "$@"

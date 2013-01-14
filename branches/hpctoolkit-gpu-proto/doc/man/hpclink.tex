@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2011/02/22}
+\setDate{ 2011/09/19}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -69,12 +69,17 @@ To control HPCToolkit's performance measurement library during an application's 
 
 \begin{itemize}
 \item \verb+HPCRUN_EVENT_LIST=<event1>[@<period1>];...;<eventN>[@<periodN>]+\\
-  Corresponds to \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}'s -e/--event option.
   Sample using \Arg{event1} through \Arg{eventN} using the respective periods.
+  Corresponds to \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}'s -e/--event option.
 
 \item \verb+HPCRUN_TRACE=1+\\
-  Corresponds to \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}'s -t/--trace option.
   Enable tracing.
+  Corresponds to \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}'s -t/--trace option.
+
+\item \verb+HPCRUN_PROCESS_FRACTION=<frac>+\\
+  Measure only a fraction \Arg{frac} of the execution's processses.
+  For each process, enable measurement with probability \Arg{frac}, where \Arg{frac} is a real number (0.10) or a fraction (1/10) between 0 and 1.
+  Corresponds to \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}'s -f/-fp/--process-fraction option.
 
 \item \verb+HPCRUN_OUT_PATH=<outpath>+\\
   Corresponds to \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}'s -o/--output option.
@@ -208,7 +213,7 @@ Version: \Version\ of \Date.
 \section{License and Copyright}
 
 \begin{description}
-\item[Copyright] \copyright\ 2008-2011, Rice University.
+\item[Copyright] \copyright\ 2002-2013, Rice University.
 \item[License] See \File{README.License}.
 \end{description}
 

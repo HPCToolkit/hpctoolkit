@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -57,7 +57,7 @@
 #include <messages/messages.h>
 #include "sample_prob.h"
 
-#define HPCRUN_SAMPLE_PROB  "HPCRUN_SAMPLE_PROB"
+#define HPCRUN_SAMPLE_PROB  "HPCRUN_PROCESS_FRACTION"
 #define DEFAULT_PROB  0.1
 
 #define HASH_PRIME  2001001003

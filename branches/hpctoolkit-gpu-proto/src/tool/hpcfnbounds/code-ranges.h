@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,8 @@ enum DiscoverFnTy {
   DiscoverFnTy_Conservative,
   DiscoverFnTy_None
 };
+
+void code_ranges_reinit();
 
 bool consider_possible_fn_address(void *addr);
 long offset_for_fn(void *addr);

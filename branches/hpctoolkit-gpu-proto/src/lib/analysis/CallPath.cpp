@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -1044,12 +1044,21 @@ makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args)
   // 2. Copy trace files (if necessary)
   Analysis::Util::copyTraceFiles(db_dir, prof.traceFileNameSet());
 
-  // 3. Create 'experiment.xml'
+  // 3. Create 'experiment.xml' file
   string experiment_fnm = db_dir + "/" + args.out_db_experiment;
   std::ostream* os = IOUtil::OpenOStream(experiment_fnm.c_str());
+
+  char* outBuf = new char[HPCIO_RWBufferSz];
+
+  std::streambuf* os_buf = os->rdbuf();
+  os_buf->pubsetbuf(outBuf, HPCIO_RWBufferSz);
+
+  // 4. Write data for 'experiment.xml'
   bool prettyPrint = (Diagnostics_GetDiagnosticFilterLevel() >= 5);
   Analysis::CallPath::write(prof, *os, args.title, prettyPrint);
   IOUtil::CloseStream(os);
+
+  delete[] outBuf;
 }
 
 

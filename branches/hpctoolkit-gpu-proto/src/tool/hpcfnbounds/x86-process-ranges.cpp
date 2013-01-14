@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -48,18 +48,23 @@
  * system include files
  *****************************************************************************/
 
+
 #include <stdio.h>
 #include <assert.h>
 #include <string>
 
+#include <include/hpctoolkit-config.h>
 
 /******************************************************************************
- * XED include files
+ * XED include files, and conditionally the amd extended ops (amd-xop)
  *****************************************************************************/
 
 extern "C" {
 #include <include/hpctoolkit-config.h>
 #include <xed-interface.h>
+#if defined(ENABLE_XOP) && defined (HOST_CPU_x86_64)
+#include "amd-xop.h"
+#endif // ENABLE_XOP
 
 // debug callable routines  -- only callable after xed_tables_init has been called
 // 
@@ -240,7 +245,10 @@ process_range(long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
   char *guidepost = RELOCATE(*fstart, offset);
 
   xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
+
+#ifdef DEBUG
   xed_iclass_enum_t prev_xiclass = XED_ICLASS_INVALID;
+#endif
 
   while (ins < end) {
 
@@ -277,6 +285,17 @@ process_range(long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
     xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
 
     if (xed_error != XED_ERROR_NONE) {
+#if defined(ENABLE_XOP) && defined (HOST_CPU_x86_64)
+      amd_decode_t decode_res;
+      adv_amd_decode(&decode_res, (uint8_t*) ins);
+      if (decode_res.success) {
+	if (decode_res.weak) {
+	  // keep count of successes that are not robust
+	}
+	ins += decode_res.len;
+	continue;
+      }
+#endif // ENABLE_XOP && HOST_CPU_x86_64
       last_bad = ins;
       error_count++; /* note the error      */
       ins++;         /* skip this byte      */
@@ -391,7 +410,10 @@ process_range(long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
     default:
       break;
     }
+
+#ifdef DEBUG
     prev_xiclass = xiclass;
+#endif
 
     ins += xed_decoded_inst_get_length(xptr);
   }
@@ -930,12 +952,16 @@ xed_next(char* ins)
   xed_decoded_inst_t xedd_tmp;
   xed_decoded_inst_t* xptr = &xedd_tmp;
   xed_error_enum_t xed_error;
+  int offset = 0;
 
   xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
   xed_decoded_inst_zero_keep_mode(xptr);
 
   xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
-  return ins + xed_decoded_inst_get_length(xptr);
+  if (xed_error == XED_ERROR_NONE) {
+    offset = xed_decoded_inst_get_length(xptr);
+  }
+  return ins + offset;
 }
 
 static bool
@@ -1288,9 +1314,13 @@ void x86_dump_ins(void *ins)
   xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
   xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
 
-  xed_format_xed(xptr, inst_buf, sizeof(inst_buf), (uint64_t) ins);
-  printf("(%p, %d bytes, %s) %s \n" , ins, xed_decoded_inst_get_length(xptr),
-         xed_iclass_enum_t2str(xed_decoded_inst_get_iclass(xptr)), inst_buf);
+  if (xed_error == XED_ERROR_NONE) {
+    xed_format_xed(xptr, inst_buf, sizeof(inst_buf), (uint64_t) ins);
+    printf("(%p, %d bytes, %s) %s \n" , ins, xed_decoded_inst_get_length(xptr),
+	   xed_iclass_enum_t2str(xed_decoded_inst_get_iclass(xptr)), inst_buf);
+  } else {
+    printf("x86_dump_ins: xed decode addr=%p, error = %d\n", ins, xed_error);
+  }
 }
 
 // #define DEBUG_ADDSUB

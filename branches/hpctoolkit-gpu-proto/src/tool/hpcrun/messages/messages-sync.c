@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -84,10 +84,10 @@
 #include "fname_max.h"
 #include "files.h"
 #include "name.h"
+#include "rank.h"
 #include "thread_data.h"
 #include "thread_use.h"
 #include "monitor.h"
-#include "sample_prob.h"
 
 #include <messages/debug-flag.h>
 #include <messages/messages.h>
@@ -148,23 +148,14 @@ messages_logfile_create()
 {
   if (hpcrun_get_disabled()) return;
 
-  // get name for log file 
-  char log_name[PATH_MAX];
-  files_log_name(log_name, 0, PATH_MAX);
-
   // open log file
-  if (! hpcrun_sample_prob_active()) {
-    // Output files turned off.
-    log_file_fd = open("/dev/null", O_RDWR);
-  }
-  else if (getenv("HPCRUN_LOG_STDERR") != NULL) {
+  if (getenv("HPCRUN_LOG_STDERR") != NULL) {
     // HPCRUN_LOG_STDERR variable set ==> log goes to stderr
     log_file_fd = 2;
   }
   else {
     // Normal case of opening .log file.
-    log_file_fd = open(log_name, O_RDWR | O_CREAT,
-		       S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    log_file_fd = hpcrun_open_log_file();
   }
   if (log_file_fd == -1) {
     log_file_fd = 2; // cannot open log_file ==> revert to stderr
@@ -180,8 +171,9 @@ messages_fini(void)
   if (log_file_fd != 2) {
     int rv = close(log_file_fd);
     if (rv) {
-      static char close_err[] = "An error occurred during the close of the log file! Be warned!\n";
-      write(2, close_err, strlen(close_err));
+      char *mesg = "hpctoolkit warning: unable to access log file "
+                   "(maybe application closed the file descriptor)\n";
+      write(2, mesg, strlen(mesg));
     }
     //----------------------------------------------------------------------
     // if this is an execution of an MPI program, we opened the log file 
@@ -189,13 +181,9 @@ messages_fini(void)
     // missing the MPI rank. fix that now by renaming the log file to what 
     // it should be.
     //----------------------------------------------------------------------
-    int rank = monitor_mpi_comm_rank();
-    if (rank >= 0 && hpcrun_sample_prob_active()) {
-      char old[PATH_MAX];
-      char new[PATH_MAX];
-      files_log_name(old, 0, PATH_MAX);
-      files_log_name(new, rank, PATH_MAX);
-      rename(old, new);
+    int rank = hpcrun_get_rank();
+    if (rank >= 0) {
+      hpcrun_rename_log_file(rank);
     }
   }
 }

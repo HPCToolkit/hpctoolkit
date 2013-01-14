@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -54,6 +54,8 @@
 //*************************** User Include Files ****************************
 
 #include "unwind-cfg.h"
+#include <unwind/common/fence_enum.h>
+#include <utilities/ip-normalized.h>
 
 //*************************** Forward Declarations **************************
 
@@ -87,7 +89,11 @@ typedef struct hpcrun_unw_cursor_t {
 
   void *ra_loc;  // for trampolines
 
+  fence_enum_t fence; // Details on which fence stopped an unwind
+
   UNW_CURSOR_INTERVAL_t intvl;
+
+  ip_normalized_t the_function; // (normalized) ip for function
 
   //NOTE: will fail if HPC_UWN_LITE defined
   ip_normalized_t pc_norm;

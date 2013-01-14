@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -74,23 +74,42 @@ l_insert_path(cct_node_t* node, cct_op_arg_t arg, size_t level)
   cct_node_t** tree = (cct_node_t**) arg;
   *tree = hpcrun_cct_insert_addr(*tree, addr);
 }
+
+//
+// "Special" routine to serve as a placeholder for "idle" resource
+//
+void
+hpcrun_special_idle(void)
+{
+}
+
 //
 // Interface procedures
 //
+
 void
 hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
 {
   bundle->top = hpcrun_cct_new();
   bundle->tree_root = bundle->top;
+
+  bundle->thread_root = bundle->tree_root;
   bundle->ctxt = ctxt;
   bundle->num_nodes = 0;
+  // FIXME: change to omp style here
   //
   // If there is a creation context (ie, this is a pthread),
-  // insert the creation context in the cct, and attach all call paths
+  // then the creation context gets special treatment.
+  //
+  // If the -dd flag ATTACH_THREAD_CTXT is *set*, then
+  // attach all thread-stopped call paths
   // to the call context prefix node instead of the top of the tree.
   //
-  if (ctxt) {
-    hpcrun_walk_path(ctxt->context, l_insert_path, (cct_op_arg_t) &(bundle->tree_root));
+  // By default (ATTACH_THREAD_CTXT is *cleared*), then attach
+  // all thread-stopped call paths to thread root.
+  // 
+  if (ENABLED(ATTACH_THREAD_CTXT) && ctxt) {
+    hpcrun_walk_path(ctxt->context, l_insert_path, (cct_op_arg_t) &(bundle->thread_root));
   }
   bundle->partial_unw_root = hpcrun_cct_new_partial();
 }
@@ -109,6 +128,10 @@ hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl)
   // attach partial unwinds at appointed slot
   //
   hpcrun_cct_insert_node(partial_insert, bndl->partial_unw_root);
+
+  //
+  // 
+  //
 
   // write out newly constructed cct
 

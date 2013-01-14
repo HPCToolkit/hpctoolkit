@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -65,6 +65,12 @@
 #include <fcntl.h>
 #include <setjmp.h>
 #include <signal.h>
+#include <unistd.h>
+
+//*****************************************************************************
+// HPCToolkit Externals Include
+//*****************************************************************************
+#include <libdwarf.h>
 
 //*****************************************************************************
 // local includes
@@ -74,6 +80,8 @@
 #include "process-ranges.h"
 #include "function-entries.h"
 #include "fnbounds-file-header.h"
+#include "server.h"
+#include "syserv-mesg.h"
 #include "Symtab.h"
 #include "Symbol.h"
 
@@ -98,14 +106,13 @@ using namespace SymtabAPI;
 
 #define STRLEN(s) (sizeof(s) - 1)
 
-
+#define DWARF_OK(e) (DW_DLV_OK == (e))
 
 //*****************************************************************************
 // forward declarations
 //*****************************************************************************
 
 static void usage(char *command, int status);
-static void dump_file_info(const char *filename, DiscoverFnTy fn_discovery);
 static void setup_segv_handler(void);
 
 //*****************************************************************************
@@ -115,9 +122,12 @@ static void setup_segv_handler(void);
 // We write() the binary format to a file descriptor and fprintf() the
 // text and classic C formats to a FILE pointer.
 //
+static int   is_server_mode = 0;
 static int   the_binary_fd = -1;
 static FILE *the_c_fp = NULL;
 static FILE *the_text_fp = NULL;
+
+static bool verbose = false; // additional verbosity
 
 static jmp_buf segv_recover; // handle longjmp "restart" from segv
 
@@ -133,12 +143,14 @@ static jmp_buf segv_recover; // handle longjmp "restart" from segv
 // open the files or set to stdout.  We allow multiple formats, but
 // only one to stdout.
 //
+
 int 
 main(int argc, char* argv[])
 {
   DiscoverFnTy fn_discovery = DiscoverFnTy_Aggressive;
   char buf[PATH_MAX], *object_file, *output_dir, *base;
   int num_fmts = 0, do_binary = 0, do_c = 0, do_text = 0;
+  int fdin, fdout;
   int n;
 
   for (n = 1; n < argc; n++) {
@@ -154,16 +166,30 @@ main(int argc, char* argv[])
     else if (strcmp(argv[n], "-h") == 0 || strcmp(argv[n], "--help") == 0) {
       usage(argv[0], 0);
     }
+    else if (strcmp(argv[n], "-s") == 0) {
+      is_server_mode = 1;
+      if (argc < n + 3 || sscanf(argv[n+1], "%d", &fdin) < 1
+	  || sscanf(argv[n+2], "%d", &fdout) < 1) {
+	errx(1, "missing file descriptors for server mode");
+      }
+      n += 2;
+    }
     else if (strcmp(argv[n], "-t") == 0) {
       do_text = 1;
     }
     else if (strcmp(argv[n], "-v") == 0) {
-      // Ignored at this layer, used in hpcfnbounds script.
+      verbose = true;
     }
     else
       break;
   }
   num_fmts = do_binary + do_c + do_text;
+
+  // Run as the system server.
+  if (server_mode()) {
+    system_server(fn_discovery, fdin, fdout);
+    exit(0);
+  }
 
   // Must specify at least the object file.
   if (n >= argc) {
@@ -234,6 +260,13 @@ main(int argc, char* argv[])
 
 
 int
+server_mode(void)
+{
+  return is_server_mode;
+}
+
+
+int
 binary_fmt_fd(void)
 {
   return (the_binary_fd);
@@ -280,6 +313,7 @@ usage(char *command, int status)
     "\t-c\twrite output in C source code\n"
     "\t-d\tdon't perform function discovery on stripped code\n"
     "\t-h\tprint this help message and exit\n"
+    "\t-s fdin fdout\trun in server mode\n"
     "\t-t\twrite output in text format\n"
     "\t-v\tturn on verbose output in hpcfnbounds script\n\n"
     "Multiple output formats (-b, -c, -t) may be specified in one run.\n"
@@ -321,13 +355,21 @@ matches_prefix(string s, const char *pre, int n)
   return strncmp(sc, pre, n) == 0;
 }
 
+#ifdef __PPC64__
+static bool 
+matches_contains(string s, const char *substring)
+{
+  const char *sc = s.c_str();
+  return strstr(sc, substring) != 0;
+}
+#endif
 
 static bool 
 pathscale_filter(Symbol *sym)
 {
   bool result = false;
   // filter out function symbols for exception handlers
-  if (matches_prefix(sym->getName(), 
+  if (matches_prefix(sym->getMangledName(), 
 		     PATHSCALE_EXCEPTION_HANDLER_PREFIX, 
 		     STRLEN(PATHSCALE_EXCEPTION_HANDLER_PREFIX))) 
     result = true;
@@ -357,8 +399,8 @@ code_range_comment(string &name, string section, const char *which)
 static void
 note_code_range(Region *s, long memaddr, DiscoverFnTy discover)
 {
-  char *start = (char *) s->getRegionAddr();
-  char *end = start + s->getRegionSize();
+  char *start = (char *) s->getDiskOffset();
+  char *end = start + s->getDiskSize();
   string ntmp;
   new_code_range(start, end, memaddr, discover);
 
@@ -387,9 +429,83 @@ note_code_ranges(Symtab *syms, DiscoverFnTy fn_discovery)
   note_section(syms, SECTION_FINI, fn_discovery);
 }
 
+// collect function start addresses from eh_frame info
+// (part of the DWARF info)
+// enter these start addresses into the reachable function
+// data structure
+
+static void
+seed_dwarf_info(int dwarf_fd)
+{
+  Dwarf_Debug dbg = NULL;
+  Dwarf_Error err;
+  Dwarf_Handler errhand = NULL;
+  Dwarf_Ptr errarg = NULL;
+
+  // Unless disabled, add eh_frame info to function entries
+  if(getenv("EH_NO")) {
+    close(dwarf_fd);
+    return;
+  }
+
+  if ( ! DWARF_OK(dwarf_init(dwarf_fd, DW_DLC_READ,
+                             errhand, errarg,
+                             &dbg, &err))) {
+    if (verbose) fprintf(stderr, "dwarf init failed !!\n");
+    return;
+  }
+
+  Dwarf_Cie* cie_data = NULL;
+  Dwarf_Signed cie_element_count = 0;
+  Dwarf_Fde* fde_data = NULL;
+  Dwarf_Signed fde_element_count = 0;
+
+  int fres =
+    dwarf_get_fde_list_eh(dbg, &cie_data,
+                          &cie_element_count, &fde_data,
+                          &fde_element_count, &err);
+  if ( ! DWARF_OK(fres)) {
+    if (verbose) fprintf(stderr, "failed to get eh_frame element from DWARF\n");
+    return;
+  }
+
+  for (int i = 0; i < fde_element_count; i++) {
+    Dwarf_Addr low_pc = 0;
+    Dwarf_Unsigned func_length = 0;
+    Dwarf_Ptr fde_bytes = NULL;
+    Dwarf_Unsigned fde_bytes_length = 0;
+    Dwarf_Off cie_offset = 0;
+    Dwarf_Signed cie_index = 0;
+    Dwarf_Off fde_offset = 0;
+
+    int fres = dwarf_get_fde_range(fde_data[i],
+                                   &low_pc, &func_length,
+                                   &fde_bytes,
+                                   &fde_bytes_length,
+                                   &cie_offset, &cie_index,
+                                   &fde_offset, &err);
+    if (fres == DW_DLV_ERROR) {
+      fprintf(stderr, " error on dwarf_get_fde_range\n");
+      return;
+    }
+    if (fres == DW_DLV_NO_ENTRY) {
+      fprintf(stderr, " NO_ENTRY error on dwarf_get_fde_range\n");
+      return;
+    }
+    if(getenv("EH_SHOW")) {
+      fprintf(stderr, " ---potential fn start = %p\n", reinterpret_cast<void*>(low_pc));
+    }
+
+    add_function_entry(reinterpret_cast<void*>(low_pc), NULL, false, 0);
+  }
+  if ( ! DWARF_OK(dwarf_finish(dbg, &err))) {
+    fprintf(stderr, "dwarf finish fails ???\n");
+  }
+  close(dwarf_fd);
+}
 
 static void 
-dump_symbols(Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
+dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
 {
   note_code_ranges(syms, fn_discovery);
 
@@ -402,11 +518,13 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
   for (unsigned int i = 0; i < symvec.size(); i++) {
     Symbol *s = symvec[i];
     Symbol::SymbolLinkage sl = s->getLinkage();
-    if (report_symbol(s) && s->getAddr() != 0) 
-      add_function_entry((void *) s->getAddr(), &s->getName(), 
+    if (report_symbol(s) && s->getOffset() != 0) 
+      add_function_entry((void *) s->getOffset(), &s->getMangledName(), 
 			 ((sl & Symbol::SL_GLOBAL) ||
 			  (sl & Symbol::SL_WEAK)));
   }
+
+  seed_dwarf_info(dwarf_fd);
 
   process_code_ranges();
 
@@ -418,14 +536,14 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
 
 
 static void 
-dump_file_symbols(Symtab *syms, vector<Symbol *> &symvec,
+dump_file_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
 		  DiscoverFnTy fn_discovery)
 {
   if (c_fmt_fp() != NULL) {
     fprintf(c_fmt_fp(), "unsigned long hpcrun_nm_addrs[] = {\n");
   }
 
-  dump_symbols(syms, symvec, fn_discovery);
+  dump_symbols(dwarf_fd, syms, symvec, fn_discovery);
 
   if (c_fmt_fp() != NULL) {
     fprintf(c_fmt_fp(), "};\nunsigned long hpcrun_nm_addrs_len = "
@@ -440,6 +558,11 @@ static void
 dump_header_info(int is_relocatable, uintptr_t ref_offset)
 {
   struct fnbounds_file_header fh;
+
+  if (server_mode()) {
+    syserv_add_header(is_relocatable, ref_offset);
+    return;
+  }
 
   if (binary_fmt_fd() >= 0) {
     memset(&fh, 0, sizeof(fh));
@@ -471,13 +594,13 @@ assert_file_is_readable(const char *filename)
   struct stat sbuf;
   int ret = stat(filename, &sbuf);
   if (ret != 0 || !S_ISREG(sbuf.st_mode)) {
-    fprintf(stderr, "hpcfnbounds: unable to open file %s", filename);
+    fprintf(stderr, "hpcfnbounds: unable to open file: %s\n", filename);
     exit(-1);
   } 
 }
 
 
-static void 
+void 
 dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
 {
   Symtab *syms;
@@ -487,8 +610,17 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
 
   assert_file_is_readable(filename);
 
-  Symtab::openFile(syms, sfile);
+  if ( ! Symtab::openFile(syms, sfile) ) {
+    fprintf(stderr,
+	    "!!! INTERNAL hpcfnbounds-bin error !!!\n"
+	    "  -- file %s is readable, but Symtab::openFile fails !\n",
+	    filename);
+    exit(1);
+  }
   int relocatable = 0;
+
+  // open for dwarf usage
+  int dwarf_fd = open(filename, O_RDONLY);
 
 #ifdef USE_SYMTABAPI_EXCEPTION_BLOCKS 
   //-----------------------------------------------------------------
@@ -519,14 +651,38 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
   }
 #endif // USE_SYMTABAPI_EXCEPTION_BLOCKS 
 
-
   syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
+
+#ifdef __PPC64__
+  {
+    //-----------------------------------------------------------------
+    // collect addresses of trampolines for long distance calls as per
+    // ppc64 abi. empirically, the linker on BG/Q enters these symbols
+    // with the type NOTYPE and a name that contains the substring 
+    // "long_branch"
+    //-----------------------------------------------------------------
+    vector<Symbol *> vec;
+    syms->getAllSymbolsByType(vec, Symbol::ST_NOTYPE);
+    for (unsigned int i = 0; i < vec.size(); i++) {
+      Symbol *s = vec[i];
+      if (matches_contains(s->getMangledName(), "long_branch") && s->getOffset() != 0)
+	add_function_entry((void *) s->getOffset(), &s->getMangledName(), true);
+    }
+  }
+#endif
+
   if (syms->getObjectType() != obj_Unknown) {
-    dump_file_symbols(syms, symvec, fn_discovery);
+    dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery);
     relocatable = syms->isExec() ? 0 : 1;
     image_offset = syms->imageOffset();
   }
   dump_header_info(relocatable, image_offset);
+
+  //-----------------------------------------------------------------
+  // free as many of the Symtab objects as we can
+  //-----------------------------------------------------------------
+
+  close(dwarf_fd);
+
+  Symtab::closeSymtab(syms);
 }
-
-

@@ -84,6 +84,7 @@ am__DEPENDENCIES_1 =
 libHPCprof_lean_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = libHPCprof_lean_la-hpcrun-fmt.lo \
 	libHPCprof_lean_la-hpcfmt.lo libHPCprof_lean_la-hpcio.lo \
+	libHPCprof_lean_la-hpcio-buffer.lo \
 	libHPCprof_lean_la-QueuingRWLock.lo \
 	libHPCprof_lean_la-spinlock.lo \
 	libHPCprof_lean_la-BalancedTree.lo \
@@ -119,11 +120,13 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BOOST_INC = @BOOST_INC@
 CC = @CC@
 CCAS = @CCAS@
 CCASDEPMODE = @CCASDEPMODE@
 CCASFLAGS = @CCASFLAGS@
 CCDEPMODE = @CCDEPMODE@
+CC_PATH = @CC_PATH@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -131,10 +134,10 @@ CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
+CXX_PATH = @CXX_PATH@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
-DLLTOOL = @DLLTOOL@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -159,6 +162,7 @@ HOST_HPCSTRUCT_LDFLAGS = @HOST_HPCSTRUCT_LDFLAGS@
 HOST_LIBTREPOSITORY = @HOST_LIBTREPOSITORY@
 HOST_LINK_NO_START_FILES = @HOST_LINK_NO_START_FILES@
 HOST_XPROF_LDFLAGS = @HOST_XPROF_LDFLAGS@
+HPCLINK_LD_FLAGS = @HPCLINK_LD_FLAGS@
 HPCPROFMPI_LT_LDFLAGS = @HPCPROFMPI_LT_LDFLAGS@
 HPCRUN_LIBCXX_PATH = @HPCRUN_LIBCXX_PATH@
 HPCTOOLKIT_PLATFORM = @HPCTOOLKIT_PLATFORM@
@@ -172,23 +176,29 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBDWARF_COPY = @LIBDWARF_COPY@
+LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_COPY = @LIBELF_COPY@
+LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB = @LIBELF_LIB@
 LIBMONITOR_COPY = @LIBMONITOR_COPY@
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
 LIBMONITOR_RUN_DIR = @LIBMONITOR_RUN_DIR@
+LIBMONITOR_WRAP_NAMES = @LIBMONITOR_WRAP_NAMES@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIBTOOL_DEPS = @LIBTOOL_DEPS@
+LIBUNWIND_COPY = @LIBUNWIND_COPY@
+LIBUNWIND_HPCLINK_LIBS = @LIBUNWIND_HPCLINK_LIBS@
+LIBUNWIND_LIB = @LIBUNWIND_LIB@
+LIBUNWIND_RUN_DIR = @LIBUNWIND_RUN_DIR@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
-MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
 MONITOR = @MONITOR@
 MPICXX = @MPICXX@
@@ -229,9 +239,10 @@ SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 SYMTABAPI_COPY = @SYMTABAPI_COPY@
+SYMTABAPI_COPY_DYN = @SYMTABAPI_COPY_DYN@
 SYMTABAPI_INC = @SYMTABAPI_INC@
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
-SYMTABAPI_RUN_DIR = @SYMTABAPI_RUN_DIR@
+SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 VERSION = @VERSION@
 XED2_COPY = @XED2_COPY@
 XED2_INC = @XED2_INC@
@@ -247,7 +258,6 @@ abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
-ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
@@ -345,6 +355,7 @@ MYSOURCES = \
 	\
 	hpcfmt.h hpcfmt.c \
 	hpcio.h hpcio.c \
+	hpcio-buffer.c \
 	\
 	atomic.h \
 	atomic-op.h atomic-op.i \
@@ -433,6 +444,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-BalancedTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-QueuingRWLock.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcfmt.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcio-buffer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcio.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcrun-fmt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-lush-support.Plo@am__quote@
@@ -479,6 +491,13 @@ libHPCprof_lean_la-hpcio.lo: hpcio.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcio.c' object='libHPCprof_lean_la-hpcio.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-hpcio.lo `test -f 'hpcio.c' || echo '$(srcdir)/'`hpcio.c
+
+libHPCprof_lean_la-hpcio-buffer.lo: hpcio-buffer.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-hpcio-buffer.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-hpcio-buffer.Tpo -c -o libHPCprof_lean_la-hpcio-buffer.lo `test -f 'hpcio-buffer.c' || echo '$(srcdir)/'`hpcio-buffer.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-hpcio-buffer.Tpo $(DEPDIR)/libHPCprof_lean_la-hpcio-buffer.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcio-buffer.c' object='libHPCprof_lean_la-hpcio-buffer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-hpcio-buffer.lo `test -f 'hpcio-buffer.c' || echo '$(srcdir)/'`hpcio-buffer.c
 
 libHPCprof_lean_la-QueuingRWLock.lo: QueuingRWLock.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-QueuingRWLock.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-QueuingRWLock.Tpo -c -o libHPCprof_lean_la-QueuingRWLock.lo `test -f 'QueuingRWLock.c' || echo '$(srcdir)/'`QueuingRWLock.c

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -110,7 +110,7 @@ BalancedTree_init(BalancedTree_t* tree,
   tree->nodeDataSz = nodeDataSz;
 
   QueuingRWLock_init(&tree->lock);
-  tree->spinlock = SPINLOCK_UNLOCKED;
+  spinlock_unlock(&tree->spinlock);
 }
 
 

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -81,7 +81,7 @@ hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
     return ip_norm;
   }
 
-  EMSG("%p not normalizable", unnormalized_ip);
+  TMSG(NORM_IP, "%p not normalizable", unnormalized_ip);
   if (ENABLED(NORM_IP_DBG)){
     EMSG("/proc/maps below");
     char tmp[128];

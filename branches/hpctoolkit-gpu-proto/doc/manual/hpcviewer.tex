@@ -33,44 +33,51 @@ The possible options are as follows:
  \item \texttt{-debug}: Log additional information about plug-in dependency problems.
 \end{itemize}
 
+
 % ===========================================================================
 % ===========================================================================
 
-%% \section{Installing \hpcviewer{}}
+\begin{comment}
+\section{Installing \hpcviewer{}}
 
-%% \subsection{Requirements}
-%% \begin{itemize}
-%%  \item Java Runtime Environment (JRE) 1.5 or greater.
-%%    Use the Sun or IBM version; we have had problems with OpenJDK.
+\subsection{Requirements}
+\begin{itemize}
+ \item Java Runtime Environment (JRE) 1.5 or greater.
+   Use the Oracle or IBM version; we have had problems with OpenJDK.
+   Specifically we recommend Oracle on x86 platforms, and IBM java on POWER.
+   Take special note on POWER systems: we require the 64-bit java, even on a 32-bit
+   platform.
 
-%%  \item On Linux, GTK+ is required.
-%% \end{itemize}
-
-
-%% \subsection{Generic Instructions}
-%% \begin{enumerate}
-%%   \item Download \hpcviewer{} package that is suitable for your platform from 
-%%     \begin{quote}
-%%       \url{https://outreach.scidac.gov/frs/?group\_id=22} 
-%%     \end{quote}
-%%   \item Untar the tarball into a temporary directory (Linux) or an installation directory (Windows and Mac).
-%% \end{enumerate}
+ \item On Linux, GTK+ is required.
+\end{itemize}
 
 
-%% \subsection{Linux-specific Instructions}
+\subsection{Generic Instructions}
+\begin{enumerate}
+  \item Download \hpcviewer{} package that is suitable for your platform from 
+    \begin{quote}
+      \url{https://outreach.scidac.gov/frs/?group\_id=22} 
+    \end{quote}
+  \item Untar the tarball into a temporary directory (Linux) or an installation directory (Windows and Mac).
+\end{enumerate}
 
-%% To install \hpcviewer{} in an \HPCToolkit{} installation, unpack the tarball and execute the following command:
-%% \begin{quote}
-%% \begin{verbatim}
-%%   ./<hpcviewer>/install <install-path>
-%% \end{verbatim}
-%% \end{quote}
-%% Here, \mytt{<hpcviewer>} is the directory created by unpacking the tarball; and 
-%% \mytt{<install-path>} is the same directory passed to the \texttt{--prefix} option of \HPCToolkit{}'s \texttt{configure} script.
 
-%% Typically one compiles and installs \HPCToolkit{} before installing \hpcviewer{}, but this is not necessary.
-%% Note, however, that if \hpcviewer{} is installed first, the \mytt{install} script will issue a warning and request confirmation.
+\subsection{Linux-specific Instructions}
 
+To install \hpcviewer{} in an \HPCToolkit{} installation, unpack the tarball and execute the following command:
+\begin{quote}
+\begin{verbatim}
+  ./<hpcviewer>/install [-j <path-to-java>] <install-path>
+\end{verbatim}
+\end{quote}
+Here, \mytt{<hpcviewer>} is the directory created by unpacking the tarball; and 
+\mytt{<install-path>} is the same directory passed to the \texttt{--prefix} option of \HPCToolkit{}'s \texttt{configure} script.
+The optional \mytt{-j} flag configures the java to be used with \mytt{<hpcviewer>}. If the \mytt{-j} flag is unspecified,
+then the java found on the path will be used.
+
+Typically one compiles and installs \HPCToolkit{} before installing \hpcviewer{}, but this is not necessary.
+Note, however, that if \hpcviewer{} is installed first, the \mytt{install} script will issue a warning and request confirmation.
+\end{comment}
 
 % ===========================================================================
 % ===========================================================================
@@ -138,6 +145,7 @@ We briefly describe the role of each pane.
 % ==========================================================
 
 \subsection{Source pane}
+\label{sec:pane-source}
 
 The source pane displays the source code associated with the current entity selected in the navigation pane.
 When a performance database is first opened with \hpcviewer{}, the source pane is initially blank because no entity has been selected in the navigation pane.
@@ -154,9 +162,6 @@ Entities that occur in the navigation pane's tree include load modules, files, p
 Selecting any of these entities will cause its corresponding source code (if any) to be displayed in the source pane.
 One can reveal or conceal children in this hierarchy by `opening' or `closing' any non-leaf (\ie{}, individual source line) entry in this view.
 
-%% Within a view, a user may order program scopes by sorting them using any performance metric.
-%% \hpcviewer{} supports several convenient operations to facilitate analysis: revealing a \emph{hot path} within the hierarchy below a scope; \emph{flattening} one or more levels of the static hierarchy, \eg, to facilitate comparison of costs between loops in different procedures; and \emph{zooming} to focus on a particular scope and its children.
-
 The nature of the entities in the navigation pane's tree structure depends upon whether one is exploring the Calling Context View, the Callers View, or the Flat View of the performance data.
 \begin{itemize}
 \item In the \textbf{Calling Context View}, entities in the navigation tree represent procedure activations, inlined code, loops, and source lines.
@@ -168,6 +173,7 @@ The nature of the entities in the navigation pane's tree structure depends upon 
 \item In the \textbf{Flat View}, entities in the navigation tree correspond to source files, procedure call sites (which are rendered the same way as procedure activations), loops, and source lines.
 \end{itemize}
 
+\subsubsection{Navigation control}
 
 The header above the navigation pane contains some controls for the navigation and metric view.
 In Figure~\ref{fig:hpcviewer-legend}, they are labeled as ``navigation/metric control.''
@@ -220,10 +226,28 @@ Increasing or decreasing the size of the navigation and metric panes.
 
 \end{itemize}
 
+
+\subsubsection{Context menus}
+\begin{figure}
+\centering{\includegraphics[width=3in]{fig/hpcviewer-menu-context-sensitive.png}}
+\caption{Context menu in the navigation pane: activated by clicking the right-button of the mouse.}
+\label{fig:hpcviewer-menu-context}
+\end{figure}
+Navigation control also provides several context menus by clicking the right-button of the mouse. As shown in Figure~\ref{fig:hpcviewer-menu-context}, the menus are:
+\begin{itemize}
+ \item \textbf{Zoom-in/out}: Carrying out exactly the same as action as the Zoom-in/out in the navigation control.
+ \item \textbf{Copy}: Copying into clipboard the selected line in navigation pane which includes the name of the node in the tree, and the values of visible metrics in metric pane (Section ~\ref{sec:pane-metric}). The values of hidden metrics will not be copied.
+ \item \textbf{Show ...}: Showing the source code file and highlighting the specified line in (Section Source pane~\ref{sec:pane-source}). If the file doesn't exist, the menu is disabled.
+ \item \textbf{Callsite ...}: Showing the source code file and highlighting the specified line of the call site. This menu only available in Calling Context View. If the file doesn't exist, the menu is disabled.
+ \item \textbf{Graph ...}: Showing the graph (plot, sorted plot or histogram) of metric values of the selected node in CCT for all processes or threads (Section~\ref{sec:hpcviewer:plots}). This menu is only available if the database is generated by \texttt{hpcprof-mpi} instead of \texttt{hpcprof}. 
+\end{itemize}
+
+
 % ==========================================================
 % ==========================================================
 
 \subsection{Metric pane}
+\label{sec:pane-metric}
 
 The metric pane displays one or more performance metrics associated with entities to the left in the navigation pane.
 Entities in the tree view of the navigation pane are sorted at each level of the hierarchy by the metric in the selected column.
@@ -449,14 +473,21 @@ The window has two main parts:
   For instance, the function \texttt{avg()} which computes the average of some metrics, need to have two arguments.
 \end{itemize}
 
-\item \textbf{Options}:
+\item \textbf{Advanced options}:
 \begin{itemize}
 
-\item \textit{Display the metric percentage}.
+\item \textit{Augment metric value display with a percentage relative to column total}.
   When this box is checked, each scope's derived metric value will be augmented with a percentage value, which for scope \textit{s} is computed as the 100 * (\textit{s}'s derived metric value) / (the derived metric value computed by applying the metric formula to the aggregate values of the input metrics) the entire execution).
   Such a computation can lead to nonsensical results for some derived metric formulae.
   For instance, if the derived metric is computed as a ratio of two other metrics, the aforementioned computation that compares the scope's ratio with the ratio for the entire program won't yield a meaningful result.
   To avoid a confusing metric display, think before you use this button to annotate a metric with its percent of total.
+
+\item \textit{Default format}. This option will set the metric value with a scientific notation format which is the default format.
+
+\item \textit{Display metric value as percent}. This option will set the metric value with percent format. For instance, if the metric has a value 12.345678, with this option, it's displayed as 12.34\%.
+
+\item \textit{Custom format}. This option will set the metric value with your customized format. The format is equivalent to Java's Formatter class, or similar to C's printf format. For example, the format "\texttt{\%6.2f}" will display 6 digit floating-points with 2 digit precision.
+
 \end{itemize}
 
 \end{itemize}
@@ -567,7 +598,7 @@ For the metric pane, \hpcviewer{} has some convenient features:
   If it would be more convenient to have columns displayed in a different order, they can be permuted as you wish.
   Depress and hold the mouse button over the header of column that you wish to move and drag the column right or left to its new position.
 
-\item Copying selected metrics into clipboard.
+\item \textbf{Copying selected metrics into clipboard}.
   In order to copy selected lines of scopes/metrics, one can right click on the metric pane or navigation pane then select the menu \textbf{Copy}.
   The copied metrics can then be pasted into any text editor.
 
@@ -610,10 +641,23 @@ This menu includes several menu items for controlling basic viewer operations.
   Open a new \hpcviewer{} window that is independent from the existing one.
 
 \item \textbf{Open database...}
-  Load a performance database into the current \hpcviewer{} window.
+  Load a performance database into the current \hpcviewer{} window. 
+Currently \hpcviewer{} restricts maximum of five database open at a time. 
+If you want to display more than five, you need to close an existing open database first.
+
+\item \textbf{Close database...}
+  Unloading one of more open performance database.
+
+\item \textbf{Merge database...}
+  Merging two database that are currently in the viewer. If \hpcviewer{} has more than two
+open database, then you need to choose which database you want to merge.
+Currently \hpcviewer{} doesn't support storing a merged database into a file.
 
 \item \textbf{Preferences...}
   Display the settings dialog box.
+
+\item \textbf{Close window}
+  Closing the current window. If there is only one window, then this menu will also exit \hpcviewer{} application.
 
 \item \textbf{Exit}
   Quit the \hpcviewer{} application.
@@ -623,11 +667,21 @@ This menu includes several menu items for controlling basic viewer operations.
 % ==========================================================
 % ==========================================================
 
-\subsection{Debug}
+\subsection{View}
+All actions in this menu are intended primarily for tool developer use. 
+By default, the menu is hidden. Once you open a database, the menu is then shown.
 
-This menu enables one to request display of \HPCToolkit{}'s raw XML representation for performance data.
-(This operation is intended primarily for tool developer use.)
+\begin{itemize}
+ \item \textbf{Show database raw's XML}
+ Enable one to request display of \HPCToolkit{}'s raw XML representation for performance data.
 
+ \item \textbf{Show CCT label}
+ Display calling context ID for each node in the tree.
+
+ \item \textbf{Show flat label}
+ Display static ID for each node in the tree.
+
+\end{itemize}
 % ==========================================================
 % ==========================================================
 

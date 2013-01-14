@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,8 +44,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//
-//
 
 #ifndef THREAD_DATA_H
 #define THREAD_DATA_H
@@ -54,9 +52,11 @@
 // (there is just 1 thread).
 
 #include <setjmp.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "sample_sources_registered.h"
 #include "newmem.h"
@@ -67,6 +67,7 @@
 #include <unwind/common/backtrace.h>
 
 #include <lib/prof-lean/hpcio.h>
+#include <lib/prof-lean/hpcio-buffer.h>
 
 typedef struct {
   sigjmp_buf jb;
@@ -107,9 +108,6 @@ typedef struct {
          trace_file
          hpcrun_file
 
-    suspend_sample
-       Stands on its own
-
     lushPthr_t
        lush items can stand alone
 
@@ -124,6 +122,8 @@ typedef struct thread_data_t {
   // ----------------------------------------
   int id;
 
+  int idle; // indicate whether the thread is idle
+
   // ----------------------------------------
   // hpcrun_malloc() memory data structures
   // ----------------------------------------
@@ -133,8 +133,12 @@ typedef struct thread_data_t {
   // ----------------------------------------
   // sample sources
   // ----------------------------------------
-  int            eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
   source_state_t ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
+  source_info_t  ss_info[MAX_POSSIBLE_SAMPLE_SOURCES];
+
+  struct sigevent sigev;   // POSIX real-time timer
+  timer_t        timerid;
+  bool           timer_init;
 
   uint64_t       last_time_us; // microseconds
 
@@ -180,6 +184,7 @@ typedef struct thread_data_t {
   bool    tramp_present;   // TRUE if a trampoline installed; FALSE otherwise
   void*   tramp_retn_addr; // return address that the trampoline replaced
   void*   tramp_loc;       // current (stack) location of the trampoline
+  size_t  cached_frame_count; // (sanity check) length of cached frame list
   frame_t* cached_bt;         // the latest backtrace (start)
   frame_t* cached_bt_end;     // the latest backtrace (end)
   frame_t* cached_bt_buf_end; // the end of the cached backtrace buffer
@@ -194,10 +199,6 @@ typedef struct thread_data_t {
   int              handling_sample;
   int              splay_lock;
   int              fnbounds_lock;
-
-  // stand-alone flag to suspend sampling during some synchronous
-  // calls to an hpcrun mechanism
-  int              suspend_sampling;
 
   // ----------------------------------------
   // Logical unwinding
@@ -214,35 +215,56 @@ typedef struct thread_data_t {
   // IO support
   // ----------------------------------------
   FILE* hpcrun_file;
-  FILE* trace_file;
   void* trace_buffer;
+  hpcio_outbuf_t trace_outbuf;
 
   // ----------------------------------------
   // debug stuff
   // ----------------------------------------
   bool debug1;
 
+  // ----------------------------------------
+  // miscellaneous
+  // ----------------------------------------
+  // Set to 1 while inside hpcrun code for safe sampling.
+  int inside_hpcrun;
+
+  // True if this thread is inside dlopen or dlclose.  A synchronous
+  // override that is called from dlopen (eg, malloc) must skip this
+  // sample or else deadlock on the dlopen lock.
+  bool inside_dlfcn;
+
 } thread_data_t;
+
 
 static const size_t HPCRUN_TraceBufferSz = HPCIO_RWBufferSz;
 
+
+void hpcrun_init_pthread_key(void);
+void hpcrun_set_thread0_data(void);
+void hpcrun_set_thread_data(thread_data_t *td);
+
+
 #define TD_GET(field) hpcrun_get_thread_data()->field
 
-extern thread_data_t *(*hpcrun_get_thread_data)(void);
-extern bool          (*hpcrun_td_avail)(void);
+extern thread_data_t* (*hpcrun_get_thread_data)(void);
+extern bool           (*hpcrun_td_avail)(void);
 
-thread_data_t *hpcrun_allocate_thread_data(void);
-void           hpcrun_init_pthread_key(void);
+void hpcrun_unthreaded_data(void);
+void hpcrun_threaded_data(void);
 
+
+thread_data_t*
+hpcrun_allocate_thread_data(void);
+
+void
+hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child);
+
+
+void     hpcrun_cached_bt_adjust_size(size_t n);
 frame_t* hpcrun_expand_btbuf(void);
-void           	hpcrun_ensure_btbuf_avail(void);
-void           	hpcrun_set_thread_data(thread_data_t *td);
-void           	hpcrun_set_thread0_data(void);
-void           	hpcrun_unthreaded_data(void);
-void           	hpcrun_threaded_data(void);
+void     hpcrun_ensure_btbuf_avail(void);
 
-void           hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child);
-void           hpcrun_cached_bt_adjust_size(size_t n);
 
 // utilities to match previous api
 #define hpcrun_get_epoch()  TD_GET(epoch)

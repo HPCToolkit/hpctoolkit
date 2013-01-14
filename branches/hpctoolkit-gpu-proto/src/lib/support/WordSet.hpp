@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -88,7 +88,7 @@ public:
   WordSet& operator-=(const WordSet &rhs); // difference
   WordSet& operator=(const WordSet &rhs);  // copy
   
-  HashTable::NumberOfEntries;
+  using HashTable::NumberOfEntries;
   
   void Dump(std::ostream& file = std::cerr, 
 	    const char* name = "", 
@@ -119,8 +119,8 @@ public:
   WordSetIterator(const WordSet *theTable);
   virtual ~WordSetIterator() { }
   unsigned long *Current() const;
-  HashTableIterator::operator++;
-  HashTableIterator::Reset;
+  using HashTableIterator::operator++;
+  using HashTableIterator::Reset;
 };
 
 //-------------------------------------------------------------
@@ -132,8 +132,8 @@ public:
                         EntryCompareFunctPtr const EntryCompare);
   virtual ~WordSetSortedIterator() { }
   unsigned long *Current() const;
-  HashTableSortedIterator::operator++;
-  HashTableSortedIterator::Reset;
+  using HashTableSortedIterator::operator++;
+  using HashTableSortedIterator::Reset;
   
 private:
   unsigned long current;  

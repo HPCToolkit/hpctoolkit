@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -213,7 +213,7 @@ dump_ui(unwind_interval *u, int dump_to_stderr)
   char buf[1000];
   _dump_ui_str(u, buf, sizeof(buf));
 
-  PMSG(UNW, buf);
+  TMSG(UNW, buf);
   if (dump_to_stderr) { 
     fprintf(stderr, "%s", buf);
     fflush(stderr);
@@ -248,7 +248,7 @@ dump_ui_troll(unwind_interval *u)
 
   _dump_ui_str(u, buf, sizeof(buf));
 
-  PMSG_LIMIT(TMSG(TROLL,buf));
+  TMSG(TROLL,buf);
 }
 
 /*************************************************************************************

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -406,8 +406,10 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   if (MYDBG) { ui_dump(UI_ARG(intvl)); }
 }
 
+// --FIXME--: add advanced fence processing and enclosing function to cursor here
+//
 
-int 
+oint 
 hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 {
   // current frame:

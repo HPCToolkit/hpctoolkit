@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -87,22 +87,31 @@ OSUtil_pid()
 }
 
 
-const char* 
+const char*
 OSUtil_jobid()
 {
   char* jid = NULL;
 
-  jid = getenv("COBALT_JOBID"); /* check for Cobalt job id */
+  // Cobalt
+  jid = getenv("COBALT_JOBID");
   if (jid) {
     return jid;
   }
 
-  jid = getenv("PBS_JOBID"); /* check for PBS job id */
+  // PBS
+  jid = getenv("PBS_JOBID");
   if (jid) {
     return jid;
   }
 
-  jid = getenv("JOB_ID"); /* check for Sun Grid Engine job id */
+  // SLURM
+  jid = getenv("SLURM_JOB_ID");
+  if (jid) {
+    return jid;
+  }
+
+  // Sun Grid Engine
+  jid = getenv("JOB_ID");
   if (jid) {
     return jid;
   }

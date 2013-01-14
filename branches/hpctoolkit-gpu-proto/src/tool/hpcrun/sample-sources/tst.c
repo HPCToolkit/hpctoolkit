@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -80,6 +80,7 @@
 #include <hpcrun/hpcrun_stats.h>
 
 #include <hpcrun/metrics.h>
+#include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/thread_data.h>
@@ -325,9 +326,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   if (more_tok()) {
     EMSG("MULTIPLE _TST events detected! Using first event spec: %s");
   }
-  // 
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->eventSet[self->evset_idx] = 0xDEAD;
 }
 
 //
@@ -379,9 +377,10 @@ METHOD_FN(display_events)
 static int
 _tst_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
-  // Must check for async block first and avoid any MSG if true.
+  // If the interrupt came from inside our code, then drop the sample
+  // and return and avoid any MSG.
   void* pc = hpcrun_context_pc(context);
-  if (hpcrun_async_is_blocked(pc)) {
+  if (! hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
   }
   else {

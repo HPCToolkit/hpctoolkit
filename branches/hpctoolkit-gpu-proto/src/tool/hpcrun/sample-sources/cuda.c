@@ -130,7 +130,13 @@ METHOD_FN(init)
 {
   PAPI_set_debug(0x3ff);
 
+  // PAPI_library_init spawns threads yields DEADLOCK !!!
+  // --- Ignore new threads for init call ---
+  //
+  monitor_disable_new_threads();
   int ret = PAPI_library_init(PAPI_VER_CURRENT);
+  monitor_enable_new_threads();
+
   TMSG(CUDA,"PAPI_library_init = %d", ret);
   TMSG(CUDA,"PAPI_VER_CURRENT =  %d", PAPI_VER_CURRENT);
   if (ret != PAPI_VER_CURRENT){
@@ -225,6 +231,13 @@ METHOD_FN(stop)
 static void
 METHOD_FN(shutdown)
 {
+  int thr_id = TD_GET(id);
+  EEMSG("CUDA/PAPI shutdown from thread %d", thr_id);
+  if (thr_id != 0) {
+    EMSG("Shutdown op for cuda sample source called from thread %d", thr_id);
+    return;
+  }
+
   METHOD_CALL(self, stop); // make sure stop has been called
 
   thread_data_t *td = hpcrun_get_thread_data();
@@ -506,6 +519,3 @@ hpcrun_cuda_kernel_callback(void *userdata,
     TMSG(CUDA,"unblocked async event in CUDA event handler");
   }
 }
-
-
-

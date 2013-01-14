@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -82,7 +82,7 @@
 #include <utilities/arch/mcontext.h>
 
 #include <lib/isa-lean/power/instruction-set.h>
-
+#include <unwind/common/fence_enum.h>
 
 //***************************************************************************
 // forward declarations
@@ -95,10 +95,18 @@ typedef enum {
   UnwFlg_StackTop,
 } unw_flag_t;
 
+static fence_enum_t
+hpcrun_check_fence(void* ip);
 
 //***************************************************************************
 // interface functions
 //***************************************************************************
+
+static bool
+fence_stop(fence_enum_t fence)
+{
+  return (fence == FENCE_MAIN) || (fence == FENCE_THREAD);
+}
 
 void
 hpcrun_unw_init(void)
@@ -144,7 +152,7 @@ hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c, ip_normalized_t* reg_value)
 
 
 int
-hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, void** reg_value)
+hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, unw_word_t* reg_value)
 {
   return hpcrun_unw_get_unnorm_reg(c, UNW_REG_IP, reg_value);
 }
@@ -200,9 +208,13 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 }
 
 
+// --FIXME--: add advanced fence processing and enclosing function to cursor here
+//
+
 int 
 hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 {
+
   // current frame
   void*  pc = cursor->pc_unnorm;
   void** sp = cursor->sp;
@@ -225,6 +237,9 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   }
 
   
+  cursor->fence = hpcrun_check_fence(cursor->pc_unnorm);
+
+#if 0
   //-----------------------------------------------------------
   // check for outermost frame (return STEP_STOP only after outermost
   // frame has been identified as valid)
@@ -233,12 +248,21 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
     TMSG(UNW, "stop: monitor_in_start_func_wide, pc=%p", pc);
     return STEP_STOP;
   }
-  
-  if ((void*)sp >= monitor_stack_bottom()) {
-    TMSG(UNW, "stop: sp (%p) >= unw_stack_bottom", sp);
+#endif  
+  //-----------------------------------------------------------
+  // check if we have reached the end of our unwind, which is
+  // demarcated with a fence. 
+  //-----------------------------------------------------------
+  if (fence_stop(cursor->fence)) {
+    TMSG(UNW,"unw_step: STEP_STOP, current pc in monitor fence pc=%p\n", cursor->pc_unnorm);
     return STEP_STOP;
   }
 
+  if ((void*)sp >= monitor_stack_bottom()) {
+    TMSG(FENCE_UNW, "stop: sp (%p) >= unw_stack_bottom", sp);
+    cursor->fence = FENCE_MAIN;
+    return STEP_STOP;
+  }
 
   //-----------------------------------------------------------
   // compute SP (stack pointer) for the caller's frame.  Do this first
@@ -260,7 +284,9 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
     nxt_sp = *sp;
   }
   else {
-    assert(0);
+    // assert(0);
+    EMSG("unwind failure computing SP at pc: %p, sp: %p", pc, sp);
+    return STEP_ERROR;
   }
 
 
@@ -280,7 +306,9 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
     nxt_pc = getNxtPCFromSP(nxt_sp);
   }
   else {
-    assert(0);
+    // assert(0);
+    EMSG("unwind failure computing RA at pc: %p, sp: %p", pc, sp);
+    return STEP_ERROR;
   }
 
 
@@ -345,4 +373,18 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   cursor->flags     = UnwFlg_NULL;
 
   return STEP_OK;
+}
+
+static fence_enum_t
+hpcrun_check_fence(void* ip)
+{
+  fence_enum_t rv = FENCE_NONE;
+  if (monitor_unwind_process_bottom_frame(ip))
+    rv = FENCE_MAIN;
+  else if (monitor_unwind_thread_bottom_frame(ip))
+    rv = FENCE_THREAD;
+
+   if (ENABLED(FENCE_UNW) && rv != FENCE_NONE)
+     TMSG(FENCE_UNW, "%s", fence_enum_name(rv));
+   return rv;
 }

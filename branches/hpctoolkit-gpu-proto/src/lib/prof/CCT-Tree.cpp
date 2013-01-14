@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -132,7 +132,7 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
   
   // -------------------------------------------------------
   // Merge pre-condition: both x and y should be "locally merged",
-  // i.e. they should be equal except for metrics and children.
+  // i.e., the nodes themselves should be equal (modulo metrics & children)
   // -------------------------------------------------------
   bool isPrecondition = false;
   if (typeid(*x_root) == typeid(CCT::Root)
@@ -162,7 +162,7 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
   // -------------------------------------------------------
 
   if (!m_mergeCtxt) {
-    bool doTrackCPIds = !metadata()->traceFileNameSet().empty();
+    bool doTrackCPIds = !x->metadata()->traceFileNameSet().empty();
     m_mergeCtxt = new MergeContext(x, doTrackCPIds);
   }
   m_mergeCtxt->flags(mrgFlag);
@@ -170,7 +170,7 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
   MergeEffectList* mrgEffects =
     x_root->mergeDeep(y_root, x_newMetricBegIdx, *m_mergeCtxt, oFlag);
 
-  DIAG_If(0) {
+  DIAG_If(0 /*public diag level*/) {
     verifyUniqueCPIds();
   }
 

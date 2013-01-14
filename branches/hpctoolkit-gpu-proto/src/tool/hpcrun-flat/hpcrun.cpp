@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -422,7 +422,7 @@ list_available_events_helper(Args::EventList_t listType)
   os << "Nodes in this System    : " << hwinfo->nnodes << "\n";
   os << "Total CPU's             : " << hwinfo->totalcpus << "\n";
   os << "Number Hardware Counters: " << dl_PAPI_get_opt(PAPI_MAX_HWCTRS, NULL) << "\n";
-  os << "Max Multiplex Counters  : " << PAPI_MPX_DEF_DEG << "\n";
+  os << "Max Multiplex Counters  : " << dl_PAPI_get_opt(PAPI_MAX_MPX_CTRS, NULL) << "\n";
   os << SEPARATOR_MAJOR;
 
   // -------------------------------------------------------
