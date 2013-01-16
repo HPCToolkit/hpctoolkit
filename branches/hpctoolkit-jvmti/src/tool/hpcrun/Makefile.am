@@ -301,7 +301,8 @@ endif
 
 if OPT_ENABLE_JAVA
 MY_BASE_FILES +=  			\
-	fnbounds/fnbounds_java.c
+	fnbounds/fnbounds_java.c	\
+	java/jmt.c
 endif
 
 MY_DYNAMIC_FILES = 			\
@@ -364,7 +365,8 @@ MY_INCLUDE_DIRS =			\
 
 if OPT_ENABLE_JAVA
 MY_INCLUDE_DIRS +=  			\
-	-I$(top_srcdir)/src/tool/hpcjava
+	-I$(top_srcdir)/src/tool/hpcjava \
+	-I$(top_srcdir)/src/lib/prof-lean
 endif
 
 MY_MIPS_INCLUDE_DIRS = \
