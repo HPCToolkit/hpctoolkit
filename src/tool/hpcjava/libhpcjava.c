@@ -64,6 +64,7 @@
 #include "safe-sampling.h"
 
 #include "opagent.h"
+#include "java/jmt.h"
 
 // this is a temporary constant to path to oprofile
 // it'll be replaced by configure's variable in the future
@@ -217,6 +218,8 @@ cb_compiled_method_load(jvmtiEnv * jvmti,
   	if (!hpcrun_safe_enter()) {
     		return;
   	}
+
+	jmt_add_java_method(method, code_addr);
 
 	/* 
  	 * check if we can access to functions in hpcrun.so
@@ -373,11 +376,6 @@ static void JNICALL cb_dynamic_code_generated(jvmtiEnv * jvmti_env,
 	const void *code_addr_end = code_addr + code_size;
 	hpcjava_add_address_interval(code_addr, code_addr_end);
 
-	if (debug) {
-		if (strcmp("Interpreter",name) == 0)
-		fprintf(stderr, "dyncode: name=%s, addr=%p, size=%i \n",
-			name, code_addr, code_size); 
-	}
 	if (op_write_native_code(agent_hdl, name,
                                  (uint64_t)(uintptr_t) code_addr,
                                  code_addr, code_size))

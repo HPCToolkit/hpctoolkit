@@ -92,10 +92,12 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @OPT_ENABLE_MPI_WRAP_TRUE@	sample-sources/mpi.c
 
 @OPT_ENABLE_JAVA_TRUE@am__append_10 = \
-@OPT_ENABLE_JAVA_TRUE@	fnbounds/fnbounds_java.c
+@OPT_ENABLE_JAVA_TRUE@	fnbounds/fnbounds_java.c	\
+@OPT_ENABLE_JAVA_TRUE@	java/jmt.c
 
 @OPT_ENABLE_JAVA_TRUE@am__append_11 = \
-@OPT_ENABLE_JAVA_TRUE@	-I$(top_srcdir)/src/tool/hpcjava
+@OPT_ENABLE_JAVA_TRUE@	-I$(top_srcdir)/src/tool/hpcjava \
+@OPT_ENABLE_JAVA_TRUE@	-I$(top_srcdir)/src/lib/prof-lean
 
 
 #-----------------------------------------------------------
@@ -304,7 +306,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	utilities/executable-path.c utilities/ip-normalized.h \
 	utilities/ip-normalized.c utilities/tokenize.h \
 	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	sample-sources/mpi.c fnbounds/fnbounds_java.c \
+	sample-sources/mpi.c fnbounds/fnbounds_java.c java/jmt.c \
 	fnbounds/fnbounds_client.c fnbounds/fnbounds_dynamic.c \
 	monitor-exts/openmp.c hpcrun_dlfns.c custom-init-dynamic.c \
 	os/linux/dylib.c unwind/common/default_validation_summary.c \
@@ -335,7 +337,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c \
 	utilities/last_func.c
 @OPT_ENABLE_MPI_WRAP_TRUE@am__objects_7 = libhpcrun_la-mpi.lo
-@OPT_ENABLE_JAVA_TRUE@am__objects_8 = libhpcrun_la-fnbounds_java.lo
+@OPT_ENABLE_JAVA_TRUE@am__objects_8 = libhpcrun_la-fnbounds_java.lo \
+@OPT_ENABLE_JAVA_TRUE@	libhpcrun_la-jmt.lo
 am__objects_9 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-disabled.lo libhpcrun_la-cct_insert_backtrace.lo \
 	libhpcrun_la-env.lo libhpcrun_la-epoch.lo \
@@ -484,7 +487,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	utilities/executable-path.c utilities/ip-normalized.h \
 	utilities/ip-normalized.c utilities/tokenize.h \
 	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	sample-sources/mpi.c fnbounds/fnbounds_java.c \
+	sample-sources/mpi.c fnbounds/fnbounds_java.c java/jmt.c \
 	fnbounds/fnbounds_static.c custom-init-static.c \
 	unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
@@ -515,7 +518,8 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	utilities/last_func.c
 @OPT_ENABLE_MPI_WRAP_TRUE@am__objects_31 = libhpcrun_o-mpi.$(OBJEXT)
 @OPT_ENABLE_JAVA_TRUE@am__objects_32 =  \
-@OPT_ENABLE_JAVA_TRUE@	libhpcrun_o-fnbounds_java.$(OBJEXT)
+@OPT_ENABLE_JAVA_TRUE@	libhpcrun_o-fnbounds_java.$(OBJEXT) \
+@OPT_ENABLE_JAVA_TRUE@	libhpcrun_o-jmt.$(OBJEXT)
 am__objects_33 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-main.$(OBJEXT) libhpcrun_o-disabled.$(OBJEXT) \
 	libhpcrun_o-cct_insert_backtrace.$(OBJEXT) \
@@ -1578,6 +1582,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-io.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ip-normalized.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-itimer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-jmt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-last_func.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-libunw-unwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-loadmap.Plo@am__quote@
@@ -1674,6 +1679,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ip-normalized.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-itimer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-jmt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-last_func.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-libunw-unwind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-loadmap.Po@am__quote@
@@ -2347,6 +2353,13 @@ libhpcrun_la-fnbounds_java.lo: fnbounds/fnbounds_java.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fnbounds/fnbounds_java.c' object='libhpcrun_la-fnbounds_java.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-fnbounds_java.lo `test -f 'fnbounds/fnbounds_java.c' || echo '$(srcdir)/'`fnbounds/fnbounds_java.c
+
+libhpcrun_la-jmt.lo: java/jmt.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-jmt.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-jmt.Tpo -c -o libhpcrun_la-jmt.lo `test -f 'java/jmt.c' || echo '$(srcdir)/'`java/jmt.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-jmt.Tpo $(DEPDIR)/libhpcrun_la-jmt.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='java/jmt.c' object='libhpcrun_la-jmt.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-jmt.lo `test -f 'java/jmt.c' || echo '$(srcdir)/'`java/jmt.c
 
 libhpcrun_la-fnbounds_client.lo: fnbounds/fnbounds_client.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-fnbounds_client.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-fnbounds_client.Tpo -c -o libhpcrun_la-fnbounds_client.lo `test -f 'fnbounds/fnbounds_client.c' || echo '$(srcdir)/'`fnbounds/fnbounds_client.c
@@ -3467,6 +3480,20 @@ libhpcrun_o-fnbounds_java.obj: fnbounds/fnbounds_java.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fnbounds/fnbounds_java.c' object='libhpcrun_o-fnbounds_java.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-fnbounds_java.obj `if test -f 'fnbounds/fnbounds_java.c'; then $(CYGPATH_W) 'fnbounds/fnbounds_java.c'; else $(CYGPATH_W) '$(srcdir)/fnbounds/fnbounds_java.c'; fi`
+
+libhpcrun_o-jmt.o: java/jmt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-jmt.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-jmt.Tpo -c -o libhpcrun_o-jmt.o `test -f 'java/jmt.c' || echo '$(srcdir)/'`java/jmt.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-jmt.Tpo $(DEPDIR)/libhpcrun_o-jmt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='java/jmt.c' object='libhpcrun_o-jmt.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-jmt.o `test -f 'java/jmt.c' || echo '$(srcdir)/'`java/jmt.c
+
+libhpcrun_o-jmt.obj: java/jmt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-jmt.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-jmt.Tpo -c -o libhpcrun_o-jmt.obj `if test -f 'java/jmt.c'; then $(CYGPATH_W) 'java/jmt.c'; else $(CYGPATH_W) '$(srcdir)/java/jmt.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-jmt.Tpo $(DEPDIR)/libhpcrun_o-jmt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='java/jmt.c' object='libhpcrun_o-jmt.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-jmt.obj `if test -f 'java/jmt.c'; then $(CYGPATH_W) 'java/jmt.c'; else $(CYGPATH_W) '$(srcdir)/java/jmt.c'; fi`
 
 libhpcrun_o-fnbounds_static.o: fnbounds/fnbounds_static.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-fnbounds_static.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-fnbounds_static.Tpo -c -o libhpcrun_o-fnbounds_static.o `test -f 'fnbounds/fnbounds_static.c' || echo '$(srcdir)/'`fnbounds/fnbounds_static.c

@@ -71,7 +71,8 @@
 #include "fnbounds_java.h"
 #include "safe-sampling.h"
 
-#include "java_asgct.h"
+#include "java/java_asgct.h"
+#include "java/jmt.h"
 
 
 #define UI_TREE_JAVA_LOCK  do {	 \
@@ -221,8 +222,12 @@ hpcjava_get_async_call_trace(void **callstack, int count)
       int i;
       for (i=0; i<trace.num_frames; i++)
       {
-	if (trace.frames[i].method_id != NULL && trace.frames[i].lineno>=0)
-	  TMSG(JAVA, "%d l. %d: %p", i, trace.frames[i].lineno, trace.frames[i].method_id);
+	if (trace.frames[i].method_id != NULL && trace.frames[i].lineno>=0) {
+	  jlocation start, end;
+	  jvmtiError err = (*java_jvmti)->GetMethodLocation(java_jvmti, trace.frames[i].method_id, &start, &end);
+	  //void *addr = jmt_get_address(trace.frames[i].method_id);
+	  TMSG(JAVA, "%d.  %d: %p (%p)", i, err, trace.frames[i].method_id, start);
+	}
       }
     } else
     {
@@ -243,7 +248,7 @@ static jvmtiFrameInfo java_frames[JAVA_MAX_FRAMES];
  * return the current call strack of the current thread
  */
 static int
-hpjava_get_call_trace(void **callstack, int count)
+hpcjava_get_call_trace(void **callstack, int count)
 {
   jvmtiError err;
   
@@ -283,17 +288,10 @@ hpcjava_get_interval(void *addr)
   interval_tree_node *p = interval_tree_lookup(&ui_tree_root, addr);
   if (p != NULL) {
     void *bt;
-    /************* hpcrun critical section ************/
-    /*if (!hpcrun_safe_enter()) {
-        return;
-     } */
 
     hpcjava_get_async_call_trace(&bt, 20);
 
     TMSG(JAVA, "found in Java unwind tree: addr %p", addr);
-
-    /************* end hpcrun critical section ************/
-    //hpcrun_safe_exit();
   }
   return (splay_interval_t *)p;
 }
