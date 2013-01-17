@@ -1,0 +1,79 @@
+Laksono's patch to opjitconv to take the file name as a command-line
+argument instead of always in /tmp.
+
+Usage: opjitconv file-name start-time end-time
+
+
+diff -Naurb oprofile-0.9.8.orig/libopagent/opagent.c oprofile-0.9.8/libopagent/opagent.c
+--- oprofile-0.9.8.orig/libopagent/opagent.c	2012-08-27 13:59:14.000000000 -0500
++++ oprofile-0.9.8/libopagent/opagent.c	2013-01-16 14:50:35.000000000 -0600
+@@ -122,19 +122,18 @@
+ 
+ #define MSG_MAXLEN 20
+ 
+-op_agent_t op_open_agent(void)
++op_agent_t op_open_agent(const char *dump_path)
+ {
+ 	char pad_bytes[7] = {0, 0, 0, 0, 0, 0, 0};
+ 	int pad_cnt;
+-	char dump_path[PATH_MAX];
+ 	char err_msg[PATH_MAX + 16];
+ 	struct stat dirstat;
+-	int rc;
+ 	struct jitheader header;
+ 	int fd;
+ 	struct timeval tv;
+ 	FILE * dumpfile = NULL;
+ 
++#if 0
+ 	rc = stat(AGENT_DIR, &dirstat);
+ 	if (rc || !S_ISDIR(dirstat.st_mode)) {
+ 		if (!rc)
+@@ -146,6 +145,7 @@
+ 		return NULL;
+ 	}
+ 	snprintf(dump_path, PATH_MAX, "%s/%i.dump", AGENT_DIR, getpid());
++#endif
+ 	snprintf(err_msg, PATH_MAX + 16, "Error opening %s\n", dump_path);
+ 	// make the dump file only accessible for the user for security reason.
+ 	fd = creat(dump_path, S_IRUSR|S_IWUSR);
+diff -Naurb oprofile-0.9.8.orig/libopagent/opagent.h oprofile-0.9.8/libopagent/opagent.h
+--- oprofile-0.9.8.orig/libopagent/opagent.h	2012-08-27 13:59:14.000000000 -0500
++++ oprofile-0.9.8/libopagent/opagent.h	2013-01-16 14:50:35.000000000 -0600
+@@ -51,7 +51,7 @@
+  * Returns a valid op_agent_t handle or NULL.  If NULL is returned, errno
+  * is set to indicate the nature of the error.
+  **/
+-op_agent_t op_open_agent(void);
++op_agent_t op_open_agent(const char *dump_path);
+ 
+ /**
+  * Frees all resources and closes open file handles.
+diff -Naurb oprofile-0.9.8.orig/opjitconv/opjitconv.c oprofile-0.9.8/opjitconv/opjitconv.c
+--- oprofile-0.9.8.orig/opjitconv/opjitconv.c	2012-08-27 13:59:15.000000000 -0500
++++ oprofile-0.9.8/opjitconv/opjitconv.c	2013-01-16 14:50:35.000000000 -0600
+@@ -755,6 +755,8 @@
+ 
+ int main(int argc, char ** argv)
+ {
++	struct op_jitdump_info dump_info;
++	char elf_file[PATH_MAX];
+ 	unsigned long long start_time, end_time;
+ 	char const * session_dir;
+ 	int rc = 0;
+@@ -807,6 +809,15 @@
+ 		rc = EXIT_FAILURE;
+ 		goto out;
+ 	}
++
++	/* hpcrun: convert JIT to .jo file and exit. */
++	rc = mmap_jitdump(argv[1], &dump_info);
++	if (rc == OP_JIT_CONV_OK) {
++		snprintf(elf_file, PATH_MAX, "%s.jo", argv[1]);
++		rc = op_jit_convert(dump_info, elf_file, start_time, end_time);
++	}
++	_exit(rc);
++
+ 	verbprintf(debug, "start time/end time is %llu/%llu\n",
+ 		   start_time, end_time);
+ 	rc = op_process_jit_dumpfiles(session_dir, start_time, end_time);
