@@ -101,13 +101,17 @@ PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
 SYMTABAPI_INC =  @SYMTABAPI_INC@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
+OPROFILE_IFLAGS = @OPROFILE_IFLAGS@
+OPROFILE_LDFLAGS = @OPROFILE_LDFLAGS@
+OPROFILE_LDLIBS = @OPROFILE_LDLIBS@
+OPROFILE_BIN = @OPROFILE_BIN@
 
 MY_DYNAMIC_FILES = 					\
 	libhpcjava.c		
 
 
 MY_INCLUDE_DIRS =					\
-	-I/home/la5/pkgs/externals/oprofile/include/		\
+	$(OPROFILE_IFLAGS)				\
         -I$(top_srcdir)/src/tool/			\
         -I$(top_srcdir)/src/tool/hpcrun        		\
         -I$(top_srcdir)/src/tool/hpcrun/messages        \
@@ -122,7 +126,6 @@ libhpcjava_la_SOURCES = 			\
 	$(MY_DYNAMIC_FILES)
 
 libhpcjavaself_la_SOURCES = 			\
-	hpcrun_dummy.c				\
 	$(MY_DYNAMIC_FILES)
 
 
@@ -142,10 +145,11 @@ libhpcjavaself_la_CPPFLAGS =			\
 #-----------------------------------------------------------
 # cflags
 #-----------------------------------------------------------
+OPROFILE_BIN_FLAG = -DOP_BINDIR="$(OPROFILE_BIN)"
 
-libhpcjava_la_CFLAGS = -I/home/la5/pkgs/externals/oprofile/include/ $(CFLAGS) $(HOST_CFLAGS)
+libhpcjava_la_CFLAGS = $(OPROFILE_IFLAGS) $(CFLAGS) $(HOST_CFLAGS) $(OPROFILE_BIN_FLAG)
 
-libhpcjavaself_la_CFLAGS = -I/home/la5/pkgs/externals/oprofile/include/ $(CFLAGS) $(HOST_CFLAGS)
+libhpcjavaself_la_CFLAGS = $(OPROFILE_IFLAGS) $(CFLAGS) $(HOST_CFLAGS) $(OPROFILE_BIN_FLAG)
 
 
 #-----------------------------------------------------------
@@ -154,9 +158,9 @@ libhpcjavaself_la_CFLAGS = -I/home/la5/pkgs/externals/oprofile/include/ $(CFLAGS
 
 #libhpcjava_la_LDFLAGS = -Wl,-Bsymbolic	\
 #	-Wl,--strip-debug -lopagent
-libhpcjava_la_LDFLAGS = -lopagent
+libhpcjava_la_LDFLAGS = $(OPROFILE_LDFLAGS) $(OPROFILE_LDLIBS)
 
-libhpcjavaself_la_LDFLAGS = -lopagent
+libhpcjavaself_la_LDFLAGS = $(OPROFILE_LDFLAGS) $(OPROFILE_LDLIBS)
 
 ############################################################
 # Install
