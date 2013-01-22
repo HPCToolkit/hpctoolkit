@@ -933,7 +933,7 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
 			    uint mBegId, uint mEndId)
 {
   // N.B. pre-order walk assumes point-wise metrics
-  // Cf. CCT::ANode::computeMetrics() && computeMetricsItrv().
+  // Cf. Prof::CCT::ANode::computeMetrics() && computeMetricsIncr().
 
   Prof::Struct::Root* strct = structure.root();
   uint numMetrics = m_mMgr.size();
