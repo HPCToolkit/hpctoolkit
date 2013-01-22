@@ -307,7 +307,7 @@ makeMetrics(Prof::CallPath::Profile& prof,
   // -------------------------------------------------------
   // compute derived metrics
   // -------------------------------------------------------
-  cctRoot->computeMetrics(mMgr, mDrvdBeg, mDrvdEnd);
+  cctRoot->computeMetrics(mMgr, mDrvdBeg, mDrvdEnd, /*doFinal*/false);
 
   for (uint i = mDrvdBeg; i < mDrvdEnd; ++i) {
     Prof::Metric::ADesc* m = mMgr.metric(i);
