@@ -223,10 +223,11 @@ hpcjava_get_async_call_trace(void **callstack, int count)
       for (i=0; i<trace.num_frames; i++)
       {
 	if (trace.frames[i].method_id != NULL && trace.frames[i].lineno>=0) {
-	  jlocation start, end;
-	  jvmtiError err = (*java_jvmti)->GetMethodLocation(java_jvmti, trace.frames[i].method_id, &start, &end);
-	  //void *addr = jmt_get_address(trace.frames[i].method_id);
-	  TMSG(JAVA, "%d.  %d: %p (%p)", i, err, trace.frames[i].method_id, start);
+	  //jlocation start, end;
+	  //jvmtiError err = (*java_jvmti)->GetMethodLocation(java_jvmti, trace.frames[i].method_id, &start, &end);
+	  //TMSG(JAVA, "%d.  %d: %p (%p)", i, err, trace.frames[i].method_id, start);
+	  void *addr = jmt_get_address(trace.frames[i].method_id);
+	  TMSG(JAVA, "%d  : %p (%p)", i, trace.frames[i].method_id, addr);
 	}
       }
     } else
@@ -247,6 +248,8 @@ static jvmtiFrameInfo java_frames[JAVA_MAX_FRAMES];
  * Synchronous Java get call stack
  * return the current call strack of the current thread
  */
+
+#if 0
 static int
 hpcjava_get_call_trace(void **callstack, int count)
 {
@@ -271,7 +274,7 @@ hpcjava_get_call_trace(void **callstack, int count)
   }
   return err;
 }
-
+#endif
 
 
 /*
@@ -354,18 +357,18 @@ hpcjava_addr_to_interval_locked(const void *addr_start, const void *addr_end)
 
   /* create an interval address node */
   p = hpcjava_ui_malloc(sizeof(interval_tree_node));
-  p->start  = addr_start;
-  p->end    = addr_end;
+  p->start  = (void*) addr_start;
+  p->end    = (void*) addr_end;
   p->lm     = lm_java;
 
   /* adjust the load module bound */
   dso_info_t *dso = lm_java->dso_info;
 
   if ( (dso->end_addr == 0) ||dso->end_addr < addr_end)
-	 dso->end_addr = addr_end;
+	 dso->end_addr = p->end;
 
   if ( (dso->start_addr == 0) || (dso->start_addr > addr_start) )
-	 dso->start_addr = addr_start;
+	 dso->start_addr = p->start;
 
   if (interval_tree_insert(&ui_tree_root, p) != 0) {
       TMSG(JAVA, "BAD unwind_java interval [%p, %p) insert failed",

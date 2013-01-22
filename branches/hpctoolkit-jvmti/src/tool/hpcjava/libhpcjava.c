@@ -66,10 +66,8 @@
 #include "opagent.h"
 #include "java/jmt.h"
 
-// this is a temporary constant to path to oprofile
-// it'll be replaced by configure's variable in the future
-#define OP_BINDIR "/home/la5/pkgs/externals/oprofile/bin"
-
+#define OPROFILE_CMD_ENV "HPCRUN_OPJIT_CONV"
+	
 static int debug = 0;
 static int can_get_line_numbers = 1;
 
@@ -393,17 +391,16 @@ static void JNICALL cb_dynamic_code_generated(jvmtiEnv * jvmti_env,
 int
 libhpcjava_fini()
 {
-	char opjitconv_path[PATH_MAX + 1];
-        const char * jitconv_pgm = "opjitconv";
 	char end_time_str[32], start_time_str[32];
 	char * exec_args[8];
 	int arg_num;
+	char *jitconv_pgm = "opjitconv";
 
         struct timeval time_end;
         pid_t childpid;
 
  	childpid = fork();
-	if (childpid == 0) {
+ 	if (childpid == 0) {
         	gettimeofday(&time_end, NULL);
 		sprintf(end_time_str, "%llu", time_end.tv_sec);
 		sprintf(start_time_str, "%llu", time_start.tv_sec);
@@ -411,20 +408,24 @@ libhpcjava_fini()
 		if (debug)
         		printf("Time range jvmti: %d - %d \n", time_start.tv_sec, time_end.tv_sec );
 
-		sprintf(opjitconv_path, "%s/%s", OP_BINDIR, jitconv_pgm);
-		arg_num = 0;
-		exec_args[arg_num++] = (char *) jitconv_pgm;
-		exec_args[arg_num++] = (char *) file_dump;
-        	exec_args[arg_num++] = start_time_str;
-        	exec_args[arg_num++] = end_time_str;
-        	exec_args[arg_num] = (char *) NULL;
+		char *oprofile_cmd = getenv(OPROFILE_CMD_ENV);
+		if (oprofile_cmd != NULL) {
+		  arg_num = 0;
+		  exec_args[arg_num++] = (char *) jitconv_pgm;
+		  exec_args[arg_num++] = (char *) file_dump;
+        	  exec_args[arg_num++] = start_time_str;
+        	  exec_args[arg_num++] = end_time_str;
+        	  exec_args[arg_num] = (char *) NULL;
 
-		execvp(opjitconv_path, exec_args);
+		  if (debug)
+			printf("executing %s .... \n", oprofile_cmd);
+		  execvp(oprofile_cmd, exec_args);
+		}
 	} 
 	else if (childpid == -1) {
         	fprintf(stderr, "Failed to exec %s: %s\n",
                  	jitconv_pgm, strerror(errno));
-	}
+	} 
 }
 
 /***
