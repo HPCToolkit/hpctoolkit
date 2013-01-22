@@ -639,6 +639,10 @@ OPT_ENABLE_HPCRUN_FALSE
 OPT_ENABLE_HPCRUN_TRUE
 OPT_ENABLE_HPCRUN_FLAT_FALSE
 OPT_ENABLE_HPCRUN_FLAT_TRUE
+OPROFILE_LDLIBS
+OPROFILE_LDFLAGS
+OPROFILE_IFLAGS
+OPROFILE_BIN
 OPT_JAVA_IFLAGS
 OPT_WITH_JAVA_FALSE
 OPT_WITH_JAVA_TRUE
@@ -17819,6 +17823,34 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_WITH_JAVA}" >&5
 $as_echo "${OPT_WITH_JAVA}" >&6; }
+
+#-------------------------------------------------
+# checking for oprofile in externals
+#-------------------------------------------------
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking oprofile in externals" >&5
+$as_echo_n "checking oprofile in externals... " >&6; }
+
+if test "${OPT_WITH_JAVA}" = "yes" -a "${OPROFILE}" = no; then
+  as_fn_error $? "Java support requested but oprofile directory is invalid!" "$LINENO" 5
+fi
+
+OPROFILE=no
+if test "$use_externals" = yes ; then
+  OPROFILE="$ext_oprofile_prefix"
+fi
+
+OPROFILE_BIN="${OPROFILE}/bin"
+OPROFILE_IFLAGS="-I${OPROFILE}/include"
+OPROFILE_LDFLAGS="-L${OPROFILE}/lib"
+OPROFILE_LDLIBS="-lopagent"
+
+
+
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPROFILE}" >&5
+$as_echo "${OPROFILE}" >&6; }
 
 #-------------------------------------------------
 # enable-hpcrun-flat: Only build hpcrun if on Linux and PAPI is present

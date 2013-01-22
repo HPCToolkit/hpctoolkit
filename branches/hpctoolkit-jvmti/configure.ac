@@ -1627,6 +1627,32 @@ AC_SUBST([OPT_JAVA_IFLAGS])
 AC_MSG_RESULT([${OPT_WITH_JAVA}])
 
 #-------------------------------------------------
+# checking for oprofile in externals
+#-------------------------------------------------
+AC_MSG_CHECKING([oprofile in externals])
+
+if test "${OPT_WITH_JAVA}" = "yes" -a "${OPROFILE}" = no; then
+  AC_MSG_ERROR([Java support requested but oprofile directory is invalid!])
+fi
+
+OPROFILE=no
+if test "$use_externals" = yes ; then
+  OPROFILE="$ext_oprofile_prefix"
+fi
+
+OPROFILE_BIN="${OPROFILE}/bin"
+OPROFILE_IFLAGS="-I${OPROFILE}/include"
+OPROFILE_LDFLAGS="-L${OPROFILE}/lib"
+OPROFILE_LDLIBS="-lopagent"
+
+AC_SUBST([OPROFILE_BIN])
+AC_SUBST([OPROFILE_IFLAGS])
+AC_SUBST([OPROFILE_LDFLAGS])
+AC_SUBST([OPROFILE_LDLIBS])
+
+AC_MSG_RESULT([${OPROFILE}])
+
+#-------------------------------------------------
 # enable-hpcrun-flat: Only build hpcrun if on Linux and PAPI is present
 #-------------------------------------------------
 
