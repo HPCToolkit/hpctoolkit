@@ -223,11 +223,13 @@ hpcjava_get_async_call_trace(void **callstack, int count)
       for (i=0; i<trace.num_frames; i++)
       {
 	if (trace.frames[i].method_id != NULL && trace.frames[i].lineno>=0) {
-	  //jlocation start, end;
-	  //jvmtiError err = (*java_jvmti)->GetMethodLocation(java_jvmti, trace.frames[i].method_id, &start, &end);
-	  //TMSG(JAVA, "%d.  %d: %p (%p)", i, err, trace.frames[i].method_id, start);
 	  void *addr = jmt_get_address(trace.frames[i].method_id);
-	  TMSG(JAVA, "%d  : %p (%p)", i, trace.frames[i].method_id, addr);
+	  if (addr != NULL) 
+	  {
+	    TMSG(JAVA, "jmt %d  : %p (%p)", i, trace.frames[i].method_id, addr);
+	  } else {
+	    TMSG(JAVA, "jmt nf %d: %p", i, trace.frames[i].method_id);
+	  }
 	}
       }
     } else

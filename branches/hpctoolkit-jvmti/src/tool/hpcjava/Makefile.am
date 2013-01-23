@@ -98,7 +98,7 @@ libhpcjava_la_CPPFLAGS = 		\
 	-I$(HPCRUN_SRCDIR)/messages	\
 	-I$(HPCRUN_SRCDIR)/unwind/common  \
 	-I$(HPCRUN_SRCDIR)/unwind/generic-libunwind \
-	$(LIBMONITOR_INC)	\
+	-I$(LIBMONITOR_INC)	\
 	$(OPT_LIBUNWIND_IFLAGS)	\
 	$(OPROFILE_IFLAGS)	\
 	$(JAVA_IFLAGS)

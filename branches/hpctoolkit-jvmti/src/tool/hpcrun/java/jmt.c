@@ -61,9 +61,19 @@ struct java_method_node_s {
 
 static struct java_method_node_s *root = NULL;
 
+
+static struct java_method_node_s*
+jmt_get_node(struct java_method_node_s *root, jmethodID method)
+{
+    REGULAR_SPLAY_TREE(java_method_node_s, root, method, method, left, right);
+    return root;
+}
+
+
 static struct java_method_node_s*
 jmt_insert_method(jmethodID method, void *addr_start, struct java_method_node_s *node)
 {
+   root = jmt_get_node( node, method );
    if (root == NULL) {
       node->left  = NULL;
       node->right = NULL;
@@ -81,13 +91,6 @@ jmt_insert_method(jmethodID method, void *addr_start, struct java_method_node_s 
     return node;
 }
 
-static struct java_method_node_s*
-jmt_get_node(struct java_method_node_s *root, jmethodID method)
-{
-    REGULAR_SPLAY_TREE(java_method_node_s, root, method, method, left, right);
-    return root;
-}
-
 ///////////////////////////////////////////////////////////////////////////
 // interface
 ///////////////////////////////////////////////////////////////////////////
@@ -96,7 +99,7 @@ void *
 jmt_get_address(jmethodID method)
 {
     struct java_method_node_s *r = jmt_get_node(root, method);
-    if (r != NULL)
+    if (r != NULL && r->method==method)
 	return r->addr_start;
     return NULL;
 }
@@ -105,7 +108,10 @@ void
 jmt_add_java_method(jmethodID method, const void *address)
 {
     struct java_method_node_s *n = hpcrun_malloc(sizeof(struct java_method_node_s));
+    n->method = method;
+    n->addr_start = address;
+
     if (n != NULL)
-       jmt_insert_method(method, address, n);
-    TMSG(JAVA, "jmt add %p addr: %p -> %p", method, address, n);
+       root = jmt_insert_method(method, address, n);
+    TMSG(JAVA, "jmt add mt: %p addr: %p r: %p", method, address, root);
 }
