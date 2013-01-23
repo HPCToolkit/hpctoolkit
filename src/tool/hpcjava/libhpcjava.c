@@ -66,7 +66,17 @@
 #include "opagent.h"
 #include "java/jmt.h"
 
+/**
+ * Name of the environment variable that stores the absolute path of opjitconv
+ * This variable should be set by hpcrun script (or manually)
+ **/
 #define OPROFILE_CMD_ENV "HPCRUN_OPJIT_CONV"
+
+/**
+ * Flag whether we want to fork the execution of opjitconv or not
+ * For debugging purpose, we may need to avoid the fork 
+ **/
+#define HPCJAVA_FORK_OPJITCONV 1
 	
 static int debug = 0;
 static int can_get_line_numbers = 1;
@@ -156,6 +166,13 @@ cb_class_load(jvmtiEnv *_jvmti_env,
 	      jthread _thread,
 	      jclass _klass)
 {
+  /************* hpcrun critical section ************/
+  if (!hpcrun_safe_enter()) {
+    return ;
+  }
+	
+  /************* end hpcrun critical section ************/
+  hpcrun_safe_exit();
 }
 
 /**
@@ -172,6 +189,11 @@ cb_class_prepare(jvmtiEnv *je,
 		 jthread thread,
 		 jclass klass)
 {
+  /************* hpcrun critical section ************/
+  if (!hpcrun_safe_enter()) {
+    return ;
+  }
+
   // We need to do this to "prime the pump",
   // as it were -- make sure that all of the
   // methodIDs have been initialized internally,
@@ -185,6 +207,9 @@ cb_class_prepare(jvmtiEnv *je,
   (*je)->GetClassMethods(je, klass, &method_count, &methods);
  
   free(methods);
+	
+  /************* end hpcrun critical section ************/
+  hpcrun_safe_exit();
 }
 
 /*
@@ -386,7 +411,8 @@ static void JNICALL cb_dynamic_code_generated(jvmtiEnv * jvmti_env,
 /***
  * Call by hpcrun before its termination
  * 
- *
+ * It will call opjitconv to convert the dumped Java's compiled code
+ *  into a .so file (named .jo file)
  */
 int
 libhpcjava_fini()
@@ -403,6 +429,8 @@ libhpcjava_fini()
   childpid = fork();
   if (childpid == 0) {
 #endif
+    // opjitconv requires the range of the time
+    // so we provide the time from VM Load and VM Unload
     gettimeofday(&time_end, NULL);
     sprintf(end_time_str, "%llu", time_end.tv_sec);
     sprintf(start_time_str, "%llu", time_start.tv_sec);
@@ -421,6 +449,7 @@ libhpcjava_fini()
 
       if (debug)
 	printf("executing %s .... \n", oprofile_cmd);
+
       execvp(oprofile_cmd, exec_args);
     }
 #if HPCJAVA_FORK_OPJITCONV
@@ -592,6 +621,16 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
 }
 
 
+/*****
+ * Agent_OnUnload: This is called immediately before the shared library is unloaded
+ *
+ * This function will be called by the VM when the library is about to be unloaded. 
+ * The library will be unloaded and this function will be called if 
+ *  some platform specific mechanism causes the unload 
+ *  (an unload mechanism is not specified in this document) or the library is (in effect) 
+ *  unloaded by the termination of the VM whether through normal termination or VM failure, 
+ *  including start-up failure. Uncontrolled shutdown is, of couse, an exception to this rule. 
+ */
 JNIEXPORT void JNICALL Agent_OnUnload(JavaVM * jvm)
 {
   /************* hpcrun critical section ************/
