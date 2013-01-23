@@ -56,15 +56,22 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
+// rank and thread information 
 #include "thread_data.h"
 #include "rank.h"
 
+// hpcrun specific headers
 #include "files.h"
 #include <fnbounds/fnbounds_java.h>
 #include "safe-sampling.h"
+#include "disabled.h"
 
+// java and oprofile headers
 #include "opagent.h"
 #include "java/jmt.h"
+
+// monitor's real functions
+#include <monitor.h>
 
 /**
  * Name of the environment variable that stores the absolute path of opjitconv
@@ -414,7 +421,7 @@ static void JNICALL cb_dynamic_code_generated(jvmtiEnv * jvmti_env,
  * It will call opjitconv to convert the dumped Java's compiled code
  *  into a .so file (named .jo file)
  */
-int
+void
 libhpcjava_fini()
 {
   char end_time_str[32], start_time_str[32];
@@ -426,17 +433,23 @@ libhpcjava_fini()
 #if HPCJAVA_FORK_OPJITCONV
   pid_t childpid;
 
-  childpid = fork();
+  childpid = monitor_real_fork();
   if (childpid == 0) {
+    //
+    //  child process: disable profiling, dup the log file fd onto
+    //  stderr and exec hpcfnbounds in server mode.
+    //         
 #endif
+    hpcrun_set_disabled();
+
     // opjitconv requires the range of the time
     // so we provide the time from VM Load and VM Unload
     gettimeofday(&time_end, NULL);
-    sprintf(end_time_str, "%llu", time_end.tv_sec);
-    sprintf(start_time_str, "%llu", time_start.tv_sec);
+    sprintf(end_time_str, "%ld", time_end.tv_sec);
+    sprintf(start_time_str, "%ld", time_start.tv_sec);
 
     if (debug)
-      printf("Time range jvmti: %d - %d \n", time_start.tv_sec, time_end.tv_sec );
+      printf("Time range jvmti: %ld - %ld \n", time_start.tv_sec, time_end.tv_sec );
 
     char *oprofile_cmd = getenv(OPROFILE_CMD_ENV);
     if (oprofile_cmd != NULL) {
@@ -450,7 +463,7 @@ libhpcjava_fini()
       if (debug)
 	printf("executing %s .... \n", oprofile_cmd);
 
-      execvp(oprofile_cmd, exec_args);
+      monitor_real_execve(oprofile_cmd, exec_args, exec_args);
     }
 #if HPCJAVA_FORK_OPJITCONV
   } 
