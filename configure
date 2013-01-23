@@ -639,15 +639,9 @@ OPT_ENABLE_HPCRUN_FALSE
 OPT_ENABLE_HPCRUN_TRUE
 OPT_ENABLE_HPCRUN_FLAT_FALSE
 OPT_ENABLE_HPCRUN_FLAT_TRUE
-OPROFILE_LDLIBS
-OPROFILE_LDFLAGS
-OPROFILE_IFLAGS
-OPROFILE_BIN
-OPT_JAVA_IFLAGS
-OPT_WITH_JAVA_FALSE
-OPT_WITH_JAVA_TRUE
 OPT_ENABLE_JAVA_FALSE
 OPT_ENABLE_JAVA_TRUE
+JAVA_IFLAGS
 XERCES_LIB
 XERCES_COPY
 XERCES_LDLIBS
@@ -672,6 +666,10 @@ OPT_PAPI_STATIC_FALSE
 OPT_PAPI_STATIC_TRUE
 OPT_PAPI_DYNAMIC_FALSE
 OPT_PAPI_DYNAMIC_TRUE
+OPROFILE_COPY
+OPROFILE_IFLAGS
+OPROFILE_LIB
+OPROFILE_BIN
 OA_LDFLAGS
 OA_IFLAGS
 OPT_INSTALL_MONITOR
@@ -887,6 +885,7 @@ with_libmonitor
 with_libunwind
 with_monitor
 with_open_analysis
+with_oprofile
 with_papi
 with_symtabAPI
 with_xed2
@@ -1590,6 +1589,7 @@ Optional Packages:
   --with-monitor=PATH     use given (old) libmonitor installation
   --with-open-analysis=PATH
                           use given OpenAnalysis installation
+  --with-oprofile=PATH    path to oprofile install directory
   --with-papi=PATH        use given PAPI installation (absolute path) with
                           hpcrun (default is NO)
   --with-symtabAPI=PATH   path to symtabAPI install directory
@@ -17444,6 +17444,62 @@ $as_echo "${OA}" >&6; }
 
 
 #-------------------------------------------------
+# Option: --with-oprofile=PATH
+#-------------------------------------------------
+
+OPROFILE=no
+if test "$use_externals" = yes ; then
+  OPROFILE="$ext_oprofile_prefix"
+fi
+
+
+# Check whether --with-oprofile was given.
+if test "${with_oprofile+set}" = set; then :
+  withval=$with_oprofile; OPROFILE="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for oprofile" >&5
+$as_echo_n "checking for oprofile... " >&6; }
+
+OPROFILE_BIN=
+OPROFILE_LIB=
+OPROFILE_IFLAGS=
+OPROFILE_COPY=no
+
+case "$OPROFILE" in
+  /* )
+    if test ! -f "${OPROFILE}/include/opagent.h" ; then
+      as_fn_error $? "invalid oprofile directory: $OPROFILE" "$LINENO" 5
+    fi
+    if test -f "${OPROFILE}/lib/libopagent.so" ; then
+      OPROFILE_LIB="${OPROFILE}/lib"
+    elif test -f "${OPROFILE}/lib/oprofile/libopagent.so" ; then
+      OPROFILE_LIB="${OPROFILE}/lib/oprofile"
+    else
+      as_fn_error $? "invalid oprofile directory: $OPROFILE" "$LINENO" 5
+    fi
+    OPROFILE_BIN="${OPROFILE}/bin"
+    OPROFILE_IFLAGS="-I${OPROFILE}/include"
+    OPROFILE_COPY=yes
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "oprofile directory must be absolute path: $OPROFILE" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $OPROFILE" >&5
+$as_echo "$OPROFILE" >&6; }
+
+
+
+
+
+
+
+#-------------------------------------------------
 # with-papi
 #-------------------------------------------------
 
@@ -17745,65 +17801,46 @@ $as_echo "${XERCES}" >&6; }
 #-------------------------------------------------
 # with-java: option to build hpcjava
 #-------------------------------------------------
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build hpcrun for Java programs" >&5
-$as_echo_n "checking whether to build hpcrun for Java programs... " >&6; }
-OPT_WITH_JAVA=no
-OPT_CILK_ROOT=
+
+JAVA=no
+OPT_ENABLE_JAVA=no
 
 
 # Check whether --with-java was given.
 if test "${with_java+set}" = set; then :
-  withval=$with_java; if test $withval != no; then
-     OPT_WITH_JAVA=yes
-     OPT_JAVA_ROOT=${withval}
-   else
-     OPT_WITH_JAVA=no
-   fi
+  withval=$with_java; JAVA="$withval"
 fi
 
 
-OPT_JAVA_IFLAGS="-I${OPT_JAVA_ROOT}/include -I${OPT_JAVA_ROOT}/include/linux"
-OPT_ENABLE_JAVA=no
-if test "${OPT_WITH_JAVA}" != "no" ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether can compile jvmti code with CFLAGS='$OPT_JAVA_IFLAGS'" >&5
-$as_echo_n "checking whether can compile jvmti code with CFLAGS='$OPT_JAVA_IFLAGS'... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for java" >&5
+$as_echo_n "checking for java... " >&6; }
 
-  ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
+JAVA_IFLAGS=
 
-  CFLAGS="$CFLAGS $OPT_JAVA_IFLAGS"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <jvmti.h>
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ans=yes
-else
-  ans=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+case "$JAVA" in
+  /* )
+    if test ! -f "${JAVA}/include/jvmti.h" ; then
+      as_fn_error $? "invalid java directory: $JAVA" "$LINENO" 5
+    fi
+    if test "$OPROFILE" = no ; then
+      as_fn_error $? "java support requires oprofile" "$LINENO" 5
+    fi
+    OPT_ENABLE_JAVA=yes
+    JAVA_IFLAGS="-I${JAVA}/include -I${JAVA}/include/linux"
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "java directory must be absolute path: $JAVA" "$LINENO" 5
+    ;;
+esac
 
-  OPT_ENABLE_JAVA=$ans
-  ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_JAVA} (request: ${OPT_WITH_JAVA})" >&5
-$as_echo "${OPT_ENABLE_JAVA} (request: ${OPT_WITH_JAVA})" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $JAVA" >&5
+$as_echo "$JAVA" >&6; }
 
 
-if test "${OPT_WITH_JAVA}" = "yes" -a "${OPT_ENABLE_JAVA}" = no ; then
-  as_fn_error $? "Java support requested but Java directory is invalid!" "$LINENO" 5
-fi
 
- if test "${OPT_ENABLE_JAVA}" = "yes"; then
+ if test "$OPT_ENABLE_JAVA" = yes; then
   OPT_ENABLE_JAVA_TRUE=
   OPT_ENABLE_JAVA_FALSE='#'
 else
@@ -17812,45 +17849,6 @@ else
 fi
 
 
- if test "$OPT_WITH_JAVA" = yes; then
-  OPT_WITH_JAVA_TRUE=
-  OPT_WITH_JAVA_FALSE='#'
-else
-  OPT_WITH_JAVA_TRUE='#'
-  OPT_WITH_JAVA_FALSE=
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_WITH_JAVA}" >&5
-$as_echo "${OPT_WITH_JAVA}" >&6; }
-
-#-------------------------------------------------
-# checking for oprofile in externals
-#-------------------------------------------------
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking oprofile in externals" >&5
-$as_echo_n "checking oprofile in externals... " >&6; }
-
-if test "${OPT_WITH_JAVA}" = "yes" -a "${OPROFILE}" = no; then
-  as_fn_error $? "Java support requested but oprofile directory is invalid!" "$LINENO" 5
-fi
-
-OPROFILE=no
-if test "$use_externals" = yes ; then
-  OPROFILE="$ext_oprofile_prefix"
-fi
-
-OPROFILE_BIN="${OPROFILE}/bin"
-OPROFILE_IFLAGS="-I${OPROFILE}/include"
-OPROFILE_LDFLAGS="-L${OPROFILE}/lib"
-OPROFILE_LDLIBS="-lopagent"
-
-
-
-
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPROFILE}" >&5
-$as_echo "${OPROFILE}" >&6; }
 
 #-------------------------------------------------
 # enable-hpcrun-flat: Only build hpcrun if on Linux and PAPI is present
@@ -18973,10 +18971,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_JAVA_TRUE}" && test -z "${OPT_ENABLE_JAVA_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_JAVA\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_WITH_JAVA_TRUE}" && test -z "${OPT_WITH_JAVA_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_WITH_JAVA\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_HPCRUN_FLAT_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_FLAT_FALSE}"; then
@@ -21704,6 +21698,8 @@ $as_echo "$as_me:   monitor/old:  ${MONITOR}" >&6;}
 $as_echo "$as_me:   libunwind:    ${OPT_LIBUNWIND}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   OpenAnalysis: ${OA}" >&5
 $as_echo "$as_me:   OpenAnalysis: ${OA}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   oprofile:     ${OPROFILE}" >&5
+$as_echo "$as_me:   oprofile:     ${OPROFILE}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   symtabAPI:    ${SYMTABAPI}" >&5
 $as_echo "$as_me:   symtabAPI:    ${SYMTABAPI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   xed2:         ${XED2}" >&5
@@ -21712,6 +21708,8 @@ $as_echo "$as_me:   xed2:         ${XED2}" >&6;}
 $as_echo "$as_me:   xerces:       ${XERCES}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi:         ${OPT_PAPI}" >&5
 $as_echo "$as_me:   papi:         ${OPT_PAPI}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   java:         ${JAVA}" >&5
+$as_echo "$as_me:   java:         ${JAVA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   upc (BG/P):   ${opt_upc_mesg}" >&5
 $as_echo "$as_me:   upc (BG/P):   ${opt_upc_mesg}" >&6;}
 

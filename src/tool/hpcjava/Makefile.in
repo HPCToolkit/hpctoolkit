@@ -33,12 +33,24 @@
 # Local includes
 ############################################################
 
+# -*-Mode: makefile;-*-
 
+#############################################################################
+#############################################################################
+
+#############################################################################
+# HPCTOOLKIT Extra rules
+#############################################################################
+
+############################################################
+# C Preprocessor
+############################################################
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
+pkglibexecdir = $(libexecdir)/@PACKAGE@
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 install_sh_DATA = $(install_sh) -c -m 644
 install_sh_PROGRAM = $(install_sh) -c
@@ -54,10 +66,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(top_srcdir)/src/Makeinclude.config
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_1 = libhpcjava.la \
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcjavaself.la
-pkglib_PROGRAMS =
+	$(top_srcdir)/src/Makeinclude.config \
+	$(top_srcdir)/src/Makeinclude.rules
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_1 = libhpcjava.la
 subdir = src/tool/hpcjava
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -90,30 +101,16 @@ am__nobase_list = $(am__nobase_strip_setup); \
 am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-am__installdirs = "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(pkglibdir)" \
-	"$(DESTDIR)$(pkglibdir)"
-LIBRARIES = $(pkglib_LIBRARIES)
+am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 libhpcjava_la_LIBADD =
-am__objects_1 = libhpcjava_la-libhpcjava.lo
-am_libhpcjava_la_OBJECTS = $(am__objects_1)
+am_libhpcjava_la_OBJECTS = libhpcjava_la-libhpcjava.lo
 libhpcjava_la_OBJECTS = $(am_libhpcjava_la_OBJECTS)
 libhpcjava_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libhpcjava_la_CFLAGS) \
 	$(CFLAGS) $(libhpcjava_la_LDFLAGS) $(LDFLAGS) -o $@
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpcjava_la_rpath = -rpath \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	$(pkglibdir)
-libhpcjavaself_la_LIBADD =
-am__objects_2 = libhpcjavaself_la-libhpcjava.lo
-am_libhpcjavaself_la_OBJECTS = $(am__objects_2)
-libhpcjavaself_la_OBJECTS = $(am_libhpcjavaself_la_OBJECTS)
-libhpcjavaself_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(libhpcjavaself_la_CFLAGS) $(CFLAGS) \
-	$(libhpcjavaself_la_LDFLAGS) $(LDFLAGS) -o $@
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpcjavaself_la_rpath = -rpath \
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	$(pkglibdir)
-PROGRAMS = $(pkglib_PROGRAMS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -127,24 +124,11 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libhpcjava_la_SOURCES) $(libhpcjavaself_la_SOURCES)
-DIST_SOURCES = $(libhpcjava_la_SOURCES) $(libhpcjavaself_la_SOURCES)
+SOURCES = $(libhpcjava_la_SOURCES)
+DIST_SOURCES = $(libhpcjava_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Automake rules
-#############################################################################
-
-#-----------------------------------------------------------
-# build targets
-#-----------------------------------------------------------
-pkglibexecdir = $(libexecdir)/$(PACKAGE)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AR = @AR@
@@ -204,6 +188,7 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+JAVA_IFLAGS = @JAVA_IFLAGS@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBDWARF_COPY = @LIBDWARF_COPY@
@@ -214,9 +199,13 @@ LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB = @LIBELF_LIB@
 LIBMONITOR_COPY = @LIBMONITOR_COPY@
 
-#-----------------------------------------------------------
-# source files, part 1
-#-----------------------------------------------------------
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Automake rules
+#############################################################################
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
 LIBMONITOR_RUN_DIR = @LIBMONITOR_RUN_DIR@
@@ -245,12 +234,11 @@ OA_LDFLAGS = @OA_LDFLAGS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPROFILE_BIN = @OPROFILE_BIN@
+OPROFILE_COPY = @OPROFILE_COPY@
 OPROFILE_IFLAGS = @OPROFILE_IFLAGS@
-OPROFILE_LDFLAGS = @OPROFILE_LDFLAGS@
-OPROFILE_LDLIBS = @OPROFILE_LDLIBS@
+OPROFILE_LIB = @OPROFILE_LIB@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
 OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
-OPT_JAVA_IFLAGS = @OPT_JAVA_IFLAGS@
 OPT_LIBUNWIND_IFLAGS = @OPT_LIBUNWIND_IFLAGS@
 OPT_LIBUNWIND_LDFLAGS = @OPT_LIBUNWIND_LDFLAGS@
 OPT_LIBUNWIND_LIBA = @OPT_LIBUNWIND_LIBA@
@@ -379,67 +367,40 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-plugin_srcdir = $(srcdir)/plugins
-plugin_instdir = $(pkglibdir)/plugins
+HPCRUN_SRCDIR = $(top_srcdir)/src/tool/hpcrun
 pkglib_LTLIBRARIES = $(am__append_1)
-pkglib_LIBRARIES = 
-PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
-PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
-MY_DYNAMIC_FILES = \
-	libhpcjava.c		
-
-MY_INCLUDE_DIRS = \
-	$(OPROFILE_IFLAGS)				\
-        -I$(top_srcdir)/src/tool/			\
-        -I$(top_srcdir)/src/tool/hpcrun        		\
-        -I$(top_srcdir)/src/tool/hpcrun/messages        \
-        -I$(top_srcdir)/src/tool/hpcrun/memory 		\
-        -I$(top_srcdir)/src/tool/hpcrun/unwind/common	\
-        -I$(top_srcdir)/src/tool/hpcrun/unwind/generic-libunwind \
-	$(HPC_IFLAGS)					\
-	$(OPT_JAVA_IFLAGS)				\
-	$(OPT_LIBUNWIND_IFLAGS)         
-
-libhpcjava_la_SOURCES = \
-	$(MY_DYNAMIC_FILES)
-
-libhpcjavaself_la_SOURCES = \
-	$(MY_DYNAMIC_FILES)
-
-
-#-----------------------------------------------------------
-# cppflags
-#-----------------------------------------------------------
+libhpcjava_la_SOURCES = libhpcjava.c
 libhpcjava_la_CPPFLAGS = \
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
+	$(HPC_IFLAGS)			\
+	-I$(top_srcdir)/src/tool/	\
+	-I$(HPCRUN_SRCDIR)		\
+	-I$(HPCRUN_SRCDIR)/memory	\
+	-I$(HPCRUN_SRCDIR)/messages	\
+	-I$(HPCRUN_SRCDIR)/unwind/common  \
+	-I$(HPCRUN_SRCDIR)/unwind/generic-libunwind \
+	$(LIBMONITOR_INC)	\
+	$(OPT_LIBUNWIND_IFLAGS)	\
+	$(OPROFILE_IFLAGS)	\
+	$(JAVA_IFLAGS)
 
-libhpcjavaself_la_CPPFLAGS = \
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
+libhpcjava_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcjava_la_LDFLAGS = \
+	-L$(LIBMONITOR_LIB) -lmonitor \
+	-L$(OPROFILE_LIB) -lopagent
 
 
-#-----------------------------------------------------------
-# cflags
-#-----------------------------------------------------------
-OPROFILE_BIN_FLAG = -DOP_BINDIR="$(OPROFILE_BIN)"
-libhpcjava_la_CFLAGS = $(OPROFILE_IFLAGS) $(CFLAGS) $(HOST_CFLAGS) $(OPROFILE_BIN_FLAG)
-libhpcjavaself_la_CFLAGS = $(OPROFILE_IFLAGS) $(CFLAGS) $(HOST_CFLAGS) $(OPROFILE_BIN_FLAG)
+# Assumes includer sets MYCXXFLAGS and MYCFLAGS
+# cf. CXXCOMPILE (automatically generated by automake)
+MYCPPFLAGS_0 = $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) 
 
-#-----------------------------------------------------------
-# ldflags
-#-----------------------------------------------------------
-
-#libhpcjava_la_LDFLAGS = -Wl,-Bsymbolic	\
-#	-Wl,--strip-debug -lopagent
-libhpcjava_la_LDFLAGS = $(OPROFILE_LDFLAGS) $(OPROFILE_LDLIBS)
-libhpcjavaself_la_LDFLAGS = $(OPROFILE_LDFLAGS) $(OPROFILE_LDLIBS)
-MYKEEPSYMS = $(addprefix -K , $(MY_INTERCEPTED_SYMS_LibHPCJavaSO))
+MYCPPFLAGS_0_CXX = $(MYCPPFLAGS_0) $(AM_CXXFLAGS) $(CXXFLAGS) $(MYCXXFLAGS)
+MYCPPFLAGS_0_CC = $(MYCPPFLAGS_0) $(AM_CFLAGS)   $(CFLAGS)   $(MYCFLAGS)
 all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .lo .o .obj
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(am__configure_deps)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(top_srcdir)/src/Makeinclude.rules $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -469,38 +430,6 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
-install-pkglibLIBRARIES: $(pkglib_LIBRARIES)
-	@$(NORMAL_INSTALL)
-	test -z "$(pkglibdir)" || $(MKDIR_P) "$(DESTDIR)$(pkglibdir)"
-	@list='$(pkglib_LIBRARIES)'; test -n "$(pkglibdir)" || list=; \
-	list2=; for p in $$list; do \
-	  if test -f $$p; then \
-	    list2="$$list2 $$p"; \
-	  else :; fi; \
-	done; \
-	test -z "$$list2" || { \
-	  echo " $(INSTALL_DATA) $$list2 '$(DESTDIR)$(pkglibdir)'"; \
-	  $(INSTALL_DATA) $$list2 "$(DESTDIR)$(pkglibdir)" || exit $$?; }
-	@$(POST_INSTALL)
-	@list='$(pkglib_LIBRARIES)'; test -n "$(pkglibdir)" || list=; \
-	for p in $$list; do \
-	  if test -f $$p; then \
-	    $(am__strip_dir) \
-	    echo " ( cd '$(DESTDIR)$(pkglibdir)' && $(RANLIB) $$f )"; \
-	    ( cd "$(DESTDIR)$(pkglibdir)" && $(RANLIB) $$f ) || exit $$?; \
-	  else :; fi; \
-	done
-
-uninstall-pkglibLIBRARIES:
-	@$(NORMAL_UNINSTALL)
-	@list='$(pkglib_LIBRARIES)'; test -n "$(pkglibdir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	test -n "$$files" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(pkglibdir)' && rm -f "$$files" )"; \
-	cd "$(DESTDIR)$(pkglibdir)" && rm -f $$files
-
-clean-pkglibLIBRARIES:
-	-test -z "$(pkglib_LIBRARIES)" || rm -f $(pkglib_LIBRARIES)
 install-pkglibLTLIBRARIES: $(pkglib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
 	test -z "$(pkglibdir)" || $(MKDIR_P) "$(DESTDIR)$(pkglibdir)"
@@ -534,51 +463,6 @@ clean-pkglibLTLIBRARIES:
 	done
 libhpcjava.la: $(libhpcjava_la_OBJECTS) $(libhpcjava_la_DEPENDENCIES) 
 	$(libhpcjava_la_LINK) $(am_libhpcjava_la_rpath) $(libhpcjava_la_OBJECTS) $(libhpcjava_la_LIBADD) $(LIBS)
-libhpcjavaself.la: $(libhpcjavaself_la_OBJECTS) $(libhpcjavaself_la_DEPENDENCIES) 
-	$(libhpcjavaself_la_LINK) $(am_libhpcjavaself_la_rpath) $(libhpcjavaself_la_OBJECTS) $(libhpcjavaself_la_LIBADD) $(LIBS)
-install-pkglibPROGRAMS: $(pkglib_PROGRAMS)
-	@$(NORMAL_INSTALL)
-	test -z "$(pkglibdir)" || $(MKDIR_P) "$(DESTDIR)$(pkglibdir)"
-	@list='$(pkglib_PROGRAMS)'; test -n "$(pkglibdir)" || list=; \
-	for p in $$list; do echo "$$p $$p"; done | \
-	sed 's/$(EXEEXT)$$//' | \
-	while read p p1; do if test -f $$p || test -f $$p1; \
-	  then echo "$$p"; echo "$$p"; else :; fi; \
-	done | \
-	sed -e 'p;s,.*/,,;n;h' -e 's|.*|.|' \
-	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
-	sed 'N;N;N;s,\n, ,g' | \
-	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1 } \
-	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
-	    if ($$2 == $$4) files[d] = files[d] " " $$1; \
-	    else { print "f", $$3 "/" $$4, $$1; } } \
-	  END { for (d in files) print "f", d, files[d] }' | \
-	while read type dir files; do \
-	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
-	    test -z "$$files" || { \
-	    echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(pkglibdir)$$dir'"; \
-	    $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(pkglibdir)$$dir" || exit $$?; \
-	    } \
-	; done
-
-uninstall-pkglibPROGRAMS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(pkglib_PROGRAMS)'; test -n "$(pkglibdir)" || list=; \
-	files=`for p in $$list; do echo "$$p"; done | \
-	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
-	      -e 's/$$/$(EXEEXT)/' `; \
-	test -n "$$list" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(pkglibdir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(pkglibdir)" && rm -f $$files
-
-clean-pkglibPROGRAMS:
-	@list='$(pkglib_PROGRAMS)'; test -n "$$list" || exit 0; \
-	echo " rm -f" $$list; \
-	rm -f $$list || exit $$?; \
-	test -n "$(EXEEXT)" || exit 0; \
-	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
-	echo " rm -f" $$list; \
-	rm -f $$list
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -587,7 +471,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcjava_la-libhpcjava.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcjavaself_la-libhpcjava.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -616,13 +499,6 @@ libhpcjava_la-libhpcjava.lo: libhpcjava.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='libhpcjava.c' object='libhpcjava_la-libhpcjava.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcjava_la_CPPFLAGS) $(CPPFLAGS) $(libhpcjava_la_CFLAGS) $(CFLAGS) -c -o libhpcjava_la-libhpcjava.lo `test -f 'libhpcjava.c' || echo '$(srcdir)/'`libhpcjava.c
-
-libhpcjavaself_la-libhpcjava.lo: libhpcjava.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcjavaself_la_CPPFLAGS) $(CPPFLAGS) $(libhpcjavaself_la_CFLAGS) $(CFLAGS) -MT libhpcjavaself_la-libhpcjava.lo -MD -MP -MF $(DEPDIR)/libhpcjavaself_la-libhpcjava.Tpo -c -o libhpcjavaself_la-libhpcjava.lo `test -f 'libhpcjava.c' || echo '$(srcdir)/'`libhpcjava.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcjavaself_la-libhpcjava.Tpo $(DEPDIR)/libhpcjavaself_la-libhpcjava.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='libhpcjava.c' object='libhpcjavaself_la-libhpcjava.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcjavaself_la_CPPFLAGS) $(CPPFLAGS) $(libhpcjavaself_la_CFLAGS) $(CFLAGS) -c -o libhpcjavaself_la-libhpcjava.lo `test -f 'libhpcjava.c' || echo '$(srcdir)/'`libhpcjava.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -714,9 +590,9 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LIBRARIES) $(LTLIBRARIES) $(PROGRAMS)
+all-am: Makefile $(LTLIBRARIES)
 installdirs:
-	for dir in "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(pkglibdir)"; do \
+	for dir in "$(DESTDIR)$(pkglibdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -746,8 +622,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool clean-pkglibLIBRARIES \
-	clean-pkglibLTLIBRARIES clean-pkglibPROGRAMS mostlyclean-am
+clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -773,10 +649,8 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-pkglibLIBRARIES install-pkglibLTLIBRARIES \
-	install-pkglibPROGRAMS
-	@$(NORMAL_INSTALL)
-	$(MAKE) $(AM_MAKEFLAGS) install-exec-hook
+install-exec-am: install-pkglibLTLIBRARIES
+
 install-html: install-html-am
 
 install-html-am:
@@ -815,27 +689,23 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-pkglibLIBRARIES uninstall-pkglibLTLIBRARIES \
-	uninstall-pkglibPROGRAMS
+uninstall-am: uninstall-pkglibLTLIBRARIES
 
-.MAKE: install-am install-exec-am install-strip
+.MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-pkglibLIBRARIES clean-pkglibLTLIBRARIES \
-	clean-pkglibPROGRAMS ctags distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-exec-hook install-html \
+	clean-libtool clean-pkglibLTLIBRARIES ctags distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
 	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-pkglibLIBRARIES \
-	install-pkglibLTLIBRARIES install-pkglibPROGRAMS install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-pkglibLIBRARIES \
-	uninstall-pkglibLTLIBRARIES uninstall-pkglibPROGRAMS
+	install-pdf install-pdf-am install-pkglibLTLIBRARIES \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am uninstall-pkglibLTLIBRARIES
 
 
 ############################################################
@@ -860,26 +730,17 @@ endef
 
 #############################################################################
 
-############################################################
-# Install
-############################################################
-#
-# Note: *-local and *-hook are special automake versions of the
-# regular target. *-hook runs *after* install has completed
+%.cpp.pp : %.cpp
+	$(CXXCPP) $(MYCPPFLAGS_0_CXX) $< > $@
 
-install-exec-hook: myinstall-exec
+%.c.pp : %.c
+	$(CXXCPP) $(MYCPPFLAGS_0_CC)  $< > $@
 
-myinstall-exec: myinstall-libhpcjavaso \
-		myinstall-libhpcjavaselfso
+#############################################################################
 
-#@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(DESTDIR)$(pkglibdir)/libhpcjava.so
-myinstall-libhpcjavaso:
-	rm -f $(DESTDIR)$(pkglibdir)/libhpjava.a
-	@OPT_OBJCOPY@ $(DESTDIR)$(pkglibdir)/libhpcjava.so
-
-myinstall-libhpcjavaselfso:
-	rm -f $(DESTDIR)$(pkglibdir)/libhpjavaself.a
-	@OPT_OBJCOPY@ $(DESTDIR)$(pkglibdir)/libhpcjavaself.so
+#############################################################################
+# Common rules
+#############################################################################
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

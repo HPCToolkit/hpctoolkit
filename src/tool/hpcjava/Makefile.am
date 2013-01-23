@@ -71,119 +71,47 @@ include $(top_srcdir)/src/Makeinclude.config
 # Automake rules
 #############################################################################
 
+LIBMONITOR_INC = @LIBMONITOR_INC@
+LIBMONITOR_LIB = @LIBMONITOR_LIB@
 
-#-----------------------------------------------------------
-# build targets
-#-----------------------------------------------------------
+OPT_LIBUNWIND_IFLAGS = @OPT_LIBUNWIND_IFLAGS@
 
-pkglibexecdir = $(libexecdir)/$(PACKAGE)
-plugin_srcdir = $(srcdir)/plugins
-plugin_instdir = $(pkglibdir)/plugins
+OPROFILE_IFLAGS =  @OPROFILE_IFLAGS@
+OPROFILE_LIB = @OPROFILE_LIB@
+
+JAVA_IFLAGS = @JAVA_IFLAGS@
+
+HPCRUN_SRCDIR = $(top_srcdir)/src/tool/hpcrun
 
 pkglib_LTLIBRARIES =
 if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcjava.la
-  pkglib_LTLIBRARIES += libhpcjavaself.la
 endif
 
-pkglib_PROGRAMS =
-pkglib_LIBRARIES =
+libhpcjava_la_SOURCES = libhpcjava.c
+
+libhpcjava_la_CPPFLAGS = 		\
+	$(HPC_IFLAGS)			\
+	-I$(top_srcdir)/src/tool/	\
+	-I$(HPCRUN_SRCDIR)		\
+	-I$(HPCRUN_SRCDIR)/memory	\
+	-I$(HPCRUN_SRCDIR)/messages	\
+	-I$(HPCRUN_SRCDIR)/unwind/common  \
+	-I$(HPCRUN_SRCDIR)/unwind/generic-libunwind \
+	$(LIBMONITOR_INC)	\
+	$(OPT_LIBUNWIND_IFLAGS)	\
+	$(OPROFILE_IFLAGS)	\
+	$(JAVA_IFLAGS)
+
+libhpcjava_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+
+libhpcjava_la_LDFLAGS = \
+	-L$(LIBMONITOR_LIB) -lmonitor \
+	-L$(OPROFILE_LIB) -lopagent
 
 
-#-----------------------------------------------------------
-# source files, part 1
-#-----------------------------------------------------------
+#############################################################################
+# Common rules
+#############################################################################
 
-LIBMONITOR_INC = @LIBMONITOR_INC@
-LIBMONITOR_LIB = @LIBMONITOR_LIB@
-PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@
-PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
-SYMTABAPI_INC =  @SYMTABAPI_INC@
-XED2_INC = @XED2_INC@
-XED2_LIB = @XED2_LIB@
-OPROFILE_IFLAGS = @OPROFILE_IFLAGS@
-OPROFILE_LDFLAGS = @OPROFILE_LDFLAGS@
-OPROFILE_LDLIBS = @OPROFILE_LDLIBS@
-OPROFILE_BIN = @OPROFILE_BIN@
-
-MY_DYNAMIC_FILES = 					\
-	libhpcjava.c		
-
-
-MY_INCLUDE_DIRS =					\
-	$(OPROFILE_IFLAGS)				\
-        -I$(top_srcdir)/src/tool/			\
-        -I$(top_srcdir)/src/tool/hpcrun        		\
-        -I$(top_srcdir)/src/tool/hpcrun/messages        \
-        -I$(top_srcdir)/src/tool/hpcrun/memory 		\
-        -I$(top_srcdir)/src/tool/hpcrun/unwind/common	\
-        -I$(top_srcdir)/src/tool/hpcrun/unwind/generic-libunwind \
-	$(HPC_IFLAGS)					\
-	$(OPT_JAVA_IFLAGS)				\
-	$(OPT_LIBUNWIND_IFLAGS)         
-
-libhpcjava_la_SOURCES = 			\
-	$(MY_DYNAMIC_FILES)
-
-libhpcjavaself_la_SOURCES = 			\
-	$(MY_DYNAMIC_FILES)
-
-
-#-----------------------------------------------------------
-# cppflags
-#-----------------------------------------------------------
-
-libhpcjava_la_CPPFLAGS =			\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
-
-libhpcjavaself_la_CPPFLAGS =			\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
-
-
-#-----------------------------------------------------------
-# cflags
-#-----------------------------------------------------------
-OPROFILE_BIN_FLAG = -DOP_BINDIR="$(OPROFILE_BIN)"
-
-libhpcjava_la_CFLAGS = $(OPROFILE_IFLAGS) $(CFLAGS) $(HOST_CFLAGS) $(OPROFILE_BIN_FLAG)
-
-libhpcjavaself_la_CFLAGS = $(OPROFILE_IFLAGS) $(CFLAGS) $(HOST_CFLAGS) $(OPROFILE_BIN_FLAG)
-
-
-#-----------------------------------------------------------
-# ldflags
-#-----------------------------------------------------------
-
-#libhpcjava_la_LDFLAGS = -Wl,-Bsymbolic	\
-#	-Wl,--strip-debug -lopagent
-libhpcjava_la_LDFLAGS = $(OPROFILE_LDFLAGS) $(OPROFILE_LDLIBS)
-
-libhpcjavaself_la_LDFLAGS = $(OPROFILE_LDFLAGS) $(OPROFILE_LDLIBS)
-
-############################################################
-# Install
-############################################################
-#
-# Note: *-local and *-hook are special automake versions of the
-# regular target. *-hook runs *after* install has completed
-
-install-exec-hook: myinstall-exec
-
-myinstall-exec: myinstall-libhpcjavaso \
-		myinstall-libhpcjavaselfso
-
-
-MYKEEPSYMS = $(addprefix -K , $(MY_INTERCEPTED_SYMS_LibHPCJavaSO))
-
-#@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(DESTDIR)$(pkglibdir)/libhpcjava.so
-myinstall-libhpcjavaso:
-	rm -f $(DESTDIR)$(pkglibdir)/libhpjava.a
-	@OPT_OBJCOPY@ $(DESTDIR)$(pkglibdir)/libhpcjava.so
-
-myinstall-libhpcjavaselfso:
-	rm -f $(DESTDIR)$(pkglibdir)/libhpjavaself.a
-	@OPT_OBJCOPY@ $(DESTDIR)$(pkglibdir)/libhpcjavaself.so
-
-
+include $(top_srcdir)/src/Makeinclude.rules
