@@ -94,6 +94,12 @@ static char file_dump[PATH_MAX] = {'\0'};
 static op_agent_t agent_hdl;
 static JavaVM *java_vm;
 
+extern char **environ;
+
+//*****************************************************************
+// helper functions
+//*****************************************************************
+
 /**
  * Handle an error or a warning, return 0 if the checked error is 
  * JVMTI_ERROR_NONE, i.e. success
@@ -153,6 +159,10 @@ create_debug_line_info(jint map_length, jvmtiAddrLocationMap const * map,
 	
   return debug_line;
 }
+
+//*****************************************************************
+// callback functions
+//*****************************************************************
 
 
 /**
@@ -421,7 +431,7 @@ static void JNICALL cb_dynamic_code_generated(jvmtiEnv * jvmti_env,
  * It will call opjitconv to convert the dumped Java's compiled code
  *  into a .so file (named .jo file)
  */
-void
+static void
 libhpcjava_fini()
 {
   char end_time_str[32], start_time_str[32];
@@ -436,8 +446,7 @@ libhpcjava_fini()
   childpid = monitor_real_fork();
   if (childpid == 0) {
     //
-    //  child process: disable profiling, dup the log file fd onto
-    //  stderr and exec hpcfnbounds in server mode.
+    //  child process: disable profiling, run opjitconv
     //         
 #endif
     hpcrun_set_disabled();
@@ -463,7 +472,7 @@ libhpcjava_fini()
       if (debug)
 	printf("executing %s .... \n", oprofile_cmd);
 
-      monitor_real_execve(oprofile_cmd, exec_args, exec_args);
+      monitor_real_execve(oprofile_cmd, exec_args, environ);
     }
 #if HPCJAVA_FORK_OPJITCONV
   } 
