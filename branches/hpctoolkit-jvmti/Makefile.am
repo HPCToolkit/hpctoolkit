@@ -110,11 +110,22 @@ dist_doc_DATA = $(MYDATA)
 # It's up to configure to decide if the library exists, whether to
 # copy it and where to put it, so we don't treat errors as fatal here.
 #
+# copy-libs-dir is the same except $3 is the destination directory
+# and $4 is the pattern to copy.
+#
 EXT_LIBS_DIR = $(DESTDIR)$(prefix)/@hpc_ext_libs_dir@
+LIBEXEC_DIR =  $(DESTDIR)$(pkglibexecdir)
 
 define copy-libs
     @if test "$1" = yes ; then \
 	( cd "$2" && tar cf - $3 ) | ( cd "$(EXT_LIBS_DIR)" && tar xvf - ) ; \
+	true ; \
+    fi
+endef
+
+define copy-libs-dir
+    @if test "$1" = yes ; then \
+	( cd "$2" && tar cf - $4 ) | ( cd "$3" && tar xvf - ) ; \
 	true ; \
     fi
 endef
@@ -126,6 +137,8 @@ install-data-local: myinstall-monitor
 	$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*)
 	$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
 	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind*)
+	$(call copy-libs-dir,$(OPROFILE_COPY),$(OPROFILE_BIN),$(LIBEXEC_DIR),opjitconv)
+	$(call copy-libs,$(OPROFILE_COPY),$(OPROFILE_LIB),libopagent*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libsymtabAPI*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libcommon*)
 	$(call copy-libs,$(SYMTABAPI_COPY_DYN),$(SYMTABAPI_LIB),libdyn*)

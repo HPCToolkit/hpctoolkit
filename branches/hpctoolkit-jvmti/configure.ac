@@ -1313,6 +1313,59 @@ AC_SUBST([OA_LDFLAGS])
 
 
 #-------------------------------------------------
+# Option: --with-oprofile=PATH
+#-------------------------------------------------
+
+OPROFILE=no
+if test "$use_externals" = yes ; then
+  OPROFILE="$ext_oprofile_prefix"
+fi
+
+AC_ARG_WITH([oprofile],
+  [AS_HELP_STRING([--with-oprofile=PATH],
+      [path to oprofile install directory])],
+  [OPROFILE="$withval"],
+  [])
+
+AC_MSG_CHECKING([for oprofile])
+
+OPROFILE_BIN=
+OPROFILE_LIB=
+OPROFILE_IFLAGS=
+OPROFILE_COPY=no
+
+case "$OPROFILE" in
+  /* )
+    if test ! -f "${OPROFILE}/include/opagent.h" ; then
+      AC_MSG_ERROR([invalid oprofile directory: $OPROFILE])
+    fi
+    if test -f "${OPROFILE}/lib/libopagent.so" ; then
+      OPROFILE_LIB="${OPROFILE}/lib"
+    elif test -f "${OPROFILE}/lib/oprofile/libopagent.so" ; then
+      OPROFILE_LIB="${OPROFILE}/lib/oprofile"
+    else
+      AC_MSG_ERROR([invalid oprofile directory: $OPROFILE])
+    fi
+    OPROFILE_BIN="${OPROFILE}/bin"
+    OPROFILE_IFLAGS="-I${OPROFILE}/include"
+    OPROFILE_COPY=yes
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([oprofile directory must be absolute path: $OPROFILE])
+    ;;
+esac
+
+AC_MSG_RESULT([$OPROFILE])
+
+AC_SUBST([OPROFILE_BIN])
+AC_SUBST([OPROFILE_LIB])
+AC_SUBST([OPROFILE_IFLAGS])
+AC_SUBST([OPROFILE_COPY])
+
+
+#-------------------------------------------------
 # with-papi
 #-------------------------------------------------
 
@@ -1583,74 +1636,44 @@ AC_SUBST([XERCES_LIB])
 #-------------------------------------------------
 # with-java: option to build hpcjava
 #-------------------------------------------------
-AC_MSG_CHECKING([whether to build hpcrun for Java programs])
-OPT_WITH_JAVA=no
-OPT_CILK_ROOT=
+
+JAVA=no
+OPT_ENABLE_JAVA=no
 
 AC_ARG_WITH([java],
   AS_HELP_STRING([--with-java=PATH],
                  [use given Java SDK installation for jvmti agents]),
-  [if test $withval != no; then
-     OPT_WITH_JAVA=yes
-     OPT_JAVA_ROOT=${withval}
-   else
-     OPT_WITH_JAVA=no
-   fi],
+  [JAVA="$withval"],
   [])
 
-OPT_JAVA_IFLAGS="-I${OPT_JAVA_ROOT}/include -I${OPT_JAVA_ROOT}/include/linux"
-OPT_ENABLE_JAVA=no
-if test "${OPT_WITH_JAVA}" != "no" ; then
-  AC_MSG_CHECKING([whether can compile jvmti code with CFLAGS='$OPT_JAVA_IFLAGS'])
+AC_MSG_CHECKING([for java])
 
-  AC_LANG_PUSH([C])
-  CFLAGS="$CFLAGS $OPT_JAVA_IFLAGS"
-  AC_COMPILE_IFELSE([#include <jvmti.h>],
-        [ans=yes],
-        [ans=no])
+JAVA_IFLAGS=
 
-  OPT_ENABLE_JAVA=$ans
-  AC_LANG_POP
-fi
+case "$JAVA" in
+  /* )
+    if test ! -f "${JAVA}/include/jvmti.h" ; then
+      AC_MSG_ERROR([invalid java directory: $JAVA])
+    fi
+    if test "$OPROFILE" = no ; then
+      AC_MSG_ERROR([java support requires oprofile])
+    fi
+    OPT_ENABLE_JAVA=yes
+    JAVA_IFLAGS="-I${JAVA}/include -I${JAVA}/include/linux"
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([java directory must be absolute path: $JAVA])
+    ;;
+esac
 
-AC_MSG_RESULT([${OPT_ENABLE_JAVA} (request: ${OPT_WITH_JAVA})])
+AC_MSG_RESULT([$JAVA])
 
+AC_SUBST([JAVA_IFLAGS])
 
-if test "${OPT_WITH_JAVA}" = "yes" -a "${OPT_ENABLE_JAVA}" = no ; then
-  AC_MSG_ERROR([Java support requested but Java directory is invalid!])
-fi
+AM_CONDITIONAL(OPT_ENABLE_JAVA, test "$OPT_ENABLE_JAVA" = yes)
 
-AM_CONDITIONAL(OPT_ENABLE_JAVA, test "${OPT_ENABLE_JAVA}" = "yes")
-
-AM_CONDITIONAL([OPT_WITH_JAVA], [test "$OPT_WITH_JAVA" = yes])
-AC_SUBST([OPT_JAVA_IFLAGS])
-AC_MSG_RESULT([${OPT_WITH_JAVA}])
-
-#-------------------------------------------------
-# checking for oprofile in externals
-#-------------------------------------------------
-AC_MSG_CHECKING([oprofile in externals])
-
-if test "${OPT_WITH_JAVA}" = "yes" -a "${OPROFILE}" = no; then
-  AC_MSG_ERROR([Java support requested but oprofile directory is invalid!])
-fi
-
-OPROFILE=no
-if test "$use_externals" = yes ; then
-  OPROFILE="$ext_oprofile_prefix"
-fi
-
-OPROFILE_BIN="${OPROFILE}/bin"
-OPROFILE_IFLAGS="-I${OPROFILE}/include"
-OPROFILE_LDFLAGS="-L${OPROFILE}/lib"
-OPROFILE_LDLIBS="-lopagent"
-
-AC_SUBST([OPROFILE_BIN])
-AC_SUBST([OPROFILE_IFLAGS])
-AC_SUBST([OPROFILE_LDFLAGS])
-AC_SUBST([OPROFILE_LDLIBS])
-
-AC_MSG_RESULT([${OPROFILE}])
 
 #-------------------------------------------------
 # enable-hpcrun-flat: Only build hpcrun if on Linux and PAPI is present
@@ -2426,10 +2449,12 @@ AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
 AC_MSG_NOTICE([  monitor/old:  ${MONITOR}])
 AC_MSG_NOTICE([  libunwind:    ${OPT_LIBUNWIND}])
 AC_MSG_NOTICE([  OpenAnalysis: ${OA}])
+AC_MSG_NOTICE([  oprofile:     ${OPROFILE}])
 AC_MSG_NOTICE([  symtabAPI:    ${SYMTABAPI}])
 AC_MSG_NOTICE([  xed2:         ${XED2}])
 AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
+AC_MSG_NOTICE([  java:         ${JAVA}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
 
 if test "$warn_non_gcc" = yes ; then

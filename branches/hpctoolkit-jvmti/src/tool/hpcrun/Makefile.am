@@ -165,7 +165,7 @@ UNW_X86_FILES = \
        $(UNW_COMMON_FILES) \
 	unwind/x86-family/x86-all.c			\
 	unwind/x86-family/amd-xop.c                     \
- 	unwind/x86-family/x86-cold-path.c		\
+	unwind/x86-family/x86-cold-path.c		\
 	unwind/x86-family/x86-validate-retn-addr.c	\
 	unwind/x86-family/x86-unwind-interval.c		\
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
@@ -300,9 +300,11 @@ MY_BASE_FILES +=  			\
 endif
 
 if OPT_ENABLE_JAVA
+if OPT_ENABLE_HPCRUN_DYNAMIC
 MY_BASE_FILES +=  			\
 	fnbounds/fnbounds_java.c	\
 	java/jmt.c
+endif
 endif
 
 MY_DYNAMIC_FILES = 			\
@@ -364,7 +366,8 @@ MY_INCLUDE_DIRS =			\
 	-I$(SYMTABAPI_INC)
 
 if OPT_ENABLE_JAVA
-MY_INCLUDE_DIRS +=  			\
+MY_INCLUDE_DIRS +=			\
+	$(JAVA_IFLAGS)			\
 	-I$(top_srcdir)/src/tool/hpcjava \
 	-I$(top_srcdir)/src/lib/prof-lean
 endif
