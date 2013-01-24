@@ -299,14 +299,6 @@ MY_BASE_FILES +=  			\
 	sample-sources/mpi.c
 endif
 
-if OPT_ENABLE_JAVA
-if OPT_ENABLE_HPCRUN_DYNAMIC
-MY_BASE_FILES +=  			\
-	fnbounds/fnbounds_java.c	\
-	java/jmt.c
-endif
-endif
-
 MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -320,6 +312,12 @@ MY_STATIC_FILES = 			\
 
 MY_LINUX_DYNAMIC_FILES = 		\
 	os/linux/dylib.c
+
+if OPT_ENABLE_JAVA
+MY_DYNAMIC_FILES +=  			\
+	fnbounds/fnbounds_java.c	\
+	java/jmt.c
+endif
 
 
 MY_MIPS_FILES = \
