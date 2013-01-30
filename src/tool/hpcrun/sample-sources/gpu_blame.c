@@ -61,7 +61,7 @@
 #include <signal.h>
 #include <sys/time.h>           /* setitimer() */
 #include <ucontext.h>           /* struct ucontext */
-
+#include <dlfcn.h>
 
 
 /******************************************************************************
@@ -104,9 +104,6 @@
 #endif
 
 // ******* Global Variables ***********
-
-stream_to_id_map_t stream_to_id[MAX_STREAMS];
-
 int g_cpu_gpu_proxy_count = 0; 
 bool g_cpu_gpu_enabled = false;
 
@@ -125,18 +122,6 @@ int d_to_h_data_xfer_metric_id;
 
 
 uint64_t g_active_threads;
-stream_node_t *g_unfinished_stream_list_head;
-event_list_node_t *g_finished_event_nodes_tail;
-event_list_node_t dummy_event_node = {.event_end = 0,.event_start = 0,.event_end_time = 0,.event_end_time = 0,.launcher_cct = 0,.stream_launcher_cct = 0 };
-struct stream_to_id_map_t *stream_to_id_tree_root = NULL;
-
-
-stream_node_t g_stream_array[MAX_STREAMS];
-spinlock_t g_gpu_lock = SPINLOCK_UNLOCKED;
-bool g_do_shared_blaming = false;
-int g_shmid = -1;
-IPC_data_t * ipc_data;
-uint32_t g_cuda_launch_skip_inner = 0;
 
 // blame shift registration info
 static bs_fn_entry_t bs_entry;
@@ -147,44 +132,13 @@ void hpcrun_set_gpu_proxy_present() {
     g_cpu_gpu_proxy_count ++;
 }
 
-void CloseAllStreams(stream_to_id_map_t *root) {
-    
-    if (!root)
-        return;
-    
-    CloseAllStreams(root->left);
-    CloseAllStreams(root->right);
-    uint32_t streamId;
-    streamId = root->id;
-    
-    hpcrun_stream_finalize(g_stream_array[streamId].st);
-
-    // remove from hpcrun process auxiliary cleanup list 
-    hpcrun_process_aux_cleanup_remove(g_stream_array[streamId].aux_cleanup_info);
-
-    g_stream_array[streamId].st = NULL;
-}
-
 
 static void METHOD_FN(init)
 {
-    char * shared_blaming_env;    
-    char * cuda_launch_skip_inner_env;    
     TMSG(CPU_GPU_BLAME_CTL, "setting up CPU_GPU_BLAME");
-    g_unfinished_stream_list_head = NULL;
     //active threads represents the total number of threads in the system
     //including the main thread 
     g_active_threads = 1;
-    g_finished_event_nodes_tail = &dummy_event_node;
-    dummy_event_node.next = g_finished_event_nodes_tail;
-    shared_blaming_env = getenv("HPCRUN_ENABLE_SHARED_GPU_BLAMING");
-    if(shared_blaming_env)
-        g_do_shared_blaming = atoi(shared_blaming_env);
-
-    cuda_launch_skip_inner_env = getenv("HPCRUN_CUDA_LAUNCH_SKIP_INNER");
-    if(cuda_launch_skip_inner_env)
-        g_cuda_launch_skip_inner = atoi(cuda_launch_skip_inner_env);
- 
     self->state = INIT;                                    
 }
 
@@ -214,6 +168,7 @@ METHOD_FN(start)
 static void METHOD_FN(thread_fini_action)
 {
     TMSG(CPU_GPU_BLAME_CTL, "thread action ");
+    atomic_add_i64(&g_active_threads, -1L);
 }
 
 static void METHOD_FN(stop)
