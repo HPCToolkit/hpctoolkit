@@ -226,10 +226,11 @@ hpcjava_get_async_call_trace(void **callstack, int count)
 	  void *addr = jmt_get_address(trace.frames[i].method_id);
 	  if (addr != NULL) 
 	  {
-	    TMSG(JAVA, "jmt %d  : %p (%p)", i, trace.frames[i].method_id, addr);
+	    TMSG(JAVA, "jmt-add %d  : %p (%p)", i, trace.frames[i].method_id, addr);
 	  } else {
-	    TMSG(JAVA, "jmt nf %d: %p", i, trace.frames[i].method_id);
+	    TMSG(JAVA, "jmt-nul %d: %p", i, trace.frames[i].method_id);
 	  }
+	  jmt_add_method_db(trace.frames[i].method_id);
 	}
       }
     } else
@@ -324,9 +325,9 @@ hpcjava_get_interval(void *addr)
 splay_interval_t *
 hpcjava_add_address_interval(const void *addr_start, const void *addr_end)
 {
-  //UI_TREE_JAVA_LOCK;
+  UI_TREE_JAVA_LOCK;
   splay_interval_t *intvl = hpcjava_addr_to_interval_locked(addr_start, addr_end);
-  //UI_TREE_JAVA_UNLOCK;
+  UI_TREE_JAVA_UNLOCK;
   
   return intvl;
 }
