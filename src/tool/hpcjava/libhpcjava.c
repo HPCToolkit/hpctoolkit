@@ -313,8 +313,8 @@ cb_compiled_method_load(jvmtiEnv * jvmti,
     if (gettimeofday(&tv, NULL)) {
       fprintf(stderr,"gettimeofday fail");
     }
-
-    fprintf(stderr, "load: t=%ld, declaring_class=%p, class=%s, "
+    else
+      fprintf(stderr, "load: t=%ld, declaring_class=%p, class=%s, "
 	    "method=%s, signature=%s, addr=%p, size=%i \n",  tv.tv_usec,
 	    declaring_class, class_signature, method_name,
 	    method_signature, code_addr, code_size);
@@ -535,7 +535,7 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
   ret = snprintf(file_dump,PATH_MAX,"%s/java-%d-%d.dump",hpcrun_get_directory(), rank, thread_id);
 
   if (ret >= PATH_MAX) {
-    perror("java dump filenaem is too long\n");
+    perror("java dump filename is too long\n");
     res = -1;
     goto finalize;
   }
@@ -562,8 +562,12 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
     goto finalize;
   }
 
+  /** inform hpcjava to store references for jvm and jvmti 
+   ** these references can be used to find Java call stack 
+   **/
   hpcjava_set_jvmti(jvm, jvmti);
 
+  /* set jvmti capabilities */
   memset(&caps, '\0', sizeof(caps));
   caps.can_generate_compiled_method_load_events = 1;
   error = (*jvmti)->AddCapabilities(jvmti, &caps);
@@ -667,6 +671,8 @@ JNIEXPORT void JNICALL Agent_OnUnload(JavaVM * jvm)
 
   if (op_close_agent(agent_hdl))
     perror("Error: op_close_agent()");
+
+  jmt_get_all_methods_db();
 
   libhpcjava_fini();
 

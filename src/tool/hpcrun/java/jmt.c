@@ -49,31 +49,49 @@
 
 #include "splay-general.h"
 #include <memory/hpcrun-malloc.h>
-#include <jvmti.h>
 
-struct java_method_node_s {
+#include "jmt.h"
+
+// data structure for <java method, code address> pair
+struct java_method_db_node_s {
   jmethodID method;
-  void *addr_start;
-  struct java_method_node_s *left;
-  struct java_method_node_s *right;
+  struct java_method_db_node_s *left;
+  struct java_method_db_node_s *right;
 };
 
+// data structure for <java method, code address> pair
+struct method_addr_pair_node_s {
+  jmethodID method;
+  void *addr_start;
+  struct method_addr_pair_node_s *left;
+  struct method_addr_pair_node_s *right;
+};
 
-static struct java_method_node_s *root = NULL;
+// root for java-address pair
+static struct method_addr_pair_node_s *method_addr_root = NULL;
 
+static int num_method_db = 0;
+static struct java_method_db_node_s *method_db_root = NULL;
 
-static struct java_method_node_s*
-jmt_get_node(struct java_method_node_s *root, jmethodID method)
+static struct method_addr_pair_node_s*
+jmt_get_method_addr_pair_node(struct method_addr_pair_node_s *root, jmethodID method)
 {
-    REGULAR_SPLAY_TREE(java_method_node_s, root, method, method, left, right);
+    REGULAR_SPLAY_TREE(method_addr_pair_node_s, root, method, method, left, right);
+    return root;
+}
+
+static struct java_method_db_node_s*
+jmt_get_method_db_node(struct java_method_db_node_s *root, jmethodID method)
+{
+    REGULAR_SPLAY_TREE(java_method_db_node_s, root, method, method, left, right);
     return root;
 }
 
 
-static struct java_method_node_s*
-jmt_insert_method(jmethodID method, void *addr_start, struct java_method_node_s *node)
+static struct method_addr_pair_node_s*
+jmt_insert_method(jmethodID method, struct method_addr_pair_node_s *node)
 {
-   root = jmt_get_node( node, method );
+   struct method_addr_pair_node_s *root = jmt_get_method_addr_pair_node( node, method );
    if (root == NULL) {
       node->left  = NULL;
       node->right = NULL;
@@ -88,6 +106,7 @@ jmt_insert_method(jmethodID method, void *addr_start, struct java_method_node_s 
        node->right = root->right;
        root->right = NULL;
     }
+    method_addr_root = root;
     return node;
 }
 
@@ -95,23 +114,88 @@ jmt_insert_method(jmethodID method, void *addr_start, struct java_method_node_s 
 // interface
 ///////////////////////////////////////////////////////////////////////////
 
+// jmt_get_address: get the code address from java method ID based on the database
 void *
 jmt_get_address(jmethodID method)
 {
-    struct java_method_node_s *r = jmt_get_node(root, method);
+    struct method_addr_pair_node_s *r = jmt_get_method_addr_pair_node(method_addr_root, method);
     if (r != NULL && r->method==method)
 	return r->addr_start;
     return NULL;
 }
 
+// jmt_add_java_method: storing the pair java-method-ID and its address to the database
 void
 jmt_add_java_method(jmethodID method, const void *address)
 {
-    struct java_method_node_s *n = hpcrun_malloc(sizeof(struct java_method_node_s));
-    n->method = method;
-    n->addr_start = address;
+    struct method_addr_pair_node_s *n = hpcrun_malloc(sizeof(struct method_addr_pair_node_s));
 
-    if (n != NULL)
-       root = jmt_insert_method(method, address, n);
-    TMSG(JAVA, "jmt add mt: %p addr: %p r: %p", method, address, root);
+    if (n != NULL) {
+       n->method = method;
+       n->addr_start = (void*)address;
+
+       method_addr_root = jmt_insert_method(method, n);
+    }
+    TMSG(JAVA, "jmt add mt: %p addr: %p r: %p", method, address, method_addr_root);
 }
+
+// jmt_add_method_db: add a method into the database of methods
+//  this function has to be called to store method ID of java callstack
+int 
+jmt_add_method_db(jmethodID method)
+{
+  method_db_root = jmt_get_method_db_node(method_db_root, method);
+  if ( (method_db_root != NULL) && (method_db_root->method == method))
+  {
+    // the method is already in the database, nothing to do
+    return 0;
+  }
+  // the java method doesn't exist, add it into the database
+  struct java_method_db_node_s *n = hpcrun_malloc(sizeof(struct java_method_db_node_s));
+  if (n != NULL) 
+  {
+    n->method = method;
+
+    if (method_db_root == NULL) 
+    {
+      n->left = NULL;
+      n->right = NULL;
+    }
+     else if (method < method_db_root->method) 
+    {
+      n->left = method_db_root->left;
+      n->right = method_db_root;
+      method_db_root->left = NULL;
+    }
+     else
+    {
+      n->left = method_db_root;
+      n->right = method_db_root->right;
+      method_db_root->right = NULL;
+    }
+  }
+  method_db_root = n;
+
+  return num_method_db++;
+}
+
+static void
+jmt_print_method_db( struct java_method_db_node_s * node )
+{
+  if (node->left != NULL)
+    jmt_print_method_db(node->left);
+
+  TMSG(JAVA, "jmt-method %p", node->method);
+
+  if (node->right != NULL)
+    jmt_print_method_db(node->right);
+}
+
+// jmt_get_all_methods_db: get the list of methods in the database
+jmethodID* 
+jmt_get_all_methods_db()
+{
+  jmt_print_method_db(method_db_root);
+  return NULL; 
+}
+
