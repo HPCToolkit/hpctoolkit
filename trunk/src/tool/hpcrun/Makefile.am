@@ -254,7 +254,6 @@ MY_BASE_FILES =				\
 	sample_sources_registered.c	\
 	segv_handler.c			\
 	start-stop.c			\
-	system_server.c			\
 	term_handler.c			\
 	thread_data.c			\
 	thread_use.c			\
