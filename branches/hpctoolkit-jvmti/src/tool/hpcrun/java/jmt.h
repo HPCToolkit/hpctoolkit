@@ -64,6 +64,6 @@ void jmt_add_java_method(jmethodID method, const void *address);
 int jmt_add_method_db(jmethodID method);
 
 // jmt_get_all_methods_db : get the list of methods in the database
-jmethodID* jmt_get_all_methods_db();
+jmethodID* jmt_get_all_methods_db(jvmtiEnv * jvmti);
 
 #endif //ifndef _JMT_H_

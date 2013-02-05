@@ -196,6 +196,7 @@ hpcjava_detach_thread()
   (*java_vm)->DetachCurrentThread(java_vm);
 }
 
+#if 0
 /***
  * Asynchronous Java to get call stack
  * 
@@ -244,7 +245,9 @@ hpcjava_get_async_call_trace(void **callstack, int count)
   *callstack = trace.frames;
   return trace.num_frames;
 }
+#endif
 
+#if 0
 static jvmtiFrameInfo java_frames[JAVA_MAX_FRAMES];
 
 /****
@@ -252,7 +255,6 @@ static jvmtiFrameInfo java_frames[JAVA_MAX_FRAMES];
  * return the current call strack of the current thread
  */
 
-#if 0
 static int
 hpcjava_get_call_trace(void **callstack, int count)
 {
@@ -293,9 +295,9 @@ hpcjava_get_interval(void *addr)
 {
   interval_tree_node *p = interval_tree_lookup(&ui_tree_root, addr);
   if (p != NULL) {
-    void *bt;
+    //void *bt;
 
-    hpcjava_get_async_call_trace(&bt, 20);
+    //hpcjava_get_async_call_trace(&bt, 20);
 
     TMSG(JAVA, "found in Java unwind tree: addr %p", addr);
   }

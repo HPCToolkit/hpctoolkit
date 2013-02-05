@@ -77,7 +77,7 @@
  * Name of the environment variable that stores the absolute path of opjitconv
  * This variable should be set by hpcrun script (or manually)
  **/
-#define OPROFILE_CMD_ENV "HPCRUN_OPJIT_CONV"
+#define OPROFILE_CMD_ENV "HPCRUN_OPJITCONV_CMD"
 
 /**
  * Flag whether we want to fork the execution of opjitconv or not
@@ -93,6 +93,7 @@ static char file_dump[PATH_MAX] = {'\0'};
 
 static op_agent_t agent_hdl;
 static JavaVM *java_vm;
+static jvmtiEnv * jvmti = NULL;
 
 extern char **environ;
 
@@ -461,7 +462,9 @@ libhpcjava_fini()
       printf("Time range jvmti: %ld - %ld \n", time_start.tv_sec, time_end.tv_sec );
 
     char *oprofile_cmd = getenv(OPROFILE_CMD_ENV);
-    if (oprofile_cmd != NULL) {
+    if (oprofile_cmd == NULL) {
+      fprintf(stderr, "Error: Env variable %s is not set\n", OPROFILE_CMD_ENV);
+    } else {
       arg_num = 0;
       exec_args[arg_num++] = (char *) jitconv_pgm;
       exec_args[arg_num++] = (char *) file_dump;
@@ -499,7 +502,6 @@ JNIEXPORT jint JNICALL
 Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
 {
   jint rc;
-  jvmtiEnv * jvmti = NULL;
   jvmtiEventCallbacks callbacks;
   jvmtiCapabilities caps;
   jvmtiJlocationFormat format;
@@ -672,7 +674,7 @@ JNIEXPORT void JNICALL Agent_OnUnload(JavaVM * jvm)
   if (op_close_agent(agent_hdl))
     perror("Error: op_close_agent()");
 
-  jmt_get_all_methods_db();
+  jmt_get_all_methods_db(jvmti);
 
   libhpcjava_fini();
 

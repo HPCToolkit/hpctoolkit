@@ -9,6 +9,9 @@
 
 #include <stdio.h>
 
+#define RIGHT(n)   (n)->right
+#define LEFT(n)    (n)->left
+
 /*
  *  The Sleator-Tarjan top-down splay algorithm.
  *
