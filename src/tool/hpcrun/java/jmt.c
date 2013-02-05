@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include <jni.h>
+#include <jvmti.h>
 
 #include <messages/messages.h>
 
@@ -108,6 +110,46 @@ jmt_insert_method(jmethodID method, struct method_addr_pair_node_s *node)
     }
     method_addr_root = root;
     return node;
+}
+
+static void
+jmt_print_method_db(jvmtiEnv * jvmti, struct java_method_db_node_s * node )
+{
+  if (node == NULL)
+    return;
+
+  // ---------------------------------------------------------------
+  // go to the left child
+  // ---------------------------------------------------------------
+  jmt_print_method_db(jvmti, LEFT(node));
+
+  // ---------------------------------------------------------------
+  // get the name of the method
+  // ---------------------------------------------------------------
+  char * method_name = NULL;
+  char * method_signature = NULL;
+  jvmtiError err;
+
+  err = (*jvmti)->GetMethodName(jvmti, node->method, &method_name,
+                                &method_signature, NULL);
+  if (err == JVMTI_ERROR_NONE)
+  {
+    TMSG(JAVA, "jmt-method %p: %s  %s", node->method, method_name, method_signature);
+  }
+  else
+  {
+    TMSG(JAVA, "jmt-method %p: %d", node->method, err);
+  }
+  // ---------------------------------------------------------------
+  // clean up
+  // ---------------------------------------------------------------
+  (*jvmti)->Deallocate(jvmti, (unsigned char *)method_name);
+  (*jvmti)->Deallocate(jvmti, (unsigned char *)method_signature);
+
+  // ---------------------------------------------------------------
+  // go to the right child
+  // ---------------------------------------------------------------
+  jmt_print_method_db(jvmti, RIGHT(node));
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -179,23 +221,11 @@ jmt_add_method_db(jmethodID method)
   return num_method_db++;
 }
 
-static void
-jmt_print_method_db( struct java_method_db_node_s * node )
-{
-  if (node->left != NULL)
-    jmt_print_method_db(node->left);
-
-  TMSG(JAVA, "jmt-method %p", node->method);
-
-  if (node->right != NULL)
-    jmt_print_method_db(node->right);
-}
-
 // jmt_get_all_methods_db: get the list of methods in the database
 jmethodID* 
-jmt_get_all_methods_db()
+jmt_get_all_methods_db(jvmtiEnv * jvmti)
 {
-  jmt_print_method_db(method_db_root);
+  jmt_print_method_db(jvmti, method_db_root);
   return NULL; 
 }
 
