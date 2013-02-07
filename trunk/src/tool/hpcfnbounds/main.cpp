@@ -70,6 +70,7 @@
 //*****************************************************************************
 // HPCToolkit Externals Include
 //*****************************************************************************
+
 #include <libdwarf.h>
 
 //*****************************************************************************
@@ -557,13 +558,13 @@ dump_file_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
 static void
 dump_header_info(int is_relocatable, uintptr_t ref_offset)
 {
-  struct fnbounds_file_header fh;
-
   if (server_mode()) {
     syserv_add_header(is_relocatable, ref_offset);
     return;
   }
 
+#if 0
+  struct fnbounds_file_header fh;
   if (binary_fmt_fd() >= 0) {
     memset(&fh, 0, sizeof(fh));
     fh.zero_pad = 0;
@@ -573,6 +574,7 @@ dump_header_info(int is_relocatable, uintptr_t ref_offset)
     fh.is_relocatable = is_relocatable;
     write(binary_fmt_fd(), &fh, sizeof(fh));
   }
+#endif
 
   if (c_fmt_fp() != NULL) {
     fprintf(c_fmt_fp(), "unsigned long hpcrun_reference_offset = %"PRIuPTR";\n", 

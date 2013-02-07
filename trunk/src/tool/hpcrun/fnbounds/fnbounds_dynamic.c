@@ -88,6 +88,7 @@
 //*********************************************************************
 
 #include "fnbounds_interface.h"
+#include "fnbounds_file_header.h"
 #include "client.h"
 #include "dylib.h"
 
@@ -101,10 +102,6 @@
 
 #include <unwind/common/ui_tree.h>
 #include <messages/messages.h>
-
-// FIXME:tallent: more spaghetti includes
-#include <hpcfnbounds/fnbounds-file-header.h>
-#include <hpcfnbounds/syserv-mesg.h>
 
 #include <lib/prof-lean/spinlock.h>
 

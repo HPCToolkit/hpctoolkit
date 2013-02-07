@@ -80,6 +80,7 @@
 #include <errno.h>
 #include <setjmp.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -109,7 +110,7 @@ static long  max_num_addrs;
 static char *inbuf;
 static long  inbuf_size;
 
-static struct fnbounds_file_header fnb_hdr;
+static struct syserv_fnbounds_info fnb_info;
 
 static int jmpbuf_ok = 0;
 static sigjmp_buf jmpbuf;
@@ -245,8 +246,8 @@ syserv_add_addr(void *addr, long func_entry_map_size)
 void
 syserv_add_header(int is_relocatable, uintptr_t ref_offset)
 {
-  fnb_hdr.reference_offset = ref_offset;
-  fnb_hdr.is_relocatable = is_relocatable;
+  fnb_info.is_relocatable = is_relocatable;
+  fnb_info.reference_offset = ref_offset;
 }
 
 
@@ -326,7 +327,7 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
   if (sigsetjmp(jmpbuf, 1) == 0) {
     // initial return on success
     jmpbuf_ok = 1;
-    memset(&fnb_hdr, 0, sizeof(fnb_hdr));
+    memset(&fnb_info, 0, sizeof(fnb_info));
     code_ranges_reinit();
     function_entries_reinit();
 
@@ -335,7 +336,7 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
 
     // pad list of addrs in case there are fewer function addrs than
     // size of map.
-    fnb_hdr.num_entries = total_num_addrs;
+    fnb_info.num_entries = total_num_addrs;
     for (k = total_num_addrs; k < max_num_addrs; k++) {
       syserv_add_addr(NULL, 0);
     }
@@ -351,14 +352,14 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
     // units are Kbytes
     struct rusage usage;
     if (getrusage(RUSAGE_SELF, &usage) == 0) {
-      fnb_hdr.memsize = usage.ru_maxrss;
+      fnb_info.memsize = usage.ru_maxrss;
     } else {
-      fnb_hdr.memsize = -1;
+      fnb_info.memsize = -1;
     }
 
-    fnb_hdr.magic = FNBOUNDS_MAGIC;
-    fnb_hdr.status = SYSERV_OK;
-    ret = write_all(fdout, &fnb_hdr, sizeof(fnb_hdr));
+    fnb_info.magic = FNBOUNDS_MAGIC;
+    fnb_info.status = SYSERV_OK;
+    ret = write_all(fdout, &fnb_info, sizeof(fnb_info));
     if (ret != SUCCESS) {
       err(1, "write to fdout failed");
     }
