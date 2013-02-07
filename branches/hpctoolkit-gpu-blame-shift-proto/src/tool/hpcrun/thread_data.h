@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -144,8 +144,8 @@ typedef struct thread_data_t {
   // ----------------------------------------
   // sample sources
   // ----------------------------------------
-  int            eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
   source_state_t ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
+  source_info_t  ss_info[MAX_POSSIBLE_SAMPLE_SOURCES];
 
   struct sigevent sigev;   // POSIX real-time timer
   timer_t        timerid;

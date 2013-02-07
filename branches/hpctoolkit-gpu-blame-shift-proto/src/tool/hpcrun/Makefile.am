@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2012, Rice University
+## Copyright ((c)) 2002-2013, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -146,7 +146,6 @@ LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
 PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
-SYMTABAPI_INC =  @SYMTABAPI_INC@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 
@@ -175,7 +174,7 @@ UNW_X86_FILES = \
        $(UNW_COMMON_FILES) \
 	unwind/x86-family/x86-all.c			\
 	unwind/x86-family/amd-xop.c                     \
- 	unwind/x86-family/x86-cold-path.c		\
+	unwind/x86-family/x86-cold-path.c		\
 	unwind/x86-family/x86-validate-retn-addr.c	\
 	unwind/x86-family/x86-unwind-interval.c		\
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
@@ -265,10 +264,10 @@ MY_BASE_FILES =				\
 	sample_sources_registered.c	\
 	segv_handler.c			\
 	start-stop.c			\
-	system_server.c			\
 	term_handler.c			\
 	thread_data.c			\
 	thread_use.c			\
+	threadmgr.c			\
 	trace.c				\
 	weak.c				\
 	write_data.c		        \
@@ -343,8 +342,11 @@ MY_IA64_FILES = \
         trampoline/ia64/ia64-tramp.s \
         utilities/arch/ia64/ia64-context-pc.c
 
-MY_PAPI_FILES = 			\
-	sample-sources/papi.c
+if OPT_PAPI_COMPONENT
+MY_PAPI_FILES = sample-sources/papi-c.c
+else
+MY_PAPI_FILES = sample-sources/papi.c
+endif
 
 MY_UPC_FILES = sample-sources/upc.c
 
@@ -365,8 +367,7 @@ MY_INCLUDE_DIRS =			\
 	$(HPC_IFLAGS)			\
 	$(OPT_LIBUNWIND_IFLAGS)         \
 	-I$(HPCFNBOUNDS_INC)		\
-	-I$(LIBMONITOR_INC)		\
-	-I$(SYMTABAPI_INC)		
+	-I$(LIBMONITOR_INC)
 
 
 MY_MIPS_INCLUDE_DIRS = \
@@ -498,38 +499,36 @@ $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
 	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
 		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
 
-
 if OPT_ENABLE_CUDA
 
 generated_file_base = $(srcdir)/sample-sources
 
-generated_cuda_driver_files = $(addprefix $(generated_file_base), gpu_blame-cuda-runtime-header.h gpu_blame-cuda-driver-table.c gpu_blame-driver-overrides-generated.c)
-generated_cuda_driver_api_files = $(addprefix $(generated_file_base), cuda_driver_apis.h) 
-generated_cuda_runtime_files = $(addprefix $(generated_file_base), gpu_blame-cuda-runtime-header.h gpu_blame-cuda-runtime-table.c pu_blame-runtime-overrides-generated.c)
-generated_cuda_runtime_api_files = $(addprefix $(generated_file_base), cuda_runtime_apis.h) 
+generated_cuda_driver_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-driver-header.h gpu_blame-cuda-driver-table.c gpu_blame-driver-overrides-generated.c)
+generated_cuda_driver_api_files = $(addprefix $(generated_file_base)/, cuda_driver_apis.h)
+generated_cuda_runtime_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-runtime-header.h gpu_blame-cuda-runtime-table.c gpu_blame-runtime-overrides-generated.c)
+generated_cuda_runtime_api_files = $(addprefix $(generated_file_base)/, cuda_runtime_apis.h)
 
-BUILT_SOURCES = $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files) 
+BUILT_SOURCES = $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
 
 CLEANFILES  =  $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
 
-$(generated_cuda_runtime_api_files) : $(generated_file_base)/cuda_runtime_dummy.c 
+$(generated_cuda_runtime_api_files) : $(generated_file_base)/cuda_runtime_dummy.c
 	$(CC) $(OPT_CUDA_IFLAGS) -E -B -c $(generated_file_base)/cuda_runtime_dummy.c  -o  $(generated_file_base)/cuda_runtime_apis.h 
 
-$(generated_cuda_runtime_files) : $(generated_file_base)/make-cuda-wrappers.py 
+$(generated_cuda_runtime_files) : $(generated_file_base)/make-cuda-wrappers.py $(generated_cuda_runtime_api_files)
 	$(PYTHON) $(generated_file_base)/make-cuda-wrappers.py runtime $(generated_cuda_runtime_api_files) $(generated_cuda_runtime_files)
 
-$(generated_file_base)/gpu_blame-cuda-runtime-header.h  $(generated_file_base)/gpu_blame-cuda-runtime-table.c
+$(generated_file_base)/gpu_blame-cuda-runtime-header.h:  $(generated_file_base)/gpu_blame-cuda-runtime-table.c
 
-$(generated_file_base)/gpu_blame-cuda-runtime-table.c $(generated_file_base)/gpu_blame-runtime-overrides-generated.c
-
+$(generated_file_base)/gpu_blame-cuda-runtime-table.c: $(generated_file_base)/gpu_blame-runtime-overrides-generated.c
 
 $(generated_cuda_driver_api_files) :  $(generated_file_base)/cuda_driver_dummy.c
 	$(CC) $(OPT_CUDA_IFLAGS)  -E -B -c $(generated_file_base)/cuda_driver_dummy.c -o $(generated_file_base)/cuda_driver_apis.h
 
-$(generated_cuda_driver_files) : $(generated_file_base)/make-cuda-wrappers.py 
-        $(PYTHON) $(generated_file_base)/make-cuda-wrappers.py driver $(generated_cuda_driver_files) $(generated_cuda_driver_api_files)
+$(generated_cuda_driver_files) : $(generated_file_base)/make-cuda-wrappers.py $(generated_cuda_driver_api_files) 
+	$(PYTHON) $(generated_file_base)/make-cuda-wrappers.py driver $(generated_cuda_driver_api_files)  $(generated_cuda_driver_files)
 
-$(generated_file_base)/gpu_blame-cuda-driver-header.h : $(generated_file_base)/gpu_blame-cuda-driver-table.c 
+$(generated_file_base)/gpu_blame-cuda-driver-header.h : $(generated_file_base)/gpu_blame-cuda-driver-table.c
 
 $(generated_file_base)/gpu_blame-cuda-driver-table.c : $(generated_file_base)/gpu_blame-driver-overrides-generated.c
 

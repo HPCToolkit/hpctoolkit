@@ -5,7 +5,7 @@
 # Part of HPCToolkit (hpctoolkit.org)
 #------------------------------------
 #
-# Copyright (c) 2002-2012, Rice University.
+# Copyright (c) 2002-2013, Rice University.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -215,19 +215,6 @@ do
     arg="$1" ; shift
     case "$arg" in
 
-	# temp option to run new fnbounds server with debugging
-	-fnb | --fnb )
-	    unset  OLD_SYSTEM_SERVER
-	    export HPCRUN_DEBUG_FLAGS="$HPCRUN_DEBUG_FLAGS SYSTEM_SERVER"
-	    ;;
-
-	# temp option to run old fnbounds server
-	-ofnb | --ofnb )
-	    export OLD_SYSTEM_SERVER=1
-	    ;;
-
-	# --------------------------------------------------
-
 	-md | --monitor-debug )
 	    export MONITOR_DEBUG=1
 	    ;;
@@ -427,38 +414,6 @@ if test -x "$command" ; then
 	    exit 1
 	fi
     fi
-fi
-
-# Verify that we can write to tmpdir: HPCRUN_TMPDIR, TMPDIR or /tmp,
-# and fail now with a useful message if not.  Note: we use the same
-# algorithm as inside hpcfnbounds: if HPCRUN_TMPDIR or TMPDIR is set,
-# then commit to that directory and not try the next if it fails.
-
-test_tmp_dir()
-{
-    tmp_file="$1/hpcrun-tmp-file-$$"
-    tmp_dir="$1"
-
-    if touch "$tmp_file" >/dev/null 2>&1 ; then
-	tmp_ans=yes
-	rm -f "$tmp_file"
-    else
-	tmp_ans=no
-    fi
-}
-
-if test -n "$HPCRUN_TMPDIR" ; then
-    test_tmp_dir "$HPCRUN_TMPDIR"
-elif test -n "$TMPDIR" ; then
-    test_tmp_dir "$TMPDIR"
-else
-    test_tmp_dir /tmp
-fi
-
-if test "x$OLD_SYSTEM_SERVER" != x && test "$tmp_ans" = no ; then
-    echo "hpcrun: unable to write to tmp directory: $tmp_dir" 1>&2
-    echo "please set HPCRUN_TMPDIR or TMPDIR and try again" 1>&2
-    exit 1
 fi
 
 #------------------------------------------------------------

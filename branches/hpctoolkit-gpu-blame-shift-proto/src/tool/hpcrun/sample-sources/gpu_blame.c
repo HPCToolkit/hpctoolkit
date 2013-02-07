@@ -239,10 +239,6 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_blame_shifter");
     bs_entry.next = 0;
     blame_shift_register(&bs_entry);
-
-    // 
-    thread_data_t *td = hpcrun_get_thread_data();
-    td->eventSet[self->evset_idx] = 0xDEAD;
 }
 
 static void METHOD_FN(gen_event_set, int lush_metrics)

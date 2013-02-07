@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -47,6 +47,7 @@
 //
 // PAPI sample source simple oo interface
 //
+
 
 /******************************************************************************
  * system includes
@@ -99,10 +100,20 @@
  * macros
  *****************************************************************************/
 
-
 #define OVERFLOW_MODE 0
 #define WEIGHT_METRIC 0
 #define DEFAULT_THRESHOLD  2000000L
+
+
+/******************************************************************************
+ * type declarations 
+ *****************************************************************************/
+
+typedef struct {
+  int eventSet;
+  long long prev_values[MAX_EVENTS];
+} papi_source_info_t;
+
 
 /******************************************************************************
  * forward declarations 
@@ -116,12 +127,23 @@ static void event_fatal_error(int ev_code, int papi_ret);
 /******************************************************************************
  * local variables
  *****************************************************************************/
+
 static int cyc_metric_id = -1; /* initialized to an illegal metric id */
 
 // Special case to make PAPI_library_init() a soft failure.
 // Make sure that we call no other PAPI functions.
 //
 static int papi_unavail = 0;
+
+// Support for derived events (proxy sampling).
+static int derived[MAX_EVENTS];
+static int some_derived;
+static int some_overflow;
+
+
+/******************************************************************************
+ * method functions
+ *****************************************************************************/
 
 static void
 METHOD_FN(init)
@@ -193,7 +215,8 @@ METHOD_FN(start)
   if (papi_unavail) { return; }
 
   thread_data_t *td = hpcrun_get_thread_data();
-  int eventSet = td->eventSet[self->evset_idx];
+  papi_source_info_t *psi = td->ss_info[self->evset_idx].ptr;
+  int eventSet = psi->eventSet;
   source_state_t my_state = TD_GET(ss_state)[self->evset_idx];
 
   // make PAPI start idempotent.  the application can turn on sampling
@@ -213,6 +236,13 @@ METHOD_FN(start)
   else if (ret != PAPI_OK) {
     EMSG("PAPI_start failed with %s (%d)", PAPI_strerror(ret), ret);
     hpcrun_ssfail_start("PAPI");
+  }
+
+  if (some_derived) {
+    ret = PAPI_read(eventSet, psi->prev_values);
+    if (ret != PAPI_OK) {
+      EMSG("PAPI_read failed with %s (%d)", PAPI_strerror(ret), ret);
+    }
   }
 
   TD_GET(ss_state)[self->evset_idx] = START;
@@ -237,7 +267,8 @@ METHOD_FN(stop)
   if (papi_unavail) { return; }
 
   thread_data_t *td = hpcrun_get_thread_data();
-  int eventSet = td->eventSet[self->evset_idx];
+  papi_source_info_t *psi = td->ss_info[self->evset_idx].ptr;
+  int eventSet = psi->eventSet;
   int nevents  = self->evl.nevents;
   source_state_t my_state = TD_GET(ss_state)[self->evset_idx];
 
@@ -339,8 +370,10 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   hpcrun_pre_allocate_metrics(nevents + num_lush_metrics);
 
+  some_derived = 0;
+  some_overflow = 0;
   for (i = 0; i < nevents; i++) {
-    char buffer[PAPI_MAX_STR_LEN];
+    char buffer[PAPI_MAX_STR_LEN + 10];
     int metric_id = hpcrun_new_metric(); /* weight */
     metric_desc_properties_t prop = metric_property_none;
     METHOD_CALL(self, store_metric_id, i, metric_id);
@@ -350,6 +383,23 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (strcmp(buffer, "PAPI_TOT_CYC") == 0) {
       prop = metric_property_cycles;
     } 
+
+    // allow derived events (proxy sampling), as long as some event
+    // supports hardware overflow.  use threshold = 0 to force proxy
+    // sampling (for testing).
+    if (event_is_derived(self->evl.events[i].event)
+	|| self->evl.events[i].thresh == 0)
+    {
+      TMSG(PAPI, "using proxy sampling for event %s", buffer);
+      strcat(buffer, " (proxy)");
+      self->evl.events[i].thresh = 1;
+      derived[i] = 1;
+      some_derived = 1;
+    } else {
+      derived[i] = 0;
+      some_overflow = 1;
+    }
+
     hpcrun_set_metric_info_and_period(metric_id, strdup(buffer),
 				      MetricFlags_ValFmt_Int,
 				      self->evl.events[i].thresh, prop);
@@ -367,6 +417,10 @@ METHOD_FN(process_event_list, int lush_metrics)
 					self->evl.events[i].thresh, prop);
     }
   }
+
+  if (! some_overflow) {
+    hpcrun_ssfail_all_derived("PAPI");
+  }
 }
 
 static void
@@ -378,6 +432,20 @@ METHOD_FN(gen_event_set,int lush_metrics)
 
   TMSG(PAPI, "gen event set");
   if (papi_unavail) { return; }
+
+  int ss_info_size = sizeof(papi_source_info_t);
+  papi_source_info_t *psi = hpcrun_malloc(ss_info_size);
+  if (psi == NULL) {
+    hpcrun_abort("Failure to allocate space for PAPI sample source");
+  }
+
+  psi->eventSet = PAPI_NULL;
+  memset(psi->prev_values,0, sizeof(psi->prev_values));
+
+  // record the component state in thread state
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->ss_info[self->evset_idx].ptr = psi;
+
 
   eventSet = PAPI_NULL;
   ret = PAPI_create_eventset(&eventSet);
@@ -403,18 +471,20 @@ METHOD_FN(gen_event_set,int lush_metrics)
     int evcode = self->evl.events[i].event;
     long thresh = self->evl.events[i].thresh;
 
-    TMSG(PAPI, "PAPI_overflow(eventSet=%d, evcode=%x, thresh=%d)", eventSet, evcode, thresh);
-    ret = PAPI_overflow(eventSet, evcode, thresh, OVERFLOW_MODE,
-			papi_event_handler);
-    TMSG(PAPI,"PAPI_overflow = %d", ret);
-    if (ret != PAPI_OK) {
-      EMSG("failure in PAPI gen_event_set(): PAPI_overflow() returned: %s (%d)",
-	   PAPI_strerror(ret), ret);
-      event_fatal_error(evcode, ret);
+    if (! derived[i]) {
+      TMSG(PAPI, "PAPI_overflow(eventSet=%d, evcode=%x, thresh=%d)",
+           eventSet, evcode, thresh);
+      ret = PAPI_overflow(eventSet, evcode, thresh, OVERFLOW_MODE,
+                          papi_event_handler);
+      TMSG(PAPI, "PAPI_overflow = %d", ret);
+      if (ret != PAPI_OK) {
+	EMSG("failure in PAPI gen_event_set(): PAPI_overflow() returned: %s (%d)",
+             PAPI_strerror(ret), ret);
+        event_fatal_error(evcode, ret);
+      }
     }
   }
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->eventSet[self->evset_idx] = eventSet;
+  psi->eventSet= eventSet;
 }
 
 static void
@@ -544,9 +614,12 @@ static void
 papi_event_handler(int event_set, void *pc, long long ovec,
                    void *context)
 {
-  int i;
+  sample_source_t *self = &_papi_obj;
+  long long values[MAX_EVENTS];
   int my_events[MAX_EVENTS];
   int my_event_count = MAX_EVENTS;
+  int nevents  = self->evl.nevents;
+  int i, ret;
 
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
@@ -557,12 +630,19 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   TMSG(PAPI_SAMPLE,"papi event happened, ovec = %ld",ovec);
 
-  int ret = PAPI_get_overflow_event_index(event_set, ovec, my_events,
-					  &my_event_count);
+  if (some_derived) {
+    ret = PAPI_read(event_set, values);
+    if (ret != PAPI_OK) {
+      EMSG("PAPI_read failed with %s (%d)", PAPI_strerror(ret), ret);
+    }
+  }
+
+  ret = PAPI_get_overflow_event_index(event_set, ovec, my_events, &my_event_count);
   if (ret != PAPI_OK) {
     hpcrun_abort("Failed inside papi_event_handler at get_overflow_event_index."
 		 "Return code = %d ==> %s", ret, PAPI_strerror(ret));
   }
+
   for (i = 0; i < my_event_count; i++) {
     // FIXME: SUBTLE ERROR: metric_id may not be same from hpcrun_new_metric()!
     // This means lush's 'time' metric should be *last*
@@ -576,5 +656,27 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
     blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
   }
+
+  // Add metric values for derived events by the difference in counter
+  // values.  Some samples can take a long time (eg, analyzing a new
+  // load module), so read the counters both on entry and exit to
+  // avoid counting our work.
+
+  if (some_derived) {
+    thread_data_t *td = hpcrun_get_thread_data();
+    papi_source_info_t *psi = td->ss_info[self->evset_idx].ptr;
+    for (i = 0; i < nevents; i++) {
+      if (derived[i]) {
+	hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),
+			       values[i] - psi->prev_values[i], 0, 0);
+      }
+    }
+
+    ret = PAPI_read(event_set, psi->prev_values);
+    if (ret != PAPI_OK) {
+      EMSG("PAPI_read failed with %s (%d)", PAPI_strerror(ret), ret);
+    }
+  }
+
   hpcrun_safe_exit();
 }

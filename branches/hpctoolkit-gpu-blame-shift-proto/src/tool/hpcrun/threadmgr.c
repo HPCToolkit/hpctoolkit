@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,29 +44,67 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//===============================================
-// File: system_server.h  
-// 
-//     use an extra "server" process to handle computing the
-//     symbols to insulate the client process from the complexity of this task, 
-//     including use of the system command to fork new processes. having the
-//     server process enables use to avoid dealing with forking off new processes
-//     with system when there might be multiple threads active with sampling  
-//     enabled.
-//
-//  Modification history:
-//     2008 April 29 - created John Mellor-Crummey
-//===============================================
+//******************************************************************************
+// File: threadmgr.c: 
+// Purpose: maintain information about the number of live threads
+//******************************************************************************
 
 
-//*******************************************************************************
-// interface operations  
-//*******************************************************************************
 
-int system_server_start();
+//******************************************************************************
+// system include files 
+//******************************************************************************
+#include <stdint.h>
 
 
-void system_server_shutdown();
- 
 
-int system_server_execute_command(const char *command);  
+//******************************************************************************
+// local include files 
+//******************************************************************************
+#include <lib/prof-lean/atomic-op.h>
+#include "threadmgr.h"
+
+
+
+//******************************************************************************
+// private data
+//******************************************************************************
+static int32_t threadmgr_active_threads = 1; // one for the process main thread
+
+
+
+//******************************************************************************
+// private operations
+//******************************************************************************
+
+static void
+adjust_thread_count(int32_t val)
+{
+	atomic_add_i32(&threadmgr_active_threads, val);
+}
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+void
+hpcrun_threadmgr_thread_new()
+{
+	adjust_thread_count(1);
+}
+
+
+void 
+hpcrun_threadmgr_thread_delete()
+{
+	adjust_thread_count(-1);
+}
+
+
+int 
+hpcrun_threadmgr_thread_count()
+{
+	return threadmgr_active_threads;
+}

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -522,7 +522,8 @@ ANode::aggregateMetricsExcl(ProcFrm* frame, const VMAIntervalSet& ivalset)
 
 
 void
-ANode::computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
+ANode::computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
+		      bool doFinal)
 {
   if ( !(mBegId < mEndId) ) {
     return;
@@ -533,15 +534,16 @@ ANode::computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
 
   for (ANodeIterator it(this); it.Current(); ++it) {
     ANode* n = it.current();
-    n->computeMetricsMe(mMgr, mBegId, mEndId);
+    n->computeMetricsMe(mMgr, mBegId, mEndId, doFinal);
   }
 }
 
 
 void
-ANode::computeMetricsMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
+ANode::computeMetricsMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
+			bool doFinal)
 {
-  //uint numMetrics = mMgr.size();
+  uint numMetrics = mMgr.size();
 
   for (uint mId = mBegId; mId < mEndId; ++mId) {
     const Metric::ADesc* m = mMgr.metric(mId);
@@ -549,7 +551,10 @@ ANode::computeMetricsMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
     if (mm && mm->expr()) {
       const Metric::AExpr* expr = mm->expr();
       expr->evalNF(*this);
-      // double val = eval(); demandMetric(mId, numMetrics/*size*/) = val;
+      if (doFinal) {
+	double val = expr->eval(*this);
+	demandMetric(mId, numMetrics/*size*/) = val;
+      }
     }
   }
 }
