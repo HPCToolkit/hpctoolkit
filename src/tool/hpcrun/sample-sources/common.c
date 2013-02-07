@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -212,6 +212,15 @@ hpcrun_ssfail_derived(char *source, char *event)
 {
   EEMSG("%s: %s event %s is a derived event and thus cannot be profiled.\n%s",
 	prefix, source, event, hpcrun_L);
+  exit(1);
+}
+
+void
+hpcrun_ssfail_all_derived(char *source)
+{
+  EEMSG("%s: All %s events are derived.  To use proxy sampling,\n"
+	"at least one event must support hardware overflow (eg, PAPI_TOT_CYC).\n",
+	prefix, source);
   exit(1);
 }
 

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -270,8 +270,8 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   // ----------------------------------------
   // sample sources
   // ----------------------------------------
-  memset(&td->eventSet, 0, sizeof(td->eventSet));
   memset(&td->ss_state, UNINIT, sizeof(td->ss_state));
+  memset(&td->ss_info, 0, sizeof(td->ss_info));
 
   td->timer_init = false;
   td->last_time_us = 0;

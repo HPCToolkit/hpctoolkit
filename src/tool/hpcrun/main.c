@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -105,6 +105,7 @@
 
 #include "epoch.h"
 #include "thread_data.h"
+#include "threadmgr.h"
 #include "thread_use.h"
 #include "trace.h"
 #include "write_data.h"
@@ -852,7 +853,9 @@ monitor_init_thread(int tid, void* data)
   void* thread_data = hpcrun_thread_init(tid, (cct_ctxt_t*)data);
   TMSG(THREAD,"back from init thread %d",tid);
 
+  hpcrun_threadmgr_thread_new();
   hpcrun_trace_open(&(TD_GET(core_profile_trace_data)));
+
   hpcrun_safe_exit();
 
   return thread_data;
@@ -862,6 +865,8 @@ monitor_init_thread(int tid, void* data)
 void
 monitor_fini_thread(void* init_thread_data)
 {
+  hpcrun_threadmgr_thread_delete();
+
   if (hpcrun_get_disabled()) {
     return;
   }
