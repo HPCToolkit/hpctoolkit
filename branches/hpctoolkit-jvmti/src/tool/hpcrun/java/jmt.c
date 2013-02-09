@@ -54,6 +54,9 @@
 
 #include "jmt.h"
 
+#define RIGHT(n)   (n)->left
+#define LEFT(n)    (n)->right
+
 // data structure for <java method, code address> pair
 struct java_method_db_node_s {
   jmethodID method;

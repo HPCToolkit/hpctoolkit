@@ -63,6 +63,7 @@
 #include <lib/prof-lean/spinlock.h>
 
 #include <jni.h>
+#include <jvmti.h>
 
 #include "fnbounds_interface.h"
 #include "splay.h"
@@ -196,7 +197,7 @@ hpcjava_detach_thread()
   (*java_vm)->DetachCurrentThread(java_vm);
 }
 
-#if 0
+#if 1
 /***
  * Asynchronous Java to get call stack
  * 
@@ -224,6 +225,8 @@ hpcjava_get_async_call_trace(void **callstack, int count)
       for (i=0; i<trace.num_frames; i++)
       {
 	if (trace.frames[i].method_id != NULL && trace.frames[i].lineno>=0) {
+	  jmt_add_method_db(trace.frames[i].method_id);
+	  /*
 	  void *addr = jmt_get_address(trace.frames[i].method_id);
 	  if (addr != NULL) 
 	  {
@@ -231,7 +234,14 @@ hpcjava_get_async_call_trace(void **callstack, int count)
 	  } else {
 	    TMSG(JAVA, "jmt-nul %d: %p", i, trace.frames[i].method_id);
 	  }
-	  jmt_add_method_db(trace.frames[i].method_id);
+	  */ /*
+	  jmethodID method;
+	  jlocation location;
+	  jvmtiError err = (*java_jvmti)->GetFrameLocation(java_jvmti, NULL, i, &method, &location);
+	  if (err == JVMTI_ERROR_NONE)
+	  {
+	    TMSG(JAVA, "gfl %d - m: %p, @: %p", i, method, location);
+	  } */
 	}
       }
     } else
@@ -263,19 +273,24 @@ hpcjava_get_call_trace(void **callstack, int count)
   err = (*java_jvmti)->GetStackTrace(java_jvmti, NULL, 0, JAVA_MAX_FRAMES, 
 					java_frames, &count);
   if (err == JVMTI_ERROR_NONE && count > 0)
-  {
+  { 
+    int i;
+    for (i=0; i<count; i++)
+    {
+      TMSG(JAVA, "gst %d id: %p, @: %p", i, java_frames[i].method, java_frames[i].location);
+    }
+    /*
     unsigned char *methodName;
     unsigned char *signatureName;
-    int i;
     for (i=0; i<count; i++) {
       err = (*java_jvmti)->GetMethodName(java_jvmti, java_frames[i].method, 
                        &methodName, &signatureName, NULL);
       if (err == JVMTI_ERROR_NONE) {
-        printf("%d method %p: %s\n", i, java_frames[i].method, methodName);
+        TMSG(JAVA, "%d method %p: %s\n", i, java_frames[i].method, methodName);
 	(*java_jvmti)->Deallocate(java_jvmti, methodName);
 	(*java_jvmti)->Deallocate(java_jvmti, signatureName);
       } 
-    }
+    } */
   }
   return err;
 }
@@ -293,12 +308,14 @@ hpcjava_get_call_trace(void **callstack, int count)
 splay_interval_t *
 hpcjava_get_interval(void *addr)
 {
-  interval_tree_node *p = interval_tree_lookup(&ui_tree_root, addr);
+  interval_tree_node *p;
+
+  p = interval_tree_lookup(&ui_tree_root, addr);
+
   if (p != NULL) {
-    //void *bt;
-
-    //hpcjava_get_async_call_trace(&bt, 20);
-
+    void *bt;
+    hpcjava_get_async_call_trace(&bt, 20);
+    //hpcjava_get_call_trace( &bt, JAVA_MAX_FRAMES);
     TMSG(JAVA, "found in Java unwind tree: addr %p", addr);
   }
   return (splay_interval_t *)p;
@@ -394,11 +411,16 @@ hpcjava_addr_to_interval_locked(const void *addr_start, const void *addr_end)
 void
 hpcjava_delete_ui()
 {
+  interval_tree_node *del_tree;
+  dso_info_t *dso;
+
   UI_TREE_JAVA_LOCK;
 
   TMSG(JAVA, "begin unwind_java delete");
 
-  free_ui_java_tree_locked(ui_tree_root);
+  dso = lm_java->dso_info;
+  interval_tree_delete(&ui_tree_root, &del_tree, dso->start_addr, dso->end_addr+1);
+  free_ui_java_tree_locked(del_tree);
 
   UI_TREE_JAVA_UNLOCK;
 }
@@ -412,7 +434,7 @@ hpcjava_delete_ui()
 /*
  * The ui free routines are in the private section in order to enforce
  * locking.  Free is only called from hpcjava_addr_to_interval() or
- * hpcjava_delete_ui_range() where the free list is already locked.
+ * hpcjava_delete_ui() where the free list is already locked.
  *
  * Free the nodes in post order, since putting a node on the free list
  * modifies its child pointers.
@@ -423,8 +445,8 @@ free_ui_java_tree_locked(interval_tree_node *tree)
   if (tree == NULL)
     return;
 
-  free_ui_java_tree_locked(LEFT(tree));
-  free_ui_java_tree_locked(RIGHT(tree));
+  free_ui_java_tree_locked((tree->prev));
+  free_ui_java_tree_locked((tree->next));
   RIGHT(tree) = ui_free_list;
   ui_free_list = tree;
 }
@@ -470,6 +492,6 @@ hpcjava_print_interval_tree_r(FILE* fs, interval_tree_node *node)
   fprintf(fs, "  {%p start=%p end=%p}\n", node, START(node), END(node));
 
   // Recur
-  hpcjava_print_interval_tree_r(fs, RIGHT(node));
-  hpcjava_print_interval_tree_r(fs, LEFT(node));
+  hpcjava_print_interval_tree_r(fs, (node->next));
+  hpcjava_print_interval_tree_r(fs, (node->prev));
 }
