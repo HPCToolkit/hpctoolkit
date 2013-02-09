@@ -149,15 +149,6 @@ create_debug_line_info(jint map_length, jvmtiAddrLocationMap const * map,
     debug_line[i].filename = source_filename;
   }
 
-  if (debug) {
-    for (i = 0; i < map_length; ++i) {
-      fprintf(stderr, "%d\t-> %lx %s:%d\t\n", i, debug_line[i].vma,
-	      debug_line[i].filename,debug_line[i].lineno);
-    }
-    fprintf(stderr, "\n");
-    fflush(stderr);
-  }
-	
   return debug_line;
 }
 
@@ -384,7 +375,7 @@ static void JNICALL cb_compiled_method_unload(jvmtiEnv * jvmti_env,
   if (op_unload_native_code(agent_hdl, (uint64_t)(uintptr_t) code_addr))
     perror("Error: op_unload_native_code()");
 
-  hpcjava_detach_thread();
+  //hpcjava_detach_thread();
 
   /************* end hpcrun critical section ************/
   hpcrun_safe_exit();
@@ -484,6 +475,25 @@ libhpcjava_fini()
 	    jitconv_pgm, strerror(errno));
   } 
 #endif
+}
+
+
+static void JNICALL
+cb_vm_death(jvmtiEnv *jvmti_env,
+            JNIEnv* jni_env)
+{
+  /************* hpcrun critical section ************/
+  if (!hpcrun_safe_enter()) {
+    return 0;
+  }
+
+  if (debug)
+    fprintf(stderr, "vm_death\n");
+
+  jmt_get_all_methods_db(jvmti);
+	
+  /************* end hpcrun critical section ************/
+  hpcrun_safe_exit();
 }
 
 /***
@@ -592,11 +602,12 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
 
   memset(&callbacks, 0, sizeof(callbacks));
 
-  callbacks.ClassLoad		= cb_class_load;
+  callbacks.ClassLoad			= cb_class_load;
   callbacks.ClassPrepare		= cb_class_prepare;
-  callbacks.CompiledMethodLoad 	= cb_compiled_method_load;
+  callbacks.CompiledMethodLoad 		= cb_compiled_method_load;
   callbacks.CompiledMethodUnload 	= cb_compiled_method_unload;
   callbacks.DynamicCodeGenerated 	= cb_dynamic_code_generated;
+  callbacks.VMDeath			= cb_vm_death;
 
   error = (*jvmti)->SetEventCallbacks(jvmti, &callbacks,
 				      sizeof(callbacks));
@@ -641,6 +652,14 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
     goto finalize;
   }
 
+  error = (*jvmti)->SetEventNotificationMode(jvmti, JVMTI_ENABLE,
+					     JVMTI_EVENT_VM_DEATH, NULL);
+  if (handle_error(error, "SetEventNotificationMode() "
+		   "JVMTI_EVENT_CLASS_LOAD", 1)) {
+    res = -1;	
+    goto finalize;
+  }
+
  finalize:
   /************* end hpcrun critical section ************/
   hpcrun_safe_exit();
@@ -674,9 +693,10 @@ JNIEXPORT void JNICALL Agent_OnUnload(JavaVM * jvm)
   if (op_close_agent(agent_hdl))
     perror("Error: op_close_agent()");
 
-  jmt_get_all_methods_db(jvmti);
-
   libhpcjava_fini();
+
+  if (debug)
+    fprintf(stderr, "jvm unload\n");
 
   /************* end hpcrun critical section ************/
   hpcrun_safe_exit();
