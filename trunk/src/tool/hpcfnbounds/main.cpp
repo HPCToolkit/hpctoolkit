@@ -60,8 +60,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <err.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <setjmp.h>
 #include <signal.h>
@@ -80,7 +78,6 @@
 #include "code-ranges.h"
 #include "process-ranges.h"
 #include "function-entries.h"
-#include "fnbounds-file-header.h"
 #include "server.h"
 #include "syserv-mesg.h"
 #include "Symtab.h"
@@ -120,46 +117,32 @@ static void setup_segv_handler(void);
 // local variables
 //*****************************************************************************
 
-// We write() the binary format to a file descriptor and fprintf() the
-// text and classic C formats to a FILE pointer.
-//
-static int   is_server_mode = 0;
-static int   the_binary_fd = -1;
-static FILE *the_c_fp = NULL;
-static FILE *the_text_fp = NULL;
+// output is text mode unless C or server mode is specified.
+
+enum { MODE_TEXT = 1, MODE_C, MODE_SERVER };
+static int the_mode = MODE_TEXT;
 
 static bool verbose = false; // additional verbosity
 
 static jmp_buf segv_recover; // handle longjmp "restart" from segv
 
 //*****************************************************************
-// global variables
-//*****************************************************************
-
-//*****************************************************************
 // interface operations
 //*****************************************************************
 
-// Parse the options to determine which output formats to write, and
-// open the files or set to stdout.  We allow multiple formats, but
-// only one to stdout.
-//
+// Now write one format (C or text) to stdout, or else binary format
+// over a pipe in server mode.  No output directory.
 
 int 
 main(int argc, char* argv[])
 {
   DiscoverFnTy fn_discovery = DiscoverFnTy_Aggressive;
-  char buf[PATH_MAX], *object_file, *output_dir, *base;
-  int num_fmts = 0, do_binary = 0, do_c = 0, do_text = 0;
-  int fdin, fdout;
-  int n;
+  char *object_file;
+  int n, fdin, fdout;
 
   for (n = 1; n < argc; n++) {
-    if (strcmp(argv[n], "-b") == 0) {
-      do_binary = 1;
-    }
-    else if (strcmp(argv[n], "-c") == 0) {
-      do_c = 1;
+    if (strcmp(argv[n], "-c") == 0) {
+      the_mode = MODE_C;
     }
     else if (strcmp(argv[n], "-d") == 0) {
       fn_discovery = DiscoverFnTy_Conservative;
@@ -168,23 +151,33 @@ main(int argc, char* argv[])
       usage(argv[0], 0);
     }
     else if (strcmp(argv[n], "-s") == 0) {
-      is_server_mode = 1;
+      the_mode = MODE_SERVER;
       if (argc < n + 3 || sscanf(argv[n+1], "%d", &fdin) < 1
 	  || sscanf(argv[n+2], "%d", &fdout) < 1) {
-	errx(1, "missing file descriptors for server mode");
+	fprintf(stderr, "%s: missing file descriptors for server mode\n",
+		argv[0]);
+	exit(1);
       }
       n += 2;
     }
     else if (strcmp(argv[n], "-t") == 0) {
-      do_text = 1;
+      the_mode = MODE_TEXT;
     }
     else if (strcmp(argv[n], "-v") == 0) {
       verbose = true;
     }
-    else
+    else if (strcmp(argv[n], "--") == 0) {
+      n++;
       break;
+    }
+    else if (strncmp(argv[n], "-", 1) == 0) {
+      fprintf(stderr, "%s: unknown option: %s\n", argv[0], argv[n]);
+      usage(argv[0], 1);
+    }
+    else {
+      break;
+    }
   }
-  num_fmts = do_binary + do_c + do_text;
 
   // Run as the system server.
   if (server_mode()) {
@@ -197,52 +190,6 @@ main(int argc, char* argv[])
     usage(argv[0], 1);
   }
   object_file = argv[n];
-  base = rindex(object_file, '/');
-  base = (base == NULL) ? object_file : base + 1;
-
-  // If don't specify the output directory, then limited to one output
-  // format and stdout.
-  if (n + 1 >= argc && num_fmts > 1) {
-    fprintf(stderr,
-      "Error: when writing two or more output formats at the same time,\n"
-      "you must specify an output directory.\n\n");
-    usage(argv[0], 1);
-  }
-  output_dir = (n + 1 < argc) ? argv[n+1] : NULL;
-
-  // If no output formats given, then use text.
-  if (num_fmts == 0)
-    do_text = 1;
-
-  // For each output format, open the file or set to stdout.
-  if (output_dir != NULL) {
-    if (do_binary) {
-      sprintf(buf, FNBOUNDS_BINARY_FORMAT, output_dir, base);
-      the_binary_fd = open(buf, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-      if (the_binary_fd < 0)
-        err(1, "open failed on: %s", buf);
-    }
-    if (do_c) {
-      sprintf(buf, FNBOUNDS_C_FORMAT, output_dir, base);
-      the_c_fp = fopen(buf, "w");
-      if (the_c_fp == NULL)
-        err(1, "open failed on: %s", buf);
-    }
-    if (do_text) {
-      sprintf(buf, FNBOUNDS_TEXT_FORMAT, output_dir, base);
-      the_text_fp = fopen(buf, "w");
-      if (the_text_fp == NULL)
-        err(1, "open failed on: %s", buf);
-    }
-  } else {
-    // At most one format when writing to stdout.
-    if (do_binary)
-      the_binary_fd = 1;
-    else if (do_c)
-      the_c_fp = stdout;
-    else
-      the_text_fp = stdout;
-  }
 
   setup_segv_handler();
   if ( ! setjmp(segv_recover) ) {
@@ -259,32 +206,16 @@ main(int argc, char* argv[])
   return 0;
 }
 
+int
+c_mode(void)
+{
+  return the_mode == MODE_C;
+}
 
 int
 server_mode(void)
 {
-  return is_server_mode;
-}
-
-
-int
-binary_fmt_fd(void)
-{
-  return (the_binary_fd);
-}
-
-
-FILE *
-c_fmt_fp(void)
-{
-  return (the_c_fp);
-}
-
-
-FILE *
-text_fmt_fp(void)
-{
-  return (the_text_fp);
+  return the_mode == MODE_SERVER;
 }
 
 
@@ -309,17 +240,13 @@ static void
 usage(char *command, int status)
 {
   fprintf(stderr, 
-    "Usage: hpcfnbounds [options] object-file [output-directory]\n\n"
-    "\t-b\twrite output in binary format\n"
+    "Usage: hpcfnbounds [options] object-file\n\n"
     "\t-c\twrite output in C source code\n"
     "\t-d\tdon't perform function discovery on stripped code\n"
     "\t-h\tprint this help message and exit\n"
     "\t-s fdin fdout\trun in server mode\n"
-    "\t-t\twrite output in text format\n"
+    "\t-t\twrite output in text format (default)\n"
     "\t-v\tturn on verbose output in hpcfnbounds script\n\n"
-    "Multiple output formats (-b, -c, -t) may be specified in one run.\n"
-    "If output-directory is not specified, then output is written to\n"
-    "stdout and only one format may be used.\n"
     "If no format is specified, then text mode is used.\n");
 
   exit(status);
@@ -540,15 +467,14 @@ static void
 dump_file_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
 		  DiscoverFnTy fn_discovery)
 {
-  if (c_fmt_fp() != NULL) {
-    fprintf(c_fmt_fp(), "unsigned long hpcrun_nm_addrs[] = {\n");
+  if (c_mode()) {
+    printf("unsigned long hpcrun_nm_addrs[] = {\n");
   }
 
   dump_symbols(dwarf_fd, syms, symvec, fn_discovery);
 
-  if (c_fmt_fp() != NULL) {
-    fprintf(c_fmt_fp(), "};\nunsigned long hpcrun_nm_addrs_len = "
-	   "sizeof(hpcrun_nm_addrs) / sizeof(hpcrun_nm_addrs[0]);\n");
+  if (c_mode()) {
+    printf("\n};\n");
   }
 }
 
@@ -563,32 +489,21 @@ dump_header_info(int is_relocatable, uintptr_t ref_offset)
     return;
   }
 
-#if 0
-  struct fnbounds_file_header fh;
-  if (binary_fmt_fd() >= 0) {
-    memset(&fh, 0, sizeof(fh));
-    fh.zero_pad = 0;
-    fh.reference_offset = ref_offset;
-    fh.magic = FNBOUNDS_MAGIC;
-    fh.num_entries = num_function_entries();
-    fh.is_relocatable = is_relocatable;
-    write(binary_fmt_fd(), &fh, sizeof(fh));
-  }
-#endif
-
-  if (c_fmt_fp() != NULL) {
-    fprintf(c_fmt_fp(), "unsigned long hpcrun_reference_offset = %"PRIuPTR";\n", 
-            ref_offset);
-    fprintf(c_fmt_fp(), "int hpcrun_is_relocatable = %d;\n", is_relocatable);
-    fprintf(c_fmt_fp(), "int hpcrun_is_stripped = %d;\n", 0);
+  if (c_mode()) {
+    printf("unsigned long hpcrun_nm_addrs_len = "
+	   "sizeof(hpcrun_nm_addrs) / sizeof(hpcrun_nm_addrs[0]);\n"
+	   "unsigned long hpcrun_reference_offset = 0x%" PRIxPTR ";\n"
+	   "int hpcrun_is_relocatable = %d;\n",
+	   ref_offset, is_relocatable);
+    return;
   }
 
-  if (text_fmt_fp() != NULL) {
-    fprintf(text_fmt_fp(), "num symbols = %ld, relocatable = %d," 
-           " image_offset = 0x%"PRIxPTR"\n",
-	    num_function_entries(), is_relocatable, ref_offset);
-  }
+  // default is text mode
+  printf("num symbols = %ld, reference offset = 0x%" PRIxPTR ", "
+	 "relocatable = %d\n",
+	 num_function_entries(), ref_offset, is_relocatable);
 }
+
 
 static void
 assert_file_is_readable(const char *filename)
