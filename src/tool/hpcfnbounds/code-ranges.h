@@ -68,8 +68,4 @@ void process_code_ranges();
 
 long num_function_entries(void);
 
-int binary_fmt_fd(void);
-FILE *c_fmt_fp(void);
-FILE *text_fmt_fp(void);
-
 #endif // code_ranges_hpp
