@@ -913,9 +913,10 @@ hpctoolkit-externals.])
 fi
 
 host_wordsize=unknown
+wordsize_cflag=
 case "$host_sizeof_voidp" in
-  4 ) host_wordsize=32 ;;
-  8 ) host_wordsize=64 ;;
+  4 ) host_wordsize=32 ; wordsize_cflag='-m32' ;;
+  8 ) host_wordsize=64 ; wordsize_cflag='-m64' ;;
   * ) AC_MSG_WARN([unable to determine host wordsize]) ;;
 esac
 
@@ -924,6 +925,8 @@ then
   AC_MSG_ERROR([mismatched wordsize: hpctoolkit is configured for \
 ${host_wordsize}-bit but externals is ${ext_wordsize}-bit])
 fi
+
+AC_SUBST([wordsize_cflag])
 
 
 #-------------------------------------------------
