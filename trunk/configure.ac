@@ -926,6 +926,11 @@ then
 ${host_wordsize}-bit but externals is ${ext_wordsize}-bit])
 fi
 
+# On ia64, -m64 is an unrecognized option (and unnecessary).
+if test "$HOST_CPU_IA64" = yes ; then
+  wordsize_cflag=
+fi
+
 AC_SUBST([wordsize_cflag])
 
 
