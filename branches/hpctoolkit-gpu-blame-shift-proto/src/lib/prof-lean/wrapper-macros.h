@@ -93,6 +93,8 @@
 #define VA_CALL_ARGS2(type_t, x, ...) \
 	VA_CALL_ARG(type_t, x) 
 
+#define VA_CALL_ARGS1(type_t,  ...) 
+
 #define VA_CALL_ARGS0(...)
 
 //*****************************************************************************

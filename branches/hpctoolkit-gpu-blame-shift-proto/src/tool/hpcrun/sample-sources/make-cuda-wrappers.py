@@ -34,11 +34,7 @@ driverSkipList = [
 'cuStreamCreate',
 'cuStreamSynchronize',
 'cuStreamDestroy_v2',
-'cuEventCreate',
-'cuEventRecord',
 'cuEventSynchronize',
-'cuEventDestroy_v2',
-'cuEventElapsedTime',
 'cuLaunchGridAsync']
 
 
@@ -49,11 +45,7 @@ runtimeSkipList = [
 'cudaStreamDestroy',
 'cudaStreamWaitEvent',
 'cudaStreamSynchronize',
-'cudaEventCreate',
-'cudaEventRecord',
 'cudaEventSynchronize',
-'cudaEventDestroy',
-'cudaEventElapsedTime',
 'cudaConfigureCall',
 'cudaLaunch',
 'cudaMalloc',
@@ -136,7 +128,7 @@ def WritecuRuntimeFunctionPointerTable(file, funcNames):
     fp.close();
 
 
-def FuncNameToEnum(name):
+def FuncNameToCapitalizedEnum(name):
 # convert cuStreamCreate to CU_STREAM_CREATE
     result = ''
     for letter in name:
@@ -144,6 +136,12 @@ def FuncNameToEnum(name):
             result = result + '_'
         result = result + letter.upper()
     return result
+
+
+def FuncNameToEnum(name):
+    return name  + 'Enum'
+
+
 
 def WriteDriverFunctionPointerHeader(file, funcSig):
 #Produce struct like this:
@@ -182,10 +180,8 @@ typedef struct cuDriverFunctionPointer {
 
 # create enum like this:
 #enum cuDriverAPIIndex {
-#    CU_STREAM_CREATE,
-#    CU_STREAM_DESTROY,
-#    CU_STREAM_SYNCHRONIZE,
-#    CU_EVENT_SYNCHRONIZE,
+#    cuStreamCreateEnum,
+#    cuStreamDestroyEnum,
 #    ...
 #    CU_MAX_APIS
 #};
@@ -240,9 +236,9 @@ typedef struct cudaRuntimeFunctionPointer {
 
 # create enum like this:
 #enum cudaRuntimeAPIIndex {
-#    CUDA_THREAD_SYNCHRONIZE,
-#    CUDA_STREAM_SYNCHRONIZE,
-#    CUDA_EVENT_SYNCHRONIZE,
+#    cudaThreadSynchronizeEnum,
+#    cudaStreamSynchronizeEnum,
+#    cudaDeviceSynchronizeEnum,
 #    ...
 #    CUDA_MAX_APIS
 #};
