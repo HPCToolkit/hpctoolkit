@@ -21,6 +21,12 @@
 //*****************************************************************************
 #define VA_DECLARE_ARG(type_t, x) type_t x
 
+#define VA_DECLARE_ARGS20(type_t, x, ...) \
+	VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS18(__VA_ARGS__)
+
+#define VA_DECLARE_ARGS18(type_t, x, ...) \
+	VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS16(__VA_ARGS__)
+
 #define VA_DECLARE_ARGS16(type_t, x, ...) \
 	VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS14(__VA_ARGS__)
 
@@ -45,6 +51,9 @@
 #define VA_DECLARE_ARGS2(type_t, x, ...) \
 	VA_DECLARE_ARG(type_t, x)
 
+#define VA_DECLARE_ARGS1(type_t, ...) type_t
+
+#define VA_DECLARE_ARGS0(...) void
 
 
 //*****************************************************************************
@@ -53,6 +62,12 @@
 //    list to type_t
 //*****************************************************************************
 #define VA_CALL_ARG(type_t, x) x
+
+#define VA_CALL_ARGS20(type_t, x, ...) \
+	VA_CALL_ARG(type_t, x), VA_CALL_ARGS18(__VA_ARGS__)
+
+#define VA_CALL_ARGS18(type_t, x, ...) \
+	VA_CALL_ARG(type_t, x), VA_CALL_ARGS16(__VA_ARGS__)
 
 #define VA_CALL_ARGS16(type_t, x, ...) \
 	VA_CALL_ARG(type_t, x), VA_CALL_ARGS14(__VA_ARGS__)
@@ -78,6 +93,7 @@
 #define VA_CALL_ARGS2(type_t, x, ...) \
 	VA_CALL_ARG(type_t, x) 
 
+#define VA_CALL_ARGS0(...)
 
 //*****************************************************************************
 // VA_COMMA0, VA_COMMA1: 
@@ -98,29 +114,29 @@
 // _VA_CONCAT3: 
 //    macro to concatenate a pair of arguments into a name.
 //*****************************************************************************
-#define _VA_CONCAT3(x,y,z,...) x##z/**/y
+#define _VA_CONCAT3(x,y,z,...) x##y##z
 
 
 //*****************************************************************************
-// __seventeen_and_0__:
-//    helper macro that expands to seventeen placeholder arguments followed
+// __twentyone_and_0__:
+//    helper macro that expands to twentyone placeholder arguments followed
 //    by a 0.
 //*****************************************************************************
-#define __seventeen_and_0__					\
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0
+#define __twentyone_and_0__					\
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 0
 
 
 //*****************************************************************************
-// _VA_SELECT18: 
-// _VA_SELECT18_INTERNAL: 
-//    pair of macros to expand to 18th argument. VA_SELECT18 macro ensures 
+// _VA_SELECT22: 
+// _VA_SELECT22_INTERNAL: 
+//    pair of macros to expand to 22nd argument. VA_SELECT22 macro ensures 
 //    that argument list is completely expanded before calling 
-//    _VA_SELECT18_INTERNAL
+//    _VA_SELECT22_INTERNAL
 //*****************************************************************************
-#define _VA_SELECT18_INTERNAL(_0,_1,_2,_3,_4,_5,_6,_7,			\
-			      _8,_9,_10,_11,_12,_13,_14,_15,_16,_17,...) _17
+#define _VA_SELECT22_INTERNAL(_0,_1,_2,_3,_4,_5,_6,_7,			\
+			      _8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,...) _21
 
-#define _VA_SELECT18(...) _VA_SELECT18_INTERNAL(__VA_ARGS__)
+#define _VA_SELECT22(...) _VA_SELECT22_INTERNAL(__VA_ARGS__)
 
 
 //*****************************************************************************
@@ -128,17 +144,19 @@
 // WARNING: will give unpredictable results if more than 16 arguments supplied.
 //*****************************************************************************
 #define VA_COUNT_ARGS(...)						\
-    _VA_SELECT18(_VA_CONCAT3(__seventeen,_and_0__,__VA_ARGS__),		\
-		 __VA_ARGS__,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1)
+    _VA_SELECT22(_VA_CONCAT3(__twentyone,_and_0__,__VA_ARGS__),		\
+		 __VA_ARGS__,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1)
 
 
+#define X_ARGS(...)						\
+    _VA_CONCAT3(__twentyone,_and_0__,__VA_ARGS__)
 //*****************************************************************************
 // ONE_IF_EMPTY: expand to a 1 if a non-zero number of arguments are supplied.
 // WARNING: will give unpredictable results if more than 16 arguments supplied. 
 //*****************************************************************************
 #define ONE_IF_NONEMPTY(...)						\
-    _VA_SELECT18(_VA_CONCAT3(__seventeen,_and_0__,__VA_ARGS__),		\
-		 __VA_ARGS__,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1)
+    _VA_SELECT22(_VA_CONCAT3(__twentyone,_and_0__,__VA_ARGS__),		\
+		 __VA_ARGS__,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1)
 
 
 //*****************************************************************************
