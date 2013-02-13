@@ -200,4 +200,34 @@
     tfn fn(VA_CONCAT2_EVAL(VA_DECLARE_ARGS,VA_COUNT_ARGS(__VA_ARGS__))(		\
 	__VA_ARGS__))
 
+
+// Test cases: anytime you change these macros, make sure these tests pass.
+
+#if 0
+VA_FN_CALL( Fun)
+VA_FN_CALL( Fun, t1, 1)
+VA_FN_CALL( Fun, t1, 1, t2, 2)
+VA_FN_CALL( Fun, t1, 1, t2, 2, t3, 3)
+VA_FN_CALL( Fun, t1, 1, t2, 2, t3, 3, t4, 4)
+VA_FN_CALL( Fun, t1, 1, t2, 2, t3, 3, t4, 4, t5, 5)
+VA_FN_CALL( Fun, t1, 1, t2, 2, t3, 3, t4, 4, t5, 5, t6, 6)
+VA_FN_CALL( Fun, t1, 1, t2, 2, t3, 3, t4, 4, t5, 5, t6, 6, t7, 7)
+VA_FN_CALL( Fun, t1, 1, t2, 2, t3, 3, t4, 4, t5, 5, t6, 6, t7, 7, t8, 8)
+VA_FN_CALL( Fun, t1, 1, t2, 2, t3, 3, t4, 4, t5, 5, t6, 6, t7, 7, t8, 8 , t9, 9)
+VA_FN_CALL( Fun, t1, 1, t2, 2, t3, 3, t4, 4, t5, 5, t6, 6, t7, 7, t8, 8 , t9, 9, t10 *, 10)
+
+VA_FN_DECLARE(ret, Fun)
+VA_FN_DECLARE(ret, Fun, void)
+VA_FN_DECLARE(ret, Fun, t1, 1)
+VA_FN_DECLARE(ret, Fun, t1, 1, t2, 2)
+VA_FN_DECLARE(ret, Fun, t1, 1, t2, 2, t3, 3)
+VA_FN_DECLARE(ret, Fun, t1, 1, t2, 2, t3, 3, t4, 4)
+VA_FN_DECLARE(ret, Fun, t1, 1, t2, 2, t3, 3, t4, 4, t5, 5)
+VA_FN_DECLARE(ret, Fun, t1, 1, t2, 2, t3, 3, t4, 4, t5, 5, t6, 6)
+VA_FN_DECLARE(ret, Fun, t1, 1, t2, 2, t3, 3, t4, 4, t5, 5, t6, 6, t7, 7)
+VA_FN_DECLARE(ret, Fun, t1, 1, t2, 2, t3, 3, t4, 4, t5, 5, t6, 6, t7, 7, t8, 8)
+VA_FN_DECLARE(ret, Fun, t1, 1, t2, 2, t3, 3, t4, 4, t5, 5, t6, 6, t7, 7, t8, 8 , t9, 9)
+VA_FN_DECLARE(ret, Fun, t1, 1, t2, 2, t3, 3, t4, 4, t5, 5, t6, 6, t7, 7, t8, 8 , t9, 9, t10 *, 10)
+#endif
+
 #endif
