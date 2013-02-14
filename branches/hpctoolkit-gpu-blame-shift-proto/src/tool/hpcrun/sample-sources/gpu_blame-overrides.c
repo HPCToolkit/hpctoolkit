@@ -1257,8 +1257,11 @@ cudaError_t cudaConfigureCall(dim3 grid, dim3 block, size_t mem, cudaStream_t st
     return ret;
 }
 
-
-cudaError_t cudaLaunch(const char *entry) {
+#if (CUDART_VERSION < 5000)
+    cudaError_t cudaLaunch(const char *entry) {
+#else
+    cudaError_t cudaLaunch(const void *entry) {
+#endif
     
     ASYNC_KERNEL_PROLOGUE(streamId, event_node, context, cct_node, ((cudaStream_t) (TD_GET(gpu_data.active_stream))), g_cuda_launch_skip_inner);
     
@@ -1411,9 +1414,20 @@ CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy2DFromArray, (context, launcher_cct, 
 
 CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy2DArrayToArray, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (width * height), kind), struct cudaArray *, dst, size_t, wOffsetDst, size_t, hOffsetDst, const struct cudaArray *, src, size_t, wOffsetSrc, size_t, hOffsetSrc, size_t, width, size_t, height, enum cudaMemcpyKind, kind )
 
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyToSymbol, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), const char *, symbol, const void *, src, size_t, count, size_t, offset , enum cudaMemcpyKind, kind )
 
+#if (CUDART_VERSION < 5000)
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyToSymbol, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), const char *, symbol, const void *, src, size_t, count, size_t, offset , enum cudaMemcpyKind, kind )
+#else
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyToSymbol, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), const void *, symbol, const void *, src, size_t, count, size_t, offset , enum cudaMemcpyKind, kind )
+#endif
+
+
+#if (CUDART_VERSION < 5000)
 CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyFromSymbol, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), void *, dst, const char *, symbol, size_t, count, size_t, offset , enum cudaMemcpyKind, kind)
+#else
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyFromSymbol, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), void *, dst, const void *, symbol, size_t, count, size_t, offset , enum cudaMemcpyKind, kind)
+#endif
+
 
 /*TODO Add a metric for peer xfer */
 CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyPeerAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, 0), void *, dst, int, dstDevice, const void *, src, int, srcDevice, size_t, count, cudaStream_t, stream)
@@ -1426,9 +1440,20 @@ CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpy2DToArrayAsync, (streamId, event_nod
 
 CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpy2DFromArrayAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, (width * height), kind), void *, dst, size_t, dpitch, const struct cudaArray *, src, size_t, wOffset, size_t, hOffset, size_t, width, size_t, height, enum cudaMemcpyKind, kind, cudaStream_t, stream)
 
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyToSymbolAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, kind), const char *, symbol, const void *, src, size_t, count, size_t, offset, enum cudaMemcpyKind, kind, cudaStream_t, stream)
 
+#if (CUDART_VERSION < 5000)
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyToSymbolAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, kind), const char *, symbol, const void *, src, size_t, count, size_t, offset, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+#else
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyToSymbolAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, kind), const void *, symbol, const void *, src, size_t, count, size_t, offset, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+#endif
+
+
+#if (CUDART_VERSION < 5000)
 CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyFromSymbolAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, kind), void *, dst, const char *, symbol, size_t, count, size_t, offset, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+#else
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyFromSymbolAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, kind), void *, dst, const void *, symbol, size_t, count, size_t, offset, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+#endif
+
 
 CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemset, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, 0, cudaMemcpyHostToDevice), void *, devPtr, int, value, size_t, count)
 
