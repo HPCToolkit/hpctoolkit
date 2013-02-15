@@ -116,45 +116,42 @@
 
 // MACROS for error checking CUDA/CUPTI APIs
 
-#define CHECK_CU_ERROR(err, cufunc)                                     \
-if (err != CUDA_SUCCESS)                                                \
-{                                                                       \
-printf ("%s:%d: error %d for CUDA Driver API function '%s'\n",          \
-__FILE__, __LINE__, err, cufunc);                                       \
-monitor_real_abort();                                                   \
+#define CHECK_CU_ERROR(err, cufunc)                                    \
+if (err != CUDA_SUCCESS)                                               \
+{                                                                      \
+EETMSG("%s:%d: error %d for CUDA Driver API function '%s'\n",          \
+__FILE__, __LINE__, err, cufunc);                                      \
+monitor_real_abort();                                                  \
 }
 
-#define CHECK_CUPTI_ERROR(err, cuptifunc)                               \
-if (err != CUPTI_SUCCESS)                                               \
-{                                                                       \
-const char *errstr;                                                     \
-cuptiGetResultString(err, &errstr);                                     \
-printf ("%s:%d:Error %s for CUPTI API function '%s'.\n",                \
-__FILE__, __LINE__, errstr, cuptifunc);                                 \
-monitor_real_abort();                                                   \
+#define CHECK_CUPTI_ERROR(err, cuptifunc)                             \
+if (err != CUPTI_SUCCESS)                                             \
+{                                                                     \
+const char *errstr;                                                   \
+cuptiGetResultString(err, &errstr);                                   \
+EEMSG("%s:%d:Error %s for CUPTI API function '%s'.\n",                \
+__FILE__, __LINE__, errstr, cuptifunc);                               \
+monitor_real_abort();                                                 \
 }
 
-#define CU_SAFE_CALL( call ) do {                                            \
-CUresult err = call;                                                         \
-if( CUDA_SUCCESS != err) {                                                   \
-fprintf(stderr, "Cuda driver error %d in call at file '%s' in line %i.\n",   \
-err, __FILE__, __LINE__ );                                                   \
-monitor_real_abort();                                                        \
+#define CU_SAFE_CALL( call ) do {                                  \
+CUresult err = call;                                               \
+if( CUDA_SUCCESS != err) {                                         \
+EEMSG("Cuda driver error %d in call at file '%s' in line %i.\n",   \
+err, __FILE__, __LINE__ );                                         \
+monitor_real_abort();                                              \
 } } while (0)
 
-#define CUDA_SAFE_CALL( call) do {                                       \
-cudaError_t err = call;                                                  \
-if( cudaSuccess != err) {                                                \
-fprintf(stderr, "Cuda error in call at file '%s' in line %i : %s.\n",    \
-__FILE__, __LINE__, cudaGetErrorString( err) );                          \
-monitor_real_abort();                                                    \
+#define CUDA_SAFE_CALL( call) do {                             \
+cudaError_t err = call;                                        \
+if( cudaSuccess != err) {                                      \
+EEMSG("Cuda error in call at file '%s' in line %i : %s.\n",    \
+__FILE__, __LINE__, cudaGetErrorString( err) );                \
+monitor_real_abort();                                          \
 } } while (0)
 
 #define GET_STREAM_ID(x) ((x) - g_stream_array)
 #define ALL_STREAMS_MASK (0xffffffff)
-#define fprintf(...) do{}while(0)
-#define fflush(...) do{}while(0)
-
 
 #define MAX_SHARED_KEY_LENGTH (100)
 
@@ -520,7 +517,7 @@ static void PopulateEntryPointesToWrappedCudaRuntimeCalls() {
         dlerror(); // null out the prev err
         cudaRuntimeFunctionPointer[i].generic = dlsym(RTLD_NEXT, cudaRuntimeFunctionPointer[i].functionName);
         if ((error = dlerror()) != NULL) {
-            fprintf(stderr, "%s\n", error);
+            EEMSG("%s: during dlsym \n", error);
             monitor_real_abort();
         }
     }
@@ -535,7 +532,7 @@ static void PopulateEntryPointesToWrappedCuDriverCalls() {
         dlerror(); // null out the prev err
         cuDriverFunctionPointer[i].generic = dlsym(RTLD_NEXT, cuDriverFunctionPointer[i].functionName);
         if ((error = dlerror()) != NULL) {
-            fprintf(stderr, "%s\n", error);
+            EEMSG("%s: during dlsym \n", error);
             monitor_real_abort();
         }
     }
@@ -647,8 +644,8 @@ static stream_to_id_map_t *splay_insert(cudaStream_t stream_ip)
             node->right = stream_to_id_tree_root->right;
             stream_to_id_tree_root->right = NULL;
         } else {
-            TMSG(MEMLEAK, "stream_to_id_tree_root  splay tree: unable to insert %p (already present)", node->stream);
-            assert(0);
+            EEMSG("stream_to_id_tree_root  splay tree: unable to insert %p (already present)", node->stream);
+            monitor_real_abort();
         }
     }
     stream_to_id_tree_root = node;
@@ -705,7 +702,7 @@ static struct stream_to_id_map_t *splay_delete(cudaStream_t stream)
     spinlock_lock(&g_stream_id_lock);
     if (stream_to_id_tree_root == NULL) {
         spinlock_unlock(&g_stream_id_lock);
-        TMSG(MEMLEAK, "stream_to_id_map_t splay tree empty: unable to delete %p", stream);
+        TMSG(CPU_GPU_BLAME_CTL, "stream_to_id_map_t splay tree empty: unable to delete %p", stream);
         return NULL;
     }
     
@@ -713,9 +710,9 @@ static struct stream_to_id_map_t *splay_delete(cudaStream_t stream)
     
     if (stream != stream_to_id_tree_root->stream) {
         spinlock_unlock(&g_stream_id_lock);
-        TMSG(MEMLEAK, "memleak splay tree: %p not in tree", stream);
-        assert(0 && "deleting non existing node in splay tree");
-        return NULL;
+        TMSG(CPU_GPU_BLAME_CTL, "gpu steam splay tree: %p not in tree", stream);
+        EEMSG("deleting non existing node in splay tree");
+        monitor_real_abort();
     }
     
     result = stream_to_id_tree_root;
@@ -745,8 +742,6 @@ static inline event_list_node_t *enter_cuda_sync(uint64_t * syncStart) {
     gettimeofday(&tv, NULL);
     *syncStart = ((uint64_t) tv.tv_usec + (((uint64_t) tv.tv_sec) * 1000000));
     
-    //fprintf(stderr, "\n Start of world = %lu", g_start_of_world_time);
-    //fprintf(stderr, "\n Sync start at  = %lu", *syncStart);
     event_list_node_t *recorded_node = g_finished_event_nodes_tail;
     if (g_finished_event_nodes_tail != &dummy_event_node)
         g_finished_event_nodes_tail->ref_count++;
@@ -1000,22 +995,12 @@ static uint32_t cleanup_finished_events() {
         event_list_node_t *current_event = cur_stream->unfinished_event_node;
         while (current_event) {
             
-            //cudaError_t err_cuda = cudaErrorNotReady;
-            //fprintf(stderr, "\n cudaEventQuery on  %p", current_event->event_end);
-            //fflush(stdout);
-            
             cudaError_t err_cuda = cudaRuntimeFunctionPointer[cudaEventQueryEnum].cudaEventQueryReal(current_event->event_end);
             
             if (err_cuda == cudaSuccess) {
                 
                 // Decrement   ipc_data->outstanding_kernels
                 DECR_SHARED_BLAMING_DS(outstanding_kernels);
-                
-                
-                
-                
-                //fprintf(stderr, "\n cudaEventQuery success %p", current_event->event_end);
-                //cct_node_t *launcher_cct = current_event->launcher_cct;
                 
                 // record start time
                 float elapsedTime;      // in millisec with 0.5 microsec resolution as per CUDA
@@ -1075,7 +1060,6 @@ static uint32_t cleanup_finished_events() {
                 }
                 
             } else {
-                //fprintf(stderr, "\n cudaEventQuery failed %p", current_event->event_end);
                 break;
             }
         }
@@ -1164,7 +1148,6 @@ static void create_stream0_if_needed(cudaStream_t stream) {
     if ( (((uint64_t)stream) == 0 )&& (g_stream0_initialized == false)) {
         uint32_t new_streamId;
         new_streamId = splay_insert(0)->id;
-        fprintf(stderr, "\n Stream id = %d", new_streamId);
         if (g_start_of_world_time == 0) {
             
             
@@ -1371,12 +1354,27 @@ cudaError_t cudaStreamCreate(cudaStream_t * stream) {
 
 inline static void increment_mem_xfer_metric(size_t count, enum cudaMemcpyKind kind, cct_node_t *node){
     switch(kind){
-        case cudaMemcpyDeviceToHost:
-            cct_metric_data_increment(d_to_h_data_xfer_metric_id, node, (cct_metric_data_t) {.i = (count)});
+        case cudaMemcpyHostToHost:
+            cct_metric_data_increment(h_to_h_data_xfer_metric_id, node, (cct_metric_data_t) {.i = (count)});
             break;
+
         case cudaMemcpyHostToDevice:
             cct_metric_data_increment(h_to_d_data_xfer_metric_id, node, (cct_metric_data_t) {.i = (count)});
             break;
+
+
+        case cudaMemcpyDeviceToHost:
+            cct_metric_data_increment(d_to_h_data_xfer_metric_id, node, (cct_metric_data_t) {.i = (count)});
+            break;
+
+        case cudaMemcpyDeviceToDevice:
+            cct_metric_data_increment(d_to_d_data_xfer_metric_id, node, (cct_metric_data_t) {.i = (count)});
+            break;
+
+        case cudaMemcpyDefault:
+            cct_metric_data_increment(uva_data_xfer_metric_id, node, (cct_metric_data_t) {.i = (count)});
+            break;
+
         default : break;
             
     }
@@ -1393,16 +1391,13 @@ CUDA_RUNTIME_SYNC_WRAPPER(cudaMalloc3DArray, (context, launcher_cct, syncStart, 
 CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy3D, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (p->extent.width * p->extent.height * p->extent.depth), (p->kind)), const struct cudaMemcpy3DParms *, p)
 
 
-/*TODO Add a metric for peer xfer */
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy3DPeer, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (p->extent.width * p->extent.height * p->extent.depth), (0)), const struct cudaMemcpy3DPeerParms *, p)
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy3DPeer, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (p->extent.width * p->extent.height * p->extent.depth), cudaMemcpyDeviceToDevice), const struct cudaMemcpy3DPeerParms *, p)
 
 CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpy3DAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, (p->extent.width * p->extent.height * p->extent.depth), (p->kind)), const struct cudaMemcpy3DParms *, p, cudaStream_t,  stream)
 
-/*TODO Add a metric for peer xfer */
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpy3DPeerAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, (p->extent.width * p->extent.height * p->extent.depth), (0)), const struct cudaMemcpy3DPeerParms *, p, cudaStream_t, stream)
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpy3DPeerAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, (p->extent.width * p->extent.height * p->extent.depth), cudaMemcpyDeviceToDevice), const struct cudaMemcpy3DPeerParms *, p, cudaStream_t, stream)
 
-/*TODO Add a metric for peer xfer */
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyPeer, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, 0), void *, dst, int, dstDevice, const void *, src, int, srcDevice, size_t, count)
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyPeer, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, cudaMemcpyDeviceToDevice), void *, dst, int, dstDevice, const void *, src, int, srcDevice, size_t, count)
 
 CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyFromArray, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), void *, dst, const struct cudaArray *, src, size_t, wOffset, size_t, hOffset, size_t, count, enum cudaMemcpyKind, kind)
 
@@ -1429,8 +1424,7 @@ CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyFromSymbol, (context, launcher_cct, s
 #endif
 
 
-/*TODO Add a metric for peer xfer */
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyPeerAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, 0), void *, dst, int, dstDevice, const void *, src, int, srcDevice, size_t, count, cudaStream_t, stream)
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyPeerAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, cudaMemcpyDeviceToDevice), void *, dst, int, dstDevice, const void *, src, int, srcDevice, size_t, count, cudaStream_t, stream)
 
 CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyFromArrayAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, kind), void *, dst, const struct cudaArray *, src, size_t, wOffset, size_t, hOffset, size_t, count, enum cudaMemcpyKind, kind, cudaStream_t, stream)
 
