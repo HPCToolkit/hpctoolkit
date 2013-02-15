@@ -80,8 +80,11 @@ extern int gpu_overload_potential_metric_id;
 extern int cpu_overlap_metric_id;
 extern int gpu_overlap_metric_id;
 extern int stream_special_metric_id;
+extern int h_to_h_data_xfer_metric_id;
 extern int h_to_d_data_xfer_metric_id;
+extern int d_to_d_data_xfer_metric_id;
 extern int d_to_h_data_xfer_metric_id;
+extern int uva_data_xfer_metric_id;
 
 extern bool g_cpu_gpu_enabled;
 

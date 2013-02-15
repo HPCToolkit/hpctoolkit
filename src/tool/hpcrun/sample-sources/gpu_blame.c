@@ -119,6 +119,9 @@ int gpu_overlap_metric_id;
 int stream_special_metric_id;
 int h_to_d_data_xfer_metric_id;
 int d_to_h_data_xfer_metric_id;
+int h_to_h_data_xfer_metric_id;
+int d_to_d_data_xfer_metric_id;
+int uva_data_xfer_metric_id;
 
 
 uint64_t g_active_threads;
@@ -222,6 +225,15 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     // d_to_h_data_xfer_metric_id is the number of bytes xfered from GPU to CPU
     d_to_h_data_xfer_metric_id = hpcrun_new_metric();
     
+    // d_to_d_data_xfer_metric_id is the number of bytes xfered from GPU to GPU
+    d_to_d_data_xfer_metric_id = hpcrun_new_metric();
+
+    // h_to_h_data_xfer_metric_id is the number of bytes xfered from CPU to CPU
+    h_to_h_data_xfer_metric_id = hpcrun_new_metric();
+
+    // uva_data_xfer_metric_id is the number of bytes xfered over CUDA unified virtual address
+    uva_data_xfer_metric_id = hpcrun_new_metric();
+
     // Accumulates the time between last kernel end to current Sync point as a potential GPU overload factor
     gpu_overload_potential_metric_id =  hpcrun_new_metric(); 
     
@@ -234,6 +246,9 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     
     hpcrun_set_metric_info_and_period(h_to_d_data_xfer_metric_id, "H_TO_D_BYTES", MetricFlags_ValFmt_Int, 1, metric_property_none);
     hpcrun_set_metric_info_and_period(d_to_h_data_xfer_metric_id, "D_TO_H_BYTES", MetricFlags_ValFmt_Int, 1, metric_property_none);
+    hpcrun_set_metric_info_and_period(h_to_h_data_xfer_metric_id, "H_TO_H_BYTES", MetricFlags_ValFmt_Int, 1, metric_property_none);
+    hpcrun_set_metric_info_and_period(d_to_d_data_xfer_metric_id, "D_TO_D_BYTES", MetricFlags_ValFmt_Int, 1, metric_property_none);
+    hpcrun_set_metric_info_and_period(uva_data_xfer_metric_id, "UVA_BYTES", MetricFlags_ValFmt_Int, 1, metric_property_none);
     hpcrun_set_metric_info_and_period(gpu_overload_potential_metric_id, "GPU_OVERLOAD_POTENTIAL", MetricFlags_ValFmt_Int, 1, metric_property_none);
 
     bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_blame_shifter");
