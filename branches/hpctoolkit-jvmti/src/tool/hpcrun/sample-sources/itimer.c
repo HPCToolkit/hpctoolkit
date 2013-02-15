@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -111,6 +111,12 @@
  * macros
  *****************************************************************************/
 
+// Note: it's not clear if CLOCK_THREAD_CPUTIME_ID or
+// CLOCK_PROCESS_CPUTIME_ID is a better clock for CPUTIME.  The docs
+// would say THREAD, but experiments suggest that PROCESS plus
+// SIGEV_THREAD_ID is also thread-specific and it seems that THREAD is
+// limited by the kernel Hz rate.
+
 #define IDLE_METRIC_NAME     "idleness (usec)"
 
 #define ITIMER_EVENT_NAME    "WALLCLOCK"
@@ -122,16 +128,18 @@
 #define REALTIME_METRIC_NAME  "REALTIME (usec)"
 #define REALTIME_SIGNAL       (SIGRTMIN + 3)
 
-#ifdef  ENABLE_CLOCK_REALTIME
 #define REALTIME_CLOCK_TYPE     CLOCK_REALTIME
 #define REALTIME_NOTIFY_METHOD  SIGEV_THREAD_ID
+
+#define CPUTIME_EVENT_NAME    "CPUTIME"
+#define CPUTIME_METRIC_NAME   "CPUTIME (usec)"
+#define CPUTIME_CLOCK_TYPE     CLOCK_THREAD_CPUTIME_ID
 
 // the man pages cite sigev_notify_thread_id in struct sigevent,
 // but often the only name is a hidden union name.
 #ifndef sigev_notify_thread_id
 #define sigev_notify_thread_id  _sigev_un._tid
 #endif
-#endif  // clock realtime
 
 #if !defined(HOST_SYSTEM_IBM_BLUEGENE)
 #define USE_ELAPSED_TIME_FOR_WALLCLOCK
@@ -169,6 +177,7 @@ itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
 
 static bool use_itimer = false;
 static bool use_realtime = false;
+static bool use_cputime = false;
 
 static char *the_event_name = "unknown";
 static char *the_metric_name = "unknown";
@@ -205,7 +214,13 @@ hpcrun_create_real_timer(thread_data_t *td)
     td->sigev.sigev_value.sival_ptr = &td->timerid;
     td->sigev.sigev_notify_thread_id = syscall(SYS_gettid);
 
-    ret = timer_create(REALTIME_CLOCK_TYPE, &td->sigev, &td->timerid);
+    clockid_t clock = REALTIME_CLOCK_TYPE;
+#ifdef ENABLE_CLOCK_CPUTIME
+    if (use_cputime) {
+      clock = CPUTIME_CLOCK_TYPE;
+    }
+#endif
+    ret = timer_create(clock, &td->sigev, &td->timerid);
     if (ret == 0) {
       td->timer_init = true;
     }
@@ -234,7 +249,7 @@ static int
 hpcrun_start_timer(thread_data_t *td)
 {
 #ifdef ENABLE_CLOCK_REALTIME
-  if (use_realtime) {
+  if (use_realtime || use_cputime) {
     return timer_settime(td->timerid, 0, &itspec_start, NULL);
   }
 #endif
@@ -246,7 +261,7 @@ static int
 hpcrun_stop_timer(thread_data_t *td)
 {
 #ifdef ENABLE_CLOCK_REALTIME
-  if (use_realtime) {
+  if (use_realtime || use_cputime) {
     return timer_settime(td->timerid, 0, &itspec_stop, NULL);
   }
 #endif
@@ -334,11 +349,11 @@ METHOD_FN(start)
   TMSG(ITIMER_CTL, "start %s", the_event_name);
 
   // the realtime clock needs an extra step to create the timer
-  if (use_realtime) {
+  if (use_realtime || use_cputime) {
     thread_data_t *td = hpcrun_get_thread_data();
     if (hpcrun_create_real_timer(td) != 0) {
-      EEMSG("Unable to create the timer for %s", REALTIME_EVENT_NAME);
-      hpcrun_ssfail_start(REALTIME_EVENT_NAME);
+      EEMSG("Unable to create the timer for %s", the_event_name);
+      hpcrun_ssfail_start(the_event_name);
     }
   }
 
@@ -383,7 +398,7 @@ METHOD_FN(shutdown)
   TMSG(ITIMER_CTL, "shutdown %s", the_event_name);
 
   // delete the realtime timer to avoid a timer leak
-  if (use_realtime) {
+  if (use_realtime || use_cputime) {
     thread_data_t *td = hpcrun_get_thread_data();
     hpcrun_delete_real_timer(td);
   }
@@ -395,6 +410,7 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
   return strstr(ev_str, ITIMER_EVENT_NAME) != NULL
+      || strstr(ev_str, CPUTIME_EVENT_NAME) != NULL
       || strstr(ev_str, REALTIME_EVENT_NAME) != NULL;
 }
  
@@ -422,18 +438,27 @@ METHOD_FN(process_event_list, int lush_metrics)
     hpcrun_ssfail_unknown(event);
 #endif
   }
+
+  if (strstr(event, CPUTIME_EVENT_NAME) != NULL) {
+#ifdef ENABLE_CLOCK_CPUTIME
+    use_cputime = true;
+    the_event_name = CPUTIME_EVENT_NAME;
+    the_metric_name = CPUTIME_METRIC_NAME;
+    the_signal_num = REALTIME_SIGNAL;
+#else
+    EEMSG("Event %s is not available on this system.", CPUTIME_EVENT_NAME);
+    hpcrun_ssfail_unknown(event);
+#endif
+  }
+
   if (strstr(event, ITIMER_EVENT_NAME) != NULL) {
     use_itimer = true;
     the_event_name = ITIMER_EVENT_NAME;
     the_metric_name = ITIMER_METRIC_NAME;
     the_signal_num = ITIMER_SIGNAL;
   }
-  if (use_itimer && use_realtime) {
-    EEMSG("Can't use both %s and %s events at the same time.",
-	  ITIMER_EVENT_NAME, REALTIME_EVENT_NAME);
-    hpcrun_ssfail_conflict("timer", event);
-  }
-  if (!use_itimer && !use_realtime) {
+
+  if (!use_itimer && !use_realtime && !use_cputime) {
     // should never get here if supports_event is true
     hpcrun_ssfail_unknown(event);
   }
@@ -502,9 +527,6 @@ METHOD_FN(process_event_list, int lush_metrics)
     EEMSG("Can't use multiple timer events in the same run.");
     hpcrun_ssfail_conflict("timer", event);
   }
-
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->eventSet[self->evset_idx] = 0xDEAD;
 }
 
 //
@@ -535,9 +557,19 @@ METHOD_FN(display_events)
 	 "\t\textension.  Includes time blocked in the kernel, but may\n"
 	 "\t\tnot be available on all systems (eg, Blue Gene).\n",
 	 REALTIME_EVENT_NAME);
+#ifndef ENABLE_CLOCK_REALTIME
+  printf("\t\tNot available on this system.\n");
+#endif
   printf("\n");
-  printf("Note: don't use both %s and %s in the same run.\n",
-	 ITIMER_EVENT_NAME, REALTIME_EVENT_NAME);
+  printf("%s  \tCPU clock time used by the thread in microseconds.  Based\n"
+	 "\t\ton the CLOCK_THREAD_CPUTIME_ID timer with the SIGEV_THREAD_ID\n"
+	 "\t\textension.  May not be available on all systems (eg, Blue Gene).\n",
+	 CPUTIME_EVENT_NAME);
+#ifndef ENABLE_CLOCK_CPUTIME
+  printf("\t\tNot available on this system.\n");
+#endif
+  printf("\n");
+  printf("Note: do not use multiple timer events in the same run.\n");
   printf("\n");
 }
 

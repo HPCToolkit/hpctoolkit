@@ -1,6 +1,8 @@
 #ifndef _FNBOUNDS_CLIENT_H_
 #define _FNBOUNDS_CLIENT_H_
 
+#include "fnbounds_file_header.h"
+
 int  hpcrun_syserv_init(void);
 
 void hpcrun_syserv_fini(void);

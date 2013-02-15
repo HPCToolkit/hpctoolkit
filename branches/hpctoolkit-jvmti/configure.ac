@@ -11,7 +11,7 @@ dnl Information about sources of support for research and development of
 dnl HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 dnl --------------------------------------------------------------------------
 dnl
-dnl Copyright ((c)) 2002-2012, Rice University
+dnl Copyright ((c)) 2002-2013, Rice University
 dnl All rights reserved.
 dnl
 dnl Redistribution and use in source and binary forms, with or without
@@ -974,6 +974,43 @@ AC_SUBST([GNUBINUTILS_LDLIBS])
 
 
 #-------------------------------------------------
+# Option: --with-boost=PATH
+#-------------------------------------------------
+
+BOOST=no
+if test "$use_externals" = yes ; then
+  BOOST="$ext_boost_prefix"
+fi
+
+AC_ARG_WITH([boost],
+  [AS_HELP_STRING([--with-boost=PATH],
+      [path to boost install directory])],
+  [BOOST="$withval"],
+  [])
+
+AC_MSG_CHECKING([for boost])
+
+case "$BOOST" in
+  /* )
+    if test ! -f "${BOOST}/include/boost/shared_ptr.hpp" ; then
+      AC_MSG_ERROR([invalid boost directory: $BOOST])
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([boost directory must be absolute path: $BOOST])
+    ;;
+esac
+
+AC_MSG_RESULT([$BOOST])
+
+BOOST_INC="${BOOST}/include"
+
+AC_SUBST([BOOST_INC])
+
+
+#-------------------------------------------------
 # Option: --with-libdwarf=PATH
 #-------------------------------------------------
 
@@ -1474,6 +1511,51 @@ AC_SUBST(OPT_PAPI_IFLAGS)
 AC_SUBST(OPT_PAPI_LDFLAGS)
 AC_SUBST(OPT_PAPI_LIBPATH)
 AC_SUBST([papi_extra_libs])
+
+# Option to use the new papi-c.c sample source file.  This is mostly
+# temporary until the new file integrates both component and
+# non-component PAPI.  Requires PAPI 5.1 or later.
+
+AC_ARG_ENABLE([papi-c],
+  AS_HELP_STRING([--enable-papi-c],
+      [use new papi component sample source, requires papi 5.1 or later]),
+  [use_papi_c="$enableval"],
+  [use_papi_c=check])
+
+AC_MSG_CHECKING([whether to use new papi component])
+
+case "$use_papi_c" in
+  no | check ) ;;
+  * ) use_papi_c=yes ;;
+esac
+
+if test "$OPT_HAVE_PAPI" = no ; then
+  use_papi_c=no
+fi
+
+if test "$use_papi_c" = check ; then
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS"
+  AC_LANG_PUSH([C])
+
+  AC_LINK_IFELSE([
+#include "papi.h"
+int main()
+{
+  return PAPI_get_eventset_component(0);
+}
+], [use_papi_c=yes], [use_papi_c=no])
+
+  AC_LANG_POP
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
+fi
+
+AC_MSG_RESULT([$use_papi_c])
+
+AM_CONDITIONAL(OPT_PAPI_COMPONENT, [test "$use_papi_c" = yes])
 
 
 #-------------------------------------------------
@@ -2071,11 +2153,11 @@ fi
 # struct sigevent.  These are Linux extensions and may not compile on
 # all systems.
 
-AC_MSG_CHECKING([for CLOCK_REALTIME and SIGEV_THREAD_ID])
-
 AC_LANG_PUSH([C])
 ORIG_LIBS="$LIBS"
 LIBS="-lrt"
+
+AC_MSG_CHECKING([for CLOCK_REALTIME and SIGEV_THREAD_ID])
 
 AC_LINK_IFELSE([
 #include <sys/syscall.h>
@@ -2097,15 +2179,33 @@ int main()
 }
 ], [ans=yes], [ans=no])
 
-LIBS="$ORIG_LIBS"
-AC_LANG_POP
-
 AC_MSG_RESULT([$ans])
+
+# If CLOCK_REALTIME exists, then also try CLOCK_THREAD_CPUTIME_ID.
 
 if test "$ans" = yes ; then
   AC_DEFINE([ENABLE_CLOCK_REALTIME], [1],
             [Support for CLOCK_REALTIME and SIGEV_THREAD_ID])
+
+  AC_MSG_CHECKING([for CLOCK_THREAD_CPUTIME_ID])
+  AC_LINK_IFELSE([
+#include <sys/time.h>
+#include <time.h>
+int main()
+{
+  clockid_t clock = CLOCK_THREAD_CPUTIME_ID;
+  return 0;
+}
+], [ans=yes], [ans=no])
+  AC_MSG_RESULT([$ans])
+
+  if test "$ans" = yes ; then
+    AC_DEFINE([ENABLE_CLOCK_CPUTIME], [1], [Support for CLOCK_THREAD_CPUTIME_ID])
+  fi
 fi
+
+LIBS="$ORIG_LIBS"
+AC_LANG_POP
 
 
 #-------------------------------------------------
@@ -2443,6 +2543,7 @@ AC_MSG_NOTICE([  HPC_LT_LDFLAGS:        '${HPC_LT_LDFLAGS}'])
 AC_MSG_NOTICE([  HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  binutils:     ${GNUBINUTILS}])
+AC_MSG_NOTICE([  boost:        ${BOOST}])
 AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
 AC_MSG_NOTICE([  libelf:       ${LIBELF}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])

@@ -313,8 +313,8 @@ hpcjava_get_interval(void *addr)
   p = interval_tree_lookup(&ui_tree_root, addr);
 
   if (p != NULL) {
-    void *bt;
-    hpcjava_get_async_call_trace(&bt, 20);
+    //void *bt;
+    //hpcjava_get_async_call_trace(&bt, 20);
     //hpcjava_get_call_trace( &bt, JAVA_MAX_FRAMES);
     TMSG(JAVA, "found in Java unwind tree: addr %p", addr);
   }

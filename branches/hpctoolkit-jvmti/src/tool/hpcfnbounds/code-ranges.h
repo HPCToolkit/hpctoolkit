@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -67,9 +67,5 @@ void new_code_range(void *start, void *end, long offset,
 void process_code_ranges();
 
 long num_function_entries(void);
-
-int binary_fmt_fd(void);
-FILE *c_fmt_fp(void);
-FILE *text_fmt_fp(void);
 
 #endif // code_ranges_hpp

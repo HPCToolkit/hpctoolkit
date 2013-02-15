@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -76,18 +76,16 @@ struct syserv_mesg {
   int64_t  len;
 };
 
-// also used to carry around fnbounds info inside hpcrun
-// (could be separate)
-
-struct fnbounds_file_header {
-  uint64_t  zero_pad;
-  uint64_t  magic;
-  uint64_t  mmap_size;
-  uint64_t  num_entries;
-  uint64_t  reference_offset;
-  int32_t   is_relocatable;
+struct syserv_fnbounds_info {
+  // internal fields for the client
+  int32_t   magic;
   int32_t   status;
   long      memsize;
+
+  // fields for the fnbounds file header
+  uint64_t  num_entries;
+  uint64_t  reference_offset;
+  int       is_relocatable;
 };
 
 #endif  // _SYSERV_MESG_H_

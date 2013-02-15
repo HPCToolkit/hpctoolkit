@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -48,6 +48,7 @@
 // RETCNT sample source simple oo interface
 //
 
+
 /******************************************************************************
  * system includes
  *****************************************************************************/
@@ -79,6 +80,8 @@
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/thread_data.h>
 #include <cct/cct.h>
+
+#if defined (HOST_CPU_x86_64)
 
 #include <messages/messages.h>
 
@@ -182,8 +185,6 @@ METHOD_FN(gen_event_set,int lush_metrics)
   TMSG(REC_COMPRESS, "RETCNT event ==> retain recursion");
   hpcrun_set_retain_recursion_mode(true); // make sure all recursion elements are retained
                                           // whenever RETCNT is used.
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->eventSet[self->evset_idx] = 0xDEAD;
 }
 
 static void
@@ -226,3 +227,12 @@ hpcrun_retcnt_inc(cct_node_t* node, int incr)
 			    node,
 			    (cct_metric_data_t){.i = incr});
 }
+
+#else
+
+void
+hpcrun_retcnt_inc(cct_node_t* node, int incr)
+{
+}
+
+#endif
