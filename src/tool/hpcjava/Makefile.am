@@ -94,6 +94,7 @@ libhpcjava_la_CPPFLAGS = 		\
 	$(HPC_IFLAGS)			\
 	-I$(top_srcdir)/src/tool/	\
 	-I$(HPCRUN_SRCDIR)		\
+	-I$(HPCRUN_SRCDIR)/fnbounds	\
 	-I$(HPCRUN_SRCDIR)/memory	\
 	-I$(HPCRUN_SRCDIR)/messages	\
 	-I$(HPCRUN_SRCDIR)/unwind/common  \

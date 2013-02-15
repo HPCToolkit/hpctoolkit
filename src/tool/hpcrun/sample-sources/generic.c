@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -398,10 +398,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   
   // NOTE: some lush-aware event list processing may need to be done here ...
 
-  // This code aways goes at the end
-  
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->eventSet[self->evset_idx] = 0xDEAD;
 }
 
 static void

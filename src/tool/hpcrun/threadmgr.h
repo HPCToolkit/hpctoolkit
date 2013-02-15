@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,39 +44,25 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef _FNBOUNDS_FILE_HEADER_
-#define _FNBOUNDS_FILE_HEADER_
-
-#include <stdint.h>
-
+//******************************************************************************
+// File: threadmgr.h 
 //
-// Printf format strings for fnbounds file names and extensions.
-// The %s conversion args are directory and basename.
-//
-#define FNBOUNDS_BINARY_FORMAT  "%s/%s.fnbounds.bin"
-#define FNBOUNDS_C_FORMAT       "%s/%s.fnbounds.c"
-#define FNBOUNDS_TEXT_FORMAT    "%s/%s.fnbounds.txt"
+// Purpose: 
+//   interface definitions for threadmgr, which maintains information 
+//   about the number of live threads
+//******************************************************************************
 
+#ifndef _threadmgr_h_
+#define _threadmgr_h_
 
-// All of this is now superseded by syserv.h and this entire file will
-// go away when we remove the old system server.
+//******************************************************************************
+// interface operations
+//******************************************************************************
 
-#if 0
-//
-// The extra info in the binary file of function addresses, written by
-// hpcfnbounds-bin and read in the main process.  We call it "header",
-// even though it's actually at the end of the file.
-//
-#define FNBOUNDS_MAGIC  0xf9f9f9f9
+void hpcrun_threadmgr_thread_new();
 
-// Note: this must be cross-platform compatible (E.g. static
-struct fnbounds_file_header {
-  uint64_t zero_pad;
-  uint64_t magic;
-  uint64_t num_entries;
-  uint64_t reference_offset;
-  int32_t  is_relocatable; // boolean
-};
-#endif
+void hpcrun_threadmgr_thread_delete();
+
+int hpcrun_threadmgr_thread_count();
 
 #endif

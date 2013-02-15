@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2012, Rice University
+## Copyright ((c)) 2002-2013, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -140,7 +140,6 @@ LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
 PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
-SYMTABAPI_INC =  @SYMTABAPI_INC@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 
@@ -255,10 +254,10 @@ MY_BASE_FILES =				\
 	sample_sources_registered.c	\
 	segv_handler.c			\
 	start-stop.c			\
-	system_server.c			\
 	term_handler.c			\
 	thread_data.c			\
 	thread_use.c			\
+	threadmgr.c			\
 	trace.c				\
 	weak.c				\
 	write_data.c		        \
@@ -338,8 +337,11 @@ MY_IA64_FILES = \
         trampoline/ia64/ia64-tramp.s \
         utilities/arch/ia64/ia64-context-pc.c
 
-MY_PAPI_FILES = 			\
-	sample-sources/papi.c
+if OPT_PAPI_COMPONENT
+MY_PAPI_FILES = sample-sources/papi-c.c
+else
+MY_PAPI_FILES = sample-sources/papi.c
+endif
 
 MY_UPC_FILES = sample-sources/upc.c
 
@@ -360,8 +362,7 @@ MY_INCLUDE_DIRS =			\
 	$(HPC_IFLAGS)			\
 	$(OPT_LIBUNWIND_IFLAGS)         \
 	-I$(HPCFNBOUNDS_INC)		\
-	-I$(LIBMONITOR_INC)		\
-	-I$(SYMTABAPI_INC)
+	-I$(LIBMONITOR_INC)
 
 if OPT_ENABLE_JAVA
 MY_INCLUDE_DIRS +=			\

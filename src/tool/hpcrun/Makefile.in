@@ -293,8 +293,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/idle.c sample-sources/memleak.c \
 	sample-sources/none.c sample-sources/retcnt.c \
 	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c system_server.c term_handler.c \
-	thread_data.c thread_use.c trace.c weak.c write_data.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c threadmgr.c trace.c weak.c write_data.c \
 	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
 	trampoline/common/trampoline.c lush/lush-backtrace.h \
 	lush/lush-backtrace.c lush/lush.h lush/lush.c \
@@ -318,8 +318,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	utilities/arch/x86-family/x86-context-pc.c \
 	trampoline/ia64/ia64-tramp.s \
 	utilities/arch/ia64/ia64-context-pc.c sample-sources/papi.c \
-	sample-sources/upc.c unwind/common/backtrace.c \
-	unwind/common/unw-throw.c \
+	sample-sources/papi-c.c sample-sources/upc.c \
+	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/generic-libunwind/libunw-unwind.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
 	unwind/ppc64/ppc64-unwind.c \
@@ -354,8 +354,8 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-retcnt.lo libhpcrun_la-sync.lo \
 	libhpcrun_la-sample_sources_registered.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-start-stop.lo \
-	libhpcrun_la-system_server.lo libhpcrun_la-term_handler.lo \
-	libhpcrun_la-thread_data.lo libhpcrun_la-thread_use.lo \
+	libhpcrun_la-term_handler.lo libhpcrun_la-thread_data.lo \
+	libhpcrun_la-thread_use.lo libhpcrun_la-threadmgr.lo \
 	libhpcrun_la-trace.lo libhpcrun_la-weak.lo \
 	libhpcrun_la-write_data.lo libhpcrun_la-cct_bundle.lo \
 	libhpcrun_la-cct_ctxt.lo libhpcrun_la-cct.lo \
@@ -388,7 +388,8 @@ am__objects_17 = libhpcrun_la-x86-tramp.lo \
 am__objects_19 = libhpcrun_la-ia64-tramp.lo \
 	libhpcrun_la-ia64-context-pc.lo
 @HOST_CPU_IA64_TRUE@am__objects_20 = $(am__objects_19)
-am__objects_21 = libhpcrun_la-papi.lo
+@OPT_PAPI_COMPONENT_FALSE@am__objects_21 = libhpcrun_la-papi.lo
+@OPT_PAPI_COMPONENT_TRUE@am__objects_21 = libhpcrun_la-papi-c.lo
 @OPT_PAPI_DYNAMIC_TRUE@am__objects_22 = $(am__objects_21)
 am__objects_23 = libhpcrun_la-upc.lo
 @OPT_ENABLE_UPC_TRUE@am__objects_24 = $(am__objects_23)
@@ -475,8 +476,8 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/idle.c sample-sources/memleak.c \
 	sample-sources/none.c sample-sources/retcnt.c \
 	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c system_server.c term_handler.c \
-	thread_data.c thread_use.c trace.c weak.c write_data.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c threadmgr.c trace.c weak.c write_data.c \
 	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
 	trampoline/common/trampoline.c lush/lush-backtrace.h \
 	lush/lush-backtrace.c lush/lush.h lush/lush.c \
@@ -498,8 +499,8 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	utilities/arch/x86-family/x86-context-pc.c \
 	trampoline/ia64/ia64-tramp.s \
 	utilities/arch/ia64/ia64-context-pc.c sample-sources/papi.c \
-	sample-sources/upc.c unwind/common/backtrace.c \
-	unwind/common/unw-throw.c \
+	sample-sources/papi-c.c sample-sources/upc.c \
+	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/generic-libunwind/libunw-unwind.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
 	unwind/ppc64/ppc64-unwind.c \
@@ -540,10 +541,10 @@ am__objects_32 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-sample_sources_registered.$(OBJEXT) \
 	libhpcrun_o-segv_handler.$(OBJEXT) \
 	libhpcrun_o-start-stop.$(OBJEXT) \
-	libhpcrun_o-system_server.$(OBJEXT) \
 	libhpcrun_o-term_handler.$(OBJEXT) \
 	libhpcrun_o-thread_data.$(OBJEXT) \
-	libhpcrun_o-thread_use.$(OBJEXT) libhpcrun_o-trace.$(OBJEXT) \
+	libhpcrun_o-thread_use.$(OBJEXT) \
+	libhpcrun_o-threadmgr.$(OBJEXT) libhpcrun_o-trace.$(OBJEXT) \
 	libhpcrun_o-weak.$(OBJEXT) libhpcrun_o-write_data.$(OBJEXT) \
 	libhpcrun_o-cct_bundle.$(OBJEXT) \
 	libhpcrun_o-cct_ctxt.$(OBJEXT) libhpcrun_o-cct.$(OBJEXT) \
@@ -576,7 +577,9 @@ am__objects_38 = libhpcrun_o-x86-tramp.$(OBJEXT) \
 am__objects_40 = libhpcrun_o-ia64-tramp.$(OBJEXT) \
 	libhpcrun_o-ia64-context-pc.$(OBJEXT)
 @HOST_CPU_IA64_TRUE@am__objects_41 = $(am__objects_40)
-am__objects_42 = libhpcrun_o-papi.$(OBJEXT)
+@OPT_PAPI_COMPONENT_FALSE@am__objects_42 = libhpcrun_o-papi.$(OBJEXT)
+@OPT_PAPI_COMPONENT_TRUE@am__objects_42 =  \
+@OPT_PAPI_COMPONENT_TRUE@	libhpcrun_o-papi-c.$(OBJEXT)
 @OPT_PAPI_STATIC_TRUE@am__objects_43 = $(am__objects_42)
 am__objects_44 = libhpcrun_o-upc.$(OBJEXT)
 @OPT_ENABLE_UPC_TRUE@am__objects_45 = $(am__objects_44)
@@ -691,6 +694,7 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BOOST_INC = @BOOST_INC@
 CC = @CC@
 CCAS = @CCAS@
 CCASDEPMODE = @CCASDEPMODE@
@@ -1017,9 +1021,9 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/memleak.c sample-sources/none.c \
 	sample-sources/retcnt.c sample-sources/sync.c \
 	sample_sources_registered.c segv_handler.c start-stop.c \
-	system_server.c term_handler.c thread_data.c thread_use.c \
-	trace.c weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c \
-	cct/cct.c cct2metrics.c trampoline/common/trampoline.c \
+	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
+	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct2metrics.c trampoline/common/trampoline.c \
 	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
 	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
 	lush/lush-pthread.c lush/lush-support-rt.h \
@@ -1059,9 +1063,8 @@ MY_IA64_FILES = \
         trampoline/ia64/ia64-tramp.s \
         utilities/arch/ia64/ia64-context-pc.c
 
-MY_PAPI_FILES = \
-	sample-sources/papi.c
-
+@OPT_PAPI_COMPONENT_FALSE@MY_PAPI_FILES = sample-sources/papi.c
+@OPT_PAPI_COMPONENT_TRUE@MY_PAPI_FILES = sample-sources/papi-c.c
 MY_UPC_FILES = sample-sources/upc.c
 MY_CPP_DEFINES = \
 	-D_GNU_SOURCE			\
@@ -1072,7 +1075,7 @@ MY_INCLUDE_DIRS = -I$(top_srcdir)/src/tool -I$(srcdir)/messages \
 	-I$(srcdir)/os/catamount -I$(srcdir)/os/linux -I$(srcdir)/cct \
 	-I$(srcdir)/unwind/common -I$(srcdir)/utilities $(HPC_IFLAGS) \
 	$(OPT_LIBUNWIND_IFLAGS) -I$(HPCFNBOUNDS_INC) \
-	-I$(LIBMONITOR_INC) -I$(SYMTABAPI_INC) $(am__append_11)
+	-I$(LIBMONITOR_INC) $(am__append_11)
 MY_MIPS_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/mips
 
@@ -1601,6 +1604,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-name.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-none.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-openmp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-papi-c.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-papi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ppc64-context-pc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ppc64-unwind-interval.Plo@am__quote@
@@ -1616,10 +1620,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-stack_troll.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-start-stop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-sync.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-system_server.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-term_handler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-thread_data.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-thread_use.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-threadmgr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-tokenize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-trace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-trampoline.Plo@am__quote@
@@ -1695,6 +1699,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-mpi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-name.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-none.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi-c.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ppc64-context-pc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ppc64-unwind-interval.Po@am__quote@
@@ -1710,10 +1715,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-stack_troll.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-start-stop.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-sync.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-system_server.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-term_handler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-thread_data.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-thread_use.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-threadmgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-tokenize.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-trace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-trampoline.Po@am__quote@
@@ -2141,13 +2146,6 @@ libhpcrun_la-start-stop.lo: start-stop.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-start-stop.lo `test -f 'start-stop.c' || echo '$(srcdir)/'`start-stop.c
 
-libhpcrun_la-system_server.lo: system_server.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-system_server.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-system_server.Tpo -c -o libhpcrun_la-system_server.lo `test -f 'system_server.c' || echo '$(srcdir)/'`system_server.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-system_server.Tpo $(DEPDIR)/libhpcrun_la-system_server.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='system_server.c' object='libhpcrun_la-system_server.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-system_server.lo `test -f 'system_server.c' || echo '$(srcdir)/'`system_server.c
-
 libhpcrun_la-term_handler.lo: term_handler.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-term_handler.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-term_handler.Tpo -c -o libhpcrun_la-term_handler.lo `test -f 'term_handler.c' || echo '$(srcdir)/'`term_handler.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-term_handler.Tpo $(DEPDIR)/libhpcrun_la-term_handler.Plo
@@ -2168,6 +2166,13 @@ libhpcrun_la-thread_use.lo: thread_use.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='thread_use.c' object='libhpcrun_la-thread_use.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-thread_use.lo `test -f 'thread_use.c' || echo '$(srcdir)/'`thread_use.c
+
+libhpcrun_la-threadmgr.lo: threadmgr.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-threadmgr.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-threadmgr.Tpo -c -o libhpcrun_la-threadmgr.lo `test -f 'threadmgr.c' || echo '$(srcdir)/'`threadmgr.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-threadmgr.Tpo $(DEPDIR)/libhpcrun_la-threadmgr.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='threadmgr.c' object='libhpcrun_la-threadmgr.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-threadmgr.lo `test -f 'threadmgr.c' || echo '$(srcdir)/'`threadmgr.c
 
 libhpcrun_la-trace.lo: trace.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-trace.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-trace.Tpo -c -o libhpcrun_la-trace.lo `test -f 'trace.c' || echo '$(srcdir)/'`trace.c
@@ -2434,6 +2439,13 @@ libhpcrun_la-papi.lo: sample-sources/papi.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi.c' object='libhpcrun_la-papi.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-papi.lo `test -f 'sample-sources/papi.c' || echo '$(srcdir)/'`sample-sources/papi.c
+
+libhpcrun_la-papi-c.lo: sample-sources/papi-c.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-papi-c.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-papi-c.Tpo -c -o libhpcrun_la-papi-c.lo `test -f 'sample-sources/papi-c.c' || echo '$(srcdir)/'`sample-sources/papi-c.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-papi-c.Tpo $(DEPDIR)/libhpcrun_la-papi-c.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi-c.c' object='libhpcrun_la-papi-c.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-papi-c.lo `test -f 'sample-sources/papi-c.c' || echo '$(srcdir)/'`sample-sources/papi-c.c
 
 libhpcrun_la-upc.lo: sample-sources/upc.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-upc.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-upc.Tpo -c -o libhpcrun_la-upc.lo `test -f 'sample-sources/upc.c' || echo '$(srcdir)/'`sample-sources/upc.c
@@ -3058,20 +3070,6 @@ libhpcrun_o-start-stop.obj: start-stop.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-start-stop.obj `if test -f 'start-stop.c'; then $(CYGPATH_W) 'start-stop.c'; else $(CYGPATH_W) '$(srcdir)/start-stop.c'; fi`
 
-libhpcrun_o-system_server.o: system_server.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-system_server.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-system_server.Tpo -c -o libhpcrun_o-system_server.o `test -f 'system_server.c' || echo '$(srcdir)/'`system_server.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-system_server.Tpo $(DEPDIR)/libhpcrun_o-system_server.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='system_server.c' object='libhpcrun_o-system_server.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-system_server.o `test -f 'system_server.c' || echo '$(srcdir)/'`system_server.c
-
-libhpcrun_o-system_server.obj: system_server.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-system_server.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-system_server.Tpo -c -o libhpcrun_o-system_server.obj `if test -f 'system_server.c'; then $(CYGPATH_W) 'system_server.c'; else $(CYGPATH_W) '$(srcdir)/system_server.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-system_server.Tpo $(DEPDIR)/libhpcrun_o-system_server.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='system_server.c' object='libhpcrun_o-system_server.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-system_server.obj `if test -f 'system_server.c'; then $(CYGPATH_W) 'system_server.c'; else $(CYGPATH_W) '$(srcdir)/system_server.c'; fi`
-
 libhpcrun_o-term_handler.o: term_handler.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-term_handler.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-term_handler.Tpo -c -o libhpcrun_o-term_handler.o `test -f 'term_handler.c' || echo '$(srcdir)/'`term_handler.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-term_handler.Tpo $(DEPDIR)/libhpcrun_o-term_handler.Po
@@ -3113,6 +3111,20 @@ libhpcrun_o-thread_use.obj: thread_use.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='thread_use.c' object='libhpcrun_o-thread_use.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-thread_use.obj `if test -f 'thread_use.c'; then $(CYGPATH_W) 'thread_use.c'; else $(CYGPATH_W) '$(srcdir)/thread_use.c'; fi`
+
+libhpcrun_o-threadmgr.o: threadmgr.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-threadmgr.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-threadmgr.Tpo -c -o libhpcrun_o-threadmgr.o `test -f 'threadmgr.c' || echo '$(srcdir)/'`threadmgr.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-threadmgr.Tpo $(DEPDIR)/libhpcrun_o-threadmgr.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='threadmgr.c' object='libhpcrun_o-threadmgr.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-threadmgr.o `test -f 'threadmgr.c' || echo '$(srcdir)/'`threadmgr.c
+
+libhpcrun_o-threadmgr.obj: threadmgr.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-threadmgr.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-threadmgr.Tpo -c -o libhpcrun_o-threadmgr.obj `if test -f 'threadmgr.c'; then $(CYGPATH_W) 'threadmgr.c'; else $(CYGPATH_W) '$(srcdir)/threadmgr.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-threadmgr.Tpo $(DEPDIR)/libhpcrun_o-threadmgr.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='threadmgr.c' object='libhpcrun_o-threadmgr.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-threadmgr.obj `if test -f 'threadmgr.c'; then $(CYGPATH_W) 'threadmgr.c'; else $(CYGPATH_W) '$(srcdir)/threadmgr.c'; fi`
 
 libhpcrun_o-trace.o: trace.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-trace.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-trace.Tpo -c -o libhpcrun_o-trace.o `test -f 'trace.c' || echo '$(srcdir)/'`trace.c
@@ -3561,6 +3573,20 @@ libhpcrun_o-papi.obj: sample-sources/papi.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi.c' object='libhpcrun_o-papi.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-papi.obj `if test -f 'sample-sources/papi.c'; then $(CYGPATH_W) 'sample-sources/papi.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/papi.c'; fi`
+
+libhpcrun_o-papi-c.o: sample-sources/papi-c.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-papi-c.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-papi-c.Tpo -c -o libhpcrun_o-papi-c.o `test -f 'sample-sources/papi-c.c' || echo '$(srcdir)/'`sample-sources/papi-c.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-papi-c.Tpo $(DEPDIR)/libhpcrun_o-papi-c.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi-c.c' object='libhpcrun_o-papi-c.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-papi-c.o `test -f 'sample-sources/papi-c.c' || echo '$(srcdir)/'`sample-sources/papi-c.c
+
+libhpcrun_o-papi-c.obj: sample-sources/papi-c.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-papi-c.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-papi-c.Tpo -c -o libhpcrun_o-papi-c.obj `if test -f 'sample-sources/papi-c.c'; then $(CYGPATH_W) 'sample-sources/papi-c.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/papi-c.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-papi-c.Tpo $(DEPDIR)/libhpcrun_o-papi-c.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi-c.c' object='libhpcrun_o-papi-c.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-papi-c.obj `if test -f 'sample-sources/papi-c.c'; then $(CYGPATH_W) 'sample-sources/papi-c.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/papi-c.c'; fi`
 
 libhpcrun_o-upc.o: sample-sources/upc.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-upc.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-upc.Tpo -c -o libhpcrun_o-upc.o `test -f 'sample-sources/upc.c' || echo '$(srcdir)/'`sample-sources/upc.c

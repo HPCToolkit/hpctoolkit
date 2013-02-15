@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -85,7 +85,8 @@
 //***************************************************************************
 
 // To build an interactive, stand-alone client for testing:
-// (1) turn on this #if and (2) fetch a copy of syserv-mesg.h.
+// (1) turn on this #if and (2) fetch copies of syserv-mesg.h
+// and fnbounds_file_header.h.
 
 #if 0
 #define STAND_ALONE_CLIENT
@@ -117,14 +118,16 @@ int zero_fcn(void) { return 0; }
 #include <unistd.h>
 
 #if !defined(STAND_ALONE_CLIENT)
-#include <tool/hpcfnbounds/syserv-mesg.h>
-#include <messages/messages.h>
+#include <hpcfnbounds/syserv-mesg.h>
 #include "client.h"
 #include "disabled.h"
+#include "fnbounds_file_header.h"
+#include "messages.h"
 #include "sample_sources_all.h"
 #include "monitor.h"
 #else
 #include "syserv-mesg.h"
+#include "fnbounds_file_header.h"
 #endif
 
 // Limit on memory use at which we restart the server in Meg.
@@ -549,34 +552,38 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
   }
 
   // Read the trailing fnbounds file header.
-  int ret = read_all(fdin, fh, sizeof(*fh));
-  if (ret != SUCCESS || fh->magic != FNBOUNDS_MAGIC) {
+  struct syserv_fnbounds_info fnb_info;
+  int ret = read_all(fdin, &fnb_info, sizeof(fnb_info));
+  if (ret != SUCCESS || fnb_info.magic != FNBOUNDS_MAGIC) {
     EMSG("SYSTEM_SERVER ERROR: lost contact with server");
     shutdown_server();
     return NULL;
   }
-  if (fh->status != SYSERV_OK) {
+  if (fnb_info.status != SYSERV_OK) {
     EMSG("SYSTEM_SERVER ERROR: query failed: %s", fname);
     return NULL;
   }
+  fh->num_entries = fnb_info.num_entries;
+  fh->reference_offset = fnb_info.reference_offset;
+  fh->is_relocatable = fnb_info.is_relocatable;
   fh->mmap_size = mmap_size;
 
   TMSG(SYSTEM_SERVER, "addr: %p, symbols: %ld, offset: 0x%lx, reloc: %d",
        addr, (long) fh->num_entries, (long) fh->reference_offset,
        (int) fh->is_relocatable);
-  TMSG(SYSTEM_SERVER, "server memsize: %ld Meg", fh->memsize / 1024);
+  TMSG(SYSTEM_SERVER, "server memsize: %ld Meg", fnb_info.memsize / 1024);
 
   // Restart the server if it's done a minimum number of queries and
   // has exceeded its memory limit.  Issue a warning at 60%.
   num_queries++;
-  if (!mem_warning && fh->memsize > (6 * mem_limit)/10) {
+  if (!mem_warning && fnb_info.memsize > (6 * mem_limit)/10) {
     EMSG("SYSTEM_SERVER: warning: memory usage: %ld Meg",
-	 fh->memsize / 1024);
+	 fnb_info.memsize / 1024);
     mem_warning = 1;
   }
-  if (num_queries >= MIN_NUM_QUERIES && fh->memsize > mem_limit) {
+  if (num_queries >= MIN_NUM_QUERIES && fnb_info.memsize > mem_limit) {
     EMSG("SYSTEM_SERVER: warning: memory usage: %ld Meg, restart server",
-	 fh->memsize / 1024);
+	 fnb_info.memsize / 1024);
     shutdown_server();
   }
 
