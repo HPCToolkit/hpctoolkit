@@ -505,9 +505,14 @@ METHOD_FN(process_event_list, int lush_metrics)
   for (i = 0; i < nevents; i++) {
     char buffer[PAPI_MAX_STR_LEN + 10];
     int metric_id = hpcrun_new_metric(); /* weight */
+    metric_desc_properties_t prop = metric_property_none;
     METHOD_CALL(self, store_metric_id, i, metric_id);
     PAPI_event_code_to_name(self->evl.events[i].event, buffer);
     TMSG(PAPI, "metric for event %d = %s", i, buffer);
+    // blame shifting needs to know if there is a cycles metric
+    if (strcmp(buffer, "PAPI_TOT_CYC") == 0) {
+      prop = metric_property_cycles;
+    }
 
     // allow derived events (proxy sampling), as long as some event
     // supports hardware overflow.  use threshold = 0 to force proxy
@@ -534,12 +539,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     hpcrun_set_metric_info_and_period(metric_id, strdup(buffer),
 				      MetricFlags_ValFmt_Int,
-				      threshold);
-
-    // blame shifting needs to know if there is a cycles metric
-    if (strcmp(buffer, "PAPI_TOT_CYC") == 0) {
-      cyc_metric_id = metric_id;
-    }
+				      threshold, prop);
 
     // FIXME:LUSH: need a more flexible metric interface
     if (num_lush_metrics > 0 && strcmp(buffer, "PAPI_TOT_CYC") == 0) {
@@ -551,7 +551,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
       hpcrun_set_metric_info_and_period(mid_idleness, "idleness",
 					MetricFlags_ValFmt_Real,
-					self->evl.events[i].thresh);
+					self->evl.events[i].thresh, prop);
     }
   }
 
@@ -866,9 +866,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metricIncrement,
 			   0/*skipInner*/, 0/*isSync*/);
 
-    if (cyc_metric_id == metric_id) {
-      blame_shift_apply(sv.sample_node, hpcrun_id2metric(metric_id)->period);
-    }
+    blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
   }
 
   // Add metric values for derived events by the difference in counter
