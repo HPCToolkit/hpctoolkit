@@ -147,7 +147,7 @@ METHOD_FN(thread_init_action)
 static void
 METHOD_FN(start)
 {
-  if (! blame_shift_source_available(bs_type_timer)) {
+  if (!blame_shift_source_available(bs_type_timer) && !blame_shift_source_available(bs_type_cycles)) {
     STDERR_MSG("HPCToolkit: IDLE metric needs either a REALTIME, CPUTIME, WALLCLOCK, or PAPI_TOT_CYC source.");
     monitor_real_exit(1);
   }
@@ -274,7 +274,11 @@ idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric
 static void 
 init_hack()
 {
-  active_worker_count = atoi(getenv("OMP_NUM_THREADS"));
+  char * num_threads = getenv("OMP_NUM_THREADS");
+  if (!num_threads)
+    active_worker_count = 1;
+  else 
+    active_worker_count = atoi(num_threads);
   total_threads = active_worker_count;
 
   TMSG(IDLE, "init_hack called, work = %d", active_worker_count);
