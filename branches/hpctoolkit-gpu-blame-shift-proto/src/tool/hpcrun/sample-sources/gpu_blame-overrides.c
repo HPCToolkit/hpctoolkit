@@ -259,7 +259,8 @@ monitor_enable_new_threads();                                                   
 TD_GET(gpu_data.is_thread_at_cuda_sync) = false;                                                                  \
 HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK
 
-#define ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, skip_inner)    ASYNC_KERNEL_PROLOGUE(streamId, event_node, context, cct_node, stream, skip_inner)
+#define ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, skip_inner) \
+	ASYNC_KERNEL_PROLOGUE(streamId, event_node, context, cct_node, stream, skip_inner)
 
 #define ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, count, kind)                                          \
 TD_GET(gpu_data.overload_state) = WORKING_STATE;                                                                  \
@@ -485,7 +486,14 @@ static stream_node_t *g_unfinished_stream_list_head;
 static event_list_node_t *g_finished_event_nodes_tail;
 
 // dummy activity node
-static event_list_node_t dummy_event_node = {.event_end = 0,.event_start = 0,.event_end_time = 0,.event_end_time = 0,.launcher_cct = 0,.stream_launcher_cct = 0 };
+static event_list_node_t dummy_event_node = {
+  .event_end = 0,
+  .event_start = 0,
+  .event_end_time = 0,
+  .event_end_time = 0,
+  .launcher_cct = 0,
+  .stream_launcher_cct = 0 
+};
 
 // is inter-process blaming enabled?
 static bool g_do_shared_blaming;
@@ -1211,21 +1219,40 @@ static void create_stream0_if_needed(cudaStream_t stream) {
 ////////////////////////////////////////////////
 
 
-CUDA_RUNTIME_SYNC_WRAPPER(cudaThreadSynchronize, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd), void)
+CUDA_RUNTIME_SYNC_WRAPPER(cudaThreadSynchronize, (context, launcher_cct,
+syncStart, recorded_node), (context, launcher_cct, syncStart,
+recorded_node, ALL_STREAMS_MASK, syncEnd), void)
 
-CUDA_RUNTIME_SYNC_ON_STREAM_WRAPPER(cudaStreamSynchronize, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, streamId, syncEnd), cudaStream_t, stream)
+CUDA_RUNTIME_SYNC_ON_STREAM_WRAPPER(cudaStreamSynchronize, (context,
+launcher_cct, syncStart, recorded_node), (context, launcher_cct,
+syncStart, recorded_node, streamId, syncEnd), cudaStream_t, stream)
 
-CUDA_RUNTIME_SYNC_WRAPPER(cudaEventSynchronize, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd), cudaEvent_t, event)
+CUDA_RUNTIME_SYNC_WRAPPER(cudaEventSynchronize, (context, launcher_cct,
+syncStart, recorded_node), (context, launcher_cct, syncStart,
+recorded_node, ALL_STREAMS_MASK, syncEnd), cudaEvent_t, event)
 
-CUDA_RUNTIME_SYNC_ON_STREAM_WRAPPER(cudaStreamWaitEvent, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, streamId, syncEnd), cudaStream_t, stream, cudaEvent_t, event, unsigned int, flags)
+CUDA_RUNTIME_SYNC_ON_STREAM_WRAPPER(cudaStreamWaitEvent, (context,
+launcher_cct, syncStart, recorded_node), (context, launcher_cct,
+syncStart, recorded_node, streamId, syncEnd), cudaStream_t, stream,
+cudaEvent_t, event, unsigned int, flags)
 
-CUDA_RUNTIME_SYNC_WRAPPER(cudaDeviceSynchronize, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd), void)
+CUDA_RUNTIME_SYNC_WRAPPER(cudaDeviceSynchronize, (context, launcher_cct,
+syncStart, recorded_node), (context, launcher_cct, syncStart,
+recorded_node, ALL_STREAMS_MASK, syncEnd), void)
 
-CUDA_RUNTIME_SYNC_WRAPPER(cudaMallocArray, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd), struct cudaArray **, array, const struct cudaChannelFormatDesc *, desc, size_t, width, size_t, height, unsigned int, flags)
+CUDA_RUNTIME_SYNC_WRAPPER(cudaMallocArray, (context, launcher_cct,
+syncStart, recorded_node), (context, launcher_cct, syncStart,
+recorded_node, ALL_STREAMS_MASK, syncEnd), struct cudaArray **, array,
+const struct cudaChannelFormatDesc *, desc, size_t, width, size_t,
+height, unsigned int, flags)
 
-CUDA_RUNTIME_SYNC_WRAPPER(cudaFree, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd), void *, devPtr)
+CUDA_RUNTIME_SYNC_WRAPPER(cudaFree, (context, launcher_cct, syncStart,
+recorded_node), (context, launcher_cct, syncStart, recorded_node,
+ALL_STREAMS_MASK, syncEnd), void *, devPtr)
 
-CUDA_RUNTIME_SYNC_WRAPPER(cudaFreeArray, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd),struct cudaArray *, array)
+CUDA_RUNTIME_SYNC_WRAPPER(cudaFreeArray, (context, launcher_cct,
+syncStart, recorded_node), (context, launcher_cct, syncStart,
+recorded_node, ALL_STREAMS_MASK, syncEnd),struct cudaArray *, array)
 
 
 
@@ -1382,94 +1409,246 @@ inline static void increment_mem_xfer_metric(size_t count, enum cudaMemcpyKind k
 
 
 
-CUDA_RUNTIME_SYNC_WRAPPER(cudaMalloc, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd), void **, devPtr, size_t, size)
+CUDA_RUNTIME_SYNC_WRAPPER(cudaMalloc, (context, launcher_cct, syncStart,
+recorded_node), (context, launcher_cct, syncStart, recorded_node,
+ALL_STREAMS_MASK, syncEnd), void **, devPtr, size_t, size)
 
-CUDA_RUNTIME_SYNC_WRAPPER(cudaMalloc3D, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd), struct cudaPitchedPtr*, pitchedDevPtr, struct cudaExtent, extent)
+CUDA_RUNTIME_SYNC_WRAPPER(cudaMalloc3D, (context, launcher_cct, syncStart,
+recorded_node), (context, launcher_cct, syncStart, recorded_node,
+ALL_STREAMS_MASK, syncEnd), struct cudaPitchedPtr*, pitchedDevPtr,
+struct cudaExtent, extent)
 
-CUDA_RUNTIME_SYNC_WRAPPER(cudaMalloc3DArray, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd), struct cudaArray**, array, const struct cudaChannelFormatDesc*, desc, struct cudaExtent, extent, unsigned int, flags)
+CUDA_RUNTIME_SYNC_WRAPPER(cudaMalloc3DArray, (context, launcher_cct,
+syncStart, recorded_node), (context, launcher_cct, syncStart,
+recorded_node, ALL_STREAMS_MASK, syncEnd), struct cudaArray**, array,
+const struct cudaChannelFormatDesc*, desc, struct cudaExtent, extent,
+unsigned int, flags)
 
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy3D, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (p->extent.width * p->extent.height * p->extent.depth), (p->kind)), const struct cudaMemcpy3DParms *, p)
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy3D, (context, launcher_cct,
+syncStart, recorded_node), (context, launcher_cct, syncStart,
+recorded_node, ALL_STREAMS_MASK, syncEnd, (p->extent.width *
+p->extent.height * p->extent.depth), (p->kind)), const struct
+cudaMemcpy3DParms *, p)
 
 
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy3DPeer, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (p->extent.width * p->extent.height * p->extent.depth), cudaMemcpyDeviceToDevice), const struct cudaMemcpy3DPeerParms *, p)
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy3DPeer, (context,
+launcher_cct, syncStart, recorded_node), (context, launcher_cct,
+syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (p->extent.width *
+p->extent.height * p->extent.depth), cudaMemcpyDeviceToDevice), const
+struct cudaMemcpy3DPeerParms *, p)
 
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpy3DAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, (p->extent.width * p->extent.height * p->extent.depth), (p->kind)), const struct cudaMemcpy3DParms *, p, cudaStream_t,  stream)
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpy3DAsync, (streamId,
+event_node, context, cct_node, stream, 0), (event_node, cct_node, stream,
+(p->extent.width * p->extent.height * p->extent.depth), (p->kind)),
+const struct cudaMemcpy3DParms *, p, cudaStream_t,  stream)
 
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpy3DPeerAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, (p->extent.width * p->extent.height * p->extent.depth), cudaMemcpyDeviceToDevice), const struct cudaMemcpy3DPeerParms *, p, cudaStream_t, stream)
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpy3DPeerAsync, (streamId,
+event_node, context, cct_node, stream, 0), (event_node, cct_node,
+stream, (p->extent.width * p->extent.height * p->extent.depth),
+cudaMemcpyDeviceToDevice), const struct cudaMemcpy3DPeerParms *, p,
+cudaStream_t, stream)
 
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyPeer, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, cudaMemcpyDeviceToDevice), void *, dst, int, dstDevice, const void *, src, int, srcDevice, size_t, count)
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyPeer, (context,
+launcher_cct, syncStart, recorded_node), (context, launcher_cct,
+syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count,
+cudaMemcpyDeviceToDevice), void *, dst, int, dstDevice, const void *,
+src, int, srcDevice, size_t, count)
 
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyFromArray, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), void *, dst, const struct cudaArray *, src, size_t, wOffset, size_t, hOffset, size_t, count, enum cudaMemcpyKind, kind)
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyFromArray, (context,
+launcher_cct, syncStart, recorded_node), (context, launcher_cct,
+syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), void
+*, dst, const struct cudaArray *, src, size_t, wOffset, size_t, hOffset,
+size_t, count, enum cudaMemcpyKind, kind)
 
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyArrayToArray, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), struct cudaArray *, dst, size_t, wOffsetDst, size_t, hOffsetDst, const struct cudaArray *, src, size_t, wOffsetSrc, size_t, hOffsetSrc, size_t, count, enum cudaMemcpyKind, kind)
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyArrayToArray, (context,
+launcher_cct, syncStart, recorded_node), (context, launcher_cct,
+syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind),
+struct cudaArray *, dst, size_t, wOffsetDst, size_t, hOffsetDst, const
+struct cudaArray *, src, size_t, wOffsetSrc, size_t, hOffsetSrc, size_t,
+count, enum cudaMemcpyKind, kind)
 
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy2DToArray, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (width * height) , kind), struct cudaArray *, dst, size_t, wOffset, size_t, hOffset, const void *, src, size_t, spitch, size_t, width, size_t, height, enum cudaMemcpyKind, kind)
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy2DToArray, (context,
+launcher_cct, syncStart, recorded_node), (context, launcher_cct,
+syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (width * height)
+, kind), struct cudaArray *, dst, size_t, wOffset, size_t, hOffset,
+const void *, src, size_t, spitch, size_t, width, size_t, height, enum
+cudaMemcpyKind, kind)
 
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy2DFromArray, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (width * height), kind), void *, dst, size_t, dpitch, const struct cudaArray *, src, size_t, wOffset, size_t, hOffset, size_t, width, size_t, height, enum cudaMemcpyKind, kind)
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy2DFromArray, (context,
+launcher_cct, syncStart, recorded_node), (context, launcher_cct,
+syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (width * height),
+kind), void *, dst, size_t, dpitch, const struct cudaArray *, src,
+size_t, wOffset, size_t, hOffset, size_t, width, size_t, height, enum
+cudaMemcpyKind, kind)
 
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy2DArrayToArray, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (width * height), kind), struct cudaArray *, dst, size_t, wOffsetDst, size_t, hOffsetDst, const struct cudaArray *, src, size_t, wOffsetSrc, size_t, hOffsetSrc, size_t, width, size_t, height, enum cudaMemcpyKind, kind )
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy2DArrayToArray, (context,
+launcher_cct, syncStart, recorded_node), (context, launcher_cct,
+syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (width * height),
+kind), struct cudaArray *, dst, size_t, wOffsetDst, size_t, hOffsetDst,
+const struct cudaArray *, src, size_t, wOffsetSrc, size_t, hOffsetSrc,
+size_t, width, size_t, height, enum cudaMemcpyKind, kind )
 
 
 #if (CUDART_VERSION < 5000)
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyToSymbol, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), const char *, symbol, const void *, src, size_t, count, size_t, offset , enum cudaMemcpyKind, kind )
+
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyToSymbol, (context,
+launcher_cct, syncStart, recorded_node), (context, launcher_cct,
+syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count,
+kind), const char *, symbol, const void *, src, size_t,
+count, size_t, offset , enum cudaMemcpyKind, kind ) 
+
 #else
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyToSymbol, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), const void *, symbol, const void *, src, size_t, count, size_t, offset , enum cudaMemcpyKind, kind )
+
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyToSymbol, (context,
+launcher_cct, syncStart, recorded_node), (context, launcher_cct,
+syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind),
+const void *, symbol, const void *, src, size_t, count, size_t, offset ,
+enum cudaMemcpyKind, kind ) 
+
 #endif
 
 
 #if (CUDART_VERSION < 5000)
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyFromSymbol, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), void *, dst, const char *, symbol, size_t, count, size_t, offset , enum cudaMemcpyKind, kind)
+
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyFromSymbol,
+(context, launcher_cct, syncStart, recorded_node), (context,
+launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK,
+syncEnd, count, kind), void *, dst, const char *, symbol,
+size_t, count, size_t, offset , enum cudaMemcpyKind, kind) 
+
 #else
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyFromSymbol, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), void *, dst, const void *, symbol, size_t, count, size_t, offset , enum cudaMemcpyKind, kind)
+
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyFromSymbol, (context,
+launcher_cct, syncStart, recorded_node), (context, launcher_cct,
+syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind),
+void *, dst, const void *, symbol, size_t, count, size_t, offset ,
+enum cudaMemcpyKind, kind) 
+
 #endif
 
 
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyPeerAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, cudaMemcpyDeviceToDevice), void *, dst, int, dstDevice, const void *, src, int, srcDevice, size_t, count, cudaStream_t, stream)
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyPeerAsync, (streamId,
+event_node, context, cct_node, stream, 0), (event_node, cct_node,
+stream, count, cudaMemcpyDeviceToDevice), void *, dst, int, dstDevice,
+const void *, src, int, srcDevice, size_t, count, cudaStream_t, stream)
 
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyFromArrayAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, kind), void *, dst, const struct cudaArray *, src, size_t, wOffset, size_t, hOffset, size_t, count, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyFromArrayAsync, (streamId,
+event_node, context, cct_node, stream, 0), (event_node, cct_node,
+stream, count, kind), void *, dst, const struct cudaArray *, src,
+size_t, wOffset, size_t, hOffset, size_t, count, enum cudaMemcpyKind,
+kind, cudaStream_t, stream)
 
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpy2DAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, (width * height), kind), void *, dst, size_t, dpitch, const void *, src, size_t, spitch, size_t, width, size_t, height, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpy2DAsync, (streamId,
+event_node, context, cct_node, stream, 0), (event_node, cct_node, stream,
+(width * height), kind), void *, dst, size_t, dpitch, const void *,
+src, size_t, spitch, size_t, width, size_t, height, enum cudaMemcpyKind,
+kind, cudaStream_t, stream)
 
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpy2DToArrayAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, (width * height), kind), struct cudaArray *, dst, size_t, wOffset, size_t, hOffset, const void *, src, size_t, spitch, size_t, width, size_t, height, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpy2DToArrayAsync, (streamId,
+event_node, context, cct_node, stream, 0), (event_node, cct_node, stream,
+(width * height), kind), struct cudaArray *, dst, size_t, wOffset,
+size_t, hOffset, const void *, src, size_t, spitch, size_t, width,
+size_t, height, enum cudaMemcpyKind, kind, cudaStream_t, stream)
 
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpy2DFromArrayAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, (width * height), kind), void *, dst, size_t, dpitch, const struct cudaArray *, src, size_t, wOffset, size_t, hOffset, size_t, width, size_t, height, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpy2DFromArrayAsync, (streamId,
+event_node, context, cct_node, stream, 0), (event_node, cct_node, stream,
+(width * height), kind), void *, dst, size_t, dpitch, const struct
+cudaArray *, src, size_t, wOffset, size_t, hOffset, size_t, width,
+size_t, height, enum cudaMemcpyKind, kind, cudaStream_t, stream)
 
 
 #if (CUDART_VERSION < 5000)
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyToSymbolAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, kind), const char *, symbol, const void *, src, size_t, count, size_t, offset, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyToSymbolAsync, (streamId,
+event_node, context, cct_node, stream, 0), (event_node, cct_node, stream,
+count, kind), const char *, symbol, const void *, src, size_t, count,
+size_t, offset, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+
 #else
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyToSymbolAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, kind), const void *, symbol, const void *, src, size_t, count, size_t, offset, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyToSymbolAsync, (streamId,
+event_node, context, cct_node, stream, 0), (event_node, cct_node, stream,
+count, kind), const void *, symbol, const void *, src, size_t, count,
+size_t, offset, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+
 #endif
 
 
 #if (CUDART_VERSION < 5000)
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyFromSymbolAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, kind), void *, dst, const char *, symbol, size_t, count, size_t, offset, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyFromSymbolAsync, (streamId,
+event_node, context, cct_node, stream, 0), (event_node, cct_node, stream,
+count, kind), void *, dst, const char *, symbol, size_t, count, size_t,
+offset, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+
 #else
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyFromSymbolAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, kind), void *, dst, const void *, symbol, size_t, count, size_t, offset, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyFromSymbolAsync, (streamId,
+event_node, context, cct_node, stream, 0), (event_node, cct_node, stream,
+count, kind), void *, dst, const void *, symbol, size_t, count, size_t,
+offset, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+
 #endif
 
 
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemset, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, 0, cudaMemcpyHostToDevice), void *, devPtr, int, value, size_t, count)
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemset, (context, launcher_cct,
+syncStart, recorded_node), (context, launcher_cct, syncStart,
+recorded_node, ALL_STREAMS_MASK, syncEnd, 0, cudaMemcpyHostToDevice),
+void *, devPtr, int, value, size_t, count)
 
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemset2D, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, 0, cudaMemcpyHostToDevice), void *, devPtr, size_t, pitch, int, value, size_t, width, size_t, height)
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemset2D, (context, launcher_cct,
+syncStart, recorded_node), (context, launcher_cct, syncStart,
+recorded_node, ALL_STREAMS_MASK, syncEnd, 0, cudaMemcpyHostToDevice),
+void *, devPtr, size_t, pitch, int, value, size_t, width, size_t, height)
 
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemset3D, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, 0, cudaMemcpyHostToDevice), struct cudaPitchedPtr, pitchedDevPtr, int, value, struct cudaExtent, extent)
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemset3D, (context, launcher_cct,
+syncStart, recorded_node), (context, launcher_cct, syncStart,
+recorded_node, ALL_STREAMS_MASK, syncEnd, 0, cudaMemcpyHostToDevice),
+struct cudaPitchedPtr, pitchedDevPtr, int, value, struct cudaExtent,
+extent)
 
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemsetAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, 0, cudaMemcpyHostToDevice), void *, devPtr, int, value, size_t, count, cudaStream_t, stream)
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemsetAsync, (streamId, event_node,
+context, cct_node, stream, 0), (event_node, cct_node, stream, 0,
+cudaMemcpyHostToDevice), void *, devPtr, int, value, size_t, count,
+cudaStream_t, stream)
 
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemset2DAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, 0, cudaMemcpyHostToDevice), void *, devPtr, size_t, pitch, int, value, size_t, width, size_t, height, cudaStream_t, stream)
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemset2DAsync, (streamId,
+event_node, context, cct_node, stream, 0), (event_node, cct_node, stream,
+0, cudaMemcpyHostToDevice), void *, devPtr, size_t, pitch, int, value,
+size_t, width, size_t, height, cudaStream_t, stream)
 
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemset3DAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, 0, cudaMemcpyHostToDevice), struct cudaPitchedPtr, pitchedDevPtr, int, value, struct cudaExtent, extent, cudaStream_t, stream)
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemset3DAsync, (streamId,
+event_node, context, cct_node, stream, 0), (event_node, cct_node, stream,
+0, cudaMemcpyHostToDevice), struct cudaPitchedPtr, pitchedDevPtr, int,
+value, struct cudaExtent, extent, cudaStream_t, stream)
 
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, kind), void *, dst, const void *, src, size_t, count, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyAsync, (streamId, event_node,
+context, cct_node, stream, 0), (event_node, cct_node, stream, count,
+kind), void *, dst, const void *, src, size_t, count, enum cudaMemcpyKind,
+kind, cudaStream_t, stream)
 
-CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyToArrayAsync, (streamId, event_node, context, cct_node, stream, 0), (event_node, cct_node, stream, count, kind), struct cudaArray *, dst, size_t, wOffset, size_t, hOffset, const void *, src, size_t, count, enum cudaMemcpyKind, kind, cudaStream_t, stream)
+CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(cudaMemcpyToArrayAsync, (streamId,
+event_node, context, cct_node, stream, 0), (event_node, cct_node,
+stream, count, kind), struct cudaArray *, dst, size_t, wOffset, size_t,
+hOffset, const void *, src, size_t, count, enum cudaMemcpyKind, kind,
+cudaStream_t, stream)
 
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy2D, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, (height * width), kind), void *, dst, size_t, dpitch, const void *, src, size_t, spitch, size_t, width, size_t, height, enum cudaMemcpyKind, kind)
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy2D, (context, launcher_cct,
+syncStart, recorded_node), (context, launcher_cct, syncStart,
+recorded_node, ALL_STREAMS_MASK, syncEnd, (height * width), kind), void *,
+dst, size_t, dpitch, const void *, src, size_t, spitch, size_t, width,
+size_t, height, enum cudaMemcpyKind, kind)
 
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), void *, dst, const void *, src, size_t, count, enum cudaMemcpyKind, kind)
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy, (context, launcher_cct,
+syncStart, recorded_node), (context, launcher_cct, syncStart,
+recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), void *, dst,
+const void *, src, size_t, count, enum cudaMemcpyKind, kind)
 
-CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyToArray, (context, launcher_cct, syncStart, recorded_node), (context, launcher_cct, syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), struct cudaArray *, dst, size_t, wOffset, size_t, hOffset, const void *, src, size_t, count, enum cudaMemcpyKind, kind)
+CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyToArray, (context,
+launcher_cct, syncStart, recorded_node), (context, launcher_cct,
+syncStart, recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), struct
+cudaArray *, dst, size_t, wOffset, size_t, hOffset, const void *, src,
+size_t, count, enum cudaMemcpyKind, kind)
 
 
 ////////////////////////////////////////////////

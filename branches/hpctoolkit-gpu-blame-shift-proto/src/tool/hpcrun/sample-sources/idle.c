@@ -147,12 +147,17 @@ METHOD_FN(thread_init_action)
 static void
 METHOD_FN(start)
 {
+  if (! blame_shift_source_available(bs_type_timer)) {
+    STDERR_MSG("HPCToolkit: IDLE metric needs either a REALTIME, CPUTIME, WALLCLOCK, or PAPI_TOT_CYC source.");
+    monitor_real_exit(1);
+  }
+
   if (idleness_blame_information_source_present == false) {
     STDERR_MSG("HPCToolkit: IDLE metric specified without a plugin that measures "
         "idleness and work.\n" 
         "For dynamic binaries, specify an appropriate plugin with an argument to hpcrun.\n"
 	"For static binaries, specify an appropriate plugin with an argument to hpclink.\n");
-    exit(1);
+    monitor_real_exit(1);
   }
 }
 

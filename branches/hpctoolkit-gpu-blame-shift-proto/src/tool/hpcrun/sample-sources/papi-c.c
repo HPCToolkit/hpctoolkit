@@ -509,9 +509,11 @@ METHOD_FN(process_event_list, int lush_metrics)
     METHOD_CALL(self, store_metric_id, i, metric_id);
     PAPI_event_code_to_name(self->evl.events[i].event, buffer);
     TMSG(PAPI, "metric for event %d = %s", i, buffer);
+
     // blame shifting needs to know if there is a cycles metric
     if (strcmp(buffer, "PAPI_TOT_CYC") == 0) {
       prop = metric_property_cycles;
+      blame_shift_source_register(bs_type_cycles);
     }
 
     // allow derived events (proxy sampling), as long as some event

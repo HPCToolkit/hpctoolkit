@@ -106,10 +106,6 @@
 
 #include <sample-sources/blame-shift.h>
 
-#ifdef ENABLE_CUDA
-#include "gpu_blame.h"
-#endif
-
 /******************************************************************************
  * macros
  *****************************************************************************/
@@ -331,9 +327,7 @@ static void
 METHOD_FN(init)
 {
   TMSG(ITIMER_CTL, "init");
-#ifdef ENABLE_CUDA    
-  hpcrun_set_gpu_proxy_present();
-#endif
+  blame_shift_source_register(bs_type_timer);
   self->state = INIT;
 }
 

@@ -160,7 +160,7 @@ static void
 METHOD_FN(start)
 {
     TMSG(CPU_GPU_BLAME_CTL,"starting CPU_GPU_BLAME");
-    if (!g_cpu_gpu_proxy_count) {
+    if (! blame_shift_source_available(bs_type_timer)) {
         EMSG("Either pass -e WALLCLOCK or -e REALTIME to enable CPU_GPU_BLAME");
         monitor_real_abort();
     }
