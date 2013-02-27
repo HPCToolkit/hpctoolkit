@@ -709,6 +709,7 @@ BOOST_INC
 GNUBINUTILS_LDLIBS
 GNUBINUTILS_LDFLAGS
 GNUBINUTILS_IFLAGS
+wordsize_cflag
 CXX_PATH
 CC_PATH
 hpc_ext_libs_dir
@@ -16993,9 +16994,10 @@ hpctoolkit-externals." >&2;}
 fi
 
 host_wordsize=unknown
+wordsize_cflag=
 case "$host_sizeof_voidp" in
-  4 ) host_wordsize=32 ;;
-  8 ) host_wordsize=64 ;;
+  4 ) host_wordsize=32 ; wordsize_cflag='-m32' ;;
+  8 ) host_wordsize=64 ; wordsize_cflag='-m64' ;;
   * ) { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to determine host wordsize" >&5
 $as_echo "$as_me: WARNING: unable to determine host wordsize" >&2;} ;;
 esac
@@ -17005,6 +17007,13 @@ then
   as_fn_error $? "mismatched wordsize: hpctoolkit is configured for \
 ${host_wordsize}-bit but externals is ${ext_wordsize}-bit" "$LINENO" 5
 fi
+
+# On ia64, -m64 is an unrecognized option (and unnecessary).
+if test "$HOST_CPU_IA64" = yes ; then
+  wordsize_cflag=
+fi
+
+
 
 
 #-------------------------------------------------

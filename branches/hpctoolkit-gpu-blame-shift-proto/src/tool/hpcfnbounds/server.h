@@ -4,8 +4,6 @@
 #include <stdint.h>
 #include "code-ranges.h"
 
-int server_mode(void);
-
 void dump_file_info(const char *filename, DiscoverFnTy fn_discovery);
 
 void system_server(DiscoverFnTy, int, int);
