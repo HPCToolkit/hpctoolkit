@@ -49,6 +49,9 @@
 
 using namespace std;
 
+int c_mode(void);
+int server_mode(void);
+
 void function_entries_reinit();
 
 void add_function_entry(void *address, const string *comment, bool isglobal, 

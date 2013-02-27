@@ -82,10 +82,9 @@ hpctk_wrap_names='@LIBMONITOR_WRAP_NAMES@  @hpclink_extra_wrap_names@'
 extra_wrap_names=
 extra_hpc_files=
 
-# Set to -m64 on 64-bit version (for gcc).
-# NM_FLAGS='-m64'
+# Compiler and flags for array of fnbounds addresses.
+CC='gcc @wordsize_cflag@'
 
-CC=gcc
 hello="_hpc_hello_$$"
 nm_addrs="_hpc_nm_addrs_$$"
 cmd_out="_hpc_output_$$"
@@ -442,7 +441,7 @@ $CC -o "$hello" "${hello}.c"
 
 rm -f "${nm_addrs}.c" "${nm_addrs}.o"
 $hpcfnbounds -c "$hello" > "${nm_addrs}.c" || die "hpcfnbounds failed on $hello"
-$CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
+$CC -c -o "${nm_addrs}.o" "${nm_addrs}.c"
 
 #
 # Some compiler scripts add extra function calls to the end of the
@@ -488,7 +487,7 @@ fi
 
 rm -f "${nm_addrs}.c" "${nm_addrs}.o"
 $hpcfnbounds -c "$appl_out" > "${nm_addrs}.c" || die "hpcfnbounds failed on $appl_out"
-$CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
+$CC -c -o "${nm_addrs}.o" "${nm_addrs}.c"
 $command "$@" || die "compile #2 failed: $command $@"
 test -f "$appl_out" || die "compile #2 failed: $command $@"
 
