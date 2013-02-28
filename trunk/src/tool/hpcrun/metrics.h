@@ -115,6 +115,8 @@ kind_info_t* hpcrun_metrics_new_kind();
 
 bool hpcrun_metrics_finalized(void);
 
+extern void hpcrun_finalize_metrics(void);
+
 void hpcrun_pre_allocate_metrics(size_t num);
 
 int hpcrun_get_num_metrics(void);
@@ -132,10 +134,10 @@ int hpcrun_new_metric(void);
 
 void hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
 				 MetricFlags_ValFmt_t valFmt, size_t period,
-				 metric_upd_proc_t upd_fn);
+				 metric_upd_proc_t upd_fn, metric_desc_properties_t prop);
 
 void hpcrun_set_metric_info_and_period(int metric_id, const char* name,
-				       MetricFlags_ValFmt_t valFmt, size_t period);
+				       MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
 
 void hpcrun_set_metric_info(int metric_id, const char* name);
 
@@ -153,6 +155,5 @@ extern void hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
 extern void hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
 					 metric_set_t* set,
 					 int num_metrics);
-
 
 #endif // METRICS_H
