@@ -350,6 +350,10 @@ note_section(Symtab *syms, const char *sname, DiscoverFnTy discover)
 static void
 note_code_ranges(Symtab *syms, DiscoverFnTy fn_discovery)
 {
+  //TODO: instead of just considering specific segments below
+  //      perhaps we should consider all segments marked executable.
+  //      binaries could include "bonus" segments we don't
+  //      know about explicitly as having code within.
   note_section(syms, SECTION_INIT, fn_discovery);
   note_section(syms, SECTION_PLT,  DiscoverFnTy_Aggressive);
   note_section(syms, SECTION_TEXT, fn_discovery);
@@ -424,7 +428,7 @@ seed_dwarf_info(int dwarf_fd)
       fprintf(stderr, " ---potential fn start = %p\n", reinterpret_cast<void*>(low_pc));
     }
 
-    add_function_entry(reinterpret_cast<void*>(low_pc), NULL, false, 0);
+    if(low_pc != NULL) add_function_entry(reinterpret_cast<void*>(low_pc), NULL, false, 0);
   }
   if ( ! DWARF_OK(dwarf_finish(dbg, &err))) {
     fprintf(stderr, "dwarf finish fails ???\n");

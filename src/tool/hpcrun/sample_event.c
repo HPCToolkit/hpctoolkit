@@ -58,6 +58,7 @@
 #include "fnbounds_interface.h"
 #include "main.h"
 #include "metrics_types.h"
+#include "cct2metrics.h"
 #include "metrics.h"
 #include "segv_handler.h"
 #include "epoch.h"
@@ -204,7 +205,7 @@ hpcrun_sample_callpath(void *context, int metricId,
   thread_data_t* td = hpcrun_get_thread_data();
   sigjmp_buf_t* it = &(td->bad_unwind);
   cct_node_t* node = NULL;
-  epoch_t* epoch = td->epoch;
+  epoch_t* epoch = td->core_profile_trace_data.epoch;
 
   hpcrun_set_handling_sample(td);
 
@@ -228,7 +229,7 @@ hpcrun_sample_callpath(void *context, int metricId,
     }
   }
   else {
-    cct_bundle_t* cct = &(td->epoch->csdata);
+    cct_bundle_t* cct = &(td->core_profile_trace_data.epoch->csdata);
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
 				 metricId, metricIncr);
     hpcrun_cleanup_partial_unwind();
@@ -254,12 +255,12 @@ hpcrun_sample_callpath(void *context, int metricId,
     // modify the persistent id
     hpcrun_cct_persistent_id_trace_mutate(func_proxy);
 
-    hpcrun_trace_append(hpcrun_cct_persistent_id(func_proxy), metricId);
+    hpcrun_trace_append(&td->core_profile_trace_data, hpcrun_cct_persistent_id(func_proxy), metricId);
   }
 
   hpcrun_clear_handling_sample(td);
   if (TD_GET(mem_low) || ENABLED(FLUSH_EVERY_SAMPLE)) {
-    hpcrun_flush_epochs();
+    hpcrun_flush_epochs(&(TD_GET(core_profile_trace_data)));
     hpcrun_reclaim_freeable_mem();
   }
 #ifndef HPCRUN_STATIC_LINK
@@ -299,7 +300,7 @@ hpcrun_gen_thread_ctxt(void* context)
   thread_data_t* td = hpcrun_get_thread_data();
   sigjmp_buf_t* it = &(td->bad_unwind);
   cct_node_t* node = NULL;
-  epoch_t* epoch = td->epoch;
+  epoch_t* epoch = td->core_profile_trace_data.epoch;
 
   hpcrun_set_handling_sample(td);
 
@@ -337,7 +338,7 @@ hpcrun_gen_thread_ctxt(void* context)
 #endif
   hpcrun_clear_handling_sample(td);
   if (TD_GET(mem_low) || ENABLED(FLUSH_EVERY_SAMPLE)) {
-    hpcrun_flush_epochs();
+    hpcrun_flush_epochs(&(TD_GET(core_profile_trace_data)));
     hpcrun_reclaim_freeable_mem();
   }
 #ifndef HPCRUN_STATIC_LINK
@@ -482,7 +483,7 @@ hpcrun_sample_callpath_w_bt(void *context,
   hpcrun_clear_handling_sample(td);
   if (TD_GET(mem_low) || ENABLED(FLUSH_EVERY_SAMPLE)) {
     hpcrun_finalize_current_loadmap();
-    hpcrun_flush_epochs();
+    hpcrun_flush_epochs(&(TD_GET(core_profile_trace_data)));
     hpcrun_reclaim_freeable_mem();
   }
 #ifndef HPCRUN_STATIC_LINK

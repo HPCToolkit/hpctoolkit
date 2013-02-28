@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/branches/hpctoolkit-gpu-blame-shift-proto/src/tool/hpcrun/sample-sources/gpu_blame.h $
+// $Id: itimer.c 3784 2012-05-10 22:35:51Z mc29 $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2011, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -42,23 +42,59 @@
 // or otherwise) arising in any way out of the use of this software, even
 // if advised of the possibility of such damage.
 //
-// ******************************************************* EndRiceCopyright *
+// **
 
-#ifndef main_h
-#define main_h
+#ifndef __GPU_BLAME_H__
+#define __GPU_BLAME_H__
+#include <cuda.h>
+#include <cuda_runtime.h>
 
-#include <setjmp.h>
-#include <stdbool.h>
+#ifdef ENABLE_CUDA
 
-bool hpcrun_is_initialized();
+#include "gpu_blame-cuda-runtime-header.h"
+#include "gpu_blame-cuda-driver-header.h"
+#include <hpcrun/core_profile_trace_data.h>
+#include <hpcrun/main.h>
 
-typedef void siglongjmp_fcn(sigjmp_buf, int);
+//
+// Blame shiting interface
+//
+#define MAX_STREAMS (500)
 
-siglongjmp_fcn *hpcrun_get_real_siglongjmp(void);
+// Visible types
 
-typedef struct hpcrun_aux_cleanup_t  hpcrun_aux_cleanup_t;
+// Visible global variables
 
-hpcrun_aux_cleanup_t * hpcrun_process_aux_cleanup_add( void (*func) (void *), void * arg);
-void hpcrun_process_aux_cleanup_remove(hpcrun_aux_cleanup_t * node);
+// function pointers to real cuda runtime functions
+extern cudaRuntimeFunctionPointer_t  cudaRuntimeFunctionPointer[];
 
-#endif  // ! main_h
+// function pointers to real cuda driver functions
+extern cuDriverFunctionPointer_t  cuDriverFunctionPointer[];
+
+// CPU GPU blame metrics
+extern int cpu_idle_metric_id;
+extern int gpu_activity_time_metric_id;
+extern int cpu_idle_cause_metric_id;
+extern int gpu_idle_metric_id;
+extern int gpu_overload_potential_metric_id;
+extern int cpu_overlap_metric_id;
+extern int gpu_overlap_metric_id;
+extern int stream_special_metric_id;
+extern int h_to_h_data_xfer_metric_id;
+extern int h_to_d_data_xfer_metric_id;
+extern int d_to_d_data_xfer_metric_id;
+extern int d_to_h_data_xfer_metric_id;
+extern int uva_data_xfer_metric_id;
+
+extern bool g_cpu_gpu_enabled;
+
+// num threads in the process
+extern uint64_t g_active_threads;
+
+// Visible function declarations
+extern void gpu_blame_shifter(int metric_id, cct_node_t * node, int  metric_incr);
+extern  void hpcrun_stream_finalize(void * st);
+extern void hpcrun_set_gpu_proxy_present();
+
+#endif
+#endif

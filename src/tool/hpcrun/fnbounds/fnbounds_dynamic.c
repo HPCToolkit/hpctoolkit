@@ -75,6 +75,7 @@
 #include <sys/types.h>
 #include <unistd.h>    // getpid
 
+
 #include <include/hpctoolkit-config.h>
 
 //*********************************************************************
@@ -179,7 +180,6 @@ fnbounds_init()
 
   return 0;
 }
-
 
 bool
 fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)

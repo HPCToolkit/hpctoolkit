@@ -194,6 +194,50 @@ hpcrun_allocate_thread_data(void)
   return hpcrun_mmap_anon(sizeof(thread_data_t));
 }
 
+static inline void core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_t* thr_ctxt) 
+{
+
+  // ----------------------------------------
+  // id
+  // ----------------------------------------
+  cptd->id = id;
+  // ----------------------------------------
+  // epoch: loadmap + cct + cct_ctxt
+  // ----------------------------------------
+
+  // ----------------------------------------
+  cptd->epoch = hpcrun_malloc(sizeof(epoch_t));
+  cptd->epoch->csdata_ctxt = copy_thr_ctxt(thr_ctxt);
+
+  // ----------------------------------------
+  // cct2metrics map: associate a metric_set with
+  //                  a cct node
+  hpcrun_cct2metrics_init(&(cptd->cct2metrics_map));
+
+  // ----------------------------------------
+  // tracing
+  // ----------------------------------------
+  cptd->trace_min_time_us = 0;
+  cptd->trace_max_time_us = 0;
+
+  // ----------------------------------------
+  // IO support
+  // ----------------------------------------
+  cptd->hpcrun_file  = NULL;
+  cptd->trace_buffer = NULL;
+    
+}
+
+
+#ifdef ENABLE_CUDA
+static inline void gpu_data_init(gpu_data_t * gpu_data)
+{
+  gpu_data->is_thread_at_cuda_sync = false;
+  gpu_data->overload_state = 0;
+  gpu_data->accum_num_sync_threads = 0;
+  gpu_data->accum_num_sync_threads = 0;
+}
+#endif
 
 void
 hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
@@ -219,7 +263,7 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   // ----------------------------------------
   // normalized thread id (monitor-generated)
   // ----------------------------------------
-  td->id = id;
+  core_profile_trace_data_init(&(td->core_profile_trace_data), id, thr_ctxt);
 
   td->idle = 0; // begin at work
 
@@ -232,17 +276,6 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   td->timer_init = false;
   td->last_time_us = 0;
 
-  // ----------------------------------------
-  // epoch: loadmap + cct + cct_ctxt
-  // ----------------------------------------
-  td->epoch = hpcrun_malloc(sizeof(epoch_t));
-  td->epoch->csdata_ctxt = copy_thr_ctxt(thr_ctxt);
-
-  // ----------------------------------------
-  // cct2metrics map: associate a metric_set with
-  //                  a cct node
-  // ----------------------------------------
-  hpcrun_cct2metrics_init(&(td->cct2metrics_map));
 
   // ----------------------------------------
   // backtrace buffer
@@ -282,17 +315,6 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   lushPthr_init(&td->pthr_metrics);
   lushPthr_thread_init(&td->pthr_metrics);
 
-  // ----------------------------------------
-  // tracing
-  // ----------------------------------------
-  td->trace_min_time_us = 0;
-  td->trace_max_time_us = 0;
-
-  // ----------------------------------------
-  // IO support
-  // ----------------------------------------
-  td->hpcrun_file  = NULL;
-  td->trace_buffer = NULL;
 
   // ----------------------------------------
   // debug support
@@ -303,6 +325,9 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   // miscellaneous
   // ----------------------------------------
   td->inside_dlfcn = false;
+#ifdef ENABLE_CUDA
+  gpu_data_init(&(td->gpu_data));
+#endif
 }
 
 

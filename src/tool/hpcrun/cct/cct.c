@@ -106,6 +106,7 @@ struct cct_node_t {
   cct_addr_t addr;
 
   bool is_leaf;
+
   
   // ---------------------------------------------------------
   // tree structure
@@ -116,8 +117,8 @@ struct cct_node_t {
   struct cct_node_t* children;
 
   // left and right pointers for splay tree of siblings
-  cct_node_t* left;
-  cct_node_t* right;
+  struct cct_node_t* left;
+  struct cct_node_t* right;
 };
 
 //
@@ -264,6 +265,7 @@ typedef struct {
   hpcrun_fmt_cct_node_t* tmp_node;
 } write_arg_t;
 
+
 static void
 lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
 {
@@ -319,10 +321,21 @@ hpcrun_cct_new_partial(void)
 }
 
 cct_node_t*
+hpcrun_cct_new_special(void* addr)
+{
+  ip_normalized_t tmp_ip = hpcrun_normalize_ip(addr, NULL);
+
+  cct_addr_t tmp = NON_LUSH_ADDR_INI(tmp_ip.lm_id, tmp_ip.lm_ip);
+
+  return cct_node_create(&tmp, NULL);
+}
+
+cct_node_t*
 hpcrun_cct_top_new(uint16_t lmid, uintptr_t lmip)
 {
   return cct_node_create(&(ADDR2(lmid, lmip)), NULL);
 }
+
 // 
 // ********** Accessor functions
 // 
@@ -366,6 +379,8 @@ hpcrun_cct_is_root(cct_node_t* node)
 {
   return ! node->parent;
 }
+
+
 //
 // ********** Mutator functions: modify a given cct
 //
@@ -529,6 +544,33 @@ hpcrun_walk_path(cct_node_t* node, cct_op_t op, cct_op_arg_t arg)
 {
   walk_path_l(node, op, arg, 0);
 }
+
+
+//
+// helper for inserting creation contexts
+//
+static void
+l_insert_path(cct_node_t* node, cct_op_arg_t arg, size_t level)
+{
+  // convenient constant cct_addr_t's
+  static cct_addr_t root = ADDR_I(CCT_ROOT);
+
+  cct_addr_t* addr = hpcrun_cct_addr(node);
+  if (cct_addr_eq(addr, &root)) return;
+
+  cct_node_t** tree = (cct_node_t**) arg;
+  *tree = hpcrun_cct_insert_addr(*tree, addr);
+}
+
+
+// Inserts cct path pointed by 'path' into a cct rooted at 'root'
+
+void
+hpcrun_cct_insert_path(cct_node_t ** root, cct_node_t* path)
+{
+  hpcrun_walk_path(path, l_insert_path, (cct_op_arg_t) root);
+}
+
 
 //
 // Writing operation
