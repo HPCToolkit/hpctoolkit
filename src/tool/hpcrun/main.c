@@ -623,11 +623,15 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_do_custom_init();
 
-  char *s = getenv(HPCRUN_EVENT_LIST);
-  if (s == NULL){
-    s = getenv("CSPROF_OPT_EVENT");
+  // for debugging, limit the life of the execution with an alarm.
+  char *life  = getenv("HPCRUN_LIFETIME");
+  if (life != NULL){
+        int seconds = atoi(life);
+        if (seconds > 0) alarm((unsigned int) seconds);
   }
-  
+
+  char *s = getenv(HPCRUN_EVENT_LIST);
+
   if (! is_child) {
     hpcrun_sample_sources_from_eventlist(s);
   }
