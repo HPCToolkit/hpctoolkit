@@ -428,7 +428,7 @@ seed_dwarf_info(int dwarf_fd)
       fprintf(stderr, " ---potential fn start = %p\n", reinterpret_cast<void*>(low_pc));
     }
 
-    if(low_pc != NULL) add_function_entry(reinterpret_cast<void*>(low_pc), NULL, false, 0);
+    if (low_pc != (Dwarf_Addr) 0) add_function_entry(reinterpret_cast<void*>(low_pc), NULL, false, 0);
   }
   if ( ! DWARF_OK(dwarf_finish(dbg, &err))) {
     fprintf(stderr, "dwarf finish fails ???\n");

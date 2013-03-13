@@ -165,7 +165,7 @@ METHOD_FN(supports_event, const char *ev_str)
   // FIXME: this message comes too early and goes to stderr instead of
   // the log file.
   // TMSG(GA, "test support event: %s", ev_str);
-  return strncasecmp(ev_str, "GA", 2) == 0;
+  return hpcrun_ev_is(ev_str, "GA");
 }
 
 

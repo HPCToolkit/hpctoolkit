@@ -409,9 +409,9 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-  return strstr(ev_str, ITIMER_EVENT_NAME) != NULL
-      || strstr(ev_str, CPUTIME_EVENT_NAME) != NULL
-      || strstr(ev_str, REALTIME_EVENT_NAME) != NULL;
+  return hpcrun_ev_is(ev_str, ITIMER_EVENT_NAME)
+    || hpcrun_ev_is(ev_str, CPUTIME_EVENT_NAME)
+    || hpcrun_ev_is(ev_str, REALTIME_EVENT_NAME);
 }
  
 static void
@@ -427,7 +427,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   TMSG(ITIMER_CTL,"checking event spec = %s",event);
 
-  if (strstr(event, REALTIME_EVENT_NAME) != NULL) {
+  if (hpcrun_ev_is(event, REALTIME_EVENT_NAME)) {
 #ifdef ENABLE_CLOCK_REALTIME
     use_realtime = true;
     the_event_name = REALTIME_EVENT_NAME;
@@ -439,7 +439,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #endif
   }
 
-  if (strstr(event, CPUTIME_EVENT_NAME) != NULL) {
+  if (hpcrun_ev_is(event, CPUTIME_EVENT_NAME)) {
 #ifdef ENABLE_CLOCK_CPUTIME
     use_cputime = true;
     the_event_name = CPUTIME_EVENT_NAME;
@@ -451,7 +451,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #endif
   }
 
-  if (strstr(event, ITIMER_EVENT_NAME) != NULL) {
+  if (hpcrun_ev_is(event, ITIMER_EVENT_NAME)) {
     use_itimer = true;
     the_event_name = ITIMER_EVENT_NAME;
     the_metric_name = ITIMER_METRIC_NAME;
