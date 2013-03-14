@@ -455,7 +455,6 @@ hpcrun_fini_internal()
   TMSG(FINI, "process");
 
   hpcrun_unthreaded_data();
-  epoch_t *epoch = TD_GET(core_profile_trace_data.epoch);
 
   if (hpcrun_is_initialized()) {
     hpcrun_is_initialized_private = false;

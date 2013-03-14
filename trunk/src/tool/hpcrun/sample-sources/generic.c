@@ -310,10 +310,10 @@ METHOD_FN(supports_event, const char *ev_str)
   // NOTE: You are guaranteed that the 'init' method for your sample source
   // has been invoked before any 'supports_event' method calls are invoked
   //
-  // For simple event specs, a strstr call is sufficient. (see below)
+  // For simple event specs, a call to "hpcrun_ev_is" is sufficient. (see below)
   // For a more involved check on events, see papi.c
 
-  return (strstr(ev_str,"YOUR_SOURCE") != NULL);
+  return hpcrun_ev_is(ev_str,"YOUR_SOURCE");
 }
  
 static void

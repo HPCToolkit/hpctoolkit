@@ -81,6 +81,7 @@
 #include <hpcrun/thread_data.h>
 
 #include <messages/messages.h>
+#include <utilities/tokenize.h>
 
 static int alloc_metric_id = -1;
 static int free_metric_id = -1;
@@ -147,7 +148,7 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return (strstr(ev_str,"MEMLEAK") != NULL);
+  return hpcrun_ev_is(ev_str,"MEMLEAK");
 }
  
 

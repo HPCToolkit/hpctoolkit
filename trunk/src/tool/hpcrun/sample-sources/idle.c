@@ -185,10 +185,8 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return (strstr(ev_str, "IDLE") != NULL);
+  return hpcrun_ev_is(ev_str, "IDLE");
 }
- 
-
 
 static void
 METHOD_FN(process_event_list, int lush_metrics)

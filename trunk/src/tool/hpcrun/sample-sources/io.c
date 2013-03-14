@@ -66,6 +66,7 @@
 #include <hpcrun/thread_data.h>
 #include <messages/messages.h>
 
+#include <utilities/tokenize.h>
 
 /******************************************************************************
  * local variables
@@ -141,7 +142,7 @@ METHOD_FN(supports_event, const char *ev_str)
   // FIXME: this message comes too early and goes to stderr instead of
   // the log file.
   // TMSG(IO, "test support event: %s", ev_str);
-  return strncasecmp(ev_str, "IO", 2) == 0;
+  return hpcrun_ev_is(ev_str, "IO");
 }
 
 

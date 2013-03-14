@@ -189,7 +189,7 @@ static void METHOD_FN(shutdown)
 
 static bool METHOD_FN(supports_event, const char *ev_str)
 {    
-    return ((strstr(ev_str, "CPU_GPU_IDLE") != NULL));
+  return hpcrun_ev_is(ev_str, "CPU_GPU_IDLE");
 }
 
 
