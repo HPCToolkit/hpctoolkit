@@ -253,7 +253,7 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-  return (strstr(ev_str,"_TST") != NULL);
+  return hpcrun_ev_is(ev_str,"_TST");
 }
  
 static void

@@ -79,6 +79,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/thread_data.h>
+#include <utilities/tokenize.h>
 #include <cct/cct.h>
 
 #if defined (HOST_CPU_x86_64)
@@ -156,7 +157,7 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return (strstr(ev_str, HPCRUN_METRIC_RetCnt) != NULL);
+  return hpcrun_ev_is(ev_str, HPCRUN_METRIC_RetCnt);
 }
  
 
