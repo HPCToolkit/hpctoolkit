@@ -558,8 +558,8 @@ libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_gpu_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_gpu_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 
@@ -583,8 +583,10 @@ libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic	\
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
 
-libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-Wl,--strip-debug
+#libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic 	\
+#	-Wl,--strip-debug
+
+libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
@@ -722,7 +724,7 @@ endif
 if OPT_ENABLE_CUDA
   libhpcrun_la_SOURCES  += sample-sources/gpu_blame.c sample-sources/gpu_blame-cuda-driver-table.c sample-sources/gpu_blame-cuda-runtime-table.c
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
-  libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS)
+  libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
   libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
 
   libhpcrun_gpu_la_CPPFLAGS += -DENABLE_CUDA

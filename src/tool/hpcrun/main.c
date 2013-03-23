@@ -167,6 +167,7 @@ int lush_metrics = 0; // FIXME: global variable for now
 
 static hpcrun_options_t opts;
 static bool hpcrun_is_initialized_private = false;
+static bool safe_to_sync_sample = false;
 static void* main_addr = NULL;
 static void* main_lower = NULL;
 static void* main_upper = (void*) (intptr_t) -1;
@@ -207,6 +208,18 @@ bool
 hpcrun_inbounds_main(void* addr)
 {
   return (main_lower <= addr) && (addr <= main_upper);
+}
+
+bool
+hpcrun_is_safe_to_sync(void)
+{
+  return safe_to_sync_sample;
+}
+
+void
+hpcrun_set_safe_to_sync(void)
+{
+  safe_to_sync_sample = true;
 }
 
 //***************************************************************************
@@ -368,6 +381,7 @@ hpcrun_init_internal(bool is_child)
   // start the sampling process
 
   hpcrun_enable_sampling();
+  hpcrun_set_safe_to_sync();
   // NOTE: hack to ensure that sample source start can be delayed until mpi_init
   if (hpctoolkit_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
       SAMPLE_SOURCES(start);
