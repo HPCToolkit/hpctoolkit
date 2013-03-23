@@ -84,6 +84,7 @@
 #include "common.h"
 #include "gpu_blame.h"
 
+#include <hpcrun/main.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/write_data.h>
 #include <hpcrun/safe-sampling.h>
@@ -300,6 +301,7 @@ hpcrun_safe_exit(); } while(0)
 
 #define CUDA_RUNTIME_SYNC_WRAPPER(fn,  prologueArgs, epilogueArgs, ...) \
     VA_FN_DECLARE(cudaError_t, fn, __VA_ARGS__) {\
+    if (! hpcrun_is_safe_to_sync()) return VA_FN_CALL(cudaRuntimeFunctionPointer[fn##Enum].fn##Real, __VA_ARGS__);\
     SYNC_PROLOGUE prologueArgs;\
     monitor_disable_new_threads();\
     cudaError_t ret = VA_FN_CALL(cudaRuntimeFunctionPointer[fn##Enum].fn##Real, __VA_ARGS__);\
@@ -1859,7 +1861,7 @@ CUresult cuMemcpyDtoH(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount) {
 
 void gpu_blame_shifter(int metric_id, cct_node_t * node,  int metric_dc) {
     
-    metric_desc_t * metric_desc = hpcrun_id2metric(metric_id);
+      metric_desc_t * metric_desc = hpcrun_id2metric(metric_id);
     
     // Only blame shift idleness for time metric.
     if ( !metric_desc->properties.time )

@@ -50,7 +50,10 @@
 #include <setjmp.h>
 #include <stdbool.h>
 
-bool hpcrun_is_initialized();
+extern bool hpcrun_is_initialized();
+
+extern bool hpcrun_is_safe_to_sync(void);
+extern void hpcrun_set_safe_to_sync(void);
 
 typedef void siglongjmp_fcn(sigjmp_buf, int);
 

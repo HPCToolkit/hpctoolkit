@@ -322,6 +322,7 @@ def WriteRuntimeFunctionWrapper(file, funcSig):
         if sig[1] in runtimeSkipList: continue
 
         fp.write('\t' + sig[0] +   sig[1] + ' (' + sig[2] + ') {\n' )
+# FIXME: put safe-to-sync-sample check here
         fp.write('TD_GET(gpu_data.is_thread_at_cuda_sync) = true;\n')
 	fp.write('monitor_disable_new_threads();\n')
         #fp.write('printf("\\n%s on","' +sig[1] +'");')

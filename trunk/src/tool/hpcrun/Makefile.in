@@ -173,7 +173,7 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_81 = -DLUSH_PTHREADS
 @OPT_ENABLE_CUDA_TRUE@am__append_82 = sample-sources/gpu_blame.c sample-sources/gpu_blame-cuda-driver-table.c sample-sources/gpu_blame-cuda-runtime-table.c
 @OPT_ENABLE_CUDA_TRUE@am__append_83 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_84 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_84 = $(OPT_CUDA_IFLAGS) -g
 @OPT_ENABLE_CUDA_TRUE@am__append_85 = $(OPT_CUDA_LDFLAGS)
 @OPT_ENABLE_CUDA_TRUE@am__append_86 = -DENABLE_CUDA
 @OPT_ENABLE_CUDA_TRUE@am__append_87 = $(OPT_CUDA_IFLAGS)
@@ -1259,8 +1259,8 @@ libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_gpu_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_87)
-libhpcrun_gpu_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) \
+libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) $(am__append_87)
+libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
 	$(am__append_90)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
@@ -1282,8 +1282,10 @@ libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic	\
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
 
-libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic -Wl,--strip-debug \
-	$(am__append_88)
+
+#libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic 	\
+#	-Wl,--strip-debug
+libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_88)
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
 
