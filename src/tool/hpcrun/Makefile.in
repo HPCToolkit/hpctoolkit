@@ -171,7 +171,7 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @OPT_ENABLE_UPC_TRUE@am__append_79 = $(OPT_UPC_LDFLAGS)
 @OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_80 = -DLUSH_PTHREADS
 @OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_81 = -DLUSH_PTHREADS
-@OPT_ENABLE_CUDA_TRUE@am__append_82 = sample-sources/gpu_blame.c sample-sources/gpu_blame-cuda-driver-table.c sample-sources/gpu_blame-cuda-runtime-table.c
+@OPT_ENABLE_CUDA_TRUE@am__append_82 = sample-sources/gpu_blame.c gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
 @OPT_ENABLE_CUDA_TRUE@am__append_83 = -DENABLE_CUDA
 @OPT_ENABLE_CUDA_TRUE@am__append_84 = $(OPT_CUDA_IFLAGS) -g
 @OPT_ENABLE_CUDA_TRUE@am__append_85 = $(OPT_CUDA_LDFLAGS)
@@ -334,10 +334,9 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	trampoline/ia64/ia64-tramp.s \
 	utilities/arch/ia64/ia64-context-pc.c sample-sources/papi.c \
 	sample-sources/papi-c.c sample-sources/upc.c \
-	sample-sources/gpu_blame.c \
-	sample-sources/gpu_blame-cuda-driver-table.c \
-	sample-sources/gpu_blame-cuda-runtime-table.c \
-	unwind/common/backtrace.c unwind/common/unw-throw.c \
+	sample-sources/gpu_blame.c gpu_blame-cuda-driver-table.c \
+	gpu_blame-cuda-runtime-table.c unwind/common/backtrace.c \
+	unwind/common/unw-throw.c \
 	unwind/generic-libunwind/libunw-unwind.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
 	unwind/ppc64/ppc64-unwind.c \
@@ -1165,13 +1164,13 @@ libhpcrun_memleak_wrap_a_SOURCES = \
 
 libhpcrun_gpu_la_SOURCES = \
 	sample-sources/gpu_blame-overrides.c \
-	sample-sources/gpu_blame-driver-overrides-generated.c \
-	sample-sources/gpu_blame-runtime-overrides-generated.c
+	gpu_blame-driver-overrides-generated.c \
+	gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_gpu_wrap_a_SOURCES = \
 	sample-sources/gpu_blame-overrides.c  \
-	sample-sources/gpu_blame-driver-overrides-generated.c \
-	sample-sources/gpu_blame-runtime-overrides-generated.c
+	gpu_blame-driver-overrides-generated.c \
+	gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_mpi_la_SOURCES = \
 	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
@@ -1230,7 +1229,8 @@ libhpcrun_gpu_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 libhpcrun_mpi_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_28) $(am__append_41) $(am__append_56) \
 	$(am__append_68) $(UNW_INCLUDE_DIRS)
-@OPT_ENABLE_CUDA_TRUE@generated_file_base = $(srcdir)/sample-sources
+@OPT_ENABLE_CUDA_TRUE@generated_file_base = .
+@OPT_ENABLE_CUDA_TRUE@generated_file_src_path = $(srcdir)/sample-sources
 @OPT_ENABLE_CUDA_TRUE@generated_cuda_driver_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-driver-header.h gpu_blame-cuda-driver-table.c gpu_blame-driver-overrides-generated.c)
 @OPT_ENABLE_CUDA_TRUE@generated_cuda_driver_api_files = $(addprefix $(generated_file_base)/, cuda_driver_apis.h)
 @OPT_ENABLE_CUDA_TRUE@generated_cuda_runtime_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-runtime-header.h gpu_blame-cuda-runtime-table.c gpu_blame-runtime-overrides-generated.c)
@@ -1928,33 +1928,33 @@ libhpcrun_gpu_wrap_a-gpu_blame-overrides.obj: sample-sources/gpu_blame-overrides
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-overrides.obj `if test -f 'sample-sources/gpu_blame-overrides.c'; then $(CYGPATH_W) 'sample-sources/gpu_blame-overrides.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/gpu_blame-overrides.c'; fi`
 
-libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.o: sample-sources/gpu_blame-driver-overrides-generated.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.o -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.o `test -f 'sample-sources/gpu_blame-driver-overrides-generated.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-driver-overrides-generated.c
+libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.o: gpu_blame-driver-overrides-generated.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.o -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.o `test -f 'gpu_blame-driver-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-driver-overrides-generated.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.Tpo $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/gpu_blame-driver-overrides-generated.c' object='libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-driver-overrides-generated.c' object='libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.o `test -f 'sample-sources/gpu_blame-driver-overrides-generated.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-driver-overrides-generated.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.o `test -f 'gpu_blame-driver-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-driver-overrides-generated.c
 
-libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.obj: sample-sources/gpu_blame-driver-overrides-generated.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.obj -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.obj `if test -f 'sample-sources/gpu_blame-driver-overrides-generated.c'; then $(CYGPATH_W) 'sample-sources/gpu_blame-driver-overrides-generated.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c'; fi`
+libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.obj: gpu_blame-driver-overrides-generated.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.obj -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.obj `if test -f 'gpu_blame-driver-overrides-generated.c'; then $(CYGPATH_W) 'gpu_blame-driver-overrides-generated.c'; else $(CYGPATH_W) '$(srcdir)/gpu_blame-driver-overrides-generated.c'; fi`
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.Tpo $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/gpu_blame-driver-overrides-generated.c' object='libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-driver-overrides-generated.c' object='libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.obj `if test -f 'sample-sources/gpu_blame-driver-overrides-generated.c'; then $(CYGPATH_W) 'sample-sources/gpu_blame-driver-overrides-generated.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/gpu_blame-driver-overrides-generated.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.obj `if test -f 'gpu_blame-driver-overrides-generated.c'; then $(CYGPATH_W) 'gpu_blame-driver-overrides-generated.c'; else $(CYGPATH_W) '$(srcdir)/gpu_blame-driver-overrides-generated.c'; fi`
 
-libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.o: sample-sources/gpu_blame-runtime-overrides-generated.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.o -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.o `test -f 'sample-sources/gpu_blame-runtime-overrides-generated.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-runtime-overrides-generated.c
+libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.o: gpu_blame-runtime-overrides-generated.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.o -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.o `test -f 'gpu_blame-runtime-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-runtime-overrides-generated.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.Tpo $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/gpu_blame-runtime-overrides-generated.c' object='libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-runtime-overrides-generated.c' object='libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.o `test -f 'sample-sources/gpu_blame-runtime-overrides-generated.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-runtime-overrides-generated.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.o `test -f 'gpu_blame-runtime-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-runtime-overrides-generated.c
 
-libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj: sample-sources/gpu_blame-runtime-overrides-generated.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj `if test -f 'sample-sources/gpu_blame-runtime-overrides-generated.c'; then $(CYGPATH_W) 'sample-sources/gpu_blame-runtime-overrides-generated.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c'; fi`
+libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj: gpu_blame-runtime-overrides-generated.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj `if test -f 'gpu_blame-runtime-overrides-generated.c'; then $(CYGPATH_W) 'gpu_blame-runtime-overrides-generated.c'; else $(CYGPATH_W) '$(srcdir)/gpu_blame-runtime-overrides-generated.c'; fi`
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.Tpo $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/gpu_blame-runtime-overrides-generated.c' object='libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-runtime-overrides-generated.c' object='libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj `if test -f 'sample-sources/gpu_blame-runtime-overrides-generated.c'; then $(CYGPATH_W) 'sample-sources/gpu_blame-runtime-overrides-generated.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/gpu_blame-runtime-overrides-generated.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj `if test -f 'gpu_blame-runtime-overrides-generated.c'; then $(CYGPATH_W) 'gpu_blame-runtime-overrides-generated.c'; else $(CYGPATH_W) '$(srcdir)/gpu_blame-runtime-overrides-generated.c'; fi`
 
 libhpcrun_io_wrap_a-io-over.o: sample-sources/io-over.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_io_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_io_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_io_wrap_a-io-over.o -MD -MP -MF $(DEPDIR)/libhpcrun_io_wrap_a-io-over.Tpo -c -o libhpcrun_io_wrap_a-io-over.o `test -f 'sample-sources/io-over.c' || echo '$(srcdir)/'`sample-sources/io-over.c
@@ -2579,19 +2579,19 @@ libhpcrun_la-gpu_blame.lo: sample-sources/gpu_blame.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-gpu_blame.lo `test -f 'sample-sources/gpu_blame.c' || echo '$(srcdir)/'`sample-sources/gpu_blame.c
 
-libhpcrun_la-gpu_blame-cuda-driver-table.lo: sample-sources/gpu_blame-cuda-driver-table.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-gpu_blame-cuda-driver-table.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-driver-table.Tpo -c -o libhpcrun_la-gpu_blame-cuda-driver-table.lo `test -f 'sample-sources/gpu_blame-cuda-driver-table.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-cuda-driver-table.c
+libhpcrun_la-gpu_blame-cuda-driver-table.lo: gpu_blame-cuda-driver-table.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-gpu_blame-cuda-driver-table.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-driver-table.Tpo -c -o libhpcrun_la-gpu_blame-cuda-driver-table.lo `test -f 'gpu_blame-cuda-driver-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-driver-table.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-driver-table.Tpo $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-driver-table.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/gpu_blame-cuda-driver-table.c' object='libhpcrun_la-gpu_blame-cuda-driver-table.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-cuda-driver-table.c' object='libhpcrun_la-gpu_blame-cuda-driver-table.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-gpu_blame-cuda-driver-table.lo `test -f 'sample-sources/gpu_blame-cuda-driver-table.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-cuda-driver-table.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-gpu_blame-cuda-driver-table.lo `test -f 'gpu_blame-cuda-driver-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-driver-table.c
 
-libhpcrun_la-gpu_blame-cuda-runtime-table.lo: sample-sources/gpu_blame-cuda-runtime-table.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-gpu_blame-cuda-runtime-table.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-runtime-table.Tpo -c -o libhpcrun_la-gpu_blame-cuda-runtime-table.lo `test -f 'sample-sources/gpu_blame-cuda-runtime-table.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-cuda-runtime-table.c
+libhpcrun_la-gpu_blame-cuda-runtime-table.lo: gpu_blame-cuda-runtime-table.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-gpu_blame-cuda-runtime-table.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-runtime-table.Tpo -c -o libhpcrun_la-gpu_blame-cuda-runtime-table.lo `test -f 'gpu_blame-cuda-runtime-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-runtime-table.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-runtime-table.Tpo $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-runtime-table.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/gpu_blame-cuda-runtime-table.c' object='libhpcrun_la-gpu_blame-cuda-runtime-table.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-cuda-runtime-table.c' object='libhpcrun_la-gpu_blame-cuda-runtime-table.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-gpu_blame-cuda-runtime-table.lo `test -f 'sample-sources/gpu_blame-cuda-runtime-table.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-cuda-runtime-table.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-gpu_blame-cuda-runtime-table.lo `test -f 'gpu_blame-cuda-runtime-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-runtime-table.c
 
 libhpcrun_la-backtrace.lo: unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-backtrace.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-backtrace.Tpo -c -o libhpcrun_la-backtrace.lo `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c
@@ -2768,19 +2768,19 @@ libhpcrun_gpu_la-gpu_blame-overrides.lo: sample-sources/gpu_blame-overrides.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_la-gpu_blame-overrides.lo `test -f 'sample-sources/gpu_blame-overrides.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-overrides.c
 
-libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo: sample-sources/gpu_blame-driver-overrides-generated.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.Tpo -c -o libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo `test -f 'sample-sources/gpu_blame-driver-overrides-generated.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-driver-overrides-generated.c
+libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo: gpu_blame-driver-overrides-generated.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.Tpo -c -o libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo `test -f 'gpu_blame-driver-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-driver-overrides-generated.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.Tpo $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/gpu_blame-driver-overrides-generated.c' object='libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-driver-overrides-generated.c' object='libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo `test -f 'sample-sources/gpu_blame-driver-overrides-generated.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-driver-overrides-generated.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo `test -f 'gpu_blame-driver-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-driver-overrides-generated.c
 
-libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo: sample-sources/gpu_blame-runtime-overrides-generated.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.Tpo -c -o libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo `test -f 'sample-sources/gpu_blame-runtime-overrides-generated.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-runtime-overrides-generated.c
+libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo: gpu_blame-runtime-overrides-generated.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.Tpo -c -o libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo `test -f 'gpu_blame-runtime-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-runtime-overrides-generated.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.Tpo $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/gpu_blame-runtime-overrides-generated.c' object='libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-runtime-overrides-generated.c' object='libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo `test -f 'sample-sources/gpu_blame-runtime-overrides-generated.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-runtime-overrides-generated.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo `test -f 'gpu_blame-runtime-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_io_la-io-over.lo: sample-sources/io-over.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_io_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_io_la_CFLAGS) $(CFLAGS) -MT libhpcrun_io_la-io-over.lo -MD -MP -MF $(DEPDIR)/libhpcrun_io_la-io-over.Tpo -c -o libhpcrun_io_la-io-over.lo `test -f 'sample-sources/io-over.c' || echo '$(srcdir)/'`sample-sources/io-over.c
@@ -4381,21 +4381,21 @@ $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
 	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
 		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
 
-@OPT_ENABLE_CUDA_TRUE@$(generated_cuda_runtime_api_files) : $(generated_file_base)/cuda_runtime_dummy.c
-@OPT_ENABLE_CUDA_TRUE@	$(CC) $(OPT_CUDA_IFLAGS) -E -B -c $(generated_file_base)/cuda_runtime_dummy.c  -o  $(generated_file_base)/cuda_runtime_apis.h 
+@OPT_ENABLE_CUDA_TRUE@$(generated_cuda_runtime_api_files) : $(generated_file_src_path)/cuda_runtime_dummy.c
+@OPT_ENABLE_CUDA_TRUE@	$(CC) $(OPT_CUDA_IFLAGS) -E -B -c $(generated_file_src_path)/cuda_runtime_dummy.c  -o  $(generated_file_base)/cuda_runtime_apis.h 
 
-@OPT_ENABLE_CUDA_TRUE@$(generated_cuda_runtime_files) : $(generated_file_base)/make-cuda-wrappers.py $(generated_cuda_runtime_api_files)
-@OPT_ENABLE_CUDA_TRUE@	$(PYTHON) $(generated_file_base)/make-cuda-wrappers.py runtime $(generated_cuda_runtime_api_files) $(generated_cuda_runtime_files)
+@OPT_ENABLE_CUDA_TRUE@$(generated_cuda_runtime_files) : $(generated_file_src_path)/make-cuda-wrappers.py $(generated_cuda_runtime_api_files)
+@OPT_ENABLE_CUDA_TRUE@	$(PYTHON) $(generated_file_src_path)/make-cuda-wrappers.py runtime $(generated_cuda_runtime_api_files) $(generated_cuda_runtime_files)
 
 @OPT_ENABLE_CUDA_TRUE@$(generated_file_base)/gpu_blame-cuda-runtime-header.h:  $(generated_file_base)/gpu_blame-cuda-runtime-table.c
 
 @OPT_ENABLE_CUDA_TRUE@$(generated_file_base)/gpu_blame-cuda-runtime-table.c: $(generated_file_base)/gpu_blame-runtime-overrides-generated.c
 
-@OPT_ENABLE_CUDA_TRUE@$(generated_cuda_driver_api_files) :  $(generated_file_base)/cuda_driver_dummy.c
-@OPT_ENABLE_CUDA_TRUE@	$(CC) $(OPT_CUDA_IFLAGS)  -E -B -c $(generated_file_base)/cuda_driver_dummy.c -o $(generated_file_base)/cuda_driver_apis.h
+@OPT_ENABLE_CUDA_TRUE@$(generated_cuda_driver_api_files) :  $(generated_file_src_path)/cuda_driver_dummy.c
+@OPT_ENABLE_CUDA_TRUE@	$(CC) $(OPT_CUDA_IFLAGS)  -E -B -c $(generated_file_src_path)/cuda_driver_dummy.c -o $(generated_file_base)/cuda_driver_apis.h
 
-@OPT_ENABLE_CUDA_TRUE@$(generated_cuda_driver_files) : $(generated_file_base)/make-cuda-wrappers.py $(generated_cuda_driver_api_files) 
-@OPT_ENABLE_CUDA_TRUE@	$(PYTHON) $(generated_file_base)/make-cuda-wrappers.py driver $(generated_cuda_driver_api_files)  $(generated_cuda_driver_files)
+@OPT_ENABLE_CUDA_TRUE@$(generated_cuda_driver_files) : $(generated_file_src_path)/make-cuda-wrappers.py $(generated_cuda_driver_api_files) 
+@OPT_ENABLE_CUDA_TRUE@	$(PYTHON) $(generated_file_src_path)/make-cuda-wrappers.py driver $(generated_cuda_driver_api_files)  $(generated_cuda_driver_files)
 
 @OPT_ENABLE_CUDA_TRUE@$(generated_file_base)/gpu_blame-cuda-driver-header.h : $(generated_file_base)/gpu_blame-cuda-driver-table.c
 

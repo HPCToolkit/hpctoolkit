@@ -415,13 +415,13 @@ libhpcrun_memleak_wrap_a_SOURCES = 	\
 
 libhpcrun_gpu_la_SOURCES = 		\
 	sample-sources/gpu_blame-overrides.c \
-	sample-sources/gpu_blame-driver-overrides-generated.c \
-	sample-sources/gpu_blame-runtime-overrides-generated.c
+	gpu_blame-driver-overrides-generated.c \
+	gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_gpu_wrap_a_SOURCES = 	\
 	sample-sources/gpu_blame-overrides.c  \
-	sample-sources/gpu_blame-driver-overrides-generated.c \
-	sample-sources/gpu_blame-runtime-overrides-generated.c
+	gpu_blame-driver-overrides-generated.c \
+	gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_mpi_la_SOURCES = 		\
 	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
@@ -501,7 +501,8 @@ $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
 
 if OPT_ENABLE_CUDA
 
-generated_file_base = $(srcdir)/sample-sources
+generated_file_base = .
+generated_file_src_path = $(srcdir)/sample-sources
 
 generated_cuda_driver_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-driver-header.h gpu_blame-cuda-driver-table.c gpu_blame-driver-overrides-generated.c)
 generated_cuda_driver_api_files = $(addprefix $(generated_file_base)/, cuda_driver_apis.h)
@@ -512,21 +513,21 @@ BUILT_SOURCES = $(generated_cuda_driver_files) $(generated_cuda_driver_api_files
 
 CLEANFILES  =  $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
 
-$(generated_cuda_runtime_api_files) : $(generated_file_base)/cuda_runtime_dummy.c
-	$(CC) $(OPT_CUDA_IFLAGS) -E -B -c $(generated_file_base)/cuda_runtime_dummy.c  -o  $(generated_file_base)/cuda_runtime_apis.h 
+$(generated_cuda_runtime_api_files) : $(generated_file_src_path)/cuda_runtime_dummy.c
+	$(CC) $(OPT_CUDA_IFLAGS) -E -B -c $(generated_file_src_path)/cuda_runtime_dummy.c  -o  $(generated_file_base)/cuda_runtime_apis.h 
 
-$(generated_cuda_runtime_files) : $(generated_file_base)/make-cuda-wrappers.py $(generated_cuda_runtime_api_files)
-	$(PYTHON) $(generated_file_base)/make-cuda-wrappers.py runtime $(generated_cuda_runtime_api_files) $(generated_cuda_runtime_files)
+$(generated_cuda_runtime_files) : $(generated_file_src_path)/make-cuda-wrappers.py $(generated_cuda_runtime_api_files)
+	$(PYTHON) $(generated_file_src_path)/make-cuda-wrappers.py runtime $(generated_cuda_runtime_api_files) $(generated_cuda_runtime_files)
 
 $(generated_file_base)/gpu_blame-cuda-runtime-header.h:  $(generated_file_base)/gpu_blame-cuda-runtime-table.c
 
 $(generated_file_base)/gpu_blame-cuda-runtime-table.c: $(generated_file_base)/gpu_blame-runtime-overrides-generated.c
 
-$(generated_cuda_driver_api_files) :  $(generated_file_base)/cuda_driver_dummy.c
-	$(CC) $(OPT_CUDA_IFLAGS)  -E -B -c $(generated_file_base)/cuda_driver_dummy.c -o $(generated_file_base)/cuda_driver_apis.h
+$(generated_cuda_driver_api_files) :  $(generated_file_src_path)/cuda_driver_dummy.c
+	$(CC) $(OPT_CUDA_IFLAGS)  -E -B -c $(generated_file_src_path)/cuda_driver_dummy.c -o $(generated_file_base)/cuda_driver_apis.h
 
-$(generated_cuda_driver_files) : $(generated_file_base)/make-cuda-wrappers.py $(generated_cuda_driver_api_files) 
-	$(PYTHON) $(generated_file_base)/make-cuda-wrappers.py driver $(generated_cuda_driver_api_files)  $(generated_cuda_driver_files)
+$(generated_cuda_driver_files) : $(generated_file_src_path)/make-cuda-wrappers.py $(generated_cuda_driver_api_files) 
+	$(PYTHON) $(generated_file_src_path)/make-cuda-wrappers.py driver $(generated_cuda_driver_api_files)  $(generated_cuda_driver_files)
 
 $(generated_file_base)/gpu_blame-cuda-driver-header.h : $(generated_file_base)/gpu_blame-cuda-driver-table.c
 
@@ -722,7 +723,7 @@ if UNW_PPC64
 endif
 
 if OPT_ENABLE_CUDA
-  libhpcrun_la_SOURCES  += sample-sources/gpu_blame.c sample-sources/gpu_blame-cuda-driver-table.c sample-sources/gpu_blame-cuda-runtime-table.c
+  libhpcrun_la_SOURCES  += sample-sources/gpu_blame.c gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
   libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
