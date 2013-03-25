@@ -104,7 +104,7 @@ def WritecuDriverFunctionPointerTable(file, funcNames):
 ''')
     fp.write('cuDriverFunctionPointer_t cuDriverFunctionPointer[] = {\n')
     for name in funcNames:
-        fp.write('\t {0,"' + name[1] + '"},\n')
+        fp.write('\t {{.generic = (void*)0},"' + name[1] + '"},\n')
     fp.write('};\n')
     fp.close();
 
@@ -123,7 +123,7 @@ def WritecuRuntimeFunctionPointerTable(file, funcNames):
 ''')
     fp.write('cudaRuntimeFunctionPointer_t  cudaRuntimeFunctionPointer[] = {\n')
     for name in funcNames:
-        fp.write('\t {0,"' + name[1] + '"},\n')
+        fp.write('\t {{.generic = (void*)0},"' + name[1] + '"},\n')
     fp.write('};\n')
     fp.close();
 
@@ -166,7 +166,7 @@ def WriteDriverFunctionPointerHeader(file, funcSig):
 #include<cuda_runtime_api.h>
 typedef struct cuDriverFunctionPointer {
     union {
-        CUresult(*generic) (void);
+	 void* generic;
 ''')
 
     for sig in funcSig:
@@ -222,7 +222,7 @@ def WriteRuntimeFunctionPointerHeader(file, funcSig):
 #include<cuda_runtime_api.h>
 typedef struct cudaRuntimeFunctionPointer {
     union {
-        cudaError_t(*generic) (void);
+	 void* generic;
 ''')
 
     for sig in funcSig:
@@ -266,6 +266,7 @@ def WriteDriverFunctionWrapper(file, funcSig):
 // GENERATED FILE DON'T EDIT
 #include <stdbool.h>
 #include <hpcrun/thread_data.h>
+#include <monitor.h>
 #include<cuda.h>
 #include "gpu_blame-cuda-driver-header.h"
 ''')
@@ -312,6 +313,7 @@ def WriteRuntimeFunctionWrapper(file, funcSig):
 // GENERATED FILE DON'T EDIT
 #include <stdbool.h>
 #include <hpcrun/thread_data.h>
+#include <monitor.h>
 #include<cuda.h>
 #include<cuda_runtime_api.h>
 #include "gpu_blame-cuda-runtime-header.h"
