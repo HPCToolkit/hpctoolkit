@@ -74,96 +74,114 @@ DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_1 = libhpcrun.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_ga.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_io.la \
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_memleak.la \
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpctoolkit.la
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_2 = scripts/hpcrun
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_memleak.la
+@OPT_ENABLE_CUDA_TRUE@@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_2 = libhpcrun_gpu.la
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_3 = libhpctoolkit.la
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_4 = scripts/hpcrun
 pkglib_PROGRAMS = $(am__EXEEXT_1)
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_3 = libhpcrun.o
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_4 = libhpcrun_wrap.a \
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_5 = libhpcrun.o
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_6 = libhpcrun_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_ga_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_io_wrap.a \
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_memleak_wrap.a \
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpctoolkit.a
-@HOST_CPU_PPC_TRUE@@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_5 = libibm_xlomp_wrappers.a
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_6 = scripts/hpclink
-@OPT_ENABLE_MPI_WRAP_TRUE@am__append_7 = libhpcrun_mpi.la
-@HOST_CPU_PPC_TRUE@am__append_8 = ibm-xlomp
-@OPT_ENABLE_MPI_WRAP_TRUE@am__append_9 = \
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_memleak_wrap.a
+@OPT_ENABLE_CUDA_TRUE@@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_7 = libhpcrun_gpu_wrap.a
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_8 = libhpctoolkit.a
+@HOST_CPU_PPC_TRUE@@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_9 = libibm_xlomp_wrappers.a
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_10 = scripts/hpclink
+@OPT_ENABLE_MPI_WRAP_TRUE@am__append_11 = libhpcrun_mpi.la
+@OPT_ENABLE_CUDA_TRUE@am__append_12 = gpu
+@HOST_CPU_PPC_TRUE@am__append_13 = ibm-xlomp
+@OPT_ENABLE_MPI_WRAP_TRUE@am__append_14 = \
 @OPT_ENABLE_MPI_WRAP_TRUE@	sample-sources/mpi.c
 
 
 #-----------------------------------------------------------
 # whirled peas
 #-----------------------------------------------------------
-@HOST_OS_LINUX_TRUE@am__append_10 = $(MY_LINUX_DYNAMIC_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_11 = $(MY_MIPS_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_12 = $(MY_MIPS_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_13 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_14 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_15 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_16 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_17 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_OS_LINUX_TRUE@am__append_15 = $(MY_LINUX_DYNAMIC_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_16 = $(MY_MIPS_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_17 = $(MY_MIPS_FILES)
 @HOST_CPU_MIPS_TRUE@am__append_18 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_19 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_20 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_21 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_22 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_23 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_24 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_25 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_26 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_27 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_28 = $(MY_MIPS_INCLUDE_DIRS)
 
 # Note: setting CCASFLAGS here is a no-op hack with the side effect of
 # prefixing the tramp.s file names so they will be compiled separately
 # for .o and .so targets.  CFLAGS does this for the .c files, but
 # CFLAGS doesn't apply to .s files.  See the automake docs section
 # 8.3.9.2, Objects created with both libtool and without.
-@HOST_CPU_PPC_TRUE@am__append_22 = $(MY_PPC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_23 = $(MY_PPC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_24 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_25 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_26 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_27 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_28 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_29 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_30 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_29 = $(MY_PPC_FILES)
+@HOST_CPU_PPC_TRUE@am__append_30 = $(MY_PPC_FILES)
 @HOST_CPU_PPC_TRUE@am__append_31 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_32 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_33 = $(MY_X86_FILES)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_34 = $(MY_X86_FILES)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_35 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_36 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_37 = $(XED2_LIB)/libxed.a
-@HOST_CPU_X86_FAMILY_TRUE@am__append_38 = $(XED2_LIB)/libxed.a
-@HOST_CPU_X86_FAMILY_TRUE@am__append_39 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_40 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_41 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_42 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_43 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_33 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_34 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_35 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_36 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_37 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_38 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_39 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_40 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_41 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_42 = $(MY_X86_FILES)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_43 = $(MY_X86_FILES)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_44 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_45 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_46 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_47 = $(MY_IA64_FILES)
-@HOST_CPU_IA64_TRUE@am__append_48 = $(MY_IA64_FILES)
-@HOST_CPU_IA64_TRUE@am__append_49 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_50 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_51 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_52 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_53 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_54 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_55 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_56 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_57 = $(MY_IA64_INCLUDE_DIRS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_58 = $(MY_PAPI_FILES)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_59 = $(PAPI_INC_FLGS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_60 = $(PAPI_LD_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_61 = $(MY_PAPI_FILES)
-@OPT_PAPI_STATIC_TRUE@am__append_62 = $(PAPI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_63 = $(PAPI_LD_FLGS)
-@OPT_ENABLE_UPC_TRUE@am__append_64 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_65 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_66 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_67 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_68 = $(OPT_UPC_LDFLAGS)
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_69 = -DLUSH_PTHREADS
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_70 = -DLUSH_PTHREADS
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_71 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_72 = libagent-pthread.la \
+@HOST_CPU_X86_FAMILY_TRUE@am__append_46 = $(XED2_LIB)/libxed.a
+@HOST_CPU_X86_FAMILY_TRUE@am__append_47 = $(XED2_LIB)/libxed.a
+@HOST_CPU_X86_FAMILY_TRUE@am__append_48 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_49 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_50 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_51 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_52 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_53 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_54 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_55 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_56 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_57 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_58 = $(MY_IA64_FILES)
+@HOST_CPU_IA64_TRUE@am__append_59 = $(MY_IA64_FILES)
+@HOST_CPU_IA64_TRUE@am__append_60 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_61 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_62 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_63 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_64 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_65 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_66 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_67 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_68 = $(MY_IA64_INCLUDE_DIRS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_69 = $(MY_PAPI_FILES)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_70 = $(PAPI_INC_FLGS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_71 = $(PAPI_LD_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_72 = $(MY_PAPI_FILES)
+@OPT_PAPI_STATIC_TRUE@am__append_73 = $(PAPI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_74 = $(PAPI_LD_FLGS)
+@OPT_ENABLE_UPC_TRUE@am__append_75 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_76 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_77 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_78 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_79 = $(OPT_UPC_LDFLAGS)
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_80 = -DLUSH_PTHREADS
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_81 = -DLUSH_PTHREADS
+@OPT_ENABLE_CUDA_TRUE@am__append_82 = sample-sources/gpu_blame.c gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
+@OPT_ENABLE_CUDA_TRUE@am__append_83 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_84 = $(OPT_CUDA_IFLAGS) -g
+@OPT_ENABLE_CUDA_TRUE@am__append_85 = $(OPT_CUDA_LDFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_86 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_87 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_88 = $(OPT_CUDA_LDFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_89 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_90 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_91 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_92 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -207,6 +225,13 @@ libhpcrun_ga_wrap_a_LIBADD =
 am_libhpcrun_ga_wrap_a_OBJECTS =  \
 	libhpcrun_ga_wrap_a-ga-overrides.$(OBJEXT)
 libhpcrun_ga_wrap_a_OBJECTS = $(am_libhpcrun_ga_wrap_a_OBJECTS)
+libhpcrun_gpu_wrap_a_AR = $(AR) $(ARFLAGS)
+libhpcrun_gpu_wrap_a_LIBADD =
+am_libhpcrun_gpu_wrap_a_OBJECTS =  \
+	libhpcrun_gpu_wrap_a-gpu_blame-overrides.$(OBJEXT) \
+	libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.$(OBJEXT) \
+	libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.$(OBJEXT)
+libhpcrun_gpu_wrap_a_OBJECTS = $(am_libhpcrun_gpu_wrap_a_OBJECTS)
 libhpcrun_io_wrap_a_AR = $(AR) $(ARFLAGS)
 libhpcrun_io_wrap_a_LIBADD =
 am_libhpcrun_io_wrap_a_OBJECTS =  \
@@ -284,24 +309,24 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/idle.c sample-sources/memleak.c \
 	sample-sources/none.c sample-sources/retcnt.c \
 	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c system_server.c term_handler.c \
-	thread_data.c thread_use.c threadmgr.c trace.c weak.c \
-	write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c sample-sources/mpi.c \
-	fnbounds/fnbounds_client.c fnbounds/fnbounds_dynamic.c \
-	monitor-exts/openmp.c hpcrun_dlfns.c custom-init-dynamic.c \
-	os/linux/dylib.c unwind/common/default_validation_summary.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c threadmgr.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/tokenize.h \
+	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	sample-sources/mpi.c fnbounds/fnbounds_client.c \
+	fnbounds/fnbounds_dynamic.c monitor-exts/openmp.c \
+	hpcrun_dlfns.c custom-init-dynamic.c os/linux/dylib.c \
+	unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
 	trampoline/x86-family/x86-tramp.S \
@@ -309,7 +334,9 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	trampoline/ia64/ia64-tramp.s \
 	utilities/arch/ia64/ia64-context-pc.c sample-sources/papi.c \
 	sample-sources/papi-c.c sample-sources/upc.c \
-	unwind/common/backtrace.c unwind/common/unw-throw.c \
+	sample-sources/gpu_blame.c gpu_blame-cuda-driver-table.c \
+	gpu_blame-cuda-runtime-table.c unwind/common/backtrace.c \
+	unwind/common/unw-throw.c \
 	unwind/generic-libunwind/libunw-unwind.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
 	unwind/ppc64/ppc64-unwind.c \
@@ -344,21 +371,21 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-retcnt.lo libhpcrun_la-sync.lo \
 	libhpcrun_la-sample_sources_registered.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-start-stop.lo \
-	libhpcrun_la-system_server.lo libhpcrun_la-term_handler.lo \
-	libhpcrun_la-thread_data.lo libhpcrun_la-thread_use.lo \
-	libhpcrun_la-threadmgr.lo libhpcrun_la-trace.lo \
-	libhpcrun_la-weak.lo libhpcrun_la-write_data.lo \
-	libhpcrun_la-cct_bundle.lo libhpcrun_la-cct_ctxt.lo \
-	libhpcrun_la-cct.lo libhpcrun_la-cct2metrics.lo \
-	libhpcrun_la-trampoline.lo libhpcrun_la-lush-backtrace.lo \
-	libhpcrun_la-lush.lo libhpcrun_la-lush-pthread.lo \
-	libhpcrun_la-lush-support-rt.lo libhpcrun_la-lushi-cb.lo \
-	libhpcrun_la-fnbounds_common.lo libhpcrun_la-mem.lo \
-	libhpcrun_la-mmap.lo libhpcrun_la-debug-flag.lo \
-	libhpcrun_la-messages-sync.lo libhpcrun_la-messages-async.lo \
-	libhpcrun_la-fmt.lo libhpcrun_la-executable-path.lo \
-	libhpcrun_la-ip-normalized.lo libhpcrun_la-tokenize.lo \
-	libhpcrun_la-unlink.lo $(am__objects_7)
+	libhpcrun_la-term_handler.lo libhpcrun_la-thread_data.lo \
+	libhpcrun_la-thread_use.lo libhpcrun_la-threadmgr.lo \
+	libhpcrun_la-trace.lo libhpcrun_la-weak.lo \
+	libhpcrun_la-write_data.lo libhpcrun_la-cct_bundle.lo \
+	libhpcrun_la-cct_ctxt.lo libhpcrun_la-cct.lo \
+	libhpcrun_la-cct2metrics.lo libhpcrun_la-trampoline.lo \
+	libhpcrun_la-lush-backtrace.lo libhpcrun_la-lush.lo \
+	libhpcrun_la-lush-pthread.lo libhpcrun_la-lush-support-rt.lo \
+	libhpcrun_la-lushi-cb.lo libhpcrun_la-fnbounds_common.lo \
+	libhpcrun_la-mem.lo libhpcrun_la-mmap.lo \
+	libhpcrun_la-debug-flag.lo libhpcrun_la-messages-sync.lo \
+	libhpcrun_la-messages-async.lo libhpcrun_la-fmt.lo \
+	libhpcrun_la-executable-path.lo libhpcrun_la-ip-normalized.lo \
+	libhpcrun_la-tokenize.lo libhpcrun_la-unlink.lo \
+	$(am__objects_7)
 am__objects_9 = libhpcrun_la-fnbounds_client.lo \
 	libhpcrun_la-fnbounds_dynamic.lo libhpcrun_la-openmp.lo \
 	libhpcrun_la-hpcrun_dlfns.lo \
@@ -381,14 +408,17 @@ am__objects_18 = libhpcrun_la-ia64-tramp.lo \
 @OPT_PAPI_DYNAMIC_TRUE@am__objects_21 = $(am__objects_20)
 am__objects_22 = libhpcrun_la-upc.lo
 @OPT_ENABLE_UPC_TRUE@am__objects_23 = $(am__objects_22)
-am__objects_24 = libhpcrun_la-backtrace.lo libhpcrun_la-unw-throw.lo
-am__objects_25 = $(am__objects_24) libhpcrun_la-libunw-unwind.lo \
+@OPT_ENABLE_CUDA_TRUE@am__objects_24 = libhpcrun_la-gpu_blame.lo \
+@OPT_ENABLE_CUDA_TRUE@	libhpcrun_la-gpu_blame-cuda-driver-table.lo \
+@OPT_ENABLE_CUDA_TRUE@	libhpcrun_la-gpu_blame-cuda-runtime-table.lo
+am__objects_25 = libhpcrun_la-backtrace.lo libhpcrun_la-unw-throw.lo
+am__objects_26 = $(am__objects_25) libhpcrun_la-libunw-unwind.lo \
 	libhpcrun_la-default_validation_summary.lo
-am__objects_26 = $(am__objects_24) libhpcrun_la-splay.lo \
+am__objects_27 = $(am__objects_25) libhpcrun_la-splay.lo \
 	libhpcrun_la-stack_troll.lo libhpcrun_la-ui_tree.lo
-am__objects_27 = $(am__objects_26) libhpcrun_la-ppc64-unwind.lo \
+am__objects_28 = $(am__objects_27) libhpcrun_la-ppc64-unwind.lo \
 	libhpcrun_la-ppc64-unwind-interval.lo
-am__objects_28 = $(am__objects_26) libhpcrun_la-x86-all.lo \
+am__objects_29 = $(am__objects_27) libhpcrun_la-x86-all.lo \
 	libhpcrun_la-amd-xop.lo libhpcrun_la-x86-cold-path.lo \
 	libhpcrun_la-x86-validate-retn-addr.lo \
 	libhpcrun_la-x86-unwind-interval.lo \
@@ -400,13 +430,14 @@ am__objects_28 = $(am__objects_26) libhpcrun_la-x86-all.lo \
 	libhpcrun_la-x86-32bit-main.lo \
 	libhpcrun_la-x86-32bit-icc-variant.lo \
 	libhpcrun_la-x86-pgi-mp_pexit.lo
-@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_29 = $(am__objects_28)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_29 = $(am__objects_27)
-@UNW_LIBUNW_TRUE@am__objects_29 = $(am__objects_25)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_30 = $(am__objects_29)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_30 = $(am__objects_28)
+@UNW_LIBUNW_TRUE@am__objects_30 = $(am__objects_26)
 am_libhpcrun_la_OBJECTS = $(am__objects_8) $(am__objects_9) \
 	$(am__objects_11) $(am__objects_13) $(am__objects_15) \
 	$(am__objects_17) $(am__objects_19) $(am__objects_21) \
-	$(am__objects_23) $(am__objects_29) libhpcrun_la-last_func.lo
+	$(am__objects_23) $(am__objects_24) $(am__objects_30) \
+	libhpcrun_la-last_func.lo
 libhpcrun_la_OBJECTS = $(am_libhpcrun_la_OBJECTS)
 libhpcrun_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libhpcrun_la_CFLAGS) \
@@ -421,6 +452,17 @@ libhpcrun_ga_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(CFLAGS) $(libhpcrun_ga_la_LDFLAGS) $(LDFLAGS) -o $@
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpcrun_ga_la_rpath = -rpath \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	$(pkglibdir)
+libhpcrun_gpu_la_LIBADD =
+am_libhpcrun_gpu_la_OBJECTS = libhpcrun_gpu_la-gpu_blame-overrides.lo \
+	libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo \
+	libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo
+libhpcrun_gpu_la_OBJECTS = $(am_libhpcrun_gpu_la_OBJECTS)
+libhpcrun_gpu_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libhpcrun_gpu_la_CFLAGS) \
+	$(CFLAGS) $(libhpcrun_gpu_la_LDFLAGS) $(LDFLAGS) -o $@
+@OPT_ENABLE_CUDA_TRUE@@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpcrun_gpu_la_rpath =  \
+@OPT_ENABLE_CUDA_TRUE@@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	-rpath \
+@OPT_ENABLE_CUDA_TRUE@@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	$(pkglibdir)
 libhpcrun_io_la_LIBADD =
 am_libhpcrun_io_la_OBJECTS = libhpcrun_io_la-io-over.lo
 libhpcrun_io_la_OBJECTS = $(am_libhpcrun_io_la_OBJECTS)
@@ -464,22 +506,22 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/idle.c sample-sources/memleak.c \
 	sample-sources/none.c sample-sources/retcnt.c \
 	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c system_server.c term_handler.c \
-	thread_data.c thread_use.c threadmgr.c trace.c weak.c \
-	write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c sample-sources/mpi.c \
-	fnbounds/fnbounds_static.c custom-init-static.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c threadmgr.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/tokenize.h \
+	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	sample-sources/mpi.c fnbounds/fnbounds_static.c \
+	custom-init-static.c \
 	unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
@@ -507,8 +549,8 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c \
 	utilities/last_func.c
-@OPT_ENABLE_MPI_WRAP_TRUE@am__objects_30 = libhpcrun_o-mpi.$(OBJEXT)
-am__objects_31 = libhpcrun_o-first_func.$(OBJEXT) \
+@OPT_ENABLE_MPI_WRAP_TRUE@am__objects_31 = libhpcrun_o-mpi.$(OBJEXT)
+am__objects_32 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-main.$(OBJEXT) libhpcrun_o-disabled.$(OBJEXT) \
 	libhpcrun_o-cct_insert_backtrace.$(OBJEXT) \
 	libhpcrun_o-env.$(OBJEXT) libhpcrun_o-epoch.$(OBJEXT) \
@@ -529,7 +571,6 @@ am__objects_31 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-sample_sources_registered.$(OBJEXT) \
 	libhpcrun_o-segv_handler.$(OBJEXT) \
 	libhpcrun_o-start-stop.$(OBJEXT) \
-	libhpcrun_o-system_server.$(OBJEXT) \
 	libhpcrun_o-term_handler.$(OBJEXT) \
 	libhpcrun_o-thread_data.$(OBJEXT) \
 	libhpcrun_o-thread_use.$(OBJEXT) \
@@ -551,37 +592,37 @@ am__objects_31 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-executable-path.$(OBJEXT) \
 	libhpcrun_o-ip-normalized.$(OBJEXT) \
 	libhpcrun_o-tokenize.$(OBJEXT) libhpcrun_o-unlink.$(OBJEXT) \
-	$(am__objects_30)
-am__objects_32 = libhpcrun_o-fnbounds_static.$(OBJEXT) \
+	$(am__objects_31)
+am__objects_33 = libhpcrun_o-fnbounds_static.$(OBJEXT) \
 	libhpcrun_o-custom-init-static.$(OBJEXT)
-am__objects_33 = libhpcrun_o-default_validation_summary.$(OBJEXT)
-@HOST_CPU_MIPS_TRUE@am__objects_34 = $(am__objects_33)
-am__objects_35 = libhpcrun_o-default_validation_summary.$(OBJEXT) \
+am__objects_34 = libhpcrun_o-default_validation_summary.$(OBJEXT)
+@HOST_CPU_MIPS_TRUE@am__objects_35 = $(am__objects_34)
+am__objects_36 = libhpcrun_o-default_validation_summary.$(OBJEXT) \
 	libhpcrun_o-ppc64-tramp.$(OBJEXT) \
 	libhpcrun_o-ppc64-context-pc.$(OBJEXT)
-@HOST_CPU_PPC_TRUE@am__objects_36 = $(am__objects_35)
-am__objects_37 = libhpcrun_o-x86-tramp.$(OBJEXT) \
+@HOST_CPU_PPC_TRUE@am__objects_37 = $(am__objects_36)
+am__objects_38 = libhpcrun_o-x86-tramp.$(OBJEXT) \
 	libhpcrun_o-x86-context-pc.$(OBJEXT)
-@HOST_CPU_X86_FAMILY_TRUE@am__objects_38 = $(am__objects_37)
-am__objects_39 = libhpcrun_o-ia64-tramp.$(OBJEXT) \
+@HOST_CPU_X86_FAMILY_TRUE@am__objects_39 = $(am__objects_38)
+am__objects_40 = libhpcrun_o-ia64-tramp.$(OBJEXT) \
 	libhpcrun_o-ia64-context-pc.$(OBJEXT)
-@HOST_CPU_IA64_TRUE@am__objects_40 = $(am__objects_39)
-@OPT_PAPI_COMPONENT_FALSE@am__objects_41 = libhpcrun_o-papi.$(OBJEXT)
-@OPT_PAPI_COMPONENT_TRUE@am__objects_41 =  \
+@HOST_CPU_IA64_TRUE@am__objects_41 = $(am__objects_40)
+@OPT_PAPI_COMPONENT_FALSE@am__objects_42 = libhpcrun_o-papi.$(OBJEXT)
+@OPT_PAPI_COMPONENT_TRUE@am__objects_42 =  \
 @OPT_PAPI_COMPONENT_TRUE@	libhpcrun_o-papi-c.$(OBJEXT)
-@OPT_PAPI_STATIC_TRUE@am__objects_42 = $(am__objects_41)
-am__objects_43 = libhpcrun_o-upc.$(OBJEXT)
-@OPT_ENABLE_UPC_TRUE@am__objects_44 = $(am__objects_43)
-am__objects_45 = libhpcrun_o-backtrace.$(OBJEXT) \
+@OPT_PAPI_STATIC_TRUE@am__objects_43 = $(am__objects_42)
+am__objects_44 = libhpcrun_o-upc.$(OBJEXT)
+@OPT_ENABLE_UPC_TRUE@am__objects_45 = $(am__objects_44)
+am__objects_46 = libhpcrun_o-backtrace.$(OBJEXT) \
 	libhpcrun_o-unw-throw.$(OBJEXT)
-am__objects_46 = $(am__objects_45) libhpcrun_o-libunw-unwind.$(OBJEXT) \
+am__objects_47 = $(am__objects_46) libhpcrun_o-libunw-unwind.$(OBJEXT) \
 	libhpcrun_o-default_validation_summary.$(OBJEXT)
-am__objects_47 = $(am__objects_45) libhpcrun_o-splay.$(OBJEXT) \
+am__objects_48 = $(am__objects_46) libhpcrun_o-splay.$(OBJEXT) \
 	libhpcrun_o-stack_troll.$(OBJEXT) \
 	libhpcrun_o-ui_tree.$(OBJEXT)
-am__objects_48 = $(am__objects_47) libhpcrun_o-ppc64-unwind.$(OBJEXT) \
+am__objects_49 = $(am__objects_48) libhpcrun_o-ppc64-unwind.$(OBJEXT) \
 	libhpcrun_o-ppc64-unwind-interval.$(OBJEXT)
-am__objects_49 = $(am__objects_47) libhpcrun_o-x86-all.$(OBJEXT) \
+am__objects_50 = $(am__objects_48) libhpcrun_o-x86-all.$(OBJEXT) \
 	libhpcrun_o-amd-xop.$(OBJEXT) \
 	libhpcrun_o-x86-cold-path.$(OBJEXT) \
 	libhpcrun_o-x86-validate-retn-addr.$(OBJEXT) \
@@ -595,13 +636,13 @@ am__objects_49 = $(am__objects_47) libhpcrun_o-x86-all.$(OBJEXT) \
 	libhpcrun_o-x86-32bit-main.$(OBJEXT) \
 	libhpcrun_o-x86-32bit-icc-variant.$(OBJEXT) \
 	libhpcrun_o-x86-pgi-mp_pexit.$(OBJEXT)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_50 = $(am__objects_49)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_50 = $(am__objects_48)
-@UNW_LIBUNW_TRUE@am__objects_50 = $(am__objects_46)
-am_libhpcrun_o_OBJECTS = $(am__objects_31) $(am__objects_32) \
-	$(am__objects_34) $(am__objects_36) $(am__objects_38) \
-	$(am__objects_40) $(am__objects_42) $(am__objects_44) \
-	$(am__objects_50) libhpcrun_o-last_func.$(OBJEXT)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_51 = $(am__objects_50)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_51 = $(am__objects_49)
+@UNW_LIBUNW_TRUE@am__objects_51 = $(am__objects_47)
+am_libhpcrun_o_OBJECTS = $(am__objects_32) $(am__objects_33) \
+	$(am__objects_35) $(am__objects_37) $(am__objects_39) \
+	$(am__objects_41) $(am__objects_43) $(am__objects_45) \
+	$(am__objects_51) libhpcrun_o-last_func.$(OBJEXT)
 libhpcrun_o_OBJECTS = $(am_libhpcrun_o_OBJECTS)
 libhpcrun_o_DEPENDENCIES = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 libhpcrun_o_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -630,17 +671,17 @@ CCASCOMPILE = $(CCAS) $(AM_CCASFLAGS) $(CCASFLAGS)
 LTCCASCOMPILE = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=compile $(CCAS) $(AM_CCASFLAGS) $(CCASFLAGS)
 SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
-	$(libhpcrun_io_wrap_a_SOURCES) \
+	$(libhpcrun_gpu_wrap_a_SOURCES) $(libhpcrun_io_wrap_a_SOURCES) \
 	$(libhpcrun_memleak_wrap_a_SOURCES) \
 	$(libhpcrun_wrap_a_SOURCES) $(libhpctoolkit_a_SOURCES) \
 	$(libibm_xlomp_wrappers_a_SOURCES) $(libagent_cilk_la_SOURCES) \
 	$(libagent_pthread_la_SOURCES) $(libagent_tbb_la_SOURCES) \
 	$(libhpcrun_la_SOURCES) $(libhpcrun_ga_la_SOURCES) \
-	$(libhpcrun_io_la_SOURCES) $(libhpcrun_memleak_la_SOURCES) \
-	$(libhpcrun_mpi_la_SOURCES) $(libhpctoolkit_la_SOURCES) \
-	$(libhpcrun_o_SOURCES)
+	$(libhpcrun_gpu_la_SOURCES) $(libhpcrun_io_la_SOURCES) \
+	$(libhpcrun_memleak_la_SOURCES) $(libhpcrun_mpi_la_SOURCES) \
+	$(libhpctoolkit_la_SOURCES) $(libhpcrun_o_SOURCES)
 DIST_SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
-	$(libhpcrun_io_wrap_a_SOURCES) \
+	$(libhpcrun_gpu_wrap_a_SOURCES) $(libhpcrun_io_wrap_a_SOURCES) \
 	$(libhpcrun_memleak_wrap_a_SOURCES) \
 	$(libhpcrun_wrap_a_SOURCES) $(libhpctoolkit_a_SOURCES) \
 	$(libibm_xlomp_wrappers_a_SOURCES) \
@@ -648,9 +689,9 @@ DIST_SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
 	$(am__libagent_pthread_la_SOURCES_DIST) \
 	$(am__libagent_tbb_la_SOURCES_DIST) \
 	$(am__libhpcrun_la_SOURCES_DIST) $(libhpcrun_ga_la_SOURCES) \
-	$(libhpcrun_io_la_SOURCES) $(libhpcrun_memleak_la_SOURCES) \
-	$(libhpcrun_mpi_la_SOURCES) $(libhpctoolkit_la_SOURCES) \
-	$(am__libhpcrun_o_SOURCES_DIST)
+	$(libhpcrun_gpu_la_SOURCES) $(libhpcrun_io_la_SOURCES) \
+	$(libhpcrun_memleak_la_SOURCES) $(libhpcrun_mpi_la_SOURCES) \
+	$(libhpctoolkit_la_SOURCES) $(am__libhpcrun_o_SOURCES_DIST)
 HEADERS = $(include_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -777,6 +818,9 @@ OA_LDFLAGS = @OA_LDFLAGS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
+OPT_CUDA = @OPT_CUDA@
+OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
+OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
 OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
 OPT_LIBUNWIND_IFLAGS = @OPT_LIBUNWIND_IFLAGS@
 OPT_LIBUNWIND_LDFLAGS = @OPT_LIBUNWIND_LDFLAGS@
@@ -876,6 +920,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+wordsize_cflag = @wordsize_cflag@
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
 AUTOMAKE_OPTIONS = foreign
@@ -917,16 +962,17 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 PYTHON = python
 plugin_srcdir = $(srcdir)/plugins
 plugin_instdir = $(pkglibdir)/plugins
-bin_SCRIPTS = scripts/hpcsummary $(am__append_2) $(am__append_6)
+bin_SCRIPTS = scripts/hpcsummary $(am__append_4) $(am__append_10)
 pkglibexec_SCRIPTS = scripts/hpclog
 include_HEADERS = hpctoolkit.h
-pkglib_LTLIBRARIES = $(am__append_1) $(am__append_7) $(am__append_71) \
-	$(am__append_72)
-pkglib_LIBRARIES = $(am__append_4) $(am__append_5)
+pkglib_LTLIBRARIES = $(am__append_1) $(am__append_2) $(am__append_3) \
+	$(am__append_11) $(am__append_91) $(am__append_92)
+pkglib_LIBRARIES = $(am__append_6) $(am__append_7) $(am__append_8) \
+	$(am__append_9)
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
-PLUGIN_CONFIG_FILES = ga io memleak $(am__append_8)
+PLUGIN_CONFIG_FILES = ga io memleak $(am__append_12) $(am__append_13)
 UNW_UNIV_FILES = \
 	unwind/common/backtrace.c	\
         unwind/common/unw-throw.c
@@ -1005,21 +1051,20 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/memleak.c sample-sources/none.c \
 	sample-sources/retcnt.c sample-sources/sync.c \
 	sample_sources_registered.c segv_handler.c start-stop.c \
-	system_server.c term_handler.c thread_data.c thread_use.c \
-	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
-	cct/cct_ctxt.c cct/cct.c cct2metrics.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	$(am__append_9)
+	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
+	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct2metrics.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c $(am__append_14)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -1088,12 +1133,13 @@ MY_IA64_INCLUDE_DIRS = \
         -I$(srcdir)/utilities/arch/ia64
 
 libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
-	$(am__append_10) $(am__append_11) $(am__append_22) \
-	$(am__append_33) $(am__append_47) $(am__append_58) \
-	$(am__append_64) $(UNW_SOURCE_FILES) utilities/last_func.c
+	$(am__append_15) $(am__append_16) $(am__append_29) \
+	$(am__append_42) $(am__append_58) $(am__append_69) \
+	$(am__append_75) $(am__append_82) $(UNW_SOURCE_FILES) \
+	utilities/last_func.c
 libhpcrun_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
-	$(am__append_12) $(am__append_23) $(am__append_34) \
-	$(am__append_48) $(am__append_61) $(am__append_65) \
+	$(am__append_17) $(am__append_30) $(am__append_43) \
+	$(am__append_59) $(am__append_72) $(am__append_76) \
 	$(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_wrap_a_SOURCES = \
 	monitor-exts/openmp.c
@@ -1116,6 +1162,16 @@ libhpcrun_memleak_la_SOURCES = \
 libhpcrun_memleak_wrap_a_SOURCES = \
 	sample-sources/memleak-overrides.c
 
+libhpcrun_gpu_la_SOURCES = \
+	sample-sources/gpu_blame-overrides.c \
+	gpu_blame-driver-overrides-generated.c \
+	gpu_blame-runtime-overrides-generated.c
+
+libhpcrun_gpu_wrap_a_SOURCES = \
+	sample-sources/gpu_blame-overrides.c  \
+	gpu_blame-driver-overrides-generated.c \
+	gpu_blame-runtime-overrides-generated.c
+
 libhpcrun_mpi_la_SOURCES = \
 	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
 
@@ -1133,40 +1189,54 @@ libhpctoolkit_a_SOURCES = \
 # cppflags
 #-----------------------------------------------------------
 libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_13) $(am__append_24) $(am__append_35) \
-	$(am__append_49) $(am__append_59) $(am__append_66) \
-	$(am__append_69) $(UNW_INCLUDE_DIRS)
+	$(am__append_18) $(am__append_31) $(am__append_44) \
+	$(am__append_60) $(am__append_70) $(am__append_77) \
+	$(am__append_80) $(am__append_83) $(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_14) $(am__append_25) \
-	$(am__append_36) $(am__append_50) $(am__append_62) \
-	$(am__append_67) $(am__append_70) $(UNW_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS) $(am__append_19) $(am__append_32) \
+	$(am__append_45) $(am__append_61) $(am__append_73) \
+	$(am__append_78) $(am__append_81) $(UNW_INCLUDE_DIRS)
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
 libhpcrun_ga_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_15) $(am__append_26) $(am__append_39) \
-	$(am__append_51) $(UNW_INCLUDE_DIRS)
+	$(am__append_20) $(am__append_33) $(am__append_48) \
+	$(am__append_62) $(UNW_INCLUDE_DIRS)
 libhpcrun_ga_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_16) $(am__append_27) \
-	$(am__append_40) $(am__append_52) $(UNW_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS) $(am__append_21) $(am__append_34) \
+	$(am__append_49) $(am__append_63) $(UNW_INCLUDE_DIRS)
 libhpcrun_io_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_17) $(am__append_28) $(am__append_41) \
-	$(am__append_53) $(UNW_INCLUDE_DIRS)
+	$(am__append_22) $(am__append_35) $(am__append_50) \
+	$(am__append_64) $(UNW_INCLUDE_DIRS)
 libhpcrun_io_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_18) $(am__append_29) \
-	$(am__append_42) $(am__append_54) $(UNW_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS) $(am__append_23) $(am__append_36) \
+	$(am__append_51) $(am__append_65) $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_19) $(am__append_30) $(am__append_43) \
-	$(am__append_55) $(UNW_INCLUDE_DIRS)
+	$(am__append_24) $(am__append_37) $(am__append_52) \
+	$(am__append_66) $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
-	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_20) \
-	$(am__append_31) $(am__append_44) $(am__append_56) \
+	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_25) \
+	$(am__append_38) $(am__append_53) $(am__append_67) \
 	$(UNW_INCLUDE_DIRS)
+libhpcrun_gpu_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
+	$(am__append_26) $(am__append_39) $(am__append_54) \
+	$(am__append_86) $(UNW_INCLUDE_DIRS)
+libhpcrun_gpu_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
+	$(MY_INCLUDE_DIRS) $(am__append_27) $(am__append_40) \
+	$(am__append_55) $(am__append_89) $(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_21) $(am__append_32) $(am__append_45) \
-	$(am__append_57) $(UNW_INCLUDE_DIRS)
+	$(am__append_28) $(am__append_41) $(am__append_56) \
+	$(am__append_68) $(UNW_INCLUDE_DIRS)
+@OPT_ENABLE_CUDA_TRUE@generated_file_base = .
+@OPT_ENABLE_CUDA_TRUE@generated_file_src_path = $(srcdir)/sample-sources
+@OPT_ENABLE_CUDA_TRUE@generated_cuda_driver_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-driver-header.h gpu_blame-cuda-driver-table.c gpu_blame-driver-overrides-generated.c)
+@OPT_ENABLE_CUDA_TRUE@generated_cuda_driver_api_files = $(addprefix $(generated_file_base)/, cuda_driver_apis.h)
+@OPT_ENABLE_CUDA_TRUE@generated_cuda_runtime_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-runtime-header.h gpu_blame-cuda-runtime-table.c gpu_blame-runtime-overrides-generated.c)
+@OPT_ENABLE_CUDA_TRUE@generated_cuda_runtime_api_files = $(addprefix $(generated_file_base)/, cuda_runtime_apis.h)
+@OPT_ENABLE_CUDA_TRUE@BUILT_SOURCES = $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
+@OPT_ENABLE_CUDA_TRUE@CLEANFILES = $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
 libhpctoolkit_la_CPPFLAGS = \
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
@@ -1180,7 +1250,7 @@ libhpctoolkit_a_CPPFLAGS = \
 #-----------------------------------------------------------
 # cflags
 #-----------------------------------------------------------
-libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_84)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -1189,6 +1259,9 @@ libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) $(am__append_87)
+libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
+	$(am__append_90)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 #-----------------------------------------------------------
@@ -1197,8 +1270,9 @@ libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
-	-lpthread -lrt $(OPT_LIBUNWIND_LDFLAGS) $(am__append_37) \
-	$(am__append_60) $(am__append_68) $(UNW_LD_FLAGS)
+	-lpthread -lrt $(OPT_LIBUNWIND_LDFLAGS) $(am__append_46) \
+	$(am__append_71) $(am__append_79) $(am__append_85) \
+	$(UNW_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic	\
 	-Wl,--strip-debug
 
@@ -1208,17 +1282,22 @@ libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic	\
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
 
+
+#libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic 	\
+#	-Wl,--strip-debug
+libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_88)
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
 
-libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS) $(am__append_38) \
-	$(am__append_63) $(UNW_LD_FLAGS)
-MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_46) \
+libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS) $(am__append_47) \
+	$(am__append_74) $(UNW_LD_FLAGS)
+MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_57) \
 	$(UNW_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
 @HOST_CPU_X86_FAMILY_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
 @HOST_CPU_PPC_TRUE@libhpcrun_o_CCASFLAGS = $(AM_CCASFLAGS)
 @HOST_CPU_X86_FAMILY_TRUE@libhpcrun_o_CCASFLAGS = $(AM_CCASFLAGS)
+#libhpcrun_gpu_wrap_a_LDFLAGS += $(OPT_CUDA_LDFLAGS)
 @UNW_LIBUNW_TRUE@UNW_SOURCE_FILES = $(UNW_LIBUNW_FILES)
 @UNW_PPC64_TRUE@UNW_SOURCE_FILES = $(UNW_PPC64_FILES)
 
@@ -1276,7 +1355,8 @@ MYCPPFLAGS_0 = $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 
 MYCPPFLAGS_0_CXX = $(MYCPPFLAGS_0) $(AM_CXXFLAGS) $(CXXFLAGS) $(MYCXXFLAGS)
 MYCPPFLAGS_0_CC = $(MYCPPFLAGS_0) $(AM_CFLAGS)   $(CFLAGS)   $(MYCFLAGS)
-all: all-am
+all: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
 .SUFFIXES: .S .c .lo .o .obj .s
@@ -1346,6 +1426,10 @@ libhpcrun_ga_wrap.a: $(libhpcrun_ga_wrap_a_OBJECTS) $(libhpcrun_ga_wrap_a_DEPEND
 	-rm -f libhpcrun_ga_wrap.a
 	$(libhpcrun_ga_wrap_a_AR) libhpcrun_ga_wrap.a $(libhpcrun_ga_wrap_a_OBJECTS) $(libhpcrun_ga_wrap_a_LIBADD)
 	$(RANLIB) libhpcrun_ga_wrap.a
+libhpcrun_gpu_wrap.a: $(libhpcrun_gpu_wrap_a_OBJECTS) $(libhpcrun_gpu_wrap_a_DEPENDENCIES) 
+	-rm -f libhpcrun_gpu_wrap.a
+	$(libhpcrun_gpu_wrap_a_AR) libhpcrun_gpu_wrap.a $(libhpcrun_gpu_wrap_a_OBJECTS) $(libhpcrun_gpu_wrap_a_LIBADD)
+	$(RANLIB) libhpcrun_gpu_wrap.a
 libhpcrun_io_wrap.a: $(libhpcrun_io_wrap_a_OBJECTS) $(libhpcrun_io_wrap_a_DEPENDENCIES) 
 	-rm -f libhpcrun_io_wrap.a
 	$(libhpcrun_io_wrap_a_AR) libhpcrun_io_wrap.a $(libhpcrun_io_wrap_a_OBJECTS) $(libhpcrun_io_wrap_a_LIBADD)
@@ -1407,6 +1491,8 @@ libhpcrun.la: $(libhpcrun_la_OBJECTS) $(libhpcrun_la_DEPENDENCIES)
 	$(libhpcrun_la_LINK) $(am_libhpcrun_la_rpath) $(libhpcrun_la_OBJECTS) $(libhpcrun_la_LIBADD) $(LIBS)
 libhpcrun_ga.la: $(libhpcrun_ga_la_OBJECTS) $(libhpcrun_ga_la_DEPENDENCIES) 
 	$(libhpcrun_ga_la_LINK) $(am_libhpcrun_ga_la_rpath) $(libhpcrun_ga_la_OBJECTS) $(libhpcrun_ga_la_LIBADD) $(LIBS)
+libhpcrun_gpu.la: $(libhpcrun_gpu_la_OBJECTS) $(libhpcrun_gpu_la_DEPENDENCIES) 
+	$(libhpcrun_gpu_la_LINK) $(am_libhpcrun_gpu_la_rpath) $(libhpcrun_gpu_la_OBJECTS) $(libhpcrun_gpu_la_LIBADD) $(LIBS)
 libhpcrun_io.la: $(libhpcrun_io_la_OBJECTS) $(libhpcrun_io_la_DEPENDENCIES) 
 	$(libhpcrun_io_la_LINK) $(am_libhpcrun_io_la_rpath) $(libhpcrun_io_la_OBJECTS) $(libhpcrun_io_la_LIBADD) $(LIBS)
 libhpcrun_memleak.la: $(libhpcrun_memleak_la_OBJECTS) $(libhpcrun_memleak_la_DEPENDENCIES) 
@@ -1545,6 +1631,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libagent_tbb_la-lush-support-rt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_ga_la-ga-overrides.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_ga_wrap_a-ga-overrides.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_gpu_la-gpu_blame-overrides.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-overrides.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_io_la-io-over.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_io_wrap_a-io-over.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-amd-xop.Plo@am__quote@
@@ -1571,6 +1663,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-fnbounds_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-fnbounds_dynamic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ga.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-gpu_blame-cuda-driver-table.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-gpu_blame-cuda-runtime-table.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-gpu_blame.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-handling_sample.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_dlfns.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_options.Plo@am__quote@
@@ -1615,7 +1710,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-stack_troll.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-start-stop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-sync.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-system_server.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-term_handler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-thread_data.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-thread_use.Plo@am__quote@
@@ -1711,7 +1805,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-stack_troll.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-start-stop.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-sync.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-system_server.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-term_handler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-thread_data.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-thread_use.Po@am__quote@
@@ -1820,6 +1913,48 @@ libhpcrun_ga_wrap_a-ga-overrides.obj: sample-sources/ga-overrides.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/ga-overrides.c' object='libhpcrun_ga_wrap_a-ga-overrides.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_ga_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_ga_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_ga_wrap_a-ga-overrides.obj `if test -f 'sample-sources/ga-overrides.c'; then $(CYGPATH_W) 'sample-sources/ga-overrides.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/ga-overrides.c'; fi`
+
+libhpcrun_gpu_wrap_a-gpu_blame-overrides.o: sample-sources/gpu_blame-overrides.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-overrides.o -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-overrides.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-overrides.o `test -f 'sample-sources/gpu_blame-overrides.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-overrides.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-overrides.Tpo $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-overrides.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/gpu_blame-overrides.c' object='libhpcrun_gpu_wrap_a-gpu_blame-overrides.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-overrides.o `test -f 'sample-sources/gpu_blame-overrides.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-overrides.c
+
+libhpcrun_gpu_wrap_a-gpu_blame-overrides.obj: sample-sources/gpu_blame-overrides.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-overrides.obj -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-overrides.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-overrides.obj `if test -f 'sample-sources/gpu_blame-overrides.c'; then $(CYGPATH_W) 'sample-sources/gpu_blame-overrides.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/gpu_blame-overrides.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-overrides.Tpo $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-overrides.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/gpu_blame-overrides.c' object='libhpcrun_gpu_wrap_a-gpu_blame-overrides.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-overrides.obj `if test -f 'sample-sources/gpu_blame-overrides.c'; then $(CYGPATH_W) 'sample-sources/gpu_blame-overrides.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/gpu_blame-overrides.c'; fi`
+
+libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.o: gpu_blame-driver-overrides-generated.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.o -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.o `test -f 'gpu_blame-driver-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-driver-overrides-generated.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.Tpo $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-driver-overrides-generated.c' object='libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.o `test -f 'gpu_blame-driver-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-driver-overrides-generated.c
+
+libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.obj: gpu_blame-driver-overrides-generated.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.obj -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.obj `if test -f 'gpu_blame-driver-overrides-generated.c'; then $(CYGPATH_W) 'gpu_blame-driver-overrides-generated.c'; else $(CYGPATH_W) '$(srcdir)/gpu_blame-driver-overrides-generated.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.Tpo $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-driver-overrides-generated.c' object='libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.obj `if test -f 'gpu_blame-driver-overrides-generated.c'; then $(CYGPATH_W) 'gpu_blame-driver-overrides-generated.c'; else $(CYGPATH_W) '$(srcdir)/gpu_blame-driver-overrides-generated.c'; fi`
+
+libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.o: gpu_blame-runtime-overrides-generated.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.o -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.o `test -f 'gpu_blame-runtime-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-runtime-overrides-generated.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.Tpo $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-runtime-overrides-generated.c' object='libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.o `test -f 'gpu_blame-runtime-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-runtime-overrides-generated.c
+
+libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj: gpu_blame-runtime-overrides-generated.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj `if test -f 'gpu_blame-runtime-overrides-generated.c'; then $(CYGPATH_W) 'gpu_blame-runtime-overrides-generated.c'; else $(CYGPATH_W) '$(srcdir)/gpu_blame-runtime-overrides-generated.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.Tpo $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-runtime-overrides-generated.c' object='libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj `if test -f 'gpu_blame-runtime-overrides-generated.c'; then $(CYGPATH_W) 'gpu_blame-runtime-overrides-generated.c'; else $(CYGPATH_W) '$(srcdir)/gpu_blame-runtime-overrides-generated.c'; fi`
 
 libhpcrun_io_wrap_a-io-over.o: sample-sources/io-over.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_io_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_io_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_io_wrap_a-io-over.o -MD -MP -MF $(DEPDIR)/libhpcrun_io_wrap_a-io-over.Tpo -c -o libhpcrun_io_wrap_a-io-over.o `test -f 'sample-sources/io-over.c' || echo '$(srcdir)/'`sample-sources/io-over.c
@@ -2143,13 +2278,6 @@ libhpcrun_la-start-stop.lo: start-stop.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-start-stop.lo `test -f 'start-stop.c' || echo '$(srcdir)/'`start-stop.c
 
-libhpcrun_la-system_server.lo: system_server.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-system_server.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-system_server.Tpo -c -o libhpcrun_la-system_server.lo `test -f 'system_server.c' || echo '$(srcdir)/'`system_server.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-system_server.Tpo $(DEPDIR)/libhpcrun_la-system_server.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='system_server.c' object='libhpcrun_la-system_server.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-system_server.lo `test -f 'system_server.c' || echo '$(srcdir)/'`system_server.c
-
 libhpcrun_la-term_handler.lo: term_handler.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-term_handler.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-term_handler.Tpo -c -o libhpcrun_la-term_handler.lo `test -f 'term_handler.c' || echo '$(srcdir)/'`term_handler.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-term_handler.Tpo $(DEPDIR)/libhpcrun_la-term_handler.Plo
@@ -2444,6 +2572,27 @@ libhpcrun_la-upc.lo: sample-sources/upc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-upc.lo `test -f 'sample-sources/upc.c' || echo '$(srcdir)/'`sample-sources/upc.c
 
+libhpcrun_la-gpu_blame.lo: sample-sources/gpu_blame.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-gpu_blame.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-gpu_blame.Tpo -c -o libhpcrun_la-gpu_blame.lo `test -f 'sample-sources/gpu_blame.c' || echo '$(srcdir)/'`sample-sources/gpu_blame.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-gpu_blame.Tpo $(DEPDIR)/libhpcrun_la-gpu_blame.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/gpu_blame.c' object='libhpcrun_la-gpu_blame.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-gpu_blame.lo `test -f 'sample-sources/gpu_blame.c' || echo '$(srcdir)/'`sample-sources/gpu_blame.c
+
+libhpcrun_la-gpu_blame-cuda-driver-table.lo: gpu_blame-cuda-driver-table.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-gpu_blame-cuda-driver-table.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-driver-table.Tpo -c -o libhpcrun_la-gpu_blame-cuda-driver-table.lo `test -f 'gpu_blame-cuda-driver-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-driver-table.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-driver-table.Tpo $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-driver-table.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-cuda-driver-table.c' object='libhpcrun_la-gpu_blame-cuda-driver-table.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-gpu_blame-cuda-driver-table.lo `test -f 'gpu_blame-cuda-driver-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-driver-table.c
+
+libhpcrun_la-gpu_blame-cuda-runtime-table.lo: gpu_blame-cuda-runtime-table.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-gpu_blame-cuda-runtime-table.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-runtime-table.Tpo -c -o libhpcrun_la-gpu_blame-cuda-runtime-table.lo `test -f 'gpu_blame-cuda-runtime-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-runtime-table.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-runtime-table.Tpo $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-runtime-table.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-cuda-runtime-table.c' object='libhpcrun_la-gpu_blame-cuda-runtime-table.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-gpu_blame-cuda-runtime-table.lo `test -f 'gpu_blame-cuda-runtime-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-runtime-table.c
+
 libhpcrun_la-backtrace.lo: unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-backtrace.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-backtrace.Tpo -c -o libhpcrun_la-backtrace.lo `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-backtrace.Tpo $(DEPDIR)/libhpcrun_la-backtrace.Plo
@@ -2611,6 +2760,27 @@ libhpcrun_ga_la-ga-overrides.lo: sample-sources/ga-overrides.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/ga-overrides.c' object='libhpcrun_ga_la-ga-overrides.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_ga_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_ga_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_ga_la-ga-overrides.lo `test -f 'sample-sources/ga-overrides.c' || echo '$(srcdir)/'`sample-sources/ga-overrides.c
+
+libhpcrun_gpu_la-gpu_blame-overrides.lo: sample-sources/gpu_blame-overrides.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_la-gpu_blame-overrides.lo -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-overrides.Tpo -c -o libhpcrun_gpu_la-gpu_blame-overrides.lo `test -f 'sample-sources/gpu_blame-overrides.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-overrides.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-overrides.Tpo $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-overrides.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/gpu_blame-overrides.c' object='libhpcrun_gpu_la-gpu_blame-overrides.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_la-gpu_blame-overrides.lo `test -f 'sample-sources/gpu_blame-overrides.c' || echo '$(srcdir)/'`sample-sources/gpu_blame-overrides.c
+
+libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo: gpu_blame-driver-overrides-generated.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.Tpo -c -o libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo `test -f 'gpu_blame-driver-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-driver-overrides-generated.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.Tpo $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-driver-overrides-generated.c' object='libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo `test -f 'gpu_blame-driver-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-driver-overrides-generated.c
+
+libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo: gpu_blame-runtime-overrides-generated.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.Tpo -c -o libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo `test -f 'gpu_blame-runtime-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-runtime-overrides-generated.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.Tpo $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-runtime-overrides-generated.c' object='libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo `test -f 'gpu_blame-runtime-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_io_la-io-over.lo: sample-sources/io-over.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_io_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_io_la_CFLAGS) $(CFLAGS) -MT libhpcrun_io_la-io-over.lo -MD -MP -MF $(DEPDIR)/libhpcrun_io_la-io-over.Tpo -c -o libhpcrun_io_la-io-over.lo `test -f 'sample-sources/io-over.c' || echo '$(srcdir)/'`sample-sources/io-over.c
@@ -3059,20 +3229,6 @@ libhpcrun_o-start-stop.obj: start-stop.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='start-stop.c' object='libhpcrun_o-start-stop.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-start-stop.obj `if test -f 'start-stop.c'; then $(CYGPATH_W) 'start-stop.c'; else $(CYGPATH_W) '$(srcdir)/start-stop.c'; fi`
-
-libhpcrun_o-system_server.o: system_server.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-system_server.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-system_server.Tpo -c -o libhpcrun_o-system_server.o `test -f 'system_server.c' || echo '$(srcdir)/'`system_server.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-system_server.Tpo $(DEPDIR)/libhpcrun_o-system_server.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='system_server.c' object='libhpcrun_o-system_server.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-system_server.o `test -f 'system_server.c' || echo '$(srcdir)/'`system_server.c
-
-libhpcrun_o-system_server.obj: system_server.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-system_server.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-system_server.Tpo -c -o libhpcrun_o-system_server.obj `if test -f 'system_server.c'; then $(CYGPATH_W) 'system_server.c'; else $(CYGPATH_W) '$(srcdir)/system_server.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-system_server.Tpo $(DEPDIR)/libhpcrun_o-system_server.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='system_server.c' object='libhpcrun_o-system_server.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-system_server.obj `if test -f 'system_server.c'; then $(CYGPATH_W) 'system_server.c'; else $(CYGPATH_W) '$(srcdir)/system_server.c'; fi`
 
 libhpcrun_o-term_handler.o: term_handler.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-term_handler.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-term_handler.Tpo -c -o libhpcrun_o-term_handler.o `test -f 'term_handler.c' || echo '$(srcdir)/'`term_handler.c
@@ -4064,14 +4220,16 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-check: check-am
+check: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) check-am
 all-am: Makefile $(LIBRARIES) $(LTLIBRARIES) $(PROGRAMS) $(SCRIPTS) \
 		$(HEADERS)
 installdirs:
 	for dir in "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
-install: install-am
+install: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-am
 install-exec: install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
@@ -4088,6 +4246,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -4096,6 +4255,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-pkglibLIBRARIES \
@@ -4172,7 +4332,7 @@ uninstall-am: uninstall-binSCRIPTS uninstall-includeHEADERS \
 	uninstall-pkglibLIBRARIES uninstall-pkglibLTLIBRARIES \
 	uninstall-pkglibPROGRAMS uninstall-pkglibexecSCRIPTS
 
-.MAKE: install-am install-data-am install-strip
+.MAKE: all check install install-am install-data-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
 	clean-libtool clean-pkglibLIBRARIES clean-pkglibLTLIBRARIES \
@@ -4220,6 +4380,26 @@ endef
 $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
 	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
 		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
+
+@OPT_ENABLE_CUDA_TRUE@$(generated_cuda_runtime_api_files) : $(generated_file_src_path)/cuda_runtime_dummy.c
+@OPT_ENABLE_CUDA_TRUE@	$(CC) $(OPT_CUDA_IFLAGS) -E -B -c $(generated_file_src_path)/cuda_runtime_dummy.c  -o  $(generated_file_base)/cuda_runtime_apis.h 
+
+@OPT_ENABLE_CUDA_TRUE@$(generated_cuda_runtime_files) : $(generated_file_src_path)/make-cuda-wrappers.py $(generated_cuda_runtime_api_files)
+@OPT_ENABLE_CUDA_TRUE@	$(PYTHON) $(generated_file_src_path)/make-cuda-wrappers.py runtime $(generated_cuda_runtime_api_files) $(generated_cuda_runtime_files)
+
+@OPT_ENABLE_CUDA_TRUE@$(generated_file_base)/gpu_blame-cuda-runtime-header.h:  $(generated_file_base)/gpu_blame-cuda-runtime-table.c
+
+@OPT_ENABLE_CUDA_TRUE@$(generated_file_base)/gpu_blame-cuda-runtime-table.c: $(generated_file_base)/gpu_blame-runtime-overrides-generated.c
+
+@OPT_ENABLE_CUDA_TRUE@$(generated_cuda_driver_api_files) :  $(generated_file_src_path)/cuda_driver_dummy.c
+@OPT_ENABLE_CUDA_TRUE@	$(CC) $(OPT_CUDA_IFLAGS)  -E -B -c $(generated_file_src_path)/cuda_driver_dummy.c -o $(generated_file_base)/cuda_driver_apis.h
+
+@OPT_ENABLE_CUDA_TRUE@$(generated_cuda_driver_files) : $(generated_file_src_path)/make-cuda-wrappers.py $(generated_cuda_driver_api_files) 
+@OPT_ENABLE_CUDA_TRUE@	$(PYTHON) $(generated_file_src_path)/make-cuda-wrappers.py driver $(generated_cuda_driver_api_files)  $(generated_cuda_driver_files)
+
+@OPT_ENABLE_CUDA_TRUE@$(generated_file_base)/gpu_blame-cuda-driver-header.h : $(generated_file_base)/gpu_blame-cuda-driver-table.c
+
+@OPT_ENABLE_CUDA_TRUE@$(generated_file_base)/gpu_blame-cuda-driver-table.c : $(generated_file_base)/gpu_blame-driver-overrides-generated.c
 
 #-----------------------------------------------------------
 # local hooks

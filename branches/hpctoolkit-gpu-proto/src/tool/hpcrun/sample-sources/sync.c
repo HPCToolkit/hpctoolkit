@@ -81,6 +81,7 @@
 #include <hpcrun/sample_sources_registered.h>
 #include "simple_oo.h"
 #include <hpcrun/thread_data.h>
+#include <utilities/tokenize.h>
 
 #include <messages/messages.h>
 
@@ -142,7 +143,7 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return (strstr(ev_str,"SYNC") != NULL);
+  return hpcrun_ev_is(ev_str,"SYNC");
 }
  
 

@@ -144,6 +144,13 @@ enum _local_const {
   PROC_NAME_LEN = 2048
 };
 
+//***************************** concrete data structure definition **********
+struct hpcrun_aux_cleanup_t {
+  void  (* func) (void *); // function to invoke on cleanup
+  void * arg; // argument to pass to func
+  struct hpcrun_aux_cleanup_t * next;
+  struct hpcrun_aux_cleanup_t * prev;
+};
 
 
 //***************************************************************************
@@ -160,10 +167,13 @@ int lush_metrics = 0; // FIXME: global variable for now
 
 static hpcrun_options_t opts;
 static bool hpcrun_is_initialized_private = false;
+static bool safe_to_sync_sample = false;
 static void* main_addr = NULL;
 static void* main_lower = NULL;
 static void* main_upper = (void*) (intptr_t) -1;
-
+static spinlock_t hpcrun_aux_cleanup_lock = SPINLOCK_UNLOCKED;
+static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_list_head = NULL;
+static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
 //
 // Local functions
 //
@@ -198,6 +208,18 @@ bool
 hpcrun_inbounds_main(void* addr)
 {
   return (main_lower <= addr) && (addr <= main_upper);
+}
+
+bool
+hpcrun_is_safe_to_sync(void)
+{
+  return safe_to_sync_sample;
+}
+
+void
+hpcrun_set_safe_to_sync(void)
+{
+  safe_to_sync_sample = true;
 }
 
 //***************************************************************************
@@ -260,7 +282,7 @@ hpcrun_init_internal(bool is_child)
   hpcrun_options__getopts(&opts);
 
   hpcrun_trace_init(); // this must go after thread initialization
-  hpcrun_trace_open();
+  hpcrun_trace_open(&(TD_GET(core_profile_trace_data)));
 
   // Decide whether to retain full single recursion, or collapse recursive calls to
   // first instance of recursive call
@@ -268,7 +290,7 @@ hpcrun_init_internal(bool is_child)
 
   // Initialize logical unwinding agents (LUSH)
   if (opts.lush_agent_paths[0] != '\0') {
-    epoch_t* epoch = TD_GET(epoch);
+    epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
     TMSG(MALLOC," -init_internal-: lush allocation");
     lush_agents = (lush_agent_pool_t*)hpcrun_malloc(sizeof(lush_agent_pool_t));
     hpcrun_logicalUnwind(true);
@@ -359,11 +381,83 @@ hpcrun_init_internal(bool is_child)
   // start the sampling process
 
   hpcrun_enable_sampling();
+  hpcrun_set_safe_to_sync();
   // NOTE: hack to ensure that sample source start can be delayed until mpi_init
   if (hpctoolkit_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
       SAMPLE_SOURCES(start);
   }
   hpcrun_is_initialized_private = true;
+}
+
+#define GET_NEW_AUX_CLEANUP_NODE(node_ptr) do {                               \
+if (hpcrun_aux_cleanup_free_list_head) {                                      \
+node_ptr = hpcrun_aux_cleanup_free_list_head;                                 \
+hpcrun_aux_cleanup_free_list_head = hpcrun_aux_cleanup_free_list_head->next;  \
+} else {                                                                      \
+node_ptr = (hpcrun_aux_cleanup_t *) hpcrun_malloc(sizeof(hpcrun_aux_cleanup_t));         \
+}                                                                             \
+} while(0)
+
+#define ADD_TO_FREE_AUX_CLEANUP_LIST(node_ptr) do { (node_ptr)->next = hpcrun_aux_cleanup_free_list_head; \
+hpcrun_aux_cleanup_free_list_head = (node_ptr); }while(0)
+
+// Add a callback function and its argument to a doubly-linked list of things to cleanup at process termination. 
+// Don't rely on sample source data in the implementation of the callback.
+// Caller needs to ensure that the entry is safe.
+
+hpcrun_aux_cleanup_t * hpcrun_process_aux_cleanup_add( void (*func) (void *), void * arg) 
+{
+  spinlock_lock(&hpcrun_aux_cleanup_lock); 
+  hpcrun_aux_cleanup_t * node;
+  GET_NEW_AUX_CLEANUP_NODE(node);
+  node->func = func;
+  node->arg = arg;
+ 
+  node->prev = NULL;
+  node->next = hpcrun_aux_cleanup_list_head;
+  if (hpcrun_aux_cleanup_list_head) {
+    hpcrun_aux_cleanup_list_head->prev = node;
+  }
+  hpcrun_aux_cleanup_list_head = node;
+  spinlock_unlock(&hpcrun_aux_cleanup_lock); 
+  return node;
+}
+
+// Delete a node from cleanup list.
+// Caller needs to ensure that the entry is safe.
+void hpcrun_process_aux_cleanup_remove(hpcrun_aux_cleanup_t * node)
+{
+  assert (node != NULL);
+  spinlock_lock(&hpcrun_aux_cleanup_lock); 
+  if (node->prev) {
+    if (node->next) {
+      node->next->prev = node->prev;
+    }
+    node->prev->next = node->next;
+  } else {
+    if (node->next) {
+      node->next->prev = NULL;
+    }
+    hpcrun_aux_cleanup_list_head = node->next;
+  }
+  ADD_TO_FREE_AUX_CLEANUP_LIST(node);   
+  spinlock_unlock(&hpcrun_aux_cleanup_lock); 
+}
+
+// This will be called after sample sources have been shutdown.
+// Don't rely on sample source data in the implementation of the callback.
+static void hpcrun_process_aux_cleanup_action()
+{
+  // Assumed to be single threaded and hence not taking any locks here
+  hpcrun_aux_cleanup_t * p = hpcrun_aux_cleanup_list_head;
+  hpcrun_aux_cleanup_t * q;
+  while (p) {
+    p->func(p->arg);
+    q = p;
+    p = p->next;
+    ADD_TO_FREE_AUX_CLEANUP_LIST(q);
+  }
+  hpcrun_aux_cleanup_list_head = NULL;
 }
 
 
@@ -375,7 +469,6 @@ hpcrun_fini_internal()
   TMSG(FINI, "process");
 
   hpcrun_unthreaded_data();
-  epoch_t *epoch = TD_GET(epoch);
 
   if (hpcrun_is_initialized()) {
     hpcrun_is_initialized_private = false;
@@ -396,8 +489,12 @@ hpcrun_fini_internal()
       return;
     }
 
-    hpcrun_write_profile_data(epoch);
-    hpcrun_trace_close();
+    // Call all registered auxiliary functions before termination.
+    // This typically means flushing files that were not done by their creators.
+
+    hpcrun_process_aux_cleanup_action();
+    hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
+    hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
     fnbounds_fini();
     hpcrun_stats_print_summary();
     messages_fini();
@@ -445,7 +542,7 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   //
   hpcrun_thread_data_init(id, thr_ctxt, 0);
 
-  epoch_t* epoch = TD_GET(epoch);
+  epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 
   // handle event sets for sample sources
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
@@ -484,8 +581,8 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-    hpcrun_write_profile_data(epoch);
-    hpcrun_trace_close();
+    hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
+    hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
   }
 }
 
@@ -539,11 +636,15 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_do_custom_init();
 
-  char *s = getenv(HPCRUN_EVENT_LIST);
-  if (s == NULL){
-    s = getenv("CSPROF_OPT_EVENT");
+  // for debugging, limit the life of the execution with an alarm.
+  char *life  = getenv("HPCRUN_LIFETIME");
+  if (life != NULL){
+        int seconds = atoi(life);
+        if (seconds > 0) alarm((unsigned int) seconds);
   }
-  
+
+  char *s = getenv(HPCRUN_EVENT_LIST);
+
   if (! is_child) {
     hpcrun_sample_sources_from_eventlist(s);
   }
@@ -730,7 +831,7 @@ monitor_thread_pre_create(void)
 
   TMSG(THREAD,"before lush malloc");
   TMSG(MALLOC," -thread_precreate: lush malloc");
-  epoch_t* epoch = hpcrun_get_epoch();
+  epoch_t* epoch = hpcrun_get_thread_epoch();
   thr_ctxt = hpcrun_malloc(sizeof(cct_ctxt_t));
   TMSG(THREAD,"after lush malloc, thr_ctxt = %p",thr_ctxt);
   thr_ctxt->context = n;
@@ -770,8 +871,8 @@ monitor_init_thread(int tid, void* data)
   TMSG(THREAD,"back from init thread %d",tid);
 
   hpcrun_threadmgr_thread_new();
+  hpcrun_trace_open(&(TD_GET(core_profile_trace_data)));
 
-  hpcrun_trace_open();
   hpcrun_safe_exit();
 
   return thread_data;
@@ -791,7 +892,6 @@ monitor_fini_thread(void* init_thread_data)
 
   epoch_t *epoch = (epoch_t *)init_thread_data;
   hpcrun_thread_fini(epoch);
-
   hpcrun_safe_exit();
 }
 
@@ -1220,7 +1320,9 @@ monitor_pre_dlopen(const char *path, int flags)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_safe_enter();
+  if (! hpcrun_safe_enter()) {
+    return;
+  }
   hpcrun_pre_dlopen(path, flags);
   hpcrun_safe_exit();
 }
@@ -1232,7 +1334,9 @@ monitor_dlopen(const char *path, int flags, void* handle)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_safe_enter();
+  if (! hpcrun_safe_enter()) {
+    return;
+  }
   hpcrun_dlopen(path, flags, handle);
   hpcrun_safe_exit();
 }

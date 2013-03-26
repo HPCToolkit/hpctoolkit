@@ -165,7 +165,7 @@ METHOD_FN(supports_event, const char *ev_str)
   // FIXME: this message comes too early and goes to stderr instead of
   // the log file.
   // TMSG(GA, "test support event: %s", ev_str);
-  return strncasecmp(ev_str, "GA", 2) == 0;
+  return hpcrun_ev_is(ev_str, "GA");
 }
 
 
@@ -194,7 +194,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   // exposed latency
   hpcrun_ga_metricId_latency = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(hpcrun_ga_metricId_latency, "latency (us)",
-				    MetricFlags_ValFmt_Real, 1);
+				    MetricFlags_ValFmt_Real, 1, metric_property_none);
 
   // exposed excess latency
   //hpcrun_ga_metricId_latencyExcess = hpcrun_new_metric();

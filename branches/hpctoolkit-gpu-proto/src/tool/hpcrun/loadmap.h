@@ -63,8 +63,7 @@
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
-#include <tool/hpcfnbounds/fnbounds-file-header.h>
-#include <tool/hpcfnbounds/syserv-mesg.h>
+#include "fnbounds_file_header.h"
 
 
 //***************************************************************************

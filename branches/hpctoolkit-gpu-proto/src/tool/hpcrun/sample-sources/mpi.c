@@ -141,7 +141,7 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return (strstr(ev_str,"MPI_MSG") != NULL);
+  return hpcrun_ev_is(ev_str,"MPI_MSG");
 }
  
 

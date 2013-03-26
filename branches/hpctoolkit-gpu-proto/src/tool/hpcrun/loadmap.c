@@ -48,6 +48,7 @@
 #include "cct.h"
 #include "loadmap.h"
 #include "fnbounds_interface.h"
+#include "fnbounds_file_header.h"
 #include "hpcrun_stats.h"
 #include "sample_event.h"
 #include "epoch.h"

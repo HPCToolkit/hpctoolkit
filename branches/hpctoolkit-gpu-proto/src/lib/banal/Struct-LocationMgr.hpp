@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef Struct_LocationMgr_hpp 
+#ifndef Struct_LocationMgr_hpp
 #define Struct_LocationMgr_hpp
 
 //************************* System Include Files ****************************
@@ -84,17 +84,17 @@
 namespace BAnal {
 namespace Struct {
 
-  inline bool 
-  ctxtNameEqFuzzy(const string& ctxtnm, const string& x) 
+  inline bool
+  ctxtNameEqFuzzy(const string& ctxtnm, const string& x)
   {
-    // perform a 'fuzzy' match: e.g., 'm_procnm' name can be 'GetLB' 
+    // perform a 'fuzzy' match: e.g., 'm_procnm' name can be 'GetLB'
     // even though the full context name is Array2D<double>::GetLB(int).
     size_t pos = ctxtnm.find(x);
     return (pos != string::npos && (pos == 0 || std::ispunct(ctxtnm[pos-1])));
   }
 
-  inline bool 
-  ctxtNameEqFuzzy(const Prof::Struct::ACodeNode* callCtxt, const string& x) 
+  inline bool
+  ctxtNameEqFuzzy(const Prof::Struct::ACodeNode* callCtxt, const string& x)
   {
     bool t1 = ctxtNameEqFuzzy(callCtxt->name(), x);
     bool t2 = false;
@@ -103,7 +103,7 @@ namespace Struct {
 	dynamic_cast<const Prof::Struct::Proc*>(callCtxt);
       t2 = ctxtNameEqFuzzy(pStrct->linkName(), x);
     }
-    return (t1 || t2);    
+    return (t1 || t2);
   }
 
 
@@ -131,7 +131,7 @@ public:
   ~LocationMgr();
 
   // set structure tree, debug mode, etc.
-  void 
+  void
   init(Prof::Struct::LM* lm = NULL);
   
   // -------------------------------------------------------
@@ -141,7 +141,7 @@ public:
   // begSeq: Given a Struct::Proc 'enclosingProc', prepare for a sequence
   //   of method invocations from the following list.  (The internal
   //   context stack should be empty.)
-  void 
+  void
   begSeq(Prof::Struct::Proc* enclosingProc, bool isFwdSubst = false);
 
   // locate: Given a parentless Struct::Loop 'loop', the original
@@ -154,8 +154,8 @@ public:
   //   1) 'loop' was originally contained within 'proposed_scope', but
   //      may need to be relocated to a more appropriate scope.
   //   2) 'proposed_scope' itself has already been relocated, if necessary.
-  void 
-  locate(Prof::Struct::Loop* loop, 
+  void
+  locate(Prof::Struct::Loop* loop,
 	 Prof::Struct::ACodeNode* proposed_scope,
 	 std::string& filenm, std::string& procnm, SrcFile::ln line);
   
@@ -166,8 +166,8 @@ public:
   //   the newly located loop.
   //  
   // The above assumptions apply.
-  void 
-  locate(Prof::Struct::Stmt* stmt, 
+  void
+  locate(Prof::Struct::Stmt* stmt,
 	 Prof::Struct::ACodeNode* proposed_scope,
 	 std::string& filenm, std::string& procnm, SrcFile::ln line);
 
@@ -178,12 +178,12 @@ public:
   // 
   // -------------------------------------------------------
   
-  Prof::Struct::ACodeNode* 
-  curScope() const 
+  Prof::Struct::ACodeNode*
+  curScope() const
   { return (m_ctxtStack.empty()) ? NULL : m_ctxtStack.front().scope(); }
   
   bool
-  isParentScope(Prof::Struct::ACodeNode* scope) const 
+  isParentScope(Prof::Struct::ACodeNode* scope) const
   { return (findCtxt(scope) != NULL); }
 
   // -------------------------------------------------------
@@ -192,11 +192,11 @@ public:
 
   // Assume we know that file names match
   static bool
-  containsLineFzy(Prof::Struct::ACodeNode* x, SrcFile::ln line, 
+  containsLineFzy(Prof::Struct::ACodeNode* x, SrcFile::ln line,
 		  bool loopIsAlien = false);
 
   static bool
-  containsIntervalFzy(Prof::Struct::ACodeNode* x, 
+  containsIntervalFzy(Prof::Struct::ACodeNode* x,
 		      SrcFile::ln begLn, SrcFile::ln endLn);
 
   // -------------------------------------------------------
@@ -220,15 +220,17 @@ private:
   // -------------------------------------------------------
   // a context stack representing nested inlining
   // -------------------------------------------------------
-  class Ctxt {
+  class Ctxt
+  {
   public:
-    Ctxt(Prof::Struct::ACodeNode* ctxt = NULL, 
+    Ctxt(Prof::Struct::ACodeNode* ctxt = NULL,
 	 Prof::Struct::Loop* loop = NULL)
-      : m_ctxt(ctxt), m_loop(loop), 
-	m_filenm( (isAlien()) ? 
+      : m_ctxt(ctxt), m_loop(loop),
+	m_filenm( (isAlien()) ?
 		    static_cast<Prof::Struct::Alien*>(ctxt)->fileName()
 		  : static_cast<Prof::Struct::Proc*>(ctxt)->ancestorFile()->name() )
     { }
+    
     ~Ctxt() { }
 
     // enclosing (calling) context (Struct::Proc, Struct::Alien)
@@ -251,8 +253,8 @@ private:
     { return m_loop; }
     
     // current enclosing scope
-    Prof::Struct::ACodeNode* 
-    scope() const 
+    Prof::Struct::ACodeNode*
+    scope() const
     {
       if (m_loop) {
 	return m_loop;
@@ -267,17 +269,13 @@ private:
     // where a file name is available *and* matches the context, the
     // line matching is more lenient.
     bool
-    containsLine(const string& filenm, SrcFile::ln line) const 
-    {
-      return (fileName() == filenm 
-	      && LocationMgr::containsLineFzy(ctxt(), line));
-    }
+    containsLine(const string& filenm, SrcFile::ln line) const;
 
     bool
     containsLine(SrcFile::ln line) const;
     
     bool
-    isAlien() const 
+    isAlien() const
     { return (typeid(*m_ctxt) == typeid(Prof::Struct::Alien)); }
     
     int
@@ -330,11 +328,15 @@ private:
     CtxtChange_FLAG_FIX_SCOPES     = 0x40000000
   };
 
-  static bool CtxtChange_eq(CtxtChange_t x, CtxtChange_t y) {
+  static bool
+  CtxtChange_eq(CtxtChange_t x, CtxtChange_t y)
+  {
     return ((CtxtChange_MASK & x) == (CtxtChange_MASK & y));
   }
 
-  static void CtxtChange_set(CtxtChange_t& x, CtxtChange_t c) {
+  static void
+  CtxtChange_set(CtxtChange_t& x, CtxtChange_t c)
+  {
     uint t = (uint)x;
     t &= CtxtChange_FLAG_MASK; // reset
     t |= (uint)c;
@@ -342,17 +344,22 @@ private:
   }
 
 
-  static bool CtxtChange_isFlag(CtxtChange_t x, CtxtChange_t flag) {
+  static bool
+  CtxtChange_isFlag(CtxtChange_t x, CtxtChange_t flag)
+  {
     return ((CtxtChange_FLAG_MASK & x) == flag);
   }
 
-  static void CtxtChange_setFlag(CtxtChange_t& x, CtxtChange_t flag) {
+  static void
+  CtxtChange_setFlag(CtxtChange_t& x, CtxtChange_t flag)
+  {
     uint t = (uint)x;
     t |= (uint)flag;
     x = (CtxtChange_t)t;
   }
 
-  static std::string toString(CtxtChange_t x);
+  static std::string
+  toString(CtxtChange_t x);
 
   // determineContext: Given the proposed enclosing scope
   // 'proposed_scope' and the best-guess source file, procedure and
@@ -362,7 +369,7 @@ private:
   // 
   // Assume that 'proposed_scope' has already been located and thus
   // may already live within an alien context)
-  CtxtChange_t 
+  CtxtChange_t
   determineContext(Prof::Struct::ACodeNode* proposed_scope,
 		   std::string& filenm, std::string& procnm, SrcFile::ln line);
   
@@ -374,15 +381,15 @@ private:
   // located within the calling context 'true_ctxt' but specifically
   // within lines 'begLn' and 'endLn', perform the transformations.
   void
-  fixScopeTree(Prof::Struct::ACodeNode* from_scope, 
-	       Prof::Struct::ACodeNode* true_ctxt, 
+  fixScopeTree(Prof::Struct::ACodeNode* from_scope,
+	       Prof::Struct::ACodeNode* true_ctxt,
 	       SrcFile::ln begLn, SrcFile::ln endLn);
 
   // alienateScopeTree: place all non-Alien children of 'scope' into an Alien
   // context based on 'alien' except for 'exclude'
   void
-  alienateScopeTree(Prof::Struct::ACodeNode* scope, 
-		    Prof::Struct::Alien* alien, 
+  alienateScopeTree(Prof::Struct::ACodeNode* scope,
+		    Prof::Struct::Alien* alien,
 		    Prof::Struct::ACodeNode* exclude);
 
   
@@ -390,23 +397,32 @@ private:
   // 'ctxt->loop()' is the deepest loop on the stack.  (If
   // ctxt->loop() is NULL then there should be no deeper loop.) We
   // chop off any loops deeper than ctxt.
-  int revertToLoop(Ctxt* ctxt);
+  int
+  revertToLoop(Ctxt* ctxt);
   
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
 
-  Ctxt* topCtxt() const 
-    { return (m_ctxtStack.empty()) ? 
-	        NULL : const_cast<Ctxt*>(&(m_ctxtStack.front())); }
+  Ctxt*
+  topCtxt() const
+  {
+    return ( m_ctxtStack.empty() ?
+	     NULL : const_cast<Ctxt*>(&(m_ctxtStack.front())) );
+  }
 
-  Ctxt& topCtxtRef() const 
-    { return const_cast<Ctxt&>(m_ctxtStack.front()); }
+  Ctxt&
+  topCtxtRef() const
+  { return const_cast<Ctxt&>(m_ctxtStack.front()); }
 
-  void pushCtxt(const Ctxt& ctxt)
-    { int nxt_lvl = (m_ctxtStack.empty()) ? 1 : topCtxtRef().level() + 1;
-      m_ctxtStack.push_front(ctxt);
-      topCtxtRef().level() = nxt_lvl; }
+  void
+  pushCtxt(const Ctxt& ctxt)
+  {
+    int nxt_lvl = (m_ctxtStack.empty()) ? 1 : topCtxtRef().level() + 1;
+    m_ctxtStack.push_front(ctxt);
+    topCtxtRef().level() = nxt_lvl;
+  }
+
 
   // -------------------------------------------------------
   // findCtxt
@@ -415,8 +431,9 @@ private:
   // switch_findCtxt: calls the appriate version of 'findCtxt'
   // based on what information is available, i.e. it is a findCtxt
   // "switch" statement.
-  Ctxt* switch_findCtxt(const string& filenm, const string& procnm,
-			SrcFile::ln line, const Ctxt* base_ctxt = NULL) const;
+  Ctxt*
+  switch_findCtxt(const string& filenm, const string& procnm,
+		  SrcFile::ln line, const Ctxt* base_ctxt = NULL) const;
   
 
   // findCtxt: find the the "first" instance of ctxt in the stack
@@ -425,103 +442,160 @@ private:
   // 'base' and if that does not exist, the deepest alien context
   // before 'base'.
   
-  class FindCtxt_MatchOp {
+  class FindCtxt_MatchOp
+  {
   public:
-    virtual ~FindCtxt_MatchOp() { }
-    virtual bool operator()(const Ctxt& ctxt) const = 0;
+    virtual
+    ~FindCtxt_MatchOp()
+    { }
+
+    virtual bool
+    operator()(const Ctxt& ctxt) const = 0;
   };
 
-  class FindCtxt_MatchFPLOp : public FindCtxt_MatchOp {
+
+  class FindCtxt_MatchFPLOp 
+    : public FindCtxt_MatchOp
+  {
   public:
-    FindCtxt_MatchFPLOp(const string& filenm, const string& procnm, SrcFile::ln line)
-      : m_filenm(filenm), m_procnm(procnm), m_line(line) { }
-    virtual ~FindCtxt_MatchFPLOp() { }
+    FindCtxt_MatchFPLOp(const string& filenm, const string& procnm,
+			SrcFile::ln line)
+      : m_filenm(filenm), m_procnm(procnm), m_line(line)
+    { }
     
-    virtual bool operator()(const Ctxt& ctxt) const {
+    virtual
+    ~FindCtxt_MatchFPLOp()
+    { }
+    
+    virtual bool
+    operator()(const Ctxt& ctxt) const
+    {
       return (ctxt.containsLine(m_filenm, m_line)
 	      && ctxtNameEqFuzzy(ctxt.ctxt(), m_procnm));
     }
+
   private:
     const string& m_filenm, m_procnm;
     SrcFile::ln m_line;
   };
 
-  class FindCtxt_MatchFPOp : public FindCtxt_MatchOp {
+
+  class FindCtxt_MatchFPOp
+    : public FindCtxt_MatchOp
+  {
   public:
     FindCtxt_MatchFPOp(const string& filenm, const string& procnm)
-      : m_filenm(filenm), m_procnm(procnm) { }
-    virtual ~FindCtxt_MatchFPOp() { }
+      : m_filenm(filenm), m_procnm(procnm)
+    { }
+
+    virtual
+    ~FindCtxt_MatchFPOp()
+    { }
     
-    virtual bool operator()(const Ctxt& ctxt) const {
+    virtual bool
+    operator()(const Ctxt& ctxt) const
+    {
       return (ctxt.fileName() == m_filenm && ctxt.ctxt()->name() == m_procnm);
     }
+
   private:
     const string& m_filenm, m_procnm;
   };
 
-  class FindCtxt_MatchFLOp : public FindCtxt_MatchOp {
+
+  class FindCtxt_MatchFLOp
+    : public FindCtxt_MatchOp
+  {
   public:
     FindCtxt_MatchFLOp(const string& filenm, SrcFile::ln line)
-      : m_filenm(filenm), m_line(line) { }
-    virtual ~FindCtxt_MatchFLOp() { }
+      : m_filenm(filenm), m_line(line)
+    { }
+
+    virtual
+    ~FindCtxt_MatchFLOp()
+    { }
     
-    virtual bool operator()(const Ctxt& ctxt) const {
+    virtual bool
+    operator()(const Ctxt& ctxt) const
+    {
       return (ctxt.containsLine(m_filenm, m_line));
     }
+
   private:
     const string& m_filenm;
     SrcFile::ln m_line;
   };
+
 
   class FindCtxt_MatchFOp : public FindCtxt_MatchOp {
   public:
     FindCtxt_MatchFOp(const string& filenm)
-      : m_filenm(filenm) { }
-    virtual ~FindCtxt_MatchFOp() { }
+      : m_filenm(filenm)
+    { }
+
+    virtual ~FindCtxt_MatchFOp()
+    { }
     
-    virtual bool operator()(const Ctxt& ctxt) const {
+    virtual bool
+    operator()(const Ctxt& ctxt) const
+    {
       return (ctxt.fileName() == m_filenm);
     }
+
   private:
     const string& m_filenm;
   };
 
+
   class FindCtxt_MatchLOp : public FindCtxt_MatchOp {
   public:
     FindCtxt_MatchLOp(SrcFile::ln line)
-      : m_line(line) { }
-    virtual ~FindCtxt_MatchLOp() { }
+      : m_line(line)
+    { }
+
+    virtual
+    ~FindCtxt_MatchLOp()
+    { }
     
-    virtual bool operator()(const Ctxt& ctxt) const {
+    virtual bool
+    operator()(const Ctxt& ctxt) const
+    {
       return (ctxt.containsLine(m_line));
     }
+
   private:
     SrcFile::ln m_line;
   };
 
 
-  Ctxt* findCtxt(Prof::Struct::ACodeNode* ctxt) const;
-  Ctxt* findCtxt(FindCtxt_MatchOp& op, 
-		 const Ctxt* base = NULL) const;
+  Ctxt*
+  findCtxt(Prof::Struct::ACodeNode* ctxt) const;
+
+  Ctxt*
+  findCtxt(FindCtxt_MatchOp& op, const Ctxt* base = NULL) const;
   
-  Ctxt* findCtxt(const string& filenm, const string& procnm, SrcFile::ln line,
-		 const Ctxt* base = NULL) const
-    { FindCtxt_MatchFPLOp op(filenm, procnm, line); return findCtxt(op, base); }
+  Ctxt*
+  findCtxt(const string& filenm, const string& procnm, SrcFile::ln line,
+	   const Ctxt* base = NULL) const
+  { FindCtxt_MatchFPLOp op(filenm, procnm, line); return findCtxt(op, base); }
 
-  Ctxt* findCtxt(const string& filenm, const string& procnm, 
-		 const Ctxt* base = NULL) const
-    { FindCtxt_MatchFPOp op(filenm, procnm); return findCtxt(op, base); }
+  Ctxt*
+  findCtxt(const string& filenm, const string& procnm,
+	   const Ctxt* base = NULL) const
+  { FindCtxt_MatchFPOp op(filenm, procnm); return findCtxt(op, base); }
 
-  Ctxt* findCtxt(const std::string& filenm, SrcFile::ln line, 
-		 const Ctxt* base = NULL) const
-    { FindCtxt_MatchFLOp op(filenm, line); return findCtxt(op, base); }
+  Ctxt*
+  findCtxt(const std::string& filenm, SrcFile::ln line,
+	   const Ctxt* base = NULL) const
+  { FindCtxt_MatchFLOp op(filenm, line); return findCtxt(op, base); }
 
-  Ctxt* findCtxt(const std::string& filenm, 
-		 const Ctxt* base = NULL) const
-    { FindCtxt_MatchFOp op(filenm); return findCtxt(op, base); }
+  Ctxt*
+  findCtxt(const std::string& filenm, const Ctxt* base = NULL) const
+  { FindCtxt_MatchFOp op(filenm); return findCtxt(op, base); }
 
-  Ctxt* findCtxt(SrcFile::ln line, const Ctxt* base = NULL) const
-    { FindCtxt_MatchLOp op(line); return findCtxt(op, base); }
+  Ctxt*
+  findCtxt(SrcFile::ln line, const Ctxt* base = NULL) const
+  { FindCtxt_MatchLOp op(line); return findCtxt(op, base); }
 
   // -------------------------------------------------------
   //
@@ -529,8 +603,9 @@ private:
   
   // AlienStrctMapKey: Note that we do not include line numbers
   // because these will be changing.
-  struct AlienStrctMapKey {
-    AlienStrctMapKey(Prof::Struct::ACodeNode* x, 
+  struct AlienStrctMapKey
+  {
+    AlienStrctMapKey(Prof::Struct::ACodeNode* x,
 		     const std::string& y, const std::string& z)
       : parent_scope(x), filenm(y), procnm(z)
     { }
@@ -540,9 +615,10 @@ private:
     std::string procnm;     // procedure name
   };
   
-  struct lt_AlienStrctMapKey {
+  struct lt_AlienStrctMapKey
+  {
     // return true if x1 < x2; false otherwise
-    bool operator()(const AlienStrctMapKey& x1, 
+    bool operator()(const AlienStrctMapKey& x1,
 		    const AlienStrctMapKey& x2) const
     {
       if (x1.parent_scope == x2.parent_scope) {
@@ -560,18 +636,18 @@ private:
     }
   };
 
-  typedef std::multimap<AlienStrctMapKey, 
-			Prof::Struct::Alien*, 
+  typedef std::multimap<AlienStrctMapKey,
+			Prof::Struct::Alien*,
 			lt_AlienStrctMapKey> AlienStrctMap;
 
   // Find or create an Struct::Alien
-  Prof::Struct::Alien* 
+  Prof::Struct::Alien*
   demandAlienStrct(Prof::Struct::ACodeNode* parent_scope,
-		   const std::string& filenm, const std::string& procnm, 
+		   const std::string& filenm, const std::string& procnm,
 		   SrcFile::ln line,
 		   bool tosOnCreate = true);
   
-private: 
+private:
   MyStack     m_ctxtStack; // cf. topCtxt() [begin()/front() is the top]
   Prof::Struct::LM* m_loadMod;
   int         mDBG;
@@ -579,7 +655,7 @@ private:
 
   AlienStrctMap m_alienMap;
 };
-  
+
 
 } // namespace Struct
 

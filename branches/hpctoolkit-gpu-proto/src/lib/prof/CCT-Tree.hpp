@@ -511,13 +511,21 @@ private:
   aggregateMetricsExcl(ProcFrm* frame, const VMAIntervalSet& ivalset);
 
 public:
+  // computeMetrics: compute this subtree's Metric::DerivedDesc metric
+  //   values for metric ids [mBegId, mEndId)
+  // computeMetricsMe: same, but for the node (not the subtree)
   void
-  computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId);
+  computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
+		 bool doFinal);
 
   void
-  computeMetricsMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId);
+  computeMetricsMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
+		   bool doFinal);
 
 
+  // computeMetricsIncr: compute this subtree's Metric::DerivedIncrDesc metric
+  //   values for metric ids [mBegId, mEndId)
+  // computeMetricsIncrMe: same, but for the node (not the subtree)
   void
   computeMetricsIncr(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 		     Metric::AExprIncr::FnTy fn);

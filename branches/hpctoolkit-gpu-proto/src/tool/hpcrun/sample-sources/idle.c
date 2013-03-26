@@ -99,7 +99,7 @@
  * forward declarations 
  *****************************************************************************/
 
-static void idle_metric_process_blame_for_sample(cct_node_t *node, int metric_value);
+static void idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric_value);
 
 static void init_hack(void);
 
@@ -147,12 +147,17 @@ METHOD_FN(thread_init_action)
 static void
 METHOD_FN(start)
 {
+  if (!blame_shift_source_available(bs_type_timer) && !blame_shift_source_available(bs_type_cycles)) {
+    STDERR_MSG("HPCToolkit: IDLE metric needs either a REALTIME, CPUTIME, WALLCLOCK, or PAPI_TOT_CYC source.");
+    monitor_real_exit(1);
+  }
+
   if (idleness_blame_information_source_present == false) {
     STDERR_MSG("HPCToolkit: IDLE metric specified without a plugin that measures "
         "idleness and work.\n" 
         "For dynamic binaries, specify an appropriate plugin with an argument to hpcrun.\n"
 	"For static binaries, specify an appropriate plugin with an argument to hpclink.\n");
-    exit(1);
+    monitor_real_exit(1);
   }
 }
 
@@ -180,10 +185,8 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return (strstr(ev_str, "IDLE") != NULL);
+  return hpcrun_ev_is(ev_str, "IDLE");
 }
- 
-
 
 static void
 METHOD_FN(process_event_list, int lush_metrics)
@@ -197,11 +200,11 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   idle_metric_id = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(idle_metric_id, "idle",
-				    MetricFlags_ValFmt_Real, 1);
+				    MetricFlags_ValFmt_Real, 1, metric_property_none);
 
   work_metric_id = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(work_metric_id, "work",
-				    MetricFlags_ValFmt_Int, 1);
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
   TMSG(IDLE, "Metric ids = idle (%d), work(%d)",
        idle_metric_id, work_metric_id);
   init_hack();
@@ -242,8 +245,15 @@ METHOD_FN(display_events)
  *****************************************************************************/
 
 static void
-idle_metric_process_blame_for_sample(cct_node_t *node, int metric_value)
+idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric_incr)
 {
+  metric_desc_t * metric_desc = hpcrun_id2metric(metric_id);
+ 
+  // Only blame shift idleness for time and cycle metrics. 
+  if ( ! (metric_desc->properties.time | metric_desc->properties.cycles) ) 
+    return;
+  
+  int metric_value = metric_desc->period * metric_incr;
   thread_data_t *td = hpcrun_get_thread_data();
   if (td->idle == 0) { // if this thread is not idle
     // capture active_worker_count into a local variable to make sure that the count doesn't change
@@ -262,7 +272,11 @@ idle_metric_process_blame_for_sample(cct_node_t *node, int metric_value)
 static void 
 init_hack()
 {
-  active_worker_count = atoi(getenv("OMP_NUM_THREADS"));
+  char * num_threads = getenv("OMP_NUM_THREADS");
+  if (!num_threads)
+    active_worker_count = 1;
+  else 
+    active_worker_count = atoi(num_threads);
   total_threads = active_worker_count;
 
   TMSG(IDLE, "init_hack called, work = %d", active_worker_count);

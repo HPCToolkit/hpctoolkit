@@ -611,6 +611,11 @@ LIBOBJS
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
+OPT_CUDA_LDFLAGS
+OPT_CUDA_IFLAGS
+OPT_CUDA
+OPT_ENABLE_CUDA_FALSE
+OPT_ENABLE_CUDA_TRUE
 OPT_UPC_LDFLAGS
 OPT_UPC_IFLAGS
 OPT_ENABLE_UPC_FALSE
@@ -704,6 +709,7 @@ BOOST_INC
 GNUBINUTILS_LDLIBS
 GNUBINUTILS_LDFLAGS
 GNUBINUTILS_IFLAGS
+wordsize_cflag
 CXX_PATH
 CC_PATH
 hpc_ext_libs_dir
@@ -899,6 +905,9 @@ enable_xop
 enable_bluegene
 with_upc
 with_upc_lib
+with_cuda
+with_cuda_include
+with_cuda_lib
 enable_data_centric_tracing
 with_objcopy
 enable_hpc_binutils
@@ -1597,6 +1606,13 @@ Optional Packages:
   --with-upc=PATH         path to IBM BlueGene UPC installation
   --with-upc-lib=LIBRARY  path to UPC library(s), absolute or relative to
                           WITH_UPC/runtime/SPI
+  --with-cuda=PATH        use given CUDA installation (absolute path) with
+                          hpcrun (default is NO)
+  --with-cuda-include=PATH
+                          use given CUDA include (absolute path) with hpcrun
+                          (default is NO)
+  --with-cuda-lib=PATH    use given CUDA lib (absolute path) with hpcrun
+                          (default is NO)
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
 
@@ -16978,9 +16994,10 @@ hpctoolkit-externals." >&2;}
 fi
 
 host_wordsize=unknown
+wordsize_cflag=
 case "$host_sizeof_voidp" in
-  4 ) host_wordsize=32 ;;
-  8 ) host_wordsize=64 ;;
+  4 ) host_wordsize=32 ; wordsize_cflag='-m32' ;;
+  8 ) host_wordsize=64 ; wordsize_cflag='-m64' ;;
   * ) { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to determine host wordsize" >&5
 $as_echo "$as_me: WARNING: unable to determine host wordsize" >&2;} ;;
 esac
@@ -16990,6 +17007,13 @@ then
   as_fn_error $? "mismatched wordsize: hpctoolkit is configured for \
 ${host_wordsize}-bit but externals is ${ext_wordsize}-bit" "$LINENO" 5
 fi
+
+# On ia64, -m64 is an unrecognized option (and unnecessary).
+if test "$HOST_CPU_IA64" = yes ; then
+  wordsize_cflag=
+fi
+
+
 
 
 #-------------------------------------------------
@@ -18639,6 +18663,109 @@ fi
 
 
 #-------------------------------------------------
+# Option: --with-cuda=PATH
+#-------------------------------------------------
+
+# CUDA support for CPU-GPU-Blame-shifting
+# CUDA default install path is /usr/local/cuda
+# Include files will be in CUDADIR/include
+# CUDA 64 bit libraries under CUDADIR/lib64 and 32 bit in CUDADIR/lib
+# We need CUPTI for callbacks which is in CUDADIR/extras/CUPTI
+# CUPTI 64 bit libraries under CUPTIDIR/lib64 and 32 bit in CUPTIDIR/lib
+
+
+if test "${host_sizeof_voidp}" = "4"; then
+    CUDA_LIB_SEARCH_ORDER="lib32 lib"
+else
+    CUDA_LIB_SEARCH_ORDER="lib64 lib"
+fi
+
+
+OPT_HAVE_CUDA=no
+OPT_CUDA=
+OPT_CUDA_INCPATH=
+OPT_CUDA_LDFLAGS=
+OPT_CUDA_LIBPATH=
+OPT_CUPTI_INCPATH=
+OPT_CUPTI_LIBPATH=
+OPT_CUPTI_LDFLAGS=
+
+
+# Check whether --with-cuda was given.
+if test "${with_cuda+set}" = set; then :
+  withval=$with_cuda; if test $withval != no; then
+     OPT_HAVE_CUDA=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cuda requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUDA=${withval}
+   fi
+fi
+
+
+if test "$OPT_HAVE_CUDA" = "yes" ; then
+
+# Check whether --with-cuda-include was given.
+if test "${with_cuda_include+set}" = set; then :
+  withval=$with_cuda_include; if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cuda-include requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUDA_INCPATH=${withval}
+  fi
+else
+  if test -f ${OPT_CUDA}/include/cuda.h; then
+         OPT_CUDA_INCPATH=${OPT_CUDA}/include
+     else
+         as_fn_error $? "'${OPT_CUDA}/include/cuda.h' not found" "$LINENO" 5
+     fi
+fi
+
+
+  OPT_CUDA_IFLAGS="-I${OPT_CUDA_INCPATH} "
+
+
+# Check whether --with-cuda-lib was given.
+if test "${with_cuda_lib+set}" = set; then :
+  withval=$with_cuda_lib; if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cuda-lib requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUDA_LIBPATH=${withval}
+   fi
+else
+  for lib in ${CUDA_LIB_SEARCH_ORDER} ; do
+    if test -f "${OPT_CUDA}/${lib}/libcudart.so"
+    then
+      OPT_CUDA_LIBPATH="${OPT_CUDA}/${lib}"
+      break
+    fi
+  done
+     if test  -z "${OPT_CUDA_LIBPATH}" ; then
+       as_fn_error $? "libcudart.so not found" "$LINENO" 5
+     fi
+
+fi
+
+
+  OPT_CUDA_LDFLAGS="-L${OPT_CUDA_LIBPATH} -lcudart "
+
+fi
+
+ if test "$OPT_HAVE_CUDA" = yes; then
+  OPT_ENABLE_CUDA_TRUE=
+  OPT_ENABLE_CUDA_FALSE='#'
+else
+  OPT_ENABLE_CUDA_TRUE='#'
+  OPT_ENABLE_CUDA_FALSE=
+fi
+
+
+
+
+
+
+#-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
 #-------------------------------------------------
 
@@ -18667,6 +18794,7 @@ if test "${OPT_ENABLE_DATACENTRIC_TRACE}" = "yes" ; then
 $as_echo "#define DATACENTRIC_TRACE 1" >>confdefs.h
 
 fi
+
 
 
 #-------------------------------------------------
@@ -19048,6 +19176,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_UPC_TRUE}" && test -z "${OPT_ENABLE_UPC_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_UPC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_CUDA_TRUE}" && test -z "${OPT_ENABLE_CUDA_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_CUDA\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE}"; then
@@ -21742,6 +21874,8 @@ $as_echo "$as_me:   xed2:         ${XED2}" >&6;}
 $as_echo "$as_me:   xerces:       ${XERCES}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi:         ${OPT_PAPI}" >&5
 $as_echo "$as_me:   papi:         ${OPT_PAPI}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   cuda:         ${OPT_CUDA}" >&5
+$as_echo "$as_me:   cuda:         ${OPT_CUDA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   upc (BG/P):   ${opt_upc_mesg}" >&5
 $as_echo "$as_me:   upc (BG/P):   ${opt_upc_mesg}" >&6;}
 

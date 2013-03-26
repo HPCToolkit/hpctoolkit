@@ -52,6 +52,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "tokenize.h"
 
 #define MIN(a,b)  (((a)<=(b))?(a):(b))
@@ -117,4 +118,16 @@ hpcrun_extract_ev_thresh(const char *in, int evlen, char *ev, long *th, long def
   *th = dlm ? strtol(dlm+1,(char **)NULL,10) : def;
 
   return dlm != NULL;
+}
+
+//
+// Check  "event" part of candidate string
+// for an **exact** match event_name
+//
+// candidate strings may be either a single event name, or EVENT_NAME@SOMETHING or EVENT_NAME:SOMETHING
+//
+bool
+hpcrun_ev_is(const char* candidate, const char* event_name)
+{
+  return (strstr(candidate, event_name) == candidate) && strchr("@:",candidate[strlen(event_name)]);
 }
