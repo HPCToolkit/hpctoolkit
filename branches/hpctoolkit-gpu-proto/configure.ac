@@ -1512,6 +1512,47 @@ AC_MSG_RESULT([$use_papi_c])
 
 AM_CONDITIONAL(OPT_PAPI_COMPONENT, [test "$use_papi_c" = yes])
 
+AC_ARG_ENABLE([papi-c-cupti],
+  AS_HELP_STRING([--enable-papi-c-cupti],
+      [enable component PAPI's CUPTI functionality (requires papi-c with cuda component installed]),
+  [use_papi_c_cupti="$enableval"],
+  [use_papi_c_cupti=no])
+
+AC_MSG_CHECKING([whether to use component papi CUPTI functionality])
+
+case "$use_papi_c_cupti" in
+  no ) ;;
+  * ) use_papi_c_cupti=yes ;;
+esac
+
+if test "$use_papi_c" = no ; then
+  use_papi_c_cupti=no
+fi
+
+if test "$use_papi_c_component" = yes ; then
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS"
+  AC_LANG_PUSH([C])
+
+  AC_LINK_IFELSE([
+#include "papi.h"
+extern void CUDA_init_component(void);
+int main()
+{
+  CUDA_init_component();
+}
+], [use_papi_c_cupti=yes], [use_papi_c_cupti=no])
+
+  AC_LANG_POP
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
+fi
+
+AC_MSG_RESULT([$use_papi_c_cupti])
+
+AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
 
 #-------------------------------------------------
 # Option: --with-symtabAPI=PATH
@@ -2557,6 +2598,7 @@ AC_MSG_NOTICE([  xed2:         ${XED2}])
 AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
+AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
 
 if test "$warn_non_gcc" = yes ; then

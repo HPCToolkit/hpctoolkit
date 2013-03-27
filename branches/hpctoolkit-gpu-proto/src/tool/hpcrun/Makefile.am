@@ -348,6 +348,10 @@ else
 MY_PAPI_FILES = sample-sources/papi.c
 endif
 
+if OPT_PAPI_CUPTI
+MY_PAPI_FILES += sample-sources/papi-c-cupti.c
+endif
+
 MY_UPC_FILES = sample-sources/upc.c
 
 MY_CPP_DEFINES =			\

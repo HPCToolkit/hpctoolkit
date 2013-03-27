@@ -659,6 +659,8 @@ SYMTABAPI_COPY
 SYMTABAPI_LIB_LIST
 SYMTABAPI_LIB
 SYMTABAPI_INC
+OPT_PAPI_CUPTI_FALSE
+OPT_PAPI_CUPTI_TRUE
 OPT_PAPI_COMPONENT_FALSE
 OPT_PAPI_COMPONENT_TRUE
 papi_extra_libs
@@ -890,6 +892,7 @@ with_monitor
 with_open_analysis
 with_papi
 enable_papi_c
+enable_papi_c_cupti
 with_symtabAPI
 with_xed2
 with_xerces
@@ -1563,6 +1566,8 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-papi-c         use new papi component sample source, requires papi
                           5.1 or later
+  --enable-papi-c-cupti   enable component PAPI's CUPTI functionality
+                          (requires papi-c with cuda component installed
   --enable-hpcrun-flat    build hpcrun-flat (default yes)
   --enable-hpcrun         build hpcrun (default yes)
   --enable-hpcrun-static  build hpcrun for statically linked executables
@@ -17712,6 +17717,78 @@ else
 fi
 
 
+# Check whether --enable-papi-c-cupti was given.
+if test "${enable_papi_c_cupti+set}" = set; then :
+  enableval=$enable_papi_c_cupti; use_papi_c_cupti="$enableval"
+else
+  use_papi_c_cupti=no
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use component papi CUPTI functionality" >&5
+$as_echo_n "checking whether to use component papi CUPTI functionality... " >&6; }
+
+case "$use_papi_c_cupti" in
+  no ) ;;
+  * ) use_papi_c_cupti=yes ;;
+esac
+
+if test "$use_papi_c" = no ; then
+  use_papi_c_cupti=no
+fi
+
+if test "$use_papi_c_component" = yes ; then
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS"
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include "papi.h"
+extern void CUDA_init_component(void);
+int main()
+{
+  CUDA_init_component();
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  use_papi_c_cupti=yes
+else
+  use_papi_c_cupti=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_papi_c_cupti" >&5
+$as_echo "$use_papi_c_cupti" >&6; }
+
+ if test "$use_papi_c_cupti" = yes; then
+  OPT_PAPI_CUPTI_TRUE=
+  OPT_PAPI_CUPTI_FALSE='#'
+else
+  OPT_PAPI_CUPTI_TRUE='#'
+  OPT_PAPI_CUPTI_FALSE=
+fi
+
 
 #-------------------------------------------------
 # Option: --with-symtabAPI=PATH
@@ -19136,6 +19213,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PAPI_COMPONENT_TRUE}" && test -z "${OPT_PAPI_COMPONENT_FALSE}"; then
   as_fn_error $? "conditional \"OPT_PAPI_COMPONENT\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_PAPI_CUPTI_TRUE}" && test -z "${OPT_PAPI_CUPTI_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_PAPI_CUPTI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_HPCRUN_FLAT_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_FLAT_FALSE}"; then
@@ -21876,6 +21957,8 @@ $as_echo "$as_me:   xerces:       ${XERCES}" >&6;}
 $as_echo "$as_me:   papi:         ${OPT_PAPI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   cuda:         ${OPT_CUDA}" >&5
 $as_echo "$as_me:   cuda:         ${OPT_CUDA}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-cupti: ${use_papi_c_cupti}" >&5
+$as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   upc (BG/P):   ${opt_upc_mesg}" >&5
 $as_echo "$as_me:   upc (BG/P):   ${opt_upc_mesg}" >&6;}
 
