@@ -62,23 +62,13 @@
 #include <unistd.h>
 #include <ucontext.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <pthread.h>
-
-
-// ******************** GPU includes ***********************
-
-#include <cuda.h>
-#include <cupti.h>
-
-// *********************************************************
 
 /******************************************************************************
  * libmonitor
  *****************************************************************************/
-
 #include <monitor.h>
-
-
 
 /******************************************************************************
  * local includes
@@ -87,6 +77,7 @@
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
+#include "papi-c-extended-info.h"
 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -113,25 +104,7 @@
 #define WEIGHT_METRIC 0
 #define DEFAULT_THRESHOLD  2000000L
 
-#define CUPTI_LAUNCH_CALLBACK_DEPTH 7
-
-/******************************************************************************
- * type declarations 
- *****************************************************************************/
-typedef struct {
-  bool inUse;
-  int eventSet;
-  source_state_t state;
-  int some_derived;
-  bool scale_by_thread_count;
-  long long prev_values[MAX_EVENTS];
-} papi_component_info_t;
-
-typedef struct {
-  int num_components;
-  papi_component_info_t component_info[0];
-} papi_source_info_t;
-
+#include "papi-c.h"
 
 /******************************************************************************
  * forward declarations 
@@ -139,7 +112,6 @@ typedef struct {
 static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
 static int  event_is_derived(int ev_code);
 static void event_fatal_error(int ev_code, int papi_ret);
-static void sync_start(void);
 
 /******************************************************************************
  * local variables
@@ -150,8 +122,6 @@ static void sync_start(void);
 // Make sure that we call no other PAPI functions.
 //
 static int papi_unavail = 0;
-static int sync_sample_evset_idx = -1;
-
 
 /******************************************************************************
  * private operations 
@@ -169,8 +139,7 @@ get_event_index(sample_source_t *self, int event_code)
   assert(0);
 }
 
-
-static int 
+int 
 get_component_event_set(papi_source_info_t *psi, int cidx)
 {
    if (cidx < 0 || cidx >= psi->num_components) {
@@ -191,21 +160,12 @@ get_component_event_set(papi_source_info_t *psi, int cidx)
   return ci->eventSet;
 }
 
-
 static bool
 thread_count_scaling_for_component(int cidx)
 {
   const PAPI_component_info_t *pci = PAPI_get_component_info(cidx);
   if (strcmp(pci->name, "bgpm/L2Unit") == 0) return true;
   return 0;
-}
-
-static bool
-component_uses_sync_samples(int cidx)
-{
-  const PAPI_component_info_t* pci = PAPI_get_component_info(cidx);
-  TMSG(PAPI, "component idx %d has name %s", cidx, pci->name);
-  return (strncmp(pci->name, "cuda", 4) == 0);
 }
 
 //-----------------------------------------------------------
@@ -248,21 +208,6 @@ print_desc(char *s)
     printf("      %s\n", buffer);
   }
 }
-
-#define CUPTI_ERRORS_UNMYSTIFIED
-static void 
-check_cupti_error(int err, char *cuptifunc)			
-{
-  if (err != CUPTI_SUCCESS) {
-    const char *errstr;                                     
-    cuptiGetResultString(err, &errstr);                    
-#ifdef CUPTI_ERRORS_UNMYSTIFIED
-    hpcrun_abort("error: CUDA CUPTI API function '%s' "
-		 "failed with message '%s' \n", cuptifunc, errstr);
-#endif // CUPTI_ERRORS_UNMYSTIFIED
-  }
-}
-
 
 /******************************************************************************
  * sample source registration
@@ -357,7 +302,7 @@ METHOD_FN(start)
     return; 
   }
 
-  thread_data_t *td = hpcrun_get_thread_data();
+  thread_data_t* td = hpcrun_get_thread_data();
   source_state_t my_state = TD_GET(ss_state)[self->evset_idx];
 
   // make PAPI start idempotent.  the application can turn on sampling
@@ -370,13 +315,13 @@ METHOD_FN(start)
   }
 
   // for each active component, start its event set
-  papi_source_info_t *psi = td->ss_info[self->evset_idx].ptr;
+  papi_source_info_t* psi = td->ss_info[self->evset_idx].ptr;
   for (cidx=0; cidx < psi->num_components; cidx++) {
-    papi_component_info_t *ci = &(psi->component_info[cidx]);
+    papi_component_info_t* ci = &(psi->component_info[cidx]);
     if (ci->inUse) {
       if (component_uses_sync_samples(cidx)) {
 	TMSG(PAPI, "component %d is synchronous, use synchronous start", cidx);
-	sync_start();
+	ci->sync_start();
       }
       else {
 	TMSG(PAPI,"starting PAPI event set %d for component %d", ci->eventSet, cidx);
@@ -384,7 +329,8 @@ METHOD_FN(start)
 	if (ret == PAPI_EISRUN) {
 	  // this case should not happen, but maybe it's not fatal
 	  EMSG("PAPI returned EISRUN for event set %d component %d", ci->eventSet, cidx);
-	} else if (ret != PAPI_OK) {
+	}
+	else if (ret != PAPI_OK) {
 	  EMSG("PAPI_start failed with %s (%d) for event set %d component %d ", 
 	       PAPI_strerror(ret), ret, ci->eventSet, cidx);
 	  hpcrun_ssfail_start("PAPI");
@@ -446,7 +392,8 @@ METHOD_FN(stop)
       }
       else {
 	TMSG(PAPI,"stop w event set = %d", ci->eventSet);
-	long_long *values = (long_long *) alloca(sizeof(long_long) * (nevents+2));
+	long_long values[nevents+2];
+	//	long_long *values = (long_long *) alloca(sizeof(long_long) * (nevents+2));
 	int ret = PAPI_stop(ci->eventSet, values);
 	if (ret != PAPI_OK){
 	  EMSG("Failed to stop PAPI for eventset %d. Return code = %d ==> %s",
@@ -508,10 +455,15 @@ METHOD_FN(process_event_list, int lush_metrics)
     long thresh;
 
     TMSG(PAPI,"checking event spec = %s",event);
+    // FIXME: restore checking will require deciding if the event is synchronous or not
+#ifdef USE_PAPI_CHECKING
     if (! hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh, DEFAULT_THRESHOLD)) {
       AMSG("WARNING: %s using default threshold %ld, "
 	   "better to use an explicit threshold.", name, DEFAULT_THRESHOLD);
     }
+#else
+    hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh, DEFAULT_THRESHOLD);
+#endif // USE_PAPI_CHECKING
     ret = PAPI_event_name_to_code(name, &evcode);
     if (ret != PAPI_OK) {
       EMSG("unexpected failure in PAPI process_event_list(): "
@@ -555,13 +507,13 @@ METHOD_FN(process_event_list, int lush_metrics)
     // supports hardware overflow.  use threshold = 0 to force proxy
     // sampling (for testing).
     if (event_is_derived(self->evl.events[i].event)
-	|| self->evl.events[i].thresh == 0)
-    {
+	|| self->evl.events[i].thresh == 0) {
       TMSG(PAPI, "using proxy sampling for event %s", buffer);
       strcat(buffer, " (proxy)");
       self->evl.events[i].thresh = 1;
       derived[i] = 1;
-    } else {
+    }
+    else {
       derived[i] = 0;
       some_overflow = 1;
     }
@@ -570,12 +522,13 @@ METHOD_FN(process_event_list, int lush_metrics)
     int threshold;
     if (thread_count_scaling_for_component(cidx)) {
       threshold = 1;
-    } else {
+    }
+    else {
       threshold = self->evl.events[i].thresh;
     }
 
-    bool sync_samples = component_uses_sync_samples(cidx);
-    if (sync_samples) TMSG(PAPI, "Event %s from synchronous component", buffer);
+    if (component_uses_sync_samples(cidx))
+      TMSG(PAPI, "Event %s from synchronous component", buffer);
     hpcrun_set_metric_info_and_period(metric_id, strdup(buffer),
 				      MetricFlags_ValFmt_Int,
 				      threshold, prop);
@@ -600,13 +553,13 @@ METHOD_FN(process_event_list, int lush_metrics)
 }
 
 static void
-METHOD_FN(gen_event_set,int lush_metrics)
+METHOD_FN(gen_event_set, int lush_metrics)
 {
   thread_data_t *td = hpcrun_get_thread_data();
   int i;
   int ret;
 
-  TMSG(PAPI, "gen event set");
+  TMSG(PAPI, "generating all event sets for all components");
   if (papi_unavail) { return; }
 
   int num_components = PAPI_num_components();
@@ -628,6 +581,8 @@ METHOD_FN(gen_event_set,int lush_metrics)
     ci->state = INIT;
     ci->some_derived = 0;
     ci->scale_by_thread_count = thread_count_scaling_for_component(i);
+    ci->is_sync = component_uses_sync_samples(i);
+    ci->sync_start = sync_start_for_component(i);
     memset(ci->prev_values, 0, sizeof(ci->prev_values));
   }
 
@@ -643,11 +598,11 @@ METHOD_FN(gen_event_set,int lush_metrics)
     psi->component_info[cidx].some_derived |= event_is_derived(evcode);
     TMSG(PAPI, "PAPI_add_event(eventSet=%d, event_code=%x)", eventSet, evcode);
     {
-    char buffer[PAPI_MAX_STR_LEN];
-    PAPI_event_code_to_name(evcode, buffer);
-    TMSG(PAPI, 
-	 "PAPI_add_event(eventSet=%d, event_code=%x (event name %s)) component=%d", 
-	 eventSet, evcode, buffer, cidx);
+      char buffer[PAPI_MAX_STR_LEN];
+      PAPI_event_code_to_name(evcode, buffer);
+      TMSG(PAPI, 
+	   "PAPI_add_event(eventSet=%d, event_code=%x (event name %s)) component=%d", 
+	   eventSet, evcode, buffer, cidx);
     }
     if (ret != PAPI_OK) {
       EMSG("failure in PAPI gen_event_set(): PAPI_add_event() returned: %s (%d)",
@@ -656,20 +611,20 @@ METHOD_FN(gen_event_set,int lush_metrics)
     }
   }
 
-  // set up event sets for active components
+  // set up overflow handling for asynchronous event sets for active components
   for (i = 0; i < nevents; i++) {
     int evcode = self->evl.events[i].event;
     long thresh = self->evl.events[i].thresh;
     int cidx = PAPI_get_event_component(evcode);
-    int eventSet = get_component_event_set(psi, cidx); 
+    int eventSet = get_component_event_set(psi, cidx);
 
-    // ********* FIGURE OUT SYNCHRONOUS SAMPLES HERE ***********
+    // **** No overflow for synchronous events ****
     if (component_uses_sync_samples(cidx)) {
       TMSG(PAPI, "event code %d (component %d) is synchronous, so do NOT set overflow", evcode, cidx);
-      sync_sample_evset_idx = cidx;
       TMSG(PAPI, "synchronous sample component index = %d", cidx);
       continue;
     }
+    // ***** Only set overflow if NOT derived event *****
     if (! derived[i]) {
       ret = PAPI_overflow(eventSet, evcode, thresh, OVERFLOW_MODE,
 			  papi_event_handler);
@@ -938,95 +893,3 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   hpcrun_safe_exit();
 }
 
-static void CUPTIAPI
-hpcrun_cuda_kernel_callback(void *userdata,
-			    CUpti_CallbackDomain domain,
-			    CUpti_CallbackId cbid, 
-			    const CUpti_CallbackData *cbInfo)
-{
-  TMSG(CUDA, "Got Kernel Callback");
-
-  thread_data_t* td = hpcrun_get_thread_data();
-  sample_source_t* self = &obj_name();
-
-  int nevents  = self->evl.nevents;
-
-  // get cuda event set
-  papi_source_info_t* psi = td->ss_info[self->evset_idx].ptr;
-  int cudaEventSet = get_component_event_set(psi, sync_sample_evset_idx);
-  
-  // This callback is enabled only for kernel launch; anything else is an error.
-  if (cbid != CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020) {
-    hpcrun_abort("CUDA CUPTI callback seen for unexpected "
-		 "interface operation: callback id  %d\n", cbid); 
-  }
-
-  if (cbInfo->callbackSite == CUPTI_API_ENTER) {
-    cudaThreadSynchronize();
-
-    TMSG(CUDA,"starting CUDA monitoring w event set %d",cudaEventSet);
-    int ret = PAPI_start(cudaEventSet);
-    if (ret != PAPI_OK){
-      EMSG("CUDA monitoring failed to start. PAPI_start failed with %s (%d)", 
-	   PAPI_strerror(ret), ret);
-    }  
-  }
-    
-  if (cbInfo->callbackSite == CUPTI_API_EXIT) {
-    cudaThreadSynchronize();
-    long_long *eventValues = 
-      (long_long *) alloca(sizeof(long_long) * (nevents+2));
-
-    TMSG(CUDA,"stopping CUDA monitoring w event set %d",cudaEventSet);
-    int ret = PAPI_stop(cudaEventSet, eventValues);
-    if (ret != PAPI_OK){
-      EMSG("CUDA monitoring failed to -stop-. PAPI_stop failed with %s (%d)", 
-	   PAPI_strerror(ret), ret);
-    }  
-    TMSG(CUDA,"stopped CUDA monitoring w event set %d",cudaEventSet);
-
-    ucontext_t uc;
-    TMSG(CUDA,"getting context in CUDA event handler");
-    getcontext(&uc);
-    TMSG(CUDA,"got context in CUDA event handler");
-    hpcrun_safe_enter();
-    TMSG(CUDA,"blocked async event in CUDA event handler");
-    {
-      int i;
-      for (i = 0; i < nevents; i++) 
-	{
-	  int metric_id = hpcrun_event2metric(&_papi_obj, i);
-
-	  TMSG(CUDA, "sampling call path for metric_id = %d", metric_id);
-	  hpcrun_sample_callpath(&uc, metric_id, eventValues[i]/*metricIncr*/, 
-				 CUPTI_LAUNCH_CALLBACK_DEPTH/*skipInner*/, 
-				 0/*isSync*/);
-	  TMSG(CUDA, "sampled call path for metric_id = %d", metric_id);
-	}
-    }
-    TMSG(CUDA,"unblocking async event in CUDA event handler");
-    hpcrun_safe_exit();
-    TMSG(CUDA,"unblocked async event in CUDA event handler");
-  }
-}
-
-//
-//***** sync start means cuda/cupti for the moment ******
-//
-static void
-sync_start(void)
-{
-  int cuptiErr;
-  CUpti_SubscriberHandle subscriber;
-
-  TMSG(CUDA,"sync start called");
-
-  cuptiErr = cuptiSubscribe(&subscriber, 
-			    (CUpti_CallbackFunc)hpcrun_cuda_kernel_callback, 
-			    (void *) NULL);
-  check_cupti_error(cuptiErr, "cuptiSubscribe");
-
-  cuptiErr = cuptiEnableCallback(1, subscriber, CUPTI_CB_DOMAIN_RUNTIME_API, 
-                                 CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020);
-  check_cupti_error(cuptiErr, "cuptiEnableCallback");
-}

@@ -335,9 +335,10 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	trampoline/ia64/ia64-tramp.s \
 	utilities/arch/ia64/ia64-context-pc.c sample-sources/papi.c \
 	sample-sources/papi-c-cupti.c sample-sources/papi-c.c \
-	sample-sources/upc.c sample-sources/gpu_blame.c \
-	gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c \
-	unwind/common/backtrace.c unwind/common/unw-throw.c \
+	sample-sources/papi-c-extended-info.c sample-sources/upc.c \
+	sample-sources/gpu_blame.c gpu_blame-cuda-driver-table.c \
+	gpu_blame-cuda-runtime-table.c unwind/common/backtrace.c \
+	unwind/common/unw-throw.c \
 	unwind/generic-libunwind/libunw-unwind.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
 	unwind/ppc64/ppc64-unwind.c \
@@ -408,6 +409,7 @@ am__objects_18 = libhpcrun_la-ia64-tramp.lo \
 @OPT_PAPI_COMPONENT_FALSE@am__objects_21 = libhpcrun_la-papi.lo \
 @OPT_PAPI_COMPONENT_FALSE@	$(am__objects_20)
 @OPT_PAPI_COMPONENT_TRUE@am__objects_21 = libhpcrun_la-papi-c.lo \
+@OPT_PAPI_COMPONENT_TRUE@	libhpcrun_la-papi-c-extended-info.lo \
 @OPT_PAPI_COMPONENT_TRUE@	$(am__objects_20)
 @OPT_PAPI_DYNAMIC_TRUE@am__objects_22 = $(am__objects_21)
 am__objects_23 = libhpcrun_la-upc.lo
@@ -534,8 +536,8 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	trampoline/ia64/ia64-tramp.s \
 	utilities/arch/ia64/ia64-context-pc.c sample-sources/papi.c \
 	sample-sources/papi-c-cupti.c sample-sources/papi-c.c \
-	sample-sources/upc.c unwind/common/backtrace.c \
-	unwind/common/unw-throw.c \
+	sample-sources/papi-c-extended-info.c sample-sources/upc.c \
+	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/generic-libunwind/libunw-unwind.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
 	unwind/ppc64/ppc64-unwind.c \
@@ -618,6 +620,7 @@ am__objects_41 = libhpcrun_o-ia64-tramp.$(OBJEXT) \
 @OPT_PAPI_COMPONENT_FALSE@	$(am__objects_43)
 @OPT_PAPI_COMPONENT_TRUE@am__objects_44 =  \
 @OPT_PAPI_COMPONENT_TRUE@	libhpcrun_o-papi-c.$(OBJEXT) \
+@OPT_PAPI_COMPONENT_TRUE@	libhpcrun_o-papi-c-extended-info.$(OBJEXT) \
 @OPT_PAPI_COMPONENT_TRUE@	$(am__objects_43)
 @OPT_PAPI_STATIC_TRUE@am__objects_45 = $(am__objects_44)
 am__objects_46 = libhpcrun_o-upc.$(OBJEXT)
@@ -830,6 +833,9 @@ OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
 OPT_CUDA = @OPT_CUDA@
 OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
 OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
+OPT_CUPTI = @OPT_CUPTI@
+OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
+OPT_CUPTI_LIB = @OPT_CUPTI_LIB@
 OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
 OPT_LIBUNWIND_IFLAGS = @OPT_LIBUNWIND_IFLAGS@
 OPT_LIBUNWIND_LDFLAGS = @OPT_LIBUNWIND_LDFLAGS@
@@ -1109,6 +1115,7 @@ MY_IA64_FILES = \
 @OPT_PAPI_COMPONENT_FALSE@MY_PAPI_FILES = sample-sources/papi.c \
 @OPT_PAPI_COMPONENT_FALSE@	$(am__append_15)
 @OPT_PAPI_COMPONENT_TRUE@MY_PAPI_FILES = sample-sources/papi-c.c \
+@OPT_PAPI_COMPONENT_TRUE@	sample-sources/papi-c-extended-info.c \
 @OPT_PAPI_COMPONENT_TRUE@	$(am__append_15)
 MY_UPC_FILES = sample-sources/upc.c
 MY_CPP_DEFINES = \
@@ -1128,6 +1135,7 @@ MY_INCLUDE_DIRS = \
 	$(HPC_IFLAGS)			\
 	$(OPT_LIBUNWIND_IFLAGS)         \
 	-I$(HPCFNBOUNDS_INC)		\
+        $(OPT_CUPTI_IFLAGS)             \
 	-I$(LIBMONITOR_INC)
 
 MY_MIPS_INCLUDE_DIRS = \
@@ -1706,6 +1714,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-none.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-openmp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-papi-c-cupti.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-papi-c-extended-info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-papi-c.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-papi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ppc64-context-pc.Plo@am__quote@
@@ -1802,6 +1811,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-name.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-none.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi-c-cupti.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi-c-extended-info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi-c.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ppc64-context-pc.Po@am__quote@
@@ -2584,6 +2594,13 @@ libhpcrun_la-papi-c.lo: sample-sources/papi-c.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi-c.c' object='libhpcrun_la-papi-c.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-papi-c.lo `test -f 'sample-sources/papi-c.c' || echo '$(srcdir)/'`sample-sources/papi-c.c
+
+libhpcrun_la-papi-c-extended-info.lo: sample-sources/papi-c-extended-info.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-papi-c-extended-info.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-papi-c-extended-info.Tpo -c -o libhpcrun_la-papi-c-extended-info.lo `test -f 'sample-sources/papi-c-extended-info.c' || echo '$(srcdir)/'`sample-sources/papi-c-extended-info.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-papi-c-extended-info.Tpo $(DEPDIR)/libhpcrun_la-papi-c-extended-info.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi-c-extended-info.c' object='libhpcrun_la-papi-c-extended-info.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-papi-c-extended-info.lo `test -f 'sample-sources/papi-c-extended-info.c' || echo '$(srcdir)/'`sample-sources/papi-c-extended-info.c
 
 libhpcrun_la-upc.lo: sample-sources/upc.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-upc.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-upc.Tpo -c -o libhpcrun_la-upc.lo `test -f 'sample-sources/upc.c' || echo '$(srcdir)/'`sample-sources/upc.c
@@ -3781,6 +3798,20 @@ libhpcrun_o-papi-c.obj: sample-sources/papi-c.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi-c.c' object='libhpcrun_o-papi-c.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-papi-c.obj `if test -f 'sample-sources/papi-c.c'; then $(CYGPATH_W) 'sample-sources/papi-c.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/papi-c.c'; fi`
+
+libhpcrun_o-papi-c-extended-info.o: sample-sources/papi-c-extended-info.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-papi-c-extended-info.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-papi-c-extended-info.Tpo -c -o libhpcrun_o-papi-c-extended-info.o `test -f 'sample-sources/papi-c-extended-info.c' || echo '$(srcdir)/'`sample-sources/papi-c-extended-info.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-papi-c-extended-info.Tpo $(DEPDIR)/libhpcrun_o-papi-c-extended-info.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi-c-extended-info.c' object='libhpcrun_o-papi-c-extended-info.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-papi-c-extended-info.o `test -f 'sample-sources/papi-c-extended-info.c' || echo '$(srcdir)/'`sample-sources/papi-c-extended-info.c
+
+libhpcrun_o-papi-c-extended-info.obj: sample-sources/papi-c-extended-info.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-papi-c-extended-info.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-papi-c-extended-info.Tpo -c -o libhpcrun_o-papi-c-extended-info.obj `if test -f 'sample-sources/papi-c-extended-info.c'; then $(CYGPATH_W) 'sample-sources/papi-c-extended-info.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/papi-c-extended-info.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-papi-c-extended-info.Tpo $(DEPDIR)/libhpcrun_o-papi-c-extended-info.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi-c-extended-info.c' object='libhpcrun_o-papi-c-extended-info.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-papi-c-extended-info.obj `if test -f 'sample-sources/papi-c-extended-info.c'; then $(CYGPATH_W) 'sample-sources/papi-c-extended-info.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/papi-c-extended-info.c'; fi`
 
 libhpcrun_o-upc.o: sample-sources/upc.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-upc.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-upc.Tpo -c -o libhpcrun_o-upc.o `test -f 'sample-sources/upc.c' || echo '$(srcdir)/'`sample-sources/upc.c

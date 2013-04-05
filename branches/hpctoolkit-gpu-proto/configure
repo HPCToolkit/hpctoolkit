@@ -611,6 +611,11 @@ LIBOBJS
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
+OPT_CUPTI_LIB
+OPT_CUPTI_IFLAGS
+OPT_CUPTI
+OPT_HAVE_CUPTI_FALSE
+OPT_HAVE_CUPTI_TRUE
 OPT_CUDA_LDFLAGS
 OPT_CUDA_IFLAGS
 OPT_CUDA
@@ -911,6 +916,7 @@ with_upc_lib
 with_cuda
 with_cuda_include
 with_cuda_lib
+with_cupti
 enable_data_centric_tracing
 with_objcopy
 enable_hpc_binutils
@@ -1618,6 +1624,8 @@ Optional Packages:
                           (default is NO)
   --with-cuda-lib=PATH    use given CUDA lib (absolute path) with hpcrun
                           (default is NO)
+  --with-cupti=PATH       use given CUDA/CUPTI installation (absolute path)
+                          with hpcrun (default is NO)
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
 
@@ -18763,10 +18771,6 @@ OPT_CUDA=
 OPT_CUDA_INCPATH=
 OPT_CUDA_LDFLAGS=
 OPT_CUDA_LIBPATH=
-OPT_CUPTI_INCPATH=
-OPT_CUPTI_LIBPATH=
-OPT_CUPTI_LDFLAGS=
-
 
 # Check whether --with-cuda was given.
 if test "${with_cuda+set}" = set; then :
@@ -18835,6 +18839,56 @@ fi
 else
   OPT_ENABLE_CUDA_TRUE='#'
   OPT_ENABLE_CUDA_FALSE=
+fi
+
+
+
+
+
+
+#-------------------------------------------------
+# Option: --with-cupti=PATH
+#-------------------------------------------------
+
+OPT_HAVE_CUPTI=no
+OPT_CUPTI=
+OPT_CUPTI_INCPATH=
+OPT_CUPTI_LIBPATH=
+OPT_CUPTI_LDFLAGS=
+
+
+# Check whether --with-cupti was given.
+if test "${with_cupti+set}" = set; then :
+  withval=$with_cupti; if test $withval != no; then
+     OPT_HAVE_CUPTI=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cupti requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUPTI=${withval}
+   fi
+fi
+
+
+if test "$OPT_HAVE_CUPTI" = "yes" ; then
+   if test -f $OPT_CUPTI/include/cupti.h; then
+     base_cuda=$(dirname $(dirname $OPT_CUPTI))
+     OPT_CUPTI_IFLAGS="-I$(base_cuda)/include -I${OPT_CUPTI}/include"
+   else
+     as_fn_error $? "'$OPT_CUPTI/include/cupti.h' not found" "$LINENO" 5
+   fi
+   if test -d $OPT_CUPTI/lib64; then
+      OPT_CUPTI_LIB=$OPT_CUPTI/lib64
+   else
+      OPT_CUPTI_LIB=$OPT_CUPTI/lib
+   fi
+fi
+
+ if test "$OPT_HAVE_CUPTI" = yes; then
+  OPT_HAVE_CUPTI_TRUE=
+  OPT_HAVE_CUPTI_FALSE='#'
+else
+  OPT_HAVE_CUPTI_TRUE='#'
+  OPT_HAVE_CUPTI_FALSE=
 fi
 
 
@@ -19261,6 +19315,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_CUDA_TRUE}" && test -z "${OPT_ENABLE_CUDA_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_CUDA\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_HAVE_CUPTI_TRUE}" && test -z "${OPT_HAVE_CUPTI_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_HAVE_CUPTI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE}"; then

@@ -343,7 +343,9 @@ MY_IA64_FILES = \
         utilities/arch/ia64/ia64-context-pc.c
 
 if OPT_PAPI_COMPONENT
-MY_PAPI_FILES = sample-sources/papi-c.c
+MY_PAPI_FILES = \
+    sample-sources/papi-c.c \
+    sample-sources/papi-c-extended-info.c
 else
 MY_PAPI_FILES = sample-sources/papi.c
 endif
@@ -371,6 +373,7 @@ MY_INCLUDE_DIRS =			\
 	$(HPC_IFLAGS)			\
 	$(OPT_LIBUNWIND_IFLAGS)         \
 	-I$(HPCFNBOUNDS_INC)		\
+        $(OPT_CUPTI_IFLAGS)             \
 	-I$(LIBMONITOR_INC)
 
 

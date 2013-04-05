@@ -61,7 +61,13 @@
 #undef ss_str
 #undef reg_fn_name
 
+#include "ss-obj-name.h"
+
+#if 0 // FIXME before checkin
 #define obj_name() _make_id( (_,ss_name,_obj))
+#endif // FIXME
+
+#define obj_name() SS_OBJ_NAME(ss_name)
 #define ss_str  _st1(ss_name) 
 #define reg_fn_name _make_id((,ss_name,_obj_reg))
 

@@ -2292,10 +2292,6 @@ OPT_CUDA=
 OPT_CUDA_INCPATH=
 OPT_CUDA_LDFLAGS=
 OPT_CUDA_LIBPATH=
-OPT_CUPTI_INCPATH=
-OPT_CUPTI_LIBPATH=
-OPT_CUPTI_LDFLAGS=
-
 AC_ARG_WITH([cuda],
   AS_HELP_STRING([--with-cuda=PATH],
                  [use given CUDA installation (absolute path) with hpcrun (default is NO)]),
@@ -2357,6 +2353,47 @@ AM_CONDITIONAL([OPT_ENABLE_CUDA], [test "$OPT_HAVE_CUDA" = yes])
 AC_SUBST([OPT_CUDA])
 AC_SUBST([OPT_CUDA_IFLAGS])
 AC_SUBST([OPT_CUDA_LDFLAGS])
+
+#-------------------------------------------------
+# Option: --with-cupti=PATH
+#-------------------------------------------------
+
+OPT_HAVE_CUPTI=no
+OPT_CUPTI=
+OPT_CUPTI_INCPATH=
+OPT_CUPTI_LIBPATH=
+OPT_CUPTI_LDFLAGS=
+
+AC_ARG_WITH([cupti],
+  AS_HELP_STRING([--with-cupti=PATH],
+                 [use given CUDA/CUPTI installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_CUPTI=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cupti requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUPTI=${withval}
+   fi])
+
+if test "$OPT_HAVE_CUPTI" = "yes" ; then
+   if test -f $OPT_CUPTI/include/cupti.h; then
+     base_cuda=$(dirname $(dirname $OPT_CUPTI))
+     OPT_CUPTI_IFLAGS="-I$(base_cuda)/include -I${OPT_CUPTI}/include"
+   else
+     AC_MSG_ERROR(['$OPT_CUPTI/include/cupti.h' not found])
+   fi
+   if test -d $OPT_CUPTI/lib64; then
+      OPT_CUPTI_LIB=$OPT_CUPTI/lib64
+   else
+      OPT_CUPTI_LIB=$OPT_CUPTI/lib
+   fi
+fi
+
+AM_CONDITIONAL([OPT_HAVE_CUPTI], [test "$OPT_HAVE_CUPTI" = yes])
+
+AC_SUBST([OPT_CUPTI])
+AC_SUBST([OPT_CUPTI_IFLAGS])
+AC_SUBST([OPT_CUPTI_LIB])
 
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
