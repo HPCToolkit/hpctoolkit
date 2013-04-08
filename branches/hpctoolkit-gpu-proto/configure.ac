@@ -1551,7 +1551,6 @@ int main()
 fi
 
 AC_MSG_RESULT([$use_papi_c_cupti])
-
 AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
 
 #-------------------------------------------------
@@ -2357,12 +2356,11 @@ AC_SUBST([OPT_CUDA_LDFLAGS])
 #-------------------------------------------------
 # Option: --with-cupti=PATH
 #-------------------------------------------------
-
 OPT_HAVE_CUPTI=no
 OPT_CUPTI=
-OPT_CUPTI_INCPATH=
-OPT_CUPTI_LIBPATH=
+OPT_CUPTI_IFLAGS=
 OPT_CUPTI_LDFLAGS=
+OPT_CUPTI_LIBPATH=
 
 AC_ARG_WITH([cupti],
   AS_HELP_STRING([--with-cupti=PATH],
@@ -2375,25 +2373,29 @@ AC_ARG_WITH([cupti],
      OPT_CUPTI=${withval}
    fi])
 
-if test "$OPT_HAVE_CUPTI" = "yes" ; then
-   if test -f $OPT_CUPTI/include/cupti.h; then
-     base_cuda=$(dirname $(dirname $OPT_CUPTI))
-     OPT_CUPTI_IFLAGS="-I$(base_cuda)/include -I${OPT_CUPTI}/include"
-   else
-     AC_MSG_ERROR(['$OPT_CUPTI/include/cupti.h' not found])
-   fi
-   if test -d $OPT_CUPTI/lib64; then
-      OPT_CUPTI_LIB=$OPT_CUPTI/lib64
-   else
-      OPT_CUPTI_LIB=$OPT_CUPTI/lib
+#
+# Valid cupti library
+#
+if test "$OPT_HAVE_CUPTI" = yes; then
+   if test ! -f $OPT_CUPTI/include/cupti.h; then
+      AC_MSG_ERROR([--with-cupti=$OPT_CUPTI invalid! No cupti.h])
    fi
 fi
 
-AM_CONDITIONAL([OPT_HAVE_CUPTI], [test "$OPT_HAVE_CUPTI" = yes])
+if test "$use_papi_c_cupti" != no; then
+   if test "$OPT_HAVE_CUPTI" = yes; then
+       OPT_CUPTI_IFLAGS="-I$OPT_CUPTI/include"
+       if test "$OPT_HAVE_CUDA" = no; then
+          cuda_dir=$(dirnmame $(dirname $OPT_CUPTI))/include
+	  OPT_CUDA_IFLAGS="-I$cuda_dir"
+       fi
+       OPT_CUPTI_IFLAGS="$OPT_CUDA_IFLAGS $OPT_CUPTI_IFLAGS"
+   else
+      AC_MSG_ERROR([papi-c-cupti specified, but no cupti lib specified!])
+   fi
+fi
 
-AC_SUBST([OPT_CUPTI])
 AC_SUBST([OPT_CUPTI_IFLAGS])
-AC_SUBST([OPT_CUPTI_LIB])
 
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing

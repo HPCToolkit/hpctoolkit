@@ -162,27 +162,28 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @OPT_PAPI_DYNAMIC_TRUE@am__append_70 = $(MY_PAPI_FILES)
 @OPT_PAPI_DYNAMIC_TRUE@am__append_71 = $(PAPI_INC_FLGS)
 @OPT_PAPI_DYNAMIC_TRUE@am__append_72 = $(PAPI_LD_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_73 = $(MY_PAPI_FILES)
-@OPT_PAPI_STATIC_TRUE@am__append_74 = $(PAPI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_75 = $(PAPI_LD_FLGS)
-@OPT_ENABLE_UPC_TRUE@am__append_76 = $(MY_UPC_FILES)
+@OPT_PAPI_CUPTI_TRUE@am__append_73 = $(CUPTI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_74 = $(MY_PAPI_FILES)
+@OPT_PAPI_STATIC_TRUE@am__append_75 = $(PAPI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_76 = $(PAPI_LD_FLGS)
 @OPT_ENABLE_UPC_TRUE@am__append_77 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_78 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_78 = $(MY_UPC_FILES)
 @OPT_ENABLE_UPC_TRUE@am__append_79 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_80 = $(OPT_UPC_LDFLAGS)
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_81 = -DLUSH_PTHREADS
+@OPT_ENABLE_UPC_TRUE@am__append_80 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_81 = $(OPT_UPC_LDFLAGS)
 @OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_82 = -DLUSH_PTHREADS
-@OPT_ENABLE_CUDA_TRUE@am__append_83 = sample-sources/gpu_blame.c gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
-@OPT_ENABLE_CUDA_TRUE@am__append_84 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_85 = $(OPT_CUDA_IFLAGS) -g
-@OPT_ENABLE_CUDA_TRUE@am__append_86 = $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_87 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_88 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_89 = $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_90 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_91 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_92 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_93 = libagent-pthread.la \
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_83 = -DLUSH_PTHREADS
+@OPT_ENABLE_CUDA_TRUE@am__append_84 = sample-sources/gpu_blame.c gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
+@OPT_ENABLE_CUDA_TRUE@am__append_85 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_86 = $(OPT_CUDA_IFLAGS) -g
+@OPT_ENABLE_CUDA_TRUE@am__append_87 = $(OPT_CUDA_LDFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_88 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_89 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_90 = $(OPT_CUDA_LDFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_91 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_92 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_93 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_94 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -833,9 +834,7 @@ OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
 OPT_CUDA = @OPT_CUDA@
 OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
 OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
-OPT_CUPTI = @OPT_CUPTI@
 OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
-OPT_CUPTI_LIB = @OPT_CUPTI_LIB@
 OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
 OPT_LIBUNWIND_IFLAGS = @OPT_LIBUNWIND_IFLAGS@
 OPT_LIBUNWIND_LDFLAGS = @OPT_LIBUNWIND_LDFLAGS@
@@ -981,11 +980,12 @@ bin_SCRIPTS = scripts/hpcsummary $(am__append_4) $(am__append_10)
 pkglibexec_SCRIPTS = scripts/hpclog
 include_HEADERS = hpctoolkit.h
 pkglib_LTLIBRARIES = $(am__append_1) $(am__append_2) $(am__append_3) \
-	$(am__append_11) $(am__append_92) $(am__append_93)
+	$(am__append_11) $(am__append_93) $(am__append_94)
 pkglib_LIBRARIES = $(am__append_6) $(am__append_7) $(am__append_8) \
 	$(am__append_9)
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
+CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 PLUGIN_CONFIG_FILES = ga io memleak $(am__append_12) $(am__append_13)
 UNW_UNIV_FILES = \
@@ -1154,11 +1154,11 @@ MY_IA64_INCLUDE_DIRS = \
 libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
 	$(am__append_16) $(am__append_17) $(am__append_30) \
 	$(am__append_43) $(am__append_59) $(am__append_70) \
-	$(am__append_76) $(am__append_83) $(UNW_SOURCE_FILES) \
+	$(am__append_77) $(am__append_84) $(UNW_SOURCE_FILES) \
 	utilities/last_func.c
 libhpcrun_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
 	$(am__append_18) $(am__append_31) $(am__append_44) \
-	$(am__append_60) $(am__append_73) $(am__append_77) \
+	$(am__append_60) $(am__append_74) $(am__append_78) \
 	$(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_wrap_a_SOURCES = \
 	monitor-exts/openmp.c
@@ -1209,12 +1209,13 @@ libhpctoolkit_a_SOURCES = \
 #-----------------------------------------------------------
 libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_19) $(am__append_32) $(am__append_45) \
-	$(am__append_61) $(am__append_71) $(am__append_78) \
-	$(am__append_81) $(am__append_84) $(UNW_INCLUDE_DIRS)
+	$(am__append_61) $(am__append_71) $(am__append_73) \
+	$(am__append_79) $(am__append_82) $(am__append_85) \
+	$(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(MY_INCLUDE_DIRS) $(am__append_20) $(am__append_33) \
-	$(am__append_46) $(am__append_62) $(am__append_74) \
-	$(am__append_79) $(am__append_82) $(UNW_INCLUDE_DIRS)
+	$(am__append_46) $(am__append_62) $(am__append_75) \
+	$(am__append_80) $(am__append_83) $(UNW_INCLUDE_DIRS)
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
@@ -1241,10 +1242,10 @@ libhpcrun_memleak_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_27) $(am__append_40) $(am__append_55) \
-	$(am__append_87) $(UNW_INCLUDE_DIRS)
+	$(am__append_88) $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(MY_INCLUDE_DIRS) $(am__append_28) $(am__append_41) \
-	$(am__append_56) $(am__append_90) $(UNW_INCLUDE_DIRS)
+	$(am__append_56) $(am__append_91) $(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_29) $(am__append_42) $(am__append_57) \
 	$(am__append_69) $(UNW_INCLUDE_DIRS)
@@ -1269,7 +1270,7 @@ libhpctoolkit_a_CPPFLAGS = \
 #-----------------------------------------------------------
 # cflags
 #-----------------------------------------------------------
-libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_85)
+libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_86)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -1278,9 +1279,9 @@ libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) $(am__append_88)
+libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) $(am__append_89)
 libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_91)
+	$(am__append_92)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 #-----------------------------------------------------------
@@ -1290,7 +1291,7 @@ libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread -lrt $(OPT_LIBUNWIND_LDFLAGS) $(am__append_47) \
-	$(am__append_72) $(am__append_80) $(am__append_86) \
+	$(am__append_72) $(am__append_81) $(am__append_87) \
 	$(UNW_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic	\
 	-Wl,--strip-debug
@@ -1304,12 +1305,12 @@ libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
 
 #libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic 	\
 #	-Wl,--strip-debug
-libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_89)
+libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_90)
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
 
 libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS) $(am__append_48) \
-	$(am__append_75) $(UNW_LD_FLAGS)
+	$(am__append_76) $(UNW_LD_FLAGS)
 MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_58) \
 	$(UNW_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)

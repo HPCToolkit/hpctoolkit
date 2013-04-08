@@ -611,11 +611,7 @@ LIBOBJS
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
-OPT_CUPTI_LIB
 OPT_CUPTI_IFLAGS
-OPT_CUPTI
-OPT_HAVE_CUPTI_FALSE
-OPT_HAVE_CUPTI_TRUE
 OPT_CUDA_LDFLAGS
 OPT_CUDA_IFLAGS
 OPT_CUDA
@@ -17788,7 +17784,6 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_papi_c_cupti" >&5
 $as_echo "$use_papi_c_cupti" >&6; }
-
  if test "$use_papi_c_cupti" = yes; then
   OPT_PAPI_CUPTI_TRUE=
   OPT_PAPI_CUPTI_FALSE='#'
@@ -18849,12 +18844,11 @@ fi
 #-------------------------------------------------
 # Option: --with-cupti=PATH
 #-------------------------------------------------
-
 OPT_HAVE_CUPTI=no
 OPT_CUPTI=
-OPT_CUPTI_INCPATH=
-OPT_CUPTI_LIBPATH=
+OPT_CUPTI_IFLAGS=
 OPT_CUPTI_LDFLAGS=
+OPT_CUPTI_LIBPATH=
 
 
 # Check whether --with-cupti was given.
@@ -18869,30 +18863,27 @@ if test "${with_cupti+set}" = set; then :
 fi
 
 
-if test "$OPT_HAVE_CUPTI" = "yes" ; then
-   if test -f $OPT_CUPTI/include/cupti.h; then
-     base_cuda=$(dirname $(dirname $OPT_CUPTI))
-     OPT_CUPTI_IFLAGS="-I$(base_cuda)/include -I${OPT_CUPTI}/include"
-   else
-     as_fn_error $? "'$OPT_CUPTI/include/cupti.h' not found" "$LINENO" 5
-   fi
-   if test -d $OPT_CUPTI/lib64; then
-      OPT_CUPTI_LIB=$OPT_CUPTI/lib64
-   else
-      OPT_CUPTI_LIB=$OPT_CUPTI/lib
+#
+# Valid cupti library
+#
+if test "$OPT_HAVE_CUPTI" = yes; then
+   if test ! -f $OPT_CUPTI/include/cupti.h; then
+      as_fn_error $? "--with-cupti=$OPT_CUPTI invalid! No cupti.h" "$LINENO" 5
    fi
 fi
 
- if test "$OPT_HAVE_CUPTI" = yes; then
-  OPT_HAVE_CUPTI_TRUE=
-  OPT_HAVE_CUPTI_FALSE='#'
-else
-  OPT_HAVE_CUPTI_TRUE='#'
-  OPT_HAVE_CUPTI_FALSE=
+if test "$use_papi_c_cupti" != no; then
+   if test "$OPT_HAVE_CUPTI" = yes; then
+       OPT_CUPTI_IFLAGS="-I$OPT_CUPTI/include"
+       if test "$OPT_HAVE_CUDA" = no; then
+          cuda_dir=$(dirnmame $(dirname $OPT_CUPTI))/include
+	  OPT_CUDA_IFLAGS="-I$cuda_dir"
+       fi
+       OPT_CUPTI_IFLAGS="$OPT_CUDA_IFLAGS $OPT_CUPTI_IFLAGS"
+   else
+      as_fn_error $? "papi-c-cupti specified, but no cupti lib specified!" "$LINENO" 5
+   fi
 fi
-
-
-
 
 
 
@@ -19315,10 +19306,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_CUDA_TRUE}" && test -z "${OPT_ENABLE_CUDA_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_CUDA\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_HAVE_CUPTI_TRUE}" && test -z "${OPT_HAVE_CUPTI_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_HAVE_CUPTI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE}"; then

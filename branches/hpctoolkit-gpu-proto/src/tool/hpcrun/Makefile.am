@@ -148,6 +148,7 @@ PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
+CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
 
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
@@ -691,6 +692,10 @@ if OPT_PAPI_DYNAMIC
   libhpcrun_la_SOURCES  += $(MY_PAPI_FILES)
   libhpcrun_la_CPPFLAGS += $(PAPI_INC_FLGS)
   libhpcrun_la_LDFLAGS  += $(PAPI_LD_FLGS)
+endif
+
+if OPT_PAPI_CUPTI
+libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
 endif
 
 if OPT_PAPI_STATIC
