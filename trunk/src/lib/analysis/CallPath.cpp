@@ -693,7 +693,7 @@ coalesceStmts(Prof::CCT::ANode* node)
 	// to the same source template or multiple stripped functions
 	// mapping to UnknownProcNm).
 	if (! Prof::CCT::ADynNode::hasMergeEffects(*n_stmtOrig, *n_stmt)) {
-	  Prof::CCT::MergeEffect effct = n_stmtOrig->mergeMe(*n_stmt);
+	  Prof::CCT::MergeEffect effct = n_stmtOrig->mergeMe(*n_stmt, /*MergeContext=*/ NULL,/*metricBegIdx=*/ 0, /*mayConflict=*/ false);
 	  DIAG_Assert(effct.isNoop(), "Analysis::CallPath::coalesceStmts: trace ids lost (" << effct.toString() << ") when merging y into x:\n"
 		      << "\tx: " << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) << "\n"
 		      << "\ty: " << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug));

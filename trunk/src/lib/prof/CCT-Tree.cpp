@@ -840,7 +840,7 @@ ANode::merge(ANode* y)
 
 MergeEffect
 ANode::mergeMe(const ANode& y, MergeContext* GCC_ATTR_UNUSED mrgCtxt,
-	       uint metricBegIdx)
+	       uint metricBegIdx, bool mayConflict)
 {
   ANode* x = this;
   
@@ -859,7 +859,7 @@ ANode::mergeMe(const ANode& y, MergeContext* GCC_ATTR_UNUSED mrgCtxt,
 
 
 MergeEffect
-ADynNode::mergeMe(const ANode& y, MergeContext* mrgCtxt, uint metricBegIdx)
+ADynNode::mergeMe(const ANode& y, MergeContext* mrgCtxt, uint metricBegIdx, bool mayConflict)
 {
   // N.B.: Assumes ADynNode::isMergable() holds
   ADynNode* x = this;
@@ -884,12 +884,20 @@ ADynNode::mergeMe(const ANode& y, MergeContext* mrgCtxt, uint metricBegIdx)
     // 3. Semi-trivial conflict: x's cpId is NULL, but y's is not
     //     => use y's cpId *if* it does not conflict with one already
     //        in x's tree.
-    DIAG_Assert(mrgCtxt, "ADynNode::mergeMe: potentially introducing cp-id conflicts; cannot verify without MergeContext!");
 
-    MergeContext::pair ret = mrgCtxt->ensureUniqueCPId(y_dyn->cpId());
-    m_cpId = ret.cpId;
-    DIAG_Assert(effct.isNoop(), DIAG_UnexpectedInput);
-    effct = ret.effect;
+    // Ignore the assertion iff the caller ensures no conflicting cpi-ids by setting mayConflict to false
+    if (mayConflict) {
+      // mayConflict is true, so we need to ensure uniqueness of cp-ids
+      DIAG_Assert(mrgCtxt, "ADynNode::mergeMe: potentially introducing cp-id conflicts; cannot verify without MergeContext!");
+      MergeContext::pair ret = mrgCtxt->ensureUniqueCPId(y_dyn->cpId());
+      m_cpId = ret.cpId;
+      DIAG_Assert(effct.isNoop(), DIAG_UnexpectedInput);
+      effct = ret.effect;
+    }
+    else {
+      // Since mayConflict is false, we can set m_cpId to y_dyn->cpId()
+      m_cpId = y_dyn->cpId();
+    }
   }
   
   return effct;
