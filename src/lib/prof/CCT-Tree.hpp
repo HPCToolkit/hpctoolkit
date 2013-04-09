@@ -579,7 +579,7 @@ public:
 
   
   virtual MergeEffect
-  mergeMe(const ANode& y, MergeContext* mrgCtxt = NULL, uint metricBegIdx = 0);
+  mergeMe(const ANode& y, MergeContext* mrgCtxt = NULL, uint metricBegIdx = 0, bool mayConflict = true);
 
 
   // findDynChild: Let z = 'this' be an interior ADynNode (otherwise the
@@ -928,7 +928,7 @@ public:
 
 
   virtual MergeEffect
-  mergeMe(const ANode& y, MergeContext* mrgCtxt = NULL, uint metricBegIdx = 0);
+  mergeMe(const ANode& y, MergeContext* mrgCtxt = NULL, uint metricBegIdx = 0, bool mayConflict = true);
   
 
   // -------------------------------------------------------
