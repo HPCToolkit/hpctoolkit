@@ -1,0 +1,20 @@
+Add a temporary patch to libmonitor to work around a signal issue on
+BGQ.  The compute node kernel on BGQ uses some extra signals in the
+range 34-39 that were confusing monitor.  So, avoid those signals
+until I figure out a better patch.
+
+To use this patch, rename this file to patch-bgq and build normally.
+Use this patch only on BG/Q.
+
+
+diff -Naurb libmonitor-0.x-r147.orig/src/signal.c libmonitor-0.x-r147/src/signal.c
+--- libmonitor-0.x-r147.orig/src/signal.c	2013-03-12 14:20:20.000000000 -0500
++++ libmonitor-0.x-r147/src/signal.c	2013-04-10 14:49:59.000000000 -0500
+@@ -95,6 +95,7 @@
+ /*  Signals that monitor treats as totally hands-off.
+  */
+ static int monitor_signal_avoid_list[] = {
++    34, 35, 36, 37, 38, 39,
+     SIGKILL, SIGSTOP, -1
+ };
+ 
