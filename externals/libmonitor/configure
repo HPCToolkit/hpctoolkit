@@ -6,7 +6,7 @@
 #
 
 PKG_NAME=libmonitor
-src=libmonitor-0.x-r147
+src=libmonitor-0.x-r149
 
 client_signals='SIGBUS, SIGSEGV, SIGPROF, 36, 37'
 
