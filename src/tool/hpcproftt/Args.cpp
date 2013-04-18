@@ -223,6 +223,10 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 , "dump",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
 
+  // Raw profile data
+    {  0 , "analytics",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+        NULL },
+
   // General
   { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
      CLP::isOptArg_long },
@@ -506,6 +510,10 @@ Args::parse(int argc, const char* const argv[])
       mode = Mode_RawDataDump;
     }
 
+      // Check for other options: Dump raw profile data
+    if (parser.isOpt("analytics")) {
+        mode = Mode_RawDataAnal;
+    }
     // FIXME: sanity check that options correspond to mode
     
     // Check for required arguments

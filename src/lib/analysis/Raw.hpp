@@ -67,6 +67,7 @@
 //*************************** User Include Files ****************************
 
 #include <include/uint.h> 
+#include <vector>
 
 //*************************** Forward Declarations ***************************
 
@@ -78,6 +79,8 @@ namespace Raw {
 
 void 
 writeAsText(/*destination,*/ const char* filenm);
+
+void analyzeSampleBlocking(const std::vector<string>& profileFiles);
 
 static inline void 
 writeAsText(/*destination,*/ const std::string& filenm)

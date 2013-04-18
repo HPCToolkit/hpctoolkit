@@ -85,7 +85,8 @@ public:
     Mode_NULL,
     Mode_SourceCorrelation,
     Mode_ObjectCorrelation,
-    Mode_RawDataDump
+    Mode_RawDataDump,
+    Mode_RawDataAnal
   };
 
   class Exception : public Diagnostics::Exception {

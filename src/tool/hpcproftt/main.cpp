@@ -82,6 +82,8 @@ main_objCorrelation(const Args& args);
 static int
 main_rawData(const std::vector<string>& profileFiles);
 
+static int
+main_rawDataAnal(const std::vector<string>& analyzeSampleBlocking);
 
 //****************************************************************************
 
@@ -131,6 +133,9 @@ realmain(int argc, char* const* argv)
     case Args::Mode_RawDataDump:
       ret = main_rawData(args.profileFiles);
       break;
+    case Args::Mode_RawDataAnal:
+        ret = main_rawDataAnal(args.profileFiles);
+        break;
     default:
       DIAG_Die("Unhandled case: " << args.mode);
   }
@@ -197,6 +202,16 @@ main_objCorrelation(const Args& args)
 					args.obj_procThreshold);
   }
   return 0;
+}
+
+
+static int
+main_rawDataAnal(const std::vector<string>& analyzeSampleBlocking)
+{
+    std::ostream& os = std::cout;
+    
+    Analysis::Raw::analyzeSampleBlocking(analyzeSampleBlocking); // pass os FIXME
+    return 0;
 }
 
 
