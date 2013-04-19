@@ -221,14 +221,14 @@ We have succssfully used versions 5.6.x - 5.10.x.
 <p><i>[<a href="#toc">Contents</a>]</i></p>
 
 <p>
-<a href="software.html">Download</a> and extract the following:
+<a href="software.html">Download</a> HPCToolkit components as follows:
 </p>
 <ol>
-  <li><p>An HPCToolkit tarball</p>
-  </li>
-
-  <li><p>An HPCToolkit externals tarball.
-      Think of this as a "package manager" that automatically configures and builds dependences not mentioned above.
+  <li><p>Download hpctoolkit from our subversion repository.</p></li>
+  <li><p>Download hpctoolkit-externals from our subversion repository.</p>
+      <p>
+      Think of hpctoolkit-externals as a "package manager" that automatically configures and builds 
+      support libraries that hpctoolkit needs.
       It contains several external libraries.
       (Some of these libraries, like libelf and libxml2 are commonly found on Linux systems, but not always.
       Others, like OpenAnalysis and SymtabAPI are almost never available.
@@ -238,18 +238,20 @@ We have succssfully used versions 5.6.x - 5.10.x.
     </p>
   </li>
 
-  <li><p>An <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> build.</p>
+  <li><p>Download binary releases of <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> for the platform on which your are building HPCToolkit.</p>
 
   <p>Note: It is perfectly reasonable to install <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> in multiple locations.
-    Since HPCToolkit's databases are portable, we often install <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> on local laptops/desktops to avoid sending display traffic over relatively slow network connections.</p>
+    Since HPCToolkit's databases are portable, we often install <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> on local laptops/desktops to avoid sending display traffic over relatively slow network connections from systems where we collect measurement data.</p>
   </li>
 
 </ol>
 
+<!--
 <p>To extract the tarball <i>zoo.tar.gz</i>, execute:</p>
 <div class="indent">
   <code>tar zxvf <i>zoo.tar.gz</i></code>
 </div>
+-->
 
 
 <!-- ********************************************************************** -->
