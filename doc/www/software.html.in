@@ -77,23 +77,6 @@ Eclipse, we provide binary releases for these tools.
     </td>
   </tr>
 
-<!--<tr>
-    <td width="50%">
-      <br />
-      <a href="http://code.google.com/p/hpcviewer/downloads/list">hpcviewer</a> (platform-specific build)
-
-    </td>
-
-
-
-    <td>
-
-https://outreach.scidac.gov/frs/?group_id=2https://outreach.scidac.gov/frs/?group_id=222
-      &nu; (after, of course, &mu;, &lambda;, &kappa;, &iota;, &theta;, &eta;, &zeta;, &epsilon;, &delta;, &gamma;, &beta;, &alpha;); not an official release but the recommended snapshot.
-
-    </td>
-  </tr> -->
-
   </table>
 </li>
 
@@ -141,34 +124,6 @@ we recommend downloading the binary releases.
 
   <br />
 
-<!--
-<li><a href="https://outreach.scidac.gov/projects/libmonitor/">libmonitor</a> (included within HPCToolkit's externals)
-
-  <table cellpadding="2" cellspacing="2" border="1" width="100%">
-  <tr>
-  <td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=libmonitor">libmonitor</a> (trunk)
-  </td>
-  <td><code>svn co https://outreach.scidac.gov/svn/libmonitor/trunk libmonitor</code>
-  </td>
-  </tr>
-  </table>
-
-  <br />
-</li>
-
-<li><a href="https://outreach.scidac.gov/projects/hpcviewer/">hpcviewer</a>
-
-  <table cellpadding="2" cellspacing="2" border="1" width="100%">
-  <tr>
-  <td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpcviewer</a> (trunk)
-  </td>
-  <td><code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk hpcviewer</code>
-  </td>
-  </tr>
-  </table>
-</li>
--->
-
 </ul>
 
 <h2>Questions, Problems, Bugs</h2>
@@ -177,7 +132,7 @@ we recommend downloading the binary releases.
 </p>
 
 
-<p>[<span class="lastupdated">Page last updated: 2013/04/18</span>]
+<p>[<span class="lastupdated">Page last updated: 2013/04/19</span>]
 </p>
 
 <!-- ********************************************************************** -->
