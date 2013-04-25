@@ -228,10 +228,19 @@ static  bool IsBlockedSample(const TraceDataStats_t & record, uint64_t span){
 static bool TraceHasExpectedSamples(int traceIndex, uint64_t startTime, uint64_t endTime, double frac) {
 	uint64_t timeRange = endTime - startTime;
 	uint64_t expectedSamples = timeRange / traceDataStats[traceIndex].medianSampleSize;
+	uint64_t correction = 0;
+
+	// if trace hasn't started yet, then assume that the trace is doing ok till startTime
+	if (traces[traceIndex][0] > startTime)
+		correction += (startTime - traces[traceIndex][0]) / traceDataStats[traceIndex].medianSampleSize; 
+	// if trace has finished, then assume that the trace would have behaved ok from endTime
+	if (traces[traceIndex][traces[traceIndex].size()-1] <  endTime)
+		correction += (endTime - traces[traceIndex][traces[traceIndex].size()-1]) / traceDataStats[traceIndex].medianSampleSize; 
+
 	// binary search of the startTime since traces are sorted.
 	int64_t left = 0;
 	int64_t right = traces[traceIndex].size();
-    int64_t mid = (right + left) / 2;
+    	int64_t mid = (right + left) / 2;
 	while (left <= right){
 		mid = (right+left)/2;
 		if ( traces[traceIndex][mid] == startTime )
@@ -251,6 +260,9 @@ static bool TraceHasExpectedSamples(int traceIndex, uint64_t startTime, uint64_t
 		if ( traces[traceIndex][i] > endTime)
 			break;
 	}
+
+	// add correction
+	numSamples += correction;
     
 	double samplePercentFromExpected = 100.0 * numSamples / expectedSamples;
     
@@ -274,7 +286,7 @@ static  bool IsBlockingSampleAffectingSystem(int traceIndex, uint64_t startTime,
         }
     }
     double unblockedTracePercent = 100.0 * unblockedTraces / numTraces ;
-    if ( unblockedTracePercent > 50 )
+    if ( unblockedTracePercent >= 50 )
         return true;
     
     return false;
