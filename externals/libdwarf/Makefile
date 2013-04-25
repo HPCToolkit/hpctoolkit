@@ -12,6 +12,7 @@ PREREQS = libelf
 FETCH_TARFILE = libdwarf-20120410.tar.gz
 
 INSTALL_CMD = ./install
+POST_FETCH_CMD = ./post-fetch
 
 include ../build-utils/Makefile.inc
 

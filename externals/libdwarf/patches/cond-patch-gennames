@@ -1,0 +1,30 @@
+Fix the Makefile for a subtle problem when cross compiling.  As part
+of the build process, libdwarf builds and runs the 'gennames' program
+on the current machine to generate the dwarf_names.[ch] files.  So,
+when cross compiling, replace CC for gennames (the cross compiler)
+with plain, ordinary gcc for the build machine.
+
+FIXME: If 'gcc' is not available or doesn't build for the current
+machine, then we need to add a configure test to find a compiler for
+the build machine.  This is possible, but unlikely.
+
+
+diff -Naurb dwarf-20120410.orig/libdwarf/Makefile.in dwarf-20120410/libdwarf/Makefile.in
+--- dwarf-20120410.orig/libdwarf/Makefile.in	2012-04-10 13:48:29.000000000 -0500
++++ dwarf-20120410/libdwarf/Makefile.in	2013-04-25 13:17:58.111494101 -0500
+@@ -136,10 +136,13 @@
+ 
+ none:
+ 	echo "do nothing"
++
+ common.o: $(srcdir)/common.c $(srcdir)/common.h
+-	$(CC) $(CFLAGS) -c $(srcdir)/common.c
++	gcc -g -O -c $(srcdir)/common.c
++
+ gennames: $(srcdir)/gennames.c $(srcdir)/dwarf.h common.o
+-	$(CC) $(CFLAGS) $(srcdir)/gennames.c common.o $(LDFLAGS) -o gennames
++	gcc -g -O $(srcdir)/gennames.c common.o -o gennames
++
+ dwarf_names.c dwarf_names.h: gennames $(srcdir)/dwarf.h
+ 	rm -f dwarf_names.h dwarf_names.c
+ 	./gennames  @dwarf_namestable@  -i $(srcdir) -o .

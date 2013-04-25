@@ -1,0 +1,16 @@
+#!/bin/sh
+#
+#  Libdwarf post-fetch
+#
+#  $Id$
+#
+
+PKG_NAME=libdwarf
+src=dwarf-20120410
+
+. ../build-utils/configure.inc
+
+if test -n "$is_cross_compile" ; then
+    echo "change compiler for gennames to current machine in cross compile"
+    patch -d "$src" -p1 < patches/cond-patch-gennames
+fi
