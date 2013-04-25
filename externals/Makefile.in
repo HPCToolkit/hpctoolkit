@@ -57,7 +57,7 @@ all install install-all: begin-build $(PACKAGES)
 
 libdwarf: libelf
 oprofile: binutils
-symtabAPI: boost libdwarf libelf libunwind libxml2
+symtabAPI: boost libdwarf libelf libxml2
 
 #
 # Catch package failures and save them in FAILURE_FILE.  This allows

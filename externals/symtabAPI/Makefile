@@ -7,7 +7,7 @@ include ../Makefile.conf
 
 PKG_NAME = symtabAPI
 
-PREREQS = boost libdwarf libelf libunwind libxml2
+PREREQS = boost libdwarf libelf libxml2
 
 PLATFORM := $(SYMTABAPI_PLATFORM)
 export PLATFORM
@@ -22,6 +22,7 @@ BUILD_DIR = symtabAPI/src/dyninst
 PATCH_DIR = patches-61
 CONFIG_CMD = ./configure-61
 INSTALL_CMD = true
+PREREQS += libunwind
 
 else
 
