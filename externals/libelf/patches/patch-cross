@@ -1,0 +1,30 @@
+Fix two defaults for the cross-compile case: (1) sizeof(long) = 8 and
+(2) the cross-compiler produces ELF type.  These involve runtime
+tests, so libelf just guesses the answer in the cross-compile case.
+
+Note: technically, we're not guaranteed that these defaults are always
+correct, eg sizeof(long) = 8.  So, we could use separate conditional
+patches for BG/P, BG/Q, MIC, etc.
+
+
+diff -Naurb libelf-0.8.13.orig/configure libelf-0.8.13/configure
+--- libelf-0.8.13.orig/configure	2008-05-23 03:18:03.000000000 -0500
++++ libelf-0.8.13/configure	2013-04-25 18:32:07.438202712 -0500
+@@ -1556,7 +1556,7 @@
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   if test "$cross_compiling" = yes; then
+-  ac_cv_sizeof_long=4
++  ac_cv_sizeof_long=8
+ else
+   cat > conftest.$ac_ext <<EOF
+ #line 1563 "configure"
+@@ -3291,7 +3291,7 @@
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   if test "$cross_compiling" = yes; then
+-  mr_cv_target_elf=no
++  mr_cv_target_elf=yes
+ else
+   cat > conftest.$ac_ext <<EOF
+ #line 3298 "configure"
