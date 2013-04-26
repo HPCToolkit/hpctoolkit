@@ -16,6 +16,10 @@ set -- CC="$CC"  \
     CFLAGS="$CFLAGS"  \
     --prefix="$prefix" "$@"
 
+if test -n "$is_cross_compile" ; then
+    set -- --host="$host" "$@"
+fi
+
 make_work_dir
 cd work || die "unable to cd: work"
 
