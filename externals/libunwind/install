@@ -45,8 +45,8 @@ cd "${prefix}/lib" || die "unable to cd: ${prefix}/lib"
 for file in libunwind.a libunwind.so*
 do
     if test -f "$file" && test ! -L "$file" ; then
-	echo objcopy "$@" "$file"
-	objcopy "$@" "$file"
+	echo $objcopy "$@" "$file"
+	$objcopy "$@" "$file"
 	test $? -eq 0 || die "objcopy failed: $file"
     fi
 done

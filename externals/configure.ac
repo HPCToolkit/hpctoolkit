@@ -292,6 +292,57 @@ fi
 AC_SUBST([gnu_make])
 
 #------------------------------------------------------------
+# OBJCOPY for cross-compile
+#------------------------------------------------------------
+
+# Search for an objcopy program that works with output produced by CC
+# or else specify one with OBJCOPY.  This is mostly for the cross-
+# compile case with names like x86_64-k1om-linux-objcopy.  Our
+# libunwind install script uses this to change some symbol names.
+
+AC_CHECK_TOOL([objcopy_prog], [objcopy], [objcopy])
+
+AC_ARG_VAR([OBJCOPY],
+    [objcopy program for binaries produced by CC, only needed
+     if autoconf fails to find a suitable program])
+
+if test -n "$OBJCOPY" ; then
+    AC_MSG_NOTICE([setting objcopy to: $OBJCOPY])
+    objcopy_prog="$OBJCOPY"
+fi
+
+AC_MSG_CHECKING([if $objcopy_prog works])
+
+srcfile="conftest.$$.c"
+objfile="conftest.$$.o"
+newobj="conftest-new.$$.o"
+rm -f "$srcfile" "$objfile" "$newobj"
+cat >"$srcfile" <<EOF
+int foo(void)
+{ return 2; }
+EOF
+
+objcopy_avail=no
+echo $CC $CFLAGS -c "$srcfile" -o "$objfile" >&AS_MESSAGE_LOG_FD
+$CC $CFLAGS -c "$srcfile" -o "$objfile" >&AS_MESSAGE_LOG_FD 2>&1
+if test $? -eq 0 ; then
+    echo $objcopy_prog --redefine-sym foo=baz "$objfile" "$newobj" >&AS_MESSAGE_LOG_FD
+    $objcopy_prog --redefine-sym foo=baz "$objfile" "$newobj" >&AS_MESSAGE_LOG_FD 2>&1
+    if test $? -eq 0 && test -f "$newobj" ; then
+	objcopy_avail=yes
+    fi
+fi
+rm -f "$srcfile" "$objfile" "$newobj"
+
+AC_MSG_RESULT([$objcopy_avail])
+
+if test "$objcopy_avail" != yes ; then
+    AC_MSG_WARN([$objcopy_prog does not work with $CC])
+fi
+
+AC_SUBST([objcopy_prog])
+
+#------------------------------------------------------------
 # Wordsize: --enable-wordsize=NUM
 #------------------------------------------------------------
 
@@ -788,6 +839,13 @@ case "$with_libunwind" in
 esac
 
 AC_MSG_RESULT([$libunwind_avail])
+
+if test "$libunwind_avail" = build && test "$objcopy_avail" != yes
+then
+    AC_MSG_ERROR([unable to find objcopy program for $CC
+set OBJCOPY to a program that works for binaries produced by $CC
+or else reconfigure without libunwind.])
+fi
 
 AC_SUBST([libunwind_prefix])
 AC_SUBST([libunwind_inc])
