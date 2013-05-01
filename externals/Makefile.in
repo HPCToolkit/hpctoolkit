@@ -38,8 +38,11 @@ NAME = @PACKAGE_NAME@
 VERSION = @PACKAGE_VERSION@
 TARNAME = @PACKAGE_TARNAME@
 
-PACKAGES = binutils boost libdwarf libelf libmonitor libunwind libxml2  \
-	old-monitor open-analysis oprofile symtabAPI xed2 xerces
+BACK_END_PKGS = boost libdwarf libelf libmonitor libunwind libxml2  \
+	symtabAPI xed2
+
+PACKAGES = $(BACK_END_PKGS)  \
+	binutils old-monitor open-analysis oprofile xerces
 
 DIST_FILES = LICENSE Makefile.conf.in Makefile.in README*  \
 	configure configure.ac externs.conf.in options.conf.in  \
@@ -48,12 +51,16 @@ DIST_FILES = LICENSE Makefile.conf.in Makefile.in README*  \
 NOBUILD_COOKIE = .dont-build
 FAILURE_FILE = BUILD-FAILURE
 
-.PHONY: all begin-build install install-all $(PACKAGES)
+.PHONY: all install install-all back-end backend begin-build
 .PHONY: fetch fetch-all clean clean-all
 .PHONY: distclean distclean-all distclean-plus dist
+.PHONY: $(PACKAGES)
 
 all install install-all: begin-build $(PACKAGES)
 	@echo "Externals build complete at `date`"
+
+back-end backend: begin-build $(BACK_END_PKGS)
+	@echo "Externals back-end build complete at `date`"
 
 libdwarf: libelf
 oprofile: binutils

@@ -697,6 +697,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_wordsize
+enable_back_end
 with_dummy_blank_line
 with_binutils
 with_boost
@@ -1344,6 +1345,8 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-wordsize=NUM   host wordsize in bits, 32 or 64, only needed if
                           autoconf computes the wrong value
+  --enable-back-end       build only those packages needed to run hpcrun on
+                          the back-end compute nodes (default no)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1361,7 +1364,7 @@ Optional Packages:
   --with-open-analysis=PATH
                           path to open analysis install directory (default
                           build)
-  --with-oprofile=PATH    path to oprofile install directory (default build)
+  --with-oprofile=PATH    path to oprofile install directory (default no)
   --with-symtabAPI=PATH   path to symtabAPI install directory (default build)
   --with-xed2=PATH        path to xed2 install directory (default build)
   --with-xerces=PATH      path to xerces/c install directory (default build)
@@ -4473,6 +4476,46 @@ xed2_local_prefix="${prefix}/xed2"
 xerces_local_prefix="${prefix}/xerces"
 
 #------------------------------------------------------------
+# Default packages: --enable-back-end
+#------------------------------------------------------------
+
+# Default set of packages to build or not to build.  These are just
+# defaults.  You can always override the choices with --with-pkg or
+# --without-pkg and the specific overrides the general.
+
+# Check whether --enable-back-end was given.
+if test "${enable_back_end+set}" = set; then :
+  enableval=$enable_back_end;
+else
+  enable_back_end=no
+fi
+
+
+# Oprofile is still experimental, so its default is no (for now).
+
+binutils_default=build
+boost_default=build
+libdwarf_default=build
+libelf_default=build
+libmonitor_default=build
+libunwind_default=build
+libxml2_default=build
+old_monitor_default=build
+open_analysis_default=build
+oprofile_default=no
+symtabAPI_default=build
+xed2_default=build
+xerces_default=build
+
+if test "$enable_back_end" != no ; then
+    binutils_default=no
+    old_monitor_default=no
+    open_analysis_default=no
+    oprofile_default=no
+    xerces_default=no
+fi
+
+#------------------------------------------------------------
 # Binutils: --with-binutils=PATH
 #------------------------------------------------------------
 
@@ -4487,7 +4530,7 @@ fi
 if test "${with_binutils+set}" = set; then :
   withval=$with_binutils;
 else
-  with_binutils=build
+  with_binutils="$binutils_default"
 fi
 
 
@@ -4539,7 +4582,7 @@ fi
 if test "${with_boost+set}" = set; then :
   withval=$with_boost;
 else
-  with_boost=build
+  with_boost="$boost_default"
 fi
 
 
@@ -4587,7 +4630,7 @@ $as_echo "$boost_avail" >&6; }
 if test "${with_libdwarf+set}" = set; then :
   withval=$with_libdwarf;
 else
-  with_libdwarf=build
+  with_libdwarf="$libdwarf_default"
 fi
 
 
@@ -4656,7 +4699,7 @@ $as_echo "$libdwarf_avail" >&6; }
 if test "${with_libelf+set}" = set; then :
   withval=$with_libelf;
 else
-  with_libelf=build
+  with_libelf="$libelf_default"
 fi
 
 
@@ -4720,7 +4763,7 @@ $as_echo "$libelf_avail" >&6; }
 if test "${with_libmonitor+set}" = set; then :
   withval=$with_libmonitor;
 else
-  with_libmonitor=build
+  with_libmonitor="$libmonitor_default"
 fi
 
 
@@ -4769,11 +4812,10 @@ $as_echo "$libmonitor_avail" >&6; }
 # due to some cross-compile issues, so disable that choice for now.
 # This is only the default, you can reenable with --with-libunwind.
 
-default=build
 case "$host_cpu" in
     *x86*64* )
 	if test "$wordsize" = 32 ; then
-	    default=no
+	    libunwind_default=no
 	fi
 	;;
 esac
@@ -4783,7 +4825,7 @@ esac
 if test "${with_libunwind+set}" = set; then :
   withval=$with_libunwind;
 else
-  with_libunwind="$default"
+  with_libunwind="$libunwind_default"
 fi
 
 
@@ -4854,7 +4896,7 @@ fi
 if test "${with_libxml2+set}" = set; then :
   withval=$with_libxml2;
 else
-  with_libxml2=build
+  with_libxml2="$libxml2_default"
 fi
 
 
@@ -4916,9 +4958,8 @@ $as_echo "$libxml2_avail" >&6; }
 # Set the default to no on Cray XT, the build fails there, and we
 # don't use it on this platform anyway.
 
-default=build
 if test "x$XTOS_VERSION" != x ; then
-    default=no
+    old_monitor_default=no
 fi
 
 
@@ -4926,7 +4967,7 @@ fi
 if test "${with_old_monitor+set}" = set; then :
   withval=$with_old_monitor;
 else
-  with_old_monitor=$default
+  with_old_monitor="$old_monitor_default"
 fi
 
 
@@ -4974,7 +5015,7 @@ $as_echo "$old_monitor_avail" >&6; }
 if test "${with_open_analysis+set}" = set; then :
   withval=$with_open_analysis;
 else
-  with_open_analysis=build
+  with_open_analysis="$open_analysis_default"
 fi
 
 
@@ -5022,7 +5063,7 @@ $as_echo "$open_analysis_avail" >&6; }
 if test "${with_oprofile+set}" = set; then :
   withval=$with_oprofile;
 else
-  with_oprofile=no
+  with_oprofile="$oprofile_default"
 fi
 
 
@@ -5074,7 +5115,7 @@ $as_echo "$oprofile_avail" >&6; }
 if test "${with_symtabAPI+set}" = set; then :
   withval=$with_symtabAPI;
 else
-  with_symtabAPI=build
+  with_symtabAPI="$symtabAPI_default"
 fi
 
 
@@ -5160,11 +5201,9 @@ $as_echo "$symtabAPI_avail" >&6; }
 
 # Used on x86 and x86_64.
 
-default=no
 case "$host_cpu" in
-    *x86* | *i*86* )
-	default=build
-	;;
+    *x86* | *i*86* ) ;;
+    * ) xed2_default=no ;;
 esac
 
 
@@ -5172,7 +5211,7 @@ esac
 if test "${with_xed2+set}" = set; then :
   withval=$with_xed2;
 else
-  with_xed2="$default"
+  with_xed2="$xed2_default"
 fi
 
 
@@ -5220,7 +5259,7 @@ $as_echo "$xed2_avail" >&6; }
 if test "${with_xerces+set}" = set; then :
   withval=$with_xerces;
 else
-  with_xerces=build
+  with_xerces="$xerces_default"
 fi
 
 
@@ -6525,8 +6564,6 @@ $as_echo "$as_me: symtabAPI: $symtabAPI_avail" >&6;}
 $as_echo "$as_me: xed2: $xed2_avail" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: xerces: $xerces_avail" >&5
 $as_echo "$as_me: xerces: $xerces_avail" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: mpi: $with_mpi" >&5
-$as_echo "$as_me: mpi: $with_mpi" >&6;}
 
 if test "$warn_non_gcc" = yes ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5

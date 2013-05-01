@@ -5,6 +5,9 @@
 
 ext_version='@svn_revision@'
 
+ext_build='@build@'
+ext_host='@host@'
+
 ext_cc_path='@CC_PATH@'
 ext_cxx_path='@CXX_PATH@'
 ext_wordsize='@wordsize@'

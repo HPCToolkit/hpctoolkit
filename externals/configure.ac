@@ -515,6 +515,45 @@ xed2_local_prefix="${prefix}/xed2"
 xerces_local_prefix="${prefix}/xerces"
 
 #------------------------------------------------------------
+# Default packages: --enable-back-end
+#------------------------------------------------------------
+
+# Default set of packages to build or not to build.  These are just
+# defaults.  You can always override the choices with --with-pkg or
+# --without-pkg and the specific overrides the general.
+
+AC_ARG_ENABLE([back-end],
+    [AS_HELP_STRING([--enable-back-end],
+        [build only those packages needed to run hpcrun on the
+	 back-end compute nodes (default no)])],
+    [],
+    [enable_back_end=no])
+
+# Oprofile is still experimental, so its default is no (for now).
+
+binutils_default=build
+boost_default=build
+libdwarf_default=build
+libelf_default=build
+libmonitor_default=build
+libunwind_default=build
+libxml2_default=build
+old_monitor_default=build
+open_analysis_default=build
+oprofile_default=no
+symtabAPI_default=build
+xed2_default=build
+xerces_default=build
+
+if test "$enable_back_end" != no ; then
+    binutils_default=no
+    old_monitor_default=no
+    open_analysis_default=no
+    oprofile_default=no
+    xerces_default=no
+fi
+
+#------------------------------------------------------------
 # Binutils: --with-binutils=PATH
 #------------------------------------------------------------
 
@@ -523,7 +562,7 @@ AC_ARG_WITH([binutils],
     [AS_HELP_STRING([--with-binutils=PATH],
 	[path to binutils install directory (default build)])],
     [],
-    [with_binutils=build])
+    [with_binutils="$binutils_default"])
 
 AC_MSG_CHECKING([binutils])
 
@@ -569,7 +608,7 @@ AC_ARG_WITH([boost],
     [AS_HELP_STRING([--with-boost=PATH],
 	[path to boost install directory (default build)])],
     [],
-    [with_boost=build])
+    [with_boost="$boost_default"])
 
 AC_MSG_CHECKING([boost])
 
@@ -612,7 +651,7 @@ AC_ARG_WITH([libdwarf],
     [AS_HELP_STRING([--with-libdwarf=PATH],
 	[path to libdwarf install directory (default build)])],
     [],
-    [with_libdwarf=build])
+    [with_libdwarf="$libdwarf_default"])
 
 AC_MSG_CHECKING([libdwarf])
 
@@ -676,7 +715,7 @@ AC_ARG_WITH([libelf],
     [AS_HELP_STRING([--with-libelf=PATH],
 	[path to libelf install directory (default build)])],
     [],
-    [with_libelf=build])
+    [with_libelf="$libelf_default"])
 
 AC_MSG_CHECKING([libelf])
 
@@ -735,7 +774,7 @@ AC_ARG_WITH([libmonitor],
     [AS_HELP_STRING([--with-libmonitor=PATH],
 	[path to libmonitor install directory (default build)])],
     [],
-    [with_libmonitor=build])
+    [with_libmonitor="$libmonitor_default"])
 
 AC_MSG_CHECKING([libmonitor])
 
@@ -780,11 +819,10 @@ AC_SUBST([libmonitor_prefix])
 # due to some cross-compile issues, so disable that choice for now.
 # This is only the default, you can reenable with --with-libunwind.
 
-default=build
 case "$host_cpu" in
     *x86*64* )
 	if test "$wordsize" = 32 ; then
-	    default=no
+	    libunwind_default=no
 	fi
 	;;
 esac
@@ -793,7 +831,7 @@ AC_ARG_WITH([libunwind],
     [AS_HELP_STRING([--with-libunwind=PATH],
 	[path to libunwind install directory (default build)])],
     [],
-    [with_libunwind="$default"])
+    [with_libunwind="$libunwind_default"])
 
 AC_MSG_CHECKING([libunwind])
 
@@ -859,7 +897,7 @@ AC_ARG_WITH([libxml2],
     [AS_HELP_STRING([--with-libxml2=PATH],
 	[path to libxml2 install directory (default build)])],
     [],
-    [with_libxml2=build])
+    [with_libxml2="$libxml2_default"])
 
 AC_MSG_CHECKING([libxml2])
 
@@ -917,16 +955,15 @@ AC_SUBST([libxml2_lib])
 # Set the default to no on Cray XT, the build fails there, and we
 # don't use it on this platform anyway.
 
-default=build
 if test "x$XTOS_VERSION" != x ; then
-    default=no
+    old_monitor_default=no
 fi
 
 AC_ARG_WITH([old-monitor],
     [AS_HELP_STRING([--with-old-monitor=PATH],
 	[path to old monitor install directory (default build)])],
     [],
-    [with_old_monitor=$default])
+    [with_old_monitor="$old_monitor_default"])
 
 AC_MSG_CHECKING([old-monitor])
 
@@ -969,7 +1006,7 @@ AC_ARG_WITH([open-analysis],
     [AS_HELP_STRING([--with-open-analysis=PATH],
 	[path to open analysis install directory (default build)])],
     [],
-    [with_open_analysis=build])
+    [with_open_analysis="$open_analysis_default"])
 
 AC_MSG_CHECKING([open-analysis])
 
@@ -1010,9 +1047,9 @@ AC_SUBST([open_analysis_prefix])
 
 AC_ARG_WITH([oprofile],
     [AS_HELP_STRING([--with-oprofile=PATH],
-	[path to oprofile install directory (default build)])],
+	[path to oprofile install directory (default no)])],
     [],
-    [with_oprofile=no])
+    [with_oprofile="$oprofile_default"])
 
 AC_MSG_CHECKING([oprofile])
 
@@ -1059,7 +1096,7 @@ AC_ARG_WITH([symtabAPI],
     [AS_HELP_STRING([--with-symtabAPI=PATH],
 	[path to symtabAPI install directory (default build)])],
     [],
-    [with_symtabAPI=build])
+    [with_symtabAPI="$symtabAPI_default"])
 
 AC_MSG_CHECKING([symtabAPI])
 
@@ -1141,18 +1178,16 @@ AC_SUBST([use_symtab_61])
 
 # Used on x86 and x86_64.
 
-default=no
 case "$host_cpu" in
-    *x86* | *i*86* )
-	default=build
-	;;
+    *x86* | *i*86* ) ;;
+    * ) xed2_default=no ;;
 esac
 
 AC_ARG_WITH([xed2],
     [AS_HELP_STRING([--with-xed2=PATH],
 	[path to xed2 install directory (default build)])],
     [],
-    [with_xed2="$default"])
+    [with_xed2="$xed2_default"])
 
 AC_MSG_CHECKING([xed2])
 
@@ -1195,7 +1230,7 @@ AC_ARG_WITH([xerces],
     [AS_HELP_STRING([--with-xerces=PATH],
 	[path to xerces/c install directory (default build)])],
     [],
-    [with_xerces=build])
+    [with_xerces="$xerces_default"])
 
 AC_MSG_CHECKING([xerces])
 
@@ -1309,7 +1344,7 @@ AC_MSG_NOTICE([oprofile: $oprofile_avail])
 AC_MSG_NOTICE([symtabAPI: $symtabAPI_avail])
 AC_MSG_NOTICE([xed2: $xed2_avail])
 AC_MSG_NOTICE([xerces: $xerces_avail])
-AC_MSG_NOTICE([mpi: $with_mpi])
+dnl AC_MSG_NOTICE([mpi: $with_mpi])
 
 if test "$warn_non_gcc" = yes ; then
     AC_MSG_NOTICE([])
