@@ -102,6 +102,8 @@ MYLDFLAGS = \
 	-L$(LIBDWARF_LIB) -ldwarf		\
 	-L$(LIBELF_LIB) -lelf
 
+MYLDADD = $(HPCLIB_SupportLean)
+
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
 #############################################################################
@@ -117,6 +119,7 @@ hpcfnbounds_bin_SOURCES  = $(MYSOURCES)
 hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS)
 hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcfnbounds_bin_LDFLAGS  = $(MYLDFLAGS)
+hpcfnbounds_bin_LDADD    = $(MYLDADD)
 
 if HOST_CPU_X86_FAMILY
   hpcfnbounds_bin_SOURCES  += x86-process-ranges.cpp amd-xop.c
