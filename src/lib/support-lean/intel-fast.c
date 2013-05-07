@@ -78,6 +78,13 @@ _intel_fast_memcpy(void *dest, const void *src, size_t n)
 }
 
 
+void * __attribute__ ((weak))
+_intel_fast_memset(void *s, int c, size_t n)
+{
+  return memset(s, c, n);
+}
+
+
 size_t __attribute__ ((weak))
 __intel_sse2_strlen(const char *s)
 {
