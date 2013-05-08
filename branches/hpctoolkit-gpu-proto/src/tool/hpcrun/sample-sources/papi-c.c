@@ -621,6 +621,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
     // **** No overflow for synchronous events ****
     if (component_uses_sync_samples(cidx)) {
       TMSG(PAPI, "event code %d (component %d) is synchronous, so do NOT set overflow", evcode, cidx);
+      TMSG(PAPI, "Set up sync handler instead");
       TMSG(PAPI, "synchronous sample component index = %d", cidx);
       continue;
     }

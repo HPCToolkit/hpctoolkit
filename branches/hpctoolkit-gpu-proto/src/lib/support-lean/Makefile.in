@@ -82,8 +82,8 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCsupport_lean_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCsupport_lean_la-timer.lo \
-	libHPCsupport_lean_la-OSUtil.lo
+am__objects_1 = libHPCsupport_lean_la-intel-fast.lo \
+	libHPCsupport_lean_la-timer.lo libHPCsupport_lean_la-OSUtil.lo
 am_libHPCsupport_lean_la_OBJECTS = $(am__objects_1)
 libHPCsupport_lean_la_OBJECTS = $(am_libHPCsupport_lean_la_OBJECTS)
 libHPCsupport_lean_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -348,6 +348,7 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 # Local settings
 #############################################################################
 MYSOURCES = \
+	intel-fast.c \
 	timer.h timer.c \
 	OSUtil.h OSUtil.c
 
@@ -427,6 +428,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-OSUtil.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-intel-fast.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-timer.Plo@am__quote@
 
 .c.o:
@@ -449,6 +451,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
+
+libHPCsupport_lean_la-intel-fast.lo: intel-fast.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -MT libHPCsupport_lean_la-intel-fast.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_lean_la-intel-fast.Tpo -c -o libHPCsupport_lean_la-intel-fast.lo `test -f 'intel-fast.c' || echo '$(srcdir)/'`intel-fast.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCsupport_lean_la-intel-fast.Tpo $(DEPDIR)/libHPCsupport_lean_la-intel-fast.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='intel-fast.c' object='libHPCsupport_lean_la-intel-fast.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCsupport_lean_la-intel-fast.lo `test -f 'intel-fast.c' || echo '$(srcdir)/'`intel-fast.c
 
 libHPCsupport_lean_la-timer.lo: timer.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -MT libHPCsupport_lean_la-timer.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_lean_la-timer.Tpo -c -o libHPCsupport_lean_la-timer.lo `test -f 'timer.c' || echo '$(srcdir)/'`timer.c

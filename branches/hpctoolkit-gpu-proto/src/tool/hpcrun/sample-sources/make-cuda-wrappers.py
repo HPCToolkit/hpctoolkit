@@ -35,7 +35,8 @@ driverSkipList = [
 'cuStreamSynchronize',
 'cuStreamDestroy_v2',
 'cuEventSynchronize',
-'cuLaunchGridAsync']
+'cuLaunchGridAsync',
+'cuLaunchKernel']
 
 
 runtimeSkipList = [

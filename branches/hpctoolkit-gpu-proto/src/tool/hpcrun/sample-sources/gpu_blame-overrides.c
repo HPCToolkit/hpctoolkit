@@ -1700,6 +1700,26 @@ CUresult cuLaunchGridAsync(CUfunction f, int grid_width, int grid_height, CUstre
     return ret;
 }
 
+CUresult cuLaunchKernel (CUfunction f,
+                                unsigned int gridDimX,
+                                unsigned int gridDimY,
+                                unsigned int gridDimZ,
+                                unsigned int blockDimX,
+                                unsigned int blockDimY,
+                                unsigned int blockDimZ,
+                                unsigned int sharedMemBytes,
+                                CUstream hStream,
+                                void **kernelParams,
+                                void **extra) {
+    ASYNC_KERNEL_PROLOGUE(streamId, event_node, context, cct_node, ((cudaStream_t)hStream), 0);
+
+    CUresult ret = cuDriverFunctionPointer[cuLaunchKernelEnum].cuLaunchKernelReal(f, gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ, sharedMemBytes, hStream, kernelParams, extra);
+
+    ASYNC_KERNEL_EPILOGUE(event_node, ((cudaStream_t)hStream));
+
+    return ret;
+}
+
 
 CUresult cuStreamDestroy(CUstream stream) {
     

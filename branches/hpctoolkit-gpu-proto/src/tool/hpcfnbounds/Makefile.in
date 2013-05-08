@@ -101,7 +101,7 @@ am__objects_1 = hpcfnbounds_bin-main.$(OBJEXT) \
 am_hpcfnbounds_bin_OBJECTS = $(am__objects_1) $(am__objects_2) \
 	$(am__objects_3)
 hpcfnbounds_bin_OBJECTS = $(am_hpcfnbounds_bin_OBJECTS)
-hpcfnbounds_bin_LDADD = $(LDADD)
+hpcfnbounds_bin_DEPENDENCIES = $(MYLDADD)
 hpcfnbounds_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) \
@@ -415,12 +415,14 @@ MYLDFLAGS = \
 	-L$(LIBDWARF_LIB) -ldwarf		\
 	-L$(LIBELF_LIB) -lelf
 
+MYLDADD = $(HPCLIB_SupportLean)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibexec_SCRIPTS = hpcfnbounds
 hpcfnbounds_bin_SOURCES = $(MYSOURCES) $(am__append_1) $(am__append_4)
 hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS) $(am__append_2)
 hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcfnbounds_bin_LDFLAGS = $(MYLDFLAGS) $(am__append_3)
+hpcfnbounds_bin_LDADD = $(MYLDADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS

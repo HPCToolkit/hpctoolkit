@@ -71,6 +71,7 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
+	intel-fast.c \
 	timer.h timer.c \
 	OSUtil.h OSUtil.c
 

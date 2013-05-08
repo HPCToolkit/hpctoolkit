@@ -242,6 +242,10 @@ AC_PROG_SED
 
 AC_PROG_CXXCPP()
 
+AC_ARG_VAR([LD],
+    [ld program for binaries produced by CC, only needed if
+     autoconf fails to find a suitable program])
+
 HPC_PROG_MPICXX(HPC_MPICXX_LIST)
 
 AC_PROG_INSTALL()
@@ -692,6 +696,77 @@ HOST_CXXFLAGS="${HOST_CXXFLAGS} ${my_opt_cxxflags}"
 HOST_HPCSTRUCT_LDFLAGS="${HOST_HPCSTRUCT_LDFLAGS} ${my_demangle_ldflags}"
 HOST_HPCPROF_LDFLAGS="${HOST_HPCPROF_LDFLAGS} ${my_demangle_ldflags}"
 HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
+
+
+#-------------------------------------------------
+# LD -- find correct arch type for ld
+#-------------------------------------------------
+
+# Autoconf gets the wrong arch type for ld in a cross compile, at
+# least on Intel MIC.  Here, we test that ld supports relocatable
+# linking (ld -r).  If not, then try other arch types until we find
+# one that works.
+
+test_ld_r()
+{
+  ld_cmd="$*"
+  AC_MSG_CHECKING([relocatable linking: $ld_cmd ])
+  rm -f "$obj3"
+  $ld_cmd -r "$obj1" "$obj2" -o "$obj3" >&AS_MESSAGE_LOG_FD 2>&1
+  if test $? -eq 0 && test -f "$obj3" ; then
+    AC_MSG_RESULT(yes)
+    return 0
+  else
+    AC_MSG_RESULT(no)
+    return 1
+  fi
+}
+
+src1="conftest.$$.1.c"
+src2="conftest.$$.2.c"
+obj1="conftest.$$.1.o"
+obj2="conftest.$$.2.o"
+obj3="conftest.$$.3.o"
+
+rm -f "$src1" "$src2" "$obj1" "$obj2" "$obj3"
+
+echo 'int foo(void) { return 2; }' >"$src1"
+echo 'int baz(void) { return 4; }' >"$src2"
+
+$CC $CFLAGS -c "$src1" -o "$obj1" >&AS_MESSAGE_LOG_FD 2>&1
+$CC $CFLAGS -c "$src2" -o "$obj2" >&AS_MESSAGE_LOG_FD 2>&1
+
+found_ld=no
+
+if test_ld_r $LD ; then
+  # autoconf's choice for LD works
+  found_ld=yes
+else
+  # try other arch types from LD -V
+  # be careful not to create a subshell (redirect fd)
+  ld_base=`echo $LD | awk '{ print $1 }'`
+
+  emul=false
+  arch_list=`$ld_base -V 2>&1`
+  for arch in $arch_list
+  do
+    if $emul && test_ld_r $ld_base -m $arch ; then
+      LD="$ld_base -m $arch"
+      found_ld=yes
+      break
+    fi
+    # skip output until 'Supported emulations:'
+    case "$arch" in
+      *emulat* ) emul=true ;;
+    esac
+  done
+fi
+
+rm -f "$src1" "$src2" "$obj1" "$obj2" "$obj3"
+
+if test "$found_ld" != yes ; then
+  AC_MSG_ERROR([unable to find correct arch type for ld])
+fi
 
 
 #-------------------------------------------------
