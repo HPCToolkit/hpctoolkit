@@ -1,0 +1,380 @@
+Larry Meadows's patch to add the k1om arch type to binutils.
+
+
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/Makefile.am version-binutils-2.20.1/binutils-2.20.1/bfd/Makefile.am
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/Makefile.am	2010-11-08 01:31:00.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/Makefile.am	2013-05-08 00:31:29.074222337 -0500
+@@ -89,6 +89,7 @@
+ 	cpu-i370.lo \
+ 	cpu-i386.lo \
+ 	cpu-l1om.lo \
++	cpu-k1om.lo \
+ 	cpu-i860.lo \
+ 	cpu-i960.lo \
+ 	cpu-ia64.lo \
+@@ -160,6 +161,7 @@
+ 	cpu-i370.c \
+ 	cpu-i386.c \
+ 	cpu-l1om.c \
++	cpu-k1om.c \
+ 	cpu-i860.c \
+ 	cpu-i960.c \
+ 	cpu-ia64.c \
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/Makefile.in version-binutils-2.20.1/binutils-2.20.1/bfd/Makefile.in
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/Makefile.in	2010-11-08 01:31:01.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/Makefile.in	2013-05-08 00:31:29.075225338 -0500
+@@ -384,6 +384,7 @@
+ 	cpu-i370.lo \
+ 	cpu-i386.lo \
+ 	cpu-l1om.lo \
++	cpu-k1om.lo \
+ 	cpu-i860.lo \
+ 	cpu-i960.lo \
+ 	cpu-ia64.lo \
+@@ -455,6 +456,7 @@
+ 	cpu-i370.c \
+ 	cpu-i386.c \
+ 	cpu-l1om.c \
++	cpu-k1om.c \
+ 	cpu-i860.c \
+ 	cpu-i960.c \
+ 	cpu-ia64.c \
+@@ -1245,6 +1247,7 @@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpu-ip2k.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpu-iq2000.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpu-l1om.Plo@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpu-k1om.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpu-lm32.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpu-m10200.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpu-m10300.Plo@am__quote@
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/archures.c version-binutils-2.20.1/binutils-2.20.1/bfd/archures.c
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/archures.c	2010-11-08 01:31:00.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/archures.c	2013-05-08 00:31:29.076222191 -0500
+@@ -181,14 +181,20 @@
+ .#define bfd_mach_mipsisa64             64
+ .#define bfd_mach_mipsisa64r2           65
+ .  bfd_arch_i386,      {* Intel 386 *}
+-.#define bfd_mach_i386_i386 1
+-.#define bfd_mach_i386_i8086 2
+-.#define bfd_mach_i386_i386_intel_syntax 3
+-.#define bfd_mach_x86_64 64
+-.#define bfd_mach_x86_64_intel_syntax 65
++.#define bfd_mach_i386_intel_syntax	(1 << 0)
++.#define bfd_mach_i386_i8086		(1 << 1)
++.#define bfd_mach_i386_i386		(1 << 2)
++.#define bfd_mach_x86_64		(1 << 3)
++.#define bfd_mach_x64_32		(1 << 4)
++.#define bfd_mach_i386_i386_intel_syntax (bfd_mach_i386_i386 | bfd_mach_i386_intel_syntax)
++.#define bfd_mach_x86_64_intel_syntax	(bfd_mach_x86_64 | bfd_mach_i386_intel_syntax)
++.#define bfd_mach_x64_32_intel_syntax	(bfd_mach_x64_32 | bfd_mach_i386_intel_syntax)
+ .  bfd_arch_l1om,   {* Intel L1OM *}
+-.#define bfd_mach_l1om 66
+-.#define bfd_mach_l1om_intel_syntax 67
++.#define bfd_mach_l1om			(1 << 5)
++.#define bfd_mach_l1om_intel_syntax	(bfd_mach_l1om | bfd_mach_i386_intel_syntax)
++.  bfd_arch_k1om,   {* Intel K1OM *}
++.#define bfd_mach_k1om			(1 << 6)
++.#define bfd_mach_k1om_intel_syntax	(bfd_mach_k1om | bfd_mach_i386_intel_syntax)
+ .  bfd_arch_we32k,     {* AT&T WE32xxx *}
+ .  bfd_arch_tahoe,     {* CCI/Harris Tahoe *}
+ .  bfd_arch_i860,      {* Intel 860 *}
+@@ -486,6 +492,7 @@
+ extern const bfd_arch_info_type bfd_ip2k_arch;
+ extern const bfd_arch_info_type bfd_iq2000_arch;
+ extern const bfd_arch_info_type bfd_l1om_arch;
++extern const bfd_arch_info_type bfd_k1om_arch;
+ extern const bfd_arch_info_type bfd_lm32_arch;
+ extern const bfd_arch_info_type bfd_m32c_arch;
+ extern const bfd_arch_info_type bfd_m32r_arch;
+@@ -562,6 +569,7 @@
+     &bfd_ip2k_arch,
+     &bfd_iq2000_arch,
+     &bfd_l1om_arch,
++    &bfd_k1om_arch,
+     &bfd_lm32_arch,
+     &bfd_m32c_arch,
+     &bfd_m32r_arch,
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/bfd-in2.h version-binutils-2.20.1/binutils-2.20.1/bfd/bfd-in2.h
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/bfd-in2.h	2010-11-08 01:31:01.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/bfd-in2.h	2013-05-08 00:31:29.078220863 -0500
+@@ -1881,14 +1881,20 @@
+ #define bfd_mach_mipsisa64             64
+ #define bfd_mach_mipsisa64r2           65
+   bfd_arch_i386,      /* Intel 386 */
+-#define bfd_mach_i386_i386 1
+-#define bfd_mach_i386_i8086 2
+-#define bfd_mach_i386_i386_intel_syntax 3
+-#define bfd_mach_x86_64 64
+-#define bfd_mach_x86_64_intel_syntax 65
++#define bfd_mach_i386_intel_syntax     (1 << 0)
++#define bfd_mach_i386_i8086            (1 << 1)
++#define bfd_mach_i386_i386             (1 << 2)
++#define bfd_mach_x86_64                (1 << 3)
++#define bfd_mach_x64_32                (1 << 4)
++#define bfd_mach_i386_i386_intel_syntax (bfd_mach_i386_i386 | bfd_mach_i386_intel_syntax)
++#define bfd_mach_x86_64_intel_syntax   (bfd_mach_x86_64 | bfd_mach_i386_intel_syntax)
++#define bfd_mach_x64_32_intel_syntax   (bfd_mach_x64_32 | bfd_mach_i386_intel_syntax)
+   bfd_arch_l1om,   /* Intel L1OM */
+-#define bfd_mach_l1om 66
+-#define bfd_mach_l1om_intel_syntax 67
++#define bfd_mach_l1om                  (1 << 5)
++#define bfd_mach_l1om_intel_syntax     (bfd_mach_l1om | bfd_mach_i386_intel_syntax)
++  bfd_arch_k1om,   /* Intel K1OM */
++#define bfd_mach_k1om                  (1 << 6)
++#define bfd_mach_k1om_intel_syntax     (bfd_mach_k1om | bfd_mach_i386_intel_syntax)
+   bfd_arch_we32k,     /* AT&T WE32xxx */
+   bfd_arch_tahoe,     /* CCI/Harris Tahoe */
+   bfd_arch_i860,      /* Intel 860 */
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/config.bfd version-binutils-2.20.1/binutils-2.20.1/bfd/config.bfd
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/config.bfd	2010-11-08 01:31:00.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/config.bfd	2013-05-08 00:31:29.080224977 -0500
+@@ -601,7 +601,7 @@
+   i[3-7]86-*-linux-*)
+     targ_defvec=bfd_elf32_i386_vec
+     targ_selvecs="i386linux_vec i386pei_vec"
+-    targ64_selvecs="bfd_elf64_x86_64_vec bfd_elf64_l1om_vec"
++    targ64_selvecs="bfd_elf64_x86_64_vec bfd_elf64_l1om_vec bfd_elf64_k1om_vec"
+     ;;
+ #ifdef BFD64
+   x86_64-*-darwin*)
+@@ -617,7 +617,7 @@
+     ;;
+   x86_64-*-elf*)
+     targ_defvec=bfd_elf64_x86_64_vec
+-    targ_selvecs="bfd_elf32_i386_vec bfd_elf64_l1om_vec i386coff_vec"
++    targ_selvecs="bfd_elf32_i386_vec bfd_elf64_l1om_vec bfd_elf64_k1om_vec i386coff_vec"
+     want64=true
+     ;;
+   x86_64-*-freebsd* | x86_64-*-kfreebsd*-gnu)
+@@ -632,7 +632,7 @@
+     ;;
+   x86_64-*-linux-*)
+     targ_defvec=bfd_elf64_x86_64_vec
+-    targ_selvecs="bfd_elf32_i386_vec i386linux_vec i386pei_vec x86_64pei_vec bfd_elf64_l1om_vec"
++    targ_selvecs="bfd_elf32_i386_vec i386linux_vec i386pei_vec x86_64pei_vec bfd_elf64_l1om_vec bfd_elf64_k1om_vec"
+     want64=true
+     ;;
+   x86_64-*-mingw*)
+@@ -1585,3 +1585,10 @@
+     targ_archs="$targ_archs bfd_l1om_arch"
+     ;;
+ esac
++#
++# If we support Intel K1OM target, then add support for bfd_k1om_arch.
++case "${targ_defvec} ${targ_selvecs}" in
++  *bfd_elf64_k1om_vec*)
++    targ_archs="$targ_archs bfd_k1om_arch"
++    ;;
++esac
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/configure version-binutils-2.20.1/binutils-2.20.1/bfd/configure
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/configure	2010-11-08 01:31:00.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/configure	2013-05-08 00:31:29.086348716 -0500
+@@ -14931,6 +14931,8 @@
+     bfd_elf64_x86_64_vec)	tb="$tb elf64-x86-64.lo elf-ifunc.lo elf64.lo $elf"; target_size=64 ;;
+     bfd_elf64_l1om_vec)		tb="$tb elf64-x86-64.lo elf-ifunc.lo elf64.lo $elf"; target_size=64 ;;
+     bfd_elf64_l1om_freebsd_vec) tb="$tb elf64-x86-64.lo elf-ifunc.lo elf64.lo $elf"; target_size=64 ;;
++    bfd_elf64_k1om_vec)		tb="$tb elf64-x86-64.lo elf-ifunc.lo elf64.lo $elf"; target_size=64 ;;
++    bfd_elf64_k1om_freebsd_vec) tb="$tb elf64-x86-64.lo elf-ifunc.lo elf64.lo $elf"; target_size=64 ;;
+     bfd_mmo_vec)		tb="$tb mmo.lo" target_size=64 ;;
+     bfd_powerpc_pe_vec)         tb="$tb pe-ppc.lo peigen.lo cofflink.lo" ;;
+     bfd_powerpc_pei_vec)        tb="$tb pei-ppc.lo peigen.lo cofflink.lo" ;;
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/configure.in version-binutils-2.20.1/binutils-2.20.1/bfd/configure.in
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/configure.in	2010-11-08 01:31:00.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/configure.in	2013-05-08 00:31:29.112213749 -0500
+@@ -819,6 +819,8 @@
+     bfd_elf64_x86_64_vec)	tb="$tb elf64-x86-64.lo elf-ifunc.lo elf64.lo $elf"; target_size=64 ;;
+     bfd_elf64_l1om_vec)		tb="$tb elf64-x86-64.lo elf-ifunc.lo elf64.lo $elf"; target_size=64 ;;
+     bfd_elf64_l1om_freebsd_vec) tb="$tb elf64-x86-64.lo elf-ifunc.lo elf64.lo $elf"; target_size=64 ;;
++    bfd_elf64_k1om_vec)         tb="$tb elf64-x86-64.lo elf-ifunc.lo elf64.lo $elf"; target_size=64 ;;
++    bfd_elf64_k1om_freebsd_vec) tb="$tb elf64-x86-64.lo elf-ifunc.lo elf64.lo $elf"; target_size=64 ;;
+     bfd_mmo_vec)		tb="$tb mmo.lo" target_size=64 ;;
+     bfd_powerpc_pe_vec)         tb="$tb pe-ppc.lo peigen.lo cofflink.lo" ;;
+     bfd_powerpc_pei_vec)        tb="$tb pei-ppc.lo peigen.lo cofflink.lo" ;;
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/cpu-k1om.c version-binutils-2.20.1/binutils-2.20.1/bfd/cpu-k1om.c
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/cpu-k1om.c	1969-12-31 18:00:00.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/cpu-k1om.c	2013-05-08 00:31:29.112213749 -0500
+@@ -0,0 +1,59 @@
++/* BFD support for the Intel K1OM architecture.
++   Copyright 2011
++   Free Software Foundation, Inc.
++
++   This file is part of BFD, the Binary File Descriptor library.
++
++   This program is free software; you can redistribute it and/or modify
++   it under the terms of the GNU General Public License as published by
++   the Free Software Foundation; either version 3 of the License, or
++   (at your option) any later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program; if not, write to the Free Software
++   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
++   MA 02110-1301, USA.  */
++
++#include "sysdep.h"
++#include "bfd.h"
++#include "libbfd.h"
++
++extern void * bfd_arch_i386_short_nop_fill (bfd_size_type, bfd_boolean,
++					    bfd_boolean);
++
++static const bfd_arch_info_type bfd_k1om_arch_intel_syntax =
++{
++  64, /* 64 bits in a word */
++  64, /* 64 bits in an address */
++  8,  /* 8 bits in a byte */
++  bfd_arch_k1om,
++  bfd_mach_k1om_intel_syntax,
++  "k1om:intel",
++  "k1om:intel",
++  3,
++  TRUE,
++  bfd_default_compatible,
++  bfd_default_scan,
++  0
++};
++
++const bfd_arch_info_type bfd_k1om_arch =
++{
++  64, /* 64 bits in a word */
++  64, /* 64 bits in an address */
++  8,  /* 8 bits in a byte */
++  bfd_arch_k1om,
++  bfd_mach_k1om,
++  "k1om",
++  "k1om",
++  3,
++  TRUE,
++  bfd_default_compatible,
++  bfd_default_scan,
++  &bfd_k1om_arch_intel_syntax
++};
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/elf64-x86-64.c version-binutils-2.20.1/binutils-2.20.1/bfd/elf64-x86-64.c
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/elf64-x86-64.c	2010-11-08 01:31:01.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/elf64-x86-64.c	2013-05-08 00:31:29.113347890 -0500
+@@ -4536,3 +4536,53 @@
+ #define elf_backend_post_process_headers  _bfd_elf_set_osabi
+ 
+ #include "elf64-target.h"
++
++/* Intel K1OM support.  */
++
++static bfd_boolean
++elf64_k1om_elf_object_p (bfd *abfd)
++{
++  /* Set the right machine number for an K1OM elf64 file.  */
++  bfd_default_set_arch_mach (abfd, bfd_arch_k1om, bfd_mach_k1om);
++  return TRUE;
++}
++
++#undef  TARGET_LITTLE_SYM
++#define TARGET_LITTLE_SYM		    bfd_elf64_k1om_vec
++#undef  TARGET_LITTLE_NAME
++#define TARGET_LITTLE_NAME		    "elf64-k1om"
++#undef ELF_ARCH
++#define ELF_ARCH			    bfd_arch_k1om
++
++#undef	ELF_MACHINE_CODE
++#define ELF_MACHINE_CODE		    EM_K1OM
++
++#undef	ELF_OSABI
++
++#undef  elf64_bed
++#define elf64_bed elf64_k1om_bed
++
++#undef elf_backend_object_p
++#define elf_backend_object_p		    elf64_k1om_elf_object_p
++
++#undef  elf_backend_post_process_headers
++
++#include "elf64-target.h"
++
++/* FreeBSD K1OM support.  */
++
++#undef  TARGET_LITTLE_SYM
++#define TARGET_LITTLE_SYM		    bfd_elf64_k1om_freebsd_vec
++#undef  TARGET_LITTLE_NAME
++#define TARGET_LITTLE_NAME		    "elf64-k1om-freebsd"
++
++#undef	ELF_OSABI
++#define	ELF_OSABI			    ELFOSABI_FREEBSD
++
++#undef  elf64_bed
++#define elf64_bed elf64_k1om_fbsd_bed
++
++#undef  elf_backend_post_process_headers
++#define elf_backend_post_process_headers  _bfd_elf_set_osabi
++
++#include "elf64-target.h"
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/targets.c version-binutils-2.20.1/binutils-2.20.1/bfd/targets.c
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/targets.c	2010-11-08 01:31:00.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/targets.c	2013-05-08 00:31:29.115347904 -0500
+@@ -701,6 +701,8 @@
+ extern const bfd_target bfd_elf64_x86_64_vec;
+ extern const bfd_target bfd_elf64_l1om_freebsd_vec;
+ extern const bfd_target bfd_elf64_l1om_vec;
++extern const bfd_target bfd_elf64_k1om_freebsd_vec;
++extern const bfd_target bfd_elf64_k1om_vec;
+ extern const bfd_target bfd_mmo_vec;
+ extern const bfd_target bfd_powerpc_pe_vec;
+ extern const bfd_target bfd_powerpc_pei_vec;
+@@ -1043,6 +1045,8 @@
+ 	&bfd_elf64_x86_64_vec,
+ 	&bfd_elf64_l1om_freebsd_vec,
+ 	&bfd_elf64_l1om_vec,
++	&bfd_elf64_k1om_freebsd_vec,
++	&bfd_elf64_k1om_vec,
+ 	&bfd_mmo_vec,
+ #endif
+ 	&bfd_powerpc_pe_vec,
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/include/elf/common.h version-binutils-2.20.1/binutils-2.20.1/include/elf/common.h
+--- version-binutils-2.20.1.orig/binutils-2.20.1/include/elf/common.h	2010-11-08 01:30:48.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/include/elf/common.h	2013-05-08 00:31:29.115347904 -0500
+@@ -282,7 +282,7 @@
+ #define EM_ETPU		178	/* Freescale Extended Time Processing Unit */
+ #define EM_SLE9X	179	/* Infineon Technologies SLE9X core */
+ #define EM_L1OM		180	/* Intel L1OM */
+-#define EM_INTEL181	181	/* Reserved by Intel */
++#define EM_K1OM 	181	/* Reserved by Intel */
+ #define EM_INTEL182	182	/* Reserved by Intel */
+ #define EM_res183	183	/* Reserved by ARM */
+ #define EM_res184	184	/* Reserved by ARM */
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/opcodes/configure version-binutils-2.20.1/binutils-2.20.1/opcodes/configure
+--- version-binutils-2.20.1.orig/binutils-2.20.1/opcodes/configure	2010-11-08 01:31:04.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/opcodes/configure	2013-05-08 00:31:29.118347978 -0500
+@@ -12298,7 +12298,7 @@
+ 	bfd_h8500_arch)		ta="$ta h8500-dis.lo" ;;
+ 	bfd_hppa_arch)		ta="$ta hppa-dis.lo" ;;
+ 	bfd_i370_arch)		ta="$ta i370-dis.lo i370-opc.lo" ;;
+-	bfd_i386_arch|bfd_l1om_arch)
++	bfd_i386_arch|bfd_l1om_arch|bfd_k1om_arch)
+ 				ta="$ta i386-dis.lo i386-opc.lo" ;;
+ 	bfd_i860_arch)		ta="$ta i860-dis.lo" ;;
+ 	bfd_i960_arch)		ta="$ta i960-dis.lo" ;;
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/opcodes/configure.in version-binutils-2.20.1/binutils-2.20.1/opcodes/configure.in
+--- version-binutils-2.20.1.orig/binutils-2.20.1/opcodes/configure.in	2010-11-08 01:31:04.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/opcodes/configure.in	2013-05-08 00:31:29.121347830 -0500
+@@ -237,7 +237,7 @@
+ 	bfd_h8500_arch)		ta="$ta h8500-dis.lo" ;;
+ 	bfd_hppa_arch)		ta="$ta hppa-dis.lo" ;;
+ 	bfd_i370_arch)		ta="$ta i370-dis.lo i370-opc.lo" ;;
+-	bfd_i386_arch|bfd_l1om_arch)
++	bfd_i386_arch|bfd_l1om_arch|bfd_k1om_arch)
+ 				ta="$ta i386-dis.lo i386-opc.lo" ;;
+ 	bfd_i860_arch)		ta="$ta i860-dis.lo" ;;
+ 	bfd_i960_arch)		ta="$ta i960-dis.lo" ;;
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/opcodes/disassemble.c version-binutils-2.20.1/binutils-2.20.1/opcodes/disassemble.c
+--- version-binutils-2.20.1.orig/binutils-2.20.1/opcodes/disassemble.c	2010-11-08 01:31:04.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/opcodes/disassemble.c	2013-05-08 00:31:29.121347830 -0500
+@@ -199,6 +199,7 @@
+ #ifdef ARCH_i386
+     case bfd_arch_i386:
+     case bfd_arch_l1om:
++    case bfd_arch_k1om:
+       disassemble = print_insn_i386;
+       break;
+ #endif
