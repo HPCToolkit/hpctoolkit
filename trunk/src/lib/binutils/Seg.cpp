@@ -534,6 +534,9 @@ BinUtil::TextSeg::makeInsn(bfd* abfd, MachInsn* mi, VMA vma, ushort opIndex,
       newInsn = new RISCInsn(mi, vma);
       break;
     case bfd_arch_i386:
+#ifdef bfd_mach_k1om
+    case bfd_arch_k1om:
+#endif
       newInsn = new CISCInsn(mi, vma, sz);
       break;
     case bfd_arch_ia64:
