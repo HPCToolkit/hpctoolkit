@@ -36,18 +36,30 @@ typedef struct cuda_callback_t {
 
 #define CUPTI_LAUNCH_CALLBACK_DEPTH 7
 
-#define CUPTI_ERRORS_UNMYSTIFIED
-static void 
-check_cupti_error(int err, char *cuptifunc)			
+#define Cupti_call(fn, ...)                                    \
+{                                                              \
+  int ret = fn(__VA_ARGS__);                                   \
+  if (ret != CUPTI_SUCCESS) {                                  \
+    const char* errstr;                                        \
+    cuptiGetResultString(ret, &errstr);                        \
+    hpcrun_abort("error: CUDA/CUPTI API "                      \
+                 #fn " failed w error code %d ==> '%s'\n",     \
+                 ret, errstr);                                 \
+  }                                                            \
+}
+
+#define Cupti_call_silent(fn, ...)                             \
+{                                                              \
+  (void) fn(__VA_ARGS__);                                      \
+}
+
+//
+// noop routine
+//
+static void
+papi_c_no_action(void)
 {
-  if (err != CUPTI_SUCCESS) {
-    const char *errstr;                                     
-    cuptiGetResultString(err, &errstr);                    
-#ifdef CUPTI_ERRORS_UNMYSTIFIED
-    hpcrun_abort("error: CUDA CUPTI API function '%s' "
-		 "failed with message '%s' \n", cuptifunc, errstr);
-#endif // CUPTI_ERRORS_UNMYSTIFIED
-  }
+  ;
 }
 
 //
@@ -113,11 +125,6 @@ hpcrun_cuda_kernel_callback(void* userdata,
     cudaThreadSynchronize();
     long_long eventValues[nevents+2];
     
-#if 0 // FIXME before checkin: take away if 0
-    long_long *eventValues = 
-      (long_long *) alloca(sizeof(long_long) * (nevents+2));
-#endif
-
     TMSG(CUDA,"stopping CUDA monitoring w event set %d",cudaEventSet);
     int ret = PAPI_stop(cudaEventSet, eventValues);
     if (ret != PAPI_OK){
@@ -151,30 +158,45 @@ hpcrun_cuda_kernel_callback(void* userdata,
   }
 }
 
+static CUpti_SubscriberHandle subscriber;
+
 //
-// sync start for cuda/cupti
+// sync setup for cuda/cupti
 //
 static void
-papi_c_sync_start(void)
+papi_c_cupti_setup(void)
 {
-  int cuptiErr;
-  CUpti_SubscriberHandle subscriber;
+  // FIXME: Remove local definition
+  // CUpti_SubscriberHandle subscriber;
 
-  TMSG(CUDA,"sync start called");
+  TMSG(CUDA,"sync setup called");
   
-  cuptiErr = cuptiSubscribe(&subscriber, 
-			    (CUpti_CallbackFunc)hpcrun_cuda_kernel_callback, 
-			    NULL);
-  check_cupti_error(cuptiErr, "cuptiSubscribe");
+  Cupti_call(cuptiSubscribe, &subscriber,
+             (CUpti_CallbackFunc)hpcrun_cuda_kernel_callback, 
+             NULL);
+             
+  Cupti_call(cuptiEnableCallback, 1, subscriber,
+             CUPTI_CB_DOMAIN_RUNTIME_API,
+             CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020);
+}
 
-  cuptiErr = cuptiEnableCallback(1, subscriber, CUPTI_CB_DOMAIN_RUNTIME_API, 
-                                 CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020);
-  check_cupti_error(cuptiErr, "cuptiEnableCallback");
+//
+// sync teardown for cuda/cupti
+//
+static void
+papi_c_cupti_teardown(void)
+{
+  TMSG(CUDA,"sync teardown called (=unsubscribe)");
+  
+  Cupti_call(cuptiUnsubscribe, subscriber);
 }
 
 static sync_info_list_t cuda_component = {
   .pred = is_papi_c_cuda,
-  .sync_start = papi_c_sync_start,
+  .sync_setup = papi_c_cupti_setup,
+  .sync_teardown = papi_c_cupti_teardown,
+  .sync_start = papi_c_no_action,
+  .sync_stop = papi_c_no_action,
   .next = NULL,
 };
 

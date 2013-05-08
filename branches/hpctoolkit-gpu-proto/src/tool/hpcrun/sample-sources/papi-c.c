@@ -140,7 +140,7 @@ get_event_index(sample_source_t *self, int event_code)
 }
 
 int 
-get_component_event_set(papi_source_info_t *psi, int cidx)
+get_component_event_set(papi_source_info_t* psi, int cidx)
 {
    if (cidx < 0 || cidx >= psi->num_components) {
     hpcrun_abort("PAPI component index out of range [0,%d]: %d", psi->num_components, cidx);
@@ -413,6 +413,7 @@ METHOD_FN(shutdown)
   if (papi_unavail) { return; }
 
   METHOD_CALL(self, stop); // make sure stop has been called
+  // FIXME: add component shutdown code here
   PAPI_shutdown();
 
   self->state = UNINIT;
@@ -567,7 +568,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
     num_components * sizeof(papi_component_info_t);
 
   TMSG(PAPI, "Num components = %d", num_components);
-  papi_source_info_t *psi = hpcrun_malloc(ss_info_size);
+  papi_source_info_t* psi = hpcrun_malloc(ss_info_size);
   if (psi == NULL) {
     hpcrun_abort("Failure to allocate vector for PAPI components");
   }
@@ -582,7 +583,10 @@ METHOD_FN(gen_event_set, int lush_metrics)
     ci->some_derived = 0;
     ci->scale_by_thread_count = thread_count_scaling_for_component(i);
     ci->is_sync = component_uses_sync_samples(i);
+    ci->sync_setup = sync_setup_for_component(i);
+    ci->sync_teardown = sync_teardown_for_component(i);
     ci->sync_start = sync_start_for_component(i);
+    ci->sync_stop = sync_stop_for_component(i);
     memset(ci->prev_values, 0, sizeof(ci->prev_values));
   }
 
@@ -612,17 +616,20 @@ METHOD_FN(gen_event_set, int lush_metrics)
   }
 
   // set up overflow handling for asynchronous event sets for active components
+  // set up synchronous handling for synchronous event sets for active compoents
   for (i = 0; i < nevents; i++) {
     int evcode = self->evl.events[i].event;
     long thresh = self->evl.events[i].thresh;
     int cidx = PAPI_get_event_component(evcode);
     int eventSet = get_component_event_set(psi, cidx);
-
+    
     // **** No overflow for synchronous events ****
+    // **** Use component-specific setup for synchronous events ****
     if (component_uses_sync_samples(cidx)) {
       TMSG(PAPI, "event code %d (component %d) is synchronous, so do NOT set overflow", evcode, cidx);
       TMSG(PAPI, "Set up sync handler instead");
       TMSG(PAPI, "synchronous sample component index = %d", cidx);
+      sync_setup_for_component(cidx)();
       continue;
     }
     // ***** Only set overflow if NOT derived event *****

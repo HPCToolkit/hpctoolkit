@@ -15,6 +15,9 @@ typedef struct {
   long long prev_values[MAX_EVENTS];
   bool is_sync;
   start_proc_t sync_start;
+  stop_proc_t sync_stop;
+  setup_proc_t sync_setup;
+  teardown_proc_t sync_teardown;
 } papi_component_info_t;
 
 typedef struct {
