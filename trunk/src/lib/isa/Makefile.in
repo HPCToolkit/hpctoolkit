@@ -68,6 +68,8 @@ host_triplet = @host@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
+@HOST_CPU_X86_FAMILY_TRUE@am__append_1 = -I$(XED2_INC)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_2 = -I$(XED2_INC)
 subdir = src/lib/isa
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -253,6 +255,14 @@ SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 VERSION = @VERSION@
 XED2_COPY = @XED2_COPY@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 XED2_RUN_DIR = @XED2_RUN_DIR@
@@ -348,14 +358,6 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
 MYSOURCES = \
 	ISATypes.hpp \
 	ISA.hpp ISA.cpp \
@@ -370,8 +372,10 @@ MYSOURCES = \
 	instructionSets/alpha.h \
 	instructionSets/mips.h
 
-MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ \
+	$(am__append_1)
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ \
+	$(am__append_2)
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
 MYLIBADD = @HOST_LIBTREPOSITORY@
