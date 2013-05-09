@@ -70,6 +70,8 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+XED2_LIB = @XED2_LIB@
+
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
@@ -100,6 +102,10 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
 
 pkglibexec_PROGRAMS = hpclump
+
+if HOST_CPU_X86_FAMILY
+  MYLDADD += $(XED2_LIB)/libxed.a
+endif
 
 hpclump_SOURCES  = $(MYSOURCES)
 hpclump_CFLAGS   = $(MYCFLAGS)
