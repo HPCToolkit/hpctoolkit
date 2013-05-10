@@ -38,12 +38,20 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@OPT_ENABLE_HPCRUN_FLAT_TRUE@am__append_1 = hpcrun-flat
-@OPT_ENABLE_HPCRUN_TRUE@am__append_2 = \
+@OPT_BUILD_TOOL_ALL_TRUE@am__append_1 = \
+@OPT_BUILD_TOOL_ALL_TRUE@	hpcstruct \
+@OPT_BUILD_TOOL_ALL_TRUE@	hpcprof \
+@OPT_BUILD_TOOL_ALL_TRUE@	hpcprof-flat \
+@OPT_BUILD_TOOL_ALL_TRUE@	hpcproftt \
+@OPT_BUILD_TOOL_ALL_TRUE@	hpclump \
+@OPT_BUILD_TOOL_ALL_TRUE@	misc
+
+@OPT_ENABLE_HPCRUN_FLAT_TRUE@am__append_2 = hpcrun-flat
+@OPT_ENABLE_HPCRUN_TRUE@am__append_3 = \
 @OPT_ENABLE_HPCRUN_TRUE@	hpcrun \
 @OPT_ENABLE_HPCRUN_TRUE@	hpcfnbounds
 
-@OPT_ENABLE_MPI_TRUE@am__append_3 = hpcprof-mpi 
+@OPT_ENABLE_MPI_TRUE@am__append_4 = hpcprof-mpi 
 subdir = src/tool
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -107,6 +115,7 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BACK_END_LABEL = @BACK_END_LABEL@
 BOOST_INC = @BOOST_INC@
 CC = @CC@
 CCAS = @CCAS@
@@ -285,6 +294,8 @@ localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
+my_pkglibdir = @my_pkglibdir@
+my_pkglibexecdir = @my_pkglibexecdir@
 oldincludedir = @oldincludedir@
 papi_extra_libs = @papi_extra_libs@
 pdfdir = @pdfdir@
@@ -311,8 +322,8 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 # Automake rules
 #############################################################################
-SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpclump misc \
-	$(am__append_1) $(am__append_2) $(am__append_3)
+SUBDIRS = $(am__append_1) $(am__append_2) $(am__append_3) \
+	$(am__append_4)
 all: all-recursive
 
 .SUFFIXES:
