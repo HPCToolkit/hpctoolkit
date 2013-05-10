@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -105,7 +105,6 @@
 //***************************************************************************
 
 typedef struct cct_node_t cct_node_t;
-
 //
 // In order to associate data with a given calling context,
 // cct nodes need an id type (abstract)
@@ -122,6 +121,7 @@ typedef cct_node_t* cct_node_id_t;
 //
 extern cct_node_t* hpcrun_cct_new(void);
 extern cct_node_t* hpcrun_cct_new_partial(void);
+extern cct_node_t* hpcrun_cct_new_special(void* addr);
 extern cct_node_t* hpcrun_cct_top_new(uint16_t lmid, uintptr_t lmip);
 // 
 // Accessor functions
@@ -169,6 +169,8 @@ extern void hpcrun_cct_terminate_path(cct_node_t* node);
 //
 //
 extern cct_node_t* hpcrun_cct_insert_node(cct_node_t* target, cct_node_t* src);
+
+extern void hpcrun_cct_insert_path(cct_node_t ** root, cct_node_t* path);
 
 // special mutator to support tracing
 extern void hpcrun_cct_persistent_id_trace_mutate(cct_node_t* x);

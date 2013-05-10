@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -282,7 +282,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     threshold = self->evl.events[k].thresh;
     BGP_UPC_Get_Event_Name(code, EVENT_NAME_SIZE, name);
     hpcrun_set_metric_info_and_period(metric_id, strdup(name),
-				      MetricFlags_ValFmt_Int, threshold);
+				      MetricFlags_ValFmt_Int, threshold, (metric_desc_properties_t){} );
     self->evl.events[k].metric_id = metric_id;
     TMSG(UPC, "add event %s(%d), threshold %ld, metric %d",
 	 name, code, threshold, metric_id);

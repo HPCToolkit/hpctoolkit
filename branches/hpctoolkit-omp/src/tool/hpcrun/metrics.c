@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -231,6 +231,12 @@ hpcrun_get_num_metrics()
   return n_metrics;
 }
 
+// Finalize metrics
+
+void hpcrun_finalize_metrics() 
+{
+  hpcrun_get_num_metrics();
+}
 
 metric_desc_t*
 hpcrun_id2metric(int metric_id)
@@ -323,7 +329,7 @@ hpcrun_new_metric(void)
 void
 hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
 			    MetricFlags_ValFmt_t valFmt, size_t period,
-			    metric_upd_proc_t upd_fn)
+			    metric_upd_proc_t upd_fn, metric_desc_properties_t prop)
 {
   if (has_set_max_metrics) {
     return;
@@ -356,6 +362,7 @@ hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
   mdesc->flags.fields.valFmt = valFmt;
   mdesc->formula = NULL;
   mdesc->format = NULL;
+  mdesc->properties = prop;
 
   //
   // manage metric proc mapping
@@ -371,10 +378,10 @@ hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
 
 void
 hpcrun_set_metric_info_and_period(int metric_id, const char* name,
-				  MetricFlags_ValFmt_t valFmt, size_t period)
+				  MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop)
 {
   hpcrun_set_metric_info_w_fn(metric_id, name, valFmt, period,
-			      hpcrun_metric_std_inc);
+			      hpcrun_metric_std_inc, prop);
 }
 
 
@@ -384,7 +391,7 @@ hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 void
 hpcrun_set_metric_info(int metric_id, const char* name)
 {
-  hpcrun_set_metric_info_and_period(metric_id, name, MetricFlags_ValFmt_Int, 1);
+  hpcrun_set_metric_info_and_period(metric_id, name, MetricFlags_ValFmt_Int, 1, metric_property_none);
 }
 
 

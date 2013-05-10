@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -72,6 +72,10 @@ typedef enum {
   STOP,
   HARD_STOP
 } source_state_t;
+
+typedef struct {
+  void *ptr;
+} source_info_t;
 
 typedef enum {
   SS_HARDWARE,    // use sample counters or other hardware.

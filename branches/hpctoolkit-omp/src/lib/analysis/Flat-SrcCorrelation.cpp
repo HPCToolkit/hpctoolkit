@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -933,7 +933,7 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
 			    uint mBegId, uint mEndId)
 {
   // N.B. pre-order walk assumes point-wise metrics
-  // Cf. CCT::ANode::computeMetrics() && computeMetricsItrv().
+  // Cf. Prof::CCT::ANode::computeMetrics() && computeMetricsIncr().
 
   Prof::Struct::Root* strct = structure.root();
   uint numMetrics = m_mMgr.size();

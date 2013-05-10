@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,10 @@
 #include "function-entries.h"
 #include "process-ranges.h"
 #include "intervals.h"
+#include "server.h"
+
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 
 #include <map>
 #include <set>
@@ -86,7 +90,6 @@ public:
 static void new_function_entry(void *addr, string *comment, bool isvisible, 
 			       int call_count);
 static void dump_function_entry(void *addr, const char *comment);
-static void end_of_function_entries(void);
 
 
 /******************************************************************************
@@ -101,16 +104,32 @@ static ExcludedFunctionSet excluded_function_entries;
 
 static intervals cbranges;
 
-#define ADDR_BUF_SIZE  1024
-
-static void *addr_buf[ADDR_BUF_SIZE];
-static long num_entries_in_buf = 0;
 static long num_entries_total = 0;
 
 
 /******************************************************************************
  * interface operations 
  *****************************************************************************/
+
+// Free the function_entries map, the Function objects in the map, the
+// excluded_function_entries set and cbranges intervals.
+//
+void
+function_entries_reinit(void)
+{
+  FunctionSet::iterator it;
+
+  for (it = function_entries.begin(); it != function_entries.end(); it++) {
+    Function *f = it->second;
+    delete f->comment;
+    delete f;
+  }
+  function_entries.clear();
+  excluded_function_entries.clear();
+  cbranges.clear();
+  num_entries_total = 0;
+}
+
 
 void
 exclude_function_entry(void *addr)
@@ -159,7 +178,6 @@ dump_reachable_functions()
     }
     dump_function_entry(f->address, name);
   }
-  end_of_function_entries();
 }
 
 
@@ -242,45 +260,28 @@ long num_function_entries(void)
  *****************************************************************************/
 
 //
-// Write one function entry, possibly to multiple files.
-// The binary format is buffered.
+// Write one function entry in one format: server, C or text.
 //
 static void
 dump_function_entry(void *addr, const char *comment)
 {
   num_entries_total++;
 
-  if (binary_fmt_fd() >= 0) {
-    addr_buf[num_entries_in_buf] = addr;
-    num_entries_in_buf++;
-    if (num_entries_in_buf == ADDR_BUF_SIZE) {
-      write(binary_fmt_fd(), addr_buf, num_entries_in_buf * sizeof(void *));
-      num_entries_in_buf = 0;
+  if (server_mode()) {
+    syserv_add_addr(addr, function_entries.size());
+    return;
+  }
+
+  if (c_mode()) {
+    if (num_entries_total > 1) {
+      printf(",\n");
     }
+    printf("  0x%" PRIxPTR "  /* %s */", (uintptr_t) addr, comment);
+    return;
   }
 
-  if (c_fmt_fp() != NULL) {
-    if (num_entries_total > 1)
-      fprintf(c_fmt_fp(), ",\n");
-    fprintf(c_fmt_fp(), "   %p /* %s */", addr, comment);
-  }
-
-  if (text_fmt_fp() != NULL) {
-    fprintf(text_fmt_fp(), "%p    %s\n", addr, comment);
-  }
-}
-
-
-static void
-end_of_function_entries(void)
-{
-  if (binary_fmt_fd() >= 0 && num_entries_in_buf > 0) {
-    write(binary_fmt_fd(), addr_buf, num_entries_in_buf * sizeof(void *));
-    num_entries_in_buf = 0;
-  }
-
-  if (c_fmt_fp() != NULL && num_entries_total > 0)
-    fprintf(c_fmt_fp(), "\n");
+  // default is text mode
+  printf("0x%" PRIxPTR "    %s\n", (uintptr_t) addr, comment);
 }
 
 

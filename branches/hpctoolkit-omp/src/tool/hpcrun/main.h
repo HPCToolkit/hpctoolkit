@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -50,10 +50,18 @@
 #include <setjmp.h>
 #include <stdbool.h>
 
-bool hpcrun_is_initialized();
+extern bool hpcrun_is_initialized();
+
+extern bool hpcrun_is_safe_to_sync(void);
+extern void hpcrun_set_safe_to_sync(void);
 
 typedef void siglongjmp_fcn(sigjmp_buf, int);
 
 siglongjmp_fcn *hpcrun_get_real_siglongjmp(void);
+
+typedef struct hpcrun_aux_cleanup_t  hpcrun_aux_cleanup_t;
+
+hpcrun_aux_cleanup_t * hpcrun_process_aux_cleanup_add( void (*func) (void *), void * arg);
+void hpcrun_process_aux_cleanup_remove(hpcrun_aux_cleanup_t * node);
 
 #endif  // ! main_h

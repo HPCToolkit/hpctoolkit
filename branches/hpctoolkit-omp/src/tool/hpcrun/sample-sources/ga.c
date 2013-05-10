@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -165,7 +165,7 @@ METHOD_FN(supports_event, const char *ev_str)
   // FIXME: this message comes too early and goes to stderr instead of
   // the log file.
   // TMSG(GA, "test support event: %s", ev_str);
-  return strncasecmp(ev_str, "GA", 2) == 0;
+  return hpcrun_ev_is(ev_str, "GA");
 }
 
 
@@ -194,7 +194,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   // exposed latency
   hpcrun_ga_metricId_latency = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(hpcrun_ga_metricId_latency, "latency (us)",
-				    MetricFlags_ValFmt_Real, 1);
+				    MetricFlags_ValFmt_Real, 1, metric_property_none);
 
   // exposed excess latency
   //hpcrun_ga_metricId_latencyExcess = hpcrun_new_metric();
@@ -208,6 +208,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     hpcrun_ga_metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(i);
     desc->metricId = hpcrun_new_metric();
     snprintf(desc->name, hpcrun_ga_metricId_dataStrLen, "ga-data-%d", i);
+    desc->name[hpcrun_ga_metricId_dataStrLen - 1] = '\0';
     hpcrun_set_metric_info(desc->metricId, desc->name);
   }
 #endif
@@ -218,8 +219,6 @@ static void
 METHOD_FN(gen_event_set, int lush_metrics)
 {
   TMSG(GA, "gen event set (no-op)");
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->eventSet[self->evset_idx] = 0xDEAD;
 }
 
 
@@ -264,6 +263,7 @@ hpcrun_ga_dataIdx_new(const char* name)
 
     hpcrun_ga_metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(idx);
     strncpy(desc->name, name, hpcrun_ga_metricId_dataStrLen);
+    desc->name[hpcrun_ga_metricId_dataStrLen - 1] = '\0';
     //hpcrun_set_metric_name(desc->metricId, desc->name);
 
     TMSG(GA, "hpcrun_ga_dataIdx_new: %s -> metric %d", name, desc->metricId);

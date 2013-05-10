@@ -13,19 +13,21 @@
 #include <hpcrun/thread_data.h>
 #include <lib/prof-lean/splay-macros.h>
 
+
 //
 // ***** The splay tree node *****
 //
-
 struct cct2metrics_t {
   cct_node_id_t node;
   metric_set_t* metrics;
   //
   // left and right pointers for splay tree of siblings
   //
-  cct2metrics_t* right;
-  cct2metrics_t* left;
+  struct cct2metrics_t* right;
+  struct cct2metrics_t* left;
 };
+
+
 
 //
 // ******** Local Data ***********
@@ -34,7 +36,7 @@ struct cct2metrics_t {
 // interface functions implicitly reference this map
 // 
 
-#define THREAD_LOCAL_MAP() TD_GET(cct2metrics_map)
+#define THREAD_LOCAL_MAP() TD_GET(core_profile_trace_data.cct2metrics_map)
 
 //
 // ******** initialization

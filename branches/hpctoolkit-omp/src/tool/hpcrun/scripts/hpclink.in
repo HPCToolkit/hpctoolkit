@@ -5,7 +5,7 @@
 # Part of HPCToolkit (hpctoolkit.org)
 #------------------------------------
 #
-# Copyright (c) 2002-2012, Rice University.
+# Copyright (c) 2002-2013, Rice University.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -68,6 +68,8 @@ hpcfnbounds_dir='libexec/hpctoolkit'
 libhpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 xed2_dir='@XED2_RUN_DIR@'
+libunwind_dir='@LIBUNWIND_RUN_DIR@'
+libunwind_hpclink_libs='@LIBUNWIND_HPCLINK_LIBS@'
 
 # Absolute path or empty.
 papi_dir='@OPT_PAPI_LIBPATH@'
@@ -80,10 +82,9 @@ hpctk_wrap_names='@LIBMONITOR_WRAP_NAMES@  @hpclink_extra_wrap_names@'
 extra_wrap_names=
 extra_hpc_files=
 
-# Set to -m64 on 64-bit version (for gcc).
-# NM_FLAGS='-m64'
+# Compiler and flags for array of fnbounds addresses.
+CC='gcc @wordsize_cflag@'
 
-CC=gcc
 hello="_hpc_hello_$$"
 nm_addrs="_hpc_nm_addrs_$$"
 cmd_out="_hpc_output_$$"
@@ -195,6 +196,10 @@ esac
 case "$xed2_dir" in
     /* ) ;;
     * )  xed2_dir="${HPCTOOLKIT}/${xed2_dir}" ;;
+esac
+case "$libunwind_dir" in
+    /* ) ;;
+    * )  libunwind_dir="${HPCTOOLKIT}/${libunwind_dir}" ;;
 esac
 
 hpcfnbounds="${hpcfnbounds_dir}/hpcfnbounds"
@@ -411,10 +416,14 @@ if test -d "$xed2_dir" ; then
     set -- "$@" "-L${xed2_dir}" -lxed
 fi
 
+if test -d "$libunwind_dir" ; then
+    set -- "$@" "-L$libunwind_dir" $libunwind_hpclink_libs
+fi
+
 set -- "$@" $upc_libs
 
 # FIXME: shouldn't always need pthread, and shoudn't ever need dl.
-set -- "$@" -lpthread -ldl -lrt
+set -- "$@" -ldl -lrt -lpthread
 set -- "$@" $appl_libs
 
 #------------------------------------------------------------
@@ -432,7 +441,7 @@ $CC -o "$hello" "${hello}.c"
 
 rm -f "${nm_addrs}.c" "${nm_addrs}.o"
 $hpcfnbounds -c "$hello" > "${nm_addrs}.c" || die "hpcfnbounds failed on $hello"
-$CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
+$CC -c -o "${nm_addrs}.o" "${nm_addrs}.c"
 
 #
 # Some compiler scripts add extra function calls to the end of the
@@ -478,7 +487,7 @@ fi
 
 rm -f "${nm_addrs}.c" "${nm_addrs}.o"
 $hpcfnbounds -c "$appl_out" > "${nm_addrs}.c" || die "hpcfnbounds failed on $appl_out"
-$CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
+$CC -c -o "${nm_addrs}.o" "${nm_addrs}.c"
 $command "$@" || die "compile #2 failed: $command $@"
 test -f "$appl_out" || die "compile #2 failed: $command $@"
 

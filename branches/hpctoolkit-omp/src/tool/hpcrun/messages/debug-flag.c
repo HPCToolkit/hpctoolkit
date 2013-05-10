@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -104,6 +104,7 @@ static pmsg_category all_list_entries [] = {
  E(INTV),
  E(ITIMER_HANDLER),
  E(ITIMER_CTL),
+ E(CPU_GPU_BLAME_CTL),
  E(_TST_HANDLER),
  E(_TST_CTL),
  E(UNW),

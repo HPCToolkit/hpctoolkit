@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -70,18 +70,11 @@
 
 //*************************** Forward Declarations ***************************
 
-double c_FP_NAN_d;
+const double c_FP_NAN_d = FP_NAN;
 
 //****************************************************************************
 
-void 
-NaN_init()
-{
-  c_FP_NAN_d = FP_NAN;
-}
-
-
-bool 
+bool
 c_isnan_d(double x)
 {
   return isnan(x);

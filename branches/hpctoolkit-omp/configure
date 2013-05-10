@@ -611,6 +611,11 @@ LIBOBJS
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
+OPT_CUDA_LDFLAGS
+OPT_CUDA_IFLAGS
+OPT_CUDA
+OPT_ENABLE_CUDA_FALSE
+OPT_ENABLE_CUDA_TRUE
 OPT_UPC_LDFLAGS
 OPT_UPC_IFLAGS
 OPT_ENABLE_UPC_FALSE
@@ -631,6 +636,7 @@ OPT_ENABLE_MPI_FALSE
 OPT_ENABLE_MPI_TRUE
 OPT_ENABLE_HPCRUN_DYNAMIC_FALSE
 OPT_ENABLE_HPCRUN_DYNAMIC_TRUE
+HPCLINK_LD_FLAGS
 OPT_ENABLE_HPCRUN_STATIC_FALSE
 OPT_ENABLE_HPCRUN_STATIC_TRUE
 HPCRUN_LIBCXX_PATH
@@ -648,10 +654,13 @@ XED2_RUN_DIR
 XED2_COPY
 XED2_LIB
 XED2_INC
-SYMTABAPI_RUN_DIR
+SYMTABAPI_COPY_DYN
 SYMTABAPI_COPY
+SYMTABAPI_LIB_LIST
 SYMTABAPI_LIB
 SYMTABAPI_INC
+OPT_PAPI_COMPONENT_FALSE
+OPT_PAPI_COMPONENT_TRUE
 papi_extra_libs
 OPT_PAPI_LIBPATH
 OPT_PAPI_LDFLAGS
@@ -666,6 +675,18 @@ OA_IFLAGS
 OPT_INSTALL_MONITOR
 HPC_MONITOR
 MONITOR
+UNW_LIBUNW_FALSE
+UNW_LIBUNW_TRUE
+UNW_MIPS_FALSE
+UNW_MIPS_TRUE
+UNW_PPC64_FALSE
+UNW_PPC64_TRUE
+UNW_X86_FALSE
+UNW_X86_TRUE
+LIBUNWIND_HPCLINK_LIBS
+LIBUNWIND_RUN_DIR
+LIBUNWIND_LIB
+LIBUNWIND_COPY
 OPT_LIBUNWIND_LIBA
 OPT_LIBUNWIND_LIBSO
 OPT_LIBUNWIND_LDFLAGS
@@ -684,9 +705,11 @@ LIBELF_LIB
 LIBDWARF_COPY
 LIBDWARF_INC
 LIBDWARF_LIB
+BOOST_INC
 GNUBINUTILS_LDLIBS
 GNUBINUTILS_LDFLAGS
 GNUBINUTILS_IFLAGS
+wordsize_cflag
 CXX_PATH
 CC_PATH
 hpc_ext_libs_dir
@@ -703,12 +726,8 @@ HOST_LIBTREPOSITORY
 HOST_AR
 HOST_CXXFLAGS
 HOST_CFLAGS
-UNW_MIPS_FALSE
-UNW_MIPS_TRUE
-UNW_PPC64_FALSE
-UNW_PPC64_TRUE
-UNW_X86_FALSE
-UNW_X86_TRUE
+HOST_CPU_IA64_FALSE
+HOST_CPU_IA64_TRUE
 HOST_CPU_X86_FAMILY_FALSE
 HOST_CPU_X86_FAMILY_TRUE
 HOST_CPU_X86_64_FALSE
@@ -862,6 +881,7 @@ enable_libtool_lock
 with_dummy_blank_line
 with_externals
 with_binutils
+with_boost
 with_libdwarf
 with_libelf
 with_libmonitor
@@ -869,6 +889,7 @@ with_libunwind
 with_monitor
 with_open_analysis
 with_papi
+enable_papi_c
 with_symtabAPI
 with_xed2
 with_xerces
@@ -884,6 +905,9 @@ enable_xop
 enable_bluegene
 with_upc
 with_upc_lib
+with_cuda
+with_cuda_include
+with_cuda_lib
 enable_data_centric_tracing
 with_objcopy
 enable_hpc_binutils
@@ -906,6 +930,7 @@ CPP
 CXXCPP
 CCAS
 CCASFLAGS
+LD
 MPICXX'
 
 
@@ -1537,6 +1562,8 @@ Optional Features:
   --enable-fast-install[=PKGS]
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --enable-papi-c         use new papi component sample source, requires papi
+                          5.1 or later
   --enable-hpcrun-flat    build hpcrun-flat (default yes)
   --enable-hpcrun         build hpcrun (default yes)
   --enable-hpcrun-static  build hpcrun for statically linked executables
@@ -1562,6 +1589,7 @@ Optional Packages:
 
   --with-externals=PATH   path to external prereqs tree
   --with-binutils=PATH    use given GNU binutils installation
+  --with-boost=PATH       path to boost install directory
   --with-libdwarf=PATH    path to libdwarf install directory
   --with-libelf=PATH      path to libelf install directory
   --with-libmonitor=PATH  path to libmonitor install directory
@@ -1579,6 +1607,13 @@ Optional Packages:
   --with-upc=PATH         path to IBM BlueGene UPC installation
   --with-upc-lib=LIBRARY  path to UPC library(s), absolute or relative to
                           WITH_UPC/runtime/SPI
+  --with-cuda=PATH        use given CUDA installation (absolute path) with
+                          hpcrun (default is NO)
+  --with-cuda-include=PATH
+                          use given CUDA include (absolute path) with hpcrun
+                          (default is NO)
+  --with-cuda-lib=PATH    use given CUDA lib (absolute path) with hpcrun
+                          (default is NO)
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
 
@@ -1601,6 +1636,8 @@ Some influential environment variables:
   CXXCPP      C++ preprocessor
   CCAS        assembler compiler command (defaults to CC)
   CCASFLAGS   assembler compiler flags (defaults to CFLAGS)
+  LD          ld program for binaries produced by CC, only needed if autoconf
+              fails to find a suitable program
   MPICXX      MPI C++ compiler
 
 Use these variables to override the choices made by `configure' or to help
@@ -3845,7 +3882,6 @@ else
   OPT_ENABLE_DEVELOP_TRUE='#'
   OPT_ENABLE_DEVELOP_FALSE=
 fi
-
 
 
 #----------------------------------------------------------------------------
@@ -15576,6 +15612,8 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
+
+
 my_compiler_list="mpicxx   \
                            mpiCC \
                           "
@@ -16199,6 +16237,11 @@ MYcxxcmp()
 
 UNWINDER=no
 
+#---------------------------------------
+# set specific libunw variable
+#---------------------------------------
+USE_LIBUNW=no
+
 #-------------------------------------------------
 # Host-specific defines
 #-------------------------------------------------
@@ -16215,6 +16258,7 @@ HOST_CPU_PPC=no
 HOST_CPU_X86=no
 HOST_CPU_X86_64=no
 HOST_CPU_X86_FAMILY=no
+HOST_CPU_IA64=no
 
 case "${host}" in
   # Linux
@@ -16256,8 +16300,12 @@ $as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
   ia64*-*-linux*)
     # __ia64 && __linux
     HOST_OS="Linux"
+    HOST_CPU_IA64=yes
+    UNWINDER=libunw
 
-$as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
+$as_echo "#define HOST_CPU_IA64 1" >>confdefs.h
+
+    $as_echo "#define HOST_OS_LINUX /**/" >>confdefs.h
 
     ;;
 
@@ -16282,6 +16330,9 @@ $as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
 
 $as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
 
+
+$as_echo "#define HOST_CPU_PPC 1" >>confdefs.h
+
     ;;
 
   # MacOS
@@ -16292,6 +16343,9 @@ $as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
     UNWINDER=ppc64
 
 $as_echo "#define HOST_OS_MACOS 1" >>confdefs.h
+
+
+$as_echo "#define HOST_CPU_PPC 1" >>confdefs.h
 
     ;;
 
@@ -16412,33 +16466,12 @@ else
   HOST_CPU_X86_FAMILY_FALSE=
 fi
 
-
-#
-# set up automake choice of unwinder
-#
-
- if test "$UNWINDER" = x86-family; then
-  UNW_X86_TRUE=
-  UNW_X86_FALSE='#'
+ if test "$HOST_CPU_IA64" = yes; then
+  HOST_CPU_IA64_TRUE=
+  HOST_CPU_IA64_FALSE='#'
 else
-  UNW_X86_TRUE='#'
-  UNW_X86_FALSE=
-fi
-
- if test "$UNWINDER" = ppc64; then
-  UNW_PPC64_TRUE=
-  UNW_PPC64_FALSE='#'
-else
-  UNW_PPC64_TRUE='#'
-  UNW_PPC64_FALSE=
-fi
-
- if test "$UNWINDER" = mips; then
-  UNW_MIPS_TRUE=
-  UNW_MIPS_FALSE='#'
-else
-  UNW_MIPS_TRUE='#'
-  UNW_MIPS_FALSE=
+  HOST_CPU_IA64_TRUE='#'
+  HOST_CPU_IA64_FALSE=
 fi
 
 
@@ -16632,6 +16665,80 @@ HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
 
 
 #-------------------------------------------------
+# LD -- find correct arch type for ld
+#-------------------------------------------------
+
+# Autoconf gets the wrong arch type for ld in a cross compile, at
+# least on Intel MIC.  Here, we test that ld supports relocatable
+# linking (ld -r).  If not, then try other arch types until we find
+# one that works.
+
+test_ld_r()
+{
+  ld_cmd="$*"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking relocatable linking: $ld_cmd " >&5
+$as_echo_n "checking relocatable linking: $ld_cmd ... " >&6; }
+  rm -f "$obj3"
+  $ld_cmd -r "$obj1" "$obj2" -o "$obj3" >&5 2>&1
+  if test $? -eq 0 && test -f "$obj3" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+    return 0
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    return 1
+  fi
+}
+
+src1="conftest.$$.1.c"
+src2="conftest.$$.2.c"
+obj1="conftest.$$.1.o"
+obj2="conftest.$$.2.o"
+obj3="conftest.$$.3.o"
+
+rm -f "$src1" "$src2" "$obj1" "$obj2" "$obj3"
+
+echo 'int foo(void) { return 2; }' >"$src1"
+echo 'int baz(void) { return 4; }' >"$src2"
+
+$CC $CFLAGS -c "$src1" -o "$obj1" >&5 2>&1
+$CC $CFLAGS -c "$src2" -o "$obj2" >&5 2>&1
+
+found_ld=no
+
+if test_ld_r $LD ; then
+  # autoconf's choice for LD works
+  found_ld=yes
+else
+  # try other arch types from LD -V
+  # be careful not to create a subshell (redirect fd)
+  ld_base=`echo $LD | awk '{ print $1 }'`
+
+  emul=false
+  arch_list=`$ld_base -V 2>&1`
+  for arch in $arch_list
+  do
+    if $emul && test_ld_r $ld_base -m $arch ; then
+      LD="$ld_base -m $arch"
+      found_ld=yes
+      break
+    fi
+    # skip output until 'Supported emulations:'
+    case "$arch" in
+      *emulat* ) emul=true ;;
+    esac
+  done
+fi
+
+rm -f "$src1" "$src2" "$obj1" "$obj2" "$obj3"
+
+if test "$found_ld" != yes ; then
+  as_fn_error $? "unable to find correct arch type for ld" "$LINENO" 5
+fi
+
+
+#-------------------------------------------------
 # Test if CXX and MPICXX are compatible
 #-------------------------------------------------
 
@@ -16759,7 +16866,7 @@ hpc_ext_libs_dir=lib/hpctoolkit/ext-libs
 #-------------------------------------------------
 
 # External's minimum svn rev number, or else a fatal error.
-EXTERNALS_MIN_REV=3872
+EXTERNALS_MIN_REV=4009
 
 ext_cc_path=unknown
 ext_cxx_path=unknown
@@ -16966,9 +17073,10 @@ hpctoolkit-externals." >&2;}
 fi
 
 host_wordsize=unknown
+wordsize_cflag=
 case "$host_sizeof_voidp" in
-  4 ) host_wordsize=32 ;;
-  8 ) host_wordsize=64 ;;
+  4 ) host_wordsize=32 ; wordsize_cflag='-m32' ;;
+  8 ) host_wordsize=64 ; wordsize_cflag='-m64' ;;
   * ) { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to determine host wordsize" >&5
 $as_echo "$as_me: WARNING: unable to determine host wordsize" >&2;} ;;
 esac
@@ -16978,6 +17086,13 @@ then
   as_fn_error $? "mismatched wordsize: hpctoolkit is configured for \
 ${host_wordsize}-bit but externals is ${ext_wordsize}-bit" "$LINENO" 5
 fi
+
+# On ia64, -m64 is an unrecognized option (and unnecessary).
+if test "$HOST_CPU_IA64" = yes ; then
+  wordsize_cflag=
+fi
+
+
 
 
 #-------------------------------------------------
@@ -17026,6 +17141,46 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${GNUBINUTILS}" >&5
 $as_echo "${GNUBINUTILS}" >&6; }
 
+
+
+
+
+#-------------------------------------------------
+# Option: --with-boost=PATH
+#-------------------------------------------------
+
+BOOST=no
+if test "$use_externals" = yes ; then
+  BOOST="$ext_boost_prefix"
+fi
+
+
+# Check whether --with-boost was given.
+if test "${with_boost+set}" = set; then :
+  withval=$with_boost; BOOST="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for boost" >&5
+$as_echo_n "checking for boost... " >&6; }
+
+case "$BOOST" in
+  /* )
+    if test ! -f "${BOOST}/include/boost/shared_ptr.hpp" ; then
+      as_fn_error $? "invalid boost directory: $BOOST" "$LINENO" 5
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "boost directory must be absolute path: $BOOST" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $BOOST" >&5
+$as_echo "$BOOST" >&6; }
+
+BOOST_INC="${BOOST}/include"
 
 
 
@@ -17196,8 +17351,12 @@ echo "$LIBMONITOR_WRAP_NAMES" >&5
 # with-libunwind
 #-------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether configured with libunwind" >&5
-$as_echo_n "checking whether configured with libunwind... " >&6; }
+#
+# ### FIXME: rationalize this: libunw chosen EITHER when ia64 or when --with-libunwind is set
+# ###        current configure will NOT do the right thing if libunw turned off but arch=ia64
+#
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether configured to use libunwind instead of native" >&5
+$as_echo_n "checking whether configured to use libunwind instead of native... " >&6; }
 
 OPT_HAVE_LIBUNWIND=no
 OPT_LIBUNWIND=
@@ -17206,6 +17365,9 @@ OPT_LIBUNWIND_LIBPATH=
 OPT_LIBUNWIND_LDFLAGS=
 OPT_LIBUNWIND_LIBSO=
 OPT_LIBUNWIND_LIBA=
+LIBUNWIND_COPY=no
+LIBUNWIND_RUN_DIR=
+LIBUNWIND_HPCLINK_LIBS=
 
 if test "$use_externals" = yes ; then
   OPT_LIBUNWIND="$ext_libunwind_prefix"
@@ -17217,24 +17379,57 @@ fi
 
 # Check whether --with-libunwind was given.
 if test "${with_libunwind+set}" = set; then :
-  withval=$with_libunwind; if test $withval != no; then
-     OPT_HAVE_LIBUNWIND=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       as_fn_error $? "--with-libunwind requires absolute path as argument; given '${withval}'" "$LINENO" 5
-     fi
-     OPT_LIBUNWIND=${withval}
-   fi
+  withval=$with_libunwind; case $withval in
+      yes) : ;;
+      /*) OPT_LIBUNWIND=${withval} ;;
+      *) as_fn_error $? "--with-libunwind requires absolute path as argument; given '${withval}'" "$LINENO" 5 ;;
+   esac
+   OPT_HAVE_LIBUNWIND=yes
+   UNWINDER=libunw
 fi
 
 
+if test "$UNWINDER" = "libunw"; then
+
+$as_echo "#define USE_LIBUNW 1" >>confdefs.h
+
+fi
+
 # Check for LIBUNWIND > .9xxx [skip for now]
+
+# Check for libunwind sanity
+if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
+  if ! test -f "$OPT_LIBUNWIND/include/libunwind.h"; then
+     as_fn_error $? "libunwind required, but specified library path is invalid (no libunwind.h)" "$LINENO" 5
+  fi
+  if test ! \( -f "$OPT_LIBUNWIND/lib/libunwind.so" -o -f "$OPT_LIBUNWIND/lib/libunwind.a" \) ; then
+     as_fn_error $? "libunwind required, but specified library path is invalid (no libunwind.a or libunwind.so)" "$LINENO" 5
+  fi
+fi
 
 if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes (${OPT_LIBUNWIND_LIBSO})" >&5
 $as_echo "yes (${OPT_LIBUNWIND_LIBSO})" >&6; }
+
+  LIBUNWIND_COPY=yes
+  LIBUNWIND_LIB="$OPT_LIBUNWIND/lib"
+  LIBUNWIND_RUN_DIR="$hpc_ext_libs_dir"
+  OPT_LIBUNWIND_IFLAGS="-I$OPT_LIBUNWIND/include"
+  OPT_LIBUNWIND_LIBPATH="$OPT_LIBUNWIND"
+
+  LIBUNWIND_HPCLINK_LIBS=" -lunwind -lunwind-generic"
+
+  OPT_LIBUNWIND_LDFLAGS="-L$LIBUNWIND_LIB $LIBUNWIND_HPCLINK_LIBS"
+
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
+fi
+
+if test -z "$HPCLINK_LD_FLAGS"; then
+   HPCLINK_LD_FLAGS="$OPT_LIBUNWIND_LDFLAGS"
+else
+   HPCLINK_LD_FLAGS="$HPCLINK_LD_FLAGS $OPT_LIBUNWIND_LDFLAGS"
 fi
 
  if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
@@ -17250,6 +17445,47 @@ fi
 
 
 
+
+
+
+
+
+#
+# set up automake choice of unwinder
+#
+# -- NOTE: ia64 ALWAYS uses libunw
+#
+ if test "$UNWINDER" = x86-family; then
+  UNW_X86_TRUE=
+  UNW_X86_FALSE='#'
+else
+  UNW_X86_TRUE='#'
+  UNW_X86_FALSE=
+fi
+
+ if test "$UNWINDER" = ppc64; then
+  UNW_PPC64_TRUE=
+  UNW_PPC64_FALSE='#'
+else
+  UNW_PPC64_TRUE='#'
+  UNW_PPC64_FALSE=
+fi
+
+ if test "$UNWINDER" = mips; then
+  UNW_MIPS_TRUE=
+  UNW_MIPS_FALSE='#'
+else
+  UNW_MIPS_TRUE='#'
+  UNW_MIPS_FALSE=
+fi
+
+ if test "$UNWINDER" = libunw; then
+  UNW_LIBUNW_TRUE=
+  UNW_LIBUNW_FALSE='#'
+else
+  UNW_LIBUNW_TRUE='#'
+  UNW_LIBUNW_FALSE=
+fi
 
 
 #-------------------------------------------------
@@ -17479,6 +17715,82 @@ fi
 
 
 
+# Option to use the new papi-c.c sample source file.  This is mostly
+# temporary until the new file integrates both component and
+# non-component PAPI.  Requires PAPI 5.1 or later.
+
+# Check whether --enable-papi-c was given.
+if test "${enable_papi_c+set}" = set; then :
+  enableval=$enable_papi_c; use_papi_c="$enableval"
+else
+  use_papi_c=check
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use new papi component" >&5
+$as_echo_n "checking whether to use new papi component... " >&6; }
+
+case "$use_papi_c" in
+  no | check ) ;;
+  * ) use_papi_c=yes ;;
+esac
+
+if test "$OPT_HAVE_PAPI" = no ; then
+  use_papi_c=no
+fi
+
+if test "$use_papi_c" = check ; then
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS"
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include "papi.h"
+int main()
+{
+  return PAPI_get_eventset_component(0);
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  use_papi_c=yes
+else
+  use_papi_c=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_papi_c" >&5
+$as_echo "$use_papi_c" >&6; }
+
+ if test "$use_papi_c" = yes; then
+  OPT_PAPI_COMPONENT_TRUE=
+  OPT_PAPI_COMPONENT_FALSE='#'
+else
+  OPT_PAPI_COMPONENT_TRUE='#'
+  OPT_PAPI_COMPONENT_FALSE=
+fi
+
+
 
 #-------------------------------------------------
 # Option: --with-symtabAPI=PATH
@@ -17499,18 +17811,26 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for symtabAPI" >&5
 $as_echo_n "checking for symtabAPI... " >&6; }
 
+SYMTABAPI_COPY=no
+SYMTABAPI_COPY_DYN=no
+SYMTABAPI_LIB_LIST=
+
 case "${SYMTABAPI}" in
   /* )
-    if test -f "${SYMTABAPI}/include/Symtab.h" ; then :
+    if test -f "${SYMTABAPI}/include/Symtab.h" && \
+       test -f "${SYMTABAPI}/lib/libsymtabAPI.so"
+    then :
     else
         as_fn_error $? "invalid symtabAPI directory: $SYMTABAPI" "$LINENO" 5
     fi
     SYMTABAPI_COPY=yes
-    SYMTABAPI_RUN_DIR="$hpc_ext_libs_dir"
+    SYMTABAPI_LIB_LIST='-lsymtabAPI -lcommon'
+    if test -f "${SYMTABAPI}/lib/libdynElf.so" ; then
+      SYMTABAPI_COPY_DYN=yes
+      SYMTABAPI_LIB_LIST="$SYMTABAPI_LIB_LIST -ldynDwarf -ldynElf"
+    fi
     ;;
   no )
-    SYMTABAPI_COPY=no
-    SYMTABAPI_RUN_DIR=no
     ;;
   * )
     as_fn_error $? "symtabAPI directory must be absolute path: $SYMTABAPI" "$LINENO" 5
@@ -17522,6 +17842,7 @@ SYMTABAPI_LIB="${SYMTABAPI}/lib"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $SYMTABAPI" >&5
 $as_echo "$SYMTABAPI" >&6; }
+
 
 
 
@@ -17817,6 +18138,7 @@ else
   OPT_ENABLE_HPCRUN_STATIC_TRUE='#'
   OPT_ENABLE_HPCRUN_STATIC_FALSE=
 fi
+
 
 
 
@@ -18191,6 +18513,108 @@ fi
 
 
 #-------------------------------------------------
+# check for POSIX real-time timers
+#-------------------------------------------------
+
+# POSIX timer_create() and CLOCK_REALTIME go back to at least 2001, so
+# they're pretty safe.  But we also need the SIGEV_THREAD_ID notify
+# method, the SYS_gettid syscall and the _sigev_un._tid field in
+# struct sigevent.  These are Linux extensions and may not compile on
+# all systems.
+
+ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+ORIG_LIBS="$LIBS"
+LIBS="-lrt"
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for CLOCK_REALTIME and SIGEV_THREAD_ID" >&5
+$as_echo_n "checking for CLOCK_REALTIME and SIGEV_THREAD_ID... " >&6; }
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <sys/syscall.h>
+#include <signal.h>
+#include <time.h>
+#include <unistd.h>
+#ifndef sigev_notify_thread_id
+#define sigev_notify_thread_id _sigev_un._tid
+#endif
+int main()
+{
+  struct sigevent sigev;
+  timer_t timerid;
+  sigev.sigev_notify = SIGEV_THREAD_ID;
+  sigev.sigev_signo = SIGRTMIN + 3;
+  sigev.sigev_value.sival_ptr = &timerid;
+  sigev.sigev_notify_thread_id = syscall(SYS_gettid);
+  return timer_create(CLOCK_REALTIME, &sigev, &timerid);
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ans=yes
+else
+  ans=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
+$as_echo "$ans" >&6; }
+
+# If CLOCK_REALTIME exists, then also try CLOCK_THREAD_CPUTIME_ID.
+
+if test "$ans" = yes ; then
+
+$as_echo "#define ENABLE_CLOCK_REALTIME 1" >>confdefs.h
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for CLOCK_THREAD_CPUTIME_ID" >&5
+$as_echo_n "checking for CLOCK_THREAD_CPUTIME_ID... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <sys/time.h>
+#include <time.h>
+int main()
+{
+  clockid_t clock = CLOCK_THREAD_CPUTIME_ID;
+  return 0;
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ans=yes
+else
+  ans=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
+$as_echo "$ans" >&6; }
+
+  if test "$ans" = yes ; then
+
+$as_echo "#define ENABLE_CLOCK_CPUTIME 1" >>confdefs.h
+
+  fi
+fi
+
+LIBS="$ORIG_LIBS"
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+
+#-------------------------------------------------
 # enable-bluegene: BG/* support
 #-------------------------------------------------
 
@@ -18318,6 +18742,109 @@ fi
 
 
 #-------------------------------------------------
+# Option: --with-cuda=PATH
+#-------------------------------------------------
+
+# CUDA support for CPU-GPU-Blame-shifting
+# CUDA default install path is /usr/local/cuda
+# Include files will be in CUDADIR/include
+# CUDA 64 bit libraries under CUDADIR/lib64 and 32 bit in CUDADIR/lib
+# We need CUPTI for callbacks which is in CUDADIR/extras/CUPTI
+# CUPTI 64 bit libraries under CUPTIDIR/lib64 and 32 bit in CUPTIDIR/lib
+
+
+if test "${host_sizeof_voidp}" = "4"; then
+    CUDA_LIB_SEARCH_ORDER="lib32 lib"
+else
+    CUDA_LIB_SEARCH_ORDER="lib64 lib"
+fi
+
+
+OPT_HAVE_CUDA=no
+OPT_CUDA=
+OPT_CUDA_INCPATH=
+OPT_CUDA_LDFLAGS=
+OPT_CUDA_LIBPATH=
+OPT_CUPTI_INCPATH=
+OPT_CUPTI_LIBPATH=
+OPT_CUPTI_LDFLAGS=
+
+
+# Check whether --with-cuda was given.
+if test "${with_cuda+set}" = set; then :
+  withval=$with_cuda; if test $withval != no; then
+     OPT_HAVE_CUDA=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cuda requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUDA=${withval}
+   fi
+fi
+
+
+if test "$OPT_HAVE_CUDA" = "yes" ; then
+
+# Check whether --with-cuda-include was given.
+if test "${with_cuda_include+set}" = set; then :
+  withval=$with_cuda_include; if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cuda-include requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUDA_INCPATH=${withval}
+  fi
+else
+  if test -f ${OPT_CUDA}/include/cuda.h; then
+         OPT_CUDA_INCPATH=${OPT_CUDA}/include
+     else
+         as_fn_error $? "'${OPT_CUDA}/include/cuda.h' not found" "$LINENO" 5
+     fi
+fi
+
+
+  OPT_CUDA_IFLAGS="-I${OPT_CUDA_INCPATH} "
+
+
+# Check whether --with-cuda-lib was given.
+if test "${with_cuda_lib+set}" = set; then :
+  withval=$with_cuda_lib; if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cuda-lib requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUDA_LIBPATH=${withval}
+   fi
+else
+  for lib in ${CUDA_LIB_SEARCH_ORDER} ; do
+    if test -f "${OPT_CUDA}/${lib}/libcudart.so"
+    then
+      OPT_CUDA_LIBPATH="${OPT_CUDA}/${lib}"
+      break
+    fi
+  done
+     if test  -z "${OPT_CUDA_LIBPATH}" ; then
+       as_fn_error $? "libcudart.so not found" "$LINENO" 5
+     fi
+
+fi
+
+
+  OPT_CUDA_LDFLAGS="-L${OPT_CUDA_LIBPATH} -lcudart "
+
+fi
+
+ if test "$OPT_HAVE_CUDA" = yes; then
+  OPT_ENABLE_CUDA_TRUE=
+  OPT_ENABLE_CUDA_FALSE='#'
+else
+  OPT_ENABLE_CUDA_TRUE='#'
+  OPT_ENABLE_CUDA_FALSE=
+fi
+
+
+
+
+
+
+#-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
 #-------------------------------------------------
 
@@ -18346,6 +18873,7 @@ if test "${OPT_ENABLE_DATACENTRIC_TRACE}" = "yes" ; then
 $as_echo "#define DATACENTRIC_TRACE 1" >>confdefs.h
 
 fi
+
 
 
 #-------------------------------------------------
@@ -18649,6 +19177,18 @@ if test -z "${HOST_CPU_X86_FAMILY_TRUE}" && test -z "${HOST_CPU_X86_FAMILY_FALSE
   as_fn_error $? "conditional \"HOST_CPU_X86_FAMILY\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${HOST_CPU_IA64_TRUE}" && test -z "${HOST_CPU_IA64_FALSE}"; then
+  as_fn_error $? "conditional \"HOST_CPU_IA64\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${IS_HOST_AR_TRUE}" && test -z "${IS_HOST_AR_FALSE}"; then
+  as_fn_error $? "conditional \"IS_HOST_AR\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_HAVE_LIBUNWIND_TRUE}" && test -z "${OPT_HAVE_LIBUNWIND_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_HAVE_LIBUNWIND\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${UNW_X86_TRUE}" && test -z "${UNW_X86_FALSE}"; then
   as_fn_error $? "conditional \"UNW_X86\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -18661,12 +19201,8 @@ if test -z "${UNW_MIPS_TRUE}" && test -z "${UNW_MIPS_FALSE}"; then
   as_fn_error $? "conditional \"UNW_MIPS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${IS_HOST_AR_TRUE}" && test -z "${IS_HOST_AR_FALSE}"; then
-  as_fn_error $? "conditional \"IS_HOST_AR\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_HAVE_LIBUNWIND_TRUE}" && test -z "${OPT_HAVE_LIBUNWIND_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_HAVE_LIBUNWIND\" was never defined.
+if test -z "${UNW_LIBUNW_TRUE}" && test -z "${UNW_LIBUNW_FALSE}"; then
+  as_fn_error $? "conditional \"UNW_LIBUNW\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PAPI_DYNAMIC_TRUE}" && test -z "${OPT_PAPI_DYNAMIC_FALSE}"; then
@@ -18675,6 +19211,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PAPI_STATIC_TRUE}" && test -z "${OPT_PAPI_STATIC_FALSE}"; then
   as_fn_error $? "conditional \"OPT_PAPI_STATIC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_PAPI_COMPONENT_TRUE}" && test -z "${OPT_PAPI_COMPONENT_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_PAPI_COMPONENT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_HPCRUN_FLAT_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_FLAT_FALSE}"; then
@@ -18715,6 +19255,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_UPC_TRUE}" && test -z "${OPT_ENABLE_UPC_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_UPC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_CUDA_TRUE}" && test -z "${OPT_ENABLE_CUDA_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_CUDA\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE}"; then
@@ -21387,6 +21931,8 @@ $as_echo "$as_me:   HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'" >&6;}
 $as_echo "$as_me: " >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   binutils:     ${GNUBINUTILS}" >&5
 $as_echo "$as_me:   binutils:     ${GNUBINUTILS}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   boost:        ${BOOST}" >&5
+$as_echo "$as_me:   boost:        ${BOOST}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libdwarf:     ${LIBDWARF}" >&5
 $as_echo "$as_me:   libdwarf:     ${LIBDWARF}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libelf:       ${LIBELF}" >&5
@@ -21407,6 +21953,8 @@ $as_echo "$as_me:   xed2:         ${XED2}" >&6;}
 $as_echo "$as_me:   xerces:       ${XERCES}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi:         ${OPT_PAPI}" >&5
 $as_echo "$as_me:   papi:         ${OPT_PAPI}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   cuda:         ${OPT_CUDA}" >&5
+$as_echo "$as_me:   cuda:         ${OPT_CUDA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   upc (BG/P):   ${opt_upc_mesg}" >&5
 $as_echo "$as_me:   upc (BG/P):   ${opt_upc_mesg}" >&6;}
 

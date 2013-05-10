@@ -3,6 +3,12 @@
 /* Data-centric tracing */
 #undef DATACENTRIC_TRACE
 
+/* Support for CLOCK_THREAD_CPUTIME_ID */
+#undef ENABLE_CLOCK_CPUTIME
+
+/* Support for CLOCK_REALTIME and SIGEV_THREAD_ID */
+#undef ENABLE_CLOCK_REALTIME
+
 /* Support for AMD XOP instructions */
 #undef ENABLE_XOP
 
@@ -65,6 +71,12 @@
 
 /* C compiler supports type "voidp" */
 #undef HAVE_VOIDP_LANG_C
+
+/* HOST CPU: ia64 (itanium) */
+#undef HOST_CPU_IA64
+
+/* HOST CPU: PowerPC (ppc) */
+#undef HOST_CPU_PPC
 
 /* HOST CPU: x86 (32-bit) */
 #undef HOST_CPU_x86
@@ -135,6 +147,9 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* libunwind is the specified unwinder */
+#undef USE_LIBUNW
 
 /* Version number of package */
 #undef VERSION

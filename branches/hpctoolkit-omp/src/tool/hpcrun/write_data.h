@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -48,9 +48,9 @@
 #define WRITE_DATA_H
 
 #include "epoch.h"
+#include "core_profile_trace_data.h"
 
-extern int hpcrun_write_profile_data(epoch_t *epoch);
-extern int hpcrun_write_other_profile_data(epoch_t *epoch, thread_data_t *thread_data);
-extern void hpcrun_flush_epochs(void);
+extern int hpcrun_write_profile_data(core_profile_trace_data_t * cptd);
+extern void hpcrun_flush_epochs(core_profile_trace_data_t * cptd);
 
 #endif // WRITE_DATA_H

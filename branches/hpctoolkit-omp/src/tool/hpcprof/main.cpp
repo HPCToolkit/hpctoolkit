@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -307,7 +307,7 @@ makeMetrics(Prof::CallPath::Profile& prof,
   // -------------------------------------------------------
   // compute derived metrics
   // -------------------------------------------------------
-  cctRoot->computeMetrics(mMgr, mDrvdBeg, mDrvdEnd);
+  cctRoot->computeMetrics(mMgr, mDrvdBeg, mDrvdEnd, /*doFinal*/false);
 
   for (uint i = mDrvdBeg; i < mDrvdEnd; ++i) {
     Prof::Metric::ADesc* m = mMgr.metric(i);

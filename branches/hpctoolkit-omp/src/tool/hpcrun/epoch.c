@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -65,7 +65,7 @@ void
 hpcrun_reset_epoch(epoch_t* epoch)
 {
   epoch->next = NULL;
-  TD_GET(epoch) = epoch;
+  TD_GET(core_profile_trace_data.epoch) = epoch;
 }
 
 void
@@ -86,7 +86,7 @@ hpcrun_epoch_init(cct_ctxt_t* ctxt)
 {
   TMSG(EPOCH,"init");
   thread_data_t* td    = hpcrun_get_thread_data();
-  epoch_t*       epoch = td->epoch;
+  epoch_t*       epoch = td->core_profile_trace_data.epoch;
 
   hpcrun_cct_bundle_init(&(epoch->csdata), ctxt);
 
@@ -137,7 +137,7 @@ hpcrun_check_for_new_loadmap(epoch_t* epoch)
     newepoch->loadmap = current;
     newepoch->next  = epoch;
 
-    TD_GET(epoch) = newepoch;
+    TD_GET(core_profile_trace_data.epoch) = newepoch;
     return newepoch;
   }
   else {
@@ -162,7 +162,7 @@ hpcrun_epoch_reset(void)
   // reset epoch list for thread to point be a list consisting of only the new epoch
   //
   TMSG(EPOCH_RESET,"--started");
-  epoch_t *epoch = hpcrun_get_epoch();
+  epoch_t *epoch = hpcrun_get_thread_epoch();
   epoch_t *newepoch = hpcrun_malloc(sizeof(epoch_t));
   memcpy(newepoch, epoch, sizeof(epoch_t));
   TMSG(EPOCH_RESET, "check new loadmap = old loadmap = %d", newepoch->loadmap == epoch->loadmap);

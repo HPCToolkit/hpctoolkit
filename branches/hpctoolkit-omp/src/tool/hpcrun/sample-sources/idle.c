@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -123,9 +123,12 @@ static void work_fn();
 static void start_fn();
 static void end_fn();
 
+#if XU_OLD
 static void process_blame_for_sample(cct_node_t *node, uint64_t metric_value);
+#endif
 void scale_fn(void *);
 void normalize_fn(cct_node_t *node, cct_op_arg_t arg, size_t level);
+static void idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric_value);
 
 /******************************************************************************
  * local variables
@@ -169,6 +172,18 @@ METHOD_FN(thread_init_action)
 static void
 METHOD_FN(start)
 {
+  if (!blame_shift_source_available(bs_type_timer) && !blame_shift_source_available(bs_type_cycles)) {
+    STDERR_MSG("HPCToolkit: IDLE metric needs either a REALTIME, CPUTIME, WALLCLOCK, or PAPI_TOT_CYC source.");
+    monitor_real_exit(1);
+  }
+
+  if (idleness_blame_information_source_present == false) {
+    STDERR_MSG("HPCToolkit: IDLE metric specified without a plugin that measures "
+        "idleness and work.\n" 
+        "For dynamic binaries, specify an appropriate plugin with an argument to hpcrun.\n"
+	"For static binaries, specify an appropriate plugin with an argument to hpclink.\n");
+    monitor_real_exit(1);
+  }
 }
 
 static void
@@ -214,43 +229,43 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return (strstr(ev_str, "IDLE") != NULL);
+  return hpcrun_ev_is(ev_str, "IDLE");
 }
- 
+
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-        bs_entry.fn = process_blame_for_sample;
-        bs_entry.next = 0;
+  bs_entry.fn = process_blame_for_sample;
+  bs_entry.next = 0;
 
-	GOMP_barrier_callback_register(idle_fn, work_fn);
-	GOMP_start_callback_register(start_fn, end_fn);
+  GOMP_barrier_callback_register(idle_fn, work_fn);
+  GOMP_start_callback_register(start_fn, end_fn);
 
-	blame_shift_register(&bs_entry);
+  blame_shift_register(&bs_entry);
 
-	idle_metric_id = hpcrun_new_metric();
-	hpcrun_set_metric_info_and_period(idle_metric_id, "p_req_core_idleness",
-			MetricFlags_ValFmt_Real, 1);
+  idle_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(idle_metric_id, "p_req_core_idleness",
+				    MetricFlags_ValFmt_Real, 1);
 
-	core_idle_metric_id = hpcrun_new_metric();
-	hpcrun_set_metric_info_and_period(core_idle_metric_id, "p_all_core_idleness",
-			MetricFlags_ValFmt_Real, 1);
+  core_idle_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(core_idle_metric_id, "p_all_core_idleness",
+				    MetricFlags_ValFmt_Real, 1);
 
-	thread_idle_metric_id = hpcrun_new_metric();
-	hpcrun_set_metric_info_and_period(thread_idle_metric_id, "p_all_thread_idleness",
-			MetricFlags_ValFmt_Real, 1);
+  thread_idle_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(thread_idle_metric_id, "p_all_thread_idleness",
+				    MetricFlags_ValFmt_Real, 1);
 
-	work_metric_id = hpcrun_new_metric();
-	hpcrun_set_metric_info_and_period(work_metric_id, "p_work",
-			MetricFlags_ValFmt_Int, 1);
+  work_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(work_metric_id, "p_work",
+				    MetricFlags_ValFmt_Int, 1);
 
-	overhead_metric_id = hpcrun_new_metric();
-	hpcrun_set_metric_info_and_period(overhead_metric_id, "p_overhead",
-			MetricFlags_ValFmt_Int, 1);
+  overhead_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(overhead_metric_id, "p_overhead",
+				    MetricFlags_ValFmt_Int, 1);
 
-	count_metric_id = hpcrun_new_metric();
-	hpcrun_set_metric_info_and_period(count_metric_id, "count_helper",
-			MetricFlags_ValFmt_Int, 1);
+  count_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(count_metric_id, "count_helper",
+				    MetricFlags_ValFmt_Int, 1);
 }
 
 static void
@@ -324,8 +339,18 @@ is_overhead(cct_node_t *node)
 }
 
 static void
+#ifdef XU_OLD
 process_blame_for_sample(cct_node_t *node, uint64_t metric_value)
+#endif
+idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric_incr)
 {
+  metric_desc_t * metric_desc = hpcrun_id2metric(metric_id);
+ 
+  // Only blame shift idleness for time and cycle metrics. 
+  if ( ! (metric_desc->properties.time | metric_desc->properties.cycles) ) 
+    return;
+  
+  int metric_value = metric_desc->period * metric_incr;
   thread_data_t *td = hpcrun_get_thread_data();
   if (td->idle == 0) { // if thread is not idle
                 double work_l = (double) work;

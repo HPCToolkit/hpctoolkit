@@ -11,7 +11,7 @@ dnl Information about sources of support for research and development of
 dnl HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 dnl --------------------------------------------------------------------------
 dnl
-dnl Copyright ((c)) 2002-2012, Rice University
+dnl Copyright ((c)) 2002-2013, Rice University
 dnl All rights reserved.
 dnl
 dnl Redistribution and use in source and binary forms, with or without
@@ -211,7 +211,6 @@ AC_ARG_ENABLE([develop],
 AC_MSG_RESULT([${OPT_ENABLE_DEVELOP}])
 AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
 
-
 #----------------------------------------------------------------------------
 # Prerequisites: compilers, tools, system libraries
 #----------------------------------------------------------------------------
@@ -242,6 +241,10 @@ AC_PROG_AWK
 AC_PROG_SED
 
 AC_PROG_CXXCPP()
+
+AC_ARG_VAR([LD],
+    [ld program for binaries produced by CC, only needed if
+     autoconf fails to find a suitable program])
 
 HPC_PROG_MPICXX(HPC_MPICXX_LIST)
 
@@ -358,6 +361,11 @@ HPC_DEF_CXXCMP()
 
 UNWINDER=no
 
+#---------------------------------------
+# set specific libunw variable
+#---------------------------------------
+USE_LIBUNW=no
+
 #-------------------------------------------------
 # Host-specific defines
 #-------------------------------------------------
@@ -374,6 +382,7 @@ HOST_CPU_PPC=no
 HOST_CPU_X86=no
 HOST_CPU_X86_64=no
 HOST_CPU_X86_FAMILY=no
+HOST_CPU_IA64=no
 
 case "${host}" in
   # Linux
@@ -405,7 +414,10 @@ case "${host}" in
   ia64*-*-linux*)
     # __ia64 && __linux
     HOST_OS="Linux"
-    AC_DEFINE([HOST_OS_LINUX], [1], [HOST OS: Linux])
+    HOST_CPU_IA64=yes
+    UNWINDER=libunw
+    AC_DEFINE([HOST_CPU_IA64], [1], [HOST CPU: ia64 (itanium)])
+    AC_DEFINE([HOST_OS_LINUX], [], [])
     ;;
 
   mips64*-*-linux*)
@@ -423,6 +435,7 @@ case "${host}" in
     HOST_CPU_PPC=yes
     UNWINDER=ppc64
     AC_DEFINE([HOST_OS_LINUX], [1], [HOST OS: Linux])
+    AC_DEFINE([HOST_CPU_PPC], [1], [HOST CPU: PowerPC (ppc)])
     ;;
 
   # MacOS
@@ -432,6 +445,7 @@ case "${host}" in
     HOST_CPU_PPC=yes
     UNWINDER=ppc64
     AC_DEFINE([HOST_OS_MACOS], [1], [HOST OS: MacOS])
+    AC_DEFINE([HOST_CPU_PPC], [1], [HOST CPU: PowerPC (ppc)])
     ;;
 
   i386*-*-darwin* | i686*-*-darwin*)
@@ -493,14 +507,7 @@ AM_CONDITIONAL([HOST_CPU_PPC],    [test "${HOST_CPU_PPC}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86],    [test "${HOST_CPU_X86}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86_64], [test "${HOST_CPU_X86_64}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86_FAMILY], [test "${HOST_CPU_X86_FAMILY}" = yes])
-
-#
-# set up automake choice of unwinder
-#
-
-AM_CONDITIONAL([UNW_X86], [test "$UNWINDER" = x86-family])
-AM_CONDITIONAL([UNW_PPC64], [test "$UNWINDER" = ppc64])
-AM_CONDITIONAL([UNW_MIPS], [test "$UNWINDER" = mips])
+AM_CONDITIONAL([HOST_CPU_IA64], [test "$HOST_CPU_IA64" = yes])
 
 #-------------------------------------------------
 # Host-specific compiler settings
@@ -692,6 +699,77 @@ HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
 
 
 #-------------------------------------------------
+# LD -- find correct arch type for ld
+#-------------------------------------------------
+
+# Autoconf gets the wrong arch type for ld in a cross compile, at
+# least on Intel MIC.  Here, we test that ld supports relocatable
+# linking (ld -r).  If not, then try other arch types until we find
+# one that works.
+
+test_ld_r()
+{
+  ld_cmd="$*"
+  AC_MSG_CHECKING([relocatable linking: $ld_cmd ])
+  rm -f "$obj3"
+  $ld_cmd -r "$obj1" "$obj2" -o "$obj3" >&AS_MESSAGE_LOG_FD 2>&1
+  if test $? -eq 0 && test -f "$obj3" ; then
+    AC_MSG_RESULT(yes)
+    return 0
+  else
+    AC_MSG_RESULT(no)
+    return 1
+  fi
+}
+
+src1="conftest.$$.1.c"
+src2="conftest.$$.2.c"
+obj1="conftest.$$.1.o"
+obj2="conftest.$$.2.o"
+obj3="conftest.$$.3.o"
+
+rm -f "$src1" "$src2" "$obj1" "$obj2" "$obj3"
+
+echo 'int foo(void) { return 2; }' >"$src1"
+echo 'int baz(void) { return 4; }' >"$src2"
+
+$CC $CFLAGS -c "$src1" -o "$obj1" >&AS_MESSAGE_LOG_FD 2>&1
+$CC $CFLAGS -c "$src2" -o "$obj2" >&AS_MESSAGE_LOG_FD 2>&1
+
+found_ld=no
+
+if test_ld_r $LD ; then
+  # autoconf's choice for LD works
+  found_ld=yes
+else
+  # try other arch types from LD -V
+  # be careful not to create a subshell (redirect fd)
+  ld_base=`echo $LD | awk '{ print $1 }'`
+
+  emul=false
+  arch_list=`$ld_base -V 2>&1`
+  for arch in $arch_list
+  do
+    if $emul && test_ld_r $ld_base -m $arch ; then
+      LD="$ld_base -m $arch"
+      found_ld=yes
+      break
+    fi
+    # skip output until 'Supported emulations:'
+    case "$arch" in
+      *emulat* ) emul=true ;;
+    esac
+  done
+fi
+
+rm -f "$src1" "$src2" "$obj1" "$obj2" "$obj3"
+
+if test "$found_ld" != yes ; then
+  AC_MSG_ERROR([unable to find correct arch type for ld])
+fi
+
+
+#-------------------------------------------------
 # Test if CXX and MPICXX are compatible
 #-------------------------------------------------
 
@@ -801,7 +879,7 @@ AC_SUBST([hpc_ext_libs_dir])
 #-------------------------------------------------
 
 # External's minimum svn rev number, or else a fatal error.
-EXTERNALS_MIN_REV=3872
+EXTERNALS_MIN_REV=4009
 
 ext_cc_path=unknown
 ext_cxx_path=unknown
@@ -910,9 +988,10 @@ hpctoolkit-externals.])
 fi
 
 host_wordsize=unknown
+wordsize_cflag=
 case "$host_sizeof_voidp" in
-  4 ) host_wordsize=32 ;;
-  8 ) host_wordsize=64 ;;
+  4 ) host_wordsize=32 ; wordsize_cflag='-m32' ;;
+  8 ) host_wordsize=64 ; wordsize_cflag='-m64' ;;
   * ) AC_MSG_WARN([unable to determine host wordsize]) ;;
 esac
 
@@ -921,6 +1000,13 @@ then
   AC_MSG_ERROR([mismatched wordsize: hpctoolkit is configured for \
 ${host_wordsize}-bit but externals is ${ext_wordsize}-bit])
 fi
+
+# On ia64, -m64 is an unrecognized option (and unnecessary).
+if test "$HOST_CPU_IA64" = yes ; then
+  wordsize_cflag=
+fi
+
+AC_SUBST([wordsize_cflag])
 
 
 #-------------------------------------------------
@@ -968,6 +1054,43 @@ AC_MSG_RESULT([${GNUBINUTILS}])
 AC_SUBST([GNUBINUTILS_IFLAGS])
 AC_SUBST([GNUBINUTILS_LDFLAGS])
 AC_SUBST([GNUBINUTILS_LDLIBS])
+
+
+#-------------------------------------------------
+# Option: --with-boost=PATH
+#-------------------------------------------------
+
+BOOST=no
+if test "$use_externals" = yes ; then
+  BOOST="$ext_boost_prefix"
+fi
+
+AC_ARG_WITH([boost],
+  [AS_HELP_STRING([--with-boost=PATH],
+      [path to boost install directory])],
+  [BOOST="$withval"],
+  [])
+
+AC_MSG_CHECKING([for boost])
+
+case "$BOOST" in
+  /* )
+    if test ! -f "${BOOST}/include/boost/shared_ptr.hpp" ; then
+      AC_MSG_ERROR([invalid boost directory: $BOOST])
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([boost directory must be absolute path: $BOOST])
+    ;;
+esac
+
+AC_MSG_RESULT([$BOOST])
+
+BOOST_INC="${BOOST}/include"
+
+AC_SUBST([BOOST_INC])
 
 
 #-------------------------------------------------
@@ -1127,7 +1250,11 @@ AC_SUBST([LIBMONITOR_WRAP_NAMES])
 # with-libunwind
 #-------------------------------------------------
 
-AC_MSG_CHECKING([whether configured with libunwind])
+#
+# ### FIXME: rationalize this: libunw chosen EITHER when ia64 or when --with-libunwind is set
+# ###        current configure will NOT do the right thing if libunw turned off but arch=ia64
+#
+AC_MSG_CHECKING([whether configured to use libunwind instead of native])
 
 OPT_HAVE_LIBUNWIND=no
 OPT_LIBUNWIND=
@@ -1136,6 +1263,9 @@ OPT_LIBUNWIND_LIBPATH=
 OPT_LIBUNWIND_LDFLAGS=
 OPT_LIBUNWIND_LIBSO=
 OPT_LIBUNWIND_LIBA=
+LIBUNWIND_COPY=no
+LIBUNWIND_RUN_DIR=
+LIBUNWIND_HPCLINK_LIBS=
 
 if test "$use_externals" = yes ; then
   OPT_LIBUNWIND="$ext_libunwind_prefix"
@@ -1147,21 +1277,52 @@ fi
 AC_ARG_WITH([libunwind],
   AS_HELP_STRING([--with-libunwind=PATH],
                  [use given LIBUNWIND installation (absolute path) with hpcrun (default is NO)]),
-  [if test $withval != no; then
-     OPT_HAVE_LIBUNWIND=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       AC_MSG_ERROR([--with-libunwind requires absolute path as argument; given '${withval}'])
-     fi
-     OPT_LIBUNWIND=${withval}
-   fi],
+  [case $withval in
+      yes) : ;;
+      /*) OPT_LIBUNWIND=${withval} ;;
+      *) AC_MSG_ERROR([--with-libunwind requires absolute path as argument; given '${withval}']) ;;
+   esac
+   OPT_HAVE_LIBUNWIND=yes
+   UNWINDER=libunw],
   [])
+
+if test "$UNWINDER" = "libunw"; then
+   AC_DEFINE([USE_LIBUNW], [1], [libunwind is the specified unwinder])
+fi
 
 # Check for LIBUNWIND > .9xxx [skip for now]
 
+# Check for libunwind sanity
+if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
+  if ! test -f "$OPT_LIBUNWIND/include/libunwind.h"; then
+     AC_MSG_ERROR([libunwind required, but specified library path is invalid (no libunwind.h)])
+  fi
+  if test ! \( -f "$OPT_LIBUNWIND/lib/libunwind.so" -o -f "$OPT_LIBUNWIND/lib/libunwind.a" \) ; then
+     AC_MSG_ERROR([libunwind required, but specified library path is invalid (no libunwind.a or libunwind.so)])
+  fi
+fi
+
 if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then 
   AC_MSG_RESULT([yes (${OPT_LIBUNWIND_LIBSO})])
+
+  LIBUNWIND_COPY=yes
+  LIBUNWIND_LIB="$OPT_LIBUNWIND/lib"
+  LIBUNWIND_RUN_DIR="$hpc_ext_libs_dir"
+  OPT_LIBUNWIND_IFLAGS="-I$OPT_LIBUNWIND/include"
+  OPT_LIBUNWIND_LIBPATH="$OPT_LIBUNWIND"
+
+  LIBUNWIND_HPCLINK_LIBS=" -lunwind -lunwind-generic"
+
+  OPT_LIBUNWIND_LDFLAGS="-L$LIBUNWIND_LIB $LIBUNWIND_HPCLINK_LIBS"
+
 else
   AC_MSG_RESULT([no])
+fi
+
+if test -z "$HPCLINK_LD_FLAGS"; then
+   HPCLINK_LD_FLAGS="$OPT_LIBUNWIND_LDFLAGS"
+else
+   HPCLINK_LD_FLAGS="$HPCLINK_LD_FLAGS $OPT_LIBUNWIND_LDFLAGS"
 fi
 
 AM_CONDITIONAL(OPT_HAVE_LIBUNWIND, test "${OPT_HAVE_LIBUNWIND}" = "yes")
@@ -1170,7 +1331,20 @@ AC_SUBST(OPT_LIBUNWIND_LIBPATH)
 AC_SUBST(OPT_LIBUNWIND_LDFLAGS)
 AC_SUBST(OPT_LIBUNWIND_LIBSO)
 AC_SUBST(OPT_LIBUNWIND_LIBA)
+AC_SUBST(LIBUNWIND_COPY)
+AC_SUBST(LIBUNWIND_LIB)
+AC_SUBST(LIBUNWIND_RUN_DIR)
+AC_SUBST(LIBUNWIND_HPCLINK_LIBS)
 
+#
+# set up automake choice of unwinder
+#
+# -- NOTE: ia64 ALWAYS uses libunw
+#
+AM_CONDITIONAL([UNW_X86], [test "$UNWINDER" = x86-family])
+AM_CONDITIONAL([UNW_PPC64], [test "$UNWINDER" = ppc64])
+AM_CONDITIONAL([UNW_MIPS], [test "$UNWINDER" = mips])
+AM_CONDITIONAL([UNW_LIBUNW], [test "$UNWINDER" = libunw])
 
 #-------------------------------------------------
 # with-monitor
@@ -1368,6 +1542,51 @@ AC_SUBST(OPT_PAPI_LDFLAGS)
 AC_SUBST(OPT_PAPI_LIBPATH)
 AC_SUBST([papi_extra_libs])
 
+# Option to use the new papi-c.c sample source file.  This is mostly
+# temporary until the new file integrates both component and
+# non-component PAPI.  Requires PAPI 5.1 or later.
+
+AC_ARG_ENABLE([papi-c],
+  AS_HELP_STRING([--enable-papi-c],
+      [use new papi component sample source, requires papi 5.1 or later]),
+  [use_papi_c="$enableval"],
+  [use_papi_c=check])
+
+AC_MSG_CHECKING([whether to use new papi component])
+
+case "$use_papi_c" in
+  no | check ) ;;
+  * ) use_papi_c=yes ;;
+esac
+
+if test "$OPT_HAVE_PAPI" = no ; then
+  use_papi_c=no
+fi
+
+if test "$use_papi_c" = check ; then
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS"
+  AC_LANG_PUSH([C])
+
+  AC_LINK_IFELSE([
+#include "papi.h"
+int main()
+{
+  return PAPI_get_eventset_component(0);
+}
+], [use_papi_c=yes], [use_papi_c=no])
+
+  AC_LANG_POP
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
+fi
+
+AC_MSG_RESULT([$use_papi_c])
+
+AM_CONDITIONAL(OPT_PAPI_COMPONENT, [test "$use_papi_c" = yes])
+
 
 #-------------------------------------------------
 # Option: --with-symtabAPI=PATH
@@ -1386,18 +1605,26 @@ AC_ARG_WITH([symtabAPI],
 
 AC_MSG_CHECKING([for symtabAPI])
 
+SYMTABAPI_COPY=no
+SYMTABAPI_COPY_DYN=no
+SYMTABAPI_LIB_LIST=
+
 case "${SYMTABAPI}" in
   /* )
-    if test -f "${SYMTABAPI}/include/Symtab.h" ; then :
+    if test -f "${SYMTABAPI}/include/Symtab.h" && \
+       test -f "${SYMTABAPI}/lib/libsymtabAPI.so"
+    then :
     else
         AC_MSG_ERROR([invalid symtabAPI directory: $SYMTABAPI])
     fi
     SYMTABAPI_COPY=yes
-    SYMTABAPI_RUN_DIR="$hpc_ext_libs_dir"
+    SYMTABAPI_LIB_LIST='-lsymtabAPI -lcommon'
+    if test -f "${SYMTABAPI}/lib/libdynElf.so" ; then
+      SYMTABAPI_COPY_DYN=yes
+      SYMTABAPI_LIB_LIST="$SYMTABAPI_LIB_LIST -ldynDwarf -ldynElf"
+    fi
     ;;
   no )
-    SYMTABAPI_COPY=no
-    SYMTABAPI_RUN_DIR=no
     ;;
   * )
     AC_MSG_ERROR([symtabAPI directory must be absolute path: $SYMTABAPI])
@@ -1411,8 +1638,9 @@ AC_MSG_RESULT([$SYMTABAPI])
 
 AC_SUBST([SYMTABAPI_INC])
 AC_SUBST([SYMTABAPI_LIB])
+AC_SUBST([SYMTABAPI_LIB_LIST])
 AC_SUBST([SYMTABAPI_COPY])
-AC_SUBST([SYMTABAPI_RUN_DIR])
+AC_SUBST([SYMTABAPI_COPY_DYN])
 
 
 #-------------------------------------------------
@@ -1664,6 +1892,7 @@ fi
 AC_MSG_RESULT([${OPT_ENABLE_HPCRUN_STATIC}])
 AM_CONDITIONAL(OPT_ENABLE_HPCRUN_STATIC, test "${OPT_ENABLE_HPCRUN_STATIC}" = "yes")
 
+AC_SUBST(HPCLINK_LD_FLAGS)
 
 AC_MSG_CHECKING([whether to build hpcrun for dynamically linked executables])
 
@@ -1903,6 +2132,71 @@ fi
 
 
 #-------------------------------------------------
+# check for POSIX real-time timers
+#-------------------------------------------------
+
+# POSIX timer_create() and CLOCK_REALTIME go back to at least 2001, so
+# they're pretty safe.  But we also need the SIGEV_THREAD_ID notify
+# method, the SYS_gettid syscall and the _sigev_un._tid field in
+# struct sigevent.  These are Linux extensions and may not compile on
+# all systems.
+
+AC_LANG_PUSH([C])
+ORIG_LIBS="$LIBS"
+LIBS="-lrt"
+
+AC_MSG_CHECKING([for CLOCK_REALTIME and SIGEV_THREAD_ID])
+
+AC_LINK_IFELSE([
+#include <sys/syscall.h>
+#include <signal.h>
+#include <time.h>
+#include <unistd.h>
+#ifndef sigev_notify_thread_id
+#define sigev_notify_thread_id _sigev_un._tid
+#endif
+int main()
+{
+  struct sigevent sigev;
+  timer_t timerid;
+  sigev.sigev_notify = SIGEV_THREAD_ID;
+  sigev.sigev_signo = SIGRTMIN + 3;
+  sigev.sigev_value.sival_ptr = &timerid;
+  sigev.sigev_notify_thread_id = syscall(SYS_gettid);
+  return timer_create(CLOCK_REALTIME, &sigev, &timerid);
+}
+], [ans=yes], [ans=no])
+
+AC_MSG_RESULT([$ans])
+
+# If CLOCK_REALTIME exists, then also try CLOCK_THREAD_CPUTIME_ID.
+
+if test "$ans" = yes ; then
+  AC_DEFINE([ENABLE_CLOCK_REALTIME], [1],
+            [Support for CLOCK_REALTIME and SIGEV_THREAD_ID])
+
+  AC_MSG_CHECKING([for CLOCK_THREAD_CPUTIME_ID])
+  AC_LINK_IFELSE([
+#include <sys/time.h>
+#include <time.h>
+int main()
+{
+  clockid_t clock = CLOCK_THREAD_CPUTIME_ID;
+  return 0;
+}
+], [ans=yes], [ans=no])
+  AC_MSG_RESULT([$ans])
+
+  if test "$ans" = yes ; then
+    AC_DEFINE([ENABLE_CLOCK_CPUTIME], [1], [Support for CLOCK_THREAD_CPUTIME_ID])
+  fi
+fi
+
+LIBS="$ORIG_LIBS"
+AC_LANG_POP
+
+
+#-------------------------------------------------
 # enable-bluegene: BG/* support
 #-------------------------------------------------
 
@@ -2009,6 +2303,96 @@ AC_SUBST(OPT_UPC_LDFLAGS)
 
 
 #-------------------------------------------------
+# Option: --with-cuda=PATH
+#-------------------------------------------------
+
+# CUDA support for CPU-GPU-Blame-shifting
+# CUDA default install path is /usr/local/cuda
+# Include files will be in CUDADIR/include
+# CUDA 64 bit libraries under CUDADIR/lib64 and 32 bit in CUDADIR/lib
+# We need CUPTI for callbacks which is in CUDADIR/extras/CUPTI
+# CUPTI 64 bit libraries under CUPTIDIR/lib64 and 32 bit in CUPTIDIR/lib
+
+
+if test "${host_sizeof_voidp}" = "4"; then
+    CUDA_LIB_SEARCH_ORDER="lib32 lib"
+else
+    CUDA_LIB_SEARCH_ORDER="lib64 lib"
+fi
+
+
+OPT_HAVE_CUDA=no
+OPT_CUDA=
+OPT_CUDA_INCPATH=
+OPT_CUDA_LDFLAGS=
+OPT_CUDA_LIBPATH=
+OPT_CUPTI_INCPATH=
+OPT_CUPTI_LIBPATH=
+OPT_CUPTI_LDFLAGS=
+
+AC_ARG_WITH([cuda],
+  AS_HELP_STRING([--with-cuda=PATH],
+                 [use given CUDA installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_CUDA=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cuda requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUDA=${withval}
+   fi])
+
+if test "$OPT_HAVE_CUDA" = "yes" ; then
+ AC_ARG_WITH([cuda-include],
+  AS_HELP_STRING([--with-cuda-include=PATH],
+                 [use given CUDA include (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cuda-include requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUDA_INCPATH=${withval}
+  fi],
+
+     [if test -f ${OPT_CUDA}/include/cuda.h; then
+         OPT_CUDA_INCPATH=${OPT_CUDA}/include
+     else
+         AC_MSG_ERROR(['${OPT_CUDA}/include/cuda.h' not found])
+     fi])  
+
+  OPT_CUDA_IFLAGS="-I${OPT_CUDA_INCPATH} "
+
+  AC_ARG_WITH([cuda-lib],
+  AS_HELP_STRING([--with-cuda-lib=PATH],
+                 [use given CUDA lib (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cuda-lib requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUDA_LIBPATH=${withval}
+   fi], 
+  
+   [for lib in ${CUDA_LIB_SEARCH_ORDER} ; do
+    if test -f "${OPT_CUDA}/${lib}/libcudart.so" 
+    then
+      OPT_CUDA_LIBPATH="${OPT_CUDA}/${lib}"
+      break
+    fi
+  done 
+     if test  -z "${OPT_CUDA_LIBPATH}" ; then
+       AC_MSG_ERROR([libcudart.so not found])
+     fi
+   ] )
+
+  OPT_CUDA_LDFLAGS="-L${OPT_CUDA_LIBPATH} -lcudart "
+
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_CUDA], [test "$OPT_HAVE_CUDA" = yes])
+
+AC_SUBST([OPT_CUDA])
+AC_SUBST([OPT_CUDA_IFLAGS])
+AC_SUBST([OPT_CUDA_LDFLAGS])
+
+#-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
 #-------------------------------------------------
 
@@ -2031,6 +2415,7 @@ AC_MSG_RESULT([${OPT_ENABLE_DATACENTRIC_TRACE}])
 if test "${OPT_ENABLE_DATACENTRIC_TRACE}" = "yes" ; then
   AC_DEFINE([DATACENTRIC_TRACE], [1], [Data-centric tracing])
 fi
+
 
 
 #-------------------------------------------------
@@ -2235,6 +2620,7 @@ AC_MSG_NOTICE([  HPC_LT_LDFLAGS:        '${HPC_LT_LDFLAGS}'])
 AC_MSG_NOTICE([  HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  binutils:     ${GNUBINUTILS}])
+AC_MSG_NOTICE([  boost:        ${BOOST}])
 AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
 AC_MSG_NOTICE([  libelf:       ${LIBELF}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
@@ -2245,6 +2631,7 @@ AC_MSG_NOTICE([  symtabAPI:    ${SYMTABAPI}])
 AC_MSG_NOTICE([  xed2:         ${XED2}])
 AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
+AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
 
 if test "$warn_non_gcc" = yes ; then

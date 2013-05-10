@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -52,40 +52,26 @@
 #include <messages/messages.h>
 #include <hpcrun/hpcrun_return_codes.h>
 #include <hpcrun/unresolved.h>
-//
-// convenient constant cct_addr_t's
-//
-
-static cct_addr_t root = ADDR_I(CCT_ROOT);
 
 //
 // Private Operations
 //
 
 //
-// helper for inserting creation contexts
-//
-static void
-l_insert_path(cct_node_t* node, cct_op_arg_t arg, size_t level)
-{
-  cct_addr_t* addr = hpcrun_cct_addr(node);
-  if (cct_addr_eq(addr, &root)) return;
-
-  cct_node_t** tree = (cct_node_t**) arg;
-  *tree = hpcrun_cct_insert_addr(*tree, addr);
-}
-
-//
 // "Special" routine to serve as a placeholder for "idle" resource
 //
+
 void
-hpcrun_special_idle(void)
+GPU_IDLE(void)
 {
 }
+
+
 
 //
 // Interface procedures
 //
+
 
 void
 hpcrun_cct_bundle_reuse_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
@@ -121,6 +107,7 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   bundle->thread_root = bundle->tree_root;
   bundle->ctxt = ctxt;
   bundle->num_nodes = 0;
+  // FIXME: change to omp style here
   //
   // If there is a creation context (ie, this is a pthread),
   // then the creation context gets special treatment.
@@ -134,10 +121,11 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   // all thread-stopped call paths to thread root.
   // 
   if (ENABLED(ATTACH_THREAD_CTXT) && ctxt) {
-    hpcrun_walk_path(ctxt->context, l_insert_path, (cct_op_arg_t) &(bundle->thread_root));
+    hpcrun_cct_insert_path(&(bundle->thread_root), ctxt->context);
   }
   bundle->partial_unw_root = hpcrun_cct_new_partial();
   bundle->unresolved_root = hpcrun_cct_top_new(UNRESOLVED_ROOT, 0);
+  bundle->special_idle_node = hpcrun_cct_new_special(GPU_IDLE);
 }
 //
 // Write to file for cct bundle: 
@@ -149,6 +137,7 @@ hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl)
 
   cct_node_t* final = bndl->tree_root;
   cct_node_t* partial_insert = final;
+
 
   //
   // attach partial unwinds at appointed slot
@@ -179,4 +168,14 @@ hpcrun_empty_cct(cct_bundle_t* cct)
     TMSG(CCT, "cct %p is empty", cct);
   }
   return rv;
+}
+
+cct_node_t*
+hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct)
+{
+  // attach special node to root if not already attached
+  if (! hpcrun_cct_parent(cct->special_idle_node))
+    hpcrun_cct_insert_node(cct->partial_unw_root, cct->special_idle_node);
+
+  return cct->special_idle_node;
 }

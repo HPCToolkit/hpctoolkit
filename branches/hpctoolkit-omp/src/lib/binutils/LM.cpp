@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -236,6 +236,11 @@ BinUtil::LM::open(const char* filenm)
     case bfd_arch_ia64:
       newisa = new IA64ISA;
       break;
+#ifdef bfd_mach_k1om
+    case bfd_arch_k1om: // Intel MIC, 64-bit only
+      newisa = new x86ISA(true);
+      break;
+#endif
     case bfd_arch_mips:
       newisa = new MipsISA;
       break;
@@ -744,6 +749,9 @@ BinUtil::LM::dumpModuleInfo(std::ostream& o, const char* pre) const
     case bfd_arch_sparc:   o << "SPARC'\n"; break;
     case bfd_arch_i386:    o << "x86'\n";   break;
     case bfd_arch_ia64:    o << "IA-64'\n"; break; 
+#ifdef bfd_mach_k1om
+    case bfd_arch_k1om:    o << "K1OM'\n";  break;
+#endif
     default: DIAG_Die("Unknown bfd arch: " << bfd_get_arch(m_bfd));
   }
 
@@ -800,6 +808,11 @@ BinUtil::LM::dumpModuleInfo(std::ostream& o, const char* pre) const
     case bfd_arch_ia64:
       o << "IA-64'\n"; 
       break; 
+#ifdef bfd_mach_k1om
+    case bfd_arch_k1om:
+      o << "K1OM'\n";
+      break;
+#endif
     default: 
       DIAG_Die("Unknown bfd arch: " << bfd_get_arch(m_bfd));
   }

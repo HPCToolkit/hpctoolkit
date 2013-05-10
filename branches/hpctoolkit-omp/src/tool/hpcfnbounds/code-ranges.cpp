@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -50,6 +50,7 @@ using namespace std;
 #include "code-ranges.h"
 #include "process-ranges.h"
 
+
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
@@ -74,7 +75,6 @@ private:
   DiscoverFnTy discover;
 };
 
-
 typedef map<void*,CodeRange*> CodeRangeSet;
 
 
@@ -85,10 +85,21 @@ typedef map<void*,CodeRange*> CodeRangeSet;
 static CodeRangeSet code_ranges;
 
 
-
 /******************************************************************************
  * interface operations 
  *****************************************************************************/
+
+// Free both the code_ranges map and the CodeRange objects in the map.
+void
+code_ranges_reinit(void)
+{
+  CodeRangeSet::iterator it;
+
+  for (it = code_ranges.begin(); it != code_ranges.end(); it++) {
+    delete it->second;
+  }
+  code_ranges.clear();
+}
 
 
 long
@@ -122,8 +133,10 @@ consider_possible_fn_address(void *addr)
 void 
 new_code_range(void *start, void *end, long offset, DiscoverFnTy discover)
 {
-  code_ranges.insert(pair<void*,CodeRange*>(start, 
-					    new CodeRange(start, end, offset, discover)));
+  // FIXME: this leaks memory in the case that the map already
+  // contains an entry with the same start address.
+  code_ranges.insert(pair<void*,CodeRange*>
+		     (start, new CodeRange(start, end, offset, discover)));
 }
 
 
@@ -137,6 +150,7 @@ process_code_ranges()
     r->Process();
   }
 }
+
 
 /******************************************************************************
  * private operations 
@@ -168,4 +182,3 @@ CodeRange::Process()
 {
   process_range(-offset, Relocate(start), Relocate(end), discover);
 }
-

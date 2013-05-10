@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -139,15 +139,9 @@ static const uint32_t default_ra_to_callsite_distance =
 //***************************************************************************
 
 static FILE *
-lazy_open_data_file(thread_data_t *thread_data)
+lazy_open_data_file(core_profile_trace_data_t * cptd)
 {
-  thread_data_t* td =NULL;
-  if(thread_data) td = thread_data;
-  else
-    td = hpcrun_get_thread_data();
-
-  TMSG(DEFER_CTXT, "in open data file %d(%d)", td->id, td->defer_write);
-  FILE* fs = td->hpcrun_file;
+  FILE* fs = cptd->hpcrun_file;
   if (fs) {
   TMSG(DEFER_CTXT, "in open data file but return %d(%d)", td->id, td->defer_write);
     return fs;
@@ -157,13 +151,13 @@ lazy_open_data_file(thread_data_t *thread_data)
   if (rank < 0) {
     rank = 0;
   }
-  int fd = hpcrun_open_profile_file(rank, td->id);
+  int fd = hpcrun_open_profile_file(rank, cptd->id);
   fs = fdopen(fd, "w");
   if (fs == NULL) {
     EEMSG("HPCToolkit: %s: unable to open profile file", __func__);
     return NULL;
   }
-  td->hpcrun_file = fs;
+  cptd->hpcrun_file = fs;
 
   if (! hpcrun_sample_prob_active())
     return fs;
@@ -180,7 +174,7 @@ lazy_open_data_file(thread_data_t *thread_data)
   snprintf(mpiRankStr, bufSZ, "%d", rank);
 
   char tidStr[bufSZ];
-  snprintf(tidStr, bufSZ, "%d", td->id);
+  snprintf(tidStr, bufSZ, "%d", cptd->id);
 
   char hostidStr[bufSZ];
   snprintf(hostidStr, bufSZ, "%lx", OSUtil_hostid());
@@ -189,10 +183,10 @@ lazy_open_data_file(thread_data_t *thread_data)
   snprintf(pidStr, bufSZ, "%u", OSUtil_pid());
 
   char traceMinTimeStr[bufSZ];
-  snprintf(traceMinTimeStr, bufSZ, "%"PRIu64, td->trace_min_time_us);
+  snprintf(traceMinTimeStr, bufSZ, "%"PRIu64, cptd->trace_min_time_us);
 
   char traceMaxTimeStr[bufSZ];
-  snprintf(traceMaxTimeStr, bufSZ, "%"PRIu64, td->trace_max_time_us);
+  snprintf(traceMaxTimeStr, bufSZ, "%"PRIu64, cptd->trace_max_time_us);
 
   //
   // ==== file hdr =====
@@ -328,28 +322,28 @@ write_epochs(FILE* fs, epoch_t* epoch)
 
 
 void
-hpcrun_flush_epochs(void)
+hpcrun_flush_epochs(core_profile_trace_data_t * cptd)
 {
-  FILE *fs = lazy_open_data_file(NULL);
+  FILE *fs = lazy_open_data_file(cptd);
   if (fs == NULL)
     return;
 
-  write_epochs(fs, TD_GET(epoch));
+  write_epochs(fs, cptd->epoch);
   hpcrun_epoch_reset();
 }
 
 int
-hpcrun_write_profile_data(epoch_t *epoch)
+hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
 {
   thread_data_t *td = hpcrun_get_thread_data();
 
   if(td->scale_fn) td->scale_fn((void*)td);
   TMSG(DATA_WRITE,"Writing hpcrun profile data");
-  FILE* fs = lazy_open_data_file(NULL);
+  FILE* fs = lazy_open_data_file(cptd);
   if (fs == NULL)
     return HPCRUN_ERR;
 
-  write_epochs(fs, epoch);
+  write_epochs(fs, cptd->epoch);
 
   TMSG(DATA_WRITE,"closing file");
   hpcio_fclose(fs);

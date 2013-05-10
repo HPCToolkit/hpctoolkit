@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -71,12 +71,12 @@
 #include <stdlib.h>    // for getenv
 #include <errno.h>     // for errno
 #include <stdbool.h>   
-#include <sys/mman.h>
 #include <sys/param.h> // for PATH_MAX
-#include <sys/stat.h>  // mkdir
 #include <sys/types.h>
 #include <unistd.h>    // getpid
-#include <fcntl.h>
+
+
+#include <include/hpctoolkit-config.h>
 
 //*********************************************************************
 // external libraries
@@ -89,27 +89,20 @@
 //*********************************************************************
 
 #include "fnbounds_interface.h"
-
+#include "fnbounds_file_header.h"
+#include "client.h"
 #include "dylib.h"
 
 #include <hpcrun_dlfns.h>
 #include <hpcrun_stats.h>
 #include <disabled.h>
 #include <loadmap.h>
-#include <files.h>
 #include <epoch.h>
 #include <sample_event.h>
-#include <system_server.h>
 #include <thread_data.h>
 
-#include <utilities/unlink.h>
-
 #include <unwind/common/ui_tree.h>
-
 #include <messages/messages.h>
-
-// FIXME:tallent: more spaghetti includes
-#include <hpcfnbounds/fnbounds-file-header.h>
 
 #include <lib/prof-lean/spinlock.h>
 
@@ -117,7 +110,6 @@
 //*********************************************************************
 // local types
 //*********************************************************************
-
 
 #define PERFORM_RELOCATION(addr, offset) \
 	((void *) (((unsigned long) addr) + ((long) offset)))
@@ -129,11 +121,6 @@
 //*********************************************************************
 // local variables
 //*********************************************************************
-
-
-static char* tmproot = "/tmp";
-
-static char fnbounds_tmpdir[PATH_MAX];
 
 // locking functions to ensure that dynamic bounds data structures 
 // are consistent.
@@ -155,15 +142,6 @@ static spinlock_t fnbounds_lock = SPINLOCK_UNLOCKED;
 // forward declarations
 //*********************************************************************
 
-static void
-fnbounds_tmpdir_remove();
-
-static int
-fnbounds_tmpdir_create();
-
-static char *
-fnbounds_tmpdir_get();
-
 static load_module_t *
 fnbounds_get_loadModule(void *ip);
 
@@ -172,12 +150,6 @@ fnbounds_compute(const char *filename, void *start, void *end);
 
 static void
 fnbounds_map_executable();
-
-
-static const char *
-mybasename(const char *string);
-
-static char *nm_command = 0;
 
 
 //*********************************************************************
@@ -200,35 +172,14 @@ static char *nm_command = 0;
 int 
 fnbounds_init()
 {
-  char* tmpdir = getenv("HPCRUN_TMPDIR");
-  if (tmpdir != NULL && *tmpdir != 0) {
-    tmproot = tmpdir;
-  }
-  else {
-    tmpdir = getenv("TMPDIR");
-    if (tmpdir != NULL && *tmpdir != 0) {
-      tmproot = tmpdir;
-    }
-  }
-
   if (hpcrun_get_disabled()) return 0;
 
-  int result = system_server_start();
-  if (result == 0) {
-    result = fnbounds_tmpdir_create();
-    if (result == 0) {
-      nm_command = getenv("HPCRUN_FNBOUNDS_CMD");
-  
-      fnbounds_map_executable();
-      fnbounds_map_open_dsos();
-    }
-    else {
-      system_server_shutdown();
-    }
-  }
-  return result;
-}
+  hpcrun_syserv_init();
+  fnbounds_map_executable();
+  fnbounds_map_open_dsos();
 
+  return 0;
+}
 
 bool
 fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
@@ -272,6 +223,7 @@ fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
   return ret;
 }
 
+
 //---------------------------------------------------------------------
 // Function: fnbounds_map_open_dsos
 // Purpose:  
@@ -284,6 +236,7 @@ fnbounds_map_open_dsos()
 {
   dylib_map_open_dsos();
 }
+
 
 bool
 fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
@@ -339,7 +292,6 @@ fnbounds_unmap_closed_dsos()
 }
 
 
-
 //---------------------------------------------------------------------
 // function fnbounds_fini: 
 // 
@@ -347,21 +299,21 @@ fnbounds_unmap_closed_dsos()
 //     server process
 //---------------------------------------------------------------------
 
-
 void 
 fnbounds_fini()
 {
   if (hpcrun_get_disabled()) return;
 
-  system_server_shutdown();
-  fnbounds_tmpdir_remove();
+  hpcrun_syserv_fini();
 }
+
 
 void
 fnbounds_release_lock(void)
 {
   FNBOUNDS_UNLOCK;  
 }
+
 
 fnbounds_table_t
 fnbounds_fetch_executable_table(void)
@@ -378,6 +330,7 @@ fnbounds_fetch_executable_table(void)
     { .table = exe_lm->dso_info->table, .len = exe_lm->dso_info->nsymbols};
 }
 
+
 //*********************************************************************
 // private operations
 //
@@ -385,123 +338,24 @@ fnbounds_fetch_executable_table(void)
 // is already locked (mostly).
 //*********************************************************************
 
-//
-// Read the binary file of function addresses from hpcfnbounds-bin and
-// load into memory as an array of void *.
-//
-// Returns: pointer to array on success and fills in map_size and file
-//          header, else NULL on failure.
-//
-static void *
-fnbounds_read_nm_file(const char *file, long *map_size,
-		      struct fnbounds_file_header *fh)
-{
-  struct stat st;
-  char *table;
-  long pagesize, len, ret;
-  int fd;
-
-  if (file == NULL || map_size == NULL || fh == NULL) {
-    EMSG("passed NULL to fnbounds_read_nm_file");
-    return (NULL);
-  }
-  if (stat(file, &st) != 0) {
-    EMSG("stat failed on fnbounds file: %s", file);
-    return (NULL);
-  }
-  if (st.st_size < sizeof(*fh)) {
-    EMSG("fnbounds file too small (%ld bytes): %s",
-	 (long)st.st_size, file);
-    return (NULL);
-  }
-  //
-  // Round up map_size to multiple of page size and mmap().
-  //
-  pagesize = getpagesize();
-  *map_size = (st.st_size/pagesize + 1)*pagesize;
-  table = mmap(NULL, *map_size, PROT_READ | PROT_WRITE,
-	       MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-  if (table == NULL) {
-    EMSG("mmap failed on fnbounds file: %s", file);
-    return (NULL);
-  }
-  //
-  // Read the file into memory.  Note: we read() the file instead of
-  // mmap()ing it directly, so we can close() it immediately.
-  //
-  fd = open(file, O_RDONLY);
-  if (fd < 0) {
-    EMSG("open failed on fnbounds file: %s", file);
-    return (NULL);
-  }
-  len = 0;
-  while (len < st.st_size) {
-    ret = read(fd, table + len, st.st_size - len);
-    if (ret <= 0) {
-      EMSG("read failed on fnbounds file: %s", file);
-      close (fd);
-      return (NULL);
-    }
-    len += ret;
-  }
-  close(fd);
-
-  memcpy(fh, table + st.st_size - sizeof(*fh), sizeof(*fh));
-  if (fh->magic != FNBOUNDS_MAGIC) {
-    EMSG("bad magic in fnbounds file: %s", file);
-    return (NULL);
-  }
-  if (st.st_size < fh->num_entries * sizeof(void *)) {
-    EMSG("fnbounds file too small (%ld bytes, %ld entries): %s",
-	 (long)st.st_size, (long)fh->num_entries, file);
-    return (NULL);
-  }
-  return (void *)table;
-}
-
-
 static dso_info_t *
 fnbounds_compute(const char *incoming_filename, void *start, void *end)
 {
-  char filename[PATH_MAX];
-  char command[MAXPATHLEN+1024];
-  char dlname[MAXPATHLEN];
-  int  logfile_fd = messages_logfile_fd();
-
-  if (nm_command == NULL || incoming_filename == NULL)
-    return (NULL);
-
-  realpath(incoming_filename, filename);
-  sprintf(dlname, FNBOUNDS_BINARY_FORMAT, fnbounds_tmpdir_get(), 
-	  mybasename(filename));
-
-  sprintf(command, "'%s' -b %s '%s' %s 1>&%d 2>&%d\n",
-	  nm_command, ENABLED(DL_BOUND_SCRIPT_DEBUG) ? "-t -v" : "",
-	  filename, fnbounds_tmpdir_get(), logfile_fd, logfile_fd);
-  TMSG(DL_BOUND, "system command = %s", command);
-
-  int failure = system_server_execute_command(command);
-  if (failure) {
-    EMSG("fnbounds server command failed for file %s, aborting", filename);
-
-#if HARSH_SS_FAILURE
-    monitor_real_exit(1);
-#endif // HARSH_SS_FAILURE
-    return hpcrun_dso_make(filename, NULL, NULL, start, end, 0);
-  }
-
-  long map_size = 0;
   struct fnbounds_file_header fh;
-  void **nm_table = (void **)fnbounds_read_nm_file(dlname, &map_size, &fh);
+  char filename[PATH_MAX];
+  void **nm_table;
+  long map_size;
+
+  if (incoming_filename == NULL) {
+    return (NULL);
+  }
+  realpath(incoming_filename, filename);
+
+  nm_table = (void **) hpcrun_syserv_query(filename, &fh);
   if (nm_table == NULL) {
-    EMSG("fnbounds computed bogus symbols for file %s, (all intervals poisoned)", filename);
-
-#if HARSH_SS_FAILURE
-    monitor_real_exit(1);
-#endif // HARSH_SS_FAILURE
-
     return hpcrun_dso_make(filename, NULL, NULL, start, end, 0);
   }
+  map_size = fh.mmap_size;
 
   if (fh.num_entries < 1) {
     EMSG("fnbounds returns no symbols for file %s, (all intervals poisoned)", filename);
@@ -529,11 +383,8 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
       end = nm_table[fh.num_entries - 1];
     }
   }
-  
-  dso_info_t *dso =
-    hpcrun_dso_make(filename, nm_table, &fh, start, end, map_size);
 
-  return dso;
+  return hpcrun_dso_make(filename, nm_table, &fh, start, end, map_size);
 }
 
 
@@ -574,54 +425,3 @@ fnbounds_map_executable()
 {
   dylib_map_executable();
 }
-
-
-static const char *
-mybasename(const char *string)
-{
-  char *suffix = rindex(string, '/');
-  if (suffix) return suffix + 1;
-  else return string;
-}
-
-
-//*********************************************************************
-// temporary directory
-//*********************************************************************
-
-static int 
-fnbounds_tmpdir_create()
-{
-  int i, result;
-  // try multiple times to create a temporary directory 
-  // with the aim of avoiding failure
-  for (i = 0; i < 10; i++) {
-    sprintf(fnbounds_tmpdir,"%s/%d-%d", tmproot, (int) getpid(),i);
-    result = mkdir(fnbounds_tmpdir, 0777);
-    if (result == 0) break;
-  }
-  if (result)  {
-    char buffer[1024];
-    EMSG("fatal error: unable to make temporary directory %s (error = %s)\n", 
-          fnbounds_tmpdir, strerror_r(errno, buffer, 1024));
-  } 
-  return result;
-}
-
-
-static char *
-fnbounds_tmpdir_get()
-{
-  return fnbounds_tmpdir;
-}
-
-
-static void 
-fnbounds_tmpdir_remove()
-{
-  if (! ENABLED (DL_BOUND_RETAIN_TMP)){
-    unlink_tree(fnbounds_tmpdir);
-  }
-}
-
-

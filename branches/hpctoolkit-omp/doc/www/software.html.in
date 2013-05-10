@@ -28,122 +28,101 @@
 
 <h2><a href="software-instructions.html">Prerequisites &amp; Instructions</a></h2>
 
-<h2>Releases</h2>
 
+
+<h2>Source code for HPCToolkit</h2>
+
+To build HPCToolkit from source, you need to download and build both hpctoolkit and hpctoolkit-externals.
 <ul>
-
-<li>For a complete installation, all four tarballs are necessary.
-
   <table cellpadding="2" cellspacing="2" border="1" width="100%">
 
   <tr>
-    <td width="50%">
-      <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-5.3.2-release.tar.gz</a> (source)
-      <br />
-      <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-externals-5.3.2-release.tar.gz</a> (source)
-      <br />
-      <a href="https://outreach.scidac.gov/frs/?group_id=22">hpcviewer-5.3.2-release-&lt;platform&gt;.tgz</a> (platform-specific build)
-      <br />
-      <a href="https://outreach.scidac.gov/frs/?group_id=22">hpctraceviewer-5.3.2-release-&lt;platform&gt;.tgz</a> (platform-specific build)
-    </td>
-    <td>
-    </td>
+  <td><a href="https://code.google.com/p/hpctoolkit/source/browse/#svn%2Ftrunk">hpctoolkit</a>
+  </td>
+  <td><code>svn co http://hpctoolkit.googlecode.com/svn/trunk hpctoolkit</code>
+  </td>
   </tr>
 
-<!--<tr>
-    <td width="50%">
-      (outdated; use svn) <del><a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-4.9.9-r2954.tar.gz</a></del> (source)
-      <br />
-      (outdated; use svn) <del><a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-externals-4.9.9-r2954.tar.gz</a></del> (source)
-      <br />
-      <a href="https://outreach.scidac.gov/frs/?group_id=22">hpcviewer</a> (platform-specific build)
+  <tr>
+  <td><a href="https://code.google.com/p/hpctoolkit/source/browse/#svn%2Fexternals">hpctoolkit-externals</a>
+  </td>
+  <td><code>svn co http://hpctoolkit.googlecode.com/svn/externals hpctoolkit-externals</code>
+  </td>
+  </tr>
+  </table>
+</ul>
+
+<h2>Binary releases for HPCToolkit GUI interfaces (recommended for tool users)</h2>
+
+
+Due to the difficulty of building the hpcviewer and hpctraceviewer graphical user interfaces from source using 
+Eclipse, we provide binary releases for these tools. 
+<ul>
+  <table cellpadding="2" cellspacing="2" border="1" width="100%">
+
+  <tr>
+    <td>
+      <a href="http://code.google.com/p/hpcviewer/downloads/list">hpcviewer-5.3.2-release-&lt;platform&gt;.tgz</a> 
     </td>
     <td>
-      &nu; (after, of course, &mu;, &lambda;, &kappa;, &iota;, &theta;, &eta;, &zeta;, &epsilon;, &delta;, &gamma;, &beta;, &alpha;); not an official release but the recommended snapshot.
+     Select the appropriate binary releases for your target platforms of choice.  
     </td>
-  </tr> -->
+  </tr>
+  <tr>
+    <td>
+      <a href="http://code.google.com/p/hpcviewer/downloads/list">hpctraceviewer-5.3.2-release-&lt;platform&gt;.tgz</a> 
+    </td>
+    <td>
+     Select the appropriate binary releases for your target platforms of choice.  
+    </td>
+  </tr>
 
   </table>
 </li>
 
 </ul>
 
+<h2>Source code for HPCToolkit GUI interfaces (recommended for tool developers only)</h2>
 
-<h2>Subversion Repository</h2>
-
+Source code for HPCToolkit's hpcviewer and hpctraceviewer graphical user interfaces is available from their 
+subversion repositories. 
+Unless you are a tool developer who wants to modify the capabilities of these graphical user interfaces,
+we recommend downloading the binary releases. 
 <ul>
-<li>To obtain a snapshot of the latest version of 'trunk':
   <table cellpadding="2" cellspacing="2" border="1" width="100%">
   <tr>
-  <td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/trunk/?root=hpctoolkit">hpctoolkit</a>
+  <td>
+    <a href="https://code.google.com/p/hpcviewer/source/browse/#svn%2Ftrunk">hpcviewer</a>
+    <br />
+    <a href="http://www.eclipse.org/rcp">(based on Eclipse RCP)</a>
   </td>
-  <td><code>svn co https://outreach.scidac.gov/svn/hpctoolkit/trunk hpctoolkit</code>
-  </td>
-  </tr>
-
-  <tr>
-  <td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/externals/?root=hpctoolkit">hpctoolkit-externals</a>
-  </td>
-  <td><code>svn co https://outreach.scidac.gov/svn/hpctoolkit/externals hpctoolkit-externals</code>
+  <td>
+<code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.common</code>
+      <br />
+<code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.data</code>
+      <br />
+      <code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.viewer</code>
   </td>
   </tr>
 
   <tr>
   <td>
-    <a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpcviewer</a>
+    <a href="https://code.google.com/p/hpcviewer/source/browse/#svn%2Ftrunk">hpctraceviewer</a>
     <br />
     <a href="http://www.eclipse.org/rcp">(based on Eclipse RCP)</a>
   </td>
-  <td><code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk/edu.rice.cs.hpc.data</code>
-      <br />
-      <code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk/edu.rice.cs.hpc.viewer</code>
-  </td>
-  </tr>
-
-  <tr>
   <td>
-    <a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpctraceviewer</a>
-    <br />
-    <a href="http://www.eclipse.org/rcp">(based on Eclipse RCP)</a>
-  </td>
-  <td><code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk/edu.rice.cs.hpc.data</code>
+<code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.common</code>
       <br />
-      <code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk/edu.rice.cs.hpc.traceviewer</code>
+<code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.data</code>
+      <br />
+      <code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.traceviewer</code>
   </td>
   </tr>
 
   </table>
 
   <br />
-</li>
-
-<!--
-<li><a href="https://outreach.scidac.gov/projects/libmonitor/">libmonitor</a> (included within HPCToolkit's externals)
-
-  <table cellpadding="2" cellspacing="2" border="1" width="100%">
-  <tr>
-  <td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=libmonitor">libmonitor</a> (trunk)
-  </td>
-  <td><code>svn co https://outreach.scidac.gov/svn/libmonitor/trunk libmonitor</code>
-  </td>
-  </tr>
-  </table>
-
-  <br />
-</li>
-
-<li><a href="https://outreach.scidac.gov/projects/hpcviewer/">hpcviewer</a>
-
-  <table cellpadding="2" cellspacing="2" border="1" width="100%">
-  <tr>
-  <td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpcviewer</a> (trunk)
-  </td>
-  <td><code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk hpcviewer</code>
-  </td>
-  </tr>
-  </table>
-</li>
--->
 
 </ul>
 
@@ -153,7 +132,7 @@
 </p>
 
 
-<p>[<span class="lastupdated">Page last updated: 2012/08/27</span>]
+<p>[<span class="lastupdated">Page last updated: 2013/04/19</span>]
 </p>
 
 <!-- ********************************************************************** -->
