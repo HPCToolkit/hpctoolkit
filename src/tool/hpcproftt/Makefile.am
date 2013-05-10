@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2012, Rice University
+## Copyright ((c)) 2002-2013, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -70,6 +70,8 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+XED2_LIB = @XED2_LIB@
+
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
@@ -111,6 +113,10 @@ pkglibexecdir = $(libexecdir)/$(PACKAGE)
 bin_SCRIPTS = hpcproftt
 
 pkglibexec_PROGRAMS = hpcproftt-bin
+
+if HOST_CPU_X86_FAMILY
+  MYLDADD += $(XED2_LIB)/libxed.a
+endif
 
 hpcproftt_bin_SOURCES   = $(MYSOURCES)
 hpcproftt_bin_CFLAGS    = $(MYCFLAGS)

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -52,14 +52,17 @@
 // (there is just 1 thread).
 
 #include <setjmp.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "sample_sources_registered.h"
 #include "newmem.h"
 #include "epoch.h"
 #include "cct2metrics.h"
+#include "core_profile_trace_data.h"
 
 #include <lush/lush-pthread.i>
 #include <unwind/common/backtrace.h>
@@ -71,7 +74,22 @@ typedef struct {
   sigjmp_buf jb;
 } sigjmp_buf_t;
 
-
+typedef struct gpu_data_t {
+  // True if this thread is at CuXXXXSynchronize.
+  bool is_thread_at_cuda_sync;
+  // maintains state to account for overload potential  
+  uint8_t overload_state;
+  // current active stream
+  uint64_t active_stream;
+  // last examined event
+  void * event_node;
+  // maintain the total number of threads (global: think shared
+  // blaming) at synchronize (could be device/stream/...)
+  uint64_t accum_num_sync_threads;
+	// holds the number of times the above accum_num_sync_threads
+	// is updated
+  uint64_t accum_num_samples;
+} gpu_data_t;
 /* ******
    TODO:
 
@@ -115,11 +133,6 @@ typedef struct {
 
 
 typedef struct thread_data_t {
-  // ----------------------------------------
-  // normalized thread id (monitor-generated)
-  // ----------------------------------------
-  int id;
-
   int idle; // indicate whether the thread is idle
   
   int overhead; // indicate whether the thread is overhead
@@ -156,21 +169,24 @@ typedef struct thread_data_t {
   // ----------------------------------------
   // sample sources
   // ----------------------------------------
-  int            eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
   source_state_t ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
+  source_info_t  ss_info[MAX_POSSIBLE_SAMPLE_SOURCES];
+
+  struct sigevent sigev;   // POSIX real-time timer
+  timer_t        timerid;
+  bool           timer_init;
 
   uint64_t       last_time_us; // microseconds
-
+   
   // ----------------------------------------
+  // core_profile_trace_data contains the following
   // epoch: loadmap + cct + cct_ctxt
-  // ----------------------------------------
-  epoch_t* epoch;
-
-  // ----------------------------------------
   // cct2metrics map: associate a metric_set with
-  //                  a cct node
+  // tracing: trace_min_time_us and trace_max_time_us
+  // IO support file handle: hpcrun_file;
   // ----------------------------------------
-  cct2metrics_t* cct2metrics_map;
+
+  core_profile_trace_data_t core_profile_trace_data;
 
   // ----------------------------------------
   // backtrace buffer
@@ -224,18 +240,6 @@ typedef struct thread_data_t {
   // ----------------------------------------
   lushPthr_t     pthr_metrics;
 
-  // ----------------------------------------
-  // tracing
-  // ----------------------------------------
-  uint64_t trace_min_time_us;
-  uint64_t trace_max_time_us;
-
-  // ----------------------------------------
-  // IO support
-  // ----------------------------------------
-  FILE* hpcrun_file;
-  void* trace_buffer;
-  hpcio_outbuf_t trace_outbuf;
 
   // ----------------------------------------
   // debug stuff
@@ -252,6 +256,10 @@ typedef struct thread_data_t {
   // override that is called from dlopen (eg, malloc) must skip this
   // sample or else deadlock on the dlopen lock.
   bool inside_dlfcn;
+
+#ifdef ENABLE_CUDA
+  gpu_data_t gpu_data;
+#endif
 
 } thread_data_t;
 
@@ -289,6 +297,6 @@ void           hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_chil
 void           hpcrun_cached_bt_adjust_size(size_t n);
 
 // utilities to match previous api
-#define hpcrun_get_epoch()  TD_GET(epoch)
+#define hpcrun_get_thread_epoch()  TD_GET(core_profile_trace_data.epoch)
 
 #endif // !defined(THREAD_DATA_H)

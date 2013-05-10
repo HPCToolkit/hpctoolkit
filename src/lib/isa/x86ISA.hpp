@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -66,6 +66,10 @@
 
 #include <include/gcc-attr.h>
 #include <include/uint.h>
+
+#include <setjmp.h>
+#include <signal.h>
+
 
 #include "ISA.hpp"
 
@@ -131,12 +135,17 @@ private:
   operator=(const x86ISA& GCC_ATTR_UNUSED x)
   { return *this; }
 
+  VMA
+  getInsnTargetVMA_bu(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
+                         ushort GCC_ATTR_UNUSED sz);
+
 protected:
 private:
   bool m_is_x86_64;
   struct disassemble_info* m_di;
   struct disassemble_info* m_di_dis;
   GNUbu_disdata m_dis_data;
+
 };
 
 //****************************************************************************

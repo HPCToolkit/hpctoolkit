@@ -69,6 +69,7 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
 bin_PROGRAMS = hpcstruct$(EXEEXT)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_1 = $(XED2_LIB)/libxed.a
 subdir = src/tool/hpcstruct
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -87,7 +88,7 @@ am_hpcstruct_OBJECTS = $(am__objects_1)
 hpcstruct_OBJECTS = $(am_hpcstruct_OBJECTS)
 am__DEPENDENCIES_1 = $(HPCLIB_Analysis) $(HPCLIB_Banal) $(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) \
-	$(HPCLIB_Support) $(HPCLIB_SupportLean)
+	$(HPCLIB_Support) $(HPCLIB_SupportLean) $(am__append_1)
 hpcstruct_DEPENDENCIES = $(am__DEPENDENCIES_1)
 hpcstruct_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcstruct_CXXFLAGS) \
@@ -126,6 +127,7 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BOOST_INC = @BOOST_INC@
 CC = @CC@
 CCAS = @CCAS@
 CCASDEPMODE = @CCASDEPMODE@
@@ -167,6 +169,7 @@ HOST_HPCSTRUCT_LDFLAGS = @HOST_HPCSTRUCT_LDFLAGS@
 HOST_LIBTREPOSITORY = @HOST_LIBTREPOSITORY@
 HOST_LINK_NO_START_FILES = @HOST_LINK_NO_START_FILES@
 HOST_XPROF_LDFLAGS = @HOST_XPROF_LDFLAGS@
+HPCLINK_LD_FLAGS = @HPCLINK_LD_FLAGS@
 HPCPROFMPI_LT_LDFLAGS = @HPCPROFMPI_LT_LDFLAGS@
 HPCRUN_LIBCXX_PATH = @HPCRUN_LIBCXX_PATH@
 HPCTOOLKIT_PLATFORM = @HPCTOOLKIT_PLATFORM@
@@ -194,6 +197,10 @@ LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIBTOOL_DEPS = @LIBTOOL_DEPS@
+LIBUNWIND_COPY = @LIBUNWIND_COPY@
+LIBUNWIND_HPCLINK_LIBS = @LIBUNWIND_HPCLINK_LIBS@
+LIBUNWIND_LIB = @LIBUNWIND_LIB@
+LIBUNWIND_RUN_DIR = @LIBUNWIND_RUN_DIR@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -210,6 +217,9 @@ OA_LDFLAGS = @OA_LDFLAGS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
+OPT_CUDA = @OPT_CUDA@
+OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
+OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
 OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
 OPT_LIBUNWIND_IFLAGS = @OPT_LIBUNWIND_IFLAGS@
 OPT_LIBUNWIND_LDFLAGS = @OPT_LIBUNWIND_LDFLAGS@
@@ -239,12 +249,21 @@ SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 SYMTABAPI_COPY = @SYMTABAPI_COPY@
+SYMTABAPI_COPY_DYN = @SYMTABAPI_COPY_DYN@
 SYMTABAPI_INC = @SYMTABAPI_INC@
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
-SYMTABAPI_RUN_DIR = @SYMTABAPI_RUN_DIR@
+SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 VERSION = @VERSION@
 XED2_COPY = @XED2_COPY@
 XED2_INC = @XED2_INC@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 XED2_LIB = @XED2_LIB@
 XED2_RUN_DIR = @XED2_RUN_DIR@
 XERCES = @XERCES@
@@ -308,6 +327,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+wordsize_cflag = @wordsize_cflag@
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
 AUTOMAKE_OPTIONS = foreign
@@ -338,14 +358,6 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
@@ -357,20 +369,10 @@ MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
 	@GNUBINUTILS_LDFLAGS@
 
-MYLDADD = \
-	@HOST_LIBTREPOSITORY@ \
-	$(HPCLIB_Analysis) \
-	$(HPCLIB_Banal) \
-	$(HPCLIB_Prof) \
-	$(HPCLIB_Binutils) \
-	$(HPCLIB_ISA) \
-	$(HPCLIB_XML) \
-	$(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) \
-	@OA_LDFLAGS@ \
-	@GNUBINUTILS_LDLIBS@ \
-	@HOST_HPCSTRUCT_LDFLAGS@
-
+MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Analysis) $(HPCLIB_Banal) \
+	$(HPCLIB_Prof) $(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) \
+	$(HPCLIB_Support) $(HPCLIB_SupportLean) @OA_LDFLAGS@ \
+	@GNUBINUTILS_LDLIBS@ @HOST_HPCSTRUCT_LDFLAGS@ $(am__append_1)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 hpcstruct_SOURCES = $(MYSOURCES)
 hpcstruct_CFLAGS = $(MYCFLAGS)

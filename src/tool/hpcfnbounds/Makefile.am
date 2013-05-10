@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2012, Rice University
+## Copyright ((c)) 2002-2013, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -70,6 +70,8 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+BOOST_INC = @BOOST_INC@
+
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
 
@@ -78,25 +80,29 @@ LIBELF_LIB   = @LIBELF_LIB@
 
 SYMTABAPI_INC = @SYMTABAPI_INC@
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
+SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 
 MYSOURCES = \
 	main.cpp \
-	\
 	code-ranges.cpp \
 	function-entries.cpp \
-	intervals.cpp
+	intervals.cpp \
+	server.cpp
 
-MYCPPFLAGS = $(HPC_IFLAGS) -I$(SYMTABAPI_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC)
+MYCPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
+	-I$(SYMTABAPI_INC)
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
 
 MYLDFLAGS = \
-	-L$(SYMTABAPI_LIB) -lsymtabAPI -lcommon	\
+	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
 	-L$(LIBDWARF_LIB) -ldwarf		\
 	-L$(LIBELF_LIB) -lelf
+
+MYLDADD = $(HPCLIB_SupportLean)
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
@@ -113,6 +119,7 @@ hpcfnbounds_bin_SOURCES  = $(MYSOURCES)
 hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS)
 hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcfnbounds_bin_LDFLAGS  = $(MYLDFLAGS)
+hpcfnbounds_bin_LDADD    = $(MYLDADD)
 
 if HOST_CPU_X86_FAMILY
   hpcfnbounds_bin_SOURCES  += x86-process-ranges.cpp amd-xop.c

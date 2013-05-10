@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,7 @@
 //*********************************************************************
 
 #include "fnbounds_interface.h"
+#include "fnbounds_file_header.h"
 
 #include <loadmap.h>
 #include <files.h>
@@ -81,11 +82,10 @@ fnbounds_init()
   long lm_size = lm_end_fn - lm_beg_fn;
 
   struct fnbounds_file_header fh;
-  fh.zero_pad = 0;
-  fh.magic = FNBOUNDS_MAGIC;
   fh.num_entries = hpcrun_nm_addrs_len;
   fh.reference_offset = hpcrun_reference_offset;
   fh.is_relocatable = hpcrun_is_relocatable;
+  fh.mmap_size = 0;
 
   dso_info_t *dso =
     hpcrun_dso_make(hpcrun_files_executable_pathname(), (void*)hpcrun_nm_addrs, 
@@ -95,13 +95,14 @@ fnbounds_init()
   return 0;
 }
 
+
 fnbounds_table_t
 fnbounds_fetch_executable_table(void)
 {
-  
   return (fnbounds_table_t)
     { .table = (void**) hpcrun_nm_addrs, .len = hpcrun_nm_addrs_len};
 }
+
 
 int
 fnbounds_query(void *pc)

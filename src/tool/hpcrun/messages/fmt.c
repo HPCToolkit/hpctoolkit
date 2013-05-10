@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -127,6 +127,7 @@ cvt_s(int code, va_list_box *box,
       unsigned char flags[], int width, int precision)
 {
   char *str = va_arg(box->ap, char *);
+  if (str == NULL) { str = "(null)"; }
 
   hpcrun_msg_puts(str, strlen(str), put, cl, flags,
            width, precision);

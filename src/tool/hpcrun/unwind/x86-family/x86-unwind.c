@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -212,7 +212,7 @@ hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c, ip_normalized_t* reg_value)
 }
 
 int
-hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, void** reg_value)
+hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, unw_word_t* reg_value)
 {
   return hpcrun_unw_get_unnorm_reg(c, UNW_REG_IP, reg_value);
 }
@@ -437,7 +437,8 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
   if (uw->bp_status == BP_UNCHANGED){
     next_bp = bp;
     TMSG(UNW,"  step_sp: unwind step has BP_UNCHANGED ==> next_bp=%p", next_bp);
-  } else {
+  }
+  else {
     //-----------------------------------------------------------
     // reload the candidate value for the caller's BP from the 
     // save area in the activation frame according to the unwind 
@@ -448,25 +449,6 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
     next_bp  = *next_bp; 
     TMSG(UNW,"  step_sp: sp unwind next_bp val = %p", next_bp);
 
-    //-----------------------------------------------------------
-    // if value of BP reloaded from the save area does not point 
-    // into the stack, then it cannot possibly be useful as a frame 
-    // pointer in the caller or any of its ancesters.
-    //
-    // if the value in the BP register points into the stack, then 
-    // it might be useful as a frame pointer. in this case, we have 
-    // nothing to lose by assuming that our binary analysis for 
-    // unwinding might have been mistaken and that the value in 
-    // the register is the one we might want. 
-    //
-    // 19 December 2007 - John Mellor-Crummey
-    //-----------------------------------------------------------
-    if (((unsigned long) next_bp < (unsigned long) sp) && 
-        ((unsigned long) bp > (unsigned long) sp)){
-      next_bp = bp;
-      TMSG(UNW,"  step_sp: unwind bp sanity check fails."
-	   " Resetting next_bp to current bp = %p", next_bp);
-    }
   }
   next_sp += 1;
   ip_normalized_t next_pc_norm = ip_normalized_NULL;
@@ -478,11 +460,13 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
       TMSG(UNW,"  step_sp: STEP_STOP_WEAK, no next interval and next_sp >= stack bottom,"
 	   " so stop unwind ...");
       return STEP_STOP_WEAK;
-    } else {
+    }
+    else {
       TMSG(UNW,"  sp STEP_ERROR: no next interval, step fails");
       return STEP_ERROR;
     }
-  } else {
+  }
+  else {
     // sanity check to avoid infinite unwind loop
     if (next_sp <= cursor->sp){
       TMSG(INTV_ERR,"@ pc = %p. sp unwind does not advance stack." 
@@ -490,6 +474,30 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
 	   cursor->sp);
       
       return STEP_ERROR;
+    }
+    unwind_interval* uw = (unwind_interval *)cursor->intvl;
+    if ((RA_BP_FRAME == uw->ra_status) ||
+	(RA_STD_FRAME == uw->ra_status)) { // Makes sense to sanity check BP, do it
+      //-----------------------------------------------------------
+      // if value of BP reloaded from the save area does not point 
+      // into the stack, then it cannot possibly be useful as a frame 
+      // pointer in the caller or any of its ancesters.
+      //
+      // if the value in the BP register points into the stack, then 
+      // it might be useful as a frame pointer. in this case, we have 
+      // nothing to lose by assuming that our binary analysis for 
+      // unwinding might have been mistaken and that the value in 
+      // the register is the one we might want. 
+      //
+      // 19 December 2007 - John Mellor-Crummey
+      //-----------------------------------------------------------
+    
+      if (((unsigned long) next_bp < (unsigned long) sp) && 
+	  ((unsigned long) bp > (unsigned long) sp)){
+	next_bp = bp;
+	TMSG(UNW,"  step_sp: unwind bp sanity check fails."
+	     " Resetting next_bp to current bp = %p", next_bp);
+      }
     }
     cursor->pc_unnorm = next_pc;
     cursor->bp 	      = next_bp;
@@ -569,7 +577,8 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
 	   cursor->intvl != NULL, next_bp, next_sp, next_pc);
       return STEP_OK;
     }
-  } else {
+  }
+  else {
     TMSG(UNW_STRATEGY,"BP unwind fails: bp (%p) < sp (%p)", bp, sp);
     return STEP_ERROR;
   }
@@ -591,7 +600,8 @@ unw_step_std(hpcrun_unw_cursor_t* cursor)
       unw_res = unw_step_bp(cursor);
       if (unw_res == STEP_STOP_WEAK) unw_res = STEP_STOP; 
     }
-  } else {
+  }
+  else {
     TMSG(UNW_STRATEGY,"--STD_FRAME: STARTing with BP");
     unw_res = unw_step_bp(cursor);
     if (unw_res == STEP_ERROR || unw_res == STEP_STOP_WEAK) {

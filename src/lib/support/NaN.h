@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -55,13 +55,11 @@
 
 //****************************************************************************
 
-extern double c_FP_NAN_d;
+extern const double c_FP_NAN_d;
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
-
-void NaN_init();
 
 bool c_isnan_d(double x);
 

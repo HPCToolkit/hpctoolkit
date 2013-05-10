@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -421,6 +421,9 @@ public:
   { return 1; }
 
 
+  // TODO: combineString1(), finalizeString()
+
+
   // ------------------------------------------------------------
   //
   // ------------------------------------------------------------
@@ -461,6 +464,15 @@ public:
   virtual uint
   numSrcFxd() const
   { return 1; }
+
+
+  virtual std::string
+  combineString1() const
+  { return combineString1Sum(); }
+
+  virtual std::string
+  finalizeString() const
+  { return finalizeStringSum(); }
 
 
   // ------------------------------------------------------------
@@ -509,6 +521,9 @@ public:
   { return 2; }
 
 
+  // TODO: combineString1(), finalizeString()
+
+
   // ------------------------------------------------------------
   //
   // ------------------------------------------------------------
@@ -555,6 +570,9 @@ public:
   { return 2; }
 
 
+  // TODO: combineString1(), finalizeString()
+
+
   // ------------------------------------------------------------
   //
   // ------------------------------------------------------------
@@ -598,6 +616,9 @@ public:
   virtual uint
   numSrcFxd() const
   { return 2; }
+
+
+  // TODO: combineString1(), finalizeString()
 
 
   // ------------------------------------------------------------

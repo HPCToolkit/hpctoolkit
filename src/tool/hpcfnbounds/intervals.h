@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -52,5 +52,6 @@ private:
 public:
   void insert(void *start, void *end); 
   std::pair<void *const, void *> *contains(void * i); 
+  void clear();
   void dump(); 
 };

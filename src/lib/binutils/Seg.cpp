@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -534,6 +534,9 @@ BinUtil::TextSeg::makeInsn(bfd* abfd, MachInsn* mi, VMA vma, ushort opIndex,
       newInsn = new RISCInsn(mi, vma);
       break;
     case bfd_arch_i386:
+#ifdef bfd_mach_k1om
+    case bfd_arch_k1om:
+#endif
       newInsn = new CISCInsn(mi, vma, sz);
       break;
     case bfd_arch_ia64:

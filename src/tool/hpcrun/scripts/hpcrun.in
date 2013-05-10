@@ -5,7 +5,7 @@
 # Part of HPCToolkit (hpctoolkit.org)
 #------------------------------------
 #
-# Copyright (c) 2002-2012, Rice University.
+# Copyright (c) 2002-2013, Rice University.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,7 @@ VERSION='@PACKAGE_VERSION@'
 hpcfnbounds_dir='libexec/hpctoolkit'
 hpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
+libunwind_dir='@LIBUNWIND_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
 
 #------------------------------------------------------------
@@ -77,10 +78,19 @@ case "$libmonitor_dir" in
     /* ) ;;
     * ) libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
 esac
+case "$libunwind_dir" in
+    /* ) ;;
+    * )  libunwind_dir="${HPCTOOLKIT}/${libunwind_dir}" ;;
+esac
 case "$papi_libdir" in
     /* ) ;;
     * ) papi_libdir="${HPCTOOLKIT}/${papi_libdir}" ;;
 esac
+
+#
+# Once hpcrun_dir is completely set, set
+#
+ext_dir="$hpcrun_dir"/ext-libs
 
 #------------------------------------------------------------
 # Usage Message
@@ -205,8 +215,6 @@ do
     arg="$1" ; shift
     case "$arg" in
 
-	# --------------------------------------------------
-
 	-md | --monitor-debug )
 	    export MONITOR_DEBUG=1
 	    ;;
@@ -246,6 +254,7 @@ do
 	        GA* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_ga.so" ;;
 		IO* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_io.so" ;;
 		MEMLEAK* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_memleak.so" ;;
+		CPU_GPU_IDLE* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_gpu.so" ;;
 		MPI* )     preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_mpi.so" ;;
 	    esac
 	    case "$HPCRUN_EVENT_LIST" in
@@ -407,38 +416,6 @@ if test -x "$command" ; then
     fi
 fi
 
-# Verify that we can write to tmpdir: HPCRUN_TMPDIR, TMPDIR or /tmp,
-# and fail now with a useful message if not.  Note: we use the same
-# algorithm as inside hpcfnbounds: if HPCRUN_TMPDIR or TMPDIR is set,
-# then commit to that directory and not try the next if it fails.
-
-test_tmp_dir()
-{
-    tmp_file="$1/hpcrun-tmp-file-$$"
-    tmp_dir="$1"
-
-    if touch "$tmp_file" >/dev/null 2>&1 ; then
-	tmp_ans=yes
-	rm -f "$tmp_file"
-    else
-	tmp_ans=no
-    fi
-}
-
-if test -n "$HPCRUN_TMPDIR" ; then
-    test_tmp_dir "$HPCRUN_TMPDIR"
-elif test -n "$TMPDIR" ; then
-    test_tmp_dir "$TMPDIR"
-else
-    test_tmp_dir /tmp
-fi
-
-if test "$tmp_ans" = no ; then
-    echo "hpcrun: unable to write to tmp directory: $tmp_dir" 1>&2
-    echo "please set HPCRUN_TMPDIR or TMPDIR and try again" 1>&2
-    exit 1
-fi
-
 #------------------------------------------------------------
 # Final Environ Settings and Exec the Binary
 #------------------------------------------------------------
@@ -454,7 +431,7 @@ fi
 # Enable core files.
 ulimit -S -c unlimited >/dev/null 2>&1
 
-hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}"
+hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}"
 preload_list="${libmonitor_dir}/libmonitor.so ${preload_list}"
 preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
 

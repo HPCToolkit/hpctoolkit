@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -81,6 +81,7 @@
 #include <hpcrun/thread_data.h>
 
 #include <messages/messages.h>
+#include <utilities/tokenize.h>
 
 static int alloc_metric_id = -1;
 static int free_metric_id = -1;
@@ -147,7 +148,7 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return (strstr(ev_str,"MEMLEAK") != NULL);
+  return hpcrun_ev_is(ev_str,"MEMLEAK");
 }
  
 
@@ -174,8 +175,6 @@ METHOD_FN(process_event_list,int lush_metrics)
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->eventSet[self->evset_idx] = 0xDEAD; 
 }
 
 

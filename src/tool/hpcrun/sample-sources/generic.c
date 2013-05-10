@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -310,10 +310,10 @@ METHOD_FN(supports_event, const char *ev_str)
   // NOTE: You are guaranteed that the 'init' method for your sample source
   // has been invoked before any 'supports_event' method calls are invoked
   //
-  // For simple event specs, a strstr call is sufficient. (see below)
+  // For simple event specs, a call to "hpcrun_ev_is" is sufficient. (see below)
   // For a more involved check on events, see papi.c
 
-  return (strstr(ev_str,"YOUR_SOURCE") != NULL);
+  return hpcrun_ev_is(ev_str,"YOUR_SOURCE");
 }
  
 static void
@@ -382,7 +382,7 @@ METHOD_FN(process_event_list, int lush_metrics)
       //
         hpcrun_set_metric_info_and_period(metric_id, NAME_FOR_EVENT_METRIC(event, i),
                                           HPCRUN_MetricFlag_Async, // This is the correct flag value for almost all events
-                                          thresh);
+                                          thresh, metric_property_none);
       }
       else { // NON STANDARD METRIC
         // For a metric that updates in a NON standard fashion, use
@@ -398,10 +398,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   
   // NOTE: some lush-aware event list processing may need to be done here ...
 
-  // This code aways goes at the end
-  
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->eventSet[self->evset_idx] = 0xDEAD;
 }
 
 static void

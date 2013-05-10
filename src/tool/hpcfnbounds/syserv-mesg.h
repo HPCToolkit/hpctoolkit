@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,36 +44,48 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+// This file defines the API for messages over the pipe between the
+// hpcrun client (hpcrun/fnbounds/fnbounds_client.c) and the new
+// fnbounds server (server.cpp).
 //
-//
+// Note: none of these structs needs to be platform-independent
+// because they're only used between processes within a single node
+// (same for the old server).
 
-#ifndef _FNBOUNDS_FILE_HEADER_
-#define _FNBOUNDS_FILE_HEADER_
+//***************************************************************************
+
+#ifndef _SYSERV_MESG_H_
+#define _SYSERV_MESG_H_
 
 #include <stdint.h>
 
-//
-// Printf format strings for fnbounds file names and extensions.
-// The %s conversion args are directory and basename.
-//
-#define FNBOUNDS_BINARY_FORMAT  "%s/%s.fnbounds.bin"
-#define FNBOUNDS_C_FORMAT       "%s/%s.fnbounds.c"
-#define FNBOUNDS_TEXT_FORMAT    "%s/%s.fnbounds.txt"
+#define SYSERV_MAGIC    0x00f8f8f8
+#define FNBOUNDS_MAGIC  0x00f9f9f9
 
-//
-// The extra info in the binary file of function addresses, written by
-// hpcfnbounds-bin and read in the main process.  We call it "header",
-// even though it's actually at the end of the file.
-//
-#define FNBOUNDS_MAGIC  0xf9f9f9f9
-
-// Note: this must be cross-platform compatible (E.g. static
-struct fnbounds_file_header {
-  uint64_t zero_pad;
-  uint64_t magic;
-  uint64_t num_entries;
-  uint64_t reference_offset;
-  int32_t  is_relocatable; // boolean
+enum {
+  SYSERV_ACK = 1,
+  SYSERV_QUERY,
+  SYSERV_EXIT,
+  SYSERV_OK,
+  SYSERV_ERR
 };
 
-#endif
+struct syserv_mesg {
+  int32_t  magic;
+  int32_t  type;
+  int64_t  len;
+};
+
+struct syserv_fnbounds_info {
+  // internal fields for the client
+  int32_t   magic;
+  int32_t   status;
+  long      memsize;
+
+  // fields for the fnbounds file header
+  uint64_t  num_entries;
+  uint64_t  reference_offset;
+  int       is_relocatable;
+};
+
+#endif  // _SYSERV_MESG_H_

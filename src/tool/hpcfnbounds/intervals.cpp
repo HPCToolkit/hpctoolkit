@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -134,6 +134,17 @@ intervals::contains(void * i)
     if (i >= (*up).first && i < (*up).second)  return &(*up);
   }
   return NULL;
+}
+
+
+//-----------------------------------------------------------------------------
+// Method clear:
+//    reset the map to empty
+//-----------------------------------------------------------------------------
+void
+intervals::clear()
+{
+  mymap.clear();
 }
 
 

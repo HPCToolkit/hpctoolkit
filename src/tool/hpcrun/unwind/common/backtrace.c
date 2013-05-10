@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -123,7 +123,7 @@ hpcrun_bt_dump(frame_t* unwind, const char* tag)
       lush_assoc_info2str(as_str, sizeof(as_str), x->as_info);
       lush_lip2str(lip_str, sizeof(lip_str), x->lip);
 
-      unw_word_t ip;
+      void* ip;
       hpcrun_unw_get_ip_unnorm_reg(&(x->cursor), &ip);
 
       load_module_t* lm = hpcrun_loadmap_findById(x->ip_norm.lm_id);
@@ -304,9 +304,9 @@ hpcrun_dump_bt(backtrace_t* bt)
 bool
 hpcrun_filter_sample(int len, frame_t* start, frame_t* last)
 {
-  unw_word_t ip_unnorm;
+  void* ip_unnorm;
   hpcrun_unw_get_ip_unnorm_reg(&last->cursor, &ip_unnorm);
-  return ( !(monitor_in_start_func_narrow(ip_unnorm) 
+  return ( !(monitor_in_start_func_narrow(ip_unnorm)
 	     && (len > 1)) );
 }
 
@@ -368,7 +368,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 
   int unw_len = 0;
   while (true) {
-    unw_word_t ip;
+    void* ip;
     hpcrun_unw_get_ip_unnorm_reg(&cursor, &ip);
 
     if (hpcrun_trampoline_interior((void*) ip)) {
@@ -579,7 +579,7 @@ hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
 
   int unw_len = 0;
   while (true) {
-    unw_word_t ip;
+    void* ip;
     hpcrun_unw_get_ip_unnorm_reg(&cursor, &ip);
 
     if (hpcrun_dbg_trampoline_interior((void*) ip)) {
@@ -745,7 +745,7 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
   int ret = STEP_ERROR;
   while (true) {
 
-    unw_word_t ip = 0;
+    void* ip = 0;
     hpcrun_unw_get_ip_unnorm_reg(&cursor, &ip);
 
     if (hpcrun_trampoline_interior((void*) ip)) {

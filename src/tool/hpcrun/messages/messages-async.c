@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -147,7 +147,7 @@ hpcrun_pmsg(const char *tag, const char *fmt, ...)
 #define THE_THREAD 1
 #define SPECIAL_DEBUG
 #ifdef SPECIAL_DEBUG
-  if ( getenv("OT") && (TD_GET(id) != THE_THREAD)) {
+  if ( getenv("OT") && (TD_GET(core_profile_trace_data.id) != THE_THREAD)) {
     return;
   }
 #endif
@@ -263,7 +263,7 @@ create_msg(char *buf, size_t buflen, bool add_thread_id, const char *tag,
 
   if (add_thread_id) {
     if (hpcrun_using_threads_p()) {
-      tmp_id = TD_GET(id);
+      tmp_id = TD_GET(core_profile_trace_data.id);
       hpcrun_msg_ns(fstr, sizeof(fstr), "[%d, %d]: ", getpid(), tmp_id);
     }
     else {

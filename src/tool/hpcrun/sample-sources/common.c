@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -142,7 +142,13 @@ hpcrun_event2metric(sample_source_t* ss, int event_idx)
 
 static char *prefix = "HPCToolkit fatal error";
 static char *warning = "HPCToolkit warning";
-static char *hpcrun_L = "See 'hpcrun -L <program>' for a list of available events.";
+static char *hpcrun_L = 
+   "If running a dynamically-linked program with hpcrun, use 'hpcrun -L <program>' for a list of available events.\n\n"
+   "If running a statically-linked program built with hpclink, set HPCRUN_EVENT_LIST=LIST in your environment and\n"
+   "run your program to see a list of available events.\n\n"
+   "Note: Either of the aforementioned methods will exit after listing available events. Arguments to your program\n"
+   "will be ignored. Thus, an execution to list events can be run on a single core and it will execute for only a few\n"
+   "seconds."; 
 static int papi_error = 0;
 
 
@@ -212,6 +218,15 @@ hpcrun_ssfail_derived(char *source, char *event)
 {
   EEMSG("%s: %s event %s is a derived event and thus cannot be profiled.\n%s",
 	prefix, source, event, hpcrun_L);
+  exit(1);
+}
+
+void
+hpcrun_ssfail_all_derived(char *source)
+{
+  EEMSG("%s: All %s events are derived.  To use proxy sampling,\n"
+	"at least one event must support hardware overflow (eg, PAPI_TOT_CYC).\n",
+	prefix, source);
   exit(1);
 }
 

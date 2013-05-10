@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -47,6 +47,10 @@
 //************************* System Include Files ****************************
 
 #include <stdint.h>
+
+//*************************** configuration ****************************
+
+#include <include/hpctoolkit-config.h>
 
 //*************************** User Include Files ****************************
 
@@ -113,10 +117,20 @@ x86_dump_ins(void *ins)
 	    xed_iclass_enum_t2str(iclass(xptr)), inst_buf);
   }
   else {
-    sprintf(errbuf, "x86_dump_ins: xed decode error addr=%p, code = %d\n", 
-	    ins, (int) xed_error);
+#if defined(ENABLE_XOP) && defined (HOST_CPU_x86_64)
+    amd_decode_t decode_res;
+    adv_amd_decode(&decode_res, ins);
+    if (decode_res.success) {
+      if (decode_res.weak)
+	sprintf(errbuf, "(%p, %d bytes) weak AMD XOP \n", ins, (int) decode_res.len);
+      else
+	sprintf(errbuf, "(%p, %d bytes) robust AMD XOP \n", ins, (int) decode_res.len);
+    }
+    else
+#endif // ENABLE_XOP and HOST_CPU_x86_64
+      sprintf(errbuf, "x86_dump_ins: xed decode error addr=%p, code = %d\n", 
+	      ins, (int) xed_error);
   }
-
   EMSG(errbuf);
   fprintf(stderr, errbuf);
   fflush(stderr);

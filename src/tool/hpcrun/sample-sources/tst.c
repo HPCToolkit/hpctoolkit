@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -253,7 +253,7 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-  return (strstr(ev_str,"_TST") != NULL);
+  return hpcrun_ev_is(ev_str,"_TST");
 }
  
 static void
@@ -311,7 +311,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   TMSG(_TST_CTL, "setting metric _TST, period = %ld", sample_period);
   hpcrun_set_metric_info_and_period(metric_id, "_TST",
 				    MetricFlags_ValFmt_Int,
-				    sample_period);
+				    sample_period, metric_property_none);
   if (lush_metrics == 1) {
     int mid_idleness = hpcrun_new_metric();
     lush_agents->metric_time = metric_id;
@@ -319,16 +319,13 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     hpcrun_set_metric_info_and_period(mid_idleness, "idleness (ms)",
 				      MetricFlags_ValFmt_Real,
-				      sample_period);
+				      sample_period, metric_property_none);
   }
 
   event = next_tok();
   if (more_tok()) {
     EMSG("MULTIPLE _TST events detected! Using first event spec: %s");
   }
-  // 
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->eventSet[self->evset_idx] = 0xDEAD;
 }
 
 //

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -73,6 +73,10 @@ using std::ostream;
 
 #include <lib/support/diagnostics.h>
 
+extern "C" {
+#include <xed-interface.h>
+}
+
 //*************************** Forward Declarations ***************************
 
 static VMA
@@ -101,6 +105,33 @@ GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
   *os << std::showbase << std::hex << x << std::dec;
 }
 
+//****************************************************************************
+// Helper functions to handling signals
+//****************************************************************************
+static sigjmp_buf jb;
+static int ljmp;
+
+static void 
+segv_handler(int sig, siginfo_t *t, void *v)
+{
+ // we only jump if the SIGSEGV signal is from xed_decode
+ if (ljmp == 0)
+   siglongjmp(jb, 9);
+}
+
+static void 
+setup_handler()
+{
+  struct sigaction action;
+  action.sa_sigaction = segv_handler;
+  sigemptyset(&action.sa_mask);
+  action.sa_flags = SA_SIGINFO;
+
+  if (sigaction(SIGSEGV, &action, 0) == -1) {
+     perror("Unable to set SIGSEGV\n");
+     exit (EXIT_FAILURE);
+  }
+}
 
 //****************************************************************************
 // x86ISA
@@ -131,6 +162,9 @@ x86ISA::x86ISA(bool is_x86_64)
   m_di_dis->endian = m_di->endian;
   m_di_dis->read_memory_func = GNUbu_read_memory;
   m_di_dis->print_address_func = GNUbu_print_addr;
+
+  ljmp = 1;
+  setup_handler();
 }
 
 
@@ -215,8 +249,53 @@ x86ISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
 }
 
 
+static VMA
+getInsnTargetVMA_xed(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
+                         ushort GCC_ATTR_UNUSED sz)
+{
+  static xed_state_t xed_machine_state =
+#if defined (HOST_CPU_x86_64)
+    { XED_MACHINE_MODE_LONG_64,
+      XED_ADDRESS_WIDTH_64b };
+#else
+      { XED_MACHINE_MODE_LONG_COMPAT_32,
+          XED_ADDRESS_WIDTH_32b };
+#endif
+
+  xed_decoded_inst_t xedd;
+  xed_decoded_inst_t *xptr = &xedd;
+  xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
+
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
+  xed_decoded_inst_zero_keep_mode(xptr);
+  void *vma_addr = mi;
+
+  bool ret = false;
+
+  ljmp = sigsetjmp(jb, 1);
+  if (ljmp == 0) {
+    xed_error_enum_t xed_error = xed_decode(xptr, (uint8_t*) vma_addr, 15);
+    ret = (XED_ERROR_NONE == xed_error);
+  }
+  ljmp = 1;
+  
+  if (ret) {
+    xed_uint_t len = xed_decoded_inst_get_length(xptr);
+
+    int offset = xed_operand_values_get_branch_displacement_int32(vals);
+    char* insn_end = (char*)vma_addr + len;
+    VMA absoluteTarget = (VMA)(insn_end + offset);
+
+    if (absoluteTarget != 0) {
+      VMA relativeTarget = GNUvma2vma(absoluteTarget, mi, vma);
+      return relativeTarget;
+    }
+  }
+  return 0;
+}
+
 VMA
-x86ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
+x86ISA::getInsnTargetVMA_bu(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
 			 ushort GCC_ATTR_UNUSED sz)
 {
   if (cacheLookup(mi) == NULL) {
@@ -231,6 +310,17 @@ x86ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
   else {
     return 0;
   }
+}
+
+VMA
+x86ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
+			 ushort GCC_ATTR_UNUSED sz)
+{
+#ifdef X86_USE_ZED
+  return getInsnTargetVMA_xed(mi, vma, opIndex, sz);
+#else
+  return getInsnTargetVMA_bu(mi, vma, opIndex, sz);
+#endif
 }
 
 
