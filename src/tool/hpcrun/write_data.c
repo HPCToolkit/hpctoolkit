@@ -334,8 +334,7 @@ hpcrun_flush_epochs(core_profile_trace_data_t * cptd)
 int
 hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
 {
-  thread_data_t *td = hpcrun_get_thread_data();
-  if(td->scale_fn) td->scale_fn((void*)td);
+  if(cptd->scale_fn) cptd->scale_fn((void*)cptd);
 
   TMSG(DATA_WRITE,"Writing hpcrun profile data");
   FILE* fs = lazy_open_data_file(cptd);

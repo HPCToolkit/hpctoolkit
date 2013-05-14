@@ -498,6 +498,7 @@ hpcrun_fini_internal()
     hpcrun_process_aux_cleanup_action();
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
     hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
+    write_other_td();
     fnbounds_fini();
     hpcrun_stats_print_summary();
     messages_fini();
@@ -584,8 +585,10 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-    hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
-    hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
+//    hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
+//    hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
+    thread_data_t *td = hpcrun_get_thread_data();
+    add_defer_td(td);
   }
 }
 
