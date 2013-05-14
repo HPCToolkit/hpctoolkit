@@ -306,14 +306,13 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample_sources_all.c sample-sources/blame-shift.c \
 	sample-sources/common.c sample-sources/ga.c \
 	sample-sources/io.c sample-sources/itimer.c \
-<<<<<<< .working
 	sample-sources/idle.c sample-sources/lockwait.c \
 	sample-sources/memleak.c sample-sources/none.c \
 	sample-sources/retcnt.c sample-sources/sync.c \
 	sample_sources_registered.c segv_handler.c start-stop.c \
-	system_server.c term_handler.c thread_data.c thread_use.c \
-	trace.c weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c \
-	cct/cct.c cct2metrics.c trampoline/common/trampoline.c \
+	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
+	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct2metrics.c trampoline/common/trampoline.c \
 	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
 	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
 	lush/lush-pthread.c lush/lush-support-rt.h \
@@ -325,35 +324,11 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
 	utilities/unlink.c utilities/defer-cntxt.h \
-	utilities/defer-cntxt.c utilities/defer-write.h \
-	utilities/defer-write.c utilities/task-cntxt.h \
+	utilities/defer-cntxt.c utilities/task-cntxt.h \
 	utilities/task-cntxt.c sample-sources/mpi.c \
-	fnbounds/fnbounds_dynamic.c monitor-exts/openmp.c \
-	hpcrun_dlfns.c custom-init-dynamic.c os/linux/dylib.c \
-	unwind/common/default_validation_summary.c \
-=======
-	sample-sources/idle.c sample-sources/memleak.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c term_handler.c thread_data.c \
-	thread_use.c threadmgr.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	sample-sources/mpi.c fnbounds/fnbounds_client.c \
-	fnbounds/fnbounds_dynamic.c monitor-exts/openmp.c \
-	hpcrun_dlfns.c custom-init-dynamic.c os/linux/dylib.c \
-	unwind/common/default_validation_summary.c \
->>>>>>> .merge-right.r4154
+	fnbounds/fnbounds_client.c fnbounds/fnbounds_dynamic.c \
+	monitor-exts/openmp.c hpcrun_dlfns.c custom-init-dynamic.c \
+	os/linux/dylib.c unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
 	trampoline/x86-family/x86-tramp.S \
@@ -412,8 +387,8 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-messages-async.lo libhpcrun_la-fmt.lo \
 	libhpcrun_la-executable-path.lo libhpcrun_la-ip-normalized.lo \
 	libhpcrun_la-tokenize.lo libhpcrun_la-unlink.lo \
-	libhpcrun_la-defer-cntxt.lo libhpcrun_la-defer-write.lo \
-	libhpcrun_la-task-cntxt.lo $(am__objects_7)
+	libhpcrun_la-defer-cntxt.lo libhpcrun_la-task-cntxt.lo \
+	$(am__objects_7)
 am__objects_9 = libhpcrun_la-fnbounds_client.lo \
 	libhpcrun_la-fnbounds_dynamic.lo libhpcrun_la-openmp.lo \
 	libhpcrun_la-hpcrun_dlfns.lo \
@@ -531,14 +506,13 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample_sources_all.c sample-sources/blame-shift.c \
 	sample-sources/common.c sample-sources/ga.c \
 	sample-sources/io.c sample-sources/itimer.c \
-<<<<<<< .working
 	sample-sources/idle.c sample-sources/lockwait.c \
 	sample-sources/memleak.c sample-sources/none.c \
 	sample-sources/retcnt.c sample-sources/sync.c \
 	sample_sources_registered.c segv_handler.c start-stop.c \
-	system_server.c term_handler.c thread_data.c thread_use.c \
-	trace.c weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c \
-	cct/cct.c cct2metrics.c trampoline/common/trampoline.c \
+	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
+	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct2metrics.c trampoline/common/trampoline.c \
 	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
 	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
 	lush/lush-pthread.c lush/lush-support-rt.h \
@@ -550,31 +524,9 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
 	utilities/unlink.c utilities/defer-cntxt.h \
-	utilities/defer-cntxt.c utilities/defer-write.h \
-	utilities/defer-write.c utilities/task-cntxt.h \
+	utilities/defer-cntxt.c utilities/task-cntxt.h \
 	utilities/task-cntxt.c sample-sources/mpi.c \
 	fnbounds/fnbounds_static.c custom-init-static.c \
-=======
-	sample-sources/idle.c sample-sources/memleak.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c term_handler.c thread_data.c \
-	thread_use.c threadmgr.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	sample-sources/mpi.c fnbounds/fnbounds_static.c \
-	custom-init-static.c \
->>>>>>> .merge-right.r4154
 	unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
@@ -646,15 +598,9 @@ am__objects_32 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-executable-path.$(OBJEXT) \
 	libhpcrun_o-ip-normalized.$(OBJEXT) \
 	libhpcrun_o-tokenize.$(OBJEXT) libhpcrun_o-unlink.$(OBJEXT) \
-<<<<<<< .working
 	libhpcrun_o-defer-cntxt.$(OBJEXT) \
-	libhpcrun_o-defer-write.$(OBJEXT) \
-	libhpcrun_o-task-cntxt.$(OBJEXT) $(am__objects_26)
-am__objects_28 = libhpcrun_o-fnbounds_static.$(OBJEXT) \
-=======
-	$(am__objects_31)
+	libhpcrun_o-task-cntxt.$(OBJEXT) $(am__objects_31)
 am__objects_33 = libhpcrun_o-fnbounds_static.$(OBJEXT) \
->>>>>>> .merge-right.r4154
 	libhpcrun_o-custom-init-static.$(OBJEXT)
 am__objects_34 = libhpcrun_o-default_validation_summary.$(OBJEXT)
 @HOST_CPU_MIPS_TRUE@am__objects_35 = $(am__objects_34)
@@ -1109,12 +1055,11 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/blame-shift.c sample-sources/common.c \
 	sample-sources/ga.c sample-sources/io.c \
 	sample-sources/itimer.c sample-sources/idle.c \
-<<<<<<< .working
 	sample-sources/lockwait.c sample-sources/memleak.c \
 	sample-sources/none.c sample-sources/retcnt.c \
 	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c system_server.c term_handler.c \
-	thread_data.c thread_use.c trace.c weak.c write_data.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c threadmgr.c trace.c weak.c write_data.c \
 	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
 	trampoline/common/trampoline.c lush/lush-backtrace.h \
 	lush/lush-backtrace.c lush/lush.h lush/lush.c \
@@ -1128,27 +1073,7 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	utilities/ip-normalized.c utilities/tokenize.h \
 	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
 	utilities/defer-cntxt.h utilities/defer-cntxt.c \
-	utilities/defer-write.h utilities/defer-write.c \
-	utilities/task-cntxt.h utilities/task-cntxt.c $(am__append_9)
-=======
-	sample-sources/memleak.c sample-sources/none.c \
-	sample-sources/retcnt.c sample-sources/sync.c \
-	sample_sources_registered.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c $(am__append_14)
->>>>>>> .merge-right.r4154
+	utilities/task-cntxt.h utilities/task-cntxt.c $(am__append_14)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -1736,7 +1661,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-debug-flag.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-default_validation_summary.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-defer-cntxt.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-defer-write.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-disabled.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-dylib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-env.Plo@am__quote@
@@ -1842,7 +1766,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-debug-flag.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-default_validation_summary.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-defer-cntxt.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-defer-write.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-disabled.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-env.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-epoch.Po@am__quote@
@@ -2579,13 +2502,6 @@ libhpcrun_la-defer-cntxt.lo: utilities/defer-cntxt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/defer-cntxt.c' object='libhpcrun_la-defer-cntxt.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-defer-cntxt.lo `test -f 'utilities/defer-cntxt.c' || echo '$(srcdir)/'`utilities/defer-cntxt.c
-
-libhpcrun_la-defer-write.lo: utilities/defer-write.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-defer-write.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-defer-write.Tpo -c -o libhpcrun_la-defer-write.lo `test -f 'utilities/defer-write.c' || echo '$(srcdir)/'`utilities/defer-write.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-defer-write.Tpo $(DEPDIR)/libhpcrun_la-defer-write.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/defer-write.c' object='libhpcrun_la-defer-write.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-defer-write.lo `test -f 'utilities/defer-write.c' || echo '$(srcdir)/'`utilities/defer-write.c
 
 libhpcrun_la-task-cntxt.lo: utilities/task-cntxt.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-task-cntxt.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-task-cntxt.Tpo -c -o libhpcrun_la-task-cntxt.lo `test -f 'utilities/task-cntxt.c' || echo '$(srcdir)/'`utilities/task-cntxt.c
@@ -3769,20 +3685,6 @@ libhpcrun_o-defer-cntxt.obj: utilities/defer-cntxt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/defer-cntxt.c' object='libhpcrun_o-defer-cntxt.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-defer-cntxt.obj `if test -f 'utilities/defer-cntxt.c'; then $(CYGPATH_W) 'utilities/defer-cntxt.c'; else $(CYGPATH_W) '$(srcdir)/utilities/defer-cntxt.c'; fi`
-
-libhpcrun_o-defer-write.o: utilities/defer-write.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-defer-write.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-defer-write.Tpo -c -o libhpcrun_o-defer-write.o `test -f 'utilities/defer-write.c' || echo '$(srcdir)/'`utilities/defer-write.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-defer-write.Tpo $(DEPDIR)/libhpcrun_o-defer-write.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/defer-write.c' object='libhpcrun_o-defer-write.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-defer-write.o `test -f 'utilities/defer-write.c' || echo '$(srcdir)/'`utilities/defer-write.c
-
-libhpcrun_o-defer-write.obj: utilities/defer-write.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-defer-write.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-defer-write.Tpo -c -o libhpcrun_o-defer-write.obj `if test -f 'utilities/defer-write.c'; then $(CYGPATH_W) 'utilities/defer-write.c'; else $(CYGPATH_W) '$(srcdir)/utilities/defer-write.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-defer-write.Tpo $(DEPDIR)/libhpcrun_o-defer-write.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/defer-write.c' object='libhpcrun_o-defer-write.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-defer-write.obj `if test -f 'utilities/defer-write.c'; then $(CYGPATH_W) 'utilities/defer-write.c'; else $(CYGPATH_W) '$(srcdir)/utilities/defer-write.c'; fi`
 
 libhpcrun_o-task-cntxt.o: utilities/task-cntxt.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-task-cntxt.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-task-cntxt.Tpo -c -o libhpcrun_o-task-cntxt.o `test -f 'utilities/task-cntxt.c' || echo '$(srcdir)/'`utilities/task-cntxt.c

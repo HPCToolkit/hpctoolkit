@@ -108,9 +108,6 @@ hpcrun_sample_val_init(sample_val_t* x)
 extern sample_val_t hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
 				   int skipInner, int isSync, void *arg);
 
-extern cct_node_t* hpcrun_sample_callpath_idle(void *context, int metricId, uint64_t metricIncr, 
-				   int skipInner, int isSync, void *arg);
-
 extern cct_node_t* hpcrun_gen_thread_ctxt(void *context);
 
 extern cct_node_t* hpcrun_sample_callpath_w_bt(void *context,

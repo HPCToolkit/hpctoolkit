@@ -177,6 +177,7 @@ METHOD_FN(start)
     monitor_real_exit(1);
   }
 
+#if 0
   if (idleness_blame_information_source_present == false) {
     STDERR_MSG("HPCToolkit: IDLE metric specified without a plugin that measures "
         "idleness and work.\n" 
@@ -184,6 +185,7 @@ METHOD_FN(start)
 	"For static binaries, specify an appropriate plugin with an argument to hpclink.\n");
     monitor_real_exit(1);
   }
+#endif
 }
 
 static void
@@ -194,10 +196,10 @@ METHOD_FN(thread_fini_action)
   // it is necessary because it can resolve/partial resolve
   // the region (temporal concern)
   if(td->defer_flag) resolve_cntxt_fini();
-  if(!td->add_to_pool) {
-    td->add_to_pool = 1;
-    add_defer_td(td);
-  }
+//  if(!td->add_to_pool) {
+//    td->add_to_pool = 1;
+//    add_defer_td(td);
+//  }
 }
 
 static void
@@ -220,7 +222,7 @@ METHOD_FN(stop)
 static void
 METHOD_FN(shutdown)
 {
-  write_other_td();
+//  write_other_td();
 
   self->state = UNINIT;
 }
@@ -235,7 +237,7 @@ METHOD_FN(supports_event,const char *ev_str)
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-  bs_entry.fn = process_blame_for_sample;
+  bs_entry.fn = idle_metric_process_blame_for_sample;
   bs_entry.next = 0;
 
   GOMP_barrier_callback_register(idle_fn, work_fn);
@@ -245,27 +247,27 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   idle_metric_id = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(idle_metric_id, "p_req_core_idleness",
-				    MetricFlags_ValFmt_Real, 1);
+				    MetricFlags_ValFmt_Real, 1, metric_property_none);
 
   core_idle_metric_id = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(core_idle_metric_id, "p_all_core_idleness",
-				    MetricFlags_ValFmt_Real, 1);
+				    MetricFlags_ValFmt_Real, 1, metric_property_none);
 
   thread_idle_metric_id = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(thread_idle_metric_id, "p_all_thread_idleness",
-				    MetricFlags_ValFmt_Real, 1);
+				    MetricFlags_ValFmt_Real, 1, metric_property_none);
 
   work_metric_id = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(work_metric_id, "p_work",
-				    MetricFlags_ValFmt_Int, 1);
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
 
   overhead_metric_id = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(overhead_metric_id, "p_overhead",
-				    MetricFlags_ValFmt_Int, 1);
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
 
   count_metric_id = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(count_metric_id, "count_helper",
-				    MetricFlags_ValFmt_Int, 1);
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
 }
 
 static void
@@ -300,8 +302,8 @@ scale_fn(void *thread_data)
 {
   thread_data_t *td = (thread_data_t *)thread_data;
   cct_node_t *root, *unresolved_root;
-  root = td->epoch->csdata.top;
-  unresolved_root = td->epoch->csdata.unresolved_root;
+  root = hpcrun_get_thread_epoch()->csdata.top;
+  unresolved_root = hpcrun_get_thread_epoch()->csdata.unresolved_root;
   hpcrun_cct_walk_node_1st(root, normalize_fn, NULL);
 //  hpcrun_cct_walk_node_1st(unresolved_root, normalize_fn, null);
 }
@@ -393,7 +395,7 @@ idle(bool thres_check)
   hpcrun_safe_enter();
   ucontext_t uc;
   getcontext(&uc);
-  hpcrun_sample_callpath_idle(&uc, idle_metric_id, 0, 2, 1, NULL);
+  hpcrun_sample_callpath(&uc, idle_metric_id, 0, 2, 1, NULL);
   hpcrun_safe_exit();
   ret = time_getTimeReal(&TD_GET(last_bar_time_us));
   if (ret != 0) {

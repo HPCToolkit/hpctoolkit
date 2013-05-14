@@ -322,7 +322,7 @@ void register_defer_callback()
 int need_defer_cntxt()
 {
   // master thread does not need to defer the context
-  if(ENABLED(SET_DEFER_CTXT) && GOMP_get_region_id() != NULL && !TD_GET(master)) {//omp_get_thread_num() != 0) {
+  if(ENABLED(SET_DEFER_CTXT) && GOMP_get_region_id() != NULL && !TD_GET(master)) {
     thread_data_t *td = hpcrun_get_thread_data();
     td->defer_flag = 1;
     init_region_id();
@@ -387,9 +387,6 @@ uint64_t is_partial_resolve(cct_node_t *prefix)
 static void
 omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
 {
-  thread_data_t *td = NULL;
-  if(a) 
-    td = (thread_data_t*) a;
   cct_node_t *prefix;
   uint64_t my_region_id = (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip;
   TMSG(DEFER_CTXT, "try to resolve region %d", my_region_id);
@@ -401,18 +398,10 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
     TMSG(DEFER_CTXT, "delete from the tbd region %d", hpcrun_cct_addr(cct)->ip_norm.lm_ip);
     partial_region_id = is_partial_resolve(prefix);
     if(partial_region_id == 0) {
-      if(!td)
-        prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_process_stop_cct());
-      else
-        prefix = hpcrun_cct_insert_path(prefix, (td->epoch->csdata).tree_root);
+      prefix = hpcrun_cct_insert_path_return_leaf((hpcrun_get_thread_epoch()->csdata).tree_root, prefix);
     }
     else {
-      if(!td) {
-        prefix = hpcrun_cct_insert_path(prefix, hpcrun_get_tbd_cct());
-      }
-      else {
-        prefix = hpcrun_cct_insert_path(prefix, (td->epoch->csdata).unresolved_root);
-      }
+      prefix = hpcrun_cct_insert_path_return_leaf((hpcrun_get_thread_epoch()->csdata).unresolved_root, prefix);
       r_splay_count_update(partial_region_id, 1L);
     }
     // adjust the callsite of the prefix in side threads to make sure they are the same as
@@ -440,7 +429,7 @@ void resolve_cntxt()
 {
   hpcrun_safe_enter();
   uint64_t current_region_id = *(GOMP_get_region_id()); //inner-most region id
-  cct_node_t* tbd_cct = hpcrun_get_tbd_cct();
+  cct_node_t* tbd_cct = (hpcrun_get_thread_epoch()->csdata).unresolved_root;
   thread_data_t *td = hpcrun_get_thread_data();
   uint64_t outer_region_id = 0;
   // no outer region in the first level
@@ -487,11 +476,10 @@ tbd_test(cct_node_t* cct, cct_op_arg_t a, size_t l)
 
 void resolve_cntxt_fini()
 {
-  hpcrun_safe_enter();
-  hpcrun_cct_walkset(hpcrun_get_tbd_cct(), omp_resolve_and_free, NULL);
-  hpcrun_safe_exit();
+  hpcrun_cct_walkset((hpcrun_get_thread_epoch()->csdata).unresolved_root, omp_resolve_and_free, NULL);
 }
 
+#if 0
 void resolve_other_cntxt(thread_data_t *thread_data)
 {
   hpcrun_safe_enter();
@@ -501,3 +489,4 @@ void resolve_other_cntxt(thread_data_t *thread_data)
 //  hpcrun_cct_walkset((td->epoch->csdata).unresolved_root, tbd_test, (cct_op_arg_t)td);
   hpcrun_safe_exit();
 }
+#endif

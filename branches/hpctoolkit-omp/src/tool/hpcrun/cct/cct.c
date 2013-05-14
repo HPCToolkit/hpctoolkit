@@ -456,10 +456,10 @@ hpcrun_cct_delete_addr(cct_node_t* node, cct_addr_t* frm)
 
 // insert a path to the root and return the path in the root
 cct_node_t*
-hpcrun_cct_insert_path(cct_node_t *path, cct_node_t *root)
+hpcrun_cct_insert_path_return_leaf(cct_node_t *root, cct_node_t *path)
 {
   if(!path || ! path->parent) return root;
-  root = hpcrun_cct_insert_path(path->parent, root);
+  root = hpcrun_cct_insert_path_return_leaf(root, path->parent);
   return hpcrun_cct_insert_addr(root, &(path->addr));
 }
 

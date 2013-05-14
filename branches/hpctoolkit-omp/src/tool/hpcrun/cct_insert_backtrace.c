@@ -317,7 +317,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
 
   omp_arg_t* omp_arg = (omp_arg_t*) arg;
   if (arg && omp_arg->tbd) {
-    cct_cursor = hpcrun_cct_find_addr(hpcrun_get_tbd_cct(), &(ADDR2(UNRESOLVED, omp_arg->region_id)));
+    cct_cursor = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, omp_arg->region_id)));
   }
   // this is for omp task
   if(arg && omp_arg->context) {

@@ -15,21 +15,21 @@ typedef struct {
 
 
 
-static inline cct_node_t*
+static inline cct_node_t**
 hpcrun_get_tbd_cct(void)
 {
-  return (TD_GET(epoch)->csdata).unresolved_root;
+  return &((hpcrun_get_thread_epoch()->csdata).unresolved_root);
 }
 
-static inline cct_node_t*
+static inline cct_node_t**
 hpcrun_get_process_stop_cct(void)
 {
-  return (TD_GET(epoch)->csdata).tree_root;
+  return &((hpcrun_get_thread_epoch()->csdata).tree_root);
 }
 
-static inline cct_node_t*
+static inline cct_node_t**
 hpcrun_get_top_cct(void)
 {
-  return (TD_GET(epoch)->csdata).top;
+  return &((hpcrun_get_thread_epoch()->csdata).top);
 }
 #endif // UNRESOLVED_H

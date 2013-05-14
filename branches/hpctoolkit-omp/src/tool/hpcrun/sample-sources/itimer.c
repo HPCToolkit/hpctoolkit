@@ -677,7 +677,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 				0/*skipInner*/, 0/*isSync*/, NULL);
   }
   if(sv.sample_node) {
-    blame_shift_apply(sv.sample_node, metric_incr);
+    blame_shift_apply(metric_id, sv.sample_node, metric_incr);
   }
   if (hpcrun_is_sampling_disabled()) {
     TMSG(ITIMER_HANDLER, "No itimer restart, due to disabled sampling");
