@@ -360,6 +360,18 @@ enum overloadPotentialState{
     SYNC_STATE,
     OVERLOADABLE_STATE
 };
+
+
+/******************************************************************************
+ * externs
+ *****************************************************************************/
+
+// function pointers to real cuda runtime functions
+extern cudaRuntimeFunctionPointer_t  cudaRuntimeFunctionPointer[];
+
+// function pointers to real cuda driver functions
+extern cuDriverFunctionPointer_t  cuDriverFunctionPointer[];
+
 /******************************************************************************
  * forward declarations
  *****************************************************************************/
