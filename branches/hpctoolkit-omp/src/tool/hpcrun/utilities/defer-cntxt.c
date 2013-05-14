@@ -308,7 +308,8 @@ void end_team_fn()
   // need to resolve itself
   if(ENABLED(SET_TASK_CTXT)) {
     TD_GET(team_master) = 1;
-    resolve_cntxt_fini();
+    thread_data_t* td = hpcrun_get_thread_data();
+    resolve_cntxt_fini(td);
     TD_GET(team_master) = 0;
   }
   hpcrun_safe_exit();
@@ -388,6 +389,7 @@ static void
 omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
 {
   cct_node_t *prefix;
+  thread_data_t *td = (thread_data_t *)a;
   uint64_t my_region_id = (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip;
   TMSG(DEFER_CTXT, "try to resolve region %d", my_region_id);
   uint64_t partial_region_id = 0;
@@ -398,16 +400,16 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
     TMSG(DEFER_CTXT, "delete from the tbd region %d", hpcrun_cct_addr(cct)->ip_norm.lm_ip);
     partial_region_id = is_partial_resolve(prefix);
     if(partial_region_id == 0) {
-      prefix = hpcrun_cct_insert_path_return_leaf((hpcrun_get_thread_epoch()->csdata).tree_root, prefix);
+      prefix = hpcrun_cct_insert_path_return_leaf((td->core_profile_trace_data.epoch->csdata).tree_root, prefix);
     }
     else {
-      prefix = hpcrun_cct_insert_path_return_leaf((hpcrun_get_thread_epoch()->csdata).unresolved_root, prefix);
+      prefix = hpcrun_cct_insert_path_return_leaf((td->core_profile_trace_data.epoch->csdata).unresolved_root, prefix);
       r_splay_count_update(partial_region_id, 1L);
     }
     // adjust the callsite of the prefix in side threads to make sure they are the same as
     // in the master thread. With this operation, all sides threads and the master thread
     // will have the unified view for parallel regions (this only works for GOMP)
-    if(TD_GET(team_master)) {
+    if(td->team_master) {
       hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
     }
     else {
@@ -440,7 +442,7 @@ void resolve_cntxt()
   // resolve the trees at the end of one parallel region
   if((td->region_id != outer_region_id) && (td->region_id != 0)){
     TMSG(DEFER_CTXT, "I want to resolve the context when I come out from region %d", td->region_id);
-    hpcrun_cct_walkset(tbd_cct, omp_resolve_and_free, NULL);
+    hpcrun_cct_walkset(tbd_cct, omp_resolve_and_free, td);
   }
   // update the use count when come into a new omp region
   if((td->region_id != outer_region_id) && (outer_region_id != 0)) {
@@ -474,9 +476,9 @@ tbd_test(cct_node_t* cct, cct_op_arg_t a, size_t l)
 }
 #endif
 
-void resolve_cntxt_fini()
+void resolve_cntxt_fini(thread_data_t *td)
 {
-  hpcrun_cct_walkset((hpcrun_get_thread_epoch()->csdata).unresolved_root, omp_resolve_and_free, NULL);
+  hpcrun_cct_walkset(td->core_profile_trace_data.epoch->csdata.unresolved_root, omp_resolve_and_free, td);
 }
 
 #if 0

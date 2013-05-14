@@ -195,7 +195,7 @@ METHOD_FN(thread_fini_action)
   if(!td->omp_thread) return;
   // it is necessary because it can resolve/partial resolve
   // the region (temporal concern)
-  if(td->defer_flag) resolve_cntxt_fini();
+  if(td->defer_flag) resolve_cntxt_fini(td);
 //  if(!td->add_to_pool) {
 //    td->add_to_pool = 1;
 //    add_defer_td(td);
@@ -207,8 +207,7 @@ METHOD_FN(stop)
 {
   //scale the requested core idleness here
   thread_data_t *td = hpcrun_get_thread_data();
-  if(!td->scale_fn)
-    td->scale_fn = scale_fn;
+  td->core_profile_trace_data.scale_fn = scale_fn;
 #if 0
   thread_data_t *td = hpcrun_get_thread_data();
   cct_node_t *root, *unresolved_root;
@@ -298,11 +297,11 @@ METHOD_FN(display_events)
  *****************************************************************************/
 
 void
-scale_fn(void *thread_data)
+scale_fn(void *td)
 {
-  thread_data_t *td = (thread_data_t *)thread_data;
+  core_profile_trace_data_t *cptd = (core_profile_trace_data_t *)td;
   cct_node_t *root, *unresolved_root;
-  root = hpcrun_get_thread_epoch()->csdata.top;
+  root = cptd->epoch->csdata.top;
   unresolved_root = hpcrun_get_thread_epoch()->csdata.unresolved_root;
   hpcrun_cct_walk_node_1st(root, normalize_fn, NULL);
 //  hpcrun_cct_walk_node_1st(unresolved_root, normalize_fn, null);
@@ -478,8 +477,8 @@ void end_fn()
   atomic_add_i64(&work, -1L);
 
   thread_data_t *td = hpcrun_get_thread_data();
-  td->add_to_pool = 1;
-  add_defer_td(td);
+//  td->add_to_pool = 1;
+//  add_defer_td(td);
 
   if(hpcrun_trace_isactive()) {
     thread_create_exit();

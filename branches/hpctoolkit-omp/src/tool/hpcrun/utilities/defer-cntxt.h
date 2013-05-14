@@ -14,7 +14,7 @@ int  need_defer_cntxt();
 
 /* resolve the contexts */
 void resolve_cntxt();
-void resolve_cntxt_fini();
+void resolve_cntxt_fini(thread_data_t*);
 void resolve_other_cntxt(thread_data_t *thread_data);
 
 uint64_t is_partial_resolve(cct_node_t *prefix);

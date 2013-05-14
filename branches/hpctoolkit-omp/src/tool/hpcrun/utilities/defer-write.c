@@ -190,16 +190,15 @@ write_other_td()
     }
     entry->flag = true;
     thread_data_t *td = hpcrun_get_thread_data();
-    cct2metrics_t* store_cct2metrics_map = td->cct2metrics_map;
-    td->cct2metrics_map = entry->td->cct2metrics_map;
-    if(entry->td->defer_flag)
-      resolve_other_cntxt(entry->td);
+    cct2metrics_t* store_cct2metrics_map = td->core_profile_trace_data.cct2metrics_map;
+    td->core_profile_trace_data.cct2metrics_map = entry->td->core_profile_trace_data.cct2metrics_map;
+    if(entry->td->defer_flag) resolve_cntxt_fini(entry->td);
 
     // write out a given td
-    hpcrun_write_other_profile_data(entry->td->epoch, entry->td);
-    trace_other_close((void *)entry->td);
-    td->cct2metrics_map = store_cct2metrics_map;
- 
+    hpcrun_write_profile_data(&(entry->td->core_profile_trace_data));
+    hpcrun_trace_close(&(entry->td->core_profile_trace_data));
+    td->core_profile_trace_data.cct2metrics_map = store_cct2metrics_map;
+
     entry = entry->next;
   }
 }
