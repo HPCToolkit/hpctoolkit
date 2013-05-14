@@ -423,12 +423,16 @@ libhpcrun_memleak_wrap_a_SOURCES = 	\
 libhpcrun_gpu_la_SOURCES = 		\
 	sample-sources/gpu_blame-overrides.c \
 	gpu_blame-driver-overrides-generated.c \
-	gpu_blame-runtime-overrides-generated.c
+	gpu_blame-runtime-overrides-generated.c \
+	gpu_blame-cuda-driver-table.c \
+	gpu_blame-cuda-runtime-table.c
 
 libhpcrun_gpu_wrap_a_SOURCES = 	\
 	sample-sources/gpu_blame-overrides.c  \
 	gpu_blame-driver-overrides-generated.c \
-	gpu_blame-runtime-overrides-generated.c
+	gpu_blame-runtime-overrides-generated.c \
+	gpu_blame-cuda-driver-table.c \
+	gpu_blame-cuda-runtime-table.c
 
 libhpcrun_mpi_la_SOURCES = 		\
 	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
@@ -730,7 +734,7 @@ if UNW_PPC64
 endif
 
 if OPT_ENABLE_CUDA
-  libhpcrun_la_SOURCES  += sample-sources/gpu_blame.c gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
+  libhpcrun_la_SOURCES  += sample-sources/gpu_blame.c
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
   libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
