@@ -304,7 +304,6 @@ MY_BASE_FILES =				\
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c \
 	utilities/defer-cntxt.h utilities/defer-cntxt.c \
-	utilities/defer-write.h utilities/defer-write.c \
         utilities/task-cntxt.h utilities/task-cntxt.c
 
 if OPT_ENABLE_MPI_WRAP

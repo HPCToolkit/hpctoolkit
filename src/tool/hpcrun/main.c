@@ -533,13 +533,8 @@ logit(cct_node_t* n, cct_op_arg_t arg, size_t l)
 void*
 hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
 {
-  bool reuse_flag = true;
-  thread_data_t *td = get_reuse_td();
-  if(!td) {
-    hpcrun_mmap_init();
-    td = hpcrun_allocate_thread_data();
-    reuse_flag = false;
-  }
+  hpcrun_mmap_init();
+  thread_data_t *td = hpcrun_allocate_thread_data();
   td->inside_hpcrun = 1;  // safe enter, disable signals
 
   hpcrun_set_thread_data(td);
@@ -548,11 +543,7 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   if (ENABLED(THREAD_CTXT))
     hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (uintptr_t) id);
   //
-  if(!reuse_flag)
-    hpcrun_thread_data_init(id, thr_ctxt, 0);
-  else
-    hpcrun_thread_data_reuse_init(thr_ctxt);
-  TMSG(DEFER_CTXT, "real id %d, reuse id %d", td->id, id);
+  hpcrun_thread_data_init(id, thr_ctxt, 0);
 
   epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 
@@ -561,10 +552,7 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
 
   // set up initial 'epoch'
   TMSG(EPOCH,"process init setting up initial epoch/loadmap");
-  if(!reuse_flag)
-    hpcrun_epoch_init(thr_ctxt);
-  else
-    hpcrun_epoch_reuse_init(thr_ctxt);
+  hpcrun_epoch_init(thr_ctxt);
 
   // sample sources take thread specific action prior to start (often is a 'registration' action);
   SAMPLE_SOURCES(thread_init_action);
@@ -596,15 +584,8 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-    // only omp threads set defer_write. Other threads (helper threads or
-    // native pthreads) don't delay the write out
-    if (!TD_GET(defer_write)) {
-#ifdef XU_OLD
-      hpcrun_write_profile_data(epoch);
-#endif // XU_OLD
-      hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
-      hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
-    }
+    hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
+    hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
   }
 }
 
@@ -914,13 +895,7 @@ monitor_fini_thread(void* init_thread_data)
 
   epoch_t *epoch = (epoch_t *)init_thread_data;
   hpcrun_thread_fini(epoch);
-
-  if(!TD_GET(defer_write))
-    hpcrun_trace_close();
-  // FIXME: MWF+XL. Figure out how to close GPU streams & deferred OMP threads
-
   hpcrun_safe_exit();
-  TD_GET(reuse) = 1;
 }
 
 

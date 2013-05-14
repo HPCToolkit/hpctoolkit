@@ -136,11 +136,9 @@ void* need_task_cntxt()
 void *copy_task_cntxt(void* creation_context)
 {
   if(ENABLED(SET_DEFER_CTXT) && (is_partial_resolve((cct_node_t *)creation_context) > 0))
-    return hpcrun_cct_insert_path((cct_node_t *)creation_context,
-				hpcrun_get_tbd_cct());
+    return hpcrun_cct_insert_path_return_leaf((hpcrun_get_thread_epoch()->csdata).unresolved_root, (cct_node_t *)creation_context);
   else
-    return hpcrun_cct_insert_path((cct_node_t *)creation_context,
-				hpcrun_get_top_cct());
+    return hpcrun_cct_insert_path_return_leaf((hpcrun_get_thread_epoch()->csdata).tree_root, (cct_node_t *)creation_context);
 }
 
 // It is a hack

@@ -700,7 +700,6 @@ papi_event_handler(int event_set, void *pc, long long ovec,
       
       sv = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 				  0/*skipInner*/, 0/*isSync*/, (void*) &omp_arg);
-      blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
     }
     else if(need_defer_cntxt()) {
       thread_data_t *td = hpcrun_get_thread_data();
@@ -721,9 +720,9 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     else
       sv = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 				  0/*skipInner*/, 0/*isSync*/, NULL);
-    if (cyc_metric_id == metric_id && sv.sample_node) {
-      blame_shift_apply(sv.sample_node, (uint64_t)(hpcrun_id2metric(metric_id)->period));
-    }
+    
+    if(sv.sample_node)
+      blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
   }
   // Add metric values for derived events by the difference in counter
   // values.  Some samples can take a long time (eg, analyzing a new
@@ -736,7 +735,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     for (i = 0; i < nevents; i++) {
       if (derived[i]) {
 	hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),
-			       values[i] - psi->prev_values[i], 0, 0);
+			       values[i] - psi->prev_values[i], 0, 0, NULL);
       }
     }
 

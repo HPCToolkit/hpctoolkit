@@ -133,7 +133,7 @@ static void lock_fn(void *lock);
 static void unlock_fn(void *lock);
 static void unlock_fn1(void *lock);
 
-static void process_lockwait_blame_for_sample(cct_node_t *node, int metric_value);
+static void process_lockwait_blame_for_sample(int metric_id, cct_node_t *node, int metric_value);
 
 /******************************************************************************
  * global variables
@@ -231,7 +231,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 	lockwait_metric_id = hpcrun_new_metric();
 	hpcrun_set_metric_info_and_period(lockwait_metric_id, "LOCKWAIT",
-			MetricFlags_ValFmt_Int, 1);
+			MetricFlags_ValFmt_Int, 1, metric_property_none);
 }
 
 static void
@@ -261,8 +261,14 @@ METHOD_FN(display_events)
  * blame samples
  *****************************************************************************/
 
-void process_lockwait_blame_for_sample(cct_node_t *node, int metric_value)
+void process_lockwait_blame_for_sample(int metric_id, cct_node_t *node, int metric_value)
 {
+  metric_desc_t * metric_desc = hpcrun_id2metric(metric_id);
+
+  // Only blame shift idleness for time and cycle metrics. 
+  if ( ! (metric_desc->properties.time | metric_desc->properties.cycles) )
+    return;
+
   if(period == 0) period = metric_value;
   thread_data_t *td = hpcrun_get_thread_data();
   if(td->lockwait && td->lockid && (td->idle == 0)) {
