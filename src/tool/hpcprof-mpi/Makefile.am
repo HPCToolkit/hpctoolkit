@@ -70,6 +70,8 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+XED2_LIB = @XED2_LIB@
+
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp \
@@ -115,6 +117,10 @@ CXX = $(MPICXX)
 bin_SCRIPTS = hpcprof-mpi
 
 pkglibexec_PROGRAMS = hpcprof-mpi-bin
+
+if HOST_CPU_X86_FAMILY
+  MYLDADD += $(XED2_LIB)/libxed.a
+endif
 
 hpcprof_mpi_bin_SOURCES  = $(MYSOURCES)
 hpcprof_mpi_bin_CFLAGS   = $(MYCFLAGS)

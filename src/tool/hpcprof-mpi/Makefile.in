@@ -68,6 +68,7 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/hpcprof-mpi.in $(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
 pkglibexec_PROGRAMS = hpcprof-mpi-bin$(EXEEXT)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_1 = $(XED2_LIB)/libxed.a
 subdir = src/tool/hpcprof-mpi
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -89,7 +90,7 @@ hpcprof_mpi_bin_OBJECTS = $(am_hpcprof_mpi_bin_OBJECTS)
 am__DEPENDENCIES_1 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_ProfLean) \
 	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) \
-	$(HPCLIB_Support) $(HPCLIB_SupportLean)
+	$(HPCLIB_Support) $(HPCLIB_SupportLean) $(am__append_1)
 hpcprof_mpi_bin_DEPENDENCIES = $(am__DEPENDENCIES_1)
 hpcprof_mpi_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
@@ -287,6 +288,14 @@ SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 VERSION = @VERSION@
 XED2_COPY = @XED2_COPY@
 XED2_INC = @XED2_INC@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 XED2_LIB = @XED2_LIB@
 XED2_RUN_DIR = @XED2_RUN_DIR@
 XERCES = @XERCES@
@@ -383,14 +392,6 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp \
@@ -405,22 +406,11 @@ MYLDFLAGS = \
 	@XERCES_LDFLAGS@ \
 	@GNUBINUTILS_LDFLAGS@
 
-MYLDADD = \
-	@HOST_LIBTREPOSITORY@ \
-	$(HPCLIB_Analysis) \
-	$(HPCLIB_Banal) \
-	$(HPCLIB_ProfXML) \
-	$(HPCLIB_Prof) \
-	$(HPCLIB_ProfLean) \
-	$(HPCLIB_Binutils) \
-	$(HPCLIB_ISA) \
-	$(HPCLIB_XML) \
-	$(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) \
-	@XERCES_LDLIBS@ \
-	@GNUBINUTILS_LDLIBS@ \
-	@HOST_HPCPROF_LDFLAGS@
-
+MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Analysis) $(HPCLIB_Banal) \
+	$(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_ProfLean) \
+	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) \
+	$(HPCLIB_Support) $(HPCLIB_SupportLean) @XERCES_LDLIBS@ \
+	@GNUBINUTILS_LDLIBS@ @HOST_HPCPROF_LDFLAGS@ $(am__append_1)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 bin_SCRIPTS = hpcprof-mpi
 hpcprof_mpi_bin_SOURCES = $(MYSOURCES)
