@@ -82,6 +82,7 @@ MYSOURCES = \
 	PowerISA.hpp PowerISA.cpp \
 	SparcISA.hpp SparcISA.cpp \
 	x86ISA.hpp x86ISA.cpp \
+	x86ISA_xed.cpp  \
 	\
 	instructionSets/alpha.h \
 	instructionSets/mips.h
