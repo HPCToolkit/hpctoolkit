@@ -1,0 +1,34 @@
+----------------------
+Autotools Build Notes
+----------------------
+
+This directory is a mini-externals package for building and installing
+the autotools packages: autoconf, automake, libtool and m4.  The
+directory it builds is suitable for an hpctoolkit /projects/pkgs
+directory for autoreconf.
+
+This package serves two purposes: (1) it makes it easy to install
+autotools on a new machine for hpctoolkit, and (2) it makes it easy to
+keep a consistent version of autotools across machines.  Running
+autoreconf with a different version of autotools produces tons of
+irrelevent diffs.  So, it is useful to keep a consistent version
+across machines.
+
+To install autotools, just run 'make.sh' with the install directory as
+argument.  For example:
+
+  ./make.sh  /projects/pkgs/autotools-ac-2.67-am-1.11.1-lt-2.2.10
+
+Autotools uses m4 and some systems have a version that is too old, so
+by default make.sh also installs m4.  To avoid installing m4, use the
+option -no-m4.
+
+To build each package manually, use:
+
+  ./configure  --prefix=...
+  make
+  make install
+
+Build in order: m4, autoconf, automake and libtool.  Add prefix/bin to
+PATH after each package.
+
