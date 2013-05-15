@@ -87,24 +87,46 @@ static xed_state_t xed_machine_state =
           XED_ADDRESS_WIDTH_32b };
 #endif
 
-//*************************** Forward Declarations ***************************
+//*************************** cache decoder ***************************
+static MachInsn *mi;
+static xed_decoded_inst_t xedd;
+
+static xed_decoded_inst_t*
+getDecodeXED(MachInsn *cmi)
+{
+  if (cmi == mi) {
+    return &xedd;
+  } 
+  else {
+    mi = cmi;
+
+    xed_decoded_inst_t *xptr = &xedd;
+
+    xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
+    xed_decoded_inst_zero_keep_mode(xptr);
+
+    xed_error_enum_t xed_error = xed_decode(xptr, (uint8_t*) mi, 15);
+    if (xed_error == XED_ERROR_NONE) {
+      return xptr;
+    }
+    else {
+      return NULL;
+    }
+  }
+}
+
+//*************************** x86ISA ***************************
 
 
 ISA::InsnDesc
 x86ISA::getInsnDesc_xed(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
                     ushort GCC_ATTR_UNUSED s)
 {
-  xed_decoded_inst_t xedd;
-  xed_decoded_inst_t *xptr = &xedd;
-  xed_error_enum_t xed_error;
-
-  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
-
-  xed_error = xed_decode(xptr, (uint8_t*) mi, 15);
+  xed_decoded_inst_t *xptr = getDecodeXED(mi);
 
   ISA::InsnDesc d;
 
-  if (xed_error != XED_ERROR_NONE) {
+  if (xptr == NULL) {
     return d;
   }
 
@@ -175,71 +197,27 @@ x86ISA::getInsnDesc_xed(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
 ushort
 x86ISA::getInsnSize_xed(MachInsn* mi)
 {
-  xed_decoded_inst_t xedd;
-  xed_decoded_inst_t *xptr = &xedd;
+  xed_decoded_inst_t *xptr = getDecodeXED(mi);
 
-  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
-  xed_decoded_inst_zero_keep_mode(xptr);
-  void *vma_addr = mi;
-
-  xed_error_enum_t xed_error = xed_decode(xptr, (uint8_t*) vma_addr, 15);
-
-  if (XED_ERROR_NONE == xed_error) {
-    xed_uint_t len = xed_decoded_inst_get_length(xptr);
-    return (ushort)len;
+  if (xptr == NULL) {
+    return 0;
   }
-  return 0;
+  return (ushort)xed_decoded_inst_get_length(xptr);
 }
 
-void
-x86ISA::checkCache(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
-                         ushort GCC_ATTR_UNUSED sz)
-{
-  if (cacheLookup(mi) == NULL) {
-    ushort size = getInsnSize_xed(mi);
-    cacheSet(mi, size);
-  }
-}
 
 VMA
 x86ISA::getInsnTargetVMA_xed(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
                          ushort GCC_ATTR_UNUSED sz)
 {
-  static xed_state_t xed_machine_state =
-#if defined (HOST_CPU_x86_64)
-    { XED_MACHINE_MODE_LONG_64,
-      XED_ADDRESS_WIDTH_64b };
-#else
-      { XED_MACHINE_MODE_LONG_COMPAT_32,
-          XED_ADDRESS_WIDTH_32b };
-#endif
+  xed_decoded_inst_t *xptr = getDecodeXED(mi);
 
-  xed_decoded_inst_t xedd;
-  xed_decoded_inst_t *xptr = &xedd;
-  xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
-
-  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
-  xed_decoded_inst_zero_keep_mode(xptr);
-  void *vma_addr = mi;
-  
-  xed_error_enum_t xed_error = xed_decode(xptr, (uint8_t*) vma_addr, 15);
-  
-  if (XED_ERROR_NONE == xed_error) {
-    int len;
-
-    // get the size of the instruction from the cache
-    // if the info is not in the cache, update it
-
-    DecodingCache *cache = cacheLookup(mi);
-    if (cache == NULL) {
-      len = xed_decoded_inst_get_length(xptr);
-      cacheSet(mi, len);
-    } else {
-      len = cache->insnSize;
-    }
-
+  if (xptr != NULL) {
+    xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
     int offset = xed_operand_values_get_branch_displacement_int32(vals);
-    char* insn_end = (char*)vma_addr + len;
+
+    int len = xed_decoded_inst_get_length(xptr);
+    char* insn_end = (char*)mi + len;
     VMA absoluteTarget = (VMA)(insn_end + offset);
 
     if (absoluteTarget != 0) {
