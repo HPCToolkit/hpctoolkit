@@ -141,9 +141,11 @@ x86ISA::x86ISA(bool is_x86_64)
   m_di_dis->read_memory_func = GNUbu_read_memory;
   m_di_dis->print_address_func = GNUbu_print_addr;
 
+#ifdef X86_USE_XED
   // initialize xed encode and decode tables
   // it must be called once before using xed
   xed_tables_init();
+#endif
 }
 
 
