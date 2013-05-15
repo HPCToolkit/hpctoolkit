@@ -73,13 +73,15 @@ using std::ostream;
 
 #include <lib/support/diagnostics.h>
 
-extern "C" {
-#include <xed-interface.h>
-}
-
 //*************************** macros ***************************
 
 //#define X86_USE_XED
+#ifdef X86_USE_XED
+extern "C" {
+#include <xed-interface.h>
+}
+#endif
+
 
 
 //*************************** Forward Declarations ***************************
