@@ -68,8 +68,9 @@ host_triplet = @host@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
-@HOST_CPU_X86_FAMILY_TRUE@am__append_1 = -I$(XED2_INC)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_1 = x86ISA_xed.cpp  
 @HOST_CPU_X86_FAMILY_TRUE@am__append_2 = -I$(XED2_INC)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_3 = -I$(XED2_INC)
 subdir = src/lib/isa
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -84,11 +85,17 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCisa_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCisa_la-ISA.lo libHPCisa_la-AlphaISA.lo \
+am__libHPCisa_la_SOURCES_DIST = ISATypes.hpp ISA.hpp ISA.cpp \
+	AlphaISA.hpp AlphaISA.cpp IA64ISA.hpp IA64ISA.cpp MipsISA.hpp \
+	MipsISA.cpp PowerISA.hpp PowerISA.cpp SparcISA.hpp \
+	SparcISA.cpp x86ISA.hpp x86ISA.cpp instructionSets/alpha.h \
+	instructionSets/mips.h x86ISA_xed.cpp
+@HOST_CPU_X86_FAMILY_TRUE@am__objects_1 = libHPCisa_la-x86ISA_xed.lo
+am__objects_2 = libHPCisa_la-ISA.lo libHPCisa_la-AlphaISA.lo \
 	libHPCisa_la-IA64ISA.lo libHPCisa_la-MipsISA.lo \
 	libHPCisa_la-PowerISA.lo libHPCisa_la-SparcISA.lo \
-	libHPCisa_la-x86ISA.lo libHPCisa_la-x86ISA_xed.lo
-am_libHPCisa_la_OBJECTS = $(am__objects_1)
+	libHPCisa_la-x86ISA.lo $(am__objects_1)
+am_libHPCisa_la_OBJECTS = $(am__objects_2)
 libHPCisa_la_OBJECTS = $(am_libHPCisa_la_OBJECTS)
 libHPCisa_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(libHPCisa_la_CXXFLAGS) \
@@ -116,7 +123,7 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(libHPCisa_la_SOURCES)
-DIST_SOURCES = $(libHPCisa_la_SOURCES)
+DIST_SOURCES = $(am__libHPCisa_la_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -361,25 +368,14 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-MYSOURCES = \
-	ISATypes.hpp \
-	ISA.hpp ISA.cpp \
-	\
-	AlphaISA.hpp AlphaISA.cpp \
-	IA64ISA.hpp IA64ISA.cpp \
-	MipsISA.hpp MipsISA.cpp \
-	PowerISA.hpp PowerISA.cpp \
-	SparcISA.hpp SparcISA.cpp \
-	x86ISA.hpp x86ISA.cpp \
-	x86ISA_xed.cpp  \
-	\
-	instructionSets/alpha.h \
-	instructionSets/mips.h
-
+MYSOURCES = ISATypes.hpp ISA.hpp ISA.cpp AlphaISA.hpp AlphaISA.cpp \
+	IA64ISA.hpp IA64ISA.cpp MipsISA.hpp MipsISA.cpp PowerISA.hpp \
+	PowerISA.cpp SparcISA.hpp SparcISA.cpp x86ISA.hpp x86ISA.cpp \
+	instructionSets/alpha.h instructionSets/mips.h $(am__append_1)
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ \
-	$(am__append_1)
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ \
 	$(am__append_2)
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ \
+	$(am__append_3)
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
 MYLIBADD = @HOST_LIBTREPOSITORY@

@@ -82,7 +82,6 @@ MYSOURCES = \
 	PowerISA.hpp PowerISA.cpp \
 	SparcISA.hpp SparcISA.cpp \
 	x86ISA.hpp x86ISA.cpp \
-	x86ISA_xed.cpp  \
 	\
 	instructionSets/alpha.h \
 	instructionSets/mips.h
@@ -107,6 +106,7 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 noinst_LTLIBRARIES = libHPCisa.la
 
 if HOST_CPU_X86_FAMILY
+  MYSOURCES  +=	x86ISA_xed.cpp  
   MYCFLAGS   += -I$(XED2_INC)
   MYCXXFLAGS += -I$(XED2_INC)
 endif
