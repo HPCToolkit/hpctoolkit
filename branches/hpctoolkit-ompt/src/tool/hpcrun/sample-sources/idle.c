@@ -98,34 +98,30 @@
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/atomic.h>
 
-#include <omp.h>
-//#include "/home/xl10/support/gcc-4.6.2/libgomp/libgomp_g.h"
-#include "hpcrun/libgomp/libgomp_g.h"
+#include "hpcrun/ompt.h"
 #include <dlfcn.h>
 #include <hpcrun/loadmap.h>
 #include <hpcrun/trace.h>
 
 #include <utilities/defer-write.h>
 #include <utilities/defer-cntxt.h>
+#include <utilities/task-cntxt.h>
 
 #include <lib/support-lean/timer.h>
 /******************************************************************************
  * macros
  *****************************************************************************/
 
-#define OMPstr "gomp"
-
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
-static void idle_fn();
-static void work_fn();
-static void start_fn();
-static void end_fn();
+static void idle_fn(ompt_data_t *thread_data);
+static void work_fn(ompt_data_t *thread_data);
+static void start_fn(ompt_data_t *thread_data);
+static void end_fn(ompt_data_t *thread_data);
+static void bar_wait_begin(ompt_data_t *task_data, ompt_parallel_id_t parallel_id);
+static void bar_wait_end(ompt_data_t *task_data, ompt_parallel_id_t parallel_id);
 
-#if XU_OLD
-static void process_blame_for_sample(cct_node_t *node, uint64_t metric_value);
-#endif
 void scale_fn(void *);
 void normalize_fn(cct_node_t *node, cct_op_arg_t arg, size_t level);
 static void idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric_value);
@@ -146,9 +142,26 @@ static int work_metric_id = -1;
 static int overhead_metric_id = -1;
 static int count_metric_id = -1;
 
-static int omp_lm_id = -1;
-
 static bs_fn_entry_t bs_entry;
+
+// temporally put the tool registration here
+void
+tool_registration()
+{
+  register_defer_callback();
+  register_task_callback();
+  // if blame shifting registration is set, call it
+  register_blame_shift();
+  register_lock();
+}
+
+void __attribute__ ((constructor)) ompt_registration()
+{
+  int ret = ompt_register_tool(tool_registration);
+  if (!ret) {
+    EMSG("WARNING: Tool was not successsfully registered");
+  }
+}
 
 static void
 METHOD_FN(init)
@@ -165,8 +178,6 @@ METHOD_FN(thread_init)
 static void
 METHOD_FN(thread_init_action)
 {
-//  thread_data_t *td = hpcrun_get_thread_data();
-//  if(td->defer_flag) resolve_cntxt_fini();
 }
 
 static void
@@ -196,10 +207,6 @@ METHOD_FN(thread_fini_action)
   // it is necessary because it can resolve/partial resolve
   // the region (temporal concern)
   if(td->defer_flag) resolve_cntxt_fini(td);
-//  if(!td->add_to_pool) {
-//    td->add_to_pool = 1;
-//    add_defer_td(td);
-//  }
 }
 
 static void
@@ -208,21 +215,11 @@ METHOD_FN(stop)
   //scale the requested core idleness here
   thread_data_t *td = hpcrun_get_thread_data();
   td->core_profile_trace_data.scale_fn = scale_fn;
-#if 0
-  thread_data_t *td = hpcrun_get_thread_data();
-  cct_node_t *root, *unresolved_root;
-  root = td->epoch->csdata.top;
-  unresolved_root = td->epoch->csdata.unresolved_root;
-  hpcrun_cct_walk_node_1st(root, normalize_fn, NULL);
-  hpcrun_cct_walk_node_1st(unresolved_root, normalize_fn, NULL);
-#endif
 }
 
 static void
 METHOD_FN(shutdown)
 {
-//  write_other_td();
-
   self->state = UNINIT;
 }
 
@@ -238,9 +235,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 {
   bs_entry.fn = idle_metric_process_blame_for_sample;
   bs_entry.next = 0;
-
-  GOMP_barrier_callback_register(idle_fn, work_fn);
-  GOMP_start_callback_register(start_fn, end_fn);
 
   blame_shift_register(&bs_entry);
 
@@ -297,14 +291,23 @@ METHOD_FN(display_events)
  *****************************************************************************/
 
 void
+register_blame_shift()
+{
+  ompt_set_callback(ompt_event_thread_create, (ompt_callback_t)start_fn);
+  ompt_set_callback(ompt_event_thread_exit, (ompt_callback_t)end_fn);
+  ompt_set_callback(ompt_event_idle_begin, (ompt_callback_t)idle_fn);
+  ompt_set_callback(ompt_event_idle_end, (ompt_callback_t)work_fn);
+  ompt_set_callback(ompt_event_wait_barrier_begin, (ompt_callback_t)bar_wait_begin);
+  ompt_set_callback(ompt_event_wait_barrier_end, (ompt_callback_t)bar_wait_end);
+}
+
+void
 scale_fn(void *td)
 {
   core_profile_trace_data_t *cptd = (core_profile_trace_data_t *)td;
-  cct_node_t *root, *unresolved_root;
+  cct_node_t *root;
   root = cptd->epoch->csdata.top;
-  unresolved_root = hpcrun_get_thread_epoch()->csdata.unresolved_root;
   hpcrun_cct_walk_node_1st(root, normalize_fn, NULL);
-//  hpcrun_cct_walk_node_1st(unresolved_root, normalize_fn, null);
 }
 
 void normalize_fn(cct_node_t *node, cct_op_arg_t arg, size_t level)
@@ -326,17 +329,15 @@ void normalize_fn(cct_node_t *node, cct_op_arg_t arg, size_t level)
 static int
 is_overhead(cct_node_t *node)
 {
-  cct_addr_t *addr = hpcrun_cct_addr(node);
-  load_module_t *lm = hpcrun_loadmap_findById(addr->ip_norm.lm_id);
-  if(!lm) return 0;
-  if(lm->id == omp_lm_id) return 1;
-  if(strstr(lm->name, OMPstr))
-  {
-    omp_lm_id = addr->ip_norm.lm_id;
+  ompt_wait_id_t wait_id;
+  if((ompt_get_state(&wait_id) == ompt_state_overhead) ||
+     (ompt_get_state(&wait_id) == ompt_state_wait_critical) ||
+     (ompt_get_state(&wait_id) == ompt_state_wait_lock) ||
+     (ompt_get_state(&wait_id) == ompt_state_wait_nest_lock) ||
+     (ompt_get_state(&wait_id) == ompt_state_wait_atomic) ||
+     (ompt_get_state(&wait_id) == ompt_state_wait_ordered))
     return 1;
-  }
-  else
-    return 0;
+  return 0;
 }
 
 static void
@@ -368,7 +369,7 @@ idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric
 		idle_l = (double)(omp_get_num_threads()) - work_l;
 		cct_metric_data_increment(thread_idle_metric_id, node, 
 					  (cct_metric_data_t){.r = (idle_l/work_l)*metric_value});
-                if(is_overhead(node) || (td->overhead > 0))
+                if(is_overhead(node))
 		  cct_metric_data_increment(overhead_metric_id, node, (cct_metric_data_t){.i = metric_value});
 		else if (!td->lockwait)
 		  cct_metric_data_increment(work_metric_id, node, (cct_metric_data_t){.i = metric_value});
@@ -413,7 +414,7 @@ thread_create_exit()
   hpcrun_safe_exit();
 }
 
-void idle_fn()
+void idle_fn(ompt_data_t *thread_data)
 {
   hpcrun_safe_enter();
   atomic_add_i64(&work, -1L);
@@ -429,7 +430,7 @@ void idle_fn()
   }
 }
 
-void work_fn()
+void work_fn(ompt_data_t *thread_data)
 {
   hpcrun_safe_enter();
   atomic_add_i64(&work, 1L);
@@ -443,7 +444,7 @@ void work_fn()
   hpcrun_safe_exit();
 }
 
-void start_fn()
+void start_fn(ompt_data_t *thread_data)
 {
   hpcrun_safe_enter();
   atomic_add_i64(&thread_num, 1L);
@@ -470,19 +471,45 @@ void start_fn()
   hpcrun_safe_exit();
 }
 
-void end_fn()
+void end_fn(ompt_data_t *thread_data)
 {
   hpcrun_safe_enter();
   atomic_add_i64(&thread_num, -1L);
   atomic_add_i64(&work, -1L);
 
-  thread_data_t *td = hpcrun_get_thread_data();
-//  td->add_to_pool = 1;
-//  add_defer_td(td);
-
   if(hpcrun_trace_isactive()) {
     thread_create_exit();
   }
 
+  hpcrun_safe_exit();
+}
+
+void bar_wait_begin(ompt_data_t *task_data, ompt_parallel_id_t parallel_id)
+{
+  hpcrun_safe_enter();
+  atomic_add_i64(&work, -1L);
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->idle = 1;
+  hpcrun_safe_exit();
+
+  if(hpcrun_trace_isactive()) {
+    idle(true);
+    // block samples between bar_wait_begin and bar_wait_end
+    // it will be unblocked at bar_wait_end()
+    hpcrun_safe_enter();
+  }
+}
+
+void bar_wait_end(ompt_data_t *task_data, ompt_parallel_id_t parallel_id)
+{
+  hpcrun_safe_enter();
+  atomic_add_i64(&work, 1L);
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->idle = 0;
+  hpcrun_safe_exit();
+
+  if(hpcrun_trace_isactive()) {
+    idle(true);
+  }
   hpcrun_safe_exit();
 }

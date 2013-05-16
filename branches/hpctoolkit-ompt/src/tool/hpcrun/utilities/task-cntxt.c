@@ -37,7 +37,6 @@
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/atomic.h>
 
-#include <omp.h>
 #include <dlfcn.h>
 #include <hpcrun/loadmap.h>
 #include <hpcrun/trace.h>
@@ -52,14 +51,11 @@
 #include <hpcrun/unresolved.h>
 #include <hpcrun/write_data.h>
 
-//#include "/home/xl10/support/gcc-4.6.2/libgomp/libgomp_g.h"
-#include "hpcrun/libgomp/libgomp_g.h"
+#include "hpcrun/ompt.h"
 
 /******************************************************************************
  * macros
  *****************************************************************************/
-
-#define OMPstr "gomp"
 
 /******************************************************************************
  * forward declaration
@@ -72,8 +68,9 @@ void *copy_task_cntxt(void*);
  * local functions
  *****************************************************************************/
 
-void start_task_fn(void** pointer)
+void start_task_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_frame, ompt_data_t *new_task_data)
 {
+  void **pointer = &(new_task_data->ptr);
   uint64_t zero_metric_incr = 0LL;
   thread_data_t *td = hpcrun_get_thread_data();
   td->overhead ++;
@@ -102,7 +99,11 @@ void start_task_fn(void** pointer)
     // start_task_fn is always called in a parallel region
     // after calling resolve_cntxt(), td->region_id is the region ID of
     // the outer most region in the current thread
-    resolve_cntxt();
+
+    // becaue tasks are always inside a parallel region, we can wait here 
+    // if the parallel region id is not set
+    while(!TD_GET(region_id))
+      resolve_cntxt();
     omp_arg.tbd = true;
     omp_arg.region_id = TD_GET(region_id);
     hpcrun_safe_enter();
@@ -121,13 +122,13 @@ void start_task_fn(void** pointer)
 
 void register_task_callback()
 {
-  GOMP_task_callback_register(start_task_fn);
+  ompt_set_callback(ompt_event_task_create, (ompt_callback_t)start_task_fn);
 }
 
 void* need_task_cntxt()
 {
-  if(ENABLED(SET_TASK_CTXT)) {
-    void *context = GOMP_get_task_context();
+  if(ENABLED(SET_TASK_CTXT) && ompt_get_task_data(0)) {
+    void *context = ompt_get_task_data(0)->ptr;
     return context;
   }
   return NULL;
@@ -146,6 +147,7 @@ void *copy_task_cntxt(void* creation_context)
 // this assumes that there is no parallel regions in the task function
 void hack_task_context(frame_t **bt_beg, frame_t **bt_last)
 {
+#if 0
   frame_t *bt_p = *bt_beg;
   while(bt_p < *bt_last) {
     load_module_t *lm = hpcrun_loadmap_findById(bt_p->ip_norm.lm_id);
@@ -155,4 +157,5 @@ void hack_task_context(frame_t **bt_beg, frame_t **bt_last)
     bt_p++;
   }
   *bt_last = --bt_p;
+#endif
 }
