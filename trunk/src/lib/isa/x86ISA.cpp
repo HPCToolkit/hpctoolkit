@@ -75,13 +75,6 @@ using std::ostream;
 
 //*************************** macros ***************************
 
-//#define X86_USE_XED
-#ifdef X86_USE_XED
-extern "C" {
-#include <xed-interface.h>
-}
-#endif
-
 
 
 //*************************** Forward Declarations ***************************
@@ -142,12 +135,6 @@ x86ISA::x86ISA(bool is_x86_64)
   m_di_dis->endian = m_di->endian;
   m_di_dis->read_memory_func = GNUbu_read_memory;
   m_di_dis->print_address_func = GNUbu_print_addr;
-
-#ifdef X86_USE_XED
-  // initialize xed encode and decode tables
-  // it must be called once before using xed
-  xed_tables_init();
-#endif
 }
 
 
@@ -161,11 +148,7 @@ x86ISA::~x86ISA()
 ushort
 x86ISA::getInsnSize(MachInsn* mi)
 {
-#ifdef X86_USE_XED
-  return getInsnSize_xed(mi);
-#else
   return getInsnSize_bu(mi);
-#endif
 }
 
 ushort
@@ -189,11 +172,7 @@ ISA::InsnDesc
 x86ISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
                     ushort GCC_ATTR_UNUSED s)
 {
-#ifdef X86_USE_XED
-  return getInsnDesc_xed(mi, opIndex, s);
-#else
   return getInsnDesc_bu(mi, opIndex, s);
-#endif
 }
 
 
@@ -279,11 +258,7 @@ VMA
 x86ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
 			 ushort GCC_ATTR_UNUSED sz)
 {
-#ifdef X86_USE_XED
-  return getInsnTargetVMA_xed(mi, vma, opIndex, sz);
-#else
   return getInsnTargetVMA_bu(mi, vma, opIndex, sz);
-#endif
 }
 
 
