@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- -*- coding: utf-8 -*- -->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!-- ********************************************************************** -->
+
+<head>
+  <!-- meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" /> -->
+
+  <title>HPCToolkit Home</title>
+
+  <link rel="stylesheet" type="text/css" href="style/style.css" />
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+@header-hpctoolkit@
+
+<!-- <script language="JavaScript" type="text/javascript" src="style/header-hpctoolkit.js"></script> -->
+
+<!-- ********************************************************************** -->
+
+<p>HPCToolkit is an integrated suite of tools for measurement and analysis of program performance on computers ranging from multicore desktop systems to the nation's largest supercomputers.
+By using statistical sampling of timers and hardware performance counters, HPCToolkit collects accurate measurements of a program's work, resource consumption, and inefficiency and attributes them to the full calling context in which they occur.
+HPCToolkit works with multilingual, fully optimized applications that are statically or dynamically linked.
+Since HPCToolkit uses sampling, measurement has low overhead (1-5%) and scales to large parallel systems.
+HPCToolkit's presentation tools enable rapid analysis of a program's execution costs, inefficiency, and scaling characteristics both within and across nodes of a parallel system.
+HPCToolkit supports measurement and analysis of serial codes, threaded codes (e.g. pthreads, OpenMP), MPI, and hybrid (MPI+threads) parallel codes.
+</p>
+
+<p>The figure below illustrates HPCToolkit's primary components and their relationships.
+</p>
+
+<div style="float: right; margin-left: 1em;">
+  <img width="500" src="fig/hpctoolkit-workflow.png" alt="" />
+</div>
+
+<ul>
+<li><p><span class="hpctool">hpcrun</span>: 
+hpcrun collects accurate and precise calling-context-sensitive performance measurements 
+for unmodified fully optimized applications at very low overhead (1-5%). 
+It uses asynchronous sampling triggered by system timers and performance 
+monitoring unit events to drive collection of call path profiles and optionally traces. 
+</p>
+</li>
+
+<li><p><span class="hpctool">hpcstruct</span>: 
+To associate calling-context-sensitive measurements with source code structure, 
+hpcstruct analyzes fully optimized application binaries and recovers information about their 
+relationship to source code. 
+In particular, hpcstruct relates object code to source code files, procedures, 
+loop nests, and identifies inlined code. 
+</p>
+</li>
+
+<li><p><span class="hpctool">hpcprof</span>: 
+
+hpcprof overlays call path profiles and traces with program structure 
+computed by hpcstruct and correlates the result with source code. 
+hpcprof/mpi handles thousands of profiles from a parallel execution by 
+performing this correlation in parallel. hpcprof and hpcprof/mpi generate a 
+performance database that can be explored using the hpcviewer and hpctraceviewer user interfaces. 
+</p>
+</li>
+
+<li><p><span class="hpctool">hpcviewer</span>: 
+hpcviewer is a graphical user interface that interactively presents performance data 
+in three complementary code-centric views (top-down, bottom-up, and flat), 
+as well as a graphical view that enables one to assess performance variability 
+across threads and processes. hpcviewer is designed to facilitate rapid top-down 
+analysis using derived metrics that highlight scalability losses and inefficiency rather than focusing exclusively on program hot spots. 
+</p>
+</li>
+
+<li><p><span class="hpctool">hpctraceviewer</span>: hpctraceviewer is a graphical user interface
+that presents a hierarhical, time-centric view of a program execution.  
+The tool can rapidly render graphical views of trace lines for thousands of processors for an execution 
+tens of minutes long even a laptop.
+hpctraceviewer's hierarchical graphical presentation is quite different than that of other tools -
+it renders execution traces at multiple levels of abstraction by 
+showing activity over time at different call stack depths. 
+</p>
+</li>
+
+</ul>
+
+<p>
+Highlighted platforms:
+</p>
+<ul>
+  <li>Linux-x86_64, Linux-x86, Linux-Power.</li>
+  <li>Including: Cray XT/XE/XK, IBM Blue Gene/Q, Blue Gene/P.</li>
+</ul>
+
+<p>HPCToolkit is open-source software released under the 3-clause
+<a href="README.License">BSD license</a>.
+</p>
+
+<p>[<span class="lastupdated">Page last updated: 2011/07/18</span>]
+</p>
+
+<!-- ********************************************************************** -->
+
+@footer-hpctoolkit@
+
+<!-- <script language="JavaScript" type="text/javascript" src="style/footer-hpctoolkit.js"></script> -->
+
+<!-- ********************************************************************** -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: "<span class=\"lastupdated\">Page last updated: " -->
+<!-- time-stamp-format: "%:y/%02m/%02d" -->
+<!-- time-stamp-end: "</span>" -->
+<!-- time-stamp-line-limit: 10000 -->
+<!-- End: -->

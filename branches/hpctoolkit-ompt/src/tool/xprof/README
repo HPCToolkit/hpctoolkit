@@ -1,0 +1,67 @@
+$Id$
+
+=============================================================================
+==
+== $Source$
+==
+== xprof
+==
+=============================================================================
+
+Overview of xprof.
+
+Contents:
+  0. Overview
+
+=============================================================================
+
+0. Overview
+--------------------
+
+Reads a profile and returns a PCProfile (in this case a DCPIProfile).
+  ProfileReader.C
+  ProfileReader.h
+
+Takes a DerivedProfile and converts it to PROFILE format.
+  ProfileWriter.C
+  ProfileWriter.h
+
+Represents metrics derived in some fashion from raw profile information.
+(Contains pointers to the raw data.)
+  DerivedProfile.C
+  DerivedProfile.h
+
+A PCProfile contains several PCProfileMetrics.  This represents the raw
+profiling information.
+  PCProfile.C
+  PCProfile.h
+  PCProfileMetric.C
+  PCProfileMetric.h
+
+Some abstract and concrete classes for filters that can be applied to a
+PCProfile to create a DerivedProfile.
+  PCProfileFilter.C
+  PCProfileFilter.h
+
+A DCPIProfile inherits from PCProfile and and represents DCPI specific
+information
+  DCPIProfile.C
+  DCPIProfile.h
+  DCPIProfileMetric.C
+  DCPIProfileMetric.h
+
+Filters for creating a DerivedProfile from a DCPIProfile.  (This is where
+the the derived metric table is.)
+  DCPIProfileFilter.C
+  DCPIProfileFilter.h
+
+This is a symbolic representation of a DCPI metric.  It also contains a
+mini-parser that converts a string/query into the representation.
+  DCPIMetricDesc.C
+  DCPIMetricDesc.h
+
+The obvious:
+  main.C
+  Args.C
+  Args.h
+
