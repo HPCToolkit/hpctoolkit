@@ -148,12 +148,6 @@ x86ISA::~x86ISA()
 ushort
 x86ISA::getInsnSize(MachInsn* mi)
 {
-  return getInsnSize_bu(mi);
-}
-
-ushort
-x86ISA::getInsnSize_bu(MachInsn* mi)
-{
   ushort size;
   DecodingCache *cache;
 
@@ -171,14 +165,6 @@ x86ISA::getInsnSize_bu(MachInsn* mi)
 ISA::InsnDesc
 x86ISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
                     ushort GCC_ATTR_UNUSED s)
-{
-  return getInsnDesc_bu(mi, opIndex, s);
-}
-
-
-ISA::InsnDesc
-x86ISA::getInsnDesc_bu(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
-		    ushort GCC_ATTR_UNUSED s)
 {
   ISA::InsnDesc d;
 
@@ -236,7 +222,7 @@ x86ISA::getInsnDesc_bu(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
 
 
 VMA
-x86ISA::getInsnTargetVMA_bu(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
+x86ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
 			 ushort GCC_ATTR_UNUSED sz)
 {
   if (cacheLookup(mi) == NULL) {
@@ -253,13 +239,6 @@ x86ISA::getInsnTargetVMA_bu(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opInde
   }
 }
 
-
-VMA
-x86ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
-			 ushort GCC_ATTR_UNUSED sz)
-{
-  return getInsnTargetVMA_bu(mi, vma, opIndex, sz);
-}
 
 
 void
