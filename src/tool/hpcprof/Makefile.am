@@ -107,8 +107,7 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-pkglibdir = @my_pkglibdir@
-pkglibexecdir = @my_pkglibexecdir@
+pkglibexecdir = $(libexecdir)/$(PACKAGE)
 
 bin_SCRIPTS = hpcprof
 

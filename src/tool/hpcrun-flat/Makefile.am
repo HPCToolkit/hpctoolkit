@@ -132,9 +132,6 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-pkglibdir = @my_pkglibdir@
-pkglibexecdir = @my_pkglibexecdir@
-
 bin_PROGRAMS            = hpcrun-flat
 hpcrun_flat_SOURCES     = $(MYSOURCES_HPCRunFlat)
 hpcrun_flat_CFLAGS      = $(MYCFLAGS_HPCRUN)

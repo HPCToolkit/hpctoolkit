@@ -52,12 +52,14 @@
 #include <cct/cct.h>
 #include <messages/messages.h>
 #include <hpcrun/metrics.h>
+#include <hpcrun/unresolved.h>
 #include <lib/prof-lean/lush/lush-support.h>
 #include <lush/lush-backtrace.h>
 #include <thread_data.h>
 #include <hpcrun_stats.h>
 #include <trampoline/common/trampoline.h>
 #include <utilities/ip-normalized.h>
+#include <utilities/task-cntxt.h>
 #include "frame.h"
 #include <unwind/common/backtrace_info.h>
 #include <unwind/common/fence_enum.h>
@@ -106,7 +108,7 @@ cct_insert_raw_backtrace(cct_node_t* cct,
 static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 			  int metricId, uint64_t metricIncr,
-			  int skipInner);
+			  int skipInner, void *arg);
 
 //
 // 
@@ -203,7 +205,7 @@ cct_node_t*
 hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context, 
 		     int metricId,
 		     uint64_t metricIncr,
-		     int skipInner, int isSync)
+		     int skipInner, int isSync, void* arg)
 {
   cct_node_t* n = NULL;
   if (hpcrun_isLogicalUnwind()) {
@@ -215,7 +217,7 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
     TMSG(BT_INSERT,"regular (NON-lush) backtrace2cct invoked");
     n = help_hpcrun_backtrace2cct(cct, context,
 				  metricId, metricIncr,
-				  skipInner);
+				  skipInner, arg);
   }
 
   // N.B.: for lush_backtrace() it may be that n = NULL
@@ -292,7 +294,7 @@ hpcrun_cct_record_backtrace(cct_bundle_t* cct, bool partial, bool thread_stop,
 cct_node_t*
 hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool thread_stop,
 				     frame_t* bt_beg, frame_t* bt_last, bool tramp_found,
-				     int metricId, uint64_t metricIncr)
+				     int metricId, uint64_t metricIncr, void* arg)
 {
   TMSG(FENCE, "Recording backtrace");
   TMSG(BT_INSERT, "Record backtrace w metric to id %d, incr = %d", metricId, metricIncr);
@@ -311,6 +313,16 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
   if (thread_stop) {
     cct_cursor = cct->thread_root;
     TMSG(FENCE, "Thread stop ==> cursor = %p", cct_cursor);
+  }
+
+  omp_arg_t* omp_arg = (omp_arg_t*) arg;
+  if (arg && omp_arg->tbd) {
+    cct_cursor = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, omp_arg->region_id)));
+  }
+  // this is for omp task
+  if(arg && omp_arg->context) {
+    cct_cursor = (cct_node_t *)omp_arg->context; 
+    hack_task_context(&bt_beg, &bt_last);
   }
 
   TMSG(FENCE, "sanity check cursor = %p", cct_cursor);
@@ -342,7 +354,7 @@ hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
   cct_node_t* n = hpcrun_cct_record_backtrace_w_metric(cct, true, bt.fence == FENCE_THREAD,
 						       bt.begin, bt.last, bt.has_tramp,
-						       metricId, metricIncr);
+						       metricId, metricIncr, NULL);
 
   hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));
   hpcrun_stats_trolled_frames_inc((long) bt.n_trolls);
@@ -357,10 +369,10 @@ hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 }
 
 static cct_node_t*
-help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
+help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
 			  int metricId,
 			  uint64_t metricIncr,
-			  int skipInner)
+			  int skipInner, void* arg)
 {
   bool tramp_found;
 
@@ -402,14 +414,16 @@ help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   // If this backtrace is generated from sampling in a thread,
   // take off the top 'monitor_pthread_main' node
   //
-  if (cct->ctxt && ! partial_unw && ! tramp_found && (bt.fence == FENCE_THREAD)) {
+  if (bundle->ctxt && ! partial_unw && ! tramp_found && (bt.fence == FENCE_THREAD)) {
     TMSG(FENCE, "bt last thread correction made");
     TMSG(THREAD_CTXT, "Thread correction, back off outermost backtrace entry");
     bt_last--;
+    // FOR OMP only, temporary solution to remove GOMP_thread_start
+    if (DISABLED(KEEP_GOMP_START)) bt_last--;
   }
-  cct_node_t* n = hpcrun_cct_record_backtrace_w_metric(cct, partial_unw, bt.fence == FENCE_THREAD,
+  cct_node_t* n = hpcrun_cct_record_backtrace_w_metric(bundle, partial_unw, bt.fence == FENCE_THREAD,
 						       bt_beg, bt_last, tramp_found,
-						       metricId, metricIncr);
+						       metricId, metricIncr, arg);
 
   if (bt.trolled) hpcrun_stats_trolled_inc();
   hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));

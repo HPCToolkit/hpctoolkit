@@ -105,6 +105,10 @@
 #include <lib/support-lean/timer.h>
 
 #include <sample-sources/blame-shift.h>
+#include <utilities/defer-cntxt.h>
+#include <utilities/defer-write.h>
+#include <utilities/task-cntxt.h>
+#include <hpcrun/unresolved.h>
 
 /******************************************************************************
  * macros
@@ -421,6 +425,11 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   TMSG(ITIMER_CTL, "process event list, lush_metrics = %d", lush_metrics);
 
+  if(ENABLED(SET_DEFER_CTXT))
+    register_defer_callback();
+  if(ENABLED(SET_TASK_CTXT))
+    register_task_callback();
+
   // fetch the event string for the sample source
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);
@@ -628,11 +637,48 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   metric_incr = cur_time_us - TD_GET(last_time_us);
 #endif
 
-  int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
-  sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_incr,
-					    0/*skipInner*/, 0/*isSync*/);
-  blame_shift_apply(metric_id, sv.sample_node, metric_incr);
+  int metric_id = hpcrun_event2metric(&_itimer_obj, ITIMER_EVENT);
+  sample_val_t sv;
+  // check whether we need to defer the context creation
+  void *task_context = NULL;
+  if((task_context = need_task_cntxt())) {
+    if(need_defer_cntxt()) {
+      thread_data_t *td = hpcrun_get_thread_data();
+      if(td->defer_flag)
+	resolve_cntxt();
+    }
+    omp_arg_t omp_arg;
+    omp_arg.tbd = false;
+    omp_arg.region_id = 0;
+    // copy the task creation context to local thread
+    omp_arg.context = copy_task_cntxt(task_context);
+      
+    sv = hpcrun_sample_callpath(context, metric_id, metric_incr/*metricIncr*/,
+				0/*skipInner*/, 0/*isSync*/, (void*) &omp_arg);
+  }
+  else if(need_defer_cntxt()) {
+    thread_data_t *td = hpcrun_get_thread_data();
+    if(td->defer_flag) {
+      resolve_cntxt();
+    }
 
+    omp_arg_t omp_arg;
+    omp_arg.tbd = false;
+    omp_arg.context = NULL;
+    if (TD_GET(region_id) > 0) {
+      omp_arg.tbd = true;
+      omp_arg.region_id = TD_GET(region_id);
+    }
+    sv = hpcrun_sample_callpath(context, metric_id, metric_incr/*metricIncr*/,
+				0/*skipInner*/, 0/*isSync*/, (void*) &omp_arg);
+  }
+  else {
+    sv = hpcrun_sample_callpath(context, metric_id, metric_incr,
+				0/*skipInner*/, 0/*isSync*/, NULL);
+  }
+  if(sv.sample_node) {
+    blame_shift_apply(metric_id, sv.sample_node, metric_incr);
+  }
   if (hpcrun_is_sampling_disabled()) {
     TMSG(ITIMER_HANDLER, "No itimer restart, due to disabled sampling");
   }

@@ -12,6 +12,9 @@ blame_shift_register(bs_fn_entry_t *entry)
 }
 
 void 
+#ifdef XU_OLD
+blame_shift_apply(cct_node_t *node, uint64_t metric_value)
+#endif
 blame_shift_apply(int metric_id, cct_node_t *node, int metric_incr)
 {
    bs_fn_entry_t *fn = bs_fns;

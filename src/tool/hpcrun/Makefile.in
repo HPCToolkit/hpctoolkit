@@ -53,6 +53,7 @@
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
+pkglibdir = $(libdir)/@PACKAGE@
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 install_sh_DATA = $(install_sh) -c -m 644
 install_sh_PROGRAM = $(install_sh) -c
@@ -67,42 +68,42 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-DIST_COMMON = $(am__include_HEADERS_DIST) $(srcdir)/Makefile.am \
+DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
-pkglib_PROGRAMS = $(am__EXEEXT_1)
-@OPT_BUILD_FRONT_END_TRUE@am__append_1 = scripts/hpcsummary
-@OPT_BUILD_FRONT_END_TRUE@am__append_2 = scripts/hpclog
-@OPT_BUILD_FRONT_END_TRUE@am__append_3 = hpctoolkit.h
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_4 = libhpcrun.la \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_1 = libhpcrun.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_ga.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_io.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_memleak.la
-@OPT_ENABLE_CUDA_TRUE@@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_5 = libhpcrun_gpu.la
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_6 = libhpctoolkit.la
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_7 = scripts/hpcrun$(BACK_END_LABEL)
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_8 = libhpcrun.o
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_9 = libhpcrun_wrap.a \
+@OPT_ENABLE_CUDA_TRUE@@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_2 = libhpcrun_gpu.la
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_3 = libhpctoolkit.la
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_4 = scripts/hpcrun
+pkglib_PROGRAMS = $(am__EXEEXT_1)
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_5 = libhpcrun.o
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_6 = libhpcrun_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_ga_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_io_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_memleak_wrap.a
-@OPT_ENABLE_CUDA_TRUE@@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_10 = libhpcrun_gpu_wrap.a
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_11 = libhpctoolkit.a
-@HOST_CPU_PPC_TRUE@@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_12 = libibm_xlomp_wrappers.a
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_13 = scripts/hpclink$(BACK_END_LABEL)
-@OPT_ENABLE_MPI_WRAP_TRUE@am__append_14 = libhpcrun_mpi.la
-@OPT_ENABLE_CUDA_TRUE@am__append_15 = gpu
-@HOST_CPU_PPC_TRUE@am__append_16 = ibm-xlomp
-@OPT_ENABLE_MPI_WRAP_TRUE@am__append_17 = \
+@OPT_ENABLE_CUDA_TRUE@@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_7 = libhpcrun_gpu_wrap.a
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_8 = libhpctoolkit.a
+@HOST_CPU_PPC_TRUE@@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_9 = libibm_xlomp_wrappers.a
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_10 = scripts/hpclink
+@OPT_ENABLE_MPI_WRAP_TRUE@am__append_11 = libhpcrun_mpi.la
+@OPT_ENABLE_CUDA_TRUE@am__append_12 = gpu
+@HOST_CPU_PPC_TRUE@am__append_13 = ibm-xlomp
+@OPT_ENABLE_MPI_WRAP_TRUE@am__append_14 = \
 @OPT_ENABLE_MPI_WRAP_TRUE@	sample-sources/mpi.c
 
 
 #-----------------------------------------------------------
 # whirled peas
 #-----------------------------------------------------------
-@HOST_OS_LINUX_TRUE@am__append_18 = $(MY_LINUX_DYNAMIC_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_19 = $(MY_MIPS_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_20 = $(MY_MIPS_FILES)
+@HOST_OS_LINUX_TRUE@am__append_15 = $(MY_LINUX_DYNAMIC_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_16 = $(MY_MIPS_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_17 = $(MY_MIPS_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_18 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_19 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_20 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_21 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_22 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_23 = $(MY_MIPS_INCLUDE_DIRS)
@@ -111,17 +112,17 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @HOST_CPU_MIPS_TRUE@am__append_26 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_27 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_28 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_29 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_30 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_31 = $(MY_MIPS_INCLUDE_DIRS)
 
 # Note: setting CCASFLAGS here is a no-op hack with the side effect of
 # prefixing the tramp.s file names so they will be compiled separately
 # for .o and .so targets.  CFLAGS does this for the .c files, but
 # CFLAGS doesn't apply to .s files.  See the automake docs section
 # 8.3.9.2, Objects created with both libtool and without.
-@HOST_CPU_PPC_TRUE@am__append_32 = $(MY_PPC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_33 = $(MY_PPC_FILES)
+@HOST_CPU_PPC_TRUE@am__append_29 = $(MY_PPC_FILES)
+@HOST_CPU_PPC_TRUE@am__append_30 = $(MY_PPC_FILES)
+@HOST_CPU_PPC_TRUE@am__append_31 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_32 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_33 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_34 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_35 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_36 = $(MY_PPC_INCLUDE_DIRS)
@@ -130,15 +131,15 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @HOST_CPU_PPC_TRUE@am__append_39 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_40 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_41 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_42 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_43 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_44 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_45 = $(MY_X86_FILES)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_46 = $(MY_X86_FILES)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_47 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_42 = $(MY_X86_FILES)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_43 = $(MY_X86_FILES)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_44 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_45 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_46 = $(XED2_LIB)/libxed.a
+@HOST_CPU_X86_FAMILY_TRUE@am__append_47 = $(XED2_LIB)/libxed.a
 @HOST_CPU_X86_FAMILY_TRUE@am__append_48 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_49 = $(XED2_LIB)/libxed.a
-@HOST_CPU_X86_FAMILY_TRUE@am__append_50 = $(XED2_LIB)/libxed.a
+@HOST_CPU_X86_FAMILY_TRUE@am__append_49 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_50 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_51 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_52 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_53 = $(MY_X86_INCLUDE_DIRS)
@@ -146,44 +147,41 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_55 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_56 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_57 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_58 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_59 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_60 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_61 = $(MY_IA64_FILES)
-@HOST_CPU_IA64_TRUE@am__append_62 = $(MY_IA64_FILES)
+@HOST_CPU_IA64_TRUE@am__append_58 = $(MY_IA64_FILES)
+@HOST_CPU_IA64_TRUE@am__append_59 = $(MY_IA64_FILES)
+@HOST_CPU_IA64_TRUE@am__append_60 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_61 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_62 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_63 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_64 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_65 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_66 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_67 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_68 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_69 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_70 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_71 = $(MY_IA64_INCLUDE_DIRS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_72 = $(MY_PAPI_FILES)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_73 = $(PAPI_INC_FLGS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_74 = $(PAPI_LD_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_75 = $(MY_PAPI_FILES)
-@OPT_PAPI_STATIC_TRUE@am__append_76 = $(PAPI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_77 = $(PAPI_LD_FLGS)
-@OPT_ENABLE_UPC_TRUE@am__append_78 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_79 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_80 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_81 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_82 = $(OPT_UPC_LDFLAGS)
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_83 = -DLUSH_PTHREADS
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_84 = -DLUSH_PTHREADS
-@OPT_ENABLE_CUDA_TRUE@am__append_85 = sample-sources/gpu_blame.c
+@OPT_PAPI_DYNAMIC_TRUE@am__append_69 = $(MY_PAPI_FILES)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_70 = $(PAPI_INC_FLGS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_71 = $(PAPI_LD_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_72 = $(MY_PAPI_FILES)
+@OPT_PAPI_STATIC_TRUE@am__append_73 = $(PAPI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_74 = $(PAPI_LD_FLGS)
+@OPT_ENABLE_UPC_TRUE@am__append_75 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_76 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_77 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_78 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_79 = $(OPT_UPC_LDFLAGS)
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_80 = -DLUSH_PTHREADS
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_81 = -DLUSH_PTHREADS
+@OPT_ENABLE_CUDA_TRUE@am__append_82 = sample-sources/gpu_blame.c gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
+@OPT_ENABLE_CUDA_TRUE@am__append_83 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_84 = $(OPT_CUDA_IFLAGS) -g
+@OPT_ENABLE_CUDA_TRUE@am__append_85 = $(OPT_CUDA_LDFLAGS)
 @OPT_ENABLE_CUDA_TRUE@am__append_86 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_87 = $(OPT_CUDA_IFLAGS) -g
+@OPT_ENABLE_CUDA_TRUE@am__append_87 = $(OPT_CUDA_IFLAGS)
 @OPT_ENABLE_CUDA_TRUE@am__append_88 = $(OPT_CUDA_LDFLAGS)
 @OPT_ENABLE_CUDA_TRUE@am__append_89 = -DENABLE_CUDA
 @OPT_ENABLE_CUDA_TRUE@am__append_90 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_91 = $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_92 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_93 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_94 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_95 = libagent-pthread.la \
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_91 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_92 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -232,9 +230,7 @@ libhpcrun_gpu_wrap_a_LIBADD =
 am_libhpcrun_gpu_wrap_a_OBJECTS =  \
 	libhpcrun_gpu_wrap_a-gpu_blame-overrides.$(OBJEXT) \
 	libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.$(OBJEXT) \
-	libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.$(OBJEXT) \
-	libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.$(OBJEXT) \
-	libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.$(OBJEXT)
+	libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.$(OBJEXT)
 libhpcrun_gpu_wrap_a_OBJECTS = $(am_libhpcrun_gpu_wrap_a_OBJECTS)
 libhpcrun_io_wrap_a_AR = $(AR) $(ARFLAGS)
 libhpcrun_io_wrap_a_LIBADD =
@@ -310,27 +306,30 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample_sources_all.c sample-sources/blame-shift.c \
 	sample-sources/common.c sample-sources/ga.c \
 	sample-sources/io.c sample-sources/itimer.c \
-	sample-sources/idle.c sample-sources/memleak.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c term_handler.c thread_data.c \
-	thread_use.c threadmgr.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	sample-sources/mpi.c fnbounds/fnbounds_client.c \
-	fnbounds/fnbounds_dynamic.c monitor-exts/openmp.c \
-	hpcrun_dlfns.c custom-init-dynamic.c os/linux/dylib.c \
-	unwind/common/default_validation_summary.c \
+	sample-sources/idle.c sample-sources/lockwait.c \
+	sample-sources/memleak.c sample-sources/none.c \
+	sample-sources/retcnt.c sample-sources/sync.c \
+	sample_sources_registered.c segv_handler.c start-stop.c \
+	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
+	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct2metrics.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c utilities/defer-cntxt.h \
+	utilities/defer-cntxt.c utilities/defer-write.h \
+	utilities/defer-write.c utilities/task-cntxt.h \
+	utilities/task-cntxt.c sample-sources/mpi.c \
+	fnbounds/fnbounds_client.c fnbounds/fnbounds_dynamic.c \
+	monitor-exts/openmp.c hpcrun_dlfns.c custom-init-dynamic.c \
+	os/linux/dylib.c unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
 	trampoline/x86-family/x86-tramp.S \
@@ -338,7 +337,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	trampoline/ia64/ia64-tramp.s \
 	utilities/arch/ia64/ia64-context-pc.c sample-sources/papi.c \
 	sample-sources/papi-c.c sample-sources/upc.c \
-	sample-sources/gpu_blame.c unwind/common/backtrace.c \
+	sample-sources/gpu_blame.c gpu_blame-cuda-driver-table.c \
+	gpu_blame-cuda-runtime-table.c unwind/common/backtrace.c \
 	unwind/common/unw-throw.c \
 	unwind/generic-libunwind/libunw-unwind.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
@@ -370,9 +370,9 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-sample_sources_all.lo libhpcrun_la-blame-shift.lo \
 	libhpcrun_la-common.lo libhpcrun_la-ga.lo libhpcrun_la-io.lo \
 	libhpcrun_la-itimer.lo libhpcrun_la-idle.lo \
-	libhpcrun_la-memleak.lo libhpcrun_la-none.lo \
-	libhpcrun_la-retcnt.lo libhpcrun_la-sync.lo \
-	libhpcrun_la-sample_sources_registered.lo \
+	libhpcrun_la-lockwait.lo libhpcrun_la-memleak.lo \
+	libhpcrun_la-none.lo libhpcrun_la-retcnt.lo \
+	libhpcrun_la-sync.lo libhpcrun_la-sample_sources_registered.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-start-stop.lo \
 	libhpcrun_la-term_handler.lo libhpcrun_la-thread_data.lo \
 	libhpcrun_la-thread_use.lo libhpcrun_la-threadmgr.lo \
@@ -388,7 +388,8 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-messages-async.lo libhpcrun_la-fmt.lo \
 	libhpcrun_la-executable-path.lo libhpcrun_la-ip-normalized.lo \
 	libhpcrun_la-tokenize.lo libhpcrun_la-unlink.lo \
-	$(am__objects_7)
+	libhpcrun_la-defer-cntxt.lo libhpcrun_la-defer-write.lo \
+	libhpcrun_la-task-cntxt.lo $(am__objects_7)
 am__objects_9 = libhpcrun_la-fnbounds_client.lo \
 	libhpcrun_la-fnbounds_dynamic.lo libhpcrun_la-openmp.lo \
 	libhpcrun_la-hpcrun_dlfns.lo \
@@ -411,7 +412,9 @@ am__objects_18 = libhpcrun_la-ia64-tramp.lo \
 @OPT_PAPI_DYNAMIC_TRUE@am__objects_21 = $(am__objects_20)
 am__objects_22 = libhpcrun_la-upc.lo
 @OPT_ENABLE_UPC_TRUE@am__objects_23 = $(am__objects_22)
-@OPT_ENABLE_CUDA_TRUE@am__objects_24 = libhpcrun_la-gpu_blame.lo
+@OPT_ENABLE_CUDA_TRUE@am__objects_24 = libhpcrun_la-gpu_blame.lo \
+@OPT_ENABLE_CUDA_TRUE@	libhpcrun_la-gpu_blame-cuda-driver-table.lo \
+@OPT_ENABLE_CUDA_TRUE@	libhpcrun_la-gpu_blame-cuda-runtime-table.lo
 am__objects_25 = libhpcrun_la-backtrace.lo libhpcrun_la-unw-throw.lo
 am__objects_26 = $(am__objects_25) libhpcrun_la-libunw-unwind.lo \
 	libhpcrun_la-default_validation_summary.lo
@@ -456,9 +459,7 @@ libhpcrun_ga_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 libhpcrun_gpu_la_LIBADD =
 am_libhpcrun_gpu_la_OBJECTS = libhpcrun_gpu_la-gpu_blame-overrides.lo \
 	libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.lo \
-	libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo \
-	libhpcrun_gpu_la-gpu_blame-cuda-driver-table.lo \
-	libhpcrun_gpu_la-gpu_blame-cuda-runtime-table.lo
+	libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo
 libhpcrun_gpu_la_OBJECTS = $(am_libhpcrun_gpu_la_OBJECTS)
 libhpcrun_gpu_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libhpcrun_gpu_la_CFLAGS) \
@@ -506,25 +507,28 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample_sources_all.c sample-sources/blame-shift.c \
 	sample-sources/common.c sample-sources/ga.c \
 	sample-sources/io.c sample-sources/itimer.c \
-	sample-sources/idle.c sample-sources/memleak.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c term_handler.c thread_data.c \
-	thread_use.c threadmgr.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	sample-sources/mpi.c fnbounds/fnbounds_static.c \
-	custom-init-static.c \
+	sample-sources/idle.c sample-sources/lockwait.c \
+	sample-sources/memleak.c sample-sources/none.c \
+	sample-sources/retcnt.c sample-sources/sync.c \
+	sample_sources_registered.c segv_handler.c start-stop.c \
+	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
+	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct2metrics.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c utilities/defer-cntxt.h \
+	utilities/defer-cntxt.c utilities/defer-write.h \
+	utilities/defer-write.c utilities/task-cntxt.h \
+	utilities/task-cntxt.c sample-sources/mpi.c \
+	fnbounds/fnbounds_static.c custom-init-static.c \
 	unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
@@ -569,8 +573,9 @@ am__objects_32 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-blame-shift.$(OBJEXT) libhpcrun_o-common.$(OBJEXT) \
 	libhpcrun_o-ga.$(OBJEXT) libhpcrun_o-io.$(OBJEXT) \
 	libhpcrun_o-itimer.$(OBJEXT) libhpcrun_o-idle.$(OBJEXT) \
-	libhpcrun_o-memleak.$(OBJEXT) libhpcrun_o-none.$(OBJEXT) \
-	libhpcrun_o-retcnt.$(OBJEXT) libhpcrun_o-sync.$(OBJEXT) \
+	libhpcrun_o-lockwait.$(OBJEXT) libhpcrun_o-memleak.$(OBJEXT) \
+	libhpcrun_o-none.$(OBJEXT) libhpcrun_o-retcnt.$(OBJEXT) \
+	libhpcrun_o-sync.$(OBJEXT) \
 	libhpcrun_o-sample_sources_registered.$(OBJEXT) \
 	libhpcrun_o-segv_handler.$(OBJEXT) \
 	libhpcrun_o-start-stop.$(OBJEXT) \
@@ -595,7 +600,9 @@ am__objects_32 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-executable-path.$(OBJEXT) \
 	libhpcrun_o-ip-normalized.$(OBJEXT) \
 	libhpcrun_o-tokenize.$(OBJEXT) libhpcrun_o-unlink.$(OBJEXT) \
-	$(am__objects_31)
+	libhpcrun_o-defer-cntxt.$(OBJEXT) \
+	libhpcrun_o-defer-write.$(OBJEXT) \
+	libhpcrun_o-task-cntxt.$(OBJEXT) $(am__objects_31)
 am__objects_33 = libhpcrun_o-fnbounds_static.$(OBJEXT) \
 	libhpcrun_o-custom-init-static.$(OBJEXT)
 am__objects_34 = libhpcrun_o-default_validation_summary.$(OBJEXT)
@@ -695,7 +702,6 @@ DIST_SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
 	$(libhpcrun_gpu_la_SOURCES) $(libhpcrun_io_la_SOURCES) \
 	$(libhpcrun_memleak_la_SOURCES) $(libhpcrun_mpi_la_SOURCES) \
 	$(libhpctoolkit_la_SOURCES) $(am__libhpcrun_o_SOURCES_DIST)
-am__include_HEADERS_DIST = hpctoolkit.h
 HEADERS = $(include_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -720,8 +726,7 @@ DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 #-----------------------------------------------------------
 # build targets
 #-----------------------------------------------------------
-pkglibdir = @my_pkglibdir@
-pkglibexecdir = @my_pkglibexecdir@
+pkglibexecdir = $(libexecdir)/$(PACKAGE)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AR = @AR@
@@ -729,7 +734,6 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
-BACK_END_LABEL = @BACK_END_LABEL@
 BOOST_INC = @BOOST_INC@
 CC = @CC@
 CCAS = @CCAS@
@@ -912,8 +916,6 @@ localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
-my_pkglibdir = @my_pkglibdir@
-my_pkglibexecdir = @my_pkglibexecdir@
 oldincludedir = @oldincludedir@
 papi_extra_libs = @papi_extra_libs@
 pdfdir = @pdfdir@
@@ -970,17 +972,17 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 PYTHON = python
 plugin_srcdir = $(srcdir)/plugins
 plugin_instdir = $(pkglibdir)/plugins
-bin_SCRIPTS = $(am__append_1) $(am__append_7) $(am__append_13)
-pkglibexec_SCRIPTS = $(am__append_2)
-include_HEADERS = $(am__append_3)
-pkglib_LIBRARIES = $(am__append_9) $(am__append_10) $(am__append_11) \
-	$(am__append_12)
-pkglib_LTLIBRARIES = $(am__append_4) $(am__append_5) $(am__append_6) \
-	$(am__append_14) $(am__append_94) $(am__append_95)
+bin_SCRIPTS = scripts/hpcsummary $(am__append_4) $(am__append_10)
+pkglibexec_SCRIPTS = scripts/hpclog
+include_HEADERS = hpctoolkit.h
+pkglib_LTLIBRARIES = $(am__append_1) $(am__append_2) $(am__append_3) \
+	$(am__append_11) $(am__append_91) $(am__append_92)
+pkglib_LIBRARIES = $(am__append_6) $(am__append_7) $(am__append_8) \
+	$(am__append_9)
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
-PLUGIN_CONFIG_FILES = ga io memleak $(am__append_15) $(am__append_16)
+PLUGIN_CONFIG_FILES = ga io memleak $(am__append_12) $(am__append_13)
 UNW_UNIV_FILES = \
 	unwind/common/backtrace.c	\
         unwind/common/unw-throw.c
@@ -1056,23 +1058,26 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/blame-shift.c sample-sources/common.c \
 	sample-sources/ga.c sample-sources/io.c \
 	sample-sources/itimer.c sample-sources/idle.c \
-	sample-sources/memleak.c sample-sources/none.c \
-	sample-sources/retcnt.c sample-sources/sync.c \
-	sample_sources_registered.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c $(am__append_17)
+	sample-sources/lockwait.c sample-sources/memleak.c \
+	sample-sources/none.c sample-sources/retcnt.c \
+	sample-sources/sync.c sample_sources_registered.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c threadmgr.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/tokenize.h \
+	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	utilities/defer-cntxt.h utilities/defer-cntxt.c \
+	utilities/defer-write.h utilities/defer-write.c \
+	utilities/task-cntxt.h utilities/task-cntxt.c $(am__append_14)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -1141,13 +1146,13 @@ MY_IA64_INCLUDE_DIRS = \
         -I$(srcdir)/utilities/arch/ia64
 
 libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
-	$(am__append_18) $(am__append_19) $(am__append_32) \
-	$(am__append_45) $(am__append_61) $(am__append_72) \
-	$(am__append_78) $(am__append_85) $(UNW_SOURCE_FILES) \
+	$(am__append_15) $(am__append_16) $(am__append_29) \
+	$(am__append_42) $(am__append_58) $(am__append_69) \
+	$(am__append_75) $(am__append_82) $(UNW_SOURCE_FILES) \
 	utilities/last_func.c
 libhpcrun_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
-	$(am__append_20) $(am__append_33) $(am__append_46) \
-	$(am__append_62) $(am__append_75) $(am__append_79) \
+	$(am__append_17) $(am__append_30) $(am__append_43) \
+	$(am__append_59) $(am__append_72) $(am__append_76) \
 	$(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_wrap_a_SOURCES = \
 	monitor-exts/openmp.c
@@ -1173,16 +1178,12 @@ libhpcrun_memleak_wrap_a_SOURCES = \
 libhpcrun_gpu_la_SOURCES = \
 	sample-sources/gpu_blame-overrides.c \
 	gpu_blame-driver-overrides-generated.c \
-	gpu_blame-runtime-overrides-generated.c \
-	gpu_blame-cuda-driver-table.c \
-	gpu_blame-cuda-runtime-table.c
+	gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_gpu_wrap_a_SOURCES = \
 	sample-sources/gpu_blame-overrides.c  \
 	gpu_blame-driver-overrides-generated.c \
-	gpu_blame-runtime-overrides-generated.c \
-	gpu_blame-cuda-driver-table.c \
-	gpu_blame-cuda-runtime-table.c
+	gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_mpi_la_SOURCES = \
 	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
@@ -1201,46 +1202,46 @@ libhpctoolkit_a_SOURCES = \
 # cppflags
 #-----------------------------------------------------------
 libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_21) $(am__append_34) $(am__append_47) \
-	$(am__append_63) $(am__append_73) $(am__append_80) \
-	$(am__append_83) $(am__append_86) $(UNW_INCLUDE_DIRS)
+	$(am__append_18) $(am__append_31) $(am__append_44) \
+	$(am__append_60) $(am__append_70) $(am__append_77) \
+	$(am__append_80) $(am__append_83) $(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_22) $(am__append_35) \
-	$(am__append_48) $(am__append_64) $(am__append_76) \
-	$(am__append_81) $(am__append_84) $(UNW_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS) $(am__append_19) $(am__append_32) \
+	$(am__append_45) $(am__append_61) $(am__append_73) \
+	$(am__append_78) $(am__append_81) $(UNW_INCLUDE_DIRS)
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
 libhpcrun_ga_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_23) $(am__append_36) $(am__append_51) \
-	$(am__append_65) $(UNW_INCLUDE_DIRS)
+	$(am__append_20) $(am__append_33) $(am__append_48) \
+	$(am__append_62) $(UNW_INCLUDE_DIRS)
 libhpcrun_ga_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_24) $(am__append_37) \
-	$(am__append_52) $(am__append_66) $(UNW_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS) $(am__append_21) $(am__append_34) \
+	$(am__append_49) $(am__append_63) $(UNW_INCLUDE_DIRS)
 libhpcrun_io_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_25) $(am__append_38) $(am__append_53) \
-	$(am__append_67) $(UNW_INCLUDE_DIRS)
+	$(am__append_22) $(am__append_35) $(am__append_50) \
+	$(am__append_64) $(UNW_INCLUDE_DIRS)
 libhpcrun_io_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_26) $(am__append_39) \
-	$(am__append_54) $(am__append_68) $(UNW_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS) $(am__append_23) $(am__append_36) \
+	$(am__append_51) $(am__append_65) $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_27) $(am__append_40) $(am__append_55) \
-	$(am__append_69) $(UNW_INCLUDE_DIRS)
+	$(am__append_24) $(am__append_37) $(am__append_52) \
+	$(am__append_66) $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
-	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_28) \
-	$(am__append_41) $(am__append_56) $(am__append_70) \
+	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_25) \
+	$(am__append_38) $(am__append_53) $(am__append_67) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_29) $(am__append_42) $(am__append_57) \
-	$(am__append_89) $(UNW_INCLUDE_DIRS)
+	$(am__append_26) $(am__append_39) $(am__append_54) \
+	$(am__append_86) $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_30) $(am__append_43) \
-	$(am__append_58) $(am__append_92) $(UNW_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS) $(am__append_27) $(am__append_40) \
+	$(am__append_55) $(am__append_89) $(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_31) $(am__append_44) $(am__append_59) \
-	$(am__append_71) $(UNW_INCLUDE_DIRS)
+	$(am__append_28) $(am__append_41) $(am__append_56) \
+	$(am__append_68) $(UNW_INCLUDE_DIRS)
 @OPT_ENABLE_CUDA_TRUE@generated_file_base = .
 @OPT_ENABLE_CUDA_TRUE@generated_file_src_path = $(srcdir)/sample-sources
 @OPT_ENABLE_CUDA_TRUE@generated_cuda_driver_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-driver-header.h gpu_blame-cuda-driver-table.c gpu_blame-driver-overrides-generated.c)
@@ -1262,7 +1263,7 @@ libhpctoolkit_a_CPPFLAGS = \
 #-----------------------------------------------------------
 # cflags
 #-----------------------------------------------------------
-libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_87)
+libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_84)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -1271,9 +1272,9 @@ libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) $(am__append_90)
+libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) $(am__append_87)
 libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_93)
+	$(am__append_90)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 #-----------------------------------------------------------
@@ -1282,8 +1283,8 @@ libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
-	-lpthread -lrt $(OPT_LIBUNWIND_LDFLAGS) $(am__append_49) \
-	$(am__append_74) $(am__append_82) $(am__append_88) \
+	-lpthread -lrt $(OPT_LIBUNWIND_LDFLAGS) $(am__append_46) \
+	$(am__append_71) $(am__append_79) $(am__append_85) \
 	$(UNW_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic	\
 	-Wl,--strip-debug
@@ -1297,13 +1298,13 @@ libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
 
 #libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic 	\
 #	-Wl,--strip-debug
-libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_91)
+libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_88)
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
 
-libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS) $(am__append_50) \
-	$(am__append_77) $(UNW_LD_FLAGS)
-MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_60) \
+libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS) $(am__append_47) \
+	$(am__append_74) $(UNW_LD_FLAGS)
+MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_57) \
 	$(UNW_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
 @HOST_CPU_X86_FAMILY_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
@@ -1643,13 +1644,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libagent_tbb_la-lush-support-rt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_ga_la-ga-overrides.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_ga_wrap_a-ga-overrides.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_gpu_la-gpu_blame-cuda-driver-table.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_gpu_la-gpu_blame-cuda-runtime-table.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_gpu_la-gpu_blame-driver-overrides-generated.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_gpu_la-gpu_blame-overrides.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-driver-overrides-generated.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-overrides.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.Po@am__quote@
@@ -1667,6 +1664,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-custom-init-dynamic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-debug-flag.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-default_validation_summary.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-defer-cntxt.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-defer-write.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-disabled.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-dylib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-env.Plo@am__quote@
@@ -1679,6 +1678,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-fnbounds_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-fnbounds_dynamic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ga.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-gpu_blame-cuda-driver-table.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-gpu_blame-cuda-runtime-table.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-gpu_blame.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-handling_sample.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_dlfns.Plo@am__quote@
@@ -1692,6 +1693,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-last_func.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-libunw-unwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-loadmap.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-lockwait.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-lush-backtrace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-lush-pthread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-lush-support-rt.Plo@am__quote@
@@ -1724,6 +1726,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-stack_troll.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-start-stop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-sync.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-task-cntxt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-term_handler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-thread_data.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-thread_use.Plo@am__quote@
@@ -1767,6 +1770,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-custom-init-static.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-debug-flag.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-default_validation_summary.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-defer-cntxt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-defer-write.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-disabled.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-env.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-epoch.Po@am__quote@
@@ -1788,6 +1793,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-last_func.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-libunw-unwind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-loadmap.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-lockwait.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-lush-backtrace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-lush-pthread.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-lush-support-rt.Po@am__quote@
@@ -1819,6 +1825,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-stack_troll.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-start-stop.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-sync.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-task-cntxt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-term_handler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-thread_data.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-thread_use.Po@am__quote@
@@ -1969,34 +1976,6 @@ libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj: gpu_blame-runtim
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-runtime-overrides-generated.c' object='libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-runtime-overrides-generated.obj `if test -f 'gpu_blame-runtime-overrides-generated.c'; then $(CYGPATH_W) 'gpu_blame-runtime-overrides-generated.c'; else $(CYGPATH_W) '$(srcdir)/gpu_blame-runtime-overrides-generated.c'; fi`
-
-libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.o: gpu_blame-cuda-driver-table.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.o -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.o `test -f 'gpu_blame-cuda-driver-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-driver-table.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.Tpo $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-cuda-driver-table.c' object='libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.o `test -f 'gpu_blame-cuda-driver-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-driver-table.c
-
-libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.obj: gpu_blame-cuda-driver-table.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.obj -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.obj `if test -f 'gpu_blame-cuda-driver-table.c'; then $(CYGPATH_W) 'gpu_blame-cuda-driver-table.c'; else $(CYGPATH_W) '$(srcdir)/gpu_blame-cuda-driver-table.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.Tpo $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-cuda-driver-table.c' object='libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-cuda-driver-table.obj `if test -f 'gpu_blame-cuda-driver-table.c'; then $(CYGPATH_W) 'gpu_blame-cuda-driver-table.c'; else $(CYGPATH_W) '$(srcdir)/gpu_blame-cuda-driver-table.c'; fi`
-
-libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.o: gpu_blame-cuda-runtime-table.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.o -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.o `test -f 'gpu_blame-cuda-runtime-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-runtime-table.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.Tpo $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-cuda-runtime-table.c' object='libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.o `test -f 'gpu_blame-cuda-runtime-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-runtime-table.c
-
-libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.obj: gpu_blame-cuda-runtime-table.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.obj -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.Tpo -c -o libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.obj `if test -f 'gpu_blame-cuda-runtime-table.c'; then $(CYGPATH_W) 'gpu_blame-cuda-runtime-table.c'; else $(CYGPATH_W) '$(srcdir)/gpu_blame-cuda-runtime-table.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.Tpo $(DEPDIR)/libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-cuda-runtime-table.c' object='libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_wrap_a_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_wrap_a-gpu_blame-cuda-runtime-table.obj `if test -f 'gpu_blame-cuda-runtime-table.c'; then $(CYGPATH_W) 'gpu_blame-cuda-runtime-table.c'; else $(CYGPATH_W) '$(srcdir)/gpu_blame-cuda-runtime-table.c'; fi`
 
 libhpcrun_io_wrap_a-io-over.o: sample-sources/io-over.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_io_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_io_wrap_a_CFLAGS) $(CFLAGS) -MT libhpcrun_io_wrap_a-io-over.o -MD -MP -MF $(DEPDIR)/libhpcrun_io_wrap_a-io-over.Tpo -c -o libhpcrun_io_wrap_a-io-over.o `test -f 'sample-sources/io-over.c' || echo '$(srcdir)/'`sample-sources/io-over.c
@@ -2271,6 +2250,13 @@ libhpcrun_la-idle.lo: sample-sources/idle.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-idle.lo `test -f 'sample-sources/idle.c' || echo '$(srcdir)/'`sample-sources/idle.c
 
+libhpcrun_la-lockwait.lo: sample-sources/lockwait.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-lockwait.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-lockwait.Tpo -c -o libhpcrun_la-lockwait.lo `test -f 'sample-sources/lockwait.c' || echo '$(srcdir)/'`sample-sources/lockwait.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-lockwait.Tpo $(DEPDIR)/libhpcrun_la-lockwait.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/lockwait.c' object='libhpcrun_la-lockwait.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-lockwait.lo `test -f 'sample-sources/lockwait.c' || echo '$(srcdir)/'`sample-sources/lockwait.c
+
 libhpcrun_la-memleak.lo: sample-sources/memleak.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-memleak.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-memleak.Tpo -c -o libhpcrun_la-memleak.lo `test -f 'sample-sources/memleak.c' || echo '$(srcdir)/'`sample-sources/memleak.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-memleak.Tpo $(DEPDIR)/libhpcrun_la-memleak.Plo
@@ -2516,6 +2502,27 @@ libhpcrun_la-unlink.lo: utilities/unlink.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-unlink.lo `test -f 'utilities/unlink.c' || echo '$(srcdir)/'`utilities/unlink.c
 
+libhpcrun_la-defer-cntxt.lo: utilities/defer-cntxt.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-defer-cntxt.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-defer-cntxt.Tpo -c -o libhpcrun_la-defer-cntxt.lo `test -f 'utilities/defer-cntxt.c' || echo '$(srcdir)/'`utilities/defer-cntxt.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-defer-cntxt.Tpo $(DEPDIR)/libhpcrun_la-defer-cntxt.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/defer-cntxt.c' object='libhpcrun_la-defer-cntxt.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-defer-cntxt.lo `test -f 'utilities/defer-cntxt.c' || echo '$(srcdir)/'`utilities/defer-cntxt.c
+
+libhpcrun_la-defer-write.lo: utilities/defer-write.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-defer-write.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-defer-write.Tpo -c -o libhpcrun_la-defer-write.lo `test -f 'utilities/defer-write.c' || echo '$(srcdir)/'`utilities/defer-write.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-defer-write.Tpo $(DEPDIR)/libhpcrun_la-defer-write.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/defer-write.c' object='libhpcrun_la-defer-write.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-defer-write.lo `test -f 'utilities/defer-write.c' || echo '$(srcdir)/'`utilities/defer-write.c
+
+libhpcrun_la-task-cntxt.lo: utilities/task-cntxt.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-task-cntxt.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-task-cntxt.Tpo -c -o libhpcrun_la-task-cntxt.lo `test -f 'utilities/task-cntxt.c' || echo '$(srcdir)/'`utilities/task-cntxt.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-task-cntxt.Tpo $(DEPDIR)/libhpcrun_la-task-cntxt.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/task-cntxt.c' object='libhpcrun_la-task-cntxt.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-task-cntxt.lo `test -f 'utilities/task-cntxt.c' || echo '$(srcdir)/'`utilities/task-cntxt.c
+
 libhpcrun_la-mpi.lo: sample-sources/mpi.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-mpi.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-mpi.Tpo -c -o libhpcrun_la-mpi.lo `test -f 'sample-sources/mpi.c' || echo '$(srcdir)/'`sample-sources/mpi.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-mpi.Tpo $(DEPDIR)/libhpcrun_la-mpi.Plo
@@ -2620,6 +2627,20 @@ libhpcrun_la-gpu_blame.lo: sample-sources/gpu_blame.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/gpu_blame.c' object='libhpcrun_la-gpu_blame.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-gpu_blame.lo `test -f 'sample-sources/gpu_blame.c' || echo '$(srcdir)/'`sample-sources/gpu_blame.c
+
+libhpcrun_la-gpu_blame-cuda-driver-table.lo: gpu_blame-cuda-driver-table.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-gpu_blame-cuda-driver-table.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-driver-table.Tpo -c -o libhpcrun_la-gpu_blame-cuda-driver-table.lo `test -f 'gpu_blame-cuda-driver-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-driver-table.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-driver-table.Tpo $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-driver-table.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-cuda-driver-table.c' object='libhpcrun_la-gpu_blame-cuda-driver-table.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-gpu_blame-cuda-driver-table.lo `test -f 'gpu_blame-cuda-driver-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-driver-table.c
+
+libhpcrun_la-gpu_blame-cuda-runtime-table.lo: gpu_blame-cuda-runtime-table.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-gpu_blame-cuda-runtime-table.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-runtime-table.Tpo -c -o libhpcrun_la-gpu_blame-cuda-runtime-table.lo `test -f 'gpu_blame-cuda-runtime-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-runtime-table.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-runtime-table.Tpo $(DEPDIR)/libhpcrun_la-gpu_blame-cuda-runtime-table.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-cuda-runtime-table.c' object='libhpcrun_la-gpu_blame-cuda-runtime-table.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-gpu_blame-cuda-runtime-table.lo `test -f 'gpu_blame-cuda-runtime-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-runtime-table.c
 
 libhpcrun_la-backtrace.lo: unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-backtrace.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-backtrace.Tpo -c -o libhpcrun_la-backtrace.lo `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c
@@ -2809,20 +2830,6 @@ libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo: gpu_blame-runtime-ove
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-runtime-overrides-generated.c' object='libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_la-gpu_blame-runtime-overrides-generated.lo `test -f 'gpu_blame-runtime-overrides-generated.c' || echo '$(srcdir)/'`gpu_blame-runtime-overrides-generated.c
-
-libhpcrun_gpu_la-gpu_blame-cuda-driver-table.lo: gpu_blame-cuda-driver-table.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_la-gpu_blame-cuda-driver-table.lo -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-cuda-driver-table.Tpo -c -o libhpcrun_gpu_la-gpu_blame-cuda-driver-table.lo `test -f 'gpu_blame-cuda-driver-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-driver-table.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-cuda-driver-table.Tpo $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-cuda-driver-table.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-cuda-driver-table.c' object='libhpcrun_gpu_la-gpu_blame-cuda-driver-table.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_la-gpu_blame-cuda-driver-table.lo `test -f 'gpu_blame-cuda-driver-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-driver-table.c
-
-libhpcrun_gpu_la-gpu_blame-cuda-runtime-table.lo: gpu_blame-cuda-runtime-table.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -MT libhpcrun_gpu_la-gpu_blame-cuda-runtime-table.lo -MD -MP -MF $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-cuda-runtime-table.Tpo -c -o libhpcrun_gpu_la-gpu_blame-cuda-runtime-table.lo `test -f 'gpu_blame-cuda-runtime-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-runtime-table.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-cuda-runtime-table.Tpo $(DEPDIR)/libhpcrun_gpu_la-gpu_blame-cuda-runtime-table.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gpu_blame-cuda-runtime-table.c' object='libhpcrun_gpu_la-gpu_blame-cuda-runtime-table.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gpu_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gpu_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_gpu_la-gpu_blame-cuda-runtime-table.lo `test -f 'gpu_blame-cuda-runtime-table.c' || echo '$(srcdir)/'`gpu_blame-cuda-runtime-table.c
 
 libhpcrun_io_la-io-over.lo: sample-sources/io-over.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_io_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_io_la_CFLAGS) $(CFLAGS) -MT libhpcrun_io_la-io-over.lo -MD -MP -MF $(DEPDIR)/libhpcrun_io_la-io-over.Tpo -c -o libhpcrun_io_la-io-over.lo `test -f 'sample-sources/io-over.c' || echo '$(srcdir)/'`sample-sources/io-over.c
@@ -3173,6 +3180,20 @@ libhpcrun_o-idle.obj: sample-sources/idle.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/idle.c' object='libhpcrun_o-idle.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-idle.obj `if test -f 'sample-sources/idle.c'; then $(CYGPATH_W) 'sample-sources/idle.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/idle.c'; fi`
+
+libhpcrun_o-lockwait.o: sample-sources/lockwait.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-lockwait.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-lockwait.Tpo -c -o libhpcrun_o-lockwait.o `test -f 'sample-sources/lockwait.c' || echo '$(srcdir)/'`sample-sources/lockwait.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-lockwait.Tpo $(DEPDIR)/libhpcrun_o-lockwait.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/lockwait.c' object='libhpcrun_o-lockwait.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-lockwait.o `test -f 'sample-sources/lockwait.c' || echo '$(srcdir)/'`sample-sources/lockwait.c
+
+libhpcrun_o-lockwait.obj: sample-sources/lockwait.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-lockwait.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-lockwait.Tpo -c -o libhpcrun_o-lockwait.obj `if test -f 'sample-sources/lockwait.c'; then $(CYGPATH_W) 'sample-sources/lockwait.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/lockwait.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-lockwait.Tpo $(DEPDIR)/libhpcrun_o-lockwait.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/lockwait.c' object='libhpcrun_o-lockwait.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-lockwait.obj `if test -f 'sample-sources/lockwait.c'; then $(CYGPATH_W) 'sample-sources/lockwait.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/lockwait.c'; fi`
 
 libhpcrun_o-memleak.o: sample-sources/memleak.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-memleak.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-memleak.Tpo -c -o libhpcrun_o-memleak.o `test -f 'sample-sources/memleak.c' || echo '$(srcdir)/'`sample-sources/memleak.c
@@ -3663,6 +3684,48 @@ libhpcrun_o-unlink.obj: utilities/unlink.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/unlink.c' object='libhpcrun_o-unlink.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-unlink.obj `if test -f 'utilities/unlink.c'; then $(CYGPATH_W) 'utilities/unlink.c'; else $(CYGPATH_W) '$(srcdir)/utilities/unlink.c'; fi`
+
+libhpcrun_o-defer-cntxt.o: utilities/defer-cntxt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-defer-cntxt.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-defer-cntxt.Tpo -c -o libhpcrun_o-defer-cntxt.o `test -f 'utilities/defer-cntxt.c' || echo '$(srcdir)/'`utilities/defer-cntxt.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-defer-cntxt.Tpo $(DEPDIR)/libhpcrun_o-defer-cntxt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/defer-cntxt.c' object='libhpcrun_o-defer-cntxt.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-defer-cntxt.o `test -f 'utilities/defer-cntxt.c' || echo '$(srcdir)/'`utilities/defer-cntxt.c
+
+libhpcrun_o-defer-cntxt.obj: utilities/defer-cntxt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-defer-cntxt.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-defer-cntxt.Tpo -c -o libhpcrun_o-defer-cntxt.obj `if test -f 'utilities/defer-cntxt.c'; then $(CYGPATH_W) 'utilities/defer-cntxt.c'; else $(CYGPATH_W) '$(srcdir)/utilities/defer-cntxt.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-defer-cntxt.Tpo $(DEPDIR)/libhpcrun_o-defer-cntxt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/defer-cntxt.c' object='libhpcrun_o-defer-cntxt.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-defer-cntxt.obj `if test -f 'utilities/defer-cntxt.c'; then $(CYGPATH_W) 'utilities/defer-cntxt.c'; else $(CYGPATH_W) '$(srcdir)/utilities/defer-cntxt.c'; fi`
+
+libhpcrun_o-defer-write.o: utilities/defer-write.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-defer-write.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-defer-write.Tpo -c -o libhpcrun_o-defer-write.o `test -f 'utilities/defer-write.c' || echo '$(srcdir)/'`utilities/defer-write.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-defer-write.Tpo $(DEPDIR)/libhpcrun_o-defer-write.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/defer-write.c' object='libhpcrun_o-defer-write.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-defer-write.o `test -f 'utilities/defer-write.c' || echo '$(srcdir)/'`utilities/defer-write.c
+
+libhpcrun_o-defer-write.obj: utilities/defer-write.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-defer-write.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-defer-write.Tpo -c -o libhpcrun_o-defer-write.obj `if test -f 'utilities/defer-write.c'; then $(CYGPATH_W) 'utilities/defer-write.c'; else $(CYGPATH_W) '$(srcdir)/utilities/defer-write.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-defer-write.Tpo $(DEPDIR)/libhpcrun_o-defer-write.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/defer-write.c' object='libhpcrun_o-defer-write.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-defer-write.obj `if test -f 'utilities/defer-write.c'; then $(CYGPATH_W) 'utilities/defer-write.c'; else $(CYGPATH_W) '$(srcdir)/utilities/defer-write.c'; fi`
+
+libhpcrun_o-task-cntxt.o: utilities/task-cntxt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-task-cntxt.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-task-cntxt.Tpo -c -o libhpcrun_o-task-cntxt.o `test -f 'utilities/task-cntxt.c' || echo '$(srcdir)/'`utilities/task-cntxt.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-task-cntxt.Tpo $(DEPDIR)/libhpcrun_o-task-cntxt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/task-cntxt.c' object='libhpcrun_o-task-cntxt.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-task-cntxt.o `test -f 'utilities/task-cntxt.c' || echo '$(srcdir)/'`utilities/task-cntxt.c
+
+libhpcrun_o-task-cntxt.obj: utilities/task-cntxt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-task-cntxt.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-task-cntxt.Tpo -c -o libhpcrun_o-task-cntxt.obj `if test -f 'utilities/task-cntxt.c'; then $(CYGPATH_W) 'utilities/task-cntxt.c'; else $(CYGPATH_W) '$(srcdir)/utilities/task-cntxt.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-task-cntxt.Tpo $(DEPDIR)/libhpcrun_o-task-cntxt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/task-cntxt.c' object='libhpcrun_o-task-cntxt.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-task-cntxt.obj `if test -f 'utilities/task-cntxt.c'; then $(CYGPATH_W) 'utilities/task-cntxt.c'; else $(CYGPATH_W) '$(srcdir)/utilities/task-cntxt.c'; fi`
 
 libhpcrun_o-mpi.o: sample-sources/mpi.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-mpi.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-mpi.Tpo -c -o libhpcrun_o-mpi.o `test -f 'sample-sources/mpi.c' || echo '$(srcdir)/'`sample-sources/mpi.c

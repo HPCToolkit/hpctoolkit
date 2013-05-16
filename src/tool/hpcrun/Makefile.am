@@ -93,25 +93,16 @@ PYTHON = python
 # build targets
 #-----------------------------------------------------------
 
-pkglibdir = @my_pkglibdir@
-pkglibexecdir = @my_pkglibexecdir@
-
+pkglibexecdir = $(libexecdir)/$(PACKAGE)
 plugin_srcdir = $(srcdir)/plugins
 plugin_instdir = $(pkglibdir)/plugins
 
-bin_SCRIPTS =
-pkglibexec_SCRIPTS =
-include_HEADERS =
-pkglib_PROGRAMS =
-pkglib_LIBRARIES =
+bin_SCRIPTS = scripts/hpcsummary
+pkglibexec_SCRIPTS = scripts/hpclog
+
+include_HEADERS = hpctoolkit.h
+
 pkglib_LTLIBRARIES =
-
-if OPT_BUILD_FRONT_END
-  bin_SCRIPTS += scripts/hpcsummary
-  pkglibexec_SCRIPTS += scripts/hpclog
-  include_HEADERS += hpctoolkit.h
-endif
-
 if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcrun.la
   pkglib_LTLIBRARIES += libhpcrun_ga.la
@@ -121,9 +112,11 @@ if OPT_ENABLE_CUDA
   pkglib_LTLIBRARIES += libhpcrun_gpu.la
 endif
   pkglib_LTLIBRARIES += libhpctoolkit.la
-  bin_SCRIPTS += scripts/hpcrun$(BACK_END_LABEL)
+  bin_SCRIPTS += scripts/hpcrun
 endif
 
+pkglib_PROGRAMS =
+pkglib_LIBRARIES =
 if OPT_ENABLE_HPCRUN_STATIC
   pkglib_PROGRAMS  += libhpcrun.o
   pkglib_LIBRARIES += libhpcrun_wrap.a
@@ -137,7 +130,7 @@ endif
 if HOST_CPU_PPC
   pkglib_LIBRARIES += libibm_xlomp_wrappers.a
 endif
-  bin_SCRIPTS += scripts/hpclink$(BACK_END_LABEL)
+  bin_SCRIPTS += scripts/hpclink
 endif
 
 if OPT_ENABLE_MPI_WRAP
@@ -264,6 +257,7 @@ MY_BASE_FILES =				\
 	sample-sources/io.c 		\
 	sample-sources/itimer.c		\
 	sample-sources/idle.c		\
+	sample-sources/lockwait.c	\
 	sample-sources/memleak.c	\
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \
@@ -308,7 +302,10 @@ MY_BASE_FILES =				\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c \
-	utilities/unlink.h utilities/unlink.c
+	utilities/unlink.h utilities/unlink.c \
+	utilities/defer-cntxt.h utilities/defer-cntxt.c \
+	utilities/defer-write.h utilities/defer-write.c \
+        utilities/task-cntxt.h utilities/task-cntxt.c
 
 if OPT_ENABLE_MPI_WRAP
 MY_BASE_FILES +=  			\
@@ -423,16 +420,12 @@ libhpcrun_memleak_wrap_a_SOURCES = 	\
 libhpcrun_gpu_la_SOURCES = 		\
 	sample-sources/gpu_blame-overrides.c \
 	gpu_blame-driver-overrides-generated.c \
-	gpu_blame-runtime-overrides-generated.c \
-	gpu_blame-cuda-driver-table.c \
-	gpu_blame-cuda-runtime-table.c
+	gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_gpu_wrap_a_SOURCES = 	\
 	sample-sources/gpu_blame-overrides.c  \
 	gpu_blame-driver-overrides-generated.c \
-	gpu_blame-runtime-overrides-generated.c \
-	gpu_blame-cuda-driver-table.c \
-	gpu_blame-cuda-runtime-table.c
+	gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_mpi_la_SOURCES = 		\
 	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
@@ -734,7 +727,7 @@ if UNW_PPC64
 endif
 
 if OPT_ENABLE_CUDA
-  libhpcrun_la_SOURCES  += sample-sources/gpu_blame.c
+  libhpcrun_la_SOURCES  += sample-sources/gpu_blame.c gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
   libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)

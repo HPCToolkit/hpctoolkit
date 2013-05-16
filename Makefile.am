@@ -75,24 +75,22 @@ MYSCRIPTS = \
 	config/hpcplatform \
 	config/config.guess
 
+MYMONITORDIR = $(DESTDIR)$(pkglibdir)/monitor
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-pkglibdir = @my_pkglibdir@
-pkglibexecdir = @my_pkglibexecdir@
-
-SUBDIRS = src
-
-if OPT_BUILD_FRONT_END
-SUBDIRS +=  \
+SUBDIRS = \
+	src \
+	\
 	doc \
 	lib
 
+pkglibexecdir = $(libexecdir)/$(PACKAGE)
 pkglibexec_SCRIPTS = $(MYSCRIPTS)
+
 dist_doc_DATA = $(MYDATA)
-endif
 
 
 #############################################################################
@@ -112,8 +110,7 @@ endif
 # It's up to configure to decide if the library exists, whether to
 # copy it and where to put it, so we don't treat errors as fatal here.
 #
-EXT_LIBS_DIR = $(DESTDIR)$(pkglibdir)/ext-libs
-MYMONITORDIR = $(DESTDIR)$(pkglibdir)/monitor
+EXT_LIBS_DIR = $(DESTDIR)$(prefix)/@hpc_ext_libs_dir@
 
 define copy-libs
     @if test "$1" = yes ; then \

@@ -194,9 +194,140 @@ hpcrun_allocate_thread_data(void)
   return hpcrun_mmap_anon(sizeof(thread_data_t));
 }
 
+#ifdef XU_OLD
+
+/* initialize the reused td: keep the existing cct and metric set *
+   initialize other data structures                               */
+void
+hpcrun_thread_data_reuse_init(cct_ctxt_t* thr_ctxt)
+{
+//  hpcrun_meminfo_t memstore;
+  thread_data_t* td = hpcrun_get_thread_data();
+  // ----------------------------------------
+  // memstore for hpcrun_malloc()
+  // ----------------------------------------
+#endif // XU_OLD
+
 static inline void core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_t* thr_ctxt) 
 {
+#ifdef XU_OLD
+  // Wipe the thread data with a bogus bit pattern, but save the
+  // memstore so we can reuse it in the child after fork.  This must
+  // come first.
+  /// td->suspend_sampling = 1;
+//  memstore = td->memstore;
+//  memset(td, 0xfe, sizeof(thread_data_t));
+//  td->memstore = memstore;
+//  hpcrun_make_memstore(&td->memstore, is_child);
+//  td->mem_low = 0;
 
+  // ----------------------------------------
+  // normalized thread id (monitor-generated)
+  // ----------------------------------------
+  td->idle = 0; // begin at work
+ 
+  td->overhead = 0; // begin at not in overhead
+
+  td->lockwait = 0;
+  td->lockid = NULL;
+
+  td->region_id = 0;
+
+  td->outer_region_id = NULL;
+
+  td->master = 0;
+  td->team_master = 0;
+
+  td->defer_write = 0; 
+
+  td->reuse = 0;
+ 
+  td->add_to_pool = 0;
+
+  td->omp_thread = 0;
+  td->last_bar_time_us = 0;
+  // ----------------------------------------
+  // sample sources
+  // ----------------------------------------
+  memset(&td->eventSet, 0, sizeof(td->eventSet));
+  memset(&td->ss_state, UNINIT, sizeof(td->ss_state));
+
+//  td->last_time_us = 0;
+
+  // ----------------------------------------
+  // epoch: loadmap + cct + cct_ctxt
+  // ----------------------------------------
+//  td->epoch = hpcrun_malloc(sizeof(epoch_t));
+  td->epoch->csdata_ctxt = copy_thr_ctxt(thr_ctxt);
+
+  // ----------------------------------------
+  // cct2metrics map: associate a metric_set with
+  //                  a cct node
+  // ----------------------------------------
+//  hpcrun_cct2metrics_init(&(td->cct2metrics_map));
+
+  // ----------------------------------------
+  // backtrace buffer
+  // ----------------------------------------
+  td->btbuf_cur = NULL;
+  td->btbuf_beg = hpcrun_malloc(sizeof(frame_t) * BACKTRACE_INIT_SZ);
+  td->btbuf_end = td->btbuf_beg + BACKTRACE_INIT_SZ;
+  td->btbuf_sav = td->btbuf_end;  // FIXME: is this needed?
+
+  hpcrun_bt_init(&(td->bt), NEW_BACKTRACE_INIT_SZ);
+
+  // ----------------------------------------
+  // trampoline
+  // ----------------------------------------
+  td->tramp_present     = false;
+  td->tramp_retn_addr   = NULL;
+  td->tramp_loc         = NULL;
+  td->cached_bt         = hpcrun_malloc(sizeof(frame_t)
+					* CACHED_BACKTRACE_SIZE);
+  td->cached_bt_end     = td->cached_bt;          
+  td->cached_bt_buf_end = td->cached_bt + CACHED_BACKTRACE_SIZE;
+  td->tramp_frame       = NULL;
+  td->tramp_cct_node    = NULL;
+
+  // ----------------------------------------
+  // exception stuff
+  // ----------------------------------------
+  memset(&td->bad_unwind, 0, sizeof(td->bad_unwind));
+  memset(&td->mem_error, 0, sizeof(td->mem_error));
+  hpcrun_init_handling_sample(td, 0, td->id);
+  td->splay_lock    = 0;
+  td->fnbounds_lock = 0;
+
+  // N.B.: suspend_sampling is already set!
+
+  // ----------------------------------------
+  // Logical unwinding
+  // ----------------------------------------
+  lushPthr_init(&td->pthr_metrics);
+  lushPthr_thread_init(&td->pthr_metrics);
+
+  // ----------------------------------------
+  // tracing
+  // ----------------------------------------
+//  td->trace_min_time_us = 0;
+//  td->trace_max_time_us = 0;
+
+  // ----------------------------------------
+  // IO support
+  // ----------------------------------------
+//  td->hpcrun_file  = NULL;
+//  td->trace_buffer = NULL;
+
+  // ----------------------------------------
+  // debug support
+  // ----------------------------------------
+  td->debug1 = false;
+
+  // ----------------------------------------
+  // miscellaneous
+  // ----------------------------------------
+  td->inside_dlfcn = false;
+#endif // XU_OLD
   // ----------------------------------------
   // id
   // ----------------------------------------
@@ -227,7 +358,6 @@ static inline void core_profile_trace_data_init(core_profile_trace_data_t * cptd
   cptd->trace_buffer = NULL;
     
 }
-
 
 #ifdef ENABLE_CUDA
 static inline void gpu_data_init(gpu_data_t * gpu_data)
@@ -266,6 +396,29 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   core_profile_trace_data_init(&(td->core_profile_trace_data), id, thr_ctxt);
 
   td->idle = 0; // begin at work
+ 
+  td->overhead = 0; // begin at not in overhead
+
+  td->lockwait = 0;
+  td->lockid = NULL;
+
+  td->region_id = 0;
+
+  td->outer_region_id = NULL;
+
+  td->defer_flag = 0;
+  
+  td->master = 0;
+  td->team_master = 0;
+
+  td->defer_write = 0;
+
+  td->reuse = 0;
+
+  td->add_to_pool = 0;
+
+  td->omp_thread = 0;
+  td->last_bar_time_us = 0;
 
   // ----------------------------------------
   // sample sources

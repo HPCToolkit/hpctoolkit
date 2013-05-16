@@ -81,6 +81,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 
+#include <cct/cct.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
@@ -95,6 +96,10 @@
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
+#include <utilities/defer-cntxt.h>
+#include <utilities/defer-write.h>
+#include <utilities/task-cntxt.h>
+#include <hpcrun/unresolved.h>
 
 /******************************************************************************
  * macros
@@ -127,8 +132,7 @@ static void event_fatal_error(int ev_code, int papi_ret);
 /******************************************************************************
  * local variables
  *****************************************************************************/
-
-static int cyc_metric_id = -1; /* initialized to an illegal metric id */
+static int cyc_metric_id = -1; // initialized to an illegal metric id
 
 // Special case to make PAPI_library_init() a soft failure.
 // Make sure that we call no other PAPI functions.
@@ -178,6 +182,7 @@ METHOD_FN(init)
   }
 
   self->state = INIT;
+  
 }
 
 static void
@@ -194,6 +199,7 @@ METHOD_FN(thread_init)
   TMSG(PAPI, "thread init OK");
 }
 
+
 static void
 METHOD_FN(thread_init_action)
 {
@@ -205,8 +211,20 @@ METHOD_FN(thread_init_action)
     EEMSG("PAPI_register_thread NOT ok, retval = %d", retval);
     monitor_real_abort();
   }
+
+#if 0
+  if(ENABLED(SET_DEFER_WRITE)) {
+    thread_data_t *td = hpcrun_get_thread_data();
+    td->defer_write = 1;
+  }
+  else {
+    // at the beginning of one thread, try to resolve any other threads
+    resolve_other_cntxt(false);
+  }
+#endif
   TMSG(PAPI, "register thread ok");
 }
+
 
 static void
 METHOD_FN(start)
@@ -248,6 +266,7 @@ METHOD_FN(start)
   TD_GET(ss_state)[self->evset_idx] = START;
 }
 
+
 static void
 METHOD_FN(thread_fini_action)
 {
@@ -257,8 +276,10 @@ METHOD_FN(thread_fini_action)
   int retval = PAPI_unregister_thread();
   char msg[] = "!!NOT PAPI_OK!! (code = -9999999)\n";
   snprintf(msg, sizeof(msg)-1, "!!NOT PAPI_OK!! (code = %d)", retval);
+  
   TMSG(PAPI, "unregister thread returns %s", retval == PAPI_OK? "PAPI_OK" : msg);
 }
+
 
 static void
 METHOD_FN(stop)
@@ -293,6 +314,7 @@ METHOD_FN(stop)
   TD_GET(ss_state)[self->evset_idx] = STOP;
 }
 
+
 static void
 METHOD_FN(shutdown)
 {
@@ -304,6 +326,7 @@ METHOD_FN(shutdown)
 
   self->state = UNINIT;
 }
+
 
 // Return true if PAPI recognizes the name, whether supported or not.
 // We'll handle unsupported events later.
@@ -325,6 +348,7 @@ METHOD_FN(supports_event, const char *ev_str)
   return PAPI_event_name_to_code(evtmp, &ec) == PAPI_OK;
 }
  
+
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
@@ -335,6 +359,10 @@ METHOD_FN(process_event_list, int lush_metrics)
   int i, ret;
   int num_lush_metrics = 0;
 
+  if(ENABLED(SET_DEFER_CTXT))
+    register_defer_callback();
+  if(ENABLED(SET_TASK_CTXT))
+    register_task_callback();
   char* evlist = METHOD_CALL(self, get_event_str);
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
     char name[1024];
@@ -418,11 +446,11 @@ METHOD_FN(process_event_list, int lush_metrics)
 					self->evl.events[i].thresh, prop);
     }
   }
-
   if (! some_overflow) {
     hpcrun_ssfail_all_derived("PAPI");
   }
 }
+
 
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
@@ -624,8 +652,10 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
+  monitor_block_shootdown();
   if (! hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
+    monitor_unblock_shootdown();
     return;
   }
 
@@ -652,12 +682,48 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
     TMSG(PAPI_SAMPLE,"sampling call path for metric_id = %d", metric_id);
 
-    sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
-			   0/*skipInner*/, 0/*isSync*/);
+    sample_val_t sv;
+    // check whether we need to defer the context creation
+    void *task_context = NULL;
+    if ((task_context = need_task_cntxt())) {
 
-    blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
+      if(need_defer_cntxt()) {
+        thread_data_t *td = hpcrun_get_thread_data();
+        if(td->defer_flag) 
+          resolve_cntxt();
+      }
+      omp_arg_t omp_arg;
+      omp_arg.tbd = false;
+      omp_arg.region_id = 0;
+      // copy the task creation context to local thread
+      omp_arg.context = copy_task_cntxt(task_context);
+      
+      sv = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
+				  0/*skipInner*/, 0/*isSync*/, (void*) &omp_arg);
+    }
+    else if(need_defer_cntxt()) {
+      thread_data_t *td = hpcrun_get_thread_data();
+      if(td->defer_flag) {
+        resolve_cntxt();
+      }
+  
+      omp_arg_t omp_arg;
+      omp_arg.tbd = false;
+      omp_arg.context = NULL;
+      if (TD_GET(region_id) > 0) {
+        omp_arg.tbd = true;
+        omp_arg.region_id = TD_GET(region_id);
+      }
+      sv = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
+				  0/*skipInner*/, 0/*isSync*/, (void*) &omp_arg);
+    }
+    else
+      sv = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
+				  0/*skipInner*/, 0/*isSync*/, NULL);
+    
+    if(sv.sample_node)
+      blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
   }
-
   // Add metric values for derived events by the difference in counter
   // values.  Some samples can take a long time (eg, analyzing a new
   // load module), so read the counters both on entry and exit to
@@ -669,7 +735,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     for (i = 0; i < nevents; i++) {
       if (derived[i]) {
 	hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),
-			       values[i] - psi->prev_values[i], 0, 0);
+			       values[i] - psi->prev_values[i], 0, 0, NULL);
       }
     }
 
@@ -679,5 +745,6 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     }
   }
 
+  monitor_unblock_shootdown();
   hpcrun_safe_exit();
 }

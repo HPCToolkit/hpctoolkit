@@ -141,7 +141,6 @@ static const uint32_t default_ra_to_callsite_distance =
 static FILE *
 lazy_open_data_file(core_profile_trace_data_t * cptd)
 {
-
   FILE* fs = cptd->hpcrun_file;
   if (fs) {
     return fs;
@@ -335,6 +334,8 @@ hpcrun_flush_epochs(core_profile_trace_data_t * cptd)
 int
 hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
 {
+  if(cptd->scale_fn) cptd->scale_fn((void*)cptd);
+
   TMSG(DATA_WRITE,"Writing hpcrun profile data");
   FILE* fs = lazy_open_data_file(cptd);
   if (fs == NULL)
@@ -349,3 +350,24 @@ hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
   return HPCRUN_OK;
 }
 
+#if 0
+int
+hpcrun_write_other_profile_data(epoch_t *epoch, thread_data_t *thread_data)
+{
+  thread_data_t *td = thread_data;
+
+  if(td->scale_fn) td->scale_fn((void*)td);
+  TMSG(DATA_WRITE,"Writing hpcrun profile data");
+  FILE* fs = lazy_open_data_file(td);
+  if (fs == NULL)
+    return HPCRUN_OK;
+
+  write_epochs(fs, epoch);
+
+  TMSG(DATA_WRITE,"closing file");
+  hpcio_fclose(fs);
+  TMSG(DATA_WRITE,"Done!");
+
+  return HPCRUN_OK;
+}
+#endif

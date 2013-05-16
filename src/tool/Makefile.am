@@ -68,17 +68,16 @@ AUTOMAKE_OPTIONS = foreign
 # Automake rules
 #############################################################################
 
-SUBDIRS =
-
-if OPT_BUILD_TOOL_ALL
-SUBDIRS += \
+SUBDIRS = \
 	hpcstruct \
 	hpcprof \
 	hpcprof-flat \
 	hpcproftt \
+	\
 	hpclump \
+	\
 	misc
-endif
+
 
 if OPT_ENABLE_HPCRUN_FLAT
   SUBDIRS += hpcrun-flat

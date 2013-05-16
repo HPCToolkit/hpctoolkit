@@ -131,6 +131,9 @@
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
 
+#include <utilities/defer-cntxt.h>
+#include <utilities/defer-write.h>
+
 extern void hpcrun_set_retain_recursion_mode(bool mode);
 #ifndef USE_LIBUNW
 extern void hpcrun_dump_intervals(void* addr);
@@ -495,6 +498,7 @@ hpcrun_fini_internal()
     hpcrun_process_aux_cleanup_action();
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
     hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
+    write_other_td();
     fnbounds_fini();
     hpcrun_stats_print_summary();
     messages_fini();
@@ -538,7 +542,7 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   if (! thr_ctxt) EMSG("Thread id %d passes null context", id);
   
   if (ENABLED(THREAD_CTXT))
-    hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (intptr_t) id);
+    hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (uintptr_t) id);
   //
   hpcrun_thread_data_init(id, thr_ctxt, 0);
 
@@ -557,7 +561,7 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   // start the sample sources
   SAMPLE_SOURCES(start);
 
-  return (void *)epoch;
+  return (void*) epoch;
 }
 
 
@@ -581,8 +585,10 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-    hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
-    hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
+//    hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
+//    hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
+    thread_data_t *td = hpcrun_get_thread_data();
+    add_defer_td(td);
   }
 }
 

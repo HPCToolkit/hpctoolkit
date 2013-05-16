@@ -134,6 +134,29 @@ typedef struct gpu_data_t {
 
 typedef struct thread_data_t {
   int idle; // indicate whether the thread is idle
+  
+  int overhead; // indicate whether the thread is overhead
+
+  int lockwait; // if thread is in work & lockwait state, it is waiting for a lock
+  void *lockid; // pointer pointing to the lock
+
+  uint64_t region_id; // record the parallel region the thread is currently in
+
+  uint64_t* outer_region_id; // record the outer-most region id the thread is currently in
+
+  int defer_flag; //whether should defer the context creation
+
+  int master; // whether the thread is the master thread
+  int team_master; // whether the thread is the team master thread
+ 
+  int defer_write; // whether should defer the write
+
+  int reuse; // mark whether the td is ready for reuse
+
+  int add_to_pool;
+
+  int omp_thread;
+  uint64_t last_bar_time_us;
 
   // ----------------------------------------
   // hpcrun_malloc() memory data structures
@@ -267,6 +290,9 @@ void     hpcrun_cached_bt_adjust_size(size_t n);
 frame_t* hpcrun_expand_btbuf(void);
 void     hpcrun_ensure_btbuf_avail(void);
 
+void           hpcrun_thread_data_reuse_init(cct_ctxt_t* thr_ctxt);
+void           hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child);
+void           hpcrun_cached_bt_adjust_size(size_t n);
 
 // utilities to match previous api
 #define hpcrun_get_thread_epoch()  TD_GET(core_profile_trace_data.epoch)
