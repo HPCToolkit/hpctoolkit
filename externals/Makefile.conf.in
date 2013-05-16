@@ -11,9 +11,12 @@ CFLAGS = @CFLAGS@
 CXX = @CXX@
 CXXFLAGS = @CXXFLAGS@
 
-SYMTABAPI_PLATFORM = @symtabAPI_platform@
-USE_SYMTAB_61 = @use_symtab_61@
-
 BUILD = @build@
 HOST = @host@
 IS_CROSS_COMPILE = @is_cross_compile@
+
+SYMTABAPI_PLATFORM = @symtabAPI_platform@
+USE_SYMTAB_61 = @use_symtab_61@
+
+USE_XED2_K1OM = @use_xed2_k1om@
+

@@ -17,6 +17,10 @@ case "$wordsize" in
     * )  die "wordsize must be 32 or 64: $wordsize" ;;
 esac
 
+case "$host" in
+    *k1om* ) XED2=extras/xed2-mic ;;
+esac
+
 mkdir -p "$prefix" || die "unable to mkdir: $prefix"
 
 cd "$XED2" || die "unable to cd: $XED2"

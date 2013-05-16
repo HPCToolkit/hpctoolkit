@@ -1183,6 +1183,11 @@ case "$host_cpu" in
     * ) xed2_default=no ;;
 esac
 
+use_xed2_k1om=no
+case "$host" in
+     *k1om* ) use_xed2_k1om=yes ;;
+esac
+
 AC_ARG_WITH([xed2],
     [AS_HELP_STRING([--with-xed2=PATH],
 	[path to xed2 install directory (default build)])],
@@ -1221,6 +1226,7 @@ esac
 AC_MSG_RESULT([$xed2_avail])
 
 AC_SUBST([xed2_prefix])
+AC_SUBST([use_xed2_k1om])
 
 #------------------------------------------------------------
 # Xerces: --with-xerces=PATH

@@ -601,6 +601,7 @@ LIBOBJS
 with_mpi
 xerces_platform
 xerces_prefix
+use_xed2_k1om
 xed2_prefix
 use_symtab_61
 symtabAPI_platform
@@ -5206,6 +5207,11 @@ case "$host_cpu" in
     * ) xed2_default=no ;;
 esac
 
+use_xed2_k1om=no
+case "$host" in
+     *k1om* ) use_xed2_k1om=yes ;;
+esac
+
 
 # Check whether --with-xed2 was given.
 if test "${with_xed2+set}" = set; then :
@@ -5247,6 +5253,7 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $xed2_avail" >&5
 $as_echo "$xed2_avail" >&6; }
+
 
 
 
