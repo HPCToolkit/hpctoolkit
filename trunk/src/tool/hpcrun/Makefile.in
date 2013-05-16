@@ -80,7 +80,7 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_memleak.la
 @OPT_ENABLE_CUDA_TRUE@@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_5 = libhpcrun_gpu.la
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_6 = libhpctoolkit.la
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_7 = scripts/hpcrun$(BACK_END_LABEL)
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_7 = scripts/hpcrun
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_8 = libhpcrun.o
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_9 = libhpcrun_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_ga_wrap.a \
@@ -89,7 +89,7 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @OPT_ENABLE_CUDA_TRUE@@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_10 = libhpcrun_gpu_wrap.a
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_11 = libhpctoolkit.a
 @HOST_CPU_PPC_TRUE@@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_12 = libibm_xlomp_wrappers.a
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_13 = scripts/hpclink$(BACK_END_LABEL)
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_13 = scripts/hpclink
 @OPT_ENABLE_MPI_WRAP_TRUE@am__append_14 = libhpcrun_mpi.la
 @OPT_ENABLE_CUDA_TRUE@am__append_15 = gpu
 @HOST_CPU_PPC_TRUE@am__append_16 = ibm-xlomp
