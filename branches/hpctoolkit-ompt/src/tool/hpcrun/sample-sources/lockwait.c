@@ -55,7 +55,6 @@
 #include <alloca.h>
 #include <assert.h>
 #include <ctype.h>
-#include <papi.h>
 #include <setjmp.h>
 #include <stdlib.h>
 #include <string.h>
