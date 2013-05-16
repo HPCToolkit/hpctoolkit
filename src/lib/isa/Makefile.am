@@ -81,7 +81,7 @@ MYSOURCES = \
 	MipsISA.hpp MipsISA.cpp \
 	PowerISA.hpp PowerISA.cpp \
 	SparcISA.hpp SparcISA.cpp \
-	x86ISA.hpp x86ISA.cpp \
+	x86ISA.hpp  x86ISA_helper.cpp \
 	\
 	instructionSets/alpha.h \
 	instructionSets/mips.h
@@ -109,6 +109,8 @@ if HOST_CPU_X86_FAMILY
   MYSOURCES  +=	x86ISA_xed.cpp  
   MYCFLAGS   += -I$(XED2_INC)
   MYCXXFLAGS += -I$(XED2_INC)
+else
+  MYSOURCES  +=	x86ISA.cpp  
 endif
 
 libHPCisa_la_SOURCES  = $(MYSOURCES)

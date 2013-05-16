@@ -117,9 +117,19 @@ getDecodeXED(MachInsn *cmi)
 
 //*************************** x86ISA ***************************
 
+x86ISA::x86ISA(bool is_x86_64)
+{
+  xed_tables_init(); 
+}
+
+
+x86ISA::~x86ISA()
+{
+}
+
 
 ISA::InsnDesc
-x86ISA::getInsnDesc_xed(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
+x86ISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
                     ushort GCC_ATTR_UNUSED s)
 {
   xed_decoded_inst_t *xptr = getDecodeXED(mi);
@@ -195,7 +205,7 @@ x86ISA::getInsnDesc_xed(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
 
 
 ushort
-x86ISA::getInsnSize_xed(MachInsn* mi)
+x86ISA::getInsnSize(MachInsn* mi)
 {
   xed_decoded_inst_t *xptr = getDecodeXED(mi);
 
@@ -207,7 +217,7 @@ x86ISA::getInsnSize_xed(MachInsn* mi)
 
 
 VMA
-x86ISA::getInsnTargetVMA_xed(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
+x86ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
                          ushort GCC_ATTR_UNUSED sz)
 {
   xed_decoded_inst_t *xptr = getDecodeXED(mi);
@@ -227,4 +237,12 @@ x86ISA::getInsnTargetVMA_xed(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opInd
   }
   return 0;
 }
+
+void
+x86ISA::decode(ostream& os, MachInsn* mi, VMA vma,
+               ushort GCC_ATTR_UNUSED opIndex)
+{
+}
+
+//****************************************************************************
 

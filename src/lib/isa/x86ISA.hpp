@@ -135,31 +135,6 @@ private:
   operator=(const x86ISA& GCC_ATTR_UNUSED x)
   { return *this; }
 
-  VMA
-  getInsnTargetVMA_bu(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
-                         ushort GCC_ATTR_UNUSED sz);
-
-  VMA
-  getInsnTargetVMA_xed(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
-                         ushort GCC_ATTR_UNUSED sz);
-
-  ISA::InsnDesc
-  getInsnDesc_xed(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
-                    ushort GCC_ATTR_UNUSED s);
-
-  ISA::InsnDesc
-  getInsnDesc_bu(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
-                    ushort GCC_ATTR_UNUSED s);
-
-  void
-  checkCache(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
-                         ushort GCC_ATTR_UNUSED sz);
-
-  ushort
-  getInsnSize_bu(MachInsn* mi);
-
-  ushort
-  getInsnSize_xed(MachInsn* mi);
 
 protected:
 private:
