@@ -37,7 +37,6 @@
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/atomic.h>
 
-#include <omp.h>
 #include <dlfcn.h>
 #include <hpcrun/loadmap.h>
 #include <hpcrun/trace.h>
@@ -51,8 +50,7 @@
 #include <hpcrun/unresolved.h>
 #include <hpcrun/write_data.h>
 
-//#include "/home/xl10/support/gcc-4.6.2/libgomp/libgomp_g.h"
-#include "hpcrun/libgomp/libgomp_g.h"
+#include "hpcrun/ompt.h"
 
 /******************************************************************************
  * entry variables and operations for delayed write *

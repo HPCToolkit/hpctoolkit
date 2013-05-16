@@ -98,9 +98,7 @@
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/atomic.h>
 
-#include <omp.h>
-//#include "/home/xl10/support/gcc-4.6.2/libgomp/libgomp_g.h"
-#include "hpcrun/libgomp/libgomp_g.h"
+#include "hpcrun/ompt.h"
 #include <dlfcn.h>
 #include <hpcrun/loadmap.h>
 #include <hpcrun/trace.h>
@@ -131,7 +129,7 @@ typedef union lockData {
  *****************************************************************************/
 static void lock_fn(void *lock);
 static void unlock_fn(void *lock);
-static void unlock_fn1(void *lock);
+static void unlock_fn1(ompt_wait_id_t wait_id);
 
 static void process_lockwait_blame_for_sample(int metric_id, cct_node_t *node, int metric_value);
 
@@ -224,9 +222,6 @@ METHOD_FN(process_event_list, int lush_metrics)
         bs_entry.fn = process_lockwait_blame_for_sample;
         bs_entry.next = 0;
 
-//	GOMP_lock_fn_register(lock_fn, unlock_fn);
-	GOMP_lock_fn_register(NULL, NULL, unlock_fn1);
-
 	blame_shift_register(&bs_entry);
 
 	lockwait_metric_id = hpcrun_new_metric();
@@ -277,7 +272,17 @@ void process_lockwait_blame_for_sample(int metric_id, cct_node_t *node, int metr
       atomic_add_i32(lock, 2);
     }
   }
-  void *lock = GOMP_get_lockwait();
+  // get the synchronization state
+  ompt_wait_id_t wait_id = 0;
+  void *lock = NULL;
+  if((ompt_get_state(&wait_id) == ompt_state_wait_critical) ||
+     (ompt_get_state(&wait_id) == ompt_state_wait_lock) ||
+     (ompt_get_state(&wait_id) == ompt_state_wait_nest_lock) ||
+     (ompt_get_state(&wait_id) == ompt_state_wait_atomic) ||
+     (ompt_get_state(&wait_id) == ompt_state_wait_ordered)) {
+    lock = (void *) wait_id;
+  }
+
   // this is a sample in the lockwait
   if (lock && td->idle == 0) {
     lockData newval;
@@ -373,8 +378,10 @@ void unlock_fn(void *lock)
   }
 }
 
-void unlock_fn1(void *lock)
+void unlock_fn1(ompt_wait_id_t wait_id)
 {
+  void *lock = (void *)wait_id;
+
   uint64_t val = 0;
   uint32_t index = lockIndex(lock);
   uint32_t lockid = lockID(lock);
@@ -409,3 +416,14 @@ void unlock_fn1(void *lock)
     }
   }
 }
+
+void
+register_lock()
+{
+  ompt_set_callback(ompt_event_release_lock, (ompt_callback_t)(unlock_fn1));
+  ompt_set_callback(ompt_event_release_nest_lock_last, (ompt_callback_t)(unlock_fn1));
+  ompt_set_callback(ompt_event_release_critical, (ompt_callback_t)(unlock_fn1));
+  ompt_set_callback(ompt_event_release_atomic, (ompt_callback_t)(unlock_fn1));
+  ompt_set_callback(ompt_event_release_ordered, (ompt_callback_t)(unlock_fn1));
+}
+

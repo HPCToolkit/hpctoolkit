@@ -142,7 +142,7 @@ typedef struct thread_data_t {
 
   uint64_t region_id; // record the parallel region the thread is currently in
 
-  uint64_t* outer_region_id; // record the outer-most region id the thread is currently in
+  uint64_t outer_region_id; // record the outer-most region id the thread is currently in
 
   int defer_flag; //whether should defer the context creation
 
