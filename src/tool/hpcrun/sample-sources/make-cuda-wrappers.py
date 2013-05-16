@@ -270,6 +270,7 @@ def WriteDriverFunctionWrapper(file, funcSig):
 #include <monitor.h>
 #include<cuda.h>
 #include "gpu_blame-cuda-driver-header.h"
+extern bool hpcrun_is_safe_to_sync(const char* fn);
 ''')
 
     for sig in funcSig:
@@ -277,6 +278,22 @@ def WriteDriverFunctionWrapper(file, funcSig):
         if sig[1] in driverSkipList: continue
 
         fp.write('\t' + sig[0] +  sig[1] + ' (' + sig[2] + ') {\n' )
+	fp.write('if (! hpcrun_is_safe_to_sync(__func__)) {')
+	fp.write('    return cuDriverFunctionPointer[' +FuncNameToEnum(sig[1]) + '].' + sig[1] + 'Real(')
+        args = sig[2].split(',')
+        first = True
+        for argTypeName in args:
+            if not first:
+                fp.write(', ')
+            else:
+                first = False
+            param = argTypeName.split()[-1].split('*')[-1]
+            if param.strip() != "void":
+                fp.write(param)
+            
+
+        fp.write( ');\n')
+	fp.write('}\n')
 	fp.write('TD_GET(gpu_data.is_thread_at_cuda_sync) = true;\n')
 	fp.write('monitor_disable_new_threads();\n')
         #fp.write('printf("\\n%s on","' +sig[1] +'");fflush(stdout);')
@@ -318,6 +335,7 @@ def WriteRuntimeFunctionWrapper(file, funcSig):
 #include<cuda.h>
 #include<cuda_runtime_api.h>
 #include "gpu_blame-cuda-runtime-header.h"
+extern bool hpcrun_is_safe_to_sync(const char* fn);
 ''')
 
     for sig in funcSig:
@@ -325,7 +343,22 @@ def WriteRuntimeFunctionWrapper(file, funcSig):
         if sig[1] in runtimeSkipList: continue
 
         fp.write('\t' + sig[0] +   sig[1] + ' (' + sig[2] + ') {\n' )
-# FIXME: put safe-to-sync-sample check here
+	fp.write('if (! hpcrun_is_safe_to_sync(__func__)) {')
+	fp.write('    return cudaRuntimeFunctionPointer[' +FuncNameToEnum(sig[1]) + '].' + sig[1] + 'Real(')
+        args = sig[2].split(',')
+        first = True
+        for argTypeName in args:
+            if not first:
+                fp.write(', ')
+            else:
+                first = False
+            param = argTypeName.split()[-1].split('*')[-1]
+            if param.strip() != "void":
+                fp.write(param)
+            
+
+        fp.write( ');\n')
+	fp.write('}\n')
         fp.write('TD_GET(gpu_data.is_thread_at_cuda_sync) = true;\n')
 	fp.write('monitor_disable_new_threads();\n')
         #fp.write('printf("\\n%s on","' +sig[1] +'");')
