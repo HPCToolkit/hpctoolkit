@@ -128,11 +128,20 @@ static void idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node
 /******************************************************************************
  * local variables
  *****************************************************************************/
+#ifdef GOMP
+// for GOMP, the master thread forks all other worker threads and the master thread
+// works as a worker thread
 static uint64_t work = 1L;// by default work is 1 (1 thread)
 static uint64_t thread_num = 1L;// by default thread is 1 (master thread)
 // record the max thread number active concurrently
 // use it to normalize the idleness at the end of measurement
 static uint64_t max_thread_num = 1L;
+#else
+// all worker threads are forked
+static uint64_t work = 0L;
+static uint64_t thread_num = 0L;
+static uint64_t max_thread_num = 0L;
+#endif
 
 static int idle_metric_id = -1;//idle for requested cores
 static int core_idle_metric_id = -1;//idle for all hardware cores
