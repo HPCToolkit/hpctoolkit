@@ -532,7 +532,12 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     // FOR OMP only, temporary solution to remove GOMP_thread_start
     if (DISABLED(KEEP_GOMP_START)) bt_last--;
   }
+  // ompt: elide runtime frames
   if (ENABLED(OMP_ELIDE_FRAME)) hpcrun_elide_runtime_frame(&bt_last, &bt_beg);
+  // master thread elides all frames (to be omp_barrier), then make it as partial to 
+  // avoid monitor_main and omp_barrier appearing in the CCT(s)
+  if((bt_last < bt_beg) && (bt.fence == FENCE_MAIN)) partial_unw = true;
+
   cct_node_t* n = hpcrun_cct_record_backtrace_w_metric(bundle, partial_unw, bt.fence == FENCE_THREAD,
 						       bt_beg, bt_last, tramp_found,
 						       metricId, metricIncr, arg);
