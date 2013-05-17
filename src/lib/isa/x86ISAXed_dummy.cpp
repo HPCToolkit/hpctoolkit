@@ -69,7 +69,7 @@ using std::ostream;
 
 #include <include/gnu_dis-asm.h>
 
-#include "x86ISA.hpp"
+#include "x86ISAXed.hpp"
 
 #include <lib/support/diagnostics.h>
 
@@ -115,11 +115,6 @@ x86ISAXed::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opInde
   return 0;
 }
 
-void
-x86ISAXed::decode(ostream& os, MachInsn* mi, VMA vma,
-               ushort GCC_ATTR_UNUSED opIndex)
-{
-}
 
 //****************************************************************************
 
