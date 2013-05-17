@@ -140,6 +140,8 @@ Options: Structure recovery\n\
                        for which <old-path> is a prefix.  Use '\\' to escape\n\
                        instances of '=' within a path. May pass multiple\n\
                        times.\n\
+  --use-binutils       Use binutils as the default binary instruction decoder\n\
+                       On x86 default is Intel XED library.\n\
 \n\
 Options: Output:\n\
   -o <file>, --output <file>\n\
@@ -194,6 +196,11 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
      CLP::isOptArg_long },
   {  0 , "debug-proc",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
+
+  // Instruction decoder pptions
+  { 0, "use-binutils",     CLP::ARG_NONE,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
+
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
 
@@ -225,6 +232,7 @@ Args::Ctor()
   isForwardSubstitution = true;
   doNormalizeTy = BAnal::Struct::NormTy_All;
   prettyPrintOutput = true;
+  useBinutils = false;
 }
 
 
@@ -356,6 +364,8 @@ Args::parse(int argc, const char* const argv[])
 	}
       }
     }
+
+    useBinutils = parser.isOpt("use-binutils");
 
     // Check for other options: Output options
     if (parser.isOpt("output")) {
