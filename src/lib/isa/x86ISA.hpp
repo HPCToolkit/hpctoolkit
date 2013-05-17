@@ -67,15 +67,10 @@
 #include <include/gcc-attr.h>
 #include <include/uint.h>
 
-#include <setjmp.h>
-#include <signal.h>
-
-
 #include "ISA.hpp"
 
 //*************************** Forward Declarations ***************************
 
-struct disassemble_info;
 
 //****************************************************************************
 
@@ -86,27 +81,36 @@ struct disassemble_info;
 // 'x86ISA': Implements the x86 and x86-64 Instruction Set Architecture
 // See comments in 'ISA.h'
 
-class x86ISA : public ISA {
+class x86ISA : public virtual ISA {
 public:
-  x86ISA(bool is_x86_64 = false);
-  virtual ~x86ISA();
+  x86ISA()
+  {}
+
+  virtual ~x86ISA()
+  {} 
 
   // --------------------------------------------------------
   // Instructions:
   // --------------------------------------------------------
 
   virtual ushort
-  getInsnSize(MachInsn* mi);
-
+  getInsnSize(MachInsn* mi) 
+  { return 0; }
+ 
   virtual ushort
   getInsnNumOps(MachInsn* GCC_ATTR_UNUSED mi)
   { return 1; }
 
   virtual InsnDesc
-  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
+  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0) 
+  {
+    InsnDesc d;
+    return d;
+  }
 
   virtual VMA
-  getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz = 0);
+  getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz = 0) 
+  { return NULL;  }
 
   virtual ushort
   getInsnNumDelaySlots(MachInsn* GCC_ATTR_UNUSED mi,
@@ -123,8 +127,10 @@ public:
 			  ushort GCC_ATTR_UNUSED sz2) const
   { return false; }
 
-  virtual void
-  decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex);
+
+  virtual void 
+  decode(std::ostream&, MachInsn*, VMA, ushort)
+  {}
 
 private:
   // Should not be used
@@ -137,20 +143,18 @@ private:
 
 
 protected:
-private:
-  bool m_is_x86_64;
-  struct disassemble_info* m_di;
-  struct disassemble_info* m_di_dis;
-  GNUbu_disdata m_dis_data;
 
 };
 
 //****************************************************************************
 // "static" function to be used by generic x86ISA and x86ISA_xed
 //****************************************************************************
+
 VMA
 GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma);
 
+void
+GNU_print_addr(bfd_vma di_vma, struct disassemble_info* di);
 
 //****************************************************************************
 

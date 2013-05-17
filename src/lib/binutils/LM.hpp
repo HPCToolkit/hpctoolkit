@@ -138,7 +138,7 @@ public:
   // -------------------------------------------------------
 
   // Constructor allocates an empty data structure
-  LM();
+  LM(bool useBinutils=false);
 
   virtual ~LM();
 
@@ -553,6 +553,8 @@ private:
   long      m_bfdSynthTabSz; // Number of synthetic syms.
 
   RealPathMgr& m_realpathMgr;
+
+  bool m_useBinutils;
 };
 
 } // namespace BinUtil

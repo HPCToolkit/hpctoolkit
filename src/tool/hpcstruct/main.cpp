@@ -124,7 +124,7 @@ realmain(int argc, char* argv[])
   // ------------------------------------------------------------
   BinUtil::LM* lm = NULL;
   try {
-    lm = new BinUtil::LM();
+    lm = new BinUtil::LM(args.useBinutils);
     lm->open(args.in_filenm.c_str());
     lm->read(BinUtil::LM::ReadFlg_ALL);
   }

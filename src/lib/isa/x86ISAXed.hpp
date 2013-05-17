@@ -47,63 +47,66 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL$
+//    x86ISAXed.h
 //
 // Purpose:
-//   [The purpose of this file]
+//    [The purpose of this file]
 //
 // Description:
-//   [The set of functions, macros, etc. defined in the file]
+//    [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
+#ifndef isa_x86ISAXed_hpp
+#define isa_x86ISAXed_hpp
+
 //************************* System Include Files ****************************
-
-#include <iostream>
-using std::ostream;
-
-#include <cstdarg>
-#include <cstring> // for 'memcpy'
 
 //*************************** User Include Files ****************************
 
-#include <include/gnu_dis-asm.h>
+#include <include/gcc-attr.h>
+#include <include/uint.h>
 
 #include "x86ISA.hpp"
 
-#include <lib/support/diagnostics.h>
-
-//*************************** macros ***************************
-
-
-
 //*************************** Forward Declarations ***************************
-void
-GNU_print_addr(bfd_vma di_vma, struct disassemble_info* di)
-{
-  GNUbu_disdata* data = (GNUbu_disdata*)di->application_data;
-
-  VMA x = GNUvma2vma(di_vma, data->insn_addr, data->insn_vma);
-  ostream* os = (ostream*)di->stream;
-  *os << std::showbase << std::hex << x << std::dec;
-}
-
-
-VMA
-GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
-{
-  // N.B.: The GNU decoders expect that the address of the 'mi' is
-  // actually the VMA.  Furthermore for 32-bit x86 decoding, only
-  // the lower 32 bits of 'mi' are valid.
-
-  static const bfd_vma M32 = 0xffffffff;
-  //VMA t = (m_is_x86_64) ?
-  //  ((m_di->target & M32) - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)vma :
-  //  ((m_di->target)       - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)vma;
-  VMA x = ((di_vma & M32) - (PTR_TO_BFDVMA(insn_addr) & M32)) + (bfd_vma)insn_vma;
-  return x;
-}
-
 
 
 //****************************************************************************
+
+//***************************************************************************
+// x86ISAXed
+//***************************************************************************
+
+// 'x86ISA': Implements the x86 and x86-64 Instruction Set Architecture
+// See comments in 'ISA.h'
+
+class x86ISAXed : public x86ISA {
+public:
+  x86ISAXed(bool is_x86_64 = false);
+  virtual ~x86ISAXed();
+
+  // --------------------------------------------------------
+  // Instructions:
+  // --------------------------------------------------------
+
+  virtual ushort
+  getInsnSize(MachInsn* mi);
+
+  virtual InsnDesc
+  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
+
+  virtual VMA
+  getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz = 0);
+
+
+};
+
+//****************************************************************************
+// "static" function to be used by generic x86ISA and x86ISA_xed
+//****************************************************************************
+
+
+//****************************************************************************
+
+#endif /* isa_x86ISAXed_hpp */
