@@ -89,9 +89,6 @@ void start_task_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_fram
  
   }
   else if(need_defer_cntxt()) {
-    //make sure we assign an ID for the region that task is in
-    init_region_id();
-
     omp_arg_t omp_arg;
     omp_arg.tbd = false;
     omp_arg.context = NULL;

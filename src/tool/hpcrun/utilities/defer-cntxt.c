@@ -310,7 +310,6 @@ int need_defer_cntxt()
   if(ENABLED(SET_DEFER_CTXT) && (ompt_get_parallel_id(0) > 0) && !TD_GET(master)) {
     thread_data_t *td = hpcrun_get_thread_data();
     td->defer_flag = 1;
-    init_region_id();
     return 1;
   }
   return 0;
