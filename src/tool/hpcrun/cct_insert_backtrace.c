@@ -65,6 +65,8 @@
 #include <unwind/common/fence_enum.h>
 #include "cct_insert_backtrace.h"
 
+#include "hpcrun/ompt.h"
+
 //
 // Misc externals (not in an include file)
 //
@@ -76,10 +78,119 @@ extern bool hpcrun_inbounds_main(void* addr);
 //
 static bool retain_recursion = false;
 
+static void
+omp_barrier()
+{
+}
+
+static void
+hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
+{
+  int i = 0;
+  frame_t *it, *exit0 = NULL, *reenter1 = NULL, *exit1 = NULL;
+  ompt_frame_t *frame0 = NULL;
+  ompt_frame_t *frame1 = NULL;
+
+  // special handle for frame 0 (inner-most frame)
+  frame0 = ompt_get_task_frame(0);
+  frame1 = ompt_get_task_frame(1);
+  // if inner-most task has no frame info, just return
+  if (!frame0) return;
+  // has reenter but no exit, meaning coming into runtime but never coming out
+  if(frame0->reenter_runtime_frame && !frame0->exit_runtime_frame) {
+    *bt_inner = frame0->reenter_runtime_frame+1;
+  }
+  // worker thread waiting at barrier (no work assigned)
+  else if (frame1 && !frame0->reenter_runtime_frame && !frame0->exit_runtime_frame) {
+    *bt_inner = *bt_outer;
+  }
+  // general cases: elide frames between frame0->exit and frame1->reenter
+  while (true) {
+    frame0 = ompt_get_task_frame(i);
+    frame1 = ompt_get_task_frame(++i);
+    if(!frame0 || !frame1) break;
+    bool exit0_flag = true, exit1_flag = true, reenter0_flag = true, reenter1_flag = true;
+
+    // check the boundary, if frame pointer is out side the bt boundary, set them to null
+    if((uint64_t)(*bt_inner)->cursor.sp > (uint64_t)(frame0->exit_runtime_frame) || (uint64_t)(*bt_outer)->cursor.sp < (uint64_t)(frame0->exit_runtime_frame))
+      exit0_flag = false;
+    if((uint64_t)(*bt_inner)->cursor.sp > (uint64_t)(frame0->reenter_runtime_frame) || (uint64_t)(*bt_outer)->cursor.sp < (uint64_t)(frame0->reenter_runtime_frame))
+      reenter0_flag = false;
+    if((uint64_t)(*bt_inner)->cursor.sp > (uint64_t)(frame1->exit_runtime_frame) || (uint64_t)(*bt_outer)->cursor.sp < (uint64_t)(frame1->exit_runtime_frame))
+      exit1_flag = false;
+    if((uint64_t)(*bt_inner)->cursor.sp > (uint64_t)(frame1->reenter_runtime_frame) || (uint64_t)(*bt_outer)->cursor.sp < (uint64_t)(frame1->reenter_runtime_frame))
+      reenter1_flag = false;
+
+    if(exit0_flag) {
+      for (it = *bt_inner; it <= *bt_outer; it++) {
+        if((uint64_t)(it->cursor.sp) >= (uint64_t)(frame0->exit_runtime_frame)) {
+          exit0 = it;
+          break;
+        }
+      }
+    }
+    if(reenter1_flag) {
+      for (it; it <= *bt_outer; it++) {
+        if((uint64_t)(it->cursor.sp) >= (uint64_t)(frame1->reenter_runtime_frame)) {
+          reenter1 = it;
+          break;
+        }
+      }
+    }
+    if(exit1_flag) {
+      for (it; it <= *bt_outer; it++) {
+        if((uint64_t)(it->cursor.sp) >= (uint64_t)(frame1->exit_runtime_frame)) {
+          exit1 = it;
+          break;
+        }
+      }
+    }
+    if(exit0 && reenter1) {
+      memmove(*bt_inner+(reenter1-exit0+1), *bt_inner, (exit0 - *bt_inner)*sizeof(frame_t));
+      *bt_inner = *bt_inner + (reenter1 - exit0 + 1);
+      exit0 = reenter1 = NULL;
+    }
+    else if(exit0 && !reenter1) {
+      // check whether frame1' exit is set
+      if(exit1) {
+        memmove(*bt_inner+(exit1-exit0+1), *bt_inner, (exit0 - *bt_inner)*sizeof(frame_t));
+        *bt_inner = *bt_inner + (exit1 - exit0 + 1);
+        exit0 = exit1 = NULL;
+      }
+      else {
+        *bt_outer = exit0-1;
+        exit0 = NULL;
+      }
+    }
+    else if(!exit0 && reenter1) {
+      *bt_inner = reenter1+1;
+      reenter1 = NULL;
+    }
+    else { // both !exit0 and !reenter1
+      // worker threads waiting at barrier for work
+      // eliminate all frames
+      *bt_outer = *bt_inner-1;
+      break;
+    }
+
+    // inside a task, check one iteration is enough
+    if(ompt_get_task_data(0) && ompt_get_task_data(0)->ptr) break;
+  }
+}
+
+
 static cct_node_t*
 cct_insert_raw_backtrace(cct_node_t* cct,
                             frame_t* path_beg, frame_t* path_end)
 {
+  if (ENABLED(OMP_ELIDE_FRAME) && (path_beg < path_end) && cct) {
+    ip_normalized_t tmp_ip = hpcrun_normalize_ip(*(void **)omp_barrier, NULL);
+    cct_addr_t tmp = ADDR2(tmp_ip.lm_id, tmp_ip.lm_ip);
+    cct = hpcrun_cct_insert_addr(cct, &tmp);
+    hpcrun_cct_terminate_path(cct);
+    return cct;
+  }
+
   TMSG(BT_INSERT, "%s : start", __func__);
   if ( (path_beg < path_end) || (!cct)) {
     TMSG(BT_INSERT, "No insert effect, cct = %p, path_beg = %p, path_end = %p",
@@ -421,6 +532,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     // FOR OMP only, temporary solution to remove GOMP_thread_start
     if (DISABLED(KEEP_GOMP_START)) bt_last--;
   }
+  if (ENABLED(OMP_ELIDE_FRAME)) hpcrun_elide_runtime_frame(&bt_last, &bt_beg);
   cct_node_t* n = hpcrun_cct_record_backtrace_w_metric(bundle, partial_unw, bt.fence == FENCE_THREAD,
 						       bt_beg, bt_last, tramp_found,
 						       metricId, metricIncr, arg);
