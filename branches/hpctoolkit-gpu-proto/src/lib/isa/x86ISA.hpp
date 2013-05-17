@@ -67,6 +67,10 @@
 #include <include/gcc-attr.h>
 #include <include/uint.h>
 
+#include <setjmp.h>
+#include <signal.h>
+
+
 #include "ISA.hpp"
 
 //*************************** Forward Declarations ***************************
@@ -131,13 +135,47 @@ private:
   operator=(const x86ISA& GCC_ATTR_UNUSED x)
   { return *this; }
 
+  VMA
+  getInsnTargetVMA_bu(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
+                         ushort GCC_ATTR_UNUSED sz);
+
+  VMA
+  getInsnTargetVMA_xed(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
+                         ushort GCC_ATTR_UNUSED sz);
+
+  ISA::InsnDesc
+  getInsnDesc_xed(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
+                    ushort GCC_ATTR_UNUSED s);
+
+  ISA::InsnDesc
+  getInsnDesc_bu(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
+                    ushort GCC_ATTR_UNUSED s);
+
+  void
+  checkCache(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
+                         ushort GCC_ATTR_UNUSED sz);
+
+  ushort
+  getInsnSize_bu(MachInsn* mi);
+
+  ushort
+  getInsnSize_xed(MachInsn* mi);
+
 protected:
 private:
   bool m_is_x86_64;
   struct disassemble_info* m_di;
   struct disassemble_info* m_di_dis;
   GNUbu_disdata m_dis_data;
+
 };
+
+//****************************************************************************
+// "static" function to be used by generic x86ISA and x86ISA_xed
+//****************************************************************************
+VMA
+GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma);
+
 
 //****************************************************************************
 

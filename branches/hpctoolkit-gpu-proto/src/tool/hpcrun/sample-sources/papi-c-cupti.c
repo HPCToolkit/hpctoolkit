@@ -1,16 +1,19 @@
 // ******************* System Includes ********************
-#include <alloca.h>
 #include <ucontext.h> 
+#include <dlfcn.h>
+
 #include <stdbool.h>
 #include <string.h>
 #include <stdint.h>
+// *********************************************************
+
 
 // ******************** PAPI *******************************
 #include <papi.h>
 // *********************************************************
 
 // ******************** GPU includes ***********************
-#include <cuda.h>
+#include <cuda_runtime_api.h>
 #include <cupti.h>
 // *********************************************************
 
@@ -29,10 +32,7 @@
 #include "papi-c-extended-info.h"
 // ***********************************
 
-typedef struct cuda_callback_t {
-  sample_source_t* ss;
-  int event_set;
-} cuda_callback_t;
+// ****************** Convenience macros *******************
 
 #define CUPTI_LAUNCH_CALLBACK_DEPTH 7
 
@@ -41,7 +41,7 @@ typedef struct cuda_callback_t {
   int ret = fn(__VA_ARGS__);                                   \
   if (ret != CUPTI_SUCCESS) {                                  \
     const char* errstr;                                        \
-    cuptiGetResultString(ret, &errstr);                        \
+    dcuptiGetResultString(ret, &errstr);                        \
     hpcrun_abort("error: CUDA/CUPTI API "                      \
                  #fn " failed w error code %d ==> '%s'\n",     \
                  ret, errstr);                                 \
@@ -51,6 +51,68 @@ typedef struct cuda_callback_t {
 #define Cupti_call_silent(fn, ...)                             \
 {                                                              \
   (void) fn(__VA_ARGS__);                                      \
+}
+
+#define Chk_dlopen(v, lib, flags)                     \
+  void* v = dlopen(lib, flags);                       \
+  if (! v) {                                          \
+    fprintf(stderr, "gpu dlopen %s failed\n", lib);   \
+    return;                                           \
+  }                                                   \
+
+#define Chk_dlsym(h, fn) {                                \
+  dlerror();                                              \
+  d ## fn = dlsym(h, #fn);                                \
+  char* e = dlerror();                                    \
+  if (e) {                                                \
+    fprintf(stderr, "dlsym(%s) fails w '%s'\n", #fn, e);  \
+    return;                                               \
+  }                                                       \
+}
+// ***********************************************************
+
+// ******************** cuda/cupti functions ***********************
+// Some cuda/cupti functions must not be wrapped! So, we fetch them via dlopen.
+// NOTE: naming convention is to prepend the letter "d" to the actual function
+// The indirect functions are below.
+//
+cudaError_t (*dcudaThreadSynchronize)(void);
+
+CUptiResult (*dcuptiGetResultString)(CUptiResult result, const char** str); 
+
+CUptiResult (*dcuptiSubscribe)(CUpti_SubscriberHandle* subscriber,
+                               CUpti_CallbackFunc callback, 
+                               void* userdata);
+
+CUptiResult (*dcuptiEnableCallback)(uint32_t enable,
+                                    CUpti_SubscriberHandle subscriber, 
+                                    CUpti_CallbackDomain domain,
+                                    CUpti_CallbackId cbid);
+
+CUptiResult (*dcuptiUnsubscribe)(CUpti_SubscriberHandle subscriber); 
+
+
+// *****************************************************************
+typedef struct cuda_callback_t {
+  sample_source_t* ss;
+  int event_set;
+} cuda_callback_t;
+
+//
+// populate the cuda/cupti functions via dlopen
+//
+
+static void
+dlgpu(void)
+{
+  Chk_dlopen(cudart, "libcudart.so", RTLD_LAZY);
+  Chk_dlsym(cudart, cudaThreadSynchronize);
+
+  Chk_dlopen(cupti, "libcupti.so", RTLD_LAZY);
+  Chk_dlsym(cupti, cuptiGetResultString);
+  Chk_dlsym(cupti, cuptiSubscribe);
+  Chk_dlsym(cupti, cuptiEnableCallback);
+  Chk_dlsym(cupti, cuptiUnsubscribe);
 }
 
 //
@@ -204,5 +266,7 @@ __attribute__((constructor))
 void
 papi_c_cupti_register(void)
 {
+  // fetch actual cuda/cupti functions
+  dlgpu();
   papi_c_sync_register(&cuda_component);
 }

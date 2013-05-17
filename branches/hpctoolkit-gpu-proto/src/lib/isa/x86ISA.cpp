@@ -73,9 +73,20 @@ using std::ostream;
 
 #include <lib/support/diagnostics.h>
 
+//*************************** macros ***************************
+
+//#define X86_USE_XED
+#ifdef X86_USE_XED
+extern "C" {
+#include <xed-interface.h>
+}
+#endif
+
+
+
 //*************************** Forward Declarations ***************************
 
-static VMA
+VMA
 GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
 {
   // N.B.: The GNU decoders expect that the address of the 'mi' is
@@ -131,6 +142,12 @@ x86ISA::x86ISA(bool is_x86_64)
   m_di_dis->endian = m_di->endian;
   m_di_dis->read_memory_func = GNUbu_read_memory;
   m_di_dis->print_address_func = GNUbu_print_addr;
+
+#ifdef X86_USE_XED
+  // initialize xed encode and decode tables
+  // it must be called once before using xed
+  xed_tables_init();
+#endif
 }
 
 
@@ -143,6 +160,16 @@ x86ISA::~x86ISA()
 
 ushort
 x86ISA::getInsnSize(MachInsn* mi)
+{
+#ifdef X86_USE_XED
+  return getInsnSize_xed(mi);
+#else
+  return getInsnSize_bu(mi);
+#endif
+}
+
+ushort
+x86ISA::getInsnSize_bu(MachInsn* mi)
 {
   ushort size;
   DecodingCache *cache;
@@ -160,6 +187,18 @@ x86ISA::getInsnSize(MachInsn* mi)
 
 ISA::InsnDesc
 x86ISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
+                    ushort GCC_ATTR_UNUSED s)
+{
+#ifdef X86_USE_XED
+  return getInsnDesc_xed(mi, opIndex, s);
+#else
+  return getInsnDesc_bu(mi, opIndex, s);
+#endif
+}
+
+
+ISA::InsnDesc
+x86ISA::getInsnDesc_bu(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
 		    ushort GCC_ATTR_UNUSED s)
 {
   ISA::InsnDesc d;
@@ -215,8 +254,10 @@ x86ISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
 }
 
 
+
+
 VMA
-x86ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
+x86ISA::getInsnTargetVMA_bu(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
 			 ushort GCC_ATTR_UNUSED sz)
 {
   if (cacheLookup(mi) == NULL) {
@@ -231,6 +272,18 @@ x86ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
   else {
     return 0;
   }
+}
+
+
+VMA
+x86ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
+			 ushort GCC_ATTR_UNUSED sz)
+{
+#ifdef X86_USE_XED
+  return getInsnTargetVMA_xed(mi, vma, opIndex, sz);
+#else
+  return getInsnTargetVMA_bu(mi, vma, opIndex, sz);
+#endif
 }
 
 

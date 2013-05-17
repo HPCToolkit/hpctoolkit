@@ -68,6 +68,9 @@ host_triplet = @host@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
+@HOST_CPU_X86_FAMILY_TRUE@am__append_1 = x86ISA_xed.cpp  
+@HOST_CPU_X86_FAMILY_TRUE@am__append_2 = -I$(XED2_INC)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_3 = -I$(XED2_INC)
 subdir = src/lib/isa
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -82,11 +85,17 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCisa_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCisa_la-ISA.lo libHPCisa_la-AlphaISA.lo \
+am__libHPCisa_la_SOURCES_DIST = ISATypes.hpp ISA.hpp ISA.cpp \
+	AlphaISA.hpp AlphaISA.cpp IA64ISA.hpp IA64ISA.cpp MipsISA.hpp \
+	MipsISA.cpp PowerISA.hpp PowerISA.cpp SparcISA.hpp \
+	SparcISA.cpp x86ISA.hpp x86ISA.cpp instructionSets/alpha.h \
+	instructionSets/mips.h x86ISA_xed.cpp
+@HOST_CPU_X86_FAMILY_TRUE@am__objects_1 = libHPCisa_la-x86ISA_xed.lo
+am__objects_2 = libHPCisa_la-ISA.lo libHPCisa_la-AlphaISA.lo \
 	libHPCisa_la-IA64ISA.lo libHPCisa_la-MipsISA.lo \
 	libHPCisa_la-PowerISA.lo libHPCisa_la-SparcISA.lo \
-	libHPCisa_la-x86ISA.lo
-am_libHPCisa_la_OBJECTS = $(am__objects_1)
+	libHPCisa_la-x86ISA.lo $(am__objects_1)
+am_libHPCisa_la_OBJECTS = $(am__objects_2)
 libHPCisa_la_OBJECTS = $(am_libHPCisa_la_OBJECTS)
 libHPCisa_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(libHPCisa_la_CXXFLAGS) \
@@ -114,7 +123,7 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(libHPCisa_la_SOURCES)
-DIST_SOURCES = $(libHPCisa_la_SOURCES)
+DIST_SOURCES = $(am__libHPCisa_la_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -125,6 +134,7 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BACK_END_LABEL = @BACK_END_LABEL@
 BOOST_INC = @BOOST_INC@
 CC = @CC@
 CCAS = @CCAS@
@@ -254,6 +264,14 @@ SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 VERSION = @VERSION@
 XED2_COPY = @XED2_COPY@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 XED2_RUN_DIR = @XED2_RUN_DIR@
@@ -304,6 +322,8 @@ localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
+my_pkglibdir = @my_pkglibdir@
+my_pkglibexecdir = @my_pkglibexecdir@
 oldincludedir = @oldincludedir@
 papi_extra_libs = @papi_extra_libs@
 pdfdir = @pdfdir@
@@ -349,30 +369,14 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
-MYSOURCES = \
-	ISATypes.hpp \
-	ISA.hpp ISA.cpp \
-	\
-	AlphaISA.hpp AlphaISA.cpp \
-	IA64ISA.hpp IA64ISA.cpp \
-	MipsISA.hpp MipsISA.cpp \
-	PowerISA.hpp PowerISA.cpp \
-	SparcISA.hpp SparcISA.cpp \
-	x86ISA.hpp x86ISA.cpp \
-	\
-	instructionSets/alpha.h \
-	instructionSets/mips.h
-
-MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYSOURCES = ISATypes.hpp ISA.hpp ISA.cpp AlphaISA.hpp AlphaISA.cpp \
+	IA64ISA.hpp IA64ISA.cpp MipsISA.hpp MipsISA.cpp PowerISA.hpp \
+	PowerISA.cpp SparcISA.hpp SparcISA.cpp x86ISA.hpp x86ISA.cpp \
+	instructionSets/alpha.h instructionSets/mips.h $(am__append_1)
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ \
+	$(am__append_2)
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ \
+	$(am__append_3)
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
 MYLIBADD = @HOST_LIBTREPOSITORY@
@@ -455,6 +459,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_la-PowerISA.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_la-SparcISA.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_la-x86ISA.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_la-x86ISA_xed.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -525,6 +530,13 @@ libHPCisa_la-x86ISA.lo: x86ISA.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='x86ISA.cpp' object='libHPCisa_la-x86ISA.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-x86ISA.lo `test -f 'x86ISA.cpp' || echo '$(srcdir)/'`x86ISA.cpp
+
+libHPCisa_la-x86ISA_xed.lo: x86ISA_xed.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-x86ISA_xed.lo -MD -MP -MF $(DEPDIR)/libHPCisa_la-x86ISA_xed.Tpo -c -o libHPCisa_la-x86ISA_xed.lo `test -f 'x86ISA_xed.cpp' || echo '$(srcdir)/'`x86ISA_xed.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCisa_la-x86ISA_xed.Tpo $(DEPDIR)/libHPCisa_la-x86ISA_xed.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='x86ISA_xed.cpp' object='libHPCisa_la-x86ISA_xed.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-x86ISA_xed.lo `test -f 'x86ISA_xed.cpp' || echo '$(srcdir)/'`x86ISA_xed.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

@@ -70,6 +70,8 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+XED2_INC = @XED2_INC@
+
 MYSOURCES = \
 	ISATypes.hpp \
 	ISA.hpp ISA.cpp \
@@ -102,6 +104,12 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 #############################################################################
 
 noinst_LTLIBRARIES = libHPCisa.la
+
+if HOST_CPU_X86_FAMILY
+  MYSOURCES  +=	x86ISA_xed.cpp  
+  MYCFLAGS   += -I$(XED2_INC)
+  MYCXXFLAGS += -I$(XED2_INC)
+endif
 
 libHPCisa_la_SOURCES  = $(MYSOURCES)
 libHPCisa_la_CFLAGS   = $(MYCFLAGS)

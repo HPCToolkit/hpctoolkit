@@ -69,6 +69,7 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
 bin_PROGRAMS = hpcstruct$(EXEEXT)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_1 = $(XED2_LIB)/libxed.a
 subdir = src/tool/hpcstruct
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -87,7 +88,7 @@ am_hpcstruct_OBJECTS = $(am__objects_1)
 hpcstruct_OBJECTS = $(am_hpcstruct_OBJECTS)
 am__DEPENDENCIES_1 = $(HPCLIB_Analysis) $(HPCLIB_Banal) $(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) \
-	$(HPCLIB_Support) $(HPCLIB_SupportLean)
+	$(HPCLIB_Support) $(HPCLIB_SupportLean) $(am__append_1)
 hpcstruct_DEPENDENCIES = $(am__DEPENDENCIES_1)
 hpcstruct_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcstruct_CXXFLAGS) \
@@ -126,6 +127,7 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BACK_END_LABEL = @BACK_END_LABEL@
 BOOST_INC = @BOOST_INC@
 CC = @CC@
 CCAS = @CCAS@
@@ -256,6 +258,14 @@ SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 VERSION = @VERSION@
 XED2_COPY = @XED2_COPY@
 XED2_INC = @XED2_INC@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 XED2_LIB = @XED2_LIB@
 XED2_RUN_DIR = @XED2_RUN_DIR@
 XERCES = @XERCES@
@@ -305,6 +315,8 @@ localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
+my_pkglibdir = @my_pkglibdir@
+my_pkglibexecdir = @my_pkglibexecdir@
 oldincludedir = @oldincludedir@
 papi_extra_libs = @papi_extra_libs@
 pdfdir = @pdfdir@
@@ -350,14 +362,6 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
@@ -369,20 +373,10 @@ MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
 	@GNUBINUTILS_LDFLAGS@
 
-MYLDADD = \
-	@HOST_LIBTREPOSITORY@ \
-	$(HPCLIB_Analysis) \
-	$(HPCLIB_Banal) \
-	$(HPCLIB_Prof) \
-	$(HPCLIB_Binutils) \
-	$(HPCLIB_ISA) \
-	$(HPCLIB_XML) \
-	$(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) \
-	@OA_LDFLAGS@ \
-	@GNUBINUTILS_LDLIBS@ \
-	@HOST_HPCSTRUCT_LDFLAGS@
-
+MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Analysis) $(HPCLIB_Banal) \
+	$(HPCLIB_Prof) $(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) \
+	$(HPCLIB_Support) $(HPCLIB_SupportLean) @OA_LDFLAGS@ \
+	@GNUBINUTILS_LDLIBS@ @HOST_HPCSTRUCT_LDFLAGS@ $(am__append_1)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 hpcstruct_SOURCES = $(MYSOURCES)
 hpcstruct_CFLAGS = $(MYCFLAGS)

@@ -63,14 +63,6 @@
 
 // Visible types
 
-// Visible global variables
-
-// function pointers to real cuda runtime functions
-extern cudaRuntimeFunctionPointer_t  cudaRuntimeFunctionPointer[];
-
-// function pointers to real cuda driver functions
-extern cuDriverFunctionPointer_t  cuDriverFunctionPointer[];
-
 // CPU GPU blame metrics
 extern int cpu_idle_metric_id;
 extern int gpu_activity_time_metric_id;

@@ -50,7 +50,6 @@
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
-pkglibdir = $(libdir)/@PACKAGE@
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 install_sh_DATA = $(install_sh) -c -m 644
 install_sh_PROGRAM = $(install_sh) -c
@@ -69,6 +68,7 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/hpcproftt.in $(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
 pkglibexec_PROGRAMS = hpcproftt-bin$(EXEEXT)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_1 = $(XED2_LIB)/libxed.a
 subdir = src/tool/hpcproftt
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -89,7 +89,7 @@ hpcproftt_bin_OBJECTS = $(am_hpcproftt_bin_OBJECTS)
 am__DEPENDENCIES_1 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_ProfLean) \
 	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) \
-	$(HPCLIB_Support) $(HPCLIB_SupportLean)
+	$(HPCLIB_Support) $(HPCLIB_SupportLean) $(am__append_1)
 hpcproftt_bin_DEPENDENCIES = $(am__DEPENDENCIES_1)
 hpcproftt_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcproftt_bin_CXXFLAGS) \
@@ -147,7 +147,8 @@ DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 #############################################################################
 # Automake rules
 #############################################################################
-pkglibexecdir = $(libexecdir)/$(PACKAGE)
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AR = @AR@
@@ -155,6 +156,7 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BACK_END_LABEL = @BACK_END_LABEL@
 BOOST_INC = @BOOST_INC@
 CC = @CC@
 CCAS = @CCAS@
@@ -285,6 +287,14 @@ SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 VERSION = @VERSION@
 XED2_COPY = @XED2_COPY@
 XED2_INC = @XED2_INC@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 XED2_LIB = @XED2_LIB@
 XED2_RUN_DIR = @XED2_RUN_DIR@
 XERCES = @XERCES@
@@ -334,6 +344,8 @@ localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
+my_pkglibdir = @my_pkglibdir@
+my_pkglibexecdir = @my_pkglibexecdir@
 oldincludedir = @oldincludedir@
 papi_extra_libs = @papi_extra_libs@
 pdfdir = @pdfdir@
@@ -379,14 +391,6 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
@@ -399,22 +403,11 @@ MYLDFLAGS = \
 	@XERCES_LDFLAGS@ \
 	@GNUBINUTILS_LDFLAGS@
 
-MYLDADD = \
-	@HOST_LIBTREPOSITORY@ \
-	$(HPCLIB_Analysis) \
-	$(HPCLIB_Banal) \
-	$(HPCLIB_ProfXML) \
-	$(HPCLIB_Prof) \
-	$(HPCLIB_ProfLean) \
-	$(HPCLIB_Binutils) \
-	$(HPCLIB_ISA) \
-	$(HPCLIB_XML) \
-	$(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) \
-	@XERCES_LDLIBS@ \
-	@GNUBINUTILS_LDLIBS@ \
-	@HOST_HPCPROFTT_LDFLAGS@
-
+MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Analysis) $(HPCLIB_Banal) \
+	$(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_ProfLean) \
+	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) \
+	$(HPCLIB_Support) $(HPCLIB_SupportLean) @XERCES_LDLIBS@ \
+	@GNUBINUTILS_LDLIBS@ @HOST_HPCPROFTT_LDFLAGS@ $(am__append_1)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 bin_SCRIPTS = hpcproftt
 hpcproftt_bin_SOURCES = $(MYSOURCES)

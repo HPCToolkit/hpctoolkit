@@ -70,6 +70,8 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+XED2_LIB = @XED2_LIB@
+
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
@@ -105,11 +107,16 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-pkglibexecdir = $(libexecdir)/$(PACKAGE)
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
 
 bin_SCRIPTS = hpcprof
 
 pkglibexec_PROGRAMS = hpcprof-bin
+
+if HOST_CPU_X86_FAMILY
+  MYLDADD += $(XED2_LIB)/libxed.a
+endif
 
 hpcprof_bin_SOURCES  = $(MYSOURCES)
 hpcprof_bin_CFLAGS   = $(MYCFLAGS)

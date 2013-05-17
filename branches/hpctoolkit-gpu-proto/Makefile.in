@@ -24,7 +24,6 @@
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
-pkglibdir = $(libdir)/@PACKAGE@
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 install_sh_DATA = $(install_sh) -c -m 644
 install_sh_PROGRAM = $(install_sh) -c
@@ -39,6 +38,10 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@OPT_BUILD_FRONT_END_TRUE@am__append_1 = \
+@OPT_BUILD_FRONT_END_TRUE@	doc \
+@OPT_BUILD_FRONT_END_TRUE@	lib
+
 subdir = .
 DIST_COMMON = README $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
@@ -47,7 +50,7 @@ DIST_COMMON = README $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/src/tool/hpcrun/scripts/hpcrun.in \
 	$(top_srcdir)/src/tool/hpcrun/scripts/hpclink.in \
 	$(top_srcdir)/src/tool/hpcrun/scripts/hpcsummary.in \
-	$(dist_doc_DATA)
+	$(am__dist_doc_DATA_DIST)
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
 	$(top_srcdir)/config/hpc-mpiutils.m4 \
@@ -93,6 +96,8 @@ RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	install-pdf-recursive install-ps-recursive install-recursive \
 	installcheck-recursive installdirs-recursive pdf-recursive \
 	ps-recursive uninstall-recursive
+am__dist_doc_DATA_DIST = README README.License README.ReleaseNotes \
+	README.Acknowledgments
 DATA = $(dist_doc_DATA)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
@@ -100,8 +105,13 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	$(RECURSIVE_CLEAN_TARGETS:-recursive=) tags TAGS ctags CTAGS
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = $(SUBDIRS)
-pkglibexecdir = $(libexecdir)/$(PACKAGE)
+DIST_SUBDIRS = src doc lib
+
+#############################################################################
+# Automake rules
+#############################################################################
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AR = @AR@
@@ -109,6 +119,7 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BACK_END_LABEL = @BACK_END_LABEL@
 BOOST_INC = @BOOST_INC@
 CC = @CC@
 CCAS = @CCAS@
@@ -288,6 +299,8 @@ localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
+my_pkglibdir = @my_pkglibdir@
+my_pkglibexecdir = @my_pkglibexecdir@
 oldincludedir = @oldincludedir@
 papi_extra_libs = @papi_extra_libs@
 pdfdir = @pdfdir@
@@ -321,19 +334,9 @@ MYSCRIPTS = \
 	config/hpcplatform \
 	config/config.guess
 
-MYMONITORDIR = $(DESTDIR)$(pkglibdir)/monitor
-
-#############################################################################
-# Automake rules
-#############################################################################
-SUBDIRS = \
-	src \
-	\
-	doc \
-	lib
-
-pkglibexec_SCRIPTS = $(MYSCRIPTS)
-dist_doc_DATA = $(MYDATA)
+SUBDIRS = src $(am__append_1)
+@OPT_BUILD_FRONT_END_TRUE@pkglibexec_SCRIPTS = $(MYSCRIPTS)
+@OPT_BUILD_FRONT_END_TRUE@dist_doc_DATA = $(MYDATA)
 
 #############################################################################
 # Other rules
@@ -352,7 +355,8 @@ dist_doc_DATA = $(MYDATA)
 # It's up to configure to decide if the library exists, whether to
 # copy it and where to put it, so we don't treat errors as fatal here.
 #
-EXT_LIBS_DIR = $(DESTDIR)$(prefix)/@hpc_ext_libs_dir@
+EXT_LIBS_DIR = $(DESTDIR)$(pkglibdir)/ext-libs
+MYMONITORDIR = $(DESTDIR)$(pkglibdir)/monitor
 
 ############################################################
 # Create hpctoolkit distribution
