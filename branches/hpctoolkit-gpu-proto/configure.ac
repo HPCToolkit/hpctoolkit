@@ -2510,7 +2510,10 @@ if test "$use_papi_c_cupti" != no; then
    fi
 fi
 
+AM_CONDITIONAL([OPT_ENABLE_CUPTI], [test "$OPT_HAVE_CUPTI" = yes])
+
 AC_SUBST([OPT_CUPTI_IFLAGS])
+AC_SUBST([OPT_CUPTI])
 
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing

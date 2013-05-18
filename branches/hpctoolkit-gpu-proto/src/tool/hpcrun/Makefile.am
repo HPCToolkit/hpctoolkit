@@ -156,6 +156,7 @@ PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
+CUPTI_BASE = @OPT_CUPTI@
 
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
@@ -749,7 +750,7 @@ if OPT_ENABLE_CUDA
   libhpcrun_la_SOURCES  += sample-sources/gpu_blame.c
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
-  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
+#  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
 
   libhpcrun_gpu_la_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_gpu_la_CFLAGS  += $(OPT_CUDA_IFLAGS)

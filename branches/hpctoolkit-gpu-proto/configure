@@ -613,7 +613,10 @@ my_pkglibdir
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
+OPT_CUPTI
 OPT_CUPTI_IFLAGS
+OPT_ENABLE_CUPTI_FALSE
+OPT_ENABLE_CUPTI_TRUE
 OPT_CUDA_LDFLAGS
 OPT_CUDA_IFLAGS
 OPT_CUDA
@@ -19047,6 +19050,16 @@ if test "$use_papi_c_cupti" != no; then
    fi
 fi
 
+ if test "$OPT_HAVE_CUPTI" = yes; then
+  OPT_ENABLE_CUPTI_TRUE=
+  OPT_ENABLE_CUPTI_FALSE='#'
+else
+  OPT_ENABLE_CUPTI_TRUE='#'
+  OPT_ENABLE_CUPTI_FALSE=
+fi
+
+
+
 
 
 #-------------------------------------------------
@@ -19503,6 +19516,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_CUDA_TRUE}" && test -z "${OPT_ENABLE_CUDA_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_CUDA\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_CUPTI_TRUE}" && test -z "${OPT_ENABLE_CUPTI_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_CUPTI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE}"; then

@@ -178,14 +178,14 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @OPT_ENABLE_CUDA_TRUE@am__append_87 = sample-sources/gpu_blame.c
 @OPT_ENABLE_CUDA_TRUE@am__append_88 = -DENABLE_CUDA
 @OPT_ENABLE_CUDA_TRUE@am__append_89 = $(OPT_CUDA_IFLAGS) -g
-@OPT_ENABLE_CUDA_TRUE@am__append_90 = $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_91 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_92 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_93 = $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_94 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_95 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_96 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_97 = libagent-pthread.la \
+#  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_90 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_91 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_92 = $(OPT_CUDA_LDFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_93 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_94 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_95 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_96 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -840,6 +840,7 @@ OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
 OPT_CUDA = @OPT_CUDA@
 OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
 OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
+OPT_CUPTI = @OPT_CUPTI@
 OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
 OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
 OPT_LIBUNWIND_IFLAGS = @OPT_LIBUNWIND_IFLAGS@
@@ -990,10 +991,11 @@ include_HEADERS = $(am__append_3)
 pkglib_LIBRARIES = $(am__append_9) $(am__append_10) $(am__append_11) \
 	$(am__append_12)
 pkglib_LTLIBRARIES = $(am__append_4) $(am__append_5) $(am__append_6) \
-	$(am__append_14) $(am__append_96) $(am__append_97)
+	$(am__append_14) $(am__append_95) $(am__append_96)
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
+CUPTI_BASE = @OPT_CUPTI@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 PLUGIN_CONFIG_FILES = ga io memleak $(am__append_15) $(am__append_16)
 UNW_UNIV_FILES = \
@@ -1254,10 +1256,10 @@ libhpcrun_memleak_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_30) $(am__append_43) $(am__append_58) \
-	$(am__append_91) $(UNW_INCLUDE_DIRS)
+	$(am__append_90) $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(MY_INCLUDE_DIRS) $(am__append_31) $(am__append_44) \
-	$(am__append_59) $(am__append_94) $(UNW_INCLUDE_DIRS)
+	$(am__append_59) $(am__append_93) $(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_32) $(am__append_45) $(am__append_60) \
 	$(am__append_72) $(UNW_INCLUDE_DIRS)
@@ -1291,9 +1293,9 @@ libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) $(am__append_92)
+libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) $(am__append_91)
 libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_95)
+	$(am__append_94)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 #-----------------------------------------------------------
@@ -1303,8 +1305,7 @@ libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread -lrt $(OPT_LIBUNWIND_LDFLAGS) $(am__append_50) \
-	$(am__append_75) $(am__append_84) $(am__append_90) \
-	$(UNW_LD_FLAGS)
+	$(am__append_75) $(am__append_84) $(UNW_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic	\
 	-Wl,--strip-debug
 
@@ -1317,7 +1318,7 @@ libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
 
 #libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic 	\
 #	-Wl,--strip-debug
-libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_93)
+libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_92)
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
 

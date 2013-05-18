@@ -232,7 +232,7 @@ papi_c_cupti_setup(void)
   // CUpti_SubscriberHandle subscriber;
 
   TMSG(CUDA,"sync setup called");
-  
+
   Cupti_call(cuptiSubscribe, &subscriber,
              (CUpti_CallbackFunc)hpcrun_cuda_kernel_callback, 
              NULL);
