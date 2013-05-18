@@ -121,7 +121,7 @@ if OPT_ENABLE_CUDA
   pkglib_LTLIBRARIES += libhpcrun_gpu.la
 endif
   pkglib_LTLIBRARIES += libhpctoolkit.la
-  bin_SCRIPTS += scripts/hpcrun$(BACK_END_LABEL)
+  bin_SCRIPTS += scripts/hpcrun
 endif
 
 if OPT_ENABLE_HPCRUN_STATIC
@@ -137,7 +137,7 @@ endif
 if HOST_CPU_PPC
   pkglib_LIBRARIES += libibm_xlomp_wrappers.a
 endif
-  bin_SCRIPTS += scripts/hpclink$(BACK_END_LABEL)
+  bin_SCRIPTS += scripts/hpclink
 endif
 
 if OPT_ENABLE_MPI_WRAP

@@ -1793,12 +1793,13 @@ AC_SUBST([XERCES_LIB])
 # the back end in a cross-compile config.
 
 AC_ARG_ENABLE([back-end],
-  [AS_HELP_STRING([--enable-back-end=LABEL],
-      [build only those tools needed to run hpcrun on the back-end
-       compute nodes, and use LABEL as a label for the back-end
-       arch type (default no)])],
+  [AS_HELP_STRING([--enable-back-end],
+      [build only those tools needed to run hpcrun and hpclink
+       on the back-end compute nodes])],
   [],
   [enable_back_end=no])
+
+# disable the back-end label until the build method settles down.
 
 back_end_label=
 case "$enable_back_end" in
@@ -1811,9 +1812,15 @@ case "$enable_back_end" in
         ;;
 esac
 
-BACK_END_LABEL=
 if test "$enable_back_end" = yes ; then
   BACK_END_LABEL="-$back_end_label"
+fi
+back_end_label=
+BACK_END_LABEL=
+
+if test "$enable_back_end" = yes ; then
+  OPT_INSTALL_MONITOR=no
+  XERCES_COPY=no
 fi
 
 AC_SUBST([BACK_END_LABEL])
@@ -2642,12 +2649,6 @@ my_pkglibdir='$(libdir)/$(PACKAGE)'
 my_pkglibexecdir='$(libexecdir)/$(PACKAGE)'
 BACK_END_LABEL=
 
-if test "$enable_back_end" = yes ; then
-  my_pkglibdir='$(libdir)/$(PACKAGE)$(BACK_END_LABEL)'
-  my_pkglibexecdir='$(libexecdir)/$(PACKAGE)$(BACK_END_LABEL)'
-  BACK_END_LABEL="-$back_end_label"
-fi
-
 AC_SUBST([my_pkglibdir])
 AC_SUBST([my_pkglibexecdir])
 AC_SUBST([BACK_END_LABEL])
@@ -2722,14 +2723,14 @@ AC_CONFIG_COMMANDS()
 
 AC_OUTPUT()
 
-# Hack to rename the scripts for a back-end build.
-if test "$enable_back_end" = yes ; then
-  dir=src/tool/hpcrun/scripts
-  for file in hpcrun hpclink
-  do
-    cp -f "${dir}/${file}" "${dir}/${file}${BACK_END_LABEL}"
-  done
-fi
+dnl # Hack to rename the scripts for a back-end build.
+dnl if test "$enable_back_end" = yes ; then
+dnl   dir=src/tool/hpcrun/scripts
+dnl   for file in hpcrun hpclink
+dnl   do
+dnl     cp -f "${dir}/${file}" "${dir}/${file}${BACK_END_LABEL}"
+dnl   done
+dnl fi
 
 
 #-------------------------------------------------

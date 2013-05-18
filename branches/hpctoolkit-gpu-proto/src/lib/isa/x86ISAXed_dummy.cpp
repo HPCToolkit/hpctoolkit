@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://hpctoolkit.googlecode.com/svn/trunk/src/lib/isa/x86ISA_xed.cpp $
+// $Id: x86ISA_xed.cpp 4175 2013-05-16 20:03:51Z laksono@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL$
+//   $HeadURL: https://hpctoolkit.googlecode.com/svn/trunk/src/lib/isa/x86ISA_xed.cpp $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -62,48 +62,59 @@
 #include <iostream>
 using std::ostream;
 
-#include <cstdarg>
+#include <cstdarg> 
 #include <cstring> // for 'memcpy'
 
 //*************************** User Include Files ****************************
 
 #include <include/gnu_dis-asm.h>
 
-#include "x86ISA.hpp"
+#include "x86ISAXed.hpp"
 
 #include <lib/support/diagnostics.h>
 
-//*************************** macros ***************************
 
+//*************************** Global Variables ***************************
 
+//*************************** cache decoder ***************************
 
-//*************************** Forward Declarations ***************************
-void
-GNU_print_addr(bfd_vma di_vma, struct disassemble_info* di)
+//*************************** x86ISA ***************************
+
+x86ISAXed::x86ISAXed(bool is_x86_64)
 {
-  GNUbu_disdata* data = (GNUbu_disdata*)di->application_data;
+}
 
-  VMA x = GNUvma2vma(di_vma, data->insn_addr, data->insn_vma);
-  ostream* os = (ostream*)di->stream;
-  *os << std::showbase << std::hex << x << std::dec;
+
+x86ISAXed::~x86ISAXed()
+{
+}
+
+
+ISA::InsnDesc
+x86ISAXed::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
+                    ushort GCC_ATTR_UNUSED s)
+{
+  ISA::InsnDesc d;
+
+  return d;
+}
+
+
+
+ushort
+x86ISAXed::getInsnSize(MachInsn* mi)
+{
+  return 0;
 }
 
 
 VMA
-GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
+x86ISAXed::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
+                         ushort GCC_ATTR_UNUSED sz)
 {
-  // N.B.: The GNU decoders expect that the address of the 'mi' is
-  // actually the VMA.  Furthermore for 32-bit x86 decoding, only
-  // the lower 32 bits of 'mi' are valid.
-
-  static const bfd_vma M32 = 0xffffffff;
-  //VMA t = (m_is_x86_64) ?
-  //  ((m_di->target & M32) - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)vma :
-  //  ((m_di->target)       - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)vma;
-  VMA x = ((di_vma & M32) - (PTR_TO_BFDVMA(insn_addr) & M32)) + (bfd_vma)insn_vma;
-  return x;
+  return 0;
 }
 
 
-
 //****************************************************************************
+

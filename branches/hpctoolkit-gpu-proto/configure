@@ -1586,9 +1586,8 @@ Optional Features:
                           5.1 or later
   --enable-papi-c-cupti   enable component PAPI's CUPTI functionality
                           (requires papi-c with cuda component installed
-  --enable-back-end=LABEL build only those tools needed to run hpcrun on the
-                          back-end compute nodes, and use LABEL as a label for
-                          the back-end arch type (default no)
+  --enable-back-end       build only those tools needed to run hpcrun and
+                          hpclink on the back-end compute nodes
   --enable-hpcrun-flat    build hpcrun-flat (default yes)
   --enable-hpcrun         build hpcrun (default yes)
   --enable-hpcrun-static  build hpcrun for statically linked executables
@@ -18071,6 +18070,8 @@ else
 fi
 
 
+# disable the back-end label until the build method settles down.
+
 back_end_label=
 case "$enable_back_end" in
   yes ) back_end_label=back-end
@@ -18082,9 +18083,15 @@ case "$enable_back_end" in
         ;;
 esac
 
-BACK_END_LABEL=
 if test "$enable_back_end" = yes ; then
   BACK_END_LABEL="-$back_end_label"
+fi
+back_end_label=
+BACK_END_LABEL=
+
+if test "$enable_back_end" = yes ; then
+  OPT_INSTALL_MONITOR=no
+  XERCES_COPY=no
 fi
 
 
@@ -19214,12 +19221,6 @@ fi
 my_pkglibdir='$(libdir)/$(PACKAGE)'
 my_pkglibexecdir='$(libexecdir)/$(PACKAGE)'
 BACK_END_LABEL=
-
-if test "$enable_back_end" = yes ; then
-  my_pkglibdir='$(libdir)/$(PACKAGE)$(BACK_END_LABEL)'
-  my_pkglibexecdir='$(libexecdir)/$(PACKAGE)$(BACK_END_LABEL)'
-  BACK_END_LABEL="-$back_end_label"
-fi
 
 
 
@@ -22117,14 +22118,6 @@ $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
 
-# Hack to rename the scripts for a back-end build.
-if test "$enable_back_end" = yes ; then
-  dir=src/tool/hpcrun/scripts
-  for file in hpcrun hpclink
-  do
-    cp -f "${dir}/${file}" "${dir}/${file}${BACK_END_LABEL}"
-  done
-fi
 
 
 #-------------------------------------------------
