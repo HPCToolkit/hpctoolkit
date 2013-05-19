@@ -56,76 +56,19 @@
  *****************************************************************************/
 
 static struct entry_t *unresolved_list = NULL;
-static struct entry_t *free_list = NULL;
 
 static spinlock_t unresolved_list_lock = SPINLOCK_UNLOCKED;
-static spinlock_t free_list_lock = SPINLOCK_UNLOCKED;
 
 struct entry_t *
 new_dw_entry()
 {
   struct entry_t *entry = NULL;
-  spinlock_lock(&free_list_lock);
-  if(free_list) {
-    entry = free_list;
-    free_list = free_list->next;
-    if(free_list) free_list->prev = NULL;
-    entry->prev = entry->next = NULL;
-    entry->td = NULL;
-    entry->flag = false;
-  }
-  else {
-    entry = (struct entry_t*)hpcrun_malloc(sizeof(struct entry_t));
-    entry->prev = entry->next = NULL;
-    entry->td = NULL;
-    entry->flag = false;
-  }
-  spinlock_unlock(&free_list_lock);
+
+  entry = (struct entry_t*)hpcrun_malloc(sizeof(struct entry_t));
+  entry->prev = entry->next = NULL;
+  entry->td = NULL;
+  entry->flag = false;
   return entry;
-}
-
-thread_data_t *
-get_reuse_td()
-{
-  spinlock_lock(&unresolved_list_lock);
-  if(!unresolved_list) {
-    spinlock_unlock(&unresolved_list_lock);
-    return NULL;
-  }
-  struct entry_t *entry = unresolved_list;
-  while(entry && entry->flag) entry=entry->next;
-  if(!entry) {
-    spinlock_unlock(&unresolved_list_lock);
-    return NULL;
-  }
-  entry->flag = true;
-  spinlock_unlock(&unresolved_list_lock);
-  while(!entry->td->reuse) ;
-  return entry->td;
-}
-
-void
-delete_dw_entry(struct entry_t* entry)
-{
-#if 0
-  // detach from the unresolved list
-  spinlock_lock(&unresolved_list_lock);
-  if(entry->prev) entry->prev->next = entry->next;
-  if(entry->next) entry->next->prev = entry->prev;
-  spinlock_unlock(&unresolved_list_lock);
-  // insert to the head of the free list
-  spinlock_lock(&free_list_lock);
-  if(!free_list) {
-    free_list = entry;
-    spinlock_unlock(&free_list_lock);
-    return;
-  }
-  entry->prev = NULL;
-  entry->next = free_list;
-  free_list->prev = entry;
-  free_list = entry;
-  spinlock_unlock(&free_list_lock);
-#endif
 }
 
 void
@@ -141,28 +84,6 @@ insert_dw_entry(struct entry_t* entry)
   entry->next = unresolved_list;
   unresolved_list->prev = entry;
   unresolved_list = entry;
-  spinlock_unlock(&unresolved_list_lock);
-}
-
-struct entry_t*
-fetch_dw_entry(struct entry_t **pointer)
-{
-  spinlock_lock(&unresolved_list_lock);
-  if(!(*pointer)) {
-    spinlock_unlock(&unresolved_list_lock);
-    return NULL;
-  }
-  while((*pointer) && (*pointer)->flag) (*pointer) = (*pointer)->next;
-  if((*pointer)) (*pointer)->flag = true;
-  spinlock_unlock(&unresolved_list_lock);
-  return (*pointer);
-}
-
-void
-set_dw_pointer(struct entry_t **pointer)
-{
-  spinlock_lock(&unresolved_list_lock);
-  *pointer = unresolved_list;
   spinlock_unlock(&unresolved_list_lock);
 }
 
