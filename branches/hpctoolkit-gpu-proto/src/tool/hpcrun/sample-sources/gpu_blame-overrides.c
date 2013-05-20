@@ -1293,11 +1293,14 @@ cudaError_t cudaConfigureCall(dim3 grid, dim3 block, size_t mem, cudaStream_t st
     
     if (! hpcrun_is_safe_to_sync(__func__))
       return cudaRuntimeFunctionPointer[cudaLaunchEnum].cudaLaunchReal(entry);
+    TMSG(CPU_GPU,"Cuda launch (get spinlock)");
     ASYNC_KERNEL_PROLOGUE(streamId, event_node, context, cct_node, ((cudaStream_t) (TD_GET(gpu_data.active_stream))), g_cuda_launch_skip_inner);
     
     cudaError_t ret = cudaRuntimeFunctionPointer[cudaLaunchEnum].cudaLaunchReal(entry);
     
+    TMSG(CPU_GPU, "Cuda launch about to release spin lock");
     ASYNC_KERNEL_EPILOGUE(event_node, ((cudaStream_t) (TD_GET(gpu_data.active_stream))));
+    TMSG(CPU_GPU, "Cuda launch done !(spin lock released)");
 
     return ret;
 }

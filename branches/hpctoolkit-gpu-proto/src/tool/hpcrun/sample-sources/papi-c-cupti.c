@@ -105,10 +105,10 @@ typedef struct cuda_callback_t {
 static void
 dlgpu(void)
 {
-  Chk_dlopen(cudart, "libcudart.so", RTLD_LAZY);
+  Chk_dlopen(cudart, "libcudart.so", RTLD_NOW | RTLD_GLOBAL);
   Chk_dlsym(cudart, cudaThreadSynchronize);
 
-  Chk_dlopen(cupti, "libcupti.so", RTLD_LAZY);
+  Chk_dlopen(cupti, "libcupti.so", RTLD_NOW | RTLD_GLOBAL);
   Chk_dlsym(cupti, cuptiGetResultString);
   Chk_dlsym(cupti, cuptiSubscribe);
   Chk_dlsym(cupti, cuptiEnableCallback);
@@ -172,7 +172,7 @@ hpcrun_cuda_kernel_callback(void* userdata,
   if (cbInfo->callbackSite == CUPTI_API_ENTER) {
     // MC recommends FIXME: cbInfo->????? (says what kind of callback) == KERNEL_LAUNCH
     // MC recommends FIXME: Unnecessary, but use cudaDeviveSynchronize
-    cudaThreadSynchronize();
+    dcudaThreadSynchronize();
 
     TMSG(CUDA,"starting CUDA monitoring w event set %d",cudaEventSet);
     int ret = PAPI_start(cudaEventSet);
@@ -184,7 +184,7 @@ hpcrun_cuda_kernel_callback(void* userdata,
     
   if (cbInfo->callbackSite == CUPTI_API_EXIT) {
     // MC recommends Use cudaDeviceSynchronize
-    cudaThreadSynchronize();
+    dcudaThreadSynchronize();
     long_long eventValues[nevents+2];
     
     TMSG(CUDA,"stopping CUDA monitoring w event set %d",cudaEventSet);
@@ -233,11 +233,11 @@ papi_c_cupti_setup(void)
 
   TMSG(CUDA,"sync setup called");
 
-  Cupti_call(cuptiSubscribe, &subscriber,
+  Cupti_call(dcuptiSubscribe, &subscriber,
              (CUpti_CallbackFunc)hpcrun_cuda_kernel_callback, 
              NULL);
              
-  Cupti_call(cuptiEnableCallback, 1, subscriber,
+  Cupti_call(dcuptiEnableCallback, 1, subscriber,
              CUPTI_CB_DOMAIN_RUNTIME_API,
              CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020);
 }
@@ -250,7 +250,7 @@ papi_c_cupti_teardown(void)
 {
   TMSG(CUDA,"sync teardown called (=unsubscribe)");
   
-  Cupti_call(cuptiUnsubscribe, subscriber);
+  Cupti_call(dcuptiUnsubscribe, subscriber);
 }
 
 static sync_info_list_t cuda_component = {
