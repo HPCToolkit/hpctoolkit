@@ -68,7 +68,6 @@ DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/hpcprof-flat.in $(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
 pkglibexec_PROGRAMS = hpcprof-flat-bin$(EXEEXT)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_1 = $(XED2_LIB)/libxed.a
 subdir = src/tool/hpcprof-flat
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -87,11 +86,12 @@ am__objects_1 = hpcprof_flat_bin-main.$(OBJEXT) \
 	hpcprof_flat_bin-ConfigParser.$(OBJEXT)
 am_hpcprof_flat_bin_OBJECTS = $(am__objects_1)
 hpcprof_flat_bin_OBJECTS = $(am_hpcprof_flat_bin_OBJECTS)
-am__DEPENDENCIES_1 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
+@HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_1 = $(XED2_LIB)/libxed.a
+am__DEPENDENCIES_2 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_ProfLean) \
-	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) \
-	$(HPCLIB_Support) $(HPCLIB_SupportLean) $(am__append_1)
-hpcprof_flat_bin_DEPENDENCIES = $(am__DEPENDENCIES_1)
+	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(am__DEPENDENCIES_1) \
+	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean)
+hpcprof_flat_bin_DEPENDENCIES = $(am__DEPENDENCIES_2)
 hpcprof_flat_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(hpcprof_flat_bin_CXXFLAGS) $(CXXFLAGS) \
@@ -405,12 +405,25 @@ MYLDFLAGS = \
 	@XERCES_LDFLAGS@ \
 	@GNUBINUTILS_LDFLAGS@
 
-MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Analysis) $(HPCLIB_Banal) \
-	$(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_ProfLean) \
-	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) \
-	$(HPCLIB_Support) $(HPCLIB_SupportLean) @XERCES_LDLIBS@ \
-	@GNUBINUTILS_LDLIBS@ @HOST_HPCPROF_FLAT_LDFLAGS@ \
-	$(am__append_1)
+MYLDADD = \
+	@HOST_LIBTREPOSITORY@ \
+	$(HPCLIB_Analysis) \
+	$(HPCLIB_Banal) \
+	$(HPCLIB_ProfXML) \
+	$(HPCLIB_Prof) \
+	$(HPCLIB_ProfLean) \
+	$(HPCLIB_Binutils) \
+	$(HPCLIB_ISA) \
+	$(MY_LIB_XED) \
+	$(HPCLIB_XML) \
+	$(HPCLIB_Support) \
+	$(HPCLIB_SupportLean) \
+	@XERCES_LDLIBS@ \
+	@GNUBINUTILS_LDLIBS@ \
+	@HOST_HPCPROF_FLAT_LDFLAGS@
+
+@HOST_CPU_X86_FAMILY_FALSE@MY_LIB_XED = 
+@HOST_CPU_X86_FAMILY_TRUE@MY_LIB_XED = $(XED2_LIB)/libxed.a
 MYCLEAN = @HOST_LIBTREPOSITORY@
 bin_SCRIPTS = hpcprof-flat
 hpcprof_flat_bin_SOURCES = $(MYSOURCES)
