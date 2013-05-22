@@ -172,11 +172,12 @@ g_free_tree_nodes_head = (node_ptr); }while(0)
 #define ADD_TO_FREE_ACTIVE_KERNEL_NODE_LIST(node_ptr) do { (node_ptr)->next_free_node = g_free_active_kernel_nodes_head; \
 g_free_active_kernel_nodes_head = (node_ptr); }while(0)
 
-#define HPCRUN_ASYNC_BLOCK_SPIN_LOCK  do{hpcrun_safe_enter(); \
+#define HPCRUN_ASYNC_BLOCK_SPIN_LOCK bool safe = false; \
+do {safe = hpcrun_safe_enter(); \
 spinlock_lock(&g_gpu_lock);} while(0)
 
 #define HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK  do{spinlock_unlock(&g_gpu_lock); \
-hpcrun_safe_exit();} while(0)
+    if (safe) hpcrun_safe_exit();} while(0)
 
 #define SYNC_PROLOGUE(ctxt, launch_node, start_time, rec_node)                                                                   \
 TD_GET(gpu_data.overload_state) = SYNC_STATE;                                                                                    \

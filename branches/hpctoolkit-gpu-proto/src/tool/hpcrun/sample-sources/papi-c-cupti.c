@@ -199,7 +199,7 @@ hpcrun_cuda_kernel_callback(void* userdata,
     TMSG(CUDA,"getting context in CUDA event handler");
     getcontext(&uc);
     TMSG(CUDA,"got context in CUDA event handler");
-    hpcrun_safe_enter();
+    bool safe = hpcrun_safe_enter();
     TMSG(CUDA,"blocked async event in CUDA event handler");
     {
       int i;
@@ -215,7 +215,7 @@ hpcrun_cuda_kernel_callback(void* userdata,
 	}
     }
     TMSG(CUDA,"unblocking async event in CUDA event handler");
-    hpcrun_safe_exit();
+    if (safe) hpcrun_safe_exit();
     TMSG(CUDA,"unblocked async event in CUDA event handler");
   }
 }
