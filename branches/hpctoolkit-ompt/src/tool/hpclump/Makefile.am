@@ -88,10 +88,17 @@ MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) \
+	$(MY_LIB_XED) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@
+
+if HOST_CPU_X86_FAMILY
+MY_LIB_XED = $(XED2_LIB)/libxed.a
+else
+MY_LIB_XED =
+endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
@@ -99,13 +106,10 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-pkglibexecdir = $(libexecdir)/$(PACKAGE)
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
 
 pkglibexec_PROGRAMS = hpclump
-
-if HOST_CPU_X86_FAMILY
-  MYLDADD += $(XED2_LIB)/libxed.a
-endif
 
 hpclump_SOURCES  = $(MYSOURCES)
 hpclump_CFLAGS   = $(MYCFLAGS)

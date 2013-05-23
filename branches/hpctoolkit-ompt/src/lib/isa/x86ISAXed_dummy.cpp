@@ -1,9 +1,9 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/branches/hpctoolkit-gpu-blame-shift-proto/src/tool/hpcrun/sample-sources/gpu_blame.h $
-// $Id: itimer.c 3784 2012-05-10 22:35:51Z mc29 $
+// $HeadURL: https://hpctoolkit.googlecode.com/svn/trunk/src/lib/isa/x86ISA_xed.cpp $
+// $Id: x86ISA_xed.cpp 4175 2013-05-16 20:03:51Z laksono@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -42,51 +42,79 @@
 // or otherwise) arising in any way out of the use of this software, even
 // if advised of the possibility of such damage.
 //
-// **
+// ******************************************************* EndRiceCopyright *
 
-#ifndef __GPU_BLAME_H__
-#define __GPU_BLAME_H__
-#include <cuda.h>
-#include <cuda_runtime.h>
-
-#ifdef ENABLE_CUDA
-
-#include "gpu_blame-cuda-runtime-header.h"
-#include "gpu_blame-cuda-driver-header.h"
-#include <hpcrun/core_profile_trace_data.h>
-#include <hpcrun/main.h>
-
+//***************************************************************************
 //
-// Blame shiting interface
+// File:
+//   $HeadURL: https://hpctoolkit.googlecode.com/svn/trunk/src/lib/isa/x86ISA_xed.cpp $
 //
-#define MAX_STREAMS (500)
+// Purpose:
+//   [The purpose of this file]
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
 
-// Visible types
+//************************* System Include Files ****************************
 
-// CPU GPU blame metrics
-extern int cpu_idle_metric_id;
-extern int gpu_activity_time_metric_id;
-extern int cpu_idle_cause_metric_id;
-extern int gpu_idle_metric_id;
-extern int gpu_overload_potential_metric_id;
-extern int cpu_overlap_metric_id;
-extern int gpu_overlap_metric_id;
-extern int stream_special_metric_id;
-extern int h_to_h_data_xfer_metric_id;
-extern int h_to_d_data_xfer_metric_id;
-extern int d_to_d_data_xfer_metric_id;
-extern int d_to_h_data_xfer_metric_id;
-extern int uva_data_xfer_metric_id;
+#include <iostream>
+using std::ostream;
 
-extern bool g_cpu_gpu_enabled;
+#include <cstdarg> 
+#include <cstring> // for 'memcpy'
 
-// num threads in the process
-extern uint64_t g_active_threads;
+//*************************** User Include Files ****************************
 
-// Visible function declarations
-extern void gpu_blame_shifter(int metric_id, cct_node_t * node, int  metric_incr);
-extern  void hpcrun_stream_finalize(void * st);
-extern void hpcrun_set_gpu_proxy_present();
+#include <include/gnu_dis-asm.h>
 
-#endif
-#endif
+#include "x86ISAXed.hpp"
+
+#include <lib/support/diagnostics.h>
+
+
+//*************************** Global Variables ***************************
+
+//*************************** cache decoder ***************************
+
+//*************************** x86ISA ***************************
+
+x86ISAXed::x86ISAXed(bool is_x86_64)
+{
+}
+
+
+x86ISAXed::~x86ISAXed()
+{
+}
+
+
+ISA::InsnDesc
+x86ISAXed::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
+                    ushort GCC_ATTR_UNUSED s)
+{
+  ISA::InsnDesc d;
+
+  return d;
+}
+
+
+
+ushort
+x86ISAXed::getInsnSize(MachInsn* mi)
+{
+  return 0;
+}
+
+
+VMA
+x86ISAXed::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
+                         ushort GCC_ATTR_UNUSED sz)
+{
+  return 0;
+}
+
+
+//****************************************************************************
+

@@ -260,14 +260,14 @@ void end_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_frame,
 	  omp_arg.tbd = true;
 	  omp_arg.region_id = TD_GET(region_id);
         }
-        node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, (void *)&omp_arg).sample_node;
+        node = hpcrun_sample_callpath(&uc, 0, 0, 1, 1, (void *)&omp_arg).sample_node;
         TMSG(DEFER_CTXT, "unwind the callstack for region %d to %d", record->region_id, TD_GET(region_id));
       }
       //
       // for master thread in the outer-most region, a normal unwind to the process stop 
       //
       else {
-        node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1, NULL).sample_node;
+        node = hpcrun_sample_callpath(&uc, 0, 0, 1, 1, NULL).sample_node;
         TMSG(DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
       }
 

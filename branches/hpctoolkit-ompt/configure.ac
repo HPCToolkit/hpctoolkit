@@ -1746,6 +1746,53 @@ AC_SUBST([XERCES_LIB])
 #----------------------------------------------------------------------------
 
 #-------------------------------------------------
+# enable-back-end
+#-------------------------------------------------
+
+# Build only those tools (hpcrun, fnbounds and prereqs) that run on
+# the back end in a cross-compile config.
+
+AC_ARG_ENABLE([back-end],
+  [AS_HELP_STRING([--enable-back-end],
+      [build only those tools needed to run hpcrun and hpclink
+       on the back-end compute nodes])],
+  [],
+  [enable_back_end=no])
+
+# disable the back-end label until the build method settles down.
+
+back_end_label=
+case "$enable_back_end" in
+  yes ) back_end_label=back-end
+        enable_back_end=yes
+        ;;
+  no )  ;;
+  * )   back_end_label="$enable_back_end"
+        enable_back_end=yes
+        ;;
+esac
+
+if test "$enable_back_end" = yes ; then
+  BACK_END_LABEL="-$back_end_label"
+fi
+back_end_label=
+BACK_END_LABEL=
+
+if test "$enable_back_end" = yes ; then
+  OPT_INSTALL_MONITOR=no
+  XERCES_COPY=no
+fi
+
+AC_SUBST([BACK_END_LABEL])
+
+AM_CONDITIONAL(OPT_BUILD_BACK_END,  [test $enable_back_end = yes])
+AM_CONDITIONAL(OPT_BUILD_FRONT_END, [test $enable_back_end = no])
+
+AM_CONDITIONAL(OPT_BUILD_LIB_ALL,  [test $enable_back_end = no])
+AM_CONDITIONAL(OPT_BUILD_TOOL_ALL, [test $enable_back_end = no])
+
+
+#-------------------------------------------------
 # enable-hpcrun-flat: Only build hpcrun if on Linux and PAPI is present
 #-------------------------------------------------
 
@@ -2512,6 +2559,19 @@ AM_CONDITIONAL(OPT_ENABLE_DEVTOOLS, test "${OPT_ENABLE_DEVTOOLS}" = "yes")
 
 
 #----------------------------------------------------------------------------
+# Adjust some install paths for Makefiles
+#----------------------------------------------------------------------------
+
+my_pkglibdir='$(libdir)/$(PACKAGE)'
+my_pkglibexecdir='$(libexecdir)/$(PACKAGE)'
+BACK_END_LABEL=
+
+AC_SUBST([my_pkglibdir])
+AC_SUBST([my_pkglibexecdir])
+AC_SUBST([BACK_END_LABEL])
+
+
+#----------------------------------------------------------------------------
 # Makefiles to create
 #----------------------------------------------------------------------------
 
@@ -2579,6 +2639,15 @@ export_hpctoolkit="${srcdir}/config/export-hpctoolkit"
 AC_CONFIG_COMMANDS()
 
 AC_OUTPUT()
+
+dnl # Hack to rename the scripts for a back-end build.
+dnl if test "$enable_back_end" = yes ; then
+dnl   dir=src/tool/hpcrun/scripts
+dnl   for file in hpcrun hpclink
+dnl   do
+dnl     cp -f "${dir}/${file}" "${dir}/${file}${BACK_END_LABEL}"
+dnl   done
+dnl fi
 
 
 #-------------------------------------------------

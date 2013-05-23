@@ -93,16 +93,25 @@ PYTHON = python
 # build targets
 #-----------------------------------------------------------
 
-pkglibexecdir = $(libexecdir)/$(PACKAGE)
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
+
 plugin_srcdir = $(srcdir)/plugins
 plugin_instdir = $(pkglibdir)/plugins
 
-bin_SCRIPTS = scripts/hpcsummary
-pkglibexec_SCRIPTS = scripts/hpclog
-
-include_HEADERS = hpctoolkit.h
-
+bin_SCRIPTS =
+pkglibexec_SCRIPTS =
+include_HEADERS =
+pkglib_PROGRAMS =
+pkglib_LIBRARIES =
 pkglib_LTLIBRARIES =
+
+if OPT_BUILD_FRONT_END
+  bin_SCRIPTS += scripts/hpcsummary
+  pkglibexec_SCRIPTS += scripts/hpclog
+  include_HEADERS += hpctoolkit.h
+endif
+
 if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcrun.la
   pkglib_LTLIBRARIES += libhpcrun_ga.la
@@ -115,8 +124,6 @@ endif
   bin_SCRIPTS += scripts/hpcrun
 endif
 
-pkglib_PROGRAMS =
-pkglib_LIBRARIES =
 if OPT_ENABLE_HPCRUN_STATIC
   pkglib_PROGRAMS  += libhpcrun.o
   pkglib_LIBRARIES += libhpcrun_wrap.a
@@ -420,12 +427,16 @@ libhpcrun_memleak_wrap_a_SOURCES = 	\
 libhpcrun_gpu_la_SOURCES = 		\
 	sample-sources/gpu_blame-overrides.c \
 	gpu_blame-driver-overrides-generated.c \
-	gpu_blame-runtime-overrides-generated.c
+	gpu_blame-runtime-overrides-generated.c \
+	gpu_blame-cuda-driver-table.c \
+	gpu_blame-cuda-runtime-table.c
 
 libhpcrun_gpu_wrap_a_SOURCES = 	\
 	sample-sources/gpu_blame-overrides.c  \
 	gpu_blame-driver-overrides-generated.c \
-	gpu_blame-runtime-overrides-generated.c
+	gpu_blame-runtime-overrides-generated.c \
+	gpu_blame-cuda-driver-table.c \
+	gpu_blame-cuda-runtime-table.c
 
 libhpcrun_mpi_la_SOURCES = 		\
 	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
@@ -727,7 +738,7 @@ if UNW_PPC64
 endif
 
 if OPT_ENABLE_CUDA
-  libhpcrun_la_SOURCES  += sample-sources/gpu_blame.c gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
+  libhpcrun_la_SOURCES  += sample-sources/gpu_blame.c
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
   libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
