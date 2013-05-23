@@ -70,6 +70,8 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+XED2_LIB = @XED2_LIB@
+
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp \
@@ -94,6 +96,7 @@ MYLDADD = \
 	$(HPCLIB_ProfLean) \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) \
+	$(MY_LIB_XED) \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
@@ -101,15 +104,22 @@ MYLDADD = \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCPROF_LDFLAGS@
 
+if HOST_CPU_X86_FAMILY
+MY_LIB_XED = $(XED2_LIB)/libxed.a
+else
+MY_LIB_XED =
+endif
+
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-CXX = $(MPICXX)
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
 
-pkglibexecdir = $(libexecdir)/$(PACKAGE)
+CXX = $(MPICXX)
 
 bin_SCRIPTS = hpcprof-mpi
 

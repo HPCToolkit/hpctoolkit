@@ -50,7 +50,6 @@
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
-pkglibdir = $(libdir)/@PACKAGE@
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 install_sh_DATA = $(install_sh) -c -m 644
 install_sh_PROGRAM = $(install_sh) -c
@@ -69,7 +68,6 @@ DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/hpcprof-flat.in $(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
 pkglibexec_PROGRAMS = hpcprof-flat-bin$(EXEEXT)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_1 = $(XED2_LIB)/libxed.a
 subdir = src/tool/hpcprof-flat
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -88,11 +86,12 @@ am__objects_1 = hpcprof_flat_bin-main.$(OBJEXT) \
 	hpcprof_flat_bin-ConfigParser.$(OBJEXT)
 am_hpcprof_flat_bin_OBJECTS = $(am__objects_1)
 hpcprof_flat_bin_OBJECTS = $(am_hpcprof_flat_bin_OBJECTS)
-am__DEPENDENCIES_1 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
+@HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_1 = $(XED2_LIB)/libxed.a
+am__DEPENDENCIES_2 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_ProfLean) \
-	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) \
-	$(HPCLIB_Support) $(HPCLIB_SupportLean) $(am__append_1)
-hpcprof_flat_bin_DEPENDENCIES = $(am__DEPENDENCIES_1)
+	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(am__DEPENDENCIES_1) \
+	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean)
+hpcprof_flat_bin_DEPENDENCIES = $(am__DEPENDENCIES_2)
 hpcprof_flat_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(hpcprof_flat_bin_CXXFLAGS) $(CXXFLAGS) \
@@ -150,7 +149,8 @@ DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 #############################################################################
 # Automake rules
 #############################################################################
-pkglibexecdir = $(libexecdir)/$(PACKAGE)
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AR = @AR@
@@ -158,6 +158,7 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BACK_END_LABEL = @BACK_END_LABEL@
 BOOST_INC = @BOOST_INC@
 CC = @CC@
 CCAS = @CCAS@
@@ -344,6 +345,8 @@ localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
+my_pkglibdir = @my_pkglibdir@
+my_pkglibexecdir = @my_pkglibexecdir@
 oldincludedir = @oldincludedir@
 papi_extra_libs = @papi_extra_libs@
 pdfdir = @pdfdir@
@@ -402,12 +405,25 @@ MYLDFLAGS = \
 	@XERCES_LDFLAGS@ \
 	@GNUBINUTILS_LDFLAGS@
 
-MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Analysis) $(HPCLIB_Banal) \
-	$(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_ProfLean) \
-	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) \
-	$(HPCLIB_Support) $(HPCLIB_SupportLean) @XERCES_LDLIBS@ \
-	@GNUBINUTILS_LDLIBS@ @HOST_HPCPROF_FLAT_LDFLAGS@ \
-	$(am__append_1)
+MYLDADD = \
+	@HOST_LIBTREPOSITORY@ \
+	$(HPCLIB_Analysis) \
+	$(HPCLIB_Banal) \
+	$(HPCLIB_ProfXML) \
+	$(HPCLIB_Prof) \
+	$(HPCLIB_ProfLean) \
+	$(HPCLIB_Binutils) \
+	$(HPCLIB_ISA) \
+	$(MY_LIB_XED) \
+	$(HPCLIB_XML) \
+	$(HPCLIB_Support) \
+	$(HPCLIB_SupportLean) \
+	@XERCES_LDLIBS@ \
+	@GNUBINUTILS_LDLIBS@ \
+	@HOST_HPCPROF_FLAT_LDFLAGS@
+
+@HOST_CPU_X86_FAMILY_FALSE@MY_LIB_XED = 
+@HOST_CPU_X86_FAMILY_TRUE@MY_LIB_XED = $(XED2_LIB)/libxed.a
 MYCLEAN = @HOST_LIBTREPOSITORY@
 bin_SCRIPTS = hpcprof-flat
 hpcprof_flat_bin_SOURCES = $(MYSOURCES)

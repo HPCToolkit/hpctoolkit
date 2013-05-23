@@ -301,7 +301,7 @@ hpcrun_safe_exit(); } while(0)
 
 #define CUDA_RUNTIME_SYNC_WRAPPER(fn,  prologueArgs, epilogueArgs, ...) \
     VA_FN_DECLARE(cudaError_t, fn, __VA_ARGS__) {\
-    if (! hpcrun_is_safe_to_sync()) return VA_FN_CALL(cudaRuntimeFunctionPointer[fn##Enum].fn##Real, __VA_ARGS__);\
+    if (! hpcrun_is_safe_to_sync(__func__)) return VA_FN_CALL(cudaRuntimeFunctionPointer[fn##Enum].fn##Real, __VA_ARGS__);\
     SYNC_PROLOGUE prologueArgs;\
     monitor_disable_new_threads();\
     cudaError_t ret = VA_FN_CALL(cudaRuntimeFunctionPointer[fn##Enum].fn##Real, __VA_ARGS__);\
@@ -328,6 +328,7 @@ hpcrun_safe_exit(); } while(0)
 
 #define CUDA_RUNTIME_ASYNC_MEMCPY_WRAPPER(fn,  prologueArgs, epilogueArgs, ...) \
     VA_FN_DECLARE(cudaError_t, fn, __VA_ARGS__) {\
+    if (! hpcrun_is_safe_to_sync(__func__)) return VA_FN_CALL(cudaRuntimeFunctionPointer[fn##Enum].fn##Real, __VA_ARGS__);\
     ASYNC_MEMCPY_PROLOGUE prologueArgs;\
     cudaError_t ret = VA_FN_CALL(cudaRuntimeFunctionPointer[fn##Enum].fn##Real, __VA_ARGS__);\
     ASYNC_MEMCPY_EPILOGUE epilogueArgs;\
@@ -336,6 +337,7 @@ hpcrun_safe_exit(); } while(0)
 
 #define CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(fn,  prologueArgs, epilogueArgs, ...) \
     VA_FN_DECLARE(cudaError_t, fn, __VA_ARGS__) {\
+    if (! hpcrun_is_safe_to_sync(__func__)) return VA_FN_CALL(cudaRuntimeFunctionPointer[fn##Enum].fn##Real, __VA_ARGS__);\
     SYNC_MEMCPY_PROLOGUE prologueArgs;\
     monitor_disable_new_threads();\
     cudaError_t ret = VA_FN_CALL(cudaRuntimeFunctionPointer[fn##Enum].fn##Real, __VA_ARGS__);\
@@ -360,6 +362,18 @@ enum overloadPotentialState{
     SYNC_STATE,
     OVERLOADABLE_STATE
 };
+
+
+/******************************************************************************
+ * externs
+ *****************************************************************************/
+
+// function pointers to real cuda runtime functions
+extern cudaRuntimeFunctionPointer_t  cudaRuntimeFunctionPointer[];
+
+// function pointers to real cuda driver functions
+extern cuDriverFunctionPointer_t  cuDriverFunctionPointer[];
+
 /******************************************************************************
  * forward declarations
  *****************************************************************************/
@@ -1260,6 +1274,8 @@ recorded_node, ALL_STREAMS_MASK, syncEnd),struct cudaArray *, array)
 
 cudaError_t cudaConfigureCall(dim3 grid, dim3 block, size_t mem, cudaStream_t stream) {
     
+    if (! hpcrun_is_safe_to_sync(__func__))
+      return cudaRuntimeFunctionPointer[cudaConfigureCallEnum].cudaConfigureCallReal(grid, block, mem, stream);
     TD_GET(gpu_data.is_thread_at_cuda_sync) = true;
     monitor_disable_new_threads();
     cudaError_t ret = cudaRuntimeFunctionPointer[cudaConfigureCallEnum].cudaConfigureCallReal(grid, block, mem, stream);
@@ -1275,6 +1291,8 @@ cudaError_t cudaConfigureCall(dim3 grid, dim3 block, size_t mem, cudaStream_t st
     cudaError_t cudaLaunch(const void *entry) {
 #endif
     
+    if (! hpcrun_is_safe_to_sync(__func__))
+      return cudaRuntimeFunctionPointer[cudaLaunchEnum].cudaLaunchReal(entry);
     ASYNC_KERNEL_PROLOGUE(streamId, event_node, context, cct_node, ((cudaStream_t) (TD_GET(gpu_data.active_stream))), g_cuda_launch_skip_inner);
     
     cudaError_t ret = cudaRuntimeFunctionPointer[cudaLaunchEnum].cudaLaunchReal(entry);
@@ -1641,10 +1659,23 @@ recorded_node, ALL_STREAMS_MASK, syncEnd, (height * width), kind), void *,
 dst, size_t, dpitch, const void *, src, size_t, spitch, size_t, width,
 size_t, height, enum cudaMemcpyKind, kind)
 
+#if 1
 CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy, (context, launcher_cct,
 syncStart, recorded_node), (context, launcher_cct, syncStart,
 recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), void *, dst,
 const void *, src, size_t, count, enum cudaMemcpyKind, kind)
+#else
+cudaError_t
+cudaMemcpy(void * dst, const void * src, size_t count, enum cudaMemcpyKind kind)
+{
+  hpcrun_get_thread_data()->gpu_data.overload_state = SYNC_STATE;
+  hpcrun_get_thread_data()->gpu_data.accum_num_sync_threads = 0;
+  hpcrun_get_thread_data()->gpu_data.accum_num_samples = 0;
+  hpcrun_safe_enter();
+  ucontext_t context; getcontext(&context); cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 , 1 ).sample_node; hpcrun_get_thread_data()->gpu_data.is_thread_at_cuda_sync = 1; spinlock_lock(&g_gpu_lock); uint64_t syncStart; event_list_node_t * recorded_node = enter_cuda_sync(& syncStart); spinlock_unlock(&g_gpu_lock); do{ if((ipc_data != ((void *)0))) (void) __sync_fetch_and_add(&(ipc_data->num_threads_at_sync_all_procs), 1L); }while(0); hpcrun_safe_exit();; monitor_disable_new_threads(); cudaError_t ret = cudaRuntimeFunctionPointer[cudaMemcpyEnum].cudaMemcpyReal(dst, src, count, kind); monitor_enable_new_threads(); hpcrun_safe_enter(); spinlock_lock(&g_gpu_lock); uint64_t last_kernel_end_time = leave_cuda_sync(recorded_node,syncStart,(0xffffffff)); hpcrun_get_thread_data()->gpu_data.accum_num_sync_threads = 0; hpcrun_get_thread_data()->gpu_data.accum_num_samples = 0; spinlock_unlock(&g_gpu_lock); struct timeval tv; gettimeofday(&tv, ((void *)0)); uint64_t syncEnd = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000)); if ( last_kernel_end_time > syncEnd) {last_kernel_end_time = syncEnd;} uint64_t cpu_idle_time = syncEnd - syncStart; uint64_t gpu_idle_time = last_kernel_end_time == 0 ? syncEnd - syncStart : syncEnd - last_kernel_end_time; cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (cpu_idle_time)}); cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (gpu_idle_time)}); increment_mem_xfer_metric(count, kind, launcher_cct); hpcrun_safe_exit(); do{ if((ipc_data != ((void *)0))) (void) __sync_fetch_and_add(&(ipc_data->num_threads_at_sync_all_procs), -1L); }while(0); hpcrun_get_thread_data()->gpu_data.is_thread_at_cuda_sync = 0;
+  return ret;
+}
+#endif
 
 CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyToArray, (context,
 launcher_cct, syncStart, recorded_node), (context, launcher_cct,

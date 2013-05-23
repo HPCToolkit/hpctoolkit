@@ -52,7 +52,7 @@
 
 extern bool hpcrun_is_initialized();
 
-extern bool hpcrun_is_safe_to_sync(void);
+extern bool hpcrun_is_safe_to_sync(const char* fn);
 extern void hpcrun_set_safe_to_sync(void);
 
 typedef void siglongjmp_fcn(sigjmp_buf, int);

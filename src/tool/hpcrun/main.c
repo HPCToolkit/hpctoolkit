@@ -213,8 +213,12 @@ hpcrun_inbounds_main(void* addr)
   return (main_lower <= addr) && (addr <= main_upper);
 }
 
+//
+// the char* fn argument is for debugging:
+//  It has no effect in this incarnation
+//
 bool
-hpcrun_is_safe_to_sync(void)
+hpcrun_is_safe_to_sync(const char* fn)
 {
   return safe_to_sync_sample;
 }

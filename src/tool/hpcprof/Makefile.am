@@ -94,6 +94,7 @@ MYLDADD = \
 	$(HPCLIB_ProfLean) \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) \
+	$(MY_LIB_XED) \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
@@ -101,21 +102,24 @@ MYLDADD = \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCPROF_LDFLAGS@
 
+if HOST_CPU_X86_FAMILY
+MY_LIB_XED = $(XED2_LIB)/libxed.a
+else
+MY_LIB_XED =
+endif
+
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-pkglibexecdir = $(libexecdir)/$(PACKAGE)
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
 
 bin_SCRIPTS = hpcprof
 
 pkglibexec_PROGRAMS = hpcprof-bin
-
-if HOST_CPU_X86_FAMILY
-  MYLDADD += $(XED2_LIB)/libxed.a
-endif
 
 hpcprof_bin_SOURCES  = $(MYSOURCES)
 hpcprof_bin_CFLAGS   = $(MYCFLAGS)

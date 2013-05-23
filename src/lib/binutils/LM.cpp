@@ -92,6 +92,8 @@ using std::endl;
 #include <lib/isa/PowerISA.hpp>
 #include <lib/isa/SparcISA.hpp>
 #include <lib/isa/x86ISA.hpp>
+#include <lib/isa/x86ISABinutils.hpp>
+#include <lib/isa/x86ISAXed.hpp>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
@@ -114,13 +116,13 @@ dumpSymFlag(std::ostream& o, asymbol* sym, int flag, const char* txt, bool& hasP
 ISA* BinUtil::LM::isa = NULL;
 
 
-BinUtil::LM::LM()
+BinUtil::LM::LM(bool useBinutils)
   : m_type(TypeNULL), m_readFlags(ReadFlg_NULL),
     m_txtBeg(0), m_txtEnd(0), m_begVMA(0),
     m_textBegReloc(0), m_unrelocDelta(0),
     m_bfd(NULL), m_bfdSymTab(NULL), m_bfdSynthTab(NULL),
     m_bfdSymTabSort(NULL), m_bfdSymTabSz(0), m_bfdSynthTabSz(0),
-    m_realpathMgr(RealPathMgr::singleton())
+    m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils)
 {
 }
 
@@ -231,14 +233,22 @@ BinUtil::LM::open(const char* filenm)
       newisa = new AlphaISA;
       break;
     case bfd_arch_i386: // x86 and x86_64
-      newisa = new x86ISA(bfd_get_mach(m_bfd) == bfd_mach_x86_64);
+      if (m_useBinutils) {
+        newisa = new x86ISABinutils(bfd_get_mach(m_bfd) == bfd_mach_x86_64);
+      } else {
+        newisa = new x86ISAXed(bfd_get_mach(m_bfd) == bfd_mach_x86_64);
+      }
       break;
     case bfd_arch_ia64:
       newisa = new IA64ISA;
       break;
 #ifdef bfd_mach_k1om
     case bfd_arch_k1om: // Intel MIC, 64-bit only
-      newisa = new x86ISA(true);
+      if (m_useBinutils) {
+         newisa = new x86ISABinutils(true);
+      } else {
+         newisa = new x86ISAXed(true);
+      }
       break;
 #endif
     case bfd_arch_mips:

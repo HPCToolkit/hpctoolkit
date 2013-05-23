@@ -47,106 +47,66 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL$
+//    x86ISAXed.h
 //
 // Purpose:
-//   A derivation of the IR interface for the x86 (disassembler) class
-//   of Struct.
-//
-//   Note: many stubs still exist.
+//    [The purpose of this file]
 //
 // Description:
-//   [The set of functions, macros, etc. defined in the file]
+//    [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef BAnal_OAInterfaceX86_hpp
-#define BAnal_OAInterfaceX86_hpp
+#ifndef isa_x86ISAXed_hpp
+#define isa_x86ISAXed_hpp
 
 //************************* System Include Files ****************************
 
-#include <list>
-#include <set>
-
-//************************ OpenAnalysis Include Files ***********************
-
-#include <OpenAnalysis/IRInterface/CFGIRInterfaceDefault.hpp>
-#include <OpenAnalysis/CFG/CFGInterface.hpp>
-
-#include "OpenAnalysis/Utils/OutputBuilderText.hpp"
-#include "OpenAnalysis/Utils/OutputBuilderDOT.hpp"
-
 //*************************** User Include Files ****************************
 
-#include <lib/banal/OAInterface.hpp>
-
 #include <include/gcc-attr.h>
- 
-#include <lib/isa/ISA.hpp>
+#include <include/uint.h>
 
-#include <lib/binutils/LM.hpp>
-#include <lib/binutils/Proc.hpp>
-#include <lib/binutils/Insn.hpp>
-
-#include <lib/support/diagnostics.h>
-
-#include "OAInterface.hpp"
+#include "x86ISA.hpp"
 
 //*************************** Forward Declarations ***************************
 
 
-//***************************************************************************
-// 
-//***************************************************************************
-
+//****************************************************************************
 
 //***************************************************************************
-// Iterators
+// x86ISAXed
 //***************************************************************************
 
+// 'x86ISA': Implements the x86 and x86-64 Instruction Set Architecture
+// See comments in 'ISA.h'
 
-//***************************************************************************
-// Abstract Interfaces
-//***************************************************************************
-
-namespace BAnal {
-
-class OAInterfaceX86
-  : public BAnal::OAInterface
-{
+class x86ISAXed : public x86ISA {
 public:
+  x86ISAXed(bool is_x86_64 = false);
+  virtual ~x86ISAXed();
 
-  // Note: We assume each instantiation of the IRInterface represents
-  // one procedure!
-  OAInterfaceX86(BinUtil::Proc* proc);
-  
-  //--------------------------------------------------------
-  // Statements: General
-  //--------------------------------------------------------
+  // --------------------------------------------------------
+  // Instructions:
+  // --------------------------------------------------------
 
-  //! Given a statement, return its CFG::IRStmtType
-  OA::CFG::IRStmtType
-  getCFGStmtType(OA::StmtHandle h);
+  virtual ushort
+  getInsnSize(MachInsn* mi);
 
-  
-  //--------------------------------------------------------
-  // Unstructured two-way conditionals
-  //--------------------------------------------------------
-  OA::StmtLabel
-  getLabel(OA::StmtHandle h);
-  
-  OA::StmtLabel
-  getTargetLabel(OA::StmtHandle h, int GCC_ATTR_UNUSED n);
+  virtual InsnDesc
+  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
+
+  virtual VMA
+  getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz = 0);
 
 
-  //--------------------------------------------------------
-  // Symbol Handles
-  //--------------------------------------------------------
-  OA::SymHandle
-  getProcSymHandle(OA::ProcHandle h);
-  
 };
 
-} // namespace BAnal
+//****************************************************************************
+// "static" function to be used by generic x86ISA and x86ISA_xed
+//****************************************************************************
 
-#endif // BAnal_OAInterfaceX86_hpp
+
+//****************************************************************************
+
+#endif /* isa_x86ISAXed_hpp */
