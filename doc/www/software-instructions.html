@@ -204,7 +204,7 @@ IBM's native Universal Performance Counters directly.)
 
 <li>
 <p>Minor requirement: To build HPCToolkit's man pages, a variant of Perl 5 is required.
-We have succssfully used versions 5.6.x - 5.10.x.
+We have successfully used versions 5.6.x - 5.10.x.
 </p>
 </li>
 
@@ -447,6 +447,88 @@ Please note that a list of examples below provides <code>configure</code> comman
 	</dl>
     </li>
 
+    <li><p>Intel MIC (early and experimental):</p>
+      <dl class="indent">
+	<dt>
+	Systems such as Stampede at TACC (Texas Advanced Computing Center)
+	have Intel MIC (Many Integrated Cores) coprocessors on the compute nodes.
+	Although the MIC cores use an extension of the Intel x86_64
+	instruction set, the architecture type of the MIC binaries (k1om)
+	is different from the type on the main cores (x86_64).
+	Binaries compiled for the MIC will not run on the main cores
+	and vice versa.
+	<p>
+	The solution is to build all of externals and hpctoolkit twice:
+	once for the main cores and once for the MIC cores.
+	Install the builds into two separate install trees (prefixes).
+	Both externals and hpctoolkit support VPATH builds, so you only
+	need to checkout one copy of each source tree.
+	Let's say that you use <code>BUILD-x86_64</code> and <code>BUILD-k1om</code>
+	for the build directories and <code>install-x86_64</code> and
+	<code>install-k1om</code> for the install directories.
+	</dt>
+	<dt>HPCToolkit Externals for the main cores:</dt>
+	<dd><code>
+	    cd BUILD-x86_64 <br>
+	    ../configure --prefix=/path/to/externals/install-x86_64
+	    </code>
+	</dd>
+	<p><dt>HPCToolkit Externals for the MIC cores:</dt>
+	<dd><code>
+	    PATH="/usr/linux-k1om-4.7/bin/:$PATH" <br>
+	    cd BUILD-k1om <br>
+	    ../configure --prefix=/path/to/externals/install-k1om \<br>
+	    &nbsp;&nbsp;&nbsp;&nbsp; --host=x86_64-k1om-linux \<br>
+	    &nbsp;&nbsp;&nbsp;&nbsp; CC=x86_64-k1om-linux-gcc \<br>
+	    &nbsp;&nbsp;&nbsp;&nbsp; CXX=x86_64-k1om-linux-g++
+	    </code>
+	</dd>
+	<p><dt>HPCToolkit for the main cores:</dt>
+	<dd><code>
+	    cd BUILD-x86_64 <br>
+	    ../configure --prefix=/path/to/hpctoolkit/install-x86_64 \<br>
+	    &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=/path/to/externals/install-x86_64 \<br>
+	    &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/path/to/papi-install
+	    </code>
+	</dd>
+	<p><dt>HPCToolkit for the MIC cores:</dt>
+	<dd><code>
+	    PATH="/usr/linux-k1om-4.7/bin/:$PATH" <br>
+	    cd BUILD-k1om <br>
+	    ../configure --prefix=/path/to/hpctoolkit/install-k1om \<br>
+	    &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=/path/to/externals/install-k1om \<br>
+	    &nbsp;&nbsp;&nbsp;&nbsp; --host=x86_64-k1om-linux \<br>
+	    &nbsp;&nbsp;&nbsp;&nbsp; CC=x86_64-k1om-linux-gcc \<br>
+	    &nbsp;&nbsp;&nbsp;&nbsp; CXX=x86_64-k1om-linux-g++
+	    </code>
+	</dd>
+	<p><dt>
+	If PAPI is available for the MIC cores, then add
+	<code>--with-papi=/path/to/papi-k1om</code> to the hpctoolkit configure
+	for MIC.
+	Be sure that this version of PAPI is built for the MIC cores.
+	<code>hpcprof-mpi</code> is untested for the MIC cores.
+	<p>
+	You can build a restricted set of tools with the
+	<code>--enable-back-end</code> option (experimental).
+	This option builds only the tools, libraries and prerequisites needed for
+	running <code>hpcrun</code> and <code>hpclink</code> and collecting data
+	on the back-end compute nodes.
+	In that case, run <code>hpcstruct</code> and <code>hpcprof</code>
+	on the main cores.
+	<p>
+	On Stampede, you can launch a mixed-mode job (symmetric computing) with
+	<code>ibrun.symm</code> and give separate command lines for the main
+	and MIC cores.
+	</dt>
+	<dd><code>
+	    ibrun.symm -m "command line for main cores" \<br>
+	    &nbsp;&nbsp;&nbsp;&nbsp; -c "command line for MIC cores"
+	    </code>
+	</dd>
+      </dl>
+    </li>
+
     <li><p>Linux-x86 (32-bit) on Linux-x86_64:</p>
 	<dl class="indent">
           <dt>HPCToolkit's Externals</dt>
@@ -582,7 +664,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2012/09/18</span>]
+<p>[<span class="lastupdated">Page last updated: 2013/05/24</span>]
 </p>
 
 <!-- ********************************************************************** -->

@@ -749,6 +749,8 @@ HOST_CPU_PPC_FALSE
 HOST_CPU_PPC_TRUE
 HOST_CPU_MIPS_FALSE
 HOST_CPU_MIPS_TRUE
+HOST_CPU_K1OM_FALSE
+HOST_CPU_K1OM_TRUE
 HOST_OS_LINUX_FALSE
 HOST_OS_LINUX_TRUE
 MPICXX
@@ -16431,6 +16433,10 @@ $as_echo "#define HOST_OS_TRU64 1" >>confdefs.h
     ;;
 esac
 
+HOST_CPU_K1OM=no
+case "$host" in
+  *k1om* ) HOST_CPU_K1OM=yes ;;
+esac
 
  if test "${HOST_OS}" = Linux; then
   HOST_OS_LINUX_TRUE=
@@ -16438,6 +16444,14 @@ esac
 else
   HOST_OS_LINUX_TRUE='#'
   HOST_OS_LINUX_FALSE=
+fi
+
+ if test "${HOST_CPU_K1OM}" = yes; then
+  HOST_CPU_K1OM_TRUE=
+  HOST_CPU_K1OM_FALSE='#'
+else
+  HOST_CPU_K1OM_TRUE='#'
+  HOST_CPU_K1OM_FALSE=
 fi
 
  if test "${HOST_CPU_MIPS}" = yes; then
@@ -19258,6 +19272,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HOST_OS_LINUX_TRUE}" && test -z "${HOST_OS_LINUX_FALSE}"; then
   as_fn_error $? "conditional \"HOST_OS_LINUX\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HOST_CPU_K1OM_TRUE}" && test -z "${HOST_CPU_K1OM_FALSE}"; then
+  as_fn_error $? "conditional \"HOST_CPU_K1OM\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HOST_CPU_MIPS_TRUE}" && test -z "${HOST_CPU_MIPS_FALSE}"; then
