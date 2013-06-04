@@ -206,6 +206,7 @@ METHOD_FN(init)
   int type;
   pfm_get_pmu_type(&type);
   if(type != PFMLIB_AMD64_PMU){
+    return;
     EEMSG("CPU is not AMD64");
     monitor_real_abort();
   }
