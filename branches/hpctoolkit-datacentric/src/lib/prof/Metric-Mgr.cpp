@@ -177,6 +177,21 @@ Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
     const Metric::ADescVec& mVec = *(metricGroups[i]);
     if (mVec.size() >= threshold) {
       const Metric::ADesc* m = mVec[0];
+      // add by Xu Liu: only compute min/max for offset metrics
+      if(m->nameGeneric().find("LOW_OFFSET") != string::npos) {
+        Metric::ADesc* mNew0 = makeSummaryMetric("Min",    m, mVec);
+        if (firstId == Mgr::npos) {
+	  firstId = mNew0->id();
+        }
+	continue;
+      }
+      if(m->nameGeneric().find("HIGH_OFFSET") != string::npos) {
+        Metric::ADesc* mNew0 = makeSummaryMetric("Max",    m, mVec);
+        if (firstId == Mgr::npos) {
+	  firstId = mNew0->id();
+        }
+	continue;
+      }
 
       Metric::ADesc* mNew =
 	makeSummaryMetric("Sum",  m, mVec);
@@ -215,6 +230,15 @@ Mgr::makeSummaryMetricsIncr(bool needAllStats, uint srcBegId, uint srcEndId)
 
   for (uint i = srcBegId; i < srcEndId; ++i) {
     Metric::ADesc* m = m_metrics[i];
+    // add by Xu Liu: only compute min/max for offset metrics
+    if(m->nameGeneric().find("LOW_OFFSET") != string::npos) {
+      makeSummaryMetricIncr("Min",    m);
+      continue;
+    }
+    if(m->nameGeneric().find("HIGH_OFFSET") != string::npos) {
+      makeSummaryMetricIncr("Max",    m);
+      continue;
+    }
 
     Metric::ADesc* mNew =
       makeSummaryMetricIncr("Sum",  m);

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -95,6 +95,7 @@
 #include <monitor-exts/monitor_ext.h>
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-macros.h>
+#include <datacentric.h>
 
 // FIXME: the inline getcontext macro is broken on 32-bit x86, so
 // revert to the getcontext syscall for now.
@@ -107,6 +108,7 @@
 #include <utilities/arch/mcontext.h>
 #endif
 
+#define MIN_BYTES 0
 
 /******************************************************************************
  * type definitions
@@ -117,6 +119,7 @@ typedef struct leakinfo_s {
   cct_node_t *context;
   size_t bytes;
   void *memblock;
+  void *rmemblock;
   struct leakinfo_s *left;
   struct leakinfo_s *right;
 } leakinfo_t;
@@ -135,7 +138,7 @@ typedef void *realloc_fcn(void *, size_t);
  * macros
  *****************************************************************************/
 
-#define MEMLEAK_USE_HYBRID_LAYOUT 1
+#define MEMLEAK_USE_HYBRID_LAYOUT 0
 
 #define MEMLEAK_MAGIC 0x68706374
 #define MEMLEAK_DEFAULT_PAGESIZE  4096
@@ -204,6 +207,12 @@ splay(struct leakinfo_s *root, void *key)
   return root;
 }
 
+static struct leakinfo_s *
+interval_splay(struct leakinfo_s *root, void *key)
+{
+  INTERVAL_SPLAY_TREE(leakinfo_s, root, key, memblock, rmemblock, left, right);
+  return root;
+}
 
 static void
 splay_insert(struct leakinfo_s *node)
@@ -270,7 +279,31 @@ splay_delete(void *memblock)
   return result;
 }
 
+/* interface for data-centric analysis */
+cct_node_t *
+splay_lookup(void *key, void **start, void **end)
+{
+  if(!memleak_tree_root) {
+    return NULL;
+  }
 
+  struct leakinfo_s *info;
+  spinlock_lock(&memtree_lock);  
+  memleak_tree_root = interval_splay(memleak_tree_root, key);
+  info = memleak_tree_root;
+  if(!info) {
+    spinlock_unlock(&memtree_lock);  
+    return NULL;
+  }
+  if((info->memblock <= key) && (info->rmemblock > key)) {
+    *start = info->memblock;
+    *end = info->rmemblock;
+    spinlock_unlock(&memtree_lock);  
+    return info->context;
+  }
+  spinlock_unlock(&memtree_lock);  
+  return NULL;
+}
 
 /******************************************************************************
  * private operations
@@ -453,12 +486,16 @@ memleak_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
   info_ptr->magic = MEMLEAK_MAGIC;
   info_ptr->bytes = bytes;
   info_ptr->memblock = appl_ptr;
+  info_ptr->rmemblock = info_ptr->memblock + info_ptr->bytes;
   info_ptr->left = NULL;
   info_ptr->right = NULL;
   if (hpcrun_memleak_active()) {
+    TD_GET(in_malloc) = 1;
     sample_val_t smpl =
       hpcrun_sample_callpath(uc, hpcrun_memleak_alloc_id(), bytes, 0, 1);
+    TD_GET(in_malloc) = 0;
     info_ptr->context = smpl.sample_node;
+    
     loc_str = loc_name[loc];
   } else {
     info_ptr->context = NULL;
@@ -531,6 +568,7 @@ memleak_malloc_helper(const char *name, size_t bytes, size_t align,
 	 name, bytes, sys_ptr);
     return sys_ptr;
   }
+  if (bytes <= MIN_BYTES) return sys_ptr;
 
   loc = memleak_get_malloc_loc(sys_ptr, bytes, align, &appl_ptr, &info_ptr);
   memleak_add_leakinfo(name, sys_ptr, appl_ptr, info_ptr, bytes, uc, loc);

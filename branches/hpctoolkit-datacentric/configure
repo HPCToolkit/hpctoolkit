@@ -19113,7 +19113,7 @@ BACK_END_LABEL=
 ac_config_headers="$ac_config_headers src/include/hpctoolkit-config.h"
 
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcvarbounds/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
 
 
 
@@ -19124,6 +19124,8 @@ ac_config_files="$ac_config_files src/tool/hpcrun/scripts/hpclink"
 ac_config_files="$ac_config_files src/tool/hpcrun/scripts/hpcsummary"
 
 ac_config_files="$ac_config_files src/tool/hpcfnbounds/hpcfnbounds"
+
+ac_config_files="$ac_config_files src/tool/hpcvarbounds/hpcvarbounds"
 
 ac_config_files="$ac_config_files src/tool/hpcprof/hpcprof"
 
@@ -20379,6 +20381,7 @@ do
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "src/tool/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/Makefile" ;;
     "src/tool/hpcfnbounds/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcfnbounds/Makefile" ;;
+    "src/tool/hpcvarbounds/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcvarbounds/Makefile" ;;
     "src/tool/hpclump/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpclump/Makefile" ;;
     "src/tool/hpcprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof/Makefile" ;;
     "src/tool/hpcprof-mpi/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-mpi/Makefile" ;;
@@ -20405,6 +20408,7 @@ do
     "src/tool/hpcrun/scripts/hpclink") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/scripts/hpclink" ;;
     "src/tool/hpcrun/scripts/hpcsummary") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/scripts/hpcsummary" ;;
     "src/tool/hpcfnbounds/hpcfnbounds") CONFIG_FILES="$CONFIG_FILES src/tool/hpcfnbounds/hpcfnbounds" ;;
+    "src/tool/hpcvarbounds/hpcvarbounds") CONFIG_FILES="$CONFIG_FILES src/tool/hpcvarbounds/hpcvarbounds" ;;
     "src/tool/hpcprof/hpcprof") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof/hpcprof" ;;
     "src/tool/hpcprof-mpi/hpcprof-mpi") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-mpi/hpcprof-mpi" ;;
     "src/tool/hpcprof-flat/hpcprof-flat") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-flat/hpcprof-flat" ;;
@@ -21950,6 +21954,7 @@ _LT_EOF
     "src/tool/hpcrun/scripts/hpclink":F) chmod +x src/tool/hpcrun/scripts/hpclink ;;
     "src/tool/hpcrun/scripts/hpcsummary":F) chmod +x src/tool/hpcrun/scripts/hpcsummary ;;
     "src/tool/hpcfnbounds/hpcfnbounds":F) chmod +x src/tool/hpcfnbounds/hpcfnbounds ;;
+    "src/tool/hpcvarbounds/hpcvarbounds":F) chmod +x src/tool/hpcvarbounds/hpcvarbounds ;;
     "src/tool/hpcprof/hpcprof":F) chmod +x src/tool/hpcprof/hpcprof ;;
     "src/tool/hpcprof-mpi/hpcprof-mpi":F) chmod +x src/tool/hpcprof-mpi/hpcprof-mpi ;;
     "src/tool/hpcprof-flat/hpcprof-flat":F) chmod +x src/tool/hpcprof-flat/hpcprof-flat ;;

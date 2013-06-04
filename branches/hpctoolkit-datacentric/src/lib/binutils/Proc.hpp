@@ -91,7 +91,7 @@ namespace BinUtil {
 
 class Proc {
 public:
-  enum Type { Local, Weak, Global, Quasi, Unknown };
+  enum Type { Local, Weak, Global, Quasi, Unknown, Data };
   
 public:
   // -------------------------------------------------------
@@ -292,6 +292,19 @@ public:
 	      && !bfd_is_und_section(sym->section)) );
   }
 
+  static bool
+  isDummyProcBFDSym(asymbol* sym)
+  {
+    flagword flg = sym->flags;
+
+    return (flg & BSF_OBJECT);
+  }
+
+  bool
+  isDummyProc() const
+  {
+    return (m_type == Data);
+  }
 private:
   // Should not be used
   Proc()

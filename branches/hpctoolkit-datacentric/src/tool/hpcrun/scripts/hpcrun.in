@@ -53,6 +53,7 @@ VERSION='@PACKAGE_VERSION@'
 
 # Relative paths are relative to HPCTOOLKIT.
 hpcfnbounds_dir='libexec/hpctoolkit'
+hpcvarbounds_dir='libexec/hpctoolkit'
 hpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 libunwind_dir='@LIBUNWIND_RUN_DIR@'
@@ -69,6 +70,10 @@ hpc_path_to_root=..
 case "$hpcfnbounds_dir" in
     /* ) ;;
     * ) hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
+esac
+case "$hpcvarbounds_dir" in
+    /* ) ;;
+    * ) hpcvarbounds_dir="${HPCTOOLKIT}/${hpcvarbounds_dir}" ;;
 esac
 case "$hpcrun_dir" in
     /* ) ;;
@@ -441,6 +446,7 @@ preload_list="${libmonitor_dir}/libmonitor.so ${preload_list}"
 preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
 
 export HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds"
+export HPCRUN_VARBOUNDS_CMD="${hpcvarbounds_dir}/hpcvarbounds"
 export LD_LIBRARY_PATH="${hpc_ld_library_path}:${LD_LIBRARY_PATH}"
 export LD_PRELOAD="${preload_list} ${LD_PRELOAD}"
 

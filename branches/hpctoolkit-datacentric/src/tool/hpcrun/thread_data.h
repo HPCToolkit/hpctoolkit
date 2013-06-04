@@ -152,6 +152,19 @@ typedef struct thread_data_t {
   bool           timer_init;
 
   uint64_t       last_time_us; // microseconds
+
+  // ----------------------------------------
+  // datacentric support 
+  // ----------------------------------------
+  cct_node_t *data_node;
+  void *pc;
+  // for static data
+  uint16_t lm_id;
+  uintptr_t lm_ip;
+
+  int ldst; // whether it is a load/store instruction;
+  int in_malloc; // whether it is a malloc unwind
+  void *ea; //effective address
    
   // ----------------------------------------
   // core_profile_trace_data contains the following

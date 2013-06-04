@@ -439,6 +439,15 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
   frame_t* bt_beg  = td->btbuf_beg;      // innermost, inclusive
   frame_t* bt_last = td->btbuf_cur - 1; // outermost, inclusive
 
+  // datacentric: update to the precise ip
+  void *pc = td->pc;
+  td->pc = NULL;
+  if (pc) {
+    ip_normalized_t norm_ip = hpcrun_normalize_ip(pc, NULL);
+    if(norm_ip.lm_id != HPCRUN_FMT_LMId_NULL) {
+      bt_beg->ip_norm = norm_ip;
+    }
+  }
   if (skipInner) {
     if (ENABLED(USE_TRAMP)){
       //

@@ -75,7 +75,6 @@
 #include <sys/types.h>
 #include <unistd.h>    // getpid
 
-
 #include <include/hpctoolkit-config.h>
 
 //*********************************************************************
@@ -91,6 +90,7 @@
 #include "fnbounds_interface.h"
 #include "fnbounds_file_header.h"
 #include "client.h"
+#include <varbounds/varbounds_client.h>
 #include "dylib.h"
 
 #include <hpcrun_dlfns.h>
@@ -181,6 +181,7 @@ fnbounds_init()
   return 0;
 }
 
+
 bool
 fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
 {
@@ -248,6 +249,11 @@ fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
   load_module_t *lm = hpcrun_loadmap_findByAddr(start, end);
   if (!lm) {
     dso_info_t *dso = fnbounds_compute(module_name, start, end);
+    struct varbounds_file_header fh;
+    char filename[PATH_MAX];
+    realpath(module_name, filename);
+    void **var_table = (void **) hpcrun_syserv_var_query(filename, &fh);
+    insert_var_table(dso, var_table, fh.num_entries);
     if (dso) {
       hpcrun_loadmap_map(dso);
     }
@@ -410,6 +416,10 @@ fnbounds_get_loadModule(void *ip)
     
     if (dylib_find_module_containing_addr(ip, module_name, &mstart, &mend)) {
       dso = fnbounds_compute(module_name, mstart, mend);
+      struct varbounds_file_header fh;
+      char filename[PATH_MAX];
+      realpath(module_name, filename);
+      void **var_table = (void **) hpcrun_syserv_var_query(filename, &fh);
       if (dso) {
 	lm = hpcrun_loadmap_map(dso);
       }

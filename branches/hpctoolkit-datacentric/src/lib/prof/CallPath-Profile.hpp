@@ -364,6 +364,9 @@ private:
 } // namespace Prof
 
 
+// add by Xu Liu: identify offset metrics (global variables)
+extern std::vector<uint> highOffsetId;
+extern std::vector<uint> lowOffsetId;
 //***************************************************************************
 
 

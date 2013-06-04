@@ -59,6 +59,8 @@
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/spinlock.h>
 
+#include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/splay-macros.h>
 
 static hpcrun_loadmap_t  s_loadmap;
 static hpcrun_loadmap_t* s_loadmap_ptr = NULL;
@@ -116,6 +118,7 @@ hpcrun_dso_make(const char* name, void** table,
   x->start_to_ref_dist = 0;
   x->start_addr = startaddr;
   x->end_addr = endaddr;
+  x->data_root = NULL;
 
   if (fh) {
     x->nsymbols = (unsigned long)fh->num_entries;
@@ -441,4 +444,83 @@ hpcrun_loadmap_t*
 hpcrun_getLoadmap()
 {
   return s_loadmap_ptr;
+}
+
+// splay operation
+
+static spinlock_t datatree_lock = SPINLOCK_UNLOCKED;
+
+static struct static_data_t **
+static_data_interval_splay(struct static_data_t **root, void *key)
+{
+  INTERVAL_SPLAY_TREE(static_data_t, *root, key, start, end, left, right);
+  return root;
+}
+
+static void
+static_data_interval_splay_insert(struct static_data_t **root, struct static_data_t *node)
+{
+  void *start = node->start;
+
+  node->left = node->right = NULL;
+
+  spinlock_lock(&datatree_lock);
+  if (*root != NULL) {
+    root = static_data_interval_splay(root, start);
+
+    if (start < (*root)->start) {
+      node->left = (*root)->left;
+      node->right = *root;
+      (*root)->left = NULL;
+    } else if (start > (*root)->start) {
+      node->left = *root;
+      node->right = (*root)->right;
+      (*root)->right = NULL;
+    } else {
+      assert(0);
+    }
+  }
+  *root = node;
+  spinlock_unlock(&datatree_lock);
+}
+
+// splay tree query
+void *
+static_data_interval_splay_lookup(static_data_t **root, void *key, void **start, void **end)
+{
+  if(!*root) {
+    return NULL;
+  }
+
+  struct static_data_t *info;
+  spinlock_lock(&datatree_lock);
+  root = static_data_interval_splay(root, key);
+  info = *root;
+  if(!info) {
+    spinlock_unlock(&datatree_lock);
+    return NULL;
+  }
+  if((info->start <= key) && (info->end > key)) {
+    *start = info->start;
+    *end = info->end;
+    spinlock_unlock(&datatree_lock);
+    return info->start;
+  }
+  spinlock_unlock(&datatree_lock);
+  return NULL;
+}
+
+void 
+insert_var_table(dso_info_t *dso, void **var_table, unsigned long num)
+{
+  if(!var_table) return;
+  int i;
+  for (i = 0; i < num; i+=2) {
+    // create splay node
+    static_data_t *node = (static_data_t *)hpcrun_malloc(sizeof(static_data_t));
+    node->start = var_table[i];
+    node->end = var_table[i]+(long)var_table[i+1];
+    node->left = node->right = NULL;
+    static_data_interval_splay_insert(&(dso->data_root), node);
+  }
 }

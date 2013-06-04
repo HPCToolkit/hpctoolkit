@@ -261,6 +261,41 @@ hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
 
 #endif
 
+void
+monitored_heap_data(void)
+{
+}
+
+void
+monitored_static_data(void)
+{
+}
+
+void
+monitored_stack_data(void)
+{
+}
+
+void
+monitored_unknown_data(void)
+{
+}
+
+void
+NOT_data_access(void)
+{
+}
+
+void
+heap_data_accesses(void)
+{
+}
+
+void
+heap_data_allocation(void)
+{
+}
+
 cct_node_t*
 hpcrun_cct_record_backtrace(cct_bundle_t* cct, bool partial, bool thread_stop,
 			    frame_t* bt_beg, frame_t* bt_last, bool tramp_found)
@@ -281,6 +316,14 @@ hpcrun_cct_record_backtrace(cct_bundle_t* cct, bool partial, bool thread_stop,
   if (thread_stop) {
     cct_cursor = cct->thread_root;
     TMSG(FENCE, "Thread stop ==> cursor = %p", cct_cursor);
+  }
+
+  // datacentric support: attach samples to data allocation cct
+  cct_node_t *data_node = TD_GET(data_node);
+  if(data_node) {
+    cct_node_t *prefix = hpcrun_cct_insert_path_return_leaf(data_node, cct_cursor);
+    cct_cursor = prefix;
+    TD_GET(data_node) = NULL;
   }
 
   TMSG(FENCE, "sanity check cursor = %p", cct_cursor);
@@ -311,6 +354,75 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
   if (thread_stop) {
     cct_cursor = cct->thread_root;
     TMSG(FENCE, "Thread stop ==> cursor = %p", cct_cursor);
+  }
+
+  // make sure at least two cct(s) are created (not delete the single root in cct normalization)
+#if defined(__PPC64__)
+  cct_cursor = hpcrun_insert_special_node(cct->tree_root, *(void **)NOT_data_access);
+#else
+  cct_cursor = hpcrun_insert_special_node(cct->tree_root, NOT_data_access);
+#endif
+  // datacentric support: attach samples to data allocation cct
+  cct_node_t *data_node = TD_GET(data_node);
+  uint16_t lm_id = TD_GET(lm_id);
+  uintptr_t lm_ip = TD_GET(lm_ip);
+  if(data_node) {
+    // give a tag for the heap allocated data
+#if defined(__PPC64__)
+    cct_cursor = hpcrun_insert_special_node(cct->tree_root, *(void **)monitored_heap_data);
+#else
+    cct_cursor = hpcrun_insert_special_node(cct->tree_root, monitored_heap_data);
+#endif
+
+    // copy the call path of the malloc
+    cct_cursor = hpcrun_cct_insert_path_return_leaf(data_node, cct_cursor);
+
+#if defined(__PPC64__)
+    cct_cursor = hpcrun_insert_special_node(cct_cursor, *(void **)heap_data_accesses);
+#else
+    cct_cursor = hpcrun_insert_special_node(cct_cursor, heap_data_accesses);
+#endif
+    TD_GET(data_node) = NULL;
+  }
+  // static data
+  else if(lm_ip){
+#if defined(__PPC64__)
+    cct_cursor = hpcrun_insert_special_node(cct->tree_root, *(void **)monitored_static_data);
+#else
+    cct_cursor = hpcrun_insert_special_node(cct->tree_root, monitored_static_data);
+#endif
+  
+    cct_cursor = hpcrun_cct_insert_addr(cct_cursor, &ADDR2(lm_id, lm_ip+1));
+    TD_GET(lm_id) = 0;
+    TD_GET(lm_ip) = NULL;
+  }
+  // stack or c++ template data, cannot back to data
+  // or hardware does not give effective address back
+  else if(TD_GET(ldst) == 1){
+#if defined(__PPC64__)
+    cct_cursor = hpcrun_insert_special_node(cct->tree_root, *(void **)monitored_unknown_data);
+#else
+    cct_cursor = hpcrun_insert_special_node(cct->tree_root, monitored_unknown_data);
+#endif
+  }
+  // unwind for malloc
+  else if (TD_GET(in_malloc) == 1) {
+#if defined(__PPC64__)
+    cct_cursor = hpcrun_insert_special_node(cct->tree_root, *(void **)heap_data_allocation);
+#else
+    cct_cursor = hpcrun_insert_special_node(cct->tree_root, heap_data_allocation);
+#endif
+  }
+  // not datacentric related samples in the datacentric profiling
+  else if(ENABLED(DATACENTRIC)){
+#if defined(__PPC64__)
+    cct_cursor = hpcrun_insert_special_node(cct->tree_root, *(void **)NOT_data_access);
+#else
+    cct_cursor = hpcrun_insert_special_node(cct->tree_root, NOT_data_access);
+#endif
+  }
+  // regular profiling
+  else {
   }
 
   TMSG(FENCE, "sanity check cursor = %p", cct_cursor);

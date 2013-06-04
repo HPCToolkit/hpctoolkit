@@ -175,7 +175,7 @@ BinUtil::Proc::dump(std::ostream& os, int flags, const char* pre) const
      << p << "  VMA: [" << hex << begVMA() << ", " << endVMA() << dec << "]\n";
   os << p << "  Size(b): " << size() << "\n";
   
-  if ((flags & LM::DUMP_Flg_Insn_ty)
+  if ((flags & LM::DUMP_Flg_Insn_ty & !isDummyProc())
       || (flags & LM::DUMP_Flg_Insn_decode)) {
     os << p1 << "----- Instruction Dump -----\n";
     for (ProcInsnIterator it(*this); it.isValid(); ++it) {
@@ -234,7 +234,8 @@ BinUtil::Proc::ddump() const
 BinUtil::ProcInsnIterator::ProcInsnIterator(const Proc& _p)
   : p(_p), lm(*(p.lm()))
 {
-  reset();
+  if(!_p.isDummyProc())
+    reset();
 }
 
 

@@ -448,6 +448,18 @@ ANode::aggregateMetricsIncl(const VMAIntervalSet& ivalset)
 
 	for (uint mId = mBegId; mId < mEndId; ++mId) {
 	  double mVal = n->demandMetric(mId, mEndId/*size*/);
+    	  // add by Xu Liu: compute inclusive offset metrics
+    	  if( find(lowOffsetId.begin(), lowOffsetId.end(), mId) != lowOffsetId.end()) {
+            if (n_parent->demandMetric(mId, mEndId/*size*/) == 0 || (n_parent->demandMetric(mId, mEndId/*size*/) > mVal && mVal > 0)) {
+              n_parent->demandMetric(mId, mEndId/*size*/) = mVal;
+             }
+            continue;
+          }
+          if( find(highOffsetId.begin(), highOffsetId.end(), mId) != highOffsetId.end()) {
+            if (n_parent->demandMetric(mId, mEndId/*size*/) < mVal || n_parent->demandMetric(mId, mEndId/*size*/) == 0)
+              n_parent->demandMetric(mId, mEndId/*size*/) = mVal;
+            continue;
+          }
 	  n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
 	}
       }
@@ -849,7 +861,18 @@ ANode::mergeMe(const ANode& y, MergeContext* GCC_ATTR_UNUSED mrgCtxt,
     ensureMetricsSize(x_end);
   }
 
+  // add by Xu Liu: compute Min/Max for offset metrics
   for (uint x_i = metricBegIdx, y_i = 0; x_i < x_end; ++x_i, ++y_i) {
+    if( find(lowOffsetId.begin(), lowOffsetId.end(), y_i) != lowOffsetId.end()) {
+      if( x->metric(x_i) == 0 || (x->metric(x_i) > y.metric(y_i) && y.metric(y_i) > 0) )
+        x->metric(x_i) = y.metric(y_i);
+      continue;
+    }
+    if( find(highOffsetId.begin(), highOffsetId.end(), y_i) != highOffsetId.end()) {
+      if( x->metric(x_i) < y.metric(y_i) || x->metric(x_i) == 0)
+        x->metric(x_i) = y.metric(y_i);
+      continue;
+    }
     x->metric(x_i) += y.metric(y_i);
   }
   
