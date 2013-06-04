@@ -95,6 +95,9 @@
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
+#include <datacentric.h>
+#include <numa.h>
+#include <numaif.h>
 
 /******************************************************************************
  * macros
@@ -119,7 +122,14 @@ typedef struct {
  * forward declarations 
  *****************************************************************************/
 
-static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
+void
+hpcrun_metric_min(int metric_id, metric_set_t* set,
+                      hpcrun_metricVal_t incr);
+void
+hpcrun_metric_max(int metric_id, metric_set_t* set,
+                      hpcrun_metricVal_t incr);
+
+static void papi_event_handler(int event_set, void *pc, void *data_addr, unsigned long t, unsigned long cpu, long long ovec, void *context);
 static int  event_is_derived(int ev_code);
 static void event_fatal_error(int ev_code, int papi_ret);
 
@@ -140,6 +150,14 @@ static int derived[MAX_EVENTS];
 static int some_derived;
 static int some_overflow;
 
+// Metrics for numa related metrics
+static int numa_match_metric_id = -1;
+static int numa_mismatch_metric_id = -1;
+
+static int low_offset_metric_id = -1;
+static int high_offset_metric_id = -1;
+
+static int *location_metric_id;
 
 /******************************************************************************
  * method functions
@@ -372,6 +390,20 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   some_derived = 0;
   some_overflow = 0;
+
+  // set up NUMA related metrics
+  numa_match_metric_id = hpcrun_new_metric(); /* create numa metric id (access matches data location in NUMA node) */
+  numa_mismatch_metric_id = hpcrun_new_metric(); /* create numa metric id (access does not match data location in NUMA node) */
+  low_offset_metric_id = hpcrun_new_metric(); /* create data range metric id (low offset) */
+  high_offset_metric_id = hpcrun_new_metric(); /* create data range metric id (high offset) */
+
+  // create data location (numa node) metrics
+  int numa_node_num = numa_num_configured_nodes();
+  location_metric_id = (int *) hpcrun_malloc(numa_node_num * sizeof(int));
+  for (i = 0; i < numa_node_num; i++) {
+    location_metric_id[i] = hpcrun_new_metric();
+  }
+
   for (i = 0; i < nevents; i++) {
     char buffer[PAPI_MAX_STR_LEN + 10];
     int metric_id = hpcrun_new_metric(); /* weight */
@@ -404,6 +436,29 @@ METHOD_FN(process_event_list, int lush_metrics)
     hpcrun_set_metric_info_and_period(metric_id, strdup(buffer),
 				      MetricFlags_ValFmt_Int,
 				      self->evl.events[i].thresh, prop);
+    int threshold = self->evl.events[i].thresh;
+    hpcrun_set_metric_info_and_period(numa_match_metric_id, "NUMA_MATCH",
+                                      MetricFlags_ValFmt_Int,
+                                      threshold, metric_property_none);
+    hpcrun_set_metric_info_and_period(numa_mismatch_metric_id, "NUMA_MISMATCH",
+                                      MetricFlags_ValFmt_Int,
+                                      threshold, metric_property_none);
+    hpcrun_set_metric_info_w_fn(low_offset_metric_id, "LOW_OFFSET",
+                                      MetricFlags_ValFmt_Real,
+                                      1, hpcrun_metric_min, metric_property_none);
+    hpcrun_set_metric_info_w_fn(high_offset_metric_id, "HIGH_OFFSET",
+                                      MetricFlags_ValFmt_Real,
+                                      1, hpcrun_metric_max, metric_property_none);
+
+    // set numa location metrics
+    int j;
+    for (j = 0; j < numa_node_num; j++) {
+      char metric_name[128];
+      sprintf(metric_name, "NUMA_NODE%d", j);
+      hpcrun_set_metric_info_and_period(location_metric_id[j], strdup(metric_name),
+                                         MetricFlags_ValFmt_Int,
+                                         threshold, metric_property_none);
+    }
 
     // FIXME:LUSH: need a more flexible metric interface
     if (num_lush_metrics > 0 && strcmp(buffer, "PAPI_TOT_CYC") == 0) {
@@ -571,6 +626,46 @@ METHOD_FN(display_events)
  * private operations 
  *****************************************************************************/
 
+void
+hpcrun_metric_min(int metric_id, metric_set_t* set,
+                      hpcrun_metricVal_t incr)
+{
+  metric_desc_t* minfo = hpcrun_id2metric(metric_id);
+  if (!minfo) {
+    return;
+  }
+
+  hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(set, metric_id);
+  switch (minfo->flags.fields.valFmt) {
+    case MetricFlags_ValFmt_Int:
+      if(loc->i > incr.i || loc->i == 0) loc->i = incr.i; break;
+    case MetricFlags_ValFmt_Real:
+      if(loc->r > incr.r || loc->r == 0.0) loc->r = incr.r; break;
+    default:
+      assert(false);
+  }
+}
+
+void
+hpcrun_metric_max(int metric_id, metric_set_t* set,
+                      hpcrun_metricVal_t incr)
+{
+  metric_desc_t* minfo = hpcrun_id2metric(metric_id);
+  if (!minfo) {
+    return;
+  }
+
+  hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(set, metric_id);
+  switch (minfo->flags.fields.valFmt) {
+    case MetricFlags_ValFmt_Int:
+      if(loc->i < incr.i || loc->i == 0) loc->i = incr.i; break;
+    case MetricFlags_ValFmt_Real:
+      if(loc->r < incr.r || loc->r == 0.0) loc->r = incr.r; break;
+    default:
+      assert(false);
+  }
+}
+
 // Returns: 1 if the event code is a derived event.
 // The papi_avail(1) utility shows how to do this.
 static int
@@ -612,7 +707,8 @@ event_fatal_error(int ev_code, int papi_ret)
 }
 
 static void
-papi_event_handler(int event_set, void *pc, long long ovec,
+papi_event_handler(int event_set, void *pc, void *data_addr,
+		   unsigned long t, unsigned long cpu, long long ovec,
                    void *context)
 {
   sample_source_t *self = &_papi_obj;
@@ -621,6 +717,8 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int my_event_count = MAX_EVENTS;
   int nevents  = self->evl.nevents;
   int i, ret;
+  void *start = NULL;
+  void *end = NULL;
 
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
@@ -652,8 +750,66 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
     TMSG(PAPI_SAMPLE,"sampling call path for metric_id = %d", metric_id);
 
+    // enable datacentric analysis
+    cct_node_t *data_node = NULL;
+    if(ENABLED(DATACENTRIC)) {
+      if(data_addr) {
+        TD_GET(ldst) = 1;
+        TD_GET(ea) = data_addr;
+      }
+      data_node = splay_lookup(data_addr, &start, &end);
+      if (!data_node) {
+        // check the static data
+        load_module_t *lm = hpcrun_loadmap_findByAddr(pc, pc);
+        if(lm && lm->dso_info) {
+          void *static_data_addr = static_data_interval_splay_lookup(&(lm->dso_info->data_root), data_addr, &start, &end);
+          if(static_data_addr) {
+            TD_GET(lm_id) = lm->id;
+            TD_GET(lm_ip) = (uintptr_t)static_data_addr;
+          }
+        }
+      }
+    }
+    // FIXME: record data_node and precise ip into thread data
+    TD_GET(data_node) = data_node;
+    TD_GET(pc) = pc;
     sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 			   0/*skipInner*/, 0/*isSync*/);
+    TD_GET(data_node) = NULL;
+    TD_GET(pc) = NULL;
+    TD_GET(ldst) = 0;
+    TD_GET(lm_id) = 0;
+    TD_GET(lm_ip) = 0;
+    TD_GET(ea) = NULL;
+
+    // compute data range info (offset %)
+    if(start && end) {
+      float offset = (float)(data_addr - start)/(end - start);
+      if (! hpcrun_has_metric_set(sv.sample_node)) {
+        cct2metrics_assoc(sv.sample_node, hpcrun_metric_set_new());
+      }
+      metric_set_t* set = hpcrun_get_metric_set(sv.sample_node);
+      hpcrun_metric_min(low_offset_metric_id, set, (cct_metric_data_t){.r = offset});
+      if (end - start <= 8) // one access covers the whole range
+        hpcrun_metric_max(high_offset_metric_id, set, (cct_metric_data_t){.r = 1.0});
+      else
+        hpcrun_metric_max(high_offset_metric_id, set, (cct_metric_data_t){.r = offset});
+    }
+
+    // compute numa-related metrics
+    int numa_access_node = numa_node_of_cpu(cpu);
+    int numa_location_node;
+    void *addr = data_addr;
+    int ret_code = move_pages(0, 1, &addr, NULL, &numa_location_node, 0);
+    if(ret_code == 0 && numa_location_node >= 0) {
+//printf("data_addr is %p, cpu is %u, numa_access_node is %d, numa_loaction_node is %d\n",data_addr, cpu, numa_access_node, numa_location_node);
+      if(numa_access_node == numa_location_node)
+        cct_metric_data_increment(numa_match_metric_id, sv.sample_node, (cct_metric_data_t){.i = 1});
+      else
+        cct_metric_data_increment(numa_mismatch_metric_id, sv.sample_node, (cct_metric_data_t){.i = 1});
+      // location metric
+      cct_metric_data_increment(location_metric_id[numa_location_node], sv.sample_node, (cct_metric_data_t){.i = 1});
+    }
 
     blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
   }
