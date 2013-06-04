@@ -156,6 +156,7 @@ typedef struct thread_data_t {
   // ----------------------------------------
   // datacentric support 
   // ----------------------------------------
+  void *ibs_ptr;
   cct_node_t *data_node;
   void *pc;
   // for static data
