@@ -126,7 +126,108 @@ x86_isReg_AX(xed_reg_enum_t reg)
 	  reg == XED_REG_AX);
 }
 
+static inline bool
+x86_isReg_BX(xed_reg_enum_t reg)
+{
+  return (
+#if defined (HOST_CPU_x86_64)
+	  reg == XED_REG_RBX ||
+#endif
+	  reg == XED_REG_EBX ||
+	  reg == XED_REG_BX);
+}
 
+static inline bool
+x86_isReg_CX(xed_reg_enum_t reg)
+{
+  return (
+#if defined (HOST_CPU_x86_64)
+	  reg == XED_REG_RCX ||
+#endif
+	  reg == XED_REG_ECX ||
+	  reg == XED_REG_CX);
+}
+
+static inline bool
+x86_isReg_DX(xed_reg_enum_t reg)
+{
+  return (
+#if defined (HOST_CPU_x86_64)
+	  reg == XED_REG_RDX ||
+#endif
+	  reg == XED_REG_EDX ||
+	  reg == XED_REG_DX);
+}
+
+static inline bool
+x86_isReg_SI(xed_reg_enum_t reg)
+{
+  return (
+#if defined (HOST_CPU_x86_64)
+	  reg == XED_REG_RSI ||
+#endif
+	  reg == XED_REG_ESI ||
+	  reg == XED_REG_SI);
+}
+
+static inline bool
+x86_isReg_DI(xed_reg_enum_t reg)
+{
+  return (
+#if defined (HOST_CPU_x86_64)
+	  reg == XED_REG_RDI ||
+#endif
+	  reg == XED_REG_EDI ||
+	  reg == XED_REG_DI);
+}
+
+static inline bool
+x86_isReg_R8(xed_reg_enum_t reg)
+{
+  return (reg == XED_REG_R8);
+}
+
+static inline bool
+x86_isReg_R9(xed_reg_enum_t reg)
+{
+  return (reg == XED_REG_R9);
+}
+
+static inline bool
+x86_isReg_R10(xed_reg_enum_t reg)
+{
+  return (reg == XED_REG_R10);
+}
+
+static inline bool
+x86_isReg_R11(xed_reg_enum_t reg)
+{
+  return (reg == XED_REG_R11);
+}
+
+static inline bool
+x86_isReg_R12(xed_reg_enum_t reg)
+{
+  return (reg == XED_REG_R12);
+}
+
+static inline bool
+x86_isReg_R13(xed_reg_enum_t reg)
+{
+  return (reg == XED_REG_R13);
+}
+
+static inline bool
+x86_isReg_R14(xed_reg_enum_t reg)
+{
+  return (reg == XED_REG_R14);
+}
+
+static inline bool
+x86_isReg_R15(xed_reg_enum_t reg)
+{
+  return (reg == XED_REG_R15);
+}
 //***************************************************************************
 
 #ifdef __cplusplus
