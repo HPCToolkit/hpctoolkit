@@ -1652,7 +1652,12 @@ AC_SUBST([SYMTABAPI_COPY_DYN])
 # Option: --with-xed2=PATH
 #-------------------------------------------------
 
+# Now support static or shared libxed.
+
 XED2=no
+XED2_STATIC=no
+XED2_LIB_FLAGS=
+
 if test "$use_externals" = yes ; then
   XED2="$ext_xed2_prefix"
 fi
@@ -1669,7 +1674,15 @@ case "${XED2}" in
   /* )
     if test -f "${XED2}/include/xed-interface.h" ; then :
     else
-        AC_MSG_ERROR([invalid xed2 directory: $XED2])
+      AC_MSG_ERROR([invalid xed2 directory: $XED2])
+    fi
+    if test -f "${XED2}/lib/libxed.a" ; then
+      XED2_STATIC=yes
+      XED2_LIB_FLAGS="${XED2}/lib/libxed.a"
+    elif test -f "${XED2}/lib/libxed.so" ; then
+      XED2_LIB_FLAGS="-L${XED2}/lib -lxed"
+    else
+      AC_MSG_ERROR([invalid xed2 directory: $XED2])
     fi
     XED2_COPY=yes
     XED2_RUN_DIR="$hpc_ext_libs_dir"
@@ -1683,6 +1696,10 @@ case "${XED2}" in
     ;;
 esac
 
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2" = no ; then
+  AC_MSG_ERROR([xed2 is required for x86 platforms])
+fi
+
 XED2_INC="${XED2}/include"
 XED2_LIB="${XED2}/lib"
 
@@ -1690,8 +1707,18 @@ AC_MSG_RESULT([$XED2])
 
 AC_SUBST([XED2_INC])
 AC_SUBST([XED2_LIB])
+AC_SUBST([XED2_LIB_FLAGS])
 AC_SUBST([XED2_COPY])
 AC_SUBST([XED2_RUN_DIR])
+
+# If Xed is shared, then hpcstruct gets a launch script.
+
+hpcstruct_launch_script=no
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
+  hpcstruct_launch_script=yes
+fi
+
+AM_CONDITIONAL(OPT_HPCSTRUCT_LAUNCH_SCRIPT, [test "$hpcstruct_launch_script" = yes])
 
 
 #-------------------------------------------------
@@ -1938,6 +1965,10 @@ AC_ARG_ENABLE([hpcrun-static],
   [OPT_ENABLE_HPCRUN_STATIC=yes])
 
 if test "$OPT_LIBMONITOR_STATIC" = no ; then
+  OPT_ENABLE_HPCRUN_STATIC=no
+fi
+
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
   OPT_ENABLE_HPCRUN_STATIC=no
 fi
 
@@ -2637,6 +2668,8 @@ AC_CONFIG_FILES([src/tool/hpcprof-flat/hpcprof-flat],
   [chmod +x src/tool/hpcprof-flat/hpcprof-flat])
 AC_CONFIG_FILES([src/tool/hpcproftt/hpcproftt],
   [chmod +x src/tool/hpcproftt/hpcproftt])
+AC_CONFIG_FILES([src/tool/hpcstruct/hpcstruct],
+  [chmod +x src/tool/hpcstruct/hpcstruct])
 
 AC_SUBST_FILE([export_hpctoolkit])
 export_hpctoolkit="${srcdir}/config/export-hpctoolkit"

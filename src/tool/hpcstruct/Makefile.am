@@ -70,7 +70,7 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-XED2_LIB = @XED2_LIB@
+XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 
 MYSOURCES = \
 	main.cpp \
@@ -100,7 +100,7 @@ MYLDADD = \
 	@HOST_HPCSTRUCT_LDFLAGS@
 
 if HOST_CPU_X86_FAMILY
-MY_LIB_XED = $(XED2_LIB)/libxed.a
+MY_LIB_XED = $(XED2_LIB_FLAGS)
 else
 MY_LIB_XED =
 endif
@@ -111,15 +111,26 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-bin_PROGRAMS = hpcstruct
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
 
-hpcstruct_SOURCES  = $(MYSOURCES)
-hpcstruct_CFLAGS   = $(MYCFLAGS)
-hpcstruct_CXXFLAGS = $(MYCXXFLAGS)
-hpcstruct_LDFLAGS  = $(MYLDFLAGS)
-hpcstruct_LDADD    = $(MYLDADD)
+bin_SCRIPTS = hpcstruct
+pkglibexec_PROGRAMS = hpcstruct-bin
+
+hpcstruct_bin_SOURCES  = $(MYSOURCES)
+hpcstruct_bin_CFLAGS   = $(MYCFLAGS)
+hpcstruct_bin_CXXFLAGS = $(MYCXXFLAGS)
+hpcstruct_bin_LDFLAGS  = $(MYLDFLAGS)
+hpcstruct_bin_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
+
+if ! OPT_HPCSTRUCT_LAUNCH_SCRIPT
+install-exec-hook:
+	rm -f $(DESTDIR)$(bindir)/hpcstruct$(EXEEXT)
+	mv -f $(DESTDIR)$(pkglibexecdir)/hpcstruct-bin$(EXEEXT) \
+	      $(DESTDIR)$(bindir)/hpcstruct$(EXEEXT)
+endif
 
 #############################################################################
 # Common rules
