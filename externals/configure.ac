@@ -1173,20 +1173,20 @@ AC_SUBST([symtabAPI_platform])
 AC_SUBST([use_symtab_61])
 
 #------------------------------------------------------------
-# XED: --with-xed2=PATH
+# XED: --with-xed2=PATH, --enable-mic
 #------------------------------------------------------------
-
-# Used on x86 and x86_64.
 
 case "$host_cpu" in
     *x86* | *i*86* ) ;;
     * ) xed2_default=no ;;
 esac
 
-use_xed2_k1om=no
-case "$host" in
-     *k1om* ) use_xed2_k1om=yes ;;
-esac
+AC_ARG_ENABLE([mic],
+    [AS_HELP_STRING([--enable-mic],
+	[use xed2 on front-end x86_64 that understands Intel MIC code,
+	 currently breaks hpclink (default no)])],
+    [],
+    [enable_mic=no])
 
 AC_ARG_WITH([xed2],
     [AS_HELP_STRING([--with-xed2=PATH],
@@ -1225,8 +1225,19 @@ esac
 
 AC_MSG_RESULT([$xed2_avail])
 
+use_xed2_k1om=no
+use_xed2_mic=no
+
+if test "$xed2_avail" = build ; then
+    case "$host" in
+	*k1om* ) use_xed2_k1om=yes ;;
+	* ) if test "$enable_mic" != no ; then use_xed2_mic=yes ; fi ;;
+    esac
+fi
+
 AC_SUBST([xed2_prefix])
 AC_SUBST([use_xed2_k1om])
+AC_SUBST([use_xed2_mic])
 
 #------------------------------------------------------------
 # Xerces: --with-xerces=PATH

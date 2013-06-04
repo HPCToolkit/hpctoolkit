@@ -601,6 +601,7 @@ LIBOBJS
 with_mpi
 xerces_platform
 xerces_prefix
+use_xed2_mic
 use_xed2_k1om
 xed2_prefix
 use_symtab_61
@@ -711,6 +712,7 @@ with_old_monitor
 with_open_analysis
 with_oprofile
 with_symtabAPI
+enable_mic
 with_xed2
 with_xerces
 with_mpi
@@ -1348,6 +1350,8 @@ Optional Features:
                           autoconf computes the wrong value
   --enable-back-end       build only those packages needed to run hpcrun on
                           the back-end compute nodes (default no)
+  --enable-mic            use xed2 on front-end x86_64 that understands Intel
+                          MIC code, currently breaks hpclink (default no)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -5197,20 +5201,21 @@ $as_echo "$symtabAPI_avail" >&6; }
 
 
 #------------------------------------------------------------
-# XED: --with-xed2=PATH
+# XED: --with-xed2=PATH, --enable-mic
 #------------------------------------------------------------
-
-# Used on x86 and x86_64.
 
 case "$host_cpu" in
     *x86* | *i*86* ) ;;
     * ) xed2_default=no ;;
 esac
 
-use_xed2_k1om=no
-case "$host" in
-     *k1om* ) use_xed2_k1om=yes ;;
-esac
+# Check whether --enable-mic was given.
+if test "${enable_mic+set}" = set; then :
+  enableval=$enable_mic;
+else
+  enable_mic=no
+fi
+
 
 
 # Check whether --with-xed2 was given.
@@ -5253,6 +5258,17 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $xed2_avail" >&5
 $as_echo "$xed2_avail" >&6; }
+
+use_xed2_k1om=no
+use_xed2_mic=no
+
+if test "$xed2_avail" = build ; then
+    case "$host" in
+	*k1om* ) use_xed2_k1om=yes ;;
+	* ) if test "$enable_mic" != no ; then use_xed2_mic=yes ; fi ;;
+    esac
+fi
+
 
 
 

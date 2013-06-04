@@ -11,15 +11,15 @@ PKG_NAME=xed2
 pre_install
 prefix="$xed2_prefix"
 
-case "$wordsize" in
-    32 ) XED2=extras/xed2-ia32 ;;
-    64 ) XED2=extras/xed2-intel64 ;;
-    * )  die "wordsize must be 32 or 64: $wordsize" ;;
-esac
-
-case "$host" in
-    *k1om* ) XED2=extras/xed2-mic ;;
-esac
+if test "$use_xed2_k1om" = yes ; then
+    XED2=extras/xed2-mic
+elif test "$use_xed2_mic" = yes ; then
+    XED2=xed-install-knc-2013-05-31-lin-x86-64
+elif test "$wordsize" = 32 ; then
+    XED2=extras/xed2-ia32
+else
+    XED2=extras/xed2-intel64
+fi
 
 mkdir -p "$prefix" || die "unable to mkdir: $prefix"
 
