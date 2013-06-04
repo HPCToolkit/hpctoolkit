@@ -69,6 +69,13 @@
 //***************************************************************************
 //
 //***************************************************************************
+//splay tree node type for static data
+typedef struct static_data_t {
+  void *start;
+  void *end;
+  struct static_data_t *left;
+  struct static_data_t *right;
+} static_data_t;
 
 typedef struct dso_info_t {
   char* name;
@@ -79,6 +86,7 @@ typedef struct dso_info_t {
   unsigned long map_size;
   unsigned long nsymbols;
   int  is_relocatable;
+  struct static_data_t *data_root;
 
   struct dso_info_t* next; //to only be used with dso_free_list
   struct dso_info_t* prev;
@@ -86,6 +94,10 @@ typedef struct dso_info_t {
 } dso_info_t;
 
 
+void
+insert_var_table(dso_info_t *dso, void **var_table, unsigned long num);
+void *
+static_data_interval_splay_lookup(static_data_t **root, void *key, void **start, void **end);
 // ---------------------------------------------------------
 // 
 // ---------------------------------------------------------

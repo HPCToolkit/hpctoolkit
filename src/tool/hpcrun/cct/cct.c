@@ -432,6 +432,15 @@ hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
   return new;
 }
 
+cct_node_t*
+hpcrun_insert_special_node(cct_node_t *root, void *addr)
+{
+  ip_normalized_t tmp_ip = hpcrun_normalize_ip(addr, NULL);
+  // plus 1 make sure lm_ip points to the correct callsite
+  cct_addr_t tmp = ADDR2(tmp_ip.lm_id, tmp_ip.lm_ip+1);
+  return hpcrun_cct_insert_addr(root, &tmp);
+}
+
 //
 // 2nd fundamental mutator: mark a node as "terminal". That is,
 //   it is the last node of a path
@@ -758,3 +767,12 @@ cct_disjoint_union_cached(cct_node_t* target, cct_node_t* src)
   }
   target->children = src;
 }
+
+cct_node_t*
+hpcrun_cct_insert_path_return_leaf(cct_node_t *path, cct_node_t *root)
+{
+  if(!path || ! path->parent) return root;
+  root = hpcrun_cct_insert_path_return_leaf(path->parent, root);
+  return hpcrun_cct_insert_addr(root, &(path->addr));
+}
+

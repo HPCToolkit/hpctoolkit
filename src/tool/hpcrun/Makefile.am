@@ -156,7 +156,11 @@ PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 
+NUMA_INC_FLGS = "-I/home/xl10/support/numactl-2.0.8"
+NUMA_LD_FLGS = "-L/home/xl10/support/numactl-2.0.8 -lnuma"
+
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
+HPCVARBOUNDS_INC = $(top_srcdir)/src/tool/hpcvarbounds
 
 PLUGIN_CONFIG_FILES = ga io memleak
 if OPT_ENABLE_CUDA
@@ -297,6 +301,8 @@ MY_BASE_FILES =				\
 	\
 	fnbounds/fnbounds_common.c	\
 	\
+   	varbounds/varbounds_common.c    \
+        \
 	memory/mem.c			\
         memory/mmap.c                   \
 	\
@@ -319,12 +325,15 @@ endif
 MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
+        varbounds/varbounds_client.c    \
+        varbounds/varbounds_dynamic.c   \
 	monitor-exts/openmp.c		\
 	hpcrun_dlfns.c                  \
         custom-init-dynamic.c
 
 MY_STATIC_FILES = 			\
 	fnbounds/fnbounds_static.c      \
+        varbounds/varbounds_static.c      \
         custom-init-static.c
 
 MY_LINUX_DYNAMIC_FILES = 		\
@@ -365,6 +374,7 @@ MY_INCLUDE_DIRS =			\
         -I$(top_srcdir)/src/tool        \
 	-I$(srcdir)/messages	        \
 	-I$(srcdir)/fnbounds		\
+        -I$(srcdir)/varbounds           \
 	-I$(srcdir)/memory		\
 	-I$(srcdir)/os/catamount	\
 	-I$(srcdir)/os/linux		\
@@ -695,12 +705,16 @@ if OPT_PAPI_DYNAMIC
   libhpcrun_la_SOURCES  += $(MY_PAPI_FILES)
   libhpcrun_la_CPPFLAGS += $(PAPI_INC_FLGS)
   libhpcrun_la_LDFLAGS  += $(PAPI_LD_FLGS)
+  libhpcrun_la_CPPFLAGS += $(NUMA_INC_FLGS)
+  libhpcrun_la_LDFLAGS  += $(NUMA_LD_FLGS)
 endif
 
 if OPT_PAPI_STATIC
   libhpcrun_o_SOURCES   += $(MY_PAPI_FILES)
   libhpcrun_o_CPPFLAGS  += $(PAPI_INC_FLGS)
   libhpcrun_o_LDFLAGS   += $(PAPI_LD_FLGS)
+  libhpcrun_o_CPPFLAGS += $(NUMA_INC_FLGS)
+  libhpcrun_o_LDFLAGS  += $(NUMA_LD_FLGS)
 endif
 
 if OPT_ENABLE_UPC

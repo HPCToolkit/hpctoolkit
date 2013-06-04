@@ -2,8 +2,8 @@
 
 ## * BeginRiceCopyright *****************************************************
 ##
-## $HeadURL$
-## $Id$
+## $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcvarbounds/Makefile.am $
+## $Id: Makefile.am 4070 2013-01-08 19:49:13Z krentel $
 ##
 ## --------------------------------------------------------------------------
 ## Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 #############################################################################
 ##
 ## File:
-##   $HeadURL$
+##   $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcvarbounds/Makefile.am $
 ##
 ## Description:
 ##   *Process with automake to produce Makefile.in*
@@ -61,44 +61,65 @@
 AUTOMAKE_OPTIONS = foreign
 
 #############################################################################
+# Common settings
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.config
+
+#############################################################################
 # Local settings
 #############################################################################
+
+BOOST_INC = @BOOST_INC@
+
+LIBDWARF_INC = @LIBDWARF_INC@
+LIBDWARF_LIB = @LIBDWARF_LIB@
+
+LIBELF_INC   = @LIBELF_INC@
+LIBELF_LIB   = @LIBELF_LIB@
+
+SYMTABAPI_INC = @SYMTABAPI_INC@
+SYMTABAPI_LIB = @SYMTABAPI_LIB@
+SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
+
+XED2_INC = @XED2_INC@
+XED2_LIB = @XED2_LIB@
+
+MYSOURCES = \
+	main.cpp \
+	function-entries.cpp \
+	server.cpp
+
+MYCPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
+	-I$(SYMTABAPI_INC)
+
+MYCXXFLAGS = @HOST_CXXFLAGS@
+
+MYLDFLAGS = \
+	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+	-L$(LIBDWARF_LIB) -ldwarf		\
+	-L$(LIBELF_LIB) -lelf
+
+MYCLEAN = @HOST_LIBTREPOSITORY@
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-SUBDIRS =
+pkglibexecdir = $(libexecdir)/$(PACKAGE)
 
-if OPT_BUILD_TOOL_ALL
-SUBDIRS += \
-	hpcstruct \
-	hpcprof \
-	hpcprof-flat \
-	hpcproftt \
-	hpclump \
-	misc
-endif
+pkglibexec_PROGRAMS = hpcvarbounds-bin
+pkglibexec_SCRIPTS =  hpcvarbounds
 
-if OPT_ENABLE_HPCRUN_FLAT
-  SUBDIRS += hpcrun-flat
-endif
+hpcvarbounds_bin_SOURCES  = $(MYSOURCES)
+hpcvarbounds_bin_CPPFLAGS = $(MYCPPFLAGS)
+hpcvarbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
+hpcvarbounds_bin_LDFLAGS  = $(MYLDFLAGS)
 
-if OPT_ENABLE_HPCRUN
-  SUBDIRS += \
-	hpcrun \
-	hpcfnbounds \
-	hpcvarbounds
-endif
-
-if OPT_ENABLE_MPI
-  SUBDIRS += hpcprof-mpi 
-endif
-
-#if OPT_ENABLE_DEVTOOLS
-#  SUBDIRS += hpclump
-#endif
+MOSTLYCLEANFILES = $(MYCLEAN)
 
 #############################################################################
-# Other rules
+# Common rules
 #############################################################################
+
+include $(top_srcdir)/src/Makeinclude.rules

@@ -83,6 +83,8 @@
 #include "files.h"
 #include "fnbounds_interface.h"
 #include "fnbounds_table_interface.h"
+#include "varbounds_interface.h"
+#include "varbounds_table_interface.h"
 #include "hpcrun_dlfns.h"
 #include "hpcrun_options.h"
 #include "hpcrun_return_codes.h"
@@ -276,6 +278,7 @@ hpcrun_init_internal(bool is_child)
   // server before we call PAPI_init, which is done in argument
   // processing below. Also, fnbounds_init must be done after the
   // memory allocator is initialized.
+  varbounds_init();
   fnbounds_init();
 
   main_addr = monitor_get_addr_main();
@@ -500,6 +503,7 @@ hpcrun_fini_internal()
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
     hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
     fnbounds_fini();
+    varbounds_fini();
     hpcrun_stats_print_summary();
     messages_fini();
   }

@@ -112,6 +112,9 @@ using namespace xml;
 
 //***************************************************************************
 
+// add by Xu Liu: identify offset metrics
+std::vector<uint> highOffsetId;
+std::vector<uint> lowOffsetId;
 
 //***************************************************************************
 // Profile
@@ -1021,6 +1024,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     //if (!tidStr.empty()) { m_sfx = "[" + tidStr + "]"; } // TODO:threads
   }
 
+  static uint metricNum = 0;
   metric_desc_t* m_lst = metricTbl.lst;
   for (uint i = 0; i < numMetricsSrc; i++) {
     const metric_desc_t& mdesc = m_lst[i];
@@ -1034,7 +1038,6 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
     bool doMakeInclExcl = (rFlags & RFlg_MakeInclExcl);
     
-
     // Certain metrics do not have both incl/excl values
     if (nm == HPCRUN_METRIC_RetCnt) {
       doMakeInclExcl = false;
@@ -1073,6 +1076,13 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     m->flags(mdesc.flags);
     
     prof->metricMgr()->insert(m);
+    if(m->name().find("LOW_OFFSET") != string::npos) {
+      lowOffsetId.push_back(metricNum);
+    }
+    if(m->name().find("HIGH_OFFSET") != string::npos) {
+      highOffsetId.push_back(metricNum);
+    }
+    metricNum ++;
 
     // ----------------------------------------
     // 2. Make associated 'exclusive' descriptor, if applicable
@@ -1089,6 +1099,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       mSmpl->flags(mdesc.flags);
       
       prof->metricMgr()->insert(mSmpl);
+      metricNum ++;
     }
   }
 

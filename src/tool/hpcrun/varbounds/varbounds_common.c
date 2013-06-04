@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/varbounds/varbounds_common.c $
+// $Id: varbounds_common.c 4059 2013-01-02 20:08:23Z krentel $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -44,58 +44,32 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef CCT_INSERT_BACKTRACE_H
-#define CCT_INSERT_BACKTRACE_H
+#include "varbounds_interface.h"
 
-#include <cct/cct_bundle.h>
-#include <cct/cct.h>
-#include <unwind/common/backtrace.h>
-#include "metrics.h"
+int
+varbounds_table_lookup(void **table, int length, void *ip, 
+		      void **start, void **end)
+{
+  int lo, mid, high;
+  int last = length - 1;
 
-//
-// interface routines
-//
-//
+  if ((ip < table[0]) || (ip >= table[last])) {
+    *start = 0;
+    *end   = 0;
+    return 1;
+  }
 
-//
-// Backtrace insertion
-//
-// Given a call path of the following form, insert the path into the
-// calling context tree and, if successful, return the leaf node
-// representing the sample point (innermost frame).
-//
-//               (low VMAs)                       (high VMAs)
-//   backtrace: [inner-frame......................outer-frame]
-//              ^ path_end                        ^ path_beg
-//              ^ bt_beg                                       ^ bt_end
-//
-extern cct_node_t* hpcrun_cct_insert_backtrace(cct_node_t* cct, frame_t* path_beg, frame_t* path_end);
+  //---------------------------------------------------------------------
+  // binary search the table for the interval containing ip
+  //---------------------------------------------------------------------
+  lo = 0; high = last; mid = (lo + high) >> 1;
+  for(; lo != mid;) {
+    if (ip >= table[mid]) lo = mid;
+    else high = mid;
+    mid = (lo + high) >> 1;
+  }
 
-extern cct_node_t* hpcrun_cct_insert_backtrace_w_metric(cct_node_t* cct,
-							int metric_id,
-							frame_t* path_beg, frame_t* path_end,
-							cct_metric_data_t datum);
-
-extern cct_node_t* hpcrun_cct_record_backtrace(cct_bundle_t* bndl, bool partial, bool thread_stop,
-					       frame_t* bt_beg, frame_t* bt_last,
-					       bool tramp_found);
-
-extern cct_node_t* hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* bndl, bool partial, bool thread_stop,
-							frame_t* bt_beg, frame_t* bt_last,
-							bool tramp_found,
-							int metricId, uint64_t metricIncr);
-
-extern cct_node_t* hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context, 
-                                        int metricId, uint64_t metricIncr,
-                                        int skipInner, int isSync);
-//
-// debug version of hpcrun_backtrace2cct:
-//   simulates errors to test partial unwind capability
-//
-
-extern cct_node_t* hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-                                            int metricId, uint64_t metricIncr,
-                                            int skipInner);
-
-extern void* hpcrun_get_addr_main(void);
-#endif // CCT_INSERT_BACKTRACE_H
+  *start = table[lo];
+  *end   = table[lo+1];
+  return 0;
+}

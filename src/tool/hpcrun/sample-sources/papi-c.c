@@ -63,6 +63,7 @@
 #include <ucontext.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <stdio.h>
 
 
 
@@ -97,6 +98,9 @@
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
+#include <datacentric.h>
+#include <numa.h>
+#include <numaif.h>
 
 
 /******************************************************************************
@@ -107,6 +111,46 @@
 #define WEIGHT_METRIC 0
 #define DEFAULT_THRESHOLD  2000000L
 
+/* for decoding data source */
+
+/* type of opcode (load/store/prefetch,code) */
+#define PERF_MEM_OP_NA          0x01 /* not available */
+#define PERF_MEM_OP_LOAD        0x02 /* load instruction */
+#define PERF_MEM_OP_STORE       0x04 /* store instruction */
+#define PERF_MEM_OP_PFETCH      0x08 /* prefetch */
+#define PERF_MEM_OP_EXEC        0x10 /* code (execution) */
+/* memory hierarchy (memory level, hit or miss) */
+#define PERF_MEM_LVL_NA         0x01  /* not available */
+#define PERF_MEM_LVL_HIT        0x02  /* hit level */
+#define PERF_MEM_LVL_MISS       0x04  /* miss level  */
+#define PERF_MEM_LVL_L1         0x08  /* L1 */
+#define PERF_MEM_LVL_LFB        0x10  /* Line Fill Buffer */
+#define PERF_MEM_LVL_L2         0x20  /* L2 hit */
+#define PERF_MEM_LVL_L3         0x40  /* L3 hit */
+#define PERF_MEM_LVL_LOC_RAM    0x80  /* Local DRAM */
+#define PERF_MEM_LVL_REM_RAM1   0x100 /* Remote DRAM (1 hop) */
+#define PERF_MEM_LVL_REM_RAM2   0x200 /* Remote DRAM (2 hops) */
+#define PERF_MEM_LVL_REM_CCE1   0x400 /* Remote Cache (1 hop) */
+#define PERF_MEM_LVL_REM_CCE2   0x800 /* Remote Cache (2 hops) */
+#define PERF_MEM_LVL_IO         0x1000 /* I/O memory */
+#define PERF_MEM_LVL_UNC        0x2000 /* Uncached memory */
+/* snoop mode */
+#define PERF_MEM_SNOOP_NA       0x01 /* not available */
+#define PERF_MEM_SNOOP_NONE     0x02 /* no snoop */
+#define PERF_MEM_SNOOP_HIT      0x04 /* snoop hit */
+#define PERF_MEM_SNOOP_MISS     0x08 /* snoop miss */
+#define PERF_MEM_SNOOP_HITM     0x10 /* snoop hit modified */
+/* locked instruction */
+#define PERF_MEM_LOCK_NA        0x01 /* not available */
+#define PERF_MEM_LOCK_LOCKED    0x02 /* locked transaction */
+/* TLB access */
+#define PERF_MEM_TLB_NA         0x01 /* not available */
+#define PERF_MEM_TLB_HIT        0x02 /* hit level */
+#define PERF_MEM_TLB_MISS       0x04 /* miss level */
+#define PERF_MEM_TLB_L1         0x08 /* L1 */
+#define PERF_MEM_TLB_L2         0x10 /* L2 */
+#define PERF_MEM_TLB_WK         0x20 /* Hardware Walker*/
+#define PERF_MEM_TLB_OS         0x40 /* OS fault handler */
 
 
 /******************************************************************************
@@ -126,11 +170,23 @@ typedef struct {
   papi_component_info_t component_info[0];
 } papi_source_info_t;
 
+typedef union perf_mem_data_src {
+        uint64_t val;
+        struct {
+                uint64_t   mem_op:5,       /* type of opcode */
+                        mem_lvl:14,     /* memory hierarchy level */
+                        mem_snoop:5,    /* snoop mode */
+                        mem_lock:2,     /* lock instr */
+                        mem_dtlb:7,     /* tlb access */
+                        mem_rsvd:31;
+        };
+}perf_mem_data_src;
+
 
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
-static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
+static void papi_event_handler(int event_set, void *pc, void *addr, unsigned long weight, unsigned long src, unsigned long cpu, long long ovec, void *context);
 static int  event_is_derived(int ev_code);
 static void event_fatal_error(int ev_code, int papi_ret);
 
@@ -146,11 +202,67 @@ static void event_fatal_error(int ev_code, int papi_ret);
 //
 static int papi_unavail = 0;
 
+static int ldlat = 3;
+static int lat_metric_id = -1;
+static int l1_metric_id = -1;
+static int lfb_metric_id = -1;
+static int l2_metric_id = -1;
+static int l3_metric_id = -1;
+static int ldram_metric_id = -1;
+static int miss_metric_id = -1;
+static int unknown_metric_id = -1;
+static int numa_match_metric_id = -1;
+static int numa_mismatch_metric_id = -1;
+
+static int low_offset_metric_id = -1;
+static int high_offset_metric_id = -1;
+
+static int *location_metric_id;
 
 
 /******************************************************************************
  * private operations 
  *****************************************************************************/
+
+void
+hpcrun_metric_min(int metric_id, metric_set_t* set,
+                      hpcrun_metricVal_t incr)
+{
+  metric_desc_t* minfo = hpcrun_id2metric(metric_id);
+  if (!minfo) {
+    return;
+  }
+
+  hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(set, metric_id);
+  switch (minfo->flags.fields.valFmt) {
+    case MetricFlags_ValFmt_Int:
+      if(loc->i > incr.i || loc->i == 0) loc->i = incr.i; break;
+    case MetricFlags_ValFmt_Real:
+      if(loc->r > incr.r || loc->r == 0.0) loc->r = incr.r; break;
+    default:
+      assert(false);
+  }
+}
+
+void
+hpcrun_metric_max(int metric_id, metric_set_t* set,
+                      hpcrun_metricVal_t incr)
+{
+  metric_desc_t* minfo = hpcrun_id2metric(metric_id);
+  if (!minfo) {
+    return;
+  }
+
+  hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(set, metric_id);
+  switch (minfo->flags.fields.valFmt) {
+    case MetricFlags_ValFmt_Int:
+      if(loc->i < incr.i || loc->i == 0) loc->i = incr.i; break;
+    case MetricFlags_ValFmt_Real:
+      if(loc->r < incr.r || loc->r == 0.0) loc->r = incr.r; break;
+    default:
+      assert(false);
+  }
+}
 
 static int
 get_event_index(sample_source_t *self, int event_code)
@@ -501,6 +613,26 @@ METHOD_FN(process_event_list, int lush_metrics)
   hpcrun_pre_allocate_metrics(nevents + num_lush_metrics);
 
   some_overflow = 0;
+    lat_metric_id = hpcrun_new_metric(); /* create latency metric id */
+  l1_metric_id = hpcrun_new_metric(); /* create l1 hit metric id */
+  lfb_metric_id = hpcrun_new_metric(); /* create lfb hit metric id */
+  l2_metric_id = hpcrun_new_metric(); /* create l2 hit metric id */
+  l3_metric_id = hpcrun_new_metric(); /* create l3 hit metric id */
+  ldram_metric_id = hpcrun_new_metric(); /* create local dram metric id */
+  miss_metric_id = hpcrun_new_metric(); /* create miss metric id (miss on any level) */
+  unknown_metric_id = hpcrun_new_metric(); /* create unknown metric id (miss on any level) */
+  numa_match_metric_id = hpcrun_new_metric(); /* create numa metric id (access matches data location in NUMA node) */
+  numa_mismatch_metric_id = hpcrun_new_metric(); /* create numa metric id (access does not match data location in NUMA node) */
+  low_offset_metric_id = hpcrun_new_metric(); /* create data range metric id (low offset) */
+  high_offset_metric_id = hpcrun_new_metric(); /* create data range metric id (high offset) */
+
+  // create data location (numa node) metrics
+  int numa_node_num = numa_num_configured_nodes();
+  location_metric_id = (int *) hpcrun_malloc(numa_node_num * sizeof(int));
+  for (i = 0; i < numa_node_num; i++) {
+    location_metric_id[i] = hpcrun_new_metric();
+  }
+
   for (i = 0; i < nevents; i++) {
     char buffer[PAPI_MAX_STR_LEN + 10];
     int metric_id = hpcrun_new_metric(); /* weight */
@@ -541,6 +673,52 @@ METHOD_FN(process_event_list, int lush_metrics)
     hpcrun_set_metric_info_and_period(metric_id, strdup(buffer),
 				      MetricFlags_ValFmt_Int,
 				      threshold, prop);
+    hpcrun_set_metric_info_and_period(lat_metric_id, "LATENCY",
+                                      MetricFlags_ValFmt_Int,
+                                      threshold, metric_property_none);
+    hpcrun_set_metric_info_and_period(l1_metric_id, "L1",
+                                      MetricFlags_ValFmt_Int,
+                                      threshold, metric_property_none);
+    hpcrun_set_metric_info_and_period(lfb_metric_id, "LFB",
+                                      MetricFlags_ValFmt_Int,
+                                      threshold, metric_property_none);
+    hpcrun_set_metric_info_and_period(l2_metric_id, "L2",
+                                      MetricFlags_ValFmt_Int,
+                                      threshold, metric_property_none);
+    hpcrun_set_metric_info_and_period(l3_metric_id, "L3",
+                                      MetricFlags_ValFmt_Int,
+                                      threshold, metric_property_none);
+    hpcrun_set_metric_info_and_period(ldram_metric_id, "LDRAM",
+                                      MetricFlags_ValFmt_Int,
+                                      threshold, metric_property_none);
+    hpcrun_set_metric_info_and_period(miss_metric_id, "MISSES",
+                                      MetricFlags_ValFmt_Int,
+                                      threshold, metric_property_none);
+    hpcrun_set_metric_info_and_period(unknown_metric_id, "UNKNOWN",
+                                      MetricFlags_ValFmt_Int,
+                                      threshold, metric_property_none);
+    hpcrun_set_metric_info_and_period(numa_match_metric_id, "NUMA_MATCH",
+                                      MetricFlags_ValFmt_Int,
+                                      threshold, metric_property_none);
+    hpcrun_set_metric_info_and_period(numa_mismatch_metric_id, "NUMA_MISMATCH",
+                                      MetricFlags_ValFmt_Int,
+                                      threshold, metric_property_none);
+    hpcrun_set_metric_info_w_fn(low_offset_metric_id, "LOW_OFFSET",
+                                      MetricFlags_ValFmt_Real,
+                                      1, hpcrun_metric_min, metric_property_none);
+    hpcrun_set_metric_info_w_fn(high_offset_metric_id, "HIGH_OFFSET",
+                                      MetricFlags_ValFmt_Real,
+                                      1, hpcrun_metric_max, metric_property_none);
+
+    // set numa location metrics
+    int j;
+    for (j = 0; j < numa_node_num; j++) {
+      char metric_name[128];
+      sprintf(metric_name, "NUMA_NODE%d", j);
+      hpcrun_set_metric_info_and_period(location_metric_id[j], strdup(metric_name),
+                                         MetricFlags_ValFmt_Int,
+                                         threshold, metric_property_none);
+    }
 
     // FIXME:LUSH: need a more flexible metric interface
     if (num_lush_metrics > 0 && strcmp(buffer, "PAPI_TOT_CYC") == 0) {
@@ -626,7 +804,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
 
     if (! derived[i]) {
       ret = PAPI_overflow(eventSet, evcode, thresh, OVERFLOW_MODE,
-			  papi_event_handler);
+			  papi_event_handler, ldlat);
       TMSG(PAPI, "PAPI_overflow(eventSet=%d, evcode=%x, thresh=%d) = %d", 
 	   eventSet, evcode, thresh, ret);
       if (ret != PAPI_OK) {
@@ -776,15 +954,19 @@ event_fatal_error(int ev_code, int papi_ret)
 }
 
 static void
-papi_event_handler(int event_set, void *pc, long long ovec,
-                   void *context)
+papi_event_handler(int event_set, void *pc, void *data_addr, unsigned long weight,
+                   unsigned long data_src, unsigned long cpu, long long ovec, void *context)
 {
+  union perf_mem_data_src src = (perf_mem_data_src)data_src;
+//printf("pc is %p, addr is %p, weight is 0x%x, src is 0x%x cpu is %u\n", pc, data_addr, weight, src.mem_lvl, cpu);
   sample_source_t *self = &obj_name();
   long long values[MAX_EVENTS];
   int my_events[MAX_EVENTS];
   int my_event_count = MAX_EVENTS;
   int nevents  = self->evl.nevents;
   int i, ret;
+  void *start = NULL;
+  void *end = NULL;
 
   int my_event_codes[MAX_EVENTS];
   int my_event_codes_count = MAX_EVENTS;
@@ -864,8 +1046,89 @@ papi_event_handler(int event_set, void *pc, long long ovec,
       metricIncrement = 1;
     }
 
+    // enable datacentric analysis
+    cct_node_t *data_node = NULL;
+    if(ENABLED(DATACENTRIC)) {
+      if(data_addr) {
+        TD_GET(ldst) = 1;
+        TD_GET(ea) = data_addr;
+      }
+      data_node = splay_lookup(data_addr, &start, &end);
+      if (!data_node) {
+        // check the static data
+        load_module_t *lm = hpcrun_loadmap_findByAddr(pc, pc);
+        if(lm && lm->dso_info) {
+          void *static_data_addr = static_data_interval_splay_lookup(&(lm->dso_info->data_root), data_addr, &start, &end);
+          if(static_data_addr) {
+            TD_GET(lm_id) = lm->id;
+            TD_GET(lm_ip) = (uintptr_t)static_data_addr;
+          }
+        }
+      }
+    }
+    // FIXME: record data_node and precise ip into thread data
+    TD_GET(data_node) = data_node;
+    TD_GET(pc) = pc;
     sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metricIncrement,
 			   0/*skipInner*/, 0/*isSync*/);
+    TD_GET(data_node) = NULL;
+    TD_GET(pc) = NULL;
+    TD_GET(ldst) = 0;
+    TD_GET(lm_id) = 0;
+    TD_GET(lm_ip) = 0;
+    TD_GET(ea) = NULL;
+
+    // compute data range info (offset %)
+    if(start && end) {
+      float offset = (float)(data_addr - start)/(end - start);
+      if (! hpcrun_has_metric_set(sv.sample_node)) {
+        cct2metrics_assoc(sv.sample_node, hpcrun_metric_set_new());
+      }
+      metric_set_t* set = hpcrun_get_metric_set(sv.sample_node);
+      hpcrun_metric_min(low_offset_metric_id, set, (cct_metric_data_t){.r = offset});
+      if (end - start <= 8) // one access covers the whole range
+        hpcrun_metric_max(high_offset_metric_id, set, (cct_metric_data_t){.r = 1.0});
+      else
+        hpcrun_metric_max(high_offset_metric_id, set, (cct_metric_data_t){.r = offset});
+    }
+
+    // compute numa-related metrics
+    int numa_access_node = numa_node_of_cpu(cpu);
+    int numa_location_node;
+    void *addr = data_addr;
+    int ret_code = move_pages(0, 1, &addr, NULL, &numa_location_node, 0);
+    if(ret_code == 0 && numa_location_node >= 0) {
+//printf("data_addr is %p, cpu is %u, numa_access_node is %d, numa_loaction_node is %d\n",data_addr, cpu, numa_access_node, numa_location_node);
+      if(numa_access_node == numa_location_node)
+        cct_metric_data_increment(numa_match_metric_id, sv.sample_node, (cct_metric_data_t){.i = 1});
+      else
+        cct_metric_data_increment(numa_mismatch_metric_id, sv.sample_node, (cct_metric_data_t){.i = 1});
+      // location metric
+      cct_metric_data_increment(location_metric_id[numa_location_node], sv.sample_node, (cct_metric_data_t){.i = 1});
+    }
+
+
+    cct_metric_data_increment(lat_metric_id, sv.sample_node, (cct_metric_data_t){.i = weight});
+    // now decode the data source info to get more metrics
+    if (src.mem_lvl & PERF_MEM_LVL_HIT) {
+      if (src.mem_lvl & PERF_MEM_LVL_L1)
+        cct_metric_data_increment(l1_metric_id, sv.sample_node, (cct_metric_data_t){.i = metricIncrement});
+      if (src.mem_lvl & PERF_MEM_LVL_LFB)
+        cct_metric_data_increment(lfb_metric_id, sv.sample_node, (cct_metric_data_t){.i = metricIncrement});
+      if (src.mem_lvl & PERF_MEM_LVL_L2)
+        cct_metric_data_increment(l2_metric_id, sv.sample_node, (cct_metric_data_t){.i = metricIncrement});
+      if (src.mem_lvl & PERF_MEM_LVL_L3)
+        cct_metric_data_increment(l3_metric_id, sv.sample_node, (cct_metric_data_t){.i = metricIncrement});
+      if (src.mem_lvl & PERF_MEM_LVL_LOC_RAM)
+        cct_metric_data_increment(ldram_metric_id, sv.sample_node, (cct_metric_data_t){.i = metricIncrement});
+    }
+    else if (src.mem_lvl & PERF_MEM_LVL_MISS) {
+      cct_metric_data_increment(miss_metric_id, sv.sample_node, (cct_metric_data_t){.i = metricIncrement});
+
+    }
+    else if (src.mem_lvl & PERF_MEM_LVL_NA) {
+      cct_metric_data_increment(unknown_metric_id, sv.sample_node, (cct_metric_data_t){.i = metricIncrement});
+    }
 
     blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
   }

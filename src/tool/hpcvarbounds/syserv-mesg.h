@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcvarbounds/syserv-mesg.h $
+// $Id: syserv-mesg.h 4097 2013-02-07 23:03:45Z krentel $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -44,58 +44,48 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef CCT_INSERT_BACKTRACE_H
-#define CCT_INSERT_BACKTRACE_H
-
-#include <cct/cct_bundle.h>
-#include <cct/cct.h>
-#include <unwind/common/backtrace.h>
-#include "metrics.h"
-
+// This file defines the API for messages over the pipe between the
+// hpcrun client (hpcrun/varbounds/varbounds_client.c) and the new
+// varbounds server (server.cpp).
 //
-// interface routines
-//
-//
+// Note: none of these structs needs to be platform-independent
+// because they're only used between processes within a single node
+// (same for the old server).
 
-//
-// Backtrace insertion
-//
-// Given a call path of the following form, insert the path into the
-// calling context tree and, if successful, return the leaf node
-// representing the sample point (innermost frame).
-//
-//               (low VMAs)                       (high VMAs)
-//   backtrace: [inner-frame......................outer-frame]
-//              ^ path_end                        ^ path_beg
-//              ^ bt_beg                                       ^ bt_end
-//
-extern cct_node_t* hpcrun_cct_insert_backtrace(cct_node_t* cct, frame_t* path_beg, frame_t* path_end);
+//***************************************************************************
 
-extern cct_node_t* hpcrun_cct_insert_backtrace_w_metric(cct_node_t* cct,
-							int metric_id,
-							frame_t* path_beg, frame_t* path_end,
-							cct_metric_data_t datum);
+#ifndef _SYSERV_MESG_H_
+#define _SYSERV_MESG_H_
 
-extern cct_node_t* hpcrun_cct_record_backtrace(cct_bundle_t* bndl, bool partial, bool thread_stop,
-					       frame_t* bt_beg, frame_t* bt_last,
-					       bool tramp_found);
+#include <stdint.h>
 
-extern cct_node_t* hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* bndl, bool partial, bool thread_stop,
-							frame_t* bt_beg, frame_t* bt_last,
-							bool tramp_found,
-							int metricId, uint64_t metricIncr);
+#define SYSERV_MAGIC    0x00f8f8f8
+#define VARBOUNDS_MAGIC  0x00f9f9f9
 
-extern cct_node_t* hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context, 
-                                        int metricId, uint64_t metricIncr,
-                                        int skipInner, int isSync);
-//
-// debug version of hpcrun_backtrace2cct:
-//   simulates errors to test partial unwind capability
-//
+enum {
+  SYSERV_ACK = 1,
+  SYSERV_QUERY,
+  SYSERV_EXIT,
+  SYSERV_OK,
+  SYSERV_ERR
+};
 
-extern cct_node_t* hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-                                            int metricId, uint64_t metricIncr,
-                                            int skipInner);
+struct syserv_mesg {
+  int32_t  magic;
+  int32_t  type;
+  int64_t  len;
+};
 
-extern void* hpcrun_get_addr_main(void);
-#endif // CCT_INSERT_BACKTRACE_H
+struct syserv_varbounds_info {
+  // internal fields for the client
+  int32_t   magic;
+  int32_t   status;
+  long      memsize;
+
+  // fields for the varbounds file header
+  uint64_t  num_entries;
+  uint64_t  reference_offset;
+  int       is_relocatable;
+};
+
+#endif  // _SYSERV_MESG_H_

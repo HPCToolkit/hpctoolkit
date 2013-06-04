@@ -276,6 +276,13 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   td->timer_init = false;
   td->last_time_us = 0;
 
+  td->data_node = NULL;
+  td->pc = NULL;
+  td->lm_id = 0;
+  td->lm_ip = NULL;
+  td->ldst = 0;
+  td->in_malloc = 0;
+  td->ea = NULL;
 
   // ----------------------------------------
   // backtrace buffer
