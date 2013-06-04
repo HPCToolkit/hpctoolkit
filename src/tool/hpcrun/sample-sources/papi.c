@@ -122,10 +122,10 @@ typedef struct {
  * forward declarations 
  *****************************************************************************/
 
-void
+static void
 hpcrun_metric_min(int metric_id, metric_set_t* set,
                       hpcrun_metricVal_t incr);
-void
+static void
 hpcrun_metric_max(int metric_id, metric_set_t* set,
                       hpcrun_metricVal_t incr);
 
@@ -626,7 +626,7 @@ METHOD_FN(display_events)
  * private operations 
  *****************************************************************************/
 
-void
+static void
 hpcrun_metric_min(int metric_id, metric_set_t* set,
                       hpcrun_metricVal_t incr)
 {
@@ -646,7 +646,7 @@ hpcrun_metric_min(int metric_id, metric_set_t* set,
   }
 }
 
-void
+static void
 hpcrun_metric_max(int metric_id, metric_set_t* set,
                       hpcrun_metricVal_t incr)
 {

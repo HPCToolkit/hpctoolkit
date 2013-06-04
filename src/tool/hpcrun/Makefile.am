@@ -352,7 +352,11 @@ MY_PPC_FILES = \
 MY_X86_FILES = \
         trampoline/x86-family/x86-tramp.S \
         \
-        utilities/arch/x86-family/x86-context-pc.c
+        utilities/arch/x86-family/x86-context-pc.c \
+        \
+        sample-sources/ibsfetch.c   \
+        \
+        sample-sources/ibsop.c
 
 MY_IA64_FILES = \
         trampoline/ia64/ia64-tramp.s \
