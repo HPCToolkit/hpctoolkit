@@ -154,7 +154,7 @@ LIBMONITOR_LIB = @LIBMONITOR_LIB@
 PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
 XED2_INC = @XED2_INC@
-XED2_LIB = @XED2_LIB@
+XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
@@ -200,7 +200,7 @@ UNW_X86_INCLUDE_DIRS = \
 	-I$(XED2_INC)
 
 UNW_X86_LD_FLAGS = \
-        $(XED2_LIB)/libxed.a
+        $(XED2_LIB_FLAGS)
 
 UNW_PPC64_FILES = \
         $(UNW_COMMON_FILES) \
@@ -663,8 +663,8 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
-  libhpcrun_la_LDFLAGS  += $(XED2_LIB)/libxed.a
-  libhpcrun_o_LDFLAGS   += $(XED2_LIB)/libxed.a
+  libhpcrun_la_LDFLAGS  += $(XED2_LIB_FLAGS)
+  libhpcrun_o_LDFLAGS   += $(XED2_LIB_FLAGS)
   libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
