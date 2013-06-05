@@ -357,7 +357,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
   }
 
   // make sure at least two cct(s) are created (not delete the single root in cct normalization)
-#if defined(__PPC64__)
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
   cct_cursor = hpcrun_insert_special_node(cct->tree_root, *(void **)NOT_data_access);
 #else
   cct_cursor = hpcrun_insert_special_node(cct->tree_root, NOT_data_access);
@@ -368,7 +368,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
   uintptr_t lm_ip = TD_GET(lm_ip);
   if(data_node) {
     // give a tag for the heap allocated data
-#if defined(__PPC64__)
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
     cct_cursor = hpcrun_insert_special_node(cct->tree_root, *(void **)monitored_heap_data);
 #else
     cct_cursor = hpcrun_insert_special_node(cct->tree_root, monitored_heap_data);
@@ -377,7 +377,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
     // copy the call path of the malloc
     cct_cursor = hpcrun_cct_insert_path_return_leaf(data_node, cct_cursor);
 
-#if defined(__PPC64__)
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
     cct_cursor = hpcrun_insert_special_node(cct_cursor, *(void **)heap_data_accesses);
 #else
     cct_cursor = hpcrun_insert_special_node(cct_cursor, heap_data_accesses);
@@ -386,7 +386,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
   }
   // static data
   else if(lm_ip){
-#if defined(__PPC64__)
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
     cct_cursor = hpcrun_insert_special_node(cct->tree_root, *(void **)monitored_static_data);
 #else
     cct_cursor = hpcrun_insert_special_node(cct->tree_root, monitored_static_data);
@@ -399,7 +399,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
   // stack or c++ template data, cannot back to data
   // or hardware does not give effective address back
   else if(TD_GET(ldst) == 1){
-#if defined(__PPC64__)
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
     cct_cursor = hpcrun_insert_special_node(cct->tree_root, *(void **)monitored_unknown_data);
 #else
     cct_cursor = hpcrun_insert_special_node(cct->tree_root, monitored_unknown_data);
@@ -407,7 +407,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
   }
   // unwind for malloc
   else if (TD_GET(in_malloc) == 1) {
-#if defined(__PPC64__)
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
     cct_cursor = hpcrun_insert_special_node(cct->tree_root, *(void **)heap_data_allocation);
 #else
     cct_cursor = hpcrun_insert_special_node(cct->tree_root, heap_data_allocation);
@@ -415,7 +415,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
   }
   // not datacentric related samples in the datacentric profiling
   else if(ENABLED(DATACENTRIC)){
-#if defined(__PPC64__)
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
     cct_cursor = hpcrun_insert_special_node(cct->tree_root, *(void **)NOT_data_access);
 #else
     cct_cursor = hpcrun_insert_special_node(cct->tree_root, NOT_data_access);
