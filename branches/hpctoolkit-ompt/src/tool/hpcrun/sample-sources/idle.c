@@ -79,6 +79,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 #include "blame-shift.h"
+#include "idle.h"
 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -114,16 +115,13 @@
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
-static void idle_fn(ompt_data_t *thread_data);
-static void work_fn(ompt_data_t *thread_data);
-static void start_fn(ompt_data_t *thread_data);
-static void end_fn(ompt_data_t *thread_data);
-static void bar_wait_begin(ompt_data_t *task_data, ompt_parallel_id_t parallel_id);
-static void bar_wait_end(ompt_data_t *task_data, ompt_parallel_id_t parallel_id);
 
 void scale_fn(void *);
 void normalize_fn(cct_node_t *node, cct_op_arg_t arg, size_t level);
-static void idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric_value);
+
+static void idle_metric_process_blame_for_sample
+(int metric_id, cct_node_t *node, int metric_value);
+
 
 /******************************************************************************
  * local variables
@@ -152,6 +150,7 @@ static int count_metric_id = -1;
 
 static bs_fn_entry_t bs_entry;
 
+#if 0
 // temporally put the tool registration here
 void
 tool_registration()
@@ -163,6 +162,12 @@ tool_registration()
   register_lock();
 }
 
+void ompt_initialize() {
+  tool_registration();
+  return 1;
+}
+
+
 void __attribute__ ((constructor)) ompt_registration()
 {
   int ret = ompt_register_tool(tool_registration);
@@ -170,6 +175,7 @@ void __attribute__ ((constructor)) ompt_registration()
     EMSG("WARNING: Tool was not successsfully registered");
   }
 }
+#endif
 
 static void
 METHOD_FN(init)

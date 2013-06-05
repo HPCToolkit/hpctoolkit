@@ -298,11 +298,6 @@ void end_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_frame,
   hpcrun_safe_exit();
 }
 
-void register_defer_callback()
-{
-  ompt_set_callback(ompt_event_parallel_create, (ompt_callback_t)start_team_fn);
-  ompt_set_callback(ompt_event_parallel_exit, (ompt_callback_t)end_team_fn);
-}
 
 int need_defer_cntxt()
 {
