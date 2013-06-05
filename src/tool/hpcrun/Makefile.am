@@ -266,6 +266,7 @@ MY_BASE_FILES =				\
 	sample-sources/idle.c		\
 	sample-sources/lockwait.c	\
 	sample-sources/memleak.c	\
+	sample-sources/ompt-interface.c	\
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \
         sample-sources/sync.c           \

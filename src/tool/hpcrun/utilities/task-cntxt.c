@@ -116,10 +116,6 @@ void start_task_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_fram
   td->overhead --;
 }
 
-void register_task_callback()
-{
-  ompt_set_callback(ompt_event_task_create, (ompt_callback_t)start_task_fn);
-}
 
 void* need_task_cntxt()
 {

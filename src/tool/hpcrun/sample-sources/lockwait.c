@@ -79,6 +79,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 #include "blame-shift.h"
+#include "lockwait.h"
 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -121,14 +122,13 @@ struct lockBlame {
 typedef union lockData {
   uint64_t all;
   struct lockBlame parts; //[0] is id, [1] is counter
-}lockData;
+} lockData;
 
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
 static void lock_fn(void *lock);
 static void unlock_fn(void *lock);
-static void unlock_fn1(ompt_wait_id_t wait_id);
 
 static void process_lockwait_blame_for_sample(int metric_id, cct_node_t *node, int metric_value);
 
@@ -415,14 +415,3 @@ void unlock_fn1(ompt_wait_id_t wait_id)
     }
   }
 }
-
-void
-register_lock()
-{
-  ompt_set_callback(ompt_event_release_lock, (ompt_callback_t)(unlock_fn1));
-  ompt_set_callback(ompt_event_release_nest_lock_last, (ompt_callback_t)(unlock_fn1));
-  ompt_set_callback(ompt_event_release_critical, (ompt_callback_t)(unlock_fn1));
-  ompt_set_callback(ompt_event_release_atomic, (ompt_callback_t)(unlock_fn1));
-  ompt_set_callback(ompt_event_release_ordered, (ompt_callback_t)(unlock_fn1));
-}
-
