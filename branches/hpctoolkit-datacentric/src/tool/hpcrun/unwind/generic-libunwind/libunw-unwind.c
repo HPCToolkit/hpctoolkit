@@ -148,12 +148,16 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* h_cursor, void* context)
   TMSG(LIBUNW_TRACE, "Init Cursor: cursor ip = %p", ipp);
 
   // unwind some max # of steps to get back to the pc from the context
-  for (int i=0; i < UNW_LIMIT; i++) {
-    if (pabs(ipp - pc) < THRESHOLD) break;
-    unw_step(cursor);
-    unw_get_reg(cursor, UNW_REG_IP, &ip);
-    ipp = (void*) ip;
-    TMSG(LIBUNW_TRACE, "Init Cursor correction step %d: cursor ip = %p", i+1, ipp);
+  // if pc is 0, not skip the unwinding ips. It always occurs ine synchronous unwining
+  // in memleak sample source.
+  if (pc != 0) {
+    for (int i=0; i < UNW_LIMIT; i++) {
+      if (pabs(ipp - pc) < THRESHOLD) break;
+      unw_step(cursor);
+      unw_get_reg(cursor, UNW_REG_IP, &ip);
+      ipp = (void*) ip;
+      TMSG(LIBUNW_TRACE, "Init Cursor correction step %d: cursor ip = %p", i+1, ipp);
+    }
   }
   h_cursor->sp = h_cursor->bp = NULL;
 
