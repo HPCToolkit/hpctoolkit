@@ -288,6 +288,9 @@ class ANode
     public Unique
 {
 public:
+  typedef std::vector<ANode*> Vec;
+
+public:
   enum ANodeTy {
     TyRoot = 0,
     TyProcFrm,
