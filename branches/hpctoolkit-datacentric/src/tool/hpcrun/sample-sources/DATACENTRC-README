@@ -1,0 +1,12 @@
+Data-centric profiling now supports IBS, MRK, PEBS, PEBS-LL and DEAR.
+IBS, PEBS, DEAR are based on perfmon2, while MRK and PEBS-LL are based on perf_events.
+We program perfmon2 with libpfm, program perf_events using a patched PAPI.
+
+Currently some manual configuation is needed to set HPCToolkit.
+FOR IBS and MRK, no need to adjust the branch.
+For PEBS, DEAR, copy papi-c-pebs.c or papi-c-dear.c to papi-c.c.
+For PEBS-LL, need to slightly change ibsop.c and ibsfetch.c. (return immediately in the init method fuction).
+
+TODO list:
+(1) Fix the NUMA path problem.
+(2) Automatic configuration for different architectures.
