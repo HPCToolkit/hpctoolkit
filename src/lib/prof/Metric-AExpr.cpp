@@ -198,7 +198,11 @@ Divide::eval(const Metric::IData& mdata) const
 {
   double n = m_numerator->eval(mdata);
   double d = m_denominator->eval(mdata);
-  double z = n / d;
+
+  double z = c_FP_NAN_d;
+  if (isok(d) && d != 0.0) {
+    z = n / d;
+  }
 
   AEXPR_CHECK(z);
   return z;
