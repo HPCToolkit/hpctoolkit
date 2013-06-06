@@ -6,6 +6,7 @@
 #
 
 PKG_NAME=xed2
+libirc=libirc.a
 
 . ../build-utils/configure.inc
 pre_install
@@ -29,5 +30,18 @@ test -d lib || die "missing lib directory: $XED2"
 echo "copying files from $XED2"
 tar cf - include lib | ( cd "$prefix" && tar xvf - )
 test $? -eq 0 || die "tar copy failed"
+
+# On MIC (k1om) host, libxed also needs libirc for the Intel fast mem
+# functions.
+
+if test "$use_xed2_k1om" = yes ; then
+    echo "adding $libirc"
+    cd "$ORIG_PKG_DIR" || die "unable to cd: $ORIG_PKG_DIR"
+    libdir="${prefix}/lib"
+    rm -f "${libdir}/${libirc}" "${libdir}/${libirc}.gz"
+    cp -f "../distfiles/${libirc}.gz" "${libdir}"
+    gzip -d "${libdir}/${libirc}.gz"
+    test -f "${libdir}/${libirc}" || die "copying $libirc failed"
+fi
 
 post_install
