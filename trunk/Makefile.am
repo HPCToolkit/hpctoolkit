@@ -132,7 +132,7 @@ install-data-local: myinstall-monitor
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libsymtabAPI*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libcommon*)
 	$(call copy-libs,$(SYMTABAPI_COPY_DYN),$(SYMTABAPI_LIB),libdyn*)
-	$(call copy-libs,$(XED2_COPY),$(XED2_LIB),libxed*)
+	$(call copy-libs,$(XED2_COPY),$(XED2_LIB),lib*)
 	$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
 
 myinstall-monitor:

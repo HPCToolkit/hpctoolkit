@@ -1657,6 +1657,7 @@ AC_SUBST([SYMTABAPI_COPY_DYN])
 XED2=no
 XED2_STATIC=no
 XED2_LIB_FLAGS=
+XED2_HPCLINK_OPTS=
 
 if test "$use_externals" = yes ; then
   XED2="$ext_xed2_prefix"
@@ -1679,10 +1680,15 @@ case "${XED2}" in
     if test -f "${XED2}/lib/libxed.a" ; then
       XED2_STATIC=yes
       XED2_LIB_FLAGS="${XED2}/lib/libxed.a"
+      XED2_HPCLINK_OPTS='-lxed'
     elif test -f "${XED2}/lib/libxed.so" ; then
       XED2_LIB_FLAGS="-L${XED2}/lib -lxed"
     else
       AC_MSG_ERROR([invalid xed2 directory: $XED2])
+    fi
+    if test -f "${XED2}/lib/libirc.a" ; then
+      XED2_LIB_FLAGS="${XED2_LIB_FLAGS} ${XED2}/lib/libirc.a"
+      XED2_HPCLINK_OPTS="$XED2_HPCLINK_OPTS -lirc"
     fi
     XED2_COPY=yes
     XED2_RUN_DIR="$hpc_ext_libs_dir"
@@ -1708,6 +1714,7 @@ AC_MSG_RESULT([$XED2])
 AC_SUBST([XED2_INC])
 AC_SUBST([XED2_LIB])
 AC_SUBST([XED2_LIB_FLAGS])
+AC_SUBST([XED2_HPCLINK_OPTS])
 AC_SUBST([XED2_COPY])
 AC_SUBST([XED2_RUN_DIR])
 
