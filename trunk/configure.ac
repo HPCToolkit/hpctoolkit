@@ -1703,7 +1703,7 @@ case "${XED2}" in
 esac
 
 if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2" = no ; then
-  AC_MSG_ERROR([xed2 is required for x86 platforms])
+  AC_MSG_WARN([xed2 is required for x86 platforms])
 fi
 
 XED2_INC="${XED2}/include"
