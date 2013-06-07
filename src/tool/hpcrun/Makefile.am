@@ -423,16 +423,12 @@ libhpcrun_memleak_wrap_a_SOURCES = 	\
 libhpcrun_gpu_la_SOURCES = 		\
 	sample-sources/gpu_blame-overrides.c \
 	gpu_blame-driver-overrides-generated.c \
-	gpu_blame-runtime-overrides-generated.c \
-	gpu_blame-cuda-driver-table.c \
-	gpu_blame-cuda-runtime-table.c
+	gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_gpu_wrap_a_SOURCES = 	\
 	sample-sources/gpu_blame-overrides.c  \
 	gpu_blame-driver-overrides-generated.c \
-	gpu_blame-runtime-overrides-generated.c \
-	gpu_blame-cuda-driver-table.c \
-	gpu_blame-cuda-runtime-table.c
+	gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_mpi_la_SOURCES = 		\
 	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
@@ -510,6 +506,8 @@ $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
 	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
 		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
 
+CUDA_TABLES = gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
+CUDA_FILES = sample-sources/gpu_blame.c $(CUDA_TABLES)
 if OPT_ENABLE_CUDA
 
 generated_file_base = .
@@ -734,7 +732,7 @@ if UNW_PPC64
 endif
 
 if OPT_ENABLE_CUDA
-  libhpcrun_la_SOURCES  += sample-sources/gpu_blame.c
+  libhpcrun_la_SOURCES += $(CUDA_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
   libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
@@ -745,8 +743,6 @@ if OPT_ENABLE_CUDA
 
   libhpcrun_gpu_wrap_a_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_gpu_wrap_a_CFLAGS  += $(OPT_CUDA_IFLAGS)
-#libhpcrun_gpu_wrap_a_LDFLAGS += $(OPT_CUDA_LDFLAGS)
-
 
 endif
 

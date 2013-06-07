@@ -26,6 +26,7 @@ import pdb
 
 
 driverSkipList = [
+'cuCtxCreate_v2',
 'cuCtxDestroy_v2',
 'cuMemcpyHtoD_v2',
 'cuMemcpyDtoH_v2',

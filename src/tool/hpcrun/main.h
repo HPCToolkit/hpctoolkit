@@ -64,4 +64,8 @@ typedef struct hpcrun_aux_cleanup_t  hpcrun_aux_cleanup_t;
 hpcrun_aux_cleanup_t * hpcrun_process_aux_cleanup_add( void (*func) (void *), void * arg);
 void hpcrun_process_aux_cleanup_remove(hpcrun_aux_cleanup_t * node);
 
+// ** HACK to accomodate PAPI-C w cuda component & gpu blame shifting
+
+extern void special_cuda_ctxt_actions(bool enable);
+
 #endif  // ! main_h
