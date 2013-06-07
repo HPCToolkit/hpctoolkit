@@ -471,7 +471,8 @@ Please note that a list of examples below provides <code>configure</code> comman
 	<dt>HPCToolkit Externals for the main cores:</dt>
 	<dd><code>
 	    cd BUILD-x86_64 <br>
-	    ../configure --prefix=/path/to/externals/install-x86_64
+	    ../configure --prefix=/path/to/externals/install-x86_64 \<br>
+	    &nbsp;&nbsp;&nbsp;&nbsp; --enable-mic
 	    </code>
 	</dd>
 	<p><dt>HPCToolkit Externals for the MIC cores:</dt>
@@ -507,11 +508,24 @@ Please note that a list of examples below provides <code>configure</code> comman
 	If PAPI is available for the MIC cores, then add
 	<code>--with-papi=/path/to/papi-k1om</code> to the hpctoolkit configure
 	for MIC.
-	Be sure that this version of PAPI is built for the MIC cores.
+	Make sure that this version of PAPI is built for the MIC cores.
 	<code>hpcprof-mpi</code> is untested for the MIC cores.
 	<p>
+	Be sure to use the option <code>--enable-mic</code> in the
+	externals's build for the main cores.
+	This option selects a version of XED that runs on the main (x86_64)
+	cores but understands the MIC (k1om) instructions.
+	(This option is ignored for the k1om build.)
+	Without this option, <code>hpcstruct</code> will crash on MIC binaries.
+	Unfortunately, this version of XED is new and currently available
+	only as a shared library, thus making it incompatible with
+	<code>hpclink</code> and the static case (why the default is no).
+	If you need to run static binaries on Stampede with
+	<code>hpclink</code>, then build a second version of hpctoolkit
+	for the main cores without this option.
+	<p>
 	You can build a restricted set of tools with the
-	<code>--enable-back-end</code> option (experimental).
+	<code>--enable-back-end</code> option for hpctoolkit (experimental).
 	This option builds only the tools, libraries and prerequisites needed for
 	running <code>hpcrun</code> and <code>hpclink</code> and collecting data
 	on the back-end compute nodes.
@@ -665,7 +679,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2013/05/24</span>]
+<p>[<span class="lastupdated">Page last updated: 2013/06/06</span>]
 </p>
 
 <!-- ********************************************************************** -->
