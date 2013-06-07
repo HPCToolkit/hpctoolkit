@@ -146,10 +146,13 @@ monitor_real_abort();                                              \
 #define CUDA_SAFE_CALL( call) do {                             \
 cudaError_t err = call;                                        \
 if( cudaSuccess != err) {                                      \
-EEMSG("Cuda error in call at file '%s' in line %i : %s.\n",    \
-__FILE__, __LINE__, cudaGetErrorString( err) );                \
-monitor_real_abort();                                          \
+  EMSG("In %s, @ line %d, gives error %d = '%s'\n", __FILE__, __LINE__, \
+                   err, \
+                   cudaGetErrorString(err));  \
+  monitor_real_abort();                                          \
 } } while (0)
+
+#define Cuda_RTcall(fn) cudaRuntimeFunctionPointer[fn ## Enum].fn ## Real
 
 #define GET_STREAM_ID(x) ((x) - g_stream_array)
 #define ALL_STREAMS_MASK (0xffffffff)
@@ -475,6 +478,10 @@ static uint32_t cleanup_finished_events();
  * local variables
  *****************************************************************************/
 
+// keep count of # of contexts
+// If more than 1 simultaneous context is created, that is bad
+static uint64_t ncontexts = 0L;
+
 // TODO.. Hack to show streams as threads, we  assume max of 32 CPU threads
 static uint32_t g_stream_id = 32;
 static uint32_t g_stream_to_id_index = 0;
@@ -581,12 +588,16 @@ static void InitCpuGpuBlameShiftDataStructs(){
 static void PopulateEntryPointesToWrappedCalls() {
     PopulateEntryPointesToWrappedCudaRuntimeCalls();
     PopulateEntryPointesToWrappedCuDriverCalls();
+    special_cuda_ctxt_actions(true);
 }
 
 __attribute__((constructor))
-static void CpuGpuBlameShiftInit() {
-    PopulateEntryPointesToWrappedCalls();
-    InitCpuGpuBlameShiftDataStructs();
+static void
+CpuGpuBlameShiftInit(void)
+{
+  // fprintf(stderr, "CPU-GPU blame shift constructor called\n");
+  PopulateEntryPointesToWrappedCalls();
+  InitCpuGpuBlameShiftDataStructs();
 }
 
 /******************** END CONSTRUCTORS ****/
@@ -723,10 +734,11 @@ static struct stream_to_id_map_t *splay_delete(cudaStream_t stream)
 {
     struct stream_to_id_map_t *result = NULL;
     
+    TMSG(CUDA, "Trying to delete %p from stream splay tree", stream);
     spinlock_lock(&g_stream_id_lock);
     if (stream_to_id_tree_root == NULL) {
         spinlock_unlock(&g_stream_id_lock);
-        TMSG(CPU_GPU_BLAME_CTL, "stream_to_id_map_t splay tree empty: unable to delete %p", stream);
+        TMSG(CUDA, "stream_to_id_map_t splay tree empty: unable to delete %p", stream);
         return NULL;
     }
     
@@ -734,9 +746,9 @@ static struct stream_to_id_map_t *splay_delete(cudaStream_t stream)
     
     if (stream != stream_to_id_tree_root->stream) {
         spinlock_unlock(&g_stream_id_lock);
-        TMSG(CPU_GPU_BLAME_CTL, "gpu steam splay tree: %p not in tree", stream);
-        EEMSG("deleting non existing node in splay tree");
-        monitor_real_abort();
+        TMSG(CUDA, "trying to deleting stream %p, but not in splay tree (root = %p)", stream, stream_to_id_tree_root->stream);
+	//        monitor_real_abort();
+	return NULL;
     }
     
     result = stream_to_id_tree_root;
@@ -1031,7 +1043,15 @@ static uint32_t cleanup_finished_events() {
                 
                 //FIX ME: deleting Elapsed time to handle context destruction....
                 //static uint64_t deleteMeTime = 0;
-                CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventElapsedTimeEnum].cudaEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_start));
+		TMSG(CUDA, "BEFORE: EventElapsedRT(%p, %p)\n", g_start_of_world_event, current_event->event_start);
+		cudaError_t err1 = Cuda_RTcall(cudaEventElapsedTime)(&elapsedTime,
+								   g_start_of_world_event,
+								   current_event->event_start);
+		// soft failure
+		if (err1 != cudaSuccess) {
+		  EMSG("cudaEventElaspsedTime failed");
+		  break;
+		}
                 
                 assert(elapsedTime > 0);
                 
@@ -1817,6 +1837,23 @@ static void destroy_all_events_in_free_event_list(){
     
 }
 
+CUresult
+cuCtxCreate_v2 (CUcontext *pctx, unsigned int flags, CUdevice dev)
+{
+  atomic_add_i64(&ncontexts, 1L);
+  if (ncontexts > 1) {
+    fprintf(stderr, "Too many contexts created\n");
+    monitor_real_abort();
+  }
+  if (! hpcrun_is_safe_to_sync(__func__)) {    return cuDriverFunctionPointer[cuCtxCreate_v2Enum].cuCtxCreate_v2Real(pctx, flags, dev);
+  }
+  TD_GET(gpu_data.is_thread_at_cuda_sync) = true;
+  monitor_disable_new_threads();
+  CUresult ret = cuDriverFunctionPointer[cuCtxCreate_v2Enum].cuCtxCreate_v2Real(pctx, flags, dev);
+  monitor_enable_new_threads();
+  TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
+  return ret;
+}
 
 CUresult cuCtxDestroy(CUcontext ctx) {
     
@@ -1849,6 +1886,9 @@ CUresult cuCtxDestroy(CUcontext ctx) {
         TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
         
     }
+    // count context creation ==> decrememnt here
+    atomic_add_i64(&ncontexts, -1L);
+    EMSG("Destroying Context!");
     HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
     
     monitor_disable_new_threads();
