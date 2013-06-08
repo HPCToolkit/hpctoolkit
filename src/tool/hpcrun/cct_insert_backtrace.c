@@ -83,7 +83,10 @@ omp_barrier()
 {
 }
 
-void mydump(char *tag, frame_t *inner, frame_t *outer) 
+#define elide_debug_dump(t,i,o) stack_dump(t,i,o)
+
+static
+void stack_dump(char *tag, frame_t *inner, frame_t *outer) 
 {
   EMSG("-----%s start", tag); 
   for (frame_t* x = inner; x <= outer; ++x) {
@@ -120,11 +123,12 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
   // special handle for frame 0 (inner-most frame)
   frame0 = ompt_get_task_frame(0);
   frame1 = ompt_get_task_frame(1);
-  // if inner-most task has no frame info, just return
 
-  mydump("ORIGINAL", *bt_inner, *bt_outer); 
-  
+  // if inner-most task has no frame info, just return
   if (!frame0) return;
+
+  elide_debug_dump("ORIGINAL", *bt_inner, *bt_outer); 
+
   if ((entry_sp = frame0->reenter_runtime_frame) || 
       ((entry_sp = frame1->reenter_runtime_frame) && !frame0->exit_runtime_frame)) {
     /* inside the runtime now; elide frames from entry to top of stack */
@@ -141,27 +145,21 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
       /* eliminate all frames */
       *bt_inner = *bt_outer + 1;
 
-      mydump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer); 
+      elide_debug_dump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer); 
 
       /* nothing left to do */
       return;
     }
-    mydump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer); 
+    elide_debug_dump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer); 
     /* frames at top of stack elided. move down one level */ 
     i++;
   }
-#if 0
- johnmc: might there not be nesting at the runtime? we cannot necessarily throw all frames
-         away. this is handled by the case above anyway.
-  // worker thread waiting at barrier (no work assigned)
-  else if (frame1 && !frame0->reenter_runtime_frame && !frame0->exit_runtime_frame) {
-    *bt_inner = *bt_outer;
-  }
-#endif
-  // general cases: elide frames between frame0->exit and frame1->reenter
+
+  // general case: elide frames between frame1->enter and frame0->exit
   while (true) {
     frame0 = ompt_get_task_frame(i);
     frame1 = ompt_get_task_frame(++i);
+
     if(!frame0 || !frame1) break;
 
     void *low_sp = (*bt_inner)->cursor.sp;
@@ -226,6 +224,7 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
     }
     else if(exit0 && !reenter1) {
       // check whether frame1' exit is set
+      // johnmc - I don't think this should ever occur.
       if(exit1) {
 	assert(0); // need to verify this condition with nested parallelism -- johnmc
         memmove(*bt_inner+(exit1-exit0+1), *bt_inner, (exit0 - *bt_inner)*sizeof(frame_t));
@@ -252,7 +251,7 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
     if(ompt_get_task_data(0) && ompt_get_task_data(0)->ptr) break;
   }
 
-  mydump("ELIDED", *bt_inner, *bt_outer); 
+  elide_debug_dump("ELIDED", *bt_inner, *bt_outer); 
 }
 
 
