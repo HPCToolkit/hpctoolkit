@@ -64,7 +64,6 @@
 #include <unwind/common/backtrace_info.h>
 #include <unwind/common/fence_enum.h>
 #include "cct_insert_backtrace.h"
-#include <lush/lush-backtrace.h>
 
 #include "hpcrun/ompt.h"
 
@@ -129,10 +128,6 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
   if ((entry_sp = frame0->reenter_runtime_frame) || 
       ((entry_sp = frame1->reenter_runtime_frame) && !frame0->exit_runtime_frame)) {
     /* inside the runtime now; elide frames from entry to top of stack */
-#if 0
-    assert(0); /* this computation isn't right */
-    *bt_inner = frame0->reenter_runtime_frame+1;
-#endif
 
     int found = 0;
     for(it = *bt_inner; it <= *bt_outer; it++) {
@@ -155,10 +150,14 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
     /* frames at top of stack elided. move down one level */ 
     i++;
   }
+#if 0
+ johnmc: might there not be nesting at the runtime? we cannot necessarily throw all frames
+         away. this is handled by the case above anyway.
   // worker thread waiting at barrier (no work assigned)
   else if (frame1 && !frame0->reenter_runtime_frame && !frame0->exit_runtime_frame) {
     *bt_inner = *bt_outer;
   }
+#endif
   // general cases: elide frames between frame0->exit and frame1->reenter
   while (true) {
     frame0 = ompt_get_task_frame(i);
@@ -181,29 +180,13 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
     bool reenter1_flag = 
       interval_contains(low_sp, high_sp, frame1->reenter_runtime_frame); 
 
-#if 0
-    bool exit0_flag = true, exit1_flag = true, reenter0_flag = true, reenter1_flag = true;
-
-    if((uint64_t)(*bt_inner)->cursor.sp > (uint64_t)(frame0->exit_runtime_frame) || 
-       (uint64_t)(*bt_outer)->cursor.sp < (uint64_t)(frame0->exit_runtime_frame))
-      exit0_flag = false;
-    if((uint64_t)(*bt_inner)->cursor.sp > (uint64_t)(frame0->reenter_runtime_frame) || 
-       (uint64_t)(*bt_outer)->cursor.sp < (uint64_t)(frame0->reenter_runtime_frame))
-      reenter0_flag = false;
-    if((uint64_t)(*bt_inner)->cursor.sp > (uint64_t)(frame1->exit_runtime_frame) || 
-       (uint64_t)(*bt_outer)->cursor.sp < (uint64_t)(frame1->exit_runtime_frame))
-      exit1_flag = false;
-    if((uint64_t)(*bt_inner)->cursor.sp > (uint64_t)(frame1->reenter_runtime_frame) || 
-       (uint64_t)(*bt_outer)->cursor.sp < (uint64_t)(frame1->reenter_runtime_frame))
-      reenter1_flag = false;
-
-    assert(exit0_flag == nexit0_flag && reenter0_flag == nreenter0_flag && 
-	   exit1_flag == nexit1_flag && reenter1_flag == nreenter1_flag); 
-#endif
-
     /* start from the top of the stack (innermost frame). 
        find the matching frame in the callstack for each of the markers in the
        stack. look for them in the order in which they should occur.
+
+       optimization note: this always starts at the top of the stack. this can
+       lead to quadratic cost. could pick up below where you left off cutting in 
+       previous iterations.
     */
     it = *bt_inner; 
     if(exit0_flag) {
