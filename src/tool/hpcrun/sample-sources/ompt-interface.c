@@ -74,30 +74,38 @@
 static void 
 init_threads()
 {
-  ompt_set_callback(ompt_event_thread_create, 
+  int retval;
+  retval = ompt_set_callback(ompt_event_thread_create, 
 		    (ompt_callback_t)start_fn);
+  assert(retval > 0);
 
-  ompt_set_callback(ompt_event_thread_exit, 
+  retval = ompt_set_callback(ompt_event_thread_exit, 
 		    (ompt_callback_t)end_fn);
+  assert(retval > 0);
 }
 
 
 static void 
 init_parallel_regions()
 {
-  ompt_set_callback(ompt_event_parallel_create, 
+  int retval;
+  retval = ompt_set_callback(ompt_event_parallel_create, 
 		    (ompt_callback_t)start_team_fn);
+  assert(retval > 0);
 
-  ompt_set_callback(ompt_event_parallel_exit, 
+  retval = ompt_set_callback(ompt_event_parallel_exit, 
 		    (ompt_callback_t)end_team_fn);
+  assert(retval > 0);
 }
 
 
 static void 
 init_tasks() 
 {
-  ompt_set_callback(ompt_event_task_create, 
+  int retval;
+  retval = ompt_set_callback(ompt_event_task_create, 
 		    (ompt_callback_t)start_task_fn);
+  assert(retval > 0);
 }
 
 
@@ -112,19 +120,20 @@ init_tasks()
 static void 
 init_blame_shift_directed()
 {
-  ompt_set_callback(ompt_event_release_lock, 
+  int retval;
+  retval = ompt_set_callback(ompt_event_release_lock, 
 		    (ompt_callback_t)(unlock_fn1));
 
-  ompt_set_callback(ompt_event_release_nest_lock_last, 
+  retval = ompt_set_callback(ompt_event_release_nest_lock_last, 
 		    (ompt_callback_t)(unlock_fn1));
 
-  ompt_set_callback(ompt_event_release_critical, 
+  retval = ompt_set_callback(ompt_event_release_critical, 
 		    (ompt_callback_t)(unlock_fn1));
 
-  ompt_set_callback(ompt_event_release_atomic, 
+  retval = ompt_set_callback(ompt_event_release_atomic, 
 		    (ompt_callback_t)(unlock_fn1));
 
-  ompt_set_callback(ompt_event_release_ordered, 
+  retval = ompt_set_callback(ompt_event_release_ordered, 
 		    (ompt_callback_t)(unlock_fn1));
 }
   
@@ -140,16 +149,17 @@ init_blame_shift_directed()
 static void 
 init_blame_shift_undirected()
 {
-  ompt_set_callback(ompt_event_idle_begin, 
+  int retval;
+  retval = ompt_set_callback(ompt_event_idle_begin, 
 		    (ompt_callback_t)idle_fn);
 
-  ompt_set_callback(ompt_event_idle_end, 
+  retval = ompt_set_callback(ompt_event_idle_end, 
 		    (ompt_callback_t)work_fn);
 
-  ompt_set_callback(ompt_event_wait_barrier_begin, 
+  retval = ompt_set_callback(ompt_event_wait_barrier_begin, 
 		    (ompt_callback_t)bar_wait_begin);
 
-  ompt_set_callback(ompt_event_wait_barrier_end, 
+  retval = ompt_set_callback(ompt_event_wait_barrier_end, 
 		    (ompt_callback_t)bar_wait_end);
 }
 
@@ -159,14 +169,19 @@ init_blame_shift_undirected()
 // interface operations
 //*****************************************************************************
 
-void 
-ompt_initialize()
+int 
+ompt_initialize(void)
 {
   init_threads();
   init_parallel_regions();
-  init_tasks();
   init_blame_shift_undirected();
   init_blame_shift_directed();
+
+  if(ENABLED(OMPT_TASK_FULL_CTXT)) {
+    init_tasks();
+    task_cntxt_full();
+  }
+  return 1;
 }
 
 
@@ -174,9 +189,9 @@ int
 ompt_state_is_overhead()
 {
   ompt_wait_id_t wait_id;
-  ompt_get_state(&wait_id);
+  ompt_state_t state = ompt_get_state(&wait_id);
 
-  switch (wait_id) {
+  switch (state) {
 
   case ompt_state_overhead:
   case ompt_state_wait_critical:

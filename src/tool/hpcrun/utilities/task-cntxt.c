@@ -57,6 +57,12 @@
  *****************************************************************************/
 
 /******************************************************************************
+ * global variables
+ *****************************************************************************/
+
+static int ompt_task_full_ctxt = 0;
+
+/******************************************************************************
  * forward declaration
  *****************************************************************************/
 
@@ -116,10 +122,15 @@ void start_task_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_fram
   td->overhead --;
 }
 
+void task_cntxt_full()
+{
+  ompt_task_full_ctxt = 1;
+}
+
 
 void* need_task_cntxt()
 {
-  if(ENABLED(SET_TASK_CTXT) && ompt_get_task_data(0)) {
+  if(ompt_task_full_ctxt && ompt_get_task_data(0)) {
     void *context = ompt_get_task_data(0)->ptr;
     return context;
   }
@@ -128,10 +139,14 @@ void* need_task_cntxt()
 
 void *copy_task_cntxt(void* creation_context)
 {
-  if(ENABLED(SET_DEFER_CTXT) && (is_partial_resolve((cct_node_t *)creation_context) > 0))
-    return hpcrun_cct_insert_path_return_leaf((hpcrun_get_thread_epoch()->csdata).unresolved_root, (cct_node_t *)creation_context);
+  if((is_partial_resolve((cct_node_t *)creation_context) > 0))
+    return hpcrun_cct_insert_path_return_leaf
+      ((hpcrun_get_thread_epoch()->csdata).unresolved_root, 
+       (cct_node_t *)creation_context);
   else
-    return hpcrun_cct_insert_path_return_leaf((hpcrun_get_thread_epoch()->csdata).tree_root, (cct_node_t *)creation_context);
+    return hpcrun_cct_insert_path_return_leaf
+      ((hpcrun_get_thread_epoch()->csdata).tree_root, 
+       (cct_node_t *)creation_context);
 }
 
 // It is a hack

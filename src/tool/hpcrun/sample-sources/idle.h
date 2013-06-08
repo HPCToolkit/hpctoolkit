@@ -1,7 +1,7 @@
 #ifndef _IDLE_H_
 #define _IDLE_H_
 
-#include "ompt.h"
+#include <ompt.h>
 
 void idle_fn(ompt_data_t *thread_data);
 void work_fn(ompt_data_t *thread_data);

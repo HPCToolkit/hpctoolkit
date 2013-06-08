@@ -65,6 +65,8 @@ struct record_t {
 
 uint64_t is_partial_resolve(cct_node_t *prefix);
 
+static int ompt_task_full_ctxt = 0;
+
 /******************************************************************************
  * splay tree operation for record map *
  *****************************************************************************/
@@ -289,7 +291,7 @@ void end_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_frame,
   // FIXME: not using team_master but use another routine to 
   // resolve team_master's tbd. Only with tasking, a team_master
   // need to resolve itself
-  if(ENABLED(SET_TASK_CTXT)) {
+  if(ENABLED(OMPT_TASK_FULL_CTXT)) {
     TD_GET(team_master) = 1;
     thread_data_t* td = hpcrun_get_thread_data();
     resolve_cntxt_fini(td);
@@ -298,11 +300,12 @@ void end_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_frame,
   hpcrun_safe_exit();
 }
 
-
 int need_defer_cntxt()
 {
+  if (getenv("OMPT_LOCAL_VIEW")) return 0;
+
   // master thread does not need to defer the context
-  if(ENABLED(SET_DEFER_CTXT) && (ompt_get_parallel_id(0) > 0) && !TD_GET(master)) {
+  if ((ompt_get_parallel_id(0) > 0) && !TD_GET(master)) {
     thread_data_t *td = hpcrun_get_thread_data();
     td->defer_flag = 1;
     return 1;

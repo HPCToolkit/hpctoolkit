@@ -1,17 +1,14 @@
 #ifndef defer_cntxt_h
 #define defer_cntxt_h
 
-#include "ompt.h"
+#include <ompt.h>
 
 #include <hpcrun/thread_data.h>
 /*
  * this interface is used for lazy callpath resolution 
 */
 
-/* register the functions in runtime (OMP) to support lazy resolution */
-void register_defer_callback();
-
-/* check whether the lazy resolution is needed */
+/* check whether the lazy resolution is needed in an unwind */
 int  need_defer_cntxt();
 
 /* resolve the contexts */
