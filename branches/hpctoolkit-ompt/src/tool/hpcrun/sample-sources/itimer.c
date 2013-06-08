@@ -425,11 +425,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   TMSG(ITIMER_CTL, "process event list, lush_metrics = %d", lush_metrics);
 
-  if(ENABLED(SET_DEFER_CTXT))
-    register_defer_callback();
-  if(ENABLED(SET_TASK_CTXT))
-    register_task_callback();
-
   // fetch the event string for the sample source
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);

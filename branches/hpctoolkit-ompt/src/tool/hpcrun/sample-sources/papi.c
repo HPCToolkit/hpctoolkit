@@ -359,10 +359,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   int i, ret;
   int num_lush_metrics = 0;
 
-  if(ENABLED(SET_DEFER_CTXT))
-    register_defer_callback();
-  if(ENABLED(SET_TASK_CTXT))
-    register_task_callback();
   char* evlist = METHOD_CALL(self, get_event_str);
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
     char name[1024];

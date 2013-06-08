@@ -150,33 +150,6 @@ static int count_metric_id = -1;
 
 static bs_fn_entry_t bs_entry;
 
-#if 0
-// temporally put the tool registration here
-void
-tool_registration()
-{
-  register_defer_callback();
-  register_task_callback();
-  // if blame shifting registration is set, call it
-  register_blame_shift();
-  register_lock();
-}
-
-void ompt_initialize() {
-  tool_registration();
-  return 1;
-}
-
-
-void __attribute__ ((constructor)) ompt_registration()
-{
-  int ret = ompt_register_tool(tool_registration);
-  if (!ret) {
-    EMSG("WARNING: Tool was not successsfully registered");
-  }
-}
-#endif
-
 static void
 METHOD_FN(init)
 {

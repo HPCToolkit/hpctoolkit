@@ -64,6 +64,7 @@
 #include <unwind/common/backtrace_info.h>
 #include <unwind/common/fence_enum.h>
 #include "cct_insert_backtrace.h"
+#include <lush/lush-backtrace.h>
 
 #include "hpcrun/ompt.h"
 
@@ -83,6 +84,31 @@ omp_barrier()
 {
 }
 
+void mydump(char *tag, frame_t *inner, frame_t *outer) 
+{
+  EMSG("-----%s start", tag); 
+  for (frame_t* x = inner; x <= outer; ++x) {
+    void* ip;
+    hpcrun_unw_get_ip_unnorm_reg(&(x->cursor), &ip);
+
+    load_module_t* lm = hpcrun_loadmap_findById(x->ip_norm.lm_id);
+    const char* lm_name = (lm) ? lm->name : "(null)";
+
+    EMSG("ip = %p (%p), load module = %s", ip, x->ip_norm.lm_ip, lm_name);
+  }
+  EMSG("-----%s end\n", tag); 
+}
+
+static int
+interval_contains(void *lower, void *upper, void *addr)
+{
+  uint64_t uaddr  = (uint64_t) addr;
+  uint64_t ulower = (uint64_t) lower;
+  uint64_t uupper = (uint64_t) upper;
+  
+  return ((ulower <= uaddr) & (uaddr <= uupper));
+}
+
 static void
 hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
 {
@@ -90,15 +116,44 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
   frame_t *it, *exit0 = NULL, *reenter1 = NULL, *exit1 = NULL;
   ompt_frame_t *frame0 = NULL;
   ompt_frame_t *frame1 = NULL;
+  void *entry_sp;
 
   // special handle for frame 0 (inner-most frame)
   frame0 = ompt_get_task_frame(0);
   frame1 = ompt_get_task_frame(1);
   // if inner-most task has no frame info, just return
+
+  mydump("ORIGINAL", *bt_inner, *bt_outer); 
+  
   if (!frame0) return;
-  // has reenter but no exit, meaning coming into runtime but never coming out
-  if(frame0->reenter_runtime_frame && !frame0->exit_runtime_frame) {
+  if ((entry_sp = frame0->reenter_runtime_frame) || 
+      ((entry_sp = frame1->reenter_runtime_frame) && !frame0->exit_runtime_frame)) {
+    /* inside the runtime now; elide frames from entry to top of stack */
+#if 0
+    assert(0); /* this computation isn't right */
     *bt_inner = frame0->reenter_runtime_frame+1;
+#endif
+
+    int found = 0;
+    for(it = *bt_inner; it <= *bt_outer; it++) {
+      if ((uint64_t)(it->cursor.sp) >= (uint64_t)entry_sp) {
+	*bt_inner = it;
+	found = 1;
+	break;
+      }
+    }
+    if (found == 0) {
+      /* eliminate all frames */
+      *bt_inner = *bt_outer + 1;
+
+      mydump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer); 
+
+      /* nothing left to do */
+      return;
+    }
+    mydump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer); 
+    /* frames at top of stack elided. move down one level */ 
+    i++;
   }
   // worker thread waiting at barrier (no work assigned)
   else if (frame1 && !frame0->reenter_runtime_frame && !frame0->exit_runtime_frame) {
@@ -109,20 +164,50 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
     frame0 = ompt_get_task_frame(i);
     frame1 = ompt_get_task_frame(++i);
     if(!frame0 || !frame1) break;
+
+    void *low_sp = (*bt_inner)->cursor.sp;
+    void *high_sp = (*bt_outer)->cursor.sp;
+
+    // if a frame marker is inside the call stack, set its flag to true
+    bool exit0_flag = 
+      interval_contains(low_sp, high_sp, frame0->exit_runtime_frame);
+
+    bool reenter0_flag = 
+      interval_contains(low_sp, high_sp, frame0->reenter_runtime_frame); 
+
+    bool exit1_flag = 
+      interval_contains(low_sp, high_sp, frame1->exit_runtime_frame);
+
+    bool reenter1_flag = 
+      interval_contains(low_sp, high_sp, frame1->reenter_runtime_frame); 
+
+#if 0
     bool exit0_flag = true, exit1_flag = true, reenter0_flag = true, reenter1_flag = true;
 
-    // check the boundary, if frame pointer is out side the bt boundary, set them to null
-    if((uint64_t)(*bt_inner)->cursor.sp > (uint64_t)(frame0->exit_runtime_frame) || (uint64_t)(*bt_outer)->cursor.sp < (uint64_t)(frame0->exit_runtime_frame))
+    if((uint64_t)(*bt_inner)->cursor.sp > (uint64_t)(frame0->exit_runtime_frame) || 
+       (uint64_t)(*bt_outer)->cursor.sp < (uint64_t)(frame0->exit_runtime_frame))
       exit0_flag = false;
-    if((uint64_t)(*bt_inner)->cursor.sp > (uint64_t)(frame0->reenter_runtime_frame) || (uint64_t)(*bt_outer)->cursor.sp < (uint64_t)(frame0->reenter_runtime_frame))
+    if((uint64_t)(*bt_inner)->cursor.sp > (uint64_t)(frame0->reenter_runtime_frame) || 
+       (uint64_t)(*bt_outer)->cursor.sp < (uint64_t)(frame0->reenter_runtime_frame))
       reenter0_flag = false;
-    if((uint64_t)(*bt_inner)->cursor.sp > (uint64_t)(frame1->exit_runtime_frame) || (uint64_t)(*bt_outer)->cursor.sp < (uint64_t)(frame1->exit_runtime_frame))
+    if((uint64_t)(*bt_inner)->cursor.sp > (uint64_t)(frame1->exit_runtime_frame) || 
+       (uint64_t)(*bt_outer)->cursor.sp < (uint64_t)(frame1->exit_runtime_frame))
       exit1_flag = false;
-    if((uint64_t)(*bt_inner)->cursor.sp > (uint64_t)(frame1->reenter_runtime_frame) || (uint64_t)(*bt_outer)->cursor.sp < (uint64_t)(frame1->reenter_runtime_frame))
+    if((uint64_t)(*bt_inner)->cursor.sp > (uint64_t)(frame1->reenter_runtime_frame) || 
+       (uint64_t)(*bt_outer)->cursor.sp < (uint64_t)(frame1->reenter_runtime_frame))
       reenter1_flag = false;
 
+    assert(exit0_flag == nexit0_flag && reenter0_flag == nreenter0_flag && 
+	   exit1_flag == nexit1_flag && reenter1_flag == nreenter1_flag); 
+#endif
+
+    /* start from the top of the stack (innermost frame). 
+       find the matching frame in the callstack for each of the markers in the
+       stack. look for them in the order in which they should occur.
+    */
+    it = *bt_inner; 
     if(exit0_flag) {
-      for (it = *bt_inner; it <= *bt_outer; it++) {
+      for (; it <= *bt_outer; it++) {
         if((uint64_t)(it->cursor.sp) >= (uint64_t)(frame0->exit_runtime_frame)) {
           exit0 = it;
           break;
@@ -130,7 +215,7 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
       }
     }
     if(reenter1_flag) {
-      for (it; it <= *bt_outer; it++) {
+      for (; it <= *bt_outer; it++) {
         if((uint64_t)(it->cursor.sp) >= (uint64_t)(frame1->reenter_runtime_frame)) {
           reenter1 = it;
           break;
@@ -138,7 +223,7 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
       }
     }
     if(exit1_flag) {
-      for (it; it <= *bt_outer; it++) {
+      for (; it <= *bt_outer; it++) {
         if((uint64_t)(it->cursor.sp) >= (uint64_t)(frame1->exit_runtime_frame)) {
           exit1 = it;
           break;
@@ -146,13 +231,20 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
       }
     }
     if(exit0 && reenter1) {
+#if 0
       memmove(*bt_inner+(reenter1-exit0+1), *bt_inner, (exit0 - *bt_inner)*sizeof(frame_t));
       *bt_inner = *bt_inner + (reenter1 - exit0 + 1);
+#else
+      // was missing a frame with intel's runtime; eliminate +1 -- johnmc
+      memmove(*bt_inner+(reenter1-exit0), *bt_inner, (exit0 - *bt_inner)*sizeof(frame_t));
+      *bt_inner = *bt_inner + (reenter1 - exit0);
+#endif
       exit0 = reenter1 = NULL;
     }
     else if(exit0 && !reenter1) {
       // check whether frame1' exit is set
       if(exit1) {
+	assert(0); // need to verify this condition with nested parallelism -- johnmc
         memmove(*bt_inner+(exit1-exit0+1), *bt_inner, (exit0 - *bt_inner)*sizeof(frame_t));
         *bt_inner = *bt_inner + (exit1 - exit0 + 1);
         exit0 = exit1 = NULL;
@@ -176,6 +268,8 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
     // inside a task, check one iteration is enough
     if(ompt_get_task_data(0) && ompt_get_task_data(0)->ptr) break;
   }
+
+  mydump("ELIDED", *bt_inner, *bt_outer); 
 }
 
 
@@ -529,8 +623,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     TMSG(FENCE, "bt last thread correction made");
     TMSG(THREAD_CTXT, "Thread correction, back off outermost backtrace entry");
     bt_last--;
-    // FOR OMP only, temporary solution to remove GOMP_thread_start
-    if (DISABLED(KEEP_GOMP_START)) bt_last--;
+    bt_last--;
   }
   // ompt: elide runtime frames
   if (ENABLED(OMP_ELIDE_FRAME)) hpcrun_elide_runtime_frame(&bt_last, &bt_beg);
