@@ -388,6 +388,8 @@ hpcrun_init_internal(bool is_child)
   if (cuda_ctx_actions) {
     cuda_ctxt_t* init_cuda_ctxt = cuda_capture_ctxt();
     TMSG(CUDA, "Captured initial process cuda ctx here: %p", cuda_get_handle(init_cuda_ctxt));
+    cuda_ncontexts_reset();
+    TMSG(CUDA, "Reset # contexts to 0");
   }
 #endif // ENABLE_CUDA
   // set up initial 'epoch' 

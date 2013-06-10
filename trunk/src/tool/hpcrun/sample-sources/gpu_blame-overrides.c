@@ -83,6 +83,7 @@
  *****************************************************************************/
 #include "common.h"
 #include "gpu_blame.h"
+#include "gpu_ctxt_actions.h"
 
 #include <hpcrun/main.h>
 #include <hpcrun/hpcrun_options.h>
@@ -478,10 +479,6 @@ static uint32_t cleanup_finished_events();
  * local variables
  *****************************************************************************/
 
-// keep count of # of contexts
-// If more than 1 simultaneous context is created, that is bad
-static uint64_t ncontexts = 0L;
-
 // TODO.. Hack to show streams as threads, we  assume max of 32 CPU threads
 static uint32_t g_stream_id = 32;
 static uint32_t g_stream_to_id_index = 0;
@@ -532,6 +529,7 @@ static bool g_stream0_initialized = false;
 
 static IPC_data_t * ipc_data;
 
+/******************** Utilities ********************/
 /******************** CONSTRUCTORS ********************/
 
 
@@ -1836,8 +1834,7 @@ static void destroy_all_events_in_free_event_list(){
 CUresult
 cuCtxCreate_v2 (CUcontext *pctx, unsigned int flags, CUdevice dev)
 {
-  atomic_add_i64(&ncontexts, 1L);
-  if (ncontexts > 1) {
+  if (cuda_ncontexts_incr() > 1) {
     fprintf(stderr, "Too many contexts created\n");
     monitor_real_abort();
   }
@@ -1882,8 +1879,8 @@ CUresult cuCtxDestroy(CUcontext ctx) {
         TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
         
     }
-    // count context creation ==> decrememnt here
-    atomic_add_i64(&ncontexts, -1L);
+    // count context creation ==> decrement here
+    cuda_ncontexts_decr();
     EMSG("Destroying Context!");
     HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
     
