@@ -97,7 +97,11 @@
 
 #include "sample_event.h"
 #include <sample-sources/none.h>
-#include <sample-sources/gpu_ctxt_actions.h>
+
+#ifdef ENABLE_CUDA
+#  include <sample-sources/gpu_ctxt_actions.h>
+#endif // ENABLE_CUDA
+
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
 #include "segv_handler.h"
@@ -143,7 +147,11 @@ extern void hpcrun_dump_intervals(void* addr);
 
 typedef struct local_thread_data_t {
   cct_ctxt_t* thr_ctxt;
+
+#ifdef ENABLE_CUDA
   cuda_ctxt_t* cuda_ctxt;
+#endif // ENABLE_CUDA
+
 } local_thread_data_t;
 
 typedef struct fork_data_t {
@@ -243,11 +251,13 @@ hpcrun_set_safe_to_sync(void)
   safe_to_sync_sample = true;
 }
 
+#ifdef ENABLE_CUDA
 void
 special_cuda_ctxt_actions(bool enable)
 {
   cuda_ctx_actions = enable;
 }
+#endif // ENABLE_CUDA
 
 //***************************************************************************
 // *** Important note about libmonitor callbacks ***
@@ -374,11 +384,12 @@ hpcrun_init_internal(bool is_child)
     SAMPLE_SOURCES(process_event_list, lush_metrics);
   }
   SAMPLE_SOURCES(gen_event_set, lush_metrics);
+#ifdef ENABLE_CUDA
   if (cuda_ctx_actions) {
     cuda_ctxt_t* init_cuda_ctxt = cuda_capture_ctxt();
     TMSG(CUDA, "Captured initial process cuda ctx here: %p", cuda_get_handle(init_cuda_ctxt));
   }
-
+#endif // ENABLE_CUDA
   // set up initial 'epoch' 
   
   TMSG(EPOCH,"process init setting up initial epoch/loadmap");
@@ -562,7 +573,9 @@ void*
 hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t* thr_ctxt)
 {
   cct_ctxt_t* thr_ctxt = local_thread_data->thr_ctxt;
+#ifdef ENABLE_CUDA
   cuda_ctxt_t* cuda_ctxt = local_thread_data->cuda_ctxt;
+#endif // ENABLE_CUDA
 
   hpcrun_mmap_init();
   thread_data_t* td = hpcrun_allocate_thread_data();
@@ -578,10 +591,12 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
 
   epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 
+#ifdef ENABLE_CUDA
   if (cuda_ctx_actions) {
     TMSG(CUDA, "Setting cuda ctxt for thread %d to %p", id, cuda_get_handle(cuda_ctxt));
     cuda_set_ctxt(cuda_ctxt);
   }
+#endif // ENABLE_CUDA
 
   // handle event sets for sample sources
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
@@ -873,11 +888,13 @@ monitor_thread_pre_create(void)
   TMSG(THREAD_CTXT, "context = %d, parent = %d", hpcrun_cct_persistent_id(thr_ctxt->context),
        thr_ctxt->parent ? hpcrun_cct_persistent_id(thr_ctxt->parent->context) : -1);
   rv->thr_ctxt = thr_ctxt;
-  // Add gpu actions here
+
+#ifdef ENABLE_CUDA
   if (cuda_ctx_actions) {
     rv->cuda_ctxt = cuda_capture_ctxt();
     TMSG(CUDA, "Capture creating thread's cuda ctxt: %p", cuda_get_handle(rv->cuda_ctxt));
   }
+#endif // ENABLE_CUDA
 					  
  fini:
 
