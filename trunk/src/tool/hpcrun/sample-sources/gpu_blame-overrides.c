@@ -532,10 +532,6 @@ static bool g_stream0_initialized = false;
 
 static IPC_data_t * ipc_data;
 
-// ******* METHOD DEFINITIONS ***********
-
-
-
 /******************** CONSTRUCTORS ********************/
 
 
