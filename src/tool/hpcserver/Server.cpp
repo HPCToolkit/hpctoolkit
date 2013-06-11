@@ -207,7 +207,6 @@ namespace TraceviewerServer
 	vector<char> Server::CompressXML()
 	{
 		vector<char> Compressed;
-		FILE* testfile = fopen("/Users/pat2/Downloads/hpctoolkit-chombo-crayxe6-1024pe-trace/test12AUTO.gz", "w+");
 
 		FILE* in = fopen(STDCL->GetExperimentXML().c_str(), "r");
 		//From http://zlib.net/zpipe.c with some editing
@@ -254,15 +253,12 @@ namespace TraceviewerServer
 				compramt += have;
 				//cout<<"Writing "<<have<< " compressed bytes. Length of compressed file so far is "<< compramt<<endl;
 				Compressed.insert(Compressed.end(), OutBuffer, OutBuffer+have);
-				fwrite(OutBuffer, 1, have, testfile);
 			} while (Compressor.avail_out == 0);
 
 
 			/* done when last data in file processed */
 		} while (flush != Z_FINISH);
 		deflateEnd(&Compressor);
-		fflush(testfile);
-		fclose(testfile);
 		cout<<"Size of vector: "<<Compressed.size()<<endl;
 		return Compressed;
 	}

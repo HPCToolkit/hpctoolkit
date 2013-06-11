@@ -24,6 +24,7 @@ namespace TraceviewerServer
 
 	Slave::Slave()
 	{
+		STDCLNeedsDeleting = false;
 
 		RunLoop();
 

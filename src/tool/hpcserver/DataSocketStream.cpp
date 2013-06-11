@@ -41,14 +41,16 @@ namespace TraceviewerServer
 		int err = bind(unopenedSocketFD, (sockaddr*) &Address, sizeof(Address));
 		if (err)
 		{
-			if (errno == 48)
+			if (errno == 48|| errno == 98)
 				cerr<< "Could not bind socket because socket is already in use. Make sure you have closed hpctraceviewer, wait 30 seconds and try again. Alternatively, you can choose a different port."<<endl;
 			else
 				cerr << "Could not bind socket. Error was " << errno << endl;
 			throw 1111;
 		}
 		//listen
-		listen(unopenedSocketFD, 5);
+		err = listen(unopenedSocketFD, 5);
+		if (err)
+			cerr<<"Listen failed: " << errno<<endl;
 		if (Accept)
 		{
 			cout << "Waiting for connection on port " << GetPort() << endl;
@@ -60,8 +62,9 @@ namespace TraceviewerServer
 		//accept
 		sockaddr_in client;
 		unsigned int len = sizeof(client);
-
+		cout<< "About to accept" <<endl;
 		socketDesc = accept(unopenedSocketFD, (sockaddr*) &client, &len);
+		cout<<"Accepted."<<endl;
 		if (socketDesc < 0)
 			cerr << "Error on accept" << endl;
 		file = fdopen(socketDesc, "r+b"); //read, write, binary
