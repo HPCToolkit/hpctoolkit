@@ -130,7 +130,7 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
   elide_debug_dump("ORIGINAL", *bt_inner, *bt_outer); 
 
   if ((entry_sp = frame0->reenter_runtime_frame) || 
-      ((entry_sp = frame1->reenter_runtime_frame) && !frame0->exit_runtime_frame)) {
+      (frame1 && (entry_sp = frame1->reenter_runtime_frame) && !frame0->exit_runtime_frame)) {
     /* inside the runtime now; elide frames from entry to top of stack */
 
     int found = 0;
@@ -260,7 +260,14 @@ cct_insert_raw_backtrace(cct_node_t* cct,
                             frame_t* path_beg, frame_t* path_end)
 {
   if (ENABLED(OMP_ELIDE_FRAME) && (path_beg < path_end) && cct) {
-    ip_normalized_t tmp_ip = hpcrun_normalize_ip(*(void **)omp_barrier, NULL);
+    // map the empty call path to omp_barrier to indicate an idle worker
+#ifdef __PPC64__
+    // with the PPC 64-bit ABI, functions are represented by D symbols and require one level of indirection
+    void *barrier_addr = *(void**) omp_barrier;
+#else
+    void *barrier_addr = (void *) omp_barrier;
+#endif
+    ip_normalized_t tmp_ip = hpcrun_normalize_ip(barrier_addr, NULL);
     cct_addr_t tmp = ADDR2(tmp_ip.lm_id, tmp_ip.lm_ip);
     cct = hpcrun_cct_insert_addr(cct, &tmp);
     hpcrun_cct_terminate_path(cct);
@@ -611,7 +618,11 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
   if (ENABLED(OMP_ELIDE_FRAME)) hpcrun_elide_runtime_frame(&bt_last, &bt_beg);
   // master thread elides all frames (to be omp_barrier), then make it as partial to 
   // avoid monitor_main and omp_barrier appearing in the CCT(s)
-  if((bt_last < bt_beg) && (bt.fence == FENCE_MAIN)) partial_unw = true;
+
+  if((bt_last < bt_beg) && (bt.fence == FENCE_MAIN)) {
+    EMSG("main fence partial");
+    partial_unw = true;
+  }
 
   cct_node_t* n = hpcrun_cct_record_backtrace_w_metric(bundle, partial_unw, bt.fence == FENCE_THREAD,
 						       bt_beg, bt_last, tramp_found,
