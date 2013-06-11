@@ -96,12 +96,19 @@ MYLDADD = \
 	$(HPCLIB_ProfLean) \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) \
+	$(MY_LIB_XED) \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
 	@XERCES_LDLIBS@ \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCPROF_LDFLAGS@
+
+if HOST_CPU_X86_FAMILY
+MY_LIB_XED = $(XED2_LIB)/libxed.a
+else
+MY_LIB_XED =
+endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
@@ -117,10 +124,6 @@ CXX = $(MPICXX)
 bin_SCRIPTS = hpcprof-mpi
 
 pkglibexec_PROGRAMS = hpcprof-mpi-bin
-
-if HOST_CPU_X86_FAMILY
-  MYLDADD += $(XED2_LIB)/libxed.a
-endif
 
 hpcprof_mpi_bin_SOURCES  = $(MYSOURCES)
 hpcprof_mpi_bin_CFLAGS   = $(MYCFLAGS)

@@ -231,6 +231,10 @@ papi_c_cupti_setup(void)
   // FIXME: Remove local definition
   // CUpti_SubscriberHandle subscriber;
 
+  static bool one_time = false;
+
+  if (one_time) return;
+
   TMSG(CUDA,"sync setup called");
 
   Cupti_call(dcuptiSubscribe, &subscriber,
@@ -240,6 +244,8 @@ papi_c_cupti_setup(void)
   Cupti_call(dcuptiEnableCallback, 1, subscriber,
              CUPTI_CB_DOMAIN_RUNTIME_API,
              CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020);
+
+  one_time = true;
 }
 
 //
@@ -248,9 +254,13 @@ papi_c_cupti_setup(void)
 static void
 papi_c_cupti_teardown(void)
 {
+  static bool one_time2 = false;
+  if (one_time2) return;
+
   TMSG(CUDA,"sync teardown called (=unsubscribe)");
   
   Cupti_call(dcuptiUnsubscribe, subscriber);
+  one_time2 = true;
 }
 
 static sync_info_list_t cuda_component = {

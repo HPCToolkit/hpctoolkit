@@ -91,12 +91,19 @@ MYLDADD = \
 	$(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) \
+	$(MY_LIB_XED) \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
 	@OA_LDFLAGS@ \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@
+
+if HOST_CPU_X86_FAMILY
+MY_LIB_XED = $(XED2_LIB)/libxed.a
+else
+MY_LIB_XED =
+endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
@@ -105,10 +112,6 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 #############################################################################
 
 bin_PROGRAMS = hpcstruct
-
-if HOST_CPU_X86_FAMILY
-  MYLDADD += $(XED2_LIB)/libxed.a
-endif
 
 hpcstruct_SOURCES  = $(MYSOURCES)
 hpcstruct_CFLAGS   = $(MYCFLAGS)

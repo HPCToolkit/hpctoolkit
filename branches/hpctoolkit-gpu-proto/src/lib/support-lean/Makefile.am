@@ -71,11 +71,14 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	intel-fast.c \
 	timer.h timer.c \
 	OSUtil.h OSUtil.c
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
+
+if HOST_CPU_K1OM
+MYSOURCES += intel-fast.c
+endif
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

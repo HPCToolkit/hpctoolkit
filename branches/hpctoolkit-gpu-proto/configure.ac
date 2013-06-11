@@ -500,8 +500,13 @@ case "${host}" in
     ;;
 esac
 
+HOST_CPU_K1OM=no
+case "$host" in
+  *k1om* ) HOST_CPU_K1OM=yes ;;
+esac
 
 AM_CONDITIONAL([HOST_OS_LINUX],   [test "${HOST_OS}" = Linux])
+AM_CONDITIONAL([HOST_CPU_K1OM],   [test "${HOST_CPU_K1OM}" = yes])
 AM_CONDITIONAL([HOST_CPU_MIPS],   [test "${HOST_CPU_MIPS}" = yes])
 AM_CONDITIONAL([HOST_CPU_PPC],    [test "${HOST_CPU_PPC}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86],    [test "${HOST_CPU_X86}" = yes])
