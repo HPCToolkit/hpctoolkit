@@ -1,0 +1,45 @@
+<!ELEMENT HPCPROF (TITLE, PATH*, REPLACE*, STRUCTURE*, GROUP*, METRIC*)>
+
+<!ELEMENT TITLE	 EMPTY>
+<!ATTLIST TITLE
+            name CDATA #REQUIRED>
+	    
+<!ELEMENT PATH EMPTY>
+<!ATTLIST PATH
+            name CDATA #REQUIRED
+            viewname CDATA #IMPLIED>
+
+<!ELEMENT REPLACE EMPTY>
+<!ATTLIST REPLACE
+            in CDATA #REQUIRED
+            out CDATA #REQUIRED>
+
+<!ELEMENT METRIC (FILE | COMPUTE)>
+<!ATTLIST METRIC
+            name CDATA #REQUIRED
+	    displayName CDATA #REQUIRED
+	    display (true|false) "true"
+	    percent (true|false) "true"
+	    sortBy  (true|false) "false">
+
+<!ELEMENT FILE EMPTY>
+<!ATTLIST FILE
+            name CDATA #REQUIRED
+	    select CDATA #IMPLIED
+	    type (HPCRUN|PROFILE) "PROFILE">
+
+<!ELEMENT COMPUTE (math)>
+<!ATTLIST COMPUTE
+	    propagate (raw|computed) "raw">
+<!ENTITY % mathml-include PUBLIC "mathml definitions" "mathml/mathml.dtd">
+%mathml-include;
+
+<!ELEMENT STRUCTURE EMPTY>
+<!ATTLIST STRUCTURE
+            name CDATA #REQUIRED>
+
+<!ELEMENT GROUP EMPTY>
+<!ATTLIST GROUP
+            name CDATA #REQUIRED>
+
+<!ELEMENT DISPLAY EMPTY>

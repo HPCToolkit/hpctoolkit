@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- -*- coding: utf-8 -*- -->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!-- ********************************************************************** -->
+
+<head>
+  <!-- meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" /> -->
+
+  <title>HPCToolkit Documentation</title>
+
+  <link rel="stylesheet" type="text/css" href="style/style.css" />
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+@header-hpctoolkit@
+
+<!-- ********************************************************************** -->
+
+<h1>Documentation</h1>
+
+<h2>Quick Reference</h2>
+<ul>
+
+<li>
+Quick Start Guide: See Chapter 3 of Manual [<a href="manual/HPCToolkit-users-manual.pdf">pdf</a>]
+</li>
+
+<li>
+Using HPCToolkit with MPI: See Chapter 6 of Manual [<a href="manual/HPCToolkit-users-manual.pdf">pdf</a>]
+</li>
+
+<li>
+Troubleshooting Guide: See Chapter 8 of Manual [<a href="manual/HPCToolkit-users-manual.pdf">pdf</a>]
+</li>
+
+</ul>
+
+
+<h2>Manuals</h2>
+<ul>
+
+<li>
+Building and Installing Instructions [<a href="software-instructions.html">html</a>]
+
+</li>
+
+<li>
+User's Manual [<a href="manual/HPCToolkit-users-manual.pdf">pdf</a>]
+</li>
+
+<!-- Using hpcviewer to browse performance databases [<a href="http://hipersoft.rice.edu/hpctoolkit/SERVER/tutorials/Using-hpcviewer.pdf">pdf</a>] -->
+<!-- <a href="http://hipersoft.rice.edu/hpctoolkit/SERVER/sc04/index.html">Supercomputing 2004 tutorial notes and exercises</a> -->
+
+</ul>
+
+
+<h2>Man Pages</h2>
+<ul>
+
+<li>
+  <a href="man/hpctoolkit.html">HPCToolkit Overview</a>
+</li>
+
+<li> Measurement:
+<ul>
+<li>
+  <a href="man/hpcrun.html">hpcrun</a>,
+  <a href="man/hpclink.html">hpclink</a>,
+  (<a href="man/hpcrun-flat.html">hpcrun-flat</a>)
+</li>
+</ul>
+</li>
+
+<li> Analysis &amp; Attribution:
+<ul>
+  <li>
+    <a href="man/hpcstruct.html">hpcstruct</a>
+  </li>
+  <li>
+    <a href="man/hpcprof.html">hpcprof</a>,
+    <a href="man/hpcprof-mpi.html">hpcprof-mpi</a>,
+    (<a href="man/hpcprof-flat.html">hpcprof-flat</a>)
+    <ul>
+      <li>
+        <a href="man/hpcproftt.html">hpcproftt</a>
+      </li>
+      <li>
+        <a href="man/hpcsummary.html">hpcsummary</a>
+      </li>
+    </ul>
+  </li>
+
+</ul>
+</li>
+
+<li> Presentation:
+<ul>
+  <li>
+    <a href="man/hpcviewer.html">hpcviewer</a>
+  </li>
+  <li>
+    <a href="man/hpctraceviewer.html">hpctraceviewer</a>
+  </li>
+</ul>
+</li>
+
+</ul>
+
+
+<h2>Questions, Problems, Bugs</h2>
+
+<div class="indent">
+<p>Note: When contacting us or submitting a bug report using any of the means listed below, please tell us the following:</p>
+<ol>
+  <li>
+    System information: OS/architecture (<code>uname -a</code>), compiler (<code>gcc -v</code>), PAPI (version), Java (<code>java -version</code>).
+  </li>
+  <li>
+    HPCToolkit: HPCToolkit version; if available, build information from <code>&lt;hpctoolkit-build&gt;/config.log</code>, which is generated after running <code>configure</code>.
+  </li>
+  <li>
+    Profiled application: Information about your application, e.g., source language, whether dynamically or statically linked.
+  </li>
+  <li>
+    Relevant profiling/analysis commands.
+    If you have used <span class="hpctool">hpcrun</span>, please include the results of executing:
+    <div class="indent">
+      <code>hpcsummary --all &lt;hpctoolkit-measurements&gt;</code>
+    </div>
+  </li>
+</ol>
+</div>
+
+<ul>
+
+<li>
+Email the <a href ="https://mailman.rice.edu/mailman/listinfo/hpctoolkit-forum">HPCToolkit Forum</a>: <a href ="mailto:hpctoolkit-forum =at= rice.edu"><tt>hpctoolkit-forum =at= rice.edu</tt></a>
+</li>
+
+<li>
+Sign up for <a href ="https://mailman.rice.edu/mailman/listinfo/hpctoolkit-announce">HPCToolkit Announcements</a>
+</li>
+
+<!--
+<li>
+Submit a <a href="https://outreach.scidac.gov/tracker/?group_id=87">bug report</a>
+</li>
+-->
+
+</ul>
+
+
+
+<p>[<span class="lastupdated">Page last updated: 2011/12/30</span>]
+</p>
+
+<!-- ********************************************************************** -->
+
+@footer-hpctoolkit@
+
+<!-- ********************************************************************** -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: "<span class=\"lastupdated\">Page last updated: " -->
+<!-- time-stamp-format: "%:y/%02m/%02d" -->
+<!-- time-stamp-end: "</span>" -->
+<!-- time-stamp-line-limit: 10000 -->
+<!-- End: -->
