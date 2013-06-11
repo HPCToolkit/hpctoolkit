@@ -264,7 +264,12 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   // ----------------------------------------
   core_profile_trace_data_init(&(td->core_profile_trace_data), id, thr_ctxt);
 
-  td->idle = 0; // begin at work
+  // ----------------------------------------
+  // blame shifting support
+  // ----------------------------------------
+
+  td->idle = 0;         // a thread begins in the working state 
+  td->blame_target = 0; // initially, no target for directed blame
  
   td->overhead = 0; // begin at not in overhead
 

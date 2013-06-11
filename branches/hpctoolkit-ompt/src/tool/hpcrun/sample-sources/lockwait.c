@@ -98,7 +98,7 @@
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/atomic.h>
 
-#include "hpcrun/ompt.h"
+#include <ompt.h>
 #include <dlfcn.h>
 #include <hpcrun/loadmap.h>
 #include <hpcrun/trace.h>

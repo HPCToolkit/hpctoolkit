@@ -54,6 +54,7 @@
 #include <hpcrun/metrics.h>
 #include <hpcrun/unresolved.h>
 #include <lib/prof-lean/lush/lush-support.h>
+#include <lib/prof-lean/placeholders.h>
 #include <lush/lush-backtrace.h>
 #include <thread_data.h>
 #include <hpcrun_stats.h>
@@ -65,7 +66,7 @@
 #include <unwind/common/fence_enum.h>
 #include "cct_insert_backtrace.h"
 
-#include "hpcrun/ompt.h"
+#include <ompt.h>
 
 //
 // Misc externals (not in an include file)
@@ -78,12 +79,11 @@ extern bool hpcrun_inbounds_main(void* addr);
 //
 static bool retain_recursion = false;
 
-static void
-omp_barrier()
-{
-}
-
+#ifdef OMPT_DEBUG
 #define elide_debug_dump(t,i,o) stack_dump(t,i,o)
+#else
+#define elide_debug_dump(t,i,o) 
+#endif
 
 static
 void stack_dump(char *tag, frame_t *inner, frame_t *outer) 
@@ -261,13 +261,8 @@ cct_insert_raw_backtrace(cct_node_t* cct,
 {
   if (ENABLED(OMP_ELIDE_FRAME) && (path_beg < path_end) && cct) {
     // map the empty call path to omp_barrier to indicate an idle worker
-#ifdef __PPC64__
-    // with the PPC 64-bit ABI, functions are represented by D symbols and require one level of indirection
-    void *barrier_addr = *(void**) omp_barrier;
-#else
-    void *barrier_addr = (void *) omp_barrier;
-#endif
-    ip_normalized_t tmp_ip = hpcrun_normalize_ip(barrier_addr, NULL);
+    void *omp_barrier_addr = canonicalize_placeholder(omp_barrier);
+    ip_normalized_t tmp_ip = hpcrun_normalize_ip(omp_barrier_addr, NULL);
     cct_addr_t tmp = ADDR2(tmp_ip.lm_id, tmp_ip.lm_ip);
     cct = hpcrun_cct_insert_addr(cct, &tmp);
     hpcrun_cct_terminate_path(cct);
@@ -604,6 +599,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     partial_unw = true;
   }
 
+#if 0
   //
   // If this backtrace is generated from sampling in a thread,
   // take off the top 'monitor_pthread_main' node
@@ -614,13 +610,30 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     bt_last--;
     bt_last--;
   }
+#endif
+
   // ompt: elide runtime frames
-  if (ENABLED(OMP_ELIDE_FRAME)) hpcrun_elide_runtime_frame(&bt_last, &bt_beg);
-  // master thread elides all frames (to be omp_barrier), then make it as partial to 
-  // avoid monitor_main and omp_barrier appearing in the CCT(s)
+  if (ENABLED(OMP_ELIDE_FRAME)) {
+    frame_t* bt_last_orig = bt_last;
+    hpcrun_elide_runtime_frame(&bt_last, &bt_beg);
+    if ((bt.fence == FENCE_THREAD) && (bt_last_orig == bt_last)) {
+      // no elision was performed on a side thread. 
+      // it is a degenerate sample outside an openmp team. collapse it by force and eliminate all frames.
+      bt_beg = bt_last + 1;
+    }
+  }
+
+
+    // master thread elides all frames (to be omp_barrier), then make it as partial to 
+    // avoid monitor_main and omp_barrier appearing in the CCT(s)
 
   if((bt_last < bt_beg) && (bt.fence == FENCE_MAIN)) {
     EMSG("main fence partial");
+    partial_unw = true;
+  }
+
+  if((bt_last < bt_beg) && (bt.fence == FENCE_THREAD)) {
+    EMSG("thread fence partial");
     partial_unw = true;
   }
 
