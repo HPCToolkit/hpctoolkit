@@ -374,6 +374,7 @@ MY_INCLUDE_DIRS =			\
 	-I$(srcdir)/os/catamount	\
 	-I$(srcdir)/os/linux		\
 	-I$(srcdir)/cct			\
+	-I$(srcdir)/ompt		\
 	-I$(srcdir)/unwind/common	\
 	-I$(srcdir)/utilities		\
 	$(HPC_IFLAGS)			\
