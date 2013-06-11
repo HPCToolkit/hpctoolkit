@@ -126,20 +126,20 @@ static void idle_metric_process_blame_for_sample
 /******************************************************************************
  * local variables
  *****************************************************************************/
-#ifdef GOMP
-// for GOMP, the master thread forks all other worker threads and the master thread
-// works as a worker thread
-static uint64_t work = 1L;// by default work is 1 (1 thread)
-static uint64_t thread_num = 1L;// by default thread is 1 (master thread)
-// record the max thread number active concurrently
-// use it to normalize the idleness at the end of measurement
-static uint64_t max_thread_num = 1L;
+#define OMP_MASTER_IS_WORKER
+
+#ifdef OMP_MASTER_IS_WORKER
+#define INITIAL_WORKER_COUNT 1
 #else
-// all worker threads are forked
-static uint64_t work = 0L;
-static uint64_t thread_num = 0L;
-static uint64_t max_thread_num = 0L;
+#define INITIAL_WORKER_COUNT 0
 #endif
+
+static uint64_t work = INITIAL_WORKER_COUNT;
+static uint64_t thread_num = INITIAL_WORKER_COUNT;
+
+// the maximum number of threads concurrently active. 
+ // use it to normalize the idleness at the end of measurement.
+static uint64_t max_thread_num = INITIAL_WORKER_COUNT;
 
 static int idle_metric_id = -1;//idle for requested cores
 static int core_idle_metric_id = -1;//idle for all hardware cores
@@ -278,17 +278,6 @@ METHOD_FN(display_events)
  *****************************************************************************/
 
 void
-register_blame_shift()
-{
-  ompt_set_callback(ompt_event_thread_create, (ompt_callback_t)start_fn);
-  ompt_set_callback(ompt_event_thread_exit, (ompt_callback_t)end_fn);
-  ompt_set_callback(ompt_event_idle_begin, (ompt_callback_t)idle_fn);
-  ompt_set_callback(ompt_event_idle_end, (ompt_callback_t)work_fn);
-  ompt_set_callback(ompt_event_wait_barrier_begin, (ompt_callback_t)bar_wait_begin);
-  ompt_set_callback(ompt_event_wait_barrier_end, (ompt_callback_t)bar_wait_end);
-}
-
-void
 scale_fn(void *td)
 {
   core_profile_trace_data_t *cptd = (core_profile_trace_data_t *)td;
@@ -311,6 +300,9 @@ void normalize_fn(cct_node_t *node, cct_op_arg_t arg, size_t level)
     }
   }
 }
+
+
+#if 0
 // for dynamically loaded case, think the overhead comes from the non-idle samples
 // in the openmp library
 static int
@@ -326,6 +318,7 @@ is_overhead(cct_node_t *node)
     return 1;
   return 0;
 }
+#endif
 
 static void
 #ifdef XU_OLD
@@ -362,7 +355,7 @@ idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric
 					    (cct_metric_data_t){.r = (idle_l/work_l)*metric_value});
 		}
 
-                if(is_overhead(node))
+                if (ompt_state_is_overhead())
 		  cct_metric_data_increment(overhead_metric_id, node, (cct_metric_data_t){.i = metric_value});
 		else if (!td->lockwait)
 		  cct_metric_data_increment(work_metric_id, node, (cct_metric_data_t){.i = metric_value});
