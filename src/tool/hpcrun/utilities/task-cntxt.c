@@ -50,7 +50,7 @@
 #include <hpcrun/unresolved.h>
 #include <hpcrun/write_data.h>
 
-#include "hpcrun/ompt.h"
+#include <ompt.h>
 
 /******************************************************************************
  * macros

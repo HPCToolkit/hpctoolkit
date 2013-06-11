@@ -133,7 +133,11 @@ typedef struct gpu_data_t {
 
 
 typedef struct thread_data_t {
-  int idle; // indicate whether the thread is idle
+  // ----------------------------------------
+  // support for blame shifting
+  // ----------------------------------------
+  int idle;           // indicate whether the thread is idle
+  void *blame_target; // a target for directed blame
   
   int overhead; // indicate whether the thread is overhead
 
