@@ -353,9 +353,15 @@ idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric
 		cct_metric_data_increment(core_idle_metric_id, node, 
 					  (cct_metric_data_t){.r = (idle_l/work_l)*metric_value});
 		
-		idle_l = (double)(omp_get_num_threads()) - work_l;
-		cct_metric_data_increment(thread_idle_metric_id, node, 
-					  (cct_metric_data_t){.r = (idle_l/work_l)*metric_value});
+		/* if in an active thread team, can score idleness w.r.t. my team.
+		   if not in a team, omp_get_num_threads is meaningless 
+		*/
+		if (ompt_get_parallel_id(0) > 0) { 
+		  idle_l = (double)(omp_get_num_threads()) - work_l;
+		  cct_metric_data_increment(thread_idle_metric_id, node, 
+					    (cct_metric_data_t){.r = (idle_l/work_l)*metric_value});
+		}
+
                 if(is_overhead(node))
 		  cct_metric_data_increment(overhead_metric_id, node, (cct_metric_data_t){.i = metric_value});
 		else if (!td->lockwait)
