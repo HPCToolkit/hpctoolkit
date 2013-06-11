@@ -88,6 +88,7 @@ am__objects_1 = libHPCprof_lean_la-hpcrun-fmt.lo \
 	libHPCprof_lean_la-QueuingRWLock.lo \
 	libHPCprof_lean_la-spinlock.lo \
 	libHPCprof_lean_la-BalancedTree.lo \
+	libHPCprof_lean_la-placeholders.lo \
 	libHPCprof_lean_la-lush-support.lo
 am_libHPCprof_lean_la_OBJECTS = $(am__objects_1)
 libHPCprof_lean_la_OBJECTS = $(am_libHPCprof_lean_la_OBJECTS)
@@ -371,6 +372,8 @@ MYSOURCES = \
 	\
 	BalancedTree.h BalancedTree.c \
 	\
+	placeholders.c \
+	\
 	lush/lush-support.h lush/lush-support.c
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
@@ -455,6 +458,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcio.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcrun-fmt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-lush-support.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-placeholders.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-spinlock.Plo@am__quote@
 
 .c.o:
@@ -526,6 +530,13 @@ libHPCprof_lean_la-BalancedTree.lo: BalancedTree.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='BalancedTree.c' object='libHPCprof_lean_la-BalancedTree.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-BalancedTree.lo `test -f 'BalancedTree.c' || echo '$(srcdir)/'`BalancedTree.c
+
+libHPCprof_lean_la-placeholders.lo: placeholders.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-placeholders.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-placeholders.Tpo -c -o libHPCprof_lean_la-placeholders.lo `test -f 'placeholders.c' || echo '$(srcdir)/'`placeholders.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-placeholders.Tpo $(DEPDIR)/libHPCprof_lean_la-placeholders.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='placeholders.c' object='libHPCprof_lean_la-placeholders.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-placeholders.lo `test -f 'placeholders.c' || echo '$(srcdir)/'`placeholders.c
 
 libHPCprof_lean_la-lush-support.lo: lush/lush-support.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-lush-support.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-lush-support.Tpo -c -o libHPCprof_lean_la-lush-support.lo `test -f 'lush/lush-support.c' || echo '$(srcdir)/'`lush/lush-support.c
