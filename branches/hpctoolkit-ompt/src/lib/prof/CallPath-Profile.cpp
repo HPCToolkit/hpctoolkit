@@ -1513,7 +1513,7 @@ Profile::canonicalize(uint rFlags)
       // hpcrun generates CCTs in the form diagrammed above
       if (splicePoint->childCount() == 1) {
 	splicePoint = splicePoint->firstChild();
-      }
+      } 
     }
 #endif
   }
