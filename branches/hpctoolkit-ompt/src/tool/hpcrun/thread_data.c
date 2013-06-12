@@ -225,7 +225,8 @@ static inline void core_profile_trace_data_init(core_profile_trace_data_t * cptd
   // ----------------------------------------
   cptd->hpcrun_file  = NULL;
   cptd->trace_buffer = NULL;
-    
+
+  cptd->scale_fn = NULL;
 }
 
 #ifdef ENABLE_CUDA
@@ -270,6 +271,9 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
 
   td->idle = 0;         // a thread begins in the working state 
   td->blame_target = 0; // initially, no target for directed blame
+
+  td->last_sample = 0; 
+  td->last_synch_sample = -1; 
  
   td->overhead = 0; // begin at not in overhead
 

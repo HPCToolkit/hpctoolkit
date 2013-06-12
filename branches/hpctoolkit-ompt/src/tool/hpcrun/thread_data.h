@@ -138,6 +138,9 @@ typedef struct thread_data_t {
   // ----------------------------------------
   int idle;           // indicate whether the thread is idle
   void *blame_target; // a target for directed blame
+
+  int last_synch_sample;
+  int last_sample;
   
   int overhead; // indicate whether the thread is overhead
 

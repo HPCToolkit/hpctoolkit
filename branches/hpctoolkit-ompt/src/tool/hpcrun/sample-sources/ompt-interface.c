@@ -71,16 +71,30 @@
  * private operations 
  *****************************************************************************/
 
+  
+static void
+ompt_thread_create(ompt_data_t *data)
+{
+  idle_metric_thread_start();
+}
+
+static void
+ompt_thread_exit(ompt_data_t *data)
+{
+  idle_metric_thread_end();
+}
+
+
 static void 
 init_threads()
 {
   int retval;
   retval = ompt_set_callback(ompt_event_thread_create, 
-		    (ompt_callback_t)start_fn);
+		    (ompt_callback_t)ompt_thread_create);
   assert(retval > 0);
 
   retval = ompt_set_callback(ompt_event_thread_exit, 
-		    (ompt_callback_t)end_fn);
+		    (ompt_callback_t)ompt_thread_exit);
   assert(retval > 0);
 }
 
@@ -137,6 +151,17 @@ init_blame_shift_directed()
 		    (ompt_callback_t)(unlock_fn1));
 }
   
+static void
+ompt_idle_begin(ompt_data_t *data)
+{
+  idle_metric_blame_shift_idle();
+}
+
+static void
+ompt_idle_end(ompt_data_t *data)
+{
+  idle_metric_blame_shift_work();
+}
 
 //------------------------------------------------------------------------------
 // function:
@@ -149,18 +174,22 @@ init_blame_shift_directed()
 static void 
 init_blame_shift_undirected()
 {
-  int retval;
-  retval = ompt_set_callback(ompt_event_idle_begin, 
-		    (ompt_callback_t)idle_fn);
+  int retval = 0;
+  retval |= ompt_set_callback(ompt_event_idle_begin, 
+		    (ompt_callback_t)ompt_idle_begin);
 
-  retval = ompt_set_callback(ompt_event_idle_end, 
-		    (ompt_callback_t)work_fn);
+  retval |= ompt_set_callback(ompt_event_idle_end, 
+		    (ompt_callback_t)ompt_idle_end);
 
-  retval = ompt_set_callback(ompt_event_wait_barrier_begin, 
-		    (ompt_callback_t)bar_wait_begin);
+  retval |= ompt_set_callback(ompt_event_wait_barrier_begin, 
+		    (ompt_callback_t)ompt_idle_begin);
 
-  retval = ompt_set_callback(ompt_event_wait_barrier_end, 
-		    (ompt_callback_t)bar_wait_end);
+  retval |= ompt_set_callback(ompt_event_wait_barrier_end, 
+		    (ompt_callback_t)ompt_idle_end);
+
+  if (retval) {
+    idle_metric_register_blame_source();
+  }
 }
 
 
