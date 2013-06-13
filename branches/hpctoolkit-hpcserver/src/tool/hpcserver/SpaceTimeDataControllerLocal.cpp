@@ -23,7 +23,6 @@ namespace TraceviewerServer
 		OldAttributes = new ImageTraceAttributes();
 		DataTrace = new BaseDataFile(locations->fileTrace, DEFAULT_HEADER_SIZE);
 		Height = DataTrace->getNumberOfFiles();
-		cout << "STDCL at: " << this << " Height= " << Height << endl;
 		ExperimentXML = locations->fileXML;
 		FileTrace = locations->fileTrace;
 		TracesInitialized = false;

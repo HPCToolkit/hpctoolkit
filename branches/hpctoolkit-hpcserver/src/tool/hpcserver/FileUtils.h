@@ -44,7 +44,7 @@ namespace TraceviewerServer
 			bool isDir = S_ISDIR(DirInfo.st_mode);
 			if ((err!=0)|| !isDir)
 			{
-				cout<<"ExistsAndIsDir returning false. Err: "<< err << " isDir: " << isDir << " mode: "<<DirInfo.st_mode<< " Errno: " << errno << endl;
+				cout<<"ExistsAndIsDir returning false for file " << p<< " Err: "<< err << " isDir: " << isDir << " mode: "<<DirInfo.st_mode<< " Errno: " << errno << endl;
 			}
 			return (err == 0) && isDir;
 		}

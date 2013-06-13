@@ -28,13 +28,13 @@ namespace TraceviewerServer
 	DataSocketStream::DataSocketStream(int _Port, bool Accept = true)
 	{
 		Port = _Port;
-		//cout<<"In socket constructor"<<endl;
-		//create
+		
 		unopenedSocketFD = socket(PF_INET, SOCK_STREAM, 0);
 		if (unopenedSocketFD == -1)
 			cerr << "Could not create socket" << endl;
 		//bind
 		sockaddr_in Address;
+		memset(&Address, 0, sizeof(Address));
 		Address.sin_family = AF_INET;
 		Address.sin_port = htons(_Port);
 		Address.sin_addr.s_addr = INADDR_ANY;
@@ -42,7 +42,9 @@ namespace TraceviewerServer
 		if (err)
 		{
 			if (errno == 48|| errno == 98)
-				cerr<< "Could not bind socket because socket is already in use. Make sure you have closed hpctraceviewer, wait 30 seconds and try again. Alternatively, you can choose a different port."<<endl;
+				cerr<< "Could not bind socket because socket is already in use. "<<
+				"Make sure you have closed hpctraceviewer, wait 30 seconds and try again. " <<
+				"Alternatively, you can choose a port other than "<< _Port<<"."<<endl;
 			else
 				cerr << "Could not bind socket. Error was " << errno << endl;
 			throw 1111;
@@ -62,9 +64,7 @@ namespace TraceviewerServer
 		//accept
 		sockaddr_in client;
 		unsigned int len = sizeof(client);
-		cout<< "About to accept" <<endl;
 		socketDesc = accept(unopenedSocketFD, (sockaddr*) &client, &len);
-		cout<<"Accepted."<<endl;
 		if (socketDesc < 0)
 			cerr << "Error on accept" << endl;
 		file = fdopen(socketDesc, "r+b"); //read, write, binary
@@ -90,12 +90,12 @@ namespace TraceviewerServer
 			return Port;
 		}
 	}
-
+	
 	DataSocketStream::~DataSocketStream()
 	{
-		cout << "In socket destructor" << endl;
+		shutdown(socketDesc, SHUT_RDWR);
 		close(socketDesc);
-
+		close(unopenedSocketFD);
 	}
 	/*DataSocketStream& DataSocketStream::operator=(const DataSocketStream& rhs)
 	 {
@@ -104,36 +104,14 @@ namespace TraceviewerServer
 
 	void DataSocketStream::WriteInt(int toWrite)
 	{
-		/*char arrayform[4] = {
-		 (toWrite& MASK_3)>>24,
-		 (toWrite & MASK_2)>>16,
-		 (toWrite & MASK_1)>>8,
-		 toWrite & MASK_0
-		 };
-
-		 as::write(*socketFormPtr, as::buffer(arrayform), as::transfer_all(),e);*/
 		char Buffer[4];
 		ByteUtilities::WriteInt(Buffer, toWrite);
-		//Message.insert(Message.end(), Buffer, Buffer + 4);
 		fwrite(Buffer, 4, 1, file);
 	}
 	void DataSocketStream::WriteLong(Long toWrite)
 	{
-		/*char arrayform[8] = {
-		 (toWrite& MASK_7)>>56,
-		 (toWrite & MASK_6)>>48,
-		 (toWrite & MASK_5)>>40,
-		 (toWrite& MASK_4)>>32,
-		 (toWrite& MASK_3)>>24,
-		 (toWrite & MASK_2)>>16,
-		 (toWrite & MASK_1)>>8,
-		 toWrite & MASK_0
-		 };
-
-		 as::write(*socketFormPtr, as::buffer(arrayform), as::transfer_all(),e);*/
 		char Buffer[8];
 		ByteUtilities::WriteLong(Buffer, toWrite);
-		//Message.insert(Message.end(), Buffer, Buffer + 8);
 		fwrite(Buffer, 8, 1, file);
 	}
 
@@ -159,11 +137,6 @@ namespace TraceviewerServer
 
 	void DataSocketStream::Flush()
 	{
-		/*cout << "Sending " << Message.size() << " bytes." << endl;
-		 int e = write(socketDesc, &Message[0], Message.size());
-		 if (e == -1)
-		 cerr<<"Error on sending"<<endl;
-		 Message.clear();*/
 		int e = fflush(file);
 		if (e == EOF)
 			cerr << "Error on sending" << endl;
