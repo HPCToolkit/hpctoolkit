@@ -15,7 +15,7 @@
 #include <vector>
 #include "DataSocketStream.h"
 
-
+#define START_NEW_CONNECTION_IMMEDIATELY 1
 namespace TraceviewerServer
 {
 	extern bool Compression;

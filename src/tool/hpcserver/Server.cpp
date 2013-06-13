@@ -32,7 +32,6 @@ namespace TraceviewerServer
 
 	Server::Server()
 	{
-		// TODO Auto-generated constructor stub
 
 	}
 
@@ -70,7 +69,7 @@ namespace TraceviewerServer
 		int Command = socketptr->ReadInt();
 		if (Command == OPEN)
 		{
-			while( RunConnection(socketptr)==1)
+			while( RunConnection(socketptr)==START_NEW_CONNECTION_IMMEDIATELY)
 				;
 		}
 		else
@@ -118,11 +117,10 @@ namespace TraceviewerServer
 					break;
 				case OPEN:
 					EndingConnection = true;
-					return 1;
+					return START_NEW_CONNECTION_IMMEDIATELY;
 				default:
 					cerr << "Unknown command received" << endl;
 					return (ERROR_UNKNOWN_COMMAND);
-					break;
 			}
 		}
 
@@ -155,18 +153,18 @@ namespace TraceviewerServer
 		DataSocketStream* XmlSocket;
 		if (XMLPort == -1)
 			XMLPort = MainPort;
-
+		int ActualXMLPort = XMLPort;
 		if (XMLPort != MainPort)
 		{//On a different port. Create another socket.
 			XmlSocket = new DataSocketStream(XMLPort, false);
-			XMLPort = XmlSocket->GetPort();//Could be different if XMLPort is 0
+			ActualXMLPort = XmlSocket->GetPort();//Could be different if XMLPort is 0
 		}
 		else
 		{
 			//Same port, simply use this socket
 			XmlSocket = socket;
 		}
-		socket->WriteInt(XMLPort);
+		socket->WriteInt(ActualXMLPort);
 
 		int NumFiles = STDCL->GetHeight();
 		socket->WriteInt(NumFiles);
@@ -186,9 +184,9 @@ namespace TraceviewerServer
 
 		socket->Flush();
 
-		cout << "Waiting to send XML on port " << XMLPort << ". Num traces was "
+		cout << "Waiting to send XML on port " << ActualXMLPort << ". Num traces was "
 				<< STDCL->GetHeight() << endl;
-		if (XMLPort != MainPort)
+		if (ActualXMLPort != MainPort)
 		{
 			XmlSocket->AcceptS();
 		}
@@ -201,7 +199,8 @@ namespace TraceviewerServer
 		XmlSocket->WriteRawData(&CompressedXML[0], CompressedXML.size());
 		XmlSocket->Flush();
 		cout << "XML Sent" << endl;
-
+		if(ActualXMLPort != MainPort)
+			delete (XmlSocket);
 	}
 
 	vector<char> Server::CompressXML()
@@ -259,7 +258,7 @@ namespace TraceviewerServer
 			/* done when last data in file processed */
 		} while (flush != Z_FINISH);
 		deflateEnd(&Compressor);
-		cout<<"Size of vector: "<<Compressed.size()<<endl;
+		cout<<"Compressed XML Size: "<<Compressed.size()<<endl;
 		return Compressed;
 	}
 
