@@ -55,6 +55,7 @@
 #include <unistd.h>
 
 #include <messages/messages.h>
+#include <lib/support-lean/OSUtil.h>
 #include "sample_prob.h"
 
 #define HPCRUN_SAMPLE_PROB  "HPCRUN_PROCESS_FRACTION"
@@ -142,7 +143,7 @@ random_hash_prob(void)
   }
 
   gettimeofday(&tv, NULL);
-  x = (((uint64_t)gethostid()) << 24) + (tv.tv_usec << 4) + rand;
+  x = (((uint64_t) OSUtil_hostid()) << 24) + (tv.tv_usec << 4) + rand;
   x = (x & ~(((uint64_t) 15) << 60)) % HASH_PRIME;
 
   // Compute gen^x (mod prime).

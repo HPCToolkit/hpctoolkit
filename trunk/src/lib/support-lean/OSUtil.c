@@ -62,9 +62,11 @@
 
 //************************* System Include Files ****************************
 
-#include <stdlib.h>
-
 #include <sys/types.h> // getpid()
+#include <setjmp.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define __USE_XOPEN_EXTENDED // for gethostid()
 #include <unistd.h>
@@ -120,19 +122,60 @@ OSUtil_jobid()
 }
 
 
+// On early RH/CentOS 6.x systems, the statically linked gethostid()
+// throws an FPE (floating point exception) and does not return.  So,
+// wrap the function with sigsetjmp().  We cache the value, so the
+// performance hit is negligible.
+
 #define OSUtil_hostid_NULL (-1)
+#define OSUtil_hostid_fail (0x0bad1d);
+
+static sigjmp_buf hostid_jbuf;
+static int hostid_jbuf_active;
+
+static void
+hostid_fpe_handler(int sig)
+{
+  if (hostid_jbuf_active) {
+    siglongjmp(hostid_jbuf, 1);
+  }
+
+  // can't get here
+  abort();
+}
 
 long
 OSUtil_hostid()
 {
   static long hostid = OSUtil_hostid_NULL;
+  struct sigaction act, old_act;
 
   if (hostid == OSUtil_hostid_NULL) {
-    // gethostid returns a 32-bit id.  treat it as unsigned 
-    // to prevent useless sign extension
-    hostid = (uint32_t) gethostid();
+    memset(&act, 0, sizeof(act));
+    memset(&old_act, 0, sizeof(old_act));
+    act.sa_handler = hostid_fpe_handler;
+    act.sa_flags = 0;
+    sigemptyset(&act.sa_mask);
+
+    hostid_jbuf_active = 0;
+    sigaction(SIGFPE, &act, &old_act);
+
+    if (sigsetjmp(hostid_jbuf, 1) == 0) {
+      // normal return
+      hostid_jbuf_active = 1;
+
+      // gethostid returns long, but only 32 bits
+      hostid = (uint32_t) gethostid();
+    }
+    else {
+      // error return from signal handler
+      hostid = OSUtil_hostid_fail;
+    }
+    hostid_jbuf_active = 0;
+
+    // reset the handler so we don't get called again
+    sigaction(SIGFPE, &old_act, NULL);
   }
 
   return hostid;
 }
-
