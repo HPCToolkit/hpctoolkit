@@ -61,6 +61,7 @@
 #include <trampoline/common/trampoline.h>
 #include <utilities/ip-normalized.h>
 #include <utilities/task-cntxt.h>
+#include <utilities/defer-cntxt.h>
 #include "frame.h"
 #include <unwind/common/backtrace_info.h>
 #include <unwind/common/fence_enum.h>
@@ -144,6 +145,7 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
     if (found == 0) {
       /* eliminate all frames */
       *bt_inner = *bt_outer + 1;
+      *bt_inner = *bt_outer;
 
       elide_debug_dump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer); 
 
@@ -169,8 +171,10 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
     bool exit0_flag = 
       interval_contains(low_sp, high_sp, frame0->exit_runtime_frame);
 
+#if 0
     bool reenter0_flag = 
       interval_contains(low_sp, high_sp, frame0->reenter_runtime_frame); 
+#endif
 
     bool exit1_flag = 
       interval_contains(low_sp, high_sp, frame1->exit_runtime_frame);
@@ -259,7 +263,7 @@ static cct_node_t*
 cct_insert_raw_backtrace(cct_node_t* cct,
                             frame_t* path_beg, frame_t* path_end)
 {
-  if (ENABLED(OMP_ELIDE_FRAME) && (path_beg < path_end) && cct) {
+  if (ompt_elide_frames() && (path_beg < path_end) && cct) {
     // map the empty call path to omp_barrier to indicate an idle worker
     void *omp_barrier_addr = canonicalize_placeholder(omp_barrier);
     ip_normalized_t tmp_ip = hpcrun_normalize_ip(omp_barrier_addr, NULL);
@@ -480,6 +484,38 @@ hpcrun_cct_record_backtrace(cct_bundle_t* cct, bool partial, bool thread_stop,
 
 }
 
+static cct_node_t *
+memoized_context_get(thread_data_t* td, uint64_t region_id)
+{
+  if (td->outer_region_id == region_id && td->outer_region_context)
+    return td->outer_region_context;
+}
+
+static void
+memoized_context_set(thread_data_t* td, uint64_t region_id, cct_node_t *result)
+{
+    td->outer_region_id = region_id;
+    td->outer_region_context = result;
+}
+
+static cct_node_t *
+lookup_region_id(cct_node_t **root, uint64_t region_id)
+{
+  thread_data_t* td = hpcrun_get_thread_data();
+  cct_node_t *result = NULL;
+
+  result = memoized_context_get(td, region_id);
+  if (result) return result;
+  
+  cct_node_t *t0_path = hpcrun_region_lookup(region_id);
+  if (t0_path) {
+    result = hpcrun_cct_insert_path_return_leaf(*root, t0_path);
+    memoized_context_set(td, region_id, result);
+  }
+
+  return result;
+}
+
 cct_node_t*
 hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool thread_stop,
 				     frame_t* bt_beg, frame_t* bt_last, bool tramp_found,
@@ -506,7 +542,11 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
 
   omp_arg_t* omp_arg = (omp_arg_t*) arg;
   if (arg && omp_arg->tbd) {
-    cct_cursor = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, omp_arg->region_id)));
+    cct_node_t *prefix = lookup_region_id(&cct->tree_root, omp_arg->region_id);
+    if (prefix) cct_cursor = prefix;
+    else {
+      cct_cursor = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, omp_arg->region_id)));
+    }
   }
   // this is for omp task
   if(arg && omp_arg->context) {
@@ -613,14 +653,16 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
 #endif
 
   // ompt: elide runtime frames
-  if (ENABLED(OMP_ELIDE_FRAME)) {
+  if (ompt_elide_frames()) {
     frame_t* bt_last_orig = bt_last;
     hpcrun_elide_runtime_frame(&bt_last, &bt_beg);
+#if 0
     if ((bt.fence == FENCE_THREAD) && (bt_last_orig == bt_last)) {
       // no elision was performed on a side thread. 
       // it is a degenerate sample outside an openmp team. collapse it by force and eliminate all frames.
       bt_beg = bt_last + 1;
     }
+#endif
   }
 
 

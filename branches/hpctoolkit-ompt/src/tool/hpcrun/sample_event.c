@@ -243,7 +243,16 @@ hpcrun_sample_callpath(void *context, int metricId,
   ret.sample_node = node;
 
   if (hpcrun_trace_isactive()) {
+#if 0
     void* pc = hpcrun_context_pc(context);
+#else
+    void* pc;
+    if (node) { 
+      pc = hpcrun_denormalize_ip(&(hpcrun_cct_addr(node)->ip_norm));
+    } else {
+      pc = hpcrun_context_pc(context);
+    }
+#endif
 
     void *func_start_pc = NULL, *func_end_pc = NULL;
     load_module_t* lm = NULL;

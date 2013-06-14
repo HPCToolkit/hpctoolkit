@@ -30,4 +30,7 @@ void end_team_fn(ompt_data_t *parent_task_data,
 		 ompt_frame_t *parent_task_frame,
 		 ompt_parallel_id_t id);
 
+
+cct_node_t *hpcrun_region_lookup(uint64_t id);
+
 #endif

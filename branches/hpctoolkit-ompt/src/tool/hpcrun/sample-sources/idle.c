@@ -297,8 +297,8 @@ init_hack()
 }
 #endif
 
-static void
-record_synchronous_sample(thread_data_t *td)
+void
+record_synchronous_sample(thread_data_t *td, int n, void *arg)
 {
   if(hpcrun_trace_isactive()) {
     if (td->last_synch_sample != td->last_sample) {
@@ -308,7 +308,7 @@ record_synchronous_sample(thread_data_t *td)
       if ( !hpcrun_safe_enter()) return;
       ucontext_t uc;
       getcontext(&uc);
-      hpcrun_sample_callpath(&uc, idle_metric_id, 0, 1, 1, NULL);
+      hpcrun_sample_callpath(&uc, idle_metric_id, 0, 1, 1, arg);
       hpcrun_safe_exit();
 
       // update throttling mechanism
@@ -346,8 +346,6 @@ idle_metric_blame_shift_idle(void)
 
   TMSG(IDLE, "blame shift idle work after decr: %ld", active_worker_count);
   TMSG(IDLE, "blame shift idle after td->idle incr = %d", td->idle);
-
-  record_synchronous_sample(td);
 }
 
 
@@ -367,8 +365,6 @@ idle_metric_blame_shift_work(void)
 
   TMSG(IDLE, "blame shift idle after td->idle decr = %d", td->idle);
   TMSG(IDLE, "blame shift work, work after incr: %ld", active_worker_count);
-
-  record_synchronous_sample(td);
 }
 
 
@@ -386,7 +382,6 @@ idle_metric_thread_start()
   td->omp_thread = 1;
   td->defer_write = 1;
   hpcrun_safe_exit();
-  record_synchronous_sample(td);
 }
 
 
@@ -404,7 +399,6 @@ idle_metric_thread_end()
   td->omp_thread = 0;
   td->defer_write = 0;
   hpcrun_safe_exit();
-  record_synchronous_sample(td);
 }
 
 

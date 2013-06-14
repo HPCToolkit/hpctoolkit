@@ -80,7 +80,6 @@ r_splay(struct record_t *root, uint64_t key)
   REGULAR_SPLAY_TREE(record_t, root, key, region_id, left, right);
   return root;
 }
-
 static struct record_t *
 r_splay_lookup(uint64_t id)
 {
@@ -195,6 +194,47 @@ new_record(uint64_t region_id)
   return record;
 }
 
+
+void
+gather_context(struct record_t *record)
+{
+  cct_node_t *node;
+  ucontext_t uc;
+  getcontext(&uc);
+  //
+  // for side thread or master thread in the nested region, unwind to the dummy root 
+  // with outer most region attached to the tbd root
+  //
+  if(! TD_GET(master)) { //the sub-master thread in nested regions
+    omp_arg_t omp_arg;
+    omp_arg.tbd = false;
+    omp_arg.context = NULL;
+    if(TD_GET(region_id) > 0) {
+      omp_arg.tbd = true;
+      omp_arg.region_id = TD_GET(region_id);
+    }
+    node = hpcrun_sample_callpath(&uc, 0, 0, 1, 1, (void *)&omp_arg).sample_node;
+    TMSG(DEFER_CTXT, "unwind the callstack for region %d to %d", record->region_id, TD_GET(region_id));
+  } else {
+    // for master thread in the outer-most region, a normal unwind to the process stop 
+    node = hpcrun_sample_callpath(&uc, 0, 0, 1, 1, NULL).sample_node;
+    TMSG(DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
+  }
+
+#ifdef GOMP
+      cct_node_t *sibling = NULL;
+      if(node)
+        sibling = hpcrun_cct_insert_addr(hpcrun_cct_parent(node), 
+			    &(ADDR2(hpcrun_cct_addr(node)->ip_norm.lm_id, 
+				hpcrun_cct_addr(node)->ip_norm.lm_ip-5L)));
+      record->node = sibling;
+#else
+      record->node = node;
+#endif
+}
+
+#define EAGER_CONTEXT 1 // temporary -- johnmc
+
 //
 // only master and sub-master thread execute start_team_fn and end_team_fn
 //
@@ -209,12 +249,16 @@ void start_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_fram
   }
   // for a new record
   struct record_t *record = new_record((uint64_t)id);
+#ifdef EAGER_CONTEXT
+  gather_context(record);
+#endif
   r_splay_insert(record);
   if(td->master) {
     ;
   }
   else if(td->outer_region_id == 0) {
     td->outer_region_id = ompt_get_parallel_id(1);
+    td->outer_region_context = NULL;
   }
   else {
     // check whether we should update the outer most id
@@ -233,6 +277,7 @@ void start_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_fram
     }
     if(outer_id == 0){
       td->outer_region_id = ompt_get_parallel_id(1);
+      td->outer_region_context = 0;
     }
   }
 
@@ -249,6 +294,8 @@ void end_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_frame,
   // insert resolved root to the corresponding record entry
   if(record && (record->region_id == region_id)) {
     if(record->use_count > 0) {
+      if (record->node == NULL) gather_context(record);
+#if 0
       ucontext_t uc;
       getcontext(&uc);
       //
@@ -283,6 +330,7 @@ void end_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_frame,
       record->node = sibling;
 #else
       record->node = node;
+#endif
 #endif
     }
     else {
@@ -450,3 +498,14 @@ void resolve_cntxt_fini(thread_data_t *td)
 {
   hpcrun_cct_walkset(td->core_profile_trace_data.epoch->csdata.unresolved_root, omp_resolve_and_free, td);
 }
+
+cct_node_t *
+hpcrun_region_lookup(uint64_t id)
+{
+  struct record_t *record = r_splay_lookup(id);
+  if (record) {
+    return record->node;
+  }
+  return NULL;
+}
+
