@@ -71,9 +71,9 @@ namespace TraceviewerServer
 		// get the procs and threads IDs
 		for (int i = 0; i < NumFiles; i++)
 		{
-			const int proc_id = MasterBuff->GetInt(current_pos);
+			 int proc_id = MasterBuff->GetInt(current_pos);
 			current_pos += SIZEOF_INT;
-			const int thread_id = MasterBuff->GetInt(current_pos);
+			 int thread_id = MasterBuff->GetInt(current_pos);
 			current_pos += SIZEOF_INT;
 
 			Offsets[i] = MasterBuff->GetLong(current_pos);

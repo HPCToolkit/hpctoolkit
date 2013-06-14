@@ -22,7 +22,7 @@ namespace TraceviewerServer
 		void WriteLong(Long);
 		void WriteDouble(double);
 		void Flush();
-		const unsigned char* GetOutputBuffer();
+		unsigned char* GetOutputBuffer();
 		int GetOutputLength();
 
 	private:

@@ -129,11 +129,11 @@ namespace TraceviewerServer
 			return Attributes->begProcess + Line;
 	}
 
-	const int* SpaceTimeDataControllerLocal::GetValuesXProcessID()
+	 int* SpaceTimeDataControllerLocal::GetValuesXProcessID()
 	{
 		return DataTrace->ProcessIDs;
 	}
-	const short* SpaceTimeDataControllerLocal::GetValuesXThreadID()
+	 short* SpaceTimeDataControllerLocal::GetValuesXThreadID()
 	{
 		return DataTrace->ThreadIDs;
 	}

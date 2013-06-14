@@ -174,8 +174,8 @@ namespace TraceviewerServer
 		socket->WriteInt(CompressionType);
 
 		//Send ValuesX
-		const int* ValuesXPI = STDCL->GetValuesXProcessID();
-		const short* ValuesXTI = STDCL->GetValuesXThreadID();
+		int* ValuesXPI = STDCL->GetValuesXProcessID();
+		short* ValuesXTI = STDCL->GetValuesXThreadID();
 		for (int i = 0; i < NumFiles; i++)
 		{
 			socket->WriteInt(ValuesXPI[i]);
@@ -311,6 +311,7 @@ namespace TraceviewerServer
 		double timeEnd = Stream->ReadDouble();
 		int verticalResolution = Stream->ReadInt();
 		int horizontalResolution = Stream->ReadInt();
+		cout << "Time end: " << timeEnd <<endl;
 
 		if (ISN(processStart) || ISN(processEnd) || (processStart > processEnd)
 				|| ISN(verticalResolution) || ISN(horizontalResolution)

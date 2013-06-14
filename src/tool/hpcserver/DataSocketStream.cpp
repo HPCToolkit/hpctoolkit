@@ -190,16 +190,13 @@ namespace TraceviewerServer
 
 	double DataSocketStream::ReadDouble()
 	{
-		Long BytesAsLong = ReadLong();
-		Long* ptrToLong = &BytesAsLong;
-		double* ptrToDoubleForm = (double*) ptrToLong;
-		return *ptrToDoubleForm;
+		Long longForm = ReadLong();
+		return ByteUtilities::ConvertLongToDouble(longForm);
 	}
 	void DataSocketStream::WriteDouble(double val)
 	{
-		double* ptrToD = &val;
-		Long* ptrToLongForm = (Long*) ptrToD;
-		WriteLong(*ptrToLongForm);
+		Long longForm = ByteUtilities::ConvertDoubleToLong(val);
+		WriteLong(longForm);
 	}
 
 	void DataSocketStream::CheckForErrors(int e)

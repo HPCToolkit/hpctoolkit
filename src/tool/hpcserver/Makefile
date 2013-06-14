@@ -18,7 +18,7 @@ SRC = \
 	MergeDataFiles.cpp \
 	ProcessTimeline.cpp \
 	Server.cpp \
-	ServerLaunch.cpp \
+	main.cpp \
 	Slave.cpp \
 	SpaceTimeDataControllerLocal.cpp \
 	VersatileMemoryPage.cpp \
@@ -26,10 +26,12 @@ SRC = \
 
 OBJ = $(patsubst %.cpp,%.o,$(SRC))
 
+#BSCOMPFLAGS =  -fthread-jumps -fcrossjumping -foptimize-sibling-calls -fcse-follow-jumps -fcse-skip-blocks -fgcse -fgcse-lm -fexpensive-optimizations -fstrength-reduce -frerun-cse-after-loop -frerun-loop-opt -fcaller-saves -fpeephole2 -fschedule-insns -fschedule-insns2
+
 all: $(TARGET)
 
 %.o: %.cpp
-	mpicxx -O0 -g3 $(INCLUDE) -Wall -c -fmessage-length=0 -o $@ $< -DMPICH_IGNORE_CXX_SEEK
+	mpicxx -O3 -g $(INCLUDE) $(BSCOMPFLAGS)  -Wall -c -fmessage-length=0 -o $@ $< -DMPICH_IGNORE_CXX_SEEK
 #
 #mpicxx -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"ServerLaunch.d" -MT"ServerLaunch.d" -o "ServerLaunch.o" "../ServerLaunch.cpp"
 #
