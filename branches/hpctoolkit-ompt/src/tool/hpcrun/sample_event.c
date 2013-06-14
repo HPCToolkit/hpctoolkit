@@ -236,23 +236,19 @@ hpcrun_sample_callpath(void *context, int metricId,
     hpcrun_cleanup_partial_unwind();
   }
 
-  //
-  // FIXME: need to correct some trace ids when cct merging
-  //        of deferred trees happens.
-  //
   ret.sample_node = node;
 
   if (hpcrun_trace_isactive()) {
-#if 0
-    void* pc = hpcrun_context_pc(context);
-#else
     void* pc;
+
+    // frame elision may have eliminated the frame represented by the pc in context.
+    // so, when a path has been inserted in the CCT (represented by a non-null leaf node), 
+    // extract the PC from the leaf for the trace.
     if (node) { 
       pc = hpcrun_denormalize_ip(&(hpcrun_cct_addr(node)->ip_norm));
     } else {
       pc = hpcrun_context_pc(context);
     }
-#endif
 
     void *func_start_pc = NULL, *func_end_pc = NULL;
     load_module_t* lm = NULL;

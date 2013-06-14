@@ -30,6 +30,7 @@
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/safe-sampling.h>
+#include <hpcrun/trace.h>
 #include <hpcrun/cct/cct.h>
 #include <messages/messages.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
@@ -64,9 +65,10 @@ struct record_t {
   struct record_t *right;
 };
 
-uint64_t is_partial_resolve(cct_node_t *prefix);
+int omp_get_level(void);
+int omp_get_thread_num(void);
 
-static int ompt_task_full_ctxt = 0;
+uint64_t is_partial_resolve(cct_node_t *prefix);
 
 /******************************************************************************
  * splay tree operation for record map *
@@ -250,7 +252,7 @@ void start_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_fram
   // for a new record
   struct record_t *record = new_record((uint64_t)id);
 #ifdef EAGER_CONTEXT
-  gather_context(record);
+  if (hpcrun_trace_isactive()) gather_context(record);
 #endif
   r_splay_insert(record);
   if(td->master) {
@@ -288,52 +290,13 @@ void end_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_frame,
 		 ompt_parallel_id_t id)
 {
   hpcrun_safe_enter();
-  cct_node_t *node = NULL;
   uint64_t region_id = id;
   struct record_t *record = r_splay_lookup(region_id);
   // insert resolved root to the corresponding record entry
   if(record && (record->region_id == region_id)) {
     if(record->use_count > 0) {
       if (record->node == NULL) gather_context(record);
-#if 0
-      ucontext_t uc;
-      getcontext(&uc);
-      //
-      // for side thread or master thread in the nested region, unwind to the dummy root 
-      // with outer most region attached to the tbd root
-      //
-      if(! TD_GET(master)) { //the sub-master thread in nested regions
-        omp_arg_t omp_arg;
-        omp_arg.tbd = false;
-    	omp_arg.context = NULL;
-        if(TD_GET(region_id) > 0) {
-	  omp_arg.tbd = true;
-	  omp_arg.region_id = TD_GET(region_id);
-        }
-        node = hpcrun_sample_callpath(&uc, 0, 0, 1, 1, (void *)&omp_arg).sample_node;
-        TMSG(DEFER_CTXT, "unwind the callstack for region %d to %d", record->region_id, TD_GET(region_id));
-      }
-      //
-      // for master thread in the outer-most region, a normal unwind to the process stop 
-      //
-      else {
-        node = hpcrun_sample_callpath(&uc, 0, 0, 1, 1, NULL).sample_node;
-        TMSG(DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
-      }
-
-#ifdef GOMP
-      cct_node_t *sibling = NULL;
-      if(node)
-        sibling = hpcrun_cct_insert_addr(hpcrun_cct_parent(node), 
-			    &(ADDR2(hpcrun_cct_addr(node)->ip_norm.lm_id, 
-				hpcrun_cct_addr(node)->ip_norm.lm_ip-5L)));
-      record->node = sibling;
-#else
-      record->node = node;
-#endif
-#endif
-    }
-    else {
+    } else {
       r_splay_count_update(record->region_id, 0L);
     }
   }
@@ -360,14 +323,6 @@ int need_defer_cntxt()
     return 1;
   }
   return 0;
-}
-
-static cct_node_t*
-is_resolved(uint64_t id)
-{
-  struct record_t *record = r_splay_lookup(id);
-  if(! record) return NULL;
-  return record->node;
 }
 
 //
@@ -423,7 +378,7 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
   uint64_t my_region_id = (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip;
   TMSG(DEFER_CTXT, "try to resolve region %d", my_region_id);
   uint64_t partial_region_id = 0;
-  if ((prefix = is_resolved(my_region_id))) {
+  if ((prefix = hpcrun_region_lookup(my_region_id))) {
     TMSG(DEFER_CTXT, "resolve region %d to %d", my_region_id, is_partial_resolve(prefix));
     // delete cct from its original parent before merging
     hpcrun_cct_delete_self(cct);
