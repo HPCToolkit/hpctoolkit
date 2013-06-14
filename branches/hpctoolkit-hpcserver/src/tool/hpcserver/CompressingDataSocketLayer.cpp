@@ -52,8 +52,7 @@ namespace TraceviewerServer
 	void CompressingDataSocketLayer::WriteDouble(double toWrite)
 	{
 		Room(8);
-		Long* plong = (Long*) (&toWrite);
-		ByteUtilities::WriteLong(inBuf + BufferIndex, *plong);
+		ByteUtilities::WriteLong(inBuf + BufferIndex, ByteUtilities::ConvertDoubleToLong(toWrite));
 		BufferIndex += 8;
 	}
 	void CompressingDataSocketLayer::Flush()
@@ -85,7 +84,7 @@ namespace TraceviewerServer
 
 		BufferIndex = 0;
 	}
-	const unsigned char* CompressingDataSocketLayer::GetOutputBuffer()
+	unsigned char* CompressingDataSocketLayer::GetOutputBuffer()
 	{
 		return outBuf;
 	}

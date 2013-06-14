@@ -35,17 +35,16 @@ cerr<<"Maxloc is smaller than Minloc!! Maxloc= "<<Maxloc << " Minloc= " << Minlo
 	void TraceDataByRankLocal::GetData(double timeStart, double timeRange,
 			double pixelLength)
 	{
-		
 		// get the start location
-		const Long startLoc = FindTimeInInterval(timeStart, Minloc, Maxloc);
+		 Long startLoc = FindTimeInInterval(timeStart, Minloc, Maxloc);
 
 		// get the end location
-		const double endTime = timeStart + timeRange;
-		const Long endLoc = min(
+		 double endTime = timeStart + timeRange;
+		 Long endLoc = min(
 				FindTimeInInterval(endTime, Minloc, Maxloc) + SIZE_OF_TRACE_RECORD, Maxloc);
 
 		// get the number of records data to display
-		const Long numRec = 1 + GetNumberOfRecords(startLoc, endLoc);
+		 Long numRec = 1 + GetNumberOfRecords(startLoc, endLoc);
 
 		// --------------------------------------------------------------------------------------------------
 		// if the data-to-display is fit in the display zone, we don't need to use recursive binary search
@@ -74,7 +73,7 @@ cerr<<"Maxloc is smaller than Minloc!! Maxloc= "<<Maxloc << " Minloc= " << Minlo
 		// --------------------------------------------------------------------------------------------------
 		if (endLoc < Maxloc)
 		{
-			const TimeCPID dataLast = GetData(endLoc);
+			 TimeCPID dataLast = GetData(endLoc);
 			AddSample(ListCPID->size(), dataLast);
 		}
 
@@ -84,7 +83,7 @@ cerr<<"Maxloc is smaller than Minloc!! Maxloc= "<<Maxloc << " Minloc= " << Minlo
 		// --------------------------------------------------------------------------------------------------
 		if (startLoc > Minloc)
 		{
-			const TimeCPID dataFirst = GetData(startLoc - SIZE_OF_TRACE_RECORD);
+			 TimeCPID dataFirst = GetData(startLoc - SIZE_OF_TRACE_RECORD);
 			AddSample(0, dataFirst);
 		}
 		//PostProcess();
@@ -114,7 +113,7 @@ cerr<<"Maxloc is smaller than Minloc!! Maxloc= "<<Maxloc << " Minloc= " << Minlo
 
 		Long loc = FindTimeInInterval(midPixel * pixelLength + startingTime, minLoc,
 				maxLoc);
-		const TimeCPID nextData = GetData(loc);
+		 TimeCPID nextData = GetData(loc);
 		AddSample(minIndex, nextData);
 		int addedLeft = SampleTimeLine(minLoc, loc, startPixel, midPixel, minIndex,
 				pixelLength, startingTime);
@@ -137,14 +136,14 @@ cerr<<"Maxloc is smaller than Minloc!! Maxloc= "<<Maxloc << " Minloc= " << Minlo
 		if (l_boundOffset == r_boundOffset)
 			return l_boundOffset;
 
-		LargeByteBuffer* const masterBuff = Data->getMasterBuffer();
+		LargeByteBuffer*  masterBuff = Data->getMasterBuffer();
 
 		Long l_index = GetRelativeLocation(l_boundOffset);
 		Long r_index = GetRelativeLocation(r_boundOffset);
 
 		double l_time = masterBuff->GetLong(l_boundOffset);
 		double r_time = masterBuff->GetLong(r_boundOffset);
-
+	
 		// apply "Newton's method" to find target time
 		while (r_index - l_index > 1)
 		{
@@ -185,8 +184,7 @@ cerr<<"Maxloc is smaller than Minloc!! Maxloc= "<<Maxloc << " Minloc= " << Minlo
 		l_time = masterBuff->GetLong(l_offset);
 		r_time = masterBuff->GetLong(r_offset);
 
-		const bool is_left_closer = abs(time - l_time) < abs(r_time - time);
-
+		 bool is_left_closer = abs(time - l_time) < abs(r_time - time);
 		if (is_left_closer)
 			return l_offset;
 		else if (r_offset < Maxloc)
@@ -219,9 +217,9 @@ cerr<<"Maxloc is smaller than Minloc!! Maxloc= "<<Maxloc << " Minloc= " << Minlo
 
 	TimeCPID TraceDataByRankLocal::GetData(Long location)
 	{
-		LargeByteBuffer* const MasterBuff = Data->getMasterBuffer();
-		const double time = MasterBuff->GetLong(location);
-		const int CPID = MasterBuff->GetInt(location + SIZEOF_LONG);
+		LargeByteBuffer*  MasterBuff = Data->getMasterBuffer();
+		 double time = MasterBuff->GetLong(location);
+		 int CPID = MasterBuff->GetInt(location + SIZEOF_LONG);
 		TimeCPID ToReturn(time, CPID);
 		return ToReturn;
 	}

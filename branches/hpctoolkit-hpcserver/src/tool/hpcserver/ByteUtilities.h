@@ -55,15 +55,6 @@ namespace TraceviewerServer
 			Buffer[1] = (utoWrite & MASK_2) >> 16;
 			Buffer[2] = (utoWrite & MASK_1) >> 8;
 			Buffer[3] = utoWrite & MASK_0;
-			/*unsigned char a =  (utoWrite& MASK_3)>>24;
-			 unsigned char b =(utoWrite & MASK_2)>>16;
-			 unsigned char c =(utoWrite & MASK_1)>>8;
-			 unsigned char d =utoWrite & MASK_0;
-			 Buffer[0] = a;
-			 Buffer[1] = b;
-			 Buffer[2] = c;
-			 Buffer[3] =d;
-			 raise(SIGTRAP);*/
 		}
 		static void WriteLong(char* Buffer, long ToWrite)
 		{
@@ -77,13 +68,24 @@ namespace TraceviewerServer
 			Buffer[6] = (utoWrite & MASK_1) >> 8;
 			Buffer[7] = utoWrite & MASK_0;
 		}
+		static Long ConvertDoubleToLong(double d)
+		{
+			union { double d; Long l;} dbLgConv;
+			dbLgConv.d = d;
+			return dbLgConv.l;
+		}
+		static double ConvertLongToDouble(Long l)
+		{
+			union { double d; Long l;} dbLgConv;
+			dbLgConv.l = l;
+			return dbLgConv.d;
+		}
 	private:
 		static const unsigned int MASK_0 = 0x000000FF, MASK_1 = 0x0000FF00, MASK_2 =
 				0x00FF0000, MASK_3 = 0xFF000000; //For an int
 		static const ULong MASK_4 = 0x000000FF00000000ULL,
 				MASK_5 = 0x0000FF0000000000ULL, MASK_6 = 0x00FF000000000000ULL, MASK_7 =
 						0xFF00000000000000ULL; //for a long
-
 	};
 
 } /* namespace TraceviewerServer */

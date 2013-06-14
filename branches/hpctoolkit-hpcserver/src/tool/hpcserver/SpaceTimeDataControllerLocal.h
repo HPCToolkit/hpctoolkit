@@ -31,8 +31,8 @@ namespace TraceviewerServer
 		//The number of processes in the database, independent of the current display size
 		int GetHeight();
 
-		const int* GetValuesXProcessID();
-		const short* GetValuesXThreadID();
+		 int* GetValuesXProcessID();
+		 short* GetValuesXThreadID();
 
 		std::string GetExperimentXML();
 		ImageTraceAttributes* Attributes;

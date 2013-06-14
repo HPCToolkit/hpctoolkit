@@ -20,8 +20,8 @@ namespace TraceviewerServer
 	MergeDataAttribute MergeDataFiles::merge(string Directory, string GlobInputFile,
 			string OutputFile)
 	{
-		const int Last_dot = GlobInputFile.find_last_of('.');
-		const string Suffix = GlobInputFile.substr(Last_dot);
+		 int Last_dot = GlobInputFile.find_last_of('.');
+		 string Suffix = GlobInputFile.substr(Last_dot);
 
 		cout << "Checking to see if " << OutputFile << " exists" << endl;
 
@@ -69,7 +69,7 @@ namespace TraceviewerServer
 
 		dos.WriteInt(Filtered.size());
 		const Long num_metric_header = 2 * SIZEOF_INT; // type of app (4 bytes) + num procs (4 bytes)
-		const Long num_metric_index = Filtered.size()
+		 Long num_metric_index = Filtered.size()
 				* (SIZEOF_LONG + 2 * SIZEOF_INT);
 		Long offset = num_metric_header + num_metric_index;
 
@@ -85,9 +85,9 @@ namespace TraceviewerServer
 		for (it2 = Filtered.begin(); it2 < Filtered.end(); it2++)
 		{
 
-			const string Filename = *it2;
-			const int last_pos_basic_name = Filename.length() - Suffix.length();
-			const string Basic_name = Filename.substr(FileUtils::CombinePaths(Directory, "").length(),//This ensures we count the "/" at the end of the path
+			 string Filename = *it2;
+			 int last_pos_basic_name = Filename.length() - Suffix.length();
+			 string Basic_name = Filename.substr(FileUtils::CombinePaths(Directory, "").length(),//This ensures we count the "/" at the end of the path
 					last_pos_basic_name);
 			cout << "Path manipulation check: The file in " << Filename << " is "
 					<< Basic_name << endl;
@@ -95,7 +95,7 @@ namespace TraceviewerServer
 			vector<string> tokens = SplitString(Basic_name, '-');
 
 
-			const int num_tokens = tokens.size();
+			 int num_tokens = tokens.size();
 			if (num_tokens < PROC_POS)
 				// if it is wrong file with the right extension, we skip
 				continue;
@@ -112,7 +112,7 @@ namespace TraceviewerServer
 			dos.WriteInt(proc);
 			if (proc != 0)
 				type |= MULTI_PROCESSES;
-			const int Thread = atoi(tokens[name_format + num_tokens - THREAD_POS].c_str());
+			 int Thread = atoi(tokens[name_format + num_tokens - THREAD_POS].c_str());
 			dos.WriteInt(Thread);
 			if (Thread != 0)
 				type |= MULTI_THREADING;
@@ -175,14 +175,14 @@ namespace TraceviewerServer
 	{
 		ifstream f(filename->c_str(), ios_base::binary | ios_base::in);
 		bool IsCorrect = false;
-		const Long pos = FileUtils::GetFileSize(*filename) - SIZEOF_LONG;
+		 Long pos = FileUtils::GetFileSize(*filename) - SIZEOF_LONG;
 		int diff;
 		if (pos > 0)
 		{
 			f.seekg(pos, ios_base::beg);
 			char buffer[8];
 			f.read(buffer, 8);
-			const ULong Marker = ByteUtilities::ReadLong(buffer);
+			 ULong Marker = ByteUtilities::ReadLong(buffer);
 			//No idea why this doesn't work:
 			//IsCorrect = ((Marker) == MARKER_END_MERGED_FILE);
 

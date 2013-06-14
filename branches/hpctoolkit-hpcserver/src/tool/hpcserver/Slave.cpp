@@ -167,7 +167,7 @@ namespace TraceviewerServer
 			 {
 			 msg.Data.Data[i++] = it->CPID;
 			 }*/
-			const unsigned char* OutputBuffer;
+			unsigned char* OutputBuffer;
 			int OutputBufferLen;
 			if (Compression)
 			{
