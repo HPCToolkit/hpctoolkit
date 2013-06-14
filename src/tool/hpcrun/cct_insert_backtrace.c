@@ -53,6 +53,7 @@
 #include <messages/messages.h>
 #include <hpcrun/metrics.h>
 #include <hpcrun/unresolved.h>
+#include <hpcrun/sample-sources/ompt-interface.h>
 #include <lib/prof-lean/lush/lush-support.h>
 #include <lib/prof-lean/placeholders.h>
 #include <lush/lush-backtrace.h>
@@ -82,9 +83,6 @@ static bool retain_recursion = false;
 
 #ifdef OMPT_DEBUG
 #define elide_debug_dump(t,i,o) stack_dump(t,i,o)
-#else
-#define elide_debug_dump(t,i,o) 
-#endif
 
 static
 void stack_dump(char *tag, frame_t *inner, frame_t *outer) 
@@ -102,6 +100,10 @@ void stack_dump(char *tag, frame_t *inner, frame_t *outer)
   EMSG("-----%s end\n", tag); 
 }
 
+#else
+#define elide_debug_dump(t,i,o) 
+#endif
+
 static int
 interval_contains(void *lower, void *upper, void *addr)
 {
@@ -117,13 +119,10 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
 {
   int i = 0;
   frame_t *it, *exit0 = NULL, *reenter1 = NULL, *exit1 = NULL;
-  ompt_frame_t *frame0 = NULL;
-  ompt_frame_t *frame1 = NULL;
-  void *entry_sp;
 
-  // special handle for frame 0 (inner-most frame)
-  frame0 = ompt_get_task_frame(0);
-  frame1 = ompt_get_task_frame(1);
+  ompt_frame_t *frame0 = ompt_get_task_frame(0);
+  ompt_frame_t *frame1 = ompt_get_task_frame(1);
+  void *entry_sp;
 
   // if inner-most task has no frame info, just return
   if (!frame0) return;
@@ -135,7 +134,7 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
     /* inside the runtime now; elide frames from entry to top of stack */
 
     int found = 0;
-    for(it = *bt_inner; it <= *bt_outer; it++) {
+    for (it = *bt_inner; it <= *bt_outer; it++) {
       if ((uint64_t)(it->cursor.sp) >= (uint64_t)entry_sp) {
 	*bt_inner = it;
 	found = 1;
@@ -143,9 +142,11 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
       }
     }
     if (found == 0) {
+#if 0
       /* eliminate all frames */
       *bt_inner = *bt_outer + 1;
-      *bt_inner = *bt_outer;
+#endif
+      /* runtime frames with nothing else; it is harmless to reveal them all */
 
       elide_debug_dump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer); 
 
@@ -487,8 +488,9 @@ hpcrun_cct_record_backtrace(cct_bundle_t* cct, bool partial, bool thread_stop,
 static cct_node_t *
 memoized_context_get(thread_data_t* td, uint64_t region_id)
 {
-  if (td->outer_region_id == region_id && td->outer_region_context)
-    return td->outer_region_context;
+  return (td->outer_region_id == region_id && td->outer_region_context) ? 
+    td->outer_region_context : 
+    NULL;
 }
 
 static void
@@ -541,13 +543,18 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
   }
 
   omp_arg_t* omp_arg = (omp_arg_t*) arg;
+
+  // if deferred context is available, resolve it and update cursor accordingly
   if (arg && omp_arg->tbd) {
     cct_node_t *prefix = lookup_region_id(&cct->tree_root, omp_arg->region_id);
     if (prefix) cct_cursor = prefix;
     else {
-      cct_cursor = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, omp_arg->region_id)));
+      prefix = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, 
+				    &(ADDR2(UNRESOLVED, omp_arg->region_id)));
+      if (prefix) cct_cursor = prefix;
     }
   }
+
   // this is for omp task
   if(arg && omp_arg->context) {
     cct_cursor = (cct_node_t *)omp_arg->context; 
@@ -652,17 +659,25 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
   }
 #endif
 
+#define INTEL_RTL
+
   // ompt: elide runtime frames
   if (ompt_elide_frames()) {
     frame_t* bt_last_orig = bt_last;
     hpcrun_elide_runtime_frame(&bt_last, &bt_beg);
-#if 0
     if ((bt.fence == FENCE_THREAD) && (bt_last_orig == bt_last)) {
-      // no elision was performed on a side thread. 
-      // it is a degenerate sample outside an openmp team. collapse it by force and eliminate all frames.
-      bt_beg = bt_last + 1;
-    }
+      // no elision was performed on a side thread. they are all runtime frames 
+#ifdef INTEL_RTL
+      {
+	omp_arg_t* omp_arg = (omp_arg_t*) arg;
+	if (hpcrun_region_lookup(omp_arg->region_id)) {
+	  // this backtrace can be related to the global view
+	  // pop off the bottom three frames of the intel runtime
+	  bt_last = bt_last - 3;
+	}
+      }
 #endif
+    }
   }
 
 

@@ -258,3 +258,15 @@ ompt_elide_frames()
   return ompt_elide && (ompt_get_parallel_id(0) > 0);
 }
 
+int
+ompt_outermost_parallel_id()
+{ 
+  int i = 0;
+  uint64_t outer_id = 0; 
+  for (;;) {
+    uint64_t next_id = ompt_get_parallel_id(i++);
+    if (next_id == 0) break;
+    outer_id = next_id;
+  }
+  return outer_id;
+}
