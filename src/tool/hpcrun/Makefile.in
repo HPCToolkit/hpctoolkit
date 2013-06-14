@@ -1120,7 +1120,6 @@ MY_INCLUDE_DIRS = \
 	-I$(srcdir)/messages	        \
 	-I$(srcdir)/fnbounds		\
 	-I$(srcdir)/memory		\
-	-I$(srcdir)/os/catamount	\
 	-I$(srcdir)/os/linux		\
 	-I$(srcdir)/cct			\
 	-I$(srcdir)/unwind/common	\
