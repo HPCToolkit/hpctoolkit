@@ -65,12 +65,23 @@
 #include "utilities/defer-cntxt.h"
 #include "utilities/task-cntxt.h"
 
+int ompt_elide = 0;
 
 
 /******************************************************************************
  * private operations 
  *****************************************************************************/
 
+#if 0
+void ompt_sync_sample()
+{
+  thread_data_t *td = hpcrun_get_thread_data();
+  ompt_data_t arg;
+  arg.tbd = true;
+  arg.region_id = 
+  record_synchronous_sample(td, n, );
+}
+#endif
   
 static void
 ompt_thread_create(ompt_data_t *data)
@@ -210,6 +221,10 @@ ompt_initialize(void)
     init_tasks();
     task_cntxt_full();
   }
+
+  if(!ENABLED(OMPT_KEEP_ALL_FRAMES)) {
+    ompt_elide = 1;
+  }
   return 1;
 }
 
@@ -235,5 +250,11 @@ ompt_state_is_overhead()
   }
 
   return 0;
+}
+
+int
+ompt_elide_frames()
+{
+  return ompt_elide && (ompt_get_parallel_id(0) > 0);
 }
 

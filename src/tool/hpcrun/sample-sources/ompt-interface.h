@@ -10,4 +10,6 @@
 //------------------------------------------------------------------------------
 extern int ompt_state_is_overhead();
 
+extern int ompt_elide_frames();
+
 #endif // _OMPT_INTERFACE_H_
