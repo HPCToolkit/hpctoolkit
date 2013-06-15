@@ -306,12 +306,12 @@ libhpcrun_la_DEPENDENCIES = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	disabled.c cct_insert_backtrace.c env.c epoch.c files.c \
 	handling_sample.c hpcrun_options.c hpcrun_stats.c loadmap.c \
-	metrics.c name.c rank.c sample_event.c sample_prob.c \
-	sample_sources_all.c sample-sources/blame-shift.c \
-	sample-sources/common.c sample-sources/ga.c \
-	sample-sources/io.c sample-sources/itimer.c \
-	sample-sources/idle.c sample-sources/lockwait.c \
-	sample-sources/memleak.c sample-sources/ompt-interface.c \
+	metrics.c name.c ompt-interface.c rank.c sample_event.c \
+	sample_prob.c sample_sources_all.c \
+	sample-sources/blame-shift.c sample-sources/common.c \
+	sample-sources/ga.c sample-sources/io.c \
+	sample-sources/itimer.c sample-sources/idle.c \
+	sample-sources/lockwait.c sample-sources/memleak.c \
 	sample-sources/none.c sample-sources/retcnt.c \
 	sample-sources/sync.c sample_sources_registered.c \
 	segv_handler.c start-stop.c term_handler.c thread_data.c \
@@ -369,13 +369,13 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-files.lo libhpcrun_la-handling_sample.lo \
 	libhpcrun_la-hpcrun_options.lo libhpcrun_la-hpcrun_stats.lo \
 	libhpcrun_la-loadmap.lo libhpcrun_la-metrics.lo \
-	libhpcrun_la-name.lo libhpcrun_la-rank.lo \
-	libhpcrun_la-sample_event.lo libhpcrun_la-sample_prob.lo \
-	libhpcrun_la-sample_sources_all.lo libhpcrun_la-blame-shift.lo \
-	libhpcrun_la-common.lo libhpcrun_la-ga.lo libhpcrun_la-io.lo \
-	libhpcrun_la-itimer.lo libhpcrun_la-idle.lo \
-	libhpcrun_la-lockwait.lo libhpcrun_la-memleak.lo \
-	libhpcrun_la-ompt-interface.lo libhpcrun_la-none.lo \
+	libhpcrun_la-name.lo libhpcrun_la-ompt-interface.lo \
+	libhpcrun_la-rank.lo libhpcrun_la-sample_event.lo \
+	libhpcrun_la-sample_prob.lo libhpcrun_la-sample_sources_all.lo \
+	libhpcrun_la-blame-shift.lo libhpcrun_la-common.lo \
+	libhpcrun_la-ga.lo libhpcrun_la-io.lo libhpcrun_la-itimer.lo \
+	libhpcrun_la-idle.lo libhpcrun_la-lockwait.lo \
+	libhpcrun_la-memleak.lo libhpcrun_la-none.lo \
 	libhpcrun_la-retcnt.lo libhpcrun_la-sync.lo \
 	libhpcrun_la-sample_sources_registered.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-start-stop.lo \
@@ -508,12 +508,12 @@ PROGRAMS = $(pkglib_PROGRAMS)
 am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	disabled.c cct_insert_backtrace.c env.c epoch.c files.c \
 	handling_sample.c hpcrun_options.c hpcrun_stats.c loadmap.c \
-	metrics.c name.c rank.c sample_event.c sample_prob.c \
-	sample_sources_all.c sample-sources/blame-shift.c \
-	sample-sources/common.c sample-sources/ga.c \
-	sample-sources/io.c sample-sources/itimer.c \
-	sample-sources/idle.c sample-sources/lockwait.c \
-	sample-sources/memleak.c sample-sources/ompt-interface.c \
+	metrics.c name.c ompt-interface.c rank.c sample_event.c \
+	sample_prob.c sample_sources_all.c \
+	sample-sources/blame-shift.c sample-sources/common.c \
+	sample-sources/ga.c sample-sources/io.c \
+	sample-sources/itimer.c sample-sources/idle.c \
+	sample-sources/lockwait.c sample-sources/memleak.c \
 	sample-sources/none.c sample-sources/retcnt.c \
 	sample-sources/sync.c sample_sources_registered.c \
 	segv_handler.c start-stop.c term_handler.c thread_data.c \
@@ -572,15 +572,15 @@ am__objects_32 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-hpcrun_options.$(OBJEXT) \
 	libhpcrun_o-hpcrun_stats.$(OBJEXT) \
 	libhpcrun_o-loadmap.$(OBJEXT) libhpcrun_o-metrics.$(OBJEXT) \
-	libhpcrun_o-name.$(OBJEXT) libhpcrun_o-rank.$(OBJEXT) \
-	libhpcrun_o-sample_event.$(OBJEXT) \
+	libhpcrun_o-name.$(OBJEXT) \
+	libhpcrun_o-ompt-interface.$(OBJEXT) \
+	libhpcrun_o-rank.$(OBJEXT) libhpcrun_o-sample_event.$(OBJEXT) \
 	libhpcrun_o-sample_prob.$(OBJEXT) \
 	libhpcrun_o-sample_sources_all.$(OBJEXT) \
 	libhpcrun_o-blame-shift.$(OBJEXT) libhpcrun_o-common.$(OBJEXT) \
 	libhpcrun_o-ga.$(OBJEXT) libhpcrun_o-io.$(OBJEXT) \
 	libhpcrun_o-itimer.$(OBJEXT) libhpcrun_o-idle.$(OBJEXT) \
 	libhpcrun_o-lockwait.$(OBJEXT) libhpcrun_o-memleak.$(OBJEXT) \
-	libhpcrun_o-ompt-interface.$(OBJEXT) \
 	libhpcrun_o-none.$(OBJEXT) libhpcrun_o-retcnt.$(OBJEXT) \
 	libhpcrun_o-sync.$(OBJEXT) \
 	libhpcrun_o-sample_sources_registered.$(OBJEXT) \
@@ -1066,12 +1066,12 @@ UNW_MIPS_LD_FLAGS =
 MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	cct_insert_backtrace.c env.c epoch.c files.c handling_sample.c \
 	hpcrun_options.c hpcrun_stats.c loadmap.c metrics.c name.c \
-	rank.c sample_event.c sample_prob.c sample_sources_all.c \
-	sample-sources/blame-shift.c sample-sources/common.c \
-	sample-sources/ga.c sample-sources/io.c \
-	sample-sources/itimer.c sample-sources/idle.c \
-	sample-sources/lockwait.c sample-sources/memleak.c \
-	sample-sources/ompt-interface.c sample-sources/none.c \
+	ompt-interface.c rank.c sample_event.c sample_prob.c \
+	sample_sources_all.c sample-sources/blame-shift.c \
+	sample-sources/common.c sample-sources/ga.c \
+	sample-sources/io.c sample-sources/itimer.c \
+	sample-sources/idle.c sample-sources/lockwait.c \
+	sample-sources/memleak.c sample-sources/none.c \
 	sample-sources/retcnt.c sample-sources/sync.c \
 	sample_sources_registered.c segv_handler.c start-stop.c \
 	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
@@ -2230,6 +2230,13 @@ libhpcrun_la-name.lo: name.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-name.lo `test -f 'name.c' || echo '$(srcdir)/'`name.c
 
+libhpcrun_la-ompt-interface.lo: ompt-interface.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ompt-interface.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ompt-interface.Tpo -c -o libhpcrun_la-ompt-interface.lo `test -f 'ompt-interface.c' || echo '$(srcdir)/'`ompt-interface.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-ompt-interface.Tpo $(DEPDIR)/libhpcrun_la-ompt-interface.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt-interface.c' object='libhpcrun_la-ompt-interface.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ompt-interface.lo `test -f 'ompt-interface.c' || echo '$(srcdir)/'`ompt-interface.c
+
 libhpcrun_la-rank.lo: rank.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-rank.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-rank.Tpo -c -o libhpcrun_la-rank.lo `test -f 'rank.c' || echo '$(srcdir)/'`rank.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-rank.Tpo $(DEPDIR)/libhpcrun_la-rank.Plo
@@ -2313,13 +2320,6 @@ libhpcrun_la-memleak.lo: sample-sources/memleak.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/memleak.c' object='libhpcrun_la-memleak.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-memleak.lo `test -f 'sample-sources/memleak.c' || echo '$(srcdir)/'`sample-sources/memleak.c
-
-libhpcrun_la-ompt-interface.lo: sample-sources/ompt-interface.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ompt-interface.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ompt-interface.Tpo -c -o libhpcrun_la-ompt-interface.lo `test -f 'sample-sources/ompt-interface.c' || echo '$(srcdir)/'`sample-sources/ompt-interface.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-ompt-interface.Tpo $(DEPDIR)/libhpcrun_la-ompt-interface.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/ompt-interface.c' object='libhpcrun_la-ompt-interface.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ompt-interface.lo `test -f 'sample-sources/ompt-interface.c' || echo '$(srcdir)/'`sample-sources/ompt-interface.c
 
 libhpcrun_la-none.lo: sample-sources/none.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-none.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-none.Tpo -c -o libhpcrun_la-none.lo `test -f 'sample-sources/none.c' || echo '$(srcdir)/'`sample-sources/none.c
@@ -3098,6 +3098,20 @@ libhpcrun_o-name.obj: name.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-name.obj `if test -f 'name.c'; then $(CYGPATH_W) 'name.c'; else $(CYGPATH_W) '$(srcdir)/name.c'; fi`
 
+libhpcrun_o-ompt-interface.o: ompt-interface.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-interface.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-interface.Tpo -c -o libhpcrun_o-ompt-interface.o `test -f 'ompt-interface.c' || echo '$(srcdir)/'`ompt-interface.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-interface.Tpo $(DEPDIR)/libhpcrun_o-ompt-interface.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt-interface.c' object='libhpcrun_o-ompt-interface.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-interface.o `test -f 'ompt-interface.c' || echo '$(srcdir)/'`ompt-interface.c
+
+libhpcrun_o-ompt-interface.obj: ompt-interface.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-interface.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-interface.Tpo -c -o libhpcrun_o-ompt-interface.obj `if test -f 'ompt-interface.c'; then $(CYGPATH_W) 'ompt-interface.c'; else $(CYGPATH_W) '$(srcdir)/ompt-interface.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-interface.Tpo $(DEPDIR)/libhpcrun_o-ompt-interface.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt-interface.c' object='libhpcrun_o-ompt-interface.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-interface.obj `if test -f 'ompt-interface.c'; then $(CYGPATH_W) 'ompt-interface.c'; else $(CYGPATH_W) '$(srcdir)/ompt-interface.c'; fi`
+
 libhpcrun_o-rank.o: rank.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-rank.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-rank.Tpo -c -o libhpcrun_o-rank.o `test -f 'rank.c' || echo '$(srcdir)/'`rank.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-rank.Tpo $(DEPDIR)/libhpcrun_o-rank.Po
@@ -3265,20 +3279,6 @@ libhpcrun_o-memleak.obj: sample-sources/memleak.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/memleak.c' object='libhpcrun_o-memleak.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-memleak.obj `if test -f 'sample-sources/memleak.c'; then $(CYGPATH_W) 'sample-sources/memleak.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/memleak.c'; fi`
-
-libhpcrun_o-ompt-interface.o: sample-sources/ompt-interface.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-interface.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-interface.Tpo -c -o libhpcrun_o-ompt-interface.o `test -f 'sample-sources/ompt-interface.c' || echo '$(srcdir)/'`sample-sources/ompt-interface.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-interface.Tpo $(DEPDIR)/libhpcrun_o-ompt-interface.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/ompt-interface.c' object='libhpcrun_o-ompt-interface.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-interface.o `test -f 'sample-sources/ompt-interface.c' || echo '$(srcdir)/'`sample-sources/ompt-interface.c
-
-libhpcrun_o-ompt-interface.obj: sample-sources/ompt-interface.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-interface.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-interface.Tpo -c -o libhpcrun_o-ompt-interface.obj `if test -f 'sample-sources/ompt-interface.c'; then $(CYGPATH_W) 'sample-sources/ompt-interface.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/ompt-interface.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-interface.Tpo $(DEPDIR)/libhpcrun_o-ompt-interface.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/ompt-interface.c' object='libhpcrun_o-ompt-interface.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-interface.obj `if test -f 'sample-sources/ompt-interface.c'; then $(CYGPATH_W) 'sample-sources/ompt-interface.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/ompt-interface.c'; fi`
 
 libhpcrun_o-none.o: sample-sources/none.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-none.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-none.Tpo -c -o libhpcrun_o-none.o `test -f 'sample-sources/none.c' || echo '$(srcdir)/'`sample-sources/none.c

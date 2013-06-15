@@ -658,19 +658,18 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     }
 
     omp_arg_t omp_arg;
+#if 1
     omp_arg.tbd = false;
     omp_arg.context = NULL;
-#if 0
     if (TD_GET(region_id) > 0) {
       omp_arg.tbd = true;
       omp_arg.region_id = TD_GET(region_id);
     }
 #else
-    int region_id = ompt_get_parallel_id(0); 
-    if (region_id > 0) {
-      omp_arg.tbd = true;
-      omp_arg.region_id = region_id;
-    }
+    int region_id = ompt_outermost_parallel_id(); 
+    omp_arg.tbd = (region_id > 0); 
+    omp_arg.region_id = region_id;
+    omp_arg.context = NULL;
 #endif
     sv = hpcrun_sample_callpath(context, metric_id, metric_incr/*metricIncr*/,
 				0/*skipInner*/, 0/*isSync*/, (void*) &omp_arg);

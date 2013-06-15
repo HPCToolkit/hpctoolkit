@@ -255,6 +255,8 @@ void start_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_fram
   if (hpcrun_trace_isactive()) gather_context(record);
 #endif
   r_splay_insert(record);
+
+#if 1
   if(td->master) {
     ;
   }
@@ -282,6 +284,12 @@ void start_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_fram
       td->outer_region_context = 0;
     }
   }
+#else
+  if (! td->master) {
+    td->outer_region_id = ompt_outermost_parallel_id();
+    td->outer_region_context = 0;
+  }
+#endif
 
   hpcrun_safe_exit();
 }
