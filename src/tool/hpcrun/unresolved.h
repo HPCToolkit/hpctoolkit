@@ -11,6 +11,7 @@ typedef struct {
   bool tbd;
   uint64_t region_id;
   void *context;
+  int should_resolve;
 } omp_arg_t;
 
 

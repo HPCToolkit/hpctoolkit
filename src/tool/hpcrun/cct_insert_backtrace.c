@@ -659,21 +659,22 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
   }
 #endif
 
-#define INTEL_RTL
+#define INTEL_RTL 1
 
   // ompt: elide runtime frames
-  if (ompt_elide_frames()) {
+  omp_arg_t* omp_arg = (omp_arg_t*) arg;
+  if (ompt_elide_frames() && omp_arg && omp_arg->region_id != 0) {
     frame_t* bt_last_orig = bt_last;
     hpcrun_elide_runtime_frame(&bt_last, &bt_beg);
     if ((bt.fence == FENCE_THREAD) && (bt_last_orig == bt_last)) {
       // no elision was performed on a side thread. they are all runtime frames 
-#ifdef INTEL_RTL
+#if INTEL_RTL
       {
-	omp_arg_t* omp_arg = (omp_arg_t*) arg;
 	if (hpcrun_region_lookup(omp_arg->region_id)) {
 	  // this backtrace can be related to the global view
 	  // pop off the bottom three frames of the intel runtime
 	  bt_last = bt_last - 3;
+	  omp_arg->should_resolve = 1;
 	}
       }
 #endif
