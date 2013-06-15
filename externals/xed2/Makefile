@@ -16,7 +16,7 @@ FETCH_TARFILE = xed-install-knc-2013-05-31-lin-x86-64.tar.bz2
 SRC_DIR = xed-install-knc-2013-05-31-lin-x86-64
 
 else
-FETCH_TARFILE = pin-extras-2.12-53271-x86-linux.tar.gz
+FETCH_TARFILE = pin-extras-2.12-58423-x86-linux.tar.gz
 SRC_DIR = extras
 endif
 
