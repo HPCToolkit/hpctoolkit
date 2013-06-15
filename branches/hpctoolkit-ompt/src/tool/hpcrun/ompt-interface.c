@@ -255,7 +255,7 @@ ompt_state_is_overhead()
 int
 ompt_elide_frames()
 {
-  return ompt_elide && (ompt_get_parallel_id(0) > 0);
+  return ompt_elide; //  && (ompt_get_parallel_id(0) > 0);
 }
 
 int

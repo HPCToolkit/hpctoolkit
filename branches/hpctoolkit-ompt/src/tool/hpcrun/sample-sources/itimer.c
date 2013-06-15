@@ -645,6 +645,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     omp_arg_t omp_arg;
     omp_arg.tbd = false;
     omp_arg.region_id = 0;
+    omp_arg.should_resolve = 0;
     // copy the task creation context to local thread
     omp_arg.context = copy_task_cntxt(task_context);
       
@@ -661,6 +662,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 #if 1
     omp_arg.tbd = false;
     omp_arg.context = NULL;
+    omp_arg.should_resolve = 0;
     if (TD_GET(region_id) > 0) {
       omp_arg.tbd = true;
       omp_arg.region_id = TD_GET(region_id);
@@ -670,6 +672,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     omp_arg.tbd = (region_id > 0); 
     omp_arg.region_id = region_id;
     omp_arg.context = NULL;
+    omp_arg.should_resolve = 0;
 #endif
     sv = hpcrun_sample_callpath(context, metric_id, metric_incr/*metricIncr*/,
 				0/*skipInner*/, 0/*isSync*/, (void*) &omp_arg);
