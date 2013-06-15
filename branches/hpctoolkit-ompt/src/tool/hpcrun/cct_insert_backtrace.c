@@ -53,7 +53,7 @@
 #include <messages/messages.h>
 #include <hpcrun/metrics.h>
 #include <hpcrun/unresolved.h>
-#include <hpcrun/sample-sources/ompt-interface.h>
+#include <hpcrun/ompt-interface.h>
 #include <lib/prof-lean/lush/lush-support.h>
 #include <lib/prof-lean/placeholders.h>
 #include <lush/lush-backtrace.h>

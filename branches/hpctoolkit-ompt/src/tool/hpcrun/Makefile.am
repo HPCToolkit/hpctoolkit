@@ -254,6 +254,7 @@ MY_BASE_FILES =				\
 	loadmap.c			\
 	metrics.c			\
 	name.c				\
+	ompt-interface.c		\
 	rank.c				\
 	sample_event.c			\
 	sample_prob.c			\
@@ -266,7 +267,6 @@ MY_BASE_FILES =				\
 	sample-sources/idle.c		\
 	sample-sources/lockwait.c	\
 	sample-sources/memleak.c	\
-	sample-sources/ompt-interface.c	\
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \
         sample-sources/sync.c           \

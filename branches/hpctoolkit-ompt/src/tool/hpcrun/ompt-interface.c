@@ -59,8 +59,8 @@
  * local includes
  *****************************************************************************/
 
-#include "idle.h"
-#include "lockwait.h"
+#include "sample-sources/idle.h"
+#include "sample-sources/lockwait.h"
 
 #include "utilities/defer-cntxt.h"
 #include "utilities/task-cntxt.h"
