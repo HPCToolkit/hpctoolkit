@@ -274,13 +274,17 @@ void process_lockwait_blame_for_sample(int metric_id, cct_node_t *node, int metr
   // get the synchronization state
   ompt_wait_id_t wait_id = 0;
   void *lock = NULL;
-  if((ompt_get_state(&wait_id) == ompt_state_wait_critical) ||
-     (ompt_get_state(&wait_id) == ompt_state_wait_lock) ||
-     (ompt_get_state(&wait_id) == ompt_state_wait_nest_lock) ||
-     (ompt_get_state(&wait_id) == ompt_state_wait_atomic) ||
-     (ompt_get_state(&wait_id) == ompt_state_wait_ordered)) {
+#if 0
+  if((hpcrun_ompt_get_state(&wait_id) == ompt_state_wait_critical) ||
+     (hpcrun_ompt_get_state(&wait_id) == ompt_state_wait_lock) ||
+     (hpcrun_ompt_get_state(&wait_id) == ompt_state_wait_nest_lock) ||
+     (hpcrun_ompt_get_state(&wait_id) == ompt_state_wait_atomic) ||
+     (hpcrun_ompt_get_state(&wait_id) == ompt_state_wait_ordered)) {
     lock = (void *) wait_id;
   }
+#else
+    lock = (void *) wait_id;
+#endif
 
   // this is a sample in the lockwait
   if (lock && td->idle == 0) {

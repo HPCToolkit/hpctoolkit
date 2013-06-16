@@ -261,7 +261,7 @@ void start_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_fram
     ;
   }
   else if(td->outer_region_id == 0) {
-    td->outer_region_id = ompt_get_parallel_id(1);
+    td->outer_region_id = hpcrun_ompt_get_parallel_id(1);
     td->outer_region_context = NULL;
   }
   else {
@@ -273,14 +273,14 @@ void start_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_fram
     int i=0;
     uint64_t outer_id = 0;
 
-    outer_id = ompt_get_parallel_id(i);
+    outer_id = hpcrun_ompt_get_parallel_id(i);
     while(outer_id > 0) {
       if(outer_id == td->outer_region_id) break;
 
-      outer_id = ompt_get_parallel_id(++i);
+      outer_id = hpcrun_ompt_get_parallel_id(++i);
     }
     if(outer_id == 0){
-      td->outer_region_id = ompt_get_parallel_id(1);
+      td->outer_region_id = hpcrun_ompt_get_parallel_id(1);
       td->outer_region_context = 0;
     }
   }
@@ -325,7 +325,7 @@ int need_defer_cntxt()
   if (getenv("OMPT_LOCAL_VIEW")) return 0;
 
   // master thread does not need to defer the context
-  if ((ompt_get_parallel_id(0) > 0) && !TD_GET(master)) {
+  if ((hpcrun_ompt_get_parallel_id(0) > 0) && !TD_GET(master)) {
     thread_data_t *td = hpcrun_get_thread_data();
     td->defer_flag = 1;
     return 1;
@@ -423,7 +423,7 @@ omp_resolve_and_free(cct_node_t* cct, cct_op_arg_t a, size_t l)
 void resolve_cntxt()
 {
   hpcrun_safe_enter();
-  uint64_t current_region_id = ompt_get_parallel_id(0); //inner-most region id
+  uint64_t current_region_id = hpcrun_ompt_get_parallel_id(0); //inner-most region id
   cct_node_t* tbd_cct = (hpcrun_get_thread_epoch()->csdata).unresolved_root;
   thread_data_t *td = hpcrun_get_thread_data();
   uint64_t outer_region_id = 0;

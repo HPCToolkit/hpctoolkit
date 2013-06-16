@@ -66,6 +66,7 @@
 #include "utilities/task-cntxt.h"
 
 int ompt_elide = 0;
+int ompt_initialized = 0;
 
 
 /******************************************************************************
@@ -212,6 +213,8 @@ init_blame_shift_undirected()
 int 
 ompt_initialize(void)
 {
+  ompt_initialized = 1;
+
   init_threads();
   init_parallel_regions();
   init_blame_shift_undirected();
@@ -230,43 +233,79 @@ ompt_initialize(void)
 
 
 int 
-ompt_state_is_overhead()
+hpcrun_ompt_state_is_overhead()
 {
-  ompt_wait_id_t wait_id;
-  ompt_state_t state = ompt_get_state(&wait_id);
+  if (ompt_initialized) {
+    ompt_wait_id_t wait_id;
+    ompt_state_t state = ompt_get_state(&wait_id);
 
-  switch (state) {
-
-  case ompt_state_overhead:
-  case ompt_state_wait_critical:
-  case ompt_state_wait_lock:
-  case ompt_state_wait_nest_lock:
-  case ompt_state_wait_atomic:
-  case ompt_state_wait_ordered:
-    return 1;
-
-  default: break;
-
+    switch (state) {
+  
+    case ompt_state_overhead:
+    case ompt_state_wait_critical:
+    case ompt_state_wait_lock:
+    case ompt_state_wait_nest_lock:
+    case ompt_state_wait_atomic:
+    case ompt_state_wait_ordered:
+      return 1;
+  
+    default: break;
+    }
   }
-
   return 0;
 }
 
-int
-ompt_elide_frames()
-{
-  return ompt_elide; //  && (ompt_get_parallel_id(0) > 0);
-}
 
 int
-ompt_outermost_parallel_id()
+hpcrun_ompt_elide_frames()
+{
+  return ompt_elide; 
+}
+
+
+int
+hpcrun_ompt_outermost_parallel_id()
 { 
-  int i = 0;
   uint64_t outer_id = 0; 
-  for (;;) {
-    uint64_t next_id = ompt_get_parallel_id(i++);
-    if (next_id == 0) break;
-    outer_id = next_id;
+  if (ompt_initialized) { 
+    int i = 0;
+    for (;;) {
+      uint64_t next_id = ompt_get_parallel_id(i++);
+      if (next_id == 0) break;
+      outer_id = next_id;
+    }
   }
   return outer_id;
+}
+
+
+int 
+hpcrun_ompt_get_parallel_id(int level)
+{
+  if (ompt_initialized) return ompt_get_parallel_id(level);
+  return 0;
+}
+
+
+int 
+hpcrun_ompt_get_state(uint64_t *wait_id)
+{
+  if (ompt_initialized) return ompt_get_state(wait_id);
+  return ompt_state_undefined;
+}
+
+
+ompt_frame_t *
+hpcrun_ompt_get_task_frame(int level)
+{
+  if (ompt_initialized) return ompt_get_task_frame(level);
+  return NULL;
+}
+
+
+ompt_data_t *
+hpcrun_ompt_get_task_data(int level)
+{
+  if (ompt_initialized) return ompt_get_task_data(level);
+  return NULL;
 }

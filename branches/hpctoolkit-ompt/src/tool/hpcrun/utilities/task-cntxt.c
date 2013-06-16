@@ -45,6 +45,7 @@
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/cct2metrics.h>
 #include <hpcrun/metrics.h>
+#include <hpcrun/ompt-interface.h>
 #include <utilities/task-cntxt.h>
 #include <utilities/defer-cntxt.h>
 #include <hpcrun/unresolved.h>
@@ -130,8 +131,8 @@ void task_cntxt_full()
 
 void* need_task_cntxt()
 {
-  if(ompt_task_full_ctxt && ompt_get_task_data(0)) {
-    void *context = ompt_get_task_data(0)->ptr;
+  if(ompt_task_full_ctxt && hpcrun_ompt_get_task_data(0)) {
+    void *context = hpcrun_ompt_get_task_data(0)->ptr;
     return context;
   }
   return NULL;
