@@ -114,6 +114,7 @@ interval_contains(void *lower, void *upper, void *addr)
   return ((ulower <= uaddr) & (uaddr <= uupper));
 }
 
+#if 0
 static void
 hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
 {
@@ -258,7 +259,183 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
 
   elide_debug_dump("ELIDED", *bt_inner, *bt_outer); 
 }
+#else 
+// active copy
+static void
+hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
+{
+  int i = 0;
+  frame_t *it, *exit0 = NULL, *reenter1 = NULL, *exit1 = NULL;
 
+  ompt_frame_t *frame0 = ompt_get_task_frame(i);
+
+  //---------------------------------------------------------------
+  // handle all of the corner cases that can occur at the top of 
+  // the stack first
+  //---------------------------------------------------------------
+
+  if (!frame0) {
+    // corner case: the innermost task (if any) has no frame info. 
+    // no action necessary. just return.
+    return;
+  }
+
+  if ((frame0->reenter_runtime_frame == 0) && (frame0->exit_runtime_frame == 0)) {
+    // corner case: the top frame has been set up, but not filled in. 
+    // ignore this frame.
+    frame0 = ompt_get_task_frame(++i);
+  }
+
+  if (!frame0) {
+    // corner case: the innermost task (if any) has no frame info. 
+    // no action necessary. just return.
+    return;
+  }
+
+  if (frame0->exit_runtime_frame && 
+      (frame0->exit_runtime_frame < (*bt_inner)->cursor.sp)) {
+    // corner case: the top frame has been set up, exit frame has been filled in; 
+    // however, exit_runtime_frame points beyond the top of stack. the final call 
+    // to user code hasn't been made yet. ignore this frame.
+    frame0 = ompt_get_task_frame(++i);
+  }
+
+  elide_debug_dump("ORIGINAL", *bt_inner, *bt_outer); 
+  
+  if (frame0->reenter_runtime_frame) { 
+    // the sample was received inside the runtime; 
+    // elide frames from top of stack down to runtime entry
+    int found = 0;
+    for (it = *bt_inner; it <= *bt_outer; it++) {
+      if ((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->reenter_runtime_frame) {
+	*bt_inner = it;
+	found = 1;
+	break;
+      }
+    }
+    if (found == 0) {
+#if 0
+      /* eliminate all frames */
+      *bt_inner = *bt_outer + 1;
+#endif
+      /* runtime frames with nothing else; it is harmless to reveal them all */
+
+      elide_debug_dump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer); 
+
+      /* nothing left to do */
+      return;
+    }
+    elide_debug_dump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer); 
+    /* frames at top of stack elided. move down one level */ 
+  }
+
+  // general case: elide frames between frame1->enter and frame0->exit
+  while (true) {
+    ompt_frame_t *frame1;
+
+    frame0 = ompt_get_task_frame(i);
+    frame1 = ompt_get_task_frame(++i);
+
+    if (!frame0 || !frame1) break;
+
+    void *low_sp = (*bt_inner)->cursor.sp;
+    void *high_sp = (*bt_outer)->cursor.sp;
+
+    // if a frame marker is inside the call stack, set its flag to true
+    bool exit0_flag = 
+      interval_contains(low_sp, high_sp, frame0->exit_runtime_frame);
+
+    bool exit1_flag = 
+      interval_contains(low_sp, high_sp, frame1->exit_runtime_frame);
+
+    bool reenter1_flag = 
+      interval_contains(low_sp, high_sp, frame1->reenter_runtime_frame); 
+
+    /* start from the top of the stack (innermost frame). 
+       find the matching frame in the callstack for each of the markers in the
+       stack. look for them in the order in which they should occur.
+
+       optimization note: this always starts at the top of the stack. this can
+       lead to quadratic cost. could pick up below where you left off cutting in 
+       previous iterations.
+    */
+    it = *bt_inner; 
+    if(exit0_flag) {
+      for (; it <= *bt_outer; it++) {
+        if((uint64_t)(it->cursor.sp) >= (uint64_t)(frame0->exit_runtime_frame)) {
+          exit0 = it;
+          break;
+        }
+      }
+    }
+    if(reenter1_flag) {
+      for (; it <= *bt_outer; it++) {
+        if((uint64_t)(it->cursor.sp) >= (uint64_t)(frame1->reenter_runtime_frame)) {
+          reenter1 = it;
+          break;
+        }
+      }
+    }
+    if(exit1_flag) {
+      for (; it <= *bt_outer; it++) {
+        if((uint64_t)(it->cursor.sp) >= (uint64_t)(frame1->exit_runtime_frame)) {
+          exit1 = it;
+          break;
+        }
+      }
+    }
+
+    if (exit0 && reenter1) {
+#if 0
+      memmove(*bt_inner+(reenter1-exit0+1), *bt_inner, (exit0 - *bt_inner)*sizeof(frame_t));
+      *bt_inner = *bt_inner + (reenter1 - exit0 + 1);
+#else
+      // was missing a frame with intel's runtime; eliminate +1 -- johnmc
+      memmove(*bt_inner+(reenter1-exit0), *bt_inner, (exit0 - *bt_inner)*sizeof(frame_t));
+      *bt_inner = *bt_inner + (reenter1 - exit0);
+#endif
+      exit0 = reenter1 = NULL;
+    } else if (exit0 && !reenter1) {
+      // corner case: reenter1 is in the team master's stack, not this one. eliminate all
+      // frames below the exit frame.
+      *bt_outer = exit0 - 1;
+      break;
+    }
+
+#if 0
+    else if(exit0 && !reenter1) {
+      // check whether frame1' exit is set
+      // johnmc - I don't think this should ever occur.
+      if(exit1) {
+	assert(0); // need to verify this condition with nested parallelism -- johnmc
+        memmove(*bt_inner+(exit1-exit0+1), *bt_inner, (exit0 - *bt_inner)*sizeof(frame_t));
+        *bt_inner = *bt_inner + (exit1 - exit0 + 1);
+        exit0 = exit1 = NULL;
+      }
+      else {
+        *bt_outer = exit0-1;
+        exit0 = NULL;
+      }
+    }
+    else if(!exit0 && reenter1) {
+      *bt_inner = reenter1+1;
+      reenter1 = NULL;
+    }
+    else { // both !exit0 and !reenter1
+      // worker threads waiting at barrier for work
+      // eliminate all frames
+      *bt_outer = *bt_inner-1;
+      break;
+    }
+#endif
+
+    // inside a task, check one iteration is enough
+    if(ompt_get_task_data(0) && ompt_get_task_data(0)->ptr) break;
+  }
+
+  elide_debug_dump("ELIDED", *bt_inner, *bt_outer); 
+}
+#endif
 
 static cct_node_t*
 cct_insert_raw_backtrace(cct_node_t* cct,
@@ -549,6 +726,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
     cct_node_t *prefix = lookup_region_id(&cct->tree_root, omp_arg->region_id);
     if (prefix) cct_cursor = prefix;
     else {
+      assert(omp_arg->should_resolve == 0);
       prefix = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, 
 				    &(ADDR2(UNRESOLVED, omp_arg->region_id)));
       if (prefix) cct_cursor = prefix;
@@ -663,7 +841,10 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
 
   // ompt: elide runtime frames
   omp_arg_t* omp_arg = (omp_arg_t*) arg;
-  if (ompt_elide_frames() && omp_arg && omp_arg->region_id != 0) {
+  if (ompt_elide_frames() && 
+      ((bt.fence == FENCE_MAIN) ||            // always elide in the main thread
+       (omp_arg && omp_arg->region_id != 0))  // elide in the side thread if appropriate
+      ) {
     frame_t* bt_last_orig = bt_last;
     hpcrun_elide_runtime_frame(&bt_last, &bt_beg);
     if ((bt.fence == FENCE_THREAD) && (bt_last_orig == bt_last)) {
@@ -681,7 +862,6 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     }
   }
 
-
     // master thread elides all frames (to be omp_barrier), then make it as partial to 
     // avoid monitor_main and omp_barrier appearing in the CCT(s)
 
@@ -690,10 +870,12 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     partial_unw = true;
   }
 
+#if 0
   if((bt_last < bt_beg) && (bt.fence == FENCE_THREAD)) {
     EMSG("thread fence partial");
     partial_unw = true;
   }
+#endif
 
   cct_node_t* n = hpcrun_cct_record_backtrace_w_metric(bundle, partial_unw, bt.fence == FENCE_THREAD,
 						       bt_beg, bt_last, tramp_found,
