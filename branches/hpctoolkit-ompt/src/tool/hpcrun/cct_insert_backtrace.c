@@ -119,7 +119,7 @@ static void
 hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
 {
   int i = 0;
-  frame_t *it, *exit0 = NULL, *reenter1 = NULL;
+  frame_t *it = NULL;
 
   ompt_frame_t *frame0 = hpcrun_ompt_get_task_frame(i);
 
@@ -185,6 +185,7 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
 
   // general case: elide frames between frame1->enter and frame0->exit
   while (true) {
+    frame_t *exit0 = NULL, *reenter1 = NULL;
     ompt_frame_t *frame1;
 
     frame0 = hpcrun_ompt_get_task_frame(i);
