@@ -4,7 +4,7 @@
  *  Created on: Jul 10, 2012
  *      Author: pat2
  */
-#include "LargeByteBuffer.h"
+#include "LargeByteBuffer.hpp"
 #include "sys/stat.h"
 #include <fcntl.h>
 
@@ -18,8 +18,8 @@ using namespace std;
 
 namespace TraceviewerServer
 {
-	static ULong MMPAGE_SIZE; //= 1<<23;//1 << 30;
-	ULong FileSize;
+	static ULong mmPageSize; //= 1<<23;//1 << 30;
+	ULong fileSize;
 	LargeByteBuffer::LargeByteBuffer(string SPath, int HeaderSize)
 	{
 		//string SPath = Path.string();
@@ -27,47 +27,47 @@ namespace TraceviewerServer
 		/*int MapFlags = MAP_PRIVATE;
 		int MapProt = PROT_READ;*/
 
-		struct stat Finfo;
-		stat(SPath.c_str(), &Finfo);
+		struct stat fInfo;
+		stat(SPath.c_str(), &fInfo);
 
-		FileSize = Finfo.st_size;
+		fileSize = fInfo.st_size;
 
-		ULong OSPageSize = getpagesize();
-		ULong PageSizeMultiple = lcm(OSPageSize, HeaderSize);//The page size must be a multiple of this
+		ULong osPageSize = getpagesize();
+		ULong PageSizeMultiple = lcm(osPageSize, HeaderSize);//The page size must be a multiple of this
 
-		ULong RamSizeInBytes = GetRamSize();
+		ULong RamSizeInBytes = getRamSize();
 
 		const ULong _64_MEGABYTE = 1 << 26;
 		//This is a pretty arbitrary algorithm, but it works
-		MMPAGE_SIZE = PageSizeMultiple * (_64_MEGABYTE/OSPageSize);//This means it will get it close to 64 MB
+		mmPageSize = PageSizeMultiple * (_64_MEGABYTE/osPageSize);//This means it will get it close to 64 MB
 
 		double MAX_PORTION_OF_RAM_AVAILABLE = 0.80;//Use up to 80%
-		int MaxPages = (RamSizeInBytes * MAX_PORTION_OF_RAM_AVAILABLE)/MMPAGE_SIZE;
-		VersatileMemoryPage::SetMaxPages(MaxPages);
+		int MaxPages = (RamSizeInBytes * MAX_PORTION_OF_RAM_AVAILABLE)/mmPageSize;
+		VersatileMemoryPage::setMaxPages(MaxPages);
 
 //		if (PAGE_SIZE % mm::mapped_file::alignment() != 0)
 //			cerr<< "PAGE_SIZE isn't a multiple of the OS granularity!!";
 //		long FileSize = fs::file_size(Path);
-		int FullPages = FileSize / MMPAGE_SIZE;
-		int PartialPageSize = FileSize % MMPAGE_SIZE;
-		NumPages = FullPages + (PartialPageSize == 0 ? 0 : 1);
+		int FullPages = fileSize / mmPageSize;
+		int PartialPageSize = fileSize % mmPageSize;
+		numPages = FullPages + (PartialPageSize == 0 ? 0 : 1);
 
 
 		FileDescriptor fd = open(SPath.c_str(), O_RDONLY);
 
-		ULong SizeRemaining = FileSize;
+		ULong SizeRemaining = fileSize;
 
 
 		//MasterBuffer = new mm::mapped_file*[NumPages];
 
-		for (int i = 0; i < NumPages; i++)
+		for (int i = 0; i < numPages; i++)
 		{
-			unsigned long mapping_len = min((ULong) MMPAGE_SIZE, SizeRemaining);
+			unsigned long mapping_len = min((ULong) mmPageSize, SizeRemaining);
 
 			//MasterBuffer[i] = new mm::mapped_file(Path, mm::mapped_file::readonly, PAGE_SIZE, PAGE_SIZE*i);
 			//This is done to make the Blue Gene Q easier
 
-			MasterBuffer.push_back(*(new VersatileMemoryPage(MMPAGE_SIZE*i , mapping_len, i, fd)));
+			masterBuffer.push_back(*(new VersatileMemoryPage(mmPageSize*i , mapping_len, i, fd)));
 
 			//cout << "Allocated a page: " << AllocatedRegion << endl;
 			SizeRemaining -= mapping_len;
@@ -77,20 +77,20 @@ namespace TraceviewerServer
 
 	}
 
-	int LargeByteBuffer::GetInt(ULong pos)
+	int LargeByteBuffer::getInt(ULong pos)
 	{
-		int Page = pos / MMPAGE_SIZE;
-		int loc = pos % MMPAGE_SIZE;
-		char* p2D = MasterBuffer[Page].Get() + loc;
-		int val = ByteUtilities::ReadInt(p2D);
+		int Page = pos / mmPageSize;
+		int loc = pos % mmPageSize;
+		char* p2D = masterBuffer[Page].get() + loc;
+		int val = ByteUtilities::readInt(p2D);
 		return val;
 	}
-	Long LargeByteBuffer::GetLong(ULong pos)
+	Long LargeByteBuffer::getLong(ULong pos)
 	{
-		int Page = pos / MMPAGE_SIZE;
-		int loc = pos % MMPAGE_SIZE;
-		char* p2D = MasterBuffer[Page].Get() + loc;
-		Long val = ByteUtilities::ReadLong(p2D);
+		int Page = pos / mmPageSize;
+		int loc = pos % mmPageSize;
+		char* p2D = masterBuffer[Page].get() + loc;
+		Long val = ByteUtilities::readLong(p2D);
 		return val;
 
 	}
@@ -116,7 +116,7 @@ namespace TraceviewerServer
 		//GCD stored in a
 		return (_a/a)*_b;
 	}
-	ULong LargeByteBuffer::GetRamSize()
+	ULong LargeByteBuffer::getRamSize()
 	{
 #ifdef _SC_PHYS_PAGES
 		long pages = sysconf(_SC_PHYS_PAGES);
@@ -139,13 +139,13 @@ namespace TraceviewerServer
 
 	}
 
-	ULong LargeByteBuffer::Size()
+	ULong LargeByteBuffer::size()
 	{
-		return FileSize;
+		return fileSize;
 	}
 	LargeByteBuffer::~LargeByteBuffer()
 	{
-		MasterBuffer.clear();
+		masterBuffer.clear();
 
 	}
 }

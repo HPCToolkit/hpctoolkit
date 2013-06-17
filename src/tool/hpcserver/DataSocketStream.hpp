@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include "ByteUtilities.h"
+#include "ByteUtilities.hpp"
 
 namespace TraceviewerServer
 {
@@ -21,34 +21,34 @@ namespace TraceviewerServer
 	{
 	public:
 		DataSocketStream(int, bool);
-		void AcceptS();
+		void acceptSocket();
 		DataSocketStream();
 
-		int GetPort();
+		int getPort();
 
 		virtual ~DataSocketStream();
 
-		virtual void WriteInt(int);
-		virtual void WriteLong(Long);
-		virtual void WriteDouble(double);
-		virtual void WriteRawData(char*, int);
-		virtual void WriteString(string);
-		virtual void WriteShort(short);
+		virtual void writeInt(int);
+		virtual void writeLong(Long);
+		virtual void writeDouble(double);
+		virtual void writeRawData(char*, int);
+		virtual void writeString(string);
+		virtual void writeShort(short);
 
-		virtual void Flush();
+		virtual void flush();
 
-		int ReadInt();
-		Long ReadLong();
-		string ReadString();
-		double ReadDouble();
-		short ReadShort();
+		int readInt();
+		Long readLong();
+		string readString();
+		double readDouble();
+		short readShort();
 
-		SocketFD GetDescriptor();
+		SocketFD getDescriptor();
 	private:
-		int Port;
+		int port;
 		SocketFD socketDesc;
 		SocketFD unopenedSocketFD;
-		void CheckForErrors(int);
+		void checkForErrors(int);
 		FILE* file;
 	};
 

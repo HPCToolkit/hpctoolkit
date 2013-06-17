@@ -10,7 +10,7 @@
 #ifndef DATAOUTPUTFILESTREAM_H_
 #define DATAOUTPUTFILESTREAM_H_
 #include <fstream>
-#include "ByteUtilities.h"
+#include "ByteUtilities.hpp"
 namespace TraceviewerServer
 {
 	using namespace std;
@@ -19,8 +19,8 @@ namespace TraceviewerServer
 	public:
 		DataOutputFileStream(const char*, openmode mode = ios_base::binary | ios_base::out);
 		virtual ~DataOutputFileStream();
-		void WriteInt(int);
-		void WriteLong(Long);
+		void writeInt(int);
+		void writeLong(Long);
 	private:
 	};
 

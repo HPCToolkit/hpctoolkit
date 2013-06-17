@@ -18,17 +18,17 @@ namespace TraceviewerServer
 	public:
 		CompressingDataSocketLayer();
 		virtual ~CompressingDataSocketLayer();
-		void WriteInt(int);
-		void WriteLong(Long);
-		void WriteDouble(double);
-		void Flush();
-		unsigned char* GetOutputBuffer();
-		int GetOutputLength();
+		void writeInt(int);
+		void writeLong(Long);
+		void writeDouble(double);
+		void flush();
+		unsigned char* getOutputBuffer();
+		int getOutputLength();
 
 	private:
-		void SoftFlush();
-		int BufferIndex;
-		z_stream Compressor;
+		void softFlush();
+		int bufferIndex;
+		z_stream compressor;
 		char inBuf[BUFFER_SIZE];
 		unsigned char outBuf[BUFFER_SIZE];
 		int posInCompBuffer;

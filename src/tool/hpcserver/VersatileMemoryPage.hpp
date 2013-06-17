@@ -10,7 +10,7 @@
 
 
 #include "sys/mman.h"
-#include "ByteUtilities.h"
+#include "ByteUtilities.hpp"
 
 
 using namespace std;
@@ -23,19 +23,19 @@ namespace TraceviewerServer
 		VersatileMemoryPage();
 		VersatileMemoryPage(ULong, int, int, FileDescriptor);
 		virtual ~VersatileMemoryPage();
-		static void SetMaxPages(int);
-		char* Get();
+		static void setMaxPages(int);
+		char* get();
 	private:
-		void MapPage();
-		void UnmapPage();
-		void PutMeOnTop();
-		ULong StartPoint;
-		int Size;
-		char* Page;
-		int Index;
-		FileDescriptor File;
+		void mapPage();
+		void unmapPage();
+		void putMeOnTop();
+		ULong startPoint;
+		int size;
+		char* page;
+		int index;
+		FileDescriptor file;
 
-		bool IsMapped;
+		bool isMapped;
 
 		static const int MAP_FLAGS = MAP_PRIVATE;
 		static const int MAP_PROT = PROT_READ;

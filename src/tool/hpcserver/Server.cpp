@@ -1,4 +1,3 @@
-//#define UseBoost
 //#define USE_MPI
 /*
  * Server.cpp
@@ -7,47 +6,36 @@
  *      Author: pat2
  */
 
-#include "Server.h"
-#include "SpaceTimeDataControllerLocal.h"
-#include "DataSocketStream.h"
-#include "LocalDBOpener.h"
-#include "Constants.h"
-#include "MPICommunication.h"
-#include "CompressingDataSocketLayer.h"
+#include "Server.hpp"
+#include "DataSocketStream.hpp"
+#include "DBOpener.hpp"
+#include "Constants.hpp"
+#include "MPICommunication.hpp"
+#include "CompressingDataSocketLayer.hpp"
 #include <iostream>
 #include <fstream>
 #include <mpi.h>
 #include "zlib.h"
-//#include "SpaceTimeDataControllerLocal.h"
+//#include "SpaceTimeDataController.hpp"
 
 using namespace std;
 using namespace MPI;
 namespace TraceviewerServer
 {
-	bool Compression = true;
-	int MainPort = DEFAULT_PORT;
-	int XMLPort = 0;
+	bool useCompression = true;
+	int mainPortNumber = DEFAULT_PORT;
+	int xmlPortNumber = 0;
 
-	static SpaceTimeDataControllerLocal* STDCL;
+
 
 	Server::Server()
 	{
-
-	}
-
-	Server::~Server()
-	{
-		delete (STDCL);
-	}
-	int Server::main(int argc, char *argv[])
-	{
-
 		DataSocketStream* socketptr;
 		try
 		{
 //TODO: Change the port to 21591 because 21590 has some other use...
 			//DataSocketStream CLsocket = new DataSocketStream(21590);
-			socketptr = new DataSocketStream(MainPort, true);
+			socketptr = new DataSocketStream(mainPortNumber, true);
 			/*
 			 ip::tcp::socket CLsocket(io_service);
 			 //CLsocket.open(ip::tcp::v4());
@@ -59,64 +47,68 @@ namespace TraceviewerServer
 		} catch (std::exception& e)
 		{
 			std::cerr << e.what() << std::endl;
-			return ERROR_STREAM_OPEN_FAILED;
+			throw ERROR_STREAM_OPEN_FAILED;
 		}
-		MainPort = socketptr->GetPort();
+		mainPortNumber = socketptr->getPort();
 		cout << "Received connection" << endl;
 
 		//vector<char> test(4);
 		//as::read(*socketptr, as::buffer(test));
-		int Command = socketptr->ReadInt();
-		if (Command == OPEN)
+		int command = socketptr->readInt();
+		if (command == OPEN)
 		{
-			while( RunConnection(socketptr)==START_NEW_CONNECTION_IMMEDIATELY)
+			while( runConnection(socketptr)==START_NEW_CONNECTION_IMMEDIATELY)
 				;
 		}
 		else
 		{
-			cerr << "Expected an open command, got " << Command << endl;
-			return ERROR_EXPECTED_OPEN_COMMAND;
+			cerr << "Expected an open command, got " << command << endl;
+			throw ERROR_EXPECTED_OPEN_COMMAND;
 		}
-		return 0;
+	}
+
+	Server::~Server()
+	{
+		delete (controller);
 	}
 
 
-	int Server::RunConnection(DataSocketStream* socketptr)
+	int Server::runConnection(DataSocketStream* socketptr)
 	{
-		ParseOpenDB(socketptr);
+		parseOpenDB(socketptr);
 
-		if (STDCL == NULL)
+		if (controller == NULL)
 		{
 			cout << "Could not open database" << endl;
-			SendDBOpenFailed(socketptr);
+			sendDBOpenFailed(socketptr);
 			return ERROR_DB_OPEN_FAILED;
 		}
 		else
 		{
 			cout << "Database opened" << endl;
-			SendDBOpenedSuccessfully(socketptr);
+			sendDBOpenedSuccessfully(socketptr);
 		}
 
-		int Message = socketptr->ReadInt();
+		int Message = socketptr->readInt();
 		if (Message == INFO)
-			ParseInfo(socketptr);
+			parseInfo(socketptr);
 		else
 			cerr << "Did not receive info packet" << endl;
 
-		bool EndingConnection = false;
-		while (!EndingConnection)
+		bool endConnection = false;
+		while (!endConnection)
 		{
-			int NextCommand = socketptr->ReadInt();
-			switch (NextCommand)
+			int nextCommand = socketptr->readInt();
+			switch (nextCommand)
 			{
 				case DATA:
-					GetAndSendData(socketptr);
+					getAndSendData(socketptr);
 					break;
 				case DONE:
-					EndingConnection = true;
+					endConnection = true;
 					break;
 				case OPEN:
-					EndingConnection = true;
+					endConnection = true;
 					return START_NEW_CONNECTION_IMMEDIATELY;
 				default:
 					cerr << "Unknown command received" << endl;
@@ -126,102 +118,99 @@ namespace TraceviewerServer
 
 		return 0;
 	}
-	void Server::ParseInfo(DataSocketStream* socket)
+	void Server::parseInfo(DataSocketStream* socket)
 	{
 
-		Long minBegTime = socket->ReadLong();
-		Long maxEndTime = socket->ReadLong();
-		int headerSize = socket->ReadInt();
-		STDCL->SetInfo(minBegTime, maxEndTime, headerSize);
+		Long minBegTime = socket->readLong();
+		Long maxEndTime = socket->readLong();
+		int headerSize = socket->readInt();
+		controller->setInfo(minBegTime, maxEndTime, headerSize);
 #ifdef USE_MPI
 		MPICommunication::CommandMessage Info;
-		Info.Command = INFO;
+		Info.command = INFO;
 		Info.minfo.minBegTime = minBegTime;
 		Info.minfo.maxEndTime = maxEndTime;
 		Info.minfo.headerSize = headerSize;
 		COMM_WORLD.Bcast(&Info, sizeof(Info), MPI_PACKED, MPICommunication::SOCKET_SERVER);
 #endif
 	}
-	void Server::SendDBOpenedSuccessfully(DataSocketStream* socket)
+	void Server::sendDBOpenedSuccessfully(DataSocketStream* socket)
 	{
 
-		socket->WriteInt(DBOK);
+		socket->writeInt(DBOK);
 
 		//int port = 2224;
 
 		//socket->WriteInt(port);
-		DataSocketStream* XmlSocket;
-		if (XMLPort == -1)
-			XMLPort = MainPort;
-		int ActualXMLPort = XMLPort;
-		if (XMLPort != MainPort)
+		DataSocketStream* xmlSocket;
+		if (xmlPortNumber == -1)
+			xmlPortNumber = mainPortNumber;
+		int actualXMLPort = xmlPortNumber;
+		if (xmlPortNumber != mainPortNumber)
 		{//On a different port. Create another socket.
-			XmlSocket = new DataSocketStream(XMLPort, false);
-			ActualXMLPort = XmlSocket->GetPort();//Could be different if XMLPort is 0
+			xmlSocket = new DataSocketStream(xmlPortNumber, false);
+			actualXMLPort = xmlSocket->getPort();//Could be different if XMLPort is 0
 		}
 		else
 		{
 			//Same port, simply use this socket
-			XmlSocket = socket;
+			xmlSocket = socket;
 		}
-		socket->WriteInt(ActualXMLPort);
+		socket->writeInt(actualXMLPort);
 
-		int NumFiles = STDCL->GetHeight();
-		socket->WriteInt(NumFiles);
+		int numFiles = controller->getNumRanks();
+		socket->writeInt(numFiles);
 
-		int CompressionType; //This is an int so that it is possible to have different compression algorithms in the future. For now, it is just 0=no compression, 1= normal compression
-		CompressionType = Compression ? 1 : 0;
-		socket->WriteInt(CompressionType);
+		int compressionType; //This is an int so that it is possible to have different compression algorithms in the future. For now, it is just 0=no compression, 1= normal compression
+		compressionType = useCompression ? 1 : 0;
+		socket->writeInt(compressionType);
 
 		//Send ValuesX
-		int* ValuesXPI = STDCL->GetValuesXProcessID();
-		short* ValuesXTI = STDCL->GetValuesXThreadID();
-		for (int i = 0; i < NumFiles; i++)
+		int* rankProcessIds = controller->getValuesXProcessID();
+		short* rankThreadIds = controller->getValuesXThreadID();
+		for (int i = 0; i < numFiles; i++)
 		{
-			socket->WriteInt(ValuesXPI[i]);
-			socket->WriteShort(ValuesXTI[i]);
+			socket->writeInt(rankProcessIds[i]);
+			socket->writeShort(rankThreadIds[i]);
 		}
 
-		socket->Flush();
+		socket->flush();
 
-		cout << "Waiting to send XML on port " << ActualXMLPort << ". Num traces was "
-				<< STDCL->GetHeight() << endl;
-		if (ActualXMLPort != MainPort)
+		cout << "Waiting to send XML on port " << actualXMLPort << endl;
+		if (actualXMLPort != mainPortNumber)
 		{
-			XmlSocket->AcceptS();
+			xmlSocket->acceptSocket();
 		}
 		else
 		{
-			XmlSocket->WriteInt(EXML);
+			xmlSocket->writeInt(EXML);
 		}
-		vector<char> CompressedXML = CompressXML();
-		XmlSocket->WriteInt(CompressedXML.size());
-		XmlSocket->WriteRawData(&CompressedXML[0], CompressedXML.size());
-		XmlSocket->Flush();
+		vector<char> compressedXML = compressXML();
+		xmlSocket->writeInt(compressedXML.size());
+		xmlSocket->writeRawData(&compressedXML[0], compressedXML.size());
+		xmlSocket->flush();
 		cout << "XML Sent" << endl;
-		if(ActualXMLPort != MainPort)
-			delete (XmlSocket);
+		if(actualXMLPort != mainPortNumber)
+			delete (xmlSocket);
 	}
 
-	vector<char> Server::CompressXML()
+	vector<char> Server::compressXML()
 	{
-		vector<char> Compressed;
+		vector<char> compressed;
 
-		FILE* in = fopen(STDCL->GetExperimentXML().c_str(), "r");
+		FILE* in = fopen(controller->getExperimentXML().c_str(), "r");
 		//From http://zlib.net/zpipe.c with some editing
-		z_stream Compressor;
-		Compressor.zalloc = Z_NULL;
-		Compressor.zfree = Z_NULL;
-		Compressor.opaque = Z_NULL;
-		//int ret = deflateInit(&Compressor, -1);
+		z_stream compressor;
+		compressor.zalloc = Z_NULL;
+		compressor.zfree = Z_NULL;
+		compressor.opaque = Z_NULL;
+		//int ret = deflateInit(&compressor, -1);
 		//This makes a gzip stream with a window of 15 bits
-		int ret = deflateInit2(&Compressor, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 16+15, 8, Z_DEFAULT_STRATEGY);
+		int ret = deflateInit2(&compressor, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 16+15, 8, Z_DEFAULT_STRATEGY);
 		if (ret != Z_OK)
 			throw ret;
 
-		//int size = TraceviewerServer::FileUtils::GetFileSize(STDCL->GetExperimentXML());
-
-#define CHUNK 0x4000
+		#define CHUNK 0x4000
 
 		unsigned char InBuffer[CHUNK];
 		unsigned char OutBuffer[CHUNK];
@@ -229,61 +218,58 @@ namespace TraceviewerServer
 		int amtprocessed =0;
 		int compramt;
 		do {
-			Compressor.avail_in = fread(InBuffer, 1, CHUNK, in);
-			amtprocessed += Compressor.avail_in;
+			compressor.avail_in = fread(InBuffer, 1, CHUNK, in);
+			amtprocessed += compressor.avail_in;
 			//cout<<"Processed " << amtprocessed << " / " <<size<<endl;
 			if (ferror(in)) {
 				cerr<<"Error"<<endl;
-				(void)deflateEnd(&Compressor);
+				(void)deflateEnd(&compressor);
 				throw Z_ERRNO;
 			}
 			flush = feof(in) ? Z_FINISH : Z_NO_FLUSH;
 
-			Compressor.next_in = InBuffer;
+			compressor.next_in = InBuffer;
 			int have;
 			/* run deflate() on input until output buffer not full, finish
 		           compression if all of source has been read in */
 			do {
-				Compressor.avail_out = CHUNK;
-				Compressor.next_out = OutBuffer;
-				ret = deflate(&Compressor, flush);    /* no bad return value */
-				if (ret == Z_STREAM_ERROR) throw -33445;  /* state not clobbered */
-				have = CHUNK - Compressor.avail_out;
+				compressor.avail_out = CHUNK;
+				compressor.next_out = OutBuffer;
+				ret = deflate(&compressor, flush);    /* no bad return value */
+				if (ret == Z_STREAM_ERROR) throw ERROR_COMPRESSION_FAILED;  /* state not clobbered */
+				have = CHUNK - compressor.avail_out;
 				compramt += have;
 				//cout<<"Writing "<<have<< " compressed bytes. Length of compressed file so far is "<< compramt<<endl;
-				Compressed.insert(Compressed.end(), OutBuffer, OutBuffer+have);
-			} while (Compressor.avail_out == 0);
+				compressed.insert(compressed.end(), OutBuffer, OutBuffer+have);
+			} while (compressor.avail_out == 0);
 
 
 			/* done when last data in file processed */
 		} while (flush != Z_FINISH);
-		deflateEnd(&Compressor);
-		cout<<"Compressed XML Size: "<<Compressed.size()<<endl;
-		return Compressed;
+		deflateEnd(&compressor);
+		cout<<"Compressed XML Size: "<<compressed.size()<<endl;
+		return compressed;
 	}
 
-	void Server::ParseOpenDB(DataSocketStream* receiver)
+	void Server::parseOpenDB(DataSocketStream* receiver)
 	{
 
-		if (false) //(!receiver->is_open())
-			cout << "Socket not open!" << endl;
-
-		string PathToDB = receiver->ReadString();
-		LocalDBOpener DBO;
-		cout << "Opening database: " << PathToDB << endl;
-		STDCL = DBO.OpenDbAndCreateSTDC(PathToDB);
+		string pathToDB = receiver->readString();
+		DBOpener DBO;
+		cout << "Opening database: " << pathToDB << endl;
+		controller = DBO.openDbAndCreateStdc(pathToDB);
 #ifdef USE_MPI
-		if (STDCL != NULL)
+		if (controller != NULL)
 		{
 		MPICommunication::CommandMessage cmdPathToDB;
-		cmdPathToDB.Command = OPEN;
-		if (PathToDB.length() > MAX_DB_PATH_LENGTH)
+		cmdPathToDB.command = OPEN;
+		if (pathToDB.length() > MAX_DB_PATH_LENGTH)
 		{
 			cerr << "Path too long" << endl;
 			throw ERROR_PATH_TOO_LONG;
 		}
-		copy(PathToDB.begin(), PathToDB.end(), cmdPathToDB.ofile.Path);
-		cmdPathToDB.ofile.Path[PathToDB.size()] = '\0';
+		copy(pathToDB.begin(), pathToDB.end(), cmdPathToDB.ofile.path);
+		cmdPathToDB.ofile.path[pathToDB.size()] = '\0';
 
 		COMM_WORLD.Bcast(&cmdPathToDB, sizeof(cmdPathToDB), MPI_PACKED,
 				MPICommunication::SOCKET_SERVER);
@@ -293,24 +279,24 @@ namespace TraceviewerServer
 
 	}
 
-	void Server::SendDBOpenFailed(DataSocketStream* socket)
+	void Server::sendDBOpenFailed(DataSocketStream* socket)
 	{
-		socket->WriteInt(NODB);
-		socket->WriteInt(0);
-		socket->Flush();
+		socket->writeInt(NODB);
+		socket->writeInt(0);
+		socket->flush();
 	}
 
 #define ISN(g) (g<0)
 
-	void Server::GetAndSendData(DataSocketStream* Stream)
+	void Server::getAndSendData(DataSocketStream* Stream)
 	{
 
-		int processStart = Stream->ReadInt();
-		int processEnd = Stream->ReadInt();
-		double timeStart = Stream->ReadDouble();
-		double timeEnd = Stream->ReadDouble();
-		int verticalResolution = Stream->ReadInt();
-		int horizontalResolution = Stream->ReadInt();
+		int processStart = Stream->readInt();
+		int processEnd = Stream->readInt();
+		double timeStart = Stream->readDouble();
+		double timeEnd = Stream->readDouble();
+		int verticalResolution = Stream->readInt();
+		int horizontalResolution = Stream->readInt();
 		cout << "Time end: " << timeEnd <<endl;
 
 		if (ISN(processStart) || ISN(processEnd) || (processStart > processEnd)
@@ -326,7 +312,7 @@ namespace TraceviewerServer
 #ifdef USE_MPI
 
 		MPICommunication::CommandMessage toBcast;
-		toBcast.Command = DATA;
+		toBcast.command = DATA;
 		toBcast.gdata.processStart = processStart;
 		toBcast.gdata.processEnd = processEnd;
 		toBcast.gdata.timeStart = timeStart;
@@ -348,16 +334,16 @@ namespace TraceviewerServer
 		correspondingAttributes.begTime = (long) timeStart;
 		correspondingAttributes.endTime = (long) timeEnd;
 		correspondingAttributes.lineNum = 0;
-		STDCL->Attributes = &correspondingAttributes;
+		controller->Attributes = &correspondingAttributes;
 
 		// TODO: Make this so that the Lines get sent as soon as they are
 		// filled.
 
-		STDCL->FillTraces(-1, true);
+		controller->FillTraces(-1, true);
 #endif
 
-		Stream->WriteInt(HERE);
-		Stream->Flush();
+		Stream->writeInt(HERE);
+		Stream->flush();
 
 
 		/*#define stWr(type,val) CompL.Write##type((val))
@@ -373,44 +359,44 @@ namespace TraceviewerServer
 		{
 			MPICommunication::ResultMessage msg;
 			COMM_WORLD.Recv(&msg, sizeof(msg), MPI_PACKED, MPI_ANY_SOURCE, MPI_ANY_TAG);
-			if (msg.Tag == SLAVE_REPLY)
+			if (msg.tag == SLAVE_REPLY)
 			{
 
 				//Stream->WriteInt(msg.Data.Line);
-				Stream->WriteInt(msg.Data.Line);
-				Stream->WriteInt(msg.Data.Entries);
-				Stream->WriteDouble(msg.Data.Begtime); // Begin time
-				Stream->WriteDouble(msg.Data.Endtime); //End time
-				Stream->WriteInt(msg.Data.CompressedSize);
+				Stream->writeInt(msg.data.line);
+				Stream->writeInt(msg.data.entries);
+				Stream->writeDouble(msg.data.begtime); // Begin time
+				Stream->writeDouble(msg.data.endtime); //End time
+				Stream->writeInt(msg.data.compressedSize);
 
-				char CompressedTraceLine[msg.Data.CompressedSize];
-				COMM_WORLD.Recv(CompressedTraceLine, msg.Data.CompressedSize, MPI_BYTE, msg.Data.RankID,
+				char CompressedTraceLine[msg.data.compressedSize];
+				COMM_WORLD.Recv(CompressedTraceLine, msg.data.compressedSize, MPI_BYTE, msg.data.rankID,
 						MPI_ANY_TAG);
 
-				Stream->WriteRawData(CompressedTraceLine, msg.Data.CompressedSize);
+				Stream->writeRawData(CompressedTraceLine, msg.data.compressedSize);
 
 				//delete(&msg);
-				Stream->Flush();
+				Stream->flush();
 			}
-			else if (msg.Tag == SLAVE_DONE)
+			else if (msg.tag == SLAVE_DONE)
 			{
-				cout << "Rank " << msg.Done.RankID << " done" << endl;
+				cout << "Rank " << msg.done.rankID << " done" << endl;
 				RanksDone++;
 			}
 		}
 
 
 #else
-		for (int i = 0; i < STDCL->TracesLength; i++)
+		for (int i = 0; i < controller->TracesLength; i++)
 		{
 
-			ProcessTimeline* T = STDCL->Traces[i];
-			Stream->WriteInt( T->Line());
-			vector<TimeCPID> data = T->Data->ListCPID;
-			Stream->WriteInt( data.size());
-			Stream->WriteDouble( data[0].Timestamp);
+			ProcessTimeline* T = controller->Traces[i];
+			Stream->writeInt( T->line());
+			vector<TimeCPID> data = T->data->ListCPID;
+			Stream->writeInt( data.size());
+			Stream->writeDouble( data[0].Timestamp);
 			// Begin time
-			Stream->WriteDouble( data[data.size() - 1].Timestamp);
+			Stream->writeDouble( data[data.size() - 1].Timestamp);
 			//End time
 			CompressingDataSocketLayer Compr;
 
@@ -420,19 +406,19 @@ namespace TraceviewerServer
 			double currentTime = data[0].Timestamp;
 			for (it = data.begin(); it != data.end(); ++it)
 			{
-				Compr.WriteInt( (int)(it->Timestamp - currentTime));
-				Compr.WriteInt( it->CPID);
+				Compr.writeInt( (int)(it->Timestamp - currentTime));
+				Compr.writeInt( it->CPID);
 				currentTime = it->Timestamp;
 			}
-			Compr.Flush();
+			Compr.flush();
 			int OutputBufferLen = Compr.GetOutputLength();
 			char* OutputBuffer = (char*)Compr.GetOutputBuffer();
 
-			Stream->WriteInt(OutputBufferLen);
+			Stream->writeInt(OutputBufferLen);
 
-			Stream->WriteRawData(OutputBuffer, OutputBufferLen);
+			Stream->writeRawData(OutputBuffer, OutputBufferLen);
 		}
-		Stream->Flush();
+		Stream->flush();
 #endif
 		cout << "Data sent" << endl;
 	}

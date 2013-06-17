@@ -3,12 +3,12 @@
 #include <map>
 
 #include "mpi.h"
-#include "FileUtils.h"
-#include "Server.h"
-#include "Slave.h"
-#include "MPICommunication.h"
+#include "FileUtils.hpp"
+#include "Server.hpp"
+#include "Slave.hpp"
+#include "MPICommunication.hpp"
 #include "zlib.h"
-#include "Constants.h"
+#include "Constants.hpp"
 
 
 using namespace std;
@@ -33,15 +33,15 @@ int main(int argc, char *argv[])
 	{
 		try
 		{
-			TraceviewerServer::Server::main(argc, argv);
+			TraceviewerServer::Server();
 		}
 		catch (int e)
 		{
-
+			cout<<"Fatal error in server." <<endl;
 		}
 		cout<<"Server done, closing..."<<endl;
 		TraceviewerServer::MPICommunication::CommandMessage serverShutdown;
-		serverShutdown.Command = DONE;
+		serverShutdown.command = DONE;
 		COMM_WORLD.Bcast(&serverShutdown, sizeof(serverShutdown), MPI_PACKED,
 				TraceviewerServer::MPICommunication::SOCKET_SERVER);
 	}
@@ -106,7 +106,7 @@ bool ParseCommandLineArgs(int argc, char *argv[])
 	const Map::value_type vals[] =
 	{
 	make_pair( "", null),
-	make_pair( "-h", help ),
+	make_pair( ".hpp", help ),
 	make_pair( "-help", help ),
 	make_pair( "--help", help ),
 	make_pair( "--Help", help ),
@@ -148,12 +148,12 @@ bool ParseCommandLineArgs(int argc, char *argv[])
 					CLoption OnOrOff = Parser.find(argv[c+1])->second;
 					if (OnOrOff == yes)
 					{
-						TraceviewerServer::Compression = true;
+						TraceviewerServer::useCompression = true;
 						break;
 					}
 					else if (OnOrOff == no)
 					{
-						TraceviewerServer::Compression = false;
+						TraceviewerServer::useCompression = false;
 						break;
 					}
 					else
@@ -186,7 +186,7 @@ bool ParseCommandLineArgs(int argc, char *argv[])
 					else
 					{
 
-						TraceviewerServer::MainPort = val;
+						TraceviewerServer::mainPortNumber = val;
 						break;
 					}
 				}
@@ -207,7 +207,7 @@ bool ParseCommandLineArgs(int argc, char *argv[])
 					}
 					else
 					{
-						TraceviewerServer::XMLPort = val;
+						TraceviewerServer::xmlPortNumber = val;
 						break;
 					}
 				}

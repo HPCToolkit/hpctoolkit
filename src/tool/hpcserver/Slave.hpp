@@ -8,8 +8,8 @@
 #ifndef SLAVE_H_
 #define SLAVE_H_
 
-#include "SpaceTimeDataControllerLocal.h"
-#include "MPICommunication.h"
+#include "SpaceTimeDataController.hpp"
+#include "MPICommunication.hpp"
 namespace TraceviewerServer
 {
 
@@ -19,12 +19,12 @@ namespace TraceviewerServer
 
 		Slave();
 		virtual ~Slave();
-		void RunLoop();
+		void run();
 
 	private:
-		SpaceTimeDataControllerLocal* STDCL;
-		int GetData(MPICommunication::CommandMessage*);
-		bool STDCLNeedsDeleting;
+		SpaceTimeDataController* controller;
+		int getData(MPICommunication::CommandMessage*);
+		bool controllerNeedsDeleting;
 	};
 
 } /* namespace TraceviewerServer */

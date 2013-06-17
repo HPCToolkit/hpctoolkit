@@ -5,10 +5,10 @@
  *      Author: pat2
  */
 
-#include "MergeDataFiles.h"
-#include "ByteUtilities.h"
-#include "Constants.h"
-#include "FileUtils.h"
+#include "MergeDataFiles.hpp"
+#include "ByteUtilities.hpp"
+#include "Constants.hpp"
+#include "FileUtils.hpp"
 #include <iostream>
 #include <algorithm>
 #include <iterator>
@@ -17,18 +17,18 @@ using namespace std;
 typedef int64_t Long;
 namespace TraceviewerServer
 {
-	MergeDataAttribute MergeDataFiles::merge(string Directory, string GlobInputFile,
-			string OutputFile)
+	MergeDataAttribute MergeDataFiles::merge(string directory, string globInputFile,
+			string outputFile)
 	{
-		 int Last_dot = GlobInputFile.find_last_of('.');
-		 string Suffix = GlobInputFile.substr(Last_dot);
+		 int lastDot = globInputFile.find_last_of('.');
+		 string suffix = globInputFile.substr(lastDot);
 
-		cout << "Checking to see if " << OutputFile << " exists" << endl;
+		cout << "Checking to see if " << outputFile << " exists" << endl;
 
-		if (FileUtils::Exists(OutputFile))
+		if (FileUtils::exists(outputFile))
 		{
 			cout << "Exists" << endl;
-			if (IsMergedFileCorrect(&OutputFile))
+			if (isMergedFileCorrect(&outputFile))
 				return SUCCESS_ALREADY_CREATED;
 			// the file exists but corrupted. In this case, we have to remove and create a new one
 			cout << "Database file may be corrupted. Continuing" << endl;
@@ -38,12 +38,12 @@ namespace TraceviewerServer
 		cout << "Doesn't exist" << endl;
 		// check if the files in glob patterns is correct
 
-		if (!AtLeastOneValidFile(Directory))
+		if (!atLeastOneValidFile(directory))
 		{
 			return FAIL_NO_DATA;
 		}
 
-		DataOutputFileStream dos(OutputFile.c_str());
+		DataOutputFileStream dos(outputFile.c_str());
 
 		//-----------------------------------------------------
 		// 1. write the header:
@@ -52,24 +52,24 @@ namespace TraceviewerServer
 		//-----------------------------------------------------
 
 		int type = 0;
-		dos.WriteInt(type);
+		dos.writeInt(type);
 
-		vector<string> AllPaths = FileUtils::GetAllFilesInDir(Directory);
-		vector<string> Filtered;
+		vector<string> allPaths = FileUtils::getAllFilesInDir(directory);
+		vector<string> filtered;
 		vector<string>::iterator it;
-		for (it = AllPaths.begin(); it != AllPaths.end(); it++)
+		for (it = allPaths.begin(); it != allPaths.end(); it++)
 		{
 			string val = *it;
 			if (val.find(".hpctrace") < string::npos)//This is hardcoded, which isn't great but will have to do because GlobInputFile is regex-style ("*.hpctrace")
-				Filtered.push_back(val);
+				filtered.push_back(val);
 		}
 		// on linux, we have to sort the files
 		//To sort them, we need a random access iterator, which means we need to load all of them into a vector
-		sort(Filtered.begin(), Filtered.end());
+		sort(filtered.begin(), filtered.end());
 
-		dos.WriteInt(Filtered.size());
+		dos.writeInt(filtered.size());
 		const Long num_metric_header = 2 * SIZEOF_INT; // type of app (4 bytes) + num procs (4 bytes)
-		 Long num_metric_index = Filtered.size()
+		 Long num_metric_index = filtered.size()
 				* (SIZEOF_LONG + 2 * SIZEOF_INT);
 		Long offset = num_metric_header + num_metric_index;
 
@@ -82,17 +82,17 @@ namespace TraceviewerServer
 		//		int proc-id, int thread-id, long offset
 		//-----------------------------------------------------
 		vector<string>::iterator it2;
-		for (it2 = Filtered.begin(); it2 < Filtered.end(); it2++)
+		for (it2 = filtered.begin(); it2 < filtered.end(); it2++)
 		{
 
 			 string Filename = *it2;
-			 int last_pos_basic_name = Filename.length() - Suffix.length();
-			 string Basic_name = Filename.substr(FileUtils::CombinePaths(Directory, "").length(),//This ensures we count the "/" at the end of the path
+			 int last_pos_basic_name = Filename.length() - suffix.length();
+			 string Basic_name = Filename.substr(FileUtils::combinePaths(directory, "").length(),//This ensures we count the "/" at the end of the path
 					last_pos_basic_name);
 			cout << "Path manipulation check: The file in " << Filename << " is "
 					<< Basic_name << endl;
 
-			vector<string> tokens = SplitString(Basic_name, '-');
+			vector<string> tokens = splitString(Basic_name, '-');
 
 
 			 int num_tokens = tokens.size();
@@ -102,27 +102,27 @@ namespace TraceviewerServer
 			int proc;
 			string Token_To_Parse = tokens[name_format + num_tokens - PROC_POS];
 			proc = atoi(Token_To_Parse.c_str());
-			if ((proc == 0) && (!StringActuallyZero(Token_To_Parse))) //catch (NumberFormatException e)
+			if ((proc == 0) && (!stringActuallyZero(Token_To_Parse))) //catch (NumberFormatException e)
 			{
 				// old version of name format
 				name_format = 1;
 				string Token_To_Parse = tokens[name_format + num_tokens - PROC_POS];
 				proc = atoi(Token_To_Parse.c_str());
 			}
-			dos.WriteInt(proc);
+			dos.writeInt(proc);
 			if (proc != 0)
 				type |= MULTI_PROCESSES;
 			 int Thread = atoi(tokens[name_format + num_tokens - THREAD_POS].c_str());
-			dos.WriteInt(Thread);
+			dos.writeInt(Thread);
 			if (Thread != 0)
 				type |= MULTI_THREADING;
-			dos.WriteLong(offset);
-			offset += FileUtils::GetFileSize(Filename);
+			dos.writeLong(offset);
+			offset += FileUtils::getFileSize(Filename);
 		}
 		//-----------------------------------------------------
 		// 3. Copy all data from the multiple files into one file
 		//-----------------------------------------------------
-		for (it2 = Filtered.begin(); it2 < Filtered.end(); it2++)
+		for (it2 = filtered.begin(); it2 < filtered.end(); it2++)
 		{
 			string i = *it2;
 
@@ -138,7 +138,7 @@ namespace TraceviewerServer
 			}
 			dis.close();
 		}
-		InsertMarker(&dos);
+		insertMarker(&dos);
 		dos.close();
 		//-----------------------------------------------------
 		// 4. FIXME: write the type of the application
@@ -146,18 +146,18 @@ namespace TraceviewerServer
 		//		Ideally, this step has to be in the beginning !
 		//-----------------------------------------------------
 		//While we don't actually want to do any input operations, adding the input flag prevents the file from being truncated to 0 bytes
-		DataOutputFileStream f(OutputFile.c_str(), ios_base::in | ios_base::out | ios_base::binary);
-		f.WriteInt(type);
+		DataOutputFileStream f(outputFile.c_str(), ios_base::in | ios_base::out | ios_base::binary);
+		f.writeInt(type);
 		f.close();
 
 		//-----------------------------------------------------
 		// 5. remove old files
 		//-----------------------------------------------------
-		RemoveFiles(Filtered);
+		removeFiles(filtered);
 		return SUCCESS_MERGED;
 	}
 
-	bool MergeDataFiles::StringActuallyZero(string ToTest)
+	bool MergeDataFiles::stringActuallyZero(string ToTest)
 	{
 		for (int var = 0; var < ToTest.length(); var++)
 		{
@@ -167,22 +167,22 @@ namespace TraceviewerServer
 		return true;
 	}
 
-	void MergeDataFiles::InsertMarker(DataOutputFileStream* dos)
+	void MergeDataFiles::insertMarker(DataOutputFileStream* dos)
 	{
-		dos->WriteLong(MARKER_END_MERGED_FILE);
+		dos->writeLong(MARKER_END_MERGED_FILE);
 	}
-	bool MergeDataFiles::IsMergedFileCorrect(string* filename)
+	bool MergeDataFiles::isMergedFileCorrect(string* filename)
 	{
 		ifstream f(filename->c_str(), ios_base::binary | ios_base::in);
 		bool IsCorrect = false;
-		 Long pos = FileUtils::GetFileSize(*filename) - SIZEOF_LONG;
+		 Long pos = FileUtils::getFileSize(*filename) - SIZEOF_LONG;
 		int diff;
 		if (pos > 0)
 		{
 			f.seekg(pos, ios_base::beg);
 			char buffer[8];
 			f.read(buffer, 8);
-			 ULong Marker = ByteUtilities::ReadLong(buffer);
+			 ULong Marker = ByteUtilities::readLong(buffer);
 			//No idea why this doesn't work:
 			//IsCorrect = ((Marker) == MARKER_END_MERGED_FILE);
 
@@ -192,7 +192,7 @@ namespace TraceviewerServer
 		f.close();
 		return IsCorrect;
 	}
-	bool MergeDataFiles::RemoveFiles(vector<string> vect)
+	bool MergeDataFiles::removeFiles(vector<string> vect)
 	{
 		bool success = true;
 		vector<string>::iterator it;
@@ -203,9 +203,9 @@ namespace TraceviewerServer
 		}
 		return success;
 	}
-	bool MergeDataFiles::AtLeastOneValidFile(string dir)
+	bool MergeDataFiles::atLeastOneValidFile(string dir)
 	{
-		vector<string> FileList = FileUtils::GetAllFilesInDir(dir);
+		vector<string> FileList = FileUtils::getAllFilesInDir(dir);
 		vector<string>::iterator it;
 		for (it = FileList.begin(); it != FileList.end(); ++it)
 		{
@@ -225,7 +225,7 @@ namespace TraceviewerServer
 		}
 		return false;
 	}
-	vector<string> MergeDataFiles::SplitString(string toSplit, char delimiter)
+	vector<string> MergeDataFiles::splitString(string toSplit, char delimiter)
 	{
 		vector<string> ToReturn;
 		int CurrentStartPos = 0;

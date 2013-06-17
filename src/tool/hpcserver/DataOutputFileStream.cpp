@@ -5,7 +5,7 @@
  *      Author: pat2
  */
 
-#include "DataOutputFileStream.h"
+#include "DataOutputFileStream.hpp"
 
 using namespace std;
 namespace TraceviewerServer
@@ -22,17 +22,17 @@ namespace TraceviewerServer
 	{
 
 	}
-	void DataOutputFileStream::WriteInt(int toWrite)
+	void DataOutputFileStream::writeInt(int toWrite)
 	{
 
 		char arrayform[4];
-		ByteUtilities::WriteInt(arrayform, toWrite);
+		ByteUtilities::writeInt(arrayform, toWrite);
 		write(arrayform, 4);
 	}
-	void DataOutputFileStream::WriteLong(Long toWrite)
+	void DataOutputFileStream::writeLong(Long toWrite)
 	{
 		char arrayform[8];
-		ByteUtilities::WriteLong(arrayform, toWrite);
+		ByteUtilities::writeLong(arrayform, toWrite);
 		write(arrayform, 8);
 	}
 

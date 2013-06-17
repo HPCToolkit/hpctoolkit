@@ -8,9 +8,9 @@
 #ifndef LARGEBYTEBUFFER_H_
 #define LARGEBYTEBUFFER_H_
 
-#include "ByteUtilities.h"
+#include "ByteUtilities.hpp"
 #include <string>
-#include "VersatileMemoryPage.h"
+#include "VersatileMemoryPage.hpp"
 #include <vector>
 
 
@@ -22,15 +22,15 @@ namespace TraceviewerServer
 	public:
 		LargeByteBuffer(std::string, int);
 		virtual ~LargeByteBuffer();
-		ULong Size();
-		Long GetLong(ULong);
-		int GetInt(ULong);
+		ULong size();
+		Long getLong(ULong);
+		int getInt(ULong);
 	private:
 		static ULong lcm(ULong, ULong);
-		static ULong GetRamSize();
-		vector<VersatileMemoryPage> MasterBuffer;
-		ULong Length;
-		int NumPages;
+		static ULong getRamSize();
+		vector<VersatileMemoryPage> masterBuffer;
+		ULong length;
+		int numPages;
 
 	};
 

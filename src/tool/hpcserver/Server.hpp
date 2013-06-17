@@ -13,14 +13,15 @@
 #endif
 
 #include <vector>
-#include "DataSocketStream.h"
+#include "DataSocketStream.hpp"
+#include "SpaceTimeDataController.hpp"
 
 #define START_NEW_CONNECTION_IMMEDIATELY 1
 namespace TraceviewerServer
 {
-	extern bool Compression;
-	extern int MainPort;
-	extern int XMLPort;
+	extern bool useCompression;
+	extern int mainPortNumber;
+	extern int xmlPortNumber;
 	class Server
 	{
 
@@ -30,13 +31,15 @@ namespace TraceviewerServer
 		static int main(int argc, char *argv[]);
 
 	private:
-		static int RunConnection(DataSocketStream*);
-		static void ParseInfo(DataSocketStream*);
-		static void SendDBOpenedSuccessfully(DataSocketStream*);
-		static void ParseOpenDB(DataSocketStream*);
-		static void GetAndSendData(DataSocketStream*);
-		static vector<char> CompressXML();
-		static void SendDBOpenFailed(DataSocketStream*);
+		int runConnection(DataSocketStream*);
+		void parseInfo(DataSocketStream*);
+		void sendDBOpenedSuccessfully(DataSocketStream*);
+		void parseOpenDB(DataSocketStream*);
+		void getAndSendData(DataSocketStream*);
+		vector<char> compressXML();
+		void sendDBOpenFailed(DataSocketStream*);
+
+		SpaceTimeDataController* controller;
 
 	};
 }/* namespace TraceviewerServer */

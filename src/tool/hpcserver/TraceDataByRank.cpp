@@ -1,61 +1,59 @@
 /*
- * TraceDataByRankLocal.cpp
+ * TraceDataByRank.cpp
  *
  *  Created on: Jul 9, 2012
  *      Author: pat2
  */
 
-#include "TraceDataByRankLocal.h"
+#include "TraceDataByRank.hpp"
 #include <cmath>
-#include "Constants.h"
+#include "Constants.hpp"
 #include <iostream>
 
 namespace TraceviewerServer
 {
 
-	TraceDataByRankLocal::TraceDataByRankLocal(BaseDataFile* data, int rank,
-			int numPixelH, int header_size)
+	TraceDataByRank::TraceDataByRank(BaseDataFile* _data, int _rank,
+			int _numPixelH, int _headerSize)
 	{
-		Data = data;
-		Rank = rank;
-		Long* Offsets = Data->getOffsets();
-		Minloc = Offsets[Rank] + header_size;
-		Maxloc = (
-				(Rank + 1 < Data->getNumberOfFiles()) ?
-						Offsets[Rank + 1] : data->getMasterBuffer()->Size() - 1)
+		data = _data;
+		rank = _rank;
+		Long* offsets = data->getOffsets();
+		minloc = offsets[rank] + _headerSize;
+		maxloc = (
+				(rank + 1 < data->getNumberOfFiles()) ?
+						offsets[rank + 1] : _data->getMasterBuffer()->size() - 1)
 				- SIZE_OF_TRACE_RECORD;
-if (Maxloc< Minloc)
-cerr<<"Maxloc is smaller than Minloc!! Maxloc= "<<Maxloc << " Minloc= " << Minloc << " Rank: " << Rank << " Num files= " << Data->getNumberOfFiles() << "MastB size=" << Data->getMasterBuffer()->Size()<<endl; 
-		NumPixelsH = numPixelH;
+		numPixelsH = _numPixelH;
 
 		
-		ListCPID = new vector<TimeCPID>();
+		listCPID = new vector<TimeCPID>();
 
 	}
-	void TraceDataByRankLocal::GetData(double timeStart, double timeRange,
+	void TraceDataByRank::getData(double timeStart, double timeRange,
 			double pixelLength)
 	{
 		// get the start location
-		 Long startLoc = FindTimeInInterval(timeStart, Minloc, Maxloc);
+		 Long startLoc = findTimeInInterval(timeStart, minloc, maxloc);
 
 		// get the end location
 		 double endTime = timeStart + timeRange;
 		 Long endLoc = min(
-				FindTimeInInterval(endTime, Minloc, Maxloc) + SIZE_OF_TRACE_RECORD, Maxloc);
+				findTimeInInterval(endTime, minloc, maxloc) + SIZE_OF_TRACE_RECORD, maxloc);
 
 		// get the number of records data to display
-		 Long numRec = 1 + GetNumberOfRecords(startLoc, endLoc);
+		 Long numRec = 1 + getNumberOfRecords(startLoc, endLoc);
 
 		// --------------------------------------------------------------------------------------------------
 		// if the data-to-display is fit in the display zone, we don't need to use recursive binary search
 		//	we just simply display everything from the file
 		// --------------------------------------------------------------------------------------------------
-		if (numRec <= NumPixelsH)
+		if (numRec <= numPixelsH)
 		{
 			// display all the records
 			for (Long i = startLoc; i <= endLoc;)
 			{
-				ListCPID->push_back(GetData(i));
+				listCPID->push_back(getData(i));
 				// one record of data contains of an integer (cpid) and a long (time)
 				i = i + SIZE_OF_TRACE_RECORD;
 			}
@@ -65,26 +63,26 @@ cerr<<"Maxloc is smaller than Minloc!! Maxloc= "<<Maxloc << " Minloc= " << Minlo
 			// the data is too big: try to fit the "big" data into the display
 
 			//fills in the rest of the data for this process timeline
-			SampleTimeLine(startLoc, endLoc, 0, NumPixelsH, 0, pixelLength, timeStart);
+			sampleTimeLine(startLoc, endLoc, 0, numPixelsH, 0, pixelLength, timeStart);
 		}
 		// --------------------------------------------------------------------------------------------------
 		// get the last data if necessary: the rightmost time is still less then the upper limit
 		// 	I think we can add the rightmost data into the list of samples
 		// --------------------------------------------------------------------------------------------------
-		if (endLoc < Maxloc)
+		if (endLoc < maxloc)
 		{
-			 TimeCPID dataLast = GetData(endLoc);
-			AddSample(ListCPID->size(), dataLast);
+			 TimeCPID dataLast = getData(endLoc);
+			addSample(listCPID->size(), dataLast);
 		}
 
 		// --------------------------------------------------------------------------------------------------
 		// get the first data if necessary: the leftmost time is still bigger than the lower limit
 		//	similarly, we add to the list
 		// --------------------------------------------------------------------------------------------------
-		if (startLoc > Minloc)
+		if (startLoc > minloc)
 		{
-			 TimeCPID dataFirst = GetData(startLoc - SIZE_OF_TRACE_RECORD);
-			AddSample(0, dataFirst);
+			 TimeCPID dataFirst = getData(startLoc - SIZE_OF_TRACE_RECORD);
+			addSample(0, dataFirst);
 		}
 		//PostProcess();
 	}
@@ -104,20 +102,20 @@ cerr<<"Maxloc is smaller than Minloc!! Maxloc= "<<Maxloc << " Minloc= " << Minlo
 	 * @return Returns the index that shows the size of the recursive subtree that has been read.
 	 * Used for calculating the index in which the data is to be inserted.
 	 ******************************************************************************************/
-	int TraceDataByRankLocal::SampleTimeLine(Long minLoc, Long maxLoc, int startPixel,
+	int TraceDataByRank::sampleTimeLine(Long minLoc, Long maxLoc, int startPixel,
 			int endPixel, int minIndex, double pixelLength, double startingTime)
 	{
 		int midPixel = (startPixel + endPixel) / 2;
 		if (midPixel == startPixel)
 			return 0;
 
-		Long loc = FindTimeInInterval(midPixel * pixelLength + startingTime, minLoc,
+		Long loc = findTimeInInterval(midPixel * pixelLength + startingTime, minLoc,
 				maxLoc);
-		 TimeCPID nextData = GetData(loc);
-		AddSample(minIndex, nextData);
-		int addedLeft = SampleTimeLine(minLoc, loc, startPixel, midPixel, minIndex,
+		 TimeCPID nextData = getData(loc);
+		addSample(minIndex, nextData);
+		int addedLeft = sampleTimeLine(minLoc, loc, startPixel, midPixel, minIndex,
 				pixelLength, startingTime);
-		int addedRight = SampleTimeLine(loc, maxLoc, midPixel, endPixel,
+		int addedRight = sampleTimeLine(loc, maxLoc, midPixel, endPixel,
 				minIndex + addedLeft + 1, pixelLength, startingTime);
 
 		return (addedLeft + addedRight + 1);
@@ -130,19 +128,19 @@ cerr<<"Maxloc is smaller than Minloc!! Maxloc= "<<Maxloc << " Minloc= " << Minlo
 	 * @param left_boundary_offset: the start location. 0 means the beginning of the data in a process
 	 * @param right_boundary_offset: the end location.
 	 ********************************************************************************/
-	Long TraceDataByRankLocal::FindTimeInInterval(double time, Long l_boundOffset,
+	Long TraceDataByRank::findTimeInInterval(double time, Long l_boundOffset,
 			Long r_boundOffset)
 	{
 		if (l_boundOffset == r_boundOffset)
 			return l_boundOffset;
 
-		LargeByteBuffer*  masterBuff = Data->getMasterBuffer();
+		LargeByteBuffer*  masterBuff = data->getMasterBuffer();
 
-		Long l_index = GetRelativeLocation(l_boundOffset);
-		Long r_index = GetRelativeLocation(r_boundOffset);
+		Long l_index = getRelativeLocation(l_boundOffset);
+		Long r_index = getRelativeLocation(r_boundOffset);
 
-		double l_time = masterBuff->GetLong(l_boundOffset);
-		double r_time = masterBuff->GetLong(r_boundOffset);
+		double l_time = masterBuff->getLong(l_boundOffset);
+		double r_time = masterBuff->getLong(r_boundOffset);
 	
 		// apply "Newton's method" to find target time
 		while (r_index - l_index > 1)
@@ -166,7 +164,7 @@ cerr<<"Maxloc is smaller than Minloc!! Maxloc= "<<Maxloc << " Minloc= " << Minlo
 			if (predicted_index >= r_index)
 				predicted_index = r_index - 1;
 
-			double temp = masterBuff->GetLong(GetAbsoluteLocation(predicted_index));
+			double temp = masterBuff->getLong(getAbsoluteLocation(predicted_index));
 			if (time >= temp)
 			{
 				l_index = predicted_index;
@@ -178,53 +176,53 @@ cerr<<"Maxloc is smaller than Minloc!! Maxloc= "<<Maxloc << " Minloc= " << Minlo
 				r_time = temp;
 			}
 		}
-		long l_offset = GetAbsoluteLocation(l_index);
-		long r_offset = GetAbsoluteLocation(r_index);
+		long l_offset = getAbsoluteLocation(l_index);
+		long r_offset = getAbsoluteLocation(r_index);
 
-		l_time = masterBuff->GetLong(l_offset);
-		r_time = masterBuff->GetLong(r_offset);
+		l_time = masterBuff->getLong(l_offset);
+		r_time = masterBuff->getLong(r_offset);
 
 		 bool is_left_closer = abs(time - l_time) < abs(r_time - time);
 		if (is_left_closer)
 			return l_offset;
-		else if (r_offset < Maxloc)
+		else if (r_offset < maxloc)
 			return r_offset;
 		else
-			return Maxloc;
+			return maxloc;
 	}
-	Long TraceDataByRankLocal::GetAbsoluteLocation(Long RelativePosition)
+	Long TraceDataByRank::getAbsoluteLocation(Long RelativePosition)
 	{
-		return Minloc + (RelativePosition * SIZE_OF_TRACE_RECORD);
+		return minloc + (RelativePosition * SIZE_OF_TRACE_RECORD);
 	}
 
-	Long TraceDataByRankLocal::GetRelativeLocation(Long AbsolutePosition)
+	Long TraceDataByRank::getRelativeLocation(Long AbsolutePosition)
 	{
-		return (AbsolutePosition - Minloc) / SIZE_OF_TRACE_RECORD;
+		return (AbsolutePosition - minloc) / SIZE_OF_TRACE_RECORD;
 	}
-	void TraceDataByRankLocal::AddSample(int index, TimeCPID dataCpid)
+	void TraceDataByRank::addSample(unsigned int index, TimeCPID dataCpid)
 	{
-		if (index == ListCPID->size())
+		if (index == listCPID->size())
 		{
-			ListCPID->push_back(dataCpid);
+			listCPID->push_back(dataCpid);
 		}
 		else
 		{
-			vector<TimeCPID>::iterator it = ListCPID->begin();
+			vector<TimeCPID>::iterator it = listCPID->begin();
 			it += index;
-			ListCPID->insert(it, dataCpid);
+			listCPID->insert(it, dataCpid);
 		}
 	}
 
-	TimeCPID TraceDataByRankLocal::GetData(Long location)
+	TimeCPID TraceDataByRank::getData(Long location)
 	{
-		LargeByteBuffer*  MasterBuff = Data->getMasterBuffer();
-		 double time = MasterBuff->GetLong(location);
-		 int CPID = MasterBuff->GetInt(location + SIZEOF_LONG);
+		LargeByteBuffer*  MasterBuff = data->getMasterBuffer();
+		 double time = MasterBuff->getLong(location);
+		 int CPID = MasterBuff->getInt(location + SIZEOF_LONG);
 		TimeCPID ToReturn(time, CPID);
 		return ToReturn;
 	}
 
-	Long TraceDataByRankLocal::GetNumberOfRecords(Long start, Long end)
+	Long TraceDataByRank::getNumberOfRecords(Long start, Long end)
 	{
 		return (end - start) / SIZE_OF_TRACE_RECORD;
 	}
@@ -233,27 +231,27 @@ cerr<<"Maxloc is smaller than Minloc!! Maxloc= "<<Maxloc << " Minloc= " << Minlo
 	 * Removes unnecessary samples:
 	 ********************************************************************************************/
 
-	void TraceDataByRankLocal::PostProcess()
+	void TraceDataByRank::postProcess()
 	{
-		int len = ListCPID->size();
+		int len = listCPID->size();
 		for (int i = 0; i < len - 2; i++)
 		{
 
-			while (i < len - 1 && (*ListCPID)[i].Timestamp == (*ListCPID)[i + 1].Timestamp)
+			while (i < len - 1 && (*listCPID)[i].timestamp == (*listCPID)[i + 1].timestamp)
 			{
-				vector<TimeCPID>::iterator it = ListCPID->begin();
+				vector<TimeCPID>::iterator it = listCPID->begin();
 				it += (i + 1);
-				ListCPID->erase(it);
+				listCPID->erase(it);
 				len--;
 			}
 
 		}
 	}
 
-	TraceDataByRankLocal::~TraceDataByRankLocal()
+	TraceDataByRank::~TraceDataByRank()
 	{
-		ListCPID->clear();
-		delete ListCPID;
+		listCPID->clear();
+		delete listCPID;
 	}
 
 } /* namespace TraceviewerServer */
