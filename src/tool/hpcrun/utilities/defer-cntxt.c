@@ -31,6 +31,7 @@
 #include <hpcrun/thread_data.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/trace.h>
+#include <hpcrun/ompt-interface.h>
 #include <hpcrun/cct/cct.h>
 #include <messages/messages.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
@@ -451,8 +452,25 @@ void resolve_cntxt()
     else
       outer_region_id = 0;
   }
+
+#ifdef DEBUG_DEFER
+  int initial_td_region = td->region_id;
+#endif
+
   // td->region_id represents the out-most parallel region id
   td->region_id = outer_region_id;
+
+
+#ifdef DEBUG_DEFER
+  // debugging code
+  if (current_region_id) {
+    struct record_t *record = r_splay_lookup(current_region_id);
+    if (!record || (record->use_count == 0)) {
+      EMSG("no record found current_region_id=%d initial_td_region_id=%d td->region_id=%d ", 
+	   current_region_id, initial_td_region, td->region_id);
+    }
+  }
+#endif
 
   hpcrun_safe_exit();
 }
