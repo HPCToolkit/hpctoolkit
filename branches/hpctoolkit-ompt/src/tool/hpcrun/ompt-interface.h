@@ -7,9 +7,10 @@
 // hpcrun wrappers for ompt interfaces
 //------------------------------------------------------------------------------
 extern ompt_parallel_id_t hpcrun_ompt_get_parallel_id(int level);
-extern int hpcrun_ompt_get_state(uint64_t *wait_id);
+extern ompt_state_t hpcrun_ompt_get_state(uint64_t *wait_id);
 extern ompt_frame_t *hpcrun_ompt_get_task_frame(int level);
 extern ompt_data_t *hpcrun_ompt_get_task_data(int level);
+extern ompt_data_t *hpcrun_ompt_get_thread_data(void);
 
 extern int hpcrun_ompt_elide_frames();
 
