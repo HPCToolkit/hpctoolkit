@@ -119,12 +119,7 @@ static bool idleness_measurement_enabled = false;
 static bool idleness_blame_information_source_present = false;
 
 
-typedef union {
-  double dval;
-  uint64_t lval;   
-} d_l_t;
-
-d_l_t total_threads; 
+uint64_t total_threads; 
 
 
 
@@ -274,7 +269,7 @@ idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric
     long workers = active_worker_count;
     double working_threads = (workers > 0 ? workers : 1.0 );
 
-    double idle_threads = (total_threads.dval - working_threads);
+    double idle_threads = total_threads - working_threads;
 		
     cct_metric_data_increment(idle_metric_id, node, (cct_metric_data_t){.r = (idle_threads / working_threads) * ((double) metric_value)});
     cct_metric_data_increment(work_metric_id, node, (cct_metric_data_t){.i = metric_value});
@@ -373,10 +368,7 @@ idle_metric_thread_start()
 {
   hpcrun_safe_enter();
   atomic_add_i64(&active_worker_count, 1L);
-
-  d_l_t converter;
-  converter.dval = (double) active_worker_count;
-  fetch_and_store_i64(&total_threads.lval, converter.lval);
+  atomic_add_i64(&total_threads, 1L);
 
   thread_data_t *td = hpcrun_get_thread_data();
   td->omp_thread = 1;
@@ -390,10 +382,7 @@ idle_metric_thread_end()
 {
   hpcrun_safe_enter();
   atomic_add_i64(&active_worker_count, -1L);
-
-  d_l_t converter;
-  converter.dval = (double) active_worker_count;
-  fetch_and_store_i64(&total_threads.lval, converter.lval);
+  atomic_add_i64(&total_threads, -1L);
 
   thread_data_t *td = hpcrun_get_thread_data();
   td->omp_thread = 0;
