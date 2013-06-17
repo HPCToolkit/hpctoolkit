@@ -18,7 +18,7 @@ namespace TraceviewerServer
 
 		typedef struct
 		{
-			char Path[1024];
+			char path[1024];
 		} open_file_command;
 		typedef struct
 		{
@@ -38,7 +38,7 @@ namespace TraceviewerServer
 
 		typedef struct
 		{
-			int Command;
+			int command;
 			union
 			{
 
@@ -50,28 +50,28 @@ namespace TraceviewerServer
 
 		typedef struct
 		{
-			int RankID;
-			int TraceLinesSent;
+			int rankID;
+			int traceLinesSent;
 		} DoneMessage;
 
 		typedef struct
 		{
-			int RankID;
+			int rankID;
 
-			int Line;
-			int Entries;
-			double Begtime;
-			double Endtime;
-			int CompressedSize;//In Bytes
+			int line;
+			int entries;
+			double begtime;
+			double endtime;
+			int compressedSize;//In Bytes
 		} DataHeader;
 
 		typedef struct
 		{
-			int Tag;
+			int tag;
 			union
 			{
-				DataHeader Data;
-				DoneMessage Done;
+				DataHeader data;
+				DoneMessage done;
 			};
 		} ResultMessage;
 

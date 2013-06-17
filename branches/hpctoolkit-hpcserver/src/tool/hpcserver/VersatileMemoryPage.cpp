@@ -11,52 +11,52 @@
 #include <list>
 #include <errno.h>
 #include <iostream>
-#include "VersatileMemoryPage.h"
+#include "VersatileMemoryPage.hpp"
 
 namespace TraceviewerServer
 {
 	static list<VersatileMemoryPage*> MostRecentlyUsed;
 	static int MAX_PAGES_TO_ALLOCATE_AT_ONCE = 0;
 	static int PagesCurrentlyAllocatedCount = 0;
-	VersatileMemoryPage::VersatileMemoryPage(ULong startPoint, int size, int index, FileDescriptor file)
+	VersatileMemoryPage::VersatileMemoryPage(ULong _startPoint, int _size, int _index, FileDescriptor _file)
 	{
-		StartPoint = startPoint;
-		Size = size;
-		Index = index;
-		File = file;
-		IsMapped = false;
+		startPoint = _startPoint;
+		size = _size;
+		index = _index;
+		file = _file;
+		isMapped = false;
 		if (MAX_PAGES_TO_ALLOCATE_AT_ONCE <1)
 			cerr<<"Set max pages before creating any VersatileMemoryPages"<<endl;
 	}
 
-	void VersatileMemoryPage::SetMaxPages(int pages)
+	void VersatileMemoryPage::setMaxPages(int pages)
 	{
 		MAX_PAGES_TO_ALLOCATE_AT_ONCE = pages;
 	}
 
 	VersatileMemoryPage::~VersatileMemoryPage()
 	{
-		if (IsMapped)
-			UnmapPage();
+		if (isMapped)
+			unmapPage();
 	}
-	char* VersatileMemoryPage::Get()
+	char* VersatileMemoryPage::get()
 	{
-		if ((IsMapped != 0)&& (IsMapped!=1))
-			cout<<"BadIsmapped:"<<IsMapped<<endl;
+		if ((isMapped != 0)&& (isMapped!=1))
+			cout<<"BadIsmapped:"<<isMapped<<endl;
 
-		PutMeOnTop();
+		putMeOnTop();
 
-		if (!IsMapped)
+		if (!isMapped)
 		{
-			MapPage();
+			mapPage();
 		}
-		return Page;
+		return page;
 	}
 
-	void VersatileMemoryPage::MapPage()
+	void VersatileMemoryPage::mapPage()
 	{
-		cout<< "Mapping page "<< Index<< " "<<PagesCurrentlyAllocatedCount << " / " << MAX_PAGES_TO_ALLOCATE_AT_ONCE << endl;
-		if (IsMapped)
+		cout<< "Mapping page "<< index<< " "<<PagesCurrentlyAllocatedCount << " / " << MAX_PAGES_TO_ALLOCATE_AT_ONCE << endl;
+		if (isMapped)
 		{
 			cerr << "Trying to double map!"<<endl;
 			return;
@@ -65,40 +65,40 @@ namespace TraceviewerServer
 		{
 
 			VersatileMemoryPage* toRemove = MostRecentlyUsed.back();
-			cout<<"Kicking " << toRemove->Index << " out"<<endl;
+			cout<<"Kicking " << toRemove->index << " out"<<endl;
 
-			if (toRemove->IsMapped != true)
+			if (toRemove->isMapped != true)
 			{
 				cerr << "Least recently used one isn't even mapped?"<<endl;
 			}
-			toRemove->UnmapPage();
+			toRemove->unmapPage();
 			MostRecentlyUsed.pop_back();
 		}
-		Page = (char*)mmap(0, Size, MAP_PROT, MAP_FLAGS, File, StartPoint);
-		if (Page == MAP_FAILED)
+		page = (char*)mmap(0, size, MAP_PROT, MAP_FLAGS, file, startPoint);
+		if (page == MAP_FAILED)
 		{
 			cerr << "Mapping returned error " << strerror(errno) << endl;
-			cerr << "off_t size =" << sizeof(off_t) << "mapping size=" << Size << " MapProt=" <<MAP_PROT
-					<< " MapFlags=" << MAP_FLAGS << " fd=" << File << " Start point=" << StartPoint << endl;
+			cerr << "off_t size =" << sizeof(off_t) << "mapping size=" << size << " MapProt=" <<MAP_PROT
+					<< " MapFlags=" << MAP_FLAGS << " fd=" << file << " Start point=" << startPoint << endl;
 			fflush(NULL);
 			exit(-1);
 		}
 		PagesCurrentlyAllocatedCount++;
-		IsMapped = true;
+		isMapped = true;
 	}
-	void VersatileMemoryPage::UnmapPage()
+	void VersatileMemoryPage::unmapPage()
 	{
-		if (!IsMapped)
+		if (!isMapped)
 		{
 			cerr << "Trying to double unmap!"<<endl;
 			return;
 		}
-		munmap(Page, Size);
+		munmap(page, size);
 		PagesCurrentlyAllocatedCount--;
-		IsMapped = false;
+		isMapped = false;
 		cout << "Unmapped a page"<<endl;
 	}
-	void VersatileMemoryPage::PutMeOnTop()
+	void VersatileMemoryPage::putMeOnTop()
 	{
 
 		if (MostRecentlyUsed.size() == 0)
@@ -106,7 +106,7 @@ namespace TraceviewerServer
 			MostRecentlyUsed.push_front(this);
 			return;
 		}
-		if (MostRecentlyUsed.front()->Index == Index)//This is already the one on top, so we're done
+		if (MostRecentlyUsed.front()->index == index)//This is already the one on top, so we're done
 			return;
 		else
 		{
@@ -114,7 +114,7 @@ namespace TraceviewerServer
 			list<VersatileMemoryPage*>::iterator it;
 			for (it = MostRecentlyUsed.begin(); it != MostRecentlyUsed.end(); it++)
 			{
-				if ((*it)->Index == Index)//We've found this one. Take it out
+				if ((*it)->index == index)//We've found this one. Take it out
 				{
 					MostRecentlyUsed.erase(it);
 					break;

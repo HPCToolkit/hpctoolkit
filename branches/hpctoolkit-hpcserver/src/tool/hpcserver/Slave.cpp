@@ -5,16 +5,16 @@
  *      Author: pat2
  */
 
-#include "Slave.h"
+#include "Slave.hpp"
 #include <mpi.h>
 #include <iostream>
 #include <vector>
-#include "TimeCPID.h"
-#include "Constants.h"
-#include "LocalDBOpener.h"
-#include "ImageTraceAttributes.h"
-#include "CompressingDataSocketLayer.h"
-#include "Server.h"
+#include "TimeCPID.hpp"
+#include "Constants.hpp"
+#include "DBOpener.hpp"
+#include "ImageTraceAttributes.hpp"
+#include "CompressingDataSocketLayer.hpp"
+#include "Server.hpp"
 #include <cmath>
 using namespace MPI;
 using namespace std;
@@ -24,44 +24,44 @@ namespace TraceviewerServer
 
 	Slave::Slave()
 	{
-		STDCLNeedsDeleting = false;
+		controllerNeedsDeleting = false;
 
-		RunLoop();
+		run();
 
 	}
-	void Slave::RunLoop()
+	void Slave::run()
 	{
 		while (true)
 		{
 			MPICommunication::CommandMessage Message;
 			COMM_WORLD.Bcast(&Message, sizeof(Message), MPI_PACKED,
 					MPICommunication::SOCKET_SERVER);
-			switch (Message.Command)
+			switch (Message.command)
 			{
 				case OPEN:
-					if (STDCLNeedsDeleting)
+					if (controllerNeedsDeleting)
 					{
-						delete (STDCL);
-						STDCLNeedsDeleting = false;
+						delete (controller);
+						controllerNeedsDeleting = false;
 					}
 					{//Set an artificial context to avoid initialization crossing cases
-						LocalDBOpener DBO;
-						STDCL = DBO.OpenDbAndCreateSTDC(string(Message.ofile.Path));
-						STDCLNeedsDeleting = true;
+						DBOpener DBO;
+						controller = DBO.openDbAndCreateStdc(string(Message.ofile.path));
+						controllerNeedsDeleting = true;
 					}
 					break;
 				case INFO:
-					STDCL->SetInfo(Message.minfo.minBegTime, Message.minfo.maxEndTime,
+					controller->setInfo(Message.minfo.minBegTime, Message.minfo.maxEndTime,
 							Message.minfo.headerSize);
 					break;
 				case DATA:
 				{
-					int LinesSent = GetData(&Message);
+					int LinesSent = getData(&Message);
 					MPICommunication::ResultMessage NodeFinishedMsg;
-					NodeFinishedMsg.Tag = SLAVE_DONE;
-					NodeFinishedMsg.Done.RankID = COMM_WORLD.Get_rank();
-					NodeFinishedMsg.Done.TraceLinesSent = LinesSent;
-					cout << "Rank " << NodeFinishedMsg.Done.RankID << " done, having created "
+					NodeFinishedMsg.tag = SLAVE_DONE;
+					NodeFinishedMsg.done.rankID = COMM_WORLD.Get_rank();
+					NodeFinishedMsg.done.traceLinesSent = LinesSent;
+					cout << "Rank " << NodeFinishedMsg.done.rankID << " done, having created "
 							<< LinesSent << " trace lines." << endl;
 					int SizeToSend = 3 * SIZEOF_INT;
 					COMM_WORLD.Send(&NodeFinishedMsg, SizeToSend, MPI_PACKED,
@@ -71,13 +71,13 @@ namespace TraceviewerServer
 				case DONE: //Server shutdown
 					return;
 				default:
-					cerr << "Unexpected message command: " << Message.Command << endl;
+					cerr << "Unexpected message command: " << Message.command << endl;
 					break;
 			}
 		}
 	}
 
-	int Slave::GetData(MPICommunication::CommandMessage* Message)
+	int Slave::getData(MPICommunication::CommandMessage* Message)
 	{
 		MPICommunication::get_data_command gc = Message->gdata;
 		ImageTraceAttributes correspondingAttributes;
@@ -122,9 +122,9 @@ namespace TraceviewerServer
 		correspondingAttributes.begTime = gc.timeStart;
 		correspondingAttributes.endTime = gc.timeEnd;
 		correspondingAttributes.lineNum = 0;
-		STDCL->Attributes = &correspondingAttributes;
+		controller->attributes = &correspondingAttributes;
 
-		ProcessTimeline* NextTrace = STDCL->GetNextTrace(true);
+		ProcessTimeline* NextTrace = controller->getNextTrace(true);
 		int LinesSentCount = 0;
 		int waitcount = 0;
 
@@ -133,10 +133,10 @@ namespace TraceviewerServer
 
 		while (NextTrace != NULL)
 		{
-			if ((NextTrace->Data->Rank < LowerInclusiveBound)
-					|| (NextTrace->Data->Rank > UpperInclusiveBound))
+			if ((NextTrace->data->rank < LowerInclusiveBound)
+					|| (NextTrace->data->rank > UpperInclusiveBound))
 			{
-				NextTrace = STDCL->GetNextTrace(true);
+				NextTrace = controller->getNextTrace(true);
 				waitcount++;
 				continue;
 			}
@@ -146,18 +146,18 @@ namespace TraceviewerServer
 						<< " processes before actually starting work" << endl;
 				waitcount = 0;
 			}
-			NextTrace->ReadInData();
+			NextTrace->readInData();
 
-			vector<TimeCPID>* ActualData = NextTrace->Data->ListCPID;
+			vector<TimeCPID>* ActualData = NextTrace->data->listCPID;
 			MPICommunication::ResultMessage msg;
-			msg.Tag = SLAVE_REPLY;
-			msg.Data.Line = NextTrace->Line();
+			msg.tag = SLAVE_REPLY;
+			msg.data.line = NextTrace->line();
 			int entries = ActualData->size();
-			msg.Data.Entries = entries;
+			msg.data.entries = entries;
 
-			msg.Data.Begtime = (*ActualData)[0].Timestamp;
-			msg.Data.Endtime = (*ActualData)[entries - 1].Timestamp;
-			msg.Data.RankID = Truerank;
+			msg.data.begtime = (*ActualData)[0].timestamp;
+			msg.data.endtime = (*ActualData)[entries - 1].timestamp;
+			msg.data.rankID = Truerank;
 			/*Have to move this so that we know how large the compressed stream is
 			 * COMM_WORLD.Send(&msg, sizeof(msg), MPI_PACKED, MPICommunication::SOCKET_SERVER,
 			 0);*/
@@ -169,20 +169,20 @@ namespace TraceviewerServer
 			 }*/
 			unsigned char* OutputBuffer;
 			int OutputBufferLen;
-			if (Compression)
+			if (useCompression)
 			{
 				CompressingDataSocketLayer Compr;
 
-				double CurrentTimestamp = msg.Data.Begtime;
+				double CurrentTimestamp = msg.data.begtime;
 				for (i = 0; i < entries; i++)
 				{
-					Compr.WriteInt((int) ((*ActualData)[i].Timestamp - CurrentTimestamp));
-					Compr.WriteInt((*ActualData)[i].CPID);
-					CurrentTimestamp = (*ActualData)[i].Timestamp;
+					Compr.writeInt((int) ((*ActualData)[i].timestamp - CurrentTimestamp));
+					Compr.writeInt((*ActualData)[i].cpid);
+					CurrentTimestamp = (*ActualData)[i].timestamp;
 				}
-				Compr.Flush();
-				OutputBufferLen = Compr.GetOutputLength();
-				OutputBuffer = Compr.GetOutputBuffer();
+				Compr.flush();
+				OutputBufferLen = Compr.getOutputLength();
+				OutputBuffer = Compr.getOutputBuffer();
 			}
 			else
 			{
@@ -192,12 +192,12 @@ namespace TraceviewerServer
 				int CurrIndexInBuff = 0;
 				for (i = 0; i < entries; i++)
 				{
-					ByteUtilities::WriteInt(ptrToFirstElem + CurrIndexInBuff, (*ActualData)[i].CPID);
+					ByteUtilities::writeInt(ptrToFirstElem + CurrIndexInBuff, (*ActualData)[i].cpid);
 					CurrIndexInBuff += 4;
 				}
 				OutputBufferLen = entries*4;
 			}
-			msg.Data.CompressedSize = OutputBufferLen;
+			msg.data.compressedSize = OutputBufferLen;
 			COMM_WORLD.Send(&msg, sizeof(msg), MPI_PACKED, MPICommunication::SOCKET_SERVER,
 					0);
 			//cout << "Buffer overflow protection: Setting " << i << " to 0xABCDEF" << endl;
@@ -211,27 +211,27 @@ namespace TraceviewerServer
 
 			COMM_WORLD.Send(OutputBuffer, OutputBufferLen, MPI_BYTE,
 					MPICommunication::SOCKET_SERVER, 0);
-			if (!Compression)
+			if (!useCompression)
 			{
 				delete[] OutputBuffer;
 			}
 			LinesSentCount++;
 			if (LinesSentCount % 100 == 0)
 				cout << Truerank << " Has sent " << LinesSentCount
-						<< ". Most recent message was " << NextTrace->Line() << " and contained "
+						<< ". Most recent message was " << NextTrace->line() << " and contained "
 						<< entries << " entries" << endl;
 
-			NextTrace = STDCL->GetNextTrace(true);
+			NextTrace = controller->getNextTrace(true);
 		}
 		return LinesSentCount;
 	}
 
 	Slave::~Slave()
 	{
-		if (STDCLNeedsDeleting)
+		if (controllerNeedsDeleting)
 		{
-			delete (STDCL);
-			STDCLNeedsDeleting = false;
+			delete (controller);
+			controllerNeedsDeleting = false;
 		}
 	}
 

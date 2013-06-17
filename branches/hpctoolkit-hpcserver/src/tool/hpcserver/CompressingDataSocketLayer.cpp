@@ -6,15 +6,15 @@
  */
 
 
-#include "ByteUtilities.h"
+#include "ByteUtilities.hpp"
 #include <iostream>
-#include "CompressingDataSocketLayer.h"
+#include "CompressingDataSocketLayer.hpp"
 
 using namespace std;
 namespace TraceviewerServer
 {
 
-#define Room(a) if ((a) + BufferIndex > BUFFER_SIZE) SoftFlush();
+#define Room(a) if ((a) + bufferIndex > BUFFER_SIZE) softFlush();
 
 	CompressingDataSocketLayer::CompressingDataSocketLayer(
 		)
@@ -25,43 +25,43 @@ namespace TraceviewerServer
 		//See: http://www.zlib.net/zpipe.c
 		int ret;
 
-		BufferIndex = 0;
+		bufferIndex = 0;
 		posInCompBuffer = 0;
 
-		Compressor.zalloc = Z_NULL;
-		Compressor.zfree = Z_NULL;
-		Compressor.opaque = Z_NULL;
-		ret = deflateInit(&Compressor, -1);
+		compressor.zalloc = Z_NULL;
+		compressor.zfree = Z_NULL;
+		compressor.opaque = Z_NULL;
+		ret = deflateInit(&compressor, -1);
 		if (ret != Z_OK)
 			throw ret;
 
 	}
-	void CompressingDataSocketLayer::WriteInt(int toWrite)
+	void CompressingDataSocketLayer::writeInt(int toWrite)
 	{
 
 		Room(4);
-		ByteUtilities::WriteInt(inBuf + BufferIndex, toWrite);
-		BufferIndex += 4;
+		ByteUtilities::writeInt(inBuf + bufferIndex, toWrite);
+		bufferIndex += 4;
 	}
-	void CompressingDataSocketLayer::WriteLong(Long toWrite)
+	void CompressingDataSocketLayer::writeLong(Long toWrite)
 	{
 		Room(8);
-		ByteUtilities::WriteLong(inBuf + BufferIndex, toWrite);
-		BufferIndex += 8;
+		ByteUtilities::writeLong(inBuf + bufferIndex, toWrite);
+		bufferIndex += 8;
 	}
-	void CompressingDataSocketLayer::WriteDouble(double toWrite)
+	void CompressingDataSocketLayer::writeDouble(double toWrite)
 	{
 		Room(8);
-		ByteUtilities::WriteLong(inBuf + BufferIndex, ByteUtilities::ConvertDoubleToLong(toWrite));
-		BufferIndex += 8;
+		ByteUtilities::writeLong(inBuf + bufferIndex, ByteUtilities::convertDoubleToLong(toWrite));
+		bufferIndex += 8;
 	}
-	void CompressingDataSocketLayer::Flush()
+	void CompressingDataSocketLayer::flush()
 	{
-		SoftFlush();
+		softFlush();
 
 	}
 
-	void CompressingDataSocketLayer::SoftFlush()
+	void CompressingDataSocketLayer::softFlush()
 	{
 		//gzwrite(Compressor, Buffer, BufferIndex);
 
@@ -70,25 +70,25 @@ namespace TraceviewerServer
 
 		do
 		{
-			Compressor.avail_out = BUFFER_SIZE - posInCompBuffer;
-			Compressor.next_out = outBuf + posInCompBuffer;
-			Compressor.avail_in = BufferIndex;
-			Compressor.next_in = (unsigned char*)inBuf;
-			int ret = deflate(&Compressor, Z_SYNC_FLUSH); /* no bad return value */
+			compressor.avail_out = BUFFER_SIZE - posInCompBuffer;
+			compressor.next_out = outBuf + posInCompBuffer;
+			compressor.avail_in = bufferIndex;
+			compressor.next_in = (unsigned char*)inBuf;
+			int ret = deflate(&compressor, Z_SYNC_FLUSH); /* no bad return value */
 			if (ret == Z_STREAM_ERROR)
 					cerr<<"zlib stream error."<<endl;	/* state not clobbered */
-			int have = BUFFER_SIZE - Compressor.avail_out;
+			int have = BUFFER_SIZE - compressor.avail_out;
 			posInCompBuffer += have;
 
-		} while (Compressor.avail_out == 0);
+		} while (compressor.avail_out == 0);
 
-		BufferIndex = 0;
+		bufferIndex = 0;
 	}
-	unsigned char* CompressingDataSocketLayer::GetOutputBuffer()
+	unsigned char* CompressingDataSocketLayer::getOutputBuffer()
 	{
 		return outBuf;
 	}
-	int CompressingDataSocketLayer::GetOutputLength()
+	int CompressingDataSocketLayer::getOutputLength()
 	{
 		return posInCompBuffer;
 	}

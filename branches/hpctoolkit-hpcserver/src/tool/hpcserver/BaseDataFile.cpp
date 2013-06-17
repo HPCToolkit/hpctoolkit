@@ -5,10 +5,10 @@
  *      Author: pat2
  */
 
-#include "BaseDataFile.h"
+#include "BaseDataFile.hpp"
 #include <iostream>
 #include <sstream>
-#include "Constants.h"
+#include "Constants.hpp"
 
 using namespace std;
 
@@ -21,33 +21,33 @@ namespace TraceviewerServer
 
 
 
-	BaseDataFile::BaseDataFile(string filename, int HeaderSize)
+	BaseDataFile::BaseDataFile(string _filename, int _headerSize)
 	{
-		cout << "Setting Data File: " << filename << endl;
-		if (filename != "")
+		cout << "Setting Data File: " << _filename << endl;
+		if (_filename != "")
 		{
 			//---------------------------------------------
 			// test file version
 			//---------------------------------------------
 
-			setData(filename, HeaderSize);
+			setData(_filename, _headerSize);
 		}
 
 	}
 
 	int BaseDataFile::getNumberOfFiles()
 	{
-		return NumFiles;
+		return numFiles;
 	}
 
 	Long* BaseDataFile::getOffsets()
 	{
-		return Offsets;
+		return offsets;
 	}
 
 	LargeByteBuffer* BaseDataFile::getMasterBuffer()
 	{
-		return MasterBuff;
+		return masterBuff;
 	}
 
 	/***
@@ -57,78 +57,78 @@ namespace TraceviewerServer
 	 */
 	void BaseDataFile::setData(string filename, int HeaderSize)
 	{
-		MasterBuff = new LargeByteBuffer(filename, HeaderSize);
+		masterBuff = new LargeByteBuffer(filename, HeaderSize);
 
-		Type = MasterBuff->GetInt(0);
-		NumFiles = MasterBuff->GetInt(SIZEOF_INT);
+		type = masterBuff->getInt(0);
+		numFiles = masterBuff->getInt(SIZEOF_INT);
 
-		ProcessIDs = new int[NumFiles];
-		ThreadIDs = new short[NumFiles];
-		Offsets = new Long[NumFiles];
+		processIDs = new int[numFiles];
+		threadIDs = new short[numFiles];
+		offsets = new Long[numFiles];
 
-		Long current_pos = SIZEOF_INT * 2;
+		Long currentPos = SIZEOF_INT * 2;
 
 		// get the procs and threads IDs
-		for (int i = 0; i < NumFiles; i++)
+		for (int i = 0; i < numFiles; i++)
 		{
-			 int proc_id = MasterBuff->GetInt(current_pos);
-			current_pos += SIZEOF_INT;
-			 int thread_id = MasterBuff->GetInt(current_pos);
-			current_pos += SIZEOF_INT;
+			 int proc_id = masterBuff->getInt(currentPos);
+			currentPos += SIZEOF_INT;
+			 int thread_id = masterBuff->getInt(currentPos);
+			currentPos += SIZEOF_INT;
 
-			Offsets[i] = MasterBuff->GetLong(current_pos);
-			current_pos += SIZEOF_LONG;
+			offsets[i] = masterBuff->getLong(currentPos);
+			currentPos += SIZEOF_LONG;
 
 			//--------------------------------------------------------------------
 			// adding list of x-axis
 			//--------------------------------------------------------------------
 
 
-			if (IsHybrid())
+			if (isHybrid())
 			{
-				ProcessIDs[i] = proc_id;
-				ThreadIDs[i] = thread_id;
+				processIDs[i] = proc_id;
+				threadIDs[i] = thread_id;
 			}
-			else if (IsMultiProcess())
+			else if (isMultiProcess())
 			{
-				ProcessIDs[i] = proc_id;
-				ThreadIDs[i] = -1;
+				processIDs[i] = proc_id;
+				threadIDs[i] = -1;
 			}
 			else
 			{
 				// temporary fix: if the application is neither hybrid nor multiproc nor multithreads,
 				// we just print whatever the order of file name alphabetically
 				// this is not the ideal solution, but we cannot trust the value of proc_id and thread_id
-				ProcessIDs[i] = i;
-				ThreadIDs[i] = -1;
+				processIDs[i] = i;
+				threadIDs[i] = -1;
 			}
 
 		}
 	}
 
 //Check if the application is a multi-processing program (like MPI)
-	bool BaseDataFile::IsMultiProcess()
+	bool BaseDataFile::isMultiProcess()
 	{
-		return (Type & MULTI_PROCESSES) != 0;
+		return (type & MULTI_PROCESSES) != 0;
 	}
 //Check if the application is a multi-threading program (OpenMP for instance)
-	bool BaseDataFile::IsMultiThreading()
+	bool BaseDataFile::isMultiThreading()
 	{
-		return (Type & MULTI_THREADING) != 0;
+		return (type & MULTI_THREADING) != 0;
 	}
 //Check if the application is a hybrid program (MPI+OpenMP)
-	bool BaseDataFile::IsHybrid()
+	bool BaseDataFile::isHybrid()
 	{
-		return (IsMultiProcess() && IsMultiThreading());
+		return (isMultiProcess() && isMultiThreading());
 
 	}
 
 	BaseDataFile::~BaseDataFile()
 	{
-		delete(MasterBuff);
-		delete[] ProcessIDs;
-		delete[] ThreadIDs;
-		delete[] Offsets;
+		delete(masterBuff);
+		delete[] processIDs;
+		delete[] threadIDs;
+		delete[] offsets;
 	}
 
 } /* namespace TraceviewerServer */
