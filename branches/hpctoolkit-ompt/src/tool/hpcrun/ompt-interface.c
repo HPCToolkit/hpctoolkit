@@ -263,14 +263,14 @@ hpcrun_ompt_elide_frames()
 }
 
 
-int
+ompt_parallel_id_t
 hpcrun_ompt_outermost_parallel_id()
 { 
-  uint64_t outer_id = 0; 
+  ompt_parallel_id_t outer_id = 0; 
   if (ompt_initialized) { 
     int i = 0;
     for (;;) {
-      uint64_t next_id = ompt_get_parallel_id(i++);
+      ompt_parallel_id_t next_id = ompt_get_parallel_id(i++);
       if (next_id == 0) break;
       outer_id = next_id;
     }
@@ -279,7 +279,7 @@ hpcrun_ompt_outermost_parallel_id()
 }
 
 
-int 
+ompt_parallel_id_t 
 hpcrun_ompt_get_parallel_id(int level)
 {
   if (ompt_initialized) return ompt_get_parallel_id(level);

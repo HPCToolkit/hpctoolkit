@@ -667,16 +667,21 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
       // no elision was performed on a side thread. they are all runtime frames 
 #if INTEL_RTL
       {
-	if (hpcrun_region_lookup(omp_arg->region_id)) {
-	  // this backtrace can be related to the global view
-	  // pop off the bottom three frames of the intel runtime
-	  bt_last = bt_last - 3;
-	  omp_arg->should_resolve = 1;
-	}
+	// this backtrace can be related to the global view
+	// pop off the bottom three frames of the intel runtime
+	bt_last = bt_last - 3;
+	omp_arg->should_resolve = hpcrun_trace_isactive();
       }
 #endif
     }
+  } 
+#ifdef DEBUG_ELIDE
+  else {
+    int region_id = omp_arg ? omp_arg->region_id : -1;
+    EMSG("not eliding in side thread: elide_frames=%d omp_arg=%p omp_arg->region_id=%d\n", 
+	 hpcrun_ompt_elide_frames(), omp_arg, region_id);
   }
+#endif
 
     // master thread elides all frames (to be omp_barrier), then make it as partial to 
     // avoid monitor_main and omp_barrier appearing in the CCT(s)
