@@ -71,6 +71,7 @@
 #include "blame-shift.h"
 
 #include <hpcrun/hpcrun_options.h>
+#include <hpcrun/ompt-interface.h>
 
 #include <hpcrun/metrics.h>
 #include <hpcrun/sample_sources_registered.h>
@@ -109,7 +110,8 @@ static void init_hack(void);
 /******************************************************************************
  * local variables
  *****************************************************************************/
-static uintptr_t active_worker_count = 1;// by default is 1 (1 thread)
+static uintptr_t active_worker_count = 1; // start with one thread
+static uint64_t total_threads = 1;        // start with one thread
 
 static int idle_metric_id = -1;
 static int work_metric_id = -1;
@@ -119,7 +121,6 @@ static bool idleness_measurement_enabled = false;
 static bool idleness_blame_information_source_present = false;
 
 
-uint64_t total_threads; 
 
 
 
@@ -262,17 +263,21 @@ idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric
   thread_data_t *td = hpcrun_get_thread_data();
   td->last_sample++;
 
-  if (td->idle == 0 && td->blame_target == 0) { // if this thread is not idle
-    // capture active_worker_count into a local variable to make sure that the count doesn't change
-    // between the time we test it and the time we use the value
-    int metric_value = metric_desc->period * metric_incr;
-    long workers = active_worker_count;
-    double working_threads = (workers > 0 ? workers : 1.0 );
+  if (hpcrun_ompt_get_thread_data()) { // it is an openmp worker thread, so it participates in blame shifting
 
-    double idle_threads = total_threads - working_threads;
+    if (td->idle == 0 && td->blame_target == 0) { // if this thread is not idle
+      // capture active_worker_count into a local variable to make sure that the count doesn't change
+      // between the time we test it and the time we use the value
+      int metric_value = metric_desc->period * metric_incr;
+      long workers = active_worker_count;
+      double working_threads = (workers > 0 ? workers : 1.0 );
+
+      double idle_threads = total_threads - working_threads;
 		
-    cct_metric_data_increment(idle_metric_id, node, (cct_metric_data_t){.r = (idle_threads / working_threads) * ((double) metric_value)});
-    cct_metric_data_increment(work_metric_id, node, (cct_metric_data_t){.i = metric_value});
+      cct_metric_data_increment(idle_metric_id, node, (cct_metric_data_t){.r = 
+	    (idle_threads / working_threads) * ((double) metric_value)});
+      cct_metric_data_increment(work_metric_id, node, (cct_metric_data_t){.i = metric_value});
+    }
   }
 }
 

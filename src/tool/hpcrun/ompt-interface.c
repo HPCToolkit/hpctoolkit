@@ -287,7 +287,7 @@ hpcrun_ompt_get_parallel_id(int level)
 }
 
 
-int 
+ompt_state_t 
 hpcrun_ompt_get_state(uint64_t *wait_id)
 {
   if (ompt_initialized) return ompt_get_state(wait_id);
@@ -307,5 +307,12 @@ ompt_data_t *
 hpcrun_ompt_get_task_data(int level)
 {
   if (ompt_initialized) return ompt_get_task_data(level);
+  return NULL;
+}
+
+ompt_data_t *
+hpcrun_ompt_get_thread_data()
+{
+  if (ompt_initialized) return ompt_get_thread_data();
   return NULL;
 }
