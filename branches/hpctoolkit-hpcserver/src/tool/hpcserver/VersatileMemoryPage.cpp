@@ -18,7 +18,7 @@ namespace TraceviewerServer
 	static list<VersatileMemoryPage*> mostRecentlyUsed;
 	static int MAX_PAGES_TO_ALLOCATE_AT_ONCE = 0;
 	static int PagesCurrentlyAllocatedCount = 0;
-	VersatileMemoryPage::VersatileMemoryPage(ULong _startPoint, int _size, int _index, FileDescriptor _file)
+	VersatileMemoryPage::VersatileMemoryPage(FileOffset _startPoint, int _size, int _index, FileDescriptor _file)
 	{
 		startPoint = _startPoint;
 		size = _size;

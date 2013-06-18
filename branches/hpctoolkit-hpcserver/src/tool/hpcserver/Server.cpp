@@ -283,8 +283,8 @@ namespace TraceviewerServer
 
 		int processStart = Stream->readInt();
 		int processEnd = Stream->readInt();
-		double timeStart = Stream->readDouble();
-		double timeEnd = Stream->readDouble();
+		Time timeStart = Stream->readLong();
+		Time timeEnd = Stream->readLong();
 		int verticalResolution = Stream->readInt();
 		int horizontalResolution = Stream->readInt();
 		cout << "Time end: " << timeEnd <<endl;
@@ -318,11 +318,9 @@ namespace TraceviewerServer
 		correspondingAttributes.endProcess = processEnd;
 		correspondingAttributes.numPixelsH = horizontalResolution;
 		correspondingAttributes.numPixelsV = verticalResolution;
-		// Time start and Time end?? Should actually be longs instead of
-		// doubles????
-		//double timeSpan = timeEnd - timeStart;
-		correspondingAttributes.begTime = (long) timeStart;
-		correspondingAttributes.endTime = (long) timeEnd;
+
+		correspondingAttributes.begTime =  timeStart;
+		correspondingAttributes.endTime =  timeEnd;
 		correspondingAttributes.lineNum = 0;
 		controller->Attributes = &correspondingAttributes;
 
@@ -350,8 +348,8 @@ namespace TraceviewerServer
 				//Stream->WriteInt(msg.Data.Line);
 				Stream->writeInt(msg.data.line);
 				Stream->writeInt(msg.data.entries);
-				Stream->writeDouble(msg.data.begtime); // Begin time
-				Stream->writeDouble(msg.data.endtime); //End time
+				Stream->writeLong(msg.data.begtime); // Begin time
+				Stream->writeLong(msg.data.endtime); //End time
 				Stream->writeInt(msg.data.compressedSize);
 
 				char CompressedTraceLine[msg.data.compressedSize];
@@ -379,16 +377,16 @@ namespace TraceviewerServer
 			vector<TimeCPID> data = T->data->ListCPID;
 			Stream->writeInt( data.size());
 			// Begin time
-			Stream->writeDouble( data[0].Timestamp);
+			Stream->writeLong( data[0].Timestamp);
 			//End time
-			Stream->writeDouble( data[data.size() - 1].Timestamp);
+			Stream->writeLong( data[data.size() - 1].Timestamp);
 
 			CompressingDataSocketLayer Compr;
 
 			vector<TimeCPID>::iterator it;
 			cout << "Sending process timeline with " << data.size() << " entries" << endl;
 			
-			double currentTime = data[0].Timestamp;
+			Time currentTime = data[0].Timestamp;
 			for (it = data.begin(); it != data.end(); ++it)
 			{
 				Compr.writeInt( (int)(it->Timestamp - currentTime));

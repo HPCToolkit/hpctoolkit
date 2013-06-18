@@ -32,7 +32,7 @@ namespace TraceviewerServer
 			return ((uBuffer[0] << 24) | (uBuffer[1] << 16) | (uBuffer[2] << 8)
 					| (uBuffer[3]));
 		}
-		static Long readLong(char* buffer)
+		static int64_t readLong(char* buffer)
 		{
 			unsigned int highWord = readInt(buffer);
 			unsigned int lowWord = readInt(buffer + 4);

@@ -174,7 +174,7 @@ namespace TraceviewerServer
 			{
 				CompressingDataSocketLayer compr;
 
-				double currentTimestamp = msg.data.begtime;
+				Time currentTimestamp = msg.data.begtime;
 				for (i = 0; i < entries; i++)
 				{
 					compr.writeInt((int) ((*ActualData)[i].timestamp - currentTimestamp));
@@ -191,7 +191,7 @@ namespace TraceviewerServer
 				outputBuffer = new unsigned char[entries*SIZEOF_DELTASAMPLE];
 				char* ptrToFirstElem = (char*)&(outputBuffer[0]);
 				char* currentPtr = ptrToFirstElem;
-				double currentTimestamp = msg.data.begtime;
+				Time currentTimestamp = msg.data.begtime;
 				for (i = 0; i < entries; i++)
 				{
 					int deltaTimestamp = (*ActualData)[i].timestamp - currentTimestamp;

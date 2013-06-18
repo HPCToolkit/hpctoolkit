@@ -10,8 +10,9 @@
 namespace TraceviewerServer
 {
 
+
 	ProcessTimeline::ProcessTimeline(int _lineNum, BaseDataFile* _dataTrace,
-			int _processNumber, int _numPixelH, double _timeRange, double _startingTime,
+			int _processNumber, int _numPixelH, Time _timeRange, Time _startingTime,
 			int _headerSize)
 	{
 		lineNum = _lineNum;
