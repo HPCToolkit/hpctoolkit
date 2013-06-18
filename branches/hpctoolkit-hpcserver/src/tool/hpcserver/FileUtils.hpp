@@ -85,6 +85,17 @@ namespace TraceviewerServer
 			closedir(testDir);
 			return validFiles;
 		}
+
+		//We need this because of the way atoi works.
+		static bool stringActuallyZero(string toTest)
+		{
+			for (unsigned int var = 0; var < toTest.length(); var++)
+			{
+				if (toTest[var] != '0')
+					return false;
+			}
+			return true;
+		}
 	};
 
 } /* namespace TraceviewerServer */

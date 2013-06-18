@@ -54,38 +54,18 @@ namespace TraceviewerServer
 		return experimentXML;
 	}
 
-	ProcessTimeline* SpaceTimeDataController::getNextTrace(bool ChangedBounds)
+	ProcessTimeline* SpaceTimeDataController::getNextTrace()
 	{
 		if (attributes->lineNum
 				< min(attributes->numPixelsV, attributes->endProcess - attributes->begProcess))
 		{
-			attributes->lineNum++;
-			if (ChangedBounds)
-			{
-				return new ProcessTimeline(attributes->lineNum - 1, dataTrace,
-						lineToPaint(attributes->lineNum - 1), attributes->numPixelsH,
-						attributes->endTime - attributes->begTime,
-						minBegTime + attributes->begTime, headerSize);
-			}
-			else
-			{
-				if (tracesLength >= attributes->lineNum)
-				{
-					if (traces[attributes->lineNum - 1] == NULL)
-					{
-						cerr << "Was null, auto-fixing" << endl;
-						traces[attributes->lineNum - 1] = new ProcessTimeline(
-								attributes->lineNum - 1, dataTrace,
-								lineToPaint(attributes->lineNum - 1), attributes->numPixelsH,
-								attributes->endTime - attributes->begTime,
-								minBegTime + attributes->begTime, headerSize);
-					}
-					return traces[attributes->lineNum - 1];
-				}
-				else
-					cerr << "STD error: trace paints" << tracesLength << " < line number "
-							<< attributes->lineNum << endl;
-			}
+		attributes->lineNum++;
+
+		return new ProcessTimeline(attributes->lineNum - 1, dataTrace,
+				lineToPaint(attributes->lineNum - 1), attributes->numPixelsH,
+				attributes->endTime - attributes->begTime,
+				minBegTime + attributes->begTime, headerSize);
+
 		}
 		return NULL;
 	}
@@ -97,25 +77,21 @@ namespace TraceviewerServer
 		traces[NextPtl->line()] = NextPtl;
 	}
 
-	void SpaceTimeDataController::fillTraces(int LinesToPaint, bool ChangedBounds)
+	//Don't call if in MPI mode
+	void SpaceTimeDataController::fillTraces()
 	{
-		//Traces might be null. Initialize it by calling prepareViewportPainting
-		prepareViewportPainting(ChangedBounds);
+		//Traces might be null.
+		resetTraces();
 
-		if (LinesToPaint == -1)
-			LinesToPaint = min(attributes->numPixelsV,
-					attributes->endProcess - attributes->begProcess); //This only works for the detail view though
-		//Threading code was here, but for now, leave the c++ implementation single-threaded
+
 		//Taken straight from TimelineThread
-		ProcessTimeline* NextTrace = getNextTrace(ChangedBounds);
+		ProcessTimeline* NextTrace = getNextTrace();
 		while (NextTrace != NULL)
 		{
-			if (ChangedBounds)
-			{
-				NextTrace->readInData();
-				addNextTrace(NextTrace);
-			}
-			NextTrace = getNextTrace(ChangedBounds);
+			NextTrace->readInData();
+			addNextTrace(NextTrace);
+
+			NextTrace = getNextTrace();
 		}
 	}
 
@@ -138,47 +114,40 @@ namespace TraceviewerServer
 		return dataTrace->threadIDs;
 	}
 
-	void SpaceTimeDataController::prepareViewportPainting(bool ChangedBounds)
+	void SpaceTimeDataController::resetTraces()
 	{
-		if (ChangedBounds)
+
+		int NumTraces = min(attributes->numPixelsV,
+				attributes->endProcess - attributes->begProcess);
+
+		if (tracesInitialized)
 		{
-			int NumTraces = min(attributes->numPixelsV,
-					attributes->endProcess - attributes->begProcess);
-			cout<< "Num Traces: "<<NumTraces<<endl;
-			if (tracesInitialized)
+			for (int var = 0; var < tracesLength; var++)
 			{
-				for (int var = 0; var < tracesLength; var++)
-				{
-					delete (traces[var]);
-				}
-				delete traces;
+				delete (traces[var]);
 			}
-
-			traces = new ProcessTimeline*[NumTraces];
-			tracesLength = NumTraces;
-			tracesInitialized = true;
+			delete traces;
 		}
-	}
 
-	SpaceTimeDataController::SpaceTimeDataController()
-	{
-		cout << "Calling the blank constructor" << endl;
+		traces = new ProcessTimeline*[NumTraces];
+		tracesLength = NumTraces;
+		tracesInitialized = true;
+
 	}
 
 	SpaceTimeDataController::~SpaceTimeDataController()
 	{
 #ifndef USE_MPI //The MPI implementation actually doesn't use the Traces array at all! It does call GetNextTrace, but ChangedBounds is always true!
-		if (traces != NULL) {
-			cout<<"Freeing Traces @"<< traces << " and all "<<tracesLength << " elements"<<endl;
+		if (tracesInitialized) {
+
 			for (int var = 0; var < tracesLength; var++)
 			{
 				delete (traces[var]);
 			}
 			delete traces;
 			traces = NULL;
+			tracesInitialized = false;
 		}
-		else
-			cout<<"Not freeing Traces because it has probably already been freed"<<endl;
 #endif
 
 	}

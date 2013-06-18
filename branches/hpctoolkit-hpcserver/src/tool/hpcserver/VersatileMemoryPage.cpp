@@ -15,7 +15,7 @@
 
 namespace TraceviewerServer
 {
-	static list<VersatileMemoryPage*> MostRecentlyUsed;
+	static list<VersatileMemoryPage*> mostRecentlyUsed;
 	static int MAX_PAGES_TO_ALLOCATE_AT_ONCE = 0;
 	static int PagesCurrentlyAllocatedCount = 0;
 	VersatileMemoryPage::VersatileMemoryPage(ULong _startPoint, int _size, int _index, FileDescriptor _file)
@@ -64,7 +64,7 @@ namespace TraceviewerServer
 		if (PagesCurrentlyAllocatedCount >= MAX_PAGES_TO_ALLOCATE_AT_ONCE)
 		{
 
-			VersatileMemoryPage* toRemove = MostRecentlyUsed.back();
+			VersatileMemoryPage* toRemove = mostRecentlyUsed.back();
 			cout<<"Kicking " << toRemove->index << " out"<<endl;
 
 			if (toRemove->isMapped != true)
@@ -72,7 +72,7 @@ namespace TraceviewerServer
 				cerr << "Least recently used one isn't even mapped?"<<endl;
 			}
 			toRemove->unmapPage();
-			MostRecentlyUsed.pop_back();
+			mostRecentlyUsed.pop_back();
 		}
 		page = (char*)mmap(0, size, MAP_PROT, MAP_FLAGS, file, startPoint);
 		if (page == MAP_FAILED)
@@ -101,26 +101,26 @@ namespace TraceviewerServer
 	void VersatileMemoryPage::putMeOnTop()
 	{
 
-		if (MostRecentlyUsed.size() == 0)
+		if (mostRecentlyUsed.size() == 0)
 		{
-			MostRecentlyUsed.push_front(this);
+			mostRecentlyUsed.push_front(this);
 			return;
 		}
-		if (MostRecentlyUsed.front()->index == index)//This is already the one on top, so we're done
+		if (mostRecentlyUsed.front()->index == index)//This is already the one on top, so we're done
 			return;
 		else
 		{
 			//Before we put this one on top, iterate through to see if it appears anywhere else
 			list<VersatileMemoryPage*>::iterator it;
-			for (it = MostRecentlyUsed.begin(); it != MostRecentlyUsed.end(); it++)
+			for (it = mostRecentlyUsed.begin(); it != mostRecentlyUsed.end(); it++)
 			{
 				if ((*it)->index == index)//We've found this one. Take it out
 				{
-					MostRecentlyUsed.erase(it);
+					mostRecentlyUsed.erase(it);
 					break;
 				}
 			}
-			MostRecentlyUsed.push_front(this);
+			mostRecentlyUsed.push_front(this);
 		}
 
 	}

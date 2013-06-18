@@ -18,15 +18,14 @@ namespace TraceviewerServer
 	class SpaceTimeDataController
 	{
 	public:
-		SpaceTimeDataController();
+
 		SpaceTimeDataController(FileData*);
 		virtual ~SpaceTimeDataController();
 		void setInfo(Long, Long, int);
-		ProcessTimeline* getNextTrace(bool);
+		ProcessTimeline* getNextTrace();
 		void addNextTrace(ProcessTimeline*);
-		void fillTraces(int, bool);
+		void fillTraces();
 		ProcessTimeline* fillTrace(bool);
-		void prepareViewportPainting(bool);
 
 		//The number of processes in the database, independent of the current display size
 		int getNumRanks();
@@ -39,6 +38,8 @@ namespace TraceviewerServer
 		ProcessTimeline** traces;
 		int tracesLength;
 	private:
+		void resetTraces();
+
 		int lineToPaint(int);
 
 		ImageTraceAttributes* oldAttributes;

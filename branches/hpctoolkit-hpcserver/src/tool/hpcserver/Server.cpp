@@ -1,4 +1,4 @@
-//#define USE_MPI
+
 /*
  * Server.cpp
  *
@@ -16,7 +16,7 @@
 #include <fstream>
 #include <mpi.h>
 #include "zlib.h"
-//#include "SpaceTimeDataController.hpp"
+
 
 using namespace std;
 using namespace MPI;
@@ -30,20 +30,13 @@ namespace TraceviewerServer
 
 	Server::Server()
 	{
-		DataSocketStream* socketptr;
+		DataSocketStream* socketptr = NULL;
 		try
 		{
-//TODO: Change the port to 21591 because 21590 has some other use...
-			//DataSocketStream CLsocket = new DataSocketStream(21590);
-			socketptr = new DataSocketStream(mainPortNumber, true);
-			/*
-			 ip::tcp::socket CLsocket(io_service);
-			 //CLsocket.open(ip::tcp::v4());
-			 acceptor.accept(CLsocket);
-			 socketptr = (DataSocketStream*) &CLsocket;
-			 */
 
-			//socketptr = &CLsocket;
+			//Port 21590 is used by vofr-gateway. Do we want to change it?
+			socketptr = new DataSocketStream(mainPortNumber, true);
+
 		} catch (std::exception& e)
 		{
 			std::cerr << e.what() << std::endl;
@@ -52,8 +45,7 @@ namespace TraceviewerServer
 		mainPortNumber = socketptr->getPort();
 		cout << "Received connection" << endl;
 
-		//vector<char> test(4);
-		//as::read(*socketptr, as::buffer(test));
+
 		int command = socketptr->readInt();
 		if (command == OPEN)
 		{
@@ -139,9 +131,7 @@ namespace TraceviewerServer
 
 		socket->writeInt(DBOK);
 
-		//int port = 2224;
 
-		//socket->WriteInt(port);
 		DataSocketStream* xmlSocket;
 		if (xmlPortNumber == -1)
 			xmlPortNumber = mainPortNumber;
@@ -339,20 +329,15 @@ namespace TraceviewerServer
 		// TODO: Make this so that the Lines get sent as soon as they are
 		// filled.
 
-		controller->FillTraces(-1, true);
+		controller->FillTraces();
 #endif
 
 		Stream->writeInt(HERE);
 		Stream->flush();
 
 
-		/*#define stWr(type,val) CompL.Write##type((val))
-		 #else
-		 #define stWr(type,val) Stream->Write##type((val))
-		 #endif*/
-
 #ifdef USE_MPI
-		int RanksDone = 1;
+		int RanksDone = 1;//1 for The MPI rank that deals with the sockets
 		int Size = COMM_WORLD.Get_size();
 
 		while (RanksDone < Size)
@@ -375,7 +360,6 @@ namespace TraceviewerServer
 
 				Stream->writeRawData(CompressedTraceLine, msg.data.compressedSize);
 
-				//delete(&msg);
 				Stream->flush();
 			}
 			else if (msg.tag == SLAVE_DONE)
@@ -394,10 +378,11 @@ namespace TraceviewerServer
 			Stream->writeInt( T->line());
 			vector<TimeCPID> data = T->data->ListCPID;
 			Stream->writeInt( data.size());
-			Stream->writeDouble( data[0].Timestamp);
 			// Begin time
-			Stream->writeDouble( data[data.size() - 1].Timestamp);
+			Stream->writeDouble( data[0].Timestamp);
 			//End time
+			Stream->writeDouble( data[data.size() - 1].Timestamp);
+
 			CompressingDataSocketLayer Compr;
 
 			vector<TimeCPID>::iterator it;
