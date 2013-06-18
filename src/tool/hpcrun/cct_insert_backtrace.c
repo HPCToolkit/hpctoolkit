@@ -542,7 +542,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
     cct_node_t *prefix = lookup_region_id(&cct->tree_root, omp_arg->region_id);
     if (prefix) cct_cursor = prefix;
     else {
-      assert(omp_arg->should_resolve == 0);
+      // assert(omp_arg->should_resolve == 0);
       prefix = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, 
 				    &(ADDR2(UNRESOLVED, omp_arg->region_id)));
       if (prefix) cct_cursor = prefix;

@@ -136,8 +136,8 @@ typedef struct thread_data_t {
   // ----------------------------------------
   // support for blame shifting
   // ----------------------------------------
-  int idle;           // indicate whether the thread is idle
-  void *blame_target; // a target for directed blame
+  int idle;              // indicate whether the thread is idle
+  uint64_t blame_target; // a target for directed blame
 
   int last_synch_sample;
   int last_sample;

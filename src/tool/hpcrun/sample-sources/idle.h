@@ -10,6 +10,8 @@ void idle_metric_blame_shift_work(void);
 void idle_metric_thread_start(void);
 void idle_metric_thread_end(void);
 
+void idle_metric_enable(); 
+
 #if 0
 void idle_fn(ompt_data_t *thread_data);
 void work_fn(ompt_data_t *thread_data);

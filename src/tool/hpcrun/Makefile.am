@@ -260,6 +260,7 @@ MY_BASE_FILES =				\
 	sample_prob.c			\
 	sample_sources_all.c		\
 	sample-sources/blame-shift.c	\
+	sample-sources/blame-shift-directed.c	\
         sample-sources/common.c         \
 	sample-sources/ga.c		\
 	sample-sources/io.c 		\
