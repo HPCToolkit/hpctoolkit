@@ -39,6 +39,7 @@ namespace TraceviewerServer
 	#define ERROR_PATH_TOO_LONG -9
 	#define ERROR_INVALID_PARAMETERS -99
 	#define ERROR_COMPRESSION_FAILED -33445
+	#define ERROR_GET_RAM_SIZE_FAILED -4456
 
 }
 #endif /* CONSTANTS_H_ */

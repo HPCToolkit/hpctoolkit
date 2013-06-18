@@ -22,14 +22,14 @@ namespace TraceviewerServer
 	public:
 		LargeByteBuffer(std::string, int);
 		virtual ~LargeByteBuffer();
-		ULong size();
-		Long getLong(ULong);
-		int getInt(ULong);
+		FileOffset size();
+		Long getLong(FileOffset);
+		int getInt(FileOffset);
 	private:
 		static ULong lcm(ULong, ULong);
 		static ULong getRamSize();
 		vector<VersatileMemoryPage> masterBuffer;
-		ULong length;
+		FileOffset length;
 		int numPages;
 
 	};

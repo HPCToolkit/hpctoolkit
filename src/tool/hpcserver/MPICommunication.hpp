@@ -8,6 +8,9 @@
 #ifndef MPICOMMUNICATION_H_
 #define MPICOMMUNICATION_H_
 
+
+#include "TimeCPID.hpp"
+
 namespace TraceviewerServer
 {
 
@@ -22,17 +25,17 @@ namespace TraceviewerServer
 		} open_file_command;
 		typedef struct
 		{
-			int processStart;
-			int processEnd;
-			double timeStart;
-			double timeEnd;
-			int verticalResolution;
-			int horizontalResolution;
+			uint32_t processStart;
+			uint32_t processEnd;
+			Time timeStart;
+			Time timeEnd;
+			uint32_t verticalResolution;
+			uint32_t horizontalResolution;
 		} get_data_command;
 		typedef struct
 		{
-			Long minBegTime;
-			Long maxEndTime;
+			Time minBegTime;
+			Time maxEndTime;
 			int headerSize;
 		} more_info_command;
 
@@ -60,8 +63,8 @@ namespace TraceviewerServer
 
 			int line;
 			int entries;
-			double begtime;
-			double endtime;
+			Time begtime;
+			Time endtime;
 			int compressedSize;//In Bytes
 		} DataHeader;
 

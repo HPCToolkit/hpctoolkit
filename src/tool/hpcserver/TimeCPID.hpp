@@ -10,13 +10,14 @@
 
 namespace TraceviewerServer
 {
-
+	typedef uint64_t Time;
 	struct TimeCPID
 	{
 	public:
-		double timestamp;
+
+		Time timestamp;
 		int cpid;
-		TimeCPID(double _timestamp, int _cpid)
+		TimeCPID(Time _timestamp, int _cpid)
 		{
 			timestamp = _timestamp;
 			cpid = _cpid;

@@ -30,14 +30,14 @@ namespace TraceviewerServer
 		listCPID = new vector<TimeCPID>();
 
 	}
-	void TraceDataByRank::getData(double timeStart, double timeRange,
+	void TraceDataByRank::getData(Time timeStart, Time timeRange,
 			double pixelLength)
 	{
 		// get the start location
 		 Long startLoc = findTimeInInterval(timeStart, minloc, maxloc);
 
 		// get the end location
-		 double endTime = timeStart + timeRange;
+		 Time endTime = timeStart + timeRange;
 		 Long endLoc = min(
 				findTimeInInterval(endTime, minloc, maxloc) + SIZE_OF_TRACE_RECORD, maxloc);
 
@@ -103,7 +103,7 @@ namespace TraceviewerServer
 	 * Used for calculating the index in which the data is to be inserted.
 	 ******************************************************************************************/
 	int TraceDataByRank::sampleTimeLine(Long minLoc, Long maxLoc, int startPixel,
-			int endPixel, int minIndex, double pixelLength, double startingTime)
+			int endPixel, int minIndex, double pixelLength, Time startingTime)
 	{
 		int midPixel = (startPixel + endPixel) / 2;
 		if (midPixel == startPixel)
@@ -121,6 +121,7 @@ namespace TraceviewerServer
 		return (addedLeft + addedRight + 1);
 	}
 
+
 	/*********************************************************************************
 	 *	Returns the location in the traceFile of the trace data (time stamp and cpid)
 	 *	Precondition: the location of the trace data is between minLoc and maxLoc.
@@ -128,7 +129,7 @@ namespace TraceviewerServer
 	 * @param left_boundary_offset: the start location. 0 means the beginning of the data in a process
 	 * @param right_boundary_offset: the end location.
 	 ********************************************************************************/
-	Long TraceDataByRank::findTimeInInterval(double time, Long l_boundOffset,
+	Long TraceDataByRank::findTimeInInterval(Time time, Long l_boundOffset,
 			Long r_boundOffset)
 	{
 		if (l_boundOffset == r_boundOffset)
@@ -139,15 +140,15 @@ namespace TraceviewerServer
 		Long l_index = getRelativeLocation(l_boundOffset);
 		Long r_index = getRelativeLocation(r_boundOffset);
 
-		double l_time = masterBuff->getLong(l_boundOffset);
-		double r_time = masterBuff->getLong(r_boundOffset);
+		Time l_time = masterBuff->getLong(l_boundOffset);
+		Time r_time = masterBuff->getLong(r_boundOffset);
 	
 		// apply "Newton's method" to find target time
 		while (r_index - l_index > 1)
 		{
 			Long predicted_index;
 			double rate = (r_time - l_time) / (r_index - l_index);
-			double mtime = (r_time - l_time) / 2;
+			Time mtime = (r_time - l_time) / 2;
 			if (time <= mtime)
 			{
 				predicted_index = max((Long) ((time - l_time) / rate) + l_index, l_index);
@@ -164,7 +165,7 @@ namespace TraceviewerServer
 			if (predicted_index >= r_index)
 				predicted_index = r_index - 1;
 
-			double temp = masterBuff->getLong(getAbsoluteLocation(predicted_index));
+			Time temp = masterBuff->getLong(getAbsoluteLocation(predicted_index));
 			if (time >= temp)
 			{
 				l_index = predicted_index;
@@ -182,7 +183,9 @@ namespace TraceviewerServer
 		l_time = masterBuff->getLong(l_offset);
 		r_time = masterBuff->getLong(r_offset);
 
-		 bool is_left_closer = abs(time - l_time) < abs(r_time - time);
+		int leftDiff = time - l_time;
+		int rightDiff = r_time - time;
+		 bool is_left_closer = abs(leftDiff) < abs(rightDiff);
 		if (is_left_closer)
 			return l_offset;
 		else if (r_offset < maxloc)
@@ -216,7 +219,7 @@ namespace TraceviewerServer
 	TimeCPID TraceDataByRank::getData(Long location)
 	{
 		LargeByteBuffer*  MasterBuff = data->getMasterBuffer();
-		 double time = MasterBuff->getLong(location);
+		 Time time = MasterBuff->getLong(location);
 		 int CPID = MasterBuff->getInt(location + SIZEOF_LONG);
 		TimeCPID ToReturn(time, CPID);
 		return ToReturn;

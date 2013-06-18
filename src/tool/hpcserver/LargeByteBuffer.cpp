@@ -5,6 +5,7 @@
  *      Author: pat2
  */
 #include "LargeByteBuffer.hpp"
+#include "Constants.hpp"
 #include "sys/stat.h"
 #include <fcntl.h>
 
@@ -77,7 +78,7 @@ namespace TraceviewerServer
 
 	}
 
-	int LargeByteBuffer::getInt(ULong pos)
+	int LargeByteBuffer::getInt(FileOffset pos)
 	{
 		int Page = pos / mmPageSize;
 		int loc = pos % mmPageSize;
@@ -85,7 +86,7 @@ namespace TraceviewerServer
 		int val = ByteUtilities::readInt(p2D);
 		return val;
 	}
-	Long LargeByteBuffer::getLong(ULong pos)
+	Long LargeByteBuffer::getLong(FileOffset pos)
 	{
 		int Page = pos / mmPageSize;
 		int loc = pos % mmPageSize;
@@ -131,7 +132,7 @@ namespace TraceviewerServer
 		if (sysctl(mib, namelen, &size, &len, NULL, 0) < 0)
 		{
 			cerr << "Could not obtain system memory size"<<endl;
-			throw 4456;
+			throw ERROR_GET_RAM_SIZE_FAILED;
 		}
 		cout << "Memory size : "<<size<<endl;
 		return size;

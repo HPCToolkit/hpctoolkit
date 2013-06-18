@@ -17,11 +17,12 @@ using namespace std;
 namespace TraceviewerServer
 {
 	typedef int FileDescriptor;
+	typedef uint64_t FileOffset;
 	class VersatileMemoryPage
 	{
 	public:
 		VersatileMemoryPage();
-		VersatileMemoryPage(ULong, int, int, FileDescriptor);
+		VersatileMemoryPage(FileOffset, int, int, FileDescriptor);
 		virtual ~VersatileMemoryPage();
 		static void setMaxPages(int);
 		char* get();
@@ -29,7 +30,7 @@ namespace TraceviewerServer
 		void mapPage();
 		void unmapPage();
 		void putMeOnTop();
-		ULong startPoint;
+		FileOffset startPoint;
 		int size;
 		char* page;
 		int index;

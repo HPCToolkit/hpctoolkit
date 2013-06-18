@@ -14,9 +14,10 @@ namespace TraceviewerServer
 
 	class ProcessTimeline
 	{
+
 	public:
 		ProcessTimeline();
-		ProcessTimeline(int, BaseDataFile*, int, int, double, double, int);
+		ProcessTimeline(int, BaseDataFile*, int, int, Time, Time, int);
 		virtual ~ProcessTimeline();
 		int line();
 		void readInData();
@@ -25,9 +26,9 @@ namespace TraceviewerServer
 		/** This ProcessTimeline's line number. */
 		int lineNum;
 		/** The initial time in view. */
-		double startingTime;
+		Time startingTime;
 		/** The range of time in view. */
-		double timeRange;
+		Time timeRange;
 		/** The amount of time that each pixel on the screen correlates to. */
 		double pixelLength;
 
