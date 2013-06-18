@@ -102,7 +102,7 @@ namespace TraceviewerServer
 			int proc;
 			string Token_To_Parse = tokens[name_format + num_tokens - PROC_POS];
 			proc = atoi(Token_To_Parse.c_str());
-			if ((proc == 0) && (!stringActuallyZero(Token_To_Parse))) //catch (NumberFormatException e)
+			if ((proc == 0) && (!FileUtils::stringActuallyZero(Token_To_Parse)))
 			{
 				// old version of name format
 				name_format = 1;
@@ -157,15 +157,7 @@ namespace TraceviewerServer
 		return SUCCESS_MERGED;
 	}
 
-	bool MergeDataFiles::stringActuallyZero(string ToTest)
-	{
-		for (int var = 0; var < ToTest.length(); var++)
-		{
-			if (ToTest[var] != '0')
-				return false;
-		}
-		return true;
-	}
+
 
 	void MergeDataFiles::insertMarker(DataOutputFileStream* dos)
 	{
@@ -211,7 +203,7 @@ namespace TraceviewerServer
 		{
 			string filename = *it;
 
-			int l = filename.length();
+			unsigned int l = filename.length();
 			//if it ends with ".hpctrace", we are good.
 			string ending = ".hpctrace";
 			if (l < ending.length())
@@ -230,7 +222,7 @@ namespace TraceviewerServer
 		vector<string> ToReturn;
 		int CurrentStartPos = 0;
 		int CurrentSize = 0;
-		for (int var = 0; var < toSplit.length(); var++) {
+		for (unsigned int var = 0; var < toSplit.length(); var++) {
 			if (toSplit[var] == delimiter)
 			{
 				ToReturn.push_back(toSplit.substr(CurrentStartPos, CurrentSize));

@@ -12,6 +12,7 @@ namespace TraceviewerServer
 
 #define SIZEOF_LONG 8
 #define SIZEOF_INT 4
+#define SIZEOF_DELTASAMPLE (2*SIZEOF_INT) //The CPID is an int, and the delta timestamp is also an int
 #define MULTI_PROCESSES  1
 #define MULTI_THREADING  2
 
@@ -27,8 +28,8 @@ namespace TraceviewerServer
 	#define INFO 0x494E464F
 	#define NODB 0x4E4F4442
 	#define EXML 0x45584D4C
-	#define SLAVE_REPLY 0x12345678
-	#define SLAVE_DONE 0x87654321
+	#define SLAVE_REPLY 0x534C5250
+	#define SLAVE_DONE 0x534C444E
 
 	//Error Codes
 	#define ERROR_STREAM_OPEN_FAILED -3

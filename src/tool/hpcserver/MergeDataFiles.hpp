@@ -38,8 +38,8 @@ namespace TraceviewerServer
 		static bool removeFiles(vector<string>);
 		//This was in Util.java in a modified form but is more useful here
 		static bool atLeastOneValidFile(string);
-		//We need this because of the way atoi works.
-		static bool stringActuallyZero(string);
+
+
 
 
 	};

@@ -84,7 +84,7 @@ namespace TraceviewerServer
 			 TimeCPID dataFirst = getData(startLoc - SIZE_OF_TRACE_RECORD);
 			addSample(0, dataFirst);
 		}
-		//PostProcess();
+		postProcess();
 	}
 	/*******************************************************************************************
 	 * Recursive method that fills in times and timeLine with the correct data from the file.

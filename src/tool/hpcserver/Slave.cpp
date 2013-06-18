@@ -16,6 +16,7 @@
 #include "CompressingDataSocketLayer.hpp"
 #include "Server.hpp"
 #include <cmath>
+#include <assert.h>
 using namespace MPI;
 using namespace std;
 
@@ -56,15 +57,15 @@ namespace TraceviewerServer
 					break;
 				case DATA:
 				{
-					int LinesSent = getData(&Message);
-					MPICommunication::ResultMessage NodeFinishedMsg;
-					NodeFinishedMsg.tag = SLAVE_DONE;
-					NodeFinishedMsg.done.rankID = COMM_WORLD.Get_rank();
-					NodeFinishedMsg.done.traceLinesSent = LinesSent;
-					cout << "Rank " << NodeFinishedMsg.done.rankID << " done, having created "
-							<< LinesSent << " trace lines." << endl;
+					int linesSent = getData(&Message);
+					MPICommunication::ResultMessage nodeFinishedMsg;
+					nodeFinishedMsg.tag = SLAVE_DONE;
+					nodeFinishedMsg.done.rankID = COMM_WORLD.Get_rank();
+					nodeFinishedMsg.done.traceLinesSent = linesSent;
+					cout << "Rank " << nodeFinishedMsg.done.rankID << " done, having created "
+							<< linesSent << " trace lines." << endl;
 					int SizeToSend = 3 * SIZEOF_INT;
-					COMM_WORLD.Send(&NodeFinishedMsg, SizeToSend, MPI_PACKED,
+					COMM_WORLD.Send(&nodeFinishedMsg, SizeToSend, MPI_PACKED,
 							MPICommunication::SOCKET_SERVER, 0);
 					break;
 				}
@@ -124,19 +125,19 @@ namespace TraceviewerServer
 		correspondingAttributes.lineNum = 0;
 		controller->attributes = &correspondingAttributes;
 
-		ProcessTimeline* NextTrace = controller->getNextTrace(true);
+		ProcessTimeline* NextTrace = controller->getNextTrace();
 		int LinesSentCount = 0;
 		int waitcount = 0;
 
-		if (NextTrace == NULL)
-			cout << "First trace was null..." << endl;
+		assert (NextTrace != NULL);
+
 
 		while (NextTrace != NULL)
 		{
 			if ((NextTrace->data->rank < LowerInclusiveBound)
 					|| (NextTrace->data->rank > UpperInclusiveBound))
 			{
-				NextTrace = controller->getNextTrace(true);
+				NextTrace = controller->getNextTrace();
 				waitcount++;
 				continue;
 			}
@@ -167,61 +168,56 @@ namespace TraceviewerServer
 			 {
 			 msg.Data.Data[i++] = it->CPID;
 			 }*/
-			unsigned char* OutputBuffer;
-			int OutputBufferLen;
+			unsigned char* outputBuffer;
+			int outputBufferLen;
 			if (useCompression)
 			{
-				CompressingDataSocketLayer Compr;
+				CompressingDataSocketLayer compr;
 
-				double CurrentTimestamp = msg.data.begtime;
+				double currentTimestamp = msg.data.begtime;
 				for (i = 0; i < entries; i++)
 				{
-					Compr.writeInt((int) ((*ActualData)[i].timestamp - CurrentTimestamp));
-					Compr.writeInt((*ActualData)[i].cpid);
-					CurrentTimestamp = (*ActualData)[i].timestamp;
+					compr.writeInt((int) ((*ActualData)[i].timestamp - currentTimestamp));
+					compr.writeInt((*ActualData)[i].cpid);
+					currentTimestamp = (*ActualData)[i].timestamp;
 				}
-				Compr.flush();
-				OutputBufferLen = Compr.getOutputLength();
-				OutputBuffer = Compr.getOutputBuffer();
+				compr.flush();
+				outputBufferLen = compr.getOutputLength();
+				outputBuffer = compr.getOutputBuffer();
 			}
 			else
 			{
 
-				OutputBuffer = new unsigned char[entries*SIZEOF_INT];
-				char* ptrToFirstElem = (char*)&(OutputBuffer[0]);
-				int CurrIndexInBuff = 0;
+				outputBuffer = new unsigned char[entries*SIZEOF_DELTASAMPLE];
+				char* ptrToFirstElem = (char*)&(outputBuffer[0]);
+				char* currentPtr = ptrToFirstElem;
+				double currentTimestamp = msg.data.begtime;
 				for (i = 0; i < entries; i++)
 				{
-					ByteUtilities::writeInt(ptrToFirstElem + CurrIndexInBuff, (*ActualData)[i].cpid);
-					CurrIndexInBuff += 4;
+					int deltaTimestamp = (*ActualData)[i].timestamp - currentTimestamp;
+					ByteUtilities::writeInt(currentPtr, deltaTimestamp);
+					currentPtr += SIZEOF_INT;
+					ByteUtilities::writeInt(currentPtr, (*ActualData)[i].cpid);
+					currentPtr += SIZEOF_INT;
 				}
-				OutputBufferLen = entries*4;
+				outputBufferLen = entries*SIZEOF_DELTASAMPLE;
 			}
-			msg.data.compressedSize = OutputBufferLen;
+			msg.data.compressedSize = outputBufferLen;
 			COMM_WORLD.Send(&msg, sizeof(msg), MPI_PACKED, MPICommunication::SOCKET_SERVER,
 					0);
-			//cout << "Buffer overflow protection: Setting " << i << " to 0xABCDEF" << endl;
-			//CPIDs[i] = 0xABCDEF;
 
-			// sizeof(msg) is too large because it assumes all the traces are full. It'll lead to lots of extra sending
-			//										Tag, Line, Size			 Beg ts, end ts--double same size as long
-			//int SizeInBytes = 3 * Constants::SIZEOF_INT + 2 * Constants::SIZEOF_LONG +
-			//Each entry is an int
-			//		(entries) * Constants::SIZEOF_INT;
-
-			COMM_WORLD.Send(OutputBuffer, OutputBufferLen, MPI_BYTE,
+			COMM_WORLD.Send(outputBuffer, outputBufferLen, MPI_BYTE,
 					MPICommunication::SOCKET_SERVER, 0);
 			if (!useCompression)
 			{
-				delete[] OutputBuffer;
+				delete[] outputBuffer;
 			}
 			LinesSentCount++;
 			if (LinesSentCount % 100 == 0)
 				cout << Truerank << " Has sent " << LinesSentCount
-						<< ". Most recent message was " << NextTrace->line() << " and contained "
-						<< entries << " entries" << endl;
+						<< " ranks." << endl;
 
-			NextTrace = controller->getNextTrace(true);
+			NextTrace = controller->getNextTrace();
 		}
 		return LinesSentCount;
 	}
