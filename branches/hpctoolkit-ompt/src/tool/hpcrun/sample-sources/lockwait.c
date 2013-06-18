@@ -221,7 +221,7 @@ METHOD_FN(process_event_list, int lush_metrics)
         bs_entry.fn = process_lockwait_blame_for_sample;
         bs_entry.next = 0;
 
-	blame_shift_register(&bs_entry);
+	blame_shift_register(&bs_entry, bs_type_directed);
 
 	lockwait_metric_id = hpcrun_new_metric();
 	hpcrun_set_metric_info_and_period(lockwait_metric_id, "LOCKWAIT",

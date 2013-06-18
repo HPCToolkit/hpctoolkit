@@ -69,6 +69,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 #include "blame-shift.h"
+#include "idle.h"
 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/ompt-interface.h>
@@ -113,14 +114,13 @@ static void init_hack(void);
 static uintptr_t active_worker_count = 1; // start with one thread
 static uint64_t total_threads = 1;        // start with one thread
 
-static int idle_metric_id = -1;
+static int idle_blame_metric_id = -1;
+static int idle_wait_metric_id = -1;
 static int work_metric_id = -1;
 
 static bs_fn_entry_t bs_entry;
 static bool idleness_measurement_enabled = false;
 static bool idleness_blame_information_source_present = false;
-
-
 
 
 
@@ -150,7 +150,8 @@ METHOD_FN(thread_init_action)
 static void
 METHOD_FN(start)
 {
-  if (!blame_shift_source_available(bs_type_timer) && !blame_shift_source_available(bs_type_cycles)) {
+  if (!blame_shift_heartbeat_available(bs_heartbeat_timer) && 
+      !blame_shift_heartbeat_available(bs_heartbeat_cycles)) {
     STDERR_MSG("HPCToolkit: IDLE metric needs either a REALTIME, CPUTIME, WALLCLOCK, or PAPI_TOT_CYC source.");
     monitor_real_exit(1);
   }
@@ -197,25 +198,7 @@ static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
   TMSG(IDLE, "Process event list");
-  idleness_measurement_enabled = true;
-  bs_entry.fn = idle_metric_process_blame_for_sample;
-  bs_entry.next = 0;
-
-  blame_shift_register(&bs_entry);
-
-  idle_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(idle_metric_id, "idle",
-				    MetricFlags_ValFmt_Real, 1, metric_property_none);
-
-  work_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(work_metric_id, "work",
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
-  TMSG(IDLE, "Metric ids = idle (%d), work(%d)",
-       idle_metric_id, work_metric_id);
-#if 0
-  init_hack();
-#endif
-
+  idle_metric_enable();
 }
 
 
@@ -263,20 +246,25 @@ idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric
   thread_data_t *td = hpcrun_get_thread_data();
   td->last_sample++;
 
+  // FIXME: OMPT should not be visible here
   if (hpcrun_ompt_get_thread_data()) { // it is an openmp worker thread, so it participates in blame shifting
 
+    int metric_value = metric_desc->period * metric_incr;
     if (td->idle == 0 && td->blame_target == 0) { // if this thread is not idle
       // capture active_worker_count into a local variable to make sure that the count doesn't change
       // between the time we test it and the time we use the value
-      int metric_value = metric_desc->period * metric_incr;
       long workers = active_worker_count;
       double working_threads = (workers > 0 ? workers : 1.0 );
 
       double idle_threads = total_threads - working_threads;
 		
-      cct_metric_data_increment(idle_metric_id, node, (cct_metric_data_t){.r = 
+      cct_metric_data_increment(idle_blame_metric_id, node, (cct_metric_data_t){.r = 
 	    (idle_threads / working_threads) * ((double) metric_value)});
       cct_metric_data_increment(work_metric_id, node, (cct_metric_data_t){.i = metric_value});
+    } else {
+      if (td->idle != 0 && td->blame_target == 0) { 
+	cct_metric_data_increment(idle_wait_metric_id, node, (cct_metric_data_t){.i = metric_value});
+      }
     }
   }
 }
@@ -297,6 +285,7 @@ init_hack()
 }
 #endif
 
+#if 0
 void
 record_synchronous_sample(thread_data_t *td, int n, void *arg)
 {
@@ -316,6 +305,7 @@ record_synchronous_sample(thread_data_t *td, int n, void *arg)
     }
   }
 }
+#endif
 
 
 /******************************************************************************
@@ -395,4 +385,31 @@ idle_metric_thread_end()
   hpcrun_safe_exit();
 }
 
+
+
+void
+idle_metric_enable() 
+{
+  if (idleness_measurement_enabled == false) {
+    idleness_measurement_enabled = true;
+    bs_entry.fn = idle_metric_process_blame_for_sample;
+    bs_entry.next = 0;
+    
+    blame_shift_register(&bs_entry, bs_type_undirected);
+    
+    idle_blame_metric_id = hpcrun_new_metric();
+    hpcrun_set_metric_info_and_period(idle_blame_metric_id, "IDLE_BLAME",
+				      MetricFlags_ValFmt_Real, 1, metric_property_none);
+
+    idle_wait_metric_id = hpcrun_new_metric();
+    hpcrun_set_metric_info_and_period(idle_wait_metric_id, "IDLE_WAIT",
+				      MetricFlags_ValFmt_Int, 1, metric_property_none);
+
+    work_metric_id = hpcrun_new_metric();
+    hpcrun_set_metric_info_and_period(work_metric_id, "WORK",
+				      MetricFlags_ValFmt_Int, 1, metric_property_none);
+
+    TMSG(IDLE, "Metric ids = idle_wait (%d) idle_blame (%d), work(%d)", idle_wait_metric_id, idle_blame_metric_ic, work_metric_id);
+  }
+}
 

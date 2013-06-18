@@ -331,7 +331,7 @@ static void
 METHOD_FN(init)
 {
   TMSG(ITIMER_CTL, "init");
-  blame_shift_source_register(bs_type_timer);
+  blame_shift_heartbeat_register(bs_heartbeat_timer);
   self->state = INIT;
 }
 

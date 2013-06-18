@@ -61,6 +61,8 @@
 
 #include "sample-sources/idle.h"
 #include "sample-sources/lockwait.h"
+#include "sample-sources/blame-shift.h"
+#include "sample-sources/blame-shift-directed.h"
 
 #include "utilities/defer-cntxt.h"
 #include "utilities/task-cntxt.h"
@@ -83,6 +85,28 @@ void ompt_sync_sample()
   record_synchronous_sample(td, n, );
 }
 #endif
+
+
+static uint64_t
+ompt_get_blame_target()
+{
+  if (ompt_initialized) {
+    ompt_wait_id_t wait_id;
+    ompt_state_t state = ompt_get_state(&wait_id);
+
+    switch (state) {
+    case ompt_state_wait_critical:
+    case ompt_state_wait_lock:
+    case ompt_state_wait_nest_lock:
+    case ompt_state_wait_atomic:
+    case ompt_state_wait_ordered:
+      return wait_id;
+    default: break;
+    }
+  }
+  return 0;
+}
+
   
 static void
 ompt_thread_create(ompt_data_t *data)
@@ -146,28 +170,39 @@ init_tasks()
 static void 
 init_blame_shift_directed()
 {
-  int retval;
-  retval = ompt_set_callback(ompt_event_release_lock, 
-		    (ompt_callback_t)(unlock_fn1));
+  static bs_tfn_entry_t entry;
 
-  retval = ompt_set_callback(ompt_event_release_nest_lock_last, 
-		    (ompt_callback_t)(unlock_fn1));
+  int retval = 0;
 
-  retval = ompt_set_callback(ompt_event_release_critical, 
-		    (ompt_callback_t)(unlock_fn1));
+  retval |= ompt_set_callback(ompt_event_release_lock, 
+		    (ompt_callback_t) directed_blame_accept);
 
-  retval = ompt_set_callback(ompt_event_release_atomic, 
-		    (ompt_callback_t)(unlock_fn1));
+  retval |= ompt_set_callback(ompt_event_release_nest_lock_last, 
+		    (ompt_callback_t) directed_blame_accept);
 
-  retval = ompt_set_callback(ompt_event_release_ordered, 
-		    (ompt_callback_t)(unlock_fn1));
+  retval |= ompt_set_callback(ompt_event_release_critical, 
+		    (ompt_callback_t) directed_blame_accept);
+
+  retval |= ompt_set_callback(ompt_event_release_atomic, 
+		    (ompt_callback_t) directed_blame_accept);
+
+  retval |= ompt_set_callback(ompt_event_release_ordered, 
+		    (ompt_callback_t) directed_blame_accept);
+
+  if (retval) {
+    entry.fn = ompt_get_blame_target;
+    entry.next = NULL;
+    blame_shift_target_register(&entry);
+  }
 }
+
   
 static void
 ompt_idle_begin(ompt_data_t *data)
 {
   idle_metric_blame_shift_idle();
 }
+
 
 static void
 ompt_idle_end(ompt_data_t *data)
@@ -315,4 +350,25 @@ hpcrun_ompt_get_thread_data()
 {
   if (ompt_initialized) return ompt_get_thread_data();
   return NULL;
+}
+
+
+uint64_t
+hpcrun_ompt_get_blame_target()
+{
+  if (ompt_initialized) {
+    ompt_wait_id_t wait_id;
+    ompt_state_t state = ompt_get_state(&wait_id);
+
+    switch (state) {
+    case ompt_state_wait_critical:
+    case ompt_state_wait_lock:
+    case ompt_state_wait_nest_lock:
+    case ompt_state_wait_atomic:
+    case ompt_state_wait_ordered:
+      return wait_id;
+    default: break;
+    }
+  }
+  return 0;
 }
