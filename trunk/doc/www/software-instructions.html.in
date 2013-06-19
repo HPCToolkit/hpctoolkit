@@ -537,8 +537,8 @@ Please note that a list of examples below provides <code>configure</code> comman
 	and MIC cores.
 	</dt>
 	<dd><code>
-	    ibrun.symm -m "command line for main cores" \<br>
-	    &nbsp;&nbsp;&nbsp;&nbsp; -c "command line for MIC cores"
+	    ibrun.symm -c "command line for main cores" \<br>
+	    &nbsp;&nbsp;&nbsp;&nbsp; -m "command line for MIC cores"
 	    </code>
 	</dd>
       </dl>
@@ -679,7 +679,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2013/06/06</span>]
+<p>[<span class="lastupdated">Page last updated: 2013/06/19</span>]
 </p>
 
 <!-- ********************************************************************** -->
