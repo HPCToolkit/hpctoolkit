@@ -105,6 +105,8 @@
 #include <utilities/defer-cntxt.h>
 #include <hpcrun/unresolved.h>
 
+#if 0 // deprecated
+
 /******************************************************************************
  * macros
  *****************************************************************************/
@@ -419,3 +421,5 @@ void unlock_fn1(ompt_wait_id_t wait_id)
     }
   }
 }
+
+#endif

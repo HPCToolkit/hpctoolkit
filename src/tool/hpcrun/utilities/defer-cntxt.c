@@ -323,7 +323,7 @@ void end_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_frame,
 
 int need_defer_cntxt()
 {
-  if (getenv("OMPT_LOCAL_VIEW")) return 0;
+  if (ENABLED(OMPT_LOCAL_VIEW)) return 0;
 
   // master thread does not need to defer the context
   if ((hpcrun_ompt_get_parallel_id(0) > 0) && !TD_GET(master)) {

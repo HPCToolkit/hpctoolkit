@@ -59,6 +59,7 @@
 #include <lush/lush-backtrace.h>
 #include <thread_data.h>
 #include <hpcrun_stats.h>
+#include <trace.h>
 #include <trampoline/common/trampoline.h>
 #include <utilities/ip-normalized.h>
 #include <utilities/task-cntxt.h>

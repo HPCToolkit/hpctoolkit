@@ -41,6 +41,8 @@ void blame_shift_apply(int metric_id, cct_node_t *node, int metric_incr);
 void blame_shift_heartbeat_register(bs_heartbeat_t bst);
 int blame_shift_heartbeat_available(bs_heartbeat_t bst);
 
+void blame_shift_target_allow();
+
 void register_blame_shift();
 void register_lock();
 #endif

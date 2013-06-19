@@ -1,4 +1,5 @@
 #include "blame-shift.h"
+#include "blame-shift-directed.h"
 #include "thread_data.h"
 
 //------------------------------------------------------------------------------
