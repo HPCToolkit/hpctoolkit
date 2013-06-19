@@ -238,8 +238,8 @@ blameht_get_blame(uint64_t obj)
       val = (uint64_t)oldval.parts.blame;
       break;
     }
-    return val;
   }
+  return val;
 }
 
 
@@ -352,7 +352,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   directed_blame_other_metric_id = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(directed_blame_other_metric_id, "MUTEX_BLAME",
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
-  // idle_metric_enable();
 }
 
 

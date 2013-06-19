@@ -121,6 +121,7 @@ struct cct_node_t {
   struct cct_node_t* right;
 };
 
+#if 0
 //
 // cache of info from most recent splay
 //
@@ -129,6 +130,7 @@ static struct {
   bool found;
   cct_addr_t* addr;
 } splay_cache;
+#endif
 
 //
 // ******************* Local Routines ********************
