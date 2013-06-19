@@ -238,6 +238,7 @@ blameht_get_blame(uint64_t obj)
       val = (uint64_t)oldval.parts.blame;
       break;
     }
+    break;
   }
   return val;
 }
