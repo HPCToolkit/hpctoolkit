@@ -15,12 +15,17 @@ using namespace std;
 
 namespace TraceviewerServer {
 
+struct OffsetPair {
+	FileOffset start;
+	FileOffset end;
+};
+
 class BaseDataFile {
 public:
-	BaseDataFile(string, int);
+	BaseDataFile(string filename, int headerSize);
 	virtual ~BaseDataFile();
 	int getNumberOfFiles();
-	Long* getOffsets();
+	OffsetPair* getOffsets();
 	LargeByteBuffer* getMasterBuffer();
 	void setData(string, int);
 
@@ -36,7 +41,7 @@ private:
 	LargeByteBuffer* masterBuff;
 	int numFiles; // = 0;
 
-	Long* offsets;
+	OffsetPair* offsets;
 };
 
 } /* namespace TraceviewerServer */

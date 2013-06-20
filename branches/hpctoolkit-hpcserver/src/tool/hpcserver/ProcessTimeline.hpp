@@ -17,12 +17,14 @@ namespace TraceviewerServer
 
 	public:
 		ProcessTimeline();
-		ProcessTimeline(int, BaseDataFile*, int, int, Time, Time, int);
+		ProcessTimeline(ImageTraceAttributes attrib, int _lineNum, FilteredBaseData* _dataTrace,
+				Time _startingTime, int _headerSize);
 		virtual ~ProcessTimeline();
 		int line();
 		void readInData();
 		TraceDataByRank* data;
 	private:
+		int lineNumToProcessNum(int line);
 		/** This ProcessTimeline's line number. */
 		int lineNum;
 		/** The initial time in view. */
@@ -31,6 +33,7 @@ namespace TraceviewerServer
 		Time timeRange;
 		/** The amount of time that each pixel on the screen correlates to. */
 		double pixelLength;
+		ImageTraceAttributes attributes;
 
 	};
 

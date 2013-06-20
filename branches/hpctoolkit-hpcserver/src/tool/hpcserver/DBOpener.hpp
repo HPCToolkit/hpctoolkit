@@ -10,7 +10,7 @@
 #include <string>
 #include "SpaceTimeDataController.hpp"
 #include "FileData.hpp"
-
+#include "Constants.hpp"
 
 using namespace std;
 namespace TraceviewerServer
@@ -25,7 +25,7 @@ namespace TraceviewerServer
 		SpaceTimeDataController* openDbAndCreateStdc(string);
 	private:
 		static const int MIN_TRACE_SIZE = 32 + 8 + 24
-				+ TraceDataByRank::SIZE_OF_TRACE_RECORD * 2;
+				+ SIZE_OF_TRACE_RECORD * 2;
 		static bool verifyDatabase(string, FileData*);
 
 	};

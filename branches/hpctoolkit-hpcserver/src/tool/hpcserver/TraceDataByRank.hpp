@@ -10,6 +10,7 @@
 
 #include <vector>
 #include "TimeCPID.hpp"
+#include "FilteredBaseData.hpp"
 #include "BaseDataFile.hpp"
 
 
@@ -20,19 +21,19 @@ namespace TraceviewerServer
 	{
 	public:
 
-		TraceDataByRank(BaseDataFile*, int, int, int);
+		TraceDataByRank(FilteredBaseData*, int, int, int);
 		virtual ~TraceDataByRank();
 
 		void getData(Time timeStart, Time timeRange, double pixelLength);
 		int sampleTimeLine(Long minLoc, Long maxLoc, int startPixel, int endPixel, int minIndex, double pixelLength, Time startingTime);
 		Long findTimeInInterval(Time time, Long l_boundOffset, Long r_boundOffset);
 
-		/**The size of one trace record in bytes (cpid (= 4 bytes) + timeStamp (= 8 bytes)).*/
-		static const int SIZE_OF_TRACE_RECORD = 12;
+
+
 		vector<TimeCPID>* listCPID;
 		int rank;
 	private:
-		BaseDataFile* data;
+		FilteredBaseData* data;
 
 		Long minloc;
 		Long maxloc;

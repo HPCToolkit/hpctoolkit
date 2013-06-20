@@ -8,7 +8,6 @@
 #include "DBOpener.hpp"
 #include <iostream>
 #include "MergeDataFiles.hpp"
-#include "TraceDataByRank.hpp"
 #include "FileUtils.hpp"
 
 namespace TraceviewerServer

@@ -15,6 +15,9 @@ namespace TraceviewerServer
 #define SIZEOF_DELTASAMPLE (2*SIZEOF_INT) //The CPID is an int, and the delta timestamp is also an int
 #define MULTI_PROCESSES  1
 #define MULTI_THREADING  2
+/**The size of one trace record in bytes (cpid (= 4 bytes) + timeStamp (= 8 bytes)).*/
+#define SIZE_OF_TRACE_RECORD (SIZEOF_INT+SIZEOF_LONG)
+#define SIZEOF_END_OF_FILE_MARKER 4
 
 	#define DEFAULT_PORT 21590
 	#define MAX_DB_PATH_LENGTH 1023

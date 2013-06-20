@@ -10,20 +10,26 @@
 namespace TraceviewerServer
 {
 
-
-	ProcessTimeline::ProcessTimeline(int _lineNum, BaseDataFile* _dataTrace,
-			int _processNumber, int _numPixelH, Time _timeRange, Time _startingTime,
-			int _headerSize)
+	ProcessTimeline::ProcessTimeline(ImageTraceAttributes attrib, int _lineNum, FilteredBaseData* _dataTrace,
+			Time _startingTime, int _headerSize)
 	{
 		lineNum = _lineNum;
 
-		timeRange = _timeRange;
+		timeRange = (attrib.endTime - attrib.begTime) ;
 		startingTime = _startingTime;
 
-		pixelLength = timeRange / (double) _numPixelH;
+		pixelLength = timeRange / (double) attrib.numPixelsH;
 
-		data = new TraceDataByRank(_dataTrace, _processNumber, _numPixelH, _headerSize);
-
+		attributes = attrib;
+		data = new TraceDataByRank(_dataTrace, lineNumToProcessNum(_lineNum), attrib.numPixelsH, _headerSize);
+	}
+	int ProcessTimeline::lineNumToProcessNum(int line) {
+		int numTimelinesToPaint = attributes.endProcess - attributes.begProcess;
+		if (numTimelinesToPaint > attributes.numPixelsV)
+			return attributes.begProcess
+					+ (line * numTimelinesToPaint) / (attributes.numPixelsV);
+		else
+			return attributes.begProcess + line;
 	}
 	void ProcessTimeline::readInData()
 	{

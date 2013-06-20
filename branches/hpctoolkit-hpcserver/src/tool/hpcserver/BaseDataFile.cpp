@@ -40,7 +40,7 @@ namespace TraceviewerServer
 		return numFiles;
 	}
 
-	Long* BaseDataFile::getOffsets()
+	OffsetPair* BaseDataFile::getOffsets()
 	{
 		return offsets;
 	}
@@ -55,19 +55,23 @@ namespace TraceviewerServer
 	 * @param f: array of files
 	 * @throws IOException
 	 */
-	void BaseDataFile::setData(string filename, int HeaderSize)
+	void BaseDataFile::setData(string filename, int headerSize)
 	{
-		masterBuff = new LargeByteBuffer(filename, HeaderSize);
+		masterBuff = new LargeByteBuffer(filename, headerSize);
 
-		type = masterBuff->getInt(0);
-		numFiles = masterBuff->getInt(SIZEOF_INT);
+		FileOffset currentPos = 0;
+		type = masterBuff->getInt(currentPos);
+		currentPos += SIZEOF_INT;
+		numFiles = masterBuff->getInt(currentPos);
+		currentPos += SIZEOF_INT;
 
 		processIDs = new int[numFiles];
 		threadIDs = new short[numFiles];
-		offsets = new Long[numFiles];
+		offsets = new OffsetPair[numFiles];
 
-		Long currentPos = SIZEOF_INT * 2;
 
+
+		offsets[numFiles-1].end	= masterBuff->size()- SIZE_OF_TRACE_RECORD - SIZEOF_END_OF_FILE_MARKER;
 		// get the procs and threads IDs
 		for (int i = 0; i < numFiles; i++)
 		{
@@ -76,8 +80,11 @@ namespace TraceviewerServer
 			 int thread_id = masterBuff->getInt(currentPos);
 			currentPos += SIZEOF_INT;
 
-			offsets[i] = masterBuff->getLong(currentPos);
+			offsets[i].start = masterBuff->getLong(currentPos);
+			if (i > 0)
+				offsets[i-1].end = offsets[i].start - SIZE_OF_TRACE_RECORD;
 			currentPos += SIZEOF_LONG;
+
 
 			//--------------------------------------------------------------------
 			// adding list of x-axis

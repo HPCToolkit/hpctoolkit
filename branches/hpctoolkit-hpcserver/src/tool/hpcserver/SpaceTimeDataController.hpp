@@ -9,8 +9,8 @@
 #define SpaceTimeDataController_H_
 #include "FileData.hpp"
 #include "ImageTraceAttributes.hpp"
-#include "BaseDataFile.hpp"
 #include "ProcessTimeline.hpp"
+#include "FilteredBaseData.hpp"
 
 namespace TraceviewerServer
 {
@@ -40,11 +40,9 @@ namespace TraceviewerServer
 	private:
 		void resetTraces();
 
-		int lineToPaint(int);
-
 		ImageTraceAttributes* oldAttributes;
 
-		BaseDataFile* dataTrace;
+		FilteredBaseData* dataTrace;
 		int headerSize;
 
 		// The minimum beginning and maximum ending time stamp across all traces (in microseconds).
