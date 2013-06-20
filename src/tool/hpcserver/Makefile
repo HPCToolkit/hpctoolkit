@@ -7,12 +7,13 @@ TARGET=hpctraceserver-mpi
 INCLUDE=-I$(ZLIB)/include 
 LDFLAGS=-L$(ZLIB)/lib -lz
 #MPI enabled by default. Disable with NO_MPI
-#USEMPI=-DUSE_MPI
+#USEMPI=-DNO_MPI
 SRC = \
 	BaseDataFile.cpp \
 	CompressingDataSocketLayer.cpp \
 	DataOutputFileStream.cpp \
 	DataSocketStream.cpp \
+	FilteredBaseData.cpp \
 	LargeByteBuffer.cpp \
 	DBOpener.cpp \
 	MergeDataFiles.cpp \
@@ -29,7 +30,7 @@ OBJ = $(patsubst %.cpp,%.o,$(SRC))
 all: $(TARGET)
 
 %.o: %.cpp
-	mpicxx -O3 -g $(INCLUDE) $(BSCOMPFLAGS)  -Wall -c -fmessage-length=0 -o $@ $< -DMPICH_IGNORE_CXX_SEEK
+	mpicxx -O1 -g $(INCLUDE) $(BSCOMPFLAGS)  -Wall -c -fmessage-length=0 -o $@ $< -DMPICH_IGNORE_CXX_SEEK
 
 
 $(TARGET): $(OBJ)

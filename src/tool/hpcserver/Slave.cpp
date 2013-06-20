@@ -83,11 +83,11 @@ namespace TraceviewerServer
 		MPICommunication::get_data_command gc = Message->gdata;
 		ImageTraceAttributes correspondingAttributes;
 
-		int Truerank = COMM_WORLD.Get_rank();
+		int trueRank = COMM_WORLD.Get_rank();
 		int size = COMM_WORLD.Get_size();
 		//Gives us a contiguous count of ranks from 0 to size-2 regardless of which node is the socket server
 		//If ss = 0, they are all mapped one less. If ss = size-1, no changes happen
-		int rank = Truerank > MPICommunication::SOCKET_SERVER ? Truerank - 1 : Truerank;
+		int rank = trueRank > MPICommunication::SOCKET_SERVER ? trueRank - 1 : trueRank;
 
 		int n = gc.processEnd - gc.processStart + 1;
 		int p = size;
@@ -110,9 +110,10 @@ namespace TraceviewerServer
 		int UpperInclusiveBound = (int) (min(mod, rank + 1) * ceil(q)
 				+ (rank + 1 - min(mod, rank + 1)) * floor(q) - 1 + gc.processStart);
 
-		cout << "Rank " << Truerank << " is getting lines [" << LowerInclusiveBound << ", "
+		cout << "Rank " << trueRank << " is getting lines [" << LowerInclusiveBound << ", "
 				<< UpperInclusiveBound << "]" << endl;
 
+		//These have to be the originals so that the strides will be correct
 		correspondingAttributes.begProcess = gc.processStart;
 		correspondingAttributes.endProcess = gc.processEnd;
 		correspondingAttributes.numPixelsH = gc.horizontalResolution;
@@ -122,7 +123,20 @@ namespace TraceviewerServer
 
 		correspondingAttributes.begTime = gc.timeStart;
 		correspondingAttributes.endTime = gc.timeEnd;
-		correspondingAttributes.lineNum = 0;
+
+		int totalTraces = min(correspondingAttributes.numPixelsV, n);
+		int autoskip;
+		/*TODO: The work distribution is a tiny bit irregular because we distribute based on process number,
+		 *  which because of the striding can lead to an occasional ± 1. I spent a while trying to get the
+		 *  skipping exact, but I don't think it's worth it. We just need to get it close, and then we can
+		 *  do an additional O(1) step. Even though this solution is not as elegant, the big difference is
+		 *  that this brings it down to O(1) from O(n).*/
+
+			autoskip = floor(rank*totalTraces/(size - 1.0));
+		cout<< "Was going to autoskip " <<autoskip << " traces."<<endl;
+
+		correspondingAttributes.lineNum = autoskip;
+
 		controller->attributes = &correspondingAttributes;
 
 		ProcessTimeline* NextTrace = controller->getNextTrace();
@@ -134,6 +148,7 @@ namespace TraceviewerServer
 
 		while (NextTrace != NULL)
 		{
+
 			if ((NextTrace->data->rank < LowerInclusiveBound)
 					|| (NextTrace->data->rank > UpperInclusiveBound))
 			{
@@ -143,8 +158,8 @@ namespace TraceviewerServer
 			}
 			if (waitcount != 0)
 			{
-				cout << Truerank << " skipped " << waitcount
-						<< " processes before actually starting work" << endl;
+				cout << trueRank << " skipped " << waitcount
+						<< " processes before actually starting work. Autoskip was " <<autoskip<< " and actual skip was " << controller->attributes->lineNum -1 << endl;
 				waitcount = 0;
 			}
 			NextTrace->readInData();
@@ -158,7 +173,7 @@ namespace TraceviewerServer
 
 			msg.data.begtime = (*ActualData)[0].timestamp;
 			msg.data.endtime = (*ActualData)[entries - 1].timestamp;
-			msg.data.rankID = Truerank;
+			msg.data.rankID = trueRank;
 			/*Have to move this so that we know how large the compressed stream is
 			 * COMM_WORLD.Send(&msg, sizeof(msg), MPI_PACKED, MPICommunication::SOCKET_SERVER,
 			 0);*/
@@ -214,7 +229,7 @@ namespace TraceviewerServer
 			}
 			LinesSentCount++;
 			if (LinesSentCount % 100 == 0)
-				cout << Truerank << " Has sent " << LinesSentCount
+				cout << trueRank << " Has sent " << LinesSentCount
 						<< " ranks." << endl;
 
 			NextTrace = controller->getNextTrace();

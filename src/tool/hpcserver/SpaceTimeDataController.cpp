@@ -21,8 +21,8 @@ namespace TraceviewerServer
 	{
 		attributes = new ImageTraceAttributes();
 		oldAttributes = new ImageTraceAttributes();
-		dataTrace = new BaseDataFile(locations->fileTrace, DEFAULT_HEADER_SIZE);
-		height = dataTrace->getNumberOfFiles();
+		dataTrace = new FilteredBaseData(locations->fileTrace, DEFAULT_HEADER_SIZE);
+		height = dataTrace->getNumberOfRanks();
 		experimentXML = locations->fileXML;
 		fileTrace = locations->fileTrace;
 		tracesInitialized = false;
@@ -37,11 +37,11 @@ namespace TraceviewerServer
 		maxEndTime = _maxEndTime;
 		headerSize = _headerSize;
 
-		if (dataTrace != NULL)
-		{
+		//if (dataTrace != NULL)
+		//{
 			delete (dataTrace);
-			dataTrace = new BaseDataFile(fileTrace, headerSize);
-		}
+			dataTrace = new FilteredBaseData(fileTrace, headerSize);
+		//}
 	}
 
 	int SpaceTimeDataController::getNumRanks()
@@ -59,13 +59,10 @@ namespace TraceviewerServer
 		if (attributes->lineNum
 				< min(attributes->numPixelsV, attributes->endProcess - attributes->begProcess))
 		{
-		attributes->lineNum++;
-
-		return new ProcessTimeline(attributes->lineNum - 1, dataTrace,
-				lineToPaint(attributes->lineNum - 1), attributes->numPixelsH,
-				attributes->endTime - attributes->begTime,
-				minBegTime + attributes->begTime, headerSize);
-
+			ProcessTimeline* toReturn  = new ProcessTimeline(*attributes, attributes->lineNum, dataTrace,
+					minBegTime + attributes->begTime, headerSize);
+			attributes->lineNum++;
+			return toReturn;
 		}
 		return NULL;
 	}
@@ -80,7 +77,7 @@ namespace TraceviewerServer
 	//Don't call if in MPI mode
 	void SpaceTimeDataController::fillTraces()
 	{
-		//Traces might be null.
+		//Traces might be null. resetTraces will fix that.
 		resetTraces();
 
 
@@ -95,23 +92,13 @@ namespace TraceviewerServer
 		}
 	}
 
-	int SpaceTimeDataController::lineToPaint(int Line)
-	{
-		int NumTimelinesToPaint = attributes->endProcess - attributes->begProcess;
-		if (NumTimelinesToPaint > attributes->numPixelsV)
-			return attributes->begProcess
-					+ (Line * NumTimelinesToPaint) / (attributes->numPixelsV);
-		else
-			return attributes->begProcess + Line;
-	}
-
 	 int* SpaceTimeDataController::getValuesXProcessID()
 	{
-		return dataTrace->processIDs;
+		return dataTrace->getProcessIDs();
 	}
 	 short* SpaceTimeDataController::getValuesXThreadID()
 	{
-		return dataTrace->threadIDs;
+		return dataTrace->getThreadIDs();
 	}
 
 	void SpaceTimeDataController::resetTraces()

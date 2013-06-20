@@ -13,17 +13,14 @@
 namespace TraceviewerServer
 {
 
-	TraceDataByRank::TraceDataByRank(BaseDataFile* _data, int _rank,
+	TraceDataByRank::TraceDataByRank(FilteredBaseData* _data, int _rank,
 			int _numPixelH, int _headerSize)
 	{
 		data = _data;
 		rank = _rank;
-		Long* offsets = data->getOffsets();
-		minloc = offsets[rank] + _headerSize;
-		maxloc = (
-				(rank + 1 < data->getNumberOfFiles()) ?
-						offsets[rank + 1] : _data->getMasterBuffer()->size() - 1)
-				- SIZE_OF_TRACE_RECORD;
+		//OffsetPair* offsets = data->getOffsets();
+		minloc = data->getMinLoc(rank);
+		maxloc = data->getMaxLoc(rank);
 		numPixelsH = _numPixelH;
 
 		
@@ -109,7 +106,7 @@ namespace TraceviewerServer
 		if (midPixel == startPixel)
 			return 0;
 
-		Long loc = findTimeInInterval(midPixel * pixelLength + startingTime, minLoc,
+		Long loc = findTimeInInterval((long)(midPixel * pixelLength + startingTime), minLoc,
 				maxLoc);
 		 TimeCPID nextData = getData(loc);
 		addSample(minIndex, nextData);
@@ -135,13 +132,13 @@ namespace TraceviewerServer
 		if (l_boundOffset == r_boundOffset)
 			return l_boundOffset;
 
-		LargeByteBuffer*  masterBuff = data->getMasterBuffer();
+
 
 		Long l_index = getRelativeLocation(l_boundOffset);
 		Long r_index = getRelativeLocation(r_boundOffset);
 
-		Time l_time = masterBuff->getLong(l_boundOffset);
-		Time r_time = masterBuff->getLong(r_boundOffset);
+		Time l_time = data->getLong(l_boundOffset);
+		Time r_time = data->getLong(r_boundOffset);
 	
 		// apply "Newton's method" to find target time
 		while (r_index - l_index > 1)
@@ -165,7 +162,7 @@ namespace TraceviewerServer
 			if (predicted_index >= r_index)
 				predicted_index = r_index - 1;
 
-			Time temp = masterBuff->getLong(getAbsoluteLocation(predicted_index));
+			Time temp = data->getLong(getAbsoluteLocation(predicted_index));
 			if (time >= temp)
 			{
 				l_index = predicted_index;
@@ -180,8 +177,8 @@ namespace TraceviewerServer
 		long l_offset = getAbsoluteLocation(l_index);
 		long r_offset = getAbsoluteLocation(r_index);
 
-		l_time = masterBuff->getLong(l_offset);
-		r_time = masterBuff->getLong(r_offset);
+		l_time = data->getLong(l_offset);
+		r_time = data->getLong(r_offset);
 
 		int leftDiff = time - l_time;
 		int rightDiff = r_time - time;
@@ -218,9 +215,9 @@ namespace TraceviewerServer
 
 	TimeCPID TraceDataByRank::getData(Long location)
 	{
-		LargeByteBuffer*  MasterBuff = data->getMasterBuffer();
-		 Time time = MasterBuff->getLong(location);
-		 int CPID = MasterBuff->getInt(location + SIZEOF_LONG);
+
+		 Time time = data->getLong(location);
+		 int CPID = data->getInt(location + SIZEOF_LONG);
 		TimeCPID ToReturn(time, CPID);
 		return ToReturn;
 	}

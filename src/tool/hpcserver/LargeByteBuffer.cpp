@@ -20,7 +20,7 @@ using namespace std;
 namespace TraceviewerServer
 {
 	static ULong mmPageSize; //= 1<<23;//1 << 30;
-	ULong fileSize;
+	FileOffset fileSize;
 	LargeByteBuffer::LargeByteBuffer(string SPath, int HeaderSize)
 	{
 		//string SPath = Path.string();
@@ -34,16 +34,16 @@ namespace TraceviewerServer
 		fileSize = fInfo.st_size;
 
 		ULong osPageSize = getpagesize();
-		ULong PageSizeMultiple = lcm(osPageSize, HeaderSize);//The page size must be a multiple of this
+		ULong pageSizeMultiple = lcm(osPageSize, HeaderSize);//The page size must be a multiple of this
 
-		ULong RamSizeInBytes = getRamSize();
+		ULong ramSizeInBytes = getRamSize();
 
 		const ULong _64_MEGABYTE = 1 << 26;
 		//This is a pretty arbitrary algorithm, but it works
-		mmPageSize = PageSizeMultiple * (_64_MEGABYTE/osPageSize);//This means it will get it close to 64 MB
+		mmPageSize = pageSizeMultiple * (_64_MEGABYTE/osPageSize);//This means it will get it close to 64 MB
 
 		double MAX_PORTION_OF_RAM_AVAILABLE = 0.80;//Use up to 80%
-		int MaxPages = (RamSizeInBytes * MAX_PORTION_OF_RAM_AVAILABLE)/mmPageSize;
+		int MaxPages = (int)(ramSizeInBytes * MAX_PORTION_OF_RAM_AVAILABLE/mmPageSize);
 		VersatileMemoryPage::setMaxPages(MaxPages);
 
 //		if (PAGE_SIZE % mm::mapped_file::alignment() != 0)
@@ -56,24 +56,22 @@ namespace TraceviewerServer
 
 		FileDescriptor fd = open(SPath.c_str(), O_RDONLY);
 
-		ULong SizeRemaining = fileSize;
+		FileOffset sizeRemaining = fileSize;
 
 
 		//MasterBuffer = new mm::mapped_file*[NumPages];
 
 		for (int i = 0; i < numPages; i++)
 		{
-			unsigned long mapping_len = min((ULong) mmPageSize, SizeRemaining);
+			unsigned long mapping_len = min((ULong) mmPageSize, sizeRemaining);
 
 			//MasterBuffer[i] = new mm::mapped_file(Path, mm::mapped_file::readonly, PAGE_SIZE, PAGE_SIZE*i);
 			//This is done to make the Blue Gene Q easier
 
 			masterBuffer.push_back(*(new VersatileMemoryPage(mmPageSize*i , mapping_len, i, fd)));
 
-			//cout << "Allocated a page: " << AllocatedRegion << endl;
-			SizeRemaining -= mapping_len;
-			//cerr << "pid=" << getpid() << " i=" << i << " first test read=" << (int) *MasterBuffer[i] << endl;
-			//cerr << "pid=" << getpid() << " i=" << i << " second test read=" << (int) *(MasterBuffer[i] + mapping_len-1) << endl;
+			sizeRemaining -= mapping_len;
+
 		}
 
 	}
@@ -126,21 +124,21 @@ namespace TraceviewerServer
 #else
 		int mib[2] = { CTL_HW, HW_MEMSIZE };
 		u_int namelen = sizeof(mib) / sizeof(mib[0]);
-		uint64_t size;
-		size_t len = sizeof(size);
+		uint64_t ramSize;
+		size_t len = sizeof(ramSize);
 
-		if (sysctl(mib, namelen, &size, &len, NULL, 0) < 0)
+		if (sysctl(mib, namelen, &ramSize, &len, NULL, 0) < 0)
 		{
 			cerr << "Could not obtain system memory size"<<endl;
 			throw ERROR_GET_RAM_SIZE_FAILED;
 		}
-		cout << "Memory size : "<<size<<endl;
-		return size;
+		cout << "Memory size : "<<ramSize<<endl;
+		return ramSize;
 #endif
 
 	}
 
-	ULong LargeByteBuffer::size()
+	FileOffset LargeByteBuffer::size()
 	{
 		return fileSize;
 	}
