@@ -1,0 +1,91 @@
+Revert main() to three arguments.  Bash requires the three arg
+version.
+
+
+Index: libmonitor-main/src/main.c
+===================================================================
+--- libmonitor-main/src/main.c	(revision 149)
++++ libmonitor-main/src/main.c	(working copy)
+@@ -90,7 +90,7 @@
+ 
+ #else  /* default __libc_start_main() args */
+ #define START_MAIN_PARAM_LIST 		\
+-    int  (*main)(int, char **),		\
++    int (*main)(int, char **, char **), \
+     int  argc,				\
+     char **argv,			\
+     void (*init)(void),			\
+@@ -100,7 +100,7 @@
+ #endif
+ 
+ typedef int start_main_fcn_t(START_MAIN_PARAM_LIST);
+-typedef int main_fcn_t(int, char **);
++typedef int main_fcn_t(int, char **, char **);
+ typedef void exit_fcn_t(int);
+ typedef int sigprocmask_fcn_t(int, const sigset_t *, sigset_t *);
+ typedef pid_t fork_fcn_t(void);
+@@ -126,6 +126,7 @@
+ 
+ static int monitor_argc = 0;
+ static char **monitor_argv = NULL;
++static char **monitor_envp = NULL;
+ 
+ volatile static char monitor_init_library_called = 0;
+ volatile static char monitor_fini_library_called = 0;
+@@ -140,7 +141,9 @@
+ 
+ static struct monitor_thread_node monitor_main_tn;
+ 
++#ifdef MONITOR_STATIC
+ extern char **environ;
++#endif
+ 
+ /*
+  *----------------------------------------------------------------------
+@@ -330,7 +333,7 @@
+ 	*argv_ptr = monitor_argv;
+     }
+     if (env_ptr != NULL) {
+-	*env_ptr = environ;
++	*env_ptr = monitor_envp;
+     }
+ }
+ 
+@@ -455,7 +458,7 @@
+  *  Dynamic case -- we get into __libc_start_main() via LD_PRELOAD.
+  */
+ int
+-monitor_main(int argc, char **argv)
++monitor_main(int argc, char **argv, char **envp)
+ {
+     int ret;
+ 
+@@ -464,6 +467,7 @@
+     MONITOR_DEBUG1("\n");
+     monitor_argc = argc;
+     monitor_argv = argv;
++    monitor_envp = envp;
+ 
+     monitor_main_tn.tn_stack_bottom = alloca(8);
+     strncpy(monitor_main_tn.tn_stack_bottom, "stakbot", 8);
+@@ -478,9 +482,9 @@
+      * application via monitor_wrap_main().  The application should
+      * call __real_main() and exit() itself and not return.
+      */
+-    monitor_wrap_main(monitor_argc, monitor_argv, environ);
++    monitor_wrap_main(monitor_argc, monitor_argv, monitor_envp);
+ #endif
+-    ret = (*real_main)(monitor_argc, monitor_argv);
++    ret = (*real_main)(monitor_argc, monitor_argv, monitor_envp);
+     MONITOR_ASM_LABEL(monitor_main_fence3);
+ 
+     monitor_end_process_fcn(MONITOR_EXIT_NORMAL);
+@@ -498,7 +502,7 @@
+     MONITOR_DEBUG1("\n");
+     real_main = &__real_main;
+ 
+-    return monitor_main(argc, argv);
++    return monitor_main(argc, argv, environ);
+ }
+ 
+ #else  /* MONITOR_DYNAMIC */
