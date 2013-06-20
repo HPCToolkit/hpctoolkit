@@ -7,15 +7,16 @@
 
 #ifndef FILTER_HPP_
 #define FILTER_HPP_
+#include <climits>
 
 class Range {
 		int min;
 		int max;
 		int stride;
 	public:
-		Range(){
+		Range(){//Default range matches nothing
 			min = 0;
-			max = INT_MAX;
+			max = 0;
 			stride = 1;
 		}
 		bool matches (int i){
@@ -32,22 +33,21 @@ class Range {
 class Filter {
 public:
 	Filter() {
-		excludeMatched = false;
+		excludeMatched = true;
 	}
 	Filter(Range _process, Range _thread, bool _excludeMatched){
 		process = _process;
 		thread = _thread;
 		excludeMatched = _excludeMatched;
 	}
-	bool matches (int processNum, int threadNum){
+	bool include (int processNum, int threadNum){
 		return (process.matches(processNum) && thread.matches(threadNum))^excludeMatched;
 		//xoring them is the logical operation we want
 	}
 private:
 	Range process;
 	Range thread;
-	bool excludeMatched;//if exclude match, any ranks that do not match the pattern are included
+	bool excludeMatched;//if excludeMatched, any ranks that _do_not_ match the pattern are included
 } ;
-
 
 #endif /* FILTER_HPP_ */

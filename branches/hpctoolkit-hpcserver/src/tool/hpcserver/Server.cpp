@@ -73,7 +73,11 @@ namespace TraceviewerServer
 		{
 			cout << "Could not open database" << endl;
 			sendDBOpenFailed(socketptr);
-			return ERROR_DB_OPEN_FAILED;
+			//Now wait until we get the next OPEN. We must get an open to proceed and no other message is legitimate here.
+			//If we don't read the OPEN here, the message stream will be off by 4 bytes because parseOpenDB (which reads from
+			//the stream next) does not expect OPEN.
+			socketptr->readInt();
+			return START_NEW_CONNECTION_IMMEDIATELY;
 		}
 		else
 		{
