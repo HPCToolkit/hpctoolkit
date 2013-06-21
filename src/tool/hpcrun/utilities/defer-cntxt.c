@@ -421,9 +421,26 @@ omp_resolve_and_free(cct_node_t* cct, cct_op_arg_t a, size_t l)
   omp_resolve(cct, a, l);
 }
 
+// The function used to resolve contexts of parallel regions.
+// The function consists of four parts: 
+// (1) Compute the outer-most region id; only the outer-most region needs to be resolved
+// (2) If the thread has a current region id that is different from its previous one; and
+//     the previous region id is non-zero, reslove the previous region. The previous region
+//     id is recorded in td->region_id.
+// (3) If the thread has a current region id that is different from its previous one; and 
+//     the current region id is non-zero, add a slot into the unresolved tree indexed by
+//     the current region_id
+// (4) Update td->region_id to be the current region id
+
 void resolve_cntxt()
 {
   hpcrun_safe_enter();
+
+  //
+  // part 1: outer_region_id contains the outer-most region id of the thread taking this sample.
+  // A pure worker thread's outer-most region is the same as the inner-most region.
+  // A sub-master thread's outer-most region is always recorded in td->outer_region_id.
+  //
   uint64_t current_region_id = hpcrun_ompt_get_parallel_id(0); //inner-most region id
   cct_node_t* tbd_cct = (hpcrun_get_thread_epoch()->csdata).unresolved_root;
   thread_data_t *td = hpcrun_get_thread_data();
@@ -433,11 +450,19 @@ void resolve_cntxt()
   if(td->outer_region_id > 0)
     outer_region_id = td->outer_region_id; // current outer region
   if(outer_region_id == 0) outer_region_id = current_region_id;
+
+  //
+  // part 2: try to resolve previous parallel region
+  //
   // resolve the trees at the end of one parallel region
   if((td->region_id != outer_region_id) && (td->region_id != 0)){
     TMSG(DEFER_CTXT, "I want to resolve the context when I come out from region %d", td->region_id);
     hpcrun_cct_walkset(tbd_cct, omp_resolve_and_free, td);
   }
+
+  //
+  // part 3: insert the current region into unresolved tree (tbd tree)
+  //
   // update the use count when come into a new omp region
   if((td->region_id != outer_region_id) && (outer_region_id != 0)) {
     // end_team_fn occurs at master thread, side threads may still 
@@ -457,6 +482,10 @@ void resolve_cntxt()
   int initial_td_region = td->region_id;
 #endif
 
+  //
+  // part 4: update the td->region_id, indicating the region where this thread 
+  // most-recently takes a sample.
+  //
   // td->region_id represents the out-most parallel region id
   td->region_id = outer_region_id;
 
