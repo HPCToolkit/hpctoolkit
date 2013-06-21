@@ -252,6 +252,8 @@ METHOD_FN(start)
   TMSG(IBS_SAMPLE, "starting IBS %d %d", td->core_profile_trace_data.id, period);
 
   ov = &fd2ov[td->core_profile_trace_data.id];
+  // not reinit for the IBS setting
+  if(ov->fd) pfm_unload_context(ov->fd);
   memset(ov, 0, sizeof(struct over_args));
 
   ov->inp_mod.ibsop.maxcnt = period;
@@ -312,6 +314,9 @@ METHOD_FN(start)
   /* load context */
   if(pfm_load_context(ov->fd, &ov->load_args) != 0){
     EMSG("error in load");
+    // if context is reloaded, just return
+    // errno EEXIST means it has already load the context for the fd
+    if (errno == EEXIST) return;
     hpcrun_ssfail_start("IBS");
   }
   
