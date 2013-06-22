@@ -92,15 +92,15 @@ refetch:
 			"$(FETCH_URL_2)"    \
 			"$(FETCH_URL_3)"    \
 			"$(FETCH_URL_4)" ;  \
-	elif test "x$(FETCH_CMD)" != x ; then  \
-		echo "$(FETCH_CMD)" ;  \
+	elif test 'x$(FETCH_CMD)' != x ; then  \
+		echo '$(FETCH_CMD)' ;  \
 		$(FETCH_CMD) ;  \
 	else  \
 		echo "missing FETCH_CMD" ;  \
 		exit 2 ;  \
 	fi
 	-ls -l "$(SRC_DIR)"
-	@if test "x$(PATCH_CMD)" != xdefault ; then  \
+	@if test 'x$(PATCH_CMD)' != xdefault ; then  \
 		echo ; echo "===> ($(PKG_NAME)) patching ..." ;  \
 		$(PATCH_CMD) ;  \
 	elif test -d "$(PATCH_DIR)" ; then  \
@@ -112,8 +112,9 @@ refetch:
 			fi ;  \
 		done ;  \
 	fi
-	@if test "x$(POST_FETCH_CMD)" != xnone ; then  \
+	@if test 'x$(POST_FETCH_CMD)' != xnone ; then  \
 		echo ; echo "===> ($(PKG_NAME)) post fetch ..." ;  \
+		echo '$(POST_FETCH_CMD)' ;  \
 		$(POST_FETCH_CMD) ;  \
 	fi
 	touch $(FETCH_COOKIE)
@@ -127,7 +128,7 @@ fetch:
 
 reconfig: fetch prereqs
 	@echo ; echo "===> ($(PKG_NAME)) make config ..."
-	@test x != "x$(CONFIG_CMD)"
+	@test x != 'x$(CONFIG_CMD)'
 	@rm -f $(CONFIG_COOKIE) $(BUILD_COOKIE) $(INSTALL_COOKIE)
 	$(CONFIG_CMD)
 	touch $(CONFIG_COOKIE)
@@ -141,7 +142,7 @@ config:
 
 rebuild: config
 	@echo ; echo "===> ($(PKG_NAME)) make build ..."
-	@test x != "x$(BUILD_CMD)"
+	@test x != 'x$(BUILD_CMD)'
 	@rm -f $(BUILD_COOKIE) $(INSTALL_COOKIE)
 	$(BUILD_CMD)
 	touch $(BUILD_COOKIE)
@@ -155,7 +156,7 @@ build:
 
 reinstall: build
 	@echo ; echo "===> ($(PKG_NAME)) make install ..."
-	@test x != "x$(INSTALL_CMD)"
+	@test x != 'x$(INSTALL_CMD)'
 	@rm -f $(INSTALL_COOKIE)
 	$(INSTALL_CMD)
 	@echo "resetting permissions on: $(INSTALL_SUBDIR)"
@@ -175,13 +176,13 @@ install:
 
 clean:
 	@echo ; echo "===> ($(PKG_NAME)) make clean ..."
-	@test x != "x$(CLEAN_CMD)"
+	@test x != 'x$(CLEAN_CMD)'
 	$(CLEAN_CMD)
 	@rm -f $(FETCH_COOKIE) $(CONFIG_COOKIE) $(BUILD_COOKIE)
 
 distclean:
 	@echo ; echo "===> ($(PKG_NAME)) make distclean ..."
-	@test x != "x$(CLEAN_CMD)"
+	@test x != 'x$(CLEAN_CMD)'
 	$(CLEAN_CMD)
 	@rm -f $(FETCH_COOKIE) $(CONFIG_COOKIE)
 	@rm -f $(BUILD_COOKIE) $(INSTALL_COOKIE)

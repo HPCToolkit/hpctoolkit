@@ -10,6 +10,9 @@ PKG_NAME = xed2
 ifeq ($(USE_XED2_K1OM),yes)
 FETCH_TARFILE = pin-extras-2.12-58423-k1om.tar.gz
 SRC_DIR = extras
+libirc_src =  ../distfiles/libirc.a.gz
+libirc_dest = extras/xed2-mic/lib/libirc.a
+POST_FETCH_CMD = gzip -d <"$(libirc_src)" >"$(libirc_dest)"
 
 else ifeq ($(USE_XED2_MIC),yes)
 FETCH_TARFILE = xed-install-knc-2013-05-31-lin-x86-64.tar.bz2
