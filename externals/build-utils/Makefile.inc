@@ -158,6 +158,8 @@ reinstall: build
 	@echo ; echo "===> ($(PKG_NAME)) make install ..."
 	@test x != 'x$(INSTALL_CMD)'
 	@rm -f $(INSTALL_COOKIE)
+	@echo "removing old install directory: $(INSTALL_SUBDIR)"
+	-rm -rf "$(PREFIX)/$(INSTALL_SUBDIR)"
 	$(INSTALL_CMD)
 	@echo "resetting permissions on: $(INSTALL_SUBDIR)"
 	-find "$(PREFIX)/$(INSTALL_SUBDIR)" -type d -exec chmod a+rx {} \;
