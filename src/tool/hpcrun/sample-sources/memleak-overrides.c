@@ -108,7 +108,7 @@
 #include <utilities/arch/mcontext.h>
 #endif
 
-#define MIN_BYTES 0
+#define MIN_BYTES 4096
 
 /******************************************************************************
  * type definitions
