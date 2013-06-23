@@ -106,7 +106,7 @@ cct_insert_raw_backtrace(cct_node_t* cct,
 static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 			  int metricId, uint64_t metricIncr,
-			  int skipInner);
+			  int skipInner, int isSync);
 
 //
 // 
@@ -215,7 +215,7 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
     TMSG(BT_INSERT,"regular (NON-lush) backtrace2cct invoked");
     n = help_hpcrun_backtrace2cct(cct, context,
 				  metricId, metricIncr,
-				  skipInner);
+				  skipInner, isSync);
   }
 
   // N.B.: for lush_backtrace() it may be that n = NULL
@@ -472,7 +472,7 @@ static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 			  int metricId,
 			  uint64_t metricIncr,
-			  int skipInner)
+			  int skipInner, int isSync)
 {
   bool tramp_found;
 
@@ -519,6 +519,9 @@ help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
     TMSG(THREAD_CTXT, "Thread correction, back off outermost backtrace entry");
     bt_last--;
   }
+
+  if (ENABLED(FLAT) && !isSync)
+    bt_last = bt_beg;
   cct_node_t* n = hpcrun_cct_record_backtrace_w_metric(cct, partial_unw, bt.fence == FENCE_THREAD,
 						       bt_beg, bt_last, tramp_found,
 						       metricId, metricIncr);
