@@ -17533,7 +17533,11 @@ MONITOR=
 MONITOR_LIBS=
 HPC_MONITOR=
 
-if test "$use_externals" = yes ; then
+# By default, disable old-monitor and hpcrun-flat in a cross compile.
+# It can be reenabled with an explicit --with-monitor option.
+
+if test "$use_externals" = yes && test -z "$is_cross_compile"
+then
   MONITOR="$ext_old_monitor_prefix"
   case "$MONITOR" in
     /* )  OPT_WITH_MONITOR=yes
@@ -18124,18 +18128,17 @@ fi
 $as_echo_n "checking whether to build hpcrun-flat... " >&6; }
 
 OPT_ENABLE_HPCRUN_FLAT="no"
-enable_hpcrun_flat_msg="${enable_hpcrun_flat}"
 
 if test "${enable_hpcrun_flat}" = yes \
-   && test "${OPT_PAPI_DYNAMIC}" = yes && test "${OPT_WITH_MONITOR}" = yes \
+   && test "${OPT_PAPI_DYNAMIC}" = yes \
+   && test "${OPT_WITH_MONITOR}" = yes \
    && test "${HOST_OS}" = "Linux"
 then
   OPT_ENABLE_HPCRUN_FLAT="yes"
-  enable_hpcrun_flat_msg="no (missing prerequisites)"
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${enable_hpcrun_flat_msg}" >&5
-$as_echo "${enable_hpcrun_flat_msg}" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $OPT_ENABLE_HPCRUN_FLAT" >&5
+$as_echo "$OPT_ENABLE_HPCRUN_FLAT" >&6; }
  if test "${OPT_ENABLE_HPCRUN_FLAT}" = "yes"; then
   OPT_ENABLE_HPCRUN_FLAT_TRUE=
   OPT_ENABLE_HPCRUN_FLAT_FALSE='#'

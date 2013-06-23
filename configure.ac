@@ -1363,7 +1363,11 @@ MONITOR=
 MONITOR_LIBS=
 HPC_MONITOR=
 
-if test "$use_externals" = yes ; then
+# By default, disable old-monitor and hpcrun-flat in a cross compile.
+# It can be reenabled with an explicit --with-monitor option.
+
+if test "$use_externals" = yes && test -z "$is_cross_compile"
+then
   MONITOR="$ext_old_monitor_prefix"
   case "$MONITOR" in
     /* )  OPT_WITH_MONITOR=yes
@@ -1844,17 +1848,16 @@ AC_ARG_ENABLE([hpcrun-flat],
 AC_MSG_CHECKING([whether to build hpcrun-flat])
 
 OPT_ENABLE_HPCRUN_FLAT="no"
-enable_hpcrun_flat_msg="${enable_hpcrun_flat}"
 
 if test "${enable_hpcrun_flat}" = yes \
-   && test "${OPT_PAPI_DYNAMIC}" = yes && test "${OPT_WITH_MONITOR}" = yes \
+   && test "${OPT_PAPI_DYNAMIC}" = yes \
+   && test "${OPT_WITH_MONITOR}" = yes \
    && test "${HOST_OS}" = "Linux"
 then
   OPT_ENABLE_HPCRUN_FLAT="yes"
-  enable_hpcrun_flat_msg="no (missing prerequisites)"
 fi
 
-AC_MSG_RESULT([${enable_hpcrun_flat_msg}])
+AC_MSG_RESULT([$OPT_ENABLE_HPCRUN_FLAT])
 AM_CONDITIONAL(OPT_ENABLE_HPCRUN_FLAT, test "${OPT_ENABLE_HPCRUN_FLAT}" = "yes")
 
 
