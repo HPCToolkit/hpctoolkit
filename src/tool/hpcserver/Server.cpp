@@ -73,11 +73,13 @@ namespace TraceviewerServer
 		{
 			cout << "Could not open database" << endl;
 			sendDBOpenFailed(socketptr);
-			//Now wait until we get the next OPEN. We must get an open to proceed and no other message is legitimate here.
-			//If we don't read the OPEN here, the message stream will be off by 4 bytes because parseOpenDB (which reads from
-			//the stream next) does not expect OPEN.
-			socketptr->readInt();
-			return START_NEW_CONNECTION_IMMEDIATELY;
+			//Now wait until we get the next tag. If we don't read it here, the message stream will
+			//be off by 4 bytes because parseOpenDB (which reads from the stream next) does not expect OPEN.
+			int tag = socketptr->readInt();
+			if (tag == OPEN)
+				return START_NEW_CONNECTION_IMMEDIATELY;
+			else
+				return CLOSE_SERVER;
 		}
 		else
 		{
@@ -100,6 +102,9 @@ namespace TraceviewerServer
 				case DATA:
 					getAndSendData(socketptr);
 					break;
+				case FLTR:
+					filter(socketptr);
+					break;
 				case DONE:
 					endConnection = true;
 					break;
@@ -112,7 +117,7 @@ namespace TraceviewerServer
 			}
 		}
 
-		return 0;
+		return CLOSE_SERVER;
 	}
 	void Server::parseInfo(DataSocketStream* socket)
 	{
@@ -408,6 +413,36 @@ namespace TraceviewerServer
 		Stream->flush();
 #endif
 		cout << "Data sent" << endl;
+	}
+
+	void Server::filter(DataSocketStream* stream)
+	{
+		stream->readByte();//Padding
+		bool excludeMatches = stream->readByte();
+		int count = stream->readShort();
+#ifdef USE_MPI
+		MPICommunication::CommandMessage toBcast;
+		toBcast.command = FLTR;
+		toBcast.filt.count = count;
+		toBcast.filt.excludeMatches = excludeMatches;
+		COMM_WORLD.Bcast(&toBcast, sizeof(toBcast), MPI_PACKED,
+					MPICommunication::SOCKET_SERVER);
+#endif
+		FilterSet filters(excludeMatches);
+		for (int i = 0; i < count; ++i) {
+			BinaryRepresentationOfFilter filt;//This makes the MPI code easier and the non-mpi code about the same
+			filt.processMin = stream->readInt();
+			filt.processMax = stream->readInt();
+			filt.processStride = stream->readInt();
+			filt.threadMin = stream->readInt();
+			filt.threadMax = stream->readInt();
+			filt.threadStride = stream->readInt();
+#ifdef USE_MPI
+			COMM_WORLD.Bcast(&filt, sizeof(filt), MPI_PACKED, MPICommunication::SOCKET_SERVER);
+#endif
+			filters.add(Filter(filt));
+			controller->applyFilters(filters);
+		}
 	}
 
 } /* namespace TraceviewerServer */

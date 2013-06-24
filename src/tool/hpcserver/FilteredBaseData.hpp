@@ -10,6 +10,7 @@
 #include "ImageTraceAttributes.hpp"
 #include "BaseDataFile.hpp"
 #include "Filter.hpp"
+#include "FilterSet.hpp"
 namespace TraceviewerServer
 {
 	class FilteredBaseData {
@@ -17,7 +18,7 @@ namespace TraceviewerServer
 		FilteredBaseData(string filename, int _headerSize);
 		virtual ~FilteredBaseData();
 
-		void setFilter(Filter _filter);
+		void setFilters(FilterSet _filter);
 
 		FileOffset getMinLoc(int pseudoRank);
 		FileOffset getMaxLoc(int pseudoRank);
@@ -32,7 +33,7 @@ namespace TraceviewerServer
 
 		BaseDataFile* baseDataFile;
 		OffsetPair* baseOffsets;
-		Filter currentlyAppliedFilter;
+		FilterSet currentlyAppliedFilter;
 		//Maps the pseudoranks the program asks for from the unfiltered
 		//pool to the real ranks from the filtered pool.
 		vector<int> rankMapping;

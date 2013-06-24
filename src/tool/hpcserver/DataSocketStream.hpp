@@ -42,6 +42,7 @@ namespace TraceviewerServer
 		string readString();
 		double readDouble();
 		short readShort();
+		char readByte();
 
 		SocketFD getDescriptor();
 	private:

@@ -41,6 +41,11 @@ namespace TraceviewerServer
 
 		typedef struct
 		{
+			int count;
+			bool excludeMatches;
+		} filter_header_command;
+		typedef struct
+		{
 			int command;
 			union
 			{
@@ -48,8 +53,10 @@ namespace TraceviewerServer
 				open_file_command ofile;
 				get_data_command gdata;
 				more_info_command minfo;
+				filter_header_command filt;
 			};
 		} CommandMessage;
+
 
 		typedef struct
 		{

@@ -20,7 +20,7 @@ FilteredBaseData::~FilteredBaseData() {
 	delete baseDataFile;
 }
 
-void FilteredBaseData::setFilter(Filter _filter)
+void FilteredBaseData::setFilters(FilterSet _filter)
 {
 	currentlyAppliedFilter = _filter;
 	filter();
@@ -30,7 +30,7 @@ void FilteredBaseData::filter()
 {
 	int numFiles = baseDataFile->getNumberOfFiles();
 	for (int i = 0; i < numFiles; i++) {
-		if (currentlyAppliedFilter.include(baseDataFile->processIDs[i], baseDataFile->threadIDs[i]))
+		if (currentlyAppliedFilter.matches(baseDataFile->processIDs[i], baseDataFile->threadIDs[i]))
 			rankMapping.push_back(i);
 	}
 }

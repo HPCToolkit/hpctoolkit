@@ -121,6 +121,10 @@ namespace TraceviewerServer
 		tracesInitialized = true;
 
 	}
+	void SpaceTimeDataController::applyFilters(FilterSet filters)
+	{
+		dataTrace->setFilters(filters);
+	}
 
 	SpaceTimeDataController::~SpaceTimeDataController()
 	{
