@@ -12,6 +12,9 @@ namespace TraceviewerServer
 
 #define SIZEOF_LONG 8
 #define SIZEOF_INT 4
+#define SIZEOF_SHORT 2
+#define SIZEOF_BYTE 1
+
 #define SIZEOF_DELTASAMPLE (2*SIZEOF_INT) //The CPID is an int, and the delta timestamp is also an int
 #define MULTI_PROCESSES  1
 #define MULTI_THREADING  2
@@ -31,10 +34,12 @@ namespace TraceviewerServer
 	#define INFO 0x494E464F
 	#define NODB 0x4E4F4442
 	#define EXML 0x45584D4C
+	#define FLTR 0x464C5452
 	#define SLAVE_REPLY 0x534C5250
 	#define SLAVE_DONE 0x534C444E
 
 	//Error Codes
+	//Yes, they are mostly arbitrary
 	#define ERROR_STREAM_OPEN_FAILED -3
 	#define ERROR_EXPECTED_OPEN_COMMAND -77
 	#define ERROR_DB_OPEN_FAILED -4
@@ -43,6 +48,8 @@ namespace TraceviewerServer
 	#define ERROR_INVALID_PARAMETERS -99
 	#define ERROR_COMPRESSION_FAILED -33445
 	#define ERROR_GET_RAM_SIZE_FAILED -4456
-
+	#define ERROR_READ_TOO_LITTLE(z) (-(0x5200 | (z)))
+	#define ERROR_STREAM_CLOSED -12
+	#define ERROR_SOCKET_IN_USE -1111
 }
 #endif /* CONSTANTS_H_ */

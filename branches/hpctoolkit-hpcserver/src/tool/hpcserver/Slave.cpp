@@ -17,6 +17,7 @@
 #include "Server.hpp"
 #include <cmath>
 #include <assert.h>
+#include "FilterSet.hpp"
 using namespace MPI;
 using namespace std;
 
@@ -67,6 +68,17 @@ namespace TraceviewerServer
 					int SizeToSend = 3 * SIZEOF_INT;
 					COMM_WORLD.Send(&nodeFinishedMsg, SizeToSend, MPI_PACKED,
 							MPICommunication::SOCKET_SERVER, 0);
+					break;
+				}
+				case FLTR:
+				{
+					FilterSet f(Message.filt.excludeMatches);
+					for (int i = 0; i < Message.filt.count; ++i) {
+						BinaryRepresentationOfFilter b;
+						COMM_WORLD.Bcast(&b, sizeof(b), MPI_PACKED, MPICommunication::SOCKET_SERVER);
+						f.add(Filter(b));
+					}
+					controller->applyFilters(f);
 					break;
 				}
 				case DONE: //Server shutdown
@@ -126,13 +138,13 @@ namespace TraceviewerServer
 
 		int totalTraces = min(correspondingAttributes.numPixelsV, n);
 		int autoskip;
-		/*TODO: The work distribution is a tiny bit irregular because we distribute based on process number,
+		/*  The work distribution is a tiny bit irregular because we distribute based on process number,
 		 *  which because of the striding can lead to an occasional ± 1. I spent a while trying to get the
 		 *  skipping exact, but I don't think it's worth it. We just need to get it close, and then we can
 		 *  do an additional O(1) step. Even though this solution is not as elegant, the big difference is
 		 *  that this brings it down to O(1) from O(n).*/
 
-			autoskip = floor(rank*totalTraces/(size - 1.0));
+		autoskip = (int)floor(rank*totalTraces/(size - 1.0));
 		cout<< "Was going to autoskip " <<autoskip << " traces."<<endl;
 
 		correspondingAttributes.lineNum = autoskip;

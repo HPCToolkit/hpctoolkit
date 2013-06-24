@@ -8,13 +8,15 @@
 #include <stdio.h>
 #include <vector>
 #include <iostream>
-#include "ByteUtilities.hpp"
+
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <errno.h>
 
 #include "DataSocketStream.hpp"
+#include "ByteUtilities.hpp"
+#include "Constants.hpp"
 
 namespace TraceviewerServer
 {
@@ -41,13 +43,13 @@ namespace TraceviewerServer
 		int err = bind(unopenedSocketFD, (sockaddr*) &Address, sizeof(Address));
 		if (err)
 		{
-			if (errno == 48|| errno == 98)
+			if (errno == EADDRINUSE)
 				cerr<< "Could not bind socket because socket is already in use. "<<
 				"Make sure you have closed hpctraceviewer, wait 30 seconds and try again. " <<
 				"Alternatively, you can choose a port other than "<< _Port<<"."<<endl;
 			else
 				cerr << "Could not bind socket. Error was " << errno << endl;
-			throw 1111;
+			throw ERROR_SOCKET_IN_USE;
 		}
 		//listen
 		err = listen(unopenedSocketFD, 5);
@@ -144,31 +146,39 @@ namespace TraceviewerServer
 
 	int DataSocketStream::readInt()
 	{
-		char Af[4];
-		int err = fread(Af, 1, 4, file);
-		if (err != 4)
-			throw 0x5249;
+		char Af[SIZEOF_INT];
+		int err = fread(Af, 1, SIZEOF_INT, file);
+		if (err != SIZEOF_INT)
+			throw ERROR_READ_TOO_LITTLE(SIZEOF_INT);
 		return ByteUtilities::readInt(Af);
 
 	}
 
 	Long DataSocketStream::readLong()
 	{
-		char Af[8];
-		int err = fread(Af, 1, 8, file);
-		if (err != 8)
-			throw 0x524C;
+		char Af[SIZEOF_LONG];
+		int err = fread(Af, 1, SIZEOF_LONG, file);
+		if (err != SIZEOF_LONG)
+			throw ERROR_READ_TOO_LITTLE(SIZEOF_LONG);
 		return ByteUtilities::readLong(Af);
 
 	}
 
 	short DataSocketStream::readShort()
 	{
-		char Af[2];
-		int err = fread(Af, 1, 2, file);
+		char Af[SIZEOF_SHORT];
+		int err = fread(Af, 1, SIZEOF_SHORT, file);
 		if (err != 2)
-			throw 0x5253;
+			throw ERROR_READ_TOO_LITTLE(SIZEOF_SHORT);
 		return ByteUtilities::readShort(Af);
+	}
+	char DataSocketStream::readByte()
+	{
+		char Af[SIZEOF_BYTE];
+		int err = fread(Af, 1, SIZEOF_BYTE, file);
+		if (err != 1)
+			throw ERROR_READ_TOO_LITTLE(SIZEOF_BYTE);
+		return Af[0];
 	}
 
 	string DataSocketStream::readString()
@@ -179,11 +189,10 @@ namespace TraceviewerServer
 		char* Msg = new char[Len + 1];
 		int err = fread(Msg, 1, Len, file);
 		if (err != Len)
-			throw 0x5254;
+			throw ERROR_READ_TOO_LITTLE(0);
 
 		Msg[Len] = '\0';
 
-		//TODO: This is wrong for any path that requires special characters
 		string SF(Msg);
 		return SF;
 	}
@@ -204,7 +213,7 @@ namespace TraceviewerServer
 		if (e == 0)
 		{
 			cout << "Connection closed" << endl; // EOF
-			throw -7;
+			throw ERROR_STREAM_CLOSED;
 		}
 		else if (e == -1)
 			throw e; // Some other error.

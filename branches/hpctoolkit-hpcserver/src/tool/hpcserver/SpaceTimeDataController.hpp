@@ -11,6 +11,7 @@
 #include "ImageTraceAttributes.hpp"
 #include "ProcessTimeline.hpp"
 #include "FilteredBaseData.hpp"
+#include "FilterSet.hpp"
 
 namespace TraceviewerServer
 {
@@ -26,7 +27,7 @@ namespace TraceviewerServer
 		void addNextTrace(ProcessTimeline*);
 		void fillTraces();
 		ProcessTimeline* fillTrace(bool);
-
+		void applyFilters(FilterSet filters);
 		//The number of processes in the database, independent of the current display size
 		int getNumRanks();
 

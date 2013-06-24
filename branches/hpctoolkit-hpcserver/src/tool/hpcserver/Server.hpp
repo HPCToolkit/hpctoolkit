@@ -17,6 +17,7 @@
 #include "SpaceTimeDataController.hpp"
 
 #define START_NEW_CONNECTION_IMMEDIATELY 1
+#define CLOSE_SERVER 0
 namespace TraceviewerServer
 {
 	extern bool useCompression;
@@ -35,6 +36,7 @@ namespace TraceviewerServer
 		void parseInfo(DataSocketStream*);
 		void sendDBOpenedSuccessfully(DataSocketStream*);
 		void parseOpenDB(DataSocketStream*);
+		void filter(DataSocketStream*);
 		void getAndSendData(DataSocketStream*);
 		vector<char> compressXML();
 		void sendDBOpenFailed(DataSocketStream*);

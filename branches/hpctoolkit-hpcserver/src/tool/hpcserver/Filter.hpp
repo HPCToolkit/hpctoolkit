@@ -30,24 +30,35 @@ class Range {
 			stride = _stride;
 		}
 };
+
+struct BinaryRepresentationOfFilter{
+	int processMin;
+	int processMax;
+	int processStride;
+	int threadMin;
+	int threadMax;
+	int threadStride;
+};
+
 class Filter {
 public:
 	Filter() {
-		excludeMatched = true;
 	}
-	Filter(Range _process, Range _thread, bool _excludeMatched){
+	Filter(Range _process, Range _thread){
 		process = _process;
 		thread = _thread;
-		excludeMatched = _excludeMatched;
 	}
-	bool include (int processNum, int threadNum){
-		return (process.matches(processNum) && thread.matches(threadNum))^excludeMatched;
-		//xoring them is the logical operation we want
+	Filter (BinaryRepresentationOfFilter tocopy) {
+		process = Range(tocopy.processMin, tocopy.processMax, tocopy.processStride);
+		thread = Range(tocopy.processMin, tocopy.processMax, tocopy.processStride);
+	}
+	bool matches (int processNum, int threadNum){
+		return (process.matches(processNum) && thread.matches(threadNum));
 	}
 private:
 	Range process;
 	Range thread;
-	bool excludeMatched;//if excludeMatched, any ranks that _do_not_ match the pattern are included
 } ;
+
 
 #endif /* FILTER_HPP_ */

@@ -37,7 +37,6 @@ int main(int argc, char *argv[])
 		}
 		catch (int e)
 		{
-			cout<<"Fatal error in server." <<endl;
 		}
 		cout<<"Server done, closing..."<<endl;
 		TraceviewerServer::MPICommunication::CommandMessage serverShutdown;
