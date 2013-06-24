@@ -68,7 +68,6 @@ host_triplet = @host@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
-@HOST_CPU_K1OM_TRUE@am__append_1 = intel-fast.c
 subdir = src/lib/support-lean
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -83,13 +82,9 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCsupport_lean_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__libHPCsupport_lean_la_SOURCES_DIST = timer.h timer.c OSUtil.h \
-	OSUtil.c intel-fast.c
-@HOST_CPU_K1OM_TRUE@am__objects_1 =  \
-@HOST_CPU_K1OM_TRUE@	libHPCsupport_lean_la-intel-fast.lo
-am__objects_2 = libHPCsupport_lean_la-timer.lo \
-	libHPCsupport_lean_la-OSUtil.lo $(am__objects_1)
-am_libHPCsupport_lean_la_OBJECTS = $(am__objects_2)
+am__objects_1 = libHPCsupport_lean_la-timer.lo \
+	libHPCsupport_lean_la-OSUtil.lo
+am_libHPCsupport_lean_la_OBJECTS = $(am__objects_1)
 libHPCsupport_lean_la_OBJECTS = $(am_libHPCsupport_lean_la_OBJECTS)
 libHPCsupport_lean_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) \
@@ -109,7 +104,7 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(libHPCsupport_lean_la_SOURCES)
-DIST_SOURCES = $(am__libHPCsupport_lean_la_SOURCES_DIST)
+DIST_SOURCES = $(libHPCsupport_lean_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -251,8 +246,10 @@ SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 VERSION = @VERSION@
 XED2_COPY = @XED2_COPY@
+XED2_HPCLINK_OPTS = @XED2_HPCLINK_OPTS@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
+XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 XED2_RUN_DIR = @XED2_RUN_DIR@
 XERCES = @XERCES@
 XERCES_COPY = @XERCES_COPY@
@@ -356,7 +353,10 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 #############################################################################
 # Local settings
 #############################################################################
-MYSOURCES = timer.h timer.c OSUtil.h OSUtil.c $(am__append_1)
+MYSOURCES = \
+	timer.h timer.c \
+	OSUtil.h OSUtil.c
+
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
@@ -433,7 +433,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-OSUtil.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-intel-fast.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-timer.Plo@am__quote@
 
 .c.o:
@@ -470,13 +469,6 @@ libHPCsupport_lean_la-OSUtil.lo: OSUtil.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='OSUtil.c' object='libHPCsupport_lean_la-OSUtil.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCsupport_lean_la-OSUtil.lo `test -f 'OSUtil.c' || echo '$(srcdir)/'`OSUtil.c
-
-libHPCsupport_lean_la-intel-fast.lo: intel-fast.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -MT libHPCsupport_lean_la-intel-fast.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_lean_la-intel-fast.Tpo -c -o libHPCsupport_lean_la-intel-fast.lo `test -f 'intel-fast.c' || echo '$(srcdir)/'`intel-fast.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCsupport_lean_la-intel-fast.Tpo $(DEPDIR)/libHPCsupport_lean_la-intel-fast.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='intel-fast.c' object='libHPCsupport_lean_la-intel-fast.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCsupport_lean_la-intel-fast.lo `test -f 'intel-fast.c' || echo '$(srcdir)/'`intel-fast.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

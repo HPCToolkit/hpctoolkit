@@ -68,6 +68,7 @@ hpcfnbounds_dir='libexec/hpctoolkit'
 libhpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 xed2_dir='@XED2_RUN_DIR@'
+xed2_link_opts='@XED2_HPCLINK_OPTS@'
 libunwind_dir='@LIBUNWIND_RUN_DIR@'
 libunwind_hpclink_libs='@LIBUNWIND_HPCLINK_LIBS@'
 
@@ -244,11 +245,10 @@ do
 	    test -f "$ga_wrap" || die "unable to find: $ga_wrap"
 	    extra_hpc_files="$extra_hpc_files $ga_wrap"
 	    extra_wrap_names="$extra_wrap_names \
-                pnga_create \
-                pnga_brdcst pnga_gop pnga_sync pnga_zero \
+                pnga_create pnga_create_handle \
                 pnga_get pnga_put pnga_acc \
-                pnga_nbget pnga_nbput pnga_nbacc"
-                # pnga_nbwait
+                pnga_nbget pnga_nbput pnga_nbacc pnga_nbwait \
+                pnga_brdcst pnga_gop pnga_sync"
 	    undef_names="$undef_names pnga_create"
 	    shift
 	    ;;
@@ -434,7 +434,7 @@ if test -d "$papi_dir" ; then
 fi
 
 if test -d "$xed2_dir" ; then
-    set -- "$@" "-L${xed2_dir}" -lxed
+    set -- "$@" "-L${xed2_dir}" $xed2_link_opts
 fi
 
 if test -d "$libunwind_dir" ; then

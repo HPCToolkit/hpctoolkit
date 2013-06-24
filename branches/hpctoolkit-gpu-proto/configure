@@ -665,8 +665,12 @@ XERCES_LDLIBS
 XERCES_LDFLAGS
 XERCES_IFLAGS
 XERCES
+OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE
+OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE
 XED2_RUN_DIR
 XED2_COPY
+XED2_HPCLINK_OPTS
+XED2_LIB_FLAGS
 XED2_LIB
 XED2_INC
 SYMTABAPI_COPY_DYN
@@ -17965,7 +17969,13 @@ $as_echo "$SYMTABAPI" >&6; }
 # Option: --with-xed2=PATH
 #-------------------------------------------------
 
+# Now support static or shared libxed.
+
 XED2=no
+XED2_STATIC=no
+XED2_LIB_FLAGS=
+XED2_HPCLINK_OPTS=
+
 if test "$use_externals" = yes ; then
   XED2="$ext_xed2_prefix"
 fi
@@ -17984,7 +17994,20 @@ case "${XED2}" in
   /* )
     if test -f "${XED2}/include/xed-interface.h" ; then :
     else
-        as_fn_error $? "invalid xed2 directory: $XED2" "$LINENO" 5
+      as_fn_error $? "invalid xed2 directory: $XED2" "$LINENO" 5
+    fi
+    if test -f "${XED2}/lib/libxed.a" ; then
+      XED2_STATIC=yes
+      XED2_LIB_FLAGS="${XED2}/lib/libxed.a"
+      XED2_HPCLINK_OPTS='-lxed'
+    elif test -f "${XED2}/lib/libxed.so" ; then
+      XED2_LIB_FLAGS="-L${XED2}/lib -lxed"
+    else
+      as_fn_error $? "invalid xed2 directory: $XED2" "$LINENO" 5
+    fi
+    if test -f "${XED2}/lib/libirc.a" ; then
+      XED2_LIB_FLAGS="${XED2_LIB_FLAGS} ${XED2}/lib/libirc.a"
+      XED2_HPCLINK_OPTS="$XED2_HPCLINK_OPTS -lirc"
     fi
     XED2_COPY=yes
     XED2_RUN_DIR="$hpc_ext_libs_dir"
@@ -17998,6 +18021,11 @@ case "${XED2}" in
     ;;
 esac
 
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2" = no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: xed2 is required for x86 platforms" >&5
+$as_echo "$as_me: WARNING: xed2 is required for x86 platforms" >&2;}
+fi
+
 XED2_INC="${XED2}/include"
 XED2_LIB="${XED2}/lib"
 
@@ -18007,6 +18035,24 @@ $as_echo "$XED2" >&6; }
 
 
 
+
+
+
+
+# If Xed is shared, then hpcstruct gets a launch script.
+
+hpcstruct_launch_script=no
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
+  hpcstruct_launch_script=yes
+fi
+
+ if test "$hpcstruct_launch_script" = yes; then
+  OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE=
+  OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE='#'
+else
+  OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE='#'
+  OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE=
+fi
 
 
 
@@ -18313,6 +18359,10 @@ fi
 
 
 if test "$OPT_LIBMONITOR_STATIC" = no ; then
+  OPT_ENABLE_HPCRUN_STATIC=no
+fi
+
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
   OPT_ENABLE_HPCRUN_STATIC=no
 fi
 
@@ -19268,6 +19318,8 @@ ac_config_files="$ac_config_files src/tool/hpcprof-flat/hpcprof-flat"
 
 ac_config_files="$ac_config_files src/tool/hpcproftt/hpcproftt"
 
+ac_config_files="$ac_config_files src/tool/hpcstruct/hpcstruct"
+
 
 
 export_hpctoolkit="${srcdir}/config/export-hpctoolkit"
@@ -19475,6 +19527,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PAPI_CUPTI_TRUE}" && test -z "${OPT_PAPI_CUPTI_FALSE}"; then
   as_fn_error $? "conditional \"OPT_PAPI_CUPTI\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE}" && test -z "${OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_HPCSTRUCT_LAUNCH_SCRIPT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_BUILD_BACK_END_TRUE}" && test -z "${OPT_BUILD_BACK_END_FALSE}"; then
@@ -20552,6 +20608,7 @@ do
     "src/tool/hpcprof-mpi/hpcprof-mpi") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-mpi/hpcprof-mpi" ;;
     "src/tool/hpcprof-flat/hpcprof-flat") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-flat/hpcprof-flat" ;;
     "src/tool/hpcproftt/hpcproftt") CONFIG_FILES="$CONFIG_FILES src/tool/hpcproftt/hpcproftt" ;;
+    "src/tool/hpcstruct/hpcstruct") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/hpcstruct" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -22097,6 +22154,7 @@ _LT_EOF
     "src/tool/hpcprof-mpi/hpcprof-mpi":F) chmod +x src/tool/hpcprof-mpi/hpcprof-mpi ;;
     "src/tool/hpcprof-flat/hpcprof-flat":F) chmod +x src/tool/hpcprof-flat/hpcprof-flat ;;
     "src/tool/hpcproftt/hpcproftt":F) chmod +x src/tool/hpcproftt/hpcproftt ;;
+    "src/tool/hpcstruct/hpcstruct":F) chmod +x src/tool/hpcstruct/hpcstruct ;;
 
   esac
 done # for ac_tag

@@ -99,9 +99,16 @@
 #include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/splay-macros.h>
 #include "blame-shift.h"
+
 #ifdef ENABLE_CUDA
 #include "gpu_blame.h"
+#include "gpu_ctxt_actions.h"
 #endif
+
+// ****************** utility macros *********************
+#define Cuda_RTcall(fn) cudaRuntimeFunctionPointer[fn ## Enum].fn ## Real
+#define Cuda_Dcall(fn)  cuDriverFunctionPointer[fn ## Enum].fn ## Real
+// ************************************************
 
 // ******* Global Variables ***********
 int g_cpu_gpu_proxy_count = 0; 
@@ -129,12 +136,13 @@ uint64_t g_active_threads;
 // blame shift registration info
 static bs_fn_entry_t bs_entry;
 
-// ******* METHOD DEFINITIONS ***********
+// ****** UTILITY Functions (public)
 
 void hpcrun_set_gpu_proxy_present() {
     g_cpu_gpu_proxy_count ++;
 }
 
+// ******* METHOD DEFINITIONS ***********
 
 static void METHOD_FN(init)
 {

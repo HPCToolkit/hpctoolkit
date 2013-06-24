@@ -154,7 +154,7 @@ LIBMONITOR_LIB = @LIBMONITOR_LIB@
 PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
 XED2_INC = @XED2_INC@
-XED2_LIB = @XED2_LIB@
+XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 
@@ -202,7 +202,7 @@ UNW_X86_INCLUDE_DIRS = \
 	-I$(XED2_INC)
 
 UNW_X86_LD_FLAGS = \
-        $(XED2_LIB)/libxed.a
+        $(XED2_LIB_FLAGS)
 
 UNW_PPC64_FILES = \
         $(UNW_COMMON_FILES) \
@@ -374,7 +374,6 @@ MY_INCLUDE_DIRS =			\
 	-I$(srcdir)/messages	        \
 	-I$(srcdir)/fnbounds		\
 	-I$(srcdir)/memory		\
-	-I$(srcdir)/os/catamount	\
 	-I$(srcdir)/os/linux		\
 	-I$(srcdir)/cct			\
 	-I$(srcdir)/unwind/common	\
@@ -432,16 +431,12 @@ libhpcrun_memleak_wrap_a_SOURCES = 	\
 libhpcrun_gpu_la_SOURCES = 		\
 	sample-sources/gpu_blame-overrides.c \
 	gpu_blame-driver-overrides-generated.c \
-	gpu_blame-runtime-overrides-generated.c \
-	gpu_blame-cuda-driver-table.c \
-	gpu_blame-cuda-runtime-table.c
+	gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_gpu_wrap_a_SOURCES = 	\
 	sample-sources/gpu_blame-overrides.c  \
 	gpu_blame-driver-overrides-generated.c \
-	gpu_blame-runtime-overrides-generated.c \
-	gpu_blame-cuda-driver-table.c \
-	gpu_blame-cuda-runtime-table.c
+	gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_mpi_la_SOURCES = 		\
 	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
@@ -518,6 +513,9 @@ libhpcrun_mpi_la_CPPFLAGS =		\
 $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
 	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
 		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
+
+CUDA_TABLES = gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
+CUDA_FILES = sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c $(CUDA_TABLES)
 
 if OPT_ENABLE_CUDA
 
@@ -672,8 +670,8 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
-  libhpcrun_la_LDFLAGS  += $(XED2_LIB)/libxed.a
-  libhpcrun_o_LDFLAGS   += $(XED2_LIB)/libxed.a
+  libhpcrun_la_LDFLAGS  += $(XED2_LIB_FLAGS)
+  libhpcrun_o_LDFLAGS   += $(XED2_LIB_FLAGS)
   libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
@@ -747,7 +745,7 @@ if UNW_PPC64
 endif
 
 if OPT_ENABLE_CUDA
-  libhpcrun_la_SOURCES  += sample-sources/gpu_blame.c
+  libhpcrun_la_SOURCES += $(CUDA_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
 #  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
@@ -758,8 +756,6 @@ if OPT_ENABLE_CUDA
 
   libhpcrun_gpu_wrap_a_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_gpu_wrap_a_CFLAGS  += $(OPT_CUDA_IFLAGS)
-#libhpcrun_gpu_wrap_a_LDFLAGS += $(OPT_CUDA_LDFLAGS)
-
 
 endif
 

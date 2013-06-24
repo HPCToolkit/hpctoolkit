@@ -70,7 +70,7 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-XED2_LIB = @XED2_LIB@
+XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 
 MYSOURCES = \
 	main.cpp \
@@ -105,7 +105,7 @@ MYLDADD = \
 	@HOST_HPCPROF_LDFLAGS@
 
 if HOST_CPU_X86_FAMILY
-MY_LIB_XED = $(XED2_LIB)/libxed.a
+MY_LIB_XED = $(XED2_LIB_FLAGS)
 else
 MY_LIB_XED =
 endif

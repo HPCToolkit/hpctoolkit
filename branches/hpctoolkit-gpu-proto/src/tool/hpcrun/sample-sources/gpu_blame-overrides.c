@@ -83,6 +83,7 @@
  *****************************************************************************/
 #include "common.h"
 #include "gpu_blame.h"
+#include "gpu_ctxt_actions.h"
 
 #include <hpcrun/main.h>
 #include <hpcrun/hpcrun_options.h>
@@ -146,10 +147,13 @@ monitor_real_abort();                                              \
 #define CUDA_SAFE_CALL( call) do {                             \
 cudaError_t err = call;                                        \
 if( cudaSuccess != err) {                                      \
-EEMSG("Cuda error in call at file '%s' in line %i : %s.\n",    \
-__FILE__, __LINE__, cudaGetErrorString( err) );                \
-monitor_real_abort();                                          \
+  EMSG("In %s, @ line %d, gives error %d = '%s'\n", __FILE__, __LINE__, \
+                   err, \
+                   cudaGetErrorString(err));  \
+  monitor_real_abort();                                          \
 } } while (0)
+
+#define Cuda_RTcall(fn) cudaRuntimeFunctionPointer[fn ## Enum].fn ## Real
 
 #define GET_STREAM_ID(x) ((x) - g_stream_array)
 #define ALL_STREAMS_MASK (0xffffffff)
@@ -526,10 +530,7 @@ static bool g_stream0_initialized = false;
 
 static IPC_data_t * ipc_data;
 
-// ******* METHOD DEFINITIONS ***********
-
-
-
+/******************** Utilities ********************/
 /******************** CONSTRUCTORS ********************/
 
 
@@ -582,12 +583,16 @@ static void InitCpuGpuBlameShiftDataStructs(){
 static void PopulateEntryPointesToWrappedCalls() {
     PopulateEntryPointesToWrappedCudaRuntimeCalls();
     PopulateEntryPointesToWrappedCuDriverCalls();
+    special_cuda_ctxt_actions(true);
 }
 
 __attribute__((constructor))
-static void CpuGpuBlameShiftInit() {
-    PopulateEntryPointesToWrappedCalls();
-    InitCpuGpuBlameShiftDataStructs();
+static void
+CpuGpuBlameShiftInit(void)
+{
+  // fprintf(stderr, "CPU-GPU blame shift constructor called\n");
+  PopulateEntryPointesToWrappedCalls();
+  InitCpuGpuBlameShiftDataStructs();
 }
 
 /******************** END CONSTRUCTORS ****/
@@ -724,10 +729,11 @@ static struct stream_to_id_map_t *splay_delete(cudaStream_t stream)
 {
     struct stream_to_id_map_t *result = NULL;
     
+    TMSG(CUDA, "Trying to delete %p from stream splay tree", stream);
     spinlock_lock(&g_stream_id_lock);
     if (stream_to_id_tree_root == NULL) {
         spinlock_unlock(&g_stream_id_lock);
-        TMSG(CPU_GPU_BLAME_CTL, "stream_to_id_map_t splay tree empty: unable to delete %p", stream);
+        TMSG(CUDA, "stream_to_id_map_t splay tree empty: unable to delete %p", stream);
         return NULL;
     }
     
@@ -735,9 +741,9 @@ static struct stream_to_id_map_t *splay_delete(cudaStream_t stream)
     
     if (stream != stream_to_id_tree_root->stream) {
         spinlock_unlock(&g_stream_id_lock);
-        TMSG(CPU_GPU_BLAME_CTL, "gpu steam splay tree: %p not in tree", stream);
-        EEMSG("deleting non existing node in splay tree");
-        monitor_real_abort();
+        TMSG(CUDA, "trying to deleting stream %p, but not in splay tree (root = %p)", stream, stream_to_id_tree_root->stream);
+	//        monitor_real_abort();
+	return NULL;
     }
     
     result = stream_to_id_tree_root;
@@ -1032,7 +1038,15 @@ static uint32_t cleanup_finished_events() {
                 
                 //FIX ME: deleting Elapsed time to handle context destruction....
                 //static uint64_t deleteMeTime = 0;
-                CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventElapsedTimeEnum].cudaEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_start));
+		TMSG(CUDA, "BEFORE: EventElapsedRT(%p, %p)\n", g_start_of_world_event, current_event->event_start);
+		cudaError_t err1 = Cuda_RTcall(cudaEventElapsedTime)(&elapsedTime,
+								   g_start_of_world_event,
+								   current_event->event_start);
+		// soft failure
+		if (err1 != cudaSuccess) {
+		  EMSG("cudaEventElaspsedTime failed");
+		  break;
+		}
                 
                 assert(elapsedTime > 0);
                 
@@ -1080,7 +1094,8 @@ static uint32_t cleanup_finished_events() {
                     g_finished_event_nodes_tail = deferred_node;
                     
                 } else {
-                    // TODO : destroy events
+                    // It is better not to call destroy from here since we might be in the signal handler
+                    // Events will be destroyed lazily when they need to be reused.
                     ADD_TO_FREE_EVENTS_LIST(deferred_node);
                 }
                 
@@ -1110,6 +1125,7 @@ static uint32_t cleanup_finished_events() {
 
 
 // Insert a new activity in a stream
+// Caller is responsible for calling monitor_disable_new_threads()
 static event_list_node_t *create_and_insert_event(int stream_id, cct_node_t * launcher_cct, cct_node_t * stream_launcher_cct) {
     
     event_list_node_t *event_node;
@@ -1117,6 +1133,12 @@ static event_list_node_t *create_and_insert_event(int stream_id, cct_node_t * la
         // get from free list
         event_node = g_free_event_nodes_head;
         g_free_event_nodes_head = g_free_event_nodes_head->next_free_node;
+
+        // Free the old events if they are alive
+        if (event_node->event_start)
+          CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventDestroyEnum].cudaEventDestroyReal((event_node->event_start)));
+        if (event_node->event_end)
+          CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventDestroyEnum].cudaEventDestroyReal((event_node->event_end)));
         
     } else {
         // allocate new node
@@ -1124,10 +1146,8 @@ static event_list_node_t *create_and_insert_event(int stream_id, cct_node_t * la
     }
     //cudaError_t err =  cudaEventCreateWithFlags(&(event_node->event_end),cudaEventDisableTiming);
     
-    monitor_disable_new_threads();
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventCreateEnum].cudaEventCreateReal(&(event_node->event_start)));
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventCreateEnum].cudaEventCreateReal(&(event_node->event_end)));
-    monitor_enable_new_threads();
     
     event_node->stream_launcher_cct = stream_launcher_cct;
     event_node->launcher_cct = launcher_cct;
@@ -1794,12 +1814,30 @@ static void destroy_all_events_in_free_event_list(){
     while(cur){
         CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventDestroyEnum].cudaEventDestroyReal(cur->event_start));
         CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventDestroyEnum].cudaEventDestroyReal(cur->event_end));
+        cur->event_start = 0;
+        cur->event_end = 0;
         cur = cur->next_free_node;
     }
     monitor_enable_new_threads();
     
 }
 
+CUresult
+cuCtxCreate_v2 (CUcontext *pctx, unsigned int flags, CUdevice dev)
+{
+  if (cuda_ncontexts_incr() > 1) {
+    fprintf(stderr, "Too many contexts created\n");
+    monitor_real_abort();
+  }
+  if (! hpcrun_is_safe_to_sync(__func__)) {    return cuDriverFunctionPointer[cuCtxCreate_v2Enum].cuCtxCreate_v2Real(pctx, flags, dev);
+  }
+  TD_GET(gpu_data.is_thread_at_cuda_sync) = true;
+  monitor_disable_new_threads();
+  CUresult ret = cuDriverFunctionPointer[cuCtxCreate_v2Enum].cuCtxCreate_v2Real(pctx, flags, dev);
+  monitor_enable_new_threads();
+  TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
+  return ret;
+}
 
 CUresult cuCtxDestroy(CUcontext ctx) {
     
@@ -1832,6 +1870,9 @@ CUresult cuCtxDestroy(CUcontext ctx) {
         TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
         
     }
+    // count context creation ==> decrement here
+    cuda_ncontexts_decr();
+    EMSG("Destroying Context!");
     HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
     
     monitor_disable_new_threads();

@@ -241,7 +241,7 @@ hpcrun_stderr_log_msg(bool copy_to_log, const char *fmt, ...)
   strncat(fstr, fmt, MSG_BUF_SIZE - 5);
   strcat(fstr,"\n");
 
-  char buf[1024] = "";
+  char buf[2048] = "";
   va_list_box_start(box, fmt);
   hpcrun_msg_vns(buf, sizeof(buf), fstr, &box);
   write(2, buf, strlen(buf));
