@@ -12,6 +12,8 @@
 #include "Constants.hpp"
 #include "MPICommunication.hpp"
 #include "CompressingDataSocketLayer.hpp"
+#include "ProgressBar.hpp"
+#include "FileUtils.hpp"
 #include <iostream>
 #include <fstream>
 #include <mpi.h>
@@ -83,7 +85,9 @@ namespace TraceviewerServer
 		}
 		else
 		{
+			#if DEBUG > 1
 			cout << "Database opened" << endl;
+			#endif
 			sendDBOpenedSuccessfully(socketptr);
 		}
 
@@ -197,6 +201,8 @@ namespace TraceviewerServer
 	{
 		vector<char> compressed;
 
+		int uncompressedFileSize = FileUtils::getFileSize(controller->getExperimentXML());
+		ProgressBar prog("Compressing XML", uncompressedFileSize);
 		FILE* in = fopen(controller->getExperimentXML().c_str(), "r");
 		//From http://zlib.net/zpipe.c with some editing
 		z_stream compressor;
@@ -214,11 +220,11 @@ namespace TraceviewerServer
 		unsigned char InBuffer[CHUNK];
 		unsigned char OutBuffer[CHUNK];
 		int flush;
-		int amtprocessed =0;
+
 		int compramt;
 		do {
-			compressor.avail_in = fread(InBuffer, 1, CHUNK, in);
-			amtprocessed += compressor.avail_in;
+			int amtprocessed = fread(InBuffer, 1, CHUNK, in);
+			compressor.avail_in = amtprocessed;
 			//cout<<"Processed " << amtprocessed << " / " <<size<<endl;
 			if (ferror(in)) {
 				cerr<<"Error"<<endl;
@@ -242,11 +248,13 @@ namespace TraceviewerServer
 				compressed.insert(compressed.end(), OutBuffer, OutBuffer+have);
 			} while (compressor.avail_out == 0);
 
-
+			prog.incrementProgress(amtprocessed);
 			/* done when last data in file processed */
 		} while (flush != Z_FINISH);
 		deflateEnd(&compressor);
+		#if DEBUG > 2
 		cout<<"Compressed XML Size: "<<compressed.size()<<endl;
+		#endif
 		return compressed;
 	}
 
@@ -296,7 +304,9 @@ namespace TraceviewerServer
 		Time timeEnd = Stream->readLong();
 		int verticalResolution = Stream->readInt();
 		int horizontalResolution = Stream->readInt();
+		#if DEBUG > 2
 		cout << "Time end: " << timeEnd <<endl;
+		#endif
 
 		if (ISN(processStart) || ISN(processEnd) || (processStart > processEnd)
 				|| ISN(verticalResolution) || ISN(horizontalResolution)
@@ -331,20 +341,20 @@ namespace TraceviewerServer
 		correspondingAttributes.begTime =  timeStart;
 		correspondingAttributes.endTime =  timeEnd;
 		correspondingAttributes.lineNum = 0;
-		controller->Attributes = &correspondingAttributes;
+		controller->attributes = &correspondingAttributes;
 
 		// TODO: Make this so that the Lines get sent as soon as they are
 		// filled.
 
-		controller->FillTraces();
+		controller->fillTraces();
 #endif
 
 		Stream->writeInt(HERE);
 		Stream->flush();
 
-
+		ProgressBar prog("Computing traces", min(processEnd - processStart, verticalResolution));
 #ifdef USE_MPI
-		int RanksDone = 1;//1 for The MPI rank that deals with the sockets
+		int RanksDone = 1;//1 for the MPI rank that deals with the sockets
 		int Size = COMM_WORLD.Get_size();
 
 		while (RanksDone < Size)
@@ -368,51 +378,57 @@ namespace TraceviewerServer
 				Stream->writeRawData(CompressedTraceLine, msg.data.compressedSize);
 
 				Stream->flush();
+				prog.incrementProgress();
 			}
 			else if (msg.tag == SLAVE_DONE)
 			{
+				#if DEBUG > 1
 				cout << "Rank " << msg.done.rankID << " done" << endl;
+				#endif
 				RanksDone++;
 			}
 		}
 
 
 #else
-		for (int i = 0; i < controller->TracesLength; i++)
+		for (int i = 0; i < controller->tracesLength; i++)
 		{
 
-			ProcessTimeline* T = controller->Traces[i];
+			ProcessTimeline* T = controller->traces[i];
 			Stream->writeInt( T->line());
-			vector<TimeCPID> data = T->data->ListCPID;
+			vector<TimeCPID> data = *T->data->listCPID;
 			Stream->writeInt( data.size());
 			// Begin time
-			Stream->writeLong( data[0].Timestamp);
+			Stream->writeLong( data[0].timestamp);
 			//End time
-			Stream->writeLong( data[data.size() - 1].Timestamp);
+			Stream->writeLong( data[data.size() - 1].timestamp);
 
 			CompressingDataSocketLayer Compr;
 
 			vector<TimeCPID>::iterator it;
+			#if DEBUG > 2
 			cout << "Sending process timeline with " << data.size() << " entries" << endl;
+			#endif
 			
-			Time currentTime = data[0].Timestamp;
+			Time currentTime = data[0].timestamp;
 			for (it = data.begin(); it != data.end(); ++it)
 			{
-				Compr.writeInt( (int)(it->Timestamp - currentTime));
-				Compr.writeInt( it->CPID);
-				currentTime = it->Timestamp;
+				Compr.writeInt( (int)(it->timestamp - currentTime));
+				Compr.writeInt( it->cpid);
+				currentTime = it->timestamp;
 			}
 			Compr.flush();
-			int OutputBufferLen = Compr.GetOutputLength();
-			char* OutputBuffer = (char*)Compr.GetOutputBuffer();
+			int outputBufferLen = Compr.getOutputLength();
+			char* outputBuffer = (char*)Compr.getOutputBuffer();
 
-			Stream->writeInt(OutputBufferLen);
+			Stream->writeInt(outputBufferLen);
 
-			Stream->writeRawData(OutputBuffer, OutputBufferLen);
+			Stream->writeRawData(outputBuffer, outputBufferLen);
+			prog.incrementProgress();
 		}
 		Stream->flush();
 #endif
-		cout << "Data sent" << endl;
+
 	}
 
 	void Server::filter(DataSocketStream* stream)

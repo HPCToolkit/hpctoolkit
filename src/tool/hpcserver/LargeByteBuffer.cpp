@@ -14,6 +14,9 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
+#ifdef USE_MPI
+#include "mpi.h"
+#endif
 
 using namespace std;
 
@@ -132,7 +135,9 @@ namespace TraceviewerServer
 			cerr << "Could not obtain system memory size"<<endl;
 			throw ERROR_GET_RAM_SIZE_FAILED;
 		}
+		#if DEBUG > 2
 		cout << "Memory size : "<<ramSize<<endl;
+		#endif
 		return ramSize;
 #endif
 

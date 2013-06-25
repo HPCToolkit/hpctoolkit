@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 #else
 	try
 	{
-		TraceviewerServer::Server::main(argc, argv);
+		TraceviewerServer::Server();
 	} catch (int e)
 	{
 		cout << "Closing with error code " << e << endl;

@@ -24,7 +24,7 @@ namespace TraceviewerServer
 
 		SpaceTimeDataController* openDbAndCreateStdc(string);
 	private:
-		static const int MIN_TRACE_SIZE = 32 + 8 + 24
+		static const unsigned int MIN_TRACE_SIZE = 32 + 8 + 24
 				+ SIZE_OF_TRACE_RECORD * 2;
 		static bool verifyDatabase(string, FileData*);
 

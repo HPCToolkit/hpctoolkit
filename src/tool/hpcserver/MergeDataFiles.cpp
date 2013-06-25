@@ -23,11 +23,15 @@ namespace TraceviewerServer
 		 int lastDot = globInputFile.find_last_of('.');
 		 string suffix = globInputFile.substr(lastDot);
 
+		#if DEBUG > 2
 		cout << "Checking to see if " << outputFile << " exists" << endl;
+		#endif
 
 		if (FileUtils::exists(outputFile))
 		{
+			#if DEBUG > 2
 			cout << "Exists" << endl;
+			#endif
 			if (isMergedFileCorrect(&outputFile))
 				return SUCCESS_ALREADY_CREATED;
 			// the file exists but corrupted. In this case, we have to remove and create a new one
@@ -35,7 +39,9 @@ namespace TraceviewerServer
 			return STATUS_UNKNOWN;
 			//remove(OutputFile.string().c_str());
 		}
+		#if DEBUG > 2
 		cout << "Doesn't exist" << endl;
+		#endif
 		// check if the files in glob patterns is correct
 
 		if (!atLeastOneValidFile(directory))
@@ -89,8 +95,6 @@ namespace TraceviewerServer
 			 int last_pos_basic_name = Filename.length() - suffix.length();
 			 string Basic_name = Filename.substr(FileUtils::combinePaths(directory, "").length(),//This ensures we count the "/" at the end of the path
 					last_pos_basic_name);
-			cout << "Path manipulation check: The file in " << Filename << " is "
-					<< Basic_name << endl;
 
 			vector<string> tokens = splitString(Basic_name, '-');
 
