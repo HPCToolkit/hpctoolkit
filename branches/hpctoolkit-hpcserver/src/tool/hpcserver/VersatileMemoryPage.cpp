@@ -55,7 +55,9 @@ namespace TraceviewerServer
 
 	void VersatileMemoryPage::mapPage()
 	{
+		#if DEBUG > 1
 		cout<< "Mapping page "<< index<< " "<<PagesCurrentlyAllocatedCount << " / " << MAX_PAGES_TO_ALLOCATE_AT_ONCE << endl;
+		#endif
 		if (isMapped)
 		{
 			cerr << "Trying to double map!"<<endl;
@@ -65,7 +67,9 @@ namespace TraceviewerServer
 		{
 
 			VersatileMemoryPage* toRemove = mostRecentlyUsed.back();
+#if DEBUG > 1
 			cout<<"Kicking " << toRemove->index << " out"<<endl;
+#endif
 
 			if (toRemove->isMapped != true)
 			{
@@ -96,7 +100,9 @@ namespace TraceviewerServer
 		munmap(page, size);
 		PagesCurrentlyAllocatedCount--;
 		isMapped = false;
+#if DEBUG > 1
 		cout << "Unmapped a page"<<endl;
+#endif
 	}
 	void VersatileMemoryPage::putMeOnTop()
 	{

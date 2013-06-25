@@ -23,7 +23,10 @@ namespace TraceviewerServer
 
 	BaseDataFile::BaseDataFile(string _filename, int _headerSize)
 	{
+
+		#if DEBUG > 1
 		cout << "Setting Data File: " << _filename << endl;
+		#endif
 		if (_filename != "")
 		{
 			//---------------------------------------------

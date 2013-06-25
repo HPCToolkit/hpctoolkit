@@ -56,7 +56,7 @@ namespace TraceviewerServer
 			return (err == NO_ERROR);
 		}
 
-		static long getFileSize(string p)
+		static uint64_t getFileSize(string p)
 		{
 			struct stat DirInfo;
 			int err = stat(p.c_str(), &DirInfo);

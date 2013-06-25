@@ -63,8 +63,10 @@ namespace TraceviewerServer
 					nodeFinishedMsg.tag = SLAVE_DONE;
 					nodeFinishedMsg.done.rankID = COMM_WORLD.Get_rank();
 					nodeFinishedMsg.done.traceLinesSent = linesSent;
+					#if DEBUG > 1
 					cout << "Rank " << nodeFinishedMsg.done.rankID << " done, having created "
 							<< linesSent << " trace lines." << endl;
+					#endif
 					int SizeToSend = 3 * SIZEOF_INT;
 					COMM_WORLD.Send(&nodeFinishedMsg, SizeToSend, MPI_PACKED,
 							MPICommunication::SOCKET_SERVER, 0);
@@ -109,7 +111,9 @@ namespace TraceviewerServer
 		//If rank > n, there are more nodes than trace lines, so this node will do nothing
 		if (rank > n)
 		{
+			#if DEBUG > 1
 			cout << "No work to do" << endl;
+			#endif
 			return 0;
 		}
 
@@ -122,8 +126,10 @@ namespace TraceviewerServer
 		int UpperInclusiveBound = (int) (min(mod, rank + 1) * ceil(q)
 				+ (rank + 1 - min(mod, rank + 1)) * floor(q) - 1 + gc.processStart);
 
+		#if DEBUG > 1
 		cout << "Rank " << trueRank << " is getting lines [" << LowerInclusiveBound << ", "
 				<< UpperInclusiveBound << "]" << endl;
+		#endif
 
 		//These have to be the originals so that the strides will be correct
 		correspondingAttributes.begProcess = gc.processStart;
@@ -145,7 +151,9 @@ namespace TraceviewerServer
 		 *  that this brings it down to O(1) from O(n).*/
 
 		autoskip = (int)floor(rank*totalTraces/(size - 1.0));
+		#if DEBUG > 1
 		cout<< "Was going to autoskip " <<autoskip << " traces."<<endl;
+		#endif
 
 		correspondingAttributes.lineNum = autoskip;
 
@@ -170,21 +178,23 @@ namespace TraceviewerServer
 			}
 			if (waitcount != 0)
 			{
+				#if DEBUG > 1
 				cout << trueRank << " skipped " << waitcount
 						<< " processes before actually starting work. Autoskip was " <<autoskip<< " and actual skip was " << controller->attributes->lineNum -1 << endl;
+				#endif
 				waitcount = 0;
 			}
 			NextTrace->readInData();
 
-			vector<TimeCPID>* ActualData = NextTrace->data->listCPID;
+			vector<TimeCPID> ActualData = *NextTrace->data->listCPID;
 			MPICommunication::ResultMessage msg;
 			msg.tag = SLAVE_REPLY;
 			msg.data.line = NextTrace->line();
-			int entries = ActualData->size();
+			int entries = ActualData.size();
 			msg.data.entries = entries;
 
-			msg.data.begtime = (*ActualData)[0].timestamp;
-			msg.data.endtime = (*ActualData)[entries - 1].timestamp;
+			msg.data.begtime = ActualData[0].timestamp;
+			msg.data.endtime = ActualData[entries - 1].timestamp;
 			msg.data.rankID = trueRank;
 			/*Have to move this so that we know how large the compressed stream is
 			 * COMM_WORLD.Send(&msg, sizeof(msg), MPI_PACKED, MPICommunication::SOCKET_SERVER,
@@ -204,9 +214,9 @@ namespace TraceviewerServer
 				Time currentTimestamp = msg.data.begtime;
 				for (i = 0; i < entries; i++)
 				{
-					compr.writeInt((int) ((*ActualData)[i].timestamp - currentTimestamp));
-					compr.writeInt((*ActualData)[i].cpid);
-					currentTimestamp = (*ActualData)[i].timestamp;
+					compr.writeInt((int) (ActualData[i].timestamp - currentTimestamp));
+					compr.writeInt(ActualData[i].cpid);
+					currentTimestamp = ActualData[i].timestamp;
 				}
 				compr.flush();
 				outputBufferLen = compr.getOutputLength();
@@ -221,10 +231,10 @@ namespace TraceviewerServer
 				Time currentTimestamp = msg.data.begtime;
 				for (i = 0; i < entries; i++)
 				{
-					int deltaTimestamp = (*ActualData)[i].timestamp - currentTimestamp;
+					int deltaTimestamp = ActualData[i].timestamp - currentTimestamp;
 					ByteUtilities::writeInt(currentPtr, deltaTimestamp);
 					currentPtr += SIZEOF_INT;
-					ByteUtilities::writeInt(currentPtr, (*ActualData)[i].cpid);
+					ByteUtilities::writeInt(currentPtr, ActualData[i].cpid);
 					currentPtr += SIZEOF_INT;
 				}
 				outputBufferLen = entries*SIZEOF_DELTASAMPLE;
@@ -240,9 +250,11 @@ namespace TraceviewerServer
 				delete[] outputBuffer;
 			}
 			LinesSentCount++;
+			#if DEBUG > 2
 			if (LinesSentCount % 100 == 0)
 				cout << trueRank << " Has sent " << LinesSentCount
 						<< " ranks." << endl;
+			#endif
 
 			NextTrace = controller->getNextTrace();
 		}

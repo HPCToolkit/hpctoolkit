@@ -57,24 +57,36 @@ namespace TraceviewerServer
 	 */
 	bool DBOpener::verifyDatabase(string directory, FileData* location)
 	{
+#if DEBUG > 2
 		cout<< "Checking " <<directory<<endl;
+#endif
 		if (FileUtils::existsAndIsDir(directory))
 		{
+#if DEBUG > 2
 			cout << "\tExists and is a directory"<<endl;
+#endif
 			location->fileXML = FileUtils::combinePaths(directory, XML_FILENAME);
+#if DEBUG > 2
 			cout << "\tTrying to open "<<location->fileXML<<endl;
+#endif
 			FILE* XMLfile = fopen(location->fileXML.c_str(), "r");
 			//Equivalent of canRead, I believe.
 			if (XMLfile != NULL)
 			{
+#if DEBUG > 2
 				cout<<"\tXML file is not null"<<endl;
+#endif
 				try
 				{
 					std::string outputFile = FileUtils::combinePaths(directory, TRACE_FILENAME);
+#if DEBUG > 2
 					cout<<"\tTrying to open "<<outputFile<<endl;
+#endif
 					MergeDataAttribute att = MergeDataFiles::merge(directory, "*.hpctrace",
 							outputFile);
+#if DEBUG > 2
 					cout<<"\tMerge resulted in "<<att<<endl;
+#endif
 					if (att != FAIL_NO_DATA)
 					{
 						location->fileTrace = outputFile;
