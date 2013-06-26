@@ -351,6 +351,56 @@ hpcrun_safe_exit(); } while(0)
     return ret;\
     }
 
+
+//
+// Macro to populate a given set of CUDA function pointers:
+//   takes a basename for a function pointer set, and a library
+//   to read from (as a fallback position).
+//
+//  Method:
+//
+//  Decide on RTLD_NEXT or dlopen of library for the function pointer set
+//  (Abort if neither method succeeds)
+//  fetch all of the symbols using dlsym, aborting if any failure
+
+#define PopulateGPUFunctionPointers(basename, library)                             \
+  char *error;                                                                     \
+                                                                                   \
+  dlerror(); 									   \
+  void* dlsym_arg = RTLD_NEXT;                                                     \
+  void* try = dlsym(dlsym_arg, basename ## FunctionPointer[0].functionName);	   \
+  if ((error=dlerror()) || (! try)) {						   \
+    if (getenv("DEBUG_HPCRUN_GPU_CONS"))					   \
+      fprintf(stderr, "RTLD_NEXT argument fails for " #basename " (%s)\n",         \
+	      (! try) ? "trial function pointer = NULL" : "dlerror != NULL");	   \
+    dlerror();									   \
+    dlsym_arg = dlopen(#library, RTLD_LAZY);					   \
+    if (! dlsym_arg) {                                                             \
+      fprintf(stderr, "fallback dlopen of " #library " failed,"			   \
+	      " dlerror message = '%s'\n", dlerror());				   \
+      monitor_real_abort();							   \
+    }                                                                              \
+    if (getenv("DEBUG_HPCRUN_GPU_CONS"))                                           \
+      fprintf(stderr, "Going forward with " #basename " overrides using " #library "\n"); \
+  }                                                                                \
+  else										   \
+    if (getenv("DEBUG_HPCRUN_GPU_CONS"))					   \
+      fprintf(stderr, "Going forward with " #basename " overrides using RTLD_NEXT\n"); \
+  for (int i = 0; i < sizeof(basename ## FunctionPointer)/sizeof(basename ## FunctionPointer[0]); i++) { \
+    dlerror();                                                                     \
+    basename ## FunctionPointer[i].generic =					   \
+      dlsym(dlsym_arg, basename ## FunctionPointer[i].functionName);		   \
+    if (getenv("DEBUG_HPCRUN_GPU_CONS"))					   \
+      fprintf(stderr, #basename "Fnptr[%d] @ %p for %s = %p\n",                    \
+	      i, & basename ## FunctionPointer[i].generic,			   \
+	      basename ## FunctionPointer[i].functionName,			   \
+	      basename ## FunctionPointer[i].generic);				   \
+    if ((error = dlerror()) != NULL) {                                             \
+      EEMSG("%s: during dlsym \n", error);					   \
+      monitor_real_abort();							   \
+    }										   \
+  }
+
 /******************************************************************************
  * local constants
  *****************************************************************************/
@@ -536,71 +586,23 @@ static IPC_data_t * ipc_data;
 
 // obtain function pointers to all real cuda runtime functions
 
-static void PopulateEntryPointesToWrappedCudaRuntimeCalls() {
-    char *error;
-    
-    for (int i = 0; i < CUDA_MAX_APIS; i++) {
-        dlerror(); // null out the prev err
-        cudaRuntimeFunctionPointer[i].generic = dlsym(RTLD_NEXT, cudaRuntimeFunctionPointer[i].functionName);
-	if (getenv("DEBUG_HPCRUN_GPU_CONS"))
-	  fprintf(stderr, "RuntimeFnptr[%d] @ %p for %s = %p\n",
-		  i, &cudaRuntimeFunctionPointer[i].generic,
-		  cudaRuntimeFunctionPointer[i].functionName,
-		  cudaRuntimeFunctionPointer[i].generic);
-        if ((error = dlerror()) != NULL) {
-            EEMSG("%s: during dlsym \n", error);
-            monitor_real_abort();
-        }
-    }
+static void
+PopulateEntryPointesToWrappedCudaRuntimeCalls()
+{
+  PopulateGPUFunctionPointers(cudaRuntime, libcudart.so)
 }
 
 // obtain function pointers to all real cuda driver functions
 
-static void PopulateEntryPointesToWrappedCuDriverCalls() {
-    char *error;
-    
-    // See if RTLD_NEXT will work
-    dlerror(); // null out any previous error
-    void* dlsym_arg = RTLD_NEXT;
-    void* try = dlsym(dlsym_arg, cuDriverFunctionPointer[0].functionName);
-
-    // If RTLD_NEXT fails, then try to dlopen libcuda.so directly
-    if ((error=dlerror()) || (! try)) {
-      if (getenv("DEBUG_HPCRUN_GPU_CONS"))
-	fprintf(stderr, "RTLD_NEXT argument fails for cuDriver (%s)\n",
-		(! try) ? "trial function pointer = NULL" : "dlerror != NULL");
-      dlerror();
-      dlsym_arg = dlopen("libcuda.so", RTLD_LAZY);
-
-      // if dlopen libcuda.so fails, give up!
-      if (! dlsym_arg) {
-	fprintf(stderr, "fallback dlopen of libcuda.so failed,"
-		" dlerror message = '%s'\n", dlerror());
-	monitor_real_abort();
-      }
-      if (getenv("DEBUG_HPCRUN_GPU_CONS"))
-	fprintf(stderr, "Going forward with cuDriver overrides using libcuda.so\n");
-    }
-    else
-      	if (getenv("DEBUG_HPCRUN_GPU_CONS"))
-	  fprintf(stderr, "Going forward with cuDriver overrides using RTLD_NEXT\n");
-    for (int i = 0; i < CU_MAX_APIS; i++) {
-        dlerror(); // null out the prev err
-        cuDriverFunctionPointer[i].generic =
-	  dlsym(dlsym_arg, cuDriverFunctionPointer[i].functionName);
-	if (getenv("DEBUG_HPCRUN_GPU_CONS"))
-	  fprintf(stderr, "DriverFnptr[%d] @ %p for %s = %p\n",
-		  i, &cuDriverFunctionPointer[i].generic,
-		  cuDriverFunctionPointer[i].functionName,
-		  cuDriverFunctionPointer[i].generic);
-        if ((error = dlerror()) != NULL) {
-            EEMSG("%s: during dlsym \n", error);
-            monitor_real_abort();
-        }
-    }
+static void
+PopulateEntryPointesToWrappedCuDriverCalls(void)
+{
+  PopulateGPUFunctionPointers(cuDriver, libcuda.so)
 }
 
-static void InitCpuGpuBlameShiftDataStructs(){
+static void
+InitCpuGpuBlameShiftDataStructs(void)
+{
     char * shared_blaming_env;
     char * cuda_launch_skip_inner_env;
     g_unfinished_stream_list_head = NULL;
