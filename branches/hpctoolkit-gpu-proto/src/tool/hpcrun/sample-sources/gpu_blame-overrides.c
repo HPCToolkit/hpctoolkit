@@ -542,6 +542,11 @@ static void PopulateEntryPointesToWrappedCudaRuntimeCalls() {
     for (int i = 0; i < CUDA_MAX_APIS; i++) {
         dlerror(); // null out the prev err
         cudaRuntimeFunctionPointer[i].generic = dlsym(RTLD_NEXT, cudaRuntimeFunctionPointer[i].functionName);
+	if (getenv("DEBUG_HPCRUN_GPU_CONS"))
+	  fprintf(stderr, "RuntimeFnptr[%d] @ %p for %s = %p\n",
+		  i, &cudaRuntimeFunctionPointer[i].generic,
+		  cudaRuntimeFunctionPointer[i].functionName,
+		  cudaRuntimeFunctionPointer[i].generic);
         if ((error = dlerror()) != NULL) {
             EEMSG("%s: during dlsym \n", error);
             monitor_real_abort();
@@ -554,9 +559,40 @@ static void PopulateEntryPointesToWrappedCudaRuntimeCalls() {
 static void PopulateEntryPointesToWrappedCuDriverCalls() {
     char *error;
     
+    // See if RTLD_NEXT will work
+    dlerror(); // null out any previous error
+    void* dlsym_arg = RTLD_NEXT;
+    void* try = dlsym(dlsym_arg, cuDriverFunctionPointer[0].functionName);
+
+    // If RTLD_NEXT fails, then try to dlopen libcuda.so directly
+    if ((error=dlerror()) || (! try)) {
+      if (getenv("DEBUG_HPCRUN_GPU_CONS"))
+	fprintf(stderr, "RTLD_NEXT argument fails for cuDriver (%s)\n",
+		(! try) ? "trial function pointer = NULL" : "dlerror != NULL");
+      dlerror();
+      dlsym_arg = dlopen("libcuda.so", RTLD_LAZY);
+
+      // if dlopen libcuda.so fails, give up!
+      if (! dlsym_arg) {
+	fprintf(stderr, "fallback dlopen of libcuda.so failed,"
+		" dlerror message = '%s'\n", dlerror());
+	monitor_real_abort();
+      }
+      if (getenv("DEBUG_HPCRUN_GPU_CONS"))
+	fprintf(stderr, "Going forward with cuDriver overrides using libcuda.so\n");
+    }
+    else
+      	if (getenv("DEBUG_HPCRUN_GPU_CONS"))
+	  fprintf(stderr, "Going forward with cuDriver overrides using RTLD_NEXT\n");
     for (int i = 0; i < CU_MAX_APIS; i++) {
         dlerror(); // null out the prev err
-        cuDriverFunctionPointer[i].generic = dlsym(RTLD_NEXT, cuDriverFunctionPointer[i].functionName);
+        cuDriverFunctionPointer[i].generic =
+	  dlsym(dlsym_arg, cuDriverFunctionPointer[i].functionName);
+	if (getenv("DEBUG_HPCRUN_GPU_CONS"))
+	  fprintf(stderr, "DriverFnptr[%d] @ %p for %s = %p\n",
+		  i, &cuDriverFunctionPointer[i].generic,
+		  cuDriverFunctionPointer[i].functionName,
+		  cuDriverFunctionPointer[i].generic);
         if ((error = dlerror()) != NULL) {
             EEMSG("%s: during dlsym \n", error);
             monitor_real_abort();
@@ -590,7 +626,8 @@ __attribute__((constructor))
 static void
 CpuGpuBlameShiftInit(void)
 {
-  // fprintf(stderr, "CPU-GPU blame shift constructor called\n");
+  if (getenv("DEBUG_HPCRUN_GPU_CONS"))
+    fprintf(stderr, "CPU-GPU blame shift constructor called\n");
   PopulateEntryPointesToWrappedCalls();
   InitCpuGpuBlameShiftDataStructs();
 }

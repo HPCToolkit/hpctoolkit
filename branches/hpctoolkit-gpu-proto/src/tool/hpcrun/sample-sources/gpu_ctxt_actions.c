@@ -1,3 +1,4 @@
+#include <messages/messages.h>
 #include "gpu_ctxt_actions.h"
 
 // ******** CUDA API *************
