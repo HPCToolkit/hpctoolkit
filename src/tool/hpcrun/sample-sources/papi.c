@@ -773,8 +773,12 @@ papi_event_handler(int event_set, void *pc, void *data_addr,
     // FIXME: record data_node and precise ip into thread data
     TD_GET(data_node) = data_node;
     TD_GET(pc) = pc;
+    TD_GET(start) = start;
+    TD_GET(end) = end;
     sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 			   0/*skipInner*/, 0/*isSync*/);
+    TD_GET(start) = NULL;
+    TD_GET(end) = NULL;
     TD_GET(data_node) = NULL;
     TD_GET(pc) = NULL;
     TD_GET(ldst) = 0;

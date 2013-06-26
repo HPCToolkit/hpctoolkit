@@ -166,6 +166,9 @@ typedef struct thread_data_t {
   int ldst; // whether it is a load/store instruction;
   int in_malloc; // whether it is a malloc unwind
   void *ea; //effective address
+  // for address-centric analysis
+  void *start;
+  void *end;
    
   // ----------------------------------------
   // core_profile_trace_data contains the following

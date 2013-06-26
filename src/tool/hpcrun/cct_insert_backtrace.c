@@ -296,6 +296,31 @@ heap_data_allocation(void)
 {
 }
 
+void
+data_range_1_5()
+{
+}
+
+void
+data_range_2_5()
+{
+}
+
+void
+data_range_3_5()
+{
+}
+
+void
+data_range_4_5()
+{
+}
+
+void
+data_range_5_5()
+{
+}
+
 cct_node_t*
 hpcrun_cct_record_backtrace(cct_bundle_t* cct, bool partial, bool thread_stop,
 			    frame_t* bt_beg, frame_t* bt_last, bool tramp_found)
@@ -366,6 +391,11 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
   cct_node_t *data_node = TD_GET(data_node);
   uint16_t lm_id = TD_GET(lm_id);
   uintptr_t lm_ip = TD_GET(lm_ip);
+  
+  void *ea = TD_GET(ea);
+  void *start = TD_GET(start);
+  void *end = TD_GET(end);
+
   if(data_node) {
     // give a tag for the heap allocated data
 #if defined(__PPC64__) || defined(HOST_CPU_IA64)
@@ -376,6 +406,47 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
 
     // copy the call path of the malloc
     cct_cursor = hpcrun_cct_insert_path_return_leaf(data_node, cct_cursor);
+
+    // insert address-centric markers
+    if (ENABLED(ADDRESS_CENTRIC)) {
+      // first compute the range the address falls in
+      double ratio = (double)(ea-start)/(end-start);
+      if (ratio < 0.2) {
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, *(void **)data_range_1_5);
+#else
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, data_range_1_5);
+#endif
+      }
+      else if (ratio < 0.4 && ratio >= 0.2 ) {
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, *(void **)data_range_2_5);
+#else
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, data_range_2_5);
+#endif
+      }
+      else if (ratio < 0.6 && ratio >= 0.4 ) {
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, *(void **)data_range_3_5);
+#else
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, data_range_3_5);
+#endif
+      }
+      else if (ratio < 0.8 && ratio >= 0.6 ) {
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, *(void **)data_range_4_5);
+#else
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, data_range_4_5);
+#endif
+      }
+      else {
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, *(void **)data_range_5_5);
+#else
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, data_range_5_5);
+#endif
+      }
+    }
 
 #if defined(__PPC64__) || defined(HOST_CPU_IA64)
     cct_cursor = hpcrun_insert_special_node(cct_cursor, *(void **)heap_data_accesses);
@@ -395,6 +466,46 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
     cct_cursor = hpcrun_cct_insert_addr(cct_cursor, &ADDR2(lm_id, lm_ip+1));
     TD_GET(lm_id) = 0;
     TD_GET(lm_ip) = NULL;
+    // insert address-centric markers
+    if (ENABLED(ADDRESS_CENTRIC)) {
+      // first compute the range the address falls in
+      double ratio = (double)(ea-start)/(end-start);
+      if (ratio < 0.2) {
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, *(void **)data_range_1_5);
+#else
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, data_range_1_5);
+#endif
+      }
+      else if (ratio < 0.4 && ratio >= 0.2 ) {
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, *(void **)data_range_2_5);
+#else
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, data_range_2_5);
+#endif
+      }
+      else if (ratio < 0.6 && ratio >= 0.4 ) {
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, *(void **)data_range_3_5);
+#else
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, data_range_3_5);
+#endif
+      }
+      else if (ratio < 0.8 && ratio >= 0.6 ) {
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, *(void **)data_range_4_5);
+#else
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, data_range_4_5);
+#endif
+      }
+      else {
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, *(void **)data_range_5_5);
+#else
+        cct_cursor = hpcrun_insert_special_node(cct_cursor, data_range_5_5);
+#endif
+      }
+    }
   }
   // stack or c++ template data, cannot back to data
   // or hardware does not give effective address back

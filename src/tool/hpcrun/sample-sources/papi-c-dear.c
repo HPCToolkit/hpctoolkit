@@ -677,7 +677,11 @@ dear_signal_handler(int sig, siginfo_t* siginfo, void* context)
     }
     TD_GET(data_node) = data_node;
     TD_GET(pc) = ip;
+    TD_GET(start) = start;
+    TD_GET(end) = end;
     node = hpcrun_sample_callpath(context, metrics[0], 1, 0, 0).sample_node;
+    TD_GET(start) = NULL;
+    TD_GET(end) = NULL;
     TD_GET(data_node) = NULL;
     TD_GET(pc) = NULL;
     TD_GET(ldst) = 0;
