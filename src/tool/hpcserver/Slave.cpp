@@ -103,7 +103,7 @@ namespace TraceviewerServer
 		//If ss = 0, they are all mapped one less. If ss = size-1, no changes happen
 		int rank = trueRank > MPICommunication::SOCKET_SERVER ? trueRank - 1 : trueRank;
 
-		int n = gc.processEnd - gc.processStart + 1;
+		int n = gc.processEnd - gc.processStart;
 		int p = size;
 		int mod = n % (p - 1);
 		double q = ((double) n) / (p - 1);

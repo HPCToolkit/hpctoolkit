@@ -9,19 +9,20 @@
 #include "MPICommunication.hpp"
 #include "zlib.h"
 #include "Constants.hpp"
+#include "Args.hpp"
 
 
 using namespace std;
 using namespace MPI;
 
-bool ParseCommandLineArgs(int, char*[]);
-
-
 int main(int argc, char *argv[])
 {
-	bool ActuallyRun = ParseCommandLineArgs(argc, argv);
-	if (!ActuallyRun)
-		return 0;
+	Args args(argc, argv);
+	TraceviewerServer::useCompression = args.compression;
+	TraceviewerServer::xmlPortNumber = args.xmlPort;
+	TraceviewerServer::mainPortNumber = args.mainPort;
+	//bool ActuallyRun = ParseCommandLineArgs(argc, argv);
+
 
 #ifdef USE_MPI
 	MPI::Init(argc, argv);
@@ -84,7 +85,7 @@ int main(int argc, char *argv[])
 #endif
 	return 0;
 }
-void PrintHelp()
+/*void PrintHelp()
 {
 	cout << "This is a server for the HPCTraceviewer. Usage: INSERT THE USAGE HERE"<<endl
 			<<"Some notes: Allowed flags: --help, --compression, --port, --xmlport"<<endl
@@ -223,7 +224,7 @@ bool ParseCommandLineArgs(int argc, char *argv[])
 		}
 	}
 	return true;
-}
+}*/
 
 /*void WriteVector(vector<string> t)
  {
