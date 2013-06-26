@@ -71,7 +71,9 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	main.cpp \
+	main.cpp 				Args.cpp 				\
+	Filter.hpp 				FilterSet.hpp				FilteredBaseData.cpp			FilteredBaseData.hpp \
+	ProgressBar.hpp				ProgressBar.cpp	\
 	BaseDataFile.cpp			DataSocketStream.hpp			MergeDataFiles.cpp			SpaceTimeDataController.cpp \
 	BaseDataFile.hpp			FileData.hpp				MergeDataFiles.hpp			SpaceTimeDataController.hpp \
 	ByteUtilities.hpp			FileUtils.hpp				ProcessTimeline.cpp			TimeCPID.hpp \
@@ -88,6 +90,10 @@ MYCFLAGS   = @HOST_CFLAGS@ $(MYMPIFLAGS)  $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(MYMPIFLAGS)  $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
 
 MYLDFLAGS  = -lz
+
+MYLDADD = \
+        @HOST_LIBTREPOSITORY@ \
+        $(HPCLIB_Support) 
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 

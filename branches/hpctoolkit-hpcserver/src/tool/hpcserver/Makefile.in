@@ -80,7 +80,9 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am__objects_1 = hpcserver-main.$(OBJEXT) \
+am__objects_1 = hpcserver-main.$(OBJEXT) hpcserver-Args.$(OBJEXT) \
+	hpcserver-FilteredBaseData.$(OBJEXT) \
+	hpcserver-ProgressBar.$(OBJEXT) \
 	hpcserver-BaseDataFile.$(OBJEXT) \
 	hpcserver-MergeDataFiles.$(OBJEXT) \
 	hpcserver-SpaceTimeDataController.$(OBJEXT) \
@@ -94,7 +96,8 @@ am__objects_1 = hpcserver-main.$(OBJEXT) \
 	hpcserver-DataSocketStream.$(OBJEXT)
 am_hpcserver_OBJECTS = $(am__objects_1)
 hpcserver_OBJECTS = $(am_hpcserver_OBJECTS)
-hpcserver_DEPENDENCIES =
+am__DEPENDENCIES_1 = $(HPCLIB_Support)
+hpcserver_DEPENDENCIES = $(am__DEPENDENCIES_1)
 hpcserver_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcserver_CXXFLAGS) \
 	$(CXXFLAGS) $(hpcserver_LDFLAGS) $(LDFLAGS) -o $@
@@ -375,7 +378,9 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 # Local settings
 #############################################################################
 MYSOURCES = \
-	main.cpp \
+	main.cpp 				Args.cpp 				\
+	Filter.hpp 				FilterSet.hpp				FilteredBaseData.cpp			FilteredBaseData.hpp \
+	ProgressBar.hpp				ProgressBar.cpp	\
 	BaseDataFile.cpp			DataSocketStream.hpp			MergeDataFiles.cpp			SpaceTimeDataController.cpp \
 	BaseDataFile.hpp			FileData.hpp				MergeDataFiles.hpp			SpaceTimeDataController.hpp \
 	ByteUtilities.hpp			FileUtils.hpp				ProcessTimeline.cpp			TimeCPID.hpp \
@@ -390,6 +395,10 @@ MYMPIFLAGS = -fmessage-length=0  -DMPICH_IGNORE_CXX_SEEK
 MYCFLAGS = @HOST_CFLAGS@ $(MYMPIFLAGS)  $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(MYMPIFLAGS)  $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
 MYLDFLAGS = -lz
+MYLDADD = \
+        @HOST_LIBTREPOSITORY@ \
+        $(HPCLIB_Support) 
+
 MYCLEAN = @HOST_LIBTREPOSITORY@
 #pkglibexec_PROGRAMS = hpcserver-bin
 hpcserver_SOURCES = $(MYSOURCES)
@@ -493,14 +502,17 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-Args.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-BaseDataFile.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-CompressingDataSocketLayer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-DBOpener.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-DataOutputFileStream.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-DataSocketStream.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-FilteredBaseData.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-LargeByteBuffer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-MergeDataFiles.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-ProcessTimeline.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-ProgressBar.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-Server.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-Slave.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-SpaceTimeDataController.Po@am__quote@
@@ -542,6 +554,48 @@ hpcserver-main.obj: main.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='hpcserver-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
+
+hpcserver-Args.o: Args.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-Args.o -MD -MP -MF $(DEPDIR)/hpcserver-Args.Tpo -c -o hpcserver-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver-Args.Tpo $(DEPDIR)/hpcserver-Args.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcserver-Args.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+
+hpcserver-Args.obj: Args.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-Args.obj -MD -MP -MF $(DEPDIR)/hpcserver-Args.Tpo -c -o hpcserver-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver-Args.Tpo $(DEPDIR)/hpcserver-Args.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcserver-Args.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+
+hpcserver-FilteredBaseData.o: FilteredBaseData.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-FilteredBaseData.o -MD -MP -MF $(DEPDIR)/hpcserver-FilteredBaseData.Tpo -c -o hpcserver-FilteredBaseData.o `test -f 'FilteredBaseData.cpp' || echo '$(srcdir)/'`FilteredBaseData.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver-FilteredBaseData.Tpo $(DEPDIR)/hpcserver-FilteredBaseData.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='FilteredBaseData.cpp' object='hpcserver-FilteredBaseData.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-FilteredBaseData.o `test -f 'FilteredBaseData.cpp' || echo '$(srcdir)/'`FilteredBaseData.cpp
+
+hpcserver-FilteredBaseData.obj: FilteredBaseData.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-FilteredBaseData.obj -MD -MP -MF $(DEPDIR)/hpcserver-FilteredBaseData.Tpo -c -o hpcserver-FilteredBaseData.obj `if test -f 'FilteredBaseData.cpp'; then $(CYGPATH_W) 'FilteredBaseData.cpp'; else $(CYGPATH_W) '$(srcdir)/FilteredBaseData.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver-FilteredBaseData.Tpo $(DEPDIR)/hpcserver-FilteredBaseData.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='FilteredBaseData.cpp' object='hpcserver-FilteredBaseData.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-FilteredBaseData.obj `if test -f 'FilteredBaseData.cpp'; then $(CYGPATH_W) 'FilteredBaseData.cpp'; else $(CYGPATH_W) '$(srcdir)/FilteredBaseData.cpp'; fi`
+
+hpcserver-ProgressBar.o: ProgressBar.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-ProgressBar.o -MD -MP -MF $(DEPDIR)/hpcserver-ProgressBar.Tpo -c -o hpcserver-ProgressBar.o `test -f 'ProgressBar.cpp' || echo '$(srcdir)/'`ProgressBar.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver-ProgressBar.Tpo $(DEPDIR)/hpcserver-ProgressBar.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ProgressBar.cpp' object='hpcserver-ProgressBar.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-ProgressBar.o `test -f 'ProgressBar.cpp' || echo '$(srcdir)/'`ProgressBar.cpp
+
+hpcserver-ProgressBar.obj: ProgressBar.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-ProgressBar.obj -MD -MP -MF $(DEPDIR)/hpcserver-ProgressBar.Tpo -c -o hpcserver-ProgressBar.obj `if test -f 'ProgressBar.cpp'; then $(CYGPATH_W) 'ProgressBar.cpp'; else $(CYGPATH_W) '$(srcdir)/ProgressBar.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver-ProgressBar.Tpo $(DEPDIR)/hpcserver-ProgressBar.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ProgressBar.cpp' object='hpcserver-ProgressBar.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-ProgressBar.obj `if test -f 'ProgressBar.cpp'; then $(CYGPATH_W) 'ProgressBar.cpp'; else $(CYGPATH_W) '$(srcdir)/ProgressBar.cpp'; fi`
 
 hpcserver-BaseDataFile.o: BaseDataFile.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-BaseDataFile.o -MD -MP -MF $(DEPDIR)/hpcserver-BaseDataFile.Tpo -c -o hpcserver-BaseDataFile.o `test -f 'BaseDataFile.cpp' || echo '$(srcdir)/'`BaseDataFile.cpp
