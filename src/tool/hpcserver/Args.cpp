@@ -2,7 +2,7 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcstruct/Args.cpp $
+// $HeadURL$
 // $Id: Args.cpp 4181 2013-05-17 18:55:33Z laksono@gmail.com $
 //
 // --------------------------------------------------------------------------
@@ -47,7 +47,7 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcstruct/Args.cpp $
+//   $HeadURL$
 //
 // Purpose:
 //   [The purpose of this file]
@@ -128,8 +128,6 @@ Options: General\n\
 //                     Verbose: generate progress messages to stderr at\n
 //                     verbosity level <n>. {1}\n
 
-#define CLP CmdLineParser
-#define CLP_SEPARATOR "!!!"
 
 static const int DEFAULT_PORT = 21590;
 
