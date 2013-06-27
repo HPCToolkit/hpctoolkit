@@ -6,6 +6,10 @@
  */
 
 #include "FilteredBaseData.hpp"
+#include <assert.h>
+
+#include <iostream>
+
 namespace TraceviewerServer {
 FilteredBaseData::FilteredBaseData(string filename, int _headerSize) {
 	baseDataFile = new BaseDataFile(filename, _headerSize);
@@ -29,17 +33,24 @@ void FilteredBaseData::setFilters(FilterSet _filter)
 void FilteredBaseData::filter()
 {
 	int numFiles = baseDataFile->getNumberOfFiles();
+	rankMapping.clear();
 	for (int i = 0; i < numFiles; i++) {
-		if (currentlyAppliedFilter.matches(baseDataFile->processIDs[i], baseDataFile->threadIDs[i]))
+		if (currentlyAppliedFilter.matches(baseDataFile->processIDs[i], baseDataFile->threadIDs[i])){
 			rankMapping.push_back(i);
+		}
 	}
+#if DEBUG > 1
+	std::cout << "Filtering matched " << rankMapping.size() << " out of "<<numFiles<<std::endl;
+#endif
 }
 
 FileOffset FilteredBaseData::getMinLoc(int pseudoRank) {
+	assert((unsigned int)pseudoRank < rankMapping.size());
 	return baseOffsets[rankMapping[pseudoRank]].start + headerSize;
 }
 
 FileOffset FilteredBaseData::getMaxLoc(int pseudoRank){
+	assert((unsigned int)pseudoRank < rankMapping.size());
 	return baseOffsets[rankMapping[pseudoRank]].end;
 }
 

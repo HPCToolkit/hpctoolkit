@@ -7,7 +7,6 @@
 
 #ifndef PROCESSTIMELINE_H_
 #define PROCESSTIMELINE_H_
-#include "BaseDataFile.hpp"
 #include "TraceDataByRank.hpp"
 namespace TraceviewerServer
 {

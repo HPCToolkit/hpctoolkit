@@ -22,7 +22,9 @@ int main(int argc, char *argv[])
 	TraceviewerServer::xmlPortNumber = args.xmlPort;
 	TraceviewerServer::mainPortNumber = args.mainPort;
 	//bool ActuallyRun = ParseCommandLineArgs(argc, argv);
-
+	cout << "Compr:" << TraceviewerServer::useCompression<<endl;
+	cout << "xml: " << TraceviewerServer::xmlPortNumber<<endl;
+	cout << "main: "<< TraceviewerServer::mainPortNumber<<endl;
 
 #ifdef USE_MPI
 	MPI::Init(argc, argv);
@@ -66,20 +68,7 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-	/*
 
-
-
-	 int* val = new int[10];
-	 if (rank == 0) {
-	 srand(time(NULL));
-	 for (int var = 0; var < 10; var++) {
-	 val[var] = rand() % 100;
-	 }
-	 }
-	 MPI_Bcast(val, 10, MPI_INT, 0, COMM_WORLD);
-	 cout << "Rank: " << rank << " val: " << val[0] << ".." << val[9] << "\n";
-	 */
 #ifdef USE_MPI
 	MPI::Finalize();
 #endif
@@ -225,13 +214,4 @@ bool ParseCommandLineArgs(int argc, char *argv[])
 	}
 	return true;
 }*/
-
-/*void WriteVector(vector<string> t)
- {
- cout << "Writing vector of length "<< t.size()<<endl;
- for (int var = 0; var < t.size(); var++) {
- cout<<"\t["<<var<<"] = " << t[var]<<endl;
- }
-
- }*/
 

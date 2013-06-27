@@ -11,7 +11,6 @@
 #include <vector>
 #include "TimeCPID.hpp"
 #include "FilteredBaseData.hpp"
-#include "BaseDataFile.hpp"
 
 
 namespace TraceviewerServer
