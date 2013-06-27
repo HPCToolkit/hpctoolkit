@@ -50,7 +50,7 @@ public:
 	}
 	Filter (BinaryRepresentationOfFilter tocopy) {
 		process = Range(tocopy.processMin, tocopy.processMax, tocopy.processStride);
-		thread = Range(tocopy.processMin, tocopy.processMax, tocopy.processStride);
+		thread = Range(tocopy.threadMin, tocopy.threadMax, tocopy.threadStride);
 	}
 	bool matches (int processNum, int threadNum){
 		return (process.matches(processNum) && thread.matches(threadNum));

@@ -453,6 +453,8 @@ namespace TraceviewerServer
 			filt.threadMin = stream->readInt();
 			filt.threadMax = stream->readInt();
 			filt.threadStride = stream->readInt();
+			cout << filt.processMin <<":" << filt.processMax <<":"<<filt.processStride<<",";
+			cout << filt.threadMax <<":" << filt.threadMax <<":"<<filt.threadStride<<endl;
 #ifdef USE_MPI
 			COMM_WORLD.Bcast(&filt, sizeof(filt), MPI_PACKED, MPICommunication::SOCKET_SERVER);
 #endif

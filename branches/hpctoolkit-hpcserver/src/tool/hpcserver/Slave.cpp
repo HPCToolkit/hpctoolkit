@@ -99,6 +99,7 @@ namespace TraceviewerServer
 
 		int trueRank = COMM_WORLD.Get_rank();
 		int size = COMM_WORLD.Get_size();
+
 		//Gives us a contiguous count of ranks from 0 to size-2 regardless of which node is the socket server
 		//If ss = 0, they are all mapped one less. If ss = size-1, no changes happen
 		int rank = trueRank > MPICommunication::SOCKET_SERVER ? trueRank - 1 : trueRank;
