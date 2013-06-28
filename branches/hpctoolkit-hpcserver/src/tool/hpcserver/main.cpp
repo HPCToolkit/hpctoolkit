@@ -1,3 +1,62 @@
+// -*-Mode: C++;-*-
+
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2013, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
+//***************************************************************************
+//
+// File:
+//   $HeadURL$
+//
+// Purpose:
+//   [The purpose of this file]
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
+
 #include <stdlib.h>
 #include <fstream>
 #include <vector>
@@ -22,17 +81,19 @@ int main(int argc, char *argv[])
 	TraceviewerServer::useCompression = args.compression;
 	TraceviewerServer::xmlPortNumber = args.xmlPort;
 	TraceviewerServer::mainPortNumber = args.mainPort;
-	//bool ActuallyRun = ParseCommandLineArgs(argc, argv);
-	cout << "Compr:" << TraceviewerServer::useCompression<<endl;
-	cout << "xml: " << TraceviewerServer::xmlPortNumber<<endl;
-	cout << "main: "<< TraceviewerServer::mainPortNumber<<endl;
 
 #ifdef USE_MPI
 	MPI::Init(argc, argv);
 	int rank, size;
 	rank = MPI::COMM_WORLD.Get_rank();
 	size = MPI::COMM_WORLD.Get_size();
-
+	if (size <= 1)
+	{
+		cout << "The MPI version of hpcserver must be run with more than one process. "<<
+				"If you are looking for a single threaded version, you must recompile hpcserver. "<<
+				"See the hpctoolkit documentation for more information."<<endl;
+		return 0;
+	}
 	if (rank == TraceviewerServer::MPICommunication::SOCKET_SERVER)
 	{
 		try
@@ -75,144 +136,3 @@ int main(int argc, char *argv[])
 #endif
 	return 0;
 }
-/*void PrintHelp()
-{
-	cout << "This is a server for the HPCTraceviewer. Usage: INSERT THE USAGE HERE"<<endl
-			<<"Some notes: Allowed flags: --help, --compression, --port, --xmlport"<<endl
-			<<"For compression, allowed options are on/off"<<endl
-			<<"For main data port, allowed values are 0, which means auto-choose, and any integer 1024< n <65535. Default is 21590"<<endl
-			<<"For the xml port, any integer 1024< n <65535. -1 forces usage of the data port to send xml. This should be used with --port 0. Do not include this flag to have the XML port automatically negotiated."
-			<< endl;
-}
-typedef enum
-{
-	null, help, compression, com_port, xml_port, yes, no
-} CLoption;
-
-bool ParseCommandLineArgs(int argc, char *argv[])
-{
-
-	typedef map<string, CLoption> Map;
-	const Map::value_type vals[] =
-	{
-	make_pair( "", null),
-	make_pair( ".hpp", help ),
-	make_pair( "-help", help ),
-	make_pair( "--help", help ),
-	make_pair( "--Help", help ),
-	make_pair( "-c", compression ),
-	make_pair( "--compression", compression ),
-	make_pair( "--Compression", compression ),
-	make_pair( "--comp", compression ),
-	make_pair( "--Comp", compression ),
-	make_pair( "-p", com_port ),
-	make_pair( "--port", com_port ),
-	make_pair( "--Port", com_port ),
-	make_pair( "--xmlport", xml_port ),//This should be undocumented, because the server should auto-negotiate it
-	make_pair( "true", yes ),
-	make_pair( "t", yes ),
-	make_pair( "True", yes ),
-	make_pair( "yes", yes ),
-	make_pair( "Yes", yes ),
-	make_pair( "y", yes ),
-	make_pair( "on", yes),
-	make_pair( "false", no ),
-	make_pair( "f", no ),
-	make_pair( "False", no ),
-	make_pair( "no", no ),
-	make_pair( "No", no ),
-	make_pair( "n", no ),
-	make_pair( "off", no)
-	};
-	const Map Parser (vals, vals + sizeof(vals) / sizeof (vals[0]));
-
-
-	for (int c = 1; c < argc; c += 2)
-	{
-		CLoption op = Parser.find(argv[c])->second;
-		switch (op)
-		{
-			case compression:
-				if (c + 1 < argc)
-				{ //Possibly passed a true/false
-					CLoption OnOrOff = Parser.find(argv[c+1])->second;
-					if (OnOrOff == yes)
-					{
-						TraceviewerServer::useCompression = true;
-						break;
-					}
-					else if (OnOrOff == no)
-					{
-						TraceviewerServer::useCompression = false;
-						break;
-					}
-					else
-					{
-						PrintHelp();
-						return false;
-					}
-				}
-				else
-				{
-					PrintHelp();
-					return false;
-				}
-			case com_port:
-				if (c + 1 < argc)
-				{ //Possibly a number following
-					int val = atoi(argv[c + 1]);
-					if (val == 0 && !TraceviewerServer::FileUtils::stringActuallyZero(argv[c+1]))
-					{
-						cout<<"Could not parse port number"<<endl;
-						PrintHelp();
-						return false;
-					}
-					if ((val < 1024)&& (val != 0))
-					{
-						cout << "Port cannot be less than 1024"<<endl;
-						PrintHelp();
-						return false;
-					}
-					else
-					{
-
-						TraceviewerServer::mainPortNumber = val;
-						break;
-					}
-				}
-				else //--port was the last argument
-				{
-					PrintHelp();
-					return false;
-				}
-				break;
-			case xml_port:
-				if (c + 1 < argc)
-				{ //Possibly a number following
-					int val = atoi(argv[c + 1]);
-					if ((val < 1024) &&(val != -1))
-					{
-						PrintHelp();
-						return false;
-					}
-					else
-					{
-						TraceviewerServer::xmlPortNumber = val;
-						break;
-					}
-				}
-				else //--port was the last argument
-				{
-					PrintHelp();
-					return false;
-				}
-				break;
-			default:
-			case help:
-				PrintHelp();
-				return false;
-		}
-	}
-	return true;
-}*/
-

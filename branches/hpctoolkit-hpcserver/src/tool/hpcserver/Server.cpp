@@ -1,10 +1,61 @@
+// -*-Mode: C++;-*-
 
-/*
- * Server.cpp
- *
- *  Created on: Jul 9, 2012
- *      Author: pat2
- */
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2013, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
+//***************************************************************************
+//
+// File:
+//   $HeadURL$
+//
+// Purpose:
+//   [The purpose of this file]
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
 
 #include "Server.hpp"
 #include "DataSocketStream.hpp"
@@ -14,8 +65,10 @@
 #include "CompressingDataSocketLayer.hpp"
 #include "ProgressBar.hpp"
 #include "FileUtils.hpp"
+
 #include <iostream>
 #include <fstream>
+
 #include <mpi.h>
 #include "zlib.h"
 
@@ -35,7 +88,6 @@ namespace TraceviewerServer
 		DataSocketStream* socketptr = NULL;
 		try
 		{
-
 			//Port 21590 is used by vofr-gateway. Do we want to change it?
 			socketptr = new DataSocketStream(mainPortNumber, true);
 
@@ -144,10 +196,10 @@ namespace TraceviewerServer
 
 		socket->writeInt(DBOK);
 
-
 		DataSocketStream* xmlSocket;
 		if (xmlPortNumber == -1)
 			xmlPortNumber = mainPortNumber;
+
 		int actualXMLPort = xmlPortNumber;
 		if (xmlPortNumber != mainPortNumber)
 		{//On a different port. Create another socket.
@@ -184,23 +236,28 @@ namespace TraceviewerServer
 		{
 			xmlSocket->acceptSocket();
 		}
-		else
-		{
-			xmlSocket->writeInt(EXML);
-		}
-		vector<char> compressedXML = compressXML();
+
+		xmlSocket->writeInt(EXML);
+		vector<char> compressedXML;
+		compressXML(compressedXML);
 		xmlSocket->writeInt(compressedXML.size());
+
+		//To be more C++-ish, DataSocketStream would have an overload that takes
+		//an iterator. Unfortunately, behind the scenes, DataSocketStream uses
+		//fwrite and other C functions, which don't take iterators.
 		xmlSocket->writeRawData(&compressedXML[0], compressedXML.size());
 		xmlSocket->flush();
+
 		cout << "XML Sent" << endl;
 		if(actualXMLPort != mainPortNumber)
 			delete (xmlSocket);
 	}
 
-	vector<char> Server::compressXML()
+	//Pass by reference to avoid copying the whole vector...
+	void Server::compressXML(vector<char>& compressed)
 	{
-		vector<char> compressed;
 
+		//If this overflows, we may have problems...
 		int uncompressedFileSize = FileUtils::getFileSize(controller->getExperimentXML());
 		ProgressBar prog("Compressing XML", uncompressedFileSize);
 		FILE* in = fopen(controller->getExperimentXML().c_str(), "r");
@@ -255,11 +312,31 @@ namespace TraceviewerServer
 		#if DEBUG > 2
 		cout<<"Compressed XML Size: "<<compressed.size()<<endl;
 		#endif
-		return compressed;
+	}
+
+	void Server::checkProtocolVersions(DataSocketStream* receiver)
+	{
+		int clientProtocolVersion = receiver->readInt();
+
+		if (clientProtocolVersion != SERVER_PROTOCOL_MAX_VERSION)
+			cout << "The client is using protocol version 0x" << hex << clientProtocolVersion<<
+			" and the server supports version 0x" << SERVER_PROTOCOL_MAX_VERSION << endl;
+
+		if (clientProtocolVersion < SERVER_PROTOCOL_MAX_VERSION) {
+			cout << "Warning: The server is running in compatibility mode." << endl;
+			agreedUponProtocolVersion = clientProtocolVersion;
+		}
+		else if (clientProtocolVersion > SERVER_PROTOCOL_MAX_VERSION) {
+			cout << "The client protocol version is not supported by this server."<<
+					"Please upgrade the server. This session may be buggy and problematic." << endl;
+			agreedUponProtocolVersion = SERVER_PROTOCOL_MAX_VERSION;
+		}
+		cout << dec;//Switch it back to decimal mode
 	}
 
 	void Server::parseOpenDB(DataSocketStream* receiver)
 	{
+		checkProtocolVersions(receiver);
 
 		string pathToDB = receiver->readString();
 		DBOpener DBO;
@@ -409,7 +486,7 @@ namespace TraceviewerServer
 			#if DEBUG > 2
 			cout << "Sending process timeline with " << data.size() << " entries" << endl;
 			#endif
-			
+
 			Time currentTime = data[0].timestamp;
 			for (it = data.begin(); it != data.end(); ++it)
 			{

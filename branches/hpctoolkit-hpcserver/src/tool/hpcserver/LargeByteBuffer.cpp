@@ -1,75 +1,119 @@
-/*
- * LargeByteBuffer.cpp
- *
- *  Created on: Jul 10, 2012
- *      Author: pat2
- */
+// -*-Mode: C++;-*-
+
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2013, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
+//***************************************************************************
+//
+// File:
+//   $HeadURL$
+//
+// Purpose:
+//   [The purpose of this file]
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
 #include "LargeByteBuffer.hpp"
 #include "Constants.hpp"
-#include "sys/stat.h"
+#include "FileUtils.hpp"
+
 #include <fcntl.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
 
 #include <iostream>
 #include <errno.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/sysctl.h>
-#ifdef USE_MPI
-#include "mpi.h"
-#endif
 
 using namespace std;
 
 namespace TraceviewerServer
 {
-	static ULong mmPageSize; //= 1<<23;//1 << 30;
+	static FileOffset mmPageSize; //= 1<<23;//1 << 30;
 	FileOffset fileSize;
-	LargeByteBuffer::LargeByteBuffer(string SPath, int HeaderSize)
+	LargeByteBuffer::LargeByteBuffer(string sPath, int headerSize)
 	{
 		//string SPath = Path.string();
 
 		/*int MapFlags = MAP_PRIVATE;
 		int MapProt = PROT_READ;*/
 
-		struct stat fInfo;
-		stat(SPath.c_str(), &fInfo);
+		fileSize = FileUtils::getFileSize(sPath);
 
-		fileSize = fInfo.st_size;
+		FileOffset osPageSize = getpagesize();
+		FileOffset pageSizeMultiple = lcm(osPageSize, headerSize);//The page size must be a multiple of this
 
-		ULong osPageSize = getpagesize();
-		ULong pageSizeMultiple = lcm(osPageSize, HeaderSize);//The page size must be a multiple of this
+		FileOffset ramSizeInBytes = getRamSize();
 
-		ULong ramSizeInBytes = getRamSize();
-
-		const ULong _64_MEGABYTE = 1 << 26;
+		const FileOffset _64_MEGABYTE = 1 << 26;
 		//This is a pretty arbitrary algorithm, but it works
 		mmPageSize = pageSizeMultiple * (_64_MEGABYTE/osPageSize);//This means it will get it close to 64 MB
 
-		double MAX_PORTION_OF_RAM_AVAILABLE = 0.80;//Use up to 80%
+		//We should take into account how many copies of this program are
+		//running on this node with something like MPI_COMM_WORLD, but I don't
+		//want to introduce MPI-specific code here. It's not worth it... Plus, there's
+		//a ton of stuff going on at the OS level that we don't really know
+		//the specifics of, so the amount of RAM may be less important than it seems.
+		double MAX_PORTION_OF_RAM_AVAILABLE = 0.60;//Use up to 60%
 		int MaxPages = (int)(ramSizeInBytes * MAX_PORTION_OF_RAM_AVAILABLE/mmPageSize);
 		VersatileMemoryPage::setMaxPages(MaxPages);
 
-//		if (PAGE_SIZE % mm::mapped_file::alignment() != 0)
-//			cerr<< "PAGE_SIZE isn't a multiple of the OS granularity!!";
-//		long FileSize = fs::file_size(Path);
+
 		int FullPages = fileSize / mmPageSize;
 		int PartialPageSize = fileSize % mmPageSize;
 		numPages = FullPages + (PartialPageSize == 0 ? 0 : 1);
 
 
-		FileDescriptor fd = open(SPath.c_str(), O_RDONLY);
+		FileDescriptor fd = open(sPath.c_str(), O_RDONLY);
 
 		FileOffset sizeRemaining = fileSize;
 
-
-		//MasterBuffer = new mm::mapped_file*[NumPages];
-
 		for (int i = 0; i < numPages; i++)
 		{
-			unsigned long mapping_len = min((ULong) mmPageSize, sizeRemaining);
-
-			//MasterBuffer[i] = new mm::mapped_file(Path, mm::mapped_file::readonly, PAGE_SIZE, PAGE_SIZE*i);
-			//This is done to make the Blue Gene Q easier
+			FileOffset mapping_len = min( mmPageSize, sizeRemaining);
 
 			masterBuffer.push_back(*(new VersatileMemoryPage(mmPageSize*i , mapping_len, i, fd)));
 
@@ -96,19 +140,14 @@ namespace TraceviewerServer
 		return val;
 
 	}
-	ULong LargeByteBuffer::lcm(ULong _a, ULong _b)
+	//Could very well be a template, but we only use it for uint64_t
+	uint64_t LargeByteBuffer::lcm(uint64_t _a, uint64_t _b)
 	{
 		//LCM(a,b) = a*b/GCD(a,b) = (a/GCD(a,b))*b
-		//From Wikipedia
-		/*function gcd(a, b)
-		    while b ­ 0
-		       t := b
-		       b := a mod b
-		       a := t
-		    return a*/
+
 		//We need the original values for later, so use temporary ones for the GCD computation
-		ULong a = _a, b = _b;
-		ULong t = 0;
+		uint64_t a = _a, b = _b;
+		uint64_t t = 0;
 		while (b != 0)
 		{
 			t = b;
@@ -118,7 +157,7 @@ namespace TraceviewerServer
 		//GCD stored in a
 		return (_a/a)*_b;
 	}
-	ULong LargeByteBuffer::getRamSize()
+	uint64_t LargeByteBuffer::getRamSize()
 	{
 #ifdef _SC_PHYS_PAGES
 		long pages = sysconf(_SC_PHYS_PAGES);
