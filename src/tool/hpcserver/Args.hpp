@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcstruct/Args.hpp $
-// $Id: Args.hpp 4181 2013-05-17 18:55:33Z laksono@gmail.com $
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcstruct/Args.hpp $
+//   $HeadURL$
 //
 // Purpose:
 //   [The purpose of this file]

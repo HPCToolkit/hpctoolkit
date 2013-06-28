@@ -89,7 +89,7 @@ using std::string;
 
 //***************************************************************************
 
-static const char* version_info = "hpcserver version 0.9, protocol version 0.9. Part of " HPCTOOLKIT_VERSION_STRING;
+static const char* version_info = "hpcserver version 0.9, protocol version 0.9. \n" HPCTOOLKIT_VERSION_STRING;
 
 static const char* usage_summary =
 "[options]\n";
@@ -258,13 +258,15 @@ Args::parse(int argc, const char* const argv[])
     }
     if (parser.isOpt("port")) {
       const string& arg = parser.getOptArg("port");
-      mainPort = (int)
-	CmdLineParser::toLong(arg); 
+      mainPort = (int) CmdLineParser::toLong(arg);
+      if (xmlPort < 1024 && xmlPort != 0)
+         	  ARG_ERROR("Ports must be greater than 1024.")
     }
     if (parser.isOpt("xmlport")) {
       const string& arg = parser.getOptArg("xmlport");
-      xmlPort =
-	CmdLineParser::toLong(arg);
+      xmlPort = (int) CmdLineParser::toLong(arg);
+      if (xmlPort < 1024 && xmlPort != 0)
+    	  ARG_ERROR("Ports must be greater than 1024.")
     }
   }
   catch (const CmdLineParser::ParseError& x) {
