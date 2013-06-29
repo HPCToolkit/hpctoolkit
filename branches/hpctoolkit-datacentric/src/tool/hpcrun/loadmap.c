@@ -510,6 +510,23 @@ static_data_interval_splay_lookup(static_data_t **root, void *key, void **start,
   return NULL;
 }
 
+void *
+static_data_lookup(void *key, void **start, void **end, uint16_t *lmid)
+{
+  for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
+    if (x->dso_info) {
+      void *normalized_key = key - x->dso_info->start_to_ref_dist;
+      void *result = static_data_interval_splay_lookup(&(x->dso_info->data_root), normalized_key, start, end);
+      if (result) {
+        *lmid = x->id;
+        return result;
+      }
+    }
+  }
+  return NULL;
+
+}
+
 void 
 insert_var_table(dso_info_t *dso, void **var_table, unsigned long num)
 {

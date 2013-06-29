@@ -287,6 +287,7 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   td->start = NULL;
   td->end = NULL;
 
+  td->ma_count = 0;
   // ----------------------------------------
   // backtrace buffer
   // ----------------------------------------

@@ -1,0 +1,12 @@
+#
+# The MEMLEAK sample source as an hpclink plugin.  These two command
+# lines are equivalent ways of linking in the MEMLEAK overrides.
+#
+#   hpclink --softibs gcc ...
+#   hpclink --plugin softibs gcc ... 
+#
+
+hpclink_files='../libhpcrun_softibs_wrap.a'
+hpclink_wrap_names='llvm_memory_profiling'
+hpclink_undefined_names='llvm_memory_profiling'
+
