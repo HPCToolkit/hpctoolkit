@@ -169,6 +169,10 @@ typedef struct thread_data_t {
   // for address-centric analysis
   void *start;
   void *end;
+  // ----------------------------------------
+  // soft ibs support 
+  // ----------------------------------------
+  long ma_count; // the number of memory accesses collected
    
   // ----------------------------------------
   // core_profile_trace_data contains the following

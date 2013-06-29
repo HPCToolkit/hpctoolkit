@@ -98,6 +98,8 @@ void
 insert_var_table(dso_info_t *dso, void **var_table, unsigned long num);
 void *
 static_data_interval_splay_lookup(static_data_t **root, void *key, void **start, void **end);
+void *
+static_data_lookup(void *key, void **start, void **end, uint16_t *lmid);
 // ---------------------------------------------------------
 // 
 // ---------------------------------------------------------
