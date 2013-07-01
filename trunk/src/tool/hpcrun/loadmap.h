@@ -175,9 +175,12 @@ hpcrun_loadmap_new();
 
 
 // Initializes the load map
-void
-hpcrun_loadmap_init(hpcrun_loadmap_t* x);
+extern void hpcrun_loadmap_init(hpcrun_loadmap_t* x);
 
+//
+// debugging operation, print loadmap in reverse order
+//
+extern void hpcrun_loadmap_print(hpcrun_loadmap_t* loadmap);
 
 // ---------------------------------------------------------
 // 

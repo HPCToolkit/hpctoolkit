@@ -238,6 +238,16 @@ hpcrun_loadmap_init(hpcrun_loadmap_t* x)
   x->size = 0;
 }
 
+//
+// debugging operation, print loadmap in reverse order
+//
+void
+hpcrun_loadmap_print(hpcrun_loadmap_t* loadmap)
+{
+  for (load_module_t* lm = loadmap->lm_end; lm; lm = lm->prev) {
+    printf("%u  %s\n", lm->id, lm->name);
+  }
+}
 
 //***************************************************************************
 
