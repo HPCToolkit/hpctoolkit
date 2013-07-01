@@ -60,16 +60,15 @@
 #ifndef Server_H_
 #define Server_H_
 
-#ifndef NO_MPI//MPI version should be default. If it is compiled with -DNO_MPI, then we shouldn't use MPI
-	#define USE_MPI
-#endif
-
 #include <vector>
 #include "DataSocketStream.hpp"
 #include "SpaceTimeDataController.hpp"
 
 #define START_NEW_CONNECTION_IMMEDIATELY 1
 #define CLOSE_SERVER 0
+
+
+
 namespace TraceviewerServer
 {
 	extern bool useCompression;

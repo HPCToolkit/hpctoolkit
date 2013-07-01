@@ -64,6 +64,13 @@
 #include "FilteredBaseData.hpp"
 #include "FilterSet.hpp"
 
+
+#ifndef DEBUG
+#define DEBUG 0
+#endif
+#define DEBUGCOUT(a) if (DEBUG > (a))\
+						cout
+
 namespace TraceviewerServer
 {
 

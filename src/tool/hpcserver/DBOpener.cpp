@@ -74,7 +74,8 @@ namespace TraceviewerServer
 
 	DBOpener::~DBOpener()
 	{
-		// TODO Auto-generated destructor stub
+		//stdcl, which is the only dynamically allocated thing gets closed later because
+		//it makes sense to have it persist even after the opener.
 	}
 	SpaceTimeDataController* stdcl;
 	SpaceTimeDataController* DBOpener::openDbAndCreateStdc(string pathToDB)
@@ -109,36 +110,36 @@ namespace TraceviewerServer
 	 */
 	bool DBOpener::verifyDatabase(string directory, FileData* location)
 	{
-#if DEBUG > 2
-		cout<< "Checking " <<directory<<endl;
-#endif
+
+		DEBUGCOUT(2) << "Checking " <<directory<<endl;
+
 		if (FileUtils::existsAndIsDir(directory))
 		{
-#if DEBUG > 2
-			cout << "\tExists and is a directory"<<endl;
-#endif
+
+			DEBUGCOUT(2) << "\tExists and is a directory"<<endl;
+
 			location->fileXML = FileUtils::combinePaths(directory, XML_FILENAME);
-#if DEBUG > 2
-			cout << "\tTrying to open "<<location->fileXML<<endl;
-#endif
+
+			DEBUGCOUT(2) << "\tTrying to open "<<location->fileXML<<endl;
+
 			FILE* XMLfile = fopen(location->fileXML.c_str(), "r");
 			//Equivalent of canRead, I believe.
 			if (XMLfile != NULL)
 			{
-#if DEBUG > 2
-				cout<<"\tXML file is not null"<<endl;
-#endif
+
+				DEBUGCOUT(2) <<"\tXML file is not null"<<endl;
+
 				try
 				{
 					std::string outputFile = FileUtils::combinePaths(directory, TRACE_FILENAME);
-#if DEBUG > 2
-					cout<<"\tTrying to open "<<outputFile<<endl;
-#endif
+
+					DEBUGCOUT(2) <<"\tTrying to open "<<outputFile<<endl;
+
 					MergeDataAttribute att = MergeDataFiles::merge(directory, "*.hpctrace",
 							outputFile);
-#if DEBUG > 2
-					cout<<"\tMerge resulted in "<<att<<endl;
-#endif
+
+					DEBUGCOUT(2) <<"\tMerge resulted in "<<att<<endl;
+
 					if (att != FAIL_NO_DATA)
 					{
 						location->fileTrace = outputFile;
