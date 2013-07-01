@@ -73,7 +73,7 @@ include $(top_srcdir)/src/Makeinclude.config
 MYSOURCES = \
 	main.cpp 				Args.cpp 				\
 	Filter.hpp 				FilterSet.hpp				FilteredBaseData.cpp			FilteredBaseData.hpp \
-	ProgressBar.hpp				ProgressBar.cpp	\
+	ProgressBar.hpp				ProgressBar.cpp				Communication.hpp			Communication-MPI.cpp	\
 	BaseDataFile.cpp			DataSocketStream.hpp			MergeDataFiles.cpp			SpaceTimeDataController.cpp \
 	BaseDataFile.hpp			FileData.hpp				MergeDataFiles.hpp			SpaceTimeDataController.hpp \
 	ByteUtilities.hpp			FileUtils.hpp				ProcessTimeline.cpp			TimeCPID.hpp \

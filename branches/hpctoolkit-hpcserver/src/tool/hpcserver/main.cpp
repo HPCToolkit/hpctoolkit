@@ -62,12 +62,12 @@
 #include <vector>
 #include <map>
 
-#include "FileUtils.hpp"
 #include "mpi.h"
+
 #include "Server.hpp"
 #include "Slave.hpp"
 #include "MPICommunication.hpp"
-#include "zlib.h"
+#include "Communication.hpp"
 #include "Constants.hpp"
 #include "Args.hpp"
 
@@ -77,62 +77,27 @@ using namespace MPI;
 
 int main(int argc, char *argv[])
 {
+	TraceviewerServer::ServerType type =  TraceviewerServer::Communication::basicInit(argc, argv);
+
 	Args args(argc, argv);
 	TraceviewerServer::useCompression = args.compression;
 	TraceviewerServer::xmlPortNumber = args.xmlPort;
 	TraceviewerServer::mainPortNumber = args.mainPort;
 
-#ifdef USE_MPI
-	MPI::Init(argc, argv);
-	int rank, size;
-	rank = MPI::COMM_WORLD.Get_rank();
-	size = MPI::COMM_WORLD.Get_size();
-	if (size <= 1)
-	{
-		cout << "The MPI version of hpcserver must be run with more than one process. "<<
-				"If you are looking for a single threaded version, you must recompile hpcserver. "<<
-				"See the hpctoolkit documentation for more information."<<endl;
-		return 0;
-	}
-	if (rank == TraceviewerServer::MPICommunication::SOCKET_SERVER)
-	{
-		try
-		{
-			TraceviewerServer::Server();
-		}
-		catch (int e)
-		{
-		}
-		cout<<"Server done, closing..."<<endl;
-		TraceviewerServer::MPICommunication::CommandMessage serverShutdown;
-		serverShutdown.command = DONE;
-		COMM_WORLD.Bcast(&serverShutdown, sizeof(serverShutdown), MPI_PACKED,
-				TraceviewerServer::MPICommunication::SOCKET_SERVER);
-	}
-	else
-	{
-		try
-		{
-			TraceviewerServer::Slave();
-		}
-		catch (int e)
-		{
-
-		}
-	}
-#else
 	try
 	{
-		TraceviewerServer::Server();
-	} catch (int e)
-	{
-		cout << "Closing with error code " << e << endl;
+		if (type == TraceviewerServer::MASTER)
+			TraceviewerServer::Server();
+		else if (type == TraceviewerServer::SLAVE)
+			TraceviewerServer::Slave();
 	}
-#endif
+	catch (int e)
+	{//We had some sort of error. If it hasn't been handled by this point, we just close.
+		DEBUGCOUT(1) << "Error on closing was " << hex << e << endl;
+	}
 
 
-#ifdef USE_MPI
-	MPI::Finalize();
-#endif
+	TraceviewerServer::Communication::closeServer();
+
 	return 0;
 }

@@ -58,7 +58,6 @@
 //***************************************************************************
 #include "SpaceTimeDataController.hpp"
 #include "FileData.hpp"
-#include "Server.hpp"
 #include <iostream>
 using namespace std;
 namespace TraceviewerServer

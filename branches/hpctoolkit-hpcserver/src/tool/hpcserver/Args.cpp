@@ -128,6 +128,8 @@ Options: General\n\
 //                     Verbose: generate progress messages to stderr at\n
 //                     verbosity level <n>. {1}\n
 
+#define CLP CmdLineParser
+#define CLP_SEPARATOR "!!"
 
 static const int DEFAULT_PORT = 21590;
 

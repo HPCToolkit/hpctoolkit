@@ -65,6 +65,7 @@
 #include "CompressingDataSocketLayer.hpp"
 #include "ProgressBar.hpp"
 #include "FileUtils.hpp"
+#include "Communication.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -137,9 +138,7 @@ namespace TraceviewerServer
 		}
 		else
 		{
-			#if DEBUG > 1
-			cout << "Database opened" << endl;
-			#endif
+			DEBUGCOUT(1) << "Database opened" << endl;
 			sendDBOpenedSuccessfully(socketptr);
 		}
 
@@ -182,14 +181,8 @@ namespace TraceviewerServer
 		Long maxEndTime = socket->readLong();
 		int headerSize = socket->readInt();
 		controller->setInfo(minBegTime, maxEndTime, headerSize);
-#ifdef USE_MPI
-		MPICommunication::CommandMessage Info;
-		Info.command = INFO;
-		Info.minfo.minBegTime = minBegTime;
-		Info.minfo.maxEndTime = maxEndTime;
-		Info.minfo.headerSize = headerSize;
-		COMM_WORLD.Bcast(&Info, sizeof(Info), MPI_PACKED, MPICommunication::SOCKET_SERVER);
-#endif
+
+		Communication::sendParseInfo(minBegTime, maxEndTime, headerSize);//Send to MPI if necessary
 	}
 	void Server::sendDBOpenedSuccessfully(DataSocketStream* socket)
 	{
@@ -309,9 +302,9 @@ namespace TraceviewerServer
 			/* done when last data in file processed */
 		} while (flush != Z_FINISH);
 		deflateEnd(&compressor);
-		#if DEBUG > 2
-		cout<<"Compressed XML Size: "<<compressed.size()<<endl;
-		#endif
+
+		DEBUGCOUT(2)<<"Compressed XML Size: "<<compressed.size()<<endl;
+
 	}
 
 	void Server::checkProtocolVersions(DataSocketStream* receiver)
@@ -342,23 +335,12 @@ namespace TraceviewerServer
 		DBOpener DBO;
 		cout << "Opening database: " << pathToDB << endl;
 		controller = DBO.openDbAndCreateStdc(pathToDB);
-#ifdef USE_MPI
+
 		if (controller != NULL)
 		{
-		MPICommunication::CommandMessage cmdPathToDB;
-		cmdPathToDB.command = OPEN;
-		if (pathToDB.length() > MAX_DB_PATH_LENGTH)
-		{
-			cerr << "Path too long" << endl;
-			throw ERROR_PATH_TOO_LONG;
+			Communication::sendParseOpenDB(pathToDB);
 		}
-		copy(pathToDB.begin(), pathToDB.end(), cmdPathToDB.ofile.path);
-		cmdPathToDB.ofile.path[pathToDB.size()] = '\0';
 
-		COMM_WORLD.Bcast(&cmdPathToDB, sizeof(cmdPathToDB), MPI_PACKED,
-				MPICommunication::SOCKET_SERVER);
-		}
-#endif
 
 
 	}
@@ -370,23 +352,23 @@ namespace TraceviewerServer
 		socket->flush();
 	}
 
-#define ISN(g) (g<0)
 
-	void Server::getAndSendData(DataSocketStream* Stream)
+
+	void Server::getAndSendData(DataSocketStream* stream)
 	{
 
-		int processStart = Stream->readInt();
-		int processEnd = Stream->readInt();
-		Time timeStart = Stream->readLong();
-		Time timeEnd = Stream->readLong();
-		int verticalResolution = Stream->readInt();
-		int horizontalResolution = Stream->readInt();
-		#if DEBUG > 2
-		cout << "Time end: " << timeEnd <<endl;
-		#endif
+		int processStart = stream->readInt();
+		int processEnd = stream->readInt();
+		Time timeStart = stream->readLong();
+		Time timeEnd = stream->readLong();
+		int verticalResolution = stream->readInt();
+		int horizontalResolution = stream->readInt();
 
-		if (ISN(processStart) || ISN(processEnd) || (processStart > processEnd)
-				|| ISN(verticalResolution) || ISN(horizontalResolution)
+		DEBUGCOUT(2) << "Time end: " << timeEnd <<endl;
+
+
+		if ((processStart < 0) || (processEnd<0) || (processStart > processEnd)
+				|| (verticalResolution<0) || (horizontalResolution<0)
 				|| (timeEnd < timeStart))
 		{
 			cerr
@@ -394,117 +376,15 @@ namespace TraceviewerServer
 					<< endl;
 			throw(ERROR_INVALID_PARAMETERS);
 		}
+		Communication::sendStartGetData(controller, processStart, processEnd, timeStart, timeEnd, verticalResolution, horizontalResolution);
 
-#ifdef USE_MPI
 
-		MPICommunication::CommandMessage toBcast;
-		toBcast.command = DATA;
-		toBcast.gdata.processStart = processStart;
-		toBcast.gdata.processEnd = processEnd;
-		toBcast.gdata.timeStart = timeStart;
-		toBcast.gdata.timeEnd = timeEnd;
-		toBcast.gdata.verticalResolution = verticalResolution;
-		toBcast.gdata.horizontalResolution = horizontalResolution;
-		COMM_WORLD.Bcast(&toBcast, sizeof(toBcast), MPI_PACKED,
-			MPICommunication::SOCKET_SERVER);
-#else
-		ImageTraceAttributes correspondingAttributes;
-
-		correspondingAttributes.begProcess = processStart;
-		correspondingAttributes.endProcess = processEnd;
-		correspondingAttributes.numPixelsH = horizontalResolution;
-		correspondingAttributes.numPixelsV = verticalResolution;
-
-		correspondingAttributes.begTime =  timeStart;
-		correspondingAttributes.endTime =  timeEnd;
-		correspondingAttributes.lineNum = 0;
-		controller->attributes = &correspondingAttributes;
-
-		// TODO: Make this so that the Lines get sent as soon as they are
-		// filled.
-
-		controller->fillTraces();
-#endif
-
-		Stream->writeInt(HERE);
-		Stream->flush();
+		stream->writeInt(HERE);
+		stream->flush();
 
 		ProgressBar prog("Computing traces", min(processEnd - processStart, verticalResolution));
-#ifdef USE_MPI
-		int RanksDone = 1;//1 for the MPI rank that deals with the sockets
-		int Size = COMM_WORLD.Get_size();
 
-		while (RanksDone < Size)
-		{
-			MPICommunication::ResultMessage msg;
-			COMM_WORLD.Recv(&msg, sizeof(msg), MPI_PACKED, MPI_ANY_SOURCE, MPI_ANY_TAG);
-			if (msg.tag == SLAVE_REPLY)
-			{
-
-				//Stream->WriteInt(msg.Data.Line);
-				Stream->writeInt(msg.data.line);
-				Stream->writeInt(msg.data.entries);
-				Stream->writeLong(msg.data.begtime); // Begin time
-				Stream->writeLong(msg.data.endtime); //End time
-				Stream->writeInt(msg.data.compressedSize);
-
-				char CompressedTraceLine[msg.data.compressedSize];
-				COMM_WORLD.Recv(CompressedTraceLine, msg.data.compressedSize, MPI_BYTE, msg.data.rankID,
-						MPI_ANY_TAG);
-
-				Stream->writeRawData(CompressedTraceLine, msg.data.compressedSize);
-
-				Stream->flush();
-				prog.incrementProgress();
-			}
-			else if (msg.tag == SLAVE_DONE)
-			{
-				#if DEBUG > 1
-				cout << "Rank " << msg.done.rankID << " done" << endl;
-				#endif
-				RanksDone++;
-			}
-		}
-
-
-#else
-		for (int i = 0; i < controller->tracesLength; i++)
-		{
-
-			ProcessTimeline* T = controller->traces[i];
-			Stream->writeInt( T->line());
-			vector<TimeCPID> data = *T->data->listCPID;
-			Stream->writeInt( data.size());
-			// Begin time
-			Stream->writeLong( data[0].timestamp);
-			//End time
-			Stream->writeLong( data[data.size() - 1].timestamp);
-
-			CompressingDataSocketLayer Compr;
-
-			vector<TimeCPID>::iterator it;
-			#if DEBUG > 2
-			cout << "Sending process timeline with " << data.size() << " entries" << endl;
-			#endif
-
-			Time currentTime = data[0].timestamp;
-			for (it = data.begin(); it != data.end(); ++it)
-			{
-				Compr.writeInt( (int)(it->timestamp - currentTime));
-				Compr.writeInt( it->cpid);
-				currentTime = it->timestamp;
-			}
-			Compr.flush();
-			int outputBufferLen = Compr.getOutputLength();
-			char* outputBuffer = (char*)Compr.getOutputBuffer();
-
-			Stream->writeInt(outputBufferLen);
-
-			Stream->writeRawData(outputBuffer, outputBufferLen);
-			prog.incrementProgress();
-		}
-		Stream->flush();
-#endif
+		Communication::sendEndGetData(stream, &prog, controller);
 
 	}
 
@@ -513,14 +393,7 @@ namespace TraceviewerServer
 		stream->readByte();//Padding
 		bool excludeMatches = stream->readByte();
 		int count = stream->readShort();
-#ifdef USE_MPI
-		MPICommunication::CommandMessage toBcast;
-		toBcast.command = FLTR;
-		toBcast.filt.count = count;
-		toBcast.filt.excludeMatches = excludeMatches;
-		COMM_WORLD.Bcast(&toBcast, sizeof(toBcast), MPI_PACKED,
-					MPICommunication::SOCKET_SERVER);
-#endif
+		Communication::sendStartFilter(count, excludeMatches);
 		FilterSet filters(excludeMatches);
 		for (int i = 0; i < count; ++i) {
 			BinaryRepresentationOfFilter filt;//This makes the MPI code easier and the non-mpi code about the same
@@ -532,9 +405,9 @@ namespace TraceviewerServer
 			filt.threadStride = stream->readInt();
 			cout << filt.processMin <<":" << filt.processMax <<":"<<filt.processStride<<",";
 			cout << filt.threadMax <<":" << filt.threadMax <<":"<<filt.threadStride<<endl;
-#ifdef USE_MPI
-			COMM_WORLD.Bcast(&filt, sizeof(filt), MPI_PACKED, MPICommunication::SOCKET_SERVER);
-#endif
+
+			Communication::sendFilter(filt);
+
 			filters.add(Filter(filt));
 			controller->applyFilters(filters);
 		}
