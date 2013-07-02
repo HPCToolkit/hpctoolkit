@@ -50,7 +50,8 @@
 //   $HeadURL$
 //
 // Purpose:
-//   [The purpose of this file]
+//   The highest level of the filtering implementation. Abstracts the filter
+//   away from the classes that access the file directly.
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
