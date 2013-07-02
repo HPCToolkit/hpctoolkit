@@ -65,7 +65,6 @@
 
 #ifndef FILTER_HPP_
 #define FILTER_HPP_
-#include <climits>
 
 class Range {
 		int min;

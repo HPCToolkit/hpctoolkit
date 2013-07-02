@@ -61,21 +61,21 @@
 #include "DataSocketStream.hpp"
 #include "DBOpener.hpp"
 #include "Constants.hpp"
-#include "MPICommunication.hpp"
 #include "CompressingDataSocketLayer.hpp"
 #include "ProgressBar.hpp"
 #include "FileUtils.hpp"
 #include "Communication.hpp"
+#include "DebugUtils.hpp"
 
 #include <iostream>
-#include <fstream>
+#include <cstdio>
+#include <vector>
 
-#include <mpi.h>
 #include "zlib.h"
 
 
 using namespace std;
-using namespace MPI;
+
 namespace TraceviewerServer
 {
 	bool useCompression = true;

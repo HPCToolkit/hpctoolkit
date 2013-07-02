@@ -63,7 +63,8 @@
 using namespace std;
 
 #include "LargeByteBuffer.hpp"
-#include "ByteUtilities.hpp"
+#include "FileUtils.hpp" //For FileOffset
+
 
 namespace TraceviewerServer {
 
@@ -85,13 +86,12 @@ public:
 	bool isMultiThreading();
 	bool isHybrid();
 
-	//string* ValuesX;
 	int* processIDs;
 	short* threadIDs;
 private:
-	int type; // = Constants::MULTI_PROCESSES | Constants::MULTI_THREADING;
+	int type; // Default is Constants::MULTI_PROCESSES | Constants::MULTI_THREADING;
 	LargeByteBuffer* masterBuff;
-	int numFiles; // = 0;
+	int numFiles;
 
 	OffsetPair* offsets;
 };

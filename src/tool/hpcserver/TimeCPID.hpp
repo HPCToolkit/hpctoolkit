@@ -8,6 +8,8 @@
 #ifndef TIMECPID_H_
 #define TIMECPID_H_
 
+#include <stdint.h>
+
 namespace TraceviewerServer
 {
 	typedef uint64_t Time;

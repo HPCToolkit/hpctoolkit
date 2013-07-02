@@ -83,11 +83,11 @@ namespace TraceviewerServer
 			double pixelLength)
 	{
 		// get the start location
-		 Long startLoc = findTimeInInterval(timeStart, minloc, maxloc);
+		FileOffset startLoc = findTimeInInterval(timeStart, minloc, maxloc);
 
 		// get the end location
 		 Time endTime = timeStart + timeRange;
-		 Long endLoc = min(
+		 FileOffset endLoc = min(
 				findTimeInInterval(endTime, minloc, maxloc) + SIZE_OF_TRACE_RECORD, maxloc);
 
 		// get the number of records data to display
@@ -100,7 +100,7 @@ namespace TraceviewerServer
 		if (numRec <= numPixelsH)
 		{
 			// display all the records
-			for (Long i = startLoc; i <= endLoc;)
+			for (FileOffset i = startLoc; i <= endLoc;)
 			{
 				listCPID->push_back(getData(i));
 				// one record of data contains of an integer (cpid) and a long (time)
@@ -151,7 +151,7 @@ namespace TraceviewerServer
 	 * @return Returns the index that shows the size of the recursive subtree that has been read.
 	 * Used for calculating the index in which the data is to be inserted.
 	 ******************************************************************************************/
-	int TraceDataByRank::sampleTimeLine(Long minLoc, Long maxLoc, int startPixel,
+	int TraceDataByRank::sampleTimeLine(FileOffset minLoc, FileOffset maxLoc, int startPixel,
 			int endPixel, int minIndex, double pixelLength, Time startingTime)
 	{
 		int midPixel = (startPixel + endPixel) / 2;
@@ -178,16 +178,16 @@ namespace TraceviewerServer
 	 * @param left_boundary_offset: the start location. 0 means the beginning of the data in a process
 	 * @param right_boundary_offset: the end location.
 	 ********************************************************************************/
-	Long TraceDataByRank::findTimeInInterval(Time time, Long l_boundOffset,
-			Long r_boundOffset)
+	FileOffset TraceDataByRank::findTimeInInterval(Time time, FileOffset l_boundOffset,
+			FileOffset r_boundOffset)
 	{
 		if (l_boundOffset == r_boundOffset)
 			return l_boundOffset;
 
 
 
-		Long l_index = getRelativeLocation(l_boundOffset);
-		Long r_index = getRelativeLocation(r_boundOffset);
+		FileOffset l_index = getRelativeLocation(l_boundOffset);
+		FileOffset r_index = getRelativeLocation(r_boundOffset);
 
 		Time l_time = data->getLong(l_boundOffset);
 		Time r_time = data->getLong(r_boundOffset);
@@ -195,16 +195,21 @@ namespace TraceviewerServer
 		// apply "Newton's method" to find target time
 		while (r_index - l_index > 1)
 		{
-			Long predicted_index;
-			double rate = (r_time - l_time) / (r_index - l_index);
+			FileOffset predicted_index;
+			//pat2 7/1/13: We only ever divide by rate, and double multiplication
+			//is faster than division (confirmed with a benchmark) so compute inverse
+			//rate instead. This line of code and the one in the else loop account for
+			//about 40% of the computation once the data is in memory
+			//double rate = (r_time - l_time) / (r_index - l_index);
+			double invrate = (r_index - l_index) / (r_time - l_time);
 			Time mtime = (r_time - l_time) / 2;
 			if (time <= mtime)
 			{
-				predicted_index = max((Long) ((time - l_time) / rate) + l_index, l_index);
+				predicted_index = max((Long) ((time - l_time) * invrate) + l_index, l_index);
 			}
 			else
 			{
-				predicted_index = min((r_index - (long) ((r_time - time) / rate)), r_index);
+				predicted_index = min((r_index - (long) ((r_time - time) * invrate)), r_index);
 			}
 			// adjust so that the predicted index differs from both ends
 			// except in the case where the interval is of length only 1
@@ -226,8 +231,8 @@ namespace TraceviewerServer
 				r_time = temp;
 			}
 		}
-		long l_offset = getAbsoluteLocation(l_index);
-		long r_offset = getAbsoluteLocation(r_index);
+		FileOffset l_offset = getAbsoluteLocation(l_index);
+		FileOffset r_offset = getAbsoluteLocation(r_index);
 
 		l_time = data->getLong(l_offset);
 		r_time = data->getLong(r_offset);
@@ -242,14 +247,14 @@ namespace TraceviewerServer
 		else
 			return maxloc;
 	}
-	Long TraceDataByRank::getAbsoluteLocation(Long RelativePosition)
+	FileOffset TraceDataByRank::getAbsoluteLocation(FileOffset relativePosition)
 	{
-		return minloc + (RelativePosition * SIZE_OF_TRACE_RECORD);
+		return minloc + (relativePosition * SIZE_OF_TRACE_RECORD);
 	}
 
-	Long TraceDataByRank::getRelativeLocation(Long AbsolutePosition)
+	FileOffset TraceDataByRank::getRelativeLocation(FileOffset absolutePosition)
 	{
-		return (AbsolutePosition - minloc) / SIZE_OF_TRACE_RECORD;
+		return (absolutePosition - minloc) / SIZE_OF_TRACE_RECORD;
 	}
 	void TraceDataByRank::addSample(unsigned int index, TimeCPID dataCpid)
 	{
@@ -265,7 +270,7 @@ namespace TraceviewerServer
 		}
 	}
 
-	TimeCPID TraceDataByRank::getData(Long location)
+	TimeCPID TraceDataByRank::getData(FileOffset location)
 	{
 
 		 Time time = data->getLong(location);
@@ -274,7 +279,7 @@ namespace TraceviewerServer
 		return ToReturn;
 	}
 
-	Long TraceDataByRank::getNumberOfRecords(Long start, Long end)
+	Long TraceDataByRank::getNumberOfRecords(FileOffset start, FileOffset end)
 	{
 		return (end - start) / SIZE_OF_TRACE_RECORD;
 	}

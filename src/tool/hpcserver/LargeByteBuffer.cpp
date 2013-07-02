@@ -95,7 +95,7 @@ namespace TraceviewerServer
 		//We should take into account how many copies of this program are
 		//running on this node with something like MPI_COMM_WORLD, but I don't
 		//want to introduce MPI-specific code here. It's not worth it... Plus, there's
-		//a ton of stuff going on at the OS level that we don't really know
+		//a ton of paging stuff going on at the OS level that we don't really know
 		//the specifics of, so the amount of RAM may be less important than it seems.
 		double MAX_PORTION_OF_RAM_AVAILABLE = 0.60;//Use up to 60%
 		int MaxPages = (int)(ramSizeInBytes * MAX_PORTION_OF_RAM_AVAILABLE/mmPageSize);
@@ -174,9 +174,8 @@ namespace TraceviewerServer
 			cerr << "Could not obtain system memory size"<<endl;
 			throw ERROR_GET_RAM_SIZE_FAILED;
 		}
-		#if DEBUG > 2
-		cout << "Memory size : "<<ramSize<<endl;
-		#endif
+		DEBUGCOUT(2) << "Memory size : "<<ramSize<<endl;
+
 		return ramSize;
 #endif
 

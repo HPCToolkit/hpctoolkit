@@ -9,6 +9,10 @@
 #include "Communication.hpp"
 #include "ProcessTimeline.hpp"
 #include "CompressingDataSocketLayer.hpp"
+#include "ImageTraceAttributes.hpp"
+
+#include <vector>
+
 using namespace std;
 namespace TraceviewerServer {
 
@@ -23,15 +27,15 @@ void Communication::sendStartGetData(SpaceTimeDataController* contr, int process
 {
 	ImageTraceAttributes correspondingAttributes;
 
-			correspondingAttributes.begProcess = processStart;
-			correspondingAttributes.endProcess = processEnd;
-			correspondingAttributes.numPixelsH = horizontalResolution;
-			correspondingAttributes.numPixelsV = verticalResolution;
+	correspondingAttributes.begProcess = processStart;
+	correspondingAttributes.endProcess = processEnd;
+	correspondingAttributes.numPixelsH = horizontalResolution;
+	correspondingAttributes.numPixelsV = verticalResolution;
+	correspondingAttributes.begTime =  timeStart;
+	correspondingAttributes.endTime =  timeEnd;
+	correspondingAttributes.lineNum = 0;
 
-			correspondingAttributes.begTime =  timeStart;
-			correspondingAttributes.endTime =  timeEnd;
-			correspondingAttributes.lineNum = 0;
-			contr->attributes = &correspondingAttributes;
+	contr->attributes = &correspondingAttributes;
 
 
 }

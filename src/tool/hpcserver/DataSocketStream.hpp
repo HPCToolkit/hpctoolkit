@@ -67,6 +67,7 @@
 #define DATASOCKETSTREAM_H_
 
 #include <string>
+#include <cstdio>
 
 #include "ByteUtilities.hpp"
 

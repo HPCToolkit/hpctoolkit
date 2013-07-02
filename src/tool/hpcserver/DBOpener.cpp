@@ -56,9 +56,10 @@
 //   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
+#include <cstdio>
 
 #include "DBOpener.hpp"
-#include <iostream>
+#include "DebugUtils.hpp"
 #include "MergeDataFiles.hpp"
 #include "FileUtils.hpp"
 

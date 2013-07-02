@@ -61,9 +61,10 @@
 #define TRACEDATABYRANKLOCAL_H_
 
 #include <vector>
+
 #include "TimeCPID.hpp"
 #include "FilteredBaseData.hpp"
-
+#include "FileUtils.hpp"//FileOffset
 
 namespace TraceviewerServer
 {
@@ -76,8 +77,8 @@ namespace TraceviewerServer
 		virtual ~TraceDataByRank();
 
 		void getData(Time timeStart, Time timeRange, double pixelLength);
-		int sampleTimeLine(Long minLoc, Long maxLoc, int startPixel, int endPixel, int minIndex, double pixelLength, Time startingTime);
-		Long findTimeInInterval(Time time, Long l_boundOffset, Long r_boundOffset);
+		int sampleTimeLine(FileOffset minLoc, FileOffset maxLoc, int startPixel, int endPixel, int minIndex, double pixelLength, Time startingTime);
+		FileOffset findTimeInInterval(Time time, FileOffset l_boundOffset, FileOffset r_boundOffset);
 
 
 
@@ -86,16 +87,16 @@ namespace TraceviewerServer
 	private:
 		FilteredBaseData* data;
 
-		Long minloc;
-		Long maxloc;
+		FileOffset minloc;
+		FileOffset maxloc;
 		int numPixelsH;
 
-		Long getAbsoluteLocation(Long);
+		FileOffset getAbsoluteLocation(FileOffset);
 
-		Long getRelativeLocation(Long);
+		FileOffset getRelativeLocation(FileOffset);
 		void addSample(unsigned int, TimeCPID);
-		TimeCPID getData(Long);
-		Long getNumberOfRecords(Long, Long);
+		TimeCPID getData(FileOffset);
+		Long getNumberOfRecords(FileOffset, FileOffset);
 		void postProcess();
 	};
 

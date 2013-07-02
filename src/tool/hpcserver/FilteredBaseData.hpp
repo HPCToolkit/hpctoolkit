@@ -59,10 +59,15 @@
 
 #ifndef FILTEREDBASEDATA_HPP_
 #define FILTEREDBASEDATA_HPP_
+
 #include "ImageTraceAttributes.hpp"
 #include "BaseDataFile.hpp"
-#include "Filter.hpp"
 #include "FilterSet.hpp"
+#include "FileUtils.hpp"//For FileOffset
+
+#include <vector>
+
+using std::vector;
 namespace TraceviewerServer
 {
 	class FilteredBaseData {

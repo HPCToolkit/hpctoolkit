@@ -68,7 +68,7 @@
 
 namespace TraceviewerServer
 {
-	typedef uint64_t ULong;
+
 	class LargeByteBuffer
 	{
 	public:
@@ -78,8 +78,8 @@ namespace TraceviewerServer
 		Long getLong(FileOffset);
 		int getInt(FileOffset);
 	private:
-		static ULong lcm(ULong, ULong);
-		static ULong getRamSize();
+		static uint64_t lcm(uint64_t, uint64_t);
+		static uint64_t getRamSize();
 		vector<VersatileMemoryPage> masterBuffer;
 		FileOffset length;
 		int numPages;
