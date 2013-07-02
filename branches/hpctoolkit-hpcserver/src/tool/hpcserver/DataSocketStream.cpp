@@ -57,13 +57,13 @@
 //
 //***************************************************************************
 
-#include <stdio.h>
-#include <string.h>
-#include <vector>
+#include <stdio.h>//fread, fwrite, etc.
+#include <cstring> //For memset
 #include <iostream>
-#include <string>
+#include <string>//for strerror
 
 #include <sys/socket.h>
+#include <arpa/inet.h> //htons
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <errno.h>
@@ -203,7 +203,7 @@ namespace TraceviewerServer
 		char Af[SIZEOF_INT];
 		int err = fread(Af, 1, SIZEOF_INT, file);
 		if (err != SIZEOF_INT)
-			throw ERROR_READ_TOO_LITTLE(SIZEOF_INT);
+			throw ERROR_READ_TOO_LITTLE;
 		return ByteUtilities::readInt(Af);
 
 	}
@@ -213,7 +213,7 @@ namespace TraceviewerServer
 		char Af[SIZEOF_LONG];
 		int err = fread(Af, 1, SIZEOF_LONG, file);
 		if (err != SIZEOF_LONG)
-			throw ERROR_READ_TOO_LITTLE(SIZEOF_LONG);
+			throw ERROR_READ_TOO_LITTLE;
 		return ByteUtilities::readLong(Af);
 
 	}
@@ -223,7 +223,7 @@ namespace TraceviewerServer
 		char Af[SIZEOF_SHORT];
 		int err = fread(Af, 1, SIZEOF_SHORT, file);
 		if (err != 2)
-			throw ERROR_READ_TOO_LITTLE(SIZEOF_SHORT);
+			throw ERROR_READ_TOO_LITTLE;
 		return ByteUtilities::readShort(Af);
 	}
 	char DataSocketStream::readByte()
@@ -231,7 +231,7 @@ namespace TraceviewerServer
 		char Af[SIZEOF_BYTE];
 		int err = fread(Af, 1, SIZEOF_BYTE, file);
 		if (err != 1)
-			throw ERROR_READ_TOO_LITTLE(SIZEOF_BYTE);
+			throw ERROR_READ_TOO_LITTLE;
 		return Af[0];
 	}
 
@@ -243,7 +243,7 @@ namespace TraceviewerServer
 		char* Msg = new char[Len + 1];
 		int err = fread(Msg, 1, Len, file);
 		if (err != Len)
-			throw ERROR_READ_TOO_LITTLE(0);
+			throw ERROR_READ_TOO_LITTLE;
 
 		Msg[Len] = '\0';
 

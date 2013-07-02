@@ -61,6 +61,7 @@
 
 
 #include "TimeCPID.hpp"
+#include <stdint.h>
 
 namespace TraceviewerServer
 {

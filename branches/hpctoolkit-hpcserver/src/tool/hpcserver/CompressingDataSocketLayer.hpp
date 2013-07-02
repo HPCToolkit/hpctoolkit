@@ -57,6 +57,7 @@
 //
 //***************************************************************************
 #include "zlib.h"
+#include <stdint.h>
 /*
  * CompressingDataSocketLayer.h
  *
@@ -76,7 +77,7 @@ namespace TraceviewerServer
 		CompressingDataSocketLayer();
 		virtual ~CompressingDataSocketLayer();
 		void writeInt(int);
-		void writeLong(Long);
+		void writeLong(uint64_t);
 		void writeDouble(double);
 		void flush();
 		unsigned char* getOutputBuffer();

@@ -66,11 +66,16 @@
 #include <vector>
 #include <errno.h>
 #include <string>
+#include <stdint.h>
 
 using namespace std;
 namespace TraceviewerServer
 {
 #define NO_ERROR 0
+
+	typedef int FileDescriptor;
+	typedef uint64_t FileOffset;
+
 	class FileUtils
 	{
 	public:
@@ -111,7 +116,7 @@ namespace TraceviewerServer
 			return (err == NO_ERROR);
 		}
 		//Gets the file size of a file (the file must exist)
-		static uint64_t getFileSize(string p)
+		static FileOffset getFileSize(string p)
 		{
 			struct stat DirInfo;
 			int err = stat(p.c_str(), &DirInfo);

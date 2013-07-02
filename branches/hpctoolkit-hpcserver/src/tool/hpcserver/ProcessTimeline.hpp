@@ -60,6 +60,7 @@
 #ifndef PROCESSTIMELINE_H_
 #define PROCESSTIMELINE_H_
 #include "TraceDataByRank.hpp"
+#include "ImageTraceAttributes.hpp"
 namespace TraceviewerServer
 {
 

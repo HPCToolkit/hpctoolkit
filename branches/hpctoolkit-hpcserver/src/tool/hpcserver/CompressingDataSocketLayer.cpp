@@ -58,7 +58,7 @@
 //***************************************************************************
 
 #include "ByteUtilities.hpp"
-#include <iostream>
+#include <iostream> //For cerr
 #include "CompressingDataSocketLayer.hpp"
 
 using namespace std;
@@ -90,7 +90,7 @@ namespace TraceviewerServer
 		ByteUtilities::writeInt(inBuf + bufferIndex, toWrite);
 		bufferIndex += 4;
 	}
-	void CompressingDataSocketLayer::writeLong(Long toWrite)
+	void CompressingDataSocketLayer::writeLong(uint64_t toWrite)
 	{
 		makeRoom(8);
 		ByteUtilities::writeLong(inBuf + bufferIndex, toWrite);

@@ -58,18 +58,22 @@
 //***************************************************************************
 
 #include "Slave.hpp"
+
 #include <mpi.h>
-#include <iostream>
+
 #include <vector>
+#include <cmath>
+#include <assert.h>
+
 #include "TimeCPID.hpp"
 #include "Constants.hpp"
 #include "DBOpener.hpp"
 #include "ImageTraceAttributes.hpp"
 #include "CompressingDataSocketLayer.hpp"
 #include "Server.hpp"
-#include <cmath>
-#include <assert.h>
 #include "FilterSet.hpp"
+#include "DebugUtils.hpp"
+
 using namespace MPI;
 using namespace std;
 
@@ -115,12 +119,10 @@ namespace TraceviewerServer
 					nodeFinishedMsg.tag = SLAVE_DONE;
 					nodeFinishedMsg.done.rankID = COMM_WORLD.Get_rank();
 					nodeFinishedMsg.done.traceLinesSent = linesSent;
-					#if DEBUG > 1
-					cout << "Rank " << nodeFinishedMsg.done.rankID << " done, having created "
+					DEBUGCOUT(1) << "Rank " << nodeFinishedMsg.done.rankID << " done, having created "
 							<< linesSent << " trace lines." << endl;
-					#endif
-					int SizeToSend = 3 * SIZEOF_INT;
-					COMM_WORLD.Send(&nodeFinishedMsg, SizeToSend, MPI_PACKED,
+
+					COMM_WORLD.Send(&nodeFinishedMsg, sizeof(nodeFinishedMsg), MPI_PACKED,
 							MPICommunication::SOCKET_SERVER, 0);
 					break;
 				}
@@ -164,9 +166,7 @@ namespace TraceviewerServer
 		//If rank > n, there are more nodes than trace lines, so this node will do nothing
 		if (rank > n)
 		{
-			#if DEBUG > 1
-			cout << "No work to do" << endl;
-			#endif
+			DEBUGCOUT(1) << "No work to do" << endl;
 			return 0;
 		}
 
@@ -179,10 +179,8 @@ namespace TraceviewerServer
 		int UpperInclusiveBound = (int) (min(mod, rank + 1) * ceil(q)
 				+ (rank + 1 - min(mod, rank + 1)) * floor(q) - 1 + gc.processStart);
 
-		#if DEBUG > 1
-		cout << "Rank " << trueRank << " is getting lines [" << LowerInclusiveBound << ", "
+		DEBUGCOUT(1) << "Rank " << trueRank << " is getting lines [" << LowerInclusiveBound << ", "
 				<< UpperInclusiveBound << "]" << endl;
-		#endif
 
 		//These have to be the originals so that the strides will be correct
 		correspondingAttributes.begProcess = gc.processStart;
@@ -204,9 +202,8 @@ namespace TraceviewerServer
 		 *  that this brings it down to O(1) from O(n).*/
 
 		autoskip = (int)floor(rank*totalTraces/(size - 1.0));
-		#if DEBUG > 1
-		cout<< "Was going to autoskip " <<autoskip << " traces."<<endl;
-		#endif
+
+		DEBUGCOUT(2) << "Was going to autoskip " <<autoskip << " traces."<<endl;
 
 		correspondingAttributes.lineNum = autoskip;
 
@@ -216,6 +213,7 @@ namespace TraceviewerServer
 		int LinesSentCount = 0;
 		int waitcount = 0;
 
+		//If it were NULL, the no rank check would have caught it.
 		assert (NextTrace != NULL);
 
 
@@ -231,10 +229,9 @@ namespace TraceviewerServer
 			}
 			if (waitcount != 0)
 			{
-				#if DEBUG > 1
-				cout << trueRank << " skipped " << waitcount
+				DEBUGCOUT(2) << trueRank << " skipped " << waitcount
 						<< " processes before actually starting work. Autoskip was " <<autoskip<< " and actual skip was " << controller->attributes->lineNum -1 << endl;
-				#endif
+
 				waitcount = 0;
 			}
 			NextTrace->readInData();
@@ -249,15 +246,10 @@ namespace TraceviewerServer
 			msg.data.begtime = ActualData[0].timestamp;
 			msg.data.endtime = ActualData[entries - 1].timestamp;
 			msg.data.rankID = trueRank;
-			/*Have to move this so that we know how large the compressed stream is
-			 * COMM_WORLD.Send(&msg, sizeof(msg), MPI_PACKED, MPICommunication::SOCKET_SERVER,
-			 0);*/
+
 
 			int i = 0;
-			/*for (it = ActualData->begin(); it != ActualData->end(); it++)
-			 {
-			 msg.Data.Data[i++] = it->CPID;
-			 }*/
+
 			unsigned char* outputBuffer;
 			int outputBufferLen;
 			if (useCompression)
@@ -303,11 +295,10 @@ namespace TraceviewerServer
 				delete[] outputBuffer;
 			}
 			LinesSentCount++;
-			#if DEBUG > 2
+
 			if (LinesSentCount % 100 == 0)
-				cout << trueRank << " Has sent " << LinesSentCount
+				DEBUGCOUT(2) << trueRank << " Has sent " << LinesSentCount
 						<< " ranks." << endl;
-			#endif
 
 			NextTrace = controller->getNextTrace();
 		}

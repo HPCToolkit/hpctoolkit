@@ -62,6 +62,8 @@
 
 #include <iostream>
 
+#include "DebugUtils.hpp"
+
 namespace TraceviewerServer {
 FilteredBaseData::FilteredBaseData(string filename, int _headerSize) {
 	baseDataFile = new BaseDataFile(filename, _headerSize);
@@ -91,9 +93,8 @@ void FilteredBaseData::filter()
 			rankMapping.push_back(i);
 		}
 	}
-#if DEBUG > 1
-	std::cout << "Filtering matched " << rankMapping.size() << " out of "<<numFiles<<std::endl;
-#endif
+
+	DEBUGCOUT(1) << "Filtering matched " << rankMapping.size() << " out of "<<numFiles<<endl;
 }
 
 FileOffset FilteredBaseData::getMinLoc(int pseudoRank) {

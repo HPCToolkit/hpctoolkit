@@ -8,12 +8,16 @@
 #include "Communication.hpp"
 #include "MPICommunication.hpp"
 #include "Constants.hpp"
+#include "DebugUtils.hpp"
 
 #include <mpi.h>
 
-#include <iostream>
+#include <iostream> //For cerr, cout
+#include <algorithm> //For copy
+
 using namespace std;
 using namespace MPI;
+
 namespace TraceviewerServer
 {
 
@@ -31,17 +35,17 @@ void Communication::sendParseInfo(Time minBegTime, Time maxEndTime, int headerSi
 void Communication::sendParseOpenDB(string pathToDB)
 {
 	MPICommunication::CommandMessage cmdPathToDB;
-			cmdPathToDB.command = OPEN;
-			if (pathToDB.length() > MAX_DB_PATH_LENGTH)
-			{
-				cerr << "Path too long" << endl;
-				throw ERROR_PATH_TOO_LONG;
-			}
-			copy(pathToDB.begin(), pathToDB.end(), cmdPathToDB.ofile.path);
-			cmdPathToDB.ofile.path[pathToDB.size()] = '\0';
+	cmdPathToDB.command = OPEN;
+	if (pathToDB.length() > MAX_DB_PATH_LENGTH)
+	{
+		cerr << "Path too long" << endl;
+		throw ERROR_PATH_TOO_LONG;
+	}
+	copy(pathToDB.begin(), pathToDB.end(), cmdPathToDB.ofile.path);
+	cmdPathToDB.ofile.path[pathToDB.size()] = '\0';
 
-			COMM_WORLD.Bcast(&cmdPathToDB, sizeof(cmdPathToDB), MPI_PACKED,
-					MPICommunication::SOCKET_SERVER);
+	COMM_WORLD.Bcast(&cmdPathToDB, sizeof(cmdPathToDB), MPI_PACKED,
+			MPICommunication::SOCKET_SERVER);
 
 }
 void Communication::sendStartGetData(SpaceTimeDataController* contr, int processStart, int processEnd,

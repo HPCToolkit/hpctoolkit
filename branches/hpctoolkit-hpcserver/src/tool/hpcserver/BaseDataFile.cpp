@@ -58,9 +58,8 @@
 //***************************************************************************
 
 #include "BaseDataFile.hpp"
-#include <iostream>
-#include <sstream>
 #include "Constants.hpp"
+#include "DebugUtils.hpp"
 
 using namespace std;
 
@@ -76,9 +75,8 @@ namespace TraceviewerServer
 	BaseDataFile::BaseDataFile(string _filename, int _headerSize)
 	{
 
-		#if DEBUG > 1
-		cout << "Setting Data File: " << _filename << endl;
-		#endif
+		DEBUGCOUT(1) << "Setting Data File: " << _filename << endl;
+
 		if (_filename != "")
 		{
 			setData(_filename, _headerSize);

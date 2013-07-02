@@ -63,13 +63,12 @@
 
 #include "sys/mman.h"
 #include "ByteUtilities.hpp"
-
+#include "FileUtils.hpp" //FileOffset
 
 using namespace std;
 namespace TraceviewerServer
 {
-	typedef int FileDescriptor;
-	typedef uint64_t FileOffset;
+
 	class VersatileMemoryPage
 	{
 	public:

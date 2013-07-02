@@ -60,7 +60,6 @@
 #ifndef Server_H_
 #define Server_H_
 
-#include <vector>
 #include "DataSocketStream.hpp"
 #include "SpaceTimeDataController.hpp"
 

@@ -57,23 +57,14 @@
 //
 //***************************************************************************
 
-#include <stdlib.h>
-#include <fstream>
-#include <vector>
-#include <map>
-
-#include "mpi.h"
-
 #include "Server.hpp"
 #include "Slave.hpp"
-#include "MPICommunication.hpp"
 #include "Communication.hpp"
 #include "Constants.hpp"
 #include "Args.hpp"
-
+#include "DebugUtils.hpp"
 
 using namespace std;
-using namespace MPI;
 
 int main(int argc, char *argv[])
 {
