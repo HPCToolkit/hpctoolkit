@@ -65,24 +65,21 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 
 SUBDIRS = \
+	prof-lean \
+	support-lean
+
+if OPT_BUILD_LIB_ALL
+SUBDIRS += \
 	analysis \
-	\
 	banal \
-	\
 	binutils \
-	\
 	isa \
-	\
 	prof \
 	profxml \
-	prof-lean \
-	\
 	xml \
-	\
 	support \
-	support-lean \
-	\
 	stubs-gcc_s
+endif
 
 
 #############################################################################

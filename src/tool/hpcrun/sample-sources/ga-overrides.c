@@ -91,16 +91,16 @@
 // type definitions
 //***************************************************************************
 
-// FIXME: temporarily import GA declarations.  Unfortunately, some of
-// these declarations are only in the source tree (as opposed to
+// FIXME: temporarily import GA 5.2 declarations.  Unfortunately, some
+// of these declarations are only in the source tree (as opposed to
 // the installation), so currently there is no clean solution.
 
 // Need: field for a profiler
 
 // ${GA-install}/include/typesf2c.h
-// ${GA-build}/armci/gaf2c/typesf2c.h
-// ${GA-src}/armci/gaf2c/typesf2c.h.in [F2C_INTEGER_C_TYPE]
-typedef long Integer; // word size
+// ${GA-build}/gaf2c/typesf2c.h
+// ${GA-src}/gaf2c/typesf2c.h.in [F2C_INTEGER_C_TYPE]
+typedef int Integer; // integer size
 typedef Integer logical;
 
 // ${GA-install}/include/armci.h
@@ -162,7 +162,7 @@ typedef struct {
        C_Integer rstrctd_id;        /* rank of processor in restricted list */
        C_Integer *rank_rstrctd;     /* ranks of processors with data        */
 
-#ifdef DO_CKPT
+#ifdef ENABLE_CHECKPOINT
        int record_id;               /* record id for writing ga to disk     */
 #endif
 } global_array_t;

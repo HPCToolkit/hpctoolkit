@@ -608,9 +608,16 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+my_pkglibexecdir
+my_pkglibdir
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
+OPT_CUDA_LDFLAGS
+OPT_CUDA_IFLAGS
+OPT_CUDA
+OPT_ENABLE_CUDA_FALSE
+OPT_ENABLE_CUDA_TRUE
 OPT_UPC_LDFLAGS
 OPT_UPC_IFLAGS
 OPT_ENABLE_UPC_FALSE
@@ -639,6 +646,15 @@ OPT_ENABLE_HPCRUN_FALSE
 OPT_ENABLE_HPCRUN_TRUE
 OPT_ENABLE_HPCRUN_FLAT_FALSE
 OPT_ENABLE_HPCRUN_FLAT_TRUE
+OPT_BUILD_TOOL_ALL_FALSE
+OPT_BUILD_TOOL_ALL_TRUE
+OPT_BUILD_LIB_ALL_FALSE
+OPT_BUILD_LIB_ALL_TRUE
+OPT_BUILD_FRONT_END_FALSE
+OPT_BUILD_FRONT_END_TRUE
+OPT_BUILD_BACK_END_FALSE
+OPT_BUILD_BACK_END_TRUE
+BACK_END_LABEL
 OPT_ENABLE_JAVA_FALSE
 OPT_ENABLE_JAVA_TRUE
 JAVA_IFLAGS
@@ -648,8 +664,12 @@ XERCES_LDLIBS
 XERCES_LDFLAGS
 XERCES_IFLAGS
 XERCES
+OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE
+OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE
 XED2_RUN_DIR
 XED2_COPY
+XED2_HPCLINK_OPTS
+XED2_LIB_FLAGS
 XED2_LIB
 XED2_INC
 SYMTABAPI_COPY_DYN
@@ -711,6 +731,7 @@ BOOST_INC
 GNUBINUTILS_LDLIBS
 GNUBINUTILS_LDFLAGS
 GNUBINUTILS_IFLAGS
+wordsize_cflag
 CXX_PATH
 CC_PATH
 hpc_ext_libs_dir
@@ -739,6 +760,8 @@ HOST_CPU_PPC_FALSE
 HOST_CPU_PPC_TRUE
 HOST_CPU_MIPS_FALSE
 HOST_CPU_MIPS_TRUE
+HOST_CPU_K1OM_FALSE
+HOST_CPU_K1OM_TRUE
 HOST_OS_LINUX_FALSE
 HOST_OS_LINUX_TRUE
 MPICXX
@@ -896,6 +919,7 @@ with_symtabAPI
 with_xed2
 with_xerces
 with_java
+enable_back_end
 enable_hpcrun_flat
 enable_hpcrun
 enable_hpcrun_static
@@ -908,6 +932,9 @@ enable_xop
 enable_bluegene
 with_upc
 with_upc_lib
+with_cuda
+with_cuda_include
+with_cuda_lib
 enable_data_centric_tracing
 with_objcopy
 enable_hpc_binutils
@@ -930,6 +957,7 @@ CPP
 CXXCPP
 CCAS
 CCASFLAGS
+LD
 MPICXX'
 
 
@@ -1563,6 +1591,8 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-papi-c         use new papi component sample source, requires papi
                           5.1 or later
+  --enable-back-end       build only those tools needed to run hpcrun and
+                          hpclink on the back-end compute nodes
   --enable-hpcrun-flat    build hpcrun-flat (default yes)
   --enable-hpcrun         build hpcrun (default yes)
   --enable-hpcrun-static  build hpcrun for statically linked executables
@@ -1608,6 +1638,13 @@ Optional Packages:
   --with-upc=PATH         path to IBM BlueGene UPC installation
   --with-upc-lib=LIBRARY  path to UPC library(s), absolute or relative to
                           WITH_UPC/runtime/SPI
+  --with-cuda=PATH        use given CUDA installation (absolute path) with
+                          hpcrun (default is NO)
+  --with-cuda-include=PATH
+                          use given CUDA include (absolute path) with hpcrun
+                          (default is NO)
+  --with-cuda-lib=PATH    use given CUDA lib (absolute path) with hpcrun
+                          (default is NO)
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
 
@@ -1630,6 +1667,8 @@ Some influential environment variables:
   CXXCPP      C++ preprocessor
   CCAS        assembler compiler command (defaults to CC)
   CCASFLAGS   assembler compiler flags (defaults to CFLAGS)
+  LD          ld program for binaries produced by CC, only needed if autoconf
+              fails to find a suitable program
   MPICXX      MPI C++ compiler
 
 Use these variables to override the choices made by `configure' or to help
@@ -15604,6 +15643,8 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
+
+
 my_compiler_list="mpicxx   \
                            mpiCC \
                           "
@@ -16407,6 +16448,10 @@ $as_echo "#define HOST_OS_TRU64 1" >>confdefs.h
     ;;
 esac
 
+HOST_CPU_K1OM=no
+case "$host" in
+  *k1om* ) HOST_CPU_K1OM=yes ;;
+esac
 
  if test "${HOST_OS}" = Linux; then
   HOST_OS_LINUX_TRUE=
@@ -16414,6 +16459,14 @@ esac
 else
   HOST_OS_LINUX_TRUE='#'
   HOST_OS_LINUX_FALSE=
+fi
+
+ if test "${HOST_CPU_K1OM}" = yes; then
+  HOST_CPU_K1OM_TRUE=
+  HOST_CPU_K1OM_FALSE='#'
+else
+  HOST_CPU_K1OM_TRUE='#'
+  HOST_CPU_K1OM_FALSE=
 fi
 
  if test "${HOST_CPU_MIPS}" = yes; then
@@ -16652,6 +16705,80 @@ HOST_CXXFLAGS="${HOST_CXXFLAGS} ${my_opt_cxxflags}"
 HOST_HPCSTRUCT_LDFLAGS="${HOST_HPCSTRUCT_LDFLAGS} ${my_demangle_ldflags}"
 HOST_HPCPROF_LDFLAGS="${HOST_HPCPROF_LDFLAGS} ${my_demangle_ldflags}"
 HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
+
+
+#-------------------------------------------------
+# LD -- find correct arch type for ld
+#-------------------------------------------------
+
+# Autoconf gets the wrong arch type for ld in a cross compile, at
+# least on Intel MIC.  Here, we test that ld supports relocatable
+# linking (ld -r).  If not, then try other arch types until we find
+# one that works.
+
+test_ld_r()
+{
+  ld_cmd="$*"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking relocatable linking: $ld_cmd " >&5
+$as_echo_n "checking relocatable linking: $ld_cmd ... " >&6; }
+  rm -f "$obj3"
+  $ld_cmd -r "$obj1" "$obj2" -o "$obj3" >&5 2>&1
+  if test $? -eq 0 && test -f "$obj3" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+    return 0
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    return 1
+  fi
+}
+
+src1="conftest.$$.1.c"
+src2="conftest.$$.2.c"
+obj1="conftest.$$.1.o"
+obj2="conftest.$$.2.o"
+obj3="conftest.$$.3.o"
+
+rm -f "$src1" "$src2" "$obj1" "$obj2" "$obj3"
+
+echo 'int foo(void) { return 2; }' >"$src1"
+echo 'int baz(void) { return 4; }' >"$src2"
+
+$CC $CFLAGS -c "$src1" -o "$obj1" >&5 2>&1
+$CC $CFLAGS -c "$src2" -o "$obj2" >&5 2>&1
+
+found_ld=no
+
+if test_ld_r $LD ; then
+  # autoconf's choice for LD works
+  found_ld=yes
+else
+  # try other arch types from LD -V
+  # be careful not to create a subshell (redirect fd)
+  ld_base=`echo $LD | awk '{ print $1 }'`
+
+  emul=false
+  arch_list=`$ld_base -V 2>&1`
+  for arch in $arch_list
+  do
+    if $emul && test_ld_r $ld_base -m $arch ; then
+      LD="$ld_base -m $arch"
+      found_ld=yes
+      break
+    fi
+    # skip output until 'Supported emulations:'
+    case "$arch" in
+      *emulat* ) emul=true ;;
+    esac
+  done
+fi
+
+rm -f "$src1" "$src2" "$obj1" "$obj2" "$obj3"
+
+if test "$found_ld" != yes ; then
+  as_fn_error $? "unable to find correct arch type for ld" "$LINENO" 5
+fi
 
 
 #-------------------------------------------------
@@ -16989,9 +17116,10 @@ hpctoolkit-externals." >&2;}
 fi
 
 host_wordsize=unknown
+wordsize_cflag=
 case "$host_sizeof_voidp" in
-  4 ) host_wordsize=32 ;;
-  8 ) host_wordsize=64 ;;
+  4 ) host_wordsize=32 ; wordsize_cflag='-m32' ;;
+  8 ) host_wordsize=64 ; wordsize_cflag='-m64' ;;
   * ) { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to determine host wordsize" >&5
 $as_echo "$as_me: WARNING: unable to determine host wordsize" >&2;} ;;
 esac
@@ -17001,6 +17129,13 @@ then
   as_fn_error $? "mismatched wordsize: hpctoolkit is configured for \
 ${host_wordsize}-bit but externals is ${ext_wordsize}-bit" "$LINENO" 5
 fi
+
+# On ia64, -m64 is an unrecognized option (and unnecessary).
+if test "$HOST_CPU_IA64" = yes ; then
+  wordsize_cflag=
+fi
+
+
 
 
 #-------------------------------------------------
@@ -17409,7 +17544,11 @@ MONITOR=
 MONITOR_LIBS=
 HPC_MONITOR=
 
-if test "$use_externals" = yes ; then
+# By default, disable old-monitor and hpcrun-flat in a cross compile.
+# It can be reenabled with an explicit --with-monitor option.
+
+if test "$use_externals" = yes && test -z "$is_cross_compile"
+then
   MONITOR="$ext_old_monitor_prefix"
   case "$MONITOR" in
     /* )  OPT_WITH_MONITOR=yes
@@ -17500,7 +17639,6 @@ if test "$use_externals" = yes ; then
   OPROFILE="$ext_oprofile_prefix"
 fi
 
-
 # Check whether --with-oprofile was given.
 if test "${with_oprofile+set}" = set; then :
   withval=$with_oprofile; OPROFILE="$withval"
@@ -17514,6 +17652,7 @@ OPROFILE_BIN=
 OPROFILE_LIB=
 OPROFILE_IFLAGS=
 OPROFILE_COPY=no
+
 
 case "$OPROFILE" in
   /* )
@@ -17818,7 +17957,13 @@ $as_echo "$SYMTABAPI" >&6; }
 # Option: --with-xed2=PATH
 #-------------------------------------------------
 
+# Now support static or shared libxed.
+
 XED2=no
+XED2_STATIC=no
+XED2_LIB_FLAGS=
+XED2_HPCLINK_OPTS=
+
 if test "$use_externals" = yes ; then
   XED2="$ext_xed2_prefix"
 fi
@@ -17837,7 +17982,20 @@ case "${XED2}" in
   /* )
     if test -f "${XED2}/include/xed-interface.h" ; then :
     else
-        as_fn_error $? "invalid xed2 directory: $XED2" "$LINENO" 5
+      as_fn_error $? "invalid xed2 directory: $XED2" "$LINENO" 5
+    fi
+    if test -f "${XED2}/lib/libxed.a" ; then
+      XED2_STATIC=yes
+      XED2_LIB_FLAGS="${XED2}/lib/libxed.a"
+      XED2_HPCLINK_OPTS='-lxed'
+    elif test -f "${XED2}/lib/libxed.so" ; then
+      XED2_LIB_FLAGS="-L${XED2}/lib -lxed"
+    else
+      as_fn_error $? "invalid xed2 directory: $XED2" "$LINENO" 5
+    fi
+    if test -f "${XED2}/lib/libirc.a" ; then
+      XED2_LIB_FLAGS="${XED2_LIB_FLAGS} ${XED2}/lib/libirc.a"
+      XED2_HPCLINK_OPTS="$XED2_HPCLINK_OPTS -lirc"
     fi
     XED2_COPY=yes
     XED2_RUN_DIR="$hpc_ext_libs_dir"
@@ -17851,6 +18009,11 @@ case "${XED2}" in
     ;;
 esac
 
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2" = no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: xed2 is required for x86 platforms" >&5
+$as_echo "$as_me: WARNING: xed2 is required for x86 platforms" >&2;}
+fi
+
 XED2_INC="${XED2}/include"
 XED2_LIB="${XED2}/lib"
 
@@ -17860,6 +18023,24 @@ $as_echo "$XED2" >&6; }
 
 
 
+
+
+
+
+# If Xed is shared, then hpcstruct gets a launch script.
+
+hpcstruct_launch_script=no
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
+  hpcstruct_launch_script=yes
+fi
+
+ if test "$hpcstruct_launch_script" = yes; then
+  OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE=
+  OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE='#'
+else
+  OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE='#'
+  OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE=
+fi
 
 
 
@@ -17973,6 +18154,81 @@ else
 fi
 
 
+#-------------------------------------------------
+# enable-back-end
+#-------------------------------------------------
+
+# Build only those tools (hpcrun, fnbounds and prereqs) that run on
+# the back end in a cross-compile config.
+
+# Check whether --enable-back-end was given.
+if test "${enable_back_end+set}" = set; then :
+  enableval=$enable_back_end;
+else
+  enable_back_end=no
+fi
+
+
+# disable the back-end label until the build method settles down.
+
+back_end_label=
+case "$enable_back_end" in
+  yes ) back_end_label=back-end
+        enable_back_end=yes
+        ;;
+  no )  ;;
+  * )   back_end_label="$enable_back_end"
+        enable_back_end=yes
+        ;;
+esac
+
+if test "$enable_back_end" = yes ; then
+  BACK_END_LABEL="-$back_end_label"
+fi
+back_end_label=
+BACK_END_LABEL=
+
+if test "$enable_back_end" = yes ; then
+  OPT_INSTALL_MONITOR=no
+  XERCES_COPY=no
+fi
+
+
+
+ if test $enable_back_end = yes; then
+  OPT_BUILD_BACK_END_TRUE=
+  OPT_BUILD_BACK_END_FALSE='#'
+else
+  OPT_BUILD_BACK_END_TRUE='#'
+  OPT_BUILD_BACK_END_FALSE=
+fi
+
+ if test $enable_back_end = no; then
+  OPT_BUILD_FRONT_END_TRUE=
+  OPT_BUILD_FRONT_END_FALSE='#'
+else
+  OPT_BUILD_FRONT_END_TRUE='#'
+  OPT_BUILD_FRONT_END_FALSE=
+fi
+
+
+ if test $enable_back_end = no; then
+  OPT_BUILD_LIB_ALL_TRUE=
+  OPT_BUILD_LIB_ALL_FALSE='#'
+else
+  OPT_BUILD_LIB_ALL_TRUE='#'
+  OPT_BUILD_LIB_ALL_FALSE=
+fi
+
+ if test $enable_back_end = no; then
+  OPT_BUILD_TOOL_ALL_TRUE=
+  OPT_BUILD_TOOL_ALL_FALSE='#'
+else
+  OPT_BUILD_TOOL_ALL_TRUE='#'
+  OPT_BUILD_TOOL_ALL_FALSE=
+fi
+
+
 
 #-------------------------------------------------
 # enable-hpcrun-flat: Only build hpcrun if on Linux and PAPI is present
@@ -17990,18 +18246,17 @@ fi
 $as_echo_n "checking whether to build hpcrun-flat... " >&6; }
 
 OPT_ENABLE_HPCRUN_FLAT="no"
-enable_hpcrun_flat_msg="${enable_hpcrun_flat}"
 
 if test "${enable_hpcrun_flat}" = yes \
-   && test "${OPT_PAPI_DYNAMIC}" = yes && test "${OPT_WITH_MONITOR}" = yes \
+   && test "${OPT_PAPI_DYNAMIC}" = yes \
+   && test "${OPT_WITH_MONITOR}" = yes \
    && test "${HOST_OS}" = "Linux"
 then
   OPT_ENABLE_HPCRUN_FLAT="yes"
-  enable_hpcrun_flat_msg="no (missing prerequisites)"
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${enable_hpcrun_flat_msg}" >&5
-$as_echo "${enable_hpcrun_flat_msg}" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $OPT_ENABLE_HPCRUN_FLAT" >&5
+$as_echo "$OPT_ENABLE_HPCRUN_FLAT" >&6; }
  if test "${OPT_ENABLE_HPCRUN_FLAT}" = "yes"; then
   OPT_ENABLE_HPCRUN_FLAT_TRUE=
   OPT_ENABLE_HPCRUN_FLAT_FALSE='#'
@@ -18142,6 +18397,10 @@ fi
 
 
 if test "$OPT_LIBMONITOR_STATIC" = no ; then
+  OPT_ENABLE_HPCRUN_STATIC=no
+fi
+
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
   OPT_ENABLE_HPCRUN_STATIC=no
 fi
 
@@ -18758,6 +19017,109 @@ fi
 
 
 #-------------------------------------------------
+# Option: --with-cuda=PATH
+#-------------------------------------------------
+
+# CUDA support for CPU-GPU-Blame-shifting
+# CUDA default install path is /usr/local/cuda
+# Include files will be in CUDADIR/include
+# CUDA 64 bit libraries under CUDADIR/lib64 and 32 bit in CUDADIR/lib
+# We need CUPTI for callbacks which is in CUDADIR/extras/CUPTI
+# CUPTI 64 bit libraries under CUPTIDIR/lib64 and 32 bit in CUPTIDIR/lib
+
+
+if test "${host_sizeof_voidp}" = "4"; then
+    CUDA_LIB_SEARCH_ORDER="lib32 lib"
+else
+    CUDA_LIB_SEARCH_ORDER="lib64 lib"
+fi
+
+
+OPT_HAVE_CUDA=no
+OPT_CUDA=
+OPT_CUDA_INCPATH=
+OPT_CUDA_LDFLAGS=
+OPT_CUDA_LIBPATH=
+OPT_CUPTI_INCPATH=
+OPT_CUPTI_LIBPATH=
+OPT_CUPTI_LDFLAGS=
+
+
+# Check whether --with-cuda was given.
+if test "${with_cuda+set}" = set; then :
+  withval=$with_cuda; if test $withval != no; then
+     OPT_HAVE_CUDA=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cuda requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUDA=${withval}
+   fi
+fi
+
+
+if test "$OPT_HAVE_CUDA" = "yes" ; then
+
+# Check whether --with-cuda-include was given.
+if test "${with_cuda_include+set}" = set; then :
+  withval=$with_cuda_include; if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cuda-include requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUDA_INCPATH=${withval}
+  fi
+else
+  if test -f ${OPT_CUDA}/include/cuda.h; then
+         OPT_CUDA_INCPATH=${OPT_CUDA}/include
+     else
+         as_fn_error $? "'${OPT_CUDA}/include/cuda.h' not found" "$LINENO" 5
+     fi
+fi
+
+
+  OPT_CUDA_IFLAGS="-I${OPT_CUDA_INCPATH} "
+
+
+# Check whether --with-cuda-lib was given.
+if test "${with_cuda_lib+set}" = set; then :
+  withval=$with_cuda_lib; if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cuda-lib requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUDA_LIBPATH=${withval}
+   fi
+else
+  for lib in ${CUDA_LIB_SEARCH_ORDER} ; do
+    if test -f "${OPT_CUDA}/${lib}/libcudart.so"
+    then
+      OPT_CUDA_LIBPATH="${OPT_CUDA}/${lib}"
+      break
+    fi
+  done
+     if test  -z "${OPT_CUDA_LIBPATH}" ; then
+       as_fn_error $? "libcudart.so not found" "$LINENO" 5
+     fi
+
+fi
+
+
+  OPT_CUDA_LDFLAGS="-L${OPT_CUDA_LIBPATH} -lcudart "
+
+fi
+
+ if test "$OPT_HAVE_CUDA" = yes; then
+  OPT_ENABLE_CUDA_TRUE=
+  OPT_ENABLE_CUDA_FALSE='#'
+else
+  OPT_ENABLE_CUDA_TRUE='#'
+  OPT_ENABLE_CUDA_FALSE=
+fi
+
+
+
+
+
+
+#-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
 #-------------------------------------------------
 
@@ -18786,6 +19148,7 @@ if test "${OPT_ENABLE_DATACENTRIC_TRACE}" = "yes" ; then
 $as_echo "#define DATACENTRIC_TRACE 1" >>confdefs.h
 
 fi
+
 
 
 #-------------------------------------------------
@@ -18902,6 +19265,19 @@ fi
 
 
 #----------------------------------------------------------------------------
+# Adjust some install paths for Makefiles
+#----------------------------------------------------------------------------
+
+my_pkglibdir='$(libdir)/$(PACKAGE)'
+my_pkglibexecdir='$(libexecdir)/$(PACKAGE)'
+BACK_END_LABEL=
+
+
+
+
+
+
+#----------------------------------------------------------------------------
 # Makefiles to create
 #----------------------------------------------------------------------------
 
@@ -18927,6 +19303,8 @@ ac_config_files="$ac_config_files src/tool/hpcprof-mpi/hpcprof-mpi"
 ac_config_files="$ac_config_files src/tool/hpcprof-flat/hpcprof-flat"
 
 ac_config_files="$ac_config_files src/tool/hpcproftt/hpcproftt"
+
+ac_config_files="$ac_config_files src/tool/hpcstruct/hpcstruct"
 
 
 
@@ -19069,6 +19447,10 @@ if test -z "${HOST_OS_LINUX_TRUE}" && test -z "${HOST_OS_LINUX_FALSE}"; then
   as_fn_error $? "conditional \"HOST_OS_LINUX\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${HOST_CPU_K1OM_TRUE}" && test -z "${HOST_CPU_K1OM_FALSE}"; then
+  as_fn_error $? "conditional \"HOST_CPU_K1OM\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${HOST_CPU_MIPS_TRUE}" && test -z "${HOST_CPU_MIPS_FALSE}"; then
   as_fn_error $? "conditional \"HOST_CPU_MIPS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -19129,8 +19511,28 @@ if test -z "${OPT_PAPI_COMPONENT_TRUE}" && test -z "${OPT_PAPI_COMPONENT_FALSE}"
   as_fn_error $? "conditional \"OPT_PAPI_COMPONENT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE}" && test -z "${OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_HPCSTRUCT_LAUNCH_SCRIPT\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${OPT_ENABLE_JAVA_TRUE}" && test -z "${OPT_ENABLE_JAVA_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_JAVA\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_BUILD_BACK_END_TRUE}" && test -z "${OPT_BUILD_BACK_END_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_BUILD_BACK_END\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_BUILD_FRONT_END_TRUE}" && test -z "${OPT_BUILD_FRONT_END_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_BUILD_FRONT_END\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_BUILD_LIB_ALL_TRUE}" && test -z "${OPT_BUILD_LIB_ALL_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_BUILD_LIB_ALL\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_BUILD_TOOL_ALL_TRUE}" && test -z "${OPT_BUILD_TOOL_ALL_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_BUILD_TOOL_ALL\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_HPCRUN_FLAT_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_FLAT_FALSE}"; then
@@ -19171,6 +19573,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_UPC_TRUE}" && test -z "${OPT_ENABLE_UPC_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_UPC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_CUDA_TRUE}" && test -z "${OPT_ENABLE_CUDA_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_CUDA\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE}"; then
@@ -20185,6 +20591,7 @@ do
     "src/tool/hpcprof-mpi/hpcprof-mpi") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-mpi/hpcprof-mpi" ;;
     "src/tool/hpcprof-flat/hpcprof-flat") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-flat/hpcprof-flat" ;;
     "src/tool/hpcproftt/hpcproftt") CONFIG_FILES="$CONFIG_FILES src/tool/hpcproftt/hpcproftt" ;;
+    "src/tool/hpcstruct/hpcstruct") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/hpcstruct" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -21730,6 +22137,7 @@ _LT_EOF
     "src/tool/hpcprof-mpi/hpcprof-mpi":F) chmod +x src/tool/hpcprof-mpi/hpcprof-mpi ;;
     "src/tool/hpcprof-flat/hpcprof-flat":F) chmod +x src/tool/hpcprof-flat/hpcprof-flat ;;
     "src/tool/hpcproftt/hpcproftt":F) chmod +x src/tool/hpcproftt/hpcproftt ;;
+    "src/tool/hpcstruct/hpcstruct":F) chmod +x src/tool/hpcstruct/hpcstruct ;;
 
   esac
 done # for ac_tag
@@ -21767,6 +22175,7 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
+
 
 
 
@@ -21858,10 +22267,10 @@ $as_echo "$as_me:   libmonitor:   ${LIBMONITOR}" >&6;}
 $as_echo "$as_me:   monitor/old:  ${MONITOR}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libunwind:    ${OPT_LIBUNWIND}" >&5
 $as_echo "$as_me:   libunwind:    ${OPT_LIBUNWIND}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   OpenAnalysis: ${OA}" >&5
-$as_echo "$as_me:   OpenAnalysis: ${OA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   oprofile:     ${OPROFILE}" >&5
 $as_echo "$as_me:   oprofile:     ${OPROFILE}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   OpenAnalysis: ${OA}" >&5
+$as_echo "$as_me:   OpenAnalysis: ${OA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   symtabAPI:    ${SYMTABAPI}" >&5
 $as_echo "$as_me:   symtabAPI:    ${SYMTABAPI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   xed2:         ${XED2}" >&5
@@ -21872,6 +22281,8 @@ $as_echo "$as_me:   xerces:       ${XERCES}" >&6;}
 $as_echo "$as_me:   papi:         ${OPT_PAPI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   java:         ${JAVA}" >&5
 $as_echo "$as_me:   java:         ${JAVA}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   cuda:         ${OPT_CUDA}" >&5
+$as_echo "$as_me:   cuda:         ${OPT_CUDA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   upc (BG/P):   ${opt_upc_mesg}" >&5
 $as_echo "$as_me:   upc (BG/P):   ${opt_upc_mesg}" >&6;}
 

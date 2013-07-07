@@ -64,7 +64,7 @@
 typedef struct epoch_t {
   cct_bundle_t csdata;     // cct (call stack data)
   cct_ctxt_t* csdata_ctxt; // creation context
-  hpcrun_loadmap_t *loadmap;
+  hpcrun_loadmap_t* loadmap;
   struct epoch_t* next;    // epochs gathererd into a (singly) linked list
 
 } epoch_t;

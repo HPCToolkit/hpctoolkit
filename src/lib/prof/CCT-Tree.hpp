@@ -288,6 +288,9 @@ class ANode
     public Unique
 {
 public:
+  typedef std::vector<ANode*> Vec;
+
+public:
   enum ANodeTy {
     TyRoot = 0,
     TyProcFrm,
@@ -579,7 +582,7 @@ public:
 
   
   virtual MergeEffect
-  mergeMe(const ANode& y, MergeContext* mrgCtxt = NULL, uint metricBegIdx = 0);
+  mergeMe(const ANode& y, MergeContext* mrgCtxt = NULL, uint metricBegIdx = 0, bool mayConflict = true);
 
 
   // findDynChild: Let z = 'this' be an interior ADynNode (otherwise the
@@ -928,7 +931,7 @@ public:
 
 
   virtual MergeEffect
-  mergeMe(const ANode& y, MergeContext* mrgCtxt = NULL, uint metricBegIdx = 0);
+  mergeMe(const ANode& y, MergeContext* mrgCtxt = NULL, uint metricBegIdx = 0, bool mayConflict = true);
   
 
   // -------------------------------------------------------

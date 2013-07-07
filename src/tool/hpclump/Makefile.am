@@ -70,6 +70,8 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
+
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
@@ -86,10 +88,17 @@ MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) \
+	$(MY_LIB_XED) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@
+
+if HOST_CPU_X86_FAMILY
+MY_LIB_XED = $(XED2_LIB_FLAGS)
+else
+MY_LIB_XED =
+endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
@@ -97,7 +106,8 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-pkglibexecdir = $(libexecdir)/$(PACKAGE)
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
 
 pkglibexec_PROGRAMS = hpclump
 

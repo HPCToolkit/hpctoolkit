@@ -543,7 +543,9 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
   int rank = hpcrun_get_rank();
   rank = (rank<0? 0:rank);
   thread_data_t* td = hpcrun_get_thread_data();
-  int thread_id = (td==NULL? 0 : td->id);
+
+  // temporary solution : we need to find a uniform way to dump file
+  int thread_id = 0; //(td==NULL? 0 : td->id);
   ret = snprintf(file_dump,PATH_MAX,"%s/java-%d-%d.dump",hpcrun_get_directory(), rank, thread_id);
 
   if (ret >= PATH_MAX) {

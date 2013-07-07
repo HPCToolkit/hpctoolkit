@@ -68,6 +68,7 @@ hpcfnbounds_dir='libexec/hpctoolkit'
 libhpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 xed2_dir='@XED2_RUN_DIR@'
+xed2_link_opts='@XED2_HPCLINK_OPTS@'
 libunwind_dir='@LIBUNWIND_RUN_DIR@'
 libunwind_hpclink_libs='@LIBUNWIND_HPCLINK_LIBS@'
 
@@ -82,10 +83,9 @@ hpctk_wrap_names='@LIBMONITOR_WRAP_NAMES@  @hpclink_extra_wrap_names@'
 extra_wrap_names=
 extra_hpc_files=
 
-# Set to -m64 on 64-bit version (for gcc).
-# NM_FLAGS='-m64'
+# Compiler and flags for array of fnbounds addresses.
+CC='@CC@ @CFLAGS@'
 
-CC=gcc
 hello="_hpc_hello_$$"
 nm_addrs="_hpc_nm_addrs_$$"
 cmd_out="_hpc_output_$$"
@@ -105,7 +105,7 @@ cleanup()
 
 die()
 {
-    echo "$0: error: $*" 1>&2
+    echo "hpclink: error: $*" 1>&2
     cleanup
     exit 1
 }
@@ -113,6 +113,17 @@ die()
 mesg()
 {
     echo "hpclink: $*"
+}
+
+unable_to_link()
+{
+    mesg "unable to link"
+    echo
+    echo "$command" $command_line_args
+    echo
+    cat "$cmd_out"
+    echo
+    die "unable to link"
 }
 
 #------------------------------------------------------------
@@ -153,6 +164,11 @@ Options: Linking
                        of -Wl).  Used to work around problems with the 
                        Berkeley UPC compiler script (rarely needed).
 
+  -fe <dir>, --front-end <dir>
+                       In a cross-compile link, use the current install tree
+                       for the back-end libraries and use <dir> for the install
+                       directory (prefix) of the front-end tools (hpcfnbounds).
+
   --io                 Include the IO bytes read and written library.
 
   --ga                 Include GA (Global Arrays) wrappers.
@@ -182,10 +198,6 @@ case "$ext_libs_dir" in
     /* ) ;;
     * )  ext_libs_dir="${HPCTOOLKIT}/${ext_libs_dir}" ;;
 esac
-case "$hpcfnbounds_dir" in
-    /* ) ;;
-    * )  hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
-esac
 case "$libhpcrun_dir" in
     /* ) ;;
     * )  libhpcrun_dir="${HPCTOOLKIT}/${libhpcrun_dir}" ;;
@@ -203,9 +215,6 @@ case "$libunwind_dir" in
     * )  libunwind_dir="${HPCTOOLKIT}/${libunwind_dir}" ;;
 esac
 
-hpcfnbounds="${hpcfnbounds_dir}/hpcfnbounds"
-test -x "$hpcfnbounds" || die "missing hpcfnbounds: $hpcfnbounds"
-
 LD_LIBRARY_PATH="${ext_libs_dir}:${LD_LIBRARY_PATH}"
 export LD_LIBRARY_PATH
 
@@ -214,6 +223,7 @@ export LD_LIBRARY_PATH
 #------------------------------------------------------------
 
 double_wrap=no
+front_end_dir=no
 my_plugin_list=
 verbose=no
 verb=:
@@ -228,6 +238,11 @@ do
 	    double_wrap=yes
 	    shift
 	    ;;
+	-fe | -front-end | --front-end )
+	    test "x$2" != x || die "missing argument for --front-end"
+	    front_end_dir="$2"
+	    shift ; shift
+	    ;;
 	-io | --io )
 	    io_wrap="${libhpcrun_dir}/libhpcrun_io_wrap.a"
 	    test -f "$io_wrap" || die "unable to find: $io_wrap"
@@ -241,11 +256,10 @@ do
 	    test -f "$ga_wrap" || die "unable to find: $ga_wrap"
 	    extra_hpc_files="$extra_hpc_files $ga_wrap"
 	    extra_wrap_names="$extra_wrap_names \
-                pnga_create \
-                pnga_brdcst pnga_gop pnga_sync pnga_zero \
+                pnga_create pnga_create_handle \
                 pnga_get pnga_put pnga_acc \
-                pnga_nbget pnga_nbput pnga_nbacc"
-                # pnga_nbwait
+                pnga_nbget pnga_nbput pnga_nbacc pnga_nbwait \
+                pnga_brdcst pnga_gop pnga_sync"
 	    undef_names="$undef_names pnga_create"
 	    shift
 	    ;;
@@ -289,6 +303,23 @@ do
 	    ;;
     esac
 done
+
+#
+# In a cross-compile link, we use fnbounds from the front-end tree and
+# hpcrun libs, externals libs, PAPI and CC from the back-end tree.
+# Note: since fnbounds is a program with a launch script, we need to
+# reset HPCTOOLKIT to the front-end root before running fnbounds.
+#
+if test "$front_end_dir" != no ; then
+    HPCTOOLKIT=`cd "$front_end_dir" && pwd`
+    if test ! -d "$HPCTOOLKIT" ; then
+        die "bad front-end directory: $front_end_dir"
+    fi
+fi
+
+hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}"
+hpcfnbounds="${hpcfnbounds_dir}/hpcfnbounds"
+test -x "$hpcfnbounds" || die "missing hpcfnbounds: $hpcfnbounds"
 
 #
 # Add plugin files: hpclink --plugin name
@@ -373,7 +404,14 @@ done
 # repeat-application-libs.
 
 if test "$verbose" = yes ; then
-    echo "original command line: $command $@"
+    mesg "original command line:"
+    echo "$command $@"
+    echo
+    mesg "wrapped symbols:"
+    echo $hpctk_wrap_names $extra_wrap_names
+    echo
+    mesg "initial undefined symbols:"
+    echo $undef_names
     echo
 fi
 
@@ -414,7 +452,7 @@ if test -d "$papi_dir" ; then
 fi
 
 if test -d "$xed2_dir" ; then
-    set -- "$@" "-L${xed2_dir}" -lxed
+    set -- "$@" "-L${xed2_dir}" $xed2_link_opts
 fi
 
 if test -d "$libunwind_dir" ; then
@@ -442,7 +480,7 @@ $CC -o "$hello" "${hello}.c"
 
 rm -f "${nm_addrs}.c" "${nm_addrs}.o"
 $hpcfnbounds -c "$hello" > "${nm_addrs}.c" || die "hpcfnbounds failed on $hello"
-$CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
+$CC -c -o "${nm_addrs}.o" "${nm_addrs}.c"
 
 #
 # Some compiler scripts add extra function calls to the end of the
@@ -451,23 +489,61 @@ $CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
 # to the undef list and try again.  Do the same for an undefined
 # reference to 'main' (gfortran does some bad things).
 #
-$command "$@" >"$cmd_out" 2>&1
-if test $? -ne 0 || test ! -f "$appl_out"
-then
+num=1
+success=no
+extra_undef_opts=
+while :
+do
+    mesg "preliminary link $num ..."
+    if test "$verbose" = yes ; then
+	echo "$command $@"
+	echo
+    fi
+
+    rm -f "$cmd_out"
+    command_line_args="$*"
+    $command "$@" >"$cmd_out" 2>&1
+    if test $? -eq 0 && test -f "$appl_out" ; then
+	success=yes
+	break
+    fi
+
+    # If the link fails, parse the compiler output for 'undefined
+    # references' and add to the next link.
+    new_undef_list=
     exec <"$cmd_out"
     while read line
     do
-        if echo "$line" | grep -E -i -e 'undef.*__wrap_' >/dev/null 2>&1
-	then
+        name=
+        if echo "$line" | grep -E -i -e 'undef.*__wrap_' >/dev/null 2>&1 ; then
 	    name=`expr "$line" : '.*\(__wrap_[A-Za-z0-9_]*\)'`
-	    set -- "${linker_prefix},--undefined=${name}" "$@"
-	elif echo "$line" | grep -E -i -e 'undef.*main' >/dev/null 2>&1
-	then
-	    set -- "${linker_prefix},--undefined=main" "$@"
+	elif echo "$line" | grep -E -i -e 'undef.*main' >/dev/null 2>&1 ; then
+	    name=main
+	fi
+	if test "x$name" != x ; then
+	    echo "$extra_undef_opts" | grep -e " $name " >/dev/null 2>&1
+	    if test $? -ne 0 ; then
+		set -- "${linker_prefix},--undefined=${name}" "$@"
+		extra_undef_opts="$extra_undef_opts -u $name "
+		new_undef_list="$new_undef_list $name"
+	    fi
 	fi
     done
-    $command "$@" || die "compile #1 failed: $command $@"
-    test -f "$appl_out" || die "compile #1 failed: $command $@"
+    if test "$verbose" = yes ; then
+	mesg "new undefined symbols: $new_undef_list"
+	echo
+    fi
+
+    # quit when there are no new undefined references
+    if test "x$new_undef_list" = x ; then
+	break
+    fi
+
+    num=`expr $num + 1`
+done
+
+if test "$success" != yes ; then
+    unable_to_link
 fi
 
 # Require the output to be statically linked.
@@ -481,16 +557,28 @@ fi
 # Step 4 -- Link with real nm file.
 #------------------------------------------------------------
 
+mesg "final link ..."
 if test "$verbose" = yes ; then
-    echo "new command line: $command $@"
+    echo "$command $@"
     echo
 fi
 
 rm -f "${nm_addrs}.c" "${nm_addrs}.o"
 $hpcfnbounds -c "$appl_out" > "${nm_addrs}.c" || die "hpcfnbounds failed on $appl_out"
-$CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
-$command "$@" || die "compile #2 failed: $command $@"
-test -f "$appl_out" || die "compile #2 failed: $command $@"
+$CC -c -o "${nm_addrs}.o" "${nm_addrs}.c"
+
+rm -f "$cmd_out"
+command_line_args="$*"
+$command "$@" >"$cmd_out" 2>&1
+if test $? -ne 0 || test ! -f "$appl_out" ; then
+    unable_to_link
+fi
+mesg "done"
+
+if test "x$extra_undef_opts" != x ; then
+    mesg "to reduce the number of preliminary links, add these options to hpclink:"
+    echo hpclink $extra_undef_opts $command ...
+fi
 
 cleanup
 exit 0
