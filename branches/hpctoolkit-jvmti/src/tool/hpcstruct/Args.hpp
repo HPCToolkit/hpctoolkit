@@ -123,6 +123,8 @@ public:
   std::string out_filenm;
   bool prettyPrintOutput;         // default: true
 
+  bool useBinutils;		  // default: false
+
   // Parsed Data: arguments
   std::string in_filenm;
 

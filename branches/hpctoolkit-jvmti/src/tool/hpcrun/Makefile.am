@@ -93,33 +93,46 @@ PYTHON = python
 # build targets
 #-----------------------------------------------------------
 
-pkglibexecdir = $(libexecdir)/$(PACKAGE)
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
+
 plugin_srcdir = $(srcdir)/plugins
 plugin_instdir = $(pkglibdir)/plugins
 
-bin_SCRIPTS = scripts/hpcsummary
-pkglibexec_SCRIPTS = scripts/hpclog
-
-include_HEADERS = hpctoolkit.h
-
+bin_SCRIPTS =
+pkglibexec_SCRIPTS =
+include_HEADERS =
+pkglib_PROGRAMS =
+pkglib_LIBRARIES =
 pkglib_LTLIBRARIES =
+
+if OPT_BUILD_FRONT_END
+  bin_SCRIPTS += scripts/hpcsummary
+  pkglibexec_SCRIPTS += scripts/hpclog
+  include_HEADERS += hpctoolkit.h
+endif
+
 if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcrun.la
   pkglib_LTLIBRARIES += libhpcrun_ga.la
   pkglib_LTLIBRARIES += libhpcrun_io.la
   pkglib_LTLIBRARIES += libhpcrun_memleak.la
+if OPT_ENABLE_CUDA
+  pkglib_LTLIBRARIES += libhpcrun_gpu.la
+endif
   pkglib_LTLIBRARIES += libhpctoolkit.la
   bin_SCRIPTS += scripts/hpcrun
 endif
 
-pkglib_PROGRAMS =
-pkglib_LIBRARIES =
 if OPT_ENABLE_HPCRUN_STATIC
   pkglib_PROGRAMS  += libhpcrun.o
   pkglib_LIBRARIES += libhpcrun_wrap.a
   pkglib_LIBRARIES += libhpcrun_ga_wrap.a
   pkglib_LIBRARIES += libhpcrun_io_wrap.a
   pkglib_LIBRARIES += libhpcrun_memleak_wrap.a
+if OPT_ENABLE_CUDA
+  pkglib_LIBRARIES += libhpcrun_gpu_wrap.a
+endif
   pkglib_LIBRARIES += libhpctoolkit.a
 if HOST_CPU_PPC
   pkglib_LIBRARIES += libibm_xlomp_wrappers.a
@@ -141,11 +154,15 @@ LIBMONITOR_LIB = @LIBMONITOR_LIB@
 PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
 XED2_INC = @XED2_INC@
-XED2_LIB = @XED2_LIB@
+XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
 PLUGIN_CONFIG_FILES = ga io memleak
+if OPT_ENABLE_CUDA
+    PLUGIN_CONFIG_FILES += gpu
+endif
+
 if HOST_CPU_PPC
   PLUGIN_CONFIG_FILES += ibm-xlomp
 endif
@@ -183,7 +200,7 @@ UNW_X86_INCLUDE_DIRS = \
 	-I$(XED2_INC)
 
 UNW_X86_LD_FLAGS = \
-        $(XED2_LIB)/libxed.a
+        $(XED2_LIB_FLAGS)
 
 UNW_PPC64_FILES = \
         $(UNW_COMMON_FILES) \
@@ -354,7 +371,6 @@ MY_INCLUDE_DIRS =			\
 	-I$(srcdir)/messages	        \
 	-I$(srcdir)/fnbounds		\
 	-I$(srcdir)/memory		\
-	-I$(srcdir)/os/catamount	\
 	-I$(srcdir)/os/linux		\
 	-I$(srcdir)/cct			\
 	-I$(srcdir)/unwind/common	\
@@ -413,6 +429,16 @@ libhpcrun_memleak_la_SOURCES = 		\
 
 libhpcrun_memleak_wrap_a_SOURCES = 	\
 	sample-sources/memleak-overrides.c
+
+libhpcrun_gpu_la_SOURCES = 		\
+	sample-sources/gpu_blame-overrides.c \
+	gpu_blame-driver-overrides-generated.c \
+	gpu_blame-runtime-overrides-generated.c
+
+libhpcrun_gpu_wrap_a_SOURCES = 	\
+	sample-sources/gpu_blame-overrides.c  \
+	gpu_blame-driver-overrides-generated.c \
+	gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_mpi_la_SOURCES = 		\
 	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
@@ -473,6 +499,15 @@ libhpcrun_memleak_wrap_a_CPPFLAGS =	\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
+libhpcrun_gpu_la_CPPFLAGS =		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_gpu_wrap_a_CPPFLAGS =	\
+	-DHPCRUN_STATIC_LINK		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
 libhpcrun_mpi_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
@@ -481,6 +516,44 @@ $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
 	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
 		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
 
+CUDA_TABLES = gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
+CUDA_FILES = sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c $(CUDA_TABLES)
+
+if OPT_ENABLE_CUDA
+
+generated_file_base = .
+generated_file_src_path = $(srcdir)/sample-sources
+
+generated_cuda_driver_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-driver-header.h gpu_blame-cuda-driver-table.c gpu_blame-driver-overrides-generated.c)
+generated_cuda_driver_api_files = $(addprefix $(generated_file_base)/, cuda_driver_apis.h)
+generated_cuda_runtime_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-runtime-header.h gpu_blame-cuda-runtime-table.c gpu_blame-runtime-overrides-generated.c)
+generated_cuda_runtime_api_files = $(addprefix $(generated_file_base)/, cuda_runtime_apis.h)
+
+BUILT_SOURCES = $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
+
+CLEANFILES  =  $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
+
+$(generated_cuda_runtime_api_files) : $(generated_file_src_path)/cuda_runtime_dummy.c
+	$(CC) $(OPT_CUDA_IFLAGS) -E -B -c $(generated_file_src_path)/cuda_runtime_dummy.c  -o  $(generated_file_base)/cuda_runtime_apis.h 
+
+$(generated_cuda_runtime_files) : $(generated_file_src_path)/make-cuda-wrappers.py $(generated_cuda_runtime_api_files)
+	$(PYTHON) $(generated_file_src_path)/make-cuda-wrappers.py runtime $(generated_cuda_runtime_api_files) $(generated_cuda_runtime_files)
+
+$(generated_file_base)/gpu_blame-cuda-runtime-header.h:  $(generated_file_base)/gpu_blame-cuda-runtime-table.c
+
+$(generated_file_base)/gpu_blame-cuda-runtime-table.c: $(generated_file_base)/gpu_blame-runtime-overrides-generated.c
+
+$(generated_cuda_driver_api_files) :  $(generated_file_src_path)/cuda_driver_dummy.c
+	$(CC) $(OPT_CUDA_IFLAGS)  -E -B -c $(generated_file_src_path)/cuda_driver_dummy.c -o $(generated_file_base)/cuda_driver_apis.h
+
+$(generated_cuda_driver_files) : $(generated_file_src_path)/make-cuda-wrappers.py $(generated_cuda_driver_api_files) 
+	$(PYTHON) $(generated_file_src_path)/make-cuda-wrappers.py driver $(generated_cuda_driver_api_files)  $(generated_cuda_driver_files)
+
+$(generated_file_base)/gpu_blame-cuda-driver-header.h : $(generated_file_base)/gpu_blame-cuda-driver-table.c
+
+$(generated_file_base)/gpu_blame-cuda-driver-table.c : $(generated_file_base)/gpu_blame-driver-overrides-generated.c
+
+endif
 
 libhpctoolkit_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
@@ -511,6 +584,8 @@ libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 
@@ -533,6 +608,11 @@ libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic	\
 
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
+
+#libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic 	\
+#	-Wl,--strip-debug
+
+libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
@@ -561,6 +641,8 @@ if HOST_CPU_MIPS
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_gpu_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_gpu_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 endif
 
@@ -581,6 +663,8 @@ if HOST_CPU_PPC
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_gpu_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_gpu_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
@@ -593,14 +677,16 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
-  libhpcrun_la_LDFLAGS  += $(XED2_LIB)/libxed.a
-  libhpcrun_o_LDFLAGS   += $(XED2_LIB)/libxed.a
+  libhpcrun_la_LDFLAGS  += $(XED2_LIB_FLAGS)
+  libhpcrun_o_LDFLAGS   += $(XED2_LIB_FLAGS)
   libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_gpu_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_gpu_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   MY_AGENT_INCLUDE_DIRS += $(MY_X86_INCLUDE_DIRS)
 endif
@@ -661,6 +747,21 @@ if UNW_PPC64
   UNW_LD_FLAGS     = $(UNW_PPC64_LD_FLAGS)
 endif
 
+if OPT_ENABLE_CUDA
+  libhpcrun_la_SOURCES += $(CUDA_FILES)
+  libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
+  libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
+  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
+
+  libhpcrun_gpu_la_CPPFLAGS += -DENABLE_CUDA
+  libhpcrun_gpu_la_CFLAGS  += $(OPT_CUDA_IFLAGS)
+  libhpcrun_gpu_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
+
+  libhpcrun_gpu_wrap_a_CPPFLAGS += -DENABLE_CUDA
+  libhpcrun_gpu_wrap_a_CFLAGS  += $(OPT_CUDA_IFLAGS)
+
+endif
+
 if UNW_LIBUNW
     UNW_SOURCE_FILES = $(UNW_LIBUNW_FILES)
     UNW_INCLUDE_DIRS = $(UNW_LIBUNW_INCLUDE_DIRS)
@@ -677,6 +778,8 @@ libhpcrun_io_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_io_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
+libhpcrun_gpu_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
+libhpcrun_gpu_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_la_LDFLAGS  += $(UNW_LD_FLAGS)
 libhpcrun_o_LDFLAGS   += $(UNW_LD_FLAGS)

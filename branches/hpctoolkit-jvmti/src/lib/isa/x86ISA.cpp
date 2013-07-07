@@ -73,9 +73,23 @@ using std::ostream;
 
 #include <lib/support/diagnostics.h>
 
-//*************************** Forward Declarations ***************************
+//*************************** macros ***************************
 
-static VMA
+
+
+//*************************** Forward Declarations ***************************
+void
+GNU_print_addr(bfd_vma di_vma, struct disassemble_info* di)
+{
+  GNUbu_disdata* data = (GNUbu_disdata*)di->application_data;
+
+  VMA x = GNUvma2vma(di_vma, data->insn_addr, data->insn_vma);
+  ostream* os = (ostream*)di->stream;
+  *os << std::showbase << std::hex << x << std::dec;
+}
+
+
+VMA
 GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
 {
   // N.B.: The GNU decoders expect that the address of the 'mi' is
@@ -90,160 +104,6 @@ GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
   return x;
 }
 
-
-static void
-GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
-{
-  GNUbu_disdata* data = (GNUbu_disdata*)di->application_data;
-
-  VMA x = GNUvma2vma(di_vma, data->insn_addr, data->insn_vma);
-  ostream* os = (ostream*)di->stream;
-  *os << std::showbase << std::hex << x << std::dec;
-}
-
-
-//****************************************************************************
-// x86ISA
-//****************************************************************************
-
-x86ISA::x86ISA(bool is_x86_64)
-  : m_is_x86_64(is_x86_64), m_di(NULL), m_di_dis(NULL)
-{
-  // See 'dis-asm.h'
-  m_di = new disassemble_info;
-  init_disassemble_info(m_di, stdout, GNUbu_fprintf_stub);
-  m_di->arch = bfd_arch_i386;     // bfd_get_arch(abfd);
-  if (m_is_x86_64) {              // bfd_get_mach(abfd); needed in print_insn()
-    m_di->mach = bfd_mach_x86_64;
-  }
-  else {
-    m_di->mach = bfd_mach_i386_i386;
-  }
-  m_di->endian = BFD_ENDIAN_LITTLE;
-  m_di->read_memory_func = GNUbu_read_memory; // vs. 'buffer_read_memory'
-  m_di->print_address_func = GNUbu_print_addr_stub; // vs. 'generic_print_addr'
-
-  m_di_dis = new disassemble_info;
-  init_disassemble_info(m_di_dis, stdout, GNUbu_fprintf);
-  m_di_dis->application_data = (void*)&m_dis_data;
-  m_di_dis->arch = m_di->arch;
-  m_di_dis->mach = m_di->mach;
-  m_di_dis->endian = m_di->endian;
-  m_di_dis->read_memory_func = GNUbu_read_memory;
-  m_di_dis->print_address_func = GNUbu_print_addr;
-}
-
-
-x86ISA::~x86ISA()
-{
-  delete m_di;
-  delete m_di_dis;
-}
-
-
-ushort
-x86ISA::getInsnSize(MachInsn* mi)
-{
-  ushort size;
-  DecodingCache *cache;
-
-  if ((cache = cacheLookup(mi)) == NULL) {
-    size = (ushort)print_insn_i386(PTR_TO_BFDVMA(mi), m_di);
-    cacheSet(mi, size);
-  }
-  else {
-    size = cache->insnSize;
-  }
-  return size;
-}
-
-
-ISA::InsnDesc
-x86ISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
-		    ushort GCC_ATTR_UNUSED s)
-{
-  ISA::InsnDesc d;
-
-  if (cacheLookup(mi) == NULL) {
-    int size = print_insn_i386(PTR_TO_BFDVMA(mi), m_di);
-    cacheSet(mi, (ushort)size);
-  }
-
-  switch(m_di->insn_type) {
-    case dis_noninsn:
-      d.set(InsnDesc::INVALID);
-      break;
-    case dis_branch:
-      if (m_di->target != 0) {
-	d.set(InsnDesc::BR_UN_COND_REL);
-      }
-      else {
-	d.set(InsnDesc::BR_UN_COND_IND);
-      }
-      break;
-    case dis_condbranch:
-      if (m_di->target != 0) {
-	d.set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
-      }
-      else {
-	d.set(InsnDesc::INT_BR_COND_IND); // arbitrarily choose int
-      }
-      break;
-    case dis_jsr:
-      if (m_di->target != 0) {
-	d.set(InsnDesc::SUBR_REL);
-      }
-      else {
-	d.set(InsnDesc::SUBR_IND);
-      }
-      break;
-    case dis_condjsr:
-      d.set(InsnDesc::OTHER);
-      break;
-    case dis_return:
-      d.set(InsnDesc::SUBR_RET);
-      break;
-    case dis_dref:
-    case dis_dref2:
-      d.set(InsnDesc::MEM_OTHER);
-      break;
-    default:
-      d.set(InsnDesc::OTHER);
-      break;
-  }
-  return d;
-}
-
-
-VMA
-x86ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
-			 ushort GCC_ATTR_UNUSED sz)
-{
-  if (cacheLookup(mi) == NULL) {
-    int size = print_insn_i386(PTR_TO_BFDVMA(mi), m_di);
-    cacheSet(mi, (ushort)size);
-  }
-
-  // The target field is only set on instructions with targets.
-  if (m_di->target != 0) {
-    return GNUvma2vma(m_di->target, mi, vma);
-  }
-  else {
-    return 0;
-  }
-}
-
-
-void
-x86ISA::decode(ostream& os, MachInsn* mi, VMA vma,
-	       ushort GCC_ATTR_UNUSED opIndex)
-{
-  m_dis_data.insn_addr = mi;
-  m_dis_data.insn_vma = vma;
-
-  m_di_dis->stream = (void*)&os;
-  print_insn_i386(PTR_TO_BFDVMA(mi), m_di_dis);
-}
 
 
 //****************************************************************************

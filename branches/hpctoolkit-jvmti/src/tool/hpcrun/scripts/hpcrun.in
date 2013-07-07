@@ -263,6 +263,7 @@ do
 	        GA* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_ga.so" ;;
 		IO* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_io.so" ;;
 		MEMLEAK* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_memleak.so" ;;
+		CPU_GPU_IDLE* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_gpu.so" ;;
 		MPI* )     preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_mpi.so" ;;
 	    esac
 	    case "$HPCRUN_EVENT_LIST" in
@@ -392,12 +393,17 @@ esac
 
 # Sanity checks before launch.
 
-if test -x "$command" ; then
+file_exists=no
+if type file >/dev/null 2>&1 ; then
+    file_exists=yes
+fi
+
+if test -x "$command" && test "$file_exists" = yes ; then
     #
     # For dynamic binaries, verify that the application and libhpcrun
     # have the same wordsize, both 32-bit or both 64-bit.
     #
-    cmd_file_out=`file -L "$command"`
+    cmd_file_out=`file -L "$command" 2>/dev/null`
     echo "$cmd_file_out" | grep -E -i -e 'elf.*dynamic' >/dev/null 2>&1
     if test $? -eq 0 ; then
 	appl_bit=`expr "$cmd_file_out" : '.*ELF.*\([0-9][0-9].bit\)'`

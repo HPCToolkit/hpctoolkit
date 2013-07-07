@@ -83,7 +83,7 @@ SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 
 XED2_INC = @XED2_INC@
-XED2_LIB = @XED2_LIB@
+XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 
 MYSOURCES = \
 	main.cpp \
@@ -102,13 +102,16 @@ MYLDFLAGS = \
 	-L$(LIBDWARF_LIB) -ldwarf		\
 	-L$(LIBELF_LIB) -lelf
 
+MYLDADD = $(HPCLIB_SupportLean)
+
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-pkglibexecdir = $(libexecdir)/$(PACKAGE)
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
 
 pkglibexec_PROGRAMS = hpcfnbounds-bin
 pkglibexec_SCRIPTS =  hpcfnbounds
@@ -117,11 +120,12 @@ hpcfnbounds_bin_SOURCES  = $(MYSOURCES)
 hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS)
 hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcfnbounds_bin_LDFLAGS  = $(MYLDFLAGS)
+hpcfnbounds_bin_LDADD    = $(MYLDADD)
 
 if HOST_CPU_X86_FAMILY
   hpcfnbounds_bin_SOURCES  += x86-process-ranges.cpp amd-xop.c
   hpcfnbounds_bin_CPPFLAGS += -I$(XED2_INC)
-  hpcfnbounds_bin_LDFLAGS  += $(XED2_LIB)/libxed.a
+  hpcfnbounds_bin_LDFLAGS  += $(XED2_LIB_FLAGS)
 else
   hpcfnbounds_bin_SOURCES += generic-process-ranges.cpp
 endif

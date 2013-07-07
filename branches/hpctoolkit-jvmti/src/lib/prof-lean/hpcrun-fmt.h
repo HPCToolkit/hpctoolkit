@@ -192,6 +192,14 @@ typedef struct hpcrun_fmt_epochHdr_t {
 
 } hpcrun_fmt_epochHdr_t;
 
+typedef struct metric_desc_properties_t {
+  unsigned time:1;
+  unsigned cycles:1;
+} metric_desc_properties_t;
+
+#define metric_property_time  ( (metric_desc_properties_t) { .time = 1 } )
+#define metric_property_cycles (  (metric_desc_properties_t) { .cycles = 1 } )
+#define metric_property_none (  (metric_desc_properties_t) { } )
 
 extern int
 hpcrun_fmt_epochHdr_fread(hpcrun_fmt_epochHdr_t* ehdr, FILE* fs,
@@ -361,6 +369,8 @@ typedef struct metric_desc_t {
   hpcrun_metricFlags_t flags;
 
   uint64_t period;
+  
+  metric_desc_properties_t properties;
 
   char* formula;
   char* format;

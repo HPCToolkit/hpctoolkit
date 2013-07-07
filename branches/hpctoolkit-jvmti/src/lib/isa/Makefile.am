@@ -70,6 +70,8 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+XED2_INC = @XED2_INC@
+
 MYSOURCES = \
 	ISATypes.hpp \
 	ISA.hpp ISA.cpp \
@@ -79,7 +81,8 @@ MYSOURCES = \
 	MipsISA.hpp MipsISA.cpp \
 	PowerISA.hpp PowerISA.cpp \
 	SparcISA.hpp SparcISA.cpp \
-	x86ISA.hpp x86ISA.cpp \
+	x86ISA.hpp  x86ISA.cpp \
+	x86ISABinutils.hpp  x86ISABinutils.cpp \
 	\
 	instructionSets/alpha.h \
 	instructionSets/mips.h
@@ -102,6 +105,14 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 #############################################################################
 
 noinst_LTLIBRARIES = libHPCisa.la
+
+if HOST_CPU_X86_FAMILY
+  MYSOURCES  +=	x86ISAXed.cpp  x86ISAXed.hpp
+  MYCFLAGS   += -I$(XED2_INC)
+  MYCXXFLAGS += -I$(XED2_INC)
+else
+  MYSOURCES  +=	x86ISAXed_dummy.cpp  x86ISAXed.hpp
+endif
 
 libHPCisa_la_SOURCES  = $(MYSOURCES)
 libHPCisa_la_CFLAGS   = $(MYCFLAGS)

@@ -106,7 +106,6 @@
 
 #include <sample-sources/blame-shift.h>
 
-
 /******************************************************************************
  * macros
  *****************************************************************************/
@@ -328,6 +327,7 @@ static void
 METHOD_FN(init)
 {
   TMSG(ITIMER_CTL, "init");
+  blame_shift_source_register(bs_type_timer);
   self->state = INIT;
 }
 
@@ -409,9 +409,9 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-  return strstr(ev_str, ITIMER_EVENT_NAME) != NULL
-      || strstr(ev_str, CPUTIME_EVENT_NAME) != NULL
-      || strstr(ev_str, REALTIME_EVENT_NAME) != NULL;
+  return hpcrun_ev_is(ev_str, ITIMER_EVENT_NAME)
+    || hpcrun_ev_is(ev_str, CPUTIME_EVENT_NAME)
+    || hpcrun_ev_is(ev_str, REALTIME_EVENT_NAME);
 }
  
 static void
@@ -427,7 +427,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   TMSG(ITIMER_CTL,"checking event spec = %s",event);
 
-  if (strstr(event, REALTIME_EVENT_NAME) != NULL) {
+  if (hpcrun_ev_is(event, REALTIME_EVENT_NAME)) {
 #ifdef ENABLE_CLOCK_REALTIME
     use_realtime = true;
     the_event_name = REALTIME_EVENT_NAME;
@@ -439,7 +439,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #endif
   }
 
-  if (strstr(event, CPUTIME_EVENT_NAME) != NULL) {
+  if (hpcrun_ev_is(event, CPUTIME_EVENT_NAME)) {
 #ifdef ENABLE_CLOCK_CPUTIME
     use_cputime = true;
     the_event_name = CPUTIME_EVENT_NAME;
@@ -451,7 +451,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #endif
   }
 
-  if (strstr(event, ITIMER_EVENT_NAME) != NULL) {
+  if (hpcrun_ev_is(event, ITIMER_EVENT_NAME)) {
     use_itimer = true;
     the_event_name = ITIMER_EVENT_NAME;
     the_metric_name = ITIMER_METRIC_NAME;
@@ -511,7 +511,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   TMSG(ITIMER_CTL, "setting metric timer period = %ld", sample_period);
   hpcrun_set_metric_info_and_period(metric_id, the_metric_name,
 				    MetricFlags_ValFmt_Int,
-				    sample_period);
+				    sample_period, metric_property_time);
   if (lush_metrics == 1) {
     int mid_idleness = hpcrun_new_metric();
     lush_agents->metric_time = metric_id;
@@ -519,7 +519,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     hpcrun_set_metric_info_and_period(mid_idleness, IDLE_METRIC_NAME,
 				      MetricFlags_ValFmt_Real,
-				      sample_period);
+				      sample_period, metric_property_time);
   }
 
   event = next_tok();
@@ -591,6 +591,7 @@ METHOD_FN(display_events)
 static int
 itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
+  static bool metrics_finalized = false;
   sample_source_t *self = &_itimer_obj;
 
   // If the interrupt came from inside our code, then drop the sample
@@ -605,11 +606,19 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     return 0;
   }
 
+  // Ensure metrics are finalized.
+  if (!metrics_finalized) {
+    hpcrun_finalize_metrics();
+    metrics_finalized = true;
+  }
+
   TMSG(ITIMER_HANDLER,"Itimer sample event");
+
+
 
   uint64_t metric_incr = 1; // default: one time unit
 
-#ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
+#if defined (USE_ELAPSED_TIME_FOR_WALLCLOCK) 
   uint64_t cur_time_us = 0;
   int ret = time_getTimeReal(&cur_time_us);
   if (ret != 0) {
@@ -622,7 +631,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
   sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_incr,
 					    0/*skipInner*/, 0/*isSync*/);
-  blame_shift_apply(sv.sample_node, metric_incr * sample_period);
+  blame_shift_apply(metric_id, sv.sample_node, metric_incr);
 
   if (hpcrun_is_sampling_disabled()) {
     TMSG(ITIMER_HANDLER, "No itimer restart, due to disabled sampling");

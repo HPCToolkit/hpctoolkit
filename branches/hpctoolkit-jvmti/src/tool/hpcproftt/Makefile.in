@@ -50,7 +50,6 @@
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
-pkglibdir = $(libdir)/@PACKAGE@
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 install_sh_DATA = $(install_sh) -c -m 644
 install_sh_PROGRAM = $(install_sh) -c
@@ -86,11 +85,13 @@ am__objects_1 = hpcproftt_bin-main.$(OBJEXT) \
 	hpcproftt_bin-Args.$(OBJEXT)
 am_hpcproftt_bin_OBJECTS = $(am__objects_1)
 hpcproftt_bin_OBJECTS = $(am_hpcproftt_bin_OBJECTS)
-am__DEPENDENCIES_1 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
+am__DEPENDENCIES_1 =
+@HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_3 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_ProfLean) \
-	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) \
-	$(HPCLIB_Support) $(HPCLIB_SupportLean)
-hpcproftt_bin_DEPENDENCIES = $(am__DEPENDENCIES_1)
+	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(am__DEPENDENCIES_2) \
+	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean)
+hpcproftt_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
 hpcproftt_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcproftt_bin_CXXFLAGS) \
 	$(CXXFLAGS) $(hpcproftt_bin_LDFLAGS) $(LDFLAGS) -o $@
@@ -147,7 +148,8 @@ DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 #############################################################################
 # Automake rules
 #############################################################################
-pkglibexecdir = $(libexecdir)/$(PACKAGE)
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AR = @AR@
@@ -155,6 +157,7 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BACK_END_LABEL = @BACK_END_LABEL@
 BOOST_INC = @BOOST_INC@
 CC = @CC@
 CCAS = @CCAS@
@@ -250,6 +253,9 @@ OPROFILE_COPY = @OPROFILE_COPY@
 OPROFILE_IFLAGS = @OPROFILE_IFLAGS@
 OPROFILE_LIB = @OPROFILE_LIB@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
+OPT_CUDA = @OPT_CUDA@
+OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
+OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
 OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
 OPT_LIBUNWIND_IFLAGS = @OPT_LIBUNWIND_IFLAGS@
 OPT_LIBUNWIND_LDFLAGS = @OPT_LIBUNWIND_LDFLAGS@
@@ -285,8 +291,18 @@ SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 VERSION = @VERSION@
 XED2_COPY = @XED2_COPY@
+XED2_HPCLINK_OPTS = @XED2_HPCLINK_OPTS@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
+XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 XED2_RUN_DIR = @XED2_RUN_DIR@
 XERCES = @XERCES@
 XERCES_COPY = @XERCES_COPY@
@@ -335,6 +351,8 @@ localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
+my_pkglibdir = @my_pkglibdir@
+my_pkglibexecdir = @my_pkglibexecdir@
 oldincludedir = @oldincludedir@
 papi_extra_libs = @papi_extra_libs@
 pdfdir = @pdfdir@
@@ -349,6 +367,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+wordsize_cflag = @wordsize_cflag@
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
 AUTOMAKE_OPTIONS = foreign
@@ -379,14 +398,6 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
@@ -408,6 +419,7 @@ MYLDADD = \
 	$(HPCLIB_ProfLean) \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) \
+	$(MY_LIB_XED) \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
@@ -415,6 +427,8 @@ MYLDADD = \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCPROFTT_LDFLAGS@
 
+@HOST_CPU_X86_FAMILY_FALSE@MY_LIB_XED = 
+@HOST_CPU_X86_FAMILY_TRUE@MY_LIB_XED = $(XED2_LIB_FLAGS)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 bin_SCRIPTS = hpcproftt
 hpcproftt_bin_SOURCES = $(MYSOURCES)

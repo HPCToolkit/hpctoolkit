@@ -242,6 +242,10 @@ AC_PROG_SED
 
 AC_PROG_CXXCPP()
 
+AC_ARG_VAR([LD],
+    [ld program for binaries produced by CC, only needed if
+     autoconf fails to find a suitable program])
+
 HPC_PROG_MPICXX(HPC_MPICXX_LIST)
 
 AC_PROG_INSTALL()
@@ -496,8 +500,13 @@ case "${host}" in
     ;;
 esac
 
+HOST_CPU_K1OM=no
+case "$host" in
+  *k1om* ) HOST_CPU_K1OM=yes ;;
+esac
 
 AM_CONDITIONAL([HOST_OS_LINUX],   [test "${HOST_OS}" = Linux])
+AM_CONDITIONAL([HOST_CPU_K1OM],   [test "${HOST_CPU_K1OM}" = yes])
 AM_CONDITIONAL([HOST_CPU_MIPS],   [test "${HOST_CPU_MIPS}" = yes])
 AM_CONDITIONAL([HOST_CPU_PPC],    [test "${HOST_CPU_PPC}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86],    [test "${HOST_CPU_X86}" = yes])
@@ -692,6 +701,77 @@ HOST_CXXFLAGS="${HOST_CXXFLAGS} ${my_opt_cxxflags}"
 HOST_HPCSTRUCT_LDFLAGS="${HOST_HPCSTRUCT_LDFLAGS} ${my_demangle_ldflags}"
 HOST_HPCPROF_LDFLAGS="${HOST_HPCPROF_LDFLAGS} ${my_demangle_ldflags}"
 HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
+
+
+#-------------------------------------------------
+# LD -- find correct arch type for ld
+#-------------------------------------------------
+
+# Autoconf gets the wrong arch type for ld in a cross compile, at
+# least on Intel MIC.  Here, we test that ld supports relocatable
+# linking (ld -r).  If not, then try other arch types until we find
+# one that works.
+
+test_ld_r()
+{
+  ld_cmd="$*"
+  AC_MSG_CHECKING([relocatable linking: $ld_cmd ])
+  rm -f "$obj3"
+  $ld_cmd -r "$obj1" "$obj2" -o "$obj3" >&AS_MESSAGE_LOG_FD 2>&1
+  if test $? -eq 0 && test -f "$obj3" ; then
+    AC_MSG_RESULT(yes)
+    return 0
+  else
+    AC_MSG_RESULT(no)
+    return 1
+  fi
+}
+
+src1="conftest.$$.1.c"
+src2="conftest.$$.2.c"
+obj1="conftest.$$.1.o"
+obj2="conftest.$$.2.o"
+obj3="conftest.$$.3.o"
+
+rm -f "$src1" "$src2" "$obj1" "$obj2" "$obj3"
+
+echo 'int foo(void) { return 2; }' >"$src1"
+echo 'int baz(void) { return 4; }' >"$src2"
+
+$CC $CFLAGS -c "$src1" -o "$obj1" >&AS_MESSAGE_LOG_FD 2>&1
+$CC $CFLAGS -c "$src2" -o "$obj2" >&AS_MESSAGE_LOG_FD 2>&1
+
+found_ld=no
+
+if test_ld_r $LD ; then
+  # autoconf's choice for LD works
+  found_ld=yes
+else
+  # try other arch types from LD -V
+  # be careful not to create a subshell (redirect fd)
+  ld_base=`echo $LD | awk '{ print $1 }'`
+
+  emul=false
+  arch_list=`$ld_base -V 2>&1`
+  for arch in $arch_list
+  do
+    if $emul && test_ld_r $ld_base -m $arch ; then
+      LD="$ld_base -m $arch"
+      found_ld=yes
+      break
+    fi
+    # skip output until 'Supported emulations:'
+    case "$arch" in
+      *emulat* ) emul=true ;;
+    esac
+  done
+fi
+
+rm -f "$src1" "$src2" "$obj1" "$obj2" "$obj3"
+
+if test "$found_ld" != yes ; then
+  AC_MSG_ERROR([unable to find correct arch type for ld])
+fi
 
 
 #-------------------------------------------------
@@ -913,9 +993,10 @@ hpctoolkit-externals.])
 fi
 
 host_wordsize=unknown
+wordsize_cflag=
 case "$host_sizeof_voidp" in
-  4 ) host_wordsize=32 ;;
-  8 ) host_wordsize=64 ;;
+  4 ) host_wordsize=32 ; wordsize_cflag='-m32' ;;
+  8 ) host_wordsize=64 ; wordsize_cflag='-m64' ;;
   * ) AC_MSG_WARN([unable to determine host wordsize]) ;;
 esac
 
@@ -924,6 +1005,13 @@ then
   AC_MSG_ERROR([mismatched wordsize: hpctoolkit is configured for \
 ${host_wordsize}-bit but externals is ${ext_wordsize}-bit])
 fi
+
+# On ia64, -m64 is an unrecognized option (and unnecessary).
+if test "$HOST_CPU_IA64" = yes ; then
+  wordsize_cflag=
+fi
+
+AC_SUBST([wordsize_cflag])
 
 
 #-------------------------------------------------
@@ -1275,7 +1363,11 @@ MONITOR=
 MONITOR_LIBS=
 HPC_MONITOR=
 
-if test "$use_externals" = yes ; then
+# By default, disable old-monitor and hpcrun-flat in a cross compile.
+# It can be reenabled with an explicit --with-monitor option.
+
+if test "$use_externals" = yes && test -z "$is_cross_compile"
+then
   MONITOR="$ext_old_monitor_prefix"
   case "$MONITOR" in
     /* )  OPT_WITH_MONITOR=yes
@@ -1357,7 +1449,6 @@ OPROFILE=no
 if test "$use_externals" = yes ; then
   OPROFILE="$ext_oprofile_prefix"
 fi
-
 AC_ARG_WITH([oprofile],
   [AS_HELP_STRING([--with-oprofile=PATH],
       [path to oprofile install directory])],
@@ -1370,6 +1461,7 @@ OPROFILE_BIN=
 OPROFILE_LIB=
 OPROFILE_IFLAGS=
 OPROFILE_COPY=no
+
 
 case "$OPROFILE" in
   /* )
@@ -1617,7 +1709,13 @@ AC_SUBST([SYMTABAPI_COPY_DYN])
 # Option: --with-xed2=PATH
 #-------------------------------------------------
 
+# Now support static or shared libxed.
+
 XED2=no
+XED2_STATIC=no
+XED2_LIB_FLAGS=
+XED2_HPCLINK_OPTS=
+
 if test "$use_externals" = yes ; then
   XED2="$ext_xed2_prefix"
 fi
@@ -1634,7 +1732,20 @@ case "${XED2}" in
   /* )
     if test -f "${XED2}/include/xed-interface.h" ; then :
     else
-        AC_MSG_ERROR([invalid xed2 directory: $XED2])
+      AC_MSG_ERROR([invalid xed2 directory: $XED2])
+    fi
+    if test -f "${XED2}/lib/libxed.a" ; then
+      XED2_STATIC=yes
+      XED2_LIB_FLAGS="${XED2}/lib/libxed.a"
+      XED2_HPCLINK_OPTS='-lxed'
+    elif test -f "${XED2}/lib/libxed.so" ; then
+      XED2_LIB_FLAGS="-L${XED2}/lib -lxed"
+    else
+      AC_MSG_ERROR([invalid xed2 directory: $XED2])
+    fi
+    if test -f "${XED2}/lib/libirc.a" ; then
+      XED2_LIB_FLAGS="${XED2_LIB_FLAGS} ${XED2}/lib/libirc.a"
+      XED2_HPCLINK_OPTS="$XED2_HPCLINK_OPTS -lirc"
     fi
     XED2_COPY=yes
     XED2_RUN_DIR="$hpc_ext_libs_dir"
@@ -1648,6 +1759,10 @@ case "${XED2}" in
     ;;
 esac
 
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2" = no ; then
+  AC_MSG_WARN([xed2 is required for x86 platforms])
+fi
+
 XED2_INC="${XED2}/include"
 XED2_LIB="${XED2}/lib"
 
@@ -1655,8 +1770,19 @@ AC_MSG_RESULT([$XED2])
 
 AC_SUBST([XED2_INC])
 AC_SUBST([XED2_LIB])
+AC_SUBST([XED2_LIB_FLAGS])
+AC_SUBST([XED2_HPCLINK_OPTS])
 AC_SUBST([XED2_COPY])
 AC_SUBST([XED2_RUN_DIR])
+
+# If Xed is shared, then hpcstruct gets a launch script.
+
+hpcstruct_launch_script=no
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
+  hpcstruct_launch_script=yes
+fi
+
+AM_CONDITIONAL(OPT_HPCSTRUCT_LAUNCH_SCRIPT, [test "$hpcstruct_launch_script" = yes])
 
 
 #-------------------------------------------------
@@ -1756,6 +1882,52 @@ AC_SUBST([JAVA_IFLAGS])
 
 AM_CONDITIONAL(OPT_ENABLE_JAVA, test "$OPT_ENABLE_JAVA" = yes)
 
+#-------------------------------------------------
+# enable-back-end
+#-------------------------------------------------
+
+# Build only those tools (hpcrun, fnbounds and prereqs) that run on
+# the back end in a cross-compile config.
+
+AC_ARG_ENABLE([back-end],
+  [AS_HELP_STRING([--enable-back-end],
+      [build only those tools needed to run hpcrun and hpclink
+       on the back-end compute nodes])],
+  [],
+  [enable_back_end=no])
+
+# disable the back-end label until the build method settles down.
+
+back_end_label=
+case "$enable_back_end" in
+  yes ) back_end_label=back-end
+        enable_back_end=yes
+        ;;
+  no )  ;;
+  * )   back_end_label="$enable_back_end"
+        enable_back_end=yes
+        ;;
+esac
+
+if test "$enable_back_end" = yes ; then
+  BACK_END_LABEL="-$back_end_label"
+fi
+back_end_label=
+BACK_END_LABEL=
+
+if test "$enable_back_end" = yes ; then
+  OPT_INSTALL_MONITOR=no
+  XERCES_COPY=no
+fi
+
+AC_SUBST([BACK_END_LABEL])
+
+AM_CONDITIONAL(OPT_BUILD_BACK_END,  [test $enable_back_end = yes])
+AM_CONDITIONAL(OPT_BUILD_FRONT_END, [test $enable_back_end = no])
+
+AM_CONDITIONAL(OPT_BUILD_LIB_ALL,  [test $enable_back_end = no])
+AM_CONDITIONAL(OPT_BUILD_TOOL_ALL, [test $enable_back_end = no])
+
 
 #-------------------------------------------------
 # enable-hpcrun-flat: Only build hpcrun if on Linux and PAPI is present
@@ -1770,17 +1942,16 @@ AC_ARG_ENABLE([hpcrun-flat],
 AC_MSG_CHECKING([whether to build hpcrun-flat])
 
 OPT_ENABLE_HPCRUN_FLAT="no"
-enable_hpcrun_flat_msg="${enable_hpcrun_flat}"
 
 if test "${enable_hpcrun_flat}" = yes \
-   && test "${OPT_PAPI_DYNAMIC}" = yes && test "${OPT_WITH_MONITOR}" = yes \
+   && test "${OPT_PAPI_DYNAMIC}" = yes \
+   && test "${OPT_WITH_MONITOR}" = yes \
    && test "${HOST_OS}" = "Linux"
 then
   OPT_ENABLE_HPCRUN_FLAT="yes"
-  enable_hpcrun_flat_msg="no (missing prerequisites)"
 fi
 
-AC_MSG_RESULT([${enable_hpcrun_flat_msg}])
+AC_MSG_RESULT([$OPT_ENABLE_HPCRUN_FLAT])
 AM_CONDITIONAL(OPT_ENABLE_HPCRUN_FLAT, test "${OPT_ENABLE_HPCRUN_FLAT}" = "yes")
 
 
@@ -1898,6 +2069,10 @@ AC_ARG_ENABLE([hpcrun-static],
   [OPT_ENABLE_HPCRUN_STATIC=yes])
 
 if test "$OPT_LIBMONITOR_STATIC" = no ; then
+  OPT_ENABLE_HPCRUN_STATIC=no
+fi
+
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
   OPT_ENABLE_HPCRUN_STATIC=no
 fi
 
@@ -2315,6 +2490,96 @@ AC_SUBST(OPT_UPC_LDFLAGS)
 
 
 #-------------------------------------------------
+# Option: --with-cuda=PATH
+#-------------------------------------------------
+
+# CUDA support for CPU-GPU-Blame-shifting
+# CUDA default install path is /usr/local/cuda
+# Include files will be in CUDADIR/include
+# CUDA 64 bit libraries under CUDADIR/lib64 and 32 bit in CUDADIR/lib
+# We need CUPTI for callbacks which is in CUDADIR/extras/CUPTI
+# CUPTI 64 bit libraries under CUPTIDIR/lib64 and 32 bit in CUPTIDIR/lib
+
+
+if test "${host_sizeof_voidp}" = "4"; then
+    CUDA_LIB_SEARCH_ORDER="lib32 lib"
+else
+    CUDA_LIB_SEARCH_ORDER="lib64 lib"
+fi
+
+
+OPT_HAVE_CUDA=no
+OPT_CUDA=
+OPT_CUDA_INCPATH=
+OPT_CUDA_LDFLAGS=
+OPT_CUDA_LIBPATH=
+OPT_CUPTI_INCPATH=
+OPT_CUPTI_LIBPATH=
+OPT_CUPTI_LDFLAGS=
+
+AC_ARG_WITH([cuda],
+  AS_HELP_STRING([--with-cuda=PATH],
+                 [use given CUDA installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_CUDA=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cuda requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUDA=${withval}
+   fi])
+
+if test "$OPT_HAVE_CUDA" = "yes" ; then
+ AC_ARG_WITH([cuda-include],
+  AS_HELP_STRING([--with-cuda-include=PATH],
+                 [use given CUDA include (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cuda-include requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUDA_INCPATH=${withval}
+  fi],
+
+     [if test -f ${OPT_CUDA}/include/cuda.h; then
+         OPT_CUDA_INCPATH=${OPT_CUDA}/include
+     else
+         AC_MSG_ERROR(['${OPT_CUDA}/include/cuda.h' not found])
+     fi])  
+
+  OPT_CUDA_IFLAGS="-I${OPT_CUDA_INCPATH} "
+
+  AC_ARG_WITH([cuda-lib],
+  AS_HELP_STRING([--with-cuda-lib=PATH],
+                 [use given CUDA lib (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cuda-lib requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUDA_LIBPATH=${withval}
+   fi], 
+  
+   [for lib in ${CUDA_LIB_SEARCH_ORDER} ; do
+    if test -f "${OPT_CUDA}/${lib}/libcudart.so" 
+    then
+      OPT_CUDA_LIBPATH="${OPT_CUDA}/${lib}"
+      break
+    fi
+  done 
+     if test  -z "${OPT_CUDA_LIBPATH}" ; then
+       AC_MSG_ERROR([libcudart.so not found])
+     fi
+   ] )
+
+  OPT_CUDA_LDFLAGS="-L${OPT_CUDA_LIBPATH} -lcudart "
+
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_CUDA], [test "$OPT_HAVE_CUDA" = yes])
+
+AC_SUBST([OPT_CUDA])
+AC_SUBST([OPT_CUDA_IFLAGS])
+AC_SUBST([OPT_CUDA_LDFLAGS])
+
+#-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
 #-------------------------------------------------
 
@@ -2337,6 +2602,7 @@ AC_MSG_RESULT([${OPT_ENABLE_DATACENTRIC_TRACE}])
 if test "${OPT_ENABLE_DATACENTRIC_TRACE}" = "yes" ; then
   AC_DEFINE([DATACENTRIC_TRACE], [1], [Data-centric tracing])
 fi
+
 
 
 #-------------------------------------------------
@@ -2433,6 +2699,19 @@ AM_CONDITIONAL(OPT_ENABLE_DEVTOOLS, test "${OPT_ENABLE_DEVTOOLS}" = "yes")
 
 
 #----------------------------------------------------------------------------
+# Adjust some install paths for Makefiles
+#----------------------------------------------------------------------------
+
+my_pkglibdir='$(libdir)/$(PACKAGE)'
+my_pkglibexecdir='$(libexecdir)/$(PACKAGE)'
+BACK_END_LABEL=
+
+AC_SUBST([my_pkglibdir])
+AC_SUBST([my_pkglibexecdir])
+AC_SUBST([BACK_END_LABEL])
+
+
+#----------------------------------------------------------------------------
 # Makefiles to create
 #----------------------------------------------------------------------------
 
@@ -2494,6 +2773,8 @@ AC_CONFIG_FILES([src/tool/hpcprof-flat/hpcprof-flat],
   [chmod +x src/tool/hpcprof-flat/hpcprof-flat])
 AC_CONFIG_FILES([src/tool/hpcproftt/hpcproftt],
   [chmod +x src/tool/hpcproftt/hpcproftt])
+AC_CONFIG_FILES([src/tool/hpcstruct/hpcstruct],
+  [chmod +x src/tool/hpcstruct/hpcstruct])
 
 AC_SUBST_FILE([export_hpctoolkit])
 export_hpctoolkit="${srcdir}/config/export-hpctoolkit"
@@ -2501,6 +2782,15 @@ export_hpctoolkit="${srcdir}/config/export-hpctoolkit"
 AC_CONFIG_COMMANDS()
 
 AC_OUTPUT()
+
+dnl # Hack to rename the scripts for a back-end build.
+dnl if test "$enable_back_end" = yes ; then
+dnl   dir=src/tool/hpcrun/scripts
+dnl   for file in hpcrun hpclink
+dnl   do
+dnl     cp -f "${dir}/${file}" "${dir}/${file}${BACK_END_LABEL}"
+dnl   done
+dnl fi
 
 
 #-------------------------------------------------
@@ -2549,13 +2839,14 @@ AC_MSG_NOTICE([  libelf:       ${LIBELF}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
 AC_MSG_NOTICE([  monitor/old:  ${MONITOR}])
 AC_MSG_NOTICE([  libunwind:    ${OPT_LIBUNWIND}])
-AC_MSG_NOTICE([  OpenAnalysis: ${OA}])
 AC_MSG_NOTICE([  oprofile:     ${OPROFILE}])
+AC_MSG_NOTICE([  OpenAnalysis: ${OA}])
 AC_MSG_NOTICE([  symtabAPI:    ${SYMTABAPI}])
 AC_MSG_NOTICE([  xed2:         ${XED2}])
 AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
 AC_MSG_NOTICE([  java:         ${JAVA}])
+AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
 
 if test "$warn_non_gcc" = yes ; then
