@@ -9,6 +9,8 @@
 #include "MPICommunication.hpp"
 #include "Constants.hpp"
 #include "DebugUtils.hpp"
+#include "Server.hpp"
+#include "Slave.hpp"
 
 #include <mpi.h>
 
@@ -135,9 +137,21 @@ ServerType Communication::basicInit(int argc, char** argv)
 		return SLAVE;
 	}
 }
-
+void Communication::run(ServerType type)
+{
+	if (type == TraceviewerServer::MASTER)
+		TraceviewerServer::Server();
+	else if (type == TraceviewerServer::SLAVE)
+		TraceviewerServer::Slave();
+}
 void Communication::closeServer()
 {
+	if (COMM_WORLD.Get_rank()==MPICommunication::SOCKET_SERVER)
+	{//The slaves participate in the bcast in the slave class before they parse it
+		MPICommunication::CommandMessage serverShutdown;
+		serverShutdown.command = DONE;
+		COMM_WORLD.Bcast(&serverShutdown, sizeof(serverShutdown), MPI_PACKED, MPICommunication::SOCKET_SERVER);
+	}
 	MPI::Finalize();
 }
 }

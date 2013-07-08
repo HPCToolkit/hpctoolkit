@@ -62,14 +62,15 @@
 #include <string.h>
 #include <list>
 #include <errno.h>
-#include <iostream>
+
+#include "DebugUtils.hpp"
 #include "VersatileMemoryPage.hpp"
 
 namespace TraceviewerServer
 {
 	static list<VersatileMemoryPage*> mostRecentlyUsed;
 	static int MAX_PAGES_TO_ALLOCATE_AT_ONCE = 0;
-	static int PagesCurrentlyAllocatedCount = 0;
+	static int pagesCurrentlyAllocatedCount = 0;
 	VersatileMemoryPage::VersatileMemoryPage(FileOffset _startPoint, int _size, int _index, FileDescriptor _file)
 	{
 		startPoint = _startPoint;
@@ -104,21 +105,21 @@ namespace TraceviewerServer
 
 	void VersatileMemoryPage::mapPage()
 	{
-		#if DEBUG > 1
-		cout<< "Mapping page "<< index<< " "<<PagesCurrentlyAllocatedCount << " / " << MAX_PAGES_TO_ALLOCATE_AT_ONCE << endl;
-		#endif
+
+		DEBUGCOUT(1) << "Mapping page "<< index<< " "<<pagesCurrentlyAllocatedCount << " / " << MAX_PAGES_TO_ALLOCATE_AT_ONCE << endl;
+
 		if (isMapped)
 		{
 			cerr << "Trying to double map!"<<endl;
 			return;
 		}
-		if (PagesCurrentlyAllocatedCount >= MAX_PAGES_TO_ALLOCATE_AT_ONCE)
+		if (pagesCurrentlyAllocatedCount >= MAX_PAGES_TO_ALLOCATE_AT_ONCE)
 		{
 
 			VersatileMemoryPage* toRemove = mostRecentlyUsed.back();
-#if DEBUG > 1
-			cout<<"Kicking " << toRemove->index << " out"<<endl;
-#endif
+
+			DEBUGCOUT(1)<<"Kicking " << toRemove->index << " out"<<endl;
+
 
 			if (toRemove->isMapped != true)
 			{
@@ -136,7 +137,7 @@ namespace TraceviewerServer
 			fflush(NULL);
 			exit(-1);
 		}
-		PagesCurrentlyAllocatedCount++;
+		pagesCurrentlyAllocatedCount++;
 		isMapped = true;
 	}
 	void VersatileMemoryPage::unmapPage()
@@ -147,11 +148,11 @@ namespace TraceviewerServer
 			return;
 		}
 		munmap(page, size);
-		PagesCurrentlyAllocatedCount--;
+		pagesCurrentlyAllocatedCount--;
 		isMapped = false;
-#if DEBUG > 1
-		cout << "Unmapped a page"<<endl;
-#endif
+
+		DEBUGCOUT(1) << "Unmapped a page"<<endl;
+
 	}
 	void VersatileMemoryPage::putMeOnTop()
 	{
@@ -161,7 +162,9 @@ namespace TraceviewerServer
 			mostRecentlyUsed.push_front(this);
 			return;
 		}
-		if (mostRecentlyUsed.front()->index == index)//This is already the one on top, so we're done
+		VersatileMemoryPage* front = *mostRecentlyUsed.begin();
+
+		if (front->index == index)//This is already the one on top, so we're done
 			return;
 		else
 		{

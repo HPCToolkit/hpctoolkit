@@ -36,6 +36,7 @@ public:
 	static void sendFilter(BinaryRepresentationOfFilter filt);
 
 	static ServerType basicInit(int argc, char** argv);
+	static void run(ServerType type);
 	static void closeServer();
 };
 }

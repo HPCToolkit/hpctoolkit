@@ -58,7 +58,6 @@
 //***************************************************************************
 
 #include "Server.hpp"
-#include "Slave.hpp"
 #include "Communication.hpp"
 #include "Constants.hpp"
 #include "Args.hpp"
@@ -77,12 +76,9 @@ int main(int argc, char *argv[])
 
 	try
 	{
-		if (type == TraceviewerServer::MASTER)
-			TraceviewerServer::Server();
-		else if (type == TraceviewerServer::SLAVE)
-			TraceviewerServer::Slave();
+		TraceviewerServer::Communication::run(type);
 	}
-	catch (int e)
+	catch (TraceviewerServer::ErrorCode& e)
 	{//We had some sort of error. If it hasn't been handled by this point, we just close.
 		DEBUGCOUT(1) << "Error on closing was " << hex << e << endl;
 	}

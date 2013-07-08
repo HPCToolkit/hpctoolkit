@@ -2,8 +2,8 @@
 
 ## * BeginRiceCopyright *****************************************************
 ##
-## $HeadURL$
-## $Id$
+## $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Makefile.am $
+## $Id: Makefile.am 4283 2013-07-02 20:13:13Z felipet1326@gmail.com $
 ##
 ## --------------------------------------------------------------------------
 ## Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 #############################################################################
 ##
 ## File:
-##   $HeadURL$
+##   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Makefile.am $
 ##
 ## Description:
 ##   *Process with automake to produce Makefile.in*
@@ -71,23 +71,24 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-Args.cpp \
-BaseDataFile.cpp \
-Communication-SingleThreaded.cpp \
-CompressingDataSocketLayer.cpp \
-DBOpener.cpp \
-DataOutputFileStream.cpp \
-DataSocketStream.cpp \
-FilteredBaseData.cpp \
-LargeByteBuffer.cpp \
-MergeDataFiles.cpp \
-ProcessTimeline.cpp \
-ProgressBar.cpp \
-Server.cpp \
-SpaceTimeDataController.cpp \
-TraceDataByRank.cpp \
-VersatileMemoryPage.cpp \
-main.cpp
+../Args.cpp \
+../BaseDataFile.cpp \
+../Communication-MPI.cpp \
+../CompressingDataSocketLayer.cpp \
+../DBOpener.cpp \
+../DataOutputFileStream.cpp \
+../DataSocketStream.cpp \
+../FilteredBaseData.cpp \
+../LargeByteBuffer.cpp \
+../MergeDataFiles.cpp \
+../ProcessTimeline.cpp \
+../ProgressBar.cpp \
+../Server.cpp \
+../Slave.cpp \
+../SpaceTimeDataController.cpp \
+../TraceDataByRank.cpp \
+../VersatileMemoryPage.cpp \
+../main.cpp
 
 
 
@@ -111,15 +112,17 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
+CXX = $(MPICXX)
 
-bin_PROGRAMS = hpcserver
+bin_PROGRAMS = hpcserver-mpi
 
-hpcserver_CXX	   = $(CXX)
-hpcserver_SOURCES  = $(MYSOURCES) $(THREADSOURCES)
-hpcserver_CFLAGS   = $(MYCFLAGS)
-hpcserver_CXXFLAGS = $(MYCXXFLAGS)
-hpcserver_LDFLAGS  = $(MYLDFLAGS)
-hpcserver_LDADD    = $(MYLDADD)
+
+hpcserver_mpi_CXX = $(MPICXX)
+hpcserver_mpi_SOURCES  = $(MYSOURCES) $(MPISOURCES)
+hpcserver_mpi_CFLAGS   = $(MYCFLAGS)
+hpcserver_mpi_CXXFLAGS = $(MYCXXFLAGS)
+hpcserver_mpi_LDFLAGS  = $(MYLDFLAGS)
+hpcserver_mpi_LDADD    = $(MYLDADD)
 
 
 MOSTLYCLEANFILES = $(MYCLEAN)

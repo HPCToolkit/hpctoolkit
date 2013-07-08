@@ -149,14 +149,11 @@ namespace TraceviewerServer
 	
 	DataSocketStream::~DataSocketStream()
 	{
+		fclose(file);
 		shutdown(socketDesc, SHUT_RDWR);
 		close(socketDesc);
 		close(unopenedSocketFD);
 	}
-	/*DataSocketStream& DataSocketStream::operator=(const DataSocketStream& rhs)
-	 {
-	 return *this;
-	 }*/
 
 	void DataSocketStream::writeInt(int toWrite)
 	{
@@ -248,6 +245,8 @@ namespace TraceviewerServer
 		Msg[Len] = '\0';
 
 		string SF(Msg);
+		//The string constructor copies the array, and we don't want to leak the memory
+		delete[] Msg;
 		return SF;
 	}
 

@@ -75,6 +75,9 @@ namespace TraceviewerServer
 		bufferIndex = 0;
 		posInCompBuffer = 0;
 
+		inBuf = new char[BUFFER_SIZE];
+		outBuf = new unsigned char[BUFFER_SIZE];
+
 		compressor.zalloc = Z_NULL;
 		compressor.zfree = Z_NULL;
 		compressor.opaque = Z_NULL;
@@ -145,8 +148,8 @@ namespace TraceviewerServer
 	CompressingDataSocketLayer::~CompressingDataSocketLayer()
 	{
 		deflateEnd(&compressor);
-		//delete[] (Buffer);
-		//delete(Compressor);
+		delete[] inBuf;
+		delete[] outBuf;
 	}
 
 } /* namespace TraceviewerServer */

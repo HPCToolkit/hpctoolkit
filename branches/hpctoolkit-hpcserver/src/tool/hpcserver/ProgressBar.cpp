@@ -59,7 +59,9 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <cstdio>
+
 #include "ProgressBar.hpp"
+#include "DebugUtils.hpp"
 
 ProgressBar::ProgressBar(string name, ulong tasksToComplete) {
 
@@ -73,9 +75,8 @@ ProgressBar::ProgressBar(string name, ulong tasksToComplete) {
 	if (ret == -1 || w.ws_col == 0)
 		w.ws_col = DEFAULT_TERMINAL_WIDTH;
 	usableWidth = w.ws_col - 10 - name.length();
-	#if DEBUG > 2
-	printf("Usable width: %d\n", usableWidth);
-	#endif
+	DEBUGCOUT(2) << "Usable width: " << usableWidth << endl;
+
 	update();
 }
 void ProgressBar::incrementProgress(ulong tasks){

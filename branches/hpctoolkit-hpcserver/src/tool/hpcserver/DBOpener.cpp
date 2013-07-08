@@ -123,9 +123,7 @@ namespace TraceviewerServer
 
 			DEBUGCOUT(2) << "\tTrying to open "<<location->fileXML<<endl;
 
-			FILE* XMLfile = fopen(location->fileXML.c_str(), "r");
-			//Equivalent of canRead, I believe.
-			if (XMLfile != NULL)
+			if (FileUtils::exists(location->fileXML))
 			{
 
 				DEBUGCOUT(2) <<"\tXML file is not null"<<endl;

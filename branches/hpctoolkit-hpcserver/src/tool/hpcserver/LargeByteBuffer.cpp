@@ -59,6 +59,7 @@
 #include "LargeByteBuffer.hpp"
 #include "Constants.hpp"
 #include "FileUtils.hpp"
+#include "DebugUtils.hpp"
 
 #include <fcntl.h>
 #include <sys/types.h>
@@ -106,7 +107,6 @@ namespace TraceviewerServer
 		int PartialPageSize = fileSize % mmPageSize;
 		numPages = FullPages + (PartialPageSize == 0 ? 0 : 1);
 
-
 		FileDescriptor fd = open(sPath.c_str(), O_RDONLY);
 
 		FileOffset sizeRemaining = fileSize;
@@ -115,7 +115,7 @@ namespace TraceviewerServer
 		{
 			FileOffset mapping_len = min( mmPageSize, sizeRemaining);
 
-			masterBuffer.push_back(*(new VersatileMemoryPage(mmPageSize*i , mapping_len, i, fd)));
+			masterBuffer.push_back(VersatileMemoryPage(mmPageSize*i , mapping_len, i, fd));
 
 			sizeRemaining -= mapping_len;
 

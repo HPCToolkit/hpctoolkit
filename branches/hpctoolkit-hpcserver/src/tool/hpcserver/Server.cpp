@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*-
+/// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -87,16 +87,12 @@ namespace TraceviewerServer
 	Server::Server()
 	{
 		DataSocketStream* socketptr = NULL;
-		try
-		{
-			//Port 21590 is used by vofr-gateway. Do we want to change it?
-			socketptr = new DataSocketStream(mainPortNumber, true);
 
-		} catch (std::exception& e)
-		{
-			std::cerr << e.what() << std::endl;
-			throw ERROR_STREAM_OPEN_FAILED;
-		}
+		//Port 21590 is used by vofr-gateway. Do we want to change it?
+		DataSocketStream socket(mainPortNumber, true);
+		socketptr = &socket;
+		//socketptr = new DataSocketStream(mainPortNumber, true);
+
 		mainPortNumber = socketptr->getPort();
 		cout << "Received connection" << endl;
 
@@ -303,8 +299,9 @@ namespace TraceviewerServer
 		} while (flush != Z_FINISH);
 		deflateEnd(&compressor);
 
-		DEBUGCOUT(2)<<"Compressed XML Size: "<<compressed.size()<<endl;
+		fclose(in);
 
+		DEBUGCOUT(2)<<"Compressed XML Size: "<<compressed.size()<<endl;
 	}
 
 	void Server::checkProtocolVersions(DataSocketStream* receiver)
@@ -403,14 +400,14 @@ namespace TraceviewerServer
 			filt.threadMin = stream->readInt();
 			filt.threadMax = stream->readInt();
 			filt.threadStride = stream->readInt();
-			cout << filt.processMin <<":" << filt.processMax <<":"<<filt.processStride<<",";
-			cout << filt.threadMax <<":" << filt.threadMax <<":"<<filt.threadStride<<endl;
+			DEBUGCOUT(2) << "Filter proc: " << filt.processMin <<":" << filt.processMax <<":"<<filt.processStride<<",";
+			DEBUGCOUT(2) << "Filter thread: " << filt.threadMax <<":" << filt.threadMax <<":"<<filt.threadStride<<endl;
 
 			Communication::sendFilter(filt);
 
 			filters.add(Filter(filt));
-			controller->applyFilters(filters);
 		}
+		controller->applyFilters(filters);
 	}
 
 } /* namespace TraceviewerServer */

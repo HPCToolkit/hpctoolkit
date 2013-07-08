@@ -43,7 +43,10 @@ enum Header {
 	SLAVE_DONE = 0x534C444E
 };
 
-
+enum ServerNextAction {
+	CLOSE_SERVER = 0,
+	START_NEW_CONNECTION_IMMEDIATELY=1
+};
 
 	//Yes, these are almost entirely arbitrary
 enum ErrorCode {
