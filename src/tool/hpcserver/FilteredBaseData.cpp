@@ -81,6 +81,7 @@ FilteredBaseData::~FilteredBaseData() {
 
 void FilteredBaseData::setFilters(FilterSet _filter)
 {
+	DEBUGCOUT(1) << "setting filters" <<endl;
 	currentlyAppliedFilter = _filter;
 	filter();
 }

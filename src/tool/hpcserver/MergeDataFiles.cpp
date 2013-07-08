@@ -61,7 +61,8 @@
 #include "ByteUtilities.hpp"
 #include "Constants.hpp"
 #include "FileUtils.hpp"
-#include <iostream>
+#include "DebugUtils.hpp"
+
 #include <string>
 #include <sstream>
 #include <algorithm>
@@ -77,15 +78,14 @@ namespace TraceviewerServer
 		 int lastDot = globInputFile.find_last_of('.');
 		 string suffix = globInputFile.substr(lastDot);
 
-		#if DEBUG > 2
-		cout << "Checking to see if " << outputFile << " exists" << endl;
-		#endif
+		DEBUGCOUT(2) << "Checking to see if " << outputFile << " exists" << endl;
+
 
 		if (FileUtils::exists(outputFile))
 		{
-			#if DEBUG > 2
-			cout << "Exists" << endl;
-			#endif
+
+			DEBUGCOUT(2) << "Exists" << endl;
+
 			if (isMergedFileCorrect(&outputFile))
 				return SUCCESS_ALREADY_CREATED;
 			// the file exists but corrupted. In this case, we have to remove and create a new one
@@ -93,9 +93,8 @@ namespace TraceviewerServer
 			return STATUS_UNKNOWN;
 			//remove(OutputFile.string().c_str());
 		}
-		#if DEBUG > 2
-		cout << "Doesn't exist" << endl;
-		#endif
+
+		DEBUGCOUT(2) << "Doesn't exist" << endl;
 		// check if the files in glob patterns is correct
 
 		if (!atLeastOneValidFile(directory))

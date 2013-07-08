@@ -63,9 +63,6 @@
 #include "DataSocketStream.hpp"
 #include "SpaceTimeDataController.hpp"
 
-#define START_NEW_CONNECTION_IMMEDIATELY 1
-#define CLOSE_SERVER 0
-
 
 
 namespace TraceviewerServer

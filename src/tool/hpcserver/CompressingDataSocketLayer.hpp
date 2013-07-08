@@ -90,8 +90,8 @@ namespace TraceviewerServer
 		void softFlush();
 		int bufferIndex;
 		z_stream compressor;
-		char inBuf[BUFFER_SIZE];
-		unsigned char outBuf[BUFFER_SIZE];
+		char* inBuf;
+		unsigned char* outBuf;
 		int posInCompBuffer;
 
 	};

@@ -10,6 +10,8 @@
 #include "ProcessTimeline.hpp"
 #include "CompressingDataSocketLayer.hpp"
 #include "ImageTraceAttributes.hpp"
+#include "DebugUtils.hpp"
+#include "Server.hpp"
 
 #include <vector>
 
@@ -25,17 +27,17 @@ void Communication::sendParseOpenDB(string pathToDB) {}
 void Communication::sendStartGetData(SpaceTimeDataController* contr, int processStart, int processEnd,
 			Time timeStart, Time timeEnd, int verticalResolution, int horizontalResolution)
 {
-	ImageTraceAttributes correspondingAttributes;
+	//Don't leak memory:
 
-	correspondingAttributes.begProcess = processStart;
-	correspondingAttributes.endProcess = processEnd;
-	correspondingAttributes.numPixelsH = horizontalResolution;
-	correspondingAttributes.numPixelsV = verticalResolution;
-	correspondingAttributes.begTime =  timeStart;
-	correspondingAttributes.endTime =  timeEnd;
-	correspondingAttributes.lineNum = 0;
+	ImageTraceAttributes* correspondingAttributes = contr->attributes;
 
-	contr->attributes = &correspondingAttributes;
+	correspondingAttributes->begProcess = processStart;
+	correspondingAttributes->endProcess = processEnd;
+	correspondingAttributes->numPixelsH = horizontalResolution;
+	correspondingAttributes->numPixelsV = verticalResolution;
+	correspondingAttributes->begTime =  timeStart;
+	correspondingAttributes->endTime =  timeEnd;
+	correspondingAttributes->lineNum = 0;
 
 
 }
@@ -60,9 +62,8 @@ void Communication::sendEndGetData(DataSocketStream* stream, ProgressBar* prog, 
 		CompressingDataSocketLayer comprStr;
 
 		vector<TimeCPID>::iterator it;
-		#if DEBUG > 2
-		cout << "Sending process timeline with " << data.size() << " entries" << endl;
-		#endif
+		DEBUGCOUT(2) << "Sending process timeline with " << data.size() << " entries" << endl;
+
 
 		Time currentTime = data[0].timestamp;
 		for (it = data.begin(); it != data.end(); ++it)
@@ -94,6 +95,11 @@ void Communication::sendFilter(BinaryRepresentationOfFilter filt)
 ServerType Communication::basicInit(int argc, char** argv)
 {
 	return MASTER;
+}
+void Communication::run(ServerType type)
+{
+	//type == MASTER
+	TraceviewerServer::Server();
 }
 void Communication::closeServer()
 {

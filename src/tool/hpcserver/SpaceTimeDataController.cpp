@@ -70,7 +70,11 @@ namespace TraceviewerServer
 	SpaceTimeDataController::SpaceTimeDataController(FileData* locations)
 	{
 		attributes = new ImageTraceAttributes();
-		oldAttributes = new ImageTraceAttributes();
+
+		//This could potentially be a problem if the header size is not the
+		//default because we might not be able to read the number of ranks correctly.
+		//For now, it's not an issue, and the data dependencies make changing this
+		//complicated.
 		dataTrace = new FilteredBaseData(locations->fileTrace, DEFAULT_HEADER_SIZE);
 		height = dataTrace->getNumberOfRanks();
 		experimentXML = locations->fileXML;
@@ -86,12 +90,6 @@ namespace TraceviewerServer
 		minBegTime = _minBegTime;
 		maxEndTime = _maxEndTime;
 		headerSize = _headerSize;
-
-		//if (dataTrace != NULL)
-		//{
-			delete (dataTrace);
-			dataTrace = new FilteredBaseData(fileTrace, headerSize);
-		//}
 	}
 
 	int SpaceTimeDataController::getNumRanks()
@@ -132,13 +130,13 @@ namespace TraceviewerServer
 
 
 		//Taken straight from TimelineThread
-		ProcessTimeline* NextTrace = getNextTrace();
-		while (NextTrace != NULL)
+		ProcessTimeline* nextTrace = getNextTrace();
+		while (nextTrace != NULL)
 		{
-			NextTrace->readInData();
-			addNextTrace(NextTrace);
+			nextTrace->readInData();
+			addNextTrace(nextTrace);
 
-			NextTrace = getNextTrace();
+			nextTrace = getNextTrace();
 		}
 	}
 
@@ -154,20 +152,13 @@ namespace TraceviewerServer
 	void SpaceTimeDataController::resetTraces()
 	{
 
-		int NumTraces = min(attributes->numPixelsV,
+		int numTraces = min(attributes->numPixelsV,
 				attributes->endProcess - attributes->begProcess);
 
-		if (tracesInitialized)
-		{
-			for (int var = 0; var < tracesLength; var++)
-			{
-				delete (traces[var]);
-			}
-			delete traces;
-		}
+		deleteTraces();
 
-		traces = new ProcessTimeline*[NumTraces];
-		tracesLength = NumTraces;
+		traces = new ProcessTimeline*[numTraces];
+		tracesLength = numTraces;
 		tracesInitialized = true;
 
 	}
@@ -175,21 +166,28 @@ namespace TraceviewerServer
 	{
 		dataTrace->setFilters(filters);
 	}
-
-	SpaceTimeDataController::~SpaceTimeDataController()
+	void SpaceTimeDataController::deleteTraces()
 	{
-#ifndef USE_MPI //The MPI implementation actually doesn't use the Traces array at all! It does call GetNextTrace, but ChangedBounds is always true!
 		if (tracesInitialized) {
 
 			for (int var = 0; var < tracesLength; var++)
 			{
 				delete (traces[var]);
 			}
-			delete traces;
-			traces = NULL;
-			tracesInitialized = false;
+			delete[] traces;
 		}
-#endif
+		traces = NULL;
+		tracesInitialized = false;
+	}
+	SpaceTimeDataController::~SpaceTimeDataController()
+	{
+		delete attributes;
+		delete dataTrace;
+
+		//The MPI implementation actually doesn't use the Traces array at all!
+		//It does call getNextTrace, but changedBounds is always true so
+		//tracesInitialized is always false for MPI
+		deleteTraces();
 
 	}
 

@@ -92,8 +92,7 @@ namespace TraceviewerServer
 		int tracesLength;
 	private:
 		void resetTraces();
-
-		ImageTraceAttributes* oldAttributes;
+		void deleteTraces();
 
 		FilteredBaseData* dataTrace;
 		int headerSize;

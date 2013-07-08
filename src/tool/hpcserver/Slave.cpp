@@ -207,23 +207,23 @@ namespace TraceviewerServer
 
 		correspondingAttributes.lineNum = autoskip;
 
-		controller->attributes = &correspondingAttributes;
+		*controller->attributes = correspondingAttributes;
 
-		ProcessTimeline* NextTrace = controller->getNextTrace();
+		ProcessTimeline* nextTrace = controller->getNextTrace();
 		int LinesSentCount = 0;
 		int waitcount = 0;
 
 		//If it were NULL, the no rank check would have caught it.
-		assert (NextTrace != NULL);
+		assert (nextTrace != NULL);
 
 
-		while (NextTrace != NULL)
+		while (nextTrace != NULL)
 		{
 
-			if ((NextTrace->data->rank < LowerInclusiveBound)
-					|| (NextTrace->data->rank > UpperInclusiveBound))
+			if ((nextTrace->data->rank < LowerInclusiveBound)
+					|| (nextTrace->data->rank > UpperInclusiveBound))
 			{
-				NextTrace = controller->getNextTrace();
+				nextTrace = controller->getNextTrace();
 				waitcount++;
 				continue;
 			}
@@ -234,12 +234,12 @@ namespace TraceviewerServer
 
 				waitcount = 0;
 			}
-			NextTrace->readInData();
+			nextTrace->readInData();
 
-			vector<TimeCPID> ActualData = *NextTrace->data->listCPID;
+			vector<TimeCPID> ActualData = *nextTrace->data->listCPID;
 			MPICommunication::ResultMessage msg;
 			msg.tag = SLAVE_REPLY;
-			msg.data.line = NextTrace->line();
+			msg.data.line = nextTrace->line();
 			int entries = ActualData.size();
 			msg.data.entries = entries;
 
@@ -250,22 +250,23 @@ namespace TraceviewerServer
 
 			int i = 0;
 
-			unsigned char* outputBuffer;
+			unsigned char* outputBuffer = NULL;
+			CompressingDataSocketLayer* compr = NULL;
 			int outputBufferLen;
 			if (useCompression)
 			{
-				CompressingDataSocketLayer compr;
+				compr = new CompressingDataSocketLayer();
 
 				Time currentTimestamp = msg.data.begtime;
 				for (i = 0; i < entries; i++)
 				{
-					compr.writeInt((int) (ActualData[i].timestamp - currentTimestamp));
-					compr.writeInt(ActualData[i].cpid);
+					compr->writeInt((int) (ActualData[i].timestamp - currentTimestamp));
+					compr->writeInt(ActualData[i].cpid);
 					currentTimestamp = ActualData[i].timestamp;
 				}
-				compr.flush();
-				outputBufferLen = compr.getOutputLength();
-				outputBuffer = compr.getOutputBuffer();
+				compr->flush();
+				outputBufferLen = compr->getOutputLength();
+				outputBuffer = compr->getOutputBuffer();
 			}
 			else
 			{
@@ -290,17 +291,21 @@ namespace TraceviewerServer
 
 			COMM_WORLD.Send(outputBuffer, outputBufferLen, MPI_BYTE,
 					MPICommunication::SOCKET_SERVER, 0);
-			if (!useCompression)
-			{
+
+			//We can't free inside the first if statement because we still need to send, so free here
+			if (useCompression)
+				delete compr;
+			else
 				delete[] outputBuffer;
-			}
+
 			LinesSentCount++;
 
 			if (LinesSentCount % 100 == 0)
 				DEBUGCOUT(2) << trueRank << " Has sent " << LinesSentCount
 						<< " ranks." << endl;
 
-			NextTrace = controller->getNextTrace();
+			delete nextTrace;
+			nextTrace = controller->getNextTrace();
 		}
 		return LinesSentCount;
 	}
