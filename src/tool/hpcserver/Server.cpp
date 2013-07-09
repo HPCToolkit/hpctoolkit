@@ -69,10 +69,6 @@
 
 #include <iostream>
 #include <cstdio>
-#include <vector>
-
-#include "zlib.h"
-
 
 using namespace std;
 
@@ -226,26 +222,16 @@ namespace TraceviewerServer
 			xmlSocket->acceptSocket();
 		}
 
-		xmlSocket->writeInt(EXML);
-		vector<char> compressedXML;
-		compressXML(compressedXML);
-		xmlSocket->writeInt(compressedXML.size());
 
-		//To be more C++-ish, DataSocketStream would have an overload that takes
-		//an iterator. Unfortunately, behind the scenes, DataSocketStream uses
-		//fwrite and other C functions, which don't take iterators.
-		xmlSocket->writeRawData(&compressedXML[0], compressedXML.size());
-		xmlSocket->flush();
+		sendXML(xmlSocket);
 
-		cout << "XML Sent" << endl;
 		if(actualXMLPort != mainPortNumber)
 			delete (xmlSocket);
 	}
 
-	//Pass by reference to avoid copying the whole vector...
-	void Server::compressXML(vector<char>& compressed)
+	void Server::sendXML(DataSocketStream* xmlSocket)
 	{
-
+		xmlSocket->writeInt(EXML);
 		//If this overflows, we may have problems...
 		int uncompressedFileSize = FileUtils::getFileSize(controller->getExperimentXML());
 		ProgressBar prog("Compressing XML", uncompressedFileSize);
@@ -255,53 +241,25 @@ namespace TraceviewerServer
 		compressor.zalloc = Z_NULL;
 		compressor.zfree = Z_NULL;
 		compressor.opaque = Z_NULL;
-		//int ret = deflateInit(&compressor, -1);
+
 		//This makes a gzip stream with a window of 15 bits
 		int ret = deflateInit2(&compressor, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 16+15, 8, Z_DEFAULT_STRATEGY);
 		if (ret != Z_OK)
 			throw ret;
 
-		#define CHUNK 0x4000
-
-		unsigned char InBuffer[CHUNK];
-		unsigned char OutBuffer[CHUNK];
-		int flush;
-
-		int compramt;
-		do {
-			int amtprocessed = fread(InBuffer, 1, CHUNK, in);
-			compressor.avail_in = amtprocessed;
-			//cout<<"Processed " << amtprocessed << " / " <<size<<endl;
-			if (ferror(in)) {
-				cerr<<"Error"<<endl;
-				(void)deflateEnd(&compressor);
-				throw Z_ERRNO;
-			}
-			flush = feof(in) ? Z_FINISH : Z_NO_FLUSH;
-
-			compressor.next_in = InBuffer;
-			int have;
-			/* run deflate() on input until output buffer not full, finish
-		           compression if all of source has been read in */
-			do {
-				compressor.avail_out = CHUNK;
-				compressor.next_out = OutBuffer;
-				ret = deflate(&compressor, flush);    /* no bad return value */
-				if (ret == Z_STREAM_ERROR) throw ERROR_COMPRESSION_FAILED;  /* state not clobbered */
-				have = CHUNK - compressor.avail_out;
-				compramt += have;
-				//cout<<"Writing "<<have<< " compressed bytes. Length of compressed file so far is "<< compramt<<endl;
-				compressed.insert(compressed.end(), OutBuffer, OutBuffer+have);
-			} while (compressor.avail_out == 0);
-
-			prog.incrementProgress(amtprocessed);
-			/* done when last data in file processed */
-		} while (flush != Z_FINISH);
-		deflateEnd(&compressor);
+		CompressingDataSocketLayer compL(compressor, &prog);
+		compL.writeFile(in);
 
 		fclose(in);
+		int compressedSize = compL.getOutputLength();
+		DEBUGCOUT(2)<<"Compressed XML Size: "<<compressedSize<<endl;
 
-		DEBUGCOUT(2)<<"Compressed XML Size: "<<compressed.size()<<endl;
+		xmlSocket->writeInt(compressedSize);
+		xmlSocket->writeRawData((char*)compL.getOutputBuffer(), compressedSize);
+
+		xmlSocket->flush();
+
+		cout << "XML Sent" << endl;
 	}
 
 	void Server::checkProtocolVersions(DataSocketStream* receiver)

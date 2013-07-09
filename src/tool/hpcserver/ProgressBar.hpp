@@ -62,7 +62,8 @@
 
 #include <string>
 using namespace std;
-
+namespace TraceviewerServer
+{
 class ProgressBar {
 private:
 typedef uint64_t ulong;
@@ -84,5 +85,5 @@ public:
 
 	virtual ~ProgressBar();
 };
-
+}
 #endif /* PROGRESSBAR_HPP_ */

@@ -56,62 +56,15 @@
 //   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
-#include "zlib.h"
-#include <stdint.h>
-#include <cstdio>
 
-#include "ProgressBar.hpp"
-/*
- * CompressingDataSocketLayer.h
- *
- *  Created on: Jul 25, 2012
- *      Author: pat2
- */
+extern void filterTest();
+extern void progBarTest();
+extern void compressionTest();
 
-#ifndef COMPRESSINGDATASOCKETLAYER_H_
-#define COMPRESSINGDATASOCKETLAYER_H_
-
-namespace TraceviewerServer
+int main(int argc, char** argv)
 {
-#define BUFFER_SIZE 0x4000
-#define BUFFER_GROW_FACTOR 2 //Double buffer size each time it fills up
-	class CompressingDataSocketLayer
-	{
-	public:
-		CompressingDataSocketLayer();
-		//Advanced constructor:
-		CompressingDataSocketLayer(z_stream customCompressor, ProgressBar* progMonitor);
+	compressionTest();
+	progBarTest();
+	filterTest();
+}
 
-		virtual ~CompressingDataSocketLayer();
-		void writeInt(int);
-		void writeLong(uint64_t);
-		void writeDouble(double);
-		void writeFile(FILE*);
-		void flush();
-		unsigned char* getOutputBuffer();
-		int getOutputLength();
-
-	private:
-		//Checks to make sure there is enough room in the buffer for count
-		//bytes. If there is not, it makes room by flushing the buffer.
-		void makeRoom(int count);
-		void softFlush(int flushType);
-
-		//Increment the progress bar if it isn't NULL
-		void pInc(unsigned int count);
-
-		void growOutputBuffer();
-
-		unsigned int bufferIndex;
-		z_stream compressor;
-		char* inBuf;
-		unsigned char* outBuf;
-		unsigned int posInCompBuffer;
-
-		unsigned int outBufferCurrentSize;
-
-		ProgressBar* progMonitor;
-	};
-
-} /* namespace TraceviewerServer */
-#endif /* COMPRESSINGDATASOCKETLAYER_H_ */

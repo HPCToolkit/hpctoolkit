@@ -65,7 +65,8 @@
 
 #ifndef FILTER_HPP_
 #define FILTER_HPP_
-
+namespace TraceviewerServer
+{
 class Range {
 		int min;
 		int max;
@@ -116,6 +117,6 @@ private:
 	Range process;
 	Range thread;
 } ;
-
+}
 
 #endif /* FILTER_HPP_ */

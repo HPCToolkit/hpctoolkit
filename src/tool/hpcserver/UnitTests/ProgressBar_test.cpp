@@ -10,8 +10,9 @@
 #include <iostream>
 using namespace std;
 
-#ifdef UNIT_TESTS
-int main (int argc, char** argv){
+using namespace TraceviewerServer;
+
+void progBarTest() {
 
 
 	ProgressBar bar("Work", 83);
@@ -29,4 +30,4 @@ int main (int argc, char** argv){
 	bar.incrementProgress(83-q);
 
 }
-#endif
+

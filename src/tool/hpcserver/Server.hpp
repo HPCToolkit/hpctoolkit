@@ -85,7 +85,7 @@ namespace TraceviewerServer
 		void parseOpenDB(DataSocketStream*);
 		void filter(DataSocketStream*);
 		void getAndSendData(DataSocketStream*);
-		void compressXML(vector<char>&);
+		void sendXML(DataSocketStream*);
 		void sendDBOpenFailed(DataSocketStream*);
 		void checkProtocolVersions(DataSocketStream* receiver);
 

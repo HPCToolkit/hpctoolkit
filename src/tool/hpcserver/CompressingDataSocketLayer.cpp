@@ -58,85 +58,141 @@
 //***************************************************************************
 
 #include "ByteUtilities.hpp"
-#include <iostream> //For cerr
 #include "CompressingDataSocketLayer.hpp"
+#include "DebugUtils.hpp"
+
+#include <iostream> //For cerr
+#include <cassert>
 
 using namespace std;
 namespace TraceviewerServer
 {
 
-	CompressingDataSocketLayer::CompressingDataSocketLayer(
-		)
+	CompressingDataSocketLayer::CompressingDataSocketLayer()
 	{
 
 		//See: http://www.zlib.net/zpipe.c
-		int ret;
 
 		bufferIndex = 0;
 		posInCompBuffer = 0;
 
 		inBuf = new char[BUFFER_SIZE];
 		outBuf = new unsigned char[BUFFER_SIZE];
+		outBufferCurrentSize = BUFFER_SIZE;
+
+		progMonitor = NULL;
 
 		compressor.zalloc = Z_NULL;
 		compressor.zfree = Z_NULL;
 		compressor.opaque = Z_NULL;
-		ret = deflateInit(&compressor, -1);
+		int ret = deflateInit(&compressor, -1);
 		if (ret != Z_OK)
 			throw ret;
 
 	}
+
+	CompressingDataSocketLayer::CompressingDataSocketLayer(z_stream customCompressor, ProgressBar* _progMonitor)
+	{
+		bufferIndex = 0;
+		posInCompBuffer = 0;
+
+		inBuf = new char[BUFFER_SIZE];
+		outBuf = new unsigned char[BUFFER_SIZE];
+		outBufferCurrentSize = BUFFER_SIZE;
+
+		progMonitor = _progMonitor;
+		compressor = customCompressor;
+	}
+
 	void CompressingDataSocketLayer::writeInt(int toWrite)
 	{
-
 		makeRoom(4);
 		ByteUtilities::writeInt(inBuf + bufferIndex, toWrite);
 		bufferIndex += 4;
+		pInc(4);
 	}
 	void CompressingDataSocketLayer::writeLong(uint64_t toWrite)
 	{
 		makeRoom(8);
 		ByteUtilities::writeLong(inBuf + bufferIndex, toWrite);
 		bufferIndex += 8;
+		pInc(8);
 	}
 	void CompressingDataSocketLayer::writeDouble(double toWrite)
 	{
 		makeRoom(8);
 		ByteUtilities::writeLong(inBuf + bufferIndex, ByteUtilities::convertDoubleToLong(toWrite));
 		bufferIndex += 8;
+		pInc(8);
+	}
+	void CompressingDataSocketLayer::writeFile(FILE* toWrite)
+	{
+		while (!feof(toWrite))
+		{
+			makeRoom(BUFFER_SIZE);
+			assert(bufferIndex == 0);
+			unsigned int read= fread(inBuf, sizeof(char), BUFFER_SIZE, toWrite);
+			bufferIndex += read;
+			pInc(read);
+		}
+		flush();
 	}
 	void CompressingDataSocketLayer::flush()
 	{
-		softFlush();
+		softFlush(Z_FINISH);
 	}
 	void CompressingDataSocketLayer::makeRoom(int count)
 	{
 		if (count + bufferIndex > BUFFER_SIZE)
-			softFlush();
+			softFlush(Z_NO_FLUSH);
 	}
-	void CompressingDataSocketLayer::softFlush()
+	void CompressingDataSocketLayer::softFlush(int flushType)
 	{
-		//gzwrite(Compressor, Buffer, BufferIndex);
 
 		/* run deflate() on input until output buffer not full, finish
 		 compression if all of source has been read in */
-		//Taken mostly from http://www.zlib.net/zpipe.c
+
+		//Adapted from http://www.zlib.net/zpipe.c
+		compressor.avail_in = bufferIndex;
+		compressor.next_in = (unsigned char*)inBuf;
 		do
 		{
-			compressor.avail_out = BUFFER_SIZE - posInCompBuffer;
+			compressor.avail_out = outBufferCurrentSize - posInCompBuffer;
+			assert(outBufferCurrentSize > posInCompBuffer);
+			DEBUGCOUT(2) << "Avail out: " << outBufferCurrentSize - posInCompBuffer<<endl;
 			compressor.next_out = outBuf + posInCompBuffer;
-			compressor.avail_in = bufferIndex;
-			compressor.next_in = (unsigned char*)inBuf;
-			int ret = deflate(&compressor, Z_SYNC_FLUSH); /* no bad return value */
+			int ret = deflate(&compressor, flushType); /* no bad return value */
 			if (ret == Z_STREAM_ERROR)
-					cerr<<"zlib stream error."<<endl;	/* state not clobbered */
-			int have = BUFFER_SIZE - compressor.avail_out;
-			posInCompBuffer += have;
+				cerr<<"zlib stream error."<<endl;	/* state not clobbered */
+
+			posInCompBuffer  = outBufferCurrentSize - compressor.avail_out;
+			if (posInCompBuffer == outBufferCurrentSize)
+				//Shoot, our output buffer is full...
+				growOutputBuffer();
 
 		} while (compressor.avail_out == 0);
+		assert(compressor.avail_in == 0);
 
 		bufferIndex = 0;
 	}
+
+	void CompressingDataSocketLayer::growOutputBuffer()
+	{
+		unsigned char* newBuffer = new unsigned char[outBufferCurrentSize * BUFFER_GROW_FACTOR];
+		copy(outBuf, outBuf + outBufferCurrentSize, newBuffer);
+
+		delete[] outBuf;
+
+		outBufferCurrentSize*= BUFFER_GROW_FACTOR;
+		outBuf = newBuffer;
+	}
+
+	void CompressingDataSocketLayer::pInc(unsigned int count)
+	{
+		if (progMonitor != NULL)
+			progMonitor->incrementProgress(count);
+	}
+
 	unsigned char* CompressingDataSocketLayer::getOutputBuffer()
 	{
 		return outBuf;

@@ -63,7 +63,8 @@
 #include <vector>
 
 using namespace std;
-
+namespace TraceviewerServer
+{
 class FilterSet{
 	vector<Filter> filters;
 	bool excludeMatched;
@@ -86,6 +87,7 @@ public:
 		return matchedSoFar;
 	}
 };
+}
 
 
 #endif /* FILTERSET_HPP_ */
