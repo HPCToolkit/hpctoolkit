@@ -27,7 +27,6 @@ void Communication::sendParseOpenDB(string pathToDB) {}
 void Communication::sendStartGetData(SpaceTimeDataController* contr, int processStart, int processEnd,
 			Time timeStart, Time timeEnd, int verticalResolution, int horizontalResolution)
 {
-	//Don't leak memory:
 
 	ImageTraceAttributes* correspondingAttributes = contr->attributes;
 

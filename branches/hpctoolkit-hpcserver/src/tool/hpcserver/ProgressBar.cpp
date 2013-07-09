@@ -63,6 +63,8 @@
 #include "ProgressBar.hpp"
 #include "DebugUtils.hpp"
 
+namespace TraceviewerServer
+{
 ProgressBar::ProgressBar(string name, ulong tasksToComplete) {
 
 
@@ -115,4 +117,4 @@ void ProgressBar::update() {
 ProgressBar::~ProgressBar() {
 	putchar('\n');
 }
-
+}

@@ -8,13 +8,14 @@
 #include "../Filter.hpp"
 #include <iostream>
 using namespace std;
-#ifdef UNIT_TESTS
-int main (int argc, char** argv){
-	Filter f(Range(1,5,1), Range(0,3,1), false);
+using namespace TraceviewerServer;
 
-	bool b = f.include(1,2);
+void filterTest (){
+	Filter f(Range(1,5,1), Range(0,3,1));
+
+	bool b = f.matches(1,2);
 
 	cout << "Include (1,2) " << (b ? "true" : "false") <<endl;
 }
-#endif
+
 
