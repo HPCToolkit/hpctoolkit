@@ -105,7 +105,7 @@ cleanup()
 
 die()
 {
-    echo "$0: error: $*" 1>&2
+    echo "hpclink: error: $*" 1>&2
     cleanup
     exit 1
 }
@@ -113,6 +113,17 @@ die()
 mesg()
 {
     echo "hpclink: $*"
+}
+
+unable_to_link()
+{
+    mesg "unable to link"
+    echo
+    echo "$command" $command_line_args
+    echo
+    cat "$cmd_out"
+    echo
+    die "unable to link"
 }
 
 #------------------------------------------------------------
@@ -393,7 +404,14 @@ done
 # repeat-application-libs.
 
 if test "$verbose" = yes ; then
-    echo "original command line: $command $@"
+    mesg "original command line:"
+    echo "$command $@"
+    echo
+    mesg "wrapped symbols:"
+    echo $hpctk_wrap_names $extra_wrap_names
+    echo
+    mesg "initial undefined symbols:"
+    echo $undef_names
     echo
 fi
 
@@ -471,23 +489,61 @@ $CC -c -o "${nm_addrs}.o" "${nm_addrs}.c"
 # to the undef list and try again.  Do the same for an undefined
 # reference to 'main' (gfortran does some bad things).
 #
-$command "$@" >"$cmd_out" 2>&1
-if test $? -ne 0 || test ! -f "$appl_out"
-then
+num=1
+success=no
+extra_undef_opts=
+while :
+do
+    mesg "preliminary link $num ..."
+    if test "$verbose" = yes ; then
+	echo "$command $@"
+	echo
+    fi
+
+    rm -f "$cmd_out"
+    command_line_args="$*"
+    $command "$@" >"$cmd_out" 2>&1
+    if test $? -eq 0 && test -f "$appl_out" ; then
+	success=yes
+	break
+    fi
+
+    # If the link fails, parse the compiler output for 'undefined
+    # references' and add to the next link.
+    new_undef_list=
     exec <"$cmd_out"
     while read line
     do
-        if echo "$line" | grep -E -i -e 'undef.*__wrap_' >/dev/null 2>&1
-	then
+        name=
+        if echo "$line" | grep -E -i -e 'undef.*__wrap_' >/dev/null 2>&1 ; then
 	    name=`expr "$line" : '.*\(__wrap_[A-Za-z0-9_]*\)'`
-	    set -- "${linker_prefix},--undefined=${name}" "$@"
-	elif echo "$line" | grep -E -i -e 'undef.*main' >/dev/null 2>&1
-	then
-	    set -- "${linker_prefix},--undefined=main" "$@"
+	elif echo "$line" | grep -E -i -e 'undef.*main' >/dev/null 2>&1 ; then
+	    name=main
+	fi
+	if test "x$name" != x ; then
+	    echo "$extra_undef_opts" | grep -e " $name " >/dev/null 2>&1
+	    if test $? -ne 0 ; then
+		set -- "${linker_prefix},--undefined=${name}" "$@"
+		extra_undef_opts="$extra_undef_opts -u $name "
+		new_undef_list="$new_undef_list $name"
+	    fi
 	fi
     done
-    $command "$@" || die "compile #1 failed: $command $@"
-    test -f "$appl_out" || die "compile #1 failed: $command $@"
+    if test "$verbose" = yes ; then
+	mesg "new undefined symbols: $new_undef_list"
+	echo
+    fi
+
+    # quit when there are no new undefined references
+    if test "x$new_undef_list" = x ; then
+	break
+    fi
+
+    num=`expr $num + 1`
+done
+
+if test "$success" != yes ; then
+    unable_to_link
 fi
 
 # Require the output to be statically linked.
@@ -501,16 +557,28 @@ fi
 # Step 4 -- Link with real nm file.
 #------------------------------------------------------------
 
+mesg "final link ..."
 if test "$verbose" = yes ; then
-    echo "new command line: $command $@"
+    echo "$command $@"
     echo
 fi
 
 rm -f "${nm_addrs}.c" "${nm_addrs}.o"
 $hpcfnbounds -c "$appl_out" > "${nm_addrs}.c" || die "hpcfnbounds failed on $appl_out"
 $CC -c -o "${nm_addrs}.o" "${nm_addrs}.c"
-$command "$@" || die "compile #2 failed: $command $@"
-test -f "$appl_out" || die "compile #2 failed: $command $@"
+
+rm -f "$cmd_out"
+command_line_args="$*"
+$command "$@" >"$cmd_out" 2>&1
+if test $? -ne 0 || test ! -f "$appl_out" ; then
+    unable_to_link
+fi
+mesg "done"
+
+if test "x$extra_undef_opts" != x ; then
+    mesg "to reduce the number of preliminary links, add these options to hpclink:"
+    echo hpclink $extra_undef_opts $command ...
+fi
 
 cleanup
 exit 0

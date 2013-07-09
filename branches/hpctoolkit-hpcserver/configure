@@ -17533,7 +17533,11 @@ MONITOR=
 MONITOR_LIBS=
 HPC_MONITOR=
 
-if test "$use_externals" = yes ; then
+# By default, disable old-monitor and hpcrun-flat in a cross compile.
+# It can be reenabled with an explicit --with-monitor option.
+
+if test "$use_externals" = yes && test -z "$is_cross_compile"
+then
   MONITOR="$ext_old_monitor_prefix"
   case "$MONITOR" in
     /* )  OPT_WITH_MONITOR=yes
@@ -18124,18 +18128,17 @@ fi
 $as_echo_n "checking whether to build hpcrun-flat... " >&6; }
 
 OPT_ENABLE_HPCRUN_FLAT="no"
-enable_hpcrun_flat_msg="${enable_hpcrun_flat}"
 
 if test "${enable_hpcrun_flat}" = yes \
-   && test "${OPT_PAPI_DYNAMIC}" = yes && test "${OPT_WITH_MONITOR}" = yes \
+   && test "${OPT_PAPI_DYNAMIC}" = yes \
+   && test "${OPT_WITH_MONITOR}" = yes \
    && test "${HOST_OS}" = "Linux"
 then
   OPT_ENABLE_HPCRUN_FLAT="yes"
-  enable_hpcrun_flat_msg="no (missing prerequisites)"
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${enable_hpcrun_flat_msg}" >&5
-$as_echo "${enable_hpcrun_flat_msg}" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $OPT_ENABLE_HPCRUN_FLAT" >&5
+$as_echo "$OPT_ENABLE_HPCRUN_FLAT" >&6; }
  if test "${OPT_ENABLE_HPCRUN_FLAT}" = "yes"; then
   OPT_ENABLE_HPCRUN_FLAT_TRUE=
   OPT_ENABLE_HPCRUN_FLAT_FALSE='#'
@@ -19163,7 +19166,7 @@ BACK_END_LABEL=
 ac_config_headers="$ac_config_headers src/include/hpctoolkit-config.h"
 
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
 
 
 
@@ -20442,6 +20445,8 @@ do
     "src/tool/hpcproftt/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcproftt/Makefile" ;;
     "src/tool/hpcrun/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/Makefile" ;;
     "src/tool/hpcrun-flat/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun-flat/Makefile" ;;
+    "src/tool/hpcserver/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcserver/Makefile" ;;
+    "src/tool/hpcserver/mpi/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcserver/mpi/Makefile" ;;
     "src/tool/hpcstruct/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/Makefile" ;;
     "src/tool/misc/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/misc/Makefile" ;;
     "src/tool/xprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/xprof/Makefile" ;;
