@@ -67,7 +67,8 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-	TraceviewerServer::ServerType type =  TraceviewerServer::Communication::basicInit(argc, argv);
+	if (!TraceviewerServer::Communication::basicInit(argc, argv))
+		return 0;
 
 	Args args(argc, argv);
 	TraceviewerServer::useCompression = args.compression;
@@ -76,7 +77,7 @@ int main(int argc, char *argv[])
 
 	try
 	{
-		TraceviewerServer::Communication::run(type);
+		TraceviewerServer::Communication::run();
 	}
 	catch (TraceviewerServer::ErrorCode& e)
 	{//We had some sort of error. If it hasn't been handled by this point, we just close.

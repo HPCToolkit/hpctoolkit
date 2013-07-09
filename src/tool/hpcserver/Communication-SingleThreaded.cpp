@@ -91,13 +91,12 @@ void Communication::sendFilter(BinaryRepresentationOfFilter filt)
 {
 }
 
-ServerType Communication::basicInit(int argc, char** argv)
+bool Communication::basicInit(int argc, char** argv)
 {
-	return MASTER;
+	return true;
 }
-void Communication::run(ServerType type)
+void Communication::run()
 {
-	//type == MASTER
 	TraceviewerServer::Server();
 }
 void Communication::closeServer()

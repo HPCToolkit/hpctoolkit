@@ -114,34 +114,29 @@ void Communication::sendFilter(BinaryRepresentationOfFilter filt)
 	COMM_WORLD.Bcast(&filt, sizeof(filt), MPI_PACKED, MPICommunication::SOCKET_SERVER);
 }
 
-ServerType Communication::basicInit(int argc, char** argv)
+bool Communication::basicInit(int argc, char** argv)
 {
 	MPI::Init(argc, argv);
 
-	int rank, size;
-	rank = MPI::COMM_WORLD.Get_rank();
+	int size;
+
 	size = MPI::COMM_WORLD.Get_size();
 	if (size <= 1)
 	{
 		cout << "The MPI version of hpcserver must be run with more than one process. "<<
 				"If you are looking for a single threaded version, you can compile hpcserver without MPI. "<<
 				"See the hpctoolkit documentation for more information."<<endl;
-		return NONE_EXIT_IMMEDIATELY;
+		return false;
 	}
-	if (rank == TraceviewerServer::MPICommunication::SOCKET_SERVER)
-	{
-		return MASTER;
-	}
-	else
-	{
-		return SLAVE;
-	}
+	return true;
 }
-void Communication::run(ServerType type)
+void Communication::run()
 {
-	if (type == TraceviewerServer::MASTER)
+	int rank;
+	rank = MPI::COMM_WORLD.Get_rank();
+	if (rank == TraceviewerServer::MPICommunication::SOCKET_SERVER)
 		TraceviewerServer::Server();
-	else if (type == TraceviewerServer::SLAVE)
+	else
 		TraceviewerServer::Slave();
 }
 void Communication::closeServer()
