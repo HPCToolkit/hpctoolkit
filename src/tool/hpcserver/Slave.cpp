@@ -50,7 +50,7 @@
 //   $HeadURL$
 //
 // Purpose:
-//   [The purpose of this file]
+//   Controls MPI processes' communication and data-getting behavior
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
@@ -69,7 +69,7 @@
 #include "Constants.hpp"
 #include "DBOpener.hpp"
 #include "ImageTraceAttributes.hpp"
-#include "CompressingDataSocketLayer.hpp"
+#include "DataCompressionLayer.hpp"
 #include "Server.hpp"
 #include "FilterSet.hpp"
 #include "DebugUtils.hpp"
@@ -246,11 +246,11 @@ namespace TraceviewerServer
 			int i = 0;
 
 			unsigned char* outputBuffer = NULL;
-			CompressingDataSocketLayer* compr = NULL;
+			DataCompressionLayer* compr = NULL;
 			int outputBufferLen;
 			if (useCompression)
 			{
-				compr = new CompressingDataSocketLayer();
+				compr = new DataCompressionLayer();
 
 				Time currentTimestamp = msg.data.begtime;
 				for (i = 0; i < entries; i++)

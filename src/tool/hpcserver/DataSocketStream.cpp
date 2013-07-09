@@ -50,7 +50,9 @@
 //   $HeadURL$
 //
 // Purpose:
-//   [The purpose of this file]
+//   An approximate implementation of Java's DataOutputStream, DataInputStream,
+//   combined with the actual socket code to make it all work. Provides useful,
+//   yet fairly direct access to the socket.
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]

@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#include "../CompressingDataSocketLayer.hpp"
+#include "../DataCompressionLayer.hpp"
 #include "../ByteUtilities.hpp"
 
 #include <cstdlib>
@@ -72,7 +72,7 @@ int inf(FILE *source, FILE *dest);
 
 void compressionTest() {
 	srand(3321);
-	CompressingDataSocketLayer compr;
+	DataCompressionLayer compr;
 	int size = BUFFER_SIZE/2 + 1000;
 	for (int i = 0; i < size;i++) {
 		compr.writeLong(rand());

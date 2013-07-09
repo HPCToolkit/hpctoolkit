@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/CompressingDataSocketLayer.cpp $
+// $Id: CompressingDataSocketLayer.cpp 4286 2013-07-09 19:03:59Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,10 +47,10 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL$
+//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/CompressingDataSocketLayer.cpp $
 //
 // Purpose:
-//   [The purpose of this file]
+//   Compresses data to a memory-based buffer.
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
@@ -58,7 +58,7 @@
 //***************************************************************************
 
 #include "ByteUtilities.hpp"
-#include "CompressingDataSocketLayer.hpp"
+#include "DataCompressionLayer.hpp"
 #include "DebugUtils.hpp"
 
 #include <iostream> //For cerr
@@ -68,7 +68,7 @@ using namespace std;
 namespace TraceviewerServer
 {
 
-	CompressingDataSocketLayer::CompressingDataSocketLayer()
+	DataCompressionLayer::DataCompressionLayer()
 	{
 
 		//See: http://www.zlib.net/zpipe.c
@@ -91,7 +91,7 @@ namespace TraceviewerServer
 
 	}
 
-	CompressingDataSocketLayer::CompressingDataSocketLayer(z_stream customCompressor, ProgressBar* _progMonitor)
+	DataCompressionLayer::DataCompressionLayer(z_stream customCompressor, ProgressBar* _progMonitor)
 	{
 		bufferIndex = 0;
 		posInCompBuffer = 0;
@@ -104,28 +104,28 @@ namespace TraceviewerServer
 		compressor = customCompressor;
 	}
 
-	void CompressingDataSocketLayer::writeInt(int toWrite)
+	void DataCompressionLayer::writeInt(int toWrite)
 	{
 		makeRoom(4);
 		ByteUtilities::writeInt(inBuf + bufferIndex, toWrite);
 		bufferIndex += 4;
 		pInc(4);
 	}
-	void CompressingDataSocketLayer::writeLong(uint64_t toWrite)
+	void DataCompressionLayer::writeLong(uint64_t toWrite)
 	{
 		makeRoom(8);
 		ByteUtilities::writeLong(inBuf + bufferIndex, toWrite);
 		bufferIndex += 8;
 		pInc(8);
 	}
-	void CompressingDataSocketLayer::writeDouble(double toWrite)
+	void DataCompressionLayer::writeDouble(double toWrite)
 	{
 		makeRoom(8);
 		ByteUtilities::writeLong(inBuf + bufferIndex, ByteUtilities::convertDoubleToLong(toWrite));
 		bufferIndex += 8;
 		pInc(8);
 	}
-	void CompressingDataSocketLayer::writeFile(FILE* toWrite)
+	void DataCompressionLayer::writeFile(FILE* toWrite)
 	{
 		while (!feof(toWrite))
 		{
@@ -137,16 +137,16 @@ namespace TraceviewerServer
 		}
 		flush();
 	}
-	void CompressingDataSocketLayer::flush()
+	void DataCompressionLayer::flush()
 	{
 		softFlush(Z_FINISH);
 	}
-	void CompressingDataSocketLayer::makeRoom(int count)
+	void DataCompressionLayer::makeRoom(int count)
 	{
 		if (count + bufferIndex > BUFFER_SIZE)
 			softFlush(Z_NO_FLUSH);
 	}
-	void CompressingDataSocketLayer::softFlush(int flushType)
+	void DataCompressionLayer::softFlush(int flushType)
 	{
 
 		/* run deflate() on input until output buffer not full, finish
@@ -176,7 +176,7 @@ namespace TraceviewerServer
 		bufferIndex = 0;
 	}
 
-	void CompressingDataSocketLayer::growOutputBuffer()
+	void DataCompressionLayer::growOutputBuffer()
 	{
 		unsigned char* newBuffer = new unsigned char[outBufferCurrentSize * BUFFER_GROW_FACTOR];
 		copy(outBuf, outBuf + outBufferCurrentSize, newBuffer);
@@ -187,21 +187,21 @@ namespace TraceviewerServer
 		outBuf = newBuffer;
 	}
 
-	void CompressingDataSocketLayer::pInc(unsigned int count)
+	void DataCompressionLayer::pInc(unsigned int count)
 	{
 		if (progMonitor != NULL)
 			progMonitor->incrementProgress(count);
 	}
 
-	unsigned char* CompressingDataSocketLayer::getOutputBuffer()
+	unsigned char* DataCompressionLayer::getOutputBuffer()
 	{
 		return outBuf;
 	}
-	int CompressingDataSocketLayer::getOutputLength()
+	int DataCompressionLayer::getOutputLength()
 	{
 		return posInCompBuffer;
 	}
-	CompressingDataSocketLayer::~CompressingDataSocketLayer()
+	DataCompressionLayer::~DataCompressionLayer()
 	{
 		deflateEnd(&compressor);
 		delete[] inBuf;

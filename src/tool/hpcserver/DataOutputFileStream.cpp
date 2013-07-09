@@ -50,7 +50,8 @@
 //   $HeadURL$
 //
 // Purpose:
-//   [The purpose of this file]
+//   Provides some helpful methods for writing to a file, similar to DataSocketStream.
+//   This is only used by MergeDataFiles and will become obsolete with it soon.
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]

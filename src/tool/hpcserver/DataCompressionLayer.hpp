@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataCompressionLayer.hpp $
+// $Id: DataCompressionLayer.hpp 4286 2013-07-09 19:03:59Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL$
+//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataCompressionLayer.hpp $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -75,14 +75,14 @@ namespace TraceviewerServer
 {
 #define BUFFER_SIZE 0x4000
 #define BUFFER_GROW_FACTOR 2 //Double buffer size each time it fills up
-	class CompressingDataSocketLayer
+	class DataCompressionLayer
 	{
 	public:
-		CompressingDataSocketLayer();
+		DataCompressionLayer();
 		//Advanced constructor:
-		CompressingDataSocketLayer(z_stream customCompressor, ProgressBar* progMonitor);
+		DataCompressionLayer(z_stream customCompressor, ProgressBar* progMonitor);
 
-		virtual ~CompressingDataSocketLayer();
+		virtual ~DataCompressionLayer();
 		void writeInt(int);
 		void writeLong(uint64_t);
 		void writeDouble(double);

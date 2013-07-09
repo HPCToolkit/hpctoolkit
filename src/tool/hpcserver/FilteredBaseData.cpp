@@ -52,6 +52,8 @@
 // Purpose:
 //   The highest level of the filtering implementation. Abstracts the filter
 //   away from the classes that access the file directly.
+//   From highest level of abstraction of the file to lowest:
+//      FilteredBaseData, BaseDataFile, LargeByteBuffer, VersatileMemoryPage
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]

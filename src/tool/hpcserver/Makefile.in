@@ -83,7 +83,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am__objects_1 = hpcserver-Args.$(OBJEXT) \
 	hpcserver-BaseDataFile.$(OBJEXT) \
 	hpcserver-Communication-SingleThreaded.$(OBJEXT) \
-	hpcserver-CompressingDataSocketLayer.$(OBJEXT) \
+	hpcserver-DataCompressionLayer.$(OBJEXT) \
 	hpcserver-DBOpener.$(OBJEXT) \
 	hpcserver-DataOutputFileStream.$(OBJEXT) \
 	hpcserver-DataSocketStream.$(OBJEXT) \
@@ -374,7 +374,7 @@ MYSOURCES = \
 Args.cpp \
 BaseDataFile.cpp \
 Communication-SingleThreaded.cpp \
-CompressingDataSocketLayer.cpp \
+DataCompressionLayer.cpp \
 DBOpener.cpp \
 DataOutputFileStream.cpp \
 DataSocketStream.cpp \
@@ -503,8 +503,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-Args.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-BaseDataFile.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-Communication-SingleThreaded.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-CompressingDataSocketLayer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-DBOpener.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-DataCompressionLayer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-DataOutputFileStream.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-DataSocketStream.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver-FilteredBaseData.Po@am__quote@
@@ -581,19 +581,19 @@ hpcserver-Communication-SingleThreaded.obj: Communication-SingleThreaded.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-Communication-SingleThreaded.obj `if test -f 'Communication-SingleThreaded.cpp'; then $(CYGPATH_W) 'Communication-SingleThreaded.cpp'; else $(CYGPATH_W) '$(srcdir)/Communication-SingleThreaded.cpp'; fi`
 
-hpcserver-CompressingDataSocketLayer.o: CompressingDataSocketLayer.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-CompressingDataSocketLayer.o -MD -MP -MF $(DEPDIR)/hpcserver-CompressingDataSocketLayer.Tpo -c -o hpcserver-CompressingDataSocketLayer.o `test -f 'CompressingDataSocketLayer.cpp' || echo '$(srcdir)/'`CompressingDataSocketLayer.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver-CompressingDataSocketLayer.Tpo $(DEPDIR)/hpcserver-CompressingDataSocketLayer.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CompressingDataSocketLayer.cpp' object='hpcserver-CompressingDataSocketLayer.o' libtool=no @AMDEPBACKSLASH@
+hpcserver-DataCompressionLayer.o: DataCompressionLayer.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-DataCompressionLayer.o -MD -MP -MF $(DEPDIR)/hpcserver-DataCompressionLayer.Tpo -c -o hpcserver-DataCompressionLayer.o `test -f 'DataCompressionLayer.cpp' || echo '$(srcdir)/'`DataCompressionLayer.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver-DataCompressionLayer.Tpo $(DEPDIR)/hpcserver-DataCompressionLayer.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DataCompressionLayer.cpp' object='hpcserver-DataCompressionLayer.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-CompressingDataSocketLayer.o `test -f 'CompressingDataSocketLayer.cpp' || echo '$(srcdir)/'`CompressingDataSocketLayer.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-DataCompressionLayer.o `test -f 'DataCompressionLayer.cpp' || echo '$(srcdir)/'`DataCompressionLayer.cpp
 
-hpcserver-CompressingDataSocketLayer.obj: CompressingDataSocketLayer.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-CompressingDataSocketLayer.obj -MD -MP -MF $(DEPDIR)/hpcserver-CompressingDataSocketLayer.Tpo -c -o hpcserver-CompressingDataSocketLayer.obj `if test -f 'CompressingDataSocketLayer.cpp'; then $(CYGPATH_W) 'CompressingDataSocketLayer.cpp'; else $(CYGPATH_W) '$(srcdir)/CompressingDataSocketLayer.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver-CompressingDataSocketLayer.Tpo $(DEPDIR)/hpcserver-CompressingDataSocketLayer.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CompressingDataSocketLayer.cpp' object='hpcserver-CompressingDataSocketLayer.obj' libtool=no @AMDEPBACKSLASH@
+hpcserver-DataCompressionLayer.obj: DataCompressionLayer.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-DataCompressionLayer.obj -MD -MP -MF $(DEPDIR)/hpcserver-DataCompressionLayer.Tpo -c -o hpcserver-DataCompressionLayer.obj `if test -f 'DataCompressionLayer.cpp'; then $(CYGPATH_W) 'DataCompressionLayer.cpp'; else $(CYGPATH_W) '$(srcdir)/DataCompressionLayer.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver-DataCompressionLayer.Tpo $(DEPDIR)/hpcserver-DataCompressionLayer.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DataCompressionLayer.cpp' object='hpcserver-DataCompressionLayer.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-CompressingDataSocketLayer.obj `if test -f 'CompressingDataSocketLayer.cpp'; then $(CYGPATH_W) 'CompressingDataSocketLayer.cpp'; else $(CYGPATH_W) '$(srcdir)/CompressingDataSocketLayer.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-DataCompressionLayer.obj `if test -f 'DataCompressionLayer.cpp'; then $(CYGPATH_W) 'DataCompressionLayer.cpp'; else $(CYGPATH_W) '$(srcdir)/DataCompressionLayer.cpp'; fi`
 
 hpcserver-DBOpener.o: DBOpener.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-DBOpener.o -MD -MP -MF $(DEPDIR)/hpcserver-DBOpener.Tpo -c -o hpcserver-DBOpener.o `test -f 'DBOpener.cpp' || echo '$(srcdir)/'`DBOpener.cpp

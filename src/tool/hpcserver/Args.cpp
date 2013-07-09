@@ -50,7 +50,7 @@
 //   $HeadURL$
 //
 // Purpose:
-//   [The purpose of this file]
+//   Parses the arguments from the command line
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]

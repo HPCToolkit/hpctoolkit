@@ -74,7 +74,7 @@ MYSOURCES = \
 Args.cpp \
 BaseDataFile.cpp \
 Communication-SingleThreaded.cpp \
-CompressingDataSocketLayer.cpp \
+DataCompressionLayer.cpp \
 DBOpener.cpp \
 DataOutputFileStream.cpp \
 DataSocketStream.cpp \

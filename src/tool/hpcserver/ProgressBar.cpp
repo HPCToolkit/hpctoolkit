@@ -50,7 +50,9 @@
 //   $HeadURL$
 //
 // Purpose:
-//   [The purpose of this file]
+//   Shows progress for long-running tasks. In the single-threaded version, this
+//   automatically picks the right width. Terminal width is not available from
+//   MPI, so it assumes a default terminal width.
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]

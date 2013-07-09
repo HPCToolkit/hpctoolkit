@@ -50,7 +50,8 @@
 //   $HeadURL$
 //
 // Purpose:
-//   [The purpose of this file]
+//   Merges databases from the many files to a megatrace (.mt) file. Rarely used
+//   and will be obsolete soon.
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]

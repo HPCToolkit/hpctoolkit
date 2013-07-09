@@ -50,7 +50,7 @@
 //   $HeadURL$
 //
 // Purpose:
-//   [The purpose of this file]
+//   The entry point for the server regardless of how it is being run.
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
