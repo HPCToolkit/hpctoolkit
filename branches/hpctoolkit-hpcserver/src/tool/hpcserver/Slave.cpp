@@ -82,7 +82,7 @@ namespace TraceviewerServer
 
 	Slave::Slave()
 	{
-		controllerNeedsDeleting = false;
+		controller= NULL;
 
 		run();
 
@@ -97,15 +97,10 @@ namespace TraceviewerServer
 			switch (Message.command)
 			{
 				case OPEN:
-					if (controllerNeedsDeleting)
-					{
-						delete (controller);
-						controllerNeedsDeleting = false;
-					}
+					delete (controller);
 					{//Set an artificial context to avoid initialization crossing cases
 						DBOpener DBO;
 						controller = DBO.openDbAndCreateStdc(string(Message.ofile.path));
-						controllerNeedsDeleting = true;
 					}
 					break;
 				case INFO:
@@ -312,11 +307,7 @@ namespace TraceviewerServer
 
 	Slave::~Slave()
 	{
-		if (controllerNeedsDeleting)
-		{
-			delete (controller);
-			controllerNeedsDeleting = false;
-		}
+		delete (controller);
 	}
 
 } /* namespace TraceviewerServer */

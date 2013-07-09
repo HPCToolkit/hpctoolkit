@@ -35,8 +35,8 @@ public:
 	static void sendStartFilter(int count, bool excludeMatches);
 	static void sendFilter(BinaryRepresentationOfFilter filt);
 
-	static ServerType basicInit(int argc, char** argv);
-	static void run(ServerType type);
+	static bool basicInit(int argc, char** argv);
+	static void run();
 	static void closeServer();
 };
 }

@@ -76,7 +76,6 @@ namespace TraceviewerServer
 	private:
 		SpaceTimeDataController* controller;
 		int getData(MPICommunication::CommandMessage*);
-		bool controllerNeedsDeleting;
 	};
 
 } /* namespace TraceviewerServer */

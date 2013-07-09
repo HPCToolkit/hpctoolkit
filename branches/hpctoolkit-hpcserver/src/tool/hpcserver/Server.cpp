@@ -140,8 +140,8 @@ namespace TraceviewerServer
 		else
 			cerr << "Did not receive info packet" << endl;
 
-		bool endConnection = false;
-		while (!endConnection)
+
+		while (true)
 		{
 			int nextCommand = socketptr->readInt();
 			switch (nextCommand)
@@ -153,14 +153,12 @@ namespace TraceviewerServer
 					filter(socketptr);
 					break;
 				case DONE:
-					endConnection = true;
-					break;
+					return CLOSE_SERVER;
 				case OPEN:
-					endConnection = true;
 					return START_NEW_CONNECTION_IMMEDIATELY;
 				default:
 					cerr << "Unknown command received" << endl;
-					return (ERROR_UNKNOWN_COMMAND);
+					return ERROR_UNKNOWN_COMMAND;
 			}
 		}
 
@@ -169,8 +167,8 @@ namespace TraceviewerServer
 	void Server::parseInfo(DataSocketStream* socket)
 	{
 
-		Long minBegTime = socket->readLong();
-		Long maxEndTime = socket->readLong();
+		Time minBegTime = socket->readLong();
+		Time maxEndTime = socket->readLong();
 		int headerSize = socket->readInt();
 		controller->setInfo(minBegTime, maxEndTime, headerSize);
 
