@@ -74,14 +74,15 @@ if OPT_BUILD_TOOL_ALL
 SUBDIRS += \
 	hpcstruct \
 	hpcprof \
-	hpcprof-flat \
 	hpcproftt \
 	hpclump \
-	misc
+	misc \
+	hpcserver
 endif
 
 if OPT_ENABLE_HPCRUN_FLAT
-  SUBDIRS += hpcrun-flat
+SUBDIRS += hpcrun-flat \
+	hpcprof-flat
 endif
 
 if OPT_ENABLE_HPCRUN
@@ -92,6 +93,7 @@ endif
 
 if OPT_ENABLE_MPI
   SUBDIRS += hpcprof-mpi 
+  SUBDIRS += hpcserver/mpi
 endif
 
 #if OPT_ENABLE_DEVTOOLS

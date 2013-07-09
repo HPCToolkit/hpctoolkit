@@ -349,3 +349,11 @@ hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
   return HPCRUN_OK;
 }
 
+//
+// DEBUG: fetch and print current loadmap
+//
+void
+hpcrun_dbg_print_current_loadmap(void)
+{
+  hpcrun_loadmap_print(hpcrun_get_thread_epoch()->loadmap);
+}
