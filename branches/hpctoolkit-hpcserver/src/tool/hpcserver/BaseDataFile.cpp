@@ -50,7 +50,7 @@
 //   $HeadURL$
 //
 // Purpose:
-//   [The purpose of this file]
+//   Another level of abstraction for the data from the file.
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]

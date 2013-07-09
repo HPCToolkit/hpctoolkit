@@ -198,7 +198,7 @@ namespace TraceviewerServer
 			FileOffset predicted_index;
 			//pat2 7/1/13: We only ever divide by rate, and double multiplication
 			//is faster than division (confirmed with a benchmark) so compute inverse
-			//rate instead. This line of code and the one in the else loop account for
+			//rate instead. This line of code and the one in the else block account for
 			//about 40% of the computation once the data is in memory
 			//double rate = (r_time - l_time) / (r_index - l_index);
 			double invrate = (r_index - l_index) / (r_time - l_time);

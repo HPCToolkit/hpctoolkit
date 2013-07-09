@@ -50,7 +50,7 @@
 //   $HeadURL$
 //
 // Purpose:
-//   [The purpose of this file]
+//   Manages much of the flow of data through the program
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]

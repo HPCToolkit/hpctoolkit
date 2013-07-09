@@ -50,7 +50,8 @@
 //   $HeadURL$
 //
 // Purpose:
-//   [The purpose of this file]
+//   Handles the socket communication for the most part and the conversion
+//   between messages and work to be done
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
@@ -61,7 +62,7 @@
 #include "DataSocketStream.hpp"
 #include "DBOpener.hpp"
 #include "Constants.hpp"
-#include "CompressingDataSocketLayer.hpp"
+#include "DataCompressionLayer.hpp"
 #include "ProgressBar.hpp"
 #include "FileUtils.hpp"
 #include "Communication.hpp"
@@ -245,7 +246,7 @@ namespace TraceviewerServer
 		if (ret != Z_OK)
 			throw ret;
 
-		CompressingDataSocketLayer compL(compressor, &prog);
+		DataCompressionLayer compL(compressor, &prog);
 		compL.writeFile(in);
 
 		fclose(in);

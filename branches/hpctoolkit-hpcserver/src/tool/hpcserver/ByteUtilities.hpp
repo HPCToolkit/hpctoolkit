@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL:$
+// $Id:$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL$
+//   $HeadURL:$
 //
 // Purpose:
 //   [The purpose of this file]
@@ -56,12 +56,6 @@
 //   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
-/*
- * ByteUtilities.h
- *
- *  Created on: Jul 17, 2012
- *      Author: pat2
- */
 
 
 

@@ -50,7 +50,8 @@
 //   $HeadURL$
 //
 // Purpose:
-//   [The purpose of this file]
+//   Manages pages of memory that are mapped and unmapped dynamically from the
+//   trace file based on the last time they were used.
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]

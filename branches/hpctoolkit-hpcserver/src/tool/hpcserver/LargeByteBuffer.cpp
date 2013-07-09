@@ -50,7 +50,8 @@
 //   $HeadURL$
 //
 // Purpose:
-//   [The purpose of this file]
+//   Stores and handles the pages of the file to abstract away the file is not
+//   stored entirely in one contiguous chunk of memory.
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
