@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- -*- coding: utf-8 -*- -->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!-- ********************************************************************** -->
+
+<head>
+  <!-- meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" /> -->
+
+  <title>HPCToolkit Software</title>
+
+  <link rel="stylesheet" type="text/css" href="style/style.css" />
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<!-- HPCToolkit Image (height = 71 pixels) --> <img style="position: absolute; top: 0px; left: 0px" src="style/header.gif" alt="hpctoolkit" /> <div style="position: relative; margin-top: 60px; width: 100%; text-align: right;"> <p style="margin: 0px; font-size: small;">   [ <a href="index.html">Home</a>   | <a href="overview.html">Overview</a>   | <a href="publications.html">Publications</a> ]   &bull;   [ <a href="examples.html">Examples</a> ]   &bull;   [ <a href="software.html">Software/Downloads</a>   | <a href="documentation.html">Documentation/Questions</a> ]   &bull;   [ <a href="info-people.html">People</a> |     <a href="info-acks.html">Acks</a> ] </p> </div> <div style="width: 100%;">   <hr /> </div> 
+<!-- ********************************************************************** -->
+
+<h1>Obtaining and Building HPCToolkit Software</h1>
+
+<h2><a href="software-instructions.html">Prerequisites &amp; Instructions</a></h2>
+
+
+
+<h2>Source code for HPCToolkit</h2>
+
+To build HPCToolkit from source, you need to download and build both hpctoolkit and hpctoolkit-externals.
+<ul>
+  <table cellpadding="2" cellspacing="2" border="1" width="100%">
+
+  <tr>
+  <td><a href="https://code.google.com/p/hpctoolkit/source/browse/#svn%2Ftrunk">hpctoolkit</a>
+  </td>
+  <td><code>svn co http://hpctoolkit.googlecode.com/svn/trunk hpctoolkit</code>
+  </td>
+  </tr>
+
+  <tr>
+  <td><a href="https://code.google.com/p/hpctoolkit/source/browse/#svn%2Fexternals">hpctoolkit-externals</a>
+  </td>
+  <td><code>svn co http://hpctoolkit.googlecode.com/svn/externals hpctoolkit-externals</code>
+  </td>
+  </tr>
+  </table>
+</ul>
+
+<h2>Binary releases for HPCToolkit GUI interfaces (recommended for tool users)</h2>
+
+
+Due to the difficulty of building the hpcviewer and hpctraceviewer graphical user interfaces from source using 
+Eclipse, we provide binary releases for these tools. 
+<ul>
+  <table cellpadding="2" cellspacing="2" border="1" width="100%">
+
+  <tr>
+    <td>
+      <a href="http://code.google.com/p/hpcviewer/downloads/list">hpcviewer-5.3.2-release-&lt;platform&gt;.tgz</a> 
+    </td>
+    <td>
+     Select the appropriate binary releases for your target platforms of choice.  
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <a href="http://code.google.com/p/hpcviewer/downloads/list">hpctraceviewer-5.3.2-release-&lt;platform&gt;.tgz</a> 
+    </td>
+    <td>
+     Select the appropriate binary releases for your target platforms of choice.  
+    </td>
+  </tr>
+
+  </table>
+</li>
+
+</ul>
+
+<h2>Source code for HPCToolkit GUI interfaces (recommended for tool developers only)</h2>
+
+Source code for HPCToolkit's hpcviewer and hpctraceviewer graphical user interfaces is available from their 
+subversion repositories. 
+Unless you are a tool developer who wants to modify the capabilities of these graphical user interfaces,
+we recommend downloading the binary releases. 
+<ul>
+  <table cellpadding="2" cellspacing="2" border="1" width="100%">
+  <tr>
+  <td>
+    <a href="https://code.google.com/p/hpcviewer/source/browse/#svn%2Ftrunk">hpcviewer</a>
+    <br />
+    <a href="http://www.eclipse.org/rcp">(based on Eclipse RCP)</a>
+  </td>
+  <td>
+<code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.common</code>
+      <br />
+<code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.data</code>
+      <br />
+      <code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.viewer</code>
+  </td>
+  </tr>
+
+  <tr>
+  <td>
+    <a href="https://code.google.com/p/hpcviewer/source/browse/#svn%2Ftrunk">hpctraceviewer</a>
+    <br />
+    <a href="http://www.eclipse.org/rcp">(based on Eclipse RCP)</a>
+  </td>
+  <td>
+<code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.common</code>
+      <br />
+<code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.data</code>
+      <br />
+      <code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.traceviewer</code>
+  </td>
+  </tr>
+
+  </table>
+
+  <br />
+
+</ul>
+
+<h2>Questions, Problems, Bugs</h2>
+
+<p>Please see our <a href="documentation.html">reporting guidelines</a>.
+</p>
+
+
+<p>[<span class="lastupdated">Page last updated: 2013/04/19</span>]
+</p>
+
+<!-- ********************************************************************** -->
+
+<div style="width: 100%; font-size: small;">   <hr />   <p style="margin: 0px; font-size: small;">     &copy;2000-2012 <a href="http://www.rice.edu">Rice University</a>     &bull;     <a href="http://www.cs.rice.edu">Rice Computer Science</a>   </p>   <a href="http://validator.w3.org/check/referer">     <img src="http://www.w3.org/Icons/valid-xhtml10-blue" alt="" height="15" /></a>   <a href="http://jigsaw.w3.org/css-validator/check/referer">     <img src="http://www.w3.org/Icons/valid-css-blue" alt="" height="15" /></a> </div> 
+<!-- ********************************************************************** -->
+
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: "<span class=\"lastupdated\">Page last updated: " -->
+<!-- time-stamp-format: "%:y/%02m/%02d" -->
+<!-- time-stamp-end: "</span>" -->
+<!-- time-stamp-line-limit: 10000 -->
+<!-- End: -->

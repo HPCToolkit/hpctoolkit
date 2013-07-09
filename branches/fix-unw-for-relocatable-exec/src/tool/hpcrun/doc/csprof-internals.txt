@@ -1,0 +1,688 @@
+ISSUES
+	augment libunwind to support call stack surgery
+		find return address of current frame (when at a sample)
+		replace return address of current frame
+
+	might need to know what register holds the return address in the epilogue of the stack procedure
+
+possible assumption: when a procedure calls another one, assume the caller stores the return address in ra. the trampoline is not set up to restore  the return address into an arbitrary register so it is available in the register after return. resolution: the trampoline would need to inspect the procedure desccriptor of the callee and make sure the return address was restored to the entry register of the callee.
+
+issue for register frame procedures (and perhaps stack frame procedures too)
+alpha procedure descriptors don't record
+	clobbering of ra
+	restore of ra
+
+upon longjmp:
+	lose information about return counts for frames between source frame and target frame on call stack
+
+	note: not safe to take samples during longjmp processing
+	to determine if the trampoline needs to be moved, we 
+
+assumption that program stack is contiguous, which is not always true
+this may be a problem for user-level threads, or programming languages that support heap-based stack frames or segments
+
+when we take samples in the trampoline, do we attribute it to the trampoline target address
+
+
+operating system specific code should be factored out of processor-specific code. e.g. the code for reading the load map
+
+why does the alpha implementation use libcall.s?
+
+on the alpha, synchronous unwinding can end up with an unsafe context e.g. for malloc profiling when malloc is called from the math library.
+
+
+
+-*- mode: outline -*-
+
+This document attempts to describe, in as much detail as possible, the
+inner workings of csprof, a sampling call path profiler for Alpha,
+Itanium, and x86-64.
+
+* Terminology
+
+The term "interface function" is used to describe any function that must
+be defined per-platform.  Please note that such functions may be able to
+be shared between different platforms; all Linux platforms could
+probably use the same definition of `csprof_epoch_get_loaded_modules'.
+The interface functions are expected to be defined in certain files;
+please see the existing platforms for the layout and names of the files
+where their interface functions are defined.
+
+* Platforms
+
+csprof works on the Alpha, Itanium, and x86-64.
+
+** Alpha issues
+
+None known at this time.  The Alpha was the initial platform for
+csprof and served as a testbed for working out many of the issues.
+
+** Itanium issues
+
+csprof on the Itanium requires the `libunwind' library.  Trampolines
+are not supported on the Itanium at this time; edge counts are
+therefore unavailable and any asynchronous driver always unwinds the
+full call stack.  (This is not as bad as it might sound, since
+libunwind caches unwind information.) (JMC: why no trampolines supported?)
+
+** x86-64 issues.
+
+Any asynchronous driver on the x86-64 requires that the application
+being profiled as well as any libraries it might use possess accurate
+unwind information for procedure epilogues.  As the only known
+compiler that generates such information is GCC, and then only with a
+Rice-only patch that is being pushed for submission into GCC mainline,
+asynchronous profiling should not be attempted on the x86-64 unless you
+know your system and your program has been compiled with a patched GCC.
+
+Synchronous drivers are fully supported.
+
+** Porting issues
+
+While the supported platforms are all 64-bit platforms, csprof should
+work properly on 32-bit platforms such as the x86 with a little
+tweaking.  The notable tweak necessary will be in mallocprof.c.  An
+alternate scheme for recognizing sampled and unsampled chunks will be
+necessary; the current scheme uses the upper 16 bits of a 'void *' and
+those bits will probably be in use on a 32-bit platform.  Other
+drivers should work with no modifications.
+
+Other specialized porting issues will be discussed in the sections
+below.
+
+* Building
+
+csprof requires GNU make to build.  We will assume GNU make is called
+`gmake'; building csprof then requires one command:
+
+gmake DRIVER=<driver> PLATFORM=<platform> THREADS=<0|1>
+
+DRIVER can currently be `itimer', `mallocprof', or `flexiprof'; PLATFORM
+can be any one of `alpha', `alpha-thread', `ia64', or `x86-64'; THREADS
+can be `0' or `1' for unthreaded or threaded profiling, respectively.
+That separate `alpha' and `alpha-thread' platforms exist is an artifact
+of the Alpha implementation.
+
+The value of DRIVER has `.c' appended to it; this file is then used in
+the build process.  See the section `Drivers' for more details.
+
+THREADS defaults to `0'.
+
+It is unknown whether using a threaded csprof on single-threaded
+programs is effective or even possible.
+
+** Notable #defines
+
+These can be set in a platform Makefile include.
+
+CSPROF_PERF should be defined if high performance is desired; it
+eliminates all debugging messages.  Testing whether the debugging
+messages should be output is quite expensive.
+
+CSPROF_LAST_EDGE_ONLY should almost always be defined.  This #define
+changes the behavior of when the trampoline counts returns.  When set,
+the trampoline will only record the first return after a sample event.
+Otherwise, the trampoline records all returns. (JMC: does this mean we don't count returns all the way up to the CCT root? Is this what you've been measuring for our papers? That's not what we described.)
+
+** Porting issues
+
+Any new platforms should copy either mkinclude.x86-64 or
+mkinclude.ia64 and then make any necessary changes.
+
+* Drivers
+
+csprof supports two types of drivers: asynchronous drivers and
+synchronous drivers.  Asynchronous drivers are exemplified by the itimer
+driver in itimer.c.  This driver works by periodically interrupting the
+application with SIGPROF and collecting a call stack sample at that
+time.  Synchronous drivers should be patterned after the malloc
+profiling driver in mallocprof.c.  This driver works by overriding the
+malloc() function and collecting statistics on where malloc is called
+from and how many bytes are allocated at each call.
+
+** Porting issues
+
+For any asynchronous driver, the porter should take care to ensure for
+all relevant platforms that the third argument to a signal handler is a
+`ucontext_t *', not an `mcontext_t *'.  Special compilation flags may be
+necessary.
+
+** Known limitations
+
+Asynchronous and synchronous sample events may not be monitored
+simultaneously. (JMC: why?)
+
+Trampolines are not used with synchronous sample sources.  (This
+restriction is because is is difficult to insert the trampoline *and*
+return from a synchronous event.)
+
+Only one asynchronous sample event is permitted.  (This restriction
+primarily stems for the difficulty of what to do with trampolines in
+the face of multiple asynchronous samples.) (JMC: what are the issues in a bit deeper detail?)
+
+Multiple synchronous event sources may be used (e.g. one might sample
+malloc(), another might sample MPI sends and receives, etc.), but they
+must all be present in a single source file for the build process.
+This also implies that there will not be separate initialization
+functions for profiling malloc, MPI, etc.; one initialization function
+must initialize all the sample sources. (JMC: why? I think we worked this out with Cristi. If the issue is just getting metric ids, than this is handled.)
+
+If this restriction was to be lifted, perhaps by permitting multiple
+independent sources to be loaded via dlopen() or similar, it might
+also be good to rework how metrics are recorded.  The current
+implementation assumes that there will be some maximum number of
+metrics recorded, for simplicity in constructing and writing out CCTs.
+(JMC: what generalization is needed here?)
+
+* Function overrides
+
+Various portions of csprof need to override functions to be informed of
+when certain events occur.  Such functions include dlopen(),
+pthread_create(), longjmp() and variants, whatever function initiates
+exception handling on a given platform, etc.
+
+Macro `CSPROF_GRAB_FUNCPTR' in `libstubs.h' will capture the necessary
+function pointer and stuff it in a predetermined variable.
+
+* States and epochs
+
+** States
+
+All information related to profiling is stored in a structure of type
+`csprof_state_t'.  In a multithreaded program, each profiled thread will
+have its own state.  States hold the CCT, a pointer into the CCT for
+efficient insertion of samples, a buffer for backtraces, information
+about the trampoline (if applicable), informational flags, and a pointer
+to the current epoch.  At each sample, the current epoch is compared
+with the epoch in the current state.  If these epochs are different,
+then a new epoch has begun; we allocate a new state, copy information
+over from the old state, link the old state to the new state, and
+install the new state as the current state.
+
+** Epochs
+
+Epochs are csprof's mechanism for dealing with dynamic libraries.  In
+simplest terms, an epoch is simply a list of load modules, representing
+knowledge about the load modules in core at a point in time.  This
+information is needed for processing collected profiles and mapping PCs
+back to the functions in which they occurred.  Every dlopen(), then,
+begins a new epoch, since we now have a new set of PCs and functions to
+consider in postprocessing.
+
+We maintain a "current" epoch in a global variable.  This information
+should not be thread-local, since information about which load modules
+are in-core is program-wide.  However, each state (thread-local) knows
+about its current epoch, which is appropriately thread-local.
+
+The interface function `csprof_epoch_get_loaded_modules' is used to
+determine what load modules are in-core when a new epoch is created.
+
+* Atomic memory operations
+
+csprof requires a very few atomic memory operations to perform some
+internal locking and to atomically increment/decrement some variables
+potentially accessed by multiple threads.  The interface functions for
+this purpose are:
+
+- csprof_atomic_increment
+- csprof_atomic_decrement
+- csprof_atomic_exchange_pointer
+
+** Porting issues
+
+Compiler intrinsics or inline assembly will be required to implement
+these intrinsics for any new platform.  Looking at the Linux kernel
+gives one a pretty decent idea of how to implement the necessary
+operations.  Future work might include making csprof depend on
+libatomic_ops from HP or using the GCC builtins provided in versions >=
+4.x.
+
+* CCT
+
+The CCT is the data structure in which collected samples are stored.  It
+is simply a tree where each node has a variable number of children.
+
+Child nodes of a node are stored two different ways: in a red-black tree
+for quick lookup during sample recording and a list for ease of
+traversal during datafile writing.
+
+The red-black tree implementation is straight out of the pages of
+CLR(S).
+
+(JMC: we might also have a memory-compact version of sampling that records only the callee at the leaf rather than the PC.)
+
+** Porting issues
+
+None if the memory allocator works properly (see the `Porting issues'
+section under `Memory allocation').  Otherwise a platform may need to
+find a place to store the red/black bit for red-black tree nodes.
+
+* Memory allocation
+
+csprof performs nearly all of its own memory allocation; the routines
+for doing this are located in the file `mem.c'.  Why not just use
+malloc(), you ask?  csprof was originally developed to support
+asynchronous sampling only.  Handling asynchronous events was to be done
+via signal handlers and a quick review of malloc's man page reminds us
+that malloc() is not to be called from within signal handlers.  Since we
+may need to do quite a bit of allocation from within signal handlers (a
+new state if we have changed epochs, new tree nodes in the CCT, a longer
+buffer to record backtraces, etc.), we needed a memory allocator
+that *was* safe to be called from within a signal handler.
+
+The implementation of the memory allocator is straightfoward.  Large
+chunks of memory are carved out via `mmap' and smaller chunks of memory
+are handed out from within these larger chunks.  There is a current
+large chunk from which allocation requests are fulfilled.  A free
+pointer is kept within the large chunk of memory; if an allocation
+request cannot be satisfied from within a chunk, another chunk is
+requested from mmap (doubling in size from the previous chunk) and this
+new chunk becomes the current chunk.  There is no free() call.
+
+(Technically, there are two allocators: one for "normal" memory
+allocation and one for temporary memory allocation.  The latter is
+intended to be used for stack-like allocation requests and therefore
+does feature a free() call.  But this second allocator is currently not
+used within csprof.)
+
+csprof on multithreaded programs simply maintains a separate memory pool
+for each profiled thread, obviating the need for locking during memory
+allocations.
+
+** Porting issues
+
+The memory allocator is a stable piece of code and should not need to be
+touched except perhaps to adapt it to the peculiarities of `mmap' on
+different platforms.
+
+A 32-bit platform should also ensure that the lower two bits of memory
+block addresses returned by `csprof_malloc' are zero, as these bits
+are used by the CCT's red-black tree implementation.
+
+* Metrics
+
+csprof features the ability to track multiple metrics along any given
+call path.  For example, the number of bytes allocated and the number of
+bytes sent with MPI calls may be tracked simultaneously.  The interface
+to metrics is found in `metrics.h'.  The usual calling pattern is, in
+the init function for a driver:
+
+driver_init(...)
+{
+    ....
+    csprof_set_max_metrics(...);
+    m_id1 = csprof_new_metric()
+    csprof_set_metric_info_and_period(m_id1, ...);
+    /* repeat as necessary for other metrics */
+    ....
+}
+
+Metric IDs can then be passed to `csprof_sample_callstack'.
+
+** Known issues
+
+Adding metrics after one or more samples have been taken is not
+supported (and not detected, either).  The reason for this is that
+metric values are stored in the CCT nodes and the datafile format
+assumes that all nodes in the datafile (across all epochs) have the same
+number of metrics in them.
+
+Deleting metrics is not supported.
+
+Both adding and deleting metrics might be possible by defining new
+epohcs whenever a metric is added or deleted.  Then the number of
+metrics would be stored per-tree in the datafile, rather than globally.
+
+* Sampling
+
+Call the interface function `csprof_sample_callstack' from an
+asynchronous driver.  The `context' parameter should be of type
+`mcontext_t'.
+
+Synchronous drivers will want to use the interface function
+`csprof_record_metric_with_unwind'.  The `unwinds' parameter is meant to
+be used to determine the number of unwinds necessary to get back to
+"user" code.  A diagram will certainly help.
+
+Imagine that we are profiling malloc() and we intercept a call to
+malloc():
+
++----------+
+|   quux   |                                      ; "user" code
++----------+
+     ||
+     ||
+     vv
++----------+
+|  malloc  |                                      ; in csprof
++----------+
+
+csprof's malloc does some work and then calls
+`csprof_record_metric_with_unwind':
+
++----------+
+|   quux   |                                      ; "user" code
++----------+
+     ||
+     ||
+     vv
++----------+
+|  malloc  |                                      ; in csprof
++----------+
+     ||
+     ||
+     vv
++----------------------------------------+
+|    csprof_record_metric_with_unwind    |        ; in csprof
++----------------------------------------+
+
+`csprof_record_metric_with_unwind' then captures its context using
+`getcontext' or `unw_getcontext'.  But it doesn't want to start
+unwinding from *that* context, because that's not what the use expects
+to see.  This is where the `unwinds' parameter comes into play: it
+specifies the number of times the captured context should be unwound
+before using it as the top of a sampled call stack.  In the example
+above, `unwinds' should be `2'.
+
+** Unsafe code
+
+The considerations in this section only apply to asynchronous sampling.
+
+Certain PCs are considered "unsafe" to take samples at, primarily
+because we do not know how to or should not unwind the stack from those
+PCs.  The interface function `csprof_context_is_unsafe' determines
+whether a particular address is safe to take a sample at and must be
+defined per-platform.
+
+Some addresses are always considered unsafe, such as addresses inside
+the csprof library itself.  There is also a flag, CSPROF_EXC_HANDLING,
+which is used to indicate that even though control may not be in the
+csprof library, it is still unsafe to take samples.
+
+The usual solution on a given platform is to have a table of
+(start_address, end_address) pairs denoting unsafe regions of code.  The
+regions covered by any two pairs in the table should be disjoint.
+This table is stored in sorted order according to `start_address',
+enabling binary search to quickly determine whether a given address is
+unsafe.
+
+** Porting issues
+
+For a given platform, the list of PCs that are considered unsafe is
+potentially incomplete.  The developer of csprof should bear this in
+mind when attempting to debug problems.
+
+Even for synchronous profiling, there may still exist certain times when
+sampling does not make sense, even though it is possible.  See the
+implementation of `realloc' in `mallocprof.c' for an example.
+
+** Known issues
+
+Despite the above refactoring with `csprof_context_is_unsafe', there is
+still quite a bit of duplication of what regions are considered unsafe
+scattered throughout the code.
+
+* Unwinding
+
+** Virtually unwinding the stack
+
+We expect there to be some function that accepts a "context" containing
+the values of machine registers at a particular point in a function and
+updates that context to contain the values of the machine registers at
+the time the function was called.  This function is called repeatedly to
+discover the frames in the call stack until we reach a frame we have
+previously examined (determined with the assistance of the trampoline
+and the shadow stack we maintain) or we reach the bottom of the
+program's call stack.  Frames collected in this manner are stored in a
+"backtrace" and then this backtrace is inserted into the CCT for storage.
+
+"Unwinding" in this document usually refers to the entire process
+described above.
+
+*** Alpha issues
+
+The Alpha unwinding process is terribly complicated and riddled with
+special cases to deal with the cheating done by the compiler with
+respect to ABI conformance.  As such, the source code is really the best
+place to look to understand all the issues involved.  The special cases
+are fairly well commented with their motivation and the attempted
+workaround(s).  Beyond these, the Alpha is not really that much
+different from what is described above.
+
+*** x86-64 and Itanium issues
+
+Both of these platforms use `libunwind' for virtually unwinding the
+stack.  The unwinding code is simple and clean.
+
+** Backtrace storage and management
+
+For unwinding efficiency, we store frames from the current backtrace in
+an array, expanding it as necessary.  A linked list would be
+conceptually easier to understand, but tests have shown it to be slower
+than using an array.  A frame is defined as an instruction pointer and a
+stack pointer; the stack pointer is included for distinguishing between
+invocations of recursive functions.  Each state has a buffer into which
+frames from a backtrace are collected and stored:
+
+btbuf                                                      btend
+|                                                            |
+v                                                            v
++------------------------------------------------------------+
+|     |                                       |              |
++------------------------------------------------------------+
+      ^                                       ^
+      |                                       |
+   unwind                                   bufstk
+
+The shadow stack tracking the current program stack is kept between
+`bufstk' and `btend'.  The current backtrace is collected into the
+buffer starting at `btbuf'; a pointer called `unwind' tracks the
+position at which a new frame is stored.  (This variable is local to the
+unwinding process and need not be stored in the state.)  If `unwind ==
+bufstk', then we have run out of space and we need to allocate a larger
+buffer.
+
+When the unwinding is complete, either by having found a frame with a
+trampoline as its return address or by finding the bottommost frame, we
+copy the frames between `btbuf' and `unwind' to be contiguous with the
+frames between `bufstk' and `btend', updating `bufstk'.
+
+** Porting issues
+
+If the platform is supported by libunwind, then copying code from the
+x86-64 or Itanium port should be sufficient.  If the platform is more
+unusual, like the Alpha, then more elbow grease may be required.
+
+* Recording samples in the CCT
+
+After a sample is taken, the collected frames are then inserted into the
+CCT, starting at the node stored by the profiling state.  If this node
+is NULL, insertion begins at the root of the CCT.  Pseudo-code for the
+insertion process looks like:
+
+current_node = ...
+
+while there are frames to process:
+    current_frame = ...
+
+    child = find_child(current_node, current_frame.ip)
+
+    if child:
+        current_node = child
+        advance to next frame
+    else:
+        /* must create entirely new subtree */
+        ...
+
+current_node.samples += num_samples
+remember current_node in the state for the next insertion
+
+* Trampoline
+
+`csprof_trampoline' is an interface function that needs to be written in
+assembly code.  Its primary purpose is to save the return value of the
+returning function, save any callee-saved registers, call
+`csprof_trampoline2', and redirect control to the original caller.
+
+Note that calling `csprof_trampoline' a "function" is not really
+accurate; it's more like a piece of code that gets jumped to and needs
+to set things up so that it looks and behaves like a real function.  (On
+the Alpha, for example, `csprof_trampoline' does not know the location
+of the GOT on entry, as all functions do.  So it needs to do some
+legwork to divine that piece of information.)
+
+There should also be an interface function called
+`csprof_trampoline_end' defined immediate after `csprof_trampoline'
+file.  This function is never called; its sole purpose is to provide a
+symbol that is positioned directly after `csprof_trampoline' and may
+therefore be used to determine whether a PC falls in
+`csprof_trampoline'.
+
+** Inserting the trampoline
+
+There are two times when the trampoline needs to be inserted: one is
+during a sample, the other is when the trampline is being moved up and
+down the stack.  Since the latter can be *much* faster than the former,
+there are different ways to find the location for each time.
+
+The functions invoked at each time fill in a `struct lox' with the
+necessary information and return a boolean flag indicating whether the
+trampoline should be installed.  Once a `struct lox' is filled in, it is
+a simple matter to determine where the trampoline should be inserted.
+To handle any vagaries of the machine, though, an interface function,
+`csprof_insert_trampoline' is used.
+
+*** During a sample
+
+The interface function `csprof_find_return_address_for_context' is used
+here.
+
+Information from the unwinding process is often used for inserting the
+trampoline to save the costs of computing it twice.  This is
+particularly true on the Alpha, where both unwinding and finding the
+correct location for the trampoline is very expensive.
+
+*** During trampoline execution
+
+The interface function `csprof_find_return_address_for_function' is used
+here.
+
+** Removing the trampoline
+
+As far as possible, the trampoline should be removed from the stack
+prior to unwinding the stack.  This is done via the interface function
+`csprof_remove_trampoline'.
+
+** Itanium issues
+
+A trampoline has not been written for Itanium, due to a lack of time
+spent understanding the Itanium's peculiar register file.
+
+* Exceptions and longjmp
+
+Since exceptions and longjmp both change the execution of the program in
+non-standard ways, they need to be noticed by csprof via function
+overrides.
+
+When overriding `longjmp', the trampoline must be moved so the
+trampoline is in or below the stack frame to which longjmp is returning.
+
+** Exception handling
+
+Exception handling needs to be overridden in two ways: the first is that
+csprof needs to be notified when handling an exception begins, since the
+functions performing the exception handling are probably "unsafe".  The
+second way is that whatever exception handling mechanism is used, there
+exists a `longjmp'-like function which must be overridden in the same
+manner as `longjmp'.
+
+Code can often be shared between the exception handling portions and the
+`longjmp' handling portion.
+
+* Data file format
+
+Tersely described, this is what the datafile format looks like:
+
+File
+  header	FileHeader
+  data		CsProfData
+  epochs	EpochsTable
+  num_trees	uint32; the number of trees to be read
+  tramp_samples	uint64; the total number of samples taken in the trampoline
+  trees		Tree[num_trees]; the trees collected
+
+FileHeader
+  magic		10 bytes; "HPC_CSPROF" (no trailing null)
+  version	5 bytes; "01.00" (no trailing null)
+  endianness    1 byte; 'l' or 'b'
+  num_chunks    8 bytes; not used
+
+CsProfData
+  target	hpcfile_string; name of executable, not used
+  num_metrics	uint32; number of metrics to be read
+  Metric
+    event_name		hpcfile_string; description of the metric
+    flags		hpcfile_number; descriptive flags (async, etc.)
+    sample_period	hpcfile_number; metric sample period
+
+EpochsTable
+  num_epochs	uint32; number of epochs to be read
+  Epoch
+    num_modules		uint32; number of load modules in the epoch
+    Module
+      name_length	uint32; number of characters in module name
+      module_name	byte[name_length];
+      virtual_address	uint64; where the module prefers to be mapped
+      mapped_address	uint64; actual address at which the module was mapped
+
+TreeId
+  magic		10 bytes; "HPC_CSTREE" (no trailing null)
+  version	5 bytes; "01.0T"
+  endianess	1 byte; 'l' or 'b'
+
+Tree
+  id		TreeId
+  vma_size	uint32; probably '8'
+  uint_size	uint32; probably '8'
+  num_nodes	uint64;
+  epoch_number	uint32; epoch index in the epoch table
+  # node 0 is the root of the tree
+  nodes		TreeNode[num_nodes]; the actual nodes of the tree
+
+TreeNode
+  id		uint64; used to index into the node array
+  parent	uint64; id of this node's parent
+  ip		uint64; ip of this node
+  sp		uint64; sp of this node
+  metrics	uint64[CsProfData.num_metrics]; metrics taken at this node
+
+* Debugging hints
+
+** The -D and -v flags to csprof
+
+These flags are actually bitfields; each bit denotes some interesting
+piece of information csprof should talk about.  See `csprof_general.h'
+for a definition of each bit.  Please be aware that while this is
+intended to be the way things work, an unusually large number of debug
+messages fire when the zeroth bit in the bitfield is set.
+
+-D output is quite a bit more verbose than -v output.  The latter is
+intended to be informative, of use to the average user, whereas the
+latter is intended to be used for "real" debugging.
+
+** Message "Eliminate all occurrences of smashing!"
+
+This message usually means that on the previous sample, we inserted the
+trampoline incorrectly.  Therefore, it was not activated and moved up
+the stack properly.  Then, on our current sample, we attempted to find a
+frame containing the trampoline as its return address and did not--we
+needed to unwind the stack all the way.  Arguably, this situation could
+be recovered from, but the data recorded may be slightly screwy, since
+we missed some returns from the trampoline.
+
+** Message "Thought we were returning to ... but ..."
+
+This message comes from within the trampoline and tells you that the
+trampoline was placed incorrectly and/or the stack was unwound
+incorrectly.  The trampoline thought we were heading to <first address>
+but we are actually supposed to go to <second address>.

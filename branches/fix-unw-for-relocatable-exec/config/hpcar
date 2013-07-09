@@ -1,0 +1,118 @@
+#!/usr/bin/env perl
+# -*-Mode: perl;-*-
+
+# $Id: hpcar 67 2006-11-11 21:58:31Z eraxxon $
+
+## **************************************************************************
+##
+## File: 
+##    hpcar: see usage.
+##
+## Author:
+##    Written by Nathan Tallent, Rice University.
+##    
+## **************************************************************************
+
+#############################################################################
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+
+#############################################################################
+
+my $cmd = "$0";
+my $error_pfx = "*Error*";
+
+my $opt_ar_cmd = undef;
+my $opt_ar_lib = undef;
+my @opt_ar_filenames = ( );
+my $opt_threshhold = 20;
+ 
+my $the_usage =
+"Usage:
+  ${cmd} <ar-command> <ar-lib> <ar-args>
+
+  Example: ${cmd} 'ar cru' 'libfoo.a' a.o b.o 'templates/*.o'
+
+  Wraps the ar command to prevent a command-line length overflow.
+  The specific motivation is that when creating a self-contained
+  archive on alpha-Tru64 (from template code), one executes
+    ar cru libfoo.a <objects> template_repository/*.o
+  However, the template repository glob often expands to an argument
+  list that is too long for Tru64's /bin/ksh!
+
+  Options: Defaults are shown in square brackets [].
+    -h, --help   : Print help, then exit
+    -v, --version: Print version, then exit
+\n";
+
+my @the_options = ('version|v',
+		   'help|h', 
+		   );
+
+sub usage() {
+  print $the_usage;
+}
+
+
+# args: ($1..$n): all arguments given to this script
+sub getoptions()
+{
+  my %opts = ();
+
+  my $ret = GetOptions(\%opts, @the_options);
+  if (!$ret) { 
+    printf "${error_pfx} Invalid option\n";
+    usage();
+    exit(1);
+  }
+
+  my $numArgs = scalar(@ARGV);
+  if ( !($numArgs >= 3) ) { 
+    printf "${error_pfx} Invalid number of required arguments!\n";
+    usage();
+    exit(1);
+  }
+  
+  $opt_ar_cmd = $ARGV[0];
+  shift(@ARGV);
+  $opt_ar_lib = $ARGV[0];
+  shift(@ARGV);
+
+  foreach my $arg (@ARGV) {
+    push(@opt_ar_filenames, $arg);
+  }
+}
+
+ 
+#############################################################################
+# Main
+#############################################################################
+
+getoptions();
+
+# Accumulate the actual file names (may involve expanding globs, one
+# of which by itself my ehaust a shell's command-line length).
+my @the_files = ();
+foreach my $glb (@opt_ar_filenames) {
+  # Each entry is a glob or filename
+  my @files = glob($glb);
+  push(@the_files, @files);
+}
+
+# Execute the command with given number of files at a time
+while (@the_files) {
+  my @tmp = splice(@the_files, 0, $opt_threshhold);
+  my $filelst = join(' ', @tmp);
+  
+  my $cmd = "${opt_ar_cmd} ${opt_ar_lib} ${filelst}";
+  print "---------------------------------------------\n";
+  print "${cmd}\n";
+  if (system($cmd) != 0) {
+      print STDERR "system() failed! '$cmd'\n";
+      exit(-1);
+  }
+}
+

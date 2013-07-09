@@ -1,0 +1,165 @@
+#!/bin/sh
+# Testing: set -x: line by line (set -n: syntax)
+# set -x
+
+# $Id: hpcguess 87 2008-07-03 01:16:00Z eraxxon $
+
+## **************************************************************************
+##
+## File: 
+##    hpcguess: see usage.
+##
+## Author:
+##    Written by Nathan Tallent, Rice University.
+##    
+## **************************************************************************
+
+#############################################################################
+
+HPCGUESS_VERSION="1.0"
+
+#############################################################################
+
+# Note: All function names are prefixed with 'f_' in order to make
+# function calls very clear.
+
+cmd="$0"
+error_pfx="*Error*"
+
+f_usage()
+{
+  p="printf"
+  $p "\n"
+  $p "Usage:\n"
+  $p "  ${cmd} [OPTIONS] cpu-vendor-os\n"
+  $p "\n"
+  $p "  Attempts to create a canonical host name, given input styled after\n"
+  $p "  GNU's config.guess script.  The raw input should be in the form:\n"
+  $p "    host_cpu-host_vendor-host_os\n"
+  $p "\n"
+  $p "  All error messages are preceeded by '${error_pfx}'\n"
+  $p "\n"
+  $p "  Options: Defaults are shown in square brackets [].\n"
+  $p "    -h, --help   : Print help, then exit\n"
+  $p "    -v, --version: Print version, then exit\n"
+  $p "\n"
+}
+
+
+# args: ($1, $2): (string_to_check, string_for_error_msg[optional])
+f_error_on_nil()
+{
+  if [ -z "$1" ]; then
+    if [ -n "$2" ]; then printf "$2"; fi
+    f_usage
+    exit 1
+  fi
+}
+
+# args: ($1, $2): (option, option_value)
+f_opt_check()
+{
+  # 'option_value' should be non-nil
+  f_error_on_nil "$2" "${error_pfx} no value for option $1\n"
+    
+  # 'option_value' should not start with '-'
+  if ( echo "$2" | grep '^-.*' >/dev/null 2>&1 ); then
+    printf "${error_pfx} invalid value for option $1: $2\n"
+    f_usage
+    exit 1
+  fi
+}
+
+# args: ($1..$n): all arguments given to this script
+f_getoptions()
+{
+  # Note: The host name may be given on the command line or via stdin
+
+  # parse argument list
+  while [ $# -ge 0 ]; do
+    case $1 in
+      --version | -v )
+         echo "version: ${HPCGUESS_VERSION}" ; exit 0 ;;
+      --help | --h* | -h )
+         f_usage; exit 0 ;; 
+      -- )     # Stop option processing
+         shift; break ;;
+#      - )      # Use stdin as input.
+#         break ;;
+      -* ) 
+         printf "${error_pfx} Invalid option '$1'\n";
+         f_usage; exit 1;
+         ;;
+      * )   
+         break ;;
+    esac
+    shift
+  done
+}
+
+#############################################################################
+# Main
+#############################################################################
+# $n: argument n, with $0 being the command name
+# $*: all arguments from $1 to $n
+
+f_getoptions $*
+
+
+# Argument $1 should now point to the raw canonical host name
+# Here are some sample canonical hosts (right), given the input on the left
+#   alphaev67-dec-osf5.1     --> alpha-Tru64
+#   i686-pc-linux-gnu        --> x86-Linux
+#   i686-pc-cygwin           --> x86-Cygwin
+#   ia64-unknown-linux-gnu   --> ia64-Linux
+#   mips-sgi-irix6.5         --> mips-IRIX64
+#   powerpc-apple-darwin6.2  --> powerpc-MacOS
+#   sparc-sun-solaris2.6     --> sparc-SunOS
+
+cononical_host=""
+case $1 in
+  # Cygwin
+  i386*-*-cygwin* | i686*-*-cygwin*)
+    cononical_host="x86-Cygwin" ;;
+
+  # IRIX
+  mips*-*-irix*)
+    cononical_host="mips-IRIX64" ;;
+
+  # Linux 
+  i386*-*-linux* | i686*-*-linux*)
+    cononical_host="x86-Linux" ;;
+  ia64*-*-linux*)
+    cononical_host="ia64-Linux" ;;
+  x86_64*-*-linux*)
+    cononical_host="x86_64-Linux" ;;
+  mips64el*-*-linux*)
+    cononical_host="mips64el-Linux" ;; 
+  powerpc64*-*-linux*)
+    cononical_host="powerpc64-Linux" ;; 
+
+  # MacOS
+  powerpc*-*-darwin*)
+    cononical_host="powerpc-MacOS" ;;
+  i386*-*-darwin* | i686*-*-darwin*)
+    cononical_host="x86-MacOS" ;;
+
+  # Solaris
+  sparc*-*-solaris*)
+    cononical_host="sparc-SunOS" ;;
+
+  # Tru64
+  alpha*-*-osf*)
+    cononical_host="alpha-OSF1" ;;
+
+  *)
+    ;;
+esac
+
+
+
+f_error_on_nil "${cononical_host}" "${error_pfx} unknown host string!\n";
+
+# success
+printf "${cononical_host}\n"
+exit 0

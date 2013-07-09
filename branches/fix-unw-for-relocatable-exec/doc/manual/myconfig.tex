@@ -1,0 +1,63 @@
+% $HeadURL$
+% $Id$
+
+% ----------------------------------------------------------
+% 
+% ----------------------------------------------------------
+
+% A sane version of verb/texttt (requires url package)
+\newcommand{\mytt}{\begingroup \urlstyle{tt}\Url}
+\newcommand{\mysf}{\begingroup \urlstyle{sf}\Url}
+
+\newcommand{\myfiguretextsize}{small}
+
+\newcommand{\NIL}{\fnnm{NIL}}
+
+% Because the retarded tabbing environment limits you to about 12 tabs
+%\newcommand{\TB}{\hspace{.2in}}
+\newcommand{\TB}{\hbox to 3ex{\hfill}}
+
+% ----------------------------------------------------------
+% my common text commands
+% ----------------------------------------------------------
+
+\newcommand{\ie}{i.e.}         % followed by a comma
+\newcommand{\eg}{e.g.}         % followed by a comma
+\newcommand{\cf}{cf.\@}        % always followed by a space
+\newcommand{\Cf}{Cf.\@}        % always followed by a space
+\newcommand{\vs}{\emph{vs.}\@} % always followed by a space
+\newcommand{\etc}{etc.}        % 
+\newcommand{\etal}{et al.\@}
+\newcommand{\viz}{\emph{viz.}}
+\newcommand{\perse}{per se}
+\newcommand{\naive}{na\"{i}ve}
+\newcommand{\nee}{n\'{e}e}
+
+\newcommand{\textseparator}{%
+  \begin{center}{\textasteriskcentered \hspace{2em} \textasteriskcentered \hspace{2em} \textasteriskcentered}\end{center}} % \textbullet
+
+
+% ----------------------------------------------------------
+% tools
+% ----------------------------------------------------------
+
+\newcommand{\HPCToolkit}{\textsc{HPCToolkit}}
+\newcommand{\hpctoolkitorg}{\href{http://hpctoolkit.org}{\textsc{HPCToolkit}}}
+\newcommand{\hpcrun}{\texttt{hpcrun}}
+\newcommand{\hpclink}{\texttt{hpclink}}
+\newcommand{\hpcstruct}{\texttt{hpcstruct}}
+\newcommand{\hpcprof}{\texttt{hpcprof}}
+\newcommand{\hpcprofmpi}{\texttt{hpcprof-mpi}}
+\newcommand{\hpcprofAll}{\texttt{hpcprof/mpi}}
+\newcommand{\hpctraceviewer}{\texttt{hpctraceviewer}}
+\newcommand{\hpcviewer}{\texttt{hpcviewer}}
+\newcommand{\libmonitor}{\texttt{libmonitor}}
+
+
+% ----------------------------------------------------------
+% 
+% ----------------------------------------------------------
+
+% use textsf instead of mathsf
+\newcommand{\fnnm}[1]{\ensuremath{\textsf{#1}}}
+

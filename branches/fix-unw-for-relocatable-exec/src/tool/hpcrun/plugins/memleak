@@ -1,0 +1,12 @@
+#
+# The MEMLEAK sample source as an hpclink plugin.  These two command
+# lines are equivalent ways of linking in the MEMLEAK overrides.
+#
+#   hpclink --memleak gcc ...
+#   hpclink --plugin memleak gcc ... 
+#
+
+hpclink_files='../libhpcrun_memleak_wrap.a'
+hpclink_wrap_names='malloc calloc free realloc memalign posix_memalign valloc'
+hpclink_undefined_names='malloc'
+
