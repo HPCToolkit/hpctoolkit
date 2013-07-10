@@ -66,6 +66,7 @@
 #include <vector>
 #include <errno.h>
 #include <string>
+#include <cstring>
 #include <stdint.h>
 
 using namespace std;

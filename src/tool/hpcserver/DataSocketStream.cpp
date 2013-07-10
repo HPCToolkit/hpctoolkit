@@ -62,7 +62,8 @@
 #include <stdio.h>//fread, fwrite, etc.
 #include <cstring> //For memset
 #include <iostream>
-#include <string>//for strerror
+#include <string>//for string
+#include <cstring>//for strerror
 
 #include <sys/socket.h>
 #include <arpa/inet.h> //htons
