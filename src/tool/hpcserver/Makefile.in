@@ -84,9 +84,9 @@ am__objects_1 = hpcserver-Args.$(OBJEXT) \
 	hpcserver-BaseDataFile.$(OBJEXT) \
 	hpcserver-Communication-SingleThreaded.$(OBJEXT) \
 	hpcserver-DataCompressionLayer.$(OBJEXT) \
-	hpcserver-DBOpener.$(OBJEXT) \
 	hpcserver-DataOutputFileStream.$(OBJEXT) \
 	hpcserver-DataSocketStream.$(OBJEXT) \
+	hpcserver-DBOpener.$(OBJEXT) \
 	hpcserver-FilteredBaseData.$(OBJEXT) \
 	hpcserver-LargeByteBuffer.$(OBJEXT) \
 	hpcserver-MergeDataFiles.$(OBJEXT) \
@@ -371,23 +371,23 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 # Local settings
 #############################################################################
 MYSOURCES = \
-Args.cpp \
-BaseDataFile.cpp \
-Communication-SingleThreaded.cpp \
-DataCompressionLayer.cpp \
-DBOpener.cpp \
-DataOutputFileStream.cpp \
-DataSocketStream.cpp \
-FilteredBaseData.cpp \
-LargeByteBuffer.cpp \
-MergeDataFiles.cpp \
-ProcessTimeline.cpp \
-ProgressBar.cpp \
-Server.cpp \
-SpaceTimeDataController.cpp \
-TraceDataByRank.cpp \
-VersatileMemoryPage.cpp \
-main.cpp
+	Args.cpp \
+	BaseDataFile.cpp \
+	Communication-SingleThreaded.cpp \
+	DataCompressionLayer.cpp \
+	DataOutputFileStream.cpp \
+	DataSocketStream.cpp \
+	DBOpener.cpp \
+	FilteredBaseData.cpp \
+	LargeByteBuffer.cpp \
+	MergeDataFiles.cpp \
+	ProcessTimeline.cpp \
+	ProgressBar.cpp \
+	Server.cpp \
+	SpaceTimeDataController.cpp \
+	TraceDataByRank.cpp \
+	VersatileMemoryPage.cpp \
+	main.cpp
 
 MYMPIFLAGS = -DMPICH_IGNORE_CXX_SEEK 
 MYCFLAGS = @HOST_CFLAGS@ $(MYMPIFLAGS)  $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
@@ -595,20 +595,6 @@ hpcserver-DataCompressionLayer.obj: DataCompressionLayer.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-DataCompressionLayer.obj `if test -f 'DataCompressionLayer.cpp'; then $(CYGPATH_W) 'DataCompressionLayer.cpp'; else $(CYGPATH_W) '$(srcdir)/DataCompressionLayer.cpp'; fi`
 
-hpcserver-DBOpener.o: DBOpener.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-DBOpener.o -MD -MP -MF $(DEPDIR)/hpcserver-DBOpener.Tpo -c -o hpcserver-DBOpener.o `test -f 'DBOpener.cpp' || echo '$(srcdir)/'`DBOpener.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver-DBOpener.Tpo $(DEPDIR)/hpcserver-DBOpener.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DBOpener.cpp' object='hpcserver-DBOpener.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-DBOpener.o `test -f 'DBOpener.cpp' || echo '$(srcdir)/'`DBOpener.cpp
-
-hpcserver-DBOpener.obj: DBOpener.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-DBOpener.obj -MD -MP -MF $(DEPDIR)/hpcserver-DBOpener.Tpo -c -o hpcserver-DBOpener.obj `if test -f 'DBOpener.cpp'; then $(CYGPATH_W) 'DBOpener.cpp'; else $(CYGPATH_W) '$(srcdir)/DBOpener.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver-DBOpener.Tpo $(DEPDIR)/hpcserver-DBOpener.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DBOpener.cpp' object='hpcserver-DBOpener.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-DBOpener.obj `if test -f 'DBOpener.cpp'; then $(CYGPATH_W) 'DBOpener.cpp'; else $(CYGPATH_W) '$(srcdir)/DBOpener.cpp'; fi`
-
 hpcserver-DataOutputFileStream.o: DataOutputFileStream.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-DataOutputFileStream.o -MD -MP -MF $(DEPDIR)/hpcserver-DataOutputFileStream.Tpo -c -o hpcserver-DataOutputFileStream.o `test -f 'DataOutputFileStream.cpp' || echo '$(srcdir)/'`DataOutputFileStream.cpp
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver-DataOutputFileStream.Tpo $(DEPDIR)/hpcserver-DataOutputFileStream.Po
@@ -636,6 +622,20 @@ hpcserver-DataSocketStream.obj: DataSocketStream.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DataSocketStream.cpp' object='hpcserver-DataSocketStream.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-DataSocketStream.obj `if test -f 'DataSocketStream.cpp'; then $(CYGPATH_W) 'DataSocketStream.cpp'; else $(CYGPATH_W) '$(srcdir)/DataSocketStream.cpp'; fi`
+
+hpcserver-DBOpener.o: DBOpener.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-DBOpener.o -MD -MP -MF $(DEPDIR)/hpcserver-DBOpener.Tpo -c -o hpcserver-DBOpener.o `test -f 'DBOpener.cpp' || echo '$(srcdir)/'`DBOpener.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver-DBOpener.Tpo $(DEPDIR)/hpcserver-DBOpener.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DBOpener.cpp' object='hpcserver-DBOpener.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-DBOpener.o `test -f 'DBOpener.cpp' || echo '$(srcdir)/'`DBOpener.cpp
+
+hpcserver-DBOpener.obj: DBOpener.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-DBOpener.obj -MD -MP -MF $(DEPDIR)/hpcserver-DBOpener.Tpo -c -o hpcserver-DBOpener.obj `if test -f 'DBOpener.cpp'; then $(CYGPATH_W) 'DBOpener.cpp'; else $(CYGPATH_W) '$(srcdir)/DBOpener.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver-DBOpener.Tpo $(DEPDIR)/hpcserver-DBOpener.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DBOpener.cpp' object='hpcserver-DBOpener.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver-DBOpener.obj `if test -f 'DBOpener.cpp'; then $(CYGPATH_W) 'DBOpener.cpp'; else $(CYGPATH_W) '$(srcdir)/DBOpener.cpp'; fi`
 
 hpcserver-FilteredBaseData.o: FilteredBaseData.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_CXXFLAGS) $(CXXFLAGS) -MT hpcserver-FilteredBaseData.o -MD -MP -MF $(DEPDIR)/hpcserver-FilteredBaseData.Tpo -c -o hpcserver-FilteredBaseData.o `test -f 'FilteredBaseData.cpp' || echo '$(srcdir)/'`FilteredBaseData.cpp
