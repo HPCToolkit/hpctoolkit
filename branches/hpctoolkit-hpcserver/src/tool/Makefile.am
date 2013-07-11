@@ -76,8 +76,11 @@ SUBDIRS += \
 	hpcprof \
 	hpcproftt \
 	hpclump \
-	misc \
-	hpcserver
+	misc
+
+if OPT_ENABLE_HPCSERVER
+SUBDIRS += hpcserver
+endif
 endif
 
 if OPT_ENABLE_HPCRUN_FLAT
@@ -93,7 +96,10 @@ endif
 
 if OPT_ENABLE_MPI
   SUBDIRS += hpcprof-mpi 
+
+if OPT_ENABLE_HPCSERVER
   SUBDIRS += hpcserver/mpi
+endif
 endif
 
 #if OPT_ENABLE_DEVTOOLS

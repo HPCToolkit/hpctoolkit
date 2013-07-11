@@ -2001,6 +2001,21 @@ AM_CONDITIONAL([OPT_ENABLE_HPCRUN_DYNAMIC],
 
 
 #-------------------------------------------------
+# enable-hpcserver:
+#-------------------------------------------------
+
+# hpcserver is new, so the default is no for now.
+
+AC_ARG_ENABLE([hpcserver],
+  [AS_HELP_STRING([--enable-hpcserver],
+	  [build hpcserver and hpcserver-mpi (default no)])],
+  [],
+  [enable_hpcserver=no])
+
+AM_CONDITIONAL([OPT_ENABLE_HPCSERVER], [test "$enable_hpcserver" = yes])
+
+
+#-------------------------------------------------
 # enable-mpi:
 #-------------------------------------------------
 
@@ -2716,6 +2731,7 @@ AC_MSG_NOTICE([  host:   $host])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
 AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])
+AC_MSG_NOTICE([  hpcserver?:   $enable_hpcserver])
 AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
 AC_MSG_NOTICE([  mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
