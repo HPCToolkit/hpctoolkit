@@ -102,7 +102,7 @@ namespace TraceviewerServer
 			struct stat DirInfo;
 			int err = stat(p.c_str(), &DirInfo);
 			bool isDir = S_ISDIR(DirInfo.st_mode);
-			if ((err!=NO_ERROR)|| !isDir)
+			if ((err!=0)|| !isDir)
 			{
 				cerr<<"Either does not exist or is not directory: File " << p<< " Err: "<< err << " isDir: " << isDir << " mode: "<<DirInfo.st_mode<< " Error: " << strerror(errno) << endl;
 			}
@@ -114,14 +114,14 @@ namespace TraceviewerServer
 		{
 			struct stat DirInfo;
 			int err = stat(p.c_str(), &DirInfo);
-			return (err == NO_ERROR);
+			return (err == 0);
 		}
 		//Gets the file size of a file (the file must exist)
 		static FileOffset getFileSize(string p)
 		{
 			struct stat DirInfo;
 			int err = stat(p.c_str(), &DirInfo);
-			if (err != NO_ERROR)
+			if (err != 0)
 				cerr << "Tried to get file size when file does not exist!" << endl;
 			return DirInfo.st_size;
 		}

@@ -61,6 +61,7 @@
 #define PROGRESSBAR_HPP_
 
 #include <string>
+#include <stdint.h>
 using namespace std;
 namespace TraceviewerServer
 {

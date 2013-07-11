@@ -71,27 +71,27 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-Args.cpp \
-BaseDataFile.cpp \
-Communication-SingleThreaded.cpp \
-DataCompressionLayer.cpp \
-DBOpener.cpp \
-DataOutputFileStream.cpp \
-DataSocketStream.cpp \
-FilteredBaseData.cpp \
-LargeByteBuffer.cpp \
-MergeDataFiles.cpp \
-ProcessTimeline.cpp \
-ProgressBar.cpp \
-Server.cpp \
-SpaceTimeDataController.cpp \
-TraceDataByRank.cpp \
-VersatileMemoryPage.cpp \
-main.cpp
+	Args.cpp \
+	BaseDataFile.cpp \
+	Communication-SingleThreaded.cpp \
+	DataCompressionLayer.cpp \
+	DataOutputFileStream.cpp \
+	DataSocketStream.cpp \
+	DBOpener.cpp \
+	FilteredBaseData.cpp \
+	LargeByteBuffer.cpp \
+	MergeDataFiles.cpp \
+	ProcessTimeline.cpp \
+	ProgressBar.cpp \
+	Server.cpp \
+	SpaceTimeDataController.cpp \
+	TraceDataByRank.cpp \
+	VersatileMemoryPage.cpp \
+	main.cpp
 
 
 
-MYMPIFLAGS = -fmessage-length=0  -DMPICH_IGNORE_CXX_SEEK 
+MYMPIFLAGS = -DMPICH_IGNORE_CXX_SEEK 
 
 MYCFLAGS   = @HOST_CFLAGS@ $(MYMPIFLAGS)  $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(MYMPIFLAGS)  $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
