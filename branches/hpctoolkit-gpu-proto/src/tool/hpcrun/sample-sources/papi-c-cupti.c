@@ -254,8 +254,8 @@ papi_c_cupti_setup(void)
 static void
 papi_c_cupti_teardown(void)
 {
-  static bool one_time2 = false;
-  if (one_time2) return;
+  static bool one_time = false;
+  if (one_time) return;
 
   TMSG(CUDA,"sync teardown called (=unsubscribe)");
   
