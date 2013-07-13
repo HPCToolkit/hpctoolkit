@@ -260,7 +260,7 @@ papi_c_cupti_teardown(void)
   TMSG(CUDA,"sync teardown called (=unsubscribe)");
   
   Cupti_call(dcuptiUnsubscribe, subscriber);
-  one_time2 = true;
+  one_time = true;
 }
 
 static sync_info_list_t cuda_component = {
