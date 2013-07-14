@@ -186,6 +186,7 @@ static int metrics [METRIC_NUM];
 static long period = DEFAULT_PERIOD;
 
 // Metrics for numa related metrics
+static int numa_lat_metric_id = -1;
 static int numa_match_metric_id = -1;
 static int numa_mismatch_metric_id = -1;
 
@@ -503,6 +504,10 @@ METHOD_FN(process_event_list, int lush_metrics)
     }
   }
 
+  numa_lat_metric_id = hpcrun_new_metric(); /* metric for latency caused by remote accesses */
+  hpcrun_set_metric_info_and_period(numa_lat_metric_id, "NUMA_LATENCY",
+                                    MetricFlags_ValFmt_Int,
+                                    1, metric_property_none);
   numa_match_metric_id = hpcrun_new_metric(); /* create numa metric id (access matches data location in NUMA node) */
   hpcrun_set_metric_info_and_period(numa_match_metric_id, "NUMA_MATCH",
                                     MetricFlags_ValFmt_Int,
@@ -799,6 +804,10 @@ ibsop_signal_handler(int sig, siginfo_t* siginfo, void* context)
 	  lat = opdata3->reg.ibsdcmisslat;
 	  if(lat > 0)
 	    cct_metric_data_increment(metrics[4], node, (cct_metric_data_t){.i = lat});
+            // log numa latency
+	    if(((opdata2->reg.nbibsreqsrc == 0x3) && (opdata2->reg.nbibsreqdstproc == 0x1)) || 
+	      ((opdata2->reg.nbibsreqsrc == 0X2) && (opdata2->reg.nbibsreqdstproc == 0x1)))
+	      cct_metric_data_increment(numa_lat_metric_id, node, (cct_metric_data_t){.i = lat});
 	}
       }
       else // this is NOT a memory access, just restart IBS
