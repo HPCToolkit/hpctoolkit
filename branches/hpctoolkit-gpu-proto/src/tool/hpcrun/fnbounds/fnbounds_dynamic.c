@@ -95,6 +95,7 @@
 #include "client.h"
 #include "dylib.h"
 
+#include <hpcrun/main.h>
 #include <hpcrun_dlfns.h>
 #include <hpcrun_stats.h>
 #include <disabled.h>
@@ -253,6 +254,7 @@ fnbounds_find_exec_bounds_proc_maps(char* exename, void**start, void** end)
     return;
   }
   char linebuf[1024 + 1];
+  char tmpname[PATH_MAX];
   char* addr = NULL;
   for(;;) {
     char* l = fgets(linebuf, sizeof(linebuf), loadmap);
@@ -265,8 +267,8 @@ fnbounds_find_exec_bounds_proc_maps(char* exename, void**start, void** end)
     // skip 3 tokens
     for (int i=0; i < 3; i++) dc = strtok_r(NULL, delim, &save);
     char* name = strtok_r(NULL, delim, &save);
-    // print("   -->address, perms, name = %s, %s, %s", addr, perms, name);
-    if ((strcmp(perms, "r-xp") == 0) && (strcmp(name, exename) == 0)) break;
+    realpath(name, tmpname); 
+    if ((strncmp(perms, "r-x", 3) == 0) && (strcmp(tmpname, exename) == 0)) break;
   }
   fclose(loadmap);
   char* save = NULL;
@@ -280,13 +282,14 @@ fnbounds_find_exec_bounds_proc_maps(char* exename, void**start, void** end)
 dso_info_t*
 fnbounds_dso_exec(void)
 {
-  char filename[PATH_MAX];
+  // char filename[PATH_MAX];
   struct fnbounds_file_header fh;
   void* start = NULL;
   void* end   = NULL;
 
   TMSG(MAP_EXEC, "Entry");
-  realpath("/proc/self/exe", filename);
+  // realpath("/proc/self/exe", filename);
+  char* filename = hpcrun_get_execname();
   void** nm_table = (void**) hpcrun_syserv_query(filename, &fh);
   if (! nm_table) {
     EMSG("No nm_table for executable %s", filename);
