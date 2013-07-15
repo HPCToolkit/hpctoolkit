@@ -58,6 +58,9 @@
 
 #ifdef LINUX
 #include <linux/unistd.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <linux/limits.h>
 #endif
 
 //***************************************************************************
@@ -199,6 +202,8 @@ static spinlock_t hpcrun_aux_cleanup_lock = SPINLOCK_UNLOCKED;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_list_head = NULL;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
 static bool cuda_ctx_actions = false;
+static char execname[PATH_MAX] = {'\0'};
+
 //
 // Local functions
 //
@@ -211,6 +216,17 @@ setup_main_bounds_check(void* main_addr)
 #endif
   load_module_t* lm = NULL;
   fnbounds_enclosing_addr(main_addr, &main_lower, &main_upper, &lm);
+}
+
+//
+// Derive the full executable name from the
+// process name. Store in a local variable.
+//
+static void
+copy_execname(char* process_name)
+{
+  char tmp[PATH_MAX] = {'\0'};
+  strncpy(execname, realpath(process_name, tmp), sizeof(tmp));
 }
 
 //
@@ -233,6 +249,15 @@ bool
 hpcrun_inbounds_main(void* addr)
 {
   return (main_lower <= addr) && (addr <= main_upper);
+}
+
+//
+// fetch the execname
+//
+char*
+hpcrun_get_execname(void)
+{
+  return execname;
 }
 
 //
@@ -679,6 +704,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_set_using_threads(false);
 
+  copy_execname(process_name);
   hpcrun_files_set_executable(process_name);
 
   hpcrun_registered_sources_init();
