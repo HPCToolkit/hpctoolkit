@@ -66,6 +66,7 @@
 #include <cstring>//for strerror
 
 #include <sys/socket.h>
+#include <unistd.h> // close socket
 #include <arpa/inet.h> //htons
 #include <sys/types.h>
 #include <netinet/in.h>
