@@ -62,6 +62,8 @@
 #include "DebugUtils.hpp"
 #include "MergeDataFiles.hpp"
 #include "FileUtils.hpp"
+#include "FileData.hpp"
+#include "SpaceTimeDataController.hpp"
 
 namespace TraceviewerServer
 {
@@ -75,7 +77,7 @@ namespace TraceviewerServer
 
 	DBOpener::~DBOpener()
 	{
-		//stdcl, which is the only dynamically allocated thing gets closed later because
+		//stdcl, which is the only dynamically allocated thing, gets closed later because
 		//it makes sense to have it persist even after the opener.
 	}
 	SpaceTimeDataController* stdcl;

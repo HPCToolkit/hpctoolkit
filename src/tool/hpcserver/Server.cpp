@@ -67,9 +67,16 @@
 #include "FileUtils.hpp"
 #include "Communication.hpp"
 #include "DebugUtils.hpp"
+#include "Filter.hpp"
+#include "FilterSet.hpp"
+#include "SpaceTimeDataController.hpp"
+#include "TimeCPID.hpp" //For Time
 
 #include <iostream>
 #include <cstdio>
+#include <zlib.h>
+#include <algorithm> //for min of int64_t
+#include <string>
 
 using namespace std;
 

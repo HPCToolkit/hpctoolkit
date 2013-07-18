@@ -60,11 +60,13 @@
 #ifndef LARGEBYTEBUFFER_H_
 #define LARGEBYTEBUFFER_H_
 
-#include "ByteUtilities.hpp"
-#include <string>
 #include "VersatileMemoryPage.hpp"
-#include <vector>
+#include "ByteUtilities.hpp"
+#include "FileUtils.hpp" //For FileOffset
 
+#include <string>
+#include <vector>
+#include <stdint.h>
 
 namespace TraceviewerServer
 {
@@ -81,7 +83,6 @@ namespace TraceviewerServer
 		static uint64_t lcm(uint64_t, uint64_t);
 		static uint64_t getRamSize();
 		vector<VersatileMemoryPage> masterBuffer;
-		FileOffset length;
 		int numPages;
 
 	};

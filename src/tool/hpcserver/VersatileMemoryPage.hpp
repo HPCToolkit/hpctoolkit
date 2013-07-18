@@ -61,8 +61,7 @@
 #define VERSATILEMEMORYPAGE_H_
 
 
-#include "sys/mman.h"
-#include "ByteUtilities.hpp"
+#include <sys/mman.h>
 #include "FileUtils.hpp" //FileOffset
 
 using namespace std;
