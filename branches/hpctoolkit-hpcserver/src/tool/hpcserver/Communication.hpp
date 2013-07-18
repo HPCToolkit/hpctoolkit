@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL:$
-// $Id:$
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL:$
+//   $HeadURL$
 //
 // Purpose:
 //    Abstracts the MPI/No-MPI differences away.
@@ -62,10 +62,12 @@
 #define COMMUNICATION_H_
 
 #include <string>
-#include "SpaceTimeDataController.hpp"
-#include "DataSocketStream.hpp"
+
 #include "TimeCPID.hpp" //For Time
 #include "ProgressBar.hpp"
+#include "SpaceTimeDataController.hpp"
+#include "DataSocketStream.hpp"
+#include "Filter.hpp"
 
 namespace TraceviewerServer
 {

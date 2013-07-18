@@ -62,9 +62,10 @@
 
 using namespace std;
 
-#include "LargeByteBuffer.hpp"
-#include "FileUtils.hpp" //For FileOffset
+#include <string>
 
+#include "FileUtils.hpp" // For FileOffset
+#include "LargeByteBuffer.hpp"
 
 namespace TraceviewerServer {
 

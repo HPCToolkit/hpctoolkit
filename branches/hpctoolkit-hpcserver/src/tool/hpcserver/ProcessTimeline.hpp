@@ -61,6 +61,7 @@
 #define PROCESSTIMELINE_H_
 #include "TraceDataByRank.hpp"
 #include "ImageTraceAttributes.hpp"
+#include "TimeCPID.hpp" // for Time
 namespace TraceviewerServer
 {
 

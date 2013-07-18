@@ -63,7 +63,9 @@
 #include "ProcessTimeline.hpp"
 #include "FilteredBaseData.hpp"
 #include "FilterSet.hpp"
+#include "TimeCPID.hpp"
 
+#include <string>
 
 namespace TraceviewerServer
 {
@@ -74,7 +76,7 @@ namespace TraceviewerServer
 
 		SpaceTimeDataController(FileData*);
 		virtual ~SpaceTimeDataController();
-		void setInfo(Long, Long, int);
+		void setInfo(Time, Time, int);
 		ProcessTimeline* getNextTrace();
 		void addNextTrace(ProcessTimeline*);
 		void fillTraces();
@@ -98,7 +100,7 @@ namespace TraceviewerServer
 		int headerSize;
 
 		// The minimum beginning and maximum ending time stamp across all traces (in microseconds).
-		Long maxEndTime, minBegTime;
+		Time maxEndTime, minBegTime;
 
 		int height;
 		string experimentXML;

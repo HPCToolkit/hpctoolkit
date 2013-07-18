@@ -65,9 +65,10 @@
 #include "DebugUtils.hpp"
 
 #include <string>
-#include <sstream>
 #include <algorithm>
-#include <iterator>
+#include <cstdlib>
+#include <cstdio>
+#include <stdint.h>
 
 using namespace std;
 typedef int64_t Long;

@@ -58,6 +58,7 @@
 //***************************************************************************
 
 #include "TraceDataByRank.hpp"
+#include <algorithm>
 #include <cstdlib> // previously: cmath but it causes ambuguity in abs function for gcc 4.4.6
 #include "Constants.hpp"
 #include <iostream>

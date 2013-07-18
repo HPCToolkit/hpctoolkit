@@ -63,6 +63,8 @@
 
 #include <iostream> //For cerr
 #include <cassert>
+#include <algorithm> //For copy
+#include <zlib.h>
 
 using namespace std;
 namespace TraceviewerServer

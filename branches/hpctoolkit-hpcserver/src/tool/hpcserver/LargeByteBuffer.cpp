@@ -65,10 +65,12 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
-
-#include <iostream>
 #include <errno.h>
 #include <unistd.h>
+
+#include <iostream>
+#include <algorithm> //For min of two longs
+
 
 using namespace std;
 

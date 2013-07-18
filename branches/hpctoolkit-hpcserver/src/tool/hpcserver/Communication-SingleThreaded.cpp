@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL:$
-// $Id:$
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL:$
+//   $HeadURL$
 //
 // Purpose:
 //   The single-threaded implementation of the methods in Communication.hpp
@@ -57,16 +57,24 @@
 //
 //***************************************************************************
 
+#include <stdint.h>                     // for uint64_t
+#include <iostream>                     // for operator<<, basic_ostream, etc
+#include <string>                       // for string
+#include <vector>                       // for vector, vector<>::iterator
 
+#include "Communication.hpp"            // for Communication
+#include "DataCompressionLayer.hpp"     // for DataCompressionLayer
+#include "DataSocketStream.hpp"         // for DataSocketStream
+#include "DebugUtils.hpp"               // for DEBUGCOUT
+#include "Filter.hpp"
+#include "ImageTraceAttributes.hpp"     // for ImageTraceAttributes
+#include "ProcessTimeline.hpp"          // for ProcessTimeline
+#include "ProgressBar.hpp"              // for ProgressBar
+#include "Server.hpp"                   // for Server
+#include "SpaceTimeDataController.hpp"  // for SpaceTimeDataController
+#include "TimeCPID.hpp"                 // for TimeCPID, Time
+#include "TraceDataByRank.hpp"          // for TraceDataByRank
 
-#include "Communication.hpp"
-#include "ProcessTimeline.hpp"
-#include "DataCompressionLayer.hpp"
-#include "ImageTraceAttributes.hpp"
-#include "DebugUtils.hpp"
-#include "Server.hpp"
-
-#include <vector>
 
 using namespace std;
 namespace TraceviewerServer {

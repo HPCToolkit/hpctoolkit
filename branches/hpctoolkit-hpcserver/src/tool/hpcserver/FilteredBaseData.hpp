@@ -66,6 +66,7 @@
 #include "FileUtils.hpp"//For FileOffset
 
 #include <vector>
+#include <stdint.h>
 
 using std::vector;
 namespace TraceviewerServer
@@ -79,7 +80,7 @@ namespace TraceviewerServer
 
 		FileOffset getMinLoc(int pseudoRank);
 		FileOffset getMaxLoc(int pseudoRank);
-		Long getLong(FileOffset position);
+		int64_t getLong(FileOffset position);
 		int getInt(FileOffset position);
 		int getNumberOfRanks();
 		int* getProcessIDs();

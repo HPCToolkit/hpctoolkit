@@ -60,12 +60,13 @@
 //
 //***************************************************************************
 
-#include "FilteredBaseData.hpp"
-#include <assert.h>
 
+#include <assert.h>
 #include <iostream>
 
+
 #include "DebugUtils.hpp"
+#include "FilteredBaseData.hpp"
 
 namespace TraceviewerServer {
 FilteredBaseData::FilteredBaseData(string filename, int _headerSize) {
@@ -111,7 +112,7 @@ FileOffset FilteredBaseData::getMaxLoc(int pseudoRank){
 	return baseOffsets[rankMapping[pseudoRank]].end;
 }
 
-Long FilteredBaseData::getLong(FileOffset position)
+int64_t FilteredBaseData::getLong(FileOffset position)
 {
 	return baseDataFile->getMasterBuffer()->getLong(position);
 }
