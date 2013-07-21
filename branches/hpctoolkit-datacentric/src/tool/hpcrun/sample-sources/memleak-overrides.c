@@ -108,7 +108,7 @@
 #include <utilities/arch/mcontext.h>
 #endif
 
-#define MIN_BYTES 4096
+#define MIN_BYTES 8192
 
 /******************************************************************************
  * type definitions
@@ -283,7 +283,7 @@ splay_delete(void *memblock)
 cct_node_t *
 splay_lookup(void *key, void **start, void **end)
 {
-  if(!memleak_tree_root) {
+  if(!memleak_tree_root || !key) {
     return NULL;
   }
 
@@ -573,6 +573,21 @@ memleak_malloc_helper(const char *name, size_t bytes, size_t align,
   loc = memleak_get_malloc_loc(sys_ptr, bytes, align, &appl_ptr, &info_ptr);
   memleak_add_leakinfo(name, sys_ptr, appl_ptr, info_ptr, bytes, uc, loc);
 
+  // support for first touch analysis
+
+  // Change the permission for the newly allocated memory ranges (rounded to 
+  // the page boundary). Will segfault at the first touch of the memory range.
+  int pagesize = getpagesize();
+  // round to the upper-bound of the next page
+  void *p = (void *)(((uint64_t)(uintptr_t) sys_ptr + pagesize-1) & ~(pagesize-1));
+  // monitor all pages of the allocation (expect the page of splay section)
+  uint64_t msize = (uint64_t)(uintptr_t) info_ptr-(uint64_t)(uintptr_t) p - pagesize;
+  if (msize <= 0 ) msize = pagesize - 1;
+  mprotect (p, msize, PROT_NONE);
+  // change the splay node section to be read/write.
+  // make sure pages with the splay section have correct permissions
+  p = (void *)((uint64_t)(uintptr_t) info_ptr & ~(pagesize - 1));
+  mprotect (p, (uint64_t)(uintptr_t) info_ptr + leakinfo_size - (uint64_t)(uintptr_t) p, PROT_READ | PROT_WRITE);
   return appl_ptr;
 }
 
