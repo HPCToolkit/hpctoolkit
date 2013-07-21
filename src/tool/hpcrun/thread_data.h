@@ -169,6 +169,8 @@ typedef struct thread_data_t {
   // for address-centric analysis
   void *start;
   void *end;
+
+  int first_touch;
   // ----------------------------------------
   // soft ibs support 
   // ----------------------------------------

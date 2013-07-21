@@ -321,6 +321,11 @@ data_range_5_5()
 {
 }
 
+void 
+first_touch_place(void)
+{
+}
+
 cct_node_t*
 hpcrun_cct_record_backtrace(cct_bundle_t* cct, bool partial, bool thread_stop,
 			    frame_t* bt_beg, frame_t* bt_last, bool tramp_found)
@@ -395,6 +400,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
   void *ea = TD_GET(ea);
   void *start = TD_GET(start);
   void *end = TD_GET(end);
+  int first_touch = TD_GET(first_touch);
 
   if(data_node) {
     // give a tag for the heap allocated data
@@ -407,6 +413,13 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
     // copy the call path of the malloc
     cct_cursor = hpcrun_cct_insert_path_return_leaf(data_node, cct_cursor);
 
+    if (first_touch) {
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
+      cct_cursor = hpcrun_insert_special_node(cct_cursor, *(void **)first_touch_place);
+#else
+      cct_cursor = hpcrun_insert_special_node(cct_cursor, first_touch_place);
+#endif
+    }
     // insert address-centric markers
     if (ENABLED(ADDRESS_CENTRIC)) {
       // first compute the range the address falls in
@@ -448,11 +461,13 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
       }
     }
 
+    if(!first_touch) {
 #if defined(__PPC64__) || defined(HOST_CPU_IA64)
-    cct_cursor = hpcrun_insert_special_node(cct_cursor, *(void **)heap_data_accesses);
+      cct_cursor = hpcrun_insert_special_node(cct_cursor, *(void **)heap_data_accesses);
 #else
-    cct_cursor = hpcrun_insert_special_node(cct_cursor, heap_data_accesses);
+      cct_cursor = hpcrun_insert_special_node(cct_cursor, heap_data_accesses);
 #endif
+    }
     TD_GET(data_node) = NULL;
   }
   // static data

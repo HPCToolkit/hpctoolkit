@@ -286,6 +286,7 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   td->ea = NULL;
   td->start = NULL;
   td->end = NULL;
+  td->first_touch = 0;
 
   td->ma_count = 0;
   // ----------------------------------------
