@@ -69,6 +69,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <stdint.h>
+#include <sstream>
 
 using namespace std;
 typedef int64_t Long;
