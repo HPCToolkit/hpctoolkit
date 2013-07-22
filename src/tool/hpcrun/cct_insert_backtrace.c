@@ -82,6 +82,8 @@ extern bool hpcrun_inbounds_main(void* addr);
 //
 static bool retain_recursion = false;
 
+#define OMPT_DEBUG 1
+
 #ifdef OMPT_DEBUG
 #define elide_debug_dump(t,i,o) stack_dump(t,i,o)
 
@@ -169,6 +171,18 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner)
       }
     }
     if (found == 0) {
+#if 1
+      uint64_t idle_frame = (uint64_t) hpcrun_ompt_get_thread_idle_frame();
+
+      if (idle_frame) {
+	for (it = *bt_inner; it <= *bt_outer; it++) {
+	  if ((uint64_t)(it->cursor.sp) >= idle_frame) {
+	    *bt_outer = it - 2;
+	    break;
+	  }
+	}
+      }
+#endif
 #if 0
       /* eliminate all frames */
       *bt_inner = *bt_outer + 1;
@@ -654,7 +668,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
   }
 #endif
 
-#define INTEL_RTL 1
+#define INTEL_RTL 0
 
   // ompt: elide runtime frames
   omp_arg_t* omp_arg = (omp_arg_t*) arg;

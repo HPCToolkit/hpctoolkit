@@ -353,6 +353,14 @@ hpcrun_ompt_get_thread_data()
 }
 
 
+void *
+hpcrun_ompt_get_thread_idle_frame()
+{
+  if (ompt_initialized) return ompt_get_thread_idle_frame();
+  return NULL;
+}
+
+
 uint64_t
 hpcrun_ompt_get_blame_target()
 {
