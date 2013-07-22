@@ -84,7 +84,7 @@ namespace TraceviewerServer
 	}
 
 //called once the INFO packet has been received to add the information to the controller
-	void SpaceTimeDataController::setInfo(Long _minBegTime, Long _maxEndTime,
+	void SpaceTimeDataController::setInfo(Time _minBegTime, Time _maxEndTime,
 			int _headerSize)
 	{
 		minBegTime = _minBegTime;
