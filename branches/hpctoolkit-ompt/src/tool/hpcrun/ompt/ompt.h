@@ -135,6 +135,9 @@ extern ompt_state_t 		ompt_get_state(ompt_wait_id_t *ompt_wait_id);
 /* thread */
 extern ompt_data_t *		ompt_get_thread_data(void);
 
+/* thread */
+extern void *		        ompt_get_thread_idle_frame(void);
+
 
 /* parallel region */
 extern ompt_parallel_id_t 	ompt_get_parallel_id(int ancestor_level);

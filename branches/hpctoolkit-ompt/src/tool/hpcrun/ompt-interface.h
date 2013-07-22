@@ -11,6 +11,7 @@ extern ompt_state_t hpcrun_ompt_get_state(uint64_t *wait_id);
 extern ompt_frame_t *hpcrun_ompt_get_task_frame(int level);
 extern ompt_data_t *hpcrun_ompt_get_task_data(int level);
 extern ompt_data_t *hpcrun_ompt_get_thread_data(void);
+extern void * hpcrun_ompt_get_thread_idle_frame();
 
 extern int hpcrun_ompt_elide_frames();
 

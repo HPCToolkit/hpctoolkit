@@ -31,7 +31,7 @@ blame_shift_target_compute()
       fn = fn->next;
     }
     if (target) directed_blame_shift_start(target);
-    else directed_blame_shift_end(target);
+    else directed_blame_shift_end();
   }
   return target;
 }
