@@ -105,10 +105,8 @@
 #include <lib/support-lean/timer.h>
 
 #include <sample-sources/blame-shift.h>
-#include <utilities/defer-cntxt.h>
-#include <utilities/defer-write.h>
-#include <utilities/task-cntxt.h>
-#include <hpcrun/unresolved.h>
+
+
 
 /******************************************************************************
  * macros
