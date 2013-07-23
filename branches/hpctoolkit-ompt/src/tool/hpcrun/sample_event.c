@@ -91,7 +91,7 @@
 static cct_node_t*
 help_hpcrun_sample_callpath(epoch_t *epoch, void *context,
 			    int metricId, uint64_t metricIncr,
-			    int skipInner, int isSync, void *arg);
+			    int skipInner, int isSync);
 
 static cct_node_t*
 hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context,
@@ -138,7 +138,7 @@ record_partial_unwind(cct_bundle_t* cct,
   hpcrun_stats_num_samples_partial_inc();
   return hpcrun_cct_record_backtrace_w_metric(cct, true, false,
 					      bt_beg, bt_last, false,
-					      metricId, metricIncr, NULL);
+					      metricId, metricIncr);
 }
 
 
@@ -159,8 +159,7 @@ hpcrun_drop_sample(void)
 sample_val_t
 hpcrun_sample_callpath(void *context, int metricId,
 		       uint64_t metricIncr,
-		       int skipInner, int isSync,
-		       void* arg )// misc hook for plugin/hook data
+		       int skipInner, int isSync)
 {
   sample_val_t ret;
   hpcrun_sample_val_init(&ret);
@@ -222,7 +221,7 @@ hpcrun_sample_callpath(void *context, int metricId,
       }
       else {
 	node = help_hpcrun_sample_callpath(epoch, context, metricId, metricIncr,
-					   skipInner, isSync, arg);
+					   skipInner, isSync);
       }
       if (ENABLED(DUMP_BACKTRACES)) {
 	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
@@ -388,7 +387,7 @@ static cct_node_t*
 help_hpcrun_sample_callpath(epoch_t *epoch, void *context,
 			    int metricId,
 			    uint64_t metricIncr, 
-			    int skipInner, int isSync, void* arg)
+			    int skipInner, int isSync)
 {
   void* pc = hpcrun_context_pc(context);
 
@@ -400,7 +399,7 @@ help_hpcrun_sample_callpath(epoch_t *epoch, void *context,
 
   cct_node_t* n =
     hpcrun_backtrace2cct(&(epoch->csdata), context, metricId, metricIncr,
-			 skipInner, isSync, arg);
+			 skipInner, isSync);
 
   // FIXME: n == -1 if sample is filtered
 

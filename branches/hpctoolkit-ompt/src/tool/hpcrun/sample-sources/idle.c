@@ -103,10 +103,6 @@
 
 static void idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric_incr);
 
-#if 0
-static void init_hack(void);
-#endif
-
 
 /******************************************************************************
  * local variables
@@ -269,21 +265,6 @@ idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric
   }
 }
 
-
-#if 0
-static void 
-init_hack()
-{
-  char * num_threads = getenv("OMP_NUM_THREADS");
-  if (!num_threads)
-    active_worker_count = 1;
-  else 
-    active_worker_count = atoi(num_threads);
-  total_threads = active_worker_count;
-
-  TMSG(IDLE, "init_hack called, work = %d", active_worker_count);
-}
-#endif
 
 #if 0
 void

@@ -331,7 +331,6 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
 	utilities/defer-cntxt.h utilities/defer-cntxt.c \
 	utilities/defer-write.h utilities/defer-write.c \
-	utilities/task-cntxt.h utilities/task-cntxt.c \
 	sample-sources/mpi.c fnbounds/fnbounds_client.c \
 	fnbounds/fnbounds_dynamic.c monitor-exts/openmp.c \
 	hpcrun_dlfns.c custom-init-dynamic.c os/linux/dylib.c \
@@ -396,7 +395,7 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-executable-path.lo libhpcrun_la-ip-normalized.lo \
 	libhpcrun_la-tokenize.lo libhpcrun_la-unlink.lo \
 	libhpcrun_la-defer-cntxt.lo libhpcrun_la-defer-write.lo \
-	libhpcrun_la-task-cntxt.lo $(am__objects_7)
+	$(am__objects_7)
 am__objects_9 = libhpcrun_la-fnbounds_client.lo \
 	libhpcrun_la-fnbounds_dynamic.lo libhpcrun_la-openmp.lo \
 	libhpcrun_la-hpcrun_dlfns.lo \
@@ -535,7 +534,6 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
 	utilities/defer-cntxt.h utilities/defer-cntxt.c \
 	utilities/defer-write.h utilities/defer-write.c \
-	utilities/task-cntxt.h utilities/task-cntxt.c \
 	sample-sources/mpi.c fnbounds/fnbounds_static.c \
 	custom-init-static.c \
 	unwind/common/default_validation_summary.c \
@@ -612,8 +610,7 @@ am__objects_32 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-ip-normalized.$(OBJEXT) \
 	libhpcrun_o-tokenize.$(OBJEXT) libhpcrun_o-unlink.$(OBJEXT) \
 	libhpcrun_o-defer-cntxt.$(OBJEXT) \
-	libhpcrun_o-defer-write.$(OBJEXT) \
-	libhpcrun_o-task-cntxt.$(OBJEXT) $(am__objects_31)
+	libhpcrun_o-defer-write.$(OBJEXT) $(am__objects_31)
 am__objects_33 = libhpcrun_o-fnbounds_static.$(OBJEXT) \
 	libhpcrun_o-custom-init-static.$(OBJEXT)
 am__objects_34 = libhpcrun_o-default_validation_summary.$(OBJEXT)
@@ -1067,6 +1064,8 @@ UNW_MIPS_INCLUDE_DIRS = \
         -I$(srcdir)/unwind/mips
 
 UNW_MIPS_LD_FLAGS = 
+
+#	sample-sources/blame-shift/blameht.c
 MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	cct_insert_backtrace.c env.c epoch.c files.c handling_sample.c \
 	hpcrun_options.c hpcrun_stats.c loadmap.c metrics.c name.c \
@@ -1094,7 +1093,7 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
 	utilities/defer-cntxt.h utilities/defer-cntxt.c \
 	utilities/defer-write.h utilities/defer-write.c \
-	utilities/task-cntxt.h utilities/task-cntxt.c $(am__append_17)
+	$(am__append_17)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -1752,7 +1751,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-stack_troll.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-start-stop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-sync.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-task-cntxt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-term_handler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-thread_data.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-thread_use.Plo@am__quote@
@@ -1853,7 +1851,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-stack_troll.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-start-stop.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-sync.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-task-cntxt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-term_handler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-thread_data.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-thread_use.Po@am__quote@
@@ -2585,13 +2582,6 @@ libhpcrun_la-defer-write.lo: utilities/defer-write.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/defer-write.c' object='libhpcrun_la-defer-write.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-defer-write.lo `test -f 'utilities/defer-write.c' || echo '$(srcdir)/'`utilities/defer-write.c
-
-libhpcrun_la-task-cntxt.lo: utilities/task-cntxt.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-task-cntxt.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-task-cntxt.Tpo -c -o libhpcrun_la-task-cntxt.lo `test -f 'utilities/task-cntxt.c' || echo '$(srcdir)/'`utilities/task-cntxt.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-task-cntxt.Tpo $(DEPDIR)/libhpcrun_la-task-cntxt.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/task-cntxt.c' object='libhpcrun_la-task-cntxt.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-task-cntxt.lo `test -f 'utilities/task-cntxt.c' || echo '$(srcdir)/'`utilities/task-cntxt.c
 
 libhpcrun_la-mpi.lo: sample-sources/mpi.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-mpi.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-mpi.Tpo -c -o libhpcrun_la-mpi.lo `test -f 'sample-sources/mpi.c' || echo '$(srcdir)/'`sample-sources/mpi.c
@@ -3810,20 +3800,6 @@ libhpcrun_o-defer-write.obj: utilities/defer-write.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/defer-write.c' object='libhpcrun_o-defer-write.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-defer-write.obj `if test -f 'utilities/defer-write.c'; then $(CYGPATH_W) 'utilities/defer-write.c'; else $(CYGPATH_W) '$(srcdir)/utilities/defer-write.c'; fi`
-
-libhpcrun_o-task-cntxt.o: utilities/task-cntxt.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-task-cntxt.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-task-cntxt.Tpo -c -o libhpcrun_o-task-cntxt.o `test -f 'utilities/task-cntxt.c' || echo '$(srcdir)/'`utilities/task-cntxt.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-task-cntxt.Tpo $(DEPDIR)/libhpcrun_o-task-cntxt.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/task-cntxt.c' object='libhpcrun_o-task-cntxt.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-task-cntxt.o `test -f 'utilities/task-cntxt.c' || echo '$(srcdir)/'`utilities/task-cntxt.c
-
-libhpcrun_o-task-cntxt.obj: utilities/task-cntxt.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-task-cntxt.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-task-cntxt.Tpo -c -o libhpcrun_o-task-cntxt.obj `if test -f 'utilities/task-cntxt.c'; then $(CYGPATH_W) 'utilities/task-cntxt.c'; else $(CYGPATH_W) '$(srcdir)/utilities/task-cntxt.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-task-cntxt.Tpo $(DEPDIR)/libhpcrun_o-task-cntxt.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/task-cntxt.c' object='libhpcrun_o-task-cntxt.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-task-cntxt.obj `if test -f 'utilities/task-cntxt.c'; then $(CYGPATH_W) 'utilities/task-cntxt.c'; else $(CYGPATH_W) '$(srcdir)/utilities/task-cntxt.c'; fi`
 
 libhpcrun_o-mpi.o: sample-sources/mpi.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-mpi.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-mpi.Tpo -c -o libhpcrun_o-mpi.o `test -f 'sample-sources/mpi.c' || echo '$(srcdir)/'`sample-sources/mpi.c

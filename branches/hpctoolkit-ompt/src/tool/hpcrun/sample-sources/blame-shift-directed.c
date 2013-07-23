@@ -244,16 +244,18 @@ blameht_get_blame(uint64_t obj)
 }
 
 
-#if 0
-/*--------------------------------------------------------------------------
- | transfer directed blame as appropritate for a sample
- --------------------------------------------------------------------------*/
-
-set_blame_target()
+void 
+set_blame_target(thread_data_t *td, uint64_t obj)
 {
-  td->blame_target = get_blame_target();
+  td->blame_target = obj;
 }
-#endif
+
+
+uint64_t  
+get_blame_target(thread_data_t *td)
+{
+  return td->blame_target;
+}
 
 static void 
 process_directed_blame_for_sample(int metric_id, cct_node_t *node, int metric_incr)
@@ -271,7 +273,7 @@ process_directed_blame_for_sample(int metric_id, cct_node_t *node, int metric_in
 
   thread_data_t *td = hpcrun_get_thread_data();
 
-  uint64_t obj_to_blame = td->blame_target;
+  uint64_t obj_to_blame = get_blame_target(td);
 
   if(obj_to_blame) {
     blameht_add_blame(obj_to_blame, metric_incr); // save blame bits by not inflating with period
@@ -388,28 +390,11 @@ METHOD_FN(display_events)
 #include "ss_obj.h"
 
 
-// attribute cost
-
 static cct_node_t *
 attribute_blame(ucontext_t *uc, int metric_id, int metric_incr, int skipcnt)
 {
-  omp_arg_t omp_arg;
-  void *info = NULL;
-  cct_node_t *node;
-
-  // for side thread or master thread in the nested region, unwind to the dummy root 
-  // with outer most region attached to the tbd root
-  //
-  if (!TD_GET(master)) { // sub-master thread in nested regions
-    omp_arg.tbd = false;
-    omp_arg.context = NULL;
-    if(TD_GET(region_id) > 0) {
-      omp_arg.tbd = true;
-      omp_arg.region_id = TD_GET(region_id);
-    }
-    info = &omp_arg;
-  }
-  node = hpcrun_sample_callpath(uc, metric_id, metric_incr, skipcnt, 1, info).sample_node;
+  cct_node_t *node = 
+    hpcrun_sample_callpath(uc, metric_id, metric_incr, skipcnt, 1).sample_node;
   return node;
 }
 
@@ -423,8 +408,7 @@ void
 directed_blame_shift_start(uint64_t obj)
 {
   thread_data_t *td = hpcrun_get_thread_data();
-  // if (td->blame_target == 0) idle_metric_blame_shift_idle();
-  td->blame_target = obj;
+  set_blame_target(td, obj);
 }
 
 
@@ -432,8 +416,7 @@ void
 directed_blame_shift_end()
 {
   thread_data_t *td = hpcrun_get_thread_data();
-  // if (td->blame_target) idle_metric_blame_shift_work();
-  td->blame_target = 0;
+  set_blame_target(td, 0);
 }
 
 
@@ -445,7 +428,6 @@ directed_blame_accept(uint64_t obj)
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_safe_enter();
-    // hpcrun_sample_callpath(&uc, directed_blame_metric_id, blame, 0, 1);
     attribute_blame(&uc, directed_blame_other_metric_id, blame * metric_period, 1);
     hpcrun_safe_exit();
   }

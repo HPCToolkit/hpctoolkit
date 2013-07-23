@@ -633,54 +633,11 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 #endif
 
   int metric_id = hpcrun_event2metric(&_itimer_obj, ITIMER_EVENT);
-  sample_val_t sv;
-  // check whether we need to defer the context creation
-  void *task_context = NULL;
-  if((task_context = need_task_cntxt())) {
-    if(need_defer_cntxt()) {
-      thread_data_t *td = hpcrun_get_thread_data();
-      if(td->defer_flag)
-	resolve_cntxt();
-    }
-    omp_arg_t omp_arg;
-    omp_arg.tbd = false;
-    omp_arg.region_id = 0;
-    omp_arg.should_resolve = 0;
-    // copy the task creation context to local thread
-    omp_arg.context = copy_task_cntxt(task_context);
-      
-    sv = hpcrun_sample_callpath(context, metric_id, metric_incr/*metricIncr*/,
-				0/*skipInner*/, 0/*isSync*/, (void*) &omp_arg);
-  }
-  else if(need_defer_cntxt()) {
-    thread_data_t *td = hpcrun_get_thread_data();
-    if(td->defer_flag) {
-      resolve_cntxt();
-    }
 
-    omp_arg_t omp_arg;
-#if 1
-    omp_arg.tbd = false;
-    omp_arg.context = NULL;
-    omp_arg.should_resolve = 0;
-    if (TD_GET(region_id) > 0) {
-      omp_arg.tbd = true;
-      omp_arg.region_id = TD_GET(region_id);
-    }
-#else
-    int region_id = ompt_outermost_parallel_id(); 
-    omp_arg.tbd = (region_id > 0); 
-    omp_arg.region_id = region_id;
-    omp_arg.context = NULL;
-    omp_arg.should_resolve = 0;
-#endif
-    sv = hpcrun_sample_callpath(context, metric_id, metric_incr/*metricIncr*/,
-				0/*skipInner*/, 0/*isSync*/, (void*) &omp_arg);
-  }
-  else {
-    sv = hpcrun_sample_callpath(context, metric_id, metric_incr,
-				0/*skipInner*/, 0/*isSync*/, NULL);
-  }
+  sample_val_t sv = 
+    hpcrun_sample_callpath(context, metric_id, metric_incr,
+			   0/*skipInner*/, 0/*isSync*/);
+
   if(sv.sample_node) {
     blame_shift_apply(metric_id, sv.sample_node, metric_incr);
   }
