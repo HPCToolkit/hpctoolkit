@@ -96,10 +96,7 @@
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
-#include <utilities/defer-cntxt.h>
-#include <utilities/defer-write.h>
-#include <utilities/task-cntxt.h>
-#include <hpcrun/unresolved.h>
+
 
 /******************************************************************************
  * macros

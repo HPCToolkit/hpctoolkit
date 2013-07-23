@@ -62,7 +62,6 @@
 #include <trace.h>
 #include <trampoline/common/trampoline.h>
 #include <utilities/ip-normalized.h>
-#include <utilities/task-cntxt.h>
 #include <utilities/defer-cntxt.h>
 #include "frame.h"
 #include <unwind/common/backtrace_info.h>
