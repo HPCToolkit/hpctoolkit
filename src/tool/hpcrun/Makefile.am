@@ -239,6 +239,8 @@ UNW_MIPS_INCLUDE_DIRS = \
 
 UNW_MIPS_LD_FLAGS =
 
+#	sample-sources/blame-shift/blameht.c
+
 MY_BASE_FILES =				\
 	utilities/first_func.c		\
 	\
@@ -313,8 +315,7 @@ MY_BASE_FILES =				\
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c \
 	utilities/defer-cntxt.h utilities/defer-cntxt.c \
-	utilities/defer-write.h utilities/defer-write.c \
-        utilities/task-cntxt.h utilities/task-cntxt.c
+	utilities/defer-write.h utilities/defer-write.c
 
 if OPT_ENABLE_MPI_WRAP
 MY_BASE_FILES +=  			\

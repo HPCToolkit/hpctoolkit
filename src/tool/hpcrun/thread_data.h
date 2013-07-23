@@ -154,6 +154,7 @@ typedef struct thread_data_t {
 
   int defer_flag; //whether should defer the context creation
 
+  cct_node_t *omp_task_context; // pass task context from elider to cct insertion
   int master; // whether the thread is the master thread
   int team_master; // whether the thread is the team master thread
  

@@ -2,17 +2,9 @@
  * system includes
  *****************************************************************************/
 
-#include <alloca.h>
 #include <assert.h>
-#include <ctype.h>
-#include <setjmp.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <ucontext.h>
-#include <stdbool.h>
 
-#include <pthread.h>
+
 
 /******************************************************************************
  * libmonitor
@@ -21,41 +13,26 @@
 #include <monitor.h>
 
 
+
 /******************************************************************************
  * local includes
  *****************************************************************************/
 
-#include <hpcrun/hpcrun_options.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/hpcrun_stats.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/trace.h>
+#include "defer-cntxt.h"
+
 #include <hpcrun/ompt-interface.h>
-#include <hpcrun/cct/cct.h>
-#include <messages/messages.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
-
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/atomic.h>
-
-#include <dlfcn.h>
-#include <hpcrun/loadmap.h>
+#include <hpcrun/safe-sampling.h>
+#include <hpcrun/sample_event.h>
+#include <hpcrun/thread_data.h>
 #include <hpcrun/trace.h>
+#include <hpcrun/unresolved.h>
 
 #include <lib/prof-lean/splay-macros.h>
 
-#include <hpcrun/cct2metrics.h>
-#include <hpcrun/metrics.h>
-#include <utilities/defer-cntxt.h>
-#include <utilities/defer-write.h>
-#include <hpcrun/unresolved.h>
-#include <hpcrun/write_data.h>
 
-#include <ompt.h>
 
 /******************************************************************************
- * type definition 
+ * type definitions 
  *****************************************************************************/
 
 struct record_t {
@@ -69,11 +46,12 @@ struct record_t {
 int omp_get_level(void);
 int omp_get_thread_num(void);
 
-uint64_t is_partial_resolve(cct_node_t *prefix);
+
 
 /******************************************************************************
  * splay tree operation for record map *
  *****************************************************************************/
+
 static struct record_t *record_tree_root = NULL;
 static spinlock_t record_tree_lock = SPINLOCK_UNLOCKED;
 
@@ -179,6 +157,9 @@ r_splay_count_update(uint64_t region_id, uint64_t val)
   spinlock_unlock(&record_tree_lock);
   return true;
 }
+
+
+
 /******************************************************************************
  * private operations 
  *****************************************************************************/
@@ -204,25 +185,9 @@ gather_context(struct record_t *record)
   cct_node_t *node;
   ucontext_t uc;
   getcontext(&uc);
-  //
-  // for side thread or master thread in the nested region, unwind to the dummy root 
-  // with outer most region attached to the tbd root
-  //
-  if(! TD_GET(master)) { //the sub-master thread in nested regions
-    omp_arg_t omp_arg;
-    omp_arg.tbd = false;
-    omp_arg.context = NULL;
-    if(TD_GET(region_id) > 0) {
-      omp_arg.tbd = true;
-      omp_arg.region_id = TD_GET(region_id);
-    }
-    node = hpcrun_sample_callpath(&uc, 0, 0, 1, 1, (void *)&omp_arg).sample_node;
-    TMSG(DEFER_CTXT, "unwind the callstack for region %d to %d", record->region_id, TD_GET(region_id));
-  } else {
-    // for master thread in the outer-most region, a normal unwind to the process stop 
-    node = hpcrun_sample_callpath(&uc, 0, 0, 1, 1, NULL).sample_node;
-    TMSG(DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
-  }
+
+  node = hpcrun_sample_callpath(&uc, 0, 0, 1, 1).sample_node;
+  TMSG(DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
 
 #ifdef GOMP
       cct_node_t *sibling = NULL;

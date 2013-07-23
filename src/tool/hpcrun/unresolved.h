@@ -7,15 +7,6 @@
 #include <cct/cct_bundle.h>
 #include <hpcrun/epoch.h>
 
-typedef struct {
-  bool tbd;
-  uint64_t region_id;
-  void *context;
-  int should_resolve;
-} omp_arg_t;
-
-
-
 static inline cct_node_t**
 hpcrun_get_tbd_cct(void)
 {

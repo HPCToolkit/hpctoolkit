@@ -83,11 +83,11 @@ extern cct_node_t* hpcrun_cct_record_backtrace(cct_bundle_t* bndl, bool partial,
 extern cct_node_t* hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* bndl, bool partial, bool thread_stop,
 							frame_t* bt_beg, frame_t* bt_last,
 							bool tramp_found,
-							int metricId, uint64_t metricIncr, void *arg);
+							int metricId, uint64_t metricIncr);
 
 extern cct_node_t* hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context, 
                                         int metricId, uint64_t metricIncr,
-                                        int skipInner, int isSync, void *arg);
+                                        int skipInner, int isSync);
 //
 // debug version of hpcrun_backtrace2cct:
 //   simulates errors to test partial unwind capability
