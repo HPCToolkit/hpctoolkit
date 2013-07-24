@@ -552,7 +552,7 @@ lookup_region_id(cct_node_t **root, uint64_t region_id)
 }
 
 cct_node_t *
-hpcrun_cct_finalize_cursor(cct_bundle_t *cct, cct_node_t *cct_cursor)
+hpcrun_cct_cursor_finalize(cct_bundle_t *cct, cct_node_t *cct_cursor)
 {
   cct_node_t *omp_task_context = TD_GET(omp_task_context);
   if (omp_task_context) {
@@ -613,7 +613,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
     TMSG(FENCE, "Thread stop ==> cursor = %p", cct_cursor);
   }
 
-  cct_cursor = hpcrun_cct_finalize_cursor(cct, cct_cursor);
+  cct_cursor = hpcrun_cct_cursor_finalize(cct, cct_cursor);
 
   TMSG(FENCE, "sanity check cursor = %p", cct_cursor);
   TMSG(FENCE, "further sanity check: bt_last frame = (%d, %p)", bt_last->ip_norm.lm_id, bt_last->ip_norm.lm_ip);
