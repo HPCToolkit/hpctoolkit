@@ -70,11 +70,12 @@
 #include "idle.h"
 #include "unresolved.h"
 
+#include <hpcrun/cct/cct.h>
 #include <hpcrun/hpctoolkit.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
+#include <hpcrun/sample-sources/blame-shift/blame-map.h>
 #include <hpcrun/thread_data.h>
-#include <hpcrun/cct/cct.h>
 
 
 
@@ -82,27 +83,7 @@
  * macros
  *****************************************************************************/
 
-#define N (128*1024)
-#define INDEX_MASK ((N)-1)
-
 #define DIRECTED_BLAME_NAME "MUTEX"
-
-
-
-/******************************************************************************
- * data type
- *****************************************************************************/
-
-struct blame_parts {
-  uint32_t obj_id;
-  uint32_t blame;
-};
-
-
-typedef union {
-  uint64_t all;
-  struct blame_parts parts; //[0] is id, [1] is blame
-} blame_entry;
 
 
 
@@ -122,7 +103,6 @@ static void process_directed_blame_for_sample(int metric_id, cct_node_t *node,
 static int directed_blame_self_metric_id = -1;
 static int directed_blame_other_metric_id = -1;
 static bs_fn_entry_t bs_entry;
-volatile blame_entry table[N];
 
 static int doblame = 0;
 
@@ -131,117 +111,6 @@ static uint32_t metric_period = 0;
 /***************************************************************************
  * private operations
  ***************************************************************************/
-
-
-/*--------------------------------------------------------------------------
- | hash table for recording directed blame
- --------------------------------------------------------------------------*/
-
-static void 
-blameht_init()
-{
-  int i;
-  for(i = 0; i < N; i++)
-    table[i].all = 0ULL;
-}
-
-
-uint32_t 
-blameht_obj_id(uint64_t obj)
-{
-  return ((uint32_t) ((uint64_t)obj) >> 2);
-}
-
-
-uint32_t 
-blameht_hash(uint64_t obj) 
-{
-  return ((uint32_t)((blameht_obj_id(obj)) & INDEX_MASK));
-}
-
-
-uint64_t 
-blameht_entry(uint64_t obj, uint32_t metric_value)
-{
-  blame_entry be;
-  be.parts.obj_id = blameht_obj_id(obj);
-  be.parts.blame = metric_value;
-  return be.all;
-}
-
-#define LOSSLESS_BLAME 
-
-void
-blameht_add_blame(uint64_t obj, uint32_t metric_value)
-{
-  uint32_t obj_id = blameht_obj_id(obj);
-  uint32_t index = blameht_hash(obj);
-
-  assert(index >= 0 && index < N);
-
-  for(;;) {
-    blame_entry oldval = table[index];
-
-    if(oldval.parts.obj_id == obj_id) {
-#ifdef LOSSLESS_BLAME
-      blame_entry newval = oldval;
-      newval.parts.blame += metric_value;
-      if (compare_and_swap_i64(&table[index].all, oldval.all, newval.all) 
-	    == oldval.all) break;
-#else
-      oldval.parts.blame += metric_value;
-      table[index].all = oldval.all;
-#endif
-      break;
-    } else {
-      if(oldval.parts.obj_id == 0) {
-	uint64_t newval = blameht_entry(obj, metric_value);
-#ifdef LOSSLESS_BLAME
-	if (compare_and_swap_i64(&table[index].all, oldval.all, newval) 
-	    == oldval.all) break;
-	// otherwise, try again
-#else
-	table[index].all = newval;
-	break;
-#endif
-      } else {
-	EMSG("leaked blame %d\n", metric_value);
-	// entry in use for another object's blame
-	// in this case, since it isn't easy to shift 
-	// our blame efficiently, we simply drop it.
-	break;
-      }
-    }
-  }
-}
-
-
-uint64_t 
-blameht_get_blame(uint64_t obj)
-{
-  static uint64_t zero = 0;
-  uint64_t val = 0;
-  uint32_t obj_id = blameht_obj_id(obj);
-  uint32_t index = blameht_hash(obj);
-
-  assert(index >= 0 && index < N);
-
-  for(;;) {
-    blame_entry oldval = table[index];
-    if(oldval.parts.obj_id == obj_id) {
-#ifdef LOSSLESS_BLAME
-      if (compare_and_swap_i64(&table[index].all, oldval.all, zero) 
-	  != oldval.all) continue; // try again on failure
-#else
-      table[index].all = 0;
-#endif
-      val = (uint64_t)oldval.parts.blame;
-      break;
-    }
-    break;
-  }
-  return val;
-}
 
 
 void 
@@ -276,7 +145,7 @@ process_directed_blame_for_sample(int metric_id, cct_node_t *node, int metric_in
   uint64_t obj_to_blame = get_blame_target(td);
 
   if(obj_to_blame) {
-    blameht_add_blame(obj_to_blame, metric_incr); // save blame bits by not inflating with period
+    blame_map_add_blame(obj_to_blame, metric_incr); // save blame bits by not inflating with period
     cct_metric_data_increment(directed_blame_self_metric_id, node, (cct_metric_data_t){.i = metric_value});
   }
 }
@@ -290,7 +159,7 @@ static void
 METHOD_FN(init)
 {
   self->state = INIT;
-  blameht_init();
+  blame_map_init();
   blame_shift_target_allow();
 }
 
@@ -423,7 +292,7 @@ directed_blame_shift_end()
 void
 directed_blame_accept(uint64_t obj)
 {
-  uint64_t blame = blameht_get_blame(obj);
+  uint64_t blame = blame_map_get_blame(obj);
   if (blame != 0 && hpctoolkit_sampling_is_active()) {
     ucontext_t uc;
     getcontext(&uc);
