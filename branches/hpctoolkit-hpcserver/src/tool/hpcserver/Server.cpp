@@ -207,7 +207,10 @@ namespace TraceviewerServer
 		int numFiles = controller->getNumRanks();
 		socket->writeInt(numFiles);
 
-		int compressionType; //This is an int so that it is possible to have different compression algorithms in the future. For now, it is just 0=no compression, 1= normal compression
+		// This is an int so that it is possible to have different compression
+		// algorithms in the future. For now, it is just
+		// 0=no compression, 1= normal compression
+		int compressionType;
 		compressionType = useCompression ? 1 : 0;
 		socket->writeInt(compressionType);
 
@@ -240,31 +243,34 @@ namespace TraceviewerServer
 		xmlSocket->writeInt(EXML);
 		//If this overflows, we may have problems...
 		int uncompressedFileSize = FileUtils::getFileSize(controller->getExperimentXML());
-		ProgressBar prog("Compressing XML", uncompressedFileSize);
-		FILE* in = fopen(controller->getExperimentXML().c_str(), "r");
-		//From http://zlib.net/zpipe.c with some editing
-		z_stream compressor;
-		compressor.zalloc = Z_NULL;
-		compressor.zfree = Z_NULL;
-		compressor.opaque = Z_NULL;
+		//Set up a subscope so that the ProgressBar will get deleted (which
+		//cleans up the output) before we write to cout again.
+		{
+			ProgressBar prog("Compressing XML", uncompressedFileSize);
+			FILE* in = fopen(controller->getExperimentXML().c_str(), "r");
+			//From http://zlib.net/zpipe.c with some editing
+			z_stream compressor;
+			compressor.zalloc = Z_NULL;
+			compressor.zfree = Z_NULL;
+			compressor.opaque = Z_NULL;
 
-		//This makes a gzip stream with a window of 15 bits
-		int ret = deflateInit2(&compressor, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 16+15, 8, Z_DEFAULT_STRATEGY);
-		if (ret != Z_OK)
-			throw ret;
+			//This makes a gzip stream with a window of 15 bits
+			int ret = deflateInit2(&compressor, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 16+15, 8, Z_DEFAULT_STRATEGY);
+			if (ret != Z_OK)
+				throw ret;
 
-		DataCompressionLayer compL(compressor, &prog);
-		compL.writeFile(in);
+			DataCompressionLayer compL(compressor, &prog);
+			compL.writeFile(in);
 
-		fclose(in);
-		int compressedSize = compL.getOutputLength();
-		DEBUGCOUT(2)<<"Compressed XML Size: "<<compressedSize<<endl;
+			fclose(in);
+			int compressedSize = compL.getOutputLength();
+			DEBUGCOUT(2)<<"Compressed XML Size: "<<compressedSize<<endl;
 
-		xmlSocket->writeInt(compressedSize);
-		xmlSocket->writeRawData((char*)compL.getOutputBuffer(), compressedSize);
+			xmlSocket->writeInt(compressedSize);
+			xmlSocket->writeRawData((char*)compL.getOutputBuffer(), compressedSize);
 
-		xmlSocket->flush();
-
+			xmlSocket->flush();
+		}
 		cout << "XML Sent" << endl;
 	}
 
@@ -317,7 +323,7 @@ namespace TraceviewerServer
 
 	void Server::getAndSendData(DataSocketStream* stream)
 	{
-
+		LOGTIMESTAMPEDMSG("Front end received data request.")
 		int processStart = stream->readInt();
 		int processEnd = stream->readInt();
 		Time timeStart = stream->readLong();
@@ -338,7 +344,7 @@ namespace TraceviewerServer
 			throw(ERROR_INVALID_PARAMETERS);
 		}
 		Communication::sendStartGetData(controller, processStart, processEnd, timeStart, timeEnd, verticalResolution, horizontalResolution);
-
+		LOGTIMESTAMPEDMSG("Back end received data request.")
 
 		stream->writeInt(HERE);
 		stream->flush();

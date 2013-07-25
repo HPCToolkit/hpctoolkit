@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL:$
-// $Id:$
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL:$
+//   $HeadURL$
 //
 // Purpose:
 //   The MPI implementation of the methods in Communication.hpp. These methods
@@ -120,16 +120,21 @@ void Communication::sendStartGetData(SpaceTimeDataController* contr, int process
 }
 void Communication::sendEndGetData(DataSocketStream* stream, ProgressBar* prog, SpaceTimeDataController* controller)
 {
-	int RanksDone = 1;//1 for the MPI rank that deals with the sockets
-	int Size = COMM_WORLD.Get_size();
+	int ranksDone = 1;//1 for the MPI rank that deals with the sockets
+	int size = COMM_WORLD.Get_size();
 
-	while (RanksDone < Size)
+	bool first = false;
+
+	while (ranksDone < size)
 	{
 		MPICommunication::ResultMessage msg;
 		COMM_WORLD.Recv(&msg, sizeof(msg), MPI_PACKED, MPI_ANY_SOURCE, MPI_ANY_TAG);
 		if (msg.tag == SLAVE_REPLY)
 		{
-
+			if (first)
+			{
+				LOGTIMESTAMPEDMSG("First line computed.")
+			}
 
 			stream->writeInt(msg.data.line);
 			stream->writeInt(msg.data.entries);
@@ -144,14 +149,24 @@ void Communication::sendEndGetData(DataSocketStream* stream, ProgressBar* prog, 
 			stream->writeRawData(CompressedTraceLine, msg.data.compressedSize);
 
 			stream->flush();
+			if (first)
+			{
+				LOGTIMESTAMPEDMSG("First line sent.")
+			}
+			first = false;
 			prog->incrementProgress();
 		}
 		else if (msg.tag == SLAVE_DONE)
 		{
 			DEBUGCOUT(1) << "Rank " << msg.done.rankID << " done" << endl;
-			RanksDone++;
+			ranksDone++;
+			if (ranksDone == 2)
+			{
+				LOGTIMESTAMPEDMSG("First rank done.")
+			}
 		}
 	}
+	LOGTIMESTAMPEDMSG("All data done.")
 }
 void Communication::sendStartFilter(int count, bool excludeMatches)
 {
