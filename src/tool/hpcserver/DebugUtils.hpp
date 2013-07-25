@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL:$
-// $Id:$
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL:$
+//   $HeadURL$
 //
 // Purpose:
 //   [The purpose of this file]
@@ -61,6 +61,7 @@
 #ifndef DEBUGUTILS_HPP_
 #define DEBUGUTILS_HPP_
 
+#include <sys/time.h>
 #include <iostream>
 using namespace std;
 
@@ -70,6 +71,14 @@ using namespace std;
 
 #define DEBUGCOUT(a) if (DEBUG > (a))\
 						cout
+
+#define LOGTIMESTAMPEDMSG(msg) \
+{\
+	timeval t; \
+	t.tv_sec = 0; t.tv_usec = 0; \
+	gettimeofday(&t, NULL); \
+	clog << t.tv_sec*1000000 + t.tv_usec<<"\t" << msg << endl;\
+}
 
 
 #endif /* DEBUGUTILS_HPP_ */

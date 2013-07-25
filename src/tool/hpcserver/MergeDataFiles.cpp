@@ -68,7 +68,6 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstdio>
-#include <stdint.h>
 #include <sstream>
 
 using namespace std;
@@ -91,7 +90,7 @@ namespace TraceviewerServer
 
 			if (isMergedFileCorrect(&outputFile))
 				return SUCCESS_ALREADY_CREATED;
-			// the file exists but corrupted. In this case, we have to remove and create a new one
+			// the file exists but corrupted.
 			cout << "Database file may be corrupted. Continuing" << endl;
 			return STATUS_UNKNOWN;
 			//remove(OutputFile.string().c_str());
@@ -236,8 +235,7 @@ namespace TraceviewerServer
 			f.read(buffer, 8);
 			uint64_t marker = ByteUtilities::readLong(buffer);
 
-			diff = marker - MARKER_END_MERGED_FILE;
-			isCorrect = (diff) == 0;
+			isCorrect = (marker==MARKER_END_MERGED_FILE);
 		}
 		f.close();
 		return isCorrect;

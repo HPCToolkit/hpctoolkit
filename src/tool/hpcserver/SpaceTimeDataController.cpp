@@ -90,6 +90,8 @@ namespace TraceviewerServer
 		minBegTime = _minBegTime;
 		maxEndTime = _maxEndTime;
 		headerSize = _headerSize;
+		delete dataTrace;
+		dataTrace = new FilteredBaseData(fileTrace, headerSize);
 	}
 
 	int SpaceTimeDataController::getNumRanks()
