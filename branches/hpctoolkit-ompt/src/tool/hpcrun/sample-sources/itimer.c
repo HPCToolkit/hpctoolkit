@@ -371,6 +371,7 @@ static void
 METHOD_FN(thread_fini_action)
 {
   TMSG(ITIMER_CTL, "thread fini action");
+  resolve_cntxt_fini(hpcrun_get_thread_data());
 }
 
 static void

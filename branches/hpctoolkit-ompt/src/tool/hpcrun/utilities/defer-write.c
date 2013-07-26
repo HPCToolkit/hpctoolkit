@@ -110,7 +110,10 @@ write_other_td()
     thread_data_t *td = hpcrun_get_thread_data();
     cct2metrics_t* store_cct2metrics_map = td->core_profile_trace_data.cct2metrics_map;
     td->core_profile_trace_data.cct2metrics_map = entry->td->core_profile_trace_data.cct2metrics_map;
-    if(entry->td->defer_flag) resolve_cntxt_fini(entry->td);
+    if(entry->td->defer_flag) {
+      TMSG(DEFER_CTXT, "write another td with id %d", entry->td->core_profile_trace_data.id);
+      resolve_cntxt_fini(entry->td);
+    }
 
     // write out a given td
     hpcrun_write_profile_data(&(entry->td->core_profile_trace_data));

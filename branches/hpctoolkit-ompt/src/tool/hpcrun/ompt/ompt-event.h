@@ -2,21 +2,21 @@
 
   /*--- Mandatory Events ---*/
 ompt_event(ompt_event_parallel_create, ompt_new_parallel_callback_t, 1, ompt_event_parallel_create_implemented) /* parallel create */
-ompt_event(ompt_event_parallel_exit, ompt_new_parallel_callback_t, 2, ompt_event_parallel_exit_implemented) /* parallel exit */
+ompt_event(ompt_event_parallel_exit, ompt_parallel_callback_t, 2, ompt_event_parallel_exit_implemented) /* parallel exit */
 
 ompt_event(ompt_event_task_create, ompt_new_task_callback_t, 3, ompt_event_task_create_implemented) /* task create */
 ompt_event(ompt_event_task_exit, ompt_task_callback_t, 4, ompt_event_task_exit_implemented) /* task destroy */
 
-ompt_event(ompt_event_thread_create, ompt_thread_callback_t, 5, ompt_event_thread_create_implemented) /* thread create */
-ompt_event(ompt_event_thread_exit, ompt_thread_callback_t, 6, ompt_event_thread_exit_implemented) /* thread exit */
+ompt_event(ompt_event_thread_create, ompt_callback_t, 5, ompt_event_thread_create_implemented) /* thread create */
+ompt_event(ompt_event_thread_exit, ompt_callback_t, 6, ompt_event_thread_exit_implemented) /* thread exit */
 
 ompt_event(ompt_event_control, ompt_control_callback_t, 7, ompt_event_control_implemented) /* support control calls */
 
 ompt_event(ompt_event_runtime_shutdown, ompt_callback_t, 8, ompt_event_runtime_shutdown_implemented) /* runtime shutdown */
 
   /*--- Optional Events (blame shifting, ompt_event_unimplemented) ---*/
-ompt_event(ompt_event_idle_begin, ompt_thread_callback_t, 9, ompt_event_idle_begin_implemented) /* begin idle state */
-ompt_event(ompt_event_idle_end, ompt_thread_callback_t, 10, ompt_event_idle_end_implemented) /* end idle state */
+ompt_event(ompt_event_idle_begin, ompt_callback_t, 9, ompt_event_idle_begin_implemented) /* begin idle state */
+ompt_event(ompt_event_idle_end, ompt_callback_t, 10, ompt_event_idle_end_implemented) /* end idle state */
 
 ompt_event(ompt_event_wait_barrier_begin, ompt_parallel_callback_t, 11, ompt_event_wait_barrier_begin_implemented) /* begin wait at barrier */
 ompt_event(ompt_event_wait_barrier_end, ompt_parallel_callback_t, 12, ompt_event_wait_barrier_end_implemented) /* end wait at barrier */
@@ -85,6 +85,6 @@ ompt_event(ompt_event_init_nest_lock, ompt_wait_callback_t, 54, ompt_event_init_
 ompt_event(ompt_event_destroy_lock, ompt_wait_callback_t, 55, ompt_event_destroy_lock_implemented) /* lock destruction */
 ompt_event(ompt_event_destroy_nest_lock, ompt_wait_callback_t, 56, ompt_event_destroy_nest_lock_implemented) /* nest lock destruction */
 
-ompt_event(ompt_event_flush, ompt_thread_callback_t, 57, ompt_event_flush_implemented) /* after executing flush */
+ompt_event(ompt_event_flush, ompt_callback_t, 57, ompt_event_flush_implemented) /* after executing flush */
 
 #undef ompt_event

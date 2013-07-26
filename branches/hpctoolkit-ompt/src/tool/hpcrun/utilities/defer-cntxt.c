@@ -186,7 +186,7 @@ gather_context(struct record_t *record)
   ucontext_t uc;
   getcontext(&uc);
 
-  node = hpcrun_sample_callpath(&uc, 0, 0, 1, 1).sample_node;
+  node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1).sample_node;
   TMSG(DEFER_CTXT, "unwind the callstack for region %d", record->region_id);
 
 #ifdef GOMP
@@ -206,10 +206,11 @@ gather_context(struct record_t *record)
 //
 // only master and sub-master thread execute start_team_fn and end_team_fn
 //
-void start_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_frame,
-		   ompt_parallel_id_t id)
+void start_team_fn(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame,
+		   ompt_parallel_id_t id, void *parallel_fn)
 {
   hpcrun_safe_enter();
+  TMSG(DEFER_CTXT, "in team start callback");
   thread_data_t *td = hpcrun_get_thread_data();
   // mark the real master thread (the one with process stop)
   if (omp_get_level() == 1 && omp_get_thread_num() == 0) {
@@ -248,6 +249,7 @@ void start_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_fram
     if(outer_id == 0){
       td->outer_region_id = hpcrun_ompt_get_parallel_id(1);
       td->outer_region_context = 0;
+      TMSG(DEFER_CTXT, "come into a new outer region %d", td->outer_region_id);
     }
   }
 #else
@@ -260,11 +262,11 @@ void start_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_fram
   hpcrun_safe_exit();
 }
 
-void end_team_fn(ompt_data_t *parent_task_data, ompt_frame_t *parent_task_frame,
-		 ompt_parallel_id_t id)
+void end_team_fn(ompt_parallel_id_t parallel_id,
+		 ompt_task_id_t task_id) 
 {
   hpcrun_safe_enter();
-  uint64_t region_id = id;
+  uint64_t region_id = parallel_id;
   struct record_t *record = r_splay_lookup(region_id);
   // insert resolved root to the corresponding record entry
   if(record && (record->region_id == region_id)) {
@@ -364,6 +366,7 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
     else {
       prefix = hpcrun_cct_insert_path_return_leaf((td->core_profile_trace_data.epoch->csdata).unresolved_root, prefix);
       r_splay_count_update(partial_region_id, 1L);
+      TMSG(DEFER_CTXT, "get partial resolution to %d\n", partial_region_id);
     }
     // adjust the callsite of the prefix in side threads to make sure they are the same as
     // in the master thread. With this operation, all sides threads and the master thread
@@ -399,7 +402,7 @@ omp_resolve_and_free(cct_node_t* cct, cct_op_arg_t a, size_t l)
 
 void resolve_cntxt()
 {
-  hpcrun_safe_enter();
+//  hpcrun_safe_enter();
 
   //
   // part 1: outer_region_id contains the outer-most region id of the thread taking this sample.
@@ -414,8 +417,11 @@ void resolve_cntxt()
   if(omp_get_level() == 1 && (td->outer_region_id > 0)) td->outer_region_id = 0;
   if(td->outer_region_id > 0)
     outer_region_id = td->outer_region_id; // current outer region
-  if(outer_region_id == 0) outer_region_id = current_region_id;
+  if(outer_region_id == 0) {
+    outer_region_id = current_region_id;
+  }
 
+  TMSG(DEFER_CTXT, "outer most region id is %d, inner most region id is %d", outer_region_id, current_region_id); 
   //
   // part 2: try to resolve previous parallel region
   //
@@ -466,7 +472,7 @@ void resolve_cntxt()
   }
 #endif
 
-  hpcrun_safe_exit();
+//  hpcrun_safe_exit();
 }
 
 void resolve_cntxt_fini(thread_data_t *td)
