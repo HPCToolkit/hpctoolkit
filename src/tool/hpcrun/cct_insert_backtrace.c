@@ -167,7 +167,7 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner, int isSync)
 
     if (found == 0) {
 #if 1
-      uint64_t idle_frame = (uint64_t) hpcrun_ompt_get_thread_idle_frame();
+      uint64_t idle_frame = (uint64_t) hpcrun_ompt_get_idle_frame();
 
       if (idle_frame) {
 	for (it = *bt_inner; it <= *bt_outer; it++) {
@@ -221,11 +221,8 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner, int isSync)
 
     if (!frame0) break;
 
-    ompt_data_t *task_data = hpcrun_ompt_get_task_data(i);
-    cct_node_t *omp_task_context = 0;
-    if (task_data) {
-      omp_task_context = (cct_node_t *) task_data->ptr;
-    }
+    ompt_task_id_t tid = hpcrun_ompt_get_task_id(i);
+    cct_node_t *omp_task_context = task_map_lookup(tid);
 
     void *low_sp = (*bt_inner)->cursor.sp;
     void *high_sp = (*bt_outer)->cursor.sp;
@@ -539,13 +536,15 @@ lookup_region_id(cct_node_t **root, uint64_t region_id)
   thread_data_t* td = hpcrun_get_thread_data();
   cct_node_t *result = NULL;
 
-  result = memoized_context_get(td, region_id);
-  if (result) return result;
+  if (hpcrun_trace_isactive()) {
+    result = memoized_context_get(td, region_id);
+    if (result) return result;
   
-  cct_node_t *t0_path = hpcrun_region_lookup(region_id);
-  if (t0_path) {
-    result = hpcrun_cct_insert_path_return_leaf(*root, t0_path);
-    memoized_context_set(td, region_id, result);
+    cct_node_t *t0_path = hpcrun_region_lookup(region_id);
+    if (t0_path) {
+      result = hpcrun_cct_insert_path_return_leaf(*root, t0_path);
+      memoized_context_set(td, region_id, result);
+    }
   }
 
   return result;
@@ -565,6 +564,7 @@ hpcrun_cct_cursor_finalize(cct_bundle_t *cct, cct_node_t *cct_cursor)
     return hpcrun_cct_insert_path_return_leaf(root, omp_task_context);
   }
 
+#if 1
   // if I am not the master thread, full context may not be immediately available.
   // if that is the case, then it will later become available in a deferred fashion.
   if (!TD_GET(master)) { // sub-master thread in nested regions
@@ -585,6 +585,16 @@ hpcrun_cct_cursor_finalize(cct_bundle_t *cct, cct_node_t *cct_cursor)
       }
     }
   }
+#else
+  if (!TD_GET(master)) {
+    uint64_t region_id = TD_GET(region_id);
+    if(region_id > 0) {
+      cct_node_t *prefix = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, 
+				      &(ADDR2(UNRESOLVED, region_id)));
+      if (prefix) cct_cursor = prefix;
+    }
+  }
+#endif
 
   return cct_cursor;
 }

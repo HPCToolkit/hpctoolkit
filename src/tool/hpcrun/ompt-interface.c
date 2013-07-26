@@ -65,6 +65,8 @@
 #include <hpcrun/thread_data.h>
 #include <hpcrun/cct/cct.h>
 
+#include "ompt-interface.h"
+
 #include "sample-sources/idle.h"
 #include "sample-sources/lockwait.h"
 #include "sample-sources/blame-shift.h"
@@ -79,10 +81,11 @@ int ompt_initialized = 0;
  * private operations 
  *****************************************************************************/
 
-void start_task_fn(ompt_data_t *parent_task_data, 
-		   ompt_frame_t *parent_task_frame, ompt_data_t *new_task_data)
+void start_task_fn(ompt_task_id_t parent_task_id, 
+		   ompt_frame_t *parent_task_frame, 
+		   ompt_task_id_t new_task_id,
+		   void *task_function)
 {
-  void **pointer = &(new_task_data->ptr);
   uint64_t zero_metric_incr = 0LL;
 
   thread_data_t *td = hpcrun_get_thread_data();
@@ -94,25 +97,15 @@ void start_task_fn(ompt_data_t *parent_task_data,
   hpcrun_safe_enter();
 
   // record the task creation context into task structure (in omp runtime)
-  *pointer = (void *)
+  cct_node_t *cct_node =
     hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1).sample_node;
 
   hpcrun_safe_exit();
 
+  task_map_insert(new_task_id, cct_node);  
+
   td->overhead --;
 }
-
-
-#if 0
-void ompt_sync_sample()
-{
-  thread_data_t *td = hpcrun_get_thread_data();
-  ompt_data_t arg;
-  arg.tbd = true;
-  arg.region_id = 
-  record_synchronous_sample(td, n, );
-}
-#endif
 
 
 static uint64_t
@@ -137,13 +130,13 @@ ompt_get_blame_target()
 
   
 static void
-ompt_thread_create(ompt_data_t *data)
+ompt_thread_create()
 {
   idle_metric_thread_start();
 }
 
 static void
-ompt_thread_exit(ompt_data_t *data)
+ompt_thread_exit()
 {
   idle_metric_thread_end();
 }
@@ -226,14 +219,14 @@ init_blame_shift_directed()
 
   
 static void
-ompt_idle_begin(ompt_data_t *data)
+ompt_idle_begin()
 {
   idle_metric_blame_shift_idle();
 }
 
 
 static void
-ompt_idle_end(ompt_data_t *data)
+ompt_idle_end()
 {
   idle_metric_blame_shift_work();
 }
@@ -365,23 +358,16 @@ hpcrun_ompt_get_task_frame(int level)
 }
 
 
-ompt_data_t *
-hpcrun_ompt_get_task_data(int level)
+ompt_task_id_t 
+hpcrun_ompt_get_task_id(int level)
 {
-  if (ompt_initialized) return ompt_get_task_data(level);
-  return NULL;
-}
-
-ompt_data_t *
-hpcrun_ompt_get_thread_data()
-{
-  if (ompt_initialized) return ompt_get_thread_data();
-  return NULL;
+  if (ompt_initialized) return ompt_get_task_id(level);
+  return ompt_task_id_none;
 }
 
 
 void *
-hpcrun_ompt_get_thread_idle_frame()
+hpcrun_ompt_get_idle_frame()
 {
   if (ompt_initialized) return ompt_get_idle_frame();
   return NULL;

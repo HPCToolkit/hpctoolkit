@@ -22,14 +22,13 @@ uint64_t is_partial_resolve(cct_node_t *prefix);
 void init_region_id();
 
 // export registration interfaces for ompt
-void start_team_fn(ompt_data_t *parent_task_data, 
+void start_team_fn(ompt_task_id_t parent_task_id, 
 		   ompt_frame_t *parent_task_frame,
-		   ompt_parallel_id_t id);
+		   ompt_parallel_id_t id,
+		   void *parallel_function);
 
-void end_team_fn(ompt_data_t *parent_task_data, 
-		 ompt_frame_t *parent_task_frame,
-		 ompt_parallel_id_t id);
-
+void end_team_fn(ompt_parallel_id_t id,
+                 ompt_task_id_t parent_task_id); 
 
 cct_node_t *hpcrun_region_lookup(uint64_t id);
 
