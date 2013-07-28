@@ -166,7 +166,6 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner, int isSync)
     }
 
     if (found == 0) {
-#if 1
       uint64_t idle_frame = (uint64_t) hpcrun_ompt_get_idle_frame();
 
       if (idle_frame) {
@@ -177,7 +176,6 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner, int isSync)
 	  }
 	}
       }
-#endif
 #if 0
       /* eliminate all frames */
       *bt_inner = *bt_outer + 1;

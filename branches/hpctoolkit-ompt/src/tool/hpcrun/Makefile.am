@@ -310,6 +310,7 @@ MY_BASE_FILES =				\
 	messages/messages-async.c	\
 	messages/fmt.c	                \
 	\
+	utilities/omp-region-map.c      \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c \
