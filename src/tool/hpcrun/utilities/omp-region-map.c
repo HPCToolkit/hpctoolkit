@@ -90,13 +90,6 @@ omp_region_map_delete_root()
  * interface operations
  *****************************************************************************/
 
-uint64_t 
-omp_region_map_entry_refcnt_get(omp_region_map_entry_t *node) 
-{
-  return node->refcnt;
-}
-
-
 omp_region_map_entry_t *
 omp_region_map_lookup(uint64_t id)
 {
@@ -170,6 +163,13 @@ omp_region_map_refcnt_update(uint64_t region_id, uint64_t val)
 
   spinlock_unlock(&omp_region_map_lock);
   return result;
+}
+
+
+uint64_t 
+omp_region_map_entry_refcnt_get(omp_region_map_entry_t *node) 
+{
+  return node->refcnt;
 }
 
 
