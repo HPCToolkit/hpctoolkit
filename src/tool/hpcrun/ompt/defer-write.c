@@ -44,8 +44,10 @@
 
 #include <hpcrun/cct2metrics.h>
 #include <hpcrun/metrics.h>
-#include <utilities/defer-cntxt.h>
-#include <utilities/defer-write.h>
+
+#include <hpcrun/ompt/defer-cntxt.h>
+#include <hpcrun/ompt/defer-write.h>
+
 #include <hpcrun/unresolved.h>
 #include <hpcrun/write_data.h>
 

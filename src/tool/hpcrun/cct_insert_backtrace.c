@@ -53,7 +53,11 @@
 #include <messages/messages.h>
 #include <hpcrun/metrics.h>
 #include <hpcrun/unresolved.h>
-#include <hpcrun/ompt-interface.h>
+
+#include <hpcrun/ompt/ompt.h>
+#include <hpcrun/ompt/ompt-interface.h>
+#include <hpcrun/ompt/defer-cntxt.h>
+
 #include <lib/prof-lean/lush/lush-support.h>
 #include <lib/prof-lean/placeholders.h>
 #include <lush/lush-backtrace.h>
@@ -62,13 +66,11 @@
 #include <trace.h>
 #include <trampoline/common/trampoline.h>
 #include <utilities/ip-normalized.h>
-#include <utilities/defer-cntxt.h>
 #include "frame.h"
 #include <unwind/common/backtrace_info.h>
 #include <unwind/common/fence_enum.h>
 #include "cct_insert_backtrace.h"
 
-#include <ompt.h>
 
 //
 // Misc externals (not in an include file)

@@ -20,14 +20,15 @@
 
 #include "defer-cntxt.h"
 
-#include <hpcrun/ompt-interface.h>
+#include <hpcrun/ompt/ompt-interface.h>
+#include <hpcrun/ompt/omp-region-map.h>
+
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/trace.h>
 #include <hpcrun/unresolved.h>
 
-#include <hpcrun/utilities/omp-region-map.h>
 
 
 

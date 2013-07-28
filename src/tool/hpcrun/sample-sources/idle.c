@@ -72,7 +72,7 @@
 #include "idle.h"
 
 #include <hpcrun/hpcrun_options.h>
-#include <hpcrun/ompt-interface.h>
+#include <hpcrun/ompt/ompt-interface.h>
 
 #include <hpcrun/metrics.h>
 #include <hpcrun/sample_sources_registered.h>

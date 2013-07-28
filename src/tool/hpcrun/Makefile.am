@@ -255,7 +255,6 @@ MY_BASE_FILES =				\
 	loadmap.c			\
 	metrics.c			\
 	name.c				\
-	ompt-interface.c		\
 	rank.c				\
 	sample_event.c			\
 	sample_prob.c			\
@@ -268,7 +267,6 @@ MY_BASE_FILES =				\
 	sample-sources/io.c 		\
 	sample-sources/itimer.c		\
 	sample-sources/idle.c		\
-	sample-sources/lockwait.c	\
 	sample-sources/memleak.c	\
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \
@@ -310,13 +308,15 @@ MY_BASE_FILES =				\
 	messages/messages-async.c	\
 	messages/fmt.c	                \
 	\
-	utilities/omp-region-map.c      \
+	ompt/ompt-interface.c		\
+	ompt/defer-cntxt.c		\
+	ompt/defer-write.c		\
+	ompt/omp-region-map.c		\
+	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c \
-	utilities/unlink.h utilities/unlink.c \
-	utilities/defer-cntxt.h utilities/defer-cntxt.c \
-	utilities/defer-write.h utilities/defer-write.c
+	utilities/unlink.h utilities/unlink.c 
 
 if OPT_ENABLE_MPI_WRAP
 MY_BASE_FILES +=  			\

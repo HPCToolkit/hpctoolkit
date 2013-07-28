@@ -12,7 +12,7 @@
 
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-macros.h>
-#include <hpcrun/utilities/omp-region-map.h>
+#include <hpcrun/ompt/omp-region-map.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 
