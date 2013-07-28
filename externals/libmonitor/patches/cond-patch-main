@@ -1,5 +1,6 @@
 Revert main() to three arguments.  Bash requires the three arg
-version.
+version.  But Blue Gene needs two args.  So, make this a
+conditinal patch.
 
 
 Index: libmonitor-main/src/main.c

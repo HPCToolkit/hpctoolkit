@@ -632,6 +632,7 @@ CPP
 OBJCOPY
 objcopy_prog
 gnu_make
+libmonitor_three_arg_main
 cflags_fpic
 have_tr1_map
 CXX_PATH
@@ -3685,6 +3686,28 @@ if test "x$cflags_fpic" = x ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find CFLAGS to support PIC" >&5
 $as_echo "$as_me: WARNING: unable to find CFLAGS to support PIC" >&2;}
 fi
+
+
+
+#------------------------------------------------------------
+# Libmonitor 2- or 3-arg version of main()
+#------------------------------------------------------------
+
+# Most systems prefer libmonitor to call main(argc, argv, envp) with
+# three arguments (bash requires three).  But somehow this breaks some
+# programs on Blue Gene (eg, amg2006 with XL on BGQ).  So, we
+# conditionally patch libmonitor to use two args on BGQ.
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether libmonitor uses 3-arg main()" >&5
+$as_echo_n "checking whether libmonitor uses 3-arg main()... " >&6; }
+
+libmonitor_three_arg_main=yes
+if test -d /bgsys ; then
+    libmonitor_three_arg_main=no
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $libmonitor_three_arg_main" >&5
+$as_echo "$libmonitor_three_arg_main" >&6; }
 
 
 

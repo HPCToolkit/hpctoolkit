@@ -263,6 +263,26 @@ fi
 AC_SUBST([cflags_fpic])
 
 #------------------------------------------------------------
+# Libmonitor 2- or 3-arg version of main()
+#------------------------------------------------------------
+
+# Most systems prefer libmonitor to call main(argc, argv, envp) with
+# three arguments (bash requires three).  But somehow this breaks some
+# programs on Blue Gene (eg, amg2006 with XL on BGQ).  So, we
+# conditionally patch libmonitor to use two args on BGQ.
+
+AC_MSG_CHECKING([whether libmonitor uses 3-arg main()])
+
+libmonitor_three_arg_main=yes
+if test -d /bgsys ; then
+    libmonitor_three_arg_main=no
+fi
+
+AC_MSG_RESULT([$libmonitor_three_arg_main])
+
+AC_SUBST([libmonitor_three_arg_main])
+
+#------------------------------------------------------------
 # GNU make
 #------------------------------------------------------------
 

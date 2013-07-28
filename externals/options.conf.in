@@ -51,6 +51,8 @@ libxml2dir="@libxml2_prefix@"
 libxml2_inc="@libxml2_inc@"
 libxml2_lib="@libxml2_lib@"
 
+libmonitor_three_arg_main='@libmonitor_three_arg_main@'
+
 symtabAPI_platform="@symtabAPI_platform@"
 xerces_platform="@xerces_platform@"
 have_tr1_map="@have_tr1_map@"

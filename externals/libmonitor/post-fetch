@@ -1,0 +1,17 @@
+#!/bin/sh
+#
+#  Libmonitor post-fetch
+#
+#  $Id$
+#
+
+PKG_NAME=libmonitor
+src=libmonitor-0.x-r149
+
+. ../build-utils/configure.inc
+
+if test "$libmonitor_three_arg_main" = yes ; then
+    echo "using three arg version of main"
+    patch -d "$src" -p1 < patches/cond-patch-main
+fi
+
