@@ -131,8 +131,8 @@
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
 
-#include <utilities/defer-cntxt.h>
-#include <utilities/defer-write.h>
+// #include <ompt/defer-cntxt.h>
+#include <ompt/defer-write.h>
 
 extern void hpcrun_set_retain_recursion_mode(bool mode);
 #ifndef USE_LIBUNW
