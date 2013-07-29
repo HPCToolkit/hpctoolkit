@@ -14,6 +14,10 @@ typedef struct {
   bool scale_by_thread_count;
   long long prev_values[MAX_EVENTS];
   bool is_sync;
+  bool setup_process_only;
+  get_event_set_proc_t get_event_set;
+  add_event_proc_t add_event;
+  finalize_event_set_proc_t finalize_event_set;
   start_proc_t sync_start;
   stop_proc_t sync_stop;
   setup_proc_t sync_setup;

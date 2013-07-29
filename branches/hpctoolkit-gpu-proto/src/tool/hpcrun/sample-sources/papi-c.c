@@ -139,6 +139,9 @@ get_event_index(sample_source_t *self, int event_code)
   assert(0);
 }
 
+//
+// fetch a given component's event set. Create one if need be
+//
 int 
 get_component_event_set(papi_source_info_t* psi, int cidx)
 {
@@ -146,18 +149,24 @@ get_component_event_set(papi_source_info_t* psi, int cidx)
     hpcrun_abort("PAPI component index out of range [0,%d]: %d", psi->num_components, cidx);
    }
 
-   papi_component_info_t *ci = &(psi->component_info[cidx]);
+   papi_component_info_t* ci = &(psi->component_info[cidx]);
 
    if (!ci->inUse) {
-     int ret = PAPI_create_eventset(&(ci->eventSet));
-     TMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret, ci->eventSet);
-     if (ret != PAPI_OK) {
-       hpcrun_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s", 
-                    ret, PAPI_strerror(ret));
-     }
+     ci->get_event_set(&(ci->eventSet));
      ci->inUse = true;
   }
   return ci->eventSet;
+}
+
+//
+// add an event to a component's event set
+//
+int
+component_add_event(papi_source_info_t* psi, int cidx, int evcode)
+{
+  int event_set = get_component_event_set(psi, cidx);
+  papi_component_info_t* ci = &(psi->component_info[cidx]);
+  return ci->add_event(event_set, evcode);
 }
 
 static bool
@@ -581,6 +590,9 @@ METHOD_FN(gen_event_set, int lush_metrics)
     ci->eventSet = PAPI_NULL;
     ci->state = INIT;
     ci->some_derived = 0;
+    ci->get_event_set = component_get_event_set(i);
+    ci->add_event = component_add_event_proc(i);
+    ci->finalize_event_set = component_finalize_event_set(i);
     ci->scale_by_thread_count = thread_count_scaling_for_component(i);
     ci->is_sync = component_uses_sync_samples(i);
     ci->sync_setup = sync_setup_for_component(i);
@@ -597,16 +609,16 @@ METHOD_FN(gen_event_set, int lush_metrics)
   for (i = 0; i < nevents; i++) {
     int evcode = self->evl.events[i].event;
     int cidx = PAPI_get_event_component(evcode);
-    int eventSet = get_component_event_set(psi, cidx); 
-    ret = PAPI_add_event(eventSet, evcode);
+    
+    ret = component_add_event(psi, cidx, evcode);
     psi->component_info[cidx].some_derived |= event_is_derived(evcode);
-    TMSG(PAPI, "PAPI_add_event(eventSet=%d, event_code=%x)", eventSet, evcode);
+    TMSG(PAPI, "Added event code %x to component %d", evcode, cidx);
     {
       char buffer[PAPI_MAX_STR_LEN];
       PAPI_event_code_to_name(evcode, buffer);
       TMSG(PAPI, 
-	   "PAPI_add_event(eventSet=%d, event_code=%x (event name %s)) component=%d", 
-	   eventSet, evcode, buffer, cidx);
+	   "PAPI_add_event(eventSet=%%d, event_code=%x (event name %s)) component=%d", 
+	   /* eventSet, */ evcode, buffer, cidx);
     }
     if (ret != PAPI_OK) {
       EMSG("failure in PAPI gen_event_set(): PAPI_add_event() returned: %s (%d)",
@@ -614,6 +626,12 @@ METHOD_FN(gen_event_set, int lush_metrics)
       event_fatal_error(evcode, ret);
     }
   }
+
+  // finalize component event sets
+    for (i = 0; i < num_components; i++) {
+      papi_component_info_t *ci = &(psi->component_info[i]);
+      ci->finalize_event_set();
+    }
 
   // set up overflow handling for asynchronous event sets for active components
   // set up synchronous handling for synchronous event sets for active compoents
@@ -900,4 +918,3 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   hpcrun_safe_exit();
 }
-

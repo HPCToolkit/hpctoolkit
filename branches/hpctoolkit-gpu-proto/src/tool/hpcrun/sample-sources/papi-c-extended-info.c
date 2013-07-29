@@ -19,6 +19,59 @@ no_action(void)
 {
 }
 
+void
+std_get_event_set(int* ev_s)
+{
+  int ret = PAPI_create_eventset(ev_s);
+  TMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret, *ev_s);
+  if (ret != PAPI_OK) {
+    hpcrun_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s", 
+                 ret, PAPI_strerror(ret));
+  }
+}
+
+int
+std_add_event(int ev_s, int ev)
+{
+  return PAPI_add_event(ev_s, ev);
+}
+
+get_event_set_proc_t
+component_get_event_set(int cidx)
+{
+  const char* name = PAPI_get_component_info(cidx)->name;
+  
+  TMSG(PAPI, "looking for sync get_event_set for component idx=%d(%s)", cidx, name);
+  for(sync_info_list_t* item=registered_sync_components; item; item = item->next) {
+    if (item->pred(name)) return item->get_event_set;
+  }
+  return std_get_event_set;
+}
+
+add_event_proc_t
+component_add_event_proc(int cidx)
+{
+  const char* name = PAPI_get_component_info(cidx)->name;
+  
+  TMSG(PAPI, "looking for sync add_event for component idx=%d(%s)", cidx, name);
+  for(sync_info_list_t* item=registered_sync_components; item; item = item->next) {
+    if (item->pred(name)) return item->add_event;
+  }
+  return std_add_event;
+}
+
+finalize_event_set_proc_t
+component_finalize_event_set(int cidx)
+{
+  const char* name = PAPI_get_component_info(cidx)->name;
+  
+  TMSG(PAPI, "looking for sync finalize_event_set for component idx=%d(%s)", cidx, name);
+  for(sync_info_list_t* item=registered_sync_components; item; item = item->next) {
+    if (item->pred(name)) return item->finalize_event_set;
+  }
+  return no_action;
+}
+
 bool
 component_uses_sync_samples(int cidx)
 {

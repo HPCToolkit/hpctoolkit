@@ -18,6 +18,8 @@
 // *********************************************************
 
 // ******* HPCToolkit Includes *********************************
+#include <lib/prof-lean/spinlock.h>
+
 #include <hpcrun/thread_data.h>
 #include <messages/messages.h>
 #include <hpcrun/sample_event.h>
@@ -70,6 +72,20 @@
   }                                                       \
 }
 // ***********************************************************
+
+typedef struct {
+  int nevents;
+  int event_set;
+  sample_source_t* self;
+} papi_cuda_data_t;
+
+static bool event_set_created = false;
+static bool event_set_finalized = false;
+
+static papi_cuda_data_t local = {};
+
+static spinlock_t cupti_lock = SPINLOCK_UNLOCKED;
+// spinlock_lock() spinlock_unlock() spinlock_is_locked()
 
 // ******************** cuda/cupti functions ***********************
 // Some cuda/cupti functions must not be wrapped! So, we fetch them via dlopen.
@@ -141,25 +157,11 @@ hpcrun_cuda_kernel_callback(void* userdata,
 {
   TMSG(CUDA, "Got Kernel Callback");
 
-  thread_data_t* td = hpcrun_get_thread_data();
-  sample_source_t* self = hpcrun_fetch_source_by_name("papi");
+  papi_cuda_data_t* cuda_data = userdata;
+  int nevents = cuda_data->nevents;
+  int cudaEventSet = cuda_data->event_set;
+  sample_source_t* self = cuda_data->self;
 
-  int nevents  = self->evl.nevents;
-
-  // get cuda event set
-
-  int cuda_component_idx;
-  int n_components = PAPI_num_components();
-
-  for (int i = 0; i < n_components; i++) {
-    if (is_papi_c_cuda(PAPI_get_component_info(i)->name)) {
-      cuda_component_idx = i;
-      break;
-    }
-  }
-
-  papi_source_info_t* psi = td->ss_info[self->evset_idx].ptr;
-  int cudaEventSet = get_component_event_set(psi, cuda_component_idx);
 
   TMSG(CUDA, "nevents = %d, cuda event set = %x", nevents, cudaEventSet);
 
@@ -170,6 +172,7 @@ hpcrun_cuda_kernel_callback(void* userdata,
   }
 
   if (cbInfo->callbackSite == CUPTI_API_ENTER) {
+    TMSG(CUDA, "Cupti API -ENTER- portion");
     // MC recommends FIXME: cbInfo->????? (says what kind of callback) == KERNEL_LAUNCH
     // MC recommends FIXME: Unnecessary, but use cudaDeviveSynchronize
     dcudaThreadSynchronize();
@@ -181,8 +184,10 @@ hpcrun_cuda_kernel_callback(void* userdata,
 	   PAPI_strerror(ret), ret);
     }  
   }
+  TMSG(CUDA, "Past (or done with) CUDA -ENTER- portion");
     
   if (cbInfo->callbackSite == CUPTI_API_EXIT) {
+    TMSG(CUDA, "Cupti API -EXIT- portion");
     // MC recommends Use cudaDeviceSynchronize
     dcudaThreadSynchronize();
     long_long eventValues[nevents+2];
@@ -218,6 +223,7 @@ hpcrun_cuda_kernel_callback(void* userdata,
     if (safe) hpcrun_safe_exit();
     TMSG(CUDA,"unblocked async event in CUDA event handler");
   }
+  TMSG(CUDA, "At end (past -EXIT-)");
 }
 
 static CUpti_SubscriberHandle subscriber;
@@ -233,20 +239,98 @@ papi_c_cupti_setup(void)
 
   static bool one_time = false;
 
-  if (one_time) return;
+  spinlock_lock(&cupti_lock);
+  TMSG(CUDA, "CUPTI setup acquire lock");
+  if (one_time) {
+    spinlock_unlock(&cupti_lock);
+    TMSG(CUDA, "CUPTI setup release lock (setup already called)");
+    return;
+  }
 
   TMSG(CUDA,"sync setup called");
 
+  thread_data_t* td = hpcrun_get_thread_data();
+  local.self = hpcrun_fetch_source_by_name("papi");
+
+  local.nevents  = local.self->evl.nevents;
+
+  // get cuda event set
+
+  int cuda_component_idx;
+  int n_components = PAPI_num_components();
+
+  for (int i = 0; i < n_components; i++) {
+    if (is_papi_c_cuda(PAPI_get_component_info(i)->name)) {
+      cuda_component_idx = i;
+      break;
+    }
+  }
+
+  papi_source_info_t* psi = td->ss_info[local.self->evset_idx].ptr;
+  local.event_set = get_component_event_set(psi, cuda_component_idx);
+
   Cupti_call(dcuptiSubscribe, &subscriber,
              (CUpti_CallbackFunc)hpcrun_cuda_kernel_callback, 
-             NULL);
+             &local);
              
   Cupti_call(dcuptiEnableCallback, 1, subscriber,
              CUPTI_CB_DOMAIN_RUNTIME_API,
              CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020);
 
   one_time = true;
+  spinlock_unlock(&cupti_lock);
+  TMSG(CUDA, "CUPTI setup release lock");
 }
+
+//
+// Get or create a cupti event set --- but only ONCE per process
+//
+void
+papi_c_cupti_get_event_set(int* ev_s)
+{
+  TMSG(CUDA, "Get event set");
+  spinlock_lock(&cupti_lock);
+  TMSG(CUDA, "Cupti lock acquired");
+  if (! event_set_created) {
+    TMSG(CUDA, "No event set created, so create one");
+    int ret = PAPI_create_eventset(ev_s);
+    if (ret != PAPI_OK) {
+      hpcrun_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s", 
+                   ret, PAPI_strerror(ret));
+    }
+    local.event_set = *ev_s;
+    event_set_created = true;
+    TMSG(CUDA, "Event set %d created", local.event_set);
+  }
+  spinlock_unlock(&cupti_lock);
+  TMSG(CUDA, "Cupti lock released");
+}
+
+int
+papi_c_cupti_add_event(int ev_s, int ev)
+{
+  int rv = PAPI_OK;
+  TMSG(CUDA, "Adding event to cupti event set");
+  spinlock_lock(&cupti_lock);
+  TMSG(CUDA, "Cupti lock acquired");
+  if (! event_set_finalized) {
+    TMSG(CUDA, "Really add event %x to cupti event set", ev);
+    rv = PAPI_add_event(local.event_set, ev);
+    TMSG(CUDA, "Check event set passed in = %d, cuda event set = %d", ev_s, local.event_set);
+  }
+  spinlock_unlock(&cupti_lock);
+  TMSG(CUDA, "Cupti lock released");
+  return rv;
+}
+
+void
+papi_c_cupti_finalize_event_set(void)
+{
+  spinlock_lock(&cupti_lock);
+  event_set_finalized = true;
+  spinlock_unlock(&cupti_lock);
+}
+
 
 //
 // sync teardown for cuda/cupti
@@ -255,20 +339,26 @@ static void
 papi_c_cupti_teardown(void)
 {
   static bool one_time = false;
+  spinlock_lock(&cupti_lock);
   if (one_time) return;
 
   TMSG(CUDA,"sync teardown called (=unsubscribe)");
   
   Cupti_call(dcuptiUnsubscribe, subscriber);
   one_time = true;
+  spinlock_unlock(&cupti_lock);
 }
 
 static sync_info_list_t cuda_component = {
   .pred = is_papi_c_cuda,
+  .get_event_set = papi_c_cupti_get_event_set,
+  .add_event = papi_c_cupti_add_event,
+  .finalize_event_set = papi_c_cupti_finalize_event_set,
   .sync_setup = papi_c_cupti_setup,
   .sync_teardown = papi_c_cupti_teardown,
   .sync_start = papi_c_no_action,
   .sync_stop = papi_c_no_action,
+  .process_only = true,
   .next = NULL,
 };
 
