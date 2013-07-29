@@ -88,7 +88,7 @@
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 
-#include <hpcrun/ompt/defer-cntxt.h>
+#include <hpcrun/ompt/ompt-region.h>
 
 #include <hpcrun/metrics.h>
 #include <hpcrun/safe-sampling.h>

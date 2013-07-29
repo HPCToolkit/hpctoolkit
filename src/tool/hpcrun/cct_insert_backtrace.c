@@ -56,7 +56,7 @@
 
 #include <hpcrun/ompt/ompt.h>
 #include <hpcrun/ompt/ompt-interface.h>
-#include <hpcrun/ompt/defer-cntxt.h>
+#include <hpcrun/ompt/ompt-region.h>
 
 #include <lib/prof-lean/lush/lush-support.h>
 #include <lib/prof-lean/placeholders.h>

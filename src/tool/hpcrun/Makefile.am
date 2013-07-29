@@ -309,7 +309,7 @@ MY_BASE_FILES =				\
 	messages/fmt.c	                \
 	\
 	ompt/ompt-interface.c		\
-	ompt/defer-cntxt.c		\
+	ompt/omp-region.c		\
 	ompt/defer-write.c		\
 	ompt/omp-region-map.c		\
 	\
