@@ -246,7 +246,7 @@ idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node,
   thread_data_t *td = hpcrun_get_thread_data();
   td->last_sample++;
 
-  if (idle_blame_participant()) { 
+  if (idle_blame_participant && idle_blame_participant()) {
     // it is an openmp worker thread, so it participates in blame shifting
 
     int metric_value = metric_desc->period * metric_incr;
