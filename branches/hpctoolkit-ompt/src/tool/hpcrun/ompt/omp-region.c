@@ -18,7 +18,7 @@
  * local includes
  *****************************************************************************/
 
-#include "defer-cntxt.h"
+#include "ompt-region.h"
 
 #include <hpcrun/ompt/ompt-interface.h>
 #include <hpcrun/ompt/omp-region-map.h>

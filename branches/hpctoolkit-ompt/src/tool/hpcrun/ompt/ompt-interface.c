@@ -61,7 +61,7 @@
 
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
-#include <hpcrun/ompt/defer-cntxt.h>
+#include <hpcrun/ompt/ompt-region.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/cct/cct.h>
 
