@@ -46,7 +46,7 @@
 #include <hpcrun/metrics.h>
 
 #include <hpcrun/ompt/ompt-region.h>
-#include <hpcrun/ompt/defer-write.h>
+#include <hpcrun/ompt/ompt-defer-write.h>
 
 #include <hpcrun/unresolved.h>
 #include <hpcrun/write_data.h>
