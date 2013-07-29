@@ -81,6 +81,15 @@ int ompt_initialized = 0;
  * private operations 
  *****************************************************************************/
 
+static int
+ompt_thread_participates(void)
+{
+  uint64_t wait_id;
+  return hpcrun_ompt_get_state(&wait_id) != ompt_state_undefined;
+}
+
+
+static
 void start_task_fn(ompt_task_id_t parent_task_id, 
 		   ompt_frame_t *parent_task_frame, 
 		   ompt_task_id_t new_task_id,
@@ -256,7 +265,7 @@ init_blame_shift_undirected()
 		    (ompt_callback_t)ompt_idle_end);
 
   if (retval) {
-    idle_metric_register_blame_source();
+    idle_metric_register_blame_source(ompt_thread_participates);
   }
 }
 

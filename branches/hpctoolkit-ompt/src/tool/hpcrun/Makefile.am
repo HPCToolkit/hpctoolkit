@@ -309,9 +309,10 @@ MY_BASE_FILES =				\
 	messages/fmt.c	                \
 	\
 	ompt/ompt-interface.c		\
-	ompt/omp-region.c		\
-	ompt/defer-write.c		\
-	ompt/omp-region-map.c		\
+	ompt/ompt-region.c		\
+	ompt/ompt-defer-write.c		\
+	ompt/ompt-region-map.c		\
+	ompt/ompt-task-map.c		\
 	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \

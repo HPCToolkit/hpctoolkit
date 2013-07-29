@@ -21,7 +21,7 @@
 #include "ompt-region.h"
 
 #include <hpcrun/ompt/ompt-interface.h>
-#include <hpcrun/ompt/omp-region-map.h>
+#include <hpcrun/ompt/ompt-region-map.h>
 
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
@@ -100,7 +100,7 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
     else {
       prefix = hpcrun_cct_insert_path_return_leaf
 	((td->core_profile_trace_data.epoch->csdata).unresolved_root, prefix);
-      omp_region_map_refcnt_update(partial_region_id, 1L);
+      ompt_region_map_refcnt_update(partial_region_id, 1L);
       TMSG(DEFER_CTXT, "get partial resolution to %d\n", partial_region_id);
     }
     // adjust the callsite of the prefix in side threads to make sure they are the same as
@@ -112,7 +112,7 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
     else {
       hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
       // must delete it when not used considering the performance
-      omp_region_map_refcnt_update(my_region_id, -1L);
+      ompt_region_map_refcnt_update(my_region_id, -1L);
       TMSG(DEFER_CTXT, "resolve region %d", my_region_id);
     }
   }
@@ -177,7 +177,7 @@ void start_team_fn(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_fram
   }
 #endif
 
-  omp_region_map_insert((uint64_t) region_id, callpath);
+  ompt_region_map_insert((uint64_t) region_id, callpath);
 
 #if 1
   if (td->master) {
@@ -223,15 +223,15 @@ void end_team_fn(ompt_parallel_id_t region_id,
 		 ompt_task_id_t task_id) 
 {
   hpcrun_safe_enter();
-  omp_region_map_entry_t *record = omp_region_map_lookup(region_id);
+  ompt_region_map_entry_t *record = ompt_region_map_lookup(region_id);
   if (record) {
-    if (omp_region_map_entry_refcnt_get(record) > 0) {
+    if (ompt_region_map_entry_refcnt_get(record) > 0) {
       // associate calling context with region if it is not already present
-      if (omp_region_map_entry_callpath_get(record) == NULL) {
-	omp_region_map_entry_callpath_set(record, gather_context(region_id));
+      if (ompt_region_map_entry_callpath_get(record) == NULL) {
+	ompt_region_map_entry_callpath_set(record, gather_context(region_id));
       }
     } else {
-      omp_region_map_refcnt_update(region_id, 0L);
+      ompt_region_map_refcnt_update(region_id, 0L);
     }
   }
   // FIXME: not using team_master but use another routine to 
@@ -330,7 +330,7 @@ void resolve_cntxt()
     // the end_team_fn) after the region record is deleted.
     // solution: consider such sample not in openmp region (need no
     // defer cntxt) 
-    if (omp_region_map_refcnt_update(outer_region_id, 1L))
+    if (ompt_region_map_refcnt_update(outer_region_id, 1L))
       hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, outer_region_id)));
     else
       outer_region_id = 0;
@@ -350,8 +350,8 @@ void resolve_cntxt()
 #ifdef DEBUG_DEFER
   // debugging code
   if (current_region_id) {
-    omp_region_map_entry_t *record = omp_region_map_lookup(current_region_id);
-    if (!record || (omp_region_map_entry_refcnt_get(record) == 0)) {
+    ompt_region_map_entry_t *record = ompt_region_map_lookup(current_region_id);
+    if (!record || (ompt_region_map_entry_refcnt_get(record) == 0)) {
       EMSG("no record found current_region_id=%d initial_td_region_id=%d td->region_id=%d ", 
 	   current_region_id, initial_td_region, td->region_id);
     }
@@ -374,9 +374,9 @@ hpcrun_region_lookup(uint64_t id)
 {
   cct_node_t *result = NULL;
 
-  omp_region_map_entry_t *record = omp_region_map_lookup(id);
+  ompt_region_map_entry_t *record = ompt_region_map_lookup(id);
   if (record) {
-    result = omp_region_map_entry_callpath_get(record);
+    result = ompt_region_map_entry_callpath_get(record);
   }
 
   return result;

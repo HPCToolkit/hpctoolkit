@@ -61,6 +61,9 @@
  *****************************************************************************/
 
 #include "blame-map.h"
+
+#include <hpcrun/messages/messages.h>
+
 #include <lib/prof-lean/atomic-op.h>
 
 
