@@ -68,7 +68,6 @@
 #include "ompt-interface.h"
 
 #include "sample-sources/idle.h"
-#include "sample-sources/lockwait.h"
 #include "sample-sources/blame-shift.h"
 #include "sample-sources/blame-shift-directed.h"
 
