@@ -83,9 +83,9 @@ extern bool hpcrun_inbounds_main(void* addr);
 //
 static bool retain_recursion = false;
 
-#define OMPT_DEBUG 1
+#define OMPT_DEBUG 0
 
-#ifdef OMPT_DEBUG
+#if OMPT_DEBUG
 #define elide_debug_dump(t,i,o) stack_dump(t,i,o)
 
 static
@@ -120,7 +120,8 @@ interval_contains(void *lower, void *upper, void *addr)
 
 
 static void
-hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner, int isSync)
+hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner, 
+			   uint64_t region_id, int isSync)
 {
   int i = 0;
   frame_t *it = NULL;
@@ -128,6 +129,8 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner, int isSync)
   ompt_frame_t *frame0 = hpcrun_ompt_get_task_frame(i);
 
   TD_GET(omp_task_context) = 0;
+
+  elide_debug_dump("ORIGINAL", *bt_inner, *bt_outer); 
 
   //---------------------------------------------------------------
   // handle all of the corner cases that can occur at the top of 
@@ -137,63 +140,19 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner, int isSync)
   if (!frame0) {
     // corner case: the innermost task (if any) has no frame info. 
     // no action necessary. just return.
-    return;
+    goto clip_base_frames;
   }
 
-  if ((frame0->reenter_runtime_frame == 0) && (frame0->exit_runtime_frame == 0)) {
+  while ((frame0->reenter_runtime_frame == 0) && (frame0->exit_runtime_frame == 0)) {
     // corner case: the top frame has been set up, but not filled in. 
     // ignore this frame.
     frame0 = hpcrun_ompt_get_task_frame(++i);
-  }
 
-  if (!frame0) {
-    // corner case: the innermost task (if any) has no frame info. 
-    // no action necessary. just return.
-    return;
-  }
-
-  if (frame0->reenter_runtime_frame) { 
-    // the sample was received inside the runtime; 
-    // elide frames from top of stack down to runtime entry
-    int found = 0;
-    for (it = *bt_inner; it <= *bt_outer; it++) {
-      if ((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->reenter_runtime_frame) {
-	if (isSync) {
-	  // for synchronous samples, make elide runtime frames at top of stack
-	  *bt_inner = it;
-	}
-	found = 1;
-	break;
-      }
+    if (!frame0) {
+      // corner case: the innermost task (if any) has no frame info. 
+      goto clip_base_frames;
     }
-
-    if (found == 0) {
-      uint64_t idle_frame = (uint64_t) hpcrun_ompt_get_idle_frame();
-
-      if (idle_frame) {
-	for (it = *bt_inner; it <= *bt_outer; it++) {
-	  if ((uint64_t)(it->cursor.sp) >= idle_frame) {
-	    *bt_outer = it - 2;
-	    break;
-	  }
-	}
-      }
-#if 0
-      /* eliminate all frames */
-      *bt_inner = *bt_outer + 1;
-#endif
-      /* runtime frames with nothing else; it is harmless to reveal them all */
-
-      elide_debug_dump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer); 
-
-      /* nothing left to do */
-      return;
-    }
-    elide_debug_dump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer); 
-    /* frames at top of stack elided. move down one level */ 
   }
-
-#if 0
 
   if (frame0->exit_runtime_frame && 
       (((uint64_t) frame0->exit_runtime_frame) < ((uint64_t) (*bt_inner)->cursor.sp))) {
@@ -205,13 +164,31 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner, int isSync)
 
   if (!frame0) {
     // corner case: the innermost task (if any) has no frame info. 
-    // no action necessary. just return.
-    return;
+    goto clip_base_frames;
   }
-#endif
 
-  elide_debug_dump("ORIGINAL", *bt_inner, *bt_outer); 
-  
+  if (frame0->reenter_runtime_frame) { 
+    // the sample was received inside the runtime; 
+    // elide frames from top of stack down to runtime entry
+    int found = 0;
+    for (it = *bt_inner; it <= *bt_outer; it++) {
+      if ((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->reenter_runtime_frame) {
+	if (isSync) {
+	  // for synchronous samples, elide runtime frames at top of stack
+	  *bt_inner = it;
+	}
+	found = 1;
+	break;
+      }
+    }
+
+    if (found == 0) {
+      // reenter_runtime_frame not found on stack. all frames are runtime frames
+      goto clip_base_frames;
+    }
+    // frames at top of stack elided. continue with the rest
+  }
+
   // general case: elide frames between frame1->enter and frame0->exit
   while (true) {
     frame_t *exit0 = NULL, *reenter1 = NULL;
@@ -271,11 +248,13 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner, int isSync)
 
     if (exit0 && reenter1) {
 #if 0
-      memmove(*bt_inner+(reenter1-exit0+1), *bt_inner, (exit0 - *bt_inner)*sizeof(frame_t));
+      memmove(*bt_inner+(reenter1-exit0+1), *bt_inner, 
+	      (exit0 - *bt_inner)*sizeof(frame_t));
       *bt_inner = *bt_inner + (reenter1 - exit0 + 1);
 #else
       // was missing a frame with intel's runtime; eliminate +1 -- johnmc
-      memmove(*bt_inner+(reenter1-exit0), *bt_inner, (exit0 - *bt_inner)*sizeof(frame_t));
+      memmove(*bt_inner+(reenter1-exit0), *bt_inner, 
+	      (exit0 - *bt_inner)*sizeof(frame_t));
       *bt_inner = *bt_inner + (reenter1 - exit0);
 #endif
       exit0 = reenter1 = NULL;
@@ -288,6 +267,28 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner, int isSync)
   }
 
   elide_debug_dump("ELIDED", *bt_inner, *bt_outer); 
+  return;
+
+ clip_base_frames:
+  {
+    /* runtime frames with nothing else; it is harmless to reveal them all */
+    uint64_t idle_frame = (uint64_t) hpcrun_ompt_get_idle_frame();
+
+    if (idle_frame) {
+      /* clip below the idle frame */
+      for (it = *bt_inner; it <= *bt_outer; it++) {
+	if ((uint64_t)(it->cursor.sp) >= idle_frame) {
+	  *bt_outer = it - 2;
+	  break;
+	}
+      }
+    } else {
+      /* no idle frame. show the whole stack. */
+    }
+    
+    elide_debug_dump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer); 
+    return;
+  }
 }
 
 static cct_node_t*
@@ -295,9 +296,9 @@ cct_insert_raw_backtrace(cct_node_t* cct,
                             frame_t* path_beg, frame_t* path_end)
 {
   if (hpcrun_ompt_elide_frames() && (path_beg < path_end) && cct) {
-    // map the empty call path to omp_barrier to indicate an idle worker
-    void *omp_barrier_addr = canonicalize_placeholder(omp_barrier);
-    ip_normalized_t tmp_ip = hpcrun_normalize_ip(omp_barrier_addr, NULL);
+    // map the empty call path to omp_runtime to indicate an idle worker
+    void *omp_runtime_addr = canonicalize_placeholder(omp_runtime);
+    ip_normalized_t tmp_ip = hpcrun_normalize_ip(omp_runtime_addr, NULL);
     cct_addr_t tmp = ADDR2(tmp_ip.lm_id, tmp_ip.lm_ip);
     cct = hpcrun_cct_insert_addr(cct, &tmp);
     hpcrun_cct_terminate_path(cct);
@@ -319,7 +320,10 @@ cct_insert_raw_backtrace(cct_node_t* cct,
       TMSG(REC_COMPRESS, "recursive routine compression!");
     }
     else {
-      cct_addr_t tmp = (cct_addr_t) {.as_info = path_beg->as_info, .ip_norm = path_beg->ip_norm, .lip = path_beg->lip};
+      cct_addr_t tmp = 
+	(cct_addr_t) {.as_info = path_beg->as_info, 
+		      .ip_norm = path_beg->ip_norm, 
+		      .lip = path_beg->lip};
       TMSG(BT_INSERT, "inserting addr (%d, %p)", tmp.ip_norm.lm_id, tmp.ip_norm.lm_ip);
       cct = hpcrun_cct_insert_addr(cct, &tmp);
     }
@@ -407,7 +411,8 @@ hpcrun_cct_insert_bt(cct_node_t* node,
 		     backtrace_t* bt,
 		     cct_metric_data_t datum)
 {
-  return hpcrun_cct_insert_backtrace_w_metric(node, metricId, hpcrun_bt_last(bt), hpcrun_bt_beg(bt), datum);
+  return hpcrun_cct_insert_backtrace_w_metric(node, metricId, hpcrun_bt_last(bt), 
+					      hpcrun_bt_beg(bt), datum);
 }
 
 
@@ -510,7 +515,9 @@ hpcrun_cct_record_backtrace(cct_bundle_t* cct, bool partial, bool thread_stop,
   }
 
   TMSG(FENCE, "sanity check cursor = %p", cct_cursor);
-  TMSG(FENCE, "further sanity check: bt_last frame = (%d, %p)", bt_last->ip_norm.lm_id, bt_last->ip_norm.lm_ip);
+  TMSG(FENCE, "further sanity check: bt_last frame = (%d, %p)", 
+       bt_last->ip_norm.lm_id, bt_last->ip_norm.lm_ip);
+
   return hpcrun_cct_insert_backtrace(cct_cursor, bt_last, bt_beg);
 
 }
@@ -554,12 +561,13 @@ cct_node_t *
 hpcrun_cct_cursor_finalize(cct_bundle_t *cct, cct_node_t *cct_cursor)
 {
   cct_node_t *omp_task_context = TD_GET(omp_task_context);
+
   if (omp_task_context) {
     cct_node_t *root;
     if((is_partial_resolve((cct_node_t *)omp_task_context) > 0)) {
       root = hpcrun_get_thread_epoch()->csdata.unresolved_root; 
     } else {
-      root = (hpcrun_get_thread_epoch()->csdata).tree_root; 
+      root = hpcrun_get_thread_epoch()->csdata.tree_root; 
     }
     return hpcrun_cct_insert_path_return_leaf(root, omp_task_context);
   }
@@ -576,11 +584,12 @@ hpcrun_cct_cursor_finalize(cct_bundle_t *cct, cct_node_t *cct_cursor)
 	// full context is available now. use it.
 	cct_cursor = prefix;
       } else {
-	// full context is not available. if the there is a node for region_id in the unresolved tree, 
-	// use it as the cursor to anchor the sample for now. it will be resolved later. otherwise,
-	// use the default cursor.
-	prefix = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, 
-				      &(ADDR2(UNRESOLVED, region_id)));
+	// full context is not available. if the there is a node for region_id in 
+	// the unresolved tree, use it as the cursor to anchor the sample for now. 
+	// it will be resolved later. otherwise, use the default cursor.
+	prefix = 
+	  hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, 
+			       &(ADDR2(UNRESOLVED, region_id)));
 	if (prefix) cct_cursor = prefix;
       }
     }
@@ -589,7 +598,8 @@ hpcrun_cct_cursor_finalize(cct_bundle_t *cct, cct_node_t *cct_cursor)
   if (!TD_GET(master)) {
     uint64_t region_id = TD_GET(region_id);
     if(region_id > 0) {
-      cct_node_t *prefix = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, 
+      cct_node_t *prefix = 
+	hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, 
 				      &(ADDR2(UNRESOLVED, region_id)));
       if (prefix) cct_cursor = prefix;
     }
@@ -600,12 +610,15 @@ hpcrun_cct_cursor_finalize(cct_bundle_t *cct, cct_node_t *cct_cursor)
 }
 
 cct_node_t*
-hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool thread_stop,
-				     frame_t* bt_beg, frame_t* bt_last, bool tramp_found,
+hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, 
+				     bool thread_stop, frame_t* bt_beg, 
+				     frame_t* bt_last, bool tramp_found,
 				     int metricId, uint64_t metricIncr)
 {
   TMSG(FENCE, "Recording backtrace");
-  TMSG(BT_INSERT, "Record backtrace w metric to id %d, incr = %d", metricId, metricIncr);
+  TMSG(BT_INSERT, "Record backtrace w metric to id %d, incr = %d", 
+       metricId, metricIncr);
+
   thread_data_t* td = hpcrun_get_thread_data();
   cct_node_t* cct_cursor = cct->tree_root;
   TMSG(FENCE, "Initially picking tree root = %p", cct_cursor);
@@ -626,7 +639,9 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, bool threa
   cct_cursor = hpcrun_cct_cursor_finalize(cct, cct_cursor);
 
   TMSG(FENCE, "sanity check cursor = %p", cct_cursor);
-  TMSG(FENCE, "further sanity check: bt_last frame = (%d, %p)", bt_last->ip_norm.lm_id, bt_last->ip_norm.lm_ip);
+  TMSG(FENCE, "further sanity check: bt_last frame = (%d, %p)", 
+       bt_last->ip_norm.lm_id, bt_last->ip_norm.lm_ip);
+
   return hpcrun_cct_insert_backtrace_w_metric(cct_cursor, metricId,
 					      bt_last, bt_beg,
 					      (cct_metric_data_t){.i = metricIncr});
@@ -652,9 +667,10 @@ hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
     }
   }
 
-  cct_node_t* n = hpcrun_cct_record_backtrace_w_metric(cct, true, bt.fence == FENCE_THREAD,
-						       bt.begin, bt.last, bt.has_tramp,
-						       metricId, metricIncr);
+  cct_node_t* n = 
+    hpcrun_cct_record_backtrace_w_metric(cct, true, bt.fence == FENCE_THREAD,
+					 bt.begin, bt.last, bt.has_tramp,
+					 metricId, metricIncr);
 
   hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));
   hpcrun_stats_trolled_frames_inc((long) bt.n_trolls);
@@ -682,8 +698,8 @@ hpcrun_backtrace_finalize(backtrace_info_t *bt, int isSync)
       }
     }
     uint64_t region_id = TD_GET(region_id);
-    if (master || region_id != 0) {
-      hpcrun_elide_runtime_frame(&bt->last, &bt->begin, isSync);
+    if (master || region_id > 0) {
+      hpcrun_elide_runtime_frame(&bt->last, &bt->begin, region_id, isSync);
     }
   }
 }
@@ -745,9 +761,10 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
   }
 #endif
 
-  cct_node_t* n = hpcrun_cct_record_backtrace_w_metric(bundle, partial_unw, bt.fence == FENCE_THREAD,
-						       bt_beg, bt_last, tramp_found,
-						       metricId, metricIncr);
+  cct_node_t* n = 
+    hpcrun_cct_record_backtrace_w_metric(bundle, partial_unw, bt.fence == FENCE_THREAD,
+					 bt_beg, bt_last, tramp_found,
+					 metricId, metricIncr);
 
   if (bt.trolled) hpcrun_stats_trolled_inc();
   hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));

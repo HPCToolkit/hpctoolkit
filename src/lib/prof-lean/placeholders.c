@@ -1,4 +1,4 @@
-void omp_barrier()
+void omp_runtime()
 {
 }
 

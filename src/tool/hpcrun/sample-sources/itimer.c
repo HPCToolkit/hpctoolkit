@@ -93,6 +93,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/thread_data.h>
+#include <hpcrun/ompt/ompt-region.h>
 
 #include <lush/lush-backtrace.h>
 #include <messages/messages.h>
