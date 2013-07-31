@@ -63,6 +63,7 @@
 #include "Constants.hpp"
 #include "FileUtils.hpp"
 #include "DebugUtils.hpp"
+#include "ProgressBar.hpp"
 
 #include <string>
 #include <algorithm>
@@ -116,34 +117,34 @@ namespace TraceviewerServer
 		dos.writeInt(type);
 
 		vector<string> allPaths = FileUtils::getAllFilesInDir(directory);
-		vector<string> filtered;
+		vector<string> filteredFileNames;
 		vector<string>::iterator it;
 		for (it = allPaths.begin(); it != allPaths.end(); it++)
 		{
 			string val = *it;
 			if (val.find(".hpctrace") < string::npos)//This is hardcoded, which isn't great but will have to do because GlobInputFile is regex-style ("*.hpctrace")
-				filtered.push_back(val);
+				filteredFileNames.push_back(val);
 		}
 		// on linux, we have to sort the files
 		//To sort them, we need a random access iterator, which means we need to load all of them into a vector
-		sort(filtered.begin(), filtered.end());
+		sort(filteredFileNames.begin(), filteredFileNames.end());
 
-		dos.writeInt(filtered.size());
+		dos.writeInt(filteredFileNames.size());
 		const Long num_metric_header = 2 * SIZEOF_INT; // type of app (4 bytes) + num procs (4 bytes)
-		 Long num_metric_index = filtered.size()
+		 Long num_metric_index = filteredFileNames.size()
 				* (SIZEOF_LONG + 2 * SIZEOF_INT);
-		Long offset = num_metric_header + num_metric_index;
+		FileOffset currentOffset = num_metric_header + num_metric_index;
 
 		int name_format = 0; // FIXME hack:some hpcprof revisions have different format name !!
 		//-----------------------------------------------------
-		// 2. Record the process ID, thread ID and the offset
+		// 2. Record the process ID, thread ID and the currentOffset
 		//   It will also detect if the application is mp, mt, or hybrid
 		//	 no accelator is supported
 		//  for all files:
-		//		int proc-id, int thread-id, long offset
+		//		int proc-id, int thread-id, long currentOffset
 		//-----------------------------------------------------
 		vector<string>::iterator it2;
-		for (it2 = filtered.begin(); it2 < filtered.end(); it2++)
+		for (it2 = filteredFileNames.begin(); it2 < filteredFileNames.end(); it2++)
 		{
 
 			 string Filename = *it2;
@@ -175,27 +176,29 @@ namespace TraceviewerServer
 			dos.writeInt(Thread);
 			if (Thread != 0)
 				type |= MULTI_THREADING;
-			dos.writeLong(offset);
-			offset += FileUtils::getFileSize(Filename);
+			dos.writeLong(currentOffset);
+			currentOffset += FileUtils::getFileSize(Filename);
 		}
 		//-----------------------------------------------------
 		// 3. Copy all data from the multiple files into one file
 		//-----------------------------------------------------
-		for (it2 = filtered.begin(); it2 < filtered.end(); it2++)
+		ProgressBar prog("Merging database", filteredFileNames.size());
+		for (it2 = filteredFileNames.begin(); it2 < filteredFileNames.end(); it2++)
 		{
 			string i = *it2;
 
 			ifstream dis(i.c_str(), ios_base::binary | ios_base::in);
 			char data[PAGE_SIZE_GUESS];
 			dis.read(data, PAGE_SIZE_GUESS);
-			int NumRead = dis.gcount();
-			while (NumRead > 0)
+			int bytesRead = dis.gcount();
+			while (bytesRead > 0)
 			{
-				dos.write(data, NumRead);
+				dos.write(data, bytesRead);
 				dis.read(data, PAGE_SIZE_GUESS);
-				NumRead = dis.gcount();
+				bytesRead = dis.gcount();
 			}
 			dis.close();
+			prog.incrementProgress();
 		}
 		insertMarker(&dos);
 		dos.close();
@@ -212,7 +215,7 @@ namespace TraceviewerServer
 		//-----------------------------------------------------
 		// 5. remove old files
 		//-----------------------------------------------------
-		removeFiles(filtered);
+		removeFiles(filteredFileNames);
 		return SUCCESS_MERGED;
 	}
 
@@ -227,7 +230,7 @@ namespace TraceviewerServer
 		ifstream f(filename->c_str(), ios_base::binary | ios_base::in);
 		bool isCorrect = false;
 		Long pos = FileUtils::getFileSize(*filename) - SIZEOF_LONG;
-		int diff;
+
 		if (pos > 0)
 		{
 			f.seekg(pos, ios_base::beg);
