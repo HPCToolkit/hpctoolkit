@@ -62,6 +62,7 @@
 #include <mpi.h>
 
 #include <vector>
+#include <list>
 #include <cmath>
 #include <assert.h>
 
@@ -149,6 +150,12 @@ namespace TraceviewerServer
 		int trueRank = COMM_WORLD.Get_rank();
 		int size = COMM_WORLD.Get_size();
 
+		// Keep track of all these buffers we declare so that we can free them
+		// all at the end. Allocating them on the heap lets us put out multiple
+		// ISends and overlap computation and communication at the cost of extra
+		// memory usage (a negligible amount though: < 10 MB)
+		list<MPICommunication::ResultBufferLocations*> buffers;
+
 		//Gives us a contiguous count of ranks from 0 to size-2 regardless of which node is the socket server
 		//If ss = 0, they are all mapped one less. If ss = size-1, no changes happen
 		int rank = trueRank > MPICommunication::SOCKET_SERVER ? trueRank - 1 : trueRank;
@@ -232,15 +239,20 @@ namespace TraceviewerServer
 			nextTrace->readInData();
 
 			vector<TimeCPID> ActualData = *nextTrace->data->listCPID;
-			MPICommunication::ResultMessage msg;
-			msg.tag = SLAVE_REPLY;
-			msg.data.line = nextTrace->line();
-			int entries = ActualData.size();
-			msg.data.entries = entries;
 
-			msg.data.begtime = ActualData[0].timestamp;
-			msg.data.endtime = ActualData[entries - 1].timestamp;
-			msg.data.rankID = trueRank;
+			MPICommunication::ResultBufferLocations* locs = new MPICommunication::ResultBufferLocations;
+
+			MPICommunication::ResultMessage* msg = new MPICommunication::ResultMessage;
+			locs->header = msg;
+
+			msg->tag = SLAVE_REPLY;
+			msg->data.line = nextTrace->line();
+			int entries = ActualData.size();
+			msg->data.entries = entries;
+
+			msg->data.begtime = ActualData[0].timestamp;
+			msg->data.endtime = ActualData[entries - 1].timestamp;
+			msg->data.rankID = trueRank;
 
 
 			int i = 0;
@@ -252,7 +264,10 @@ namespace TraceviewerServer
 			{
 				compr = new DataCompressionLayer();
 
-				Time currentTimestamp = msg.data.begtime;
+				locs->compressed = true;
+				locs->compMsg = compr;
+
+				Time currentTimestamp = msg->data.begtime;
 				for (i = 0; i < entries; i++)
 				{
 					compr->writeInt((int) (ActualData[i].timestamp - currentTimestamp));
@@ -267,9 +282,13 @@ namespace TraceviewerServer
 			{
 
 				outputBuffer = new unsigned char[entries*SIZEOF_DELTASAMPLE];
+
+				locs->compressed = false;
+				locs->message = outputBuffer;
+
 				char* ptrToFirstElem = (char*)&(outputBuffer[0]);
 				char* currentPtr = ptrToFirstElem;
-				Time currentTimestamp = msg.data.begtime;
+				Time currentTimestamp = msg->data.begtime;
 				for (i = 0; i < entries; i++)
 				{
 					int deltaTimestamp = ActualData[i].timestamp - currentTimestamp;
@@ -280,20 +299,18 @@ namespace TraceviewerServer
 				}
 				outputBufferLen = entries*SIZEOF_DELTASAMPLE;
 			}
-			msg.data.compressedSize = outputBufferLen;
-			COMM_WORLD.Send(&msg, sizeof(msg), MPI_PACKED, MPICommunication::SOCKET_SERVER,
-					0);
 
-			COMM_WORLD.Send(outputBuffer, outputBufferLen, MPI_BYTE,
+
+
+			msg->data.compressedSize = outputBufferLen;
+			locs->headerRequest = COMM_WORLD.Isend(msg, sizeof(*msg), MPI_PACKED,
 					MPICommunication::SOCKET_SERVER, 0);
 
-			//We can't free inside the first if statement because we still need to send, so free here
-			if (useCompression)
-				delete compr;
-			else
-				delete[] outputBuffer;
+			locs->bodyRequest = COMM_WORLD.Isend(outputBuffer, outputBufferLen,
+					MPI_BYTE, MPICommunication::SOCKET_SERVER, 0);
 
 			LinesSentCount++;
+			buffers.push_back(locs);
 
 			if (LinesSentCount % 100 == 0)
 				DEBUGCOUT(2) << trueRank << " Has sent " << LinesSentCount
@@ -302,6 +319,24 @@ namespace TraceviewerServer
 			delete nextTrace;
 			nextTrace = controller->getNextTrace();
 		}
+		//Clean up all our MPI buffers.
+		MPICommunication::ResultBufferLocations* current;
+		while (!buffers.empty())
+		{
+			current = buffers.front();
+			buffers.pop_front();
+			current->headerRequest.Wait();
+			current->bodyRequest.Wait();
+			//Now it is safe to delete everything
+			delete(current->header);
+			if (current->compressed)
+				delete(current->compMsg);
+			else
+				delete(current->message);
+			delete(current);
+		}
+
+
 		return LinesSentCount;
 	}
 
