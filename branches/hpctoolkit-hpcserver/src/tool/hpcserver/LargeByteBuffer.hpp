@@ -63,6 +63,7 @@
 #include "VersatileMemoryPage.hpp"
 #include "ByteUtilities.hpp"
 #include "FileUtils.hpp" //For FileOffset
+#include "LRUList.hpp"
 
 #include <string>
 #include <vector>
@@ -84,6 +85,7 @@ namespace TraceviewerServer
 		static uint64_t getRamSize();
 		vector<VersatileMemoryPage> masterBuffer;
 		int numPages;
+		LRUList<VersatileMemoryPage>* pageManagementList;
 
 	};
 

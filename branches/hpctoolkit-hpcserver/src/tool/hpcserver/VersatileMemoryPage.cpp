@@ -66,17 +66,18 @@
 
 #include "DebugUtils.hpp"
 #include "VersatileMemoryPage.hpp"
+#include "LRUList.hpp"
 
 namespace TraceviewerServer
 {
-	static list<VersatileMemoryPage*> mostRecentlyUsed;
 	static int MAX_PAGES_TO_ALLOCATE_AT_ONCE = 0;
-	static int pagesCurrentlyAllocatedCount = 0;
-	VersatileMemoryPage::VersatileMemoryPage(FileOffset _startPoint, int _size, int _index, FileDescriptor _file)
+
+	VersatileMemoryPage::VersatileMemoryPage(FileOffset _startPoint, int _size, FileDescriptor _file, LRUList<VersatileMemoryPage>* pageManagementList)
 	{
 		startPoint = _startPoint;
 		size = _size;
-		index = _index;
+		mostRecentlyUsed = pageManagementList;
+		index = mostRecentlyUsed->addNewUnused(this);
 		file = _file;
 		isMapped = false;
 		if (MAX_PAGES_TO_ALLOCATE_AT_ONCE <1)
@@ -95,39 +96,38 @@ namespace TraceviewerServer
 	}
 	char* VersatileMemoryPage::get()
 	{
-		putMeOnTop();
 
 		if (!isMapped)
 		{
 			mapPage();
 		}
+		mostRecentlyUsed->putOnTop(index);
+
 		return page;
 	}
 
 	void VersatileMemoryPage::mapPage()
 	{
 
-		DEBUGCOUT(1) << "Mapping page "<< index<< " "<<pagesCurrentlyAllocatedCount << " / " << MAX_PAGES_TO_ALLOCATE_AT_ONCE << endl;
+		DEBUGCOUT(1) << "Mapping page "<< index<< " "<<mostRecentlyUsed->getSize() << " / " << MAX_PAGES_TO_ALLOCATE_AT_ONCE << endl;
 
 		if (isMapped)
 		{
 			cerr << "Trying to double map!"<<endl;
 			return;
 		}
-		if (pagesCurrentlyAllocatedCount >= MAX_PAGES_TO_ALLOCATE_AT_ONCE)
+		if (mostRecentlyUsed->getSize() >= MAX_PAGES_TO_ALLOCATE_AT_ONCE)
 		{
 
-			VersatileMemoryPage* toRemove = mostRecentlyUsed.back();
+			VersatileMemoryPage* toRemove = mostRecentlyUsed->getLast();
 
 			DEBUGCOUT(1)<<"Kicking " << toRemove->index << " out"<<endl;
 
-
 			if (toRemove->isMapped != true)
-			{
 				cerr << "Least recently used one isn't even mapped?"<<endl;
-			}
+
 			toRemove->unmapPage();
-			mostRecentlyUsed.pop_back();
+			mostRecentlyUsed->removeLast();
 		}
 		page = (char*)mmap(0, size, MAP_PROT, MAP_FLAGS, file, startPoint);
 		if (page == MAP_FAILED)
@@ -138,8 +138,10 @@ namespace TraceviewerServer
 			fflush(NULL);
 			exit(-1);
 		}
-		pagesCurrentlyAllocatedCount++;
+
+
 		isMapped = true;
+		mostRecentlyUsed->reAdd(index);
 	}
 	void VersatileMemoryPage::unmapPage()
 	{
@@ -149,38 +151,10 @@ namespace TraceviewerServer
 			return;
 		}
 		munmap(page, size);
-		pagesCurrentlyAllocatedCount--;
+
 		isMapped = false;
 
 		DEBUGCOUT(1) << "Unmapped a page"<<endl;
-
-	}
-	void VersatileMemoryPage::putMeOnTop()
-	{
-
-		if (mostRecentlyUsed.size() == 0)
-		{
-			mostRecentlyUsed.push_front(this);
-			return;
-		}
-		VersatileMemoryPage* front = *mostRecentlyUsed.begin();
-
-		if (front->index == index)//This is already the one on top, so we're done
-			return;
-		else
-		{
-			//Before we put this one on top, iterate through to see if it appears anywhere else
-			list<VersatileMemoryPage*>::iterator it;
-			for (it = mostRecentlyUsed.begin(); it != mostRecentlyUsed.end(); it++)
-			{
-				if ((*it)->index == index)//We've found this one. Take it out
-				{
-					mostRecentlyUsed.erase(it);
-					break;
-				}
-			}
-			mostRecentlyUsed.push_front(this);
-		}
 
 	}
 
