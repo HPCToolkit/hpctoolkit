@@ -57,16 +57,75 @@
 //
 //***************************************************************************
 
-extern void filterTest();
-extern void progBarTest();
-extern void compressionTest();
-extern void lruTest();
 
-int main(int argc, char** argv)
+#undef NDEBUG
+
+#include <iostream>
+#include <cassert>
+using namespace std;
+struct TestData
 {
-	lruTest();
-	compressionTest();
-	progBarTest();
-	filterTest();
+	int index;
+	bool expensiveObjectInUse;
+};
+
+#include "../LRUList.hpp"
+
+using TraceviewerServer::LRUList;
+
+void lruTest()
+{
+	#define OBJCOUNT 20
+	LRUList<TestData> list(OBJCOUNT);
+
+	bool inuse[OBJCOUNT];//Just for testing
+	for(int i = 0; i< OBJCOUNT; i++)
+	{
+		TestData* next = new TestData;
+		next->expensiveObjectInUse = true;
+		next->index = list.addNew(next);
+		inuse[next->index] = true;
+	}
+	assert(list.getSize()==OBJCOUNT);
+
+	srand(12);
+	for(int i = 0; i< 70; i++)
+	{
+		list.putOnTop(rand()%OBJCOUNT);
+	}
+	assert(list.getSize()==OBJCOUNT);
+	int count = OBJCOUNT;
+	for(int i = 0; i< 12; i++)
+	{
+		TestData* last = list.getLast();
+		last->expensiveObjectInUse = false;
+		inuse[last->index] = false;
+		list.removeLast();
+		assert(list.getSize() == --count);
+
+		int ran;
+		if(inuse[ran = (rand()%OBJCOUNT)])
+			list.putOnTop(ran);
+		if(!inuse[ran = (rand()%OBJCOUNT)])
+		{
+			inuse[ran] = true;
+			list.reAdd(ran);
+			assert(list.getSize() == ++count);
+		}
+	}
+	//list.dump();
+
+	while (list.getSize() > 0)
+	{
+		list.removeLast();
+		//list.dump();
+	}
+	assert(list.getSize()==0);
+	for(int i = 0; i< OBJCOUNT; i++)
+	{
+		list.reAdd(i);
+	}
+	assert(list.getSize()==OBJCOUNT);
+	cout << "List operations did not crash and were probably successful"<<endl;
 }
 

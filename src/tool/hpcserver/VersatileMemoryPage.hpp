@@ -63,6 +63,7 @@
 
 #include <sys/mman.h>
 #include "FileUtils.hpp" //FileOffset
+#include "LRUList.hpp"
 
 using namespace std;
 namespace TraceviewerServer
@@ -72,14 +73,14 @@ namespace TraceviewerServer
 	{
 	public:
 		VersatileMemoryPage();
-		VersatileMemoryPage(FileOffset, int, int, FileDescriptor);
+		VersatileMemoryPage(FileOffset, int, FileDescriptor, LRUList<VersatileMemoryPage>* pageManagementList);
 		virtual ~VersatileMemoryPage();
 		static void setMaxPages(int);
 		char* get();
 	private:
 		void mapPage();
 		void unmapPage();
-		void putMeOnTop();
+
 		FileOffset startPoint;
 		int size;
 		char* page;
@@ -87,8 +88,9 @@ namespace TraceviewerServer
 		FileDescriptor file;
 
 		bool isMapped;
+		LRUList<VersatileMemoryPage>* mostRecentlyUsed;
 
-		static const int MAP_FLAGS = MAP_PRIVATE;
+		static const int MAP_FLAGS = MAP_SHARED;
 		static const int MAP_PROT = PROT_READ;
 	};
 
