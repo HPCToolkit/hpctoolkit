@@ -61,10 +61,15 @@
 
 
 #include "TimeCPID.hpp"
+
+#include <mpi.h>
 #include <stdint.h>
 
 namespace TraceviewerServer
 {
+//Forward declarations so we don't need to include the class just to have a pointer to it
+	class DataCompressionLayer;
+
 
 	class MPICommunication
 	{
@@ -137,6 +142,17 @@ namespace TraceviewerServer
 			};
 		} ResultMessage;
 
+		typedef struct
+		{
+			ResultMessage* header;
+			bool compressed;
+			union{
+				DataCompressionLayer* compMsg;
+				unsigned char* message;
+			};
+			MPI::Request headerRequest;
+			MPI::Request bodyRequest;
+		} ResultBufferLocations;
 	};
 
 } /* namespace TraceviewerServer */
