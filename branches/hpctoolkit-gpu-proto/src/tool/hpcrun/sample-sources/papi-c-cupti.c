@@ -85,7 +85,7 @@ static bool event_set_finalized = false;
 static papi_cuda_data_t local = {};
 
 static spinlock_t cupti_lock = SPINLOCK_UNLOCKED;
-// spinlock_lock() spinlock_unlock() spinlock_is_locked()
+static spinlock_t setup_lock = SPINLOCK_UNLOCKED;
 
 // ******************** cuda/cupti functions ***********************
 // Some cuda/cupti functions must not be wrapped! So, we fetch them via dlopen.
@@ -173,23 +173,28 @@ hpcrun_cuda_kernel_callback(void* userdata,
 
   if (cbInfo->callbackSite == CUPTI_API_ENTER) {
     TMSG(CUDA, "Cupti API -ENTER- portion");
-    // MC recommends FIXME: cbInfo->????? (says what kind of callback) == KERNEL_LAUNCH
-    // MC recommends FIXME: Unnecessary, but use cudaDeviveSynchronize
+    // MC recommends FIXME: Unnecessary, but use cudaDeviceSynchronize
+      // exclusive access to launcher
+    spinlock_lock(&cupti_lock);
+    TMSG(CUPTI, "-ACQ-lock");
     dcudaThreadSynchronize();
 
-    TMSG(CUDA,"starting CUDA monitoring w event set %d",cudaEventSet);
+    TMSG(CUPTI,"-- PRE launch callback");
+    TMSG(CUDA, "Start monitoring with event set %d", cudaEventSet);
     int ret = PAPI_start(cudaEventSet);
     if (ret != PAPI_OK){
       EMSG("CUDA monitoring failed to start. PAPI_start failed with %s (%d)", 
 	   PAPI_strerror(ret), ret);
-    }  
+    }
   }
   TMSG(CUDA, "Past (or done with) CUDA -ENTER- portion");
-    
+
+
   if (cbInfo->callbackSite == CUPTI_API_EXIT) {
     TMSG(CUDA, "Cupti API -EXIT- portion");
     // MC recommends Use cudaDeviceSynchronize
     dcudaThreadSynchronize();
+    TMSG(CUPTI, "-- POST launch callback");
     long_long eventValues[nevents+2];
     
     TMSG(CUDA,"stopping CUDA monitoring w event set %d",cudaEventSet);
@@ -222,6 +227,9 @@ hpcrun_cuda_kernel_callback(void* userdata,
     TMSG(CUDA,"unblocking async event in CUDA event handler");
     if (safe) hpcrun_safe_exit();
     TMSG(CUDA,"unblocked async event in CUDA event handler");
+
+    spinlock_unlock(&cupti_lock);
+    TMSG(CUPTI,"-REL-lock\n");
   }
   TMSG(CUDA, "At end (past -EXIT-)");
 }
@@ -239,10 +247,10 @@ papi_c_cupti_setup(void)
 
   static bool one_time = false;
 
-  spinlock_lock(&cupti_lock);
+  spinlock_lock(&setup_lock);
   TMSG(CUDA, "CUPTI setup acquire lock");
   if (one_time) {
-    spinlock_unlock(&cupti_lock);
+    spinlock_unlock(&setup_lock);
     TMSG(CUDA, "CUPTI setup release lock (setup already called)");
     return;
   }
@@ -278,7 +286,7 @@ papi_c_cupti_setup(void)
              CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020);
 
   one_time = true;
-  spinlock_unlock(&cupti_lock);
+  spinlock_unlock(&setup_lock);
   TMSG(CUDA, "CUPTI setup release lock");
 }
 
@@ -289,7 +297,7 @@ void
 papi_c_cupti_get_event_set(int* ev_s)
 {
   TMSG(CUDA, "Get event set");
-  spinlock_lock(&cupti_lock);
+  spinlock_lock(&setup_lock);
   TMSG(CUDA, "Cupti lock acquired");
   if (! event_set_created) {
     TMSG(CUDA, "No event set created, so create one");
@@ -302,7 +310,7 @@ papi_c_cupti_get_event_set(int* ev_s)
     event_set_created = true;
     TMSG(CUDA, "Event set %d created", local.event_set);
   }
-  spinlock_unlock(&cupti_lock);
+  spinlock_unlock(&setup_lock);
   TMSG(CUDA, "Cupti lock released");
 }
 
@@ -311,14 +319,14 @@ papi_c_cupti_add_event(int ev_s, int ev)
 {
   int rv = PAPI_OK;
   TMSG(CUDA, "Adding event to cupti event set");
-  spinlock_lock(&cupti_lock);
+  spinlock_lock(&setup_lock);
   TMSG(CUDA, "Cupti lock acquired");
   if (! event_set_finalized) {
     TMSG(CUDA, "Really add event %x to cupti event set", ev);
     rv = PAPI_add_event(local.event_set, ev);
     TMSG(CUDA, "Check event set passed in = %d, cuda event set = %d", ev_s, local.event_set);
   }
-  spinlock_unlock(&cupti_lock);
+  spinlock_unlock(&setup_lock);
   TMSG(CUDA, "Cupti lock released");
   return rv;
 }
@@ -326,9 +334,9 @@ papi_c_cupti_add_event(int ev_s, int ev)
 void
 papi_c_cupti_finalize_event_set(void)
 {
-  spinlock_lock(&cupti_lock);
+  spinlock_lock(&setup_lock);
   event_set_finalized = true;
-  spinlock_unlock(&cupti_lock);
+  spinlock_unlock(&setup_lock);
 }
 
 
@@ -339,14 +347,14 @@ static void
 papi_c_cupti_teardown(void)
 {
   static bool one_time = false;
-  spinlock_lock(&cupti_lock);
+  spinlock_lock(&setup_lock);
   if (one_time) return;
 
   TMSG(CUDA,"sync teardown called (=unsubscribe)");
   
   Cupti_call(dcuptiUnsubscribe, subscriber);
   one_time = true;
-  spinlock_unlock(&cupti_lock);
+  spinlock_unlock(&setup_lock);
 }
 
 static sync_info_list_t cuda_component = {
