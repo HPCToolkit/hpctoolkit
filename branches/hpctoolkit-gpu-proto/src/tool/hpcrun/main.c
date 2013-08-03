@@ -599,6 +599,8 @@ logit(cct_node_t* n, cct_op_arg_t arg, size_t l)
 void*
 hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t* thr_ctxt)
 {
+  // local_thread_data = NULL ==> all fields are NULL
+  if (! local_thread_data) local_thread_data = &((local_thread_data_t){});
   cct_ctxt_t* thr_ctxt = local_thread_data->thr_ctxt;
 #ifdef ENABLE_CUDA
   cuda_ctxt_t* cuda_ctxt = local_thread_data->cuda_ctxt;
@@ -619,7 +621,7 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 
 #ifdef ENABLE_CUDA
-  if (cuda_ctx_actions) {
+  if (cuda_ctx_actions && cuda_ctxt) {
     TMSG(CUDA, "Setting cuda ctxt for thread %d to %p", id, cuda_get_handle(cuda_ctxt));
     cuda_set_ctxt(cuda_ctxt);
   }
