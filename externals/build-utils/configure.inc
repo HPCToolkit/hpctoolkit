@@ -145,6 +145,12 @@ test -f "$OPTIONS_FILE" || die "must run top-level configure first"
 . "$OPTIONS_FILE"
 
 #
+# Disable CONFIG_SITE in the packages.  It interferes with the install
+# layout that hpctoolkit and externals expect.
+#
+export CONFIG_SITE=NONE
+
+#
 # MAKE is either exported from Makefile.inc, or else passed from
 # top-level configure via options.conf.
 #
