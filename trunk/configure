@@ -3798,6 +3798,23 @@ HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
 
 
 #-------------------------------------------------
+# CONFIG_SITE
+#-------------------------------------------------
+
+# If CONFIG_SITE contains the path to a file, then autoconf sources
+# that file to reset default values for libdir, etc.  This may break
+# our launch scripts by producing an install layout that they don't
+# expect.
+
+warn_config_site=no
+if test -f "$CONFIG_SITE" ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: CONFIG_SITE is set in the environment" >&5
+$as_echo "$as_me: WARNING: CONFIG_SITE is set in the environment" >&2;}
+  warn_config_site=yes
+fi
+libdir='${exec_prefix}/lib'
+
+#-------------------------------------------------
 # SVN version
 #-------------------------------------------------
 
@@ -22156,6 +22173,19 @@ $as_echo "$as_me:   papi:         ${OPT_PAPI}" >&6;}
 $as_echo "$as_me:   cuda:         ${OPT_CUDA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   upc (BG/P):   ${opt_upc_mesg}" >&5
 $as_echo "$as_me:   upc (BG/P):   ${opt_upc_mesg}" >&6;}
+
+if test "$warn_config_site" = yes ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+$as_echo "$as_me: " >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: You have CONFIG_SITE set in your environment." >&5
+$as_echo "$as_me: WARNING: You have CONFIG_SITE set in your environment." >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: This may break some of hpctoolkit's install paths and" >&5
+$as_echo "$as_me: WARNING: This may break some of hpctoolkit's install paths and" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: launch scripts.  Set CONFIG_SITE=NONE or else unset it" >&5
+$as_echo "$as_me: WARNING: launch scripts.  Set CONFIG_SITE=NONE or else unset it" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: from your environment and rerun configure." >&5
+$as_echo "$as_me: WARNING: from your environment and rerun configure." >&2;}
+fi
 
 if test "$warn_non_gcc" = yes ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
