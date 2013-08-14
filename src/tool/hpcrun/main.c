@@ -48,6 +48,7 @@
 // system include files 
 //***************************************************************************
 
+#include <sys/types.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <setjmp.h>
@@ -55,11 +56,11 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <dlfcn.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef LINUX
 #include <linux/unistd.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <linux/limits.h>
 #endif
 
@@ -228,7 +229,10 @@ static void
 copy_execname(char* process_name)
 {
   char tmp[PATH_MAX] = {'\0'};
-  strncpy(execname, realpath(process_name, tmp), sizeof(tmp));
+  char *rpath = realpath(process_name, tmp);
+  char *src = (rpath != NULL) ? rpath : process_name;
+
+  strncpy(execname, src, sizeof(execname));
 }
 
 //
@@ -255,6 +259,7 @@ hpcrun_inbounds_main(void* addr)
 
 //
 // fetch the execname
+// note: execname has no value before main().
 //
 char*
 hpcrun_get_execname(void)

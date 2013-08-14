@@ -282,14 +282,13 @@ fnbounds_find_exec_bounds_proc_maps(char* exename, void**start, void** end)
 dso_info_t*
 fnbounds_dso_exec(void)
 {
-  // char filename[PATH_MAX];
+  char filename[PATH_MAX];
   struct fnbounds_file_header fh;
   void* start = NULL;
   void* end   = NULL;
 
   TMSG(MAP_EXEC, "Entry");
-  // realpath("/proc/self/exe", filename);
-  char* filename = hpcrun_get_execname();
+  realpath("/proc/self/exe", filename);
   void** nm_table = (void**) hpcrun_syserv_query(filename, &fh);
   if (! nm_table) {
     EMSG("No nm_table for executable %s", filename);
