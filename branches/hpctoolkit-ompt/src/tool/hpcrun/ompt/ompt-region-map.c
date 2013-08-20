@@ -102,6 +102,8 @@ ompt_region_map_lookup(uint64_t id)
   }
 
   spinlock_unlock(&ompt_region_map_lock);
+
+  TMSG(DEFER_CTXT, "region map lookup: id=0x%lx (record %p)", id, result);
   return result;
 }
 
@@ -110,6 +112,8 @@ void
 ompt_region_map_insert(uint64_t region_id, cct_node_t *call_path)
 {
   ompt_region_map_entry_t *node = ompt_region_map_entry_new(region_id, call_path);
+
+  TMSG(DEFER_CTXT, "region map insert: id=0x%lx (record %p)", region_id, node);
 
   node->left = node->right = NULL;
 
@@ -144,7 +148,9 @@ bool
 ompt_region_map_refcnt_update(uint64_t region_id, uint64_t val)
 {
   bool result = false; 
-  TMSG(DEFER_CTXT, "update region %d with %d", region_id, val);
+
+  TMSG(DEFER_CTXT, "region map refcnt_update: id=0x%lx (update %ld)", 
+       region_id, val);
 
   spinlock_lock(&ompt_region_map_lock);
   ompt_region_map_root = ompt_region_map_splay(ompt_region_map_root, region_id);
@@ -152,12 +158,16 @@ ompt_region_map_refcnt_update(uint64_t region_id, uint64_t val)
   if (ompt_region_map_root && 
       ompt_region_map_root->region_id == region_id) {
     ompt_region_map_root->refcnt += val;
-    TMSG(DEFER_CTXT, "region %d: increased reference count by %d to %d", 
+    TMSG(DEFER_CTXT, "region map refcnt_update: id=0x%lx (%ld --> %ld)", 
 	 region_id, val, ompt_region_map_root->refcnt);
+// FIXME
+#if 0
     if (ompt_region_map_root->refcnt == 0) {
-      TMSG(DEFER_CTXT, "I am here for delete");
+      TMSG(DEFER_CTXT, "region map refcnt_update: id=0x%lx (deleting)",
+           region_id);
       ompt_region_map_delete_root();
     }
+#endif
     result = true;
   }
 

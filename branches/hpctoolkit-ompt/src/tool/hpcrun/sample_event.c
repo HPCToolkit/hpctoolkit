@@ -127,17 +127,31 @@ hpcrun_cleanup_partial_unwind(void)
 
 
 static cct_node_t*
-record_partial_unwind(cct_bundle_t* cct,
+record_partial_unwind(cct_bundle_t* cct, 
 		      frame_t* bt_beg, frame_t* bt_last,
 		      int metricId, uint64_t metricIncr)
 {
   if (ENABLED(NO_PARTIAL_UNW)){
     return NULL;
   }
+  backtrace_info_t bt;
+
+  bt.begin = bt_beg;
+  bt.last =  bt_last;
+  bt.fence = FENCE_BAD;
+  bt.has_tramp = false;
+  bt.trolled = false;
+  bt.n_trolls = 0;
+  bt.bottom_frame_elided = false;
+
   TMSG(PARTIAL_UNW, "recording partial unwind from segv");
   hpcrun_stats_num_samples_partial_inc();
-  return hpcrun_cct_record_backtrace_w_metric(cct, true, false,
-					      bt_beg, bt_last, false,
+  return hpcrun_cct_record_backtrace_w_metric(cct, true, &bt, 
+#if 0
+false,
+					      bt_beg, bt_last, 
+#endif
+false,
 					      metricId, metricIncr);
 }
 
@@ -334,8 +348,12 @@ hpcrun_gen_thread_ctxt(void* context)
       TMSG(THREAD_CTXT, "Thread correction, back off outermost backtrace entry");
       bt.last--;
     }
-    node = hpcrun_cct_record_backtrace(&(epoch->csdata), false, bt.fence == FENCE_THREAD,
-				       bt.begin, bt.last, bt.has_tramp);
+    node = hpcrun_cct_record_backtrace(&(epoch->csdata), false, &bt, 
+#if 0
+					bt.fence == FENCE_THREAD,
+				       bt.begin, bt.last, 
+#endif
+bt.has_tramp);
   }
   // FIXME: What to do when thread context is partial ?
 #if 0

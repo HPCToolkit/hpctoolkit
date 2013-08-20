@@ -83,13 +83,13 @@ extern bool hpcrun_inbounds_main(void* addr);
 //
 static bool retain_recursion = false;
 
-#define OMPT_DEBUG 0
+#define OMPT_DEBUG 1
 
 #if OMPT_DEBUG
-#define elide_debug_dump(t,i,o) stack_dump(t,i,o)
+#define elide_debug_dump(t,i,o,r) stack_dump(t,i,o,r)
 
 static
-void stack_dump(char *tag, frame_t *inner, frame_t *outer) 
+void stack_dump(char *tag, frame_t *inner, frame_t *outer, uint64_t region_id) 
 {
   EMSG("-----%s start", tag); 
   for (frame_t* x = inner; x <= outer; ++x) {
@@ -101,11 +101,12 @@ void stack_dump(char *tag, frame_t *inner, frame_t *outer)
 
     EMSG("ip = %p (%p), load module = %s", ip, x->ip_norm.lm_ip, lm_name);
   }
-  EMSG("-----%s end\n", tag); 
+  EMSG("-----%s end", tag); 
+  EMSG("<0x%lx>\n", region_id); 
 }
 
 #else
-#define elide_debug_dump(t,i,o) 
+#define elide_debug_dump(t,i,o,r) 
 #endif
 
 static int
@@ -130,7 +131,7 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner,
 
   TD_GET(omp_task_context) = 0;
 
-  elide_debug_dump("ORIGINAL", *bt_inner, *bt_outer); 
+  elide_debug_dump("ORIGINAL", *bt_inner, *bt_outer, region_id); 
 
   //---------------------------------------------------------------
   // handle all of the corner cases that can occur at the top of 
@@ -172,7 +173,7 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner,
     // elide frames from top of stack down to runtime entry
     int found = 0;
     for (it = *bt_inner; it <= *bt_outer; it++) {
-      if ((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->reenter_runtime_frame) {
+      if ((uint64_t)(it->cursor.sp) > (uint64_t)frame0->reenter_runtime_frame) {
 	if (isSync) {
 	  // for synchronous samples, elide runtime frames at top of stack
 	  *bt_inner = it;
@@ -219,8 +220,8 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner,
     it = *bt_inner; 
     if(exit0_flag) {
       for (; it <= *bt_outer; it++) {
-        if((uint64_t)(it->cursor.sp) >= (uint64_t)(frame0->exit_runtime_frame)) {
-          exit0 = it;
+        if((uint64_t)(it->cursor.sp) > (uint64_t)(frame0->exit_runtime_frame)) {
+          exit0 = it - 1;
           break;
         }
       }
@@ -239,15 +240,16 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner,
       interval_contains(low_sp, high_sp, frame1->reenter_runtime_frame); 
     if(reenter1_flag) {
       for (; it <= *bt_outer; it++) {
-        if((uint64_t)(it->cursor.sp) >= (uint64_t)(frame1->reenter_runtime_frame)) {
-          reenter1 = it;
+        if((uint64_t)(it->cursor.sp) > (uint64_t)(frame1->reenter_runtime_frame)) {
+          reenter1 = it - 1;
           break;
         }
       }
     }
 
     if (exit0 && reenter1) {
-#if 0
+// FIXME: IBM and INTEL need to agree
+#if 1
       memmove(*bt_inner+(reenter1-exit0+1), *bt_inner, 
 	      (exit0 - *bt_inner)*sizeof(frame_t));
       *bt_inner = *bt_inner + (reenter1 - exit0 + 1);
@@ -266,7 +268,7 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner,
     }
   }
 
-  elide_debug_dump("ELIDED", *bt_inner, *bt_outer); 
+  elide_debug_dump("ELIDED", *bt_inner, *bt_outer, region_id); 
   return;
 
  clip_base_frames:
@@ -286,7 +288,7 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner,
       /* no idle frame. show the whole stack. */
     }
     
-    elide_debug_dump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer); 
+    elide_debug_dump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer, region_id); 
     return;
   }
 }
@@ -493,8 +495,13 @@ hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
 #endif
 
 cct_node_t*
-hpcrun_cct_record_backtrace(cct_bundle_t* cct, bool partial, bool thread_stop,
-			    frame_t* bt_beg, frame_t* bt_last, bool tramp_found)
+hpcrun_cct_record_backtrace(cct_bundle_t* cct, bool partial, 
+backtrace_info_t *bt,
+#if 0
+bool thread_stop,
+			    frame_t* bt_beg, frame_t* bt_last, 
+#endif
+bool tramp_found)
 {
   TMSG(FENCE, "Recording backtrace");
   thread_data_t* td = hpcrun_get_thread_data();
@@ -509,16 +516,16 @@ hpcrun_cct_record_backtrace(cct_bundle_t* cct, bool partial, bool thread_stop,
     cct_cursor = cct->partial_unw_root;
     TMSG(FENCE, "Partial unwind ==> cursor = %p", cct_cursor);
   }
-  if (thread_stop) {
+  if (bt->fence == FENCE_THREAD) {
     cct_cursor = cct->thread_root;
     TMSG(FENCE, "Thread stop ==> cursor = %p", cct_cursor);
   }
 
   TMSG(FENCE, "sanity check cursor = %p", cct_cursor);
-  TMSG(FENCE, "further sanity check: bt_last frame = (%d, %p)", 
-       bt_last->ip_norm.lm_id, bt_last->ip_norm.lm_ip);
+  TMSG(FENCE, "further sanity check: bt->last frame = (%d, %p)", 
+       bt->last->ip_norm.lm_id, bt->last->ip_norm.lm_ip);
 
-  return hpcrun_cct_insert_backtrace(cct_cursor, bt_last, bt_beg);
+  return hpcrun_cct_insert_backtrace(cct_cursor, bt->last, bt->begin);
 
 }
 
@@ -558,7 +565,8 @@ lookup_region_id(cct_node_t **root, uint64_t region_id)
 }
 
 cct_node_t *
-hpcrun_cct_cursor_finalize(cct_bundle_t *cct, cct_node_t *cct_cursor)
+hpcrun_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt, 
+                           cct_node_t *cct_cursor)
 {
   cct_node_t *omp_task_context = TD_GET(omp_task_context);
 
@@ -577,7 +585,7 @@ hpcrun_cct_cursor_finalize(cct_bundle_t *cct, cct_node_t *cct_cursor)
   // if that is the case, then it will later become available in a deferred fashion.
   if (!TD_GET(master)) { // sub-master thread in nested regions
     uint64_t region_id = TD_GET(region_id);
-    if (region_id > 0) {
+    if (region_id > 0 && bt->bottom_frame_elided) {
 
       cct_node_t *prefix = lookup_region_id(&cct->tree_root, region_id);
       if (prefix) {
@@ -611,8 +619,12 @@ hpcrun_cct_cursor_finalize(cct_bundle_t *cct, cct_node_t *cct_cursor)
 
 cct_node_t*
 hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, 
+                                     backtrace_info_t *bt,
+#if 0
 				     bool thread_stop, frame_t* bt_beg, 
-				     frame_t* bt_last, bool tramp_found,
+				     frame_t* bt_last, 
+#endif
+                                     bool tramp_found,
 				     int metricId, uint64_t metricIncr)
 {
   TMSG(FENCE, "Recording backtrace");
@@ -631,19 +643,19 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
     cct_cursor = cct->partial_unw_root;
     TMSG(FENCE, "Partial unwind ==> cursor = %p", cct_cursor);
   }
-  if (thread_stop) {
+  if (bt->fence == FENCE_THREAD) {
     cct_cursor = cct->thread_root;
     TMSG(FENCE, "Thread stop ==> cursor = %p", cct_cursor);
   }
 
-  cct_cursor = hpcrun_cct_cursor_finalize(cct, cct_cursor);
+  cct_cursor = hpcrun_cct_cursor_finalize(cct, bt, cct_cursor);
 
   TMSG(FENCE, "sanity check cursor = %p", cct_cursor);
-  TMSG(FENCE, "further sanity check: bt_last frame = (%d, %p)", 
-       bt_last->ip_norm.lm_id, bt_last->ip_norm.lm_ip);
+  TMSG(FENCE, "further sanity check: bt->last frame = (%d, %p)", 
+       bt->last->ip_norm.lm_id, bt->last->ip_norm.lm_ip);
 
   return hpcrun_cct_insert_backtrace_w_metric(cct_cursor, metricId,
-					      bt_last, bt_beg,
+					      bt->last, bt->begin,
 					      (cct_metric_data_t){.i = metricIncr});
 
 }
@@ -668,8 +680,12 @@ hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   }
 
   cct_node_t* n = 
-    hpcrun_cct_record_backtrace_w_metric(cct, true, bt.fence == FENCE_THREAD,
-					 bt.begin, bt.last, bt.has_tramp,
+    hpcrun_cct_record_backtrace_w_metric(cct, true, &bt,
+#if 0
+bt.fence == FENCE_THREAD,
+					 bt.begin, bt.last, 
+#endif
+bt.has_tramp,
 					 metricId, metricIncr);
 
   hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));
@@ -699,7 +715,11 @@ hpcrun_backtrace_finalize(backtrace_info_t *bt, int isSync)
     }
     uint64_t region_id = TD_GET(region_id);
     if (master || region_id > 0) {
+      frame_t* bt_last = bt->last;
       hpcrun_elide_runtime_frame(&bt->last, &bt->begin, region_id, isSync);
+      if (bt_last != bt->last) {
+        bt->bottom_frame_elided = true;
+      }
     }
   }
 }
@@ -754,16 +774,18 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     partial_unw = true;
   }
 
-#if 0
   if((bt_last < bt_beg) && (bt.fence == FENCE_THREAD)) {
     EMSG("thread fence partial");
     partial_unw = true;
   }
-#endif
 
   cct_node_t* n = 
-    hpcrun_cct_record_backtrace_w_metric(bundle, partial_unw, bt.fence == FENCE_THREAD,
-					 bt_beg, bt_last, tramp_found,
+    hpcrun_cct_record_backtrace_w_metric(bundle, partial_unw, &bt, 
+#if 0
+bt.fence == FENCE_THREAD,
+bt_beg, bt_last, 
+#endif
+					tramp_found,
 					 metricId, metricIncr);
 
   if (bt.trolled) hpcrun_stats_trolled_inc();

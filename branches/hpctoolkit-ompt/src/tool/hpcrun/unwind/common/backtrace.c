@@ -347,6 +347,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
   bt->trolled  = false;
   bt->n_trolls = 0;
   bt->fence = FENCE_BAD;
+  bt->bottom_frame_elided = false;
 
   bool tramp_found = false;
 
@@ -558,6 +559,7 @@ hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
   bt->has_tramp = false;
   bt->trolled  = false;
   bt->n_trolls = 0;
+  bt->bottom_frame_elided = false;
 
   bool tramp_found = false;
 

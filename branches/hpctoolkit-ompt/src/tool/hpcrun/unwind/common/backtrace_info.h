@@ -22,6 +22,7 @@ typedef struct {
   bool     has_tramp; // true when a trampoline short-circuited the unwind
   bool     trolled;   // true when ANY frame in the backtrace came from a troll
   size_t   n_trolls;  // # of frames that resulted from trolling
+  bool     bottom_frame_elided; // true if bottom frame has been elided 
 } backtrace_info_t;
 
 #endif // BACKTRACE_INFO_H

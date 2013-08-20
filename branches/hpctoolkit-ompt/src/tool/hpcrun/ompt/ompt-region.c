@@ -85,13 +85,13 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
   cct_node_t *prefix;
   thread_data_t *td = (thread_data_t *)a;
   uint64_t my_region_id = (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip;
-  TMSG(DEFER_CTXT, "try to resolve region %d", my_region_id);
+  TMSG(DEFER_CTXT, "omp_resolve: try to resolve region 0x%lx", my_region_id);
   uint64_t partial_region_id = 0;
   if ((prefix = hpcrun_region_lookup(my_region_id))) {
-    TMSG(DEFER_CTXT, "resolve region %d to %d", my_region_id, is_partial_resolve(prefix));
+    TMSG(DEFER_CTXT, "omp_resolve: resolve region 0x%lx to 0x%lx", my_region_id, is_partial_resolve(prefix));
     // delete cct from its original parent before merging
     hpcrun_cct_delete_self(cct);
-    TMSG(DEFER_CTXT, "delete from the tbd region %d", hpcrun_cct_addr(cct)->ip_norm.lm_ip);
+    TMSG(DEFER_CTXT, "omp_resolve: delete from the tbd region 0x%lx", hpcrun_cct_addr(cct)->ip_norm.lm_ip);
     partial_region_id = is_partial_resolve(prefix);
     if (partial_region_id == 0) {
       prefix = hpcrun_cct_insert_path_return_leaf
@@ -101,7 +101,7 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
       prefix = hpcrun_cct_insert_path_return_leaf
 	((td->core_profile_trace_data.epoch->csdata).unresolved_root, prefix);
       ompt_region_map_refcnt_update(partial_region_id, 1L);
-      TMSG(DEFER_CTXT, "get partial resolution to %d\n", partial_region_id);
+      TMSG(DEFER_CTXT, "omp_resolve: get partial resolution to 0x%lx\n", partial_region_id);
     }
     // adjust the callsite of the prefix in side threads to make sure they are the same as
     // in the master thread. With this operation, all sides threads and the master thread
@@ -112,8 +112,8 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
     else {
       hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
       // must delete it when not used considering the performance
+      TMSG(DEFER_CTXT, "omp_resolve: resolve region 0x%lx", my_region_id);
       ompt_region_map_refcnt_update(my_region_id, -1L);
-      TMSG(DEFER_CTXT, "resolve region %d", my_region_id);
     }
   }
 }
@@ -138,7 +138,7 @@ gather_context(uint64_t region_id)
   getcontext(&uc);
 
   node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1).sample_node;
-  TMSG(DEFER_CTXT, "unwind the callstack for region %d", region_id);
+  TMSG(DEFER_CTXT, "gather_context: unwind the callstack for region 0x%lx", region_id);
 
 #ifdef GOMP
   cct_node_t *sibling = NULL;
@@ -164,10 +164,13 @@ void start_team_fn(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_fram
 {
   cct_node_t *callpath = NULL;
   hpcrun_safe_enter();
-  TMSG(DEFER_CTXT, "in team start callback");
+  TMSG(DEFER_CTXT, "team start id=0x%lx", region_id);
   thread_data_t *td = hpcrun_get_thread_data();
-  // mark the real master thread (the one with process stop)
-  if (omp_get_level() == 1 && omp_get_thread_num() == 0) {
+  uint64_t parent_region_id = hpcrun_ompt_get_parallel_id(0);
+
+  if (parent_region_id == 0) {
+    // mark the master thread in the outermost region 
+    // (the one that unwinds to FENCE_MAIN)
     td->master = 1;
   }
 
@@ -177,52 +180,47 @@ void start_team_fn(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_fram
   }
 #endif
 
+  assert(region_id != 0);
   ompt_region_map_insert((uint64_t) region_id, callpath);
 
-#if 1
-  if (td->master) {
-    ;
-  }
-  else if (td->outer_region_id == 0) {
-    td->outer_region_id = hpcrun_ompt_get_parallel_id(1);
-    td->outer_region_context = NULL;
-  }
-  else {
-    // check whether we should update the outer most id
-    // if the outer-most region with td->outer_region_id is an outer region of current reigon,
-    // then no need to update outer-most id in the td
-    // else if it is not an outer region of the current region, we have to update the 
-    // outer-most id 
-    int i=0;
-    uint64_t outer_id = 0;
-
-    outer_id = hpcrun_ompt_get_parallel_id(i);
-    while (outer_id > 0) {
-      if (outer_id == td->outer_region_id) break;
-
-      outer_id = hpcrun_ompt_get_parallel_id(++i);
+  if (!td->master) {
+    if (td->outer_region_id == 0) {
+      // this callback occurs in the context of the parent, so
+      // the enclosing parallel region is available at level 0
+      td->outer_region_id = parent_region_id;
+      td->outer_region_context = NULL;
+    } else {
+      // check whether we should update the outer most id
+      // if the outer-most region with td->outer_region_id is an outer region of current reigon,
+      // then no need to update outer-most id in the td
+      // else if it is not an outer region of the current region, we have to update the 
+      // outer-most id 
+      int i=0;
+      uint64_t outer_id = 0;
+  
+      outer_id = hpcrun_ompt_get_parallel_id(i);
+      while (outer_id > 0) {
+        if (outer_id == td->outer_region_id) break;
+  
+        outer_id = hpcrun_ompt_get_parallel_id(++i);
+      }
+      if (outer_id == 0){
+        td->outer_region_id = hpcrun_ompt_get_parallel_id(0); // parent region id
+        td->outer_region_context = 0;
+        TMSG(DEFER_CTXT, "enter a new outer region 0x%lx (start team)", td->outer_region_id);
+      }
     }
-    if (outer_id == 0){
-      td->outer_region_id = hpcrun_ompt_get_parallel_id(1);
-      td->outer_region_context = 0;
-      TMSG(DEFER_CTXT, "come into a new outer region %d", td->outer_region_id);
-    }
   }
-#else
-  if (! td->master) {
-    td->outer_region_id = ompt_outermost_parallel_id();
-    td->outer_region_context = 0;
-  }
-#endif
 
   hpcrun_safe_exit();
 }
 
 
-void end_team_fn(ompt_parallel_id_t region_id,
-		 ompt_task_id_t task_id) 
+void end_team_fn(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame,
+                 ompt_parallel_id_t region_id, void *parallel_fn)
 {
   hpcrun_safe_enter();
+  TMSG(DEFER_CTXT, "team end   id=0x%lx", region_id);
   ompt_region_map_entry_t *record = ompt_region_map_lookup(region_id);
   if (record) {
     if (ompt_region_map_entry_refcnt_get(record) > 0) {
@@ -233,6 +231,8 @@ void end_team_fn(ompt_parallel_id_t region_id,
     } else {
       ompt_region_map_refcnt_update(region_id, 0L);
     }
+  } else {
+    assert(0);
   }
   // FIXME: not using team_master but use another routine to 
   // resolve team_master's tbd. Only with tasking, a team_master
@@ -308,13 +308,13 @@ void resolve_cntxt()
     outer_region_id = current_region_id;
   }
 
-  TMSG(DEFER_CTXT, "outer most region id is %d, inner most region id is %d", outer_region_id, current_region_id); 
+  TMSG(DEFER_CTXT, "resolve_cntxt: outermost region id is 0x%lx, innermost region id is 0x%lx", outer_region_id, current_region_id); 
   //
   // part 2: try to resolve previous parallel region
   //
   // resolve the trees at the end of one parallel region
   if ((td->region_id != outer_region_id) && (td->region_id != 0)){
-    TMSG(DEFER_CTXT, "I want to resolve the context when I come out from region %d", td->region_id);
+    TMSG(DEFER_CTXT, "I want to resolve the context when I come out from region 0x%lx", td->region_id);
     hpcrun_cct_walkset(tbd_cct, omp_resolve_and_free, td);
   }
 
@@ -352,7 +352,7 @@ void resolve_cntxt()
   if (current_region_id) {
     ompt_region_map_entry_t *record = ompt_region_map_lookup(current_region_id);
     if (!record || (ompt_region_map_entry_refcnt_get(record) == 0)) {
-      EMSG("no record found current_region_id=%d initial_td_region_id=%d td->region_id=%d ", 
+      EMSG("no record found current_region_id=0x%lx initial_td_region_id=0x%lx td->region_id=0x%lx ", 
 	   current_region_id, initial_td_region, td->region_id);
     }
   }
