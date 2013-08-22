@@ -1,31 +1,55 @@
-Revert main() to three arguments.  Bash requires the three arg
-version.  But Blue Gene needs two args.  So, make this a
-conditinal patch.
+Use three arguments for main(), except on powerpc which uses four
+arguments.  This is what glibc does.
 
 
 Index: libmonitor-main/src/main.c
 ===================================================================
 --- libmonitor-main/src/main.c	(revision 149)
 +++ libmonitor-main/src/main.c	(working copy)
-@@ -90,7 +90,7 @@
+@@ -76,7 +76,16 @@
+  *----------------------------------------------------------------------
+  */
+ 
++/*
++ *  Powerpc uses a different signature for __libc_start_main() and
++ *  adds a fourth argument to main().
++ */
++
+ #ifdef MONITOR_START_MAIN_PPC
++
++#define AUXVEC_ARG   , auxvec
++#define AUXVEC_DECL  , void * auxvec
++
+ #define START_MAIN_PARAM_LIST 		\
+     int  argc,				\
+     char **argv,			\
+@@ -89,18 +98,23 @@
+ static void *new_stinfo[4];
  
  #else  /* default __libc_start_main() args */
++
++#define AUXVEC_ARG
++#define AUXVEC_DECL
++
  #define START_MAIN_PARAM_LIST 		\
 -    int  (*main)(int, char **),		\
-+    int (*main)(int, char **, char **), \
++    int  (*main)(int, char **, char **),  \
      int  argc,				\
      char **argv,			\
      void (*init)(void),			\
-@@ -100,7 +100,7 @@
+     void (*fini)(void),			\
+     void (*rtld_fini)(void),		\
+     void *stack_end
++
  #endif
  
  typedef int start_main_fcn_t(START_MAIN_PARAM_LIST);
 -typedef int main_fcn_t(int, char **);
-+typedef int main_fcn_t(int, char **, char **);
++typedef int main_fcn_t(int, char **, char **  AUXVEC_DECL );
  typedef void exit_fcn_t(int);
  typedef int sigprocmask_fcn_t(int, const sigset_t *, sigset_t *);
  typedef pid_t fork_fcn_t(void);
-@@ -126,6 +126,7 @@
+@@ -126,6 +140,7 @@
  
  static int monitor_argc = 0;
  static char **monitor_argv = NULL;
@@ -33,17 +57,16 @@ Index: libmonitor-main/src/main.c
  
  volatile static char monitor_init_library_called = 0;
  volatile static char monitor_fini_library_called = 0;
-@@ -140,7 +141,9 @@
+@@ -140,8 +155,6 @@
  
  static struct monitor_thread_node monitor_main_tn;
  
-+#ifdef MONITOR_STATIC
- extern char **environ;
-+#endif
- 
+-extern char **environ;
+-
  /*
   *----------------------------------------------------------------------
-@@ -330,7 +333,7 @@
+  *  INIT FUNCTIONS
+@@ -330,7 +343,7 @@
  	*argv_ptr = monitor_argv;
      }
      if (env_ptr != NULL) {
@@ -52,16 +75,16 @@ Index: libmonitor-main/src/main.c
      }
  }
  
-@@ -455,7 +458,7 @@
+@@ -455,7 +468,7 @@
   *  Dynamic case -- we get into __libc_start_main() via LD_PRELOAD.
   */
  int
 -monitor_main(int argc, char **argv)
-+monitor_main(int argc, char **argv, char **envp)
++monitor_main(int argc, char **argv, char **envp  AUXVEC_DECL )
  {
      int ret;
  
-@@ -464,6 +467,7 @@
+@@ -464,6 +477,7 @@
      MONITOR_DEBUG1("\n");
      monitor_argc = argc;
      monitor_argv = argv;
@@ -69,7 +92,7 @@ Index: libmonitor-main/src/main.c
  
      monitor_main_tn.tn_stack_bottom = alloca(8);
      strncpy(monitor_main_tn.tn_stack_bottom, "stakbot", 8);
-@@ -478,9 +482,9 @@
+@@ -478,9 +492,9 @@
       * application via monitor_wrap_main().  The application should
       * call __real_main() and exit() itself and not return.
       */
@@ -77,16 +100,24 @@ Index: libmonitor-main/src/main.c
 +    monitor_wrap_main(monitor_argc, monitor_argv, monitor_envp);
  #endif
 -    ret = (*real_main)(monitor_argc, monitor_argv);
-+    ret = (*real_main)(monitor_argc, monitor_argv, monitor_envp);
++    ret = (*real_main)(argc, argv, envp  AUXVEC_ARG );
      MONITOR_ASM_LABEL(monitor_main_fence3);
  
      monitor_end_process_fcn(MONITOR_EXIT_NORMAL);
-@@ -498,7 +502,7 @@
+@@ -491,14 +505,14 @@
+ 
+ #ifdef MONITOR_STATIC
+ int
+-__wrap_main(int argc, char **argv)
++__wrap_main(int argc, char **argv, char **envp  AUXVEC_DECL )
+ {
+     monitor_normal_init();
+ 
      MONITOR_DEBUG1("\n");
      real_main = &__real_main;
  
 -    return monitor_main(argc, argv);
-+    return monitor_main(argc, argv, environ);
++    return monitor_main(argc, argv, envp  AUXVEC_ARG );
  }
  
  #else  /* MONITOR_DYNAMIC */
