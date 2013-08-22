@@ -625,6 +625,8 @@ libdwarf_inc
 libdwarf_prefix
 boost_prefix
 binutils_prefix
+libmonitor_use_bgq_backend
+ppc64_bgq_avail
 wordsize
 EGREP
 GREP
@@ -632,7 +634,6 @@ CPP
 OBJCOPY
 objcopy_prog
 gnu_make
-libmonitor_three_arg_main
 cflags_fpic
 have_tr1_map
 CXX_PATH
@@ -700,6 +701,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_wordsize
+enable_bgq
 enable_back_end
 with_dummy_blank_line
 with_binutils
@@ -1349,6 +1351,8 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-wordsize=NUM   host wordsize in bits, 32 or 64, only needed if
                           autoconf computes the wrong value
+  --enable-bgq            enable BGQ-specific options: build libmonitor with
+                          back-end powerpc64-bgq-linux-gcc (autodetect)
   --enable-back-end       build only those packages needed to run hpcrun on
                           the back-end compute nodes (default no)
   --enable-mic            use xed2 on front-end x86_64 that understands Intel
@@ -3690,28 +3694,6 @@ fi
 
 
 #------------------------------------------------------------
-# Libmonitor 2- or 3-arg version of main()
-#------------------------------------------------------------
-
-# Most systems prefer libmonitor to call main(argc, argv, envp) with
-# three arguments (bash requires three).  But somehow this breaks some
-# programs on Blue Gene (eg, amg2006 with XL on BGQ).  So, we
-# conditionally patch libmonitor to use two args on BGQ.
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether libmonitor uses 3-arg main()" >&5
-$as_echo_n "checking whether libmonitor uses 3-arg main()... " >&6; }
-
-libmonitor_three_arg_main=yes
-if test -d /bgsys ; then
-    libmonitor_three_arg_main=no
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $libmonitor_three_arg_main" >&5
-$as_echo "$libmonitor_three_arg_main" >&6; }
-
-
-
-#------------------------------------------------------------
 # GNU make
 #------------------------------------------------------------
 
@@ -4422,6 +4404,102 @@ $as_echo "$as_me: WARNING: using a CFLAGS option to reset the wordsize, then put
 $as_echo "$as_me: WARNING: option in CC with something like CC='gcc -m${wordsize}'." >&2;}
     as_fn_error $? "CC or CXX generate inconsistent wordsizes." "$LINENO" 5
 fi
+
+#------------------------------------------------------------
+# Platform-specific options
+#------------------------------------------------------------
+
+# Libmonitor on BGQ needs the back-end compiler.  For now, use this
+# only for libmonitor, only on Blue Gene/Q and only if not already
+# cross compiling.
+
+# Check whether --enable-bgq was given.
+if test "${enable_bgq+set}" = set; then :
+  enableval=$enable_bgq;
+else
+  enable_bgq=check
+fi
+
+
+# Search for the back-end BGQ compiler on PATH and test for Blue
+# Gene/P (suppress the warning on P).
+
+blue_gene_p=no
+ppc64_bgq_avail=
+if test -d /bgsys ; then
+    # Extract the first word of "powerpc64-bgq-linux-gcc", so it can be a program name with args.
+set dummy powerpc64-bgq-linux-gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_prog_ppc64_bgq_avail+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ppc64_bgq_avail"; then
+  ac_cv_prog_ppc64_bgq_avail="$ppc64_bgq_avail" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_ppc64_bgq_avail="yes"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_prog_ppc64_bgq_avail" && ac_cv_prog_ppc64_bgq_avail="no"
+fi
+fi
+ppc64_bgq_avail=$ac_cv_prog_ppc64_bgq_avail
+if test -n "$ppc64_bgq_avail"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ppc64_bgq_avail" >&5
+$as_echo "$ppc64_bgq_avail" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+    if test "$ppc64_bgq_avail" = no && test "$wordsize" = 32 ; then
+	blue_gene_p=yes
+    fi
+else
+    ppc64_bgq_avail=no
+fi
+
+libmonitor_use_bgq_backend=no
+warn_bgq_backend=no
+
+case "$enable_bgq" in
+    yes )
+	if test "$ppc64_bgq_avail" != yes ; then
+	    as_fn_error $? "unable to find powerpc64-bgq-linux-gcc for enable-bgq" "$LINENO" 5
+	fi
+	libmonitor_use_bgq_backend=yes
+	;;
+    no ) ;;
+    * )
+	if test -d /bgsys && test "$blue_gene_p" = no && test -z "$is_cross_compile"
+	then
+	    if test "$ppc64_bgq_avail" = yes ; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using back-end compiler for libmonitor" >&5
+$as_echo "$as_me: WARNING: using back-end compiler for libmonitor" >&2;}
+		libmonitor_use_bgq_backend=yes
+	    else
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find powerpc64-bgq-linux-gcc" >&5
+$as_echo "$as_me: WARNING: unable to find powerpc64-bgq-linux-gcc" >&2;}
+	    fi
+	    warn_bgq_backend=yes
+	fi
+	;;
+esac
+
+
 
 #------------------------------------------------------------
 # Copy skeleton directories
@@ -6545,6 +6623,11 @@ fi
 
 rm -f "$failure_file"
 
+backend_mesg=
+if test "$libmonitor_use_bgq_backend" = yes ; then
+    backend_mesg='(back end)'
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: ------------------" >&5
 $as_echo "$as_me: ------------------" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: Externals summary" >&5
@@ -6592,8 +6675,8 @@ $as_echo "$as_me: boost: $boost_avail" >&6;}
 $as_echo "$as_me: libdwarf: $libdwarf_avail" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: libelf: $libelf_avail" >&5
 $as_echo "$as_me: libelf: $libelf_avail" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: libmonitor: $libmonitor_avail" >&5
-$as_echo "$as_me: libmonitor: $libmonitor_avail" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: libmonitor: $libmonitor_avail $backend_mesg" >&5
+$as_echo "$as_me: libmonitor: $libmonitor_avail $backend_mesg" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: libunwind: $libunwind_avail" >&5
 $as_echo "$as_me: libunwind: $libunwind_avail" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: libxml2: $libxml2_avail" >&5
@@ -6622,4 +6705,15 @@ $as_echo "$as_me: WARNING: This is not necessarily an error, but some packages m
 $as_echo "$as_me: WARNING: compile cleanly without gcc or g++.  If the build fails, try" >&2;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using GNU gcc and g++ before reporting an error." >&5
 $as_echo "$as_me: WARNING: using GNU gcc and g++ before reporting an error." >&2;}
+fi
+
+if test "$warn_bgq_backend" = yes ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+$as_echo "$as_me: " >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: On the Blue Gene/Q compute nodes, libmonitor needs a separate," >&5
+$as_echo "$as_me: WARNING: On the Blue Gene/Q compute nodes, libmonitor needs a separate," >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: back-end compiler.  Use --enable-bgq to build for the back end," >&5
+$as_echo "$as_me: WARNING: back-end compiler.  Use --enable-bgq to build for the back end," >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: or else --disable-bgq to build for the front end." >&5
+$as_echo "$as_me: WARNING: or else --disable-bgq to build for the front end." >&2;}
 fi

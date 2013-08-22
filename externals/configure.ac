@@ -263,26 +263,6 @@ fi
 AC_SUBST([cflags_fpic])
 
 #------------------------------------------------------------
-# Libmonitor 2- or 3-arg version of main()
-#------------------------------------------------------------
-
-# Most systems prefer libmonitor to call main(argc, argv, envp) with
-# three arguments (bash requires three).  But somehow this breaks some
-# programs on Blue Gene (eg, amg2006 with XL on BGQ).  So, we
-# conditionally patch libmonitor to use two args on BGQ.
-
-AC_MSG_CHECKING([whether libmonitor uses 3-arg main()])
-
-libmonitor_three_arg_main=yes
-if test -d /bgsys ; then
-    libmonitor_three_arg_main=no
-fi
-
-AC_MSG_RESULT([$libmonitor_three_arg_main])
-
-AC_SUBST([libmonitor_three_arg_main])
-
-#------------------------------------------------------------
 # GNU make
 #------------------------------------------------------------
 
@@ -455,6 +435,62 @@ then
     AC_MSG_WARN([option in CC with something like CC='gcc -m${wordsize}'.])
     AC_MSG_ERROR([CC or CXX generate inconsistent wordsizes.])
 fi
+
+#------------------------------------------------------------
+# Platform-specific options
+#------------------------------------------------------------
+
+# Libmonitor on BGQ needs the back-end compiler.  For now, use this
+# only for libmonitor, only on Blue Gene/Q and only if not already
+# cross compiling.
+
+AC_ARG_ENABLE([bgq],
+    [AS_HELP_STRING([--enable-bgq],
+	[enable BGQ-specific options: build libmonitor with
+	 back-end powerpc64-bgq-linux-gcc (autodetect)])],
+    [],
+    [enable_bgq=check])
+
+# Search for the back-end BGQ compiler on PATH and test for Blue
+# Gene/P (suppress the warning on P).
+
+blue_gene_p=no
+ppc64_bgq_avail=
+if test -d /bgsys ; then
+    AC_CHECK_PROG([ppc64_bgq_avail], [powerpc64-bgq-linux-gcc], [yes], [no])
+    if test "$ppc64_bgq_avail" = no && test "$wordsize" = 32 ; then
+	blue_gene_p=yes
+    fi
+else
+    ppc64_bgq_avail=no
+fi
+
+libmonitor_use_bgq_backend=no
+warn_bgq_backend=no
+
+case "$enable_bgq" in 
+    yes )
+	if test "$ppc64_bgq_avail" != yes ; then
+	    AC_MSG_ERROR([unable to find powerpc64-bgq-linux-gcc for enable-bgq])
+	fi
+	libmonitor_use_bgq_backend=yes
+	;;
+    no ) ;;
+    * )
+	if test -d /bgsys && test "$blue_gene_p" = no && test -z "$is_cross_compile"
+	then
+	    if test "$ppc64_bgq_avail" = yes ; then
+		AC_MSG_WARN([using back-end compiler for libmonitor])
+		libmonitor_use_bgq_backend=yes
+	    else
+		AC_MSG_WARN([unable to find powerpc64-bgq-linux-gcc])
+	    fi
+	    warn_bgq_backend=yes
+	fi
+	;;
+esac
+
+AC_SUBST([libmonitor_use_bgq_backend])
 
 #------------------------------------------------------------
 # Copy skeleton directories
@@ -1346,6 +1382,11 @@ fi
 
 rm -f "$failure_file"
 
+backend_mesg=
+if test "$libmonitor_use_bgq_backend" = yes ; then
+    backend_mesg='(back end)'
+fi
+
 AC_MSG_NOTICE([------------------])
 AC_MSG_NOTICE([Externals summary])
 AC_MSG_NOTICE([------------------])
@@ -1372,7 +1413,7 @@ AC_MSG_NOTICE([binutils: $binutils_avail])
 AC_MSG_NOTICE([boost: $boost_avail])
 AC_MSG_NOTICE([libdwarf: $libdwarf_avail])
 AC_MSG_NOTICE([libelf: $libelf_avail])
-AC_MSG_NOTICE([libmonitor: $libmonitor_avail])
+AC_MSG_NOTICE([libmonitor: $libmonitor_avail $backend_mesg])
 AC_MSG_NOTICE([libunwind: $libunwind_avail])
 AC_MSG_NOTICE([libxml2: $libxml2_avail])
 AC_MSG_NOTICE([old-monitor: $old_monitor_avail])
@@ -1389,4 +1430,11 @@ if test "$warn_non_gcc" = yes ; then
     AC_MSG_WARN([This is not necessarily an error, but some packages may not])
     AC_MSG_WARN([compile cleanly without gcc or g++.  If the build fails, try])
     AC_MSG_WARN([using GNU gcc and g++ before reporting an error.])
+fi
+
+if test "$warn_bgq_backend" = yes ; then
+    AC_MSG_NOTICE([])
+    AC_MSG_WARN([On the Blue Gene/Q compute nodes, libmonitor needs a separate,])
+    AC_MSG_WARN([back-end compiler.  Use --enable-bgq to build for the back end,])
+    AC_MSG_WARN([or else --disable-bgq to build for the front end.])
 fi
