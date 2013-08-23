@@ -1112,8 +1112,8 @@ static uint32_t cleanup_finished_events() {
                 }
                 
                 
-                // Add the kernel execution time to the gpu_activity_time_metric_id
-                cct_metric_data_increment(gpu_activity_time_metric_id, current_event->launcher_cct, (cct_metric_data_t) {
+                // Add the kernel execution time to the gpu_time_metric_id
+                cct_metric_data_increment(gpu_time_metric_id, current_event->launcher_cct, (cct_metric_data_t) {
                     .i = (micro_time_end - micro_time_start)});
                 
                 event_list_node_t *deferred_node = current_event;
