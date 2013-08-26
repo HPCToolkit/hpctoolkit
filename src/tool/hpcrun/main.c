@@ -718,7 +718,7 @@ monitor_init_process(int *argc, char **argv, void* data)
     while (DEBUGGER_WAIT);
   }
 
-#if defined(HOST_SYSTEM_IBM_BLUEGENE)
+#if 0
   // temporary patch to avoid deadlock within PAMI's optimized implementation 
   // of all-to-all. a problem was observed when PAMI's optimized all-to-all 
   // implementation was invoked on behalf of darshan_shutdown 
