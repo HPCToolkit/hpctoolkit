@@ -403,7 +403,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     // blame shifting needs to know if there is a cycles metric
     if (strcmp(buffer, "PAPI_TOT_CYC") == 0) {
       prop = metric_property_cycles;
-      blame_shift_source_register(bs_type_cycles);
+      blame_shift_heartbeat_register(bs_heartbeat_cycles);
     } 
 
     // allow derived events (proxy sampling), as long as some event
@@ -693,7 +693,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     for (i = 0; i < nevents; i++) {
       if (derived[i]) {
 	hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),
-			       values[i] - psi->prev_values[i], 0, 0, NULL);
+			       values[i] - psi->prev_values[i], 0, 0);
       }
     }
 
