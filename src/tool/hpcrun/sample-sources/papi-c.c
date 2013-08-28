@@ -512,7 +512,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     // blame shifting needs to know if there is a cycles metric
     if (strcmp(buffer, "PAPI_TOT_CYC") == 0) {
       prop = metric_property_cycles;
-      blame_shift_source_register(bs_type_cycles);
+      blame_shift_heartbeat_register(bs_heartbeat_cycles);
     }
 
     // allow derived events (proxy sampling), as long as some event
