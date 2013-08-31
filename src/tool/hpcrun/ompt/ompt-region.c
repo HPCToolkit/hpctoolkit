@@ -164,7 +164,8 @@ void start_team_fn(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_fram
 {
   cct_node_t *callpath = NULL;
   hpcrun_safe_enter();
-  TMSG(DEFER_CTXT, "team start id=0x%lx", region_id);
+  TMSG(DEFER_CTXT, "team create  id=0x%lx parallel_fn=%p ompt_get_parallel_id(0)=0x%lx", region_id, parallel_fn, 
+       ompt_get_parallel_id(0));
   thread_data_t *td = hpcrun_get_thread_data();
   uint64_t parent_region_id = hpcrun_ompt_get_parallel_id(0);
 
@@ -220,7 +221,8 @@ void end_team_fn(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame,
                  ompt_parallel_id_t region_id, void *parallel_fn)
 {
   hpcrun_safe_enter();
-  TMSG(DEFER_CTXT, "team end   id=0x%lx", region_id);
+  TMSG(DEFER_CTXT, "team end   id=0x%lx parallel_fn=%p ompt_get_parallel_id(0)=0x%lx", region_id, parallel_fn, 
+       ompt_get_parallel_id(0));
   ompt_region_map_entry_t *record = ompt_region_map_lookup(region_id);
   if (record) {
     if (ompt_region_map_entry_refcnt_get(record) > 0) {
@@ -276,46 +278,77 @@ is_partial_resolve(cct_node_t *prefix)
 }
 
 
-// The function used to resolve contexts of parallel regions.
-// The function consists of four parts: 
-// (1) Compute the outer-most region id; only the outer-most region needs to be resolved
-// (2) If the thread has a current region id that is different from its previous one; and
-//     the previous region id is non-zero, reslove the previous region. The previous region
-//     id is recorded in td->region_id.
-// (3) If the thread has a current region id that is different from its previous one; and 
-//     the current region id is non-zero, add a slot into the unresolved tree indexed by
-//     the current region_id
+//-----------------------------------------------------------------------------
+// Function: resolve_cntxt
+// 
+// Purpose: 
+//   resolve contexts of parallel regions.
+//
+// Description:
+// (1) Compute the outer-most region id; only the outer-most region needs to be 
+//     resolved
+// (2) If the thread has a current region id that is different from its previous 
+//     one; and the previous region id is non-zero, resolve the previous region.
+//     The previous region id is recorded in td->region_id.
+// (3) If the thread has a current region id that is different from its previous
+//     one; and the current region id is non-zero, add a slot into the 
+//     unresolved tree indexed by the current region_id
 // (4) Update td->region_id to be the current region id
 
 void resolve_cntxt()
 {
-//  hpcrun_safe_enter();
-
-  //
-  // part 1: outer_region_id contains the outer-most region id of the thread taking this sample.
-  // A pure worker thread's outer-most region is the same as the inner-most region.
-  // A sub-master thread's outer-most region is always recorded in td->outer_region_id.
-  //
-  uint64_t current_region_id = hpcrun_ompt_get_parallel_id(0); //inner-most region id
   cct_node_t* tbd_cct = (hpcrun_get_thread_epoch()->csdata).unresolved_root;
   thread_data_t *td = hpcrun_get_thread_data();
+
+  //---------------------------------------------------------------------------
+  // step 1: 
+  // 
+  // a pure worker thread's outermost region is the same as its innermost region.
+  // 
+  // a sub-master thread's outermost region was memoized when the thread became
+  // a sub-master. the identity of the sub-master's outermost region in this case is 
+  // available in td->outer_region_id.
+  //
+  // the post condition for the following code is that outer_region_id contains 
+  // the outermost region id in the current thread.
+  //---------------------------------------------------------------------------
+
+  uint64_t innermost_region_id = hpcrun_ompt_get_parallel_id(0); 
   uint64_t outer_region_id = 0;
-  // no outer region in the first level
-  if (omp_get_level() == 1 && (td->outer_region_id > 0)) td->outer_region_id = 0;
-  if (td->outer_region_id > 0)
-    outer_region_id = td->outer_region_id; // current outer region
-  if (outer_region_id == 0) {
-    outer_region_id = current_region_id;
+
+  if (td->outer_region_id > 0) {
+    uint64_t enclosing_region_id = hpcrun_ompt_get_parallel_id(1); 
+    if (enclosing_region_id == 0) {
+      // we are currently in a single level parallel region.
+      // forget the previously memoized outermost parallel region. 
+      td->outer_region_id = 0;
+    } else {
+      outer_region_id = td->outer_region_id; // outer region for submaster 
+    }
   }
 
-  TMSG(DEFER_CTXT, "resolve_cntxt: outermost region id is 0x%lx, innermost region id is 0x%lx", outer_region_id, current_region_id); 
+  // if outer_region_id has not already been set, it defaults to the innermost 
+  // region.
+  if (outer_region_id == 0) {
+    outer_region_id = innermost_region_id;
+  }
+
+  TMSG(DEFER_CTXT, "resolve_cntxt: outermost region id is 0x%lx, "
+       "innermost region id is 0x%lx", outer_region_id, innermost_region_id); 
+
+  //---------------------------------------------------------------------------
+  // step 2: 
   //
-  // part 2: try to resolve previous parallel region
-  //
-  // resolve the trees at the end of one parallel region
-  if ((td->region_id != outer_region_id) && (td->region_id != 0)){
-    TMSG(DEFER_CTXT, "I want to resolve the context when I come out from region 0x%lx", td->region_id);
-    hpcrun_cct_walkset(tbd_cct, omp_resolve_and_free, td);
+  // if we changed parallel regions, try to resolve contexts for past regions.
+  //---------------------------------------------------------------------------
+  if (td->region_id != 0) { 
+    // we were in a parallel region when the last sample was received
+    if (td->region_id != outer_region_id) {
+      // the region we are in now (if any) differs from the region where
+      // the last sample was received.
+      TMSG(DEFER_CTXT, "exited region 0x%lx; attempting to resolve contexts", td->region_id);
+      hpcrun_cct_walkset(tbd_cct, omp_resolve_and_free, td);
+    }
   }
 
   //
@@ -349,16 +382,14 @@ void resolve_cntxt()
 
 #ifdef DEBUG_DEFER
   // debugging code
-  if (current_region_id) {
-    ompt_region_map_entry_t *record = ompt_region_map_lookup(current_region_id);
+  if (innermost_region_id) {
+    ompt_region_map_entry_t *record = ompt_region_map_lookup(innermost_region_id);
     if (!record || (ompt_region_map_entry_refcnt_get(record) == 0)) {
-      EMSG("no record found current_region_id=0x%lx initial_td_region_id=0x%lx td->region_id=0x%lx ", 
-	   current_region_id, initial_td_region, td->region_id);
+      EMSG("no record found innermost_region_id=0x%lx initial_td_region_id=0x%lx td->region_id=0x%lx ", 
+	   innermost_region_id, initial_td_region, td->region_id);
     }
   }
 #endif
-
-//  hpcrun_safe_exit();
 }
 
 

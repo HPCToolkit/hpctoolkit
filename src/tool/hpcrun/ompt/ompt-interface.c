@@ -71,9 +71,21 @@
 #include "sample-sources/blame-shift.h"
 #include "sample-sources/blame-shift-directed.h"
 
+/******************************************************************************
+ * static variables
+ *****************************************************************************/
 
 int ompt_elide = 0;
 int ompt_initialized = 0;
+
+
+//-----------------------------------------
+// declare ompt interface function pointers
+//-----------------------------------------
+#define ompt_interface_fn(f) f ## _t f ## _fn;
+#include "ompt-fns.h"
+#undef ompt_interface_fn
+
 
 
 /******************************************************************************
@@ -121,7 +133,7 @@ ompt_get_blame_target()
 {
   if (ompt_initialized) {
     ompt_wait_id_t wait_id;
-    ompt_state_t state = ompt_get_state(&wait_id);
+    ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
 
     switch (state) {
     case ompt_state_wait_critical:
@@ -154,11 +166,11 @@ static void
 init_threads()
 {
   int retval;
-  retval = ompt_set_callback(ompt_event_thread_create, 
+  retval = ompt_set_callback_fn(ompt_event_thread_create, 
 		    (ompt_callback_t)ompt_thread_create);
   assert(retval > 0);
 
-  retval = ompt_set_callback(ompt_event_thread_exit, 
+  retval = ompt_set_callback_fn(ompt_event_thread_exit, 
 		    (ompt_callback_t)ompt_thread_exit);
   assert(retval > 0);
 }
@@ -168,11 +180,11 @@ static void
 init_parallel_regions()
 {
   int retval;
-  retval = ompt_set_callback(ompt_event_parallel_create, 
+  retval = ompt_set_callback_fn(ompt_event_parallel_create, 
 		    (ompt_callback_t)start_team_fn);
   assert(retval > 0);
 
-  retval = ompt_set_callback(ompt_event_parallel_exit, 
+  retval = ompt_set_callback_fn(ompt_event_parallel_exit, 
 		    (ompt_callback_t)end_team_fn);
   assert(retval > 0);
 }
@@ -182,7 +194,7 @@ static void
 init_tasks() 
 {
   int retval;
-  retval = ompt_set_callback(ompt_event_task_create, 
+  retval = ompt_set_callback_fn(ompt_event_task_create, 
 		    (ompt_callback_t)start_task_fn);
   assert(retval > 0);
 }
@@ -203,19 +215,19 @@ init_blame_shift_directed()
 
   int retval = 0;
 
-  retval |= ompt_set_callback(ompt_event_release_lock, 
+  retval |= ompt_set_callback_fn(ompt_event_release_lock, 
 		    (ompt_callback_t) directed_blame_accept);
 
-  retval |= ompt_set_callback(ompt_event_release_nest_lock_last, 
+  retval |= ompt_set_callback_fn(ompt_event_release_nest_lock_last, 
 		    (ompt_callback_t) directed_blame_accept);
 
-  retval |= ompt_set_callback(ompt_event_release_critical, 
+  retval |= ompt_set_callback_fn(ompt_event_release_critical, 
 		    (ompt_callback_t) directed_blame_accept);
 
-  retval |= ompt_set_callback(ompt_event_release_atomic, 
+  retval |= ompt_set_callback_fn(ompt_event_release_atomic, 
 		    (ompt_callback_t) directed_blame_accept);
 
-  retval |= ompt_set_callback(ompt_event_release_ordered, 
+  retval |= ompt_set_callback_fn(ompt_event_release_ordered, 
 		    (ompt_callback_t) directed_blame_accept);
 
   if (retval) {
@@ -251,16 +263,16 @@ static void
 init_blame_shift_undirected()
 {
   int retval = 0;
-  retval |= ompt_set_callback(ompt_event_idle_begin, 
+  retval |= ompt_set_callback_fn(ompt_event_idle_begin, 
 		    (ompt_callback_t)ompt_idle_begin);
 
-  retval |= ompt_set_callback(ompt_event_idle_end, 
+  retval |= ompt_set_callback_fn(ompt_event_idle_end, 
 		    (ompt_callback_t)ompt_idle_end);
 
-  retval |= ompt_set_callback(ompt_event_wait_barrier_begin, 
+  retval |= ompt_set_callback_fn(ompt_event_wait_barrier_begin, 
 		    (ompt_callback_t)ompt_idle_begin);
 
-  retval |= ompt_set_callback(ompt_event_wait_barrier_end, 
+  retval |= ompt_set_callback_fn(ompt_event_wait_barrier_end, 
 		    (ompt_callback_t)ompt_idle_end);
 
   if (retval) {
@@ -269,16 +281,27 @@ init_blame_shift_undirected()
 }
 
 
+void init_function_pointers(ompt_function_lookup_t ompt_fn_lookup)
+{
+#define ompt_interface_fn(f) \
+  f ## _fn = (f ## _t) ompt_fn_lookup(#f); \
+  assert(f ##_fn != 0);
+
+#include "ompt-fns.h"
+
+#undef ompt_interface_fn
+}
 
 //*****************************************************************************
 // interface operations
 //*****************************************************************************
 
 int 
-ompt_initialize(void)
+ompt_initialize(ompt_function_lookup_t ompt_fn_lookup)
 {
   ompt_initialized = 1;
 
+  init_function_pointers(ompt_fn_lookup);
   init_threads();
   init_parallel_regions();
   init_blame_shift_undirected();
@@ -300,7 +323,7 @@ hpcrun_ompt_state_is_overhead()
 {
   if (ompt_initialized) {
     ompt_wait_id_t wait_id;
-    ompt_state_t state = ompt_get_state(&wait_id);
+    ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
 
     switch (state) {
   
@@ -333,7 +356,7 @@ hpcrun_ompt_outermost_parallel_id()
   if (ompt_initialized) { 
     int i = 0;
     for (;;) {
-      ompt_parallel_id_t next_id = ompt_get_parallel_id(i++);
+      ompt_parallel_id_t next_id = ompt_get_parallel_id_fn(i++);
       if (next_id == 0) break;
       outer_id = next_id;
     }
@@ -345,7 +368,7 @@ hpcrun_ompt_outermost_parallel_id()
 ompt_parallel_id_t 
 hpcrun_ompt_get_parallel_id(int level)
 {
-  if (ompt_initialized) return ompt_get_parallel_id(level);
+  if (ompt_initialized) return ompt_get_parallel_id_fn(level);
   return 0;
 }
 
@@ -353,7 +376,7 @@ hpcrun_ompt_get_parallel_id(int level)
 ompt_state_t 
 hpcrun_ompt_get_state(uint64_t *wait_id)
 {
-  if (ompt_initialized) return ompt_get_state(wait_id);
+  if (ompt_initialized) return ompt_get_state_fn(wait_id);
   return ompt_state_undefined;
 }
 
@@ -361,7 +384,7 @@ hpcrun_ompt_get_state(uint64_t *wait_id)
 ompt_frame_t *
 hpcrun_ompt_get_task_frame(int level)
 {
-  if (ompt_initialized) return ompt_get_task_frame(level);
+  if (ompt_initialized) return ompt_get_task_frame_fn(level);
   return NULL;
 }
 
@@ -369,7 +392,7 @@ hpcrun_ompt_get_task_frame(int level)
 ompt_task_id_t 
 hpcrun_ompt_get_task_id(int level)
 {
-  if (ompt_initialized) return ompt_get_task_id(level);
+  if (ompt_initialized) return ompt_get_task_id_fn(level);
   return ompt_task_id_none;
 }
 
@@ -377,7 +400,7 @@ hpcrun_ompt_get_task_id(int level)
 void *
 hpcrun_ompt_get_idle_frame()
 {
-  if (ompt_initialized) return ompt_get_idle_frame();
+  if (ompt_initialized) return ompt_get_idle_frame_fn();
   return NULL;
 }
 
@@ -387,7 +410,7 @@ hpcrun_ompt_get_blame_target()
 {
   if (ompt_initialized) {
     ompt_wait_id_t wait_id;
-    ompt_state_t state = ompt_get_state(&wait_id);
+    ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
 
     switch (state) {
     case ompt_state_wait_critical:
