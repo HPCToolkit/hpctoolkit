@@ -166,6 +166,7 @@ METHOD_FN(thread_fini_action)
 static void
 METHOD_FN(stop)
 {
+#if 0
   if (idleness_blame_information_source_present == false) {
     STDERR_MSG("HPCToolkit: IDLE metric requested but no information source "
 	       "provided that measures idleness and work.\n" 
@@ -174,6 +175,7 @@ METHOD_FN(stop)
 	       "For static binaries, specify an appropriate plugin with "
 	       "an argument to hpclink.\n");
   }
+#endif
 }
 
 

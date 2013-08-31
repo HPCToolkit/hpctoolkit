@@ -120,6 +120,10 @@ typedef void (*ompt_control_callback_t) (
   );
 
 
+typedef void (*ompt_interface_fn_t)(void);
+
+typedef ompt_interface_fn_t (*ompt_function_lookup_t)(const char *);
+
 
 /****************************************************************************
  * ompt API 
@@ -129,40 +133,43 @@ typedef void (*ompt_control_callback_t) (
 extern "C" {
 #endif 
 
+#define OMPT_API_ENTRY(t, fn, args) typedef t (*fn##_t) args
+
 
 
 /****************************************************************************
  * INQUIRY FUNCTIONS
  ***************************************************************************/
 
+
 /* state */
-extern ompt_state_t ompt_get_state(
+OMPT_API_ENTRY(ompt_state_t , ompt_get_state, (
   ompt_wait_id_t *ompt_wait_id
-);
+));
 
 /* thread */
-extern void *ompt_get_idle_frame(void);
+OMPT_API_ENTRY(void *, ompt_get_idle_frame, (void));
 
 /* parallel region */
-extern ompt_parallel_id_t ompt_get_parallel_id(
+OMPT_API_ENTRY(ompt_parallel_id_t, ompt_get_parallel_id, (
   int ancestor_level
-);
+));
 
 /* task */
-extern ompt_task_id_t ompt_get_task_id(
+OMPT_API_ENTRY(ompt_task_id_t, ompt_get_task_id, (
   int ancestor_level
-);
+));
 
-extern ompt_frame_t *ompt_get_task_frame(
+OMPT_API_ENTRY(ompt_frame_t *, ompt_get_task_frame, (
   int ancestor_level
-);
+));
 
 
 /****************************************************************************
  * INITIALIZATION FUNCTIONS
  ***************************************************************************/
 
-extern int ompt_initialize(void); /* to be defined by tool */
+int ompt_initialize(ompt_function_lookup_t ompt_fn_lookup); /* to be defined by tool */
 
 typedef enum opt_init_mode_e {
   ompt_init_mode_never  = 0,
@@ -171,10 +178,10 @@ typedef enum opt_init_mode_e {
   ompt_init_mode_always = 3
 } ompt_init_mode_t;
 
-extern int ompt_set_callback(
+OMPT_API_ENTRY(int, ompt_set_callback, (
   ompt_event_t event, 
   ompt_callback_t callback
-);
+));
 
 typedef enum ompt_set_callback_rc_e {  /* non-standard */
   ompt_set_callback_error      = 0,
@@ -185,33 +192,37 @@ typedef enum ompt_set_callback_rc_e {  /* non-standard */
 } ompt_set_callback_rc_t;
 
 
-extern int ompt_get_callback(
+OMPT_API_ENTRY(int, ompt_get_callback, (
   ompt_event_t event, 
   ompt_callback_t *callback
-);
+));
 
 /****************************************************************************
  * MISCELLANEOUS FUNCTIONS
  ***************************************************************************/
 
 /* control */
-extern void ompt_control(
+OMPT_API_ENTRY(void, ompt_control, (
   uint64_t command, 
-  uint64_t modifier);
+  uint64_t modifier
+));
 
 /* library inquiry */
-extern int ompt_get_ompt_version(void);
+OMPT_API_ENTRY(int, ompt_get_ompt_version, (
+  void
+));
 
-extern int ompt_get_runtime_version(
+OMPT_API_ENTRY( int, ompt_get_runtime_version, (
   char *buffer, 
   int length
-);
+));
 
-extern int ompt_enumerate_state(
+OMPT_API_ENTRY(int, ompt_enumerate_state, (
   int current_state, 
   int *next_state, 
   const char **next_state_name
-);
+));
+
 
 
 #ifdef  __cplusplus
