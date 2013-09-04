@@ -332,7 +332,7 @@ hpcrun_stats_print_summary(void)
   hpcrun_memory_summary();
 
   AMSG("SAMPLE ANOMALIES: blocks: %ld (async: %ld, dlopen: %ld), "
-       "errors: %ld (segv: %d, soft: %ld)",
+       "errors: %ld (segv: %ld, soft: %ld)",
        blocked, num_samples_blocked_async, num_samples_blocked_dlopen,
        errant, num_samples_segv, soft);
 
