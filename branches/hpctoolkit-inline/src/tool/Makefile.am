@@ -68,7 +68,9 @@ AUTOMAKE_OPTIONS = foreign
 # Automake rules
 #############################################################################
 
-SUBDIRS =
+SUBDIRS = hpcstruct
+
+if FALSE
 
 if OPT_BUILD_TOOL_ALL
 SUBDIRS += \
@@ -97,6 +99,8 @@ endif
 #if OPT_ENABLE_DEVTOOLS
 #  SUBDIRS += hpclump
 #endif
+
+endif
 
 #############################################################################
 # Other rules

@@ -70,13 +70,19 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+BOOST_INC = @BOOST_INC@
+LIBDWARF_INC = @LIBDWARF_INC@
+LIBELF_INC   = @LIBELF_INC@
+SYMTABAPI_INC = @SYMTABAPI_INC@
+
 MYSOURCES = \
 	Struct.hpp Struct.cpp \
 	StructSimple.hpp StructSimple.cpp \
 	Struct-LocationMgr.hpp Struct-LocationMgr.cpp \
-	\
+	Struct-Inlining.cpp \
 	OAInterface.hpp OAInterface.cpp
 
+MYCPPFLAGS = -I$(BOOST_INC) -I$(LIBDWARF_INC) -I$(LIBELF_INC) -I$(SYMTABAPI_INC)
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @OA_IFLAGS@
 
@@ -97,6 +103,7 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 noinst_LTLIBRARIES = libHPCbanal.la
 
 libHPCbanal_la_SOURCES  = $(MYSOURCES)
+libHPCbanal_la_CPPFLAGS = $(MYCPPFLAGS)
 libHPCbanal_la_CFLAGS   = $(MYCFLAGS)
 libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS)
 libHPCbanal_la_AR       = $(MYAR)

@@ -1195,7 +1195,14 @@ case "${LIBELF}" in
     ;;
 esac
 
-LIBELF_LIB="${LIBELF}/lib"
+if test -f "${LIBELF}/lib/libelf.so" ; then
+  LIBELF_LIB="${LIBELF}/lib"
+elif test -f "${LIBELF}/lib64/libelf.so" ; then
+  LIBELF_LIB="${LIBELF}/lib64"
+else
+  LIBELF_LIB=no
+fi
+
 LIBELF_INC="${LIBELF}/include"
 
 AC_MSG_RESULT([$LIBELF])
@@ -2790,3 +2797,8 @@ if test "$warn_compiler_mismatch" = yes ; then
   AC_MSG_WARN([hpctoolkit-externals.  Check the externals configure summary])
   AC_MSG_WARN([and try again with the same compilers.])
 fi
+
+AC_MSG_NOTICE([])
+AC_MSG_NOTICE([This is a special branch for building hpcstruct with better support])
+AC_MSG_NOTICE([for inlined functions.  See README.hpcstruct for details.])
+

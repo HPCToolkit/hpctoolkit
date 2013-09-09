@@ -214,6 +214,14 @@ LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBDWARF_COPY = @LIBDWARF_COPY@
 LIBDWARF_INC = @LIBDWARF_INC@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_COPY = @LIBELF_COPY@
 LIBELF_INC = @LIBELF_INC@
@@ -288,14 +296,6 @@ XED2_COPY = @XED2_COPY@
 XED2_HPCLINK_OPTS = @XED2_HPCLINK_OPTS@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 XED2_RUN_DIR = @XED2_RUN_DIR@
 XERCES = @XERCES@
@@ -401,7 +401,10 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @OA_IFLAGS@
 MYLDFLAGS = \
 	@HPC_LT_LDFLAGS@ \
 	@HOST_CXXFLAGS@ \
-	@GNUBINUTILS_LDFLAGS@
+	@GNUBINUTILS_LDFLAGS@ \
+	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+	-L$(LIBDWARF_LIB) -ldwarf \
+	-L$(LIBELF_LIB) -lelf
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \

@@ -94,6 +94,7 @@ using std::string;
 #include <include/gcc-attr.h>
 
 #include "Struct.hpp"
+#include "Struct-Inlining.hpp"
 #include "Struct-LocationMgr.hpp"
 #include "OAInterface.hpp"
 
@@ -317,6 +318,8 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
 
   // 1. Build Struct::File/Struct::Proc skeletal structure
   ProcStrctToProcMap* mp = buildLMSkeleton(lmStrct, lm, procNmMgr);
+
+  openSymtab(lm->name());
   
   // 2. For each [Struct::Proc, BinUtil::Proc] pair, complete the build.
   // Note that a Struct::Proc may be associated with more than one
@@ -336,6 +339,8 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
     bool doNormalizeUnsafe = (doNormalizeTy == NormTy_All);
     normalize(lmStrct, doNormalizeUnsafe);
   }
+
+  closeSymtab();
 
   return lmStrct;
 }
@@ -815,12 +820,15 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
     //Struct::ACodeNode* procCtxt = enclosingStrct->ancestorProcCtxt();
     string fnm, pnm;
     SrcFile::ln line;
+    CallingContext *cc = NULL;
+
     findLoopBegLineInfo(/*procCtxt,*/ p, bb, fnm, pnm, line);
     pnm = BinUtil::canonicalizeProcName(pnm, procNmMgr);
+    cc = analyzeInlining(begVMA);
     
     Prof::Struct::Loop* loop = new Prof::Struct::Loop(NULL, line, line);
     loop->vmaSet().insert(begVMA, begVMA + 1); // a loop id
-    locMgr.locate(loop, enclosingStrct, fnm, pnm, line);
+    locMgr.locate(loop, enclosingStrct, fnm, pnm, line, cc);
     childScope = loop;
   }
   else if (!isIrrIvalLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
@@ -865,8 +873,11 @@ buildStmts(Struct::LocationMgr& locMgr,
     // 1. gather source code info
     string filenm, procnm;
     SrcFile::ln line;
+    CallingContext *cc = NULL;
+
     p->findSrcCodeInfo(vma, opIdx, procnm, filenm, line);
     procnm = BinUtil::canonicalizeProcName(procnm, procNmMgr);
+    cc = analyzeInlining(vma);
 
     // 2. create a VMA interval
     // the next (or hypothetically next) insn begins no earlier than:
@@ -890,7 +901,7 @@ buildStmts(Struct::LocationMgr& locMgr,
     if (idesc.isSubr()) {
       stmt->sortId(--call_sortId);
     }
-    locMgr.locate(stmt, enclosingStrct, filenm, procnm, line);
+    locMgr.locate(stmt, enclosingStrct, filenm, procnm, line, cc);
   }
   return 0;
 }

@@ -78,6 +78,7 @@
 #include <include/uint.h>
 
 #include <lib/prof/Struct-Tree.hpp>
+#include <lib/banal/Struct-Inlining.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -157,7 +158,7 @@ public:
   void
   locate(Prof::Struct::Loop* loop,
 	 Prof::Struct::ACodeNode* proposed_scope,
-	 std::string& filenm, std::string& procnm, SrcFile::ln line);
+	 std::string& filenm, std::string& procnm, SrcFile::ln line, CallingContext *cc);
   
   // locate: Given a parentless Struct::Stmt 'stmt', the original
   //   enclosing scope 'proposed_scope' and best-guess source-line
@@ -169,7 +170,7 @@ public:
   void
   locate(Prof::Struct::Stmt* stmt,
 	 Prof::Struct::ACodeNode* proposed_scope,
-	 std::string& filenm, std::string& procnm, SrcFile::ln line);
+	 std::string& filenm, std::string& procnm, SrcFile::ln line, CallingContext *cc);
 
   // endSeq: 
   void endSeq();
@@ -371,7 +372,7 @@ private:
   // may already live within an alien context)
   CtxtChange_t
   determineContext(Prof::Struct::ACodeNode* proposed_scope,
-		   std::string& filenm, std::string& procnm, SrcFile::ln line);
+		   std::string& filenm, std::string& procnm, SrcFile::ln line, CallingContext *cc);
   
   // fixCtxtStack: Yuck.
   void

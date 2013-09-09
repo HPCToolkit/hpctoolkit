@@ -17320,7 +17320,14 @@ case "${LIBELF}" in
     ;;
 esac
 
-LIBELF_LIB="${LIBELF}/lib"
+if test -f "${LIBELF}/lib/libelf.so" ; then
+  LIBELF_LIB="${LIBELF}/lib"
+elif test -f "${LIBELF}/lib64/libelf.so" ; then
+  LIBELF_LIB="${LIBELF}/lib64"
+else
+  LIBELF_LIB=no
+fi
+
 LIBELF_INC="${LIBELF}/include"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBELF" >&5
@@ -22212,3 +22219,11 @@ $as_echo "$as_me: WARNING: hpctoolkit-externals.  Check the externals configure 
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: and try again with the same compilers." >&5
 $as_echo "$as_me: WARNING: and try again with the same compilers." >&2;}
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+$as_echo "$as_me: " >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: This is a special branch for building hpcstruct with better support" >&5
+$as_echo "$as_me: This is a special branch for building hpcstruct with better support" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: for inlined functions.  See README.hpcstruct for details." >&5
+$as_echo "$as_me: for inlined functions.  See README.hpcstruct for details." >&6;}
+

@@ -70,6 +70,10 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+LIBDWARF_LIB = @LIBDWARF_LIB@
+LIBELF_LIB   = @LIBELF_LIB@
+SYMTABAPI_LIB = @SYMTABAPI_LIB@
+SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 
 MYSOURCES = \
@@ -82,7 +86,10 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @OA_IFLAGS@
 MYLDFLAGS = \
 	@HPC_LT_LDFLAGS@ \
 	@HOST_CXXFLAGS@ \
-	@GNUBINUTILS_LDFLAGS@
+	@GNUBINUTILS_LDFLAGS@ \
+	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+	-L$(LIBDWARF_LIB) -ldwarf \
+	-L$(LIBELF_LIB) -lelf
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \

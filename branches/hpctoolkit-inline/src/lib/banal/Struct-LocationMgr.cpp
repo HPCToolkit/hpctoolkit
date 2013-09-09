@@ -79,6 +79,8 @@ using std::pair;
 
 #include <cstring>
 
+#include <stdlib.h>
+
 //*************************** User Include Files ****************************
 
 #include "Struct-LocationMgr.hpp"
@@ -159,12 +161,12 @@ LocationMgr::begSeq(Prof::Struct::Proc* enclosingProc, bool isFwdSubst)
 void
 LocationMgr::locate(Prof::Struct::Loop* loop,
 		    Prof::Struct::ACodeNode* proposed_scope,
-		    string& filenm, string& procnm, SrcFile::ln line)
+		    string& filenm, string& procnm, SrcFile::ln line, CallingContext *cc)
 {
   DIAG_DevMsgIf(mDBG, "LocationMgr::locate: " << loop->toXML() << "\n"
 		<< "  proposed: " << proposed_scope->toXML() << "\n"
 		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
-  determineContext(proposed_scope, filenm, procnm, line);
+  determineContext(proposed_scope, filenm, procnm, line, cc);
   Ctxt& encl_ctxt = topCtxtRef();
   loop->linkAndSetLineRange(encl_ctxt.scope());
 }
@@ -173,13 +175,13 @@ LocationMgr::locate(Prof::Struct::Loop* loop,
 void
 LocationMgr::locate(Prof::Struct::Stmt* stmt,
 		    Prof::Struct::ACodeNode* proposed_scope,
-		    string& filenm, string& procnm, SrcFile::ln line)
+		    string& filenm, string& procnm, SrcFile::ln line, CallingContext *cc)
 {
   DIAG_DevMsgIf(mDBG, "LocationMgr::locate: " << stmt->toXML() << "\n"
 		<< "  proposed: " << proposed_scope->toXML() << "\n"
 		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
   // FIXME (minor): manage stmt cache! if stmt already exists, only add vma
-  determineContext(proposed_scope, filenm, procnm, line);
+  determineContext(proposed_scope, filenm, procnm, line, cc);
   Ctxt& encl_ctxt = topCtxtRef();
   stmt->linkAndSetLineRange(encl_ctxt.scope());
 }
@@ -412,7 +414,8 @@ LocationMgr::toString(CtxtChange_t x)
 
 LocationMgr::CtxtChange_t
 LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
-			      string& filenm, string& procnm, SrcFile::ln line)
+			      string& filenm, string& procnm, SrcFile::ln line, 
+			      CallingContext *cc)
 {
   DIAG_DevMsgIf(mDBG, "LocationMgr::determineContext");
 
@@ -465,7 +468,11 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
   // 2. Attempt to find an appropriate existing enclosing context for
   // the given source information.
   // -----------------------------------------------------
-  const Ctxt* use_ctxt = switch_findCtxt(filenm, procnm, line);
+  const Ctxt* use_ctxt = NULL;
+
+  if (!cc) {
+    use_ctxt = switch_findCtxt(filenm, procnm, line);
+  }
   
   DIAG_DevMsgIfCtd(mDBG, "  first ctxt:\n"
 		   << ((use_ctxt) ? use_ctxt->toString(-1, "  ") : ""));
@@ -544,18 +551,52 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
     // Relocation! Add an alien context.
     DIAG_Assert(!filenm.empty(), "");
     CtxtChange_set(change, CtxtChange_PUSH);
-    
-    // Find or create the alien scope
-    Prof::Struct::Alien* alien =
+
+    if (cc) {
+      while (topCtxtRef().isAlien()) {
+	m_ctxtStack.pop_front();
+      }
+      // Find or create an appropriate chain of alien scopes
+      Prof::Struct::ACodeNode* enclosing_scope = proposed_scope;
+      string empty = "";
+      string &calleeName = empty; 
+      Prof::Struct::Alien* alien;
+      for (CallingContext *it = cc; it;) {
+	CallingContext *next = it->Next();
+	// call site
+	alien = demandAlienStrct(enclosing_scope, it->getFileName(), 
+				 empty, (SrcFile::ln) it->getLineNumber(), true);
+	enclosing_scope = alien;
+	pushCtxt(Ctxt(alien, NULL));
+#if 0
+	string calleeFile = next ? next->getFileName() : filenm;
+	SrcFile::ln lineNum = 0; 
+	alien = demandAlienStrct(enclosing_scope, calleeFile,
+				 it->getCalleeName(), lineNum, true);
+	enclosing_scope = alien;
+	pushCtxt(Ctxt(alien, NULL));
+#endif
+	it = next;
+      }
+#if 1
+      alien = demandAlienStrct(enclosing_scope, filenm,
+			       calleeName, line, true);
+      enclosing_scope = alien;
+      pushCtxt(Ctxt(alien, NULL));
+#endif
+    } else {
+      // Find or create the alien scope
+      Prof::Struct::Alien* alien =
 #if (STRUCT_NEST_ALIEN_CONTEXTS)
-      demandAlienStrct(proposed_scope, filenm, procnm, line, true);
+	demandAlienStrct(proposed_scope, filenm, procnm, line, true);
 #else
       demandAlienStrct(proposed_scope, filenm, procnm, line, false);
-    if (topCtxtRef().isAlien()) {
-      m_ctxtStack.pop_front();
-    }
+      if (topCtxtRef().isAlien()) {
+	m_ctxtStack.pop_front();
+      }
 #endif
-    pushCtxt(Ctxt(alien, NULL));
+      pushCtxt(Ctxt(alien, NULL));
+    }
 
     use_ctxt = topCtxt();
   }
@@ -841,6 +882,10 @@ LocationMgr::demandAlienStrct(Prof::Struct::ACodeNode* parent_scope,
   // INVARIANT: 'parent_scope' should either be the top of the stack
   // or the first first enclosing LOOP or PROC of the top of the
   // stack.
+
+#if DEBUG
+  std::cout << "filenm: " << filenm << "  procnm: " << procnm << "\n";
+#endif
   
   Prof::Struct::Alien* alien = NULL;
   AlienStrctMapKey key(parent_scope, filenm, procnm);
@@ -859,7 +904,7 @@ LocationMgr::demandAlienStrct(Prof::Struct::ACodeNode* parent_scope,
       break;
     }
   }
-  
+
   if (!alien) {
     Prof::Struct::ACodeNode* p =
       (tosOnCreate) ? topCtxtRef().scope() : parent_scope;
