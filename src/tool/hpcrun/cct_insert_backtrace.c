@@ -754,14 +754,16 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
   // Check to make sure node below monitor_main is "main" node
   //
   // TMSG(GENERIC1, "tmain chk");
-  if ( bt.fence == FENCE_MAIN &&
-       ! partial_unw &&
-       ! tramp_found &&
-       (bt.last == bt.begin || 
-	! hpcrun_inbounds_main(hpcrun_frame_get_unnorm(bt.last - 1)))) {
-    hpcrun_bt_dump(TD_GET(btbuf_cur), "WRONG MAIN");
-    hpcrun_stats_num_samples_dropped_inc();
-    partial_unw = true;
+  if (ENABLED(CHECK_MAIN)) {
+    if ( bt.fence == FENCE_MAIN &&
+	 ! partial_unw &&
+	 ! tramp_found &&
+	 (bt.last == bt.begin || 
+	  ! hpcrun_inbounds_main(hpcrun_frame_get_unnorm(bt.last - 1)))) {
+      hpcrun_bt_dump(TD_GET(btbuf_cur), "WRONG MAIN");
+      hpcrun_stats_num_samples_dropped_inc();
+      partial_unw = true;
+    }
   }
 
   hpcrun_backtrace_finalize(&bt, isSync); 
