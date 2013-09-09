@@ -1,0 +1,400 @@
+// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2013, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
+//
+//
+
+//************************* System Include Files ****************************
+
+#include <assert.h>
+#include <pthread.h>
+#include <stdlib.h>
+
+//************************ libmonitor Include Files *************************
+
+#include <monitor.h>
+
+//*************************** User Include Files ****************************
+
+#include "newmem.h"
+#include "epoch.h"
+#include "handling_sample.h"
+
+#include "thread_data.h"
+
+#include <lush/lush-pthread.h>
+#include <messages/messages.h>
+#include <trampoline/common/trampoline.h>
+#include <memory/mmap.h>
+
+//***************************************************************************
+
+enum _local_int_const {
+  BACKTRACE_INIT_SZ     = 32,
+  NEW_BACKTRACE_INIT_SZ = 32
+};
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+static thread_data_t _local_td;
+
+static pthread_key_t _hpcrun_key;
+
+void
+hpcrun_init_pthread_key(void)
+{
+  TMSG(THREAD_SPECIFIC,"creating _hpcrun_key");
+  int bad = pthread_key_create(&_hpcrun_key, NULL);
+  if (bad){
+    EMSG("pthread_key_create returned non-zero = %d",bad);
+  }
+}
+
+
+void
+hpcrun_set_thread0_data(void)
+{
+  TMSG(THREAD_SPECIFIC,"set thread0 data");
+  hpcrun_set_thread_data(&_local_td);
+}
+
+
+void
+hpcrun_set_thread_data(thread_data_t *td)
+{
+  TMSG(THREAD_SPECIFIC,"setting td");
+  pthread_setspecific(_hpcrun_key, (void *) td);
+}
+
+
+//***************************************************************************
+
+static thread_data_t*
+hpcrun_get_thread_data_local(void)
+{
+  return &_local_td;
+}
+
+
+static bool
+hpcrun_get_thread_data_local_avail(void)
+{
+  return true;
+}
+
+
+static thread_data_t*
+hpcrun_get_thread_data_specific(void)
+{
+  thread_data_t *ret = (thread_data_t *) pthread_getspecific(_hpcrun_key);
+  if (!ret){
+    monitor_real_abort();
+  }
+  return ret;
+}
+
+
+static bool
+hpcrun_get_thread_data_specific_avail(void)
+{
+  thread_data_t *ret = (thread_data_t *) pthread_getspecific(_hpcrun_key);
+  return !(ret == NULL);
+}
+
+
+thread_data_t* (*hpcrun_get_thread_data)(void) = &hpcrun_get_thread_data_local;
+bool           (*hpcrun_td_avail)(void)        = &hpcrun_get_thread_data_local_avail;
+
+#if 0
+static inline
+thread_data_t*
+hpcrun_get_thread_data()
+{
+  if (hpcrun_use_thread_data_local) {
+    return hpcrun_get_thread_data_local();
+  }
+  else {
+    return hpcrun_get_thread_data_specific();
+  }
+}
+#endif
+
+
+void
+hpcrun_unthreaded_data(void)
+{
+  hpcrun_get_thread_data = &hpcrun_get_thread_data_local;
+  hpcrun_td_avail        = &hpcrun_get_thread_data_local_avail;
+}
+
+
+void
+hpcrun_threaded_data(void)
+{
+  assert(hpcrun_get_thread_data == &hpcrun_get_thread_data_local);
+  hpcrun_get_thread_data = &hpcrun_get_thread_data_specific;
+  hpcrun_td_avail        = &hpcrun_get_thread_data_specific_avail;
+}
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+thread_data_t*
+hpcrun_allocate_thread_data(void)
+{
+  TMSG(THREAD_SPECIFIC,"malloc thread data");
+  return hpcrun_mmap_anon(sizeof(thread_data_t));
+}
+
+static inline void core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_t* thr_ctxt) 
+{
+
+  // ----------------------------------------
+  // id
+  // ----------------------------------------
+  cptd->id = id;
+  // ----------------------------------------
+  // epoch: loadmap + cct + cct_ctxt
+  // ----------------------------------------
+
+  // ----------------------------------------
+  cptd->epoch = hpcrun_malloc(sizeof(epoch_t));
+  cptd->epoch->csdata_ctxt = copy_thr_ctxt(thr_ctxt);
+
+  // ----------------------------------------
+  // cct2metrics map: associate a metric_set with
+  //                  a cct node
+  hpcrun_cct2metrics_init(&(cptd->cct2metrics_map));
+
+  // ----------------------------------------
+  // tracing
+  // ----------------------------------------
+  cptd->trace_min_time_us = 0;
+  cptd->trace_max_time_us = 0;
+
+  // ----------------------------------------
+  // IO support
+  // ----------------------------------------
+  cptd->hpcrun_file  = NULL;
+  cptd->trace_buffer = NULL;
+    
+}
+
+
+#ifdef ENABLE_CUDA
+static inline void gpu_data_init(gpu_data_t * gpu_data)
+{
+  gpu_data->is_thread_at_cuda_sync = false;
+  gpu_data->overload_state = 0;
+  gpu_data->accum_num_sync_threads = 0;
+  gpu_data->accum_num_sync_threads = 0;
+}
+#endif
+
+void
+hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
+{
+  hpcrun_meminfo_t memstore;
+  thread_data_t* td = hpcrun_get_thread_data();
+
+  // ----------------------------------------
+  // memstore for hpcrun_malloc()
+  // ----------------------------------------
+
+  // Wipe the thread data with a bogus bit pattern, but save the
+  // memstore so we can reuse it in the child after fork.  This must
+  // come first.
+  td->inside_hpcrun = 1;
+  memstore = td->memstore;
+  memset(td, 0xfe, sizeof(thread_data_t));
+  td->inside_hpcrun = 1;
+  td->memstore = memstore;
+  hpcrun_make_memstore(&td->memstore, is_child);
+  td->mem_low = 0;
+
+  // ----------------------------------------
+  // normalized thread id (monitor-generated)
+  // ----------------------------------------
+  core_profile_trace_data_init(&(td->core_profile_trace_data), id, thr_ctxt);
+
+  td->idle = 0; // begin at work
+
+  // ----------------------------------------
+  // sample sources
+  // ----------------------------------------
+  memset(&td->ss_state, UNINIT, sizeof(td->ss_state));
+  memset(&td->ss_info, 0, sizeof(td->ss_info));
+
+  td->timer_init = false;
+  td->last_time_us = 0;
+
+
+  // ----------------------------------------
+  // backtrace buffer
+  // ----------------------------------------
+  td->btbuf_cur = NULL;
+  td->btbuf_beg = hpcrun_malloc(sizeof(frame_t) * BACKTRACE_INIT_SZ);
+  td->btbuf_end = td->btbuf_beg + BACKTRACE_INIT_SZ;
+  td->btbuf_sav = td->btbuf_end;  // FIXME: is this needed?
+
+  hpcrun_bt_init(&(td->bt), NEW_BACKTRACE_INIT_SZ);
+
+  // ----------------------------------------
+  // trampoline
+  // ----------------------------------------
+  td->tramp_present     = false;
+  td->tramp_retn_addr   = NULL;
+  td->tramp_loc         = NULL;
+  td->cached_bt         = hpcrun_malloc(sizeof(frame_t)
+					* CACHED_BACKTRACE_SIZE);
+  td->cached_bt_end     = td->cached_bt;          
+  td->cached_bt_buf_end = td->cached_bt + CACHED_BACKTRACE_SIZE;
+  td->tramp_frame       = NULL;
+  td->tramp_cct_node    = NULL;
+
+  // ----------------------------------------
+  // exception stuff
+  // ----------------------------------------
+  memset(&td->bad_unwind, 0, sizeof(td->bad_unwind));
+  memset(&td->mem_error, 0, sizeof(td->mem_error));
+  hpcrun_init_handling_sample(td, 0, id);
+  td->splay_lock    = 0;
+  td->fnbounds_lock = 0;
+
+  // ----------------------------------------
+  // Logical unwinding
+  // ----------------------------------------
+  lushPthr_init(&td->pthr_metrics);
+  lushPthr_thread_init(&td->pthr_metrics);
+
+
+  // ----------------------------------------
+  // debug support
+  // ----------------------------------------
+  td->debug1 = false;
+
+  // ----------------------------------------
+  // miscellaneous
+  // ----------------------------------------
+  td->inside_dlfcn = false;
+#ifdef ENABLE_CUDA
+  gpu_data_init(&(td->gpu_data));
+#endif
+}
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+void
+hpcrun_cached_bt_adjust_size(size_t n)
+{
+  thread_data_t *td = hpcrun_get_thread_data();
+  if ((td->cached_bt_buf_end - td->cached_bt) >= n) {
+    return; // cached backtrace buffer is already big enough
+  }
+
+  frame_t* newbuf = hpcrun_malloc(n * sizeof(frame_t));
+  memcpy(newbuf, td->cached_bt, (void*)td->cached_bt_buf_end - (void*)td->cached_bt);
+  size_t idx            = td->cached_bt_end - td->cached_bt;
+  td->cached_bt         = newbuf;
+  td->cached_bt_buf_end = newbuf+n;
+  td->cached_bt_end     = newbuf + idx;
+}
+
+
+frame_t*
+hpcrun_expand_btbuf(void)
+{
+  thread_data_t* td = hpcrun_get_thread_data();
+  frame_t* unwind = td->btbuf_cur;
+
+  /* how big is the current buffer? */
+  size_t sz = td->btbuf_end - td->btbuf_beg;
+  size_t newsz = sz*2;
+  /* how big is the current backtrace? */
+  size_t btsz = td->btbuf_end - td->btbuf_sav;
+  /* how big is the backtrace we're recording? */
+  size_t recsz = unwind - td->btbuf_beg;
+  /* get new buffer */
+  TMSG(EPOCH," epoch_expand_buffer");
+  frame_t *newbt = hpcrun_malloc(newsz*sizeof(frame_t));
+
+  if(td->btbuf_sav > td->btbuf_end) {
+    EMSG("Invariant btbuf_sav > btbuf_end violated");
+    monitor_real_abort();
+  }
+
+  /* copy frames from old to new */
+  memcpy(newbt, td->btbuf_beg, recsz*sizeof(frame_t));
+  memcpy(newbt+newsz-btsz, td->btbuf_end-btsz, btsz*sizeof(frame_t));
+
+  /* setup new pointers */
+  td->btbuf_beg = newbt;
+  td->btbuf_end = newbt+newsz;
+  td->btbuf_sav = newbt+newsz-btsz;
+
+  /* return new unwind pointer */
+  return newbt+recsz;
+}
+
+
+void
+hpcrun_ensure_btbuf_avail(void)
+{
+  thread_data_t* td = hpcrun_get_thread_data();
+  if (td->btbuf_cur == td->btbuf_end) {
+    td->btbuf_cur = hpcrun_expand_btbuf();
+    td->btbuf_sav = td->btbuf_end;
+  }
+}
+
