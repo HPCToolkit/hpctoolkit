@@ -1,0 +1,72 @@
+----------------------------------
+Notes on hpctoolkit-inline branch
+----------------------------------
+
+This branch is an early proof-of-concept for building hpcstruct that
+uses symtabAPI for better support for inlined functions.  This branch
+builds only hpcstruct, uses a special version of dyninst/symtabAPI and
+contains a number of special-purpose fixme hacks (for now).
+
+(1) Get dyninst with Matt's patches.
+
+The dyninst-4fb1f52 snapshot works.  The 8.0 release in externals does
+not work, probably also not 8.1.1 or 8.1.2.  I expect 8.2 will contain
+Matt's patches, but that's not yet released.
+
+http://git.dyninst.org/?p=dyninst.git;a=snapshot;h=4fb1f5288eda3abfd01bbeaa64c267666cdc907e;sf=tgz
+
+For people at Rice, I have a copy on joni in /home/krentel/Download.
+
+$ md5sum  dyninst-4fb1f52.tar.gz 
+a0f0d74d40c55a634952a8bd33c49fb5  dyninst-4fb1f52.tar.gz
+
+(2) Build symtabAPI.
+
+Symtab needs boost, libelf and libdwarf.  You can use boost and
+libdwarf from externals.  But without special patches, symtab doesn't
+understand our libelf from externals (issues of libelf subdir for
+header files).  So, leave off --with-libelf and let symtab grab the
+system libelf from /usr.
+
+In the dyninst-4fb1f52 directory:
+
+./configure  \
+    CC=gcc   CFLAGS='-g -O2'  \
+    CXX=g++  CXXFLAGS='-g -O2'  \
+    --prefix=/path/to/install/prefix  \
+    --with-boost=/path/to/externals/install/boost  \
+    --with-libdwarf=/path/to/externals/install/libdwarf  \
+    --with-default-component=SymtabAPI \
+    --enable-gnu-demangler  \
+    --disable-testsuite
+
+make
+make install
+
+Symtab also needs a fairly recent compiler.  Gcc 4.4.7 from RedHat 6.x
+works, 4.1.2 from RH 5.x does not.  Symtab does not support vpath
+builds or parallel make.
+
+The --with-default-component=SymtabAPI option is dyninst's way of
+saying build only symtab (not full dyninst).
+
+(3) Build hpcstruct from the hpctoolkit-inline branch.
+
+Configure and build the hpctoolkit-inline branch as usual, except use
+libelf from /usr and symtabAPI from (2) above.  There's no need to add
+PAPI, since this branch only builds hpcstruct.
+
+../configure  \
+    --prefix=/path/to/install/prefix  \
+    --with-externals=/path/to/externals  \
+    --with-libelf=/usr  \
+    --with-symtabAPI=/path/to/symtab/from/above
+
+make -j 4 install
+
+Hpctoolkit needs a full externals, or else parts of configure will
+fail.
+
+Then, build hpctoolkit trunk for the rest of toolkit: hpcrun, hpcprof,
+etc.
+
