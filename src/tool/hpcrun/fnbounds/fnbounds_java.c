@@ -66,14 +66,14 @@
 #include <jvmti.h>
 
 #include "fnbounds_interface.h"
-#include "splay.h"
-#include "splay-interval.h"
+//#include "splay.h"
+//#include "splay-interval.h"
 #include "thread_data.h"
 #include "fnbounds_java.h"
 #include "safe-sampling.h"
 
-#include "java/java_asgct.h"
-#include "java/jmt.h"
+//#include "java/java_asgct.h"
+//#include "java/jmt.h"
 
 
 #define UI_TREE_JAVA_LOCK  do {	 \
@@ -197,7 +197,7 @@ hpcjava_detach_thread()
   (*java_vm)->DetachCurrentThread(java_vm);
 }
 
-#if 1
+#if 0
 /***
  * Asynchronous Java to get call stack
  * 
@@ -225,7 +225,7 @@ hpcjava_get_async_call_trace(void **callstack, int count)
       for (i=0; i<trace.num_frames; i++)
       {
 	if (trace.frames[i].method_id != NULL && trace.frames[i].lineno>=0) {
-	  jmt_add_method_db(trace.frames[i].method_id);
+	  //jmt_add_method_db(trace.frames[i].method_id);
 	  /*
 	  void *addr = jmt_get_address(trace.frames[i].method_id);
 	  if (addr != NULL) 
