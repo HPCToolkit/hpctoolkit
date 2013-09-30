@@ -50,7 +50,6 @@ VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
-pkglibexecdir = $(libexecdir)/@PACKAGE@
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 install_sh_DATA = $(install_sh) -c -m 644
 install_sh_PROGRAM = $(install_sh) -c
@@ -129,6 +128,7 @@ DIST_SOURCES = $(libhpcjava_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+pkglibexecdir = @my_pkglibexecdir@
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AR = @AR@
@@ -748,6 +748,7 @@ endef
 	$(CXXCPP) $(MYCPPFLAGS_0_CC)  $< > $@
 
 #############################################################################
+#pkglibexec_PROGRAMS = ${OPROFILE_BIN}/opjitconv
 
 #############################################################################
 # Common rules

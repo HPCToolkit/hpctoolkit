@@ -71,7 +71,7 @@
 #include "java/jmt.h"
 
 // monitor's real functions
-#include <monitor.h>
+//#include <monitor.h>
 
 /**
  * Name of the environment variable that stores the absolute path of opjitconv
@@ -84,6 +84,15 @@
  * For debugging purpose, we may need to avoid the fork 
  **/
 #define HPCJAVA_FORK_OPJITCONV 1
+
+#define JAVA_REGISTER_EVENT(Event) 		\
+  error = (*jvmti)->SetEventNotificationMode(jvmti, JVMTI_ENABLE, 	\
+					     (Event), NULL); 		\
+  if (handle_error(error, "SetEventNotificationMode() " 		\
+		   "Event", 1)) { 					\
+    res = -1;								\
+    goto finalize;							\
+  }
 	
 static int debug = 0;
 static int can_get_line_numbers = 1;
@@ -496,6 +505,17 @@ cb_vm_death(jvmtiEnv *jvmti_env,
   hpcrun_safe_exit();
 }
 
+static void JNICALL
+cb_method_entry(jvmtiEnv *jvmti_env,
+            JNIEnv* jni_env,
+            jthread thread,
+            jmethodID method)
+{
+  fprintf(stderr, "cb_method_entry %d\n", method);
+  if (debug) {
+  } 
+}
+
 /***
  * The VM will start the agent by calling this function. It will be called early enough in VM initialization that:
  *
@@ -585,6 +605,7 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
   memset(&caps, '\0', sizeof(caps));
   caps.can_generate_compiled_method_load_events = 1;
   error = (*jvmti)->AddCapabilities(jvmti, &caps);
+
   if (handle_error(error, "AddCapabilities()", 1)) {
     res = -1;
     goto finalize;
@@ -593,14 +614,20 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
   /* FIXME: settable through command line, default on/off? */
   error = (*jvmti)->GetJLocationFormat(jvmti, &format);
   if (!handle_error(error, "GetJLocationFormat", 1) &&
-      format == JVMTI_JLOCATION_JVMBCI) {
+      format == JVMTI_JLOCATION_JVMBCI) 
+  {
     memset(&caps, '\0', sizeof(caps));
     caps.can_get_line_numbers = 1;
     caps.can_get_source_file_name = 1;
+    caps.can_generate_method_entry_events = 1;
     error = (*jvmti)->AddCapabilities(jvmti, &caps);
     if (!handle_error(error, "AddCapabilities()", 1))
       can_get_line_numbers = 1;
   }
+
+  /*
+   *  set function callbacks
+   */
 
   memset(&callbacks, 0, sizeof(callbacks));
 
@@ -609,6 +636,7 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
   callbacks.CompiledMethodLoad 		= cb_compiled_method_load;
   callbacks.CompiledMethodUnload 	= cb_compiled_method_unload;
   callbacks.DynamicCodeGenerated 	= cb_dynamic_code_generated;
+  callbacks.MethodEntry			= cb_method_entry;
   callbacks.VMDeath			= cb_vm_death;
 
   error = (*jvmti)->SetEventCallbacks(jvmti, &callbacks,
@@ -618,49 +646,18 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
     goto finalize;
   }
 
-  error = (*jvmti)->SetEventNotificationMode(jvmti, JVMTI_ENABLE,
-					     JVMTI_EVENT_COMPILED_METHOD_LOAD, NULL);
-  if (handle_error(error, "SetEventNotificationMode() "
-		   "JVMTI_EVENT_COMPILED_METHOD_LOAD", 1)) {
-    res = -1;
-    goto finalize;
-  }
-  error = (*jvmti)->SetEventNotificationMode(jvmti, JVMTI_ENABLE,
-					     JVMTI_EVENT_COMPILED_METHOD_UNLOAD, NULL);
-  if (handle_error(error, "SetEventNotificationMode() "
-		   "JVMTI_EVENT_COMPILED_METHOD_UNLOAD", 1)) {
-    res = -1;
-    goto finalize;
-  }
-  error = (*jvmti)->SetEventNotificationMode(jvmti, JVMTI_ENABLE,
-					     JVMTI_EVENT_DYNAMIC_CODE_GENERATED, NULL);
-  if (handle_error(error, "SetEventNotificationMode() "
-		   "JVMTI_EVENT_DYNAMIC_CODE_GENERATED", 1)) {
-    res = -1;	
-    goto finalize;
-  }
-  error = (*jvmti)->SetEventNotificationMode(jvmti, JVMTI_ENABLE,
-					     JVMTI_EVENT_CLASS_PREPARE, NULL);
-  if (handle_error(error, "SetEventNotificationMode() "
-		   "JVMTI_EVENT_CLASS_PREPARE", 1)) {
-    res = -1;	
-    goto finalize;
-  }
-  error = (*jvmti)->SetEventNotificationMode(jvmti, JVMTI_ENABLE,
-					     JVMTI_EVENT_CLASS_LOAD, NULL);
-  if (handle_error(error, "SetEventNotificationMode() "
-		   "JVMTI_EVENT_CLASS_LOAD", 1)) {
-    res = -1;	
-    goto finalize;
-  }
+  /*
+   *  register event callbacks
+   */
 
-  error = (*jvmti)->SetEventNotificationMode(jvmti, JVMTI_ENABLE,
-					     JVMTI_EVENT_VM_DEATH, NULL);
-  if (handle_error(error, "SetEventNotificationMode() "
-		   "JVMTI_EVENT_CLASS_LOAD", 1)) {
-    res = -1;	
-    goto finalize;
-  }
+  JAVA_REGISTER_EVENT( JVMTI_EVENT_COMPILED_METHOD_LOAD )
+  JAVA_REGISTER_EVENT( JVMTI_EVENT_COMPILED_METHOD_UNLOAD )
+  JAVA_REGISTER_EVENT( JVMTI_EVENT_DYNAMIC_CODE_GENERATED )
+  JAVA_REGISTER_EVENT( JVMTI_EVENT_CLASS_PREPARE )
+  JAVA_REGISTER_EVENT( JVMTI_EVENT_CLASS_LOAD )
+  JAVA_REGISTER_EVENT( JVMTI_EVENT_METHOD_ENTRY )
+  JAVA_REGISTER_EVENT( JVMTI_EVENT_VM_DEATH )
+
 
  finalize:
   /************* end hpcrun critical section ************/

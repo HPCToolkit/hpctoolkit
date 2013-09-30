@@ -78,6 +78,7 @@ OPT_LIBUNWIND_IFLAGS = @OPT_LIBUNWIND_IFLAGS@
 
 OPROFILE_IFLAGS =  @OPROFILE_IFLAGS@
 OPROFILE_LIB = @OPROFILE_LIB@
+OPROFILE_BIN = @OPROFILE_BIN@
 
 JAVA_IFLAGS = @JAVA_IFLAGS@
 
@@ -109,6 +110,9 @@ libhpcjava_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcjava_la_LDFLAGS = \
 	-L$(LIBMONITOR_LIB) -lmonitor \
 	-L$(OPROFILE_LIB) -lopagent
+
+pkglibexecdir = @my_pkglibexecdir@
+#pkglibexec_PROGRAMS = ${OPROFILE_BIN}/opjitconv
 
 
 #############################################################################
