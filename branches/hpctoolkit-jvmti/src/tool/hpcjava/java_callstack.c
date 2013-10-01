@@ -57,6 +57,8 @@
 // hpcrun headers
 #include <memory/hpcrun-malloc.h>
 
+#include <stacktraces.h>
+
 #define ENTRY_MALLOC(Type) (struct Type *) hpcrun_malloc(sizeof(struct Type))
 
 //***************************************************************************
@@ -76,6 +78,8 @@ struct entry {
 
 static const int debug = 1;
 struct java_callstack freelist = TAILQ_HEAD_INITIALIZER(freelist);
+ASGCTType asgct;
+
 
 //***************************************************************************
 // Helper functions
@@ -163,6 +167,11 @@ js_remove(jmethodID method)
      js_print_stack();
 }
 
+void 
+js_setAsgct(ASGCTType asgct_func)
+{
+  asgct = asgct_func;
+}
 
 
 

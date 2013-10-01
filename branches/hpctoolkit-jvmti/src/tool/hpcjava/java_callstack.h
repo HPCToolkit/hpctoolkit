@@ -57,6 +57,10 @@
 // hpcrun headers
 #include <memory/hpcrun-malloc.h>
 
+#include "stacktraces.h"
+
+
+
 
 void js_add(jmethodID method);
 
