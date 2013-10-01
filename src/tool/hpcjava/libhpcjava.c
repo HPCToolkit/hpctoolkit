@@ -45,6 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 #include <stdio.h>
+#include <stdbool.h> // standard boolean
 #include <jvmti.h>
 #include <string.h>
 #include <stdint.h>
@@ -70,6 +71,7 @@
 #include "opagent.h"
 #include "java/jmt.h"
 #include "java_callstack.h"
+#include "stacktraces.h"
 
 // monitor's real functions
 #include <monitor.h>
@@ -88,15 +90,14 @@
 
 /**
  * Macro to  control the generation of events
- * This macro is designed to be called by Agent_OnLoad() function only
+ * This macro is designed to be called by setup_callbacks() function only
  **/
 #define JAVA_REGISTER_EVENT(Event) 		\
   error = (*jvmti)->SetEventNotificationMode(jvmti, JVMTI_ENABLE, 	\
 					     (Event), NULL); 		\
   if (handle_error(error, "SetEventNotificationMode() " 		\
 		   #Event, 1)) { 					\
-    res = -1;								\
-    goto finalize;							\
+    return false;							\
   }
 	
 //*****************************************************************
@@ -227,13 +228,25 @@ cb_class_prepare(jvmtiEnv *je,
   // for AsyncGetCallTrace.  I imagine it slows
   // down class loading a mite, but honestly,
   // how fast does class loading have to be?
-  jint method_count;
-  jmethodID *methods;
- 
-  hpcjava_attach_thread(java_vm, je, jni_env);
-  (*je)->GetClassMethods(je, klass, &method_count, &methods);
- 
-  free(methods);
+
+  jint 	     method_count;
+  jmethodID  *methods;
+  jvmtiError e = (*je)->GetClassMethods(je, klass, &method_count, &methods);
+
+  if (e != JVMTI_ERROR_NONE && e != JVMTI_ERROR_CLASS_NOT_PREPARED) {
+
+    // JVMTI_ERROR_CLASS_NOT_PREPARED is okay because some classes may
+    // be loaded but not prepared at this point.
+
+    char *ksig;
+    e = (*je)->GetClassSignature(je, klass, &ksig, NULL);
+
+    if (e != JVMTI_ERROR_NONE) {
+ 	fprintf(stderr, "%d Failed to create method ID for %s\n", e, ksig);
+    }
+    (*je)->Deallocate(je, (unsigned char*) ksig);
+  }
+  (*je)->Deallocate(je, (unsigned char*) methods);
 	
   /************* end hpcrun critical section ************/
   hpcrun_safe_exit();
@@ -523,55 +536,135 @@ cb_vm_death(jvmtiEnv *jvmti_env,
   hpcrun_safe_exit();
 }
 
+
 /*****
- * Method entry events are generated upon entry of Java programming language methods (including native methods).
- * The location reported by GetFrameLocation identifies the initial executable location in the method.
+ * setting up for the output file (which is a *.jo file)
+ * return true if everything works fine, false otherwise
  ****/
-static void JNICALL
-cb_method_entry(jvmtiEnv *jvmti_env,
-            JNIEnv* jni_env,
-            jthread thread,
-            jmethodID method)
+static bool
+setup_file_output()
 {
-  /************* hpcrun critical section ************/
-  if (!hpcrun_safe_enter()) {
-    return ;
+  /* record time start (to be used for opjitconv) */
+  gettimeofday(&time_start, NULL);
+
+  /* prepare the name of the .dump and  .jo file */
+  int rank = hpcrun_get_rank();
+  rank = (rank<0? 0:rank);
+  thread_data_t* td = hpcrun_get_thread_data();
+
+  // temporary solution : we need to find a uniform way to dump file
+  int thread_id = (td==NULL? 0 : (td->core_profile_trace_data.id) );
+  int ret = snprintf(file_dump,PATH_MAX,"%s/java-%06d-%03d.dump",hpcrun_get_directory(), rank, thread_id);
+
+  if (ret >= PATH_MAX) {
+    perror("java dump filename is too long\n");
+    return false;
   }
 
-  js_add(method);
-	
-  /************* end hpcrun critical section ************/
-  hpcrun_safe_exit();
-}
+  if (debug)
+    fprintf(stderr,"Java file to dump: %s\n", file_dump);
 
-/*
- * Method exit events are generated upon exit from Java programming language methods (including native methods). 
- * This is true whether termination is caused by executing its return instruction or by throwing an exception to 
- * its caller (see was_popped_by_exception).
+  /* initialize Java's tree interval */
+  char file_dump_jo[PATH_MAX] = {'\0'};
+  snprintf(file_dump_jo,PATH_MAX,"%s.jo",file_dump);
+  hpcjava_interval_tree_init(file_dump_jo);
 
-   The method field uniquely identifies the method being entered or exited. 
-   The frame field provides access to the stack frame for the method.
-
-   The location reported by GetFrameLocation identifies the executable location in the returning method 
-   immediately prior to the return. 
- */
-void JNICALL
-cb_method_exit(jvmtiEnv *jvmti_env,
-            JNIEnv* jni_env,
-            jthread thread,
-            jmethodID method,
-            jboolean was_popped_by_exception,
-            jvalue return_value)
-{
-  /************* hpcrun critical section ************/
-  if (!hpcrun_safe_enter()) {
-    return ;
+  /* prepare java dump file */
+  agent_hdl = op_open_agent(file_dump);
+  if (!agent_hdl) {
+    perror("Error: op_open_agent()");
+    return false;
   }
-  js_remove(method);
-	
-  /************* end hpcrun critical section ************/
-  hpcrun_safe_exit();
+  return true;
 }
+
+
+/*****
+ * setting up for java capabilities
+ * return true if everything works fine, false otherwise
+ ****/
+static bool
+setup_capabilities(jvmtiEnv * jvmti)
+{
+  jvmtiCapabilities caps;
+  jvmtiError error;
+  jvmtiJlocationFormat format;
+
+  can_get_line_numbers = 0;
+
+  /* FIXME: settable through command line, default on/off? */
+  error = (*jvmti)->GetJLocationFormat(jvmti, &format);
+  if (!handle_error(error, "GetJLocationFormat", 1) &&
+      format == JVMTI_JLOCATION_JVMBCI) 
+  {
+    memset(&caps, '\0', sizeof(caps));
+
+    caps.can_generate_compiled_method_load_events = 1;
+    caps.can_get_line_numbers 		= 1;
+    caps.can_get_source_file_name 	= 1;
+    caps.can_get_bytecodes 		= 1;
+    caps.can_get_constant_pool 		= 1;
+
+    error = (*jvmti)->AddCapabilities(jvmti, &caps);
+    if (!handle_error(error, "AddCapabilities()", 1))
+      can_get_line_numbers = 1;
+  }
+  return (can_get_line_numbers == 1);
+}
+
+
+/******
+ * setup jvmti callbacks
+ * return true if the callbacks are succesfully registered,
+ *	false otherwise
+ *****/
+static bool
+setup_callbacks(jvmtiEnv * jvmti)
+{
+  jvmtiEventCallbacks callbacks;
+  jvmtiError error;
+
+  memset(&callbacks, 0, sizeof(callbacks));
+
+  callbacks.ClassLoad			= cb_class_load;
+  callbacks.ClassPrepare		= cb_class_prepare;
+  callbacks.CompiledMethodLoad 		= cb_compiled_method_load;
+  callbacks.CompiledMethodUnload 	= cb_compiled_method_unload;
+  callbacks.DynamicCodeGenerated 	= cb_dynamic_code_generated;
+  callbacks.VMDeath			= cb_vm_death;
+
+  error = (*jvmti)->SetEventCallbacks(jvmti, &callbacks,
+				      sizeof(callbacks));
+  if (handle_error(error, "SetEventCallbacks()", 1)) {
+     return false;
+  }
+
+  /*
+   *  register event callbacks
+   */
+
+  JAVA_REGISTER_EVENT( JVMTI_EVENT_COMPILED_METHOD_LOAD )
+  JAVA_REGISTER_EVENT( JVMTI_EVENT_COMPILED_METHOD_UNLOAD )
+  JAVA_REGISTER_EVENT( JVMTI_EVENT_DYNAMIC_CODE_GENERATED )
+  JAVA_REGISTER_EVENT( JVMTI_EVENT_CLASS_PREPARE )
+  JAVA_REGISTER_EVENT( JVMTI_EVENT_CLASS_LOAD )
+  JAVA_REGISTER_EVENT( JVMTI_EVENT_VM_DEATH )
+
+  return true;
+}
+
+
+static ASGCTType
+get_asgct()
+{
+   void *handle = dlopen("libjvm.so", RTLD_LAZY);
+
+   if (handle != NULL) {
+      return (ASGCTType) dlsym(handle, "AsyncGetCallTrace");
+   }
+   return NULL;
+}
+  
 
 /***
  * The VM will start the agent by calling this function. It will be called early enough in VM initialization that:
@@ -589,13 +682,7 @@ JNIEXPORT jint JNICALL
 Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
 {
   jint rc;
-  jvmtiEventCallbacks callbacks;
-  jvmtiCapabilities caps;
-  jvmtiJlocationFormat format;
-  jvmtiError error;
   jint res = 0;
-  int ret;
-
 	
   /************* hpcrun critical section ************/
   if (!hpcrun_safe_enter()) {
@@ -604,8 +691,7 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
 
   java_vm = jvm;
 
-  if (options && !strcmp("debug", options))
-    debug = 1;
+  debug = (options && !strcmp("debug", options));
 
   if (debug)
     fprintf(stderr, "jvmti hpcjava: agent activated\n");
@@ -613,39 +699,13 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
   /* shut up compiler warning */
   reserved = reserved;
 
-  /* record time start (to be used for opjitconv) */
-  gettimeofday(&time_start, NULL);
-
-  /* prepare the name of the .dump and  .jo file */
-  int rank = hpcrun_get_rank();
-  rank = (rank<0? 0:rank);
-  thread_data_t* td = hpcrun_get_thread_data();
-
-  // temporary solution : we need to find a uniform way to dump file
-  int thread_id = (td==NULL? 0 : (td->core_profile_trace_data.id) );
-  ret = snprintf(file_dump,PATH_MAX,"%s/java-%06d-%03d.dump",hpcrun_get_directory(), rank, thread_id);
-
-  if (ret >= PATH_MAX) {
-    perror("java dump filename is too long\n");
-    res = -1;
-    goto finalize;
-  }
-  if (debug)
-    fprintf(stderr,"Java file to dump: %s\n", file_dump);
-
-  /* initialize Java's tree interval */
-  char file_dump_jo[PATH_MAX] = {'\0'};
-  snprintf(file_dump_jo,PATH_MAX,"%s.jo",file_dump);
-  hpcjava_interval_tree_init(file_dump_jo);
-
-  /* prepare java dump file */
-  agent_hdl = op_open_agent(file_dump);
-  if (!agent_hdl) {
-    perror("Error: op_open_agent()");
+  /* initialize output file */
+  if (!setup_file_output()) {
     res = -1;
     goto finalize;
   }
 
+  /* get jvmti from jvm */
   rc = (*jvm)->GetEnv(jvm, (void *)&jvmti, JVMTI_VERSION_1);
   if (rc != JNI_OK) {
     fprintf(stderr, "Error: GetEnv(), rc=%i\n", rc);
@@ -653,73 +713,28 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
     goto finalize;
   }
 
+  /* get Java's undocumented AsyncGetCallTrace method */
+  ASGCTType asgct = get_asgct();
+  js_setAsgct(asgct);
+
   /** inform hpcjava to store references for jvm and jvmti 
    ** these references can be used to find Java call stack 
    **/
   hpcjava_set_jvmti(jvm, jvmti);
 
-  /* set jvmti capabilities */
-  memset(&caps, '\0', sizeof(caps));
-  caps.can_generate_compiled_method_load_events = 1;
-  error = (*jvmti)->AddCapabilities(jvmti, &caps);
-
-  if (handle_error(error, "AddCapabilities()", 1)) {
+  /* setup jvmti capabilities */
+  if (!setup_capabilities(jvmti)) {
     res = -1;
     goto finalize;
-  }
-
-  /* FIXME: settable through command line, default on/off? */
-  error = (*jvmti)->GetJLocationFormat(jvmti, &format);
-  if (!handle_error(error, "GetJLocationFormat", 1) &&
-      format == JVMTI_JLOCATION_JVMBCI) 
-  {
-    memset(&caps, '\0', sizeof(caps));
-
-    caps.can_get_line_numbers = 1;
-    caps.can_get_source_file_name = 1;
-    caps.can_generate_method_entry_events = 1;
-    caps.can_generate_method_exit_events = 1;
-
-    error = (*jvmti)->AddCapabilities(jvmti, &caps);
-    if (!handle_error(error, "AddCapabilities()", 1))
-      can_get_line_numbers = 1;
   }
 
   /*
    *  set function callbacks
    */
-
-  memset(&callbacks, 0, sizeof(callbacks));
-
-  callbacks.ClassLoad			= cb_class_load;
-  callbacks.ClassPrepare		= cb_class_prepare;
-  callbacks.CompiledMethodLoad 		= cb_compiled_method_load;
-  callbacks.CompiledMethodUnload 	= cb_compiled_method_unload;
-  callbacks.DynamicCodeGenerated 	= cb_dynamic_code_generated;
-  callbacks.MethodEntry			= cb_method_entry;
-  callbacks.MethodExit 			= cb_method_exit;
-  callbacks.VMDeath			= cb_vm_death;
-
-  error = (*jvmti)->SetEventCallbacks(jvmti, &callbacks,
-				      sizeof(callbacks));
-  if (handle_error(error, "SetEventCallbacks()", 1)) {
+ if (!setup_callbacks(jvmti)) {
     res = -1;
     goto finalize;
-  }
-
-  /*
-   *  register event callbacks
-   */
-
-  JAVA_REGISTER_EVENT( JVMTI_EVENT_COMPILED_METHOD_LOAD )
-  JAVA_REGISTER_EVENT( JVMTI_EVENT_COMPILED_METHOD_UNLOAD )
-  JAVA_REGISTER_EVENT( JVMTI_EVENT_DYNAMIC_CODE_GENERATED )
-  JAVA_REGISTER_EVENT( JVMTI_EVENT_CLASS_PREPARE )
-  JAVA_REGISTER_EVENT( JVMTI_EVENT_CLASS_LOAD )
-  JAVA_REGISTER_EVENT( JVMTI_EVENT_METHOD_ENTRY )
-  JAVA_REGISTER_EVENT( JVMTI_EVENT_METHOD_EXIT )
-  JAVA_REGISTER_EVENT( JVMTI_EVENT_VM_DEATH )
-
+ }
 
  finalize:
   /************* end hpcrun critical section ************/
