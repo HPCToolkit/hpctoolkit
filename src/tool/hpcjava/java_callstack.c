@@ -89,7 +89,7 @@ js_print_stack()
 {
   struct entry *np;
 
-  for(np = head.tqh_first; np != NULL; np = np->entries.tqe_next)
+  TAILQ_FOREACH(np, &head, entries)
    {
      printf("%p ", np->method);
    }
@@ -97,15 +97,22 @@ js_print_stack()
 }
 
 
+/*
+ * a new node is allocated iff the freelist is empty. 
+ */
 static struct entry*
 js_malloc()
 {
    struct entry *node = NULL;
 
    if (freelist.tqh_first != NULL) {
+      // grab a new node from the free list
       node = freelist.tqh_first;
+
+      // remove the node from the free list
       TAILQ_REMOVE(&freelist, freelist.tqh_first, entries);
    } else {
+      // free list is empty. create a new one from hpcrun_malloc
       node = ENTRY_MALLOC(entry);
    }
    return node;
@@ -139,6 +146,10 @@ js_remove(jmethodID method)
 {
   struct entry *node = head.tqh_first;
   if (node->method != method) {
+    // if we reach here, it means there's inconsistency. 
+    // it can be either race condition, or issues with the jvm   
+    //  a lock isn't necessary protect this, so the only solution is to
+   //   traverse the list which node we should remove which is O(n) unfortunately 
     fprintf(stderr,"Error: got %p, while expecting %p ! \n", node->method, method);
   }
 
