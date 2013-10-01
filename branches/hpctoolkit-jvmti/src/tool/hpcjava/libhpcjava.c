@@ -69,9 +69,10 @@
 // java and oprofile headers
 #include "opagent.h"
 #include "java/jmt.h"
+#include "java_callstack.h"
 
 // monitor's real functions
-//#include <monitor.h>
+#include <monitor.h>
 
 /**
  * Name of the environment variable that stores the absolute path of opjitconv
@@ -85,15 +86,23 @@
  **/
 #define HPCJAVA_FORK_OPJITCONV 1
 
+/**
+ * Macro to  control the generation of events
+ * This macro is designed to be called by Agent_OnLoad() function only
+ **/
 #define JAVA_REGISTER_EVENT(Event) 		\
   error = (*jvmti)->SetEventNotificationMode(jvmti, JVMTI_ENABLE, 	\
 					     (Event), NULL); 		\
   if (handle_error(error, "SetEventNotificationMode() " 		\
-		   "Event", 1)) { 					\
+		   #Event, 1)) { 					\
     res = -1;								\
     goto finalize;							\
   }
 	
+//*****************************************************************
+// global variables
+//*****************************************************************
+
 static int debug = 0;
 static int can_get_line_numbers = 1;
 
@@ -401,8 +410,9 @@ static void JNICALL cb_compiled_method_unload(jvmtiEnv * jvmti_env,
  *
  * These events can be sent after their initial occurrence with GenerateEvents. 
  */
-static void JNICALL cb_dynamic_code_generated(jvmtiEnv * jvmti_env,
-					      char const * name, void const * code_addr, jint code_size)
+static void JNICALL 
+cb_dynamic_code_generated(jvmtiEnv * jvmti_env,
+		      char const * name, void const * code_addr, jint code_size)
 {
   /************* hpcrun critical section ************/
   if (!hpcrun_safe_enter()) {
@@ -426,8 +436,9 @@ static void JNICALL cb_dynamic_code_generated(jvmtiEnv * jvmti_env,
   hpcrun_safe_exit();
 }
 
+
 /***
- * Call by hpcrun before its termination
+ * Called before Java's termination
  * 
  * It will call opjitconv to convert the dumped Java's compiled code
  *  into a .so file (named .jo file)
@@ -441,6 +452,7 @@ libhpcjava_fini()
   char *jitconv_pgm = "opjitconv";
 
   struct timeval time_end;
+
 #if HPCJAVA_FORK_OPJITCONV
   pid_t childpid;
 
@@ -487,13 +499,19 @@ libhpcjava_fini()
 }
 
 
+/***
+ * The VM death event notifies the agent of the termination of the VM. 
+ * No events will occur after the VMDeath event.
+ * In the case of VM start-up failure, this event will not be sent. 
+ * Note that Agent_OnUnload will still be called in these cases.
+ ***/
 static void JNICALL
 cb_vm_death(jvmtiEnv *jvmti_env,
             JNIEnv* jni_env)
 {
   /************* hpcrun critical section ************/
   if (!hpcrun_safe_enter()) {
-    return 0;
+    return ;
   }
 
   if (debug)
@@ -505,15 +523,54 @@ cb_vm_death(jvmtiEnv *jvmti_env,
   hpcrun_safe_exit();
 }
 
+/*****
+ * Method entry events are generated upon entry of Java programming language methods (including native methods).
+ * The location reported by GetFrameLocation identifies the initial executable location in the method.
+ ****/
 static void JNICALL
 cb_method_entry(jvmtiEnv *jvmti_env,
             JNIEnv* jni_env,
             jthread thread,
             jmethodID method)
 {
-  fprintf(stderr, "cb_method_entry %d\n", method);
-  if (debug) {
-  } 
+  /************* hpcrun critical section ************/
+  if (!hpcrun_safe_enter()) {
+    return ;
+  }
+
+  js_add(method);
+	
+  /************* end hpcrun critical section ************/
+  hpcrun_safe_exit();
+}
+
+/*
+ * Method exit events are generated upon exit from Java programming language methods (including native methods). 
+ * This is true whether termination is caused by executing its return instruction or by throwing an exception to 
+ * its caller (see was_popped_by_exception).
+
+   The method field uniquely identifies the method being entered or exited. 
+   The frame field provides access to the stack frame for the method.
+
+   The location reported by GetFrameLocation identifies the executable location in the returning method 
+   immediately prior to the return. 
+ */
+void JNICALL
+cb_method_exit(jvmtiEnv *jvmti_env,
+            JNIEnv* jni_env,
+            jthread thread,
+            jmethodID method,
+            jboolean was_popped_by_exception,
+            jvalue return_value)
+{
+  /************* hpcrun critical section ************/
+  if (!hpcrun_safe_enter()) {
+    return ;
+  }
+  js_remove(method);
+	
+  /************* end hpcrun critical section ************/
+  hpcrun_safe_exit();
 }
 
 /***
@@ -565,8 +622,8 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
   thread_data_t* td = hpcrun_get_thread_data();
 
   // temporary solution : we need to find a uniform way to dump file
-  int thread_id = 0; //(td==NULL? 0 : td->id);
-  ret = snprintf(file_dump,PATH_MAX,"%s/java-%d-%d.dump",hpcrun_get_directory(), rank, thread_id);
+  int thread_id = (td==NULL? 0 : (td->core_profile_trace_data.id) );
+  ret = snprintf(file_dump,PATH_MAX,"%s/java-%06d-%03d.dump",hpcrun_get_directory(), rank, thread_id);
 
   if (ret >= PATH_MAX) {
     perror("java dump filename is too long\n");
@@ -617,9 +674,12 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
       format == JVMTI_JLOCATION_JVMBCI) 
   {
     memset(&caps, '\0', sizeof(caps));
+
     caps.can_get_line_numbers = 1;
     caps.can_get_source_file_name = 1;
     caps.can_generate_method_entry_events = 1;
+    caps.can_generate_method_exit_events = 1;
+
     error = (*jvmti)->AddCapabilities(jvmti, &caps);
     if (!handle_error(error, "AddCapabilities()", 1))
       can_get_line_numbers = 1;
@@ -637,6 +697,7 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
   callbacks.CompiledMethodUnload 	= cb_compiled_method_unload;
   callbacks.DynamicCodeGenerated 	= cb_dynamic_code_generated;
   callbacks.MethodEntry			= cb_method_entry;
+  callbacks.MethodExit 			= cb_method_exit;
   callbacks.VMDeath			= cb_vm_death;
 
   error = (*jvmti)->SetEventCallbacks(jvmti, &callbacks,
@@ -656,6 +717,7 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
   JAVA_REGISTER_EVENT( JVMTI_EVENT_CLASS_PREPARE )
   JAVA_REGISTER_EVENT( JVMTI_EVENT_CLASS_LOAD )
   JAVA_REGISTER_EVENT( JVMTI_EVENT_METHOD_ENTRY )
+  JAVA_REGISTER_EVENT( JVMTI_EVENT_METHOD_EXIT )
   JAVA_REGISTER_EVENT( JVMTI_EVENT_VM_DEATH )
 
 

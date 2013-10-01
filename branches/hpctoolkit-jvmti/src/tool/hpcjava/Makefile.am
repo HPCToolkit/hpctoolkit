@@ -89,7 +89,8 @@ if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcjava.la
 endif
 
-libhpcjava_la_SOURCES = libhpcjava.c
+libhpcjava_la_SOURCES = libhpcjava.c \
+			java_callstack.c
 
 libhpcjava_la_CPPFLAGS = 		\
 	$(HPC_IFLAGS)			\
