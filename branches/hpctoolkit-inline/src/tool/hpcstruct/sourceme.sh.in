@@ -1,0 +1,10 @@
+#
+# Source this file to set LD_LIBRARY_PATH for the hpcstruct and
+# matt-inline programs.
+#
+
+prefix='@prefix@'
+ext_libs_dir="${prefix}/lib/hpctoolkit/ext-libs"
+
+LD_LIBRARY_PATH="${ext_libs_dir}:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH

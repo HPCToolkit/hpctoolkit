@@ -139,6 +139,17 @@ install-exec-hook:
 	      $(DESTDIR)$(bindir)/hpcstruct$(EXEEXT)
 endif
 
+bin_PROGRAMS = matt-inline
+bin_SCRIPTS += sourceme.sh
+
+SYMTABAPI_INC = @SYMTABAPI_INC@
+
+matt_inline_SOURCES  = matt-inline.cpp
+matt_inline_CXXFLAGS = @HOST_CFLAGS@ -I$(SYMTABAPI_INC)
+matt_inline_LDFLAGS  = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+	-L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
+
+
 #############################################################################
 # Common rules
 #############################################################################

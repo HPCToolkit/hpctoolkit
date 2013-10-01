@@ -2704,6 +2704,8 @@ AC_CONFIG_FILES([src/tool/hpcproftt/hpcproftt],
 AC_CONFIG_FILES([src/tool/hpcstruct/hpcstruct],
   [chmod +x src/tool/hpcstruct/hpcstruct])
 
+AC_CONFIG_FILES([src/tool/hpcstruct/sourceme.sh])
+
 AC_SUBST_FILE([export_hpctoolkit])
 export_hpctoolkit="${srcdir}/config/export-hpctoolkit"
 

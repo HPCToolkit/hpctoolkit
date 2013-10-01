@@ -19213,6 +19213,9 @@ ac_config_files="$ac_config_files src/tool/hpcproftt/hpcproftt"
 ac_config_files="$ac_config_files src/tool/hpcstruct/hpcstruct"
 
 
+ac_config_files="$ac_config_files src/tool/hpcstruct/sourceme.sh"
+
+
 
 export_hpctoolkit="${srcdir}/config/export-hpctoolkit"
 
@@ -20493,6 +20496,7 @@ do
     "src/tool/hpcprof-flat/hpcprof-flat") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-flat/hpcprof-flat" ;;
     "src/tool/hpcproftt/hpcproftt") CONFIG_FILES="$CONFIG_FILES src/tool/hpcproftt/hpcproftt" ;;
     "src/tool/hpcstruct/hpcstruct") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/hpcstruct" ;;
+    "src/tool/hpcstruct/sourceme.sh") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/sourceme.sh" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
