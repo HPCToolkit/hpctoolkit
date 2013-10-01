@@ -60,11 +60,9 @@
 
 splay_interval_t * hpcjava_get_interval(void *addr);
 void hpcjava_interval_tree_init(const char *jo_filename);
-void hpcjava_release_splay_lock(void);
 void *hpcjava_ui_malloc(size_t ui_size);
 
 splay_interval_t *hpcjava_add_address_interval(const void *addr_start, const void *addr_end);
-splay_interval_t *hpcjava_addr_to_interval_locked(const void *addr_start, const void *addr_end);
 
 void hpcjava_delete_ui();
 void free_ui_node_locked(interval_tree_node *node);

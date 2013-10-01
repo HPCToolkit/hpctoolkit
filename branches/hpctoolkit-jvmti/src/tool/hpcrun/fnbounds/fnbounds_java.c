@@ -66,8 +66,6 @@
 #include <jvmti.h>
 
 #include "fnbounds_interface.h"
-//#include "splay.h"
-//#include "splay-interval.h"
 #include "thread_data.h"
 #include "fnbounds_java.h"
 #include "safe-sampling.h"
@@ -127,15 +125,13 @@ hpcjava_interval_tree_init(const char *jo_filename)
 			  0, 0, 0 );
   lm_java = hpcrun_loadmap_map(dso_info);
 
-  UI_TREE_JAVA_UNLOCK;
+//  this file is mostly copied from ui_tree.c to store Java's interval
+//  however, calling UI_TREE_JAVA_UNLOCK will cause race conditions 
+//  while inserting an interval (just for java, but not in ui_tree)
+
+//  UI_TREE_JAVA_UNLOCK;
 }
 
-
-void
-hpcjava_release_splay_lock(void)
-{
-  UI_TREE_JAVA_UNLOCK;
-}
 
 
 /*
@@ -257,44 +253,6 @@ hpcjava_get_async_call_trace(void **callstack, int count)
 }
 #endif
 
-#if 0
-static jvmtiFrameInfo java_frames[JAVA_MAX_FRAMES];
-
-/****
- * Synchronous Java get call stack
- * return the current call strack of the current thread
- */
-
-static int
-hpcjava_get_call_trace(void **callstack, int count)
-{
-  jvmtiError err;
-  
-  err = (*java_jvmti)->GetStackTrace(java_jvmti, NULL, 0, JAVA_MAX_FRAMES, 
-					java_frames, &count);
-  if (err == JVMTI_ERROR_NONE && count > 0)
-  { 
-    int i;
-    for (i=0; i<count; i++)
-    {
-      TMSG(JAVA, "gst %d id: %p, @: %p", i, java_frames[i].method, java_frames[i].location);
-    }
-    /*
-    unsigned char *methodName;
-    unsigned char *signatureName;
-    for (i=0; i<count; i++) {
-      err = (*java_jvmti)->GetMethodName(java_jvmti, java_frames[i].method, 
-                       &methodName, &signatureName, NULL);
-      if (err == JVMTI_ERROR_NONE) {
-        TMSG(JAVA, "%d method %p: %s\n", i, java_frames[i].method, methodName);
-	(*java_jvmti)->Deallocate(java_jvmti, methodName);
-	(*java_jvmti)->Deallocate(java_jvmti, signatureName);
-      } 
-    } */
-  }
-  return err;
-}
-#endif
 
 
 /*
@@ -321,36 +279,6 @@ hpcjava_get_interval(void *addr)
   return (splay_interval_t *)p;
 }
 
-/*
- * Lookup the instruction pointer 'addr' in the interval tree and
- * return a pointer to the interval containing that address (the new
- * root).  Grow the tree lazily and memo-ize the answers.
- *
- * Extension to support fast normalization of IPs: Given an (dynamic)
- * IP 'ip', return the normalized (static) IP through the argument
- * 'ip_norm'.  Both 'ip' and 'ip_norm' are optional and may be NULL.
- * NOTE: typically 'addr' equals 'ip', but there are subtle use cases
- * where they are different.  (In all cases, 'addr' and 'ip' should be
- * in the same load module.)
- *
- * N.B.: tallent: The above extension is not as clean as I would like.
- * An alternative is to write a separate function, but then the
- * typical usage would require two back-to-back lock-protected
- * lookups.  Thus for the time being, in this limited circumstance, I
- * have chosen performance over a cleaner design.
- *
- * Returns: pointer to unwind_java_interval struct if found, else NULL.
- */
-splay_interval_t *
-hpcjava_add_address_interval(const void *addr_start, const void *addr_end)
-{
-  UI_TREE_JAVA_LOCK;
-  splay_interval_t *intvl = hpcjava_addr_to_interval_locked(addr_start, addr_end);
-  UI_TREE_JAVA_UNLOCK;
-  
-  return intvl;
-}
-
 
 /*
  * The locked version of hpcjava_addr_to_interval().  Lookup the PC
@@ -360,7 +288,7 @@ hpcjava_add_address_interval(const void *addr_start, const void *addr_end)
  * Returns: pointer to unwind_java_interval struct if found, else NULL.
  * The caller must hold the ui-tree lock.
  */
-splay_interval_t *
+static splay_interval_t *
 hpcjava_addr_to_interval_locked(const void *addr_start, const void *addr_end)
 {
   interval_tree_node *p;
@@ -405,6 +333,30 @@ hpcjava_addr_to_interval_locked(const void *addr_start, const void *addr_end)
 
 
 /*
+ * Lookup the instruction pointer 'addr' in the interval tree and
+ * return a pointer to the interval containing that address (the new
+ * root).  Grow the tree lazily and memo-ize the answers.
+ *
+ * Extension to support fast normalization of IPs: Given an (dynamic)
+ * IP 'ip', return the normalized (static) IP through the argument
+ * 'ip_norm'.  Both 'ip' and 'ip_norm' are optional and may be NULL.
+ * NOTE: typically 'addr' equals 'ip', but there are subtle use cases
+ * where they are different.  (In all cases, 'addr' and 'ip' should be
+ * in the same load module.)
+ *
+ * Returns: pointer to unwind_java_interval struct if found, else NULL.
+ */
+splay_interval_t *
+hpcjava_add_address_interval(const void *addr_start, const void *addr_end)
+{
+  UI_TREE_JAVA_LOCK;
+  splay_interval_t *intvl = hpcjava_addr_to_interval_locked(addr_start, addr_end);
+  UI_TREE_JAVA_UNLOCK;
+  
+  return intvl;
+}
+
+/*
  * Remove intervals in the range [start, end) from the unwind_java interval
  * tree, and move the deleted nodes to the unwind_java free list.
  */
@@ -445,8 +397,8 @@ free_ui_java_tree_locked(interval_tree_node *tree)
   if (tree == NULL)
     return;
 
-  free_ui_java_tree_locked((tree->prev));
-  free_ui_java_tree_locked((tree->next));
+  free_ui_java_tree_locked(LEFT(tree));
+  free_ui_java_tree_locked(RIGHT(tree));
   RIGHT(tree) = ui_free_list;
   ui_free_list = tree;
 }
