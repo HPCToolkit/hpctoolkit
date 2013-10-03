@@ -764,7 +764,7 @@ JNIEXPORT void JNICALL Agent_OnUnload(JavaVM * jvm)
   /* shut up compiler warning */
   jvm = jvm;
 
-  hpcjava_delete_ui();
+  //hpcjava_delete_ui();
 
   if (op_close_agent(agent_hdl))
     perror("Error: op_close_agent()");
