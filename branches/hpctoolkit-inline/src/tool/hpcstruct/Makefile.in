@@ -441,7 +441,7 @@ hpcstruct_bin_LDFLAGS = $(MYLDFLAGS)
 hpcstruct_bin_LDADD = $(MYLDADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 matt_inline_SOURCES = matt-inline.cpp
-matt_inline_CXXFLAGS = @HOST_CFLAGS@ -I$(SYMTABAPI_INC)
+matt_inline_CXXFLAGS = @HOST_CFLAGS@ -I$(BOOST_INC) -I$(SYMTABAPI_INC)
 matt_inline_LDFLAGS = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
 	-L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
 

@@ -142,10 +142,11 @@ endif
 bin_PROGRAMS = matt-inline
 bin_SCRIPTS += sourceme.sh
 
+BOOST_INC = @BOOST_INC@
 SYMTABAPI_INC = @SYMTABAPI_INC@
 
 matt_inline_SOURCES  = matt-inline.cpp
-matt_inline_CXXFLAGS = @HOST_CFLAGS@ -I$(SYMTABAPI_INC)
+matt_inline_CXXFLAGS = @HOST_CFLAGS@ -I$(BOOST_INC) -I$(SYMTABAPI_INC)
 matt_inline_LDFLAGS  = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
 	-L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
 
