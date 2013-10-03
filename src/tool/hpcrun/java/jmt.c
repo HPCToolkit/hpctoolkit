@@ -54,15 +54,9 @@
 
 #include "jmt.h"
 
-#define RIGHT(n)   (n)->left
-#define LEFT(n)    (n)->right
+#define RIGHT(n)   (n)->right
+#define LEFT(n)    (n)->left
 
-// data structure for <java method, code address> pair
-struct java_method_db_node_s {
-  jmethodID method;
-  struct java_method_db_node_s *left;
-  struct java_method_db_node_s *right;
-};
 
 // data structure for <java method, code address> pair
 struct method_addr_pair_node_s {
@@ -75,20 +69,11 @@ struct method_addr_pair_node_s {
 // root for java-address pair
 static struct method_addr_pair_node_s *method_addr_root = NULL;
 
-static int num_method_db = 0;
-static struct java_method_db_node_s *method_db_root = NULL;
 
 static struct method_addr_pair_node_s*
 jmt_get_method_addr_pair_node(struct method_addr_pair_node_s *root, jmethodID method)
 {
     REGULAR_SPLAY_TREE(method_addr_pair_node_s, root, method, method, left, right);
-    return root;
-}
-
-static struct java_method_db_node_s*
-jmt_get_method_db_node(struct java_method_db_node_s *root, jmethodID method)
-{
-    REGULAR_SPLAY_TREE(java_method_db_node_s, root, method, method, left, right);
     return root;
 }
 
@@ -115,45 +100,6 @@ jmt_insert_method(jmethodID method, struct method_addr_pair_node_s *node)
     return node;
 }
 
-static void
-jmt_print_method_db(jvmtiEnv * jvmti, struct java_method_db_node_s * node )
-{
-  if (node == NULL)
-    return;
-
-  // ---------------------------------------------------------------
-  // go to the left child
-  // ---------------------------------------------------------------
-  jmt_print_method_db(jvmti, LEFT(node));
-
-  // ---------------------------------------------------------------
-  // get the name of the method
-  // ---------------------------------------------------------------
-  char * method_name = NULL;
-  char * method_signature = NULL;
-  jvmtiError err;
-
-  err = (*jvmti)->GetMethodName(jvmti, node->method, &method_name,
-                                &method_signature, NULL);
-  if (err == JVMTI_ERROR_NONE)
-  {
-    TMSG(JAVA, "jmt-method %p: %s  %s", node->method, method_name, method_signature);
-  }
-  else
-  {
-    TMSG(JAVA, "jmt-method %p: %d", node->method, err);
-  }
-  // ---------------------------------------------------------------
-  // clean up
-  // ---------------------------------------------------------------
-  (*jvmti)->Deallocate(jvmti, (unsigned char *)method_name);
-  (*jvmti)->Deallocate(jvmti, (unsigned char *)method_signature);
-
-  // ---------------------------------------------------------------
-  // go to the right child
-  // ---------------------------------------------------------------
-  jmt_print_method_db(jvmti, RIGHT(node));
-}
 
 ///////////////////////////////////////////////////////////////////////////
 // interface
@@ -182,53 +128,5 @@ jmt_add_java_method(jmethodID method, const void *address)
        method_addr_root = jmt_insert_method(method, n);
     }
     TMSG(JAVA, "jmt add mt: %p addr: %p r: %p", method, address, method_addr_root);
-}
-
-// jmt_add_method_db: add a method into the database of methods
-//  this function has to be called to store method ID of java callstack
-int 
-jmt_add_method_db(jmethodID method)
-{
-  method_db_root = jmt_get_method_db_node(method_db_root, method);
-  if ( (method_db_root != NULL) && (method_db_root->method == method))
-  {
-    // the method is already in the database, nothing to do
-    return 0;
-  }
-  // the java method doesn't exist, add it into the database
-  struct java_method_db_node_s *n = hpcrun_malloc(sizeof(struct java_method_db_node_s));
-  if (n != NULL) 
-  {
-    n->method = method;
-
-    if (method_db_root == NULL) 
-    {
-      n->left = NULL;
-      n->right = NULL;
-    }
-     else if (method < method_db_root->method) 
-    {
-      n->left = method_db_root->left;
-      n->right = method_db_root;
-      method_db_root->left = NULL;
-    }
-     else
-    {
-      n->left = method_db_root;
-      n->right = method_db_root->right;
-      method_db_root->right = NULL;
-    }
-  }
-  method_db_root = n;
-
-  return num_method_db++;
-}
-
-// jmt_get_all_methods_db: get the list of methods in the database
-jmethodID* 
-jmt_get_all_methods_db(jvmtiEnv * jvmti)
-{
-  jmt_print_method_db(jvmti, method_db_root);
-  return NULL; 
 }
 
