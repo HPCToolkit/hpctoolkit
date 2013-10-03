@@ -31,7 +31,6 @@ typedef struct {
 
 typedef void (*ASGCTType)(JVMPI_CallTrace *, jint, void *);
 
-void js_setAsgct(ASGCTType asgct_func);
 
 
 #endif  // STACKTRACES_H

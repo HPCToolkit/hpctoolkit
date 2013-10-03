@@ -103,8 +103,7 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 libhpcjava_la_LIBADD =
-am_libhpcjava_la_OBJECTS = libhpcjava_la-libhpcjava.lo \
-	libhpcjava_la-java_callstack.lo
+am_libhpcjava_la_OBJECTS = libhpcjava_la-libhpcjava.lo
 libhpcjava_la_OBJECTS = $(am_libhpcjava_la_OBJECTS)
 libhpcjava_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libhpcjava_la_CFLAGS) \
@@ -380,9 +379,7 @@ HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 HPCRUN_SRCDIR = $(top_srcdir)/src/tool/hpcrun
 pkglib_LTLIBRARIES = $(am__append_1)
-libhpcjava_la_SOURCES = libhpcjava.c \
-			java_callstack.c
-
+libhpcjava_la_SOURCES = libhpcjava.c 
 libhpcjava_la_CPPFLAGS = \
 	$(HPC_IFLAGS)			\
 	-I$(top_srcdir)/src/tool/	\
@@ -484,7 +481,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcjava_la-java_callstack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcjava_la-libhpcjava.Plo@am__quote@
 
 .c.o:
@@ -514,13 +510,6 @@ libhpcjava_la-libhpcjava.lo: libhpcjava.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='libhpcjava.c' object='libhpcjava_la-libhpcjava.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcjava_la_CPPFLAGS) $(CPPFLAGS) $(libhpcjava_la_CFLAGS) $(CFLAGS) -c -o libhpcjava_la-libhpcjava.lo `test -f 'libhpcjava.c' || echo '$(srcdir)/'`libhpcjava.c
-
-libhpcjava_la-java_callstack.lo: java_callstack.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcjava_la_CPPFLAGS) $(CPPFLAGS) $(libhpcjava_la_CFLAGS) $(CFLAGS) -MT libhpcjava_la-java_callstack.lo -MD -MP -MF $(DEPDIR)/libhpcjava_la-java_callstack.Tpo -c -o libhpcjava_la-java_callstack.lo `test -f 'java_callstack.c' || echo '$(srcdir)/'`java_callstack.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcjava_la-java_callstack.Tpo $(DEPDIR)/libhpcjava_la-java_callstack.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='java_callstack.c' object='libhpcjava_la-java_callstack.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcjava_la_CPPFLAGS) $(CPPFLAGS) $(libhpcjava_la_CFLAGS) $(CFLAGS) -c -o libhpcjava_la-java_callstack.lo `test -f 'java_callstack.c' || echo '$(srcdir)/'`java_callstack.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

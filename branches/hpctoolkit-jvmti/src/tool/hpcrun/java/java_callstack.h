@@ -44,6 +44,9 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef __JAVA_CALLSTACK_H__
+#define __JAVA_CALLSTACK_H__
+
 // standard libraries
 #include <stdio.h>
 #include <string.h>
@@ -61,8 +64,6 @@
 
 
 void js_init();
+void js_add_method(jmethodID method, interval_tree_node *interval_node);
 
-
-void js_add(jmethodID method);
-
-void js_remove(jmethodID method);
+#endif
