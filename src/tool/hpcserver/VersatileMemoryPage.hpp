@@ -90,7 +90,12 @@ namespace TraceviewerServer
 		bool isMapped;
 		LRUList<VersatileMemoryPage>* mostRecentlyUsed;
 
-		static const int MAP_FLAGS = MAP_SHARED;
+		// Use MAP_POPULATE if available
+#ifdef MAP_POPULATE
+		static const int MAP_FLAGS = MAP_SHARED | MAP_POPULATE;
+#else
+		static const int MAP_FLAGS = MAP_SHARED
+#endif
 		static const int MAP_PROT = PROT_READ;
 	};
 
