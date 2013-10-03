@@ -291,7 +291,20 @@ hpcjava_get_interval(void *addr)
 static splay_interval_t *
 hpcjava_addr_to_interval_locked(const void *addr_start, const void *addr_end)
 {
-  interval_tree_node *p;
+  interval_tree_node *p_s, *p_e;
+
+  /* See if addr is already in the tree. */
+  p_s = interval_tree_lookup(&ui_tree_root, addr_start);
+  if (p_s != NULL) {
+    TMSG(JAVA, "found addr %p", addr_start);
+    return (splay_interval_t *)p_s;
+  }
+
+  p_e = interval_tree_lookup(&ui_tree_root, addr_end);
+  if (p_e != NULL) {
+    TMSG(JAVA, "found addr %p", addr_end);
+    return (splay_interval_t *)p_e;
+  }
 
   /*
    * Get list of new intervals to insert into the tree.
@@ -306,7 +319,7 @@ hpcjava_addr_to_interval_locked(const void *addr_start, const void *addr_end)
        addr_start, addr_end);
 
   /* create an interval address node */
-  p = hpcjava_ui_malloc(sizeof(interval_tree_node));
+  interval_tree_node *p = hpcjava_ui_malloc(sizeof(interval_tree_node));
   p->start  = (void*) addr_start;
   p->end    = (void*) addr_end;
   p->lm     = lm_java;
@@ -426,10 +439,14 @@ hpcjava_print_interval_tree()
 {
   FILE* fs = stdout;
 
+  UI_TREE_JAVA_LOCK;
+
   fprintf(fs, "Interval tree:\n");
   hpcjava_print_interval_tree_r(fs, ui_tree_root);
   fprintf(fs, "\n");
   fflush(fs);
+ 
+  UI_TREE_JAVA_UNLOCK;
 }
 
 
@@ -441,9 +458,9 @@ hpcjava_print_interval_tree_r(FILE* fs, interval_tree_node *node)
     return;
   }
 
-  fprintf(fs, "  {%p start=%p end=%p}\n", node, START(node), END(node));
+  fprintf(fs, "  %p [%p , %p]\n", node, START(node), END(node));
 
   // Recur
-  hpcjava_print_interval_tree_r(fs, (node->next));
-  hpcjava_print_interval_tree_r(fs, (node->prev));
+  hpcjava_print_interval_tree_r(fs, LEFT(node));
+  hpcjava_print_interval_tree_r(fs, RIGHT(node));
 }
