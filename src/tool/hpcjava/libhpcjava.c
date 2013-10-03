@@ -69,9 +69,7 @@
 
 // java and oprofile headers
 #include "opagent.h"
-#include "java/jmt.h"
-#include "java_callstack.h"
-#include "stacktraces.h"
+#include "java/java_callstack.h"
 
 // monitor's real functions
 #include <monitor.h>
@@ -86,7 +84,7 @@
  * Flag whether we want to fork the execution of opjitconv or not
  * For debugging purpose, we may need to avoid the fork 
  **/
-#define HPCJAVA_FORK_OPJITCONV 1
+#define HPCJAVA_FORK_OPJITCONV 0
 
 /**
  * Macro to  control the generation of events
@@ -282,7 +280,6 @@ cb_compiled_method_load(jvmtiEnv * jvmti,
     return;
   }
 
-  jmt_add_java_method(method, code_addr);
 
   /* 
    * check if we can access to functions in hpcrun.so
@@ -352,7 +349,7 @@ cb_compiled_method_load(jvmtiEnv * jvmti,
     strncat(buf, method_signature, cnt - strlen(buf) - 1);
     const void *code_addr_end = code_addr + code_size;
 
-    hpcjava_add_address_interval(code_addr, code_addr_end);
+    hpcjava_add_address_interval(method, code_addr, code_addr_end);
 
     if (op_write_native_code(agent_hdl, buf,
 			     (uint64_t)(uintptr_t) code_addr,
@@ -438,7 +435,7 @@ cb_dynamic_code_generated(jvmtiEnv * jvmti_env,
   /* adding the interval to the java ui tree
    */ 	 
   const void *code_addr_end = code_addr + code_size;
-  hpcjava_add_address_interval(code_addr, code_addr_end);
+  hpcjava_add_address_interval(NULL, code_addr, code_addr_end);
 
   if (op_write_native_code(agent_hdl, name,
 			   (uint64_t)(uintptr_t) code_addr,
@@ -530,7 +527,6 @@ cb_vm_death(jvmtiEnv *jvmti_env,
   if (debug)
     fprintf(stderr, "vm_death\n");
 
-  jmt_get_all_methods_db(jvmti);
 	
   /************* end hpcrun critical section ************/
   hpcrun_safe_exit();
@@ -631,7 +627,7 @@ setup_callbacks(jvmtiEnv * jvmti)
   callbacks.CompiledMethodLoad 		= cb_compiled_method_load;
   callbacks.CompiledMethodUnload 	= cb_compiled_method_unload;
   callbacks.DynamicCodeGenerated 	= cb_dynamic_code_generated;
-  callbacks.VMDeath			= cb_vm_death;
+  //callbacks.VMDeath			= cb_vm_death;
 
   error = (*jvmti)->SetEventCallbacks(jvmti, &callbacks,
 				      sizeof(callbacks));
@@ -648,23 +644,12 @@ setup_callbacks(jvmtiEnv * jvmti)
   JAVA_REGISTER_EVENT( JVMTI_EVENT_DYNAMIC_CODE_GENERATED )
   JAVA_REGISTER_EVENT( JVMTI_EVENT_CLASS_PREPARE )
   JAVA_REGISTER_EVENT( JVMTI_EVENT_CLASS_LOAD )
-  JAVA_REGISTER_EVENT( JVMTI_EVENT_VM_DEATH )
+  //JAVA_REGISTER_EVENT( JVMTI_EVENT_VM_DEATH )
 
   return true;
 }
 
 
-static ASGCTType
-get_asgct()
-{
-   void *handle = dlopen("libjvm.so", RTLD_LAZY);
-
-   if (handle != NULL) {
-      return (ASGCTType) dlsym(handle, "AsyncGetCallTrace");
-   }
-   return NULL;
-}
-  
 
 /***
  * The VM will start the agent by calling this function. It will be called early enough in VM initialization that:
@@ -713,9 +698,8 @@ Agent_OnLoad(JavaVM * jvm, char * options, void * reserved)
     goto finalize;
   }
 
-  /* get Java's undocumented AsyncGetCallTrace method */
-  ASGCTType asgct = get_asgct();
-  js_setAsgct(asgct);
+  /* initialize java call stack management */
+  js_init();
 
   /** inform hpcjava to store references for jvm and jvmti 
    ** these references can be used to find Java call stack 

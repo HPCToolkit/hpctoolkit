@@ -48,83 +48,71 @@
 #include <stdio.h>
 #include <string.h>
 
-// list/queue library
-#include <sys/queue.h>
-
 // java headers
 #include <jvmti.h>
 
 // hpcrun headers
 #include <memory/hpcrun-malloc.h>
 #include <messages/messages.h>
+#include <splay.h>
+#include <lib/prof-lean/spinlock.h>
+#include <thread_data.h>
+
 
 // hpcrun java headers
 #include <java/stacktraces.h>
+#include <java/splay-general.h>
 
-#define ENTRY_MALLOC(Type) (struct Type *) hpcrun_malloc(sizeof(struct Type))
 
 //***************************************************************************
-// queue management
+// macros
 //***************************************************************************
 
-TAILQ_HEAD(java_callstack, entry) head = TAILQ_HEAD_INITIALIZER(head);
+#define JAVA_CS_LOCK  do {  \
+  TD_GET(splay_lock) = 0;        \
+  spinlock_lock(&java_tree_lock);  \
+  TD_GET(splay_lock) = 1;        \
+} while (0)
 
-struct entry {
+#define JAVA_CS_UNLOCK  do {       \
+  spinlock_unlock(&java_tree_lock);  \
+  TD_GET(splay_lock) = 0;          \
+} while (0)
+
+
+//***************************************************************************
+// data structure
+//***************************************************************************
+
+struct splay_methodID_s {
   jmethodID method;
-  TAILQ_ENTRY(entry) entries;
-}; 
+  interval_tree_node *interval;
+
+  struct splay_methodID_s *left;
+  struct splay_methodID_s *right;
+};
+
+typedef struct splay_methodID_s splay_methodID_t;
+
 
 //***************************************************************************
 // global variables
 //***************************************************************************
 
-static const int debug = 1;
-struct java_callstack freelist = TAILQ_HEAD_INITIALIZER(freelist);
-ASGCTType asgct;
+static spinlock_t java_tree_lock;
+
+static ASGCTType asgct;
+static splay_methodID_t *root;
 
 
 //***************************************************************************
 // Helper functions
 //***************************************************************************
 
-/*
- * debugging purpose: printing the stored callstacks
- */ 
-static void
-js_print_stack()
-{
-  struct entry *np;
-
-  TAILQ_FOREACH(np, &head, entries)
-   {
-     printf("%p ", np->method);
-   }
-   printf("\n");
-}
-
-
-/*
- * a new node is allocated iff the freelist is empty. 
- */
-static struct entry*
-js_malloc()
-{
-   struct entry *node = NULL;
-
-   if (freelist.tqh_first != NULL) {
-      // grab a new node from the free list
-      node = freelist.tqh_first;
-
-      // remove the node from the free list
-      TAILQ_REMOVE(&freelist, freelist.tqh_first, entries);
-   } else {
-      // free list is empty. create a new one from hpcrun_malloc
-      node = ENTRY_MALLOC(entry);
-   }
-   return node;
-}
-
-
+/***
+ * loading AsyncGetCallTrace from libjvm.so
+ * if the loading fails, there's no use to get java's callpath from jvm
+ ***/
 static void
 js_set_asgct()
 {
@@ -138,51 +126,41 @@ js_set_asgct()
    } 
 }
 
+static splay_methodID_t*
+js_get_method_node(jmethodID method)
+{
+  REGULAR_SPLAY_TREE(splay_methodID_s, root, method, method, left, right);
+  return root;
+}
+
+static splay_methodID_t *
+js_insert_method(jmethodID method, splay_methodID_t *newnode)
+{
+  splay_methodID_t * node = js_get_method_node(method);
+  if (node == NULL) {
+      newnode->left  = NULL;
+      newnode->right = NULL;
+  }
+  else if (newnode->method < node->method) {
+      newnode->left = node->left;
+      newnode->right = node;
+      node->left = NULL;
+  }
+  else {
+      newnode->left = node;
+      newnode->right = node->right;
+      node->right = NULL;
+  }
+  return newnode;
+}
+
 //***************************************************************************
 // interface APIs
 //***************************************************************************
 
-/*
- * adding a new method into the stack
- */ 
-void
-js_add(jmethodID method)
-{
-  struct entry *node = js_malloc();
-  if (node != NULL) 
-  {
-     node->method = method;
-     TAILQ_INSERT_HEAD(&head, node, entries);
-  }
-  if (debug)
-     js_print_stack();
-}
-
-/*
- * removing the latest method from the stack
- */ 
-void
-js_remove(jmethodID method)
-{
-  struct entry *node = head.tqh_first;
-  if (node->method != method) {
-    // if we reach here, it means there's inconsistency. 
-    // it can be either race condition, or issues with the jvm   
-    //  a lock isn't necessary protect this, so the only solution is to
-   //   traverse the list which node we should remove which is O(n) unfortunately 
-    fprintf(stderr,"Error: got %p, while expecting %p ! \n", node->method, method);
-  }
-
-  // remove the node from the stack
-  TAILQ_REMOVE(&head, head.tqh_first, entries);
-
-  // save the node into the free list  
-  TAILQ_INSERT_HEAD(&freelist, node, entries);
-
-  if (debug)
-     js_print_stack();
-}
-
+/**
+ * initializing variables and methods
+ */
 void 
 js_init()
 {
@@ -190,4 +168,31 @@ js_init()
 }
 
 
+void
+js_add_method(jmethodID method, interval_tree_node *interval_node)
+{
+#if 0
+  JAVA_CS_LOCK;
+  
+  //check if the method is already in the tree
+  splay_methodID_t *node = js_get_method_node(method);
+  if (node != NULL) {
+    if (node->method == method)
+       // method already exists in the tree
+       return;
+  }
+
+  node = hpcrun_malloc(sizeof(splay_methodID_t));
+   
+  if (node != NULL) {
+    node->method = method;
+    node->interval = interval_node;
+    
+    root = js_insert_method(method, node);
+    TMSG(JAVA, "js  add mt: %p addr: %p r: %p", method, node->interval->start, root);
+  }
+
+  JAVA_CS_UNLOCK;
+#endif
+}
 

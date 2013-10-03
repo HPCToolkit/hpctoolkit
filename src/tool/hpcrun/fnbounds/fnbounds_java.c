@@ -70,8 +70,7 @@
 #include "fnbounds_java.h"
 #include "safe-sampling.h"
 
-//#include "java/java_asgct.h"
-//#include "java/jmt.h"
+#include "java/java_callstack.h"
 
 
 #define UI_TREE_JAVA_LOCK  do {	 \
@@ -86,6 +85,8 @@
 } while (0)
 
 #define JAVA_MAX_FRAMES 256
+
+
 
 static void free_ui_java_tree_locked(interval_tree_node *tree);
 static void free_ui_java_node_locked(interval_tree_node *node);
@@ -360,12 +361,16 @@ hpcjava_addr_to_interval_locked(const void *addr_start, const void *addr_end)
  * Returns: pointer to unwind_java_interval struct if found, else NULL.
  */
 splay_interval_t *
-hpcjava_add_address_interval(const void *addr_start, const void *addr_end)
+hpcjava_add_address_interval(jmethodID method, const void *addr_start, const void *addr_end)
 {
   UI_TREE_JAVA_LOCK;
   splay_interval_t *intvl = hpcjava_addr_to_interval_locked(addr_start, addr_end);
   UI_TREE_JAVA_UNLOCK;
   
+  if (method != NULL) {
+    js_add_method(method, intvl);
+  }
+
   return intvl;
 }
 
