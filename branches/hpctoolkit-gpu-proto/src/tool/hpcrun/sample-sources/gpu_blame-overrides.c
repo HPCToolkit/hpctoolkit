@@ -83,7 +83,6 @@
  *****************************************************************************/
 #include "common.h"
 #include "gpu_blame.h"
-#include "gpu_ctxt_actions.h"
 
 #include <hpcrun/main.h>
 #include <hpcrun/hpcrun_options.h>
@@ -429,6 +428,9 @@ extern cudaRuntimeFunctionPointer_t  cudaRuntimeFunctionPointer[];
 // function pointers to real cuda driver functions
 extern cuDriverFunctionPointer_t  cuDriverFunctionPointer[];
 
+// special papi disable function
+extern void hpcrun_disable_papi_cuda(void);
+
 /******************************************************************************
  * forward declarations
  *****************************************************************************/
@@ -621,13 +623,13 @@ InitCpuGpuBlameShiftDataStructs(void)
 static void PopulateEntryPointesToWrappedCalls() {
     PopulateEntryPointesToWrappedCudaRuntimeCalls();
     PopulateEntryPointesToWrappedCuDriverCalls();
-    special_cuda_ctxt_actions(true);
 }
 
 __attribute__((constructor))
 static void
 CpuGpuBlameShiftInit(void)
 {
+  hpcrun_disable_papi_cuda();
   if (getenv("DEBUG_HPCRUN_GPU_CONS"))
     fprintf(stderr, "CPU-GPU blame shift constructor called\n");
   PopulateEntryPointesToWrappedCalls();

@@ -416,7 +416,7 @@ hpcrun_files_set_directory()
 
 
 void 
-hpcrun_files_set_executable(char *execname)
+hpcrun_files_set_executable(char* execname)
 {
   strncpy(executable_name, basename(execname), sizeof(executable_name));
 

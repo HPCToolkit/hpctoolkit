@@ -123,6 +123,12 @@ static void event_fatal_error(int ev_code, int papi_ret);
 //
 static int papi_unavail = 0;
 
+//
+// To accomodate GPU blame shifting, we must disable the cuda component
+// Flag below controls this disabling
+//
+static bool disable_papi_cuda = false;
+
 /******************************************************************************
  * private operations 
  *****************************************************************************/
@@ -241,6 +247,19 @@ METHOD_FN(init)
   //         succeeds
   //
   monitor_disable_new_threads();
+  if (disable_papi_cuda) {
+    TMSG(PAPI, "Will disable PAPI cuda component (if component is active)");
+    int cidx = PAPI_get_component_index("cuda");
+    if (cidx) {
+      int res = PAPI_disable_component(cidx);
+      if (res == PAPI_OK) {
+	TMSG(PAPI, "PAPI cuda component disabled");
+      }
+      else {
+	EMSG("*** PAPI cuda component could not be disabled!!!");
+      }
+    }
+  }
   int ret = PAPI_library_init(PAPI_VER_CURRENT);
   monitor_enable_new_threads();
 
@@ -756,7 +775,14 @@ METHOD_FN(display_events)
 
 #include "ss_obj.h"
 
-
+// **************************************************************************
+// * public operations 
+// **************************************************************************
+void
+hpcrun_disable_papi_cuda(void)
+{
+  disable_papi_cuda = true;
+}
 
 /******************************************************************************
  * private operations 

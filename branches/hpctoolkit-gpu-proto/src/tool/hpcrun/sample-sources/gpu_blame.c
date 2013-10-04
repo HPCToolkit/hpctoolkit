@@ -102,7 +102,6 @@
 
 #ifdef ENABLE_CUDA
 #include "gpu_blame.h"
-#include "gpu_ctxt_actions.h"
 #endif
 
 // ****************** utility macros *********************

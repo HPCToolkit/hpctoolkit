@@ -17,5 +17,4 @@ extern uint64_t cuda_ncontexts_decr(void);
 extern cuda_ctxt_t* cuda_capture_ctxt(void);
 extern void cuda_set_ctxt(cuda_ctxt_t* ctxt);
 extern void* cuda_get_handle(cuda_ctxt_t* ctxt);
-extern void cuda_ncontexts_reset(void);
 #endif // GPU_CTXT_ACTIONS
