@@ -124,6 +124,7 @@ inliningAtAddr(Symtab *symt, unsigned long addr)
 #endif
 
     callChain = getStaticCallChain(base, NULL);
+#if 0
     if (callChain) {
       cout << std::hex << addr << std::dec << ": " << endl;
       int indent = 0;
@@ -134,6 +135,7 @@ inliningAtAddr(Symtab *symt, unsigned long addr)
       }
       cout << endl;
     }
+#endif
   }
   return callChain;
 }

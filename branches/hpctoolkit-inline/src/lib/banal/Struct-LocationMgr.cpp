@@ -113,12 +113,6 @@ RELOCATEDcmp(const string& x)
 
 //*************************** Forward Declarations **************************
 
-// When Alien contexts are nested, there may be many at the top of the
-// stack at one time; in the opposite case, only one is on the top of
-// the stack at any time.
-#define STRUCT_NEST_ALIEN_CONTEXTS 0
-
-//***************************************************************************
 
 //***************************************************************************
 // LocationMgr
@@ -468,12 +462,8 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
   // 2. Attempt to find an appropriate existing enclosing context for
   // the given source information.
   // -----------------------------------------------------
-  const Ctxt* use_ctxt = NULL;
+  const Ctxt* use_ctxt = switch_findCtxt(filenm, procnm, line);
 
-  if (!cc) {
-    use_ctxt = switch_findCtxt(filenm, procnm, line);
-  }
-  
   DIAG_DevMsgIfCtd(mDBG, "  first ctxt:\n"
 		   << ((use_ctxt) ? use_ctxt->toString(-1, "  ") : ""));
   
@@ -549,55 +539,35 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
   
   if (!use_ctxt) {
     // Relocation! Add an alien context.
+    Prof::Struct::Alien *alien;
+    bool use_tos = false;
+
     DIAG_Assert(!filenm.empty(), "");
     CtxtChange_set(change, CtxtChange_PUSH);
 
-    if (cc) {
-      while (topCtxtRef().isAlien()) {
-	m_ctxtStack.pop_front();
-      }
-      // Find or create an appropriate chain of alien scopes
-      Prof::Struct::ACodeNode* enclosing_scope = proposed_scope;
-      string empty = "";
-      string &calleeName = empty; 
-      Prof::Struct::Alien* alien;
-      for (CallingContext *it = cc; it;) {
-	CallingContext *next = it->Next();
-	// call site
-	alien = demandAlienStrct(enclosing_scope, it->getFileName(), 
-				 empty, (SrcFile::ln) it->getLineNumber(), true);
-	enclosing_scope = alien;
-	pushCtxt(Ctxt(alien, NULL));
-#if 0
-	string calleeFile = next ? next->getFileName() : filenm;
-	SrcFile::ln lineNum = 0; 
-	alien = demandAlienStrct(enclosing_scope, calleeFile,
-				 it->getCalleeName(), lineNum, true);
-	enclosing_scope = alien;
-	pushCtxt(Ctxt(alien, NULL));
-#endif
-	it = next;
-      }
-#if 1
-      alien = demandAlienStrct(enclosing_scope, filenm,
-			       calleeName, line, true);
-      enclosing_scope = alien;
-      pushCtxt(Ctxt(alien, NULL));
-#endif
-    } else {
-      // Find or create the alien scope
-      Prof::Struct::Alien* alien =
-#if (STRUCT_NEST_ALIEN_CONTEXTS)
-	demandAlienStrct(proposed_scope, filenm, procnm, line, true);
-#else
-      demandAlienStrct(proposed_scope, filenm, procnm, line, false);
-      if (topCtxtRef().isAlien()) {
-	m_ctxtStack.pop_front();
-      }
-#endif
-      pushCtxt(Ctxt(alien, NULL));
+    // erase aliens from top of stack
+    while (topCtxtRef().isAlien()) {
+      m_ctxtStack.pop_front();
     }
 
+    // Add sequence of intermediate aliens from cc.  The alien cache
+    // belongs to proposed_scope, but we fake the proc name to the
+    // line number to avoid collapsing nodes that need to remain
+    // separate.
+    //
+    for (CallingContext *it = cc; it != NULL; it = it->Next())
+    {
+      char buf[50];
+      sprintf(buf, "fake_line_%lu", it->getLineNumber());
+      alien = demandAlienStrct(proposed_scope, it->getFileName(),
+			       string(buf), it->getLineNumber(), use_tos);
+      pushCtxt(Ctxt(alien, NULL));
+      use_tos = true;
+    }
+
+    // add last alien
+    alien = demandAlienStrct(proposed_scope, filenm, procnm, line, use_tos);
+    pushCtxt(Ctxt(alien, NULL));
     use_ctxt = topCtxt();
   }
 
