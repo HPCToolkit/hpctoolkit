@@ -63,6 +63,7 @@
 #include <vector>
 #include <list>
 
+
 using std::list;
 using std::vector;
 
@@ -73,7 +74,8 @@ namespace TraceviewerServer {
 template <typename T>
 class LRUList {
 private:
-	int size;
+	int totalPages;
+	int usedPages;
 	int currentFront;
 	list<T*> useOrder;
 	list<T*> removed;
@@ -93,21 +95,23 @@ public:
 	LRUList(int expectedMaxSize)//Up to linear time
 	{
 		iters.reserve(expectedMaxSize);
-		size = 0;
+		totalPages = 0;
+		usedPages = 0;
 		currentFront = -1;
 	}
 	int addNew(T* toAdd)//constant time
 	{
 		useOrder.push_front(toAdd);
-		int index = size++;
+		int index = totalPages++;
 		currentFront = index;
 		iters.push_back(useOrder.begin());
+		usedPages++;
 		return index;
 	}
 	int addNewUnused(T* toAdd)//constant time
 	{
 		removed.push_front(toAdd);
-		int index = size++;
+		int index = totalPages++;
 		iters.push_back(removed.begin());
 		return index;
 	}
@@ -127,18 +131,22 @@ public:
 	void removeLast()//Constant time
 	{
 		removed.splice(removed.end(), useOrder, --useOrder.end());
-		size--;
+		usedPages--;
 	}
 	void reAdd(int index)//Constant time
 	{
 		typename list<T*>::iterator it = iters[index];
 		useOrder.splice(useOrder.begin(), removed, it);
 		currentFront = index;
-		size++;
+		usedPages++;
 	}
-	int getSize()//Constant time
+	int getTotalPageCount()//Constant time
 	{
-		return size;
+		return totalPages;
+	}
+	int getUsedPageCount()
+	{
+		return usedPages;
 	}
 	virtual ~LRUList()
 	{
@@ -159,6 +167,7 @@ public:
 			for(; it != removed.end(); ++it){
 				printf("%d\n", ((TestData*)*it)->index);
 			}
+			cout << "Used count: " << usedPages <<" supposed to be " << x<<endl;
 			return x;
 		}*/
 };

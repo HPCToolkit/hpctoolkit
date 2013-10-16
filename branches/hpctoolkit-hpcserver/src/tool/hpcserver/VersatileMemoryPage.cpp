@@ -109,14 +109,14 @@ namespace TraceviewerServer
 	void VersatileMemoryPage::mapPage()
 	{
 
-		DEBUGCOUT(1) << "Mapping page "<< index<< " "<<mostRecentlyUsed->getSize() << " / " << MAX_PAGES_TO_ALLOCATE_AT_ONCE << endl;
+		DEBUGCOUT(1) << "Mapping page "<< index<< " "<<mostRecentlyUsed->getUsedPageCount() << " / " << MAX_PAGES_TO_ALLOCATE_AT_ONCE << endl;
 
 		if (isMapped)
 		{
 			cerr << "Trying to double map!"<<endl;
 			return;
 		}
-		if (mostRecentlyUsed->getSize() >= MAX_PAGES_TO_ALLOCATE_AT_ONCE)
+		if (mostRecentlyUsed->getUsedPageCount() >= MAX_PAGES_TO_ALLOCATE_AT_ONCE)
 		{
 
 			VersatileMemoryPage* toRemove = mostRecentlyUsed->getLast();
