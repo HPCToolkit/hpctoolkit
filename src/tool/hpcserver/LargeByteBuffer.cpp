@@ -90,7 +90,7 @@ namespace TraceviewerServer
 		fileSize = FileUtils::getFileSize(sPath);
 
 		FileOffset osPageSize = getpagesize();
-		FileOffset pageSizeMultiple = lcm(osPageSize, headerSize);//The page size must be a multiple of this
+		FileOffset pageSizeMultiple = lcm(osPageSize, lcm(headerSize, SIZE_OF_TRACE_RECORD));//The page size must be a multiple of this
 
 		FileOffset ramSizeInBytes = getRamSize();
 
@@ -149,7 +149,8 @@ namespace TraceviewerServer
 	//Could very well be a template, but we only use it for uint64_t
 	uint64_t LargeByteBuffer::lcm(uint64_t _a, uint64_t _b)
 	{
-		//LCM(a,b) = a*b/GCD(a,b) = (a/GCD(a,b))*b
+		// LCM(a,b) = a*b/GCD(a,b) = (a/GCD(a,b))*b
+		// [a/GCD(a,b) is an integer and a*b might overflow]
 
 		//We need the original values for later, so use temporary ones for the GCD computation
 		uint64_t a = _a, b = _b;

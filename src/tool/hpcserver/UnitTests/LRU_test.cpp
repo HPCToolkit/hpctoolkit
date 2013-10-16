@@ -78,30 +78,51 @@ void lruTest()
 	#define OBJCOUNT 20
 	LRUList<TestData> list(OBJCOUNT);
 
+	srand(12);
 	bool inuse[OBJCOUNT];//Just for testing
 	for(int i = 0; i< OBJCOUNT; i++)
 	{
 		TestData* next = new TestData;
-		next->expensiveObjectInUse = true;
-		next->index = list.addNew(next);
-		inuse[next->index] = true;
+		if (rand() % 2 == 0)
+		{
+			next->expensiveObjectInUse = true;
+			next->index = list.addNew(next);
+			inuse[next->index] = true;
+		}
+		else
+		{
+			next->expensiveObjectInUse = false;
+			next->index = list.addNewUnused(next);
+			inuse[next->index] = false;
+		}
 	}
-	assert(list.getSize()==OBJCOUNT);
+	assert(list.getTotalPageCount()==OBJCOUNT);
+	list.dump();
 
-	srand(12);
 	for(int i = 0; i< 70; i++)
 	{
-		list.putOnTop(rand()%OBJCOUNT);
+		int x = rand() % OBJCOUNT;
+		if (inuse[x])
+			list.putOnTop(x);
 	}
-	assert(list.getSize()==OBJCOUNT);
+	for (int i = 0; i < OBJCOUNT; ++i) {
+		if (!inuse[i]){
+			inuse[i] = true;
+			list.reAdd(i);
+		}
+	}
+	list.dump();
+	assert(list.getUsedPageCount()==OBJCOUNT);
 	int count = OBJCOUNT;
+	for(int i = 0; i < OBJCOUNT; i++)
+		cout << i <<": " << inuse[i]<<endl;
 	for(int i = 0; i< 12; i++)
 	{
 		TestData* last = list.getLast();
 		last->expensiveObjectInUse = false;
 		inuse[last->index] = false;
 		list.removeLast();
-		assert(list.getSize() == --count);
+		assert(list.getUsedPageCount() == --count);
 
 		int ran;
 		if(inuse[ran = (rand()%OBJCOUNT)])
@@ -110,22 +131,26 @@ void lruTest()
 		{
 			inuse[ran] = true;
 			list.reAdd(ran);
-			assert(list.getSize() == ++count);
+			assert(list.getUsedPageCount() == ++count);
 		}
 	}
-	//list.dump();
+	list.dump();
 
-	while (list.getSize() > 0)
+	while (list.getUsedPageCount() > 0)
 	{
+		cout <<"Removing: "<< list.getLast()->index<<endl;
 		list.removeLast();
-		//list.dump();
+		int dumpc = list.dump();
+
+		//assert(list.getUsedPageCount()==list.dump());
 	}
-	assert(list.getSize()==0);
+	assert(list.getUsedPageCount()==0);
 	for(int i = 0; i< OBJCOUNT; i++)
 	{
 		list.reAdd(i);
 	}
-	assert(list.getSize()==OBJCOUNT);
+	assert(list.getUsedPageCount()==OBJCOUNT);
+	list.dump();
 	cout << "List operations did not crash and were probably successful"<<endl;
 }
 
