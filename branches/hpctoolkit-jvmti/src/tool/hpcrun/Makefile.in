@@ -98,8 +98,7 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 
 @OPT_ENABLE_JAVA_TRUE@am__append_18 = \
 @OPT_ENABLE_JAVA_TRUE@	fnbounds/fnbounds_java.c	\
-@OPT_ENABLE_JAVA_TRUE@	java/java_callstack.c  		\
-@OPT_ENABLE_JAVA_TRUE@	java/jmt.c
+@OPT_ENABLE_JAVA_TRUE@	java/java_callstack.c  		
 
 @OPT_ENABLE_JAVA_TRUE@am__append_19 = \
 @OPT_ENABLE_JAVA_TRUE@	$(JAVA_IFLAGS)			\
@@ -338,7 +337,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/mpi.c fnbounds/fnbounds_client.c \
 	fnbounds/fnbounds_dynamic.c monitor-exts/openmp.c \
 	hpcrun_dlfns.c custom-init-dynamic.c fnbounds/fnbounds_java.c \
-	java/java_callstack.c java/jmt.c os/linux/dylib.c \
+	java/java_callstack.c os/linux/dylib.c \
 	unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
@@ -400,8 +399,7 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-tokenize.lo libhpcrun_la-unlink.lo \
 	$(am__objects_7)
 @OPT_ENABLE_JAVA_TRUE@am__objects_9 = libhpcrun_la-fnbounds_java.lo \
-@OPT_ENABLE_JAVA_TRUE@	libhpcrun_la-java_callstack.lo \
-@OPT_ENABLE_JAVA_TRUE@	libhpcrun_la-jmt.lo
+@OPT_ENABLE_JAVA_TRUE@	libhpcrun_la-java_callstack.lo
 am__objects_10 = libhpcrun_la-fnbounds_client.lo \
 	libhpcrun_la-fnbounds_dynamic.lo libhpcrun_la-openmp.lo \
 	libhpcrun_la-hpcrun_dlfns.lo \
@@ -1697,7 +1695,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ip-normalized.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-itimer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-java_callstack.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-jmt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-last_func.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-libunw-unwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-loadmap.Plo@am__quote@
@@ -2552,13 +2549,6 @@ libhpcrun_la-java_callstack.lo: java/java_callstack.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='java/java_callstack.c' object='libhpcrun_la-java_callstack.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-java_callstack.lo `test -f 'java/java_callstack.c' || echo '$(srcdir)/'`java/java_callstack.c
-
-libhpcrun_la-jmt.lo: java/jmt.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-jmt.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-jmt.Tpo -c -o libhpcrun_la-jmt.lo `test -f 'java/jmt.c' || echo '$(srcdir)/'`java/jmt.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-jmt.Tpo $(DEPDIR)/libhpcrun_la-jmt.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='java/jmt.c' object='libhpcrun_la-jmt.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-jmt.lo `test -f 'java/jmt.c' || echo '$(srcdir)/'`java/jmt.c
 
 libhpcrun_la-dylib.lo: os/linux/dylib.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-dylib.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-dylib.Tpo -c -o libhpcrun_la-dylib.lo `test -f 'os/linux/dylib.c' || echo '$(srcdir)/'`os/linux/dylib.c

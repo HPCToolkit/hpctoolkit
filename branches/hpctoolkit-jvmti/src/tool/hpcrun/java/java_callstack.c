@@ -146,11 +146,20 @@ js_insert_method(jmethodID method, splay_methodID_t *newnode)
       newnode->right = node;
       node->left = NULL;
   }
-  else {
+  else if (newnode->method > node->method) {
       newnode->left = node;
       newnode->right = node->right;
       node->right = NULL;
   }
+  else {
+     // newnode->method == node->method 
+     // (the same method, but probably different interval)
+     node->interval = newnode->interval;
+     TMSG(JAVA, "js method exists:  %p addr: %p r: %p", method, node->interval->start, node);
+
+     return node;
+  }
+  TMSG(JAVA, "js  add mt: %p addr: %p r: %p", method, newnode->interval->start, newnode);
   return newnode;
 }
 
@@ -165,34 +174,27 @@ void
 js_init()
 {
   js_set_asgct();
+  JAVA_CS_UNLOCK;
 }
 
 
+/**
+ * attempt adding a new method if the method doesn't exist in the splay tree
+ */
 void
 js_add_method(jmethodID method, interval_tree_node *interval_node)
 {
-#if 0
   JAVA_CS_LOCK;
   
-  //check if the method is already in the tree
-  splay_methodID_t *node = js_get_method_node(method);
-  if (node != NULL) {
-    if (node->method == method)
-       // method already exists in the tree
-       return;
-  }
-
-  node = hpcrun_malloc(sizeof(splay_methodID_t));
+  splay_methodID_t *node = hpcrun_malloc(sizeof(splay_methodID_t));
    
   if (node != NULL) {
     node->method = method;
     node->interval = interval_node;
     
     root = js_insert_method(method, node);
-    TMSG(JAVA, "js  add mt: %p addr: %p r: %p", method, node->interval->start, root);
   }
 
   JAVA_CS_UNLOCK;
-#endif
 }
 

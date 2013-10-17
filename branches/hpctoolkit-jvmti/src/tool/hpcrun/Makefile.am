@@ -332,8 +332,7 @@ MY_LINUX_DYNAMIC_FILES = 		\
 if OPT_ENABLE_JAVA
 MY_DYNAMIC_FILES +=  			\
 	fnbounds/fnbounds_java.c	\
-	java/java_callstack.c  		\
-	java/jmt.c
+	java/java_callstack.c  		
 endif
 
 
