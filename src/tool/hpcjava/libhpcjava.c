@@ -84,7 +84,7 @@
  * Flag whether we want to fork the execution of opjitconv or not
  * For debugging purpose, we may need to avoid the fork 
  **/
-#define HPCJAVA_FORK_OPJITCONV 0
+#define HPCJAVA_FORK_OPJITCONV 1
 
 /**
  * Macro to  control the generation of events
@@ -495,7 +495,7 @@ libhpcjava_fini()
       exec_args[arg_num] = (char *) NULL;
 
       if (debug)
-	printf("executing %s .... \n", oprofile_cmd);
+	printf("executing %s %s %s\n", oprofile_cmd, start_time_str, end_time_str);
 
       monitor_real_execve(oprofile_cmd, exec_args, environ);
     }
@@ -627,7 +627,7 @@ setup_callbacks(jvmtiEnv * jvmti)
   callbacks.CompiledMethodLoad 		= cb_compiled_method_load;
   callbacks.CompiledMethodUnload 	= cb_compiled_method_unload;
   callbacks.DynamicCodeGenerated 	= cb_dynamic_code_generated;
-  //callbacks.VMDeath			= cb_vm_death;
+  callbacks.VMDeath			= cb_vm_death;
 
   error = (*jvmti)->SetEventCallbacks(jvmti, &callbacks,
 				      sizeof(callbacks));
@@ -644,7 +644,7 @@ setup_callbacks(jvmtiEnv * jvmti)
   JAVA_REGISTER_EVENT( JVMTI_EVENT_DYNAMIC_CODE_GENERATED )
   JAVA_REGISTER_EVENT( JVMTI_EVENT_CLASS_PREPARE )
   JAVA_REGISTER_EVENT( JVMTI_EVENT_CLASS_LOAD )
-  //JAVA_REGISTER_EVENT( JVMTI_EVENT_VM_DEATH )
+  JAVA_REGISTER_EVENT( JVMTI_EVENT_VM_DEATH )
 
   return true;
 }
