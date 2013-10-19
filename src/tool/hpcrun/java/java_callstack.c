@@ -126,6 +126,11 @@ js_set_asgct()
    } 
 }
 
+
+/***
+ * find a node in the splay tree.
+ * here, the key is java method ID
+ ***/
 static splay_methodID_t*
 js_get_method_node(jmethodID method)
 {
@@ -133,6 +138,11 @@ js_get_method_node(jmethodID method)
   return root;
 }
 
+
+/***
+ * insert a node in the splay tee
+ * if the method already exists in the tree, we just need to update the interval
+ ***/
 static splay_methodID_t *
 js_insert_method(jmethodID method, splay_methodID_t *newnode)
 {
@@ -155,11 +165,13 @@ js_insert_method(jmethodID method, splay_methodID_t *newnode)
      // newnode->method == node->method 
      // (the same method, but probably different interval)
      node->interval = newnode->interval;
-     TMSG(JAVA, "js method exists:  %p addr: %p r: %p", method, node->interval->start, node);
+     TMSG(JAVA, "js update:  %p [%p , %p] r: %p", method, node->interval->start, 
+						  node->interval->end, node);
 
      return node;
   }
-  TMSG(JAVA, "js  add mt: %p addr: %p r: %p", method, newnode->interval->start, newnode);
+  TMSG(JAVA, "js add %p [%p , %p] r: %p", method, newnode->interval->start, 
+					  newnode->interval->end, newnode);
   return newnode;
 }
 
