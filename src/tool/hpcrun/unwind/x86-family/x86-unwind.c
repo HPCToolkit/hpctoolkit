@@ -155,11 +155,14 @@ t1_dbg_unw_step(hpcrun_unw_cursor_t* cursor);
 
 static step_state (*dbg_unw_step)(hpcrun_unw_cursor_t* cursor) = t1_dbg_unw_step;
 
+extern void hpcrun_set_real_siglongjmp(void);
+
 void
 hpcrun_unw_init(void)
 {
   x86_family_decoder_init();
   hpcrun_interval_tree_init();
+  hpcrun_set_real_siglongjmp();
 }
 
 //
