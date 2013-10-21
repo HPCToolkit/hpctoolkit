@@ -540,7 +540,6 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
   if (!use_ctxt) {
     // Relocation! Add an alien context.
     Prof::Struct::Alien *alien;
-    bool use_tos = false;
 
     DIAG_Assert(!filenm.empty(), "");
     CtxtChange_set(change, CtxtChange_PUSH);
@@ -550,23 +549,54 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
       m_ctxtStack.pop_front();
     }
 
-    // Add sequence of intermediate aliens from cc.  The alien cache
-    // belongs to proposed_scope, but we fake the proc name to the
-    // line number to avoid collapsing nodes that need to remain
-    // separate.
+    // If proposed_scope and the current stmt are both inlined, then
+    // it's possible that proposed_scope is on the cc path.  In that
+    // case, start the alien sequence at the child of proposed_scope.
+    // Proposed_scope could be a loop in the middle of a long inlined
+    // sequence.  Banal knows about the loop, but symtab doesn't and
+    // blows past the loop all the way to the top-level (non-inlined)
+    // code.
     //
-    for (CallingContext *it = cc; it != NULL; it = it->Next())
+    // Find the deepest non-terminal alien above proposed_scope (its
+    // grandparent), find the matching node in cc and start the alien
+    // sequence at its child.
+    //
+    CallingContext *start_cc = cc;
+    Prof::Struct::ACodeNode *node = proposed_scope->ACodeNodeParent();
+    if (node != NULL && node->type() == Prof::Struct::ANode::TyAlien) {
+      node = node->ACodeNodeParent();
+      if (node != NULL && node->type() == Prof::Struct::ANode::TyAlien) {
+	alien = static_cast <Prof::Struct::Alien *> (node);
+	for (CallingContext *it = cc; it != NULL; it = it->Next()) {
+	  if (it->getFileName() == alien->fileName()
+	      && alien->containsLine(it->getLineNumber()))
+	  {
+	    // it matches the alien node above proposed_scope, so
+	    // resume the inline sequence at the child of it.
+	    start_cc = it->Next();
+	    break;
+	  }
+	}
+      }
+    }
+
+    // Add sequence of intermediate aliens from cc, starting at
+    // start_cc.  Fake the proc name to the line number so that
+    // multiple calls to the same inlined func will remain separate.
+    //
+    Prof::Struct::ACodeNode *parent = proposed_scope;
+    for (CallingContext *it = start_cc; it != NULL; it = it->Next())
     {
       char buf[50];
       sprintf(buf, "fake_line_%lu", it->getLineNumber());
-      alien = demandAlienStrct(proposed_scope, it->getFileName(),
-			       string(buf), it->getLineNumber(), use_tos);
+      alien = demandAlienStrct(parent, it->getFileName(),
+			       string(buf), it->getLineNumber(), false);
       pushCtxt(Ctxt(alien, NULL));
-      use_tos = true;
+      parent = alien;
     }
 
     // add last alien
-    alien = demandAlienStrct(proposed_scope, filenm, procnm, line, use_tos);
+    alien = demandAlienStrct(parent, filenm, procnm, line, false);
     pushCtxt(Ctxt(alien, NULL));
     use_ctxt = topCtxt();
   }
