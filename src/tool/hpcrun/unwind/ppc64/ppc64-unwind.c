@@ -108,10 +108,13 @@ fence_stop(fence_enum_t fence)
   return (fence == FENCE_MAIN) || (fence == FENCE_THREAD);
 }
 
+extern void hpcrun_set_real_siglongjmp(void);
+
 void
 hpcrun_unw_init(void)
 {
   hpcrun_interval_tree_init();
+  hpcrun_set_real_siglongjmp();
 }
 
 //
