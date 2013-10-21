@@ -1063,9 +1063,7 @@ hpcrun_get_real_siglongjmp(void)
 void
 hpcrun_set_real_siglongjmp(void)
 {
-  hpcrun_safe_enter();
   MONITOR_EXT_GET_NAME(real_siglongjmp, siglongjmp);
-  hpcrun_safe_exit();
 }
 
 #else
@@ -1090,9 +1088,7 @@ hpcrun_get_real_siglongjmp(void)
 void
 hpcrun_set_real_siglongjmp(void)
 {
-  hpcrun_safe_enter();
   MONITOR_EXT_GET_NAME_WRAP(real_siglongjmp, siglongjmp);
-  hpcrun_safe_exit();
 }
 
 void
