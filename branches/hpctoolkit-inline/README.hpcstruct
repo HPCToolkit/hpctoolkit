@@ -26,7 +26,7 @@ Symtab needs boost, libelf and libdwarf.  You can use boost and
 libdwarf from externals.  But without special patches, symtab doesn't
 understand our libelf from externals (issues of libelf subdir for
 header files).  So, leave off --with-libelf and let symtab grab the
-system libelf from /usr.
+system libelf from /usr.  See technical note (4) below.
 
 In the dyninst-4fb1f52 directory:
 
@@ -36,12 +36,25 @@ In the dyninst-4fb1f52 directory:
     --prefix=/path/to/install/prefix  \
     --with-boost=/path/to/externals/install/boost  \
     --with-libdwarf=/path/to/externals/install/libdwarf  \
+    --with-libelf=/path/to/libelf  \
     --with-default-component=SymtabAPI \
     --enable-gnu-demangler  \
     --disable-testsuite
 
+export PLATFORM=<symtab-platform>
 make
 make install
+
+Where PLATFORM is from:
+
+    x86_64-unknown-linux2.4
+    i386-unknown-linux2.4
+    ppc64_linux
+    ppc32_linux
+
+If you omit PLATFORM, symtab will try to figure out the right platform
+itself and probably get it right.  But it doesn't hurt to explicitly
+set it yourself.
 
 Symtab also needs a fairly recent compiler.  Gcc 4.4.7 from RedHat 6.x
 works, 4.1.2 from RH 5.x does not.  Symtab does not support vpath
@@ -69,4 +82,25 @@ fail.
 
 Then, build hpctoolkit trunk for the rest of toolkit: hpcrun, hpcprof,
 etc.
+
+(4) Technically, the instructions for building symtab are incorrect
+over how we choose libelf.  Libdwarf uses libelf from externals, but
+symtab uses /usr.  Technically, this is incorrect, but if it fails, I
+would expect it to fail catastrophically (but maybe not).
+
+To be fully correct, use patch-dyninst to convert symtab's use of
+'#include <libelf.h>' to '#include "libelf/libelf.h" which matches the
+way we build libelf in externals.  Then run autoreconf to regenerate
+the configure script.
+
+cd dyninst-4fb1f52
+patch -p1 <patch-dyninst
+autoreconf
+
+Then, configure symtab with:
+
+    --with-libelf=/path/to/externals/install/libelf
+
+and omit --with-libelf in hpctoolkit's configure (so it will take the
+one from externals).
 

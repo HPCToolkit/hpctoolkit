@@ -1,0 +1,83 @@
+This patch changes symtab's #include for libelf to use the subdir
+libelf/libelf.h.  This allows configuring symtab to use libelf from
+externals.  Apply the patch with:
+
+cd dyninst-4fb1f52
+patch -p1 <this-patch
+
+Then run 'autoreconf' to regenerate configure.
+
+
+diff -Naurb dyninst-orig/configure.in dyninst-4fb1f52/configure.in
+--- dyninst-orig/configure.in	2013-07-29 17:56:01.000000000 -0500
++++ dyninst-4fb1f52/configure.in	2013-10-20 23:49:21.958743610 -0500
+@@ -223,6 +223,12 @@
+       CXXFLAGS="$CXXFLAGS $LIBELF_INCFLAGS";
+       CPPFLAGS="$CPPFLAGS $LIBELF_INCFLAGS";
+ 
++      if true ; then
++         AC_CHECK_HEADER([libelf/libelf.h],
++	    [AC_MSG_NOTICE([ELF include directory: $LIBELF_INC_DIR])],
++	    [AC_ERROR([invalid ELF include directory: $LIBELF_INC_DIR])])
++      else
++
+       AC_CHECK_HEADER([libelf.h], [AC_MSG_NOTICE(ELF include directory: $LIBELF_INC_DIR)],
+            [CXXFLAGS="$CXXFLAGS $LIBELF_ALT_INCFLAGS"
+             CPPFLAGS="$CPPFLAGS $LIBELF_ALT_INCFLAGS"
+@@ -231,6 +237,8 @@
+                             [LIBELF_INC_DIR=$LIBELF_ALT_INC_DIR;AC_MSG_NOTICE(ELF include directory: $LIBELF_INC_DIR)],
+                             [AC_ERROR(couldn't find libelf.h: $CPPFLAGS)])])
+ 
++      fi
++
+       CXXFLAGS=$CXXFLAGS_HOLD
+       CPPFLAGS=$CPPFLAGS_HOLD
+       PD_CHECK_LIB_DIR($LIBELF_LIB_DIR,[elf],[elf_memory])
+diff -Naurb dyninst-orig/elf/h/Elf_X.h dyninst-4fb1f52/elf/h/Elf_X.h
+--- dyninst-orig/elf/h/Elf_X.h	2013-07-29 17:56:01.000000000 -0500
++++ dyninst-4fb1f52/elf/h/Elf_X.h	2013-10-20 23:51:57.075937042 -0500
+@@ -31,7 +31,7 @@
+ #ifndef __ELF_X_H__
+ #define __ELF_X_H__
+ 
+-#include "libelf.h"
++#include "libelf/libelf.h"
+ #include <string>
+ #include <map>
+ #include <vector>
+diff -Naurb dyninst-orig/symtabAPI/src/Object-elf.h dyninst-4fb1f52/symtabAPI/src/Object-elf.h
+--- dyninst-orig/symtabAPI/src/Object-elf.h	2013-07-29 17:56:01.000000000 -0500
++++ dyninst-4fb1f52/symtabAPI/src/Object-elf.h	2013-10-20 23:49:21.959743642 -0500
+@@ -56,7 +56,7 @@
+ 
+ 
+ #include <elf.h>
+-#include <libelf.h>
++#include "libelf/libelf.h"
+ #include <string>
+ 
+ #include "elf/h/Elf_X.h"
+diff -Naurb dyninst-orig/symtabAPI/src/dwarfWalker.h dyninst-4fb1f52/symtabAPI/src/dwarfWalker.h
+--- dyninst-orig/symtabAPI/src/dwarfWalker.h	2013-07-29 17:56:01.000000000 -0500
++++ dyninst-4fb1f52/symtabAPI/src/dwarfWalker.h	2013-10-20 23:49:21.960743682 -0500
+@@ -3,7 +3,7 @@
+ #define _dwarf_walker_h_
+ 
+ #include "elf.h"
+-#include "libelf.h"
++#include "libelf/libelf.h"
+ #include "libdwarf.h"
+ #include <stack>
+ #include <vector>
+diff -Naurb dyninst-orig/symtabAPI/src/parseDwarf.C dyninst-4fb1f52/symtabAPI/src/parseDwarf.C
+--- dyninst-orig/symtabAPI/src/parseDwarf.C	2013-07-29 17:56:01.000000000 -0500
++++ dyninst-4fb1f52/symtabAPI/src/parseDwarf.C	2013-10-20 23:49:21.960743682 -0500
+@@ -30,7 +30,7 @@
+ #include <map>
+ 
+ #include "elf.h"
+-#include "libelf.h"
++#include "libelf/libelf.h"
+ #include "dwarf.h"
+ #include "libdwarf.h"
+ #include "dwarf/h/dwarfExprParser.h"
