@@ -76,8 +76,8 @@ using std::dec;
 using std::pair;
 
 #include <climits>
-
 #include <cstring>
+#include <list>
 
 #include <stdlib.h>
 
@@ -539,8 +539,6 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
   
   if (!use_ctxt) {
     // Relocation! Add an alien context.
-    Prof::Struct::Alien *alien;
-
     DIAG_Assert(!filenm.empty(), "");
     CtxtChange_set(change, CtxtChange_PUSH);
 
@@ -549,33 +547,48 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
       m_ctxtStack.pop_front();
     }
 
-    // If proposed_scope and the current stmt are both inlined, then
-    // it's possible that proposed_scope is on the cc path.  In that
-    // case, start the alien sequence at the child of proposed_scope.
-    // Proposed_scope could be a loop in the middle of a long inlined
-    // sequence.  Banal knows about the loop, but symtab doesn't and
-    // blows past the loop all the way to the top-level (non-inlined)
-    // code.
+    // When adding intermediate aliens from cc, omit any aliens that
+    // are ancestors of proposed_scope.  For example, proposed_scope
+    // could be a loop in the middle of a long inlined sequence.
+    // Banal knows about the loop, but symtab doesn't and blows past
+    // the loop all the way to the top-level (non-inlined) code.
     //
-    // Find the deepest non-terminal alien above proposed_scope (its
-    // grandparent), find the matching node in cc and start the alien
-    // sequence at its child.
+    // FIXME: for now, compute the list of ancestors of proposed_scope
+    // that are aliens and match it against the cc list.  This is
+    // inefficient due to recomputing lists.
     //
+    // Better to memoize the lists or build a subtree of alien
+    // ancestors.  Better still if we can use the old aliens already
+    // on the stack (ie, not erase the stack).
+    //
+    Prof::Struct::Alien *alien;
     CallingContext *start_cc = cc;
-    Prof::Struct::ACodeNode *node = proposed_scope->ACodeNodeParent();
-    if (node != NULL && node->type() == Prof::Struct::ANode::TyAlien) {
-      node = node->ACodeNodeParent();
-      if (node != NULL && node->type() == Prof::Struct::ANode::TyAlien) {
-	alien = static_cast <Prof::Struct::Alien *> (node);
-	for (CallingContext *it = cc; it != NULL; it = it->Next()) {
-	  if (it->getFileName() == alien->fileName()
-	      && alien->containsLine(it->getLineNumber()))
+
+    if (cc != NULL) {
+      std::list <Prof::Struct::Alien*> alienList;
+      std::list <Prof::Struct::Alien*>::iterator ait;
+      alien = proposed_scope->ancestorAlien();
+      while (alien != NULL) {
+	alienList.push_front(alien);
+	alien = alien->ACodeNodeParent()->ancestorAlien();
+      }
+
+      for (CallingContext *it = cc; it != NULL; it = it->Next())
+      {
+	bool found = false;
+	for (ait = alienList.begin(); ait != alienList.end(); ait++) {
+	  if ((*ait)->fileName() == it->getFileName()
+	      && (*ait)->containsLine(it->getLineNumber()))
 	  {
-	    // it matches the alien node above proposed_scope, so
-	    // resume the inline sequence at the child of it.
-	    start_cc = it->Next();
+	    found = true;
 	    break;
 	  }
+	}
+	if (found) {
+	  start_cc = NULL;
+	}
+	else if (start_cc == NULL) {
+	  start_cc = it;
 	}
       }
     }
