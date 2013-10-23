@@ -12,6 +12,10 @@
 #include <papi.h>
 // *********************************************************
 
+// ******************** MONITOR *******************************
+#include <monitor.h>
+// *********************************************************
+
 // ******************** GPU includes ***********************
 #include <cuda_runtime_api.h>
 #include <cupti.h>
@@ -56,7 +60,7 @@
 }
 
 #define Chk_dlopen(v, lib, flags)                     \
-  void* v = dlopen(lib, flags);                       \
+  void* v = monitor_real_dlopen(lib, flags);          \
   if (! v) {                                          \
     fprintf(stderr, "gpu dlopen %s failed\n", lib);   \
     return;                                           \
@@ -121,6 +125,8 @@ typedef struct cuda_callback_t {
 static void
 dlgpu(void)
 {
+  // only use dlfunctions in NON static case
+#ifndef HPCRUN_STATIC_LINK
   Chk_dlopen(cudart, "libcudart.so", RTLD_NOW | RTLD_GLOBAL);
   Chk_dlsym(cudart, cudaThreadSynchronize);
 
@@ -129,6 +135,7 @@ dlgpu(void)
   Chk_dlsym(cupti, cuptiSubscribe);
   Chk_dlsym(cupti, cuptiEnableCallback);
   Chk_dlsym(cupti, cuptiUnsubscribe);
+#endif // ! HPCRUN_STATIC_LINK
 }
 
 //

@@ -373,7 +373,7 @@ hpcrun_safe_exit(); } while(0)
       fprintf(stderr, "RTLD_NEXT argument fails for " #basename " (%s)\n",         \
 	      (! try) ? "trial function pointer = NULL" : "dlerror != NULL");	   \
     dlerror();									   \
-    dlsym_arg = dlopen(#library, RTLD_LAZY);					   \
+    dlsym_arg = monitor_real_dlopen(#library, RTLD_LAZY);					   \
     if (! dlsym_arg) {                                                             \
       fprintf(stderr, "fallback dlopen of " #library " failed,"			   \
 	      " dlerror message = '%s'\n", dlerror());				   \
@@ -632,8 +632,11 @@ CpuGpuBlameShiftInit(void)
   hpcrun_disable_papi_cuda();
   if (getenv("DEBUG_HPCRUN_GPU_CONS"))
     fprintf(stderr, "CPU-GPU blame shift constructor called\n");
+  // no dlopen calls in static case
+#ifndef HPCRUN_STATIC_LINK
   PopulateEntryPointesToWrappedCalls();
   InitCpuGpuBlameShiftDataStructs();
+#endif // ! HPCRUN_STATIC_LINK
 }
 
 /******************** END CONSTRUCTORS ****/
