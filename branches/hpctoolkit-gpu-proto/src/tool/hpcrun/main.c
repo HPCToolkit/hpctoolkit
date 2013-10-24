@@ -48,6 +48,7 @@
 // system include files 
 //***************************************************************************
 
+#include <sys/types.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <setjmp.h>
@@ -55,11 +56,11 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <dlfcn.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef LINUX
 #include <linux/unistd.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <linux/limits.h>
 #endif
 
@@ -124,6 +125,8 @@
 #include <unwind/common/backtrace.h>
 #include <unwind/common/unwind.h>
 #include <unwind/common/splay-interval.h>
+
+#include <utilities/arch/context-pc.h>
 
 #include <lush/lush-backtrace.h>
 #include <lush/lush-pthread.h>
@@ -219,7 +222,6 @@ copy_execname(char* process_name)
   strncpy(execname,
 	  realpath(process_name, tmp) ? tmp : process_name,
 	  sizeof(execname));
-
 }
 
 //
@@ -246,6 +248,7 @@ hpcrun_inbounds_main(void* addr)
 
 //
 // fetch the execname
+// note: execname has no value before main().
 //
 char*
 hpcrun_get_execname(void)
@@ -286,6 +289,31 @@ hpcrun_set_safe_to_sync(void)
 //***************************************************************************
 // internal operations 
 //***************************************************************************
+
+static int
+abort_timeout_handler(int sig, siginfo_t* siginfo, void* context)
+{
+  EEMSG("hpcrun: abort timeout activated - context pc %p", 
+    hpcrun_context_pc(context)); 
+  monitor_real_abort();
+  
+  return 0; /* keep compiler happy, but can't get here */
+}
+
+
+static void 
+hpcrun_set_abort_timeout()
+{
+  char *error_timeout = getenv("HPCRUN_ABORT_TIMEOUT");
+  if (error_timeout) {
+     int seconds = atoi(error_timeout);
+     if (seconds != 0) {
+       EEMSG("hpcrun: abort timeout armed");
+       monitor_sigaction(SIGALRM, &abort_timeout_handler, 0, NULL);
+       alarm(seconds);
+     }
+  }
+}
 
 //------------------------------------
 // ** local routines & data to support interval dumping **
@@ -655,6 +683,13 @@ monitor_init_process(int *argc, char **argv, void* data)
     while (DEBUGGER_WAIT);
   }
 
+#if 0
+  // temporary patch to avoid deadlock within PAMI's optimized implementation 
+  // of all-to-all. a problem was observed when PAMI's optimized all-to-all 
+  // implementation was invoked on behalf of darshan_shutdown 
+  putenv("PAMID_COLLECTIVES=0");
+#endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
+
   hpcrun_sample_prob_init();
 
   // FIXME: if the process fork()s before main, then argc and argv
@@ -694,6 +729,8 @@ monitor_init_process(int *argc, char **argv, void* data)
   if (! is_child) {
     hpcrun_sample_sources_from_eventlist(s);
   }
+
+  hpcrun_set_abort_timeout();
 
   hpcrun_process_sample_source_none();
 
@@ -975,11 +1012,16 @@ monitor_reset_stacksize(size_t old_size)
 
 static siglongjmp_fcn *real_siglongjmp = NULL;
 
-siglongjmp_fcn *
+siglongjmp_fcn*
 hpcrun_get_real_siglongjmp(void)
 {
-  MONITOR_EXT_GET_NAME(real_siglongjmp, siglongjmp);
   return real_siglongjmp;
+}
+
+void
+hpcrun_set_real_siglongjmp(void)
+{
+  MONITOR_EXT_GET_NAME(real_siglongjmp, siglongjmp);
 }
 
 #else
@@ -998,10 +1040,14 @@ static siglongjmp_fcn *real_siglongjmp = NULL;
 siglongjmp_fcn*
 hpcrun_get_real_siglongjmp(void)
 {
-  MONITOR_EXT_GET_NAME_WRAP(real_siglongjmp, siglongjmp);
   return real_siglongjmp;
 }
 
+void
+hpcrun_set_real_siglongjmp(void)
+{
+  MONITOR_EXT_GET_NAME_WRAP(real_siglongjmp, siglongjmp);
+}
 
 void
 MONITOR_EXT_WRAP_NAME(longjmp)(jmp_buf buf, int val)
@@ -1032,7 +1078,6 @@ MONITOR_EXT_WRAP_NAME(siglongjmp)(sigjmp_buf buf, int val)
   _exit(1);
 }
 #endif
-
 
 //***************************************************************************
 // thread control (via our monitoring extensions)

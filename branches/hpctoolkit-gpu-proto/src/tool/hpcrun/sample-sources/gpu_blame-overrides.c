@@ -1118,8 +1118,8 @@ static uint32_t cleanup_finished_events() {
                 }
                 
                 
-                // Add the kernel execution time to the gpu_activity_time_metric_id
-                cct_metric_data_increment(gpu_activity_time_metric_id, current_event->launcher_cct, (cct_metric_data_t) {
+                // Add the kernel execution time to the gpu_time_metric_id
+                cct_metric_data_increment(gpu_time_metric_id, current_event->launcher_cct, (cct_metric_data_t) {
                     .i = (micro_time_end - micro_time_start)});
                 
                 event_list_node_t *deferred_node = current_event;
@@ -2022,21 +2022,10 @@ void gpu_blame_shifter(int metric_id, cct_node_t * node,  int metric_dc) {
     unfinished_event_list_head = g_unfinished_stream_list_head;
     
     if (num_unfinshed_streams) {
-        // CPU - GPU overlap
         
-        // Increment cpu_overlap by metric_incr
-        cct_metric_data_increment(cpu_overlap_metric_id, node, (cct_metric_data_t) {
-            .r = metric_incr}
-                                  );
-        
-        // Increment gpu_overlap by metric_incr/num_unfinshed_streams for each of the unfinshed streams
-        for (stream_node_t * unfinished_stream = unfinished_event_list_head; unfinished_stream; unfinished_stream = unfinished_stream->next_unfinished_stream) {
-            cct_metric_data_increment(gpu_overlap_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t) {
-                .r = metric_incr * 1.0 / num_unfinshed_streams}
-                                      );
-
-            //SHARED BLAMING: kernels need to be blamed for idleness on other procs/threads.
-            if(SHARED_BLAMING_INITIALISED && ipc_data->num_threads_at_sync_all_procs && !g_num_threads_at_sync) {
+        //SHARED BLAMING: kernels need to be blamed for idleness on other procs/threads.
+        if(SHARED_BLAMING_INITIALISED && ipc_data->num_threads_at_sync_all_procs && !g_num_threads_at_sync) {
+            for (stream_node_t * unfinished_stream = unfinished_event_list_head; unfinished_stream; unfinished_stream = unfinished_stream->next_unfinished_stream) {
                 //TODO: FIXME: the local threads at sync need to be removed, /T has to be done while adding metric
                 //increment (either one of them).
                cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t) {
@@ -2044,7 +2033,6 @@ void gpu_blame_shifter(int metric_id, cct_node_t * node,  int metric_dc) {
                                       );
             }
          }
-
     } else {
         
         /*** Code to account for Overload factor ***/
