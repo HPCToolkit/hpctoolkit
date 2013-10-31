@@ -244,7 +244,7 @@ TD_GET(gpu_data.is_thread_at_cuda_sync) = false
 create_stream0_if_needed(stream);                                                                                                       \
 uint32_t streamId = 0;                                                                                                                  \
 event_list_node_t *event_node;                                                                                                          \
-streamId = splay_get_stream_id(stream_to_id_tree_root, stream);                                                                         \
+streamId = splay_get_stream_id(stream);                                                                         \
 HPCRUN_ASYNC_BLOCK_SPIN_LOCK;                                                                                                           \
 TD_GET(gpu_data.is_thread_at_cuda_sync) = true;                                                                                         \
 ucontext_t context;                                                                                                                     \
@@ -322,7 +322,7 @@ hpcrun_safe_exit(); } while(0)
     cudaError_t ret = VA_FN_CALL(cudaRuntimeFunctionPointer[fn##Enum].fn##Real, __VA_ARGS__);\
     hpcrun_safe_enter();\
     uint32_t streamId;\
-    streamId = splay_get_stream_id(stream_to_id_tree_root, stream);\
+    streamId = splay_get_stream_id(stream);\
     hpcrun_safe_exit();\
     monitor_enable_new_threads();\
     SYNC_EPILOGUE epilogueArgs;\
@@ -677,9 +677,12 @@ static struct stream_to_id_map_t *splay(struct stream_to_id_map_t *root, cudaStr
 }
 
 
-static uint32_t splay_get_stream_id(struct stream_to_id_map_t *root, cudaStream_t key) {
+static uint32_t splay_get_stream_id(cudaStream_t key) {
     spinlock_lock(&g_stream_id_lock);
+    struct stream_to_id_map_t *root = stream_to_id_tree_root;
     REGULAR_SPLAY_TREE(stream_to_id_map_t, root, key, stream, left, right);
+    // The stream at the root must match the key, else we are in a bad shape.
+    assert(root->stream == key);
     stream_to_id_tree_root = root;
     uint32_t ret = stream_to_id_tree_root->id;
     spinlock_unlock(&g_stream_id_lock);
@@ -1370,7 +1373,7 @@ cudaError_t cudaStreamDestroy(cudaStream_t stream) {
     
     uint32_t streamId;
     
-    streamId = splay_get_stream_id(stream_to_id_tree_root, stream);
+    streamId = splay_get_stream_id(stream);
     
     hpcrun_stream_finalize(g_stream_array[streamId].st);
 
@@ -1757,7 +1760,7 @@ CUresult cuStreamSynchronize(CUstream stream) {
     
     hpcrun_safe_enter();
     uint32_t streamId;
-    streamId = splay_get_stream_id(stream_to_id_tree_root, (cudaStream_t)stream);
+    streamId = splay_get_stream_id((cudaStream_t)stream);
     hpcrun_safe_exit();
     
     SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, streamId, syncEnd);
@@ -1817,7 +1820,7 @@ CUresult cuStreamDestroy(CUstream stream) {
     hpcrun_safe_enter();
     
     uint32_t streamId;
-    streamId = splay_get_stream_id(stream_to_id_tree_root, (cudaStream_t)stream);
+    streamId = splay_get_stream_id((cudaStream_t)stream);
     
     
     hpcrun_stream_finalize(g_stream_array[streamId].st);
