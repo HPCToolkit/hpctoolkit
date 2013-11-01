@@ -681,6 +681,11 @@ monitor_init_process(int *argc, char **argv, void* data)
   if (HPCRUN_WAIT) {
     volatile int DEBUGGER_WAIT = 1;
     while (DEBUGGER_WAIT);
+
+    // when the user program forks, we don't want to wait to have a debugger 
+    // attached for each exec along a chain of fork/exec. if that is what
+    // you want when debugging, make your own arrangements. 
+    unsetenv("HPCRUN_WAIT");
   }
 
 #if 0
