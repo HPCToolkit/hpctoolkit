@@ -78,6 +78,8 @@ namespace TraceviewerServer
 	private:
 		SpaceTimeDataController* controller;
 		int getData(MPICommunication::CommandMessage*);
+		// Removes all sent messages from the queue
+		void cleanSent(list<MPICommunication::ResultBufferLocations*>& buffers, bool wait);
 	};
 
 } /* namespace TraceviewerServer */
