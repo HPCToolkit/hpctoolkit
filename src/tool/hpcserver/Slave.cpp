@@ -312,6 +312,8 @@ namespace TraceviewerServer
 			LinesSentCount++;
 			buffers.push_back(locs);
 
+			cleanSent(buffers, false);
+
 			if (LinesSentCount % 100 == 0)
 				DEBUGCOUT(2) << trueRank << " Has sent " << LinesSentCount
 						<< " ranks." << endl;
@@ -320,26 +322,36 @@ namespace TraceviewerServer
 			nextTrace = controller->getNextTrace();
 		}
 		//Clean up all our MPI buffers.
-		MPICommunication::ResultBufferLocations* current;
-		while (!buffers.empty())
-		{
-			current = buffers.front();
-			buffers.pop_front();
-			current->headerRequest.Wait();
-			current->bodyRequest.Wait();
-			//Now it is safe to delete everything
-			delete(current->header);
-			if (current->compressed)
-				delete(current->compMsg);
-			else
-				delete(current->message);
-			delete(current);
-		}
+		cleanSent(buffers, true);
 
 
 		return LinesSentCount;
 	}
+	void Slave::cleanSent(list<MPICommunication::ResultBufferLocations*>& buffers, bool wait)
+	{
+		MPICommunication::ResultBufferLocations* current;
+		while (!buffers.empty())
+		{
+			current = buffers.front();
 
+			bool okayToDelete = current->headerRequest.Test() && current->bodyRequest.Test();
+			if (!wait && !okayToDelete) return;
+
+			if (!okayToDelete)
+			{
+				current->headerRequest.Wait();
+				current->bodyRequest.Wait();
+			}
+			//Now it is safe to delete everything
+			delete (current->header);
+			if (current->compressed)
+				delete (current->compMsg);
+			else
+				delete (current->message);
+			delete (current);
+			buffers.pop_front();
+		}
+	}
 	Slave::~Slave()
 	{
 		delete (controller);
