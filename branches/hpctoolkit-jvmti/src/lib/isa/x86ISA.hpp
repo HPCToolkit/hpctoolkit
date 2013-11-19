@@ -110,7 +110,7 @@ public:
 
   virtual VMA
   getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz = 0) 
-  { return NULL;  }
+  { return (VMA)NULL;  }
 
   virtual ushort
   getInsnNumDelaySlots(MachInsn* GCC_ATTR_UNUSED mi,

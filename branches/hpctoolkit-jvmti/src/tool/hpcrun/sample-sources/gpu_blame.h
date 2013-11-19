@@ -65,12 +65,10 @@
 
 // CPU GPU blame metrics
 extern int cpu_idle_metric_id;
-extern int gpu_activity_time_metric_id;
+extern int gpu_time_metric_id;
 extern int cpu_idle_cause_metric_id;
 extern int gpu_idle_metric_id;
 extern int gpu_overload_potential_metric_id;
-extern int cpu_overlap_metric_id;
-extern int gpu_overlap_metric_id;
 extern int stream_special_metric_id;
 extern int h_to_h_data_xfer_metric_id;
 extern int h_to_d_data_xfer_metric_id;

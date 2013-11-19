@@ -117,12 +117,10 @@ bool g_cpu_gpu_enabled = false;
 
 // Various CPU-GPU metrics
 int cpu_idle_metric_id;
-int gpu_activity_time_metric_id;
+int gpu_time_metric_id;
 int cpu_idle_cause_metric_id;
 int gpu_idle_metric_id;
 int gpu_overload_potential_metric_id;
-int cpu_overlap_metric_id;
-int gpu_overlap_metric_id;
 int stream_special_metric_id;
 int h_to_d_data_xfer_metric_id;
 int d_to_h_data_xfer_metric_id;
@@ -216,15 +214,8 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     // gpu_idle_metric_id a.k.a GPU_IDLE_CAUSE measures the time when GPU is idle and blames CPU CCT node
     // for not creating work
     gpu_idle_metric_id = hpcrun_new_metric();
-    // cpu_overlap_metric_id a.k.a OVERLAPPED_CPU attributes the time to CPU CCT node  concurrently
-    // executing with GPU 
-    cpu_overlap_metric_id = hpcrun_new_metric();
-    // gpu_overlap_metric_id a.k.a OVERLAPPED_GPU attributes the time to GPU kernel (CCT node which launched it)
-    // concurrently executing with CPU 
-    gpu_overlap_metric_id = hpcrun_new_metric();
-    
-    // gpu_activity_time_metric_id a.k.a. GPU_ACTIVITY_TIME accounts the absolute running time of a kernel (CCT node which launched it)
-    gpu_activity_time_metric_id = hpcrun_new_metric();
+    // gpu_time_metric_id a.k.a. GPU_ACTIVITY_TIME accounts the absolute running time of a kernel (CCT node which launched it)
+    gpu_time_metric_id = hpcrun_new_metric();
     
     
     // h_to_d_data_xfer_metric_id is the number of bytes xfered from CPU to GPU
@@ -248,9 +239,7 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     hpcrun_set_metric_info_and_period(cpu_idle_metric_id, "CPU_IDLE", MetricFlags_ValFmt_Int, 1, metric_property_none);
     hpcrun_set_metric_info_and_period(gpu_idle_metric_id, "GPU_IDLE_CAUSE", MetricFlags_ValFmt_Int, 1, metric_property_none);
     hpcrun_set_metric_info_and_period(cpu_idle_cause_metric_id, "CPU_IDLE_CAUSE", MetricFlags_ValFmt_Real, 1, metric_property_none);
-    hpcrun_set_metric_info_and_period(cpu_overlap_metric_id, "OVERLAPPED_CPU", MetricFlags_ValFmt_Real, 1, metric_property_none);
-    hpcrun_set_metric_info_and_period(gpu_overlap_metric_id, "OVERLAPPED_GPU", MetricFlags_ValFmt_Real, 1, metric_property_none);
-    hpcrun_set_metric_info_and_period(gpu_activity_time_metric_id, "GPU_ACTIVITY_TIME", MetricFlags_ValFmt_Int, 1, metric_property_none);
+    hpcrun_set_metric_info_and_period(gpu_time_metric_id, "GPU_TIME", MetricFlags_ValFmt_Int, 1, metric_property_none);
     
     hpcrun_set_metric_info_and_period(h_to_d_data_xfer_metric_id, "H_TO_D_BYTES", MetricFlags_ValFmt_Int, 1, metric_property_none);
     hpcrun_set_metric_info_and_period(d_to_h_data_xfer_metric_id, "D_TO_H_BYTES", MetricFlags_ValFmt_Int, 1, metric_property_none);

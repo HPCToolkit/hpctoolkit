@@ -48,6 +48,7 @@
 // system include files 
 //***************************************************************************
 
+#include <sys/types.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <setjmp.h>
@@ -55,9 +56,12 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <dlfcn.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef LINUX
 #include <linux/unistd.h>
+#include <linux/limits.h>
 #endif
 
 //***************************************************************************
@@ -125,6 +129,8 @@
 #include <unwind/common/backtrace.h>
 #include <unwind/common/unwind.h>
 #include <unwind/common/splay-interval.h>
+
+#include <utilities/arch/context-pc.h>
 
 #include <lush/lush-backtrace.h>
 #include <lush/lush-pthread.h>
@@ -200,6 +206,8 @@ static spinlock_t hpcrun_aux_cleanup_lock = SPINLOCK_UNLOCKED;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_list_head = NULL;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
 static bool cuda_ctx_actions = false;
+static char execname[PATH_MAX] = {'\0'};
+
 //
 // Local functions
 //
@@ -212,6 +220,20 @@ setup_main_bounds_check(void* main_addr)
 #endif
   load_module_t* lm = NULL;
   fnbounds_enclosing_addr(main_addr, &main_lower, &main_upper, &lm);
+}
+
+//
+// Derive the full executable name from the
+// process name. Store in a local variable.
+//
+static void
+copy_execname(char* process_name)
+{
+  char tmp[PATH_MAX] = {'\0'};
+  char *rpath = realpath(process_name, tmp);
+  char *src = (rpath != NULL) ? rpath : process_name;
+
+  strncpy(execname, src, sizeof(execname));
 }
 
 //
@@ -234,6 +256,16 @@ bool
 hpcrun_inbounds_main(void* addr)
 {
   return (main_lower <= addr) && (addr <= main_upper);
+}
+
+//
+// fetch the execname
+// note: execname has no value before main().
+//
+char*
+hpcrun_get_execname(void)
+{
+  return execname;
 }
 
 //
@@ -277,6 +309,31 @@ special_cuda_ctxt_actions(bool enable)
 //***************************************************************************
 // internal operations 
 //***************************************************************************
+
+static int
+abort_timeout_handler(int sig, siginfo_t* siginfo, void* context)
+{
+  EEMSG("hpcrun: abort timeout activated - context pc %p", 
+    hpcrun_context_pc(context)); 
+  monitor_real_abort();
+  
+  return 0; /* keep compiler happy, but can't get here */
+}
+
+
+static void 
+hpcrun_set_abort_timeout()
+{
+  char *error_timeout = getenv("HPCRUN_ABORT_TIMEOUT");
+  if (error_timeout) {
+     int seconds = atoi(error_timeout);
+     if (seconds != 0) {
+       EEMSG("hpcrun: abort timeout armed");
+       monitor_sigaction(SIGALRM, &abort_timeout_handler, 0, NULL);
+       alarm(seconds);
+     }
+  }
+}
 
 //------------------------------------
 // ** local routines & data to support interval dumping **
@@ -575,9 +632,9 @@ logit(cct_node_t* n, cct_op_arg_t arg, size_t l)
 void*
 hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t* thr_ctxt)
 {
-  cct_ctxt_t* thr_ctxt = local_thread_data->thr_ctxt;
+  cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 #ifdef ENABLE_CUDA
-  cuda_ctxt_t* cuda_ctxt = local_thread_data->cuda_ctxt;
+  cuda_ctxt_t* cuda_ctxt = local_thread_data ? local_thread_data->cuda_ctxt : NULL;
 #endif // ENABLE_CUDA
 
   hpcrun_mmap_init();
@@ -595,7 +652,7 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 
 #ifdef ENABLE_CUDA
-  if (cuda_ctx_actions) {
+  if (cuda_ctx_actions && cuda_ctxt) {
     TMSG(CUDA, "Setting cuda ctxt for thread %d to %p", id, cuda_get_handle(cuda_ctxt));
     cuda_set_ctxt(cuda_ctxt);
   }
@@ -660,7 +717,19 @@ monitor_init_process(int *argc, char **argv, void* data)
   if (HPCRUN_WAIT) {
     volatile int DEBUGGER_WAIT = 1;
     while (DEBUGGER_WAIT);
+
+    // when the user program forks, we don't want to wait to have a debugger 
+    // attached for each exec along a chain of fork/exec. if that is what
+    // you want when debugging, make your own arrangements. 
+    unsetenv("HPCRUN_WAIT");
   }
+
+#if 0
+  // temporary patch to avoid deadlock within PAMI's optimized implementation 
+  // of all-to-all. a problem was observed when PAMI's optimized all-to-all 
+  // implementation was invoked on behalf of darshan_shutdown 
+  putenv("PAMID_COLLECTIVES=0");
+#endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
 
   hpcrun_sample_prob_init();
 
@@ -680,6 +749,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_set_using_threads(false);
 
+  copy_execname(process_name);
   hpcrun_files_set_executable(process_name);
 
   hpcrun_registered_sources_init();
@@ -700,6 +770,8 @@ monitor_init_process(int *argc, char **argv, void* data)
   if (! is_child) {
     hpcrun_sample_sources_from_eventlist(s);
   }
+
+  hpcrun_set_abort_timeout();
 
   hpcrun_process_sample_source_none();
 
@@ -988,11 +1060,16 @@ monitor_reset_stacksize(size_t old_size)
 
 static siglongjmp_fcn *real_siglongjmp = NULL;
 
-siglongjmp_fcn *
+siglongjmp_fcn*
 hpcrun_get_real_siglongjmp(void)
 {
-  MONITOR_EXT_GET_NAME(real_siglongjmp, siglongjmp);
   return real_siglongjmp;
+}
+
+void
+hpcrun_set_real_siglongjmp(void)
+{
+  MONITOR_EXT_GET_NAME(real_siglongjmp, siglongjmp);
 }
 
 #else
@@ -1011,10 +1088,14 @@ static siglongjmp_fcn *real_siglongjmp = NULL;
 siglongjmp_fcn*
 hpcrun_get_real_siglongjmp(void)
 {
-  MONITOR_EXT_GET_NAME_WRAP(real_siglongjmp, siglongjmp);
   return real_siglongjmp;
 }
 
+void
+hpcrun_set_real_siglongjmp(void)
+{
+  MONITOR_EXT_GET_NAME_WRAP(real_siglongjmp, siglongjmp);
+}
 
 void
 MONITOR_EXT_WRAP_NAME(longjmp)(jmp_buf buf, int val)
@@ -1045,7 +1126,6 @@ MONITOR_EXT_WRAP_NAME(siglongjmp)(sigjmp_buf buf, int val)
   _exit(1);
 }
 #endif
-
 
 //***************************************************************************
 // thread control (via our monitoring extensions)
