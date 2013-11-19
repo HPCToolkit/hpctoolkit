@@ -55,6 +55,11 @@ extern bool hpcrun_is_initialized();
 extern bool hpcrun_is_safe_to_sync(const char* fn);
 extern void hpcrun_set_safe_to_sync(void);
 
+//
+// fetch the full path of the execname
+//
+extern char* hpcrun_get_execname(void);
+
 typedef void siglongjmp_fcn(sigjmp_buf, int);
 
 siglongjmp_fcn *hpcrun_get_real_siglongjmp(void);
