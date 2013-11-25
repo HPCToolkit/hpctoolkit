@@ -306,8 +306,8 @@ hpcjava_addr_to_interval_locked(const void *addr_start, const void *addr_end)
 
   p_e = interval_tree_lookup(&ui_tree_root, addr_end);
   if (p_e != NULL) {
-    if (p_s->start > addr_start) {
-	p_s->start = addr_start;
+    if (p_e->start > addr_start) {
+	p_e->start = addr_start;
     }
     TMSG(JAVA, "found addr %p", addr_end);
     return (splay_interval_t *)p_e;
