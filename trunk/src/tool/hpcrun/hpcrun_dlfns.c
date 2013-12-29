@@ -66,9 +66,9 @@
 #include "thread_data.h"
 
 #include <messages/messages.h>
-
 #include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/spinlock.h>
+#include <monitor.h>
 
 
 //
@@ -80,6 +80,13 @@
 // they're writers, dl_iterate_phdr (via sampling or pthread_create)
 // is a reader.  Note: this lock needs to be process-wide.
 //
+// Now allow a writer to lock against itself.  That is, we record the
+// thread id of the writer and if a nested dlopen (from init ctor)
+// happens in the same thread, then we allow the thread to proceed.
+// Normally, this would be dangerous (exposes inconsistent state).
+// But in this case, the init ctor occurs after the dangerous part.
+// This is necessary to handle nested dlopens in an init constructor.
+//
 // And if we could just separate dlopen() into mmap() and its init
 // constructor, then we'd only need to block the mmap part. :-(
 //
@@ -89,7 +96,8 @@
 //
 static spinlock_t dlopen_lock = SPINLOCK_UNLOCKED;
 static volatile long dlopen_num_readers = 0;
-static volatile char dlopen_num_writers = 0;
+static volatile long dlopen_num_writers = 0;
+static int  dlopen_writer_tid = -1;
 static long num_dlopen_pending = 0;
 
 
@@ -101,16 +109,19 @@ hpcrun_dlopen_pending(void)
 }
 
 
-// Writers always wait until they acquire the lock.
+// Writers always wait until they acquire the lock.  Now allow writers
+// to lock against themselves, but only in the same thread.
 static void
 hpcrun_dlopen_write_lock(void)
 {
+  int tid = monitor_get_thread_num();
   int acquire = 0;
 
   do {
     spinlock_lock(&dlopen_lock);
-    if (dlopen_num_writers == 0) {
-      dlopen_num_writers = 1;
+    if (dlopen_num_writers == 0 || tid == dlopen_writer_tid) {
+      dlopen_num_writers++;
+      dlopen_writer_tid = tid;
       acquire = 1;
     }
     spinlock_unlock(&dlopen_lock);
@@ -126,7 +137,7 @@ hpcrun_dlopen_write_lock(void)
 static void
 hpcrun_dlopen_write_unlock(void)
 {
-  dlopen_num_writers = 0;
+  dlopen_num_writers--;
 }
 
 
@@ -176,17 +187,26 @@ hpcrun_pre_dlopen(const char *path, int flags)
 
 // It's safe to downgrade the lock during fnbounds_map_open_dsos()
 // because it acquires the dl-iterate lock before the fnbounds lock,
-// and that order is consistent with sampling.
+// and that order is consistent with sampling.  Note: can only
+// downgrade the lock on the last (outermost) dlopen.
 //
 void 
 hpcrun_dlopen(const char *module_name, int flags, void *handle)
 {
+  int outermost = (dlopen_num_writers == 1);
+
   TMSG(LOADMAP, "dlopen: handle = %p, name = %s", handle, module_name);
-  hpcrun_dlopen_downgrade_lock();
+  if (outermost) {
+    hpcrun_dlopen_downgrade_lock();
+  }
   fnbounds_map_open_dsos();
   atomic_add_i64(&num_dlopen_pending, -1L);
-  TD_GET(inside_dlfcn) = false;
-  hpcrun_dlopen_read_unlock();
+  if (outermost) {
+    TD_GET(inside_dlfcn) = false;
+    hpcrun_dlopen_read_unlock();
+  } else {
+    hpcrun_dlopen_write_unlock();
+  }
 }
 
 
@@ -205,8 +225,12 @@ hpcrun_dlclose(void *handle)
 void
 hpcrun_post_dlclose(void *handle, int ret)
 {
+  int outermost = (dlopen_num_writers == 1);
+
   TMSG(LOADMAP, "dlclose: handle = %p", handle);
   fnbounds_unmap_closed_dsos();
-  TD_GET(inside_dlfcn) = false;
+  if (outermost) {
+    TD_GET(inside_dlfcn) = false;
+  }
   hpcrun_dlopen_write_unlock();
 }
