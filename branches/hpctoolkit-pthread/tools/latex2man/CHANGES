@@ -1,0 +1,106 @@
+
+                Change history of the latex2man package
+                =======================================
+
+$Id: CHANGES,v 1.60 2008/11/11 07:18:18 vollmer Exp $
+1.23   11 Nov  2008     - use /usr/bin/env to locate the perl interpreter
+       	                  Thanks to "J.R. Mauro" <jrm8005-at-gmail.com>
+1.22   05 Dec  2007     - Fixed TROFF code generation if none of -H -T -M -L
+                          is given.
+1.21   05 Jul  2007     - Fixed Makefile
+1.20   24 Apr  2007     - Added optional parameter to Table-environment
+                        - Fixed generataion of tbl-tables.
+1.19   12 Sep  2005     - Thanks to Aleksey Nogin <nogin@cs.caltech.edu> for
+                          his bugfix of the problem he found:
+                          "I came across another issue in the latest
+                           latex2man - if the source file has "\verb+.foo+" in
+                           it, then the ".foo" will be copied to the man page
+                           verbatim and if it happens to be placed on the
+                           beginning of a line, then troff will consider it to
+                           be a command and not display it properly."
+1.18   20 July 2005     - latex2man.sty: Removed option pdf.
+1.17   14 Oct  2004     - Fixed order of gerating &amp; for HTML
+                          (Thanks to Aleksey Nogin <nogin@cs.caltech.edu>)
+1.16   06 Sep  2004     - Fixed handling of % in \verb+..+ and verbatim
+                          environments
+                          (Thanks to  Aleksey Nogin <nogin@cs.caltech.edu>)
+                        - added \subsubsection
+1.15   12 Dec  2001     - added extra stuff in the headline of man pages
+                          (thanks to Andrew Anderson <aja@emulab.ee.mu.oz.au>)
+1.14   18 June 2001     - TROFF generation: fixed handling of leading . and '
+                        - removed macro \Dot
+1.13   08 May  2001     - Added \begin{center} / \end{center}.
+                        - Reimplemented font changing stuff in TROFF
+                          generation (use now troff instead of -man commands).
+1.12.3 10 Apr  2001     - Fixed \oOptArg in man output.
+1.12.2 12 Mar  2001     - Fixed handling of conditional translation to LaTeX
+                          (if in a IF .. ELSE .. END-IF, the condition
+                           evaluates to true, the ELSE and END-IF are written
+                           to the result file, but not the IF...
+                           Now all %@% directives are written.)
+1.12.1 13 Sep  2000     - In \setDate and \setVersion a ~ is replaced by the
+                          output specific blank.
+1.12   28 Aug  2000     - Fixed error in htmlVerb (thanks to
+                          Glunz Wolfgang <Wolfgang.Glunz@icn.siemens.de>)
+                        - Fixed error in conditional text handling:
+                          (%@%ELSE%@% was not handled correct).
+1.11   25 Aug  2000     - Fixed error in conditional text handling:
+                          (MAN was not enabled by default, when calling
+                           with -M).
+                        - Added eror message, if arguments of \begin{Name},
+                          \section, and \subsection are not contained on a
+                          single line.
+1.10.1 21 Aug  2000     - Better handling of \Tilde.
+1.10   13 Jun  2000     - added \Begin{Description}[label] (based on an idea of
+                          Andi Winter <winter@cocolab.de>)
+                        - Thanks to  Andi Winter <winter@cocolab.de>:
+                          - fixed: removed wrong line break in date for
+                            TROFF output
+                          - fixed wrong line breaks in some TROFF macros
+                          - fixed wrong output of optional arguments in TROFF
+                          - allow spaces between `\item' and following `['
+1.9.1  20 Mar  2000     - added \OptoArg \oOptoArg Option with optional
+                          argument (Thanks to Andi Winter <winter@cocolab.de>)
+1.9    13 Mar  2000     - latex2man.sty: Added option pdf.
+                          latex2man:     define names HTML TEXI MAN LATEX
+                                         automatically.
+1.8    11 Feb  2000     - Added verbatim environment (many thanks to
+                          "Olaf Maibaum" <Maibaum@Informatik.Uni-Oldenburg.DE>
+                          who provided me the troff generation code)
+                        - Added better handling of german Umlaut
+                        - Fixed minor HTML tag mismatch.
+1.7.1  17 Nov  1999     - Fixed END_IF handling of -L option.
+1.7    25 July 1999     - Allow german Umlaute to be written as \"a, etc.
+1.6.4  30 May  1999     - Added fix of Frank.Schilder@Mathematik.TU-Ilmenau.DE
+                          line 418: from
+                                if ($manRS == 0 && $list_nest > 0) {
+                          to
+                                if ($manRS == 0 && $list_nest > 1) {
+                          line 471: from
+
+                                #    manParagraph;
+                          to
+                                     manParagraph;
+1.6.3   25 Mar  1999    - Added \,  Math stuff is matched now after macro
+                          arguments
+1.6.2   21 Nov  1998    - Added \LBr / \RBr, added \setlength{}{} and \itemsep
+                          \Dollar $\ge$, $\le$, $\leftarrow$, $\Leftarrow$,
+                          $\rightarrow$, $\Rightarrow$.
+1.6.1   14 Sep  1998    - Added $<=$, $>=$, $=$ $<>$.
+1.6     08 Sep  1998    - Added \SP macro.
+                        - Hyphenation \- is translated for TexInfo into @-.
+                        - Runs now under older Versions of Perl (e.g. 5.03).
+1.5     22 Aug  1998    - Support for the fanyhdr package, added latex2man.cfg
+                        - Now \% and \- work.
+1.4     23 July 1998    - Fixed typos.
+                        - Fixed generated HTML
+                             The following is wrong: <a ..> <h..>....</h..></a>
+                             Correct is:             <h..><a ..>...</a></h..>
+1.3     03 June 1998    - Add conditional text feature
+1.2     18 Jan  1998    - Enumerate/itemize/description environments may
+                          be nested now.
+                        - Output specific line break macros.
+1.1     14 Jan  1998    - Fixed bug in HTML generation (no blanks emited
+                          after \hline)
+1.0     11 Jan  1998    - Initial version
+

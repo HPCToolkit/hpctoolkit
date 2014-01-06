@@ -1,0 +1,44 @@
+#
+# Set and export HPCTOOLKIT to the root dir of the install (prefix).
+# If HPCTOOLKIT already names a valid directory, then use that, else
+# try to find the root directory from $0.
+#
+hpc_path_to_root="${hpc_path_to_root:-..}"
+valid_hpctoolkit_dir()
+{
+    test -d "$1" && test -d "$1/lib/hpctoolkit"
+}
+
+# Warn if HPCTOOLKIT is set improperly, set to abs path if ok.
+if test "x$HPCTOOLKIT" != x ; then
+    if valid_hpctoolkit_dir "$HPCTOOLKIT" ; then
+	HPCTOOLKIT=`( cd "$HPCTOOLKIT" 2>/dev/null && pwd )`
+    else
+	echo "Warning: invalid HPCTOOLKIT directory: $HPCTOOLKIT" 1>&2
+    fi
+fi
+
+# Try dirname of $0, dereference symlink if needed.
+if valid_hpctoolkit_dir "$HPCTOOLKIT" ; then :
+else
+    if test -L "$0" ; then
+	hpc_file=`readlink "$0"`
+    else
+	hpc_file="$0"
+    fi
+    hpc_dir=`dirname "$hpc_file"`
+    HPCTOOLKIT=`( cd "${hpc_dir}/${hpc_path_to_root}" 2>/dev/null && pwd )`
+fi
+
+if valid_hpctoolkit_dir "$HPCTOOLKIT" ; then :
+else
+    cat <<EOF >&2
+
+$0: Unable to find HPCTOOLKIT root directory.
+Please set HPCTOOLKIT to the install prefix, either in this script,
+or in your environment, and try again.
+EOF
+    exit 1
+fi
+
+export HPCTOOLKIT
