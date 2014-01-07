@@ -151,10 +151,10 @@ dylib_addr_is_mapped(void *addr)
 
 
 int 
-dylib_find_module_containing_addr(void *addr, 
-				  char *module_name,
-				  void **start, 
-				  void **end)
+dylib_find_module_containing_addr(void* addr, 
+				  char* module_name,
+				  void** start, 
+				  void** end)
 {
   int retval = 0; // not found
   struct dylib_fmca_s arg;
@@ -284,10 +284,10 @@ dylib_map_open_dsos_callback(struct dl_phdr_info *info, size_t size,
 
 
 static int
-dylib_find_module_containing_addr_callback(struct dl_phdr_info *info, 
-					   size_t size, void *fargs_v)
+dylib_find_module_containing_addr_callback(struct dl_phdr_info* info, 
+					   size_t size, void* fargs_v)
 {
-  struct dylib_fmca_s *fargs = (struct dylib_fmca_s *) fargs_v;
+  struct dylib_fmca_s* fargs = (struct dylib_fmca_s*) fargs_v;
   dylib_get_segment_bounds(info, &fargs->bounds);
 
   //------------------------------------------------------------------------

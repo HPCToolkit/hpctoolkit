@@ -398,6 +398,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
     partial_unw = true;
   }
 
+#if 0
   //
   // If this backtrace is generated from sampling in a thread,
   // take off the top 'monitor_pthread_main' node
@@ -407,6 +408,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
     TMSG(THREAD_CTXT, "Thread correction, back off outermost backtrace entry");
     bt_last--;
   }
+#endif
   cct_node_t* n = hpcrun_cct_record_backtrace_w_metric(cct, partial_unw, bt.fence == FENCE_THREAD,
 						       bt_beg, bt_last, tramp_found,
 						       metricId, metricIncr);

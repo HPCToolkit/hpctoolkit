@@ -73,9 +73,12 @@ pabs(ptrdiff_t diff)
 // hpcrun_unw_init
 // ----------------------------------------------------------
 
+extern void hpcrun_set_real_siglongjmp(void);
+
 void
 hpcrun_unw_init(void)
-{   // nothing necessary
+{
+  hpcrun_set_real_siglongjmp();
 }
 
 

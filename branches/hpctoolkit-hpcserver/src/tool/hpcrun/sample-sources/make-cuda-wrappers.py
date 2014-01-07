@@ -197,7 +197,7 @@ enum cuDriverAPIIndex {
     fp.write('''
 CU_MAX_APIS
 };
-extern cuDriverFunctionPointer_t cuDriverFunctionPointer[];
+extern cuDriverFunctionPointer_t cuDriverFunctionPointer[CU_MAX_APIS];
 ''')
 
     fp.write('#endif\n')
@@ -254,7 +254,7 @@ enum cudaRuntimeAPIIndex{
     fp.write('''
 CUDA_MAX_APIS
 };
-extern cudaRuntimeFunctionPointer_t cudaRuntimeFunctionPointer[];
+extern cudaRuntimeFunctionPointer_t cudaRuntimeFunctionPointer[CUDA_MAX_APIS];
 ''')
 
     fp.write('#endif\n')

@@ -371,13 +371,26 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 <p>The list below gives example HPCToolkit Externals and HPCToolkit <code>configure</code> commands (respectively) for selected platforms.</p>
 
-<p><strong>N.B.:</strong> The commands are designed to replace the respective commands in the <a href="#building-installing">above build instructions</a>.</p>
+<p><strong>N.B.:</strong> These commands are designed to replace the respective commands in the <a href="#building-installing">above build instructions</a>.</p>
   <ul>
 
     <li><p>Blue Gene/Q:</p>
         <dl class="indent">
-          <dt>HPCToolkit's Externals</dt>
-          <dd><code>../configure --prefix=`pwd`/../powerpc64-linux
+	  <dt>
+	  Load the '<code>+mpiwrapper-gcc</code>' softenv package (for the MPICXX
+	  compiler) and check that the back-end <code>powerpc64-bgq-linux</code>
+	  compilers are on your PATH.
+	  Use the '<code>--enable-bgq</code>' option for HPCToolkit externals
+	  to build for the Blue Gene/Q compute nodes.
+	  </dt>
+	  <dd><code>soft add +mpiwrapper-gcc <br/>
+	       PATH="/bgsys/drivers/ppcfloor/gnu-linux/bin/:$PATH"
+	      </code>
+	  </dd>
+
+          <p><dt>HPCToolkit's Externals</dt>
+          <dd><code>../configure --prefix=`pwd`/../powerpc64-linux \<br/>
+               &nbsp;&nbsp;&nbsp;&nbsp; --enable-bgq
               </code>
           </dd>
 
@@ -390,8 +403,15 @@ Please note that a list of examples below provides <code>configure</code> comman
               &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/soft/perftools/papi
               </code>
           </dd>
-	  <dt>&nbsp;</dt>
-	  <dt>Note: The paths for <code>MPICXX</code> and PAPI may be different on your system.</dt>
+	  <p><dt>
+	  Normally on Blue Gene, you want to build HPCToolkit to run on the compute nodes.
+	  Configure will auto-detect this and default to the back-end nodes (but issue
+	  a warning).  The '<code>--enable-bgq</code>' flag adds options specific
+	  to the Blue Gene/Q compute nodes and suppresses the warning.
+	  If you want to build <code>hpcrun</code> to run on the front-end nodes,
+	  then use the option '<code>--disable-bgq</code>'.
+	  </dt>
+	  <p><dt>Note: The paths for <code>MPICXX</code> and PAPI may be different on your system.</dt>
         </dl>
     </li>
 
@@ -679,7 +699,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2013/06/19</span>]
+<p>[<span class="lastupdated">Page last updated: 2013/08/22</span>]
 </p>
 
 <!-- ********************************************************************** -->

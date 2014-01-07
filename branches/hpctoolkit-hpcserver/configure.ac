@@ -121,6 +121,22 @@ HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
 AC_SUBST([HPCTOOLKIT_PLATFORM])
 
 #-------------------------------------------------
+# CONFIG_SITE
+#-------------------------------------------------
+
+# If CONFIG_SITE contains the path to a file, then autoconf sources
+# that file to reset default values for libdir, etc.  This may break
+# our launch scripts by producing an install layout that they don't
+# expect.
+
+warn_config_site=no
+if test -f "$CONFIG_SITE" ; then
+  AC_MSG_WARN([CONFIG_SITE is set in the environment])
+  warn_config_site=yes
+fi
+libdir='${exec_prefix}/lib'
+
+#-------------------------------------------------
 # SVN version
 #-------------------------------------------------
 
@@ -2768,6 +2784,14 @@ AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
+
+if test "$warn_config_site" = yes ; then
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([You have CONFIG_SITE set in your environment.])
+  AC_MSG_WARN([This may break some of hpctoolkit's install paths and])
+  AC_MSG_WARN([launch scripts.  Set CONFIG_SITE=NONE or else unset it])
+  AC_MSG_WARN([from your environment and rerun configure.])
+fi
 
 if test "$warn_non_gcc" = yes ; then
   AC_MSG_NOTICE([])

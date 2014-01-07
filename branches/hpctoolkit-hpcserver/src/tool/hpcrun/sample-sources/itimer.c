@@ -261,6 +261,9 @@ hpcrun_stop_timer(thread_data_t *td)
 {
 #ifdef ENABLE_CLOCK_REALTIME
   if (use_realtime || use_cputime) {
+    if (! td->timer_init) {
+      return 0;
+    }
     return timer_settime(td->timerid, 0, &itspec_stop, NULL);
   }
 #endif
