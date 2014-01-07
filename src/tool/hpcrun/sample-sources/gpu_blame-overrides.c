@@ -244,7 +244,7 @@ TD_GET(gpu_data.is_thread_at_cuda_sync) = false
 create_stream0_if_needed(stream);                                                                                                       \
 uint32_t streamId = 0;                                                                                                                  \
 event_list_node_t *event_node;                                                                                                          \
-streamId = splay_get_stream_id(stream_to_id_tree_root, stream);                                                                         \
+streamId = splay_get_stream_id(stream);                                                                         \
 HPCRUN_ASYNC_BLOCK_SPIN_LOCK;                                                                                                           \
 TD_GET(gpu_data.is_thread_at_cuda_sync) = true;                                                                                         \
 ucontext_t context;                                                                                                                     \
@@ -322,7 +322,7 @@ hpcrun_safe_exit(); } while(0)
     cudaError_t ret = VA_FN_CALL(cudaRuntimeFunctionPointer[fn##Enum].fn##Real, __VA_ARGS__);\
     hpcrun_safe_enter();\
     uint32_t streamId;\
-    streamId = splay_get_stream_id(stream_to_id_tree_root, stream);\
+    streamId = splay_get_stream_id(stream);\
     hpcrun_safe_exit();\
     monitor_enable_new_threads();\
     SYNC_EPILOGUE epilogueArgs;\
@@ -349,6 +349,56 @@ hpcrun_safe_exit(); } while(0)
     SYNC_MEMCPY_EPILOGUE epilogueArgs;\
     return ret;\
     }
+
+
+//
+// Macro to populate a given set of CUDA function pointers:
+//   takes a basename for a function pointer set, and a library
+//   to read from (as a fallback position).
+//
+//  Method:
+//
+//  Decide on RTLD_NEXT or dlopen of library for the function pointer set
+//  (Abort if neither method succeeds)
+//  fetch all of the symbols using dlsym, aborting if any failure
+
+#define PopulateGPUFunctionPointers(basename, library)                             \
+  char *error;                                                                     \
+                                                                                   \
+  dlerror(); 									   \
+  void* dlsym_arg = RTLD_NEXT;                                                     \
+  void* try = dlsym(dlsym_arg, basename ## FunctionPointer[0].functionName);	   \
+  if ((error=dlerror()) || (! try)) {						   \
+    if (getenv("DEBUG_HPCRUN_GPU_CONS"))					   \
+      fprintf(stderr, "RTLD_NEXT argument fails for " #basename " (%s)\n",         \
+	      (! try) ? "trial function pointer = NULL" : "dlerror != NULL");	   \
+    dlerror();									   \
+    dlsym_arg = dlopen(#library, RTLD_LAZY);					   \
+    if (! dlsym_arg) {                                                             \
+      fprintf(stderr, "fallback dlopen of " #library " failed,"			   \
+	      " dlerror message = '%s'\n", dlerror());				   \
+      monitor_real_abort();							   \
+    }                                                                              \
+    if (getenv("DEBUG_HPCRUN_GPU_CONS"))                                           \
+      fprintf(stderr, "Going forward with " #basename " overrides using " #library "\n"); \
+  }                                                                                \
+  else										   \
+    if (getenv("DEBUG_HPCRUN_GPU_CONS"))					   \
+      fprintf(stderr, "Going forward with " #basename " overrides using RTLD_NEXT\n"); \
+  for (int i = 0; i < sizeof(basename ## FunctionPointer)/sizeof(basename ## FunctionPointer[0]); i++) { \
+    dlerror();                                                                     \
+    basename ## FunctionPointer[i].generic =					   \
+      dlsym(dlsym_arg, basename ## FunctionPointer[i].functionName);		   \
+    if (getenv("DEBUG_HPCRUN_GPU_CONS"))					   \
+      fprintf(stderr, #basename "Fnptr[%d] @ %p for %s = %p\n",                    \
+	      i, & basename ## FunctionPointer[i].generic,			   \
+	      basename ## FunctionPointer[i].functionName,			   \
+	      basename ## FunctionPointer[i].generic);				   \
+    if ((error = dlerror()) != NULL) {                                             \
+      EEMSG("%s: during dlsym \n", error);					   \
+      monitor_real_abort();							   \
+    }										   \
+  }
 
 /******************************************************************************
  * local constants
@@ -535,35 +585,23 @@ static IPC_data_t * ipc_data;
 
 // obtain function pointers to all real cuda runtime functions
 
-static void PopulateEntryPointesToWrappedCudaRuntimeCalls() {
-    char *error;
-    
-    for (int i = 0; i < CUDA_MAX_APIS; i++) {
-        dlerror(); // null out the prev err
-        cudaRuntimeFunctionPointer[i].generic = dlsym(RTLD_NEXT, cudaRuntimeFunctionPointer[i].functionName);
-        if ((error = dlerror()) != NULL) {
-            EEMSG("%s: during dlsym \n", error);
-            monitor_real_abort();
-        }
-    }
+static void
+PopulateEntryPointesToWrappedCudaRuntimeCalls()
+{
+  PopulateGPUFunctionPointers(cudaRuntime, libcudart.so)
 }
 
 // obtain function pointers to all real cuda driver functions
 
-static void PopulateEntryPointesToWrappedCuDriverCalls() {
-    char *error;
-    
-    for (int i = 0; i < CU_MAX_APIS; i++) {
-        dlerror(); // null out the prev err
-        cuDriverFunctionPointer[i].generic = dlsym(RTLD_NEXT, cuDriverFunctionPointer[i].functionName);
-        if ((error = dlerror()) != NULL) {
-            EEMSG("%s: during dlsym \n", error);
-            monitor_real_abort();
-        }
-    }
+static void
+PopulateEntryPointesToWrappedCuDriverCalls(void)
+{
+  PopulateGPUFunctionPointers(cuDriver, libcuda.so)
 }
 
-static void InitCpuGpuBlameShiftDataStructs(){
+static void
+InitCpuGpuBlameShiftDataStructs(void)
+{
     char * shared_blaming_env;
     char * cuda_launch_skip_inner_env;
     g_unfinished_stream_list_head = NULL;
@@ -589,7 +627,8 @@ __attribute__((constructor))
 static void
 CpuGpuBlameShiftInit(void)
 {
-  // fprintf(stderr, "CPU-GPU blame shift constructor called\n");
+  if (getenv("DEBUG_HPCRUN_GPU_CONS"))
+    fprintf(stderr, "CPU-GPU blame shift constructor called\n");
   PopulateEntryPointesToWrappedCalls();
   InitCpuGpuBlameShiftDataStructs();
 }
@@ -638,9 +677,12 @@ static struct stream_to_id_map_t *splay(struct stream_to_id_map_t *root, cudaStr
 }
 
 
-static uint32_t splay_get_stream_id(struct stream_to_id_map_t *root, cudaStream_t key) {
+static uint32_t splay_get_stream_id(cudaStream_t key) {
     spinlock_lock(&g_stream_id_lock);
+    struct stream_to_id_map_t *root = stream_to_id_tree_root;
     REGULAR_SPLAY_TREE(stream_to_id_map_t, root, key, stream, left, right);
+    // The stream at the root must match the key, else we are in a bad shape.
+    assert(root->stream == key);
     stream_to_id_tree_root = root;
     uint32_t ret = stream_to_id_tree_root->id;
     spinlock_unlock(&g_stream_id_lock);
@@ -1073,8 +1115,8 @@ static uint32_t cleanup_finished_events() {
                 }
                 
                 
-                // Add the kernel execution time to the gpu_activity_time_metric_id
-                cct_metric_data_increment(gpu_activity_time_metric_id, current_event->launcher_cct, (cct_metric_data_t) {
+                // Add the kernel execution time to the gpu_time_metric_id
+                cct_metric_data_increment(gpu_time_metric_id, current_event->launcher_cct, (cct_metric_data_t) {
                     .i = (micro_time_end - micro_time_start)});
                 
                 event_list_node_t *deferred_node = current_event;
@@ -1331,7 +1373,7 @@ cudaError_t cudaStreamDestroy(cudaStream_t stream) {
     
     uint32_t streamId;
     
-    streamId = splay_get_stream_id(stream_to_id_tree_root, stream);
+    streamId = splay_get_stream_id(stream);
     
     hpcrun_stream_finalize(g_stream_array[streamId].st);
 
@@ -1718,7 +1760,7 @@ CUresult cuStreamSynchronize(CUstream stream) {
     
     hpcrun_safe_enter();
     uint32_t streamId;
-    streamId = splay_get_stream_id(stream_to_id_tree_root, (cudaStream_t)stream);
+    streamId = splay_get_stream_id((cudaStream_t)stream);
     hpcrun_safe_exit();
     
     SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, streamId, syncEnd);
@@ -1778,7 +1820,7 @@ CUresult cuStreamDestroy(CUstream stream) {
     hpcrun_safe_enter();
     
     uint32_t streamId;
-    streamId = splay_get_stream_id(stream_to_id_tree_root, (cudaStream_t)stream);
+    streamId = splay_get_stream_id((cudaStream_t)stream);
     
     
     hpcrun_stream_finalize(g_stream_array[streamId].st);
@@ -1987,21 +2029,10 @@ void gpu_blame_shifter(int metric_id, cct_node_t * node,  int metric_dc) {
     unfinished_event_list_head = g_unfinished_stream_list_head;
     
     if (num_unfinshed_streams) {
-        // CPU - GPU overlap
         
-        // Increment cpu_overlap by metric_incr
-        cct_metric_data_increment(cpu_overlap_metric_id, node, (cct_metric_data_t) {
-            .r = metric_incr}
-                                  );
-        
-        // Increment gpu_overlap by metric_incr/num_unfinshed_streams for each of the unfinshed streams
-        for (stream_node_t * unfinished_stream = unfinished_event_list_head; unfinished_stream; unfinished_stream = unfinished_stream->next_unfinished_stream) {
-            cct_metric_data_increment(gpu_overlap_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t) {
-                .r = metric_incr * 1.0 / num_unfinshed_streams}
-                                      );
-
-            //SHARED BLAMING: kernels need to be blamed for idleness on other procs/threads.
-            if(SHARED_BLAMING_INITIALISED && ipc_data->num_threads_at_sync_all_procs && !g_num_threads_at_sync) {
+        //SHARED BLAMING: kernels need to be blamed for idleness on other procs/threads.
+        if(SHARED_BLAMING_INITIALISED && ipc_data->num_threads_at_sync_all_procs && !g_num_threads_at_sync) {
+            for (stream_node_t * unfinished_stream = unfinished_event_list_head; unfinished_stream; unfinished_stream = unfinished_stream->next_unfinished_stream) {
                 //TODO: FIXME: the local threads at sync need to be removed, /T has to be done while adding metric
                 //increment (either one of them).
                cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t) {
@@ -2009,7 +2040,6 @@ void gpu_blame_shifter(int metric_id, cct_node_t * node,  int metric_dc) {
                                       );
             }
          }
-
     } else {
         
         /*** Code to account for Overload factor ***/

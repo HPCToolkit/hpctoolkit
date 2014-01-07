@@ -66,10 +66,12 @@
 // system includes
 //*********************************************************************
 
+#include <stdio.h>     // fopen, fclose, etc
 #include <dlfcn.h>     // for dlopen/dlclose
 #include <string.h>    // for strcmp, strerror
 #include <stdlib.h>    // for getenv
 #include <errno.h>     // for errno
+#include <stdint.h>
 #include <stdbool.h>   
 #include <sys/param.h> // for PATH_MAX
 #include <sys/types.h>
@@ -93,6 +95,7 @@
 #include "client.h"
 #include "dylib.h"
 
+#include <hpcrun/main.h>
 #include <hpcrun_dlfns.h>
 #include <hpcrun_stats.h>
 #include <disabled.h>
@@ -238,6 +241,91 @@ fnbounds_map_open_dsos()
 }
 
 
+//
+// Find start and end of executable from /proc/self/maps
+//
+static void
+fnbounds_find_exec_bounds_proc_maps(char* exename, void**start, void** end)
+{
+  *start = NULL; *end = NULL;
+  FILE* loadmap = fopen("/proc/self/maps", "r");
+  if (! loadmap) {
+    EMSG("Could not open /proc/self/maps");
+    return;
+  }
+  char linebuf[1024 + 1];
+  char tmpname[PATH_MAX];
+  char* addr = NULL;
+  for(;;) {
+    char* l = fgets(linebuf, sizeof(linebuf), loadmap);
+    if (feof(loadmap)) break;
+    char* dc = NULL;
+    char* save = NULL;
+    const char delim[] = " \n";
+    addr = strtok_r(l, delim, &save);
+    char* perms = strtok_r(NULL, delim, &save);
+    // skip 3 tokens
+    for (int i=0; i < 3; i++) dc = strtok_r(NULL, delim, &save);
+    char* name = strtok_r(NULL, delim, &save);
+    realpath(name, tmpname); 
+    if ((strncmp(perms, "r-x", 3) == 0) && (strcmp(tmpname, exename) == 0)) break;
+  }
+  fclose(loadmap);
+  char* save = NULL;
+  const char dash[] = "-";
+  char* start_str = strtok_r(addr, dash, &save);
+  char* end_str   = strtok_r(NULL, dash, &save);
+  *start = (void*) (uintptr_t) strtol(start_str, NULL, 16);
+  *end   = (void*) (uintptr_t) strtol(end_str, NULL, 16);
+}
+
+dso_info_t*
+fnbounds_dso_exec(void)
+{
+  char filename[PATH_MAX];
+  struct fnbounds_file_header fh;
+  void* start = NULL;
+  void* end   = NULL;
+
+  TMSG(MAP_EXEC, "Entry");
+  realpath("/proc/self/exe", filename);
+  void** nm_table = (void**) hpcrun_syserv_query(filename, &fh);
+  if (! nm_table) {
+    EMSG("No nm_table for executable %s", filename);
+    return hpcrun_dso_make(filename, NULL, NULL, NULL, NULL, 0);
+  }
+  if (fh.num_entries < 1) {
+    EMSG("fnbounds returns no symbols for file %s, (all intervals poisoned)", filename);
+    return hpcrun_dso_make(filename, NULL, NULL, NULL, NULL, 0);
+  }
+  TMSG(MAP_EXEC, "Relocatable exec");
+  if (fh.is_relocatable) {
+    if (nm_table[0] >= start && nm_table[0] <= end) {
+      // segment loaded at its preferred address
+      fh.is_relocatable = 0;
+    }
+    // Use loadmap to find start, end for a relocatable executable
+    fnbounds_find_exec_bounds_proc_maps(filename, &start, &end);
+    TMSG(MAP_EXEC, "Bounds for relocatable exec = %p, %p", start, end);
+  }
+  else {
+    TMSG(MAP_EXEC, "NON relocatable exec");
+    char executable_name[PATH_MAX];
+    void* mstart; 
+    void* mend;
+    if (dylib_find_module_containing_addr(nm_table[0],
+					  executable_name, &mstart, &mend)) {
+      start = (void*) mstart;
+      end = (void*) mend;
+    }
+    else {
+      start = nm_table[0];
+      end = nm_table[fh.num_entries - 1];
+    }
+  }
+  return hpcrun_dso_make(filename, nm_table, &fh, start, end, fh.mmap_size);
+}
+
 bool
 fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
 {
@@ -338,12 +426,12 @@ fnbounds_fetch_executable_table(void)
 // is already locked (mostly).
 //*********************************************************************
 
-static dso_info_t *
-fnbounds_compute(const char *incoming_filename, void *start, void *end)
+static dso_info_t* 
+fnbounds_compute(const char* incoming_filename, void* start, void* end)
 {
   struct fnbounds_file_header fh;
   char filename[PATH_MAX];
-  void **nm_table;
+  void** nm_table;
   long map_size;
 
   if (incoming_filename == NULL) {
@@ -351,7 +439,7 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
   }
   realpath(incoming_filename, filename);
 
-  nm_table = (void **) hpcrun_syserv_query(filename, &fh);
+  nm_table = (void**) hpcrun_syserv_query(filename, &fh);
   if (nm_table == NULL) {
     return hpcrun_dso_make(filename, NULL, NULL, start, end, 0);
   }
@@ -370,15 +458,17 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
       // segment loaded at its preferred address
       fh.is_relocatable = 0;
     }
-  } else {
+  }
+  else {
     char executable_name[PATH_MAX];
     void *mstart; 
     void *mend;
     if (dylib_find_module_containing_addr(nm_table[0],
 					  executable_name, &mstart, &mend)) {
-      start = (void *) mstart;
-      end = (void *) mend;
-    } else {
+      start = (void*) mstart;
+      end = (void*) mend;
+    }
+    else {
       start = nm_table[0];
       end = nm_table[fh.num_entries - 1];
     }
@@ -423,5 +513,15 @@ fnbounds_get_loadModule(void *ip)
 static void
 fnbounds_map_executable()
 {
-  dylib_map_executable();
+  // dylib_map_executable() ==>
+  // fnbounds_ensure_mapped_dso("/proc/self/exe", NULL, NULL) ==>
+  //{
+  //   FNBOUNDS_LOCK;
+  //   dso = fnbound_compute(exename, ...);
+  //   hpcrun_loadmap_map(dso);
+  //   FNBOUNDS_UNLOCK;
+  //}
+  FNBOUNDS_LOCK;
+  hpcrun_loadmap_map(fnbounds_dso_exec());
+  FNBOUNDS_UNLOCK;
 }
