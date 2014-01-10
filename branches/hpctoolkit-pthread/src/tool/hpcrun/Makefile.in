@@ -305,30 +305,31 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	disabled.c cct_insert_backtrace.c env.c epoch.c files.c \
 	handling_sample.c hpcrun_options.c hpcrun_stats.c loadmap.c \
 	metrics.c name.c rank.c sample_event.c sample_prob.c \
-	sample_sources_all.c sample-sources/blame-shift.c \
-	sample-sources/common.c sample-sources/ga.c \
-	sample-sources/io.c sample-sources/itimer.c \
-	sample-sources/idle.c sample-sources/memleak.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c term_handler.c thread_data.c \
-	thread_use.c threadmgr.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	sample-sources/mpi.c fnbounds/fnbounds_client.c \
-	fnbounds/fnbounds_dynamic.c monitor-exts/openmp.c \
-	hpcrun_dlfns.c custom-init-dynamic.c os/linux/dylib.c \
-	unwind/common/default_validation_summary.c \
+	sample_sources_all.c sample-sources/blame-shift/blame-shift.c \
+	sample-sources/blame-shift/blame-map.c sample-sources/common.c \
+	sample-sources/ga.c sample-sources/io.c \
+	sample-sources/itimer.c sample-sources/idle.c \
+	sample-sources/memleak.c sample-sources/pthread-blame.c \
+	sample-sources/pthread-blame-overrides.c sample-sources/none.c \
+	sample-sources/retcnt.c sample-sources/sync.c \
+	sample_sources_registered.c segv_handler.c start-stop.c \
+	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
+	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct2metrics.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c sample-sources/mpi.c \
+	fnbounds/fnbounds_client.c fnbounds/fnbounds_dynamic.c \
+	monitor-exts/openmp.c hpcrun_dlfns.c custom-init-dynamic.c \
+	os/linux/dylib.c unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
 	trampoline/x86-family/x86-tramp.S \
@@ -367,11 +368,13 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-name.lo libhpcrun_la-rank.lo \
 	libhpcrun_la-sample_event.lo libhpcrun_la-sample_prob.lo \
 	libhpcrun_la-sample_sources_all.lo libhpcrun_la-blame-shift.lo \
-	libhpcrun_la-common.lo libhpcrun_la-ga.lo libhpcrun_la-io.lo \
-	libhpcrun_la-itimer.lo libhpcrun_la-idle.lo \
-	libhpcrun_la-memleak.lo libhpcrun_la-none.lo \
-	libhpcrun_la-retcnt.lo libhpcrun_la-sync.lo \
-	libhpcrun_la-sample_sources_registered.lo \
+	libhpcrun_la-blame-map.lo libhpcrun_la-common.lo \
+	libhpcrun_la-ga.lo libhpcrun_la-io.lo libhpcrun_la-itimer.lo \
+	libhpcrun_la-idle.lo libhpcrun_la-memleak.lo \
+	libhpcrun_la-pthread-blame.lo \
+	libhpcrun_la-pthread-blame-overrides.lo libhpcrun_la-none.lo \
+	libhpcrun_la-none.lo libhpcrun_la-retcnt.lo \
+	libhpcrun_la-sync.lo libhpcrun_la-sample_sources_registered.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-start-stop.lo \
 	libhpcrun_la-term_handler.lo libhpcrun_la-thread_data.lo \
 	libhpcrun_la-thread_use.lo libhpcrun_la-threadmgr.lo \
@@ -504,28 +507,29 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	disabled.c cct_insert_backtrace.c env.c epoch.c files.c \
 	handling_sample.c hpcrun_options.c hpcrun_stats.c loadmap.c \
 	metrics.c name.c rank.c sample_event.c sample_prob.c \
-	sample_sources_all.c sample-sources/blame-shift.c \
-	sample-sources/common.c sample-sources/ga.c \
-	sample-sources/io.c sample-sources/itimer.c \
-	sample-sources/idle.c sample-sources/memleak.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c term_handler.c thread_data.c \
-	thread_use.c threadmgr.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	sample-sources/mpi.c fnbounds/fnbounds_static.c \
-	custom-init-static.c \
+	sample_sources_all.c sample-sources/blame-shift/blame-shift.c \
+	sample-sources/blame-shift/blame-map.c sample-sources/common.c \
+	sample-sources/ga.c sample-sources/io.c \
+	sample-sources/itimer.c sample-sources/idle.c \
+	sample-sources/memleak.c sample-sources/pthread-blame.c \
+	sample-sources/pthread-blame-overrides.c sample-sources/none.c \
+	sample-sources/retcnt.c sample-sources/sync.c \
+	sample_sources_registered.c segv_handler.c start-stop.c \
+	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
+	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct2metrics.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c sample-sources/mpi.c \
+	fnbounds/fnbounds_static.c custom-init-static.c \
 	unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
@@ -567,10 +571,14 @@ am__objects_34 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-sample_event.$(OBJEXT) \
 	libhpcrun_o-sample_prob.$(OBJEXT) \
 	libhpcrun_o-sample_sources_all.$(OBJEXT) \
-	libhpcrun_o-blame-shift.$(OBJEXT) libhpcrun_o-common.$(OBJEXT) \
+	libhpcrun_o-blame-shift.$(OBJEXT) \
+	libhpcrun_o-blame-map.$(OBJEXT) libhpcrun_o-common.$(OBJEXT) \
 	libhpcrun_o-ga.$(OBJEXT) libhpcrun_o-io.$(OBJEXT) \
 	libhpcrun_o-itimer.$(OBJEXT) libhpcrun_o-idle.$(OBJEXT) \
-	libhpcrun_o-memleak.$(OBJEXT) libhpcrun_o-none.$(OBJEXT) \
+	libhpcrun_o-memleak.$(OBJEXT) \
+	libhpcrun_o-pthread-blame.$(OBJEXT) \
+	libhpcrun_o-pthread-blame-overrides.$(OBJEXT) \
+	libhpcrun_o-none.$(OBJEXT) libhpcrun_o-none.$(OBJEXT) \
 	libhpcrun_o-retcnt.$(OBJEXT) libhpcrun_o-sync.$(OBJEXT) \
 	libhpcrun_o-sample_sources_registered.$(OBJEXT) \
 	libhpcrun_o-segv_handler.$(OBJEXT) \
@@ -1056,26 +1064,29 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	cct_insert_backtrace.c env.c epoch.c files.c handling_sample.c \
 	hpcrun_options.c hpcrun_stats.c loadmap.c metrics.c name.c \
 	rank.c sample_event.c sample_prob.c sample_sources_all.c \
-	sample-sources/blame-shift.c sample-sources/common.c \
+	sample-sources/blame-shift/blame-shift.c \
+	sample-sources/blame-shift/blame-map.c sample-sources/common.c \
 	sample-sources/ga.c sample-sources/io.c \
 	sample-sources/itimer.c sample-sources/idle.c \
-	sample-sources/memleak.c sample-sources/none.c \
-	sample-sources/retcnt.c sample-sources/sync.c \
-	sample_sources_registered.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c $(am__append_17)
+	sample-sources/memleak.c sample-sources/pthread-blame.c \
+	sample-sources/pthread-blame-overrides.c sample-sources/none.c \
+	sample-sources/none.c sample-sources/retcnt.c \
+	sample-sources/sync.c sample_sources_registered.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c threadmgr.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/tokenize.h \
+	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	$(am__append_17)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -1652,6 +1663,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_io_wrap_a-io-over.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-amd-xop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-backtrace.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-blame-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-blame-shift.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct2metrics.Plo@am__quote@
@@ -1711,6 +1723,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ppc64-context-pc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ppc64-unwind-interval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ppc64-unwind.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-pthread-blame-overrides.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-pthread-blame.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-rank.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-retcnt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-sample_event.Plo@am__quote@
@@ -1755,6 +1769,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_mpi_la-mpi-overrides.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-amd-xop.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-backtrace.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-blame-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-blame-shift.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct2metrics.Po@am__quote@
@@ -1806,6 +1821,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ppc64-context-pc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ppc64-unwind-interval.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ppc64-unwind.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-pthread-blame-overrides.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-pthread-blame.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-rank.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-retcnt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-sample_event.Po@am__quote@
@@ -2199,12 +2216,19 @@ libhpcrun_la-sample_sources_all.lo: sample_sources_all.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-sample_sources_all.lo `test -f 'sample_sources_all.c' || echo '$(srcdir)/'`sample_sources_all.c
 
-libhpcrun_la-blame-shift.lo: sample-sources/blame-shift.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-blame-shift.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-blame-shift.Tpo -c -o libhpcrun_la-blame-shift.lo `test -f 'sample-sources/blame-shift.c' || echo '$(srcdir)/'`sample-sources/blame-shift.c
+libhpcrun_la-blame-shift.lo: sample-sources/blame-shift/blame-shift.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-blame-shift.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-blame-shift.Tpo -c -o libhpcrun_la-blame-shift.lo `test -f 'sample-sources/blame-shift/blame-shift.c' || echo '$(srcdir)/'`sample-sources/blame-shift/blame-shift.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-blame-shift.Tpo $(DEPDIR)/libhpcrun_la-blame-shift.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift.c' object='libhpcrun_la-blame-shift.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift/blame-shift.c' object='libhpcrun_la-blame-shift.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-blame-shift.lo `test -f 'sample-sources/blame-shift.c' || echo '$(srcdir)/'`sample-sources/blame-shift.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-blame-shift.lo `test -f 'sample-sources/blame-shift/blame-shift.c' || echo '$(srcdir)/'`sample-sources/blame-shift/blame-shift.c
+
+libhpcrun_la-blame-map.lo: sample-sources/blame-shift/blame-map.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-blame-map.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-blame-map.Tpo -c -o libhpcrun_la-blame-map.lo `test -f 'sample-sources/blame-shift/blame-map.c' || echo '$(srcdir)/'`sample-sources/blame-shift/blame-map.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-blame-map.Tpo $(DEPDIR)/libhpcrun_la-blame-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift/blame-map.c' object='libhpcrun_la-blame-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-blame-map.lo `test -f 'sample-sources/blame-shift/blame-map.c' || echo '$(srcdir)/'`sample-sources/blame-shift/blame-map.c
 
 libhpcrun_la-common.lo: sample-sources/common.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-common.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-common.Tpo -c -o libhpcrun_la-common.lo `test -f 'sample-sources/common.c' || echo '$(srcdir)/'`sample-sources/common.c
@@ -2247,6 +2271,20 @@ libhpcrun_la-memleak.lo: sample-sources/memleak.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/memleak.c' object='libhpcrun_la-memleak.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-memleak.lo `test -f 'sample-sources/memleak.c' || echo '$(srcdir)/'`sample-sources/memleak.c
+
+libhpcrun_la-pthread-blame.lo: sample-sources/pthread-blame.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-pthread-blame.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-pthread-blame.Tpo -c -o libhpcrun_la-pthread-blame.lo `test -f 'sample-sources/pthread-blame.c' || echo '$(srcdir)/'`sample-sources/pthread-blame.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-pthread-blame.Tpo $(DEPDIR)/libhpcrun_la-pthread-blame.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/pthread-blame.c' object='libhpcrun_la-pthread-blame.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-pthread-blame.lo `test -f 'sample-sources/pthread-blame.c' || echo '$(srcdir)/'`sample-sources/pthread-blame.c
+
+libhpcrun_la-pthread-blame-overrides.lo: sample-sources/pthread-blame-overrides.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-pthread-blame-overrides.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-pthread-blame-overrides.Tpo -c -o libhpcrun_la-pthread-blame-overrides.lo `test -f 'sample-sources/pthread-blame-overrides.c' || echo '$(srcdir)/'`sample-sources/pthread-blame-overrides.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-pthread-blame-overrides.Tpo $(DEPDIR)/libhpcrun_la-pthread-blame-overrides.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/pthread-blame-overrides.c' object='libhpcrun_la-pthread-blame-overrides.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-pthread-blame-overrides.lo `test -f 'sample-sources/pthread-blame-overrides.c' || echo '$(srcdir)/'`sample-sources/pthread-blame-overrides.c
 
 libhpcrun_la-none.lo: sample-sources/none.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-none.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-none.Tpo -c -o libhpcrun_la-none.lo `test -f 'sample-sources/none.c' || echo '$(srcdir)/'`sample-sources/none.c
@@ -3067,19 +3105,33 @@ libhpcrun_o-sample_sources_all.obj: sample_sources_all.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-sample_sources_all.obj `if test -f 'sample_sources_all.c'; then $(CYGPATH_W) 'sample_sources_all.c'; else $(CYGPATH_W) '$(srcdir)/sample_sources_all.c'; fi`
 
-libhpcrun_o-blame-shift.o: sample-sources/blame-shift.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-blame-shift.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-blame-shift.Tpo -c -o libhpcrun_o-blame-shift.o `test -f 'sample-sources/blame-shift.c' || echo '$(srcdir)/'`sample-sources/blame-shift.c
+libhpcrun_o-blame-shift.o: sample-sources/blame-shift/blame-shift.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-blame-shift.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-blame-shift.Tpo -c -o libhpcrun_o-blame-shift.o `test -f 'sample-sources/blame-shift/blame-shift.c' || echo '$(srcdir)/'`sample-sources/blame-shift/blame-shift.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-blame-shift.Tpo $(DEPDIR)/libhpcrun_o-blame-shift.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift.c' object='libhpcrun_o-blame-shift.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift/blame-shift.c' object='libhpcrun_o-blame-shift.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-blame-shift.o `test -f 'sample-sources/blame-shift.c' || echo '$(srcdir)/'`sample-sources/blame-shift.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-blame-shift.o `test -f 'sample-sources/blame-shift/blame-shift.c' || echo '$(srcdir)/'`sample-sources/blame-shift/blame-shift.c
 
-libhpcrun_o-blame-shift.obj: sample-sources/blame-shift.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-blame-shift.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-blame-shift.Tpo -c -o libhpcrun_o-blame-shift.obj `if test -f 'sample-sources/blame-shift.c'; then $(CYGPATH_W) 'sample-sources/blame-shift.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/blame-shift.c'; fi`
+libhpcrun_o-blame-shift.obj: sample-sources/blame-shift/blame-shift.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-blame-shift.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-blame-shift.Tpo -c -o libhpcrun_o-blame-shift.obj `if test -f 'sample-sources/blame-shift/blame-shift.c'; then $(CYGPATH_W) 'sample-sources/blame-shift/blame-shift.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/blame-shift/blame-shift.c'; fi`
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-blame-shift.Tpo $(DEPDIR)/libhpcrun_o-blame-shift.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift.c' object='libhpcrun_o-blame-shift.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift/blame-shift.c' object='libhpcrun_o-blame-shift.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-blame-shift.obj `if test -f 'sample-sources/blame-shift.c'; then $(CYGPATH_W) 'sample-sources/blame-shift.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/blame-shift.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-blame-shift.obj `if test -f 'sample-sources/blame-shift/blame-shift.c'; then $(CYGPATH_W) 'sample-sources/blame-shift/blame-shift.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/blame-shift/blame-shift.c'; fi`
+
+libhpcrun_o-blame-map.o: sample-sources/blame-shift/blame-map.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-blame-map.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-blame-map.Tpo -c -o libhpcrun_o-blame-map.o `test -f 'sample-sources/blame-shift/blame-map.c' || echo '$(srcdir)/'`sample-sources/blame-shift/blame-map.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-blame-map.Tpo $(DEPDIR)/libhpcrun_o-blame-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift/blame-map.c' object='libhpcrun_o-blame-map.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-blame-map.o `test -f 'sample-sources/blame-shift/blame-map.c' || echo '$(srcdir)/'`sample-sources/blame-shift/blame-map.c
+
+libhpcrun_o-blame-map.obj: sample-sources/blame-shift/blame-map.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-blame-map.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-blame-map.Tpo -c -o libhpcrun_o-blame-map.obj `if test -f 'sample-sources/blame-shift/blame-map.c'; then $(CYGPATH_W) 'sample-sources/blame-shift/blame-map.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/blame-shift/blame-map.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-blame-map.Tpo $(DEPDIR)/libhpcrun_o-blame-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift/blame-map.c' object='libhpcrun_o-blame-map.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-blame-map.obj `if test -f 'sample-sources/blame-shift/blame-map.c'; then $(CYGPATH_W) 'sample-sources/blame-shift/blame-map.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/blame-shift/blame-map.c'; fi`
 
 libhpcrun_o-common.o: sample-sources/common.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-common.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-common.Tpo -c -o libhpcrun_o-common.o `test -f 'sample-sources/common.c' || echo '$(srcdir)/'`sample-sources/common.c
@@ -3164,6 +3216,34 @@ libhpcrun_o-memleak.obj: sample-sources/memleak.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/memleak.c' object='libhpcrun_o-memleak.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-memleak.obj `if test -f 'sample-sources/memleak.c'; then $(CYGPATH_W) 'sample-sources/memleak.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/memleak.c'; fi`
+
+libhpcrun_o-pthread-blame.o: sample-sources/pthread-blame.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-pthread-blame.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-pthread-blame.Tpo -c -o libhpcrun_o-pthread-blame.o `test -f 'sample-sources/pthread-blame.c' || echo '$(srcdir)/'`sample-sources/pthread-blame.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-pthread-blame.Tpo $(DEPDIR)/libhpcrun_o-pthread-blame.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/pthread-blame.c' object='libhpcrun_o-pthread-blame.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-pthread-blame.o `test -f 'sample-sources/pthread-blame.c' || echo '$(srcdir)/'`sample-sources/pthread-blame.c
+
+libhpcrun_o-pthread-blame.obj: sample-sources/pthread-blame.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-pthread-blame.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-pthread-blame.Tpo -c -o libhpcrun_o-pthread-blame.obj `if test -f 'sample-sources/pthread-blame.c'; then $(CYGPATH_W) 'sample-sources/pthread-blame.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/pthread-blame.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-pthread-blame.Tpo $(DEPDIR)/libhpcrun_o-pthread-blame.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/pthread-blame.c' object='libhpcrun_o-pthread-blame.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-pthread-blame.obj `if test -f 'sample-sources/pthread-blame.c'; then $(CYGPATH_W) 'sample-sources/pthread-blame.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/pthread-blame.c'; fi`
+
+libhpcrun_o-pthread-blame-overrides.o: sample-sources/pthread-blame-overrides.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-pthread-blame-overrides.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-pthread-blame-overrides.Tpo -c -o libhpcrun_o-pthread-blame-overrides.o `test -f 'sample-sources/pthread-blame-overrides.c' || echo '$(srcdir)/'`sample-sources/pthread-blame-overrides.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-pthread-blame-overrides.Tpo $(DEPDIR)/libhpcrun_o-pthread-blame-overrides.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/pthread-blame-overrides.c' object='libhpcrun_o-pthread-blame-overrides.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-pthread-blame-overrides.o `test -f 'sample-sources/pthread-blame-overrides.c' || echo '$(srcdir)/'`sample-sources/pthread-blame-overrides.c
+
+libhpcrun_o-pthread-blame-overrides.obj: sample-sources/pthread-blame-overrides.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-pthread-blame-overrides.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-pthread-blame-overrides.Tpo -c -o libhpcrun_o-pthread-blame-overrides.obj `if test -f 'sample-sources/pthread-blame-overrides.c'; then $(CYGPATH_W) 'sample-sources/pthread-blame-overrides.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/pthread-blame-overrides.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-pthread-blame-overrides.Tpo $(DEPDIR)/libhpcrun_o-pthread-blame-overrides.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/pthread-blame-overrides.c' object='libhpcrun_o-pthread-blame-overrides.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-pthread-blame-overrides.obj `if test -f 'sample-sources/pthread-blame-overrides.c'; then $(CYGPATH_W) 'sample-sources/pthread-blame-overrides.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/pthread-blame-overrides.c'; fi`
 
 libhpcrun_o-none.o: sample-sources/none.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-none.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-none.Tpo -c -o libhpcrun_o-none.o `test -f 'sample-sources/none.c' || echo '$(srcdir)/'`sample-sources/none.c

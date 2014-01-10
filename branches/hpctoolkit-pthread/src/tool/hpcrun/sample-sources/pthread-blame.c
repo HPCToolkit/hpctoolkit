@@ -81,27 +81,7 @@
  * macros
  *****************************************************************************/
 
-#define N (128*1024)
-#define INDEX_MASK ((N)-1)
-
 #define DIRECTED_BLAME_NAME "LOCKWAIT"
-
-
-
-/******************************************************************************
- * data type
- *****************************************************************************/
-
-struct blame_parts {
-  uint32_t obj_id;
-  uint32_t blame;
-};
-
-
-typedef union {
-  uint64_t all;
-  struct blame_parts parts; //[0] is id, [1] is blame
-} blame_entry;
 
 
 
@@ -130,13 +110,13 @@ static int doblame = 0;
 
 
 /*--------------------------------------------------------------------------
- | transfer directed blame as appropritate for a sample
+ | transferp directed blame as appropritate for a sample
  --------------------------------------------------------------------------*/
 
 static void 
 process_directed_blame_for_sample(int metric_id, cct_node_t *node, int metric_incr)
 {
-  metric_desc_t * metric_desc = hpcrun_id2metric(metric_id);
+  metric_desc_t* metric_desc = hpcrun_id2metric(metric_id);
  
   // Only blame shift idleness for time and cycle metrics. 
   if ( ! (metric_desc->properties.time | metric_desc->properties.cycles) ) 
@@ -144,11 +124,11 @@ process_directed_blame_for_sample(int metric_id, cct_node_t *node, int metric_in
   
   uint32_t metric_value = (uint32_t) (metric_desc->period * metric_incr);
 
-  thread_data_t *td = hpcrun_get_thread_data();
-  int32_t *obj_to_blame = td->blame_target;
+  thread_data_t* td = hpcrun_get_thread_data();
+  int32_t* obj_to_blame = td->blame_target;
 
   if(obj_to_blame && (td->idle == 0)) {
-    blameht_add_blame(obj_to_blame, metric_value);
+    blame_map_add_blame(obj_to_blame, metric_value);
   }
 }
 
@@ -161,7 +141,6 @@ static void
 METHOD_FN(init)
 {
   self->state = INIT;
-  blameht_init();
 }
 
 
@@ -213,14 +192,15 @@ METHOD_FN(supports_event,const char *ev_str)
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-        bs_entry.fn = process_directed_blame_for_sample;
-        bs_entry.next = 0;
+  bs_entry.fn = process_directed_blame_for_sample;
+  bs_entry.next = 0;
 
-	blame_shift_register(&bs_entry);
+  blame_map_init();
+  blame_shift_register(&bs_entry);
 
-	directed_blame_metric_id = hpcrun_new_metric();
-	hpcrun_set_metric_info_and_period(directed_blame_metric_id, DIRECTED_BLAME_NAME,
-			MetricFlags_ValFmt_Int, 1, metric_property_none);
+  directed_blame_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(directed_blame_metric_id, DIRECTED_BLAME_NAME,
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
 }
 
 
@@ -255,170 +235,3 @@ METHOD_FN(display_events)
 
 #include "ss_obj.h"
 
-
-
-/******************************************************************************
- * interface operations for clients 
- *****************************************************************************/
-
-void
-directed_blame_shift_start(void *obj)
-{
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->blame_target = obj;
-  idle_metric_blame_shift_idle();
-}
-
-
-void
-directed_blame_shift_end()
-{
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->blame_target = 0;
-  idle_metric_blame_shift_work();
-}
-
-
-void
-directed_blame_accept(void *obj)
-{
-  uint64_t blame = blameht_get_blame(obj);
-  if (blame != 0 && hpctoolkit_sampling_is_active()) {
-    ucontext_t uc;
-    getcontext(&uc);
-    hpcrun_safe_enter();
-    hpcrun_sample_callpath(&uc, directed_blame_metric_id, blame, 0, 1);
-    hpcrun_safe_exit();
-  }
-}
-
-/******************************************************************************
- * draft wrapper interface for pthread routines 
- *****************************************************************************/
-#ifdef COND_AVAIL
-extern int __pthread_cond_timedwait(pthread_cond_t *restrict cond,
-                                    pthread_mutex_t *restrict mutex,
-                                    const struct timespec *restrict abstime);
-
-extern int __pthread_cond_wait(pthread_cond_t *restrict cond,
-                               pthread_mutex_t *restrict mutex);
-
-extern int __pthread_cond_broadcast(pthread_cond_t *cond);
-
-extern int __pthread_cond_signal(pthread_cond_t *cond);
-#else 
-
-typedef int (*__pthread_cond_timedwait_t)(pthread_cond_t *restrict cond,
-                                    pthread_mutex_t *restrict mutex,
-                                    const struct timespec *restrict abstime);
-
-typedef int (*__pthread_cond_wait_t)(pthread_cond_t *restrict cond,
-                               pthread_mutex_t *restrict mutex);
-
-typedef int (*__pthread_cond_broadcast_t)(pthread_cond_t *cond);
-
-typedef int (*__pthread_cond_signal_t)(pthread_cond_t *cond);
-
-__pthread_cond_timedwait_t __pthread_cond_timedwait;
-__pthread_cond_wait_t __pthread_cond_wait;
-__pthread_cond_broadcast_t __pthread_cond_broadcast;
-__pthread_cond_signal_t __pthread_cond_signal;
-#endif
-
-extern int __pthread_mutex_lock(pthread_mutex_t *mutex);
-
-extern int __pthread_mutex_unlock(pthread_mutex_t *mutex);
-
-extern int __pthread_mutex_timedlock(pthread_mutex_t *restrict mutex,
-                                     const struct timespec *restrict abs_timeout);
-
-
-
-#define DL_LOOKUP(name) \
-  __ ## name = (__ ## name ## _t ) dlvsym(RTLD_NEXT, # name , "GLIBC_2.3.2") 
-void __attribute__ ((constructor))
-pthread_plugin_init() 
-{
-  idle_metric_register_blame_source();
-#ifndef COND_AVAIL
-   DL_LOOKUP(pthread_cond_broadcast);
-   DL_LOOKUP(pthread_cond_signal);
-   DL_LOOKUP(pthread_cond_wait);
-   DL_LOOKUP(pthread_cond_timedwait);
-#endif
-}
-
-
-int 
-pthread_cond_timedwait(pthread_cond_t *restrict cond,
-                       pthread_mutex_t *restrict mutex,
-                       const struct timespec *restrict abstime)
-{
-  int retval;
-  directed_blame_shift_start(cond);
-  retval = __pthread_cond_timedwait(cond, mutex, abstime);
-  directed_blame_shift_end();
-  return retval;
-}
-
-
-int 
-pthread_cond_wait(pthread_cond_t *restrict cond,
-                  pthread_mutex_t *restrict mutex)
-{
-  int retval;
-  directed_blame_shift_start(cond);
-  retval = __pthread_cond_wait(cond, mutex);
-  directed_blame_shift_end();
-  return retval;
-}
-
-
-int 
-pthread_cond_broadcast(pthread_cond_t *cond)
-{
-  int retval = __pthread_cond_broadcast(cond);
-  directed_blame_accept(cond);
-  return retval;
-}
-
-
-int 
-pthread_cond_signal(pthread_cond_t *cond)
-{
-  int retval = __pthread_cond_signal(cond);
-  directed_blame_accept(cond);
-  return retval;
-}
-
-
-int 
-pthread_mutex_lock(pthread_mutex_t *mutex)
-{
-  int retval;
-  directed_blame_shift_start(mutex);
-  retval = __pthread_mutex_lock(mutex);
-  directed_blame_shift_end();
-  return retval;
-}
-
-
-int 
-pthread_mutex_unlock(pthread_mutex_t *mutex)
-{
-  int retval = __pthread_mutex_unlock(mutex);
-  directed_blame_accept(mutex);
-  return retval;
-}
-
-
-int 
-pthread_mutex_timedlock(pthread_mutex_t *restrict mutex,
-                        const struct timespec *restrict abs_timeout)
-{
-  int retval;
-  directed_blame_shift_start(mutex);
-  retval = __pthread_mutex_timedlock(mutex, abs_timeout);
-  directed_blame_shift_end();
-  return retval;
-}

@@ -15,6 +15,7 @@ typedef enum bs_type{
   bs_type_cycles
 } bs_type;
 
+
 void blame_shift_register(bs_fn_entry_t *entry);
 void blame_shift_apply(int metric_id, cct_node_t *node, int metric_incr);
 void blame_shift_source_register(bs_type bst);
