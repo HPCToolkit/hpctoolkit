@@ -104,3 +104,19 @@ Then, configure symtab with:
 and omit --with-libelf in hpctoolkit's configure (so it will take the
 one from externals).
 
+(5) One more patch to dyninst.  There is a bug in dyninst-4fb1f52 over
+how symtabAPI finds the intervals for an inlined subroutine.  It works
+for a single interval, but symtab doesn't handle the case of a list of
+multiple ranges correctly.  Essentially, symtab is blind to an inlined
+subroutine that consists of multiple intervals.
+
+This patch fixes this problem.  Apply the patch with:
+
+cd dyninst-4fb1f52
+patch -p1 <patch-at-ranges
+
+Then, rebuild symtabAPI and hpcstruct.
+
+Thanks to Matt LeGendre at LLNL for tracking down the problem and
+writing the patch.
+
