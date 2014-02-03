@@ -1,0 +1,28 @@
+Fix a couple uses of '@' in comments in bfd.texinfo.
+Texinfo 4 is ok with this, but texinfo 5 barfs on it.
+
+Instead, we could just disable building the info docs,
+but I don't see a config option for this.
+
+
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/doc/bfd.texinfo version-binutils-2.20.1/binutils-2.20.1/bfd/doc/bfd.texinfo
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/doc/bfd.texinfo	2010-11-08 01:30:56.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/doc/bfd.texinfo	2014-01-30 14:04:42.776331708 -0600
+@@ -323,7 +323,7 @@
+ @printindex cp
+ 
+ @tex
+-% I think something like @colophon should be in texinfo.  In the
++% I think something like colophon should be in texinfo.  In the
+ % meantime:
+ \long\def\colophon{\hbox to0pt{}\vfill
+ \centerline{The body of this manual is set in}
+@@ -334,7 +334,7 @@
+ \centerline{{\sl\fontname\tensl\/}}
+ \centerline{are used for emphasis.}\vfill}
+ \page\colophon
+-% Blame: doc@cygnus.com, 28mar91.
++% Blame: doc-at-cygnus.com, 28mar91.
+ @end tex
+ 
+ @bye
