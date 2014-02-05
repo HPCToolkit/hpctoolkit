@@ -602,6 +602,7 @@ protected:
     if (!VMAInterval::empty(begVMA, endVMA)) {
       m_vmaSet.insert(begVMA, endVMA);
     }
+    m_inline_data_ptr = NULL;
   }
 
 
@@ -800,7 +801,26 @@ protected:
   SrcFile::ln m_begLn;
   SrcFile::ln m_endLn;
   VMAIntervalSet m_vmaSet;
-};
+
+  // --------------------------------------------------------
+  // Support for inline info
+  // --------------------------------------------------------
+
+public:
+  void setInlineDataPtr(void *ptr)
+  {
+    m_inline_data_ptr = ptr;
+  }
+
+  void * getInlineDataPtr()
+  {
+    return m_inline_data_ptr;
+  }
+
+private:
+  void * m_inline_data_ptr;
+
+};  // class ACodeNode
 
 
 

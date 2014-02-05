@@ -160,7 +160,7 @@ LocationMgr::locate(Prof::Struct::Loop* loop,
   DIAG_DevMsgIf(mDBG, "LocationMgr::locate: " << loop->toXML() << "\n"
 		<< "  proposed: " << proposed_scope->toXML() << "\n"
 		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
-  determineContext(proposed_scope, filenm, procnm, line, cc);
+  determineContext(proposed_scope, filenm, procnm, line, cc, loop);
   Ctxt& encl_ctxt = topCtxtRef();
   loop->linkAndSetLineRange(encl_ctxt.scope());
 }
@@ -175,7 +175,7 @@ LocationMgr::locate(Prof::Struct::Stmt* stmt,
 		<< "  proposed: " << proposed_scope->toXML() << "\n"
 		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
   // FIXME (minor): manage stmt cache! if stmt already exists, only add vma
-  determineContext(proposed_scope, filenm, procnm, line, cc);
+  determineContext(proposed_scope, filenm, procnm, line, cc, NULL);
   Ctxt& encl_ctxt = topCtxtRef();
   stmt->linkAndSetLineRange(encl_ctxt.scope());
 }
@@ -409,7 +409,7 @@ LocationMgr::toString(CtxtChange_t x)
 LocationMgr::CtxtChange_t
 LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 			      string& filenm, string& procnm, SrcFile::ln line, 
-			      CallingContext *cc)
+			      CallingContext *cc, Prof::Struct::ACodeNode* loop)
 {
   DIAG_DevMsgIf(mDBG, "LocationMgr::determineContext");
 
@@ -553,42 +553,18 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
     // Banal knows about the loop, but symtab doesn't and blows past
     // the loop all the way to the top-level (non-inlined) code.
     //
-    // FIXME: for now, compute the list of ancestors of proposed_scope
-    // that are aliens and match it against the cc list.  This is
-    // inefficient due to recomputing lists.
-    //
-    // Better to memoize the lists or build a subtree of alien
-    // ancestors.  Better still if we can use the old aliens already
-    // on the stack (ie, not erase the stack).
-    //
     Prof::Struct::Alien *alien;
     CallingContext *start_cc = cc;
+    CallingContext *scope_cc =
+	static_cast <CallingContext *> (proposed_scope->getInlineDataPtr());
 
-    if (cc != NULL) {
-      std::list <Prof::Struct::Alien*> alienList;
-      std::list <Prof::Struct::Alien*>::iterator ait;
-      alien = proposed_scope->ancestorAlien();
-      while (alien != NULL) {
-	alienList.push_front(alien);
-	alien = alien->ACodeNodeParent()->ancestorAlien();
-      }
-
+    if (cc != NULL && scope_cc != NULL) {
       for (CallingContext *it = cc; it != NULL; it = it->Next())
       {
-	bool found = false;
-	for (ait = alienList.begin(); ait != alienList.end(); ait++) {
-	  if ((*ait)->fileName() == it->getFileName()
-	      && (*ait)->containsLine(it->getLineNumber()))
-	  {
-	    found = true;
-	    break;
-	  }
-	}
-	if (found) {
-	  start_cc = NULL;
-	}
-	else if (start_cc == NULL) {
-	  start_cc = it;
+	if (it->getFileName() == scope_cc->getFileName()
+	    && it->getLineNumber() == scope_cc->getLineNumber())
+	{
+	  start_cc = it->Next();
 	}
       }
     }
@@ -606,6 +582,10 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 			       string(buf), it->getLineNumber(), false);
       pushCtxt(Ctxt(alien, NULL));
       parent = alien;
+      if (loop != NULL && it->getCalleeName() == procnm) {
+	loop->setInlineDataPtr(it);
+	break;
+      }
     }
 
     // add last alien
