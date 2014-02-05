@@ -56,6 +56,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <dlfcn.h>
+#include <stdbool.h>
 
 
 
@@ -66,8 +67,10 @@
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
-#include "blame-shift.h"
-#include "idle.h"
+#include "pthread-blame.h"
+#include <sample-sources/blame-shift/blame-shift.h>
+#include <sample-sources/blame-shift/blame-map.h>
+// #include "idle.h"
 
 #include <hpcrun/hpctoolkit.h>
 #include <hpcrun/safe-sampling.h>
@@ -75,34 +78,38 @@
 #include <hpcrun/thread_data.h>
 #include <hpcrun/cct/cct.h>
 
-
-
 /******************************************************************************
  * macros
  *****************************************************************************/
-
-#define DIRECTED_BLAME_NAME "LOCKWAIT"
-
-
 
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
 
-static void process_directed_blame_for_sample(int metric_id, cct_node_t *node, int metric_incr);
+static void process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t *node, int metric_incr);
 
 
 
 /******************************************************************************
- * global variables
+ * static local variables
  *****************************************************************************/
 
 static int directed_blame_metric_id = -1;
 static bs_fn_entry_t bs_entry;
-volatile blame_entry table[N];
 
 static int doblame = 0;
 
+// ******************************************************************************
+//  public utility functions
+// ******************************************************************************
+
+static bool metric_id_set = false;
+
+int
+hpcrun_get_pthread_directed_blame_metric_id(void)
+{
+  return (metric_id_set) ? directed_blame_metric_id : -1;
+}
 
 /***************************************************************************
  * private operations
@@ -114,7 +121,7 @@ static int doblame = 0;
  --------------------------------------------------------------------------*/
 
 static void 
-process_directed_blame_for_sample(int metric_id, cct_node_t *node, int metric_incr)
+process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t *node, int metric_incr)
 {
   metric_desc_t* metric_desc = hpcrun_id2metric(metric_id);
  
@@ -125,7 +132,7 @@ process_directed_blame_for_sample(int metric_id, cct_node_t *node, int metric_in
   uint32_t metric_value = (uint32_t) (metric_desc->period * metric_incr);
 
   thread_data_t* td = hpcrun_get_thread_data();
-  int32_t* obj_to_blame = td->blame_target;
+  uint64_t obj_to_blame = td->blame_target;
 
   if(obj_to_blame && (td->idle == 0)) {
     blame_map_add_blame(obj_to_blame, metric_value);
@@ -193,12 +200,14 @@ static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
   bs_entry.fn = process_directed_blame_for_sample;
-  bs_entry.next = 0;
+  bs_entry.arg = NULL;
+  bs_entry.next = NULL;
 
   blame_map_init();
   blame_shift_register(&bs_entry);
 
   directed_blame_metric_id = hpcrun_new_metric();
+  metric_id_set = true;
   hpcrun_set_metric_info_and_period(directed_blame_metric_id, DIRECTED_BLAME_NAME,
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
 }
@@ -229,6 +238,8 @@ METHOD_FN(display_events)
 /*--------------------------------------------------------------------------
  | sample source object
  --------------------------------------------------------------------------*/
+
+#include <stdio.h>
 
 #define ss_name directed_blame
 #define ss_cls SS_SOFTWARE

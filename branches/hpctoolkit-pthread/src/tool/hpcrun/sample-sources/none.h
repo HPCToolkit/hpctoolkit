@@ -47,7 +47,6 @@
 #ifndef SAMPLE_SOURCE_NONE_H
 #define SAMPLE_SOURCE_NONE_H
 
-void
-hpcrun_process_sample_source_none();
+extern void hpcrun_process_sample_source_none(void);
 
 #endif // SAMPLE_SOURCE_NONE_H

@@ -1,8 +1,13 @@
 #include <pthread.h>
 #include <dlfcn.h>
 
-#include <sample-sources/blame_map.h>
+#include <sample-sources/blame-shift/blame-map.h>
+#include <sample-sources/pthread-blame.h>
 #include <hpcrun/thread_data.h>
+
+#include <hpcrun/hpctoolkit.h>
+#include <hpcrun/safe-sampling.h>
+#include <hpcrun/sample_event.h>
 
 /******************************************************************************
  * interface operations for clients 
@@ -12,8 +17,8 @@ static void
 directed_blame_shift_start(void* obj)
 {
   thread_data_t* td = hpcrun_get_thread_data();
-  td->blame_target = obj;
-  idle_metric_blame_shift_idle();
+  td->blame_target = (uint64_t) (uintptr_t) obj;
+  // idle_metric_blame_shift_idle();
 }
 
 
@@ -22,19 +27,23 @@ directed_blame_shift_end(void)
 {
   thread_data_t* td = hpcrun_get_thread_data();
   td->blame_target = 0;
-  idle_metric_blame_shift_work();
+  // idle_metric_blame_shift_work();
 }
 
+//
+// BLAME-SHIFT FIXME: obtain the blame shift object
+//
 
 static void
 directed_blame_accept(void* obj)
 {
-  uint64_t blame = blame_map_get_blame(obj);
+  uint64_t blame = blame_map_get_blame((uint64_t) (uintptr_t) obj);
   if (blame != 0 && hpctoolkit_sampling_is_active()) {
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_safe_enter();
-    hpcrun_sample_callpath(&uc, directed_blame_metric_id, blame, 0, 1);
+    hpcrun_sample_callpath(&uc, hpcrun_get_pthread_directed_blame_metric_id(),
+                           blame, 0, 1);
     hpcrun_safe_exit();
   }
 }
@@ -86,7 +95,9 @@ extern int __pthread_mutex_timedlock(pthread_mutex_t *restrict mutex,
 void __attribute__ ((constructor))
 pthread_plugin_init() 
 {
+#ifdef REGISTER_BLAME_SOURCE // FIXME BLAME ?????
   idle_metric_register_blame_source();
+#endif // REGISTER_BLAME_SOURCE
 #ifndef COND_AVAIL
    DL_LOOKUP(pthread_cond_broadcast);
    DL_LOOKUP(pthread_cond_signal);

@@ -236,6 +236,10 @@ typedef struct thread_data_t {
   gpu_data_t gpu_data;
 #endif
 
+  //
+  // Blame target
+  //
+  uint64_t blame_target;
 } thread_data_t;
 
 

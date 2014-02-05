@@ -269,7 +269,6 @@ MY_BASE_FILES =				\
 	sample-sources/pthread-blame.c  \
 	sample-sources/pthread-blame-overrides.c  \
 	sample-sources/none.c           \
-	sample-sources/none.c           \
         sample-sources/retcnt.c         \
         sample-sources/sync.c           \
 	sample_sources_registered.c	\

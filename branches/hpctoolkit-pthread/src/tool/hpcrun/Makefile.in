@@ -373,8 +373,8 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-idle.lo libhpcrun_la-memleak.lo \
 	libhpcrun_la-pthread-blame.lo \
 	libhpcrun_la-pthread-blame-overrides.lo libhpcrun_la-none.lo \
-	libhpcrun_la-none.lo libhpcrun_la-retcnt.lo \
-	libhpcrun_la-sync.lo libhpcrun_la-sample_sources_registered.lo \
+	libhpcrun_la-retcnt.lo libhpcrun_la-sync.lo \
+	libhpcrun_la-sample_sources_registered.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-start-stop.lo \
 	libhpcrun_la-term_handler.lo libhpcrun_la-thread_data.lo \
 	libhpcrun_la-thread_use.lo libhpcrun_la-threadmgr.lo \
@@ -578,8 +578,8 @@ am__objects_34 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-memleak.$(OBJEXT) \
 	libhpcrun_o-pthread-blame.$(OBJEXT) \
 	libhpcrun_o-pthread-blame-overrides.$(OBJEXT) \
-	libhpcrun_o-none.$(OBJEXT) libhpcrun_o-none.$(OBJEXT) \
-	libhpcrun_o-retcnt.$(OBJEXT) libhpcrun_o-sync.$(OBJEXT) \
+	libhpcrun_o-none.$(OBJEXT) libhpcrun_o-retcnt.$(OBJEXT) \
+	libhpcrun_o-sync.$(OBJEXT) \
 	libhpcrun_o-sample_sources_registered.$(OBJEXT) \
 	libhpcrun_o-segv_handler.$(OBJEXT) \
 	libhpcrun_o-start-stop.$(OBJEXT) \
@@ -1070,23 +1070,22 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/itimer.c sample-sources/idle.c \
 	sample-sources/memleak.c sample-sources/pthread-blame.c \
 	sample-sources/pthread-blame-overrides.c sample-sources/none.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c term_handler.c thread_data.c \
-	thread_use.c threadmgr.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	$(am__append_17)
+	sample-sources/retcnt.c sample-sources/sync.c \
+	sample_sources_registered.c segv_handler.c start-stop.c \
+	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
+	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct2metrics.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c $(am__append_17)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
