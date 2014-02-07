@@ -11,7 +11,8 @@ License: LGPL
 Uses Autoconf, but not Automake.
 Supports vpath build directory.
 
-CC=gcc CFLAGS='...' ./configure --prefix=PATH
+export CC=gcc CFLAGS='...'
+./configure --prefix=PATH --enable-compat
 make
 make install
 
@@ -19,3 +20,10 @@ Note: configure does not accept CC and CFLAGS on the command line
 after the ./configure command.  It misinterprets those as trying to
 set the host type.  CC and CFLAGS, if used, must be given as
 environment variables before the ./configure command.
+
+Note: --enable-compat forces libelf to install libelf.h, gelf.h and
+nlist.h in <prefix>/include, rather than include/libelf.  The default
+is to check /usr/include and not install them if they exist in /usr.
+Symtab can't handle the libelf subdir and this option is a cleaner way
+of solving the problem than patching symtab.
+

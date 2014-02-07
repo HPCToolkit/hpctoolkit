@@ -18,7 +18,8 @@ prefix="$libelf_prefix"
 
 export CC="$CC"
 export CFLAGS="$CFLAGS"
-set -- --prefix="$prefix" "$@"
+set -- --prefix="$prefix"  \
+    --enable-compat "$@"
 if test -n "${is_cross_compile}" ; then
     set -- --host="${host}" "$@"
 fi
