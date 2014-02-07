@@ -77,6 +77,10 @@
 
 #define LOSSLESS_BLAME 
 
+//
+// LOCKWAIT FIXME: Add collision treatment!
+//
+//
 
 
 

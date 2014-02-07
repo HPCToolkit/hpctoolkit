@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <pthread.h>
 #include <dlfcn.h>
 
@@ -8,37 +9,39 @@
 #include <hpcrun/hpctoolkit.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
+#include <messages/messages.h>
 
 /******************************************************************************
  * interface operations for clients 
  *****************************************************************************/
 
+typedef struct {
+  uint64_t target;
+  bool idle;
+} blame_t;
+
+static __thread blame_t pthread_blame = {0, false};
+
 static void
 directed_blame_shift_start(void* obj)
 {
-  thread_data_t* td = hpcrun_get_thread_data();
-  td->blame_target = (uint64_t) (uintptr_t) obj;
-  // idle_metric_blame_shift_idle();
+  pthread_blame = (blame_t) {.target = (uint64_t)(uintptr_t)obj,
+                             .idle   = true};
 }
 
 
 static void
 directed_blame_shift_end(void)
 {
-  thread_data_t* td = hpcrun_get_thread_data();
-  td->blame_target = 0;
-  // idle_metric_blame_shift_work();
+  pthread_blame = (blame_t) {.target = 0, .idle = false};
 }
-
-//
-// BLAME-SHIFT FIXME: obtain the blame shift object
-//
 
 static void
 directed_blame_accept(void* obj)
 {
+  TMSG(LOCKWAIT, "Blame obj %d accepting blame", obj);
   uint64_t blame = blame_map_get_blame((uint64_t) (uintptr_t) obj);
-  if (blame != 0 && hpctoolkit_sampling_is_active()) {
+  if (blame && hpctoolkit_sampling_is_active()) {
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_safe_enter();
@@ -48,62 +51,107 @@ directed_blame_accept(void* obj)
   }
 }
 
-/******************************************************************************
- * draft wrapper interface for pthread routines 
- *****************************************************************************/
-#ifdef COND_AVAIL
-extern int __pthread_cond_timedwait(pthread_cond_t *restrict cond,
-                                    pthread_mutex_t *restrict mutex,
-                                    const struct timespec *restrict abstime);
+// ***********************
+// public interface to blame structure
+// ***********************
 
-extern int __pthread_cond_wait(pthread_cond_t *restrict cond,
-                               pthread_mutex_t *restrict mutex);
+uint64_t
+pthread_blame_get_blame_target(void)
+{
+  return pthread_blame.target;
+}
 
-extern int __pthread_cond_broadcast(pthread_cond_t *cond);
+// ***** dl system macros *****
+#define DL_REAL_VAR(name) __ ## name
 
-extern int __pthread_cond_signal(pthread_cond_t *cond);
-#else 
+#define DL_REAL_FN(name) __ ## name
 
-typedef int (*__pthread_cond_timedwait_t)(pthread_cond_t *restrict cond,
-                                    pthread_mutex_t *restrict mutex,
-                                    const struct timespec *restrict abstime);
+#define DL_TYPE(name) __ ## name ## _t
 
-typedef int (*__pthread_cond_wait_t)(pthread_cond_t *restrict cond,
-                               pthread_mutex_t *restrict mutex);
+#define DL_EXTERN(rt, name, ...) extern rt DL_REAL_FN(name)(__VA_ARGS__)
 
-typedef int (*__pthread_cond_broadcast_t)(pthread_cond_t *cond);
+#define DL_TYPEDEF(rt, name, ...) typedef rt (*DL_TYPE(name))(__VA_ARGS__)
 
-typedef int (*__pthread_cond_signal_t)(pthread_cond_t *cond);
+#define DL_STATIC(name) DL_TYPE(name) DL_REAL_VAR(name)
 
-__pthread_cond_timedwait_t __pthread_cond_timedwait;
-__pthread_cond_wait_t __pthread_cond_wait;
-__pthread_cond_broadcast_t __pthread_cond_broadcast;
-__pthread_cond_signal_t __pthread_cond_signal;
-#endif
-
-extern int __pthread_mutex_lock(pthread_mutex_t *mutex);
-
-extern int __pthread_mutex_unlock(pthread_mutex_t *mutex);
-
-extern int __pthread_mutex_timedlock(pthread_mutex_t *restrict mutex,
-                                     const struct timespec *restrict abs_timeout);
-
-
+#define DL_LOOKUPV(name) \
+  DL_REAL_VAR(name) = (DL_TYPE(name)) dlvsym(RTLD_NEXT, # name , "GLIBC_2.3.2")
 
 #define DL_LOOKUP(name) \
-  __ ## name = (__ ## name ## _t ) dlvsym(RTLD_NEXT, # name , "GLIBC_2.3.2") 
-void __attribute__ ((constructor))
+  DL_REAL_VAR(name) = (DL_TYPE(name)) dlsym(RTLD_NEXT, # name)
+
+#define DL_DEFAULT(name) \
+  if (! DL_REAL_VAR(name)) DL_REAL_VAR(name) = (DL_TYPE(name)) 0xDEADBEEF
+
+#define DL_ASSERT(name) \
+     if (!DL_REAL_VAR(name)) DL_LOOKUP(name); assert(DL_REAL_VAR(name)) 
+
+// ******************************************************************************
+// *draft wrapper interface for pthread routines 
+// ****************************************************************************
+#ifdef REAL_FNS_AVAIL // used to be COND_AVAIL
+extern int DL_REAL_FN(pthread_cond_timedwait)(pthread_cond_t* restrict cond,
+                                              pthread_mutex_t* restrict mutex,
+                                              const struct timespec* restrict abstime);
+
+extern int DL_REAL_FN(pthread_cond_wait)(pthread_cond_t* restrict cond,
+                                         pthread_mutex_t* restrict mutex);
+
+extern int DL_REAL_FN(pthread_cond_broadcast)(pthread_cond_t* cond);
+
+extern int DL_REAL_FN(pthread_cond_signal)(pthread_cond_t* cond);
+
+#else 
+typedef int (*DL_TYPE(pthread_cond_timedwait))(pthread_cond_t* restrict cond,
+                                               pthread_mutex_t* restrict mutex,
+                                               const struct timespec* restrict abstime);
+typedef int (*DL_TYPE(pthread_cond_wait))(pthread_cond_t *restrict cond,
+                                          pthread_mutex_t *restrict mutex);
+typedef int (*DL_TYPE(pthread_cond_broadcast))(pthread_cond_t *cond);
+typedef int (*DL_TYPE(pthread_cond_signal))(pthread_cond_t *cond);
+
+static DL_TYPE(pthread_cond_timedwait) DL_REAL_VAR(pthread_cond_timedwait);
+static DL_TYPE(pthread_cond_wait) DL_REAL_VAR(pthread_cond_wait);
+static DL_TYPE(pthread_cond_broadcast) DL_REAL_VAR(pthread_cond_broadcast);
+static DL_TYPE(pthread_cond_signal) DL_REAL_VAR(pthread_cond_signal);
+
+#endif
+
+// mutex function overrides
+
+#ifdef REAL_FNS_AVAIL
+extern int DL_REAL_FN(pthread_mutex_lock)(pthread_mutex_t* mutex);
+extern int DL_REAL_FN(pthread_mutex_unlock)(pthread_mutex_t* mutex);
+extern int DL_REAL_FN(pthread_mutex_timedlock)(pthread_mutex_t *restrict mutex,
+                                               const struct timespec *restrict abs_timeout);
+#else
+typedef int (*DL_TYPE(pthread_mutex_lock))(pthread_mutex_t* mutex);
+typedef int (*DL_TYPE(pthread_mutex_unlock))(pthread_mutex_t* mutex);
+typedef int (*DL_TYPE(pthread_mutex_timedlock))(pthread_mutex_t *restrict mutex,
+                                                const struct timespec *restrict abs_timeout);
+
+static DL_TYPE(pthread_mutex_lock) DL_REAL_VAR(pthread_mutex_lock);
+static DL_TYPE(pthread_mutex_unlock) DL_REAL_VAR(pthread_mutex_unlock);
+static DL_TYPE(pthread_mutex_timedlock) DL_REAL_VAR(pthread_mutex_timedlock);
+#endif
+
+ __attribute__ ((constructor)) 
+void
 pthread_plugin_init() 
 {
 #ifdef REGISTER_BLAME_SOURCE // FIXME BLAME ?????
   idle_metric_register_blame_source();
 #endif // REGISTER_BLAME_SOURCE
-#ifndef COND_AVAIL
-   DL_LOOKUP(pthread_cond_broadcast);
-   DL_LOOKUP(pthread_cond_signal);
-   DL_LOOKUP(pthread_cond_wait);
-   DL_LOOKUP(pthread_cond_timedwait);
+#ifdef COND_AVAIL
+  DL_LOOKUPV(pthread_cond_broadcast);
+  DL_LOOKUPV(pthread_cond_signal);
+  DL_LOOKUPV(pthread_cond_wait);
+  DL_LOOKUPV(pthread_cond_timedwait);
+
 #endif
+  DL_LOOKUP(pthread_mutex_lock);
+  DL_LOOKUP(pthread_mutex_unlock);
+  DL_LOOKUP(pthread_mutex_timedlock);
 }
 
 int 
@@ -118,7 +166,6 @@ pthread_cond_timedwait(pthread_cond_t* restrict cond,
   return retval;
 }
 
-
 int 
 pthread_cond_wait(pthread_cond_t* restrict cond,
                   pthread_mutex_t* restrict mutex)
@@ -130,7 +177,6 @@ pthread_cond_wait(pthread_cond_t* restrict cond,
   return retval;
 }
 
-
 int 
 pthread_cond_broadcast(pthread_cond_t *cond)
 {
@@ -138,7 +184,6 @@ pthread_cond_broadcast(pthread_cond_t *cond)
   directed_blame_accept(cond);
   return retval;
 }
-
 
 int 
 pthread_cond_signal(pthread_cond_t* cond)
@@ -148,34 +193,43 @@ pthread_cond_signal(pthread_cond_t* cond)
   return retval;
 }
 
-
 int 
 pthread_mutex_lock(pthread_mutex_t* mutex)
 {
-  int retval;
+  if (! pthread_blame_lockwait_enabled() ) {
+    return __pthread_mutex_lock(mutex);
+  }
+  TMSG(LOCKWAIT, "pthread mutex LOCK");
   directed_blame_shift_start(mutex);
-  retval = __pthread_mutex_lock(mutex);
+  int retval = __pthread_mutex_lock(mutex);
   directed_blame_shift_end();
   return retval;
 }
 
-
 int 
 pthread_mutex_unlock(pthread_mutex_t* mutex)
 {
+  if (! pthread_blame_lockwait_enabled() ) {
+    return __pthread_mutex_lock(mutex);
+  }
+  TMSG(LOCKWAIT, "pthread mutex UNLOCK");
   int retval = __pthread_mutex_unlock(mutex);
   directed_blame_accept(mutex);
   return retval;
 }
 
-
 int 
 pthread_mutex_timedlock(pthread_mutex_t* restrict mutex,
                         const struct timespec *restrict abs_timeout)
 {
-  int retval;
+  if (! pthread_blame_lockwait_enabled() ) {
+    return __pthread_mutex_lock(mutex);
+  }
+
+  TMSG(LOCKWAIT, "pthread mutex TIMEDLOCK");
+
   directed_blame_shift_start(mutex);
-  retval = __pthread_mutex_timedlock(mutex, abs_timeout);
+  int retval = __pthread_mutex_timedlock(mutex, abs_timeout);
   directed_blame_shift_end();
   return retval;
 }

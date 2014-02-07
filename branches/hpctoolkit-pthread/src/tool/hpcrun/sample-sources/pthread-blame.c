@@ -70,13 +70,13 @@
 #include "pthread-blame.h"
 #include <sample-sources/blame-shift/blame-shift.h>
 #include <sample-sources/blame-shift/blame-map.h>
-// #include "idle.h"
 
 #include <hpcrun/hpctoolkit.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/cct/cct.h>
+#include <messages/messages.h>
 
 /******************************************************************************
  * macros
@@ -88,8 +88,6 @@
 
 static void process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t *node, int metric_incr);
 
-
-
 /******************************************************************************
  * static local variables
  *****************************************************************************/
@@ -97,7 +95,17 @@ static void process_directed_blame_for_sample(void* arg, int metric_id, cct_node
 static int directed_blame_metric_id = -1;
 static bs_fn_entry_t bs_entry;
 
-static int doblame = 0;
+static bool lockwait_enabled = false;
+
+// ******************************************************************************
+//  public interface to local variables
+// ******************************************************************************
+
+bool
+pthread_blame_lockwait_enabled(void)
+{
+  return lockwait_enabled;
+}
 
 // ******************************************************************************
 //  public utility functions
@@ -115,7 +123,6 @@ hpcrun_get_pthread_directed_blame_metric_id(void)
  * private operations
  ***************************************************************************/
 
-
 /*--------------------------------------------------------------------------
  | transferp directed blame as appropritate for a sample
  --------------------------------------------------------------------------*/
@@ -123,18 +130,20 @@ hpcrun_get_pthread_directed_blame_metric_id(void)
 static void 
 process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t *node, int metric_incr)
 {
+  TMSG(LOCKWAIT, "Processing directed blame");
   metric_desc_t* metric_desc = hpcrun_id2metric(metric_id);
  
+#ifdef LOCKWAIT_FIX
   // Only blame shift idleness for time and cycle metrics. 
   if ( ! (metric_desc->properties.time | metric_desc->properties.cycles) ) 
     return;
+#endif // LOCKWAIT_FIX
   
   uint32_t metric_value = (uint32_t) (metric_desc->period * metric_incr);
 
-  thread_data_t* td = hpcrun_get_thread_data();
-  uint64_t obj_to_blame = td->blame_target;
-
-  if(obj_to_blame && (td->idle == 0)) {
+  uint64_t obj_to_blame = pthread_blame_get_blame_target();
+  if(obj_to_blame) {
+    TMSG(LOCKWAIT, "about to add %d to blame object %d", metric_value, obj_to_blame);
     blame_map_add_blame(obj_to_blame, metric_value);
   }
 }
@@ -166,7 +175,7 @@ METHOD_FN(thread_init_action)
 static void
 METHOD_FN(start)
 {
-   doblame = 1;
+  lockwait_enabled = true;
 }
 
 
@@ -186,6 +195,7 @@ static void
 METHOD_FN(shutdown)
 {
   self->state = UNINIT;
+  lockwait_enabled = false;
 }
 
 
