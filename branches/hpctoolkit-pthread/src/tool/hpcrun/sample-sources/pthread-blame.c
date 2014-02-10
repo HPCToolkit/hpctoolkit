@@ -176,6 +176,7 @@ static void
 METHOD_FN(start)
 {
   lockwait_enabled = true;
+  // create & initialize blame table
 }
 
 
@@ -189,7 +190,6 @@ static void
 METHOD_FN(stop)
 {
 }
-
 
 static void
 METHOD_FN(shutdown)
@@ -255,4 +255,3 @@ METHOD_FN(display_events)
 #define ss_cls SS_SOFTWARE
 
 #include "ss_obj.h"
-
