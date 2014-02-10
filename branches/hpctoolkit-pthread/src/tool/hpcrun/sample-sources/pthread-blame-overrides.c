@@ -210,18 +210,7 @@ MONITOR_EXT_WRAP_NAME(pthread_mutex_lock)(pthread_mutex_t* mutex)
   }
   TMSG(LOCKWAIT, "pthread mutex LOCK");
   directed_blame_shift_start(mutex);
-#ifdef USE_BUSYWAIT_LOCK
-  //
-  // trylock here
-  // replace sleepwait with busywait
-  //
-  int retval = __pthread_mutex_trylock(mutex);
-  while(! (retval = __pthread_mutex_trylock(mutex))){
-    TMSG(LOCKWAIT, "Busy waiting for mutex lock");
-  }
-#else // use original block with sleepwait
   int retval = __pthread_mutex_lock(mutex);
-#endif // USE_BUSYWAIT_LOCK
   directed_blame_shift_end();
   return retval;
 }
