@@ -117,6 +117,7 @@ if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcrun_ga.la
   pkglib_LTLIBRARIES += libhpcrun_io.la
   pkglib_LTLIBRARIES += libhpcrun_memleak.la
+  pkglib_LTLIBRARIES += libhpcrun_pthread.la
 if OPT_ENABLE_CUDA
   pkglib_LTLIBRARIES += libhpcrun_gpu.la
 endif
@@ -130,6 +131,7 @@ if OPT_ENABLE_HPCRUN_STATIC
   pkglib_LIBRARIES += libhpcrun_ga_wrap.a
   pkglib_LIBRARIES += libhpcrun_io_wrap.a
   pkglib_LIBRARIES += libhpcrun_memleak_wrap.a
+  pkglib_LIBRARIES += libhpcrun_pthread_wrap.a
 if OPT_ENABLE_CUDA
   pkglib_LIBRARIES += libhpcrun_gpu_wrap.a
 endif
@@ -158,7 +160,7 @@ XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
-PLUGIN_CONFIG_FILES = ga io memleak
+PLUGIN_CONFIG_FILES = ga io memleak pthread
 if OPT_ENABLE_CUDA
     PLUGIN_CONFIG_FILES += gpu
 endif
@@ -267,7 +269,6 @@ MY_BASE_FILES =				\
 	sample-sources/idle.c		\
 	sample-sources/memleak.c	\
 	sample-sources/pthread-blame.c  \
-	sample-sources/pthread-blame-overrides.c  \
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \
         sample-sources/sync.c           \
@@ -422,6 +423,12 @@ libhpcrun_memleak_la_SOURCES = 		\
 libhpcrun_memleak_wrap_a_SOURCES = 	\
 	sample-sources/memleak-overrides.c
 
+libhpcrun_pthread_la_SOURCES = 		\
+	sample-sources/pthread-blame-overrides.c
+
+libhpcrun_pthread_wrap_a_SOURCES = 	\
+	sample-sources/pthread-blame-overrides.c
+
 libhpcrun_gpu_la_SOURCES = 		\
 	sample-sources/gpu_blame-overrides.c \
 	gpu_blame-driver-overrides-generated.c \
@@ -487,6 +494,15 @@ libhpcrun_memleak_la_CPPFLAGS =		\
 	$(MY_INCLUDE_DIRS)
 
 libhpcrun_memleak_wrap_a_CPPFLAGS =	\
+	-DHPCRUN_STATIC_LINK		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_pthread_la_CPPFLAGS =		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_pthread_wrap_a_CPPFLAGS =	\
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
@@ -571,6 +587,8 @@ libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_pthread_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_pthread_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -596,8 +614,8 @@ libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic	\
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
 
-#libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic 	\
-#	-Wl,--strip-debug
+libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic 	\
+	-Wl,--strip-debug
 
 libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic
 
@@ -628,6 +646,8 @@ if HOST_CPU_MIPS
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_pthread_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_gpu_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_gpu_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
@@ -650,6 +670,8 @@ if HOST_CPU_PPC
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_pthread_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_gpu_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_gpu_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
@@ -672,6 +694,8 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_pthread_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_gpu_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_gpu_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
@@ -689,6 +713,8 @@ if HOST_CPU_IA64
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+  libhpcrun_pthread_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+  libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
 endif
 
@@ -765,6 +791,8 @@ libhpcrun_io_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_io_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
+libhpcrun_pthread_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
+libhpcrun_pthread_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
