@@ -1,0 +1,220 @@
+%% $Id: hpctraceviewer.tex 3428 2011-02-22 21:31:42Z tallent $
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[english]{article}
+\usepackage[latin1]{inputenc}
+\usepackage{babel}
+\usepackage{verbatim}
+
+%% do we have the `hyperref package?
+\IfFileExists{hyperref.sty}{
+   \usepackage[bookmarksopen,bookmarksnumbered]{hyperref}
+}{}
+
+%% do we have the `fancyhdr' or `fancyheadings' package?
+\IfFileExists{fancyhdr.sty}{
+\usepackage[fancyhdr]{latex2man}
+}{
+\IfFileExists{fancyheadings.sty}{
+\usepackage[fancy]{latex2man}
+}{
+\usepackage[nofancy]{latex2man}
+\message{no fancyhdr or fancyheadings package present, discard it}
+}}
+
+%% do we have the `rcsinfo' package?
+\IfFileExists{rcsinfo.sty}{
+\usepackage[nofancy]{rcsinfo}
+\rcsInfo $Id: hpctraceviewer.tex 3428 2011-02-22 21:31:42Z tallent $
+\setDate{\rcsInfoLongDate}
+}{
+\setDate{ 2011/02/22}
+\message{package rcsinfo not present, discard it}
+}
+
+\setVersionWord{Version:}  %%% that's the default, no need to set it.
+\setVersion{=PACKAGE_VERSION=}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+
+
+\begin{Name}{1}{hpctraceviewer}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpctraceviewer:\\ Interactive Presentation of Program Traces}
+
+The Java-based \Prog{hpctraceviewer} interactively presents dynamic behavior of a program. 
+
+\end{Name}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Synopsis}
+
+Command-line usage:\\
+\SP\SP\SP\Prog{hpctraceviewer} \oOpt{options} \oOpt{hpctoolkit-database}
+
+GUI usage:\\
+\SP\SP\SP Launch \File{hpctraceviewer} and open the Experiment database \oOpt{hpctoolkit-database}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Description}
+
+The Java-based \Prog{hpctraceviewer} interactively presents program traces in a top-down fashion.
+Since Experiment databases are self-contained, they may be relocated from a cluster for visulization on a laptop or workstation.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Arguments}
+
+\begin{Description}
+\item[\Arg{hpctoolkit-database}] An HPCToolkit Experiment database, which is the result of executing \Prog{hpcprof}, \Prog{hpcprof-mpi} or \Prog{hpcprof-flat}.
+\end{Description}
+
+%Default values for an option's optional arguments are shown in \{\}.
+
+\subsection{Options}
+
+\begin{Description}
+
+\item[\Opt{-consolelog}]
+Send log entries to a console in addition to a log file.
+
+\item[\Opt{-debug}]
+Log additional information about plug-in dependency problems.
+
+\end{Description}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Detailed Description}
+
+\subsection{Views}
+
+\Prog{hpctraceviewer} comprises of three different parts. 
+
+
+\begin{itemize}
+\item Trace view (left, top):
+  This is hpctraceviewer's primary view.
+  This view, which is similar to a conventional process/time (or space/time) view, shows time on the horizontal axis and process (or thread) rank on the vertical axis; time moves from left to right.
+  Compared to typical process/time views, there is one key difference.
+  To show call path hierarchy, the view is actually a user-controllable slice of the process/time/call-path space.
+  Given a call path depth, the view shows the color of the currently active procedure at a given time and process rank.
+  (If the requested depth is deeper than a particular call path, then hpctraceviewer simply displays the deepest procedure frame and, space permitting, overlays an annotation indicating the fact that this frame represents a shallower depth.)
+  hpctraceviewer assigns colors to procedures based on (static) source code procedures.
+  Although the color assignment is currently random, it is consistent across the different views.
+  Thus, the same color within the Trace and Depth Views refers to the same procedure.
+  The Trace View has a white crosshair that represents a selected point in time and process space.
+  For this selected point, the Call Path View shows the corresponding call path.
+  The Depth View shows the selected process.
+
+\item Depth view (left, bottom):
+  This is a call-path/time view for the process rank selected by the Trace view's crosshair.
+  Given a process rank, the view shows for each virtual time along the horizontal axis a stylized call path along the vertical axis, where `main' is at the top and leaves (samples) are at the bottom.
+  In other words, this view shows for the whole time range, in qualitative fashion, what the Call Path View shows for a selected point.
+  The horizontal time axis is exactly aligned with the Trace View's time axis; and the colors are consistent across both views.
+  This view has its own crosshair that corresponds to the currently selected time and call path depth.
+
+\item Summary view (same location as depth view on the left-bottom part):
+  The view shows for the whole time range dislayed, the proportion of each subroutine in a certain time.
+  Similar to Depth view, the time range in Summary reflects to the time range in the Trace view. 
+
+\item Call view (right, top):
+  This view shows two things: (1) the current call path depth that defines the hierarchical slice shown in the Trace View; and (2) the actual call path for the point selected by the Trace View's crosshair.
+  (To easily coordinate the call path depth value with the call path, the Call Path View currently suppresses details such as loop structure and call sites; we may use indentation or other techniques to display this in the future.)
+
+\item Mini map view (right, bottom):
+  The Mini Map shows, relative to the process/time dimensions, the portion of the execution shown by the Trace View.
+  The Mini Map enables one to zoom and to move from one close-up to another quickly.
+
+\end{itemize}
+
+
+% ===========================================================================
+
+\subsection{Trace view}
+
+Trace view is divided into two parts: the top part which contains \emph{action pane} and the \emph{information pane}, and the main view which displays the traces. 
+
+The buttons in the action pane are the following:
+\begin{itemize}
+
+\item Home : Resetting the view configuration into the original view, i.e., viewing traces for all times and processes.
+\item Horiontal zoom in / out : Zooming in/out the time dimension of the traces. 
+\item Vertical zoom in / out : Zooming in/out the process dimension of the traces.
+\item Navigation buttons : Navigating the trace view to the left, right, up and bottom, respectively. It is also possible to navigate with the arrow keys in the keyboard. Since Trace view does not support scrool bars, the only way to navigate is through navigation buttons (or arrow keys).
+\item Undo : Canceling the action of zoom or navigation and returning back to the previous view configuration.
+\item Redo : Redoing of previously undo change of view configuration.
+\item save  / a view configuration : Saving/loading a saved view configuration. 
+A view configuration file contains the information of the current dimension of time and process, the depth and the position of the crosshair. 
+It is recommended to store the view configuration file in the same directory as the database to ensure that the view configuration file matches well with the database since the file does not store which database it is associated with. 
+Although it is possible to open a view configuration file which is associated from different database, it is highly not recommended since each database has different time/process dimensions and depth.
+
+
+\end{itemize}
+
+The information pane contains some information concerning the range status of the current displayed data.
+\begin{itemize}
+ \item Time Range. The information of current time-range (horizontal) dimension. 
+ \item Process Range. The information of current process-range (vertical) dimension. 
+ \item Cross Hair. The information of current crosshair position in time and process dimensions. 
+\end{itemize}
+
+% ===========================================================================
+% ===========================================================================
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\section{Arguments}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\section{Examples}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\section{Notes}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{See Also}
+
+\HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Version}
+
+Version: \Version\ of \Date.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{License and Copyright}
+
+\begin{description}
+\item[Copyright] \copyright\ 2002-2014, Rice University.
+\item[License] See \File{README.License}.
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Authors}
+
+\noindent
+Laksono Adhianto \\
+John Mellor-Crummey \\
+Nathan Tallent \\
+Rice HPCToolkit Research Group \\
+Email: \Email{hpctoolkit-forum =at= rice.edu} \\
+WWW: \URL{http://hpctoolkit.org}.
+
+\LatexManEnd
+
+\end{document}
+
+%% Local Variables:
+%% eval: (add-hook 'write-file-hooks 'time-stamp)
+%% time-stamp-start: "setDate{ "
+%% time-stamp-format: "%:y/%02m/%02d"
+%% time-stamp-end: "}\n"
+%% time-stamp-line-limit: 50
+%% End:
+
