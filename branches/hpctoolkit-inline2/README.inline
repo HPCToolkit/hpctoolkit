@@ -1,0 +1,10 @@
+This, the hpctoolkit-inline2 branch, is a short-lived, temporary
+branch to prepare code for static inline support from SymtabAPI.
+
+The other hpctoolkit-inline branch is a hacked proof of concept.
+This is the branch that will be merged back into trunk.
+
+Don't expect this branch to always build or run cleanly.  When it's
+featured enough, I'll add directions on building the latest symtab
+from git with cmake.
+
