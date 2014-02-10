@@ -256,10 +256,20 @@ hpcrun_loadmap_findByAddr(void* begin, void* end)
 {
   TMSG(LOADMAP, "find by address %p -- %p", begin, end);
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
-    if (x->dso_info
-	&& x->dso_info->start_addr <= begin && end <= x->dso_info->end_addr) {
-      TMSG(LOADMAP, "       --->%s", x->name);
-      return x;
+    TMSG(LOADMAP, "\tload module %s", x->name);
+    if (x->dso_info) {
+      TMSG(LOADMAP, "\t\t [%lx, %lx) table [%lx, %lx)", 
+	   x->dso_info->start_addr,
+	   x->dso_info->end_addr,
+	   (x->dso_info->table ? (x->dso_info->table[0] + 
+				  x->dso_info->start_to_ref_dist) : -1),
+	   (x->dso_info->table ? (x->dso_info->table[x->dso_info->nsymbols -1] +
+				  x->dso_info->start_to_ref_dist) : -1)
+	   );
+      if (x->dso_info->start_addr <= begin && end <= x->dso_info->end_addr) {
+	TMSG(LOADMAP, "       --->%s", x->name);
+	return x;
+      }
     }
   }
   TMSG(LOADMAP, "       --->(NOT FOUND)");
