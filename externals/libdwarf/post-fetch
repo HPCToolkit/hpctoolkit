@@ -6,7 +6,7 @@
 #
 
 PKG_NAME=libdwarf
-src=dwarf-20120410
+src=dwarf-20130126
 
 . ../build-utils/configure.inc
 
