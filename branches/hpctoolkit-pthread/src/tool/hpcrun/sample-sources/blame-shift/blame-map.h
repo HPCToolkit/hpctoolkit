@@ -60,32 +60,19 @@
 
 #include <stdint.h>
 
-
+//
+// (abstract) data type definition
+//
+typedef union blame_entry_t blame_entry_t;
 
 /***************************************************************************
  * interface operations
  ***************************************************************************/
 
-void      blame_map_init(); 
-void      blame_map_add_blame(uint64_t obj, uint32_t metric_value);
-uint64_t  blame_map_get_blame(uint64_t obj);
-
-/******************************************************************************
- * data type
- *****************************************************************************/
-
-struct blame_parts {
-  uint32_t obj_id;
-  uint32_t blame;
-};
-
-
-typedef union {
-  uint64_t all;
-  struct blame_parts parts; //[0] is id, [1] is blame
-} blame_entry;
-
-// global variable
-extern volatile blame_entry table[];
+blame_entry_t* blame_map_new(void);
+void blame_map_init(blame_entry_t* table);
+void blame_map_add_blame(blame_entry_t* table,
+			 uint64_t obj, uint32_t metric_value);
+uint64_t blame_map_get_blame(blame_entry_t* table, uint64_t obj);
 
 #endif // _hpctoolkit_blame_map_h_

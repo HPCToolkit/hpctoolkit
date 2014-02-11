@@ -3,13 +3,18 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define DIRECTED_BLAME_NAME "LOCKWAIT"
-extern int hpcrun_get_pthread_directed_blame_metric_id(void);
+#include <pthread.h>
 
-// blame object manipulation
-extern uint64_t pthread_blame_get_blame_target(void);
+#define DIRECTED_BLAME_NAME "PTHREAD_BLAME"
 
 // pthread blame shifting enabled
 extern bool pthread_blame_lockwait_enabled(void);
+
+//
+// handling pthread blame
+//
+extern void pthread_directed_blame_shift_start(void* obj);
+extern void pthread_directed_blame_shift_end(void);
+extern void pthread_directed_blame_accept(void* obj);
 
 #endif // PTHREAD_BLAME_H

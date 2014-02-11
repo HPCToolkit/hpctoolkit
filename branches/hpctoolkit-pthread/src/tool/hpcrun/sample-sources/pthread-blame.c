@@ -78,54 +78,84 @@
 #include <hpcrun/cct/cct.h>
 #include <messages/messages.h>
 
-/******************************************************************************
- * macros
- *****************************************************************************/
+// typedefs
+//
+typedef struct {
+  uint64_t target;
+  bool idle;
+} blame_t;
 
+#if 0
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
 
 static void process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t *node, int metric_incr);
+#endif
 
-/******************************************************************************
- * static local variables
- *****************************************************************************/
+// *****************************************************************************
+//    static local variables
+// *****************************************************************************
 
 static int directed_blame_metric_id = -1;
 static bs_fn_entry_t bs_entry;
 
 static bool lockwait_enabled = false;
 
-// ******************************************************************************
-//  public interface to local variables
-// ******************************************************************************
-
-bool
-pthread_blame_lockwait_enabled(void)
-{
-  return lockwait_enabled;
-}
-
-// ******************************************************************************
-//  public utility functions
-// ******************************************************************************
+static blame_entry_t* pthread_blame_table = NULL;
 
 static bool metric_id_set = false;
 
-int
-hpcrun_get_pthread_directed_blame_metric_id(void)
+//
+// thread-local variables
+//
+
+static __thread blame_t pthread_blame = {0, false};
+
+static inline
+uint64_t
+get_blame_target(void)
 {
-  return (metric_id_set) ? directed_blame_metric_id : -1;
+  return pthread_blame.target;
 }
 
 /***************************************************************************
  * private operations
  ***************************************************************************/
 
+static inline
+int
+get_pthread_directed_blame_metric_id(void)
+{
+  return (metric_id_set) ? directed_blame_metric_id : -1;
+}
+
 /*--------------------------------------------------------------------------
  | transferp directed blame as appropritate for a sample
  --------------------------------------------------------------------------*/
+
+static inline
+void
+add_blame(uint64_t obj, uint32_t value)
+{
+  if (! pthread_blame_table) {
+    EMSG("Attempted to add pthread blame before initialization");
+    return;
+  }
+  blame_map_add_blame(pthread_blame_table,
+		      obj, value);
+}
+
+static inline
+uint64_t
+get_blame(uint64_t obj)
+{
+  if (! pthread_blame_table) {
+    EMSG("Attempted to fetch pthread blame before initialization");
+    return 0;
+  }
+  return blame_map_get_blame(pthread_blame_table, obj);
+}
 
 static void 
 process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t *node, int metric_incr)
@@ -141,13 +171,57 @@ process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t *node, in
   
   uint32_t metric_value = (uint32_t) (metric_desc->period * metric_incr);
 
-  uint64_t obj_to_blame = pthread_blame_get_blame_target();
+  uint64_t obj_to_blame = get_blame_target();
   if(obj_to_blame) {
     TMSG(LOCKWAIT, "about to add %d to blame object %d", metric_value, obj_to_blame);
-    blame_map_add_blame(obj_to_blame, metric_value);
+    add_blame(obj_to_blame, metric_value);
   }
 }
 
+// ******************************************************************************
+//  public interface to local variables
+// ******************************************************************************
+
+bool
+pthread_blame_lockwait_enabled(void)
+{
+  return lockwait_enabled;
+}
+
+//
+// public blame manipulation functions
+//
+void
+pthread_directed_blame_shift_start(void* obj)
+{
+  TMSG(LOCKWAIT, "Start directed blaming using blame structure %x, for obj %d",
+       &pthread_blame, (uintptr_t) obj);
+  pthread_blame = (blame_t) {.target = (uint64_t)(uintptr_t)obj,
+                             .idle   = true};
+}
+
+void
+pthread_directed_blame_shift_end(void)
+{
+  pthread_blame = (blame_t) {.target = 0, .idle = false};
+  TMSG(LOCKWAIT, "End directed blaming for blame structure %x",
+       &pthread_blame);
+}
+
+void
+pthread_directed_blame_accept(void* obj)
+{
+  uint64_t blame = get_blame((uint64_t) (uintptr_t) obj);
+  TMSG(LOCKWAIT, "Blame obj %d accepting %d units of blame", obj, blame);
+  if (blame && hpctoolkit_sampling_is_active()) {
+    ucontext_t uc;
+    getcontext(&uc);
+    hpcrun_safe_enter();
+    hpcrun_sample_callpath(&uc, get_pthread_directed_blame_metric_id(),
+                           blame, 0, 1);
+    hpcrun_safe_exit();
+  }
+}
 
 /*--------------------------------------------------------------------------
  | sample source methods
@@ -176,7 +250,7 @@ static void
 METHOD_FN(start)
 {
   lockwait_enabled = true;
-  // create & initialize blame table
+  TMSG(LOCKWAIT, "pthread blame ss STARTED, blame table = %x", pthread_blame_table);
 }
 
 
@@ -213,13 +287,14 @@ METHOD_FN(process_event_list, int lush_metrics)
   bs_entry.arg = NULL;
   bs_entry.next = NULL;
 
-  blame_map_init();
   blame_shift_register(&bs_entry);
 
   directed_blame_metric_id = hpcrun_new_metric();
   metric_id_set = true;
   hpcrun_set_metric_info_and_period(directed_blame_metric_id, DIRECTED_BLAME_NAME,
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+  // create & initialize blame table (once per process)
+  if (! pthread_blame_table) pthread_blame_table = blame_map_new();
 }
 
 

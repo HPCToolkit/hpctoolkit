@@ -18,55 +18,6 @@
  * interface operations for clients 
  *****************************************************************************/
 
-typedef struct {
-  uint64_t target;
-  bool idle;
-} blame_t;
-
-static __thread blame_t pthread_blame = {0, false};
-
-static void
-directed_blame_shift_start(void* obj)
-{
-  TMSG(LOCKWAIT, "Start directed blaming using blame structure %x, for obj %d",
-       &pthread_blame, (uintptr_t) obj);
-  pthread_blame = (blame_t) {.target = (uint64_t)(uintptr_t)obj,
-                             .idle   = true};
-}
-
-
-static void
-directed_blame_shift_end(void)
-{
-  pthread_blame = (blame_t) {.target = 0, .idle = false};
-  TMSG(LOCKWAIT, "End directed blaming for blame structure %x",
-       &pthread_blame);
-}
-
-static void
-directed_blame_accept(void* obj)
-{
-  uint64_t blame = blame_map_get_blame((uint64_t) (uintptr_t) obj);
-  TMSG(LOCKWAIT, "Blame obj %d accepting %d units of blame", obj, blame);
-  if (blame && hpctoolkit_sampling_is_active()) {
-    ucontext_t uc;
-    getcontext(&uc);
-    hpcrun_safe_enter();
-    hpcrun_sample_callpath(&uc, hpcrun_get_pthread_directed_blame_metric_id(),
-                           blame, 0, 1);
-    hpcrun_safe_exit();
-  }
-}
-
-// ***********************
-// public interface to blame structure
-// ***********************
-
-uint64_t
-pthread_blame_get_blame_target(void)
-{
-  return pthread_blame.target;
-}
 
 // ***** dl system macros *****
 #define DL_REAL_VAR(name) __ ## name
@@ -169,9 +120,9 @@ pthread_cond_timedwait(pthread_cond_t* restrict cond,
                        const struct timespec* restrict abstime)
 {
   int retval;
-  directed_blame_shift_start(cond);
+  pthread_directed_blame_shift_start(cond);
   retval = __pthread_cond_timedwait(cond, mutex, abstime);
-  directed_blame_shift_end();
+  pthread_directed_blame_shift_end();
   return retval;
 }
 
@@ -180,9 +131,9 @@ pthread_cond_wait(pthread_cond_t* restrict cond,
                   pthread_mutex_t* restrict mutex)
 {
   int retval;
-  directed_blame_shift_start(cond);
+  pthread_directed_blame_shift_start(cond);
   retval = __pthread_cond_wait(cond, mutex);
-  directed_blame_shift_end();
+  pthread_directed_blame_shift_end();
   return retval;
 }
 
@@ -190,7 +141,7 @@ int
 pthread_cond_broadcast(pthread_cond_t *cond)
 {
   int retval = __pthread_cond_broadcast(cond);
-  directed_blame_accept(cond);
+  pthread_directed_blame_accept(cond);
   return retval;
 }
 
@@ -198,32 +149,34 @@ int
 pthread_cond_signal(pthread_cond_t* cond)
 {
   int retval = __pthread_cond_signal(cond);
-  directed_blame_accept(cond);
+  pthread_directed_blame_accept(cond);
   return retval;
 }
 
 int 
 MONITOR_EXT_WRAP_NAME(pthread_mutex_lock)(pthread_mutex_t* mutex)
 {
+  TMSG(LOCKWAIT, "mutex lock ENCOUNTERED");
   if (! pthread_blame_lockwait_enabled() ) {
     return __pthread_mutex_lock(mutex);
   }
-  TMSG(LOCKWAIT, "pthread mutex LOCK");
-  directed_blame_shift_start(mutex);
+  TMSG(LOCKWAIT, "pthread mutex LOCK override");
+  pthread_directed_blame_shift_start(mutex);
   int retval = __pthread_mutex_lock(mutex);
-  directed_blame_shift_end();
+  pthread_directed_blame_shift_end();
   return retval;
 }
 
 int 
 MONITOR_EXT_WRAP_NAME(pthread_mutex_unlock)(pthread_mutex_t* mutex)
 {
+  TMSG(LOCKWAIT, "mutex unlock ENCOUNTERED");
   if (! pthread_blame_lockwait_enabled() ) {
     return __pthread_mutex_unlock(mutex);
   }
   TMSG(LOCKWAIT, "pthread mutex UNLOCK");
   int retval = __pthread_mutex_unlock(mutex);
-  directed_blame_accept(mutex);
+  pthread_directed_blame_accept(mutex);
   return retval;
 }
 
@@ -231,15 +184,15 @@ int
 MONITOR_EXT_WRAP_NAME(pthread_mutex_timedlock)(pthread_mutex_t* restrict mutex,
                                                const struct timespec *restrict abs_timeout)
 {
+  TMSG(LOCKWAIT, "mutex timedlock ENCOUNTERED");
   if (! pthread_blame_lockwait_enabled() ) {
     return __pthread_mutex_timedlock(mutex, abs_timeout);
   }
 
   TMSG(LOCKWAIT, "pthread mutex TIMEDLOCK");
 
-  directed_blame_shift_start(mutex);
-  // how to do this ??
+  pthread_directed_blame_shift_start(mutex);
   int retval = __pthread_mutex_timedlock(mutex, abs_timeout);
-  directed_blame_shift_end();
+  pthread_directed_blame_shift_end();
   return retval;
 }
