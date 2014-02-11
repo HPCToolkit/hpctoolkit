@@ -87,7 +87,7 @@ MYLDFLAGS = \
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Analysis) \
-	$(HPCLIB_Banal) \
+	$(MY_LIB_Banal) \
 	$(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) \
@@ -98,6 +98,12 @@ MYLDADD = \
 	@OA_LDFLAGS@ \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@
+
+if OPT_ENABLE_BANAL_WITH_SYMTAB
+MY_LIB_Banal = $(HPCLIB_Banal_Symtab)
+else
+MY_LIB_Banal = $(HPCLIB_Banal)
+endif
 
 if HOST_CPU_X86_FAMILY
 MY_LIB_XED = $(XED2_LIB_FLAGS)
