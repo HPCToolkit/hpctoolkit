@@ -2017,6 +2017,23 @@ AM_CONDITIONAL([OPT_ENABLE_HPCRUN_DYNAMIC],
 
 
 #-------------------------------------------------
+# enable-inline:
+#-------------------------------------------------
+
+# Enable the static inline support from symtabAPI.  This involves
+# linking symtab into hpcstruct and banal.
+
+AC_ARG_ENABLE([inline],
+  [AS_HELP_STRING([--enable-inline],
+      [enable static inline support, requires linking symtab
+       into hpcstruct (default yes)])],
+  [],
+  [enable_inline=yes])
+
+AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_SYMTAB], [test "$enable_inline" = yes])
+
+
+#-------------------------------------------------
 # enable-mpi:
 #-------------------------------------------------
 
@@ -2766,6 +2783,7 @@ AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
+AC_MSG_NOTICE([  inline:       ${enable_inline}])
 
 if test "$warn_config_site" = yes ; then
   AC_MSG_NOTICE([])

@@ -636,6 +636,8 @@ OPT_ENABLE_MPI_WRAP_FALSE
 OPT_ENABLE_MPI_WRAP_TRUE
 OPT_ENABLE_MPI_FALSE
 OPT_ENABLE_MPI_TRUE
+OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE
+OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE
 OPT_ENABLE_HPCRUN_DYNAMIC_FALSE
 OPT_ENABLE_HPCRUN_DYNAMIC_TRUE
 HPCLINK_LD_FLAGS
@@ -914,6 +916,7 @@ enable_back_end
 enable_hpcrun_flat
 enable_hpcrun
 enable_hpcrun_static
+enable_inline
 enable_mpi
 enable_mpi_wrapper
 enable_lush
@@ -1588,6 +1591,8 @@ Optional Features:
   --enable-hpcrun         build hpcrun (default yes)
   --enable-hpcrun-static  build hpcrun for statically linked executables
                           (default yes)
+  --enable-inline         enable static inline support, requires linking
+                          symtab into hpcstruct (default yes)
   --enable-mpi            Enable MPI support (uses MPICXX variable)
   --enable-mpi-wrapper    Enable MPI wrapper support (uses MPIF77 and CFLAGS)
   --enable-lush           use lush backtrace in hpcrun
@@ -18338,6 +18343,31 @@ fi
 
 
 #-------------------------------------------------
+# enable-inline:
+#-------------------------------------------------
+
+# Enable the static inline support from symtabAPI.  This involves
+# linking symtab into hpcstruct and banal.
+
+# Check whether --enable-inline was given.
+if test "${enable_inline+set}" = set; then :
+  enableval=$enable_inline;
+else
+  enable_inline=yes
+fi
+
+
+ if test "$enable_inline" = yes; then
+  OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE=
+  OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE='#'
+else
+  OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE='#'
+  OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE=
+fi
+
+
+
+#-------------------------------------------------
 # enable-mpi:
 #-------------------------------------------------
 
@@ -19444,6 +19474,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_HPCRUN_DYNAMIC_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_DYNAMIC_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_HPCRUN_DYNAMIC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE}" && test -z "${OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_BANAL_WITH_SYMTAB\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_MPI_TRUE}" && test -z "${OPT_ENABLE_MPI_FALSE}"; then
@@ -22173,6 +22207,8 @@ $as_echo "$as_me:   papi:         ${OPT_PAPI}" >&6;}
 $as_echo "$as_me:   cuda:         ${OPT_CUDA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   upc (BG/P):   ${opt_upc_mesg}" >&5
 $as_echo "$as_me:   upc (BG/P):   ${opt_upc_mesg}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   inline:       ${enable_inline}" >&5
+$as_echo "$as_me:   inline:       ${enable_inline}" >&6;}
 
 if test "$warn_config_site" = yes ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5

@@ -102,6 +102,15 @@ libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS)
 libHPCbanal_la_AR       = $(MYAR)
 libHPCbanal_la_LIBADD   = $(MYLIBADD)
 
+if OPT_ENABLE_BANAL_WITH_SYMTAB
+noinst_LTLIBRARIES += libHPCbanal_symtab.la
+libHPCbanal_symtab_la_SOURCES  = $(MYSOURCES)
+libHPCbanal_symtab_la_CFLAGS   = $(MYCFLAGS) -DBANAL_USE_SYMTAB
+libHPCbanal_symtab_la_CXXFLAGS = $(MYCXXFLAGS) -DBANAL_USE_SYMTAB
+libHPCbanal_symtab_la_AR       = $(MYAR)
+libHPCbanal_symtab_la_LIBADD   = $(MYLIBADD)
+endif
+
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 #############################################################################
