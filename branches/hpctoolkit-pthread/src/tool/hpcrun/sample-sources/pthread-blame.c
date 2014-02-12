@@ -80,24 +80,27 @@
 
 // typedefs
 //
+//
+
+typedef enum {
+  Running,
+  Spinning,
+  Blocked,
+} state_t;
+
 typedef struct {
   uint64_t target;
-  bool idle;
+  state_t state;
 } blame_t;
-
-#if 0
-/******************************************************************************
- * forward declarations 
- *****************************************************************************/
-
-static void process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t *node, int metric_incr);
-#endif
 
 // *****************************************************************************
 //    static local variables
 // *****************************************************************************
 
-static int directed_blame_metric_id = -1;
+static int blame_metric_id = -1;
+static int blockwait_metric_id = -1;
+static int spinwait_metric_id = -1;
+
 static bs_fn_entry_t bs_entry;
 
 static bool lockwait_enabled = false;
@@ -110,7 +113,7 @@ static bool metric_id_set = false;
 // thread-local variables
 //
 
-static __thread blame_t pthread_blame = {0, false};
+static __thread blame_t pthread_blame = {0, Running};
 
 static inline
 uint64_t
@@ -125,9 +128,9 @@ get_blame_target(void)
 
 static inline
 int
-get_pthread_directed_blame_metric_id(void)
+get_blame_metric_id(void)
 {
-  return (metric_id_set) ? directed_blame_metric_id : -1;
+  return (metric_id_set) ? blame_metric_id : -1;
 }
 
 /*--------------------------------------------------------------------------
@@ -192,18 +195,27 @@ pthread_blame_lockwait_enabled(void)
 // public blame manipulation functions
 //
 void
-pthread_directed_blame_shift_start(void* obj)
+pthread_directed_blame_shift_blocked_start(void* obj)
 {
   TMSG(LOCKWAIT, "Start directed blaming using blame structure %x, for obj %d",
        &pthread_blame, (uintptr_t) obj);
   pthread_blame = (blame_t) {.target = (uint64_t)(uintptr_t)obj,
-                             .idle   = true};
+                             .state   = Blocked};
+}
+
+void
+pthread_directed_blame_shift_spin_start(void* obj)
+{
+  TMSG(LOCKWAIT, "Start directed blaming using blame structure %x, for obj %d",
+       &pthread_blame, (uintptr_t) obj);
+  pthread_blame = (blame_t) {.target = (uint64_t)(uintptr_t)obj,
+                             .state   = Spinning};
 }
 
 void
 pthread_directed_blame_shift_end(void)
 {
-  pthread_blame = (blame_t) {.target = 0, .idle = false};
+  pthread_blame = (blame_t) {.target = 0, .state = Running};
   TMSG(LOCKWAIT, "End directed blaming for blame structure %x",
        &pthread_blame);
 }
@@ -217,7 +229,7 @@ pthread_directed_blame_accept(void* obj)
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_safe_enter();
-    hpcrun_sample_callpath(&uc, get_pthread_directed_blame_metric_id(),
+    hpcrun_sample_callpath(&uc, get_blame_metric_id(),
                            blame, 0, 1);
     hpcrun_safe_exit();
   }
@@ -276,7 +288,7 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return (strstr(ev_str, DIRECTED_BLAME_NAME) != NULL);
+  return (strstr(ev_str, PTHREAD_EVENT_NAME) != NULL);
 }
 
  
@@ -289,10 +301,17 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   blame_shift_register(&bs_entry);
 
-  directed_blame_metric_id = hpcrun_new_metric();
-  metric_id_set = true;
-  hpcrun_set_metric_info_and_period(directed_blame_metric_id, DIRECTED_BLAME_NAME,
+  blame_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(blame_metric_id, PTHREAD_BLAME_METRIC,
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+  blockwait_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(blockwait_metric_id, PTHREAD_BLOCKWAIT_METRIC,
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+  spinwait_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(spinwait_metric_id, PTHREAD_SPINWAIT_METRIC,
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+  metric_id_set = true;
+
   // create & initialize blame table (once per process)
   if (! pthread_blame_table) pthread_blame_table = blame_map_new();
 }
@@ -314,7 +333,7 @@ METHOD_FN(display_events)
   printf("---------------------------------------------------------------------------\n");
   printf("%s\tShift the blame for waiting for a lock to the lock holder.\n"
 	 "\t\tOnly suitable for threaded programs.\n",
-	 DIRECTED_BLAME_NAME);
+	 PTHREAD_EVENT_NAME);
   printf("\n");
 }
 

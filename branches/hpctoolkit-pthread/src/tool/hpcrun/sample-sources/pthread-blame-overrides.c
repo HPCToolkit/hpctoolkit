@@ -120,7 +120,7 @@ pthread_cond_timedwait(pthread_cond_t* restrict cond,
                        const struct timespec* restrict abstime)
 {
   int retval;
-  pthread_directed_blame_shift_start(cond);
+  pthread_directed_blame_shift_blocked_start(cond);
   retval = __pthread_cond_timedwait(cond, mutex, abstime);
   pthread_directed_blame_shift_end();
   return retval;
@@ -131,7 +131,7 @@ pthread_cond_wait(pthread_cond_t* restrict cond,
                   pthread_mutex_t* restrict mutex)
 {
   int retval;
-  pthread_directed_blame_shift_start(cond);
+  pthread_directed_blame_shift_blocked_start(cond);
   retval = __pthread_cond_wait(cond, mutex);
   pthread_directed_blame_shift_end();
   return retval;
@@ -161,7 +161,7 @@ MONITOR_EXT_WRAP_NAME(pthread_mutex_lock)(pthread_mutex_t* mutex)
     return __pthread_mutex_lock(mutex);
   }
   TMSG(LOCKWAIT, "pthread mutex LOCK override");
-  pthread_directed_blame_shift_start(mutex);
+  pthread_directed_blame_shift_blocked_start(mutex);
   int retval = __pthread_mutex_lock(mutex);
   pthread_directed_blame_shift_end();
   return retval;
@@ -191,7 +191,7 @@ MONITOR_EXT_WRAP_NAME(pthread_mutex_timedlock)(pthread_mutex_t* restrict mutex,
 
   TMSG(LOCKWAIT, "pthread mutex TIMEDLOCK");
 
-  pthread_directed_blame_shift_start(mutex);
+  pthread_directed_blame_shift_blocked_start(mutex);
   int retval = __pthread_mutex_timedlock(mutex, abs_timeout);
   pthread_directed_blame_shift_end();
   return retval;
