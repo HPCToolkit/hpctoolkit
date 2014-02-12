@@ -71,6 +71,9 @@
 #include <sample-sources/blame-shift/blame-shift.h>
 #include <sample-sources/blame-shift/blame-map.h>
 
+#include <hpcrun/cct2metrics.h>
+#include <hpcrun/metrics.h>
+
 #include <hpcrun/hpctoolkit.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
@@ -125,6 +128,14 @@ get_blame_target(void)
 /***************************************************************************
  * private operations
  ***************************************************************************/
+static inline
+char*
+state2str(state_t s)
+{
+  if (s == Running) return "Running";
+  if (s == Spinning) return "Spinning";
+  if (s == Blocked) return "Blocked";
+}
 
 static inline
 int
@@ -161,7 +172,7 @@ get_blame(uint64_t obj)
 }
 
 static void 
-process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t *node, int metric_incr)
+process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t* node, int metric_incr)
 {
   TMSG(LOCKWAIT, "Processing directed blame");
   metric_desc_t* metric_desc = hpcrun_id2metric(metric_id);
@@ -178,6 +189,14 @@ process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t *node, in
   if(obj_to_blame) {
     TMSG(LOCKWAIT, "about to add %d to blame object %d", metric_value, obj_to_blame);
     add_blame(obj_to_blame, metric_value);
+    // update appropriate wait metric as well
+    int wait_metric = (pthread_blame.state == Blocked) ? blockwait_metric_id : spinwait_metric_id;
+    TMSG(LOCKWAIT, "about to add %d to %s-waiting",
+	 metric_incr, state2str(pthread_blame.state));
+    metric_set_t* metrics = hpcrun_reify_metric_set(node);
+    hpcrun_metric_std_inc(wait_metric,
+			  metrics,
+			  (cct_metric_data_t) {.i = metric_incr});
   }
 }
 
