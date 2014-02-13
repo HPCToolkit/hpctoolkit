@@ -70,6 +70,10 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+LIBDWARF_LIB = @LIBDWARF_LIB@
+LIBELF_LIB   = @LIBELF_LIB@
+SYMTABAPI_LIB = @SYMTABAPI_LIB@
+SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 
 MYSOURCES = \
@@ -101,6 +105,9 @@ MYLDADD = \
 
 if OPT_ENABLE_BANAL_WITH_SYMTAB
 MY_LIB_Banal = $(HPCLIB_Banal_Symtab)
+MYLDFLAGS += -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+	-L$(LIBDWARF_LIB) -ldwarf \
+	-L$(LIBELF_LIB) -lelf
 else
 MY_LIB_Banal = $(HPCLIB_Banal)
 endif

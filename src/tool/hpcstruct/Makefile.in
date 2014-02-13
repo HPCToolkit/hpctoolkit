@@ -67,6 +67,10 @@ host_triplet = @host@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/hpcstruct.in $(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
+@OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@am__append_1 = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+@OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@	-L$(LIBDWARF_LIB) -ldwarf \
+@OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@	-L$(LIBELF_LIB) -lelf
+
 pkglibexec_PROGRAMS = hpcstruct-bin$(EXEEXT)
 subdir = src/tool/hpcstruct
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -220,6 +224,14 @@ LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBDWARF_COPY = @LIBDWARF_COPY@
 LIBDWARF_INC = @LIBDWARF_INC@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_COPY = @LIBELF_COPY@
 LIBELF_INC = @LIBELF_INC@
@@ -294,14 +306,6 @@ XED2_COPY = @XED2_COPY@
 XED2_HPCLINK_OPTS = @XED2_HPCLINK_OPTS@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 XED2_RUN_DIR = @XED2_RUN_DIR@
 XERCES = @XERCES@
@@ -406,11 +410,8 @@ MYSOURCES = \
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @OA_IFLAGS@
-MYLDFLAGS = \
-	@HPC_LT_LDFLAGS@ \
-	@HOST_CXXFLAGS@ \
-	@GNUBINUTILS_LDFLAGS@
-
+MYLDFLAGS = @HPC_LT_LDFLAGS@ @HOST_CXXFLAGS@ @GNUBINUTILS_LDFLAGS@ \
+	$(am__append_1)
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Analysis) \
