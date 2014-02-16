@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <pthread.h>
 #include <dlfcn.h>
 
@@ -46,6 +45,23 @@
 //   DL_LOOKUP(pthread_mutex_timedlock);
 // }
 //
+
+//
+// (dlsym-based) lookup utility for lazy initialization
+//
+
+static
+void*
+lookup(char* fname)
+{
+  dlerror(); // clear dlerror
+  void* rv = dlsym(RTLD_NEXT, fname);
+  char* e = dlerror();
+  if (e) {
+    hpcrun_abort("dlsym(RTLD_NEXT, %s) failed: %s", fname, e);
+  }
+  return rv;
+}
 
 //
 // Define strategies for overrides
