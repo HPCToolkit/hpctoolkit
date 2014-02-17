@@ -91,6 +91,10 @@ lookupv(char* fname)
 #define pthread_mutex_timedlock_REAL  DL
 #define pthread_mutex_trylock_REAL    ALT
 
+#define pthread_spin_lock_REAL        DL
+#define pthread_spin_unlock_REAL      DL
+
+
 // 
 // Typedefs and declarations for real routines that are overridden
 // 
@@ -105,8 +109,11 @@ REAL_TYPEDEF(int, pthread_cond_signal)(pthread_cond_t* cond);
 
 REAL_TYPEDEF(int, pthread_mutex_lock)(pthread_mutex_t* mutex);
 REAL_TYPEDEF(int, pthread_mutex_unlock)(pthread_mutex_t* mutex);
-REAL_TYPEDEF(int, pthread_mutex_timedlock)(pthread_mutex_t *restrict mutex,
-                                           const struct timespec *restrict abs_timeout);
+REAL_TYPEDEF(int, pthread_mutex_timedlock)(pthread_mutex_t* restrict mutex,
+                                           const struct timespec* restrict abs_timeout);
+REAL_TYPEDEF(int, pthread_spin_lock)(pthread_spinlock_t* lock);
+REAL_TYPEDEF(int, pthread_spin_unlock)(pthread_spinlock_t* lock);
+
 
 REAL_DCL(pthread_cond_timedwait);
 REAL_DCL(pthread_cond_wait);
@@ -115,6 +122,8 @@ REAL_DCL(pthread_cond_signal);
 REAL_DCL(pthread_mutex_lock);
 REAL_DCL(pthread_mutex_unlock);
 REAL_DCL(pthread_mutex_timedlock);
+REAL_DCL(pthread_spin_lock);
+REAL_DCL(pthread_spin_unlock);
 
 int 
 OVERRIDE_NM(pthread_cond_timedwait)(pthread_cond_t* restrict cond,
@@ -212,5 +221,39 @@ OVERRIDE_NM(pthread_mutex_timedlock)(pthread_mutex_t* restrict mutex,
   pthread_directed_blame_shift_blocked_start(mutex);
   int retval = REAL_FN(pthread_mutex_timedlock)(mutex, abs_timeout);
   pthread_directed_blame_shift_end();
+  return retval;
+}
+
+int
+OVERRIDE_NM(pthread_spin_lock)(pthread_spinlock_t* lock)
+{
+  REAL_INIT(pthread_spin_lock);
+
+  TMSG(LOCKWAIT, "pthread_spin_lock ENCOUNTERED");
+  if (! pthread_blame_lockwait_enabled() ) {
+    return REAL_FN(pthread_spin_lock)(lock);
+  }
+
+  TMSG(LOCKWAIT, "pthread SPIN LOCK override");
+  pthread_directed_blame_shift_spin_start(lock);
+  int retval = REAL_FN(pthread_spin_lock)(lock);
+  pthread_directed_blame_shift_end();
+
+  return retval;
+}
+
+int
+OVERRIDE_NM(pthread_spin_unlock)(pthread_spinlock_t* lock)
+{
+  REAL_INIT(pthread_spin_unlock);
+
+  TMSG(LOCKWAIT, "pthread_spin_unlock ENCOUNTERED");
+  if (! pthread_blame_lockwait_enabled() ) {
+    return REAL_FN(pthread_spin_unlock)(lock);
+  }
+
+  TMSG(LOCKWAIT, "pthread SPIN UNLOCK");
+  int retval = REAL_FN(pthread_spin_unlock)(lock);
+  pthread_directed_blame_accept(lock);
   return retval;
 }
