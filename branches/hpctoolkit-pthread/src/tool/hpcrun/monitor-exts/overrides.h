@@ -99,14 +99,25 @@
 #define DL_DCL(n) extern REAL_TYPE(n) DL_FN(n)
 #define DL_TYPEDEF(rt, n) typedef rt REAL_TYPE(n)
 #define DL_INIT(n)
+#define DLV_INIT(n)
 #define OVERRIDE_NM(n) PPCAT(__wrap_, n)
 #else
 #define DL_FN(n) PPCAT(real_, n)
 #define DL_DCL(n) static REAL_TYPE(n) DL_FN(n)
 #define DL_TYPEDEF(rt, n) typedef rt (*REAL_TYPE(n))
 #define DL_INIT(n) if (! DL_FN(n) ){DL_FN(n) = lookup(PPSTR(n));}
+#define DLV_INIT(n) if (! DL_FN(n) ){DL_FN(n) = lookupv(PPSTR(n));}
 #define OVERRIDE_NM(n) n
 #endif // STATIC_LINK
+
+//
+// DLV class is same as DL, except for dynamic case (lookup is different)
+//  (see #else case above)
+//
+
+#define DLV_FN(n) DL_FN(n)
+#define DLV_DCL(n) DL_DCL(n)
+#define DLV_TYPEDEF(rt, n) DL_TYPEDEF(rt, n)
 
 #define REAL_TYPE(n) PPCAT(n, _t)
 

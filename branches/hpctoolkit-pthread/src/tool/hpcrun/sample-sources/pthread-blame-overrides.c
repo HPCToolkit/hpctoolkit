@@ -14,19 +14,16 @@
 #include <messages/messages.h>
 
 //
-// NOTE 1: the following functions (apparently) need dlvsym to obtain the function
-//         via dl lookup:
+// NOTE 1: the following functions (apparently) need dlvsym instead of dlsym to obtain the 
+//         true function:
 //           pthread_cond_broadcast
 //           pthread_cond_signal
 //           pthread_cond_wait
 //           pthread_cond_timedwait;
 //
-// The lookup macro was defined as:
-// #define DL_LOOKUPV(name) \
-//  DL_FN(name) = (DL_TYPE(name)) dlvsym(RTLD_NEXT, # name , "GLIBC_2.3.2")
+//  !! This treatment is determined empirically !!
+//  Future systems may need different treatment (or different version for dlvsym)
 //
-// An informal check indicates that lookup is NOT necessary for any of the
-// systems of interest. *IF THAT CHANGES*, then redeploy above macro as needed
 //
 // NOTE 2: Rather than use a constructor, use lazy initialization.
 //         If constructor needed, uncomment code below
@@ -64,13 +61,30 @@ lookup(char* fname)
 }
 
 //
+// (dlsym-based) lookup utility for lazy initialization
+//
+
+static
+void*
+lookupv(char* fname)
+{
+  dlerror(); // clear dlerror
+  void* rv = dlvsym(RTLD_NEXT, fname, "GLIBC_2.3.2");
+  char* e = dlerror();
+  if (e) {
+    hpcrun_abort("dlsym(RTLD_NEXT, %s) failed: %s", fname, e);
+  }
+  return rv;
+}
+
+//
 // Define strategies for overrides
 //
 
-#define pthread_cond_timedwait_REAL   ALT
-#define pthread_cond_wait_REAL        ALT
-#define pthread_cond_broadcast_REAL   ALT
-#define pthread_cond_signal_REAL      ALT
+#define pthread_cond_timedwait_REAL   DLV
+#define pthread_cond_wait_REAL        DLV
+#define pthread_cond_broadcast_REAL   DLV
+#define pthread_cond_signal_REAL      DLV
 
 #define pthread_mutex_lock_REAL       ALT
 #define pthread_mutex_unlock_REAL     ALT
