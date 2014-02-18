@@ -1592,7 +1592,7 @@ Optional Features:
   --enable-hpcrun-static  build hpcrun for statically linked executables
                           (default yes)
   --enable-inline         enable static inline support, requires linking
-                          symtab into hpcstruct (default yes)
+                          symtab into hpcstruct (default check)
   --enable-mpi            Enable MPI support (uses MPICXX variable)
   --enable-mpi-wrapper    Enable MPI wrapper support (uses MPIF77 and CFLAGS)
   --enable-lush           use lush backtrace in hpcrun
@@ -18353,9 +18353,67 @@ fi
 if test "${enable_inline+set}" = set; then :
   enableval=$enable_inline;
 else
-  enable_inline=yes
+  enable_inline=check
 fi
 
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking symtabAPI for static inline support" >&5
+$as_echo_n "checking symtabAPI for static inline support... " >&6; }
+
+if test "$enable_inline" = no ; then
+  enable_inline=disabled
+else
+  ORIG_CXXFLAGS="$CXXFLAGS"
+  ORIG_LIBS="$LIBS"
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  CXXFLAGS="-I${BOOST_INC} -I${SYMTABAPI_INC}"
+  LIBS="-L${LIBELF_LIB} -L${LIBDWARF_LIB} -L${SYMTABAPI_LIB}"
+  LIBS="${LIBS} ${SYMTABAPI_LIB_LIST} -ldwarf -lelf"
+  LIBS="${LIBS} ${GNUBINUTILS_LDFLAGS} -liberty"
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <iostream>
+#include <Symtab.h>
+#include <Function.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace std;
+int main()
+{
+  FunctionBase *func = (FunctionBase *) 0x0400400;
+  FunctionBase *parent = func->getInlinedParent();
+  cout << parent;
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  enable_inline=yes
+else
+  enable_inline=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  CXXFLAGS="$ORIG_CXXFLAGS"
+  LIBS="$ORIG_LIBS"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_inline" >&5
+$as_echo "$enable_inline" >&6; }
 
  if test "$enable_inline" = yes; then
   OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE=
