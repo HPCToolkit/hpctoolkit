@@ -2026,9 +2026,45 @@ AM_CONDITIONAL([OPT_ENABLE_HPCRUN_DYNAMIC],
 AC_ARG_ENABLE([inline],
   [AS_HELP_STRING([--enable-inline],
       [enable static inline support, requires linking symtab
-       into hpcstruct (default yes)])],
+       into hpcstruct (default check)])],
   [],
-  [enable_inline=yes])
+  [enable_inline=check])
+
+AC_MSG_CHECKING([symtabAPI for static inline support])
+
+if test "$enable_inline" = no ; then
+  enable_inline=disabled
+else
+  ORIG_CXXFLAGS="$CXXFLAGS"
+  ORIG_LIBS="$LIBS"
+  AC_LANG_PUSH([C++])
+  CXXFLAGS="-I${BOOST_INC} -I${SYMTABAPI_INC}"
+  LIBS="-L${LIBELF_LIB} -L${LIBDWARF_LIB} -L${SYMTABAPI_LIB}"
+  LIBS="${LIBS} ${SYMTABAPI_LIB_LIST} -ldwarf -lelf"
+  LIBS="${LIBS} ${GNUBINUTILS_LDFLAGS} -liberty"
+
+  AC_LINK_IFELSE([
+#include <iostream>
+#include <Symtab.h>
+#include <Function.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace std;
+int main()
+{
+  FunctionBase *func = (FunctionBase *) 0x0400400;
+  FunctionBase *parent = func->getInlinedParent();
+  cout << parent;
+  return 0;
+}
+], [enable_inline=yes], [enable_inline=no])
+
+  AC_LANG_POP()
+  CXXFLAGS="$ORIG_CXXFLAGS"
+  LIBS="$ORIG_LIBS"
+fi
+
+AC_MSG_RESULT([$enable_inline])
 
 AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_SYMTAB], [test "$enable_inline" = yes])
 
