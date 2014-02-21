@@ -63,6 +63,10 @@
 // optional, not required.  So, wrap the symtab calls with sigsetjmp()
 // so that failure does not kill the process.
 //
+// But be careful about overusing sigsetjmp().  There is only one
+// handler per process, so this could break other libraries or the
+// main program.
+//
 // 3. Apologies for the single static buffer.  Ideally, we would read
 // the dwarf info from inside lib/binutils and carry it down into
 // makeStructure() and determineContext().  But that requires
@@ -72,8 +76,13 @@
 
 //***************************************************************************
 
+#include <setjmp.h>
+#include <signal.h>
+#include <string.h>
+
 #include <list>
 #include <vector>
+#include <lib/support/diagnostics.h>
 #include "Struct-Inline.hpp"
 
 #include <Symtab.h>
@@ -88,6 +97,50 @@ static const string UNKNOWN_PROC ("unknown-proc");
 // FIXME: uses a single static buffer.
 static Symtab *the_symtab = NULL;
 
+static struct sigaction old_act_abrt;
+static struct sigaction old_act_segv;
+static sigjmp_buf jbuf;
+static int jbuf_active = 0;
+
+static int num_queries = 0;
+static int num_errors = 0;
+
+//***************************************************************************
+
+static void
+banal_sighandler(int sig)
+{
+  if (jbuf_active) {
+    siglongjmp(jbuf, 1);
+  }
+
+  // caught a signal, but it didn't come from symtab
+  DIAG_Die("banal caught unexpected signal " << sig);
+}
+
+static void
+init_sighandler(void)
+{
+  struct sigaction act;
+
+  memset(&act, 0, sizeof(act));
+  act.sa_handler = banal_sighandler;
+  act.sa_flags = 0;
+  sigemptyset(&act.sa_mask);
+
+  jbuf_active = 0;
+  sigaction(SIGABRT, &act, &old_act_abrt);
+  sigaction(SIGSEGV, &act, &old_act_segv);
+}
+
+static void
+restore_sighandler(void)
+{
+  sigaction(SIGABRT, &old_act_abrt, NULL);
+  sigaction(SIGSEGV, &old_act_segv, NULL);
+  jbuf_active = 0;
+}
+
 //***************************************************************************
 
 namespace Inline {
@@ -96,14 +149,34 @@ namespace Inline {
 bool
 openSymtab(string filename)
 {
-  bool ret = Symtab::openFile(the_symtab, filename);
-  if (! ret) {
-    the_symtab = NULL;
-    return false;
-  }
-  the_symtab->parseTypesNow();
+  bool ret = false;
 
-  return true;
+  init_sighandler();
+  num_queries = 0;
+  num_errors = 0;
+
+  if (sigsetjmp(jbuf, 1) == 0) {
+    // normal return
+    jbuf_active = 1;
+    ret = Symtab::openFile(the_symtab, filename);
+    if (ret) {
+      the_symtab->parseTypesNow();
+    }
+  }
+  else {
+    // error return
+    ret = false;
+  }
+  jbuf_active = 0;
+
+  if (! ret) {
+    DIAG_WMsgIf(1, "SymtabAPI was unable to open: " << filename);
+    DIAG_WMsgIf(1, "The static inline support does not work cross platform,");
+    DIAG_WMsgIf(1, "so check that this file has the same arch type as hpctoolkit.");
+    the_symtab = NULL;
+  }
+
+  return ret;
 }
 
 bool
@@ -113,6 +186,14 @@ closeSymtab()
 
   if (the_symtab != NULL) {
     ret = Symtab::closeSymtab(the_symtab);
+  }
+  the_symtab = NULL;
+
+  restore_sighandler();
+
+  if (num_errors > 0) {
+    DIAG_WMsgIf(1, "SymtabAPI had " << num_errors << " errors in "
+		<< num_queries << " queries.");
   }
 
   return ret;
@@ -126,32 +207,48 @@ bool
 analyzeAddr(InlineSeqn &nodelist, VMA addr)
 {
   FunctionBase *func, *parent;
+  bool ret = false;
 
   if (the_symtab == NULL) {
     return false;
   }
-  if (! the_symtab->getContainingInlinedFunction(addr, func)) {
-    return false;
-  }
   nodelist.clear();
 
-  parent = func->getInlinedParent();
-  while (parent != NULL) {
-    InlinedFunction *ifunc = static_cast <InlinedFunction *> (func);
-    pair <string, Offset> callsite = ifunc->getCallsite();
-    vector <string> name_vec = func->getAllPrettyNames();
+  num_queries++;
 
-    string procnm = (! name_vec.empty()) ? name_vec[0] : UNKNOWN_PROC;
-    string filenm = callsite.first;
-    long lineno = callsite.second;
+  if (sigsetjmp(jbuf, 1) == 0) {
+    //
+    // normal return
+    //
+    jbuf_active = 1;
+    if (the_symtab->getContainingInlinedFunction(addr, func))
+    {
+      parent = func->getInlinedParent();
+      while (parent != NULL) {
+	// func is inlined iff it has a parent
+	InlinedFunction *ifunc = static_cast <InlinedFunction *> (func);
+	pair <string, Offset> callsite = ifunc->getCallsite();
+	vector <string> name_vec = func->getAllPrettyNames();
 
-    nodelist.push_front(InlineNode(filenm, procnm, lineno));
+	string procnm = (! name_vec.empty()) ? name_vec[0] : UNKNOWN_PROC;
+	string filenm = callsite.first;
+	long lineno = callsite.second;
+	nodelist.push_front(InlineNode(filenm, procnm, lineno));
 
-    func = parent;
-    parent = func->getInlinedParent();
+	func = parent;
+	parent = func->getInlinedParent();
+      }
+      ret = true;
+    }
   }
+  else {
+    // error return
+    num_errors++;
+    ret = false;
+  }
+  jbuf_active = 0;
 
-  return true;
+  return ret;
 }
 
 }  // namespace Inline
