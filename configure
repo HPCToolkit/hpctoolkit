@@ -636,6 +636,8 @@ OPT_ENABLE_MPI_WRAP_FALSE
 OPT_ENABLE_MPI_WRAP_TRUE
 OPT_ENABLE_MPI_FALSE
 OPT_ENABLE_MPI_TRUE
+OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE
+OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE
 OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE
 OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE
 OPT_ENABLE_HPCRUN_DYNAMIC_FALSE
@@ -663,8 +665,6 @@ XERCES_LDLIBS
 XERCES_LDFLAGS
 XERCES_IFLAGS
 XERCES
-OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE
-OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE
 XED2_RUN_DIR
 XED2_COPY
 XED2_HPCLINK_OPTS
@@ -17982,22 +17982,6 @@ $as_echo "$XED2" >&6; }
 
 
 
-# If Xed is shared, then hpcstruct gets a launch script.
-
-hpcstruct_launch_script=no
-if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
-  hpcstruct_launch_script=yes
-fi
-
- if test "$hpcstruct_launch_script" = yes; then
-  OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE=
-  OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE='#'
-else
-  OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE='#'
-  OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE=
-fi
-
-
 
 #-------------------------------------------------
 # Check for Xerces-C (XML parser)
@@ -18421,6 +18405,26 @@ $as_echo "$enable_inline" >&6; }
 else
   OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE='#'
   OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE=
+fi
+
+
+# Hpcstruct gets a launch script if (1) Xed is shared (some versions
+# of MIC), or (2) use symtab for inline support.
+
+hpcstruct_launch_script=no
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
+  hpcstruct_launch_script=yes
+fi
+if test "$enable_inline" = yes ; then
+  hpcstruct_launch_script=yes
+fi
+
+ if test "$hpcstruct_launch_script" = yes; then
+  OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE=
+  OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE='#'
+else
+  OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE='#'
+  OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE=
 fi
 
 
@@ -19498,10 +19502,6 @@ if test -z "${OPT_PAPI_COMPONENT_TRUE}" && test -z "${OPT_PAPI_COMPONENT_FALSE}"
   as_fn_error $? "conditional \"OPT_PAPI_COMPONENT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE}" && test -z "${OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_HPCSTRUCT_LAUNCH_SCRIPT\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${OPT_BUILD_BACK_END_TRUE}" && test -z "${OPT_BUILD_BACK_END_FALSE}"; then
   as_fn_error $? "conditional \"OPT_BUILD_BACK_END\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -19536,6 +19536,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE}" && test -z "${OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_BANAL_WITH_SYMTAB\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE}" && test -z "${OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_HPCSTRUCT_LAUNCH_SCRIPT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_MPI_TRUE}" && test -z "${OPT_ENABLE_MPI_FALSE}"; then

@@ -1738,15 +1738,6 @@ AC_SUBST([XED2_HPCLINK_OPTS])
 AC_SUBST([XED2_COPY])
 AC_SUBST([XED2_RUN_DIR])
 
-# If Xed is shared, then hpcstruct gets a launch script.
-
-hpcstruct_launch_script=no
-if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
-  hpcstruct_launch_script=yes
-fi
-
-AM_CONDITIONAL(OPT_HPCSTRUCT_LAUNCH_SCRIPT, [test "$hpcstruct_launch_script" = yes])
-
 
 #-------------------------------------------------
 # Check for Xerces-C (XML parser)
@@ -2067,6 +2058,19 @@ fi
 AC_MSG_RESULT([$enable_inline])
 
 AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_SYMTAB], [test "$enable_inline" = yes])
+
+# Hpcstruct gets a launch script if (1) Xed is shared (some versions
+# of MIC), or (2) use symtab for inline support.
+
+hpcstruct_launch_script=no
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
+  hpcstruct_launch_script=yes
+fi
+if test "$enable_inline" = yes ; then
+  hpcstruct_launch_script=yes
+fi
+
+AM_CONDITIONAL(OPT_HPCSTRUCT_LAUNCH_SCRIPT, [test "$hpcstruct_launch_script" = yes])
 
 
 #-------------------------------------------------
