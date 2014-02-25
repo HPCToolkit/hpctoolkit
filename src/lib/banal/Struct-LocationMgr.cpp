@@ -542,7 +542,35 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
       }
     }
   }
-  
+
+#ifdef BANAL_USE_SYMTAB
+  //
+  // Analyze the VM address for its inline sequence.  We need this for
+  // inserting alien nodes (use_ctxt) and for locating loops.
+  //
+  Inline::InlineSeqn nodelist;
+  Inline::InlineSeqn::iterator it;
+  bool inlineAvail = false;
+
+  if (loop != NULL || !use_ctxt) {
+    inlineAvail = Inline::analyzeAddr(nodelist, begVMA);
+  }
+
+  //
+  // For loops (scopes), find the location of the loop in the inline
+  // sequence and save for later lookup.  We need this for all loops,
+  // whether directly inlined or not.
+  //
+  if (loop != NULL && inlineAvail) {
+    for (it = nodelist.begin(); it != nodelist.end(); it++) {
+      if (it->getProcName() == procnm) {
+	loop->setScopeLocation(it->getFileName(), it->getLineNum());
+	break;
+      }
+    }
+  }
+#endif
+
   if (!use_ctxt) {
     // Relocation! Add an alien context.
     DIAG_Assert(!filenm.empty(), "");
@@ -560,12 +588,8 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
     //
     // Add intermediate aliens for inlined sequence, if avail.
     //
-    Inline::InlineSeqn nodelist;
-    bool ret = Inline::analyzeAddr(nodelist, begVMA);
-
-    if (ret && !nodelist.empty()) {
+    if (inlineAvail && !nodelist.empty()) {
       Inline::InlineSeqn::iterator start_it = nodelist.begin();
-      Inline::InlineSeqn::iterator it;
 
       // Look for 'proposed_scope' on 'nodelist' using the previously
       // stored file name and line number location.  If found, start
@@ -584,8 +608,7 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
       // Add sequence of intermediate aliens starting at start_it.
       // Stmts go all the way to the bottom VMA in nodelist.  But for
       // loops, we stop the sequence at the node corresponding to that
-      // loop based on 'procnm' and then save the location for future
-      // sequences (above).
+      // loop based on 'procnm'.
       //
       // Fake the proc name to the line number so that multiple calls
       // to the same inlined function will remain separate.
@@ -599,7 +622,6 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 	pushCtxt(Ctxt(alien, NULL));
 	parent = alien;
 	if (loop != NULL && it->getProcName() == procnm) {
-	  loop->setScopeLocation(it->getFileName(), it->getLineNum());
 	  break;
 	}
       }
