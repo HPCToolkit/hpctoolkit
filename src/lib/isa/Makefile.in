@@ -376,6 +376,8 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
+@OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE@HPCLIB_Banal_Symtab = 
+@OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@HPCLIB_Banal_Symtab = $(top_builddir)/src/lib/banal/libHPCbanal_symtab.la
 MYSOURCES = ISATypes.hpp ISA.hpp ISA.cpp AlphaISA.hpp AlphaISA.cpp \
 	IA64ISA.hpp IA64ISA.cpp MipsISA.hpp MipsISA.cpp PowerISA.hpp \
 	PowerISA.cpp SparcISA.hpp SparcISA.cpp x86ISA.hpp x86ISA.cpp \
