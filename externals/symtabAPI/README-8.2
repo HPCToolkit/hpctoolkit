@@ -1,0 +1,114 @@
+----------------------------------------------------------------------
+Directions on building symtabAPI 8.2 with cmake.  This version is
+needed for the hpcstruct static inline support, now available in
+hpctoolkit trunk as of rev 4441.
+
+In due time (soon), symtabAPI in externals will be updated to build
+8.2 automatically.  But for now, build it manually with these
+directions.
+----------------------------------------------------------------------
+
+(1) Dyninst requires GNU gcc/g++ version 4.4 or later.  So, build
+externals, dyninst and toolkit with the same gcc/g++ 4.4 or later.
+
+(2) Cmake -- dyninst now builds with cmake.  Make sure your system has
+cmake installed, version 2.6.4 or later.
+
+$ cmake --version
+cmake version 2.6-patch 4
+
+If not, download cmake 2.8.x from:
+
+http://www.cmake.org/cmake/resources/software.html
+
+Cmake builds pretty easily and without prereqs.  There's a bootstrap
+script that takes the place of configure.  Cmake build supports vpath
+and parallel make.
+
+./bootstrap --prefix=...
+make -j 4
+make install
+
+(3) Externals -- check out and build a current externals.  Use rev
+4421 or later (2014 copyright).  Configure as usual and remember this
+branch builds a full toolkit, so build a full externals.
+(Technically, you don't need to build symtab, but whatever.)
+
+(4) Dyninst -- check out a current dyninst from the Wisconsin git
+repository.  Clone or pull after Feb 3, 2014.  Matt fixed an important
+bug about "dwarf range offsets" on Feb 3.
+
+git clone http://git.dyninst.org/dyninst.git
+
+Configure dyninst with the prereq paths for boost, libiberty (in
+binutils), libelf and libdwarf from externals.  Cmake uses -D
+directives to set config options.
+
+ext=/path/to/externals/install/dir
+
+cmake .  \
+    -DCMAKE_INSTALL_PREFIX=/path/to/install/prefix  \
+    -DCMAKE_BUILD_TYPE=Release  \
+    -DCMAKE_C_COMPILER=gcc   \
+    -DCMAKE_C_FLAGS='-g -O2'  \
+    -DCMAKE_CXX_COMPILER=g++   \
+    -DCMAKE_CXX_FLAGS='-g -O2'  \
+    -DPATH_BOOST="$ext/boost"  \
+    -DIBERTY_LIBRARY="$ext/binutils/lib64/libiberty.a"  \
+    -DLIBELF_INCLUDE_DIR="$ext/libelf/include"  \
+    -DLIBELF_LIBRARIES="$ext/libelf/lib/libelf.so"  \
+    -DLIBDWARF_INCLUDE_DIR="$ext/libdwarf/include"  \
+    -DLIBDWARF_LIBRARIES="$ext/libdwarf/lib/libdwarf.so"
+
+You probably don't need to set the C, C++ compiler and flags unless
+you need to change the defaults (eg, 32-bit build).
+
+Note the library variables for libiberty, libelf and libdwarf are the
+library itself (.a or .so file), not the directory containing it.
+
+Cmake (or dyninst) is a bit heavy-handed about the choice of compiler
+and flags.  You can specify flags, but dyninst adds their own flags
+after the config setting.  Also, it prefers /usr/bin/gcc/g++ over
+another gcc/g++ on your path, even if your choice is in the front of
+your path.  (WTF!?)  If you want another compiler, you probably need
+to specify C/CXX via an absolute path.
+
+Also, cmake (or dyninst) doesn't allow options on the COMPILER
+variables.  So, if you want to use -m32, you need to add this to
+FLAGS. (yuck)
+
+Remember, dyninst requires GNU gcc/g++ version 4.4 or later.
+
+Cmake and dyninst support vpath builds.  Run cmake with the path to
+the source tree instead of '.'.
+
+(5) Build symtabAPI and prereqs, you don't need a full dyninst.
+
+dyninst=/path/to/dyninst/build/dir
+
+for dir in elf dwarf common symtabAPI
+do
+    cd "$dyninst/$dir"
+    make -j 4
+done
+
+for dir in elf dwarf common symtabAPI
+do
+    cd "$dyninst/$dir"
+    make install
+done
+
+Check that the install directory is sensible.  Include has some 36
+header files and lib has four main libraries (libcommon, libdynDwarf,
+libdynElf and libsymtabAPI) plus symlinks and static versions.
+
+(6) Build hpctoolkit as usual and specify the special symtabAPI built
+above.
+
+configure  \
+    --with-externals=/path/to/externals  \
+    --with-symtabAPI=/path/to/this/symtabAPI  \
+    ...
+
+The new hpcstruct now has a launch script for setting LD_LIBRARY_PATH.
+
