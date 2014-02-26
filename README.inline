@@ -1,3 +1,11 @@
+IMPORTANT NOTE
+
+This branch has been reintegrated with trunk as of rev 4441.
+This branch is now deprecated and will be deleted in due time.
+Commit no further changes to this branch.
+
+------------------------------------------------------------
+
 This, the hpctoolkit-inline2 branch, is a short-lived, temporary
 branch to prepare code for static inline support from SymtabAPI.
 
