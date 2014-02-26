@@ -1,2 +1,0 @@
-\setVersionWord{Version:}  %%% that's the default, no need to set it.
-\setVersion{@PACKAGE_VERSION@}
