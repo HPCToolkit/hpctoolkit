@@ -155,9 +155,13 @@ LocationMgr::locate(Prof::Struct::Loop* loop,
 		    Prof::Struct::ACodeNode* proposed_scope,
 		    string& filenm, string& procnm, SrcFile::ln line)
 {
+  DIAG_MsgIfCtd(mDBG, "====================  loop  ====================\n"
+		<< "node=" << loop->id() << "  scope=" << proposed_scope->id()
+		<< "  proc: '" << procnm << "'\n"
+		<< "file: '" << filenm << "'  line: " << line << "\n");
   DIAG_DevMsgIf(mDBG, "LocationMgr::locate: " << loop->toXML() << "\n"
 		<< "  proposed: " << proposed_scope->toXML() << "\n"
-		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
+		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line << "\n");
 
   VMAIntervalSet& vmaset = loop->vmaSet();
   VMA begVMA = (! vmaset.empty()) ? vmaset.begin()->beg() : 0;
@@ -173,9 +177,13 @@ LocationMgr::locate(Prof::Struct::Stmt* stmt,
 		    Prof::Struct::ACodeNode* proposed_scope,
 		    string& filenm, string& procnm, SrcFile::ln line)
 {
+  DIAG_MsgIfCtd(mDBG, "====================  stmt  ====================\n"
+		<< "node=" << stmt->id() << "  scope=" << proposed_scope->id()
+		<< "  proc: '" << procnm << "'\n"
+		<< "file: '" << filenm << "'  line: " << line << "\n");
   DIAG_DevMsgIf(mDBG, "LocationMgr::locate: " << stmt->toXML() << "\n"
 		<< "  proposed: " << proposed_scope->toXML() << "\n"
-		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
+		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line << "\n");
 
   VMAIntervalSet& vmaset = stmt->vmaSet();
   VMA begVMA = (! vmaset.empty()) ? vmaset.begin()->beg() : 0;
@@ -551,9 +559,32 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
   Inline::InlineSeqn nodelist;
   Inline::InlineSeqn::iterator it;
   bool inlineAvail = false;
+  bool wantInline = false;
 
   if (loop != NULL || !use_ctxt) {
     inlineAvail = Inline::analyzeAddr(nodelist, begVMA);
+    wantInline = true;
+  }
+
+  // debug: full inline sequence
+  if (mDBG) {
+    DIAG_DevMsgIf(1, "inline sequence at 0x" << std::hex << begVMA << std::dec);
+    if (! wantInline) {
+      DIAG_DevMsgIfCtd(1, "  not available");
+    }
+    else if (! inlineAvail) {
+      DIAG_DevMsgIfCtd(1, "  failed");
+    }
+    else if (nodelist.empty()) {
+      DIAG_DevMsgIfCtd(1, "  empty");
+    }
+    else {
+      for (it = nodelist.begin(); it != nodelist.end(); it++) {
+	DIAG_DevMsgIfCtd(1, "  file: '" << it->getFileName()
+			 << "'  line: " << it->getLineNum()
+			 << "  proc: '" << it->getProcName() << "'");
+      }
+    }
   }
 
   //
@@ -564,6 +595,9 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
   if (loop != NULL && inlineAvail) {
     for (it = nodelist.begin(); it != nodelist.end(); it++) {
       if (it->getProcName() == procnm) {
+	DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
+			 << " file: '" << it->getFileName()
+			 << "'  line: " << it->getLineNum());
 	loop->setScopeLocation(it->getFileName(), it->getLineNum());
 	break;
       }
@@ -590,17 +624,27 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
     //
     if (inlineAvail && !nodelist.empty()) {
       Inline::InlineSeqn::iterator start_it = nodelist.begin();
+      string scope_filenm = proposed_scope->getScopeFileName();
+      SrcFile::ln scope_lineno = proposed_scope->getScopeLineNum();
+
+      DIAG_DevMsgIfCtd(mDBG, "  get scope (" << proposed_scope->id()
+		       << ") file: '" << scope_filenm
+		       << "'  line: " << scope_lineno);
 
       // Look for 'proposed_scope' on 'nodelist' using the previously
       // stored file name and line number location.  If found, start
       // the alien sequence at the next inlined node.
       //
-      for (it = nodelist.begin(); it != nodelist.end(); it++)
-      {
-	if (it->getFileName() == proposed_scope->getScopeFileName()
-	    && it->getLineNum() == proposed_scope->getScopeLineNum())
+      for (it = nodelist.begin(); it != nodelist.end(); it++) {
+	if (it->getFileName() == scope_filenm && it->getLineNum() == scope_lineno)
 	{
 	  start_it = ++it;
+	  if (start_it != nodelist.end()) {
+	    DIAG_DevMsgIfCtd(mDBG, "  start node file: '" << start_it->getFileName()
+			     << "'  line: " << start_it->getLineNum());
+	  } else {
+	    DIAG_DevMsgIfCtd(mDBG, "  start node: end of list");
+	  }
 	  break;
 	}
       }
@@ -622,10 +666,16 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 	pushCtxt(Ctxt(alien, NULL));
 	parent = alien;
 	if (loop != NULL && it->getProcName() == procnm) {
+	  DIAG_DevMsgIfCtd(mDBG, "  end node file: '" << it->getFileName()
+			   << "'  line: " << it->getLineNum());
 	  break;
 	}
       }
     }
+
+    DIAG_DevMsgIfCtd(mDBG, "  final alien file: '" << filenm
+		     << "'  line: " << line
+		     << "  proc: '" << procnm << "'");
 #endif
 
     // Add final 'guard' alien.
@@ -634,8 +684,12 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
     use_ctxt = topCtxt();
   }
 
-  DIAG_DevMsgIfCtd(mDBG, "  final ctxt [" << toString(change) << "]\n"
-		   << use_ctxt->toString(0, "  "));
+#ifdef BANAL_USE_SYMTAB
+  DIAG_DevMsgIfCtd(mDBG, "");
+#endif
+
+  DIAG_DevMsgIf(mDBG, "final ctxt [" << toString(change) << "]\n"
+		<< use_ctxt->toString(0, "  "));
   return change;
 }
 
