@@ -176,6 +176,7 @@ static long period = DEFAULT_PERIOD;
 static void
 METHOD_FN(init)
 {
+  return;
   if(pfm_initialize() != PFMLIB_SUCCESS){
     EEMSG("libpfm init NOT ok");
     monitor_real_abort();
