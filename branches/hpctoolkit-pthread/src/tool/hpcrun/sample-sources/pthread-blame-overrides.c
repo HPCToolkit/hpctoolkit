@@ -207,7 +207,7 @@ OVERRIDE_NM(pthread_mutex_unlock)(pthread_mutex_t* mutex)
 
 int 
 OVERRIDE_NM(pthread_mutex_timedlock)(pthread_mutex_t* restrict mutex,
-                                     const struct timespec *restrict abs_timeout)
+                                     const struct timespec* restrict abs_timeout)
 {
   REAL_INIT(pthread_mutex_timedlock);
   

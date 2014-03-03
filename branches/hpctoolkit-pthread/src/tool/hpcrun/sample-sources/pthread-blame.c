@@ -58,6 +58,8 @@
 #include <dlfcn.h>
 #include <stdbool.h>
 
+//***** DBG
+#include <stdio.h>
 
 
 /******************************************************************************
@@ -112,11 +114,25 @@ static blame_entry_t* pthread_blame_table = NULL;
 
 static bool metric_id_set = false;
 
+// *** DBG
+typedef struct dbg_t {
+  struct timeval tv;
+  char l[4]; // "add" or "get"
+  uint32_t amt;
+  uint64_t obj;
+} dbg_t;
+
+typedef struct dbg_tr_t {
+  unsigned n_elts;
+  dbg_t trace[3000];
+} dbg_tr_t;
+
 //
 // thread-local variables
 //
 
 static __thread blame_t pthread_blame = {0, Running};
+static __thread dbg_tr_t p_dbg = {.n_elts = 0};
 
 static inline
 uint64_t
@@ -135,6 +151,7 @@ state2str(state_t s)
   if (s == Running) return "Running";
   if (s == Spinning) return "Spinning";
   if (s == Blocked) return "Blocked";
+  return "????";
 }
 
 static inline
@@ -171,6 +188,9 @@ get_blame(uint64_t obj)
   return blame_map_get_blame(pthread_blame_table, obj);
 }
 
+// *** DBG **** temporary declaration, remove when debuggind done
+extern void hpcrun_metric_std_inc1(int metric_id, metric_set_t* set,
+				   hpcrun_metricVal_t incr);
 static void 
 process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t* node, int metric_incr)
 {
@@ -187,16 +207,17 @@ process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t* node, in
 
   uint64_t obj_to_blame = get_blame_target();
   if(obj_to_blame) {
-    TMSG(LOCKWAIT, "about to add %d to blame object %d", metric_value, obj_to_blame);
-    add_blame(obj_to_blame, metric_value);
+    TMSG(LOCKWAIT, "about to add %d to blame object %d", metric_incr, obj_to_blame);
+    add_blame(obj_to_blame, metric_incr);
     // update appropriate wait metric as well
     int wait_metric = (pthread_blame.state == Blocked) ? blockwait_metric_id : spinwait_metric_id;
-    TMSG(LOCKWAIT, "about to add %d to %s-waiting",
-	 metric_incr, state2str(pthread_blame.state));
+    TMSG(LOCKWAIT, "about to add %d to %s-waiting in node %d",
+	 metric_incr, state2str(pthread_blame.state),
+	 hpcrun_cct_persistent_id(node));
     metric_set_t* metrics = hpcrun_reify_metric_set(node);
-    hpcrun_metric_std_inc(wait_metric,
-			  metrics,
-			  (cct_metric_data_t) {.i = metric_incr});
+    hpcrun_metric_std_inc1(wait_metric,
+			   metrics,
+			   (cct_metric_data_t) {.i = metric_incr});
   }
 }
 
@@ -208,6 +229,35 @@ bool
 pthread_blame_lockwait_enabled(void)
 {
   return lockwait_enabled;
+}
+
+void
+inc_p_dbg(const char* tag, uint64_t obj, uint32_t val)
+{
+  unsigned idx = p_dbg.n_elts++;
+  p_dbg.trace[idx] = (dbg_t) {.amt = val, .obj = obj};
+  strncpy(&(p_dbg.trace[idx].l[0]), tag, 4);
+  gettimeofday(&(p_dbg.trace[idx].tv), NULL);
+}
+
+//
+// ***** Write out dbg info to file
+//
+void
+pthread_write_debug(void)
+{
+  int id = TD_GET(core_profile_trace_data.id);
+  char fn[100] = {'\0'};
+  snprintf(fn, sizeof(fn) - 1, "thread-%02d.dbg", id);
+  FILE* f = fopen(fn, "w"); // "wb" mode ?
+  // fprintf(f, "%d ops\n", get_p_dbg());   // fwrite() binary data ?
+  fprintf(f, "%d ops\n", p_dbg.n_elts);
+  for(unsigned i = 0; i < p_dbg.n_elts; i++) {
+    fprintf(f, "%ld,%ld %s %08lx %d\n",
+	    p_dbg.trace[i].tv.tv_sec, p_dbg.trace[i].tv.tv_usec,
+	    p_dbg.trace[i].l, p_dbg.trace[i].obj, p_dbg.trace[i].amt);
+  }
+  fclose(f);
 }
 
 //

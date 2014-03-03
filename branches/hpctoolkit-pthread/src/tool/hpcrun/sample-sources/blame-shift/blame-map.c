@@ -66,7 +66,8 @@
 #include <lib/prof-lean/atomic-op.h>
 #include <memory/hpcrun-malloc.h>
 
-
+// ****** DBUG **********
+#include <sample-sources/p-dbg.h>
 
 /******************************************************************************
  * macros
@@ -75,7 +76,7 @@
 #define N (128*1024)
 #define INDEX_MASK ((N)-1)
 
-#define LOSSLESS_BLAME 
+#define LOSSLESS_BLAME
 
 //
 // LOCKWAIT FIXME: Add collision treatment!
@@ -201,6 +202,7 @@ blame_map_add_blame(blame_entry_t table[],
       }
     }
   }
+  inc_p_dbg("add", obj, metric_value);
 }
 
 
@@ -224,9 +226,9 @@ blame_map_get_blame(blame_entry_t table[], uint64_t obj)
       table[index].all = 0;
 #endif
       val = (uint64_t)oldval.parts.blame;
-      break;
     }
     break;
   }
+  inc_p_dbg("get", obj, val);
   return val;
 }
