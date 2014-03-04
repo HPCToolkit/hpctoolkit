@@ -112,6 +112,48 @@ RELOCATEDcmp(const string& x)
   return RELOCATEDcmp(x.c_str());
 }
 
+#ifdef BANAL_USE_SYMTAB
+//
+// Test if two procedure names are equal where we ignore embedded
+// spaces and closing '()'.  C++ names often have these features and
+// we don't want these features to cause unequal.
+//
+static bool
+procnmEq(string& s1, string& s2)
+{
+  long len1 = s1.length();
+  long len2 = s2.length();
+  int i, j;
+
+  i = 0; j = 0;
+  for (;;) {
+    if (i < len1 && s1[i] == ' ') {
+      i++;
+    }
+    else if (j < len2 && s2[j] == ' ') {
+      j++;
+    }
+    else if (i+1 < len1 && s1[i] == '(' && s1[i+1] == ')') {
+      i += 2;
+    }
+    else if (j+1 < len2 && s2[j] == '(' && s2[j+1] == ')') {
+      j += 2;
+    }
+    else if (i < len1 && j < len2 && s1[i] == s2[j]) {
+      i++; j++;
+    }
+    else {
+      break;
+    }
+  }
+  if (i == len1 && j == len2) {
+    return true;
+  }
+  return false;
+}
+#endif
+
+
 //***************************************************************************
 // LocationMgr
 //***************************************************************************
@@ -560,6 +602,7 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
   Inline::InlineSeqn::iterator it;
   bool inlineAvail = false;
   bool wantInline = false;
+  bool setLoopScope = false;
 
   if (loop != NULL || !use_ctxt) {
     inlineAvail = Inline::analyzeAddr(nodelist, begVMA);
@@ -594,11 +637,12 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
   //
   if (loop != NULL && inlineAvail) {
     for (it = nodelist.begin(); it != nodelist.end(); it++) {
-      if (it->getProcName() == procnm) {
+      if (procnmEq(it->getProcName(), procnm)) {
 	DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
 			 << " file: '" << it->getFileName()
 			 << "'  line: " << it->getLineNum());
 	loop->setScopeLocation(it->getFileName(), it->getLineNum());
+	setLoopScope = true;
 	break;
       }
     }
@@ -657,19 +701,32 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
       // Fake the proc name to the line number so that multiple calls
       // to the same inlined function will remain separate.
       //
+      Inline::InlineSeqn::iterator last_it = nodelist.end();
       for (it = start_it; it != nodelist.end(); it++)
       {
+	last_it = it;
 	char buf[50];
-	snprintf(buf, 50, "fake_line_%ld", (long) it->getLineNum());
+	snprintf(buf, 50, "inline-alien-%ld", (long) it->getLineNum());
 	alien = demandAlienStrct(parent, it->getFileName(), string(buf),
 				 it->getLineNum(), false);
 	pushCtxt(Ctxt(alien, NULL));
 	parent = alien;
-	if (loop != NULL && it->getProcName() == procnm) {
+	if (loop != NULL && procnmEq(it->getProcName(), procnm)) {
 	  DIAG_DevMsgIfCtd(mDBG, "  end node file: '" << it->getFileName()
 			   << "'  line: " << it->getLineNum());
 	  break;
 	}
+      }
+      //
+      // If we didn't find the loop's location above but it still is
+      // inlined, then set it to the last inlined node before the
+      // guard alien.
+      //
+      if (loop != NULL && !setLoopScope && last_it != nodelist.end()) {
+	DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
+			 << " file: '" << last_it->getFileName()
+			 << "'  line: " << last_it->getLineNum());
+	loop->setScopeLocation(last_it->getFileName(), last_it->getLineNum());
       }
     }
 
