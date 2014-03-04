@@ -602,7 +602,6 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
   Inline::InlineSeqn::iterator it;
   bool inlineAvail = false;
   bool wantInline = false;
-  bool setLoopScope = false;
 
   if (loop != NULL || !use_ctxt) {
     inlineAvail = Inline::analyzeAddr(nodelist, begVMA);
@@ -613,7 +612,7 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
   if (mDBG) {
     DIAG_DevMsgIf(1, "inline sequence at 0x" << std::hex << begVMA << std::dec);
     if (! wantInline) {
-      DIAG_DevMsgIfCtd(1, "  not available");
+      DIAG_DevMsgIfCtd(1, "  not needed");
     }
     else if (! inlineAvail) {
       DIAG_DevMsgIfCtd(1, "  failed");
@@ -632,20 +631,23 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 
   //
   // For loops (scopes), find the location of the loop in the inline
-  // sequence and save for later lookup.  We need this for all loops,
-  // whether directly inlined or not.
+  // sequence and save for later lookup.  If we don't find the loop
+  // from procnm, then use the last node in the sequence.  We need
+  // this for all loops, whether directly inlined or not.
   //
-  if (loop != NULL && inlineAvail) {
+  if (loop != NULL && inlineAvail && !nodelist.empty()) {
+    Inline::InlineSeqn::iterator loop_it = nodelist.begin();
+
     for (it = nodelist.begin(); it != nodelist.end(); it++) {
+      loop_it = it;
       if (procnmEq(it->getProcName(), procnm)) {
-	DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
-			 << " file: '" << it->getFileName()
-			 << "'  line: " << it->getLineNum());
-	loop->setScopeLocation(it->getFileName(), it->getLineNum());
-	setLoopScope = true;
 	break;
       }
     }
+    DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
+		     << " file: '" << loop_it->getFileName()
+		     << "'  line: " << loop_it->getLineNum());
+    loop->setScopeLocation(loop_it->getFileName(), loop_it->getLineNum());
   }
 #endif
 
@@ -679,17 +681,21 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
       // stored file name and line number location.  If found, start
       // the alien sequence at the next inlined node.
       //
-      for (it = nodelist.begin(); it != nodelist.end(); it++) {
-	if (it->getFileName() == scope_filenm && it->getLineNum() == scope_lineno)
-	{
-	  start_it = ++it;
-	  if (start_it != nodelist.end()) {
-	    DIAG_DevMsgIfCtd(mDBG, "  start node file: '" << start_it->getFileName()
-			     << "'  line: " << start_it->getLineNum());
-	  } else {
-	    DIAG_DevMsgIfCtd(mDBG, "  start node: end of list");
+      if (scope_filenm != "") {
+	for (it = nodelist.begin(); it != nodelist.end(); it++) {
+	  if (it->getFileName() == scope_filenm
+	      && it->getLineNum() == scope_lineno)
+	  {
+	    start_it = ++it;
+	    if (start_it != nodelist.end()) {
+	      DIAG_DevMsgIfCtd(mDBG, "  start node file: '"
+			       << start_it->getFileName()
+			       << "'  line: " << start_it->getLineNum());
+	    } else {
+	      DIAG_DevMsgIfCtd(mDBG, "  start node: end of list");
+	    }
+	    break;
 	  }
-	  break;
 	}
       }
 
@@ -701,10 +707,8 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
       // Fake the proc name to the line number so that multiple calls
       // to the same inlined function will remain separate.
       //
-      Inline::InlineSeqn::iterator last_it = nodelist.end();
       for (it = start_it; it != nodelist.end(); it++)
       {
-	last_it = it;
 	char buf[50];
 	snprintf(buf, 50, "inline-alien-%ld", (long) it->getLineNum());
 	alien = demandAlienStrct(parent, it->getFileName(), string(buf),
@@ -716,17 +720,6 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 			   << "'  line: " << it->getLineNum());
 	  break;
 	}
-      }
-      //
-      // If we didn't find the loop's location above but it still is
-      // inlined, then set it to the last inlined node before the
-      // guard alien.
-      //
-      if (loop != NULL && !setLoopScope && last_it != nodelist.end()) {
-	DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
-			 << " file: '" << last_it->getFileName()
-			 << "'  line: " << last_it->getLineNum());
-	loop->setScopeLocation(last_it->getFileName(), last_it->getLineNum());
       }
     }
 
