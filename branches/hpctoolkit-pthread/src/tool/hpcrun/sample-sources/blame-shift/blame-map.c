@@ -69,6 +69,8 @@
 // ****** DBUG **********
 #include <sample-sources/p-dbg.h>
 
+
+
 /******************************************************************************
  * macros
  *****************************************************************************/
@@ -78,14 +80,20 @@
 
 #define LOSSLESS_BLAME
 
-//
-// LOCKWAIT FIXME: Add collision treatment!
-//
-//
+// FIXME: temporarily use a lock to avoid losses that occur with data races 
+//        fix lock-free handling of collisions
+#define do_lock() \
+{ \
+  for(;;) { \
+    if (fetch_and_store_i64(&thelock, 1) == 0) break; \
+    while (thelock == 1); \
+  } \
+}
 
-//
-// Data definintion
-//
+#define do_unlock() thelock = 0
+
+
+
 /******************************************************************************
  * data type
  *****************************************************************************/
@@ -101,7 +109,13 @@ union blame_entry_t {
   blame_parts_t parts; //[0] is id, [1] is blame
 };
 
-// volatile blame_entry table[N];
+
+
+/***************************************************************************
+ * private data  
+ ***************************************************************************/
+
+static uint64_t volatile thelock;
 
 
 
@@ -166,6 +180,7 @@ blame_map_add_blame(blame_entry_t table[],
 
   assert(index >= 0 && index < N);
 
+  do_lock();
   for(;;) {
     blame_entry_t oldval = table[index];
 
@@ -202,6 +217,8 @@ blame_map_add_blame(blame_entry_t table[],
       }
     }
   }
+  do_unlock();
+
   inc_p_dbg("add", obj, metric_value);
 }
 
@@ -216,6 +233,7 @@ blame_map_get_blame(blame_entry_t table[], uint64_t obj)
 
   assert(index >= 0 && index < N);
 
+  do_lock();
   for(;;) {
     blame_entry_t oldval = table[index];
     if(oldval.parts.obj_id == obj_id) {
@@ -229,6 +247,7 @@ blame_map_get_blame(blame_entry_t table[], uint64_t obj)
     }
     break;
   }
+  do_unlock();
   inc_p_dbg("get", obj, val);
   return val;
 }

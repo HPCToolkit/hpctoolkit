@@ -297,7 +297,7 @@ directed_blame_accept(uint64_t obj)
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_safe_enter();
-    attribute_blame(&uc, directed_blame_other_metric_id, blame * metric_period, 1);
+    attribute_blame(&uc, directed_blame_other_metric_id, blame, 1);
     hpcrun_safe_exit();
   }
 }
