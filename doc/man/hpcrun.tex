@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2012/08/24}
+\setDate{ 2014/03/05}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -162,18 +162,6 @@ corresponding situations are:
        \Prog{hpcrun} script to a different location from the installed base. If your
        system uses this copying mechanism, you must set the \verb+HPCTOOLKIT+
        environment variable to the top-level installation directory.
-  \item[\verb+HPCRUN_TMPDIR+] While profiling a program, \Prog{hpcrun} must
-       write some internal data to temporary files. By default, these files
-       are written to \File{/tmp}. On some systems, however, you may not
-       have permission to write to \File{/tmp}. If this is the case on your system,
-       you should set the \verb+HPCRUN_TMPDIR+x environment variable to a directory
-       where you have write permission. \\
-       \textbf{CAUTION:} Your home directory is \emph{not}
-       a good choice, as some of \Prog{hpcrun}'s temporary files can get large.
-
-       NOTE: You do not strictly have to use \verb+HPCRUN_TMPDIR+. If you set the
-       commonly-used Unix environment \verb+TMPDIR+, \Prog{hpcrun} will use it for
-       temporary files if \verb+HPCRUN_TMPDIR+ is not set.
 \end{Description}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
