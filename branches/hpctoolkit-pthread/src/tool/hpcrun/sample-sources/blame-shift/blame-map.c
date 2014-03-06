@@ -75,8 +75,8 @@
 
 #define LOSSLESS_BLAME
 
-// FIXME: temporarily use a lock to avoid losses that occur with data races 
-//        fix lock-free handling of collisions
+#ifdef BLAME_MAP_LOCKING
+
 #define do_lock() \
 { \
   for(;;) { \
@@ -86,6 +86,13 @@
 }
 
 #define do_unlock() thelock = 0
+
+#else
+
+#define do_lock() 
+#define do_unlock()
+
+#endif
 
 
 
@@ -101,7 +108,7 @@ typedef struct {
 
 union blame_entry_t {
   uint64_t all;
-  blame_parts_t parts; //[0] is id, [1] is blame
+  blame_parts_t parts; 
 };
 
 
@@ -188,10 +195,9 @@ blame_map_add_blame(blame_entry_t table[],
 #else
       oldval.parts.blame += metric_value;
       table[index].all = oldval.all;
-#endif
       break;
-    }
-    else {
+#endif
+    } else {
       if(oldval.parts.obj_id == 0) {
 	uint64_t newval = blame_map_entry(obj, metric_value);
 #ifdef LOSSLESS_BLAME
