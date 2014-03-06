@@ -460,31 +460,6 @@ hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
 }
 
 //
-// Special version of metric incr, has lockwait in it.
-// Otherwise, is an exact duplicate of metric_std_inc
-//
-void
-hpcrun_metric_std_inc1(int metric_id, metric_set_t* set,
-		       hpcrun_metricVal_t incr)
-{
-  metric_desc_t* minfo = hpcrun_id2metric(metric_id);
-  if (!minfo) {
-    return;
-  }
-
-  hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(set, metric_id);
-  switch (minfo->flags.fields.valFmt) {
-    case MetricFlags_ValFmt_Int:
-      TMSG(LOCKWAIT, "adding %d to metric location %p", incr.i, loc);
-      loc->i += incr.i; break;
-    case MetricFlags_ValFmt_Real:
-      loc->r += incr.r; break;
-    default:
-      assert(false);
-  }
-}
-
-//
 // copy a metric set
 //
 void

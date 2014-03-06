@@ -563,9 +563,6 @@ static void hpcrun_process_aux_cleanup_action()
   hpcrun_aux_cleanup_list_head = NULL;
 }
 
-// write out thread-specific debug stuff
-extern void pthread_write_debug(void);
-
 void
 hpcrun_fini_internal()
 {
@@ -600,7 +597,6 @@ hpcrun_fini_internal()
     hpcrun_process_aux_cleanup_action();
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
     hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
-    pthread_write_debug();
     fnbounds_fini();
     hpcrun_stats_print_summary();
     messages_fini();
@@ -701,7 +697,6 @@ hpcrun_thread_fini(epoch_t *epoch)
 
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
     hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
-    pthread_write_debug();
   }
 }
 

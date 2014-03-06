@@ -66,11 +66,6 @@
 #include <lib/prof-lean/atomic-op.h>
 #include <memory/hpcrun-malloc.h>
 
-// ****** DBUG **********
-#include <sample-sources/p-dbg.h>
-
-
-
 /******************************************************************************
  * macros
  *****************************************************************************/
@@ -218,8 +213,6 @@ blame_map_add_blame(blame_entry_t table[],
     }
   }
   do_unlock();
-
-  inc_p_dbg("add", obj, metric_value);
 }
 
 
@@ -248,6 +241,6 @@ blame_map_get_blame(blame_entry_t table[], uint64_t obj)
     break;
   }
   do_unlock();
-  inc_p_dbg("get", obj, val);
+
   return val;
 }
