@@ -2,7 +2,7 @@
 % $HeadURL$
 % $Id$
 %
-% Copyright ((c)) 2002-2013, Rice University
+% Copyright ((c)) 2002-2014, Rice University
 % All rights reserved.
 % See file README.License for details.
 %
@@ -1544,28 +1544,6 @@ If the compiler duplicated calls as it replicated code during optimization, mult
 % ===========================================================================
 % ===========================================================================
 
-\section{I get a message about ``unable to write to tmp directory''}
-
-While profiling a program, \hpcrun{} must write some internal data to temporary files.
-By default, these files are written to \verb|/tmp|. On some systems, however, you may not
-have permission to write to \verb|/tmp|. If this is the case on your system, then
-you will see the message
-\begin{quote}
-\begin{verbatim}
-    hpcrun: unable to write to tmp directory: /tmp
-    please set HPCRUN_TMPDIR or TMPDIR and try again
-\end{verbatim}
-\end{quote}
-
-To correct this problem, you should set the \verb|HPCRUN_TMPDIR| (or, if you prefer, \verb|TMPDIR|)
-environment variable to a directory
-where you have write permission. {\bf CAUTION:} Your home directory is \emph{not}
-a good choice, as some of \hpcrun{}'s temporary files can get large.
-
-See section~\ref{sec:env-vars} for a bit more detail.
-
-% ===========================================================================
-% ===========================================================================
 \section{I get a message about ``Unable to find HPCTOOLKIT root directory''}
 
 On some systems, you might see a message like this:
