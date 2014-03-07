@@ -58,6 +58,8 @@
 #include <dlfcn.h>
 #include <stdbool.h>
 
+
+
 /******************************************************************************
  * local includes
  *****************************************************************************/
@@ -79,22 +81,35 @@
 #include <hpcrun/cct/cct.h>
 #include <messages/messages.h>
 
-// typedefs
-//
-//
+
+// *****************************************************************************
+// macros
+// *****************************************************************************
+
+#define SKIP_ONE_FRAME 1
+
+
+
+// *****************************************************************************
+// type definitions
+// *****************************************************************************
+
 typedef enum {
   Running,
   Spinning,
   Blocked,
 } state_t;
 
+
 typedef struct {
   uint64_t target;
   state_t state;
 } blame_t;
 
+
+
 // *****************************************************************************
-//    static local variables
+// static local variables
 // *****************************************************************************
 
 static int blame_metric_id = -1;
@@ -121,10 +136,18 @@ typedef struct dbg_tr_t {
   dbg_t trace[3000];
 } dbg_tr_t;
 
-//
-// thread-local variables
-//
+
+
+// *****************************************************************************
+// thread local variables
+// *****************************************************************************
 static __thread blame_t pthread_blame = {0, Running};
+
+
+
+/***************************************************************************
+ * private operations
+ ***************************************************************************/
 
 static inline
 uint64_t
@@ -133,9 +156,7 @@ get_blame_target(void)
   return pthread_blame.target;
 }
 
-/***************************************************************************
- * private operations
- ***************************************************************************/
+
 static inline
 char*
 state2str(state_t s)
@@ -146,6 +167,7 @@ state2str(state_t s)
   return "????";
 }
 
+
 static inline
 int
 get_blame_metric_id(void)
@@ -154,7 +176,7 @@ get_blame_metric_id(void)
 }
 
 /*--------------------------------------------------------------------------
- | transferp directed blame as appropritate for a sample
+ | transfer directed blame as appropriate for a sample
  --------------------------------------------------------------------------*/
 
 static inline
@@ -165,9 +187,9 @@ add_blame(uint64_t obj, uint32_t value)
     EMSG("Attempted to add pthread blame before initialization");
     return;
   }
-  blame_map_add_blame(pthread_blame_table,
-		      obj, value);
+  blame_map_add_blame(pthread_blame_table, obj, value);
 }
+
 
 static inline
 uint64_t
@@ -179,6 +201,7 @@ get_blame(uint64_t obj)
   }
   return blame_map_get_blame(pthread_blame_table, obj);
 }
+
 
 static void 
 process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t* node, int metric_incr)
@@ -209,6 +232,8 @@ process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t* node, in
 			  (cct_metric_data_t) {.i = metric_incr});
   }
 }
+
+
 
 // ******************************************************************************
 //  public interface to local variables
@@ -258,8 +283,8 @@ pthread_directed_blame_accept(void* obj)
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_safe_enter();
-    hpcrun_sample_callpath(&uc, get_blame_metric_id(),
-                           blame, 0, 1);
+    hpcrun_sample_callpath(&uc, get_blame_metric_id(), blame, 
+                           SKIP_ONE_FRAME, 1);
     hpcrun_safe_exit();
   }
 }
