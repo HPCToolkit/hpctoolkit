@@ -104,7 +104,7 @@
 
 #include <lib/support-lean/timer.h>
 
-#include <sample-sources/blame-shift.h>
+#include <sample-sources/blame-shift/blame-shift.h>
 
 /******************************************************************************
  * macros

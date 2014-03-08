@@ -458,7 +458,6 @@ hpcrun_open_trace_file(int thread)
   return ret;
 }
 
-
 // Returns: file descriptor for profile (hpcrun) file.
 int
 hpcrun_open_profile_file(int rank, int thread)
