@@ -204,7 +204,9 @@ static void* main_upper = (void*) (intptr_t) -1;
 static spinlock_t hpcrun_aux_cleanup_lock = SPINLOCK_UNLOCKED;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_list_head = NULL;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
+#ifdef CUDA_CTX
 static bool cuda_ctx_actions = false;
+#endif // CUDA_CTX
 static char execname[PATH_MAX] = {'\0'};
 
 //
@@ -560,7 +562,6 @@ static void hpcrun_process_aux_cleanup_action()
   }
   hpcrun_aux_cleanup_list_head = NULL;
 }
-
 
 void
 hpcrun_fini_internal()

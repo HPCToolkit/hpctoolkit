@@ -1,8 +1,11 @@
 // -*-Mode: C++;-*- // technically C99
 
+#ifndef _hpctoolkit_blame_map_h_
+#define _hpctoolkit_blame_map_h_
+
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
+// $HeadURL: $
 // $Id$
 //
 // --------------------------------------------------------------------------
@@ -12,7 +15,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2013, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,9 +47,32 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef SAMPLE_SOURCE_NONE_H
-#define SAMPLE_SOURCE_NONE_H
+//******************************************************************************
+//
+// map for recording directed blame for locks, critical sections, ...
+//
+//******************************************************************************
 
-extern void hpcrun_process_sample_source_none(void);
 
-#endif // SAMPLE_SOURCE_NONE_H
+/******************************************************************************
+ * system includes
+ *****************************************************************************/
+
+#include <stdint.h>
+
+//
+// (abstract) data type definition
+//
+typedef union blame_entry_t blame_entry_t;
+
+/***************************************************************************
+ * interface operations
+ ***************************************************************************/
+
+blame_entry_t* blame_map_new(void);
+void blame_map_init(blame_entry_t* table);
+void blame_map_add_blame(blame_entry_t* table,
+			 uint64_t obj, uint32_t metric_value);
+uint64_t blame_map_get_blame(blame_entry_t* table, uint64_t obj);
+
+#endif // _hpctoolkit_blame_map_h_

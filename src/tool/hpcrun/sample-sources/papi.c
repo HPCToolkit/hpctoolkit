@@ -89,7 +89,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
 
-#include <sample-sources/blame-shift.h>
+#include <sample-sources/blame-shift/blame-shift.h>
 #include <utilities/tokenize.h>
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>

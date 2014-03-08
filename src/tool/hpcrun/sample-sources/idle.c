@@ -68,7 +68,7 @@
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
-#include "blame-shift.h"
+#include <sample-sources/blame-shift/blame-shift.h>
 
 #include <hpcrun/hpcrun_options.h>
 
@@ -99,7 +99,7 @@
  * forward declarations 
  *****************************************************************************/
 
-static void idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric_value);
+static void idle_metric_process_blame_for_sample(void* arg, int metric_id, cct_node_t *node, int metric_value);
 
 static void init_hack(void);
 
@@ -222,7 +222,7 @@ static void
 METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
-  printf("Available idle preset events\n");
+  printf("NO Available IDLE preset events\n");
   printf("===========================================================================\n");
   printf("\n");
 }
@@ -245,7 +245,7 @@ METHOD_FN(display_events)
  *****************************************************************************/
 
 static void
-idle_metric_process_blame_for_sample(int metric_id, cct_node_t *node, int metric_incr)
+idle_metric_process_blame_for_sample(void* arg, int metric_id, cct_node_t *node, int metric_incr)
 {
   metric_desc_t * metric_desc = hpcrun_id2metric(metric_id);
  

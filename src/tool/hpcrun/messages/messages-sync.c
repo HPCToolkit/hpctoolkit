@@ -228,7 +228,6 @@ hpcrun_abort_w_info(void (*info)(void), const char *fmt, ...)
   monitor_real_exit(-1);
 }
 
-
 // message to log file, also echo on stderr
 void
 hpcrun_stderr_log_msg(bool copy_to_log, const char *fmt, ...)
