@@ -11,7 +11,7 @@ dnl Information about sources of support for research and development of
 dnl HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 dnl --------------------------------------------------------------------------
 dnl
-dnl Copyright ((c)) 2002-2013, Rice University
+dnl Copyright ((c)) 2002-2014, Rice University
 dnl All rights reserved.
 dnl
 dnl Redistribution and use in source and binary forms, with or without
@@ -1738,15 +1738,6 @@ AC_SUBST([XED2_HPCLINK_OPTS])
 AC_SUBST([XED2_COPY])
 AC_SUBST([XED2_RUN_DIR])
 
-# If Xed is shared, then hpcstruct gets a launch script.
-
-hpcstruct_launch_script=no
-if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
-  hpcstruct_launch_script=yes
-fi
-
-AM_CONDITIONAL(OPT_HPCSTRUCT_LAUNCH_SCRIPT, [test "$hpcstruct_launch_script" = yes])
-
 
 #-------------------------------------------------
 # Check for Xerces-C (XML parser)
@@ -2029,6 +2020,72 @@ AC_ARG_ENABLE([hpcserver],
   [enable_hpcserver=no])
 
 AM_CONDITIONAL([OPT_ENABLE_HPCSERVER], [test "$enable_hpcserver" = yes])
+
+
+#-------------------------------------------------
+# enable-inline:
+#-------------------------------------------------
+
+# Enable the static inline support from symtabAPI.  This involves
+# linking symtab into hpcstruct and banal.
+
+AC_ARG_ENABLE([inline],
+  [AS_HELP_STRING([--enable-inline],
+      [enable static inline support, requires linking symtab
+       into hpcstruct (default check)])],
+  [],
+  [enable_inline=check])
+
+AC_MSG_CHECKING([symtabAPI for static inline support])
+
+if test "$enable_inline" = no ; then
+  enable_inline=disabled
+else
+  ORIG_CXXFLAGS="$CXXFLAGS"
+  ORIG_LIBS="$LIBS"
+  AC_LANG_PUSH([C++])
+  CXXFLAGS="-I${BOOST_INC} -I${SYMTABAPI_INC}"
+  LIBS="-L${LIBELF_LIB} -L${LIBDWARF_LIB} -L${SYMTABAPI_LIB}"
+  LIBS="${LIBS} ${SYMTABAPI_LIB_LIST} -ldwarf -lelf"
+  LIBS="${LIBS} ${GNUBINUTILS_LDFLAGS} -liberty"
+
+  AC_LINK_IFELSE([
+#include <iostream>
+#include <Symtab.h>
+#include <Function.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace std;
+int main()
+{
+  FunctionBase *func = (FunctionBase *) 0x0400400;
+  FunctionBase *parent = func->getInlinedParent();
+  cout << parent;
+  return 0;
+}
+], [enable_inline=yes], [enable_inline=no])
+
+  AC_LANG_POP()
+  CXXFLAGS="$ORIG_CXXFLAGS"
+  LIBS="$ORIG_LIBS"
+fi
+
+AC_MSG_RESULT([$enable_inline])
+
+AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_SYMTAB], [test "$enable_inline" = yes])
+
+# Hpcstruct gets a launch script if (1) Xed is shared (some versions
+# of MIC), or (2) use symtab for inline support.
+
+hpcstruct_launch_script=no
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
+  hpcstruct_launch_script=yes
+fi
+if test "$enable_inline" = yes ; then
+  hpcstruct_launch_script=yes
+fi
+
+AM_CONDITIONAL(OPT_HPCSTRUCT_LAUNCH_SCRIPT, [test "$hpcstruct_launch_script" = yes])
 
 
 #-------------------------------------------------
@@ -2784,6 +2841,7 @@ AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
+AC_MSG_NOTICE([  inline:       ${enable_inline}])
 
 if test "$warn_config_site" = yes ; then
   AC_MSG_NOTICE([])

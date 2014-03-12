@@ -75,6 +75,11 @@
 #include "FilterSet.hpp"
 #include "DebugUtils.hpp"
 
+#define HPCTOOLKIT_PROFILE
+#ifdef HPCTOOLKIT_PROFILE
+ #include "hpctoolkit.h"
+#endif
+
 using namespace MPI;
 using namespace std;
 
@@ -95,6 +100,9 @@ namespace TraceviewerServer
 			MPICommunication::CommandMessage Message;
 			COMM_WORLD.Bcast(&Message, sizeof(Message), MPI_PACKED,
 					MPICommunication::SOCKET_SERVER);
+#ifdef HPCTOOLKIT_PROFILE
+                                        hpctoolkit_sampling_start();
+#endif
 			switch (Message.command)
 			{
 				case OPEN:
@@ -139,6 +147,9 @@ namespace TraceviewerServer
 					cerr << "Unexpected message command: " << Message.command << endl;
 					break;
 			}
+#ifdef HPCTOOLKIT_PROFILE
+                                        hpctoolkit_sampling_stop();
+#endif
 		}
 	}
 

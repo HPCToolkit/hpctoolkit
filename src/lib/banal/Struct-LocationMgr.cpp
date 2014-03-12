@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -87,11 +87,14 @@ using std::pair;
 using namespace Prof;
 
 #include <lib/binutils/BinUtils.hpp>
+#include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
 
-//*************************** Forward Declarations **************************
+#ifdef BANAL_USE_SYMTAB
+#include "Struct-Inline.hpp"
+#endif
 
 //*************************** Forward Declarations **************************
 
@@ -109,14 +112,47 @@ RELOCATEDcmp(const string& x)
   return RELOCATEDcmp(x.c_str());
 }
 
-//*************************** Forward Declarations **************************
+#ifdef BANAL_USE_SYMTAB
+//
+// Test if two procedure names are equal where we ignore embedded
+// spaces and closing '()'.  C++ names often have these features and
+// we don't want these features to cause unequal.
+//
+static bool
+procnmEq(string& s1, string& s2)
+{
+  long len1 = s1.length();
+  long len2 = s2.length();
+  int i, j;
 
-// When Alien contexts are nested, there may be many at the top of the
-// stack at one time; in the opposite case, only one is on the top of
-// the stack at any time.
-#define STRUCT_NEST_ALIEN_CONTEXTS 0
+  i = 0; j = 0;
+  for (;;) {
+    if (i < len1 && s1[i] == ' ') {
+      i++;
+    }
+    else if (j < len2 && s2[j] == ' ') {
+      j++;
+    }
+    else if (i+1 < len1 && s1[i] == '(' && s1[i+1] == ')') {
+      i += 2;
+    }
+    else if (j+1 < len2 && s2[j] == '(' && s2[j+1] == ')') {
+      j += 2;
+    }
+    else if (i < len1 && j < len2 && s1[i] == s2[j]) {
+      i++; j++;
+    }
+    else {
+      break;
+    }
+  }
+  if (i == len1 && j == len2) {
+    return true;
+  }
+  return false;
+}
+#endif
 
-//***************************************************************************
 
 //***************************************************************************
 // LocationMgr
@@ -161,10 +197,18 @@ LocationMgr::locate(Prof::Struct::Loop* loop,
 		    Prof::Struct::ACodeNode* proposed_scope,
 		    string& filenm, string& procnm, SrcFile::ln line)
 {
+  DIAG_MsgIfCtd(mDBG, "====================  loop  ====================\n"
+		<< "node=" << loop->id() << "  scope=" << proposed_scope->id()
+		<< "  proc: '" << procnm << "'\n"
+		<< "file: '" << filenm << "'  line: " << line << "\n");
   DIAG_DevMsgIf(mDBG, "LocationMgr::locate: " << loop->toXML() << "\n"
 		<< "  proposed: " << proposed_scope->toXML() << "\n"
-		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
-  determineContext(proposed_scope, filenm, procnm, line);
+		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line << "\n");
+
+  VMAIntervalSet& vmaset = loop->vmaSet();
+  VMA begVMA = (! vmaset.empty()) ? vmaset.begin()->beg() : 0;
+
+  determineContext(proposed_scope, filenm, procnm, line, begVMA, loop);
   Ctxt& encl_ctxt = topCtxtRef();
   loop->linkAndSetLineRange(encl_ctxt.scope());
 }
@@ -175,11 +219,19 @@ LocationMgr::locate(Prof::Struct::Stmt* stmt,
 		    Prof::Struct::ACodeNode* proposed_scope,
 		    string& filenm, string& procnm, SrcFile::ln line)
 {
+  DIAG_MsgIfCtd(mDBG, "====================  stmt  ====================\n"
+		<< "node=" << stmt->id() << "  scope=" << proposed_scope->id()
+		<< "  proc: '" << procnm << "'\n"
+		<< "file: '" << filenm << "'  line: " << line << "\n");
   DIAG_DevMsgIf(mDBG, "LocationMgr::locate: " << stmt->toXML() << "\n"
 		<< "  proposed: " << proposed_scope->toXML() << "\n"
-		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
+		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line << "\n");
+
+  VMAIntervalSet& vmaset = stmt->vmaSet();
+  VMA begVMA = (! vmaset.empty()) ? vmaset.begin()->beg() : 0;
+
   // FIXME (minor): manage stmt cache! if stmt already exists, only add vma
-  determineContext(proposed_scope, filenm, procnm, line);
+  determineContext(proposed_scope, filenm, procnm, line, begVMA, NULL);
   Ctxt& encl_ctxt = topCtxtRef();
   stmt->linkAndSetLineRange(encl_ctxt.scope());
 }
@@ -412,7 +464,8 @@ LocationMgr::toString(CtxtChange_t x)
 
 LocationMgr::CtxtChange_t
 LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
-			      string& filenm, string& procnm, SrcFile::ln line)
+			      string& filenm, string& procnm, SrcFile::ln line,
+			      VMA begVMA, Prof::Struct::ACodeNode* loop)
 {
   DIAG_DevMsgIf(mDBG, "LocationMgr::determineContext");
 
@@ -539,29 +592,154 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
       }
     }
   }
-  
+
+#ifdef BANAL_USE_SYMTAB
+  //
+  // Analyze the VM address for its inline sequence.  We need this for
+  // inserting alien nodes (use_ctxt) and for locating loops.
+  //
+  Inline::InlineSeqn nodelist;
+  Inline::InlineSeqn::iterator it;
+  bool inlineAvail = false;
+  bool wantInline = false;
+
+  if (loop != NULL || !use_ctxt) {
+    inlineAvail = Inline::analyzeAddr(nodelist, begVMA);
+    wantInline = true;
+  }
+
+  // debug: full inline sequence
+  if (mDBG) {
+    DIAG_DevMsgIf(1, "inline sequence at 0x" << std::hex << begVMA << std::dec);
+    if (! wantInline) {
+      DIAG_DevMsgIfCtd(1, "  not needed");
+    }
+    else if (! inlineAvail) {
+      DIAG_DevMsgIfCtd(1, "  failed");
+    }
+    else if (nodelist.empty()) {
+      DIAG_DevMsgIfCtd(1, "  empty");
+    }
+    else {
+      for (it = nodelist.begin(); it != nodelist.end(); it++) {
+	DIAG_DevMsgIfCtd(1, "  file: '" << it->getFileName()
+			 << "'  line: " << it->getLineNum()
+			 << "  proc: '" << it->getProcName() << "'");
+      }
+    }
+  }
+
+  //
+  // For loops (scopes), find the location of the loop in the inline
+  // sequence and save for later lookup.  If we don't find the loop
+  // from procnm, then use the last node in the sequence.  We need
+  // this for all loops, whether directly inlined or not.
+  //
+  if (loop != NULL && inlineAvail && !nodelist.empty()) {
+    Inline::InlineSeqn::iterator loop_it = nodelist.begin();
+
+    for (it = nodelist.begin(); it != nodelist.end(); it++) {
+      loop_it = it;
+      if (procnmEq(it->getProcName(), procnm)) {
+	break;
+      }
+    }
+    DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
+		     << " file: '" << loop_it->getFileName()
+		     << "'  line: " << loop_it->getLineNum());
+    loop->setScopeLocation(loop_it->getFileName(), loop_it->getLineNum());
+  }
+#endif
+
   if (!use_ctxt) {
     // Relocation! Add an alien context.
     DIAG_Assert(!filenm.empty(), "");
     CtxtChange_set(change, CtxtChange_PUSH);
-    
-    // Find or create the alien scope
-    Prof::Struct::Alien* alien =
-#if (STRUCT_NEST_ALIEN_CONTEXTS)
-      demandAlienStrct(proposed_scope, filenm, procnm, line, true);
-#else
-      demandAlienStrct(proposed_scope, filenm, procnm, line, false);
-    if (topCtxtRef().isAlien()) {
+
+    // Erase aliens from top of stack.
+    while (topCtxtRef().isAlien()) {
       m_ctxtStack.pop_front();
     }
-#endif
-    pushCtxt(Ctxt(alien, NULL));
 
+    Prof::Struct::Alien *alien;
+    Prof::Struct::ACodeNode *parent = proposed_scope;
+
+#ifdef BANAL_USE_SYMTAB
+    //
+    // Add intermediate aliens for inlined sequence, if avail.
+    //
+    if (inlineAvail && !nodelist.empty()) {
+      Inline::InlineSeqn::iterator start_it = nodelist.begin();
+      string scope_filenm = proposed_scope->getScopeFileName();
+      SrcFile::ln scope_lineno = proposed_scope->getScopeLineNum();
+
+      DIAG_DevMsgIfCtd(mDBG, "  get scope (" << proposed_scope->id()
+		       << ") file: '" << scope_filenm
+		       << "'  line: " << scope_lineno);
+
+      // Look for 'proposed_scope' on 'nodelist' using the previously
+      // stored file name and line number location.  If found, start
+      // the alien sequence at the next inlined node.
+      //
+      if (scope_filenm != "") {
+	for (it = nodelist.begin(); it != nodelist.end(); it++) {
+	  if (it->getFileName() == scope_filenm
+	      && it->getLineNum() == scope_lineno)
+	  {
+	    start_it = ++it;
+	    if (start_it != nodelist.end()) {
+	      DIAG_DevMsgIfCtd(mDBG, "  start node file: '"
+			       << start_it->getFileName()
+			       << "'  line: " << start_it->getLineNum());
+	    } else {
+	      DIAG_DevMsgIfCtd(mDBG, "  start node: end of list");
+	    }
+	    break;
+	  }
+	}
+      }
+
+      // Add sequence of intermediate aliens starting at start_it.
+      // Stmts go all the way to the bottom VMA in nodelist.  But for
+      // loops, we stop the sequence at the node corresponding to that
+      // loop based on 'procnm'.
+      //
+      // Fake the proc name to the line number so that multiple calls
+      // to the same inlined function will remain separate.
+      //
+      for (it = start_it; it != nodelist.end(); it++)
+      {
+	char buf[50];
+	snprintf(buf, 50, "inline-alien-%ld", (long) it->getLineNum());
+	alien = demandAlienStrct(parent, it->getFileName(), string(buf),
+				 it->getLineNum(), false);
+	pushCtxt(Ctxt(alien, NULL));
+	parent = alien;
+	if (loop != NULL && procnmEq(it->getProcName(), procnm)) {
+	  DIAG_DevMsgIfCtd(mDBG, "  end node file: '" << it->getFileName()
+			   << "'  line: " << it->getLineNum());
+	  break;
+	}
+      }
+    }
+
+    DIAG_DevMsgIfCtd(mDBG, "  final alien file: '" << filenm
+		     << "'  line: " << line
+		     << "  proc: '" << procnm << "'");
+#endif
+
+    // Add final 'guard' alien.
+    alien = demandAlienStrct(parent, filenm, procnm, line, false);
+    pushCtxt(Ctxt(alien, NULL));
     use_ctxt = topCtxt();
   }
 
-  DIAG_DevMsgIfCtd(mDBG, "  final ctxt [" << toString(change) << "]\n"
-		   << use_ctxt->toString(0, "  "));
+#ifdef BANAL_USE_SYMTAB
+  DIAG_DevMsgIfCtd(mDBG, "");
+#endif
+
+  DIAG_DevMsgIf(mDBG, "final ctxt [" << toString(change) << "]\n"
+		<< use_ctxt->toString(0, "  "));
   return change;
 }
 

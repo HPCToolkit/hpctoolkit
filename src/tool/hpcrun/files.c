@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -457,7 +457,6 @@ hpcrun_open_trace_file(int thread)
 
   return ret;
 }
-
 
 // Returns: file descriptor for profile (hpcrun) file.
 int

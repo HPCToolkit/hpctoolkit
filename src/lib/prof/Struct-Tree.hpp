@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -602,6 +602,8 @@ protected:
     if (!VMAInterval::empty(begVMA, endVMA)) {
       m_vmaSet.insert(begVMA, endVMA);
     }
+    m_scope_filenm = "";
+    m_scope_lineno = 0;
   }
 
 
@@ -800,6 +802,23 @@ protected:
   SrcFile::ln m_begLn;
   SrcFile::ln m_endLn;
   VMAIntervalSet m_vmaSet;
+
+  // --------------------------------------------------------
+  // Inline support -- Save the location (file name, line num) of an
+  // alien scope (loop) node to help find the same scope in a later
+  // InlineNode sequence inside the location manager.
+  // --------------------------------------------------------
+private:
+  std::string m_scope_filenm;
+  SrcFile::ln m_scope_lineno;
+  
+public:
+  void setScopeLocation(std::string &file, SrcFile::ln line) {
+    m_scope_filenm = file;
+    m_scope_lineno = line;
+  }
+  std::string & getScopeFileName() { return m_scope_filenm; }
+  SrcFile::ln getScopeLineNum() { return m_scope_lineno; }
 };
 
 

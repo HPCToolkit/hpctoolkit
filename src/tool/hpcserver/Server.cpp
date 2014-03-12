@@ -72,6 +72,10 @@
 #include "SpaceTimeDataController.hpp"
 #include "TimeCPID.hpp" //For Time
 
+#ifdef HPCTOOLKIT_PROFILE
+ #include "hpctoolkit.h"
+#endif
+
 #include <iostream>
 #include <cstdio>
 #include <zlib.h>
@@ -122,6 +126,9 @@ namespace TraceviewerServer
 
 	int Server::runConnection(DataSocketStream* socketptr)
 	{
+#ifdef HPCTOOLKIT_PROFILE
+		hpctoolkit_sampling_start();
+#endif
 		parseOpenDB(socketptr);
 
 		if (controller == NULL)
@@ -147,18 +154,32 @@ namespace TraceviewerServer
 			parseInfo(socketptr);
 		else
 			cerr << "Did not receive info packet" << endl;
-
-
+	
+#ifdef HPCTOOLKIT_PROFILE
+		hpctoolkit_sampling_stop();
+#endif
 		while (true)
 		{
 			int nextCommand = socketptr->readInt();
 			switch (nextCommand)
 			{
 				case DATA:
+#ifdef HPCTOOLKIT_PROFILE
+					hpctoolkit_sampling_start();
+#endif
 					getAndSendData(socketptr);
+#ifdef HPCTOOLKIT_PROFILE
+					hpctoolkit_sampling_stop();
+#endif
 					break;
 				case FLTR:
+#ifdef HPCTOOLKIT_PROFILE
+					hpctoolkit_sampling_start();
+#endif
 					filter(socketptr);
+#ifdef HPCTOOLKIT_PROFILE
+					hpctoolkit_sampling_stop();
+#endif
 					break;
 				case DONE:
 					return CLOSE_SERVER;

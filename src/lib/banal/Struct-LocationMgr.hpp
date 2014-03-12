@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -78,6 +78,7 @@
 #include <include/uint.h>
 
 #include <lib/prof/Struct-Tree.hpp>
+#include <lib/isa/ISATypes.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -371,7 +372,8 @@ private:
   // may already live within an alien context)
   CtxtChange_t
   determineContext(Prof::Struct::ACodeNode* proposed_scope,
-		   std::string& filenm, std::string& procnm, SrcFile::ln line);
+		   std::string& filenm, std::string& procnm, SrcFile::ln line,
+		   VMA begVMA, Prof::Struct::ACodeNode* loop);
   
   // fixCtxtStack: Yuck.
   void
