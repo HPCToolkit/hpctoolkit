@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2013, Rice University
+## Copyright ((c)) 2002-2014, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -70,6 +70,10 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+LIBDWARF_LIB = @LIBDWARF_LIB@
+LIBELF_LIB   = @LIBELF_LIB@
+SYMTABAPI_LIB = @SYMTABAPI_LIB@
+SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 
 MYSOURCES = \
@@ -87,7 +91,7 @@ MYLDFLAGS = \
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Analysis) \
-	$(HPCLIB_Banal) \
+	$(MY_LIB_Banal) \
 	$(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) \
@@ -98,6 +102,15 @@ MYLDADD = \
 	@OA_LDFLAGS@ \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@
+
+if OPT_ENABLE_BANAL_WITH_SYMTAB
+MY_LIB_Banal = $(HPCLIB_Banal_Symtab)
+MYLDFLAGS += -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+	-L$(LIBDWARF_LIB) -ldwarf \
+	-L$(LIBELF_LIB) -lelf
+else
+MY_LIB_Banal = $(HPCLIB_Banal)
+endif
 
 if HOST_CPU_X86_FAMILY
 MY_LIB_XED = $(XED2_LIB_FLAGS)
