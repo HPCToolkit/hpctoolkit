@@ -162,7 +162,7 @@ case "$base" in
     * )  AC_PATH_PROG([CC_PATH], [$base]) ;;
 esac
 if test "x$CC_PATH" = x ; then
-    CC_PATH=unknown
+    CC_PATH="$base"
 fi
 
 warn_non_gcc=no
@@ -185,7 +185,7 @@ case "$base" in
     * )  AC_PATH_PROG([CXX_PATH], [$base]) ;;
 esac
 if test "x$CXX_PATH" = x ; then
-    CXX_PATH=unknown
+    CXX_PATH="$base"
 fi
 
 echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
@@ -199,6 +199,29 @@ AC_MSG_NOTICE([C++ compiler: $CXX_VERSION])
 
 AC_SUBST([CC_PATH])
 AC_SUBST([CXX_PATH])
+
+# Warn if using GNU gcc/g++ older than 4.4.  The new symtab 8.2 has
+# trouble with versions earlier than 4.4.
+
+warn_old_gcc=no
+if test "$warn_non_gcc" = no ; then
+    ans=`$CC -v 2>&1 | grep -i version`
+    version=`echo $ans | sed -e 's/^.*version//i' | awk '{ print $1 }'`
+    major=`echo $version | awk -F. '{ print $1 }'`
+    minor=`echo $version | awk -F. '{ print $2 }'`
+    expr 1 + "$major" >/dev/null 2>&1 && expr 1 + "$minor" >/dev/null 2>&1
+    if test $? -ne 0 ; then
+        AC_MSG_WARN([unable to parse gcc version])
+    elif test "$major" -le 3 ; then
+	warn_old_gcc=yes
+    elif test "$major" -eq 4 && test "$minor" -lt 4 ; then
+	warn_old_gcc=yes
+    fi
+fi
+
+if test "$warn_old_gcc" = yes ; then
+    AC_MSG_WARN([Using an old version of GNU gcc/g++.])
+fi
 
 #------------------------------------------------------------
 # CXX tr1/unordered_map
@@ -290,6 +313,23 @@ if test "$gnu_make" = no ; then
 fi
 
 AC_SUBST([gnu_make])
+
+#------------------------------------------------------------
+# CMAKE
+#------------------------------------------------------------
+
+# Look for cmake and test version, but save any errors for symtab.
+# The new symtab 8.2 uses cmake and requires version 2.6.4 or later
+# but prefers version 2.8.
+
+AC_CHECK_PROG([cmake_found], [cmake], [yes], [no])
+
+if test "$cmake_found" = yes ; then
+    version=`cmake --version 2>&1 | grep -i version`
+    AC_MSG_NOTICE([$version])
+else
+    AC_MSG_WARN([unable to find cmake])
+fi
 
 #------------------------------------------------------------
 # OBJCOPY for cross-compile
@@ -1154,15 +1194,27 @@ AC_ARG_WITH([symtabAPI],
     [],
     [with_symtabAPI="$symtabAPI_default"])
 
+AC_ARG_ENABLE([symtab82],
+    [AS_HELP_STRING([--enable-symtab82],
+	[use latest symtabAPI 8.2 for inline support (default yes)])],
+    [],
+    [enable_symtab82=no])
+
 AC_MSG_CHECKING([symtabAPI])
 
 symtabAPI_avail=no
 symtabAPI_prefix=no
 symtabAPI_platform=no
+symtab_version=8.2
+use_symtab_82=yes
 use_symtab_61=no
-avail_version=
 cookie="symtabAPI/${nobuild_cookie}"
 rm -f "$cookie"
+
+if test "$enable_symtab82" = no ; then
+    symtab_version=8.0
+    use_symtab_82=no
+fi
 
 case "$with_symtabAPI" in
     build | yes )
@@ -1185,8 +1237,9 @@ case "$with_symtabAPI" in
 		;;
 	    *ia64* )
 		symtabAPI_platform=ia64-unknown-linux2.4
+		symtab_version=6.1
+		use_symtab_82=no
 		use_symtab_61=yes
-		avail_version=6.1
 		;;
 	    *mips64* )
 		symtabAPI_platform=mips64_linux
@@ -1199,7 +1252,7 @@ case "$with_symtabAPI" in
 		;;
 	esac
 	if test "$symtabAPI_platform" != no ; then
-	    symtabAPI_avail="build $avail_version"
+	    symtabAPI_avail="build $symtab_version"
 	    symtabAPI_prefix="$symtabAPI_local_prefix"
 	else
 	    echo "not available on this platform" > "$cookie"
@@ -1226,7 +1279,28 @@ AC_MSG_RESULT([$symtabAPI_avail])
 
 AC_SUBST([symtabAPI_prefix])
 AC_SUBST([symtabAPI_platform])
+AC_SUBST([use_symtab_82])
 AC_SUBST([use_symtab_61])
+
+# Symtab 8.2 requires cmake version 2.6 or later.
+
+if test "$use_symtab_82" = yes && test "$cmake_found" = no ; then
+    AC_MSG_WARN([SymtabAPI 8.2 requires cmake.  Please put cmake on your])
+    AC_MSG_WARN([path or else reconfigure with --disable-symtab82.])
+    AC_MSG_ERROR([Unable to find cmake.])
+fi
+
+# Symtab 8.2 doesn't like options in CC and CXX, eg: CC='gcc -m32'.
+# So, move any flags in CC and CXX to another variable.
+
+set -- $CC ; shift
+symtab_cflags="$* $CFLAGS"
+
+set -- $CXX ; shift
+symtab_cxxflags="$* $CXXFLAGS"
+
+AC_SUBST([symtab_cflags])
+AC_SUBST([symtab_cxxflags])
 
 #------------------------------------------------------------
 # XED: --with-xed2=PATH, --enable-mic
@@ -1430,6 +1504,13 @@ if test "$warn_non_gcc" = yes ; then
     AC_MSG_WARN([This is not necessarily an error, but some packages may not])
     AC_MSG_WARN([compile cleanly without gcc or g++.  If the build fails, try])
     AC_MSG_WARN([using GNU gcc and g++ before reporting an error.])
+fi
+
+if test "$warn_old_gcc" = yes ; then
+    AC_MSG_NOTICE([])
+    AC_MSG_WARN([Using an old version of GNU gcc/g++.])
+    AC_MSG_WARN([Some packages may not build correctly with this version.])
+    AC_MSG_WARN([Please reconfigure with GNU gcc/g++ version 4.4 or later.])
 fi
 
 if test "$warn_bgq_backend" = yes ; then

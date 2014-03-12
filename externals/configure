@@ -604,7 +604,10 @@ xerces_prefix
 use_xed2_mic
 use_xed2_k1om
 xed2_prefix
+symtab_cxxflags
+symtab_cflags
 use_symtab_61
+use_symtab_82
 symtabAPI_platform
 symtabAPI_prefix
 oprofile_prefix
@@ -633,6 +636,7 @@ GREP
 CPP
 OBJCOPY
 objcopy_prog
+cmake_found
 gnu_make
 cflags_fpic
 have_tr1_map
@@ -715,6 +719,7 @@ with_old_monitor
 with_open_analysis
 with_oprofile
 with_symtabAPI
+enable_symtab82
 enable_mic
 with_xed2
 with_xerces
@@ -1355,6 +1360,8 @@ Optional Features:
                           back-end powerpc64-bgq-linux-gcc (autodetect)
   --enable-back-end       build only those packages needed to run hpcrun on
                           the back-end compute nodes (default no)
+  --enable-symtab82       use latest symtabAPI 8.2 for inline support (default
+                          yes)
   --enable-mic            use xed2 on front-end x86_64 that understands Intel
                           MIC code, currently breaks hpclink (default no)
 
@@ -3505,7 +3512,7 @@ fi
  ;;
 esac
 if test "x$CC_PATH" = x ; then
-    CC_PATH=unknown
+    CC_PATH="$base"
 fi
 
 warn_non_gcc=no
@@ -3568,7 +3575,7 @@ fi
  ;;
 esac
 if test "x$CXX_PATH" = x ; then
-    CXX_PATH=unknown
+    CXX_PATH="$base"
 fi
 
 echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
@@ -3585,6 +3592,31 @@ $as_echo "$as_me: C++ compiler: $CXX_VERSION" >&6;}
 
 
 
+
+# Warn if using GNU gcc/g++ older than 4.4.  The new symtab 8.2 has
+# trouble with versions earlier than 4.4.
+
+warn_old_gcc=no
+if test "$warn_non_gcc" = no ; then
+    ans=`$CC -v 2>&1 | grep -i version`
+    version=`echo $ans | sed -e 's/^.*version//i' | awk '{ print $1 }'`
+    major=`echo $version | awk -F. '{ print $1 }'`
+    minor=`echo $version | awk -F. '{ print $2 }'`
+    expr 1 + "$major" >/dev/null 2>&1 && expr 1 + "$minor" >/dev/null 2>&1
+    if test $? -ne 0 ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to parse gcc version" >&5
+$as_echo "$as_me: WARNING: unable to parse gcc version" >&2;}
+    elif test "$major" -le 3 ; then
+	warn_old_gcc=yes
+    elif test "$major" -eq 4 && test "$minor" -lt 4 ; then
+	warn_old_gcc=yes
+    fi
+fi
+
+if test "$warn_old_gcc" = yes ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Using an old version of GNU gcc/g++." >&5
+$as_echo "$as_me: WARNING: Using an old version of GNU gcc/g++." >&2;}
+fi
 
 #------------------------------------------------------------
 # CXX tr1/unordered_map
@@ -3724,6 +3756,62 @@ $as_echo "$as_me: WARNING: unable to find gnu make" >&2;}
 fi
 
 
+
+#------------------------------------------------------------
+# CMAKE
+#------------------------------------------------------------
+
+# Look for cmake and test version, but save any errors for symtab.
+# The new symtab 8.2 uses cmake and requires version 2.6.4 or later
+# but prefers version 2.8.
+
+# Extract the first word of "cmake", so it can be a program name with args.
+set dummy cmake; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_prog_cmake_found+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$cmake_found"; then
+  ac_cv_prog_cmake_found="$cmake_found" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_cmake_found="yes"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_prog_cmake_found" && ac_cv_prog_cmake_found="no"
+fi
+fi
+cmake_found=$ac_cv_prog_cmake_found
+if test -n "$cmake_found"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $cmake_found" >&5
+$as_echo "$cmake_found" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+
+if test "$cmake_found" = yes ; then
+    version=`cmake --version 2>&1 | grep -i version`
+    { $as_echo "$as_me:${as_lineno-$LINENO}: $version" >&5
+$as_echo "$as_me: $version" >&6;}
+else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find cmake" >&5
+$as_echo "$as_me: WARNING: unable to find cmake" >&2;}
+fi
 
 #------------------------------------------------------------
 # OBJCOPY for cross-compile
@@ -5225,16 +5313,30 @@ else
 fi
 
 
+# Check whether --enable-symtab82 was given.
+if test "${enable_symtab82+set}" = set; then :
+  enableval=$enable_symtab82;
+else
+  enable_symtab82=no
+fi
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking symtabAPI" >&5
 $as_echo_n "checking symtabAPI... " >&6; }
 
 symtabAPI_avail=no
 symtabAPI_prefix=no
 symtabAPI_platform=no
+symtab_version=8.2
+use_symtab_82=yes
 use_symtab_61=no
-avail_version=
 cookie="symtabAPI/${nobuild_cookie}"
 rm -f "$cookie"
+
+if test "$enable_symtab82" = no ; then
+    symtab_version=8.0
+    use_symtab_82=no
+fi
 
 case "$with_symtabAPI" in
     build | yes )
@@ -5257,8 +5359,9 @@ case "$with_symtabAPI" in
 		;;
 	    *ia64* )
 		symtabAPI_platform=ia64-unknown-linux2.4
+		symtab_version=6.1
+		use_symtab_82=no
 		use_symtab_61=yes
-		avail_version=6.1
 		;;
 	    *mips64* )
 		symtabAPI_platform=mips64_linux
@@ -5271,7 +5374,7 @@ case "$with_symtabAPI" in
 		;;
 	esac
 	if test "$symtabAPI_platform" != no ; then
-	    symtabAPI_avail="build $avail_version"
+	    symtabAPI_avail="build $symtab_version"
 	    symtabAPI_prefix="$symtabAPI_local_prefix"
 	else
 	    echo "not available on this platform" > "$cookie"
@@ -5297,6 +5400,29 @@ esac
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $symtabAPI_avail" >&5
 $as_echo "$symtabAPI_avail" >&6; }
 
+
+
+
+
+
+# Symtab 8.2 requires cmake version 2.6 or later.
+
+if test "$use_symtab_82" = yes && test "$cmake_found" = no ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: SymtabAPI 8.2 requires cmake.  Please put cmake on your" >&5
+$as_echo "$as_me: WARNING: SymtabAPI 8.2 requires cmake.  Please put cmake on your" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: path or else reconfigure with --disable-symtab82." >&5
+$as_echo "$as_me: WARNING: path or else reconfigure with --disable-symtab82." >&2;}
+    as_fn_error $? "Unable to find cmake." "$LINENO" 5
+fi
+
+# Symtab 8.2 doesn't like options in CC and CXX, eg: CC='gcc -m32'.
+# So, move any flags in CC and CXX to another variable.
+
+set -- $CC ; shift
+symtab_cflags="$* $CFLAGS"
+
+set -- $CXX ; shift
+symtab_cxxflags="$* $CXXFLAGS"
 
 
 
@@ -6705,6 +6831,17 @@ $as_echo "$as_me: WARNING: This is not necessarily an error, but some packages m
 $as_echo "$as_me: WARNING: compile cleanly without gcc or g++.  If the build fails, try" >&2;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using GNU gcc and g++ before reporting an error." >&5
 $as_echo "$as_me: WARNING: using GNU gcc and g++ before reporting an error." >&2;}
+fi
+
+if test "$warn_old_gcc" = yes ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+$as_echo "$as_me: " >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Using an old version of GNU gcc/g++." >&5
+$as_echo "$as_me: WARNING: Using an old version of GNU gcc/g++." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Some packages may not build correctly with this version." >&5
+$as_echo "$as_me: WARNING: Some packages may not build correctly with this version." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please reconfigure with GNU gcc/g++ version 4.4 or later." >&5
+$as_echo "$as_me: WARNING: Please reconfigure with GNU gcc/g++ version 4.4 or later." >&2;}
 fi
 
 if test "$warn_bgq_backend" = yes ; then

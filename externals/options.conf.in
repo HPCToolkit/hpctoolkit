@@ -54,8 +54,13 @@ libxml2_lib="@libxml2_lib@"
 libmonitor_use_bgq_backend='@libmonitor_use_bgq_backend@'
 
 symtabAPI_platform="@symtabAPI_platform@"
-xerces_platform="@xerces_platform@"
 have_tr1_map="@have_tr1_map@"
+symtab_cc_path='@CC_PATH@'
+symtab_cxx_path='@CXX_PATH@'
+symtab_cflags='@symtab_cflags@'
+symtab_cxxflags='@symtab_cxxflags@'
+
+xerces_platform="@xerces_platform@"
 
 use_xed2_k1om='@use_xed2_k1om@'
 use_xed2_mic='@use_xed2_mic@'
