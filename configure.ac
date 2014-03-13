@@ -2008,6 +2008,21 @@ AM_CONDITIONAL([OPT_ENABLE_HPCRUN_DYNAMIC],
 
 
 #-------------------------------------------------
+# enable-hpcserver:
+#-------------------------------------------------
+
+# hpcserver is new, so the default is no for now.
+
+AC_ARG_ENABLE([hpcserver],
+  [AS_HELP_STRING([--enable-hpcserver],
+          [build hpcserver and hpcserver-mpi (default no)])],
+  [],
+  [enable_hpcserver=no])
+
+AM_CONDITIONAL([OPT_ENABLE_HPCSERVER], [test "$enable_hpcserver" = yes])
+
+
+#-------------------------------------------------
 # enable-inline:
 #-------------------------------------------------
 
@@ -2717,6 +2732,8 @@ AC_CONFIG_FILES([ \
   src/tool/hpcproftt/Makefile \
   src/tool/hpcrun/Makefile \
   src/tool/hpcrun-flat/Makefile \
+  src/tool/hpcserver/Makefile \
+  src/tool/hpcserver/mpi/Makefile \
   src/tool/hpcstruct/Makefile \
   src/tool/misc/Makefile \
   src/tool/xprof/Makefile \

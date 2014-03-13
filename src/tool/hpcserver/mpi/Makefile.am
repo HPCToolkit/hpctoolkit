@@ -2,8 +2,8 @@
 
 ## * BeginRiceCopyright *****************************************************
 ##
-## $HeadURL$
-## $Id$
+## $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Makefile.am $
+## $Id: Makefile.am 4283 2013-07-02 20:13:13Z felipet1326@gmail.com $
 ##
 ## --------------------------------------------------------------------------
 ## Part of HPCToolkit (hpctoolkit.org)
@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2014, Rice University
+## Copyright ((c)) 2002-2013, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -47,7 +47,7 @@
 #############################################################################
 ##
 ## File:
-##   $HeadURL$
+##   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Makefile.am $
 ##
 ## Description:
 ##   *Process with automake to produce Makefile.in*
@@ -61,51 +61,76 @@
 AUTOMAKE_OPTIONS = foreign
 
 #############################################################################
+# Common settings
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.config
+
+#############################################################################
 # Local settings
 #############################################################################
+
+MYSOURCES = \
+../Args.cpp \
+../BaseDataFile.cpp \
+../Communication-MPI.cpp \
+../DataCompressionLayer.cpp \
+../DBOpener.cpp \
+../DataOutputFileStream.cpp \
+../DataSocketStream.cpp \
+../FilteredBaseData.cpp \
+../LargeByteBuffer.cpp \
+../MergeDataFiles.cpp \
+../ProcessTimeline.cpp \
+../ProgressBar.cpp \
+../Server.cpp \
+../Slave.cpp \
+../SpaceTimeDataController.cpp \
+../TraceDataByRank.cpp \
+../VersatileMemoryPage.cpp \
+../main.cpp
+
+
+
+MYMPIFLAGS = -DMPICH_IGNORE_CXX_SEEK 
+
+MYCFLAGS   = @HOST_CFLAGS@ $(MYMPIFLAGS)  $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(MYMPIFLAGS)  $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
+
+MYLDFLAGS  = -lz
+
+MYLDADD = \
+        @HOST_LIBTREPOSITORY@ \
+        $(HPCLIB_Support) 
+
+MYCLEAN = @HOST_LIBTREPOSITORY@
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-SUBDIRS =
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
 
-if OPT_BUILD_TOOL_ALL
-SUBDIRS += \
-	hpcstruct \
-	hpcprof \
-	hpcproftt \
-	hpclump \
-	misc
+CXX = $(MPICXX)
 
-if OPT_ENABLE_HPCSERVER
-SUBDIRS += hpcserver
-endif
-endif
+bin_PROGRAMS = hpcserver-mpi
 
-if OPT_ENABLE_HPCRUN_FLAT
-SUBDIRS += hpcrun-flat \
-	hpcprof-flat
-endif
 
-if OPT_ENABLE_HPCRUN
-  SUBDIRS += \
-	hpcrun \
-	hpcfnbounds
-endif
+hpcserver_mpi_CXX = $(MPICXX)
+hpcserver_mpi_SOURCES  = $(MYSOURCES) $(MPISOURCES)
+hpcserver_mpi_CFLAGS   = $(MYCFLAGS)
+hpcserver_mpi_CXXFLAGS = $(MYCXXFLAGS)
+hpcserver_mpi_LDFLAGS  = $(MYLDFLAGS)
+hpcserver_mpi_LDADD    = $(MYLDADD)
 
-if OPT_ENABLE_MPI
-  SUBDIRS += hpcprof-mpi 
 
-if OPT_ENABLE_HPCSERVER
-  SUBDIRS += hpcserver/mpi
-endif
-endif
+MOSTLYCLEANFILES = $(MYCLEAN)
 
-#if OPT_ENABLE_DEVTOOLS
-#  SUBDIRS += hpclump
-#endif
 
 #############################################################################
-# Other rules
+# Common rules
 #############################################################################
+
+include $(top_srcdir)/src/Makeinclude.rules
+
