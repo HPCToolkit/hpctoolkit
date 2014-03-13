@@ -75,7 +75,6 @@
 #include "FilterSet.hpp"
 #include "DebugUtils.hpp"
 
-#define HPCTOOLKIT_PROFILE
 #ifdef HPCTOOLKIT_PROFILE
  #include "hpctoolkit.h"
 #endif
