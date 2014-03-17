@@ -51,22 +51,24 @@
 #define MAX_HARDWARE_SAMPLE_SOURCES 1
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #include <sample-sources/sample_source_obj.h>
 
-void hpcrun_sample_sources_from_eventlist(char *evl);
-sample_source_t* hpcrun_fetch_source_by_name(const char *src);
-bool hpcrun_check_named_source(const char *src);
-void hpcrun_all_sources_init(void);
-void hpcrun_all_sources_thread_init(void);
-void hpcrun_all_sources_thread_init_action(void);
-void hpcrun_all_sources_process_event_list(int lush_metrics);
-void hpcrun_all_sources_gen_event_set(int lush_metrics);
-void hpcrun_all_sources_start(void);
-void hpcrun_all_sources_thread_fini_action(void);
-void hpcrun_all_sources_stop(void);
-void hpcrun_all_sources_shutdown(void);
-bool  hpcrun_all_sources_started(void);
+extern void hpcrun_sample_sources_from_eventlist(char *evl);
+extern sample_source_t* hpcrun_fetch_source_by_name(const char *src);
+extern bool hpcrun_check_named_source(const char *src);
+extern void hpcrun_all_sources_init(void);
+extern void hpcrun_all_sources_thread_init(void);
+extern void hpcrun_all_sources_thread_init_action(void);
+extern void hpcrun_all_sources_process_event_list(int lush_metrics);
+extern void hpcrun_all_sources_gen_event_set(int lush_metrics);
+extern void hpcrun_all_sources_start(void);
+extern void hpcrun_all_sources_thread_fini_action(void);
+extern void hpcrun_all_sources_stop(void);
+extern void hpcrun_all_sources_shutdown(void);
+extern bool  hpcrun_all_sources_started(void);
+extern size_t hpcrun_get_num_sample_sources(void);
 
 #define SAMPLE_SOURCES(op,...) hpcrun_all_sources_ ##op(__VA_ARGS__)
 

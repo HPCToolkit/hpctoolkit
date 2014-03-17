@@ -131,7 +131,7 @@ static void
 METHOD_FN(start)
 {
   TMSG(GA, "starting GA sample source");
-  TD_GET(ss_state)[self->evset_idx] = START;
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 
@@ -146,7 +146,7 @@ static void
 METHOD_FN(stop)
 {
   TMSG(GA, "stopping GA sample source");
-  TD_GET(ss_state)[self->evset_idx] = STOP;
+  TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 

@@ -215,9 +215,9 @@ METHOD_FN(start)
   if (papi_unavail) { return; }
 
   thread_data_t *td = hpcrun_get_thread_data();
-  papi_source_info_t *psi = td->ss_info[self->evset_idx].ptr;
+  papi_source_info_t *psi = td->ss_info[self->sel_idx].ptr;
   int eventSet = psi->eventSet;
-  source_state_t my_state = TD_GET(ss_state)[self->evset_idx];
+  source_state_t my_state = TD_GET(ss_state)[self->sel_idx];
 
   // make PAPI start idempotent.  the application can turn on sampling
   // anywhere via the start-stop interface, so we can't control what
@@ -245,7 +245,7 @@ METHOD_FN(start)
     }
   }
 
-  TD_GET(ss_state)[self->evset_idx] = START;
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 static void
@@ -267,10 +267,10 @@ METHOD_FN(stop)
   if (papi_unavail) { return; }
 
   thread_data_t *td = hpcrun_get_thread_data();
-  papi_source_info_t *psi = td->ss_info[self->evset_idx].ptr;
+  papi_source_info_t *psi = td->ss_info[self->sel_idx].ptr;
   int eventSet = psi->eventSet;
   int nevents  = self->evl.nevents;
-  source_state_t my_state = TD_GET(ss_state)[self->evset_idx];
+  source_state_t my_state = TD_GET(ss_state)[self->sel_idx];
 
   if (my_state == STOP) {
     TMSG(PAPI,"--stop called on an already stopped event set %d",eventSet);
@@ -290,7 +290,7 @@ METHOD_FN(stop)
 	 eventSet,ret,PAPI_strerror(ret));
   }
 
-  TD_GET(ss_state)[self->evset_idx] = STOP;
+  TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 static void
@@ -445,7 +445,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
 
   // record the component state in thread state
   thread_data_t *td = hpcrun_get_thread_data();
-  td->ss_info[self->evset_idx].ptr = psi;
+  td->ss_info[self->sel_idx].ptr = psi;
 
 
   eventSet = PAPI_NULL;
@@ -665,7 +665,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   if (some_derived) {
     thread_data_t *td = hpcrun_get_thread_data();
-    papi_source_info_t *psi = td->ss_info[self->evset_idx].ptr;
+    papi_source_info_t *psi = td->ss_info[self->sel_idx].ptr;
     for (i = 0; i < nevents; i++) {
       if (derived[i]) {
 	hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),

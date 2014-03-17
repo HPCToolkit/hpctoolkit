@@ -345,7 +345,7 @@ METHOD_FN(start)
   // Need to ignore failure here.
   BGP_UPC_Start(0);
 
-  TD_GET(ss_state)[self->evset_idx] = START;
+  TD_GET(ss_state)[self->sel_idx] = START;
   TMSG(UPC, "BGP_UPC_Start on core 0");
 }
 
@@ -361,7 +361,7 @@ METHOD_FN(stop)
     return;
 
   BGP_UPC_Stop();
-  TD_GET(ss_state)[self->evset_idx] = STOP;
+  TD_GET(ss_state)[self->sel_idx] = STOP;
   TMSG(UPC, "BGP_UPC_Stop on core 0");
 }
 

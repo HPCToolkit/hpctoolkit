@@ -318,7 +318,7 @@ hpcrun_restart_timer(sample_source_t *self, int safe)
   }
 #endif
 
-  TD_GET(ss_state)[self->evset_idx] = START;
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 
@@ -391,7 +391,7 @@ METHOD_FN(stop)
     EMSG("stop %s failed, errno: %d", the_event_name, errno);
   }
 
-  TD_GET(ss_state)[self->evset_idx] = STOP;
+  TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 static void

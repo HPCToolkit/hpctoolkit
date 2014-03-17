@@ -171,7 +171,7 @@ METHOD_FN(start)
         monitor_real_abort();
     }
     g_cpu_gpu_enabled = true;
-    TD_GET(ss_state)[self->evset_idx] = START;
+    TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 static void METHOD_FN(thread_fini_action)
@@ -183,7 +183,7 @@ static void METHOD_FN(thread_fini_action)
 static void METHOD_FN(stop)
 {
     TMSG(CPU_GPU_BLAME_CTL, "stopping CPU_GPU_BLAME");
-    TD_GET(ss_state)[self->evset_idx] = STOP;
+    TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 static void METHOD_FN(shutdown)

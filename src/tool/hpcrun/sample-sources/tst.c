@@ -224,7 +224,7 @@ METHOD_FN(start)
   }
 #endif
 
-  TD_GET(ss_state)[self->evset_idx] = START;
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 static void
@@ -240,7 +240,7 @@ METHOD_FN(stop)
   rc = setitimer(HPCRUN_PROFILE_TIMER, &zerotimer, NULL);
 
   TMSG(ITIMER_CTL,"stopping _tst");
-  TD_GET(ss_state)[self->evset_idx] = STOP;
+  TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 static void
