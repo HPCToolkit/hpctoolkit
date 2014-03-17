@@ -397,6 +397,8 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
+@OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE@HPCLIB_Banal_Symtab = 
+@OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@HPCLIB_Banal_Symtab = $(top_builddir)/src/lib/banal/libHPCbanal_symtab.la
 
 #############################################################################
 # Common settings

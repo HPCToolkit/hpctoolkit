@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -104,7 +104,7 @@
 
 #include <lib/support-lean/timer.h>
 
-#include <sample-sources/blame-shift.h>
+#include <sample-sources/blame-shift/blame-shift.h>
 
 /******************************************************************************
  * macros
@@ -261,6 +261,9 @@ hpcrun_stop_timer(thread_data_t *td)
 {
 #ifdef ENABLE_CLOCK_REALTIME
   if (use_realtime || use_cputime) {
+    if (! td->timer_init) {
+      return 0;
+    }
     return timer_settime(td->timerid, 0, &itspec_stop, NULL);
   }
 #endif
