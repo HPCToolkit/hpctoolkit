@@ -65,6 +65,8 @@
 #define ss_str  _st1(ss_name) 
 #define reg_fn_name _make_id((,ss_name,_obj_reg))
 
+static void local_set_idx(int idx);
+
 sample_source_t obj_name() = {
   // common methods
 
@@ -93,10 +95,10 @@ sample_source_t obj_name() = {
     .evl_spec = {[0] = '\0'},
     .nevents = 0
   },
-  .evset_idx = -1,
+  .sel_idx   = -1,
   .name = ss_str,
   .cls  = ss_cls,
-  .state = UNINIT
+  .state = UNINIT,
 };
 
 

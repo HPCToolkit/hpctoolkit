@@ -240,7 +240,7 @@ static inline void gpu_data_init(gpu_data_t * gpu_data)
 #endif
 
 void
-hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
+hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sources)
 {
   hpcrun_meminfo_t memstore;
   thread_data_t* td = hpcrun_get_thread_data();
@@ -270,8 +270,17 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
   // ----------------------------------------
   // sample sources
   // ----------------------------------------
-  memset(&td->ss_state, UNINIT, sizeof(td->ss_state));
-  memset(&td->ss_info, 0, sizeof(td->ss_info));
+
+
+  // allocate ss_state, ss_info
+
+  td->ss_state = hpcrun_malloc(n_sources * sizeof(source_state_t));
+  td->ss_info  = hpcrun_malloc(n_sources * sizeof(source_info_t));
+
+  // initialize ss_state,info
+
+  memset(td->ss_state, UNINIT, n_sources * sizeof(source_state_t));
+  memset(td->ss_info, NULL, n_sources * sizeof(source_info_t));
 
   td->timer_init = false;
   td->last_time_us = 0;

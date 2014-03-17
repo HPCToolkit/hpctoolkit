@@ -131,7 +131,7 @@ METHOD_FN(start)
 {
   TMSG(RETCNT_CTL,"starting " HPCRUN_METRIC_RetCnt);
 
-  TD_GET(ss_state)[self->evset_idx] = START;
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 static void
@@ -144,7 +144,7 @@ static void
 METHOD_FN(stop)
 {
   TMSG(RETCNT_CTL,"stopping " HPCRUN_METRIC_RetCnt);
-  TD_GET(ss_state)[self->evset_idx] = STOP;
+  TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 static void

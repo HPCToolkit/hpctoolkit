@@ -62,11 +62,6 @@ static int nregs = 0;
 void
 hpcrun_ss_register(sample_source_t* src)
 {
-  if (nregs >= MAX_POSSIBLE_SAMPLE_SOURCES){
-    EMSG("Sample source named %s NOT registered due to # sample sources exceeded",src->name);
-    return;
-  }
-  src->evset_idx                     = nregs++;
   *registered_sample_sources_insert  = src;
   src->next_reg                      = NULL;
   registered_sample_sources_insert   = &(src->next_reg);

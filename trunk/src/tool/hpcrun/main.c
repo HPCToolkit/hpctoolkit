@@ -362,7 +362,7 @@ hpcrun_init_internal(bool is_child)
 
   hpcrun_memory_reinit();
   hpcrun_mmap_init();
-  hpcrun_thread_data_init(0, NULL, is_child);
+  hpcrun_thread_data_init(0, NULL, is_child, hpcrun_get_num_sample_sources());
 
   // WARNING: a perfmon bug requires us to fork off the fnbounds
   // server before we call PAPI_init, which is done in argument
@@ -647,7 +647,7 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   if (ENABLED(THREAD_CTXT))
     hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (intptr_t) id);
   //
-  hpcrun_thread_data_init(id, thr_ctxt, 0);
+  hpcrun_thread_data_init(id, thr_ctxt, 0, hpcrun_get_num_sample_sources());
 
   epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 
@@ -761,8 +761,8 @@ monitor_init_process(int *argc, char **argv, void* data)
   // for debugging, limit the life of the execution with an alarm.
   char *life  = getenv("HPCRUN_LIFETIME");
   if (life != NULL){
-        int seconds = atoi(life);
-        if (seconds > 0) alarm((unsigned int) seconds);
+    int seconds = atoi(life);
+    if (seconds > 0) alarm((unsigned int) seconds);
   }
 
   char *s = getenv(HPCRUN_EVENT_LIST);

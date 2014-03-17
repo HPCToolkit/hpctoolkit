@@ -332,7 +332,7 @@ METHOD_FN(start)
   }
 
   thread_data_t *td = hpcrun_get_thread_data();
-  source_state_t my_state = TD_GET(ss_state)[self->evset_idx];
+  source_state_t my_state = TD_GET(ss_state)[self->sel_idx];
 
   // make PAPI start idempotent.  the application can turn on sampling
   // anywhere via the start-stop interface, so we can't control what
@@ -344,7 +344,7 @@ METHOD_FN(start)
   }
 
   // for each active component, start its event set
-  papi_source_info_t *psi = td->ss_info[self->evset_idx].ptr;
+  papi_source_info_t* psi = td->ss_info[self->sel_idx].ptr;
   for (cidx=0; cidx < psi->num_components; cidx++) {
     papi_component_info_t *ci = &(psi->component_info[cidx]);
     if (ci->inUse) {
@@ -369,7 +369,7 @@ METHOD_FN(start)
       }
     }
   }
-  td->ss_state[self->evset_idx] = START;
+  td->ss_state[self->sel_idx] = START;
 }
 
 static void
@@ -394,7 +394,7 @@ METHOD_FN(stop)
 
   thread_data_t *td = hpcrun_get_thread_data();
   int nevents = self->evl.nevents;
-  source_state_t my_state = TD_GET(ss_state)[self->evset_idx];
+  source_state_t my_state = TD_GET(ss_state)[self->sel_idx];
 
   if (my_state == STOP) {
     TMSG(PAPI,"*NOTE* PAPI stop called when already in state STOP");
@@ -406,7 +406,7 @@ METHOD_FN(stop)
     return;
   }
 
-  papi_source_info_t *psi = td->ss_info[self->evset_idx].ptr;
+  papi_source_info_t *psi = td->ss_info[self->sel_idx].ptr;
   for (cidx=0; cidx < psi->num_components; cidx++) {
     papi_component_info_t *ci = &(psi->component_info[cidx]);
     if (ci->inUse) {
@@ -420,7 +420,7 @@ METHOD_FN(stop)
     }
   }
 
-  TD_GET(ss_state)[self->evset_idx] = STOP;
+  TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 static void
@@ -593,7 +593,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
   }
 
   // record the component state in thread state
-  td->ss_info[self->evset_idx].ptr = psi;
+  td->ss_info[self->sel_idx].ptr = psi;
 
   int nevents = (self->evl).nevents;
   for (i = 0; i < nevents; i++) {
@@ -804,7 +804,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   int cidx = PAPI_get_eventset_component(event_set);
   thread_data_t *td = hpcrun_get_thread_data();
-  papi_source_info_t *psi = td->ss_info[self->evset_idx].ptr;
+  papi_source_info_t *psi = td->ss_info[self->sel_idx].ptr;
   papi_component_info_t *ci = &(psi->component_info[cidx]);
 
   if (ci->some_derived) {

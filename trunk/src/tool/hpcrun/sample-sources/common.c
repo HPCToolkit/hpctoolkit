@@ -111,7 +111,7 @@ CMETHOD_FN(get_event_str)
 bool
 CMETHOD_FN(started)
 {
-  return (TD_GET(ss_state)[self->evset_idx] == START);
+  return (TD_GET(ss_state)[self->sel_idx] == START);
 }
 
 // **********************************************************

@@ -107,21 +107,21 @@ hpcrun_add_sample_source(sample_source_globals_t *_ssgtd)
 //
 // START/STOP inversion
 void
-hpcrun_start_sampling(thread_data_t *td)
+hpcrun_start_sampling(thread_data_t* td)
 {
   call_sampling_methods(SAMPLING_START, td);
 }
 
 
 void
-hpcrun_stop_sampling(thread_data_t *td)
+hpcrun_stop_sampling(thread_data_t* td)
 {
   call_sampling_methods(SAMPLING_STOP, td);
 }
 
 
 void
-hpcrun_init_sampling()
+hpcrun_init_sampling(void)
 {
   call_sampling_methods(SAMPLING_INIT, td);
 }
@@ -132,7 +132,7 @@ hpcrun_init_sampling()
  *****************************************************************************/
 
 static void
-call_sampling_methods(sampling_method mid, thread_data_t *td)
+call_sampling_methods(sampling_method mid, thread_data_t* td)
 {
   sampling_source_globals_t *g = ssg;
   for(; g; g = g->next) {
@@ -142,8 +142,8 @@ call_sampling_methods(sampling_method mid, thread_data_t *td)
 
 
 static void
-call_sampling_method(sampling_source_globals_t *g, 
-		     sampling_method mid, thread_data_t *td)
+call_sampling_method(sampling_source_globals_t* g, 
+		     sampling_method mid, thread_data_t* td)
 {
   (g->methods[mid])(td);
 }
