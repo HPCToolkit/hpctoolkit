@@ -1,0 +1,58 @@
+#!/bin/sh
+#
+#  SymtabAPI 8.2 configure.
+#
+#  $Id$
+#
+
+PKG_NAME=symtabAPI
+src=dyninst
+
+. ../build-utils/configure.inc
+pre_configure
+prefix="$symtabAPI_prefix"
+
+echo "symtabAPI PLATFORM: $symtabAPI_platform"
+
+set -- \
+    -DCMAKE_INSTALL_PREFIX="$prefix" \
+    -DCMAKE_BUILD_TYPE=Release  \
+    -DCMAKE_C_COMPILER="$symtab_cc_path" \
+    -DCMAKE_CXX_COMPILER="$symtab_cxx_path" \
+    -DPATH_BOOST="$boost_prefix" \
+    -DIBERTY_LIBRARY="$binutils_prefix/lib/libiberty.a" \
+    -DLIBELF_INCLUDE_DIR="$libelf_inc" \
+    -DLIBELF_LIBRARIES="$libelf_lib/libelf.so" \
+    -DLIBDWARF_INCLUDE_DIR="$libdwarf_inc" \
+    -DLIBDWARF_LIBRARIES="$libdwarf_lib/libdwarf.so"
+
+# Symtab overrides CFLAGS and CXXFLAGS, so we write these into the
+# cmake files.
+
+cd "$src/cmake" || die "unable to cd: $src/cmake"
+rm -f c++11.cmake optimization.cmake
+
+cat <<EOF >c++11.cmake
+message("-- Set CXX std C++11 flags: ${cxx_c11_flag}")
+set (CMAKE_CXX_FLAGS "\${CMAKE_CXX_FLAGS} ${cxx_c11_flag}")
+EOF
+
+cat <<EOF >optimization.cmake
+message("-- Set CC optimization flags:  ${symtab_cflags}")
+message("-- Set CXX optimization flags: ${symtab_cxxflags}")
+set (CMAKE_C_FLAGS_RELEASE "${symtab_cflags}")
+set (CMAKE_CXX_FLAGS_RELEASE "${symtab_cxxflags}")
+EOF
+
+cd "$ORIG_PKG_DIR" || die "unable to cd: $ORIG_PKG_DIR"
+
+make_work_dir
+cd work || die "unable to cd: work"
+
+export PLATFORM="$symtabAPI_platform"
+
+echo cmake "../$src" "$@"
+cmake "../$src" "$@"
+test $? -eq 0 || die "cmake configure failed"
+
+post_configure

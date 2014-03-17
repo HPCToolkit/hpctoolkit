@@ -64,7 +64,7 @@ back-end backend: begin-build $(BACK_END_PKGS)
 
 libdwarf: libelf
 oprofile: binutils
-symtabAPI: boost libdwarf libelf libxml2
+symtabAPI: boost libelf libdwarf @SYMTAB_OTHER_PREREQS@
 
 #
 # Catch package failures and save them in FAILURE_FILE.  This allows

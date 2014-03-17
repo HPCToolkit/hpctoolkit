@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+#  SymtabAPI 8.2 post-fetch.
+#
+#  $Id$
+#
+
+PKG_NAME=symtabAPI
+src=dyninst
+
+. ../build-utils/configure.inc
+
+# Configure needs to overwrite c++11.cmake and optimization.cmake,
+# so we save copies here.
+
+cd "$src/cmake" || die "unable to cd: $src/cmake"
+
+for file in c++11.cmake optimization.cmake
+do
+    echo "copy $file"
+    rm -f "$file.orig"
+    cp -p "$file" "$file.orig"
+done
+
+cd "$ORIG_PKG_DIR" || die "unable to cd: $ORIG_PKG_DIR"
+
+reset_perms "$src"

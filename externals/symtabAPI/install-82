@@ -1,0 +1,25 @@
+#!/bin/sh
+#
+#  SymtabAPI 8.2 install.
+#
+#  $Id$
+#
+
+PKG_NAME=symtabAPI
+src=dyninst
+
+subdirs='elf dwarf common symtabAPI'
+
+. ../build-utils/configure.inc
+pre_install
+
+cd work || die "unable to cd: work"
+work_dir=`pwd`
+
+for dir in $subdirs ; do
+    echo "installing $dir ..."
+    cd "$work_dir/$dir" || die "unable to cd: $work_dir/$dir"
+    $MAKE install || die "unable to install $dir"
+done
+
+post_install

@@ -606,6 +606,7 @@ use_xed2_k1om
 xed2_prefix
 symtab_cxxflags
 symtab_cflags
+SYMTAB_OTHER_PREREQS
 use_symtab_61
 use_symtab_82
 symtabAPI_platform
@@ -639,6 +640,8 @@ objcopy_prog
 cmake_found
 gnu_make
 cflags_fpic
+cxx_c11_flag
+CXX11_FLAG
 have_tr1_map
 CXX_PATH
 CC_PATH
@@ -736,6 +739,7 @@ CPPFLAGS
 CXX
 CXXFLAGS
 CCC
+CXX11_FLAG
 OBJCOPY
 CPP'
 
@@ -1398,6 +1402,8 @@ Some influential environment variables:
               you have headers in a nonstandard directory <include dir>
   CXX         C++ compiler command
   CXXFLAGS    C++ compiler flags
+  CXX11_FLAG  CXX flag for symtabAPI for standard C++11, only needed for
+              non-GNU CXX
   OBJCOPY     objcopy program for binaries produced by CC, only needed if
               autoconf fails to find a suitable program
   CPP         C preprocessor
@@ -3663,6 +3669,86 @@ have_tr1_map="$ans"
 
 
 #------------------------------------------------------------
+# CXXFLAGS for std C++11
+#------------------------------------------------------------
+
+# New symtab 8.2 wants a flag for std C++11.  The native symtab test
+# is broken for back-end MIC (g++ 4.7.0 but doesn't know -std=c++11),
+# so we test here.
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for CXXFLAGS for std C++11" >&5
+$as_echo_n "checking for CXXFLAGS for std C++11... " >&6; }
+
+c11_list='argvar none -std=c++11 -std=c++0x -std=gnu++0x'
+cxx_c11_avail=no
+cxx_c11_flag=
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+for opt in $c11_list
+do
+    case "$opt" in
+	argvar ) flag="$CXX11_FLAG" ;;
+	none )   flag=  ;;
+	* )      flag="$opt" ;;
+    esac
+    CXXFLAGS="$ORIG_CXXFLAGS $flag"
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <list>
+int mylen(std::list <int> lst)
+{
+    int ans = 0;
+    for (auto it = lst.begin(); it != lst.end(); it++) {
+        ans++;
+    }
+    return ans;
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  ans=yes
+else
+  ans=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    if test "$ans" = yes ; then
+	cxx_c11_avail=yes
+	cxx_c11_flag="$flag"
+	break
+    fi
+done
+
+ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $cxx_c11_flag" >&5
+$as_echo "$cxx_c11_flag" >&6; }
+
+if test "$cxx_c11_avail" = no ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find CXXFLAGS for std C++11" >&5
+$as_echo "$as_me: WARNING: unable to find CXXFLAGS for std C++11" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: try setting the CXX11_FLAG variable" >&5
+$as_echo "$as_me: WARNING: try setting the CXX11_FLAG variable" >&2;}
+fi
+
+
+
+#------------------------------------------------------------
 # CFLAGS for -fPIC
 #------------------------------------------------------------
 
@@ -5317,7 +5403,7 @@ fi
 if test "${enable_symtab82+set}" = set; then :
   enableval=$enable_symtab82;
 else
-  enable_symtab82=no
+  enable_symtab82=yes
 fi
 
 
@@ -5333,7 +5419,12 @@ use_symtab_61=no
 cookie="symtabAPI/${nobuild_cookie}"
 rm -f "$cookie"
 
-if test "$enable_symtab82" = no ; then
+SYMTAB_OTHER_PREREQS=
+
+if test "$enable_symtab82" = yes ; then
+    SYMTAB_OTHER_PREREQS=binutils
+else
+    SYMTAB_OTHER_PREREQS=libxml2
     symtab_version=8.0
     use_symtab_82=no
 fi
@@ -5358,6 +5449,7 @@ case "$with_symtabAPI" in
 		esac
 		;;
 	    *ia64* )
+		SYMTAB_OTHER_PREREQS='libunwind libxml2'
 		symtabAPI_platform=ia64-unknown-linux2.4
 		symtab_version=6.1
 		use_symtab_82=no
@@ -5405,6 +5497,7 @@ $as_echo "$symtabAPI_avail" >&6; }
 
 
 
+
 # Symtab 8.2 requires cmake version 2.6 or later.
 
 if test "$use_symtab_82" = yes && test "$cmake_found" = no ; then
@@ -5413,6 +5506,18 @@ $as_echo "$as_me: WARNING: SymtabAPI 8.2 requires cmake.  Please put cmake on yo
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: path or else reconfigure with --disable-symtab82." >&5
 $as_echo "$as_me: WARNING: path or else reconfigure with --disable-symtab82." >&2;}
     as_fn_error $? "Unable to find cmake." "$LINENO" 5
+fi
+
+# Symtab 8.2 requires standard C++11.
+
+if test "$use_symtab_82" = yes && test "$cxx_c11_avail" = no ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: SymtabAPI 8.2 requires a C++11 compiler.  Please set" >&5
+$as_echo "$as_me: WARNING: SymtabAPI 8.2 requires a C++11 compiler.  Please set" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: CXX11_FLAG to a CXX flag for std C++11 or else" >&5
+$as_echo "$as_me: WARNING: CXX11_FLAG to a CXX flag for std C++11 or else" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: reconfigure with --disable-symtab82." >&5
+$as_echo "$as_me: WARNING: reconfigure with --disable-symtab82." >&2;}
+    as_fn_error $? "Unable to find CXX flag for std C++11." "$LINENO" 5
 fi
 
 # Symtab 8.2 doesn't like options in CC and CXX, eg: CC='gcc -m32'.

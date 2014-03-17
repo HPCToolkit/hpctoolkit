@@ -9,6 +9,8 @@ CXX="@CXX@"
 CXXFLAGS="@CXXFLAGS@"
 AR="@AR@"
 
+cxx_c11_flag='@cxx_c11_flag@'
+
 gnu_make="@gnu_make@"
 
 build="@build@"

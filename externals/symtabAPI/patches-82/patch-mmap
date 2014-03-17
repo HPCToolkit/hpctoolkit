@@ -1,0 +1,41 @@
+Change mmap() flags MAP_SHARED to MAP_PRIVATE.  The pvfs file system
+on intrepid has problems with MAP_SHARED and we only read the file,
+we never try to write it back.
+
+
+diff -Naurb dyninst.orig/common/src/MappedFile.C dyninst/common/src/MappedFile.C
+--- dyninst.orig/common/src/MappedFile.C	2014-03-12 18:20:10.000000000 -0500
++++ dyninst/common/src/MappedFile.C	2014-03-13 15:12:36.091764602 -0500
+@@ -362,7 +362,7 @@
+ #else
+ 
+    int mmap_prot  = PROT_READ;
+-   int mmap_flags = MAP_SHARED;
++   int mmap_flags = MAP_PRIVATE;
+ 
+ #if defined(os_vxworks)   
+    // VxWorks kernel modules have relocations which need to be
+diff -Naurb dyninst.orig/common/src/mmtimer.c dyninst/common/src/mmtimer.c
+--- dyninst.orig/common/src/mmtimer.c	2014-03-12 18:20:10.000000000 -0500
++++ dyninst/common/src/mmtimer.c	2014-03-13 15:12:36.091764602 -0500
+@@ -82,7 +82,7 @@
+ 		close( fd );
+ 		return 0;
+ 		}
+-	 if( ( mmdev_timer_addr = (volatile unsigned long int *)mmap( 0, getpagesize(), PROT_READ, MAP_SHARED, fd, 0 ) ) == NULL ) {
++	 if( ( mmdev_timer_addr = (volatile unsigned long int *)mmap( 0, getpagesize(), PROT_READ, MAP_PRIVATE, fd, 0 ) ) == NULL ) {
+ 	 	close( fd );
+ 	 	return 0;
+ 		}
+diff -Naurb dyninst.orig/elf/src/Elf_X.C dyninst/elf/src/Elf_X.C
+--- dyninst.orig/elf/src/Elf_X.C	2014-03-12 18:20:10.000000000 -0500
++++ dyninst/elf/src/Elf_X.C	2014-03-13 15:12:36.092764521 -0500
+@@ -1599,7 +1599,7 @@
+    if (fd == -1)
+       return false;
+ 
+-   char *buffer = (char *) mmap(NULL, fileStat.st_size, PROT_READ, MAP_SHARED, fd, 0);
++   char *buffer = (char *) mmap(NULL, fileStat.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    close(fd);
+    if (!buffer)
+       return false;

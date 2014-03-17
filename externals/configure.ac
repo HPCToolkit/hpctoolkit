@@ -246,6 +246,65 @@ have_tr1_map="$ans"
 AC_SUBST([have_tr1_map])
 
 #------------------------------------------------------------
+# CXXFLAGS for std C++11
+#------------------------------------------------------------
+
+# New symtab 8.2 wants a flag for std C++11.  The native symtab test
+# is broken for back-end MIC (g++ 4.7.0 but doesn't know -std=c++11),
+# so we test here.
+
+AC_ARG_VAR([CXX11_FLAG],
+    [CXX flag for symtabAPI for standard C++11, only needed for
+     non-GNU CXX])
+
+AC_MSG_CHECKING([for CXXFLAGS for std C++11])
+
+c11_list='argvar none -std=c++11 -std=c++0x -std=gnu++0x'
+cxx_c11_avail=no
+cxx_c11_flag=
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+AC_LANG_PUSH([C++])
+
+for opt in $c11_list
+do
+    case "$opt" in
+	argvar ) flag="$CXX11_FLAG" ;;
+	none )   flag=  ;;
+	* )      flag="$opt" ;;
+    esac
+    CXXFLAGS="$ORIG_CXXFLAGS $flag"
+    AC_COMPILE_IFELSE([
+#include <list>
+int mylen(std::list <int> lst)
+{
+    int ans = 0;
+    for (auto it = lst.begin(); it != lst.end(); it++) {
+        ans++;
+    }
+    return ans;
+}
+], [ans=yes], [ans=no])
+    if test "$ans" = yes ; then
+	cxx_c11_avail=yes
+	cxx_c11_flag="$flag"
+	break
+    fi
+done
+
+AC_LANG_POP
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+AC_MSG_RESULT([$cxx_c11_flag])
+
+if test "$cxx_c11_avail" = no ; then
+    AC_MSG_WARN([unable to find CXXFLAGS for std C++11])
+    AC_MSG_WARN([try setting the CXX11_FLAG variable])
+fi
+
+AC_SUBST([cxx_c11_flag])
+
+#------------------------------------------------------------
 # CFLAGS for -fPIC
 #------------------------------------------------------------
 
@@ -1198,7 +1257,7 @@ AC_ARG_ENABLE([symtab82],
     [AS_HELP_STRING([--enable-symtab82],
 	[use latest symtabAPI 8.2 for inline support (default yes)])],
     [],
-    [enable_symtab82=no])
+    [enable_symtab82=yes])
 
 AC_MSG_CHECKING([symtabAPI])
 
@@ -1211,7 +1270,12 @@ use_symtab_61=no
 cookie="symtabAPI/${nobuild_cookie}"
 rm -f "$cookie"
 
-if test "$enable_symtab82" = no ; then
+SYMTAB_OTHER_PREREQS=
+
+if test "$enable_symtab82" = yes ; then
+    SYMTAB_OTHER_PREREQS=binutils
+else
+    SYMTAB_OTHER_PREREQS=libxml2
     symtab_version=8.0
     use_symtab_82=no
 fi
@@ -1236,6 +1300,7 @@ case "$with_symtabAPI" in
 		esac
 		;;
 	    *ia64* )
+		SYMTAB_OTHER_PREREQS='libunwind libxml2'
 		symtabAPI_platform=ia64-unknown-linux2.4
 		symtab_version=6.1
 		use_symtab_82=no
@@ -1281,6 +1346,7 @@ AC_SUBST([symtabAPI_prefix])
 AC_SUBST([symtabAPI_platform])
 AC_SUBST([use_symtab_82])
 AC_SUBST([use_symtab_61])
+AC_SUBST([SYMTAB_OTHER_PREREQS])
 
 # Symtab 8.2 requires cmake version 2.6 or later.
 
@@ -1288,6 +1354,15 @@ if test "$use_symtab_82" = yes && test "$cmake_found" = no ; then
     AC_MSG_WARN([SymtabAPI 8.2 requires cmake.  Please put cmake on your])
     AC_MSG_WARN([path or else reconfigure with --disable-symtab82.])
     AC_MSG_ERROR([Unable to find cmake.])
+fi
+
+# Symtab 8.2 requires standard C++11.
+
+if test "$use_symtab_82" = yes && test "$cxx_c11_avail" = no ; then
+    AC_MSG_WARN([SymtabAPI 8.2 requires a C++11 compiler.  Please set])
+    AC_MSG_WARN([CXX11_FLAG to a CXX flag for std C++11 or else])
+    AC_MSG_WARN([reconfigure with --disable-symtab82.])
+    AC_MSG_ERROR([Unable to find CXX flag for std C++11.])
 fi
 
 # Symtab 8.2 doesn't like options in CC and CXX, eg: CC='gcc -m32'.
