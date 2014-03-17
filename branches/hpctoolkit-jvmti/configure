@@ -636,6 +636,12 @@ OPT_ENABLE_MPI_WRAP_FALSE
 OPT_ENABLE_MPI_WRAP_TRUE
 OPT_ENABLE_MPI_FALSE
 OPT_ENABLE_MPI_TRUE
+OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE
+OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE
+OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE
+OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE
+OPT_ENABLE_HPCSERVER_FALSE
+OPT_ENABLE_HPCSERVER_TRUE
 OPT_ENABLE_HPCRUN_DYNAMIC_FALSE
 OPT_ENABLE_HPCRUN_DYNAMIC_TRUE
 HPCLINK_LD_FLAGS
@@ -664,8 +670,6 @@ XERCES_LDLIBS
 XERCES_LDFLAGS
 XERCES_IFLAGS
 XERCES
-OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE
-OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE
 XED2_RUN_DIR
 XED2_COPY
 XED2_HPCLINK_OPTS
@@ -923,6 +927,8 @@ enable_back_end
 enable_hpcrun_flat
 enable_hpcrun
 enable_hpcrun_static
+enable_hpcserver
+enable_inline
 enable_mpi
 enable_mpi_wrapper
 enable_lush
@@ -1597,6 +1603,9 @@ Optional Features:
   --enable-hpcrun         build hpcrun (default yes)
   --enable-hpcrun-static  build hpcrun for statically linked executables
                           (default yes)
+  --enable-hpcserver      build hpcserver and hpcserver-mpi (default no)
+  --enable-inline         enable static inline support, requires linking
+                          symtab into hpcstruct (default check)
   --enable-mpi            Enable MPI support (uses MPICXX variable)
   --enable-mpi-wrapper    Enable MPI wrapper support (uses MPIF77 and CFLAGS)
   --enable-lush           use lush backtrace in hpcrun
@@ -18044,22 +18053,6 @@ $as_echo "$XED2" >&6; }
 
 
 
-# If Xed is shared, then hpcstruct gets a launch script.
-
-hpcstruct_launch_script=no
-if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
-  hpcstruct_launch_script=yes
-fi
-
- if test "$hpcstruct_launch_script" = yes; then
-  OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE=
-  OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE='#'
-else
-  OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE='#'
-  OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE=
-fi
-
-
 
 #-------------------------------------------------
 # Check for Xerces-C (XML parser)
@@ -18451,6 +18444,133 @@ $as_echo "$OPT_ENABLE_HPCRUN_DYNAMIC" >&6; }
 else
   OPT_ENABLE_HPCRUN_DYNAMIC_TRUE='#'
   OPT_ENABLE_HPCRUN_DYNAMIC_FALSE=
+fi
+
+
+
+#-------------------------------------------------
+# enable-hpcserver:
+#-------------------------------------------------
+
+# hpcserver is new, so the default is no for now.
+
+# Check whether --enable-hpcserver was given.
+if test "${enable_hpcserver+set}" = set; then :
+  enableval=$enable_hpcserver;
+else
+  enable_hpcserver=no
+fi
+
+
+ if test "$enable_hpcserver" = yes; then
+  OPT_ENABLE_HPCSERVER_TRUE=
+  OPT_ENABLE_HPCSERVER_FALSE='#'
+else
+  OPT_ENABLE_HPCSERVER_TRUE='#'
+  OPT_ENABLE_HPCSERVER_FALSE=
+fi
+
+
+
+#-------------------------------------------------
+# enable-inline:
+#-------------------------------------------------
+
+# Enable the static inline support from symtabAPI.  This involves
+# linking symtab into hpcstruct and banal.
+
+# Check whether --enable-inline was given.
+if test "${enable_inline+set}" = set; then :
+  enableval=$enable_inline;
+else
+  enable_inline=check
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking symtabAPI for static inline support" >&5
+$as_echo_n "checking symtabAPI for static inline support... " >&6; }
+
+if test "$enable_inline" = no ; then
+  enable_inline=disabled
+else
+  ORIG_CXXFLAGS="$CXXFLAGS"
+  ORIG_LIBS="$LIBS"
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  CXXFLAGS="-I${BOOST_INC} -I${SYMTABAPI_INC}"
+  LIBS="-L${LIBELF_LIB} -L${LIBDWARF_LIB} -L${SYMTABAPI_LIB}"
+  LIBS="${LIBS} ${SYMTABAPI_LIB_LIST} -ldwarf -lelf"
+  LIBS="${LIBS} ${GNUBINUTILS_LDFLAGS} -liberty"
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <iostream>
+#include <Symtab.h>
+#include <Function.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace std;
+int main()
+{
+  FunctionBase *func = (FunctionBase *) 0x0400400;
+  FunctionBase *parent = func->getInlinedParent();
+  cout << parent;
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  enable_inline=yes
+else
+  enable_inline=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  CXXFLAGS="$ORIG_CXXFLAGS"
+  LIBS="$ORIG_LIBS"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_inline" >&5
+$as_echo "$enable_inline" >&6; }
+
+ if test "$enable_inline" = yes; then
+  OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE=
+  OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE='#'
+else
+  OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE='#'
+  OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE=
+fi
+
+
+# Hpcstruct gets a launch script if (1) Xed is shared (some versions
+# of MIC), or (2) use symtab for inline support.
+
+hpcstruct_launch_script=no
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
+  hpcstruct_launch_script=yes
+fi
+if test "$enable_inline" = yes ; then
+  hpcstruct_launch_script=yes
+fi
+
+ if test "$hpcstruct_launch_script" = yes; then
+  OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE=
+  OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE='#'
+else
+  OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE='#'
+  OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE=
 fi
 
 
@@ -19301,7 +19421,7 @@ BACK_END_LABEL=
 ac_config_headers="$ac_config_headers src/include/hpctoolkit-config.h"
 
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcjava/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcjava/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
 
 
 
@@ -19528,10 +19648,6 @@ if test -z "${OPT_PAPI_COMPONENT_TRUE}" && test -z "${OPT_PAPI_COMPONENT_FALSE}"
   as_fn_error $? "conditional \"OPT_PAPI_COMPONENT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE}" && test -z "${OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_HPCSTRUCT_LAUNCH_SCRIPT\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${OPT_ENABLE_JAVA_TRUE}" && test -z "${OPT_ENABLE_JAVA_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_JAVA\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -19566,6 +19682,18 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_HPCRUN_DYNAMIC_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_DYNAMIC_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_HPCRUN_DYNAMIC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_HPCSERVER_TRUE}" && test -z "${OPT_ENABLE_HPCSERVER_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_HPCSERVER\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE}" && test -z "${OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_BANAL_WITH_SYMTAB\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE}" && test -z "${OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_HPCSTRUCT_LAUNCH_SCRIPT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_MPI_TRUE}" && test -z "${OPT_ENABLE_MPI_FALSE}"; then
@@ -20585,6 +20713,8 @@ do
     "src/tool/hpcproftt/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcproftt/Makefile" ;;
     "src/tool/hpcrun/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/Makefile" ;;
     "src/tool/hpcrun-flat/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun-flat/Makefile" ;;
+    "src/tool/hpcserver/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcserver/Makefile" ;;
+    "src/tool/hpcserver/mpi/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcserver/mpi/Makefile" ;;
     "src/tool/hpcstruct/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/Makefile" ;;
     "src/tool/misc/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/misc/Makefile" ;;
     "src/tool/xprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/xprof/Makefile" ;;
@@ -22302,6 +22432,8 @@ $as_echo "$as_me:   java:         ${JAVA}" >&6;}
 $as_echo "$as_me:   cuda:         ${OPT_CUDA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   upc (BG/P):   ${opt_upc_mesg}" >&5
 $as_echo "$as_me:   upc (BG/P):   ${opt_upc_mesg}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   inline:       ${enable_inline}" >&5
+$as_echo "$as_me:   inline:       ${enable_inline}" >&6;}
 
 if test "$warn_config_site" = yes ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5

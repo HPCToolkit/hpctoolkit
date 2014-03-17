@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -93,9 +93,10 @@ struct dylib_fmca_s {
 
 #define SEG_SIZE(info, seg) ((info)->dlpi_phdr[seg].p_memsz)
 
-#define SEG_IS_EXECUTABLE(info, seg)	\
+#define SEG_IS_EXECUTABLE_CODE(info, seg)	\
     (((info) != NULL) &&		\
      ((info)->dlpi_phdr != NULL) &&	\
+     ((info)->dlpi_phdr[seg].p_type == PT_LOAD) && \
      ((info)->dlpi_phdr[seg].p_flags & PF_X))
 
 
@@ -256,11 +257,15 @@ dylib_get_segment_bounds(struct dl_phdr_info *info,
   // compute start of first & end of last executable chunks in this segment
   //------------------------------------------------------------------------
   for (j = 0; j < info->dlpi_phnum; j++) {
-    if (SEG_IS_EXECUTABLE(info, j)) {
+    if (SEG_IS_EXECUTABLE_CODE(info, j)) {
       char *saddr = SEG_START_ADDR(info, j);
-      char *eaddr = saddr + SEG_SIZE(info, j);
-      if (saddr < start) start = saddr;
-      if (eaddr >= end) end = eaddr;
+      long size = SEG_SIZE(info, j);
+      // don't adjust info unless segment has positive size
+      if (size > 0) { 
+	char *eaddr = saddr + size;
+	if (saddr < start) start = saddr;
+	if (eaddr >= end) end = eaddr;
+      }
     }
   }
 

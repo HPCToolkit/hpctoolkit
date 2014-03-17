@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -109,6 +109,10 @@ using namespace Prof;
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
+
+#ifdef BANAL_USE_SYMTAB
+#include "Struct-Inline.hpp"
+#endif
 
 //*************************** Forward Declarations ***************************
 
@@ -317,6 +321,10 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
 
   // 1. Build Struct::File/Struct::Proc skeletal structure
   ProcStrctToProcMap* mp = buildLMSkeleton(lmStrct, lm, procNmMgr);
+
+#ifdef BANAL_USE_SYMTAB
+  Inline::openSymtab(lm->name());
+#endif
   
   // 2. For each [Struct::Proc, BinUtil::Proc] pair, complete the build.
   // Note that a Struct::Proc may be associated with more than one
@@ -336,6 +344,10 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
     bool doNormalizeUnsafe = (doNormalizeTy == NormTy_All);
     normalize(lmStrct, doNormalizeUnsafe);
   }
+
+#ifdef BANAL_USE_SYMTAB
+  Inline::closeSymtab();
+#endif
 
   return lmStrct;
 }
