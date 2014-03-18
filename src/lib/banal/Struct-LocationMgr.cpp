@@ -115,8 +115,8 @@ RELOCATEDcmp(const string& x)
 #ifdef BANAL_USE_SYMTAB
 //
 // Test if two procedure names are equal where we ignore embedded
-// spaces and closing '()'.  C++ names often have these features and
-// we don't want these features to cause unequal.
+// spaces and closing '(...)'.  Binutils and symtab often disagree
+// over these features and we don't want that to cause unequal.
 //
 static bool
 procnmEq(string& s1, string& s2)
@@ -133,14 +133,14 @@ procnmEq(string& s1, string& s2)
     else if (j < len2 && s2[j] == ' ') {
       j++;
     }
-    else if (i+1 < len1 && s1[i] == '(' && s1[i+1] == ')') {
-      i += 2;
-    }
-    else if (j+1 < len2 && s2[j] == '(' && s2[j+1] == ')') {
-      j += 2;
-    }
     else if (i < len1 && j < len2 && s1[i] == s2[j]) {
       i++; j++;
+    }
+    else if (i == len1 && j < len2 && s2[j] == '(') {
+      j = len2;
+    }
+    else if (j == len2 && i < len1 && s1[i] == '(') {
+      i = len1;
     }
     else {
       break;
