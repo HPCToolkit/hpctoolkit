@@ -712,7 +712,7 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 	char buf[50];
 	snprintf(buf, 50, "inline-alien-%ld", (long) it->getLineNum());
 	alien = demandAlienStrct(parent, it->getFileName(), string(buf),
-				 it->getLineNum(), false);
+				 it->getProcName(), it->getLineNum());
 	pushCtxt(Ctxt(alien, NULL));
 	parent = alien;
 	if (loop != NULL && procnmEq(it->getProcName(), procnm)) {
@@ -729,7 +729,7 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 #endif
 
     // Add final 'guard' alien.
-    alien = demandAlienStrct(parent, filenm, procnm, line, false);
+    alien = demandAlienStrct(parent, filenm, procnm, procnm, line);
     pushCtxt(Ctxt(alien, NULL));
     use_ctxt = topCtxt();
   }
@@ -860,7 +860,7 @@ LocationMgr::alienateScopeTree(Prof::Struct::ACodeNode* scope,
   // create new alien context based on 'alien'
   Prof::Struct::ACodeNode* clone =
     demandAlienStrct(scope, alien->fileName(), alien->name(),
-		     alien->begLine(), /*tosOnCreate*/ false);
+		     alien->displayName(), alien->begLine());
   clone->setLineRange(alien->begLine(), alien->endLine(), 0 /*propagate*/);
   
   // move non-alien children of 'scope' into 'clone'
@@ -1013,8 +1013,8 @@ Prof::Struct::Alien*
 LocationMgr::demandAlienStrct(Prof::Struct::ACodeNode* parent_scope,
 			      const std::string& filenm,
 			      const std::string& procnm,
-			      SrcFile::ln line,
-			      bool tosOnCreate)
+			      const std::string& displaynm,
+			      SrcFile::ln line)
 {
   // INVARIANT: 'parent_scope' should either be the top of the stack
   // or the first first enclosing LOOP or PROC of the top of the
@@ -1039,9 +1039,8 @@ LocationMgr::demandAlienStrct(Prof::Struct::ACodeNode* parent_scope,
   }
   
   if (!alien) {
-    Prof::Struct::ACodeNode* p =
-      (tosOnCreate) ? topCtxtRef().scope() : parent_scope;
-    alien = new Prof::Struct::Alien(p, filenm, procnm, line, line);
+    alien = new Prof::Struct::Alien(parent_scope, filenm, procnm,
+				    displaynm, line, line);
     m_alienMap.insert(std::make_pair(key, alien));
   }
 

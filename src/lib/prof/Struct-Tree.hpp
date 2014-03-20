@@ -1513,18 +1513,20 @@ public:
   // Create/Destroy
   // --------------------------------------------------------
   Alien(ACodeNode* parent, const char* filenm, const char* procnm,
+	     const char* displaynm,
 	     SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyAlien, parent, begLn, endLn, 0, 0)
   {
-    Ctor(parent, filenm, procnm);
+    Ctor(parent, filenm, procnm, displaynm);
   }
 
   Alien(ACodeNode* parent,
 	     const std::string& filenm, const std::string& procnm,
+	     const std::string& displaynm,
 	     SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyAlien, parent, begLn, endLn, 0, 0)
   {
-    Ctor(parent, filenm.c_str(), procnm.c_str());
+    Ctor(parent, filenm.c_str(), procnm.c_str(), displaynm.c_str());
   }
 
   virtual ~Alien()
@@ -1559,6 +1561,10 @@ public:
   name(const std::string& n)
   { m_name = n; }
 
+  const std::string&
+  displayName() const
+  { return m_displaynm; }
+
   virtual std::string
   codeName() const;
 
@@ -1581,11 +1587,13 @@ public:
 
 private:
   void
-  Ctor(ACodeNode* parent, const char* filenm, const char* procnm);
+  Ctor(ACodeNode* parent, const char* filenm, const char* procnm,
+       const char* displaynm);
 
 private:
   std::string m_filenm;
   std::string m_name;
+  std::string m_displaynm;
 
   static RealPathMgr& s_realpathMgr;
 };

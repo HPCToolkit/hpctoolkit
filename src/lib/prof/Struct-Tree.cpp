@@ -460,7 +460,8 @@ Proc::demand(File* file, const string& name, const std::string& linkname,
 RealPathMgr& Alien::s_realpathMgr = RealPathMgr::singleton();
 
 void
-Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm)
+Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm,
+	    const char* displaynm)
 {
   ANodeTy t = (parent) ? parent->type() : TyANY;
   DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyAlien)
@@ -470,6 +471,7 @@ Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm)
   s_realpathMgr.realpath(m_filenm);
 
   m_name   = (nm) ? nm : "";
+  m_displaynm = (displaynm) ? displaynm : "";
 }
 
 
@@ -480,6 +482,7 @@ Alien::operator=(const Alien& x)
   if (&x != this) {
     m_filenm = x.m_filenm;
     m_name   = x.m_name;
+    m_displaynm = x.m_displaynm;
   }
   return *this;
 }
@@ -1480,7 +1483,7 @@ string
 Alien::toXML(uint oFlags) const
 {
   string self = ANode::toXML(oFlags)
-    + " f" + MakeAttrStr(m_filenm) + " n" + MakeAttrStr(m_name);
+    + " f" + MakeAttrStr(m_filenm) + " n" + MakeAttrStr(m_displaynm);
   self = self + " " + XMLLineRange(oFlags) + " " + XMLVMAIntervals(oFlags);
   return self;
 }

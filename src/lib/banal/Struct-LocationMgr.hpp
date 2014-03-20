@@ -646,8 +646,7 @@ private:
   Prof::Struct::Alien*
   demandAlienStrct(Prof::Struct::ACodeNode* parent_scope,
 		   const std::string& filenm, const std::string& procnm,
-		   SrcFile::ln line,
-		   bool tosOnCreate = true);
+		   const std::string& displaynm, SrcFile::ln line);
   
 private:
   MyStack     m_ctxtStack; // cf. topCtxt() [begin()/front() is the top]

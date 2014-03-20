@@ -373,7 +373,7 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
 
     Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(getCurrentScope());
 
-    Struct::ACodeNode* alien = new Struct::Alien(parent, fnm, nm, begLn, endLn);
+    Struct::ACodeNode* alien = new Struct::Alien(parent, fnm, nm, nm, begLn, endLn);
     DIAG_DevMsgIf(DBG, "PGMDocHandler: " << alien->toStringMe());
 
     curStrct = alien;
