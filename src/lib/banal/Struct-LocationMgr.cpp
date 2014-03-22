@@ -608,9 +608,10 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
     wantInline = true;
   }
 
-  // debug: full inline sequence
+  // debug: raw inline data from symtab
   if (mDBG) {
-    DIAG_DevMsgIf(1, "inline sequence at 0x" << std::hex << begVMA << std::dec);
+    DIAG_DevMsgIf(1, "raw inline data at 0x" << std::hex << begVMA << std::dec
+		  << ", alien: " << (use_ctxt ? "no" : "yes"));
     if (! wantInline) {
       DIAG_DevMsgIfCtd(1, "  not needed");
     }
@@ -631,24 +632,28 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 
   //
   // For loops (scopes), find the location of the loop in the inline
-  // sequence and save for later lookup.  If we don't find the loop
-  // from procnm, then use the last node in the sequence.  We need
-  // this for all loops, whether directly inlined or not.
+  // sequence and save for later lookup.  If procnm is not on the
+  // list, then the scope remains empty (front of list).  We need this
+  // for all loops, whether directly inlined or not.
   //
   if (loop != NULL && inlineAvail && !nodelist.empty()) {
-    Inline::InlineSeqn::iterator loop_it = nodelist.begin();
+    bool found_scope = false;
 
     for (it = nodelist.begin(); it != nodelist.end(); it++) {
-      loop_it = it;
       if (procnmEq(it->getProcName(), procnm)) {
+	DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
+			 << " file: '" << it->getFileName()
+			 << "'  line: " << it->getLineNum());
+	loop->setScopeLocation(it->getFileName(), it->getLineNum());
+	found_scope = true;
 	break;
       }
     }
-    DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
-		     << " file: '" << loop_it->getFileName()
-		     << "'  line: " << loop_it->getLineNum());
-    loop->setScopeLocation(loop_it->getFileName(), loop_it->getLineNum());
+    if (! found_scope) {
+      DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ") none");
+    }
   }
+  DIAG_DevMsgIfCtd(mDBG, "");
 #endif
 
   if (!use_ctxt) {
@@ -660,6 +665,8 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
     while (topCtxtRef().isAlien()) {
       m_ctxtStack.pop_front();
     }
+
+    DIAG_DevMsgIf(mDBG, "insert alien nodes");
 
     Prof::Struct::Alien *alien;
     Prof::Struct::ACodeNode *parent = proposed_scope;
@@ -687,13 +694,6 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 	      && it->getLineNum() == scope_lineno)
 	  {
 	    start_it = ++it;
-	    if (start_it != nodelist.end()) {
-	      DIAG_DevMsgIfCtd(mDBG, "  start node file: '"
-			       << start_it->getFileName()
-			       << "'  line: " << start_it->getLineNum());
-	    } else {
-	      DIAG_DevMsgIfCtd(mDBG, "  start node: end of list");
-	    }
 	    break;
 	  }
 	}
@@ -715,28 +715,30 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 				 it->getProcName(), it->getLineNum());
 	pushCtxt(Ctxt(alien, NULL));
 	parent = alien;
+
+	DIAG_DevMsgIfCtd(mDBG, "  node=" << alien->id()
+			 << "  file: '" << alien->fileName()
+			 << "'  line: " << alien->begLine()
+			 << "  name: '" << alien->displayName() << "'");
+
 	if (loop != NULL && procnmEq(it->getProcName(), procnm)) {
-	  DIAG_DevMsgIfCtd(mDBG, "  end node file: '" << it->getFileName()
-			   << "'  line: " << it->getLineNum());
 	  break;
 	}
       }
     }
-
-    DIAG_DevMsgIfCtd(mDBG, "  final alien file: '" << filenm
-		     << "'  line: " << line
-		     << "  proc: '" << procnm << "'");
 #endif
 
     // Add final 'guard' alien.
     alien = demandAlienStrct(parent, filenm, procnm, procnm, line);
     pushCtxt(Ctxt(alien, NULL));
     use_ctxt = topCtxt();
-  }
 
-#ifdef BANAL_USE_SYMTAB
-  DIAG_DevMsgIfCtd(mDBG, "");
-#endif
+    DIAG_DevMsgIfCtd(mDBG, "  guard node=" << alien->id()
+		     << "  file: '" << alien->fileName()
+		     << "'  line: " << alien->begLine()
+		     << "  name: '" << alien->displayName() << "'");
+    DIAG_DevMsgIfCtd(mDBG, "");
+  }
 
   DIAG_DevMsgIf(mDBG, "final ctxt [" << toString(change) << "]\n"
 		<< use_ctxt->toString(0, "  "));
