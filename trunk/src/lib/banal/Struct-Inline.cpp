@@ -83,6 +83,7 @@
 #include <list>
 #include <vector>
 #include <lib/support/diagnostics.h>
+#include <lib/support/realpath.h>
 #include "Struct-Inline.hpp"
 
 #include <Symtab.h>
@@ -225,13 +226,15 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
     {
       parent = func->getInlinedParent();
       while (parent != NULL) {
+	//
 	// func is inlined iff it has a parent
+	//
 	InlinedFunction *ifunc = static_cast <InlinedFunction *> (func);
 	pair <string, Offset> callsite = ifunc->getCallsite();
 	vector <string> name_vec = func->getAllPrettyNames();
 
 	string procnm = (! name_vec.empty()) ? name_vec[0] : UNKNOWN_PROC;
-	string filenm = callsite.first;
+	string filenm = RealPath(callsite.first.c_str());
 	long lineno = callsite.second;
 	nodelist.push_front(InlineNode(filenm, procnm, lineno));
 
