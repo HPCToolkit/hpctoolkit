@@ -57,8 +57,6 @@
 static sample_source_t* registered_sample_sources         = NULL;
 static sample_source_t** registered_sample_sources_insert = &registered_sample_sources;
 
-static int nregs = 0;
-
 void
 hpcrun_ss_register(sample_source_t* src)
 {

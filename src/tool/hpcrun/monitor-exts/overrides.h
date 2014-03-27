@@ -105,8 +105,8 @@
 #define DL_FN(n) PPCAT(real_, n)
 #define DL_DCL(n) static REAL_TYPE(n) DL_FN(n)
 #define DL_TYPEDEF(rt, n) typedef rt (*REAL_TYPE(n))
-#define DL_INIT(n) if (! DL_FN(n) ){DL_FN(n) = lookup(PPSTR(n));}
-#define DLV_INIT(n) if (! DL_FN(n) ){DL_FN(n) = lookupv(PPSTR(n));}
+#define DL_INIT(n) if (! DL_FN(n) ){DL_FN(n) = override_lookup(PPSTR(n));}
+#define DLV_INIT(n) if (! DL_FN(n) ){DL_FN(n) = override_lookupv(PPSTR(n));}
 #define OVERRIDE_NM(n) n
 #endif // STATIC_LINK
 
@@ -125,5 +125,8 @@
 #define REAL_TYPEDEF(rt, n) PPCAT(PPCAT(n, _REAL), _TYPEDEF)(rt, n)
 #define REAL_DCL(n) PPCAT(PPCAT(n, _REAL), _DCL)(n)
 #define REAL_INIT(n) PPCAT(PPCAT(n, _REAL), _INIT)(n)
+
+extern void* override_lookup(char* fname);
+extern void* override_lookupv(char* fname);
 
 #endif // OVERRIDES_H

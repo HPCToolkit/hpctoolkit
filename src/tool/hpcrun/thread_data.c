@@ -280,7 +280,7 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
   // initialize ss_state,info
 
   memset(td->ss_state, UNINIT, n_sources * sizeof(source_state_t));
-  memset(td->ss_info, NULL, n_sources * sizeof(source_info_t));
+  memset(td->ss_info, 0, n_sources * sizeof(source_info_t));
 
   td->timer_init = false;
   td->last_time_us = 0;

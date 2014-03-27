@@ -220,7 +220,7 @@ process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t* node, in
   uint64_t obj_to_blame = get_blame_target();
   if(obj_to_blame) {
     TMSG(LOCKWAIT, "about to add %d to blame object %d", metric_incr, obj_to_blame);
-    add_blame(obj_to_blame, metric_incr);
+    add_blame(obj_to_blame, metric_value);
     // update appropriate wait metric as well
     int wait_metric = (pthread_blame.state == Blocked) ? blockwait_metric_id : spinwait_metric_id;
     TMSG(LOCKWAIT, "about to add %d to %s-waiting in node %d",

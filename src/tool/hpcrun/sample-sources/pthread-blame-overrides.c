@@ -44,40 +44,6 @@
 //
 
 //
-// (dlsym-based) lookup utility for lazy initialization
-//
-
-static
-void*
-lookup(char* fname)
-{
-  dlerror(); // clear dlerror
-  void* rv = dlsym(RTLD_NEXT, fname);
-  char* e = dlerror();
-  if (e) {
-    hpcrun_abort("dlsym(RTLD_NEXT, %s) failed: %s", fname, e);
-  }
-  return rv;
-}
-
-//
-// (dlsym-based) lookup utility for lazy initialization
-//
-
-static
-void*
-lookupv(char* fname)
-{
-  dlerror(); // clear dlerror
-  void* rv = dlvsym(RTLD_NEXT, fname, "GLIBC_2.3.2");
-  char* e = dlerror();
-  if (e) {
-    hpcrun_abort("dlsym(RTLD_NEXT, %s) failed: %s", fname, e);
-  }
-  return rv;
-}
-
-//
 // Define strategies for overrides
 //
 
@@ -235,8 +201,8 @@ OVERRIDE_NM(pthread_spin_lock)(pthread_spinlock_t* lock)
   }
 
   TMSG(LOCKWAIT, "pthread SPIN LOCK override");
-  pthread_directed_blame_shift_spin_start(lock);
-  int retval = REAL_FN(pthread_spin_lock)(lock);
+  pthread_directed_blame_shift_spin_start((void*) lock);
+  int retval = REAL_FN(pthread_spin_lock)((void*) lock);
   pthread_directed_blame_shift_end();
 
   return retval;
@@ -253,7 +219,39 @@ OVERRIDE_NM(pthread_spin_unlock)(pthread_spinlock_t* lock)
   }
 
   TMSG(LOCKWAIT, "pthread SPIN UNLOCK");
-  int retval = REAL_FN(pthread_spin_unlock)(lock);
-  pthread_directed_blame_accept(lock);
+  int retval = REAL_FN(pthread_spin_unlock)((void*) lock);
+  pthread_directed_blame_accept((void*) lock);
   return retval;
+}
+
+//
+// (dlsym-based) lookup utility for lazy initialization
+//
+
+void*
+override_lookup(char* fname)
+{
+  dlerror(); // clear dlerror
+  void* rv = dlsym(RTLD_NEXT, fname);
+  char* e = dlerror();
+  if (e) {
+    hpcrun_abort("dlsym(RTLD_NEXT, %s) failed: %s", fname, e);
+  }
+  return rv;
+}
+
+//
+// (dlvsym-based) lookup utility for lazy initialization
+//
+
+void*
+override_lookupv(char* fname)
+{
+  dlerror(); // clear dlerror
+  void* rv = dlvsym(RTLD_NEXT, fname, "GLIBC_2.3.2");
+  char* e = dlerror();
+  if (e) {
+    hpcrun_abort("dlsym(RTLD_NEXT, %s) failed: %s", fname, e);
+  }
+  return rv;
 }
