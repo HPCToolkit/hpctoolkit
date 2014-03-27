@@ -65,8 +65,6 @@
 #define ss_str  _st1(ss_name) 
 #define reg_fn_name _make_id((,ss_name,_obj_reg))
 
-static void local_set_idx(int idx);
-
 sample_source_t obj_name() = {
   // common methods
 

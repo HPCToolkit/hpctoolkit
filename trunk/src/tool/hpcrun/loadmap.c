@@ -259,11 +259,11 @@ hpcrun_loadmap_findByAddr(void* begin, void* end)
     TMSG(LOADMAP, "\tload module %s", x->name);
     if (x->dso_info) {
       TMSG(LOADMAP, "\t\t [%lx, %lx) table [%lx, %lx)", 
-	   x->dso_info->start_addr,
-	   x->dso_info->end_addr,
-	   (x->dso_info->table ? (x->dso_info->table[0] + 
+	   (uintptr_t) x->dso_info->start_addr,
+	   (uintptr_t) x->dso_info->end_addr,
+	   ((uintptr_t) x->dso_info->table ? ((uintptr_t) x->dso_info->table[0] + 
 				  x->dso_info->start_to_ref_dist) : -1),
-	   (x->dso_info->table ? (x->dso_info->table[x->dso_info->nsymbols -1] +
+	   ((uintptr_t) x->dso_info->table ? ((uintptr_t) x->dso_info->table[x->dso_info->nsymbols -1] +
 				  x->dso_info->start_to_ref_dist) : -1)
 	   );
       if (x->dso_info->start_addr <= begin && end <= x->dso_info->end_addr) {
