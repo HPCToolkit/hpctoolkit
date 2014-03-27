@@ -1,0 +1,126 @@
+% $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/doc/manual/hpcviewer-users-manual.tex $
+% $Id: hpcviewer-users-manual.tex 3260 2010-12-01 05:55:26Z tallent $
+
+% ***************************************************************************
+%
+% ***************************************************************************
+
+\documentclass[11pt,letterpaper]{article}
+
+
+% ***************************************************************************
+% Standard packages
+% ***************************************************************************
+
+\usepackage{fixltx2e}
+%\usepackage{fixpdftex}
+
+% ==========================================================
+% formatting, graphics, tables, figures, etc.
+% ==========================================================
+
+\usepackage[toc]{appendix}
+
+%\usepackage{geometry}
+
+\usepackage{comment}
+
+\usepackage{fullpage}
+\usepackage{indentfirst}
+\usepackage[bf,normalsize]{caption}
+
+\usepackage{setspace} % setspace (better than doublespace)
+
+\usepackage{cite}
+
+\usepackage{verbatim,moreverb,fancyvrb}
+
+\usepackage{listings}
+\lstset{%
+  %basicstyle=\small, % print whole listing small 
+  %keywordstyle=\color{black}\bfseries\underbar, 
+  language=C++,
+  columns=fullflexible,
+  numbers=left, numberstyle=\scriptsize, stepnumber=1, numbersep=5pt, %\tiny
+  escapeinside={(@}{@)}
+}
+
+% Generally load hyperref last, unless otherwise specified
+\usepackage[breaklinks=true]{hyperref} %bookmarksopen,bookmarksnumbered
+%\hypersetup{
+%  colorlinks=false,%
+%  pdfborder = 0 0 0
+%}
+
+% Cf. http://www.nersc.no/~knutal/latex_tips.html
+%   To use epstopdf: pdflatex --shell-escape <*.tex>
+\usepackage{ifpdf}
+\ifpdf
+  \usepackage[pdftex]{graphicx}
+  \usepackage{epstopdf}
+  \usepackage{pdfpages}
+\else
+  \usepackage[dvips]{graphicx}
+  \usepackage{breakurl} % fix hyperref
+\fi
+
+% ==========================================================
+% symbols, etc.
+% ==========================================================
+
+\usepackage{latexsym}
+\usepackage{textcomp}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+
+% ***************************************************************************
+% Customizations
+% ***************************************************************************
+
+\input{myconfig}
+
+
+% ***************************************************************************
+% Document
+% ***************************************************************************
+
+\begin{document}
+
+% ***************************************************************************
+% ***************************************************************************
+
+\title{\hpctraceviewer{}'s Users Manual}
+%\subtitle{}
+
+%\author{
+%John Mellor-Crummey\\
+%Laksono Adhianto,
+%Nathan Tallent\\
+%\\
+%Rice University\\
+%\\
+%%($Revision: 3260 $)
+%}
+
+\date{}
+
+\maketitle
+
+% ***************************************************************************
+% ***************************************************************************
+
+\input{hpctraceviewer}
+
+
+% ***************************************************************************
+% ***************************************************************************
+
+\bibliographystyle{abbrv}
+%\bibliographystyle{acm}
+\bibliography{texmf/bibtex/bib/refs,texmf/bibtex/bib/pubs}
+
+%\thispagestyle{plain}
+
+
+\end{document}
