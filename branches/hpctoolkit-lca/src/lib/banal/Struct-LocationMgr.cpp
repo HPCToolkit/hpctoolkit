@@ -206,9 +206,13 @@ LocationMgr::locate(Prof::Struct::Loop* loop,
 		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line << "\n");
 
   VMAIntervalSet& vmaset = loop->vmaSet();
-  VMA begVMA = (! vmaset.empty()) ? vmaset.begin()->beg() : 0;
+  VMA loopVMA = (! vmaset.empty()) ? vmaset.begin()->beg() : 0;
 
-  determineContext(proposed_scope, filenm, procnm, line, begVMA, loop);
+#if 0 // LCA_INLINE
+  determineContext(proposed_scope, filenm, procnm, line, loopVMA, NULL);
+#else
+  determineContext(proposed_scope, filenm, procnm, line, loopVMA, loop);
+#endif
   Ctxt& encl_ctxt = topCtxtRef();
   loop->linkAndSetLineRange(encl_ctxt.scope());
 }
@@ -733,11 +737,9 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
     // Add final 'guard' alien.
     alien = demandAlienStrct(parent, filenm, procnm, procnm, line);
 
-#ifdef BANAL_USE_SYMTAB
     if (non_empty_prefix) {
       alien->setInvisible();
     }
-#endif
 
     pushCtxt(Ctxt(alien, NULL));
 

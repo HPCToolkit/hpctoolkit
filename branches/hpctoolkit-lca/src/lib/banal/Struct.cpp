@@ -157,7 +157,7 @@ buildStmts(Struct::LocationMgr& locMgr,
 static void
 findLoopBegLineInfo(/*Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
 		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
-		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn);
+		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn, VMA &loop_vma);
 
 #if 0
 static Struct::Stmt*
@@ -813,7 +813,7 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
   Prof::Struct::ACodeNode* childScope = enclosingStrct;
 
   OA::NestedSCR::Node_t ity = tarj->getNodeType(fgNode);
-#if 0
+#if 1
   if (ity == OA::NestedSCR::NODE_ACYCLIC
       || ity == OA::NestedSCR::NODE_NOTHING) {
     // -----------------------------------------------------
@@ -828,13 +828,14 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
     //Struct::ACodeNode* procCtxt = enclosingStrct->ancestorProcCtxt();
     string fnm, pnm;
     SrcFile::ln line;
-    findLoopBegLineInfo(/*procCtxt,*/ p, bb, fnm, pnm, line);
+    VMA loop_vma;
+    findLoopBegLineInfo(/*procCtxt,*/ p, bb, fnm, pnm, line, loop_vma);
     pnm = BinUtil::canonicalizeProcName(pnm, procNmMgr);
     
     Prof::Struct::Loop* loop = new Prof::Struct::Loop(NULL, line, line);
-    loop->vmaSet().insert(begVMA, begVMA + 1); // a loop id
+    loop->vmaSet().insert(loop_vma, loop_vma + 1); // a loop id
     locMgr.locate(loop, enclosingStrct, fnm, pnm, line);
-    childScope = loop;
+    // childScope = loop;
   }
   else if (!isIrrIvalLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
     // -----------------------------------------------------
@@ -1002,7 +1003,7 @@ buildProcLoopNests(Prof::Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
 static void
 findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
 		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
-		    string& begFileNm, string& begProcNm, SrcFile::ln& begLn)
+		    string& begFileNm, string& begProcNm, SrcFile::ln& begLn, VMA &loop_vma)
 {
   using namespace OA::CFG;
 
@@ -1044,6 +1045,7 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
 	begLn = line;
 	begFileNm = filenm;
 	begProcNm = procnm;
+	loop_vma = vma;
       }
     }
   }
@@ -1054,6 +1056,7 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
   if (!SrcFile::isValid(begLn)) {
     // Fall through: consult the first instruction in the loop
     p->findSrcCodeInfo(headVMA, headOpIdx, begProcNm, begFileNm, begLn);
+    loop_vma = headVMA;
   }
 
 #if 0
