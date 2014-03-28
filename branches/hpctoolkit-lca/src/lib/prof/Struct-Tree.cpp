@@ -236,6 +236,7 @@ void
 Root::Ctor(const char* nm)
 {
   DIAG_Assert(nm, "");
+  setInvisible();
   m_name = nm;
   groupMap = new GroupMap();
   lmMap_realpath = new LMMap();
@@ -1059,6 +1060,9 @@ File::findProc(const char* name, const char* linkname) const
 void
 ACodeNode::setLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 {
+  // never expand an alien line range
+  if (type() == ANode::TyAlien && begLn != endLn) return; 
+
   checkLineRange(begLn, endLn);
   
   m_begLn = begLn;
@@ -1076,10 +1080,11 @@ ACodeNode::setLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
   }
 }
 
-
 void
 ACodeNode::expandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 {
+  if (type() == ANode::TyAlien) return; // never expand an alien line range
+
   checkLineRange(begLn, endLn);
 
   if (begLn == ln_NULL) {
@@ -1517,7 +1522,7 @@ Ref::toXML(uint oFlags) const
 bool
 ANode::writeXML_pre(ostream& os, uint oFlags, const char* pfx) const
 {
-  bool doTag = (type() != TyRoot);
+  bool doTag = isVisible();
   bool doMetrics = ((oFlags & Tree::OFlg_LeafMetricsOnly) ?
 		    isLeaf() && hasMetrics() : hasMetrics());
   bool isXMLLeaf = isLeaf() && !doMetrics;
@@ -1546,7 +1551,7 @@ void
 ANode::writeXML_post(ostream& os, uint GCC_ATTR_UNUSED oFlags,
 		     const char* pfx) const
 {
-  bool doTag = (type() != TyRoot);
+  bool doTag = isVisible();
 
   if (doTag) {
     os << pfx << "</" << ANodeTyToXMLelement(type()) << ">" << endl;
@@ -1557,7 +1562,9 @@ ANode::writeXML_post(ostream& os, uint GCC_ATTR_UNUSED oFlags,
 ostream&
 ANode::writeXML(ostream& os, uint oFlags, const char* pfx) const
 {
-  string indent = "  ";
+  // indent childen of visible nodes
+  string indent = isVisible() ? "  " : ""; 
+
   if (oFlags & Tree::OFlg_Compressed) {
     pfx = "";
     indent = "";

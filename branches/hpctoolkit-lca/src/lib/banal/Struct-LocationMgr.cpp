@@ -670,6 +670,7 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 
     Prof::Struct::Alien *alien;
     Prof::Struct::ACodeNode *parent = proposed_scope;
+    bool non_empty_prefix = false;
 
 #ifdef BANAL_USE_SYMTAB
     //
@@ -715,6 +716,7 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 				 it->getProcName(), it->getLineNum());
 	pushCtxt(Ctxt(alien, NULL));
 	parent = alien;
+	non_empty_prefix = true;
 
 	DIAG_DevMsgIfCtd(mDBG, "  node=" << alien->id()
 			 << "  file: '" << alien->fileName()
@@ -730,14 +732,22 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 
     // Add final 'guard' alien.
     alien = demandAlienStrct(parent, filenm, procnm, procnm, line);
+
+#ifdef BANAL_USE_SYMTAB
+    if (non_empty_prefix) {
+      alien->setInvisible();
+    }
+#endif
+
     pushCtxt(Ctxt(alien, NULL));
-    use_ctxt = topCtxt();
 
     DIAG_DevMsgIfCtd(mDBG, "  guard node=" << alien->id()
 		     << "  file: '" << alien->fileName()
 		     << "'  line: " << alien->begLine()
 		     << "  name: '" << alien->displayName() << "'");
     DIAG_DevMsgIfCtd(mDBG, "");
+
+    use_ctxt = topCtxt();
   }
 
   DIAG_DevMsgIf(mDBG, "final ctxt [" << toString(change) << "]\n"

@@ -813,6 +813,7 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
   Prof::Struct::ACodeNode* childScope = enclosingStrct;
 
   OA::NestedSCR::Node_t ity = tarj->getNodeType(fgNode);
+#if 0
   if (ity == OA::NestedSCR::NODE_ACYCLIC
       || ity == OA::NestedSCR::NODE_NOTHING) {
     // -----------------------------------------------------
@@ -843,6 +844,7 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
   else {
     DIAG_Die("Should never reach!");
   }
+#endif
 
   // -----------------------------------------------------
   // Process instructions within BB

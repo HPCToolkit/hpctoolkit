@@ -283,7 +283,8 @@ public:
   ANode(ANodeTy ty, ANode* parent = NULL)
     : NonUniformDegreeTreeNode(parent),
       Metric::IData(),
-      m_type(ty)
+      m_type(ty),
+      m_visible(true)
   {
     m_id = s_nextUniqueId++;
   }
@@ -313,6 +314,7 @@ protected:
       Metric::IData::operator=(x);
       m_type    = x.m_type;
       m_id      = x.m_id;
+      m_visible = x.m_visible;
     }
     return *this;
   }
@@ -349,6 +351,13 @@ public:
   nameQual() const
   { return name(); }
 
+  void 
+  setInvisible() 
+  { m_visible = false; }
+
+  bool 
+  isVisible() const
+  { return m_visible == true; }
 
   // --------------------------------------------------------
   // Tree navigation
@@ -583,6 +592,7 @@ private:
 protected:
   ANodeTy m_type; // obsolete with typeid(), but hard to replace
   uint m_id;
+  bool m_visible;
 };
 
 
