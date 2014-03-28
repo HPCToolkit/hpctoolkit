@@ -151,7 +151,8 @@ buildProcLoopNests(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
 static int
 buildStmts(Struct::LocationMgr& locMgr,
 	   Prof::Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
-	   OA::OA_ptr<OA::CFG::NodeInterface> bb, ProcNameMgr* procNmMgr);
+	   OA::OA_ptr<OA::CFG::NodeInterface> bb, ProcNameMgr* procNmMgr,
+	   std::list<Prof::Struct::ACodeNode *> &insertions);
 
 
 static void
@@ -807,6 +808,7 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
     rifg->getNode(fgNode).convert<OA::CFG::NodeInterface>();
   BinUtil::Insn* insn = BAnal::OA_CFG_getBegInsn(bb);
   VMA begVMA = (insn) ? insn->opVMA() : 0;
+  Prof::Struct::Loop* childLoop = NULL;
   
   DIAG_DevMsg(10, "buildLoopAndStmts: " << bb << " [id: " << bb->getId() << "] " << hex << begVMA << " --> " << enclosingStrct << dec << " " << enclosingStrct->toString_id());
 
@@ -835,7 +837,7 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
     Prof::Struct::Loop* loop = new Prof::Struct::Loop(NULL, line, line);
     loop->vmaSet().insert(loop_vma, loop_vma + 1); // a loop id
     locMgr.locate(loop, enclosingStrct, fnm, pnm, line);
-    // childScope = loop;
+    childLoop = loop;
   }
   else if (!isIrrIvalLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
     // -----------------------------------------------------
@@ -847,10 +849,65 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
   }
 #endif
 
+  std::list<Prof::Struct::ACodeNode *> kids;
   // -----------------------------------------------------
   // Process instructions within BB
   // -----------------------------------------------------
-  buildStmts(locMgr, childScope, p, bb, procNmMgr);
+  buildStmts(locMgr, childScope, p, bb, procNmMgr, kids);
+  
+  if (childLoop) { // relocate kids
+#ifdef DEBUG_RELINK
+    static int loopsMoved = 0;
+#endif
+
+    Prof::Struct::ANode *loopParent = childLoop->parent();
+#ifdef DEBUG_RELINK
+    std::cerr << "moving loop " << ++loopsMoved << std::endl;
+#endif
+    for(std::list<Prof::Struct::ACodeNode *>::iterator i = kids.begin(); i != kids.end(); ++i) {
+      Prof::Struct::ANode *kid = *i;
+      Prof::Struct::ANode *node = kid;
+      bool relink = true;
+      string indent = " ";
+#ifdef DEBUG_RELINK
+      int tripcount = 0;
+#endif
+      for(;;) {
+	if (node == 0) {
+	  // kid must be an ancestor of loop that needs to be teleported into the loop. move kid directly.
+	  node = kid; 
+	  relink = true;
+	  break;
+	}
+	if (node->parent() == childLoop) {
+	  // kid is in a subtree of node, which is already in the loop. no further action needed.
+	  relink = false;
+	  break;
+	}
+	if (node->parent() == loopParent) {
+	  // kid is in a subtree of node, which is currently a sibling of the loop. move node into the loop.
+	  relink = true;
+	  break;
+	}
+	node = node->parent();
+#ifdef DEBUG_RELINK
+	if (node) {
+	  std::cerr << indent << "node=" << std::hex << node << 
+	    " (" << std::dec << node->id() << ")" << std::endl;
+	  indent += " ";
+	  if (++tripcount % 10 == 0) {
+	    tripcount = 0;
+	  }
+	}
+#endif
+      }
+      if (relink) {
+	node->unlink();
+	node->link(childLoop);
+      }
+    }
+    // childScope = childLoop;
+  }
 
   return childScope;
 }
@@ -862,7 +919,8 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
 static int
 buildStmts(Struct::LocationMgr& locMgr,
 	   Prof::Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
-	   OA::OA_ptr<OA::CFG::NodeInterface> bb, ProcNameMgr* procNmMgr)
+	   OA::OA_ptr<OA::CFG::NodeInterface> bb, ProcNameMgr* procNmMgr, 
+	   std::list<Prof::Struct::ACodeNode *> &insertions)
 {
   static int call_sortId = 0;
 
@@ -905,6 +963,7 @@ buildStmts(Struct::LocationMgr& locMgr,
     if (idesc.isSubr()) {
       stmt->sortId(--call_sortId);
     }
+    insertions.push_back(stmt);
     locMgr.locate(stmt, enclosingStrct, filenm, procnm, line);
   }
   return 0;
