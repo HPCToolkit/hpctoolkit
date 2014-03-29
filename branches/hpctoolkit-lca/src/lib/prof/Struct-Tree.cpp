@@ -1084,6 +1084,7 @@ void
 ACodeNode::expandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 {
   if (type() == ANode::TyAlien) return; // never expand an alien line range
+  if (type() == ANode::TyLoop) return;  // never expand a loop range
 
   checkLineRange(begLn, endLn);
 
