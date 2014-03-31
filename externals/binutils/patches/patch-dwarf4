@@ -1,0 +1,42 @@
+Skip over dwarf version 4 compilation units.  Binutils 2.20 doesn't
+understand version 4, but we know enough to skip over this unit and
+stay in sync.  This means that one version 4 unit won't kill the rest
+of the file as before.
+
+
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/dwarf2.c version-binutils-2.20.1/binutils-2.20.1/bfd/dwarf2.c
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/dwarf2.c	2014-03-31 17:19:44.517206767 -0500
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/dwarf2.c	2014-03-31 17:43:04.598257220 -0500
+@@ -2575,6 +2575,15 @@
+   addr_size = read_1_byte (abfd, info_ptr);
+   info_ptr += 1;
+ 
++  /* Skip over a dwarf version 4 compilation unit.  Binutils 2.20
++   * doesn't understand version 4, but we know enough to skip over
++   * this unit and stay in sync.  This means that one version 4 unit
++   * won't kill the rest of the file as before.
++   */
++  if (version == 4) {
++      return (struct comp_unit *) 1;
++  }
++
+   if (version != 2 && version != 3)
+     {
+       (*_bfd_error_handler) (_("Dwarf Error: found dwarf version '%u', this reader only handles version 2 and 3 information."), version);
+@@ -3653,6 +3662,16 @@
+         {
+           each = parse_comp_unit (stash, length, info_ptr_unit,
+                                   offset_size);
++
++	  /* Special return value '1' means a dwarf version 4 unit
++	   * that we want to skip over but continue to use later
++	   * units.
++	   */
++	  if (each == (struct comp_unit *) 1) {
++	    stash->info_ptr += length;
++	    continue;
++	  }
++
+           if (!each)
+             /* The dwarf information is damaged, don't trust it any
+                more.  */
