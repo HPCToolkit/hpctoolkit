@@ -128,7 +128,7 @@ static void event_fatal_error(int ev_code, int papi_ret);
  * local variables
  *****************************************************************************/
 
-static int cyc_metric_id = -1; /* initialized to an illegal metric id */
+// static int cyc_metric_id = -1; /* initialized to an illegal metric id */
 
 // Special case to make PAPI_library_init() a soft failure.
 // Make sure that we call no other PAPI functions.
