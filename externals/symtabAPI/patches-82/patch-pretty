@@ -1,0 +1,18 @@
+Fix a bug with name demangling.  If a name is tagged as mangled but
+it's actually not, then use the original name.  This fixes a bug with
+Intel icc where we were getting empty string for inlined function
+names.
+
+
+diff -Naurb dyninst.orig/symtabAPI/src/Aggregate.C dyninst/symtabAPI/src/Aggregate.C
+--- dyninst.orig/symtabAPI/src/Aggregate.C	2014-03-12 18:20:10.000000000 -0500
++++ dyninst/symtabAPI/src/Aggregate.C	2014-04-04 13:31:50.508319520 -0500
+@@ -227,7 +227,7 @@
+        }
+        else {
+           //If mangling failed, then assume mangled name is already pretty
+-          prettyNames_.push_back(pretty);
++          prettyNames_.push_back(name);
+        }
+     }
+     return true;
