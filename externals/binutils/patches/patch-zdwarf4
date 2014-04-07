@@ -1,0 +1,137 @@
+Partially merge dwarf2.c from binutils 2.24 to parse dwarf 4 sections.
+
+
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/dwarf2.c version-binutils-2.20.1/binutils-2.20.1/bfd/dwarf2.c
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/dwarf2.c	2014-04-02 16:15:49.138603351 -0500
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/dwarf2.c	2014-04-06 23:33:14.068534540 -0500
+@@ -1144,7 +1144,7 @@
+     case DW_FORM_ref_addr:
+       /* DW_FORM_ref_addr is an address in DWARF2, and an offset in
+          DWARF3.  */
+-      if (unit->version == 3)
++      if (unit->version == 3 || unit->version == 4)
+         {
+           if (unit->offset_size == 4)
+             attr->u.val = read_4_bytes (unit->abfd, info_ptr);
+@@ -1158,6 +1158,14 @@
+       attr->u.val = read_address (unit, info_ptr);
+       info_ptr += unit->addr_size;
+       break;
++    case DW_FORM_GNU_ref_alt:
++    case DW_FORM_sec_offset:
++      if (unit->offset_size == 4)
++	attr->u.val = read_4_bytes (unit->abfd, info_ptr);
++      else
++	attr->u.val = read_8_bytes (unit->abfd, info_ptr);
++      info_ptr += unit->offset_size;
++      break;
+     case DW_FORM_block2:
+       amt = sizeof (struct dwarf_block);
+       blk = (struct dwarf_block *) bfd_alloc (abfd, amt);
+@@ -1196,6 +1204,7 @@
+       attr->u.str = read_indirect_string (unit, info_ptr, &bytes_read);
+       info_ptr += bytes_read;
+       break;
++    case DW_FORM_exprloc:
+     case DW_FORM_block:
+       amt = sizeof (struct dwarf_block);
+       blk = (struct dwarf_block *) bfd_alloc (abfd, amt);
+@@ -1222,6 +1231,9 @@
+       attr->u.val = read_1_byte (abfd, info_ptr);
+       info_ptr += 1;
+       break;
++    case DW_FORM_flag_present:
++      attr->u.val = 1;
++      break;
+     case DW_FORM_sdata:
+       attr->u.sval = read_signed_leb128 (abfd, info_ptr, &bytes_read);
+       info_ptr += bytes_read;
+@@ -1246,6 +1258,10 @@
+       attr->u.val = read_8_bytes (abfd, info_ptr);
+       info_ptr += 8;
+       break;
++    case DW_FORM_sig8:
++      attr->u.val = read_8_bytes (abfd, info_ptr);
++      info_ptr += 8;
++      break;
+     case DW_FORM_ref_udata:
+       attr->u.val = read_unsigned_leb128 (abfd, info_ptr, &bytes_read);
+       info_ptr += bytes_read;
+@@ -2563,6 +2579,7 @@
+   bfd_vma low_pc = 0;
+   bfd_vma high_pc = 0;
+   bfd *abfd = stash->bfd_ptr;
++  bfd_boolean high_pc_relative = FALSE;
+ 
+   version = read_2_bytes (abfd, info_ptr);
+   info_ptr += 2;
+@@ -2575,9 +2592,11 @@
+   addr_size = read_1_byte (abfd, info_ptr);
+   info_ptr += 1;
+ 
+-  if (version != 2 && version != 3)
++  if (version != 2 && version != 3 && version != 4)
+     {
+-      (*_bfd_error_handler) (_("Dwarf Error: found dwarf version '%u', this reader only handles version 2 and 3 information."), version);
++      (*_bfd_error_handler)
++	(_("Dwarf Error: found dwarf version '%u', this reader"
++	   " only handles version 2, 3 and 4 information."), version);
+       bfd_set_error (bfd_error_bad_value);
+       return 0;
+     }
+@@ -2656,11 +2675,13 @@
+           /* If the compilation unit DIE has a DW_AT_low_pc attribute,
+              this is the base address to use when reading location
+              lists or range lists. */
++	  if (abbrev->tag == DW_TAG_compile_unit)
+           unit->base_address = low_pc;
+           break;
+ 
+         case DW_AT_high_pc:
+           high_pc = attr.u.val;
++	  high_pc_relative = attr.form != DW_FORM_addr;
+           break;
+ 
+         case DW_AT_ranges:
+@@ -2688,6 +2709,8 @@
+           break;
+         }
+     }
++  if (high_pc_relative)
++    high_pc += low_pc;
+   if (high_pc != 0)
+     {
+       add_arange_to_comp_unit(unit, low_pc, high_pc);
+@@ -3653,12 +3676,13 @@
+         {
+           each = parse_comp_unit (stash, length, info_ptr_unit,
+                                   offset_size);
+-          if (!each)
+-            /* The dwarf information is damaged, don't trust it any
+-               more.  */
+-            break;
+           stash->info_ptr += length;
+ 
++          if (!each) {
++	    /* Skip this comp unit and go to the next. */
++	    continue;
++	  }
++
+           if (stash->all_comp_units)
+             stash->all_comp_units->prev_unit = each;
+           else
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/include/dwarf2.h version-binutils-2.20.1/binutils-2.20.1/include/dwarf2.h
+--- version-binutils-2.20.1.orig/binutils-2.20.1/include/dwarf2.h	2010-11-08 01:30:49.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/include/dwarf2.h	2014-04-06 23:33:14.066534605 -0500
+@@ -254,7 +254,10 @@
+     DW_FORM_sec_offset = 0x17,
+     DW_FORM_exprloc = 0x18,
+     DW_FORM_flag_present = 0x19,
+-    DW_FORM_sig8 = 0x20
++    DW_FORM_sig8 = 0x20,
++    /* GNU extensions. */
++    DW_FORM_GNU_ref_alt = 0x1f20,
++    DW_FORM_GNU_strp_alt = 0x1f21
+   };
+ 
+ /* Attribute names and codes.  */
