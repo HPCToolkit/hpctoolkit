@@ -632,25 +632,43 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 
   //
   // For loops (scopes), find the location of the loop in the inline
-  // sequence and save for later lookup.  If procnm is not on the
-  // list, then the scope remains empty (front of list).  We need this
-  // for all loops, whether directly inlined or not.
+  // sequence and save for later lookup.  We need this for all loops,
+  // whether directly inlined or not.
   //
-  if (loop != NULL && inlineAvail && !nodelist.empty()) {
+  if (loop != NULL) {
     bool found_scope = false;
 
-    for (it = nodelist.begin(); it != nodelist.end(); it++) {
-      if (procnmEq(it->getProcName(), procnm)) {
-	DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
-			 << " file: '" << it->getFileName()
-			 << "'  line: " << it->getLineNum());
-	loop->setScopeLocation(it->getFileName(), it->getLineNum());
-	found_scope = true;
-	break;
+    if (inlineAvail && !nodelist.empty()) {
+      for (it = nodelist.begin(); it != nodelist.end(); it++) {
+	if (procnmEq(it->getProcName(), procnm)) {
+	  DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
+			   << " file: '" << it->getFileName()
+			   << "'  line: " << it->getLineNum());
+	  loop->setScopeLocation(it->getFileName(), it->getLineNum());
+	  found_scope = true;
+	  break;
+	}
       }
     }
+    //
+    // If the inline sequence doesn't find the scope for this loop
+    // directly, then use the scope of its parent.  This happens with
+    // nested loops and no relocation between them.
+    //
     if (! found_scope) {
-      DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ") none");
+      string parent_filenm = proposed_scope->getScopeFileName();
+      SrcFile::ln parent_lineno = proposed_scope->getScopeLineNum();
+
+      if (parent_filenm != "") {
+	DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
+			 << " parent (" << proposed_scope->id() << ")"
+			 << " file: '" << parent_filenm
+			 << "'  line: " << parent_lineno);
+	loop->setScopeLocation(parent_filenm, parent_lineno);
+      }
+      else {
+	DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ") none");
+      }
     }
   }
   DIAG_DevMsgIfCtd(mDBG, "");
