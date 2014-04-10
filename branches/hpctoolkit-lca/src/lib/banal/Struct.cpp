@@ -713,7 +713,26 @@ getVisibleAncestor(Prof::Struct::ANode *node)
     if (node == 0 || node->isVisible()) return node;
   }
 }
+
+int
+willBeCycle()
+{
+  return 1;
+}
  
+
+static int
+checkCycle(Prof::Struct::ANode *node, Prof::Struct::ANode *loop)
+{
+  Prof::Struct::ANode *n = loop;
+  while (n) {
+    if (n == node) {
+      return willBeCycle();
+    }
+    n = n->parent();
+  }
+  return 0;
+}
 
 static void
 reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop, Prof::Struct::ANode *loopParent)
@@ -740,9 +759,10 @@ reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop, Prof::Struct::
     }
     node = parent;
   }
-
-  node->unlink();
-  node->link(loop);
+  if (checkCycle(node, loop) == 0) {
+    node->unlink();
+    node->link(loop);
+  }
 }
 
 
@@ -937,7 +957,11 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
     // -----------------------------------------------------
     // reparent statements into new loop
     // -----------------------------------------------------
+#if 0
     Prof::Struct::ANode *loopParent = loop->parent();
+#else
+    Prof::Struct::ANode *loopParent = getVisibleAncestor(loop); 
+#endif
     for (std::list<Prof::Struct::ACodeNode *>::iterator kid = kids.begin(); 
 	 kid != kids.end(); ++kid) {
       reparentNode(*kid, loop, loopParent);
