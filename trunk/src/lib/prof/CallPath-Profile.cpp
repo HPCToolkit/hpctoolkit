@@ -119,6 +119,14 @@ using namespace xml;
 
 namespace Prof {
 
+// ---------------------------------------------------
+// special variables to store mapping between the original and redirected ID
+// this hack is needed to avoid duplicate filenames
+// which occurs with alien nodes 
+// this variable will be used by getFileIdFromMap in CCT-Tree.cpp
+// ---------------------------------------------------
+std::map<uint, uint> m_mapFileIDs;      // map between file IDs
+
 namespace CallPath {
 
 
@@ -443,6 +451,13 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
   delete[] outfsBuf;
 }
 
+// ---------------------------------------------------
+// special variables to store mapping between filename and the ID
+// this hack is needed to avoid duplicate filenames
+// which occurs with alien nodes 
+// ---------------------------------------------------
+static std::map<const char *, uint> m_mapFiles; // map the filenames and the ID
+
 
 static void
 writeXML_help(std::ostream& os, const char* entry_nm,
@@ -467,6 +482,21 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       nm = ((typeid(*strct) == typeid(Struct::Alien)) ?
 	    static_cast<Struct::Alien*>(strct)->fileName().c_str() :
 	    static_cast<Struct::File*>(strct)->name().c_str());
+
+      // ---------------------------------------
+      // remove redundancy in the list of tables
+      // ---------------------------------------
+      if (m_mapFiles.find(nm) == m_mapFiles.end()) {
+	//  the filename is not in the list. Add it.
+	m_mapFiles[nm] = id;
+
+      } else {
+	// duplicate filename. Use the first one.
+	uint id_orig = m_mapFiles[nm];
+	// remember that this ID needs redirection
+	Prof::m_mapFileIDs[id] = id_orig; 
+	continue;
+      }
     }
     else if (type == 3) { // Proc
       nm = strct->name().c_str();
