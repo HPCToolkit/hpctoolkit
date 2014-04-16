@@ -98,7 +98,7 @@
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/splay-macros.h>
-#include "blame-shift.h"
+#include "blame-shift/blame-shift.h"
 
 #ifdef ENABLE_CUDA
 #include "gpu_blame.h"
