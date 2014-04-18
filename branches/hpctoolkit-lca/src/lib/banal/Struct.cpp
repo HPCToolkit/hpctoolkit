@@ -734,8 +734,21 @@ checkCycle(Prof::Struct::ANode *node, Prof::Struct::ANode *loop)
   return 0;
 }
 
+
+static int
+ancestorIsLoop(Prof::Struct::ANode *node)
+{
+  Prof::Struct::ANode *n = node;
+  while ((n = n->parent())) {
+    if (n->type() == Prof::Struct::ANode::TyLoop) 
+      return 1;
+  }
+  return 0;
+}
+
 static void
-reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop, Prof::Struct::ANode *loopParent)
+reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop, Prof::Struct::ANode *loopParent, 
+	     Struct::LocationMgr& locMgr)
 {
   Prof::Struct::ANode *node = kid;
 
@@ -760,6 +773,12 @@ reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop, Prof::Struct::
     node = parent;
   }
   if (checkCycle(node, loop) == 0) {
+    if (typeid(*node) == typeid(Prof::Struct::Alien)) {
+      // if reparenting an alien node, make sure that we are not 
+      // caching its old parent in the alien cache
+      locMgr.evictAlien((Prof::Struct::ACodeNode *)node->parent(), 
+			(Prof::Struct::Alien *)node);
+    }
     node->unlink();
     node->link(loop);
   }
@@ -839,7 +858,7 @@ processInterval(BinUtil::Proc* p,
       // adjust my location in the scope tree so that it is inside 
       // my enclosing scope. 
       // --------------------------------------------------------------
-      reparentNode(currentScope, enclosingScope, lca);
+      reparentNode(currentScope, enclosingScope, lca, locMgr);
     }
     nLoops++;
   }
@@ -911,6 +930,10 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
   BinUtil::Insn* insn = BAnal::OA_CFG_getBegInsn(bb);
   VMA begVMA = (insn) ? insn->opVMA() : 0;
   Prof::Struct::Loop* loop = NULL;
+
+  string fnm, pnm;
+  SrcFile::ln line;
+  VMA loop_vma;
   
   DIAG_DevMsg(10, "buildLoopAndStmts: " << bb << " [id: " << bb->getId() << "] " 
 	      << hex << begVMA << " --> " << enclosingStrct << dec 
@@ -930,15 +953,11 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
     // INTERVAL or IRREDUCIBLE as a loop: Loop head
     // -----------------------------------------------------
     //Struct::ACodeNode* procCtxt = enclosingStrct->ancestorProcCtxt();
-    string fnm, pnm;
-    SrcFile::ln line;
-    VMA loop_vma;
     findLoopBegLineInfo(/*procCtxt,*/ p, bb, fnm, pnm, line, loop_vma);
     pnm = BinUtil::canonicalizeProcName(pnm, procNmMgr);
     
     loop = new Prof::Struct::Loop(NULL, line, line);
     loop->vmaSet().insert(loop_vma, loop_vma + 1); // a loop id
-    locMgr.locate(loop, enclosingStrct, fnm, pnm, line);
   } else if (!isIrrIvalLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
     // -----------------------------------------------------
     // IRREDUCIBLE as no loop: May contain loops
@@ -954,6 +973,9 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
   buildStmts(locMgr, theScope, p, bb, procNmMgr, kids);
   
   if (loop) { 
+    locMgr.locate(loop, enclosingStrct, fnm, pnm, line);
+    if (ancestorIsLoop(loop)) willBeCycle();
+
     // -----------------------------------------------------
     // reparent statements into new loop
     // -----------------------------------------------------
@@ -964,7 +986,7 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
 #endif
     for (std::list<Prof::Struct::ACodeNode *>::iterator kid = kids.begin(); 
 	 kid != kids.end(); ++kid) {
-      reparentNode(*kid, loop, loopParent);
+      reparentNode(*kid, loop, loopParent, locMgr);
     }
     theScope = loop;
   }

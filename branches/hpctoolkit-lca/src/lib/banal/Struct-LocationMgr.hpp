@@ -648,6 +648,12 @@ private:
 		   const std::string& filenm, const std::string& procnm,
 		   const std::string& displaynm, SrcFile::ln line);
   
+public:
+  // evict an alien from the m_alienMap
+  void
+  evictAlien(Prof::Struct::ACodeNode* parent_scope, 
+	     Prof::Struct::Alien* alien);
+
 private:
   MyStack     m_ctxtStack; // cf. topCtxt() [begin()/front() is the top]
   Prof::Struct::LM* m_loadMod;

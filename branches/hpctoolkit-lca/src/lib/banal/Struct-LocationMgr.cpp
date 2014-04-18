@@ -1061,6 +1061,17 @@ LocationMgr::demandAlienStrct(Prof::Struct::ACodeNode* parent_scope,
   return alien;
 }
 
+
+
+void
+LocationMgr::evictAlien(Prof::Struct::ACodeNode* parent_scope,
+			Prof::Struct::Alien* alien)
+{
+  AlienStrctMapKey key(parent_scope, alien->fileName(), alien->name());
+
+  m_alienMap.erase(key);
+}
+
 } // namespace Struct
 
 } // namespace BAnal
