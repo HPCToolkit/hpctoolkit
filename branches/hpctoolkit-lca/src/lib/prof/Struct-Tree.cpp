@@ -473,7 +473,7 @@ Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm,
 
   m_name   = (nm) ? nm : "";
   m_displaynm = (displaynm) ? displaynm : "";
-  finalizeLine();
+  freezeLine();
 }
 
 
@@ -1061,10 +1061,7 @@ File::findProc(const char* name, const char* linkname) const
 void
 ACodeNode::setLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 {
-  if (m_lineno_finalized) return;
-
-  // never expand an alien line range
-  if (type() == ANode::TyAlien && begLn != endLn) return; 
+  if (m_lineno_frozen) return;
 
   checkLineRange(begLn, endLn);
   
@@ -1086,7 +1083,7 @@ ACodeNode::setLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 void
 ACodeNode::expandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 {
-  if (m_lineno_finalized) return;
+  if (m_lineno_frozen) return;
 
   if (type() == ANode::TyAlien) return; // never expand an alien line range
   if (type() == ANode::TyLoop) return;  // never expand a loop range

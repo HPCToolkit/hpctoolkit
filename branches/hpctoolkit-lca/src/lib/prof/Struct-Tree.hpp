@@ -608,7 +608,7 @@ protected:
 	   VMA begVMA = 0, VMA endVMA = 0)
     : ANode(ty, parent), m_begLn(ln_NULL), m_endLn(ln_NULL)
   {
-    m_lineno_finalized = false;
+    m_lineno_frozen = false;
     setLineRange(begLn, endLn);
     if (!VMAInterval::empty(begVMA, endVMA)) {
       m_vmaSet.insert(begVMA, endVMA);
@@ -691,8 +691,13 @@ public:
   }
   
   void
-  finalizeLine() 
-  { m_lineno_finalized = true; }
+  freezeLine() 
+  { m_lineno_frozen = true; }
+
+  void
+  thawLine() 
+  { m_lineno_frozen = false; }
+
 
   // -------------------------------------------------------
   // A set of *unrelocated* VMAs associated with this scope
@@ -826,7 +831,7 @@ protected:
 private:
   std::string m_scope_filenm;
   SrcFile::ln m_scope_lineno;
-  bool m_lineno_finalized;
+  bool m_lineno_frozen;
   
 public:
   void setScopeLocation(std::string &file, SrcFile::ln line) {
