@@ -751,19 +751,9 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
     }
 #endif
 
-#if 0
-    // Add final 'guard' alien.
-    alien = demandAlienStrct(parent, filenm, procnm, procnm, line);
-#else
     // avoid terminal line number
     alien = demandAlienStrct(parent, filenm, procnm, procnm, 0);
-#endif
 
-#if 0
-    if (non_empty_prefix) {
-      alien->setInvisible();
-    }
-#endif
 
     pushCtxt(Ctxt(alien, NULL));
 

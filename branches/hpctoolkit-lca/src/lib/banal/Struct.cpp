@@ -59,6 +59,8 @@
 
 //************************* System Include Files ****************************
 
+#include <limits.h>
+
 #include <iostream>
 using std::cout;
 using std::cerr;
@@ -161,12 +163,6 @@ findLoopBegLineInfo(/*Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
 		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
 		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn, VMA &loop_vma);
 
-#if 0
-static Struct::Stmt*
-demandStmtNode(std::map<SrcFile::ln, Struct::Stmt*>& stmtMap,
-	       Prof::Struct::ACodeNode* enclosingStrct, SrcFile::ln line,
-	       VMAInterval& vmaint);
-#endif
 
 // Cannot make this a local class because it is used as a template
 // argument! Sigh.
@@ -574,6 +570,50 @@ public:
 };
 
 
+static bool
+inlinedProceduresFilter(const Prof::Struct::ANode& x, long GCC_ATTR_UNUSED type)
+{
+  if (x.type() != Prof::Struct::ANode::TyAlien) return false;
+  Prof::Struct::Alien* alien = (Prof::Struct::Alien*) &x;
+  return (alien->begLine() == 0);
+}
+
+
+// iterate over all nodes that represent inlined procedure scopes. compute an approximate
+// beginning line based on the minimum line number in scopes directly within.
+static void
+renumberAlienScopes(Prof::Struct::ANode* node)
+{
+  // use a filter that selects scopes that represent inlined procedures (not call sites)
+  Prof::Struct::ANodeFilter inlinesOnly(inlinedProceduresFilter, "inlinedProceduresFilter", 0);
+  
+  // iterate over scopes that represent inlined procedures
+  for(Prof::Struct::ANodeIterator inlines(node, &inlinesOnly); inlines.Current(); inlines++) {
+    Prof::Struct::Alien* inlinedProcedure = (Prof::Struct::Alien*) inlines.Current();
+    int minLine = INT_MAX;
+    int maxLine = 0;
+    // iterate over the immediate child scopes of an inlined procedure
+    for(Prof::Struct::ANodeChildIterator kids(inlinedProcedure); kids.Current(); kids++) {
+      Prof::Struct::ACodeNode* child = (Prof::Struct::ACodeNode*) kids.Current();
+      int childLine = child->begLine();
+      if (childLine > 0) {
+        if (childLine < minLine) {
+          minLine = childLine;
+        }
+        if (childLine > maxLine) {
+          maxLine = childLine;
+        }
+      }
+    }
+    if (maxLine != 0) {
+	inlinedProcedure->thawLine();
+	inlinedProcedure->setLineRange(minLine,maxLine);
+	inlinedProcedure->freezeLine();
+    }
+  }
+}
+
+
 static void
 coalesceAlienChildren(Prof::Struct::ANode* node)
 {
@@ -644,6 +684,7 @@ buildProcStructure(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
   
   buildProcLoopNests(pStrct, p, isIrrIvalLoop, isFwdSubst, procNmMgr, isDbg);
   coalesceAlienChildren(pStrct);
+  renumberAlienScopes(pStrct);
   
   return pStrct;
 }
@@ -729,36 +770,7 @@ buildProcLoopNests(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
     OA::RIFG::NodeId fgRoot = rifg->getSource();
 
     if (isDbg) {
-#if 1
       debugCFGInfo(p);
-#else
-      cerr << setfill('=') << setw(sepWidth) << "=" << endl;
-      cerr << "Procedure: " << p->name() << endl << endl;
-
-      OA::OA_ptr<OA::OutputBuilder> ob1, ob2;
-      ob1 = new OA::OutputBuilderText(cerr);
-      ob2 = new OA::OutputBuilderDOT(cerr);
-
-      cerr << setfill('-') << setw(sepWidth) << "-" << endl;
-      cerr << "*** CFG Text: [nodes, edges: "
-	   << cfg->getNumNodes() << ", " << cfg->getNumEdges() << "]\n";
-      cfg->configOutput(ob1);
-      cfg->output(*irIF);
-
-      cerr << setfill('-') << setw(sepWidth) << "-" << endl;
-      cerr << "*** CFG DOT:\n";
-      cfg->configOutput(ob2);
-      cfg->output(*irIF);
-      cerr << endl;
-
-      cerr << setfill('-') << setw(sepWidth) << "-" << endl;
-      cerr << "*** Nested SCR (Tarjan) Tree\n";
-      tarj->dump(cerr);
-      cerr << endl;
-
-      cerr << setfill('-') << setw(sepWidth) << "-" << endl;
-      cerr << endl << flush;
-#endif
     }
 
     int r = buildProcLoopNests(pStrct, p, tarj, cfg, fgRoot,
@@ -901,24 +913,7 @@ processInterval(BinUtil::Proc* p,
 		    procNmMgr, nLoops, isDbg);
   }
 
-#if 0
-  // --------------------------------------------------------------
-  // if my scope is a loop ...
-  // --------------------------------------------------------------
-  if (currentScope->type() == Prof::Struct::ANode::TyLoop) {
-    // --------------------------------------------------------------
-    // loops are initially inserted into the scope tree without any regard
-    // for enclosing loops. this approach is necessary to ensure proper
-    // nesting within inlined code. 
-    //
-    // after a loop is properly positioned relative to inlined code,
-    // move the loop inside its enclosing loop (if any) along with any
-    // inlined context that belongs between them.
-    // --------------------------------------------------------------
-#else
   if (currentScope != enclosingScope) {
-#endif
-
     // --------------------------------------------------------------
     // if my enclosing scope is a loop ...
     // --------------------------------------------------------------
@@ -1230,28 +1225,6 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
 #endif
 }
 
-
-
-#if 0
-// demandStmtNode: Build a Struct::Stmt.  Unlike LocateStmt,
-// assumes that procedure boundaries do not need to be expanded.
-static Prof::Struct::Stmt*
-demandStmtNode(std::map<SrcFile::ln, Prof::Struct::Stmt*>& stmtMap,
-	       Prof::Struct::ACodeNode* enclosingStrct, SrcFile::ln line,
-	       VMAInterval& vmaint)
-{
-  Prof::Struct::Stmt* stmt = stmtMap[line];
-  if (!stmt) {
-    stmt = new Prof::Struct::Stmt(enclosingStrct, line, line,
-				  vmaint.beg(), vmaint.end());
-    stmtMap.insert(make_pair(line, stmt));
-  }
-  else {
-    stmt->vmaSet().insert(vmaint); // expand VMA range
-  }
-  return stmt;
-}
-#endif
 
 } // namespace Struct
 
