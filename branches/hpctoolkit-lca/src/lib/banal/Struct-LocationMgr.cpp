@@ -208,7 +208,7 @@ LocationMgr::locate(Prof::Struct::Loop* loop,
   VMAIntervalSet& vmaset = loop->vmaSet();
   VMA loopVMA = (! vmaset.empty()) ? vmaset.begin()->beg() : 0;
 
-#if 0 // LCA_INLINE
+#if 1 // LCA_INLINE
   determineContext(proposed_scope, filenm, procnm, line, loopVMA, NULL);
 #else
   determineContext(proposed_scope, filenm, procnm, line, loopVMA, loop);
@@ -712,15 +712,32 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
       // Fake the proc name to the line number so that multiple calls
       // to the same inlined function will remain separate.
       //
+      string empty = "";
+      string calledProcedure = "";
       for (it = start_it; it != nodelist.end(); it++)
       {
 	char buf[50];
+	if (!calledProcedure.empty()) {
+	  snprintf(buf, 50, "inline-alien-%ld", (long) it->getLineNum());
+	  alien = demandAlienStrct(parent, it->getFileName(), string(buf),
+				   calledProcedure, 0);
+	  pushCtxt(Ctxt(alien, NULL));
+	  parent = alien;
+
+	  DIAG_DevMsgIfCtd(mDBG, "  node=" << alien->id()
+	    		   << "  file: '" << alien->fileName()
+			   << "'  line: " << alien->begLine()
+			   << "  name: '" << alien->displayName() << "'");
+
+	}
+
 	snprintf(buf, 50, "inline-alien-%ld", (long) it->getLineNum());
 	alien = demandAlienStrct(parent, it->getFileName(), string(buf),
-				 it->getProcName(), it->getLineNum());
+				 empty, it->getLineNum());
 	pushCtxt(Ctxt(alien, NULL));
 	parent = alien;
 	non_empty_prefix = true;
+	calledProcedure = it->getProcName();
 
 	DIAG_DevMsgIfCtd(mDBG, "  node=" << alien->id()
 			 << "  file: '" << alien->fileName()
@@ -734,12 +751,19 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
     }
 #endif
 
+#if 0
     // Add final 'guard' alien.
     alien = demandAlienStrct(parent, filenm, procnm, procnm, line);
+#else
+    // avoid terminal line number
+    alien = demandAlienStrct(parent, filenm, procnm, procnm, 0);
+#endif
 
+#if 0
     if (non_empty_prefix) {
       alien->setInvisible();
     }
+#endif
 
     pushCtxt(Ctxt(alien, NULL));
 
@@ -1044,6 +1068,11 @@ LocationMgr::demandAlienStrct(Prof::Struct::ACodeNode* parent_scope,
        (it != range.second); ++it) {
     // we know that filenm and procnm match
     Prof::Struct::Alien* a = it->second;
+
+    if (!SrcFile::isValid(line)) {
+	alien = a;
+	break;
+    }
     
     if ( (SrcFile::isValid(line) && containsLineFzy(a, line))
 	 || (!SrcFile::isValid(a->begLine())) ) {
