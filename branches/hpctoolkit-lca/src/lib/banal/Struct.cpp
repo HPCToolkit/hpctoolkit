@@ -641,7 +641,7 @@ coalesceAlienChildren(Prof::Struct::ANode* node)
       for (rest++; rest != alienList.end(); rest++)  {
          Prof::Struct::Alien* duplicate = (Prof::Struct::Alien*) *rest;
          // have the first adopt the children of this node 
-         for(Prof::Struct::ANodeChildIterator kids(duplicate); kids.Current(); kids++) {
+         for(Prof::Struct::ANodeChildIterator kids(duplicate); kids.Current();) {
            Prof::Struct::ANode* kid = (Prof::Struct::ANode*) kids.Current();
 	   kids++;
            kid->unlink();
