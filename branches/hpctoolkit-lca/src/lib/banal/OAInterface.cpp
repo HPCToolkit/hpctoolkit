@@ -239,7 +239,7 @@ BAnal::OAInterface::dump(OA::StmtHandle stmt, std::ostream& os)
     VMA targ = insn->targetVMA(pc);
     os << " <" << hex << targ << dec << ">";
     if (m_proc->isIn(targ) == false) {
-      os << " [out of procedure -- treated as SIMPLE]";
+      os << " [out of procedure -- treat as RETURN via tail call]";
     }
   }
   else if (d.isBrInd()) {
@@ -300,7 +300,13 @@ BAnal::OAInterface::getCFGStmtType(OA::StmtHandle h)
       ty = OA::CFG::UNCONDITIONAL_JUMP;
     }
     else {
+#if 0 
       ty = OA::CFG::SIMPLE;
+#else
+      // treat a branch out of the procedure (typically a tail call) as a return
+      // 04 05 2014 - johnmc
+      ty = OA::CFG::RETURN;
+#endif
     }
   }
   else if (d.isBrUnCondInd()) {
