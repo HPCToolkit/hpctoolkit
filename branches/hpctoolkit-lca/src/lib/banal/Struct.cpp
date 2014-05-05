@@ -117,6 +117,8 @@ using namespace Prof;
 #include "Struct-Inline.hpp"
 #endif
 
+#define FULL_STRUCT_DEBUG 0
+
 //*************************** Forward Declarations ***************************
 
 namespace BAnal {
@@ -678,7 +680,8 @@ buildProcStructure(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
     //uint dbgId = p->id();
     isDbg = FileUtil::fnmatch(dbgProcGlob, p->name().c_str());
   }
-#if 1
+#if FULL_STRUCT_DEBUG
+  // heavy handed knob for full debug output, left in place for convenience
   isDbg = true;
 #endif
   
@@ -857,7 +860,11 @@ reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop, Prof::Struct::
     }
     node = parent;
   }
-  if (checkCycle(node, loop) == 0) {
+#if FULL_STRUCT_DEBUG
+  // heavyhanded debugging
+  if (checkCycle(node, loop) == 0) 
+#endif
+  {
     if (typeid(*node) == typeid(Prof::Struct::Alien)) {
       // if reparenting an alien node, make sure that we are not 
       // caching its old parent in the alien cache
@@ -1046,8 +1053,10 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
   buildStmts(locMgr, topScope, p, bb, procNmMgr, kids);
   
   if (loop) { 
-    locMgr.locate(loop, enclosingScope, fnm, pnm, line);
+    locMgr.locate(loop, topScope, fnm, pnm, line);
+#if FULL_STRUCT_DEBUG
     if (ancestorIsLoop(loop)) willBeCycle();
+#endif
   }
 
   if (typeid(*targetScope) == typeid(Prof::Struct::Loop)) {
