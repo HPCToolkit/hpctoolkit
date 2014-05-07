@@ -12,6 +12,10 @@
 ##
 ## **************************************************************************
 
+# If this script can't find its own install prefix, or if the script
+# is moved elsewhere, then set HPCTOOLKIT here.
+# HPCTOOLKIT='@prefix@'
+
 #############################################################################
 # Find where we were called from
 #############################################################################
