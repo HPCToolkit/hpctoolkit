@@ -1,0 +1,7 @@
+
+This, the hpctoolkit-prof branch, is Mark's branch for beginning work
+on making hpctoolkit more scalable for our use of files.  I'm working
+backwards from the viewer to hpcrun.  Step 1 is between hpcprof and
+the viewer to make prof write files in a compact binary format and not
+write one file per process or thread.
+
