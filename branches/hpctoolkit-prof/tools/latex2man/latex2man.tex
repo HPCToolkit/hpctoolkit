@@ -1,0 +1,758 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Project:     Documentation Tools
+%% Descr:       Latex -->  MAN-page (groff -man), LATEX documentation
+%% Author:      Dr. Jürgen Vollmer, Juergen.Vollmer@informatik-vollmer.de
+%% $Id: latex2man.tex,v 1.187 2008/11/11 07:21:18 vollmer Exp $
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% Latex2man is a tool to translate UNIX manual pages written with LaTeX into a
+%% format understood by the UNIX man(1)-command.
+%% Alternatively HTML or TexInfo code can be produced too.
+%% Output of parts of the text may be supressed using the conditional text
+%% feature.
+%%
+%% There is LaTeX package (latex2man.sty) used for writing the Man-page
+%% and a PERL script (latex2man) doing the actual translation.
+%%
+%% Copyright (C) 1998, Dr. Juergen Vollmer
+%%                     Viktoriastrasse 15, D-76133 Karlsruhe, Germany
+%%                     Juergen.Vollmer@informatik-vollmer.de
+%% License:
+%%   This program can be redistributed and/or modified under the terms
+%%   of the LaTeX Project Public License Distributed from CTAN
+%%   archives in directory macros/latex/base/lppl.txt; either
+%%   version 1 of the License, or any later version.
+%%
+%% If you find this software useful, please send me a postcard.
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[english]{article}
+\usepackage[latin1]{inputenc}
+\usepackage{babel}
+\usepackage{verbatim}
+
+%% do we have the `hyperref package?
+\IfFileExists{hyperref.sty}{
+   \usepackage[bookmarksopen,bookmarksnumbered]{hyperref}
+}{}
+
+%% do we have the `fancyhdr' package?
+\IfFileExists{fancyhdr.sty}{
+\usepackage[fancyhdr]{latex2man}
+}{
+%% do we have the `fancyheadings' package?
+\IfFileExists{fancyheadings.sty}{
+\usepackage[fancy]{latex2man}
+}{
+\usepackage[nofancy]{latex2man}
+\message{no fancyhdr or fancyheadings package present, discard it}
+}}
+
+%% do we have the `rcsinfo' package?
+\IfFileExists{rcsinfo.sty}{
+\usepackage[nofancy]{rcsinfo}
+\rcsInfo $Id: latex2man.tex,v 1.187 2008/11/11 07:21:18 vollmer Exp $
+\setDate{\rcsInfoLongDate}
+}{
+\setDate{2008/11/11}    %%%% must be manually set, if rcsinfo is not present
+\message{package rcsinfo not present, discard it}
+}
+
+\setVersionWord{Version:}  %%% that's the default, no need to set it.
+\setVersion{1.23}
+
+\begin{document}
+
+\begin{Name}{1}{latex2man}{Dr.~J{\"u}rgen Vollmer}{Documentation Tools}{\LaTeX2man\\--\\ A Documentation Tool}
+
+  \Prog{Latex2man} is a tool to translate UNIX manual pages written with
+  \LaTeX\ into a format understood by the UNIX \Cmd{man}{1}-command.
+  Alternatively HTML, TexInfo, or \LaTeX\ code can be produced too.
+  Output of parts of the text may be suppressed using the conditional text
+  feature (for this, LaTeX generation may be used).
+\end{Name}
+
+\section{Synopsis}
+%%%%%%%%%%%%%%%%%%
+
+\Prog{latex2man} \oOptArg{-t}{transfile}
+                 \oOpt{-HMTL} \oOpt{-h} \oOpt{-V} \oOptArg{-C}{name} \TEXIbr
+                 \oOptArg{-a}{char}
+                 \Arg{infile}
+                 \Arg{outfile}
+
+\section{Description}
+%%%%%%%%%%%%%%%%%%%%%
+\Prog{Latex2man} reads the file \Arg{infile} and writes \Arg{outfile}. The
+input must be a \LaTeX\ document using the \Prog{latex2man} \LaTeX\ package.
+\Prog{Latex2man} translates that document into the \Cmd{troff}{1} format using
+the \Opt{-man} macro package.
+
+Using the \Opt{-H} option, HTML code can be produced, instead of
+\Cmd{troff}{1}.
+
+Using the \Opt{-T} option, TexInfo code can be produced, instead of
+\Cmd{troff}{1}.
+
+Using the \Opt{-M} option, \Cmd{troff}{1} input is produced.
+
+Using the \Opt{-L} option, \LaTeX\ ouput can be produced, instead of
+\Cmd{troff}{1}.
+
+
+\section{Options}
+%%%%%%%%%%%%%%%%%
+\begin{Description}[\OptArg{-t}{transfile}]\setlength{\itemsep}{0cm}
+\item[\OptArg{-t}{transfile}] Translation for user defined \LaTeX\ macros.
+\item[\Opt{-M}] Produce output suitable for the \Cmd{man}{1} command (default).
+\item[\Opt{-H}] Instead of producing output suitable for the \Cmd{man}{1}
+     command, HTML code is produced (despite the name of the command).
+\item[\Opt{-T}] Instead of producing output suitable for the \Cmd{man}{1}
+     command, TexInfo code is produced (despite the name of the command).  The
+     generated \File{.texi}-file may be processed with \Cmd{makeinfo}{1}
+     (to produce an \File{.info}-file) which in turn may be installed using
+     \Cmd{install-info}{1}.  The Info tags \verb+@dircategory+ and
+     \verb+@direntry+ are provided.
+\item[\Opt{-L}] The \LaTeX\ source is written to the \Arg{outfile}. This is
+     useful in conjunction with the \OptArg{-C}{name} option.
+\item[\OptArg{-C}{name}] Output the conditional text for \Arg{name}.  If more
+     than one name should be given use quotes: \OptArg{-C}{'name1 name2 ...'}\\
+     The following names are defined automatically:
+     \begin{itemize}
+        \item \Opt{-H} defines \texttt{HTML}
+        \item \Opt{-T} defines \texttt{TEXI}
+        \item \Opt{-M} defines \texttt{MAN}
+        \item \Opt{-L} defines \texttt{LATEX}
+     \end{itemize}
+ \item[\OptArg{-a}{char}] Is used only in conjunction with -T.\\
+     Background:\\
+     TexInfo ignores all blanks before the first word on a new line. In order
+     to produce some additional space before that word (using \Bs SP) some
+     character has to be printed before the additional space. By default this
+     is a . (dot).  The \Arg{char} specifies an alternative for that first
+     character.  Giving a blank to
+     \Opt{-a} supresses the indentation of a line.\\
+     Note: only for the first \Bs SP of a series that \Arg{char} is printed.
+\item[\Opt{-h}] Show a help text.
+\item[\Opt{-V}] Show version information.
+\end{Description}
+
+\section{Files}
+%%%%%%%%%%%%%%%
+
+\begin{Description}\setlength{\itemsep}{0cm}
+\item[\File{latex2man.tex}] The \LaTeX\ file containing this Man-page.
+\item[\File{latex2man.sty}] The \LaTeX\ package defining the environments and
+     commands.
+\item[\File{latex2man.cfg}] The configuration file for \Prog{Latex2man}
+     \LaTeX-package.
+\item[\File{latex2man.trans}] File containing example translations of user
+     defined \LaTeX\ macros.
+\item[\File{fancyheadings.sty}] A \LaTeX\ package used to typeset head- and
+     foot lines.
+\item[\File{fancyhdr.sty}] A \LaTeX\ package used to typeset head- and foot
+     lines.
+\item[\File{rcsinfo.sty}] A \LaTeX\ package used to extract and use RCS version
+     control information in \LaTeX\ documents.
+\end{Description}
+
+\section{See Also}
+%%%%%%%%%%%%%%%%%%
+
+\LaTeX, TexInfo, \Cmd{troff}{1}, \Cmd{groff}{1}, \Cmd{makeinfo}{1}.
+
+\section{\LaTeX\ commands}
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The \LaTeX\ package \texttt{latex2man} is used to write the Man-pages with
+\LaTeX.  Since we translate into other text formats, not all \LaTeX\ stuff can
+be translated.
+
+\subsection{Package Options}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The \texttt{latex2man} package accepts the following options:
+
+\begin{description}\setlength{\itemsep}{0cm}
+\item[fancy]    use the  \LaTeX\ package \texttt{fancyheadings}.
+\item[fancyhdr] use the  \LaTeX\ package \texttt{fancyhdr}.
+\item[nofancy] neither the \LaTeX\ package \texttt{fancyheadings} nor
+     \texttt{fancyhdr} are used.
+\end{description}
+
+The default option may be specified in the file \texttt{latex2man.cfg}.
+
+\subsection{Package Specific Environments}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The following environments are provided by the package:
+\begin{description}\setlength{\itemsep}{0cm}
+\item[\Bs begin\{Name\}\{chapter\}\{name\}\{author\}\{info\}\{title\} ] The
+     \texttt{Name} environment takes five arguments: 1.\ the Man-page chapter,
+     2.\ the name of the Man-page, 3.\ the author, 4.\ some short information
+     about the tool printed in the footline of the Man-page, and 5.\ a text
+     which is used as title, for HTML and \LaTeX\ (it's ignored for output of
+     the Man-page or TeXinfo. The \texttt{Name} environment must be the first
+     environment in the document. Processing starts with this environment. Any
+     text before this is ignored (exception: the \verb+setVersion+ and
+     \verb+setDate+ commands).  (Note: all arguments of \Bs begin\{Name\} must
+     be written on one line).
+\item[\Bs begin\{Table\}\Lbr width\Rbr\{columns\}] The \texttt{Table}
+     environment takes two arguments: the first optional one specifies
+     a width of the last column, the second one gives the number of columns.
+     For example:
+
+     \verb+\begin{Table}[2cm]{3}+            \\
+     \verb+ Here & am  & I   \\\hline+  \\
+     \verb+  A 1 & A 2 & A 3 1 2 3 4 5 A 3 1 2 3 4 5 \\+        \\
+     \verb+  B 1 & B 2 & B 3 \\+        \\
+     \verb+\end{Table}+
+
+     will be typeset as:
+
+     \begin{Table}[2cm]{3}
+       Here & am  & I   \\\hline
+        A 1 & A 2 & A 3 1 2 3 4 5 A 3 1 2 3 4 5\\
+        B 1 & B 2 & B 3 \\
+     \end{Table}
+
+     If no optional \emph{width} argument is given, all entries are
+     typeset left justified.
+     The \emph{width} is a length measured absolutly in \emph{cm}.
+     Processing with \LaTeX\ a \verb+p{width}+ column is typeset
+     as last column. The translation to \Cmd{troff}{1} commands
+     results in a \texttt{lw(width)} column specification. Translating
+     to HTML and TexInfo ignores the \emph{width} parameter.
+
+     \verb+\hline+ may be used.
+
+     If the Man-page is formatted with \Cmd{troff}{1} and tables are used, the
+     \Cmd{tbl}{1} preprocessor should be called, usually by giving
+     a \Opt{-t} to the call of \Cmd{troff}{1}. When viewing the generated
+     manula page using \Cmd{man}{1}, \Cmd{tbl}{1} is called automatically.
+\item[\Bs begin\{Description\}] is the same as \Bs begin\{description\}
+\item[\Bs begin\{Description\}\Lbr label\Rbr] is similar to
+     \Bs begin\{description\}, but the item labels have at minimum the size
+     of the (optional) word \emph{label}. The difference is visible only
+     in the DVI and PDF-output, not in the troff, TexInfo or HTML output.
+     \begin{description}
+     \item[a]   \Bar a \verb+\begin{description}+
+     \item[ab]  \Bar ab
+     \item[abc] \Bar abc
+     \end{description}
+     \begin{Description}
+     \item[a]  \Bar a \verb+\begin{Description}+
+     \item[ab] \Bar ab
+     \item[abc]\Bar abc
+     \end{Description}
+     \begin{Description}[ab]
+     \item[a]   \Bar a \verb+\begin{Description}[aa]+
+     \item[ab]  \Bar ab
+     \item[abc] \Bar abc
+     \end{Description}
+\end{description}
+
+\subsection{Accepted \LaTeX\ Environments}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The following environments are accepted:
+\begin{itemize}\setlength{\itemsep}{0cm}
+\item \texttt{description}
+\item \texttt{enumerate}
+\item \texttt{itemize}
+\item \texttt{verbatim}
+\item \texttt{center}
+\end{itemize}
+
+They may be nested:
+\begin{itemize}
+\item Itemize and nested center:
+     \begin{center}
+       A centered line.\\
+       Another centered line.
+     \end{center}
+\item Another item an nested enumerate
+     \begin{enumerate}
+       \item a
+       \item b
+     \end{enumerate}
+\end{itemize}
+
+
+\subsection{Package Specific Macros}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The following commands are provided:
+\begin{description}\setlength{\itemsep}{0cm}
+\item[\Bs Opt\{option\}] Option:  \verb+\Opt{-o}+ will be typeset as \Opt{-o}.
+\item[\Bs Arg\{argument\}] Argument: \verb+\Arg{filename}+ will be typeset as
+     \Arg{filename}.
+\item[\Bs OptArg\{option\}\{argument\}] Option with Argument:\\
+     \verb+\OptArg{-o}{filename}+ will be typeset as \OptArg{-o}{filename}.
+\item[\Bs OptoArg\{option\}\{argument\}] Option with optional Argument:\\
+     \verb+\OptoArg{-o}{filename}+ will be
+     typeset as \OptoArg{-o}{filename}.
+\item[\Bs oOpt\{option\}] Optional option, e.g.\ \verb+\oOpt{-o}+ will be
+     typeset as \oOpt{-o}.
+\item[\Bs oArg\{argument\}] Optional argument, e.g.\ \verb+\oArg{filename}+
+     will be typeset as \oArg{filename}.
+\item[\Bs oOptArg\{option\}\{argument\}] Optional option with argument, e.g.\\
+     \verb+\oOptArg{-o}{filename}+ will be typeset as \oOptArg{-o}{filename}.
+\item[\Bs oOptoArg\{option\}\{argument\}] Optional option with optional
+     argument, e.g.\
+     \verb+\oOptoArg{-o}{filename}+ will be typeset as \oOptoArg{-o}{filename}.
+\item[\Bs File\{filename\}] used to typeset filenames, e.g.\
+     \verb+\File{filename}+ will be typeset as \File{filename}.
+\item[\Bs Prog\{prog\}] used to typeset program names, e.g.\
+     \verb+\Prog{latex2man}+ will be typeset as \Prog{latex2man}.
+\item[\Bs Cmd\{command\}\{chapter\}] used to typeset references to other
+     commands, e.g.\ \verb+\Cmd{latex2man}{1}+ will be typeset as
+     \Cmd{latex2man}{1}.
+\item[\Bs Bar] is typeset as \Bar.
+\item[\Bs Bs] (BackSlash) is typeset as \Bs.
+\item[\Bs Tilde] is typeset as a \Tilde.
+\item[\Bs Dots] is typeset as \Dots
+\item[\Bs Bullet] us typeset as \Bullet.
+\item[\Bs setVersion\{..\}] set  \verb+..+ as version information.
+\item[\Bs setVersionWord\{..\}] set \verb+..+ for the word \emph{Version:} in
+     the footline. The default is \verb+\setVersionWord{Version:}+.
+\item[\Bs Version] returns the version information.
+\item[\Bs setDate\{..\}] sets \verb+..+ as date information.
+\item[\Bs Date] returns the date information.
+\item[\Bs Email\{..\}] use to mark an Email address:\\
+        \verb+\Email{Juergen.Vollmer@informatik-vollmer.de}+ is typeset as:\\
+        \Email{Juergen.Vollmer@informatik-vollmer.de}.
+\item[\Bs URL\{..\}] use to mark an URL:
+        \verb+\URL{http://www.foo.de/\Tilde vollmer}+ is typeset as
+        \URL{http://www.foo.de/\Tilde vollmer}.
+\item[\Bs LatexManEnd] the input file is read and processed until reading
+        end-of-file or \verb+\LatexManEnd+ (at the beginning of a line).
+        \LaTeX\ ignores this command.
+\item[\Bs Lbr, \Bs Rbr] is typeset as \Lbr\ and \Rbr\ (these variants are
+        needed only somtimes like in \verb+item[FooBar\LBr xx \Lbr]+. Usually
+        \verb+[ ]+ will work.
+\item[\Bs LBr, \Bs RBr] is typeset as \LBr\ and \RBr\ (these variants are
+        needed when using \{ or \} as arguments to macros.
+\item[\Bs Circum] is typeset as \Circum.
+\item[\Bs Percent] is typeset as \Percent.
+\item[\Bs TEXbr] If processed with \LaTeX\ causes a linebreak (i.e.\ is
+     equivalent to \Bs\Bs). In the output of \Prog{latex2man} this macro is
+     ignored.
+\item[\Bs TEXIbr] If TexInfo output is generated, causes a linebreak (i.e.\ is
+     equivalent to \Bs\Bs), otherwise ignored.
+\item[\Bs MANbr] If Man-Page output is generated, causes a linebreak (i.e.\ is
+     equivalent to \Bs\Bs), otherwise ignored.
+\item[\Bs HTMLbr] If HTML output is generated, causes a linebreak (i.e.\ is
+     equivalent to \Bs\Bs), otherwise ignored.
+\item[\Bs medskip] An empty line.
+\item[\Bs SP] Produces some extra space, works also at the beginning of lines.
+     The code of the second line looks like:
+     \texttt{\Bs SP abc \Bs SP\Bs SP xx\Bs\Bs}:\\
+     abc  \SP\SP\SP xx\\
+     \SP abc \SP\SP xx\\
+     \SP\SP abc \SP xx
+
+     Note: Due to some ``problems'' with TexInfo, the lines starting with
+     \texttt{\Bs SP} have a leading . (dot) in the TexInfo output,
+     see \OptArg{-a}{char}.
+\end{description}
+
+\subsection{Accepted Macros from the rcsinfo Package}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{description}\setlength{\itemsep}{0cm}
+\item[\Bs rcsInfo \$Id ...\$] if the \LaTeX\ package \File{rcsinfo} is used,
+     this command is used to extract the date of the Man-page.
+\item[\Bs rcsInfoLongDate] if the \LaTeX\ package \File{rcsinfo} is used, this
+     command is used to typeset the date coded in the \verb+$Id ..$+ string.
+\end{description}
+
+\subsection{Accepted \LaTeX\ Macros}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The following standard \LaTeX\ commands are accepted:
+\begin{description}\setlength{\itemsep}{0cm}
+\item[\Bs section\{..\}] The \texttt{section} macro takes one argument: the
+     name of the Man-page section.  Each Man-page consists of several sections.
+     Usually there are the following sections in a Man-page: \emph{Name}
+     (special handling as environment, c.f.\ above), \emph{Synopsis},
+     \emph{Description}, \emph{Options}, \emph{Files}, \emph{See Also},
+     \emph{Diagnostics}, \emph{Return Values}, \emph{Bugs}, \emph{Author},
+     \emph{version}, etc.
+
+     \emph{Synopsis} must be the first section after the \texttt{Name}
+     environment.
+
+     Note: Do not use \LaTeX-macros in section names.
+\item[\Bs subsection\{..\}] works as well as
+\item[\Bs subsubsection\{..\}] those.
+\item[\Bs emph\{..\}] \verb+\emph{example}+ is typeset as \emph{example}.
+\item[\Bs textbf\{..\}] \verb+\textbf{example}+ is typeset as \textbf{example}.
+\item[\Bs texttt\{..\}]\verb+\textt{example}+ is typeset as \texttt{example}.
+\item[\Bs underline\{..\}]\verb+\underline{example}+ is typeset as
+     \underline{example of underline}.
+\item[\Bs date\{..\}] uses \verb+..+ as date.
+\item[\Bs verb+..+] but only + is allowed as delimiter.
+\item[\$$<$\$]  is typeset as $<$.
+\item[\$$>$\$]  is typeset as $>$.
+\item[\$$<=$\$] is typeset as $<=$.
+\item[\$$>=$\$] is typeset as $>=$.
+\item[\$$=$\$]  is typeset as $=$.
+\item[\$$<>$\$] is typeset as $<>$.
+\item[\$\Bs ge\$] is typeset as $\ge$.
+\item[\$\Bs le\$] is typeset as $\le$.
+\item[\$\Bs leftarrow\$] is typeset as $\leftarrow$.
+\item[\$\Bs Leftarrow\$] is typeset as $\Leftarrow$.
+\item[\$\Bs rightarrow\$] is typeset as $\rightarrow$.
+\item[\$\Bs Rightarrow\$] is typeset as $\Rightarrow$.
+\item[\Bs \{] is typeset as \{.
+\item[\Bs \}] is typeset as \}.
+\item[\Bs \$] is typeset as \$.
+\item[\Bs \Dollar] is typeset as \Dollar, should be used inside macro
+     arguments.
+\item[\Bs \_] is typeset as \_.
+\item[\Bs \&] is typeset as \&.
+\item[\Bs \#] is typeset as \#.
+\item[\Bs \%] is typeset as \%.
+\item[\Bs ,] is typeset as smaller blank -\,- (between the two -)
+\item[\Bs -]  is used to mark hyphenation in a word.
+\item[\Bs \Bs] is typeset as a linebreak or marks the end of a column in the
+     \texttt{Table} environment.
+\item[\Bs ] (a \Bs\ followed by a blank) is typeset as a blank,
+     although it cannot be used at the beginning of a line to make indentation
+     (see the \texttt{\Bs SP} command).
+\item[\Tilde] is typeset as a blank.
+\item[\Bs copyright] is typeset as \copyright.
+\item[\Bs noindent]
+\item[\Bs hline] inside a \texttt{Table} environment.
+\item[\Bs item] inside a \texttt{itemize}, \texttt{enumerate}, or
+     \texttt{description} environment.
+\item[\Bs today] \today\ (see also the \texttt{rcsinfo} \LaTeX\ package).
+\item[\Bs ss,\Bs"a, ...] \Bs ss = \ss, \Bs"a = \"a, \Bs"o = \"o, \Bs"u = \"u,
+     \Bs"A = \"A, \Bs"O = \"O, \Bs"U = \"U. It is allowed to surround these
+     macros in \{ and \} in all places, even inside other macros, e.g.
+     \begin{verbatim}
+     \textbf{\"a\"o\"u\"A\"O\"U\ss}
+     \textbf{\"a}{\"o}{\"u}{\"A}{\"O}{\"U}{\ss}}
+     \textbf{äöüÄÖÜß}
+     \end{verbatim}
+
+     \textbf{\"a\"o\"u\"A\"O\"U\ss {\"a}{\"o}{\"u}{\"A}{\"O}{\"U}{\ss} äöüÄÖÜß}
+
+     If these letters are used in their LATIN-1 8-bit coding, they are
+     translated into the equivalent letter of the desired output format.
+     E.g. \texttt{Ä} becomes \texttt{\&Auml}; in HTML and \texttt{@"A}
+     in texinfo.
+\end{description}
+
+\subsection{Conditional Text}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\Prog{latex2man} preprocesses the \LaTeX\ input to allow text to be used
+conditionally. A special sort of \LaTeX\ comment is used for that purpose.
+\begin{itemize}\setlength{\itemsep}{0cm}
+\item \Percent@\Percent\ IF \emph{condition} \Percent@\Percent
+\item \Percent@\Percent\ ELSE \Percent@\Percent
+\item \Percent@\Percent\ END-IF \Percent@\Percent
+\end{itemize}
+
+A line must contain only such a comment and nothing else.  \emph{condition} is
+a boolean expression containing ``names'' and operators.  The names given with
+the \OptArg{-C}{name} option have the value ``true'', while all other names
+occuring in the expression are assumed to be ``false''.  If the evaluation of
+the boolean expression results in the value ``true'', the text in the
+``then''-part is used and the text in the optional ``else''-part is skipped
+(and vice versa).  The \texttt{IF/ELSE/END-IF} may be nested.  As boolean
+operators the following are allowed:
+
+\begin{Table}{2}
+\Bar\Bar & boolean or   \\
+\&\&     & boolean and  \\
+!        & negation
+\end{Table}
+
+( and ) for grouping are allowed.
+
+\noindent
+For example:\\
+\Percent@\Percent\ IF abc                    \Percent@\Percent\\
+\verb+    +abc set\\
+\verb+    +\Percent@\Percent\ IF xyz         \Percent@\Percent\\
+\verb+       +xyz set\\
+\verb+    +\Percent@\Percent\ ELSE           \Percent@\Percent\\
+\verb+       +xyz NOT set\\
+\verb+    +\Percent@\Percent\ END-IF         \Percent@\Percent\\
+\Percent@\Percent\ ELSE                      \Percent@\Percent\\
+\verb+    +abc NOT set\\
+\verb+    +\Percent@\Percent\ IF xyz \Bar\Bar\ !XYZ \Percent@\Percent\\
+\verb+       +xyz OR !XYZ set\\
+\verb+    +\Percent@\Percent\ ELSE           \Percent@\Percent\\
+\verb+       +xyz OR !XYZ NOT set\\
+\verb+    +\Percent@\Percent\ END-IF         \Percent@\Percent\\
+\Percent@\Percent\ END-IF                    \Percent@\Percent
+
+\noindent
+Run this manual page through \Prog{latex2man} with e.g.\
+\OptArg{-C}{'abc XYZ'} and have a look to the generated output.
+(If simply running the \LaTeX-document\ through \LaTeX, all lines are shown in the
+.dvi file).\\
+%@% IF abc            %@%
+   abc set\\
+   %@% IF xyz         %@%
+       xyz set\\
+   %@% ELSE           %@%
+       xyz NOT set\\
+   %@% END-IF         %@%
+%@% ELSE              %@%
+    abc NOT set\\
+    %@% IF xyz || !XYZ %@%
+    xyz OR !XYZ set\\
+    %@% ELSE          %@%
+    xyz OR !XYZ NOT set
+    %@% END-IF        %@%
+%@% END-IF            %@%
+
+\noindent
+To check the conditional text feature, when \Prog{latex2man} is called with
+\begin{description}
+\item[\OptArg{-C}{HTML}]  the lines 1a, 2b, 3b, and 4b;
+\item[\OptArg{-C}{TEXI}]  the lines 1b, 2a, 3b, and 4b;
+\item[\OptArg{-C}{MAN}]   the lines 1b, 2b, 3a, and 4b;
+\item[\OptArg{-C}{LATEX}] the lines 1b, 2b, 3b, and 4a;
+\item[calling \LaTeX\ without preprocessing] all lines
+\end{description}
+should be shown:
+
+%@% IF HTML %@%
+1a. This text occurs only when viewing the HTML output.
+
+%@% ELSE %@%
+1b. The HTML conditional was not set.
+
+%@% END-IF %@%
+
+%@% IF TEXI %@%
+2a. This text occurs only when viewing the TEXI output
+
+%@% ELSE %@%
+2b. The TEXI conditional was not set.
+
+%@% END-IF %@%
+
+%@% IF MAN %@%
+3a. This text occurs only when viewing the MAN output
+
+%@% ELSE %@%
+3b. The MAN conditional was not set.
+
+%@% END-IF %@%
+
+%@% IF LATEX %@%
+4a. This text occurs only when viewing the LATEX output
+
+%@% ELSE %@%
+4b. The LATEX conditional was not set.
+
+%@% END-IF %@%
+
+\subsection{Translation of User Defined Macros}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The user macro translation file (given by the \oOptArg{-t}{transfile}) contains
+\Prog{Perl} commands specifying the translation of \LaTeX\ macros defined by
+the user. These macros may have none, one or two arguments. The following code
+is expected:
+
+\begin{itemize}\setlength{\itemsep}{0cm}
+\item Comments start with a \# up to the end of the line.
+\item For a macro \verb+\foo+ with no arguments, the following code must be
+     specified:
+     \begin{description}\setlength{\itemsep}{0cm}
+       \item[Translation to Man-Pages]\TEXbr
+            \verb+$manMacro{'foo'}  = '...';+
+       \item[Translation to HTML]\TEXbr
+            \verb+$htmlMacro{'foo'} = '...';+
+       \item[Translation to TexInfo]\TEXbr
+            \verb+$texiMacro{'foo'} = '...';+
+     \end{description}
+
+     where \verb+...+ is the translation.
+
+\item For a macro \verb+\foo{..}+ with one argument, the following code must be
+     specified:
+     \begin{description}\setlength{\itemsep}{0cm}
+       \item[Translation to Man-Pages]\TEXbr
+            \verb+$manMacro1a{'foo'}  = '...';+\\
+            \verb+$manMacro1b{'foo'}  = '...';+
+       \item[Translation to HTML]\TEXbr
+            \verb+$htmlMacro1a{'foo'} = '...';+\\
+            \verb+$htmlMacro1b{'foo'} = '...';+
+
+       \item[Translation to TexInfo]\TEXbr
+            \verb+$texiMacro1a{'foo'} = '...';+\\
+            \verb+$texiMacro1b{'foo'} = '...';+
+     \end{description}
+
+     where \verb+...+ is the translation. The \verb+1a+ code is used before the
+     argument, while \verb+1b+ is typeset after the argument is set.
+
+\item For a macro \verb+\foo{..}{..}+ with two arguments, the following code
+     must be specified:
+     \begin{description}\setlength{\itemsep}{0cm}
+     \item[Translation to Man-Pages]\TEXbr
+          \verb+$manMacro2a{'foo'}  = '...';+\\
+          \verb+$manMacro2b{'foo'}  = '...';+\\
+          \verb+$manMacro2c{'foo'}  = '...';+
+     \item[Translation to HTML]\TEXbr
+          \verb+$htmlMacro2a{'foo'} = '...';+\\
+          \verb+$htmlMacro2b{'foo'} = '...';+\\
+          \verb+$htmlMacro2c{'foo'} = '...';+
+     \item[Translation to TexInfo]\TEXbr
+          \verb+$texiMacro2a{'foo'} = '...';+\\
+          \verb+$texiMacro2b{'foo'} = '...';+\\
+          \verb+$texiMacro2c{'foo'} = '...';+
+     \end{description}
+
+     where \verb+...+ is the translation. The \verb+2a+ code is used before the
+     first argument, \verb+2b+ between the two arguments and \verb+2c+ is
+     typeset after the second argument is set.
+\item The file \File{latex2man.trans} contains some example code.
+\end{itemize}
+
+\subsection{Verbatim Environment}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{verbatim}
+This
+    {is}
+        \texttt{a}
+                  $test$
+                         _of_
+verbatim
+<this is no HTML tag> and no @* TexInfo command
+\end{verbatim}
+
+\subsection{Subsection works}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This is a \verb+\subsection+.
+
+\subsubsection{Subsubsection works}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This is a \verb+\subsubsection+.
+
+\subsubsection{Subsubsection still works}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This is another \verb+\subsubsection+.
+
+
+\subsection{General Remarks}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{enumerate}\setlength{\itemsep}{0cm}
+\item Empty lines are typeset as paragraph separators.
+\item The arguments of the \LaTeX\ commands must not be split over several
+     lines.
+\item Do not nest calls to macros.
+\item Except the mentioned environment and macros, the usage of other \LaTeX\
+     environments or macros are not translated. Their usage will cause garbage
+     in the output.
+\item \Prog{latex2man} requires Perl version $>=$ 5.0004\_03.
+\item If you want to install the system with the distributed \File{Makefile},
+     you need GNU-\Prog{make}. If you don't have it, you should execute the
+     steps shown in the \File{Makefile} manually.
+\end{enumerate}
+
+\subsection{Some Bug Fix Tests}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% TODO: HTML: a blank line after \begin{description} should not emit a <p>
+\begin{description}
+\item[Leading . and ']
+%%%%%%%%%%%%%%%%%%%%%%
+Now leading . and ' in generation troff output should work propperly,
+since a \verb+\&+ is added. Therfore the \verb+\Dot+ macro has been deleted.\\
+Thanks to \Email{Frank.Schilder@Mathematik.Tu-Ilmenau.De}.\\
+Testcase 1:
+\begin{description}
+\item['\Bs n'] ...
+\end{description}
+Testcase 2:\\
+\File{.foobar}
+Testcase 3:\\
+\Dots
+
+abc \Dots abc . efg ' 123
+
+\item[\% in verbatim] A \% in a \Bs verb and verbatim-environment was not
+     emitted correctly.  Thanks to Aleksey Nogin \Email{nogin@cs.caltech.edu}
+     for the bug report and bug fix.
+
+\verb+ % abc+
+
+\begin{verbatim}
+   % abc %
+\end{verbatim}
+
+but ignore comments following this: % this should be ignored
+
+\end{description}
+
+\section{Requirements}
+%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{description}\setlength{\itemsep}{0cm}
+\item[Perl] \Prog{latex2man} requires Perl version $>=$ 5.0004\_03.
+\item[Make] If you want to install the system with the distributed
+     \File{Makefile}, you need GNU-\Prog{make}. If you don't have it, you
+     should execute the steps shown in the \File{Makefile} manually.
+\item[\LaTeX] \LaTeX 2e is required.
+\end{description}
+
+\section{Changes}
+%@% IF LATEX %@%
+{\small\verbatiminput{CHANGES}}
+%@% ELSE %@%
+Please check the file \URL{latex2man-CHANGES} for the list of changes.
+%@% END-IF %@%
+
+\section{Version}
+%%%%%%%%%%%%%%%%%
+
+Version: \Version\ of \Date.
+
+\section{License and Copyright}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{description}
+\item[Copyright] \copyright\ 1998, Dr.~Jürgen Vollmer, Viktoriastraße 15,
+     D-76133 Karlsruhe, Germany, \Email{Juergen.Vollmer@informatik-vollmer.de}
+
+
+     The actual version of  \Prog{Latex2man} may be found on my homepage\\
+     \URL{http://www.informatik-vollmer.de/software/latex2man.html}.
+
+\item[License] This program can be redistributed and/or modified under the
+     terms of the LaTeX Project Public License Distributed from CTAN archives
+     in directory \File{macros/latex/base/lppl.txt}; either version 1 of the
+     License, or any later version.
+
+\item[Misc] If you find this software useful, please send me a postcard from
+     the place where you are living.
+\end{description}
+
+\section{Author}
+%%%%%%%%%%%%%%%%
+
+\noindent
+Dr.~Jürgen Vollmer                      \\
+Viktoriastraße 15                       \\
+D-76133 Karlsruhe                       \\
+Email: \Email{Juergen.Vollmer@informatik-vollmer.de}  \\
+WWW: \URL{http://www.informatik-vollmer.de}.
+
+\LatexManEnd
+
+\end{document}
