@@ -720,6 +720,66 @@ HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
 
 
 #-------------------------------------------------
+# Big or little endian and byteswap
+#-------------------------------------------------
+
+# Test if host is big or little endian with an option to override in
+# the rare case that autoconf detects the wrong value.
+
+AC_C_BIGENDIAN([default=big], [default=little], [default=none], [default=none])
+
+AC_ARG_ENABLE([endian],
+  [AS_HELP_STRING([--enable-endian],
+      [host endianness (big, little), only needed if autoconf fails
+       to detect correctly])],
+  [host_endian="$enable_endian"],
+  [host_endian="$default"])
+
+case "$host_endian" in
+  big )
+    AC_DEFINE([HOST_BIG_ENDIAN], [1], [Host is big endian.])
+    ;;
+  little )
+    AC_DEFINE([HOST_LITTLE_ENDIAN], [1], [Host is little endian.])
+    ;;
+  none )
+    AC_MSG_WARN([Unable to autodetect host endianness.])
+    AC_MSG_ERROR([Set --enable-endian to 'big' or 'little' and rerun configure.])
+    ;;
+  * )
+    AC_MSG_WARN([Bad value for host endianness: $host_endian])
+    AC_MSG_ERROR([Set --enable-endian to 'big' or 'little' and rerun configure.])
+    ;;
+esac
+
+AC_MSG_NOTICE([host endian: $host_endian])
+
+# Test if <byteswap.h> exists and defines bswap_64.  If yes, then it
+# has assembly code for the fastest way to convert between big/little
+# endian.
+
+AC_LANG_PUSH([C++])
+AC_LINK_IFELSE([
+#include <stdio.h>
+#include <stdint.h>
+#include <byteswap.h>
+int main(int argc, char **argv)
+{
+  uint64_t x = (uint64_t) argc;
+  uint64_t y = bswap_64(x);
+  return y > 2;
+}
+], [use_byteswap=yes], [use_byteswap=no])
+AC_LANG_POP()
+
+AC_MSG_NOTICE([use system byteswap.h: $use_byteswap])
+
+if test "$use_byteswap" = yes ; then
+  AC_DEFINE([USE_SYSTEM_BYTESWAP], [1], [Use system byteswap.h])
+fi
+
+
+#-------------------------------------------------
 # LD -- find correct arch type for ld
 #-------------------------------------------------
 
@@ -2801,6 +2861,7 @@ AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  prefix: $prefix])
 AC_MSG_NOTICE([  build:  $build])
 AC_MSG_NOTICE([  host:   $host])
+AC_MSG_NOTICE([  host endian: $host_endian])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
 AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])

@@ -72,6 +72,9 @@
 /* C compiler supports type "voidp" */
 #undef HAVE_VOIDP_LANG_C
 
+/* Host is big endian. */
+#undef HOST_BIG_ENDIAN
+
 /* HOST CPU: ia64 (itanium) */
 #undef HOST_CPU_IA64
 
@@ -83,6 +86,9 @@
 
 /* HOST CPU: x86-64 */
 #undef HOST_CPU_x86_64
+
+/* Host is little endian. */
+#undef HOST_LITTLE_ENDIAN
 
 /* HOST OS: IRIX */
 #undef HOST_OS_IRIX
@@ -151,8 +157,23 @@
 /* libunwind is the specified unwinder */
 #undef USE_LIBUNW
 
+/* Use system byteswap.h */
+#undef USE_SYSTEM_BYTESWAP
+
 /* Version number of package */
 #undef VERSION
+
+/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
+   significant byte first (like Motorola and SPARC, unlike Intel). */
+#if defined AC_APPLE_UNIVERSAL_BUILD
+# if defined __BIG_ENDIAN__
+#  define WORDS_BIGENDIAN 1
+# endif
+#else
+# ifndef WORDS_BIGENDIAN
+#  undef WORDS_BIGENDIAN
+# endif
+#endif
 
 /* Fix pthread.h */
 #undef __thread
