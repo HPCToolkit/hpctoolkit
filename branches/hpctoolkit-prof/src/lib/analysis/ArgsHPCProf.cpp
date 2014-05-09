@@ -155,6 +155,7 @@ Options: Output:\n\
   --metric-db <yes|no>\n\
                        Control whether to generate a thread-level metric\n\
                        value database for hpcviewer scatter plots. {yes}\n\
+  --new-db             Use new binary db format for metrics (work in progress).\n\
 ";
 
 
@@ -199,6 +200,8 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
   {  0 , "db",              CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
      NULL },
   {  0 , "metric-db",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  {  0 , "new-db",          CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // General
@@ -396,6 +399,9 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
     if (parser.isOpt("metric-db")) {
       const string& arg = parser.getOptArg("metric-db");
       db_makeMetricDB = CmdLineParser::parseArg_bool(arg, "--metric-db option");
+    }
+    if (parser.isOpt("new-db")) {
+      new_db_format = true;
     }
 
     // Check for required arguments

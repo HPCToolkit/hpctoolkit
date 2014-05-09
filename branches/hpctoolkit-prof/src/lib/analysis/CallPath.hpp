@@ -183,7 +183,8 @@ makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args);
 
 void 
 write(Prof::CallPath::Profile& prof, std::ostream& os, 
-      const std::string& title, bool prettyPrint = true);
+      const std::string& title, bool prettyPrint = true,
+      bool omitMetrics = false);
 
 } // namespace CallPath
 

@@ -115,6 +115,7 @@ Args::Ctor()
   db_copySrcFiles   = true;
   out_db_config     = "";
   db_makeMetricDB   = true;
+  new_db_format     = false;
 
   out_txt           = Analysis_OUT_TXT;
   txt_summary       = TxtSum_NULL;

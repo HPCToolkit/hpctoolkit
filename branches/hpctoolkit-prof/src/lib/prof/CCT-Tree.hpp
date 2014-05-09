@@ -138,7 +138,8 @@ public:
     OFlg_Compressed      = (1 << 0), // Write in compressed format
     OFlg_LeafMetricsOnly = (1 << 1), // Write metrics only at leaves (outdated)
     OFlg_Debug           = (1 << 2), // Debug: show xtra source line info
-    OFlg_DebugAll        = (1 << 3)  // Debug: (may be invalid format)
+    OFlg_DebugAll        = (1 << 3), // Debug: (may be invalid format)
+    OFlg_OmitMetrics     = (1 << 4)  // Do not write metrics into XML files
   };
 
 

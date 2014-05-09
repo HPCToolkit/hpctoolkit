@@ -1055,7 +1055,7 @@ makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args)
 
   // 4. Write data for 'experiment.xml'
   bool prettyPrint = (Diagnostics_GetDiagnosticFilterLevel() >= 5);
-  Analysis::CallPath::write(prof, *os, args.title, prettyPrint);
+  Analysis::CallPath::write(prof, *os, args.title, prettyPrint, args.new_db_format);
   IOUtil::CloseStream(os);
 
   delete[] outBuf;
@@ -1064,7 +1064,7 @@ makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args)
 
 void
 write(Prof::CallPath::Profile& prof, std::ostream& os,
-      const string& title, bool prettyPrint)
+      const string& title, bool prettyPrint, bool omitMetrics)
 {
   static const char* experimentDTD =
 #include <lib/xml/hpc-experiment.dtd.h>
@@ -1077,6 +1077,9 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   }
   DIAG_If(5) {
     oFlags |= CCT::Tree::OFlg_Debug;
+  }
+  if (omitMetrics) {
+    oFlags |= CCT::Tree::OFlg_OmitMetrics;
   }
 
   uint metricBegId = 0;
