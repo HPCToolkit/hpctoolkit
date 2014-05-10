@@ -74,6 +74,8 @@ using std::endl;
 #include <string>
 using std::string;
 
+#define _GLIBCXX_DEBUG
+
 #include <map>
 #include <list>
 #include <vector>
@@ -157,7 +159,7 @@ static int
 buildStmts(Struct::LocationMgr& locMgr,
 	   Prof::Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
 	   OA::OA_ptr<OA::CFG::NodeInterface> bb, ProcNameMgr* procNmMgr,
-	   std::list<Prof::Struct::ACodeNode *> &insertions);
+	   std::list<Prof::Struct::ACodeNode *> &insertions, int targetScopeID);
 
 
 static void
@@ -561,6 +563,8 @@ AlienScopeFilter(const Prof::Struct::ANode& x, long GCC_ATTR_UNUSED type)
   return (x.type() == Prof::Struct::ANode::TyAlien);
 }
 
+int debug_compare = 0;
+
 class AlienCompare {
 public:
   bool operator()(const Prof::Struct::Alien* a1,  const Prof::Struct::Alien* a2) const {
@@ -591,12 +595,17 @@ renumberAlienScopes(Prof::Struct::ANode* node)
   
   // iterate over scopes that represent inlined procedures
   for(Prof::Struct::ANodeIterator inlines(node, &inlinesOnly); inlines.Current(); inlines++) {
-    Prof::Struct::Alien* inlinedProcedure = (Prof::Struct::Alien*) inlines.Current();
+    Prof::Struct::Alien* inlinedProcedure = dynamic_cast<Prof::Struct::Alien*>(inlines.Current());
     int minLine = INT_MAX;
     int maxLine = 0;
+
+    //---------------------------------------------------------------------
     // iterate over the immediate child scopes of an inlined procedure
-    for(Prof::Struct::ANodeChildIterator kids(inlinedProcedure); kids.Current(); kids++) {
-      Prof::Struct::ACodeNode* child = (Prof::Struct::ACodeNode*) kids.Current();
+    //---------------------------------------------------------------------
+    for(NonUniformDegreeTreeNodeChildIterator kids(inlinedProcedure); 
+        kids.Current(); kids++) {
+      Prof::Struct::ACodeNode* child = 
+         dynamic_cast<Prof::Struct::ACodeNode*>(kids.Current());
       int childLine = child->begLine();
       if (childLine > 0) {
         if (childLine < minLine) {
@@ -616,52 +625,84 @@ renumberAlienScopes(Prof::Struct::ANode* node)
 }
 
 
+//----------------------------------------------------------------------------
+// because of how alien contexts are entered into the tree, there may be many
+// duplicates. if there are duplicates among the immediate children of node, 
+// coalesce them. then, apply this coalescing to the subtree rooted at 
+// each of the remaining (unique) children of node.
+//----------------------------------------------------------------------------
 static void
 coalesceAlienChildren(Prof::Struct::ANode* node)
 {
-  std::map<Prof::Struct::Alien*, list<Prof::Struct::Alien*>, AlienCompare> alienMap; 
+  std::map<Prof::Struct::Alien*, list<Prof::Struct::Alien*>, AlienCompare> 
+      alienMap; 
 
-  // enter all alien children into a map. values in the map will be lists of equivalent 
-  // alien children.
+  //----------------------------------------------------------------------------
+  // enter all alien children into a map. values in the map will be lists of 
+  // equivalent alien children.
+  //----------------------------------------------------------------------------
   Prof::Struct::ANodeFilter aliensOnly(AlienScopeFilter, "AlienScopeFilter", 0);
   for(Prof::Struct::ANodeChildIterator it(node, &aliensOnly); it.Current(); it++) {
-    Prof::Struct::Alien* alien = (Prof::Struct::Alien*) it.Current();
+    Prof::Struct::Alien* alien = dynamic_cast<Prof::Struct::Alien*>(it.Current());
     alienMap[alien].push_back(alien);
   }
 
-  // coalesce equivalent alien children by merging all alien children in a list into the first
-  // element. free duplicates after unlinking them from the tree.
-  for (std::map<Prof::Struct::Alien*,list<Prof::Struct::Alien*> >::iterator sets = alienMap.begin();
-      sets != alienMap.end(); sets++) {
+  //----------------------------------------------------------------------------
+  // coalesce equivalent alien children by merging all alien children in a list 
+  // into the first element. free duplicate aliens after unlinking them from the 
+  // tree.
+  //----------------------------------------------------------------------------
+  for (std::map<Prof::Struct::Alien*,list<Prof::Struct::Alien*> >::iterator 
+       sets = alienMap.begin(); sets != alienMap.end(); sets++) {
 
-      // for each list of equivalent aliens, have the first alien adopt children of all the rest.
-      // unlink and delete all but the first of the list of aliens.
+      //------------------------------------------------------------------------
+      // for each list of equivalent aliens, have the first alien adopt children 
+      // of all the rest unlink and delete all but the first of the list of 
+      // aliens.
+      //------------------------------------------------------------------------
       list<Prof::Struct::Alien*> &alienList =  sets->second;
       std::list<Prof::Struct::Alien*>::iterator rest = alienList.begin();
       Prof::Struct::Alien* first = *rest;
       // for second through last elements in the list
       for (rest++; rest != alienList.end(); rest++)  {
          Prof::Struct::Alien* duplicate = (Prof::Struct::Alien*) *rest;
-         // have the first adopt the children of this node 
-         for(Prof::Struct::ANodeChildIterator kids(duplicate); kids.Current();) {
-           Prof::Struct::ANode* kid = (Prof::Struct::ANode*) kids.Current();
-	   kids++;
+
+         //---------------------------------------------------------------------
+	 // accumulate a list of the children of the duplicate alien 
+         //---------------------------------------------------------------------
+	 std::list<Prof::Struct::ANode*> kidsList;
+         for(NonUniformDegreeTreeNodeChildIterator kids(duplicate); 
+             kids.Current(); kids++) {
+           Prof::Struct::ANode* kid = 
+             dynamic_cast<Prof::Struct::ANode*>(kids.Current());
+	   kidsList.push_back(kid);
+	 }
+
+         //---------------------------------------------------------------------
+	 // walk through the list of the children of duplicate and reparent them
+         // under first - an equivalent alien that will adopt all children of 
+         // duplicate.
+         //---------------------------------------------------------------------
+         for (std::list<Prof::Struct::ANode*>::iterator kids = kidsList.begin();
+           kids != kidsList.end(); kids++)  {
+           Prof::Struct::ANode* kid = *kids;
            kid->unlink();
            kid->link(first);
-	 }
+         }
          duplicate->unlink();
          delete duplicate;
       }
-      alienList.clear(); // done with this list. discard it to minimize memory footprint.
+      alienList.clear(); // done with this list. discard its contents.
    }
 
-  
-  alienMap.clear(); // done with the map. discard it to minimize memory footprint.
+  alienMap.clear(); // done with the map. discard its contents.
 
-  // recursively coalesce alien grand children
-  for(Prof::Struct::ANodeChildIterator it(node); it.Current(); it++) {
-    Prof::Struct::ANode* child = (Prof::Struct::ANode*) it.Current();
-    coalesceAlienChildren(child);
+  //----------------------------------------------------------------------------
+  // recursively apply coalescing to the subtree rooted at each child of node
+  //----------------------------------------------------------------------------
+  for(NonUniformDegreeTreeNodeChildIterator kids(node); kids.Current(); kids++) {
+    Prof::Struct::ANode* kid = dynamic_cast<Prof::Struct::ANode*>(kids.Current());
+    coalesceAlienChildren(kid);
   }
 }
 
@@ -802,7 +843,9 @@ getVisibleAncestor(Prof::Struct::ANode *node)
   }
 }
 
-int
+
+#if FULL_STRUCT_DEBUG
+static int
 willBeCycle()
 {
   return 1;
@@ -833,10 +876,12 @@ ancestorIsLoop(Prof::Struct::ANode *node)
   }
   return 0;
 }
+#endif
+
 
 static void
-reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop, Prof::Struct::ANode *loopParent, 
-	     Struct::LocationMgr& locMgr)
+reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop, 
+             Prof::Struct::ANode *loopParent, Struct::LocationMgr& locMgr)
 {
   Prof::Struct::ANode *node = kid;
 
@@ -1050,10 +1095,10 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
   // Process instructions within BB
   // -----------------------------------------------------
   std::list<Prof::Struct::ACodeNode *> kids;
-  buildStmts(locMgr, topScope, p, bb, procNmMgr, kids);
+  buildStmts(locMgr, topScope, p, bb, procNmMgr, kids, targetScope->id());
   
   if (loop) { 
-    locMgr.locate(loop, topScope, fnm, pnm, line);
+    locMgr.locate(loop, topScope, fnm, pnm, line, targetScope->id());
 #if FULL_STRUCT_DEBUG
     if (ancestorIsLoop(loop)) willBeCycle();
 #endif
@@ -1081,7 +1126,7 @@ static int
 buildStmts(Struct::LocationMgr& locMgr,
 	   Prof::Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
 	   OA::OA_ptr<OA::CFG::NodeInterface> bb, ProcNameMgr* procNmMgr, 
-	   std::list<Prof::Struct::ACodeNode *> &insertions)
+	   std::list<Prof::Struct::ACodeNode *> &insertions, int targetScopeID)
 {
   static int call_sortId = 0;
 
@@ -1125,7 +1170,7 @@ buildStmts(Struct::LocationMgr& locMgr,
       stmt->sortId(--call_sortId);
     }
     insertions.push_back(stmt);
-    locMgr.locate(stmt, enclosingStrct, filenm, procnm, line);
+    locMgr.locate(stmt, enclosingStrct, filenm, procnm, line, targetScopeID);
   }
   return 0;
 }
