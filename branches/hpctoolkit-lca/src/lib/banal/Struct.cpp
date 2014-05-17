@@ -120,7 +120,7 @@ using namespace Prof;
 #include "Struct-Inline.hpp"
 #endif
 
-#define FULL_STRUCT_DEBUG 0
+#define FULL_STRUCT_DEBUG 1
 
 //*************************** Forward Declarations ***************************
 
@@ -661,8 +661,8 @@ coalesceAlienChildren(Prof::Struct::ANode* node)
       } else {
 #ifdef DEBUG_ALIEN_MAP
         std::cerr << "  " << "alien follower (" << found->first << ") " << alien << " " << 
-#endif
             alien->toStringMe() << std::endl;
+#endif
         found->second->push_back(alien);
 	duplicates = true;
       }
@@ -1104,7 +1104,7 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
     findLoopBegLineInfo(/*procCtxt,*/ p, bb, fnm, pnm, line, loop_vma);
     pnm = BinUtil::canonicalizeProcName(pnm, procNmMgr);
     
-    loop = new Prof::Struct::Loop(NULL, line, line);
+    loop = new Prof::Struct::Loop(NULL, fnm, line, line);
     loop->vmaSet().insert(loop_vma, loop_vma + 1); // a loop id
     targetScope = loop;
   } else if (!isIrrIvalLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
