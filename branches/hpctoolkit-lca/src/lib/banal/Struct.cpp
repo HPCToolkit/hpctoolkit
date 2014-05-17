@@ -77,6 +77,7 @@ using std::string;
 #define _GLIBCXX_DEBUG
 
 #include <map>
+#include <algorithm>
 #include <list>
 #include <vector>
 
@@ -624,6 +625,8 @@ renumberAlienScopes(Prof::Struct::ANode* node)
   }
 }
 
+typedef std::list<Prof::Struct::Alien*> AlienList;
+typedef std::map<Prof::Struct::Alien*, AlienList*, AlienCompare> AlienMap; 
 
 //----------------------------------------------------------------------------
 // because of how alien contexts are entered into the tree, there may be many
@@ -634,38 +637,57 @@ renumberAlienScopes(Prof::Struct::ANode* node)
 static void
 coalesceAlienChildren(Prof::Struct::ANode* node)
 {
-  std::map<Prof::Struct::Alien*, list<Prof::Struct::Alien*>, AlienCompare> 
-      alienMap; 
+  AlienMap alienMap; 
+  bool duplicates = false;
 
+#ifdef DEBUG_ALIEN_MAP
+  std::cerr << "Coalescing children of node " << node << " " << node->toStringMe() << std::endl;
+#endif
   //----------------------------------------------------------------------------
   // enter all alien children into a map. values in the map will be lists of 
   // equivalent alien children.
   //----------------------------------------------------------------------------
-  Prof::Struct::ANodeFilter aliensOnly(AlienScopeFilter, "AlienScopeFilter", 0);
-  for(Prof::Struct::ANodeChildIterator it(node, &aliensOnly); it.Current(); it++) {
+  for(NonUniformDegreeTreeNodeChildIterator it(node); it.Current(); it++) {
     Prof::Struct::Alien* alien = dynamic_cast<Prof::Struct::Alien*>(it.Current());
-    alienMap[alien].push_back(alien);
+    if (alien) {
+      AlienMap::iterator found = alienMap.find(alien);
+      if (found == alienMap.end()) {
+        AlienList *newlist = new AlienList; 
+        // newlist->push_back(alien);
+        alienMap[alien] = newlist; 
+#ifdef DEBUG_ALIEN_MAP
+        std::cerr << "  " << "alien leader " << alien << " " << alien->toStringMe() << std::endl;
+#endif
+      } else {
+#ifdef DEBUG_ALIEN_MAP
+        std::cerr << "  " << "alien follower (" << found->first << ") " << alien << " " << 
+#endif
+            alien->toStringMe() << std::endl;
+        found->second->push_back(alien);
+	duplicates = true;
+      }
+   }
   }
 
+  if (duplicates) {
   //----------------------------------------------------------------------------
   // coalesce equivalent alien children by merging all alien children in a list 
   // into the first element. free duplicate aliens after unlinking them from the 
   // tree.
   //----------------------------------------------------------------------------
-  for (std::map<Prof::Struct::Alien*,list<Prof::Struct::Alien*> >::iterator 
-       sets = alienMap.begin(); sets != alienMap.end(); sets++) {
+  for (AlienMap::iterator sets = alienMap.begin(); sets != alienMap.end(); sets++) {
 
       //------------------------------------------------------------------------
       // for each list of equivalent aliens, have the first alien adopt children 
       // of all the rest unlink and delete all but the first of the list of 
       // aliens.
       //------------------------------------------------------------------------
-      list<Prof::Struct::Alien*> &alienList =  sets->second;
-      std::list<Prof::Struct::Alien*>::iterator rest = alienList.begin();
-      Prof::Struct::Alien* first = *rest;
+      Prof::Struct::Alien* first = sets->first;
+      AlienList *alienList =  sets->second;
+      AlienList::iterator rest = alienList->begin();
       // for second through last elements in the list
-      for (rest++; rest != alienList.end(); rest++)  {
-         Prof::Struct::Alien* duplicate = (Prof::Struct::Alien*) *rest;
+      for (; rest != alienList->end(); rest++)  {
+         Prof::Struct::Alien* duplicate = *rest;
 
          //---------------------------------------------------------------------
 	 // accumulate a list of the children of the duplicate alien 
@@ -692,17 +714,19 @@ coalesceAlienChildren(Prof::Struct::ANode* node)
          duplicate->unlink();
          delete duplicate;
       }
-      alienList.clear(); // done with this list. discard its contents.
+      alienList->clear(); // done with this list. discard its contents.
    }
-
-  alienMap.clear(); // done with the map. discard its contents.
+   }
+   alienMap.clear(); // done with the map. discard its contents.
 
   //----------------------------------------------------------------------------
   // recursively apply coalescing to the subtree rooted at each child of node
   //----------------------------------------------------------------------------
   for(NonUniformDegreeTreeNodeChildIterator kids(node); kids.Current(); kids++) {
     Prof::Struct::ANode* kid = dynamic_cast<Prof::Struct::ANode*>(kids.Current());
-    coalesceAlienChildren(kid);
+    if (typeid(*kid) != typeid(Prof::Struct::Stmt)) {
+      coalesceAlienChildren(kid);
+    }
   }
 }
 
