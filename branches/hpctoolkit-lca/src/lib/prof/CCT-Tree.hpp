@@ -1039,7 +1039,6 @@ public:
     return id;
   }
 
-
   virtual const std::string&
   procName() const
   { return (m_strct) ? m_strct->name() : BOGUS; }
@@ -1204,6 +1203,16 @@ public:
   Loop(ANode* parent, Struct::ACodeNode* strct = NULL)
     : ANode(TyLoop, parent, strct)
   { }
+
+  virtual uint
+  fileId() const
+  {
+    uint id = 0;
+    if (m_strct) {
+      id = m_strct->id(); 
+    }
+    return id;
+  }
 
   virtual ~Loop()
   { }

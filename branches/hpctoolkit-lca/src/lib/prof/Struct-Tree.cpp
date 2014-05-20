@@ -103,6 +103,8 @@ namespace Prof {
 namespace Struct {
 
 
+RealPathMgr& s_realpathMgr = RealPathMgr::singleton();
+
 //***************************************************************************
 // Tree
 //***************************************************************************
@@ -230,7 +232,9 @@ ACodeNode::linkAndSetLineRange(ACodeNode* parent)
 }
 
 
+#if 0
 RealPathMgr& Root::s_realpathMgr = RealPathMgr::singleton();
+#endif
 
 void
 Root::Ctor(const char* nm)
@@ -311,7 +315,9 @@ Group::demand(Root* pgm, const string& nm, ANode* parent)
 }
 
 
+#if 0
 RealPathMgr& LM::s_realpathMgr = RealPathMgr::singleton();
+#endif
 
 void
 LM::Ctor(const char* nm, ANode* parent)
@@ -357,7 +363,9 @@ LM::demand(Root* pgm, const string& lm_nm)
 }
 
 
+#if 0
 RealPathMgr& File::s_realpathMgr = RealPathMgr::singleton();
+#endif
 
 void
 File::Ctor(const char* fname, ANode* parent)
@@ -390,7 +398,7 @@ File::demand(LM* lm, const string& filenm)
   const char* note = "(found)";
 
   string nm_real = filenm;
-  File::s_realpathMgr.realpath(nm_real);
+  s_realpathMgr.realpath(nm_real);
 
   File* file = lm->findFile(nm_real);
   if (!file) {
@@ -458,7 +466,9 @@ Proc::demand(File* file, const string& name, const std::string& linkname,
 }
 
 
+#if 0
 RealPathMgr& Alien::s_realpathMgr = RealPathMgr::singleton();
+#endif
 
 void
 Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm,
@@ -877,6 +887,13 @@ Root::insertGroupMap(Group* grp)
   std::pair<GroupMap::iterator, bool> ret =
     groupMap->insert(std::make_pair(grp->name(), grp));
   DIAG_Assert(ret.second, "Duplicate!");
+}
+
+void
+Loop::setFile(std::string filenm)
+{
+  m_filenm = filenm;
+  s_realpathMgr.realpath(m_filenm);
 }
 
 
@@ -1500,7 +1517,7 @@ Alien::toXML(uint oFlags) const
 string
 Loop::toXML(uint oFlags) const
 {
-  string self = ACodeNode::toXML(oFlags);
+  string self = ACodeNode::toXML(oFlags) + " f" + MakeAttrStr(m_filenm);
   return self;
 }
 

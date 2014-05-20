@@ -970,7 +970,9 @@ private:
   LMMap* lmMap_realpath; // mapped by 'realpath'
   LMMap* lmMap_basename;
 
+#if 0
   static RealPathMgr& s_realpathMgr;
+#endif
 };
 
 
@@ -1250,7 +1252,9 @@ private:
   mutable VMAToProcMap*      m_procMap;
   mutable VMAToStmtRangeMap* m_stmtMap;
 
+#if 0
   static RealPathMgr& s_realpathMgr;
+#endif
 };
 
 
@@ -1368,7 +1372,9 @@ private:
   std::string m_name; // the file name including the path
   ProcMap*    m_procMap;
 
+#if 0
   static RealPathMgr& s_realpathMgr;
+#endif
 };
 
 
@@ -1616,7 +1622,9 @@ private:
   std::string m_name;
   std::string m_displaynm;
 
+#if 0
   static RealPathMgr& s_realpathMgr;
+#endif
 };
 
 
@@ -1631,14 +1639,17 @@ public:
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
-  Loop(ACodeNode* parent,
+  Loop(ACodeNode* parent, std::string &filenm, 
 	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyLoop, parent, begLn, endLn, 0, 0)
   {
     ANodeTy t = (parent) ? parent->type() : TyANY;
+    setFile(filenm);
     DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyFile) ||
 		(t == TyProc) || (t == TyAlien) || (t == TyLoop), "");
   }
+
+  void setFile(std::string filenm);
 
   virtual ~Loop()
   { }
@@ -1667,6 +1678,16 @@ public:
   dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
 	 const char* pre = "") const;
 
+  const std::string&
+  fileName() const
+  { return m_filenm; }
+
+  void
+  fileName(const std::string& fnm)
+  { m_filenm = fnm; }
+
+private:
+  std::string m_filenm;
 };
 
 

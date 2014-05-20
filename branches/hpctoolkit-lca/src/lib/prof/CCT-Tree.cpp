@@ -104,6 +104,8 @@ using SrcFile::ln_NULL;
 
 namespace Prof {
 
+extern std::map<uint, uint> m_mapFileIDs;      // map between file IDs
+
 namespace CCT {
   
 Tree::Tree(const CallPath::Profile* metadata)
@@ -1120,6 +1122,15 @@ Root::toStringMe(uint oFlags) const
   return self;
 }
 
+static uint
+getFileIdFromMap(uint file_id)
+{
+  uint id = file_id;
+  if (Prof::m_mapFileIDs.find(file_id) != Prof::m_mapFileIDs.end()) {
+    id = Prof::m_mapFileIDs[file_id];
+  }
+  return id;
+}
 
 string
 ProcFrm::toStringMe(uint oFlags) const
@@ -1128,7 +1139,10 @@ ProcFrm::toStringMe(uint oFlags) const
   
   if (m_strct) {
     string lm_nm = xml::MakeAttrNum(lmId());
-    string fnm = xml::MakeAttrNum(fileId());
+
+    uint file_id = getFileIdFromMap(fileId());
+    string fnm = xml::MakeAttrNum(file_id);
+
     string pnm = xml::MakeAttrNum(procId());
 
     if (oFlags & Tree::OFlg_DebugAll) {
@@ -1153,7 +1167,8 @@ Proc::toStringMe(uint oFlags) const
   
   if (m_strct) {
     string lm_nm = xml::MakeAttrNum(lmId());
-    string fnm = xml::MakeAttrNum(fileId());
+    uint file_id = getFileIdFromMap(fileId());
+    string fnm = xml::MakeAttrNum(file_id);
     string pnm = xml::MakeAttrNum(procId());
 
     if (oFlags & Tree::OFlg_DebugAll) {
@@ -1175,7 +1190,9 @@ Proc::toStringMe(uint oFlags) const
 string 
 Loop::toStringMe(uint oFlags) const
 {
-  string self = ANode::toStringMe(oFlags);
+  uint file_id = getFileIdFromMap(fileId());
+  string fnm = xml::MakeAttrNum(file_id);
+  string self = ANode::toStringMe(oFlags) + " f" + fnm;
   return self;
 }
 
