@@ -74,10 +74,7 @@ using std::endl;
 #include <string>
 using std::string;
 
-#define _GLIBCXX_DEBUG
-
 #include <map>
-#include <algorithm>
 #include <list>
 #include <vector>
 
@@ -120,7 +117,7 @@ using namespace Prof;
 #include "Struct-Inline.hpp"
 #endif
 
-#define FULL_STRUCT_DEBUG 1
+#define FULL_STRUCT_DEBUG 0
 
 //*************************** Forward Declarations ***************************
 
@@ -564,15 +561,52 @@ AlienScopeFilter(const Prof::Struct::ANode& x, long GCC_ATTR_UNUSED type)
   return (x.type() == Prof::Struct::ANode::TyAlien);
 }
 
-int debug_compare = 0;
+
+#if DEBUG_COMPARE
+static int debug_compare = 0;
+#define retval_line 1
+#define retval_proc 2
+#define retval_file 3
+#define MAINTAIN_REASON(x) x
+#else
+#define MAINTAIN_REASON(x) 
+#endif
+
 
 class AlienCompare {
 public:
   bool operator()(const Prof::Struct::Alien* a1,  const Prof::Struct::Alien* a2) const {
-    if (a1->begLine() < a2->begLine()) return true;
-    if (a1->displayName() < a2->displayName()) return true;
-    if (a1->fileName() < a2->fileName()) return true;
-    return false;
+    bool retval = false;
+    MAINTAIN_REASON(int reason = 0);
+    if (a1->begLine() == a2->begLine()) {
+      int result_dn = strcmp(a1->displayName().c_str(), a2->displayName().c_str());
+      if (result_dn == 0) {
+        int result_fn = strcmp(a1->fileName().c_str(), a2->fileName().c_str());
+        if (result_fn == 0) {
+          retval = false;
+        } else {
+          retval = (result_fn < 0) ? true : false;
+          MAINTAIN_REASON(reason = retval_file);
+        }
+      } else {
+        retval = (result_dn < 0) ? true : false;
+        MAINTAIN_REASON(reason = retval_proc);
+      }
+    } else {
+      retval = (a1->begLine() < a2->begLine()) ? true : false;
+      MAINTAIN_REASON(reason = retval_line);
+    } 
+#if DEBUG_COMPARE
+    if (debug_compare) {
+      std::cout << "compare(" << a1 << ", " << a2 << ") = " 
+                << retval << " reason =" << reason << std::endl;
+      std::cout << "  " << a1 << "=[" << a1->begLine() << "," 
+                << a1->displayName() << "," << a1->fileName() << "]" << std::endl;
+      std::cout << "  " << a2 << "=[" << a2->begLine() << "," 
+                << a2->displayName() << "," << a2->fileName() << "]" << std::endl;
+    }
+#endif
+    return retval;
   } 
 };
 
@@ -625,8 +659,6 @@ renumberAlienScopes(Prof::Struct::ANode* node)
   }
 }
 
-typedef std::list<Prof::Struct::Alien*> AlienList;
-typedef std::map<Prof::Struct::Alien*, AlienList*, AlienCompare> AlienMap; 
 
 //----------------------------------------------------------------------------
 // because of how alien contexts are entered into the tree, there may be many
@@ -634,60 +666,69 @@ typedef std::map<Prof::Struct::Alien*, AlienList*, AlienCompare> AlienMap;
 // coalesce them. then, apply this coalescing to the subtree rooted at 
 // each of the remaining (unique) children of node.
 //----------------------------------------------------------------------------
+typedef std::list<Prof::Struct::Alien*> AlienList;
+typedef std::map<Prof::Struct::Alien*, AlienList *, AlienCompare> AlienMap;
+
+void dumpMap(AlienMap &alienMap)
+{
+    std::cout << "map " << &alienMap << 
+                 " (" << alienMap.size() << " items)" << std::endl;
+
+    for(AlienMap::iterator pairs = alienMap.begin(); 
+        pairs != alienMap.end(); pairs++) {
+        std::cout << "  [" << pairs->first << "] = {"; 
+        AlienList *alienList = pairs->second;
+        for(AlienList::iterator duplicates = alienList->begin(); 
+            duplicates != alienList->end(); duplicates++) {
+            std::cout << " " << *duplicates << " "; 
+	}
+        std::cout << "}" << std::endl; 
+    }
+}
+
 static void
 coalesceAlienChildren(Prof::Struct::ANode* node)
 {
   AlienMap alienMap; 
   bool duplicates = false;
 
-#ifdef DEBUG_ALIEN_MAP
-  std::cerr << "Coalescing children of node " << node << " " << node->toStringMe() << std::endl;
-#endif
   //----------------------------------------------------------------------------
   // enter all alien children into a map. values in the map will be lists of 
   // equivalent alien children.
   //----------------------------------------------------------------------------
-  for(NonUniformDegreeTreeNodeChildIterator it(node); it.Current(); it++) {
+  Prof::Struct::ANodeFilter aliensOnly(AlienScopeFilter, "AlienScopeFilter", 0);
+  for(Prof::Struct::ANodeChildIterator it(node, &aliensOnly); it.Current(); it++) {
     Prof::Struct::Alien* alien = dynamic_cast<Prof::Struct::Alien*>(it.Current());
-    if (alien) {
-      AlienMap::iterator found = alienMap.find(alien);
-      if (found == alienMap.end()) {
-        AlienList *newlist = new AlienList; 
-        // newlist->push_back(alien);
-        alienMap[alien] = newlist; 
-#ifdef DEBUG_ALIEN_MAP
-        std::cerr << "  " << "alien leader " << alien << " " << alien->toStringMe() << std::endl;
-#endif
-      } else {
-#ifdef DEBUG_ALIEN_MAP
-        std::cerr << "  " << "alien follower (" << found->first << ") " << alien << " " << 
-            alien->toStringMe() << std::endl;
-#endif
-        found->second->push_back(alien);
-	duplicates = true;
-      }
-   }
+    AlienMap::iterator found = alienMap.find(alien);
+    if (found == alienMap.end()) {
+      alienMap[alien] = new AlienList;
+    } else {
+      found->second->push_back(alien);
+      duplicates = true;
+    }
   }
 
-  if (duplicates) {
   //----------------------------------------------------------------------------
   // coalesce equivalent alien children by merging all alien children in a list 
   // into the first element. free duplicate aliens after unlinking them from the 
   // tree.
   //----------------------------------------------------------------------------
-  for (AlienMap::iterator sets = alienMap.begin(); sets != alienMap.end(); sets++) {
+  if (duplicates) {
+    for (AlienMap::iterator sets = alienMap.begin(); 
+       sets != alienMap.end(); sets++) {
 
       //------------------------------------------------------------------------
       // for each list of equivalent aliens, have the first alien adopt children 
       // of all the rest unlink and delete all but the first of the list of 
       // aliens.
       //------------------------------------------------------------------------
-      Prof::Struct::Alien* first = sets->first;
       AlienList *alienList =  sets->second;
-      AlienList::iterator rest = alienList->begin();
-      // for second through last elements in the list
-      for (; rest != alienList->end(); rest++)  {
-         Prof::Struct::Alien* duplicate = *rest;
+      Prof::Struct::Alien* first = sets->first;
+
+      // for each of the elements in the list of duplicate aliens
+      for (AlienList::iterator duplicates = alienList->begin();
+           duplicates != alienList->end(); duplicates++)  {
+         Prof::Struct::Alien* duplicate = *duplicates;
 
          //---------------------------------------------------------------------
 	 // accumulate a list of the children of the duplicate alien 
@@ -715,9 +756,10 @@ coalesceAlienChildren(Prof::Struct::ANode* node)
          delete duplicate;
       }
       alienList->clear(); // done with this list. discard its contents.
-   }
-   }
-   alienMap.clear(); // done with the map. discard its contents.
+    }
+  }
+
+  alienMap.clear(); // done with the map. discard its contents.
 
   //----------------------------------------------------------------------------
   // recursively apply coalescing to the subtree rooted at each child of node
