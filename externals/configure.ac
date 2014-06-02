@@ -1107,12 +1107,9 @@ AC_SUBST([libxml2_lib])
 # Old Monitor: --with-old-monitor=PATH
 #------------------------------------------------------------
 
-# Set the default to no on Cray XT, the build fails there, and we
-# don't use it on this platform anyway.
+# Turn off old-monitor (and thus hpcrun-flat) by default.
 
-if test "x$XTOS_VERSION" != x ; then
-    old_monitor_default=no
-fi
+old_monitor_default=no
 
 AC_ARG_WITH([old-monitor],
     [AS_HELP_STRING([--with-old-monitor=PATH],
