@@ -86,6 +86,7 @@ using std::string;
 #include <lib/profxml/XercesUtil.hpp>
 #include <lib/profxml/PGMReader.hpp>
 
+#include <lib/prof/Database.hpp>
 #include <lib/prof-lean/hpcrun-metric.h>
 
 #include <lib/binutils/LM.hpp>
@@ -1057,6 +1058,11 @@ makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args)
   bool prettyPrint = (Diagnostics_GetDiagnosticFilterLevel() >= 5);
   Analysis::CallPath::write(prof, *os, args.title, prettyPrint, args.new_db_format);
   IOUtil::CloseStream(os);
+
+  // 5. Make summary.db file (new-db format).
+  if (args.new_db_format) {
+    Prof::Database::makeSummaryDB(prof, args);
+  }
 
   delete[] outBuf;
 }

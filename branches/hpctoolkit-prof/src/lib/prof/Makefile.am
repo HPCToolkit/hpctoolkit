@@ -87,6 +87,8 @@ MYSOURCES = \
 	CCT-TreeIterator.hpp CCT-TreeIterator.cpp \
 	CCT-Merge.hpp CCT-Merge.cpp \
 	\
+	Database.hpp Database.cpp \
+	\
 	Flat-ProfileData.hpp Flat-ProfileData.cpp \
 	\
 	CallPath-Profile.hpp CallPath-Profile.cpp
