@@ -538,6 +538,13 @@ Each metric contains a sub-menu that lists the three different types of graphs \
   The graph plots the frequency that a metric value falls into a particular sub-range.
 \end{itemize}
 
+Note that the viewers have the following notation for the ranks:
+\begin{verbatim}
+  <process_id> . <thread_id>
+\end{verbatim}
+Hence, if the ranks are 0.0, 0.1, \dots{} 31.0, 31.1 it means MPI process 0 has two threads: thread 0 and thread 1 (similarly with MPI process 31). 
+
+
 Currently, it is only possible to generate scatter plots for metrics directly collected by \hpcrun{}, which excludes derived metrics created within \hpcviewer{}.
 
 
