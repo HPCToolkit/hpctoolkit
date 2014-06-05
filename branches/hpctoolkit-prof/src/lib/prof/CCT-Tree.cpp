@@ -195,8 +195,14 @@ Tree::makeDensePreorderIds()
 {
   uint nextId = 1; // cf. s_nextUniqueId
   nextId = m_root->makeDensePreorderIds(nextId);
-
   m_maxDenseId = (nextId - 1);
+
+  // invalidate the NodeIdToANodeMap
+  if (m_nodeidMap != NULL) {
+    delete m_nodeidMap;
+  }
+  m_nodeidMap = NULL;
+
   return m_maxDenseId;
 }
 
