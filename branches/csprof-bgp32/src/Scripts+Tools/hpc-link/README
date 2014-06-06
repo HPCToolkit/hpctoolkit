@@ -1,6 +1,0 @@
-For hpc-link to work during the development process, I put a symlink to
-monitor.o and libcsprof.o in the libexec directory.
-
-Then, whenever I remake either one, the hpc-link.sh will still work.
-
-Production code will likely *install* the appropriate stuff in libexec

@@ -1,3 +1,0 @@
-#! /bin/sh
-
-LD_LIBRARY_PATH=^PAPI^:$LD_LIBRARY_PATH ./papi-u

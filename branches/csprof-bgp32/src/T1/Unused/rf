@@ -1,5 +1,0 @@
-#! /bin/bash
-
-export LD_PRELOAD=./lib-override.so
-exec ./f0
-
