@@ -98,7 +98,7 @@ class Seg;
 class Proc;
 class Insn;
 //class LMImpl;
-class Plt;
+class NoReturns;
 
 // --------------------------------------------------------------------------
 // 'LM' represents a load module, a binary loaded into memory
@@ -553,11 +553,11 @@ private:
   asymbol** m_bfdDynSymTab;  // Unmodified BFD dynamic symbol table
   asymbol*  m_bfdSynthTab;   // Synthetic BFD symbol table.
   asymbol** m_bfdSymTabSort; // Sorted BFD symbol table
-  uint      m_bfdSymTabSz;   // Number of syms in sorted table.
+  long      m_bfdSymTabSz;   // Number of syms in sorted table.
   long      m_bfdDynSymTabSz;// Number of dynamic syms.
   long      m_bfdSynthTabSz; // Number of synthetic syms.
 
-  Plt      *m_plt;
+  NoReturns *m_noreturns;
 
   RealPathMgr& m_realpathMgr;
 
