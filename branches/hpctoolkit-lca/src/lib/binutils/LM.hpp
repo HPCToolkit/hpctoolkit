@@ -97,7 +97,8 @@ namespace BinUtil {
 class Seg;
 class Proc;
 class Insn;
-class LMImpl;
+//class LMImpl;
+class Plt;
 
 // --------------------------------------------------------------------------
 // 'LM' represents a load module, a binary loaded into memory
@@ -360,6 +361,8 @@ public:
     m_insnMap.insert(InsnMap::value_type(opvma, insn));
   }
 
+  bool
+  is_plt_noreturn(VMA addr);
   
   // -------------------------------------------------------
   // findSrcCodeInfo: If possible, find the source file, function
@@ -514,7 +517,7 @@ private:
   BinUtil::Dbg::LM*
   getDebugInfo()
   { return &m_dbgInfo; }
-    
+
 private:
   std::string m_name;
 
@@ -547,10 +550,14 @@ private:
 
   bfd*      m_bfd;           // BFD of this module.
   asymbol** m_bfdSymTab;     // Unmodified BFD symbol table
+  asymbol** m_bfdDynSymTab;  // Unmodified BFD dynamic symbol table
   asymbol*  m_bfdSynthTab;   // Synthetic BFD symbol table.
   asymbol** m_bfdSymTabSort; // Sorted BFD symbol table
   uint      m_bfdSymTabSz;   // Number of syms in sorted table.
+  long      m_bfdDynSymTabSz;// Number of dynamic syms.
   long      m_bfdSynthTabSz; // Number of synthetic syms.
+
+  Plt      *m_plt;
 
   RealPathMgr& m_realpathMgr;
 

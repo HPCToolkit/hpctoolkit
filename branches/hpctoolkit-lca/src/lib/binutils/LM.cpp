@@ -99,14 +99,217 @@ using std::endl;
 #include <lib/support/Logic.hpp>
 #include <lib/support/QuickSort.hpp>
 
-//*************************** Forward Declarations **************************
+
+
+//***************************************************************************
+// macros
+//***************************************************************************
 
 #define DBG_BLD_PROC_MAP 0
+
+#define PLT_NORETURN_DISABLE 0
+#define PLT_NORETURN_DEBUG 0
+#define PLT_NOISY 1
+
+
+
+//***************************************************************************
+// type definitions
+//***************************************************************************
+
+class cstring_compare {
+public:
+  bool operator()(const char *s1, const char *s2) const {
+      int result = strcmp(s1,s2);
+      return result < 0 ? true : false;
+  }
+};
+
+
+
+static const char *noreturn_table[] = {
+  // include machine-generated file containing names of functions that don't return
+#include "names.cpp"
+};
+
+
+
+namespace BinUtil {
+
+class name_set : public std::set<const char*, cstring_compare> {
+public:
+  name_set() { 
+    unsigned int i; 
+    for(i = 0; i < sizeof(noreturn_table)/sizeof(char*); i++) 
+      insert(noreturn_table[i]); 
+  }
+};
+
+name_set noreturn_fn_names; 
+
+class Plt {
+public:
+  
+#if 0
+  Plt(BinUtil::LM* lm) {
+    bfd* abfd = lm->abfd();
+    asymbol **dynsyms = load_dynsyms(abfd);
+    int dyncount = bfd_get_dynamic_symcount(abfd);
+
+    if (dyncount == 0 || dynsyms == NULL) return;
+
+    long symcount_unused = 0;
+    asymbol **syms_unused = 0;
+    asymbol *synsyms = 0;
+    long plt_nsyms = bfd_get_synthetic_symtab(abfd, symcount_unused, 
+                                              syms_unused, dyncount, 
+                                              dynsyms, &synsyms);
+
+#if PLT_NOISY
+    printf("-------- plt noreturn functions ------ \n");
+#endif
+
+    asymbol *symbol = synsyms;
+    for (long i = 0; i < plt_nsyms; i++, symbol++) {
+       unsigned long addr = symbol->value + symbol->section->vma;
+       char *name = strdup(symbol->name);
+       char *index = strrchr(name,'@');
+       if (index) {
+         *index = 0;
+         addIfNoReturn(name, addr);
+       }
+       free(name);
+    }
+  };
+#endif
+
+  
+  Plt(asymbol* synsyms, long synsymcount) {
+#if 0
+    bfd* abfd = lm->abfd();
+    asymbol **dynsyms = load_dynsyms(abfd);
+    int dyncount = bfd_get_dynamic_symcount(abfd);
+
+    if (dyncount == 0 || dynsyms == NULL) return;
+
+    long symcount_unused = 0;
+    asymbol **syms_unused = 0;
+    asymbol *synsyms = 0;
+    long plt_nsyms = bfd_get_synthetic_symtab(abfd, symcount_unused, 
+                                              syms_unused, dyncount, 
+                                              dynsyms, &synsyms);
+#endif
+
+#if PLT_NOISY
+    printf("-------- plt noreturn functions ------ \n");
+#endif
+
+    asymbol *symbol = synsyms;
+    for (long i = 0; i < synsymcount; i++, symbol++) {
+       unsigned long addr = symbol->value + symbol->section->vma;
+       char *name = strdup(symbol->name);
+       char *index = strrchr(name,'@');
+       if (index) {
+         *index = 0;
+         addIfNoReturn(name, addr);
+       }
+       free(name);
+    }
+  };
+
+  ~Plt() { 
+  };
+
+  bool 
+  isNoReturn(VMA addr) {
+#if PLT_NORETURN_DISABLE
+    return false;
+#else
+    return plt_noreturns.find(addr) != plt_noreturns.end();   
+#endif
+  };
+
+
+  void
+  addIfNoReturn(const char *name, uint64_t addr) {
+    if (noreturn_fn_names.find(name) != noreturn_fn_names.end()) {
+      plt_noreturns.insert(addr);
+#if PLT_NOISY
+      std::cout << name << " @ " << std::hex << "0x" << addr << std::endl;
+#endif
+    }
+  };
+
+
+  void 
+  dump() {  
+    std::cout << "PLT noreturns (addresses of functions that don't return)" 
+              << std::endl;  
+    for(std::set<VMA>::iterator i = plt_noreturns.begin(); 
+        i != plt_noreturns.end(); i++) {     
+      std::cout << std::hex << "0x" << *i << std::endl;  
+    }
+  };
+
+
+private:
+
+  asymbol **
+  load_dynsyms(bfd *abfd) {
+    long nbytes = bfd_get_dynamic_symtab_upper_bound(abfd);
+    asymbol **dynsyms = NULL;
+
+    if (nbytes > 0) {
+      dynsyms = (asymbol **) malloc(nbytes);
+
+      long dynsymcount = bfd_canonicalize_dynamic_symtab (abfd, dynsyms);
+      if (dynsymcount < 0) { 
+        free(dynsyms); 
+        dynsyms = NULL; 
+      }
+    }
+    return dynsyms;
+  };
+
+
+private:
+
+  std::set<VMA> plt_noreturns;
+
+};
+
+}
+
+
+
+//------------------------------------------------------------------------------
+// local variables
+//------------------------------------------------------------------------------
+
+
+//*************************** Forward Declarations **************************
+
 
 static void
 dumpSymFlag(std::ostream& o, asymbol* sym, int flag, const char* txt, bool& hasPrinted);
 
 //***************************************************************************
+
+
+//***************************************************************************
+// noreturn_fn_names 
+//***************************************************************************
+
+
+#if PLT_NORETURN_DEBUG
+static void dumpnames()
+{  
+  for(name_set::iterator i = noreturn_fn_names.begin(); 
+      i != noreturn_fn_names.end(); i++) {     
+    std::cout << *i << std::endl;  
+  }
+}
+#endif
 
 //***************************************************************************
 // LM
@@ -121,7 +324,7 @@ BinUtil::LM::LM(bool useBinutils)
     m_txtBeg(0), m_txtEnd(0), m_begVMA(0),
     m_textBegReloc(0), m_unrelocDelta(0),
     m_bfd(NULL), m_bfdSymTab(NULL), m_bfdSynthTab(NULL),
-    m_bfdSymTabSort(NULL), m_bfdSymTabSz(0), m_bfdSynthTabSz(0),
+    m_bfdSymTabSort(NULL), m_bfdSymTabSz(0), m_bfdSynthTabSz(0), m_plt(0), 
     m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils)
 {
 }
@@ -160,6 +363,9 @@ BinUtil::LM::~LM()
   // reset isa
   delete isa;
   isa = NULL;
+
+  delete m_plt;
+  m_plt = NULL;
 }
 
 
@@ -275,6 +481,7 @@ BinUtil::LM::open(const char* filenm)
     DIAG_Assert(typeid(*newisa) == typeid(*isa),
 		"Cannot simultaneously open LMs with different ISAs!");
   }
+
 }
 
 
@@ -288,6 +495,9 @@ BinUtil::LM::read(LM::ReadFlg readflg)
 
   readSymbolTables();
   readSegs();
+
+  // gather information about symbols bound through the PLT
+  m_plt = new Plt(m_bfdSynthTab, m_bfdSynthTabSz);
 }
 
 
@@ -632,15 +842,15 @@ BinUtil::LM::readSymbolTables()
   // -------------------------------------------------------
   // Look for dynamic symbol table if there is no normal symbol table
   // -------------------------------------------------------
-  if (!m_bfdSymTab) {
+  {
     bytesNeeded = bfd_get_dynamic_symtab_upper_bound(m_bfd);
 
     if (bytesNeeded > 0) {
-      m_bfdSymTab = new asymbol*[bytesNeeded / sizeof(asymbol*)];
-      m_bfdSymTabSz = bfd_canonicalize_dynamic_symtab(m_bfd, m_bfdSymTab);
+      m_bfdDynSymTab = new asymbol*[bytesNeeded / sizeof(asymbol*)];
+      m_bfdDynSymTabSz = bfd_canonicalize_dynamic_symtab(m_bfd, m_bfdDynSymTab);
     }
 
-    if (m_bfdSymTabSz == 0) {
+    if (m_bfdDynSymTabSz == 0) {
       DIAG_Msg(2, "'" << name() << "': No dynamic symbols found.");
     }
   }
@@ -654,8 +864,8 @@ BinUtil::LM::readSymbolTables()
   // Note: the sorted table may be larger than the original table,
   // and size is the size of the sorted table (regular + synthetic).
   // -------------------------------------------------------
-  m_bfdSynthTabSz = bfd_get_synthetic_symtab(m_bfd, m_bfdSymTabSz, m_bfdSymTab,
-					     0, NULL, &m_bfdSynthTab);
+  m_bfdSynthTabSz = bfd_get_synthetic_symtab(m_bfd, 0, NULL, m_bfdDynSymTabSz, 
+                                             m_bfdDynSymTab, &m_bfdSynthTab);
   if (m_bfdSynthTabSz < 0) {
     m_bfdSynthTabSz = 0;
   }
@@ -715,6 +925,13 @@ BinUtil::LM::readSegs()
   }
 
   m_dbgInfo.clear();
+}
+
+
+bool
+BinUtil::LM::is_plt_noreturn(VMA addr)
+{
+   return m_plt->isNoReturn(addr);
 }
 
 
@@ -902,6 +1119,8 @@ dumpSymFlag(std::ostream& o,
     hasPrinted = true;			\
   }
 }
+
+
 
 
 //***************************************************************************

@@ -59,6 +59,7 @@
 //
 //***************************************************************************
 
+
 //************************* System Include Files ****************************
 
 #include <iostream>
@@ -338,6 +339,14 @@ BAnal::OAInterface::getCFGStmtType(OA::StmtHandle h)
   else if (d.isSubrRet()) {
     // Return statement.
     ty = OA::CFG::RETURN;
+  }
+  else if (d.isSubrRel()) {
+    VMA callee = insn->targetVMA(insn->vma());
+    if (m_proc->lm()->is_plt_noreturn(callee)) {
+      ty = OA::CFG::RETURN;
+    } else {
+      ty = OA::CFG::SIMPLE;
+    }
   }
   else {
     // Simple statements.
