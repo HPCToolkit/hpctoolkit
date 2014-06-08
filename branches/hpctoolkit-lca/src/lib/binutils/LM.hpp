@@ -362,8 +362,8 @@ public:
   }
 
   bool
-  is_plt_noreturn(VMA addr);
-  
+  functionNeverReturns(VMA addr);
+
   // -------------------------------------------------------
   // findSrcCodeInfo: If possible, find the source file, function
   // name and line number that corresponds to the operation at
@@ -495,6 +495,9 @@ private:
 
   void
   readSegs();
+
+  void
+  computeNoReturns();
   
   // unrelocate: Given a relocated VMA, returns a non-relocated version.
   VMA

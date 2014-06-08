@@ -342,7 +342,7 @@ BAnal::OAInterface::getCFGStmtType(OA::StmtHandle h)
   }
   else if (d.isSubrRel()) {
     VMA callee = insn->targetVMA(insn->vma());
-    if (m_proc->lm()->is_plt_noreturn(callee)) {
+    if (m_proc->lm()->functionNeverReturns(callee)) {
       ty = OA::CFG::RETURN;
     } else {
       ty = OA::CFG::SIMPLE;

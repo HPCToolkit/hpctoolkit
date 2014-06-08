@@ -109,7 +109,8 @@ using std::endl;
 
 #define NORETURNS_DISABLE 0
 #define NORETURNS_DEBUG 0
-#define NORETURNS_NOISY 1
+#define NORETURNS_RESULT_NOISY 0
+#define NORETURNS_LOOKUP_NOISY 0 
 
 
 
@@ -168,17 +169,40 @@ public:
 
   void
   addSynSymEntries(asymbol* syms, long symcount) { 
-#if NORETURNS_NOISY
+#if NORETURNS_RESULT_NOISY
     printf("-------- dyn sym noreturn functions ------ \n");
 #endif
-
+    //-------------------------------------------------------------------
+    // iterate through the functions referenced through the load module's       
+    // PLT to identify which of them are known to not return. for each 
+    // PLT entry for a function that doesn't return, record the address 
+    // of its PLT trampoline so that we can identify calls to functions 
+    // that don't return when building a control flow graph.
+    //
+    // Note: the binutils interface to symbols in the PLT processes 
+    //       the symbols and converts each symbol with name "symname" to 
+    //       have name "symname@plt". Here, we strip off the suffix
+    //       that begins with the @ before comparing a PLT symbol name
+    //       with names of functions known to not return.
+    //-------------------------------------------------------------------
     asymbol *symbol = syms;
     for (long i = 0; i < symcount; i++, symbol++) {
-       unsigned long addr = symbol->value + symbol->section->vma;
-       char *name = strdup(symbol->name);
-       char *index = strrchr(name,'@');
-       if (index) {
-         *index = 0;
+       //-----------------------------------------------------
+       // create a copy of the symbol name that we can modify
+       //-----------------------------------------------------
+       char *name = strdup(bfd_asymbol_name(symbol)); 
+       char *index = strrchr(name,'@'); // look for an @ in the symbol
+       if (index) {                     // if an @ was found
+         *index = 0;                    // remove the suffix @...
+         unsigned long addr = bfd_asymbol_value(symbol);
+         //---------------------------------------------------------
+         // look for the symbol name in the set of functions known to 
+         // not return. if it is found, note the address of the PLT
+         // entry as the address of a callee that won't return.
+         //---------------------------------------------------------
+#if NORETURNS_LOOKUP_NOISY
+         std::cout << "looking up " << name << " @ " << std::hex << "0x" << addr << std::endl;
+#endif
          addIfNoReturn(name, addr);
        }
        free(name);
@@ -187,15 +211,32 @@ public:
 
 
   void
-  addSymEntries(asymbol* syms, long symcount) { 
-#if NORETURNS_NOISY
+  addSymEntries(asymbol** syms, long symcount) { 
+#if NORETURNS_RESULT_NOISY
     printf("-------- sym noreturn functions ------ \n");
 #endif
-
-    asymbol *symbol = syms;
-    for (long i = 0; i < symcount; i++, symbol++) {
-       unsigned long addr = symbol->value;
-       addIfNoReturn(symbol->name, addr);
+    //-------------------------------------------------------------------
+    // iterate through functions statically linked in the load module
+    // to identify which of them are known to not return. for each 
+    // function that doesn't return, record its address so that we can 
+    // identify calls to functions that don't return when building a 
+    // control flow graph.
+    //-------------------------------------------------------------------
+    asymbol **symbol = syms;
+    for (long i = 0; i < symcount; i++) {
+      if (symbol[i]) {
+        const char *name = bfd_asymbol_name(symbol[i]);
+        if (symbol[i]->flags & (BSF_FUNCTION))  {
+          unsigned long addr = bfd_asymbol_value(symbol[i]);
+#if NORETURNS_LOOKUP_NOISY
+          std::cout << "looking up " << name << " @ " << std::hex << "0x" 
+                    << addr << std::endl;
+#endif
+          if (addr) {
+            addIfNoReturn(name, addr);
+          }
+        }
+      }
     }
   };
 
@@ -212,7 +253,7 @@ public:
   addIfNoReturn(const char *name, uint64_t addr) {
     if (noreturn_fn_names.find(name) != noreturn_fn_names.end()) {
       this->insert(addr);
-#if NORETURNS_NOISY
+#if NORETURNS_RESULT_NOISY
       std::cout << name << " @ " << std::hex << "0x" << addr << std::endl;
 #endif
     }
@@ -221,7 +262,7 @@ public:
 
   void 
   dump() {  
-    std::cout << "PLT noreturns (addresses of functions that don't return)" 
+    std::cout << "noreturns (addresses of functions that don't return)" 
               << std::endl;  
     for(std::set<VMA>::iterator i = this->begin(); i != this->end(); i++) {     
       std::cout << std::hex << "0x" << *i << std::endl;  
@@ -427,14 +468,9 @@ BinUtil::LM::read(LM::ReadFlg readflg)
 
   readSymbolTables();
   readSegs();
-
-  // gather information about functions that don't return
-  m_noreturns = new NoReturns();
-#if  0
-  m_noreturns->addSymEntries((asymbol *)m_bfdSymTab, m_bfdSymTabSz);
-#endif
-  m_noreturns->addSynSymEntries(m_bfdSynthTab, m_bfdSynthTabSz);
+  computeNoReturns();
 }
+
 
 
 // relocate: Internally, all operations are performed on non-relocated
@@ -760,7 +796,7 @@ void
 BinUtil::LM::readSymbolTables()
 {
   // -------------------------------------------------------
-  // Look for normal symbol table.
+  // Read the normal symbol table
   // -------------------------------------------------------
   long bytesNeeded = bfd_get_symtab_upper_bound(m_bfd);
   
@@ -776,7 +812,7 @@ BinUtil::LM::readSymbolTables()
   }
 
   // -------------------------------------------------------
-  // Look for dynamic symbol table if there is no normal symbol table
+  // Read the dynamic symbol table 
   // -------------------------------------------------------
   {
     bytesNeeded = bfd_get_dynamic_symtab_upper_bound(m_bfd);
@@ -863,9 +899,21 @@ BinUtil::LM::readSegs()
   m_dbgInfo.clear();
 }
 
+void
+BinUtil::LM::computeNoReturns()
+{
+  m_noreturns = new NoReturns();
+  
+  // gather information about functions in this load module
+  m_noreturns->addSymEntries(m_bfdSymTab, m_bfdSymTabSz);
+
+  // gather information about functions accessed through the PLT
+  m_noreturns->addSynSymEntries(m_bfdSynthTab, m_bfdSynthTabSz);
+}
+
 
 bool
-BinUtil::LM::is_plt_noreturn(VMA addr)
+BinUtil::LM::functionNeverReturns(VMA addr)
 {
    return m_noreturns->isNoReturn(addr);
 }
