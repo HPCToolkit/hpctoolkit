@@ -223,18 +223,16 @@ public:
     // control flow graph.
     //-------------------------------------------------------------------
     asymbol **symbol = syms;
-    for (long i = 0; i < symcount; i++) {
-      if (symbol[i]) {
-        const char *name = bfd_asymbol_name(symbol[i]);
-        if (symbol[i]->flags & (BSF_FUNCTION))  {
-          unsigned long addr = bfd_asymbol_value(symbol[i]);
+    for (long i = 0; symbol[i]; i++) {
+      const char *name = bfd_asymbol_name(symbol[i]);
+      if (symbol[i]->flags & (BSF_FUNCTION))  {
+        unsigned long addr = bfd_asymbol_value(symbol[i]);
 #if NORETURNS_LOOKUP_NOISY
-          std::cout << "looking up " << name << " @ " << std::hex << "0x" 
-                    << addr << std::endl;
+        std::cout << "looking up " << name << " @ " << std::hex << "0x" 
+                  << addr << std::endl;
 #endif
-          if (addr) {
-            addIfNoReturn(name, addr);
-          }
+        if (addr) {
+          addIfNoReturn(name, addr);
         }
       }
     }
