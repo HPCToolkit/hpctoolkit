@@ -223,16 +223,18 @@ public:
     // control flow graph.
     //-------------------------------------------------------------------
     asymbol **symbol = syms;
-    for (long i = 0; symbol[i]; i++) {
-      const char *name = bfd_asymbol_name(symbol[i]);
-      if (symbol[i]->flags & (BSF_FUNCTION))  {
-        unsigned long addr = bfd_asymbol_value(symbol[i]);
+    if (symbol && symcount > 0) {
+      for (long i = 0; symbol[i]; i++) {
+        const char *name = bfd_asymbol_name(symbol[i]);
+        if (symbol[i]->flags & (BSF_FUNCTION))  {
+          unsigned long addr = bfd_asymbol_value(symbol[i]);
 #if NORETURNS_LOOKUP_NOISY
-        std::cout << "looking up " << name << " @ " << std::hex << "0x" 
-                  << addr << std::endl;
+          std::cout << "looking up " << name << " @ " << std::hex << "0x" 
+                    << addr << std::endl;
 #endif
-        if (addr) {
-          addIfNoReturn(name, addr);
+          if (addr) {
+            addIfNoReturn(name, addr);
+          }
         }
       }
     }
@@ -295,7 +297,7 @@ BinUtil::LM::LM(bool useBinutils)
     m_bfd(NULL), m_bfdSymTab(NULL), 
     m_bfdDynSymTab(NULL), m_bfdSynthTab(NULL),
     m_bfdSymTabSort(NULL), m_bfdSymTabSz(0), m_bfdDynSymTabSz(0),
-    m_bfdSynthTabSz(0), m_noreturns(0), 
+    m_bfdSymTabSortSz(0), m_bfdSynthTabSz(0), m_noreturns(0), 
     m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils)
 {
 }
@@ -329,6 +331,7 @@ BinUtil::LM::~LM()
   m_bfdSymTabSort = NULL; 
 
   m_bfdSymTabSz = 0;
+  m_bfdSymTabSortSz = 0;
   m_bfdSynthTabSz = 0;
   
   // reset isa
@@ -849,15 +852,15 @@ BinUtil::LM::readSymbolTables()
   for (int i = 0; i < m_bfdSynthTabSz; i++) {
     m_bfdSymTabSort[m_bfdSymTabSz + i] = &m_bfdSynthTab[i];
   }
-  m_bfdSymTabSz += m_bfdSynthTabSz;
-  m_bfdSymTabSort[m_bfdSymTabSz] = NULL;
+  m_bfdSymTabSortSz = m_bfdSymTabSz + m_bfdSynthTabSz;
+  m_bfdSymTabSort[m_bfdSymTabSortSz] = NULL;
 
   // -------------------------------------------------------
   // Sort symbol table by VMA.
   // -------------------------------------------------------
   QuickSort QSort;
   QSort.Create((void **)(m_bfdSymTabSort), LM::cmpBFDSymByVMA);
-  QSort.Sort(0, m_bfdSymTabSz - 1);
+  QSort.Sort(0, m_bfdSymTabSortSz - 1);
 }
 
 

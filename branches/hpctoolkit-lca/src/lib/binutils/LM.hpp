@@ -422,7 +422,7 @@ public:
 
   uint
   bfdSymTabSz() const
-  { return m_bfdSymTabSz; }
+  { return m_bfdSymTabSortSz; }
 
 
   // -------------------------------------------------------
@@ -551,14 +551,15 @@ private:
   // size of the sorted table.  Also, the synthetic table is an array
   // of asymbol structs, not pointers.
 
-  bfd*      m_bfd;           // BFD of this module.
-  asymbol** m_bfdSymTab;     // Unmodified BFD symbol table
-  asymbol** m_bfdDynSymTab;  // Unmodified BFD dynamic symbol table
-  asymbol*  m_bfdSynthTab;   // Synthetic BFD symbol table.
-  asymbol** m_bfdSymTabSort; // Sorted BFD symbol table
-  long      m_bfdSymTabSz;   // Number of syms in sorted table.
-  long      m_bfdDynSymTabSz;// Number of dynamic syms.
-  long      m_bfdSynthTabSz; // Number of synthetic syms.
+  bfd*      m_bfd;             // BFD of this module.
+  asymbol** m_bfdSymTab;       // Unmodified BFD symbol table
+  asymbol** m_bfdDynSymTab;    // Unmodified BFD dynamic symbol table
+  asymbol*  m_bfdSynthTab;     // Synthetic BFD symbol table.
+  asymbol** m_bfdSymTabSort;   // Sorted BFD symbol table
+  long      m_bfdSymTabSz;     // Number of syms unmodified BFD symbol table.
+  long      m_bfdDynSymTabSz;  // Number of dynamic syms.
+  long      m_bfdSymTabSortSz; // Number of syms in the sorted table.
+  long      m_bfdSynthTabSz;   // Number of synthetic syms.
 
   NoReturns *m_noreturns;
 
