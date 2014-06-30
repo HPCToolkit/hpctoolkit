@@ -116,6 +116,8 @@ public:
     pathLenMax = 0;
     groupMap = new UIntVec;
     groupMax = 0; // 1-based group numbering
+    begTid = 0;
+    numTid = 0;
   }
 
   ~NormalizeProfileArgs_t()
@@ -136,6 +138,10 @@ public:
 
   UIntVec* groupMap;
   uint     groupMax; // 1-based group numbering
+
+  // in prof-mpi, my threads are beg ... beg+num-1
+  uint  begTid;
+  uint  numTid;
 };
 
 

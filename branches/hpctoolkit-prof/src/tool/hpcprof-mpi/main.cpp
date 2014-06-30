@@ -422,6 +422,9 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
   const uint groupIdLen = 1; // see asssertion below
   uint pathLenMax = 0;
   uint groupIdMax = 0;
+  uint totalThreads = 0;
+  uint numPerRank = 0;
+  uint itemSz = 0;
 
   // -------------------------------------------------------
   // root creates canonical and grouped list of files
@@ -434,30 +437,31 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
     Analysis::Util::StringVec* canonicalFiles = nArgs.paths;
     pathLenMax = nArgs.pathLenMax;
     groupIdMax = nArgs.groupMax;
+    totalThreads = nArgs.numTid;
+    numPerRank = (totalThreads + numRanks - 1)/numRanks;
+    itemSz = groupIdLen + pathLenMax + 1;
 
-    DIAG_Assert(nArgs.groupMax <= UCHAR_MAX, "myNormalizeProfileArgs: 'groupMax' cannot be packed into a uchar!");
+    DIAG_Assert(nArgs.groupMax <= UCHAR_MAX,
+		"myNormalizeProfileArgs: 'groupMax' cannot be packed into a uchar!");
 
-    uint chunkSz = (uint)
-      ceil( (double)canonicalFiles->size() / (double)numRanks);
-    
-    sendFilesChunkSz = chunkSz * (groupIdLen + pathLenMax + 1);
+    sendFilesChunkSz = numPerRank * itemSz;
     sendFilesBufSz = sendFilesChunkSz * numRanks;
     sendFilesBuf = new char[sendFilesBufSz];
     memset(sendFilesBuf, '\0', sendFilesBufSz);
 
     groupIdToGroupSizeMap.resize(groupIdMax + 1);
     
-    for (uint i = 0, j = 0; i < canonicalFiles->size(); 
-	 i++, j += (groupIdLen + pathLenMax + 1)) {
+    for (uint i = 0, j = 0; i < totalThreads; i++, j += itemSz) {
       const std::string& nm = (*canonicalFiles)[i];
       uint groupId = (*nArgs.groupMap)[i];
 
       groupIdToGroupSizeMap[groupId]++;
 
       // pack into sendFilesBuf
+      // FIXME: is nm.c_str guaranteed to be pathLenMax long?
       sendFilesBuf[j] = (char)groupId;
       strncpy(&(sendFilesBuf[j + groupIdLen]), nm.c_str(), pathLenMax);
-      sendFilesBuf[j + groupIdLen + pathLenMax] = '\0';
+      sendFilesBuf[j + itemSz - 1] = '\0';
     }
 
     nArgs.destroy();
@@ -467,11 +471,12 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
   // prepare parameters for scatter
   // -------------------------------------------------------
   
-  const uint metadataBufSz = 3;
+  const uint metadataBufSz = 4;
   uint metadataBuf[metadataBufSz];
   metadataBuf[0] = sendFilesChunkSz;
   metadataBuf[1] = pathLenMax;
   metadataBuf[2] = groupIdMax;
+  metadataBuf[3] = totalThreads;
 
   MPI_Bcast((void*)metadataBuf, metadataBufSz, MPI_UNSIGNED,
 	    rootRank, MPI_COMM_WORLD);
@@ -480,6 +485,9 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
     sendFilesChunkSz = metadataBuf[0];
     pathLenMax       = metadataBuf[1];
     groupIdMax       = metadataBuf[2];
+    totalThreads     = metadataBuf[3];
+    numPerRank = (totalThreads + numRanks - 1)/numRanks;
+    itemSz = groupIdLen + pathLenMax + 1;
   }
 
   // -------------------------------------------------------
@@ -495,8 +503,7 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
   
   delete[] sendFilesBuf;
 
-
-  for (uint i = 0; i < recvFilesChunkSz; i += (groupIdLen + pathLenMax + 1)) {
+  for (uint i = 0; i < recvFilesChunkSz; i += itemSz) {
     uint groupId = recvFilesBuf[i];
     const char* nm_cstr = &recvFilesBuf[i + groupIdLen];
     string nm = nm_cstr;
@@ -508,6 +515,8 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
 
   out.pathLenMax = pathLenMax;
   out.groupMax = groupIdMax;
+  out.begTid = std::min(myRank * numPerRank, totalThreads);
+  out.numTid = out.paths->size();
 
   delete[] recvFilesBuf;
 
