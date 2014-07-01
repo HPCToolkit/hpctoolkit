@@ -1920,9 +1920,9 @@ AM_CONDITIONAL([OPT_ENABLE_HPCRUN], [test "${OPT_ENABLE_HPCRUN}" = yes])
 # LD_LIBRARY_PATH, which can't be right.)  Is there a better option
 # here?
 
-HPCRUN_LIBCXX_PATH=`${CXX} -print-file-name=libstdc++.so`
+libcxx_file=`${CXX} -print-file-name=libstdc++.so`
 
-case "$HPCRUN_LIBCXX_PATH" in
+case "$libcxx_file" in
   /* ) ;;
   * )
     src="hpc_hello.$$.cc"
@@ -1932,17 +1932,19 @@ case "$HPCRUN_LIBCXX_PATH" in
 main(){}
 EOF
     ${CXX} -o "$obj" "$src"
-    HPCRUN_LIBCXX_PATH=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
+    libcxx_file=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
     rm -f "$src" "$obj"
     ;;
 esac
 
+libcxx_dir=`dirname $libcxx_file`
+libcxx_base=`basename $libcxx_file`
+HPCRUN_LIBCXX_PATH=`( cd $libcxx_dir 2>/dev/null && /bin/pwd )`
+
 case "$HPCRUN_LIBCXX_PATH" in
-  /* ) AC_MSG_NOTICE([found libstdc++.so at $HPCRUN_LIBCXX_PATH]) ;;
+  /* ) AC_MSG_NOTICE([found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}]) ;;
   * )  AC_MSG_WARN([unable to find libstdc++.so]) ;;
 esac
-
-HPCRUN_LIBCXX_PATH=`dirname $HPCRUN_LIBCXX_PATH`
 
 AC_SUBST([HPCRUN_LIBCXX_PATH])
 
@@ -2770,6 +2772,9 @@ AC_CONFIG_FILES([src/tool/hpcproftt/hpcproftt],
   [chmod +x src/tool/hpcproftt/hpcproftt])
 AC_CONFIG_FILES([src/tool/hpcstruct/hpcstruct],
   [chmod +x src/tool/hpcstruct/hpcstruct])
+
+AC_SUBST_FILE([copyright_hash])
+copyright_hash="${srcdir}/config/copyright-hash"
 
 AC_SUBST_FILE([export_hpctoolkit])
 export_hpctoolkit="${srcdir}/config/export-hpctoolkit"
