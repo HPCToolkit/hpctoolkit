@@ -887,7 +887,8 @@ PACKAGE_TARNAME
 PACKAGE_NAME
 PATH_SEPARATOR
 SHELL'
-ac_subst_files='export_hpctoolkit'
+ac_subst_files='copyright_hash
+export_hpctoolkit'
 ac_user_opts='
 enable_option_checking
 enable_maintainer_mode
@@ -18222,9 +18223,9 @@ fi
 # LD_LIBRARY_PATH, which can't be right.)  Is there a better option
 # here?
 
-HPCRUN_LIBCXX_PATH=`${CXX} -print-file-name=libstdc++.so`
+libcxx_file=`${CXX} -print-file-name=libstdc++.so`
 
-case "$HPCRUN_LIBCXX_PATH" in
+case "$libcxx_file" in
   /* ) ;;
   * )
     src="hpc_hello.$$.cc"
@@ -18234,19 +18235,21 @@ case "$HPCRUN_LIBCXX_PATH" in
 main(){}
 EOF
     ${CXX} -o "$obj" "$src"
-    HPCRUN_LIBCXX_PATH=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
+    libcxx_file=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
     rm -f "$src" "$obj"
     ;;
 esac
 
+libcxx_dir=`dirname $libcxx_file`
+libcxx_base=`basename $libcxx_file`
+HPCRUN_LIBCXX_PATH=`( cd $libcxx_dir 2>/dev/null && /bin/pwd )`
+
 case "$HPCRUN_LIBCXX_PATH" in
-  /* ) { $as_echo "$as_me:${as_lineno-$LINENO}: found libstdc++.so at $HPCRUN_LIBCXX_PATH" >&5
-$as_echo "$as_me: found libstdc++.so at $HPCRUN_LIBCXX_PATH" >&6;} ;;
+  /* ) { $as_echo "$as_me:${as_lineno-$LINENO}: found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}" >&5
+$as_echo "$as_me: found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}" >&6;} ;;
   * )  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find libstdc++.so" >&5
 $as_echo "$as_me: WARNING: unable to find libstdc++.so" >&2;} ;;
 esac
-
-HPCRUN_LIBCXX_PATH=`dirname $HPCRUN_LIBCXX_PATH`
 
 
 
@@ -19325,6 +19328,9 @@ ac_config_files="$ac_config_files src/tool/hpcproftt/hpcproftt"
 
 ac_config_files="$ac_config_files src/tool/hpcstruct/hpcstruct"
 
+
+
+copyright_hash="${srcdir}/config/copyright-hash"
 
 
 export_hpctoolkit="${srcdir}/config/export-hpctoolkit"
