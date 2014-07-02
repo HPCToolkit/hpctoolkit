@@ -83,7 +83,7 @@ int ompt_initialized = 0;
 // declare ompt interface function pointers
 //-----------------------------------------
 #define ompt_interface_fn(f) f ## _t f ## _fn;
-#include "ompt-fns.h"
+FOREACH_OMPT_FN(ompt_interface_fn)
 #undef ompt_interface_fn
 
 
@@ -166,11 +166,11 @@ static void
 init_threads()
 {
   int retval;
-  retval = ompt_set_callback_fn(ompt_event_thread_create, 
+  retval = ompt_set_callback_fn(ompt_event_thread_begin, 
 		    (ompt_callback_t)ompt_thread_create);
   assert(retval > 0);
 
-  retval = ompt_set_callback_fn(ompt_event_thread_exit, 
+  retval = ompt_set_callback_fn(ompt_event_thread_end, 
 		    (ompt_callback_t)ompt_thread_exit);
   assert(retval > 0);
 }
@@ -180,11 +180,11 @@ static void
 init_parallel_regions()
 {
   int retval;
-  retval = ompt_set_callback_fn(ompt_event_parallel_create, 
+  retval = ompt_set_callback_fn(ompt_event_parallel_begin, 
 		    (ompt_callback_t)start_team_fn);
   assert(retval > 0);
 
-  retval = ompt_set_callback_fn(ompt_event_parallel_exit, 
+  retval = ompt_set_callback_fn(ompt_event_parallel_end, 
 		    (ompt_callback_t)end_team_fn);
   assert(retval > 0);
 }
@@ -194,7 +194,7 @@ static void
 init_tasks() 
 {
   int retval;
-  retval = ompt_set_callback_fn(ompt_event_task_create, 
+  retval = ompt_set_callback_fn(ompt_event_task_begin, 
 		    (ompt_callback_t)start_task_fn);
   assert(retval > 0);
 }
@@ -287,9 +287,10 @@ void init_function_pointers(ompt_function_lookup_t ompt_fn_lookup)
   f ## _fn = (f ## _t) ompt_fn_lookup(#f); \
   assert(f ##_fn != 0);
 
-#include "ompt-fns.h"
+FOREACH_OMPT_FN(ompt_interface_fn)
 
 #undef ompt_interface_fn
+
 }
 
 //*****************************************************************************
@@ -297,7 +298,11 @@ void init_function_pointers(ompt_function_lookup_t ompt_fn_lookup)
 //*****************************************************************************
 
 int 
-ompt_initialize(ompt_function_lookup_t ompt_fn_lookup)
+ompt_initialize(
+  ompt_function_lookup_t ompt_fn_lookup,
+  const char *runtime_version,
+  int ompt_version
+)
 {
   ompt_initialized = 1;
 
