@@ -1,0 +1,38 @@
+Add the Elf machine type 181 (k1om) as a synonym for EM_X86_64.
+Binutils defines EM_K1OM, but libelf-0.8.13 does not, so we'll
+just use the number 181 until libelf catches up.
+
+
+diff -Naurb dyninst.orig/dwarf/src/dwarfHandle.C dyninst/dwarf/src/dwarfHandle.C
+--- dyninst.orig/dwarf/src/dwarfHandle.C	2014-03-12 18:20:10.000000000 -0500
++++ dyninst/dwarf/src/dwarfHandle.C	2014-07-03 15:22:32.666118810 -0500
+@@ -127,6 +127,7 @@
+          arch = Arch_x86;
+          break;
+       case EM_X86_64:
++      case 181:
+          arch = Arch_x86_64;
+          break;
+       case EM_PPC:
+diff -Naurb dyninst.orig/elf/src/SystemTap.C dyninst/elf/src/SystemTap.C
+--- dyninst.orig/elf/src/SystemTap.C	2014-03-12 18:20:10.000000000 -0500
++++ dyninst/elf/src/SystemTap.C	2014-07-03 15:21:38.554089819 -0500
+@@ -96,6 +96,7 @@
+          arch = Arch_x86;
+          break;
+       case EM_X86_64:
++      case 181:
+          arch = Arch_x86_64;
+          break;
+       case EM_PPC:
+diff -Naurb dyninst.orig/symtabAPI/src/Object-elf.C dyninst/symtabAPI/src/Object-elf.C
+--- dyninst.orig/symtabAPI/src/Object-elf.C	2014-03-12 18:20:10.000000000 -0500
++++ dyninst/symtabAPI/src/Object-elf.C	2014-07-03 15:23:23.546228058 -0500
+@@ -296,6 +296,7 @@
+         case EM_PPC:
+         case EM_PPC64:
+         case EM_X86_64:
++        case 181:
+         case EM_IA_64:
+             ret = Region::RT_RELA;
+             break;
