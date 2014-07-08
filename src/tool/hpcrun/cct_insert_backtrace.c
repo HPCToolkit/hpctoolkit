@@ -54,7 +54,7 @@
 #include <hpcrun/metrics.h>
 #include <hpcrun/unresolved.h>
 
-#include <hpcrun/ompt/ompt.h>
+#include <ompt.h>
 #include <hpcrun/ompt/ompt-interface.h>
 #include <hpcrun/ompt/ompt-region.h>
 
@@ -250,9 +250,13 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner,
     if (exit0 && reenter1) {
 // FIXME: IBM and INTEL need to agree
 #if 1
-      memmove(*bt_inner+(reenter1-exit0+1), *bt_inner, 
+      // laksono 2014.07.08: hack removing one more frame to avoid redundancy with the parent
+      // It seems the last frame of the master is the same as the first frame of the workers thread
+      // By eliminating the topmost frame we should avoid the appearance of the same frame twice 
+      //  in the callpath
+      memmove(*bt_inner+(reenter1-exit0+2), *bt_inner, 
 	      (exit0 - *bt_inner)*sizeof(frame_t));
-      *bt_inner = *bt_inner + (reenter1 - exit0 + 1);
+      *bt_inner = *bt_inner + (reenter1 - exit0 + 2);
 #else
       // was missing a frame with intel's runtime; eliminate +1 -- johnmc
       memmove(*bt_inner+(reenter1-exit0), *bt_inner, 
