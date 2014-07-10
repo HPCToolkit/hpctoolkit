@@ -140,6 +140,7 @@ static int derived[MAX_EVENTS];
 static int some_derived;
 static int some_overflow;
 
+static __thread bool reenter = false;
 
 /******************************************************************************
  * method functions
@@ -611,6 +612,8 @@ event_fatal_error(int ev_code, int papi_ret)
   hpcrun_ssfail_unsupported("PAPI", name);
 }
 
+extern bool ui_lock_holder_ok(void);
+
 static void
 papi_event_handler(int event_set, void *pc, long long ovec,
                    void *context)
@@ -628,6 +631,12 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     hpcrun_stats_num_samples_blocked_async_inc();
     return;
   }
+
+  if (reenter) {
+    EMSG("PAPI event handler attempted reentry!");
+    return;
+  }
+  reenter = true;
 
   TMSG(PAPI_SAMPLE,"papi event happened, ovec = %ld",ovec);
 
@@ -680,4 +689,12 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   }
 
   hpcrun_safe_exit();
+  assert(ui_lock_holder_ok());
+  reenter = false;
+}
+
+void
+hpcrun_papi_reenter_ok(void)
+{
+  reenter = false;
 }

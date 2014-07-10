@@ -352,9 +352,6 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 
   step_state ret = STEP_ERROR; // default return value from stepper
 
-  hpcrun_unw_cursor_t cursor;
-  hpcrun_unw_init_cursor(&cursor, context);
-
   //--------------------------------------------------------------------
   // note: these variables are not local variables so that if a SIGSEGV 
   // occurs and control returns up several procedure frames, the values 
@@ -364,7 +361,13 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 
   thread_data_t* td = hpcrun_get_thread_data();
   td->btbuf_cur   = td->btbuf_beg; // innermost
+#ifdef NO
+  EMSG("td->btbuf_cur = %p", td->btbuf_cur);
+#endif
   td->btbuf_sav   = td->btbuf_end;
+
+  hpcrun_unw_cursor_t cursor;
+  hpcrun_unw_init_cursor(&cursor, context);
 
   int unw_len = 0;
   while (true) {

@@ -162,6 +162,79 @@ enum _local_const {
 };
 
 
+// !!! debug !!!!
+
+#include <stdio.h>
+
+unsigned int reenter_count[200] = {};
+int reentrant_culprit = -1;
+size_t hit_thresh = 0;
+
+unsigned int total_sample_hits = 0;
+unsigned int sample_hits[200] = {};
+
+extern bool ui_lock_holder_ok(void);
+
+#include <signal.h>
+
+static unsigned int emsg_collar = 0;
+static char* tag[] = {" NA", " NO", "YES"};
+
+static sigset_t saved_sigset;
+static sigset_t block_all;
+
+#define LAST_SIGNAL 64
+static void
+generate_block_all(void)
+{
+  sigemptyset(&block_all);
+
+  for(int i=1; i <= LAST_SIGNAL; i++) {
+    sigaddset(&block_all, i);
+  }
+}
+
+static inline
+void
+save_sigset(void)
+{
+  if (monitor_real_pthread_sigmask(SIG_BLOCK, NULL, &saved_sigset)) {
+    EMSG("Could NOT get pthread sigmask");
+    return;
+  }
+  if (monitor_real_pthread_sigmask(SIG_BLOCK, &block_all, NULL)) {
+    EMSG("Could NOT block signals !!");
+    return;
+  }
+}
+
+void
+hpcrun_restore_sigset(void)
+{
+  if (monitor_real_pthread_sigmask(SIG_SETMASK, &saved_sigset, NULL)) {
+    EMSG("Could NOT restore saved sigmask");
+    return;
+  }
+}
+
+static inline
+void
+show_pthread_sigmask(void)
+{
+  if (emsg_collar++ > 10) return;
+
+  sigset_t the_set;
+  if (pthread_sigmask(SIG_BLOCK, NULL, &the_set)) {
+    EMSG("Could NOT get pthread sigmask");
+    return;
+  }
+  EMSG("Sigmask IS:");
+  for (int i=1; i <= 64; i++) {
+    EMSG("  -->%02d: %s", i, tag[sigismember(&the_set, i)+1]);
+  }
+  
+}
+
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
@@ -193,6 +266,7 @@ static struct itimerspec itspec_stop;
 static sigset_t timer_mask;
 
 static __thread bool wallclock_ok = false;
+static __thread bool reenter = false;
 
 // ****************************************************************************
 // * public helper function
@@ -341,6 +415,10 @@ METHOD_FN(init)
 {
   TMSG(ITIMER_CTL, "init");
   blame_shift_source_register(bs_type_timer);
+  generate_block_all();
+  char* tmp = getenv("HIT_THRESH");
+  if (tmp) hit_thresh = atoi(tmp);
+  fprintf(stderr, "hit thresh = %d\n", hit_thresh);
   self->state = INIT;
 }
 
@@ -601,16 +679,43 @@ METHOD_FN(display_events)
  * private operations 
  *****************************************************************************/
 
+#include <lib/prof-lean/atomic.h>
+
+#define THRESHOLD 5000
 static int
 itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
+  fetch_and_add(&total_sample_hits, 1);
+  sample_hits[monitor_get_thread_num()+1]++;
+  if (hit_thresh && (total_sample_hits > hit_thresh)) {
+    monitor_real_abort();
+  }
   static bool metrics_finalized = false;
   sample_source_t *self = &_itimer_obj;
 
   // If we got a wallclock signal not meant for our thread, then drop the sample
   if (! wallclock_ok) {
     EMSG("Received itimer signal, but thread not initialized");
+    return 0;
   }
+  save_sigset();
+  // show_pthread_sigmask();
+  //#define ABORT_FIRST_REENTRY 1
+  if (reenter) {
+#ifdef ABORT_FIRST_REENTRY
+    // fprintf(stderr, "Thread %d ITIMER event handler attempted reentry!!!\n", monitor_get_thread_num());
+    fetch_and_store(&reentrant_culprit, monitor_get_thread_num());
+    monitor_real_abort();
+#endif // ABORT_FIRST_REENTRY
+#ifdef EMSG_ALL_REENTRY
+    EMSG("PAPI event handler attempted reentry!");
+#endif // EMSG_ALL_REENTRY
+    reenter_count[monitor_get_thread_num()+1]++;
+    hpcrun_restore_sigset();
+    return 0;
+  }
+  reenter = true;
+
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
   void* pc = hpcrun_context_pc(context);
@@ -620,6 +725,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
       hpcrun_restart_timer(self, 0);
     }
     // tell monitor the signal has been handled.
+    hpcrun_restore_sigset();
     return 0;
   }
 
@@ -658,6 +764,15 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   }
 
   hpcrun_safe_exit();
+  assert(ui_lock_holder_ok());
+  reenter = false;
+  hpcrun_restore_sigset();
 
   return 0; /* tell monitor that the signal has been handled */
+}
+
+void
+hpcrun_itimer_reenter_ok(void)
+{
+  reenter = false;
 }
