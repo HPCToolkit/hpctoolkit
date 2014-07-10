@@ -1,0 +1,202 @@
+/****************************************************************************
+ * 
+ * HPCToolkit style sheet
+ *
+ ****************************************************************************/
+
+/****************************************************************************
+ * Coordination with header/menu
+ ****************************************************************************/
+
+
+/****************************************************************************
+ * Classes and Id styles
+ ****************************************************************************/
+
+.indent {
+  margin-left: 4%; /* these can be nested */
+}
+
+
+ol.noindent {
+  margin-left: 1ex;
+  padding-left: 2ex;
+  border-width: 0ex;
+  text-align: left;
+}
+
+ul.noindent {
+  margin-left: 2ex;
+  padding-left: 0ex;
+  border-width: 0ex;
+  list-style: disc outside;
+  text-align: left;
+}
+
+/*
+ul.noindent > li:before {
+  display: marker;
+  marker-offset: 2ex;
+  border-width: 0ex;
+}
+*/
+
+/* (Pseudo) href class: used for examples
+ */
+.hrefPs {
+  color: blue;
+  text-decoration: underline;
+  background-color: transparent;
+}
+
+/* lastupdated class: For "Last Updated text"
+ */
+.lastupdated {
+  font-style: italic;
+  color: black;
+  text-decoration: none;
+  background-color: transparent;
+}
+
+/* disclaimer class: For Disclaimer at bottom of each page.
+ */
+.disclaimer {
+  font-style: italic;
+  color: black;
+  text-decoration: none;
+  background-color: transparent;
+}
+
+/* hpctool class: a reference to an hpctool such as hpcrun, hpcstruct, hpcprof
+ */
+.hpctool {
+  font-weight: bold;
+  /* color: maroon; */
+  /* text-decoration: none; */
+  background-color: transparent;
+}
+
+/* xtool class: a reference to an external tool such as ssrun or prof
+ */
+.xtool {
+  color: #888800; /* olive; */
+  /* text-decoration: none; */
+  background-color: transparent;
+}
+
+/* xmlcomment class: inline comments for annotating/explaining XML formats
+ */
+.xmlcomment {
+  color: red;
+  font-style: italic; 
+  /* text-decoration: none; */
+  background-color: transparent;
+}
+
+/* xmlvar class: attribute values/variables that users should note 
+ *   (for annotating/explaining XML formats)
+ */
+.xmlvar {
+  color: green;
+  /* text-decoration: none; */
+  background-color: transparent;
+}
+
+
+/****************************************************************************
+ * Block Element styles
+ ****************************************************************************/
+
+head {
+  font-size:100%;
+}
+
+body {
+  font-size: 90%;
+  color: black;
+  background-color: white;
+}
+
+p {
+  font-family: sans-serif;
+  font-size: 1em;
+  background-color: transparent;
+}
+
+blockquote {
+  font-family: sans-serif;
+  font-size: 1em;
+  background-color: transparent;
+}
+
+dl {
+  font-family: sans-serif;
+  font-size: 1em;
+  background-color: transparent;
+}
+
+ul {
+  font-family: sans-serif;
+  font-size: 1em;
+  background-color: transparent;
+}
+
+ol {
+  font-family: sans-serif;
+  font-size: 1em;
+}
+
+table {
+  font-family: sans-serif;
+  font-size: 1em;
+}
+
+/****************************************************************************
+ * Inline Element styles
+ ****************************************************************************/
+
+h1 {
+  font-family: sans-serif;
+  font-size: 1.8em;
+  text-decoration: underline;
+  background-color: transparent;
+}
+
+h2 {
+  font-family: sans-serif;
+  font-size: 1.4em;
+  background-color: transparent;
+}
+
+h3 {
+  font-family: sans-serif;
+  font-size: 1.25em;
+  background-color: transparent;
+  list-style-type: disc;
+  list-style-position: outside;
+}
+
+h4 {
+  font-family: sans-serif;
+  font-size: 1.1em;
+  background-color: transparent;
+  list-style-type: disc;
+  list-style-position: outside;
+}
+
+a {
+  text-decoration: none; /* underline */
+  color: blue;
+  background-color: transparent;
+}
+
+pre, code {
+  font-family: monospace;
+  font-size: 1.1em;
+  background-color: transparent; 
+}
+
+img {
+  /*  padding-left: 5px;
+  display: float; */
+}
