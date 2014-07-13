@@ -83,7 +83,9 @@
 #include <list>
 #include <vector>
 #include <lib/support/diagnostics.h>
+#include <lib/support/FileNameMap.hpp>
 #include <lib/support/realpath.h>
+
 #include "Struct-Inline.hpp"
 
 #include <Symtab.h>
@@ -200,6 +202,14 @@ closeSymtab()
   return ret;
 }
 
+class FilenameCompare {
+public:
+  bool operator()(const char *n1,  const char *n2) const {
+    return strcmp(n1,n2) < 0;
+  }
+};
+
+
 // Returns nodelist as a list of InlineNodes for the inlined sequence
 // at VMA addr.  The front of the list is the outermost frame, back is
 // innermost.
@@ -234,7 +244,7 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 	vector <string> name_vec = func->getAllPrettyNames();
 
 	string procnm = (! name_vec.empty()) ? name_vec[0] : UNKNOWN_PROC;
-	string filenm = RealPath(callsite.first.c_str());
+	string &filenm = getRealPath(callsite.first.c_str());
 	long lineno = callsite.second;
 	nodelist.push_front(InlineNode(filenm, procnm, lineno));
 
