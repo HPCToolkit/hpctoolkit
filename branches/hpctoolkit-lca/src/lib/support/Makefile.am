@@ -83,6 +83,7 @@ MYSOURCES = \
 	StrUtil.hpp StrUtil.cpp \
 	\
 	IOUtil.hpp IOUtil.cpp \
+	FileNameMap.hpp FileNameMap.cpp \
 	FileUtil.hpp FileUtil.cpp \
 	SrcFile.hpp SrcFile.cpp \
 	RealPathMgr.hpp RealPathMgr.cpp \
