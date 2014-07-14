@@ -451,7 +451,7 @@ public:
        const char* pre = "") const;
 
   void
-  ddump() const;
+  ddump(int code = DUMP_Long_decode) const;
   
   // dump helpers
   virtual void

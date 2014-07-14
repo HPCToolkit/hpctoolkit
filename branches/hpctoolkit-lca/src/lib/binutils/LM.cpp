@@ -109,8 +109,9 @@ using std::endl;
 
 #define NORETURNS_DISABLE 0
 #define NORETURNS_DEBUG 0
-#define NORETURNS_RESULT_NOISY 0
-#define NORETURNS_LOOKUP_NOISY 0 
+#define NORETURNS_WAIT 0
+#define NORETURNS_RESULT_NOISY 1
+#define NORETURNS_LOOKUP_NOISY 1 
 
 
 
@@ -160,6 +161,10 @@ public:
 
 name_set noreturn_fn_names; 
 
+#if NORETURNS_WAIT 
+int dynwait = true;
+#endif
+
 
 class NoReturns : private std::set<VMA> {
 public:
@@ -191,7 +196,8 @@ public:
        // create a copy of the symbol name that we can modify
        //-----------------------------------------------------
        char *name = strdup(bfd_asymbol_name(symbol)); 
-       char *index = strrchr(name,'@'); // look for an @ in the symbol
+
+       char *index = strchr(name,'@'); // look for an @ in the symbol
        if (index) {                     // if an @ was found
          *index = 0;                    // remove the suffix @...
          unsigned long addr = bfd_asymbol_value(symbol);
@@ -222,6 +228,9 @@ public:
     // identify calls to functions that don't return when building a 
     // control flow graph.
     //-------------------------------------------------------------------
+#if NORETURNS_WAIT 
+    while (dynwait);
+#endif
     asymbol **symbol = syms;
     if (symbol && symcount > 0) {
       for (long i = 0; symbol[i]; i++) {
@@ -235,6 +244,26 @@ public:
           if (addr) {
             addIfNoReturn(name, addr);
           }
+        } else if (symbol[i]->flags == BSF_LOCAL)  {
+          // look for plt_call trampolines found in Power binaries
+          if (strstr(name, "plt_call")) {
+            unsigned long addr = bfd_asymbol_value(symbol[i]);
+            if (addr) {
+              char *dname = strdup(name);
+              char *index = strchr(dname,'@'); // look for an @ in the symbol
+              if (index) {                     // if an @ was found
+                *index = 0;                    // remove the suffix @...
+              }
+              // on power architectures, need to eliminate *.plt_call. prefix
+              char *name = dname;
+              char *name_suffix = strrchr(dname,'.');
+              if (name_suffix) {
+                name = name_suffix + 1;
+              }
+              addIfNoReturn(name, addr);
+              free(dname);
+            }
+         }
         }
       }
     }
@@ -737,9 +766,9 @@ BinUtil::LM::dump(std::ostream& o, int flags, const char* pre) const
 
 
 void
-BinUtil::LM::ddump() const
+BinUtil::LM::ddump(int code) const
 {
-  dump(std::cerr);
+  dump(std::cerr, code);
 }
 
 
@@ -837,8 +866,9 @@ BinUtil::LM::readSymbolTables()
   // Note: the sorted table may be larger than the original table,
   // and size is the size of the sorted table (regular + synthetic).
   // -------------------------------------------------------
-  m_bfdSynthTabSz = bfd_get_synthetic_symtab(m_bfd, 0, NULL, m_bfdDynSymTabSz, 
-                                             m_bfdDynSymTab, &m_bfdSynthTab);
+  m_bfdSynthTabSz = bfd_get_synthetic_symtab(m_bfd, m_bfdSymTabSz, m_bfdSymTab, 
+					     m_bfdDynSymTabSz, m_bfdDynSymTab, 
+					     &m_bfdSynthTab);
   if (m_bfdSynthTabSz < 0) {
     m_bfdSynthTabSz = 0;
   }
