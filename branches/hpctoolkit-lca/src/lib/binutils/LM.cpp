@@ -109,9 +109,8 @@ using std::endl;
 
 #define NORETURNS_DISABLE 0
 #define NORETURNS_DEBUG 0
-#define NORETURNS_WAIT 0
-#define NORETURNS_RESULT_NOISY 1
-#define NORETURNS_LOOKUP_NOISY 1 
+#define NORETURNS_RESULT_NOISY 0
+#define NORETURNS_LOOKUP_NOISY 0 
 
 
 
@@ -120,7 +119,8 @@ using std::endl;
 //***************************************************************************
 
 static const char *noreturn_table[] = {
-  // include machine-generated file containing names of functions that don't return
+  // include machine-generated file containing names of functions 
+  // that don't return
 #include "names.cpp"
 };
 
@@ -160,10 +160,6 @@ public:
 
 
 name_set noreturn_fn_names; 
-
-#if NORETURNS_WAIT 
-int dynwait = true;
-#endif
 
 
 class NoReturns : private std::set<VMA> {
@@ -228,9 +224,6 @@ public:
     // identify calls to functions that don't return when building a 
     // control flow graph.
     //-------------------------------------------------------------------
-#if NORETURNS_WAIT 
-    while (dynwait);
-#endif
     asymbol **symbol = syms;
     if (symbol && symcount > 0) {
       for (long i = 0; symbol[i]; i++) {
@@ -260,10 +253,14 @@ public:
               if (name_suffix) {
                 name = name_suffix + 1;
               }
+#if NORETURNS_LOOKUP_NOISY
+          std::cout << "looking up " << name << " @ " << std::hex << "0x" 
+                    << addr << std::endl;
+#endif
               addIfNoReturn(name, addr);
               free(dname);
             }
-         }
+	  }
         }
       }
     }
