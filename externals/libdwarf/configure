@@ -10,30 +10,22 @@
 #
 
 PKG_NAME=libdwarf
-SRC=dwarf-20130126/libdwarf
+SRC=dwarf-20140519/libdwarf
 
 . ../build-utils/configure.inc
 pre_configure
 prefix="$libdwarf_prefix"
 
-elf_inc="${libelfdir}/include"
-
-# FIXME: tallent: libdwarf requires a gcc-compatible compiler.
-# However, it is dangerous to hardcode 'gcc'; e.g., it breaks
-# cross-compiling.  Rather, in the top-level configure, the compiler
-# should be tested to see if it is GCC-compatible (GCC, Intel...) and
-# if so left alone.  If not, then resort to the optionally specified
-# GCC compiler, which defaults to 'gcc'.
-# CC=gcc  \
-
 set -- \
     CC="$CC" \
-    CFLAGS="$CFLAGS -fPIC -I${elf_inc}"  \
-    CPPFLAGS="-I${elf_inc}"  \
+    CFLAGS="$CFLAGS -I${libelf_inc}"  \
+    CPPFLAGS="-I${libelf_inc}"  \
     LDFLAGS="-L${libelf_lib}"  \
     --prefix="$prefix"  \
     --enable-shared  \
-    --disable-nonshared "$@"
+    --disable-nonshared  \
+    "$@"
+
 if test -n "${is_cross_compile}" ; then
     set -- --host="${host}" "$@"
 fi

@@ -4,16 +4,25 @@ Libdwarf Build Notes
 
 Home: http://www.prevanders.net/dwarf.html
 
-Download: http://www.prevanders.net/libdwarf-20130126.tar.gz
+Download: http://www.prevanders.net/libdwarf-20140519.tar.gz
 
 License: LGPL (libdwarf), GPL (dwarfdump)
 
 Uses Autoconf, but not Automake, does support VPATH.
 
-../configure CC=gcc CFLAGS='-g -O2 -fPIC'  \
-    --enable-shared --disable-nonshared
+../configure  \
+    CC=gcc  \
+    CPPFLAGS='-I/path/to/libelf/include'  \
+    CFLAGS='-g -O2 -fPIC -I/path/to/libelf/include'  \
+    LDFLAGS='-L/path/to/libelf/lib'  \
+    --enable-shared  \
+    --disable-nonshared
 make
 manually copy files
+
+Note: Has no --with-libelf config option.  Need to specify -I include
+path to CPPFLAGS (for configure), -L lib path to LDFLAGS (for make)
+and also CFLAGS (both).
 
 Note: The dwarf tarball includes both dwarfdump and libdwarf, but we
 only use libdwarf.

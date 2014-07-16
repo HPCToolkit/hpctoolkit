@@ -1,0 +1,35 @@
+Fix the build for gennames to always use the front-end gcc compiler.
+This was breaking the build in a cross-compile.
+
+Add an explicit .c to .o rule for the back-end objects.
+
+
+diff -Naurb dwarf-20140519.orig/libdwarf/Makefile.in dwarf-20140519/libdwarf/Makefile.in
+--- dwarf-20140519.orig/libdwarf/Makefile.in	2014-05-19 19:11:17.000000000 -0500
++++ dwarf-20140519/libdwarf/Makefile.in	2014-07-15 00:18:42.201186814 -0500
+@@ -128,6 +128,9 @@
+ 
+ all: @build_shared@ @build_nonshared@
+ 
++$(OBJS): %.o: %.c
++	$(CC) -o $@ -c $(CFLAGS) $<
++
+ libdwarf.a: dwarf_names.h dwarf_names.c  $(OBJS) dwarf_names.o
+ 	$(AR) $(ARFLAGS) $@ $(OBJS)  dwarf_names.o > ar-output-temp
+ 
+@@ -136,10 +139,13 @@
+ 
+ none:
+ 	echo "do nothing " $@
++
+ common.o: $(srcdir)/common.c $(srcdir)/common.h
+-	$(CC) $(CFLAGS) -c $(srcdir)/common.c
++	gcc -g -O -c $(srcdir)/common.c
++
+ gennames: $(srcdir)/gennames.c $(srcdir)/dwarf.h common.o
+-	$(CC) $(CFLAGS) $(srcdir)/gennames.c common.o $(LDFLAGS) -o gennames
++	gcc -g -O $(srcdir)/gennames.c common.o -o gennames
++
+ dwarf_names.c dwarf_names.h: gennames $(srcdir)/dwarf.h
+ 	rm -f dwarf_names.h dwarf_names.c
+ 	./gennames  @dwarf_namestable@  -i $(srcdir) -o .

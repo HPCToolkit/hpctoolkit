@@ -1,0 +1,16 @@
+Fix the typedef for struct Elf.  This is duplicated in the libelf
+header and thus breaking here.
+
+
+diff -Naurb dwarf-20140519.orig/libdwarf/libdwarf.h.in dwarf-20140519/libdwarf/libdwarf.h.in
+--- dwarf-20140519.orig/libdwarf/libdwarf.h.in	2014-05-19 19:11:17.000000000 -0500
++++ dwarf-20140519/libdwarf/libdwarf.h.in	2014-07-14 18:31:51.671775387 -0500
+@@ -60,7 +60,7 @@
+ 
+ */
+ 
+-typedef struct Elf Elf;
++struct Elf;
+ typedef struct Elf* dwarf_elf_handle;
+ 
+ /* To enable printing with printf regardless of the

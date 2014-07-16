@@ -6,7 +6,7 @@
 #
 
 PKG_NAME=libdwarf
-SRC=dwarf-20130126/libdwarf
+SRC=dwarf-20140519/libdwarf
 WORK=work
 
 . ../build-utils/configure.inc
@@ -16,9 +16,11 @@ prefix="$libdwarf_prefix"
 mkdir -p "$prefix/lib" || die "unable to mkdir: $prefix/lib"
 mkdir -p "$prefix/include" || die "unable to mkdir: $prefix/include"
 
+echo "copying libdwarf files ..."
+
 cp "$WORK/libdwarf.so" "$prefix/lib/" || die "unable to install libdwarf.so"
 cp "$SRC/dwarf.h" "$prefix/include/"  || die "unable to install dwarf.h"
-cp "$SRC/libdwarf.h" "$prefix/include/" || die "unable to install libdwarf.h"
+cp "$WORK/libdwarf.h" "$prefix/include/" || die "unable to install libdwarf.h"
 
 post_install
 

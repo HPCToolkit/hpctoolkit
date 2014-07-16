@@ -1,0 +1,105 @@
+Fix how libdwarf generates libdwarf.h from libdwarf.h.in.
+This was broken for vpath builds.
+
+Also, disable the test for struct Elf vs. struct _Elf.
+Our libelf only uses struct Elf.
+
+
+diff -Naurb dwarf-20140519.orig/libdwarf/configure dwarf-20140519/libdwarf/configure
+--- dwarf-20140519.orig/libdwarf/configure	2014-02-01 16:52:12.000000000 -0600
++++ dwarf-20140519/libdwarf/configure	2014-07-14 23:54:25.603753631 -0500
+@@ -2046,6 +2046,9 @@
+ ac_config_headers="$ac_config_headers config.h"
+ 
+ 
++ac_config_files="$ac_config_files Makefile libdwarf.h"
++
++
+ ac_ext=c
+ ac_cpp='$CPP $CPPFLAGS'
+ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+@@ -3822,7 +3825,6 @@
+ 
+ 
+ echo Assuming struct Elf for the default libdwarf.h
+-cp libdwarf.h.in libdwarf.h
+ 
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking for elf64_getehdr in -lelf" >&5
+ $as_echo_n "checking for elf64_getehdr in -lelf... " >&6; }
+@@ -3977,6 +3979,7 @@
+ fi
+ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+ 
++if false ; then
+ 
+ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+@@ -4017,6 +4020,8 @@
+ fi
+ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+ 
++fi
++
+ 
+ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+@@ -4287,8 +4292,6 @@
+ fi
+ 
+ 
+-ac_config_files="$ac_config_files Makefile"
+-
+ cat >confcache <<\_ACEOF
+ # This file is a shell script that caches the results of configure
+ # tests run on this system so they can be shared between configure
+@@ -4982,6 +4985,7 @@
+   case $ac_config_target in
+     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
+     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
++    "libdwarf.h") CONFIG_FILES="$CONFIG_FILES libdwarf.h" ;;
+ 
+   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
+   esac
+diff -Naurb dwarf-20140519.orig/libdwarf/configure.in dwarf-20140519/libdwarf/configure.in
+--- dwarf-20140519.orig/libdwarf/configure.in	2014-01-30 18:34:01.000000000 -0600
++++ dwarf-20140519/libdwarf/configure.in	2014-07-14 23:53:50.654189564 -0500
+@@ -3,6 +3,8 @@
+ AC_INIT()
+ AC_CONFIG_HEADER(config.h)
+ 
++AC_CONFIG_FILES(Makefile libdwarf.h)
++
+ AC_PROG_CC
+ AC_C_BIGENDIAN
+ AC_GCC_TRADITIONAL
+@@ -16,7 +18,6 @@
+ 
+ dnl The default libdwarf is the one with struct Elf
+ echo Assuming struct Elf for the default libdwarf.h
+-cp libdwarf.h.in libdwarf.h
+ 
+ AC_CHECK_LIB(elf,elf64_getehdr,
+   AC_DEFINE(HAVE_ELF64_GETEHDR,1,
+@@ -35,6 +36,7 @@
+   AC_DEFINE(HAVE___UINT64_T_IN_SYS_TYPES_H,1,
+ 	[Define 1 if sys/types.h defines __uint64_t.]))
+ 
++if false ; then
+ 
+ dnl The following are for FreeBSD and others which
+ dnl use struct _Elf as the actual struct type.
+@@ -51,6 +53,8 @@
+     echo Found struct _Elf in libelf.h, using it in libdwarf.h ],
+   [echo libelf.h does not have struct _Elf]) 
+ 
++fi
++
+ 
+ dnl checking for ia 64 types, which might be enums, using HAVE_R_IA_64_DIR32LSB
+ dnl to stand in for a small set.
+@@ -158,4 +162,4 @@
+ 	[AC_DEFINE(HAVE_DWARF2_99_EXTENSION,1,
+ 		[Define 1 if want to allow producer to build with 32/64bit section offsets per dwarf3] )])])
+ 
+-AC_OUTPUT(Makefile)
++AC_OUTPUT
