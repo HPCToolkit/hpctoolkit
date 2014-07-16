@@ -57,6 +57,8 @@
 #include <assert.h>
 #include <string.h>
 #include <pthread.h>
+#include <unistd.h>
+#include <stdio.h>
 
 #include <memory/hpcrun-malloc.h>
 #include "fnbounds_interface.h"
@@ -110,12 +112,16 @@ lock_ui(void)
 {
   for(size_t i=0;;i++) {
     if (iter_count && (i > iter_count)) {
+#ifdef FPRINTF_MSG
       fprintf(stderr, "Thread %d exceeded iter_count\n", monitor_get_thread_num());
+#endif // FPRINTF_MSG
       hpcrun_drop_sample();
     }
     while(ui_tree_lock.thelock != SPINLOCK_UNLOCKED_VALUE) {
       if (iter_count && (i > iter_count)) {
+#ifdef FPRINTF_MSG
 	fprintf(stderr, "Thread %d exceeded iter_count\n", monitor_get_thread_num());
+#endif // FPRINTF_MSG
 	hpcrun_drop_sample();
       }
       i++;
