@@ -1316,6 +1316,27 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
     loop_vma = headVMA;
   }
 
+#ifdef BANAL_USE_SYMTAB
+  if (loop_vma != headVMA) {
+    // Compilers today are not perfect. Our experience is that neither
+    // the source location of the backward branch nor the source 
+    // location of the loop head are always the best answer for 
+    // where to locate a loop in the presence of inlined code. Here,
+    // we consider both as candidates and pick the one that has a 
+    // shallower depth of inlining (if any). If there is no difference,
+    // favor the location of the backward branch.
+    Inline::InlineSeqn loop_vma_nodelist;
+    Inline::InlineSeqn head_vma_nodelist;
+    Inline::analyzeAddr(head_vma_nodelist, headVMA);
+    Inline::analyzeAddr(loop_vma_nodelist, loop_vma);
+
+    if (head_vma_nodelist.size() < loop_vma_nodelist.size()) {
+      p->findSrcCodeInfo(headVMA, headOpIdx, begProcNm, begFileNm, begLn);
+      loop_vma = headVMA;
+    }
+}
+#endif
+
 #if 0
   // TODO: Possibly try to have two levels of forward-substitution-off
   // support.  The less agressive level (this code) compares the first
