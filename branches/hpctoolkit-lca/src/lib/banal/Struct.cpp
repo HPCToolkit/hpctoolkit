@@ -1264,6 +1264,10 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
 {
   using namespace OA::CFG;
 
+  // initialize sourceEdgeType to a value that is not one of the 
+  // types we are considering because there is no invalid edge type.
+  EdgeType sourceEdgeType = RETURN_EDGE; 
+
   begLn = SrcFile::ln_NULL;
 
   // Find the head vma
@@ -1275,6 +1279,8 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
   
   // ------------------------------------------------------------
   // Attempt to use backward branch to find loop begin line (see note above)
+  // If no backward branch is found, we will settle for a true 
+  // edge. 
   // ------------------------------------------------------------
   OA::OA_ptr<EdgesIteratorInterface> it
     = headBB->getCFGIncomingEdgesIterator();
@@ -1283,27 +1289,55 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
 
     OA::OA_ptr<NodeInterface> bb = e->getCFGSource();
 
-    BinUtil::Insn* backBR = BAnal::OA_CFG_getEndInsn(bb);
-    if (!backBR) {
+    BinUtil::Insn* insn = BAnal::OA_CFG_getEndInsn(bb);
+    if (!insn) {
       continue;
     }
     
-    VMA vma = backBR->vma();
-    ushort opIdx = backBR->opIndex();
+    VMA vma = insn->vma();
+    ushort opIdx = insn->opIndex();
 
-    // If we have a backward edge, find the source line of the
-    // backward branch.  Note: back edges are not always labeled as such!
-    if (e->getType() == BACK_EDGE || vma >= headVMA) {
-      SrcFile::ln line;
-      string filenm, procnm;
-      p->findSrcCodeInfo(vma, opIdx, procnm, filenm, line);
-      if (SrcFile::isValid(line)
-	  && (!SrcFile::isValid(begLn) || line < begLn)) {
-	begLn = line;
-	begFileNm = filenm;
-	begProcNm = procnm;
-	loop_vma = vma;
+    EdgeType etype = e->getType();
+
+    // only consider true, false or back edges; skip others.
+    switch(etype) {
+    case TRUE_EDGE:
+    case FALSE_EDGE:
+    case BACK_EDGE:
+      break;
+    case FALLTHROUGH_EDGE:
+      {
+       // we are only interested in fallthrough edges
+       // that are unconditional branches. simply 
+       // executing the next instruction will never 
+       // serve as the proxy for the back edge of a loop.
+       // if not an unconditional branch, no further 
+       // processing needed.
+       ISA::InsnDesc d = insn->desc();
+       if (d.isBrUnCondRel()) break;
       }
+    default:
+      continue;
+    }
+
+    // back edges are not always labeled as such!
+    // relabel as back edge if it seems appropriate.
+    if (vma >= headVMA) etype = BACK_EDGE;
+
+    // back edges have highest preference
+    if (etype != BACK_EDGE && sourceEdgeType == BACK_EDGE) continue;
+
+    // find the source line of the branch.
+    SrcFile::ln line;
+    string filenm, procnm;
+    p->findSrcCodeInfo(vma, opIdx, procnm, filenm, line);
+
+    if (SrcFile::isValid(line) && (!SrcFile::isValid(begLn) || line < begLn)) {
+      begLn = line;
+      begFileNm = filenm;
+      begProcNm = procnm;
+      loop_vma = vma;
+      sourceEdgeType = etype;
     }
   }
 
