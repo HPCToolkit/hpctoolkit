@@ -1242,6 +1242,130 @@ buildStmts(Struct::LocationMgr& locMgr,
 }
 
 
+
+// findLoopBegLineInfo: Given the head basic block node of the loop,
+// find loop begin source line information.
+//
+// The routine first attempts to use the source line information for
+// the backward branch, if one exists.  Then, it consults the 'head'
+// instruction.
+//
+// Note: It is possible to have multiple or no backward branches
+// (e.g. an 'unstructured' loop written with IFs and GOTOs).  In the
+// former case, we take the smallest source line of them all; in the
+// latter we use headVMA.
+static void
+findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
+		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
+		    string& begFileNm, string& begProcNm, SrcFile::ln& begLn, VMA &loop_vma)
+{
+  using namespace OA::CFG;
+
+  begLn = SrcFile::ln_NULL;
+
+  int savedPriority = 0;
+
+  // Find the head vma
+  BinUtil::Insn* head = BAnal::OA_CFG_getBegInsn(headBB);
+  VMA headVMA = head->vma();
+  ushort headOpIdx = head->opIndex();
+  DIAG_Assert(headOpIdx == 0, "Target of a branch at " << headVMA
+	      << " has op-index of: " << headOpIdx);
+
+  
+  // ------------------------------------------------------------
+  // Attempt to use backward branch to find loop begin line (see note above)
+  // ------------------------------------------------------------
+  OA::OA_ptr<EdgesIteratorInterface> it
+    = headBB->getCFGIncomingEdgesIterator();
+  for ( ; it->isValid(); ++(*it)) {
+    OA::OA_ptr<EdgeInterface> e = it->currentCFGEdge();
+
+    OA::OA_ptr<NodeInterface> bb = e->getCFGSource();
+
+    BinUtil::Insn* insn = BAnal::OA_CFG_getEndInsn(bb);
+
+    int currentPriority = 0;
+
+
+    if (!insn) {
+      // we failed to get the instruction. ignore it.
+      continue;
+    }
+    
+    VMA vma = insn->vma();
+
+    EdgeType etype = e->getType();
+
+    // compute priority score based on branch type.
+    // backward branches are most reliable.
+    // apparent backward branches are second best.
+    // forward branch may be better than nothing.
+    switch (etype) {
+    case BACK_EDGE:
+      currentPriority = 3;
+      break;
+    case TRUE_EDGE:
+      if (vma >= headVMA) {
+        // apparent backward branch
+        currentPriority = 2;
+      } else currentPriority = 1;
+      break;
+    default:
+      continue;
+    }
+
+    // If we have a backward edge, find the source line of the
+    // backward branch.  Note: back edges are not always labeled as such!
+    // if (etype == BACK_EDGE || vma >= headVMA) {
+    if (currentPriority >= savedPriority) {
+      ushort opIdx = insn->opIndex();
+      SrcFile::ln line;
+      string filenm, procnm;
+      p->findSrcCodeInfo(vma, opIdx, procnm, filenm, line);
+      if (SrcFile::isValid(line)
+	  && (!SrcFile::isValid(begLn) || currentPriority > savedPriority || begFileNm.compare(filenm) != 0 || line < begLn)) {
+	begLn = line;
+	begFileNm = filenm;
+	begProcNm = procnm;
+	loop_vma = vma;
+        savedPriority = currentPriority;
+      }
+    }
+  }
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+  if (!SrcFile::isValid(begLn)) {
+    // Fall through: consult the first instruction in the loop
+    p->findSrcCodeInfo(headVMA, headOpIdx, begProcNm, begFileNm, begLn);
+    loop_vma = headVMA;
+  }
+
+#ifdef BANAL_USE_SYMTAB
+  if (loop_vma != headVMA) {
+    // Compilers today are not perfect. Our experience is that neither
+    // the source location of the backward branch nor the source 
+    // location of the loop head are always the best answer for 
+    // where to locate a loop in the presence of inlined code. Here,
+    // we consider both as candidates and pick the one that has a 
+    // shallower depth of inlining (if any). If there is no difference,
+    // favor the location of the backward branch.
+    Inline::InlineSeqn loop_vma_nodelist;
+    Inline::InlineSeqn head_vma_nodelist;
+    Inline::analyzeAddr(head_vma_nodelist, headVMA);
+    Inline::analyzeAddr(loop_vma_nodelist, loop_vma);
+
+    if (head_vma_nodelist.size() < loop_vma_nodelist.size()) {
+      p->findSrcCodeInfo(headVMA, headOpIdx, begProcNm, begFileNm, begLn);
+      loop_vma = headVMA;
+    }
+}
+#endif
+}
+
+#if 0
 //****************************************************************************
 // 
 //****************************************************************************
@@ -1290,13 +1414,11 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
     OA::OA_ptr<NodeInterface> bb = e->getCFGSource();
 
     BinUtil::Insn* insn = BAnal::OA_CFG_getEndInsn(bb);
+
     if (!insn) {
       continue;
     }
     
-    VMA vma = insn->vma();
-    ushort opIdx = insn->opIndex();
-
     EdgeType etype = e->getType();
 
     // only consider true, false or back edges; skip others.
@@ -1306,6 +1428,7 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
     case BACK_EDGE:
       break;
     case FALLTHROUGH_EDGE:
+#if 0
       {
        // we are only interested in fallthrough edges
        // that are unconditional branches. simply 
@@ -1316,28 +1439,35 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
        ISA::InsnDesc d = insn->desc();
        if (d.isBrUnCondRel()) break;
       }
+#endif
     default:
       continue;
     }
 
-    // back edges are not always labeled as such!
-    // relabel as back edge if it seems appropriate.
+    VMA vma = insn->vma();
     if (vma >= headVMA) etype = BACK_EDGE;
 
     // back edges have highest preference
     if (etype != BACK_EDGE && sourceEdgeType == BACK_EDGE) continue;
 
+    // only back edges
+    if (etype != BACK_EDGE) continue;
+
     // find the source line of the branch.
     SrcFile::ln line;
     string filenm, procnm;
+    ushort opIdx = insn->opIndex();
     p->findSrcCodeInfo(vma, opIdx, procnm, filenm, line);
 
-    if (SrcFile::isValid(line) && (!SrcFile::isValid(begLn) || line < begLn)) {
-      begLn = line;
-      begFileNm = filenm;
-      begProcNm = procnm;
-      loop_vma = vma;
-      sourceEdgeType = etype;
+    if (SrcFile::isValid(line)) {
+      if ((sourceEdgeType != BACK_EDGE && etype == BACK_EDGE) ||
+          (!SrcFile::isValid(begLn) || line < begLn)) {
+        begLn = line;
+        begFileNm = filenm;
+        begProcNm = procnm;
+        loop_vma = vma;
+        sourceEdgeType = etype;
+      }
     }
   }
 
@@ -1399,6 +1529,7 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
   }
 #endif
 }
+#endif
 
 
 } // namespace Struct
