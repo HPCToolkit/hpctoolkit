@@ -1,0 +1,29 @@
+Force symtab to skip the check for boost and always use the one
+supplied with PATH_BOOST.
+
+On systems with boost installed in /usr/include (eg, babbage at
+NERSC), cmake config was using boost from /usr/include instead of
+our version and thus omitting the -I path.  This would break a cross
+compile because it doesn't use /usr/include by default.
+
+
+diff -Naurb dyninst.orig/cmake/packages.cmake dyninst/cmake/packages.cmake
+--- dyninst.orig/cmake/packages.cmake	2014-03-12 23:20:10.000000000 +0000
++++ dyninst/cmake/packages.cmake	2014-07-21 20:41:59.953020000 +0000
+@@ -100,13 +100,10 @@
+   "1.50" "1.50.0" "1.51" "1.51.0" "1.52" "1.52.0"
+   "1.53" "1.53.0" "1.54" "1.54.0")
+ 
+-set (PATH_BOOST "/usr" CACHE STRING "Path to boost")
+-if (NOT (PATH_BOOST STREQUAL ""))
+-  set (CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${PATH_BOOST}/lib ${PATH_BOOST}/lib64)
+-  set (CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} ${PATH_BOOST}/include)
+-endif()
++# Force symtab to always use our version of Boost from PATH_BOOST.
+ 
+-find_package (Boost REQUIRED)
++message ("-- Using Boost: ${PATH_BOOST}/include")
++set (Boost_INCLUDE_DIRS ${PATH_BOOST}/include)
+ 
+ include_directories (
+   ${Boost_INCLUDE_DIRS}
