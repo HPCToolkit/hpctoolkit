@@ -674,7 +674,6 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 
     Prof::Struct::Alien *alien;
     Prof::Struct::ACodeNode *parent = proposed_scope;
-    bool non_empty_prefix = false;
 
 #ifdef BANAL_USE_SYMTAB
     //
@@ -736,7 +735,6 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 				 empty, it->getLineNum(), targetScopeID);
 	pushCtxt(Ctxt(alien, NULL));
 	parent = alien;
-	non_empty_prefix = true;
 	calledProcedure = it->getProcName();
 
 	DIAG_DevMsgIfCtd(mDBG, "  node=" << alien->id()
@@ -748,6 +746,7 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 	  break;
 	}
       }
+      procnm = calledProcedure;
     }
 #endif
 
