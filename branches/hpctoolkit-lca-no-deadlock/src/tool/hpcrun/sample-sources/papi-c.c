@@ -793,7 +793,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int my_event_codes[MAX_EVENTS];
   int my_event_codes_count = MAX_EVENTS;
 
-#define ABORT_FIRST_REENTRY 1
+  // #define ABORT_FIRST_REENTRY 1
   if (reenter) {
 #ifdef ABORT_FIRST_REENTRY
     fprintf(stderr, "Thread %d PAPI event handler attempted reentry!!!\n", monitor_get_thread_num());

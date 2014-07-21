@@ -266,7 +266,9 @@ static struct itimerspec itspec_stop;
 static sigset_t timer_mask;
 
 static __thread bool wallclock_ok = false;
+#ifdef NO
 static __thread bool reenter = false;
+#endif
 
 // ****************************************************************************
 // * public helper function
@@ -415,10 +417,12 @@ METHOD_FN(init)
 {
   TMSG(ITIMER_CTL, "init");
   blame_shift_source_register(bs_type_timer);
+#ifdef NO
   generate_block_all();
   char* tmp = getenv("HIT_THRESH");
   if (tmp) hit_thresh = atoi(tmp);
   fprintf(stderr, "hit thresh = %d\n", hit_thresh);
+#endif
   self->state = INIT;
 }
 
@@ -685,11 +689,13 @@ METHOD_FN(display_events)
 static int
 itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
+#ifdef NO
   fetch_and_add(&total_sample_hits, 1);
   sample_hits[monitor_get_thread_num()+1]++;
   if (hit_thresh && (total_sample_hits > hit_thresh)) {
     monitor_real_abort();
   }
+#endif
   static bool metrics_finalized = false;
   sample_source_t *self = &_itimer_obj;
 
@@ -698,8 +704,11 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     EMSG("Received itimer signal, but thread not initialized");
     return 0;
   }
+#ifdef NO
   save_sigset();
   // show_pthread_sigmask();
+#endif
+#ifdef NO
   //#define ABORT_FIRST_REENTRY 1
   if (reenter) {
 #ifdef ABORT_FIRST_REENTRY
@@ -711,10 +720,13 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     EMSG("PAPI event handler attempted reentry!");
 #endif // EMSG_ALL_REENTRY
     reenter_count[monitor_get_thread_num()+1]++;
+#ifdef NO
     hpcrun_restore_sigset();
+#endif
     return 0;
   }
   reenter = true;
+#endif
 
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
@@ -764,15 +776,18 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   }
 
   hpcrun_safe_exit();
+#ifdef NO
   assert(ui_lock_holder_ok());
   reenter = false;
   hpcrun_restore_sigset();
-
+#endif
   return 0; /* tell monitor that the signal has been handled */
 }
 
+#ifdef NO
 void
 hpcrun_itimer_reenter_ok(void)
 {
   reenter = false;
 }
+#endif

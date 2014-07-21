@@ -105,15 +105,20 @@ spinlock_t ui_tree_lock = SPINLOCK_UNLOCKED;
 // Deadlock protection
 //  -- !!! clean up later !!! --
 //
+#define WRITE_MSG 1
 static size_t iter_count = 0;
 extern void hpcrun_drop_sample(void);
 static inline void
 lock_ui(void)
 {
+  char buf[100] = {};
   for(size_t i=0;;i++) {
     if (iter_count && (i > iter_count)) {
 #ifdef FPRINTF_MSG
       fprintf(stderr, "Thread %d exceeded iter_count\n", monitor_get_thread_num());
+#elif defined(WRITE_MSG)
+      int len = snprintf(buf, sizeof(buf), "Thread %d exceeded iter_count\n", monitor_get_thread_num());
+      write(2, buf, len > 0 ? len : sizeof(buf) - 1);
 #endif // FPRINTF_MSG
       hpcrun_drop_sample();
     }
@@ -121,6 +126,9 @@ lock_ui(void)
       if (iter_count && (i > iter_count)) {
 #ifdef FPRINTF_MSG
 	fprintf(stderr, "Thread %d exceeded iter_count\n", monitor_get_thread_num());
+#elif defined(WRITE_MSG)
+      int len = snprintf(buf, sizeof(buf), "Thread %d exceeded iter_count\n", monitor_get_thread_num());
+      write(2, buf, len > 0 ? len : sizeof(buf) - 1);
 #endif // FPRINTF_MSG
 	hpcrun_drop_sample();
       }
