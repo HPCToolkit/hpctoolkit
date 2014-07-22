@@ -713,11 +713,12 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
       //
       string empty = "";
       string calledProcedure = "";
+      long callsiteLineNumber = 0;
       for (it = start_it; it != nodelist.end(); it++)
       {
 	char buf[50];
 	if (!calledProcedure.empty()) {
-	  snprintf(buf, 50, "inline-alien-%ld", (long) it->getLineNum());
+	  snprintf(buf, 50, "inline-alien-%ld", callsiteLineNumber);
 	  alien = demandAlienStrct(parent, it->getFileName(), string(buf),
 				   calledProcedure, 0, targetScopeID);
 	  pushCtxt(Ctxt(alien, NULL));
@@ -736,6 +737,7 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 	pushCtxt(Ctxt(alien, NULL));
 	parent = alien;
 	calledProcedure = it->getProcName();
+	callsiteLineNumber = it->getLineNum();
 
 	DIAG_DevMsgIfCtd(mDBG, "  node=" << alien->id()
 			 << "  file: '" << alien->fileName()

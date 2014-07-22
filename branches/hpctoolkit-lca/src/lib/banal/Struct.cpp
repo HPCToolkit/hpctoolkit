@@ -362,8 +362,10 @@ BAnal::Struct::normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe)
 {
   bool changed = false;
   
+#if 0
   // Remove unnecessary alien scopes
   changed |= mergeBogusAlienStrct(lmStrct);
+#endif
 
   // Cleanup procedure/alien scopes
   changed |= coalesceDuplicateStmts(lmStrct, doNormalizeUnsafe);
@@ -987,6 +989,75 @@ reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop,
   }
 }
 
+static bool
+aliensMatch(Prof::Struct::Alien *n1, Prof::Struct::Alien *n2)
+{
+  return 
+    n1->fileName() == n2->fileName() &&
+    n1->begLine() == n2->begLine() &&
+    n1->displayName() == n2->displayName();
+}
+
+
+static bool
+pathsMatch(Prof::Struct::ANode *n1, Prof::Struct::ANode *n2)
+{
+  if (n1 != n2) {
+    bool result = pathsMatch(n1->parent(), n2->parent());
+    if (result &&
+	(typeid(*n1) == typeid(Prof::Struct::Alien)) &&
+	(typeid(*n2) == typeid(Prof::Struct::Alien))) {
+      return aliensMatch((Prof::Struct::Alien *)n1, 
+			 (Prof::Struct::Alien *)n2);
+    } else return false;
+  } return true;
+} 
+
+
+static void
+reparentNode2(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop, 
+	      Prof::Struct::ANode *loopParent, Struct::LocationMgr& locMgr,
+	      int nodeDepth, int loopParentDepth)
+{
+  Prof::Struct::ANode *node = kid;
+
+  if (nodeDepth <= loopParentDepth) {
+    // simple case: fall through to reparent node into loop.
+  } else {
+    Prof::Struct::ANode *child;
+    // find node at loopParentDepth
+    // always >= 1 trip through
+    while (nodeDepth > loopParentDepth) {
+      child = node;
+      node = node->parent();
+      nodeDepth--;
+    }
+    //  this seems to have an off by one error
+    // if (node == loopParent) return;
+    if (child == loop) return;
+    else if (pathsMatch(node, loopParent)) {
+      node = child;
+    } else {
+      node = kid;
+    }
+  }
+
+#if FULL_STRUCT_DEBUG
+  // heavyhanded debugging
+  if (checkCycle(node, loop) == 0) 
+#endif
+  {
+    if (typeid(*node) == typeid(Prof::Struct::Alien)) {
+      // if reparenting an alien node, make sure that we are not 
+      // caching its old parent in the alien cache
+      locMgr.evictAlien((Prof::Struct::ACodeNode *)node->parent(), 
+			(Prof::Struct::Alien *)node);
+    }
+    node->unlink();
+    node->link(loop);
+  }
+}
+
 
 static void
 processInterval(BinUtil::Proc* p,
@@ -1175,9 +1246,16 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
     // reparent statements into the target loop 
     // -----------------------------------------------------
     Prof::Struct::ANode *targetScopeParent = getVisibleAncestor(targetScope); 
+    int targetScopeParentDepth = targetScopeParent->ancestorCount(); 
     for (std::list<Prof::Struct::ACodeNode *>::iterator kid = kids.begin(); 
 	 kid != kids.end(); ++kid) {
+      Prof::Struct::ANode *node = *kid;
+      int nodeDepth = node->ancestorCount(); 
+      reparentNode2(node, targetScope, targetScopeParent, locMgr, 
+		    nodeDepth, targetScopeParentDepth);
+#if 0
       reparentNode(*kid, targetScope, targetScopeParent, locMgr);
+#endif
     }
   }
 
@@ -1546,6 +1624,10 @@ namespace BAnal {
 namespace Struct {
 
 
+#if 0
+// this code is now officially obsolete. it disrupts precise information
+// computed with new inlining support
+// -- johnmc 7/22/14
 static bool
 mergeBogusAlienStrct(Prof::Struct::ACodeNode* node, Prof::Struct::File* file);
 
@@ -1604,6 +1686,8 @@ mergeBogusAlienStrct(Prof::Struct::ACodeNode* node, Prof::Struct::File* file)
   
   return changed;
 }
+#endif
+
 
 
 //****************************************************************************
