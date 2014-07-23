@@ -163,7 +163,8 @@ buildStmts(Struct::LocationMgr& locMgr,
 static void
 findLoopBegLineInfo(/*Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
 		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
-		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn, VMA &loop_vma);
+		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn, VMA &loop_vma,
+		    OA::OA_ptr<OA::NestedSCR> tarj, OA::RIFG::NodeId fgNode);
 
 
 // Cannot make this a local class because it is used as a template
@@ -1214,7 +1215,7 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
     // INTERVAL or IRREDUCIBLE as a loop: Loop head
     // -----------------------------------------------------
     //Struct::ACodeNode* procCtxt = enclosingStrct->ancestorProcCtxt();
-    findLoopBegLineInfo(/*procCtxt,*/ p, bb, fnm, pnm, line, loop_vma);
+    findLoopBegLineInfo(/*procCtxt,*/ p, bb, fnm, pnm, line, loop_vma, tarj, fgNode);
     pnm = BinUtil::canonicalizeProcName(pnm, procNmMgr);
     
     loop = new Prof::Struct::Loop(NULL, fnm, line, line);
@@ -1335,9 +1336,12 @@ buildStmts(Struct::LocationMgr& locMgr,
 static void
 findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
 		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
-		    string& begFileNm, string& begProcNm, SrcFile::ln& begLn, VMA &loop_vma)
+		    string& begFileNm, string& begProcNm, SrcFile::ln& begLn, VMA &loop_vma, 
+		    OA::OA_ptr<OA::NestedSCR> tarj, OA::RIFG::NodeId fgNode)
 {
   using namespace OA::CFG;
+
+  OA::OA_ptr<OA::RIFG> rifg = tarj->getRIFG();
 
   begLn = SrcFile::ln_NULL;
 
@@ -1381,14 +1385,21 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
     // forward branch may be better than nothing.
     switch (etype) {
     case BACK_EDGE:
-      currentPriority = 3;
+      currentPriority = 4;
       break;
     case TRUE_EDGE:
       if (vma >= headVMA) {
         // apparent backward branch
-        currentPriority = 2;
-      } else currentPriority = 1;
+        currentPriority = 3;
+      } else currentPriority = 2;
       break;
+    case FALLTHROUGH_EDGE:
+      // if the source of a fall through edge is within the same loop, 
+      // consider it, but at low priority.
+      if (tarj->getOuter(rifg->getNodeId(bb)) == fgNode) {
+        currentPriority = 1;
+        break;
+      }
     default:
       continue;
     }
