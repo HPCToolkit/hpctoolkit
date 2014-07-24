@@ -161,32 +161,11 @@ buildStmts(Struct::LocationMgr& locMgr,
 
 
 static void
-findLoopBegLineInfo(/*Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
+findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj, 
 		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
-		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn, VMA &loop_vma,
-		    OA::OA_ptr<OA::NestedSCR> tarj, OA::RIFG::NodeId fgNode);
+		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn, VMA &loop_vma);
 
 
-// Cannot make this a local class because it is used as a template
-// argument! Sigh.
-class QNode {
-public:
-  QNode(OA::RIFG::NodeId x = OA::RIFG::NIL,
-	Prof::Struct::ACodeNode* y = NULL, Prof::Struct::ACodeNode* z = NULL)
-    : fgNode(x), enclosingStrct(y), scope(z) { }
-
-  bool isProcessed() const { return (scope != NULL); }
-
-  OA::RIFG::NodeId fgNode;  // flow graph node
-
-  // enclosing scope of 'fgNode'
-  Prof::Struct::ACodeNode* enclosingStrct;
-
-  // scope for children of 'fgNode' (fgNode scope)
-  Prof::Struct::ACodeNode* scope;
-};
-
-  
 } // namespace Struct
 
 } // namespace BAnal
@@ -1165,8 +1144,7 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
     // -----------------------------------------------------
     // INTERVAL or IRREDUCIBLE as a loop: Loop head
     // -----------------------------------------------------
-    //Struct::ACodeNode* procCtxt = enclosingStrct->ancestorProcCtxt();
-    findLoopBegLineInfo(/*procCtxt,*/ p, bb, fnm, pnm, line, loop_vma, tarj, fgNode);
+    findLoopBegLineInfo(p, tarj, bb, fnm, pnm, line, loop_vma);
     pnm = BinUtil::canonicalizeProcName(pnm, procNmMgr);
     
     loop = new Prof::Struct::Loop(NULL, fnm, line, line);
@@ -1281,14 +1259,14 @@ buildStmts(Struct::LocationMgr& locMgr,
 // former case, we take the smallest source line of them all; in the
 // latter we use headVMA.
 static void
-findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
+findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj, 
 		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
-		    string& begFileNm, string& begProcNm, SrcFile::ln& begLn, VMA &loop_vma, 
-		    OA::OA_ptr<OA::NestedSCR> tarj, OA::RIFG::NodeId fgNode)
+		    string& begFileNm, string& begProcNm, SrcFile::ln& begLn, VMA &loop_vma)
 {
   using namespace OA::CFG;
 
   OA::OA_ptr<OA::RIFG> rifg = tarj->getRIFG();
+  OA::RIFG::NodeId loopHeadNodeId = rifg->getNodeId(headBB);
 
   begLn = SrcFile::ln_NULL;
 
@@ -1329,12 +1307,18 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
     // compute priority score based on branch type.
     // backward branches are most reliable.
     // apparent backward branches are second best.
-    // forward branch may be better than nothing.
+    // forward branch seems to be better than nothing.
     switch (etype) {
     case BACK_EDGE:
       currentPriority = 4;
       break;
     case TRUE_EDGE:
+    case FALSE_EDGE:
+      if (tarj->getOuter(rifg->getNodeId(bb)) != loopHeadNodeId) {
+	// if the source of a true or false edge is not within 
+	// the tarjan interval, ignore it.
+	continue; 
+      }
       if (vma >= headVMA) {
         // apparent backward branch
         currentPriority = 3;
@@ -1343,7 +1327,7 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
     case FALLTHROUGH_EDGE:
       // if the source of a fall through edge is within the same loop, 
       // consider it, but at low priority.
-      if (tarj->getOuter(rifg->getNodeId(bb)) == fgNode) {
+      if (tarj->getOuter(rifg->getNodeId(bb)) == loopHeadNodeId) {
         currentPriority = 1;
         break;
       }
@@ -1359,13 +1343,19 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
       SrcFile::ln line;
       string filenm, procnm;
       p->findSrcCodeInfo(vma, opIdx, procnm, filenm, line);
-      if (SrcFile::isValid(line)
-	  && (!SrcFile::isValid(begLn) || currentPriority > savedPriority || begFileNm.compare(filenm) != 0 || line < begLn)) {
-	begLn = line;
-	begFileNm = filenm;
-	begProcNm = procnm;
-	loop_vma = vma;
-        savedPriority = currentPriority;
+      if (SrcFile::isValid(line)) {
+	if (!SrcFile::isValid(begLn) || currentPriority > savedPriority || 
+	    begFileNm.compare(filenm) != 0 || line < begLn) {
+	  // NOTE: if inlining information is available, in the case where the priority is the same, 
+	  //       we might be able to improve the decision to change the source mapping by comparing
+	  //       the length of the inlined sequences and keep the shorter one. leave this adjustment
+	  //       for another time, if it seems warranted.
+	  begLn = line;
+	  begFileNm = filenm;
+	  begProcNm = procnm;
+	  loop_vma = vma;
+	  savedPriority = currentPriority;
+	}
       }
     }
   }
@@ -1374,7 +1364,8 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
   // 
   // ------------------------------------------------------------
   if (!SrcFile::isValid(begLn)) {
-    // Fall through: consult the first instruction in the loop
+    // if no candidate source mapping for the loop has been identified so far, 
+    // default to the mapping for the first instruction in the loop header
     p->findSrcCodeInfo(headVMA, headOpIdx, begProcNm, begFileNm, begLn);
     loop_vma = headVMA;
   }
@@ -1382,8 +1373,9 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
 #ifdef BANAL_USE_SYMTAB
   if (loop_vma != headVMA) {
     // Compilers today are not perfect. Our experience is that neither
-    // the source location of the backward branch nor the source 
-    // location of the loop head are always the best answer for 
+    // the source code location associated with the source of a flow 
+    // graph edge entering the loop nor the source location of the loop 
+    // head is always the best answer for 
     // where to locate a loop in the presence of inlined code. Here,
     // we consider both as candidates and pick the one that has a 
     // shallower depth of inlining (if any). If there is no difference,
