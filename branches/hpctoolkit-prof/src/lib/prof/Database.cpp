@@ -53,6 +53,17 @@
 //
 // 3. Replace err() with hpcprof errors and warnings.
 //
+// 4. Settle on alignment (if any) in trace and other files.
+//
+// 5. Add trace file to hpcprof-mpi.
+//
+// 6. Add way to choose subset of trace files.
+//
+// 7. Add min/max times to trace header.
+//
+// 8. Add fields to experiment.xml for the .db files and their
+// properties.
+//
 
 //***************************************************************************
 
@@ -72,6 +83,7 @@
 #include <lib/analysis/Args.hpp>
 #include <lib/analysis/ArgsHPCProf.hpp>
 #include <lib/prof/CallPath-Profile.hpp>
+#include <lib/prof/CCT-Merge.hpp>
 #include <lib/prof/CCT-Tree.hpp>
 #include <lib/prof/Metric-Mgr.hpp>
 #include <include/uint.h>
@@ -80,14 +92,15 @@
 //***************************************************************************
 
 #define MESSAGE_SIZE  32
-#define SUMMARY_NAME  "hpcprof summary metrics"
+#define SUMMARY_NAME  "hpctoolkit summary file"
+#define TRACE_NAME    "hpctoolkit trace file"
 
 #define MAGIC  0x06870630
 
 #define METRIC_BUFFER_SIZE  (4 * 1024 * 1024)
-#define TABLE_ALIGN   512
+#define TRACE_BUFFER_SIZE   (8 * 1024 * 1024)
 
-#define round_up(x, y)  ((y) * (((x) + (y) - 1)/(y)))
+#define OFFSET_ALIGN  512
 
 struct __attribute__ ((packed)) common_header {
   char      mesg[MESSAGE_SIZE];
@@ -109,10 +122,34 @@ struct __attribute__ ((packed)) summary_header {
   uint32_t  size_metval;
 };
 
+struct __attribute__ ((packed)) trace_header {
+  uint64_t  min_time;
+  uint64_t  max_time;
+  uint64_t  index_start;
+  uint64_t  index_length;
+  uint32_t  size_offset;
+  uint32_t  size_length;
+  uint32_t  size_time;
+  uint32_t  size_cctid;
+};
+
 struct __attribute__ ((packed)) metric_entry {
   uint16_t  metid;
   uint32_t  metval;
 };
+
+struct __attribute__ ((packed)) trace_index {
+  uint64_t  offset;
+  uint64_t  length;
+};
+
+// Global data for all files.
+
+static bool new_db_format = false;
+static std::string db_dir;
+
+static int trace_fd = -1;
+static unsigned char *trace_buf = NULL;
 
 //***************************************************************************
 
@@ -159,6 +196,29 @@ write_all_at(int fd, const void *buf, size_t count, off_t offset)
 namespace Prof {
 namespace Database {
 
+void
+initdb(const Analysis::Args & args)
+{
+  db_dir = std::string(args.db_dir);
+  new_db_format = true;
+}
+
+bool
+newDBFormat(void)
+{
+  return new_db_format;
+}
+
+off_t
+alignOffset(off_t offset)
+{
+  return OFFSET_ALIGN * ((offset + OFFSET_ALIGN - 1)/OFFSET_ALIGN);
+}
+
+//***************************************************************************
+
+// Summary Metrics File
+
 bool
 makeSummaryDB(Prof::CallPath::Profile & prof, const Analysis::Args & args)
 {
@@ -190,9 +250,9 @@ makeSummaryDB(Prof::CallPath::Profile & prof, const Analysis::Args & args)
   uint64_t summary_size = sizeof(struct summary_header);
   uint64_t metric_entry_size = sizeof(struct metric_entry);
   uint64_t header_size =  common_size + summary_size;
-  uint64_t offset_start = round_up(header_size + 8, TABLE_ALIGN);
+  uint64_t offset_start = alignOffset(header_size);
   uint64_t offset_size =  sizeof(uint64_t) * (num_cctid + 2);
-  uint64_t metric_start = round_up(offset_start + offset_size + 8, TABLE_ALIGN);
+  uint64_t metric_start = alignOffset(offset_start + offset_size);
 
   struct common_header * common_hdr;
   struct summary_header * summary_hdr;
@@ -300,6 +360,181 @@ makeSummaryDB(Prof::CallPath::Profile & prof, const Analysis::Args & args)
   close(sum_fd);
 
   return true;
+}
+
+//***************************************************************************
+
+// Mega Trace File
+
+off_t
+firstTraceOffset(long num_files)
+{
+  off_t offset;
+
+  offset = sizeof(struct common_header) + sizeof(struct trace_header);
+  offset = alignOffset(offset);
+  offset += (num_files + 2) * sizeof(struct trace_index);
+  offset = alignOffset(offset);
+
+  return offset;
+}
+
+int
+writeTraceHeader(long num_threads)
+{
+  struct common_header * common_hdr;
+  struct trace_header * trace_hdr;
+
+  if (trace_fd < 0) {
+    return 0;
+  }
+
+  uint64_t common_size = sizeof(struct common_header);
+  uint64_t trace_size = sizeof(struct trace_header);
+  uint64_t header_size =  common_size + trace_size;
+  uint64_t index_start = alignOffset(header_size);
+  uint64_t index_length = (num_threads + 2) * sizeof(struct trace_index);
+
+  char * header = (char *) malloc(header_size);
+  if (header == NULL) {
+    err(1, "malloc for trace header failed");
+  }
+  common_hdr = (struct common_header *) header;
+  trace_hdr = (struct trace_header *) (header + common_size);
+
+  memset(header, 0, header_size);
+  strncpy((char *) common_hdr, TRACE_NAME, MESSAGE_SIZE);
+
+  common_hdr->mesg[MESSAGE_SIZE - 1] = 0;
+  common_hdr->magic = host_to_be_32(MAGIC);
+  common_hdr->type =  host_to_be_32(2);
+  common_hdr->format =  host_to_be_32(2);
+  common_hdr->num_threads = host_to_be_64(num_threads);
+  common_hdr->num_cctid =  0;
+  common_hdr->num_metric = 0;
+
+  trace_hdr->min_time = 0;
+  trace_hdr->max_time = 0;
+  trace_hdr->index_start =  host_to_be_64(index_start);
+  trace_hdr->index_length = host_to_be_64(index_length);
+  trace_hdr->size_offset =  host_to_be_32(8);
+  trace_hdr->size_length =  host_to_be_32(8);
+  trace_hdr->size_time =    host_to_be_32(8);
+  trace_hdr->size_cctid =   host_to_be_32(4);
+
+  if (write_all_at(trace_fd, header, header_size, 0) != 0) {
+    err(1, "write trace header failed");
+  }
+
+  return 0;
+}
+
+int
+writeTraceIndex(traceInfo *trace, long num_threads)
+{
+  struct trace_index *table;
+  size_t start = alignOffset(sizeof(struct common_header) + sizeof(struct trace_header));
+  size_t size = (num_threads + 1) * sizeof(*table);
+  long n;
+
+  if (trace_fd < 0) {
+    return 0;
+  }
+
+  table = (struct trace_index *) malloc(size);
+  if (table == NULL) {
+    err(1, "unable to malloc trace index table");
+  }
+
+  for (n = 0; n < num_threads; n++) {
+    table[n].offset = host_to_be_64(trace[n].start_offset);
+    table[n].length = host_to_be_64(trace[n].length);
+  }
+  table[num_threads].offset = 0;
+  table[num_threads].length = 0;
+
+  if (write_all_at(trace_fd, table, size, start) != 0) {
+    err(1, "write trace index table failed");
+  }
+
+  return 0;
+}
+
+int
+writeTraceFile(Prof::CallPath::Profile *prof,
+	       Prof::CCT::MergeEffectList *effects)
+{
+  off_t offset = prof->m_trace->start_offset;
+
+  // open trace.db file lazily.
+  if (trace_fd < 0) {
+    std::string trace_fname = db_dir + "/" + "trace.db";
+
+    trace_fd = open(trace_fname.c_str(), O_WRONLY | O_CREAT, 0644);
+    if (trace_fd < 0) {
+      err(1, "open trace metrics file failed");
+    }
+
+    trace_buf = (unsigned char *) malloc(TRACE_BUFFER_SIZE);
+    if (trace_buf == NULL) {
+      err(1, "malloc for trace buffer failed");
+    }
+  }
+
+  // read the original trace file.
+  const char *name = prof->traceFileName().c_str();
+  int old_fd = open(name, O_RDONLY);
+  if (old_fd < 0) {
+    err(1, "open trace file failed: %s", name);
+  }
+
+  ssize_t len = read(old_fd, trace_buf, TRACE_BUFFER_SIZE);
+  if (len < 0) {
+    err(1, "read trace file failed: %s", name);
+  }
+  close(old_fd);
+
+  // translate the cctids.
+  if (effects != NULL) {
+    std::map <uint, uint> cctid_map;
+
+    // convert merge effects list to map.
+    for (CCT::MergeEffectList::iterator it = effects->begin();
+	 it != effects->end(); ++it) {
+      cctid_map.insert(std::make_pair(it->old_cpId, it->new_cpId));
+    }
+
+    // walk through original trace file and translate the cctids.
+    for (int k = 40; k < len; k += 12) {
+      int32_t *p = (int32_t *) &trace_buf[k];
+      uint oldid = be_to_host_32(*p);
+      std::map <uint, uint> :: iterator it = cctid_map.find(oldid);
+
+      if (it != cctid_map.end()) {
+	*p = host_to_be_32(it->second);
+      }
+    }
+  }
+
+  // write the new trace file.
+  if (write_all_at(trace_fd, &trace_buf[32], len - 32, offset) != 0) {
+    err(1, "write trace file failed: %s", name);
+  }
+
+  prof->m_trace->length = len - 32;
+  prof->m_trace->active = true;
+
+  return 0;
+}
+
+void
+endTraceFiles(void)
+{
+  close(trace_fd);
+
+  if (trace_buf != NULL) {
+    free(trace_buf);
+  }
 }
 
 }  // namespace Prof, Database

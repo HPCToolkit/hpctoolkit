@@ -59,6 +59,10 @@
 
 //************************* System Include Files ****************************
 
+#include <sys/types.h>
+#include <err.h>
+#include <errno.h>
+
 #include <iostream>
 using std::hex;
 using std::dec;
@@ -123,21 +127,69 @@ Prof::CallPath::Profile*
 read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
      int mergeTy, uint rFlags, uint mrgFlags)
 {
+  Prof::Database::traceInfo *trace = NULL;
+  bool new_trace = Prof::Database::newDBFormat()
+      && ((mrgFlags & Prof::CCT::MrgFlg_NormalizeTraceFileY) != 0);
+  off_t offset = 0;
+  long num_trace = 0;
+
   // Special case
   if (profileFiles.empty()) {
     Prof::CallPath::Profile* prof = Prof::CallPath::Profile::make(rFlags);
     return prof;
   }
-  
+
+  if (new_trace) {
+    long num_files = profileFiles.size();
+    long size = num_files * sizeof(*trace);
+    trace = (Prof::Database::traceInfo *) malloc(size);
+    if (trace == NULL) {
+      err(1, "unable to malloc trace index");
+    }
+    offset = Prof::Database::firstTraceOffset(num_files);
+    num_trace = 0;
+  }
+
   // General case
   uint groupId = (groupMap) ? (*groupMap)[0] : 0;
   Prof::CallPath::Profile* prof = read(profileFiles[0], groupId, rFlags);
 
+  if (new_trace && ! prof->traceFileName().empty()) {
+    offset = Prof::Database::alignOffset(offset);
+    trace[0].start_offset = offset;
+    trace[0].active = false;
+    prof->m_trace = &trace[0];
+    Prof::Database::writeTraceFile(prof, NULL);
+    if (trace[0].active) {
+      offset += trace[0].length;
+      num_trace++;
+    }
+  }
+
   for (uint i = 1; i < profileFiles.size(); ++i) {
     groupId = (groupMap) ? (*groupMap)[i] : 0;
     Prof::CallPath::Profile* p = read(profileFiles[i], groupId, rFlags);
+    bool active = false;
+
+    if (new_trace && ! p->traceFileName().empty()) {
+      offset = Prof::Database::alignOffset(offset);
+      trace[num_trace].start_offset = offset;
+      trace[num_trace].active = false;
+      p->m_trace = &trace[num_trace];
+      active = true;
+    }
     prof->merge(*p, mergeTy, mrgFlags);
+    if (active && trace[num_trace].active) {
+      offset += trace[num_trace].length;
+      num_trace++;
+    }
     delete p;
+  }
+
+  if (new_trace) {
+    Prof::Database::writeTraceIndex(trace, num_trace);
+    Prof::Database::writeTraceHeader(num_trace);
+    Prof::Database::endTraceFiles();
   }
   
   return prof;
@@ -1043,7 +1095,9 @@ makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args)
 				  args.searchPathTpls, db_dir);
 
   // 2. Copy trace files (if necessary)
-  Analysis::Util::copyTraceFiles(db_dir, prof.traceFileNameSet());
+  if (! args.new_db_format) {
+    Analysis::Util::copyTraceFiles(db_dir, prof.traceFileNameSet());
+  }
 
   // 3. Create 'experiment.xml' file
   string experiment_fnm = db_dir + "/" + args.out_db_experiment;

@@ -47,17 +47,48 @@
 #ifndef Prof_Database_hpp
 #define Prof_Database_hpp
 
+#include <sys/types.h>
+#include <stdint.h>
+
 #include <lib/analysis/Args.hpp>
 #include <lib/analysis/ArgsHPCProf.hpp>
+#include <lib/prof/CCT-Merge.hpp>
 #include <lib/prof/CallPath-Profile.hpp>
 
 namespace Prof {
 namespace Database {
 
-bool
-makeSummaryDB(Prof::CallPath::Profile & prof, const Analysis::Args & args);
+struct traceInfo_s {
+  off_t  start_offset;
+  off_t  length;
+  long   rank;
+  long   tid;
+  bool   active;
+};
 
-}
+typedef struct traceInfo_s traceInfo;
+
+void initdb(const Analysis::Args & args);
+
+bool newDBFormat(void);
+
+off_t alignOffset(off_t offset);
+
+bool makeSummaryDB(Prof::CallPath::Profile & prof,
+		   const Analysis::Args & args);
+
+off_t firstTraceOffset(long num_files);
+
+int writeTraceHeader(long num_threads);
+
+int writeTraceIndex(traceInfo *trace, long num_threads);
+
+int writeTraceFile(Prof::CallPath::Profile *prof, 
+		   Prof::CCT::MergeEffectList *effects);
+
+void endTraceFiles(void);
+
+}  // namespace Prof, Database
 }
 
 #endif

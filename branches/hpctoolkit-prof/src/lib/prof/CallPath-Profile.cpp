@@ -91,6 +91,7 @@ using std::string;
 
 #include "CallPath-Profile.hpp"
 #include "Struct-Tree.hpp"
+#include <lib/prof/Database.hpp>
 
 #include <lib/xml/xml.hpp>
 using namespace xml;
@@ -140,6 +141,7 @@ Profile::Profile(const std::string name)
 
   m_traceMinTime = UINT64_MAX;
   m_traceMaxTime = 0;
+  m_trace = NULL;
 
   m_mMgr = new Metric::Mgr;
   m_isMetricMgrVirtual = false;
@@ -254,7 +256,15 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
 			     mrgFlag & CCT::MrgFlg_NormalizeTraceFileY),
 	      "CallPath::Profile::merge: there should only be CCT::MergeEffects when MrgFlg_NormalizeTraceFileY is passed");
 
-  y.merge_fixTrace(mrgEffects2);
+  if (Prof::Database::newDBFormat()) {
+    if (! y.traceFileName().empty()) {
+      Prof::Database::writeTraceFile(&y, mrgEffects2);
+    }
+  }
+  else {
+    y.merge_fixTrace(mrgEffects2);
+  }
+
   delete mrgEffects2;
 
   return firstMergedMetric;

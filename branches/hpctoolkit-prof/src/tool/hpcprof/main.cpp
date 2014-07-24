@@ -75,7 +75,7 @@ using std::string;
 
 #include <lib/analysis/CallPath.hpp>
 #include <lib/analysis/Util.hpp>
-
+#include <lib/prof/Database.hpp>
 #include <lib/support/diagnostics.h>
 #include <lib/support/RealPathMgr.hpp>
 
@@ -152,6 +152,9 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
 
   args.makeDatabaseDir();
+  if (args.new_db_format) {
+    Prof::Database::initdb(args);
+  }
 
   // ------------------------------------------------------------
   // 1a. Create canonical CCT // Normalize trace files

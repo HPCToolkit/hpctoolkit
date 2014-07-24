@@ -62,6 +62,9 @@
 
 //************************* System Include Files ****************************
 
+#include <sys/types.h>
+#include <stdint.h>
+
 #include <iostream>
 #include <cstdio>
 
@@ -77,6 +80,7 @@
 #include "Metric-Mgr.hpp"
 #include "LoadMap.hpp"
 #include "CCT-Tree.hpp"
+#include "Database.hpp"
 
 //*************************** Forward Declarations ***************************
 
@@ -124,6 +128,8 @@ public:
   std::set<std::string>&
   traceFileNameSet()
   { return m_traceFileNameSet; }
+
+  std::string & traceFileName() { return m_traceFileName; }
   
 
   // -------------------------------------------------------
@@ -357,6 +363,10 @@ private:
   CCT::Tree* m_cct;
 
   Prof::Struct::Tree* m_structure;
+
+public:
+  Prof::Database::traceInfo *m_trace;
+
 };
 
 } // namespace CallPath
