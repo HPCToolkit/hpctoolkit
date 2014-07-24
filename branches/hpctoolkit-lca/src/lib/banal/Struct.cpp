@@ -203,9 +203,6 @@ namespace Struct {
 // ------------------------------------------------------------
 
 static bool
-mergeBogusAlienStrct(Prof::Struct::LM* lmStrct);
-
-static bool
 coalesceDuplicateStmts(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe);
 
 static bool
@@ -363,11 +360,6 @@ BAnal::Struct::normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe)
 {
   bool changed = false;
   
-#if 0
-  // Remove unnecessary alien scopes
-  changed |= mergeBogusAlienStrct(lmStrct);
-#endif
-
   // Cleanup procedure/alien scopes
   changed |= coalesceDuplicateStmts(lmStrct, doNormalizeUnsafe);
   changed |= mergePerfectlyNestedLoops(lmStrct);
@@ -948,48 +940,6 @@ ancestorIsLoop(Prof::Struct::ANode *node)
 #endif
 
 
-static void
-reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop, 
-             Prof::Struct::ANode *loopParent, Struct::LocationMgr& locMgr)
-{
-  Prof::Struct::ANode *node = kid;
-
-  for(;;) {
-    if (node == 0) {
-      // kid must be an ancestor of loop that needs to be reparented
-      // into the loop. move kid directly.
-      node = kid; 
-      break;
-    }
-    Prof::Struct::ANode *parent = getVisibleAncestor(node);
-    if (parent == loop) {
-      // kid is in a subtree of node, which is already a descendant of
-      // loop. no further action needed.
-      return;
-    }
-    if (parent == loopParent) {
-      // kid is in a subtree of node, which is currently a sibling of
-      // loop. move node into loop.
-      break;
-    }
-    node = parent;
-  }
-#if FULL_STRUCT_DEBUG
-  // heavyhanded debugging
-  if (checkCycle(node, loop) == 0) 
-#endif
-  {
-    if (typeid(*node) == typeid(Prof::Struct::Alien)) {
-      // if reparenting an alien node, make sure that we are not 
-      // caching its old parent in the alien cache
-      locMgr.evictAlien((Prof::Struct::ACodeNode *)node->parent(), 
-			(Prof::Struct::Alien *)node);
-    }
-    node->unlink();
-    node->link(loop);
-  }
-}
-
 static bool
 aliensMatch(Prof::Struct::Alien *n1, Prof::Struct::Alien *n2)
 {
@@ -1016,7 +966,7 @@ pathsMatch(Prof::Struct::ANode *n1, Prof::Struct::ANode *n2)
 
 
 static void
-reparentNode2(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop, 
+reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop, 
 	      Prof::Struct::ANode *loopParent, Struct::LocationMgr& locMgr,
 	      int nodeDepth, int loopParentDepth)
 {
@@ -1120,7 +1070,8 @@ processInterval(BinUtil::Proc* p,
       // adjust my location in the scope tree so that it is inside 
       // my enclosing scope. 
       // --------------------------------------------------------------
-      reparentNode(currentScope, enclosingScope, lca, locMgr);
+      reparentNode(currentScope, enclosingScope, lca, locMgr, 
+		   currentScope->ancestorCount(), lca->ancestorCount()); 
     }
     nLoops++;
   }
@@ -1251,12 +1202,8 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
     for (std::list<Prof::Struct::ACodeNode *>::iterator kid = kids.begin(); 
 	 kid != kids.end(); ++kid) {
       Prof::Struct::ANode *node = *kid;
-      int nodeDepth = node->ancestorCount(); 
-      reparentNode2(node, targetScope, targetScopeParent, locMgr, 
-		    nodeDepth, targetScopeParentDepth);
-#if 0
-      reparentNode(*kid, targetScope, targetScopeParent, locMgr);
-#endif
+      reparentNode(node, targetScope, targetScopeParent, locMgr, 
+		   node->ancestorCount(), targetScopeParentDepth);
     }
   }
 
@@ -1454,173 +1401,6 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
 #endif
 }
 
-#if 0
-//****************************************************************************
-// 
-//****************************************************************************
-
-// findLoopBegLineInfo: Given the head basic block node of the loop,
-// find loop begin source line information.
-//
-// The routine first attempts to use the source line information for
-// the backward branch, if one exists.  Then, it consults the 'head'
-// instruction.
-//
-// Note: It is possible to have multiple or no backward branches
-// (e.g. an 'unstructured' loop written with IFs and GOTOs).  In the
-// former case, we take the smallest source line of them all; in the
-// latter we use headVMA.
-static void
-findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
-		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
-		    string& begFileNm, string& begProcNm, SrcFile::ln& begLn, VMA &loop_vma)
-{
-  using namespace OA::CFG;
-
-  // initialize sourceEdgeType to a value that is not one of the 
-  // types we are considering because there is no invalid edge type.
-  EdgeType sourceEdgeType = RETURN_EDGE; 
-
-  begLn = SrcFile::ln_NULL;
-
-  // Find the head vma
-  BinUtil::Insn* head = BAnal::OA_CFG_getBegInsn(headBB);
-  VMA headVMA = head->vma();
-  ushort headOpIdx = head->opIndex();
-  DIAG_Assert(headOpIdx == 0, "Target of a branch at " << headVMA
-	      << " has op-index of: " << headOpIdx);
-  
-  // ------------------------------------------------------------
-  // Attempt to use backward branch to find loop begin line (see note above)
-  // If no backward branch is found, we will settle for a true 
-  // edge. 
-  // ------------------------------------------------------------
-  OA::OA_ptr<EdgesIteratorInterface> it
-    = headBB->getCFGIncomingEdgesIterator();
-  for ( ; it->isValid(); ++(*it)) {
-    OA::OA_ptr<EdgeInterface> e = it->currentCFGEdge();
-
-    OA::OA_ptr<NodeInterface> bb = e->getCFGSource();
-
-    BinUtil::Insn* insn = BAnal::OA_CFG_getEndInsn(bb);
-
-    if (!insn) {
-      continue;
-    }
-    
-    EdgeType etype = e->getType();
-
-    // only consider true, false or back edges; skip others.
-    switch(etype) {
-    case TRUE_EDGE:
-    case FALSE_EDGE:
-    case BACK_EDGE:
-      break;
-    case FALLTHROUGH_EDGE:
-#if 0
-      {
-       // we are only interested in fallthrough edges
-       // that are unconditional branches. simply 
-       // executing the next instruction will never 
-       // serve as the proxy for the back edge of a loop.
-       // if not an unconditional branch, no further 
-       // processing needed.
-       ISA::InsnDesc d = insn->desc();
-       if (d.isBrUnCondRel()) break;
-      }
-#endif
-    default:
-      continue;
-    }
-
-    VMA vma = insn->vma();
-    if (vma >= headVMA) etype = BACK_EDGE;
-
-    // back edges have highest preference
-    if (etype != BACK_EDGE && sourceEdgeType == BACK_EDGE) continue;
-
-    // only back edges
-    if (etype != BACK_EDGE) continue;
-
-    // find the source line of the branch.
-    SrcFile::ln line;
-    string filenm, procnm;
-    ushort opIdx = insn->opIndex();
-    p->findSrcCodeInfo(vma, opIdx, procnm, filenm, line);
-
-    if (SrcFile::isValid(line)) {
-      if ((sourceEdgeType != BACK_EDGE && etype == BACK_EDGE) ||
-          (!SrcFile::isValid(begLn) || line < begLn)) {
-        begLn = line;
-        begFileNm = filenm;
-        begProcNm = procnm;
-        loop_vma = vma;
-        sourceEdgeType = etype;
-      }
-    }
-  }
-
-  // ------------------------------------------------------------
-  // 
-  // ------------------------------------------------------------
-  if (!SrcFile::isValid(begLn)) {
-    // Fall through: consult the first instruction in the loop
-    p->findSrcCodeInfo(headVMA, headOpIdx, begProcNm, begFileNm, begLn);
-    loop_vma = headVMA;
-  }
-
-#ifdef BANAL_USE_SYMTAB
-  if (loop_vma != headVMA) {
-    // Compilers today are not perfect. Our experience is that neither
-    // the source location of the backward branch nor the source 
-    // location of the loop head are always the best answer for 
-    // where to locate a loop in the presence of inlined code. Here,
-    // we consider both as candidates and pick the one that has a 
-    // shallower depth of inlining (if any). If there is no difference,
-    // favor the location of the backward branch.
-    Inline::InlineSeqn loop_vma_nodelist;
-    Inline::InlineSeqn head_vma_nodelist;
-    Inline::analyzeAddr(head_vma_nodelist, headVMA);
-    Inline::analyzeAddr(loop_vma_nodelist, loop_vma);
-
-    if (head_vma_nodelist.size() < loop_vma_nodelist.size()) {
-      p->findSrcCodeInfo(headVMA, headOpIdx, begProcNm, begFileNm, begLn);
-      loop_vma = headVMA;
-    }
-}
-#endif
-
-#if 0
-  // TODO: Possibly try to have two levels of forward-substitution-off
-  // support.  The less agressive level (this code) compares the first
-  // instruction in a loop with the loop backward branch in an attempt
-  // to arrive at a better loop begin line (which is only adjusted by
-  // fuzzy matching or by self-nesting correction).  The more
-  // aggressive level is the min-max loop heuristic and is implemented
-  // in LocationMgr::determineContext().
-
-  else if (/* forward substitution off */) {
-    // INVARIANT: backward branch was found (begLn is valid)
-
-    // If head instruction appears to come from the same procedure
-    // context as the backward branch, then compare the two sets of
-    // source information.
-    SrcFile::ln line;
-    string filenm, procnm;
-    p->findSrcCodeInfo(headVMA, headOpIdx, procnm, filenm, line);
-
-    if (filenm == begFileNm && ctxtNameEqFuzzy(procnm, begProcNm)
-	&& procCtxt->begLine() < line && line < procCtxt->endLine()) {
-      begLn = line;
-      begFileNm = filenm;
-      begProcNm = procnm;
-    }
-  }
-#endif
-}
-#endif
-
-
 } // namespace Struct
 
 } // namespace BAnal
@@ -1633,72 +1413,6 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
 namespace BAnal {
 
 namespace Struct {
-
-
-#if 0
-// this code is now officially obsolete. it disrupts precise information
-// computed with new inlining support
-// -- johnmc 7/22/14
-static bool
-mergeBogusAlienStrct(Prof::Struct::ACodeNode* node, Prof::Struct::File* file);
-
-
-static bool
-mergeBogusAlienStrct(Prof::Struct::LM* lmStrct)
-{
-  bool changed = false;
-    
-  for (Prof::Struct::ANodeIterator it(lmStrct, &Prof::Struct::ANodeTyFilter[Prof::Struct::ANode::TyProc]);
-       it.Current(); ++it) {
-    Prof::Struct::Proc* proc = dynamic_cast<Prof::Struct::Proc*>(it.Current());
-    Prof::Struct::File* file = proc->ancestorFile();
-    changed |= mergeBogusAlienStrct(proc, file);
-  }
-  
-  return changed;
-}
-
-
-static bool
-mergeBogusAlienStrct(Prof::Struct::ACodeNode* node, Prof::Struct::File* file)
-{
-  bool changed = false;
-  
-  if (!node) { return changed; }
-
-  for (Prof::Struct::ACodeNodeChildIterator it(node); it.Current(); /* */) {
-    Prof::Struct::ACodeNode* child = it.current();
-    it++; // advance iterator -- it is pointing at 'child'
-    
-    // 1. Recursively do any merging for this tree's children
-    changed |= mergeBogusAlienStrct(child, file);
-    
-    // 2. Merge an alien node if it is redundant with its procedure context
-    if (typeid(*child) == typeid(Prof::Struct::Alien)) {
-      Prof::Struct::Alien* alien = dynamic_cast<Prof::Struct::Alien*>(child);
-      Prof::Struct::ACodeNode* parent = alien->ACodeNodeParent();
-      
-      Prof::Struct::ACodeNode* procCtxt = parent->ancestorProcCtxt();
-      const string& procCtxtFnm =
-	(typeid(*procCtxt) == typeid(Prof::Struct::Alien)) ?
-	dynamic_cast<Prof::Struct::Alien*>(procCtxt)->fileName() : file->name();
-      
-      // FIXME: Looking again, don't we know that 'procCtxtFnm' is alien?
-      if (alien->fileName() == procCtxtFnm
-	  && ctxtNameEqFuzzy(procCtxt, alien->name())
-	  && LocationMgr::containsIntervalFzy(parent, alien->begLine(),
-					      alien->endLine()))  {
-	// Move all children of 'alien' into 'parent'
-	changed = Prof::Struct::ANode::merge(parent, alien);
-	DIAG_Assert(changed, "mergeBogusAlienStrct: merge failed.");
-      }
-    }
-  }
-  
-  return changed;
-}
-#endif
-
 
 
 //****************************************************************************
