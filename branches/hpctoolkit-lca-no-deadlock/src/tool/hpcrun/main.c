@@ -1001,12 +1001,10 @@ monitor_thread_post_create(void* data)
   hpcrun_safe_exit();
 }
 
-unsigned int init_thread_count = 0;
 void* 
 monitor_init_thread(int tid, void* data)
 {
   TMSG(THREAD,"init thread %d",tid);
-  init_thread_count++;
   void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data);
   TMSG(THREAD,"back from init thread %d",tid);
 

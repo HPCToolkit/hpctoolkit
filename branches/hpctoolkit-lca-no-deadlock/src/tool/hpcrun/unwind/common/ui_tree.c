@@ -75,80 +75,45 @@
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/atomic.h>
 
-// !!! FIXME: MWF debug deadlock problem !!!
-
-pthread_t ui_lock_holder = -1;
-bool lock_trace = false;
-#define UI_LOCK_TRACE_LEN 1000
-int ui_lock_trace[UI_LOCK_TRACE_LEN] = {};
-size_t ui_trace_cursor = 0;
-
 // Locks both the UI tree and the UI free list.
 spinlock_t ui_tree_lock = SPINLOCK_UNLOCKED;
 
-#define DEBUG_LOCK
-#ifndef DEBUG_LOCK
+#define DEADLOCK_PROTECT
+#ifndef DEADLOCK_PROTECT
 #define UI_TREE_LOCK  do {	 \
   TD_GET(splay_lock) = 0;	 \
   spinlock_lock(&ui_tree_lock);  \
-  ui_lock_holder = monitor_get_thread_num(); \
   TD_GET(splay_lock) = 1;	 \
 } while (0)
 
 #define UI_TREE_UNLOCK  do {       \
-  ui_lock_holder = -1;             \
   spinlock_unlock(&ui_tree_lock);  \
   TD_GET(splay_lock) = 0;	   \
 } while (0)
-#else // The debug variety
-//
-// Deadlock protection
-//  -- !!! clean up later !!! --
-//
-#define WRITE_MSG 1
+#else // defined(DEADLOCK_PROTECT)
+
+// #define WRITE_MSG 1
 static size_t iter_count = 0;
 extern void hpcrun_drop_sample(void);
 static inline void
 lock_ui(void)
 {
-  char buf[100] = {};
-  for(size_t i=0;;i++) {
-    if (iter_count && (i > iter_count)) {
-#ifdef FPRINTF_MSG
-      fprintf(stderr, "Thread %d exceeded iter_count\n", monitor_get_thread_num());
-#elif defined(WRITE_MSG)
-      int len = snprintf(buf, sizeof(buf), "Thread %d exceeded iter_count\n", monitor_get_thread_num());
-      write(2, buf, len > 0 ? len : sizeof(buf) - 1);
-#endif // FPRINTF_MSG
-      hpcrun_drop_sample();
-    }
-    while(ui_tree_lock.thelock != SPINLOCK_UNLOCKED_VALUE) {
-      if (iter_count && (i > iter_count)) {
-#ifdef FPRINTF_MSG
-	fprintf(stderr, "Thread %d exceeded iter_count\n", monitor_get_thread_num());
-#elif defined(WRITE_MSG)
-      int len = snprintf(buf, sizeof(buf), "Thread %d exceeded iter_count\n", monitor_get_thread_num());
-      write(2, buf, len > 0 ? len : sizeof(buf) - 1);
-#endif // FPRINTF_MSG
-	hpcrun_drop_sample();
-      }
-      i++;
-    }
-    if (fetch_and_store(&(ui_tree_lock.thelock),
-			SPINLOCK_LOCKED_VALUE) == SPINLOCK_UNLOCKED_VALUE)
-      break;
+  if (! limited_spinlock_lock(&ui_tree_lock, iter_count)) {
+#if defined(WRITE_MSG)
+    char buf[100] = {};
+    int len = snprintf(buf, sizeof(buf), "Thread %d exceeded iter_count\n", monitor_get_thread_num());
+    write(2, buf, len > 0 ? len : sizeof(buf) - 1);
+#endif // WRITE_MSG
+    hpcrun_drop_sample();
   }
-  if (lock_trace)
-    ui_lock_trace[ui_trace_cursor] = monitor_get_thread_num();
 }
+
 static inline void
 unlock_ui(void) {
-  if (lock_trace && (ui_trace_cursor < UI_LOCK_TRACE_LEN))
-    fetch_and_add(&ui_trace_cursor, 1);
-  ui_tree_lock.thelock = SPINLOCK_UNLOCKED_VALUE;
+  spinlock_unlock(&ui_tree_lock);
 }
-#define UI_TREE_LOCK lock_ui(); ui_lock_holder = monitor_get_thread_num()
-#define UI_TREE_UNLOCK ui_lock_holder = -1; unlock_ui()
+#define UI_TREE_LOCK TD_GET(splay_lock) = 0; lock_ui(); TD_GET(splay_lock) = 1
+#define UI_TREE_UNLOCK unlock_ui(); TD_GET(splay_lock) = 0
 #endif //
 
 // Locks both the UI tree and the UI free list.
@@ -172,12 +137,9 @@ hpcrun_interval_tree_init(void)
 {
   TMSG(UITREE, "init unwind interval tree");
   ui_tree_root = NULL;
-  for (size_t i=0; i < UI_LOCK_TRACE_LEN; i++)
-    ui_lock_trace[i] = -1;
-  if (getenv("LOCK_TRACE")) lock_trace = true;
   iter_count = 0;
-  if (getenv("DEADLOCK_THRESH"))
-    iter_count = atoi(getenv("DEADLOCK_THRESH"));
+  if (getenv("HPCRUN_DEADLOCK_THRESHOLD"))
+    iter_count = atoi(getenv("HPCRUN_DEADLOCK_THRESHOLD"));
   UI_TREE_UNLOCK;
 }
 
@@ -250,13 +212,6 @@ bool ui_lock_holder_ok(void);
 splay_interval_t *
 hpcrun_addr_to_interval(void *addr, void *ip, ip_normalized_t* ip_norm)
 {
-  assert(ui_lock_holder_ok());
-#ifdef NO
-  if (! TD_GET(btbuf_cur)) {
-    EMSG("Before ui lock btbuf_cur = %p", TD_GET(btbuf_cur));
-    // monitor_real_abort();
-  }
-#endif
   UI_TREE_LOCK;
   splay_interval_t *intvl = hpcrun_addr_to_interval_locked(addr);
   UI_TREE_UNLOCK;
@@ -432,20 +387,12 @@ free_ui_node_locked(interval_tree_node *node)
 // debug operations
 //---------------------------------------------------------------------
 
-bool
-ui_lock_holder_ok(void)
-{
-  bool rv = ui_lock_holder != monitor_get_thread_num();
-  if (!rv) EMSG("Attempted to get UI_TREE_LOCK that I already own !!!");
-  return rv;
-}
-
 static void
 hpcrun_print_interval_tree_r(FILE* fs, interval_tree_node *node);
 
 
 void
-hpcrun_print_interval_tree()
+hpcrun_print_interval_tree(void)
 {
   FILE* fs = stdout;
 

@@ -106,10 +106,6 @@ hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context,
 // recover from SEGVs and partial unwinds
 // ------------------------------------------------------------
 
-// --- deadlock debug ---
-extern void hpcrun_papi_reenter_ok(void);
-// extern void hpcrun_itimer_reenter_ok(void);
-
 static void
 hpcrun_cleanup_partial_unwind(void)
 {
@@ -127,11 +123,6 @@ hpcrun_cleanup_partial_unwind(void)
   if (TD_GET(fnbounds_lock)) {
     fnbounds_release_lock();
   }
-  
-#ifdef DEADLOCK_DEBUG
-  hpcrun_itimer_reenter_ok();
-#endif
-  hpcrun_papi_reenter_ok();
 }
 
 

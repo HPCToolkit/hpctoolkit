@@ -247,8 +247,6 @@ static int derived[MAX_EVENTS];
 static int some_derived;
 static int some_overflow;
 
-static __thread bool reenter = false;
-
 /******************************************************************************
  * method functions
  *****************************************************************************/
@@ -793,19 +791,6 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int my_event_codes[MAX_EVENTS];
   int my_event_codes_count = MAX_EVENTS;
 
-  // #define ABORT_FIRST_REENTRY 1
-  if (reenter) {
-#ifdef ABORT_FIRST_REENTRY
-    fprintf(stderr, "Thread %d PAPI event handler attempted reentry!!!\n", monitor_get_thread_num());
-    monitor_real_abort();
-#endif // ABORT_FIRST_REENTRY
-#ifdef EMSG_ALL_REENTRY
-    EMSG("PAPI event handler attempted reentry!");
-#endif // EMSG_ALL_REENTRY
-    return;
-  }
-  reenter = true;
-
   TMSG(PAPI_SAMPLE,"papi event happened, ovec = %ld",ovec);
  
   // If the interrupt came from inside our code, then drop the sample
@@ -903,12 +888,4 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   }
 
   hpcrun_safe_exit();
-  assert(ui_lock_holder_ok());
-  reenter = false;
-}
-
-void
-hpcrun_papi_reenter_ok(void)
-{
-  reenter = false;
 }

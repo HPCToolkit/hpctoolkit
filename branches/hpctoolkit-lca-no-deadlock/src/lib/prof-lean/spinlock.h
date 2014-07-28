@@ -64,6 +64,8 @@
 #define prof_lean_spinlock_h
 
 #include <stdbool.h>
+#include <stdint.h>
+#include <stddef.h>
 
 #include "atomic-op.h"
 
@@ -124,6 +126,35 @@ static inline bool
 spinlock_is_locked(spinlock_t *l)
 {
   return (l->thelock != SPINLOCK_UNLOCKED_VALUE);
+}
+
+// deadlock avoiding lock primitives:
+//
+// test-and-test-and-set lock acquisition, but make a bounded 
+// number of attempts to get lock.
+// returns false if lock not acquired
+//
+// NOTE: this lock is still released with spinlock_unlock operation
+//
+static inline bool
+limited_spinlock_lock(spinlock_t* l, size_t limit)
+{
+  for(size_t i=0;;i++) {
+    if (limit && (i > limit))
+      return false;
+    while (l->thelock != SPINLOCK_UNLOCKED_VALUE) {
+      if (limit && (i > limit))
+	return false;
+      i++;
+    }
+    if (fetch_and_store(&l->thelock, SPINLOCK_LOCKED_VALUE) == SPINLOCK_UNLOCKED_VALUE)
+      break;
+  }
+
+#if defined(__powerpc__)
+  __asm__ __volatile__ ("isync\n");
+#endif
+  return true;
 }
 
 

@@ -140,8 +140,6 @@ static int derived[MAX_EVENTS];
 static int some_derived;
 static int some_overflow;
 
-static __thread bool reenter = false;
-
 /******************************************************************************
  * method functions
  *****************************************************************************/
@@ -632,12 +630,6 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     return;
   }
 
-  if (reenter) {
-    EMSG("PAPI event handler attempted reentry!");
-    return;
-  }
-  reenter = true;
-
   TMSG(PAPI_SAMPLE,"papi event happened, ovec = %ld",ovec);
 
   if (some_derived) {
@@ -690,11 +682,4 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   hpcrun_safe_exit();
   assert(ui_lock_holder_ok());
-  reenter = false;
-}
-
-void
-hpcrun_papi_reenter_ok(void)
-{
-  reenter = false;
 }
