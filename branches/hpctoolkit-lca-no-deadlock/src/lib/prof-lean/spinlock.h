@@ -77,7 +77,7 @@ typedef struct spinlock_s {
 	volatile long thelock;
 } spinlock_t;
 
-#define SPINLOCK_UNLOCKED_VALUE (0L)
+#define SPINLOCK_UNLOCKED_VALUE (-1L)
 #define SPINLOCK_LOCKED_VALUE (1L)
 #define INITIALIZE_SPINLOCK(x) { .thelock = (x) }
 
@@ -132,12 +132,13 @@ spinlock_is_locked(spinlock_t *l)
 //
 // test-and-test-and-set lock acquisition, but make a bounded 
 // number of attempts to get lock.
+// This lock also permits multiple "locked" values
 // returns false if lock not acquired
 //
 // NOTE: this lock is still released with spinlock_unlock operation
 //
 static inline bool
-limited_spinlock_lock(spinlock_t* l, size_t limit)
+limited_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 {
   for(size_t i=0;;i++) {
     if (limit && (i > limit))
@@ -147,7 +148,7 @@ limited_spinlock_lock(spinlock_t* l, size_t limit)
 	return false;
       i++;
     }
-    if (fetch_and_store(&l->thelock, SPINLOCK_LOCKED_VALUE) == SPINLOCK_UNLOCKED_VALUE)
+    if (fetch_and_store(&l->thelock, locked_val) == SPINLOCK_UNLOCKED_VALUE)
       break;
   }
 
@@ -157,5 +158,35 @@ limited_spinlock_lock(spinlock_t* l, size_t limit)
   return true;
 }
 
+//
+// test-and-test-and-set lock acquisition, but check
+// the locked value to see if this lock has already been locked
+// by the same thread (this should be the hardware thread id)
+//
+// returns false if lock not acquired
+//
+// NOTE: this lock is still released with spinlock_unlock operation
+//
+static inline bool
+val_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
+{
+  for(;;) {
+    // if we are already locked by the same id, prevent deadlock by
+    // abandoning the try to lock
+    if (l->thelock == locked_val)
+      return false;
+    while (l->thelock != SPINLOCK_UNLOCKED_VALUE) {
+      if (l->thelock == locked_val)
+	return false;
+    }
+    if (fetch_and_store(&l->thelock, locked_val) == SPINLOCK_UNLOCKED_VALUE)
+      break;
+  }
+
+#if defined(__powerpc__)
+  __asm__ __volatile__ ("isync\n");
+#endif
+  return true;
+}
 
 #endif // prof_lean_spinlock_h

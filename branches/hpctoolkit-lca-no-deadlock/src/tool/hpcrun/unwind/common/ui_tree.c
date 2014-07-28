@@ -93,12 +93,19 @@ spinlock_t ui_tree_lock = SPINLOCK_UNLOCKED;
 #else // defined(DEADLOCK_PROTECT)
 
 // #define WRITE_MSG 1
+// #define USE_HW_THREAD_ID
+#ifdef USE_HW_THREAD_ID
+#include <spi/include/kernel/location.h>
+#define lock_val Kernel_ProcessorID()
+#else  // ! defined(USE_HW_THREAD_ID)
+#define lock_val SPINLOCK_LOCKED_VALUE
+#endif // USE_HW_THREAD_ID
 static size_t iter_count = 0;
 extern void hpcrun_drop_sample(void);
 static inline void
 lock_ui(void)
 {
-  if (! limited_spinlock_lock(&ui_tree_lock, iter_count)) {
+  if (! limited_spinlock_lock(&ui_tree_lock, iter_count, lock_val)) {
 #if defined(WRITE_MSG)
     char buf[100] = {};
     int len = snprintf(buf, sizeof(buf), "Thread %d exceeded iter_count\n", monitor_get_thread_num());
