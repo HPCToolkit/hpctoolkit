@@ -749,6 +749,14 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 	}
       }
       procnm = calledProcedure;
+    } else {
+      // HACK HACK HACK
+      // if the procnm is the name of the enclosing procedure, then it is garbage and it should be removed
+      // from the alien node. currently, we use "-" as the placeholder for 
+      // "the procedure that should not be named". the empty string is used for call sites for alien calls.
+      // hpcviewer expects this "-" and will treat it as an unknown procedure that should not be named.
+      string TheProcedureWhoShouldNotBeNamed = "-";
+      procnm = TheProcedureWhoShouldNotBeNamed; 
     }
 #endif
 
