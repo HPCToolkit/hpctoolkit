@@ -101,6 +101,7 @@
 
 #include "sample_event.h"
 #include <sample-sources/none.h>
+#include <sample-sources/itimer.h>
 
 #ifdef ENABLE_CUDA
 #  include <sample-sources/gpu_ctxt_actions.h>
@@ -523,6 +524,10 @@ hpcrun_init_internal(bool is_child)
 
   hpcrun_enable_sampling();
   hpcrun_set_safe_to_sync();
+
+  // release the wallclock handler -for this thread-
+  hpcrun_itimer_wallclock_ok(true);
+
   // NOTE: hack to ensure that sample source start can be delayed until mpi_init
   if (hpctoolkit_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
       SAMPLE_SOURCES(start);
@@ -706,6 +711,8 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   // sample sources take thread specific action prior to start (often is a 'registration' action);
   SAMPLE_SOURCES(thread_init_action);
 
+  // release the wallclock handler -for this thread-
+  hpcrun_itimer_wallclock_ok(true);
   // start the sample sources
   SAMPLE_SOURCES(start);
 

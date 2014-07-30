@@ -99,14 +99,214 @@ using std::endl;
 #include <lib/support/Logic.hpp>
 #include <lib/support/QuickSort.hpp>
 
-//*************************** Forward Declarations **************************
+
+
+//***************************************************************************
+// macros
+//***************************************************************************
 
 #define DBG_BLD_PROC_MAP 0
+
+#define NORETURNS_DISABLE 0
+#define NORETURNS_DEBUG 0
+#define NORETURNS_RESULT_NOISY 0
+#define NORETURNS_LOOKUP_NOISY 0 
+
+
+
+//***************************************************************************
+// private data 
+//***************************************************************************
+
+static const char *noreturn_table[] = {
+  // include machine-generated file containing names of functions 
+  // that don't return
+#include "names.cpp"
+};
+
+
+
+//***************************************************************************
+// type declarations
+//***************************************************************************
+
+namespace BinUtil {
+
+class cstring_compare {
+public:
+  bool operator()(const char *s1, const char *s2) const {
+      int result = strcmp(s1,s2);
+      return result < 0 ? true : false;
+  }
+};
+
+
+class name_set : public std::set<const char*, cstring_compare> {
+public:
+  name_set() { 
+    unsigned int i; 
+    for(i = 0; i < sizeof(noreturn_table)/sizeof(char*); i++) 
+      insert(noreturn_table[i]); 
+  }
+
+  void 
+  dumpnames() {  
+    for(name_set::iterator i = this->begin(); 
+      i != this->end(); i++) {     
+      std::cout << *i << std::endl;  
+    }
+  }
+};
+
+
+name_set noreturn_fn_names; 
+
+
+class NoReturns : private std::set<VMA> {
+public:
+  
+  NoReturns() { 
+  };
+
+  void
+  addSynSymEntries(asymbol* syms, long symcount) { 
+#if NORETURNS_RESULT_NOISY
+    printf("-------- dyn sym noreturn functions ------ \n");
+#endif
+    //-------------------------------------------------------------------
+    // iterate through the functions referenced through the load module's       
+    // PLT to identify which of them are known to not return. for each 
+    // PLT entry for a function that doesn't return, record the address 
+    // of its PLT trampoline so that we can identify calls to functions 
+    // that don't return when building a control flow graph.
+    //
+    // Note: the binutils interface to symbols in the PLT processes 
+    //       the symbols and converts each symbol with name "symname" to 
+    //       have name "symname@plt". Here, we strip off the suffix
+    //       that begins with the @ before comparing a PLT symbol name
+    //       with names of functions known to not return.
+    //-------------------------------------------------------------------
+    asymbol *symbol = syms;
+    for (long i = 0; i < symcount; i++, symbol++) {
+       //-----------------------------------------------------
+       // create a copy of the symbol name that we can modify
+       //-----------------------------------------------------
+       char *name = strdup(bfd_asymbol_name(symbol)); 
+
+       char *index = strchr(name,'@'); // look for an @ in the symbol
+       if (index) {                     // if an @ was found
+         *index = 0;                    // remove the suffix @...
+         unsigned long addr = bfd_asymbol_value(symbol);
+         //---------------------------------------------------------
+         // look for the symbol name in the set of functions known to 
+         // not return. if it is found, note the address of the PLT
+         // entry as the address of a callee that won't return.
+         //---------------------------------------------------------
+#if NORETURNS_LOOKUP_NOISY
+         std::cout << "looking up " << name << " @ " << std::hex << "0x" << addr << std::endl;
+#endif
+         addIfNoReturn(name, addr);
+       }
+       free(name);
+    }
+  };
+
+
+  void
+  addSymEntries(asymbol** syms, long symcount) { 
+#if NORETURNS_RESULT_NOISY
+    printf("-------- sym noreturn functions ------ \n");
+#endif
+    //-------------------------------------------------------------------
+    // iterate through functions statically linked in the load module
+    // to identify which of them are known to not return. for each 
+    // function that doesn't return, record its address so that we can 
+    // identify calls to functions that don't return when building a 
+    // control flow graph.
+    //-------------------------------------------------------------------
+    asymbol **symbol = syms;
+    if (symbol && symcount > 0) {
+      for (long i = 0; symbol[i]; i++) {
+        const char *name = bfd_asymbol_name(symbol[i]);
+        if (symbol[i]->flags & (BSF_FUNCTION))  {
+          unsigned long addr = bfd_asymbol_value(symbol[i]);
+#if NORETURNS_LOOKUP_NOISY
+          std::cout << "looking up " << name << " @ " << std::hex << "0x" 
+                    << addr << std::endl;
+#endif
+          if (addr) {
+            addIfNoReturn(name, addr);
+          }
+        } else if (symbol[i]->flags == BSF_LOCAL)  {
+          // look for plt_call trampolines found in Power binaries
+          if (strstr(name, "plt_call")) {
+            unsigned long addr = bfd_asymbol_value(symbol[i]);
+            if (addr) {
+              char *dname = strdup(name);
+              char *index = strchr(dname,'@'); // look for an @ in the symbol
+              if (index) {                     // if an @ was found
+                *index = 0;                    // remove the suffix @...
+              }
+              // on power architectures, need to eliminate *.plt_call. prefix
+              char *name = dname;
+              char *name_suffix = strrchr(dname,'.');
+              if (name_suffix) {
+                name = name_suffix + 1;
+              }
+#if NORETURNS_LOOKUP_NOISY
+          std::cout << "looking up " << name << " @ " << std::hex << "0x" 
+                    << addr << std::endl;
+#endif
+              addIfNoReturn(name, addr);
+              free(dname);
+            }
+	  }
+        }
+      }
+    }
+  };
+
+  ~NoReturns() { 
+  };
+
+  bool 
+  isNoReturn(VMA addr) {
+    return NORETURNS_DISABLE ? false : this->find(addr) != this->end();   
+  };
+
+
+  void
+  addIfNoReturn(const char *name, uint64_t addr) {
+    if (noreturn_fn_names.find(name) != noreturn_fn_names.end()) {
+      this->insert(addr);
+#if NORETURNS_RESULT_NOISY
+      std::cout << name << " @ " << std::hex << "0x" << addr << std::endl;
+#endif
+    }
+  };
+
+
+  void 
+  dump() {  
+    std::cout << "noreturns (addresses of functions that don't return)" 
+              << std::endl;  
+    for(std::set<VMA>::iterator i = this->begin(); i != this->end(); i++) {     
+      std::cout << std::hex << "0x" << *i << std::endl;  
+    }
+  };
+};
+
+}
+
+
+//*************************** Forward Declarations **************************
+
 
 static void
 dumpSymFlag(std::ostream& o, asymbol* sym, int flag, const char* txt, bool& hasPrinted);
 
 //***************************************************************************
+
 
 //***************************************************************************
 // LM
@@ -120,8 +320,10 @@ BinUtil::LM::LM(bool useBinutils)
   : m_type(TypeNULL), m_readFlags(ReadFlg_NULL),
     m_txtBeg(0), m_txtEnd(0), m_begVMA(0),
     m_textBegReloc(0), m_unrelocDelta(0),
-    m_bfd(NULL), m_bfdSymTab(NULL), m_bfdSynthTab(NULL),
-    m_bfdSymTabSort(NULL), m_bfdSymTabSz(0), m_bfdSynthTabSz(0),
+    m_bfd(NULL), m_bfdSymTab(NULL), 
+    m_bfdDynSymTab(NULL), m_bfdSynthTab(NULL),
+    m_bfdSymTabSort(NULL), m_bfdSymTabSz(0), m_bfdDynSymTabSz(0),
+    m_bfdSymTabSortSz(0), m_bfdSynthTabSz(0), m_noreturns(0), 
     m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils)
 {
 }
@@ -155,11 +357,15 @@ BinUtil::LM::~LM()
   m_bfdSymTabSort = NULL; 
 
   m_bfdSymTabSz = 0;
+  m_bfdSymTabSortSz = 0;
   m_bfdSynthTabSz = 0;
   
   // reset isa
   delete isa;
   isa = NULL;
+
+  delete m_noreturns;
+  m_noreturns = NULL;
 }
 
 
@@ -275,6 +481,7 @@ BinUtil::LM::open(const char* filenm)
     DIAG_Assert(typeid(*newisa) == typeid(*isa),
 		"Cannot simultaneously open LMs with different ISAs!");
   }
+
 }
 
 
@@ -288,7 +495,9 @@ BinUtil::LM::read(LM::ReadFlg readflg)
 
   readSymbolTables();
   readSegs();
+  computeNoReturns();
 }
+
 
 
 // relocate: Internally, all operations are performed on non-relocated
@@ -554,9 +763,9 @@ BinUtil::LM::dump(std::ostream& o, int flags, const char* pre) const
 
 
 void
-BinUtil::LM::ddump() const
+BinUtil::LM::ddump(int code) const
 {
-  dump(std::cerr);
+  dump(std::cerr, code);
 }
 
 
@@ -614,7 +823,7 @@ void
 BinUtil::LM::readSymbolTables()
 {
   // -------------------------------------------------------
-  // Look for normal symbol table.
+  // Read the normal symbol table
   // -------------------------------------------------------
   long bytesNeeded = bfd_get_symtab_upper_bound(m_bfd);
   
@@ -630,17 +839,17 @@ BinUtil::LM::readSymbolTables()
   }
 
   // -------------------------------------------------------
-  // Look for dynamic symbol table if there is no normal symbol table
+  // Read the dynamic symbol table 
   // -------------------------------------------------------
-  if (!m_bfdSymTab) {
+  {
     bytesNeeded = bfd_get_dynamic_symtab_upper_bound(m_bfd);
 
     if (bytesNeeded > 0) {
-      m_bfdSymTab = new asymbol*[bytesNeeded / sizeof(asymbol*)];
-      m_bfdSymTabSz = bfd_canonicalize_dynamic_symtab(m_bfd, m_bfdSymTab);
+      m_bfdDynSymTab = new asymbol*[bytesNeeded / sizeof(asymbol*)];
+      m_bfdDynSymTabSz = bfd_canonicalize_dynamic_symtab(m_bfd, m_bfdDynSymTab);
     }
 
-    if (m_bfdSymTabSz == 0) {
+    if (m_bfdDynSymTabSz == 0) {
       DIAG_Msg(2, "'" << name() << "': No dynamic symbols found.");
     }
   }
@@ -654,8 +863,9 @@ BinUtil::LM::readSymbolTables()
   // Note: the sorted table may be larger than the original table,
   // and size is the size of the sorted table (regular + synthetic).
   // -------------------------------------------------------
-  m_bfdSynthTabSz = bfd_get_synthetic_symtab(m_bfd, m_bfdSymTabSz, m_bfdSymTab,
-					     0, NULL, &m_bfdSynthTab);
+  m_bfdSynthTabSz = bfd_get_synthetic_symtab(m_bfd, m_bfdSymTabSz, m_bfdSymTab, 
+					     m_bfdDynSymTabSz, m_bfdDynSymTab, 
+					     &m_bfdSynthTab);
   if (m_bfdSynthTabSz < 0) {
     m_bfdSynthTabSz = 0;
   }
@@ -669,15 +879,15 @@ BinUtil::LM::readSymbolTables()
   for (int i = 0; i < m_bfdSynthTabSz; i++) {
     m_bfdSymTabSort[m_bfdSymTabSz + i] = &m_bfdSynthTab[i];
   }
-  m_bfdSymTabSz += m_bfdSynthTabSz;
-  m_bfdSymTabSort[m_bfdSymTabSz] = NULL;
+  m_bfdSymTabSortSz = m_bfdSymTabSz + m_bfdSynthTabSz;
+  m_bfdSymTabSort[m_bfdSymTabSortSz] = NULL;
 
   // -------------------------------------------------------
   // Sort symbol table by VMA.
   // -------------------------------------------------------
   QuickSort QSort;
   QSort.Create((void **)(m_bfdSymTabSort), LM::cmpBFDSymByVMA);
-  QSort.Sort(0, m_bfdSymTabSz - 1);
+  QSort.Sort(0, m_bfdSymTabSortSz - 1);
 }
 
 
@@ -715,6 +925,25 @@ BinUtil::LM::readSegs()
   }
 
   m_dbgInfo.clear();
+}
+
+void
+BinUtil::LM::computeNoReturns()
+{
+  m_noreturns = new NoReturns();
+  
+  // gather information about functions in this load module
+  m_noreturns->addSymEntries(m_bfdSymTab, m_bfdSymTabSz);
+
+  // gather information about functions accessed through the PLT
+  m_noreturns->addSynSymEntries(m_bfdSynthTab, m_bfdSynthTabSz);
+}
+
+
+bool
+BinUtil::LM::functionNeverReturns(VMA addr)
+{
+   return m_noreturns->isNoReturn(addr);
 }
 
 
@@ -902,6 +1131,8 @@ dumpSymFlag(std::ostream& o,
     hasPrinted = true;			\
   }
 }
+
+
 
 
 //***************************************************************************

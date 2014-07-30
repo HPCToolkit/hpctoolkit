@@ -283,7 +283,8 @@ public:
   ANode(ANodeTy ty, ANode* parent = NULL)
     : NonUniformDegreeTreeNode(parent),
       Metric::IData(),
-      m_type(ty)
+      m_type(ty),
+      m_visible(true)
   {
     m_id = s_nextUniqueId++;
   }
@@ -313,6 +314,7 @@ protected:
       Metric::IData::operator=(x);
       m_type    = x.m_type;
       m_id      = x.m_id;
+      m_visible = x.m_visible;
     }
     return *this;
   }
@@ -349,6 +351,13 @@ public:
   nameQual() const
   { return name(); }
 
+  void 
+  setInvisible() 
+  { m_visible = false; }
+
+  bool 
+  isVisible() const
+  { return m_visible == true; }
 
   // --------------------------------------------------------
   // Tree navigation
@@ -583,6 +592,7 @@ private:
 protected:
   ANodeTy m_type; // obsolete with typeid(), but hard to replace
   uint m_id;
+  bool m_visible;
 };
 
 
@@ -598,6 +608,7 @@ protected:
 	   VMA begVMA = 0, VMA endVMA = 0)
     : ANode(ty, parent), m_begLn(ln_NULL), m_endLn(ln_NULL)
   {
+    m_lineno_frozen = false;
     setLineRange(begLn, endLn);
     if (!VMAInterval::empty(begVMA, endVMA)) {
       m_vmaSet.insert(begVMA, endVMA);
@@ -678,6 +689,15 @@ public:
     DIAG_Assert(Logic::equiv(m_begLn == ln_NULL, m_endLn == ln_NULL),
 		"ACodeNode::checkLineRange: b=" << m_begLn << " e=" << m_endLn);
   }
+  
+  void
+  freezeLine() 
+  { m_lineno_frozen = true; }
+
+  void
+  thawLine() 
+  { m_lineno_frozen = false; }
+
 
   // -------------------------------------------------------
   // A set of *unrelocated* VMAs associated with this scope
@@ -811,6 +831,7 @@ protected:
 private:
   std::string m_scope_filenm;
   SrcFile::ln m_scope_lineno;
+  bool m_lineno_frozen;
   
 public:
   void setScopeLocation(std::string &file, SrcFile::ln line) {
@@ -949,7 +970,9 @@ private:
   LMMap* lmMap_realpath; // mapped by 'realpath'
   LMMap* lmMap_basename;
 
+#if 0
   static RealPathMgr& s_realpathMgr;
+#endif
 };
 
 
@@ -1229,7 +1252,9 @@ private:
   mutable VMAToProcMap*      m_procMap;
   mutable VMAToStmtRangeMap* m_stmtMap;
 
+#if 0
   static RealPathMgr& s_realpathMgr;
+#endif
 };
 
 
@@ -1347,7 +1372,9 @@ private:
   std::string m_name; // the file name including the path
   ProcMap*    m_procMap;
 
+#if 0
   static RealPathMgr& s_realpathMgr;
+#endif
 };
 
 
@@ -1595,7 +1622,9 @@ private:
   std::string m_name;
   std::string m_displaynm;
 
+#if 0
   static RealPathMgr& s_realpathMgr;
+#endif
 };
 
 
@@ -1610,14 +1639,17 @@ public:
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
-  Loop(ACodeNode* parent,
+  Loop(ACodeNode* parent, std::string &filenm, 
 	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyLoop, parent, begLn, endLn, 0, 0)
   {
     ANodeTy t = (parent) ? parent->type() : TyANY;
+    setFile(filenm);
     DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyFile) ||
 		(t == TyProc) || (t == TyAlien) || (t == TyLoop), "");
   }
+
+  void setFile(std::string filenm);
 
   virtual ~Loop()
   { }
@@ -1646,6 +1678,16 @@ public:
   dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
 	 const char* pre = "") const;
 
+  const std::string&
+  fileName() const
+  { return m_filenm; }
+
+  void
+  fileName(const std::string& fnm)
+  { m_filenm = fnm; }
+
+private:
+  std::string m_filenm;
 };
 
 

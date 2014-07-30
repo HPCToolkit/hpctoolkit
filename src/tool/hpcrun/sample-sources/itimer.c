@@ -192,6 +192,16 @@ static struct itimerspec itspec_stop;
 
 static sigset_t timer_mask;
 
+static __thread bool wallclock_ok = false;
+
+// ****************************************************************************
+// * public helper function
+// ****************************************************************************
+
+void hpcrun_itimer_wallclock_ok(bool flag)
+{
+  wallclock_ok = flag;
+}
 
 /******************************************************************************
  * internal helper functions
@@ -597,6 +607,10 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   static bool metrics_finalized = false;
   sample_source_t *self = &_itimer_obj;
 
+  // If we got a wallclock signal not meant for our thread, then drop the sample
+  if (! wallclock_ok) {
+    EMSG("Received itimer signal, but thread not initialized");
+  }
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
   void* pc = hpcrun_context_pc(context);

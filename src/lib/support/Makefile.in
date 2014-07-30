@@ -87,8 +87,8 @@ am__objects_1 = libHPCsupport_la-CmdLineParser.lo \
 	libHPCsupport_la-Trace.lo libHPCsupport_la-Logic.lo \
 	libHPCsupport_la-NaN.lo libHPCsupport_la-CStrUtil.lo \
 	libHPCsupport_la-StrUtil.lo libHPCsupport_la-IOUtil.lo \
-	libHPCsupport_la-FileUtil.lo libHPCsupport_la-SrcFile.lo \
-	libHPCsupport_la-RealPathMgr.lo \
+	libHPCsupport_la-FileNameMap.lo libHPCsupport_la-FileUtil.lo \
+	libHPCsupport_la-SrcFile.lo libHPCsupport_la-RealPathMgr.lo \
 	libHPCsupport_la-PathReplacementMgr.lo \
 	libHPCsupport_la-findinstall.lo libHPCsupport_la-pathfind.lo \
 	libHPCsupport_la-PathFindMgr.lo libHPCsupport_la-realpath.lo \
@@ -391,6 +391,7 @@ MYSOURCES = \
 	StrUtil.hpp StrUtil.cpp \
 	\
 	IOUtil.hpp IOUtil.cpp \
+	FileNameMap.hpp FileNameMap.cpp \
 	FileUtil.hpp FileUtil.cpp \
 	SrcFile.hpp SrcFile.cpp \
 	RealPathMgr.hpp RealPathMgr.cpp \
@@ -494,6 +495,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-CStrUtil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-CmdLineParser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-Exception.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-FileNameMap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-FileUtil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-HashTable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-HashTableSortedIterator.Plo@am__quote@
@@ -637,6 +639,13 @@ libHPCsupport_la-IOUtil.lo: IOUtil.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='IOUtil.cpp' object='libHPCsupport_la-IOUtil.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-IOUtil.lo `test -f 'IOUtil.cpp' || echo '$(srcdir)/'`IOUtil.cpp
+
+libHPCsupport_la-FileNameMap.lo: FileNameMap.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-FileNameMap.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-FileNameMap.Tpo -c -o libHPCsupport_la-FileNameMap.lo `test -f 'FileNameMap.cpp' || echo '$(srcdir)/'`FileNameMap.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCsupport_la-FileNameMap.Tpo $(DEPDIR)/libHPCsupport_la-FileNameMap.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='FileNameMap.cpp' object='libHPCsupport_la-FileNameMap.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-FileNameMap.lo `test -f 'FileNameMap.cpp' || echo '$(srcdir)/'`FileNameMap.cpp
 
 libHPCsupport_la-FileUtil.lo: FileUtil.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-FileUtil.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-FileUtil.Tpo -c -o libHPCsupport_la-FileUtil.lo `test -f 'FileUtil.cpp' || echo '$(srcdir)/'`FileUtil.cpp

@@ -71,7 +71,6 @@ using std::string;
 #include <vector>
 using std::vector;
 
-#include <map>
 #include <set>
 using std::set;
 
@@ -104,6 +103,8 @@ using SrcFile::ln_NULL;
 //***************************************************************************
 
 namespace Prof {
+
+extern std::map<uint, uint> m_mapFileIDs;      // map between file IDs
 
 namespace CCT {
   
@@ -272,8 +273,6 @@ Tree::ddump() const
 
 
 namespace Prof {
-
-extern std::map<uint, uint> m_mapFileIDs;      // map between file IDs
 
 namespace CCT {
 
@@ -1128,7 +1127,7 @@ getFileIdFromMap(uint file_id)
 {
   uint id = file_id;
   if (Prof::m_mapFileIDs.find(file_id) != Prof::m_mapFileIDs.end()) {
-     id = Prof::m_mapFileIDs[file_id];
+    id = Prof::m_mapFileIDs[file_id];
   }
   return id;
 }
@@ -1140,11 +1139,11 @@ ProcFrm::toStringMe(uint oFlags) const
   
   if (m_strct) {
     string lm_nm = xml::MakeAttrNum(lmId());
-    string pnm = xml::MakeAttrNum(procId());
 
-    uint file_id = getFileIdFromMap( fileId() );
-    //string fnm = xml::MakeAttrNum(fileId());
+    uint file_id = getFileIdFromMap(fileId());
     string fnm = xml::MakeAttrNum(file_id);
+
+    string pnm = xml::MakeAttrNum(procId());
 
     if (oFlags & Tree::OFlg_DebugAll) {
       lm_nm = xml::MakeAttrStr(lmName());
@@ -1153,7 +1152,7 @@ ProcFrm::toStringMe(uint oFlags) const
     if ( (oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll) ) {
       pnm = xml::MakeAttrStr(procNameDbg());
     }
-    
+
     self += " lm" + lm_nm + " f" + fnm + " n" + pnm;
   }
 
@@ -1168,9 +1167,8 @@ Proc::toStringMe(uint oFlags) const
   
   if (m_strct) {
     string lm_nm = xml::MakeAttrNum(lmId());
-    uint file_id = getFileIdFromMap( fileId() );
+    uint file_id = getFileIdFromMap(fileId());
     string fnm = xml::MakeAttrNum(file_id);
-    //string fnm = xml::MakeAttrNum(fileId());
     string pnm = xml::MakeAttrNum(procId());
 
     if (oFlags & Tree::OFlg_DebugAll) {
@@ -1192,7 +1190,9 @@ Proc::toStringMe(uint oFlags) const
 string 
 Loop::toStringMe(uint oFlags) const
 {
-  string self = ANode::toStringMe(oFlags);
+  uint file_id = getFileIdFromMap(fileId());
+  string fnm = xml::MakeAttrNum(file_id);
+  string self = ANode::toStringMe(oFlags) + " f" + fnm;
   return self;
 }
 
