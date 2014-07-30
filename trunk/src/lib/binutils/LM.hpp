@@ -97,7 +97,8 @@ namespace BinUtil {
 class Seg;
 class Proc;
 class Insn;
-class LMImpl;
+//class LMImpl;
+class NoReturns;
 
 // --------------------------------------------------------------------------
 // 'LM' represents a load module, a binary loaded into memory
@@ -360,7 +361,9 @@ public:
     m_insnMap.insert(InsnMap::value_type(opvma, insn));
   }
 
-  
+  bool
+  functionNeverReturns(VMA addr);
+
   // -------------------------------------------------------
   // findSrcCodeInfo: If possible, find the source file, function
   // name and line number that corresponds to the operation at
@@ -419,7 +422,7 @@ public:
 
   uint
   bfdSymTabSz() const
-  { return m_bfdSymTabSz; }
+  { return m_bfdSymTabSortSz; }
 
 
   // -------------------------------------------------------
@@ -448,7 +451,7 @@ public:
        const char* pre = "") const;
 
   void
-  ddump() const;
+  ddump(int code = DUMP_Long_decode) const;
   
   // dump helpers
   virtual void
@@ -492,6 +495,9 @@ private:
 
   void
   readSegs();
+
+  void
+  computeNoReturns();
   
   // unrelocate: Given a relocated VMA, returns a non-relocated version.
   VMA
@@ -514,7 +520,7 @@ private:
   BinUtil::Dbg::LM*
   getDebugInfo()
   { return &m_dbgInfo; }
-    
+
 private:
   std::string m_name;
 
@@ -545,12 +551,17 @@ private:
   // size of the sorted table.  Also, the synthetic table is an array
   // of asymbol structs, not pointers.
 
-  bfd*      m_bfd;           // BFD of this module.
-  asymbol** m_bfdSymTab;     // Unmodified BFD symbol table
-  asymbol*  m_bfdSynthTab;   // Synthetic BFD symbol table.
-  asymbol** m_bfdSymTabSort; // Sorted BFD symbol table
-  uint      m_bfdSymTabSz;   // Number of syms in sorted table.
-  long      m_bfdSynthTabSz; // Number of synthetic syms.
+  bfd*      m_bfd;             // BFD of this module.
+  asymbol** m_bfdSymTab;       // Unmodified BFD symbol table
+  asymbol** m_bfdDynSymTab;    // Unmodified BFD dynamic symbol table
+  asymbol*  m_bfdSynthTab;     // Synthetic BFD symbol table.
+  asymbol** m_bfdSymTabSort;   // Sorted BFD symbol table
+  long      m_bfdSymTabSz;     // Number of syms unmodified BFD symbol table.
+  long      m_bfdDynSymTabSz;  // Number of dynamic syms.
+  long      m_bfdSymTabSortSz; // Number of syms in the sorted table.
+  long      m_bfdSynthTabSz;   // Number of synthetic syms.
+
+  NoReturns *m_noreturns;
 
   RealPathMgr& m_realpathMgr;
 

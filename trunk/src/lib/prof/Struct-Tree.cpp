@@ -103,6 +103,8 @@ namespace Prof {
 namespace Struct {
 
 
+RealPathMgr& s_realpathMgr = RealPathMgr::singleton();
+
 //***************************************************************************
 // Tree
 //***************************************************************************
@@ -230,12 +232,15 @@ ACodeNode::linkAndSetLineRange(ACodeNode* parent)
 }
 
 
+#if 0
 RealPathMgr& Root::s_realpathMgr = RealPathMgr::singleton();
+#endif
 
 void
 Root::Ctor(const char* nm)
 {
   DIAG_Assert(nm, "");
+  setInvisible();
   m_name = nm;
   groupMap = new GroupMap();
   lmMap_realpath = new LMMap();
@@ -310,7 +315,9 @@ Group::demand(Root* pgm, const string& nm, ANode* parent)
 }
 
 
+#if 0
 RealPathMgr& LM::s_realpathMgr = RealPathMgr::singleton();
+#endif
 
 void
 LM::Ctor(const char* nm, ANode* parent)
@@ -356,7 +363,9 @@ LM::demand(Root* pgm, const string& lm_nm)
 }
 
 
+#if 0
 RealPathMgr& File::s_realpathMgr = RealPathMgr::singleton();
+#endif
 
 void
 File::Ctor(const char* fname, ANode* parent)
@@ -389,7 +398,7 @@ File::demand(LM* lm, const string& filenm)
   const char* note = "(found)";
 
   string nm_real = filenm;
-  File::s_realpathMgr.realpath(nm_real);
+  s_realpathMgr.realpath(nm_real);
 
   File* file = lm->findFile(nm_real);
   if (!file) {
@@ -457,7 +466,9 @@ Proc::demand(File* file, const string& name, const std::string& linkname,
 }
 
 
+#if 0
 RealPathMgr& Alien::s_realpathMgr = RealPathMgr::singleton();
+#endif
 
 void
 Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm,
@@ -472,6 +483,7 @@ Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm,
 
   m_name   = (nm) ? nm : "";
   m_displaynm = (displaynm) ? displaynm : "";
+  freezeLine();
 }
 
 
@@ -877,6 +889,13 @@ Root::insertGroupMap(Group* grp)
   DIAG_Assert(ret.second, "Duplicate!");
 }
 
+void
+Loop::setFile(std::string filenm)
+{
+  m_filenm = filenm;
+  s_realpathMgr.realpath(m_filenm);
+}
+
 
 void
 Root::insertLMMap(LM* lm)
@@ -1059,6 +1078,8 @@ File::findProc(const char* name, const char* linkname) const
 void
 ACodeNode::setLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 {
+  if (m_lineno_frozen) return;
+
   checkLineRange(begLn, endLn);
   
   m_begLn = begLn;
@@ -1076,10 +1097,14 @@ ACodeNode::setLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
   }
 }
 
-
 void
 ACodeNode::expandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 {
+  if (m_lineno_frozen) return;
+
+  if (type() == ANode::TyAlien) return; // never expand an alien line range
+  if (type() == ANode::TyLoop) return;  // never expand a loop range
+
   checkLineRange(begLn, endLn);
 
   if (begLn == ln_NULL) {
@@ -1492,7 +1517,7 @@ Alien::toXML(uint oFlags) const
 string
 Loop::toXML(uint oFlags) const
 {
-  string self = ACodeNode::toXML(oFlags);
+  string self = ACodeNode::toXML(oFlags) + " f" + MakeAttrStr(m_filenm);
   return self;
 }
 
@@ -1517,7 +1542,7 @@ Ref::toXML(uint oFlags) const
 bool
 ANode::writeXML_pre(ostream& os, uint oFlags, const char* pfx) const
 {
-  bool doTag = (type() != TyRoot);
+  bool doTag = isVisible();
   bool doMetrics = ((oFlags & Tree::OFlg_LeafMetricsOnly) ?
 		    isLeaf() && hasMetrics() : hasMetrics());
   bool isXMLLeaf = isLeaf() && !doMetrics;
@@ -1546,7 +1571,7 @@ void
 ANode::writeXML_post(ostream& os, uint GCC_ATTR_UNUSED oFlags,
 		     const char* pfx) const
 {
-  bool doTag = (type() != TyRoot);
+  bool doTag = isVisible();
 
   if (doTag) {
     os << pfx << "</" << ANodeTyToXMLelement(type()) << ">" << endl;
@@ -1557,7 +1582,9 @@ ANode::writeXML_post(ostream& os, uint GCC_ATTR_UNUSED oFlags,
 ostream&
 ANode::writeXML(ostream& os, uint oFlags, const char* pfx) const
 {
-  string indent = "  ";
+  // indent childen of visible nodes
+  string indent = isVisible() ? "  " : ""; 
+
   if (oFlags & Tree::OFlg_Compressed) {
     pfx = "";
     indent = "";
