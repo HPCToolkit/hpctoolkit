@@ -195,7 +195,7 @@ LocationMgr::begSeq(Prof::Struct::Proc* enclosingProc, bool isFwdSubst)
 void
 LocationMgr::locate(Prof::Struct::Loop* loop,
 		    Prof::Struct::ACodeNode* proposed_scope,
-		    string& filenm, string& procnm, SrcFile::ln line, int targetScopeID)
+		    string& filenm, string& procnm, SrcFile::ln line, uint targetScopeID)
 {
   DIAG_MsgIfCtd(mDBG, "====================  loop  ====================\n"
 		<< "node=" << loop->id() << "  scope=" << proposed_scope->id()
@@ -221,7 +221,7 @@ LocationMgr::locate(Prof::Struct::Loop* loop,
 void
 LocationMgr::locate(Prof::Struct::Stmt* stmt,
 		    Prof::Struct::ACodeNode* proposed_scope,
-		    string& filenm, string& procnm, SrcFile::ln line, int targetScopeID)
+		    string& filenm, string& procnm, SrcFile::ln line, uint targetScopeID)
 {
   DIAG_MsgIfCtd(mDBG, "====================  stmt  ====================\n"
 		<< "node=" << stmt->id() << "  scope=" << proposed_scope->id()
@@ -469,7 +469,7 @@ LocationMgr::toString(CtxtChange_t x)
 LocationMgr::CtxtChange_t
 LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 			      string& filenm, string& procnm, SrcFile::ln line,
-			      VMA begVMA, Prof::Struct::ACodeNode* loop, int targetScopeID)
+			      VMA begVMA, Prof::Struct::ACodeNode* loop, uint targetScopeID)
 {
   DIAG_DevMsgIf(mDBG, "LocationMgr::determineContext");
 
@@ -862,7 +862,7 @@ fixScopeTree_init(Prof::Struct::ACodeNode*& cur_ctxt,
 void
 LocationMgr::fixScopeTree(Prof::Struct::ACodeNode* from_scope,
 			  Prof::Struct::ACodeNode* true_ctxt,
-			  SrcFile::ln begLn, SrcFile::ln endLn, int targetScopeID)
+			  SrcFile::ln begLn, SrcFile::ln endLn, uint targetScopeID)
 {
   // INVARIANT: 'true_ctxt' is a Struct::Proc or Struct::Alien and an
   // ancestor of 'from_scope'
@@ -920,7 +920,7 @@ LocationMgr::fixScopeTree(Prof::Struct::ACodeNode* from_scope,
 void
 LocationMgr::alienateScopeTree(Prof::Struct::ACodeNode* scope,
 			       Prof::Struct::Alien* alien,
-			       Prof::Struct::ACodeNode* exclude, int targetScopeID)
+			       Prof::Struct::ACodeNode* exclude, uint targetScopeID)
 {
   // create new alien context based on 'alien'
   Prof::Struct::ACodeNode* clone =
@@ -1080,7 +1080,7 @@ LocationMgr::demandAlienStrct(Prof::Struct::ACodeNode* parent_scope,
 			      const std::string& procnm,
 			      const std::string& displaynm,
 			      SrcFile::ln line,
-			      int targetScopeID)
+			      uint targetScopeID)
 {
   // INVARIANT: 'parent_scope' should either be the top of the stack
   // or the first first enclosing LOOP or PROC of the top of the
