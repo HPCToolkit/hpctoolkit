@@ -597,15 +597,16 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
     }
   }
 
+  bool inlineAvail = false;
+
 #ifdef BANAL_USE_SYMTAB
   //
   // Analyze the VM address for its inline sequence.  We need this for
   // inserting alien nodes (use_ctxt) and for locating loops.
   //
-  Inline::InlineSeqn nodelist;
   Inline::InlineSeqn::iterator it;
-  bool inlineAvail = false;
   bool wantInline = false;
+  Inline::InlineSeqn nodelist;
 
   if (loop != NULL || !use_ctxt) {
     inlineAvail = Inline::analyzeAddr(nodelist, begVMA);
@@ -636,25 +637,43 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 
   //
   // For loops (scopes), find the location of the loop in the inline
-  // sequence and save for later lookup.  If procnm is not on the
-  // list, then the scope remains empty (front of list).  We need this
-  // for all loops, whether directly inlined or not.
+  // sequence and save for later lookup.  We need this for all loops,
+  // whether directly inlined or not.
   //
-  if (loop != NULL && inlineAvail && !nodelist.empty()) {
+  if (loop != NULL) {
     bool found_scope = false;
 
-    for (it = nodelist.begin(); it != nodelist.end(); it++) {
-      if (procnmEq(it->getProcName(), procnm)) {
-	DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
-			 << " file: '" << it->getFileName()
-			 << "'  line: " << it->getLineNum());
-	loop->setScopeLocation(it->getFileName(), it->getLineNum());
-	found_scope = true;
-	break;
+    if (inlineAvail && !nodelist.empty()) {
+      for (it = nodelist.begin(); it != nodelist.end(); it++) {
+	if (procnmEq(it->getProcName(), procnm)) {
+	  DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
+			   << " file: '" << it->getFileName()
+			   << "'  line: " << it->getLineNum());
+	  loop->setScopeLocation(it->getFileName(), it->getLineNum());
+	  found_scope = true;
+	  break;
+	}
       }
     }
+    //
+    // If the inline sequence doesn't find the scope for this loop
+    // directly, then use the scope of its parent.  This happens with
+    // nested loops and no relocation between them.
+    //
     if (! found_scope) {
-      DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ") none");
+      string parent_filenm = proposed_scope->getScopeFileName();
+      SrcFile::ln parent_lineno = proposed_scope->getScopeLineNum();
+
+      if (parent_filenm != "") {
+	DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
+			 << " parent (" << proposed_scope->id() << ")"
+			 << " file: '" << parent_filenm
+			 << "'  line: " << parent_lineno);
+	loop->setScopeLocation(parent_filenm, parent_lineno);
+      }
+      else {
+	DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ") none");
+      }
     }
   }
   DIAG_DevMsgIfCtd(mDBG, "");
@@ -749,16 +768,25 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 	}
       }
       procnm = calledProcedure;
-    } else {
-      // HACK HACK HACK
-      // if the procnm is the name of the enclosing procedure, then it is garbage and it should be removed
-      // from the alien node. currently, we use "-" as the placeholder for 
-      // "the procedure that should not be named". the empty string is used for call sites for alien calls.
-      // hpcviewer expects this "-" and will treat it as an unknown procedure that should not be named.
-      string TheProcedureWhoShouldNotBeNamed = "-";
-      procnm = TheProcedureWhoShouldNotBeNamed; 
-    }
+    } 
 #endif
+
+    if (!inlineAvail) {
+      // if the procnm is the name of the enclosing procedure, then it
+      // is garbage and it should be removed from the alien
+      // node. currently, we use "-" as the placeholder for "the
+      // procedure that should not be named". the empty string is used
+      // for call sites for alien calls.  hpcviewer expects this "-"
+      // and will treat it as an unknown procedure that should not be
+      // named.
+      string TheProcedureWhoShouldNotBeNamed = "-";
+
+      // the enclosing scope should be a procedure, but cast carefully and code defensively.
+      Prof::Struct::Proc *procedure = dynamic_cast<Prof::Struct::Proc*>(proposed_scope);
+      if (procedure && procnm == procedure->name()) {
+	procnm = TheProcedureWhoShouldNotBeNamed; 
+      }
+    }
 
     // avoid terminal line number
     alien = demandAlienStrct(parent, filenm, procnm, procnm, 0, targetScopeID);
