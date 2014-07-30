@@ -83,6 +83,8 @@
 #define atomic_add_i64(addr, val) \
 	atomic_add(addr, val) 
 
+#define compare_and_swap \
+        __sync_val_compare_and_swap
 
 
 // -------------------------------------------------------------

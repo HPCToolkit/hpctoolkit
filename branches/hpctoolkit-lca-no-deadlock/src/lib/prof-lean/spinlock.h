@@ -69,6 +69,9 @@
 
 #include "atomic-op.h"
 
+#define compare_and_swap __sync_val_compare_and_swap
+
+
 /*
  * Simple spin lock.
  */
@@ -93,7 +96,8 @@ typedef struct spinlock_s {
  * Technically, the isync could be moved to the assembly code for
  * fetch_and_store().
  */
-static inline void 
+static inline
+void 
 spinlock_lock(spinlock_t *l)
 {
   /* test-and-test-and-set lock */
@@ -111,7 +115,8 @@ spinlock_lock(spinlock_t *l)
 }
 
 
-static inline void 
+static inline
+void 
 spinlock_unlock(spinlock_t *l)
 {
 #if defined(__powerpc__)
@@ -122,7 +127,8 @@ spinlock_unlock(spinlock_t *l)
 }
 
 
-static inline bool 
+static inline
+bool 
 spinlock_is_locked(spinlock_t *l)
 {
   return (l->thelock != SPINLOCK_UNLOCKED_VALUE);
@@ -132,13 +138,15 @@ spinlock_is_locked(spinlock_t *l)
 //
 // test-and-test-and-set lock acquisition, but make a bounded 
 // number of attempts to get lock.
-// This lock also permits multiple "locked" values
+// to be signature compatible, this locking function takes a "locked" value, but does
+// not use it.
 // returns false if lock not acquired
 //
 // NOTE: this lock is still released with spinlock_unlock operation
 //
-static inline bool
-limited_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
+static inline
+bool
+limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 {
   for(size_t i=0;;i++) {
     if (limit && (i > limit))
@@ -148,7 +156,7 @@ limited_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 	return false;
       i++;
     }
-    if (fetch_and_store(&l->thelock, locked_val) == SPINLOCK_UNLOCKED_VALUE)
+    if (fetch_and_store(&l->thelock, SPINLOCK_LOCKED_VALUE) == SPINLOCK_UNLOCKED_VALUE)
       break;
   }
 
@@ -159,27 +167,26 @@ limited_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 }
 
 //
-// test-and-test-and-set lock acquisition, but check
-// the locked value to see if this lock has already been locked
-// by the same thread (this should be the hardware thread id)
+// hwt_cas_spinlock_lock uses the CAS primitive, but prevents deadlock
+// by checking the locked value to see if this (hardware) thread has already
+// acquired the lock
 //
-// returns false if lock not acquired
+// returns false if lock acquisition is abandoned
 //
 // NOTE: this lock is still released with spinlock_unlock operation
 //
-static inline bool
-val_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
+static inline
+bool
+hwt_cas_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 {
   for(;;) {
     // if we are already locked by the same id, prevent deadlock by
-    // abandoning the try to lock
-    if (l->thelock == locked_val)
-      return false;
+    // abandoning lock acquisition
     while (l->thelock != SPINLOCK_UNLOCKED_VALUE) {
       if (l->thelock == locked_val)
 	return false;
     }
-    if (fetch_and_store(&l->thelock, locked_val) == SPINLOCK_UNLOCKED_VALUE)
+    if (compare_and_swap(&l->thelock, SPINLOCK_UNLOCKED_VALUE, locked_val) == SPINLOCK_UNLOCKED_VALUE)
       break;
   }
 

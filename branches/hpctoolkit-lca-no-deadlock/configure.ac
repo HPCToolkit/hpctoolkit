@@ -2404,6 +2404,58 @@ if test "${OPT_ENABLE_IBM_BLUEGENE}" = "yes" ; then
 fi
 
 
+# hpcrun (&hpclink) on BGQ needs the back-end compiler.  For now, use this
+# only for hpcrun, only on Blue Gene/Q and only if not already
+# cross compiling.
+
+AC_ARG_ENABLE([bgq],
+    [AS_HELP_STRING([--enable-bgq],
+	[enable BGQ-specific options: build libmonitor with
+	 back-end powerpc64-bgq-linux-gcc (autodetect)])],
+    [],
+    [enable_bgq=check])
+
+# Search for the back-end BGQ compiler on PATH and test for Blue
+# Gene/P (suppress the warning on P).
+
+blue_gene_p=no
+ppc64_bgq_avail=
+if test -d /bgsys ; then
+    AC_CHECK_PROG([ppc64_bgq_avail], [powerpc64-bgq-linux-gcc], [yes], [no])
+    if test "$ppc64_bgq_avail" = no && test "$wordsize" = 32 ; then
+	blue_gene_p=yes
+    fi
+else
+    ppc64_bgq_avail=no
+fi
+
+hpcrun_use_bgq_backend=no
+warn_bgq_backend=no
+
+case "$enable_bgq" in 
+    yes )
+	if test "$ppc64_bgq_avail" != yes ; then
+	    AC_MSG_ERROR([unable to find powerpc64-bgq-linux-gcc for enable-bgq])
+	fi
+	hpcrun_use_bgq_backend=yes
+	;;
+    no ) ;;
+    * )
+	if test -d /bgsys && test "$blue_gene_p" = no && test -z "$is_cross_compile"
+	then
+	    if test "$ppc64_bgq_avail" = yes ; then
+		AC_MSG_WARN([using back-end compiler for libmonitor])
+		hpcrun_use_bgq_backend=yes
+	    else
+		AC_MSG_WARN([unable to find powerpc64-bgq-linux-gcc])
+	    fi
+	    warn_bgq_backend=yes
+	fi
+	;;
+esac
+
+AC_SUBST([hpcrun_use_bgq_backend])
+
 #-------------------------------------------------
 # Option: --with-upc=PATH
 #-------------------------------------------------
@@ -2856,6 +2908,13 @@ if test "$warn_non_gcc" = yes ; then
   AC_MSG_WARN([This is not necessarily an error, but some parts of hpctoolkit])
   AC_MSG_WARN([may not compile cleanly without gcc or g++.  If the build fails,])
   AC_MSG_WARN([try using GNU gcc and g++ before reporting an error.])
+fi
+
+if test "$warn_bgq_backend" = yes ; then
+    AC_MSG_NOTICE([])
+    AC_MSG_WARN([On the Blue Gene/Q compute nodes, hpcrun needs a separate,])
+    AC_MSG_WARN([back-end compiler.  Use --enable-bgq to build for the back end,])
+    AC_MSG_WARN([or else --disable-bgq to build for the front end.])
 fi
 
 if test "$warn_compiler_mismatch" = yes ; then
