@@ -165,7 +165,7 @@ void start_team_fn(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_fram
   cct_node_t *callpath = NULL;
   hpcrun_safe_enter();
   TMSG(DEFER_CTXT, "team create  id=0x%lx parallel_fn=%p ompt_get_parallel_id(0)=0x%lx", region_id, parallel_fn, 
-       ompt_get_parallel_id(0));
+       hpcrun_ompt_get_parallel_id(0));
   thread_data_t *td = hpcrun_get_thread_data();
   uint64_t parent_region_id = hpcrun_ompt_get_parallel_id(0);
 
@@ -222,7 +222,7 @@ void end_team_fn(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame,
 {
   hpcrun_safe_enter();
   TMSG(DEFER_CTXT, "team end   id=0x%lx parallel_fn=%p ompt_get_parallel_id(0)=0x%lx", region_id, parallel_fn, 
-       ompt_get_parallel_id(0));
+       hpcrun_ompt_get_parallel_id(0));
   ompt_region_map_entry_t *record = ompt_region_map_lookup(region_id);
   if (record) {
     if (ompt_region_map_entry_refcnt_get(record) > 0) {
