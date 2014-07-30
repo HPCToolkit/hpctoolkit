@@ -437,6 +437,14 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
   if (incoming_filename == NULL) {
     return (NULL);
   }
+
+  // linux-vdso.so and linux-gate.so are virtual files and don't exist
+  // in the file system.
+  if (strncmp(incoming_filename, "linux-vdso.so", 13) == 0
+      || strncmp(incoming_filename, "linux-gate.so", 13) == 0) {
+    return hpcrun_dso_make(incoming_filename, NULL, NULL, start, end, 0);
+  }
+
   realpath(incoming_filename, filename);
 
   nm_table = (void**) hpcrun_syserv_query(filename, &fh);

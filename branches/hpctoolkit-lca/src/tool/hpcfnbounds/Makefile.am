@@ -97,12 +97,10 @@ MYCPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
 
-MYLDFLAGS = \
+MYLDADD = $(HPCLIB_SupportLean) \
 	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
-	-L$(LIBDWARF_LIB) -ldwarf		\
+	-L$(LIBDWARF_LIB) -ldwarf \
 	-L$(LIBELF_LIB) -lelf
-
-MYLDADD = $(HPCLIB_SupportLean)
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
@@ -119,13 +117,12 @@ pkglibexec_SCRIPTS =  hpcfnbounds
 hpcfnbounds_bin_SOURCES  = $(MYSOURCES)
 hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS)
 hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
-hpcfnbounds_bin_LDFLAGS  = $(MYLDFLAGS)
 hpcfnbounds_bin_LDADD    = $(MYLDADD)
 
 if HOST_CPU_X86_FAMILY
   hpcfnbounds_bin_SOURCES  += x86-process-ranges.cpp amd-xop.c
   hpcfnbounds_bin_CPPFLAGS += -I$(XED2_INC)
-  hpcfnbounds_bin_LDFLAGS  += $(XED2_LIB_FLAGS)
+  hpcfnbounds_bin_LDADD    += $(XED2_LIB_FLAGS)
 else
   hpcfnbounds_bin_SOURCES += generic-process-ranges.cpp
 endif

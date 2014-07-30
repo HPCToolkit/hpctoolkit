@@ -1,54 +1,59 @@
 #!/bin/sh
-# Testing: set -x: line by line (set -n: syntax)
 # set -x
-
+#
+@copyright_hash@
+#
 # $Id$
+#
+# Launch script for hpcproftt.
+#
+#------------------------------------------------------------
+# Values from configure
+#------------------------------------------------------------
 
-## **************************************************************************
-##
-## Launching script
-##
-## John Mellor-Crummey and Nathan Tallent
-##
-## **************************************************************************
+# If this script can't find its own install prefix, or if it's
+# moved elsewhere, then set HPCTOOLKIT here.
+# HPCTOOLKIT='@prefix@'
 
-#############################################################################
-# Find where we were called from
-#############################################################################
+VERSION='@PACKAGE_VERSION@'
 
+# Relative paths are relative to HPCTOOLKIT.
+ext_libs_dir='@hpc_ext_libs_dir@'
+libexec_dir='libexec/hpctoolkit'
+
+# Should be absolute path.
+libcxx_path='@HPCRUN_LIBCXX_PATH@'
+
+prog_name=hpcproftt
+binary_name=hpcproftt-bin
+
+#------------------------------------------------------------
+# Find path to this script
+#------------------------------------------------------------
+
+hpc_path_to_root=..
 @export_hpctoolkit@
 
-BINARY="${HPCTOOLKIT}/libexec/hpctoolkit/hpcproftt-bin"
+#------------------------------------------------------------
+# Set environment and exec
+#------------------------------------------------------------
 
-#############################################################################
-# Set environment for process
-#############################################################################
+case "$1" in
+    -V | -version | --version )
+	echo "${prog_name}: A member of HPCToolkit, version $VERSION"
+	exit 0
+	;;
+esac
 
-#HPCTOOLKIT_PLATFORM=`cd ${HPCTOOLKIT}/libexec/hpctoolkit && ./hpcplatform`
-#export HPCTOOLKIT_PLATFORM
+# Relative paths are relative to HPCTOOLKIT.
+case "$ext_libs_dir" in
+    /* ) ;;
+    * )  ext_libs_dir="${HPCTOOLKIT}/${ext_libs_dir}" ;;
+esac
+case "$libexec_dir" in
+    /* ) ;;
+    * )  libexec_dir="${HPCTOOLKIT}/${libexec_dir}" ;;
+esac
 
-XERCESC_PATH="${HPCTOOLKIT}/lib/hpctoolkit/ext-libs"
-
-if test -z "${LD_LIBRARY_PATH}" ; then
-  LD_LIBRARY_PATH=${XERCESC_PATH}
-else
-  LD_LIBRARY_PATH=${XERCESC_PATH}:${LD_LIBRARY_PATH}
-fi
-export LD_LIBRARY_PATH
-
-unset XERCESC_PATH
-
-#############################################################################
-# exec binary image
-#############################################################################
-
-if [ -r "${BINARY}" -a -x "${BINARY}" ]; then
-    if [ $# -eq 0 ]; then
-	exec ${BINARY}
-    else
-	exec ${BINARY} "$@"
-    fi
-else
-    echo "$0 fatal error: cannot exec '${BINARY}'"
-    exit 1;
-fi
+export LD_LIBRARY_PATH="${ext_libs_dir}:${libcxx_path}:${LD_LIBRARY_PATH}"
+exec "${libexec_dir}/${binary_name}" "$@"

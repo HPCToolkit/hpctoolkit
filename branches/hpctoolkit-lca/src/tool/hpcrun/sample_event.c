@@ -238,6 +238,7 @@ hpcrun_sample_callpath(void *context, int metricId,
   ret.sample_node = node;
 
   if (hpcrun_trace_isactive()) {
+    TMSG(TRACE, "Sample event encountered");
     void* pc = hpcrun_context_pc(context);
 
     void *func_start_pc = NULL, *func_end_pc = NULL;
@@ -458,6 +459,7 @@ hpcrun_sample_callpath_w_bt(void *context,
 					      bt_fn, arg, isSync);
 
       if (hpcrun_trace_isactive()) {
+	TMSG(TRACE, "non-NULL epoch code");
 	void* pc = hpcrun_context_pc(context);
 	cct_bundle_t* cct = &(td->epoch->csdata); 
 	void* func_start_pc = NULL;
