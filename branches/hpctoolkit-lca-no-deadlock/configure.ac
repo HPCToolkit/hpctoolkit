@@ -2403,28 +2403,26 @@ if test "${OPT_ENABLE_IBM_BLUEGENE}" = "yes" ; then
   AC_DEFINE([HOST_SYSTEM_IBM_BLUEGENE], [1], [IBM BlueGene/P support])
 fi
 
-
-# hpcrun (&hpclink) on BGQ needs the back-end compiler.  For now, use this
-# only for hpcrun, only on Blue Gene/Q and only if not already
-# cross compiling.
-
-AC_ARG_ENABLE([bgq],
-    [AS_HELP_STRING([--enable-bgq],
-	[enable BGQ-specific options: build libmonitor with
-	 back-end powerpc64-bgq-linux-gcc (autodetect)])],
-    [],
-    [enable_bgq=check])
+#-------------------------------------------------
+# Option: --enable-bgq-cnk=PATH
+#-------------------------------------------------
+#
+# hpcrun (&hpclink) on BGQ needs the back-end compiler for a few files.
+#
+enable_bgq=no
+AC_ARG_ENABLE([bgq-cnk],
+    [AS_HELP_STRING([--enable-bgq-cnk],
+	[enable BGQ- and cnk-specific options: build parts of hpcrun with
+	 back-end powerpc64-bgq-linux-gcc])],
+    [enable_bgq="yes"],
+    [])
 
 # Search for the back-end BGQ compiler on PATH and test for Blue
 # Gene/P (suppress the warning on P).
 
-blue_gene_p=no
 ppc64_bgq_avail=
 if test -d /bgsys ; then
     AC_CHECK_PROG([ppc64_bgq_avail], [powerpc64-bgq-linux-gcc], [yes], [no])
-    if test "$ppc64_bgq_avail" = no && test "$wordsize" = 32 ; then
-	blue_gene_p=yes
-    fi
 else
     ppc64_bgq_avail=no
 fi
@@ -2435,26 +2433,17 @@ warn_bgq_backend=no
 case "$enable_bgq" in 
     yes )
 	if test "$ppc64_bgq_avail" != yes ; then
-	    AC_MSG_ERROR([unable to find powerpc64-bgq-linux-gcc for enable-bgq])
+	    AC_MSG_ERROR([unable to find powerpc64-bgq-linux-gcc for enable-bgq-cnk])
 	fi
 	hpcrun_use_bgq_backend=yes
 	;;
     no ) ;;
-    * )
-	if test -d /bgsys && test "$blue_gene_p" = no && test -z "$is_cross_compile"
-	then
-	    if test "$ppc64_bgq_avail" = yes ; then
-		AC_MSG_WARN([using back-end compiler for libmonitor])
-		hpcrun_use_bgq_backend=yes
-	    else
-		AC_MSG_WARN([unable to find powerpc64-bgq-linux-gcc])
-	    fi
-	    warn_bgq_backend=yes
-	fi
-	;;
+    * )  ;;
 esac
 
 AC_SUBST([hpcrun_use_bgq_backend])
+AC_MSG_RESULT([$hpcrun_use_bgq_backend])
+AM_CONDITIONAL(OPT_BGQ_BACKEND, test "$hpcrun_use_bgq_backend" = "yes")
 
 #-------------------------------------------------
 # Option: --with-upc=PATH
@@ -2783,6 +2772,7 @@ AC_CONFIG_FILES([ \
   src/tool/hpcprof-flat/Makefile \
   src/tool/hpcproftt/Makefile \
   src/tool/hpcrun/Makefile \
+  src/tool/hpcrun/utilities/bgq-cnk/Makefile \
   src/tool/hpcrun-flat/Makefile \
   src/tool/hpcserver/Makefile \
   src/tool/hpcserver/mpi/Makefile \

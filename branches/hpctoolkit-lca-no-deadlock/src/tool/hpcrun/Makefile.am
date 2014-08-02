@@ -93,6 +93,10 @@ PYTHON = python
 # build targets
 #-----------------------------------------------------------
 
+if OPT_BGQ_BACKEND
+  SUBDIRS = utilities/bgq-cnk
+endif
+
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
@@ -460,11 +464,18 @@ libhpcrun_la_CPPFLAGS =			\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
+if OPT_BGQ_BACKEND
+  libhpcrun_la_CPPFLAGS += -I$(srcdir)/utilities/bgq-cnk
+endif
+
 libhpcrun_o_CPPFLAGS =			\
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
+if OPT_BGQ_BACKEND
+  libhpcrun_o_CPPFLAGS += -I$(srcdir)/utilities/bgq-cnk
+endif
 
 libhpcrun_wrap_a_CPPFLAGS =		\
 	-DHPCRUN_STATIC_LINK		\
@@ -600,6 +611,11 @@ libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 libhpcrun_o_LDADD   = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
+
+if OPT_BGQ_BACKEND
+  libhpcrun_la_LIBADD += utilities/bgq-cnk/libhardware-thread-id.la
+  libhpcrun_o_LDADD   += utilities/bgq-cnk/libhardware-thread-id.la
+endif
 
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt \

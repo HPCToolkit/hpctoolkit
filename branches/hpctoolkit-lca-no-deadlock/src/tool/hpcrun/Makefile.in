@@ -98,17 +98,17 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @OPT_ENABLE_MPI_WRAP_TRUE@am__append_17 = \
 @OPT_ENABLE_MPI_WRAP_TRUE@	sample-sources/mpi.c
 
+@OPT_BGQ_BACKEND_TRUE@am__append_18 = -I$(srcdir)/utilities/bgq-cnk
+@OPT_BGQ_BACKEND_TRUE@am__append_19 = -I$(srcdir)/utilities/bgq-cnk
+@OPT_BGQ_BACKEND_TRUE@am__append_20 = utilities/bgq-cnk/libhardware-thread-id.la
+@OPT_BGQ_BACKEND_TRUE@am__append_21 = utilities/bgq-cnk/libhardware-thread-id.la
 
 #-----------------------------------------------------------
 # whirled peas
 #-----------------------------------------------------------
-@HOST_OS_LINUX_TRUE@am__append_18 = $(MY_LINUX_DYNAMIC_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_19 = $(MY_MIPS_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_20 = $(MY_MIPS_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_21 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_22 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_23 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_24 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_OS_LINUX_TRUE@am__append_22 = $(MY_LINUX_DYNAMIC_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_23 = $(MY_MIPS_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_24 = $(MY_MIPS_FILES)
 @HOST_CPU_MIPS_TRUE@am__append_25 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_26 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_27 = $(MY_MIPS_INCLUDE_DIRS)
@@ -118,18 +118,18 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @HOST_CPU_MIPS_TRUE@am__append_31 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_32 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_33 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_34 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_35 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_36 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_37 = $(MY_MIPS_INCLUDE_DIRS)
 
 # Note: setting CCASFLAGS here is a no-op hack with the side effect of
 # prefixing the tramp.s file names so they will be compiled separately
 # for .o and .so targets.  CFLAGS does this for the .c files, but
 # CFLAGS doesn't apply to .s files.  See the automake docs section
 # 8.3.9.2, Objects created with both libtool and without.
-@HOST_CPU_PPC_TRUE@am__append_34 = $(MY_PPC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_35 = $(MY_PPC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_36 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_37 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_38 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_39 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_38 = $(MY_PPC_FILES)
+@HOST_CPU_PPC_TRUE@am__append_39 = $(MY_PPC_FILES)
 @HOST_CPU_PPC_TRUE@am__append_40 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_41 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_42 = $(MY_PPC_INCLUDE_DIRS)
@@ -139,16 +139,16 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @HOST_CPU_PPC_TRUE@am__append_46 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_47 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_48 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_49 = $(MY_X86_FILES)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_50 = $(MY_X86_FILES)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_51 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_52 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_53 = $(XED2_LIB_FLAGS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_54 = $(XED2_LIB_FLAGS)
+@HOST_CPU_PPC_TRUE@am__append_49 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_50 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_51 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_52 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_53 = $(MY_X86_FILES)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_54 = $(MY_X86_FILES)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_55 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_56 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_57 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_58 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_57 = $(XED2_LIB_FLAGS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_58 = $(XED2_LIB_FLAGS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_59 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_60 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_61 = $(MY_X86_INCLUDE_DIRS)
@@ -157,12 +157,12 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_64 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_65 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_66 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_67 = $(MY_IA64_FILES)
-@HOST_CPU_IA64_TRUE@am__append_68 = $(MY_IA64_FILES)
-@HOST_CPU_IA64_TRUE@am__append_69 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_70 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_71 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_72 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_67 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_68 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_69 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_70 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_71 = $(MY_IA64_FILES)
+@HOST_CPU_IA64_TRUE@am__append_72 = $(MY_IA64_FILES)
 @HOST_CPU_IA64_TRUE@am__append_73 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_74 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_75 = $(MY_IA64_INCLUDE_DIRS)
@@ -170,30 +170,34 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @HOST_CPU_IA64_TRUE@am__append_77 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_78 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_79 = $(MY_IA64_INCLUDE_DIRS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_80 = $(MY_PAPI_FILES)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_81 = $(PAPI_INC_FLGS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_82 = $(PAPI_LD_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_83 = $(MY_PAPI_FILES)
-@OPT_PAPI_STATIC_TRUE@am__append_84 = $(PAPI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_85 = $(PAPI_LD_FLGS)
-@OPT_ENABLE_UPC_TRUE@am__append_86 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_87 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_88 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_89 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_90 = $(OPT_UPC_LDFLAGS)
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_91 = -DLUSH_PTHREADS
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_92 = -DLUSH_PTHREADS
-@OPT_ENABLE_CUDA_TRUE@am__append_93 = $(CUDA_FILES)
-@OPT_ENABLE_CUDA_TRUE@am__append_94 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_95 = $(OPT_CUDA_IFLAGS) -g
-@OPT_ENABLE_CUDA_TRUE@am__append_96 = $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_97 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_98 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_99 = $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_100 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_101 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_102 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_103 = libagent-pthread.la \
+@HOST_CPU_IA64_TRUE@am__append_80 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_81 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_82 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_83 = $(MY_IA64_INCLUDE_DIRS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_84 = $(MY_PAPI_FILES)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_85 = $(PAPI_INC_FLGS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_86 = $(PAPI_LD_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_87 = $(MY_PAPI_FILES)
+@OPT_PAPI_STATIC_TRUE@am__append_88 = $(PAPI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_89 = $(PAPI_LD_FLGS)
+@OPT_ENABLE_UPC_TRUE@am__append_90 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_91 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_92 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_93 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_94 = $(OPT_UPC_LDFLAGS)
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_95 = -DLUSH_PTHREADS
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_96 = -DLUSH_PTHREADS
+@OPT_ENABLE_CUDA_TRUE@am__append_97 = $(CUDA_FILES)
+@OPT_ENABLE_CUDA_TRUE@am__append_98 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_99 = $(OPT_CUDA_IFLAGS) -g
+@OPT_ENABLE_CUDA_TRUE@am__append_100 = $(OPT_CUDA_LDFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_101 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_102 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_103 = $(OPT_CUDA_LDFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_104 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_105 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_106 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_107 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -316,7 +320,8 @@ libagent_tbb_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libagent_tbb_la_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 @OPT_ENABLE_LUSH_TRUE@am_libagent_tbb_la_rpath = -rpath $(pkglibdir)
-libhpcrun_la_DEPENDENCIES = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
+libhpcrun_la_DEPENDENCIES = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
+	$(am__append_20)
 am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	disabled.c cct_insert_backtrace.c env.c epoch.c files.c \
 	handling_sample.c hpcrun_options.c hpcrun_stats.c loadmap.c \
@@ -679,7 +684,8 @@ am_libhpcrun_o_OBJECTS = $(am__objects_34) $(am__objects_35) \
 	$(am__objects_43) $(am__objects_45) $(am__objects_47) \
 	$(am__objects_53) libhpcrun_o-last_func.$(OBJEXT)
 libhpcrun_o_OBJECTS = $(am_libhpcrun_o_OBJECTS)
-libhpcrun_o_DEPENDENCIES = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
+libhpcrun_o_DEPENDENCIES = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
+	$(am__append_21)
 libhpcrun_o_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libhpcrun_o_CFLAGS) \
 	$(CFLAGS) $(libhpcrun_o_LDFLAGS) $(LDFLAGS) -o $@
@@ -731,31 +737,49 @@ DIST_SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
 	$(libhpcrun_memleak_la_SOURCES) $(libhpcrun_mpi_la_SOURCES) \
 	$(libhpcrun_pthread_la_SOURCES) $(libhpctoolkit_la_SOURCES) \
 	$(am__libhpcrun_o_SOURCES_DIST)
+RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
+	html-recursive info-recursive install-data-recursive \
+	install-dvi-recursive install-exec-recursive \
+	install-html-recursive install-info-recursive \
+	install-pdf-recursive install-ps-recursive install-recursive \
+	installcheck-recursive installdirs-recursive pdf-recursive \
+	ps-recursive uninstall-recursive
 am__include_HEADERS_DIST = hpctoolkit.h
 HEADERS = $(include_HEADERS)
+RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
+  distclean-recursive maintainer-clean-recursive
+AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
+	$(RECURSIVE_CLEAN_TARGETS:-recursive=) tags TAGS ctags CTAGS \
+	distdir
 ETAGS = etags
 CTAGS = ctags
+DIST_SUBDIRS = utilities/bgq-cnk
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-
-#############################################################################
-# Automake rules
-#############################################################################
-
-# FIXME: tallent: hpcrun's build is highly parameterized and therefore
-# will be more complex than other parts of HPCToolkit.  However, this
-# makefile is surely more convoluted than necessary.  Sorting it out
-# would take more time than I have right now.
-#
-# An initial list of parameters:
-# - statically vs. dynamically linked app
-# - unwinder selection
-# - logical unwinding plugins
-# - system, language, problem-specific sample sources
-# - architecture/system/mpi-specific code (unwinder, sample sources, etc)
-
-#-----------------------------------------------------------
-# build targets
-#-----------------------------------------------------------
+am__relativize = \
+  dir0=`pwd`; \
+  sed_first='s,^\([^/]*\)/.*$$,\1,'; \
+  sed_rest='s,^[^/]*/*,,'; \
+  sed_last='s,^.*/\([^/]*\)$$,\1,'; \
+  sed_butlast='s,/*[^/]*$$,,'; \
+  while test -n "$$dir1"; do \
+    first=`echo "$$dir1" | sed -e "$$sed_first"`; \
+    if test "$$first" != "."; then \
+      if test "$$first" = ".."; then \
+        dir2=`echo "$$dir0" | sed -e "$$sed_last"`/"$$dir2"; \
+        dir0=`echo "$$dir0" | sed -e "$$sed_butlast"`; \
+      else \
+        first2=`echo "$$dir2" | sed -e "$$sed_first"`; \
+        if test "$$first2" = "$$first"; then \
+          dir2=`echo "$$dir2" | sed -e "$$sed_rest"`; \
+        else \
+          dir2="../$$dir2"; \
+        fi; \
+        dir0="$$dir0"/"$$first"; \
+      fi; \
+    fi; \
+    dir1=`echo "$$dir1" | sed -e "$$sed_rest"`; \
+  done; \
+  reldir="$$dir2"
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 ACLOCAL = @ACLOCAL@
@@ -1010,6 +1034,27 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 # Local settings
 #############################################################################
 PYTHON = python
+
+#############################################################################
+# Automake rules
+#############################################################################
+
+# FIXME: tallent: hpcrun's build is highly parameterized and therefore
+# will be more complex than other parts of HPCToolkit.  However, this
+# makefile is surely more convoluted than necessary.  Sorting it out
+# would take more time than I have right now.
+#
+# An initial list of parameters:
+# - statically vs. dynamically linked app
+# - unwinder selection
+# - logical unwinding plugins
+# - system, language, problem-specific sample sources
+# - architecture/system/mpi-specific code (unwinder, sample sources, etc)
+
+#-----------------------------------------------------------
+# build targets
+#-----------------------------------------------------------
+@OPT_BGQ_BACKEND_TRUE@SUBDIRS = utilities/bgq-cnk
 plugin_srcdir = $(srcdir)/plugins
 plugin_instdir = $(pkglibdir)/plugins
 bin_SCRIPTS = $(am__append_1) $(am__append_7) $(am__append_13)
@@ -1018,7 +1063,7 @@ include_HEADERS = $(am__append_3)
 pkglib_LIBRARIES = $(am__append_9) $(am__append_10) $(am__append_11) \
 	$(am__append_12)
 pkglib_LTLIBRARIES = $(am__append_4) $(am__append_5) $(am__append_6) \
-	$(am__append_14) $(am__append_102) $(am__append_103)
+	$(am__append_14) $(am__append_106) $(am__append_107)
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
@@ -1185,13 +1230,13 @@ MY_IA64_INCLUDE_DIRS = \
         -I$(srcdir)/utilities/arch/ia64
 
 libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
-	$(am__append_18) $(am__append_19) $(am__append_34) \
-	$(am__append_49) $(am__append_67) $(am__append_80) \
-	$(am__append_86) $(am__append_93) $(UNW_SOURCE_FILES) \
+	$(am__append_22) $(am__append_23) $(am__append_38) \
+	$(am__append_53) $(am__append_71) $(am__append_84) \
+	$(am__append_90) $(am__append_97) $(UNW_SOURCE_FILES) \
 	utilities/last_func.c
 libhpcrun_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
-	$(am__append_20) $(am__append_35) $(am__append_50) \
-	$(am__append_68) $(am__append_83) $(am__append_87) \
+	$(am__append_24) $(am__append_39) $(am__append_54) \
+	$(am__append_72) $(am__append_87) $(am__append_91) \
 	$(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_wrap_a_SOURCES = \
 	monitor-exts/openmp.c
@@ -1247,53 +1292,55 @@ libhpctoolkit_a_SOURCES = \
 # cppflags
 #-----------------------------------------------------------
 libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_21) $(am__append_36) $(am__append_51) \
-	$(am__append_69) $(am__append_81) $(am__append_88) \
-	$(am__append_91) $(am__append_94) $(UNW_INCLUDE_DIRS)
+	$(am__append_18) $(am__append_25) $(am__append_40) \
+	$(am__append_55) $(am__append_73) $(am__append_85) \
+	$(am__append_92) $(am__append_95) $(am__append_98) \
+	$(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_22) $(am__append_37) \
-	$(am__append_52) $(am__append_70) $(am__append_84) \
-	$(am__append_89) $(am__append_92) $(UNW_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS) $(am__append_19) $(am__append_26) \
+	$(am__append_41) $(am__append_56) $(am__append_74) \
+	$(am__append_88) $(am__append_93) $(am__append_96) \
+	$(UNW_INCLUDE_DIRS)
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
 libhpcrun_ga_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_23) $(am__append_38) $(am__append_55) \
-	$(am__append_71) $(UNW_INCLUDE_DIRS)
-libhpcrun_ga_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_24) $(am__append_39) \
-	$(am__append_56) $(am__append_72) $(UNW_INCLUDE_DIRS)
-libhpcrun_io_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_25) $(am__append_40) $(am__append_57) \
-	$(am__append_73) $(UNW_INCLUDE_DIRS)
-libhpcrun_io_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_26) $(am__append_41) \
-	$(am__append_58) $(am__append_74) $(UNW_INCLUDE_DIRS)
-libhpcrun_memleak_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_27) $(am__append_42) $(am__append_59) \
 	$(am__append_75) $(UNW_INCLUDE_DIRS)
-libhpcrun_memleak_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
-	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_28) \
-	$(am__append_43) $(am__append_60) $(am__append_76) \
-	$(UNW_INCLUDE_DIRS)
-libhpcrun_pthread_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
+libhpcrun_ga_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
+	$(MY_INCLUDE_DIRS) $(am__append_28) $(am__append_43) \
+	$(am__append_60) $(am__append_76) $(UNW_INCLUDE_DIRS)
+libhpcrun_io_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_29) $(am__append_44) $(am__append_61) \
 	$(am__append_77) $(UNW_INCLUDE_DIRS)
+libhpcrun_io_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
+	$(MY_INCLUDE_DIRS) $(am__append_30) $(am__append_45) \
+	$(am__append_62) $(am__append_78) $(UNW_INCLUDE_DIRS)
+libhpcrun_memleak_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
+	$(am__append_31) $(am__append_46) $(am__append_63) \
+	$(am__append_79) $(UNW_INCLUDE_DIRS)
+libhpcrun_memleak_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
+	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_32) \
+	$(am__append_47) $(am__append_64) $(am__append_80) \
+	$(UNW_INCLUDE_DIRS)
+libhpcrun_pthread_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
+	$(am__append_33) $(am__append_48) $(am__append_65) \
+	$(am__append_81) $(UNW_INCLUDE_DIRS)
 libhpcrun_pthread_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
-	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_30) \
-	$(am__append_45) $(am__append_62) $(am__append_78) \
+	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_34) \
+	$(am__append_49) $(am__append_66) $(am__append_82) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_31) $(am__append_46) $(am__append_63) \
-	$(am__append_97) $(UNW_INCLUDE_DIRS)
+	$(am__append_35) $(am__append_50) $(am__append_67) \
+	$(am__append_101) $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_32) $(am__append_47) \
-	$(am__append_64) $(am__append_100) $(UNW_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS) $(am__append_36) $(am__append_51) \
+	$(am__append_68) $(am__append_104) $(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_33) $(am__append_48) $(am__append_65) \
-	$(am__append_79) $(UNW_INCLUDE_DIRS)
+	$(am__append_37) $(am__append_52) $(am__append_69) \
+	$(am__append_83) $(UNW_INCLUDE_DIRS)
 CUDA_TABLES = gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
 CUDA_FILES = sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c $(CUDA_TABLES)
 @OPT_ENABLE_CUDA_TRUE@generated_file_base = .
@@ -1317,7 +1364,7 @@ libhpctoolkit_a_CPPFLAGS = \
 #-----------------------------------------------------------
 # cflags
 #-----------------------------------------------------------
-libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_95)
+libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_99)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -1328,19 +1375,22 @@ libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) $(am__append_98)
+libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
+	$(am__append_102)
 libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_101)
+	$(am__append_105)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 #-----------------------------------------------------------
 # ldflags
 #-----------------------------------------------------------
-libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
-libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
+libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
+	$(am__append_20)
+libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
+	$(am__append_21)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
-	-lpthread -lrt $(OPT_LIBUNWIND_LDFLAGS) $(am__append_53) \
-	$(am__append_82) $(am__append_90) $(am__append_96) \
+	-lpthread -lrt $(OPT_LIBUNWIND_LDFLAGS) $(am__append_57) \
+	$(am__append_86) $(am__append_94) $(am__append_100) \
 	$(UNW_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic	\
 	-Wl,--strip-debug
@@ -1354,13 +1404,13 @@ libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
 libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
 
-libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_99)
+libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_103)
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
 
-libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS) $(am__append_54) \
-	$(am__append_85) $(UNW_LD_FLAGS)
-MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_66) \
+libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS) $(am__append_58) \
+	$(am__append_89) $(UNW_LD_FLAGS)
+MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_70) \
 	$(UNW_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
 @HOST_CPU_X86_FAMILY_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
@@ -1424,7 +1474,7 @@ MYCPPFLAGS_0 = $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 MYCPPFLAGS_0_CXX = $(MYCPPFLAGS_0) $(AM_CXXFLAGS) $(CXXFLAGS) $(MYCXXFLAGS)
 MYCPPFLAGS_0_CC = $(MYCPPFLAGS_0) $(AM_CFLAGS)   $(CFLAGS)   $(MYCFLAGS)
 all: $(BUILT_SOURCES)
-	$(MAKE) $(AM_MAKEFLAGS) all-am
+	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
 .SUFFIXES: .S .c .lo .o .obj .s
@@ -4288,6 +4338,76 @@ uninstall-includeHEADERS:
 	echo " ( cd '$(DESTDIR)$(includedir)' && rm -f" $$files ")"; \
 	cd "$(DESTDIR)$(includedir)" && rm -f $$files
 
+# This directory's subdirectories are mostly independent; you can cd
+# into them and run `make' without going through this Makefile.
+# To change the values of `make' variables: instead of editing Makefiles,
+# (1) if the variable is set in `config.status', edit `config.status'
+#     (which will cause the Makefiles to be regenerated when you run `make');
+# (2) otherwise, pass the desired values on the `make' command line.
+$(RECURSIVE_TARGETS):
+	@fail= failcom='exit 1'; \
+	for f in x $$MAKEFLAGS; do \
+	  case $$f in \
+	    *=* | --[!k]*);; \
+	    *k*) failcom='fail=yes';; \
+	  esac; \
+	done; \
+	dot_seen=no; \
+	target=`echo $@ | sed s/-recursive//`; \
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  echo "Making $$target in $$subdir"; \
+	  if test "$$subdir" = "."; then \
+	    dot_seen=yes; \
+	    local_target="$$target-am"; \
+	  else \
+	    local_target="$$target"; \
+	  fi; \
+	  ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
+	  || eval $$failcom; \
+	done; \
+	if test "$$dot_seen" = "no"; then \
+	  $(MAKE) $(AM_MAKEFLAGS) "$$target-am" || exit 1; \
+	fi; test -z "$$fail"
+
+$(RECURSIVE_CLEAN_TARGETS):
+	@fail= failcom='exit 1'; \
+	for f in x $$MAKEFLAGS; do \
+	  case $$f in \
+	    *=* | --[!k]*);; \
+	    *k*) failcom='fail=yes';; \
+	  esac; \
+	done; \
+	dot_seen=no; \
+	case "$@" in \
+	  distclean-* | maintainer-clean-*) list='$(DIST_SUBDIRS)' ;; \
+	  *) list='$(SUBDIRS)' ;; \
+	esac; \
+	rev=''; for subdir in $$list; do \
+	  if test "$$subdir" = "."; then :; else \
+	    rev="$$subdir $$rev"; \
+	  fi; \
+	done; \
+	rev="$$rev ."; \
+	target=`echo $@ | sed s/-recursive//`; \
+	for subdir in $$rev; do \
+	  echo "Making $$target in $$subdir"; \
+	  if test "$$subdir" = "."; then \
+	    local_target="$$target-am"; \
+	  else \
+	    local_target="$$target"; \
+	  fi; \
+	  ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
+	  || eval $$failcom; \
+	done && test -z "$$fail"
+tags-recursive:
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  test "$$subdir" = . || ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) tags); \
+	done
+ctags-recursive:
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  test "$$subdir" = . || ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) ctags); \
+	done
+
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
 	unique=`for i in $$list; do \
@@ -4298,10 +4418,23 @@ ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	mkid -fID $$unique
 tags: TAGS
 
-TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+TAGS: tags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 		$(TAGS_FILES) $(LISP)
 	set x; \
 	here=`pwd`; \
+	if ($(ETAGS) --etags-include --version) >/dev/null 2>&1; then \
+	  include_option=--etags-include; \
+	  empty_fix=.; \
+	else \
+	  include_option=--include; \
+	  empty_fix=; \
+	fi; \
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  if test "$$subdir" = .; then :; else \
+	    test ! -f $$subdir/TAGS || \
+	      set "$$@" "$$include_option=$$here/$$subdir/TAGS"; \
+	  fi; \
+	done; \
 	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
 	unique=`for i in $$list; do \
 	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
@@ -4320,7 +4453,7 @@ TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 	  fi; \
 	fi
 ctags: CTAGS
-CTAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+CTAGS: ctags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 		$(TAGS_FILES) $(LISP)
 	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
 	unique=`for i in $$list; do \
@@ -4370,25 +4503,54 @@ distdir: $(DISTFILES)
 	    || exit 1; \
 	  fi; \
 	done
+	@list='$(DIST_SUBDIRS)'; for subdir in $$list; do \
+	  if test "$$subdir" = .; then :; else \
+	    test -d "$(distdir)/$$subdir" \
+	    || $(MKDIR_P) "$(distdir)/$$subdir" \
+	    || exit 1; \
+	  fi; \
+	done
+	@list='$(DIST_SUBDIRS)'; for subdir in $$list; do \
+	  if test "$$subdir" = .; then :; else \
+	    dir1=$$subdir; dir2="$(distdir)/$$subdir"; \
+	    $(am__relativize); \
+	    new_distdir=$$reldir; \
+	    dir1=$$subdir; dir2="$(top_distdir)"; \
+	    $(am__relativize); \
+	    new_top_distdir=$$reldir; \
+	    echo " (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) top_distdir="$$new_top_distdir" distdir="$$new_distdir" \\"; \
+	    echo "     am__remove_distdir=: am__skip_length_check=: am__skip_mode_fix=: distdir)"; \
+	    ($(am__cd) $$subdir && \
+	      $(MAKE) $(AM_MAKEFLAGS) \
+	        top_distdir="$$new_top_distdir" \
+	        distdir="$$new_distdir" \
+		am__remove_distdir=: \
+		am__skip_length_check=: \
+		am__skip_mode_fix=: \
+	        distdir) \
+	      || exit 1; \
+	  fi; \
+	done
 check-am: all-am
 check: $(BUILT_SOURCES)
-	$(MAKE) $(AM_MAKEFLAGS) check-am
+	$(MAKE) $(AM_MAKEFLAGS) check-recursive
 all-am: Makefile $(LIBRARIES) $(LTLIBRARIES) $(PROGRAMS) $(SCRIPTS) \
 		$(HEADERS)
-installdirs:
+installdirs: installdirs-recursive
+installdirs-am:
 	for dir in "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
-	$(MAKE) $(AM_MAKEFLAGS) install-am
-install-exec: install-exec-am
-install-data: install-data-am
-uninstall: uninstall-am
+	$(MAKE) $(AM_MAKEFLAGS) install-recursive
+install-exec: install-exec-recursive
+install-data: install-data-recursive
+uninstall: uninstall-recursive
 
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
 
-installcheck: installcheck-am
+installcheck: installcheck-recursive
 install-strip:
 	$(MAKE) $(AM_MAKEFLAGS) INSTALL_PROGRAM="$(INSTALL_STRIP_PROGRAM)" \
 	  install_sh_PROGRAM="$(INSTALL_STRIP_PROGRAM)" INSTALL_STRIP_FLAG=-s \
@@ -4407,33 +4569,33 @@ maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
-clean: clean-am
+clean: clean-recursive
 
 clean-am: clean-generic clean-libtool clean-pkglibLIBRARIES \
 	clean-pkglibLTLIBRARIES clean-pkglibPROGRAMS mostlyclean-am
 
-distclean: distclean-am
+distclean: distclean-recursive
 	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
 
-dvi: dvi-am
+dvi: dvi-recursive
 
 dvi-am:
 
-html: html-am
+html: html-recursive
 
 html-am:
 
-info: info-am
+info: info-recursive
 
 info-am:
 
 install-data-am: install-includeHEADERS
 	@$(NORMAL_INSTALL)
 	$(MAKE) $(AM_MAKEFLAGS) install-data-hook
-install-dvi: install-dvi-am
+install-dvi: install-dvi-recursive
 
 install-dvi-am:
 
@@ -4441,41 +4603,41 @@ install-exec-am: install-binSCRIPTS install-pkglibLIBRARIES \
 	install-pkglibLTLIBRARIES install-pkglibPROGRAMS \
 	install-pkglibexecSCRIPTS
 
-install-html: install-html-am
+install-html: install-html-recursive
 
 install-html-am:
 
-install-info: install-info-am
+install-info: install-info-recursive
 
 install-info-am:
 
 install-man:
 
-install-pdf: install-pdf-am
+install-pdf: install-pdf-recursive
 
 install-pdf-am:
 
-install-ps: install-ps-am
+install-ps: install-ps-recursive
 
 install-ps-am:
 
 installcheck-am:
 
-maintainer-clean: maintainer-clean-am
+maintainer-clean: maintainer-clean-recursive
 	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
-mostlyclean: mostlyclean-am
+mostlyclean: mostlyclean-recursive
 
 mostlyclean-am: mostlyclean-compile mostlyclean-generic \
 	mostlyclean-libtool
 
-pdf: pdf-am
+pdf: pdf-recursive
 
 pdf-am:
 
-ps: ps-am
+ps: ps-recursive
 
 ps-am:
 
@@ -4483,27 +4645,31 @@ uninstall-am: uninstall-binSCRIPTS uninstall-includeHEADERS \
 	uninstall-pkglibLIBRARIES uninstall-pkglibLTLIBRARIES \
 	uninstall-pkglibPROGRAMS uninstall-pkglibexecSCRIPTS
 
-.MAKE: all check install install-am install-data-am install-strip
+.MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) all check \
+	ctags-recursive install install-am install-data-am \
+	install-strip tags-recursive
 
-.PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-pkglibLIBRARIES clean-pkglibLTLIBRARIES \
-	clean-pkglibPROGRAMS ctags distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-binSCRIPTS install-data install-data-am \
-	install-data-hook install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am \
+.PHONY: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) CTAGS GTAGS \
+	all all-am check check-am clean clean-generic clean-libtool \
+	clean-pkglibLIBRARIES clean-pkglibLTLIBRARIES \
+	clean-pkglibPROGRAMS ctags ctags-recursive distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-binSCRIPTS install-data \
+	install-data-am install-data-hook install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
 	install-includeHEADERS install-info install-info-am \
 	install-man install-pdf install-pdf-am install-pkglibLIBRARIES \
 	install-pkglibLTLIBRARIES install-pkglibPROGRAMS \
 	install-pkglibexecSCRIPTS install-ps install-ps-am \
 	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags uninstall uninstall-am \
-	uninstall-binSCRIPTS uninstall-includeHEADERS \
-	uninstall-pkglibLIBRARIES uninstall-pkglibLTLIBRARIES \
-	uninstall-pkglibPROGRAMS uninstall-pkglibexecSCRIPTS
+	installdirs-am maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-recursive \
+	uninstall uninstall-am uninstall-binSCRIPTS \
+	uninstall-includeHEADERS uninstall-pkglibLIBRARIES \
+	uninstall-pkglibLTLIBRARIES uninstall-pkglibPROGRAMS \
+	uninstall-pkglibexecSCRIPTS
 
 
 ############################################################

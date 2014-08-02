@@ -69,12 +69,9 @@
 
 #include "atomic-op.h"
 
-#define compare_and_swap __sync_val_compare_and_swap
-
-
-/*
- * Simple spin lock.
- */
+//
+// Simple spin lock.
+//
 
 typedef struct spinlock_s {
 	volatile long thelock;
@@ -196,4 +193,41 @@ hwt_cas_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
   return true;
 }
 
+//
+// hwt_limit_spinlock_lock uses the CAS primitive, but prevents deadlock
+// by checking the locked value to see if this (hardware) thread has already
+// acquired the lock. This spinlock *also* uses the iteration limit
+// from the limit spinlock. 
+
+// The hwt technique covers priority inversion deadlock
+// in a way that is most friendly to high priority threads.
+//
+// The iteration limit technique covers other kinds of deadlock
+// and starvation situations.
+//
+// NOTE: this lock is still released with spinlock_unlock operation
+//
+static inline
+bool
+hwt_limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
+{
+  for(size_t i=0;;i++) {
+    // if we are already locked by the same id, prevent deadlock by
+    // abandoning lock acquisition
+    while (l->thelock != SPINLOCK_UNLOCKED_VALUE) {
+      if (l->thelock == locked_val)
+	return false;
+      if (limit && (i > limit))
+	return false;
+      i++;
+    }
+    if (compare_and_swap(&l->thelock, SPINLOCK_UNLOCKED_VALUE, locked_val) == SPINLOCK_UNLOCKED_VALUE)
+      break;
+  }
+
+#if defined(__powerpc__)
+  __asm__ __volatile__ ("isync\n");
+#endif
+  return true;
+}
 #endif // prof_lean_spinlock_h

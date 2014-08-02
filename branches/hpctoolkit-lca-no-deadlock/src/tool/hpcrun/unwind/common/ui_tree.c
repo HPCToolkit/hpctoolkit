@@ -93,11 +93,11 @@ spinlock_t ui_tree_lock = SPINLOCK_UNLOCKED;
 #else // defined(DEADLOCK_PROTECT)
 
 #undef WRITE_MSG
-#undef USE_HW_THREAD_ID
+#define USE_HW_THREAD_ID
 #ifdef USE_HW_THREAD_ID
 #include <hardware-thread-id.h>
 #define lock_val get_hw_tid()
-#define safe_spinlock_lock hwt_cas_spinlock_lock
+#define safe_spinlock_lock hwt_limit_spinlock_lock
 #else  // ! defined(USE_HW_THREAD_ID)
 #define lock_val SPINLOCK_LOCKED_VALUE
 #define safe_spinlock_lock limit_spinlock_lock
@@ -112,6 +112,7 @@ lock_ui(void)
     char buf[100] = {};
     int len = snprintf(buf, sizeof(buf), "Thread %d exceeded iter_count\n", monitor_get_thread_num());
     write(2, buf, len > 0 ? len : sizeof(buf) - 1);
+    EMSG("Abandon Lock for hwt id = %d", lock_val);
 #endif // WRITE_MSG
     hpcrun_drop_sample();
   }
@@ -123,7 +124,7 @@ unlock_ui(void) {
 }
 #define UI_TREE_LOCK TD_GET(splay_lock) = 0; lock_ui(); TD_GET(splay_lock) = 1
 #define UI_TREE_UNLOCK unlock_ui(); TD_GET(splay_lock) = 0
-#endif //
+#endif // DEADLOCK_PROTECT
 
 // Locks both the UI tree and the UI free list.
 // static spinlock_t ui_tree_lock;
