@@ -92,8 +92,6 @@ spinlock_t ui_tree_lock = SPINLOCK_UNLOCKED;
 } while (0)
 #else // defined(DEADLOCK_PROTECT)
 
-#undef WRITE_MSG
-#define USE_HW_THREAD_ID
 #ifdef USE_HW_THREAD_ID
 #include <hardware-thread-id.h>
 #define lock_val get_hw_tid()
@@ -108,12 +106,7 @@ static inline void
 lock_ui(void)
 {
   if (! safe_spinlock_lock(&ui_tree_lock, iter_count, lock_val)) {
-#if defined(WRITE_MSG)
-    char buf[100] = {};
-    int len = snprintf(buf, sizeof(buf), "Thread %d exceeded iter_count\n", monitor_get_thread_num());
-    write(2, buf, len > 0 ? len : sizeof(buf) - 1);
-    EMSG("Abandon Lock for hwt id = %d", lock_val);
-#endif // WRITE_MSG
+    //    EMSG("Abandon Lock for hwt id = %d", lock_val);
     hpcrun_drop_sample();
   }
 }

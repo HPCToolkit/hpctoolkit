@@ -369,6 +369,10 @@ MY_CPP_DEFINES =			\
 	-D_GNU_SOURCE			\
 	-DINLINE_FN=1
 
+if OPT_BGQ_BACKEND
+   MY_CPP_DEFINES += -DUSE_HW_THREAD_ID
+endif
+
 MY_INCLUDE_DIRS =			\
         -I$(top_srcdir)/src/tool        \
 	-I$(srcdir)/messages	        \
