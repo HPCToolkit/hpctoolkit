@@ -1042,7 +1042,7 @@ monitor_thread_post_create(void* data)
 void* 
 monitor_init_thread(int tid, void* data)
 {
-  NMSG(THREAD,"init thread %d",tid);
+  TMSG(THREAD,"init thread %d",tid);
   void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data);
   TMSG(THREAD,"back from init thread %d",tid);
 

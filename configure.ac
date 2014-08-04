@@ -2405,6 +2405,47 @@ if test "${OPT_ENABLE_IBM_BLUEGENE}" = "yes" ; then
   AC_DEFINE([HOST_SYSTEM_IBM_BLUEGENE], [1], [IBM BlueGene/P support])
 fi
 
+#-------------------------------------------------
+# Option: --enable-bgq-cnk=PATH
+#-------------------------------------------------
+#
+# hpcrun (&hpclink) on BGQ needs the back-end compiler for a few files.
+#
+enable_bgq=no
+AC_ARG_ENABLE([bgq-cnk],
+    [AS_HELP_STRING([--enable-bgq-cnk],
+	[enable BGQ- and cnk-specific options: build parts of hpcrun with
+	 back-end powerpc64-bgq-linux-gcc])],
+    [enable_bgq="yes"],
+    [])
+
+# Search for the back-end BGQ compiler on PATH and test for Blue
+# Gene/P (suppress the warning on P).
+
+ppc64_bgq_avail=
+if test -d /bgsys ; then
+    AC_CHECK_PROG([ppc64_bgq_avail], [powerpc64-bgq-linux-gcc], [yes], [no])
+else
+    ppc64_bgq_avail=no
+fi
+
+hpcrun_use_bgq_backend=no
+warn_bgq_backend=no
+
+case "$enable_bgq" in 
+    yes )
+	if test "$ppc64_bgq_avail" != yes ; then
+	    AC_MSG_ERROR([unable to find powerpc64-bgq-linux-gcc for enable-bgq-cnk])
+	fi
+	hpcrun_use_bgq_backend=yes
+	;;
+    no ) ;;
+    * )  ;;
+esac
+
+AC_SUBST([hpcrun_use_bgq_backend])
+AC_MSG_RESULT([$hpcrun_use_bgq_backend])
+AM_CONDITIONAL(OPT_BGQ_BACKEND, test "$hpcrun_use_bgq_backend" = "yes")
 
 #-------------------------------------------------
 # Option: --with-upc=PATH
@@ -2733,6 +2774,7 @@ AC_CONFIG_FILES([ \
   src/tool/hpcprof-flat/Makefile \
   src/tool/hpcproftt/Makefile \
   src/tool/hpcrun/Makefile \
+  src/tool/hpcrun/utilities/bgq-cnk/Makefile \
   src/tool/hpcrun-flat/Makefile \
   src/tool/hpcserver/Makefile \
   src/tool/hpcserver/mpi/Makefile \
@@ -2861,6 +2903,13 @@ if test "$warn_non_gcc" = yes ; then
   AC_MSG_WARN([This is not necessarily an error, but some parts of hpctoolkit])
   AC_MSG_WARN([may not compile cleanly without gcc or g++.  If the build fails,])
   AC_MSG_WARN([try using GNU gcc and g++ before reporting an error.])
+fi
+
+if test "$warn_bgq_backend" = yes ; then
+    AC_MSG_NOTICE([])
+    AC_MSG_WARN([On the Blue Gene/Q compute nodes, hpcrun needs a separate,])
+    AC_MSG_WARN([back-end compiler.  Use --enable-bgq to build for the back end,])
+    AC_MSG_WARN([or else --disable-bgq to build for the front end.])
 fi
 
 if test "$warn_compiler_mismatch" = yes ; then
