@@ -1,0 +1,51 @@
+John's patch to continue DFS on all nodes in the graph that are
+not reached on the first call to DFS.  That is, DFS may produce
+a forest and not necessarily a single tree.
+
+
+diff -Naurb version-0.4pre.orig/src/OpenAnalysis/Utils/NestedSCR.cpp version-0.4pre/src/OpenAnalysis/Utils/NestedSCR.cpp
+--- version-0.4pre.orig/src/OpenAnalysis/Utils/NestedSCR.cpp	2014-08-04 15:45:40.012213158 -0500
++++ version-0.4pre/src/OpenAnalysis/Utils/NestedSCR.cpp	2014-08-04 16:01:14.562754881 -0500
+@@ -232,10 +232,8 @@
+ void 
+ NestedSCR::Create()
+ {
+-  RIFG::NodeId root = rifg->getSource();
+-  
+   Init();
+-  DFS(root);
++  PerformDFSNumbering();
+   FillPredLists();
+   GetTarjans();
+   Build();
+@@ -336,6 +334,19 @@
+   }
+ }
+ 
++void 
++NestedSCR::PerformDFSNumbering()
++{
++  RIFG::NodeId root = rifg->getSource();
++  DFS(root);
++
++  // ensure that all nodes have been numbered
++  OA_ptr<RIFG::NodesIterator> ni = rifg->getNodesIterator();
++  for ( ; ni->isValid(); ++(*ni)) {
++    RIFG::NodeId nid = ni->current();
++    if (dfnum(nid) == DFNUM_NIL) DFS(nid);
++  }
++}
+ 
+ //
+ // Do depth first search on control flow graph to 
+diff -Naurb version-0.4pre.orig/src/OpenAnalysis/Utils/NestedSCR.hpp version-0.4pre/src/OpenAnalysis/Utils/NestedSCR.hpp
+--- version-0.4pre.orig/src/OpenAnalysis/Utils/NestedSCR.hpp	2007-12-12 22:22:51.000000000 -0600
++++ version-0.4pre/src/OpenAnalysis/Utils/NestedSCR.hpp	2014-08-04 14:52:21.000000000 -0500
+@@ -155,6 +155,7 @@
+ 
+   void Init();
+   void InitArrays();
++  void PerformDFSNumbering();
+   void DFS(RIFG::NodeId n);
+   void FillPredLists();
+   void GetTarjans();
