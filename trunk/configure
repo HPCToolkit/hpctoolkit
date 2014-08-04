@@ -622,6 +622,10 @@ OPT_UPC_LDFLAGS
 OPT_UPC_IFLAGS
 OPT_ENABLE_UPC_FALSE
 OPT_ENABLE_UPC_TRUE
+OPT_BGQ_BACKEND_FALSE
+OPT_BGQ_BACKEND_TRUE
+hpcrun_use_bgq_backend
+ppc64_bgq_avail
 hpclink_extra_wrap_names
 OPT_ENABLE_LUSH_PTHREADS_FALSE
 OPT_ENABLE_LUSH_PTHREADS_TRUE
@@ -928,6 +932,7 @@ with_cilk
 enable_lush_pthreads
 enable_xop
 enable_bluegene
+enable_bgq_cnk
 with_upc
 with_upc_lib
 with_cuda
@@ -1605,6 +1610,8 @@ Optional Features:
   --enable-xop            include support for decoding AMD XOP instructions,
                           x86-64 only (default no)
   --enable-bluegene       Enable BlueGene/P support
+  --enable-bgq-cnk        enable BGQ- and cnk-specific options: build parts of
+                          hpcrun with back-end powerpc64-bgq-linux-gcc
   --enable-data-centric-tracing
                           Enable data-centric tracing (prototype)
   --enable-hpc-binutils   Enable extra HPCToolkit GNU binutils functionality
@@ -18943,6 +18950,91 @@ $as_echo "#define HOST_SYSTEM_IBM_BLUEGENE 1" >>confdefs.h
 
 fi
 
+#-------------------------------------------------
+# Option: --enable-bgq-cnk=PATH
+#-------------------------------------------------
+#
+# hpcrun (&hpclink) on BGQ needs the back-end compiler for a few files.
+#
+enable_bgq=no
+# Check whether --enable-bgq-cnk was given.
+if test "${enable_bgq_cnk+set}" = set; then :
+  enableval=$enable_bgq_cnk; enable_bgq="yes"
+fi
+
+
+# Search for the back-end BGQ compiler on PATH and test for Blue
+# Gene/P (suppress the warning on P).
+
+ppc64_bgq_avail=
+if test -d /bgsys ; then
+    # Extract the first word of "powerpc64-bgq-linux-gcc", so it can be a program name with args.
+set dummy powerpc64-bgq-linux-gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_prog_ppc64_bgq_avail+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ppc64_bgq_avail"; then
+  ac_cv_prog_ppc64_bgq_avail="$ppc64_bgq_avail" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_ppc64_bgq_avail="yes"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_prog_ppc64_bgq_avail" && ac_cv_prog_ppc64_bgq_avail="no"
+fi
+fi
+ppc64_bgq_avail=$ac_cv_prog_ppc64_bgq_avail
+if test -n "$ppc64_bgq_avail"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ppc64_bgq_avail" >&5
+$as_echo "$ppc64_bgq_avail" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+else
+    ppc64_bgq_avail=no
+fi
+
+hpcrun_use_bgq_backend=no
+warn_bgq_backend=no
+
+case "$enable_bgq" in
+    yes )
+	if test "$ppc64_bgq_avail" != yes ; then
+	    as_fn_error $? "unable to find powerpc64-bgq-linux-gcc for enable-bgq-cnk" "$LINENO" 5
+	fi
+	hpcrun_use_bgq_backend=yes
+	;;
+    no ) ;;
+    * )  ;;
+esac
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $hpcrun_use_bgq_backend" >&5
+$as_echo "$hpcrun_use_bgq_backend" >&6; }
+ if test "$hpcrun_use_bgq_backend" = "yes"; then
+  OPT_BGQ_BACKEND_TRUE=
+  OPT_BGQ_BACKEND_FALSE='#'
+else
+  OPT_BGQ_BACKEND_TRUE='#'
+  OPT_BGQ_BACKEND_FALSE=
+fi
+
 
 #-------------------------------------------------
 # Option: --with-upc=PATH
@@ -19306,7 +19398,7 @@ BACK_END_LABEL=
 ac_config_headers="$ac_config_headers src/include/hpctoolkit-config.h"
 
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
 
 
 
@@ -19598,6 +19690,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_LUSH_PTHREADS_TRUE}" && test -z "${OPT_ENABLE_LUSH_PTHREADS_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_LUSH_PTHREADS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_BGQ_BACKEND_TRUE}" && test -z "${OPT_BGQ_BACKEND_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_BGQ_BACKEND\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_UPC_TRUE}" && test -z "${OPT_ENABLE_UPC_FALSE}"; then
@@ -20595,6 +20691,7 @@ do
     "src/tool/hpcprof-flat/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-flat/Makefile" ;;
     "src/tool/hpcproftt/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcproftt/Makefile" ;;
     "src/tool/hpcrun/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/Makefile" ;;
+    "src/tool/hpcrun/utilities/bgq-cnk/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/utilities/bgq-cnk/Makefile" ;;
     "src/tool/hpcrun-flat/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun-flat/Makefile" ;;
     "src/tool/hpcserver/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcserver/Makefile" ;;
     "src/tool/hpcserver/mpi/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcserver/mpi/Makefile" ;;
@@ -22336,6 +22433,17 @@ $as_echo "$as_me: WARNING: This is not necessarily an error, but some parts of h
 $as_echo "$as_me: WARNING: may not compile cleanly without gcc or g++.  If the build fails," >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: try using GNU gcc and g++ before reporting an error." >&5
 $as_echo "$as_me: WARNING: try using GNU gcc and g++ before reporting an error." >&2;}
+fi
+
+if test "$warn_bgq_backend" = yes ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+$as_echo "$as_me: " >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: On the Blue Gene/Q compute nodes, hpcrun needs a separate," >&5
+$as_echo "$as_me: WARNING: On the Blue Gene/Q compute nodes, hpcrun needs a separate," >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: back-end compiler.  Use --enable-bgq to build for the back end," >&5
+$as_echo "$as_me: WARNING: back-end compiler.  Use --enable-bgq to build for the back end," >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: or else --disable-bgq to build for the front end." >&5
+$as_echo "$as_me: WARNING: or else --disable-bgq to build for the front end." >&2;}
 fi
 
 if test "$warn_compiler_mismatch" = yes ; then
