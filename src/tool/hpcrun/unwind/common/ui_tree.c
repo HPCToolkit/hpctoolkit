@@ -107,6 +107,7 @@ lock_ui(void)
 {
   if (! safe_spinlock_lock(&ui_tree_lock, iter_count, lock_val)) {
     //    EMSG("Abandon Lock for hwt id = %d", lock_val);
+    TD_GET(deadlock_drop) = true;
     hpcrun_drop_sample();
   }
 }
