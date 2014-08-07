@@ -369,8 +369,11 @@ MY_CPP_DEFINES =			\
 	-D_GNU_SOURCE			\
 	-DINLINE_FN=1
 
+#
+# BG/Q backend requires special treatment to avoid deadlocks
+#
 if OPT_BGQ_BACKEND
-   MY_CPP_DEFINES += -DUSE_HW_THREAD_ID
+   MY_CPP_DEFINES += -DUSE_HW_THREAD_ID -DNONZERO_THRESHOLD
 endif
 
 MY_INCLUDE_DIRS =			\
