@@ -98,7 +98,11 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @OPT_ENABLE_MPI_WRAP_TRUE@am__append_17 = \
 @OPT_ENABLE_MPI_WRAP_TRUE@	sample-sources/mpi.c
 
-@OPT_BGQ_BACKEND_TRUE@am__append_18 = -DUSE_HW_THREAD_ID
+
+#
+# BG/Q backend requires special treatment to avoid deadlocks
+#
+@OPT_BGQ_BACKEND_TRUE@am__append_18 = -DUSE_HW_THREAD_ID -DNONZERO_THRESHOLD
 @OPT_BGQ_BACKEND_TRUE@am__append_19 = -I$(srcdir)/utilities/bgq-cnk
 @OPT_BGQ_BACKEND_TRUE@am__append_20 = -I$(srcdir)/utilities/bgq-cnk
 @OPT_BGQ_BACKEND_TRUE@am__append_21 = utilities/bgq-cnk/libhardware-thread-id.la

@@ -66,6 +66,7 @@
 #include "splay-interval.h"
 #include "thread_data.h"
 #include "ui_tree.h"
+#include "hpcrun_stats.h"
 
 #include <messages/messages.h>
 
@@ -108,6 +109,7 @@ lock_ui(void)
   if (! safe_spinlock_lock(&ui_tree_lock, iter_count, lock_val)) {
     //    EMSG("Abandon Lock for hwt id = %d", lock_val);
     TD_GET(deadlock_drop) = true;
+    hpcrun_stats_num_samples_yielded_inc();
     hpcrun_drop_sample();
   }
 }
@@ -136,14 +138,23 @@ static void free_ui_tree_locked(interval_tree_node *tree);
 // interface operations
 //---------------------------------------------------------------------
 
+#ifdef NONZERO_THRESHOLD
+#define DEADLOCK_DEFAULT 5000
+#else  // ! NONZERO_THRESHOLD ==> DEADLOCK_DEFAULT = 0
+#define DEADLOCK_DEFAULT 0
+#endif // NONZERO_THRESHOLD
+
 void
 hpcrun_interval_tree_init(void)
 {
   TMSG(UITREE, "init unwind interval tree");
   ui_tree_root = NULL;
-  iter_count = 0;
-  if (getenv("HPCRUN_DEADLOCK_THRESHOLD"))
+  iter_count = DEADLOCK_DEFAULT;
+  if (getenv("HPCRUN_DEADLOCK_THRESHOLD")) {
     iter_count = atoi(getenv("HPCRUN_DEADLOCK_THRESHOLD"));
+    if (iter_count < 0) iter_count = 0;
+  }
+  TMSG(DEADLOCK, "deadlock threshold set to %d", iter_count);
   UI_TREE_UNLOCK;
 }
 

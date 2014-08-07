@@ -114,7 +114,8 @@ hpcrun_cleanup_partial_unwind(void)
 
   memset((void *)it->jb, '\0', sizeof(it->jb));
 
-  hpcrun_stats_num_samples_dropped_inc();
+  if ( ! td->deadlock_drop)
+    hpcrun_stats_num_samples_dropped_inc();
 
   hpcrun_up_pmsg_count();
   if (TD_GET(splay_lock)) {
