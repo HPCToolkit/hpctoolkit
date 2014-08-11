@@ -839,10 +839,10 @@ Consider two weak scaling experiments executed on $p$ and $q$ processors, respec
 In Figure~\ref{fig:scaling-loss} shows how we can use a derived metric to compute and attribute scalability losses.
 Here, we compute the difference in inclusive cycles spent on one core of a 8192-core run and one core in a 256-core run in a weak scaling experiment.
 If the code had perfect weak scaling, the time for an MPI rank in each of the executions would be identical. In this case, they are not. 
-We compute the fraction of excess work by computing the difference for each scope between the time on the 8192-core  run minus the time on the 256-core core run, and divide that by the total time spent on the 8192-core  run.
-This formula tells us how much extra time we spent on the 8192-core core run, attributes differences to each scope.
-By normalizing by the total time spent in the 8192-core  run, we attribute to each scope the fraction of the total excess time in the execution that was spent in that scope when scaling from 256 to 8192 cores.%
-This calculation pinpoints and quantifies scaling losses across different node counts of a Blue Gene/P systems.
+We compute the excess work by computing the difference for each scope between the time on the 8192-core  run and the time on the 256-core core run. 
+We normalize the differences of the time spent in the two runs by dividing then by the total time spent on the 8192-core  run. This yields the fraction of wasted effort 
+for each scope when scaling from 256 to 8192 cores. Finally, we multiply these resuls by 100 to compute the \% scalability loss.
+This example shows how one can compute a derived metric to that pinpoints and quantifies scaling losses across different node counts of a Blue Gene/P system.
 
 A similar analysis can be applied to compute scaling losses between jobs that use different numbers of core counts on individual processors.
 In Figure~\ref{fig:scaling-loss-2}, we compute the scaling loss for each loop nest when scaling from one to eight cores on a multicore node and rank order loop nests by their scaling loss metric.
