@@ -845,7 +845,8 @@ for each scope when scaling from 256 to 8192 cores. Finally, we multiply these r
 This example shows how one can compute a derived metric to that pinpoints and quantifies scaling losses across different node counts of a Blue Gene/P system.
 
 A similar analysis can be applied to compute scaling losses between jobs that use different numbers of core counts on individual processors.
-In Figure~\ref{fig:scaling-loss-2}, we compute the scaling loss for each loop nest when scaling from one to eight cores on a multicore node and rank order loop nests by their scaling loss metric.
+ Figure~\ref{fig:scaling-loss-2} shows the result of computing  the scaling loss for each loop nest when scaling from one to eight cores on a multicore node and rank order loop nests by their scaling loss metric. Here, we simply compute the scaling loss as the difference between the cycle counts of the eight-core and the one-core runs, divided through by the aggregate cost of the process executing on eight cores. This figure shows the scaling lost written in scientific notation as a fraction rather than multiplying through by 100 to yield a percent.
+In this figure, we examine scaling losses in the flat view, showing them for each loop nest.
 The source pane shows the loop nest responsible for the greatest scaling loss when scaling from one to eight cores.
 Unsurprisingly, the loop with the worst scaling loss is very memory intensive.
 Memory bandwidth is a precious commodity on multicore processors.
