@@ -818,9 +818,10 @@ Next, we describe performance expectations for weak scaling and intuitive metric
 More information about our scalability analysis technique can be found elsewhere~\cite{Coarfa-MC:2007:ICS-scalability,Tallent-MC-etal:2009:SC-hpctoolkit-petascale}.
 
 \begin{figure}[t]
-\center{\includegraphics[width=1.0\textwidth]{fig/scaling-loss.png}}
+\center{\includegraphics[width=1.0\textwidth]{fig/flash-scalability.png}}
 %Two possible representations for the call path fragment $\ldots s_1 \rightarrow s_2 \ldots$, where $s_1$ and $s_2$ are call sites and where $s_1$ represents a call from $p$ to $q$ and $s_2$ a call from $q'$ to $r$.
-\caption{Computing the fraction of excess work in each program scope when applying weak scaling to go from simulating a $30^3$ domain on one core to simulating a $60^3$ domain on eight cores of an AMD Barcelona. The fraction of excess work is a quantitative measure of scalability loss.}
+\caption{Computing the scaling loss when weak scaling a white dwarf detonation simulation with FLASH3  from 256 to 8192 cores. For weak scaling, the time on an MPI rank in each of the simulations will be the same. In the figure, column 0 represents the inclusive cost for one MPI rank in a 256-core simulation; column 2 represents the inclusive cost for one MPI rank in an 8192-core simulation.  The difference between these two columns, computed as {\tt \$2-\$0},
+represents the excess work present in the larger simulation for each unique program context in the calling context tree. Dividing that by the total time in the 8192-core execution {\tt @2} gives the fraction of wasted  time. Multiplying through by 100 gives the percent of the time wasted in the 8192-core execution, which corresponds to the \%~scalability loss.}
 \label{fig:scaling-loss}
 \end{figure}
 
@@ -836,24 +837,20 @@ More information about our scalability analysis technique can be found elsewhere
 
 Consider two weak scaling experiments executed on $p$ and $q$ processors, respectively, $p<q$.
 In Figure~\ref{fig:scaling-loss} shows how we can use a derived metric to compute and attribute scalability losses.
-Here, we compute the difference in exclusive cycles spent on one core of an 8-core run and one core in a single core run in a weak scaling experiment.
-If the code had perfect weak scaling, the time for the one core and the eight
-core executions would be identical.
-We compute the fraction of excess work by computing the difference for each scope between the time on the eight core run minus the time on the single core run, and divide that by the total time spent on the eight core run.
-This formula tells us how much extra time we spent on the eight core run, attributes differences to each scope.
-By normalizing by the total time spent in the eight core run, we attribute to each scope the fraction of the total excess time in the execution that was spent in that scope when scaling from one to eight cores.%
-\footnote{In \hpcviewer{}, we compute this metric for each scope
-$s$ by subtracting the exclusive time spent in $s$ on one core (\$1) from
-the time spent in $s$ on eight cores (\$5), and normalizing this quantity
-by the aggregate total time spent on 8 cores ({\tt aggregate(\&5)}).}
-This calculation pinpoints and quantifies scaling losses within a multicore node.
-A similar analysis can be applied to compute scaling losses between pairs of jobs scaled across an entire parallel system and not just within a node.
-In Figure~\ref{fig:scaling-loss-2}, we rank order loop nests by their scaling loss metric.
+Here, we compute the difference in inclusive cycles spent on one core of a 8192-core run and one core in a 256-core run in a weak scaling experiment.
+If the code had perfect weak scaling, the time for an MPI rank in each of the executions would be identical. In this case, they are not. 
+We compute the fraction of excess work by computing the difference for each scope between the time on the 8192-core  run minus the time on the 256-core core run, and divide that by the total time spent on the 8192-core  run.
+This formula tells us how much extra time we spent on the 8192-core core run, attributes differences to each scope.
+By normalizing by the total time spent in the 8192-core  run, we attribute to each scope the fraction of the total excess time in the execution that was spent in that scope when scaling from 256 to 8192 cores.%
+This calculation pinpoints and quantifies scaling losses across different node counts of a Blue Gene/P systems.
+
+A similar analysis can be applied to compute scaling losses between jobs that use different numbers of core counts on individual processors.
+In Figure~\ref{fig:scaling-loss-2}, we compute the scaling loss for each loop nest when scaling from one to eight cores on a multicore node and rank order loop nests by their scaling loss metric.
 The source pane shows the loop nest responsible for the greatest scaling loss when scaling from one to eight cores.
 Unsurprisingly, the loop with the worst scaling loss is very memory intensive.
 Memory bandwidth is a precious commodity on multicore processors.
 
-While we have shown how to compute and attribute the fraction of excess work in a weak scaling experiment, one can compute a similar quantity for experiments with strong scaling, except that the work on the larger number of processors has to have a corrective multiplier applied to account for the smaller fraction of work it receives.
+While we have shown how to compute and attribute the fraction of excess work in a weak scaling experiment, one can compute a similar quantity for experiments with strong scaling. When differencing the costs summed across all of the threads in a pair of strong-scaling experiments, one uses exactly the same approach as shown in Figure~\ref{fig:scaling-loss}. If comparing weak scaling costs summed across all ranks in $p$ and $q$ core executions, one can simply scale the aggregate costs by $1/p$ and $1/q$ respectively before differencing them. 
 
 
 \subsubsection{Exploring Scaling Losses}
