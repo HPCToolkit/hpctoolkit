@@ -1718,6 +1718,37 @@ app [app-arguments]
 
 \end{enumerate}
 
+\subsection{Using \hpclink{} with {\tt cmake}}
+
+When creating a statically-linked executable with {\tt cmake}, it is not obvious how to add {\tt hpclink} as a prefix to a link command. Unless it is overridden somewhere  along the way, the following rule found in {\tt Modules/CMakeCXXInformation.cmake} is
+used to create the link command line for a C++ executable:
+
+\begin{verbatim}
+  if(NOT CMAKE_CXX_LINK_EXECUTABLE)
+    set(CMAKE_CXX_LINK_EXECUTABLE
+       "<CMAKE_CXX_COMPILER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> 
+                             <OBJECTS> -o <TARGET> <LINK_LIBRARIES>")
+  endif()
+\end{verbatim}
+
+\noindent 
+As the rule shows, by default, the C++ compiler is used to link C++ executables. One way to change this is to override the definition for \verb|CMAKE_CXX_LINK_EXECUTABLE|  on the {\tt cmake} command line so that it includes the  necessary \hpclink{} prefix, as shown below:
+
+\begin{verbatim}
+  cmake srcdir ... \
+     -DCMAKE_CXX_LINK_EXECUTABLE="hpclink <CMAKE_CXX_COMPILER> \
+          <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> \
+          <LINK_LIBRARIES>" ...
+\end{verbatim}
+
+\noindent
+If your project has executables linked with a C or Fortran compiler, you will need analogous redefinitions for \verb|CMAKE_C_LINK_EXECUTABLE| or  \verb|CMAKE_Fortran_LINK_EXECUTABLE| as well.
+
+Rather than adding the redefinitions of these linker patterns to the {\tt cmake} command line, 
+you may find it more convenient to add a definitions of these rules to your {\tt cmake} file.
+
+
+
 
 % ===========================================================================
 % ===========================================================================
