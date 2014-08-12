@@ -1387,7 +1387,7 @@ When running \hpcprofAll{}, we recommend using an \texttt{-I/--include} option t
 Assume the paths to your top-level source directories are \texttt{<dir1>} through \texttt{<dirN>}.
 Then, pass the the following options to \hpcprofAll{}:
 \begin{quote}
-  \verb|-I <dir1>/'*' -I <dir2>/'*' ... -I <dirN>/'*'|
+  \verb|-I <dir1>/+ -I <dir2>/+ ... -I <dirN>/+|
 \end{quote}
 These options instruct \hpcprofAll{} to search for source files that live within any of the source directories \texttt{<dir1>} through \texttt{<dirN>}.
 Each directory argument can be either absolute or relative to the current working directory.
@@ -1402,9 +1402,8 @@ For this reason, we always recommend supplying at least one \texttt{-I/--include
 There are two basic forms in which the search directory can be specified: non-recursive and recursive.
 In most cases, the most useful form is the recursive search directory, which means that the directory should be searched \emph{along with all of its descendants}.
 A non-recursive search directory \texttt{dir} is simply specified as \texttt{dir}.
-A recursive search directory \texttt{dir} is specified as the base search directory followed by the special suffix `\texttt{/*}': \texttt{dir/*}.
+A recursive search directory \texttt{dir} is specified as the base search directory followed by the special suffix `\texttt{/+}': \texttt{dir/+}.
 The paths above use the recursive form.
-Note that the asterisk (`\texttt{*}') should be escaped with either a backslash (\verb|\*|) or single quotes (\texttt{'*'}) to protect it from shell expansion.
 
 
 % ==========================================================
