@@ -1373,9 +1373,6 @@ If the \texttt{experiment.xml} file within your database is tens of megabytes or
 
 Assuming you compiled your application with debugging information (see Issue~\ref{sec:troubleshooting:debug-info}), the most common reason that \hpcviewer{} does not show source code is that \hpcprofAll{} could not find it and therefore could not copy it into the \HPCToolkit{} performance database.
 
-\section{\hpctraceviewer{} shows lots of white space on the left. Why?}
-
-At startup, \hpctraceviewer{}  renders traces for the time interval between the minimum and maximum times recorded for any process or thread in the execution. The minimum time for each process or thread is recorded when its trace file is opened as HPCToolkit's monitoring facilities are initialized at the beginning of its execution. The maximum time for a process or thread is recorded when the process or thread is finalized and its trace file is closed. When an application uses the \verb|hpctoolkit_start| and \verb|hpctoolkit_stop| primitives, the minimum and maximum time recorded for a process/thread are  at the beginning and end of its execution, which may be  distant from the start/stop interval. This can cause significant white space to appear in \hpctraceviewer{}'s display to the left and right of the region (or regions) of interest demarcated in an execution by start/stop calls.
 
 
 % ==========================================================
@@ -1555,6 +1552,11 @@ If the compiler duplicated calls as it replicated code during optimization, mult
 
 % ===========================================================================
 % ===========================================================================
+
+\section{\hpctraceviewer{} shows lots of white space on the left. Why?}
+
+At startup, \hpctraceviewer{}  renders traces for the time interval between the minimum and maximum times recorded for any process or thread in the execution. The minimum time for each process or thread is recorded when its trace file is opened as HPCToolkit's monitoring facilities are initialized at the beginning of its execution. The maximum time for a process or thread is recorded when the process or thread is finalized and its trace file is closed. When an application uses the \verb|hpctoolkit_start| and \verb|hpctoolkit_stop| primitives, the minimum and maximum time recorded for a process/thread are  at the beginning and end of its execution, which may be  distant from the start/stop interval. This can cause significant white space to appear in \hpctraceviewer{}'s display to the left and right of the region (or regions) of interest demarcated in an execution by start/stop calls.
+
 
 \section{I get a message about ``Unable to find HPCTOOLKIT root directory''}
 
