@@ -1157,6 +1157,8 @@ qsub -t 60 -n 64 --env HPCRUN_EVENT_LIST="WALLCLOCK@1000" \
 \end{verbatim}
 \end{quote}
 
+To collect sample traces of  an execution of a statically linked binary (for visualization with \hpctraceviewer{}), one needs to set the environment variable \mytt{HPCRUN_TRACE=1} in the execution environment.
+
 
 % ===========================================================================
 % ===========================================================================
