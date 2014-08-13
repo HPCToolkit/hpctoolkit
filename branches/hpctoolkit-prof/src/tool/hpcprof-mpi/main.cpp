@@ -93,6 +93,7 @@ using std::vector;
 
 #include <lib/binutils/VMAInterval.hpp>
 
+#include <lib/prof/Database.hpp>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 #include <lib/support/diagnostics.h>
@@ -267,7 +268,11 @@ realmain(int argc, char* const* argv)
   Analysis::Util::UIntVec* groupMap =
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
-  profLcl = Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy, rFlags);
+  long numFiles = nArgs.paths->size();
+  Prof::Database::traceInfo *trace =
+    (Prof::Database::traceInfo *) malloc(numFiles * sizeof(Prof::Database::traceInfo));
+
+  profLcl = Analysis::CallPath::read(*nArgs.paths, groupMap, trace, mergeTy, rFlags);
 
   // -------------------------------------------------------
   // 1b. Create canonical CCT (metrics merged by <group>.<name>.*)

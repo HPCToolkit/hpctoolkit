@@ -125,73 +125,52 @@ namespace CallPath {
 
 Prof::CallPath::Profile*
 read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
+     Prof::Database::traceInfo * trace,
      int mergeTy, uint rFlags, uint mrgFlags)
 {
-  Prof::Database::traceInfo *trace = NULL;
-  bool new_trace = Prof::Database::newDBFormat()
-      && ((mrgFlags & Prof::CCT::MrgFlg_NormalizeTraceFileY) != 0);
-  off_t offset = 0;
-  long num_trace = 0;
+  bool new_trace_now = Prof::Database::newDBFormat()
+    && ((mrgFlags & Prof::CCT::MrgFlg_NormalizeTraceFileY) != 0);
+  long num_files = profileFiles.size();
+  off_t offset;
 
-  // Special case
+  // Special case, no files
   if (profileFiles.empty()) {
     Prof::CallPath::Profile* prof = Prof::CallPath::Profile::make(rFlags);
     return prof;
   }
 
-  if (new_trace) {
-    long num_files = profileFiles.size();
-    long size = num_files * sizeof(*trace);
-    trace = (Prof::Database::traceInfo *) malloc(size);
-    if (trace == NULL) {
-      err(1, "unable to malloc trace index");
-    }
-    offset = Prof::Database::firstTraceOffset(num_files);
-    num_trace = 0;
-  }
-
-  // General case
+  // General case, first file
   uint groupId = (groupMap) ? (*groupMap)[0] : 0;
   Prof::CallPath::Profile* prof = read(profileFiles[0], groupId, rFlags);
 
-  if (new_trace && ! prof->traceFileName().empty()) {
-    offset = Prof::Database::alignOffset(offset);
-    trace[0].start_offset = offset;
-    trace[0].active = false;
-    prof->m_trace = &trace[0];
-    Prof::Database::writeTraceFile(prof, NULL);
-    if (trace[0].active) {
-      offset += trace[0].length;
-      num_trace++;
-    }
-  }
+  offset = Prof::Database::firstTraceOffset(num_files);
+  offset = Prof::Database::alignOffset(offset);
+  prof->m_traceInfo.start_offset = offset;
 
-  for (uint i = 1; i < profileFiles.size(); ++i) {
+  if (new_trace_now && prof->m_traceInfo.active) {
+    Prof::Database::writeTraceFile(prof, NULL);
+    offset += prof->m_traceInfo.length;
+    offset = Prof::Database::alignOffset(offset);
+  }
+  trace[0] = prof->m_traceInfo;
+
+  // General case, files 1...n-1
+  for (uint i = 1; i < num_files; ++i) {
     groupId = (groupMap) ? (*groupMap)[i] : 0;
     Prof::CallPath::Profile* p = read(profileFiles[i], groupId, rFlags);
-    bool active = false;
 
-    if (new_trace && ! p->traceFileName().empty()) {
-      offset = Prof::Database::alignOffset(offset);
-      trace[num_trace].start_offset = offset;
-      trace[num_trace].active = false;
-      p->m_trace = &trace[num_trace];
-      active = true;
-    }
+    p->m_traceInfo.start_offset = offset;
     prof->merge(*p, mergeTy, mrgFlags);
-    if (active && trace[num_trace].active) {
-      offset += trace[num_trace].length;
-      num_trace++;
+
+    if (p->m_traceInfo.active) {
+      offset += prof->m_traceInfo.length;
+      offset = Prof::Database::alignOffset(offset);
     }
+    trace[i] = p->m_traceInfo;
+
     delete p;
   }
 
-  if (new_trace) {
-    Prof::Database::writeTraceIndex(trace, num_trace);
-    Prof::Database::writeTraceHeader(num_trace);
-    Prof::Database::endTraceFiles();
-  }
-  
   return prof;
 }
 

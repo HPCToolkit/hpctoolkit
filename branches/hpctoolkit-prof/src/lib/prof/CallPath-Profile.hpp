@@ -365,7 +365,7 @@ private:
   Prof::Struct::Tree* m_structure;
 
 public:
-  Prof::Database::traceInfo *m_trace;
+  Prof::Database::traceInfo m_traceInfo;
 
 };
 

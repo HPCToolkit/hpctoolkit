@@ -61,6 +61,10 @@
 
 #define __STDC_LIMIT_MACROS /* stdint; locate here for CentOS 5/gcc 4.1.2) */
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <iostream>
 using std::hex;
 using std::dec;
@@ -141,7 +145,7 @@ Profile::Profile(const std::string name)
 
   m_traceMinTime = UINT64_MAX;
   m_traceMaxTime = 0;
-  m_trace = NULL;
+  m_traceInfo.active = false;
 
   m_mMgr = new Metric::Mgr;
   m_isMetricMgrVirtual = false;
@@ -971,6 +975,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   string   traceMinTimeStr, traceMaxTimeStr;
   uint64_t traceMinTime = UINT64_MAX, traceMaxTime = 0;
+  off_t    traceLen = 0;
+  bool     traceActive = false;
 
   val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_traceMinTime);
   if (val) {
@@ -998,6 +1004,15 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       traceFileName.replace(traceFileName.begin() + ext_pos,
 			    traceFileName.end(), ext_trace);
       // DIAG_Assert(FileUtil::isReadable(traceFileName));
+    }
+
+    // file size (minus header) of trace file
+    struct stat buf;
+    if (stat(traceFileName.c_str(), &buf) == 0) {
+      if (buf.st_size >= 32 + 2*12) {
+	traceLen = buf.st_size - 32;
+	traceActive = true;
+      }
     }
   }
 
@@ -1040,6 +1055,10 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     prof->m_traceMaxTime = traceMaxTime;
   }
 
+  prof->m_traceInfo.rank = mpiRank;
+  prof->m_traceInfo.tid = tid;
+  prof->m_traceInfo.length = traceLen;
+  prof->m_traceInfo.active = traceActive;
 
   // ----------------------------------------
   // make metric table

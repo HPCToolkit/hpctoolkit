@@ -464,7 +464,7 @@ int
 writeTraceFile(Prof::CallPath::Profile *prof,
 	       Prof::CCT::MergeEffectList *effects)
 {
-  off_t offset = prof->m_trace->start_offset;
+  off_t offset = prof->m_traceInfo.start_offset;
 
   // open trace.db file lazily.
   if (trace_fd < 0) {
@@ -521,8 +521,7 @@ writeTraceFile(Prof::CallPath::Profile *prof,
     err(1, "write trace file failed: %s", name);
   }
 
-  prof->m_trace->length = len - 32;
-  prof->m_trace->active = true;
+  prof->m_traceInfo.length = len - 32;
 
   return 0;
 }

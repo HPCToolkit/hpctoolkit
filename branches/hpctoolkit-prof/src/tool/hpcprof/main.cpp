@@ -170,8 +170,29 @@ realmain(int argc, char* const* argv)
   }
   uint mrgFlags = (Prof::CCT::MrgFlg_NormalizeTraceFileY);
 
+  long numFiles = nArgs.paths->size();
+  Prof::Database::traceInfo *trace =
+    (Prof::Database::traceInfo *) malloc(numFiles * sizeof(Prof::Database::traceInfo));
+
   Prof::CallPath::Profile* prof =
-    Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy, rFlags, mrgFlags);
+    Analysis::CallPath::read(*nArgs.paths, groupMap, trace, mergeTy, rFlags, mrgFlags);
+
+  // compact the inactive trace files
+  long numActive = 0;
+  for (long k = 0; k < numFiles; k++) {
+    if (trace[k].active) {
+      if (numActive < k) {
+	trace[numActive] = trace[k];
+      }
+      numActive++;
+    }
+  }
+
+  if (Prof::Database::newDBFormat()) {
+    Prof::Database::writeTraceIndex(trace, numActive);
+    Prof::Database::writeTraceHeader(numActive);
+    Prof::Database::endTraceFiles();
+  }
 
   // ------------------------------------------------------------
   // 1b. Add static structure to canonical CCT

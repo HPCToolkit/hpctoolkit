@@ -96,6 +96,7 @@ extern std::ostream* dbgOs; // for parallel debugging
 
 Prof::CallPath::Profile*
 read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
+     Prof::Database::traceInfo * trace,
      int mergeTy, uint rFlags = 0, uint mrgFlags = 0);
 
 Prof::CallPath::Profile*
