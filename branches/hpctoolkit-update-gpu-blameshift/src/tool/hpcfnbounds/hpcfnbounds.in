@@ -1,0 +1,99 @@
+#!/bin/sh
+# set -x
+#
+@copyright_hash@
+#
+# $Id$
+#
+# Wrapper script for hpcfnbounds-bin.  Other than setting
+# LD_LIBRARY_PATH, all this script does is process the -v option
+# for internal debugging.
+#
+#------------------------------------------------------------
+# Values from configure
+#------------------------------------------------------------
+
+# If this script can't find its own install prefix, or if the script
+# is moved elsewhere, then set HPCTOOLKIT here.
+# HPCTOOLKIT='@prefix@'
+
+# Relative paths are relative to HPCTOOLKIT.
+ext_libs_dir='@hpc_ext_libs_dir@'
+hpcfnbounds_dir='libexec/hpctoolkit'
+
+# Should be absolute path.
+libcxx_path='@HPCRUN_LIBCXX_PATH@'
+
+#------------------------------------------------------------
+# Find path to this script
+#------------------------------------------------------------
+
+hpc_path_to_root=../..
+@export_hpctoolkit@
+
+# Relative paths are relative to HPCTOOLKIT.
+case "$ext_libs_dir" in
+    /* ) ;;
+    * )  ext_libs_dir="${HPCTOOLKIT}/${ext_libs_dir}" ;;
+esac
+case "$hpcfnbounds_dir" in
+    /* ) ;;
+    * )  hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
+esac
+
+#------------------------------------------------------------
+# Process options
+#------------------------------------------------------------
+
+# If -v is one of the options, then print extra info about what files
+# hpcfnbounds is run on, whether it succeeds, etc, to go in hpcrun
+# logfile.
+#
+server=no
+verbose=no
+base=
+dir=
+for arg in "$@"
+do
+    case "$arg" in
+	-s ) server=yes ;;
+	-v ) verbose=yes ;;
+	-* ) ;;
+	* )
+	    if test "x$base" = x ; then
+		base=`basename "$arg"`
+	    elif test "x$dir" = x ; then
+		dir="$arg"
+	    fi
+	    ;;
+    esac
+done
+
+# FIXME: integrate server and verbose.
+
+if test "$server" = yes ; then
+    export LD_LIBRARY_PATH="${ext_libs_dir}:${libcxx_path}:${LD_LIBRARY_PATH}"
+    exec "${hpcfnbounds_dir}/hpcfnbounds-bin" "$@"
+fi
+
+if test "$verbose" = yes ; then
+    echo "hpcfnbounds $@"
+fi
+
+if test "x$dir" != x && test ! -d "$dir" ; then
+    mkdir -p "$dir"
+fi
+
+LD_LIBRARY_PATH="${ext_libs_dir}:${libcxx_path}:${LD_LIBRARY_PATH}" \
+    "${hpcfnbounds_dir}/hpcfnbounds-bin" "$@"
+
+ret=$?
+if test "$verbose" = yes ; then
+    if test $ret -ne 0 ; then
+	echo "hpcfnbounds $base FAILED"
+    fi
+    ls -l "${dir}/${base}"*
+    tail -1 "${dir}/${base}"*.txt
+fi
+
+exit $ret
