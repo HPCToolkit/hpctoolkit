@@ -624,9 +624,6 @@ InitCpuGpuBlameShiftDataStructs(void)
 static void PopulateEntryPointesToWrappedCalls() {
     PopulateEntryPointesToWrappedCudaRuntimeCalls();
     PopulateEntryPointesToWrappedCuDriverCalls();
-#ifdef OLD_PROB
-    special_cuda_ctxt_actions(true);
-#endif // OLD_PROB
 }
 
 __attribute__((constructor))

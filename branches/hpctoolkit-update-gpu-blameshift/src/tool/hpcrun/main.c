@@ -103,12 +103,6 @@
 #include <sample-sources/none.h>
 #include <sample-sources/itimer.h>
 
-#ifdef OLD_PROBLEM
-#ifdef ENABLE_CUDA
-#  include <sample-sources/gpu_ctxt_actions.h>
-#endif // ENABLE_CUDA
-#endif // OLD_PROBLEM
-
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
 #include "segv_handler.h"
@@ -156,12 +150,6 @@ extern void hpcrun_dump_intervals(void* addr);
 
 typedef struct local_thread_data_t {
   cct_ctxt_t* thr_ctxt;
-
-#ifdef OLD_PROBLEM
-#ifdef ENABLE_CUDA
-  cuda_ctxt_t* cuda_ctxt;
-#endif // ENABLE_CUDA
-#endif // OLD_PROBLEM
 } local_thread_data_t;
 
 typedef struct fork_data_t {
@@ -213,11 +201,6 @@ static void* main_upper_dl = (void*) (intptr_t) -1;
 static spinlock_t hpcrun_aux_cleanup_lock = SPINLOCK_UNLOCKED;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_list_head = NULL;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
-#ifdef OLD_PROB
-#ifdef CUDA_CTX
-static bool cuda_ctx_actions = false;
-#endif // CUDA_CTX
-#endif // OLD_PROB
 static char execname[PATH_MAX] = {'\0'};
 
 //
@@ -328,16 +311,6 @@ hpcrun_set_safe_to_sync(void)
 {
   safe_to_sync_sample = true;
 }
-
-#ifdef OLD_PROB
-#ifdef ENABLE_CUDA
-void
-special_cuda_ctxt_actions(bool enable)
-{
-  cuda_ctx_actions = enable;
-}
-#endif // ENABLE_CUDA
-#endif // OLD_PROB
 
 //***************************************************************************
 // *** Important note about libmonitor callbacks ***
@@ -489,16 +462,6 @@ hpcrun_init_internal(bool is_child)
     SAMPLE_SOURCES(process_event_list, lush_metrics);
   }
   SAMPLE_SOURCES(gen_event_set, lush_metrics);
-#ifdef OLD_PROB
-#ifdef ENABLE_CUDA
-  if (cuda_ctx_actions) {
-    cuda_ctxt_t* init_cuda_ctxt = cuda_capture_ctxt();
-    TMSG(CUDA, "Captured initial process cuda ctx here: %p", cuda_get_handle(init_cuda_ctxt));
-    cuda_ncontexts_reset();
-    TMSG(CUDA, "Reset # contexts to 0");
-  }
-#endif // ENABLE_CUDA
-#endif // OLD_PROB
 
   // set up initial 'epoch' 
   
@@ -687,12 +650,6 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
 {
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
-#ifdef OLD_PROB
-#ifdef ENABLE_CUDA
-  cuda_ctxt_t* cuda_ctxt = local_thread_data ? local_thread_data->cuda_ctxt : NULL;
-#endif // ENABLE_CUDA
-#endif // OLD_PROB
-
   hpcrun_mmap_init();
   thread_data_t* td = hpcrun_allocate_thread_data();
   td->inside_hpcrun = 1;  // safe enter, disable signals
@@ -706,15 +663,6 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   hpcrun_thread_data_init(id, thr_ctxt, 0, hpcrun_get_num_sample_sources());
 
   epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
-
-#ifdef OLD_PROB
-#ifdef ENABLE_CUDA
-  if (cuda_ctx_actions && cuda_ctxt) {
-    TMSG(CUDA, "Setting cuda ctxt for thread %d to %p", id, cuda_get_handle(cuda_ctxt));
-    cuda_set_ctxt(cuda_ctxt);
-  }
-#endif // ENABLE_CUDA
-#endif // OLD_PROB
 
   // handle event sets for sample sources
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
@@ -1024,15 +972,6 @@ monitor_thread_pre_create(void)
        thr_ctxt->parent ? hpcrun_cct_persistent_id(thr_ctxt->parent->context) : -1);
   rv->thr_ctxt = thr_ctxt;
 
-#ifdef OLD_PROBLEM
-#ifdef ENABLE_CUDA
-  if (cuda_ctx_actions) {
-    rv->cuda_ctxt = cuda_capture_ctxt();
-    TMSG(CUDA, "Capture creating thread's cuda ctxt: %p", cuda_get_handle(rv->cuda_ctxt));
-  }
-#endif // ENABLE_CUDA
-#endif OLD_PROBLEM
-					  
  fini:
 
   TMSG(THREAD,"->finish pre create");
