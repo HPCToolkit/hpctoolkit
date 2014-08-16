@@ -102,8 +102,10 @@
 
 #ifdef ENABLE_CUDA
 #include "gpu_blame.h"
+#ifdef OLD_PROB
 #include "gpu_ctxt_actions.h"
-#endif
+#endif // OLD_PROB
+#endif // ENABLE_CUDA
 
 // ****************** utility macros *********************
 #define Cuda_RTcall(fn) cudaRuntimeFunctionPointer[fn ## Enum].fn ## Real
@@ -132,7 +134,7 @@ int uva_data_xfer_metric_id;
 uint64_t g_active_threads;
 
 // blame shift registration info
-static bs_fn_entry_t bs_entry;
+static bs_fn_entry_t bs_entry = {};
 
 // ****** UTILITY Functions (public)
 

@@ -82,8 +82,8 @@ extern bool g_cpu_gpu_enabled;
 extern uint64_t g_active_threads;
 
 // Visible function declarations
-extern void gpu_blame_shifter(int metric_id, cct_node_t * node, int  metric_incr);
-extern  void hpcrun_stream_finalize(void * st);
+extern void gpu_blame_shifter(void* dc, int metric_id, cct_node_t* node, int  metric_incr);
+extern  void hpcrun_stream_finalize(void* st);
 extern void hpcrun_set_gpu_proxy_present();
 
 #endif

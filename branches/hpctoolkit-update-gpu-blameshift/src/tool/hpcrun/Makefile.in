@@ -98,23 +98,23 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @OPT_ENABLE_MPI_WRAP_TRUE@am__append_17 = \
 @OPT_ENABLE_MPI_WRAP_TRUE@	sample-sources/mpi.c
 
+@OPT_PAPI_CUPTI_TRUE@am__append_18 = sample-sources/papi-c-cupti.c
 
 #
 # BG/Q backend requires special treatment to avoid deadlocks
 #
-@OPT_BGQ_BACKEND_TRUE@am__append_18 = -DUSE_HW_THREAD_ID -DNONZERO_THRESHOLD
-@OPT_BGQ_BACKEND_TRUE@am__append_19 = -I$(srcdir)/utilities/bgq-cnk
+@OPT_BGQ_BACKEND_TRUE@am__append_19 = -DUSE_HW_THREAD_ID -DNONZERO_THRESHOLD
 @OPT_BGQ_BACKEND_TRUE@am__append_20 = -I$(srcdir)/utilities/bgq-cnk
-@OPT_BGQ_BACKEND_TRUE@am__append_21 = utilities/bgq-cnk/libhardware-thread-id.la
+@OPT_BGQ_BACKEND_TRUE@am__append_21 = -I$(srcdir)/utilities/bgq-cnk
 @OPT_BGQ_BACKEND_TRUE@am__append_22 = utilities/bgq-cnk/libhardware-thread-id.la
+@OPT_BGQ_BACKEND_TRUE@am__append_23 = utilities/bgq-cnk/libhardware-thread-id.la
 
 #-----------------------------------------------------------
 # whirled peas
 #-----------------------------------------------------------
-@HOST_OS_LINUX_TRUE@am__append_23 = $(MY_LINUX_DYNAMIC_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_24 = $(MY_MIPS_FILES)
+@HOST_OS_LINUX_TRUE@am__append_24 = $(MY_LINUX_DYNAMIC_FILES)
 @HOST_CPU_MIPS_TRUE@am__append_25 = $(MY_MIPS_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_26 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_26 = $(MY_MIPS_FILES)
 @HOST_CPU_MIPS_TRUE@am__append_27 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_28 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_29 = $(MY_MIPS_INCLUDE_DIRS)
@@ -127,15 +127,15 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @HOST_CPU_MIPS_TRUE@am__append_36 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_37 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_38 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_39 = $(MY_MIPS_INCLUDE_DIRS)
 
 # Note: setting CCASFLAGS here is a no-op hack with the side effect of
 # prefixing the tramp.s file names so they will be compiled separately
 # for .o and .so targets.  CFLAGS does this for the .c files, but
 # CFLAGS doesn't apply to .s files.  See the automake docs section
 # 8.3.9.2, Objects created with both libtool and without.
-@HOST_CPU_PPC_TRUE@am__append_39 = $(MY_PPC_FILES)
 @HOST_CPU_PPC_TRUE@am__append_40 = $(MY_PPC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_41 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_41 = $(MY_PPC_FILES)
 @HOST_CPU_PPC_TRUE@am__append_42 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_43 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_44 = $(MY_PPC_INCLUDE_DIRS)
@@ -148,13 +148,13 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @HOST_CPU_PPC_TRUE@am__append_51 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_52 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_53 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_54 = $(MY_X86_FILES)
+@HOST_CPU_PPC_TRUE@am__append_54 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_55 = $(MY_X86_FILES)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_56 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_56 = $(MY_X86_FILES)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_57 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_58 = $(XED2_LIB_FLAGS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_58 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_59 = $(XED2_LIB_FLAGS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_60 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_60 = $(XED2_LIB_FLAGS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_61 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_62 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_63 = $(MY_X86_INCLUDE_DIRS)
@@ -166,9 +166,9 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_69 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_70 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_71 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_72 = $(MY_IA64_FILES)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_72 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_73 = $(MY_IA64_FILES)
-@HOST_CPU_IA64_TRUE@am__append_74 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_74 = $(MY_IA64_FILES)
 @HOST_CPU_IA64_TRUE@am__append_75 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_76 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_77 = $(MY_IA64_INCLUDE_DIRS)
@@ -179,30 +179,32 @@ pkglib_PROGRAMS = $(am__EXEEXT_1)
 @HOST_CPU_IA64_TRUE@am__append_82 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_83 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_84 = $(MY_IA64_INCLUDE_DIRS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_85 = $(MY_PAPI_FILES)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_86 = $(PAPI_INC_FLGS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_87 = $(PAPI_LD_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_88 = $(MY_PAPI_FILES)
-@OPT_PAPI_STATIC_TRUE@am__append_89 = $(PAPI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_90 = $(PAPI_LD_FLGS)
-@OPT_ENABLE_UPC_TRUE@am__append_91 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_92 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_93 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_94 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_95 = $(OPT_UPC_LDFLAGS)
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_96 = -DLUSH_PTHREADS
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_97 = -DLUSH_PTHREADS
-@OPT_ENABLE_CUDA_TRUE@am__append_98 = $(CUDA_FILES)
-@OPT_ENABLE_CUDA_TRUE@am__append_99 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_100 = $(OPT_CUDA_IFLAGS) -g
-@OPT_ENABLE_CUDA_TRUE@am__append_101 = $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_102 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_103 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_104 = $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_105 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_106 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_107 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_108 = libagent-pthread.la \
+@HOST_CPU_IA64_TRUE@am__append_85 = $(MY_IA64_INCLUDE_DIRS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_86 = $(MY_PAPI_FILES)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_87 = $(PAPI_INC_FLGS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_88 = $(PAPI_LD_FLGS)
+@OPT_PAPI_CUPTI_TRUE@am__append_89 = $(CUPTI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_90 = $(MY_PAPI_FILES)
+@OPT_PAPI_STATIC_TRUE@am__append_91 = $(PAPI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_92 = $(PAPI_LD_FLGS)
+@OPT_ENABLE_UPC_TRUE@am__append_93 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_94 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_95 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_96 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_97 = $(OPT_UPC_LDFLAGS)
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_98 = -DLUSH_PTHREADS
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_99 = -DLUSH_PTHREADS
+@OPT_ENABLE_CUDA_TRUE@am__append_100 = $(CUDA_FILES)
+@OPT_ENABLE_CUDA_TRUE@am__append_101 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_102 = $(OPT_CUDA_IFLAGS) -g
+#  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_103 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_104 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_105 = $(OPT_CUDA_LDFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_106 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_107 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_108 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_109 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -326,7 +328,7 @@ libagent_tbb_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 @OPT_ENABLE_LUSH_TRUE@am_libagent_tbb_la_rpath = -rpath $(pkglibdir)
 libhpcrun_la_DEPENDENCIES = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
-	$(am__append_21)
+	$(am__append_22)
 am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	disabled.c cct_insert_backtrace.c env.c epoch.c files.c \
 	handling_sample.c hpcrun_options.c hpcrun_stats.c loadmap.c \
@@ -362,7 +364,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	utilities/arch/x86-family/x86-context-pc.c \
 	trampoline/ia64/ia64-tramp.s \
 	utilities/arch/ia64/ia64-context-pc.c sample-sources/papi.c \
-	sample-sources/papi-c.c sample-sources/upc.c \
+	sample-sources/papi-c-cupti.c sample-sources/papi-c.c \
+	sample-sources/papi-c-extended-info.c sample-sources/upc.c \
 	sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c \
 	gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
@@ -433,24 +436,28 @@ am__objects_16 = libhpcrun_la-x86-tramp.lo \
 am__objects_18 = libhpcrun_la-ia64-tramp.lo \
 	libhpcrun_la-ia64-context-pc.lo
 @HOST_CPU_IA64_TRUE@am__objects_19 = $(am__objects_18)
-@OPT_PAPI_COMPONENT_FALSE@am__objects_20 = libhpcrun_la-papi.lo
-@OPT_PAPI_COMPONENT_TRUE@am__objects_20 = libhpcrun_la-papi-c.lo
-@OPT_PAPI_DYNAMIC_TRUE@am__objects_21 = $(am__objects_20)
-am__objects_22 = libhpcrun_la-upc.lo
-@OPT_ENABLE_UPC_TRUE@am__objects_23 = $(am__objects_22)
-am__objects_24 = libhpcrun_la-gpu_blame-cuda-driver-table.lo \
+@OPT_PAPI_CUPTI_TRUE@am__objects_20 = libhpcrun_la-papi-c-cupti.lo
+@OPT_PAPI_COMPONENT_FALSE@am__objects_21 = libhpcrun_la-papi.lo \
+@OPT_PAPI_COMPONENT_FALSE@	$(am__objects_20)
+@OPT_PAPI_COMPONENT_TRUE@am__objects_21 = libhpcrun_la-papi-c.lo \
+@OPT_PAPI_COMPONENT_TRUE@	libhpcrun_la-papi-c-extended-info.lo \
+@OPT_PAPI_COMPONENT_TRUE@	$(am__objects_20)
+@OPT_PAPI_DYNAMIC_TRUE@am__objects_22 = $(am__objects_21)
+am__objects_23 = libhpcrun_la-upc.lo
+@OPT_ENABLE_UPC_TRUE@am__objects_24 = $(am__objects_23)
+am__objects_25 = libhpcrun_la-gpu_blame-cuda-driver-table.lo \
 	libhpcrun_la-gpu_blame-cuda-runtime-table.lo
-am__objects_25 = libhpcrun_la-gpu_blame.lo \
-	libhpcrun_la-gpu_ctxt_actions.lo $(am__objects_24)
-@OPT_ENABLE_CUDA_TRUE@am__objects_26 = $(am__objects_25)
-am__objects_27 = libhpcrun_la-backtrace.lo libhpcrun_la-unw-throw.lo
-am__objects_28 = $(am__objects_27) libhpcrun_la-libunw-unwind.lo \
+am__objects_26 = libhpcrun_la-gpu_blame.lo \
+	libhpcrun_la-gpu_ctxt_actions.lo $(am__objects_25)
+@OPT_ENABLE_CUDA_TRUE@am__objects_27 = $(am__objects_26)
+am__objects_28 = libhpcrun_la-backtrace.lo libhpcrun_la-unw-throw.lo
+am__objects_29 = $(am__objects_28) libhpcrun_la-libunw-unwind.lo \
 	libhpcrun_la-default_validation_summary.lo
-am__objects_29 = $(am__objects_27) libhpcrun_la-splay.lo \
+am__objects_30 = $(am__objects_28) libhpcrun_la-splay.lo \
 	libhpcrun_la-stack_troll.lo libhpcrun_la-ui_tree.lo
-am__objects_30 = $(am__objects_29) libhpcrun_la-ppc64-unwind.lo \
+am__objects_31 = $(am__objects_30) libhpcrun_la-ppc64-unwind.lo \
 	libhpcrun_la-ppc64-unwind-interval.lo
-am__objects_31 = $(am__objects_29) libhpcrun_la-x86-all.lo \
+am__objects_32 = $(am__objects_30) libhpcrun_la-x86-all.lo \
 	libhpcrun_la-amd-xop.lo libhpcrun_la-x86-cold-path.lo \
 	libhpcrun_la-x86-validate-retn-addr.lo \
 	libhpcrun_la-x86-unwind-interval.lo \
@@ -462,13 +469,13 @@ am__objects_31 = $(am__objects_29) libhpcrun_la-x86-all.lo \
 	libhpcrun_la-x86-32bit-main.lo \
 	libhpcrun_la-x86-32bit-icc-variant.lo \
 	libhpcrun_la-x86-pgi-mp_pexit.lo
-@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_32 = $(am__objects_31)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_32 = $(am__objects_30)
-@UNW_LIBUNW_TRUE@am__objects_32 = $(am__objects_28)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_33 = $(am__objects_32)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_33 = $(am__objects_31)
+@UNW_LIBUNW_TRUE@am__objects_33 = $(am__objects_29)
 am_libhpcrun_la_OBJECTS = $(am__objects_8) $(am__objects_9) \
 	$(am__objects_11) $(am__objects_13) $(am__objects_15) \
-	$(am__objects_17) $(am__objects_19) $(am__objects_21) \
-	$(am__objects_23) $(am__objects_26) $(am__objects_32) \
+	$(am__objects_17) $(am__objects_19) $(am__objects_22) \
+	$(am__objects_24) $(am__objects_27) $(am__objects_33) \
 	libhpcrun_la-last_func.lo
 libhpcrun_la_OBJECTS = $(am_libhpcrun_la_OBJECTS)
 libhpcrun_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -572,7 +579,8 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	utilities/arch/x86-family/x86-context-pc.c \
 	trampoline/ia64/ia64-tramp.s \
 	utilities/arch/ia64/ia64-context-pc.c sample-sources/papi.c \
-	sample-sources/papi-c.c sample-sources/upc.c \
+	sample-sources/papi-c-cupti.c sample-sources/papi-c.c \
+	sample-sources/papi-c-extended-info.c sample-sources/upc.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/generic-libunwind/libunw-unwind.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
@@ -592,8 +600,8 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c \
 	utilities/last_func.c
-@OPT_ENABLE_MPI_WRAP_TRUE@am__objects_33 = libhpcrun_o-mpi.$(OBJEXT)
-am__objects_34 = libhpcrun_o-first_func.$(OBJEXT) \
+@OPT_ENABLE_MPI_WRAP_TRUE@am__objects_34 = libhpcrun_o-mpi.$(OBJEXT)
+am__objects_35 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-main.$(OBJEXT) libhpcrun_o-disabled.$(OBJEXT) \
 	libhpcrun_o-cct_insert_backtrace.$(OBJEXT) \
 	libhpcrun_o-env.$(OBJEXT) libhpcrun_o-epoch.$(OBJEXT) \
@@ -637,37 +645,42 @@ am__objects_34 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-executable-path.$(OBJEXT) \
 	libhpcrun_o-ip-normalized.$(OBJEXT) \
 	libhpcrun_o-tokenize.$(OBJEXT) libhpcrun_o-unlink.$(OBJEXT) \
-	$(am__objects_33)
-am__objects_35 = libhpcrun_o-fnbounds_static.$(OBJEXT) \
+	$(am__objects_34)
+am__objects_36 = libhpcrun_o-fnbounds_static.$(OBJEXT) \
 	libhpcrun_o-custom-init-static.$(OBJEXT)
-am__objects_36 = libhpcrun_o-default_validation_summary.$(OBJEXT)
-@HOST_CPU_MIPS_TRUE@am__objects_37 = $(am__objects_36)
-am__objects_38 = libhpcrun_o-default_validation_summary.$(OBJEXT) \
+am__objects_37 = libhpcrun_o-default_validation_summary.$(OBJEXT)
+@HOST_CPU_MIPS_TRUE@am__objects_38 = $(am__objects_37)
+am__objects_39 = libhpcrun_o-default_validation_summary.$(OBJEXT) \
 	libhpcrun_o-ppc64-tramp.$(OBJEXT) \
 	libhpcrun_o-ppc64-context-pc.$(OBJEXT)
-@HOST_CPU_PPC_TRUE@am__objects_39 = $(am__objects_38)
-am__objects_40 = libhpcrun_o-x86-tramp.$(OBJEXT) \
+@HOST_CPU_PPC_TRUE@am__objects_40 = $(am__objects_39)
+am__objects_41 = libhpcrun_o-x86-tramp.$(OBJEXT) \
 	libhpcrun_o-x86-context-pc.$(OBJEXT)
-@HOST_CPU_X86_FAMILY_TRUE@am__objects_41 = $(am__objects_40)
-am__objects_42 = libhpcrun_o-ia64-tramp.$(OBJEXT) \
+@HOST_CPU_X86_FAMILY_TRUE@am__objects_42 = $(am__objects_41)
+am__objects_43 = libhpcrun_o-ia64-tramp.$(OBJEXT) \
 	libhpcrun_o-ia64-context-pc.$(OBJEXT)
-@HOST_CPU_IA64_TRUE@am__objects_43 = $(am__objects_42)
-@OPT_PAPI_COMPONENT_FALSE@am__objects_44 = libhpcrun_o-papi.$(OBJEXT)
-@OPT_PAPI_COMPONENT_TRUE@am__objects_44 =  \
-@OPT_PAPI_COMPONENT_TRUE@	libhpcrun_o-papi-c.$(OBJEXT)
-@OPT_PAPI_STATIC_TRUE@am__objects_45 = $(am__objects_44)
-am__objects_46 = libhpcrun_o-upc.$(OBJEXT)
-@OPT_ENABLE_UPC_TRUE@am__objects_47 = $(am__objects_46)
-am__objects_48 = libhpcrun_o-backtrace.$(OBJEXT) \
+@HOST_CPU_IA64_TRUE@am__objects_44 = $(am__objects_43)
+@OPT_PAPI_CUPTI_TRUE@am__objects_45 =  \
+@OPT_PAPI_CUPTI_TRUE@	libhpcrun_o-papi-c-cupti.$(OBJEXT)
+@OPT_PAPI_COMPONENT_FALSE@am__objects_46 = libhpcrun_o-papi.$(OBJEXT) \
+@OPT_PAPI_COMPONENT_FALSE@	$(am__objects_45)
+@OPT_PAPI_COMPONENT_TRUE@am__objects_46 =  \
+@OPT_PAPI_COMPONENT_TRUE@	libhpcrun_o-papi-c.$(OBJEXT) \
+@OPT_PAPI_COMPONENT_TRUE@	libhpcrun_o-papi-c-extended-info.$(OBJEXT) \
+@OPT_PAPI_COMPONENT_TRUE@	$(am__objects_45)
+@OPT_PAPI_STATIC_TRUE@am__objects_47 = $(am__objects_46)
+am__objects_48 = libhpcrun_o-upc.$(OBJEXT)
+@OPT_ENABLE_UPC_TRUE@am__objects_49 = $(am__objects_48)
+am__objects_50 = libhpcrun_o-backtrace.$(OBJEXT) \
 	libhpcrun_o-unw-throw.$(OBJEXT)
-am__objects_49 = $(am__objects_48) libhpcrun_o-libunw-unwind.$(OBJEXT) \
+am__objects_51 = $(am__objects_50) libhpcrun_o-libunw-unwind.$(OBJEXT) \
 	libhpcrun_o-default_validation_summary.$(OBJEXT)
-am__objects_50 = $(am__objects_48) libhpcrun_o-splay.$(OBJEXT) \
+am__objects_52 = $(am__objects_50) libhpcrun_o-splay.$(OBJEXT) \
 	libhpcrun_o-stack_troll.$(OBJEXT) \
 	libhpcrun_o-ui_tree.$(OBJEXT)
-am__objects_51 = $(am__objects_50) libhpcrun_o-ppc64-unwind.$(OBJEXT) \
+am__objects_53 = $(am__objects_52) libhpcrun_o-ppc64-unwind.$(OBJEXT) \
 	libhpcrun_o-ppc64-unwind-interval.$(OBJEXT)
-am__objects_52 = $(am__objects_50) libhpcrun_o-x86-all.$(OBJEXT) \
+am__objects_54 = $(am__objects_52) libhpcrun_o-x86-all.$(OBJEXT) \
 	libhpcrun_o-amd-xop.$(OBJEXT) \
 	libhpcrun_o-x86-cold-path.$(OBJEXT) \
 	libhpcrun_o-x86-validate-retn-addr.$(OBJEXT) \
@@ -681,16 +694,16 @@ am__objects_52 = $(am__objects_50) libhpcrun_o-x86-all.$(OBJEXT) \
 	libhpcrun_o-x86-32bit-main.$(OBJEXT) \
 	libhpcrun_o-x86-32bit-icc-variant.$(OBJEXT) \
 	libhpcrun_o-x86-pgi-mp_pexit.$(OBJEXT)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_53 = $(am__objects_52)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_53 = $(am__objects_51)
-@UNW_LIBUNW_TRUE@am__objects_53 = $(am__objects_49)
-am_libhpcrun_o_OBJECTS = $(am__objects_34) $(am__objects_35) \
-	$(am__objects_37) $(am__objects_39) $(am__objects_41) \
-	$(am__objects_43) $(am__objects_45) $(am__objects_47) \
-	$(am__objects_53) libhpcrun_o-last_func.$(OBJEXT)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_55 = $(am__objects_54)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_55 = $(am__objects_53)
+@UNW_LIBUNW_TRUE@am__objects_55 = $(am__objects_51)
+am_libhpcrun_o_OBJECTS = $(am__objects_35) $(am__objects_36) \
+	$(am__objects_38) $(am__objects_40) $(am__objects_42) \
+	$(am__objects_44) $(am__objects_47) $(am__objects_49) \
+	$(am__objects_55) libhpcrun_o-last_func.$(OBJEXT)
 libhpcrun_o_OBJECTS = $(am_libhpcrun_o_OBJECTS)
 libhpcrun_o_DEPENDENCIES = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
-	$(am__append_22)
+	$(am__append_23)
 libhpcrun_o_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libhpcrun_o_CFLAGS) \
 	$(CFLAGS) $(libhpcrun_o_LDFLAGS) $(LDFLAGS) -o $@
@@ -892,6 +905,8 @@ OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
 OPT_CUDA = @OPT_CUDA@
 OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
 OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
+OPT_CUPTI = @OPT_CUPTI@
+OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
 OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
 OPT_LIBUNWIND_IFLAGS = @OPT_LIBUNWIND_IFLAGS@
 OPT_LIBUNWIND_LDFLAGS = @OPT_LIBUNWIND_LDFLAGS@
@@ -1068,9 +1083,11 @@ include_HEADERS = $(am__append_3)
 pkglib_LIBRARIES = $(am__append_9) $(am__append_10) $(am__append_11) \
 	$(am__append_12)
 pkglib_LTLIBRARIES = $(am__append_4) $(am__append_5) $(am__append_6) \
-	$(am__append_14) $(am__append_107) $(am__append_108)
+	$(am__append_14) $(am__append_108) $(am__append_109)
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
+CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
+CUPTI_BASE = @OPT_CUPTI@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 PLUGIN_CONFIG_FILES = ga io memleak pthread $(am__append_15) \
 	$(am__append_16)
@@ -1200,10 +1217,13 @@ MY_IA64_FILES = \
         trampoline/ia64/ia64-tramp.s \
         utilities/arch/ia64/ia64-context-pc.c
 
-@OPT_PAPI_COMPONENT_FALSE@MY_PAPI_FILES = sample-sources/papi.c
-@OPT_PAPI_COMPONENT_TRUE@MY_PAPI_FILES = sample-sources/papi-c.c
+@OPT_PAPI_COMPONENT_FALSE@MY_PAPI_FILES = sample-sources/papi.c \
+@OPT_PAPI_COMPONENT_FALSE@	$(am__append_18)
+@OPT_PAPI_COMPONENT_TRUE@MY_PAPI_FILES = sample-sources/papi-c.c \
+@OPT_PAPI_COMPONENT_TRUE@	sample-sources/papi-c-extended-info.c \
+@OPT_PAPI_COMPONENT_TRUE@	$(am__append_18)
 MY_UPC_FILES = sample-sources/upc.c
-MY_CPP_DEFINES = -D_GNU_SOURCE -DINLINE_FN=1 $(am__append_18)
+MY_CPP_DEFINES = -D_GNU_SOURCE -DINLINE_FN=1 $(am__append_19)
 MY_INCLUDE_DIRS = \
         -I$(top_srcdir)/src/tool        \
 	-I$(srcdir)/messages	        \
@@ -1216,6 +1236,7 @@ MY_INCLUDE_DIRS = \
 	$(HPC_IFLAGS)			\
 	$(OPT_LIBUNWIND_IFLAGS)         \
 	-I$(HPCFNBOUNDS_INC)		\
+        $(OPT_CUPTI_IFLAGS)             \
 	-I$(LIBMONITOR_INC)
 
 MY_MIPS_INCLUDE_DIRS = \
@@ -1232,13 +1253,13 @@ MY_IA64_INCLUDE_DIRS = \
         -I$(srcdir)/utilities/arch/ia64
 
 libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
-	$(am__append_23) $(am__append_24) $(am__append_39) \
-	$(am__append_54) $(am__append_72) $(am__append_85) \
-	$(am__append_91) $(am__append_98) $(UNW_SOURCE_FILES) \
+	$(am__append_24) $(am__append_25) $(am__append_40) \
+	$(am__append_55) $(am__append_73) $(am__append_86) \
+	$(am__append_93) $(am__append_100) $(UNW_SOURCE_FILES) \
 	utilities/last_func.c
 libhpcrun_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
-	$(am__append_25) $(am__append_40) $(am__append_55) \
-	$(am__append_73) $(am__append_88) $(am__append_92) \
+	$(am__append_26) $(am__append_41) $(am__append_56) \
+	$(am__append_74) $(am__append_90) $(am__append_94) \
 	$(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_wrap_a_SOURCES = \
 	monitor-exts/openmp.c
@@ -1294,14 +1315,14 @@ libhpctoolkit_a_SOURCES = \
 # cppflags
 #-----------------------------------------------------------
 libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_19) $(am__append_26) $(am__append_41) \
-	$(am__append_56) $(am__append_74) $(am__append_86) \
-	$(am__append_93) $(am__append_96) $(am__append_99) \
-	$(UNW_INCLUDE_DIRS)
+	$(am__append_20) $(am__append_27) $(am__append_42) \
+	$(am__append_57) $(am__append_75) $(am__append_87) \
+	$(am__append_89) $(am__append_95) $(am__append_98) \
+	$(am__append_101) $(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_20) $(am__append_27) \
-	$(am__append_42) $(am__append_57) $(am__append_75) \
-	$(am__append_89) $(am__append_94) $(am__append_97) \
+	$(MY_INCLUDE_DIRS) $(am__append_21) $(am__append_28) \
+	$(am__append_43) $(am__append_58) $(am__append_76) \
+	$(am__append_91) $(am__append_96) $(am__append_99) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
@@ -1309,40 +1330,40 @@ libhpcrun_wrap_a_CPPFLAGS = \
 	$(MY_INCLUDE_DIRS)
 
 libhpcrun_ga_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_28) $(am__append_43) $(am__append_60) \
-	$(am__append_76) $(UNW_INCLUDE_DIRS)
+	$(am__append_29) $(am__append_44) $(am__append_61) \
+	$(am__append_77) $(UNW_INCLUDE_DIRS)
 libhpcrun_ga_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_29) $(am__append_44) \
-	$(am__append_61) $(am__append_77) $(UNW_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS) $(am__append_30) $(am__append_45) \
+	$(am__append_62) $(am__append_78) $(UNW_INCLUDE_DIRS)
 libhpcrun_io_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_30) $(am__append_45) $(am__append_62) \
-	$(am__append_78) $(UNW_INCLUDE_DIRS)
+	$(am__append_31) $(am__append_46) $(am__append_63) \
+	$(am__append_79) $(UNW_INCLUDE_DIRS)
 libhpcrun_io_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_31) $(am__append_46) \
-	$(am__append_63) $(am__append_79) $(UNW_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS) $(am__append_32) $(am__append_47) \
+	$(am__append_64) $(am__append_80) $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_32) $(am__append_47) $(am__append_64) \
-	$(am__append_80) $(UNW_INCLUDE_DIRS)
+	$(am__append_33) $(am__append_48) $(am__append_65) \
+	$(am__append_81) $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
-	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_33) \
-	$(am__append_48) $(am__append_65) $(am__append_81) \
+	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_34) \
+	$(am__append_49) $(am__append_66) $(am__append_82) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_pthread_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_34) $(am__append_49) $(am__append_66) \
-	$(am__append_82) $(UNW_INCLUDE_DIRS)
+	$(am__append_35) $(am__append_50) $(am__append_67) \
+	$(am__append_83) $(UNW_INCLUDE_DIRS)
 libhpcrun_pthread_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
-	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_35) \
-	$(am__append_50) $(am__append_67) $(am__append_83) \
+	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_36) \
+	$(am__append_51) $(am__append_68) $(am__append_84) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_36) $(am__append_51) $(am__append_68) \
-	$(am__append_102) $(UNW_INCLUDE_DIRS)
+	$(am__append_37) $(am__append_52) $(am__append_69) \
+	$(am__append_103) $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_37) $(am__append_52) \
-	$(am__append_69) $(am__append_105) $(UNW_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS) $(am__append_38) $(am__append_53) \
+	$(am__append_70) $(am__append_106) $(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_38) $(am__append_53) $(am__append_70) \
-	$(am__append_84) $(UNW_INCLUDE_DIRS)
+	$(am__append_39) $(am__append_54) $(am__append_71) \
+	$(am__append_85) $(UNW_INCLUDE_DIRS)
 CUDA_TABLES = gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
 CUDA_FILES = sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c $(CUDA_TABLES)
 @OPT_ENABLE_CUDA_TRUE@generated_file_base = .
@@ -1366,7 +1387,7 @@ libhpctoolkit_a_CPPFLAGS = \
 #-----------------------------------------------------------
 # cflags
 #-----------------------------------------------------------
-libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_100)
+libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_102)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -1378,22 +1399,21 @@ libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_103)
+	$(am__append_104)
 libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_106)
+	$(am__append_107)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 #-----------------------------------------------------------
 # ldflags
 #-----------------------------------------------------------
 libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
-	$(am__append_21)
-libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 	$(am__append_22)
+libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
+	$(am__append_23)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
-	-lpthread -lrt $(OPT_LIBUNWIND_LDFLAGS) $(am__append_58) \
-	$(am__append_87) $(am__append_95) $(am__append_101) \
-	$(UNW_LD_FLAGS)
+	-lpthread -lrt $(OPT_LIBUNWIND_LDFLAGS) $(am__append_59) \
+	$(am__append_88) $(am__append_97) $(UNW_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic	\
 	-Wl,--strip-debug
 
@@ -1406,13 +1426,13 @@ libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
 libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
 
-libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_104)
+libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_105)
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-Wl,--strip-debug
 
-libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS) $(am__append_59) \
-	$(am__append_90) $(UNW_LD_FLAGS)
-MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_71) \
+libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS) $(am__append_60) \
+	$(am__append_92) $(UNW_LD_FLAGS)
+MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_72) \
 	$(UNW_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
 @HOST_CPU_X86_FAMILY_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
@@ -1822,6 +1842,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-name.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-none.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-openmp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-papi-c-cupti.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-papi-c-extended-info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-papi-c.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-papi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ppc64-context-pc.Plo@am__quote@
@@ -1919,6 +1941,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-mpi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-name.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-none.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi-c-cupti.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi-c-extended-info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi-c.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ppc64-context-pc.Po@am__quote@
@@ -2719,12 +2743,26 @@ libhpcrun_la-papi.lo: sample-sources/papi.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-papi.lo `test -f 'sample-sources/papi.c' || echo '$(srcdir)/'`sample-sources/papi.c
 
+libhpcrun_la-papi-c-cupti.lo: sample-sources/papi-c-cupti.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-papi-c-cupti.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-papi-c-cupti.Tpo -c -o libhpcrun_la-papi-c-cupti.lo `test -f 'sample-sources/papi-c-cupti.c' || echo '$(srcdir)/'`sample-sources/papi-c-cupti.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-papi-c-cupti.Tpo $(DEPDIR)/libhpcrun_la-papi-c-cupti.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi-c-cupti.c' object='libhpcrun_la-papi-c-cupti.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-papi-c-cupti.lo `test -f 'sample-sources/papi-c-cupti.c' || echo '$(srcdir)/'`sample-sources/papi-c-cupti.c
+
 libhpcrun_la-papi-c.lo: sample-sources/papi-c.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-papi-c.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-papi-c.Tpo -c -o libhpcrun_la-papi-c.lo `test -f 'sample-sources/papi-c.c' || echo '$(srcdir)/'`sample-sources/papi-c.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-papi-c.Tpo $(DEPDIR)/libhpcrun_la-papi-c.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi-c.c' object='libhpcrun_la-papi-c.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-papi-c.lo `test -f 'sample-sources/papi-c.c' || echo '$(srcdir)/'`sample-sources/papi-c.c
+
+libhpcrun_la-papi-c-extended-info.lo: sample-sources/papi-c-extended-info.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-papi-c-extended-info.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-papi-c-extended-info.Tpo -c -o libhpcrun_la-papi-c-extended-info.lo `test -f 'sample-sources/papi-c-extended-info.c' || echo '$(srcdir)/'`sample-sources/papi-c-extended-info.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-papi-c-extended-info.Tpo $(DEPDIR)/libhpcrun_la-papi-c-extended-info.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi-c-extended-info.c' object='libhpcrun_la-papi-c-extended-info.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-papi-c-extended-info.lo `test -f 'sample-sources/papi-c-extended-info.c' || echo '$(srcdir)/'`sample-sources/papi-c-extended-info.c
 
 libhpcrun_la-upc.lo: sample-sources/upc.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-upc.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-upc.Tpo -c -o libhpcrun_la-upc.lo `test -f 'sample-sources/upc.c' || echo '$(srcdir)/'`sample-sources/upc.c
@@ -3937,6 +3975,20 @@ libhpcrun_o-papi.obj: sample-sources/papi.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-papi.obj `if test -f 'sample-sources/papi.c'; then $(CYGPATH_W) 'sample-sources/papi.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/papi.c'; fi`
 
+libhpcrun_o-papi-c-cupti.o: sample-sources/papi-c-cupti.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-papi-c-cupti.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-papi-c-cupti.Tpo -c -o libhpcrun_o-papi-c-cupti.o `test -f 'sample-sources/papi-c-cupti.c' || echo '$(srcdir)/'`sample-sources/papi-c-cupti.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-papi-c-cupti.Tpo $(DEPDIR)/libhpcrun_o-papi-c-cupti.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi-c-cupti.c' object='libhpcrun_o-papi-c-cupti.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-papi-c-cupti.o `test -f 'sample-sources/papi-c-cupti.c' || echo '$(srcdir)/'`sample-sources/papi-c-cupti.c
+
+libhpcrun_o-papi-c-cupti.obj: sample-sources/papi-c-cupti.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-papi-c-cupti.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-papi-c-cupti.Tpo -c -o libhpcrun_o-papi-c-cupti.obj `if test -f 'sample-sources/papi-c-cupti.c'; then $(CYGPATH_W) 'sample-sources/papi-c-cupti.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/papi-c-cupti.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-papi-c-cupti.Tpo $(DEPDIR)/libhpcrun_o-papi-c-cupti.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi-c-cupti.c' object='libhpcrun_o-papi-c-cupti.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-papi-c-cupti.obj `if test -f 'sample-sources/papi-c-cupti.c'; then $(CYGPATH_W) 'sample-sources/papi-c-cupti.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/papi-c-cupti.c'; fi`
+
 libhpcrun_o-papi-c.o: sample-sources/papi-c.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-papi-c.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-papi-c.Tpo -c -o libhpcrun_o-papi-c.o `test -f 'sample-sources/papi-c.c' || echo '$(srcdir)/'`sample-sources/papi-c.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-papi-c.Tpo $(DEPDIR)/libhpcrun_o-papi-c.Po
@@ -3950,6 +4002,20 @@ libhpcrun_o-papi-c.obj: sample-sources/papi-c.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi-c.c' object='libhpcrun_o-papi-c.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-papi-c.obj `if test -f 'sample-sources/papi-c.c'; then $(CYGPATH_W) 'sample-sources/papi-c.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/papi-c.c'; fi`
+
+libhpcrun_o-papi-c-extended-info.o: sample-sources/papi-c-extended-info.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-papi-c-extended-info.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-papi-c-extended-info.Tpo -c -o libhpcrun_o-papi-c-extended-info.o `test -f 'sample-sources/papi-c-extended-info.c' || echo '$(srcdir)/'`sample-sources/papi-c-extended-info.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-papi-c-extended-info.Tpo $(DEPDIR)/libhpcrun_o-papi-c-extended-info.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi-c-extended-info.c' object='libhpcrun_o-papi-c-extended-info.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-papi-c-extended-info.o `test -f 'sample-sources/papi-c-extended-info.c' || echo '$(srcdir)/'`sample-sources/papi-c-extended-info.c
+
+libhpcrun_o-papi-c-extended-info.obj: sample-sources/papi-c-extended-info.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-papi-c-extended-info.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-papi-c-extended-info.Tpo -c -o libhpcrun_o-papi-c-extended-info.obj `if test -f 'sample-sources/papi-c-extended-info.c'; then $(CYGPATH_W) 'sample-sources/papi-c-extended-info.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/papi-c-extended-info.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-papi-c-extended-info.Tpo $(DEPDIR)/libhpcrun_o-papi-c-extended-info.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/papi-c-extended-info.c' object='libhpcrun_o-papi-c-extended-info.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-papi-c-extended-info.obj `if test -f 'sample-sources/papi-c-extended-info.c'; then $(CYGPATH_W) 'sample-sources/papi-c-extended-info.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/papi-c-extended-info.c'; fi`
 
 libhpcrun_o-upc.o: sample-sources/upc.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-upc.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-upc.Tpo -c -o libhpcrun_o-upc.o `test -f 'sample-sources/upc.c' || echo '$(srcdir)/'`sample-sources/upc.c
