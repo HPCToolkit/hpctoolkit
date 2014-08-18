@@ -139,7 +139,7 @@ read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
     return prof;
   }
 
-  // General case, first file
+  // General case, first file 0
   uint groupId = (groupMap) ? (*groupMap)[0] : 0;
   Prof::CallPath::Profile* prof = read(profileFiles[0], groupId, rFlags);
 
@@ -154,7 +154,7 @@ read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
   }
   trace[0] = prof->m_traceInfo;
 
-  // General case, files 1...n-1
+  // General case, files 1 ... N-1
   for (uint i = 1; i < num_files; ++i) {
     groupId = (groupMap) ? (*groupMap)[i] : 0;
     Prof::CallPath::Profile* p = read(profileFiles[i], groupId, rFlags);
@@ -163,7 +163,7 @@ read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
     prof->merge(*p, mergeTy, mrgFlags);
 
     if (p->m_traceInfo.active) {
-      offset += prof->m_traceInfo.length;
+      offset += p->m_traceInfo.length;
       offset = Prof::Database::alignOffset(offset);
     }
     trace[i] = p->m_traceInfo;

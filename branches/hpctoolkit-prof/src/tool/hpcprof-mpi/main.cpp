@@ -63,6 +63,8 @@
 
 //************************* System Include Files ****************************
 
+#include <sys/types.h>
+
 #include <iostream>
 #include <fstream>
 #include <typeinfo>
@@ -126,7 +128,14 @@ makeThreadMetrics(Prof::CallPath::Profile& profGbl,
 		  const Analysis::Args& args,
 		  const Analysis::Util::NormalizeProfileArgs_t& nArgs,
 		  const vector<uint>& groupIdToGroupSizeMap,
+		  Prof::Database::traceInfo *traceLcl,
 		  int myRank, int numRanks, int rootRank);
+
+static int
+mergeTraceInfo(Prof::Database::traceInfo *traceGbl,
+	       Prof::Database::traceInfo *traceLcl,
+	       long numPerRank, long & numActive,
+	       int myRank, int numRanks, int rootRank);
 
 static uint
 makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
@@ -147,8 +156,9 @@ makeSummaryMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 static void
 makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 		      const string& profileFile,
-		      const Analysis::Args& args, uint groupId, uint groupMax,
-		      int myRank);
+		      const Analysis::Args& args,
+		      Prof::Database::traceInfo *traceLcl,
+		      uint groupId, uint groupMax, int myRank);
 
 static string
 makeDBFileName(const string& dbDir, uint groupId, const string& profileFile);
@@ -250,6 +260,10 @@ realmain(int argc, char* const* argv)
   MPI_Bcast((void*)dbDirBuf, PATH_MAX, MPI_CHAR, rootRank, MPI_COMM_WORLD);
   args.db_dir = dbDirBuf;
 
+  if (args.new_db_format) {
+    Prof::Database::initdb(args);
+  }
+
   // -------------------------------------------------------
   // 1a. Create local CCT (from local set of profile files)
   // -------------------------------------------------------
@@ -268,11 +282,33 @@ realmain(int argc, char* const* argv)
   Analysis::Util::UIntVec* groupMap =
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
-  long numFiles = nArgs.paths->size();
-  Prof::Database::traceInfo *trace =
-    (Prof::Database::traceInfo *) malloc(numFiles * sizeof(Prof::Database::traceInfo));
+  // collect trace info on size, rank, tid, etc.
+  long numPerRank = nArgs.numPerRank;
+  long totalFiles = numPerRank * numRanks;
+  long traceInfoSize = sizeof(Prof::Database::traceInfo);
+  Prof::Database::traceInfo * traceLcl =
+    (Prof::Database::traceInfo *) malloc(numPerRank * traceInfoSize);
+  DIAG_Assert(traceLcl != NULL,
+	      "unable to malloc local traceInfo for rank: " << myRank);
+  for (long i = 0; i < numPerRank; i++) {
+    traceLcl[i].active = false;
+  }
 
-  profLcl = Analysis::CallPath::read(*nArgs.paths, groupMap, trace, mergeTy, rFlags);
+  profLcl = Analysis::CallPath::read(*nArgs.paths, groupMap, traceLcl, mergeTy, rFlags);
+
+  // rank 0 computes prefix sum on the lengths of the trace files to
+  // determine their starting offsets.
+  Prof::Database::traceInfo * traceGbl = NULL;
+  long numActive = 0;
+  if (Prof::Database::newDBFormat()) {
+    if (myRank == rootRank) {
+      traceGbl = (Prof::Database::traceInfo *) malloc(totalFiles * traceInfoSize);
+      DIAG_Assert(traceGbl != NULL,
+		  "unable to malloc global traceInfo for rank: " << myRank);
+    }
+    mergeTraceInfo(traceGbl, traceLcl, numPerRank, numActive,
+		   myRank, numRanks, rootRank);
+  }
 
   // -------------------------------------------------------
   // 1b. Create canonical CCT (metrics merged by <group>.<name>.*)
@@ -372,8 +408,17 @@ realmain(int argc, char* const* argv)
   // 2c. Create thread-level metric DB // Normalize trace files
   // -------------------------------------------------------
   makeThreadMetrics(*profGbl, args, nArgs, groupIdToGroupSizeMap,
-		    myRank, numRanks, rootRank);
-  
+		    traceLcl, myRank, numRanks, rootRank);
+
+  // rank 0 writes the index and header
+  if (Prof::Database::newDBFormat()) {
+    if (myRank == rootRank && numActive > 0) {
+      Prof::Database::writeTraceIndex(traceGbl, numActive);
+      Prof::Database::writeTraceHeader(numActive);
+    }
+    Prof::Database::endTraceFiles();
+  }
+
   // ------------------------------------------------------------
   // 3. Generate Experiment database
   //    INVARIANT: database dir already exists
@@ -393,7 +438,9 @@ realmain(int argc, char* const* argv)
     Analysis::CallPath::makeDatabase(*profGbl, args);
   }
   else {
-    Analysis::Util::copyTraceFiles(args.db_dir, profGbl->traceFileNameSet());
+    if (! Prof::Database::newDBFormat()) {
+      Analysis::Util::copyTraceFiles(args.db_dir, profGbl->traceFileNameSet());
+    }
   }
 
   // -------------------------------------------------------
@@ -520,6 +567,7 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
 
   out.pathLenMax = pathLenMax;
   out.groupMax = groupIdMax;
+  out.numPerRank = numPerRank;
   out.begTid = std::min(myRank * numPerRank, totalThreads);
   out.numTid = out.paths->size();
 
@@ -655,13 +703,85 @@ makeThreadMetrics(Prof::CallPath::Profile& profGbl,
 		  const Analysis::Args& args,
 		  const Analysis::Util::NormalizeProfileArgs_t& nArgs,
 		  const vector<uint>& groupIdToGroupSizeMap,
+		  Prof::Database::traceInfo *traceLcl,
 		  int myRank, int numRanks, int rootRank)
 {
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];
     uint groupId = (*nArgs.groupMap)[i];
-    makeThreadMetrics_Lcl(profGbl, fnm, args, groupId, nArgs.groupMax, myRank);
+    makeThreadMetrics_Lcl(profGbl, fnm, args, &traceLcl[i],
+			  groupId, nArgs.groupMax, myRank);
   }
+}
+
+
+// Perform a prefix sum on the lengths of the trace files to determine
+// their starting offsets.  Rank 0 gathers the trace info from all
+// ranks, computes the prefix sum (serial), and then scatters the
+// result back to the other ranks.  Rank 0 also collects the global
+// index and compacts it.
+//
+static int
+mergeTraceInfo(Prof::Database::traceInfo *traceGbl,
+	       Prof::Database::traceInfo *traceLcl,
+	       long numPerRank, long & numActive,
+	       int myRank, int numRanks, int rootRank)
+{
+  int chunkSize = numPerRank * sizeof(Prof::Database::traceInfo);
+  long totalFiles = numPerRank * numRanks;
+  off_t offset = 0;
+  long k;
+  int ret;
+
+  ret = MPI_Gather((void *) traceLcl, chunkSize, MPI_CHAR,
+		   (void *) traceGbl, chunkSize, MPI_CHAR,
+		   rootRank, MPI_COMM_WORLD);
+
+  DIAG_Assert(ret == 0, "MPI_Gather for mergeTraceInfo failed");
+
+  numActive = 0;
+  if (myRank == rootRank) {
+    // count the number of active trace files
+    for (k = 0; k < totalFiles; k++) {
+      if (traceGbl[k].active) {
+	numActive++;
+      }
+    }
+
+    // compute starting offsets for all trace files
+    offset = Prof::Database::firstTraceOffset(numActive);
+    offset = Prof::Database::alignOffset(offset);
+
+    for (k = 0; k < totalFiles; k++) {
+      traceGbl[k].start_offset = 0;
+      if (traceGbl[k].active) {
+	traceGbl[k].start_offset = offset;
+	offset += traceGbl[k].length;
+	offset = Prof::Database::alignOffset(offset);
+      }
+    }
+  }
+
+  ret = MPI_Scatter((void *) traceGbl, chunkSize, MPI_CHAR,
+		    (void *) traceLcl, chunkSize, MPI_CHAR,
+		    rootRank, MPI_COMM_WORLD);
+
+  DIAG_Assert(ret == 0, "MPI_Scatter for mergeTraceInfo failed");
+
+  // after the scatter, rank 0 compacts the global index
+  if (myRank == rootRank) {
+    long i = 0;
+    for (k = 0; k < totalFiles; k++) {
+      if (traceGbl[k].active) {
+	if (i < k) {
+	  traceGbl[i] = traceGbl[k];
+	}
+	i++;
+      }
+    }
+  }
+
+  return 0;
 }
 
 
@@ -870,8 +990,9 @@ makeSummaryMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 static void
 makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 		      const string& profileFile,
-		      const Analysis::Args& args, uint groupId, uint groupMax,
-		      int myRank)
+		      const Analysis::Args& args, 
+		      Prof::Database::traceInfo *traceLcl,
+		      uint groupId, uint groupMax, int myRank)
 {
   Prof::Metric::Mgr* mMgrGbl = profGbl.metricMgr();
   Prof::CCT::Tree* cctGbl = profGbl.cct();
@@ -886,6 +1007,8 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 
   Prof::CallPath::Profile* prof =
     Analysis::CallPath::read(profileFile, rGroupId, rFlags);
+
+  prof->m_traceInfo = *traceLcl;
 
   // -------------------------------------------------------
   // merge into canonical CCT

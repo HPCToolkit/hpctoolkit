@@ -261,7 +261,7 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
 	      "CallPath::Profile::merge: there should only be CCT::MergeEffects when MrgFlg_NormalizeTraceFileY is passed");
 
   if (Prof::Database::newDBFormat()) {
-    if (y.m_traceInfo.active) {
+    if ((mrgFlag & CCT::MrgFlg_NormalizeTraceFileY) && y.m_traceInfo.active) {
       Prof::Database::writeTraceFile(&y, mrgEffects2);
     }
   }
