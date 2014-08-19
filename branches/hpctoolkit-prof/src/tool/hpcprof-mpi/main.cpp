@@ -435,6 +435,9 @@ realmain(int argc, char* const* argv)
       profGbl->metricMgr()->zeroDBInfo();
     }
 
+    profGbl->m_traceGbl = traceGbl;
+    profGbl->m_numActive = numActive;
+
     Analysis::CallPath::makeDatabase(*profGbl, args);
   }
   else {

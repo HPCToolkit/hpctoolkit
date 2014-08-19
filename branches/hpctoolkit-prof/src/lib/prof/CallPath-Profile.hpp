@@ -366,6 +366,8 @@ private:
 
 public:
   Prof::Database::traceInfo m_traceInfo;
+  Prof::Database::traceInfo * m_traceGbl;
+  long  m_numActive;
 
 };
 

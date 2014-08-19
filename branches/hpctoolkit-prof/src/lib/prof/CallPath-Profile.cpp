@@ -146,6 +146,8 @@ Profile::Profile(const std::string name)
   m_traceMinTime = UINT64_MAX;
   m_traceMaxTime = 0;
   m_traceInfo.active = false;
+  m_traceGbl = NULL;
+  m_numActive = 0;
 
   m_mMgr = new Metric::Mgr;
   m_isMetricMgrVirtual = false;
@@ -643,8 +645,30 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   os << "  </MetricDBTable>\n";
 
   // -------------------------------------------------------
-  //
+  // SummaryDBTable
   // -------------------------------------------------------
+  if (Prof::Database::newDBFormat()) {
+    os << "  <SummaryDBTable>\n";
+    os << "    <SummaryDBFile i=\"0\" name=\"summary.db\"/>\n";
+    os << "  </SummaryDBTable>\n";
+  }
+
+  // -------------------------------------------------------
+  // TraceDBTable
+  // -------------------------------------------------------
+  if (Prof::Database::newDBFormat()) {
+    if (m_numActive > 0) {
+      os << "  <TraceDBTable>\n";
+      os << "    <TraceDBFile i=\"0\""
+	 << " name=\"trace.db\""
+	 << " db-min-time=\"" << m_traceMinTime << "\""
+	 << " db-max-time=\"" << m_traceMaxTime << "\""
+	 << "/>\n";
+      os << "  </TraceDBTable>\n";
+    }
+
+  } else {
+
   if (!traceFileNameSet().empty()) {
     os << "  <TraceDBTable>\n";
     os << "    <TraceDB i" << MakeAttrNum(0)
@@ -654,6 +678,23 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
        << " db-header-sz=\"" << HPCTRACE_FMT_HeaderLen << "\""
        << "/>\n";
     os << "  </TraceDBTable>\n";
+  }
+  }
+
+  // -------------------------------------------------------
+  // ThreadIDTable
+  // -------------------------------------------------------
+  if (Prof::Database::newDBFormat()) {
+    if (m_numActive > 0) {
+      os << "  <ThreadIDTable size=\"" << m_numActive << "\">\n";
+      for (long i = 0; i < m_numActive; i++) {
+	os << "    <Thread i=\"" << i << "\""
+	   << " r=\"" << m_traceGbl[i].rank << "\""
+	   << " t=\"" << m_traceGbl[i].tid  << "\""
+	   << "/>\n";
+      }
+      os << "  </ThreadIDTable>\n";
+    }
   }
 
   // -------------------------------------------------------
