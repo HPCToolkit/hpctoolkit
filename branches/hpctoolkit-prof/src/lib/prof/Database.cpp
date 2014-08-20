@@ -67,6 +67,8 @@
 
 //***************************************************************************
 
+#define __STDC_LIMIT_MACROS
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <err.h>
@@ -404,7 +406,7 @@ openTraceFile(void)
 }
 
 int
-writeTraceHeader(long num_threads)
+writeTraceHeader(traceInfo *trace, long num_threads)
 {
   struct common_header * common_hdr;
   struct trace_header * trace_hdr;
@@ -414,6 +416,8 @@ writeTraceHeader(long num_threads)
   uint64_t header_size =  common_size + trace_size;
   uint64_t index_start = alignOffset(header_size);
   uint64_t index_length = (num_threads + 2) * sizeof(struct trace_index);
+  uint64_t min_time, max_time;
+  long n;
 
   openTraceFile();
 
@@ -435,8 +439,15 @@ writeTraceHeader(long num_threads)
   common_hdr->num_cctid =  0;
   common_hdr->num_metric = 0;
 
-  trace_hdr->min_time = 0;
-  trace_hdr->max_time = 0;
+  min_time = UINT64_MAX;
+  max_time = 0;
+  for (n = 0; n < num_threads; n++) {
+    min_time = std::min(min_time, trace[n].min_time);
+    max_time = std::max(max_time, trace[n].max_time);
+  }
+
+  trace_hdr->min_time = host_to_be_64(min_time);
+  trace_hdr->max_time = host_to_be_64(max_time);
   trace_hdr->index_start =  host_to_be_64(index_start);
   trace_hdr->index_length = host_to_be_64(index_length);
   trace_hdr->size_offset =  host_to_be_32(8);

@@ -192,7 +192,7 @@ realmain(int argc, char* const* argv)
 
   if (Prof::Database::newDBFormat() && numActive > 0) {
     Prof::Database::writeTraceIndex(trace, numActive);
-    Prof::Database::writeTraceHeader(numActive);
+    Prof::Database::writeTraceHeader(trace, numActive);
     Prof::Database::endTraceFiles();
   }
 

@@ -1096,6 +1096,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     prof->m_traceMaxTime = traceMaxTime;
   }
 
+  prof->m_traceInfo.min_time = traceMinTime;
+  prof->m_traceInfo.max_time = traceMaxTime;
   prof->m_traceInfo.rank = mpiRank;
   prof->m_traceInfo.tid = tid;
   prof->m_traceInfo.length = traceLen;

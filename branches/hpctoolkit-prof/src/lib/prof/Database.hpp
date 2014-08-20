@@ -59,6 +59,8 @@ namespace Prof {
 namespace Database {
 
 struct traceInfo_s {
+  uint64_t  min_time;
+  uint64_t  max_time;
   off_t  start_offset;
   off_t  length;
   long   rank;
@@ -79,7 +81,7 @@ bool makeSummaryDB(Prof::CallPath::Profile & prof,
 
 off_t firstTraceOffset(long num_files);
 
-int writeTraceHeader(long num_threads);
+int writeTraceHeader(traceInfo *trace, long num_threads);
 
 int writeTraceIndex(traceInfo *trace, long num_threads);
 

@@ -414,7 +414,7 @@ realmain(int argc, char* const* argv)
   if (Prof::Database::newDBFormat()) {
     if (myRank == rootRank && numActive > 0) {
       Prof::Database::writeTraceIndex(traceGbl, numActive);
-      Prof::Database::writeTraceHeader(numActive);
+      Prof::Database::writeTraceHeader(traceGbl, numActive);
     }
     Prof::Database::endTraceFiles();
   }
