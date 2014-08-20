@@ -379,21 +379,43 @@ firstTraceOffset(long num_files)
   return offset;
 }
 
+// Open trace file lazily.  We don't know at initdb time if there are
+// trace files.  So, we open trace.db and malloc buffer on first
+// write.
+//
+static void
+openTraceFile(void)
+{
+  if (trace_fd >= 0) {
+    return;
+  }
+
+  std::string trace_fname = db_dir + "/" + "trace.db";
+
+  trace_fd = open(trace_fname.c_str(), O_WRONLY | O_CREAT, 0644);
+  if (trace_fd < 0) {
+    err(1, "open trace metrics file failed");
+  }
+
+  trace_buf = (unsigned char *) malloc(TRACE_BUFFER_SIZE);
+  if (trace_buf == NULL) {
+    err(1, "malloc for trace buffer failed");
+  }
+}
+
 int
 writeTraceHeader(long num_threads)
 {
   struct common_header * common_hdr;
   struct trace_header * trace_hdr;
 
-  if (trace_fd < 0) {
-    return 0;
-  }
-
   uint64_t common_size = sizeof(struct common_header);
   uint64_t trace_size = sizeof(struct trace_header);
   uint64_t header_size =  common_size + trace_size;
   uint64_t index_start = alignOffset(header_size);
   uint64_t index_length = (num_threads + 2) * sizeof(struct trace_index);
+
+  openTraceFile();
 
   char * header = (char *) malloc(header_size);
   if (header == NULL) {
@@ -437,9 +459,7 @@ writeTraceIndex(traceInfo *trace, long num_threads)
   size_t size = (num_threads + 1) * sizeof(*table);
   long n;
 
-  if (trace_fd < 0) {
-    return 0;
-  }
+  openTraceFile();
 
   table = (struct trace_index *) malloc(size);
   if (table == NULL) {
@@ -466,20 +486,7 @@ writeTraceFile(Prof::CallPath::Profile *prof,
 {
   off_t offset = prof->m_traceInfo.start_offset;
 
-  // open trace.db file lazily.
-  if (trace_fd < 0) {
-    std::string trace_fname = db_dir + "/" + "trace.db";
-
-    trace_fd = open(trace_fname.c_str(), O_WRONLY | O_CREAT, 0644);
-    if (trace_fd < 0) {
-      err(1, "open trace metrics file failed");
-    }
-
-    trace_buf = (unsigned char *) malloc(TRACE_BUFFER_SIZE);
-    if (trace_buf == NULL) {
-      err(1, "malloc for trace buffer failed");
-    }
-  }
+  openTraceFile();
 
   // read the original trace file.
   const char *name = prof->traceFileName().c_str();
