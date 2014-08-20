@@ -47,8 +47,6 @@ cuda_ncontexts_decr(void)
 }
 
 
-static CUcontext the_ctxt = NULL;
-
 struct cuda_ctxt_t {
   CUcontext ctxt;
 } local_ctxt;

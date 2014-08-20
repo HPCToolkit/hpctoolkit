@@ -259,13 +259,12 @@ fnbounds_find_exec_bounds_proc_maps(char* exename, void**start, void** end)
   for(;;) {
     char* l = fgets(linebuf, sizeof(linebuf), loadmap);
     if (feof(loadmap)) break;
-    char* dc = NULL;
     char* save = NULL;
     const char delim[] = " \n";
     addr = strtok_r(l, delim, &save);
     char* perms = strtok_r(NULL, delim, &save);
     // skip 3 tokens
-    for (int i=0; i < 3; i++) dc = strtok_r(NULL, delim, &save);
+    for (int i=0; i < 3; i++) { (void) strtok_r(NULL, delim, &save);}
     char* name = strtok_r(NULL, delim, &save);
     realpath(name, tmpname); 
     if ((strncmp(perms, "r-x", 3) == 0) && (strcmp(tmpname, exename) == 0)) break;
