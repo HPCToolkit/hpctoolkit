@@ -161,13 +161,12 @@ PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
 XED2_INC = @XED2_INC@
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
+CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
+CUPTI_BASE = @OPT_CUPTI@
 
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
 PLUGIN_CONFIG_FILES = ga io memleak pthread
-if OPT_ENABLE_CUDA
-    PLUGIN_CONFIG_FILES += gpu
-endif
 
 if HOST_CPU_PPC
   PLUGIN_CONFIG_FILES += ibm-xlomp
@@ -358,9 +357,15 @@ MY_IA64_FILES = \
         utilities/arch/ia64/ia64-context-pc.c
 
 if OPT_PAPI_COMPONENT
-MY_PAPI_FILES = sample-sources/papi-c.c
+MY_PAPI_FILES = \
+    sample-sources/papi-c.c \
+    sample-sources/papi-c-extended-info.c
 else
 MY_PAPI_FILES = sample-sources/papi.c
+endif
+
+if OPT_PAPI_CUPTI
+MY_PAPI_FILES += sample-sources/papi-c-cupti.c
 endif
 
 MY_UPC_FILES = sample-sources/upc.c
@@ -388,6 +393,7 @@ MY_INCLUDE_DIRS =			\
 	$(HPC_IFLAGS)			\
 	$(OPT_LIBUNWIND_IFLAGS)         \
 	-I$(HPCFNBOUNDS_INC)		\
+        $(OPT_CUPTI_IFLAGS)             \
 	-I$(LIBMONITOR_INC)
 
 
@@ -747,6 +753,10 @@ if OPT_PAPI_DYNAMIC
   libhpcrun_la_LDFLAGS  += $(PAPI_LD_FLGS)
 endif
 
+if OPT_PAPI_CUPTI
+libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
+endif
+
 if OPT_PAPI_STATIC
   libhpcrun_o_SOURCES   += $(MY_PAPI_FILES)
   libhpcrun_o_CPPFLAGS  += $(PAPI_INC_FLGS)
@@ -787,7 +797,7 @@ if OPT_ENABLE_CUDA
   libhpcrun_la_SOURCES += $(CUDA_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
-  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
+#  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
 
   libhpcrun_gpu_la_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_gpu_la_CFLAGS  += $(OPT_CUDA_IFLAGS)

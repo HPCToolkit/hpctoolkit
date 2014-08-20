@@ -150,7 +150,13 @@ METHOD_FN(init)
 {
   PAPI_set_debug(0x3ff);
 
+  // **NOTE: some papi components may start threads, so
+  //         hpcrun must ignore these threads to ensure that PAPI_library_init
+  //         succeeds
+  //
+  monitor_disable_new_threads();
   int ret = PAPI_library_init(PAPI_VER_CURRENT);
+  monitor_enable_new_threads();
   TMSG(PAPI,"PAPI_library_init = %d", ret);
   TMSG(PAPI,"PAPI_VER_CURRENT =  %d", PAPI_VER_CURRENT);
 
@@ -566,6 +572,19 @@ METHOD_FN(display_events)
 #define ss_cls SS_HARDWARE
 
 #include "ss_obj.h"
+
+/******************************************************************************
+ * public operations
+ *****************************************************************************/
+
+//
+// Do not need to disable the papi cuda component if there is no papi component
+//
+void
+hpcrun_disable_papi_cuda(void)
+{
+  ;
+}
 
 /******************************************************************************
  * private operations 
