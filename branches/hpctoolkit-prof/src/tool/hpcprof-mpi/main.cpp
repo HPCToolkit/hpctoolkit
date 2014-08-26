@@ -64,6 +64,8 @@
 //************************* System Include Files ****************************
 
 #include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 #include <iostream>
 #include <fstream>
@@ -167,6 +169,9 @@ static void
 writeMetricsDB(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
 	       const string& metricDBFnm);
 
+static void
+printRusage(struct timeval start_time,
+	    int myRank, int numRanks, int rootRank);
 
 static void
 writeStructure(const Prof::Struct::Tree& structure, const char* baseNm,
@@ -214,7 +219,10 @@ main(int argc, char* const* argv)
 static int
 realmain(int argc, char* const* argv) 
 {
+  struct timeval start_time;
   Args args;
+
+  gettimeofday(&start_time, NULL);
   args.parse(argc, argv); // may call exit()
 
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
@@ -450,8 +458,9 @@ realmain(int argc, char* const* argv)
   // Cleanup/MPI finalize
   // -------------------------------------------------------
   nArgs.destroy();
-
   delete profGbl;
+
+  printRusage(start_time, myRank, numRanks, rootRank);
 
   MPI_Finalize();
 
@@ -1142,6 +1151,71 @@ writeMetricsDB(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
   }
 
   hpcio_fclose(fs);
+}
+
+
+static void
+printRusage(struct timeval start_time,
+	    int myRank, int numRanks, int rootRank)
+{
+  const int numelts = 4;
+  long sbuf[numelts];
+  long *rbuf = NULL;
+
+  if (myRank == rootRank) {
+    rbuf = (long *) malloc(numRanks * numelts * sizeof(long));
+  }
+
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  struct timeval now;
+  struct rusage usage;
+
+  gettimeofday(&now, NULL);
+  getrusage(RUSAGE_SELF, &usage);
+
+  sbuf[0] = now.tv_sec - start_time.tv_sec;
+  sbuf[1] = usage.ru_utime.tv_sec;
+  sbuf[2] = usage.ru_stime.tv_sec;
+  sbuf[3] = usage.ru_maxrss;
+
+  MPI_Gather(sbuf, numelts, MPI_LONG,
+	     rbuf, numelts, MPI_LONG,
+	     rootRank, MPI_COMM_WORLD);
+
+  if (myRank == rootRank) {
+    long real_time = 0;
+    long user_time = 0;
+    long sys_time = 0;
+    long min_rss = usage.ru_maxrss;
+    long max_rss = 0;
+    long sum_rss = 0;
+
+    for (int i = 0; i < numRanks; i++) {
+      real_time = std::max(real_time, rbuf[numelts * i]);
+      user_time += rbuf[numelts * i + 1];
+      sys_time += rbuf[numelts * i + 2];
+      long rss = rbuf[numelts * i + 3];
+      min_rss = std::min(min_rss, rss);
+      max_rss = std::max(max_rss, rss);
+      sum_rss += rss;
+    }
+    user_time = user_time/numRanks;
+    sys_time = sys_time/numRanks;
+    sum_rss = sum_rss/numRanks;
+
+    std::cout << "real: "
+	      << real_time/60 << "min " << real_time % 60 << "sec, "
+	      << "user(avg): "
+	      << user_time/60 << "min " << user_time % 60 << "sec, "
+	      << "sys(avg): "
+	      << sys_time/60 << "min " << sys_time % 60 << "sec\n";
+
+    std::cout << "memory: rank0: " << usage.ru_maxrss/1024 << "meg, "
+	      << "min: " << min_rss/1024 << "meg, "
+	      << "avg: " << sum_rss/1024 << "meg, "
+	      << "max: " << max_rss/1024 << "meg\n";
+  }
 }
 
 

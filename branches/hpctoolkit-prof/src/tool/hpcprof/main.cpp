@@ -59,6 +59,10 @@
 
 //************************* System Include Files ****************************
 
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+
 #include <iostream>
 #include <fstream>
 
@@ -125,7 +129,10 @@ main(int argc, char* const* argv)
 static int
 realmain(int argc, char* const* argv) 
 {
+  struct timeval start_time;
   Args args;
+
+  gettimeofday(&start_time, NULL);
   args.parse(argc, argv);
 
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
@@ -261,8 +268,21 @@ realmain(int argc, char* const* argv)
   // Cleanup
   // -------------------------------------------------------
   nArgs.destroy();
-
   delete prof;
+
+  struct timeval now;
+  struct rusage usage;
+
+  gettimeofday(&now, NULL);
+  getrusage(RUSAGE_SELF, &usage);
+  long real_time = now.tv_sec - start_time.tv_sec;
+  long user_time = usage.ru_utime.tv_sec;
+  long sys_time = usage.ru_stime.tv_sec;
+
+  std::cout << "real: " << real_time/60 << "min " << real_time % 60 << "sec, "
+	    << "user: " << user_time/60 << "min " << user_time % 60 << "sec, "
+	    << "sys: " << sys_time/60 << "min " << sys_time % 60 << "sec, "
+	    << "mem: " << usage.ru_maxrss/1024 << "meg\n";
 
   return 0;
 }
