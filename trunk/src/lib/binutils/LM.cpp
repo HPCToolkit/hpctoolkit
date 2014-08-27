@@ -111,6 +111,7 @@ using std::endl;
 #define NORETURNS_DEBUG 0
 #define NORETURNS_RESULT_NOISY 0
 #define NORETURNS_LOOKUP_NOISY 0 
+#define NORETURNS_LOOKUP_LOCAL_NOISY 0
 
 
 
@@ -238,8 +239,36 @@ public:
             addIfNoReturn(name, addr);
           }
         } else if (symbol[i]->flags == BSF_LOCAL)  {
-          // look for plt_call trampolines found in Power binaries
-          if (strstr(name, "plt_call")) {
+          // look for plt_call and long branch trampolines found in 
+          // Power binaries
+#if NORETURNS_LOOKUP_LOCAL_NOISY
+          unsigned long laddr = bfd_asymbol_value(symbol[i]);
+          std::cout << "looking up local symbol " << name << std::hex << "0x" 
+                    << laddr << std::endl;
+#endif
+          if (strstr(name, "long_branch_r2off")) {
+            unsigned long addr = bfd_asymbol_value(symbol[i]);
+            if (addr) {
+              char *dname = strdup(name);
+              char *index = strchr(dname,'+'); // look for an @ in the symbol
+              if (index) {                     // if an @ was found
+                *index = 0;                    // remove the suffix @...
+              }
+              // on power architectures, need to eliminate 
+              // *.long_branch_r2off. prefix
+              char *name = dname;
+              char *name_suffix = strrchr(dname,'.');
+              if (name_suffix) {
+                name = name_suffix + 1;
+              }
+#if NORETURNS_LOOKUP_NOISY
+          std::cout << "looking up " << name << " @ " << std::hex << "0x" 
+                    << addr << std::endl;
+#endif
+              addIfNoReturn(name, addr);
+              free(dname);
+            }
+	  } else if (strstr(name, "plt_call")) {
             unsigned long addr = bfd_asymbol_value(symbol[i]);
             if (addr) {
               char *dname = strdup(name);
