@@ -176,8 +176,8 @@ writeXML(std::ostream& os, const Prof::Struct::Tree& strctTree,
   static const char* structureDTD =
 #include <lib/xml/hpc-structure.dtd.h>
 
-  os << "<?xml version=\"1.0\"?>" << std::endl;
-  os << "<!DOCTYPE HPCToolkitStructure [\n" << structureDTD << "]>" << std::endl;
+  os << "<?xml version=\"1.0\"?>\n";
+  os << "<!DOCTYPE HPCToolkitStructure [\n" << structureDTD << "]>\n";
   os.flush();
 
   int oFlags = 0;
@@ -189,6 +189,7 @@ writeXML(std::ostream& os, const Prof::Struct::Tree& strctTree,
      << xml::MakeAttrStr(strctTree.name()) << ">\n";
   strctTree.writeXML(os, oFlags);
   os << "</HPCToolkitStructure>\n";
+  os.flush();
 }
 
 
@@ -1550,17 +1551,17 @@ ANode::writeXML_pre(ostream& os, uint oFlags, const char* pfx) const
   // 1. Write element name
   if (doTag) {
     if (isXMLLeaf) {
-      os << pfx << "<" << toXML(oFlags) << "/>" << endl;
+      os << pfx << "<" << toXML(oFlags) << "/>\n";
     }
     else {
-      os << pfx << "<" << toXML(oFlags) << ">" << endl;
+      os << pfx << "<" << toXML(oFlags) << ">\n";
     }
   }
 
   // 2. Write associated metrics
   if (doMetrics) {
     writeMetricsXML(os, Metric::IData::npos, Metric::IData::npos, oFlags, pfx);
-    os << endl;
+    os << "\n";
   }
  
   return !isXMLLeaf; // whether to execute writeXML_post()
@@ -1574,7 +1575,7 @@ ANode::writeXML_post(ostream& os, uint GCC_ATTR_UNUSED oFlags,
   bool doTag = isVisible();
 
   if (doTag) {
-    os << pfx << "</" << ANodeTyToXMLelement(type()) << ">" << endl;
+    os << pfx << "</" << ANodeTyToXMLelement(type()) << ">\n";
   }
 }
 

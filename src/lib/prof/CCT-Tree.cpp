@@ -1283,17 +1283,17 @@ ANode::writeXML_pre(ostream& os, uint metricBeg, uint metricEnd,
   // 1. Write element name
   if (doTag) {
     if (isXMLLeaf) {
-      os << pfx << "<" << toStringMe(oFlags) << "/>" << endl;
+      os << pfx << "<" << toStringMe(oFlags) << "/>\n";
     }
     else {
-      os << pfx << "<" << toStringMe(oFlags) << ">" << endl;
+      os << pfx << "<" << toStringMe(oFlags) << ">\n";
     }
   }
 
   // 2. Write associated metrics
   if (doMetrics) {
     writeMetricsXML(os, metricBeg, metricEnd, oFlags, pfx);
-    os << endl;
+    os << "\n";
   }
 
   return !isXMLLeaf; // whether to execute writeXML_post()
@@ -1309,7 +1309,7 @@ ANode::writeXML_post(ostream& os, uint GCC_ATTR_UNUSED oFlags,
     return;
   }
   
-  os << pfx << "</" << ANodeTyToName(type()) << ">" << endl;
+  os << pfx << "</" << ANodeTyToName(type()) << ">\n";
 }
 
 

@@ -64,6 +64,7 @@ using std::cerr;
 using std::endl;
 
 #include <fstream>
+#include <streambuf>
 #include <new>
 
 //*************************** User Include Files ****************************
@@ -73,6 +74,7 @@ using std::endl;
 #include <lib/banal/Struct.hpp>
 
 #include <lib/prof/Struct-Tree.hpp>
+#include <lib/prof-lean/hpcio.h>
 
 #include <lib/binutils/LM.hpp>
 
@@ -144,6 +146,10 @@ realmain(int argc, char* argv[])
 
   const char* osnm = (args.out_filenm == "-") ? NULL : args.out_filenm.c_str();
   std::ostream* os = IOUtil::OpenOStream(osnm);
+  char* outBuf = new char[HPCIO_RWBufferSz];
+
+  std::streambuf* os_buf = os->rdbuf();
+  os_buf->pubsetbuf(outBuf, HPCIO_RWBufferSz);
 
   ProcNameMgr* procNameMgr = NULL;
   if (args.lush_agent == "agent-c++") {
@@ -167,11 +173,11 @@ realmain(int argc, char* argv[])
   Prof::Struct::writeXML(*os, *strctTree, args.prettyPrintOutput);
   IOUtil::CloseStream(os);
   
-  delete strctTree;
-  
-  
   // Cleanup
+
+  delete strctTree;
   delete lm;
+  delete[] outBuf;
   
   return (0);
 }
