@@ -83,6 +83,7 @@
 #include <list>
 #include <vector>
 #include <lib/support/diagnostics.h>
+#include <lib/support/FileNameMap.hpp>
 #include <lib/support/realpath.h>
 #include "Struct-Inline.hpp"
 
@@ -234,7 +235,7 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 	vector <string> name_vec = func->getAllPrettyNames();
 
 	string procnm = (! name_vec.empty()) ? name_vec[0] : UNKNOWN_PROC;
-	string filenm = RealPath(callsite.first.c_str());
+	string &filenm = getRealPath(callsite.first.c_str());
 	long lineno = callsite.second;
 	nodelist.push_front(InlineNode(filenm, procnm, lineno));
 

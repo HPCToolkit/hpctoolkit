@@ -613,6 +613,10 @@ my_pkglibdir
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
+OPT_CUPTI
+OPT_CUPTI_IFLAGS
+OPT_ENABLE_CUPTI_FALSE
+OPT_ENABLE_CUPTI_TRUE
 OPT_CUDA_LDFLAGS
 OPT_CUDA_IFLAGS
 OPT_CUDA
@@ -622,6 +626,10 @@ OPT_UPC_LDFLAGS
 OPT_UPC_IFLAGS
 OPT_ENABLE_UPC_FALSE
 OPT_ENABLE_UPC_TRUE
+OPT_BGQ_BACKEND_FALSE
+OPT_BGQ_BACKEND_TRUE
+hpcrun_use_bgq_backend
+ppc64_bgq_avail
 hpclink_extra_wrap_names
 OPT_ENABLE_LUSH_PTHREADS_FALSE
 OPT_ENABLE_LUSH_PTHREADS_TRUE
@@ -678,6 +686,8 @@ SYMTABAPI_COPY
 SYMTABAPI_LIB_LIST
 SYMTABAPI_LIB
 SYMTABAPI_INC
+OPT_PAPI_CUPTI_FALSE
+OPT_PAPI_CUPTI_TRUE
 OPT_PAPI_COMPONENT_FALSE
 OPT_PAPI_COMPONENT_TRUE
 papi_extra_libs
@@ -887,7 +897,8 @@ PACKAGE_TARNAME
 PACKAGE_NAME
 PATH_SEPARATOR
 SHELL'
-ac_subst_files='export_hpctoolkit'
+ac_subst_files='copyright_hash
+export_hpctoolkit'
 ac_user_opts='
 enable_option_checking
 enable_maintainer_mode
@@ -912,6 +923,7 @@ with_monitor
 with_open_analysis
 with_papi
 enable_papi_c
+enable_papi_c_cupti
 with_symtabAPI
 with_xed2
 with_xerces
@@ -928,11 +940,13 @@ with_cilk
 enable_lush_pthreads
 enable_xop
 enable_bluegene
+enable_bgq_cnk
 with_upc
 with_upc_lib
 with_cuda
 with_cuda_include
 with_cuda_lib
+with_cupti
 enable_data_centric_tracing
 with_objcopy
 enable_hpc_binutils
@@ -1591,6 +1605,8 @@ Optional Features:
                           autoconf fails to detect correctly
   --enable-papi-c         use new papi component sample source, requires papi
                           5.1 or later
+  --enable-papi-c-cupti   enable component PAPI's CUPTI functionality
+                          (requires papi-c with cuda component installed
   --enable-back-end       build only those tools needed to run hpcrun and
                           hpclink on the back-end compute nodes
   --enable-hpcrun-flat    build hpcrun-flat (default yes)
@@ -1607,6 +1623,8 @@ Optional Features:
   --enable-xop            include support for decoding AMD XOP instructions,
                           x86-64 only (default no)
   --enable-bluegene       Enable BlueGene/P support
+  --enable-bgq-cnk        enable BGQ- and cnk-specific options: build parts of
+                          hpcrun with back-end powerpc64-bgq-linux-gcc
   --enable-data-centric-tracing
                           Enable data-centric tracing (prototype)
   --enable-hpc-binutils   Enable extra HPCToolkit GNU binutils functionality
@@ -1646,6 +1664,8 @@ Optional Packages:
                           (default is NO)
   --with-cuda-lib=PATH    use given CUDA lib (absolute path) with hpcrun
                           (default is NO)
+  --with-cupti=PATH       use given CUDA/CUPTI installation (absolute path)
+                          with hpcrun (default is NO)
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
 
@@ -18166,6 +18186,77 @@ else
 fi
 
 
+# Check whether --enable-papi-c-cupti was given.
+if test "${enable_papi_c_cupti+set}" = set; then :
+  enableval=$enable_papi_c_cupti; use_papi_c_cupti="$enableval"
+else
+  use_papi_c_cupti=no
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use component papi CUPTI functionality" >&5
+$as_echo_n "checking whether to use component papi CUPTI functionality... " >&6; }
+
+case "$use_papi_c_cupti" in
+  no ) ;;
+  * ) use_papi_c_cupti=yes ;;
+esac
+
+if test "$use_papi_c" = no ; then
+  use_papi_c_cupti=no
+fi
+
+if test "$use_papi_c_component" = yes ; then
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS"
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include "papi.h"
+extern void CUDA_init_component(void);
+int main()
+{
+  CUDA_init_component();
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  use_papi_c_cupti=yes
+else
+  use_papi_c_cupti=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_papi_c_cupti" >&5
+$as_echo "$use_papi_c_cupti" >&6; }
+ if test "$use_papi_c_cupti" = yes; then
+  OPT_PAPI_CUPTI_TRUE=
+  OPT_PAPI_CUPTI_FALSE='#'
+else
+  OPT_PAPI_CUPTI_TRUE='#'
+  OPT_PAPI_CUPTI_FALSE=
+fi
+
 
 #-------------------------------------------------
 # Option: --with-symtabAPI=PATH
@@ -18535,9 +18626,9 @@ fi
 # LD_LIBRARY_PATH, which can't be right.)  Is there a better option
 # here?
 
-HPCRUN_LIBCXX_PATH=`${CXX} -print-file-name=libstdc++.so`
+libcxx_file=`${CXX} -print-file-name=libstdc++.so`
 
-case "$HPCRUN_LIBCXX_PATH" in
+case "$libcxx_file" in
   /* ) ;;
   * )
     src="hpc_hello.$$.cc"
@@ -18547,19 +18638,21 @@ case "$HPCRUN_LIBCXX_PATH" in
 main(){}
 EOF
     ${CXX} -o "$obj" "$src"
-    HPCRUN_LIBCXX_PATH=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
+    libcxx_file=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
     rm -f "$src" "$obj"
     ;;
 esac
 
+libcxx_dir=`dirname $libcxx_file`
+libcxx_base=`basename $libcxx_file`
+HPCRUN_LIBCXX_PATH=`( cd $libcxx_dir 2>/dev/null && /bin/pwd )`
+
 case "$HPCRUN_LIBCXX_PATH" in
-  /* ) { $as_echo "$as_me:${as_lineno-$LINENO}: found libstdc++.so at $HPCRUN_LIBCXX_PATH" >&5
-$as_echo "$as_me: found libstdc++.so at $HPCRUN_LIBCXX_PATH" >&6;} ;;
+  /* ) { $as_echo "$as_me:${as_lineno-$LINENO}: found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}" >&5
+$as_echo "$as_me: found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}" >&6;} ;;
   * )  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find libstdc++.so" >&5
 $as_echo "$as_me: WARNING: unable to find libstdc++.so" >&2;} ;;
 esac
-
-HPCRUN_LIBCXX_PATH=`dirname $HPCRUN_LIBCXX_PATH`
 
 
 
@@ -19253,6 +19346,91 @@ $as_echo "#define HOST_SYSTEM_IBM_BLUEGENE 1" >>confdefs.h
 
 fi
 
+#-------------------------------------------------
+# Option: --enable-bgq-cnk=PATH
+#-------------------------------------------------
+#
+# hpcrun (&hpclink) on BGQ needs the back-end compiler for a few files.
+#
+enable_bgq=no
+# Check whether --enable-bgq-cnk was given.
+if test "${enable_bgq_cnk+set}" = set; then :
+  enableval=$enable_bgq_cnk; enable_bgq="yes"
+fi
+
+
+# Search for the back-end BGQ compiler on PATH and test for Blue
+# Gene/P (suppress the warning on P).
+
+ppc64_bgq_avail=
+if test -d /bgsys ; then
+    # Extract the first word of "powerpc64-bgq-linux-gcc", so it can be a program name with args.
+set dummy powerpc64-bgq-linux-gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_prog_ppc64_bgq_avail+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ppc64_bgq_avail"; then
+  ac_cv_prog_ppc64_bgq_avail="$ppc64_bgq_avail" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_ppc64_bgq_avail="yes"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_prog_ppc64_bgq_avail" && ac_cv_prog_ppc64_bgq_avail="no"
+fi
+fi
+ppc64_bgq_avail=$ac_cv_prog_ppc64_bgq_avail
+if test -n "$ppc64_bgq_avail"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ppc64_bgq_avail" >&5
+$as_echo "$ppc64_bgq_avail" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+else
+    ppc64_bgq_avail=no
+fi
+
+hpcrun_use_bgq_backend=no
+warn_bgq_backend=no
+
+case "$enable_bgq" in
+    yes )
+	if test "$ppc64_bgq_avail" != yes ; then
+	    as_fn_error $? "unable to find powerpc64-bgq-linux-gcc for enable-bgq-cnk" "$LINENO" 5
+	fi
+	hpcrun_use_bgq_backend=yes
+	;;
+    no ) ;;
+    * )  ;;
+esac
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $hpcrun_use_bgq_backend" >&5
+$as_echo "$hpcrun_use_bgq_backend" >&6; }
+ if test "$hpcrun_use_bgq_backend" = "yes"; then
+  OPT_BGQ_BACKEND_TRUE=
+  OPT_BGQ_BACKEND_FALSE='#'
+else
+  OPT_BGQ_BACKEND_TRUE='#'
+  OPT_BGQ_BACKEND_FALSE=
+fi
+
 
 #-------------------------------------------------
 # Option: --with-upc=PATH
@@ -19452,6 +19630,62 @@ fi
 
 
 #-------------------------------------------------
+# Option: --with-cupti=PATH
+#-------------------------------------------------
+OPT_HAVE_CUPTI=no
+OPT_CUPTI=
+OPT_CUPTI_IFLAGS=
+OPT_CUPTI_LDFLAGS=
+OPT_CUPTI_LIBPATH=
+
+
+# Check whether --with-cupti was given.
+if test "${with_cupti+set}" = set; then :
+  withval=$with_cupti; if test $withval != no; then
+     OPT_HAVE_CUPTI=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cupti requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUPTI=${withval}
+   fi
+fi
+
+
+#
+# Valid cupti library
+#
+if test "$OPT_HAVE_CUPTI" = yes; then
+   if test ! -f $OPT_CUPTI/include/cupti.h; then
+      as_fn_error $? "--with-cupti=$OPT_CUPTI invalid! No cupti.h" "$LINENO" 5
+   fi
+fi
+
+if test "$use_papi_c_cupti" != no; then
+   if test "$OPT_HAVE_CUPTI" = yes; then
+       OPT_CUPTI_IFLAGS="-I$OPT_CUPTI/include"
+       if test "$OPT_HAVE_CUDA" = no; then
+          cuda_dir=$(dirnmame $(dirname $OPT_CUPTI))/include
+	  OPT_CUDA_IFLAGS="-I$cuda_dir"
+       fi
+       OPT_CUPTI_IFLAGS="$OPT_CUDA_IFLAGS $OPT_CUPTI_IFLAGS"
+   else
+      as_fn_error $? "papi-c-cupti specified, but no cupti lib specified!" "$LINENO" 5
+   fi
+fi
+
+ if test "$OPT_HAVE_CUPTI" = yes; then
+  OPT_ENABLE_CUPTI_TRUE=
+  OPT_ENABLE_CUPTI_FALSE='#'
+else
+  OPT_ENABLE_CUPTI_TRUE='#'
+  OPT_ENABLE_CUPTI_FALSE=
+fi
+
+
+
+
+
+#-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
 #-------------------------------------------------
 
@@ -19616,7 +19850,7 @@ BACK_END_LABEL=
 ac_config_headers="$ac_config_headers src/include/hpctoolkit-config.h"
 
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
 
 
 
@@ -19638,6 +19872,9 @@ ac_config_files="$ac_config_files src/tool/hpcproftt/hpcproftt"
 
 ac_config_files="$ac_config_files src/tool/hpcstruct/hpcstruct"
 
+
+
+copyright_hash="${srcdir}/config/copyright-hash"
 
 
 export_hpctoolkit="${srcdir}/config/export-hpctoolkit"
@@ -19843,6 +20080,10 @@ if test -z "${OPT_PAPI_COMPONENT_TRUE}" && test -z "${OPT_PAPI_COMPONENT_FALSE}"
   as_fn_error $? "conditional \"OPT_PAPI_COMPONENT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${OPT_PAPI_CUPTI_TRUE}" && test -z "${OPT_PAPI_CUPTI_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_PAPI_CUPTI\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${OPT_BUILD_BACK_END_TRUE}" && test -z "${OPT_BUILD_BACK_END_FALSE}"; then
   as_fn_error $? "conditional \"OPT_BUILD_BACK_END\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -19907,12 +20148,20 @@ if test -z "${OPT_ENABLE_LUSH_PTHREADS_TRUE}" && test -z "${OPT_ENABLE_LUSH_PTHR
   as_fn_error $? "conditional \"OPT_ENABLE_LUSH_PTHREADS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${OPT_BGQ_BACKEND_TRUE}" && test -z "${OPT_BGQ_BACKEND_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_BGQ_BACKEND\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${OPT_ENABLE_UPC_TRUE}" && test -z "${OPT_ENABLE_UPC_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_UPC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_CUDA_TRUE}" && test -z "${OPT_ENABLE_CUDA_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_CUDA\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_CUPTI_TRUE}" && test -z "${OPT_ENABLE_CUPTI_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_CUPTI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE}"; then
@@ -20902,6 +21151,7 @@ do
     "src/tool/hpcprof-flat/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-flat/Makefile" ;;
     "src/tool/hpcproftt/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcproftt/Makefile" ;;
     "src/tool/hpcrun/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/Makefile" ;;
+    "src/tool/hpcrun/utilities/bgq-cnk/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/utilities/bgq-cnk/Makefile" ;;
     "src/tool/hpcrun-flat/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun-flat/Makefile" ;;
     "src/tool/hpcserver/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcserver/Makefile" ;;
     "src/tool/hpcserver/mpi/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcserver/mpi/Makefile" ;;
@@ -22616,6 +22866,8 @@ $as_echo "$as_me:   xerces:       ${XERCES}" >&6;}
 $as_echo "$as_me:   papi:         ${OPT_PAPI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   cuda:         ${OPT_CUDA}" >&5
 $as_echo "$as_me:   cuda:         ${OPT_CUDA}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-cupti: ${use_papi_c_cupti}" >&5
+$as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   upc (BG/P):   ${opt_upc_mesg}" >&5
 $as_echo "$as_me:   upc (BG/P):   ${opt_upc_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   inline:       ${enable_inline}" >&5
@@ -22645,6 +22897,17 @@ $as_echo "$as_me: WARNING: This is not necessarily an error, but some parts of h
 $as_echo "$as_me: WARNING: may not compile cleanly without gcc or g++.  If the build fails," >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: try using GNU gcc and g++ before reporting an error." >&5
 $as_echo "$as_me: WARNING: try using GNU gcc and g++ before reporting an error." >&2;}
+fi
+
+if test "$warn_bgq_backend" = yes ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+$as_echo "$as_me: " >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: On the Blue Gene/Q compute nodes, hpcrun needs a separate," >&5
+$as_echo "$as_me: WARNING: On the Blue Gene/Q compute nodes, hpcrun needs a separate," >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: back-end compiler.  Use --enable-bgq to build for the back end," >&5
+$as_echo "$as_me: WARNING: back-end compiler.  Use --enable-bgq to build for the back end," >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: or else --disable-bgq to build for the front end." >&5
+$as_echo "$as_me: WARNING: or else --disable-bgq to build for the front end." >&2;}
 fi
 
 if test "$warn_compiler_mismatch" = yes ; then

@@ -366,8 +366,9 @@ copySourceFileMain(const string& fnm_orig,
 static bool 
 Flat_Filter(const Prof::Struct::ANode& x, long GCC_ATTR_UNUSED type)
 {
-  return (x.type() == Prof::Struct::ANode::TyFile 
-	  || x.type() == Prof::Struct::ANode::TyAlien);
+  return (x.type() == Prof::Struct::ANode::TyFile || 
+	  x.type() == Prof::Struct::ANode::TyLoop || 
+	  x.type() == Prof::Struct::ANode::TyAlien);
 }
 
 
@@ -394,8 +395,12 @@ copySourceFiles(Prof::Struct::Root* structure,
     // to resolve it on the current filesystem. (cf. RealPathMgr)
 
     // DIAG_Assert( , DIAG_UnexpectedInput);
-    const string& fnm_orig = (typeid(*strct) == typeid(Prof::Struct::Alien)) ?
-      dynamic_cast<Prof::Struct::Alien*>(strct)->fileName() : strct->name();
+    const string& fnm_orig = 
+      ((typeid(*strct) == typeid(Prof::Struct::Alien)) ?
+       dynamic_cast<Prof::Struct::Alien*>(strct)->fileName() : 
+       ((typeid(*strct) == typeid(Prof::Struct::Loop)) ? 
+	dynamic_cast<Prof::Struct::Loop*>(strct)->fileName() : 
+	strct->name()));
     
     // ------------------------------------------------------
     // Given fnm_orig, attempt to find and copy fnm_new
@@ -409,8 +414,9 @@ copySourceFiles(Prof::Struct::Root* structure,
     if (!fnm_new.empty()) {
       if (typeid(*strct) == typeid(Prof::Struct::Alien)) {
 	dynamic_cast<Prof::Struct::Alien*>(strct)->fileName(fnm_new);
-      }
-      else {
+      } else if (typeid(*strct) == typeid(Prof::Struct::Loop)) {
+	dynamic_cast<Prof::Struct::Loop*>(strct)->fileName(fnm_new);
+      } else {
 	dynamic_cast<Prof::Struct::File*>(strct)->name(fnm_new);
       }
     }

@@ -64,18 +64,20 @@
 #define prof_lean_spinlock_h
 
 #include <stdbool.h>
+#include <stdint.h>
+#include <stddef.h>
 
 #include "atomic-op.h"
 
-/*
- * Simple spin lock.
- */
+//
+// Simple spin lock.
+//
 
 typedef struct spinlock_s {
 	volatile long thelock;
 } spinlock_t;
 
-#define SPINLOCK_UNLOCKED_VALUE (0L)
+#define SPINLOCK_UNLOCKED_VALUE (-1L)
 #define SPINLOCK_LOCKED_VALUE (1L)
 #define INITIALIZE_SPINLOCK(x) { .thelock = (x) }
 
@@ -91,7 +93,8 @@ typedef struct spinlock_s {
  * Technically, the isync could be moved to the assembly code for
  * fetch_and_store().
  */
-static inline void 
+static inline
+void 
 spinlock_lock(spinlock_t *l)
 {
   /* test-and-test-and-set lock */
@@ -109,7 +112,8 @@ spinlock_lock(spinlock_t *l)
 }
 
 
-static inline void 
+static inline
+void 
 spinlock_unlock(spinlock_t *l)
 {
 #if defined(__powerpc__)
@@ -120,11 +124,110 @@ spinlock_unlock(spinlock_t *l)
 }
 
 
-static inline bool 
+static inline
+bool 
 spinlock_is_locked(spinlock_t *l)
 {
   return (l->thelock != SPINLOCK_UNLOCKED_VALUE);
 }
 
+// deadlock avoiding lock primitives:
+//
+// test-and-test-and-set lock acquisition, but make a bounded 
+// number of attempts to get lock.
+// to be signature compatible, this locking function takes a "locked" value, but does
+// not use it.
+// returns false if lock not acquired
+//
+// NOTE: this lock is still released with spinlock_unlock operation
+//
+static inline
+bool
+limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
+{
+  for(size_t i=0;;i++) {
+    if (limit && (i > limit))
+      return false;
+    while (l->thelock != SPINLOCK_UNLOCKED_VALUE) {
+      if (limit && (i > limit))
+	return false;
+      i++;
+    }
+    if (fetch_and_store(&l->thelock, SPINLOCK_LOCKED_VALUE) == SPINLOCK_UNLOCKED_VALUE)
+      break;
+  }
 
+#if defined(__powerpc__)
+  __asm__ __volatile__ ("isync\n");
+#endif
+  return true;
+}
+
+//
+// hwt_cas_spinlock_lock uses the CAS primitive, but prevents deadlock
+// by checking the locked value to see if this (hardware) thread has already
+// acquired the lock
+//
+// returns false if lock acquisition is abandoned
+//
+// NOTE: this lock is still released with spinlock_unlock operation
+//
+static inline
+bool
+hwt_cas_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
+{
+  for(;;) {
+    // if we are already locked by the same id, prevent deadlock by
+    // abandoning lock acquisition
+    while (l->thelock != SPINLOCK_UNLOCKED_VALUE) {
+      if (l->thelock == locked_val)
+	return false;
+    }
+    if (compare_and_swap(&l->thelock, SPINLOCK_UNLOCKED_VALUE, locked_val) == SPINLOCK_UNLOCKED_VALUE)
+      break;
+  }
+
+#if defined(__powerpc__)
+  __asm__ __volatile__ ("isync\n");
+#endif
+  return true;
+}
+
+//
+// hwt_limit_spinlock_lock uses the CAS primitive, but prevents deadlock
+// by checking the locked value to see if this (hardware) thread has already
+// acquired the lock. This spinlock *also* uses the iteration limit
+// from the limit spinlock. 
+
+// The hwt technique covers priority inversion deadlock
+// in a way that is most friendly to high priority threads.
+//
+// The iteration limit technique covers other kinds of deadlock
+// and starvation situations.
+//
+// NOTE: this lock is still released with spinlock_unlock operation
+//
+static inline
+bool
+hwt_limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
+{
+  for(size_t i=0;;i++) {
+    // if we are already locked by the same id, prevent deadlock by
+    // abandoning lock acquisition
+    while (l->thelock != SPINLOCK_UNLOCKED_VALUE) {
+      if (l->thelock == locked_val)
+	return false;
+      if (limit && (i > limit))
+	return false;
+      i++;
+    }
+    if (compare_and_swap(&l->thelock, SPINLOCK_UNLOCKED_VALUE, locked_val) == SPINLOCK_UNLOCKED_VALUE)
+      break;
+  }
+
+#if defined(__powerpc__)
+  __asm__ __volatile__ ("isync\n");
+#endif
+  return true;
+}
 #endif // prof_lean_spinlock_h

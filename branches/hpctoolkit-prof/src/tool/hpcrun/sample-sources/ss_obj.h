@@ -61,7 +61,9 @@
 #undef ss_str
 #undef reg_fn_name
 
-#define obj_name() _make_id( (_,ss_name,_obj))
+#include "ss-obj-name.h"
+
+#define obj_name() SS_OBJ_NAME(ss_name)
 #define ss_str  _st1(ss_name) 
 #define reg_fn_name _make_id((,ss_name,_obj_reg))
 

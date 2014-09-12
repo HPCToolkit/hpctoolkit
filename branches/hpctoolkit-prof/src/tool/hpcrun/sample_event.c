@@ -114,7 +114,8 @@ hpcrun_cleanup_partial_unwind(void)
 
   memset((void *)it->jb, '\0', sizeof(it->jb));
 
-  hpcrun_stats_num_samples_dropped_inc();
+  if ( ! td->deadlock_drop)
+    hpcrun_stats_num_samples_dropped_inc();
 
   hpcrun_up_pmsg_count();
   if (TD_GET(splay_lock)) {
@@ -157,7 +158,7 @@ hpcrun_drop_sample(void)
 
 
 sample_val_t
-hpcrun_sample_callpath(void *context, int metricId,
+hpcrun_sample_callpath(void* context, int metricId,
 		       uint64_t metricIncr,
 		       int skipInner, int isSync)
 {
@@ -210,6 +211,7 @@ hpcrun_sample_callpath(void *context, int metricId,
   hpcrun_set_handling_sample(td);
 
   td->btbuf_cur = NULL;
+  td->deadlock_drop = false;
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
 
@@ -237,26 +239,33 @@ hpcrun_sample_callpath(void *context, int metricId,
 
   ret.sample_node = node;
 
-  if (hpcrun_trace_isactive()) {
+  bool trace_ok = ! td->deadlock_drop;
+  TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
+  if (trace_ok && hpcrun_trace_isactive()) {
     TMSG(TRACE, "Sample event encountered");
     void* pc = hpcrun_context_pc(context);
 
-    void *func_start_pc = NULL, *func_end_pc = NULL;
+    void* func_start_pc = NULL;
+    void* func_end_pc = NULL;
     load_module_t* lm = NULL;
     fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc, &lm);
 
+    TMSG(TRACE, "func start = %p, pc = %p, func_end = %p");
     ip_normalized_t pc_proxy = hpcrun_normalize_ip(func_start_pc, lm);
 
     cct_addr_t frm = { .ip_norm = pc_proxy };
+    TMSG(TRACE,"parent node = %p, &frm = %p", hpcrun_cct_parent(node), &frm);
     cct_node_t* func_proxy = 
       hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);
 
+    TMSG(TRACE, "inserted func start addr into parent node, func_proxy = %p", func_proxy);
     ret.trace_node = func_proxy;
 
     // modify the persistent id
     hpcrun_cct_persistent_id_trace_mutate(func_proxy);
-
+    TMSG(TRACE, "Changed persistent id to indicate mutation of func_proxy node");
     hpcrun_trace_append(&td->core_profile_trace_data, hpcrun_cct_persistent_id(func_proxy), metricId);
+    TMSG(TRACE, "Appended func_proxy node to trace");
   }
 
   hpcrun_clear_handling_sample(td);

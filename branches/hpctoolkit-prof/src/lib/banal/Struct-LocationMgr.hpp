@@ -158,7 +158,7 @@ public:
   void
   locate(Prof::Struct::Loop* loop,
 	 Prof::Struct::ACodeNode* proposed_scope,
-	 std::string& filenm, std::string& procnm, SrcFile::ln line);
+	 std::string& filenm, std::string& procnm, SrcFile::ln line, uint targetScopeID);
   
   // locate: Given a parentless Struct::Stmt 'stmt', the original
   //   enclosing scope 'proposed_scope' and best-guess source-line
@@ -170,7 +170,7 @@ public:
   void
   locate(Prof::Struct::Stmt* stmt,
 	 Prof::Struct::ACodeNode* proposed_scope,
-	 std::string& filenm, std::string& procnm, SrcFile::ln line);
+	 std::string& filenm, std::string& procnm, SrcFile::ln line, uint targetScopeID);
 
   // endSeq: 
   void endSeq();
@@ -373,7 +373,7 @@ private:
   CtxtChange_t
   determineContext(Prof::Struct::ACodeNode* proposed_scope,
 		   std::string& filenm, std::string& procnm, SrcFile::ln line,
-		   VMA begVMA, Prof::Struct::ACodeNode* loop);
+		   VMA begVMA, Prof::Struct::ACodeNode* loop, uint targetScopeID);
   
   // fixCtxtStack: Yuck.
   void
@@ -385,14 +385,14 @@ private:
   void
   fixScopeTree(Prof::Struct::ACodeNode* from_scope,
 	       Prof::Struct::ACodeNode* true_ctxt,
-	       SrcFile::ln begLn, SrcFile::ln endLn);
+	       SrcFile::ln begLn, SrcFile::ln endLn, uint targetScopeID);
 
   // alienateScopeTree: place all non-Alien children of 'scope' into an Alien
   // context based on 'alien' except for 'exclude'
   void
   alienateScopeTree(Prof::Struct::ACodeNode* scope,
 		    Prof::Struct::Alien* alien,
-		    Prof::Struct::ACodeNode* exclude);
+		    Prof::Struct::ACodeNode* exclude, uint targetScopeID);
 
   
   // revertToLoop: Pop contexts between top and 'ctxt' until
@@ -646,8 +646,14 @@ private:
   Prof::Struct::Alien*
   demandAlienStrct(Prof::Struct::ACodeNode* parent_scope,
 		   const std::string& filenm, const std::string& procnm,
-		   const std::string& displaynm, SrcFile::ln line);
+		   const std::string& displaynm, SrcFile::ln line, uint targetScopeID);
   
+public:
+  // evict an alien from the m_alienMap
+  void
+  evictAlien(Prof::Struct::ACodeNode* parent_scope, 
+	     Prof::Struct::Alien* alien);
+
 private:
   MyStack     m_ctxtStack; // cf. topCtxt() [begin()/front() is the top]
   Prof::Struct::LM* m_loadMod;

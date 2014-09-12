@@ -220,7 +220,7 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
     attrVer(XMLString::transcode("version")),
     attrId(XMLString::transcode("i")),
     attrName(XMLString::transcode("n")),
-    attrAlienFile(XMLString::transcode("f")),
+    attrFile(XMLString::transcode("f")),
     attrLnName(XMLString::transcode("ln")),
     attrLine(XMLString::transcode("l")),
     attrVMA(XMLString::transcode("v"))
@@ -251,7 +251,7 @@ PGMDocHandler::~PGMDocHandler()
   XMLString::release((XMLCh**)&attrVer);
   XMLString::release((XMLCh**)&attrId);
   XMLString::release((XMLCh**)&attrName);
-  XMLString::release((XMLCh**)&attrAlienFile);
+  XMLString::release((XMLCh**)&attrFile);
   XMLString::release((XMLCh**)&attrLnName);
   XMLString::release((XMLCh**)&attrLine);
   XMLString::release((XMLCh**)&attrVMA);
@@ -365,7 +365,7 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
     DIAG_Assert(0 <= numAttr && numAttr <= 6, DIAG_UnexpectedInput);
 
     string nm = getAttr(attributes, attrName);
-    string fnm = getAttr(attributes, attrAlienFile);
+    string fnm = getAttr(attributes, attrFile);
     fnm = m_args.realpath(fnm);
 
     SrcFile::ln begLn, endLn;
@@ -385,15 +385,18 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
 
     // both 'begin' and 'end' are implied (and can be in any order)
     int numAttr = attributes.getLength();
-    DIAG_Assert(0 <= numAttr && numAttr <= 4, DIAG_UnexpectedInput);
+    DIAG_Assert(0 <= numAttr && numAttr <= 5, DIAG_UnexpectedInput);
 
     SrcFile::ln begLn, endLn;
     getLineAttr(begLn, endLn, attributes);
 
+    string fnm = getAttr(attributes, attrFile);
+    fnm = m_args.realpath(fnm);
+
     // by now the file and function names should have been found
     Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(getCurrentScope());
 
-    Struct::ACodeNode* loopNode = new Struct::Loop(parent, begLn, endLn);
+    Struct::ACodeNode* loopNode = new Struct::Loop(parent, fnm, begLn, endLn);
     DIAG_DevMsgIf(DBG, "PGMDocHandler: " << loopNode->toStringMe());
 
     curStrct = loopNode;

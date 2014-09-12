@@ -1672,6 +1672,46 @@ AC_MSG_RESULT([$use_papi_c])
 
 AM_CONDITIONAL(OPT_PAPI_COMPONENT, [test "$use_papi_c" = yes])
 
+AC_ARG_ENABLE([papi-c-cupti],
+  AS_HELP_STRING([--enable-papi-c-cupti],
+      [enable component PAPI's CUPTI functionality (requires papi-c with cuda component installed]),
+  [use_papi_c_cupti="$enableval"],
+  [use_papi_c_cupti=no])
+
+AC_MSG_CHECKING([whether to use component papi CUPTI functionality])
+
+case "$use_papi_c_cupti" in
+  no ) ;;
+  * ) use_papi_c_cupti=yes ;;
+esac
+
+if test "$use_papi_c" = no ; then
+  use_papi_c_cupti=no
+fi
+
+if test "$use_papi_c_component" = yes ; then
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS"
+  AC_LANG_PUSH([C])
+
+  AC_LINK_IFELSE([
+#include "papi.h"
+extern void CUDA_init_component(void);
+int main()
+{
+  CUDA_init_component();
+}
+], [use_papi_c_cupti=yes], [use_papi_c_cupti=no])
+
+  AC_LANG_POP
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
+fi
+
+AC_MSG_RESULT([$use_papi_c_cupti])
+AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
 
 #-------------------------------------------------
 # Option: --with-symtabAPI=PATH
@@ -1980,9 +2020,9 @@ AM_CONDITIONAL([OPT_ENABLE_HPCRUN], [test "${OPT_ENABLE_HPCRUN}" = yes])
 # LD_LIBRARY_PATH, which can't be right.)  Is there a better option
 # here?
 
-HPCRUN_LIBCXX_PATH=`${CXX} -print-file-name=libstdc++.so`
+libcxx_file=`${CXX} -print-file-name=libstdc++.so`
 
-case "$HPCRUN_LIBCXX_PATH" in
+case "$libcxx_file" in
   /* ) ;;
   * )
     src="hpc_hello.$$.cc"
@@ -1992,17 +2032,19 @@ case "$HPCRUN_LIBCXX_PATH" in
 main(){}
 EOF
     ${CXX} -o "$obj" "$src"
-    HPCRUN_LIBCXX_PATH=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
+    libcxx_file=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
     rm -f "$src" "$obj"
     ;;
 esac
 
+libcxx_dir=`dirname $libcxx_file`
+libcxx_base=`basename $libcxx_file`
+HPCRUN_LIBCXX_PATH=`( cd $libcxx_dir 2>/dev/null && /bin/pwd )`
+
 case "$HPCRUN_LIBCXX_PATH" in
-  /* ) AC_MSG_NOTICE([found libstdc++.so at $HPCRUN_LIBCXX_PATH]) ;;
+  /* ) AC_MSG_NOTICE([found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}]) ;;
   * )  AC_MSG_WARN([unable to find libstdc++.so]) ;;
 esac
-
-HPCRUN_LIBCXX_PATH=`dirname $HPCRUN_LIBCXX_PATH`
 
 AC_SUBST([HPCRUN_LIBCXX_PATH])
 
@@ -2463,6 +2505,47 @@ if test "${OPT_ENABLE_IBM_BLUEGENE}" = "yes" ; then
   AC_DEFINE([HOST_SYSTEM_IBM_BLUEGENE], [1], [IBM BlueGene/P support])
 fi
 
+#-------------------------------------------------
+# Option: --enable-bgq-cnk=PATH
+#-------------------------------------------------
+#
+# hpcrun (&hpclink) on BGQ needs the back-end compiler for a few files.
+#
+enable_bgq=no
+AC_ARG_ENABLE([bgq-cnk],
+    [AS_HELP_STRING([--enable-bgq-cnk],
+	[enable BGQ- and cnk-specific options: build parts of hpcrun with
+	 back-end powerpc64-bgq-linux-gcc])],
+    [enable_bgq="yes"],
+    [])
+
+# Search for the back-end BGQ compiler on PATH and test for Blue
+# Gene/P (suppress the warning on P).
+
+ppc64_bgq_avail=
+if test -d /bgsys ; then
+    AC_CHECK_PROG([ppc64_bgq_avail], [powerpc64-bgq-linux-gcc], [yes], [no])
+else
+    ppc64_bgq_avail=no
+fi
+
+hpcrun_use_bgq_backend=no
+warn_bgq_backend=no
+
+case "$enable_bgq" in 
+    yes )
+	if test "$ppc64_bgq_avail" != yes ; then
+	    AC_MSG_ERROR([unable to find powerpc64-bgq-linux-gcc for enable-bgq-cnk])
+	fi
+	hpcrun_use_bgq_backend=yes
+	;;
+    no ) ;;
+    * )  ;;
+esac
+
+AC_SUBST([hpcrun_use_bgq_backend])
+AC_MSG_RESULT([$hpcrun_use_bgq_backend])
+AM_CONDITIONAL(OPT_BGQ_BACKEND, test "$hpcrun_use_bgq_backend" = "yes")
 
 #-------------------------------------------------
 # Option: --with-upc=PATH
@@ -2634,6 +2717,53 @@ AC_SUBST([OPT_CUDA_IFLAGS])
 AC_SUBST([OPT_CUDA_LDFLAGS])
 
 #-------------------------------------------------
+# Option: --with-cupti=PATH
+#-------------------------------------------------
+OPT_HAVE_CUPTI=no
+OPT_CUPTI=
+OPT_CUPTI_IFLAGS=
+OPT_CUPTI_LDFLAGS=
+OPT_CUPTI_LIBPATH=
+
+AC_ARG_WITH([cupti],
+  AS_HELP_STRING([--with-cupti=PATH],
+                 [use given CUDA/CUPTI installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_CUPTI=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cupti requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUPTI=${withval}
+   fi])
+
+#
+# Valid cupti library
+#
+if test "$OPT_HAVE_CUPTI" = yes; then
+   if test ! -f $OPT_CUPTI/include/cupti.h; then
+      AC_MSG_ERROR([--with-cupti=$OPT_CUPTI invalid! No cupti.h])
+   fi
+fi
+
+if test "$use_papi_c_cupti" != no; then
+   if test "$OPT_HAVE_CUPTI" = yes; then
+       OPT_CUPTI_IFLAGS="-I$OPT_CUPTI/include"
+       if test "$OPT_HAVE_CUDA" = no; then
+          cuda_dir=$(dirnmame $(dirname $OPT_CUPTI))/include
+	  OPT_CUDA_IFLAGS="-I$cuda_dir"
+       fi
+       OPT_CUPTI_IFLAGS="$OPT_CUDA_IFLAGS $OPT_CUPTI_IFLAGS"
+   else
+      AC_MSG_ERROR([papi-c-cupti specified, but no cupti lib specified!])
+   fi
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_CUPTI], [test "$OPT_HAVE_CUPTI" = yes])
+
+AC_SUBST([OPT_CUPTI_IFLAGS])
+AC_SUBST([OPT_CUPTI])
+
+#-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
 #-------------------------------------------------
 
@@ -2791,6 +2921,7 @@ AC_CONFIG_FILES([ \
   src/tool/hpcprof-flat/Makefile \
   src/tool/hpcproftt/Makefile \
   src/tool/hpcrun/Makefile \
+  src/tool/hpcrun/utilities/bgq-cnk/Makefile \
   src/tool/hpcrun-flat/Makefile \
   src/tool/hpcserver/Makefile \
   src/tool/hpcserver/mpi/Makefile \
@@ -2830,6 +2961,9 @@ AC_CONFIG_FILES([src/tool/hpcproftt/hpcproftt],
   [chmod +x src/tool/hpcproftt/hpcproftt])
 AC_CONFIG_FILES([src/tool/hpcstruct/hpcstruct],
   [chmod +x src/tool/hpcstruct/hpcstruct])
+
+AC_SUBST_FILE([copyright_hash])
+copyright_hash="${srcdir}/config/copyright-hash"
 
 AC_SUBST_FILE([export_hpctoolkit])
 export_hpctoolkit="${srcdir}/config/export-hpctoolkit"
@@ -2900,6 +3034,7 @@ AC_MSG_NOTICE([  xed2:         ${XED2}])
 AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
+AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
 AC_MSG_NOTICE([  inline:       ${enable_inline}])
 
@@ -2917,6 +3052,13 @@ if test "$warn_non_gcc" = yes ; then
   AC_MSG_WARN([This is not necessarily an error, but some parts of hpctoolkit])
   AC_MSG_WARN([may not compile cleanly without gcc or g++.  If the build fails,])
   AC_MSG_WARN([try using GNU gcc and g++ before reporting an error.])
+fi
+
+if test "$warn_bgq_backend" = yes ; then
+    AC_MSG_NOTICE([])
+    AC_MSG_WARN([On the Blue Gene/Q compute nodes, hpcrun needs a separate,])
+    AC_MSG_WARN([back-end compiler.  Use --enable-bgq to build for the back end,])
+    AC_MSG_WARN([or else --disable-bgq to build for the front end.])
 fi
 
 if test "$warn_compiler_mismatch" = yes ; then

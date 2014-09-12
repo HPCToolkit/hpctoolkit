@@ -259,13 +259,12 @@ fnbounds_find_exec_bounds_proc_maps(char* exename, void**start, void** end)
   for(;;) {
     char* l = fgets(linebuf, sizeof(linebuf), loadmap);
     if (feof(loadmap)) break;
-    char* dc = NULL;
     char* save = NULL;
     const char delim[] = " \n";
     addr = strtok_r(l, delim, &save);
     char* perms = strtok_r(NULL, delim, &save);
     // skip 3 tokens
-    for (int i=0; i < 3; i++) dc = strtok_r(NULL, delim, &save);
+    for (int i=0; i < 3; i++) { (void) strtok_r(NULL, delim, &save);}
     char* name = strtok_r(NULL, delim, &save);
     realpath(name, tmpname); 
     if ((strncmp(perms, "r-x", 3) == 0) && (strcmp(tmpname, exename) == 0)) break;
@@ -437,6 +436,14 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
   if (incoming_filename == NULL) {
     return (NULL);
   }
+
+  // linux-vdso.so and linux-gate.so are virtual files and don't exist
+  // in the file system.
+  if (strncmp(incoming_filename, "linux-vdso.so", 13) == 0
+      || strncmp(incoming_filename, "linux-gate.so", 13) == 0) {
+    return hpcrun_dso_make(incoming_filename, NULL, NULL, start, end, 0);
+  }
+
   realpath(incoming_filename, filename);
 
   nm_table = (void**) hpcrun_syserv_query(filename, &fh);
