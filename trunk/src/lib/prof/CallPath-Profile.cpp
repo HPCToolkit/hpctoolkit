@@ -455,8 +455,8 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
 
 class FilenameCompare {
 public:
-  bool operator()(const char *n1,  const char *n2) const {
-    return strcmp(n1,n2) < 0;
+  bool operator()(const std::string n1,  const std::string n2) const {
+    return n1.compare(n2)<0;
   } 
 };
 
@@ -465,7 +465,7 @@ public:
 // this hack is needed to avoid duplicate filenames
 // which occurs with alien nodes
 // ---------------------------------------------------
-static std::map<const char *, uint, FilenameCompare> m_mapFiles; // map the filenames and the ID
+static std::map<std::string, uint, FilenameCompare> m_mapFiles; // map the filenames and the ID
 
 static void
 writeXML_help(std::ostream& os, const char* entry_nm,
@@ -495,15 +495,21 @@ writeXML_help(std::ostream& os, const char* entry_nm,
 	nm = static_cast<Struct::File*>(strct)->name().c_str();
       }
       // ---------------------------------------
-      // avoid redundancy in filename list 
+      // avoid redundancy in XML filename dictionary
+      // (exception for unknown-file)
       // ---------------------------------------
       if (m_mapFiles.find(nm) == m_mapFiles.end()) {
 	//  the filename is not in the list. Add it.
 	m_mapFiles[nm] = id;
-      } else {
-	// duplicate filename. Use the first one.
+
+      } else if ( nm != Prof::Struct::Tree::UnknownFileNm 
+		  && nm[0] != '\0' )
+      { // WARNING: We do not allow redundancy unless for some specific files
+	// For "unknown-file" and empty file (alien case), we allow duplicates
+	// Otherwise we remove duplicate filename, and use the existing one.
 	uint id_orig = m_mapFiles[nm];
-	// remember that this ID needs redirection
+
+	// remember that this ID needs redirection to the existing ID
 	Prof::m_mapFileIDs[id] = id_orig;
 	continue;
       }
