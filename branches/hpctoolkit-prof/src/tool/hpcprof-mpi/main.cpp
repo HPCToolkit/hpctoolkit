@@ -117,12 +117,15 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
 		       vector<uint>& groupIdToGroupSizeMap,
 		       int myRank, int numRanks, int rootRank = 0);
 
+static ulong
+numNonZeroMetrics(Prof::CCT::Tree * cct, uint begMet, uint endMet);
 
 static void
 makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
 		   const Analysis::Args& args,
 		   const Analysis::Util::NormalizeProfileArgs_t& nArgs,
 		   const vector<uint>& groupIdToGroupSizeMap,
+		   ulong& numNonZero,
 		   int myRank, int numRanks, int rootRank);
 
 static void
@@ -153,7 +156,7 @@ makeSummaryMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 		       const string& profileFile,
 		       const Analysis::Args& args, uint groupId, uint groupMax,
 		       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap,
-		       int myRank);
+		       ulong& numNonZero, int myRank);
 
 static void
 makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
@@ -375,8 +378,9 @@ realmain(int argc, char* const* argv)
   //
   // Post-INVARIANT: rank 0's 'profGbl' contains summary metrics
   // -------------------------------------------------------
+  ulong numSamples = 0;
   makeSummaryMetrics(*profGbl, args, nArgs, groupIdToGroupSizeMap,
-		     myRank, numRanks, rootRank);
+		     numSamples, myRank, numRanks, rootRank);
 
   // -------------------------------------------------------
   // 2b. Prune and normalize canonical CCT
@@ -596,6 +600,32 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
 }
 
 
+// Returns: number of non-zero metric values in CCT with metric id
+// in [begMet, endMet) summed over all CCT nodes.  This assumes a
+// dense node ordering.
+//
+static ulong
+numNonZeroMetrics(Prof::CCT::Tree * cct, uint begMet, uint endMet)
+{
+  uint maxid = cct->maxDenseId();
+  ulong num = 0;
+
+  for (uint cctid = 1; cctid <= maxid; cctid++) {
+    Prof::CCT::ANode * node = cct->findNode(cctid);
+
+    if (node != NULL) {
+      for (uint i = begMet; i < endMet; i++) {
+	if (i < node->numMetrics() && node->metric(i) != 0.0) {
+	  num++;
+	}
+      }
+    }
+  }
+
+  return num;
+}
+
+
 //***************************************************************************
 
 // makeSummaryMetrics: Assumes 'profGbl' is the canonical CCT (with
@@ -605,6 +635,7 @@ makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
 		   const Analysis::Args& args,
 		   const Analysis::Util::NormalizeProfileArgs_t& nArgs,
 		   const vector<uint>& groupIdToGroupSizeMap,
+		   ulong& numNonZero,
 		   int myRank, int numRanks, int rootRank)
 {
   uint mDrvdBeg = 0, mDrvdEnd = 0;   // [ )
@@ -626,11 +657,14 @@ makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
   cctRoot->computeMetricsIncr(mMgrGbl, mDrvdBeg, mDrvdEnd,
 			      Prof::Metric::AExprIncr::FnInit);
 
+  numNonZero = 0;
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     const string& fnm = (*nArgs.paths)[i];
     uint groupId = (*nArgs.groupMap)[i];
+    ulong nonZero_lcl = 0;
     makeSummaryMetrics_Lcl(profGbl, fnm, args, groupId, nArgs.groupMax,
-			   groupIdToGroupMetricsMap, myRank);
+			   groupIdToGroupMetricsMap, nonZero_lcl, myRank);
+    numNonZero += nonZero_lcl;
   }
 
   // -------------------------------------------------------
@@ -903,7 +937,7 @@ makeSummaryMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 		       const string& profileFile,
 		       const Analysis::Args& args, uint groupId, uint groupMax,
 		       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap,
-		       int myRank)
+		       ulong& numNonZero, int myRank)
 {
   Prof::Metric::Mgr* mMgrGbl = profGbl.metricMgr();
   Prof::CCT::Tree* cctGbl = profGbl.cct();
@@ -963,6 +997,7 @@ makeSummaryMetrics_Lcl(Prof::CallPath::Profile& profGbl,
   cctRootGbl->aggregateMetricsIncl(ivalsetIncl);
   cctRootGbl->aggregateMetricsExcl(ivalsetExcl);
 
+  numNonZero = numNonZeroMetrics(cctGbl, mBeg, mEnd);
 
   // 2. Batch compute local derived metrics
   const VMAIntervalSet* ivalsetDrvd = groupIdToGroupMetricsMap[groupId];
