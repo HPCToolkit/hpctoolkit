@@ -112,6 +112,7 @@ public:
     if (size != 0) {
       ensureMetricsSize(size);
     }
+    m_numPlotMetrics = 0;
   }
 
   virtual ~IData()
@@ -125,6 +126,7 @@ public:
     if (x.m_metrics) {
       m_metrics = new MetricVec(*(x.m_metrics));
     }
+    m_numPlotMetrics = x.m_numPlotMetrics;
   }
   
   IData&
@@ -135,6 +137,7 @@ public:
       if (x.m_metrics) {
 	m_metrics = new MetricVec(*(x.m_metrics));
       }
+      m_numPlotMetrics = x.m_numPlotMetrics;
     }
     return *this;
   }
@@ -274,6 +277,10 @@ public:
   
 private:
   mutable MetricVec* m_metrics; // 'mutable' for ensureMetricsSize()
+
+public:
+  // for prof-mpi to count the number of plot metrics per cct node
+  ulong m_numPlotMetrics;
 };
 
 //***************************************************************************

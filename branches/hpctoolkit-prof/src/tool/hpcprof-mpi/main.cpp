@@ -117,6 +117,11 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
 		       vector<uint>& groupIdToGroupSizeMap,
 		       int myRank, int numRanks, int rootRank = 0);
 
+static void
+addPlotMetrics(Prof::CallPath::Profile & prof, uint begMet, uint endMet);
+
+static void
+resetPlotMetrics(Prof::CallPath::Profile & prof);
 
 static void
 makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
@@ -375,6 +380,8 @@ realmain(int argc, char* const* argv)
   //
   // Post-INVARIANT: rank 0's 'profGbl' contains summary metrics
   // -------------------------------------------------------
+  resetPlotMetrics(*profGbl);
+
   makeSummaryMetrics(*profGbl, args, nArgs, groupIdToGroupSizeMap,
 		     myRank, numRanks, rootRank);
 
@@ -593,6 +600,41 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
   }
 
   return out;
+}
+
+
+// Count the number of non-zero plot metrics per CCT node and save
+// them in profGbl's nodes.  At each merge, makeSummaryMetrics puts
+// the metrics from one local profile into profGbl (and then zeros
+// them for the next profile).
+//
+static void
+addPlotMetrics(Prof::CallPath::Profile & prof, uint begMet, uint endMet)
+{
+  Prof::CCT::Tree * cct = prof.cct();
+  uint maxid = cct->maxDenseId();
+
+  for (uint cctid = 1; cctid <= maxid; cctid++) {
+    Prof::CCT::ANode * node = cct->findNode(cctid);
+
+    for (uint metid = begMet; metid < endMet; metid++) {
+      if (metid < node->numMetrics() && node->metric(metid) != 0.0) {
+	node->m_numPlotMetrics++;
+      }
+    }
+  }
+}
+
+static void
+resetPlotMetrics(Prof::CallPath::Profile & prof)
+{
+  Prof::CCT::Tree * cct = prof.cct();
+  uint maxid = cct->maxDenseId();
+
+  for (uint cctid = 1; cctid <= maxid; cctid++) {
+    Prof::CCT::ANode * node = cct->findNode(cctid);
+    node->m_numPlotMetrics = 0;
+  }
 }
 
 
@@ -963,6 +1005,7 @@ makeSummaryMetrics_Lcl(Prof::CallPath::Profile& profGbl,
   cctRootGbl->aggregateMetricsIncl(ivalsetIncl);
   cctRootGbl->aggregateMetricsExcl(ivalsetExcl);
 
+  addPlotMetrics(profGbl, mBeg, mEnd);
 
   // 2. Batch compute local derived metrics
   const VMAIntervalSet* ivalsetDrvd = groupIdToGroupMetricsMap[groupId];
