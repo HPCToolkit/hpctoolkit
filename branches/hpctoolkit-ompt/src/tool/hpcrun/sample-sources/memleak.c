@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -120,7 +120,7 @@ METHOD_FN(start)
 {
   TMSG(MEMLEAK,"starting MEMLEAK");
 
-  TD_GET(ss_state)[self->evset_idx] = START;
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 static void
@@ -133,7 +133,7 @@ static void
 METHOD_FN(stop)
 {
   TMSG(MEMLEAK,"stopping MEMLEAK");
-  TD_GET(ss_state)[self->evset_idx] = STOP;
+  TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 
@@ -229,8 +229,9 @@ int
 hpcrun_memleak_active() 
 {
   if (hpcrun_is_initialized()) {
-    return (TD_GET(ss_state)[obj_name().evset_idx] == START);
-  } else {
+    return (TD_GET(ss_state)[obj_name().sel_idx] == START);
+  }
+  else {
     return 0;
   }
 }

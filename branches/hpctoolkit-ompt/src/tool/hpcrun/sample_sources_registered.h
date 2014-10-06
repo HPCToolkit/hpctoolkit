@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -48,7 +48,7 @@
 #define REGISTERED_SAMPLE_SOURCES_H
 
 #include <sample-sources/sample_source_obj.h>
-#define MAX_POSSIBLE_SAMPLE_SOURCES 10
+#define MAX_POSSIBLE_SAMPLE_SOURCES 12
 
 void hpcrun_ss_register(sample_source_t *src);
 sample_source_t *hpcrun_source_can_process(char *event);

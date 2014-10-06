@@ -70,7 +70,7 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 pkglibexec_PROGRAMS = hpcfnbounds-bin$(EXEEXT)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_1 = x86-process-ranges.cpp amd-xop.c
 @HOST_CPU_X86_FAMILY_TRUE@am__append_2 = -I$(XED2_INC)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_3 = $(XED2_LIB)/libxed.a
+@HOST_CPU_X86_FAMILY_TRUE@am__append_3 = $(XED2_LIB_FLAGS)
 @HOST_CPU_X86_FAMILY_FALSE@am__append_4 = generic-process-ranges.cpp
 subdir = src/tool/hpcfnbounds
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -100,11 +100,15 @@ am__objects_1 = hpcfnbounds_bin-main.$(OBJEXT) \
 am_hpcfnbounds_bin_OBJECTS = $(am__objects_1) $(am__objects_2) \
 	$(am__objects_3)
 hpcfnbounds_bin_OBJECTS = $(am_hpcfnbounds_bin_OBJECTS)
-hpcfnbounds_bin_DEPENDENCIES = $(MYLDADD)
+am__DEPENDENCIES_1 =
+am__DEPENDENCIES_2 = $(HPCLIB_SupportLean) $(am__DEPENDENCIES_1)
+@HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
+hpcfnbounds_bin_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_3)
 hpcfnbounds_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
-	$(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) \
-	$(hpcfnbounds_bin_LDFLAGS) $(LDFLAGS) -o $@
+	$(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -194,6 +198,7 @@ CXX_PATH = @CXX_PATH@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DLLTOOL = @DLLTOOL@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -255,6 +260,7 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
+MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
 MONITOR = @MONITOR@
 MPICXX = @MPICXX@
@@ -269,6 +275,8 @@ OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
 OPT_CUDA = @OPT_CUDA@
 OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
 OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
+OPT_CUPTI = @OPT_CUPTI@
+OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
 OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
 OPT_LIBUNWIND_IFLAGS = @OPT_LIBUNWIND_IFLAGS@
 OPT_LIBUNWIND_LDFLAGS = @OPT_LIBUNWIND_LDFLAGS@
@@ -304,8 +312,10 @@ SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 VERSION = @VERSION@
 XED2_COPY = @XED2_COPY@
+XED2_HPCLINK_OPTS = @XED2_HPCLINK_OPTS@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
+XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 XED2_RUN_DIR = @XED2_RUN_DIR@
 XERCES = @XERCES@
 XERCES_COPY = @XERCES_COPY@
@@ -317,6 +327,7 @@ abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
@@ -344,6 +355,7 @@ host_os = @host_os@
 host_vendor = @host_vendor@
 hpc_ext_libs_dir = @hpc_ext_libs_dir@
 hpclink_extra_wrap_names = @hpclink_extra_wrap_names@
+hpcrun_use_bgq_backend = @hpcrun_use_bgq_backend@
 htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
@@ -359,6 +371,7 @@ my_pkglibexecdir = @my_pkglibexecdir@
 oldincludedir = @oldincludedir@
 papi_extra_libs = @papi_extra_libs@
 pdfdir = @pdfdir@
+ppc64_bgq_avail = @ppc64_bgq_avail@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
@@ -401,6 +414,8 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
+@OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE@HPCLIB_Banal_Symtab = 
+@OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@HPCLIB_Banal_Symtab = $(top_builddir)/src/lib/banal/libHPCbanal_symtab.la
 MYSOURCES = \
 	main.cpp \
 	code-ranges.cpp \
@@ -412,19 +427,17 @@ MYCPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
 	-I$(SYMTABAPI_INC)
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
-MYLDFLAGS = \
+MYLDADD = $(HPCLIB_SupportLean) \
 	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
-	-L$(LIBDWARF_LIB) -ldwarf		\
+	-L$(LIBDWARF_LIB) -ldwarf \
 	-L$(LIBELF_LIB) -lelf
 
-MYLDADD = $(HPCLIB_SupportLean)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibexec_SCRIPTS = hpcfnbounds
 hpcfnbounds_bin_SOURCES = $(MYSOURCES) $(am__append_1) $(am__append_4)
 hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS) $(am__append_2)
 hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
-hpcfnbounds_bin_LDFLAGS = $(MYLDFLAGS) $(am__append_3)
-hpcfnbounds_bin_LDADD = $(MYLDADD)
+hpcfnbounds_bin_LDADD = $(MYLDADD) $(am__append_3)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS

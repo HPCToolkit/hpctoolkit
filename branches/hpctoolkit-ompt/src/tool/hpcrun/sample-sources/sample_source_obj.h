@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -74,13 +74,13 @@ typedef enum {
 } source_state_t;
 
 typedef struct {
-  void *ptr;
+  void* ptr;
 } source_info_t;
 
 typedef enum {
   SS_HARDWARE,    // use sample counters or other hardware.
                   // NOTE: *Currently limited to only 1 hardware class sample source*
-  SS_SOFTWARE     // software-based, only return counts for the moment
+  SS_SOFTWARE     // software-based, e.g. synchronous samples.
 } ss_class_t;
 
 typedef struct sample_source_t {
@@ -108,7 +108,7 @@ typedef struct sample_source_t {
 
   // data
   evlist_t       	  evl;       	 // event list
-  int            	  evset_idx; 	 // index of sample source
+  int                     sel_idx;       // selection index of sample source
   const char*    	  name;      	 // text name of sample source
   source_state_t 	  state;     	 // state of sample source: limited to UNINIT or INIT
   ss_class_t     	  cls;       	 // kind of sample source: see ss_class_t typedef at top of file

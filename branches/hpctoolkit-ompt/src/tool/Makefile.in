@@ -46,12 +46,14 @@ host_triplet = @host@
 @OPT_BUILD_TOOL_ALL_TRUE@	hpclump \
 @OPT_BUILD_TOOL_ALL_TRUE@	misc
 
-@OPT_ENABLE_HPCRUN_FLAT_TRUE@am__append_2 = hpcrun-flat
-@OPT_ENABLE_HPCRUN_TRUE@am__append_3 = \
+@OPT_BUILD_TOOL_ALL_TRUE@@OPT_ENABLE_HPCSERVER_TRUE@am__append_2 = hpcserver
+@OPT_ENABLE_HPCRUN_FLAT_TRUE@am__append_3 = hpcrun-flat
+@OPT_ENABLE_HPCRUN_TRUE@am__append_4 = \
 @OPT_ENABLE_HPCRUN_TRUE@	hpcrun \
 @OPT_ENABLE_HPCRUN_TRUE@	hpcfnbounds
 
-@OPT_ENABLE_MPI_TRUE@am__append_4 = hpcprof-mpi 
+@OPT_ENABLE_MPI_TRUE@am__append_5 = hpcprof-mpi 
+@OPT_ENABLE_HPCSERVER_TRUE@@OPT_ENABLE_MPI_TRUE@am__append_6 = hpcserver/mpi
 subdir = src/tool
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -81,7 +83,8 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 ETAGS = etags
 CTAGS = ctags
 DIST_SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpclump misc \
-	hpcrun-flat hpcrun hpcfnbounds hpcprof-mpi
+	hpcserver hpcrun-flat hpcrun hpcfnbounds hpcprof-mpi \
+	hpcserver/mpi
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -134,6 +137,7 @@ CXX_PATH = @CXX_PATH@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DLLTOOL = @DLLTOOL@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -195,6 +199,7 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
+MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
 MONITOR = @MONITOR@
 MPICXX = @MPICXX@
@@ -209,6 +214,8 @@ OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
 OPT_CUDA = @OPT_CUDA@
 OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
 OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
+OPT_CUPTI = @OPT_CUPTI@
+OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
 OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
 OPT_LIBUNWIND_IFLAGS = @OPT_LIBUNWIND_IFLAGS@
 OPT_LIBUNWIND_LDFLAGS = @OPT_LIBUNWIND_LDFLAGS@
@@ -244,8 +251,10 @@ SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 VERSION = @VERSION@
 XED2_COPY = @XED2_COPY@
+XED2_HPCLINK_OPTS = @XED2_HPCLINK_OPTS@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
+XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 XED2_RUN_DIR = @XED2_RUN_DIR@
 XERCES = @XERCES@
 XERCES_COPY = @XERCES_COPY@
@@ -257,6 +266,7 @@ abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
@@ -284,6 +294,7 @@ host_os = @host_os@
 host_vendor = @host_vendor@
 hpc_ext_libs_dir = @hpc_ext_libs_dir@
 hpclink_extra_wrap_names = @hpclink_extra_wrap_names@
+hpcrun_use_bgq_backend = @hpcrun_use_bgq_backend@
 htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
@@ -299,6 +310,7 @@ my_pkglibexecdir = @my_pkglibexecdir@
 oldincludedir = @oldincludedir@
 papi_extra_libs = @papi_extra_libs@
 pdfdir = @pdfdir@
+ppc64_bgq_avail = @ppc64_bgq_avail@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
@@ -323,7 +335,7 @@ AUTOMAKE_OPTIONS = foreign
 # Automake rules
 #############################################################################
 SUBDIRS = $(am__append_1) $(am__append_2) $(am__append_3) \
-	$(am__append_4)
+	$(am__append_4) $(am__append_5) $(am__append_6)
 all: all-recursive
 
 .SUFFIXES:

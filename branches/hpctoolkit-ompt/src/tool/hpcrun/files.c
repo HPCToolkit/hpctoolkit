@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -450,14 +450,18 @@ hpcrun_open_trace_file(int thread)
 {
   int ret;
 
+  TMSG(TRACE, "Opening trace file for %d", thread);
   spinlock_lock(&files_lock);
+  TMSG(TRACE, "Calling files init for %d", thread);
   hpcrun_files_init();
+  TMSG(TRACE, "About to open file for %d", thread);
   ret = hpcrun_open_file(0, thread, HPCRUN_TraceFnmSfx, FILES_EARLY);
+  TMSG(TRACE, "Back from open file %d, ret code = %d", thread, ret);
   spinlock_unlock(&files_lock);
+  TMSG(TRACE, "Unlocked file lock for %d", thread);
 
   return ret;
 }
-
 
 // Returns: file descriptor for profile (hpcrun) file.
 int
@@ -508,10 +512,15 @@ hpcrun_rename_trace_file(int rank, int thread)
 {
   int ret;
 
+  TMSG(TRACE, "Renaming trace file for rank %d, thread %d", rank, thread);
   spinlock_lock(&files_lock);
+  TMSG(TRACE, "(Rename) Spin lock acquired for (R:%d, T:%d)", rank, thread);
   hpcrun_rename_log_file_early(rank);
+  TMSG(TRACE, "Rename log file early (R:%d, T:%d)", rank, thread);
   ret = hpcrun_rename_file(rank, thread, HPCRUN_TraceFnmSfx);
+  TMSG(TRACE, "Back from rename trace file for(R:%d, T:%d), retcode = %d", rank, thread, ret);
   spinlock_unlock(&files_lock);
+  TMSG(TRACE, "(rename) Spin lock released for (R:%d, T:%d)", rank, thread);
 
   return ret;
 }

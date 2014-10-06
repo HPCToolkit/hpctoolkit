@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -79,7 +79,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 #include <hpcrun/sample_sources_registered.h>
-#include "simple_oo.h"
+// #include "simple_oo.h"
 #include <hpcrun/thread_data.h>
 #include <utilities/tokenize.h>
 
@@ -115,7 +115,7 @@ METHOD_FN(start)
 {
   TMSG(NONE_CTL,"starting NONE");
 
-  TD_GET(ss_state)[self->evset_idx] = START;
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 static void
@@ -128,7 +128,7 @@ static void
 METHOD_FN(stop)
 {
   TMSG(NONE_CTL,"stopping NONE");
-  TD_GET(ss_state)[self->evset_idx] = STOP;
+  TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 static void
@@ -196,8 +196,8 @@ METHOD_FN(display_events)
  * interface functions 
  *****************************************************************************/
 
-void
-hpcrun_process_sample_source_none()
+void 
+hpcrun_process_sample_source_none(void)
 {
   sample_source_t *none = &_none_obj;
   

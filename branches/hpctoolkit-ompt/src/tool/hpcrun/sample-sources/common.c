@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -111,7 +111,7 @@ CMETHOD_FN(get_event_str)
 bool
 CMETHOD_FN(started)
 {
-  return (TD_GET(ss_state)[self->evset_idx] == START);
+  return (TD_GET(ss_state)[self->sel_idx] == START);
 }
 
 // **********************************************************

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -176,8 +176,9 @@ typedef struct thread_data_t {
   // ----------------------------------------
   // sample sources
   // ----------------------------------------
-  source_state_t ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
-  source_info_t  ss_info[MAX_POSSIBLE_SAMPLE_SOURCES];
+
+  source_state_t* ss_state; // allocate at initialization time
+  source_info_t*  ss_info;  // allocate at initialization time
 
   struct sigevent sigev;   // POSIX real-time timer
   timer_t        timerid;
@@ -238,6 +239,7 @@ typedef struct thread_data_t {
   // ----------------------------------------
   sigjmp_buf_t     bad_unwind;
   sigjmp_buf_t     mem_error;
+  bool             deadlock_drop;
   int              handling_sample;
   int              splay_lock;
   int              fnbounds_lock;
@@ -267,7 +269,6 @@ typedef struct thread_data_t {
 #ifdef ENABLE_CUDA
   gpu_data_t gpu_data;
 #endif
-
 } thread_data_t;
 
 
@@ -292,7 +293,7 @@ thread_data_t*
 hpcrun_allocate_thread_data(void);
 
 void
-hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child);
+hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sources);
 
 
 void     hpcrun_cached_bt_adjust_size(size_t n);
@@ -300,7 +301,6 @@ frame_t* hpcrun_expand_btbuf(void);
 void     hpcrun_ensure_btbuf_avail(void);
 
 void           hpcrun_thread_data_reuse_init(cct_ctxt_t* thr_ctxt);
-void           hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child);
 void           hpcrun_cached_bt_adjust_size(size_t n);
 
 // utilities to match previous api

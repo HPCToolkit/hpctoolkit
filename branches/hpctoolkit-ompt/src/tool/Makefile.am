@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2013, Rice University
+## Copyright ((c)) 2002-2014, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -78,6 +78,10 @@ SUBDIRS += \
 	hpcproftt \
 	hpclump \
 	misc
+
+if OPT_ENABLE_HPCSERVER
+SUBDIRS += hpcserver
+endif
 endif
 
 if OPT_ENABLE_HPCRUN_FLAT
@@ -92,6 +96,10 @@ endif
 
 if OPT_ENABLE_MPI
   SUBDIRS += hpcprof-mpi 
+
+if OPT_ENABLE_HPCSERVER
+  SUBDIRS += hpcserver/mpi
+endif
 endif
 
 #if OPT_ENABLE_DEVTOOLS

@@ -67,9 +67,8 @@
 
 #include "ompt-interface.h"
 
-#include "sample-sources/idle.h"
-#include "sample-sources/blame-shift.h"
-#include "sample-sources/blame-shift-directed.h"
+#include "sample-sources/blame-shift/blame-shift.h"
+#include "sample-sources/blame-shift/blame-map.h"
 
 /******************************************************************************
  * static variables
@@ -78,6 +77,8 @@
 int ompt_elide = 0;
 int ompt_initialized = 0;
 
+static blame_entry_t* pthread_blame_table = NULL;
+
 
 //-----------------------------------------
 // declare ompt interface function pointers
@@ -85,6 +86,34 @@ int ompt_initialized = 0;
 #define ompt_interface_fn(f) f ## _t f ## _fn;
 FOREACH_OMPT_FN(ompt_interface_fn)
 #undef ompt_interface_fn
+
+
+/*--------------------------------------------------------------------------*
+ | transfer directed blame as appropriate for a sample			    |
+ *--------------------------------------------------------------------------*/
+
+static inline
+void
+add_blame(uint64_t obj, uint32_t value)
+{
+  if (! pthread_blame_table) {
+    EMSG("Attempted to add pthread blame before initialization");
+    return;
+  }
+  blame_map_add_blame(pthread_blame_table, obj, value);
+}
+
+
+static inline
+uint64_t
+get_blame(uint64_t obj)
+{
+  if (! pthread_blame_table) {
+    EMSG("Attempted to fetch pthread blame before initialization");
+    return 0;
+  }
+  return blame_map_get_blame(pthread_blame_table, obj);
+}
 
 
 
@@ -152,13 +181,13 @@ ompt_get_blame_target()
 static void
 ompt_thread_create()
 {
-  idle_metric_thread_start();
+ // idle_metric_thread_start();
 }
 
 static void
 ompt_thread_exit()
 {
-  idle_metric_thread_end();
+ // idle_metric_thread_end();
 }
 
 
@@ -199,7 +228,7 @@ init_tasks()
   assert(retval > 0);
 }
 
-
+#if 0
 //------------------------------------------------------------------------------
 // function:
 //   init_blame_shift_directed()
@@ -236,7 +265,7 @@ init_blame_shift_directed()
     blame_shift_target_register(&entry);
   }
 }
-
+#endif
   
 static void
 ompt_idle_begin()
@@ -250,6 +279,50 @@ ompt_idle_end()
 {
   idle_metric_blame_shift_work();
 }
+
+static void 
+ompt_wait_callback(ompt_wait_id_t wait_id)
+{
+  uint64_t blame = get_blame((uint64_t) wait_id );
+  
+}
+
+//------------------------------------------------------------------------------
+// function:
+//   init_blame_shift_directed()
+//
+// description:
+//   register functions that will employ directed blame shifting 
+//   to attribute idleness caused while awaiting mutual exclusion 
+//------------------------------------------------------------------------------
+static void 
+init_blame_shift_directed()
+{
+  int retval = 0;
+
+  retval |= ompt_set_callback_fn(ompt_event_release_lock, 
+		    (ompt_wait_callback_t) ompt_wait_callback);
+
+  retval |= ompt_set_callback_fn(ompt_event_release_nest_lock_last, 
+		    (ompt_wait_callback_t) ompt_wait_callback);
+
+  retval |= ompt_set_callback_fn(ompt_event_release_critical, 
+		    (ompt_wait_callback_t) ompt_wait_callback);
+
+  retval |= ompt_set_callback_fn(ompt_event_release_atomic, 
+		    (ompt_wait_callback_t) ompt_wait_callback);
+
+  retval |= ompt_set_callback_fn(ompt_event_release_ordered, 
+		    (ompt_wait_callback_t) ompt_wait_callback);
+
+  if (retval)
+  {
+    // create & initialize blame table (once per process)
+    if (! pthread_blame_table) pthread_blame_table = blame_map_new();
+  }
+}
+
+
 
 //------------------------------------------------------------------------------
 // function:

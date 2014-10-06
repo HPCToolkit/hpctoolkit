@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -1091,9 +1091,9 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
 
   string name = (title.empty()) ? prof.name() : title;
 
-  os << "<?xml version=\"1.0\"?>" << std::endl;
-  os << "<!DOCTYPE HPCToolkitExperiment [\n" << experimentDTD << "]>"
-     << std::endl;
+  os << "<?xml version=\"1.0\"?>\n";
+  os << "<!DOCTYPE HPCToolkitExperiment [\n" << experimentDTD << "]>\n";
+
   os << "<HPCToolkitExperiment version=\"2.0\">\n";
   os << "<Header n" << MakeAttrStr(name) << ">\n";
   os << "  <Info/>\n";

@@ -44,6 +44,7 @@
   <!ATTLIST L
 	i CDATA #REQUIRED
 	l CDATA #REQUIRED
+	f CDATA #IMPLIED
 	v CDATA #IMPLIED>
   <!-- Statement -->
   <!ELEMENT S (S)*>

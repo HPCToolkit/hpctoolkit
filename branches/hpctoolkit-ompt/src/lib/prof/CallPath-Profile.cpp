@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -118,6 +118,14 @@ using namespace xml;
 //***************************************************************************
 
 namespace Prof {
+
+// -------------------------------------------------------------------------
+// special variables to store mapping between the original and unique ID
+// this table is needed to avoid duplicate filenames that arise with alien 
+// and loop nodes.
+// this variable will be used by getFileIdFromMap in CCT-Tree.cpp
+// ---------------------------------------------------
+std::map<uint, uint> m_mapFileIDs;      // map between file IDs
 
 namespace CallPath {
 
@@ -444,6 +452,21 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
 }
 
 
+
+class FilenameCompare {
+public:
+  bool operator()(const std::string n1,  const std::string n2) const {
+    return n1.compare(n2)<0;
+  } 
+};
+
+// ---------------------------------------------------
+// special variables to store mapping between filename and the ID
+// this hack is needed to avoid duplicate filenames
+// which occurs with alien nodes
+// ---------------------------------------------------
+static std::map<std::string, uint, FilenameCompare> m_mapFiles; // map the filenames and the ID
+
 static void
 writeXML_help(std::ostream& os, const char* entry_nm,
 	      Struct::Tree* structure, const Struct::ANodeFilter* filter,
@@ -464,9 +487,32 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       nm = strct->name().c_str();
     }
     else if (type == 2) { // File
-      nm = ((typeid(*strct) == typeid(Struct::Alien)) ?
-	    static_cast<Struct::Alien*>(strct)->fileName().c_str() :
-	    static_cast<Struct::File*>(strct)->name().c_str());
+      if (typeid(*strct) == typeid(Struct::Alien)) {
+	nm = static_cast<Struct::Alien*>(strct)->fileName().c_str();
+      } else if (typeid(*strct) == typeid(Struct::Loop)) {
+	nm = static_cast<Struct::Loop*>(strct)->fileName().c_str();
+      } else {
+	nm = static_cast<Struct::File*>(strct)->name().c_str();
+      }
+      // ---------------------------------------
+      // avoid redundancy in XML filename dictionary
+      // (exception for unknown-file)
+      // ---------------------------------------
+      if (m_mapFiles.find(nm) == m_mapFiles.end()) {
+	//  the filename is not in the list. Add it.
+	m_mapFiles[nm] = id;
+
+      } else if ( nm != Prof::Struct::Tree::UnknownFileNm 
+		  && nm[0] != '\0' )
+      { // WARNING: We do not allow redundancy unless for some specific files
+	// For "unknown-file" and empty file (alien case), we allow duplicates
+	// Otherwise we remove duplicate filename, and use the existing one.
+	uint id_orig = m_mapFiles[nm];
+
+	// remember that this ID needs redirection to the existing ID
+	Prof::m_mapFileIDs[id] = id_orig;
+	continue;
+      }
     }
     else if (type == 3) { // Proc
       nm = strct->name().c_str();
@@ -484,7 +530,8 @@ writeXML_help(std::ostream& os, const char* entry_nm,
 static bool
 writeXML_FileFilter(const Struct::ANode& x, long GCC_ATTR_UNUSED type)
 {
-  return (typeid(x) == typeid(Struct::File) || typeid(x) == typeid(Struct::Alien));
+  return (typeid(x) == typeid(Struct::File) || typeid(x) == typeid(Struct::Alien) ||
+	  typeid(x) == typeid(Struct::Loop)); 
 }
 
 

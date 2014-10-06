@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -78,9 +78,9 @@
 void                                                                 \
 hpcrun_all_sources_ ##n(void)                                        \
 {								     \
-  TMSG(AS_MAP, "calling function _AS0(%s)", #n);                     \
+  TMSG(SS_ALL, "calling function %s", __func__);                     \
   for(sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \
-    TMSG(AS_MAP,"sample source (%s) method call: %s",	             \
+    TMSG(SS_ALL,"sample source (%s) method call: %s",	             \
 	 ss->name, #n);            				     \
     METHOD_CALL(ss, n);           				     \
   }								     \
@@ -99,10 +99,10 @@ hpcrun_all_sources_ ##n(t arg)                                       \
 bool								     \
 hpcrun_all_sources_ ##n(void)					     \
 {								     \
-  TMSG(AS_ ##n,"checking %d sources",n_sources);		     \
+  TMSG(SS_ALL, "checking %d sources",n_sources);		     \
   for(sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \
     if (! METHOD_CALL(ss, n)) {			                     \
-      TMSG(AS_ ##n,"%s not started",ss->name);                       \
+      TMSG(SS_ALL, "%s not started",ss->name);                       \
       return false;						     \
     }								     \
   }								     \
@@ -119,7 +119,7 @@ hpcrun_all_sources_ ##n(void)					     \
 
 static sample_source_t* sample_sources = NULL;
 static sample_source_t** ss_insert     = &sample_sources;
-static int n_sources = 0;
+static size_t n_sources = 0;
 
 
 //*******************************************************************
@@ -163,17 +163,27 @@ in_sources(sample_source_t* ss_in)
 static void
 add_source(sample_source_t* ss)
 {
-  TMSG(AS_add_source,"%s",ss->name);
+  TMSG(SS_ALL, "%s", ss->name);
   if (in_sources(ss)) {
     return;
   }
   *ss_insert = ss;
   ss->next_sel = NULL;
   ss_insert    = &(ss->next_sel);
-  n_sources++;
-  TMSG(AS_add_source,"# sources now = %d",n_sources);
+  ss->sel_idx  = n_sources++;
+  TMSG(SS_ALL, "Sample source %s has selection index %d", ss->name, ss->sel_idx);
+  TMSG(SS_ALL, "# sources now = %d", n_sources);
 }
 
+
+//
+// Return the number of -selected- sample sources
+//
+size_t
+hpcrun_get_num_sample_sources(void)
+{
+  return n_sources;
+}
 
 void
 hpcrun_sample_sources_from_eventlist(char* evl)

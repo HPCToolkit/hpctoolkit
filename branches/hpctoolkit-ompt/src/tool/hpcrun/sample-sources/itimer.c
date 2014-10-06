@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -105,7 +105,7 @@
 
 #include <lib/support-lean/timer.h>
 
-#include <sample-sources/blame-shift.h>
+#include <sample-sources/blame-shift/blame-shift.h>
 
 
 
@@ -195,6 +195,16 @@ static struct itimerspec itspec_stop;
 
 static sigset_t timer_mask;
 
+static __thread bool wallclock_ok = false;
+
+// ****************************************************************************
+// * public helper function
+// ****************************************************************************
+
+void hpcrun_itimer_wallclock_ok(bool flag)
+{
+  wallclock_ok = flag;
+}
 
 /******************************************************************************
  * internal helper functions
@@ -264,6 +274,9 @@ hpcrun_stop_timer(thread_data_t *td)
 {
 #ifdef ENABLE_CLOCK_REALTIME
   if (use_realtime || use_cputime) {
+    if (! td->timer_init) {
+      return 0;
+    }
     return timer_settime(td->timerid, 0, &itspec_stop, NULL);
   }
 #endif
@@ -318,7 +331,7 @@ hpcrun_restart_timer(sample_source_t *self, int safe)
   }
 #endif
 
-  TD_GET(ss_state)[self->evset_idx] = START;
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 
@@ -330,7 +343,7 @@ static void
 METHOD_FN(init)
 {
   TMSG(ITIMER_CTL, "init");
-  blame_shift_heartbeat_register(bs_heartbeat_timer);
+  blame_shift_source_register(bs_type_timer);
   self->state = INIT;
 }
 
@@ -392,7 +405,7 @@ METHOD_FN(stop)
     EMSG("stop %s failed, errno: %d", the_event_name, errno);
   }
 
-  TD_GET(ss_state)[self->evset_idx] = STOP;
+  TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 static void
@@ -598,6 +611,10 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   static bool metrics_finalized = false;
   sample_source_t *self = &_itimer_obj;
 
+  // If we got a wallclock signal not meant for our thread, then drop the sample
+  if (! wallclock_ok) {
+    EMSG("Received itimer signal, but thread not initialized");
+  }
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
   void* pc = hpcrun_context_pc(context);

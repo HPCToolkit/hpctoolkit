@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -345,7 +345,7 @@ METHOD_FN(start)
   // Need to ignore failure here.
   BGP_UPC_Start(0);
 
-  TD_GET(ss_state)[self->evset_idx] = START;
+  TD_GET(ss_state)[self->sel_idx] = START;
   TMSG(UPC, "BGP_UPC_Start on core 0");
 }
 
@@ -361,7 +361,7 @@ METHOD_FN(stop)
     return;
 
   BGP_UPC_Stop();
-  TD_GET(ss_state)[self->evset_idx] = STOP;
+  TD_GET(ss_state)[self->sel_idx] = STOP;
   TMSG(UPC, "BGP_UPC_Stop on core 0");
 }
 

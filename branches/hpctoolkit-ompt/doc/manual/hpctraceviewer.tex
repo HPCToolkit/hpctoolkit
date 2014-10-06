@@ -147,7 +147,12 @@ Although it is possible to open a view configuration file which is associated fr
 The information pane contains some information concerning the range status of the current displayed data.
 \begin{itemize}
  \item \textbf{Time Range}. The information of current time-range (horizontal) dimension. 
- \item \textbf{Process Range}. The information of current process-range (vertical) dimension. 
+ \item \textbf{Process Range}. The information of current process-range (vertical) dimension. The ranks are formatted in the following notation:
+\begin{verbatim}
+  <process_id> . <thread_id>
+\end{verbatim}
+Hence, if the ranks are 0.0, 0.1, \dots{} 31.0, 31.1 it means MPI process 0 has two threads: thread 0 and thread 1 (similarly with MPI process 31). 
+
  \item \textbf{Cross Hair}. The information of current \crosshair{} position in time and process dimensions. 
 \end{itemize}
 

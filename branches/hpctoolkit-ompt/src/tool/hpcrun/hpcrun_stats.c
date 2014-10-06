@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -70,6 +70,7 @@ static long num_samples_blocked_dlopen = 0;
 static long num_samples_dropped = 0;
 static long num_samples_segv = 0;
 static long num_samples_partial = 0;
+static long num_samples_yielded = 0;
 
 static long num_unwind_intervals_total = 0;
 static long num_unwind_intervals_suspicious = 0;
@@ -314,6 +315,22 @@ hpcrun_stats_trolled_frames(void)
   return trolled_frames;
 }
 
+//----------------------------
+// samples yielded due to deadlock prevention
+//----------------------------
+
+void
+hpcrun_stats_num_samples_yielded_inc(void)
+{
+  atomic_add_i64(&num_samples_yielded, 1L);
+}
+
+long
+hpcrun_stats_num_samples_yielded(void)
+{
+  return num_samples_yielded;
+}
+
 //-----------------------------
 // print summary
 //-----------------------------
@@ -336,10 +353,10 @@ hpcrun_stats_print_summary(void)
        blocked, num_samples_blocked_async, num_samples_blocked_dlopen,
        errant, num_samples_segv, soft);
 
-  AMSG("SUMMARY: samples: %ld (recorded: %ld, blocked: %ld, errant: %ld, trolled: %ld),\n"
+  AMSG("SUMMARY: samples: %ld (recorded: %ld, blocked: %ld, errant: %ld, trolled: %ld, yielded: %ld),\n"
        "         frames: %ld (trolled: %ld)\n"
        "         intervals: %ld (suspicious: %ld)",
-       num_samples_total, valid, blocked, errant, trolled,
+       num_samples_total, valid, blocked, errant, trolled, num_samples_yielded,
        frames_total, trolled_frames,
        num_unwind_intervals_total,  num_unwind_intervals_suspicious);
 
@@ -353,3 +370,4 @@ hpcrun_stats_print_summary(void)
     hpcrun_validation_summary();
   }
 }
+

@@ -56,6 +56,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <dlfcn.h>
+#include <stdbool.h>
 
 
 
@@ -66,170 +67,227 @@
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
-#include "blame-shift.h"
-#include "idle.h"
+#include "pthread-blame.h"
+#include <sample-sources/blame-shift/blame-shift.h>
+#include <sample-sources/blame-shift/blame-map.h>
+
+#include <hpcrun/cct2metrics.h>
+#include <hpcrun/metrics.h>
 
 #include <hpcrun/hpctoolkit.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/cct/cct.h>
+#include <messages/messages.h>
+
+
+// *****************************************************************************
+// macros
+// *****************************************************************************
+
+#define SKIP_ONE_FRAME 1
 
 
 
-/******************************************************************************
- * macros
- *****************************************************************************/
+// *****************************************************************************
+// type definitions
+// *****************************************************************************
 
-#define N (128*1024)
-#define INDEX_MASK ((N)-1)
-
-#define DIRECTED_BLAME_NAME "LOCKWAIT"
-
-
-
-/******************************************************************************
- * data type
- *****************************************************************************/
-
-struct blame_parts {
-  uint32_t obj_id;
-  uint32_t blame;
-};
+typedef enum {
+  Running,
+  Spinning,
+  Blocked,
+} state_t;
 
 
-typedef union {
-  uint64_t all;
-  struct blame_parts parts; //[0] is id, [1] is blame
-} blame_entry;
+typedef struct {
+  uint64_t target;
+  state_t state;
+} blame_t;
 
 
 
-/******************************************************************************
- * forward declarations 
- *****************************************************************************/
+// *****************************************************************************
+// static local variables
+// *****************************************************************************
 
-static void process_directed_blame_for_sample(int metric_id, cct_node_t *node, int metric_incr);
+static int blame_metric_id = -1;
+static int blockwait_metric_id = -1;
+static int spinwait_metric_id = -1;
 
-
-
-/******************************************************************************
- * global variables
- *****************************************************************************/
-
-static int directed_blame_metric_id = -1;
 static bs_fn_entry_t bs_entry;
-volatile blame_entry table[N];
 
-static int doblame = 0;
+static bool lockwait_enabled = false;
+
+static blame_entry_t* pthread_blame_table = NULL;
+
+static bool metric_id_set = false;
+
+typedef struct dbg_t {
+  struct timeval tv;
+  char l[4]; // "add" or "get"
+  uint32_t amt;
+  uint64_t obj;
+} dbg_t;
+
+typedef struct dbg_tr_t {
+  unsigned n_elts;
+  dbg_t trace[3000];
+} dbg_tr_t;
+
+
+
+// *****************************************************************************
+// thread local variables
+// *****************************************************************************
+static __thread blame_t pthread_blame = {0, Running};
+
 
 
 /***************************************************************************
  * private operations
  ***************************************************************************/
 
+static inline
+uint64_t
+get_blame_target(void)
+{
+  return pthread_blame.target;
+}
+
+
+static inline
+char*
+state2str(state_t s)
+{
+  if (s == Running) return "Running";
+  if (s == Spinning) return "Spinning";
+  if (s == Blocked) return "Blocked";
+  return "????";
+}
+
+
+static inline
+int
+get_blame_metric_id(void)
+{
+  return (metric_id_set) ? blame_metric_id : -1;
+}
 
 /*--------------------------------------------------------------------------
- | hash table for recording directed blame
+ | transfer directed blame as appropriate for a sample
  --------------------------------------------------------------------------*/
 
-static void 
-blameht_init()
-{
-  int i;
-  for(i = 0; i < N; i++)
-    table[i].all = 0ULL;
-}
-
-
-uint32_t 
-blameht_obj_id(void *addr)
-{
-  return ((uint32_t) ((uint64_t)addr) >> 2);
-}
-
-
-uint32_t 
-blameht_hash(void *addr) 
-{
-  return ((uint32_t)((blameht_obj_id(addr)) & INDEX_MASK));
-}
-
-
-uint64_t 
-blameht_entry(void *addr)
-{
-  return (uint64_t)((((uint64_t)blameht_obj_id(addr)) << 32) | 1);
-}
-
-
+static inline
 void
-blameht_add_blame(void *obj, uint32_t metric_value)
+add_blame(uint64_t obj, uint32_t value)
 {
-  uint32_t obj_id = blameht_obj_id(obj);
-  uint32_t index = blameht_hash(obj);
-
-  assert(index >= 0 && index < N);
-
-  blame_entry oldval = table[index];
-
-  if(oldval.parts.obj_id == obj_id) {
-    blame_entry newval;
-    newval.all = oldval.all + metric_value;
-    table[index].all = newval.all;
-  } else {
-    if(oldval.parts.obj_id == 0) {
-      table[index].all = blameht_entry(obj);
-    } else {
-      // entry in use for another object's blame
-      // in this case, since it isn't easy to shift 
-      // our blame efficiently, we simply drop it.
-    }
+  if (! pthread_blame_table) {
+    EMSG("Attempted to add pthread blame before initialization");
+    return;
   }
+  blame_map_add_blame(pthread_blame_table, obj, value);
 }
 
 
-uint64_t 
-blameht_get_blame(void *obj)
+static inline
+uint64_t
+get_blame(uint64_t obj)
 {
-  uint64_t val = 0;
-  uint32_t obj_id = blameht_obj_id(obj);
-  uint32_t index = blameht_hash(obj);
-
-  assert(index >= 0 && index < N);
-
-  blame_entry oldval = table[index];
-  if(oldval.parts.obj_id == obj_id) {
-    table[index].all = 0;
-    val = (uint64_t)oldval.parts.blame;
+  if (! pthread_blame_table) {
+    EMSG("Attempted to fetch pthread blame before initialization");
+    return 0;
   }
-  return val;
+  return blame_map_get_blame(pthread_blame_table, obj);
 }
 
-
-/*--------------------------------------------------------------------------
- | transfer directed blame as appropritate for a sample
- --------------------------------------------------------------------------*/
 
 static void 
-process_directed_blame_for_sample(int metric_id, cct_node_t *node, int metric_incr)
+process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t* node, int metric_incr)
 {
-  metric_desc_t * metric_desc = hpcrun_id2metric(metric_id);
+  TMSG(LOCKWAIT, "Processing directed blame");
+  metric_desc_t* metric_desc = hpcrun_id2metric(metric_id);
  
+#ifdef LOCKWAIT_FIX
   // Only blame shift idleness for time and cycle metrics. 
   if ( ! (metric_desc->properties.time | metric_desc->properties.cycles) ) 
     return;
+#endif // LOCKWAIT_FIX
   
   uint32_t metric_value = (uint32_t) (metric_desc->period * metric_incr);
 
-  thread_data_t *td = hpcrun_get_thread_data();
-  int32_t *obj_to_blame = td->blame_target;
-
-  if(obj_to_blame && (td->idle == 0)) {
-    blameht_add_blame(obj_to_blame, metric_value);
+  uint64_t obj_to_blame = get_blame_target();
+  if(obj_to_blame) {
+    TMSG(LOCKWAIT, "about to add %d to blame object %d", metric_incr, obj_to_blame);
+    add_blame(obj_to_blame, metric_value);
+    // update appropriate wait metric as well
+    int wait_metric = (pthread_blame.state == Blocked) ? blockwait_metric_id : spinwait_metric_id;
+    TMSG(LOCKWAIT, "about to add %d to %s-waiting in node %d",
+	 metric_incr, state2str(pthread_blame.state),
+	 hpcrun_cct_persistent_id(node));
+    metric_set_t* metrics = hpcrun_reify_metric_set(node);
+    hpcrun_metric_std_inc(wait_metric,
+			  metrics,
+			  (cct_metric_data_t) {.i = metric_incr});
   }
 }
 
+
+
+// ******************************************************************************
+//  public interface to local variables
+// ******************************************************************************
+
+bool
+pthread_blame_lockwait_enabled(void)
+{
+  return lockwait_enabled;
+}
+
+//
+// public blame manipulation functions
+//
+void
+pthread_directed_blame_shift_blocked_start(void* obj)
+{
+  TMSG(LOCKWAIT, "Start directed blaming using blame structure %x, for obj %d",
+       &pthread_blame, (uintptr_t) obj);
+  pthread_blame = (blame_t) {.target = (uint64_t)(uintptr_t)obj,
+                             .state   = Blocked};
+}
+
+void
+pthread_directed_blame_shift_spin_start(void* obj)
+{
+  TMSG(LOCKWAIT, "Start directed blaming using blame structure %x, for obj %d",
+       &pthread_blame, (uintptr_t) obj);
+  pthread_blame = (blame_t) {.target = (uint64_t)(uintptr_t)obj,
+                             .state   = Spinning};
+}
+
+void
+pthread_directed_blame_shift_end(void)
+{
+  pthread_blame = (blame_t) {.target = 0, .state = Running};
+  TMSG(LOCKWAIT, "End directed blaming for blame structure %x",
+       &pthread_blame);
+}
+
+void
+pthread_directed_blame_accept(void* obj)
+{
+  uint64_t blame = get_blame((uint64_t) (uintptr_t) obj);
+  TMSG(LOCKWAIT, "Blame obj %d accepting %d units of blame", obj, blame);
+  if (blame && hpctoolkit_sampling_is_active()) {
+    ucontext_t uc;
+    getcontext(&uc);
+    hpcrun_safe_enter();
+    hpcrun_sample_callpath(&uc, get_blame_metric_id(), blame, 
+                           SKIP_ONE_FRAME, 1);
+    hpcrun_safe_exit();
+  }
+}
 
 /*--------------------------------------------------------------------------
  | sample source methods
@@ -239,7 +297,6 @@ static void
 METHOD_FN(init)
 {
   self->state = INIT;
-  blameht_init();
 }
 
 
@@ -258,7 +315,8 @@ METHOD_FN(thread_init_action)
 static void
 METHOD_FN(start)
 {
-   doblame = 1;
+  lockwait_enabled = true;
+  TMSG(LOCKWAIT, "pthread blame ss STARTED, blame table = %x", pthread_blame_table);
 }
 
 
@@ -273,32 +331,43 @@ METHOD_FN(stop)
 {
 }
 
-
 static void
 METHOD_FN(shutdown)
 {
   self->state = UNINIT;
+  lockwait_enabled = false;
 }
 
 
 static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return (strstr(ev_str, DIRECTED_BLAME_NAME) != NULL);
+  return (strstr(ev_str, PTHREAD_EVENT_NAME) != NULL);
 }
 
  
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-        bs_entry.fn = process_directed_blame_for_sample;
-        bs_entry.next = 0;
+  bs_entry.fn = process_directed_blame_for_sample;
+  bs_entry.arg = NULL;
+  bs_entry.next = NULL;
 
-	blame_shift_register(&bs_entry);
+  blame_shift_register(&bs_entry);
 
-	directed_blame_metric_id = hpcrun_new_metric();
-	hpcrun_set_metric_info_and_period(directed_blame_metric_id, DIRECTED_BLAME_NAME,
-			MetricFlags_ValFmt_Int, 1, metric_property_none);
+  blame_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(blame_metric_id, PTHREAD_BLAME_METRIC,
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+  blockwait_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(blockwait_metric_id, PTHREAD_BLOCKWAIT_METRIC,
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+  spinwait_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(spinwait_metric_id, PTHREAD_SPINWAIT_METRIC,
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+  metric_id_set = true;
+
+  // create & initialize blame table (once per process)
+  if (! pthread_blame_table) pthread_blame_table = blame_map_new();
 }
 
 
@@ -318,185 +387,18 @@ METHOD_FN(display_events)
   printf("---------------------------------------------------------------------------\n");
   printf("%s\tShift the blame for waiting for a lock to the lock holder.\n"
 	 "\t\tOnly suitable for threaded programs.\n",
-	 DIRECTED_BLAME_NAME);
+	 PTHREAD_EVENT_NAME);
   printf("\n");
 }
-
 
 
 /*--------------------------------------------------------------------------
  | sample source object
  --------------------------------------------------------------------------*/
 
+#include <stdio.h>
+
 #define ss_name directed_blame
 #define ss_cls SS_SOFTWARE
 
 #include "ss_obj.h"
-
-
-
-/******************************************************************************
- * interface operations for clients 
- *****************************************************************************/
-
-void
-directed_blame_shift_start(void *obj)
-{
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->blame_target = obj;
-  idle_metric_blame_shift_idle();
-}
-
-
-void
-directed_blame_shift_end()
-{
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->blame_target = 0;
-  idle_metric_blame_shift_work();
-}
-
-
-void
-directed_blame_accept(void *obj)
-{
-  uint64_t blame = blameht_get_blame(obj);
-  if (blame != 0 && hpctoolkit_sampling_is_active()) {
-    ucontext_t uc;
-    getcontext(&uc);
-    hpcrun_safe_enter();
-    hpcrun_sample_callpath(&uc, directed_blame_metric_id, blame, 0, 1);
-    hpcrun_safe_exit();
-  }
-}
-
-/******************************************************************************
- * draft wrapper interface for pthread routines 
- *****************************************************************************/
-#ifdef COND_AVAIL
-extern int __pthread_cond_timedwait(pthread_cond_t *restrict cond,
-                                    pthread_mutex_t *restrict mutex,
-                                    const struct timespec *restrict abstime);
-
-extern int __pthread_cond_wait(pthread_cond_t *restrict cond,
-                               pthread_mutex_t *restrict mutex);
-
-extern int __pthread_cond_broadcast(pthread_cond_t *cond);
-
-extern int __pthread_cond_signal(pthread_cond_t *cond);
-#else 
-
-typedef int (*__pthread_cond_timedwait_t)(pthread_cond_t *restrict cond,
-                                    pthread_mutex_t *restrict mutex,
-                                    const struct timespec *restrict abstime);
-
-typedef int (*__pthread_cond_wait_t)(pthread_cond_t *restrict cond,
-                               pthread_mutex_t *restrict mutex);
-
-typedef int (*__pthread_cond_broadcast_t)(pthread_cond_t *cond);
-
-typedef int (*__pthread_cond_signal_t)(pthread_cond_t *cond);
-
-__pthread_cond_timedwait_t __pthread_cond_timedwait;
-__pthread_cond_wait_t __pthread_cond_wait;
-__pthread_cond_broadcast_t __pthread_cond_broadcast;
-__pthread_cond_signal_t __pthread_cond_signal;
-#endif
-
-extern int __pthread_mutex_lock(pthread_mutex_t *mutex);
-
-extern int __pthread_mutex_unlock(pthread_mutex_t *mutex);
-
-extern int __pthread_mutex_timedlock(pthread_mutex_t *restrict mutex,
-                                     const struct timespec *restrict abs_timeout);
-
-
-
-#define DL_LOOKUP(name) \
-  __ ## name = (__ ## name ## _t ) dlvsym(RTLD_NEXT, # name , "GLIBC_2.3.2") 
-void __attribute__ ((constructor))
-pthread_plugin_init() 
-{
-  idle_metric_register_blame_source();
-#ifndef COND_AVAIL
-   DL_LOOKUP(pthread_cond_broadcast);
-   DL_LOOKUP(pthread_cond_signal);
-   DL_LOOKUP(pthread_cond_wait);
-   DL_LOOKUP(pthread_cond_timedwait);
-#endif
-}
-
-
-int 
-pthread_cond_timedwait(pthread_cond_t *restrict cond,
-                       pthread_mutex_t *restrict mutex,
-                       const struct timespec *restrict abstime)
-{
-  int retval;
-  directed_blame_shift_start(cond);
-  retval = __pthread_cond_timedwait(cond, mutex, abstime);
-  directed_blame_shift_end();
-  return retval;
-}
-
-
-int 
-pthread_cond_wait(pthread_cond_t *restrict cond,
-                  pthread_mutex_t *restrict mutex)
-{
-  int retval;
-  directed_blame_shift_start(cond);
-  retval = __pthread_cond_wait(cond, mutex);
-  directed_blame_shift_end();
-  return retval;
-}
-
-
-int 
-pthread_cond_broadcast(pthread_cond_t *cond)
-{
-  int retval = __pthread_cond_broadcast(cond);
-  directed_blame_accept(cond);
-  return retval;
-}
-
-
-int 
-pthread_cond_signal(pthread_cond_t *cond)
-{
-  int retval = __pthread_cond_signal(cond);
-  directed_blame_accept(cond);
-  return retval;
-}
-
-
-int 
-pthread_mutex_lock(pthread_mutex_t *mutex)
-{
-  int retval;
-  directed_blame_shift_start(mutex);
-  retval = __pthread_mutex_lock(mutex);
-  directed_blame_shift_end();
-  return retval;
-}
-
-
-int 
-pthread_mutex_unlock(pthread_mutex_t *mutex)
-{
-  int retval = __pthread_mutex_unlock(mutex);
-  directed_blame_accept(mutex);
-  return retval;
-}
-
-
-int 
-pthread_mutex_timedlock(pthread_mutex_t *restrict mutex,
-                        const struct timespec *restrict abs_timeout)
-{
-  int retval;
-  directed_blame_shift_start(mutex);
-  retval = __pthread_mutex_timedlock(mutex, abs_timeout);
-  directed_blame_shift_end();
-  return retval;
-}

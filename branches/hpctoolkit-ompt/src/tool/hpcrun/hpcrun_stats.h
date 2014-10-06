@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -98,6 +98,12 @@ long hpcrun_stats_num_samples_dropped(void);
 void hpcrun_stats_num_samples_partial_inc(void);
 long hpcrun_stats_num_samples_partial(void);
 
+//----------------------------
+// samples yielded due to deadlock prevention
+//----------------------------
+
+extern void hpcrun_stats_num_samples_yielded_inc(void);
+extern long hpcrun_stats_num_samples_yielded(void);
 
 //-----------------------------
 // samples filtered

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -103,6 +103,8 @@ using SrcFile::ln_NULL;
 //***************************************************************************
 
 namespace Prof {
+
+extern std::map<uint, uint> m_mapFileIDs;      // map between file IDs
 
 namespace CCT {
   
@@ -1121,6 +1123,28 @@ Root::toStringMe(uint oFlags) const
 }
 
 
+//**********************************************************************
+// Goal: This function is to avoid using different ID for the same file name.
+// During the writing of file dictionary table (see CallPath-Profile.cpp)
+// 	if a file has the exact absolute name with a previous file, 
+//	then we redirect its ID to the existing ID
+//
+// This function will check if any nodes refer to redirected ID or not.
+// 	if this is the case, it will return the existing file ID instead of
+//	the node's file ID.
+//**********************************************************************
+static uint
+getFileIdFromMap(uint file_id)
+{
+  uint id = file_id;
+  if (Prof::m_mapFileIDs.find(file_id) != Prof::m_mapFileIDs.end()) {
+    // the file ID should redirected to another file ID which has 
+    // exactly the same filename
+    id = Prof::m_mapFileIDs[file_id];
+  }
+  return id;
+}
+
 string
 ProcFrm::toStringMe(uint oFlags) const
 {
@@ -1128,7 +1152,10 @@ ProcFrm::toStringMe(uint oFlags) const
   
   if (m_strct) {
     string lm_nm = xml::MakeAttrNum(lmId());
-    string fnm = xml::MakeAttrNum(fileId());
+
+    uint file_id = getFileIdFromMap(fileId());
+    string fnm = xml::MakeAttrNum(file_id);
+
     string pnm = xml::MakeAttrNum(procId());
 
     if (oFlags & Tree::OFlg_DebugAll) {
@@ -1153,7 +1180,9 @@ Proc::toStringMe(uint oFlags) const
   
   if (m_strct) {
     string lm_nm = xml::MakeAttrNum(lmId());
-    string fnm = xml::MakeAttrNum(fileId());
+
+    uint file_id = getFileIdFromMap(fileId());
+    string fnm = xml::MakeAttrNum(file_id);
     string pnm = xml::MakeAttrNum(procId());
 
     if (oFlags & Tree::OFlg_DebugAll) {
@@ -1175,7 +1204,9 @@ Proc::toStringMe(uint oFlags) const
 string 
 Loop::toStringMe(uint oFlags) const
 {
-  string self = ANode::toStringMe(oFlags);
+  uint file_id = getFileIdFromMap(fileId());
+  string fnm = xml::MakeAttrNum(file_id);
+  string self = ANode::toStringMe(oFlags) + " f" + fnm;
   return self;
 }
 
@@ -1266,17 +1297,17 @@ ANode::writeXML_pre(ostream& os, uint metricBeg, uint metricEnd,
   // 1. Write element name
   if (doTag) {
     if (isXMLLeaf) {
-      os << pfx << "<" << toStringMe(oFlags) << "/>" << endl;
+      os << pfx << "<" << toStringMe(oFlags) << "/>\n";
     }
     else {
-      os << pfx << "<" << toStringMe(oFlags) << ">" << endl;
+      os << pfx << "<" << toStringMe(oFlags) << ">\n";
     }
   }
 
   // 2. Write associated metrics
   if (doMetrics) {
     writeMetricsXML(os, metricBeg, metricEnd, oFlags, pfx);
-    os << endl;
+    os << "\n";
   }
 
   return !isXMLLeaf; // whether to execute writeXML_post()
@@ -1292,7 +1323,7 @@ ANode::writeXML_post(ostream& os, uint GCC_ATTR_UNUSED oFlags,
     return;
   }
   
-  os << pfx << "</" << ANodeTyToName(type()) << ">" << endl;
+  os << pfx << "</" << ANodeTyToName(type()) << ">\n";
 }
 
 

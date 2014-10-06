@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -246,10 +246,20 @@ hpcrun_loadmap_findByAddr(void* begin, void* end)
 {
   TMSG(LOADMAP, "find by address %p -- %p", begin, end);
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
-    if (x->dso_info
-	&& x->dso_info->start_addr <= begin && end <= x->dso_info->end_addr) {
-      TMSG(LOADMAP, "       --->%s", x->name);
-      return x;
+    TMSG(LOADMAP, "\tload module %s", x->name);
+    if (x->dso_info) {
+      TMSG(LOADMAP, "\t\t [%lx, %lx) table [%lx, %lx)", 
+	   (uintptr_t) x->dso_info->start_addr,
+	   (uintptr_t) x->dso_info->end_addr,
+	   ((uintptr_t) x->dso_info->table ? ((uintptr_t) x->dso_info->table[0] + 
+				  x->dso_info->start_to_ref_dist) : -1),
+	   ((uintptr_t) x->dso_info->table ? ((uintptr_t) x->dso_info->table[x->dso_info->nsymbols -1] +
+				  x->dso_info->start_to_ref_dist) : -1)
+	   );
+      if (x->dso_info->start_addr <= begin && end <= x->dso_info->end_addr) {
+	TMSG(LOADMAP, "       --->%s", x->name);
+	return x;
+      }
     }
   }
   TMSG(LOADMAP, "       --->(NOT FOUND)");

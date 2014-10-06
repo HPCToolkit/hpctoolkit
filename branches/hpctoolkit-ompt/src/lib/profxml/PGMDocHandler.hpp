@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -253,7 +253,7 @@ private:
   const XMLCh *const attrVer;
   const XMLCh *const attrId;
   const XMLCh *const attrName;
-  const XMLCh *const attrAlienFile;
+  const XMLCh *const attrFile;
   const XMLCh *const attrLnName;
   const XMLCh *const attrLine;
   const XMLCh *const attrVMA;
