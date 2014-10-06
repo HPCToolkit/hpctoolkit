@@ -89,6 +89,7 @@ using std::vector;
 
 #include "Args.hpp"
 #include "ParallelAnalysis.hpp"
+#include "Plot-Trace.hpp"
 
 #include <lib/analysis/CallPath.hpp>
 #include <lib/analysis/Util.hpp>
@@ -422,6 +423,10 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
   // 2c. Create thread-level metric DB // Normalize trace files
   // -------------------------------------------------------
+  if (Prof::Database::newDBFormat()) {
+    Plot::allocBuffers(*profGbl, myRank, numRanks, rootRank);
+  }
+
   makeThreadMetrics(*profGbl, args, nArgs, groupIdToGroupSizeMap,
 		    traceLcl, myRank, numRanks, rootRank);
 

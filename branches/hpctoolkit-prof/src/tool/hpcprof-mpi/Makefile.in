@@ -83,7 +83,8 @@ am__installdirs = "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(bindir)"
 PROGRAMS = $(pkglibexec_PROGRAMS)
 am__objects_1 = hpcprof_mpi_bin-main.$(OBJEXT) \
 	hpcprof_mpi_bin-Args.$(OBJEXT) \
-	hpcprof_mpi_bin-ParallelAnalysis.$(OBJEXT)
+	hpcprof_mpi_bin-ParallelAnalysis.$(OBJEXT) \
+	hpcprof_mpi_bin-Plot-Trace.$(OBJEXT)
 am_hpcprof_mpi_bin_OBJECTS = $(am__objects_1)
 hpcprof_mpi_bin_OBJECTS = $(am_hpcprof_mpi_bin_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -404,7 +405,8 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp \
-	ParallelAnalysis.hpp ParallelAnalysis.cpp
+	ParallelAnalysis.hpp ParallelAnalysis.cpp \
+	Plot-Trace.cpp Plot-Trace.hpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
@@ -575,6 +577,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi_bin-Args.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi_bin-ParallelAnalysis.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi_bin-Plot-Trace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi_bin-main.Po@am__quote@
 
 .cpp.o:
@@ -639,6 +642,20 @@ hpcprof_mpi_bin-ParallelAnalysis.obj: ParallelAnalysis.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ParallelAnalysis.cpp' object='hpcprof_mpi_bin-ParallelAnalysis.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi_bin-ParallelAnalysis.obj `if test -f 'ParallelAnalysis.cpp'; then $(CYGPATH_W) 'ParallelAnalysis.cpp'; else $(CYGPATH_W) '$(srcdir)/ParallelAnalysis.cpp'; fi`
+
+hpcprof_mpi_bin-Plot-Trace.o: Plot-Trace.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi_bin-Plot-Trace.o -MD -MP -MF $(DEPDIR)/hpcprof_mpi_bin-Plot-Trace.Tpo -c -o hpcprof_mpi_bin-Plot-Trace.o `test -f 'Plot-Trace.cpp' || echo '$(srcdir)/'`Plot-Trace.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcprof_mpi_bin-Plot-Trace.Tpo $(DEPDIR)/hpcprof_mpi_bin-Plot-Trace.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Plot-Trace.cpp' object='hpcprof_mpi_bin-Plot-Trace.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi_bin-Plot-Trace.o `test -f 'Plot-Trace.cpp' || echo '$(srcdir)/'`Plot-Trace.cpp
+
+hpcprof_mpi_bin-Plot-Trace.obj: Plot-Trace.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi_bin-Plot-Trace.obj -MD -MP -MF $(DEPDIR)/hpcprof_mpi_bin-Plot-Trace.Tpo -c -o hpcprof_mpi_bin-Plot-Trace.obj `if test -f 'Plot-Trace.cpp'; then $(CYGPATH_W) 'Plot-Trace.cpp'; else $(CYGPATH_W) '$(srcdir)/Plot-Trace.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcprof_mpi_bin-Plot-Trace.Tpo $(DEPDIR)/hpcprof_mpi_bin-Plot-Trace.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Plot-Trace.cpp' object='hpcprof_mpi_bin-Plot-Trace.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi_bin-Plot-Trace.obj `if test -f 'Plot-Trace.cpp'; then $(CYGPATH_W) 'Plot-Trace.cpp'; else $(CYGPATH_W) '$(srcdir)/Plot-Trace.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

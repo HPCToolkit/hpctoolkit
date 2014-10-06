@@ -75,7 +75,8 @@ XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp \
-	ParallelAnalysis.hpp ParallelAnalysis.cpp
+	ParallelAnalysis.hpp ParallelAnalysis.cpp \
+	Plot-Trace.cpp Plot-Trace.hpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
