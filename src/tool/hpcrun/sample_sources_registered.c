@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -57,16 +57,9 @@
 static sample_source_t* registered_sample_sources         = NULL;
 static sample_source_t** registered_sample_sources_insert = &registered_sample_sources;
 
-static int nregs = 0;
-
 void
 hpcrun_ss_register(sample_source_t* src)
 {
-  if (nregs >= MAX_POSSIBLE_SAMPLE_SOURCES){
-    EMSG("Sample source named %s NOT registered due to # sample sources exceeded",src->name);
-    return;
-  }
-  src->evset_idx                     = nregs++;
   *registered_sample_sources_insert  = src;
   src->next_reg                      = NULL;
   registered_sample_sources_insert   = &(src->next_reg);

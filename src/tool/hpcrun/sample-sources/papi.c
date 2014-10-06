@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -81,7 +81,6 @@
 #include "sample_source_obj.h"
 #include "common.h"
 
-#include <cct/cct.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
@@ -90,12 +89,11 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
 
-#include <sample-sources/blame-shift.h>
+#include <sample-sources/blame-shift/blame-shift.h>
 #include <utilities/tokenize.h>
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
-
 
 
 /******************************************************************************
@@ -129,7 +127,8 @@ static void event_fatal_error(int ev_code, int papi_ret);
 /******************************************************************************
  * local variables
  *****************************************************************************/
-static int cyc_metric_id = -1; // initialized to an illegal metric id
+
+// static int cyc_metric_id = -1; /* initialized to an illegal metric id */
 
 // Special case to make PAPI_library_init() a soft failure.
 // Make sure that we call no other PAPI functions.
@@ -151,7 +150,13 @@ METHOD_FN(init)
 {
   PAPI_set_debug(0x3ff);
 
+  // **NOTE: some papi components may start threads, so
+  //         hpcrun must ignore these threads to ensure that PAPI_library_init
+  //         succeeds
+  //
+  monitor_disable_new_threads();
   int ret = PAPI_library_init(PAPI_VER_CURRENT);
+  monitor_enable_new_threads();
   TMSG(PAPI,"PAPI_library_init = %d", ret);
   TMSG(PAPI,"PAPI_VER_CURRENT =  %d", PAPI_VER_CURRENT);
 
@@ -179,7 +184,6 @@ METHOD_FN(init)
   }
 
   self->state = INIT;
-  
 }
 
 static void
@@ -196,7 +200,6 @@ METHOD_FN(thread_init)
   TMSG(PAPI, "thread init OK");
 }
 
-
 static void
 METHOD_FN(thread_init_action)
 {
@@ -208,20 +211,8 @@ METHOD_FN(thread_init_action)
     EEMSG("PAPI_register_thread NOT ok, retval = %d", retval);
     monitor_real_abort();
   }
-
-#if 0
-  if(ENABLED(SET_DEFER_WRITE)) {
-    thread_data_t *td = hpcrun_get_thread_data();
-    td->defer_write = 1;
-  }
-  else {
-    // at the beginning of one thread, try to resolve any other threads
-    resolve_other_cntxt(false);
-  }
-#endif
   TMSG(PAPI, "register thread ok");
 }
-
 
 static void
 METHOD_FN(start)
@@ -230,9 +221,9 @@ METHOD_FN(start)
   if (papi_unavail) { return; }
 
   thread_data_t *td = hpcrun_get_thread_data();
-  papi_source_info_t *psi = td->ss_info[self->evset_idx].ptr;
+  papi_source_info_t *psi = td->ss_info[self->sel_idx].ptr;
   int eventSet = psi->eventSet;
-  source_state_t my_state = TD_GET(ss_state)[self->evset_idx];
+  source_state_t my_state = TD_GET(ss_state)[self->sel_idx];
 
   // make PAPI start idempotent.  the application can turn on sampling
   // anywhere via the start-stop interface, so we can't control what
@@ -260,9 +251,8 @@ METHOD_FN(start)
     }
   }
 
-  TD_GET(ss_state)[self->evset_idx] = START;
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
-
 
 static void
 METHOD_FN(thread_fini_action)
@@ -273,10 +263,8 @@ METHOD_FN(thread_fini_action)
   int retval = PAPI_unregister_thread();
   char msg[] = "!!NOT PAPI_OK!! (code = -9999999)\n";
   snprintf(msg, sizeof(msg)-1, "!!NOT PAPI_OK!! (code = %d)", retval);
-  
   TMSG(PAPI, "unregister thread returns %s", retval == PAPI_OK? "PAPI_OK" : msg);
 }
-
 
 static void
 METHOD_FN(stop)
@@ -285,10 +273,10 @@ METHOD_FN(stop)
   if (papi_unavail) { return; }
 
   thread_data_t *td = hpcrun_get_thread_data();
-  papi_source_info_t *psi = td->ss_info[self->evset_idx].ptr;
+  papi_source_info_t *psi = td->ss_info[self->sel_idx].ptr;
   int eventSet = psi->eventSet;
   int nevents  = self->evl.nevents;
-  source_state_t my_state = TD_GET(ss_state)[self->evset_idx];
+  source_state_t my_state = TD_GET(ss_state)[self->sel_idx];
 
   if (my_state == STOP) {
     TMSG(PAPI,"--stop called on an already stopped event set %d",eventSet);
@@ -308,9 +296,8 @@ METHOD_FN(stop)
 	 eventSet,ret,PAPI_strerror(ret));
   }
 
-  TD_GET(ss_state)[self->evset_idx] = STOP;
+  TD_GET(ss_state)[self->sel_idx] = STOP;
 }
-
 
 static void
 METHOD_FN(shutdown)
@@ -323,7 +310,6 @@ METHOD_FN(shutdown)
 
   self->state = UNINIT;
 }
-
 
 // Return true if PAPI recognizes the name, whether supported or not.
 // We'll handle unsupported events later.
@@ -345,7 +331,6 @@ METHOD_FN(supports_event, const char *ev_str)
   return PAPI_event_name_to_code(evtmp, &ec) == PAPI_OK;
 }
  
-
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
@@ -403,7 +388,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     // blame shifting needs to know if there is a cycles metric
     if (strcmp(buffer, "PAPI_TOT_CYC") == 0) {
       prop = metric_property_cycles;
-      blame_shift_heartbeat_register(bs_heartbeat_cycles);
+      blame_shift_source_register(bs_type_cycles);
     } 
 
     // allow derived events (proxy sampling), as long as some event
@@ -439,11 +424,11 @@ METHOD_FN(process_event_list, int lush_metrics)
 					self->evl.events[i].thresh, prop);
     }
   }
+
   if (! some_overflow) {
     hpcrun_ssfail_all_derived("PAPI");
   }
 }
-
 
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
@@ -466,7 +451,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
 
   // record the component state in thread state
   thread_data_t *td = hpcrun_get_thread_data();
-  td->ss_info[self->evset_idx].ptr = psi;
+  td->ss_info[self->sel_idx].ptr = psi;
 
 
   eventSet = PAPI_NULL;
@@ -589,6 +574,19 @@ METHOD_FN(display_events)
 #include "ss_obj.h"
 
 /******************************************************************************
+ * public operations
+ *****************************************************************************/
+
+//
+// Do not need to disable the papi cuda component if there is no papi component
+//
+void
+hpcrun_disable_papi_cuda(void)
+{
+  ;
+}
+
+/******************************************************************************
  * private operations 
  *****************************************************************************/
 
@@ -645,10 +643,8 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
-  monitor_block_shootdown();
   if (! hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
-    monitor_unblock_shootdown();
     return;
   }
 
@@ -675,13 +671,12 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
     TMSG(PAPI_SAMPLE,"sampling call path for metric_id = %d", metric_id);
 
-    sample_val_t sv =
-      hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
-			     0/*skipInner*/, 0/*isSync*/);
-    
-    if(sv.sample_node)
-      blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
+    sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
+			   0/*skipInner*/, 0/*isSync*/);
+
+    blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
   }
+
   // Add metric values for derived events by the difference in counter
   // values.  Some samples can take a long time (eg, analyzing a new
   // load module), so read the counters both on entry and exit to
@@ -689,7 +684,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   if (some_derived) {
     thread_data_t *td = hpcrun_get_thread_data();
-    papi_source_info_t *psi = td->ss_info[self->evset_idx].ptr;
+    papi_source_info_t *psi = td->ss_info[self->sel_idx].ptr;
     for (i = 0; i < nevents; i++) {
       if (derived[i]) {
 	hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),
@@ -703,6 +698,5 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     }
   }
 
-  monitor_unblock_shootdown();
   hpcrun_safe_exit();
 }

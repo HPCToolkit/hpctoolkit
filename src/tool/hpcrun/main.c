@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -48,6 +48,7 @@
 // system include files 
 //***************************************************************************
 
+#include <sys/types.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <setjmp.h>
@@ -55,9 +56,12 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <dlfcn.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef LINUX
 #include <linux/unistd.h>
+#include <linux/limits.h>
 #endif
 
 //***************************************************************************
@@ -97,6 +101,8 @@
 
 #include "sample_event.h"
 #include <sample-sources/none.h>
+#include <sample-sources/itimer.h>
+
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
 #include "segv_handler.h"
@@ -121,6 +127,8 @@
 #include <unwind/common/unwind.h>
 #include <unwind/common/splay-interval.h>
 
+#include <utilities/arch/context-pc.h>
+
 #include <lush/lush-backtrace.h>
 #include <lush/lush-pthread.h>
 
@@ -131,12 +139,24 @@
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
 
-#include <ompt/ompt-defer-write.h>
-
 extern void hpcrun_set_retain_recursion_mode(bool mode);
 #ifndef USE_LIBUNW
 extern void hpcrun_dump_intervals(void* addr);
 #endif // ! USE_LIBUNW
+
+//***************************************************************************
+// local data types. Primarily for passing data between pre_PHASE, PHASE, and post_PHASE
+//***************************************************************************
+
+typedef struct local_thread_data_t {
+  cct_ctxt_t* thr_ctxt;
+} local_thread_data_t;
+
+typedef struct fork_data_t {
+  int flag;
+  bool is_child;
+} fork_data_t;
+
 
 //***************************************************************************
 // constants
@@ -173,21 +193,65 @@ static bool safe_to_sync_sample = false;
 static void* main_addr = NULL;
 static void* main_lower = NULL;
 static void* main_upper = (void*) (intptr_t) -1;
+#ifndef HPCRUN_STATIC_LINK
+static void* main_addr_dl = NULL;
+static void* main_lower_dl = NULL;
+static void* main_upper_dl = (void*) (intptr_t) -1;
+#endif
 static spinlock_t hpcrun_aux_cleanup_lock = SPINLOCK_UNLOCKED;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_list_head = NULL;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
+static char execname[PATH_MAX] = {'\0'};
+
 //
 // Local functions
 //
 static void
 setup_main_bounds_check(void* main_addr)
 {
-  if (! main_addr) return;
-#if defined(__PPC64__) || defined(HOST_CPU_IA64)
-  main_addr = *((void**) main_addr);
-#endif
+  // record bound information for the symbol main statically linked 
+  // into an executable, or a PLT stub named main and the function
+  // to which it will be dynamically bound. these function bounds will
+  // later be used to validate unwinds in the main thread by the function 
+  // hpcrun_inbounds_main.
+
   load_module_t* lm = NULL;
-  fnbounds_enclosing_addr(main_addr, &main_lower, &main_upper, &lm);
+
+  // record bound information about the function bounds of the 'main'
+  // function passed into libc_start_main as real_main. this might be
+  // a trampoline in the PLT.
+  if (main_addr) {
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
+    main_addr = *((void**) main_addr);
+#endif
+    fnbounds_enclosing_addr(main_addr, &main_lower, &main_upper, &lm);
+  }
+
+#ifndef HPCRUN_STATIC_LINK
+  // record bound information about the function bounds of a global
+  // dynamic symbol named 'main' (if any).
+  // passed into libc_start_main as real_main. this might be a
+  // trampoline in the PLT.
+  dlerror();
+  main_addr_dl = dlsym(RTLD_NEXT,"main");
+  if (main_addr_dl) {
+    fnbounds_enclosing_addr(main_addr_dl, &main_lower_dl, &main_upper_dl, &lm);
+  }
+#endif
+}
+
+//
+// Derive the full executable name from the
+// process name. Store in a local variable.
+//
+static void
+copy_execname(char* process_name)
+{
+  char tmp[PATH_MAX] = {'\0'};
+  char* rpath = realpath(process_name, tmp);
+  char* src = (rpath != NULL) ? rpath : process_name;
+
+  strncpy(execname, src, sizeof(execname));
 }
 
 //
@@ -209,7 +273,27 @@ hpcrun_get_addr_main(void)
 bool
 hpcrun_inbounds_main(void* addr)
 {
-  return (main_lower <= addr) && (addr <= main_upper);
+  // address is in a main routine statically linked into the executable
+  int in_static_main = (main_lower <= addr) & (addr <= main_upper);
+  int in_main = in_static_main;
+
+#ifndef HPCRUN_STATIC_LINK
+  // address is in a main routine dynamically linked into the executable
+  int in_dynamic_main = (main_lower_dl <= addr) & (addr <= main_upper_dl);
+  in_main |= in_dynamic_main;
+#endif
+
+  return in_main;
+}
+
+//
+// fetch the execname
+// note: execname has no value before main().
+//
+char*
+hpcrun_get_execname(void)
+{
+  return execname;
 }
 
 //
@@ -246,6 +330,31 @@ hpcrun_set_safe_to_sync(void)
 // internal operations 
 //***************************************************************************
 
+static int
+abort_timeout_handler(int sig, siginfo_t* siginfo, void* context)
+{
+  EEMSG("hpcrun: abort timeout activated - context pc %p", 
+    hpcrun_context_pc(context)); 
+  monitor_real_abort();
+  
+  return 0; /* keep compiler happy, but can't get here */
+}
+
+
+static void 
+hpcrun_set_abort_timeout()
+{
+  char *error_timeout = getenv("HPCRUN_ABORT_TIMEOUT");
+  if (error_timeout) {
+     int seconds = atoi(error_timeout);
+     if (seconds != 0) {
+       EEMSG("hpcrun: abort timeout armed");
+       monitor_sigaction(SIGALRM, &abort_timeout_handler, 0, NULL);
+       alarm(seconds);
+     }
+  }
+}
+
 //------------------------------------
 // ** local routines & data to support interval dumping **
 //------------------------------------
@@ -272,7 +381,7 @@ hpcrun_init_internal(bool is_child)
 
   hpcrun_memory_reinit();
   hpcrun_mmap_init();
-  hpcrun_thread_data_init(0, NULL, is_child);
+  hpcrun_thread_data_init(0, NULL, is_child, hpcrun_get_num_sample_sources());
 
   // WARNING: a perfmon bug requires us to fork off the fnbounds
   // server before we call PAPI_init, which is done in argument
@@ -388,6 +497,10 @@ hpcrun_init_internal(bool is_child)
 
   hpcrun_enable_sampling();
   hpcrun_set_safe_to_sync();
+
+  // release the wallclock handler -for this thread-
+  hpcrun_itimer_wallclock_ok(true);
+
   // NOTE: hack to ensure that sample source start can be delayed until mpi_init
   if (hpctoolkit_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
       SAMPLE_SOURCES(start);
@@ -466,7 +579,6 @@ static void hpcrun_process_aux_cleanup_action()
   hpcrun_aux_cleanup_list_head = NULL;
 }
 
-
 void
 hpcrun_fini_internal()
 {
@@ -501,7 +613,6 @@ hpcrun_fini_internal()
     hpcrun_process_aux_cleanup_action();
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
     hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
-    write_other_td();
     fnbounds_fini();
     hpcrun_stats_print_summary();
     messages_fini();
@@ -535,19 +646,21 @@ logit(cct_node_t* n, cct_op_arg_t arg, size_t l)
 }
 
 void*
-hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
+hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t* thr_ctxt)
 {
+  cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
+
   hpcrun_mmap_init();
-  thread_data_t *td = hpcrun_allocate_thread_data();
+  thread_data_t* td = hpcrun_allocate_thread_data();
   td->inside_hpcrun = 1;  // safe enter, disable signals
 
   hpcrun_set_thread_data(td);
   if (! thr_ctxt) EMSG("Thread id %d passes null context", id);
   
   if (ENABLED(THREAD_CTXT))
-    hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (uintptr_t) id);
+    hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (intptr_t) id);
   //
-  hpcrun_thread_data_init(id, thr_ctxt, 0);
+  hpcrun_thread_data_init(id, thr_ctxt, 0, hpcrun_get_num_sample_sources());
 
   epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 
@@ -561,6 +674,8 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   // sample sources take thread specific action prior to start (often is a 'registration' action);
   SAMPLE_SOURCES(thread_init_action);
 
+  // release the wallclock handler -for this thread-
+  hpcrun_itimer_wallclock_ok(true);
   // start the sample sources
   SAMPLE_SOURCES(start);
 
@@ -588,17 +703,10 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-//    hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
-//    hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
-    thread_data_t *td = hpcrun_get_thread_data();
-    add_defer_td(td);
+    hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
+    hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
   }
 }
-
-typedef struct fork_data_t {
-  int flag;
-  bool is_child;
-} fork_data_t;
 
 //***************************************************************************
 // process control (via libmonitor)
@@ -617,7 +725,19 @@ monitor_init_process(int *argc, char **argv, void* data)
   if (HPCRUN_WAIT) {
     volatile int DEBUGGER_WAIT = 1;
     while (DEBUGGER_WAIT);
+
+    // when the user program forks, we don't want to wait to have a debugger 
+    // attached for each exec along a chain of fork/exec. if that is what
+    // you want when debugging, make your own arrangements. 
+    unsetenv("HPCRUN_WAIT");
   }
+
+#if 0
+  // temporary patch to avoid deadlock within PAMI's optimized implementation 
+  // of all-to-all. a problem was observed when PAMI's optimized all-to-all 
+  // implementation was invoked on behalf of darshan_shutdown 
+  putenv("PAMID_COLLECTIVES=0");
+#endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
 
   hpcrun_sample_prob_init();
 
@@ -637,6 +757,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_set_using_threads(false);
 
+  copy_execname(process_name);
   hpcrun_files_set_executable(process_name);
 
   hpcrun_registered_sources_init();
@@ -646,17 +767,19 @@ monitor_init_process(int *argc, char **argv, void* data)
   hpcrun_do_custom_init();
 
   // for debugging, limit the life of the execution with an alarm.
-  char *life  = getenv("HPCRUN_LIFETIME");
+  char* life  = getenv("HPCRUN_LIFETIME");
   if (life != NULL){
-        int seconds = atoi(life);
-        if (seconds > 0) alarm((unsigned int) seconds);
+    int seconds = atoi(life);
+    if (seconds > 0) alarm((unsigned int) seconds);
   }
 
-  char *s = getenv(HPCRUN_EVENT_LIST);
+  char* s = getenv(HPCRUN_EVENT_LIST);
 
   if (! is_child) {
     hpcrun_sample_sources_from_eventlist(s);
   }
+
+  hpcrun_set_abort_timeout();
 
   hpcrun_process_sample_source_none();
 
@@ -807,7 +930,6 @@ monitor_init_thread_support(void)
   hpcrun_safe_exit();
 }
 
-
 void*
 monitor_thread_pre_create(void)
 {
@@ -817,6 +939,7 @@ monitor_thread_pre_create(void)
     return NULL;
   }
   hpcrun_safe_enter();
+  local_thread_data_t* rv = hpcrun_malloc(sizeof(local_thread_data_t));
 
   // INVARIANTS at this point:
   //   1. init-process has occurred.
@@ -847,13 +970,14 @@ monitor_thread_pre_create(void)
   thr_ctxt->parent = epoch->csdata_ctxt;
   TMSG(THREAD_CTXT, "context = %d, parent = %d", hpcrun_cct_persistent_id(thr_ctxt->context),
        thr_ctxt->parent ? hpcrun_cct_persistent_id(thr_ctxt->parent->context) : -1);
+  rv->thr_ctxt = thr_ctxt;
 
  fini:
 
   TMSG(THREAD,"->finish pre create");
   hpcrun_safe_exit();
 
-  return thr_ctxt;
+  return rv;
 }
 
 
@@ -871,12 +995,11 @@ monitor_thread_post_create(void* data)
   hpcrun_safe_exit();
 }
 
-
 void* 
 monitor_init_thread(int tid, void* data)
 {
-  NMSG(THREAD,"init thread %d",tid);
-  void* thread_data = hpcrun_thread_init(tid, (cct_ctxt_t*)data);
+  TMSG(THREAD,"init thread %d",tid);
+  void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data);
   TMSG(THREAD,"back from init thread %d",tid);
 
   hpcrun_threadmgr_thread_new();
@@ -1332,7 +1455,7 @@ MONITOR_EXT_WRAP_NAME(pthread_cond_broadcast)(pthread_cond_t* cond)
 #ifndef HPCRUN_STATIC_LINK
 
 void
-monitor_pre_dlopen(const char *path, int flags)
+monitor_pre_dlopen(const char* path, int flags)
 {
   if (! hpcrun_is_initialized()) {
     return;

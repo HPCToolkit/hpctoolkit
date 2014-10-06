@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -83,6 +83,7 @@
  *****************************************************************************/
 #include "common.h"
 #include "gpu_blame.h"
+#include "gpu_ctxt_actions.h"
 
 #include <hpcrun/main.h>
 #include <hpcrun/hpcrun_options.h>
@@ -146,10 +147,13 @@ monitor_real_abort();                                              \
 #define CUDA_SAFE_CALL( call) do {                             \
 cudaError_t err = call;                                        \
 if( cudaSuccess != err) {                                      \
-EEMSG("Cuda error in call at file '%s' in line %i : %s.\n",    \
-__FILE__, __LINE__, cudaGetErrorString( err) );                \
-monitor_real_abort();                                          \
+  EMSG("In %s, @ line %d, gives error %d = '%s'\n", __FILE__, __LINE__, \
+                   err, \
+                   cudaGetErrorString(err));  \
+  monitor_real_abort();                                          \
 } } while (0)
+
+#define Cuda_RTcall(fn) cudaRuntimeFunctionPointer[fn ## Enum].fn ## Real
 
 #define GET_STREAM_ID(x) ((x) - g_stream_array)
 #define ALL_STREAMS_MASK (0xffffffff)
@@ -172,11 +176,12 @@ g_free_tree_nodes_head = (node_ptr); }while(0)
 #define ADD_TO_FREE_ACTIVE_KERNEL_NODE_LIST(node_ptr) do { (node_ptr)->next_free_node = g_free_active_kernel_nodes_head; \
 g_free_active_kernel_nodes_head = (node_ptr); }while(0)
 
-#define HPCRUN_ASYNC_BLOCK_SPIN_LOCK  do{hpcrun_safe_enter(); \
+#define HPCRUN_ASYNC_BLOCK_SPIN_LOCK bool safe = false; \
+do {safe = hpcrun_safe_enter(); \
 spinlock_lock(&g_gpu_lock);} while(0)
 
 #define HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK  do{spinlock_unlock(&g_gpu_lock); \
-hpcrun_safe_exit();} while(0)
+    if (safe) hpcrun_safe_exit();} while(0)
 
 #define SYNC_PROLOGUE(ctxt, launch_node, start_time, rec_node)                                                                   \
 TD_GET(gpu_data.overload_state) = SYNC_STATE;                                                                                    \
@@ -240,7 +245,7 @@ TD_GET(gpu_data.is_thread_at_cuda_sync) = false
 create_stream0_if_needed(stream);                                                                                                       \
 uint32_t streamId = 0;                                                                                                                  \
 event_list_node_t *event_node;                                                                                                          \
-streamId = splay_get_stream_id(stream_to_id_tree_root, stream);                                                                         \
+streamId = splay_get_stream_id(stream);                                                                         \
 HPCRUN_ASYNC_BLOCK_SPIN_LOCK;                                                                                                           \
 TD_GET(gpu_data.is_thread_at_cuda_sync) = true;                                                                                         \
 ucontext_t context;                                                                                                                     \
@@ -318,7 +323,7 @@ hpcrun_safe_exit(); } while(0)
     cudaError_t ret = VA_FN_CALL(cudaRuntimeFunctionPointer[fn##Enum].fn##Real, __VA_ARGS__);\
     hpcrun_safe_enter();\
     uint32_t streamId;\
-    streamId = splay_get_stream_id(stream_to_id_tree_root, stream);\
+    streamId = splay_get_stream_id(stream);\
     hpcrun_safe_exit();\
     monitor_enable_new_threads();\
     SYNC_EPILOGUE epilogueArgs;\
@@ -345,6 +350,56 @@ hpcrun_safe_exit(); } while(0)
     SYNC_MEMCPY_EPILOGUE epilogueArgs;\
     return ret;\
     }
+
+
+//
+// Macro to populate a given set of CUDA function pointers:
+//   takes a basename for a function pointer set, and a library
+//   to read from (as a fallback position).
+//
+//  Method:
+//
+//  Decide on RTLD_NEXT or dlopen of library for the function pointer set
+//  (Abort if neither method succeeds)
+//  fetch all of the symbols using dlsym, aborting if any failure
+
+#define PopulateGPUFunctionPointers(basename, library)                             \
+  char *error;                                                                     \
+                                                                                   \
+  dlerror(); 									   \
+  void* dlsym_arg = RTLD_NEXT;                                                     \
+  void* try = dlsym(dlsym_arg, basename ## FunctionPointer[0].functionName);	   \
+  if ((error=dlerror()) || (! try)) {						   \
+    if (getenv("DEBUG_HPCRUN_GPU_CONS"))					   \
+      fprintf(stderr, "RTLD_NEXT argument fails for " #basename " (%s)\n",         \
+	      (! try) ? "trial function pointer = NULL" : "dlerror != NULL");	   \
+    dlerror();									   \
+    dlsym_arg = monitor_real_dlopen(#library, RTLD_LAZY);			   \
+    if (! dlsym_arg) {                                                             \
+      fprintf(stderr, "fallback dlopen of " #library " failed,"			   \
+	      " dlerror message = '%s'\n", dlerror());				   \
+      monitor_real_abort();							   \
+    }                                                                              \
+    if (getenv("DEBUG_HPCRUN_GPU_CONS"))                                           \
+      fprintf(stderr, "Going forward with " #basename " overrides using " #library "\n"); \
+  }                                                                                \
+  else										   \
+    if (getenv("DEBUG_HPCRUN_GPU_CONS"))					   \
+      fprintf(stderr, "Going forward with " #basename " overrides using RTLD_NEXT\n"); \
+  for (int i = 0; i < sizeof(basename ## FunctionPointer)/sizeof(basename ## FunctionPointer[0]); i++) { \
+    dlerror();                                                                     \
+    basename ## FunctionPointer[i].generic =					   \
+      dlsym(dlsym_arg, basename ## FunctionPointer[i].functionName);		   \
+    if (getenv("DEBUG_HPCRUN_GPU_CONS"))					   \
+      fprintf(stderr, #basename "Fnptr[%d] @ %p for %s = %p\n",                    \
+	      i, & basename ## FunctionPointer[i].generic,			   \
+	      basename ## FunctionPointer[i].functionName,			   \
+	      basename ## FunctionPointer[i].generic);				   \
+    if ((error = dlerror()) != NULL) {                                             \
+      EEMSG("%s: during dlsym \n", error);					   \
+      monitor_real_abort();							   \
+    }										   \
+  }
 
 /******************************************************************************
  * local constants
@@ -373,6 +428,9 @@ extern cudaRuntimeFunctionPointer_t  cudaRuntimeFunctionPointer[];
 
 // function pointers to real cuda driver functions
 extern cuDriverFunctionPointer_t  cuDriverFunctionPointer[];
+
+// special papi disable function
+extern void hpcrun_disable_papi_cuda(void);
 
 /******************************************************************************
  * forward declarations
@@ -525,44 +583,29 @@ static bool g_stream0_initialized = false;
 
 static IPC_data_t * ipc_data;
 
-// ******* METHOD DEFINITIONS ***********
-
-
-
+/******************** Utilities ********************/
 /******************** CONSTRUCTORS ********************/
 
 
 // obtain function pointers to all real cuda runtime functions
 
-static void PopulateEntryPointesToWrappedCudaRuntimeCalls() {
-    char *error;
-    
-    for (int i = 0; i < CUDA_MAX_APIS; i++) {
-        dlerror(); // null out the prev err
-        cudaRuntimeFunctionPointer[i].generic = dlsym(RTLD_NEXT, cudaRuntimeFunctionPointer[i].functionName);
-        if ((error = dlerror()) != NULL) {
-            EEMSG("%s: during dlsym \n", error);
-            monitor_real_abort();
-        }
-    }
+static void
+PopulateEntryPointesToWrappedCudaRuntimeCalls()
+{
+  PopulateGPUFunctionPointers(cudaRuntime, libcudart.so)
 }
 
 // obtain function pointers to all real cuda driver functions
 
-static void PopulateEntryPointesToWrappedCuDriverCalls() {
-    char *error;
-    
-    for (int i = 0; i < CU_MAX_APIS; i++) {
-        dlerror(); // null out the prev err
-        cuDriverFunctionPointer[i].generic = dlsym(RTLD_NEXT, cuDriverFunctionPointer[i].functionName);
-        if ((error = dlerror()) != NULL) {
-            EEMSG("%s: during dlsym \n", error);
-            monitor_real_abort();
-        }
-    }
+static void
+PopulateEntryPointesToWrappedCuDriverCalls(void)
+{
+  PopulateGPUFunctionPointers(cuDriver, libcuda.so)
 }
 
-static void InitCpuGpuBlameShiftDataStructs(){
+static void
+InitCpuGpuBlameShiftDataStructs(void)
+{
     char * shared_blaming_env;
     char * cuda_launch_skip_inner_env;
     g_unfinished_stream_list_head = NULL;
@@ -584,9 +627,17 @@ static void PopulateEntryPointesToWrappedCalls() {
 }
 
 __attribute__((constructor))
-static void CpuGpuBlameShiftInit() {
-    PopulateEntryPointesToWrappedCalls();
-    InitCpuGpuBlameShiftDataStructs();
+static void
+CpuGpuBlameShiftInit(void)
+{
+  hpcrun_disable_papi_cuda();
+  if (getenv("DEBUG_HPCRUN_GPU_CONS"))
+    fprintf(stderr, "CPU-GPU blame shift constructor called\n");
+  // no dlopen calls in static case
+  // #ifndef HPCRUN_STATIC_LINK
+  PopulateEntryPointesToWrappedCalls();
+  InitCpuGpuBlameShiftDataStructs();
+  // #endif // ! HPCRUN_STATIC_LINK
 }
 
 /******************** END CONSTRUCTORS ****/
@@ -633,9 +684,12 @@ static struct stream_to_id_map_t *splay(struct stream_to_id_map_t *root, cudaStr
 }
 
 
-static uint32_t splay_get_stream_id(struct stream_to_id_map_t *root, cudaStream_t key) {
+static uint32_t splay_get_stream_id(cudaStream_t key) {
     spinlock_lock(&g_stream_id_lock);
+    struct stream_to_id_map_t *root = stream_to_id_tree_root;
     REGULAR_SPLAY_TREE(stream_to_id_map_t, root, key, stream, left, right);
+    // The stream at the root must match the key, else we are in a bad shape.
+    assert(root->stream == key);
     stream_to_id_tree_root = root;
     uint32_t ret = stream_to_id_tree_root->id;
     spinlock_unlock(&g_stream_id_lock);
@@ -723,10 +777,11 @@ static struct stream_to_id_map_t *splay_delete(cudaStream_t stream)
 {
     struct stream_to_id_map_t *result = NULL;
     
+    TMSG(CUDA, "Trying to delete %p from stream splay tree", stream);
     spinlock_lock(&g_stream_id_lock);
     if (stream_to_id_tree_root == NULL) {
         spinlock_unlock(&g_stream_id_lock);
-        TMSG(CPU_GPU_BLAME_CTL, "stream_to_id_map_t splay tree empty: unable to delete %p", stream);
+        TMSG(CUDA, "stream_to_id_map_t splay tree empty: unable to delete %p", stream);
         return NULL;
     }
     
@@ -734,9 +789,9 @@ static struct stream_to_id_map_t *splay_delete(cudaStream_t stream)
     
     if (stream != stream_to_id_tree_root->stream) {
         spinlock_unlock(&g_stream_id_lock);
-        TMSG(CPU_GPU_BLAME_CTL, "gpu steam splay tree: %p not in tree", stream);
-        EEMSG("deleting non existing node in splay tree");
-        monitor_real_abort();
+        TMSG(CUDA, "trying to deleting stream %p, but not in splay tree (root = %p)", stream, stream_to_id_tree_root->stream);
+	//        monitor_real_abort();
+	return NULL;
     }
     
     result = stream_to_id_tree_root;
@@ -1031,7 +1086,15 @@ static uint32_t cleanup_finished_events() {
                 
                 //FIX ME: deleting Elapsed time to handle context destruction....
                 //static uint64_t deleteMeTime = 0;
-                CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventElapsedTimeEnum].cudaEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_start));
+		TMSG(CUDA, "BEFORE: EventElapsedRT(%p, %p)\n", g_start_of_world_event, current_event->event_start);
+		cudaError_t err1 = Cuda_RTcall(cudaEventElapsedTime)(&elapsedTime,
+								   g_start_of_world_event,
+								   current_event->event_start);
+		// soft failure
+		if (err1 != cudaSuccess) {
+		  EMSG("cudaEventElaspsedTime failed");
+		  break;
+		}
                 
                 assert(elapsedTime > 0);
                 
@@ -1059,8 +1122,8 @@ static uint32_t cleanup_finished_events() {
                 }
                 
                 
-                // Add the kernel execution time to the gpu_activity_time_metric_id
-                cct_metric_data_increment(gpu_activity_time_metric_id, current_event->launcher_cct, (cct_metric_data_t) {
+                // Add the kernel execution time to the gpu_time_metric_id
+                cct_metric_data_increment(gpu_time_metric_id, current_event->launcher_cct, (cct_metric_data_t) {
                     .i = (micro_time_end - micro_time_start)});
                 
                 event_list_node_t *deferred_node = current_event;
@@ -1079,7 +1142,8 @@ static uint32_t cleanup_finished_events() {
                     g_finished_event_nodes_tail = deferred_node;
                     
                 } else {
-                    // TODO : destroy events
+                    // It is better not to call destroy from here since we might be in the signal handler
+                    // Events will be destroyed lazily when they need to be reused.
                     ADD_TO_FREE_EVENTS_LIST(deferred_node);
                 }
                 
@@ -1109,6 +1173,7 @@ static uint32_t cleanup_finished_events() {
 
 
 // Insert a new activity in a stream
+// Caller is responsible for calling monitor_disable_new_threads()
 static event_list_node_t *create_and_insert_event(int stream_id, cct_node_t * launcher_cct, cct_node_t * stream_launcher_cct) {
     
     event_list_node_t *event_node;
@@ -1116,6 +1181,12 @@ static event_list_node_t *create_and_insert_event(int stream_id, cct_node_t * la
         // get from free list
         event_node = g_free_event_nodes_head;
         g_free_event_nodes_head = g_free_event_nodes_head->next_free_node;
+
+        // Free the old events if they are alive
+        if (event_node->event_start)
+          CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventDestroyEnum].cudaEventDestroyReal((event_node->event_start)));
+        if (event_node->event_end)
+          CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventDestroyEnum].cudaEventDestroyReal((event_node->event_end)));
         
     } else {
         // allocate new node
@@ -1123,10 +1194,8 @@ static event_list_node_t *create_and_insert_event(int stream_id, cct_node_t * la
     }
     //cudaError_t err =  cudaEventCreateWithFlags(&(event_node->event_end),cudaEventDisableTiming);
     
-    monitor_disable_new_threads();
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventCreateEnum].cudaEventCreateReal(&(event_node->event_start)));
     CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventCreateEnum].cudaEventCreateReal(&(event_node->event_end)));
-    monitor_enable_new_threads();
     
     event_node->stream_launcher_cct = stream_launcher_cct;
     event_node->launcher_cct = launcher_cct;
@@ -1293,11 +1362,14 @@ cudaError_t cudaConfigureCall(dim3 grid, dim3 block, size_t mem, cudaStream_t st
     
     if (! hpcrun_is_safe_to_sync(__func__))
       return cudaRuntimeFunctionPointer[cudaLaunchEnum].cudaLaunchReal(entry);
+    TMSG(CPU_GPU,"Cuda launch (get spinlock)");
     ASYNC_KERNEL_PROLOGUE(streamId, event_node, context, cct_node, ((cudaStream_t) (TD_GET(gpu_data.active_stream))), g_cuda_launch_skip_inner);
     
     cudaError_t ret = cudaRuntimeFunctionPointer[cudaLaunchEnum].cudaLaunchReal(entry);
     
+    TMSG(CPU_GPU, "Cuda launch about to release spin lock");
     ASYNC_KERNEL_EPILOGUE(event_node, ((cudaStream_t) (TD_GET(gpu_data.active_stream))));
+    TMSG(CPU_GPU, "Cuda launch done !(spin lock released)");
 
     return ret;
 }
@@ -1311,7 +1383,7 @@ cudaError_t cudaStreamDestroy(cudaStream_t stream) {
     
     uint32_t streamId;
     
-    streamId = splay_get_stream_id(stream_to_id_tree_root, stream);
+    streamId = splay_get_stream_id(stream);
     
     hpcrun_stream_finalize(g_stream_array[streamId].st);
 
@@ -1659,23 +1731,10 @@ recorded_node, ALL_STREAMS_MASK, syncEnd, (height * width), kind), void *,
 dst, size_t, dpitch, const void *, src, size_t, spitch, size_t, width,
 size_t, height, enum cudaMemcpyKind, kind)
 
-#if 1
 CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpy, (context, launcher_cct,
 syncStart, recorded_node), (context, launcher_cct, syncStart,
 recorded_node, ALL_STREAMS_MASK, syncEnd, count, kind), void *, dst,
 const void *, src, size_t, count, enum cudaMemcpyKind, kind)
-#else
-cudaError_t
-cudaMemcpy(void * dst, const void * src, size_t count, enum cudaMemcpyKind kind)
-{
-  hpcrun_get_thread_data()->gpu_data.overload_state = SYNC_STATE;
-  hpcrun_get_thread_data()->gpu_data.accum_num_sync_threads = 0;
-  hpcrun_get_thread_data()->gpu_data.accum_num_samples = 0;
-  hpcrun_safe_enter();
-  ucontext_t context; getcontext(&context); cct_node_t * launcher_cct = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0 , 0 , 1 ).sample_node; hpcrun_get_thread_data()->gpu_data.is_thread_at_cuda_sync = 1; spinlock_lock(&g_gpu_lock); uint64_t syncStart; event_list_node_t * recorded_node = enter_cuda_sync(& syncStart); spinlock_unlock(&g_gpu_lock); do{ if((ipc_data != ((void *)0))) (void) __sync_fetch_and_add(&(ipc_data->num_threads_at_sync_all_procs), 1L); }while(0); hpcrun_safe_exit();; monitor_disable_new_threads(); cudaError_t ret = cudaRuntimeFunctionPointer[cudaMemcpyEnum].cudaMemcpyReal(dst, src, count, kind); monitor_enable_new_threads(); hpcrun_safe_enter(); spinlock_lock(&g_gpu_lock); uint64_t last_kernel_end_time = leave_cuda_sync(recorded_node,syncStart,(0xffffffff)); hpcrun_get_thread_data()->gpu_data.accum_num_sync_threads = 0; hpcrun_get_thread_data()->gpu_data.accum_num_samples = 0; spinlock_unlock(&g_gpu_lock); struct timeval tv; gettimeofday(&tv, ((void *)0)); uint64_t syncEnd = ((uint64_t)tv.tv_usec + (((uint64_t)tv.tv_sec) * 1000000)); if ( last_kernel_end_time > syncEnd) {last_kernel_end_time = syncEnd;} uint64_t cpu_idle_time = syncEnd - syncStart; uint64_t gpu_idle_time = last_kernel_end_time == 0 ? syncEnd - syncStart : syncEnd - last_kernel_end_time; cct_metric_data_increment(cpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (cpu_idle_time)}); cct_metric_data_increment(gpu_idle_metric_id, launcher_cct, (cct_metric_data_t) {.i = (gpu_idle_time)}); increment_mem_xfer_metric(count, kind, launcher_cct); hpcrun_safe_exit(); do{ if((ipc_data != ((void *)0))) (void) __sync_fetch_and_add(&(ipc_data->num_threads_at_sync_all_procs), -1L); }while(0); hpcrun_get_thread_data()->gpu_data.is_thread_at_cuda_sync = 0;
-  return ret;
-}
-#endif
 
 CUDA_RUNTIME_SYNC_MEMCPY_WRAPPER(cudaMemcpyToArray, (context,
 launcher_cct, syncStart, recorded_node), (context, launcher_cct,
@@ -1698,7 +1757,7 @@ CUresult cuStreamSynchronize(CUstream stream) {
     
     hpcrun_safe_enter();
     uint32_t streamId;
-    streamId = splay_get_stream_id(stream_to_id_tree_root, (cudaStream_t)stream);
+    streamId = splay_get_stream_id((cudaStream_t)stream);
     hpcrun_safe_exit();
     
     SYNC_EPILOGUE(context, launcher_cct, syncStart, recorded_node, streamId, syncEnd);
@@ -1758,7 +1817,7 @@ CUresult cuStreamDestroy(CUstream stream) {
     hpcrun_safe_enter();
     
     uint32_t streamId;
-    streamId = splay_get_stream_id(stream_to_id_tree_root, (cudaStream_t)stream);
+    streamId = splay_get_stream_id((cudaStream_t)stream);
     
     
     hpcrun_stream_finalize(g_stream_array[streamId].st);
@@ -1803,12 +1862,30 @@ static void destroy_all_events_in_free_event_list(){
     while(cur){
         CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventDestroyEnum].cudaEventDestroyReal(cur->event_start));
         CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventDestroyEnum].cudaEventDestroyReal(cur->event_end));
+        cur->event_start = 0;
+        cur->event_end = 0;
         cur = cur->next_free_node;
     }
     monitor_enable_new_threads();
     
 }
 
+CUresult
+cuCtxCreate_v2 (CUcontext *pctx, unsigned int flags, CUdevice dev)
+{
+  if (cuda_ncontexts_incr() > 1) {
+    fprintf(stderr, "Too many contexts created\n");
+    monitor_real_abort();
+  }
+  if (! hpcrun_is_safe_to_sync(__func__)) {    return cuDriverFunctionPointer[cuCtxCreate_v2Enum].cuCtxCreate_v2Real(pctx, flags, dev);
+  }
+  TD_GET(gpu_data.is_thread_at_cuda_sync) = true;
+  monitor_disable_new_threads();
+  CUresult ret = cuDriverFunctionPointer[cuCtxCreate_v2Enum].cuCtxCreate_v2Real(pctx, flags, dev);
+  monitor_enable_new_threads();
+  TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
+  return ret;
+}
 
 CUresult cuCtxDestroy(CUcontext ctx) {
     
@@ -1841,6 +1918,9 @@ CUresult cuCtxDestroy(CUcontext ctx) {
         TD_GET(gpu_data.is_thread_at_cuda_sync) = false;
         
     }
+    // count context creation ==> decrement here
+    cuda_ncontexts_decr();
+    EMSG("Destroying Context!");
     HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK;
     
     monitor_disable_new_threads();
@@ -1910,96 +1990,85 @@ CUresult cuMemcpyDtoH(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount) {
 ////////////////////////////////////////////////
 
 
-void gpu_blame_shifter(int metric_id, cct_node_t * node,  int metric_dc) {
+void
+gpu_blame_shifter(void* dc, int metric_id, cct_node_t* node,  int metric_dc)
+{
+  metric_desc_t* metric_desc = hpcrun_id2metric(metric_id);
     
-      metric_desc_t * metric_desc = hpcrun_id2metric(metric_id);
+  // Only blame shift idleness for time metric.
+  if ( !metric_desc->properties.time )
+    return;
     
-    // Only blame shift idleness for time metric.
-    if ( !metric_desc->properties.time )
-        return;
+  uint64_t cur_time_us = 0;
+  int ret = time_getTimeReal(&cur_time_us);
+  if (ret != 0) {
+    EMSG("time_getTimeReal (clock_gettime) failed!");
+    monitor_real_abort();
+  }
+  uint64_t metric_incr = cur_time_us - TD_GET(last_time_us);
     
-    uint64_t cur_time_us = 0;
-    int ret = time_getTimeReal(&cur_time_us);
-    if (ret != 0) {
-        EMSG("time_getTimeReal (clock_gettime) failed!");
-        monitor_real_abort();
-    }
-    uint64_t metric_incr = cur_time_us - TD_GET(last_time_us);
+  // If we are already in a cuda API, then we can't call cleanup_finished_events() since CUDA could have taken the same lock. Hence we just return.
     
-    // If we are already in a cuda API, then we can't call cleanup_finished_events() since CUDA could have taken the same lock. Hence we just return.
-    
-    bool is_threads_at_sync = TD_GET(gpu_data.is_thread_at_cuda_sync);
+  bool is_threads_at_sync = TD_GET(gpu_data.is_thread_at_cuda_sync);
   
-    if (is_threads_at_sync) {
-        if(SHARED_BLAMING_INITIALISED) {
-            TD_GET(gpu_data.accum_num_sync_threads) += ipc_data->num_threads_at_sync_all_procs; 
-            TD_GET(gpu_data.accum_num_samples) += 1;
-        } 
-        return;
+  if (is_threads_at_sync) {
+    if(SHARED_BLAMING_INITIALISED) {
+      TD_GET(gpu_data.accum_num_sync_threads) += ipc_data->num_threads_at_sync_all_procs; 
+      TD_GET(gpu_data.accum_num_samples) += 1;
+    } 
+    return;
+  }
+    
+  spinlock_lock(&g_gpu_lock);
+  uint32_t num_unfinshed_streams = 0;
+  stream_node_t *unfinished_event_list_head = 0;
+    
+  num_unfinshed_streams = cleanup_finished_events();
+  unfinished_event_list_head = g_unfinished_stream_list_head;
+    
+  if (num_unfinshed_streams) {
+        
+    //SHARED BLAMING: kernels need to be blamed for idleness on other procs/threads.
+    if(SHARED_BLAMING_INITIALISED && ipc_data->num_threads_at_sync_all_procs && !g_num_threads_at_sync) {
+      for (stream_node_t * unfinished_stream = unfinished_event_list_head; unfinished_stream; unfinished_stream = unfinished_stream->next_unfinished_stream) {
+	//TODO: FIXME: the local threads at sync need to be removed, /T has to be done while adding metric
+	//increment (either one of them).
+	cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t) {
+	    .r = metric_incr / g_active_threads}
+	  );
+      }
     }
-    
-    spinlock_lock(&g_gpu_lock);
-    uint32_t num_unfinshed_streams = 0;
-    stream_node_t *unfinished_event_list_head = 0;
-    
-    num_unfinshed_streams = cleanup_finished_events();
-    unfinished_event_list_head = g_unfinished_stream_list_head;
-    
-    if (num_unfinshed_streams) {
-        // CPU - GPU overlap
-        
-        // Increment cpu_overlap by metric_incr
-        cct_metric_data_increment(cpu_overlap_metric_id, node, (cct_metric_data_t) {
-            .r = metric_incr}
-                                  );
-        
-        // Increment gpu_overlap by metric_incr/num_unfinshed_streams for each of the unfinshed streams
-        for (stream_node_t * unfinished_stream = unfinished_event_list_head; unfinished_stream; unfinished_stream = unfinished_stream->next_unfinished_stream) {
-            cct_metric_data_increment(gpu_overlap_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t) {
-                .r = metric_incr * 1.0 / num_unfinshed_streams}
-                                      );
+  }
+  else {
 
-            //SHARED BLAMING: kernels need to be blamed for idleness on other procs/threads.
-            if(SHARED_BLAMING_INITIALISED && ipc_data->num_threads_at_sync_all_procs && !g_num_threads_at_sync) {
-                //TODO: FIXME: the local threads at sync need to be removed, /T has to be done while adding metric
-                //increment (either one of them).
-               cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t) {
-                .r = metric_incr / g_active_threads}
-                                      );
-            }
-         }
-
+    /*** Code to account for Overload factor ***/
+    if(TD_GET(gpu_data.overload_state) == WORKING_STATE) {
+      TD_GET(gpu_data.overload_state) = OVERLOADABLE_STATE;
+    }
+        
+    if(TD_GET(gpu_data.overload_state) == OVERLOADABLE_STATE) {
+      // Increment gpu_overload_potential_metric_id  by metric_incr
+      cct_metric_data_increment(gpu_overload_potential_metric_id, node, (cct_metric_data_t) {
+	  .i = metric_incr});
+    }
+        
+    // GPU is idle iff   ipc_data->outstanding_kernels == 0 
+    // If ipc_data is NULL, then this process has not made GPU calls so, we are blind and declare GPU idle w/o checking status of other processes
+    // There is no better solution yet since we dont know which GPU card we should be looking for idleness. 
+    if(g_do_shared_blaming){
+      if ( !ipc_data || ipc_data->outstanding_kernels == 0) { // GPU device is truely idle i.e. no other process is keeping it busy
+	// Increment gpu_ilde by metric_incr
+	cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
+	    .i = metric_incr});
+      }
     } else {
-        
-        /*** Code to account for Overload factor ***/
-        if(TD_GET(gpu_data.overload_state) == WORKING_STATE) {
-            TD_GET(gpu_data.overload_state) = OVERLOADABLE_STATE;
-        }
-        
-        if(TD_GET(gpu_data.overload_state) == OVERLOADABLE_STATE) {
-            // Increment gpu_overload_potential_metric_id  by metric_incr
-            cct_metric_data_increment(gpu_overload_potential_metric_id, node, (cct_metric_data_t) {
-                .i = metric_incr});
-        }
-        
-        // GPU is idle iff   ipc_data->outstanding_kernels == 0 
-        // If ipc_data is NULL, then this process has not made GPU calls so, we are blind and declare GPU idle w/o checking status of other processes
-        // There is no better solution yet since we dont know which GPU card we should be looking for idleness. 
-        if(g_do_shared_blaming){
-            if ( !ipc_data || ipc_data->outstanding_kernels == 0) { // GPU device is truely idle i.e. no other process is keeping it busy
-                // Increment gpu_ilde by metric_incr
-                cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
-                    .i = metric_incr});
-            }
-        } else {
-            // Increment gpu_ilde by metric_incr
-            cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
-                .i = metric_incr});            
-        }
-        
+      // Increment gpu_ilde by metric_incr
+      cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
+	  .i = metric_incr});            
     }
-    spinlock_unlock(&g_gpu_lock);
+        
+  }
+  spinlock_unlock(&g_gpu_lock);
 }
-
 
 #endif

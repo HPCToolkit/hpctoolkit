@@ -107,7 +107,7 @@ Debug structure recovery for procedures matching the procedure glob \Arg{glob}.
 Use \Arg{path} when resolving source file names. 
 This option is useful when a compiler records the same filename in \emph{different} ways within the symbolic information.
 (Yes, this does happen.)
-For a recursive search, append a '*' after the last slash, e.g., \verb+'/mypath/*'+ (quote or escape to protect from the shell). 
+For a recursive search, append a '+' after the last slash, e.g., \texttt{/mypath/+}. 
 May pass multiple times.
 
 \item[\OptArg{--loop-intvl}{yes|no}]
@@ -209,7 +209,7 @@ Version: \Version\ of \Date.
 \section{License and Copyright}
 
 \begin{description}
-\item[Copyright] \copyright\ 2002-2013, Rice University.
+\item[Copyright] \copyright\ 2002-2014, Rice University.
 \item[License] See \File{README.License}.
 \end{description}
 

@@ -203,6 +203,7 @@
 		i CDATA #IMPLIED
 		s CDATA #IMPLIED
 		l CDATA #IMPLIED
+	        f CDATA #IMPLIED
 		v CDATA #IMPLIED>
       <!-- Statement (Note 2) -->
       <!--   (it): trace record identifier -->

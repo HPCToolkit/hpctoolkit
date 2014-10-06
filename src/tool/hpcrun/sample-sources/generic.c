@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -241,7 +241,7 @@ METHOD_FN(start)
   }
 
   // This line must always appear at the end of a start method
-  TD_GET(ss_state)[self->evset_idx] = START;
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 //
@@ -281,7 +281,7 @@ METHOD_FN(stop)
   TMSG(YOUR_MESSAGE_CLASS,"your stop message %p : %s", your_optional_arg1, your_optional_arg2);
 
   // This line must always appear at the end of a stop method
-  TD_GET(ss_state)[self->evset_idx] = STOP;
+  TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 static void

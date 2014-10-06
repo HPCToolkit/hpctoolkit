@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,9 @@
 #include <sys/types.h>
 #include <assert.h>
 #include <string.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <stdio.h>
 
 #include <memory/hpcrun-malloc.h>
 #include "fnbounds_interface.h"
@@ -63,12 +66,21 @@
 #include "splay-interval.h"
 #include "thread_data.h"
 #include "ui_tree.h"
+#include "hpcrun_stats.h"
 
 #include <messages/messages.h>
 
+// libmonitor functions
+#include <monitor.h>
+
 #include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/atomic.h>
 
+// Locks both the UI tree and the UI free list.
+spinlock_t ui_tree_lock = SPINLOCK_UNLOCKED;
 
+#define DEADLOCK_PROTECT
+#ifndef DEADLOCK_PROTECT
 #define UI_TREE_LOCK  do {	 \
   TD_GET(splay_lock) = 0;	 \
   spinlock_lock(&ui_tree_lock);  \
@@ -79,10 +91,39 @@
   spinlock_unlock(&ui_tree_lock);  \
   TD_GET(splay_lock) = 0;	   \
 } while (0)
+#else // defined(DEADLOCK_PROTECT)
 
+#ifdef USE_HW_THREAD_ID
+#include <hardware-thread-id.h>
+#define lock_val get_hw_tid()
+#define safe_spinlock_lock hwt_limit_spinlock_lock
+#else  // ! defined(USE_HW_THREAD_ID)
+#define lock_val SPINLOCK_LOCKED_VALUE
+#define safe_spinlock_lock limit_spinlock_lock
+#endif // USE_HW_THREAD_ID
+static size_t iter_count = 0;
+extern void hpcrun_drop_sample(void);
+static inline void
+lock_ui(void)
+{
+  if (! safe_spinlock_lock(&ui_tree_lock, iter_count, lock_val)) {
+    //    EMSG("Abandon Lock for hwt id = %d", lock_val);
+    TD_GET(deadlock_drop) = true;
+    hpcrun_stats_num_samples_yielded_inc();
+    hpcrun_drop_sample();
+  }
+}
+
+static inline void
+unlock_ui(void) {
+  spinlock_unlock(&ui_tree_lock);
+}
+#define UI_TREE_LOCK TD_GET(splay_lock) = 0; lock_ui(); TD_GET(splay_lock) = 1
+#define UI_TREE_UNLOCK unlock_ui(); TD_GET(splay_lock) = 0
+#endif // DEADLOCK_PROTECT
 
 // Locks both the UI tree and the UI free list.
-static spinlock_t ui_tree_lock;
+// static spinlock_t ui_tree_lock;
 
 static interval_tree_node *ui_tree_root = NULL;
 static interval_tree_node *ui_free_list = NULL;
@@ -97,12 +138,23 @@ static void free_ui_tree_locked(interval_tree_node *tree);
 // interface operations
 //---------------------------------------------------------------------
 
+#ifdef NONZERO_THRESHOLD
+#define DEADLOCK_DEFAULT 5000
+#else  // ! NONZERO_THRESHOLD ==> DEADLOCK_DEFAULT = 0
+#define DEADLOCK_DEFAULT 0
+#endif // NONZERO_THRESHOLD
 
 void
 hpcrun_interval_tree_init(void)
 {
   TMSG(UITREE, "init unwind interval tree");
   ui_tree_root = NULL;
+  iter_count = DEADLOCK_DEFAULT;
+  if (getenv("HPCRUN_DEADLOCK_THRESHOLD")) {
+    iter_count = atoi(getenv("HPCRUN_DEADLOCK_THRESHOLD"));
+    if (iter_count < 0) iter_count = 0;
+  }
+  TMSG(DEADLOCK, "deadlock threshold set to %d", iter_count);
   UI_TREE_UNLOCK;
 }
 
@@ -169,6 +221,9 @@ hpcrun_ui_malloc(size_t ui_size)
  *
  * Returns: pointer to unwind_interval struct if found, else NULL.
  */
+
+bool ui_lock_holder_ok(void);
+
 splay_interval_t *
 hpcrun_addr_to_interval(void *addr, void *ip, ip_normalized_t* ip_norm)
 {
@@ -347,13 +402,12 @@ free_ui_node_locked(interval_tree_node *node)
 // debug operations
 //---------------------------------------------------------------------
 
-
 static void
 hpcrun_print_interval_tree_r(FILE* fs, interval_tree_node *node);
 
 
 void
-hpcrun_print_interval_tree()
+hpcrun_print_interval_tree(void)
 {
   FILE* fs = stdout;
 

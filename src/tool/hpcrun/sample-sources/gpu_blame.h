@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2011, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -84,8 +84,8 @@ extern bool g_cpu_gpu_enabled;
 extern uint64_t g_active_threads;
 
 // Visible function declarations
-extern void gpu_blame_shifter(int metric_id, cct_node_t * node, int  metric_incr);
-extern  void hpcrun_stream_finalize(void * st);
+extern void gpu_blame_shifter(void* dc, int metric_id, cct_node_t* node, int  metric_incr);
+extern  void hpcrun_stream_finalize(void* st);
 extern void hpcrun_set_gpu_proxy_present();
 
 #endif

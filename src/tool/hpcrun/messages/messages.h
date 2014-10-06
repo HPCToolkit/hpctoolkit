@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -69,6 +69,12 @@
 
 #define EMSG           hpcrun_emsg
 #define AMSG           hpcrun_amsg
+
+#ifdef COMPILE_IN
+#define CTMSG(...) TMSG(__VA_ARGS__)
+#else
+#define CTMSG(...)
+#endif // COMPILE_IN
 
 #ifdef NO_HPCRUN_MSGS
 #define STDERR_MSG(...)

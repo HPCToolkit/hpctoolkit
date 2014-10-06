@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -227,7 +227,6 @@ hpcrun_abort_w_info(void (*info)(void), const char *fmt, ...)
   info();
   monitor_real_exit(-1);
 }
-
 
 // message to log file, also echo on stderr
 void

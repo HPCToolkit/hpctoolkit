@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -114,7 +114,8 @@ hpcrun_cleanup_partial_unwind(void)
 
   memset((void *)it->jb, '\0', sizeof(it->jb));
 
-  hpcrun_stats_num_samples_dropped_inc();
+  if ( ! td->deadlock_drop)
+    hpcrun_stats_num_samples_dropped_inc();
 
   hpcrun_up_pmsg_count();
   if (TD_GET(splay_lock)) {
@@ -127,7 +128,7 @@ hpcrun_cleanup_partial_unwind(void)
 
 
 static cct_node_t*
-record_partial_unwind(cct_bundle_t* cct, 
+record_partial_unwind(cct_bundle_t* cct,
 		      frame_t* bt_beg, frame_t* bt_last,
 		      int metricId, uint64_t metricIncr)
 {
@@ -135,7 +136,7 @@ record_partial_unwind(cct_bundle_t* cct,
     return NULL;
   }
   backtrace_info_t bt;
-
+ 
   bt.begin = bt_beg;
   bt.last =  bt_last;
   bt.fence = FENCE_BAD;
@@ -146,13 +147,9 @@ record_partial_unwind(cct_bundle_t* cct,
 
   TMSG(PARTIAL_UNW, "recording partial unwind from segv");
   hpcrun_stats_num_samples_partial_inc();
-  return hpcrun_cct_record_backtrace_w_metric(cct, true, &bt, 
-#if 0
-false,
-					      bt_beg, bt_last, 
-#endif
-false,
-					      metricId, metricIncr);
+  return hpcrun_cct_record_backtrace_w_metric(cct, true, &bt,
+//					      false, bt_beg, bt_last, 
+					      false, metricId, metricIncr);
 }
 
 
@@ -171,7 +168,7 @@ hpcrun_drop_sample(void)
 
 
 sample_val_t
-hpcrun_sample_callpath(void *context, int metricId,
+hpcrun_sample_callpath(void* context, int metricId,
 		       uint64_t metricIncr,
 		       int skipInner, int isSync)
 {
@@ -224,6 +221,7 @@ hpcrun_sample_callpath(void *context, int metricId,
   hpcrun_set_handling_sample(td);
 
   td->btbuf_cur = NULL;
+  td->deadlock_drop = false;
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
 
@@ -251,34 +249,33 @@ hpcrun_sample_callpath(void *context, int metricId,
 
   ret.sample_node = node;
 
-  if (hpcrun_trace_isactive()) {
-    void* pc;
+  bool trace_ok = ! td->deadlock_drop;
+  TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
+  if (trace_ok && hpcrun_trace_isactive()) {
+    TMSG(TRACE, "Sample event encountered");
+    void* pc = hpcrun_context_pc(context);
 
-    // frame elision may have eliminated the frame represented by the pc in context.
-    // so, when a path has been inserted in the CCT (represented by a non-null leaf node), 
-    // extract the PC from the leaf for the trace.
-    if (node) { 
-      pc = hpcrun_denormalize_ip(&(hpcrun_cct_addr(node)->ip_norm));
-    } else {
-      pc = hpcrun_context_pc(context);
-    }
-
-    void *func_start_pc = NULL, *func_end_pc = NULL;
+    void* func_start_pc = NULL;
+    void* func_end_pc = NULL;
     load_module_t* lm = NULL;
     fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc, &lm);
 
+    TMSG(TRACE, "func start = %p, pc = %p, func_end = %p");
     ip_normalized_t pc_proxy = hpcrun_normalize_ip(func_start_pc, lm);
 
     cct_addr_t frm = { .ip_norm = pc_proxy };
+    TMSG(TRACE,"parent node = %p, &frm = %p", hpcrun_cct_parent(node), &frm);
     cct_node_t* func_proxy = 
       hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);
 
+    TMSG(TRACE, "inserted func start addr into parent node, func_proxy = %p", func_proxy);
     ret.trace_node = func_proxy;
 
     // modify the persistent id
     hpcrun_cct_persistent_id_trace_mutate(func_proxy);
-
+    TMSG(TRACE, "Changed persistent id to indicate mutation of func_proxy node");
     hpcrun_trace_append(&td->core_profile_trace_data, hpcrun_cct_persistent_id(func_proxy), metricId);
+    TMSG(TRACE, "Appended func_proxy node to trace");
   }
 
   hpcrun_clear_handling_sample(td);
@@ -295,7 +292,6 @@ hpcrun_sample_callpath(void *context, int metricId,
 
   return ret;
 }
-
 
 static int const PTHREAD_CTXT_SKIP_INNER = 1;
 
@@ -348,12 +344,9 @@ hpcrun_gen_thread_ctxt(void* context)
       TMSG(THREAD_CTXT, "Thread correction, back off outermost backtrace entry");
       bt.last--;
     }
-    node = hpcrun_cct_record_backtrace(&(epoch->csdata), false, &bt, 
-#if 0
-					bt.fence == FENCE_THREAD,
-				       bt.begin, bt.last, 
-#endif
-bt.has_tramp);
+    node = hpcrun_cct_record_backtrace(&(epoch->csdata), false, &bt,
+//				       bt.fence == FENCE_THREAD, bt.begin, bt.last, 
+				       bt.has_tramp);
   }
   // FIXME: What to do when thread context is partial ?
 #if 0
@@ -486,6 +479,7 @@ hpcrun_sample_callpath_w_bt(void *context,
 					      bt_fn, arg, isSync);
 
       if (hpcrun_trace_isactive()) {
+	TMSG(TRACE, "non-NULL epoch code");
 	void* pc = hpcrun_context_pc(context);
 	cct_bundle_t* cct = &(td->epoch->csdata); 
 	void* func_start_pc = NULL;
@@ -497,7 +491,7 @@ hpcrun_sample_callpath_w_bt(void *context,
 	cct_node_t* func_proxy = hpcrun_cct_get_child(cct, node->parent, &frm);
 	func_proxy->persistent_id |= HPCRUN_FMT_RetainIdFlag; 
 
-	hpcrun_trace_append(func_proxy->persistent_id, metricId);
+	hpcrun_trace_append(func_proxy->persistent_id);
       }
       if (ENABLED(DUMP_BACKTRACES)) {
 	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");

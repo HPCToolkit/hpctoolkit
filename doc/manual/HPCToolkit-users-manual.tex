@@ -2,7 +2,7 @@
 % $HeadURL$
 % $Id$
 %
-% Copyright ((c)) 2002-2013, Rice University
+% Copyright ((c)) 2002-2014, Rice University
 % All rights reserved.
 % See file README.License for details.
 %
@@ -476,7 +476,7 @@ This command analyzes \texttt{app}'s binary and computes a representation of its
 The command saves this information in a file named \texttt{app.hpcstruct} that should be passed to \hpcprof{} with the \texttt{-S/--structure} argument.
 
 Typically, \hpcstruct{} is launched without any options.
-When using an IBM XL compiler, it is usually best to pass the option \texttt{--loop-fwd-subst=no} to \hpcstruct{}.
+% When using an IBM XL compiler, it is usually best to pass the option \texttt{--loop-fwd-subst=no} to \hpcstruct{}.
 
 
 % ==========================================================
@@ -818,9 +818,10 @@ Next, we describe performance expectations for weak scaling and intuitive metric
 More information about our scalability analysis technique can be found elsewhere~\cite{Coarfa-MC:2007:ICS-scalability,Tallent-MC-etal:2009:SC-hpctoolkit-petascale}.
 
 \begin{figure}[t]
-\center{\includegraphics[width=1.0\textwidth]{fig/scaling-loss.png}}
+\center{\includegraphics[width=1.0\textwidth]{fig/flash-scalability.png}}
 %Two possible representations for the call path fragment $\ldots s_1 \rightarrow s_2 \ldots$, where $s_1$ and $s_2$ are call sites and where $s_1$ represents a call from $p$ to $q$ and $s_2$ a call from $q'$ to $r$.
-\caption{Computing the fraction of excess work in each program scope when applying weak scaling to go from simulating a $30^3$ domain on one core to simulating a $60^3$ domain on eight cores of an AMD Barcelona. The fraction of excess work is a quantitative measure of scalability loss.}
+\caption{Computing the scaling loss when weak scaling a white dwarf detonation simulation with FLASH3  from 256 to 8192 cores. For weak scaling, the time on an MPI rank in each of the simulations will be the same. In the figure, column 0 represents the inclusive cost for one MPI rank in a 256-core simulation; column 2 represents the inclusive cost for one MPI rank in an 8192-core simulation.  The difference between these two columns, computed as {\tt \$2-\$0},
+represents the excess work present in the larger simulation for each unique program context in the calling context tree. Dividing that by the total time in the 8192-core execution {\tt @2} gives the fraction of wasted  time. Multiplying through by 100 gives the percent of the time wasted in the 8192-core execution, which corresponds to the \%~scalability loss.}
 \label{fig:scaling-loss}
 \end{figure}
 
@@ -836,24 +837,21 @@ More information about our scalability analysis technique can be found elsewhere
 
 Consider two weak scaling experiments executed on $p$ and $q$ processors, respectively, $p<q$.
 In Figure~\ref{fig:scaling-loss} shows how we can use a derived metric to compute and attribute scalability losses.
-Here, we compute the difference in exclusive cycles spent on one core of an 8-core run and one core in a single core run in a weak scaling experiment.
-If the code had perfect weak scaling, the time for the one core and the eight
-core executions would be identical.
-We compute the fraction of excess work by computing the difference for each scope between the time on the eight core run minus the time on the single core run, and divide that by the total time spent on the eight core run.
-This formula tells us how much extra time we spent on the eight core run, attributes differences to each scope.
-By normalizing by the total time spent in the eight core run, we attribute to each scope the fraction of the total excess time in the execution that was spent in that scope when scaling from one to eight cores.%
-\footnote{In \hpcviewer{}, we compute this metric for each scope
-$s$ by subtracting the exclusive time spent in $s$ on one core (\$1) from
-the time spent in $s$ on eight cores (\$5), and normalizing this quantity
-by the aggregate total time spent on 8 cores ({\tt aggregate(\&5)}).}
-This calculation pinpoints and quantifies scaling losses within a multicore node.
-A similar analysis can be applied to compute scaling losses between pairs of jobs scaled across an entire parallel system and not just within a node.
-In Figure~\ref{fig:scaling-loss-2}, we rank order loop nests by their scaling loss metric.
+Here, we compute the difference in inclusive cycles spent on one core of a 8192-core run and one core in a 256-core run in a weak scaling experiment.
+If the code had perfect weak scaling, the time for an MPI rank in each of the executions would be identical. In this case, they are not. 
+We compute the excess work by computing the difference for each scope between the time on the 8192-core  run and the time on the 256-core core run. 
+We normalize the differences of the time spent in the two runs by dividing then by the total time spent on the 8192-core  run. This yields the fraction of wasted effort 
+for each scope when scaling from 256 to 8192 cores. Finally, we multiply these resuls by 100 to compute the \% scalability loss.
+This example shows how one can compute a derived metric to that pinpoints and quantifies scaling losses across different node counts of a Blue Gene/P system.
+
+A similar analysis can be applied to compute scaling losses between jobs that use different numbers of core counts on individual processors.
+ Figure~\ref{fig:scaling-loss-2} shows the result of computing  the scaling loss for each loop nest when scaling from one to eight cores on a multicore node and rank order loop nests by their scaling loss metric. Here, we simply compute the scaling loss as the difference between the cycle counts of the eight-core and the one-core runs, divided through by the aggregate cost of the process executing on eight cores. This figure shows the scaling lost written in scientific notation as a fraction rather than multiplying through by 100 to yield a percent.
+In this figure, we examine scaling losses in the flat view, showing them for each loop nest.
 The source pane shows the loop nest responsible for the greatest scaling loss when scaling from one to eight cores.
 Unsurprisingly, the loop with the worst scaling loss is very memory intensive.
 Memory bandwidth is a precious commodity on multicore processors.
 
-While we have shown how to compute and attribute the fraction of excess work in a weak scaling experiment, one can compute a similar quantity for experiments with strong scaling, except that the work on the larger number of processors has to have a corrective multiplier applied to account for the smaller fraction of work it receives.
+While we have shown how to compute and attribute the fraction of excess work in a weak scaling experiment, one can compute a similar quantity for experiments with strong scaling. When differencing the costs summed across all of the threads in a pair of strong-scaling experiments, one uses exactly the same approach as shown in Figure~\ref{fig:scaling-loss}. If comparing weak scaling costs summed across all ranks in $p$ and $q$ core executions, one can simply scale the aggregate costs by $1/p$ and $1/q$ respectively before differencing them. 
 
 
 \subsubsection{Exploring Scaling Losses}
@@ -1159,6 +1157,8 @@ qsub -t 60 -n 64 --env HPCRUN_EVENT_LIST="WALLCLOCK@1000" \
 \end{verbatim}
 \end{quote}
 
+To collect sample traces of  an execution of a statically linked binary (for visualization with \hpctraceviewer{}), one needs to set the environment variable \mytt{HPCRUN_TRACE=1} in the execution environment.
+
 
 % ===========================================================================
 % ===========================================================================
@@ -1284,8 +1284,17 @@ You can decrease the maximum size of the Java heap from 1812MB to 1GB
 % ===========================================================================
 % ===========================================================================
 
+\section{\hpcviewer{} fails to launch due to java.lang.NoSuchMethodError exception.}
+
+The root cause of the error is due to a mix of old \and new hpcviewer{} binaries. 
+To solve this problem, you need to remove your hpcviewer workspace (usually in \texttt{\$HOME/.hpctoolkit/hpcviewer} directory, and run \hpcviewer{} again.
+
+
+
+% ===========================================================================
+% ===========================================================================
+
 \section{\hpcviewer{} attributes performance information only to functions and not to source code loops and lines! Why?}
-\label{sec:troubleshooting:debug-info}
 
 Most likely, your application's binary either lacks debugging information or is stripped.
 A binary's (optional) debugging information includes a line map that is used by profilers and debuggers to map object code to source code.
@@ -1365,6 +1374,7 @@ If the \texttt{experiment.xml} file within your database is tens of megabytes or
 Assuming you compiled your application with debugging information (see Issue~\ref{sec:troubleshooting:debug-info}), the most common reason that \hpcviewer{} does not show source code is that \hpcprofAll{} could not find it and therefore could not copy it into the \HPCToolkit{} performance database.
 
 
+
 % ==========================================================
 % ==========================================================
 
@@ -1374,7 +1384,7 @@ When running \hpcprofAll{}, we recommend using an \texttt{-I/--include} option t
 Assume the paths to your top-level source directories are \texttt{<dir1>} through \texttt{<dirN>}.
 Then, pass the the following options to \hpcprofAll{}:
 \begin{quote}
-  \verb|-I <dir1>/'*' -I <dir2>/'*' ... -I <dirN>/'*'|
+  \verb|-I <dir1>/+ -I <dir2>/+ ... -I <dirN>/+|
 \end{quote}
 These options instruct \hpcprofAll{} to search for source files that live within any of the source directories \texttt{<dir1>} through \texttt{<dirN>}.
 Each directory argument can be either absolute or relative to the current working directory.
@@ -1389,9 +1399,8 @@ For this reason, we always recommend supplying at least one \texttt{-I/--include
 There are two basic forms in which the search directory can be specified: non-recursive and recursive.
 In most cases, the most useful form is the recursive search directory, which means that the directory should be searched \emph{along with all of its descendants}.
 A non-recursive search directory \texttt{dir} is simply specified as \texttt{dir}.
-A recursive search directory \texttt{dir} is specified as the base search directory followed by the special suffix `\texttt{/*}': \texttt{dir/*}.
+A recursive search directory \texttt{dir} is specified as the base search directory followed by the special suffix `\texttt{/+}': \texttt{dir/+}.
 The paths above use the recursive form.
-Note that the asterisk (`\texttt{*}') should be escaped with either a backslash (\verb|\*|) or single quotes (\texttt{'*'}) to protect it from shell expansion.
 
 
 % ==========================================================
@@ -1544,28 +1553,11 @@ If the compiler duplicated calls as it replicated code during optimization, mult
 % ===========================================================================
 % ===========================================================================
 
-\section{I get a message about ``unable to write to tmp directory''}
+\section{\hpctraceviewer{} shows lots of white space on the left. Why?}
 
-While profiling a program, \hpcrun{} must write some internal data to temporary files.
-By default, these files are written to \verb|/tmp|. On some systems, however, you may not
-have permission to write to \verb|/tmp|. If this is the case on your system, then
-you will see the message
-\begin{quote}
-\begin{verbatim}
-    hpcrun: unable to write to tmp directory: /tmp
-    please set HPCRUN_TMPDIR or TMPDIR and try again
-\end{verbatim}
-\end{quote}
+At startup, \hpctraceviewer{}  renders traces for the time interval between the minimum and maximum times recorded for any process or thread in the execution. The minimum time for each process or thread is recorded when its trace file is opened as HPCToolkit's monitoring facilities are initialized at the beginning of its execution. The maximum time for a process or thread is recorded when the process or thread is finalized and its trace file is closed. When an application uses the \verb|hpctoolkit_start| and \verb|hpctoolkit_stop| primitives, the minimum and maximum time recorded for a process/thread are  at the beginning and end of its execution, which may be  distant from the start/stop interval. This can cause significant white space to appear in \hpctraceviewer{}'s display to the left and right of the region (or regions) of interest demarcated in an execution by start/stop calls.
 
-To correct this problem, you should set the \verb|HPCRUN_TMPDIR| (or, if you prefer, \verb|TMPDIR|)
-environment variable to a directory
-where you have write permission. {\bf CAUTION:} Your home directory is \emph{not}
-a good choice, as some of \hpcrun{}'s temporary files can get large.
 
-See section~\ref{sec:env-vars} for a bit more detail.
-
-% ===========================================================================
-% ===========================================================================
 \section{I get a message about ``Unable to find HPCTOOLKIT root directory''}
 
 On some systems, you might see a message like this:
@@ -1732,6 +1724,37 @@ app [app-arguments]
 \item To raise a controlled sampling signal, raise a SIGPROF, \eg{}, using GDB's command \verb|signal SIGPROF|.
 
 \end{enumerate}
+
+\subsection{Using \hpclink{} with {\tt cmake}}
+
+When creating a statically-linked executable with {\tt cmake}, it is not obvious how to add {\tt hpclink} as a prefix to a link command. Unless it is overridden somewhere  along the way, the following rule found in {\tt Modules/CMakeCXXInformation.cmake} is
+used to create the link command line for a C++ executable:
+
+\begin{verbatim}
+  if(NOT CMAKE_CXX_LINK_EXECUTABLE)
+    set(CMAKE_CXX_LINK_EXECUTABLE
+       "<CMAKE_CXX_COMPILER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> 
+                             <OBJECTS> -o <TARGET> <LINK_LIBRARIES>")
+  endif()
+\end{verbatim}
+
+\noindent 
+As the rule shows, by default, the C++ compiler is used to link C++ executables. One way to change this is to override the definition for \verb|CMAKE_CXX_LINK_EXECUTABLE|  on the {\tt cmake} command line so that it includes the  necessary \hpclink{} prefix, as shown below:
+
+\begin{verbatim}
+  cmake srcdir ... \
+     -DCMAKE_CXX_LINK_EXECUTABLE="hpclink <CMAKE_CXX_COMPILER> \
+          <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> \
+          <LINK_LIBRARIES>" ...
+\end{verbatim}
+
+\noindent
+If your project has executables linked with a C or Fortran compiler, you will need analogous redefinitions for \verb|CMAKE_C_LINK_EXECUTABLE| or  \verb|CMAKE_Fortran_LINK_EXECUTABLE| as well.
+
+Rather than adding the redefinitions of these linker rules to the {\tt cmake} command line, 
+you may find it more convenient to add definitions of these rules to your {\tt CMakeLists.cmake} file.
+
+
 
 
 % ===========================================================================

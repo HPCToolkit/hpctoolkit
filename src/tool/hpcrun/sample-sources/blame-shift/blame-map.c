@@ -63,10 +63,8 @@
 #include "blame-map.h"
 
 #include <hpcrun/messages/messages.h>
-
 #include <lib/prof-lean/atomic-op.h>
-
-
+#include <memory/hpcrun-malloc.h>
 
 /******************************************************************************
  * macros
@@ -75,7 +73,26 @@
 #define N (128*1024)
 #define INDEX_MASK ((N)-1)
 
-#define LOSSLESS_BLAME 
+#define LOSSLESS_BLAME
+
+#ifdef BLAME_MAP_LOCKING
+
+#define do_lock() \
+{ \
+  for(;;) { \
+    if (fetch_and_store_i64(&thelock, 1) == 0) break; \
+    while (thelock == 1); \
+  } \
+}
+
+#define do_unlock() thelock = 0
+
+#else
+
+#define do_lock() 
+#define do_unlock()
+
+#endif
 
 
 
@@ -83,24 +100,24 @@
  * data type
  *****************************************************************************/
 
-struct blame_parts {
+typedef struct {
   uint32_t obj_id;
   uint32_t blame;
+} blame_parts_t;
+
+
+union blame_entry_t {
+  uint64_t all;
+  blame_parts_t parts; 
 };
 
 
-typedef union {
-  uint64_t all;
-  struct blame_parts parts; //[0] is id, [1] is blame
-} blame_entry;
 
+/***************************************************************************
+ * private data  
+ ***************************************************************************/
 
-
-/******************************************************************************
- * global variables
- *****************************************************************************/
-
-volatile blame_entry table[N];
+static uint64_t volatile thelock;
 
 
 
@@ -125,7 +142,7 @@ blame_map_hash(uint64_t obj)
 uint64_t 
 blame_map_entry(uint64_t obj, uint32_t metric_value)
 {
-  blame_entry be;
+  blame_entry_t be;
   be.parts.obj_id = blame_map_obj_id(obj);
   be.parts.blame = metric_value;
   return be.all;
@@ -137,8 +154,18 @@ blame_map_entry(uint64_t obj, uint32_t metric_value)
  * interface operations
  ***************************************************************************/
 
+blame_entry_t*
+blame_map_new(void)
+{
+  blame_entry_t* rv = hpcrun_malloc(N * sizeof(blame_entry_t));
+  for(blame_entry_t* p = rv; p < rv + N; p++) {
+    p->all = 0;
+  }
+  return rv;
+}
+
 void 
-blame_map_init()
+blame_map_init(blame_entry_t table[])
 {
   int i;
   for(i = 0; i < N; i++)
@@ -147,27 +174,29 @@ blame_map_init()
 
 
 void
-blame_map_add_blame(uint64_t obj, uint32_t metric_value)
+blame_map_add_blame(blame_entry_t table[],
+		    uint64_t obj, uint32_t metric_value)
 {
   uint32_t obj_id = blame_map_obj_id(obj);
   uint32_t index = blame_map_hash(obj);
 
   assert(index >= 0 && index < N);
 
+  do_lock();
   for(;;) {
-    blame_entry oldval = table[index];
+    blame_entry_t oldval = table[index];
 
     if(oldval.parts.obj_id == obj_id) {
 #ifdef LOSSLESS_BLAME
-      blame_entry newval = oldval;
+      blame_entry_t newval = oldval;
       newval.parts.blame += metric_value;
       if (compare_and_swap_i64(&table[index].all, oldval.all, newval.all) 
 	    == oldval.all) break;
 #else
       oldval.parts.blame += metric_value;
       table[index].all = oldval.all;
-#endif
       break;
+#endif
     } else {
       if(oldval.parts.obj_id == 0) {
 	uint64_t newval = blame_map_entry(obj, metric_value);
@@ -179,7 +208,8 @@ blame_map_add_blame(uint64_t obj, uint32_t metric_value)
 	table[index].all = newval;
 	break;
 #endif
-      } else {
+      }
+      else {
 	EMSG("leaked blame %d\n", metric_value);
 	// entry in use for another object's blame
 	// in this case, since it isn't easy to shift 
@@ -188,11 +218,12 @@ blame_map_add_blame(uint64_t obj, uint32_t metric_value)
       }
     }
   }
+  do_unlock();
 }
 
 
 uint64_t 
-blame_map_get_blame(uint64_t obj)
+blame_map_get_blame(blame_entry_t table[], uint64_t obj)
 {
   static uint64_t zero = 0;
   uint64_t val = 0;
@@ -201,8 +232,9 @@ blame_map_get_blame(uint64_t obj)
 
   assert(index >= 0 && index < N);
 
+  do_lock();
   for(;;) {
-    blame_entry oldval = table[index];
+    blame_entry_t oldval = table[index];
     if(oldval.parts.obj_id == obj_id) {
 #ifdef LOSSLESS_BLAME
       if (compare_and_swap_i64(&table[index].all, oldval.all, zero) 
@@ -211,9 +243,10 @@ blame_map_get_blame(uint64_t obj)
       table[index].all = 0;
 #endif
       val = (uint64_t)oldval.parts.blame;
-      break;
     }
     break;
   }
+  do_unlock();
+
   return val;
 }

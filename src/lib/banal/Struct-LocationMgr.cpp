@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -87,11 +87,14 @@ using std::pair;
 using namespace Prof;
 
 #include <lib/binutils/BinUtils.hpp>
+#include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
 
-//*************************** Forward Declarations **************************
+#ifdef BANAL_USE_SYMTAB
+#include "Struct-Inline.hpp"
+#endif
 
 //*************************** Forward Declarations **************************
 
@@ -109,14 +112,47 @@ RELOCATEDcmp(const string& x)
   return RELOCATEDcmp(x.c_str());
 }
 
-//*************************** Forward Declarations **************************
+#ifdef BANAL_USE_SYMTAB
+//
+// Test if two procedure names are equal where we ignore embedded
+// spaces and closing '(...)'.  Binutils and symtab often disagree
+// over these features and we don't want that to cause unequal.
+//
+static bool
+procnmEq(string& s1, string& s2)
+{
+  long len1 = s1.length();
+  long len2 = s2.length();
+  int i, j;
 
-// When Alien contexts are nested, there may be many at the top of the
-// stack at one time; in the opposite case, only one is on the top of
-// the stack at any time.
-#define STRUCT_NEST_ALIEN_CONTEXTS 0
+  i = 0; j = 0;
+  for (;;) {
+    if (i < len1 && s1[i] == ' ') {
+      i++;
+    }
+    else if (j < len2 && s2[j] == ' ') {
+      j++;
+    }
+    else if (i < len1 && j < len2 && s1[i] == s2[j]) {
+      i++; j++;
+    }
+    else if (i == len1 && j < len2 && s2[j] == '(') {
+      j = len2;
+    }
+    else if (j == len2 && i < len1 && s1[i] == '(') {
+      i = len1;
+    }
+    else {
+      break;
+    }
+  }
+  if (i == len1 && j == len2) {
+    return true;
+  }
+  return false;
+}
+#endif
 
-//***************************************************************************
 
 //***************************************************************************
 // LocationMgr
@@ -159,12 +195,24 @@ LocationMgr::begSeq(Prof::Struct::Proc* enclosingProc, bool isFwdSubst)
 void
 LocationMgr::locate(Prof::Struct::Loop* loop,
 		    Prof::Struct::ACodeNode* proposed_scope,
-		    string& filenm, string& procnm, SrcFile::ln line)
+		    string& filenm, string& procnm, SrcFile::ln line, uint targetScopeID)
 {
+  DIAG_MsgIfCtd(mDBG, "====================  loop  ====================\n"
+		<< "node=" << loop->id() << "  scope=" << proposed_scope->id()
+		<< "  proc: '" << procnm << "'\n"
+		<< "file: '" << filenm << "'  line: " << line << "\n");
   DIAG_DevMsgIf(mDBG, "LocationMgr::locate: " << loop->toXML() << "\n"
 		<< "  proposed: " << proposed_scope->toXML() << "\n"
-		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
-  determineContext(proposed_scope, filenm, procnm, line);
+		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line << "\n");
+
+  VMAIntervalSet& vmaset = loop->vmaSet();
+  VMA loopVMA = (! vmaset.empty()) ? vmaset.begin()->beg() : 0;
+
+#if 1 // LCA_INLINE
+  determineContext(proposed_scope, filenm, procnm, line, loopVMA, NULL, targetScopeID);
+#else
+  determineContext(proposed_scope, filenm, procnm, line, loopVMA, loop, targetScopeID);
+#endif
   Ctxt& encl_ctxt = topCtxtRef();
   loop->linkAndSetLineRange(encl_ctxt.scope());
 }
@@ -173,13 +221,21 @@ LocationMgr::locate(Prof::Struct::Loop* loop,
 void
 LocationMgr::locate(Prof::Struct::Stmt* stmt,
 		    Prof::Struct::ACodeNode* proposed_scope,
-		    string& filenm, string& procnm, SrcFile::ln line)
+		    string& filenm, string& procnm, SrcFile::ln line, uint targetScopeID)
 {
+  DIAG_MsgIfCtd(mDBG, "====================  stmt  ====================\n"
+		<< "node=" << stmt->id() << "  scope=" << proposed_scope->id()
+		<< "  proc: '" << procnm << "'\n"
+		<< "file: '" << filenm << "'  line: " << line << "\n");
   DIAG_DevMsgIf(mDBG, "LocationMgr::locate: " << stmt->toXML() << "\n"
 		<< "  proposed: " << proposed_scope->toXML() << "\n"
-		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
+		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line << "\n");
+
+  VMAIntervalSet& vmaset = stmt->vmaSet();
+  VMA begVMA = (! vmaset.empty()) ? vmaset.begin()->beg() : 0;
+
   // FIXME (minor): manage stmt cache! if stmt already exists, only add vma
-  determineContext(proposed_scope, filenm, procnm, line);
+  determineContext(proposed_scope, filenm, procnm, line, begVMA, NULL, targetScopeID);
   Ctxt& encl_ctxt = topCtxtRef();
   stmt->linkAndSetLineRange(encl_ctxt.scope());
 }
@@ -412,7 +468,8 @@ LocationMgr::toString(CtxtChange_t x)
 
 LocationMgr::CtxtChange_t
 LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
-			      string& filenm, string& procnm, SrcFile::ln line)
+			      string& filenm, string& procnm, SrcFile::ln line,
+			      VMA begVMA, Prof::Struct::ACodeNode* loop, uint targetScopeID)
 {
   DIAG_DevMsgIf(mDBG, "LocationMgr::determineContext");
 
@@ -481,7 +538,7 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
     if (use_ctxt->level() < proposed_ctxt->level()) {
       DIAG_DevMsgIfCtd(mDBG, "  fixScopeTree: before\n" << toString()
 		       << use_ctxt->ctxt()->toStringXML());
-      fixScopeTree(top_ctxt->scope(), use_ctxt->ctxt(), line, line);
+      fixScopeTree(top_ctxt->scope(), use_ctxt->ctxt(), line, line, targetScopeID);
       DIAG_DevMsgIfCtd(mDBG, "  fixScopeTree: after\n"
 		       << use_ctxt->ctxt()->toStringXML());
       
@@ -539,29 +596,215 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
       }
     }
   }
-  
+
+  bool inlineAvail = false;
+
+#ifdef BANAL_USE_SYMTAB
+  //
+  // Analyze the VM address for its inline sequence.  We need this for
+  // inserting alien nodes (use_ctxt) and for locating loops.
+  //
+  Inline::InlineSeqn::iterator it;
+  bool wantInline = false;
+  Inline::InlineSeqn nodelist;
+
+  if (loop != NULL || !use_ctxt) {
+    inlineAvail = Inline::analyzeAddr(nodelist, begVMA);
+    wantInline = true;
+  }
+
+  // debug: raw inline data from symtab
+  if (mDBG) {
+    DIAG_DevMsgIf(1, "raw inline data at 0x" << std::hex << begVMA << std::dec
+		  << ", alien: " << (use_ctxt ? "no" : "yes"));
+    if (! wantInline) {
+      DIAG_DevMsgIfCtd(1, "  not needed");
+    }
+    else if (! inlineAvail) {
+      DIAG_DevMsgIfCtd(1, "  failed");
+    }
+    else if (nodelist.empty()) {
+      DIAG_DevMsgIfCtd(1, "  empty");
+    }
+    else {
+      for (it = nodelist.begin(); it != nodelist.end(); it++) {
+	DIAG_DevMsgIfCtd(1, "  file: '" << it->getFileName()
+			 << "'  line: " << it->getLineNum()
+			 << "  proc: '" << it->getProcName() << "'");
+      }
+    }
+  }
+
+  //
+  // For loops (scopes), find the location of the loop in the inline
+  // sequence and save for later lookup.  We need this for all loops,
+  // whether directly inlined or not.
+  //
+  if (loop != NULL) {
+    bool found_scope = false;
+
+    if (inlineAvail && !nodelist.empty()) {
+      for (it = nodelist.begin(); it != nodelist.end(); it++) {
+	if (procnmEq(it->getProcName(), procnm)) {
+	  DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
+			   << " file: '" << it->getFileName()
+			   << "'  line: " << it->getLineNum());
+	  loop->setScopeLocation(it->getFileName(), it->getLineNum());
+	  found_scope = true;
+	  break;
+	}
+      }
+    }
+    //
+    // If the inline sequence doesn't find the scope for this loop
+    // directly, then use the scope of its parent.  This happens with
+    // nested loops and no relocation between them.
+    //
+    if (! found_scope) {
+      string parent_filenm = proposed_scope->getScopeFileName();
+      SrcFile::ln parent_lineno = proposed_scope->getScopeLineNum();
+
+      if (parent_filenm != "") {
+	DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ")"
+			 << " parent (" << proposed_scope->id() << ")"
+			 << " file: '" << parent_filenm
+			 << "'  line: " << parent_lineno);
+	loop->setScopeLocation(parent_filenm, parent_lineno);
+      }
+      else {
+	DIAG_DevMsgIfCtd(mDBG, "  set scope (" << loop->id() << ") none");
+      }
+    }
+  }
+  DIAG_DevMsgIfCtd(mDBG, "");
+#endif
+
   if (!use_ctxt) {
     // Relocation! Add an alien context.
     DIAG_Assert(!filenm.empty(), "");
     CtxtChange_set(change, CtxtChange_PUSH);
-    
-    // Find or create the alien scope
-    Prof::Struct::Alien* alien =
-#if (STRUCT_NEST_ALIEN_CONTEXTS)
-      demandAlienStrct(proposed_scope, filenm, procnm, line, true);
-#else
-      demandAlienStrct(proposed_scope, filenm, procnm, line, false);
-    if (topCtxtRef().isAlien()) {
+
+    // Erase aliens from top of stack.
+    while (topCtxtRef().isAlien()) {
       m_ctxtStack.pop_front();
     }
+
+    DIAG_DevMsgIf(mDBG, "insert alien nodes");
+
+    Prof::Struct::Alien *alien;
+    Prof::Struct::ACodeNode *parent = proposed_scope;
+
+#ifdef BANAL_USE_SYMTAB
+    //
+    // Add intermediate aliens for inlined sequence, if avail.
+    //
+    if (inlineAvail && !nodelist.empty()) {
+      Inline::InlineSeqn::iterator start_it = nodelist.begin();
+      string scope_filenm = proposed_scope->getScopeFileName();
+      SrcFile::ln scope_lineno = proposed_scope->getScopeLineNum();
+
+      DIAG_DevMsgIfCtd(mDBG, "  get scope (" << proposed_scope->id()
+		       << ") file: '" << scope_filenm
+		       << "'  line: " << scope_lineno);
+
+      // Look for 'proposed_scope' on 'nodelist' using the previously
+      // stored file name and line number location.  If found, start
+      // the alien sequence at the next inlined node.
+      //
+      if (scope_filenm != "") {
+	for (it = nodelist.begin(); it != nodelist.end(); it++) {
+	  if (it->getFileName() == scope_filenm
+	      && it->getLineNum() == scope_lineno)
+	  {
+	    start_it = ++it;
+	    break;
+	  }
+	}
+      }
+
+      // Add sequence of intermediate aliens starting at start_it.
+      // Stmts go all the way to the bottom VMA in nodelist.  But for
+      // loops, we stop the sequence at the node corresponding to that
+      // loop based on 'procnm'.
+      //
+      // Fake the proc name to the line number so that multiple calls
+      // to the same inlined function will remain separate.
+      //
+      string empty = "";
+      string calledProcedure = "";
+      long callsiteLineNumber = 0;
+      for (it = start_it; it != nodelist.end(); it++)
+      {
+	char buf[50];
+	if (!calledProcedure.empty()) {
+	  snprintf(buf, 50, "inline-alien-%ld", callsiteLineNumber);
+	  alien = demandAlienStrct(parent, it->getFileName(), string(buf),
+				   calledProcedure, 0, targetScopeID);
+	  pushCtxt(Ctxt(alien, NULL));
+	  parent = alien;
+
+	  DIAG_DevMsgIfCtd(mDBG, "  node=" << alien->id()
+	    		   << "  file: '" << alien->fileName()
+			   << "'  line: " << alien->begLine()
+			   << "  name: '" << alien->displayName() << "'");
+
+	}
+
+	snprintf(buf, 50, "inline-alien-%ld", (long) it->getLineNum());
+	alien = demandAlienStrct(parent, it->getFileName(), string(buf),
+				 empty, it->getLineNum(), targetScopeID);
+	pushCtxt(Ctxt(alien, NULL));
+	parent = alien;
+	calledProcedure = it->getProcName();
+	callsiteLineNumber = it->getLineNum();
+
+	DIAG_DevMsgIfCtd(mDBG, "  node=" << alien->id()
+			 << "  file: '" << alien->fileName()
+			 << "'  line: " << alien->begLine()
+			 << "  name: '" << alien->displayName() << "'");
+
+	if (loop != NULL && procnmEq(it->getProcName(), procnm)) {
+	  break;
+	}
+      }
+      procnm = calledProcedure;
+    } 
 #endif
+
+    if (!inlineAvail) {
+      // if the procnm is the name of the enclosing procedure, then it
+      // is garbage and it should be removed from the alien
+      // node. currently, we use "-" as the placeholder for "the
+      // procedure that should not be named". the empty string is used
+      // for call sites for alien calls.  hpcviewer expects this "-"
+      // and will treat it as an unknown procedure that should not be
+      // named.
+      string TheProcedureWhoShouldNotBeNamed = "-";
+
+      // the enclosing scope should be a procedure, but cast carefully and code defensively.
+      Prof::Struct::Proc *procedure = dynamic_cast<Prof::Struct::Proc*>(proposed_scope);
+      if (procedure && procnm == procedure->name()) {
+	procnm = TheProcedureWhoShouldNotBeNamed; 
+      }
+    }
+
+    // avoid terminal line number
+    alien = demandAlienStrct(parent, filenm, procnm, procnm, 0, targetScopeID);
+
+
     pushCtxt(Ctxt(alien, NULL));
+
+    DIAG_DevMsgIfCtd(mDBG, "  guard node=" << alien->id()
+		     << "  file: '" << alien->fileName()
+		     << "'  line: " << alien->begLine()
+		     << "  name: '" << alien->displayName() << "'");
+    DIAG_DevMsgIfCtd(mDBG, "");
 
     use_ctxt = topCtxt();
   }
 
-  DIAG_DevMsgIfCtd(mDBG, "  final ctxt [" << toString(change) << "]\n"
-		   << use_ctxt->toString(0, "  "));
+  DIAG_DevMsgIf(mDBG, "final ctxt [" << toString(change) << "]\n"
+		<< use_ctxt->toString(0, "  "));
   return change;
 }
 
@@ -619,7 +862,7 @@ fixScopeTree_init(Prof::Struct::ACodeNode*& cur_ctxt,
 void
 LocationMgr::fixScopeTree(Prof::Struct::ACodeNode* from_scope,
 			  Prof::Struct::ACodeNode* true_ctxt,
-			  SrcFile::ln begLn, SrcFile::ln endLn)
+			  SrcFile::ln begLn, SrcFile::ln endLn, uint targetScopeID)
 {
   // INVARIANT: 'true_ctxt' is a Struct::Proc or Struct::Alien and an
   // ancestor of 'from_scope'
@@ -660,7 +903,7 @@ LocationMgr::fixScopeTree(Prof::Struct::ACodeNode* from_scope,
 	if ((x_old && x->childCount() >= 2)
 	    || (!x_old && x->childCount() >= 1)) {
 	  alienateScopeTree(x, dynamic_cast<Prof::Struct::Alien*>(cur_ctxt),
-			    x_old);
+			    x_old, targetScopeID);
 	}
       }
     }
@@ -677,12 +920,12 @@ LocationMgr::fixScopeTree(Prof::Struct::ACodeNode* from_scope,
 void
 LocationMgr::alienateScopeTree(Prof::Struct::ACodeNode* scope,
 			       Prof::Struct::Alien* alien,
-			       Prof::Struct::ACodeNode* exclude)
+			       Prof::Struct::ACodeNode* exclude, uint targetScopeID)
 {
   // create new alien context based on 'alien'
   Prof::Struct::ACodeNode* clone =
     demandAlienStrct(scope, alien->fileName(), alien->name(),
-		     alien->begLine(), /*tosOnCreate*/ false);
+		     alien->displayName(), alien->begLine(), targetScopeID);
   clone->setLineRange(alien->begLine(), alien->endLine(), 0 /*propagate*/);
   
   // move non-alien children of 'scope' into 'clone'
@@ -835,8 +1078,9 @@ Prof::Struct::Alien*
 LocationMgr::demandAlienStrct(Prof::Struct::ACodeNode* parent_scope,
 			      const std::string& filenm,
 			      const std::string& procnm,
+			      const std::string& displaynm,
 			      SrcFile::ln line,
-			      bool tosOnCreate)
+			      uint targetScopeID)
 {
   // INVARIANT: 'parent_scope' should either be the top of the stack
   // or the first first enclosing LOOP or PROC of the top of the
@@ -852,6 +1096,13 @@ LocationMgr::demandAlienStrct(Prof::Struct::ACodeNode* parent_scope,
        (it != range.second); ++it) {
     // we know that filenm and procnm match
     Prof::Struct::Alien* a = it->second;
+
+    if (a->id() < targetScopeID) continue;
+
+    if (!SrcFile::isValid(line)) {
+	alien = a;
+	break;
+    }
     
     if ( (SrcFile::isValid(line) && containsLineFzy(a, line))
 	 || (!SrcFile::isValid(a->begLine())) ) {
@@ -861,13 +1112,23 @@ LocationMgr::demandAlienStrct(Prof::Struct::ACodeNode* parent_scope,
   }
   
   if (!alien) {
-    Prof::Struct::ACodeNode* p =
-      (tosOnCreate) ? topCtxtRef().scope() : parent_scope;
-    alien = new Prof::Struct::Alien(p, filenm, procnm, line, line);
+    alien = new Prof::Struct::Alien(parent_scope, filenm, procnm,
+				    displaynm, line, line);
     m_alienMap.insert(std::make_pair(key, alien));
   }
 
   return alien;
+}
+
+
+
+void
+LocationMgr::evictAlien(Prof::Struct::ACodeNode* parent_scope,
+			Prof::Struct::Alien* alien)
+{
+  AlienStrctMapKey key(parent_scope, alien->fileName(), alien->name());
+
+  m_alienMap.erase(key);
 }
 
 } // namespace Struct

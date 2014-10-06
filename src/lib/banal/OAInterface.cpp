@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -58,6 +58,7 @@
 //   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
+
 
 //************************* System Include Files ****************************
 
@@ -239,7 +240,7 @@ BAnal::OAInterface::dump(OA::StmtHandle stmt, std::ostream& os)
     VMA targ = insn->targetVMA(pc);
     os << " <" << hex << targ << dec << ">";
     if (m_proc->isIn(targ) == false) {
-      os << " [out of procedure -- treated as SIMPLE]";
+      os << " [out of procedure -- treat as RETURN via tail call]";
     }
   }
   else if (d.isBrInd()) {
@@ -300,7 +301,13 @@ BAnal::OAInterface::getCFGStmtType(OA::StmtHandle h)
       ty = OA::CFG::UNCONDITIONAL_JUMP;
     }
     else {
+#if 0 
       ty = OA::CFG::SIMPLE;
+#else
+      // treat a branch out of the procedure (typically a tail call) as a return
+      // 04 05 2014 - johnmc
+      ty = OA::CFG::RETURN;
+#endif
     }
   }
   else if (d.isBrUnCondInd()) {
@@ -332,6 +339,14 @@ BAnal::OAInterface::getCFGStmtType(OA::StmtHandle h)
   else if (d.isSubrRet()) {
     // Return statement.
     ty = OA::CFG::RETURN;
+  }
+  else if (d.isSubrRel()) {
+    VMA callee = insn->targetVMA(insn->vma());
+    if (m_proc->lm()->functionNeverReturns(callee)) {
+      ty = OA::CFG::RETURN;
+    } else {
+      ty = OA::CFG::SIMPLE;
+    }
   }
   else {
     // Simple statements.

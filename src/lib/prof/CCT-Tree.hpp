@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -1036,7 +1036,6 @@ public:
     return id;
   }
 
-
   virtual const std::string&
   procName() const
   { return (m_strct) ? m_strct->name() : BOGUS; }
@@ -1201,6 +1200,16 @@ public:
   Loop(ANode* parent, Struct::ACodeNode* strct = NULL)
     : ANode(TyLoop, parent, strct)
   { }
+
+  virtual uint
+  fileId() const
+  {
+    uint id = 0;
+    if (m_strct) {
+      id = m_strct->id(); 
+    }
+    return id;
+  }
 
   virtual ~Loop()
   { }

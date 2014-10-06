@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2013, Rice University
+## Copyright ((c)) 2002-2014, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -70,6 +70,9 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+BOOST_INC = @BOOST_INC@
+SYMTABAPI_INC = @SYMTABAPI_INC@
+
 MYSOURCES = \
 	Struct.hpp Struct.cpp \
 	StructSimple.hpp StructSimple.cpp \
@@ -79,6 +82,9 @@ MYSOURCES = \
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @OA_IFLAGS@
+
+INLINE_SRCS = Struct-Inline.hpp Struct-Inline.cpp
+INLINE_FLGS = -DBANAL_USE_SYMTAB -I$(BOOST_INC) -I$(SYMTABAPI_INC)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@
@@ -101,6 +107,15 @@ libHPCbanal_la_CFLAGS   = $(MYCFLAGS)
 libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS)
 libHPCbanal_la_AR       = $(MYAR)
 libHPCbanal_la_LIBADD   = $(MYLIBADD)
+
+if OPT_ENABLE_BANAL_WITH_SYMTAB
+noinst_LTLIBRARIES += libHPCbanal_symtab.la
+libHPCbanal_symtab_la_SOURCES  = $(MYSOURCES)  $(INLINE_SRCS)
+libHPCbanal_symtab_la_CFLAGS   = $(MYCFLAGS)   $(INLINE_FLGS)
+libHPCbanal_symtab_la_CXXFLAGS = $(MYCXXFLAGS) $(INLINE_FLGS)
+libHPCbanal_symtab_la_AR       = $(MYAR)
+libHPCbanal_symtab_la_LIBADD   = $(MYLIBADD)
+endif
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 

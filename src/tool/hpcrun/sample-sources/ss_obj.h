@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -61,7 +61,9 @@
 #undef ss_str
 #undef reg_fn_name
 
-#define obj_name() _make_id( (_,ss_name,_obj))
+#include "ss-obj-name.h"
+
+#define obj_name() SS_OBJ_NAME(ss_name)
 #define ss_str  _st1(ss_name) 
 #define reg_fn_name _make_id((,ss_name,_obj_reg))
 
@@ -93,10 +95,10 @@ sample_source_t obj_name() = {
     .evl_spec = {[0] = '\0'},
     .nevents = 0
   },
-  .evset_idx = -1,
+  .sel_idx   = -1,
   .name = ss_str,
   .cls  = ss_cls,
-  .state = UNINIT
+  .state = UNINIT,
 };
 
 

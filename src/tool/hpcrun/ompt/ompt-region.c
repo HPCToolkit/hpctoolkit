@@ -160,7 +160,7 @@ gather_context(uint64_t region_id)
 // only master and sub-master thread execute start_team_fn and end_team_fn
 //
 void start_team_fn(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame,
-		   ompt_parallel_id_t region_id, void *parallel_fn)
+		   ompt_parallel_id_t region_id, uint32_t requested_team_size, void *parallel_fn)
 {
   cct_node_t *callpath = NULL;
   hpcrun_safe_enter();
@@ -216,7 +216,39 @@ void start_team_fn(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_fram
   hpcrun_safe_exit();
 }
 
+void end_team_fn( ompt_parallel_id_t parallel_id,    /* id of parallel region       */
+  		  ompt_task_id_t task_id             /* id of task                  */ )
+{
+  hpcrun_safe_enter();
+  TMSG(DEFER_CTXT, "team end   id=0x%lx task_id=%x ompt_get_parallel_id(0)=0x%lx", parallel_id, task_id, 
+       hpcrun_ompt_get_parallel_id(0));
+  ompt_region_map_entry_t *record = ompt_region_map_lookup(parallel_id);
+  if (record) {
+    if (ompt_region_map_entry_refcnt_get(record) > 0) {
+      // associate calling context with region if it is not already present
+      if (ompt_region_map_entry_callpath_get(record) == NULL) {
+	ompt_region_map_entry_callpath_set(record, gather_context(parallel_id));
+      }
+    } else {
+      ompt_region_map_refcnt_update(parallel_id, 0L);
+    }
+  } else {
+    assert(0);
+  }
+  // FIXME: not using team_master but use another routine to 
+  // resolve team_master's tbd. Only with tasking, a team_master
+  // need to resolve itself
+  if (ENABLED(OMPT_TASK_FULL_CTXT)) {
+    TD_GET(team_master) = 1;
+    thread_data_t* td = hpcrun_get_thread_data();
+    resolve_cntxt_fini(td);
+    TD_GET(team_master) = 0;
+  }
+  hpcrun_safe_exit();
+ 
+}
 
+#if 0
 void end_team_fn(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame,
                  ompt_parallel_id_t region_id, void *parallel_fn)
 {
@@ -247,7 +279,7 @@ void end_team_fn(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame,
   }
   hpcrun_safe_exit();
 }
-
+#endif
 
 int 
 need_defer_cntxt()

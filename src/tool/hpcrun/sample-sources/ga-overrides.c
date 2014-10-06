@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -257,7 +257,8 @@ extern global_array_t *GA;
 
 #define doSample(g_a, do1, do2, do3, do4)				\
 {									\
-  if (hpcrun_safe_enter()) {						\
+  bool safe = false;                                                    \
+  if ((safe = hpcrun_safe_enter())) {					\
     ucontext_t uc;							\
     getcontext(&uc);							\
 									\
@@ -286,7 +287,7 @@ extern global_array_t *GA;
     do3;								\
     do4;								\
     									\
-    hpcrun_safe_exit();							\
+    if (safe) hpcrun_safe_exit();					\
   }									\
 }
 

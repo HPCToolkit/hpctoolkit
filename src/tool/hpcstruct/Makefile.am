@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2013, Rice University
+## Copyright ((c)) 2002-2014, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -70,7 +70,11 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-XED2_LIB = @XED2_LIB@
+LIBDWARF_LIB = @LIBDWARF_LIB@
+LIBELF_LIB   = @LIBELF_LIB@
+SYMTABAPI_LIB = @SYMTABAPI_LIB@
+SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
+XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 
 MYSOURCES = \
 	main.cpp \
@@ -80,14 +84,13 @@ MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @OA_IFLAGS@
 
 MYLDFLAGS = \
-	@HPC_LT_LDFLAGS@ \
 	@HOST_CXXFLAGS@ \
 	@GNUBINUTILS_LDFLAGS@
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Analysis) \
-	$(HPCLIB_Banal) \
+	$(MY_LIB_Banal) \
 	$(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) \
@@ -95,12 +98,23 @@ MYLDADD = \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
+	$(MY_LIB_Symtab) \
 	@OA_LDFLAGS@ \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@
 
+if OPT_ENABLE_BANAL_WITH_SYMTAB
+MY_LIB_Banal = $(HPCLIB_Banal_Symtab)
+MY_LIB_Symtab = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+	-L$(LIBDWARF_LIB) -ldwarf \
+	-L$(LIBELF_LIB) -lelf
+else
+MY_LIB_Banal = $(HPCLIB_Banal)
+MY_LIB_Symtab =
+endif
+
 if HOST_CPU_X86_FAMILY
-MY_LIB_XED = $(XED2_LIB)/libxed.a
+MY_LIB_XED = $(XED2_LIB_FLAGS)
 else
 MY_LIB_XED =
 endif
@@ -111,15 +125,26 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-bin_PROGRAMS = hpcstruct
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
 
-hpcstruct_SOURCES  = $(MYSOURCES)
-hpcstruct_CFLAGS   = $(MYCFLAGS)
-hpcstruct_CXXFLAGS = $(MYCXXFLAGS)
-hpcstruct_LDFLAGS  = $(MYLDFLAGS)
-hpcstruct_LDADD    = $(MYLDADD)
+bin_SCRIPTS = hpcstruct
+pkglibexec_PROGRAMS = hpcstruct-bin
+
+hpcstruct_bin_SOURCES  = $(MYSOURCES)
+hpcstruct_bin_CFLAGS   = $(MYCFLAGS)
+hpcstruct_bin_CXXFLAGS = $(MYCXXFLAGS)
+hpcstruct_bin_LDFLAGS  = $(MYLDFLAGS)
+hpcstruct_bin_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
+
+if ! OPT_HPCSTRUCT_LAUNCH_SCRIPT
+install-exec-hook:
+	rm -f $(DESTDIR)$(bindir)/hpcstruct$(EXEEXT)
+	mv -f $(DESTDIR)$(pkglibexecdir)/hpcstruct-bin$(EXEEXT) \
+	      $(DESTDIR)$(bindir)/hpcstruct$(EXEEXT)
+endif
 
 #############################################################################
 # Common rules

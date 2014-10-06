@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/sample-sources/memleak.c $
-// $Id: memleak.c 3328 2010-12-23 23:39:09Z tallent $
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -113,7 +113,7 @@ METHOD_FN(start)
 {
   TMSG(MPI,"starting MPI");
 
-  TD_GET(ss_state)[self->evset_idx] = START;
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 static void
@@ -126,7 +126,7 @@ static void
 METHOD_FN(stop)
 {
   TMSG(MPI,"stopping MPI");
-  TD_GET(ss_state)[self->evset_idx] = STOP;
+  TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 
@@ -145,7 +145,7 @@ METHOD_FN(supports_event,const char *ev_str)
 }
  
 
-// MEMLEAK creates two metrics: bytes allocated and Bytes Freed.
+// MPI_MSG creates one metrics: bytes sent/received in bytes
 
 static void
 METHOD_FN(process_event_list,int lush_metrics)
@@ -220,7 +220,7 @@ void
 hpcrun_mpi_inc(cct_node_t* node, int incr)
 {
   if (node != NULL) {
-    TMSG(MEMLEAK, "\tmpi (cct node %p): metric[%d] += %d",
+    TMSG(MPI, "\tmpi (cct node %p): metric[%d] += %d",
 	 node, hpmpi_metric_id, incr);
     cct_metric_data_increment(hpmpi_metric_id,
 			       node,

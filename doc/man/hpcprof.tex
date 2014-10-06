@@ -97,8 +97,8 @@ Set the database's name (title) to \Arg{name}.
 
 \item[\OptArg{-I}{dir}, \OptArg{--include}{dir}]
 Use \Arg{dir} as a search directory to find source files.
-For a recursive search, append a '*' after the last slash, e.g., \verb+'/mypath/*'+ (quote or escape to protect from the shell).
-May pass multiple times.
+For a recursive search, append a '+' after the last slash, e.g., \texttt{/mypath/+}.
+May pass -I multiple times.
 
 Note: With multiple search-directory arguments, it may be the case that file \Arg{f} exists within more than one search directory.
 In this case, the ambiguity is resolved in favor of the search directory that appears first on the command line.
@@ -172,7 +172,7 @@ Version: \Version\ of \Date.
 \section{License and Copyright}
 
 \begin{description}
-\item[Copyright] \copyright\ 2002-2013, Rice University.
+\item[Copyright] \copyright\ 2002-2014, Rice University.
 \item[License] See \File{README.License}.
 \end{description}
 
