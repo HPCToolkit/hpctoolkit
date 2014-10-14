@@ -1,0 +1,91 @@
+$Id$
+
+=============================================================================
+==
+== README
+==
+== Location: ${HPCTOOLKIT}/src/hpctoolkit/hpcview
+==
+=============================================================================
+
+This is the README for hpcview.
+
+** It only covers group support ** 
+
+=============================================================================
+
+Group support.
+--------------------
+
+The Group scope is a generic scope 'container' that is designed to
+flexibly specify and name partitions of the program structure scope
+tree.  The containers also serve as handles that will be annotated
+with aggregate performance information by hpcview and displayed by
+hpcviewer.  Groups can be nested, representing a collection of one or
+more partitions.  Groups whose performance data sums to zero are
+pruned from the tree and not displayed by hpcviewer.
+
+Groups are specified in a 'group file' which is exactly the same
+format as a program structure file (i.e. the file type returned by
+bloop).  Just as multiple structure files can be passed to
+hpcquick/hpcview -- e.g. one per load module -- so too multiple group
+files.  Because the group and structure files are the same format, it
+is possible to include all structure and group information in one
+group file.  (Note that this cannot be reversed since groups in
+structure files will be handled differently.)  An easy way to create a
+group file is to annotate bloop output with appropriate groups.
+
+   Please see the tests below for examples of how group support works.
+
+Caveats:
+--------------------
+ 
+It is possible to place all the children of a load module (LM), file
+(F) or procedure (P) within a partition in one fell swoop (see tests
+2a-2c):
+   <G n="Grp">
+     <LM n="simple"/>  <!-- everything within LM will be in 'Grp' -->
+   </G>
+Because we do not have a specific naming scheme for loops (in contrast
+to load modules, files, procedures and groups), it is not possible to
+do this for loop nests.  Thus a group file of the form (see test 2e):
+   <G n="Grp1">
+     <L b="27" e="34"/>  <!-- will not work as expected! -->
+   </G>
+will have not place the loop nest under L in a separate partition.  In
+fact, it will be pruned from the hpcview scope tree because no metric
+data will reach it.  It is possible to use loop nests within group
+files as long as they explicitly specify all enclosed statements
+(S) (see test 1a-1b).
+
+Our structure/group file parser and scope tree engine make some
+simplifying assumptions which means that hpcview will not actually
+accept every possible valid group file (as defined by the DTD).
+(Rationale: hpcview was originally designed to consume bloop input,
+which never violated these assumptions.)  The important constraint is
+that statements (S) must live within a fully specified namespace of
+load module (LM), file (F) and procedure (P).  In other words, while
+this is valid (see test 2f):
+  <LM n=...>
+    <F n=...>
+       <P n=...>
+          <S ...>  <!-- ok -->
+          ....
+this is not:
+  <LM n=...>
+    <P n=...>
+       <S ...>     <!-- error, missing File -->
+        ....
+Within this framework, Gs (groups), Ls (loops) and Ss (statements) can
+be arbitrarily located.  (But note the next point!)
+
+Another exception is that in order to make groups flexible it is
+possible to write syntactically correct group files that are
+semantically incorrect.  For example, don't construct:
+  <G n=g1> 
+    <LM n=...> 
+       <F n=...> 
+         <G n=g2> 
+            <LM n=...> <!-- bogus! -->
+
+

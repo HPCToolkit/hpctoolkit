@@ -1,0 +1,59 @@
+#!/bin/sh
+# set -x
+#
+@copyright_hash@
+#
+# $Id$
+#
+# Launch script for hpcstruct.
+#
+#------------------------------------------------------------
+# Values from configure
+#------------------------------------------------------------
+
+# If this script can't find its own install prefix, or if it's
+# moved elsewhere, then set HPCTOOLKIT here.
+# HPCTOOLKIT='@prefix@'
+
+VERSION='@PACKAGE_VERSION@'
+
+# Relative paths are relative to HPCTOOLKIT.
+ext_libs_dir='@hpc_ext_libs_dir@'
+libexec_dir='libexec/hpctoolkit'
+
+# Should be absolute path.
+libcxx_path='@HPCRUN_LIBCXX_PATH@'
+
+prog_name=hpcstruct
+binary_name=hpcstruct-bin
+
+#------------------------------------------------------------
+# Find path to this script
+#------------------------------------------------------------
+
+hpc_path_to_root=..
+@export_hpctoolkit@
+
+#------------------------------------------------------------
+# Set environment and exec
+#------------------------------------------------------------
+
+case "$1" in
+    -V | -version | --version )
+	echo "${prog_name}: A member of HPCToolkit, version $VERSION"
+	exit 0
+	;;
+esac
+
+# Relative paths are relative to HPCTOOLKIT.
+case "$ext_libs_dir" in
+    /* ) ;;
+    * )  ext_libs_dir="${HPCTOOLKIT}/${ext_libs_dir}" ;;
+esac
+case "$libexec_dir" in
+    /* ) ;;
+    * )  libexec_dir="${HPCTOOLKIT}/${libexec_dir}" ;;
+esac
+
+export LD_LIBRARY_PATH="${ext_libs_dir}:${libcxx_path}:${LD_LIBRARY_PATH}"
+exec "${libexec_dir}/${binary_name}" "$@"
