@@ -6,9 +6,9 @@
 #
 
 PKG_NAME=symtabAPI
-src=dyninst
+src=dyninst-8.2
 
-subdirs='elf dwarf common symtabAPI'
+subdirs='common elf dwarf symtabAPI'
 
 . ../build-utils/configure.inc
 pre_build

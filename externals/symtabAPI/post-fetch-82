@@ -6,7 +6,7 @@
 #
 
 PKG_NAME=symtabAPI
-src=dyninst
+src=dyninst-8.2
 
 . ../build-utils/configure.inc
 

@@ -16,8 +16,8 @@ ifeq ($(USE_SYMTAB_82),yes)
 
 # New symtabAPI 8.2 with inline support.
 
-FETCH_TARFILE = dyninst-pre8.2.tar.gz
-SRC_DIR = dyninst
+FETCH_TARFILE = dyninst-8.2.tar.gz
+SRC_DIR = dyninst-8.2
 PATCH_DIR = patches-82
 POST_FETCH_CMD = ./post-fetch-82
 CONFIG_CMD = ./configure-82

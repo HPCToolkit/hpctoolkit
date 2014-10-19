@@ -1,4 +1,4 @@
-Force symtab to skip the check for boost and always use the one
+(1) Force symtab to skip the check for boost and always use the one
 supplied with PATH_BOOST.
 
 On systems with boost installed in /usr/include (eg, babbage at
@@ -6,22 +6,49 @@ NERSC), cmake config was using boost from /usr/include instead of
 our version and thus omitting the -I path.  This would break a cross
 compile because it doesn't use /usr/include by default.
 
+I (krentel) think the babbage problem could be overcome by a full
+cross compile with CMAKE_FIND_ROOT_PATH, etc, but this is simpler and
+more robust.
 
-diff -Naurb dyninst.orig/cmake/packages.cmake dyninst/cmake/packages.cmake
---- dyninst.orig/cmake/packages.cmake	2014-03-12 23:20:10.000000000 +0000
-+++ dyninst/cmake/packages.cmake	2014-07-21 20:41:59.953020000 +0000
-@@ -100,13 +100,10 @@
-   "1.50" "1.50.0" "1.51" "1.51.0" "1.52" "1.52.0"
-   "1.53" "1.53.0" "1.54" "1.54.0")
+(2) Disable find_package for ThreadDB.  SymtabAPI doesn't use it and
+without a full cross compile, cmake finds the wrong libthread_db.so.
+This way, the test can't fail and break config.
+
+
+diff -Naurb dyninst-8.2.orig/cmake/packages.cmake dyninst-8.2/cmake/packages.cmake
+--- dyninst-8.2.orig/cmake/packages.cmake	2014-08-19 14:59:44.000000000 -0500
++++ dyninst-8.2/cmake/packages.cmake	2014-10-16 14:20:06.647548192 -0500
+@@ -79,7 +79,6 @@
+       PROPERTY IMPORTED_LOCATION ${IBERTY_LIBRARY})
+   endif()
  
+-  find_package (ThreadDB)
+   include_directories (
+     ${LIBELF_INCLUDE_DIR}
+     ${LIBDWARF_INCLUDE_DIR}
+@@ -105,7 +104,6 @@
+   "1.53" "1.53.0" "1.54" "1.54.0" "1.55" "1.55.0" "1.56" "1.56.0")
+ 
+ set (Boost_DEBUG ON)
 -set (PATH_BOOST "/usr" CACHE STRING "Path to boost")
--if (NOT (PATH_BOOST STREQUAL ""))
--  set (CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${PATH_BOOST}/lib ${PATH_BOOST}/lib64)
--  set (CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} ${PATH_BOOST}/include)
--endif()
-+# Force symtab to always use our version of Boost from PATH_BOOST.
  
--find_package (Boost REQUIRED)
+ set(Boost_USE_MULTITHREADED ON)
+ set(Boost_USE_STATIC_RUNTIME OFF)
+@@ -115,7 +113,6 @@
+   set(Boost_NO_BOOST_CMAKE ON)
+ endif()
+ if (NOT ("${PATH_BOOST}" STREQUAL ""))
+-  set (CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${PATH_BOOST}/lib ${PATH_BOOST}/lib64)
+   set (CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} ${PATH_BOOST}/include)
+ endif()
+ 
+@@ -130,9 +127,8 @@
+   set(Boost_NO_SYSTEM_PATHS ON)
+ endif()
+ 
+-find_package (Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS thread system)
+-
+-link_directories ( ${Boost_LIBRARY_DIRS} )
 +message ("-- Using Boost: ${PATH_BOOST}/include")
 +set (Boost_INCLUDE_DIRS ${PATH_BOOST}/include)
  

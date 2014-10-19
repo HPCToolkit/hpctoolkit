@@ -5,39 +5,64 @@ SymtabAPI Build Notes
 Home: http://www.paradyn.org/
       http://www.dyninst.org/
 
-Download: ftp://ftp.cs.wisc.edu/paradyn/releases/
+Download: www.dyninst.org/downloads
+
+Git: git clone http://git.dyninst.org/dyninst.git
 
 License: LGPL
 
-Prereqs: boost libdwarf libelf (libxml2 libunwind)
+Prereqs: boost libelf libdwarf binutils (for libiberty)
 
-Now uses autoconf but not automake.
-Does not support vpath build or parallel make.
+Dyninst and symtab now build with cmake.  They prefer version 2.8, but
+2.6.4 should be ok.  See the configure-82 script for details on how we
+run cmake.  Supports vpath and parallel make.
 
 export PLATFORM=platform
-cd SymtabAPI-8.0
+cmake ../dyninst  \
+    -DCMAKE_INSTALL_PREFIX=/path/to/prefix  \
+    -DCMAKE_BUILD_TYPE=Release  \
+    -DCROSS_COMPILING=1  \
+    -DCMAKE_C_COMPILER=CC  \
+    -DCMAKE_CXX_COMPILER=CXX  \
 
-./configure CC=CC CFLAGS=flags CXX=CXX CXXFLAGS=flags  \
-    --prefix=prefix  \
-    --bindir=bindir  \
-    --includedir=includedir  \
-    --libdir=libdir  \
-    --with-libelf-incdir=incdir  \
-    --with-libelf-libdir=libdir  \
-    --with-default-component=SymtabAPI  \
-    --disable-testsuite  \
-    ...
-make
-make install
+    -DPATH_BOOST=/path/to/boost/prefix  \
+    -DIBERTY_LIBRARY=/path/to/libiberty.a  \
+    -DLIBELF_INCLUDE_DIR=/path/to/libelf/include  \
+    -DLIBELF_LIBRARIES=/path/to/libelf.so  \
+    -DLIBDWARF_INCLUDE_DIR=/path/to/libdwarf/include  \
+    -DLIBDWARF_LIBRARIES=/path/to/libdwarf.so
 
-Beginning with symtabAPI 8.0, the boost headers are separate and no
-longer in the symtab source tree.  For now, they only use boost
-headers, no libs.
+for subdirs in common elf dwarf symtabAPI
+do
+    make -j 4
+    make install
+done
 
-Symtab configure uses CC, CXX and flags for config tests, but doesn't
-fully pass them to make, so we force them into make.config.local.
+Notes:
 
-Some compilers don't support tr1/unordered_map (old module at05 on
-biou).  In that case, disable unordered_map in dyntypes.h via a
-conditional patch.
+(1) Dyninst requires GNU gcc/g++ version 4.4 or later.  So, build
+externals and toolkit with the same gcc/g++ 4.4 or later.
+
+(2) Dyninst uses C++11 features (auto), but we let dyninst choose the
+-std=c++0x flag itself.
+
+(3) Specify CC and CXX with absolute path.  If these are only 'gcc',
+then cmake takes /usr/bin/gcc over gcc earlier in PATH. (wtf!?)
+
+(4) IBERTY_LIBRARY, LIBELF_LIBRARIES and LIBDWARF_LIBRARIES are the
+actual libraries (.a and .so files), not the lib directory containing
+them.
+
+(5) Dyninst doesn't allow options on CC or CXX compilers.  So, instead
+of 'g++ -m32', we need to move -m32 to FLAGS. (yuck)
+
+(6) Dyninst overrides CMAKE_C/CXX_FLAGS, so we write these into
+optimization.cmake instead.
+
+(7) The tar file is the full dyninst, but we only build common, elf,
+dwarf and symtabAPI.
+
+(8) Dyninst is not fully set up for a true cross compile.  We use
+CROSS_COMPILING=1 to disable runtime config tests (harmless for non
+cross compiles), but we skip the full CMAKE_FIND_ROOT_PATH, etc.
 

@@ -1,0 +1,27 @@
+Disable configure for dyninstAPI_RT.
+We don't use it.
+
+
+diff -Naurb dyninst-8.2.orig/CMakeLists.txt dyninst-8.2/CMakeLists.txt
+--- dyninst-8.2.orig/CMakeLists.txt	2014-08-19 14:59:44.000000000 -0500
++++ dyninst-8.2/CMakeLists.txt	2014-10-16 14:31:30.757513398 -0500
+@@ -83,7 +83,10 @@
+   set (RT_C_COMPILER ${CMAKE_C_COMPILER} CACHE STRING "Compiler for runtime library")
+ endif()
+ set (NEED_NATIVE_ASSEMBLER NO CACHE STRING "Does the compiler break on assembly files? (Unlikely)")
+-message(STATUS "Configuring RT library")
++
++message(STATUS "Skipping RT library")
++
++if(FALSE)
+ 
+ execute_process(WORKING_DIRECTORY ${RT_BINARY_DIR}
+   COMMAND ${CMAKE_COMMAND}
+@@ -107,6 +110,7 @@
+   WORKING_DIRECTORY ${RT_BINARY_DIR}
+   COMMENT "Building DyninstRT")
+ 
++endif()
+ 
+ 
+ if(UNIX)
