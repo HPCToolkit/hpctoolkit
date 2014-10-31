@@ -87,7 +87,7 @@ static void
 __attribute__ ((constructor))
 register_unwind_interval_fixup_function(void)
 {
-  add_x86_unwind_interval_fixup_function(intel14_fork_call_signature);
+  add_x86_unwind_interval_fixup_function(adjust_intel14_fork_call_intervals);
 }
 
 
