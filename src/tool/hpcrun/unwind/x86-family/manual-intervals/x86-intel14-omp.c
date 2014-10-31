@@ -62,7 +62,7 @@ static char intel14_fork_call_signature[] = {
 static int 
 adjust_intel14_fork_call_intervals(char *ins, int len, interval_status *stat)
 {
-  int siglen = sizeof(intel11_f90main_signature);
+  int siglen = sizeof(intel14_fork_call_signature);
 
   if (len > siglen && strncmp((char *)intel14_fork_call_signature, ins, siglen) == 0) {
     // signature matched 
@@ -87,7 +87,7 @@ static void
 __attribute__ ((constructor))
 register_unwind_interval_fixup_function(void)
 {
-  add_x86_unwind_interval_fixup_function(adjust_intel11_f90main_intervals);
+  add_x86_unwind_interval_fixup_function(intel14_fork_call_signature);
 }
 
 
