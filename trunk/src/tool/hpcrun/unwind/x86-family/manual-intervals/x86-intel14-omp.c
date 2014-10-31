@@ -68,13 +68,25 @@ adjust_intel14_fork_call_intervals(char *ins, int len, interval_status *stat)
     // signature matched 
     unwind_interval *ui = (unwind_interval *) stat->first;
 
-    // this won't fix all of the intervals, but it will fix the one we care about.
-    while(ui) {
-      if (ui->ra_status == RA_STD_FRAME){
-	ui->bp_ra_pos = 8;
-	ui->bp_bp_pos = 0;
+    // this won't fix all of the intervals, but it will fix the ones 
+    // that we care about.
+    //
+    // The method is as follows:
+    // Ignore (do not correct) intervals before 1st std frame
+    // For 1st STD_FRAME, compute the corrections for this interval and subsequent intervals
+    // For this interval and subsequent interval, apply the corrected offsets
+    //
+
+    for(; ui->ra_status != RA_STD_FRAME; ui = (unwind_interval *)(ui->common).next);
+
+    // this is only correct for 64-bit code
+    for(; ui; ui = (unwind_interval *)(ui->common).next) {
+      if (ui->ra_status == RA_SP_RELATIVE) continue;
+      if ((ui->ra_status == RA_STD_FRAME) || (ui->ra_status == RA_BP_FRAME)) {  
+         ui->ra_status = RA_BP_FRAME;
+         ui->bp_ra_pos = 8;
+         ui->bp_bp_pos = 0;
       }
-      ui = (unwind_interval *)(ui->common).next;
     }
 
     return 1;
