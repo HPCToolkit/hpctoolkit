@@ -55,6 +55,10 @@ namespace Plot {
 int allocBuffers(Prof::CallPath::Profile & prof,
 		 int myRank, int numRanks, int rootRank);
 
+void addPlotPoints(Prof::CallPath::Profile & prof, uint metBeg, uint metEnd);
+
+int sharePlotPoints(int myRank, int numRanks, int rootRank);
+
 }
 
 #endif

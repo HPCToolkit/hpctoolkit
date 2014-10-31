@@ -76,10 +76,15 @@ struct plot_pt_s {
 
 typedef struct plot_pt_s plot_pt;
 
-// global data
+// Plot graph global data
 
-static plot_pt * send_buf = NULL;
-static plot_pt * recv_buf = NULL;
+static plot_pt * plot_send_buf = NULL;
+static plot_pt * plot_recv_buf = NULL;
+
+static uint * plot_index = NULL;
+static uint * start_id = NULL;
+static ulong group_size = 0;
+
 
 static void
 dumpCCTsizes(ulong *cct_sum, ulong *cct_prefix, uint *rank_start, uint maxid);
@@ -148,7 +153,8 @@ split(uint cctlo, uint ccthi, int ranklo, int rankhi,
 // not bytes.
 //
 static ulong
-partition_cctids(ulong *cct_global, uint maxid, int numRanks)
+partition_cctids(ulong *cct_global, uint *start_id,
+		 uint maxid, int numRanks)
 {
   size_t num_elts = maxid + 1;
   int rank, group;
@@ -156,9 +162,8 @@ partition_cctids(ulong *cct_global, uint maxid, int numRanks)
 
   ulong * cct_sum = (ulong *) malloc(num_elts * sizeof(ulong));
   ulong * cct_prefix = (ulong *) malloc(num_elts * sizeof(ulong));
-  uint * rank_start = (uint *) malloc((numRanks + 1) * sizeof(uint));
 
-  DIAG_Assert(cct_sum != NULL && cct_prefix != NULL && rank_start != NULL,
+  DIAG_Assert(cct_sum != NULL && cct_prefix != NULL,
 	      "out of memory in Plot::initArrays");
 
   // cct_sum[] is the number of plot points per CCT node summed over
@@ -179,29 +184,29 @@ partition_cctids(ulong *cct_global, uint maxid, int numRanks)
   }
 
   // partition the cct nodes into approx equal-sized groups
-  split(1, maxid, 0, numRanks - 1, cct_prefix, rank_start);
-  rank_start[numRanks] = maxid + 1;
+  split(1, maxid, 0, numRanks - 1, cct_prefix, start_id);
+  start_id[numRanks] = maxid + 1;
 
   // find max size of one group
   ulong group_size = 0;
   for (rank = 0; rank < numRanks; rank++) {
     for (group = 0; group < numRanks; group++) {
       ulong size = 0;
-      for (id = rank_start[group]; id < rank_start[group + 1]; id++) {
+      for (id = start_id[group]; id < start_id[group + 1]; id++) {
 	size += cct_global[rank * num_elts + id];
       }
       group_size = std::max(group_size, size);
     }
   }
+  group_size += 2;  // space for sentinel
 
   if (0) {
-    dumpCCTsizes(cct_sum, cct_prefix, rank_start, maxid);
-    dumpGroupSizes(cct_global, rank_start, maxid, numRanks);
+    dumpCCTsizes(cct_sum, cct_prefix, start_id, maxid);
+    dumpGroupSizes(cct_global, start_id, maxid, numRanks);
   }
 
   free(cct_sum);
   free(cct_prefix);
-  free(rank_start);
 
   return group_size;
 }
@@ -216,18 +221,22 @@ allocBuffers(Prof::CallPath::Profile & prof,
 {
   Prof::CCT::Tree * cct = prof.cct();
   uint maxid = cct->maxDenseId();
-  uint id;  int ret, rank;
+  uint id;  int ret, ret2, rank;
 
   ulong size_local = (maxid + 1) * sizeof(ulong);
   ulong size_global = numRanks * size_local;
   ulong * cct_local = (ulong *) malloc(size_local);
   ulong * cct_global = NULL;
 
-  DIAG_Assert(cct_local != NULL, "out of memory in Plot::initArrays");
+  plot_index = (uint *) malloc(numRanks * sizeof(uint));
+  start_id = (uint *) malloc((numRanks + 1) * sizeof(uint));
+
+  DIAG_Assert(cct_local != NULL && plot_index != NULL && start_id != NULL,
+	      "out of memory in Plot::allocBuffers");
 
   if (myRank == rootRank) {
     cct_global = (ulong *) malloc(size_global);
-    DIAG_Assert(cct_global != NULL, "out of memory in Plot::initArrays");
+    DIAG_Assert(cct_global != NULL, "out of memory in Plot::allocBuffers");
   }
 
   // rank 0 gathers the local plot counts and divides the CCT nodes
@@ -242,20 +251,23 @@ allocBuffers(Prof::CallPath::Profile & prof,
 		   (void *) cct_global, maxid + 1, MPI_LONG,
 		   rootRank, MPI_COMM_WORLD);
 
-  DIAG_Assert(ret == 0, "MPI_Gather for Plot::initArrays failed");
+  DIAG_Assert(ret == 0, "MPI_Gather for Plot::allocBuffers failed");
 
   // rank 0 partitions the cct ids, computes the max group size and
   // broadcasts the result.
   //
-  ulong group_size = 0;
-
   if (myRank == rootRank) {
-    group_size = partition_cctids(cct_global, maxid, numRanks);
+    group_size = partition_cctids(cct_global, start_id, maxid, numRanks);
   }
+  ret = MPI_Bcast(start_id, numRanks + 1, MPI_INT, rootRank, MPI_COMM_WORLD);
+  ret2 = MPI_Bcast(&group_size, 1, MPI_LONG, rootRank, MPI_COMM_WORLD);
 
-  ret = MPI_Bcast(&group_size, 1, MPI_LONG, rootRank, MPI_COMM_WORLD);
+  DIAG_Assert(ret == 0 && ret2 == 0,
+	      "MPI_Bcast for Plot::allocBuffers failed");
 
-  DIAG_Assert(ret == 0, "MPI_Bcast for Plot::initArrays failed");
+  for (rank = 0; rank < numRanks; rank++) {
+    plot_index[rank] = rank * group_size;
+  }
 
   // every rank tries to malloc the send/recv buffers.  rank 0 gathers
   // the success of each rank and broadcasts the result.
@@ -265,19 +277,19 @@ allocBuffers(Prof::CallPath::Profile & prof,
 
   if (myRank == rootRank) {
     success_gbl = (int *) malloc(numRanks * sizeof(int));
-    DIAG_Assert(success_gbl != NULL, "out of memory in Plot::initArrays");
+    DIAG_Assert(success_gbl != NULL, "out of memory in Plot::allocBuffers");
   }
 
-  send_buf = (plot_pt *) malloc(group_size * numRanks * sizeof(plot_pt));
-  recv_buf = (plot_pt *) malloc(group_size * numRanks * sizeof(plot_pt));
+  plot_send_buf = (plot_pt *) malloc(group_size * numRanks * sizeof(plot_pt));
+  plot_recv_buf = (plot_pt *) malloc(group_size * numRanks * sizeof(plot_pt));
 
-  my_success = (send_buf != NULL) && (recv_buf != NULL);
+  my_success = (plot_send_buf != NULL) && (plot_recv_buf != NULL);
 
   ret = MPI_Gather((void *) &my_success, 1, MPI_INT,
 		   (void *) success_gbl, 1, MPI_INT,
 		   rootRank, MPI_COMM_WORLD);
 
-  DIAG_Assert(ret == 0, "MPI_Gather for Plot::initArrays failed");
+  DIAG_Assert(ret == 0, "MPI_Gather for Plot::allocBuffers failed");
 
   if (myRank == rootRank) {
     success = 1;
@@ -288,7 +300,7 @@ allocBuffers(Prof::CallPath::Profile & prof,
 
   ret = MPI_Bcast(&success, 1, MPI_INT, rootRank, MPI_COMM_WORLD);
 
-  DIAG_Assert(ret == 0, "MPI_Bcast for Plot::initArrays failed");
+  DIAG_Assert(ret == 0, "MPI_Bcast for Plot::allocBuffers failed");
 
   if (myRank == rootRank) {
     double bufsize = (group_size * numRanks * sizeof(plot_pt))/((double) MEG);
@@ -299,6 +311,68 @@ allocBuffers(Prof::CallPath::Profile & prof,
   }
 
   return 0;
+}
+
+// FIXME: compute tid
+
+void
+addPlotPoints(Prof::CallPath::Profile & prof, uint begMet, uint endMet)
+{
+  Prof::CCT::Tree * cct = prof.cct();
+  uint maxid = cct->maxDenseId();
+  long group = 0;
+
+  for (uint id = 1; id <= maxid; id++) {
+    Prof::CCT::ANode * node = cct->findNode(id);
+
+    for (uint metid = begMet; metid < endMet; metid++) {
+      if (metid < node->numMetrics() && node->metric(metid) != 0.0) {
+	while (id >= start_id[group + 1]) {
+	  group++;
+	}
+	uint pos = plot_index[group];
+
+	plot_send_buf[pos].cctid = id;
+	plot_send_buf[pos].metid = metid;
+	plot_send_buf[pos].tid = 0;
+	plot_send_buf[pos].val = node->metric(metid);
+	plot_index[group]++;
+      }
+    }
+  }
+}
+
+int
+sharePlotPoints(int myRank, int numRanks, int rootRank)
+{
+  int ret, group;
+
+  // add sentinels and check for overflow.
+  int success = 1;
+  for (group = 0; group < numRanks; group++) {
+    uint pos = plot_index[group];
+
+    if (pos < group_size * (group + 1)) {
+      plot_send_buf[pos].cctid = 0;
+      plot_send_buf[pos].metid = 0;
+      plot_send_buf[pos].tid = 0;
+      plot_send_buf[pos].val = 0;
+    }
+    else {
+      success = 0;
+    }
+  }
+
+  DIAG_Assert(success, "incorrect count of plot points in Plot::sharePlotPoints");
+
+  int size = group_size * sizeof(plot_pt);
+
+  ret = MPI_Alltoall(plot_send_buf, size, MPI_BYTE,
+		     plot_recv_buf, size, MPI_BYTE, MPI_COMM_WORLD);
+
+  DIAG_Assert(ret == 0, "MPI_Alltoall failed in Plot::sharePlotPoints");
+
+  return ret;
 }
 
 }  // namespace Plot

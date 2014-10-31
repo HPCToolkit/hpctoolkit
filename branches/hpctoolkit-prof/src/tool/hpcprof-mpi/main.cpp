@@ -430,6 +430,14 @@ realmain(int argc, char* const* argv)
   makeThreadMetrics(*profGbl, args, nArgs, groupIdToGroupSizeMap,
 		    traceLcl, myRank, numRanks, rootRank);
 
+  if (Prof::Database::newDBFormat()) {
+    int ret = Plot::sharePlotPoints(myRank, numRanks, rootRank);
+
+    if (myRank == rootRank) {
+      printf("plot graph all-to-all: %s\n", (ret == 0) ? "success" : "failure");
+    }
+  }
+
   // rank 0 writes the index and header
   if (Prof::Database::newDBFormat()) {
     if (myRank == rootRank && numActive > 0) {
@@ -1120,8 +1128,13 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
     // write local sampled metric values into database
     // -------------------------------------------------------
 
-    string dbFnm = makeDBFileName(args.db_dir, groupId, profileFile);
-    writeMetricsDB(profGbl, mBeg, mEnd, dbFnm);
+    if (Prof::Database::newDBFormat()) {
+      Plot::addPlotPoints(profGbl, mBeg, mEnd);
+    }
+    else {
+      string dbFnm = makeDBFileName(args.db_dir, groupId, profileFile);
+      writeMetricsDB(profGbl, mBeg, mEnd, dbFnm);
+    }
 
     // -------------------------------------------------------
     // reinitialize metric values for next time
