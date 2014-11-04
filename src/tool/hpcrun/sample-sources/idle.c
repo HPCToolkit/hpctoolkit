@@ -152,6 +152,7 @@ METHOD_FN(start)
     monitor_real_exit(1);
   }
 
+#if 0
   if (idleness_blame_information_source_present == false) {
     STDERR_MSG("HPCToolkit: IDLE metric specified without a plugin that measures "
         "idleness and work.\n" 
@@ -159,6 +160,7 @@ METHOD_FN(start)
 	"For static binaries, specify an appropriate plugin with an argument to hpclink.\n");
     monitor_real_exit(1);
   }
+#endif
 }
 
 
