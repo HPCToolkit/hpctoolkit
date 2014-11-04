@@ -70,14 +70,27 @@
 #include <utilities/tokenize.h>
 #include <messages/messages.h>
 
+
+
+//*******************************************************************
+// Macros
+//*******************************************************************
+
+#define THREAD_DOINIT           0
+#define THREAD_NOSAMPLING       1
+#define THREAD_SAMPLING         2
+
+
+
 //*******************************************************************
 // Function Defining Macros
 //*******************************************************************
 
-#define _AS0(n) \
+#define _AS0(n,necessary)					     \
 void                                                                 \
 hpcrun_all_sources_ ##n(void)                                        \
 {								     \
+ if (necessary) { if (ignore_this_thread()) return; }                \
   TMSG(SS_ALL, "calling function %s", __func__);                     \
   for(sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \
     TMSG(SS_ALL,"sample source (%s) method call: %s",	             \
@@ -113,6 +126,8 @@ hpcrun_all_sources_ ##n(void)					     \
 // END Function Defining Macros
 //
 
+
+
 //*******************************************************************
 // Local variables
 //*******************************************************************
@@ -120,6 +135,40 @@ hpcrun_all_sources_ ##n(void)					     \
 static sample_source_t* sample_sources = NULL;
 static sample_source_t** ss_insert     = &sample_sources;
 static size_t n_sources = 0;
+
+static __thread int ignore_thread = THREAD_DOINIT;
+
+
+
+//*******************************************************************
+// private functions 
+//*******************************************************************
+
+static int
+ignore_this_thread()
+{
+  if (ignore_thread == THREAD_DOINIT) {
+    ignore_thread = THREAD_SAMPLING;
+
+    char *string = getenv("HPCRUN_IGNORE_THREAD");
+    if (string) {
+
+      // eliminate special cases by adding comma delimiters at front and back 
+      char all_str[1024];
+      sprintf(all_str, ",%s,", string); 
+
+      int myid = monitor_get_thread_num();
+      char myid_str[20];
+      sprintf(myid_str, ",%d,", myid);
+
+      if (strstr(all_str, myid_str)) {
+        ignore_thread = THREAD_NOSAMPLING;
+      }
+    }
+  }
+  return ignore_thread == THREAD_NOSAMPLING;
+}
+
 
 
 //*******************************************************************
@@ -212,12 +261,12 @@ hpcrun_sample_sources_from_eventlist(char* evl)
 // The mapped operations
 
 _AS1(process_event_list, int, lush_metrics)
-_AS0(init)
-_AS0(thread_init)
-_AS0(thread_init_action)
+_AS0(init,0)
+_AS0(thread_init,0)
+_AS0(thread_init_action,0)
 _AS1(gen_event_set, int, lush_metrics)
-_AS0(start)
-_AS0(thread_fini_action)
-_AS0(stop)
-_AS0(shutdown)
+_AS0(start,1)
+_AS0(thread_fini_action,0)
+_AS0(stop,1)
+_AS0(shutdown,0)
 _ASB(started)
