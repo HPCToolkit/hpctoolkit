@@ -69,15 +69,25 @@
 
 #include "sample-sources/blame-shift/blame-shift.h"
 #include "sample-sources/blame-shift/blame-map.h"
+#include "sample-sources/idle.h"
+
+
+/******************************************************************************
+ * macros
+ *****************************************************************************/
+
+#define ompt_event_may_occur(r) \
+  ((r ==  ompt_has_event_may_callback) | (r ==  ompt_has_event_must_callback))
+
+
 
 /******************************************************************************
  * static variables
  *****************************************************************************/
 
-int ompt_elide = 0;
-int ompt_initialized = 0;
-
-static blame_entry_t* pthread_blame_table = NULL;
+static int ompt_elide = 0;
+static int ompt_initialized = 0;
+static blame_entry_t* ompt_blame_table = NULL;
 
 
 //-----------------------------------------
@@ -96,11 +106,11 @@ static inline
 void
 add_blame(uint64_t obj, uint32_t value)
 {
-  if (! pthread_blame_table) {
+  if (!ompt_blame_table) {
     EMSG("Attempted to add pthread blame before initialization");
     return;
   }
-  blame_map_add_blame(pthread_blame_table, obj, value);
+  blame_map_add_blame(ompt_blame_table, obj, value);
 }
 
 
@@ -108,11 +118,11 @@ static inline
 uint64_t
 get_blame(uint64_t obj)
 {
-  if (! pthread_blame_table) {
+  if (!ompt_blame_table) {
     EMSG("Attempted to fetch pthread blame before initialization");
     return 0;
   }
-  return blame_map_get_blame(pthread_blame_table, obj);
+  return blame_map_get_blame(ompt_blame_table, obj);
 }
 
 
@@ -157,6 +167,7 @@ void start_task_fn(ompt_task_id_t parent_task_id,
 }
 
 
+#if 0
 static uint64_t
 ompt_get_blame_target()
 {
@@ -176,18 +187,20 @@ ompt_get_blame_target()
   }
   return 0;
 }
+#endif
 
   
 static void
 ompt_thread_create()
 {
- // idle_metric_thread_start();
+  idle_metric_thread_start();
 }
+
 
 static void
 ompt_thread_exit()
 {
- // idle_metric_thread_end();
+  idle_metric_thread_end();
 }
 
 
@@ -197,11 +210,11 @@ init_threads()
   int retval;
   retval = ompt_set_callback_fn(ompt_event_thread_begin, 
 		    (ompt_callback_t)ompt_thread_create);
-  assert(retval > 0);
+  assert(ompt_event_may_occur(retval));
 
   retval = ompt_set_callback_fn(ompt_event_thread_end, 
 		    (ompt_callback_t)ompt_thread_exit);
-  assert(retval > 0);
+  assert(ompt_event_may_occur(retval));
 }
 
 
@@ -211,11 +224,11 @@ init_parallel_regions()
   int retval;
   retval = ompt_set_callback_fn(ompt_event_parallel_begin, 
 		    (ompt_callback_t)start_team_fn);
-  assert(retval > 0);
+  assert(ompt_event_may_occur(retval));
 
   retval = ompt_set_callback_fn(ompt_event_parallel_end, 
 		    (ompt_callback_t)end_team_fn);
-  assert(retval > 0);
+  assert(ompt_event_may_occur(retval));
 }
 
 
@@ -225,8 +238,9 @@ init_tasks()
   int retval;
   retval = ompt_set_callback_fn(ompt_event_task_begin, 
 		    (ompt_callback_t)start_task_fn);
-  assert(retval > 0);
+  assert(ompt_event_may_occur(retval));
 }
+
 
 #if 0
 //------------------------------------------------------------------------------
@@ -267,6 +281,7 @@ init_blame_shift_directed()
 }
 #endif
   
+
 static void
 ompt_idle_begin()
 {
@@ -280,12 +295,14 @@ ompt_idle_end()
   idle_metric_blame_shift_work();
 }
 
+
 static void 
 ompt_wait_callback(ompt_wait_id_t wait_id)
 {
   uint64_t blame = get_blame((uint64_t) wait_id );
   
 }
+
 
 //------------------------------------------------------------------------------
 // function:
@@ -298,30 +315,34 @@ ompt_wait_callback(ompt_wait_id_t wait_id)
 static void 
 init_blame_shift_directed()
 {
+  int blame_shift_init = 0;
   int retval = 0;
 
-  retval |= ompt_set_callback_fn(ompt_event_release_lock, 
-		    (ompt_wait_callback_t) ompt_wait_callback);
+  retval = ompt_set_callback_fn(ompt_event_release_lock, 
+		    (ompt_callback_t) ompt_wait_callback);
+  blame_shift_init |= ompt_event_may_occur(retval);
 
-  retval |= ompt_set_callback_fn(ompt_event_release_nest_lock_last, 
-		    (ompt_wait_callback_t) ompt_wait_callback);
+  retval = ompt_set_callback_fn(ompt_event_release_nest_lock_last, 
+		    (ompt_callback_t) ompt_wait_callback);
+  blame_shift_init |= ompt_event_may_occur(retval);
 
-  retval |= ompt_set_callback_fn(ompt_event_release_critical, 
-		    (ompt_wait_callback_t) ompt_wait_callback);
+  retval = ompt_set_callback_fn(ompt_event_release_critical, 
+		    (ompt_callback_t) ompt_wait_callback);
+  blame_shift_init |= ompt_event_may_occur(retval);
 
-  retval |= ompt_set_callback_fn(ompt_event_release_atomic, 
-		    (ompt_wait_callback_t) ompt_wait_callback);
+  retval = ompt_set_callback_fn(ompt_event_release_atomic, 
+		    (ompt_callback_t) ompt_wait_callback);
+  blame_shift_init |= ompt_event_may_occur(retval);
 
-  retval |= ompt_set_callback_fn(ompt_event_release_ordered, 
-		    (ompt_wait_callback_t) ompt_wait_callback);
+  retval = ompt_set_callback_fn(ompt_event_release_ordered, 
+		    (ompt_callback_t) ompt_wait_callback);
+  blame_shift_init |= ompt_event_may_occur(retval);
 
-  if (retval)
-  {
+  if (blame_shift_init) {
     // create & initialize blame table (once per process)
-    if (! pthread_blame_table) pthread_blame_table = blame_map_new();
+    if (!ompt_blame_table) ompt_blame_table = blame_map_new();
   }
 }
-
 
 
 //------------------------------------------------------------------------------
@@ -335,26 +356,32 @@ init_blame_shift_directed()
 static void 
 init_blame_shift_undirected()
 {
+  int blame_shift_init = 0;
   int retval = 0;
-  retval |= ompt_set_callback_fn(ompt_event_idle_begin, 
+  retval = ompt_set_callback_fn(ompt_event_idle_begin, 
 		    (ompt_callback_t)ompt_idle_begin);
+  blame_shift_init |= ompt_event_may_occur(retval);
 
-  retval |= ompt_set_callback_fn(ompt_event_idle_end, 
-		    (ompt_callback_t)ompt_idle_end);
+  retval = ompt_set_callback_fn(ompt_event_idle_end, 
+				(ompt_callback_t)ompt_idle_end);
+  blame_shift_init |= ompt_event_may_occur(retval);
 
-  retval |= ompt_set_callback_fn(ompt_event_wait_barrier_begin, 
-		    (ompt_callback_t)ompt_idle_begin);
+  retval = ompt_set_callback_fn(ompt_event_wait_barrier_begin, 
+				(ompt_callback_t)ompt_idle_begin);
+  blame_shift_init |= ompt_event_may_occur(retval);
 
-  retval |= ompt_set_callback_fn(ompt_event_wait_barrier_end, 
-		    (ompt_callback_t)ompt_idle_end);
+  retval = ompt_set_callback_fn(ompt_event_wait_barrier_end, 
+				(ompt_callback_t)ompt_idle_end);
+  blame_shift_init |= ompt_event_may_occur(retval);
 
-  if (retval) {
+  if (blame_shift_init) {
     idle_metric_register_blame_source(ompt_thread_participates);
   }
 }
 
 
-void init_function_pointers(ompt_function_lookup_t ompt_fn_lookup)
+static void 
+init_function_pointers(ompt_function_lookup_t ompt_fn_lookup)
 {
 #define ompt_interface_fn(f) \
   f ## _fn = (f ## _t) ompt_fn_lookup(#f); \
