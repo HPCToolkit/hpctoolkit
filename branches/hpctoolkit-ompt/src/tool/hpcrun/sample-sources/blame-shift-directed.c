@@ -66,7 +66,7 @@
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
-#include "blame-shift.h"
+#include "blame-shift/blame-shift.h"
 #include "idle.h"
 #include "unresolved.h"
 
@@ -91,8 +91,8 @@
  * forward declarations 
  *****************************************************************************/
 
-static void process_directed_blame_for_sample(int metric_id, cct_node_t *node, 
-	int metric_incr);
+static void process_directed_blame_for_sample(void *arg, int metric_id, 
+					      cct_node_t *node, int metric_incr);
 
 
 
@@ -103,6 +103,7 @@ static void process_directed_blame_for_sample(int metric_id, cct_node_t *node,
 static int directed_blame_self_metric_id = -1;
 static int directed_blame_other_metric_id = -1;
 static bs_fn_entry_t bs_entry;
+static blame_entry_t* ompt_blame_table = NULL;
 
 static int doblame = 0;
 
@@ -127,7 +128,8 @@ get_blame_target(thread_data_t *td)
 }
 
 static void 
-process_directed_blame_for_sample(int metric_id, cct_node_t *node, int metric_incr)
+process_directed_blame_for_sample(void *arg, int metric_id, cct_node_t *node, 
+				  int metric_incr)
 {
   metric_desc_t * metric_desc = hpcrun_id2metric(metric_id);
  
@@ -145,7 +147,7 @@ process_directed_blame_for_sample(int metric_id, cct_node_t *node, int metric_in
   uint64_t obj_to_blame = get_blame_target(td);
 
   if(obj_to_blame) {
-    blame_map_add_blame(obj_to_blame, metric_incr); // save blame bits by not inflating with period
+    blame_map_add_blame(ompt_blame_table, obj_to_blame, metric_incr); // save blame bits by not inflating with period
     cct_metric_data_increment(directed_blame_self_metric_id, node, (cct_metric_data_t){.i = metric_value});
   }
 }
@@ -159,8 +161,8 @@ static void
 METHOD_FN(init)
 {
   self->state = INIT;
-  blame_map_init();
-  blame_shift_target_allow();
+  // blame_shift_target_allow();
+  if (! ompt_blame_table) ompt_blame_table = blame_map_new();
 }
 
 
@@ -213,9 +215,10 @@ static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
   bs_entry.fn = process_directed_blame_for_sample;
-  bs_entry.next = 0;
+  bs_entry.next = NULL;
+  bs_entry.arg = NULL;
 
-  blame_shift_register(&bs_entry, bs_type_directed);
+  blame_shift_register(&bs_entry);
 
   directed_blame_self_metric_id = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(directed_blame_self_metric_id, "MUTEX_WAIT", 
@@ -292,7 +295,7 @@ directed_blame_shift_end()
 void
 directed_blame_accept(uint64_t obj)
 {
-  uint64_t blame = blame_map_get_blame(obj);
+  uint64_t blame = blame_map_get_blame(ompt_blame_table, obj);
   if (blame != 0 && hpctoolkit_sampling_is_active()) {
     ucontext_t uc;
     getcontext(&uc);
