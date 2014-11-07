@@ -204,6 +204,7 @@ partition_cctids(ulong *cct_global, uint *start_id,
     dumpCCTsizes(cct_sum, cct_prefix, start_id, maxid);
     dumpGroupSizes(cct_global, start_id, maxid, numRanks);
   }
+  dumpGroupSizes(cct_global, start_id, maxid, numRanks);
 
   free(cct_sum);
   free(cct_prefix);
@@ -313,10 +314,9 @@ allocBuffers(Prof::CallPath::Profile & prof,
   return 0;
 }
 
-// FIXME: compute tid
-
 void
-addPlotPoints(Prof::CallPath::Profile & prof, uint begMet, uint endMet)
+addPlotPoints(Prof::CallPath::Profile & prof,
+	      uint threadId, uint begMet, uint endMet)
 {
   Prof::CCT::Tree * cct = prof.cct();
   uint maxid = cct->maxDenseId();
@@ -334,8 +334,8 @@ addPlotPoints(Prof::CallPath::Profile & prof, uint begMet, uint endMet)
 
 	plot_send_buf[pos].cctid = id;
 	plot_send_buf[pos].metid = metid;
-	plot_send_buf[pos].tid = 0;
-	plot_send_buf[pos].val = node->metric(metid);
+	plot_send_buf[pos].tid = threadId;
+	plot_send_buf[pos].val = (float) node->metric(metid);
 	plot_index[group]++;
       }
     }
@@ -373,6 +373,115 @@ sharePlotPoints(int myRank, int numRanks, int rootRank)
   DIAG_Assert(ret == 0, "MPI_Alltoall failed in Plot::sharePlotPoints");
 
   return ret;
+}
+
+int
+writePlotGraphs(uint max_cctid, uint max_metid, uint max_tid,
+		int myRank, int numRanks, int rootRank)
+{
+  int group;
+  ulong n;
+
+  // Radix sort the plot points (cctid, metid, tid, val).
+  //
+  // Step 1 -- scan recv buf, count total number of plot points and
+  // number per tid, and recompute max metric id (don't trust passed
+  // in value).  We do this for tid, metid and cctid, so allocate just
+  // one array of max size and reuse it.
+
+  ulong array_size = std::max(max_cctid, std::max(max_metid, max_tid)) + 2;
+  ulong * count = (ulong *) malloc(array_size * sizeof(ulong));
+  ulong * start = (ulong *) malloc(array_size * sizeof(ulong));
+  ulong num_points;
+
+  DIAG_Assert(count != NULL && start != NULL,
+	      "out of memory in Plot::writePlotGraphs");
+
+  for (n = 0; n < array_size; n++) {
+    count[n] = 0;
+  }
+
+  max_metid = 0;
+  num_points = 0;
+  for (group = 0; group < numRanks; group++) {
+    for (n = 0; n < group_size; n++) {
+      plot_pt *elt = &plot_recv_buf[group * group_size + n];
+
+      if (elt->cctid == 0) {
+	break;
+      }
+      count[elt->tid]++;
+      max_metid = std::max(max_metid, elt->metid);
+      num_points++;
+    }
+  }
+
+  start[0] = 0;
+  for (n = 1; n <= max_tid; n++) {
+    start[n] = start[n - 1] + count[n - 1];
+  }
+
+  // Step 2 -- copy recv buf to send buf, use start[] to radix sort by
+  // tid, and count number of points per metid.
+
+  for (n = 0; n < array_size; n++) {
+    count[n] = 0;
+  }
+
+  for (group = 0; group < numRanks; group++) {
+    for (n = 0; n < group_size; n++) {
+      plot_pt *elt = &plot_recv_buf[group * group_size + n];
+
+      if (elt->cctid == 0) {
+	break;
+      }
+      plot_send_buf[start[elt->tid]] = *elt;
+      start[elt->tid]++;
+      count[elt->metid]++;
+    }
+  }
+
+  start[0] = 0;
+  for (n = 1; n <= max_metid; n++) {
+    start[n] = start[n - 1] + count[n - 1];
+  }
+
+  // Step 3 -- copy send buf back to recv buf, radix sort by metid,
+  // and count number of points per cctid.
+
+  for (n = 0; n < array_size; n++) {
+    count[n] = 0;
+  }
+
+  for (ulong k = 0; k < num_points; k++) {
+    plot_pt *elt = &plot_send_buf[k];
+
+    plot_recv_buf[start[elt->metid]] = *elt;
+    start[elt->metid]++;
+    count[elt->cctid]++;
+  }
+
+  start[0] = 0;
+  for (n = 1; n <= max_cctid; n++) {
+    start[n] = start[n - 1] + count[n - 1];
+  }
+
+  // Step 4 -- copy recv buf back to send buf and sort by cctid.
+
+  for (ulong k = 0; k < num_points; k++) {
+    plot_pt *elt = &plot_recv_buf[k];
+
+    plot_send_buf[start[elt->cctid]] = *elt;
+    start[elt->cctid]++;
+  }
+
+  // temp debug info
+  printf("rank: %3d  write:  %ld points\n", myRank, start[max_cctid]);
+
+  free(count);
+  free(start);
+
+  return 0;
 }
 
 }  // namespace Plot

@@ -166,6 +166,7 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 		      const string& profileFile,
 		      const Analysis::Args& args,
 		      Prof::Database::traceInfo *traceLcl,
+		      uint threadId,
 		      uint groupId, uint groupMax, int myRank);
 
 static string
@@ -423,6 +424,9 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
   // 2c. Create thread-level metric DB // Normalize trace files
   // -------------------------------------------------------
+  uint maxCCTid = profGbl->cct()->maxDenseId();
+  uint maxMetid = profGbl->metricMgr()->size();
+
   if (Prof::Database::newDBFormat()) {
     Plot::allocBuffers(*profGbl, myRank, numRanks, rootRank);
   }
@@ -436,6 +440,9 @@ realmain(int argc, char* const* argv)
     if (myRank == rootRank) {
       printf("plot graph all-to-all: %s\n", (ret == 0) ? "success" : "failure");
     }
+
+    Plot::writePlotGraphs(maxCCTid, maxMetid, totalFiles,
+			  myRank, numRanks, rootRank);
   }
 
   // rank 0 writes the index and header
@@ -777,7 +784,7 @@ makeThreadMetrics(Prof::CallPath::Profile& profGbl,
     string& fnm = (*nArgs.paths)[i];
     uint groupId = (*nArgs.groupMap)[i];
     makeThreadMetrics_Lcl(profGbl, fnm, args, &traceLcl[i],
-			  groupId, nArgs.groupMax, myRank);
+			  nArgs.begTid + i, groupId, nArgs.groupMax, myRank);
   }
 }
 
@@ -1060,6 +1067,7 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 		      const string& profileFile,
 		      const Analysis::Args& args, 
 		      Prof::Database::traceInfo *traceLcl,
+		      uint threadId,
 		      uint groupId, uint groupMax, int myRank)
 {
   Prof::Metric::Mgr* mMgrGbl = profGbl.metricMgr();
@@ -1129,7 +1137,7 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
     // -------------------------------------------------------
 
     if (Prof::Database::newDBFormat()) {
-      Plot::addPlotPoints(profGbl, mBeg, mEnd);
+      Plot::addPlotPoints(profGbl, threadId, mBeg, mEnd);
     }
     else {
       string dbFnm = makeDBFileName(args.db_dir, groupId, profileFile);
