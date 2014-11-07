@@ -83,7 +83,7 @@
  * macros
  *****************************************************************************/
 
-#define DIRECTED_BLAME_NAME "MUTEX"
+#define DIRECTED_BLAME_NAME "OMP_MUTEX"
 
 
 
@@ -107,21 +107,20 @@ static blame_entry_t* ompt_blame_table = NULL;
 
 static int doblame = 0;
 
-static uint32_t metric_period = 0;
 
 /***************************************************************************
  * private operations
  ***************************************************************************/
 
 
-void 
+static inline void 
 set_blame_target(thread_data_t *td, uint64_t obj)
 {
   td->blame_target = obj;
 }
 
 
-uint64_t  
+static inline uint64_t  
 get_blame_target(thread_data_t *td)
 {
   return td->blame_target;
@@ -134,11 +133,11 @@ process_directed_blame_for_sample(void *arg, int metric_id, cct_node_t *node,
   metric_desc_t * metric_desc = hpcrun_id2metric(metric_id);
  
   // Only blame shift idleness for time and cycle metrics. 
-  if ( ! (metric_desc->properties.time | metric_desc->properties.cycles) ) 
+  if (!(metric_desc->properties.time | metric_desc->properties.cycles)) 
     return;
   
   // FIXME: not good form to use a static here
-  metric_period = metric_desc->period;
+  uint32_t metric_period = metric_desc->period;
 
   uint32_t metric_value = (uint32_t) (metric_period * metric_incr);
 
@@ -146,8 +145,8 @@ process_directed_blame_for_sample(void *arg, int metric_id, cct_node_t *node,
 
   uint64_t obj_to_blame = get_blame_target(td);
 
-  if(obj_to_blame) {
-    blame_map_add_blame(ompt_blame_table, obj_to_blame, metric_incr); // save blame bits by not inflating with period
+  if (obj_to_blame) {
+    blame_map_add_blame(ompt_blame_table, obj_to_blame, metric_value); 
     cct_metric_data_increment(directed_blame_self_metric_id, node, (cct_metric_data_t){.i = metric_value});
   }
 }
@@ -221,11 +220,11 @@ METHOD_FN(process_event_list, int lush_metrics)
   blame_shift_register(&bs_entry);
 
   directed_blame_self_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(directed_blame_self_metric_id, "MUTEX_WAIT", 
+  hpcrun_set_metric_info_and_period(directed_blame_self_metric_id, "OMP_MUTEX_WAIT", 
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
 
   directed_blame_other_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(directed_blame_other_metric_id, "MUTEX_BLAME",
+  hpcrun_set_metric_info_and_period(directed_blame_other_metric_id, "OMP_MUTEX_BLAME",
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
 }
 
@@ -240,12 +239,13 @@ static void
 METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
-  printf("Available directed blame shifting preset events\n");
+  printf("Available OpenMP directed blame shifting preset events\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\tShift the blame for waiting for a lock to the lock holder.\n"
-	 "\t\tOnly suitable for threaded programs.\n",
+  printf("%s\tWhen waiting for an OpenMP mutex (i.e., a lock or critical\n"
+         "\t\tsection), shift blame for waiting to code holding the mutex.\n"
+         "\t\tOnly suitable for OpenMP programs.\n",
 	 DIRECTED_BLAME_NAME);
   printf("\n");
 }
@@ -256,14 +256,14 @@ METHOD_FN(display_events)
  | sample source object
  --------------------------------------------------------------------------*/
 
-#define ss_name directed_blame
+#define ss_name ompt_directed_blame
 #define ss_cls SS_SOFTWARE
 
 #include "ss_obj.h"
 
 
 static cct_node_t *
-attribute_blame(ucontext_t *uc, int metric_id, int metric_incr, int skipcnt)
+ompt_attribute_blame(ucontext_t *uc, int metric_id, int metric_incr, int skipcnt)
 {
   cct_node_t *node = 
     hpcrun_sample_callpath(uc, metric_id, metric_incr, skipcnt, 1).sample_node;
@@ -277,7 +277,7 @@ attribute_blame(ucontext_t *uc, int metric_id, int metric_incr, int skipcnt)
  *****************************************************************************/
 
 void
-directed_blame_shift_start(uint64_t obj)
+ompt_directed_blame_shift_start(uint64_t obj)
 {
   thread_data_t *td = hpcrun_get_thread_data();
   set_blame_target(td, obj);
@@ -285,7 +285,7 @@ directed_blame_shift_start(uint64_t obj)
 
 
 void
-directed_blame_shift_end()
+ompt_directed_blame_shift_end()
 {
   thread_data_t *td = hpcrun_get_thread_data();
   set_blame_target(td, 0);
@@ -293,14 +293,14 @@ directed_blame_shift_end()
 
 
 void
-directed_blame_accept(uint64_t obj)
+ompt_directed_blame_accept(uint64_t obj)
 {
   uint64_t blame = blame_map_get_blame(ompt_blame_table, obj);
   if (blame != 0 && hpctoolkit_sampling_is_active()) {
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_safe_enter();
-    attribute_blame(&uc, directed_blame_other_metric_id, blame * metric_period, 1);
+    attribute_blame(&uc, directed_blame_other_metric_id, blame, 1);
     hpcrun_safe_exit();
   }
 }
