@@ -67,6 +67,7 @@
 
 #include "ompt-interface.h"
 
+#include "sample-sources/blame-shift-directed.h"
 #include "sample-sources/blame-shift/blame-shift.h"
 #include "sample-sources/blame-shift/blame-map.h"
 #include "sample-sources/idle.h"
@@ -87,7 +88,10 @@
 
 static int ompt_elide = 0;
 static int ompt_initialized = 0;
+
+#if 0
 static blame_entry_t* ompt_blame_table = NULL;
+#endif
 
 
 //-----------------------------------------
@@ -98,6 +102,7 @@ FOREACH_OMPT_FN(ompt_interface_fn)
 #undef ompt_interface_fn
 
 
+#if 0
 /*--------------------------------------------------------------------------*
  | transfer directed blame as appropriate for a sample			    |
  *--------------------------------------------------------------------------*/
@@ -125,6 +130,7 @@ get_blame(uint64_t obj)
   return blame_map_get_blame(ompt_blame_table, obj);
 }
 
+#endif
 
 
 /******************************************************************************
@@ -259,22 +265,22 @@ init_blame_shift_directed()
   int retval = 0;
 
   retval |= ompt_set_callback_fn(ompt_event_release_lock, 
-		    (ompt_callback_t) directed_blame_accept);
+		    (ompt_callback_t) ompt_directed_blame_accept);
 
   retval |= ompt_set_callback_fn(ompt_event_release_nest_lock_last, 
-		    (ompt_callback_t) directed_blame_accept);
+		    (ompt_callback_t) ompt_directed_blame_accept);
 
   retval |= ompt_set_callback_fn(ompt_event_release_critical, 
-		    (ompt_callback_t) directed_blame_accept);
+		    (ompt_callback_t) ompt_directed_blame_accept);
 
   retval |= ompt_set_callback_fn(ompt_event_release_atomic, 
-		    (ompt_callback_t) directed_blame_accept);
+		    (ompt_callback_t) ompt_directed_blame_accept);
 
   retval |= ompt_set_callback_fn(ompt_event_release_ordered, 
-		    (ompt_callback_t) directed_blame_accept);
+		    (ompt_callback_t) ompt_directed_blame_accept);
 
   if (retval) {
-    entry.fn = ompt_get_blame_target;
+    entry.fn = hpcrun_ompt_get_blame_target;
     entry.next = NULL;
     blame_shift_target_register(&entry);
   }
@@ -296,12 +302,14 @@ ompt_idle_end()
 }
 
 
+#if 0
 static void 
 ompt_wait_callback(ompt_wait_id_t wait_id)
 {
   uint64_t blame = get_blame((uint64_t) wait_id );
   
 }
+#endif
 
 
 //------------------------------------------------------------------------------
@@ -319,29 +327,32 @@ init_blame_shift_directed()
   int retval = 0;
 
   retval = ompt_set_callback_fn(ompt_event_release_lock, 
-		    (ompt_callback_t) ompt_wait_callback);
+		    (ompt_callback_t) ompt_directed_blame_accept);
   blame_shift_init |= ompt_event_may_occur(retval);
 
   retval = ompt_set_callback_fn(ompt_event_release_nest_lock_last, 
-		    (ompt_callback_t) ompt_wait_callback);
+		    (ompt_callback_t) ompt_directed_blame_accept);
   blame_shift_init |= ompt_event_may_occur(retval);
 
   retval = ompt_set_callback_fn(ompt_event_release_critical, 
-		    (ompt_callback_t) ompt_wait_callback);
+		    (ompt_callback_t) ompt_directed_blame_accept);
   blame_shift_init |= ompt_event_may_occur(retval);
 
   retval = ompt_set_callback_fn(ompt_event_release_atomic, 
-		    (ompt_callback_t) ompt_wait_callback);
+		    (ompt_callback_t) ompt_directed_blame_accept);
   blame_shift_init |= ompt_event_may_occur(retval);
 
   retval = ompt_set_callback_fn(ompt_event_release_ordered, 
-		    (ompt_callback_t) ompt_wait_callback);
+		    (ompt_callback_t) ompt_directed_blame_accept);
   blame_shift_init |= ompt_event_may_occur(retval);
 
+#if 0
   if (blame_shift_init) {
-    // create & initialize blame table (once per process)
-    if (!ompt_blame_table) ompt_blame_table = blame_map_new();
+    entry.fn = hpcrun_ompt_get_blame_target;
+    entry.next = NULL;
+    blame_shift_target_register(&entry);
   }
+#endif
 }
 
 
