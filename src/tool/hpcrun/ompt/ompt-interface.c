@@ -173,7 +173,7 @@ void start_task_fn(ompt_task_id_t parent_task_id,
 }
 
 
-#if 0
+#if 1
 static uint64_t
 ompt_get_blame_target()
 {
@@ -323,6 +323,8 @@ ompt_wait_callback(ompt_wait_id_t wait_id)
 static void 
 init_blame_shift_directed()
 {
+  // static bs_tfn_entry_t entry;
+
   int blame_shift_init = 0;
   int retval = 0;
 
