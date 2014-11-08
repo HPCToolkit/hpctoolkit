@@ -135,17 +135,11 @@ process_directed_blame_for_sample(void *arg, int metric_id, cct_node_t *node,
   // Only blame shift idleness for time and cycle metrics. 
   if (!(metric_desc->properties.time | metric_desc->properties.cycles)) 
     return;
-  
-  // FIXME: not good form to use a static here
-  uint32_t metric_period = metric_desc->period;
 
-  uint32_t metric_value = (uint32_t) (metric_period * metric_incr);
-
-  thread_data_t *td = hpcrun_get_thread_data();
-
-  uint64_t obj_to_blame = get_blame_target(td);
-
+  uint64_t obj_to_blame = hpcrun_ompt_get_blame_target();
   if (obj_to_blame) {
+    uint32_t metric_period = metric_desc->period;
+    uint32_t metric_value = (uint32_t) (metric_period * metric_incr);
     blame_map_add_blame(ompt_blame_table, obj_to_blame, metric_value); 
     cct_metric_data_increment(directed_blame_self_metric_id, node, (cct_metric_data_t){.i = metric_value});
   }
@@ -276,6 +270,7 @@ ompt_attribute_blame(ucontext_t *uc, int metric_id, int metric_incr, int skipcnt
  * interface operations for clients 
  *****************************************************************************/
 
+#if 0
 void
 ompt_directed_blame_shift_start(uint64_t obj)
 {
@@ -290,6 +285,7 @@ ompt_directed_blame_shift_end()
   thread_data_t *td = hpcrun_get_thread_data();
   set_blame_target(td, 0);
 }
+#endif
 
 
 void
@@ -300,7 +296,7 @@ ompt_directed_blame_accept(uint64_t obj)
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_safe_enter();
-    attribute_blame(&uc, directed_blame_other_metric_id, blame, 1);
+    ompt_attribute_blame(&uc, directed_blame_other_metric_id, blame, 1);
     hpcrun_safe_exit();
   }
 }
