@@ -111,21 +111,6 @@ static int doblame = 0;
 /***************************************************************************
  * private operations
  ***************************************************************************/
-
-
-static inline void 
-set_blame_target(thread_data_t *td, uint64_t obj)
-{
-  td->blame_target = obj;
-}
-
-
-static inline uint64_t  
-get_blame_target(thread_data_t *td)
-{
-  return td->blame_target;
-}
-
 static void 
 process_directed_blame_for_sample(void *arg, int metric_id, cct_node_t *node, 
 				  int metric_incr)
@@ -269,24 +254,6 @@ ompt_attribute_blame(ucontext_t *uc, int metric_id, int metric_incr, int skipcnt
 /******************************************************************************
  * interface operations for clients 
  *****************************************************************************/
-
-#if 0
-void
-ompt_directed_blame_shift_start(uint64_t obj)
-{
-  thread_data_t *td = hpcrun_get_thread_data();
-  set_blame_target(td, obj);
-}
-
-
-void
-ompt_directed_blame_shift_end()
-{
-  thread_data_t *td = hpcrun_get_thread_data();
-  set_blame_target(td, 0);
-}
-#endif
-
 
 void
 ompt_directed_blame_accept(uint64_t obj)

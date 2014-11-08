@@ -89,9 +89,6 @@
 static int ompt_elide = 0;
 static int ompt_initialized = 0;
 
-#if 0
-static blame_entry_t* ompt_blame_table = NULL;
-#endif
 
 
 //-----------------------------------------
@@ -101,36 +98,6 @@ static blame_entry_t* ompt_blame_table = NULL;
 FOREACH_OMPT_FN(ompt_interface_fn)
 #undef ompt_interface_fn
 
-
-#if 0
-/*--------------------------------------------------------------------------*
- | transfer directed blame as appropriate for a sample			    |
- *--------------------------------------------------------------------------*/
-
-static inline
-void
-add_blame(uint64_t obj, uint32_t value)
-{
-  if (!ompt_blame_table) {
-    EMSG("Attempted to add pthread blame before initialization");
-    return;
-  }
-  blame_map_add_blame(ompt_blame_table, obj, value);
-}
-
-
-static inline
-uint64_t
-get_blame(uint64_t obj)
-{
-  if (!ompt_blame_table) {
-    EMSG("Attempted to fetch pthread blame before initialization");
-    return 0;
-  }
-  return blame_map_get_blame(ompt_blame_table, obj);
-}
-
-#endif
 
 
 /******************************************************************************
@@ -248,46 +215,6 @@ init_tasks()
 }
 
 
-#if 0
-//------------------------------------------------------------------------------
-// function:
-//   init_blame_shift_directed()
-//
-// description:
-//   register functions that will employ directed blame shifting 
-//   to attribute idleness caused while awaiting mutual exclusion 
-//------------------------------------------------------------------------------
-static void 
-init_blame_shift_directed()
-{
-  static bs_tfn_entry_t entry;
-
-  int retval = 0;
-
-  retval |= ompt_set_callback_fn(ompt_event_release_lock, 
-		    (ompt_callback_t) ompt_directed_blame_accept);
-
-  retval |= ompt_set_callback_fn(ompt_event_release_nest_lock_last, 
-		    (ompt_callback_t) ompt_directed_blame_accept);
-
-  retval |= ompt_set_callback_fn(ompt_event_release_critical, 
-		    (ompt_callback_t) ompt_directed_blame_accept);
-
-  retval |= ompt_set_callback_fn(ompt_event_release_atomic, 
-		    (ompt_callback_t) ompt_directed_blame_accept);
-
-  retval |= ompt_set_callback_fn(ompt_event_release_ordered, 
-		    (ompt_callback_t) ompt_directed_blame_accept);
-
-  if (retval) {
-    entry.fn = hpcrun_ompt_get_blame_target;
-    entry.next = NULL;
-    blame_shift_target_register(&entry);
-  }
-}
-#endif
-  
-
 static void
 ompt_idle_begin()
 {
@@ -300,16 +227,6 @@ ompt_idle_end()
 {
   idle_metric_blame_shift_work();
 }
-
-
-#if 0
-static void 
-ompt_wait_callback(ompt_wait_id_t wait_id)
-{
-  uint64_t blame = get_blame((uint64_t) wait_id );
-  
-}
-#endif
 
 
 //------------------------------------------------------------------------------
@@ -347,14 +264,6 @@ init_blame_shift_directed()
   retval = ompt_set_callback_fn(ompt_event_release_ordered, 
 		    (ompt_callback_t) ompt_directed_blame_accept);
   blame_shift_init |= ompt_event_may_occur(retval);
-
-#if 0
-  if (blame_shift_init) {
-    entry.fn = hpcrun_ompt_get_blame_target;
-    entry.next = NULL;
-    blame_shift_target_register(&entry);
-  }
-#endif
 }
 
 
