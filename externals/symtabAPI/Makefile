@@ -19,10 +19,9 @@ ifeq ($(USE_SYMTAB_82),yes)
 FETCH_TARFILE = dyninst-8.2.tar.gz
 SRC_DIR = dyninst-8.2
 PATCH_DIR = patches-82
-POST_FETCH_CMD = ./post-fetch-82
+FETCH_COPY_FILES = cmake/optimization.cmake
 CONFIG_CMD = ./configure-82
-BUILD_CMD =  ./build-82
-INSTALL_CMD = ./install-82
+BUILD_SUBDIRS = common elf dwarf symtabAPI
 PREREQS += binutils
 
 else

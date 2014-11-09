@@ -47,15 +47,21 @@ BAK = .bak
 
 PATCH_DIR ?=  patches
 BUILD_DIR ?=  work
+BUILD_SUBDIRS  ?= none
 INSTALL_SUBDIR ?= $(PKG_NAME)
+
+FETCH_COPY_FILES ?= none
 
 FETCH_CMD ?=    true
 PATCH_CMD ?= 	default
-POST_FETCH_CMD ?= none
 CONFIG_CMD ?=   ./configure
-BUILD_CMD ?=	$(MAKE) -C "$(BUILD_DIR)"
-INSTALL_CMD ?=  $(MAKE) -C "$(BUILD_DIR)" install
+BUILD_CMD ?=	default
+INSTALL_CMD ?=  default
 CLEAN_CMD ?=	rm -rf "$(SRC_DIR)" "$(BUILD_DIR)"
+
+POST_FETCH_CMD ?= none
+POST_BUILD_CMD ?= none
+POST_INSTALL_CMD ?= none
 
 FETCH_FTP =  ../build-utils/fetch-ftp.sh
 
@@ -112,6 +118,13 @@ refetch:
 			fi ;  \
 		done ;  \
 	fi
+	@if test 'x$(FETCH_COPY_FILES)' != xnone ; then  \
+		for f in $(FETCH_COPY_FILES) ; do  \
+			echo "copy $(SRC_DIR)/$$f" ;  \
+			rm -f "$(SRC_DIR)/$$f.orig" ;  \
+			cp -f -p "$(SRC_DIR)/$$f" "$(SRC_DIR)/$$f.orig" ;  \
+		done ;  \
+	fi
 	@if test 'x$(POST_FETCH_CMD)' != xnone ; then  \
 		echo ; echo "===> ($(PKG_NAME)) post fetch ..." ;  \
 		echo '$(POST_FETCH_CMD)' ;  \
@@ -144,7 +157,22 @@ rebuild: config
 	@echo ; echo "===> ($(PKG_NAME)) make build ..."
 	@test x != 'x$(BUILD_CMD)'
 	@rm -f $(BUILD_COOKIE) $(INSTALL_COOKIE)
-	$(BUILD_CMD)
+	@if test 'x$(BUILD_CMD)' != xdefault ; then  \
+		echo "$(BUILD_CMD)" ;  \
+		$(BUILD_CMD) ;  \
+	elif test 'x$(BUILD_SUBDIRS)' = xnone ; then  \
+		$(MAKE) -C "$(BUILD_DIR)" ;  \
+	else  \
+		for dir in $(BUILD_SUBDIRS) ; do  \
+			echo "===> ($(PKG_NAME)) make build $$dir ..." ;  \
+			$(MAKE) -C "$(BUILD_DIR)/$$dir" || exit 2 ;  \
+		done ;  \
+	fi
+	@if test 'x$(POST_BUILD_CMD)' != xnone ; then  \
+		echo ; echo "===> ($(PKG_NAME)) post build ..." ;  \
+		echo '$(POST_BUILD_CMD)' ;  \
+		$(POST_BUILD_CMD) ;  \
+	fi
 	touch $(BUILD_COOKIE)
 
 build:
@@ -160,7 +188,22 @@ reinstall: build
 	@rm -f $(INSTALL_COOKIE)
 	@echo "removing old install directory: $(INSTALL_SUBDIR)"
 	-rm -rf "$(PREFIX)/$(INSTALL_SUBDIR)"
-	$(INSTALL_CMD)
+	@if test 'x$(INSTALL_CMD)' != xdefault ; then  \
+		echo "$(INSTALL_CMD)" ;  \
+		$(INSTALL_CMD) ;  \
+	elif test 'x$(BUILD_SUBDIRS)' = xnone ; then  \
+		$(MAKE) -C "$(BUILD_DIR)" install ;  \
+	else  \
+		for dir in $(BUILD_SUBDIRS) ; do  \
+			echo "===> ($(PKG_NAME)) make install $$dir ..." ;  \
+			$(MAKE) -C "$(BUILD_DIR)/$$dir" install || exit 2 ;  \
+		done ;  \
+	fi
+	@if test 'x$(POST_INSTALL_CMD)' != xnone ; then  \
+		echo ; echo "===> ($(PKG_NAME)) post install ..." ;  \
+		echo '$(POST_INSTALL_CMD)' ;  \
+		$(POST_INSTALL_CMD) ;  \
+	fi
 	@echo "resetting permissions on: $(INSTALL_SUBDIR)"
 	-find "$(PREFIX)/$(INSTALL_SUBDIR)" -type d -exec chmod a+rx {} \;
 	-chmod -R a+r "$(PREFIX)/$(INSTALL_SUBDIR)"
