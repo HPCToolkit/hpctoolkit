@@ -44,16 +44,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/******************************************************************************
- * system includes
- *****************************************************************************/
-
-#include <ucontext.h>
-#include <pthread.h>
-#include <string.h>
-#include <dlfcn.h>
-
-
 
 /******************************************************************************
  * ompt
@@ -77,6 +67,7 @@
 #include "sample-sources/blame-shift/directed.h"
 #include "sample-sources/blame-shift/blame-shift.h"
 #include "sample-sources/blame-shift/blame-map.h"
+
 #include "sample-sources/idle.h"
 
 
@@ -101,7 +92,6 @@ static bs_fn_entry_t bs_entry;
 static directed_blame_info_t omp_mutex_blame_info;
 
 
-
 //-----------------------------------------
 // declare ompt interface function pointers
 //-----------------------------------------
@@ -115,6 +105,27 @@ FOREACH_OMPT_FN(ompt_interface_fn)
  * private operations 
  *****************************************************************************/
 
+//----------------------------------------------------------------------------
+// initialize pointers to callback functions supported by the OMPT interface
+//----------------------------------------------------------------------------
+
+static void 
+init_function_pointers(ompt_function_lookup_t ompt_fn_lookup)
+{
+#define ompt_interface_fn(f) \
+  f ## _fn = (f ## _t) ompt_fn_lookup(#f); \
+  assert(f ##_fn != 0);
+
+FOREACH_OMPT_FN(ompt_interface_fn)
+
+#undef ompt_interface_fn
+}
+
+
+//----------------------------------------------------------------------------
+// identify whether a thread is an OpenMP thread or not
+//----------------------------------------------------------------------------
+
 static int
 ompt_thread_participates(void)
 {
@@ -123,8 +134,12 @@ ompt_thread_participates(void)
 }
 
 
+//----------------------------------------------------------------------------
+// note the creation context for an OpenMP task
+//----------------------------------------------------------------------------
+
 static
-void start_task_fn(ompt_task_id_t parent_task_id, 
+void ompt_task_begin(ompt_task_id_t parent_task_id, 
 		   ompt_frame_t *parent_task_frame, 
 		   ompt_task_id_t new_task_id,
 		   void *task_function)
@@ -151,9 +166,59 @@ void start_task_fn(ompt_task_id_t parent_task_id,
 }
 
 
-#if 0
+//----------------------------------------------------------------------------
+// support for undirected blame shifting to attribute idleness
+//----------------------------------------------------------------------------
+
+//-------------------------------------------------
+// note birth and death of threads to support 
+// undirected blame shifting using the IDLE metric
+//-------------------------------------------------
+
+static void
+ompt_thread_create()
+{
+  idle_metric_thread_start();
+}
+
+
+static void
+ompt_thread_exit()
+{
+  idle_metric_thread_end();
+}
+
+
+//-------------------------------------------------
+// note the beginning and end of idleness to 
+// support undirected blame shifting
+//-------------------------------------------------
+
+static void
+ompt_idle_begin()
+{
+  idle_metric_blame_shift_idle();
+}
+
+
+static void
+ompt_idle_end()
+{
+  idle_metric_blame_shift_work();
+}
+
+
+//----------------------------------------------------------------------------
+// support for directed blame shifting for mutex objects
+//----------------------------------------------------------------------------
+
+//-------------------------------------------------
+// return a mutex that should be blamed for 
+// current waiting (if any)
+//-------------------------------------------------
+
 static uint64_t
-ompt_get_blame_target()
+ompt_mutex_blame_target()
 {
   if (ompt_initialized) {
     ompt_wait_id_t wait_id;
@@ -171,22 +236,23 @@ ompt_get_blame_target()
   }
   return 0;
 }
-#endif
 
-  
-static void
-ompt_thread_create()
+
+//-------------------------------------------------
+// accept any blame accumulated for mutex while 
+// this thread held it
+//-------------------------------------------------
+
+static void 
+ompt_mutex_blame_accept(uint64_t mutex)
 {
-  idle_metric_thread_start();
+  directed_blame_accept(&omp_mutex_blame_info, mutex);
 }
 
 
-static void
-ompt_thread_exit()
-{
-  idle_metric_thread_end();
-}
-
+//----------------------------------------------------------------------------
+// initialization of OMPT interface by setting up callbacks
+//----------------------------------------------------------------------------
 
 static void 
 init_threads()
@@ -221,42 +287,18 @@ init_tasks()
 {
   int retval;
   retval = ompt_set_callback_fn(ompt_event_task_begin, 
-		    (ompt_callback_t)start_task_fn);
+		    (ompt_callback_t)ompt_task_begin);
   assert(ompt_event_may_occur(retval));
 }
 
 
-static void
-ompt_idle_begin()
-{
-  idle_metric_blame_shift_idle();
-}
-
-
-static void
-ompt_idle_end()
-{
-  idle_metric_blame_shift_work();
-}
-
-
+//-------------------------------------------------
+// register callbacks to support directed blame
+// shifting, namely attributing waiting for a mutex
+// to the mutex holder at the point of release.
+//-------------------------------------------------
 static void 
-ompt_mutex_blame_accept(uint64_t obj)
-{
-  directed_blame_accept(&omp_mutex_blame_info, obj);
-}
-
-
-//------------------------------------------------------------------------------
-// function:
-//   init_blame_shift_directed()
-//
-// description:
-//   register functions that will employ directed blame shifting 
-//   to attribute idleness caused while awaiting mutual exclusion 
-//------------------------------------------------------------------------------
-static void 
-init_blame_shift_directed()
+init_mutex_blame_shift()
 {
   int blame_shift_init = 0;
   int retval = 0;
@@ -283,16 +325,14 @@ init_blame_shift_directed()
 }
 
 
-//------------------------------------------------------------------------------
-// function:
-//   init_blame_shift_undirected()
-//
-// description:
-//   register functions that will employ undirected blame shifting 
-//   to attribute idleness 
-//------------------------------------------------------------------------------
+//-------------------------------------------------
+// register callbacks to support undirected blame
+// shifting, namely attributing thread idleness to
+// the work happening on other threads when the
+// idleness occurs. 
+//-------------------------------------------------
 static void 
-init_blame_shift_undirected()
+init_idle_blame_shift()
 {
   int blame_shift_init = 0;
   int retval = 0;
@@ -318,23 +358,15 @@ init_blame_shift_undirected()
 }
 
 
-static void 
-init_function_pointers(ompt_function_lookup_t ompt_fn_lookup)
-{
-#define ompt_interface_fn(f) \
-  f ## _fn = (f ## _t) ompt_fn_lookup(#f); \
-  assert(f ##_fn != 0);
-
-FOREACH_OMPT_FN(ompt_interface_fn)
-
-#undef ompt_interface_fn
-
-}
-
 //*****************************************************************************
 // interface operations
 //*****************************************************************************
 
+//-------------------------------------------------
+// ompt_initialize will be called by an OpenMP
+// runtime system immediately after it initializes
+// itself.
+//-------------------------------------------------
 int 
 ompt_initialize(
   ompt_function_lookup_t ompt_fn_lookup,
@@ -347,8 +379,8 @@ ompt_initialize(
   init_function_pointers(ompt_fn_lookup);
   init_threads();
   init_parallel_regions();
-  init_blame_shift_undirected();
-  init_blame_shift_directed();
+  init_mutex_blame_shift();
+  init_idle_blame_shift();
 
   if(ENABLED(OMPT_TASK_FULL_CTXT)) {
     init_tasks();
@@ -357,7 +389,8 @@ ompt_initialize(
   if(!ENABLED(OMPT_KEEP_ALL_FRAMES)) {
     ompt_elide = 1;
   }
-  return 1;
+
+  return 1; // indicate tool present
 }
 
 
@@ -384,6 +417,10 @@ hpcrun_ompt_state_is_overhead()
   return 0;
 }
 
+//-------------------------------------------------
+// returns true if OpenMP runtime frames should
+// be elided out of thread callstacks
+//-------------------------------------------------
 
 int
 hpcrun_ompt_elide_frames()
@@ -392,21 +429,10 @@ hpcrun_ompt_elide_frames()
 }
 
 
-ompt_parallel_id_t
-hpcrun_ompt_outermost_parallel_id()
-{ 
-  ompt_parallel_id_t outer_id = 0; 
-  if (ompt_initialized) { 
-    int i = 0;
-    for (;;) {
-      ompt_parallel_id_t next_id = ompt_get_parallel_id_fn(i++);
-      if (next_id == 0) break;
-      outer_id = next_id;
-    }
-  }
-  return outer_id;
-}
-
+//----------------------------------------------------------------------------
+// safe (wrapped) versions of API functions that can be called from the rest
+// of hpcrun, even if no OMPT support is available
+//----------------------------------------------------------------------------
 
 ompt_parallel_id_t 
 hpcrun_ompt_get_parallel_id(int level)
@@ -448,26 +474,32 @@ hpcrun_ompt_get_idle_frame()
 }
 
 
-uint64_t
-hpcrun_ompt_get_blame_target()
-{
-  if (ompt_initialized) {
-    ompt_wait_id_t wait_id;
-    ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
+//-------------------------------------------------
+// a special safe function that determines the
+// outermost parallel region enclosing the current
+// context.
+//-------------------------------------------------
 
-    switch (state) {
-    case ompt_state_wait_critical:
-    case ompt_state_wait_lock:
-    case ompt_state_wait_nest_lock:
-    case ompt_state_wait_atomic:
-    case ompt_state_wait_ordered:
-      return wait_id;
-    default: break;
+ompt_parallel_id_t
+hpcrun_ompt_outermost_parallel_id()
+{ 
+  ompt_parallel_id_t outer_id = 0; 
+  if (ompt_initialized) { 
+    int i = 0;
+    for (;;) {
+      ompt_parallel_id_t next_id = ompt_get_parallel_id_fn(i++);
+      if (next_id == 0) break;
+      outer_id = next_id;
     }
   }
-  return 0;
+  return outer_id;
 }
 
+
+//----------------------------------------------------------------------------
+// interface function to register support for directed blame shifting for 
+// OpenMP operations on mutexes if event OMP_MUTEX is present
+//----------------------------------------------------------------------------
 
 void
 ompt_mutex_blame_shift_register()
@@ -476,7 +508,7 @@ ompt_mutex_blame_shift_register()
   bs_entry.next = NULL;
   bs_entry.arg = &omp_mutex_blame_info;
 
-  omp_mutex_blame_info.get_blame_target = hpcrun_ompt_get_blame_target;
+  omp_mutex_blame_info.get_blame_target = ompt_mutex_blame_target;
 
   omp_mutex_blame_info.blame_table = blame_map_new();
 
