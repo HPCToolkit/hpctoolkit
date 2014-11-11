@@ -91,10 +91,13 @@ void
 directed_blame_accept(void *arg, uint64_t obj)
 {
   directed_blame_info_t *bi = (directed_blame_info_t *) arg;
-  uint64_t blame = blame_map_get_blame(bi->blame_table, obj);
-  if (bi->enabled != 0 && hpctoolkit_sampling_is_active()) {
+
+  if (hpctoolkit_sampling_is_active()) {
+    uint64_t blame = blame_map_get_blame(bi->blame_table, obj);
+
     ucontext_t uc;
     getcontext(&uc);
+
     hpcrun_safe_enter();
     attribute_blame(&uc, bi->blame_metric_id, blame, bi->levels_to_skip);
     hpcrun_safe_exit();
@@ -106,13 +109,12 @@ void
 directed_blame_sample(void *arg, int metric_id, cct_node_t *node, 
                       int metric_incr)
 {
+  directed_blame_info_t *bi = (directed_blame_info_t *) arg;
   metric_desc_t * metric_desc = hpcrun_id2metric(metric_id);
  
   // Only blame shift idleness for time and cycle metrics. 
   if (!(metric_desc->properties.time | metric_desc->properties.cycles)) 
     return;
-
-  directed_blame_info_t *bi = (directed_blame_info_t *) arg;
 
   uint64_t obj_to_blame = bi->get_blame_target();
   if (obj_to_blame) {

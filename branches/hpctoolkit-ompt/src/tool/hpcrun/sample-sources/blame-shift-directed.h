@@ -16,8 +16,6 @@ typedef struct directed_blame_info_t {
   int active_worker_count;
   int idle_worker_count;
 
-  int enabled;
-
   directed_blame_target_fn get_blame_target;
 
   blame_entry_t* blame_table;

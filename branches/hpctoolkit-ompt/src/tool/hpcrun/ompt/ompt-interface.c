@@ -470,13 +470,6 @@ hpcrun_ompt_get_blame_target()
 
 
 void
-ompt_mutex_blame_shift_enable()
-{
-   omp_mutex_blame_info.enabled = 1;
-}
-
-
-void
 ompt_mutex_blame_shift_register()
 {
   bs_entry.fn = directed_blame_sample;
