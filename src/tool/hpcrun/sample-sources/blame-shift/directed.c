@@ -65,7 +65,7 @@
 #include <hpcrun/sample_event.h>
 
 #include <hpcrun/sample-sources/blame-shift/blame-map.h>
-#include <hpcrun/sample-sources/blame-shift-directed.h>
+#include <hpcrun/sample-sources/blame-shift/directed.h>
 
 
 

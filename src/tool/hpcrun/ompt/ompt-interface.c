@@ -74,7 +74,7 @@
 
 #include "ompt-interface.h"
 
-#include "sample-sources/blame-shift-directed.h"
+#include "sample-sources/blame-shift/directed.h"
 #include "sample-sources/blame-shift/blame-shift.h"
 #include "sample-sources/blame-shift/blame-map.h"
 #include "sample-sources/idle.h"
@@ -241,7 +241,7 @@ ompt_idle_end()
 
 
 static void 
-ompt_directed_blame_accept(uint64_t obj)
+ompt_mutex_blame_accept(uint64_t obj)
 {
   directed_blame_accept(&omp_mutex_blame_info, obj);
 }
@@ -262,23 +262,23 @@ init_blame_shift_directed()
   int retval = 0;
 
   retval = ompt_set_callback_fn(ompt_event_release_lock, 
-		    (ompt_callback_t) ompt_directed_blame_accept);
+		    (ompt_callback_t) ompt_mutex_blame_accept);
   blame_shift_init |= ompt_event_may_occur(retval);
 
   retval = ompt_set_callback_fn(ompt_event_release_nest_lock_last, 
-		    (ompt_callback_t) ompt_directed_blame_accept);
+		    (ompt_callback_t) ompt_mutex_blame_accept);
   blame_shift_init |= ompt_event_may_occur(retval);
 
   retval = ompt_set_callback_fn(ompt_event_release_critical, 
-		    (ompt_callback_t) ompt_directed_blame_accept);
+		    (ompt_callback_t) ompt_mutex_blame_accept);
   blame_shift_init |= ompt_event_may_occur(retval);
 
   retval = ompt_set_callback_fn(ompt_event_release_atomic, 
-		    (ompt_callback_t) ompt_directed_blame_accept);
+		    (ompt_callback_t) ompt_mutex_blame_accept);
   blame_shift_init |= ompt_event_may_occur(retval);
 
   retval = ompt_set_callback_fn(ompt_event_release_ordered, 
-		    (ompt_callback_t) ompt_directed_blame_accept);
+		    (ompt_callback_t) ompt_mutex_blame_accept);
   blame_shift_init |= ompt_event_may_occur(retval);
 }
 
