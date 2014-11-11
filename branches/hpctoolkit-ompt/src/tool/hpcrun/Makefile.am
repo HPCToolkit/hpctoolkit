@@ -264,9 +264,9 @@ MY_BASE_FILES =				\
 	sample_event.c			\
 	sample_prob.c			\
 	sample_sources_all.c		\
-	sample-sources/blame-shift/blame-shift.c          \
-	sample-sources/blame-shift/blame-map.c            \
-	sample-sources/blame-shift-directed.c \
+	sample-sources/blame-shift/blame-shift.c \
+	sample-sources/blame-shift/blame-map.c   \
+	sample-sources/blame-shift/directed.c    \
 	sample-sources/omp-mutex.c      \
         sample-sources/common.c         \
 	sample-sources/ga.c		\

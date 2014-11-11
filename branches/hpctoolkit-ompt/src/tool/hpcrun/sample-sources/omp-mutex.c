@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 //
-// directed blame shifting for locks, critical sections, ...
+// directed blame shifting for OpenMP mutex (locks, critical sections, ...)
 //
 
 /******************************************************************************
