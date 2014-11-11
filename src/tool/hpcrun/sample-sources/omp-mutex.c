@@ -103,7 +103,6 @@ METHOD_FN(thread_init_action)
 static void
 METHOD_FN(start)
 {
-  ompt_mutex_blame_shift_enable();
 }
 
 
