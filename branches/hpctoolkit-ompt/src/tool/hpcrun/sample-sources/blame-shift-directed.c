@@ -53,9 +53,6 @@
  *****************************************************************************/
 
 #include <ucontext.h>
-#include <pthread.h>
-#include <string.h>
-#include <dlfcn.h>
 
 
 
@@ -63,186 +60,21 @@
  * local includes
  *****************************************************************************/
 
-#include "simple_oo.h"
-#include "sample_source_obj.h"
-#include "common.h"
-#include "blame-shift/blame-shift.h"
-#include "idle.h"
-#include "unresolved.h"
-
 #include <hpcrun/cct/cct.h>
-#include <hpcrun/hpctoolkit.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
+
 #include <hpcrun/sample-sources/blame-shift/blame-map.h>
-#include <hpcrun/thread_data.h>
+#include <hpcrun/sample-sources/blame-shift-directed.h>
 
-
-
-/******************************************************************************
- * macros
- *****************************************************************************/
-
-#define DIRECTED_BLAME_NAME "OMP_MUTEX"
-
-
-
-/******************************************************************************
- * forward declarations 
- *****************************************************************************/
-
-static void process_directed_blame_for_sample(void *arg, int metric_id, 
-					      cct_node_t *node, int metric_incr);
-
-
-
-/******************************************************************************
- * global variables
- *****************************************************************************/
-
-static int directed_blame_self_metric_id = -1;
-static int directed_blame_other_metric_id = -1;
-static bs_fn_entry_t bs_entry;
-static blame_entry_t* ompt_blame_table = NULL;
-
-static int doblame = 0;
 
 
 /***************************************************************************
  * private operations
  ***************************************************************************/
-static void 
-process_directed_blame_for_sample(void *arg, int metric_id, cct_node_t *node, 
-				  int metric_incr)
-{
-  metric_desc_t * metric_desc = hpcrun_id2metric(metric_id);
- 
-  // Only blame shift idleness for time and cycle metrics. 
-  if (!(metric_desc->properties.time | metric_desc->properties.cycles)) 
-    return;
-
-  uint64_t obj_to_blame = hpcrun_ompt_get_blame_target();
-  if (obj_to_blame) {
-    uint32_t metric_period = metric_desc->period;
-    uint32_t metric_value = (uint32_t) (metric_period * metric_incr);
-    blame_map_add_blame(ompt_blame_table, obj_to_blame, metric_value); 
-    cct_metric_data_increment(directed_blame_self_metric_id, node, (cct_metric_data_t){.i = metric_value});
-  }
-}
-
-
-/*--------------------------------------------------------------------------
- | sample source methods
- --------------------------------------------------------------------------*/
-
-static void
-METHOD_FN(init)
-{
-  self->state = INIT;
-  // blame_shift_target_allow();
-  if (! ompt_blame_table) ompt_blame_table = blame_map_new();
-}
-
-
-static void
-METHOD_FN(thread_init)
-{
-}
-
-
-static void
-METHOD_FN(thread_init_action)
-{
-}
-
-
-static void
-METHOD_FN(start)
-{
-   doblame = 1;
-}
-
-
-static void
-METHOD_FN(thread_fini_action)
-{
-}
-
-
-static void
-METHOD_FN(stop)
-{
-}
-
-
-static void
-METHOD_FN(shutdown)
-{
-  self->state = UNINIT;
-}
-
-
-static bool
-METHOD_FN(supports_event,const char *ev_str)
-{
-  return (strstr(ev_str, DIRECTED_BLAME_NAME) != NULL);
-}
-
- 
-static void
-METHOD_FN(process_event_list, int lush_metrics)
-{
-  bs_entry.fn = process_directed_blame_for_sample;
-  bs_entry.next = NULL;
-  bs_entry.arg = NULL;
-
-  blame_shift_register(&bs_entry);
-
-  directed_blame_self_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(directed_blame_self_metric_id, "OMP_MUTEX_WAIT", 
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
-
-  directed_blame_other_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(directed_blame_other_metric_id, "OMP_MUTEX_BLAME",
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
-}
-
-
-static void
-METHOD_FN(gen_event_set,int lush_metrics)
-{
-}
-
-
-static void
-METHOD_FN(display_events)
-{
-  printf("===========================================================================\n");
-  printf("Available OpenMP directed blame shifting preset events\n");
-  printf("===========================================================================\n");
-  printf("Name\t\tDescription\n");
-  printf("---------------------------------------------------------------------------\n");
-  printf("%s\tWhen waiting for an OpenMP mutex (i.e., a lock or critical\n"
-         "\t\tsection), shift blame for waiting to code holding the mutex.\n"
-         "\t\tOnly suitable for OpenMP programs.\n",
-	 DIRECTED_BLAME_NAME);
-  printf("\n");
-}
-
-
-
-/*--------------------------------------------------------------------------
- | sample source object
- --------------------------------------------------------------------------*/
-
-#define ss_name ompt_directed_blame
-#define ss_cls SS_SOFTWARE
-
-#include "ss_obj.h"
-
 
 static cct_node_t *
-ompt_attribute_blame(ucontext_t *uc, int metric_id, int metric_incr, int skipcnt)
+attribute_blame(ucontext_t *uc, int metric_id, int metric_incr, int skipcnt)
 {
   cct_node_t *node = 
     hpcrun_sample_callpath(uc, metric_id, metric_incr, skipcnt, 1).sample_node;
@@ -256,14 +88,40 @@ ompt_attribute_blame(ucontext_t *uc, int metric_id, int metric_incr, int skipcnt
  *****************************************************************************/
 
 void
-ompt_directed_blame_accept(uint64_t obj)
+directed_blame_accept(void *arg, uint64_t obj)
 {
-  uint64_t blame = blame_map_get_blame(ompt_blame_table, obj);
-  if (blame != 0 && hpctoolkit_sampling_is_active()) {
+  directed_blame_info_t *bi = (directed_blame_info_t *) arg;
+  uint64_t blame = blame_map_get_blame(bi->blame_table, obj);
+  if (bi->enabled != 0 && hpctoolkit_sampling_is_active()) {
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_safe_enter();
-    ompt_attribute_blame(&uc, directed_blame_other_metric_id, blame, 1);
+    attribute_blame(&uc, bi->blame_metric_id, blame, bi->levels_to_skip);
     hpcrun_safe_exit();
+  }
+}
+
+
+void 
+directed_blame_sample(void *arg, int metric_id, cct_node_t *node, 
+                      int metric_incr)
+{
+  metric_desc_t * metric_desc = hpcrun_id2metric(metric_id);
+ 
+  // Only blame shift idleness for time and cycle metrics. 
+  if (!(metric_desc->properties.time | metric_desc->properties.cycles)) 
+    return;
+
+  directed_blame_info_t *bi = (directed_blame_info_t *) arg;
+
+  uint64_t obj_to_blame = bi->get_blame_target();
+  if (obj_to_blame) {
+    uint32_t metric_period = metric_desc->period;
+    uint32_t metric_value = (uint32_t) (metric_period * metric_incr);
+    blame_map_add_blame(bi->blame_table, obj_to_blame, metric_value); 
+    if (bi->wait_metric_id) {
+      cct_metric_data_increment(bi->wait_metric_id, node, 
+                                (cct_metric_data_t){.i = metric_value});
+    }
   }
 }
