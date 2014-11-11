@@ -118,7 +118,7 @@ Options: General\n\
   -x, --xmlport        Sets the port on which the experiment.xml file will be\n\
                            transmitted. Specifying 0 or not including this flag\n\
                            indicates that the port will be auto-negotiated with\n\
-                           the client. Specifying -1 indicates that the xml will\n\
+                           the client. Specifying 1 indicates that the xml will\n\
                            be transferred on the main data port.\n\
 \n\
 ";
@@ -261,14 +261,14 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("port")) {
       const string& arg = parser.getOptArg("port");
       mainPort = (int) CmdLineParser::toLong(arg);
-      if (xmlPort < 1024 && xmlPort != 0)
+      if (mainPort < 1024 && mainPort != 0)
          	  ARG_ERROR("Ports must be greater than 1024.")
     }
     if (parser.isOpt("xmlport")) {
       const string& arg = parser.getOptArg("xmlport");
       xmlPort = (int) CmdLineParser::toLong(arg);
-      if (xmlPort < 1024 && xmlPort != 0)
-    	  ARG_ERROR("Ports must be greater than 1024.")
+      if (xmlPort < 1024 && xmlPort > 1)
+    	   ARG_ERROR("Ports must be greater than 1024.")
     }
   }
   catch (const CmdLineParser::ParseError& x) {
