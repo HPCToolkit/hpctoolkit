@@ -209,7 +209,11 @@ namespace TraceviewerServer
 		socket->writeInt(DBOK);
 
 		DataSocketStream* xmlSocket;
-		if (xmlPortNumber == -1)
+ 	
+ 		// Laksono 2014.11.11: Somehow the class Args.cpp cannot accept -1 as an integer argument
+ 		// (not sure if this is a feature or it's a bug to confuse between a flag and negative number)
+ 		// Temporary, we can specify that if the xml port is 1 then it will be the same as the main port
+		if (xmlPortNumber == 1)
 			xmlPortNumber = mainPortNumber;
 
 		int actualXMLPort = xmlPortNumber;
