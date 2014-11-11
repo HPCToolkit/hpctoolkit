@@ -48,6 +48,13 @@
  * system includes
  *****************************************************************************/
 
+#include <ucontext.h>
+#include <pthread.h>
+#include <string.h>
+#include <dlfcn.h>
+
+
+
 /******************************************************************************
  * ompt
  *****************************************************************************/
@@ -88,6 +95,10 @@
 
 static int ompt_elide = 0;
 static int ompt_initialized = 0;
+
+static bs_fn_entry_t bs_entry;
+
+static directed_blame_info_t omp_mutex_blame_info;
 
 
 
@@ -140,7 +151,7 @@ void start_task_fn(ompt_task_id_t parent_task_id,
 }
 
 
-#if 1
+#if 0
 static uint64_t
 ompt_get_blame_target()
 {
@@ -229,6 +240,13 @@ ompt_idle_end()
 }
 
 
+static void 
+ompt_directed_blame_accept(uint64_t obj)
+{
+  directed_blame_accept(&omp_mutex_blame_info, obj);
+}
+
+
 //------------------------------------------------------------------------------
 // function:
 //   init_blame_shift_directed()
@@ -240,8 +258,6 @@ ompt_idle_end()
 static void 
 init_blame_shift_directed()
 {
-  // static bs_tfn_entry_t entry;
-
   int blame_shift_init = 0;
   int retval = 0;
 
@@ -451,3 +467,38 @@ hpcrun_ompt_get_blame_target()
   }
   return 0;
 }
+
+
+void
+ompt_mutex_blame_shift_enable()
+{
+   omp_mutex_blame_info.enabled = 1;
+}
+
+
+void
+ompt_mutex_blame_shift_register()
+{
+  bs_entry.fn = directed_blame_sample;
+  bs_entry.next = NULL;
+  bs_entry.arg = &omp_mutex_blame_info;
+
+  omp_mutex_blame_info.get_blame_target = hpcrun_ompt_get_blame_target;
+
+  omp_mutex_blame_info.blame_table = blame_map_new();
+
+  int wait_id = omp_mutex_blame_info.wait_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(wait_id, "OMP_MUTEX_WAIT", 
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+
+  int blame_id = omp_mutex_blame_info.blame_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(blame_id, "OMP_MUTEX_BLAME",
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+
+  omp_mutex_blame_info.levels_to_skip = 1;
+
+  blame_shift_register(&bs_entry);
+}
+
+
+

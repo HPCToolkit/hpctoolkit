@@ -11,10 +11,15 @@ extern ompt_task_id_t hpcrun_ompt_get_task_id(int level);
 extern ompt_state_t hpcrun_ompt_get_state(uint64_t *wait_id);
 extern ompt_frame_t *hpcrun_ompt_get_task_frame(int level);
 extern void *hpcrun_ompt_get_idle_frame();
+extern uint64_t hpcrun_ompt_get_blame_target();
 
 extern int hpcrun_ompt_elide_frames();
 
 extern ompt_parallel_id_t hpcrun_ompt_outermost_parallel_id();
+
+extern void ompt_mutex_blame_shift_enable();
+
+extern void ompt_mutex_blame_shift_register();
 
 //------------------------------------------------------------------------------
 // function: 
