@@ -50,6 +50,8 @@
 #include <include/uint.h>
 #include <lib/prof/CallPath-Profile.hpp>
 
+#include <string>
+
 namespace Plot {
 
 int allocBuffers(Prof::CallPath::Profile & prof,
@@ -60,8 +62,8 @@ void addPlotPoints(Prof::CallPath::Profile & prof,
 
 int sharePlotPoints(int myRank, int numRanks, int rootRank);
 
-int writePlotGraphs(uint max_cctid, uint max_metid, uint max_tid,
-		    int myRank, int numRanks, int rootRank);
+int writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_metid,
+		    uint max_tid, int myRank, int numRanks, int rootRank);
 
 }
 

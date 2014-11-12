@@ -441,8 +441,8 @@ realmain(int argc, char* const* argv)
       printf("plot graph all-to-all: %s\n", (ret == 0) ? "success" : "failure");
     }
 
-    Plot::writePlotGraphs(maxCCTid, maxMetid, totalFiles,
-			  myRank, numRanks, rootRank);
+    Plot::writePlotGraphs(args.db_dir, maxCCTid, maxMetid,
+			  totalFiles, myRank, numRanks, rootRank);
   }
 
   // rank 0 writes the index and header
