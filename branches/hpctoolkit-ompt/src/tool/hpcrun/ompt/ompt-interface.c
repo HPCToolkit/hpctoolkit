@@ -247,7 +247,6 @@ ompt_mutex_blame_target()
 static void 
 ompt_mutex_blame_accept(uint64_t mutex)
 {
-  // if (!ompt_mutex_blame_enabled) return;
   directed_blame_accept(&omp_mutex_blame_info, mutex);
 }
 
