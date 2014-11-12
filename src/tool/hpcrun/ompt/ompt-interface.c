@@ -86,6 +86,7 @@
 
 static int ompt_elide = 0;
 static int ompt_initialized = 0;
+static int ompt_mutex_blame_enabled = 0;
 
 static bs_fn_entry_t bs_entry;
 
@@ -246,6 +247,7 @@ ompt_mutex_blame_target()
 static void 
 ompt_mutex_blame_accept(uint64_t mutex)
 {
+  // if (!ompt_mutex_blame_enabled) return;
   directed_blame_accept(&omp_mutex_blame_info, mutex);
 }
 
@@ -302,6 +304,7 @@ init_mutex_blame_shift()
 {
   int blame_shift_init = 0;
   int retval = 0;
+  if (!ompt_mutex_blame_enabled) return;
 
   retval = ompt_set_callback_fn(ompt_event_release_lock, 
 		    (ompt_callback_t) ompt_mutex_blame_accept);
@@ -504,6 +507,8 @@ hpcrun_ompt_outermost_parallel_id()
 void
 ompt_mutex_blame_shift_register()
 {
+  ompt_mutex_blame_enabled = 1;
+
   bs_entry.fn = directed_blame_sample;
   bs_entry.next = NULL;
   bs_entry.arg = &omp_mutex_blame_info;
