@@ -65,6 +65,7 @@
 #include "ompt-interface.h"
 
 #include "sample-sources/blame-shift/directed.h"
+#include "sample-sources/blame-shift/undirected.h"
 #include "sample-sources/blame-shift/blame-shift.h"
 #include "sample-sources/blame-shift/blame-map.h"
 
@@ -86,12 +87,20 @@
 
 static int ompt_elide = 0;
 static int ompt_initialized = 0;
-static int ompt_mutex_blame_enabled = 0;
 
-static bs_fn_entry_t bs_entry;
+static int ompt_mutex_blame_requested = 0;
+static int ompt_idle_blame_requested = 0;
 
+static int ompt_idle_blame_enabled = 0;
+
+static bs_fn_entry_t mutex_bs_entry;
+static bs_fn_entry_t idle_bs_entry;
+
+// state for directed blame shifting away from spinning on a mutex
 static directed_blame_info_t omp_mutex_blame_info;
 
+// state for undirected blame shifting away from spinning waiting for work
+static undirected_blame_info_t omp_idle_blame_info;
 
 //-----------------------------------------
 // declare ompt interface function pointers
@@ -99,6 +108,22 @@ static directed_blame_info_t omp_mutex_blame_info;
 #define ompt_interface_fn(f) f ## _t f ## _fn;
 FOREACH_OMPT_FN(ompt_interface_fn)
 #undef ompt_interface_fn
+
+
+
+/******************************************************************************
+ * thread-local variables
+ *****************************************************************************/
+
+//-----------------------------------------
+// variable ompt_idle_count:
+//    this variable holds a count of how 
+//    many times the current thread has
+//    been marked as idle. a count is used 
+//    rather than a flag to support
+//    nested marking.
+//-----------------------------------------
+static __thread int ompt_idle_count;
 
 
 
@@ -177,16 +202,16 @@ void ompt_task_begin(ompt_task_id_t parent_task_id,
 //-------------------------------------------------
 
 static void
-ompt_thread_create()
+ompt_thread_begin()
 {
-  idle_metric_thread_start();
+  undirected_blame_thread_start(&omp_idle_blame_info);
 }
 
 
 static void
-ompt_thread_exit()
+ompt_thread_end()
 {
-  idle_metric_thread_end();
+  undirected_blame_thread_end(&omp_idle_blame_info);
 }
 
 
@@ -198,14 +223,14 @@ ompt_thread_exit()
 static void
 ompt_idle_begin()
 {
-  idle_metric_blame_shift_idle();
+  undirected_blame_idle_begin(&omp_idle_blame_info);
 }
 
 
 static void
 ompt_idle_end()
 {
-  idle_metric_blame_shift_work();
+  undirected_blame_idle_end(&omp_idle_blame_info);
 }
 
 
@@ -239,6 +264,13 @@ ompt_mutex_blame_target()
 }
 
 
+static int *
+ompt_get_idle_count_ptr()
+{
+  return &ompt_idle_count;
+}
+
+
 //-------------------------------------------------
 // accept any blame accumulated for mutex while 
 // this thread held it
@@ -260,11 +292,11 @@ init_threads()
 {
   int retval;
   retval = ompt_set_callback_fn(ompt_event_thread_begin, 
-		    (ompt_callback_t)ompt_thread_create);
+		    (ompt_callback_t)ompt_thread_begin);
   assert(ompt_event_may_occur(retval));
 
   retval = ompt_set_callback_fn(ompt_event_thread_end, 
-		    (ompt_callback_t)ompt_thread_exit);
+		    (ompt_callback_t)ompt_thread_end);
   assert(ompt_event_may_occur(retval));
 }
 
@@ -299,31 +331,41 @@ init_tasks()
 // to the mutex holder at the point of release.
 //-------------------------------------------------
 static void 
-init_mutex_blame_shift()
+init_mutex_blame_shift(char *version)
 {
-  int blame_shift_init = 0;
+  int mutex_blame_shift_avail = 0;
   int retval = 0;
-  if (!ompt_mutex_blame_enabled) return;
+
+  if (!ompt_mutex_blame_requested) return;
 
   retval = ompt_set_callback_fn(ompt_event_release_lock, 
 		    (ompt_callback_t) ompt_mutex_blame_accept);
-  blame_shift_init |= ompt_event_may_occur(retval);
+  mutex_blame_shift_avail |= ompt_event_may_occur(retval);
 
   retval = ompt_set_callback_fn(ompt_event_release_nest_lock_last, 
 		    (ompt_callback_t) ompt_mutex_blame_accept);
-  blame_shift_init |= ompt_event_may_occur(retval);
+  mutex_blame_shift_avail |= ompt_event_may_occur(retval);
 
   retval = ompt_set_callback_fn(ompt_event_release_critical, 
 		    (ompt_callback_t) ompt_mutex_blame_accept);
-  blame_shift_init |= ompt_event_may_occur(retval);
+  mutex_blame_shift_avail |= ompt_event_may_occur(retval);
 
   retval = ompt_set_callback_fn(ompt_event_release_atomic, 
 		    (ompt_callback_t) ompt_mutex_blame_accept);
-  blame_shift_init |= ompt_event_may_occur(retval);
+  mutex_blame_shift_avail |= ompt_event_may_occur(retval);
 
   retval = ompt_set_callback_fn(ompt_event_release_ordered, 
 		    (ompt_callback_t) ompt_mutex_blame_accept);
-  blame_shift_init |= ompt_event_may_occur(retval);
+  mutex_blame_shift_avail |= ompt_event_may_occur(retval);
+
+  if (mutex_blame_shift_avail) {
+    ompt_mutex_blame_shift_register();
+  } else {
+    printf("hpcrun warning: OMP_MUTEX event requested, however the\n"
+	   "OpenMP runtime present (%s) doesn't support the\n"
+	   "events needed for MUTEX blame shifting. As a result\n"
+	   "OMP_MUTEX blame will not be monitored or reported.\n", version);
+  }
 }
 
 
@@ -334,28 +376,36 @@ init_mutex_blame_shift()
 // idleness occurs. 
 //-------------------------------------------------
 static void 
-init_idle_blame_shift()
+init_idle_blame_shift(char *version)
 {
-  int blame_shift_init = 0;
+  int idle_blame_shift_avail = 0;
   int retval = 0;
+
+  if (!ompt_idle_blame_requested) return;
+
   retval = ompt_set_callback_fn(ompt_event_idle_begin, 
 		    (ompt_callback_t)ompt_idle_begin);
-  blame_shift_init |= ompt_event_may_occur(retval);
+  idle_blame_shift_avail |= ompt_event_may_occur(retval);
 
   retval = ompt_set_callback_fn(ompt_event_idle_end, 
 				(ompt_callback_t)ompt_idle_end);
-  blame_shift_init |= ompt_event_may_occur(retval);
+  idle_blame_shift_avail |= ompt_event_may_occur(retval);
 
   retval = ompt_set_callback_fn(ompt_event_wait_barrier_begin, 
 				(ompt_callback_t)ompt_idle_begin);
-  blame_shift_init |= ompt_event_may_occur(retval);
+  idle_blame_shift_avail |= ompt_event_may_occur(retval);
 
   retval = ompt_set_callback_fn(ompt_event_wait_barrier_end, 
 				(ompt_callback_t)ompt_idle_end);
-  blame_shift_init |= ompt_event_may_occur(retval);
+  idle_blame_shift_avail |= ompt_event_may_occur(retval);
 
-  if (blame_shift_init) {
-    idle_metric_register_blame_source(ompt_thread_participates);
+  if (idle_blame_shift_avail) {
+    ompt_idle_blame_shift_register();
+  } else {
+    printf("hpcrun warning: OMP_IDLE event requested, however the\n"
+	   "OpenMP runtime present (%s) doesn't support the\n"
+	   "events needed for blame shifting idleness. As a result\n"
+	   "OMP_IDLE blame will not be monitored or reported.\n", version);
   }
 }
 
@@ -381,8 +431,8 @@ ompt_initialize(
   init_function_pointers(ompt_fn_lookup);
   init_threads();
   init_parallel_regions();
-  init_mutex_blame_shift();
-  init_idle_blame_shift();
+  init_mutex_blame_shift(runtime_version);
+  init_idle_blame_shift(runtime_version);
 
   if(ENABLED(OMPT_TASK_FULL_CTXT)) {
     init_tasks();
@@ -497,6 +547,18 @@ hpcrun_ompt_outermost_parallel_id()
   return outer_id;
 }
 
+void 
+ompt_mutex_blame_shift_request()
+{
+  ompt_mutex_blame_requested = 1;
+}
+
+
+void 
+ompt_idle_blame_shift_request()
+{
+  ompt_idle_blame_requested = 1;
+}
 
 //----------------------------------------------------------------------------
 // interface function to register support for directed blame shifting for 
@@ -506,11 +568,9 @@ hpcrun_ompt_outermost_parallel_id()
 void
 ompt_mutex_blame_shift_register()
 {
-  ompt_mutex_blame_enabled = 1;
-
-  bs_entry.fn = directed_blame_sample;
-  bs_entry.next = NULL;
-  bs_entry.arg = &omp_mutex_blame_info;
+  mutex_bs_entry.fn = directed_blame_sample;
+  mutex_bs_entry.next = NULL;
+  mutex_bs_entry.arg = &omp_mutex_blame_info;
 
   omp_mutex_blame_info.get_blame_target = ompt_mutex_blame_target;
 
@@ -526,8 +586,38 @@ ompt_mutex_blame_shift_register()
 
   omp_mutex_blame_info.levels_to_skip = 1;
 
-  blame_shift_register(&bs_entry);
+  blame_shift_register(&mutex_bs_entry);
 }
 
 
+void
+ompt_idle_blame_shift_register()
+{
+  ompt_idle_blame_enabled = 1;
 
+  idle_bs_entry.fn = undirected_blame_sample;
+  idle_bs_entry.next = NULL;
+  idle_bs_entry.arg = &omp_idle_blame_info;
+
+  omp_idle_blame_info.get_idle_count_ptr = ompt_get_idle_count_ptr;
+
+  int idle_metric_id = omp_idle_blame_info.idle_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(idle_metric_id, "OMP_IDLE",
+				    MetricFlags_ValFmt_Real, 1, metric_property_none);
+
+  int work_metric_id = omp_idle_blame_info.work_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(work_metric_id, "OMP_WORK",
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+
+  blame_shift_register(&idle_bs_entry);
+}
+
+
+#if 0
+void
+idle_metric_register_blame_source()
+{
+   idleness_blame_information_source_present = true;
+}
+
+#endif

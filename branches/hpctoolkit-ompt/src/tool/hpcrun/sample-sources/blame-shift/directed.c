@@ -66,20 +66,7 @@
 
 #include <hpcrun/sample-sources/blame-shift/blame-map.h>
 #include <hpcrun/sample-sources/blame-shift/directed.h>
-
-
-
-/***************************************************************************
- * private operations
- ***************************************************************************/
-
-static cct_node_t *
-attribute_blame(ucontext_t *uc, int metric_id, int metric_incr, int skipcnt)
-{
-  cct_node_t *node = 
-    hpcrun_sample_callpath(uc, metric_id, metric_incr, skipcnt, 1).sample_node;
-  return node;
-}
+#include <hpcrun/sample-sources/blame-shift/metric_info.h>
 
 
 
@@ -95,12 +82,14 @@ directed_blame_accept(void *arg, uint64_t obj)
   if (hpctoolkit_sampling_is_active()) {
     uint64_t blame = blame_map_get_blame(bi->blame_table, obj);
 
-    ucontext_t uc;
-    getcontext(&uc);
-
-    hpcrun_safe_enter();
-    attribute_blame(&uc, bi->blame_metric_id, blame, bi->levels_to_skip);
-    hpcrun_safe_exit();
+    if (blame > 0) {
+      // attribute blame to the current context
+      ucontext_t uc;
+      getcontext(&uc);
+      hpcrun_safe_enter();
+      hpcrun_sample_callpath(&uc, bi->blame_metric_id, blame, bi->levels_to_skip, 1);
+      hpcrun_safe_exit();
+    }
   }
 }
 
@@ -110,15 +99,12 @@ directed_blame_sample(void *arg, int metric_id, cct_node_t *node,
                       int metric_incr)
 {
   directed_blame_info_t *bi = (directed_blame_info_t *) arg;
-  metric_desc_t * metric_desc = hpcrun_id2metric(metric_id);
- 
-  // Only blame shift idleness for time and cycle metrics. 
-  if (!(metric_desc->properties.time | metric_desc->properties.cycles)) 
-    return;
+  int metric_period;
+
+  if (!metric_is_timebase(metric_id, &metric_period)) return;
 
   uint64_t obj_to_blame = bi->get_blame_target();
   if (obj_to_blame) {
-    uint32_t metric_period = metric_desc->period;
     uint32_t metric_value = (uint32_t) (metric_period * metric_incr);
     blame_map_add_blame(bi->blame_table, obj_to_blame, metric_value); 
     if (bi->wait_metric_id) {
