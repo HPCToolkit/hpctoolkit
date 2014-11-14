@@ -683,7 +683,7 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_metid,
 
   DIAG_Assert(ret == 0, "MPI_Gather for Plot::writePlotGraphs failed");
 
-  // compact the index data
+  // compact the index data, then write the index and header.
   if (myRank == rootRank) {
     char *dest = ((char *) index_global) + global_size[0];
     char *src =  ((char *) index_global) + index_max;
@@ -697,6 +697,12 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_metid,
     ret = write_all_at(plot_fd, index_global, index_sum, plot_index_start);
 
     DIAG_Assert(ret == 0, "write plot metrics index failed");
+
+    ret = Prof::Database::writePlotHeader(
+		plot_fd, max_cctid + 1, max_metid + 1, max_tid,
+		plot_index_start, index_sum);
+
+    DIAG_Assert(ret == 0, "write plot metrics header failed");
   }
 
   // temp debugging output

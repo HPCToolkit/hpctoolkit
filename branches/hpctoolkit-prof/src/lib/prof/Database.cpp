@@ -94,8 +94,9 @@
 //***************************************************************************
 
 #define MESSAGE_SIZE  32
-#define SUMMARY_NAME  "hpctoolkit summary file"
-#define TRACE_NAME    "hpctoolkit trace file"
+#define SUMMARY_NAME  "hpctoolkit summary metrics"
+#define TRACE_NAME    "hpctoolkit trace metrics"
+#define PLOT_NAME     "hpctoolkit plot metrics"
 
 #define MAGIC  0x06870630
 
@@ -133,6 +134,17 @@ struct __attribute__ ((packed)) trace_header {
   uint32_t  size_length;
   uint32_t  size_time;
   uint32_t  size_cctid;
+};
+
+struct __attribute__ ((packed)) plot_header {
+  uint64_t  index_start;
+  uint64_t  index_length;
+  uint32_t  size_cctid;
+  uint32_t  size_metid;
+  uint32_t  size_offset;
+  uint32_t  size_count;
+  uint32_t  size_tid;
+  uint32_t  size_metval;
 };
 
 struct __attribute__ ((packed)) metric_entry {
@@ -552,6 +564,52 @@ endTraceFiles(void)
   if (trace_buf != NULL) {
     free(trace_buf);
   }
+}
+
+//***************************************************************************
+
+// Plot Graph Header
+
+int
+writePlotHeader(int fd, ulong num_cctid, ulong num_metric,
+		ulong num_threads, ulong index_start, ulong index_length)
+{
+  long common_size = sizeof(struct common_header);
+  long plot_size = sizeof(struct plot_header);
+  long header_size = common_size + plot_size;
+
+  char * header = (char *) malloc(header_size);
+  if (header == NULL) {
+    err(1, "malloc for plot metrics header failed");
+  }
+  struct common_header * common_hdr = (struct common_header *) header;
+  struct plot_header * plot_hdr = (struct plot_header *) (header + common_size);
+
+  memset(header, 0, header_size);
+  strncpy((char *) common_hdr, PLOT_NAME, MESSAGE_SIZE);
+
+  common_hdr->mesg[MESSAGE_SIZE - 1] = 0;
+  common_hdr->magic = host_to_be_32(MAGIC);
+  common_hdr->type =  host_to_be_32(3);
+  common_hdr->format =  host_to_be_32(3);
+  common_hdr->num_threads = host_to_be_64(num_threads);
+  common_hdr->num_cctid =  host_to_be_64(num_cctid);
+  common_hdr->num_metric = host_to_be_64(num_metric);
+
+  plot_hdr->index_start =  host_to_be_64(index_start);
+  plot_hdr->index_length = host_to_be_64(index_length);
+  plot_hdr->size_cctid = host_to_be_32(4);
+  plot_hdr->size_metid = host_to_be_32(4);
+  plot_hdr->size_offset = host_to_be_32(8);
+  plot_hdr->size_count = host_to_be_32(8);
+  plot_hdr->size_tid = host_to_be_32(4);
+  plot_hdr->size_metval = host_to_be_32(4);
+
+  int ret = write_all_at(fd, header, header_size, 0);
+
+  free(header);
+
+  return ret;
 }
 
 }  // namespace Prof, Database

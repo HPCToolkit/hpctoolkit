@@ -50,6 +50,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 
+#include <include/uint.h>
 #include <lib/analysis/Args.hpp>
 #include <lib/analysis/ArgsHPCProf.hpp>
 #include <lib/prof/CCT-Merge.hpp>
@@ -89,6 +90,9 @@ int writeTraceFile(Prof::CallPath::Profile *prof,
 		   Prof::CCT::MergeEffectList *effects);
 
 void endTraceFiles(void);
+
+int writePlotHeader(int fd, ulong max_cctid, ulong num_metrics,
+		    ulong num_threads, ulong index_start, ulong index_length);
 
 }  // namespace Prof, Database
 }
