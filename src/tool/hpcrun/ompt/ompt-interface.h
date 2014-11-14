@@ -19,7 +19,8 @@ extern ompt_parallel_id_t hpcrun_ompt_outermost_parallel_id();
 
 extern void ompt_mutex_blame_shift_enable();
 
-extern void ompt_mutex_blame_shift_register();
+extern void ompt_mutex_blame_shift_request();
+extern void ompt_idle_blame_shift_request();
 
 //------------------------------------------------------------------------------
 // function: 
