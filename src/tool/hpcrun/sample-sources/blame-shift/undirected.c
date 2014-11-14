@@ -73,26 +73,6 @@
 #include <hpcrun/sample-sources/blame-shift/undirected.h>
 #include <hpcrun/sample-sources/blame-shift/metric_info.h>
 
-#if 0
-#include "simple_oo.h"
-#include "sample_source_obj.h"
-#include "common.h"
-
-#include <sample-sources/blame-shift/blame-shift.h>
-
-#include <hpcrun/hpcrun_options.h>
-
-#include <hpcrun/metrics.h>
-#include <hpcrun/sample_sources_registered.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/trace.h>
-#include <messages/messages.h>
-#include <utilities/tokenize.h>
-
-#endif
-
 #include <lib/prof-lean/atomic.h>
 
 /******************************************************************************
