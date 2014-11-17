@@ -1634,7 +1634,8 @@ Optional Packages:
                           both]
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
 
-  --with-externals=PATH   path to external prereqs tree
+  --with-externals=PATH   path to hpctoolkit-externals build or install
+                          directory (normally required)
   --with-binutils=PATH    use given GNU binutils installation
   --with-boost=PATH       path to boost install directory
   --with-libdwarf=PATH    path to libdwarf install directory
@@ -16950,6 +16951,8 @@ ext_cc_path=unknown
 ext_cxx_path=unknown
 ext_wordsize=unknown
 
+warn_no_externals=no
+
 
 # Check whether --with-dummy-blank-line was given.
 if test "${with_dummy_blank_line+set}" = set; then :
@@ -16990,6 +16993,7 @@ else
 $as_echo "$as_me: WARNING: not using --with-externals" >&2;}
   use_externals=no
   externals_mesg=no
+  warn_no_externals=yes
 fi
 
 
@@ -22571,6 +22575,32 @@ $as_echo "$as_me: WARNING: launch scripts.  Set CONFIG_SITE=NONE or else unset i
 $as_echo "$as_me: WARNING: from your environment and rerun configure." >&2;}
 fi
 
+if test "$warn_bgq_backend" = yes ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+$as_echo "$as_me: " >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: On the Blue Gene/Q compute nodes, hpcrun needs a separate," >&5
+$as_echo "$as_me: WARNING: On the Blue Gene/Q compute nodes, hpcrun needs a separate," >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: back-end compiler.  Use --enable-bgq to build for the back end," >&5
+$as_echo "$as_me: WARNING: back-end compiler.  Use --enable-bgq to build for the back end," >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: or else --disable-bgq to build for the front end." >&5
+$as_echo "$as_me: WARNING: or else --disable-bgq to build for the front end." >&2;}
+fi
+
+if test "$warn_no_externals" = yes ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+$as_echo "$as_me: " >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using hpctoolkit-externals." >&5
+$as_echo "$as_me: WARNING: Not using hpctoolkit-externals." >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unless you're building hpctoolkit only for docs or make dist," >&5
+$as_echo "$as_me: WARNING: Unless you're building hpctoolkit only for docs or make dist," >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: this is probably an error.  First, svn checkout, configure" >&5
+$as_echo "$as_me: WARNING: this is probably an error.  First, svn checkout, configure" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: and build externals and then reconfigure hpctoolkit with:" >&5
+$as_echo "$as_me: WARNING: and build externals and then reconfigure hpctoolkit with:" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --with-externals=/path/to/externals/install/directory" >&5
+$as_echo "$as_me: WARNING: --with-externals=/path/to/externals/install/directory" >&2;}
+fi
+
 if test "$warn_non_gcc" = yes ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
@@ -22582,17 +22612,6 @@ $as_echo "$as_me: WARNING: This is not necessarily an error, but some parts of h
 $as_echo "$as_me: WARNING: may not compile cleanly without gcc or g++.  If the build fails," >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: try using GNU gcc and g++ before reporting an error." >&5
 $as_echo "$as_me: WARNING: try using GNU gcc and g++ before reporting an error." >&2;}
-fi
-
-if test "$warn_bgq_backend" = yes ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
-$as_echo "$as_me: " >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: On the Blue Gene/Q compute nodes, hpcrun needs a separate," >&5
-$as_echo "$as_me: WARNING: On the Blue Gene/Q compute nodes, hpcrun needs a separate," >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: back-end compiler.  Use --enable-bgq to build for the back end," >&5
-$as_echo "$as_me: WARNING: back-end compiler.  Use --enable-bgq to build for the back end," >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: or else --disable-bgq to build for the front end." >&5
-$as_echo "$as_me: WARNING: or else --disable-bgq to build for the front end." >&2;}
 fi
 
 if test "$warn_compiler_mismatch" = yes ; then
