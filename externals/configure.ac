@@ -229,6 +229,7 @@ fi
 
 # Test if CXX supports <tr1/unordered_map>.  SymtabAPI uses this with
 # gcc 4.3 and later, but some installations (biou) are missing this.
+# Now, only old symtab 6.1 for ia64 uses this.
 
 AC_MSG_CHECKING([if CXX supports tr1 unordered_map])
 
@@ -309,6 +310,8 @@ AC_SUBST([cxx_c11_flag])
 #------------------------------------------------------------
 
 # Try C flags for PIC.  GNU and Intel use -fPIC, PGI uses -fpic.
+# We use this in binutils to build an fPIC version of libiberty for
+# symtabAPI.
 
 AC_MSG_CHECKING([for option for PIC])
 
@@ -1250,11 +1253,11 @@ AC_ARG_WITH([symtabAPI],
     [],
     [with_symtabAPI="$symtabAPI_default"])
 
-AC_ARG_ENABLE([symtab82],
-    [AS_HELP_STRING([--enable-symtab82],
-	[use latest symtabAPI 8.2 for inline support (default yes)])],
+AC_ARG_ENABLE([symtab61],
+    [AS_HELP_STRING([--enable-symtab61],
+	[use old symbabAPI 6.1 for Itanium, used only on ia64 (default no)])],
     [],
-    [enable_symtab82=yes])
+    [enable_symtab61=no])
 
 AC_MSG_CHECKING([symtabAPI])
 
@@ -1269,12 +1272,13 @@ rm -f "$cookie"
 
 SYMTAB_OTHER_PREREQS=
 
-if test "$enable_symtab82" = yes ; then
-    SYMTAB_OTHER_PREREQS=binutils
-else
-    SYMTAB_OTHER_PREREQS=libxml2
-    symtab_version=8.0
+if test "$enable_symtab61" = yes ; then
+    SYMTAB_OTHER_PREREQS='libunwind libxml2'
+    symtab_version=6.1
     use_symtab_82=no
+    use_symtab_61=yes
+else
+    SYMTAB_OTHER_PREREQS=binutils
 fi
 
 case "$with_symtabAPI" in
@@ -1348,17 +1352,16 @@ AC_SUBST([SYMTAB_OTHER_PREREQS])
 # Symtab 8.2 requires cmake version 2.6 or later.
 
 if test "$use_symtab_82" = yes && test "$cmake_found" = no ; then
-    AC_MSG_WARN([SymtabAPI 8.2 requires cmake.  Please put cmake on your])
-    AC_MSG_WARN([path or else reconfigure with --disable-symtab82.])
+    AC_MSG_WARN([SymtabAPI 8.2 requires cmake.])
+    AC_MSG_WARN([Please put cmake on your PATH.])
     AC_MSG_ERROR([Unable to find cmake.])
 fi
 
 # Symtab 8.2 requires standard C++11.
 
 if test "$use_symtab_82" = yes && test "$cxx_c11_avail" = no ; then
-    AC_MSG_WARN([SymtabAPI 8.2 requires a C++11 compiler.  Please set])
-    AC_MSG_WARN([CXX11_FLAG to a CXX flag for std C++11 or else])
-    AC_MSG_WARN([reconfigure with --disable-symtab82.])
+    AC_MSG_WARN([SymtabAPI 8.2 requires a C++11 compiler.])
+    AC_MSG_WARN([Please set CXX11_FLAG to a CXX flag for std C++11.])
     AC_MSG_ERROR([Unable to find CXX flag for std C++11.])
 fi
 

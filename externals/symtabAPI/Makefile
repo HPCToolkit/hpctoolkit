@@ -12,19 +12,6 @@ PREREQS = boost libelf libdwarf
 PLATFORM := $(SYMTABAPI_PLATFORM)
 export PLATFORM
 
-ifeq ($(USE_SYMTAB_82),yes)
-
-# New symtabAPI 8.2 with inline support.
-
-FETCH_TARFILE = dyninst-8.2.tar.gz
-SRC_DIR = dyninst-8.2
-PATCH_DIR = patches-82
-FETCH_COPY_FILES = cmake/optimization.cmake
-CONFIG_CMD = ./configure-82
-BUILD_SUBDIRS = common elf dwarf symtabAPI
-PREREQS += binutils
-
-else
 ifeq ($(USE_SYMTAB_61),yes)
 
 # SymtabAPI dropped support for ia64 after 6.1.
@@ -39,15 +26,16 @@ PREREQS += libunwind libxml2
 
 else
 
-FETCH_TARFILE = symtabAPI-8.0.tgz
-SRC_DIR =   SymtabAPI-8.0
-BUILD_DIR = SymtabAPI-8.0
-PATCH_DIR = patches
-POST_FETCH_CMD = ./post-fetch
-CONFIG_CMD = ./configure
-PREREQS += libxml2
+# New symtabAPI 8.2 with inline support.
 
-endif
+FETCH_TARFILE = dyninst-8.2.tar.gz
+SRC_DIR = dyninst-8.2
+PATCH_DIR = patches-82
+FETCH_COPY_FILES = cmake/optimization.cmake
+CONFIG_CMD = ./configure-82
+BUILD_SUBDIRS = common elf dwarf symtabAPI
+PREREQS += binutils
+
 endif
 
 include ../build-utils/Makefile.inc

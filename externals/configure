@@ -722,7 +722,7 @@ with_old_monitor
 with_open_analysis
 with_oprofile
 with_symtabAPI
-enable_symtab82
+enable_symtab61
 enable_mic
 with_xed2
 with_xerces
@@ -1364,8 +1364,8 @@ Optional Features:
                           back-end powerpc64-bgq-linux-gcc (autodetect)
   --enable-back-end       build only those packages needed to run hpcrun on
                           the back-end compute nodes (default no)
-  --enable-symtab82       use latest symtabAPI 8.2 for inline support (default
-                          yes)
+  --enable-symtab61       use old symbabAPI 6.1 for Itanium, used only on ia64
+                          (default no)
   --enable-mic            use xed2 on front-end x86_64 that understands Intel
                           MIC code, currently breaks hpclink (default no)
 
@@ -3630,6 +3630,7 @@ fi
 
 # Test if CXX supports <tr1/unordered_map>.  SymtabAPI uses this with
 # gcc 4.3 and later, but some installations (biou) are missing this.
+# Now, only old symtab 6.1 for ia64 uses this.
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking if CXX supports tr1 unordered_map" >&5
 $as_echo_n "checking if CXX supports tr1 unordered_map... " >&6; }
@@ -3753,6 +3754,8 @@ fi
 #------------------------------------------------------------
 
 # Try C flags for PIC.  GNU and Intel use -fPIC, PGI uses -fpic.
+# We use this in binutils to build an fPIC version of libiberty for
+# symtabAPI.
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for option for PIC" >&5
 $as_echo_n "checking for option for PIC... " >&6; }
@@ -5396,11 +5399,11 @@ else
 fi
 
 
-# Check whether --enable-symtab82 was given.
-if test "${enable_symtab82+set}" = set; then :
-  enableval=$enable_symtab82;
+# Check whether --enable-symtab61 was given.
+if test "${enable_symtab61+set}" = set; then :
+  enableval=$enable_symtab61;
 else
-  enable_symtab82=yes
+  enable_symtab61=no
 fi
 
 
@@ -5418,12 +5421,13 @@ rm -f "$cookie"
 
 SYMTAB_OTHER_PREREQS=
 
-if test "$enable_symtab82" = yes ; then
-    SYMTAB_OTHER_PREREQS=binutils
-else
-    SYMTAB_OTHER_PREREQS=libxml2
-    symtab_version=8.0
+if test "$enable_symtab61" = yes ; then
+    SYMTAB_OTHER_PREREQS='libunwind libxml2'
+    symtab_version=6.1
     use_symtab_82=no
+    use_symtab_61=yes
+else
+    SYMTAB_OTHER_PREREQS=binutils
 fi
 
 case "$with_symtabAPI" in
@@ -5498,22 +5502,20 @@ $as_echo "$symtabAPI_avail" >&6; }
 # Symtab 8.2 requires cmake version 2.6 or later.
 
 if test "$use_symtab_82" = yes && test "$cmake_found" = no ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: SymtabAPI 8.2 requires cmake.  Please put cmake on your" >&5
-$as_echo "$as_me: WARNING: SymtabAPI 8.2 requires cmake.  Please put cmake on your" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: path or else reconfigure with --disable-symtab82." >&5
-$as_echo "$as_me: WARNING: path or else reconfigure with --disable-symtab82." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: SymtabAPI 8.2 requires cmake." >&5
+$as_echo "$as_me: WARNING: SymtabAPI 8.2 requires cmake." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please put cmake on your PATH." >&5
+$as_echo "$as_me: WARNING: Please put cmake on your PATH." >&2;}
     as_fn_error $? "Unable to find cmake." "$LINENO" 5
 fi
 
 # Symtab 8.2 requires standard C++11.
 
 if test "$use_symtab_82" = yes && test "$cxx_c11_avail" = no ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: SymtabAPI 8.2 requires a C++11 compiler.  Please set" >&5
-$as_echo "$as_me: WARNING: SymtabAPI 8.2 requires a C++11 compiler.  Please set" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: CXX11_FLAG to a CXX flag for std C++11 or else" >&5
-$as_echo "$as_me: WARNING: CXX11_FLAG to a CXX flag for std C++11 or else" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: reconfigure with --disable-symtab82." >&5
-$as_echo "$as_me: WARNING: reconfigure with --disable-symtab82." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: SymtabAPI 8.2 requires a C++11 compiler." >&5
+$as_echo "$as_me: WARNING: SymtabAPI 8.2 requires a C++11 compiler." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please set CXX11_FLAG to a CXX flag for std C++11." >&5
+$as_echo "$as_me: WARNING: Please set CXX11_FLAG to a CXX flag for std C++11." >&2;}
     as_fn_error $? "Unable to find CXX flag for std C++11." "$LINENO" 5
 fi
 
