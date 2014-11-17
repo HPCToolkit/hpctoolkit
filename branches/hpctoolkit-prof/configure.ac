@@ -966,10 +966,13 @@ ext_cc_path=unknown
 ext_cxx_path=unknown
 ext_wordsize=unknown
 
+warn_no_externals=no
+
 AC_ARG_WITH([dummy-blank-line], [AS_HELP_STRING([], [])])
 AC_ARG_WITH([externals],
   [AS_HELP_STRING([--with-externals=PATH],
-	  [path to external prereqs tree])],
+	  [path to hpctoolkit-externals build or install directory
+	   (normally required)])],
   [],
   [with_externals=no])
 
@@ -994,6 +997,7 @@ else
   AC_MSG_WARN([not using --with-externals])
   use_externals=no
   externals_mesg=no
+  warn_no_externals=yes
 fi
 
 
@@ -3046,19 +3050,28 @@ if test "$warn_config_site" = yes ; then
   AC_MSG_WARN([from your environment and rerun configure.])
 fi
 
+if test "$warn_bgq_backend" = yes ; then
+    AC_MSG_NOTICE([])
+    AC_MSG_WARN([On the Blue Gene/Q compute nodes, hpcrun needs a separate,])
+    AC_MSG_WARN([back-end compiler.  Use --enable-bgq to build for the back end,])
+    AC_MSG_WARN([or else --disable-bgq to build for the front end.])
+fi
+
+if test "$warn_no_externals" = yes ; then
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([Not using hpctoolkit-externals.])
+  AC_MSG_WARN([Unless you're building hpctoolkit only for docs or make dist,])
+  AC_MSG_WARN([this is probably an error.  First, svn checkout, configure])
+  AC_MSG_WARN([and build externals and then reconfigure hpctoolkit with:])
+  AC_MSG_WARN([--with-externals=/path/to/externals/install/directory])
+fi
+
 if test "$warn_non_gcc" = yes ; then
   AC_MSG_NOTICE([])
   AC_MSG_WARN([Not using the GNU C or C++ compiler.])
   AC_MSG_WARN([This is not necessarily an error, but some parts of hpctoolkit])
   AC_MSG_WARN([may not compile cleanly without gcc or g++.  If the build fails,])
   AC_MSG_WARN([try using GNU gcc and g++ before reporting an error.])
-fi
-
-if test "$warn_bgq_backend" = yes ; then
-    AC_MSG_NOTICE([])
-    AC_MSG_WARN([On the Blue Gene/Q compute nodes, hpcrun needs a separate,])
-    AC_MSG_WARN([back-end compiler.  Use --enable-bgq to build for the back end,])
-    AC_MSG_WARN([or else --disable-bgq to build for the front end.])
 fi
 
 if test "$warn_compiler_mismatch" = yes ; then

@@ -381,6 +381,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
+	unwind/x86-family/manual-intervals/x86-intel14-omp.c \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
@@ -464,6 +465,7 @@ am__objects_32 = $(am__objects_30) libhpcrun_la-x86-all.lo \
 	libhpcrun_la-x86-unwind.lo libhpcrun_la-x86-unwind-support.lo \
 	libhpcrun_la-x86-linux-dlresolver.lo \
 	libhpcrun_la-x86-intel11-f90main.lo \
+	libhpcrun_la-x86-intel14-omp.lo \
 	libhpcrun_la-x86-intel-composer2013-mic.lo \
 	libhpcrun_la-x86-32bit-main.lo \
 	libhpcrun_la-x86-32bit-icc-variant.lo \
@@ -594,6 +596,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
+	unwind/x86-family/manual-intervals/x86-intel14-omp.c \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
@@ -689,6 +692,7 @@ am__objects_54 = $(am__objects_52) libhpcrun_o-x86-all.$(OBJEXT) \
 	libhpcrun_o-x86-unwind-support.$(OBJEXT) \
 	libhpcrun_o-x86-linux-dlresolver.$(OBJEXT) \
 	libhpcrun_o-x86-intel11-f90main.$(OBJEXT) \
+	libhpcrun_o-x86-intel14-omp.$(OBJEXT) \
 	libhpcrun_o-x86-intel-composer2013-mic.$(OBJEXT) \
 	libhpcrun_o-x86-32bit-main.$(OBJEXT) \
 	libhpcrun_o-x86-32bit-icc-variant.$(OBJEXT) \
@@ -1111,6 +1115,7 @@ UNW_X86_FILES = \
 	unwind/x86-family/x86-unwind-support.c		\
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
+	unwind/x86-family/manual-intervals/x86-intel14-omp.c \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
@@ -1879,6 +1884,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-context-pc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-intel-composer2013-mic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-intel11-f90main.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-intel14-omp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-linux-dlresolver.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-pgi-mp_pexit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-tramp.Plo@am__quote@
@@ -1978,6 +1984,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-context-pc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-intel-composer2013-mic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-intel11-f90main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-intel14-omp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-linux-dlresolver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-pgi-mp_pexit.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-tramp.Po@am__quote@
@@ -2922,6 +2929,13 @@ libhpcrun_la-x86-intel11-f90main.lo: unwind/x86-family/manual-intervals/x86-inte
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-intel11-f90main.c' object='libhpcrun_la-x86-intel11-f90main.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-x86-intel11-f90main.lo `test -f 'unwind/x86-family/manual-intervals/x86-intel11-f90main.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel11-f90main.c
+
+libhpcrun_la-x86-intel14-omp.lo: unwind/x86-family/manual-intervals/x86-intel14-omp.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-x86-intel14-omp.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-x86-intel14-omp.Tpo -c -o libhpcrun_la-x86-intel14-omp.lo `test -f 'unwind/x86-family/manual-intervals/x86-intel14-omp.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel14-omp.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-x86-intel14-omp.Tpo $(DEPDIR)/libhpcrun_la-x86-intel14-omp.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-intel14-omp.c' object='libhpcrun_la-x86-intel14-omp.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-x86-intel14-omp.lo `test -f 'unwind/x86-family/manual-intervals/x86-intel14-omp.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel14-omp.c
 
 libhpcrun_la-x86-intel-composer2013-mic.lo: unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-x86-intel-composer2013-mic.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-x86-intel-composer2013-mic.Tpo -c -o libhpcrun_la-x86-intel-composer2013-mic.lo `test -f 'unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c
@@ -4280,6 +4294,20 @@ libhpcrun_o-x86-intel11-f90main.obj: unwind/x86-family/manual-intervals/x86-inte
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-intel11-f90main.c' object='libhpcrun_o-x86-intel11-f90main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-intel11-f90main.obj `if test -f 'unwind/x86-family/manual-intervals/x86-intel11-f90main.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-intel11-f90main.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-intel11-f90main.c'; fi`
+
+libhpcrun_o-x86-intel14-omp.o: unwind/x86-family/manual-intervals/x86-intel14-omp.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-intel14-omp.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-intel14-omp.Tpo -c -o libhpcrun_o-x86-intel14-omp.o `test -f 'unwind/x86-family/manual-intervals/x86-intel14-omp.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel14-omp.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-x86-intel14-omp.Tpo $(DEPDIR)/libhpcrun_o-x86-intel14-omp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-intel14-omp.c' object='libhpcrun_o-x86-intel14-omp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-intel14-omp.o `test -f 'unwind/x86-family/manual-intervals/x86-intel14-omp.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel14-omp.c
+
+libhpcrun_o-x86-intel14-omp.obj: unwind/x86-family/manual-intervals/x86-intel14-omp.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-intel14-omp.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-intel14-omp.Tpo -c -o libhpcrun_o-x86-intel14-omp.obj `if test -f 'unwind/x86-family/manual-intervals/x86-intel14-omp.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-intel14-omp.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-intel14-omp.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-x86-intel14-omp.Tpo $(DEPDIR)/libhpcrun_o-x86-intel14-omp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-intel14-omp.c' object='libhpcrun_o-x86-intel14-omp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-intel14-omp.obj `if test -f 'unwind/x86-family/manual-intervals/x86-intel14-omp.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-intel14-omp.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-intel14-omp.c'; fi`
 
 libhpcrun_o-x86-intel-composer2013-mic.o: unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-intel-composer2013-mic.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-intel-composer2013-mic.Tpo -c -o libhpcrun_o-x86-intel-composer2013-mic.o `test -f 'unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c

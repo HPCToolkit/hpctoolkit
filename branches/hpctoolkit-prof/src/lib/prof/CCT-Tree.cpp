@@ -1128,11 +1128,24 @@ Root::toStringMe(uint oFlags) const
   return self;
 }
 
+
+//**********************************************************************
+// Goal: This function is to avoid using different ID for the same file name.
+// During the writing of file dictionary table (see CallPath-Profile.cpp)
+// 	if a file has the exact absolute name with a previous file, 
+//	then we redirect its ID to the existing ID
+//
+// This function will check if any nodes refer to redirected ID or not.
+// 	if this is the case, it will return the existing file ID instead of
+//	the node's file ID.
+//**********************************************************************
 static uint
 getFileIdFromMap(uint file_id)
 {
   uint id = file_id;
   if (Prof::m_mapFileIDs.find(file_id) != Prof::m_mapFileIDs.end()) {
+    // the file ID should redirected to another file ID which has 
+    // exactly the same filename
     id = Prof::m_mapFileIDs[file_id];
   }
   return id;
@@ -1173,6 +1186,7 @@ Proc::toStringMe(uint oFlags) const
   
   if (m_strct) {
     string lm_nm = xml::MakeAttrNum(lmId());
+
     uint file_id = getFileIdFromMap(fileId());
     string fnm = xml::MakeAttrNum(file_id);
     string pnm = xml::MakeAttrNum(procId());

@@ -5,5 +5,8 @@ backwards from the viewer to hpcrun.  Step 1 is between hpcprof and
 the viewer to make prof write files in a compact binary format and not
 write one file per process or thread.
 
+origin: 2014-05-08 from trunk rev 4504
+
 sync: 2014-09-12 with trunk rev 4599
+sync: 2014-11-17 with trunk rev 4643
 
