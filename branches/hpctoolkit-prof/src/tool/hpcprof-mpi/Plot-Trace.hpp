@@ -49,6 +49,7 @@
 
 #include <include/uint.h>
 #include <lib/prof/CallPath-Profile.hpp>
+#include <lib/prof/Database.hpp>
 
 #include <string>
 
@@ -65,6 +66,15 @@ int sharePlotPoints(int myRank, int numRanks, int rootRank);
 int writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
 		    int myRank, int numRanks, int rootRank);
 
-}
+}  // namespace Plot
+
+namespace Trace {
+
+int mergeTraceInfo(Prof::Database::traceInfo * traceGbl,
+		   Prof::Database::traceInfo * traceLcl,
+		   long numPerRank, long & numActive,
+		   int myRank, int numRanks, int rootRank);
+
+}  // namespace Trace
 
 #endif

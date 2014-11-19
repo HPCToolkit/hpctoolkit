@@ -760,6 +760,81 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
 
 //***************************************************************************
 
+namespace Trace {
+
+// Perform a prefix sum on the lengths of the trace files to determine
+// their starting offsets.  Rank 0 gathers the trace info from all
+// ranks, computes the prefix sum (serial), and then scatters the
+// result back to the other ranks.  Rank 0 also collects the global
+// index and compacts it.
+//
+int
+mergeTraceInfo(Prof::Database::traceInfo * traceGbl,
+	       Prof::Database::traceInfo * traceLcl,
+	       long numPerRank, long & numActive,
+	       int myRank, int numRanks, int rootRank)
+{
+  int chunkSize = numPerRank * sizeof(Prof::Database::traceInfo);
+  long totalFiles = numPerRank * numRanks;
+  off_t offset = 0;
+  long k;
+  int ret;
+
+  ret = MPI_Gather((void *) traceLcl, chunkSize, MPI_CHAR,
+		   (void *) traceGbl, chunkSize, MPI_CHAR,
+		   rootRank, MPI_COMM_WORLD);
+
+  DIAG_Assert(ret == 0, "MPI_Gather for mergeTraceInfo failed");
+
+  numActive = 0;
+  if (myRank == rootRank) {
+    // count the number of active trace files
+    for (k = 0; k < totalFiles; k++) {
+      if (traceGbl[k].active) {
+	numActive++;
+      }
+    }
+
+    // compute starting offsets for all trace files
+    offset = Prof::Database::firstTraceOffset(numActive);
+    offset = Prof::Database::alignOffset(offset);
+
+    for (k = 0; k < totalFiles; k++) {
+      traceGbl[k].start_offset = 0;
+      if (traceGbl[k].active) {
+	traceGbl[k].start_offset = offset;
+	offset += traceGbl[k].length;
+	offset = Prof::Database::alignOffset(offset);
+      }
+    }
+  }
+
+  ret = MPI_Scatter((void *) traceGbl, chunkSize, MPI_CHAR,
+		    (void *) traceLcl, chunkSize, MPI_CHAR,
+		    rootRank, MPI_COMM_WORLD);
+
+  DIAG_Assert(ret == 0, "MPI_Scatter for mergeTraceInfo failed");
+
+  // after the scatter, rank 0 compacts the global index
+  if (myRank == rootRank) {
+    long i = 0;
+    for (k = 0; k < totalFiles; k++) {
+      if (traceGbl[k].active) {
+	if (i < k) {
+	  traceGbl[i] = traceGbl[k];
+	}
+	i++;
+      }
+    }
+  }
+
+  return 0;
+}
+
+}  // namespace Trace
+
+//***************************************************************************
+
 // Debugging output
 
 static void
