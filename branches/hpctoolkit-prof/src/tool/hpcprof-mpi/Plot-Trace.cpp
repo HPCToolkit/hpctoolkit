@@ -74,8 +74,8 @@
 #include <string>
 #include <utility>
 
+#define PLOT_INDEX_START  512
 #define MEG  (1024 * 1024)
-#define OFFSET_ALIGN  1024
 
 struct __attribute__ ((packed)) plot_index_s {
   uint32_t  cctid;
@@ -111,8 +111,6 @@ static ulong send_buf_size = 0;
 static uint * group_pos = NULL;
 static uint * start_id = NULL;
 static ulong group_size = 0;
-
-static ulong plot_index_start = 512;
 
 
 static void
@@ -448,49 +446,67 @@ sharePlotPoints(int myRank, int numRanks, int rootRank)
   return ret;
 }
 
-int
-writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_metid,
-		uint max_tid, int myRank, int numRanks, int rootRank)
+// Radix sort the plot points (cctid, metid, tid, val) using the
+// send/recv buffers.  Also, count the total number of plot points,
+// max metid and number of points per (cctid, metid) pair.
+//
+static void
+sortPlotPoints(uint max_cctid, uint & max_metid, uint num_tid, int numRanks,
+	       ulong & num_points, std::map <uint_pair, long> & cct_met_count)
 {
-  int group, rank, ret;
-  ulong n;
+  int group;  ulong n;
 
-  // Radix sort the plot points (cctid, metid, tid, val).
-  //
-  // Step 1 -- scan recv buf, count total number of plot points and
-  // number per tid, and recompute max metric id (don't trust passed
-  // in value).  We do this for tid, metid and cctid, so allocate just
-  // one array of max size and reuse it.
+  // Step 1 -- scan recv buf, count total number of plot points,
+  // number per tid, number per (cctid, metid) pair, and recompute max
+  // metric id (don't trust passed in value).  We sort three times, so
+  // allocate one array of max size and reuse it.
 
-  ulong array_size = std::max(max_cctid, std::max(max_metid, max_tid)) + 2;
+  ulong array_size = std::max(std::max(max_cctid, num_tid), (uint) 300) + 2;
   ulong * count = (ulong *) malloc(array_size * sizeof(ulong));
   ulong * start = (ulong *) malloc(array_size * sizeof(ulong));
-  ulong num_points;
 
   DIAG_Assert(count != NULL && start != NULL,
-	      "out of memory in Plot::writePlotGraphs");
+	      "out of memory in Plot::sortPlotPoints");
 
   for (n = 0; n < array_size; n++) {
     count[n] = 0;
   }
-
-  max_metid = 0;
+  cct_met_count.clear();
   num_points = 0;
+  max_metid = 0;
+
   for (group = 0; group < numRanks; group++) {
     for (n = 0; n < group_size; n++) {
       plot_pt *elt = &plot_recv_buf[group * group_size + n];
+      uint_pair mypair(elt->cctid, elt->metid);
 
       if (elt->cctid == 0) {
 	break;
       }
       count[elt->tid]++;
-      max_metid = std::max(max_metid, elt->metid);
+      if (cct_met_count.find(mypair) != cct_met_count.end()) {
+	cct_met_count[mypair]++;
+      } else {
+	cct_met_count[mypair] = 1;
+      }
       num_points++;
+      max_metid = std::max(max_metid, elt->metid);
     }
   }
 
+  // extremely unlikely, but theoretically possible
+  if (max_metid + 2 > array_size) {
+    array_size = max_metid + 2;
+    count = (ulong *) realloc(count, array_size * sizeof(ulong));
+    start = (ulong *) realloc(start, array_size * sizeof(ulong));
+
+    DIAG_Assert(count != NULL && start != NULL,
+		"out of memory in Plot::sortPlotPoints");
+  }
+
+  // prefix sum of count[] is the start index per tid.
   start[0] = 0;
-  for (n = 1; n <= max_tid; n++) {
+  for (n = 1; n <= num_tid; n++) {
     start[n] = start[n - 1] + count[n - 1];
   }
 
@@ -526,8 +542,8 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_metid,
     count[n] = 0;
   }
 
-  for (ulong k = 0; k < num_points; k++) {
-    plot_pt *elt = &plot_send_buf[k];
+  for (n = 0; n < num_points; n++) {
+    plot_pt *elt = &plot_send_buf[n];
 
     plot_recv_buf[start[elt->metid]] = *elt;
     start[elt->metid]++;
@@ -540,47 +556,55 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_metid,
   }
 
   // Step 4 -- copy recv buf back to send buf and sort by cctid.
-  // Also, count the number of points per (cctid, metid) pair sparsely
-  // with C++ map.
+  // This completes the (cctid, metid, tid) sorted order.
 
-  std::map <uint_pair, long> cct_met_count;
-  std::map <uint_pair, long>::iterator it;
+  for (n = 0; n < num_points; n++) {
+    plot_pt *elt = &plot_recv_buf[n];
 
-  cct_met_count.clear();
-
-  for (ulong k = 0; k < num_points; k++) {
-    plot_pt *elt = &plot_recv_buf[k];
     plot_send_buf[start[elt->cctid]] = *elt;
     start[elt->cctid]++;
-
-    uint_pair mypair(elt->cctid, elt->metid);
-    if (cct_met_count.find(mypair) != cct_met_count.end()) {
-      cct_met_count[mypair]++;
-    } else {
-      cct_met_count[mypair] = 1;
-    }
   }
 
-  // debugging output to examine plot points
+  free(count);
+  free(start);
+}
+
+int
+writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
+		int myRank, int numRanks, int rootRank)
+{
+  std::map <uint_pair, long> cct_met_count;
+  ulong num_points, n;
+  uint max_metid;
+  int rank, ret;
+
+  // Step 1 -- sort the plot points, result goes in send buf, and
+  // count the number of plot points per (cctid, metid) pair.
+
+  sortPlotPoints(max_cctid, max_metid, max_tid, numRanks,
+		 num_points, cct_met_count);
+
+  // debug output to write plot points to a file.
   if (0) {
     dumpPlotPoints(db_dir, plot_send_buf, num_points,
 		   myRank, numRanks, rootRank);
   }
 
-  // Step 5 -- share meta data with rank 0 for size of plot point data
-  // and size of index.
+  // Step 2 -- send size of plot data and size of index to rank 0,
+  // compute file offsets and scatter result.
 
   ulong my_data_size = num_points * sizeof(plot_entry);
+  ulong my_index_size = cct_met_count.size() * sizeof(plot_index);
+  ulong my_size[2];
+  ulong * global_size = NULL;
+  ulong * global_ans = NULL;
   ulong my_data_offset = 0;
   ulong index_max = 0;
   ulong index_sum = 0;
-  ulong my_size[2];
-  ulong my_ans[2];
-  ulong * global_size = NULL;
-  ulong * global_ans = NULL;
+  ulong index_start = 0;
 
-  my_size[0] = cct_met_count.size() * sizeof(plot_index);
-  my_size[1] = my_data_size;
+  my_size[0] = my_data_size;
+  my_size[1] = my_index_size;
 
   if (myRank == rootRank) {
     global_size = (ulong *) malloc(2 * numRanks * sizeof(ulong));
@@ -598,31 +622,32 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_metid,
 
   if (myRank == rootRank) {
     for (rank = 0; rank < numRanks; rank++) {
-      index_max = std::max(index_max, global_size[2*rank]);
-      index_sum += global_size[2*rank];
+      index_max = std::max(index_max, global_size[2*rank + 1]);
+      index_sum += global_size[2*rank + 1];
     }
 
-    plot_index_start = Prof::Database::alignOffset(plot_index_start);
-    ulong offset = Prof::Database::alignOffset(plot_index_start + index_sum);
+    index_start = Prof::Database::alignOffset(PLOT_INDEX_START);
+    ulong offset = Prof::Database::alignOffset(index_start + index_sum);
 
     for (rank = 0; rank < numRanks; rank++) {
-      global_ans[2*rank] = index_max;
-      global_ans[2*rank + 1] = offset;
-      offset = Prof::Database::alignOffset(offset + global_size[2*rank + 1]);
+      global_ans[2*rank] = offset;
+      global_ans[2*rank + 1] = index_max;
+      offset = Prof::Database::alignOffset(offset + global_size[2*rank]);
     }
   }
 
   ret = MPI_Scatter((void *) global_ans, 2, MPI_LONG,
-		    (void *) my_ans, 2, MPI_LONG,
+		    (void *) my_size, 2, MPI_LONG,
 		    rootRank, MPI_COMM_WORLD);
 
   DIAG_Assert(ret == 0, "MPI_Scatter for Plot::writePlotGraphs failed");
 
-  index_max = my_ans[0];
-  my_data_offset = my_ans[1];
+  my_data_offset = my_size[0];
+  index_max = my_size[1];
 
-  // Step 6 -- copy send buf back to recv buf and write (tid, val)
-  // pairs in big endian.  Finally, write the buffer to a file.
+  // Step 3 -- copy send buf back to recv buf, write (tid, val) pairs
+  // in big endian, and write data to file.  After the write, the send
+  // and recv buffers are unused.
 
   plot_entry * plot_out_buf = (plot_entry *) plot_recv_buf;
   union { float fval; uint32_t ival; } u32;
@@ -642,7 +667,7 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_metid,
 
   DIAG_Assert(ret == 0, "write plot metrics file failed");
 
-  // Step 7 -- pack the plot index data into a buffer in big-endian
+  // Step 4 -- pack the plot index data into a buffer in big-endian
   // format and send to rank 0.  Reuse the send/recv buffers for this
   // and resize if necessary.
 
@@ -666,6 +691,7 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_metid,
   }
 
   ulong offset = my_data_offset;
+  std::map <uint_pair, long>::iterator it;
 
   n = 0;
   for (it = cct_met_count.begin(); it != cct_met_count.end(); it++) {
@@ -685,49 +711,47 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_metid,
 
   // compact the index data, then write the index and header.
   if (myRank == rootRank) {
-    char *dest = ((char *) index_global) + global_size[0];
+    char *dest = ((char *) index_global) + global_size[1];
     char *src =  ((char *) index_global) + index_max;
 
     for (rank = 1; rank < numRanks; rank++) {
-      memmove(dest, src, global_size[2*rank]);
-      dest += global_size[2*rank];
+      memmove(dest, src, global_size[2*rank + 1]);
+      dest += global_size[2*rank + 1];
       src += index_max;
     }
 
-    ret = write_all_at(plot_fd, index_global, index_sum, plot_index_start);
+    ret = write_all_at(plot_fd, index_global, index_sum, index_start);
 
     DIAG_Assert(ret == 0, "write plot metrics index failed");
 
     ret = Prof::Database::writePlotHeader(
 		plot_fd, max_cctid + 1, max_metid + 1, max_tid,
-		plot_index_start, index_sum);
+		index_start, index_sum);
 
     DIAG_Assert(ret == 0, "write plot metrics header failed");
   }
 
   // temp debugging output
   if (1 && myRank == rootRank) {
-    ulong start = plot_index_start;
+    ulong start = index_start;
 
     printf("\n");
     for (rank = 0; rank < numRanks; rank++) {
       printf("index rank: %d  start: 0x%06lx  data: 0x%08lx  points: %ld\n",
-	     rank, start, global_ans[2*rank + 1],
-	     global_size[2*rank + 1] / sizeof(plot_entry));
+	     rank, start, global_ans[2*rank],
+	     global_size[2*rank] / sizeof(plot_entry));
 
-      start += global_size[2*rank];
+      start += global_size[2*rank + 1];
     }
     printf("\n");
   }
 
   close(plot_fd);
 
-  free(index_local);
-  free(index_global);
   free(global_size);
   free(global_ans);
-  free(count);
-  free(start);
+  free(index_local);
+  free(index_global);
 
   return 0;
 }
@@ -800,6 +824,8 @@ dumpGroupSizes(ulong *cct_global, uint *rank_start, uint maxid, int numRanks)
 	 group_size, total/(numRanks * numRanks) + 1,
 	 group_size * numRanks,
 	 group_size * numRanks * numRanks, total);
+
+  free(column);
 }
 
 static void

@@ -425,7 +425,6 @@ realmain(int argc, char* const* argv)
   // 2c. Create thread-level metric DB // Normalize trace files
   // -------------------------------------------------------
   uint maxCCTid = profGbl->cct()->maxDenseId();
-  uint maxMetid = profGbl->metricMgr()->size();
 
   if (Prof::Database::newDBFormat()) {
     Plot::allocBuffers(*profGbl, myRank, numRanks, rootRank);
@@ -441,8 +440,8 @@ realmain(int argc, char* const* argv)
       printf("plot graph all-to-all: %s\n", (ret == 0) ? "success" : "failure");
     }
 
-    Plot::writePlotGraphs(args.db_dir, maxCCTid, maxMetid,
-			  totalFiles, myRank, numRanks, rootRank);
+    Plot::writePlotGraphs(args.db_dir, maxCCTid, totalFiles,
+			  myRank, numRanks, rootRank);
   }
 
   // rank 0 writes the index and header
