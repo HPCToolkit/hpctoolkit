@@ -373,7 +373,9 @@ memleak_get_malloc_loc(void *sys_ptr, size_t bytes, size_t align,
 		       void **appl_ptr, leakinfo_t **info_ptr)
 {
 #if MEMLEAK_USE_HYBRID_LAYOUT
-  if (memleak_same_page(sys_ptr, sys_ptr + leakinfo_size) && align == 0) {
+  if ( (! ENABLED(MEMLEAK_NO_HEADER)) && align == 0
+       && memleak_same_page(sys_ptr, sys_ptr + leakinfo_size) )
+  {
     *appl_ptr = sys_ptr + leakinfo_size;
     *info_ptr = sys_ptr;
     return MEMLEAK_LOC_HEAD;
