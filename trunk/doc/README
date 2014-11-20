@@ -12,6 +12,19 @@ tools (latex) outside the normal build procedure.  In that case,
 'make' doesn't regenerate the doc files, and 'make install' merely
 copies the files into the install tree.
 
+------------------------------------
+Manual directory, tex and pdf files
+------------------------------------
+
+The HPCToolkit User's Manual is kept in Latex in the doc/manual
+directory.  To update the manual, edit the .tex file(s) and then
+regenerate the manual using Makefile.latex:
+
+   make -f Makefile.latex
+
+Note that you run make from the doc/manual source directory.
+Use either no target or target 'all'.
+
 -----------------------------
 WWW directory and html files
 -----------------------------
