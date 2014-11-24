@@ -136,7 +136,7 @@ makeThreadMetrics(Prof::CallPath::Profile& profGbl,
 		  const Analysis::Args& args,
 		  const Analysis::Util::NormalizeProfileArgs_t& nArgs,
 		  const vector<uint>& groupIdToGroupSizeMap,
-		  Prof::Database::traceInfo *traceLcl,
+		  Prof::Database::traceInfo *traceLcl, int doPlot,
 		  int myRank, int numRanks, int rootRank);
 
 static uint
@@ -160,7 +160,7 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 		      const string& profileFile,
 		      const Analysis::Args& args,
 		      Prof::Database::traceInfo *traceLcl,
-		      uint threadId,
+		      uint threadId, int doPlot,
 		      uint groupId, uint groupMax, int myRank);
 
 static string
@@ -419,32 +419,35 @@ realmain(int argc, char* const* argv)
   // 2c. Create thread-level metric DB // Normalize trace files
   // -------------------------------------------------------
   uint maxCCTid = profGbl->cct()->maxDenseId();
+  int doPlot = 0;
 
-  if (Prof::Database::newDBFormat()) {
-    Plot::allocBuffers(*profGbl, myRank, numRanks, rootRank);
+  // malloc space for plot graphs
+  if (args.db_makeMetricDB && Prof::Database::newDBFormat()) {
+    doPlot = Plot::allocBuffers(*profGbl, myRank, numRanks, rootRank);
+
+    if (! doPlot && myRank == rootRank) {
+      std::cerr << "unable to make plot graphs: not enough memory\n";
+    }
   }
 
   makeThreadMetrics(*profGbl, args, nArgs, groupIdToGroupSizeMap,
-		    traceLcl, myRank, numRanks, rootRank);
+		    traceLcl, doPlot, myRank, numRanks, rootRank);
 
-  if (Prof::Database::newDBFormat()) {
-    int ret = Plot::sharePlotPoints(myRank, numRanks, rootRank);
-
-    if (myRank == rootRank) {
-      printf("plot graph all-to-all: %s\n", (ret == 0) ? "success" : "failure");
-    }
-
-    Plot::writePlotGraphs(args.db_dir, maxCCTid, totalFiles,
-			  myRank, numRanks, rootRank);
-  }
-
-  // rank 0 writes the index and header
+  // rank 0 writes the trace index and header
   if (Prof::Database::newDBFormat()) {
     if (myRank == rootRank && numActive > 0) {
       Prof::Database::writeTraceIndex(traceGbl, numActive);
       Prof::Database::writeTraceHeader(traceGbl, numActive);
     }
     Prof::Database::endTraceFiles();
+  }
+
+  // write plot graphs, if malloc worked
+  if (doPlot) {
+    Plot::sharePlotPoints(myRank, numRanks, rootRank);
+
+    Plot::writePlotGraphs(args.db_dir, maxCCTid, totalFiles,
+			  myRank, numRanks, rootRank);
   }
 
   // ------------------------------------------------------------
@@ -770,14 +773,14 @@ makeThreadMetrics(Prof::CallPath::Profile& profGbl,
 		  const Analysis::Args& args,
 		  const Analysis::Util::NormalizeProfileArgs_t& nArgs,
 		  const vector<uint>& groupIdToGroupSizeMap,
-		  Prof::Database::traceInfo *traceLcl,
+		  Prof::Database::traceInfo *traceLcl, int doPlot,
 		  int myRank, int numRanks, int rootRank)
 {
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];
     uint groupId = (*nArgs.groupMap)[i];
-    makeThreadMetrics_Lcl(profGbl, fnm, args, &traceLcl[i],
-			  nArgs.begTid + i, groupId, nArgs.groupMax, myRank);
+    makeThreadMetrics_Lcl(profGbl, fnm, args, &traceLcl[i], nArgs.begTid + i,
+			  doPlot, groupId, nArgs.groupMax, myRank);
   }
 }
 
@@ -989,7 +992,7 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 		      const string& profileFile,
 		      const Analysis::Args& args, 
 		      Prof::Database::traceInfo *traceLcl,
-		      uint threadId,
+		      uint threadId, int doPlot,
 		      uint groupId, uint groupMax, int myRank)
 {
   Prof::Metric::Mgr* mMgrGbl = profGbl.metricMgr();
@@ -1059,7 +1062,9 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
     // -------------------------------------------------------
 
     if (Prof::Database::newDBFormat()) {
-      Plot::addPlotPoints(profGbl, threadId, mBeg, mEnd);
+      if (doPlot) {
+	Plot::addPlotPoints(profGbl, threadId, mBeg, mEnd);
+      }
     }
     else {
       string dbFnm = makeDBFileName(args.db_dir, groupId, profileFile);

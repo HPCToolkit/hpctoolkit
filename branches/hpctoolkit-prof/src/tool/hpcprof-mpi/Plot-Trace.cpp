@@ -285,6 +285,13 @@ partition_cctids(ulong *cct_global, uint *start_id,
 
 namespace Plot {
 
+// Try to malloc the plot send/recv buffers for makeThreadMetrics().
+// Treat unable to malloc as a soft failure: we can't make the plot
+// graphs, but don't kill the whole program.  Note: it's important for
+// all ranks to agree on whether to continue with plot graphs.
+//
+// Returns: 1 on success, 0 on failure.
+//
 int
 allocBuffers(Prof::CallPath::Profile & prof,
 	     int myRank, int numRanks, int rootRank)
@@ -374,15 +381,22 @@ allocBuffers(Prof::CallPath::Profile & prof,
 
   DIAG_Assert(ret == 0, "MPI_Bcast for Plot::allocBuffers failed");
 
+  if (! success) {
+    free(plot_send_buf);
+    free(plot_recv_buf);
+    plot_send_buf = NULL;
+    plot_recv_buf = NULL;
+  }
+
   if (myRank == rootRank) {
-    double bufsize = (group_size * numRanks * sizeof(plot_pt))/((double) MEG);
+    double bufsize = send_buf_size / ((double) MEG);
 
     printf("\nplot graph buffer: %.2f meg, grand total: %.2f meg, in memory: %s\n",
 	   bufsize, 2 * bufsize * numRanks,
 	   success ? "yes" : "no");
   }
 
-  return 0;
+  return success;
 }
 
 void
@@ -413,6 +427,8 @@ addPlotPoints(Prof::CallPath::Profile & prof,
   }
 }
 
+// The giant, in memory all-to-all of plot points.
+//
 int
 sharePlotPoints(int myRank, int numRanks, int rootRank)
 {
@@ -439,7 +455,8 @@ sharePlotPoints(int myRank, int numRanks, int rootRank)
   int size = group_size * sizeof(plot_pt);
 
   ret = MPI_Alltoall(plot_send_buf, size, MPI_BYTE,
-		     plot_recv_buf, size, MPI_BYTE, MPI_COMM_WORLD);
+		     plot_recv_buf, size, MPI_BYTE,
+		     MPI_COMM_WORLD);
 
   DIAG_Assert(ret == 0, "MPI_Alltoall failed in Plot::sharePlotPoints");
 
