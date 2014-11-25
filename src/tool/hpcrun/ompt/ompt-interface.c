@@ -423,7 +423,7 @@ int
 ompt_initialize(
   ompt_function_lookup_t ompt_fn_lookup,
   const char *runtime_version,
-  int ompt_version
+  unsigned int ompt_version
 )
 {
   ompt_initialized = 1;
