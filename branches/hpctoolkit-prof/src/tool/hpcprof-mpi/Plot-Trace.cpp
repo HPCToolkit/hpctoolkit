@@ -473,10 +473,12 @@ sortPlotPoints(uint max_cctid, uint & max_metid, uint num_tid, int numRanks,
 {
   int group;  ulong n;
 
+  //------------------------------------------------------------
   // Step 1 -- scan recv buf, count total number of plot points,
   // number per tid, number per (cctid, metid) pair, and recompute max
   // metric id (don't trust passed in value).  We sort three times, so
   // allocate one array of max size and reuse it.
+  //------------------------------------------------------------
 
   ulong array_size = std::max(std::max(max_cctid, num_tid), (uint) 300) + 2;
   ulong * count = (ulong *) malloc(array_size * sizeof(ulong));
@@ -527,8 +529,10 @@ sortPlotPoints(uint max_cctid, uint & max_metid, uint num_tid, int numRanks,
     start[n] = start[n - 1] + count[n - 1];
   }
 
+  //------------------------------------------------------------
   // Step 2 -- copy recv buf to send buf, use start[] to radix sort by
   // tid, and count number of points per metid.
+  //------------------------------------------------------------
 
   for (n = 0; n < array_size; n++) {
     count[n] = 0;
@@ -552,8 +556,10 @@ sortPlotPoints(uint max_cctid, uint & max_metid, uint num_tid, int numRanks,
     start[n] = start[n - 1] + count[n - 1];
   }
 
+  //------------------------------------------------------------
   // Step 3 -- copy send buf back to recv buf, radix sort by metid,
   // and count number of points per cctid.
+  //------------------------------------------------------------
 
   for (n = 0; n < array_size; n++) {
     count[n] = 0;
@@ -572,8 +578,10 @@ sortPlotPoints(uint max_cctid, uint & max_metid, uint num_tid, int numRanks,
     start[n] = start[n - 1] + count[n - 1];
   }
 
+  //------------------------------------------------------------
   // Step 4 -- copy recv buf back to send buf and sort by cctid.
   // This completes the (cctid, metid, tid) sorted order.
+  //------------------------------------------------------------
 
   for (n = 0; n < num_points; n++) {
     plot_pt *elt = &plot_recv_buf[n];
@@ -595,8 +603,10 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
   uint max_metid;
   int rank, ret;
 
+  //------------------------------------------------------------
   // Step 1 -- sort the plot points, result goes in send buf, and
   // count the number of plot points per (cctid, metid) pair.
+  //------------------------------------------------------------
 
   sortPlotPoints(max_cctid, max_metid, max_tid, numRanks,
 		 num_points, cct_met_count);
@@ -607,18 +617,16 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
 		   myRank, numRanks, rootRank);
   }
 
+  //------------------------------------------------------------
   // Step 2 -- send size of plot data and size of index to rank 0,
   // compute file offsets and scatter result.
+  //------------------------------------------------------------
 
   ulong my_data_size = num_points * sizeof(plot_entry);
   ulong my_index_size = cct_met_count.size() * sizeof(plot_index);
   ulong my_size[2];
   ulong * global_size = NULL;
   ulong * global_ans = NULL;
-  ulong my_data_offset = 0;
-  ulong index_max = 0;
-  ulong index_sum = 0;
-  ulong index_start = 0;
 
   my_size[0] = my_data_size;
   my_size[1] = my_index_size;
@@ -637,19 +645,25 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
 
   DIAG_Assert(ret == 0, "MPI_Gather for Plot::writePlotGraphs failed");
 
+  // for the header at rank 0
+  ulong index_start = Prof::Database::alignOffset(PLOT_INDEX_START);
+  ulong index_size = 0;
+
   if (myRank == rootRank) {
+    ulong next_pos = index_start;
+
+    // we don't align the index entries per mpi rank
     for (rank = 0; rank < numRanks; rank++) {
-      index_max = std::max(index_max, global_size[2*rank + 1]);
-      index_sum += global_size[2*rank + 1];
+      global_ans[2*rank + 1] = next_pos;
+      next_pos += global_size[2*rank + 1];
     }
+    index_size = next_pos - index_start;
 
-    index_start = Prof::Database::alignOffset(PLOT_INDEX_START);
-    ulong offset = Prof::Database::alignOffset(index_start + index_sum);
-
+    // we do align the main plot data
+    next_pos = Prof::Database::alignOffset(next_pos);
     for (rank = 0; rank < numRanks; rank++) {
-      global_ans[2*rank] = offset;
-      global_ans[2*rank + 1] = index_max;
-      offset = Prof::Database::alignOffset(offset + global_size[2*rank]);
+      global_ans[2*rank] = next_pos;
+      next_pos = Prof::Database::alignOffset(next_pos + global_size[2*rank]);
     }
   }
 
@@ -659,12 +673,14 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
 
   DIAG_Assert(ret == 0, "MPI_Scatter for Plot::writePlotGraphs failed");
 
-  my_data_offset = my_size[0];
-  index_max = my_size[1];
+  ulong my_data_start = my_size[0];
+  ulong my_index_start = my_size[1];
 
+  //------------------------------------------------------------
   // Step 3 -- copy send buf back to recv buf, write (tid, val) pairs
   // in big endian, and write data to file.  After the write, the send
   // and recv buffers are unused.
+  //------------------------------------------------------------
 
   plot_entry * plot_out_buf = (plot_entry *) plot_recv_buf;
   union { float fval; uint32_t ival; } u32;
@@ -680,95 +696,69 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
   
   DIAG_Assert(plot_fd >= 0, "open plot metrics file failed");
 
-  ret = write_all_at(plot_fd, plot_out_buf, my_data_size, my_data_offset);
+  ret = write_all_at(plot_fd, plot_out_buf, my_data_size, my_data_start);
 
   DIAG_Assert(ret == 0, "write plot metrics file failed");
 
-  // Step 4 -- pack the plot index data into a buffer in big-endian
-  // format and send to rank 0.  Reuse the send/recv buffers for this
-  // and resize if necessary.
+  //------------------------------------------------------------
+  // Step 4 -- write the index data in big endian and write to file.
+  // This probably fits in the send buf, if not, then resize.
+  //------------------------------------------------------------
 
-  plot_index * index_local = (plot_index *) plot_send_buf;
-  plot_index * index_global = (plot_index *) plot_recv_buf;
+  plot_index * index_buf = (plot_index *) plot_send_buf;
+  free(plot_recv_buf);
 
-  if (index_max > send_buf_size) {
+  if (my_index_size > send_buf_size) {
     free(plot_send_buf);
     plot_send_buf = NULL;
-    index_local = (plot_index *) malloc(index_max);
+    index_buf = (plot_index *) malloc(my_index_size);
 
-    DIAG_Assert(index_local != NULL, "out of memory in Plot::writePlotGraphs");
+    DIAG_Assert(index_buf != NULL, "out of memory in Plot::writePlotGraphs");
   }
 
-  if (myRank == rootRank && numRanks * index_max > send_buf_size) {
-    free(plot_recv_buf);
-    plot_recv_buf = NULL;
-    index_global = (plot_index *) malloc(numRanks * index_max);
-
-    DIAG_Assert(index_global != NULL, "out of memory in Plot::writePlotGraphs");
-  }
-
-  ulong offset = my_data_offset;
   std::map <uint_pair, long>::iterator it;
+  ulong offset = my_data_start;
 
   n = 0;
   for (it = cct_met_count.begin(); it != cct_met_count.end(); it++) {
-    index_local[n].cctid = host_to_be_32(it->first.first);
-    index_local[n].metid = host_to_be_32(it->first.second);
-    index_local[n].offset = host_to_be_64(offset);
-    index_local[n].count =  host_to_be_64(it->second);
+    index_buf[n].cctid = host_to_be_32(it->first.first);
+    index_buf[n].metid = host_to_be_32(it->first.second);
+    index_buf[n].offset = host_to_be_64(offset);
+    index_buf[n].count =  host_to_be_64(it->second);
     offset += it->second * sizeof(plot_entry);
     n++;
   }
 
-  ret = MPI_Gather((void *) index_local,  index_max, MPI_CHAR,
-		   (void *) index_global, index_max, MPI_CHAR,
-		   rootRank, MPI_COMM_WORLD);
+  ret = write_all_at(plot_fd, index_buf, my_index_size, my_index_start);
 
-  DIAG_Assert(ret == 0, "MPI_Gather for Plot::writePlotGraphs failed");
+  DIAG_Assert(ret == 0, "write plot metrics index failed");
 
-  // compact the index data, then write the index and header.
+  free(index_buf);
+
+  // finally, rank 0 writes the header
   if (myRank == rootRank) {
-    char *dest = ((char *) index_global) + global_size[1];
-    char *src =  ((char *) index_global) + index_max;
-
-    for (rank = 1; rank < numRanks; rank++) {
-      memmove(dest, src, global_size[2*rank + 1]);
-      dest += global_size[2*rank + 1];
-      src += index_max;
-    }
-
-    ret = write_all_at(plot_fd, index_global, index_sum, index_start);
-
-    DIAG_Assert(ret == 0, "write plot metrics index failed");
-
     ret = Prof::Database::writePlotHeader(
-		plot_fd, max_cctid + 1, max_metid + 1, max_tid,
-		index_start, index_sum);
+	    plot_fd, max_cctid + 1, max_metid + 1, max_tid,
+	    index_start, index_size);
 
     DIAG_Assert(ret == 0, "write plot metrics header failed");
   }
 
+  close(plot_fd);
+
   // temp debugging output
   if (1 && myRank == rootRank) {
-    ulong start = index_start;
-
-    printf("\n");
+    printf("\nfile offsets for index and data\n");
     for (rank = 0; rank < numRanks; rank++) {
-      printf("index rank: %d  start: 0x%06lx  data: 0x%08lx  points: %ld\n",
-	     rank, start, global_ans[2*rank],
+      printf("rank: %d  index: 0x%08lx  data: 0x%08lx  points: %ld\n",
+	     rank, global_ans[2*rank + 1], global_ans[2*rank],
 	     global_size[2*rank] / sizeof(plot_entry));
-
-      start += global_size[2*rank + 1];
     }
     printf("\n");
   }
 
-  close(plot_fd);
-
   free(global_size);
   free(global_ans);
-  free(index_local);
-  free(index_global);
 
   return 0;
 }
