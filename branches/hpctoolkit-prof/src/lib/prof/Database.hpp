@@ -82,9 +82,9 @@ bool makeSummaryDB(Prof::CallPath::Profile & prof,
 
 off_t firstTraceOffset(long num_files);
 
-int writeTraceHeader(traceInfo *trace, long num_threads);
+int writeTraceHeader(traceInfo *trace, long num_threads, long num_active);
 
-int writeTraceIndex(traceInfo *trace, long num_threads);
+int writeTraceIndex(traceInfo *trace, long num_threads, long num_active);
 
 int writeTraceFile(Prof::CallPath::Profile *prof, 
 		   Prof::CCT::MergeEffectList *effects);

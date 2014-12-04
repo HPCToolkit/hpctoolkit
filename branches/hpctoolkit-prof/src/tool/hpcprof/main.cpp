@@ -181,25 +181,30 @@ realmain(int argc, char* const* argv)
   Prof::Database::traceInfo *trace =
     (Prof::Database::traceInfo *) malloc(numFiles * sizeof(Prof::Database::traceInfo));
 
+  DIAG_Assert(trace != NULL, "out of memory in hpcprof");
+
+  for (long i = 0; i < numFiles; i++) {
+    trace[i].active = false;
+  }
+
   Prof::CallPath::Profile* prof =
     Analysis::CallPath::read(*nArgs.paths, groupMap, trace, mergeTy, rFlags, mrgFlags);
 
-  // compact the inactive trace files
+  // count the number of active trace files
   long numActive = 0;
   for (long k = 0; k < numFiles; k++) {
     if (trace[k].active) {
-      if (numActive < k) {
-	trace[numActive] = trace[k];
-      }
       numActive++;
     }
   }
+
   prof->m_traceGbl = trace;
+  prof->m_numFiles = numFiles;
   prof->m_numActive = numActive;
 
   if (Prof::Database::newDBFormat() && numActive > 0) {
-    Prof::Database::writeTraceIndex(trace, numActive);
-    Prof::Database::writeTraceHeader(trace, numActive);
+    Prof::Database::writeTraceIndex(trace, numFiles, numActive);
+    Prof::Database::writeTraceHeader(trace, numFiles, numActive);
     Prof::Database::endTraceFiles();
   }
 

@@ -147,7 +147,9 @@ Profile::Profile(const std::string name)
   m_traceMaxTime = 0;
   m_traceInfo.active = false;
   m_traceGbl = NULL;
+  m_numFiles = 0;
   m_numActive = 0;
+  m_doPlot = 0;
 
   m_mMgr = new Metric::Mgr;
   m_isMetricMgrVirtual = false;
@@ -676,42 +678,45 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   if (Prof::Database::newDBFormat()) {
     if (m_numActive > 0) {
       os << "  <TraceDBTable>\n";
-      os << "    <TraceDBFile i=\"0\""
-	 << " name=\"trace.db\""
-	 << " db-min-time=\"" << m_traceMinTime << "\""
-	 << " db-max-time=\"" << m_traceMaxTime << "\""
-	 << "/>\n";
+      os << "    <TraceDBFile i=\"0\" name=\"trace.db\"/>\n";
       os << "  </TraceDBTable>\n";
     }
 
   } else {
 
-  if (!traceFileNameSet().empty()) {
-    os << "  <TraceDBTable>\n";
-    os << "    <TraceDB i" << MakeAttrNum(0)
-       << " db-glob=\"" << "*." << HPCRUN_TraceFnmSfx << "\""
-       << " db-min-time=\"" << m_traceMinTime << "\""
-       << " db-max-time=\"" << m_traceMaxTime << "\""
-       << " db-header-sz=\"" << HPCTRACE_FMT_HeaderLen << "\""
-       << "/>\n";
-    os << "  </TraceDBTable>\n";
+    if (!traceFileNameSet().empty()) {
+      os << "  <TraceDBTable>\n";
+      os << "    <TraceDB i" << MakeAttrNum(0)
+	 << " db-glob=\"" << "*." << HPCRUN_TraceFnmSfx << "\""
+	 << " db-min-time=\"" << m_traceMinTime << "\""
+	 << " db-max-time=\"" << m_traceMaxTime << "\""
+	 << " db-header-sz=\"" << HPCTRACE_FMT_HeaderLen << "\""
+	 << "/>\n";
+      os << "  </TraceDBTable>\n";
+    }
   }
+
+  // -------------------------------------------------------
+  // PlotDBTable
+  // -------------------------------------------------------
+  if (Prof::Database::newDBFormat() && m_doPlot) {
+    os << "  <PlotDBTable>\n";
+    os << "    <PlotDBFile i=\"0\" name=\"plot.db\"/>\n";
+    os << "  </PlotDBTable>\n";
   }
 
   // -------------------------------------------------------
   // ThreadIDTable
   // -------------------------------------------------------
   if (Prof::Database::newDBFormat()) {
-    if (m_numActive > 0) {
-      os << "  <ThreadIDTable size=\"" << m_numActive << "\">\n";
-      for (long i = 0; i < m_numActive; i++) {
-	os << "    <Thread i=\"" << i << "\""
-	   << " r=\"" << m_traceGbl[i].rank << "\""
-	   << " t=\"" << m_traceGbl[i].tid  << "\""
-	   << "/>\n";
-      }
-      os << "  </ThreadIDTable>\n";
+    os << "  <ThreadIDTable size=\"" << m_numFiles << "\">\n";
+    for (long i = 0; i < m_numFiles; i++) {
+      os << "    <Thread i=\"" << i << "\""
+	 << " r=\"" << m_traceGbl[i].rank << "\""
+	 << " t=\"" << m_traceGbl[i].tid  << "\""
+	 << "/>\n";
     }
+    os << "  </ThreadIDTable>\n";
   }
 
   // -------------------------------------------------------

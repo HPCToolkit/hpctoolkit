@@ -772,8 +772,7 @@ namespace Trace {
 // Perform a prefix sum on the lengths of the trace files to determine
 // their starting offsets.  Rank 0 gathers the trace info from all
 // ranks, computes the prefix sum (serial), and then scatters the
-// result back to the other ranks.  Rank 0 also collects the global
-// index and compacts it.
+// result back to the other ranks.
 //
 int
 mergeTraceInfo(Prof::Database::traceInfo * traceGbl,
@@ -821,19 +820,6 @@ mergeTraceInfo(Prof::Database::traceInfo * traceGbl,
 		    rootRank, MPI_COMM_WORLD);
 
   DIAG_Assert(ret == 0, "MPI_Scatter for mergeTraceInfo failed");
-
-  // after the scatter, rank 0 compacts the global index
-  if (myRank == rootRank) {
-    long i = 0;
-    for (k = 0; k < totalFiles; k++) {
-      if (traceGbl[k].active) {
-	if (i < k) {
-	  traceGbl[i] = traceGbl[k];
-	}
-	i++;
-      }
-    }
-  }
 
   return 0;
 }

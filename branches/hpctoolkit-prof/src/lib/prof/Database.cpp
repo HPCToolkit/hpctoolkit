@@ -84,6 +84,7 @@
 
 #include <lib/analysis/Args.hpp>
 #include <lib/analysis/ArgsHPCProf.hpp>
+#include <lib/support/diagnostics.h>
 #include <lib/prof/CallPath-Profile.hpp>
 #include <lib/prof/CCT-Merge.hpp>
 #include <lib/prof/CCT-Tree.hpp>
@@ -155,6 +156,7 @@ struct __attribute__ ((packed)) metric_entry {
 struct __attribute__ ((packed)) trace_index {
   uint64_t  offset;
   uint64_t  length;
+  uint64_t  global_tid;
 };
 
 // Global data for all files.
@@ -418,7 +420,7 @@ openTraceFile(void)
 }
 
 int
-writeTraceHeader(traceInfo *trace, long num_threads)
+writeTraceHeader(traceInfo *trace, long num_threads, long num_active)
 {
   struct common_header * common_hdr;
   struct trace_header * trace_hdr;
@@ -427,16 +429,16 @@ writeTraceHeader(traceInfo *trace, long num_threads)
   uint64_t trace_size = sizeof(struct trace_header);
   uint64_t header_size =  common_size + trace_size;
   uint64_t index_start = alignOffset(header_size);
-  uint64_t index_length = (num_threads + 2) * sizeof(struct trace_index);
+  uint64_t index_length = (num_active + 1) * sizeof(struct trace_index);
   uint64_t min_time, max_time;
   long n;
 
   openTraceFile();
 
   char * header = (char *) malloc(header_size);
-  if (header == NULL) {
-    err(1, "malloc for trace header failed");
-  }
+
+  DIAG_Assert(header != NULL, "out of memory in Prof::Database::writeTraceHeader");
+
   common_hdr = (struct common_header *) header;
   trace_hdr = (struct trace_header *) (header + common_size);
 
@@ -447,15 +449,17 @@ writeTraceHeader(traceInfo *trace, long num_threads)
   common_hdr->magic = host_to_be_32(MAGIC);
   common_hdr->type =  host_to_be_32(2);
   common_hdr->format =  host_to_be_32(2);
-  common_hdr->num_threads = host_to_be_64(num_threads);
+  common_hdr->num_threads = host_to_be_64(num_active);
   common_hdr->num_cctid =  0;
   common_hdr->num_metric = 0;
 
   min_time = UINT64_MAX;
   max_time = 0;
   for (n = 0; n < num_threads; n++) {
-    min_time = std::min(min_time, trace[n].min_time);
-    max_time = std::max(max_time, trace[n].max_time);
+    if (trace[n].active) {
+      min_time = std::min(min_time, trace[n].min_time);
+      max_time = std::max(max_time, trace[n].max_time);
+    }
   }
 
   trace_hdr->min_time = host_to_be_64(min_time);
@@ -467,38 +471,49 @@ writeTraceHeader(traceInfo *trace, long num_threads)
   trace_hdr->size_time =    host_to_be_32(8);
   trace_hdr->size_cctid =   host_to_be_32(4);
 
-  if (write_all_at(trace_fd, header, header_size, 0) != 0) {
-    err(1, "write trace header failed");
-  }
+  int ret = write_all_at(trace_fd, header, header_size, 0);
+
+  DIAG_Assert(ret == 0, "write trace header failed in Prof::Database::writeTraceHeader");
 
   return 0;
 }
 
+// Experiment.xml includes the full list of threads, but trace.db
+// includes only those threads with active trace files.
+//
 int
-writeTraceIndex(traceInfo *trace, long num_threads)
+writeTraceIndex(traceInfo *trace, long num_threads, long num_active)
 {
   struct trace_index *table;
   size_t start = alignOffset(sizeof(struct common_header) + sizeof(struct trace_header));
-  size_t size = (num_threads + 1) * sizeof(*table);
-  long n;
+  size_t size = (num_threads + 1) * sizeof(struct trace_index);
+  long n, pos;
 
   openTraceFile();
 
   table = (struct trace_index *) malloc(size);
-  if (table == NULL) {
-    err(1, "unable to malloc trace index table");
-  }
 
+  DIAG_Assert(table != NULL, "out of memory in Prof::Database::writeTraceIndex");
+
+  pos = 0;
   for (n = 0; n < num_threads; n++) {
-    table[n].offset = host_to_be_64(trace[n].start_offset);
-    table[n].length = host_to_be_64(trace[n].length);
+    if (trace[n].active) {
+      table[pos].offset = host_to_be_64(trace[n].start_offset);
+      table[pos].length = host_to_be_64(trace[n].length);
+      table[pos].global_tid = host_to_be_64(n);
+      pos++;
+    }
   }
-  table[num_threads].offset = 0;
-  table[num_threads].length = 0;
+  table[pos].offset = 0;
+  table[pos].length = 0;
+  table[pos].global_tid = 0;
+  size = (pos + 1) * sizeof(struct trace_index);
 
-  if (write_all_at(trace_fd, table, size, start) != 0) {
-    err(1, "write trace index table failed");
-  }
+  int ret = write_all_at(trace_fd, table, size, start);
+
+  DIAG_Assert(ret == 0, "write trace index failed in Prof::Database::writeTraceIndex");
+
+  free(table);
 
   return 0;
 }

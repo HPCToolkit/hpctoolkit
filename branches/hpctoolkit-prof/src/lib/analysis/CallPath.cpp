@@ -1136,7 +1136,11 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   os << "<?xml version=\"1.0\"?>\n";
   os << "<!DOCTYPE HPCToolkitExperiment [\n" << experimentDTD << "]>\n";
 
-  os << "<HPCToolkitExperiment version=\"2.0\">\n";
+  if (Prof::Database::newDBFormat()) {
+    os << "<HPCToolkitExperiment version=\"3.0\">\n";
+  } else {
+    os << "<HPCToolkitExperiment version=\"2.0\">\n";
+  }
   os << "<Header n" << MakeAttrStr(name) << ">\n";
   os << "  <Info/>\n";
   os << "</Header>\n";

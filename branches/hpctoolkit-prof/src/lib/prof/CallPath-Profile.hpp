@@ -367,7 +367,9 @@ private:
 public:
   Prof::Database::traceInfo m_traceInfo;
   Prof::Database::traceInfo * m_traceGbl;
+  long  m_numFiles;
   long  m_numActive;
+  int   m_doPlot;
 
 };
 

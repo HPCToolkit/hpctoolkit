@@ -116,6 +116,7 @@ public:
     pathLenMax = 0;
     groupMap = new UIntVec;
     groupMax = 0; // 1-based group numbering
+    numFiles = 0;
     numPerRank = 0;
     begTid = 0;
     numTid = 0;
@@ -141,6 +142,7 @@ public:
   uint     groupMax; // 1-based group numbering
 
   // in prof-mpi, my threads are beg ... beg+num-1
+  long  numFiles;
   long  numPerRank;
   uint  begTid;
   uint  numTid;

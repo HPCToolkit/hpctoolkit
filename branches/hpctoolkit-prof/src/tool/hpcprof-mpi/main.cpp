@@ -292,13 +292,17 @@ realmain(int argc, char* const* argv)
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
   // collect trace info on size, rank, tid, etc.
+  long numFiles = nArgs.numFiles;
   long numPerRank = nArgs.numPerRank;
   long totalFiles = numPerRank * numRanks;
   long traceInfoSize = sizeof(Prof::Database::traceInfo);
+
   Prof::Database::traceInfo * traceLcl =
     (Prof::Database::traceInfo *) malloc(numPerRank * traceInfoSize);
+
   DIAG_Assert(traceLcl != NULL,
 	      "unable to malloc local traceInfo for rank: " << myRank);
+
   for (long i = 0; i < numPerRank; i++) {
     traceLcl[i].active = false;
   }
@@ -309,9 +313,11 @@ realmain(int argc, char* const* argv)
   // determine their starting offsets.
   Prof::Database::traceInfo * traceGbl = NULL;
   long numActive = 0;
+
   if (Prof::Database::newDBFormat()) {
     if (myRank == rootRank) {
       traceGbl = (Prof::Database::traceInfo *) malloc(totalFiles * traceInfoSize);
+
       DIAG_Assert(traceGbl != NULL,
 		  "unable to malloc global traceInfo for rank: " << myRank);
     }
@@ -436,8 +442,8 @@ realmain(int argc, char* const* argv)
   // rank 0 writes the trace index and header
   if (Prof::Database::newDBFormat()) {
     if (myRank == rootRank && numActive > 0) {
-      Prof::Database::writeTraceIndex(traceGbl, numActive);
-      Prof::Database::writeTraceHeader(traceGbl, numActive);
+      Prof::Database::writeTraceIndex(traceGbl, numFiles, numActive);
+      Prof::Database::writeTraceHeader(traceGbl, numFiles, numActive);
     }
     Prof::Database::endTraceFiles();
   }
@@ -467,7 +473,9 @@ realmain(int argc, char* const* argv)
     }
 
     profGbl->m_traceGbl = traceGbl;
+    profGbl->m_numFiles = numFiles;
     profGbl->m_numActive = numActive;
+    profGbl->m_doPlot = doPlot;
 
     Analysis::CallPath::makeDatabase(*profGbl, args);
   }
@@ -602,6 +610,7 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
 
   out.pathLenMax = pathLenMax;
   out.groupMax = groupIdMax;
+  out.numFiles = totalThreads;
   out.numPerRank = numPerRank;
   out.begTid = std::min(myRank * numPerRank, totalThreads);
   out.numTid = out.paths->size();
