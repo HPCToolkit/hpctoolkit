@@ -18435,7 +18435,7 @@ fi
 
 # Check whether --enable-hpcserver was given.
 if test "${enable_hpcserver+set}" = set; then :
-  enableval=$enable_hpcserver;
+  enableval=$enable_hpcserver; enable_hpcserver=yes
 else
   enable_hpcserver=no
 fi
@@ -18630,6 +18630,8 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
+  OLD_CC="$CC"
+  CC="$MPICC"
   CFLAGS="$CFLAGS"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -18642,6 +18644,7 @@ else
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
+  CC="$OLD_CC"
   OPT_ENABLE_MPI_WRAP=$ans
   ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
@@ -22493,6 +22496,8 @@ $as_echo "$as_me:   mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}" >&6;}
 $as_echo "$as_me:   hpcrun/lush?: ${opt_enable_lush}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}" >&5
 $as_echo "$as_me:   datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   hpcserver?:   ${enable_hpcserver}" >&5
+$as_echo "$as_me:   hpcserver?:   ${enable_hpcserver}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   C compiler: $CC_VERSION" >&5
