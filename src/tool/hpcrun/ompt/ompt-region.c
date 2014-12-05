@@ -159,7 +159,7 @@ gather_context(uint64_t region_id)
 //
 // only master and sub-master thread execute start_team_fn and end_team_fn
 //
-void start_team_fn(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame,
+void ompt_parallel_begin(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame,
 		   ompt_parallel_id_t region_id, uint32_t requested_team_size, void *parallel_fn)
 {
   cct_node_t *callpath = NULL;
@@ -216,7 +216,7 @@ void start_team_fn(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_fram
   hpcrun_safe_exit();
 }
 
-void end_team_fn( ompt_parallel_id_t parallel_id,    /* id of parallel region       */
+void ompt_parallel_end( ompt_parallel_id_t parallel_id,    /* id of parallel region       */
   		  ompt_task_id_t task_id             /* id of task                  */ )
 {
   hpcrun_safe_enter();
