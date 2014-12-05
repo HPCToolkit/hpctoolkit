@@ -306,11 +306,11 @@ init_parallel_regions()
 {
   int retval;
   retval = ompt_set_callback_fn(ompt_event_parallel_begin, 
-		    (ompt_callback_t)start_team_fn);
+		    (ompt_callback_t)ompt_parallel_begin);
   assert(ompt_event_may_occur(retval));
 
   retval = ompt_set_callback_fn(ompt_event_parallel_end, 
-		    (ompt_callback_t)end_team_fn);
+		    (ompt_callback_t)ompt_parallel_end);
   assert(ompt_event_may_occur(retval));
 }
 

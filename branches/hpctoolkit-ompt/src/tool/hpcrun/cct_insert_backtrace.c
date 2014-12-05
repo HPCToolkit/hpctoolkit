@@ -83,7 +83,7 @@ extern bool hpcrun_inbounds_main(void* addr);
 //
 static bool retain_recursion = false;
 
-#define OMPT_DEBUG 0
+#define OMPT_DEBUG 1
 
 #if OMPT_DEBUG
 #define elide_debug_dump(t,i,o,r) stack_dump(t,i,o,r)
