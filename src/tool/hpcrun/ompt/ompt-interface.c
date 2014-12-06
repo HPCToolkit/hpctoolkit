@@ -132,6 +132,96 @@ static __thread int ompt_idle_count;
  *****************************************************************************/
 
 //----------------------------------------------------------------------------
+// support for directed blame shifting for mutex objects
+//----------------------------------------------------------------------------
+
+//-------------------------------------------------
+// return a mutex that should be blamed for 
+// current waiting (if any)
+//-------------------------------------------------
+
+static uint64_t
+ompt_mutex_blame_target()
+{
+  if (ompt_initialized) {
+    ompt_wait_id_t wait_id;
+    ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
+
+    switch (state) {
+    case ompt_state_wait_critical:
+    case ompt_state_wait_lock:
+    case ompt_state_wait_nest_lock:
+    case ompt_state_wait_atomic:
+    case ompt_state_wait_ordered:
+      return wait_id;
+    default: break;
+    }
+  }
+  return 0;
+}
+
+
+static int *
+ompt_get_idle_count_ptr()
+{
+  return &ompt_idle_count;
+}
+
+
+//----------------------------------------------------------------------------
+// interface function to register support for directed blame shifting for 
+// OpenMP operations on mutexes if event OMP_MUTEX is present
+//----------------------------------------------------------------------------
+
+static void
+ompt_mutex_blame_shift_register(void)
+{
+  mutex_bs_entry.fn = directed_blame_sample;
+  mutex_bs_entry.next = NULL;
+  mutex_bs_entry.arg = &omp_mutex_blame_info;
+
+  omp_mutex_blame_info.get_blame_target = ompt_mutex_blame_target;
+
+  omp_mutex_blame_info.blame_table = blame_map_new();
+
+  int wait_id = omp_mutex_blame_info.wait_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(wait_id, "OMP_MUTEX_WAIT", 
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+
+  int blame_id = omp_mutex_blame_info.blame_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(blame_id, "OMP_MUTEX_BLAME",
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+
+  omp_mutex_blame_info.levels_to_skip = 1;
+
+  blame_shift_register(&mutex_bs_entry);
+}
+
+
+static void
+ompt_idle_blame_shift_register(void)
+{
+  ompt_idle_blame_enabled = 1;
+
+  idle_bs_entry.fn = undirected_blame_sample;
+  idle_bs_entry.next = NULL;
+  idle_bs_entry.arg = &omp_idle_blame_info;
+
+  omp_idle_blame_info.get_idle_count_ptr = ompt_get_idle_count_ptr;
+
+  int idle_metric_id = omp_idle_blame_info.idle_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(idle_metric_id, "OMP_IDLE",
+				    MetricFlags_ValFmt_Real, 1, metric_property_none);
+
+  int work_metric_id = omp_idle_blame_info.work_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(work_metric_id, "OMP_WORK",
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+
+  blame_shift_register(&idle_bs_entry);
+}
+
+
+//----------------------------------------------------------------------------
 // initialize pointers to callback functions supported by the OMPT interface
 //----------------------------------------------------------------------------
 
@@ -234,43 +324,6 @@ ompt_idle_end()
 }
 
 
-//----------------------------------------------------------------------------
-// support for directed blame shifting for mutex objects
-//----------------------------------------------------------------------------
-
-//-------------------------------------------------
-// return a mutex that should be blamed for 
-// current waiting (if any)
-//-------------------------------------------------
-
-static uint64_t
-ompt_mutex_blame_target()
-{
-  if (ompt_initialized) {
-    ompt_wait_id_t wait_id;
-    ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
-
-    switch (state) {
-    case ompt_state_wait_critical:
-    case ompt_state_wait_lock:
-    case ompt_state_wait_nest_lock:
-    case ompt_state_wait_atomic:
-    case ompt_state_wait_ordered:
-      return wait_id;
-    default: break;
-    }
-  }
-  return 0;
-}
-
-
-static int *
-ompt_get_idle_count_ptr()
-{
-  return &ompt_idle_count;
-}
-
-
 //-------------------------------------------------
 // accept any blame accumulated for mutex while 
 // this thread held it
@@ -304,6 +357,12 @@ init_threads()
 static void 
 init_parallel_regions()
 {
+  ompt_parallel_region_register_callbacks(ompt_set_callback_fn);
+}
+
+#if 0
+void ompt_parallel_region_register_callbacks()
+{
   int retval;
   retval = ompt_set_callback_fn(ompt_event_parallel_begin, 
 		    (ompt_callback_t)ompt_parallel_begin);
@@ -313,6 +372,7 @@ init_parallel_regions()
 		    (ompt_callback_t)ompt_parallel_end);
   assert(ompt_event_may_occur(retval));
 }
+#endif
 
 
 static void 
@@ -331,7 +391,7 @@ init_tasks()
 // to the mutex holder at the point of release.
 //-------------------------------------------------
 static void 
-init_mutex_blame_shift(char *version)
+init_mutex_blame_shift(const char *version)
 {
   int mutex_blame_shift_avail = 0;
   int retval = 0;
@@ -376,7 +436,7 @@ init_mutex_blame_shift(char *version)
 // idleness occurs. 
 //-------------------------------------------------
 static void 
-init_idle_blame_shift(char *version)
+init_idle_blame_shift(const char *version)
 {
   int idle_blame_shift_avail = 0;
   int retval = 0;
@@ -420,7 +480,7 @@ init_idle_blame_shift(char *version)
 // itself.
 //-------------------------------------------------
 int 
-ompt_initialize(
+ompt_initialize_internal(
   ompt_function_lookup_t ompt_fn_lookup,
   const char *runtime_version,
   unsigned int ompt_version
@@ -428,7 +488,11 @@ ompt_initialize(
 {
   ompt_initialized = 1;
 
+  fprintf(stderr, "ompt_fn_lookup = %p\n", ompt_fn_lookup);
+  fflush(NULL);
   init_function_pointers(ompt_fn_lookup);
+
+
   init_threads();
   init_parallel_regions();
   init_mutex_blame_shift(runtime_version);
@@ -442,8 +506,40 @@ ompt_initialize(
     ompt_elide = 1;
   }
 
+  EEMSG("completed ompt_initialize\n");
+
   return 1; // indicate tool present
 }
+
+
+#ifdef OMPT_V2013_07
+
+#define macro(fn) extern void fn (void); 
+FOREACH_OMPT_FN( macro )
+
+#undef macro
+static ompt_interface_fn_t
+ompt_lookup(const char *fname)
+{
+#define macro( fn ) if (strcmp(fname, #fn) == 0) return (ompt_interface_fn_t) fn;
+FOREACH_OMPT_FN( macro )
+#undef macro
+return 0;
+}
+
+int ompt_initialize(void)
+{
+  return ompt_initialize_internal(ompt_lookup, "", 1);
+}
+#else
+int
+ompt_initialize( ompt_function_lookup_t lookup,
+                 const char*            runtime_version,
+                 unsigned int           ompt_version )
+{
+  return ompt_initialize_internal(lookup, runtime_version, ompt_version);
+}
+#endif
 
 
 int 
@@ -513,7 +609,9 @@ hpcrun_ompt_get_task_frame(int level)
 ompt_task_id_t 
 hpcrun_ompt_get_task_id(int level)
 {
+#ifndef OMPT_V2013_07
   if (ompt_initialized) return ompt_get_task_id_fn(level);
+#endif
   return ompt_task_id_none;
 }
 
@@ -521,7 +619,9 @@ hpcrun_ompt_get_task_id(int level)
 void *
 hpcrun_ompt_get_idle_frame()
 {
+#ifndef OMPT_V2013_07
   if (ompt_initialized) return ompt_get_idle_frame_fn();
+#endif
   return NULL;
 }
 
@@ -559,59 +659,6 @@ ompt_idle_blame_shift_request()
 {
   ompt_idle_blame_requested = 1;
 }
-
-//----------------------------------------------------------------------------
-// interface function to register support for directed blame shifting for 
-// OpenMP operations on mutexes if event OMP_MUTEX is present
-//----------------------------------------------------------------------------
-
-void
-ompt_mutex_blame_shift_register()
-{
-  mutex_bs_entry.fn = directed_blame_sample;
-  mutex_bs_entry.next = NULL;
-  mutex_bs_entry.arg = &omp_mutex_blame_info;
-
-  omp_mutex_blame_info.get_blame_target = ompt_mutex_blame_target;
-
-  omp_mutex_blame_info.blame_table = blame_map_new();
-
-  int wait_id = omp_mutex_blame_info.wait_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(wait_id, "OMP_MUTEX_WAIT", 
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
-
-  int blame_id = omp_mutex_blame_info.blame_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(blame_id, "OMP_MUTEX_BLAME",
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
-
-  omp_mutex_blame_info.levels_to_skip = 1;
-
-  blame_shift_register(&mutex_bs_entry);
-}
-
-
-void
-ompt_idle_blame_shift_register()
-{
-  ompt_idle_blame_enabled = 1;
-
-  idle_bs_entry.fn = undirected_blame_sample;
-  idle_bs_entry.next = NULL;
-  idle_bs_entry.arg = &omp_idle_blame_info;
-
-  omp_idle_blame_info.get_idle_count_ptr = ompt_get_idle_count_ptr;
-
-  int idle_metric_id = omp_idle_blame_info.idle_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(idle_metric_id, "OMP_IDLE",
-				    MetricFlags_ValFmt_Real, 1, metric_property_none);
-
-  int work_metric_id = omp_idle_blame_info.work_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(work_metric_id, "OMP_WORK",
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
-
-  blame_shift_register(&idle_bs_entry);
-}
-
 
 #if 0
 void
