@@ -317,6 +317,7 @@ MY_BASE_FILES =				\
 	messages/messages-async.c	\
 	messages/fmt.c	                \
 	\
+	ompt/ompt-callstack.c           \
 	ompt/ompt-interface.c           \
 	ompt/ompt-region.c              \
 	ompt/ompt-defer-write.c         \

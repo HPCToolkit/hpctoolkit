@@ -21,6 +21,7 @@ uint64_t is_partial_resolve(cct_node_t *prefix);
 //deferred region ID assignment
 void init_region_id();
 
+#if 0
 // export registration interfaces for ompt
 void ompt_parallel_begin(ompt_task_id_t parent_task_id, 
                          ompt_frame_t *parent_task_frame,
@@ -31,6 +32,9 @@ void ompt_parallel_begin(ompt_task_id_t parent_task_id,
 // export registration interfaces for ompt
 void ompt_parallel_end(ompt_parallel_id_t parallel_id,    /* id of parallel region       */
   		       ompt_task_id_t task_id             /* id of task                  */ );
+#endif
+
+void ompt_parallel_region_register_callbacks(ompt_set_callback_t ompt_set_callback_fn);
 
 cct_node_t *hpcrun_region_lookup(uint64_t id);
 

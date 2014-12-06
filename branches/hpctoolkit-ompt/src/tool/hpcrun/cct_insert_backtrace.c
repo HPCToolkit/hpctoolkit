@@ -339,6 +339,7 @@ cct_insert_raw_backtrace(cct_node_t* cct,
   return cct;
 }
 
+
 static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 			  int metricId, uint64_t metricIncr,
