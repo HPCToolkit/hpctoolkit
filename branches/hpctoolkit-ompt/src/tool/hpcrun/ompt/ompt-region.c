@@ -20,6 +20,7 @@
 
 #include "ompt-region.h"
 #include "ompt-callback.h"
+#include "ompt-callstack.h"
 
 #include <hpcrun/ompt/ompt-interface.h>
 #include <hpcrun/ompt/ompt-region-map.h>
@@ -127,51 +128,10 @@ omp_resolve_and_free(cct_node_t* cct, cct_op_arg_t a, size_t l)
 }
 
 
-/******************************************************************************
- * interface operations
- *****************************************************************************/
-
-cct_node_t *
-gather_context(uint64_t region_id)
-{
-  cct_node_t *node;
-  ucontext_t uc;
-  getcontext(&uc);
-
-  node = hpcrun_sample_callpath(&uc, 0, 0, 2, 1).sample_node;
-  TMSG(DEFER_CTXT, "gather_context: unwind the callstack for region 0x%lx", region_id);
-
-#ifdef GOMP
-  cct_node_t *sibling = NULL;
-  if (node) {
-    sibling = hpcrun_cct_insert_addr
-      (hpcrun_cct_parent(node), 
-       &(ADDR2(hpcrun_cct_addr(node)->ip_norm.lm_id, 
-	       hpcrun_cct_addr(node)->ip_norm.lm_ip-5L)));
-  }
-  node = sibling;
-#endif
-
-  return node;
-}
-
-#define EAGER_CONTEXT 1 // temporary -- johnmc
-
-//
-// only master and sub-master thread execute start_team_fn and end_team_fn
-//
-#if 0
-void ompt_parallel_begin(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame,
-		   ompt_parallel_id_t region_id, uint32_t requested_team_size, void *parallel_fn)
-#endif
-
 static void 
 ompt_parallel_begin_internal(ompt_parallel_id_t region_id) 
-#if 0
-ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame, ompt_parallel_id_t region_id, uint32_t requested_team_size, void *parallel_fn)
-#endif
 {
-  cct_node_t *callpath = NULL;
+  cct_node_t *callpath = ompt_parallel_begin_context(region_id, 1);
   hpcrun_safe_enter();
   thread_data_t *td = hpcrun_get_thread_data();
   uint64_t parent_region_id = hpcrun_ompt_get_parallel_id(0);
@@ -181,12 +141,6 @@ ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame, ompt_parallel_id
     // (the one that unwinds to FENCE_MAIN)
     td->master = 1;
   }
-
-#ifdef EAGER_CONTEXT
-  if (hpcrun_trace_isactive()) {
-    callpath = gather_context(region_id);
-  }
-#endif
 
   assert(region_id != 0);
   ompt_region_map_insert((uint64_t) region_id, callpath);
@@ -198,11 +152,12 @@ ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame, ompt_parallel_id
       td->outer_region_id = parent_region_id;
       td->outer_region_context = NULL;
     } else {
-      // check whether we should update the outer most id
-      // if the outer-most region with td->outer_region_id is an outer region of current reigon,
+      // check whether we should update the outermost id
+      // if the outer-most region with td->outer_region_id is an 
+      // outer region of current region,
       // then no need to update outer-most id in the td
-      // else if it is not an outer region of the current region, we have to update the 
-      // outer-most id 
+      // else if it is not an outer region of the current region, 
+      // we have to update the outer-most id 
       int i=0;
       uint64_t outer_id = 0;
   
@@ -213,44 +168,17 @@ ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame, ompt_parallel_id
         outer_id = hpcrun_ompt_get_parallel_id(++i);
       }
       if (outer_id == 0){
-        td->outer_region_id = hpcrun_ompt_get_parallel_id(0); // parent region id
+	// parent region id
+        td->outer_region_id = hpcrun_ompt_get_parallel_id(0); 
         td->outer_region_context = 0;
-        TMSG(DEFER_CTXT, "enter a new outer region 0x%lx (start team)", td->outer_region_id);
+        TMSG(DEFER_CTXT, "enter a new outer region 0x%lx (start team)", 
+	     td->outer_region_id);
       }
     }
   }
 
   hpcrun_safe_exit();
 }
-
-#ifdef OMPT_V2013_07 
-int ompt_parallel_begin(
-  ompt_data_t  *parent_task_data,   /* tool data for parent task   */
-  ompt_frame_t *parent_task_frame,  /* frame data of parent task   */
-  ompt_parallel_id_t parallel_id    /* id of parallel region       */
-)
-{
-  ompt_parallel_begin_internal(parallel_id); 
-}
-#else
-void ompt_parallel_begin(
-  ompt_task_id_t parent_task_id, 
-  ompt_frame_t *parent_task_frame,
-  ompt_parallel_id_t region_id, 
-  uint32_t requested_team_size, 
-  void *parallel_fn
-)
-{
-#if 0
-  hpcrun_safe_enter();
-  TMSG(DEFER_CTXT, "team create  id=0x%lx parallel_fn=%p ompt_get_parallel_id(0)=0x%lx", region_id, parallel_fn, 
-       hpcrun_ompt_get_parallel_id(0));
-  hpcrun_safe_exit();
-#endif
-  ompt_parallel_begin_internal(region_id); 
-}
-
-#endif
 
 
 static void 
@@ -264,7 +192,8 @@ ompt_parallel_end_internal(
     if (ompt_region_map_entry_refcnt_get(record) > 0) {
       // associate calling context with region if it is not already present
       if (ompt_region_map_entry_callpath_get(record) == NULL) {
-	ompt_region_map_entry_callpath_set(record, gather_context(parallel_id));
+	ompt_region_map_entry_callpath_set(record, 
+					   ompt_region_context(parallel_id, 1));
       }
     } else {
       ompt_region_map_refcnt_update(parallel_id, 0L);
@@ -285,8 +214,46 @@ ompt_parallel_end_internal(
  
 }
 
+
+
+/******************************************************************************
+ * interface operations
+ *****************************************************************************/
+
 #ifdef OMPT_V2013_07 
-int ompt_parallel_end(
+void 
+ompt_parallel_begin(
+  ompt_data_t  *parent_task_data,   /* tool data for parent task   */
+  ompt_frame_t *parent_task_frame,  /* frame data of parent task   */
+  ompt_parallel_id_t parallel_id    /* id of parallel region       */
+)
+{
+  ompt_parallel_begin_internal(parallel_id); 
+}
+#else
+void 
+ompt_parallel_begin(
+  ompt_task_id_t parent_task_id, 
+  ompt_frame_t *parent_task_frame,
+  ompt_parallel_id_t region_id, 
+  uint32_t requested_team_size, 
+  void *parallel_fn
+)
+{
+#if 0
+  hpcrun_safe_enter();
+  TMSG(DEFER_CTXT, "team create  id=0x%lx parallel_fn=%p ompt_get_parallel_id(0)=0x%lx", region_id, parallel_fn, 
+       hpcrun_ompt_get_parallel_id(0));
+  hpcrun_safe_exit();
+#endif
+  ompt_parallel_begin_internal(region_id); 
+}
+
+#endif
+
+#ifdef OMPT_V2013_07 
+void 
+ompt_parallel_end(
   ompt_data_t  *parent_task_data,   /* tool data for parent task   */
   ompt_frame_t *parent_task_frame,  /* frame data of parent task   */
   ompt_parallel_id_t parallel_id    /* id of parallel region       */
@@ -296,7 +263,8 @@ int ompt_parallel_end(
 }
 
 #else
-void ompt_parallel_end(
+void 
+ompt_parallel_end(
   ompt_parallel_id_t parallel_id,    /* id of parallel region       */
   ompt_task_id_t task_id             /* id of task                  */ )
 {
@@ -308,41 +276,11 @@ void ompt_parallel_end(
 }
 #endif
 
-#if 0
-void end_team_fn(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame,
-                 ompt_parallel_id_t region_id, void *parallel_fn)
-{
-  hpcrun_safe_enter();
-  TMSG(DEFER_CTXT, "team end   id=0x%lx parallel_fn=%p ompt_get_parallel_id(0)=0x%lx", region_id, parallel_fn, 
-       hpcrun_ompt_get_parallel_id(0));
-  ompt_region_map_entry_t *record = ompt_region_map_lookup(region_id);
-  if (record) {
-    if (ompt_region_map_entry_refcnt_get(record) > 0) {
-      // associate calling context with region if it is not already present
-      if (ompt_region_map_entry_callpath_get(record) == NULL) {
-	ompt_region_map_entry_callpath_set(record, gather_context(region_id));
-      }
-    } else {
-      ompt_region_map_refcnt_update(region_id, 0L);
-    }
-  } else {
-    assert(0);
-  }
-  // FIXME: not using team_master but use another routine to 
-  // resolve team_master's tbd. Only with tasking, a team_master
-  // need to resolve itself
-  if (ENABLED(OMPT_TASK_FULL_CTXT)) {
-    TD_GET(team_master) = 1;
-    thread_data_t* td = hpcrun_get_thread_data();
-    resolve_cntxt_fini(td);
-    TD_GET(team_master) = 0;
-  }
-  hpcrun_safe_exit();
-}
-#endif
 
 void 
-ompt_parallel_region_register_callbacks(ompt_set_callback_t ompt_set_callback_fn)
+ompt_parallel_region_register_callbacks(
+  ompt_set_callback_t ompt_set_callback_fn
+)
 {
   int retval;
   retval = ompt_set_callback_fn(ompt_event_parallel_begin,
