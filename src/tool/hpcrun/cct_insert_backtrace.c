@@ -54,10 +54,6 @@
 #include <hpcrun/metrics.h>
 #include <hpcrun/unresolved.h>
 
-#include <ompt.h>
-#include <hpcrun/ompt/ompt-interface.h>
-#include <hpcrun/ompt/ompt-region.h>
-
 #include <lib/prof-lean/lush/lush-support.h>
 #include <lib/prof-lean/placeholders.h>
 #include <lush/lush-backtrace.h>
@@ -88,22 +84,13 @@ static cct_node_t*
 cct_insert_raw_backtrace(cct_node_t* cct,
                             frame_t* path_beg, frame_t* path_end)
 {
-  if (hpcrun_ompt_elide_frames() && (path_beg < path_end) && cct) {
-    // map the empty call path to omp_runtime to indicate an idle worker
-    void *omp_idle_addr = canonicalize_placeholder(omp_idle);
-    ip_normalized_t tmp_ip = hpcrun_normalize_ip(omp_idle_addr, NULL);
-    cct_addr_t tmp = ADDR2(tmp_ip.lm_id, tmp_ip.lm_ip);
-    cct = hpcrun_cct_insert_addr(cct, &tmp);
-    hpcrun_cct_terminate_path(cct);
-    return cct;
+  TMSG(BT_INSERT, "%s : start", __func__);
+  if (!cct) return NULL; // nowhere to insert
+
+  if (path_beg < path_end) { // null backtrace 
+     return cct_backtrace_null_handler(cct);
   }
 
-  TMSG(BT_INSERT, "%s : start", __func__);
-  if ( (path_beg < path_end) || (!cct)) {
-    TMSG(BT_INSERT, "No insert effect, cct = %p, path_beg = %p, path_end = %p",
-	 cct, path_beg, path_end);
-    return cct;
-  }
   ip_normalized_t parent_routine = ip_normalized_NULL;
   for(; path_beg >= path_end; path_beg--){
     if ( (! retain_recursion) &&
@@ -288,13 +275,12 @@ hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
 #endif
 
 cct_node_t*
-hpcrun_cct_record_backtrace(cct_bundle_t* cct, bool partial, 
-backtrace_info_t *bt,
-#if 0
-bool thread_stop,
-			    frame_t* bt_beg, frame_t* bt_last, 
-#endif
-bool tramp_found)
+hpcrun_cct_record_backtrace(
+  cct_bundle_t* cct, 
+  bool partial, 
+  backtrace_info_t *bt,
+  bool tramp_found
+)
 {
   TMSG(FENCE, "Recording backtrace");
   thread_data_t* td = hpcrun_get_thread_data();
@@ -322,101 +308,9 @@ bool tramp_found)
 
 }
 
-static cct_node_t *
-memoized_context_get(thread_data_t* td, uint64_t region_id)
-{
-  return (td->outer_region_id == region_id && td->outer_region_context) ? 
-    td->outer_region_context : 
-    NULL;
-}
-
-static void
-memoized_context_set(thread_data_t* td, uint64_t region_id, cct_node_t *result)
-{
-    td->outer_region_id = region_id;
-    td->outer_region_context = result;
-}
-
-static cct_node_t *
-lookup_region_id(cct_node_t **root, uint64_t region_id)
-{
-  thread_data_t* td = hpcrun_get_thread_data();
-  cct_node_t *result = NULL;
-
-  if (hpcrun_trace_isactive()) {
-    result = memoized_context_get(td, region_id);
-    if (result) return result;
-  
-    cct_node_t *t0_path = hpcrun_region_lookup(region_id);
-    if (t0_path) {
-      result = hpcrun_cct_insert_path_return_leaf(*root, t0_path);
-      memoized_context_set(td, region_id, result);
-    }
-  }
-
-  return result;
-}
-
-cct_node_t *
-hpcrun_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt, 
-                           cct_node_t *cct_cursor)
-{
-  cct_node_t *omp_task_context = TD_GET(omp_task_context);
-
-  if (omp_task_context) {
-    cct_node_t *root;
-    if((is_partial_resolve((cct_node_t *)omp_task_context) > 0)) {
-      root = hpcrun_get_thread_epoch()->csdata.unresolved_root; 
-    } else {
-      root = hpcrun_get_thread_epoch()->csdata.tree_root; 
-    }
-    return hpcrun_cct_insert_path_return_leaf(root, omp_task_context);
-  }
-
-#if 1
-  // if I am not the master thread, full context may not be immediately available.
-  // if that is the case, then it will later become available in a deferred fashion.
-  if (!TD_GET(master)) { // sub-master thread in nested regions
-    uint64_t region_id = TD_GET(region_id);
-    if (region_id > 0 && bt->bottom_frame_elided) {
-
-      cct_node_t *prefix = lookup_region_id(&cct->tree_root, region_id);
-      if (prefix) {
-	// full context is available now. use it.
-	cct_cursor = prefix;
-      } else {
-	// full context is not available. if the there is a node for region_id in 
-	// the unresolved tree, use it as the cursor to anchor the sample for now. 
-	// it will be resolved later. otherwise, use the default cursor.
-	prefix = 
-	  hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, 
-			       &(ADDR2(UNRESOLVED, region_id)));
-	if (prefix) cct_cursor = prefix;
-      }
-    }
-  }
-#else
-  if (!TD_GET(master)) {
-    uint64_t region_id = TD_GET(region_id);
-    if(region_id > 0) {
-      cct_node_t *prefix = 
-	hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, 
-				      &(ADDR2(UNRESOLVED, region_id)));
-      if (prefix) cct_cursor = prefix;
-    }
-  }
-#endif
-
-  return cct_cursor;
-}
-
 cct_node_t*
 hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, 
                                      backtrace_info_t *bt,
-#if 0
-				     bool thread_stop, frame_t* bt_beg, 
-				     frame_t* bt_last, 
-#endif
                                      bool tramp_found,
 				     int metricId, uint64_t metricIncr)
 {
@@ -441,7 +335,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
     TMSG(FENCE, "Thread stop ==> cursor = %p", cct_cursor);
   }
 
-  cct_cursor = hpcrun_cct_cursor_finalize(cct, bt, cct_cursor);
+  cct_cursor = cct_cursor_finalize(cct, bt, cct_cursor);
 
   TMSG(FENCE, "sanity check cursor = %p", cct_cursor);
   TMSG(FENCE, "further sanity check: bt->last frame = (%d, %p)", 
@@ -474,11 +368,7 @@ hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
   cct_node_t* n = 
     hpcrun_cct_record_backtrace_w_metric(cct, true, &bt,
-#if 0
-bt.fence == FENCE_THREAD,
-					 bt.begin, bt.last, 
-#endif
-bt.has_tramp,
+					 bt.has_tramp,
 					 metricId, metricIncr);
 
   hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));
@@ -552,11 +442,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
 
   cct_node_t* n = 
     hpcrun_cct_record_backtrace_w_metric(bundle, partial_unw, &bt, 
-#if 0
-bt.fence == FENCE_THREAD,
-bt_beg, bt_last, 
-#endif
-					tramp_found,
+					 tramp_found,
 					 metricId, metricIncr);
 
   if (bt.trolled) hpcrun_stats_trolled_inc();
