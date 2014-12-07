@@ -1,4 +1,4 @@
-void omp_runtime()
+void omp_idle()
 {
 }
 

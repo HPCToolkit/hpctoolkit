@@ -63,6 +63,7 @@
 #include <hpcrun/cct/cct.h>
 
 #include "ompt-interface.h"
+#include "ompt-callstack.h"
 
 #include "sample-sources/blame-shift/directed.h"
 #include "sample-sources/blame-shift/undirected.h"
@@ -504,9 +505,8 @@ ompt_initialize_internal(
 
   if(!ENABLED(OMPT_KEEP_ALL_FRAMES)) {
     ompt_elide = 1;
+    ompt_callstack_register_handlers();
   }
-
-  EEMSG("completed ompt_initialize\n");
 
   return 1; // indicate tool present
 }

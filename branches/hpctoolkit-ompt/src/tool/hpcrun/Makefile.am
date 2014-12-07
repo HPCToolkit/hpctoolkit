@@ -251,6 +251,7 @@ MY_BASE_FILES =				\
 	main.h main.c			\
 	disabled.c			\
         cct_insert_backtrace.c          \
+        cct_backtrace_finalize.c        \
 	env.c				\
 	epoch.c				\
 	files.c				\
