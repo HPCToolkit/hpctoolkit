@@ -70,6 +70,7 @@
 #include <unwind/common/backtrace_info.h>
 #include <unwind/common/fence_enum.h>
 #include "cct_insert_backtrace.h"
+#include "cct_backtrace_finalize.h"
 
 
 //
@@ -83,6 +84,7 @@ extern bool hpcrun_inbounds_main(void* addr);
 //
 static bool retain_recursion = false;
 
+#if 0
 #define OMPT_DEBUG 1
 
 #if OMPT_DEBUG
@@ -297,14 +299,16 @@ hpcrun_elide_runtime_frame(frame_t **bt_outer, frame_t **bt_inner,
   }
 }
 
+#endif
+
 static cct_node_t*
 cct_insert_raw_backtrace(cct_node_t* cct,
                             frame_t* path_beg, frame_t* path_end)
 {
   if (hpcrun_ompt_elide_frames() && (path_beg < path_end) && cct) {
     // map the empty call path to omp_runtime to indicate an idle worker
-    void *omp_runtime_addr = canonicalize_placeholder(omp_runtime);
-    ip_normalized_t tmp_ip = hpcrun_normalize_ip(omp_runtime_addr, NULL);
+    void *omp_idle_addr = canonicalize_placeholder(omp_idle);
+    ip_normalized_t tmp_ip = hpcrun_normalize_ip(omp_idle_addr, NULL);
     cct_addr_t tmp = ADDR2(tmp_ip.lm_id, tmp_ip.lm_ip);
     cct = hpcrun_cct_insert_addr(cct, &tmp);
     hpcrun_cct_terminate_path(cct);
@@ -706,6 +710,7 @@ bt.has_tramp,
 }
 
 
+#if 0
 void
 hpcrun_backtrace_finalize(backtrace_info_t *bt, int isSync) 
 {
@@ -728,6 +733,7 @@ hpcrun_backtrace_finalize(backtrace_info_t *bt, int isSync)
     }
   }
 }
+#endif
 
 
 static cct_node_t*
@@ -771,7 +777,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     }
   }
 
-  hpcrun_backtrace_finalize(&bt, isSync); 
+  cct_backtrace_finalize(&bt, isSync); 
 
   frame_t* bt_beg = bt.begin;
   frame_t* bt_last = bt.last;
