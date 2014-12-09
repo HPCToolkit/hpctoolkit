@@ -52,14 +52,14 @@
 #include <ompt.h>
 
 #include <lib/prof-lean/placeholders.h>
-
-#include <hpcrun/ompt/ompt-interface.h>
-#include <hpcrun/ompt/ompt-region.h>
 #include <hpcrun/cct_backtrace_finalize.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/trace.h>
 #include <hpcrun/unresolved.h>
 
+#include "ompt-interface.h"
+#include "ompt-region.h"
+#include "ompt-defer.h"
 
 
 //******************************************************************************
@@ -439,11 +439,12 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
     return hpcrun_cct_insert_path_return_leaf(root, omp_task_context);
   }
 
-#if 1
   // if I am not the master thread, full context may not be immediately available.
   // if that is the case, then it will later become available in a deferred fashion.
   if (!TD_GET(master)) { // sub-master thread in nested regions
     uint64_t region_id = TD_GET(region_id);
+    // FIXME: check whether bottom frame elided will be right for IBM runtime
+    //        without help of get_idle_frame
     if (region_id > 0 && bt->bottom_frame_elided) {
 
       cct_node_t *prefix = lookup_region_id(&cct->tree_root, region_id);
@@ -461,17 +462,6 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
       }
     }
   }
-#else
-  if (!TD_GET(master)) {
-    uint64_t region_id = TD_GET(region_id);
-    if(region_id > 0) {
-      cct_node_t *prefix = 
-	hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, 
-				      &(ADDR2(UNRESOLVED, region_id)));
-      if (prefix) cct_cursor = prefix;
-    }
-  }
-#endif
 
   return cct_cursor;
 }
