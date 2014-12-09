@@ -319,10 +319,12 @@ MY_BASE_FILES =				\
 	messages/fmt.c	                \
 	\
 	ompt/ompt-callstack.c           \
+	ompt/ompt-defer.c               \
+	ompt/ompt-defer-write.c         \
 	ompt/ompt-interface.c           \
 	ompt/ompt-region.c              \
-	ompt/ompt-defer-write.c         \
 	ompt/ompt-region-map.c          \
+	ompt/ompt-task.c                \
 	ompt/ompt-task-map.c            \
 	\
 	utilities/executable-path.h utilities/executable-path.c \

@@ -60,6 +60,8 @@
  * local includes
  *****************************************************************************/
 
+#include <hpctoolkit.h>
+
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>

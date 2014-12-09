@@ -1,3 +1,9 @@
+#include <stdint.h>
+
+#include <cct/cct.h>
+
+#include <ompt.h>
+
 void ompt_callstack_register_handlers(void);
 
 cct_node_t *

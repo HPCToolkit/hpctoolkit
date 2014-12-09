@@ -59,6 +59,7 @@
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/ompt/ompt-region.h>
+#include <hpcrun/ompt/ompt-task.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/cct/cct.h>
 
@@ -361,28 +362,11 @@ init_parallel_regions()
   ompt_parallel_region_register_callbacks(ompt_set_callback_fn);
 }
 
-#if 0
-void ompt_parallel_region_register_callbacks()
-{
-  int retval;
-  retval = ompt_set_callback_fn(ompt_event_parallel_begin, 
-		    (ompt_callback_t)ompt_parallel_begin);
-  assert(ompt_event_may_occur(retval));
-
-  retval = ompt_set_callback_fn(ompt_event_parallel_end, 
-		    (ompt_callback_t)ompt_parallel_end);
-  assert(ompt_event_may_occur(retval));
-}
-#endif
-
 
 static void 
 init_tasks() 
 {
-  int retval;
-  retval = ompt_set_callback_fn(ompt_event_task_begin, 
-		    (ompt_callback_t)ompt_task_begin);
-  assert(ompt_event_may_occur(retval));
+  ompt_task_register_callbacks(ompt_set_callback_fn);
 }
 
 
@@ -659,12 +643,3 @@ ompt_idle_blame_shift_request()
 {
   ompt_idle_blame_requested = 1;
 }
-
-#if 0
-void
-idle_metric_register_blame_source()
-{
-   idleness_blame_information_source_present = true;
-}
-
-#endif

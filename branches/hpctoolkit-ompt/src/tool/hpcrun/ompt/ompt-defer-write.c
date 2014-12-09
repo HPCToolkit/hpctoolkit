@@ -2,6 +2,7 @@
  * system includes
  *****************************************************************************/
 
+#if 0
 #include <alloca.h>
 #include <assert.h>
 #include <ctype.h>
@@ -13,6 +14,7 @@
 #include <stdbool.h>
 
 #include <pthread.h>
+#endif
 
 /******************************************************************************
  * libmonitor
@@ -45,8 +47,9 @@
 #include <hpcrun/cct2metrics.h>
 #include <hpcrun/metrics.h>
 
-#include <hpcrun/ompt/ompt-region.h>
-#include <hpcrun/ompt/ompt-defer-write.h>
+#include "ompt-region.h"
+#include "ompt-defer.h"
+#include "ompt-defer-write.h"
 
 #include <hpcrun/unresolved.h>
 #include <hpcrun/write_data.h>
