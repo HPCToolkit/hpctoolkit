@@ -120,6 +120,7 @@ ompt_task_begin(
   ompt_task_begin_internal(new_task_id);
 }
 #else
+void
 ompt_task_begin(
   ompt_task_id_t parent_task_id, 
   ompt_frame_t *parent_task_frame, 

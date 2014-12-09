@@ -46,8 +46,8 @@ extern int omp_get_thread_num(void);
 static void 
 ompt_parallel_begin_internal(ompt_parallel_id_t region_id) 
 {
-  cct_node_t *callpath = ompt_parallel_begin_context(region_id, 1);
   hpcrun_safe_enter();
+  cct_node_t *callpath = ompt_parallel_begin_context(region_id, 1);
   thread_data_t *td = hpcrun_get_thread_data();
   uint64_t parent_region_id = hpcrun_ompt_get_parallel_id(0);
 
@@ -108,7 +108,7 @@ ompt_parallel_end_internal(
       // associate calling context with region if it is not already present
       if (ompt_region_map_entry_callpath_get(record) == NULL) {
 	ompt_region_map_entry_callpath_set(record, 
-					   ompt_region_context(parallel_id, 1));
+					   ompt_region_context(parallel_id, 3));
       }
     } else {
       ompt_region_map_refcnt_update(parallel_id, 0L);

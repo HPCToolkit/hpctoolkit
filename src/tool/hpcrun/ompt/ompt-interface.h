@@ -31,10 +31,12 @@ extern void ompt_idle_blame_shift_request();
 //------------------------------------------------------------------------------
 extern int hpcrun_ompt_state_is_overhead();
 
+#if 1
 //FIXME for tasks
 #define task_map_insert(id, cct) ((uint64_t) id & (uint64_t) cct) // computation to avoid unused var warnings
 #define task_map_delete(id, cct)
 #define task_map_lookup(id) (id & 0) // computation to avoid unused var warnings
+#endif
 
 
 #endif // _OMPT_INTERFACE_H_

@@ -60,6 +60,7 @@
 #include "ompt-interface.h"
 #include "ompt-region.h"
 #include "ompt-defer.h"
+#include "ompt-task-map.h"
 
 
 //******************************************************************************
@@ -69,9 +70,9 @@
 #define OMPT_DEBUG 1
 
 #if OMPT_DEBUG
-#define elide_debug_dump(t,i,o,r) stack_dump(t,i,o,r)
+#define elide_debug_dump(t,i,o,r) if (ompt_callstack_debug) stack_dump(t,i,o,r)
 #else
-#define elide_debug_dump(t,i,o,r) 
+#define elide_debug_dump(t,i,o,r)
 #endif
 
 
@@ -82,6 +83,7 @@
 static cct_backtrace_finalize_entry_t ompt_finalizer;
 
 static int ompt_eager_context = 0;
+static int ompt_callstack_debug = 0;
 
 
 
@@ -89,7 +91,6 @@ static int ompt_eager_context = 0;
 // private  operations
 //******************************************************************************
 
-#if OMPT_DEBUG
 static void 
 stack_dump(
   char *tag, 
@@ -111,7 +112,6 @@ stack_dump(
   EMSG("-----%s end", tag); 
   EMSG("<0x%lx>\n", region_id); 
 }
-#endif
 
 
 static int
