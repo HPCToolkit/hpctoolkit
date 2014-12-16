@@ -224,7 +224,7 @@ ANode::IntToANodeTy(long i)
 void
 ACodeNode::linkAndSetLineRange(ACodeNode* parent)
 {
-  this->link(parent);
+  parent->AddChild(this);
   if (begLine() != ln_NULL) {
     SrcFile::ln bLn = std::min(parent->begLine(), begLine());
     SrcFile::ln eLn = std::max(parent->endLine(), endLine());
@@ -829,15 +829,9 @@ ANode::merge(ANode* toNode, ANode* fromNode)
   
   // Perform the merge
   // 1. Move all children of 'fromNode' into 'toNode'
-  for (ANodeChildIterator it(fromNode); it.Current(); /* */) {
-    ANode* child = dynamic_cast<ANode*>(it.Current());
-    it++; // advance iterator -- it is pointing at 'child'
-    
-    child->unlink();
-    child->link(toNode);
-  }
-  
-  // 2. If merging ACodeNodes, update line ranges
+ fromNode->TransferAllMyChildrenTo(toNode);
+
+ // 2. If merging ACodeNodes, update line ranges
   ACodeNode* toCI = dynamic_cast<ACodeNode*>(toNode);
   ACodeNode* fromCI = dynamic_cast<ACodeNode*>(fromNode);
   DIAG_Assert(Logic::equiv(toCI, fromCI), "Invariant broken!");
@@ -1149,7 +1143,7 @@ ACodeNode::relocate()
   }
   
   // INVARIANT: The parent scope contains at least two children
-  DIAG_Assert(parent()->childCount() >= 2, "");
+  DIAG_Assert(parent()->m_childCount() >= 2, "");
 
   ANode* prnt = parent();
   unlink();

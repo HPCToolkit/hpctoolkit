@@ -900,8 +900,8 @@ LocationMgr::fixScopeTree(Prof::Struct::ACodeNode* from_scope,
 	   x_old = x, x = x->ACodeNodeParent()) {
 	x->setLineRange(begLn, endLn, 0 /*propagate*/); // FIXME
 	
-	if ((x_old && x->childCount() >= 2)
-	    || (!x_old && x->childCount() >= 1)) {
+	if ((x_old && x->m_childCount() >= 2)
+	    || (!x_old && x->m_childCount() >= 1)) {
 	  alienateScopeTree(x, dynamic_cast<Prof::Struct::Alien*>(cur_ctxt),
 			    x_old, targetScopeID);
 	}

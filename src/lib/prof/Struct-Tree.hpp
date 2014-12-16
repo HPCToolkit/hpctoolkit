@@ -82,7 +82,8 @@
 #include <lib/support/diagnostics.h>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/Logic.hpp>
-#include <lib/support/NonUniformDegreeTree.hpp>
+//#include <lib/support/NonUniformDegreeTree.hpp>
+#include <lib/parallelxml/LockFreeXMLNode.hpp>
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/SrcFile.hpp>
 using SrcFile::ln_NULL;
@@ -247,7 +248,7 @@ class Ref;
 // ---------------------------------------------------------
 // ANode: The base node for a program scope tree
 // ---------------------------------------------------------
-class ANode: public NonUniformDegreeTreeNode,
+class ANode: public LockFreeXMLNode,
 	     public Metric::IData {
 public:
   enum ANodeTy {
@@ -281,7 +282,7 @@ public:
   // Create/Destroy
   // --------------------------------------------------------
   ANode(ANodeTy ty, ANode* parent = NULL)
-    : NonUniformDegreeTreeNode(parent),
+    : LockFreeXMLNode(parent, "??"),
       Metric::IData(),
       m_type(ty),
       m_visible(true)
@@ -302,11 +303,11 @@ public:
 
 
 protected:
-  ANode(const ANode& x)
-  { *this = x; }
+  //ANode(const ANode& x)
+  //{ *this = x; }
 
   // deep copy of internals (but without children)
-  ANode&
+  /*ANode&
   operator=(const ANode& x)
   {
     if (this != &x) {
@@ -317,7 +318,7 @@ protected:
       m_visible = x.m_visible;
     }
     return *this;
-  }
+  }*/
 
 
 public:
@@ -364,34 +365,27 @@ public:
   // --------------------------------------------------------
   ANode*
   parent() const
-  { return static_cast<ANode*>(NonUniformDegreeTreeNode::Parent()); }
+  { return static_cast<ANode*>(LockFreeXMLNode::Parent()); }
 
   ANode*
   firstChild() const
-  { return static_cast<ANode*>(NonUniformDegreeTreeNode::FirstChild()); }
+  { return static_cast<ANode*>(LockFreeXMLNode::FirstChild()); }
 
   ANode*
   lastChild() const
-  { return static_cast<ANode*>(NonUniformDegreeTreeNode::LastChild()); }
+  { return static_cast<ANode*>(LockFreeXMLNode::LastChild()); }
 
+  // Unlike NonUniformDegreeTreeNode, LockFreeXMLNode's children are not circularly linked
   ANode*
   nextSibling() const
   {
-    // siblings are linked in a circular list
-    if ((parent()->lastChild() != this)) {
-      return static_cast<ANode*>(NonUniformDegreeTreeNode::NextSibling());
-    }
-    return NULL;
+      return static_cast<ANode*>(LockFreeXMLNode::NextSibling());
   }
 
   ANode*
   prevSibling() const
   {
-    // siblings are linked in a circular list
-    if ((parent()->firstChild() != this)) {
-      return static_cast<ANode*>(NonUniformDegreeTreeNode::PrevSibling());
-    }
-    return NULL;
+	  return static_cast<ANode*>(LockFreeXMLNode::PrevSibling());
   }
 
 
