@@ -1143,7 +1143,7 @@ ACodeNode::relocate()
   }
   
   // INVARIANT: The parent scope contains at least two children
-  DIAG_Assert(parent()->m_childCount() >= 2, "");
+  DIAG_Assert(parent()->childCount() >= 2, "");
 
   ANode* prnt = parent();
   unlink();
@@ -1153,7 +1153,7 @@ ACodeNode::relocate()
   //}
   if (m_begLn == ln_NULL) {
     // insert as first child
-    linkBefore(prnt->firstChild());
+	 prnt->AddChildFirst(this);
   }
   else {
     // insert after sibling with sibling->begLine() <= begLine()
@@ -1169,7 +1169,7 @@ ACodeNode::relocate()
       linkAfter(sibling);
     }
     else {
-      linkBefore(prnt->FirstChild());
+      prnt->AddChildFirst(this);
     }
   }
 }
@@ -1982,7 +1982,7 @@ Ref::RelocateRef()
       linkAfter(sibling);
     }
     else {
-      linkBefore(prnt->FirstChild());
+      prnt->AddChildFirst(this);
     }
   }
 }

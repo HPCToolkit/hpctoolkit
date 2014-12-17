@@ -2875,6 +2875,7 @@ AC_CONFIG_FILES([ \
   src/lib/isa/Makefile \
   src/lib/prof/Makefile \
   src/lib/profxml/Makefile \
+  src/lib/parallelxml/Makefile \
   src/lib/prof-lean/Makefile \
   src/lib/stubs-gcc_s/Makefile \
   src/lib/support/Makefile \

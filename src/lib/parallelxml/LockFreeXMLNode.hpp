@@ -51,7 +51,18 @@ public:
 	void AddAttribute(Attribute);
 	// Locks attributes, no further changes allowed. They may be written out
 	void FinalizeAttributes();
+
+
 	void AddChild(LockFreeXMLNode* newChild);
+	void AddChildFirst(LockFreeXMLNode* newChild);
+	void AddChildAfter(LockFreeXMLNode* newChild, LockFreeXMLNode* sibling);
+	// removes me from my parent's children
+	void unlink();
+
+	// For compatibility: adds this node to the specified parent
+	void link(LockFreeXMLNode* parent) ;
+	void linkAfter(LockFreeXMLNode* sibling);
+
 	void TransferAllMyChildrenTo(LockFreeXMLNode* newParent);
 	virtual ~LockFreeXMLNode();
 
@@ -79,7 +90,9 @@ private:
 	int m_childCount;
 	int m_ancestorCount;
 
+	// This is the only authoritative pointer. The sequence point occurs when nextSibling is set
 	LockFreeXMLNode* nextSibling;
+
 	LockFreeXMLNode* previousSibling;
 	LockFreeXMLNode* firstChild;
 	// lastChild is not authoritative, it's just convenient and makes adding a new child O(1)
