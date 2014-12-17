@@ -4,7 +4,7 @@
  *  Created on: Dec 15, 2014
  *      Author: pat2
  */
-//TODO: Portability...
+//TODO: Use prof-lean's atomics instead
 #ifndef LIB_PARALLELXML_ATOMICS_HPP_
 #define LIB_PARALLELXML_ATOMICS_HPP_
 

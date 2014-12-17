@@ -35,7 +35,9 @@ LockFreeXMLNode::LockFreeXMLNode(LockFreeXMLNode* parent, const string& tagName)
 	}
 
 LockFreeXMLNode::~LockFreeXMLNode() {
-	// TODO Auto-generated destructor stub
+#ifndef __cilk
+	delete attributeList;
+#endif
 }
 LockFreeXMLNode* LockFreeXMLNode::createNode(const string& tag) {
 	return new LockFreeXMLNode(tag, out);
@@ -73,26 +75,25 @@ void LockFreeXMLNode::write() {
 	Write(false); // XML must have a single root element
 }
 void LockFreeXMLNode::Write(bool printSiblings) {
-	out << "<" << tag;
-	/*
-#ifdef __cilk
-	attributeList.get_value();
-#else
-	*attributeList;
-#endif
-*/
-	for(AttributeList::iterator it = attributeList.begin(); it != attributeList.end(); ++it)
+	if (!hidden)
 	{
-		out << " " << it->name << "=\"" << it->value << "\"";
-	}
+		out << "<" << tag;
+		for(AttributeList::iterator it = attributeList.begin(); it != attributeList.end(); ++it)
+		{
+			out << " " << it->name << "=\"" << it->value << "\"";
+		}
 
-	if (firstChild == NULL) {
-		out << " />\n";
-	} else {
-		out << ">\n";
-		cilk_spawn firstChild->Write(true);
-		out << "</" << tag << ">\n";
+		if (firstChild == NULL) {
+			out << " />\n";
+		} else {
+			out << ">\n";
+			cilk_spawn firstChild->Write(true);
+			out << "</" << tag << ">\n";
+		}
 	}
+	else if (firstChild != NULL)
+		cilk_spawn firstChild->Write(true);
+
 
 	// Could call nextSibling->Write(), but that would cause the
 	// stack to grow with the width of the XML tree instead of just the depth.
@@ -103,6 +104,80 @@ void LockFreeXMLNode::Write(bool printSiblings) {
 			current = current->nextSibling;
 		}
 	}
+}
+
+void LockFreeXMLNode::AddChild(LockFreeXMLNode* newChild) {
+	assert(newChild->attrStatus != OPEN);
+	// Before the node is in the tree, it should be private, so we don't need to be atomic yet
+	newChild->nextSibling = NULL;
+	newChild->parent = this;
+	newChild->m_ancestorCount = m_ancestorCount+1;
+
+	if (firstChild == NULL && cas<LockFreeXMLNode*>(&firstChild, NULL, newChild)) {
+		// this is the first node
+		lastChild = newChild;
+		return;
+	}
+	if (lastChild == NULL)
+		// might fail, but everyone is writing the same value so someone will get it
+		// It's still necessary because C++ mem model doesn't guarantee no out-of-thin-air vals
+		cas<LockFreeXMLNode*>(&lastChild, NULL, firstChild);
+
+	while (true) {
+		LockFreeXMLNode* privateLastChild = lastChild; // other threads may be modifying lastChild
+		// anticipate success
+		newChild->previousSibling = privateLastChild;
+
+		// privateLastChild->nextSibling == NULL iff privateLastChild is the last one
+		if (privateLastChild->nextSibling == NULL
+				&& cas<LockFreeXMLNode*>(&(privateLastChild->nextSibling), NULL, newChild)) {
+			// Successfully hooked on: Sequence point
+			fai(&m_childCount);
+			// again, we don't really care if this fails
+			cas<LockFreeXMLNode*>(&lastChild, privateLastChild,  newChild);
+			return;
+		} else
+			cas<LockFreeXMLNode*>(&lastChild, privateLastChild, privateLastChild->nextSibling);
+	}
+}
+void LockFreeXMLNode::AddChildFirst(LockFreeXMLNode* newChild)
+{
+	// Prepare newChild
+	newChild->parent = this;
+	newChild->previousSibling = NULL;
+	newChild->m_ancestorCount = m_ancestorCount + 1;
+
+	while (true) {
+		LockFreeXMLNode* privateFirstChild = firstChild;
+		newChild->nextSibling = privateFirstChild;
+		if (cas<LockFreeXMLNode*>(&privateFirstChild->previousSibling, NULL, newChild))
+			break;
+		else
+			// someone else swapped in a new first child and this->firstChild is lagging
+			cas<LockFreeXMLNode*>(&firstChild, privateFirstChild, privateFirstChild->previousSibling);
+	}
+	fai(&m_childCount);
+}
+void LockFreeXMLNode::AddChildAfter(LockFreeXMLNode* newChild, LockFreeXMLNode* sibling)
+{
+	assert(sibling->parent == this);
+	newChild->parent = this;
+	newChild->previousSibling = sibling;
+	newChild->m_ancestorCount = m_ancestorCount+1;
+
+	while (true) {
+		LockFreeXMLNode* rightSibling = sibling->nextSibling;
+		newChild->nextSibling = rightSibling;
+		if (cas<LockFreeXMLNode*>(&sibling->nextSibling, rightSibling, newChild)) {
+			rightSibling->previousSibling = newChild; // does this need to be a compare&swap???
+			break;
+		}
+		// otherwise sibling->nextSibling was updated so try again
+	}
+
+	if (lastChild == sibling)
+		cas<LockFreeXMLNode*>(&lastChild, sibling, lastChild);
+	fai(&m_childCount);
 }
 
 void LockFreeXMLNode::TransferAllMyChildrenTo(LockFreeXMLNode* newParent)
@@ -150,37 +225,30 @@ void LockFreeXMLNode::TransferAllMyChildrenTo(LockFreeXMLNode* newParent)
 
 }
 
-void LockFreeXMLNode::AddChild(LockFreeXMLNode* newChild) {
-	assert(newChild->attrStatus != OPEN);
-	// Before the node is in the tree, it should be private, so we don't need to be atomic yet
-	newChild->nextSibling = NULL;
-	newChild->parent = this;
-	newChild->m_ancestorCount = m_ancestorCount+1;
+void LockFreeXMLNode::unlink()
+{
+	// I think this doesn't race with addChild but might race with itself, but I'm not positive....
 
-	if (firstChild == NULL && cas<LockFreeXMLNode*>(&firstChild, NULL, newChild)) {
-		// this is the first node
-		lastChild = newChild;
-		return;
+	if (previousSibling != NULL) {
+		while(!cas<LockFreeXMLNode*>(&previousSibling->nextSibling, this, nextSibling))
+			;
+		cas<LockFreeXMLNode*>(&parent->lastChild, this, previousSibling);
 	}
-	if (lastChild == NULL)
-		// might fail, but everyone is writing the same value so someone will get it
-		// It's still necessary because C++ mem model doesn't guarantee no out-of-thin-air vals
-		cas<LockFreeXMLNode*>(&lastChild, NULL, firstChild);
+	else
+		cas<LockFreeXMLNode*>(&parent->firstChild, this, nextSibling);
+	faa(&parent->m_childCount, -1);
 
-	while (true) {
-		LockFreeXMLNode* privateLastChild = lastChild; // other threads may be modifying lastChild
-		// anticipate success
-		newChild->previousSibling = privateLastChild;
-
-		// privateLastChild->nextSibling == NULL iff privateLastChild is the last one
-		if (privateLastChild->nextSibling == NULL
-				&& cas<LockFreeXMLNode*>(&(privateLastChild->nextSibling), NULL, newChild)) {
-			// Successfully hooked on
-			fai(&m_childCount);
-			// again, we don't really care if this fails
-			cas<LockFreeXMLNode*>(&lastChild, privateLastChild,  newChild);
-			return;
-		} else
-			cas<LockFreeXMLNode*>(&lastChild, privateLastChild, privateLastChild->nextSibling);
-	}
+	// previousSibling only used for iterating, and if you are iterating while deleting,
+	// that's already a bad idea, so updating previousSibling is lower priority.
+	if (nextSibling != NULL)
+		// If the assertion fails, I don't know what is going on
+		assert(cas<LockFreeXMLNode*>(&nextSibling->previousSibling, this, previousSibling));
+}
+void LockFreeXMLNode::link(LockFreeXMLNode* parent)
+{
+	parent->AddChild(this);
+}
+void LockFreeXMLNode::linkAfter(LockFreeXMLNode* sibling)
+{
+	sibling->parent->AddChildAfter(this, sibling);
 }
