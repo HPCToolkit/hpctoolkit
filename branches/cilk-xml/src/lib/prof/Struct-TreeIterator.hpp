@@ -73,7 +73,6 @@
 
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/WordSet.hpp>
-#include <lib/parallelxml/LockFreeXMLIterators.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -134,13 +133,13 @@ extern const ANodeFilter ANodeTyFilter[ANode::TyNUMBER];
 //                parent->FirstChild()
 //              until the last node is removed
 
-class ANodeChildIterator : public LockFreeXMLTreeNodeChildIterator{
+class ANodeChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
 
   // If filter == NULL enumerate all entries; otherwise, only entries
   // with filter->fct(e) == true
   ANodeChildIterator(const ANode* root, const ANodeFilter* filter = NULL)
-    : LockFreeXMLTreeNodeChildIterator(root, /*forward*/false),
+    : NonUniformDegreeTreeNodeChildIterator(root, /*forward*/false), 
       m_filter(filter)
   { }
 
@@ -150,11 +149,11 @@ public:
   { return static_cast<ANode*>(Current()); }
 
 
-  virtual LockFreeXMLNode*
+  virtual NonUniformDegreeTreeNode*
   Current() const
   {
-    LockFreeXMLNode* x_base = NULL;
-    while ( (x_base = LockFreeXMLTreeNodeChildIterator::Current()) ) {
+    NonUniformDegreeTreeNode* x_base = NULL;
+    while ( (x_base = NonUniformDegreeTreeNodeChildIterator::Current()) ) {
       ANode* x = static_cast<ANode*>(x_base);
       if ((m_filter == NULL) || m_filter->apply(*x)) {
 	break;
@@ -169,10 +168,10 @@ private:
 };
 
 
-class ACodeNodeChildIterator : public LockFreeXMLTreeNodeChildIterator {
+class ACodeNodeChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
   ACodeNodeChildIterator(const ACodeNode* root)
-    : LockFreeXMLTreeNodeChildIterator(root, /*forward*/false)
+    : NonUniformDegreeTreeNodeChildIterator(root, /*forward*/false)
   { }
 
   ACodeNode*
@@ -192,7 +191,7 @@ public:
 //   changed.
 //***************************************************************************
 
-class ANodeIterator : public LockFreeXMLTreeIterator {
+class ANodeIterator : public NonUniformDegreeTreeIterator {
 public: 
   // If filter == NULL enumerate all entries; otherwise, only entries
   // with filter->fct(e) == true
@@ -200,10 +199,10 @@ public:
 		const ANodeFilter* filter = NULL,
 		bool leavesOnly = false,
 		TraversalOrder torder = PreOrder)
-    : LockFreeXMLTreeIterator(root, torder,
+    : NonUniformDegreeTreeIterator(root, torder, 
 				   ((leavesOnly) 
-				    ? LOCK_FREE_XML_TREE_ENUM_LEAVES_ONLY
-				    : LOCK_FREE_XML_TREE_ENUM_ALL_NODES)),
+				    ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
+				    : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES)),
       m_filter(filter)
   { }
 
@@ -213,11 +212,11 @@ public:
   { return static_cast<ANode*>(Current()); }
 
 
-  virtual LockFreeXMLNode*
+  virtual NonUniformDegreeTreeNode*
   Current() const
   {
-    LockFreeXMLNode* x_base = NULL;
-    while ( (x_base = LockFreeXMLTreeIterator::Current()) ) {
+    NonUniformDegreeTreeNode* x_base = NULL;
+    while ( (x_base = NonUniformDegreeTreeIterator::Current()) ) {
       ANode* x = static_cast<ANode*>(x_base);
       if ((m_filter == NULL) || m_filter->apply(*x)) {
 	break;

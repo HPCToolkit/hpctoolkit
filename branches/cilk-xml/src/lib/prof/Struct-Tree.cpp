@@ -224,7 +224,7 @@ ANode::IntToANodeTy(long i)
 void
 ACodeNode::linkAndSetLineRange(ACodeNode* parent)
 {
-  parent->AddChild(this);
+  this->link(parent);
   if (begLine() != ln_NULL) {
     SrcFile::ln bLn = std::min(parent->begLine(), begLine());
     SrcFile::ln eLn = std::max(parent->endLine(), endLine());
@@ -829,9 +829,15 @@ ANode::merge(ANode* toNode, ANode* fromNode)
   
   // Perform the merge
   // 1. Move all children of 'fromNode' into 'toNode'
- fromNode->TransferAllMyChildrenTo(toNode);
-
- // 2. If merging ACodeNodes, update line ranges
+  for (ANodeChildIterator it(fromNode); it.Current(); /* */) {
+    ANode* child = dynamic_cast<ANode*>(it.Current());
+    it++; // advance iterator -- it is pointing at 'child'
+    
+    child->unlink();
+    child->link(toNode);
+  }
+  
+  // 2. If merging ACodeNodes, update line ranges
   ACodeNode* toCI = dynamic_cast<ACodeNode*>(toNode);
   ACodeNode* fromCI = dynamic_cast<ACodeNode*>(fromNode);
   DIAG_Assert(Logic::equiv(toCI, fromCI), "Invariant broken!");
@@ -1153,7 +1159,7 @@ ACodeNode::relocate()
   //}
   if (m_begLn == ln_NULL) {
     // insert as first child
-	 prnt->AddChildFirst(this);
+    linkBefore(prnt->firstChild());
   }
   else {
     // insert after sibling with sibling->begLine() <= begLine()
@@ -1169,7 +1175,7 @@ ACodeNode::relocate()
       linkAfter(sibling);
     }
     else {
-      prnt->AddChildFirst(this);
+      linkBefore(prnt->FirstChild());
     }
   }
 }
@@ -1982,7 +1988,7 @@ Ref::RelocateRef()
       linkAfter(sibling);
     }
     else {
-      prnt->AddChildFirst(this);
+      linkBefore(prnt->FirstChild());
     }
   }
 }

@@ -611,7 +611,7 @@ renumberAlienScopes(Prof::Struct::ANode* node)
     //---------------------------------------------------------------------
     // iterate over the immediate child scopes of an inlined procedure
     //---------------------------------------------------------------------
-    for(LockFreeXMLTreeNodeChildIterator kids(inlinedProcedure);
+    for(NonUniformDegreeTreeNodeChildIterator kids(inlinedProcedure); 
         kids.Current(); kids++) {
       Prof::Struct::ACodeNode* child = 
          dynamic_cast<Prof::Struct::ACodeNode*>(kids.Current());
@@ -708,7 +708,7 @@ coalesceAlienChildren(Prof::Struct::ANode* node)
 	 // accumulate a list of the children of the duplicate alien 
          //---------------------------------------------------------------------
 	 std::list<Prof::Struct::ANode*> kidsList;
-         for(LockFreeXMLTreeNodeChildIterator kids(duplicate);
+         for(NonUniformDegreeTreeNodeChildIterator kids(duplicate); 
              kids.Current(); kids++) {
            Prof::Struct::ANode* kid = 
              dynamic_cast<Prof::Struct::ANode*>(kids.Current());
@@ -738,7 +738,7 @@ coalesceAlienChildren(Prof::Struct::ANode* node)
   //----------------------------------------------------------------------------
   // recursively apply coalescing to the subtree rooted at each child of node
   //----------------------------------------------------------------------------
-  for(LockFreeXMLTreeNodeChildIterator kids(node); kids.Current(); kids++) {
+  for(NonUniformDegreeTreeNodeChildIterator kids(node); kids.Current(); kids++) {
     Prof::Struct::ANode* kid = dynamic_cast<Prof::Struct::ANode*>(kids.Current());
     if (typeid(*kid) != typeid(Prof::Struct::Stmt)) {
       coalesceAlienChildren(kid);
@@ -1770,10 +1770,8 @@ removeEmptyNodes(Prof::Struct::ANode* node)
 
     // 2. Trim this node if necessary
     if (removeEmptyNodes_isEmpty(child)) {
-    	//FIXME: support unlink/delete
-    	child->hide();
-    	// child->unlink(); // unlink 'child' from tree
-      //delete child;
+      child->unlink(); // unlink 'child' from tree
+      delete child;
       changed = true;
     }
   }
@@ -1829,10 +1827,8 @@ deleteContents(Prof::Struct::ANodeSet* s)
   // Delete nodes in toDelete
   for (Prof::Struct::ANodeSet::iterator it = s->begin(); it != s->end(); ++it) {
     Prof::Struct::ANode* n = (*it);
-    // FIXME: Support unlinking
-    n->hide();
-    //n->unlink(); // unlink 'n' from tree
-    //delete n;
+    n->unlink(); // unlink 'n' from tree
+    delete n;
   }
   s->clear();
 }
