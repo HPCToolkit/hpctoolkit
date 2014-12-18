@@ -145,7 +145,7 @@ ompt_region_map_insert(uint64_t region_id, cct_node_t *call_path)
 
 // return true if record found; false otherwise
 bool
-ompt_region_map_refcnt_update(uint64_t region_id, uint64_t val)
+ompt_region_map_refcnt_update(uint64_t region_id, int val)
 {
   bool result = false; 
 
@@ -160,14 +160,11 @@ ompt_region_map_refcnt_update(uint64_t region_id, uint64_t val)
     ompt_region_map_root->refcnt += val;
     TMSG(DEFER_CTXT, "region map refcnt_update: id=0x%lx (%ld --> %ld)", 
 	 region_id, val, ompt_region_map_root->refcnt);
-// FIXME
-#if 0
     if (ompt_region_map_root->refcnt == 0) {
       TMSG(DEFER_CTXT, "region map refcnt_update: id=0x%lx (deleting)",
            region_id);
       ompt_region_map_delete_root();
     }
-#endif
     result = true;
   }
 
@@ -196,3 +193,28 @@ ompt_region_map_entry_callpath_get(ompt_region_map_entry_t *node)
 {
   return node->call_path;
 }
+
+
+
+/******************************************************************************
+ * debugging code
+ *****************************************************************************/
+
+static int 
+ompt_region_map_count_helper(ompt_region_map_entry_t *node) 
+{
+  if (node) {
+     int left = ompt_region_map_count_helper(node->left);
+     int right = ompt_region_map_count_helper(node->right);
+     return 1 + right + left; 
+  } 
+  return 0;
+}
+
+
+int 
+ompt_region_map_count() 
+{
+  return ompt_region_map_count_helper(ompt_region_map_root);
+}
+

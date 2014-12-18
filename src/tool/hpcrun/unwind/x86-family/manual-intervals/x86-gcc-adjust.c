@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-ompt/src/tool/hpcrun/unwind/x86-family/manual-intervals/x86-32bit-main.c $
+// $Id: x86-32bit-main.c 4606 2014-10-06 22:53:14Z laksono@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -44,36 +44,53 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//************************* System Include Files ****************************
+#include <string.h>
+#include "x86-unwind-interval-fixup.h"
+#include "x86-unwind-interval.h"
 
-//*************************** User Include Files ****************************
 
-#include "x86-decoder.h"
-#include "x86-interval-arg.h"
+static char gcc_adjust_stack_signature[] = { 
+   0x4c, 0x8d, 0x54, 0x24, 0x08, // lea    0x8(%rsp),%r10
+   0x48, 0x83, 0xe4, 0xc0,       // and    $0xffffffffffffffc0,%rsp
+   0x41, 0xff, 0x72, 0xf8,       // pushq  -0x8(%r10)
+   0x55,                         // push   %rbp
+   0x48, 0x89, 0xe5              // mov    %rsp,%rbp
+};
 
-#include <lib/isa-lean/x86/instruction-set.h>
 
-//***************************************************************************
-
-unwind_interval *
-process_and(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
+static int 
+gcc_adjust_stack_intervals(char *ins, int len, interval_status *stat)
 {
-  unwind_interval *next = iarg->current;
-  const xed_operand_t* op0 = xed_inst_operand(xi,0);
-  xed_operand_enum_t   op0_name = xed_operand_name(op0);
+  int siglen = sizeof(gcc_adjust_stack_signature);
 
-  if (op0_name == XED_OPERAND_REG0) {
-    xed_reg_enum_t reg0 = xed_decoded_inst_get_reg(xptr, op0_name);
-    if (x86_isReg_SP(reg0) && iarg->current->bp_status == BP_SAVED) {
-      //-----------------------------------------------------------------------
-      // we are adjusting the stack pointer via 'and' instruction
-      //-----------------------------------------------------------------------
-	next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), 
-		      RA_BP_FRAME, iarg->current->sp_ra_pos, iarg->current->bp_ra_pos,
-		      iarg->current->bp_status, iarg->current->sp_bp_pos, 
-		      iarg->current->bp_bp_pos, iarg->current);
+  if (len > siglen && strncmp((char *)gcc_adjust_stack_signature, ins, siglen) == 0) {
+    // signature matched 
+    unwind_interval *ui = (unwind_interval *) stat->first;
 
+    // this won't fix all of the intervals, but it will fix the ones 
+    // that we care about.
+    while(ui) {
+      if (ui->ra_status == RA_STD_FRAME){
+        ui->ra_status = RA_BP_FRAME;
+	ui->bp_ra_pos = 8;
+	ui->bp_bp_pos = 0;
+      }
+      if (ui->ra_status == RA_BP_FRAME){
+	ui->bp_ra_pos = 8;
+	ui->bp_bp_pos = 0;
+      }
+      ui = (unwind_interval *)(ui->common).next;
     }
-  }
-  return next;
+
+    return 1;
+  } 
+  return 0;
+}
+
+
+static void 
+__attribute__ ((constructor))
+register_unwind_interval_fixup_function(void)
+{
+  add_x86_unwind_interval_fixup_function(gcc_adjust_stack_intervals);
 }
