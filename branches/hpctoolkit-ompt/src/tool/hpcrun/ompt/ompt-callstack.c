@@ -429,6 +429,9 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
 {
   cct_node_t *omp_task_context = TD_GET(omp_task_context);
 
+  // FIXME: should memoize the resulting task context in a thread-local variable
+  //        I think we can just return omp_task_context here. it is already
+  //        relative to one root or another.
   if (omp_task_context) {
     cct_node_t *root;
     if((is_partial_resolve((cct_node_t *)omp_task_context) > 0)) {

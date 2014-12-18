@@ -31,6 +31,14 @@
 
 
 /******************************************************************************
+ * macros
+ *****************************************************************************/
+
+// FIXME: should use eliding interface rather than skipping frames manually
+#define LEVELS_TO_SKIP 2 // skip one level in enclosing OpenMP runtime
+
+
+/******************************************************************************
  * external declarations 
  *****************************************************************************/
 
@@ -44,10 +52,13 @@ extern int omp_get_thread_num(void);
  *****************************************************************************/
 
 static void 
-ompt_parallel_begin_internal(ompt_parallel_id_t region_id) 
+ompt_parallel_begin_internal(
+  ompt_parallel_id_t region_id, 
+  int levels_to_skip
+) 
 {
   hpcrun_safe_enter();
-  cct_node_t *callpath = ompt_parallel_begin_context(region_id, 1);
+  cct_node_t *callpath = ompt_parallel_begin_context(region_id, ++levels_to_skip);
   thread_data_t *td = hpcrun_get_thread_data();
   uint64_t parent_region_id = hpcrun_ompt_get_parallel_id(0);
 
@@ -98,7 +109,8 @@ ompt_parallel_begin_internal(ompt_parallel_id_t region_id)
 
 static void 
 ompt_parallel_end_internal( 
-  ompt_parallel_id_t parallel_id    /* id of parallel region       */
+  ompt_parallel_id_t parallel_id,    /* id of parallel region       */
+  int levels_to_skip
 )
 {
   hpcrun_safe_enter();
@@ -108,7 +120,8 @@ ompt_parallel_end_internal(
       // associate calling context with region if it is not already present
       if (ompt_region_map_entry_callpath_get(record) == NULL) {
 	ompt_region_map_entry_callpath_set(record, 
-					   ompt_region_context(parallel_id, 3));
+					   ompt_region_context(parallel_id, 
+                                                               ++levels_to_skip));
       }
     } else {
       ompt_region_map_refcnt_update(parallel_id, 0L);
@@ -143,7 +156,8 @@ ompt_parallel_begin(
   ompt_parallel_id_t parallel_id    /* id of parallel region       */
 )
 {
-  ompt_parallel_begin_internal(parallel_id); 
+  int levels_to_skip = LEVELS_TO_SKIP;
+  ompt_parallel_begin_internal(parallel_id, ++level_to_skip); 
 }
 #else
 void 
@@ -161,7 +175,8 @@ ompt_parallel_begin(
        hpcrun_ompt_get_parallel_id(0));
   hpcrun_safe_exit();
 #endif
-  ompt_parallel_begin_internal(region_id); 
+  int levels_to_skip = LEVELS_TO_SKIP;
+  ompt_parallel_begin_internal(region_id, ++levels_to_skip); 
 }
 
 #endif
@@ -174,7 +189,8 @@ ompt_parallel_end(
   ompt_parallel_id_t parallel_id    /* id of parallel region       */
   )
 {
-  ompt_parallel_end_internal(parallel_id);
+  int levels_to_skip = LEVELS_TO_SKIP;
+  ompt_parallel_end_internal(parallel_id, ++levels_to_skip);
 }
 
 #else
@@ -187,7 +203,8 @@ ompt_parallel_end(
   TMSG(DEFER_CTXT, "team end   id=0x%lx task_id=%x ompt_get_parallel_id(0)=0x%lx", parallel_id, task_id, 
        hpcrun_ompt_get_parallel_id(0));
   hpcrun_safe_exit();
-  ompt_parallel_end_internal(parallel_id);
+  int levels_to_skip = LEVELS_TO_SKIP;
+  ompt_parallel_end_internal(parallel_id, ++levels_to_skip);
 }
 #endif
 

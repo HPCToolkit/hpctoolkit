@@ -36,7 +36,10 @@ struct ompt_task_map_entry_s {
  *****************************************************************************/
 
 static ompt_task_map_entry_t *ompt_task_map_root = NULL;
+static ompt_task_map_entry_t *freelist = NULL;
+
 static spinlock_t ompt_task_map_lock = SPINLOCK_UNLOCKED;
+
 
 
 
@@ -44,11 +47,33 @@ static spinlock_t ompt_task_map_lock = SPINLOCK_UNLOCKED;
  * private operations
  *****************************************************************************/
 
+inline ompt_task_map_entry_t *
+ompt_task_map_entry_alloc()
+{
+  ompt_task_map_entry_t *e;
+  if (freelist) {  
+    e = freelist;
+    freelist = freelist->left;
+  } else {
+    e = (ompt_task_map_entry_t *) hpcrun_malloc(sizeof(ompt_task_map_entry_t));
+  }
+  return e;
+}
+
+
+inline void
+ompt_task_map_entry_free(ompt_task_map_entry_t *e)
+{
+  e->left = freelist;
+  freelist = e;
+}
+
+
 static ompt_task_map_entry_t *
 ompt_task_map_entry_new(uint64_t task_id, cct_node_t *call_path)
 {
   ompt_task_map_entry_t *e;
-  e = (ompt_task_map_entry_t *)hpcrun_malloc(sizeof(ompt_task_map_entry_t));
+  e = ompt_task_map_entry_alloc();
   e->task_id = task_id;
   e->call_path = call_path;
   e->left = NULL;

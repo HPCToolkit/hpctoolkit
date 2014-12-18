@@ -23,8 +23,8 @@
 #include "ompt-callback.h"
 #include "ompt-callstack.h"
 
-#include <hpcrun/ompt/ompt-interface.h>
-#include <hpcrun/ompt/ompt-region-map.h>
+#include "ompt-interface.h"
+#include "ompt-region-map.h"
 
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
@@ -50,6 +50,8 @@ extern int omp_get_thread_num(void);
 
 //
 // TODO: add trace correction info here
+// FIXME: merge metrics belongs in a different file. it is not specific to 
+// OpenMP
 //
 static void
 merge_metrics(cct_node_t *a, cct_node_t *b, merge_op_arg_t arg)

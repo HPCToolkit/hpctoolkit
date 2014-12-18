@@ -128,13 +128,20 @@ hpcrun_cleanup_partial_unwind(void)
 
 
 static cct_node_t*
-record_partial_unwind(cct_bundle_t* cct,
-		      frame_t* bt_beg, frame_t* bt_last,
-		      int metricId, uint64_t metricIncr)
+record_partial_unwind(
+  cct_bundle_t* cct,
+  frame_t* bt_beg, 
+  frame_t* bt_last,
+  int metricId, 
+  uint64_t metricIncr,
+  int skipInner)
 {
   if (ENABLED(NO_PARTIAL_UNW)){
     return NULL;
   }
+
+  bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
+
   backtrace_info_t bt;
  
   bt.begin = bt_beg;
@@ -243,7 +250,7 @@ hpcrun_sample_callpath(void* context, int metricId,
   else {
     cct_bundle_t* cct = &(td->core_profile_trace_data.epoch->csdata);
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
-				 metricId, metricIncr);
+				 metricId, metricIncr, skipInner);
     hpcrun_cleanup_partial_unwind();
   }
 

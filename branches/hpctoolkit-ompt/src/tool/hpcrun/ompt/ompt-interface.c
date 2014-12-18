@@ -473,8 +473,11 @@ ompt_initialize_internal(
 {
   ompt_initialized = 1;
 
+#if 0
   fprintf(stderr, "ompt_fn_lookup = %p\n", ompt_fn_lookup);
   fflush(NULL);
+#endif
+
   init_function_pointers(ompt_fn_lookup);
 
 

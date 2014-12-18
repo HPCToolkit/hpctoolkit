@@ -33,7 +33,7 @@ ompt_region_map_entry_t *ompt_region_map_lookup(uint64_t id);
 
 void ompt_region_map_insert(uint64_t region_id, cct_node_t *call_path);
 
-bool ompt_region_map_refcnt_update(uint64_t region_id, uint64_t val);
+bool ompt_region_map_refcnt_update(uint64_t region_id, int val);
 
 uint64_t ompt_region_map_entry_refcnt_get(ompt_region_map_entry_t *node);
 

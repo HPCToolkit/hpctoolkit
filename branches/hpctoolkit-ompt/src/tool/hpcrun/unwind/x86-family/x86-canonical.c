@@ -51,11 +51,11 @@
 
 #include <messages/messages.h>
 
-#define HW_INITIALIZED		0x8
-#define HW_BP_SAVED			0x4
-#define HW_BP_OVERWRITTEN	0x2
-#define HW_SP_DECREMENTED	0x1
-#define HW_UNINITIALIZED	0x0
+#define HW_INITIALIZED          0x8
+#define HW_BP_SAVED             0x4
+#define HW_BP_OVERWRITTEN       0x2
+#define HW_SP_DECREMENTED       0x1
+#define HW_UNINITIALIZED        0x0
 
 
 /******************************************************************************

@@ -197,6 +197,7 @@ UNW_X86_FILES = \
 	unwind/x86-family/manual-intervals/x86-intel14-omp.c \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
+	unwind/x86-family/manual-intervals/x86-gcc-adjust.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c
 
