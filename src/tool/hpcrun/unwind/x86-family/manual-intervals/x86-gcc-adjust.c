@@ -76,7 +76,8 @@ gcc_adjust_stack_intervals(char *ins, int len, interval_status *stat)
 	ui->bp_bp_pos = 0;
       }
       if (ui->ra_status == RA_BP_FRAME){
-	ui->bp_ra_pos = 8;
+        if (ui->bp_status == BP_SAVED) ui->bp_ra_pos = 8;
+        else if (ui->bp_status == BP_UNCHANGED) ui->bp_ra_pos = 0;
 	ui->bp_bp_pos = 0;
       }
       ui = (unwind_interval *)(ui->common).next;
