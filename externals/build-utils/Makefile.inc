@@ -1,7 +1,7 @@
 #
 #  Makefile include rules.
 #
-#  Copyright (c) 2008-2014, Rice University.
+#  Copyright (c) 2008-2015, Rice University.
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
