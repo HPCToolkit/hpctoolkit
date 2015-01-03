@@ -37,6 +37,7 @@
 NAME = @PACKAGE_NAME@
 VERSION = @PACKAGE_VERSION@
 TARNAME = @PACKAGE_TARNAME@
+PREFIX = @prefix@
 
 BACK_END_PKGS = boost libdwarf libelf libmonitor libunwind libxml2  \
 	symtabAPI xed2
@@ -49,17 +50,21 @@ DIST_FILES = LICENSE Makefile.conf.in Makefile.in README*  \
 	.svn-revision autogen build-utils config distfiles
 
 NOBUILD_COOKIE = .dont-build
+EXTERNS_FILE = externs.conf
 FAILURE_FILE = BUILD-FAILURE
 
-.PHONY: all install install-all back-end backend begin-build
+.PHONY: all install install-all back-end backend
 .PHONY: fetch fetch-all clean clean-all
 .PHONY: distclean distclean-all distclean-plus dist
+.PHONY: pre-build post-build
 .PHONY: $(PACKAGES)
 
-all install install-all: begin-build $(PACKAGES)
+all install install-all: pre-build $(PACKAGES)
+	$(MAKE) post-build
 	@echo "Externals build complete at `date`"
 
-back-end backend: begin-build $(BACK_END_PKGS)
+back-end backend: pre-build $(BACK_END_PKGS)
+	$(MAKE) post-build
 	@echo "Externals back-end build complete at `date`"
 
 libdwarf: libelf
@@ -72,20 +77,26 @@ symtabAPI: boost libelf libdwarf @SYMTAB_OTHER_PREREQS@
 # top-level targets are entire package builds, so the output in a
 # parallel build often hides the error from another package.
 #
-begin-build:
+pre-build:
 	@rm -f $(FAILURE_FILE)
 
-$(PACKAGES): begin-build
-	@if $(MAKE) -C $@ install ; then \
-		if test -f $(FAILURE_FILE) ; then \
-			echo "BUILD FAILURE in the following packages:" ; \
-			cat $(FAILURE_FILE) ; \
-		fi ; \
-	else \
+post-build:
+	@if test -f $(FAILURE_FILE) ; then \
+		echo "BUILD FAILURE in the following packages:" ; \
+		cat $(FAILURE_FILE) ; \
+	fi
+	@-if test ! -f "$(PREFIX)/$(EXTERNS_FILE)" ; then \
+		echo "reinstall $(EXTERNS_FILE) ..." ;  \
+		cp "$(EXTERNS_FILE)" "$(PREFIX)/$(EXTERNS_FILE)" ; \
+	fi
+
+$(PACKAGES): pre-build
+	@if $(MAKE) -C $@ install ; then : ; else \
 		echo $@ >>$(FAILURE_FILE) ; \
 		echo "BUILD FAILURE:" $@ ;  \
 		exit 2 ; \
 	fi
+	$(MAKE) post-build
 
 fetch fetch-all:
 	@for pkg in $(PACKAGES) ; do  \
@@ -126,7 +137,7 @@ SRCDIR = @srcdir@
 
 dist:
 	@echo "cleaning source tree (ignore errors) ..."
-	-cd "$(SRCDIR)" && make clean
+	-cd "$(SRCDIR)" && $(MAKE) clean
 	rm -f "$(MY_DIST_DIR)" "$(MY_TAR_FILE)" "$(MY_TAR_FILE).gz"
 	ln -s "$(SRCDIR)" "$(MY_DIST_DIR)"
 	tar cf "$(MY_TAR_FILE)"  \

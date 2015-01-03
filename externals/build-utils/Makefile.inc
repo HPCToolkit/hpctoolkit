@@ -130,6 +130,9 @@ refetch:
 		echo '$(POST_FETCH_CMD)' ;  \
 		$(POST_FETCH_CMD) ;  \
 	fi
+	@echo "resetting permissions on: $(SRC_DIR)"
+	-find "$(SRC_DIR)" -type d -exec chmod a+rx {} \;
+	-chmod -R a+r "$(SRC_DIR)"
 	touch $(FETCH_COOKIE)
 
 fetch:
