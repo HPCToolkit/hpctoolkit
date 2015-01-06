@@ -91,8 +91,9 @@ int writeTraceFile(Prof::CallPath::Profile *prof,
 
 void endTraceFiles(void);
 
-int writePlotHeader(int fd, ulong max_cctid, ulong num_metrics,
-		    ulong num_threads, ulong index_start, ulong index_length);
+int writePlotHeader(int fd, ulong max_cctid, ulong num_metrics, ulong num_threads,
+		    ulong index_start, ulong index_length,
+		    ulong plot_start, ulong plot_length);
 
 }  // namespace Prof, Database
 }

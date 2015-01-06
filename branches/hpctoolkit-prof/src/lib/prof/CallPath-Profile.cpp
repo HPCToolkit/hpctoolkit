@@ -568,7 +568,20 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   UIntToStringMap metricIdToFormula;
 
   // -------------------------------------------------------
-  //
+  // File Names for Binary Metrics
+  // -------------------------------------------------------
+  if (Prof::Database::newDBFormat()) {
+    os << "  <SummaryDBFile name=\"summary.db\"/>\n";
+    if (m_numActive > 0) {
+      os << "  <TraceDBFile name=\"trace.db\"/>\n";
+    }
+    if (m_doPlot) {
+      os << "  <PlotDBFile name=\"plot.db\"/>\n";
+    }
+  }
+
+  // -------------------------------------------------------
+  // Metric Table and Formulas
   // -------------------------------------------------------
   os << "  <MetricTable>\n";
   for (uint i = metricBeg; i < metricEnd; i++) {
@@ -646,7 +659,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   os << "  </MetricTable>\n";
 
   // -------------------------------------------------------
-  //
+  // Metrics for Plot Graphs
   // -------------------------------------------------------
   os << "  <MetricDBTable>\n";
   for (uint i = 0; i < m_mMgr->size(); i++) {
@@ -664,45 +677,17 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   os << "  </MetricDBTable>\n";
 
   // -------------------------------------------------------
-  // SummaryDBTable
+  // TraceDBTable, old style only
   // -------------------------------------------------------
-  if (Prof::Database::newDBFormat()) {
-    os << "  <SummaryDBTable>\n";
-    os << "    <SummaryDBFile i=\"0\" name=\"summary.db\"/>\n";
-    os << "  </SummaryDBTable>\n";
-  }
-
-  // -------------------------------------------------------
-  // TraceDBTable
-  // -------------------------------------------------------
-  if (Prof::Database::newDBFormat()) {
-    if (m_numActive > 0) {
-      os << "  <TraceDBTable>\n";
-      os << "    <TraceDBFile i=\"0\" name=\"trace.db\"/>\n";
-      os << "  </TraceDBTable>\n";
-    }
-
-  } else {
-
-    if (!traceFileNameSet().empty()) {
-      os << "  <TraceDBTable>\n";
-      os << "    <TraceDB i" << MakeAttrNum(0)
-	 << " db-glob=\"" << "*." << HPCRUN_TraceFnmSfx << "\""
-	 << " db-min-time=\"" << m_traceMinTime << "\""
-	 << " db-max-time=\"" << m_traceMaxTime << "\""
-	 << " db-header-sz=\"" << HPCTRACE_FMT_HeaderLen << "\""
-	 << "/>\n";
-      os << "  </TraceDBTable>\n";
-    }
-  }
-
-  // -------------------------------------------------------
-  // PlotDBTable
-  // -------------------------------------------------------
-  if (Prof::Database::newDBFormat() && m_doPlot) {
-    os << "  <PlotDBTable>\n";
-    os << "    <PlotDBFile i=\"0\" name=\"plot.db\"/>\n";
-    os << "  </PlotDBTable>\n";
+  if (!Prof::Database::newDBFormat() && !traceFileNameSet().empty()) {
+    os << "  <TraceDBTable>\n";
+    os << "    <TraceDB i" << MakeAttrNum(0)
+       << " db-glob=\"" << "*." << HPCRUN_TraceFnmSfx << "\""
+       << " db-min-time=\"" << m_traceMinTime << "\""
+       << " db-max-time=\"" << m_traceMaxTime << "\""
+       << " db-header-sz=\"" << HPCTRACE_FMT_HeaderLen << "\""
+       << "/>\n";
+    os << "  </TraceDBTable>\n";
   }
 
   // -------------------------------------------------------

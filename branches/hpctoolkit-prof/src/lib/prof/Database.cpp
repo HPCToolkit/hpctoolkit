@@ -94,10 +94,23 @@
 
 //***************************************************************************
 
-#define MESSAGE_SIZE  32
 #define SUMMARY_NAME  "hpctoolkit summary metrics"
 #define TRACE_NAME    "hpctoolkit trace metrics"
 #define PLOT_NAME     "hpctoolkit plot metrics"
+
+#define FILE_VERSION  3
+
+#define SUMMARY_TYPE  1
+#define TRACE_TYPE    2
+#define PLOT_TYPE     3
+
+#define SUMMARY_FMT   1
+#define TRACE_FMT     2
+#define PLOT_FMT      3
+
+#define HEADER_SIZE  512
+#define COMMON_SIZE  256
+#define MESSAGE_SIZE  32
 
 #define MAGIC  0x06870630
 
@@ -108,12 +121,13 @@
 
 struct __attribute__ ((packed)) common_header {
   char      mesg[MESSAGE_SIZE];
-  uint32_t  magic;
-  uint32_t  type;
-  uint32_t  format;
-  uint64_t  num_threads;
+  uint64_t  magic;
+  uint64_t  version;
+  uint64_t  type;
+  uint64_t  format;
   uint64_t  num_cctid;
-  uint64_t  num_metric;
+  uint64_t  num_metid;
+  uint64_t  num_threads;
 };
 
 struct __attribute__ ((packed)) summary_header {
@@ -127,12 +141,15 @@ struct __attribute__ ((packed)) summary_header {
 };
 
 struct __attribute__ ((packed)) trace_header {
-  uint64_t  min_time;
-  uint64_t  max_time;
   uint64_t  index_start;
   uint64_t  index_length;
+  uint64_t  trace_start;
+  uint64_t  trace_length;
+  uint64_t  min_time;
+  uint64_t  max_time;
   uint32_t  size_offset;
   uint32_t  size_length;
+  uint32_t  size_global_tid;
   uint32_t  size_time;
   uint32_t  size_cctid;
 };
@@ -140,6 +157,8 @@ struct __attribute__ ((packed)) trace_header {
 struct __attribute__ ((packed)) plot_header {
   uint64_t  index_start;
   uint64_t  index_length;
+  uint64_t  plot_start;
+  uint64_t  plot_length;
   uint32_t  size_cctid;
   uint32_t  size_metid;
   uint32_t  size_offset;
@@ -149,7 +168,7 @@ struct __attribute__ ((packed)) plot_header {
 };
 
 struct __attribute__ ((packed)) metric_entry {
-  uint16_t  metid;
+  uint32_t  metid;
   uint32_t  metval;
 };
 
@@ -207,6 +226,24 @@ write_all_at(int fd, const void *buf, size_t count, off_t offset)
   return write_all(fd, buf, count);
 }
 
+static void
+make_common_header(struct common_header *hdr, const char *mesg,
+		   uint64_t type, uint64_t format,
+		   uint64_t num_cctid, uint64_t num_metid, uint64_t num_threads)
+{
+  memset(hdr, 0, sizeof(struct common_header));
+
+  strncpy(hdr->mesg, mesg, MESSAGE_SIZE);
+  hdr->mesg[MESSAGE_SIZE - 1] = 0;
+  hdr->magic = host_to_be_64(MAGIC);
+  hdr->version = host_to_be_64(FILE_VERSION);
+  hdr->type =   host_to_be_64(type);
+  hdr->format = host_to_be_64(format);
+  hdr->num_cctid = host_to_be_64(num_cctid);
+  hdr->num_metid = host_to_be_64(num_metid);
+  hdr->num_threads = host_to_be_64(num_threads);
+}
+
 //***************************************************************************
 
 namespace Prof {
@@ -242,7 +279,7 @@ makeSummaryDB(Prof::CallPath::Profile & prof, const Analysis::Args & args)
   Prof::Metric::Mgr * mgr = prof.metricMgr();
   Metric::ADesc * desc;
   uint num_cctid = cct_tree->maxDenseId() + 1;
-  uint num_metrics = prof.metricMgr()->size();
+  uint num_metid = prof.metricMgr()->size();
   uint beg_metric, end_metric, last_vis;
 
   desc = mgr->findFirstVisible();
@@ -253,7 +290,7 @@ makeSummaryDB(Prof::CallPath::Profile & prof, const Analysis::Args & args)
 
   std::cout << "writing summary binary db: "
 	    << "max-cct: " << num_cctid
-	    << ", num-metrics: " << num_metrics << ", ...\n";
+	    << ", num-metrics: " << num_metid << ", ...\n";
   std::cout << "first-vis: " << beg_metric
 	    << ", last-vis: " << last_vis << "\n";
 
@@ -262,25 +299,14 @@ makeSummaryDB(Prof::CallPath::Profile & prof, const Analysis::Args & args)
   // compute sizes and allocate buffers
   //------------------------------------------------------------
 
-  uint64_t common_size = sizeof(struct common_header);
-  uint64_t summary_size = sizeof(struct summary_header);
+  uint64_t header_size = HEADER_SIZE;
   uint64_t metric_entry_size = sizeof(struct metric_entry);
-  uint64_t header_size =  common_size + summary_size;
   uint64_t offset_start = alignOffset(header_size);
   uint64_t offset_size =  sizeof(uint64_t) * (num_cctid + 2);
   uint64_t metric_start = alignOffset(offset_start + offset_size);
 
-  struct common_header * common_hdr;
-  struct summary_header * summary_hdr;
   uint64_t * offset_table;
   struct metric_entry * metric_table;
-
-  char * header = (char *) malloc(header_size);
-  if (header == NULL) {
-    err(1, "malloc for summary metrics header failed");
-  }
-  common_hdr = (struct common_header *) header;
-  summary_hdr = (struct summary_header *) (header + common_size);
 
   offset_table = (uint64_t *) malloc(offset_size);
   if (offset_table == NULL) {
@@ -323,7 +349,7 @@ makeSummaryDB(Prof::CallPath::Profile & prof, const Analysis::Args & args)
       for (uint metid = beg_metric; metid < end_metric; metid++) {
 	u32.fval = (float) node->metric(metid);
 	if (u32.fval != 0.0) {
-	  metric_table[next_idx].metid = host_to_be_16(metid);
+	  metric_table[next_idx].metid = host_to_be_32(metid);
 	  metric_table[next_idx].metval = host_to_be_32(u32.ival);
 	  next_idx++;
 	  next_off += metric_entry_size;
@@ -338,23 +364,21 @@ makeSummaryDB(Prof::CallPath::Profile & prof, const Analysis::Args & args)
   // fill in common and summary headers
   //------------------------------------------------------------
 
-  memset(header, 0, header_size);
-  strncpy((char *) common_hdr, SUMMARY_NAME, MESSAGE_SIZE);
+  char header[HEADER_SIZE];
 
-  common_hdr->mesg[MESSAGE_SIZE - 1] = 0;
-  common_hdr->magic = host_to_be_32(MAGIC);
-  common_hdr->type =  host_to_be_32(1);
-  common_hdr->format =  host_to_be_32(1);
-  common_hdr->num_threads = 0;
-  common_hdr->num_cctid =  host_to_be_64(num_cctid);
-  common_hdr->num_metric = host_to_be_64(num_metrics);
+  struct common_header * common_hdr = (struct common_header *) header;
+  struct summary_header * summary_hdr = (struct summary_header *) (header + COMMON_SIZE);
+
+  memset(header, 0, header_size);
+  make_common_header(common_hdr, SUMMARY_NAME, SUMMARY_TYPE, SUMMARY_FMT,
+		     num_cctid, num_metid, 0);
 
   summary_hdr->offset_start = host_to_be_64(offset_start);
   summary_hdr->offset_size =  host_to_be_64(offset_size);
   summary_hdr->metric_start = host_to_be_64(metric_start);
   summary_hdr->metric_size =  host_to_be_64(next_off);
   summary_hdr->size_offset =  host_to_be_32(8);
-  summary_hdr->size_metid =   host_to_be_32(2);
+  summary_hdr->size_metid =   host_to_be_32(4);
   summary_hdr->size_metval =  host_to_be_32(4);
 
   //------------------------------------------------------------
@@ -373,6 +397,8 @@ makeSummaryDB(Prof::CallPath::Profile & prof, const Analysis::Args & args)
     err(1, "write summary metric header failed");
   }
 
+  free(offset_table);
+  free(metric_table);
   close(sum_fd);
 
   return true;
@@ -422,54 +448,42 @@ openTraceFile(void)
 int
 writeTraceHeader(traceInfo *trace, long num_threads, long num_active)
 {
-  struct common_header * common_hdr;
-  struct trace_header * trace_hdr;
-
-  uint64_t common_size = sizeof(struct common_header);
-  uint64_t trace_size = sizeof(struct trace_header);
-  uint64_t header_size =  common_size + trace_size;
+  uint64_t header_size = HEADER_SIZE;
   uint64_t index_start = alignOffset(header_size);
   uint64_t index_length = (num_active + 1) * sizeof(struct trace_index);
   uint64_t min_time, max_time;
-  long n;
 
   openTraceFile();
 
-  char * header = (char *) malloc(header_size);
-
-  DIAG_Assert(header != NULL, "out of memory in Prof::Database::writeTraceHeader");
-
-  common_hdr = (struct common_header *) header;
-  trace_hdr = (struct trace_header *) (header + common_size);
-
-  memset(header, 0, header_size);
-  strncpy((char *) common_hdr, TRACE_NAME, MESSAGE_SIZE);
-
-  common_hdr->mesg[MESSAGE_SIZE - 1] = 0;
-  common_hdr->magic = host_to_be_32(MAGIC);
-  common_hdr->type =  host_to_be_32(2);
-  common_hdr->format =  host_to_be_32(2);
-  common_hdr->num_threads = host_to_be_64(num_active);
-  common_hdr->num_cctid =  0;
-  common_hdr->num_metric = 0;
-
   min_time = UINT64_MAX;
   max_time = 0;
-  for (n = 0; n < num_threads; n++) {
+  for (long n = 0; n < num_threads; n++) {
     if (trace[n].active) {
       min_time = std::min(min_time, trace[n].min_time);
       max_time = std::max(max_time, trace[n].max_time);
     }
   }
 
-  trace_hdr->min_time = host_to_be_64(min_time);
-  trace_hdr->max_time = host_to_be_64(max_time);
+  char header[HEADER_SIZE];
+
+  struct common_header * common_hdr = (struct common_header *) header;
+  struct trace_header * trace_hdr = (struct trace_header *) (header + COMMON_SIZE);
+
+  memset(header, 0, header_size);
+  make_common_header(common_hdr, TRACE_NAME, TRACE_TYPE, TRACE_FMT,
+		     0, 0, num_threads);
+
   trace_hdr->index_start =  host_to_be_64(index_start);
   trace_hdr->index_length = host_to_be_64(index_length);
-  trace_hdr->size_offset =  host_to_be_32(8);
-  trace_hdr->size_length =  host_to_be_32(8);
-  trace_hdr->size_time =    host_to_be_32(8);
-  trace_hdr->size_cctid =   host_to_be_32(4);
+  trace_hdr->trace_start = 0;
+  trace_hdr->trace_length = 0;
+  trace_hdr->min_time = host_to_be_64(min_time);
+  trace_hdr->max_time = host_to_be_64(max_time);
+  trace_hdr->size_offset = host_to_be_32(8);
+  trace_hdr->size_length = host_to_be_32(8);
+  trace_hdr->size_global_tid = host_to_be_32(8);
+  trace_hdr->size_time =  host_to_be_32(8);
+  trace_hdr->size_cctid = host_to_be_32(4);
 
   int ret = write_all_at(trace_fd, header, header_size, 0);
 
@@ -586,43 +600,32 @@ endTraceFiles(void)
 // Plot Graph Header
 
 int
-writePlotHeader(int fd, ulong num_cctid, ulong num_metric,
-		ulong num_threads, ulong index_start, ulong index_length)
+writePlotHeader(int fd, ulong num_cctid, ulong num_metid, ulong num_threads,
+		ulong index_start, ulong index_length,
+		ulong plot_start, ulong plot_length)
 {
-  long common_size = sizeof(struct common_header);
-  long plot_size = sizeof(struct plot_header);
-  long header_size = common_size + plot_size;
+  long header_size = HEADER_SIZE;
+  char header[HEADER_SIZE];
 
-  char * header = (char *) malloc(header_size);
-  if (header == NULL) {
-    err(1, "malloc for plot metrics header failed");
-  }
   struct common_header * common_hdr = (struct common_header *) header;
-  struct plot_header * plot_hdr = (struct plot_header *) (header + common_size);
+  struct plot_header * plot_hdr = (struct plot_header *) (header + COMMON_SIZE);
 
   memset(header, 0, header_size);
-  strncpy((char *) common_hdr, PLOT_NAME, MESSAGE_SIZE);
-
-  common_hdr->mesg[MESSAGE_SIZE - 1] = 0;
-  common_hdr->magic = host_to_be_32(MAGIC);
-  common_hdr->type =  host_to_be_32(3);
-  common_hdr->format =  host_to_be_32(3);
-  common_hdr->num_threads = host_to_be_64(num_threads);
-  common_hdr->num_cctid =  host_to_be_64(num_cctid);
-  common_hdr->num_metric = host_to_be_64(num_metric);
+  make_common_header(common_hdr, PLOT_NAME, PLOT_TYPE, PLOT_FMT,
+		     num_cctid, num_metid, num_threads);
 
   plot_hdr->index_start =  host_to_be_64(index_start);
   plot_hdr->index_length = host_to_be_64(index_length);
+  plot_hdr->plot_start =  host_to_be_64(plot_start);
+  plot_hdr->plot_length = host_to_be_64(plot_length);
   plot_hdr->size_cctid = host_to_be_32(4);
   plot_hdr->size_metid = host_to_be_32(4);
   plot_hdr->size_offset = host_to_be_32(8);
-  plot_hdr->size_count = host_to_be_32(8);
+  plot_hdr->size_count =  host_to_be_32(8);
   plot_hdr->size_tid = host_to_be_32(4);
   plot_hdr->size_metval = host_to_be_32(4);
 
   int ret = write_all_at(fd, header, header_size, 0);
-
-  free(header);
 
   return ret;
 }

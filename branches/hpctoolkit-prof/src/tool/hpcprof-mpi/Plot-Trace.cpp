@@ -737,9 +737,9 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
 
   // finally, rank 0 writes the header
   if (myRank == rootRank) {
-    ret = Prof::Database::writePlotHeader(
-	    plot_fd, max_cctid + 1, max_metid + 1, max_tid,
-	    index_start, index_size);
+    ret = Prof::Database::writePlotHeader(plot_fd,
+	    max_cctid + 1, max_metid + 1, max_tid,
+	    index_start, index_size, 0, 0);
 
     DIAG_Assert(ret == 0, "write plot metrics header failed");
   }
