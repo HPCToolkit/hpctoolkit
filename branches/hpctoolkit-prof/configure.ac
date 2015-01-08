@@ -11,7 +11,7 @@ dnl Information about sources of support for research and development of
 dnl HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 dnl --------------------------------------------------------------------------
 dnl
-dnl Copyright ((c)) 2002-2014, Rice University
+dnl Copyright ((c)) 2002-2015, Rice University
 dnl All rights reserved.
 dnl
 dnl Redistribution and use in source and binary forms, with or without
@@ -2122,7 +2122,7 @@ AM_CONDITIONAL([OPT_ENABLE_HPCRUN_DYNAMIC],
 AC_ARG_ENABLE([hpcserver],
   [AS_HELP_STRING([--enable-hpcserver],
           [build hpcserver and hpcserver-mpi (default no)])],
-  [],
+  [enable_hpcserver=yes],
   [enable_hpcserver=no])
 
 AM_CONDITIONAL([OPT_ENABLE_HPCSERVER], [test "$enable_hpcserver" = yes])
@@ -2251,11 +2251,14 @@ if test "${OPT_REQ_ENABLE_MPI_WRAP}" != "no" ; then
   AC_MSG_CHECKING([whether can compile MPI code with CFLAGS='$CFLAGS'])
 
   AC_LANG_PUSH([C])
+  OLD_CC="$CC"
+  CC="$MPICC"
   CFLAGS="$CFLAGS"
   AC_COMPILE_IFELSE([#include <mpi.h>],
         [ans=yes],
         [ans=no])
 
+  CC="$OLD_CC"
   OPT_ENABLE_MPI_WRAP=$ans
   AC_LANG_POP
 fi
@@ -3007,6 +3010,7 @@ AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
 AC_MSG_NOTICE([  mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
+AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
 AC_MSG_NOTICE([  Path:      $CC_PATH])
