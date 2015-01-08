@@ -97,16 +97,19 @@
 #define SUMMARY_NAME  "hpctoolkit summary metrics"
 #define TRACE_NAME    "hpctoolkit trace metrics"
 #define PLOT_NAME     "hpctoolkit plot metrics"
+#define THREADS_NAME  "hpctoolkit thread index"
 
 #define FILE_VERSION  3
 
 #define SUMMARY_TYPE  1
 #define TRACE_TYPE    2
 #define PLOT_TYPE     3
+#define THREADS_TYPE  4
 
 #define SUMMARY_FMT   1
 #define TRACE_FMT     2
 #define PLOT_FMT      3
+#define THREADS_FMT   4
 
 #define HEADER_SIZE  512
 #define COMMON_SIZE  256
@@ -165,6 +168,16 @@ struct __attribute__ ((packed)) plot_header {
   uint32_t  size_count;
   uint32_t  size_tid;
   uint32_t  size_metval;
+};
+
+struct __attribute__ ((packed)) threads_header {
+  uint64_t  string_start;
+  uint64_t  string_length;
+  uint64_t  index_start;
+  uint64_t  index_length;
+  uint32_t  num_fields;
+  uint32_t  size_string;
+  uint32_t  size_field;
 };
 
 struct __attribute__ ((packed)) metric_entry {
@@ -471,7 +484,7 @@ writeTraceHeader(traceInfo *trace, long num_threads, long num_active)
 
   memset(header, 0, header_size);
   make_common_header(common_hdr, TRACE_NAME, TRACE_TYPE, TRACE_FMT,
-		     0, 0, num_threads);
+		     0, 0, num_active);
 
   trace_hdr->index_start =  host_to_be_64(index_start);
   trace_hdr->index_length = host_to_be_64(index_length);
@@ -499,7 +512,7 @@ int
 writeTraceIndex(traceInfo *trace, long num_threads, long num_active)
 {
   struct trace_index *table;
-  size_t start = alignOffset(sizeof(struct common_header) + sizeof(struct trace_header));
+  size_t start = alignOffset(HEADER_SIZE);
   size_t size = (num_threads + 1) * sizeof(struct trace_index);
   long n, pos;
 
@@ -593,6 +606,122 @@ endTraceFiles(void)
   if (trace_buf != NULL) {
     free(trace_buf);
   }
+}
+
+//***************************************************************************
+
+// Thread ID File
+
+int
+writeThreadIDFile(traceInfo *trace, long num_threads)
+{
+  long header_size = HEADER_SIZE;
+  char header[HEADER_SIZE];
+  long k, pos;
+
+  // open the threads.db file
+
+  std::string thr_fname = db_dir + "/" + "threads.db";
+  int flags = O_WRONLY | O_CREAT | O_TRUNC;
+
+  int thr_fd = open(thr_fname.c_str(), flags, 0644);
+
+  DIAG_Assert(thr_fd >= 0, "open thread id file failed");
+
+  // check if threads have multiple mpi ranks and/or multiple thread
+  // ids, where 'multiple' means any non-zero value.
+
+  int use_rank = 0;
+  int use_tid = 0;
+  int num_fields;
+
+  for (k = 0; k < num_threads; k++) {
+    if (trace[k].rank > 0) {
+      use_rank = 1;
+    }
+    if (trace[k].tid > 0) {
+      use_tid = 1;
+    }
+  }
+  if (use_tid == 0) { use_rank = 1; }
+  num_fields = use_rank + use_tid;
+
+  // write the string table
+
+  uint64_t string_start = alignOffset(header_size);
+  uint64_t string_length;
+
+  memset(header, 0, header_size);
+
+  pos = 0;
+  if (use_rank) {
+    strncpy(&header[pos], "mpi rank", MESSAGE_SIZE);
+    header[pos + MESSAGE_SIZE - 1] = 0;
+    pos += MESSAGE_SIZE;
+  }
+  if (use_tid) {
+    strncpy(&header[pos], "thread id", MESSAGE_SIZE);
+    header[pos + MESSAGE_SIZE - 1] = 0;
+    pos += MESSAGE_SIZE;
+  }
+  string_length = pos;
+
+  int ret = write_all_at(thr_fd, header, string_length, string_start);
+
+  DIAG_Assert(ret == 0, "write thread index file failed");
+
+  // write the thread index data
+  // fixme: may want to buffer this
+
+  long index_start = alignOffset(string_start + string_length);
+  long index_size = num_threads * num_fields * sizeof(uint32_t);
+
+  uint32_t *index = (uint32_t *) malloc(index_size);
+
+  DIAG_Assert(index != NULL, "malloc for thread id table failed");
+
+  pos = 0;
+  for (k = 0; k < num_threads; k++) {
+    if (use_rank) {
+      index[pos] = host_to_be_32(trace[k].rank);
+      pos++;
+    }
+    if (use_tid) {
+      index[pos] = host_to_be_32(trace[k].tid);
+      pos++;
+    }
+  }
+
+  ret = write_all_at(thr_fd, index, index_size, index_start);
+
+  DIAG_Assert(ret == 0, "write thread id file failed");
+
+  free(index);
+
+  // lastly, write the header
+
+  struct common_header * common_hdr = (struct common_header *) header;
+  struct threads_header * thr_hdr = (struct threads_header *) (header + COMMON_SIZE);
+
+  memset(header, 0, header_size);
+  make_common_header(common_hdr, THREADS_NAME, THREADS_TYPE, THREADS_FMT,
+		     0, 0, num_threads);
+
+  thr_hdr->string_start =  host_to_be_64(string_start);
+  thr_hdr->string_length = host_to_be_64(string_length);
+  thr_hdr->index_start =  host_to_be_64(index_start);
+  thr_hdr->index_length = host_to_be_64(index_size);
+  thr_hdr->num_fields =  host_to_be_32(num_fields);
+  thr_hdr->size_string = host_to_be_32(MESSAGE_SIZE);
+  thr_hdr->size_field =  host_to_be_32(4);
+
+  ret = write_all_at(thr_fd, header, header_size, 0);
+
+  DIAG_Assert(ret == 0, "write thread id file failed");
+
+  close(thr_fd);
+
+  return 0;
 }
 
 //***************************************************************************

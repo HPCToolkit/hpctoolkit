@@ -456,6 +456,12 @@ realmain(int argc, char* const* argv)
 			  myRank, numRanks, rootRank);
   }
 
+  // write the thread id file
+  if (Prof::Database::newDBFormat() && myRank == rootRank
+      && (numActive > 0 || doPlot)) {
+    Prof::Database::writeThreadIDFile(traceGbl, numFiles);
+  }
+
   // ------------------------------------------------------------
   // 3. Generate Experiment database
   //    INVARIANT: database dir already exists

@@ -206,6 +206,7 @@ realmain(int argc, char* const* argv)
     Prof::Database::writeTraceIndex(trace, numFiles, numActive);
     Prof::Database::writeTraceHeader(trace, numFiles, numActive);
     Prof::Database::endTraceFiles();
+    Prof::Database::writeThreadIDFile(trace, numFiles);
   }
 
   // ------------------------------------------------------------

@@ -578,6 +578,9 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     if (m_doPlot) {
       os << "  <PlotDBFile name=\"plot.db\"/>\n";
     }
+    if (m_numActive > 0 || m_doPlot) {
+      os << "  <ThreadIDFile name=\"threads.db\"/>\n";
+    }
   }
 
   // -------------------------------------------------------
@@ -688,20 +691,6 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
        << " db-header-sz=\"" << HPCTRACE_FMT_HeaderLen << "\""
        << "/>\n";
     os << "  </TraceDBTable>\n";
-  }
-
-  // -------------------------------------------------------
-  // ThreadIDTable
-  // -------------------------------------------------------
-  if (Prof::Database::newDBFormat()) {
-    os << "  <ThreadIDTable size=\"" << m_numFiles << "\">\n";
-    for (long i = 0; i < m_numFiles; i++) {
-      os << "    <Thread i=\"" << i << "\""
-	 << " r=\"" << m_traceGbl[i].rank << "\""
-	 << " t=\"" << m_traceGbl[i].tid  << "\""
-	 << "/>\n";
-    }
-    os << "  </ThreadIDTable>\n";
   }
 
   // -------------------------------------------------------
