@@ -655,12 +655,12 @@ writeThreadIDFile(traceInfo *trace, long num_threads)
 
   pos = 0;
   if (use_rank) {
-    strncpy(&header[pos], "mpi rank", MESSAGE_SIZE);
+    strncpy(&header[pos], "Process", MESSAGE_SIZE);
     header[pos + MESSAGE_SIZE - 1] = 0;
     pos += MESSAGE_SIZE;
   }
   if (use_tid) {
-    strncpy(&header[pos], "thread id", MESSAGE_SIZE);
+    strncpy(&header[pos], "Thread", MESSAGE_SIZE);
     header[pos + MESSAGE_SIZE - 1] = 0;
     pos += MESSAGE_SIZE;
   }
