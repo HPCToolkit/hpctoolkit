@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -648,9 +648,12 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
   // for the header at rank 0
   ulong index_start = Prof::Database::alignOffset(PLOT_INDEX_START);
   ulong index_size = 0;
+  ulong data_start = 0;
+  ulong data_size = 0;
 
   if (myRank == rootRank) {
     ulong next_pos = index_start;
+    ulong data_end = 0;
 
     // we don't align the index entries per mpi rank
     for (rank = 0; rank < numRanks; rank++) {
@@ -661,10 +664,13 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
 
     // we do align the main plot data
     next_pos = Prof::Database::alignOffset(next_pos);
+    data_start = next_pos;
     for (rank = 0; rank < numRanks; rank++) {
       global_ans[2*rank] = next_pos;
-      next_pos = Prof::Database::alignOffset(next_pos + global_size[2*rank]);
+      data_end = next_pos + global_size[2*rank];
+      next_pos = Prof::Database::alignOffset(data_end);
     }
+    data_size = data_end - data_start;
   }
 
   ret = MPI_Scatter((void *) global_ans, 2, MPI_LONG,
@@ -739,7 +745,7 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
   if (myRank == rootRank) {
     ret = Prof::Database::writePlotHeader(plot_fd,
 	    max_cctid + 1, max_metid + 1, max_tid,
-	    index_start, index_size, 0, 0);
+	    index_start, index_size, data_start, data_size);
 
     DIAG_Assert(ret == 0, "write plot metrics header failed");
   }

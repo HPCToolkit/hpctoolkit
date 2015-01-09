@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -465,15 +465,21 @@ writeTraceHeader(traceInfo *trace, long num_threads, long num_active)
   uint64_t index_start = alignOffset(header_size);
   uint64_t index_length = (num_active + 1) * sizeof(struct trace_index);
   uint64_t min_time, max_time;
+  uint64_t min_start, max_end;
 
   openTraceFile();
 
   min_time = UINT64_MAX;
   max_time = 0;
+  min_start = UINT64_MAX;
+  max_end = 0;
+
   for (long n = 0; n < num_threads; n++) {
     if (trace[n].active) {
       min_time = std::min(min_time, trace[n].min_time);
       max_time = std::max(max_time, trace[n].max_time);
+      min_start = std::min(min_start, (uint64_t) trace[n].start_offset);
+      max_end = std::max(max_end, (uint64_t) (trace[n].start_offset + trace[n].length));
     }
   }
 
@@ -488,8 +494,8 @@ writeTraceHeader(traceInfo *trace, long num_threads, long num_active)
 
   trace_hdr->index_start =  host_to_be_64(index_start);
   trace_hdr->index_length = host_to_be_64(index_length);
-  trace_hdr->trace_start = 0;
-  trace_hdr->trace_length = 0;
+  trace_hdr->trace_start =  host_to_be_64(min_start);
+  trace_hdr->trace_length = host_to_be_64(max_end - min_start);
   trace_hdr->min_time = host_to_be_64(min_time);
   trace_hdr->max_time = host_to_be_64(max_time);
   trace_hdr->size_offset = host_to_be_32(8);
