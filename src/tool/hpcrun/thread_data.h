@@ -252,6 +252,7 @@ void hpcrun_set_thread_data(thread_data_t *td);
 
 extern thread_data_t* (*hpcrun_get_thread_data)(void);
 extern bool           (*hpcrun_td_avail)(void);
+extern thread_data_t* hpcrun_safe_get_td(void);
 
 void hpcrun_unthreaded_data(void);
 void hpcrun_threaded_data(void);
