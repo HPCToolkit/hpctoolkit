@@ -144,13 +144,11 @@ hpcrun_emsg(const char *fmt,...)
 void
 hpcrun_pmsg(const char *tag, const char *fmt, ...)
 {
-#define THE_THREAD 1
-#define SPECIAL_DEBUG
-#ifdef SPECIAL_DEBUG
+#ifdef SINGLE_THREAD_LOGGING
   if ( getenv("OT") && (TD_GET(core_profile_trace_data.id) != THE_THREAD)) {
     return;
   }
-#endif
+#endif // SINGLE_THREAD_LOGGING
   va_list_box box;
   va_list_box_start(box, fmt);
   hpcrun_write_msg_to_log(false, true, tag, fmt, &box);
@@ -252,19 +250,42 @@ hpcrun_write_msg_to_log(bool echo_stderr, bool add_thread_id,
 // private operations
 //*****************************************************************************
 
+static char*
+safely_get_tid_str(char* buf, size_t len)
+{
+#ifndef USE_GCC_THREAD
+  thread_data_t* td;
+  if ( td = hpcrun_safe_get_td()) {
+    hpcrun_msg_ns(buf, len, "%d", (td->core_profile_trace_data).id);
+  }
+  else {
+    strncpy(buf, "??", len);
+  }
+#else // USE_GCC_THREAD
+  extern __thread monitor_tid;
+  if (monitor_tid != -1) {
+    hpcrun_msg_ns(buf, len, "%d", monitor_tid);
+  }
+  else {
+    strncpy(buf, "??", len);
+  }
+#endif // USE_GCC_THREAD
+  return buf;
+}
+
 static void
 create_msg(char *buf, size_t buflen, bool add_thread_id, const char *tag,
 	   const char *fmt, va_list_box* box)
 {
   char fstr[MSG_BUF_SIZE];
-  int  tmp_id = -1;
 
   fstr[0] = '\0';
 
   if (add_thread_id) {
     if (hpcrun_using_threads_p()) {
-      tmp_id = TD_GET(core_profile_trace_data.id);
-      hpcrun_msg_ns(fstr, sizeof(fstr), "[%d, %d]: ", getpid(), tmp_id);
+      // tmp_id = TD_GET(core_profile_trace_data.id);
+      char tmp[6] = {};
+      hpcrun_msg_ns(fstr, sizeof(fstr), "[%d, %d]: ", getpid(), safely_get_tid_str(tmp, sizeof(tmp)));
     }
     else {
       hpcrun_msg_ns(fstr, sizeof(fstr), "[%d, N]: ", getpid());

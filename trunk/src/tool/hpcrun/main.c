@@ -624,6 +624,10 @@ hpcrun_fini_internal()
 // thread level 
 //------------------------------------
 
+#ifdef USE_GCC_THREAD
+extern __thread monitor_tid;
+#endif // USE_GCC_THREAD
+
 void
 hpcrun_init_thread_support()
 {
@@ -998,6 +1002,9 @@ monitor_thread_post_create(void* data)
 void* 
 monitor_init_thread(int tid, void* data)
 {
+#ifdef USE_GCC_THREAD
+  monitor_tid = tid;
+#endif
   TMSG(THREAD,"init thread %d",tid);
   void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data);
   TMSG(THREAD,"back from init thread %d",tid);

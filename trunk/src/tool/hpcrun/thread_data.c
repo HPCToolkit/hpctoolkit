@@ -82,6 +82,10 @@ enum _local_int_const {
 // 
 //***************************************************************************
 
+#ifdef USE_GCC_THREAD
+__thread int monitor_tid = -1;
+#endif // USE_GCC_THREAD
+
 static thread_data_t _local_td;
 
 static pthread_key_t _hpcrun_key;
@@ -89,7 +93,7 @@ static pthread_key_t _hpcrun_key;
 void
 hpcrun_init_pthread_key(void)
 {
-  NMSG(THREAD_SPECIFIC,"creating _hpcrun_key");
+  TMSG(THREAD_SPECIFIC,"creating _hpcrun_key");
   int bad = pthread_key_create(&_hpcrun_key, NULL);
   if (bad){
     EMSG("pthread_key_create returned non-zero = %d",bad);
@@ -100,7 +104,7 @@ hpcrun_init_pthread_key(void)
 void
 hpcrun_set_thread0_data(void)
 {
-  NMSG(THREAD_SPECIFIC,"set thread0 data");
+  TMSG(THREAD_SPECIFIC,"set thread0 data");
   hpcrun_set_thread_data(&_local_td);
 }
 
@@ -108,7 +112,7 @@ hpcrun_set_thread0_data(void)
 void
 hpcrun_set_thread_data(thread_data_t *td)
 {
-  NMSG(THREAD_SPECIFIC,"setting td");
+  TMSG(THREAD_SPECIFIC,"setting td");
   pthread_setspecific(_hpcrun_key, (void *) td);
 }
 
@@ -129,6 +133,12 @@ hpcrun_get_thread_data_local_avail(void)
 }
 
 
+thread_data_t*
+hpcrun_safe_get_td(void)
+{
+  return (thread_data_t*) pthread_getspecific(_hpcrun_key);
+}
+
 static thread_data_t*
 hpcrun_get_thread_data_specific(void)
 {
@@ -138,7 +148,6 @@ hpcrun_get_thread_data_specific(void)
   }
   return ret;
 }
-
 
 static bool
 hpcrun_get_thread_data_specific_avail(void)
@@ -190,7 +199,7 @@ hpcrun_threaded_data(void)
 thread_data_t*
 hpcrun_allocate_thread_data(int id)
 {
-  NMSG(THREAD_SPECIFIC,"malloc thread data for thread %d", id);
+  TMSG(THREAD_SPECIFIC,"malloc thread data for thread %d", id);
   return hpcrun_mmap_anon(sizeof(thread_data_t));
 }
 
