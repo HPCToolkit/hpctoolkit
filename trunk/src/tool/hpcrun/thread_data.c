@@ -89,7 +89,7 @@ static pthread_key_t _hpcrun_key;
 void
 hpcrun_init_pthread_key(void)
 {
-  TMSG(THREAD_SPECIFIC,"creating _hpcrun_key");
+  NMSG(THREAD_SPECIFIC,"creating _hpcrun_key");
   int bad = pthread_key_create(&_hpcrun_key, NULL);
   if (bad){
     EMSG("pthread_key_create returned non-zero = %d",bad);
@@ -100,7 +100,7 @@ hpcrun_init_pthread_key(void)
 void
 hpcrun_set_thread0_data(void)
 {
-  TMSG(THREAD_SPECIFIC,"set thread0 data");
+  NMSG(THREAD_SPECIFIC,"set thread0 data");
   hpcrun_set_thread_data(&_local_td);
 }
 
@@ -108,7 +108,7 @@ hpcrun_set_thread0_data(void)
 void
 hpcrun_set_thread_data(thread_data_t *td)
 {
-  TMSG(THREAD_SPECIFIC,"setting td");
+  NMSG(THREAD_SPECIFIC,"setting td");
   pthread_setspecific(_hpcrun_key, (void *) td);
 }
 
@@ -188,13 +188,14 @@ hpcrun_threaded_data(void)
 //***************************************************************************
 
 thread_data_t*
-hpcrun_allocate_thread_data(void)
+hpcrun_allocate_thread_data(int id)
 {
-  TMSG(THREAD_SPECIFIC,"malloc thread data");
+  NMSG(THREAD_SPECIFIC,"malloc thread data for thread %d", id);
   return hpcrun_mmap_anon(sizeof(thread_data_t));
 }
 
-static inline void core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_t* thr_ctxt) 
+static inline void
+core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_t* thr_ctxt) 
 {
 
   // ----------------------------------------

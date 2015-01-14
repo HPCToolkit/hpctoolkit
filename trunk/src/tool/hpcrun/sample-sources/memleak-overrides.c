@@ -225,7 +225,7 @@ splay_insert(struct leakinfo_s *node)
       node->right = memleak_tree_root->right;
       memleak_tree_root->right = NULL;
     } else {
-      TMSG(MEMLEAK, "memleak splay tree: unable to insert %p (already present)", 
+      NMSG(MEMLEAK, "memleak splay tree: unable to insert %p (already present)", 
 	   node->memblock);
       assert(0);
     }
@@ -243,7 +243,7 @@ splay_delete(void *memblock)
   spinlock_lock(&memtree_lock);  
   if (memleak_tree_root == NULL) {
     spinlock_unlock(&memtree_lock);  
-    TMSG(MEMLEAK, "memleak splay tree empty: unable to delete %p", memblock);
+    NMSG(MEMLEAK, "memleak splay tree empty: unable to delete %p", memblock);
     return NULL;
   }
 
@@ -251,7 +251,7 @@ splay_delete(void *memblock)
 
   if (memblock != memleak_tree_root->memblock) {
     spinlock_unlock(&memtree_lock);  
-    TMSG(MEMLEAK, "memleak splay tree: %p not in tree", memblock);
+    NMSG(MEMLEAK, "memleak splay tree: %p not in tree", memblock);
     return NULL;
   }
 
@@ -322,7 +322,7 @@ memleak_initialize(void)
   if (prob_str != NULL) {
     use_memleak_prob = 1;
     memleak_prob = string_to_prob(prob_str);
-    TMSG(MEMLEAK, "sampling mallocs with prob = %f", memleak_prob);
+    NMSG(MEMLEAK, "sampling mallocs with prob = %f", memleak_prob);
 
     seed = 0;
     fd = open("/dev/urandom", O_RDONLY);
@@ -339,7 +339,7 @@ memleak_initialize(void)
   leak_detection_enabled = 1;
   leak_detection_init = 1;
 
-  TMSG(MEMLEAK, "init");
+  NMSG(MEMLEAK, "init");
 }
 
 
@@ -446,7 +446,7 @@ memleak_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
   char *loc_str;
 
   if (info_ptr == NULL) {
-    TMSG(MEMLEAK, "Warning: %s: bytes: %ld sys: %p appl: %p info: %p "
+    NMSG(MEMLEAK, "Warning: %s: bytes: %ld sys: %p appl: %p info: %p "
 	 "(NULL leakinfo pointer, this should not happen)",
 	 name, bytes, sys_ptr, appl_ptr, info_ptr);
     return;
@@ -470,7 +470,7 @@ memleak_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
     splay_insert(info_ptr);
   }
 
-  TMSG(MEMLEAK, "%s: bytes: %ld sys: %p appl: %p info: %p cct: %p (%s)",
+  NMSG(MEMLEAK, "%s: bytes: %ld sys: %p appl: %p info: %p cct: %p (%s)",
        name, bytes, sys_ptr, appl_ptr, info_ptr, info_ptr->context, loc_str);
 }
 
@@ -493,7 +493,7 @@ memleak_malloc_helper(const char *name, size_t bytes, size_t align,
   int active, loc;
   size_t size;
 
-  TMSG(MEMLEAK, "%s: bytes: %ld", name, bytes);
+  NMSG(MEMLEAK, "%s: bytes: %ld", name, bytes);
 
   // do the real malloc, aligned or not.  note: we can't track malloc
   // inside dlopen, that would lead to deadlock.
@@ -524,12 +524,12 @@ memleak_malloc_helper(const char *name, size_t bytes, size_t align,
 
   // inactive or failed malloc
   if (! active) {
-    TMSG(MEMLEAK, "%s: bytes: %ld, sys: %p (%s)",
+    NMSG(MEMLEAK, "%s: bytes: %ld, sys: %p (%s)",
 	 name, bytes, sys_ptr, inactive_mesg);
     return sys_ptr;
   }
   if (sys_ptr == NULL) {
-    TMSG(MEMLEAK, "%s: bytes: %ld, sys: %p (failed)",
+    NMSG(MEMLEAK, "%s: bytes: %ld, sys: %p (failed)",
 	 name, bytes, sys_ptr);
     return sys_ptr;
   }
@@ -556,7 +556,7 @@ memleak_free_helper(const char *name, void *sys_ptr, void *appl_ptr,
   char *loc_str;
 
   if (info_ptr == NULL) {
-    TMSG(MEMLEAK, "%s: sys: %p appl: %p (no malloc)", name, sys_ptr, appl_ptr);
+    NMSG(MEMLEAK, "%s: sys: %p appl: %p (no malloc)", name, sys_ptr, appl_ptr);
     return;
   }
 
@@ -568,7 +568,7 @@ memleak_free_helper(const char *name, void *sys_ptr, void *appl_ptr,
   }
   info_ptr->magic = 0;
 
-  TMSG(MEMLEAK, "%s: bytes: %ld sys: %p appl: %p info: %p cct: %p (%s)",
+  NMSG(MEMLEAK, "%s: bytes: %ld sys: %p appl: %p info: %p cct: %p (%s)",
        name, info_ptr->bytes, sys_ptr, appl_ptr, info_ptr,
        info_ptr->context, loc_str);
 }
@@ -742,11 +742,11 @@ MONITOR_EXT_WRAP_NAME(free)(void *ptr)
   int safe = hpcrun_safe_enter();
 
   memleak_initialize();
-  TMSG(MEMLEAK, "free: ptr: %p", ptr);
+  NMSG(MEMLEAK, "free: ptr: %p", ptr);
 
   if (! leak_detection_enabled) {
     real_free(ptr);
-    TMSG(MEMLEAK, "free: ptr: %p (inactive)", ptr);
+    NMSG(MEMLEAK, "free: ptr: %p (inactive)", ptr);
     goto finish;
   }
   if (ptr == NULL) {
@@ -778,7 +778,7 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
   int safe = hpcrun_safe_enter();
 
   memleak_initialize();
-  TMSG(MEMLEAK, "realloc: ptr: %p bytes: %ld", ptr, bytes);
+  NMSG(MEMLEAK, "realloc: ptr: %p bytes: %ld", ptr, bytes);
 
   if (! leak_detection_enabled) {
     appl_ptr = real_realloc(ptr, bytes);
@@ -827,7 +827,7 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
       memmove(sys_ptr, ptr, bytes);
     }
     appl_ptr = real_realloc(sys_ptr, bytes);
-    TMSG(MEMLEAK, "realloc: bytes: %ld ptr: %p (%s)",
+    NMSG(MEMLEAK, "realloc: bytes: %ld ptr: %p (%s)",
 	 bytes, appl_ptr, inactive_mesg);
     goto finish;
   }
