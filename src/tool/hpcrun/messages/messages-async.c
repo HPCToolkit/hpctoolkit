@@ -186,7 +186,7 @@ hpcrun_nmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag,
 
 
 void
-hpcrun_nmsg(pmsg_category flag, const char* tag, const char *fmt, ...)
+hpcrun_nmsg(pmsg_category flag, const char* tag, const char* fmt, ...)
 {
   if (debug_flag_get(flag) == 0){
     return;

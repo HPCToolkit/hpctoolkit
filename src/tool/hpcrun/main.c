@@ -651,7 +651,7 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
   hpcrun_mmap_init();
-  thread_data_t* td = hpcrun_allocate_thread_data();
+  thread_data_t* td = hpcrun_allocate_thread_data(id);
   td->inside_hpcrun = 1;  // safe enter, disable signals
 
   hpcrun_set_thread_data(td);

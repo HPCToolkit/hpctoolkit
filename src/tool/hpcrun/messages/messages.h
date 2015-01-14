@@ -93,7 +93,7 @@
 #define TMSG(f,...) if (debug_flag_get(DBG_PREFIX(f))) hpcrun_pmsg(#f, __VA_ARGS__)
 
 #define ETMSG(f,...)   hpcrun_pmsg_stderr(true,DBG_PREFIX(f), #f, __VA_ARGS__)
-#define NMSG(f,...)    hpcrun_nmsg(DBG_PREFIX(f), #f, __VA_ARGS__)
+#define NMSG(f,...) if (debug_flag_get(DBG_PREFIX(f))) hpcrun_nmsg(DBG_PREFIX(f), #f, __VA_ARGS__)
 #define ENMSG(f, ...)  hpcrun_nmsg_stderr(true, DBG_PREFIX(f), #f, __VA_ARGS__)
 #endif // NO_HPCRUN_MSGS
 
