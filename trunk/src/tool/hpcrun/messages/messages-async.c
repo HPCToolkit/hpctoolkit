@@ -285,7 +285,7 @@ create_msg(char *buf, size_t buflen, bool add_thread_id, const char *tag,
     if (hpcrun_using_threads_p()) {
       // tmp_id = TD_GET(core_profile_trace_data.id);
       char tmp[6] = {};
-      hpcrun_msg_ns(fstr, sizeof(fstr), "[%d, %d]: ", getpid(), safely_get_tid_str(tmp, sizeof(tmp)));
+      hpcrun_msg_ns(fstr, sizeof(fstr), "[%d, %s]: ", getpid(), safely_get_tid_str(tmp, sizeof(tmp)));
     }
     else {
       hpcrun_msg_ns(fstr, sizeof(fstr), "[%d, N]: ", getpid());
