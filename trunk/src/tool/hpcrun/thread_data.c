@@ -143,11 +143,9 @@ static thread_data_t*
 hpcrun_get_thread_data_specific(void)
 {
   thread_data_t *ret = (thread_data_t *) pthread_getspecific(_hpcrun_key);
-#if 0
   if (!ret){
     monitor_real_abort();
   }
-#endif
   return ret;
 }
 
