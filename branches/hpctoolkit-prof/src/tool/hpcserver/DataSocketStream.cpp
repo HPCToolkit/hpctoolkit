@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataSocketStream.cpp $
-// $Id: DataSocketStream.cpp 4306 2013-07-17 21:19:13Z laksono@gmail.com $
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataSocketStream.cpp $
+//   $HeadURL$
 //
 // Purpose:
 //   An approximate implementation of Java's DataOutputStream, DataInputStream,

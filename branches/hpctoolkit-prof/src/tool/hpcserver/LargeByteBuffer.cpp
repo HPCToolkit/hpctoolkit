@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/LargeByteBuffer.cpp $
-// $Id: LargeByteBuffer.cpp 4380 2013-10-16 06:34:29Z felipet1326@gmail.com $
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/LargeByteBuffer.cpp $
+//   $HeadURL$
 //
 // Purpose:
 //   Stores and handles the pages of the file to abstract away the file is not

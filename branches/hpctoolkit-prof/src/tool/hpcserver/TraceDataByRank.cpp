@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/TraceDataByRank.cpp $
-// $Id: TraceDataByRank.cpp 4307 2013-07-18 17:04:52Z felipet1326@gmail.com $
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/TraceDataByRank.cpp $
+//   $HeadURL$
 //
 // Purpose:
 //   [The purpose of this file]

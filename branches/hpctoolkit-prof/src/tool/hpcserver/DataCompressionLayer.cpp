@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/CompressingDataSocketLayer.cpp $
-// $Id: CompressingDataSocketLayer.cpp 4286 2013-07-09 19:03:59Z felipet1326@gmail.com $
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/CompressingDataSocketLayer.cpp $
+//   $HeadURL$
 //
 // Purpose:
 //   Compresses data to a memory-based buffer.

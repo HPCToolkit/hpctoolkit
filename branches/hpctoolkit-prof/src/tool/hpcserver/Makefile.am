@@ -2,8 +2,8 @@
 
 ## * BeginRiceCopyright *****************************************************
 ##
-## $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Makefile.am $
-## $Id: Makefile.am 4294 2013-07-11 00:15:53Z felipet1326@gmail.com $
+## $HeadURL$
+## $Id$
 ##
 ## --------------------------------------------------------------------------
 ## Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 #############################################################################
 ##
 ## File:
-##   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Makefile.am $
+##   $HeadURL$
 ##
 ## Description:
 ##   *Process with automake to produce Makefile.in*

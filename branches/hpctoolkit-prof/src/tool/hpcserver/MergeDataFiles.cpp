@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/MergeDataFiles.cpp $
-// $Id: MergeDataFiles.cpp 4333 2013-07-31 01:00:13Z felipet1326@gmail.com $
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/MergeDataFiles.cpp $
+//   $HeadURL$
 //
 // Purpose:
 //   Merges databases from the many files to a megatrace (.mt) file. Rarely used
