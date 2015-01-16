@@ -66,6 +66,11 @@ using std::string;
 #include <cstdlib> // for 'free'
 #include <cstring> // for 'strlen', 'strcpy'
 
+#include <hpctoolkit-config.h>
+
+#if defined(HAVE_CXXABI_H)
+#include <cxxabi.h>
+#endif
 
 //*************************** User Include Files ****************************
 
@@ -140,10 +145,15 @@ demangleProcName(const std::string& name)
 #endif
   // Note: on Linux, system demangler is same as GNU's
 
+#if defined(HAVE_CXXABI_H)
+  int status;
+  char *str = abi::__cxa_demangle(name.c_str(), 0, 0, &status);
+#else
   // -------------------------------------------------------
   // Now try GNU's demangler
   // -------------------------------------------------------
   char* str = GNU_CPLUS_DEMANGLE(name.c_str(), DMGL_PARAMS | DMGL_ANSI);
+#endif
   if (str) {
     bestname = str;
     free(str); // gnu_cplus_demangle caller is responsible for memory cleanup
