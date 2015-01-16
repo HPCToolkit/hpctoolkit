@@ -12,6 +12,9 @@
 /* Support for AMD XOP instructions */
 #undef ENABLE_XOP
 
+/* Define to 1 if you have the <cxxabi.h> header file. */
+#undef HAVE_CXXABI_H
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
