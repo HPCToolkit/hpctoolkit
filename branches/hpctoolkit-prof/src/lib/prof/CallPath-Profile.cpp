@@ -680,9 +680,9 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   os << "  </MetricDBTable>\n";
 
   // -------------------------------------------------------
-  // TraceDBTable, old style only
+  // TraceDBTable, old style (mostly)
   // -------------------------------------------------------
-  if (!Prof::Database::newDBFormat() && !traceFileNameSet().empty()) {
+  if (! traceFileNameSet().empty()) {
     os << "  <TraceDBTable>\n";
     os << "    <TraceDB i" << MakeAttrNum(0)
        << " db-glob=\"" << "*." << HPCRUN_TraceFnmSfx << "\""
