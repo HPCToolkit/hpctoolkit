@@ -59,6 +59,7 @@
 #include "SpaceTimeDataController.hpp"
 #include "FileData.hpp"
 #include <iostream>
+
 using namespace std;
 namespace TraceviewerServer
 {
@@ -75,12 +76,13 @@ namespace TraceviewerServer
 		//default because we might not be able to read the number of ranks correctly.
 		//For now, it's not an issue, and the data dependencies make changing this
 		//complicated.
-		dataTrace = new FilteredBaseData(locations->fileTrace, DEFAULT_HEADER_SIZE);
+		dataTrace = new FilteredBaseData(locations, DEFAULT_HEADER_SIZE);
+		new_db = locations->new_db;
+		fileData = *locations;
 		height = dataTrace->getNumberOfRanks();
 		experimentXML = locations->fileXML;
 		fileTrace = locations->fileTrace;
 		tracesInitialized = false;
-
 	}
 
 //called once the INFO packet has been received to add the information to the controller
@@ -90,8 +92,13 @@ namespace TraceviewerServer
 		minBegTime = _minBegTime;
 		maxEndTime = _maxEndTime;
 		headerSize = _headerSize;
-		delete dataTrace;
-		dataTrace = new FilteredBaseData(fileTrace, headerSize);
+
+		// in the old style, redo parsing the trace file with
+		// the correct header size.  blech.
+		if (! new_db) {
+		    	delete dataTrace;
+			dataTrace = new FilteredBaseData(&fileData, headerSize);
+		}
 	}
 
 	int SpaceTimeDataController::getNumRanks()

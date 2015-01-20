@@ -58,6 +58,7 @@
 //***************************************************************************
 #ifndef SpaceTimeDataController_H_
 #define SpaceTimeDataController_H_
+
 #include "FileData.hpp"
 #include "ImageTraceAttributes.hpp"
 #include "ProcessTimeline.hpp"
@@ -85,16 +86,20 @@ namespace TraceviewerServer
 		//The number of processes in the database, independent of the current display size
 		int getNumRanks();
 
-		 int* getValuesXProcessID();
-		 short* getValuesXThreadID();
+		int* getValuesXProcessID();
+		short* getValuesXThreadID();
 
 		std::string getExperimentXML();
 		ImageTraceAttributes* attributes;
 		ProcessTimeline** traces;
 		int tracesLength;
+
 	private:
 		void resetTraces();
 		void deleteTraces();
+
+		bool new_db;
+	    	FileData fileData;
 
 		FilteredBaseData* dataTrace;
 		int headerSize;

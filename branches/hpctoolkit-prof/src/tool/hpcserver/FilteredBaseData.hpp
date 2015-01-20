@@ -62,6 +62,7 @@
 
 #include "ImageTraceAttributes.hpp"
 #include "BaseDataFile.hpp"
+#include "FileData.hpp"
 #include "FilterSet.hpp"
 #include "FileUtils.hpp"//For FileOffset
 
@@ -73,7 +74,7 @@ namespace TraceviewerServer
 {
 	class FilteredBaseData {
 	public:
-		FilteredBaseData(string filename, int _headerSize);
+		FilteredBaseData(FileData *locations, int _headerSize);
 		virtual ~FilteredBaseData();
 
 		void setFilters(FilterSet _filter);
@@ -85,10 +86,11 @@ namespace TraceviewerServer
 		int getNumberOfRanks();
 		int* getProcessIDs();
 		short* getThreadIDs();
-	private:
 
+	private:
 		void filter();
 
+	  	bool new_db;
 		BaseDataFile* baseDataFile;
 		OffsetPair* baseOffsets;
 		FilterSet currentlyAppliedFilter;
@@ -97,7 +99,6 @@ namespace TraceviewerServer
 		vector<int> rankMapping;
 		int headerSize;
 	};
-
 
 }
 #endif /* FILTEREDBASEDATA_HPP_ */

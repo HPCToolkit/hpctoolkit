@@ -81,6 +81,7 @@ MYSOURCES = \
 ../FilteredBaseData.cpp \
 ../LargeByteBuffer.cpp \
 ../MergeDataFiles.cpp \
+../NewDBFormat.cpp \
 ../ProcessTimeline.cpp \
 ../ProgressBar.cpp \
 ../Server.cpp \

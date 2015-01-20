@@ -59,6 +59,7 @@
 
 #ifndef LOCALDBOPENER_H_
 #define LOCALDBOPENER_H_
+
 #include <string>
 #include "SpaceTimeDataController.hpp"
 #include "FileData.hpp"
@@ -67,7 +68,6 @@
 using namespace std;
 namespace TraceviewerServer
 {
-
 	class DBOpener
 	{
 	public:
@@ -75,6 +75,8 @@ namespace TraceviewerServer
 		virtual ~DBOpener();
 
 		SpaceTimeDataController* openDbAndCreateStdc(string);
+		bool verifyNewDatabase(string, FileData *);
+
 	private:
 		static const unsigned int MIN_TRACE_SIZE = 32 + 8 + 24
 				+ SIZE_OF_TRACE_RECORD * 2;

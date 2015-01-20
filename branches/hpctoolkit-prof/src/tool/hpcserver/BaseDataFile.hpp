@@ -64,6 +64,7 @@ using namespace std;
 
 #include <string>
 
+#include "FileData.hpp"
 #include "FileUtils.hpp" // For FileOffset
 #include "LargeByteBuffer.hpp"
 
@@ -76,12 +77,13 @@ struct OffsetPair {
 
 class BaseDataFile {
 public:
-	BaseDataFile(string filename, int headerSize);
+	BaseDataFile(FileData *locations, int headerSize);
 	virtual ~BaseDataFile();
 	int getNumberOfFiles();
 	OffsetPair* getOffsets();
 	LargeByteBuffer* getMasterBuffer();
 	void setData(string, int);
+	void setNewData(FileData *, int);
 
 	bool isMultiProcess();
 	bool isMultiThreading();
@@ -89,6 +91,7 @@ public:
 
 	int* processIDs;
 	short* threadIDs;
+
 private:
 	int type; // Default is Constants::MULTI_PROCESSES | Constants::MULTI_THREADING;
 	LargeByteBuffer* masterBuff;

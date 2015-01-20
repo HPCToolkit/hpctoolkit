@@ -59,14 +59,19 @@
 
 #ifndef FILEDATA_H_
 #define FILEDATA_H_
+
 #include <string>
+
 using namespace std;
+
 namespace TraceviewerServer
 {
 	struct FileData
 	{
+		bool   new_db;
 		string fileXML;
 		string fileTrace;
+		string fileThreads;
 	};
 }
 #endif

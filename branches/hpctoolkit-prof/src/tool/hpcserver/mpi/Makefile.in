@@ -90,6 +90,7 @@ am__objects_1 = hpcserver_mpi-Args.$(OBJEXT) \
 	hpcserver_mpi-FilteredBaseData.$(OBJEXT) \
 	hpcserver_mpi-LargeByteBuffer.$(OBJEXT) \
 	hpcserver_mpi-MergeDataFiles.$(OBJEXT) \
+	hpcserver_mpi-NewDBFormat.$(OBJEXT) \
 	hpcserver_mpi-ProcessTimeline.$(OBJEXT) \
 	hpcserver_mpi-ProgressBar.$(OBJEXT) \
 	hpcserver_mpi-Server.$(OBJEXT) hpcserver_mpi-Slave.$(OBJEXT) \
@@ -388,6 +389,7 @@ MYSOURCES = \
 ../FilteredBaseData.cpp \
 ../LargeByteBuffer.cpp \
 ../MergeDataFiles.cpp \
+../NewDBFormat.cpp \
 ../ProcessTimeline.cpp \
 ../ProgressBar.cpp \
 ../Server.cpp \
@@ -518,6 +520,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver_mpi-FilteredBaseData.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver_mpi-LargeByteBuffer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver_mpi-MergeDataFiles.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver_mpi-NewDBFormat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver_mpi-ProcessTimeline.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver_mpi-ProgressBar.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcserver_mpi-Server.Po@am__quote@
@@ -687,6 +690,20 @@ hpcserver_mpi-MergeDataFiles.obj: ../MergeDataFiles.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../MergeDataFiles.cpp' object='hpcserver_mpi-MergeDataFiles.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver_mpi-MergeDataFiles.obj `if test -f '../MergeDataFiles.cpp'; then $(CYGPATH_W) '../MergeDataFiles.cpp'; else $(CYGPATH_W) '$(srcdir)/../MergeDataFiles.cpp'; fi`
+
+hpcserver_mpi-NewDBFormat.o: ../NewDBFormat.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_mpi_CXXFLAGS) $(CXXFLAGS) -MT hpcserver_mpi-NewDBFormat.o -MD -MP -MF $(DEPDIR)/hpcserver_mpi-NewDBFormat.Tpo -c -o hpcserver_mpi-NewDBFormat.o `test -f '../NewDBFormat.cpp' || echo '$(srcdir)/'`../NewDBFormat.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver_mpi-NewDBFormat.Tpo $(DEPDIR)/hpcserver_mpi-NewDBFormat.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../NewDBFormat.cpp' object='hpcserver_mpi-NewDBFormat.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver_mpi-NewDBFormat.o `test -f '../NewDBFormat.cpp' || echo '$(srcdir)/'`../NewDBFormat.cpp
+
+hpcserver_mpi-NewDBFormat.obj: ../NewDBFormat.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_mpi_CXXFLAGS) $(CXXFLAGS) -MT hpcserver_mpi-NewDBFormat.obj -MD -MP -MF $(DEPDIR)/hpcserver_mpi-NewDBFormat.Tpo -c -o hpcserver_mpi-NewDBFormat.obj `if test -f '../NewDBFormat.cpp'; then $(CYGPATH_W) '../NewDBFormat.cpp'; else $(CYGPATH_W) '$(srcdir)/../NewDBFormat.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcserver_mpi-NewDBFormat.Tpo $(DEPDIR)/hpcserver_mpi-NewDBFormat.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../NewDBFormat.cpp' object='hpcserver_mpi-NewDBFormat.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcserver_mpi-NewDBFormat.obj `if test -f '../NewDBFormat.cpp'; then $(CYGPATH_W) '../NewDBFormat.cpp'; else $(CYGPATH_W) '$(srcdir)/../NewDBFormat.cpp'; fi`
 
 hpcserver_mpi-ProcessTimeline.o: ../ProcessTimeline.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcserver_mpi_CXXFLAGS) $(CXXFLAGS) -MT hpcserver_mpi-ProcessTimeline.o -MD -MP -MF $(DEPDIR)/hpcserver_mpi-ProcessTimeline.Tpo -c -o hpcserver_mpi-ProcessTimeline.o `test -f '../ProcessTimeline.cpp' || echo '$(srcdir)/'`../ProcessTimeline.cpp

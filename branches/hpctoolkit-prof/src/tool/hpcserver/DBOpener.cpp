@@ -80,22 +80,32 @@ namespace TraceviewerServer
 		//stdcl, which is the only dynamically allocated thing, gets closed later because
 		//it makes sense to have it persist even after the opener.
 	}
+
 	SpaceTimeDataController* stdcl;
 	SpaceTimeDataController* DBOpener::openDbAndCreateStdc(string pathToDB)
 	{
 		FileData location;
 		FileData* ptrLocation = &location;
-		bool hasDatabase = false;
-		hasDatabase = verifyDatabase(pathToDB, ptrLocation);
+
+		// new style
+		if (verifyNewDatabase(pathToDB, ptrLocation)) {
+		  	stdcl = new SpaceTimeDataController(ptrLocation);
+			return stdcl;
+		}
+
+		// old style
+		if (verifyDatabase(pathToDB, ptrLocation)) {
+		  	stdcl = new SpaceTimeDataController(ptrLocation);
+			return stdcl;
+		}
 
 		// If it still doesn't have a database, we assume that the user doesn't
-		// want to open a database, so we return null, which makes the calling method return false.
-		if (!hasDatabase)
-			return NULL;
-
-		stdcl = new SpaceTimeDataController(ptrLocation);
-		return stdcl;
+		// want to open a database, so we return null, which makes the calling
+		// method return false.
+		stdcl = NULL;
+		return NULL;
 	}
+
 	/****
 	 * Check if the directory is correct or not. If it is correct, it returns
 	 * the XML file and the trace file

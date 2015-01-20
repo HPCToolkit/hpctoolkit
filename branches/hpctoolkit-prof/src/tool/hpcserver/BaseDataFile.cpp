@@ -60,6 +60,7 @@
 #include "BaseDataFile.hpp"
 #include "Constants.hpp"
 #include "DebugUtils.hpp"
+#include "FileData.hpp"
 
 using namespace std;
 
@@ -70,18 +71,20 @@ namespace TraceviewerServer
 //-----------------------------------------------------------
 
 
-
-
-	BaseDataFile::BaseDataFile(string _filename, int _headerSize)
+	BaseDataFile::BaseDataFile(FileData *locations, int _headerSize)
 	{
+	  	string _filename = locations->fileTrace;
 
 		DEBUGCOUT(1) << "Setting Data File: " << _filename << endl;
 
 		if (_filename != "")
 		{
-			setData(_filename, _headerSize);
+		    	if (locations->new_db) {
+			    	setNewData(locations, _headerSize);
+			} else {
+			    	setData(_filename, _headerSize);
+			}
 		}
-
 	}
 
 	int BaseDataFile::getNumberOfFiles()

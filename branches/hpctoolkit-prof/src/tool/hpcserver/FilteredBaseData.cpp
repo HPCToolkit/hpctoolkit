@@ -64,18 +64,20 @@
 #include <assert.h>
 #include <iostream>
 
-
 #include "DebugUtils.hpp"
+#include "FileData.hpp"
 #include "FilteredBaseData.hpp"
 
 namespace TraceviewerServer {
-FilteredBaseData::FilteredBaseData(string filename, int _headerSize) {
-	baseDataFile = new BaseDataFile(filename, _headerSize);
-	headerSize = _headerSize;
+
+FilteredBaseData::FilteredBaseData(FileData *locations, int _headerSize)
+{
+	baseDataFile = new BaseDataFile(locations, _headerSize);
+	new_db = locations->new_db;
+	headerSize = (new_db ? 0 : _headerSize);
 	baseOffsets = baseDataFile->getOffsets();
 	//Filters are default, which is allow everything, so this will initialize the vector
 	filter();
-
 }
 
 FilteredBaseData::~FilteredBaseData() {
