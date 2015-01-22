@@ -51,8 +51,6 @@
 //
 // Todo:
 //
-// 1. Read threads.db for the process/thread indicies.
-//
 // 2. Check consistency of offsets.end.  The db files treat end as
 // exclusive, but the server seems to use inclusive.
 //
@@ -91,21 +89,76 @@ using namespace std;
 namespace TraceviewerServer
 {
 
-// Fill in the BaseDataFile class.  Read the index in trace.db and
-// compute the offsets[], processIDs[] and threadIDs[] arrays.
-//
-// Fixme: need to read threads.db to get the real process/thread IDs
-// instead of just 0..N-1.
+// Read the indicies from trace.db and threads.db and fill in the
+// BaseDataFile class: the offsets[], processIDs[] and threadIDs[]
+// arrays.
 //
 void
 BaseDataFile::setNewData(FileData *locations, int headerSize)
 {
+    const char *threads_str = locations->fileThreads.c_str();
     const char *trace_str = locations->fileTrace.c_str();
     char header[HEADER_SIZE];
     long len;
 
     //
-    // Step 1 -- open trace.db and read the header.
+    // Step 1 -- open threads.db and read the threads index table.
+    //
+    int threads_fd = open(threads_str, O_RDONLY);
+    if (threads_fd < 0) {
+        err(1, "unable to open: %s", threads_str);
+    }
+
+    len = read(threads_fd, header, HEADER_SIZE);
+    if (len != HEADER_SIZE) {
+        err(1, "unable to read: %s", threads_str);
+    }
+
+    common_header_t *common_hdr = (common_header_t *) header;
+    threads_header_t *threads_hdr = (threads_header_t *) (header + COMMON_SIZE);
+
+    uint64_t magic = be_to_host_64(common_hdr->magic);
+    uint64_t format = be_to_host_64(common_hdr->format);
+    uint64_t total_threads = be_to_host_64(common_hdr->num_threads);
+
+    if (magic != MAGIC) {
+        errx(1, "bad magic value (0x%lx) in: %s", magic, threads_str);
+    }
+    if (format != THREADS_FMT) {
+        errx(1, "bad format value (%ld) in: %s", format, threads_str);
+    }
+
+    uint32_t num_fields = be_to_host_32(threads_hdr->num_fields);
+    uint64_t index_start = be_to_host_64(threads_hdr->index_start);
+    uint64_t index_size = total_threads * num_fields * sizeof(uint32_t);
+
+    if (num_fields < 1) {
+	errx(1, "bad num_fields value (%d) in: %s", num_fields, threads_str);
+    }
+    if (num_fields > 2) {
+	warnx("bad num_fields value (%d) in: %s", num_fields, threads_str);
+    }
+
+    uint32_t * threads_index = (uint32_t *) malloc(index_size);
+    if (threads_index == NULL) {
+	errx(1, "out of memory in BaseDataFile::setNewData");
+    }
+
+    len = lseek(threads_fd, index_start, SEEK_SET);
+    if (len != (long) index_start) {
+        err(1, "unable to seek to threads index (0x%lx) in: %s",
+	    index_start, threads_str);
+    }
+
+    len = read(threads_fd, threads_index, index_size);
+    if (len != (long) index_size) {
+        err(1, "unable to read threads index in: %s", threads_str);
+    }
+
+    close(threads_fd);
+
+    //
+    // Step 2 -- open trace.db and read the header.
     //
     int trace_fd = open(trace_str, O_RDONLY);
     if (trace_fd < 0) {
@@ -117,12 +170,11 @@ BaseDataFile::setNewData(FileData *locations, int headerSize)
         err(1, "unable to read: %s", trace_str);
     }
 
-    struct common_header *common_hdr = (struct common_header *) header;
-    struct trace_header *trace_hdr = (struct trace_header *) (header + COMMON_SIZE);
+    trace_header_t * trace_hdr = (trace_header_t *) (header + COMMON_SIZE);
 
-    uint64_t magic = be_to_host_64(common_hdr->magic);
-    uint64_t format = be_to_host_64(common_hdr->format);
-    uint64_t num_threads = be_to_host_64(common_hdr->num_threads);
+    magic = be_to_host_64(common_hdr->magic);
+    format = be_to_host_64(common_hdr->format);
+    uint64_t active_threads = be_to_host_64(common_hdr->num_threads);
 
     if (magic != MAGIC) {
         errx(1, "bad magic value (0x%lx) in: %s", magic, trace_str);
@@ -132,54 +184,63 @@ BaseDataFile::setNewData(FileData *locations, int headerSize)
     }
 
     //
-    // Step 2 -- read the index and fill in arrays.
+    // Step 3 -- read the trace index and fill in arrays.
     //
-    numFiles = num_threads;
+    numFiles = active_threads;
 
-    processIDs = new int[num_threads];
-    threadIDs = new short[num_threads];
-    offsets = new OffsetPair[num_threads];
+    processIDs = new int[active_threads];
+    threadIDs = new short[active_threads];
+    offsets = new OffsetPair[active_threads];
 
     if (processIDs == NULL || threadIDs == NULL || offsets == NULL) {
 	errx(1, "out of memory in BaseDataFile::setNewData");
     }
 
-    // fixme: need to read process/thread IDs from threads.db.
+    index_start = be_to_host_64(trace_hdr->index_start);
+    index_size = active_threads * sizeof(trace_index_t);
 
-    uint64_t index_start = be_to_host_64(trace_hdr->index_start);
-    uint64_t index_length = num_threads * sizeof(struct trace_index);
-
-    struct trace_index *index = (struct trace_index *) malloc(index_length);
+    trace_index_t * index = (trace_index_t *) malloc(index_size);
     if (index == NULL) {
 	errx(1, "out of memory in BaseDataFile::setNewData");
     }
 
     len = lseek(trace_fd, index_start, SEEK_SET);
     if (len != (long) index_start) {
-        err(1, "unable to seek to trace index (0x%lx) in setNewData",
-	    index_start);
+        err(1, "unable to seek to trace index (0x%lx) in: %s",
+	    index_start, trace_str);
     }
 
-    len = read(trace_fd, index, index_length);
-    if (len != (long) index_length) {
+    len = read(trace_fd, index, index_size);
+    if (len != (long) index_size) {
         err(1, "unable to read trace index in: %s", trace_str);
     }
 
     // fixme: is value for offsets.end inclusive or exclusive?
 
-    for (ulong k = 0; k < num_threads; k++) {
+    for (ulong k = 0; k < active_threads; k++) {
+	uint64_t tid = be_to_host_64(index[k].global_tid);
+
 	offsets[k].start = be_to_host_64(index[k].offset);
 	offsets[k].end = offsets[k].start + be_to_host_64(index[k].length) - 12;
-	processIDs[k] = k;
-	threadIDs[k] = -1;
+
+	processIDs[k] = be_to_host_32(threads_index[tid * num_fields]);
+	if (num_fields > 1) {
+	    threadIDs[k] = be_to_host_32(threads_index[tid * num_fields + 1]);
+	} else {
+	    threadIDs[k] = -1;
+	}
     }
     type = MULTI_PROCESSES;
+    if (num_fields > 1) {
+        type |= MULTI_THREADING;
+    }
 
+    free(threads_index);
     free(index);
     close(trace_fd);
 
     //
-    // Step 3 -- finally, allocate LargeByteBuffer for file.
+    // Step 4 -- finally, allocate LargeByteBuffer for file.
     //
     masterBuff = new LargeByteBuffer(locations->fileTrace, 1);
 }
