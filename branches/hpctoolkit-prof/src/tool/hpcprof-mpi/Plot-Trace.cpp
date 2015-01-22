@@ -62,6 +62,7 @@
 #include <mpi.h>
 
 #include "Plot-Trace.hpp"
+#include <lib/prof/DBFormat.h>
 
 #include <include/uint.h>
 #include <include/big-endian.h>
@@ -77,18 +78,6 @@
 #define PLOT_INDEX_START  512
 #define MEG  (1024 * 1024)
 
-struct __attribute__ ((packed)) plot_index_s {
-  uint32_t  cctid;
-  uint32_t  metid;
-  uint64_t  offset;
-  uint64_t  count;
-};
-
-struct __attribute__ ((packed)) plot_entry_s {
-  uint32_t  tid;
-  uint32_t  metval;
-};
-
 struct plot_pt_s {
   uint  cctid;
   uint  metid;
@@ -96,8 +85,6 @@ struct plot_pt_s {
   float val;
 };
 
-typedef struct plot_index_s plot_index;
-typedef struct plot_entry_s plot_entry;
 typedef struct plot_pt_s plot_pt;
 
 typedef std::pair <uint, uint> uint_pair;
@@ -622,8 +609,8 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
   // compute file offsets and scatter result.
   //------------------------------------------------------------
 
-  ulong my_data_size = num_points * sizeof(plot_entry);
-  ulong my_index_size = cct_met_count.size() * sizeof(plot_index);
+  ulong my_data_size = num_points * sizeof(plot_entry_t);
+  ulong my_index_size = cct_met_count.size() * sizeof(plot_index_t);
   ulong my_size[2];
   ulong * global_size = NULL;
   ulong * global_ans = NULL;
@@ -688,7 +675,7 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
   // and recv buffers are unused.
   //------------------------------------------------------------
 
-  plot_entry * plot_out_buf = (plot_entry *) plot_recv_buf;
+  plot_entry_t * plot_out_buf = (plot_entry_t *) plot_recv_buf;
   union { float fval; uint32_t ival; } u32;
 
   for (n = 0; n < num_points; n++) {
@@ -711,13 +698,13 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
   // This probably fits in the send buf, if not, then resize.
   //------------------------------------------------------------
 
-  plot_index * index_buf = (plot_index *) plot_send_buf;
+  plot_index_t * index_buf = (plot_index_t *) plot_send_buf;
   free(plot_recv_buf);
 
   if (my_index_size > send_buf_size) {
     free(plot_send_buf);
     plot_send_buf = NULL;
-    index_buf = (plot_index *) malloc(my_index_size);
+    index_buf = (plot_index_t *) malloc(my_index_size);
 
     DIAG_Assert(index_buf != NULL, "out of memory in Plot::writePlotGraphs");
   }
@@ -731,7 +718,7 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
     index_buf[n].metid = host_to_be_32(it->first.second);
     index_buf[n].offset = host_to_be_64(offset);
     index_buf[n].count =  host_to_be_64(it->second);
-    offset += it->second * sizeof(plot_entry);
+    offset += it->second * sizeof(plot_entry_t);
     n++;
   }
 
@@ -758,7 +745,7 @@ writePlotGraphs(std::string & db_dir, uint max_cctid, uint max_tid,
     for (rank = 0; rank < numRanks; rank++) {
       printf("rank: %d  index: 0x%08lx  data: 0x%08lx  points: %ld\n",
 	     rank, global_ans[2*rank + 1], global_ans[2*rank],
-	     global_size[2*rank] / sizeof(plot_entry));
+	     global_size[2*rank] / sizeof(plot_entry_t));
     }
     printf("\n");
   }

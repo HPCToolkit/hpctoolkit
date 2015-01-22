@@ -88,108 +88,18 @@
 #include <lib/prof/CallPath-Profile.hpp>
 #include <lib/prof/CCT-Merge.hpp>
 #include <lib/prof/CCT-Tree.hpp>
+#include <lib/prof/Database.hpp>
+#include <lib/prof/DBFormat.h>
 #include <lib/prof/Metric-Mgr.hpp>
 #include <include/uint.h>
 #include <include/big-endian.h>
 
 //***************************************************************************
 
-#define SUMMARY_NAME  "hpctoolkit summary metrics"
-#define TRACE_NAME    "hpctoolkit trace metrics"
-#define PLOT_NAME     "hpctoolkit plot metrics"
-#define THREADS_NAME  "hpctoolkit thread index"
-
-#define FILE_VERSION  3
-
-#define SUMMARY_TYPE  1
-#define TRACE_TYPE    2
-#define PLOT_TYPE     3
-#define THREADS_TYPE  4
-
-#define SUMMARY_FMT   1
-#define TRACE_FMT     2
-#define PLOT_FMT      3
-#define THREADS_FMT   4
-
-#define HEADER_SIZE  512
-#define COMMON_SIZE  256
-#define MESSAGE_SIZE  32
-
-#define MAGIC  0x06870630
-
 #define METRIC_BUFFER_SIZE  (4 * 1024 * 1024)
 #define TRACE_BUFFER_SIZE   (8 * 1024 * 1024)
 
 #define OFFSET_ALIGN  512
-
-struct __attribute__ ((packed)) common_header {
-  char      mesg[MESSAGE_SIZE];
-  uint64_t  magic;
-  uint64_t  version;
-  uint64_t  type;
-  uint64_t  format;
-  uint64_t  num_cctid;
-  uint64_t  num_metid;
-  uint64_t  num_threads;
-};
-
-struct __attribute__ ((packed)) summary_header {
-  uint64_t  offset_start;
-  uint64_t  offset_size;
-  uint64_t  metric_start;
-  uint64_t  metric_size;
-  uint32_t  size_offset;
-  uint32_t  size_metid;
-  uint32_t  size_metval;
-};
-
-struct __attribute__ ((packed)) trace_header {
-  uint64_t  index_start;
-  uint64_t  index_length;
-  uint64_t  trace_start;
-  uint64_t  trace_length;
-  uint64_t  min_time;
-  uint64_t  max_time;
-  uint32_t  size_offset;
-  uint32_t  size_length;
-  uint32_t  size_global_tid;
-  uint32_t  size_time;
-  uint32_t  size_cctid;
-};
-
-struct __attribute__ ((packed)) plot_header {
-  uint64_t  index_start;
-  uint64_t  index_length;
-  uint64_t  plot_start;
-  uint64_t  plot_length;
-  uint32_t  size_cctid;
-  uint32_t  size_metid;
-  uint32_t  size_offset;
-  uint32_t  size_count;
-  uint32_t  size_tid;
-  uint32_t  size_metval;
-};
-
-struct __attribute__ ((packed)) threads_header {
-  uint64_t  string_start;
-  uint64_t  string_length;
-  uint64_t  index_start;
-  uint64_t  index_length;
-  uint32_t  num_fields;
-  uint32_t  size_string;
-  uint32_t  size_field;
-};
-
-struct __attribute__ ((packed)) metric_entry {
-  uint32_t  metid;
-  uint32_t  metval;
-};
-
-struct __attribute__ ((packed)) trace_index {
-  uint64_t  offset;
-  uint64_t  length;
-  uint64_t  global_tid;
-};
 
 // Global data for all files.
 
