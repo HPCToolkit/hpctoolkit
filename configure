@@ -18435,11 +18435,16 @@ fi
 
 # Check whether --enable-hpcserver was given.
 if test "${enable_hpcserver+set}" = set; then :
-  enableval=$enable_hpcserver; enable_hpcserver=yes
+  enableval=$enable_hpcserver;
 else
   enable_hpcserver=no
 fi
 
+
+case "$enable_hpcserver" in
+  yes | Yes | YES ) enable_hpcserver=yes ;;
+  * ) enable_hpcserver=no ;;
+esac
 
  if test "$enable_hpcserver" = yes; then
   OPT_ENABLE_HPCSERVER_TRUE=
