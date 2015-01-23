@@ -2062,8 +2062,13 @@ AM_CONDITIONAL([OPT_ENABLE_HPCRUN_DYNAMIC],
 AC_ARG_ENABLE([hpcserver],
   [AS_HELP_STRING([--enable-hpcserver],
           [build hpcserver and hpcserver-mpi (default no)])],
-  [enable_hpcserver=yes],
+  [],
   [enable_hpcserver=no])
+
+case "$enable_hpcserver" in
+  yes | Yes | YES ) enable_hpcserver=yes ;;
+  * ) enable_hpcserver=no ;;
+esac
 
 AM_CONDITIONAL([OPT_ENABLE_HPCSERVER], [test "$enable_hpcserver" = yes])
 
