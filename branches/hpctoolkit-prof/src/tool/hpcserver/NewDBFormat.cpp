@@ -51,9 +51,6 @@
 //
 // Todo:
 //
-// 2. Check consistency of offsets.end.  The db files treat end as
-// exclusive, but the server seems to use inclusive.
-//
 // 3. Sometimes the client freezes up or displays an odd depth view,
 // but this happens even with an old style database.
 
@@ -215,7 +212,8 @@ BaseDataFile::setNewData(FileData *locations, int headerSize)
         err(1, "unable to read trace index in: %s", trace_str);
     }
 
-    // fixme: is value for offsets.end inclusive or exclusive?
+    // note: the trace server treats offsets.end as inclusive, it
+    // points to the beginning of the last valid trace record.
 
     for (ulong k = 0; k < active_threads; k++) {
 	uint64_t tid = be_to_host_64(index[k].global_tid);
