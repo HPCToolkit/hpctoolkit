@@ -194,6 +194,11 @@ static sigset_t timer_mask;
 
 static __thread bool wallclock_ok = false;
 
+/******************************************************************************
+ * external thread-local variables
+ *****************************************************************************/
+extern __thread bool hpcrun_thread_suppress_sample;
+
 // ****************************************************************************
 // * public helper function
 // ****************************************************************************
@@ -606,6 +611,13 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
   static bool metrics_finalized = false;
   sample_source_t *self = &_itimer_obj;
+
+  // if sampling is suppressed for this thread, restart timer, & exit
+  if (hpcrun_thread_suppress_sample) {
+    TMSG(ITIMER_HANDLER, "thread sampling suppressed");
+    hpcrun_restart_timer(self, 1);
+    return 0;
+  }
 
   // If we got a wallclock signal not meant for our thread, then drop the sample
   if (! wallclock_ok) {

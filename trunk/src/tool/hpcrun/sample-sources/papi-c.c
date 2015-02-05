@@ -234,6 +234,11 @@ static int some_overflow;
 
 
 /******************************************************************************
+ * external thread-local variables
+ *****************************************************************************/
+extern __thread bool hpcrun_thread_suppress_sample;
+
+/******************************************************************************
  * method functions
  *****************************************************************************/
 
@@ -841,6 +846,9 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   int my_event_codes[MAX_EVENTS];
   int my_event_codes_count = MAX_EVENTS;
+
+  // if sampling disabled explicitly for this thread, skip all processing
+  if (hpcrun_thread_suppress_sample) return;
 
   if (!ovec) {
     TMSG(PAPI_SAMPLE, "papi overflow event: event set %d ovec = %ld",
