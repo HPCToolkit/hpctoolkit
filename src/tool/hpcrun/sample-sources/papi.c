@@ -140,6 +140,10 @@ static int derived[MAX_EVENTS];
 static int some_derived;
 static int some_overflow;
 
+/******************************************************************************
+ * external thread-local variables
+ *****************************************************************************/
+extern __thread bool hpcrun_thread_suppress_sample;
 
 /******************************************************************************
  * method functions
@@ -640,6 +644,10 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int my_event_count = MAX_EVENTS;
   int nevents  = self->evl.nevents;
   int i, ret;
+
+  // if sampling disabled explicitly for this thread, skip all processing
+  if (hpcrun_thread_suppress_sample) return;
+
 
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
