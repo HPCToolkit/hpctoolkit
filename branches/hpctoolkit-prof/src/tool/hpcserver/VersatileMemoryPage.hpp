@@ -61,6 +61,7 @@
 #define VERSATILEMEMORYPAGE_H_
 
 
+#include <sys/types.h>
 #include <sys/mman.h>
 #include "FileUtils.hpp" //FileOffset
 #include "LRUList.hpp"
@@ -73,7 +74,8 @@ namespace TraceviewerServer
 	{
 	public:
 		VersatileMemoryPage();
-		VersatileMemoryPage(FileOffset, int, FileDescriptor, LRUList<VersatileMemoryPage>* pageManagementList);
+		VersatileMemoryPage(FileOffset, ssize_t, FileDescriptor,
+				    LRUList<VersatileMemoryPage>* pageManagementList);
 		virtual ~VersatileMemoryPage();
 		static void setMaxPages(int);
 		char* get();
@@ -82,21 +84,15 @@ namespace TraceviewerServer
 		void unmapPage();
 
 		FileOffset startPoint;
-		int size;
+		ssize_t size;
+		ssize_t map_size;
+		ssize_t page_size;
 		char* page;
 		int index;
 		FileDescriptor file;
 
 		bool isMapped;
 		LRUList<VersatileMemoryPage>* mostRecentlyUsed;
-
-		// Use MAP_POPULATE if available
-#ifdef MAP_POPULATE
-		static const int MAP_FLAGS = MAP_SHARED | MAP_POPULATE;
-#else
-		static const int MAP_FLAGS = MAP_SHARED
-#endif
-		static const int MAP_PROT = PROT_READ;
 	};
 
 } /* namespace TraceviewerServer */

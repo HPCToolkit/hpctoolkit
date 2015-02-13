@@ -58,24 +58,42 @@
 //
 //***************************************************************************
 
+#include <sys/types.h>
+#include <sys/mman.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <cstring>
 #include <list>
-#include <errno.h>
 
 #include "DebugUtils.hpp"
 #include "VersatileMemoryPage.hpp"
 #include "LRUList.hpp"
 
+#define DEFAULT_PAGE_SIZE  4096
+
+using namespace std;
+
 namespace TraceviewerServer
 {
 	static int MAX_PAGES_TO_ALLOCATE_AT_ONCE = 0;
 
-	VersatileMemoryPage::VersatileMemoryPage(FileOffset _startPoint, int _size, FileDescriptor _file, LRUList<VersatileMemoryPage>* pageManagementList)
+	VersatileMemoryPage::VersatileMemoryPage(FileOffset _startPoint, ssize_t _size,
+						 FileDescriptor _file,
+						 LRUList<VersatileMemoryPage>* pageManagementList)
 	{
 		startPoint = _startPoint;
 		size = _size;
+		page_size = DEFAULT_PAGE_SIZE;
+#ifdef _SC_PAGESIZE
+		page_size = sysconf(_SC_PAGESIZE);
+#endif
+		if (page_size < DEFAULT_PAGE_SIZE) {
+			page_size = DEFAULT_PAGE_SIZE;
+		}
+		map_size = page_size * ((size + page_size - 1)/page_size);
+
 		mostRecentlyUsed = pageManagementList;
 		index = mostRecentlyUsed->addNewUnused(this);
 		file = _file;
@@ -129,20 +147,37 @@ namespace TraceviewerServer
 			toRemove->unmapPage();
 			mostRecentlyUsed->removeLast();
 		}
-		page = (char*)mmap(0, size, MAP_PROT, MAP_FLAGS, file, startPoint);
-		if (page == MAP_FAILED)
-		{
-			cerr << "Mapping returned error " << strerror(errno) << endl;
-			cerr << "off_t size =" << sizeof(off_t) << "mapping size=" << size << " MapProt=" <<MAP_PROT
-					<< " MapFlags=" << MAP_FLAGS << " fd=" << file << " Start point=" << startPoint << endl;
-			fflush(NULL);
-			exit(-1);
+
+		// mmap anon space for buffer
+#ifdef MAP_ANONYMOUS
+		int map_flags = MAP_PRIVATE | MAP_ANONYMOUS;
+#else
+		int map_flags = MAP_PRIVATE | MAP_ANON;
+#endif
+		page = (char *) mmap(NULL, map_size, PROT_READ | PROT_WRITE, map_flags, -1, 0);
+		if (page == MAP_FAILED) {
+			cerr << "mmap versatile memory page failed: "
+			     << strerror(errno) << endl;
+			exit(1);
 		}
 
+		// read segment from file and handle short reads
+		ssize_t len = 0;
+		while (len < size) {
+			ssize_t ret = pread(file, &page[len], size - len, startPoint + len);
+			if (ret > 0) {
+			    	len += ret;
+			}
+			else if (errno != EINTR) {
+			    	cerr << "read trace file failed: " << strerror(errno) << endl;
+				exit(1);
+			}
+		}
 
 		isMapped = true;
 		mostRecentlyUsed->reAdd(index);
 	}
+
 	void VersatileMemoryPage::unmapPage()
 	{
 		if (!isMapped)
@@ -150,7 +185,7 @@ namespace TraceviewerServer
 			cerr << "Trying to double unmap!"<<endl;
 			return;
 		}
-		munmap(page, size);
+		munmap(page, map_size);
 
 		isMapped = false;
 
