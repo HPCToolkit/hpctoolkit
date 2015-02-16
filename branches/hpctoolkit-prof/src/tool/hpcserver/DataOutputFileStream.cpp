@@ -58,6 +58,10 @@
 //
 //***************************************************************************
 
+#include <stdint.h>
+#include <include/big-endian.h>
+
+#include "ByteUtilities.hpp"
 #include "DataOutputFileStream.hpp"
 
 using namespace std;
@@ -73,18 +77,17 @@ namespace TraceviewerServer
 	{
 
 	}
+
 	void DataOutputFileStream::writeInt(int toWrite)
 	{
-
-		char arrayform[4];
-		ByteUtilities::writeInt(arrayform, toWrite);
-		write(arrayform, 4);
+		uint32_t elt = host_to_be_32(toWrite);
+		write((char *) &elt, 4);
 	}
+
 	void DataOutputFileStream::writeLong(Long toWrite)
 	{
-		char arrayform[8];
-		ByteUtilities::writeLong(arrayform, toWrite);
-		write(arrayform, 8);
+		uint64_t elt = host_to_be_64(toWrite);
+		write((char *) &elt, 8);
 	}
 
 } /* namespace TraceviewerServer */

@@ -61,6 +61,9 @@
 #include "DataCompressionLayer.hpp"
 #include "DebugUtils.hpp"
 
+#include <stdint.h>
+#include <include/big-endian.h>
+
 #include <iostream> //For cerr
 #include <cassert>
 #include <algorithm> //For copy
@@ -109,21 +112,26 @@ namespace TraceviewerServer
 	void DataCompressionLayer::writeInt(int toWrite)
 	{
 		makeRoom(4);
-		ByteUtilities::writeInt(inBuf + bufferIndex, toWrite);
+		uint32_t *elt = (uint32_t *) (inBuf + bufferIndex);
+		*elt = host_to_be_32(toWrite);
 		bufferIndex += 4;
 		pInc(4);
 	}
 	void DataCompressionLayer::writeLong(uint64_t toWrite)
 	{
 		makeRoom(8);
-		ByteUtilities::writeLong(inBuf + bufferIndex, toWrite);
+		uint64_t *elt = (uint64_t *) (inBuf + bufferIndex);
+		*elt = host_to_be_64(toWrite);
 		bufferIndex += 8;
 		pInc(8);
 	}
 	void DataCompressionLayer::writeDouble(double toWrite)
 	{
 		makeRoom(8);
-		ByteUtilities::writeLong(inBuf + bufferIndex, ByteUtilities::convertDoubleToLong(toWrite));
+		union { double dval; uint64_t ival; } u64;
+		u64.dval = toWrite;
+		uint64_t *elt = (uint64_t *) (inBuf + bufferIndex);
+		*elt = host_to_be_64(u64.ival);
 		bufferIndex += 8;
 		pInc(8);
 	}

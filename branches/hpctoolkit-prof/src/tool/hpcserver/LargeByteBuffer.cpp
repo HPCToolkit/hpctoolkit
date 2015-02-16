@@ -57,17 +57,19 @@
 //   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
+
+#include "ByteUtilities.hpp"
 #include "LargeByteBuffer.hpp"
 #include "Constants.hpp"
 #include "FileUtils.hpp"
 #include "DebugUtils.hpp"
-
-
+#include <include/big-endian.h>
 
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <errno.h>
+#include <stdint.h>
 #include <unistd.h>
 
 #include <iostream>
@@ -134,18 +136,19 @@ namespace TraceviewerServer
 		int Page = pos / mmPageSize;
 		int loc = pos % mmPageSize;
 		char* p2D = masterBuffer[Page].get() + loc;
-		int val = ByteUtilities::readInt(p2D);
-		return val;
+
+		return (int) be_to_host_32(*((uint32_t *) p2D));
 	}
+
 	Long LargeByteBuffer::getLong(FileOffset pos)
 	{
 		int Page = pos / mmPageSize;
 		int loc = pos % mmPageSize;
 		char* p2D = masterBuffer[Page].get() + loc;
-		Long val = ByteUtilities::readLong(p2D);
-		return val;
 
+		return (Long) be_to_host_64(*((uint64_t *) p2D));
 	}
+
 	//Could very well be a template, but we only use it for uint64_t
 	uint64_t LargeByteBuffer::lcm(uint64_t _a, uint64_t _b)
 	{
@@ -164,6 +167,7 @@ namespace TraceviewerServer
 		//GCD stored in a
 		return (_a/a)*_b;
 	}
+
 	uint64_t LargeByteBuffer::getRamSize()
 	{
 #ifdef _SC_PHYS_PAGES

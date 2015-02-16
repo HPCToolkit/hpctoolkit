@@ -57,12 +57,16 @@
 //
 //***************************************************************************
 
-
-
 #ifndef BYTEUTILITIES_H_
 #define BYTEUTILITIES_H_
 
 #include <stdint.h>
+
+// must be exactly 64 bits or else many things will break.
+typedef int64_t Long;
+
+// this is all superseded by <include/big-endian.h>
+#if 0
 
 namespace TraceviewerServer
 {
@@ -140,4 +144,6 @@ namespace TraceviewerServer
 	};
 
 } /* namespace TraceviewerServer */
+#endif
+
 #endif /* BYTEUTILITIES_H_ */

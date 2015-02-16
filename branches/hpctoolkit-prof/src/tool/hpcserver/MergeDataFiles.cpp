@@ -65,6 +65,9 @@
 #include "DebugUtils.hpp"
 #include "ProgressBar.hpp"
 
+#include <stdint.h>
+#include <include/big-endian.h>
+
 #include <string>
 #include <algorithm>
 #include <cstdlib>
@@ -72,7 +75,7 @@
 #include <sstream>
 
 using namespace std;
-typedef int64_t Long;
+
 namespace TraceviewerServer
 {
 	MergeDataAttribute MergeDataFiles::merge(string directory, string globInputFile,
@@ -233,11 +236,10 @@ namespace TraceviewerServer
 
 		if (pos > 0)
 		{
+			union { char buf[8]; uint64_t ival; } u64;
 			f.seekg(pos, ios_base::beg);
-			char buffer[8];
-			f.read(buffer, 8);
-			uint64_t marker = ByteUtilities::readLong(buffer);
-
+			f.read(u64.buf, 8);
+			uint64_t marker = be_to_host_64(u64.ival);
 			isCorrect = (marker==MARKER_END_MERGED_FILE);
 		}
 		f.close();

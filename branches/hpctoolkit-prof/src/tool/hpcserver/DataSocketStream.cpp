@@ -71,10 +71,12 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <errno.h>
+#include <stdint.h>
 
 #include "DataSocketStream.hpp"
 #include "ByteUtilities.hpp"
 #include "Constants.hpp"
+#include <include/big-endian.h>
 
 namespace TraceviewerServer
 {
@@ -161,15 +163,15 @@ namespace TraceviewerServer
 
 	void DataSocketStream::writeInt(int toWrite)
 	{
-		char Buffer[4];
-		ByteUtilities::writeInt(Buffer, toWrite);
-		fwrite(Buffer, 4, 1, file);
+		union { char buf[4]; uint32_t ival; } u32;
+		u32.ival = host_to_be_32(toWrite);
+		fwrite(u32.buf, 4, 1, file);
 	}
 	void DataSocketStream::writeLong(Long toWrite)
 	{
-		char Buffer[8];
-		ByteUtilities::writeLong(Buffer, toWrite);
-		fwrite(Buffer, 8, 1, file);
+		union { char buf[8]; uint64_t ival; } u64;
+		u64.ival = host_to_be_64(toWrite);
+		fwrite(u64.buf, 8, 1, file);
 	}
 
 	void DataSocketStream::writeRawData(char* Data, int Length)
@@ -187,9 +189,9 @@ namespace TraceviewerServer
 
 	void DataSocketStream::writeShort(short toWrite)
 	{
-		char Buffer[2];
-		ByteUtilities::writeShort(Buffer, toWrite);
-		fwrite(Buffer, 2, 1, file);
+		union { char buf[2]; uint16_t ival; } u16;
+		u16.ival = host_to_be_16(toWrite);
+		fwrite(u16.buf, 2, 1, file);
 	}
 
 	void DataSocketStream::flush()
@@ -201,32 +203,37 @@ namespace TraceviewerServer
 
 	int DataSocketStream::readInt()
 	{
-		char Af[SIZEOF_INT];
-		int err = fread(Af, 1, SIZEOF_INT, file);
-		if (err != SIZEOF_INT)
-			throw ERROR_READ_TOO_LITTLE;
-		return ByteUtilities::readInt(Af);
+		union { char buf[4]; uint32_t ival; } u32;
 
+		long ret = fread(u32.buf, 1, 4, file);
+		if (ret != 4) {
+			throw ERROR_READ_TOO_LITTLE;
+		}
+		return (int) be_to_host_32(u32.ival);
 	}
 
 	Long DataSocketStream::readLong()
 	{
-		char Af[SIZEOF_LONG];
-		int err = fread(Af, 1, SIZEOF_LONG, file);
-		if (err != SIZEOF_LONG)
-			throw ERROR_READ_TOO_LITTLE;
-		return ByteUtilities::readLong(Af);
+		union { char buf[8]; uint64_t ival; } u64;
 
+		long ret = fread(u64.buf, 1, 8, file);
+		if (ret != 8) {
+			throw ERROR_READ_TOO_LITTLE;
+		}
+		return (Long) be_to_host_64(u64.ival);
 	}
 
 	short DataSocketStream::readShort()
 	{
-		char Af[SIZEOF_SHORT];
-		int err = fread(Af, 1, SIZEOF_SHORT, file);
-		if (err != 2)
+		union { char buf[2]; uint16_t ival; } u16;
+
+		long ret = fread(u16.buf, 1, 2, file);
+		if (ret != 2) {
 			throw ERROR_READ_TOO_LITTLE;
-		return ByteUtilities::readShort(Af);
+		}
+		return (short) be_to_host_16(u16.ival);
 	}
+
 	char DataSocketStream::readByte()
 	{
 		char Af[SIZEOF_BYTE];
@@ -238,7 +245,6 @@ namespace TraceviewerServer
 
 	string DataSocketStream::readString()
 	{
-
 		short Len = readShort();
 
 		char* Msg = new char[Len + 1];
@@ -256,13 +262,24 @@ namespace TraceviewerServer
 
 	double DataSocketStream::readDouble()
 	{
-		Long longForm = readLong();
-		return ByteUtilities::convertLongToDouble(longForm);
+		union { char buf[8]; uint64_t ival; double dval; } u64;
+
+		long ret = fread(u64.buf, 1, 8, file);
+		if (ret != 8) {
+			throw ERROR_READ_TOO_LITTLE;
+		}
+		u64.ival = be_to_host_64(u64.ival);
+
+		return u64.dval;
 	}
+
 	void DataSocketStream::writeDouble(double val)
 	{
-		Long longForm = ByteUtilities::convertDoubleToLong(val);
-		writeLong(longForm);
+		union { char buf[8]; uint64_t ival; double dval; } u64;
+
+		u64.dval = val;
+		u64.ival = host_to_be_64(u64.ival);
+		fwrite(u64.buf, 8, 1, file);
 	}
 
 	void DataSocketStream::checkForErrors(int e)

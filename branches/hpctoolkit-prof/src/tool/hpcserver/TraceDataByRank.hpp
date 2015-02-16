@@ -62,6 +62,7 @@
 
 #include <vector>
 
+#include "ByteUtilities.hpp"
 #include "TimeCPID.hpp"
 #include "FilteredBaseData.hpp"
 #include "FileUtils.hpp"//FileOffset
@@ -79,7 +80,6 @@ namespace TraceviewerServer
 		void getData(Time timeStart, Time timeRange, double pixelLength);
 		int sampleTimeLine(FileOffset minLoc, FileOffset maxLoc, int startPixel, int endPixel, int minIndex, double pixelLength, Time startingTime);
 		FileOffset findTimeInInterval(Time time, FileOffset l_boundOffset, FileOffset r_boundOffset);
-
 
 
 		vector<TimeCPID>* listCPID;

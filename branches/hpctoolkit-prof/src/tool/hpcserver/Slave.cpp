@@ -65,6 +65,8 @@
 #include <list>
 #include <cmath>
 #include <assert.h>
+#include <stdint.h>
+#include <include/big-endian.h>
 
 #include "TimeCPID.hpp"
 #include "Constants.hpp"
@@ -302,15 +304,15 @@ namespace TraceviewerServer
 				for (i = 0; i < entries; i++)
 				{
 					int deltaTimestamp = ActualData[i].timestamp - currentTimestamp;
-					ByteUtilities::writeInt(currentPtr, deltaTimestamp);
+					uint32_t *elt = (uint32_t *) currentPtr;
+					*elt = host_to_be_32(deltaTimestamp);
 					currentPtr += SIZEOF_INT;
-					ByteUtilities::writeInt(currentPtr, ActualData[i].cpid);
+					elt = (uint32_t *) currentPtr;
+					*elt = host_to_be_32(ActualData[i].cpid);
 					currentPtr += SIZEOF_INT;
 				}
 				outputBufferLen = entries*SIZEOF_DELTASAMPLE;
 			}
-
-
 
 			msg->data.compressedSize = outputBufferLen;
 			locs->headerRequest = COMM_WORLD.Isend(msg, sizeof(*msg), MPI_PACKED,
