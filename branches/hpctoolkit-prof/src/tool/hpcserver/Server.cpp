@@ -92,51 +92,25 @@ namespace TraceviewerServer
 
 	Server::Server()
 	{
-		DataSocketStream* socketptr = NULL;
-		DataSocketStream* xmlSocketPtr = NULL;
-
-		//Port 21590 is used by vofr-gateway. Do we want to change it?
-		DataSocketStream socket(mainPortNumber, true);
-		socketptr = &socket;
+		DataSocketStream socket(mainPortNumber, false);
+		DataSocketStream* socketptr = &socket;
 
 		mainPortNumber = socketptr->getPort();
-		cout << "Received connection" << endl;
 
-		int command = socketptr->readInt();
-		if (command == OPEN)
-		{
- 			// Laksono 2014.11.11: Somehow the class Args.cpp cannot accept -1 as an integer argument
-	 		// (not sure if this is a feature or it's a bug to confuse between a flag and negative number)
- 			// Temporary, we can specify that if the xml port is 1 then it will be the same as the main port
-			if (xmlPortNumber == 1)
-			  xmlPortNumber = mainPortNumber;
+		// allow sequence of connections
+		for (;;) {
+		    	cout << "\nListening for connection on port "
+			     << mainPortNumber << " ..." << endl;
 
-			if (xmlPortNumber != mainPortNumber)
-			{//On a different port. Create another socket.
-			  xmlSocketPtr = new DataSocketStream(xmlPortNumber, false);
+			socketptr->acceptSocket();
+			cout << "Received connection" << endl;
+
+			try {
+			    	startConnection(socketptr);
 			}
-			else
-			{
-			  //Same port, simply use this socket
-			  xmlSocketPtr = socketptr;
+			catch (...) {
 			}
-
-			// ----------------------------------------------------------------------------------
-			// Loop for the Server: As long as the client doesn't close the socket communication
-			// 			we'll remain in this loop
-			// ----------------------------------------------------------------------------------
-
-			while( runConnection(socketptr, xmlSocketPtr)==START_NEW_CONNECTION_IMMEDIATELY) ;
-
-			if (xmlPortNumber != mainPortNumber)
-			{
-			  delete (xmlSocketPtr);
-			}
-		}
-		else
-		{
-			cerr << "Expected an open command, got " << command << endl;
-			throw ERROR_EXPECTED_OPEN_COMMAND;
+			socketptr->closeSocket();
 		}
 	}
 
@@ -145,6 +119,40 @@ namespace TraceviewerServer
 		delete (controller);
 	}
 
+    	void Server::startConnection(DataSocketStream* socketptr)
+	{
+		DataSocketStream* xmlSocketPtr = NULL;
+
+		int command = socketptr->readInt();
+		if (command == OPEN)
+		{
+		    	// port 1 means use same connection as main port
+		    	if (xmlPortNumber == 1) {
+				xmlPortNumber = mainPortNumber;
+			}
+
+			// create new socket if different port
+			if (xmlPortNumber != mainPortNumber) {
+			    	xmlSocketPtr = new DataSocketStream(xmlPortNumber, false);
+			}
+			else {
+			    	// Same port, simply use this socket
+			    	xmlSocketPtr = socketptr;
+			}
+
+			// stay in this loop as long as the connection stays open
+			while( runConnection(socketptr, xmlSocketPtr)
+			       == START_NEW_CONNECTION_IMMEDIATELY ) ;
+
+			if (xmlPortNumber != mainPortNumber) {
+			  	delete (xmlSocketPtr);
+			}
+		}
+		else {
+			cerr << "Expected an open command, got " << command << endl;
+			throw ERROR_EXPECTED_OPEN_COMMAND;
+		}
+	}
 
 	int Server::runConnection(DataSocketStream* socketptr, DataSocketStream* xmlSocket)
 	{
@@ -309,9 +317,14 @@ namespace TraceviewerServer
 	{
 		int clientProtocolVersion = receiver->readInt();
 
-		if (clientProtocolVersion != SERVER_PROTOCOL_MAX_VERSION)
+		// for now, we only support one protocol version, so
+		// treat it as a magic number.
+		if (clientProtocolVersion != SERVER_PROTOCOL_MAX_VERSION) {
 			cout << "The client is using protocol version 0x" << hex << clientProtocolVersion<<
 			" and the server supports version 0x" << SERVER_PROTOCOL_MAX_VERSION << endl;
+			cout << dec;
+			throw ERROR_INVALID_PROTOCOL;
+		}
 
 		if (clientProtocolVersion < SERVER_PROTOCOL_MAX_VERSION) {
 			cout << "Warning: The server is running in compatibility mode." << endl;
@@ -331,7 +344,7 @@ namespace TraceviewerServer
 
 		string pathToDB = receiver->readString();
 		DBOpener DBO;
-		cout << "Opening database: " << pathToDB << endl;
+		cout << "\nOpening database: " << pathToDB << endl;
 		SpaceTimeDataController* controller = DBO.openDbAndCreateStdc(pathToDB);
 
 		if (controller != NULL)

@@ -72,6 +72,7 @@
 #include <netinet/in.h>
 #include <errno.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "DataSocketStream.hpp"
 #include "ByteUtilities.hpp"
@@ -90,46 +91,67 @@ namespace TraceviewerServer
 	DataSocketStream::DataSocketStream(int _Port, bool Accept = true)
 	{
 		port = _Port;
-		
+
+		// create socket
 		unopenedSocketFD = socket(PF_INET, SOCK_STREAM, 0);
-		if (unopenedSocketFD == -1)
-			cerr << "Could not create socket" << endl;
-		//bind
+		if (unopenedSocketFD < 0) {
+			cerr << "unable to create socket" << endl;
+			exit(1);
+		}
+
+		// add SO_REUSEADDR.  this allows binding to a recently closed
+		// port (but not an active socket owned by another process).
+		int optval = 1;
+		setsockopt(unopenedSocketFD, SOL_SOCKET, SO_REUSEADDR,
+			   &optval, sizeof(optval));
+
+		// bind
 		sockaddr_in Address;
 		memset(&Address, 0, sizeof(Address));
 		Address.sin_family = AF_INET;
 		Address.sin_port = htons(_Port);
 		Address.sin_addr.s_addr = INADDR_ANY;
 		int err = bind(unopenedSocketFD, (sockaddr*) &Address, sizeof(Address));
-		if (err)
-		{
-			if (errno == EADDRINUSE)
-				cerr<< "Could not bind socket because socket is already in use. "<<
-				"Make sure you have closed hpctraceviewer, wait 30 seconds and try again. " <<
-				"Alternatively, you can choose a port other than "<< _Port<<"."<<endl;
-			else
-				cerr << "Could not bind socket. Error was " << strerror(errno) << endl;
-			throw ERROR_SOCKET_IN_USE;
+		if (err != 0) {
+			cerr << "unable to bind to port " << port
+			     << ": " << strerror(errno) << endl;
+			if (errno == EADDRINUSE) {
+				cerr << "try another port, or else use '-p 0' "
+				     << "to use an ephemeral port." << endl;
+			}
+			exit(1);
 		}
-		//listen
+
+		// listen
 		err = listen(unopenedSocketFD, 5);
-		if (err)
-			cerr<<"Listen failed: " << strerror(errno)<<endl;
+		if (err != 0) {
+			cerr << "unable to listen on port " << port
+			     << ": " << strerror(errno) << endl;
+			exit(1);
+		}
+
 		if (Accept)
 		{
 			cout << "Waiting for connection on port " << getPort() << endl;
 			acceptSocket();
 		}
 	}
-	void DataSocketStream::acceptSocket()
+
+	// return true on success, false on failure
+	bool DataSocketStream::acceptSocket()
 	{
-		//accept
 		sockaddr_in client;
 		unsigned int len = sizeof(client);
+
 		socketDesc = accept(unopenedSocketFD, (sockaddr*) &client, &len);
-		if (socketDesc < 0)
-			cerr << "Error on accept" << endl;
-		file = fdopen(socketDesc, "r+b"); //read, write, binary
+		if (socketDesc < 0) {
+			cerr << "error trying to accept connection: "
+			     << strerror(errno) << endl;
+			return false;
+		}
+
+		file = fdopen(socketDesc, "r+"); //read + write
+		return true;
 	}
 
 	int DataSocketStream::getPort()
@@ -153,6 +175,14 @@ namespace TraceviewerServer
 		}
 	}
 	
+    	// close the sock fd for this connection but not the listen fd.
+    	void DataSocketStream::closeSocket()
+	{
+		fclose(file);
+		shutdown(socketDesc, SHUT_RDWR);
+		close(socketDesc);
+	}
+
 	DataSocketStream::~DataSocketStream()
 	{
 		fclose(file);

@@ -80,8 +80,9 @@ namespace TraceviewerServer
 	{
 	public:
 		DataSocketStream(int, bool);
-		void acceptSocket();
 		DataSocketStream();
+		bool acceptSocket();
+		void closeSocket();
 
 		int getPort();
 

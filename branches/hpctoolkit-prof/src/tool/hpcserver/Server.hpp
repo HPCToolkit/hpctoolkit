@@ -79,6 +79,7 @@ namespace TraceviewerServer
 		static int main(int argc, char *argv[]);
 
 	private:
+		void startConnection(DataSocketStream*);
 		int runConnection(DataSocketStream*, DataSocketStream* xmlSocket);
 		void sendDBOpenedSuccessfully(DataSocketStream* socket, DataSocketStream* xmlSocket);
 
