@@ -116,10 +116,16 @@
 // SIGEV_THREAD_ID is also thread-specific and it seems that THREAD is
 // limited by the kernel Hz rate.
 
+// Implement WALLCLOCK as CPUTIME where possible, except on Blue Gene
+// where we need to use ITIMER.
+
 #define IDLE_METRIC_NAME     "idleness (usec)"
 
-#define ITIMER_EVENT_NAME    "WALLCLOCK"
-#define ITIMER_METRIC_NAME   "WALLCLOCK (usec)"
+#define WALLCLOCK_EVENT_NAME   "WALLCLOCK"
+#define WALLCLOCK_METRIC_NAME  "WALLCLOCK (usec)"
+
+#define ITIMER_EVENT_NAME    "ITIMER"
+#define ITIMER_METRIC_NAME   "ITIMER (usec)"
 #define ITIMER_SIGNAL         SIGPROF
 #define ITIMER_TYPE           ITIMER_PROF
 
@@ -428,6 +434,7 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
   return hpcrun_ev_is(ev_str, ITIMER_EVENT_NAME)
+    || hpcrun_ev_is(ev_str, WALLCLOCK_EVENT_NAME)
     || hpcrun_ev_is(ev_str, CPUTIME_EVENT_NAME)
     || hpcrun_ev_is(ev_str, REALTIME_EVENT_NAME);
 }
@@ -444,6 +451,26 @@ METHOD_FN(process_event_list, int lush_metrics)
   char* event = start_tok(evlist);
 
   TMSG(ITIMER_CTL,"checking event spec = %s",event);
+
+  if (hpcrun_ev_is(event, WALLCLOCK_EVENT_NAME)) {
+#ifdef HOST_SYSTEM_IBM_BLUEGENE
+    use_itimer = true;
+    the_event_name = WALLCLOCK_EVENT_NAME;
+    the_metric_name = WALLCLOCK_METRIC_NAME;
+    the_signal_num = ITIMER_SIGNAL;
+#else
+#ifdef ENABLE_CLOCK_CPUTIME
+    use_cputime = true;
+    the_event_name = CPUTIME_EVENT_NAME;
+    the_metric_name = CPUTIME_METRIC_NAME;
+    the_signal_num = REALTIME_SIGNAL;
+#else
+    EEMSG("Event %s (%s) is not available on this system.",
+	  WALLCLOCK_EVENT_NAME, CPUTIME_EVENT_NAME);
+    hpcrun_ssfail_unknown(event);
+#endif
+#endif
+  }
 
   if (hpcrun_ev_is(event, REALTIME_EVENT_NAME)) {
 #ifdef ENABLE_CLOCK_REALTIME
@@ -565,15 +592,11 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\tWall clock time used by the process in microseconds.\n"
-	 "\t\tBased on ITIMER_PROF, so does not count time blocked in\n"
-	 "\t\tthe kernel.  May not be suitable for threaded programs.\n",
-	 ITIMER_EVENT_NAME);
-  printf("\n");
   printf("%s\tReal clock time used by the thread in microseconds.\n"
 	 "\t\tBased on the CLOCK_REALTIME timer with the SIGEV_THREAD_ID\n"
 	 "\t\textension.  Includes time blocked in the kernel, but may\n"
-	 "\t\tnot be available on all systems (eg, Blue Gene).\n",
+	 "\t\tnot be available on all systems (eg, Blue Gene) and may\n"
+	 "\t\tbreak some syscalls that are sensitive to EINTR.\n",
 	 REALTIME_EVENT_NAME);
 #ifndef ENABLE_CLOCK_REALTIME
   printf("\t\tNot available on this system.\n");
@@ -586,6 +609,11 @@ METHOD_FN(display_events)
 #ifndef ENABLE_CLOCK_CPUTIME
   printf("\t\tNot available on this system.\n");
 #endif
+  printf("\n");
+  printf("%s \tCPU clock time used by the thread in microseconds.  Same\n"
+	 "\t\tas %s except on Blue Gene, where it is implemented\n"
+	 "\t\tby ITIMER_PROF.\n",
+	 WALLCLOCK_EVENT_NAME, CPUTIME_EVENT_NAME);
   printf("\n");
   printf("Note: do not use multiple timer events in the same run.\n");
   printf("\n");
@@ -642,8 +670,6 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   }
 
   TMSG(ITIMER_HANDLER,"Itimer sample event");
-
-
 
   uint64_t metric_incr = 1; // default: one time unit
 
