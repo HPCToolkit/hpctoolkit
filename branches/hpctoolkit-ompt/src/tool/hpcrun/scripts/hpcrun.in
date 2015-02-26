@@ -442,7 +442,7 @@ preload_list="${libmonitor_dir}/libmonitor.so ${preload_list}"
 preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
 
 export HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds"
-export LD_LIBRARY_PATH="${hpc_ld_library_path}:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="${INTEL_OMPT_LIBDIR}:${hpc_ld_library_path}:${LD_LIBRARY_PATH}"
 export LD_PRELOAD="${preload_list} ${LD_PRELOAD}"
 
 exec "$@"
