@@ -139,7 +139,6 @@ ompt_parallel_end_internal(
     TD_GET(team_master) = 0;
   }
   hpcrun_safe_exit();
- 
 }
 
 
