@@ -64,15 +64,15 @@
 #include "SpaceTimeDataController.hpp"
 
 
-
 namespace TraceviewerServer
 {
-	extern bool useCompression;
 	extern int mainPortNumber;
 	extern int xmlPortNumber;
+	extern bool useCompression;
+	extern bool stayOpen;
+
 	class Server
 	{
-
 	public:
 		Server();
 		virtual ~Server();
@@ -98,5 +98,6 @@ namespace TraceviewerServer
 		static const int SERVER_PROTOCOL_MAX_VERSION = 0x00010001;
 
 	};
+
 }/* namespace TraceviewerServer */
 #endif /* Server_H_ */

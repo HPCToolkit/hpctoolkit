@@ -70,13 +70,9 @@ using std::string;
 
 #include <include/hpctoolkit-config.h>
 
-#include "Args.hpp"
-
-#include <lib/analysis/Util.hpp>
-
+#include <lib/support/CmdLineParser.hpp>
 #include <lib/support/diagnostics.h>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/StrUtil.hpp>
+#include "Args.hpp"
 
 //*************************** Forward Declarations **************************
 
@@ -89,7 +85,8 @@ using std::string;
 
 //***************************************************************************
 
-static const char* version_info = "hpcserver version 0.9, protocol version 0.9. \n" HPCTOOLKIT_VERSION_STRING;
+static const char* version_info = "hpcserver version 0.9, protocol version 0.9.\n"
+HPCTOOLKIT_VERSION_STRING;
 
 static const char* usage_summary =
 "[options]\n";
@@ -105,50 +102,40 @@ with the data located locally.\n\
 Unlike standard web servers, for example, hpcserver is designed to run only\n\
 while in use, and not perpetually as a daemon on background process. hpcserver\n\
 also runs with the permissions of the user that launched it and allows the\n\
-hpctraceviewer client to specify and access any database that hpcserver can read.\
+hpctraceviewer client to specify and access any database that hpcserver can read.\n\
 \n\
-Options: General\n\
+Options:\n\
   -V, --version        Print version information.\n\
   -h, --help           Print this help.\n\
   -c, --compression    Enables or disables compression (on by default)\n\
-                       Allowed values: on off \n\
+                          Allowed values: on, off \n\
   -p, --port           Sets the main communication port (default is 21590)\n\
-                           Specifying 0 indicates that an open port should be \n\
-                           chosen automatically.\n\
-  -x, --xmlport        Sets the port on which the experiment.xml file will be\n\
-                           transmitted. Specifying 0 or not including this flag\n\
-                           indicates that the port will be auto-negotiated with\n\
-                           the client. Specifying 1 indicates that the xml will\n\
-                           be transferred on the main data port.\n\
-\n\
+                          Specifying 0 indicates that an open port should be \n\
+                          chosen automatically.\n\
+  -x, --xmlport        Sets the port on which the experiment.xml file is\n\
+                          transferred.  By default, the main port is used,\n\
+                          but this can be changed by '-x <port>'.\n\
+  --stay-open yes|no   By default, hpcserver resumes listening on the main port\n\
+                          for another connection after the client exits.  Adding\n\
+                          the option '--stay-open no' causes the server to exit\n\
+                          immediately after the client exits.\n\
 ";
-
-// Possible extensions:
-//-v [<n>], --verbose [<n>]\n
-//                     Verbose: generate progress messages to stderr at\n
-//                     verbosity level <n>. {1}\n
 
 #define CLP CmdLineParser
 #define CLP_SEPARATOR "!!"
 
 static const int DEFAULT_PORT = 21590;
 
-
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
-  // General
-/*  { 'v', "verbose",     CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
-     CLP::isOptArg_long },*/
-  { 'V', "version",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  { 'h', "help",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  {  'c' , "compression",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     CLP::isOptArg_long },
-  {  'p' , "port",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     CLP::isOptArg_long },
-  {  'x' , "xmlport",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     CLP::isOptArg_long },
+
+  { 'V', "version",  CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
+  { 'h', "help",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
+  { 'c', "compression",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, CLP::isOptArg_long },
+  { 'p', "port",     CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, CLP::isOptArg_long },
+  { 'x', "xmlport",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, CLP::isOptArg_long },
+  {  0,  "stay-open",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, NULL },
+
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
 
@@ -175,9 +162,10 @@ Args::Args(int argc, const char* const argv[])
 void
 Args::Ctor()
 {
+  mainPort = DEFAULT_PORT;  // 21590
+  xmlPort = 1;  // use main port
   compression = true;
-  mainPort = DEFAULT_PORT;//21590
-  xmlPort = 0;
+  stayOpen = true;
 }
 
 
@@ -237,38 +225,38 @@ Args::parse(int argc, const char* const argv[])
     
     // Special options that should be checked first
     if (parser.isOpt("help")) {
-      printUsage(std::cerr);
-      exit(1);
+      printUsage(std::cout);
+      exit(0);
     }
+
     if (parser.isOpt("version")) {
-      printVersion(std::cerr);
-      exit(1);
+      printVersion(std::cout);
+      exit(0);
     }
-    /*if (parser.isOpt("verbose")) {
-      int verb = 1;
-      if (parser.isOptArg("verbose")) {
-	const string& arg = parser.getOptArg("verbose");
-	verb = (int)CmdLineParser::toLong(arg);
-      }
-      Diagnostics_SetDiagnosticFilterLevel(verb);
-    }*/
 
     // Check for other options: Communication options
     if (parser.isOpt("compression")) {
       const string& arg = parser.getOptArg("compression");
       compression = CmdLineParser::parseArg_bool(arg, "--compression option");
     }
+
     if (parser.isOpt("port")) {
       const string& arg = parser.getOptArg("port");
       mainPort = (int) CmdLineParser::toLong(arg);
       if (mainPort < 1024 && mainPort != 0)
          	  ARG_ERROR("Ports must be greater than 1024.")
     }
+
     if (parser.isOpt("xmlport")) {
       const string& arg = parser.getOptArg("xmlport");
       xmlPort = (int) CmdLineParser::toLong(arg);
       if (xmlPort < 1024 && xmlPort > 1)
     	   ARG_ERROR("Ports must be greater than 1024.")
+    }
+
+    if (parser.isOpt("stay-open")) {
+      const string& arg = parser.getOptArg("stay-open");
+      stayOpen = CmdLineParser::parseArg_bool(arg, "--stay-open option");
     }
   }
   catch (const CmdLineParser::ParseError& x) {
@@ -279,65 +267,3 @@ Args::parse(int argc, const char* const argv[])
     exit(1);
   }
 }
-
-
-void
-Args::dump(std::ostream& os) const
-{
-  os << "Args.cmd= " << getCmd() << endl;
-}
-
-
-void
-Args::ddump() const
-{
-  dump(std::cerr);
-}
-
-
-//***************************************************************************
-
-BAnal::Struct::NormTy
-Args::parseArg_norm(const string& value, const char* err_note)
-{
-  if (value == "all") {
-    return BAnal::Struct::NormTy_All;
-  }
-  else if (value == "safe") {
-    return BAnal::Struct::NormTy_Safe;
-  }
-  else if (value == "none") {
-    return BAnal::Struct::NormTy_None;
-  }
-  else {
-    ARG_ERROR(err_note << ": Unexpected value received: " << value);
-  }
-}
-
-//***************************************************************************
-
-#if 0
-void
-Args::setHPCHome()
-{
-  char * home = getenv(HPCTOOLKIT.c_str());
-  if (home == NULL) {
-    cerr << "Error: Please set your " << HPCTOOLKIT << " environment variable."
-	 << endl;
-    exit(1);
-  }
-   
-  // chop of trailing slashes
-  int len = strlen(home);
-  if (home[len-1] == '/') home[--len] = 0;
-   
-  DIR *fp = opendir(home);
-  if (fp == NULL) {
-    cerr << "Error: " << home << " is not a directory" << endl;
-    exit(1);
-  }
-  closedir(fp);
-  hpcHome = home;
-}
-#endif
-

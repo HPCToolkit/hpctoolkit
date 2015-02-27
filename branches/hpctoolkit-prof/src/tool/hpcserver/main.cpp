@@ -71,9 +71,11 @@ int main(int argc, char *argv[])
 		return 0;
 
 	Args args(argc, argv);
-	TraceviewerServer::useCompression = args.compression;
-	TraceviewerServer::xmlPortNumber = args.xmlPort;
+
 	TraceviewerServer::mainPortNumber = args.mainPort;
+	TraceviewerServer::xmlPortNumber = args.xmlPort;
+	TraceviewerServer::useCompression = args.compression;
+	TraceviewerServer::stayOpen = args.stayOpen;
 
 	try
 	{
@@ -83,7 +85,6 @@ int main(int argc, char *argv[])
 	{//We had some sort of error. If it hasn't been handled by this point, we just close.
 		DEBUGCOUT(1) << "Error on closing was " << hex << e << endl;
 	}
-
 
 	TraceviewerServer::Communication::closeServer();
 

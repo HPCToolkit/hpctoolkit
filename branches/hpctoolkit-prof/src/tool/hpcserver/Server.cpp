@@ -86,9 +86,10 @@ using namespace std;
 
 namespace TraceviewerServer
 {
-	bool useCompression = true;
 	int mainPortNumber = DEFAULT_PORT;
 	int xmlPortNumber = 0;
+	bool useCompression = true;
+	bool stayOpen = true;
 
 	Server::Server()
 	{
@@ -98,7 +99,7 @@ namespace TraceviewerServer
 		mainPortNumber = socketptr->getPort();
 
 		// allow sequence of connections
-		for (;;) {
+		do {
 		    	cout << "\nListening for connection on port "
 			     << mainPortNumber << " ..." << endl;
 
@@ -112,6 +113,7 @@ namespace TraceviewerServer
 			}
 			socketptr->closeSocket();
 		}
+		while (stayOpen);
 	}
 
 	Server::~Server()

@@ -91,6 +91,8 @@ namespace TraceviewerServer
 	DataSocketStream::DataSocketStream(int _Port, bool Accept = true)
 	{
 		port = _Port;
+		socketDesc = -1;
+		file = NULL;
 
 		// create socket
 		unopenedSocketFD = socket(PF_INET, SOCK_STREAM, 0);
@@ -123,7 +125,7 @@ namespace TraceviewerServer
 		}
 
 		// listen
-		err = listen(unopenedSocketFD, 5);
+		err = listen(unopenedSocketFD, 1);
 		if (err != 0) {
 			cerr << "unable to listen on port " << port
 			     << ": " << strerror(errno) << endl;
@@ -178,16 +180,17 @@ namespace TraceviewerServer
     	// close the sock fd for this connection but not the listen fd.
     	void DataSocketStream::closeSocket()
 	{
-		fclose(file);
-		shutdown(socketDesc, SHUT_RDWR);
-		close(socketDesc);
+		if (socketDesc >= 0) {
+			fclose(file);
+			shutdown(socketDesc, SHUT_RDWR);
+			close(socketDesc);
+		}
+		socketDesc = -1;
 	}
 
 	DataSocketStream::~DataSocketStream()
 	{
-		fclose(file);
-		shutdown(socketDesc, SHUT_RDWR);
-		close(socketDesc);
+		closeSocket();
 		close(unopenedSocketFD);
 	}
 
@@ -310,17 +313,6 @@ namespace TraceviewerServer
 		u64.dval = val;
 		u64.ival = host_to_be_64(u64.ival);
 		fwrite(u64.buf, 8, 1, file);
-	}
-
-	void DataSocketStream::checkForErrors(int e)
-	{
-		if (e == 0)
-		{
-			cout << "Connection closed" << endl; // EOF
-			throw ERROR_STREAM_CLOSED;
-		}
-		else if (e == -1)
-			throw e; // Some other error.
 	}
 
 	SocketFD DataSocketStream::getDescriptor()

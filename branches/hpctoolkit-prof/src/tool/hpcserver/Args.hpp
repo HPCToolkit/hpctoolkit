@@ -68,9 +68,6 @@
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
-
-#include <lib/banal/Struct.hpp>
-
 #include <lib/support/CmdLineParser.hpp>
 
 //*************************** Forward Declarations **************************
@@ -101,29 +98,19 @@ public:
   void
   printError(std::ostream& os, const std::string& msg) const;
 
-  // Dump
-  void
-  dump(std::ostream& os = std::cerr) const;
-
-  void
-  ddump() const;
-
 public:
   // Parsed Data: Command
   const std::string& getCmd() const;
 
   // Parsed Data: optional arguments
   int mainPort;       // default: 21590
-  int xmlPort;        // default: 0
+  int xmlPort;        // default: 1
   bool compression;   // default: true
-
+  bool stayOpen;      // default: true
 
 private:
   void
   Ctor();
-
-  BAnal::Struct::NormTy
-  parseArg_norm(const std::string& value, const char* err_note);
 
 private:
   static CmdLineParser::OptArgDesc optArgs[];

@@ -109,7 +109,6 @@ namespace TraceviewerServer
 		int port;
 		SocketFD socketDesc;
 		SocketFD unopenedSocketFD;
-		void checkForErrors(int);
 		FILE* file;
 	};
 
