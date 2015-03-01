@@ -62,6 +62,8 @@
 #include <sys/types.h>
 #include <unistd.h> // for getpid
 
+#include <libunwind-x86.h> // for showbacktrace
+
 
 //***************************************************************************
 // libmonitor includes
@@ -151,6 +153,9 @@ static step_state
 unw_step_std(hpcrun_unw_cursor_t* cursor);
 
 static step_state
+unw_step_libunwind(hpcrun_unw_cursor_t* cursor);
+
+static step_state
 t1_dbg_unw_step(hpcrun_unw_cursor_t* cursor);
 
 static step_state (*dbg_unw_step)(hpcrun_unw_cursor_t* cursor) = t1_dbg_unw_step;
@@ -164,6 +169,7 @@ hpcrun_unw_init(void)
   hpcrun_interval_tree_init();
   hpcrun_set_real_siglongjmp();
 }
+
 
 //
 // register codes (only 1 at the moment)
@@ -219,6 +225,27 @@ hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, unw_word_t* reg_value)
 {
   return hpcrun_unw_get_unnorm_reg(c, UNW_REG_IP, reg_value);
 }
+
+
+int 
+hpcrun_unw_set_cursor(hpcrun_unw_cursor_t* cursor, void **sp, void **bp, void *ip)
+{
+  cursor->pc_unnorm = ip;
+  cursor->bp 	    = bp;
+  cursor->sp 	    = sp;
+  cursor->ra_loc    = NULL;
+
+  TMSG(UNW, "unw_set_cursor: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
+       cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
+
+  cursor->flags = 0; // trolling_used
+  cursor->intvl = hpcrun_addr_to_interval(cursor->pc_unnorm,
+					  cursor->pc_unnorm, &cursor->pc_norm);
+  cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, NULL);
+
+  return (cursor->intvl != NULL);
+}
+
 
 void 
 hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
@@ -333,8 +360,23 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
     // spin wait for developer to attach a debugger and clear the flag 
     while(DEBUG_WAIT_BEFORE_TROLLING);  
   }
+
+  {
+    hpcrun_unw_cursor_t libunwind_cursor = *cursor;
+    unw_res = unw_step_libunwind(&libunwind_cursor);
+  
+    if (unw_res == STEP_STOP_WEAK) unw_res = STEP_STOP; 
+
+    if (unw_res != STEP_ERROR) {
+      *cursor = libunwind_cursor;
+      return unw_res;
+    }
+  }
+
+  show_backtrace();
   
   update_cursor_with_troll(cursor, 1);
+
   return STEP_TROLL;
 }
 
@@ -586,6 +628,36 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
     return STEP_ERROR;
   }
   EMSG("FALL Through BP unwind: shouldn't happen");
+  return STEP_ERROR;
+}
+
+
+static step_state
+unw_step_libunwind(hpcrun_unw_cursor_t* cursor)
+{
+  void **sp = cursor->sp;
+  void **bp = cursor->bp;
+  void *ip = cursor->pc_unnorm;
+
+  int libuw_success = libunwind_step(&sp, &bp, &ip);
+  if (libuw_success) {
+    // libunwind was successful; update cursor based on its results 
+    int success = hpcrun_unw_set_cursor(cursor, sp, bp, ip);
+
+    if (success) {
+      return STEP_OK;
+    } else {
+      void *next_sp =  cursor->sp;
+      void *next_pc = cursor->pc_unnorm;
+      if (next_sp >= monitor_stack_bottom()) {
+        TMSG(UNW,"  step_libunwind: STEP_STOP_WEAK, " 
+             "next_sp >= monitor_stack_bottom, next_sp = %p", next_sp);
+        return STEP_STOP_WEAK;
+      }
+      TMSG(UNW,"  step_libunwind: STEP_ERROR, cannot build interval " 
+           "for next_pc(%p)", next_pc);
+    }
+  }
   return STEP_ERROR;
 }
 
