@@ -687,6 +687,16 @@ is_sub_immed_sp(char* ins, char** next)
 //
 
 static bool
+is_sub_immed_prologue(char* ins)
+{
+  char* next = NULL;
+  if (is_sub_immed_sp(ins, &next)) {
+    return true;
+  }
+  return false;
+}
+
+static bool
 is_2step_push_bp(char* ins)
 {
   char* next = NULL;
@@ -701,6 +711,7 @@ is_push_bp_seq(char* ins)
 {
   return is_push_bp(ins) ||
     contains_bp_save_window(ins, 1) ||
+    is_sub_immed_prologue(ins) ||
     is_2step_push_bp(ins);
 }
 
