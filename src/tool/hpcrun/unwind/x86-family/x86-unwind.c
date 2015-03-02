@@ -126,6 +126,7 @@ static int DEBUG_NO_LONGJMP = 0;
 //****************************************************************************
 
 #define MYDBG 0
+#define USE_LIBUNWIND 0
 
 
 static void 
@@ -152,8 +153,10 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor);
 static step_state
 unw_step_std(hpcrun_unw_cursor_t* cursor);
 
+#if USE_LIBUNWIND
 static step_state
 unw_step_libunwind(hpcrun_unw_cursor_t* cursor);
+#endif
 
 static step_state
 t1_dbg_unw_step(hpcrun_unw_cursor_t* cursor);
@@ -227,6 +230,7 @@ hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, unw_word_t* reg_value)
 }
 
 
+#if USE_LIBUNWIND
 int 
 hpcrun_unw_set_cursor(hpcrun_unw_cursor_t* cursor, void **sp, void **bp, void *ip)
 {
@@ -245,6 +249,7 @@ hpcrun_unw_set_cursor(hpcrun_unw_cursor_t* cursor, void **sp, void **bp, void *i
 
   return (cursor->intvl != NULL);
 }
+#endif
 
 
 void 
@@ -361,6 +366,7 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
     while(DEBUG_WAIT_BEFORE_TROLLING);  
   }
 
+#if USE_LIBUNWIND
   {
     hpcrun_unw_cursor_t libunwind_cursor = *cursor;
     unw_res = unw_step_libunwind(&libunwind_cursor);
@@ -374,6 +380,7 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
   }
 
   show_backtrace();
+#endif
   
   update_cursor_with_troll(cursor, 1);
 
@@ -632,6 +639,7 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
 }
 
 
+#if USE_LIBUNWIND
 static step_state
 unw_step_libunwind(hpcrun_unw_cursor_t* cursor)
 {
@@ -660,6 +668,7 @@ unw_step_libunwind(hpcrun_unw_cursor_t* cursor)
   }
   return STEP_ERROR;
 }
+#endif
 
 
 static step_state
