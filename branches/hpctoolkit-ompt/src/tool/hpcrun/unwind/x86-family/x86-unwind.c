@@ -62,7 +62,7 @@
 #include <sys/types.h>
 #include <unistd.h> // for getpid
 
-#include <libunwind-x86.h> // for showbacktrace
+#define USE_LIBUNWIND 0
 
 
 //***************************************************************************
@@ -97,6 +97,10 @@
 #include "x86-unwind-interval.h"
 #include "x86-validate-retn-addr.h"
 
+#if USE_LIBUNWIND
+#include "x86-libunwind.h" 
+#endif
+
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
 #include "main.h"
@@ -126,7 +130,6 @@ static int DEBUG_NO_LONGJMP = 0;
 //****************************************************************************
 
 #define MYDBG 0
-#define USE_LIBUNWIND 0
 
 
 static void 
