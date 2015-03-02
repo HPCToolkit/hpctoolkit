@@ -62,17 +62,17 @@
 #include <stdio.h>//fread, fwrite, etc.
 #include <cstring> //For memset
 #include <iostream>
-#include <string>//for string
-#include <cstring>//for strerror
+#include <string> //for string
+#include <sstream>
 
-#include <sys/socket.h>
-#include <unistd.h> // close socket
-#include <arpa/inet.h> //htons
 #include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h> //htons
 #include <netinet/in.h>
 #include <errno.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h> // close socket
 
 #include "DataSocketStream.hpp"
 #include "ByteUtilities.hpp"
@@ -92,6 +92,7 @@ namespace TraceviewerServer
 	{
 		port = _Port;
 		socketDesc = -1;
+		clientIP = "0.0.0.0";
 		file = NULL;
 
 		// create socket
@@ -145,12 +146,23 @@ namespace TraceviewerServer
 		sockaddr_in client;
 		unsigned int len = sizeof(client);
 
+		clientIP = "0.0.0.0";
+		file = NULL;
+
+		memset(&client, 0, len);
 		socketDesc = accept(unopenedSocketFD, (sockaddr*) &client, &len);
 		if (socketDesc < 0) {
 			cerr << "error trying to accept connection: "
 			     << strerror(errno) << endl;
 			return false;
 		}
+
+		// client's IP address to display
+		unsigned char *addr = (unsigned char *) &client.sin_addr;
+		ostringstream oss;
+		oss << (int) addr[0] << "." << (int) addr[1] << "."
+		    << (int) addr[2] << "." << (int) addr[3];
+		clientIP = oss.str();
 
 		file = fdopen(socketDesc, "r+"); //read + write
 		return true;
@@ -176,7 +188,12 @@ namespace TraceviewerServer
 			return port;
 		}
 	}
-	
+
+	string DataSocketStream::getClientIP()
+	{
+	    	return clientIP;
+	}
+
     	// close the sock fd for this connection but not the listen fd.
     	void DataSocketStream::closeSocket()
 	{

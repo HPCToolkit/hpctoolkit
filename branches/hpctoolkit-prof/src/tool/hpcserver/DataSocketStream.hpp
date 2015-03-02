@@ -85,6 +85,7 @@ namespace TraceviewerServer
 		void closeSocket();
 
 		int getPort();
+		string getClientIP();
 
 		virtual ~DataSocketStream();
 
@@ -109,6 +110,7 @@ namespace TraceviewerServer
 		int port;
 		SocketFD socketDesc;
 		SocketFD unopenedSocketFD;
+		string clientIP;
 		FILE* file;
 	};
 

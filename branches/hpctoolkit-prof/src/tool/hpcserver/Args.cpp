@@ -119,6 +119,9 @@ Options:\n\
                           for another connection after the client exits.  Adding\n\
                           the option '--stay-open no' causes the server to exit\n\
                           immediately after the client exits.\n\
+  --timeout num        The time in minutes the server will wait to accept an\n\
+                          incoming connection before timing out (default 15 min).\n\
+                          A timeout of 0 means wait forever.\n\
 ";
 
 #define CLP CmdLineParser
@@ -135,6 +138,7 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   { 'p', "port",     CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, CLP::isOptArg_long },
   { 'x', "xmlport",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, CLP::isOptArg_long },
   {  0,  "stay-open",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, NULL },
+  {  0,  "timeout",    CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, CLP::isOptArg_long },
 
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
@@ -166,6 +170,7 @@ Args::Ctor()
   xmlPort = 1;  // use main port
   compression = true;
   stayOpen = true;
+  timeout = 15;
 }
 
 
@@ -257,6 +262,11 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("stay-open")) {
       const string& arg = parser.getOptArg("stay-open");
       stayOpen = CmdLineParser::parseArg_bool(arg, "--stay-open option");
+    }
+
+    if (parser.isOpt("timeout")) {
+      const string& arg = parser.getOptArg("timeout");
+      timeout = (int) CmdLineParser::toLong(arg);
     }
   }
   catch (const CmdLineParser::ParseError& x) {

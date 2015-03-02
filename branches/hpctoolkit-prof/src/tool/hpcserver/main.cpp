@@ -76,6 +76,7 @@ int main(int argc, char *argv[])
 	TraceviewerServer::xmlPortNumber = args.xmlPort;
 	TraceviewerServer::useCompression = args.compression;
 	TraceviewerServer::stayOpen = args.stayOpen;
+	TraceviewerServer::timeout = args.timeout;
 
 	try
 	{

@@ -58,6 +58,11 @@
 //
 //***************************************************************************
 
+#include <sys/time.h>
+#include <setjmp.h>
+#include <signal.h>
+#include <string.h>
+
 #include "Server.hpp"
 #include "DataSocketStream.hpp"
 #include "DBOpener.hpp"
@@ -82,12 +87,25 @@
 #include <algorithm> //for min of int64_t
 #include <string>
 
+static sigjmp_buf alarm_jbuf;
+static int jbuf_active = 0;
+
+// catch sig alarm and return to server
+static void
+sigalarm_handler(int sig)
+{
+	if (jbuf_active) {
+		siglongjmp(alarm_jbuf, 1);
+	}
+}
+
 using namespace std;
 
 namespace TraceviewerServer
 {
 	int mainPortNumber = DEFAULT_PORT;
 	int xmlPortNumber = 0;
+	int timeout = 15;
 	bool useCompression = true;
 	bool stayOpen = true;
 
@@ -97,14 +115,58 @@ namespace TraceviewerServer
 		DataSocketStream* socketptr = &socket;
 
 		mainPortNumber = socketptr->getPort();
+		controller = NULL;
+
+		// setup sig alarm handler for timeout
+		struct itimerval alarm_start, alarm_stop;
+		struct sigaction act;
+
+		memset(&alarm_start, 0, sizeof(alarm_start));
+		memset(&alarm_stop, 0, sizeof(alarm_stop));
+		alarm_start.it_value.tv_sec = 60 * timeout;
+
+		memset(&act, 0, sizeof(act));
+		act.sa_handler = sigalarm_handler;
+		act.sa_flags = 0;
+		sigemptyset(&act.sa_mask);
+		if (timeout > 0) {
+			sigaction(SIGALRM, &act, NULL);
+		}
 
 		// allow sequence of connections
 		do {
 		    	cout << "\nListening for connection on port "
 			     << mainPortNumber << " ..." << endl;
 
+			// jump buf for return from timeout
+			jbuf_active = 0;
+			if (timeout > 0) {
+				if (sigsetjmp(alarm_jbuf, 1) == 0) {
+					// normal return
+					jbuf_active = 1;
+				} else {
+					// return from timeout
+					jbuf_active = 0;
+					cout << "Timeout waiting for connection" << endl;
+					setitimer(ITIMER_REAL, &alarm_stop, NULL);
+					break;
+				}
+			}
+
+			// wait on accept() with timeout
+			if (timeout > 0) {
+				setitimer(ITIMER_REAL, &alarm_start, NULL);
+			}
 			socketptr->acceptSocket();
-			cout << "Received connection" << endl;
+
+			// turn off alarm
+			jbuf_active = 0;
+			if (timeout > 0) {
+				setitimer(ITIMER_REAL, &alarm_stop, NULL);
+			}
+
+			cout << "Received connection from "
+			     << socketptr->getClientIP() << endl;
 
 			try {
 			    	startConnection(socketptr);
@@ -118,7 +180,9 @@ namespace TraceviewerServer
 
 	Server::~Server()
 	{
-		delete (controller);
+		if (controller != NULL) {
+			delete (controller);
+		}
 	}
 
     	void Server::startConnection(DataSocketStream* socketptr)

@@ -105,6 +105,7 @@ public:
   // Parsed Data: optional arguments
   int mainPort;       // default: 21590
   int xmlPort;        // default: 1
+  int timeout;        // default: 15 min
   bool compression;   // default: true
   bool stayOpen;      // default: true
 
