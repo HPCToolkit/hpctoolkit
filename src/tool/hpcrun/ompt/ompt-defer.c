@@ -98,10 +98,17 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
     // delete cct from its original parent before merging
     hpcrun_cct_delete_self(cct);
     TMSG(DEFER_CTXT, "omp_resolve: delete from the tbd region 0x%lx", hpcrun_cct_addr(cct)->ip_norm.lm_ip);
+
     partial_region_id = is_partial_resolve(prefix);
+
     if (partial_region_id == 0) {
+#if 1
+      cct_node_t *root = region_root(prefix);
+      prefix = hpcrun_cct_insert_path_return_leaf(root,  prefix);
+#else
       prefix = hpcrun_cct_insert_path_return_leaf
 	((td->core_profile_trace_data.epoch->csdata).tree_root, prefix);
+#endif
     }
     else {
       prefix = hpcrun_cct_insert_path_return_leaf
@@ -153,8 +160,9 @@ is_partial_resolve(cct_node_t *prefix)
   //go up the path to check whether there is a node with UNRESOLVED tag
   cct_node_t *node = prefix;
   while (node) {
-    if (hpcrun_cct_addr(node)->ip_norm.lm_id == (uint16_t)UNRESOLVED)
-      return (uint64_t)(hpcrun_cct_addr(node)->ip_norm.lm_ip);
+    cct_addr_t *addr = hpcrun_cct_addr(node);
+    if (IS_UNRESOLVED_ROOT(addr))
+      return (uint64_t)(addr->ip_norm.lm_ip);
     node = hpcrun_cct_parent(node);
   }
   return 0;
