@@ -22,4 +22,6 @@ void init_region_id();
 
 cct_node_t *hpcrun_region_lookup(uint64_t id);
 
+#define IS_UNRESOLVED_ROOT(addr) (addr->ip_norm.lm_id == (uint16_t)UNRESOLVED)
+
 #endif

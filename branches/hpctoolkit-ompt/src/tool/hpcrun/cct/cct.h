@@ -100,9 +100,15 @@
 #define ADDR(L)      (cct_addr_t) NON_LUSH_ADDR_INI(L)
 #define ADDR2_I(id, ip) NON_LUSH_ADDR_INI(id, ip)
 #define ADDR2(id, ip) (cct_addr_t) ADDR2_I(id, ip)
+
 //***************************************************************************
 // Calling context tree node (abstract data type)
 //***************************************************************************
+
+
+#define IS_PARTIAL_ROOT(addr) \
+	(addr->ip_norm.lm_id == HPCRUN_FMT_LMId_NULL) && \
+	(addr->ip_norm.lm_ip == HPCRUN_FMT_LMIp_Flag1)
 
 typedef struct cct_node_t cct_node_t;
 //

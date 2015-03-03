@@ -326,8 +326,29 @@ memoized_context_set(thread_data_t* td, uint64_t region_id, cct_node_t *result)
     td->outer_region_context = result;
 }
 
+
+cct_node_t *
+region_root(cct_node_t *_node)
+{
+  cct_node_t *root;
+  cct_node_t *node = _node;
+  while (node) {
+    cct_addr_t *addr = hpcrun_cct_addr(node);
+    if (IS_UNRESOLVED_ROOT(addr)) {
+      root = hpcrun_get_thread_epoch()->csdata.unresolved_root; 
+      break;
+    } else if (IS_PARTIAL_ROOT(addr)) {
+      root = hpcrun_get_thread_epoch()->csdata.partial_unw_root; 
+      break;
+    }
+    node = hpcrun_cct_parent(node);
+  }
+  if (node == NULL) root = hpcrun_get_thread_epoch()->csdata.tree_root; 
+  return root;
+}
+
 static cct_node_t *
-lookup_region_id(cct_node_t **root, uint64_t region_id)
+lookup_region_id(uint64_t region_id)
 {
   thread_data_t* td = hpcrun_get_thread_data();
   cct_node_t *result = NULL;
@@ -338,7 +359,8 @@ lookup_region_id(cct_node_t **root, uint64_t region_id)
   
     cct_node_t *t0_path = hpcrun_region_lookup(region_id);
     if (t0_path) {
-      result = hpcrun_cct_insert_path_return_leaf(*root, t0_path);
+      cct_node_t *rroot = region_root(t0_path);
+      result = hpcrun_cct_insert_path_return_leaf(rroot, t0_path);
       memoized_context_set(td, region_id, result);
     }
   }
@@ -434,11 +456,15 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
   //        relative to one root or another.
   if (omp_task_context) {
     cct_node_t *root;
+#if 1
+    root = region_root(omp_task_context);
+#else
     if((is_partial_resolve((cct_node_t *)omp_task_context) > 0)) {
       root = hpcrun_get_thread_epoch()->csdata.unresolved_root; 
     } else {
       root = hpcrun_get_thread_epoch()->csdata.tree_root; 
     }
+#endif
     return hpcrun_cct_insert_path_return_leaf(root, omp_task_context);
   }
 
@@ -450,7 +476,7 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
     //        without help of get_idle_frame
     if (region_id > 0 && bt->bottom_frame_elided) {
 
-      cct_node_t *prefix = lookup_region_id(&cct->tree_root, region_id);
+      cct_node_t *prefix = lookup_region_id(region_id);
       if (prefix) {
 	// full context is available now. use it.
 	cct_cursor = prefix;
