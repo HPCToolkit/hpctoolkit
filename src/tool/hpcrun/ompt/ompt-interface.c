@@ -185,7 +185,15 @@ ompt_mutex_blame_shift_register(void)
   omp_mutex_blame_info.get_blame_target = ompt_mutex_blame_target;
 
   omp_mutex_blame_info.blame_table = blame_map_new();
+  omp_mutex_blame_info.levels_to_skip = 1;
 
+  blame_shift_register(&mutex_bs_entry);
+}
+
+
+static void
+ompt_register_mutex_metrics(void)
+{
   int wait_id = omp_mutex_blame_info.wait_metric_id = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(wait_id, "OMP_MUTEX_WAIT", 
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
@@ -193,12 +201,20 @@ ompt_mutex_blame_shift_register(void)
   int blame_id = omp_mutex_blame_info.blame_metric_id = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(blame_id, "OMP_MUTEX_BLAME",
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
-
-  omp_mutex_blame_info.levels_to_skip = 1;
-
-  blame_shift_register(&mutex_bs_entry);
 }
 
+
+static void
+ompt_register_idle_metrics(void)
+{
+  int idle_metric_id = omp_idle_blame_info.idle_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(idle_metric_id, "OMP_IDLE",
+				    MetricFlags_ValFmt_Real, 1, metric_property_none);
+
+  int work_metric_id = omp_idle_blame_info.work_metric_id = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(work_metric_id, "OMP_WORK",
+				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+}
 
 static void
 ompt_idle_blame_shift_register(void)
@@ -210,14 +226,6 @@ ompt_idle_blame_shift_register(void)
   idle_bs_entry.arg = &omp_idle_blame_info;
 
   omp_idle_blame_info.get_idle_count_ptr = ompt_get_idle_count_ptr;
-
-  int idle_metric_id = omp_idle_blame_info.idle_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(idle_metric_id, "OMP_IDLE",
-				    MetricFlags_ValFmt_Real, 1, metric_property_none);
-
-  int work_metric_id = omp_idle_blame_info.work_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(work_metric_id, "OMP_WORK",
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
 
   blame_shift_register(&idle_bs_entry);
 }
@@ -634,10 +642,12 @@ hpcrun_ompt_outermost_parallel_id()
   return outer_id;
 }
 
+
 void 
 ompt_mutex_blame_shift_request()
 {
   ompt_mutex_blame_requested = 1;
+  ompt_register_mutex_metrics();
 }
 
 
@@ -645,4 +655,5 @@ void
 ompt_idle_blame_shift_request()
 {
   ompt_idle_blame_requested = 1;
+  ompt_register_idle_metrics();
 }
