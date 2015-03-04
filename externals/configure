@@ -599,6 +599,7 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 with_mpi
+zlib_prefix
 xerces_platform
 xerces_prefix
 use_xed2_mic
@@ -726,6 +727,7 @@ enable_symtab61
 enable_mic
 with_xed2
 with_xerces
+with_zlib
 with_mpi
 '
       ac_precious_vars='build_alias
@@ -1389,6 +1391,7 @@ Optional Packages:
   --with-symtabAPI=PATH   path to symtabAPI install directory (default build)
   --with-xed2=PATH        path to xed2 install directory (default build)
   --with-xerces=PATH      path to xerces/c install directory (default build)
+  --with-zlib=PATH        path to zlib install directory (default no)
   --with-mpi=PATH         pass the MPI path to old monitor, not used by
                           libmonitor (default no)
 
@@ -4687,7 +4690,7 @@ esac
 # copy other subdirs.
 
 packages='binutils boost libdwarf libelf libmonitor libunwind libxml2
-old-monitor open-analysis oprofile symtabAPI xed2 xerces'
+old-monitor open-analysis oprofile symtabAPI xed2 xerces zlib'
 
 if test "x$srcdir" != x.
 then
@@ -4757,6 +4760,7 @@ oprofile_local_prefix="${prefix}/oprofile"
 symtabAPI_local_prefix="${prefix}/symtabAPI"
 xed2_local_prefix="${prefix}/xed2"
 xerces_local_prefix="${prefix}/xerces"
+zlib_local_prefix="${prefix}/zlib"
 
 #------------------------------------------------------------
 # Default packages: --enable-back-end
@@ -4783,12 +4787,13 @@ libelf_default=build
 libmonitor_default=build
 libunwind_default=build
 libxml2_default=build
-old_monitor_default=build
+old_monitor_default=no
 open_analysis_default=build
 oprofile_default=no
 symtabAPI_default=build
 xed2_default=build
 xerces_default=build
+zlib_default=no
 
 if test "$enable_back_end" != no ; then
     binutils_default=no
@@ -5652,6 +5657,56 @@ $as_echo "$xerces_avail" >&6; }
 
 xerces_platform=linux
 
+
+
+
+#------------------------------------------------------------
+# Zlib: --with-zlib=PATH
+#------------------------------------------------------------
+
+
+# Check whether --with-zlib was given.
+if test "${with_zlib+set}" = set; then :
+  withval=$with_zlib;
+else
+  with_zlib="$zlib_default"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking zlib" >&5
+$as_echo_n "checking zlib... " >&6; }
+
+zlib_avail=no
+zlib_prefix=no
+cookie="zlib/${nobuild_cookie}"
+rm -f "$cookie"
+
+case "$with_zlib" in
+    build | yes )
+	zlib_avail=build
+	zlib_prefix="$zlib_local_prefix"
+	;;
+    /* )
+	if test -f "${with_zlib}/include/zlib.h"  \
+	    && test -f "${with_zlib}/lib/libz.a"
+	then
+	    zlib_avail="$with_zlib"
+	    zlib_prefix="$with_zlib"
+	else
+	    as_fn_error $? "invalid zlib directory: $with_zlib" "$LINENO" 5
+	fi
+	echo "installed in: $with_zlib" > "$cookie"
+	;;
+    no )
+	echo "not available" > "$cookie"
+	;;
+    * )
+	as_fn_error $? "zlib directory must be absolute path: $with_zlib" "$LINENO" 5
+	;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $zlib_avail" >&5
+$as_echo "$zlib_avail" >&6; }
 
 
 
@@ -6923,6 +6978,9 @@ $as_echo "$as_me: symtabAPI: $symtabAPI_avail" >&6;}
 $as_echo "$as_me: xed2: $xed2_avail" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: xerces: $xerces_avail" >&5
 $as_echo "$as_me: xerces: $xerces_avail" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: zlib: $zlib_avail" >&5
+$as_echo "$as_me: zlib: $zlib_avail" >&6;}
+
 
 if test "$warn_non_gcc" = yes ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5

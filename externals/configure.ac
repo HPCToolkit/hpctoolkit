@@ -603,7 +603,7 @@ AC_SUBST([libmonitor_use_bgq_backend])
 # copy other subdirs.
 
 packages='binutils boost libdwarf libelf libmonitor libunwind libxml2
-old-monitor open-analysis oprofile symtabAPI xed2 xerces'
+old-monitor open-analysis oprofile symtabAPI xed2 xerces zlib'
 
 if test "x$srcdir" != x.
 then
@@ -671,6 +671,7 @@ oprofile_local_prefix="${prefix}/oprofile"
 symtabAPI_local_prefix="${prefix}/symtabAPI"
 xed2_local_prefix="${prefix}/xed2"
 xerces_local_prefix="${prefix}/xerces"
+zlib_local_prefix="${prefix}/zlib"
 
 #------------------------------------------------------------
 # Default packages: --enable-back-end
@@ -696,12 +697,13 @@ libelf_default=build
 libmonitor_default=build
 libunwind_default=build
 libxml2_default=build
-old_monitor_default=build
+old_monitor_default=no
 open_analysis_default=build
 oprofile_default=no
 symtabAPI_default=build
 xed2_default=build
 xerces_default=build
+zlib_default=no
 
 if test "$enable_back_end" != no ; then
     binutils_default=no
@@ -1491,6 +1493,51 @@ AC_SUBST([xerces_prefix])
 AC_SUBST([xerces_platform])
 
 #------------------------------------------------------------
+# Zlib: --with-zlib=PATH
+#------------------------------------------------------------
+
+AC_ARG_WITH([zlib],
+    [AS_HELP_STRING([--with-zlib=PATH],
+	[path to zlib install directory (default no)])],
+    [],
+    [with_zlib="$zlib_default"])
+
+AC_MSG_CHECKING([zlib])
+
+zlib_avail=no
+zlib_prefix=no
+cookie="zlib/${nobuild_cookie}"
+rm -f "$cookie"
+
+case "$with_zlib" in
+    build | yes )
+	zlib_avail=build
+	zlib_prefix="$zlib_local_prefix"
+	;;
+    /* )
+	if test -f "${with_zlib}/include/zlib.h"  \
+	    && test -f "${with_zlib}/lib/libz.a"
+	then
+	    zlib_avail="$with_zlib"
+	    zlib_prefix="$with_zlib"
+	else
+	    AC_MSG_ERROR([invalid zlib directory: $with_zlib])
+	fi
+	echo "installed in: $with_zlib" > "$cookie"
+	;;
+    no )
+	echo "not available" > "$cookie"
+	;;
+    * )
+	AC_MSG_ERROR([zlib directory must be absolute path: $with_zlib])
+	;;
+esac
+
+AC_MSG_RESULT([$zlib_avail])
+
+AC_SUBST([zlib_prefix])
+
+#------------------------------------------------------------
 # MPI: --with-mpi=PATH
 #------------------------------------------------------------
 
@@ -1571,6 +1618,8 @@ AC_MSG_NOTICE([oprofile: $oprofile_avail])
 AC_MSG_NOTICE([symtabAPI: $symtabAPI_avail])
 AC_MSG_NOTICE([xed2: $xed2_avail])
 AC_MSG_NOTICE([xerces: $xerces_avail])
+AC_MSG_NOTICE([zlib: $zlib_avail])
+
 dnl AC_MSG_NOTICE([mpi: $with_mpi])
 
 if test "$warn_non_gcc" = yes ; then

@@ -25,4 +25,5 @@ ext_oprofile_prefix='@oprofile_prefix@'
 ext_symtabAPI_prefix='@symtabAPI_prefix@'
 ext_xed2_prefix='@xed2_prefix@'
 ext_xerces_prefix='@xerces_prefix@'
+ext_zlib_prefix='@zlib_prefix@'
 

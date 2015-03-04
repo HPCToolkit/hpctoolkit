@@ -36,6 +36,7 @@ oprofile_prefix="@oprofile_prefix@"
 symtabAPI_prefix="@symtabAPI_prefix@"
 xed2_prefix="@xed2_prefix@"
 xerces_prefix="@xerces_prefix@"
+zlib_prefix="@zlib_prefix@"
 
 libdwarfdir="@libdwarf_prefix@"
 libdwarf_inc="@libdwarf_inc@"

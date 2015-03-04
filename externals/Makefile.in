@@ -43,7 +43,7 @@ BACK_END_PKGS = boost libdwarf libelf libmonitor libunwind libxml2  \
 	symtabAPI xed2
 
 PACKAGES = $(BACK_END_PKGS)  \
-	binutils old-monitor open-analysis oprofile xerces
+	binutils old-monitor open-analysis oprofile xerces zlib
 
 DIST_FILES = LICENSE Makefile.conf.in Makefile.in README*  \
 	configure configure.ac externs.conf.in options.conf.in  \

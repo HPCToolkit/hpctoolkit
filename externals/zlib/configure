@@ -1,0 +1,34 @@
+#!/bin/sh
+#
+#  Zlib configure.
+#
+#  Configure does not accept CC and CFLAGS on the command line, they
+#  must be set in the environment.
+#
+#  Does not support vpath build.
+#
+#  $Id$
+#
+
+PKG_NAME=zlib
+src=zlib-1.2.8
+
+. ../build-utils/configure.inc
+pre_configure
+prefix="$zlib_prefix"
+
+export CC="$CC"
+export CFLAGS="$CFLAGS"
+
+set -- \
+    --prefix="$prefix" \
+    --static \
+    "$@"
+
+cd "$src" || die "unable to cd: $src"
+
+echo ./configure "$@"
+./configure "$@"
+test $? -eq 0 || die "configure failed"
+
+post_configure

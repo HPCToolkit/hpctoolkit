@@ -1,0 +1,24 @@
+=================
+Zlib Build Notes
+=================
+
+Home: http://www.zlib.net/
+
+Download: http://zlib.net/zlib-1.2.8.tar.gz
+
+License: Custom, but similar to BSD.
+
+Uses own configure and Makefile, no autotools.
+
+export CC=gcc CFLAGS='...'
+./configure --prefix=PATH --static
+make
+make install
+
+1. Configure does not accept CC and CFLAGS on the command line.  These
+must be set in the environment.
+
+2. Does not support vpath builds.
+
+3. Builds static and shared libraries, but we only use static.
+
