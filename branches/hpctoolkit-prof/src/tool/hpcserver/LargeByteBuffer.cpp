@@ -63,6 +63,7 @@
 #include "Constants.hpp"
 #include "FileUtils.hpp"
 #include "DebugUtils.hpp"
+#include "VersatileMemoryPage.hpp"
 #include <include/big-endian.h>
 
 #include <fcntl.h>
@@ -75,66 +76,44 @@
 #include <iostream>
 #include <algorithm> //For min of two longs
 
+// chunk size must be a multiple of trace record size (12 bytes)
+#define CHUNK_SIZE  (6 * 1024L * 1024L)
 
 using namespace std;
 
 namespace TraceviewerServer
 {
-	static FileOffset mmPageSize; //= 1<<23;//1 << 30;
-	FileOffset fileSize;
 	LargeByteBuffer::LargeByteBuffer(string sPath, int headerSize)
 	{
-		//string SPath = Path.string();
-
-		/*int MapFlags = MAP_PRIVATE;
-		int MapProt = PROT_READ;*/
+		chunkSize = CHUNK_SIZE;
+		long memLimit = getRamSize() / 2;
+		long pageLimit = (memLimit + chunkSize - 1)/chunkSize;
 
 		fileSize = FileUtils::getFileSize(sPath);
-
-		FileOffset osPageSize = getpagesize();
-		FileOffset pageSizeMultiple = lcm(osPageSize, lcm(headerSize, SIZE_OF_TRACE_RECORD));//The page size must be a multiple of this
-
-		FileOffset ramSizeInBytes = getRamSize();
-
-		const FileOffset _64_MEGABYTE = 1 << 26;
-		//This is a pretty arbitrary algorithm, but it works
-		mmPageSize = pageSizeMultiple * (_64_MEGABYTE/osPageSize);//This means it will get it close to 64 MB
-
-		//We should take into account how many copies of this program are
-		//running on this node with something like MPI_COMM_WORLD, but I don't
-		//want to introduce MPI-specific code here. It's not worth it... Plus, there's
-		//a ton of paging stuff going on at the OS level that we don't really know
-		//the specifics of, so the amount of RAM may be less important than it seems.
-		double MAX_PORTION_OF_RAM_AVAILABLE = 0.60;//Use up to 60%
-		int MaxPages = (int)(ramSizeInBytes * MAX_PORTION_OF_RAM_AVAILABLE/mmPageSize);
-		VersatileMemoryPage::setMaxPages(MaxPages);
-
-
-		int FullPages = fileSize / mmPageSize;
-		int PartialPageSize = fileSize % mmPageSize;
-		numPages = FullPages + (PartialPageSize == 0 ? 0 : 1);
-		pageManagementList = new LRUList<VersatileMemoryPage>(numPages);
-
-		FileDescriptor fd = open(sPath.c_str(), O_RDONLY);
-
-		FileOffset sizeRemaining = fileSize;
-
-		for (int i = 0; i < numPages; i++)
-		{
-			FileOffset mapping_len = min( mmPageSize, sizeRemaining);
-
-			masterBuffer.push_back(VersatileMemoryPage(mmPageSize*i, mapping_len, fd, pageManagementList));
-
-			sizeRemaining -= mapping_len;
-
+		numFilePages = (fileSize + chunkSize - 1)/chunkSize;
+		if (numFilePages < pageLimit) {
+			pageLimit = numFilePages;
 		}
 
+		FileDescriptor fd = open(sPath.c_str(), O_RDONLY);
+		info = new PageInfo(fd, pageLimit, chunkSize);
+
+		FileOffset sizeRemaining = fileSize;
+		for (long i = 0; i < numFilePages; i++)
+		{
+			FileOffset mapping_len = min( chunkSize, sizeRemaining);
+
+			masterBuffer.push_back(
+				VersatileMemoryPage(info, i, i * chunkSize,
+						    mapping_len));
+			sizeRemaining -= mapping_len;
+		}
 	}
 
 	int LargeByteBuffer::getInt(FileOffset pos)
 	{
-		int Page = pos / mmPageSize;
-		int loc = pos % mmPageSize;
+		int Page = pos / chunkSize;
+		int loc = pos % chunkSize;
 		char* p2D = masterBuffer[Page].get() + loc;
 
 		return (int) be_to_host_32(*((uint32_t *) p2D));
@@ -142,13 +121,14 @@ namespace TraceviewerServer
 
 	Long LargeByteBuffer::getLong(FileOffset pos)
 	{
-		int Page = pos / mmPageSize;
-		int loc = pos % mmPageSize;
+		int Page = pos / chunkSize;
+		int loc = pos % chunkSize;
 		char* p2D = masterBuffer[Page].get() + loc;
 
 		return (Long) be_to_host_64(*((uint64_t *) p2D));
 	}
 
+#if 0
 	//Could very well be a template, but we only use it for uint64_t
 	uint64_t LargeByteBuffer::lcm(uint64_t _a, uint64_t _b)
 	{
@@ -167,6 +147,7 @@ namespace TraceviewerServer
 		//GCD stored in a
 		return (_a/a)*_b;
 	}
+#endif
 
 	uint64_t LargeByteBuffer::getRamSize()
 	{
@@ -189,18 +170,16 @@ namespace TraceviewerServer
 
 		return ramSize;
 #endif
-
 	}
 
 	FileOffset LargeByteBuffer::size()
 	{
 		return fileSize;
 	}
+
 	LargeByteBuffer::~LargeByteBuffer()
 	{
 		masterBuffer.clear();
-		delete pageManagementList;
-
+		delete info;
 	}
 }
-

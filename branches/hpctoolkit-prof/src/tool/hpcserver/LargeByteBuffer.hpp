@@ -63,7 +63,6 @@
 #include "VersatileMemoryPage.hpp"
 #include "ByteUtilities.hpp"
 #include "FileUtils.hpp" //For FileOffset
-#include "LRUList.hpp"
 
 #include <string>
 #include <vector>
@@ -71,7 +70,6 @@
 
 namespace TraceviewerServer
 {
-
 	class LargeByteBuffer
 	{
 	public:
@@ -80,13 +78,15 @@ namespace TraceviewerServer
 		FileOffset size();
 		Long getLong(FileOffset);
 		int getInt(FileOffset);
-	private:
-		static uint64_t lcm(uint64_t, uint64_t);
-		static uint64_t getRamSize();
-		vector<VersatileMemoryPage> masterBuffer;
-		int numPages;
-		LRUList<VersatileMemoryPage>* pageManagementList;
 
+	private:
+		static uint64_t getRamSize();
+
+		vector <VersatileMemoryPage> masterBuffer;
+		PageInfo * info;
+		FileOffset fileSize;
+		FileOffset chunkSize;
+		long numFilePages;
 	};
 
 } /* namespace TraceviewerServer */

@@ -60,6 +60,8 @@
 #ifndef SLAVE_H_
 #define SLAVE_H_
 
+#include <list>
+
 #include "SpaceTimeDataController.hpp"
 #include "MPICommunication.hpp"
 

@@ -57,20 +57,19 @@
 //
 //***************************************************************************
 
-
 #ifndef DEBUGUTILS_HPP_
 #define DEBUGUTILS_HPP_
 
 #include <sys/time.h>
 #include <iostream>
+
 using namespace std;
 
 #ifndef DEBUG
 #define DEBUG 0
 #endif
 
-#define DEBUGCOUT(a) if (DEBUG > (a))\
-						cout
+#define DEBUGCOUT(a) if (DEBUG >= (a)) std::cout
 
 #define LOGTIMESTAMPEDMSG(msg) \
 {\
@@ -79,6 +78,5 @@ using namespace std;
 	gettimeofday(&t, NULL); \
 	clog << t.tv_sec*1000000 + t.tv_usec<<"\t" << msg << endl;\
 }
-
 
 #endif /* DEBUGUTILS_HPP_ */

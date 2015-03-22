@@ -64,12 +64,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+
 #include <cstring>
 #include <list>
 
 #include "DebugUtils.hpp"
 #include "VersatileMemoryPage.hpp"
-#include "LRUList.hpp"
 
 #define DEFAULT_PAGE_SIZE  4096
 
@@ -77,76 +77,79 @@ using namespace std;
 
 namespace TraceviewerServer
 {
-	static int MAX_PAGES_TO_ALLOCATE_AT_ONCE = 0;
-
-	VersatileMemoryPage::VersatileMemoryPage(FileOffset _startPoint, ssize_t _size,
-						 FileDescriptor _file,
-						 LRUList<VersatileMemoryPage>* pageManagementList)
+	PageInfo::PageInfo(FileDescriptor _fd, long _numPages, long _chunkSize)
 	{
-		startPoint = _startPoint;
-		size = _size;
-		page_size = DEFAULT_PAGE_SIZE;
+		fd = _fd;
+		numPages = _numPages;
+		nextIndex = 0;
+		chunkSize = _chunkSize;
+
+		long page_size = DEFAULT_PAGE_SIZE;
 #ifdef _SC_PAGESIZE
 		page_size = sysconf(_SC_PAGESIZE);
 #endif
 		if (page_size < DEFAULT_PAGE_SIZE) {
 			page_size = DEFAULT_PAGE_SIZE;
 		}
-		map_size = page_size * ((size + page_size - 1)/page_size);
+		map_size = page_size * ((chunkSize + page_size - 1)/page_size);
 
-		mostRecentlyUsed = pageManagementList;
-		index = mostRecentlyUsed->addNewUnused(this);
-		file = _file;
-		isMapped = false;
-		if (MAX_PAGES_TO_ALLOCATE_AT_ONCE <1)
-			cerr<<"Set max pages before creating any VersatileMemoryPages"<<endl;
+		pageVec.resize(numPages);
+		for (long i = 0; i < numPages; i++) {
+			pageVec[i] = NULL;
+		}
 	}
 
-	void VersatileMemoryPage::setMaxPages(int pages)
+	VersatileMemoryPage::VersatileMemoryPage(PageInfo * _info, long _index,
+						 FileOffset _offset, ssize_t _size)
 	{
-		MAX_PAGES_TO_ALLOCATE_AT_ONCE = pages;
+		info = _info;
+		index = _index;
+		offset = _offset;
+		size = _size;
+		page = NULL;
+		isMapped = false;
 	}
 
 	VersatileMemoryPage::~VersatileMemoryPage()
 	{
-		if (isMapped)
+		if (isMapped) {
 			unmapPage();
+		}
 	}
+
 	char* VersatileMemoryPage::get()
 	{
-
-		if (!isMapped)
-		{
+		if (! isMapped) {
 			mapPage();
 		}
-		mostRecentlyUsed->putOnTop(index);
-
 		return page;
 	}
 
 	void VersatileMemoryPage::mapPage()
 	{
+		DEBUGCOUT(1) << "map page: " << index << "  size: 0x" << hex
+			     << size << "  offset: 0x" << offset << dec << endl;
 
-		DEBUGCOUT(1) << "Mapping page "<< index<< " "<<mostRecentlyUsed->getUsedPageCount() << " / " << MAX_PAGES_TO_ALLOCATE_AT_ONCE << endl;
-
-		if (isMapped)
-		{
-			cerr << "Trying to double map!"<<endl;
+		if (isMapped && page != NULL) {
+			cerr << "warning: trying to map page " << index
+			     << " that is already mapped" << endl;
 			return;
 		}
-		if (mostRecentlyUsed->getUsedPageCount() >= MAX_PAGES_TO_ALLOCATE_AT_ONCE)
-		{
+		isMapped = false;
 
-			VersatileMemoryPage* toRemove = mostRecentlyUsed->getLast();
+		// A simple page replacement strategy: replace the
+		// page at nextIndex with this page.  This gives LRU
+		// based on the map time.
 
-			DEBUGCOUT(1)<<"Kicking " << toRemove->index << " out"<<endl;
+		long pos = info->nextIndex;
+		info->nextIndex = (pos + 1) % info->numPages;
 
-			if (toRemove->isMapped != true)
-				cerr << "Least recently used one isn't even mapped?"<<endl;
+		VersatileMemoryPage *old_page = info->pageVec[pos];
 
-			toRemove->unmapPage();
-			mostRecentlyUsed->removeLast();
+		if (old_page != NULL) {
+			old_page->unmapPage();
 		}
+		info->pageVec[pos] = this;
 
 		// mmap anon space for buffer
 #ifdef MAP_ANONYMOUS
@@ -154,7 +157,8 @@ namespace TraceviewerServer
 #else
 		int map_flags = MAP_PRIVATE | MAP_ANON;
 #endif
-		page = (char *) mmap(NULL, map_size, PROT_READ | PROT_WRITE, map_flags, -1, 0);
+		page = (char *) mmap(NULL, info->map_size, PROT_READ | PROT_WRITE,
+				     map_flags, -1, 0);
 		if (page == MAP_FAILED) {
 			cerr << "mmap versatile memory page failed: "
 			     << strerror(errno) << endl;
@@ -164,7 +168,7 @@ namespace TraceviewerServer
 		// read segment from file and handle short reads
 		ssize_t len = 0;
 		while (len < size) {
-			ssize_t ret = pread(file, &page[len], size - len, startPoint + len);
+			ssize_t ret = pread(info->fd, &page[len], size - len, offset + len);
 			if (ret > 0) {
 			    	len += ret;
 			}
@@ -173,24 +177,23 @@ namespace TraceviewerServer
 				exit(1);
 			}
 		}
-
 		isMapped = true;
-		mostRecentlyUsed->reAdd(index);
 	}
 
 	void VersatileMemoryPage::unmapPage()
 	{
-		if (!isMapped)
-		{
-			cerr << "Trying to double unmap!"<<endl;
+		DEBUGCOUT(1) << "unmap page: " << index << "  size: 0x" << hex
+			     << size << "  offset: 0x" << offset << dec << endl;
+
+		if (! isMapped || page == NULL) {
+			cerr << "warning: trying to unmap page " << index
+			     << " that is not mapped" << endl;
 			return;
 		}
-		munmap(page, map_size);
+		munmap(page, info->map_size);
 
+		page = NULL;
 		isMapped = false;
-
-		DEBUGCOUT(1) << "Unmapped a page"<<endl;
-
 	}
 
 } /* namespace TraceviewerServer */

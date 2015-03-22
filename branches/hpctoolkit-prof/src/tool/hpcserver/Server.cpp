@@ -225,6 +225,9 @@ namespace TraceviewerServer
 #ifdef HPCTOOLKIT_PROFILE
 		hpctoolkit_sampling_start();
 #endif
+		if (controller != NULL) {
+			delete controller;
+		}
 		controller = parseOpenDB(socketptr);
 
 		if (controller == NULL)

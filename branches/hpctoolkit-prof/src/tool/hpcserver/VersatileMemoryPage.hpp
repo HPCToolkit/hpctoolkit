@@ -60,39 +60,52 @@
 #ifndef VERSATILEMEMORYPAGE_H_
 #define VERSATILEMEMORYPAGE_H_
 
-
 #include <sys/types.h>
 #include <sys/mman.h>
+
+#include <vector>
+
 #include "FileUtils.hpp" //FileOffset
-#include "LRUList.hpp"
 
 using namespace std;
 namespace TraceviewerServer
 {
+	class VersatileMemoryPage;
+
+	// Info about what pages are in memory and how to fetch from
+	// the file.  pageVec is the vector of mapped pages.
+
+	class PageInfo
+	{
+	public:
+		PageInfo(FileDescriptor, long, long);
+
+		vector <VersatileMemoryPage *> pageVec;
+		FileDescriptor fd;
+		long  numPages;
+		long  nextIndex;
+		long  chunkSize;
+		long  map_size;
+	};
 
 	class VersatileMemoryPage
 	{
 	public:
 		VersatileMemoryPage();
-		VersatileMemoryPage(FileOffset, ssize_t, FileDescriptor,
-				    LRUList<VersatileMemoryPage>* pageManagementList);
+		VersatileMemoryPage(PageInfo *, long, FileOffset, ssize_t);
 		virtual ~VersatileMemoryPage();
-		static void setMaxPages(int);
 		char* get();
+
 	private:
 		void mapPage();
 		void unmapPage();
 
-		FileOffset startPoint;
+		PageInfo * info;
+		long index;
+		FileOffset offset;
 		ssize_t size;
-		ssize_t map_size;
-		ssize_t page_size;
 		char* page;
-		int index;
-		FileDescriptor file;
-
 		bool isMapped;
-		LRUList<VersatileMemoryPage>* mostRecentlyUsed;
 	};
 
 } /* namespace TraceviewerServer */
