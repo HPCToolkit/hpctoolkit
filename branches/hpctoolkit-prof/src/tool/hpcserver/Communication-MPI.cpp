@@ -58,7 +58,6 @@
 //
 //***************************************************************************
 
-
 #include "Communication.hpp"
 #include "MPICommunication.hpp"
 #include "Constants.hpp"
@@ -85,7 +84,6 @@ void Communication::sendParseInfo(Time minBegTime, Time maxEndTime, int headerSi
 			Info.minfo.maxEndTime = maxEndTime;
 			Info.minfo.headerSize = headerSize;
 			COMM_WORLD.Bcast(&Info, sizeof(Info), MPI_PACKED, MPICommunication::SOCKET_SERVER);
-
 }
 
 void Communication::sendParseOpenDB(string pathToDB)
@@ -102,8 +100,8 @@ void Communication::sendParseOpenDB(string pathToDB)
 
 	COMM_WORLD.Bcast(&cmdPathToDB, sizeof(cmdPathToDB), MPI_PACKED,
 			MPICommunication::SOCKET_SERVER);
-
 }
+
 void Communication::sendStartGetData(SpaceTimeDataController* contr, int processStart, int processEnd,
 			Time timeStart, Time timeEnd, int verticalResolution, int horizontalResolution)
 {
@@ -118,6 +116,7 @@ void Communication::sendStartGetData(SpaceTimeDataController* contr, int process
 	COMM_WORLD.Bcast(&toBcast, sizeof(toBcast), MPI_PACKED,
 		MPICommunication::SOCKET_SERVER);
 }
+
 void Communication::sendEndGetData(DataSocketStream* stream, ProgressBar* prog, SpaceTimeDataController* controller)
 {
 	int ranksDone = 1;//1 for the MPI rank that deals with the sockets
@@ -168,6 +167,7 @@ void Communication::sendEndGetData(DataSocketStream* stream, ProgressBar* prog, 
 	}
 	LOGTIMESTAMPEDMSG("All data done.")
 }
+
 void Communication::sendStartFilter(int count, bool excludeMatches)
 {
 	MPICommunication::CommandMessage toBcast;
@@ -176,8 +176,8 @@ void Communication::sendStartFilter(int count, bool excludeMatches)
 		toBcast.filt.excludeMatches = excludeMatches;
 		COMM_WORLD.Bcast(&toBcast, sizeof(toBcast), MPI_PACKED,
 					MPICommunication::SOCKET_SERVER);
-
 }
+
 void Communication::sendFilter(BinaryRepresentationOfFilter filt)
 {
 	COMM_WORLD.Bcast(&filt, sizeof(filt), MPI_PACKED, MPICommunication::SOCKET_SERVER);
@@ -199,6 +199,14 @@ bool Communication::basicInit(int argc, char** argv)
 	}
 	return true;
 }
+
+bool Communication::rankLeader()
+{
+	int rank = MPI::COMM_WORLD.Get_rank();
+
+	return rank == MPICommunication::SOCKET_SERVER;
+}
+
 void Communication::run()
 {
 	int rank;
@@ -208,6 +216,7 @@ void Communication::run()
 	else
 		TraceviewerServer::Slave();
 }
+
 void Communication::closeServer()
 {
 	if (COMM_WORLD.Get_rank()==MPICommunication::SOCKET_SERVER)

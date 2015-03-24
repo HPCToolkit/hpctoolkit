@@ -66,11 +66,13 @@
 
 namespace TraceviewerServer
 {
-	extern int mainPortNumber;
-	extern int xmlPortNumber;
-	extern int timeout;
+	extern int  mainPortNumber;
+	extern int  xmlPortNumber;
+	extern long optMemSize;
+	extern long optChunkSize;
 	extern bool useCompression;
 	extern bool stayOpen;
+	extern int  timeout;
 
 	class Server
 	{

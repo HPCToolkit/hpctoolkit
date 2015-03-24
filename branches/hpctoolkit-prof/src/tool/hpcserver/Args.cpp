@@ -59,6 +59,9 @@
 
 //************************* System Include Files ****************************
 
+#include <sys/types.h>
+#include <stdio.h>
+
 #include <iostream>
 using std::cerr;
 using std::endl;
@@ -107,14 +110,21 @@ hpctraceviewer client to specify and access any database that hpcserver can read
 Options:\n\
   -V, --version        Print version information.\n\
   -h, --help           Print this help.\n\
-  -c, --compression    Enables or disables compression (on by default)\n\
-                          Allowed values: on, off \n\
   -p, --port           Sets the main communication port (default is 21590)\n\
                           Specifying 0 indicates that an open port should be \n\
                           chosen automatically.\n\
   -x, --xmlport        Sets the port on which the experiment.xml file is\n\
                           transferred.  By default, the main port is used,\n\
                           but this can be changed by '-x <port>'.\n\
+  --memsize num        Amount of RAM per process (rank) to use as in-memory\n\
+                          cache for the mega-trace file.  Units are bytes with\n\
+                          suffix 'k', 'm' or 'g' for Kilo, Meg or Gig bytes.\n\
+                          For example, '--memsize 2g' for 2 Gig.  Default is\n\
+                          50% of available RAM.\n\
+  --chunksize num      Size of pages for memory cache, same units as memsize.\n\
+                          Default is 6 Meg.\n\
+  --compression        Enables or disables compression (on by default)\n\
+                          Allowed values: on, off \n\
   --stay-open yes|no   By default, hpcserver resumes listening on the main port\n\
                           for another connection after the client exits.  Adding\n\
                           the option '--stay-open no' causes the server to exit\n\
@@ -134,9 +144,11 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
 
   { 'V', "version",  CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
   { 'h', "help",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
-  { 'c', "compression",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, CLP::isOptArg_long },
   { 'p', "port",     CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, CLP::isOptArg_long },
   { 'x', "xmlport",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, CLP::isOptArg_long },
+  {  0,  "memsize",    CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, NULL },
+  {  0,  "chunksize",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, NULL },
+  { 'c', "compression",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, CLP::isOptArg_long },
   {  0,  "stay-open",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, NULL },
   {  0,  "timeout",    CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, CLP::isOptArg_long },
 
@@ -149,6 +161,46 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
 //***************************************************************************
 // Args
 //***************************************************************************
+
+// Parse a number with suffix K, Meg or Gig, and allow floating point.
+// Eg, '123' -> 123, '2k' -> 2048, '2.5G' -> 2684354560, etc.
+static long
+parse_units(string arg)
+{
+  long unit = 1;
+  size_t pos = arg.find_first_of("KkMmGg");
+  if (pos != string::npos) {
+    if (arg[pos] == 'K' || arg[pos] == 'k') { unit = 1024; }
+    else if (arg[pos] == 'M' || arg[pos] == 'm') { unit = 1024 * 1024; }
+    else if (arg[pos] == 'G' || arg[pos] == 'g') { unit = 1024L * 1024L * 1024L; }
+    else {
+      std::cerr << "warning: unable to parse argument: " << arg << endl;
+    }
+  }
+
+  long ans = 0;
+  if (arg.find_first_of(".") != string::npos) {
+    // read val as floating point double
+    double dval;
+    if (sscanf(arg.c_str(), "%lf", &dval) < 1) {
+      std::cerr << "warning: unable to parse argument: " << arg << endl;
+      return 0;
+    }
+    ans = (long) (dval * (double) unit);
+  }
+  else {
+    // read val as long int
+    long lval;
+    if (sscanf(arg.c_str(), "%ld", &lval) < 1) {
+      std::cerr << "warning: unable to parse argument: " << arg << endl;
+      return 0;
+    }
+    ans = lval * unit;
+  }
+
+  return ans;
+}
+
 
 Args::Args()
 {
@@ -168,6 +220,8 @@ Args::Ctor()
 {
   mainPort = DEFAULT_PORT;  // 21590
   xmlPort = 1;  // use main port
+  memSize = 0;
+  chunkSize = 0;
   compression = true;
   stayOpen = true;
   timeout = 15;
@@ -239,12 +293,7 @@ Args::parse(int argc, const char* const argv[])
       exit(0);
     }
 
-    // Check for other options: Communication options
-    if (parser.isOpt("compression")) {
-      const string& arg = parser.getOptArg("compression");
-      compression = CmdLineParser::parseArg_bool(arg, "--compression option");
-    }
-
+    // ports
     if (parser.isOpt("port")) {
       const string& arg = parser.getOptArg("port");
       mainPort = (int) CmdLineParser::toLong(arg);
@@ -257,6 +306,23 @@ Args::parse(int argc, const char* const argv[])
       xmlPort = (int) CmdLineParser::toLong(arg);
       if (xmlPort < 1024 && xmlPort > 1)
     	   ARG_ERROR("Ports must be greater than 1024.")
+    }
+
+    // memory size
+    if (parser.isOpt("memsize")) {
+      const string& arg = parser.getOptArg("memsize");
+      memSize = parse_units(arg);
+    }
+
+    if (parser.isOpt("chunksize")) {
+      const string& arg = parser.getOptArg("chunksize");
+      chunkSize = parse_units(arg);
+    }
+
+    // other options
+    if (parser.isOpt("compression")) {
+      const string& arg = parser.getOptArg("compression");
+      compression = CmdLineParser::parseArg_bool(arg, "--compression option");
     }
 
     if (parser.isOpt("stay-open")) {

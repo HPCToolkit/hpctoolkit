@@ -98,9 +98,8 @@ void Communication::sendStartGetData(SpaceTimeDataController* contr, int process
 	correspondingAttributes->begTime =  timeStart;
 	correspondingAttributes->endTime =  timeEnd;
 	correspondingAttributes->lineNum = 0;
-
-
 }
+
 void Communication::sendEndGetData(DataSocketStream* stream, ProgressBar* prog, SpaceTimeDataController* controller)
 {
 	// TODO: Make this so that the Lines get sent as soon as they are
@@ -156,10 +155,17 @@ bool Communication::basicInit(int argc, char** argv)
 {
 	return true;
 }
+
+bool Communication::rankLeader()
+{
+	return true;
+}
+
 void Communication::run()
 {
 	TraceviewerServer::Server();
 }
+
 void Communication::closeServer()
 {
 	cout<<"Server done, closing..."<<endl;

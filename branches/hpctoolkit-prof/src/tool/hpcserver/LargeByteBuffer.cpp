@@ -60,9 +60,11 @@
 
 #include "ByteUtilities.hpp"
 #include "LargeByteBuffer.hpp"
+#include "Communication.hpp"
 #include "Constants.hpp"
 #include "FileUtils.hpp"
 #include "DebugUtils.hpp"
+#include "Server.hpp"
 #include "VersatileMemoryPage.hpp"
 #include <include/big-endian.h>
 
@@ -71,13 +73,19 @@
 #include <sys/sysctl.h>
 #include <errno.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <unistd.h>
 
 #include <iostream>
 #include <algorithm> //For min of two longs
 
-// chunk size must be a multiple of trace record size (12 bytes)
-#define CHUNK_SIZE  (6 * 1024L * 1024L)
+#define MEG  (1024 * 1024)
+
+#define DEFAULT_CHUNK_SIZE  (6 * 1024L * 1024L)
+#define MIN_CHUNK_SIZE  (512 * 1024L)
+#define MIN_MEM_LIMIT   (512 * 1024L * 1024L)
+
+#define RECORD_SIZE  12
 
 using namespace std;
 
@@ -85,12 +93,34 @@ namespace TraceviewerServer
 {
 	LargeByteBuffer::LargeByteBuffer(string sPath, int headerSize)
 	{
-		chunkSize = CHUNK_SIZE;
-		long memLimit = getRamSize() / 2;
-		long pageLimit = (memLimit + chunkSize - 1)/chunkSize;
+		// chunk size
+		chunkSize = DEFAULT_CHUNK_SIZE;
+		if (optChunkSize > 0) {
+		    	chunkSize = optChunkSize;
+		}
+		if (chunkSize < MIN_CHUNK_SIZE) {
+		    	cerr << "warning: chunk size (" << chunkSize << ") "
+			     << "is too small, using: " << MIN_CHUNK_SIZE << endl;
+			chunkSize = MIN_CHUNK_SIZE;
+		}
+		// must be a multiple of trace record size (12 bytes)
+		chunkSize = RECORD_SIZE * ((chunkSize + RECORD_SIZE - 1)/RECORD_SIZE);
+
+		// memory size
+		long memLimit = optMemSize;
+		if (memLimit <= 0) {
+		    	memLimit = getRamSize() / 2;
+		}
+		if (memLimit < MIN_MEM_LIMIT) {
+		    	cerr << "warning: memory size (" << memLimit << ") "
+			     << "is too small, using: " << MIN_MEM_LIMIT << endl;
+			memLimit = MIN_MEM_LIMIT;
+		}
 
 		fileSize = FileUtils::getFileSize(sPath);
 		numFilePages = (fileSize + chunkSize - 1)/chunkSize;
+
+		long pageLimit = (memLimit + chunkSize - 1)/chunkSize;
 		if (numFilePages < pageLimit) {
 			pageLimit = numFilePages;
 		}
@@ -107,6 +137,13 @@ namespace TraceviewerServer
 				VersatileMemoryPage(info, i, i * chunkSize,
 						    mapping_len));
 			sizeRemaining -= mapping_len;
+		}
+
+		if (Communication::rankLeader()) {
+			printf("Mega Trace: %.1f Meg, Memory (per rank): %.1f Meg "
+			       "(%ld/%ld pages)\n",
+			       ((double) fileSize)/MEG, ((double) memLimit)/MEG,
+			       pageLimit, numFilePages);
 		}
 	}
 

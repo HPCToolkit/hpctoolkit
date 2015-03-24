@@ -74,6 +74,8 @@ int main(int argc, char *argv[])
 
 	TraceviewerServer::mainPortNumber = args.mainPort;
 	TraceviewerServer::xmlPortNumber = args.xmlPort;
+	TraceviewerServer::optMemSize = args.memSize;
+	TraceviewerServer::optChunkSize = args.chunkSize;
 	TraceviewerServer::useCompression = args.compression;
 	TraceviewerServer::stayOpen = args.stayOpen;
 	TraceviewerServer::timeout = args.timeout;

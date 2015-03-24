@@ -71,11 +71,6 @@
 
 namespace TraceviewerServer
 {
-enum ServerType {
-	NONE_EXIT_IMMEDIATELY = 0,
-	MASTER = 1,
-	SLAVE = 2
-};
 
 class Communication {
 public:
@@ -89,6 +84,7 @@ public:
 	static void sendFilter(BinaryRepresentationOfFilter filt);
 
 	static bool basicInit(int argc, char** argv);
+	static bool rankLeader();
 	static void run();
 	static void closeServer();
 };

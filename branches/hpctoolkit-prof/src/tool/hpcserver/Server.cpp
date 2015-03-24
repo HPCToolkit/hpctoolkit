@@ -103,11 +103,13 @@ using namespace std;
 
 namespace TraceviewerServer
 {
-	int mainPortNumber = DEFAULT_PORT;
-	int xmlPortNumber = 0;
-	int timeout = 15;
+	int  mainPortNumber = DEFAULT_PORT;
+	int  xmlPortNumber = 0;
+	long optMemSize = 0;
+	long optChunkSize = 0;
 	bool useCompression = true;
 	bool stayOpen = true;
+	int  timeout = 15;
 
 	Server::Server()
 	{

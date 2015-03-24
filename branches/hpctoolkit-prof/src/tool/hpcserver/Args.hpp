@@ -103,11 +103,13 @@ public:
   const std::string& getCmd() const;
 
   // Parsed Data: optional arguments
-  int mainPort;       // default: 21590
-  int xmlPort;        // default: 1
-  int timeout;        // default: 15 min
+  int  mainPort;      // default: 21590
+  int  xmlPort;       // default: 1
+  long memSize;       // number of bytes
+  long chunkSize;     // number of bytes
   bool compression;   // default: true
   bool stayOpen;      // default: true
+  int  timeout;       // default: 15 min
 
 private:
   void
