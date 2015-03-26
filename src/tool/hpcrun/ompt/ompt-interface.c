@@ -84,6 +84,14 @@
 
 
 /******************************************************************************
+ * global variables
+ *****************************************************************************/
+
+omp_idle_t ompt_idle_placeholder_fn;
+
+
+
+/******************************************************************************
  * static variables
  *****************************************************************************/
 
@@ -245,6 +253,8 @@ init_function_pointers(ompt_function_lookup_t ompt_fn_lookup)
 FOREACH_OMPT_FN(ompt_interface_fn)
 
 #undef ompt_interface_fn
+
+ ompt_idle_placeholder_fn = omp_idle_fn;
 }
 
 

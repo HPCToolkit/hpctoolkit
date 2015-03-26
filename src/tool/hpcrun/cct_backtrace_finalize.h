@@ -29,7 +29,7 @@ typedef struct cct_backtrace_finalize_entry_s {
 
 
 typedef cct_node_t *(*cct_backtrace_null_handler_fn)(
-  cct_node_t *n
+  cct_node_t *n, void **trace_pc
 );
 
 
@@ -58,7 +58,7 @@ extern void cct_backtrace_finalize(
 );
 
 extern cct_node_t *cct_backtrace_null_handler(
-  cct_node_t *n
+  cct_node_t *n, void **trace_pc
 );
 
 extern void cct_cursor_finalize_register(

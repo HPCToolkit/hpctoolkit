@@ -67,10 +67,11 @@ cct_backtrace_null_handler_register(
 
 cct_node_t *
 cct_backtrace_null_handler(
-  cct_node_t *n
+  cct_node_t *n,
+  void **trace_pc
 )
 {
-  if (null_handler) return null_handler(n);
+  if (null_handler) return null_handler(n, trace_pc);
   else return n;
 }
 

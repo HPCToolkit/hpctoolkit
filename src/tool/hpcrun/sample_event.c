@@ -89,12 +89,12 @@
 //*************************** Forward Declarations **************************
 
 static cct_node_t*
-help_hpcrun_sample_callpath(epoch_t *epoch, void *context,
+help_hpcrun_sample_callpath(epoch_t *epoch, void *context, void **trace_pc,
 			    int metricId, uint64_t metricIncr,
 			    int skipInner, int isSync);
 
 static cct_node_t*
-hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context,
+hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context, void **trace_pc,
 			   int metricId, uint64_t metricIncr,
 			   int skipInner, int isSync);
 
@@ -132,6 +132,7 @@ record_partial_unwind(
   cct_bundle_t* cct,
   frame_t* bt_beg, 
   frame_t* bt_last,
+  void *trace_pc,
   int metricId, 
   uint64_t metricIncr,
   int skipInner)
@@ -156,6 +157,7 @@ record_partial_unwind(
   hpcrun_stats_num_samples_partial_inc();
   return hpcrun_cct_record_backtrace_w_metric(cct, true, &bt,
 //					      false, bt_beg, bt_last, 
+                                              trace_pc,
 					      false, metricId, metricIncr);
 }
 
@@ -227,6 +229,8 @@ hpcrun_sample_callpath(void* context, int metricId,
 
   hpcrun_set_handling_sample(td);
 
+  void* trace_pc = hpcrun_context_pc(context);
+
   td->btbuf_cur = NULL;
   td->deadlock_drop = false;
   int ljmp = sigsetjmp(it->jb, 1);
@@ -235,11 +239,11 @@ hpcrun_sample_callpath(void* context, int metricId,
     if (epoch != NULL) {
       if (ENABLED(DEBUG_PARTIAL_UNW)){
 	EMSG("PARTIAL UNW debug sampler invoked @ sample %d", hpcrun_stats_num_samples_attempted());
-	node = hpcrun_dbg_sample_callpath(epoch, context, metricId, metricIncr,
+	node = hpcrun_dbg_sample_callpath(epoch, context, &trace_pc, metricId, metricIncr,
 					  skipInner, isSync);
       }
       else {
-	node = help_hpcrun_sample_callpath(epoch, context, metricId, metricIncr,
+	node = help_hpcrun_sample_callpath(epoch, context, &trace_pc, metricId, metricIncr,
 					   skipInner, isSync);
       }
       if (ENABLED(DUMP_BACKTRACES)) {
@@ -250,7 +254,7 @@ hpcrun_sample_callpath(void* context, int metricId,
   else {
     cct_bundle_t* cct = &(td->core_profile_trace_data.epoch->csdata);
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
-				 metricId, metricIncr, skipInner);
+				 trace_pc, metricId, metricIncr, skipInner);
     hpcrun_cleanup_partial_unwind();
   }
 
@@ -260,12 +264,11 @@ hpcrun_sample_callpath(void* context, int metricId,
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
   if (trace_ok && hpcrun_trace_isactive()) {
     TMSG(TRACE, "Sample event encountered");
-    void* pc = hpcrun_context_pc(context);
 
     void* func_start_pc = NULL;
     void* func_end_pc = NULL;
     load_module_t* lm = NULL;
-    fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc, &lm);
+    fnbounds_enclosing_addr(trace_pc, &func_start_pc, &func_end_pc, &lm);
 
     TMSG(TRACE, "func start = %p, pc = %p, func_end = %p");
     ip_normalized_t pc_proxy = hpcrun_normalize_ip(func_start_pc, lm);
@@ -305,6 +308,8 @@ static int const PTHREAD_CTXT_SKIP_INNER = 1;
 cct_node_t*
 hpcrun_gen_thread_ctxt(void* context)
 {
+  void *trace_pc; // unused argument to callee
+
   if (monitor_block_shootdown()) {
     monitor_unblock_shootdown();
     return NULL;
@@ -353,6 +358,7 @@ hpcrun_gen_thread_ctxt(void* context)
     }
     node = hpcrun_cct_record_backtrace(&(epoch->csdata), false, &bt,
 //				       bt.fence == FENCE_THREAD, bt.begin, bt.last, 
+                                       &trace_pc,
 				       bt.has_tramp);
   }
   // FIXME: What to do when thread context is partial ?
@@ -380,7 +386,7 @@ hpcrun_gen_thread_ctxt(void* context)
 }
 
 static cct_node_t*
-hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context,
+hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context, void **trace_pc,
 			   int metricId,
 			   uint64_t metricIncr, 
 			   int skipInner, int isSync)
@@ -393,7 +399,7 @@ hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context,
   epoch = hpcrun_check_for_new_loadmap(epoch);
 
   cct_node_t* n = hpcrun_dbg_backtrace2cct(&(epoch->csdata),
-					   context,
+					   context, trace_pc,
 					   metricId, metricIncr,
 					   skipInner);
 
@@ -402,7 +408,7 @@ hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context,
 
 
 static cct_node_t*
-help_hpcrun_sample_callpath(epoch_t *epoch, void *context,
+help_hpcrun_sample_callpath(epoch_t *epoch, void *context, void **trace_pc,
 			    int metricId,
 			    uint64_t metricIncr, 
 			    int skipInner, int isSync)
@@ -416,7 +422,7 @@ help_hpcrun_sample_callpath(epoch_t *epoch, void *context,
   epoch = hpcrun_check_for_new_loadmap(epoch);
 
   cct_node_t* n =
-    hpcrun_backtrace2cct(&(epoch->csdata), context, metricId, metricIncr,
+    hpcrun_backtrace2cct(&(epoch->csdata), context, trace_pc, metricId, metricIncr,
 			 skipInner, isSync);
 
   // FIXME: n == -1 if sample is filtered
