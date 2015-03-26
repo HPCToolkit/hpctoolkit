@@ -14,40 +14,31 @@
 
 
 /*****************************************************************************
- * iteration macros 
+ * iteration macros
  *****************************************************************************/
 
-#ifdef OMPT_V2013_07
 #define FOREACH_OMPT_FN(macro) \
-	macro (ompt_enumerate_state ) 	\
-					\
-	macro (ompt_set_callback) 	\
-	macro (ompt_get_callback) 	\
-					\
-	macro (ompt_get_task_frame) 	\
-					\
-	macro (ompt_get_state) 		\
-					\
-	macro (ompt_get_parallel_id) 	\
-	macro (ompt_get_task_data) 	\
-	macro (ompt_get_thread_data)
-#else
-#define FOREACH_OMPT_FN(macro) \
-	macro (ompt_enumerate_state ) 	\
-					\
-	macro (ompt_set_callback) 	\
-	macro (ompt_get_callback) 	\
-					\
-	macro (ompt_get_idle_frame) 	\
-	macro (ompt_get_task_frame) 	\
-					\
-	macro (ompt_get_state) 		\
-					\
-	macro (ompt_get_parallel_id) 	\
+	macro (ompt_enumerate_state ) 		\
+						\
+	macro (ompt_set_callback) 		\
+	macro (ompt_get_callback) 		\
+						\
+	macro (ompt_get_idle_frame) 		\
+	macro (ompt_get_task_frame) 		\
+						\
+	macro (ompt_get_state) 			\
+						\
+	macro (ompt_get_parallel_id) 		\
 	macro (ompt_get_parallel_team_size) 	\
-	macro (ompt_get_task_id) 	\
-	macro (ompt_get_thread_id)
-#endif
+	macro (ompt_get_task_id) 		\
+	macro (ompt_get_thread_id)		\
+						\
+	macro (omp_idle) 			\
+	macro (omp_overhead) 			\
+	macro (omp_barrier_wait)		\
+	macro (omp_task_wait)			\
+	macro (omp_mutex_wait)
+
 
 #define FOREACH_OMPT_STATE(macro) \
 											\
@@ -93,7 +84,7 @@
 	macro (ompt_event_parallel_end,             ompt_parallel_callback_t,       2) /* parallel end */               \
 															\
 	macro (ompt_event_task_begin,               ompt_new_task_callback_t,       3) /* task begin */			\
-	macro (ompt_event_task_end,                 ompt_new_task_callback_t,       4) /* task destroy */		\
+	macro (ompt_event_task_end,                 ompt_task_callback_t,       4) /* task destroy */		\
 						  									\
 	macro (ompt_event_thread_begin,             ompt_thread_type_callback_t,    5) /* thread begin */		\
 	macro (ompt_event_thread_end,               ompt_thread_type_callback_t,    6) /* thread end */			\
@@ -216,18 +207,8 @@ typedef struct ompt_frame_s {
 
 
 /*****************************************************************************
- * enumerations for thread states and runtime events 
+ * enumerations for thread states and runtime events
  *****************************************************************************/
-
-#ifdef OMPT_V2013_07
-/*---------------------
- * tool data word
- *---------------------*/
-typedef union ompt_data_u {
-         uint64_t value;    /* data under tool control    */
-         void *ptr;         /* pointer under tool control */
-} ompt_data_t;
-#endif
 
 /*---------------------
  * runtime states
@@ -252,7 +233,7 @@ typedef enum {
 
 
 /*---------------------
- * set callback results 
+ * set callback results
  *---------------------*/
 typedef enum {
   ompt_set_result_registration_error              = 0,
@@ -342,12 +323,12 @@ typedef void (*ompt_callback_t)(void);
 
 
 /****************************************************************************
- * ompt API 
+ * ompt API
  ***************************************************************************/
 
 #ifdef  __cplusplus
 extern "C" {
-#endif 
+#endif
 
 #define OMPT_API_FNTYPE(fn) fn##_t
 
@@ -365,14 +346,8 @@ OMPT_API_FUNCTION(ompt_state_t , ompt_get_state, (
   ompt_wait_id_t *ompt_wait_id
 ));
 
-#ifdef OMPT_V2013_07
-OMPT_API_FUNCTION(ompt_data_t *, ompt_get_thread_data, (
-  int depth
-));
-#else
 /* thread */
 OMPT_API_FUNCTION(ompt_thread_id_t, ompt_get_thread_id, (void));
-#endif
 
 OMPT_API_FUNCTION(void *, ompt_get_idle_frame, (void));
 
@@ -385,19 +360,43 @@ OMPT_API_FUNCTION(int, ompt_get_parallel_team_size, (
   int ancestor_level
 ));
 
-#ifdef OMPT_V2013_07
-OMPT_API_FUNCTION(ompt_data_t *, ompt_get_task_data, (
-  int depth
-));
-#else
 /* task */
 OMPT_API_FUNCTION(ompt_task_id_t, ompt_get_task_id, (
   int depth
 ));
-#endif
 
 OMPT_API_FUNCTION(ompt_frame_t *, ompt_get_task_frame, (
   int depth
+));
+
+
+/*---------------------------------------------------------------------------
+ * PLACEHOLDERS FOR PERFORMANCE REPORTING
+ *-------------------------------------------------------------------------*/
+
+/* idle */
+OMPT_API_FUNCTION(void, omp_idle, (
+  void
+));
+
+/* overhead */
+OMPT_API_FUNCTION(void, omp_overhead, (
+  void
+));
+
+/* barrier wait */
+OMPT_API_FUNCTION(void, omp_barrier_wait, (
+  void
+));
+
+/* task wait */
+OMPT_API_FUNCTION(void, omp_task_wait, (
+  void
+));
+
+/* mutex wait */
+OMPT_API_FUNCTION(void, omp_mutex_wait, (
+  void
 ));
 
 
@@ -406,16 +405,12 @@ OMPT_API_FUNCTION(ompt_frame_t *, ompt_get_task_frame, (
  * INITIALIZATION FUNCTIONS
  ***************************************************************************/
 
-#ifdef OMPT_V2013_07
-int ompt_initialize(void);
-#else
 /* initialization interface to be defined by tool */
 int ompt_initialize(
-  ompt_function_lookup_t ompt_fn_lookup, 
-  const char *runtime_version, 
+  ompt_function_lookup_t ompt_fn_lookup,
+  const char *runtime_version,
   unsigned int ompt_version
-); 
-#endif
+);
 
 typedef enum opt_init_mode_e {
   ompt_init_mode_never  = 0,
@@ -425,7 +420,7 @@ typedef enum opt_init_mode_e {
 } ompt_init_mode_t;
 
 OMPT_API_FUNCTION(int, ompt_set_callback, (
-  ompt_event_t event, 
+  ompt_event_t event,
   ompt_callback_t callback
 ));
 
@@ -439,7 +434,7 @@ typedef enum ompt_set_callback_rc_e {  /* non-standard */
 
 
 OMPT_API_FUNCTION(int, ompt_get_callback, (
-  ompt_event_t event, 
+  ompt_event_t event,
   ompt_callback_t *callback
 ));
 
@@ -454,7 +449,7 @@ OMPT_API_FUNCTION(int, ompt_get_callback, (
 #pragma omp declare target
 #endif
 void ompt_control(
-  uint64_t command, 
+  uint64_t command,
   uint64_t modifier
 );
 #if defined(_OPENMP) && (_OPENMP >= 201307)
@@ -463,8 +458,8 @@ void ompt_control(
 
 /* state enumeration */
 OMPT_API_FUNCTION(int, ompt_enumerate_state, (
-  int current_state, 
-  int *next_state, 
+  int current_state,
+  int *next_state,
   const char **next_state_name
 ));
 
