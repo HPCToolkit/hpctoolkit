@@ -1,7 +1,3 @@
-void omp_idle()
-{
-}
-
 void *
 canonicalize_placeholder(void *routine)
 {
