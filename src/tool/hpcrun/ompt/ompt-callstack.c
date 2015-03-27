@@ -58,8 +58,9 @@
 #include <hpcrun/unresolved.h>
 
 #include "ompt-interface.h"
-#include "ompt-region.h"
+#include "ompt-state-placeholders.h"
 #include "ompt-defer.h"
+#include "ompt-region.h"
 #include "ompt-task-map.h"
 
 
@@ -450,7 +451,7 @@ ompt_backtrace_null_handler(
 )
 {
   // map the empty call path to omp_runtime to indicate an idle worker
-  void *omp_idle_addr = canonicalize_placeholder(ompt_idle_placeholder_fn);
+  void *omp_idle_addr = canonicalize_placeholder(ompt_placeholders.omp_idle);
   ip_normalized_t tmp_ip = hpcrun_normalize_ip(omp_idle_addr, NULL);
   cct_addr_t tmp = ADDR2(tmp_ip.lm_id, tmp_ip.lm_ip);
 

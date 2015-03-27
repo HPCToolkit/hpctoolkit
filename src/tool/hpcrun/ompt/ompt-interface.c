@@ -116,7 +116,7 @@ static undirected_blame_info_t omp_idle_blame_info;
 // declare ompt interface function pointers
 //-----------------------------------------
 #define ompt_interface_fn(f) f ## _t f ## _fn;
-FOREACH_OMPT_FN(ompt_interface_fn)
+FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 #undef ompt_interface_fn
 
 
@@ -140,53 +140,6 @@ static __thread int ompt_idle_count;
 /******************************************************************************
  * private operations 
  *****************************************************************************/
-
-//----------------------------------------------------------------------------
-// placeholder functions for blame shift reporting
-//----------------------------------------------------------------------------
-
-void omp_idle(void)
-{
-  // this function is a placeholder used to represent the calling context of
-  // idle OpenMP worker threads. It is not meant to be invoked.
-  assert(0);
-}
-
-
-void omp_overhead(void)
-{
-  // this function is a placeholder used to represent the OpenMP context of
-  // threads working in the OpenMP runtime.  It is not meant to be invoked.
-  assert(0);
-}
-
-
-void omp_barrier_wait(void)
-{
-  // this function is a placeholder used to represent the OpenMP context of
-  // threads waiting for a barrier in the OpenMP runtime. It is not meant 
-  // to be invoked.
-  assert(0);
-}
-
-
-void omp_task_wait(void)
-{
-  // this function is a placeholder used to represent the OpenMP context of
-  // threads waiting for a task in the OpenMP runtime. It is not meant 
-  // to be invoked.
-  assert(0);
-}
-
-
-void omp_mutex_wait(void)
-{
-  // this function is a placeholder used to represent the OpenMP context of
-  // threads waiting for a mutex in the OpenMP runtime. It is not meant 
-  // to be invoked.
-  assert(0);
-}
-
 
 //----------------------------------------------------------------------------
 // support for directed blame shifting for mutex objects
@@ -291,18 +244,20 @@ ompt_idle_blame_shift_register(void)
 //----------------------------------------------------------------------------
 
 static void 
-init_function_pointers(ompt_function_lookup_t ompt_fn_lookup)
+ompt_init_inquiry_fn_ptrs(ompt_function_lookup_t ompt_fn_lookup)
 {
 #define ompt_interface_fn(f) \
   f ## _fn = (f ## _t) ompt_fn_lookup(#f); 
 
-FOREACH_OMPT_FN(ompt_interface_fn)
+FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 
 #undef ompt_interface_fn
 
+#if 0
  if (!omp_idle_fn) omp_idle_fn = omp_idle;
 
  ompt_idle_placeholder_fn = omp_idle_fn;
+#endif
 }
 
 
@@ -544,8 +499,8 @@ ompt_initialize_internal(
   fflush(NULL);
 #endif
 
-  init_function_pointers(ompt_fn_lookup);
-
+  ompt_init_inquiry_fn_ptrs(ompt_fn_lookup);
+  ompt_init_placeholder_fn_ptrs(ompt_fn_lookup);
 
   init_threads();
   init_parallel_regions();
@@ -568,14 +523,14 @@ ompt_initialize_internal(
 #ifdef OMPT_V2013_07
 
 #define macro(fn) extern void fn (void); 
-FOREACH_OMPT_FN( macro )
+FOREACH_OMPT_INQUIRY_FN( macro )
 
 #undef macro
 static ompt_interface_fn_t
 ompt_lookup(const char *fname)
 {
 #define macro( fn ) if (strcmp(fname, #fn) == 0) return (ompt_interface_fn_t) fn;
-FOREACH_OMPT_FN( macro )
+FOREACH_OMPT_INQUIRY_FN( macro )
 #undef macro
 return 0;
 }
