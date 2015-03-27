@@ -17,7 +17,7 @@
  * iteration macros
  *****************************************************************************/
 
-#define FOREACH_OMPT_FN(macro) \
+#define FOREACH_OMPT_INQUIRY_FN(macro) \
 	macro (ompt_enumerate_state ) 		\
 						\
 	macro (ompt_set_callback) 		\
@@ -31,8 +31,10 @@
 	macro (ompt_get_parallel_id) 		\
 	macro (ompt_get_parallel_team_size) 	\
 	macro (ompt_get_task_id) 		\
-	macro (ompt_get_thread_id)		\
-						\
+	macro (ompt_get_thread_id)
+
+
+#define FOREACH_OMPT_PLACEHOLDER_FN(macro) \
 	macro (omp_idle) 			\
 	macro (omp_overhead) 			\
 	macro (omp_barrier_wait)		\
