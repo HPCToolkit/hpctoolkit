@@ -247,8 +247,7 @@ static void
 init_function_pointers(ompt_function_lookup_t ompt_fn_lookup)
 {
 #define ompt_interface_fn(f) \
-  f ## _fn = (f ## _t) ompt_fn_lookup(#f); \
-  assert(f ##_fn != 0);
+  f ## _fn = (f ## _t) ompt_fn_lookup(#f); 
 
 FOREACH_OMPT_FN(ompt_interface_fn)
 
