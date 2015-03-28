@@ -126,7 +126,7 @@ namespace TraceviewerServer
 		}
 
 		FileDescriptor fd = open(sPath.c_str(), O_RDONLY);
-		info = new PageInfo(fd, pageLimit, chunkSize);
+		info = new PageInfo(fd, fileSize, pageLimit, chunkSize);
 
 		FileOffset sizeRemaining = fileSize;
 		for (long i = 0; i < numFilePages; i++)

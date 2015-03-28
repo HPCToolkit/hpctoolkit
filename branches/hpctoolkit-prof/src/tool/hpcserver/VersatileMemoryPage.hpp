@@ -78,10 +78,11 @@ namespace TraceviewerServer
 	class PageInfo
 	{
 	public:
-		PageInfo(FileDescriptor, long, long);
+		PageInfo(FileDescriptor, FileOffset, long, long);
 
 		vector <VersatileMemoryPage *> pageVec;
 		FileDescriptor fd;
+		FileOffset  fileSize;
 		long  numPages;
 		long  nextIndex;
 		long  chunkSize;

@@ -72,14 +72,17 @@
 #include "VersatileMemoryPage.hpp"
 
 #define DEFAULT_PAGE_SIZE  4096
+#define EXTRA_SIZE   32
 
 using namespace std;
 
 namespace TraceviewerServer
 {
-	PageInfo::PageInfo(FileDescriptor _fd, long _numPages, long _chunkSize)
+	PageInfo::PageInfo(FileDescriptor _fd, FileOffset _fileSize,
+			   long _numPages, long _chunkSize)
 	{
 		fd = _fd;
+		fileSize = _fileSize;
 		numPages = _numPages;
 		nextIndex = 0;
 		chunkSize = _chunkSize;
@@ -91,7 +94,8 @@ namespace TraceviewerServer
 		if (page_size < DEFAULT_PAGE_SIZE) {
 			page_size = DEFAULT_PAGE_SIZE;
 		}
-		map_size = page_size * ((chunkSize + page_size - 1)/page_size);
+		map_size = chunkSize + EXTRA_SIZE;
+		map_size = page_size * ((map_size + page_size - 1)/page_size);
 
 		pageVec.resize(numPages);
 		for (long i = 0; i < numPages; i++) {
@@ -165,10 +169,25 @@ namespace TraceviewerServer
 			exit(1);
 		}
 
+		// extend each segment by a small amount (32 bytes) to
+		// simplify handling a trace record that crosses a
+		// segment boundary.
+
+		ssize_t read_size = size + EXTRA_SIZE;
+		if (offset + read_size > info->fileSize) {
+			read_size = info->fileSize - offset;
+		}
+		if (read_size > info->map_size) {
+			cerr << "warning: page " << index
+			     << " segment size 0x" << hex << read_size
+			     << " exceeds map size 0x" << info->map_size
+			     << dec << endl;
+		}
+
 		// read segment from file and handle short reads
 		ssize_t len = 0;
-		while (len < size) {
-			ssize_t ret = pread(info->fd, &page[len], size - len, offset + len);
+		while (len < read_size) {
+			ssize_t ret = pread(info->fd, &page[len], read_size - len, offset + len);
 			if (ret > 0) {
 			    	len += ret;
 			}
