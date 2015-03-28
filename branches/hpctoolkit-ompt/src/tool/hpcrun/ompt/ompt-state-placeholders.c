@@ -76,7 +76,7 @@ omp_mutex_wait(void)
 //***************************************************************************
 
 #define FINALIZE_PLACEHOLDER(f) \
-  if (ompt_placeholders.f) ompt_placeholders.f = f
+  if (!ompt_placeholders.f) ompt_placeholders.f = f
 
 #define OMPT_PLACEHOLDER_MACRO(f) \
   ompt_placeholders.f = (f ## _t) ompt_fn_lookup(#f); 
