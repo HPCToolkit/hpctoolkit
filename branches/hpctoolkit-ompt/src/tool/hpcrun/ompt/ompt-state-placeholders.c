@@ -11,6 +11,8 @@
 //***************************************************************************
 
 #include "ompt-state-placeholders.h"
+#include "../fnbounds/fnbounds_interface.h"
+#include "../../../lib/prof-lean/placeholders.h"
 
 
 
@@ -73,31 +75,43 @@ omp_mutex_wait(void)
 }
 
 
+//***************************************************************************
+// private operations
+//***************************************************************************
+
+static load_module_t *
+pc_to_lm(void *pc)
+{
+  void *func_start_pc, *func_end_pc;
+  load_module_t *lm = NULL;
+  fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc, &lm);
+  return lm;
+}
+
+
+static void 
+init_placeholder(ompt_placeholder_t *p, void *pc)
+{
+  void *cpc = canonicalize_placeholder(pc);
+  p->pc = cpc;
+  p->pc_norm = hpcrun_normalize_ip(cpc, pc_to_lm(cpc));
+}
+
 
 //***************************************************************************
 // interface operations
 //***************************************************************************
 
-#define FINALIZE_PLACEHOLDER(f) \
-  if (!ompt_placeholders.f) ompt_placeholders.f = f;
 
-#define OMPT_PLACEHOLDER_MACRO(f) \
-  ompt_placeholders.f = (f ## _t) ompt_fn_lookup(#f); 
+#define OMPT_PLACEHOLDER_MACRO(f)               \
+  {                                             \
+    f ## _t fn = (f ## _t) ompt_fn_lookup(#f);  \
+    if (!fn) fn = f;                            \
+    init_placeholder(&ompt_placeholders.f, fn); \
+  }
 
 void
 ompt_init_placeholder_fn_ptrs(ompt_function_lookup_t ompt_fn_lookup)
 {
-  // look up placeholders functions available from the runtime
   FOREACH_OMPT_PLACEHOLDER_FN(OMPT_PLACEHOLDER_MACRO)
-
-  // use a tool placeholder function if the runtime doesn't have one 
-  FOREACH_OMPT_PLACEHOLDER_FN(FINALIZE_PLACEHOLDER)
-
-#if 0
-  FINALIZE_PLACEHOLDER(omp_idle);
-  FINALIZE_PLACEHOLDER(omp_overhead);
-  FINALIZE_PLACEHOLDER(omp_barrier_wait);
-  FINALIZE_PLACEHOLDER(omp_task_wait);
-  FINALIZE_PLACEHOLDER(omp_mutex_wait);
-#endif
 }

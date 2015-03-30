@@ -1,8 +1,16 @@
 //***************************************************************************
-// local include files
+// global include files
 //***************************************************************************
 
 #include <ompt.h>
+
+
+
+//***************************************************************************
+// local include files
+//***************************************************************************
+
+#include "../utilities/ip-normalized.h"
 
 
 
@@ -11,11 +19,15 @@
 //***************************************************************************
 
 typedef struct {
-  omp_idle_t omp_idle;
-  omp_overhead_t omp_overhead;
-  omp_barrier_wait_t omp_barrier_wait;
-  omp_task_wait_t omp_task_wait;
-  omp_mutex_wait_t omp_mutex_wait;
+  void           *pc;
+  ip_normalized_t pc_norm; 
+} ompt_placeholder_t;
+
+
+typedef struct {
+#define declare_ph(f) ompt_placeholder_t f;
+  FOREACH_OMPT_PLACEHOLDER_FN(declare_ph);
+#undef declare_ph 
 } ompt_placeholders_t; 
 
 
