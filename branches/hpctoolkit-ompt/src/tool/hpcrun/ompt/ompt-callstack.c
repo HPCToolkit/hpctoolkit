@@ -182,13 +182,15 @@ ompt_elide_runtime_frame(
 #endif
 
   if (state == ompt_state_idle) {
-     int master = TD_GET(master);
-     if (!master) {
-       set_frame(*bt_inner, ompt_placeholders.omp_idle);
-       *bt_outer = *bt_inner; 
-       bt->bottom_frame_elided = true;
-       return;
-     }
+    int master = TD_GET(master);
+    if (!master) { 
+      set_frame(*bt_outer, ompt_placeholders.omp_idle);
+      *bt_inner = *bt_outer; 
+      bt->bottom_frame_elided = false;
+      bt->partial_unwind = false;
+      bt->trace_pc = (*bt_inner)->cursor.pc_unnorm;
+      return;
+    }
   }
 
   int i = 0;
@@ -354,16 +356,22 @@ ompt_elide_runtime_frame(
     }
   }
 
+  bt->trace_pc = (*bt_inner)->cursor.pc_unnorm;
+
   elide_debug_dump("ELIDED", *bt_inner, *bt_outer, region_id); 
   return;
 
  clip_base_frames:
   {
-    set_frame(*bt_inner, ompt_placeholders.omp_idle);
-    *bt_outer = *bt_inner; 
-    bt->bottom_frame_elided = true;
-    bt->partial_unwind = false;
-    return;
+    int master = TD_GET(master);
+    if (!master) { 
+      set_frame(*bt_outer, ompt_placeholders.omp_idle);
+      *bt_inner = *bt_outer; 
+      bt->bottom_frame_elided = false;
+      bt->partial_unwind = false;
+      bt->trace_pc = (*bt_inner)->cursor.pc_unnorm;
+      return;
+    }
 
     /* runtime frames with nothing else; it is harmless to reveal them all */
     uint64_t idle_frame = (uint64_t) hpcrun_ompt_get_idle_frame();
