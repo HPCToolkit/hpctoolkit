@@ -12,10 +12,6 @@
 
 static cct_backtrace_finalize_entry_t *finalizers;
 
-#if 0
-static cct_backtrace_null_handler_fn null_handler;
-#endif
-
 static cct_cursor_finalize_fn cursor_finalize;
 
 
@@ -56,28 +52,6 @@ cct_backtrace_finalize(
     e = e->next;
   }
 }
-
-
-#if 0
-void
-cct_backtrace_null_handler_register(
-  cct_backtrace_null_handler_fn fn
-)
-{
-  null_handler = fn;
-}
-
-
-cct_node_t *
-cct_backtrace_null_handler(
-  cct_node_t *n,
-  void **trace_pc
-)
-{
-  if (null_handler) return null_handler(n, trace_pc);
-  else return n;
-}
-#endif
 
 
 cct_node_t *

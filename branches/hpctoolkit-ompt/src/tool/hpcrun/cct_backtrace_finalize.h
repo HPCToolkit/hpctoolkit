@@ -11,7 +11,6 @@
 
 
 
-
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -28,13 +27,6 @@ typedef struct cct_backtrace_finalize_entry_s {
 } cct_backtrace_finalize_entry_t;
 
 
-#if 0
-typedef cct_node_t *(*cct_backtrace_null_handler_fn)(
-  cct_node_t *n, void **trace_pc
-);
-#endif
-
-
 typedef cct_node_t * (*cct_cursor_finalize_fn)(
   cct_bundle_t *cct,
   backtrace_info_t *bt,
@@ -49,27 +41,17 @@ extern void cct_backtrace_finalize_register(
   cct_backtrace_finalize_entry_t *e
 );
 
-#if 0
-extern void cct_backtrace_null_handler_register(
-  cct_backtrace_null_handler_fn fn
-);
-#endif
-
 
 extern void cct_backtrace_finalize(
   backtrace_info_t *bt, 
   int isSync
 );
 
-#if 0
-extern cct_node_t *cct_backtrace_null_handler(
-  cct_node_t *n, void **trace_pc
-);
-#endif
 
 extern void cct_cursor_finalize_register(
   cct_cursor_finalize_fn fn
 );
+
 
 extern cct_node_t *cct_cursor_finalize(
   cct_bundle_t *cct,
