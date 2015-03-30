@@ -346,16 +346,6 @@ ompt_elide_runtime_frame(
     bt->partial_unwind = false;
   }
 
-  {
-    int master = TD_GET(master);
-    if (!master && check_state() == ompt_state_wait_barrier) {
-       int again = TD_GET(master);
-    }
-    if (!master && hpcrun_ompt_get_parallel_id(0) == 0) {
-       int again = TD_GET(master);
-    }
-  }
-
   bt->trace_pc = (*bt_inner)->cursor.pc_unnorm;
 
   elide_debug_dump("ELIDED", *bt_inner, *bt_outer, region_id); 
@@ -503,44 +493,8 @@ ompt_backtrace_finalize(
   uint64_t region_id = TD_GET(region_id);
 
   ompt_elide_runtime_frame(bt, region_id, isSync);
-
-#if 0
-  {
-    frame_t* bt_last = bt->last;
-&bt->last, &bt->begin, 
-    if (bt_last != bt->last) {
-      bt->bottom_frame_elided = true;
-      if (hpcrun_ompt_get_parallel_id(0) == 0) bt->partial_unwind = true;
-    }
-  }
-#endif
 }
 
-
-#if 0
-static cct_node_t *
-ompt_backtrace_null_handler(
-  cct_node_t *cct,
-  void **trace_pc
-)
-{
-  // map the empty call path to omp_runtime to indicate an idle worker
-  void *omp_idle_addr = canonicalize_placeholder(ompt_placeholders.omp_idle);
-  ip_normalized_t tmp_ip = hpcrun_normalize_ip(omp_idle_addr, NULL);
-  cct_addr_t tmp = ADDR2(tmp_ip.lm_id, tmp_ip.lm_ip);
-
-  // insert the idle worker placeholder in the cct
-  cct = hpcrun_cct_insert_addr(cct, &tmp);
-  hpcrun_cct_terminate_path(cct);
-
-  // change the PC to use for tracing to be in the idle routine
-  *trace_pc = omp_idle_addr;
-
-  // return the new idle worker placeholder
-  return cct;
-}
-#endif
-    
 
 cct_node_t *
 ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt, 
@@ -601,8 +555,5 @@ ompt_callstack_register_handlers(void)
   ompt_finalizer.next = 0;
   ompt_finalizer.fn = ompt_backtrace_finalize;
   cct_backtrace_finalize_register(&ompt_finalizer);
-#if 0
-  cct_backtrace_null_handler_register(ompt_backtrace_null_handler);
-#endif
   cct_cursor_finalize_register(ompt_cct_cursor_finalize);
 }
