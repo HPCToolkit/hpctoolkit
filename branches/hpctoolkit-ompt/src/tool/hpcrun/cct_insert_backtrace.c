@@ -82,14 +82,16 @@ static bool retain_recursion = false;
 
 static cct_node_t*
 cct_insert_raw_backtrace(cct_node_t* cct,
-                            frame_t* path_beg, frame_t* path_end, void **trace_pc)
+                            frame_t* path_beg, frame_t* path_end)
 {
   TMSG(BT_INSERT, "%s : start", __func__);
   if (!cct) return NULL; // nowhere to insert
 
+#if 0
   if (path_beg < path_end) { // null backtrace 
-     return cct_backtrace_null_handler(cct, trace_pc);
+     return cct_backtrace_null_handler(cct);
   }
+#endif
 
   ip_normalized_t parent_routine = ip_normalized_NULL;
   for(; path_beg >= path_end; path_beg--){
@@ -132,8 +134,7 @@ hpcrun_set_retain_recursion_mode(bool mode)
 
 // See usage in header.
 cct_node_t*
-hpcrun_cct_insert_backtrace(cct_node_t* treenode, frame_t* path_beg, frame_t* path_end, 
-                            void **trace_pc)
+hpcrun_cct_insert_backtrace(cct_node_t* treenode, frame_t* path_beg, frame_t* path_end)
 {
   TMSG(FENCE, "insert backtrace into treenode %p", treenode);
   TMSG(FENCE, "backtrace below");
@@ -142,7 +143,7 @@ hpcrun_cct_insert_backtrace(cct_node_t* treenode, frame_t* path_beg, frame_t* pa
     ENABLE(BT_INSERT);
   }
 
-  cct_node_t* path = cct_insert_raw_backtrace(treenode, path_beg, path_end, trace_pc);
+  cct_node_t* path = cct_insert_raw_backtrace(treenode, path_beg, path_end);
   if (! bt_ins) DISABLE(BT_INSERT);
 
   // Put lush as_info class correction here
@@ -169,9 +170,9 @@ cct_node_t*
 hpcrun_cct_insert_backtrace_w_metric(cct_node_t* treenode,
 				     int metric_id,
 				     frame_t* path_beg, frame_t* path_end,
-				     cct_metric_data_t datum, void **trace_pc)
+				     cct_metric_data_t datum)
 {
-  cct_node_t* path = hpcrun_cct_insert_backtrace(treenode, path_beg, path_end, trace_pc);
+  cct_node_t* path = hpcrun_cct_insert_backtrace(treenode, path_beg, path_end);
 
   metric_set_t* mset = hpcrun_reify_metric_set(path);
 
@@ -196,7 +197,7 @@ hpcrun_cct_insert_bt(cct_node_t* node,
 		     cct_metric_data_t datum, void **trace_pc)
 {
   return hpcrun_cct_insert_backtrace_w_metric(node, metricId, hpcrun_bt_last(bt), 
-					      hpcrun_bt_beg(bt), datum, trace_pc);
+					      hpcrun_bt_beg(bt), datum);
 }
 
 
@@ -281,7 +282,6 @@ hpcrun_cct_record_backtrace(
   cct_bundle_t* cct, 
   bool partial, 
   backtrace_info_t *bt,
-  void **trace_pc,
   bool tramp_found
 )
 {
@@ -307,13 +307,13 @@ hpcrun_cct_record_backtrace(
   TMSG(FENCE, "further sanity check: bt->last frame = (%d, %p)", 
        bt->last->ip_norm.lm_id, bt->last->ip_norm.lm_ip);
 
-  return hpcrun_cct_insert_backtrace(cct_cursor, bt->last, bt->begin, trace_pc);
+  return hpcrun_cct_insert_backtrace(cct_cursor, bt->last, bt->begin);
 
 }
 
 cct_node_t*
 hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, 
-                                     backtrace_info_t *bt, void **trace_pc,
+                                     backtrace_info_t *bt, 
                                      bool tramp_found,
 				     int metricId, uint64_t metricIncr)
 {
@@ -346,7 +346,7 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
 
   return hpcrun_cct_insert_backtrace_w_metric(cct_cursor, metricId,
 					      bt->last, bt->begin,
-					      (cct_metric_data_t){.i = metricIncr}, trace_pc);
+					      (cct_metric_data_t){.i = metricIncr});
 
 }
 
@@ -371,7 +371,7 @@ hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   }
 
   cct_node_t* n = 
-    hpcrun_cct_record_backtrace_w_metric(cct, true, &bt, trace_pc,
+    hpcrun_cct_record_backtrace_w_metric(cct, true, &bt,
 					 bt.has_tramp,
 					 metricId, metricIncr);
 
@@ -400,17 +400,9 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
   thread_data_t* td = hpcrun_get_thread_data();
   backtrace_info_t bt;
 
-  bool partial_unw = false;
-  if (! hpcrun_generate_backtrace(&bt, context, skipInner)) {
-    if (ENABLED(NO_PARTIAL_UNW)){
-      return NULL;
-    }
+  bool success = hpcrun_generate_backtrace(&bt, context, skipInner);
 
-    TMSG(PARTIAL_UNW, "recording partial unwind from graceful failure, "
-	 "len partial unw = %d", (bt.last - bt.begin)+1);
-    hpcrun_stats_num_samples_partial_inc();
-    partial_unw = true;
-  }
+  assert(!success == bt.partial_unwind);
 
   tramp_found = bt.has_tramp;
 
@@ -420,22 +412,36 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
   // TMSG(GENERIC1, "tmain chk");
   if (ENABLED(CHECK_MAIN)) {
     if ( bt.fence == FENCE_MAIN &&
-	 ! partial_unw &&
+	 ! bt.partial_unwind &&
 	 ! tramp_found &&
 	 (bt.last == bt.begin || 
 	  ! hpcrun_inbounds_main(hpcrun_frame_get_unnorm(bt.last - 1)))) {
       hpcrun_bt_dump(TD_GET(btbuf_cur), "WRONG MAIN");
       hpcrun_stats_num_samples_dropped_inc();
-      partial_unw = true;
+      bt.partial_unwind = true;
     }
   }
 
+  bt.trace_pc = bt.begin->cursor.pc_unnorm;
+
   cct_backtrace_finalize(&bt, isSync); 
 
+  if (bt.partial_unwind) {
+    if (ENABLED(NO_PARTIAL_UNW)){
+      return NULL;
+    }
+
+    TMSG(PARTIAL_UNW, "recording partial unwind from graceful failure, "
+	 "len partial unw = %d", (bt.last - bt.begin)+1);
+    hpcrun_stats_num_samples_partial_inc();
+  }
+
   cct_node_t* n = 
-    hpcrun_cct_record_backtrace_w_metric(bundle, partial_unw, &bt, trace_pc,
+    hpcrun_cct_record_backtrace_w_metric(bundle, bt.partial_unwind, &bt, 
 					 tramp_found,
 					 metricId, metricIncr);
+
+  *trace_pc = bt.trace_pc;
 
   if (bt.trolled) hpcrun_stats_trolled_inc();
   hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));

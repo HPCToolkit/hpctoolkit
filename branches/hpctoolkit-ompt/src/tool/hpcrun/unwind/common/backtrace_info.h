@@ -23,6 +23,8 @@ typedef struct {
   bool     trolled;   // true when ANY frame in the backtrace came from a troll
   size_t   n_trolls;  // # of frames that resulted from trolling
   bool     bottom_frame_elided; // true if bottom frame has been elided 
+  bool     partial_unwind; // true if not a full unwind
+  void    *trace_pc;  // in/out value: modified to adjust trace when modifying backtrace
 } backtrace_info_t;
 
 #endif // BACKTRACE_INFO_H

@@ -137,22 +137,59 @@ check_state()
   return hpcrun_ompt_get_state(&wait_id);
 }
 
+static load_module_t *
+pc_to_lm(void *pc)
+{
+  void *func_start_pc, *func_end_pc;
+  load_module_t *lm = NULL;
+  fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc, &lm);
+  return lm;
+}
+
+static void 
+set_frame(frame_t *f, void *pc)
+{
+  void *cpc = canonicalize_placeholder(pc);
+  f->cursor.pc_unnorm = cpc;
+  f->ip_norm = hpcrun_normalize_ip(cpc, pc_to_lm(cpc));
+}
+
 
 static void
 ompt_elide_runtime_frame(
-  frame_t **bt_outer, 
-  frame_t **bt_inner, 
+  backtrace_info_t *bt, 
   uint64_t region_id, 
   int isSync
 )
 {
-#if 1
-  if (check_state() == ompt_state_idle) {
-     // clip all frames
-     *bt_inner = *bt_outer + 1; 
+  frame_t **bt_outer = &bt->last; 
+  frame_t **bt_inner = &bt->begin;
+
+  frame_t *bt_outer_at_entry = *bt_outer;
+
+  ompt_state_t state = check_state();
+
+ #if 0
+  // FIXME
+  if ((state == ompt_state_wait_barrier) ||
+      (state == ompt_state_wait_barrier_explicit) ||
+      (state == ompt_state_wait_barrier_implicit)) {
+     set_frame(*bt_inner, ompt_placeholders.omp_barrier_wait);
+     *bt_outer = *bt_inner; 
+     bt->bottom_frame_elided = true;
      return;
   }
 #endif
+
+  if (state == ompt_state_idle) {
+     int master = TD_GET(master);
+     if (!master) {
+       set_frame(*bt_inner, ompt_placeholders.omp_idle);
+       *bt_outer = *bt_inner; 
+       bt->bottom_frame_elided = true;
+       return;
+     }
+  }
 
   int i = 0;
   frame_t *it = NULL;
@@ -302,11 +339,32 @@ ompt_elide_runtime_frame(
     }
   }
 
+  if (*bt_outer != bt_outer_at_entry) {
+    bt->bottom_frame_elided = true;
+    bt->partial_unwind = false;
+  }
+
+  {
+    int master = TD_GET(master);
+    if (!master && check_state() == ompt_state_wait_barrier) {
+       int again = TD_GET(master);
+    }
+    if (!master && hpcrun_ompt_get_parallel_id(0) == 0) {
+       int again = TD_GET(master);
+    }
+  }
+
   elide_debug_dump("ELIDED", *bt_inner, *bt_outer, region_id); 
   return;
 
  clip_base_frames:
   {
+    set_frame(*bt_inner, ompt_placeholders.omp_idle);
+    *bt_outer = *bt_inner; 
+    bt->bottom_frame_elided = true;
+    bt->partial_unwind = false;
+    return;
+
     /* runtime frames with nothing else; it is harmless to reveal them all */
     uint64_t idle_frame = (uint64_t) hpcrun_ompt_get_idle_frame();
 
@@ -315,6 +373,8 @@ ompt_elide_runtime_frame(
       for (it = *bt_inner; it <= *bt_outer; it++) {
 	if ((uint64_t)(it->cursor.sp) >= idle_frame) {
 	  *bt_outer = it - 2;
+          bt->bottom_frame_elided = true;
+          bt->partial_unwind = true;
 	  break;
 	}
       }
@@ -434,16 +494,22 @@ ompt_backtrace_finalize(
   }
   uint64_t region_id = TD_GET(region_id);
 
+  ompt_elide_runtime_frame(bt, region_id, isSync);
+
+#if 0
   {
     frame_t* bt_last = bt->last;
-    ompt_elide_runtime_frame(&bt->last, &bt->begin, region_id, isSync);
+&bt->last, &bt->begin, 
     if (bt_last != bt->last) {
       bt->bottom_frame_elided = true;
+      if (hpcrun_ompt_get_parallel_id(0) == 0) bt->partial_unwind = true;
     }
   }
+#endif
 }
 
 
+#if 0
 static cct_node_t *
 ompt_backtrace_null_handler(
   cct_node_t *cct,
@@ -460,11 +526,12 @@ ompt_backtrace_null_handler(
   hpcrun_cct_terminate_path(cct);
 
   // change the PC to use for tracing to be in the idle routine
-  *trace_pc = omp_idle_addr + 1;
+  *trace_pc = omp_idle_addr;
 
   // return the new idle worker placeholder
   return cct;
 }
+#endif
     
 
 cct_node_t *
@@ -526,6 +593,8 @@ ompt_callstack_register_handlers(void)
   ompt_finalizer.next = 0;
   ompt_finalizer.fn = ompt_backtrace_finalize;
   cct_backtrace_finalize_register(&ompt_finalizer);
+#if 0
   cct_backtrace_null_handler_register(ompt_backtrace_null_handler);
+#endif
   cct_cursor_finalize_register(ompt_cct_cursor_finalize);
 }

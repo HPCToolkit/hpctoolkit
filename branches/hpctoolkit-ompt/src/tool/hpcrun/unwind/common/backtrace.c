@@ -348,6 +348,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
   bt->n_trolls = 0;
   bt->fence = FENCE_BAD;
   bt->bottom_frame_elided = false;
+  bt->partial_unwind = true;
 
   bool tramp_found = false;
 
@@ -464,7 +465,9 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
     TMSG(BT, "** Soft Failure **");
     return false;
   }
+
   TMSG(BT, "succeeds");
+  bt->partial_unwind = false;
   return true;
 }
 
@@ -560,6 +563,7 @@ hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
   bt->trolled  = false;
   bt->n_trolls = 0;
   bt->bottom_frame_elided = false;
+  bt->partial_unwind = true;
 
   bool tramp_found = false;
 
@@ -689,6 +693,7 @@ hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
     bt->begin = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
   }
 
+  bt->partial_unwind = false;
   return true;
 }
 
