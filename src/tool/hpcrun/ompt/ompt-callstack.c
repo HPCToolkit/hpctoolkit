@@ -137,21 +137,12 @@ check_state()
   return hpcrun_ompt_get_state(&wait_id);
 }
 
-static load_module_t *
-pc_to_lm(void *pc)
-{
-  void *func_start_pc, *func_end_pc;
-  load_module_t *lm = NULL;
-  fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc, &lm);
-  return lm;
-}
 
 static void 
-set_frame(frame_t *f, void *pc)
+set_frame(frame_t *f, ompt_placeholder_t *ph)
 {
-  void *cpc = canonicalize_placeholder(pc);
-  f->cursor.pc_unnorm = cpc;
-  f->ip_norm = hpcrun_normalize_ip(cpc, pc_to_lm(cpc));
+  f->cursor.pc_unnorm = ph->pc;
+  f->ip_norm = ph->pc_norm;
 }
 
 
@@ -174,7 +165,7 @@ ompt_elide_runtime_frame(
   if ((state == ompt_state_wait_barrier) ||
       (state == ompt_state_wait_barrier_explicit) ||
       (state == ompt_state_wait_barrier_implicit)) {
-     set_frame(*bt_inner, ompt_placeholders.omp_barrier_wait);
+     set_frame(*bt_inner, &ompt_placeholders.omp_barrier_wait);
      *bt_outer = *bt_inner; 
      bt->bottom_frame_elided = true;
      return;
@@ -184,7 +175,7 @@ ompt_elide_runtime_frame(
   if (state == ompt_state_idle) {
     int master = TD_GET(master);
     if (!master) { 
-      set_frame(*bt_outer, ompt_placeholders.omp_idle);
+      set_frame(*bt_outer, &ompt_placeholders.omp_idle);
       *bt_inner = *bt_outer; 
       bt->bottom_frame_elided = false;
       bt->partial_unwind = false;
@@ -355,7 +346,7 @@ ompt_elide_runtime_frame(
   {
     int master = TD_GET(master);
     if (!master) { 
-      set_frame(*bt_outer, ompt_placeholders.omp_idle);
+      set_frame(*bt_outer, &ompt_placeholders.omp_idle);
       *bt_inner = *bt_outer; 
       bt->bottom_frame_elided = false;
       bt->partial_unwind = false;
