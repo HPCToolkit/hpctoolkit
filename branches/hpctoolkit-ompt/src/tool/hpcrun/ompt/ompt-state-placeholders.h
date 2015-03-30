@@ -45,5 +45,5 @@ extern ompt_placeholders_t ompt_placeholders;
 //***************************************************************************
 
 void
-ompt_init_placeholder_fn_ptrs(ompt_function_lookup_t ompt_fn_lookup);
+ompt_init_placeholders(ompt_function_lookup_t ompt_fn_lookup);
 

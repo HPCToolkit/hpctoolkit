@@ -111,7 +111,7 @@ init_placeholder(ompt_placeholder_t *p, void *pc)
   }
 
 void
-ompt_init_placeholder_fn_ptrs(ompt_function_lookup_t ompt_fn_lookup)
+ompt_init_placeholders(ompt_function_lookup_t ompt_fn_lookup)
 {
   FOREACH_OMPT_PLACEHOLDER_FN(OMPT_PLACEHOLDER_MACRO)
 }

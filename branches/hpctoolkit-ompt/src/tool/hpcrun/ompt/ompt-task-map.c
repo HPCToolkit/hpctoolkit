@@ -47,7 +47,7 @@ static spinlock_t ompt_task_map_lock = SPINLOCK_UNLOCKED;
  * private operations
  *****************************************************************************/
 
-inline ompt_task_map_entry_t *
+ompt_task_map_entry_t *
 ompt_task_map_entry_alloc()
 {
   ompt_task_map_entry_t *e;
@@ -61,7 +61,7 @@ ompt_task_map_entry_alloc()
 }
 
 
-inline void
+void
 ompt_task_map_entry_free(ompt_task_map_entry_t *e)
 {
   e->left = freelist;
@@ -90,7 +90,8 @@ ompt_task_map_splay(ompt_task_map_entry_t *root, uint64_t key)
   return root;
 }
 
-
+#if 0
+// FIXME -- this will be needed when the taskmap is populated and used
 static void
 ompt_task_map_delete_root()
 {
@@ -106,6 +107,7 @@ ompt_task_map_delete_root()
     ompt_task_map_root = ompt_task_map_root->left;
   }
 }
+#endif
 
 
 

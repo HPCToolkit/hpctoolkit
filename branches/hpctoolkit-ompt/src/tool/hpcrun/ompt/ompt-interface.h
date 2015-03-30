@@ -35,9 +35,9 @@ extern omp_idle_t ompt_idle_placeholder_fn;
 
 #if 1
 //FIXME for tasks
-#define task_map_insert(id, cct) ((uint64_t) id & (uint64_t) cct) // computation to avoid unused var warnings
+#define task_map_insert(id, cct) // FIXME 
 #define task_map_delete(id, cct)
-#define task_map_lookup(id) (id & 0) // computation to avoid unused var warnings
+#define task_map_lookup(id) 0 // FIXME
 #endif
 
 

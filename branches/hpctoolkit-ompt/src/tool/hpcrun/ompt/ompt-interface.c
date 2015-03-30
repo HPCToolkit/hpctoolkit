@@ -65,6 +65,7 @@
 
 #include "ompt-interface.h"
 #include "ompt-callstack.h"
+#include "ompt-state-placeholders.h"
 
 #include "sample-sources/blame-shift/directed.h"
 #include "sample-sources/blame-shift/undirected.h"
@@ -500,7 +501,8 @@ ompt_initialize_internal(
 #endif
 
   ompt_init_inquiry_fn_ptrs(ompt_fn_lookup);
-  ompt_init_placeholder_fn_ptrs(ompt_fn_lookup);
+
+  ompt_init_placeholders(ompt_fn_lookup);
 
   init_threads();
   init_parallel_regions();
