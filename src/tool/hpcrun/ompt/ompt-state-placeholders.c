@@ -79,7 +79,7 @@ omp_mutex_wait(void)
 //***************************************************************************
 
 #define FINALIZE_PLACEHOLDER(f) \
-  if (!ompt_placeholders.f) ompt_placeholders.f = f
+  if (!ompt_placeholders.f) ompt_placeholders.f = f;
 
 #define OMPT_PLACEHOLDER_MACRO(f) \
   ompt_placeholders.f = (f ## _t) ompt_fn_lookup(#f); 
@@ -91,9 +91,13 @@ ompt_init_placeholder_fn_ptrs(ompt_function_lookup_t ompt_fn_lookup)
   FOREACH_OMPT_PLACEHOLDER_FN(OMPT_PLACEHOLDER_MACRO)
 
   // use a tool placeholder function if the runtime doesn't have one 
+  FOREACH_OMPT_PLACEHOLDER_FN(FINALIZE_PLACEHOLDER)
+
+#if 0
   FINALIZE_PLACEHOLDER(omp_idle);
   FINALIZE_PLACEHOLDER(omp_overhead);
   FINALIZE_PLACEHOLDER(omp_barrier_wait);
   FINALIZE_PLACEHOLDER(omp_task_wait);
   FINALIZE_PLACEHOLDER(omp_mutex_wait);
+#endif
 }
