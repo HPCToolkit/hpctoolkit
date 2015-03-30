@@ -1,4 +1,12 @@
 //***************************************************************************
+// system includes 
+//***************************************************************************
+
+#include <assert.h>
+
+
+
+//***************************************************************************
 // local includes 
 //***************************************************************************
 
@@ -25,48 +33,43 @@ ompt_placeholders_t ompt_placeholders;
 void 
 omp_idle(void)
 {
-  // this function is a placeholder used to represent the calling context of
+  // this function is a placeholder that represents the calling context of
   // idle OpenMP worker threads. It is not meant to be invoked.
-  assert(0);
 }
 
 
 void 
 omp_overhead(void)
 {
-  // this function is a placeholder used to represent the OpenMP context of
+  // this function is a placeholder that represents the calling context of
   // threads working in the OpenMP runtime.  It is not meant to be invoked.
-  assert(0);
 }
 
 
 void 
 omp_barrier_wait(void)
 {
-  // this function is a placeholder used to represent the OpenMP context of
+  // this function is a placeholder that represents the calling context of
   // threads waiting for a barrier in the OpenMP runtime. It is not meant 
   // to be invoked.
-  assert(0);
 }
 
 
 void 
 omp_task_wait(void)
 {
-  // this function is a placeholder used to represent the OpenMP context of
+  // this function is a placeholder that represents the calling context of
   // threads waiting for a task in the OpenMP runtime. It is not meant 
   // to be invoked.
-  assert(0);
 }
 
 
 void 
 omp_mutex_wait(void)
 {
-  // this function is a placeholder used to represent the OpenMP context of
+  // this function is a placeholder that represents the calling context of
   // threads waiting for a mutex in the OpenMP runtime. It is not meant 
   // to be invoked.
-  assert(0);
 }
 
 
