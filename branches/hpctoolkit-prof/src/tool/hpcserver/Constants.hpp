@@ -72,7 +72,7 @@ namespace TraceviewerServer
 
 /**The size of one trace record in bytes (cpid (= 4 bytes) + timeStamp (= 8 bytes)).*/
 #define SIZE_OF_TRACE_RECORD (SIZEOF_INT+SIZEOF_LONG)
-#define SIZEOF_END_OF_FILE_MARKER 4
+#define SIZEOF_END_OF_FILE_MARKER 8
 
 	static const int DEFAULT_PORT = 21590;
 	static const unsigned int MAX_DB_PATH_LENGTH = 1023;
