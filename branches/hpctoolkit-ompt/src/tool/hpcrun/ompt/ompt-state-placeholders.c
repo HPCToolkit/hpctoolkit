@@ -13,6 +13,7 @@
 #include "ompt-state-placeholders.h"
 #include "../fnbounds/fnbounds_interface.h"
 #include "../../../lib/prof-lean/placeholders.h"
+#include "../safe-sampling.h"
 
 
 
@@ -92,9 +93,16 @@ pc_to_lm(void *pc)
 static void 
 init_placeholder(ompt_placeholder_t *p, void *pc)
 {
-  void *cpc = canonicalize_placeholder(pc);
-  p->pc = cpc;
-  p->pc_norm = hpcrun_normalize_ip(cpc, pc_to_lm(cpc));
+  // protect against receiving a sample here. if we do, we may get 
+  // deadlock trying to acquire a lock associated with 
+  // fnbounds_enclosing_addr
+  hpcrun_safe_enter();
+  {
+    void *cpc = canonicalize_placeholder(pc);
+    p->pc = cpc;
+    p->pc_norm = hpcrun_normalize_ip(cpc, pc_to_lm(cpc));
+  }
+  hpcrun_safe_exit();
 }
 
 
