@@ -113,7 +113,7 @@ namespace TraceviewerServer
 
 		bool tracesInitialized;
 
-		static const int DEFAULT_HEADER_SIZE = 24;
+		static const int DEFAULT_HEADER_SIZE = 32;
 
 	};
 

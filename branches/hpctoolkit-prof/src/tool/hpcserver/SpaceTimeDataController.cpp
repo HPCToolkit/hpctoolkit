@@ -76,8 +76,9 @@ namespace TraceviewerServer
 		//default because we might not be able to read the number of ranks correctly.
 		//For now, it's not an issue, and the data dependencies make changing this
 		//complicated.
-		dataTrace = new FilteredBaseData(locations, DEFAULT_HEADER_SIZE);
 		new_db = locations->new_db;
+		headerSize = DEFAULT_HEADER_SIZE;
+		dataTrace = new FilteredBaseData(locations, headerSize);
 		fileData = *locations;
 		height = dataTrace->getNumberOfRanks();
 		experimentXML = locations->fileXML;
@@ -91,11 +92,11 @@ namespace TraceviewerServer
 	{
 		minBegTime = _minBegTime;
 		maxEndTime = _maxEndTime;
-		headerSize = _headerSize;
 
-		// in the old style, redo parsing the trace file with
-		// the correct header size.  blech.
-		if (! new_db) {
+		// re-parse the trace file with the correct header
+		// size, if needed.  very rare and old style only.
+		if (! new_db && headerSize != _headerSize) {
+			headerSize = _headerSize;
 		    	delete dataTrace;
 			dataTrace = new FilteredBaseData(&fileData, headerSize);
 		}
