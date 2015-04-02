@@ -1,0 +1,11 @@
+--- dyninst.orig/symtabAPI/src/dwarfWalker.C	2014-08-19 19:59:44.000000000 +0000
++++ dyninst/symtabAPI/src/dwarfWalker.C	2015-04-02 12:17:15.224435652 +0000
+@@ -1559,7 +1559,7 @@
+       Dwarf_Unsigned fileNameDeclVal;
+       DWARF_FAIL_RET(dwarf_formudata(fileDeclAttribute, &fileNameDeclVal, NULL));
+       dwarf_dealloc( dbg(), fileDeclAttribute, DW_DLA_ATTR );			
+-      if (fileNameDeclVal > srcFiles().size()) {
++      if (fileNameDeclVal > srcFiles().size() || fileNameDeclVal <= 0) {
+          dwarf_printf("Dwarf error reading line index %d from srcFiles of size %lu\n",
+                       fileNameDeclVal, srcFiles().size());
+          return false;
