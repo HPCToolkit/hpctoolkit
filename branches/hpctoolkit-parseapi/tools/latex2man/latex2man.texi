@@ -1,0 +1,1005 @@
+\input texinfo   @c -*-texinfo-*-
+@c %**start of header
+@setfilename latex2man.info
+@settitle latex2man
+@c %**end of header
+@c Manual page created with latex2man on Di 11. Nov 08:21:27 CET 2008>
+@c NOTE: This file is generated, DO NOT EDIT.
+@dircategory Man-pages
+@direntry
+* Latex2man: (latex2man). Its Man-Page 
+@end direntry
+@titlepage
+@title latex2man
+@subtitle Documentation Tools
+@author Dr.~J@"urgen Vollmer
+@end titlepage
+@node Top, Description, (dir), (dir)
+@top latex2man
+
+Latex2man
+is a tool to translate UNIX manual pages written with 
+LaTeXinto a format understood by the UNIX man(1)-command.
+Alternatively HTML, TexInfo, or LaTeX code can be produced too. 
+Output of parts of the text may be suppressed using the conditional text 
+feature (for this, LaTeX generation may be used). 
+
+@section Synopsis
+
+
+latex2man
+[ -t@var{transfile} ]
+[ -HMTL ]
+[ -h ]
+[ -V ]
+[ -C@var{name} ]
+@*
+[ -a@var{char} ]
+@var{infile}
+@var{outfile}
+
+@menu
+* Description:: 
+* Options:: 
+* Files:: 
+* See Also:: 
+* LaTeX commands:: 
+* Package Options:: 
+* Package Specific Environments:: 
+* Accepted LaTeX Environments:: 
+* Package Specific Macros:: 
+* Accepted Macros from the rcsinfo Package:: 
+* Accepted LaTeX Macros:: 
+* Conditional Text:: 
+* Translation of User Defined Macros:: 
+* Verbatim Environment:: 
+* Subsection works:: 
+* Subsubsection works:: 
+* Subsubsection still works:: 
+* General Remarks:: 
+* Some Bug Fix Tests:: 
+* Requirements:: 
+* Changes:: 
+* Version:: 
+* License and Copyright:: 
+* Author:: 
+@end menu
+@node Description,  Options,  Top, Top  
+@section Description
+
+Latex2man
+reads the file @var{infile}
+and writes @var{outfile}.
+The 
+input must be a LaTeX document using the latex2man
+LaTeXpackage. 
+Latex2man
+translates that document into the troff(1)
+format using 
+the -man
+macro package. 
+
+Using the -H
+option, HTML code can be produced, instead of 
+troff(1).
+
+Using the -T
+option, TexInfo code can be produced, instead of 
+troff(1).
+
+Using the -M
+option, troff(1)
+input is produced. 
+
+Using the -L
+option, LaTeX ouput can be produced, instead of 
+troff(1).
+
+@node Options,  Files,  Description, Top  
+@section Options
+
+@table @samp
+@item -t@var{transfile}
+Translation for user defined LaTeX macros. 
+@item -M
+Produce output suitable for the man(1)
+command (default). 
+@item -H
+Instead of producing output suitable for the man(1)
+command, HTML code is produced (despite the name of the command). 
+@item -T
+Instead of producing output suitable for the man(1)
+command, TexInfo code is produced (despite the name of the command). The 
+generated @file{.texi}-file
+may be processed with makeinfo(1)
+(to produce an @file{.info}-file)
+which in turn may be installed using 
+install-info(1).
+The Info tags @t{@@dircategory} and 
+@t{@@direntry} are provided. 
+@item -L
+The LaTeX source is written to the @var{outfile}.
+This is 
+useful in conjunction with the -C@var{name}
+option. 
+@item -C@var{name}
+Output the conditional text for @var{name}.
+If more 
+than one name should be given use quotes: -C@var{'name1 name2 ...'}@*
+
+The following names are defined automatically: 
+@itemize @bullet
+@item
+-H defines @t{HTML}
+@item
+-T defines @t{TEXI}
+@item
+-M defines @t{MAN}
+@item
+-L defines @t{LATEX}
+@end itemize
+@item -a@var{char}
+Is used only in conjunction with -T.@*
+
+Background:@*
+
+TexInfo ignores all blanks before the first word on a new line. In order 
+to produce some additional space before that word (using \SP) some 
+character has to be printed before the additional space. By default this 
+is a . (dot). The @var{char}
+specifies an alternative for that first 
+character. Giving a blank to 
+-a
+supresses the indentation of a line.@*
+
+Note: only for the first \SP of a series that @var{char}
+is printed. 
+@item -h
+Show a help text. 
+@item -V
+Show version information. 
+@end table
+
+@node Files,  See Also,  Options, Top  
+@section Files
+
+
+@table @samp
+@item @file{latex2man.tex}
+The LaTeX file containing this Man-page. 
+@item @file{latex2man.sty}
+The LaTeX package defining the environments and 
+commands. 
+@item @file{latex2man.cfg}
+The configuration file for Latex2man
+LaTeX-package.
+@item @file{latex2man.trans}
+File containing example translations of user 
+defined LaTeX macros. 
+@item @file{fancyheadings.sty}
+A LaTeX package used to typeset head- and 
+foot lines. 
+@item @file{fancyhdr.sty}
+A LaTeX package used to typeset head- and foot 
+lines. 
+@item @file{rcsinfo.sty}
+A LaTeX package used to extract and use RCS version 
+control information in LaTeX documents. 
+@end table
+
+@node See Also,  LaTeX commands, Files, Top  
+@section See Also
+
+
+LaTeX,TexInfo, troff(1),
+groff(1),
+makeinfo(1).
+
+@node LaTeX commands, Package Options,  See Also, Top  
+@section LaTeX commands
+
+
+The LaTeX package @t{latex2man}
+is used to write the Man-pages with 
+LaTeX.Since we translate into other text formats, not all LaTeX stuff can 
+be translated. 
+
+@node Package Options,  Package Specific Environments,  LaTeX commands, Top 
+@subsection Package Options
+
+The @t{latex2man}
+package accepts the following options: 
+
+@table @samp
+@item fancy
+use the LaTeX package @t{fancyheadings}.
+@item fancyhdr
+use the LaTeX package @t{fancyhdr}.
+@item nofancy
+neither the LaTeX package @t{fancyheadings}
+nor 
+@t{fancyhdr}
+are used. 
+@end table
+
+The default option may be specified in the file @t{latex2man.cfg}.
+
+@node Package Specific Environments,  Accepted LaTeX Environments, Package Options, Top  
+@subsection Package Specific Environments
+
+
+The following environments are provided by the package: 
+@table @samp
+@item \begin@{Name@}@{chapter@}@{name@}@{author@}@{info@}@{title@} 
+The 
+@t{Name}
+environment takes five arguments: 1.  the Man-page chapter, 
+2.  the name of the Man-page, 3.  the author, 4.  some short information 
+about the tool printed in the footline of the Man-page, and 5.  a text 
+which is used as title, for HTML and LaTeX (it's ignored for output of 
+the Man-page or TeXinfo. The @t{Name}
+environment must be the first 
+environment in the document. Processing starts with this environment. Any 
+text before this is ignored (exception: the @t{setVersion} and 
+@t{setDate} commands). (Note: all arguments of \begin@{Name@} must 
+be written on one line). 
+@item \begin@{Table@}[width]@{columns@}
+The @t{Table}
+environment takes two arguments: the first optional one specifies 
+a width of the last column, the second one gives the number of columns. 
+For example: 
+
+@t{\begin@{Table@}[2cm]@{3@}} @*
+
+@t{Here & am & I \\\hline} @*
+
+@t{A 1 & A 2 & A 3 1 2 3 4 5 A 3 1 2 3 4 5 \\} @*
+
+@t{B 1 & B 2 & B 3 \\} @*
+
+@t{\end@{Table@}} 
+
+will be typeset as: 
+
+@multitable @columnfractions  0.3 0.3 0.3
+@item Here @tab  am @tab  I 
+
+@item 
+A 1 @tab  A 2 @tab  A 3 1 2 3 4 5 A 3 1 2 3 4 5
+
+@item B 1 @tab  B 2 @tab  B 3 
+
+@end multitable
+
+If no optional @emph{width}
+argument is given, all entries are 
+typeset left justified. 
+The @emph{width}
+is a length measured absolutly in @emph{cm}.
+Processing with LaTeX a @t{p@{width@}} column is typeset 
+as last column. The translation to troff(1)
+commands 
+results in a @t{lw(width)}
+column specification. Translating 
+to HTML and TexInfo ignores the @emph{width}
+parameter. 
+
+@t{\hline} may be used. 
+
+If the Man-page is formatted with troff(1)
+and tables are used, the 
+tbl(1)
+preprocessor should be called, usually by giving 
+a -t
+to the call of troff(1).
+When viewing the generated 
+manula page using man(1),
+tbl(1)
+is called automatically. 
+@item \begin@{Description@}
+is the same as \begin@{description@} 
+@item \begin@{Description@}[label]
+is similar to 
+\begin@{description@}, but the item labels have at minimum the size 
+of the (optional) word @emph{label}.
+The difference is visible only 
+in the DVI and PDF-output, not in the troff, TexInfo or HTML output. 
+@table @samp
+@item a
+|a @t{\begin@{description@}} 
+@item ab
+|ab 
+@item abc
+|abc 
+@end table
+@table @samp
+@item a
+|a @t{\begin@{Description@}} 
+@item ab
+|ab 
+@item abc
+|abc 
+@end table
+@table @samp
+@item a
+|a @t{\begin@{Description@}[aa]} 
+@item ab
+|ab 
+@item abc
+|abc 
+@end table
+@end table
+
+@node Accepted LaTeX Environments, Package Specific Macros,  Package Specific Environments, Top  
+@subsection Accepted LaTeX Environments
+
+
+The following environments are accepted: 
+@itemize @bullet
+@item
+@t{description}
+@item
+@t{enumerate}
+@item
+@t{itemize}
+@item
+@t{verbatim}
+@item
+@t{center}
+@end itemize
+
+They may be nested: 
+@itemize @bullet
+@item
+Itemize and nested center: 
+
+@center A centered line.@*
+@center Another centered line. 
+@center 
+@item
+Another item an nested enumerate 
+@enumerate
+@item
+a 
+@item
+b 
+@end enumerate
+@end itemize
+
+@node Package Specific Macros,  Accepted Macros from the rcsinfo Package,  Accepted LaTeX Environments, Top 
+@subsection Package Specific Macros
+
+
+The following commands are provided: 
+@table @samp
+@item \Opt@{option@}
+Option: @t{\Opt@{-o@}} will be typeset as -o.
+@item \Arg@{argument@}
+Argument: @t{\Arg@{filename@}} will be typeset as 
+@var{filename}.
+@item \OptArg@{option@}@{argument@}
+Option with Argument:@*
+
+@t{\OptArg@{-o@}@{filename@}} will be typeset as -o@var{filename}.
+@item \OptoArg@{option@}@{argument@}
+Option with optional Argument:@*
+
+@t{\OptoArg@{-o@}@{filename@}} will be 
+typeset as -o[@var{filename}].
+@item \oOpt@{option@}
+Optional option, e.g.  @t{\oOpt@{-o@}} will be 
+typeset as [ -o ].
+@item \oArg@{argument@}
+Optional argument, e.g.  @t{\oArg@{filename@}} 
+will be typeset as [ @var{filename} ].
+@item \oOptArg@{option@}@{argument@}
+Optional option with argument, e.g.@*
+
+@t{\oOptArg@{-o@}@{filename@}} will be typeset as [ -o@var{filename} ].
+@item \oOptoArg@{option@}@{argument@}
+Optional option with optional 
+argument, e.g.  
+@t{\oOptoArg@{-o@}@{filename@}} will be typeset as [ -o[@var{filename}] ].
+@item \File@{filename@}
+used to typeset filenames, e.g.  
+@t{\File@{filename@}} will be typeset as @file{filename}.
+@item \Prog@{prog@}
+used to typeset program names, e.g.  
+@t{\Prog@{latex2man@}} will be typeset as latex2man.
+@item \Cmd@{command@}@{chapter@}
+used to typeset references to other 
+commands, e.g.  @t{\Cmd@{latex2man@}@{1@}} will be typeset as 
+latex2man(1).
+@item \Bar
+is typeset as |.
+@item \Bs
+(BackSlash) is typeset as \.
+@item \Tilde
+is typeset as a ~.
+@item \Dots
+is typeset as ...
+@item \Bullet
+us typeset as *.
+@item \setVersion@{..@}
+set @t{..} as version information. 
+@item \setVersionWord@{..@}
+set @t{..} for the word @emph{Version:}
+in 
+the footline. The default is @t{\setVersionWord@{Version:@}}. 
+@item \Version
+returns the version information. 
+@item \setDate@{..@}
+sets @t{..} as date information. 
+@item \Date
+returns the date information. 
+@item \Email@{..@}
+use to mark an Email address:@*
+
+@t{\Email@{Juergen.Vollmer@@informatik-vollmer.de@}} is typeset as:@*
+
+@email{Juergen.Vollmer@@informatik-vollmer.de}.
+@item \URL@{..@}
+use to mark an URL: 
+@t{\URL@{http://www.foo.de/\Tilde vollmer@}} is typeset as 
+@url{http://www.foo.de/~vollmer}.
+@item \LatexManEnd
+the input file is read and processed until reading 
+end-of-file or @t{\LatexManEnd} (at the beginning of a line). 
+LaTeXignores this command. 
+@item \Lbr, \Rbr
+is typeset as [ and ] (these variants are 
+needed only somtimes like in @t{item[FooBar\LBr xx \Lbr]}. Usually 
+@t{[ ]} will work. 
+@item \LBr, \RBr
+is typeset as @{ and @} (these variants are 
+needed when using @{ or @} as arguments to macros. 
+@item \Circum
+is typeset as ^.
+@item \Percent
+is typeset as %.
+@item \TEXbr
+If processed with LaTeX causes a linebreak (i.e.  is 
+equivalent to \\).In the output of latex2man
+this macro is 
+ignored. 
+@item \TEXIbr
+If TexInfo output is generated, causes a linebreak (i.e.  is 
+equivalent to \\),otherwise ignored. 
+@item \MANbr
+If Man-Page output is generated, causes a linebreak (i.e.  is 
+equivalent to \\),otherwise ignored. 
+@item \HTMLbr
+If HTML output is generated, causes a linebreak (i.e.  is 
+equivalent to \\),otherwise ignored. 
+@item \medskip
+An empty line. 
+@item \SP
+Produces some extra space, works also at the beginning of lines. 
+The code of the second line looks like: 
+@t{\SP abc \SP\SP xx\\}:@*
+
+abc @ @ @ @ @ @ xx@*
+
+.@ abc @ @ @ @ xx@*
+
+.@ .@ abc @ @ xx 
+
+Note: Due to some ``problems'' with TexInfo, the lines starting with 
+@t{\SP}
+have a leading . (dot) in the TexInfo output, 
+see -a@var{char}.
+@end table
+
+@node Accepted Macros from the rcsinfo Package,  Accepted LaTeX Macros, Package Specific Macros, Top  
+@subsection Accepted Macros from the rcsinfo Package
+
+
+@table @samp
+@item \rcsInfo $Id ...$
+if the LaTeX package @file{rcsinfo}
+is used, 
+this command is used to extract the date of the Man-page. 
+@item \rcsInfoLongDate
+if the LaTeX package @file{rcsinfo}
+is used, this 
+command is used to typeset the date coded in the @t{$Id ..$} string. 
+@end table
+
+@node Accepted LaTeX Macros, Conditional Text,  Accepted Macros from the rcsinfo Package, Top  
+@subsection Accepted LaTeX Macros
+
+
+The following standard LaTeX commands are accepted: 
+@table @samp
+@item \section@{..@}
+The @t{section}
+macro takes one argument: the 
+name of the Man-page section. Each Man-page consists of several sections. 
+Usually there are the following sections in a Man-page: @emph{Name}
+(special handling as environment, c.f.  above), @emph{Synopsis},
+@emph{Description},
+@emph{Options},
+@emph{Files},
+@emph{See Also},
+@emph{Diagnostics},
+@emph{Return Values},
+@emph{Bugs},
+@emph{Author},
+@emph{version},
+etc. 
+
+@emph{Synopsis}
+must be the first section after the @t{Name}
+environment. 
+
+Note: Do not use LaTeX-macrosin section names. 
+@item \subsection@{..@}
+works as well as 
+@item \subsubsection@{..@}
+those. 
+@item \emph@{..@}
+@t{\emph@{example@}} is typeset as @emph{example}.
+@item \textbf@{..@}
+@t{\textbf@{example@}} is typeset as @strong{example}.
+@item \texttt@{..@}
+@t{\textt@{example@}} is typeset as @t{example}.
+@item \underline@{..@}
+@t{\underline@{example@}} is typeset as 
+example of underline.
+@item \date@{..@}
+uses @t{..} as date. 
+@item \verb+..+
+but only + is allowed as delimiter. 
+@item $<$
+is typeset as <. 
+@item $>$
+is typeset as >. 
+@item $<=$
+is typeset as <=. 
+@item $>=$
+is typeset as >=. 
+@item $=$
+is typeset as =. 
+@item $<>$
+is typeset as <>. 
+@item $\ge$
+is typeset as $>=$.
+@item $\le$
+is typeset as $<=$.
+@item $\leftarrow$
+is typeset as $<--$.
+@item $\Leftarrow$
+is typeset as $<==$.
+@item $\rightarrow$
+is typeset as $-->$.
+@item $\Rightarrow$
+is typeset as $==>$.
+@item \@{
+is typeset as @{. 
+@item \@}
+is typeset as @}. 
+@item \$
+is typeset as $. 
+@item \$
+is typeset as $,should be used inside macro 
+arguments. 
+@item \_
+is typeset as _. 
+@item \&
+is typeset as &. 
+@item \#
+is typeset as #. 
+@item \%
+is typeset as %. 
+@item \,
+is typeset as smaller blank - - (between the two -) 
+@item \-
+is used to mark hyphenation in a word. 
+@item \\
+is typeset as a linebreak or marks the end of a column in the 
+@t{Table}
+environment. 
+@item \
+(a \ followed by a blank) is typeset as a blank, 
+although it cannot be used at the beginning of a line to make indentation 
+(see the @t{\SP}
+command). 
+@item ~
+is typeset as a blank. 
+@item \copyright
+is typeset as @copyright{}.
+@item \noindent
+@item \hline
+inside a @t{Table}
+environment. 
+@item \item
+inside a @t{itemize},
+@t{enumerate},
+or 
+@t{description}
+environment. 
+@item \today
+11 November 2008(see also the @t{rcsinfo}
+LaTeXpackage). 
+@item \ss,\"a, ...
+\ss = @ss{}, \"a= @"a, \"o= @"o, \"u= @"u, 
+\"A= @"A, \"O= @"O, \"U= @"U. It is allowed to surround these 
+macros in @{ and @} in all places, even inside other macros, e.g. 
+@*
+.@ @ @ @ @ \textbf@{\"a\"o\"u\"A\"O\"U\ss@}@*
+.@ @ @ @ @ \textbf@{\"a@}@{\"o@}@{\"u@}@{\"A@}@{\"O@}@{\"U@}@{\ss@}@}@*
+.@ @ @ @ @ \textbf@{‰ˆ¸ƒ÷‹ﬂ@}@*
+
+@strong{@"a@"o@"u@"A@"O@"U@ss{} @"a@"o@"u@"A@"O@"U@ss{} @"a@"o@"u@"A@"O@"U@ss{}}
+
+If these letters are used in their LATIN-1 8-bit coding, they are 
+translated into the equivalent letter of the desired output format. 
+E.g. @t{@"A}
+becomes @t{&Auml};
+in HTML and @t{@@"A}
+in texinfo. 
+@end table
+
+@node Conditional Text,  Translation of User Defined Macros,  Accepted LaTeX Macros, Top 
+@subsection Conditional Text
+
+
+latex2man
+preprocesses the LaTeX input to allow text to be used 
+conditionally. A special sort of LaTeX comment is used for that purpose. 
+@itemize @bullet
+@item
+%@@% IF @emph{condition} %@@%
+@item
+%@@% ELSE %@@% 
+@item
+%@@% END-IF %@@% 
+@end itemize
+
+A line must contain only such a comment and nothing else. @emph{condition}
+is 
+a boolean expression containing ``names'' and operators. The names given with 
+the -C@var{name}
+option have the value ``true'', while all other names 
+occuring in the expression are assumed to be ``false''. If the evaluation of 
+the boolean expression results in the value ``true'', the text in the 
+``then''-part is used and the text in the optional ``else''-part is skipped 
+(and vice versa). The @t{IF/ELSE/END-IF}
+may be nested. As boolean 
+operators the following are allowed: 
+
+@multitable @columnfractions  0.45 0.45
+@item ||@tab  boolean or 
+
+@item && @tab  boolean and 
+
+@item ! @tab  negation 
+@end multitable
+
+( and ) for grouping are allowed. 
+
+@noindent
+
+For example:@*
+
+%@@% IF abc %@@%@*
+
+@t{}abc set@*
+
+@t{}%@@%  IF xyz %@@%@*
+
+@t{}xyz set@*
+
+@t{}%@@%  ELSE %@@%@*
+
+@t{}xyz NOT set@*
+
+@t{}%@@%  END-IF %@@%@*
+
+%@@% ELSE %@@%@*
+
+@t{}abc NOT set@*
+
+@t{}%@@%  IF xyz || !XYZ %@@%@*
+
+@t{}xyz OR !XYZ set@*
+
+@t{}%@@%  ELSE %@@%@*
+
+@t{}xyz OR !XYZ NOT set@*
+
+@t{}%@@%  END-IF %@@%@*
+
+%@@% END-IF %@@%
+
+@noindent
+
+Run this manual page through latex2man
+with e.g.  
+-C@var{'abc XYZ'}
+and have a look to the generated output. 
+(If simply running the LaTeX-document through LaTeX,all lines are shown in the 
+.dvi file).@*
+
+abc NOT set@*
+
+xyz OR !XYZ set@*
+
+
+@noindent
+
+To check the conditional text feature, when latex2man
+is called with 
+@table @samp
+@item -C@var{HTML}
+the lines 1a, 2b, 3b, and 4b; 
+@item -C@var{TEXI}
+the lines 1b, 2a, 3b, and 4b; 
+@item -C@var{MAN}
+the lines 1b, 2b, 3a, and 4b; 
+@item -C@var{LATEX}
+the lines 1b, 2b, 3b, and 4a; 
+@item calling LaTeX without preprocessing
+all lines 
+@end table
+should be shown: 
+
+1b. The HTML conditional was not set. 
+
+2a. This text occurs only when viewing the TEXI output 
+
+3b. The MAN conditional was not set. 
+
+4b. The LATEX conditional was not set. 
+
+@node Translation of User Defined Macros,  Verbatim Environment,  Conditional Text, Top  
+@subsection Translation of User Defined Macros
+
+
+The user macro translation file (given by the [ -t@var{transfile} ])
+contains 
+Perl
+commands specifying the translation of LaTeX macros defined by 
+the user. These macros may have none, one or two arguments. The following code 
+is expected: 
+
+@itemize @bullet
+@item
+Comments start with a # up to the end of the line. 
+@item
+For a macro @t{\foo} with no arguments, the following code must be 
+specified: 
+@table @samp
+@item Translation to Man-Pages
+@t{$manMacro@{'foo'@} = '...';} 
+@item Translation to HTML
+@t{$htmlMacro@{'foo'@} = '...';} 
+@item Translation to TexInfo
+@t{$texiMacro@{'foo'@} = '...';} 
+@end table
+
+where @t{...} is the translation. 
+
+@item
+For a macro @t{\foo@{..@}} with one argument, the following code must be 
+specified: 
+@table @samp
+@item Translation to Man-Pages
+@t{$manMacro1a@{'foo'@} = '...';}@*
+ 
+@t{$manMacro1b@{'foo'@} = '...';} 
+@item Translation to HTML
+@t{$htmlMacro1a@{'foo'@} = '...';}@*
+ 
+@t{$htmlMacro1b@{'foo'@} = '...';} 
+
+@item Translation to TexInfo
+@t{$texiMacro1a@{'foo'@} = '...';}@*
+ 
+@t{$texiMacro1b@{'foo'@} = '...';} 
+@end table
+
+where @t{...} is the translation. The @t{1a} code is used before the 
+argument, while @t{1b} is typeset after the argument is set. 
+
+@item
+For a macro @t{\foo@{..@}@{..@}} with two arguments, the following code 
+must be specified: 
+@table @samp
+@item Translation to Man-Pages
+@t{$manMacro2a@{'foo'@} = '...';}@*
+ 
+@t{$manMacro2b@{'foo'@} = '...';}@*
+ 
+@t{$manMacro2c@{'foo'@} = '...';} 
+@item Translation to HTML
+@t{$htmlMacro2a@{'foo'@} = '...';}@*
+ 
+@t{$htmlMacro2b@{'foo'@} = '...';}@*
+ 
+@t{$htmlMacro2c@{'foo'@} = '...';} 
+@item Translation to TexInfo
+@t{$texiMacro2a@{'foo'@} = '...';}@*
+ 
+@t{$texiMacro2b@{'foo'@} = '...';}@*
+ 
+@t{$texiMacro2c@{'foo'@} = '...';} 
+@end table
+
+where @t{...} is the translation. The @t{2a} code is used before the 
+first argument, @t{2b} between the two arguments and @t{2c} is 
+typeset after the second argument is set. 
+@item
+The file @file{latex2man.trans} contains some example code.
+@end itemize
+
+@node Verbatim Environment,  Subsection works,  Translation of User Defined Macros, Top  
+@subsection Verbatim Environment
+
+
+@*
+.This@*
+.@ @ @ @ @{is@}@*
+.@ @ @ @ @ @ @ @ \texttt@{a@}@*
+.@ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ $test$@*
+.@ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ _of_@*
+.verbatim@*
+.<this@ is@ no@ HTML@ tag>@ and@ no@ @@*@ TexInfo@ command@*
+
+@node Subsection works,  Subsubsection works,  Verbatim Environment, Top  
+@subsection Subsection works
+
+
+This is a @t{\subsection}. 
+
+@node Subsubsection works,  Subsubsection still works,  Subsection works, Top  
+@subsubsection Subsubsection works
+
+
+This is a @t{\subsubsection}. 
+
+@node Subsubsection still works,  General Remarks,  Subsubsection works, Top  
+@subsubsection Subsubsection still works
+
+
+This is another @t{\subsubsection}. 
+
+@node General Remarks,  Some Bug Fix Tests,  Subsubsection still works, Top  
+@subsection General Remarks
+
+
+@enumerate
+@item
+Empty lines are typeset as paragraph separators. 
+@item
+The arguments of the LaTeX commands must not be split over several 
+lines. 
+@item
+Do not nest calls to macros. 
+@item
+Except the mentioned environment and macros, the usage of other LaTeX  
+environments or macros are not translated. Their usage will cause garbage 
+in the output. 
+@item
+latex2man requires Perl version >= 5.0004_03.
+@item
+If you want to install the system with the distributed @file{Makefile},
+you need GNU-make.
+If you don't have it, you should execute the 
+steps shown in the @file{Makefile}
+manually. 
+@end enumerate
+
+@node Some Bug Fix Tests,  Requirements,  General Remarks, Top  
+@subsection Some Bug Fix Tests
+
+
+@table @samp
+@item Leading . and '
+Now leading . and ' in generation troff output should work propperly, 
+since a @t{\&} is added. Therfore the @t{\Dot} macro has been deleted.@*
+
+Thanks to @email{Frank.Schilder@@Mathematik.Tu-Ilmenau.De}.@*
+
+Testcase 1: 
+@table @samp
+@item '\n'
+... 
+@end table
+Testcase 2:@*
+
+@file{.foobar}
+Testcase 3:@*
+
+...
+abc ...abc . efg ' 123 
+
+@item % in verbatim
+A % in a \verb and verbatim-environment was not 
+emitted correctly. Thanks to Aleksey Nogin @email{nogin@@cs.caltech.edu}
+for the bug report and bug fix. 
+
+@t{% abc} 
+
+@*
+.@ @ @ %@ abc@ %@*
+
+but ignore comments following this: 
+
+@end table
+
+@node Requirements,  Changes,  Some Bug Fix Tests, Top  
+@section Requirements
+
+
+@table @samp
+@item Perl
+latex2man
+requires Perl version >= 5.0004_03. 
+@item Make
+If you want to install the system with the distributed 
+@file{Makefile},
+you need GNU-make.
+If you don't have it, you 
+should execute the steps shown in the @file{Makefile}
+manually. 
+@item LaTeX
+LaTeX2e is required. 
+@end table
+
+@node Changes,  Version,  Requirements, Top  
+@section Changes
+
+Please check the file @url{latex2man-CHANGES}
+for the list of changes. 
+
+@node Version,  License and Copyright,  Changes, Top  
+@section Version
+
+
+Version: 1.23 of 2008/11/11.
+
+@node License and Copyright,  Author,  Version, Top  
+@section License and Copyright
+
+
+@table @samp
+@item Copyright
+@copyright{}1998, Dr. J@"urgen Vollmer, Viktoriastra@ss{}e 15, 
+D-76133 Karlsruhe, Germany, @email{Juergen.Vollmer@@informatik-vollmer.de}
+
+The actual version of Latex2man
+may be found on my homepage@*
+
+@url{http://www.informatik-vollmer.de/software/latex2man.html}.
+
+@item License
+This program can be redistributed and/or modified under the 
+terms of the LaTeX Project Public License Distributed from CTAN archives 
+in directory @file{macros/latex/base/lppl.txt};
+either version 1 of the 
+License, or any later version. 
+
+@item Misc
+If you find this software useful, please send me a postcard from 
+the place where you are living. 
+@end table
+
+@node Author,  ,  License and Copyright, Top  
+@section Author
+
+
+@noindent
+
+Dr. J@"urgen Vollmer @*
+
+Viktoriastra@ss{}e 15 @*
+
+D-76133 Karlsruhe @*
+
+Email: @email{Juergen.Vollmer@@informatik-vollmer.de}
+@*
+WWW: @url{http://www.informatik-vollmer.de}.
+
+@bye
+@c NOTE: This file is generated, DO NOT EDIT.

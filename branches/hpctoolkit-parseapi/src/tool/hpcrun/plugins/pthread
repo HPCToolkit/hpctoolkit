@@ -1,0 +1,9 @@
+#
+# The pthread (==LOCKWAIT) sample source as an hpclink plugin.
+#
+#   hpclink --plugin pthread gcc ... 
+#
+
+hpclink_files='../libhpcrun_pthread_wrap.a'
+hpclink_wrap_names='pthread_cond_timedwait pthread_cond_wait pthread_cond_broadcast pthread_cond_signal pthread_mutex_lock pthread_mutex_unlock pthread_mutex_timedlock pthread_spin_lock pthread_spin_unlock sched_yield sem_wait sem_post sem_timedwait'
+#hpclink_undefined_names='????'

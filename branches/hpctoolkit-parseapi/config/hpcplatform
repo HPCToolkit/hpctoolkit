@@ -1,0 +1,87 @@
+#!/bin/sh
+# Testing: set -x: line by line (set -n: syntax)
+# set -x
+
+# $Id: hpcplatform 67 2006-11-11 21:58:31Z eraxxon $
+
+## **************************************************************************
+##
+## File: 
+##    hpcplatform: see usage.
+##
+## Author:
+##    Written by Nathan Tallent, Rice University.
+##    
+## **************************************************************************
+
+#############################################################################
+
+HPCPLATFORM_VERSION="1.0"
+
+#############################################################################
+
+# Note: All function names are prefixed with 'f_' in order to make
+# function calls very clear.
+
+cmd="$0"
+error_pfx="*Error*"
+
+f_usage()
+{
+  p="printf"
+  $p "\n"
+  $p "Usage:\n"
+  $p "  ${cmd} [OPTIONS]\n"
+  $p "\n"
+  $p "  Prints the platform name if known or the empty string.  Returns\n"
+  $p "  0 when the platform name is known; non-zero otherwise.\n"
+  $p "\n"
+  $p "  Options: Defaults are shown in square brackets [].\n"
+  $p "    -h, --help   : Print help, then exit\n"
+  $p "    -v, --version: Print version, then exit\n"
+  $p "\n"
+}
+
+
+# args: ($1..$n): all arguments given to this script
+f_getoptions()
+{
+  # parse argument list
+  while [ $# -ge 0 ]; do
+    case $1 in
+      --version | -v )
+         echo "version: ${HPCPLATFORM_VERSION}" ; exit 0 ;;
+      --help | --h* | -h )
+         f_usage; exit 0 ;; 
+      -* ) 
+         printf "${error_pfx} Invalid option '$1'\n";
+         f_usage; exit 1;
+         ;;
+      * )   
+         break ;;
+    esac
+    shift
+  done
+}
+
+#############################################################################
+# Main
+#############################################################################
+# $n: argument n, with $0 being the command name
+# $*: all arguments from $1 to $n
+
+f_getoptions $*
+
+# Make sure that `.' is in the PATH so that we can find the commands below.
+PATH=".:${PATH}"
+
+# Try to find the platform
+platform_guess=`config.guess`
+platform=`hpcguess "${platform_guess}"`
+if [ $? -eq 0 ]; then 
+  printf "${platform}\n"
+  exit 0
+else
+  printf "\n"
+  exit 1
+fi
