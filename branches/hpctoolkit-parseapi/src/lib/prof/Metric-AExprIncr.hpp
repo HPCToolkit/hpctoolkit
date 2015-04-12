@@ -111,7 +111,7 @@ class AExprIncr
     public Unique // disable copying, for now
 {
 public:
-  static const double epsilon = 0.000001;
+  static constexpr double epsilon = 0.000001;
 
 public:
   AExprIncr(uint accumId, uint srcId)

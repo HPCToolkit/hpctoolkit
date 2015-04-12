@@ -162,7 +162,7 @@ public:
   size_type erase(const key_type& x) 
     { return m_map.erase(x); }
   void erase(iterator first, iterator last) 
-    { return m_map.erase(first, last); }
+    { m_map.erase(first, last); }
     
   void clear();
   
@@ -208,7 +208,7 @@ public:
   size_type erase1(const key_type1& x) 
     { return m_map1.erase(x); }
   void erase1(iterator1 first, iterator1 last) 
-    { return m_map1.erase(first, last); }
+    { m_map1.erase(first, last); }
     
   void clear1();
   

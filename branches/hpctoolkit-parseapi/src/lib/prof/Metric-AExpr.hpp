@@ -114,7 +114,7 @@ class AExpr
 public:
   typedef std::vector<AExpr*> AExprVec;
 
-  static const double epsilon = 0.000001;
+  static constexpr double epsilon = 0.000001;
 
 public:
   AExpr()

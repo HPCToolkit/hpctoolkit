@@ -292,7 +292,7 @@ toStr(const int64_t x, int base)
   
   switch (base) {
   case 10:
-    format = "%"PRId64;
+    format = "%" PRId64;
     break;
     
   default:
@@ -311,11 +311,11 @@ toStr(const uint64_t x, int base)
   
   switch (base) {
   case 10:
-    format = "%"PRIu64;
+    format = "%" PRIu64;
     break;
     
   case 16:
-    format = "%#"PRIx64;
+    format = "%#" PRIx64;
     break;
 
   default:

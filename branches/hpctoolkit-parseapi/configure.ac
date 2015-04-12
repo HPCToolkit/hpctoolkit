@@ -783,8 +783,10 @@ fi
 # CXXFLAGS for std C++11
 #-------------------------------------------------
 
-# Find a CXX flag for std C++11.  We use the 'auto' feature in some
-# symtabAPI code in lib/banal.
+# Find a CXX flag for standard C++11 and add to CXXFLAGS if needed.
+# We use some C++11 features (auto and constexpr) in the parseAPI code
+# in src/lib/banal.  Unfortunately, due to include files, we pretty
+# much need this everywhere for C++ code.
 
 AC_ARG_VAR([CXX11_FLAG],
   [CXX flag for C++11 standard, normally only needed for non-GNU CXX])
@@ -805,14 +807,15 @@ do
     none )   flag=  ;;
     * )      flag="$opt" ;;
   esac
-  CXXFLAGS="$ORIG_CXXFLAGS $flag"
+  CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $flag"
   AC_COMPILE_IFELSE([
 #include <list>
 int mylen(std::list <int> lst)
 {
+  static constexpr int incr = 2;
   int ans = 0;
   for (auto it = lst.begin(); it != lst.end(); it++) {
-    ans++;
+    ans += incr;
   }
   return ans;
 }
@@ -827,12 +830,14 @@ done
 AC_MSG_RESULT([$cxx_c11_flag])
 
 AC_LANG_POP
-CXXFLAGS="$ORIG_CXXFLAGS"
 
 if test "$cxx_c11_avail" = no ; then
   AC_MSG_WARN([unable to find CXXFLAGS for std C++11])
-  AC_MSG_WARN([try setting the CXX11_FLAG variable])
+  AC_MSG_ERROR([set the CXX11_FLAG variable and rerun configure])
 fi
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx_c11_flag"
 
 AC_SUBST([cxx_c11_flag])
 
@@ -2219,13 +2224,13 @@ AC_LANG_PUSH([C++])
 #
 # test for SymtabAPI and getInlinedParent()
 #
-use_inline=no
+orig_inline="$enable_inline"
 
-if test "$enable_inline" = no
+if test "x$enable_inline" = xno
 then
   AC_MSG_NOTICE([skipping test for symtabAPI inline support])
 else
-  CXXFLAGS="${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
+  CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
   LIBS="-L${SYMTABAPI_LIB} ${SYMTABAPI_LIB_LIST}"
   LIBS="${LIBS} -L${LIBELF_LIB} -L${LIBDWARF_LIB} -ldwarf -lelf"
   LIBS="${LIBS} ${GNUBINUTILS_LDFLAGS} -liberty"
@@ -2246,25 +2251,29 @@ int main()
   cout << parent;
   return 0;
 }
-], [use_inline=yes], [use_inline=no])
+], [enable_inline=yes], [enable_inline=no])
 
-  AC_MSG_RESULT([$use_inline])
+  AC_MSG_RESULT([$enable_inline])
 fi
 
-if test "$enable_inline" = yes && test "$use_inline" = no ; then
+if test "$orig_inline" = yes && test "$enable_inline" = no ; then
   AC_MSG_ERROR([symtabAPI does not support static inline analysis])
 fi
 
 #
 # test for ParseAPI, CodeObject, Function and Block
 #
-use_parseapi=no
+orig_parseapi="$enable_parseapi"
 
-if test "$use_inline" = no || test "$enable_parseapi" = no
+if test "$enable_inline" = no ; then
+  enable_parseapi=no
+fi
+
+if test "x$enable_parseapi" = xno
 then
   AC_MSG_NOTICE([skipping test for parseAPI and CFG support])
 else
-  CXXFLAGS="$cxx_c11_flag $CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS $cxx_c11_flag"
   LIBS="-L${SYMTABAPI_LIB} -lparseAPI -linstructionAPI $LIBS"
 
   AC_MSG_CHECKING([parseAPI for support for control flow graphs])
@@ -2299,12 +2308,12 @@ int main()
   }
   return 0;
 }
-], [use_parseapi=yes], [use_parseapi=no])
+], [enable_parseapi=yes], [enable_parseapi=no])
 
-  AC_MSG_RESULT([$use_parseapi])
+  AC_MSG_RESULT([$enable_parseapi])
 fi
 
-if test "$enable_parseapi" = yes && test "$use_parseapi" = no ; then
+if test "$orig_parseapi" = yes && test "$enable_parseapi" = no ; then
   AC_MSG_ERROR([parseAPI does not support control flow graphs])
 fi
 
@@ -2312,8 +2321,8 @@ AC_LANG_POP()
 CXXFLAGS="$ORIG_CXXFLAGS"
 LIBS="$ORIG_LIBS"
 
-AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_SYMTAB], [test "$use_inline" = yes])
-AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_PARSEAPI], [test "$use_parseapi" = yes])
+AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_SYMTAB], [test "$enable_inline" = yes])
+AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_PARSEAPI], [test "$enable_parseapi" = yes])
 
 # Hpcstruct gets a launch script if (1) Xed is shared (some versions
 # of MIC), or (2) use symtab for inline support.
@@ -3180,8 +3189,8 @@ AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
-AC_MSG_NOTICE([  inline:       ${use_inline}])
-AC_MSG_NOTICE([  parseapi:     ${use_parseapi}])
+AC_MSG_NOTICE([  inline:       ${enable_inline}])
+AC_MSG_NOTICE([  parseapi:     ${enable_parseapi}])
 
 if test "$warn_config_site" = yes ; then
   AC_MSG_NOTICE([])

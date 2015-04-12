@@ -67,7 +67,6 @@ using std::cerr;
 using std::endl;
 
 #include <iomanip>
-
 #include <fstream>
 #include <sstream>
 
@@ -77,11 +76,8 @@ using std::string;
 #include <map>
 #include <list>
 #include <vector>
-
 #include <typeinfo>
-
 #include <algorithm>
-
 #include <cstring>
 
 //************************ OpenAnalysis Include Files ***********************
@@ -114,7 +110,13 @@ using namespace Prof;
 #include <lib/support/Logic.hpp>
 
 #ifdef BANAL_USE_SYMTAB
+#include <Symtab.h>
+#include <Function.h>
 #include "Struct-Inline.hpp"
+
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace std;
 #endif
 
 #define FULL_STRUCT_DEBUG 0
@@ -291,16 +293,15 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
   // Assume lm->Read() has been performed
   DIAG_Assert(lm, DIAG_UnexpectedInput);
 
-  // FIXME (minor): relocate
-  //OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm + lm->name();
-
   Prof::Struct::LM* lmStrct = new Prof::Struct::LM(lm->name(), NULL);
 
   // 1. Build Struct::File/Struct::Proc skeletal structure
   ProcStrctToProcMap* mp = buildLMSkeleton(lmStrct, lm, procNmMgr);
 
 #ifdef BANAL_USE_SYMTAB
-  Inline::openSymtab(lm->name());
+  Symtab * symtab = Inline::openSymtab(lm->name());
+
+
 #endif
   
   // 2. For each [Struct::Proc, BinUtil::Proc] pair, complete the build.

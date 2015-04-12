@@ -68,6 +68,10 @@
 #include <Symtab.h>
 #include <Function.h>
 
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace std;
+
 namespace Inline {
 
 class InlineNode {
@@ -92,7 +96,7 @@ public:
 
 typedef list <InlineNode> InlineSeqn;
 
-bool openSymtab(std::string filename);
+Symtab * openSymtab(std::string filename);
 bool closeSymtab();
 bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
 

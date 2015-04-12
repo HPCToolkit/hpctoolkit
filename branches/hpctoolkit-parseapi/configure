@@ -17070,8 +17070,10 @@ fi
 # CXXFLAGS for std C++11
 #-------------------------------------------------
 
-# Find a CXX flag for std C++11.  We use the 'auto' feature in some
-# symtabAPI code in lib/banal.
+# Find a CXX flag for standard C++11 and add to CXXFLAGS if needed.
+# We use some C++11 features (auto and constexpr) in the parseAPI code
+# in src/lib/banal.  Unfortunately, due to include files, we pretty
+# much need this everywhere for C++ code.
 
 
 
@@ -17097,16 +17099,17 @@ do
     none )   flag=  ;;
     * )      flag="$opt" ;;
   esac
-  CXXFLAGS="$ORIG_CXXFLAGS $flag"
+  CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $flag"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #include <list>
 int mylen(std::list <int> lst)
 {
+  static constexpr int incr = 2;
   int ans = 0;
   for (auto it = lst.begin(); it != lst.end(); it++) {
-    ans++;
+    ans += incr;
   }
   return ans;
 }
@@ -17134,14 +17137,15 @@ ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
-CXXFLAGS="$ORIG_CXXFLAGS"
 
 if test "$cxx_c11_avail" = no ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find CXXFLAGS for std C++11" >&5
 $as_echo "$as_me: WARNING: unable to find CXXFLAGS for std C++11" >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: try setting the CXX11_FLAG variable" >&5
-$as_echo "$as_me: WARNING: try setting the CXX11_FLAG variable" >&2;}
+  as_fn_error $? "set the CXX11_FLAG variable and rerun configure" "$LINENO" 5
 fi
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx_c11_flag"
 
 
 
@@ -18894,14 +18898,14 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 #
 # test for SymtabAPI and getInlinedParent()
 #
-use_inline=no
+orig_inline="$enable_inline"
 
-if test "$enable_inline" = no
+if test "x$enable_inline" = xno
 then
   { $as_echo "$as_me:${as_lineno-$LINENO}: skipping test for symtabAPI inline support" >&5
 $as_echo "$as_me: skipping test for symtabAPI inline support" >&6;}
 else
-  CXXFLAGS="${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
+  CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
   LIBS="-L${SYMTABAPI_LIB} ${SYMTABAPI_LIB_LIST}"
   LIBS="${LIBS} -L${LIBELF_LIB} -L${LIBDWARF_LIB} -ldwarf -lelf"
   LIBS="${LIBS} ${GNUBINUTILS_LDFLAGS} -liberty"
@@ -18928,32 +18932,36 @@ int main()
 
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  use_inline=yes
+  enable_inline=yes
 else
-  use_inline=no
+  enable_inline=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_inline" >&5
-$as_echo "$use_inline" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_inline" >&5
+$as_echo "$enable_inline" >&6; }
 fi
 
-if test "$enable_inline" = yes && test "$use_inline" = no ; then
+if test "$orig_inline" = yes && test "$enable_inline" = no ; then
   as_fn_error $? "symtabAPI does not support static inline analysis" "$LINENO" 5
 fi
 
 #
 # test for ParseAPI, CodeObject, Function and Block
 #
-use_parseapi=no
+orig_parseapi="$enable_parseapi"
 
-if test "$use_inline" = no || test "$enable_parseapi" = no
+if test "$enable_inline" = no ; then
+  enable_parseapi=no
+fi
+
+if test "x$enable_parseapi" = xno
 then
   { $as_echo "$as_me:${as_lineno-$LINENO}: skipping test for parseAPI and CFG support" >&5
 $as_echo "$as_me: skipping test for parseAPI and CFG support" >&6;}
 else
-  CXXFLAGS="$cxx_c11_flag $CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS $cxx_c11_flag"
   LIBS="-L${SYMTABAPI_LIB} -lparseAPI -linstructionAPI $LIBS"
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking parseAPI for support for control flow graphs" >&5
@@ -18994,18 +19002,18 @@ int main()
 
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  use_parseapi=yes
+  enable_parseapi=yes
 else
-  use_parseapi=no
+  enable_parseapi=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_parseapi" >&5
-$as_echo "$use_parseapi" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_parseapi" >&5
+$as_echo "$enable_parseapi" >&6; }
 fi
 
-if test "$enable_parseapi" = yes && test "$use_parseapi" = no ; then
+if test "$orig_parseapi" = yes && test "$enable_parseapi" = no ; then
   as_fn_error $? "parseAPI does not support control flow graphs" "$LINENO" 5
 fi
 
@@ -19018,7 +19026,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 CXXFLAGS="$ORIG_CXXFLAGS"
 LIBS="$ORIG_LIBS"
 
- if test "$use_inline" = yes; then
+ if test "$enable_inline" = yes; then
   OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE=
   OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE='#'
 else
@@ -19026,7 +19034,7 @@ else
   OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE=
 fi
 
- if test "$use_parseapi" = yes; then
+ if test "$enable_parseapi" = yes; then
   OPT_ENABLE_BANAL_WITH_PARSEAPI_TRUE=
   OPT_ENABLE_BANAL_WITH_PARSEAPI_FALSE='#'
 else
@@ -23074,10 +23082,10 @@ $as_echo "$as_me:   cuda:         ${OPT_CUDA}" >&6;}
 $as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   upc (BG/P):   ${opt_upc_mesg}" >&5
 $as_echo "$as_me:   upc (BG/P):   ${opt_upc_mesg}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   inline:       ${use_inline}" >&5
-$as_echo "$as_me:   inline:       ${use_inline}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   parseapi:     ${use_parseapi}" >&5
-$as_echo "$as_me:   parseapi:     ${use_parseapi}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   inline:       ${enable_inline}" >&5
+$as_echo "$as_me:   inline:       ${enable_inline}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   parseapi:     ${enable_parseapi}" >&5
+$as_echo "$as_me:   parseapi:     ${enable_parseapi}" >&6;}
 
 if test "$warn_config_site" = yes ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
