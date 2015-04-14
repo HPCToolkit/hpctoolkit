@@ -77,7 +77,6 @@ MYSOURCES = \
 	Struct.hpp Struct.cpp \
 	StructSimple.hpp StructSimple.cpp \
 	Struct-LocationMgr.hpp Struct-LocationMgr.cpp \
-	\
 	OAInterface.hpp OAInterface.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
@@ -85,6 +84,12 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @OA_IFLAGS@
 
 INLINE_SRCS = Struct-Inline.hpp Struct-Inline.cpp
 INLINE_FLGS = -DBANAL_USE_SYMTAB -I$(BOOST_INC) -I$(SYMTABAPI_INC)
+
+if OPT_ENABLE_BANAL_WITH_PARSEAPI
+INLINE_FLGS += -DBANAL_USE_PARSEAPI
+else
+INLINE_FLGS += -DBANAL_USE_OPEN_ANALYSIS
+endif
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

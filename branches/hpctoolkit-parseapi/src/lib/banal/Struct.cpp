@@ -117,6 +117,14 @@ using namespace Prof;
 using namespace Dyninst;
 using namespace SymtabAPI;
 using namespace std;
+
+#ifdef BANAL_USE_PARSEAPI
+#include <CFG.h>
+#include <CodeObject.h>
+#include <CodeSource.h>
+
+using namespace ParseAPI;
+#endif
 #endif
 
 #define FULL_STRUCT_DEBUG 0
@@ -301,7 +309,16 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
 #ifdef BANAL_USE_SYMTAB
   Symtab * symtab = Inline::openSymtab(lm->name());
 
+#ifdef BANAL_USE_PARSEAPI
+  SymtabCodeSource * code_src;
+  CodeObject * code_obj;
 
+  if (symtab != NULL) {
+    code_src = new SymtabCodeSource(symtab);
+    code_obj = new CodeObject(code_src);
+    code_obj->parse();
+  }
+#endif
 #endif
   
   // 2. For each [Struct::Proc, BinUtil::Proc] pair, complete the build.

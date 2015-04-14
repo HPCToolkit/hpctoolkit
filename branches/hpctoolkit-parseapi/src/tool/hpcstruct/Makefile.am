@@ -98,6 +98,7 @@ MYLDADD = \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
+	$(MY_LIB_ParseAPI) \
 	$(MY_LIB_Symtab) \
 	@OA_LDFLAGS@ \
 	@GNUBINUTILS_LDLIBS@ \
@@ -111,6 +112,12 @@ MY_LIB_Symtab = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
 else
 MY_LIB_Banal = $(HPCLIB_Banal)
 MY_LIB_Symtab =
+endif
+
+if OPT_ENABLE_BANAL_WITH_PARSEAPI
+MY_LIB_ParseAPI = -L$(SYMTABAPI_LIB) -lparseAPI -linstructionAPI
+else
+MY_LIB_ParseAPI =
 endif
 
 if HOST_CPU_X86_FAMILY

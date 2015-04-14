@@ -683,6 +683,7 @@ XED2_HPCLINK_OPTS
 XED2_LIB_FLAGS
 XED2_LIB
 XED2_INC
+SYMTABAPI_COPY_PARSE
 SYMTABAPI_COPY_DYN
 SYMTABAPI_COPY
 SYMTABAPI_LIB_LIST
@@ -18377,6 +18378,7 @@ $as_echo_n "checking for symtabAPI... " >&6; }
 
 SYMTABAPI_COPY=no
 SYMTABAPI_COPY_DYN=no
+SYMTABAPI_COPY_PARSE=no
 SYMTABAPI_LIB_LIST=
 
 case "${SYMTABAPI}" in
@@ -18393,6 +18395,9 @@ case "${SYMTABAPI}" in
       SYMTABAPI_COPY_DYN=yes
       SYMTABAPI_LIB_LIST="$SYMTABAPI_LIB_LIST -ldynDwarf -ldynElf"
     fi
+    if test -f "${SYMTABAPI}/lib/libparseAPI.so" ; then
+      SYMTABAPI_COPY_PARSE=yes
+    fi
     ;;
   no )
     ;;
@@ -18406,6 +18411,7 @@ SYMTABAPI_LIB="${SYMTABAPI}/lib"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $SYMTABAPI" >&5
 $as_echo "$SYMTABAPI" >&6; }
+
 
 
 

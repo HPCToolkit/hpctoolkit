@@ -1799,6 +1799,7 @@ AC_MSG_CHECKING([for symtabAPI])
 
 SYMTABAPI_COPY=no
 SYMTABAPI_COPY_DYN=no
+SYMTABAPI_COPY_PARSE=no
 SYMTABAPI_LIB_LIST=
 
 case "${SYMTABAPI}" in
@@ -1814,6 +1815,9 @@ case "${SYMTABAPI}" in
     if test -f "${SYMTABAPI}/lib/libdynElf.so" ; then
       SYMTABAPI_COPY_DYN=yes
       SYMTABAPI_LIB_LIST="$SYMTABAPI_LIB_LIST -ldynDwarf -ldynElf"
+    fi
+    if test -f "${SYMTABAPI}/lib/libparseAPI.so" ; then
+      SYMTABAPI_COPY_PARSE=yes
     fi
     ;;
   no )
@@ -1833,6 +1837,7 @@ AC_SUBST([SYMTABAPI_LIB])
 AC_SUBST([SYMTABAPI_LIB_LIST])
 AC_SUBST([SYMTABAPI_COPY])
 AC_SUBST([SYMTABAPI_COPY_DYN])
+AC_SUBST([SYMTABAPI_COPY_PARSE])
 
 
 #-------------------------------------------------

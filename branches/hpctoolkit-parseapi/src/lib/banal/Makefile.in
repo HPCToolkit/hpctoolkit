@@ -68,7 +68,9 @@ host_triplet = @host@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
-@OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@am__append_1 = libHPCbanal_symtab.la
+@OPT_ENABLE_BANAL_WITH_PARSEAPI_TRUE@am__append_1 = -DBANAL_USE_PARSEAPI
+@OPT_ENABLE_BANAL_WITH_PARSEAPI_FALSE@am__append_2 = -DBANAL_USE_OPEN_ANALYSIS
+@OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@am__append_3 = libHPCbanal_symtab.la
 subdir = src/lib/banal
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -283,6 +285,7 @@ SHELL = @SHELL@
 STRIP = @STRIP@
 SYMTABAPI_COPY = @SYMTABAPI_COPY@
 SYMTABAPI_COPY_DYN = @SYMTABAPI_COPY_DYN@
+SYMTABAPI_COPY_PARSE = @SYMTABAPI_COPY_PARSE@
 SYMTABAPI_INC = @SYMTABAPI_INC@
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
@@ -396,13 +399,13 @@ MYSOURCES = \
 	Struct.hpp Struct.cpp \
 	StructSimple.hpp StructSimple.cpp \
 	Struct-LocationMgr.hpp Struct-LocationMgr.cpp \
-	\
 	OAInterface.hpp OAInterface.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @OA_IFLAGS@
 INLINE_SRCS = Struct-Inline.hpp Struct-Inline.cpp
-INLINE_FLGS = -DBANAL_USE_SYMTAB -I$(BOOST_INC) -I$(SYMTABAPI_INC)
+INLINE_FLGS = -DBANAL_USE_SYMTAB -I$(BOOST_INC) -I$(SYMTABAPI_INC) \
+	$(am__append_1) $(am__append_2)
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
 MYLIBADD = @HOST_LIBTREPOSITORY@
@@ -411,7 +414,7 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 #############################################################################
 # Automake rules
 #############################################################################
-noinst_LTLIBRARIES = libHPCbanal.la $(am__append_1)
+noinst_LTLIBRARIES = libHPCbanal.la $(am__append_3)
 libHPCbanal_la_SOURCES = $(MYSOURCES)
 libHPCbanal_la_CFLAGS = $(MYCFLAGS)
 libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS)
