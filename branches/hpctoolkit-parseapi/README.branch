@@ -2,5 +2,93 @@
 Mark's branch for using ParseAPI to construct better control flow
 graphs in banal and hpcstruct.
 
+Warning: the build system is still somewhat fragile and does not
+support all cases and options, and the new parseAPI version will
+likely be broken and produce incomplete struct files until fully put
+together.
+
+Warning: DO NOT commit any of this back to trunk or externals and DO
+NOT branch externals.  There are incompatible changes in dyninst
+between 8.2-release and git head and things will break.  At some
+point, I'll write config tests and #ifdefs, but not yet.
+
 origin: 2015-04-05 from trunk rev 4732
+
+------------------------------------------------------------
+
+Building a special externals with symtabAPI + parseAPI for this
+branch.
+
+Note: these directions are for this branch only and will break with
+trunk.  So, DO NOT commit anything back to externals (and don't branch
+externals either).
+
+1. Clone a recent dyninst.  This should checkout the branch 'master'
+automatically, but if not, then checkout master.  It's simplest to
+name the directory 'dyninst-8.2' to match the tar file in
+externals/distfiles.
+
+git clone http://git.dyninst.org/dyninst.git  dyninst-8.2
+cd dyninst-8.2
+git checkout master
+
+2. Make a tar file of the dyninst-8.2 directory.  Again, it's simplest
+if the directory is named 'dyninst-8.2' and the tar file is named
+'dyninst-8.2.tar.gz' to match the old tar file.  You'll want to
+exclude the .git subdirectory from the tar file.
+
+tar cf dyninst-8.2.tar --exclude .git  dyninst-8.2
+gzip dyninst-8.2.tar
+
+Excluding the .git subdirectory, the tar file is about 19 Meg
+uncompressed and about 6.5 Meg compressed.
+
+3. Checkout externals as usual and replace 'dyninst-8.2.tar.gz' in
+externals/distfiles with this new one.
+
+4. In symtabAPI/patches-82, delete or rename the file 'patch-181' to
+something that doesn't match 'patch-*'.
+
+This patch is for 8.2-release and no longer applies cleanly to git
+head.  But it's only used for Intel MIC, so it's not needed here.
+
+5. Make one manual edit in symtabAPI/Makefile to add 'instructionAPI'
+and 'parseAPI' to BUILD_SUBDIRS.  Put these at the end of the list.
+
+--- symtabAPI/Makefile  (revision 4737)
++++ symtabAPI/Makefile  (working copy)
+@@ -33,7 +33,7 @@
+ PATCH_DIR = patches-82
+ FETCH_COPY_FILES = cmake/optimization.cmake
+ CONFIG_CMD = ./configure-82
+-BUILD_SUBDIRS = common elf dwarf symtabAPI
++BUILD_SUBDIRS = common elf dwarf symtabAPI instructionAPI parseAPI
+ PREREQS += binutils
+ 
+ endif
+
+If the tar file is not named 'dyninst-8.2.tar.gz' or the directory is
+not named 'dyninst-8.2', then you'll also need to edit FETCH_TARFILE
+and SRC_DIR in symtabAPI/Makefile and set 'src' in configure-8.2.
+
+6. Configure and build externals as usual.  Check that the symtabAPI
+include directory contains 'CFG.h' and 'CodeObject.h', and that lib
+contains 'libparseAPI.so' and 'libinstructionAPI.so'.
+
+If the 'patch-symtab-dwarfwalker' patch fails, then remove or rename
+it and try again.  'make fetch' from inside symtabAPI will test this.
+
+We've alerted Wisconsin about this bug and at some point they will
+likely commit the patch to their git repository.  After that, this
+patch will be a duplicate and fail, so just remove it.
+
+7. Configure and build hpctoolkit from this branch as usual.
+Configure will auto-detect the new parseAPI code.
+
+Use the configure option '--disable-parseapi' to build with the old
+Open Analysis or '--enable-parseapi' to build with the new parseAPI.
+The new way will likely produce incomplete struct files until fully
+put together.
+
+And again, use these directions for this branch only.
 
