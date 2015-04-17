@@ -116,7 +116,6 @@ using namespace Prof;
 
 using namespace Dyninst;
 using namespace SymtabAPI;
-using namespace std;
 
 #ifdef BANAL_USE_PARSEAPI
 #include <CFG.h>
@@ -263,6 +262,116 @@ private:
   Prof::Struct::ACodeNode* m_node;
 };
 
+
+// ------------------------------------------------------------
+// Make a dot (graphviz) file for the Control-Flow Graph
+// ------------------------------------------------------------
+
+// Write the Control-Flow Graph for each procedure to the ostream
+// dotFile.  This code will likely migrate somewhere down inside
+// buildProcStructure at some later time.
+
+#ifdef BANAL_USE_PARSEAPI
+static void
+makeDotFile_parseAPI(std::ostream * dotFile, CodeObject * code_obj)
+{
+  const CodeObject::funclist & funcList = code_obj->funcs();
+
+  for (auto fit = funcList.begin(); fit != funcList.end(); ++fit)
+  {
+    ParseAPI::Function * func = *fit;
+    map <Block *, int> blockNum;
+    map <Block *, int>::iterator mit;
+    int num;
+
+    *dotFile << "--------------------------------------------------\n"
+	     << "Procedure: '" << func->name() << "'\n\n"
+	     << "digraph " << func->name() << " {\n"
+	     << "  1 [ label=\"start\" shape=\"diamond\" ];\n";
+
+    const ParseAPI::Function::blocklist & blist = func->blocks();
+
+    // write the list of nodes (blocks)
+    num = 1;
+    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+      Block * block = *bit;
+      num++;
+
+      blockNum[block] = num;
+      *dotFile << "  " << num << " [ label=\"0x" << hex << block->start()
+	       << dec << "\" ];\n";
+    }
+    int endNum = num + 1;
+    *dotFile << "  " << endNum << " [ label=\"end\" shape=\"diamond\" ];\n";
+
+    // in parseAPI, functions have a unique entry point
+    mit = blockNum.find(func->entry());
+    if (mit != blockNum.end()) {
+      *dotFile << "  1 -> " << mit->second << ";\n";
+    }
+
+    // write the list of internal edges
+    num = 1;
+    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+      Block * block = *bit;
+      const ParseAPI::Block::edgelist & elist = block->targets();
+      num++;
+
+      for (auto eit = elist.begin(); eit != elist.end(); ++eit) {
+	mit = blockNum.find((*eit)->trg());
+	if (mit != blockNum.end()) {
+	  *dotFile << "  " << num << " -> " << mit->second << ";\n";
+	}
+      }
+    }
+
+    // add any exit edges
+    const ParseAPI::Function::const_blocklist & eblist = func->exitBlocks();
+    for (auto bit = eblist.begin(); bit != eblist.end(); ++bit) {
+      Block * block = *bit;
+      mit = blockNum.find(block);
+      if (mit != blockNum.end()) {
+	*dotFile << "  " << mit->second << " -> " << endNum << ";\n";
+      }
+    }
+
+    *dotFile << "}\n" << endl;
+  }
+}
+#endif
+
+
+#ifdef BANAL_USE_OPEN_ANALYSIS
+static void
+makeDotFile_OA(std::ostream * dotFile, BinUtil::LM * lm)
+{
+  BinUtil::LM::ProcMap & pmap = lm->procs();
+
+  for (BinUtil::LM::ProcMap::iterator it = pmap.begin();
+       it != pmap.end(); ++it)
+  {
+    BinUtil::Proc * proc = it->second;
+
+    OA::OA_ptr <OAInterface> irIF;
+    irIF = new OAInterface(proc);
+
+    OA::OA_ptr <OA::CFG::ManagerCFGStandard> cfgmanstd;
+    cfgmanstd = new OA::CFG::ManagerCFGStandard(irIF);
+
+    OA::OA_ptr <OA::CFG::CFG> cfg =
+      cfgmanstd->performAnalysis(TY_TO_IRHNDL(proc, OA::ProcHandle));
+
+    OA::OA_ptr <OA::RIFG> rifg;
+    rifg = new OA::RIFG(cfg, cfg->getEntry(), cfg->getExit());
+
+    *dotFile << "--------------------------------------------------\n"
+	     << "Procedure: '" << proc->name() << "'\n\n";
+    rifg->dump(*dotFile);
+    *dotFile << endl;
+  }
+}
+#endif
+
 } // namespace Struct
 
 } // namespace BAnal
@@ -292,6 +401,7 @@ static const string& OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm;
 //   optimizations such as loop unrolling.
 Prof::Struct::LM*
 BAnal::Struct::makeStructure(BinUtil::LM* lm,
+			     std::ostream * dotFile,
 			     NormTy doNormalizeTy,
 			     bool isIrrIvalLoop,
 			     bool isFwdSubst,
@@ -338,6 +448,16 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
   if (doNormalizeTy != NormTy_None) {
     bool doNormalizeUnsafe = (doNormalizeTy == NormTy_All);
     normalize(lmStrct, doNormalizeUnsafe);
+  }
+
+  // 4. Write CFG in dot (graphviz) format to file.
+  if (dotFile != NULL) {
+#ifdef BANAL_USE_PARSEAPI
+    makeDotFile_parseAPI(dotFile, code_obj);
+#endif
+#ifdef BANAL_USE_OPEN_ANALYSIS
+    makeDotFile_OA(dotFile, lm);
+#endif
   }
 
 #ifdef BANAL_USE_SYMTAB

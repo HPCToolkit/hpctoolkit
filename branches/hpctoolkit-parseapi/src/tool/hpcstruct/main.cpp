@@ -64,6 +64,7 @@ using std::cerr;
 using std::endl;
 
 #include <fstream>
+#include <string>
 #include <streambuf>
 #include <new>
 
@@ -79,6 +80,7 @@ using std::endl;
 #include <lib/binutils/LM.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/FileUtil.hpp>
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
 
@@ -151,6 +153,30 @@ realmain(int argc, char* argv[])
   std::streambuf* os_buf = os->rdbuf();
   os_buf->pubsetbuf(outBuf, HPCIO_RWBufferSz);
 
+  std::ostream* dotFile = NULL;
+  char* dotBuf = NULL;
+  std::streambuf* dot_rdbuf = NULL;
+
+  if (args.doDot) {
+    std::string dotName = args.dot_filenm;
+    if (dotName == "-") {
+      if (args.out_filenm == "-") {
+	DIAG_EMsg("Cannot use '-' (stdout) for both hpcstruct file and dot file.");
+	exit(1);
+      }
+      dotFile = &std::cout;
+    }
+    else {
+      if (dotName.empty()) {
+	dotName = FileUtil::basename(args.in_filenm) + ".dot";
+      }
+      dotFile = IOUtil::OpenOStream(dotName.c_str());
+    }
+    dotBuf = new char[HPCIO_RWBufferSz];
+    dot_rdbuf = dotFile->rdbuf();
+    dot_rdbuf->pubsetbuf(dotBuf, HPCIO_RWBufferSz);
+  }
+
   ProcNameMgr* procNameMgr = NULL;
   if (args.lush_agent == "agent-c++") {
     procNameMgr = new CppNameMgr;
@@ -161,9 +187,10 @@ realmain(int argc, char* argv[])
   
   Prof::Struct::Root* rootStrct = new Prof::Struct::Root("");
   Prof::Struct::Tree* strctTree = new Prof::Struct::Tree("", rootStrct);
-  
+
   using namespace BAnal::Struct;
-  Prof::Struct::LM* lmStrct = makeStructure(lm, args.doNormalizeTy,
+  Prof::Struct::LM* lmStrct = makeStructure(lm, dotFile,
+					    args.doNormalizeTy,
 					    args.isIrreducibleIntervalLoop,
 					    args.isForwardSubstitution,
 					    procNameMgr,
@@ -172,6 +199,10 @@ realmain(int argc, char* argv[])
   
   Prof::Struct::writeXML(*os, *strctTree, args.prettyPrintOutput);
   IOUtil::CloseStream(os);
+
+  if (dotFile != NULL) {
+    IOUtil::CloseStream(dotFile);
+  }
   
   // Cleanup
 
