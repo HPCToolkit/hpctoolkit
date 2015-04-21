@@ -90,7 +90,7 @@ MYLDFLAGS = \
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Analysis) \
-	$(MY_LIB_Banal) \
+	$(HPCLIB_Banal) \
 	$(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) \
@@ -104,20 +104,18 @@ MYLDADD = \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@
 
-if OPT_ENABLE_BANAL_WITH_SYMTAB
-MY_LIB_Banal = $(HPCLIB_Banal_Symtab)
-MY_LIB_Symtab = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
-	-L$(LIBDWARF_LIB) -ldwarf \
-	-L$(LIBELF_LIB) -lelf
-else
-MY_LIB_Banal = $(HPCLIB_Banal)
-MY_LIB_Symtab =
-endif
-
 if OPT_ENABLE_BANAL_WITH_PARSEAPI
 MY_LIB_ParseAPI = -L$(SYMTABAPI_LIB) -lparseAPI -linstructionAPI
 else
 MY_LIB_ParseAPI =
+endif
+
+if OPT_ENABLE_BANAL_WITH_SYMTAB
+MY_LIB_Symtab = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+	-L$(LIBDWARF_LIB) -ldwarf \
+	-L$(LIBELF_LIB) -lelf
+else
+MY_LIB_Symtab =
 endif
 
 if HOST_CPU_X86_FAMILY

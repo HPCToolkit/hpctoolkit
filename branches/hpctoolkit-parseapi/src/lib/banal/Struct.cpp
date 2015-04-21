@@ -116,6 +116,7 @@ using namespace Prof;
 
 using namespace Dyninst;
 using namespace SymtabAPI;
+#endif
 
 #ifdef BANAL_USE_PARSEAPI
 #include <CFG.h>
@@ -124,6 +125,19 @@ using namespace SymtabAPI;
 
 using namespace ParseAPI;
 #endif
+
+// Makefile.am should define exactly one of BANAL_USE_PARSEAPI and
+// BANAL_USE_OA for this file.  Also, BANAL_USE_PARSEAPI implies
+// BANAL_USE_SYMTAB.
+
+#if ! defined(BANAL_USE_PARSEAPI) && ! defined(BANAL_USE_OA)
+#error must define one of BANAL_USE_PARSEAPI and BANAL_USE_OA
+#endif
+#if defined(BANAL_USE_PARSEAPI) && defined(BANAL_USE_OA)
+#error cannot define both BANAL_USE_PARSEAPI and BANAL_USE_OA
+#endif
+#if defined(BANAL_USE_PARSEAPI) && ! defined(BANAL_USE_SYMTAB)
+#error cannot define BANAL_USE_PARSEAPI without BANAL_USE_SYMTAB
 #endif
 
 #define FULL_STRUCT_DEBUG 0
@@ -341,7 +355,7 @@ makeDotFile_parseAPI(std::ostream * dotFile, CodeObject * code_obj)
 #endif
 
 
-#ifdef BANAL_USE_OPEN_ANALYSIS
+#ifdef BANAL_USE_OA
 static void
 makeDotFile_OA(std::ostream * dotFile, BinUtil::LM * lm)
 {
@@ -454,8 +468,7 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
   if (dotFile != NULL) {
 #ifdef BANAL_USE_PARSEAPI
     makeDotFile_parseAPI(dotFile, code_obj);
-#endif
-#ifdef BANAL_USE_OPEN_ANALYSIS
+#else
     makeDotFile_OA(dotFile, lm);
 #endif
   }
