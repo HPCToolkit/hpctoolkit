@@ -152,10 +152,35 @@ namespace Struct {
 // Helpers for building a structure tree
 // ------------------------------------------------------------
 
-typedef std::multimap<Prof::Struct::Proc*, BinUtil::Proc*> ProcStrctToProcMap;
+// The three views of a procedure: scope tree, binutils and parseAPI.
+// This is how we combine the open analysis and parseAPI cases to
+// simplify passing different arguments.
 
-static ProcStrctToProcMap*
-buildLMSkeleton(Prof::Struct::LM* lmStrct, BinUtil::LM* lm,
+class ProcInfo {
+public:
+  Prof::Struct::Proc * proc;
+  BinUtil::Proc * proc_bin;
+#ifdef BANAL_USE_PARSEAPI
+  ParseAPI::Function * proc_parse;
+#endif
+
+#ifdef BANAL_USE_PARSEAPI
+  ProcInfo(Prof::Struct::Proc *p, BinUtil::Proc *pb, ParseAPI::Function *f)
+  { proc = p;  proc_bin = pb;  proc_parse = f; }
+#else
+  ProcInfo(Prof::Struct::Proc *p, BinUtil::Proc *pb)
+  { proc = p;  proc_bin = pb; }
+#endif
+};
+
+typedef std::vector <ProcInfo> ProcInfoVec;
+
+static ProcInfoVec *
+buildLMSkeleton(Prof::Struct::LM* lmStrct,
+		BinUtil::LM* lm,
+#ifdef BANAL_USE_PARSEAPI
+		ParseAPI::CodeObject *code_obj,
+#endif
 		ProcNameMgr* procNmMgr);
 
 static Prof::Struct::File*
@@ -427,9 +452,6 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
 
   Prof::Struct::LM* lmStrct = new Prof::Struct::LM(lm->name(), NULL);
 
-  // 1. Build Struct::File/Struct::Proc skeletal structure
-  ProcStrctToProcMap* mp = buildLMSkeleton(lmStrct, lm, procNmMgr);
-
 #ifdef BANAL_USE_SYMTAB
   Symtab * symtab = Inline::openSymtab(lm->name());
 
@@ -444,19 +466,26 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
   }
 #endif
 #endif
-  
+
+  // 1. Build Struct::File/Struct::Proc skeletal structure
+#ifdef BANAL_USE_PARSEAPI
+  ProcInfoVec * pvec = buildLMSkeleton(lmStrct, lm, code_obj, procNmMgr);
+#else
+  ProcInfoVec * pvec = buildLMSkeleton(lmStrct, lm, procNmMgr);
+#endif
+
   // 2. For each [Struct::Proc, BinUtil::Proc] pair, complete the build.
   // Note that a Struct::Proc may be associated with more than one
   // BinUtil::Proc.
-  for (ProcStrctToProcMap::iterator it = mp->begin(); it != mp->end(); ++it) {
-    Prof::Struct::Proc* pStrct = it->first;
-    BinUtil::Proc* p = it->second;
+  for (auto it = pvec->begin(); it != pvec->end(); ++it) {
+    Prof::Struct::Proc* pStrct = it->proc;
+    BinUtil::Proc* p = it->proc_bin;
 
     DIAG_Msg(2, "Building scope tree for [" << p->name()  << "] ... ");
     buildProcStructure(pStrct, p, isIrrIvalLoop, isFwdSubst,
 		       procNmMgr, dbgProcGlob);
   }
-  delete mp;
+  delete pvec;
 
   // 3. Normalize
   if (doNormalizeTy != NormTy_None) {
@@ -515,23 +544,26 @@ namespace Struct {
 // A Struct::Proc can be associated with multiple BinUtil::Procs
 //
 // Struct::Procs will be sorted by begLn (cf. Struct::ACodeNode::Reorder)
-static ProcStrctToProcMap*
-buildLMSkeleton(Prof::Struct::LM* lmStrct, BinUtil::LM* lm,
+//
+#ifdef BANAL_USE_OA
+static ProcInfoVec *
+buildLMSkeleton(Prof::Struct::LM* lmStrct,
+		BinUtil::LM* lm,
 		ProcNameMgr* procNmMgr)
 {
-  ProcStrctToProcMap* mp = new ProcStrctToProcMap;
+  ProcInfoVec * pvec = new ProcInfoVec;
   
   // -------------------------------------------------------
   // 1. Create basic structure for each procedure
   // -------------------------------------------------------
 
-  for (BinUtil::LM::ProcMap::iterator it = lm->procs().begin();
-       it != lm->procs().end(); ++it) {
+  for (auto it = lm->procs().begin(); it != lm->procs().end(); ++it) {
     BinUtil::Proc* p = it->second;
+
     if (p->size() != 0) {
       Prof::Struct::File* fStrct = demandFileNode(lmStrct, p);
       Prof::Struct::Proc* pStrct = demandProcNode(fStrct, p, procNmMgr);
-      mp->insert(make_pair(pStrct, p));
+      pvec->push_back(ProcInfo(pStrct, p));
     }
   }
 
@@ -540,9 +572,9 @@ buildLMSkeleton(Prof::Struct::LM* lmStrct, BinUtil::LM* lm,
   // -------------------------------------------------------
   // FIXME: disable until we are sure we can handle this (cf. MOAB)
 #if 0
-  for (ProcStrctToProcMap::iterator it = mp->begin(); it != mp->end(); ++it) {
-    Prof::Struct::Proc* pStrct = it->first;
-    BinUtil::Proc* p = it->second;
+  for (auto it = pvec->begin(); it != pvec->end(); ++it) {
+    Prof::Struct::Proc* pStrct = it->proc;
+    BinUtil::Proc* p = it->proc_bin;
     BinUtil::Proc* parent = p->parent();
 
     if (parent) {
@@ -563,8 +595,64 @@ buildLMSkeleton(Prof::Struct::LM* lmStrct, BinUtil::LM* lm,
 
   // 4. Establish procedure groups: [FIXME: more stuff from DWARF]
   //      template instantiations, class member functions
-  return mp;
+
+  return pvec;
 }
+#endif  // open analysis
+
+
+// In the ParseAPI version, we iterate over the ParseAPI list of
+// functions and match them up with the BinUtil procedures by entry
+// address.  We still use BinUtil::Proc for the line map info, even in
+// the ParseAPI case.
+//
+// FIXME: The ParseAPI and BinUtil function entry points agree about
+// 99% of the time, but not always.  To handle the last 1%, we should
+// store the BinUtil::Proc address *ranges* and lookup the ParseAPI
+// entry point in the BinUtil range.  But this will do for now to see
+// how the rest of the code works.
+//
+#ifdef BANAL_USE_PARSEAPI
+static ProcInfoVec *
+buildLMSkeleton(Prof::Struct::LM* lmStrct,
+		BinUtil::LM* lm,
+		ParseAPI::CodeObject *code_obj,
+		ProcNameMgr* procNmMgr)
+{
+  ProcInfoVec * pvec = new ProcInfoVec;
+
+  // match up the ParseAPI and BinUtil procs by entry address
+  map <VMA, BinUtil::Proc *> proc_map;
+  map <VMA, BinUtil::Proc *>::iterator pmit;
+
+  for (auto it = lm->procs().begin(); it != lm->procs().end(); ++it) {
+    VMA vma = it->first.beg();
+    BinUtil::Proc * proc = it->second;
+    proc_map[vma] = proc;
+  }
+
+  // iterate over the ParseAPI Functions
+  const CodeObject::funclist & funcList = code_obj->funcs();
+
+  for (auto fit = funcList.begin(); fit != funcList.end(); ++fit) {
+    ParseAPI::Function * func = *fit;
+    pmit = proc_map.find((VMA) func->addr());
+
+    if (pmit != proc_map.end() && pmit->second->size() != 0) {
+      BinUtil::Proc *p = pmit->second;
+      Prof::Struct::File * fStrct = demandFileNode(lmStrct, p);
+      Prof::Struct::Proc * pStrct = demandProcNode(fStrct, p, procNmMgr);
+      pvec->push_back(ProcInfo(pStrct, p, func));
+    }
+    else {
+      DIAG_WMsgIf(1, "no matching BinUtil::Proc for function '" << func->name()
+		  << "' at address 0x" << std::hex << func->addr() << std::dec);
+    }
+  }
+
+  return pvec;
+}
+#endif  // parseAPI
 
 
 // demandFileNode:
