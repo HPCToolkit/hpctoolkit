@@ -86,6 +86,7 @@ am__objects_1 = libHPCprof_lean_la-hpcrun-fmt.lo \
 	libHPCprof_lean_la-hpcfmt.lo libHPCprof_lean_la-hpcio.lo \
 	libHPCprof_lean_la-hpcio-buffer.lo \
 	libHPCprof_lean_la-QueuingRWLock.lo \
+	libHPCprof_lean_la-pfq-rwlock.lo \
 	libHPCprof_lean_la-spinlock.lo \
 	libHPCprof_lean_la-BalancedTree.lo \
 	libHPCprof_lean_la-placeholders.lo \
@@ -376,6 +377,7 @@ MYSOURCES = \
 	atomic.h \
 	atomic-op.h atomic-op.i \
 	QueuingRWLock.h QueuingRWLock.c \
+	pfq-rwlock.h pfq-rwlock.c \
 	spinlock.h spinlock.c \
 	\
 	BalancedTree.h BalancedTree.c \
@@ -466,6 +468,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcio.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcrun-fmt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-lush-support.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-pfq-rwlock.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-placeholders.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-spinlock.Plo@am__quote@
 
@@ -524,6 +527,13 @@ libHPCprof_lean_la-QueuingRWLock.lo: QueuingRWLock.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='QueuingRWLock.c' object='libHPCprof_lean_la-QueuingRWLock.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-QueuingRWLock.lo `test -f 'QueuingRWLock.c' || echo '$(srcdir)/'`QueuingRWLock.c
+
+libHPCprof_lean_la-pfq-rwlock.lo: pfq-rwlock.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-pfq-rwlock.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-pfq-rwlock.Tpo -c -o libHPCprof_lean_la-pfq-rwlock.lo `test -f 'pfq-rwlock.c' || echo '$(srcdir)/'`pfq-rwlock.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-pfq-rwlock.Tpo $(DEPDIR)/libHPCprof_lean_la-pfq-rwlock.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pfq-rwlock.c' object='libHPCprof_lean_la-pfq-rwlock.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-pfq-rwlock.lo `test -f 'pfq-rwlock.c' || echo '$(srcdir)/'`pfq-rwlock.c
 
 libHPCprof_lean_la-spinlock.lo: spinlock.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-spinlock.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-spinlock.Tpo -c -o libHPCprof_lean_la-spinlock.lo `test -f 'spinlock.c' || echo '$(srcdir)/'`spinlock.c
