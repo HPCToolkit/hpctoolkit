@@ -2,10 +2,15 @@
 // a fair, phased reader-writer lock with local spinning
 //
 // Reference:
+//   Björn B. Brandenburg and James H. Anderson. 2010. Spin-based reader-writer 
+//   synchronization for multiprocessor real-time systems. Real-Time Systems
+//   46(1):25-87 (September 2010).  http://dx.doi.org/10.1007/s11241-010-9097-2
 //
-// Björn B. Brandenburg and James H. Anderson. 2010. Spin-based reader-writer 
-// synchronization for multiprocessor real-time systems. Real-Time Systems
-// 46, 1 (September 2010), 25-87. http://dx.doi.org/10.1007/s11241-010-9097-2
+// Notes:
+//   the reference uses a queue for arriving readers. on a cache coherent 
+//   machine, the local spinning property for waiting readers can be achieved
+//   by simply using a cacheble flag. the implementation here uses that
+//   simplification.
 //
 //******************************************************************************
 
@@ -15,11 +20,14 @@
 // local includes
 //******************************************************************************
 
+#define HOST_BIG_ENDIAN
+
 #include <include/hpctoolkit-config.h>
 
 #include "pfq-rwlock.h"
+#include "atomic-powerpc.h"
 
-
+#if 0
 uint32_t 
 fetch_and_add(uint32_t *p, uint32_t val)
 {
@@ -45,8 +53,8 @@ compare_and_swap(pfq_rwlock_node **p, pfq_rwlock_node *old, pfq_rwlock_node *val
   if (match) *p = val;
   return match;
 }
+#endif
 
-#define HOST_BIG_ENDIAN
 
 
 //******************************************************************************
@@ -54,13 +62,14 @@ compare_and_swap(pfq_rwlock_node **p, pfq_rwlock_node *old, pfq_rwlock_node *val
 //******************************************************************************
 
 #define READER_INCREMENT 0x100
+
 #define PHASE_BIT        0x001
 #define WRITER_PRESENT   0x002
+
 #define WRITER_MASK      (PHASE_BIT | WRITER_PRESENT)
 #define TICKET_MASK      ~(WRITER_MASK)
 
 #define PFQ_NIL          ((pfq_rwlock_node *) 0)
-#define PFQ_WAIT         ((pfq_rwlock_node *) 1)
 
 #define TRUE             1
 #define FALSE            0
@@ -84,17 +93,6 @@ compare_and_swap(pfq_rwlock_node **p, pfq_rwlock_node *old, pfq_rwlock_node *val
 #endif
 
 
-//------------------------------------------------------------------
-// toggle PHASE_BIT by writing the low order byte
-// non-atomicity is OK since there are no concurrent updates of the
-// low-order byte containing the phase bit
-//------------------------------------------------------------------
-#define TOGGLE_PHASE_BIT(p) \
-  do {\
-    unsigned char *lsb = LSB_PTR(p);\
-    lsb ^= PHASE_BIT;\
-  } while(0)
-
 
 //******************************************************************************
 // interface operations
@@ -103,34 +101,35 @@ compare_and_swap(pfq_rwlock_node **p, pfq_rwlock_node *old, pfq_rwlock_node *val
 void
 pfq_rwlock_start_read(pfq_rwlock *l, pfq_rwlock_node *me)
 {
-  uint32_t ticket = fetch_and_add(&(l->rin), READER_INCREMENT);
+  uint32_t ticket = fetch_and_add32(&(l->rin), READER_INCREMENT);
 
   if (ticket & WRITER_PRESENT) {
     uint32_t phase = ticket & PHASE_BIT;
-#if PFQ_ORIGINAL
-    me->blocked = TRUE;
-    pfq_rwlock_node *prev = fetch_and_store(&(l->rtail[phase]), me);
-    if (prev != PFQ_NIL) {
-      while (me->blocked);
-      if (prev != PFQ_WAIT) {
-        prev->blocked = FALSE;
-      }
-    } else {
-      pfq_rwlock_node *prev = fetch_and_store(&(l->rtail[phase]), PFQ_NIL);
-      prev->blocked = FALSE;
-      while (me->blocked);
-    }
+    while (l->flag[phase].flag);
+
+    //--------------------------------------------------------------------------
+    // prevent speculative reads until after flag is set
+    //--------------------------------------------------------------------------
+    enforce_load_to_load_order();
+  } else {
+    //--------------------------------------------------------------------------
+    // prevent speculative reads until after the counter is incremented
+    //--------------------------------------------------------------------------
+    enforce_rmw_to_load_order();
   }
-#else
-    while (l->flag[phase] == l->sense);
-#endif
 }
 
 
 void 
 pfq_rwlock_end_read(pfq_rwlock *l, pfq_rwlock_node *me)
 {
-  uint32_t ticket = fetch_and_add(&(l->rout), READER_INCREMENT);
+  //----------------------------------------------------------------------------
+  // finish reads before the counter is incremented
+  //----------------------------------------------------------------------------
+  enforce_load_to_rmw_order();
+
+  uint32_t ticket = fetch_and_add32(&(l->rout), READER_INCREMENT);
+
   if ((ticket & WRITER_PRESENT) && 
       ((ticket & TICKET_MASK) == l->last - 1)) {
     l->whead->blocked = FALSE;
@@ -143,46 +142,56 @@ pfq_rwlock_start_write(pfq_rwlock *l, pfq_rwlock_node *me)
 {
   pfq_rwlock_node *prev = fetch_and_store(&(l->wtail), me);
 
-  //-------------------------------------------------------------
-  // wait for writers ahead of me, if any
-  //-------------------------------------------------------------
+  //--------------------------------------------------------------------
+  // if any writers precede me, wait for writers them to finish
+  //--------------------------------------------------------------------
   if (prev != PFQ_NIL) {
     me->blocked = TRUE;
     prev->next = me;
     while (me->blocked);
   }
 
-  //-------------------------------------------------------------
+  //--------------------------------------------------------------------
   // announce myself as next writer
-  //-------------------------------------------------------------
+  //--------------------------------------------------------------------
   l->whead = me;
 
-  //-------------------------------------------------------------
-  // signal readers about the presence of a writer by setting
-  // the WRITER_PRESENT bit
-  //
-  // wait for all active reads to drain
-  //-------------------------------------------------------------
-  uint32_t phase = l->rin & PHASE_BIT;
-
-#ifdef ORIGINAL
-  l->rtail[phase] = PFQ_WAIT;
-#else
+  //--------------------------------------------------------------------
   // set the flag to block any readers in the next batch 
-  l->flag[phase] = TRUE; 
-#endif
+  //--------------------------------------------------------------------
+  uint32_t phase = l->rin & PHASE_BIT;
+  l->flag[phase].flag = TRUE; 
 
-  uint32_t ticket = fetch_and_add(&(l->rin), WRITER_PRESENT) & TICKET_MASK;
+  //--------------------------------------------------------------------
+  // acquire an "in" sequence number to see how many readers arrived
+  // set the WRITER_PRESENT bit so subsequent readers will wait
+  //--------------------------------------------------------------------
+  uint32_t in = fetch_and_add32(&(l->rin), WRITER_PRESENT) & TICKET_MASK;
 
-  l->last = ticket;
+  //--------------------------------------------------------------------
+  // save the identity of the last reader 
+  //--------------------------------------------------------------------
+  l->last = in;
 
-  uint32_t exit = fetch_and_add(&(l->rout), WRITER_PRESENT) & TICKET_MASK;
+  //-------------------------------------------------------------
+  // acquire an "out" sequence number to see how many readers left
+  // set the WRITER_PRESENT bit so the last reader will know to signal
+  // it is responsible for signaling the waiting writer
+  //-------------------------------------------------------------
+  uint32_t out = fetch_and_add32(&(l->rout), WRITER_PRESENT) & TICKET_MASK;
 
-  if (exit != ticket) {
-    while (me->blocked);
+  //--------------------------------------------------------------------
+  // if any reads are active, wait for last reader to signal me
+  //--------------------------------------------------------------------
+  if (in != out) {
+    while (me->blocked); // wait for active reads to drain
   }
-}
 
+#if defined(__powerpc__)
+  // prevent speculative reads from starting before the lock has been acquired
+  __asm__ __volatile__ ("isync\n");
+#endif
+}
 
 
 void 
@@ -190,29 +199,30 @@ pfq_rwlock_end_write(pfq_rwlock *l, pfq_rwlock_node *me)
 {
   l->rout &= TICKET_MASK; // clear WRITER_PRESENT and PHASE_BIT 
 
-  //------------------------------------------------------------------
+  //--------------------------------------------------------------------
   // toggle PHASE_BIT by writing the low order byte
   // non-atomicity is OK since there are no concurrent updates of the
   // low-order byte containing the phase bit
-  //------------------------------------------------------------------
+  //--------------------------------------------------------------------
   unsigned char *lsb = LSB_PTR(&(l->rin));
   uint32_t phase = *lsb;
   *lsb ^= PHASE_BIT;
 
-#ifdef ORIGINAL
-  pfq_rwlock_node *prev = fetch_and_store(&(l->rtail[phase]), PFQ_NIL);
-  if (prev != PFQ_WAIT) {
-    prev->blocked = FALSE;
-  }
-#else
+  //--------------------------------------------------------------------
   // clear the flag to release waiting readers in the current read phase 
-  l->flag[phase] = FALSE; 
-#endif
+  //--------------------------------------------------------------------
+  l->flag[phase].flag = FALSE; 
 
   if ((me->next == PFQ_NIL) &&
-      (compare_and_swap(&(l->wtail), me, PFQ_NIL)) return;
+      (compare_and_swap_bool(&(l->wtail), me, PFQ_NIL))) return;
 
+  //--------------------------------------------------------------------
+  // wait for arriving writer
+  //--------------------------------------------------------------------
   while (me->next == PFQ_NIL);
 
+  //--------------------------------------------------------------------
+  // signal next writer 
+  //--------------------------------------------------------------------
   me->next->blocked = FALSE;
 }
