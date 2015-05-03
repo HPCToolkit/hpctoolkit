@@ -1,7 +1,7 @@
 #include <stdbool.h>
 
-typedef struct pfq_rwlock_node_s {
-  struct pfq_rwlock_node_s * volatile next;
+typedef struct mcs_node_s {
+  struct mcs_node_s * volatile next;
   volatile bool blocked;
 } mcs_node_t;
 

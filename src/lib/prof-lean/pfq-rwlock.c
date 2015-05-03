@@ -26,34 +26,7 @@
 
 #include "pfq-rwlock.h"
 #include "atomic-powerpc.h"
-
-#if 0
-uint32_t 
-fetch_and_add(uint32_t *p, uint32_t val)
-{
-  uint32_t prev = *p;
-  *p += val;
-  return prev;
-}
-
-
-pfq_rwlock_node *
-fetch_and_store(pfq_rwlock_node **p, pfq_rwlock_node *val)
-{
-  pfq_rwlock_node *prev = *p;
-  *p = val;
-  return prev;
-}
-
-
-uint32_t 
-compare_and_swap(pfq_rwlock_node **p, pfq_rwlock_node *old, pfq_rwlock_node *val)
-{
-  uint32_t match = *p == old;
-  if (match) *p = val;
-  return match;
-}
-#endif
+#include "fence.h"
 
 
 
@@ -69,10 +42,7 @@ compare_and_swap(pfq_rwlock_node **p, pfq_rwlock_node *old, pfq_rwlock_node *val
 #define WRITER_MASK      (PHASE_BIT | WRITER_PRESENT)
 #define TICKET_MASK      ~(WRITER_MASK)
 
-#define PFQ_NIL          ((pfq_rwlock_node *) 0)
-
-#define TRUE             1
-#define FALSE            0
+#define PFQ_NIL          ((pfq_rwlock_node_t *) 0)
 
 
 //------------------------------------------------------------------
@@ -89,7 +59,8 @@ compare_and_swap(pfq_rwlock_node **p, pfq_rwlock_node *old, pfq_rwlock_node *val
 #endif
 
 #ifndef LSB_PTR
-#error endianness must be configured. use --enable-endian to force configuration
+#error "endianness must be configured. " \
+       "use --enable-endian to force configuration"
 #endif
 
 
@@ -99,7 +70,7 @@ compare_and_swap(pfq_rwlock_node **p, pfq_rwlock_node *old, pfq_rwlock_node *val
 //******************************************************************************
 
 void
-pfq_rwlock_start_read(pfq_rwlock *l, pfq_rwlock_node *me)
+pfq_rwlock_start_read(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 {
   uint32_t ticket = fetch_and_add32(&(l->rin), READER_INCREMENT);
 
@@ -121,7 +92,7 @@ pfq_rwlock_start_read(pfq_rwlock *l, pfq_rwlock_node *me)
 
 
 void 
-pfq_rwlock_end_read(pfq_rwlock *l, pfq_rwlock_node *me)
+pfq_rwlock_end_read(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 {
   //----------------------------------------------------------------------------
   // finish reads before the counter is incremented
@@ -132,21 +103,21 @@ pfq_rwlock_end_read(pfq_rwlock *l, pfq_rwlock_node *me)
 
   if ((ticket & WRITER_PRESENT) && 
       ((ticket & TICKET_MASK) == l->last - 1)) {
-    l->whead->blocked = FALSE;
+    l->whead->blocked = false;
   }
 }
 
 
 void
-pfq_rwlock_start_write(pfq_rwlock *l, pfq_rwlock_node *me)
+pfq_rwlock_start_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 {
-  pfq_rwlock_node *prev = fetch_and_store(&(l->wtail), me);
+  pfq_rwlock_node_t *prev = fetch_and_store(&(l->wtail), me);
 
   //--------------------------------------------------------------------
   // if any writers precede me, wait for writers them to finish
   //--------------------------------------------------------------------
   if (prev != PFQ_NIL) {
-    me->blocked = TRUE;
+    me->blocked = true;
     prev->next = me;
     while (me->blocked);
   }
@@ -160,7 +131,7 @@ pfq_rwlock_start_write(pfq_rwlock *l, pfq_rwlock_node *me)
   // set the flag to block any readers in the next batch 
   //--------------------------------------------------------------------
   uint32_t phase = l->rin & PHASE_BIT;
-  l->flag[phase].flag = TRUE; 
+  l->flag[phase].flag = true; 
 
   //--------------------------------------------------------------------
   // acquire an "in" sequence number to see how many readers arrived
@@ -186,16 +157,11 @@ pfq_rwlock_start_write(pfq_rwlock *l, pfq_rwlock_node *me)
   if (in != out) {
     while (me->blocked); // wait for active reads to drain
   }
-
-#if defined(__powerpc__)
-  // prevent speculative reads from starting before the lock has been acquired
-  __asm__ __volatile__ ("isync\n");
-#endif
 }
 
 
 void 
-pfq_rwlock_end_write(pfq_rwlock *l, pfq_rwlock_node *me)
+pfq_rwlock_end_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 {
   l->rout &= TICKET_MASK; // clear WRITER_PRESENT and PHASE_BIT 
 
@@ -211,7 +177,7 @@ pfq_rwlock_end_write(pfq_rwlock *l, pfq_rwlock_node *me)
   //--------------------------------------------------------------------
   // clear the flag to release waiting readers in the current read phase 
   //--------------------------------------------------------------------
-  l->flag[phase].flag = FALSE; 
+  l->flag[phase].flag = false; 
 
   if ((me->next == PFQ_NIL) &&
       (compare_and_swap_bool(&(l->wtail), me, PFQ_NIL))) return;
@@ -224,5 +190,5 @@ pfq_rwlock_end_write(pfq_rwlock *l, pfq_rwlock_node *me)
   //--------------------------------------------------------------------
   // signal next writer 
   //--------------------------------------------------------------------
-  me->next->blocked = FALSE;
+  me->next->blocked = false;
 }

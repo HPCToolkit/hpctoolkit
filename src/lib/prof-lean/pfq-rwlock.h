@@ -1,23 +1,32 @@
 #include <inttypes.h>
+#include <stdbool.h>
 
-typedef struct pfq_rwlock_node_s {
-  struct pfq_rwlock_node_s *next;
-  volatile uint32_t blocked;
-} pfq_rwlock_node;
+#include "mcs-lock.h"
+
+typedef mcs_node_t pfq_rwlock_node_t;
 
 // align a variable at the start of a cache line
 // CLA = Cache Line Aligned
-#define CLA(x) x __attribute__((aligned(64)))
+#define CLA(x) x __attribute__((aligned(128)))
 
 typedef struct {
-  CLA(volatile int flag);
-} pfq_rwlock_flag;
+  CLA(volatile bool flag);
+} pfq_rwlock_flag_t;
 
-typedef struct pfq_rwlock_s {
+typedef struct {
+  //----------------------------------------------------------------------------
+  // reader management
+  //----------------------------------------------------------------------------
   CLA(uint32_t rin);
   CLA(uint32_t rout);
   CLA(uint32_t last);
-  pfq_rwlock_flag flag[2]; 
-  CLA(pfq_rwlock_node *wtail);
-  CLA(pfq_rwlock_node *whead);
-} pfq_rwlock;
+
+  pfq_rwlock_flag_t flag[2]; 
+
+  //----------------------------------------------------------------------------
+  // writer management
+  //----------------------------------------------------------------------------
+  CLA(mcs_lock_t wtail);
+  CLA(mcs_node_t *whead);
+
+} pfq_rwlock_t;
