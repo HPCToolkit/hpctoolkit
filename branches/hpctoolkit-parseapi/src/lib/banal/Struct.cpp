@@ -190,9 +190,8 @@ static Prof::Struct::Proc*
 demandProcNode(Prof::Struct::File* fStrct, BinUtil::Proc* p,
 	       ProcNameMgr* procNmMgr);
 
-
 static Prof::Struct::Proc*
-buildProcStructure(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
+buildProcStructure(ProcInfo pinfo,
 		   bool isIrrIvalLoop, bool isFwdSubst,
 		   ProcNameMgr* procNmMgr, const std::string& dbgProcGlob);
 
@@ -206,7 +205,6 @@ buildStmts(Struct::LocationMgr& locMgr,
 	   Prof::Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
 	   OA::OA_ptr<OA::CFG::NodeInterface> bb, ProcNameMgr* procNmMgr,
 	   std::list<Prof::Struct::ACodeNode *> &insertions, int targetScopeID);
-
 
 static void
 findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj, 
@@ -312,7 +310,7 @@ private:
 
 #ifdef BANAL_USE_PARSEAPI
 static void
-makeDotFile_parseAPI(std::ostream * dotFile, CodeObject * code_obj)
+makeDotFile(std::ostream * dotFile, CodeObject * code_obj)
 {
   const CodeObject::funclist & funcList = code_obj->funcs();
 
@@ -382,7 +380,7 @@ makeDotFile_parseAPI(std::ostream * dotFile, CodeObject * code_obj)
 
 #ifdef BANAL_USE_OA
 static void
-makeDotFile_OA(std::ostream * dotFile, BinUtil::LM * lm)
+makeDotFile(std::ostream * dotFile, BinUtil::LM * lm)
 {
   BinUtil::LM::ProcMap & pmap = lm->procs();
 
@@ -478,11 +476,10 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
   // Note that a Struct::Proc may be associated with more than one
   // BinUtil::Proc.
   for (auto it = pvec->begin(); it != pvec->end(); ++it) {
-    Prof::Struct::Proc* pStrct = it->proc;
     BinUtil::Proc* p = it->proc_bin;
 
     DIAG_Msg(2, "Building scope tree for [" << p->name()  << "] ... ");
-    buildProcStructure(pStrct, p, isIrrIvalLoop, isFwdSubst,
+    buildProcStructure(*it, isIrrIvalLoop, isFwdSubst,
 		       procNmMgr, dbgProcGlob);
   }
   delete pvec;
@@ -496,9 +493,9 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
   // 4. Write CFG in dot (graphviz) format to file.
   if (dotFile != NULL) {
 #ifdef BANAL_USE_PARSEAPI
-    makeDotFile_parseAPI(dotFile, code_obj);
+    makeDotFile(dotFile, code_obj);
 #else
-    makeDotFile_OA(dotFile, lm);
+    makeDotFile(dotFile, lm);
 #endif
   }
 
@@ -749,7 +746,6 @@ namespace BAnal {
 
 namespace Struct {
 
-
 static int
 buildProcLoopNests(Prof::Struct::Proc* enclosingProc, BinUtil::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
@@ -758,6 +754,7 @@ buildProcLoopNests(Prof::Struct::Proc* enclosingProc, BinUtil::Proc* p,
 		   bool isIrrIvalLoop, bool isFwdSubst,
 		   ProcNameMgr* procNmMgr, bool isDbg);
 
+
 static Prof::Struct::ACodeNode*
 buildLoopAndStmts(Struct::LocationMgr& locMgr,
 		  Prof::Struct::ACodeNode* topScope, Prof::Struct::ACodeNode* enclosingScope, 
@@ -765,7 +762,6 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
 		  OA::OA_ptr<OA::CFG::CFGInterface> cfg,
 		  OA::RIFG::NodeId fgNode,
 		  bool isIrrIvalLoop, ProcNameMgr* procNmMgr);
-
 
 
 static bool
@@ -988,11 +984,16 @@ coalesceAlienChildren(Prof::Struct::ANode* node)
 
 // buildProcStructure: Complete the representation for 'pStrct' given the
 // BinUtil::Proc 'p'.  Note that pStrcts parent may itself be a Struct::Proc.
+//
+#ifdef BANAL_USE_OA
 static Prof::Struct::Proc*
-buildProcStructure(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
+buildProcStructure(ProcInfo pinfo,
 		   bool isIrrIvalLoop, bool isFwdSubst,
 		   ProcNameMgr* procNmMgr, const std::string& dbgProcGlob)
 {
+  Prof::Struct::Proc * pStrct = pinfo.proc;
+  BinUtil::Proc *p = pinfo.proc_bin;
+
   DIAG_Msg(3, "==> Proc `" << p->name() << "' (" << p->id() << ") <==");
   
   bool isDbg = false;
@@ -1013,7 +1014,7 @@ buildProcStructure(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
 }
 
 
-void
+static void
 debugCFGInfo(BinUtil::Proc* p)
 {
   static const int sepWidth = 77;
@@ -1063,6 +1064,8 @@ debugCFGInfo(BinUtil::Proc* p)
   cerr << setfill('-') << setw(sepWidth) << "-" << endl;
   cerr << endl << flush;
 }
+#endif  // open analysis
+
 
 // buildProcLoopNests: Build procedure structure by traversing
 // the Nested SCR (Tarjan tree) to create loop nests and statement
@@ -1092,9 +1095,11 @@ buildProcLoopNests(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
     
     OA::RIFG::NodeId fgRoot = rifg->getSource();
 
+#ifdef BANAL_USE_OA
     if (isDbg) {
       debugCFGInfo(p);
     }
+#endif
 
     int r = buildProcLoopNests(pStrct, p, tarj, cfg, fgRoot,
 			       isIrrIvalLoop, isFwdSubst, procNmMgr, isDbg);
@@ -1485,7 +1490,6 @@ buildStmts(Struct::LocationMgr& locMgr,
 }
 
 
-
 // findLoopBegLineInfo: Given the head basic block node of the loop,
 // find loop begin source line information.
 //
@@ -1635,6 +1639,135 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 } // namespace Struct
 
 } // namespace BAnal
+
+
+//****************************************************************************
+// ParseAPI code for functions, loops and blocks
+//****************************************************************************
+
+#ifdef BANAL_USE_PARSEAPI
+
+#define PARSE_DEBUG  0
+
+// The ParseAPI version of traversing functions, CFGs, loops, basic
+// blocks and instructions.  This is the code between makeStructure()
+// and creating Prof::Struct nodes for loops, stmts, etc.
+
+namespace BAnal {
+namespace Struct {
+
+typedef map <Block *, bool> BlockSet;
+
+static void doLoopTree(ProcInfo, BlockSet &, LoopTreeNode *);
+static void doLoop(ProcInfo, BlockSet &, Loop *);
+static void doBlock(ProcInfo, BlockSet &, Block *);
+
+
+static Prof::Struct::Proc *
+buildProcStructure(ProcInfo pinfo,
+		   bool isIrrIvalLoop, bool isFwdSubst,
+		   ProcNameMgr* procNmMgr, const std::string& dbgProcGlob)
+{
+  ParseAPI::Function * func = pinfo.proc_parse;
+  const ParseAPI::Function::blocklist & blist = func->blocks();
+
+#if PARSE_DEBUG
+  cout << "\nfunc: '" << func->name() << "'\n";
+#endif
+
+  // make a map of visited blocks
+  BlockSet visited;
+
+  for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+    Block * block = *bit;
+    visited[block] = false;
+  }
+
+  // traverse the loop (Tarjan) tree
+  doLoopTree(pinfo, visited, func->getLoopTree());
+
+#if PARSE_DEBUG
+  cout << "non-loop blocks:\n";
+#endif
+
+  // process any blocks not in a loop
+  for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+    Block * block = *bit;
+    if (! visited[block]) {
+      doBlock(pinfo, visited, block);
+    }
+  }
+
+  return pinfo.proc;
+}
+
+
+static void
+doLoopTree(ProcInfo pinfo, BlockSet & visited, LoopTreeNode *ltnode)
+{
+  if (ltnode == NULL) {
+    return;
+  }
+
+#if PARSE_DEBUG
+  if (ltnode->loop != NULL) {
+    cout << "loop: " << ltnode->name() << "\n";
+  }
+#endif
+
+  doLoop(pinfo, visited, ltnode->loop);
+
+  vector <LoopTreeNode *> clist = ltnode->children;
+
+  for (int i = 0; i < clist.size(); i++) {
+    doLoopTree(pinfo, visited, clist[i]);
+  }
+}
+
+
+static void
+doLoop(ProcInfo pinfo, BlockSet & visited, Loop *loop)
+{
+  if (loop == NULL) {
+    return;
+  }
+
+  vector <Block *> blist;
+  loop->getLoopBasicBlocksExclusive(blist);
+
+  vector <Block *> elist;
+  int num_ents = loop->getLoopEntries(elist);
+
+  // process the entry blocks first
+  for (int i = 0; i < elist.size(); i++) {
+    doBlock(pinfo, visited, elist[i]);
+  }
+
+  // non-entry blocks
+  for (int i = 0; i < blist.size(); i++) {
+    doBlock(pinfo, visited, blist[i]);
+  }
+}
+
+
+static void
+doBlock(ProcInfo pinfo, BlockSet & visited, Block *block)
+{
+  if (block == NULL || visited[block]) {
+    return;
+  }
+  visited[block] = true;
+
+#if PARSE_DEBUG
+  cout << "  0x" << std::hex << block->start() << std::dec << "\n";
+#endif
+}
+
+
+}  // namespace Struct
+}  // namespace BAnal
+
+#endif  // parseAPI
 
 
 //****************************************************************************
