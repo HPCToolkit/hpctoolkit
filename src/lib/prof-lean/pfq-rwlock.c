@@ -15,6 +15,9 @@
 //******************************************************************************
 
 
+FIXME still needs fences
+
+
 
 //******************************************************************************
 // local includes
@@ -111,16 +114,15 @@ pfq_rwlock_end_read(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 void
 pfq_rwlock_start_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 {
-  pfq_rwlock_node_t *prev = fetch_and_store(&(l->wtail), me);
+  //--------------------------------------------------------------------
+  // use MCS lock to enforce mutual exclusion with other writers
+  //--------------------------------------------------------------------
+  mcs_lock(&(l->wtail), me);
 
   //--------------------------------------------------------------------
-  // if any writers precede me, wait for writers them to finish
+  // always clear when at the head of the mcs queue
   //--------------------------------------------------------------------
-  if (prev != PFQ_NIL) {
-    me->blocked = true;
-    prev->next = me;
-    while (me->blocked);
-  }
+  me->blocked = true;
 
   //--------------------------------------------------------------------
   // announce myself as next writer
@@ -133,6 +135,11 @@ pfq_rwlock_start_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   uint32_t phase = l->rin & PHASE_BIT;
   l->flag[phase].flag = true; 
 
+  //----------------------------------------------------------------------------
+  // store to flag must complete before incrementing rin
+  //----------------------------------------------------------------------------
+  enforce_store_to_rmw_order();
+
   //--------------------------------------------------------------------
   // acquire an "in" sequence number to see how many readers arrived
   // set the WRITER_PRESENT bit so subsequent readers will wait
@@ -143,6 +150,15 @@ pfq_rwlock_start_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // save the identity of the last reader 
   //--------------------------------------------------------------------
   l->last = in;
+  
+  //----------------------------------------------------------------------------
+  // store to last must complete before notifying readers of writer 
+  // stores to whead and me->blocked also were already committed
+  // before last fetch-and-add32
+  // the LL of l->rout must not occur before before the LL of l->rin. 
+  // the fence below enforces that too.
+  //----------------------------------------------------------------------------
+  enforce_load_to_load_and_store_to_store_order();
 
   //-------------------------------------------------------------
   // acquire an "out" sequence number to see how many readers left
@@ -156,6 +172,11 @@ pfq_rwlock_start_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   //--------------------------------------------------------------------
   if (in != out) {
     while (me->blocked); // wait for active reads to drain
+  
+    //--------------------------------------------------------------------------
+    // store to flag must complete before notifying readers of writer 
+    //--------------------------------------------------------------------------
+    enforce_load_to_access_order();
   }
 }
 
@@ -163,32 +184,49 @@ pfq_rwlock_start_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 void 
 pfq_rwlock_end_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 {
-  l->rout &= TICKET_MASK; // clear WRITER_PRESENT and PHASE_BIT 
+  unsigned char *lsb;
+  //----------------------------------------------------------------------------
+  // finish accesses in the critical section before signalling next
+  // readers or next writer  
+  //----------------------------------------------------------------------------
+  enforce_access_to_store_order();
+
+  //--------------------------------------------------------------------
+  // clear WRITER_PRESENT in rout
+  //--------------------------------------------------------------------
+  lsb = LSB_PTR(&(l->rout));
+  *lsb = 0; 
+
+  //----------------------------------------------------------------------------
+  // no fence needed because readers don't modify LSB(rout) 
+  // mcs_unlock will ensure this store commits before next writer proceeds 
+  //----------------------------------------------------------------------------
 
   //--------------------------------------------------------------------
   // toggle PHASE_BIT by writing the low order byte
   // non-atomicity is OK since there are no concurrent updates of the
   // low-order byte containing the phase bit
   //--------------------------------------------------------------------
-  unsigned char *lsb = LSB_PTR(&(l->rin));
+  lsb = LSB_PTR(&(l->rin));
   uint32_t phase = *lsb;
-  *lsb ^= PHASE_BIT;
+
+  //--------------------------------------------------------------------
+  // toggle phase and clear WRITER_PRESENT in rin
+  //--------------------------------------------------------------------
+  *lsb = (~phase) & PHASE_BIT;
+
+  //----------------------------------------------------------------------------
+  // clearing writer present in rin can be reordered with flag set below
+  // because any arriving reader will see the cleared flag and proceed.
+  //----------------------------------------------------------------------------
 
   //--------------------------------------------------------------------
   // clear the flag to release waiting readers in the current read phase 
   //--------------------------------------------------------------------
   l->flag[phase].flag = false; 
 
-  if ((me->next == PFQ_NIL) &&
-      (compare_and_swap_bool(&(l->wtail), me, PFQ_NIL))) return;
-
   //--------------------------------------------------------------------
-  // wait for arriving writer
+  // pass writer lock to next writer 
   //--------------------------------------------------------------------
-  while (me->next == PFQ_NIL);
-
-  //--------------------------------------------------------------------
-  // signal next writer 
-  //--------------------------------------------------------------------
-  me->next->blocked = false;
+  mcs_unlock(&(l->wtail), me);
 }

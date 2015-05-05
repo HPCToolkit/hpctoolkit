@@ -15,6 +15,24 @@
 
 
 //******************************************************************************
+// private operations
+//******************************************************************************
+
+static inline mcs_node_t *
+fas(volatile mcs_node_t **p, mcs_node_t *n)
+{
+  return (mcs_node_t *) fetch_and_store((volatile void **) p, n);
+}
+
+
+static inline bool
+cas_bool(volatile mcs_node_t **p, mcs_node_t *o, mcs_node_t *n)
+{
+  return compare_and_swap_bool((volatile void **) p, o, n);
+}
+
+
+//******************************************************************************
 // interface operations
 //******************************************************************************
 
@@ -35,7 +53,8 @@ mcs_lock(mcs_lock_t *l, mcs_node_t *me)
   // install my node at the tail of the lock queue. 
   // determine my predecessor, if any.
   //--------------------------------------------------------------------
-  mcs_node_t *predecessor = (mcs_node_t *) fetch_and_store(l, me);
+  // mcs_node_t *predecessor = (mcs_node_t *) fetch_and_store(l, me);
+  mcs_node_t *predecessor = fas(&(l->tail), me);
 
   //--------------------------------------------------------------------
   // if I have a predecessor, wait until it signals me
@@ -71,19 +90,23 @@ mcs_lock(mcs_lock_t *l, mcs_node_t *me)
 
 
 void
-mcs_unlock(mcs_lock_t l, mcs_node_t *me)
+mcs_unlock(mcs_lock_t *l, mcs_node_t *me)
 {
-  if (!me->next) {            // I don't currently have a successor
+  if (!me->next) {            
+    //--------------------------------------------------------------------
+    // I don't currently have a successor, so I may be at the tail
+    //--------------------------------------------------------------------
+
     //--------------------------------------------------------------------
     // all accesses in the critical section must occur before releasing 
-    // the lock by unlinking myself with a compare-and-swap
+    // the lock by unlinking myself from the tail with a compare-and-swap
     //--------------------------------------------------------------------
     enforce_access_to_rmw_order(); 
 
     //--------------------------------------------------------------------
     // if my node is at the tail of the queue, remove myself
     //--------------------------------------------------------------------
-    if (compare_and_swap_bool(&l, me, 0)) {
+    if (cas_bool(&(l->tail), me, 0)) {
       //------------------------------------------------------------------
       // I removed myself from the queue; I will never have a 
       // successor, so I'm done 

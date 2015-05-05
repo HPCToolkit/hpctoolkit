@@ -30,7 +30,7 @@
 
 
 static inline void *
-fetch_and_store(void **ptr, void *val)
+fetch_and_store(volatile void **ptr, void *val)
 {
   void *result;
   __asm__ __volatile__(              
@@ -45,7 +45,7 @@ fetch_and_store(void **ptr, void *val)
 
 
 static inline uint32_t
-fetch_and_add32(uint32_t *ptr, uint32_t val)
+fetch_and_add32(volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t result;
   __asm__ __volatile__(              
@@ -61,7 +61,7 @@ fetch_and_add32(uint32_t *ptr, uint32_t val)
 
 
 static inline uint64_t
-fetch_and_add64(uint64_t *ptr, uint64_t val)
+fetch_and_add64(volatile uint64_t *ptr, uint64_t val)
 {
   uint64_t result;
   __asm__ __volatile__(              
@@ -77,7 +77,7 @@ fetch_and_add64(uint64_t *ptr, uint64_t val)
 
 
 static inline void *
-compare_and_swap_val(void **ptr, void *oldval, void *newval)
+compare_and_swap_val(volatile void **ptr, void *oldval, void *newval)
 {
   void *result;
   __asm__ __volatile__(              
@@ -93,9 +93,10 @@ compare_and_swap_val(void **ptr, void *oldval, void *newval)
 }
 
 
-static int
-compare_and_swap_bool(void **ptr, void *oldval, void *newval)
+static inline bool
+compare_and_swap_bool(volatile void **ptr, void *oldval, void *newval)
 {
-  void *result = compare_and_swap_val(ptr, oldval, newval);
-  return oldval == result;
+  void *resval = compare_and_swap_val(ptr, oldval, newval);
+  bool result = oldval == resval; 
+  return result;
 }

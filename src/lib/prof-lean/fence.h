@@ -69,8 +69,13 @@
 #define enforce_load_to_load_order()     __asm__ __volatile__ ("isync\n")
 
 
+// see table
+#define enforce_load_to_load_and_store_to_store_order()  \
+   __asm__ __volatile__ ("lwsync\n")
+
 // L -> lwsync (B.2.3); S -> lwsync (B.2.2.2)
 #define enforce_access_to_store_order()  __asm__ __volatile__ ("lwsync\n")
+
 
 // S -> lwsync (B.2.2.2)
 #define enforce_store_to_store_order()   __asm__ __volatile__ ("lwsync\n")
