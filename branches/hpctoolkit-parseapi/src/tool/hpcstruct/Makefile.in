@@ -67,6 +67,7 @@ host_triplet = @host@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/hpcstruct.in $(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
+@OPT_ENABLE_BANAL_WITH_PARSEAPI_FALSE@am__append_1 = @OA_IFLAGS@
 pkglibexec_PROGRAMS = hpcstruct-bin$(EXEEXT)
 subdir = src/tool/hpcstruct
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -408,7 +409,8 @@ MYSOURCES = \
 	Args.hpp Args.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @OA_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ \
+	$(am__append_1)
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
 	@GNUBINUTILS_LDFLAGS@
@@ -424,14 +426,13 @@ MYLDADD = \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
-	$(MY_LIB_ParseAPI) \
+	$(MY_LIB_CFG) \
 	$(MY_LIB_Symtab) \
-	@OA_LDFLAGS@ \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@
 
-@OPT_ENABLE_BANAL_WITH_PARSEAPI_FALSE@MY_LIB_ParseAPI = 
-@OPT_ENABLE_BANAL_WITH_PARSEAPI_TRUE@MY_LIB_ParseAPI = -L$(SYMTABAPI_LIB) -lparseAPI -linstructionAPI
+@OPT_ENABLE_BANAL_WITH_PARSEAPI_FALSE@MY_LIB_CFG = @OA_LDFLAGS@
+@OPT_ENABLE_BANAL_WITH_PARSEAPI_TRUE@MY_LIB_CFG = -L$(SYMTABAPI_LIB) -lparseAPI -linstructionAPI
 @OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE@MY_LIB_Symtab = 
 @OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@MY_LIB_Symtab = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
 @OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@	-L$(LIBDWARF_LIB) -ldwarf \

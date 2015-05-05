@@ -76,14 +76,14 @@ SYMTABAPI_INC = @SYMTABAPI_INC@
 MYSOURCES = \
 	Struct.hpp Struct.cpp \
 	StructSimple.hpp StructSimple.cpp \
-	Struct-LocationMgr.hpp Struct-LocationMgr.cpp \
-	OAInterface.hpp OAInterface.cpp
+	Struct-LocationMgr.hpp Struct-LocationMgr.cpp
 
 SIMPLE_SRCS = StructSimple.hpp StructSimple.cpp
 INLINE_SRCS = Struct-Inline.hpp Struct-Inline.cpp
+OA_SRCS =     OAInterface.hpp OAInterface.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @OA_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 
 if IS_HOST_AR
   MYAR = @HOST_AR@
@@ -121,7 +121,8 @@ endif
 if OPT_ENABLE_BANAL_WITH_PARSEAPI
 libHPCbanal_la_CXXFLAGS += -DBANAL_USE_PARSEAPI
 else
-libHPCbanal_la_CXXFLAGS += -DBANAL_USE_OA
+libHPCbanal_la_SOURCES += $(OA_SRCS)
+libHPCbanal_la_CXXFLAGS += -DBANAL_USE_OA @OA_IFLAGS@
 endif
 
 MOSTLYCLEANFILES = $(MYCLEAN)

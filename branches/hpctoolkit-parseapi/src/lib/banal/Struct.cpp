@@ -57,6 +57,20 @@
 //
 //***************************************************************************
 
+// Makefile.am should define exactly one of BANAL_USE_PARSEAPI and
+// BANAL_USE_OA for this file.  Also, BANAL_USE_PARSEAPI implies
+// BANAL_USE_SYMTAB.
+
+#if ! defined(BANAL_USE_PARSEAPI) && ! defined(BANAL_USE_OA)
+#error must define one of BANAL_USE_PARSEAPI and BANAL_USE_OA
+#endif
+#if defined(BANAL_USE_PARSEAPI) && defined(BANAL_USE_OA)
+#error cannot define both BANAL_USE_PARSEAPI and BANAL_USE_OA
+#endif
+#if defined(BANAL_USE_PARSEAPI) && ! defined(BANAL_USE_SYMTAB)
+#error cannot define BANAL_USE_PARSEAPI without BANAL_USE_SYMTAB
+#endif
+
 //************************* System Include Files ****************************
 
 #include <limits.h>
@@ -82,10 +96,13 @@ using std::string;
 
 //************************ OpenAnalysis Include Files ***********************
 
+#ifdef BANAL_USE_OA
 #include <OpenAnalysis/CFG/ManagerCFG.hpp>
 #include <OpenAnalysis/Utils/RIFG.hpp>
 #include <OpenAnalysis/Utils/NestedSCR.hpp>
 #include <OpenAnalysis/Utils/Exception.hpp>
+#include "OAInterface.hpp"
+#endif
 
 //*************************** User Include Files ****************************
 
@@ -93,7 +110,6 @@ using std::string;
 
 #include "Struct.hpp"
 #include "Struct-LocationMgr.hpp"
-#include "OAInterface.hpp"
 
 #include <lib/prof/Struct-Tree.hpp>
 #include <lib/prof/Struct-TreeIterator.hpp>
@@ -102,6 +118,7 @@ using namespace Prof;
 #include <lib/binutils/LM.hpp>
 #include <lib/binutils/Seg.hpp>
 #include <lib/binutils/Proc.hpp>
+#include <lib/binutils/Insn.hpp>
 #include <lib/binutils/BinUtils.hpp>
 
 #include <lib/xml/xml.hpp>
@@ -126,26 +143,12 @@ using namespace SymtabAPI;
 using namespace ParseAPI;
 #endif
 
-// Makefile.am should define exactly one of BANAL_USE_PARSEAPI and
-// BANAL_USE_OA for this file.  Also, BANAL_USE_PARSEAPI implies
-// BANAL_USE_SYMTAB.
-
-#if ! defined(BANAL_USE_PARSEAPI) && ! defined(BANAL_USE_OA)
-#error must define one of BANAL_USE_PARSEAPI and BANAL_USE_OA
-#endif
-#if defined(BANAL_USE_PARSEAPI) && defined(BANAL_USE_OA)
-#error cannot define both BANAL_USE_PARSEAPI and BANAL_USE_OA
-#endif
-#if defined(BANAL_USE_PARSEAPI) && ! defined(BANAL_USE_SYMTAB)
-#error cannot define BANAL_USE_PARSEAPI without BANAL_USE_SYMTAB
-#endif
-
 #define FULL_STRUCT_DEBUG 0
+
 
 //*************************** Forward Declarations ***************************
 
 namespace BAnal {
-
 namespace Struct {
 
 // ------------------------------------------------------------
@@ -195,6 +198,8 @@ buildProcStructure(ProcInfo pinfo,
 		   bool isIrrIvalLoop, bool isFwdSubst,
 		   ProcNameMgr* procNmMgr, const std::string& dbgProcGlob);
 
+#ifdef BANAL_USE_OA
+
 static int
 buildProcLoopNests(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
 		   bool isIrrIvalLoop, bool isFwdSubst,
@@ -211,16 +216,15 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
 		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn, VMA &loop_vma);
 
+#endif  // open analysis
 
 } // namespace Struct
-
 } // namespace BAnal
 
 
 //*************************** Forward Declarations ***************************
 
 namespace BAnal {
-
 namespace Struct {
 
 // ------------------------------------------------------------
@@ -375,7 +379,7 @@ makeDotFile(std::ostream * dotFile, CodeObject * code_obj)
     *dotFile << "}\n" << endl;
   }
 }
-#endif
+#endif  // parseAPI
 
 
 #ifdef BANAL_USE_OA
@@ -407,11 +411,11 @@ makeDotFile(std::ostream * dotFile, BinUtil::LM * lm)
     *dotFile << endl;
   }
 }
-#endif
+#endif  // open analysis
 
 } // namespace Struct
-
 } // namespace BAnal
+
 
 //*************************** Forward Declarations ***************************
 
@@ -530,7 +534,6 @@ BAnal::Struct::normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe)
 //****************************************************************************
 
 namespace BAnal {
-
 namespace Struct {
 
 // buildLMSkeleton: Build skeletal file-procedure structure.  This
@@ -734,42 +737,17 @@ demandProcNode(Prof::Struct::File* fStrct, BinUtil::Proc* p,
 }
 
 } // namespace Struct
-
 } // namespace BAnal
 
 
 //****************************************************************************
-//
+// Helpers for Alien nodes
 //****************************************************************************
 
 namespace BAnal {
-
 namespace Struct {
 
-static int
-buildProcLoopNests(Prof::Struct::Proc* enclosingProc, BinUtil::Proc* p,
-		   OA::OA_ptr<OA::NestedSCR> tarj,
-		   OA::OA_ptr<OA::CFG::CFGInterface> cfg,
-		   OA::RIFG::NodeId fgRoot,
-		   bool isIrrIvalLoop, bool isFwdSubst,
-		   ProcNameMgr* procNmMgr, bool isDbg);
-
-
-static Prof::Struct::ACodeNode*
-buildLoopAndStmts(Struct::LocationMgr& locMgr,
-		  Prof::Struct::ACodeNode* topScope, Prof::Struct::ACodeNode* enclosingScope, 
-	  	  BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
-		  OA::OA_ptr<OA::CFG::CFGInterface> cfg,
-		  OA::RIFG::NodeId fgNode,
-		  bool isIrrIvalLoop, ProcNameMgr* procNmMgr);
-
-
-static bool
-AlienScopeFilter(const Prof::Struct::ANode& x, long GCC_ATTR_UNUSED type)
-{
-  return (x.type() == Prof::Struct::ANode::TyAlien);
-}
-
+#define DEBUG_COMPARE  0
 
 #if DEBUG_COMPARE
 static int debug_compare = 0;
@@ -780,6 +758,13 @@ static int debug_compare = 0;
 #else
 #define MAINTAIN_REASON(x) 
 #endif
+
+
+static bool
+AlienScopeFilter(const Prof::Struct::ANode& x, long GCC_ATTR_UNUSED type)
+{
+  return (x.type() == Prof::Struct::ANode::TyAlien);
+}
 
 
 class AlienCompare {
@@ -878,7 +863,8 @@ renumberAlienScopes(Prof::Struct::ANode* node)
 typedef std::list<Prof::Struct::Alien*> AlienList;
 typedef std::map<Prof::Struct::Alien*, AlienList *, AlienCompare> AlienMap;
 
-void dumpMap(AlienMap &alienMap)
+static void
+dumpMap(AlienMap &alienMap)
 {
     std::cout << "map " << &alienMap << 
                  " (" << alienMap.size() << " items)" << std::endl;
@@ -894,6 +880,7 @@ void dumpMap(AlienMap &alienMap)
         std::cout << "}" << std::endl; 
     }
 }
+
 
 static void
 coalesceAlienChildren(Prof::Struct::ANode* node)
@@ -982,10 +969,154 @@ coalesceAlienChildren(Prof::Struct::ANode* node)
 }
 
 
+static Prof::Struct::ANode * 
+getVisibleAncestor(Prof::Struct::ANode *node)
+{
+  for (;;) {
+    node = node->parent();
+    if (node == 0 || node->isVisible()) return node;
+  }
+}
+
+
+#if FULL_STRUCT_DEBUG
+static int
+willBeCycle()
+{
+  return 1;
+}
+ 
+
+static int
+checkCycle(Prof::Struct::ANode *node, Prof::Struct::ANode *loop)
+{
+  Prof::Struct::ANode *n = loop;
+  while (n) {
+    if (n == node) {
+      return willBeCycle();
+    }
+    n = n->parent();
+  }
+  return 0;
+}
+
+
+static int
+ancestorIsLoop(Prof::Struct::ANode *node)
+{
+  Prof::Struct::ANode *n = node;
+  while ((n = n->parent())) {
+    if (n->type() == Prof::Struct::ANode::TyLoop) 
+      return 1;
+  }
+  return 0;
+}
+#endif  // full_struct_debug
+
+
+static bool
+aliensMatch(Prof::Struct::Alien *n1, Prof::Struct::Alien *n2)
+{
+  return 
+    n1->fileName() == n2->fileName() &&
+    n1->begLine() == n2->begLine() &&
+    n1->displayName() == n2->displayName();
+}
+
+
+static bool
+pathsMatch(Prof::Struct::ANode *n1, Prof::Struct::ANode *n2)
+{
+  if (n1 != n2) {
+    bool result = pathsMatch(n1->parent(), n2->parent());
+    if (result &&
+	(typeid(*n1) == typeid(Prof::Struct::Alien)) &&
+	(typeid(*n2) == typeid(Prof::Struct::Alien))) {
+      return aliensMatch((Prof::Struct::Alien *)n1, 
+			 (Prof::Struct::Alien *)n2);
+    } else return false;
+  } return true;
+} 
+
+
+static void
+reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop, 
+	      Prof::Struct::ANode *loopParent, Struct::LocationMgr& locMgr,
+	      int nodeDepth, int loopParentDepth)
+{
+  Prof::Struct::ANode *node = kid;
+
+  if (nodeDepth <= loopParentDepth) {
+    // simple case: fall through to reparent node into loop.
+  } else {
+    Prof::Struct::ANode *child;
+    // find node at loopParentDepth
+    // always >= 1 trip through
+    while (nodeDepth > loopParentDepth) {
+      child = node;
+      node = node->parent();
+      nodeDepth--;
+    }
+    //  this seems to have an off by one error
+    // if (node == loopParent) return;
+    if (child == loop) return;
+    else if (pathsMatch(node, loopParent)) {
+      node = child;
+    } else {
+      node = kid;
+    }
+  }
+
+#if FULL_STRUCT_DEBUG
+  // heavyhanded debugging
+  if (checkCycle(node, loop) == 0) 
+#endif
+  {
+    if (typeid(*node) == typeid(Prof::Struct::Alien)) {
+      // if reparenting an alien node, make sure that we are not 
+      // caching its old parent in the alien cache
+      locMgr.evictAlien((Prof::Struct::ACodeNode *)node->parent(), 
+			(Prof::Struct::Alien *)node);
+    }
+    node->unlink();
+    node->link(loop);
+  }
+}
+
+} // namespace Struct
+} // namespace BAnal
+
+
+//****************************************************************************
+// Open Analysis code for procedures, loops and blocks
+//****************************************************************************
+
+#ifdef BANAL_USE_OA
+
+namespace BAnal {
+namespace Struct {
+
+static int
+buildProcLoopNests(Prof::Struct::Proc* enclosingProc, BinUtil::Proc* p,
+		   OA::OA_ptr<OA::NestedSCR> tarj,
+		   OA::OA_ptr<OA::CFG::CFGInterface> cfg,
+		   OA::RIFG::NodeId fgRoot,
+		   bool isIrrIvalLoop, bool isFwdSubst,
+		   ProcNameMgr* procNmMgr, bool isDbg);
+
+
+static Prof::Struct::ACodeNode*
+buildLoopAndStmts(Struct::LocationMgr& locMgr,
+		  Prof::Struct::ACodeNode* topScope, Prof::Struct::ACodeNode* enclosingScope, 
+	  	  BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
+		  OA::OA_ptr<OA::CFG::CFGInterface> cfg,
+		  OA::RIFG::NodeId fgNode,
+		  bool isIrrIvalLoop, ProcNameMgr* procNmMgr);
+
+
 // buildProcStructure: Complete the representation for 'pStrct' given the
 // BinUtil::Proc 'p'.  Note that pStrcts parent may itself be a Struct::Proc.
 //
-#ifdef BANAL_USE_OA
 static Prof::Struct::Proc*
 buildProcStructure(ProcInfo pinfo,
 		   bool isIrrIvalLoop, bool isFwdSubst,
@@ -1064,7 +1195,6 @@ debugCFGInfo(BinUtil::Proc* p)
   cerr << setfill('-') << setw(sepWidth) << "-" << endl;
   cerr << endl << flush;
 }
-#endif  // open analysis
 
 
 // buildProcLoopNests: Build procedure structure by traversing
@@ -1095,11 +1225,9 @@ buildProcLoopNests(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
     
     OA::RIFG::NodeId fgRoot = rifg->getSource();
 
-#ifdef BANAL_USE_OA
     if (isDbg) {
       debugCFGInfo(p);
     }
-#endif
 
     int r = buildProcLoopNests(pStrct, p, tarj, cfg, fgRoot,
 			       isIrrIvalLoop, isFwdSubst, procNmMgr, isDbg);
@@ -1114,121 +1242,6 @@ buildProcLoopNests(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
     std::ostringstream os;
     x.report(os);
     DIAG_Throw("[OpenAnalysis] " << os.str());
-  }
-}
-
-
-static Prof::Struct::ANode * 
-getVisibleAncestor(Prof::Struct::ANode *node)
-{
-  for (;;) {
-    node = node->parent();
-    if (node == 0 || node->isVisible()) return node;
-  }
-}
-
-
-#if FULL_STRUCT_DEBUG
-static int
-willBeCycle()
-{
-  return 1;
-}
- 
-
-static int
-checkCycle(Prof::Struct::ANode *node, Prof::Struct::ANode *loop)
-{
-  Prof::Struct::ANode *n = loop;
-  while (n) {
-    if (n == node) {
-      return willBeCycle();
-    }
-    n = n->parent();
-  }
-  return 0;
-}
-
-
-static int
-ancestorIsLoop(Prof::Struct::ANode *node)
-{
-  Prof::Struct::ANode *n = node;
-  while ((n = n->parent())) {
-    if (n->type() == Prof::Struct::ANode::TyLoop) 
-      return 1;
-  }
-  return 0;
-}
-#endif
-
-
-static bool
-aliensMatch(Prof::Struct::Alien *n1, Prof::Struct::Alien *n2)
-{
-  return 
-    n1->fileName() == n2->fileName() &&
-    n1->begLine() == n2->begLine() &&
-    n1->displayName() == n2->displayName();
-}
-
-
-static bool
-pathsMatch(Prof::Struct::ANode *n1, Prof::Struct::ANode *n2)
-{
-  if (n1 != n2) {
-    bool result = pathsMatch(n1->parent(), n2->parent());
-    if (result &&
-	(typeid(*n1) == typeid(Prof::Struct::Alien)) &&
-	(typeid(*n2) == typeid(Prof::Struct::Alien))) {
-      return aliensMatch((Prof::Struct::Alien *)n1, 
-			 (Prof::Struct::Alien *)n2);
-    } else return false;
-  } return true;
-} 
-
-
-static void
-reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop, 
-	      Prof::Struct::ANode *loopParent, Struct::LocationMgr& locMgr,
-	      int nodeDepth, int loopParentDepth)
-{
-  Prof::Struct::ANode *node = kid;
-
-  if (nodeDepth <= loopParentDepth) {
-    // simple case: fall through to reparent node into loop.
-  } else {
-    Prof::Struct::ANode *child;
-    // find node at loopParentDepth
-    // always >= 1 trip through
-    while (nodeDepth > loopParentDepth) {
-      child = node;
-      node = node->parent();
-      nodeDepth--;
-    }
-    //  this seems to have an off by one error
-    // if (node == loopParent) return;
-    if (child == loop) return;
-    else if (pathsMatch(node, loopParent)) {
-      node = child;
-    } else {
-      node = kid;
-    }
-  }
-
-#if FULL_STRUCT_DEBUG
-  // heavyhanded debugging
-  if (checkCycle(node, loop) == 0) 
-#endif
-  {
-    if (typeid(*node) == typeid(Prof::Struct::Alien)) {
-      // if reparenting an alien node, make sure that we are not 
-      // caching its old parent in the alien cache
-      locMgr.evictAlien((Prof::Struct::ACodeNode *)node->parent(), 
-			(Prof::Struct::Alien *)node);
-    }
-    node->unlink();
-    node->link(loop);
   }
 }
 
@@ -1632,13 +1645,14 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
       p->findSrcCodeInfo(headVMA, headOpIdx, begProcNm, begFileNm, begLn);
       loop_vma = headVMA;
     }
-}
+  }
 #endif
 }
 
 } // namespace Struct
-
 } // namespace BAnal
+
+#endif  // open analysis
 
 
 //****************************************************************************
@@ -1763,7 +1777,6 @@ doBlock(ProcInfo pinfo, BlockSet & visited, Block *block)
 #endif
 }
 
-
 }  // namespace Struct
 }  // namespace BAnal
 
@@ -1775,11 +1788,7 @@ doBlock(ProcInfo pinfo, BlockSet & visited, Block *block)
 //****************************************************************************
 
 namespace BAnal {
-
 namespace Struct {
-
-
-//****************************************************************************
 
 // coalesceDuplicateStmts: Coalesce duplicate statement instances that
 // may appear in the scope tree.  There are two basic cases:
@@ -2207,6 +2216,5 @@ deleteContents(Prof::Struct::ANodeSet* s)
 
 
 } // namespace Struct
-
 } // namespace BAnal
 
