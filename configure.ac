@@ -2199,6 +2199,22 @@ fi
 AM_CONDITIONAL(OPT_HPCSTRUCT_LAUNCH_SCRIPT, [test "$hpcstruct_launch_script" = yes])
 
 
+# Temporary option to allow using the new symtab from git.  The new
+# version has an incompatible change in the iterator for getting a
+# function's list of pretty names.
+
+AC_ARG_ENABLE([new-symtab],
+  [AS_HELP_STRING([--enable-new-symtab],
+      [temporary option to allow using new symtabAPI from git,
+       requires -std=c++11 (default no)])],
+  [], [enable_new_symtab=no])
+
+if test "$enable_new_symtab" = yes ; then
+  AC_MSG_NOTICE([using new symtabAPI from git])
+  AC_DEFINE([SYMTAB_NEW_NAME_ITERATOR], [1], [Use new symtabAPI pretty names iterator])
+fi
+
+
 #-------------------------------------------------
 # enable-mpi:
 #-------------------------------------------------
