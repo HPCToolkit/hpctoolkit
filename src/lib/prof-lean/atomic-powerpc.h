@@ -45,7 +45,7 @@ fetch_and_store(volatile void **ptr, void *val)
 
 
 static inline uint32_t
-fetch_and_add32(volatile uint32_t *ptr, uint32_t val)
+fetch_and_add_i32(volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t result;
   __asm__ __volatile__(              
@@ -61,7 +61,7 @@ fetch_and_add32(volatile uint32_t *ptr, uint32_t val)
 
 
 static inline uint64_t
-fetch_and_add64(volatile uint64_t *ptr, uint64_t val)
+fetch_and_add_i64(volatile uint64_t *ptr, uint64_t val)
 {
   uint64_t result;
   __asm__ __volatile__(              

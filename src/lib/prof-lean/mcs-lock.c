@@ -10,7 +10,7 @@
 
 #include "mcs-lock.h"
 #include "fence.h"
-#include "atomic-powerpc.h"
+#include "atomics.h"
 
 
 
