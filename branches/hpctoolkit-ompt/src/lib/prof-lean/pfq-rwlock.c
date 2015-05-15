@@ -15,9 +15,6 @@
 //******************************************************************************
 
 
-FIXME still needs fences
-
-
 
 //******************************************************************************
 // local includes
@@ -28,8 +25,8 @@ FIXME still needs fences
 #include <include/hpctoolkit-config.h>
 
 #include "pfq-rwlock.h"
-#include "atomic-powerpc.h"
 #include "fence.h"
+#include "atomics.h"
 
 
 
@@ -75,7 +72,7 @@ FIXME still needs fences
 void
 pfq_rwlock_start_read(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 {
-  uint32_t ticket = fetch_and_add32(&(l->rin), READER_INCREMENT);
+  uint32_t ticket = fetch_and_add_i32(&(l->rin), READER_INCREMENT);
 
   if (ticket & WRITER_PRESENT) {
     uint32_t phase = ticket & PHASE_BIT;
@@ -102,7 +99,7 @@ pfq_rwlock_end_read(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   //----------------------------------------------------------------------------
   enforce_load_to_rmw_order();
 
-  uint32_t ticket = fetch_and_add32(&(l->rout), READER_INCREMENT);
+  uint32_t ticket = fetch_and_add_i32(&(l->rout), READER_INCREMENT);
 
   if ((ticket & WRITER_PRESENT) && 
       ((ticket & TICKET_MASK) == l->last - 1)) {
@@ -144,7 +141,7 @@ pfq_rwlock_start_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // acquire an "in" sequence number to see how many readers arrived
   // set the WRITER_PRESENT bit so subsequent readers will wait
   //--------------------------------------------------------------------
-  uint32_t in = fetch_and_add32(&(l->rin), WRITER_PRESENT) & TICKET_MASK;
+  uint32_t in = fetch_and_add_i32(&(l->rin), WRITER_PRESENT) & TICKET_MASK;
 
   //--------------------------------------------------------------------
   // save the identity of the last reader 
@@ -154,7 +151,7 @@ pfq_rwlock_start_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   //----------------------------------------------------------------------------
   // store to last must complete before notifying readers of writer 
   // stores to whead and me->blocked also were already committed
-  // before last fetch-and-add32
+  // before last fetch-and-add_i32
   // the LL of l->rout must not occur before before the LL of l->rin. 
   // the fence below enforces that too.
   //----------------------------------------------------------------------------
@@ -165,7 +162,7 @@ pfq_rwlock_start_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // set the WRITER_PRESENT bit so the last reader will know to signal
   // it is responsible for signaling the waiting writer
   //-------------------------------------------------------------
-  uint32_t out = fetch_and_add32(&(l->rout), WRITER_PRESENT) & TICKET_MASK;
+  uint32_t out = fetch_and_add_i32(&(l->rout), WRITER_PRESENT) & TICKET_MASK;
 
   //--------------------------------------------------------------------
   // if any reads are active, wait for last reader to signal me
