@@ -81,6 +81,24 @@ using std::string;
 //***************************************************************************
 
 //***************************************************************************
+// private operations
+//***************************************************************************
+
+// if there is a ".." path component in a path that is not absolute, 
+// then the path may lie outside the path cache computed. if that is the
+// case, inform PathFind::pathfind that it should try the slow lookup
+// method, which looks outside the cache.
+bool try_slow_lookup_for_relative_paths(const char *path)
+{
+  bool contains_relative = false;
+
+  if (path[0] != '/') {
+    contains_relative = strstr(path, "..") != NULL;
+  }
+  return contains_relative;
+}
+
+//***************************************************************************
 // PathFindMgr
 //***************************************************************************
 
@@ -137,12 +155,14 @@ PathFindMgr::pathfind(const char* pathList, const char* name, const char* mode)
 
   bool found = find(name_real);
  
-  if (!found && m_isFull) {
-    std::set<std::string> seenPaths;
-    const char* temp = pathfind_slow(pathList, name, mode, seenPaths);
-    if (temp) {
-      found = true;
-      name_real = temp;
+  if (!found) {
+    if (m_isFull || try_slow_lookup_for_relative_paths(name)) {
+      std::set<std::string> seenPaths;
+      const char* temp = pathfind_slow(pathList, name, mode, seenPaths);
+      if (temp) {
+        found = true;
+        name_real = temp;
+      }
     }
   }
 
