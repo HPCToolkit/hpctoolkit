@@ -195,7 +195,8 @@ LocationMgr::begSeq(Prof::Struct::Proc* enclosingProc, bool isFwdSubst)
 void
 LocationMgr::locate(Prof::Struct::Loop* loop,
 		    Prof::Struct::ACodeNode* proposed_scope,
-		    string& filenm, string& procnm, SrcFile::ln line, uint targetScopeID)
+		    string& filenm, string& procnm, SrcFile::ln line, uint targetScopeID,
+                    ProcNameMgr *procNmMgr)
 {
   DIAG_MsgIfCtd(mDBG, "====================  loop  ====================\n"
 		<< "node=" << loop->id() << "  scope=" << proposed_scope->id()
@@ -209,9 +210,9 @@ LocationMgr::locate(Prof::Struct::Loop* loop,
   VMA loopVMA = (! vmaset.empty()) ? vmaset.begin()->beg() : 0;
 
 #if 1 // LCA_INLINE
-  determineContext(proposed_scope, filenm, procnm, line, loopVMA, NULL, targetScopeID);
+  determineContext(proposed_scope, filenm, procnm, line, loopVMA, NULL, targetScopeID, procNmMgr);
 #else
-  determineContext(proposed_scope, filenm, procnm, line, loopVMA, loop, targetScopeID);
+  determineContext(proposed_scope, filenm, procnm, line, loopVMA, loop, targetScopeID, procNmMgr);
 #endif
   Ctxt& encl_ctxt = topCtxtRef();
   loop->linkAndSetLineRange(encl_ctxt.scope());
@@ -221,7 +222,8 @@ LocationMgr::locate(Prof::Struct::Loop* loop,
 void
 LocationMgr::locate(Prof::Struct::Stmt* stmt,
 		    Prof::Struct::ACodeNode* proposed_scope,
-		    string& filenm, string& procnm, SrcFile::ln line, uint targetScopeID)
+		    string& filenm, string& procnm, SrcFile::ln line, uint targetScopeID,
+                    ProcNameMgr *procNmMgr)
 {
   DIAG_MsgIfCtd(mDBG, "====================  stmt  ====================\n"
 		<< "node=" << stmt->id() << "  scope=" << proposed_scope->id()
@@ -235,7 +237,7 @@ LocationMgr::locate(Prof::Struct::Stmt* stmt,
   VMA begVMA = (! vmaset.empty()) ? vmaset.begin()->beg() : 0;
 
   // FIXME (minor): manage stmt cache! if stmt already exists, only add vma
-  determineContext(proposed_scope, filenm, procnm, line, begVMA, NULL, targetScopeID);
+  determineContext(proposed_scope, filenm, procnm, line, begVMA, NULL, targetScopeID, procNmMgr);
   Ctxt& encl_ctxt = topCtxtRef();
   stmt->linkAndSetLineRange(encl_ctxt.scope());
 }
@@ -469,7 +471,8 @@ LocationMgr::toString(CtxtChange_t x)
 LocationMgr::CtxtChange_t
 LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 			      string& filenm, string& procnm, SrcFile::ln line,
-			      VMA begVMA, Prof::Struct::ACodeNode* loop, uint targetScopeID)
+			      VMA begVMA, Prof::Struct::ACodeNode* loop, uint targetScopeID, 
+                              ProcNameMgr *procNmMgr)
 {
   DIAG_DevMsgIf(mDBG, "LocationMgr::determineContext");
 
@@ -737,9 +740,10 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
       {
 	char buf[50];
 	if (!calledProcedure.empty()) {
+	  string demangledProcedure = BinUtil::canonicalizeProcName(calledProcedure, procNmMgr);
 	  snprintf(buf, 50, "inline-alien-%ld", callsiteLineNumber);
 	  alien = demandAlienStrct(parent, it->getFileName(), string(buf),
-				   calledProcedure, 0, targetScopeID);
+				   demangledProcedure, 0, targetScopeID);
 	  pushCtxt(Ctxt(alien, NULL));
 	  parent = alien;
 
@@ -789,7 +793,8 @@ LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
     }
 
     // avoid terminal line number
-    alien = demandAlienStrct(parent, filenm, procnm, procnm, 0, targetScopeID);
+    string demangledProcnm = BinUtil::canonicalizeProcName(procnm, procNmMgr);
+    alien = demandAlienStrct(parent, filenm, procnm, demangledProcnm, 0, targetScopeID);
 
 
     pushCtxt(Ctxt(alien, NULL));
