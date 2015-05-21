@@ -451,7 +451,13 @@ demandProcNode(Prof::Struct::File* fStrct, BinUtil::Proc* p,
   
   // Find procedure name
   string procNm   = BinUtil::canonicalizeProcName(p->name(), procNmMgr);
+#if 0
   string procLnNm = BinUtil::canonicalizeProcName(p->linkName(), procNmMgr);
+#else
+  string procLnNm = p->linkName();
+#endif
+   
+
   
   // Find preliminary source line bounds
   string file, proc;
@@ -1165,7 +1171,7 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
   buildStmts(locMgr, topScope, p, bb, procNmMgr, kids, targetScope->id());
   
   if (loop) { 
-    locMgr.locate(loop, topScope, fnm, pnm, line, targetScope->id());
+    locMgr.locate(loop, topScope, fnm, pnm, line, targetScope->id(), procNmMgr);
 #if FULL_STRUCT_DEBUG
     if (ancestorIsLoop(loop)) willBeCycle();
 #endif
@@ -1240,7 +1246,7 @@ buildStmts(Struct::LocationMgr& locMgr,
       stmt->sortId(--call_sortId);
     }
     insertions.push_back(stmt);
-    locMgr.locate(stmt, enclosingStrct, filenm, procnm, line, targetScopeID);
+    locMgr.locate(stmt, enclosingStrct, filenm, procnm, line, targetScopeID, procNmMgr);
   }
   return 0;
 }
