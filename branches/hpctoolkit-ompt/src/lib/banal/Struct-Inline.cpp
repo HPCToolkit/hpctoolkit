@@ -233,14 +233,11 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 	InlinedFunction *ifunc = static_cast <InlinedFunction *> (func);
 	pair <string, Offset> callsite = ifunc->getCallsite();
 
-// I was surprised to find out that demangling is a many --> one mapping.
-// To avoid chaos, we need to use mangled names through the bulk of
-// processing in hpcstruct to avoid chaos due to collisions.
-#if 0
-	vector <string> name_vec = func->getAllPrettyNames();
-#else
+        // Surprisingly, demangling is a many --> one mapping.
+        // To avoid inadvertant merging as a result of name collisions, we 
+        // use mangle names through the bulk of processing in hpcstruct. 
+        // Names will be demangled later for presentation.
 	vector <string> name_vec = func->getAllMangledNames();
-#endif
 
 	string procnm = (! name_vec.empty()) ? name_vec[0] : UNKNOWN_PROC;
 	string &filenm = getRealPath(callsite.first.c_str());
