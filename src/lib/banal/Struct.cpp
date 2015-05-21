@@ -451,13 +451,10 @@ demandProcNode(Prof::Struct::File* fStrct, BinUtil::Proc* p,
   
   // Find procedure name
   string procNm   = BinUtil::canonicalizeProcName(p->name(), procNmMgr);
-#if 0
-  string procLnNm = BinUtil::canonicalizeProcName(p->linkName(), procNmMgr);
-#else
-  string procLnNm = p->linkName();
-#endif
-   
 
+  // don't demangle the link name. because demangling is a many-->one mapping,
+  // we need to keep the link name (the mangled name) for use as a unique key
+  string procLnNm = p->linkName(); 
   
   // Find preliminary source line bounds
   string file, proc;
