@@ -525,9 +525,11 @@ METHOD_FN(display_events)
   ret = PAPI_enum_event(&ev, PAPI_ENUM_FIRST);
 #endif
   while (ret == PAPI_OK) {
-    if (PAPI_query_event(ev) == PAPI_OK) {
+    if (PAPI_query_event(ev) == PAPI_OK
+	&& PAPI_get_event_info(ev, &info) == PAPI_OK
+	&& info.count != 0)
+    {
       PAPI_event_code_to_name(ev, name);
-      PAPI_get_event_info(ev, &info);
       if (event_is_derived(ev)) {
 	prof = "No";
       } else {
