@@ -107,6 +107,7 @@ using std::string;
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
+#include <include/uint.h>
 
 #include "Struct.hpp"
 #include "Struct-LocationMgr.hpp"
@@ -139,7 +140,9 @@ using namespace SymtabAPI;
 #include <CFG.h>
 #include <CodeObject.h>
 #include <CodeSource.h>
+#include <Instruction.h>
 
+using namespace InstructionAPI;
 using namespace ParseAPI;
 #endif
 
@@ -1659,9 +1662,37 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 // ParseAPI code for functions, loops and blocks
 //****************************************************************************
 
+// Major TO-DO items:
+//
+// 1. There is a major regression in the pretty_names_begin() iterator
+// between Dyninst 8.2-release and git head in analyzeAddr() in
+// Struct-Inline.cpp.  The iterator is always empty, so our inlined
+// procedure names are always "unknown-proc".  Wisconsin is working on
+// it, but until it is fixed, the inline part of the struct files will
+// be badly broken.
+//
+// 2. Figure out interaction between reparentNode() and location
+// manager and make sure they work at cross purposes.
+//
+// 3. findLoopBegin() -- look at entry blocks, back edges and line
+// numbers and make an intelligent decision for where a loop begins in
+// the source code.
+//
+// 4. Decide how to handle basic blocks that belong to multiple
+// functions.
+//
+// 5. Some blocks are the entry block to multiple, nested loops.  This
+// happens when one or both of the loops is irreducible.
+//
+// 6. Add address ranges to buildLMSkeleton().
+//
+// 7. Add call_sortId from buildStmts() to doBlock().
+//
+
 #ifdef BANAL_USE_PARSEAPI
 
 #define PARSE_DEBUG  0
+#define INDENT   "   "
 
 // The ParseAPI version of traversing functions, CFGs, loops, basic
 // blocks and instructions.  This is the code between makeStructure()
@@ -1671,25 +1702,46 @@ namespace BAnal {
 namespace Struct {
 
 typedef map <Block *, bool> BlockSet;
+typedef list <Prof::Struct::ACodeNode *> NodeList;
 
-static void doLoopTree(ProcInfo, BlockSet &, LoopTreeNode *);
-static void doLoop(ProcInfo, BlockSet &, Loop *);
-static void doBlock(ProcInfo, BlockSet &, Block *);
+static void
+doLoopTree(ProcInfo, BlockSet &, LoopTreeNode *,
+	   Prof::Struct::ACodeNode *, Prof::Struct::ACodeNode *,
+	   Struct::LocationMgr &, ProcNameMgr *);
 
+static Prof::Struct::ACodeNode *
+doLoop(ProcInfo, BlockSet &, LoopTreeNode *,
+       Prof::Struct::ACodeNode *, Prof::Struct::ACodeNode *,
+       Struct::LocationMgr &, ProcNameMgr *);
+
+static void
+doBlock(ProcInfo, BlockSet &, Block *,
+	Prof::Struct::ACodeNode *, Prof::Struct::ACodeNode *,
+	Struct::LocationMgr &, ProcNameMgr *, NodeList *);
+
+static void
+findLoopBegin(ProcInfo, Loop *, string &, string &, SrcFile::ln &, VMA &);
+
+//****************************************************************************
 
 static Prof::Struct::Proc *
-buildProcStructure(ProcInfo pinfo,
-		   bool isIrrIvalLoop, bool isFwdSubst,
-		   ProcNameMgr* procNmMgr, const std::string& dbgProcGlob)
+buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
+		   ProcNameMgr * nameMgr, const std::string & dbgProcGlob)
 {
+  Prof::Struct::Proc * topScope = pinfo.proc;
   ParseAPI::Function * func = pinfo.proc_parse;
-  const ParseAPI::Function::blocklist & blist = func->blocks();
 
 #if PARSE_DEBUG
-  cout << "\nfunc: '" << func->name() << "'\n";
+  cout << "\n------------------------------------------------------------\n"
+       << "func:  0x" << hex << func->addr() << dec << "  '" << func->name() << "'\n";
 #endif
 
+  // location manager for this function
+  Struct::LocationMgr locMgr(topScope->ancestorLM());
+  locMgr.begSeq(topScope, isFwdSubst);
+
   // make a map of visited blocks
+  const ParseAPI::Function::blocklist & blist = func->blocks();
   BlockSet visited;
 
   for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
@@ -1698,74 +1750,126 @@ buildProcStructure(ProcInfo pinfo,
   }
 
   // traverse the loop (Tarjan) tree
-  doLoopTree(pinfo, visited, func->getLoopTree());
+  doLoopTree(pinfo, visited, func->getLoopTree(), topScope, topScope, locMgr, nameMgr);
 
 #if PARSE_DEBUG
-  cout << "non-loop blocks:\n";
+  cout << "\nnon-loop blocks:\n";
 #endif
 
   // process any blocks not in a loop
   for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
     Block * block = *bit;
     if (! visited[block]) {
-      doBlock(pinfo, visited, block);
+      doBlock(pinfo, visited, block, topScope, topScope, locMgr, nameMgr, NULL);
     }
   }
 
-  return pinfo.proc;
+  locMgr.endSeq();
+  coalesceAlienChildren(topScope);
+  renumberAlienScopes(topScope);
+
+  return topScope;
 }
 
 
 static void
-doLoopTree(ProcInfo pinfo, BlockSet & visited, LoopTreeNode *ltnode)
+doLoopTree(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
+	   Prof::Struct::ACodeNode * topScope, Prof::Struct::ACodeNode * curScope,
+	   Struct::LocationMgr & locMgr, ProcNameMgr * nameMgr)
 {
   if (ltnode == NULL) {
     return;
   }
 
-#if PARSE_DEBUG
+  // the top-level loop becomes the new curScope for its children.
+  // note: the root of the loop tree is empty to represent a loop
+  // forest.
+  //
   if (ltnode->loop != NULL) {
-    cout << "loop: " << ltnode->name() << "\n";
+    curScope = doLoop(pinfo, visited, ltnode, topScope, curScope, locMgr, nameMgr);
   }
-#endif
 
-  doLoop(pinfo, visited, ltnode->loop);
-
+  // process the children of the loop tree
   vector <LoopTreeNode *> clist = ltnode->children;
 
-  for (int i = 0; i < clist.size(); i++) {
-    doLoopTree(pinfo, visited, clist[i]);
+  for (uint i = 0; i < clist.size(); i++) {
+    doLoopTree(pinfo, visited, clist[i], topScope, curScope, locMgr, nameMgr);
   }
 }
 
 
-static void
-doLoop(ProcInfo pinfo, BlockSet & visited, Loop *loop)
+static Prof::Struct::ACodeNode *
+doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
+       Prof::Struct::ACodeNode * topScope, Prof::Struct::ACodeNode * curScope,
+       Struct::LocationMgr & locMgr, ProcNameMgr * nameMgr)
 {
-  if (loop == NULL) {
-    return;
-  }
+  // promised not to be null
+  Loop * loop = ltnode->loop;
 
-  vector <Block *> blist;
-  loop->getLoopBasicBlocksExclusive(blist);
-
+  // the loop's entry blocks
   vector <Block *> elist;
   int num_ents = loop->getLoopEntries(elist);
 
-  // process the entry blocks first
-  for (int i = 0; i < elist.size(); i++) {
-    doBlock(pinfo, visited, elist[i]);
+  // create the loop scope node, but don't locate it.
+  string filenm;
+  string procnm;
+  SrcFile::ln line;
+  VMA vma;
+
+  findLoopBegin(pinfo, loop, filenm, procnm, line, vma);
+  procnm = BinUtil::canonicalizeProcName(procnm, nameMgr);
+
+  Prof::Struct::Loop * loopNode =
+    new Prof::Struct::Loop(NULL, filenm, line, line);
+
+  loopNode->vmaSet().insert(vma, vma + 1);
+
+#if PARSE_DEBUG
+  cout << "\nloop:  " << ltnode->name()
+       << ((num_ents == 1) ? "  (reducible)" : "  (irreducible)")
+       << "\n" << INDENT << "loop node: (n=" << loopNode->id() << ")"
+       << "  l=" << line << "  f='" << filenm << "'\n";
+#endif
+
+  // insert the loop's exclusive blocks at the function's top-level
+  // scope, starting with the entry blocks first.  keep a list of
+  // added statements for later reparenting.
+  //
+  NodeList stmtList;
+
+  for (uint i = 0; i < elist.size(); i++) {
+    doBlock(pinfo, visited, elist[i], topScope, loopNode, locMgr, nameMgr, &stmtList);
   }
 
-  // non-entry blocks
-  for (int i = 0; i < blist.size(); i++) {
-    doBlock(pinfo, visited, blist[i]);
+  // add the remaining exclusive blocks
+  vector <Block *> blist;
+  loop->getLoopBasicBlocksExclusive(blist);
+
+  for (uint i = 0; i < blist.size(); i++) {
+    doBlock(pinfo, visited, blist[i], topScope, loopNode, locMgr, nameMgr, &stmtList);
   }
+
+  // locate the loop node in the tree
+  locMgr.locate(loopNode, topScope, filenm, procnm, line, loopNode->id());
+
+  // finally, reparent the new statements
+  Prof::Struct::ANode * parent = getVisibleAncestor(loopNode);
+  int depth = parent->ancestorCount();
+
+  for (auto sit = stmtList.begin(); sit != stmtList.end(); ++sit) {
+    Prof::Struct::ANode * node = *sit;
+    reparentNode(node, loopNode, parent, locMgr, node->ancestorCount(), depth);
+  }
+
+  return loopNode;
 }
 
 
 static void
-doBlock(ProcInfo pinfo, BlockSet & visited, Block *block)
+doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
+	Prof::Struct::ACodeNode * topScope, Prof::Struct::ACodeNode * curScope,
+	Struct::LocationMgr & locMgr, ProcNameMgr * nameMgr,
+	NodeList * stmtList)
 {
   if (block == NULL || visited[block]) {
     return;
@@ -1773,8 +1877,63 @@ doBlock(ProcInfo pinfo, BlockSet & visited, Block *block)
   visited[block] = true;
 
 #if PARSE_DEBUG
-  cout << "  0x" << std::hex << block->start() << std::dec << "\n";
+  cout << INDENT << "block:\n";
 #endif
+
+  // iterate through the instructions in this block
+  map <Offset, InstructionAPI::Instruction::Ptr> imap;
+  block->getInsns(imap);
+
+  for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
+    Offset vma = iit->first;
+    Offset vma_end = vma + iit->second->size();
+    string procnm;
+    string filenm;
+    SrcFile::ln line;
+
+    pinfo.proc_bin->findSrcCodeInfo(vma, 0, procnm, filenm, line);
+    procnm = BinUtil::canonicalizeProcName(procnm, nameMgr);
+
+    Prof::Struct::Stmt * stmt =
+      new Prof::Struct::Stmt(NULL, line, line, vma, vma_end);
+
+    if (stmtList != NULL) {
+      stmtList->push_back(stmt);
+    }
+    locMgr.locate(stmt, topScope, filenm, procnm, line, curScope->id());
+
+#if PARSE_DEBUG
+    cout << INDENT << INDENT << "stmt: (n=" << stmt->id() << ")"
+	 << "  0x" << hex << vma << dec
+	 << "  l=" << line << "  f='" << filenm << "'  p='" << procnm << "'\n";
+#endif
+  }
+}
+
+
+static void
+findLoopBegin(ProcInfo pinfo, Loop * loop, string & filenm, string & procnm,
+	      SrcFile::ln & line, VMA & vma)
+{
+  // FIXME: this is a naive placeholder function that just uses the
+  // location of the first back edge.  But actually, back edges work
+  // pretty well and most loops have only one back edge, so it
+  // probably produces a decent answer much of the time.
+
+  filenm = "";
+  procnm = "";
+  line = 0;
+  vma = 0;
+
+  vector <Edge *> elist;
+  loop->getBackEdges(elist);
+  auto eit = elist.begin();
+
+  if (eit != elist.end()) {
+    Block * block = (*eit)->src();
+    vma = block->last();
+    pinfo.proc_bin->findSrcCodeInfo(vma, 0, procnm, filenm, line);
+  }
 }
 
 }  // namespace Struct
