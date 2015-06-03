@@ -1720,7 +1720,13 @@ doBlock(ProcInfo, BlockSet &, Block *,
 	Struct::LocationMgr &, ProcNameMgr *, NodeList *);
 
 static void
-findLoopBegin(ProcInfo, Loop *, string &, string &, SrcFile::ln &, VMA &);
+findLoopBegin(ProcInfo, Loop *, vector <Block *> &, vector <Edge *> &,
+	      string &, string &, SrcFile::ln &, VMA &);
+
+static void
+debugLoop(LoopTreeNode *, Prof::Struct::Loop *,
+	  vector <Block *> &, vector <Edge *> &,
+	  string &, string &, SrcFile::ln, VMA);
 
 //****************************************************************************
 
@@ -1807,8 +1813,12 @@ doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
   Loop * loop = ltnode->loop;
 
   // the loop's entry blocks
-  vector <Block *> elist;
-  int num_ents = loop->getLoopEntries(elist);
+  vector <Block *> entBlocks;
+  int num_ents = loop->getLoopEntries(entBlocks);
+
+  // the loop's back edges
+  vector <Edge *> backEdges;
+  int num_back = loop->getBackEdges(backEdges);
 
   // create the loop scope node, but don't locate it.
   string filenm;
@@ -1816,7 +1826,7 @@ doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
   SrcFile::ln line;
   VMA vma;
 
-  findLoopBegin(pinfo, loop, filenm, procnm, line, vma);
+  findLoopBegin(pinfo, loop, entBlocks, backEdges, filenm, procnm, line, vma);
   procnm = BinUtil::canonicalizeProcName(procnm, nameMgr);
 
   Prof::Struct::Loop * loopNode =
@@ -1825,10 +1835,7 @@ doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
   loopNode->vmaSet().insert(vma, vma + 1);
 
 #if PARSE_DEBUG
-  cout << "\nloop:  " << ltnode->name()
-       << ((num_ents == 1) ? "  (reducible)" : "  (irreducible)")
-       << "\n" << INDENT << "loop node: (n=" << loopNode->id() << ")"
-       << "  l=" << line << "  f='" << filenm << "'\n";
+  debugLoop(ltnode, loopNode, entBlocks, backEdges, filenm, procnm, line, vma);
 #endif
 
   // insert the loop's exclusive blocks at the function's top-level
@@ -1837,8 +1844,8 @@ doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
   //
   NodeList stmtList;
 
-  for (uint i = 0; i < elist.size(); i++) {
-    doBlock(pinfo, visited, elist[i], topScope, loopNode, locMgr, nameMgr, &stmtList);
+  for (uint i = 0; i < entBlocks.size(); i++) {
+    doBlock(pinfo, visited, entBlocks[i], topScope, loopNode, locMgr, nameMgr, &stmtList);
   }
 
   // add the remaining exclusive blocks
@@ -1877,7 +1884,7 @@ doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
   visited[block] = true;
 
 #if PARSE_DEBUG
-  cout << INDENT << "block:\n";
+  cout << "\nblock:\n";
 #endif
 
   // iterate through the instructions in this block
@@ -1903,17 +1910,27 @@ doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
     locMgr.locate(stmt, topScope, filenm, procnm, line, curScope->id());
 
 #if PARSE_DEBUG
-    cout << INDENT << INDENT << "stmt: (n=" << stmt->id() << ")"
+    Inline::InlineSeqn nodeList;
+    Inline::analyzeAddr(nodeList, vma);
+
+    cout << INDENT << "stmt: (n=" << stmt->id() << ")"
 	 << "  0x" << hex << vma << dec
 	 << "  l=" << line << "  f='" << filenm << "'  p='" << procnm << "'\n";
+
+    // list is outermost to innermost
+    for (auto nit = nodeList.begin(); nit != nodeList.end(); ++nit) {
+      cout << INDENT << INDENT << "inline:  l=" << nit->getLineNum()
+	   << "  f='" << nit->getFileName() << "'  p='" << nit->getProcName() << "'\n";
+    }
 #endif
   }
 }
 
 
 static void
-findLoopBegin(ProcInfo pinfo, Loop * loop, string & filenm, string & procnm,
-	      SrcFile::ln & line, VMA & vma)
+findLoopBegin(ProcInfo pinfo, Loop * loop,
+	      vector <Block *> & entBlocks, vector <Edge *> & backEdges,
+	      string & filenm, string & procnm, SrcFile::ln & line, VMA & vma)
 {
   // FIXME: this is a naive placeholder function that just uses the
   // location of the first back edge.  But actually, back edges work
@@ -1925,15 +1942,47 @@ findLoopBegin(ProcInfo pinfo, Loop * loop, string & filenm, string & procnm,
   line = 0;
   vma = 0;
 
-  vector <Edge *> elist;
-  loop->getBackEdges(elist);
-  auto eit = elist.begin();
+  auto eit = backEdges.begin();
 
-  if (eit != elist.end()) {
+  if (eit != backEdges.end()) {
     Block * block = (*eit)->src();
     vma = block->last();
     pinfo.proc_bin->findSrcCodeInfo(vma, 0, procnm, filenm, line);
   }
+}
+
+
+// debug info for a loop
+static void
+debugLoop(LoopTreeNode * ltnode, Prof::Struct::Loop * loopNode,
+	  vector <Block *> & entBlocks, vector <Edge *> & backEdges,
+	  string & filenm, string & procnm, SrcFile::ln line, VMA vma)
+{
+  cout << "\nloop:  " << ltnode->name()
+       << ((entBlocks.size() == 1) ? "  (reducible)" : "  (irreducible)") << "\n";
+
+  cout << INDENT << "loop node: (n=" << loopNode->id() << ")"
+       << "  0x" << hex << vma << "  l=" << dec << line
+       << "  f='" << filenm << "'  p='" << procnm << "'\n";
+
+  cout << INDENT << "entry blocks:" << hex;
+  for (auto bit = entBlocks.begin(); bit != entBlocks.end(); ++bit) {
+    Block * block = *bit;
+    cout << "  0x" << block->start();
+  }
+
+  cout << "\n" << INDENT << "back edge sources:";
+  for (auto eit = backEdges.begin(); eit != backEdges.end(); ++eit) {
+    Block * block = (*eit)->src();
+    cout << "  0x" << block->last();
+  }
+
+  cout << "\n" << INDENT << "back edge targets:";
+  for (auto eit = backEdges.begin(); eit != backEdges.end(); ++eit) {
+    Block * block = (*eit)->trg();
+    cout << "  0x" << block->start();
+  }
+  cout << "\n" << dec;
 }
 
 }  // namespace Struct
