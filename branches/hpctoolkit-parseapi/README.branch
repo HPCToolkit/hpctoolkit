@@ -14,6 +14,8 @@ point, I'll write config tests and #ifdefs, but not yet.
 
 origin: 2015-04-05 from trunk rev 4732
 
+sync: 2015-06-05 with trunk rev 4757
+
 ------------------------------------------------------------
 
 Building a special externals with symtabAPI + parseAPI for this
@@ -51,6 +53,10 @@ something that doesn't match 'patch-*'.
 
 This patch is for 8.2-release and no longer applies cleanly to git
 head.  But it's only used for Intel MIC, so it's not needed here.
+
+With a current git version, 'patch-rt' also fails to apply cleanly.
+Again, this patch is not really necessary, so just remove or rename it
+as well.
 
 5. Make one manual edit in symtabAPI/Makefile to add 'instructionAPI'
 and 'parseAPI' to BUILD_SUBDIRS.  Put these at the end of the list.

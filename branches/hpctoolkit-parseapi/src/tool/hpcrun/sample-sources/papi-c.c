@@ -718,8 +718,7 @@ METHOD_FN(display_events)
     while (ret == PAPI_OK) {
       char *prof;
       memset(&info, 0, sizeof(info));
-      if (PAPI_get_event_info(ev, &info) == PAPI_OK) {
-	PAPI_get_event_info(ev, &info);
+      if (PAPI_get_event_info(ev, &info) == PAPI_OK && info.count != 0) {
 	if (event_is_derived(ev)) {
 	  prof = "No";
 	} else {
