@@ -221,6 +221,25 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 
 #endif  // open analysis
 
+// ------------------------------------------------------------
+// Debug functions to display input data for loops, blocks and stmts
+// ------------------------------------------------------------
+
+#define DEBUG_CFG_SOURCE  0
+
+#if DEBUG_CFG_SOURCE
+
+#ifdef BANAL_USE_PARSEAPI
+static void
+debugLoop(LoopTreeNode *, Prof::Struct::Loop *, vector <Block *> &,
+	  vector <Edge *> &, string &, string &, SrcFile::ln, VMA);
+#endif
+
+static void
+debugStmt(Prof::Struct::Stmt *, VMA, string &, string &, SrcFile::ln);
+
+#endif  // DEBUG_CFG_SOURCE
+
 } // namespace Struct
 } // namespace BAnal
 
@@ -1128,6 +1147,11 @@ buildProcStructure(ProcInfo pinfo,
   Prof::Struct::Proc * pStrct = pinfo.proc;
   BinUtil::Proc *p = pinfo.proc_bin;
 
+#if DEBUG_CFG_SOURCE
+  cout << "\n------------------------------------------------------------\n"
+       << "func:  0x" << hex << p->begVMA() << dec << "  '" << p->name() << "'\n";
+#endif
+
   DIAG_Msg(3, "==> Proc `" << p->name() << "' (" << p->id() << ") <==");
   
   bool isDbg = false;
@@ -1410,6 +1434,15 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
     loop = new Prof::Struct::Loop(NULL, fnm, line, line);
     loop->vmaSet().insert(loop_vma, loop_vma + 1); // a loop id
     targetScope = loop;
+
+#if DEBUG_CFG_SOURCE
+    cout << "\nloop:  " << ((ity == OA::NestedSCR::NODE_INTERVAL) ?
+			    "(reducible)" : "(irreducible)") << "\n";
+    cout << "loop node: (n=" << loop->id() << ")"
+	 << "  0x" << hex << loop_vma << dec<< "  l=" << line
+	 << "  f='" << fnm << "'  p='" << pnm << "'\n"
+	 << "entry block:  0x" << hex << begVMA << dec << "\n";
+#endif
   } else if (!isIrrIvalLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
     // -----------------------------------------------------
     // IRREDUCIBLE as no loop: May contain loops
@@ -1460,6 +1493,10 @@ buildStmts(Struct::LocationMgr& locMgr,
 {
   static int call_sortId = 0;
 
+#if DEBUG_CFG_SOURCE
+  cout << "\nblock:\n";
+#endif
+
   OA::OA_ptr<OA::CFG::NodeStatementsIteratorInterface> it =
     bb->getNodeStatementsIterator();
   for ( ; it->isValid(); ) {
@@ -1501,6 +1538,10 @@ buildStmts(Struct::LocationMgr& locMgr,
     }
     insertions.push_back(stmt);
     locMgr.locate(stmt, enclosingStrct, filenm, procnm, line, targetScopeID);
+
+#if DEBUG_CFG_SOURCE
+    debugStmt(stmt, vma, filenm, procnm, line);
+#endif
   }
   return 0;
 }
@@ -1691,9 +1732,6 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 
 #ifdef BANAL_USE_PARSEAPI
 
-#define PARSE_DEBUG  0
-#define INDENT   "   "
-
 // The ParseAPI version of traversing functions, CFGs, loops, basic
 // blocks and instructions.  This is the code between makeStructure()
 // and creating Prof::Struct nodes for loops, stmts, etc.
@@ -1723,11 +1761,6 @@ static void
 findLoopBegin(ProcInfo, Loop *, vector <Block *> &, vector <Edge *> &,
 	      string &, string &, SrcFile::ln &, VMA &);
 
-static void
-debugLoop(LoopTreeNode *, Prof::Struct::Loop *,
-	  vector <Block *> &, vector <Edge *> &,
-	  string &, string &, SrcFile::ln, VMA);
-
 //****************************************************************************
 
 static Prof::Struct::Proc *
@@ -1737,7 +1770,7 @@ buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
   Prof::Struct::Proc * topScope = pinfo.proc;
   ParseAPI::Function * func = pinfo.proc_parse;
 
-#if PARSE_DEBUG
+#if DEBUG_CFG_SOURCE
   cout << "\n------------------------------------------------------------\n"
        << "func:  0x" << hex << func->addr() << dec << "  '" << func->name() << "'\n";
 #endif
@@ -1758,7 +1791,7 @@ buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
   // traverse the loop (Tarjan) tree
   doLoopTree(pinfo, visited, func->getLoopTree(), topScope, topScope, locMgr, nameMgr);
 
-#if PARSE_DEBUG
+#if DEBUG_CFG_SOURCE
   cout << "\nnon-loop blocks:\n";
 #endif
 
@@ -1834,7 +1867,7 @@ doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
 
   loopNode->vmaSet().insert(vma, vma + 1);
 
-#if PARSE_DEBUG
+#if DEBUG_CFG_SOURCE
   debugLoop(ltnode, loopNode, entBlocks, backEdges, filenm, procnm, line, vma);
 #endif
 
@@ -1883,7 +1916,7 @@ doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
   }
   visited[block] = true;
 
-#if PARSE_DEBUG
+#if DEBUG_CFG_SOURCE
   cout << "\nblock:\n";
 #endif
 
@@ -1909,19 +1942,8 @@ doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
     }
     locMgr.locate(stmt, topScope, filenm, procnm, line, curScope->id());
 
-#if PARSE_DEBUG
-    Inline::InlineSeqn nodeList;
-    Inline::analyzeAddr(nodeList, vma);
-
-    cout << INDENT << "stmt: (n=" << stmt->id() << ")"
-	 << "  0x" << hex << vma << dec
-	 << "  l=" << line << "  f='" << filenm << "'  p='" << procnm << "'\n";
-
-    // list is outermost to innermost
-    for (auto nit = nodeList.begin(); nit != nodeList.end(); ++nit) {
-      cout << INDENT << INDENT << "inline:  l=" << nit->getLineNum()
-	   << "  f='" << nit->getFileName() << "'  p='" << nit->getProcName() << "'\n";
-    }
+#if DEBUG_CFG_SOURCE
+    debugStmt(stmt, vma, filenm, procnm, line);
 #endif
   }
 }
@@ -1951,8 +1973,29 @@ findLoopBegin(ProcInfo pinfo, Loop * loop,
   }
 }
 
+}  // namespace Struct
+}  // namespace BAnal
 
-// debug info for a loop
+#endif  // parseAPI
+
+
+//****************************************************************************
+// Debug functions
+//****************************************************************************
+
+#if DEBUG_CFG_SOURCE
+
+// Debug functions to display the raw input data for loops, blocks,
+// stmts, file names, proc names and line numbers.  We compute the
+// loop and alien nesting based on this input.  This applies to both
+// Open Analysis and ParseAPI.
+
+#define INDENT   "   "
+
+namespace BAnal {
+namespace Struct {
+
+#ifdef BANAL_USE_PARSEAPI
 static void
 debugLoop(LoopTreeNode * ltnode, Prof::Struct::Loop * loopNode,
 	  vector <Block *> & entBlocks, vector <Edge *> & backEdges,
@@ -1961,34 +2004,56 @@ debugLoop(LoopTreeNode * ltnode, Prof::Struct::Loop * loopNode,
   cout << "\nloop:  " << ltnode->name()
        << ((entBlocks.size() == 1) ? "  (reducible)" : "  (irreducible)") << "\n";
 
-  cout << INDENT << "loop node: (n=" << loopNode->id() << ")"
-       << "  0x" << hex << vma << "  l=" << dec << line
+  cout << "loop node: (n=" << loopNode->id() << ")"
+       << "  0x" << hex << vma << dec << "  l=" << line
        << "  f='" << filenm << "'  p='" << procnm << "'\n";
 
-  cout << INDENT << "entry blocks:" << hex;
+  cout << "entry blocks:" << hex;
   for (auto bit = entBlocks.begin(); bit != entBlocks.end(); ++bit) {
     Block * block = *bit;
     cout << "  0x" << block->start();
   }
 
-  cout << "\n" << INDENT << "back edge sources:";
+  cout << "\nback edge sources:";
   for (auto eit = backEdges.begin(); eit != backEdges.end(); ++eit) {
     Block * block = (*eit)->src();
     cout << "  0x" << block->last();
   }
 
-  cout << "\n" << INDENT << "back edge targets:";
+  cout << "\nback edge targets:";
   for (auto eit = backEdges.begin(); eit != backEdges.end(); ++eit) {
     Block * block = (*eit)->trg();
     cout << "  0x" << block->start();
   }
   cout << "\n" << dec;
 }
+#endif  // parseAPI
+
+
+static void
+debugStmt(Prof::Struct::Stmt * stmt, VMA vma,
+	  string & filenm, string & procnm, SrcFile::ln line)
+{
+  cout << INDENT << "stmt: (n=" << stmt->id() << ")"
+       << "  0x" << hex << vma << dec
+       << "  l=" << line << "  f='" << filenm << "'  p='" << procnm << "'\n";
+
+#ifdef BANAL_USE_SYMTAB
+  Inline::InlineSeqn nodeList;
+  Inline::analyzeAddr(nodeList, vma);
+
+  // list is outermost to innermost
+  for (auto nit = nodeList.begin(); nit != nodeList.end(); ++nit) {
+    cout << INDENT << INDENT << "inline:  l=" << nit->getLineNum()
+	 << "  f='" << nit->getFileName() << "'  p='" << nit->getProcName() << "'\n";
+  }
+#endif
+}
 
 }  // namespace Struct
 }  // namespace BAnal
 
-#endif  // parseAPI
+#endif  // DEBUG_CFG_SOURCE
 
 
 //****************************************************************************
