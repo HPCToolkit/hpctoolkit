@@ -1533,15 +1533,16 @@ buildStmts(Struct::LocationMgr& locMgr,
     // 4. locate stmt
     Prof::Struct::Stmt* stmt =
       new Prof::Struct::Stmt(NULL, line, line, vmaint.beg(), vmaint.end());
+
+#if DEBUG_CFG_SOURCE
+    debugStmt(stmt, vma, filenm, procnm, line);
+#endif
+
     if (idesc.isSubr()) {
       stmt->sortId(--call_sortId);
     }
     insertions.push_back(stmt);
     locMgr.locate(stmt, enclosingStrct, filenm, procnm, line, targetScopeID);
-
-#if DEBUG_CFG_SOURCE
-    debugStmt(stmt, vma, filenm, procnm, line);
-#endif
   }
   return 0;
 }
@@ -1937,14 +1938,14 @@ doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
     Prof::Struct::Stmt * stmt =
       new Prof::Struct::Stmt(NULL, line, line, vma, vma_end);
 
+#if DEBUG_CFG_SOURCE
+    debugStmt(stmt, vma, filenm, procnm, line);
+#endif
+
     if (stmtList != NULL) {
       stmtList->push_back(stmt);
     }
     locMgr.locate(stmt, topScope, filenm, procnm, line, curScope->id());
-
-#if DEBUG_CFG_SOURCE
-    debugStmt(stmt, vma, filenm, procnm, line);
-#endif
   }
 }
 
