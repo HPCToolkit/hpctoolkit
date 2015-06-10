@@ -1715,6 +1715,7 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 //
 // 2. Figure out interaction between reparentNode() and location
 // manager and make sure they work at cross purposes.
+// ---> don't use the location manager
 //
 // 3. findLoopBegin() -- look at entry blocks, back edges and line
 // numbers and make an intelligent decision for where a loop begins in
@@ -1746,17 +1747,17 @@ typedef list <Prof::Struct::ACodeNode *> NodeList;
 static void
 doLoopTree(ProcInfo, BlockSet &, LoopTreeNode *,
 	   Prof::Struct::ACodeNode *, Prof::Struct::ACodeNode *,
-	   Struct::LocationMgr &, ProcNameMgr *);
+	   ProcNameMgr *);
 
 static Prof::Struct::ACodeNode *
 doLoop(ProcInfo, BlockSet &, LoopTreeNode *,
        Prof::Struct::ACodeNode *, Prof::Struct::ACodeNode *,
-       Struct::LocationMgr &, ProcNameMgr *);
+       ProcNameMgr *);
 
 static void
 doBlock(ProcInfo, BlockSet &, Block *,
 	Prof::Struct::ACodeNode *, Prof::Struct::ACodeNode *,
-	Struct::LocationMgr &, ProcNameMgr *, NodeList *);
+	ProcNameMgr *);
 
 static void
 findLoopBegin(ProcInfo, Loop *, vector <Block *> &, vector <Edge *> &,
@@ -1776,10 +1777,6 @@ buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
        << "func:  0x" << hex << func->addr() << dec << "  '" << func->name() << "'\n";
 #endif
 
-  // location manager for this function
-  Struct::LocationMgr locMgr(topScope->ancestorLM());
-  locMgr.begSeq(topScope, isFwdSubst);
-
   // make a map of visited blocks
   const ParseAPI::Function::blocklist & blist = func->blocks();
   BlockSet visited;
@@ -1790,7 +1787,7 @@ buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
   }
 
   // traverse the loop (Tarjan) tree
-  doLoopTree(pinfo, visited, func->getLoopTree(), topScope, topScope, locMgr, nameMgr);
+  doLoopTree(pinfo, visited, func->getLoopTree(), topScope, topScope, nameMgr);
 
 #if DEBUG_CFG_SOURCE
   cout << "\nnon-loop blocks:\n";
@@ -1800,11 +1797,11 @@ buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
   for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
     Block * block = *bit;
     if (! visited[block]) {
-      doBlock(pinfo, visited, block, topScope, topScope, locMgr, nameMgr, NULL);
+      doBlock(pinfo, visited, block, topScope, topScope, nameMgr);
     }
   }
 
-  locMgr.endSeq();
+  // fixme: may or may not use these
   coalesceAlienChildren(topScope);
   renumberAlienScopes(topScope);
 
@@ -1815,7 +1812,7 @@ buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
 static void
 doLoopTree(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
 	   Prof::Struct::ACodeNode * topScope, Prof::Struct::ACodeNode * curScope,
-	   Struct::LocationMgr & locMgr, ProcNameMgr * nameMgr)
+	   ProcNameMgr * nameMgr)
 {
   if (ltnode == NULL) {
     return;
@@ -1826,14 +1823,14 @@ doLoopTree(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
   // forest.
   //
   if (ltnode->loop != NULL) {
-    curScope = doLoop(pinfo, visited, ltnode, topScope, curScope, locMgr, nameMgr);
+    curScope = doLoop(pinfo, visited, ltnode, topScope, curScope, nameMgr);
   }
 
   // process the children of the loop tree
   vector <LoopTreeNode *> clist = ltnode->children;
 
   for (uint i = 0; i < clist.size(); i++) {
-    doLoopTree(pinfo, visited, clist[i], topScope, curScope, locMgr, nameMgr);
+    doLoopTree(pinfo, visited, clist[i], topScope, curScope, nameMgr);
   }
 }
 
@@ -1841,7 +1838,7 @@ doLoopTree(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
 static Prof::Struct::ACodeNode *
 doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
        Prof::Struct::ACodeNode * topScope, Prof::Struct::ACodeNode * curScope,
-       Struct::LocationMgr & locMgr, ProcNameMgr * nameMgr)
+       ProcNameMgr * nameMgr)
 {
   // promised not to be null
   Loop * loop = ltnode->loop;
@@ -1873,13 +1870,10 @@ doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
 #endif
 
   // insert the loop's exclusive blocks at the function's top-level
-  // scope, starting with the entry blocks first.  keep a list of
-  // added statements for later reparenting.
+  // scope, starting with the entry blocks first.
   //
-  NodeList stmtList;
-
   for (uint i = 0; i < entBlocks.size(); i++) {
-    doBlock(pinfo, visited, entBlocks[i], topScope, loopNode, locMgr, nameMgr, &stmtList);
+    doBlock(pinfo, visited, entBlocks[i], topScope, loopNode, nameMgr);
   }
 
   // add the remaining exclusive blocks
@@ -1887,19 +1881,22 @@ doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
   loop->getLoopBasicBlocksExclusive(blist);
 
   for (uint i = 0; i < blist.size(); i++) {
-    doBlock(pinfo, visited, blist[i], topScope, loopNode, locMgr, nameMgr, &stmtList);
+    doBlock(pinfo, visited, blist[i], topScope, loopNode, nameMgr);
   }
 
-  // locate the loop node in the tree
-  locMgr.locate(loopNode, topScope, filenm, procnm, line, loopNode->id());
+  // insert the loop node in the tree
+  // fixme: the alien is just a temporary hack because otherwise the
+  // viewer totally screws up the file names.  (not the real solution)
 
-  // finally, reparent the new statements
-  Prof::Struct::ANode * parent = getVisibleAncestor(loopNode);
-  int depth = parent->ancestorCount();
-
-  for (auto sit = stmtList.begin(); sit != stmtList.end(); ++sit) {
-    Prof::Struct::ANode * node = *sit;
-    reparentNode(node, loopNode, parent, locMgr, node->ancestorCount(), depth);
+  if (curScope->type() == Prof::Struct::ANode::TyLoop
+      && filenm != (dynamic_cast <Prof::Struct::Loop *> (curScope))->fileName())
+  {
+    Prof::Struct::Alien * alien =
+      new Prof::Struct::Alien(curScope, filenm, procnm, procnm, line, line);
+    loopNode->link(alien);
+  }
+  else {
+    loopNode->link(curScope);
   }
 
   return loopNode;
@@ -1909,8 +1906,7 @@ doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
 static void
 doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
 	Prof::Struct::ACodeNode * topScope, Prof::Struct::ACodeNode * curScope,
-	Struct::LocationMgr & locMgr, ProcNameMgr * nameMgr,
-	NodeList * stmtList)
+	ProcNameMgr * nameMgr)
 {
   if (block == NULL || visited[block]) {
     return;
@@ -1942,10 +1938,19 @@ doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
     debugStmt(stmt, vma, filenm, procnm, line);
 #endif
 
-    if (stmtList != NULL) {
-      stmtList->push_back(stmt);
+    // fixme: the alien is just a temporary hack because otherwise the
+    // viewer totally screws up the file names.  (not the real solution)
+
+    if (curScope->type() == Prof::Struct::ANode::TyLoop
+	&& filenm != (dynamic_cast <Prof::Struct::Loop *> (curScope))->fileName())
+    {
+      Prof::Struct::Alien * alien =
+	new Prof::Struct::Alien(curScope, filenm, procnm, procnm, line, line);
+      stmt->link(alien);
     }
-    locMgr.locate(stmt, topScope, filenm, procnm, line, curScope->id());
+    else {
+      stmt->link(curScope);
+    }
   }
 }
 
