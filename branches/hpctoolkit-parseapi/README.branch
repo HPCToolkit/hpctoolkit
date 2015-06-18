@@ -48,15 +48,25 @@ uncompressed and about 6.5 Meg compressed.
 3. Checkout externals as usual and replace 'dyninst-8.2.tar.gz' in
 externals/distfiles with this new one.
 
-4. In symtabAPI/patches-82, delete or rename the file 'patch-181' to
-something that doesn't match 'patch-*'.
+4. Cd to externals/symtabAPI/patches-82 and make the following
+changes:
 
-This patch is for 8.2-release and no longer applies cleanly to git
-head.  But it's only used for Intel MIC, so it's not needed here.
+4.A -- delete or rename the file 'patch-181' to something that doesn't
+match 'patch-*'.  This patch no longer applies cleanly to git head,
+but it's only for Intel MIC, so it's not needed here.
 
-With a current git version, 'patch-rt' also fails to apply cleanly.
-Again, this patch is not really necessary, so just remove or rename it
-as well.
+4.B -- delete or rename 'patch-rt'.  Again, it won't apply cleanly and
+we don't really need it.
+
+4.C -- copy 'patch-getName' from this directory (hpctoolkit-parseapi)
+into patches-82.  At some point, Wisconsin will add this to git head
+and then this patch will become a duplicate.
+
+4.D -- if the patch 'patch-symtab-dwarfwalker' fails to apply cleanly
+in symtabAPI 'make fetch', then delete or rename it.
+
+Again, this patch fixes a certain bug.  At some point, Wisconsin will
+add the fix to git head and this patch will become a duplicate.
 
 5. Make one manual edit in symtabAPI/Makefile to add 'instructionAPI'
 and 'parseAPI' to BUILD_SUBDIRS.  Put these at the end of the list.
@@ -83,10 +93,6 @@ contains 'libparseAPI.so' and 'libinstructionAPI.so'.
 
 If the 'patch-symtab-dwarfwalker' patch fails, then remove or rename
 it and try again.  'make fetch' from inside symtabAPI will test this.
-
-We've alerted Wisconsin about this bug and at some point they will
-likely commit the patch to their git repository.  After that, this
-patch will be a duplicate and fail, so just remove it.
 
 7. Configure and build hpctoolkit from this branch as usual.
 Configure will auto-detect the new parseAPI code.

@@ -1712,6 +1712,7 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 // procedure names are always "unknown-proc".  Wisconsin is working on
 // it, but until it is fixed, the inline part of the struct files will
 // be badly broken.
+// ---> now fixed with the 'patch-getName' patch
 //
 // 2. Figure out interaction between reparentNode() and location
 // manager and make sure they work at cross purposes.

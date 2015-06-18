@@ -234,8 +234,8 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 	pair <string, Offset> callsite = ifunc->getCallsite();
 
 #ifdef SYMTAB_NEW_NAME_ITERATOR
-        auto it = func->pretty_names_begin();
-        string procnm = (it != func->pretty_names_end()) ? *it : UNKNOWN_PROC;
+        string procnm = func->getName();
+	if (procnm == "") { procnm = UNKNOWN_PROC; }
 #else
 	vector <string> name_vec = func->getAllPrettyNames();
 	string procnm = (! name_vec.empty()) ? name_vec[0] : UNKNOWN_PROC;
