@@ -177,7 +177,11 @@ void
 LocationMgr::init(Prof::Struct::LM* lm)
 {
   m_loadMod = lm;
+#if 0
+  mDBG = 1;
+#else
   mDBG = 0;
+#endif
   m_isFwdSubst = false;
 }
 
