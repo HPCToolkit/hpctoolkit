@@ -201,6 +201,31 @@ closeSymtab()
   return ret;
 }
 
+#ifdef DEBUG_INLINE
+const char *nm(string &name)
+{
+        static const char *null = "NULL";
+        if (!name.empty()) return name.c_str();
+        else return null;
+}
+
+void
+nodelist_dump(InlineSeqn &nodelist)
+{
+  Inline::InlineSeqn::iterator it;
+
+  for (it = nodelist.begin(); it != nodelist.end(); it++) {
+    cout << " file: " << nm(it->getFileName()) << endl
+         << " line: " << it->getLineNum() << endl
+         << " proc: " << nm(it->getProcName()) << endl << endl;
+  }
+}
+
+
+VMA volatile target_addr = 0x406587;
+#endif
+
+
 // Returns nodelist as a list of InlineNodes for the inlined sequence
 // at VMA addr.  The front of the list is the outermost frame, back is
 // innermost.
@@ -256,6 +281,10 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
     ret = false;
   }
   jbuf_active = 0;
+
+#ifdef DEBUG_INLINE
+  if (addr == target_addr) nodelist_dump(nodelist);
+#endif
 
   return ret;
 }

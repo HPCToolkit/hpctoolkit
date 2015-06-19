@@ -923,7 +923,7 @@ ancestorIsLoop(Prof::Struct::ANode *node)
 
 
 static bool
-aliensMatch(Prof::Struct::Alien *n1, Prof::Struct::Alien *n2)
+matchAliens(Prof::Struct::Alien *n1, Prof::Struct::Alien *n2)
 {
   return 
     n1->fileName() == n2->fileName() &&
@@ -933,17 +933,27 @@ aliensMatch(Prof::Struct::Alien *n1, Prof::Struct::Alien *n2)
 
 
 static bool
-pathsMatch(Prof::Struct::ANode *n1, Prof::Struct::ANode *n2)
+matchPaths(Prof::Struct::ANode *n1, Prof::Struct::ANode *n2, Prof::Struct::ANode *child, Prof::Struct::ANode **result)
 {
-  if (n1 != n2) {
-    bool result = pathsMatch(n1->parent(), n2->parent());
-    if (result &&
-	(typeid(*n1) == typeid(Prof::Struct::Alien)) &&
+  if (n1 == n2) { 
+    // n1 and n2 are identical; they trivially match
+    *result = child;
+    return true;
+  }
+
+  // n1 and n2 are not identical; check to see if they are equivalent
+  bool parentsMatch = matchPaths(n1->parent(), n2->parent(), n1, result);
+  if (parentsMatch) {
+    if ((typeid(*n1) == typeid(Prof::Struct::Alien)) &&
 	(typeid(*n2) == typeid(Prof::Struct::Alien))) {
-      return aliensMatch((Prof::Struct::Alien *)n1, 
-			 (Prof::Struct::Alien *)n2);
-    } else return false;
-  } return true;
+      if (matchAliens((Prof::Struct::Alien *)n1, (Prof::Struct::Alien *)n2)) {
+	// parents match, n1 and n2 are equivalent, so the paths match to this point
+	*result = child; 
+	return true;
+      }
+    }
+  }
+  return false;
 } 
 
 
@@ -965,13 +975,12 @@ reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop,
       node = node->parent();
       nodeDepth--;
     }
-    //  this seems to have an off by one error
-    // if (node == loopParent) return;
+
     if (child == loop) return;
-    else if (pathsMatch(node, loopParent)) {
-      node = child;
-    } else {
-      node = kid;
+    else {
+      Prof::Struct::ANode *result = kid;
+      matchPaths(node, loopParent, child, &result);
+      node = result;
     }
   }
 
