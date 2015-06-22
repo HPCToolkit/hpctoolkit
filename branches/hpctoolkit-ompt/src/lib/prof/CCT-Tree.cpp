@@ -1261,11 +1261,39 @@ ANode::writeXML(ostream& os, uint metricBeg, uint metricEnd,
 
 
 std::ostream&
+ANode::writeXML_path(ostream& os, uint metricBeg, uint metricEnd,
+		     uint oFlags, const char* pfx) const
+{
+  string indent = "  ";
+  if (oFlags & CCT::Tree::OFlg_Compressed) {
+    pfx = "";
+    indent = "";
+  }
+
+  ANode *parent = this->parent();
+  if (parent) {
+    parent->writeXML_path(os, metricBeg, metricEnd, oFlags, pfx);
+  }
+  
+  writeXML_pre(os, metricBeg, metricEnd, oFlags, pfx);
+  return os;
+}
+
+
+std::ostream&
 ANode::dump(ostream& os, uint oFlags, const char* pfx) const 
 {
   writeXML(os, Metric::IData::npos, Metric::IData::npos, oFlags, pfx); 
   return os;
 }
+
+
+void
+ANode::adump() const
+{
+  writeXML_path(std::cerr, Metric::IData::npos, Metric::IData::npos,
+	        Tree::OFlg_DebugAll, "");
+} 
 
 
 void
