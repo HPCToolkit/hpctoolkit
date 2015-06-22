@@ -222,7 +222,7 @@ nodelist_dump(InlineSeqn &nodelist)
 }
 
 
-VMA volatile target_addr = 0x406587;
+VMA volatile target_addr = 0;
 #endif
 
 
