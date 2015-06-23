@@ -82,9 +82,12 @@
 
 #include <list>
 #include <vector>
+
 #include <lib/support/diagnostics.h>
 #include <lib/support/FileNameMap.hpp>
 #include <lib/support/realpath.h>
+#include <lib/support/StringTable.hpp>
+
 #include "Struct-Inline.hpp"
 
 #include <Symtab.h>
@@ -258,6 +261,46 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
   jbuf_active = 0;
 
   return ret;
+}
+
+
+// Add one terminal statement to the inline tree.
+void
+addStmtToTree(TreeNode * root, StringTable & strTab,
+	      VMA vma, string & filenm, SrcFile::ln line, string & procnm)
+{
+  InlineSeqn path;
+  TreeNode *node;
+
+  analyzeAddr(path, vma);
+
+  // follow 'path' down the tree and insert any edges that don't exist
+  node = root;
+  for (auto it = path.begin(); it != path.end(); ++it) {
+    FLPIndex flp(strTab, *it);
+    auto nit = node->nodeMap.find(flp);
+
+    if (nit != node->nodeMap.end()) {
+      node = nit->second;
+    }
+    else {
+      // add new node with edge 'flp'
+      TreeNode *child = new TreeNode();
+      node->nodeMap[flp] = child;
+      node = child;
+    }
+  }
+
+  // add statement to last node in the sequence.  statements are
+  // defined by their vma, so there should be no duplicates.
+  StmtInfo *sinfo = new StmtInfo(strTab, vma, filenm, line, procnm);
+  auto sit = node->stmtMap.find(vma);
+
+  if (sit != node->stmtMap.end()) {
+    DIAG_WMsgIf(1, "addStmtToTree: duplicate vma in inline tree: 0x"
+		<< hex << vma << dec);
+  }
+  node->stmtMap[vma] = sinfo;
 }
 
 }  // namespace Inline

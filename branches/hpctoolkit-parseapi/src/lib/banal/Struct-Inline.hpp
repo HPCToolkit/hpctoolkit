@@ -45,16 +45,22 @@
 // ******************************************************* EndRiceCopyright *
 
 // This file defines the API between symtabAPI and the banal code for
-// the static inline support.
+// the static inline support.  Now with support for building a tree of
+// inlined call sites.
 //
 // For each VM address that came from inlined code, symtab provides a
 // C++ list representing the sequence of inlining steps.  (The list
 // front is outermost, back is innermost.)  An empty list means not
-// inlined code.
+// inlined code (or else missing dwarf info).
 //
 // Each node in the list contains: (1) the file name and (2) line
 // number in the source code, and (3) the procedure name at the call
 // site.
+//
+// The inline TreeNode represents several InlineNode paths combined
+// into a single tree.  Edges in the tree represent one (file, line,
+// proc) call site and nodes contain a map of subtrees and a list of
+// terminal statements.
 
 //***************************************************************************
 
@@ -62,8 +68,11 @@
 #define Banal_Struct_Inline_hpp
 
 #include <list>
+#include <map>
+
 #include <lib/isa/ISATypes.hpp>
 #include <lib/support/SrcFile.hpp>
+#include <lib/support/StringTable.hpp>
 
 #include <Symtab.h>
 #include <Function.h>
@@ -74,8 +83,19 @@ using namespace std;
 
 namespace Inline {
 
-class InlineNode {
+class InlineNode;
+class FLPIndex;
+class FLPCompare;
+class StmtInfo;
+class TreeNode;
 
+typedef list <InlineNode> InlineSeqn;
+typedef map <FLPIndex, TreeNode *, FLPCompare> NodeMap;
+typedef map <VMA, StmtInfo *> StmtMap;
+
+
+// File, proc, line we get from Symtab inline call sites.
+class InlineNode {
 private:
   std::string  m_filenm;
   std::string  m_procnm;
@@ -91,14 +111,111 @@ public:
   std::string & getFileName() { return m_filenm; }
   std::string & getProcName() { return m_procnm; }
   SrcFile::ln getLineNum() { return m_lineno; }
+};
 
-};  // class InlineNode
 
-typedef list <InlineNode> InlineSeqn;
+// 3-tuple of indices for file, line, proc.
+class FLPIndex {
+public:
+  long  file_index;
+  long  line_num;
+  long  proc_index;
+
+  // constructor by index
+  FLPIndex(long file, long line, long proc)
+  {
+    file_index = file;
+    line_num = line;
+    proc_index = proc;
+  }
+
+  // constructor by InlineNode strings
+  FLPIndex(StringTable & strTab, InlineNode & node)
+  {
+    file_index = strTab.str2index(node.getFileName());
+    line_num = (long) node.getLineNum();
+    proc_index = strTab.str2index(node.getProcName());
+  }
+};
+
+
+// Compare (file, line, proc) indices lexigraphically.
+class FLPCompare {
+public:
+  bool operator() (const FLPIndex t1, const FLPIndex t2)
+  {
+    if (t1.file_index < t2.file_index) { return true; }
+    if (t1.file_index > t2.file_index) { return false; }
+    if (t1.line_num < t2.line_num) { return true; }
+    if (t1.line_num > t2.line_num) { return false; }
+    if (t1.proc_index < t2.proc_index) { return true; }
+    return false;
+  }
+};
+
+
+// Info for one terminal statement (vma) in the inline tree.
+class StmtInfo {
+public:
+  VMA   addr;
+  long  file_index;
+  long  line_num;
+  long  proc_index;
+
+  // constructor by index
+  StmtInfo(VMA vma, long file, long line, long proc)
+  {
+    addr = vma;
+    file_index = file;
+    line_num = line;
+    proc_index = proc;
+  }
+
+  // constructor by string name
+  StmtInfo(StringTable & strTab, VMA vma, const std::string & filenm,
+	   long line, const std::string & procnm)
+  {
+    addr = vma;
+    file_index = strTab.str2index(filenm);
+    line_num = line;
+    proc_index = strTab.str2index(procnm);
+  }
+};
+
+
+// One node in the inline tree.
+class TreeNode {
+public:
+  NodeMap  nodeMap;
+  StmtMap  stmtMap;
+
+  TreeNode()
+  {
+    nodeMap.clear();
+    stmtMap.clear();
+  }
+
+  // recursively delete the subtrees and stmts
+  ~TreeNode()
+  {
+    for (NodeMap::iterator nit = nodeMap.begin(); nit != nodeMap.end(); ++nit) {
+      delete nit->second;
+    }
+    for (StmtMap::iterator sit = stmtMap.begin(); sit != stmtMap.end(); ++sit) {
+      delete sit->second;
+    }
+  }
+};
+
+//***************************************************************************
 
 Symtab * openSymtab(std::string filename);
 bool closeSymtab();
 bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
+
+void
+addStmtToTree(TreeNode * root, StringTable & strTab,
+	      VMA vma, string & filenm, SrcFile::ln line, string & procnm);
 
 }  // namespace Inline
 

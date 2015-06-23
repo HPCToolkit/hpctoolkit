@@ -126,6 +126,7 @@ using namespace Prof;
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
+#include <lib/support/StringTable.hpp>
 
 #ifdef BANAL_USE_SYMTAB
 #include <Symtab.h>
@@ -233,6 +234,9 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 static void
 debugLoop(LoopTreeNode *, Prof::Struct::Loop *, vector <Block *> &,
 	  vector <Edge *> &, string &, string &, SrcFile::ln, VMA);
+
+static void
+debugInlineTree(Inline::TreeNode *, StringTable &, int);
 #endif
 
 static void
@@ -1715,7 +1719,7 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 // ---> now fixed with the 'patch-getName' patch
 //
 // 2. Figure out interaction between reparentNode() and location
-// manager and make sure they work at cross purposes.
+// manager and make sure they don't work at cross purposes.
 // ---> don't use the location manager
 //
 // 3. findLoopBegin() -- look at entry blocks, back edges and line
@@ -1747,18 +1751,15 @@ typedef list <Prof::Struct::ACodeNode *> NodeList;
 
 static void
 doLoopTree(ProcInfo, BlockSet &, LoopTreeNode *,
-	   Prof::Struct::ACodeNode *, Prof::Struct::ACodeNode *,
-	   ProcNameMgr *);
-
-static Prof::Struct::ACodeNode *
-doLoop(ProcInfo, BlockSet &, LoopTreeNode *,
-       Prof::Struct::ACodeNode *, Prof::Struct::ACodeNode *,
-       ProcNameMgr *);
+	   StringTable &, ProcNameMgr *);
 
 static void
-doBlock(ProcInfo, BlockSet &, Block *,
-	Prof::Struct::ACodeNode *, Prof::Struct::ACodeNode *,
-	ProcNameMgr *);
+doLoop(ProcInfo, BlockSet &, LoopTreeNode *,
+       StringTable &, ProcNameMgr *);
+
+static void
+doBlock(ProcInfo, BlockSet &, Block *, Inline::TreeNode *,
+	StringTable &, ProcNameMgr *);
 
 static void
 findLoopBegin(ProcInfo, Loop *, vector <Block *> &, vector <Edge *> &,
@@ -1772,6 +1773,7 @@ buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
 {
   Prof::Struct::Proc * topScope = pinfo.proc;
   ParseAPI::Function * func = pinfo.proc_parse;
+  StringTable strTab;
 
 #if DEBUG_CFG_SOURCE
   cout << "\n------------------------------------------------------------\n"
@@ -1788,23 +1790,33 @@ buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
   }
 
   // traverse the loop (Tarjan) tree
-  doLoopTree(pinfo, visited, func->getLoopTree(), topScope, topScope, nameMgr);
+  doLoopTree(pinfo, visited, func->getLoopTree(), strTab, nameMgr);
 
 #if DEBUG_CFG_SOURCE
   cout << "\nnon-loop blocks:\n";
 #endif
 
   // process any blocks not in a loop
+  Inline::TreeNode root;
+
   for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
     Block * block = *bit;
     if (! visited[block]) {
-      doBlock(pinfo, visited, block, topScope, topScope, nameMgr);
+      doBlock(pinfo, visited, block, &root, strTab, nameMgr);
     }
   }
 
+#if DEBUG_CFG_SOURCE
+  cout << "\ninline tree for non-loop blocks:\n\n";
+  debugInlineTree(&root, strTab, 0);
+  cout << "\nend non-loop blocks\n";
+#endif
+
   // fixme: may or may not use these
+#if 0
   coalesceAlienChildren(topScope);
   renumberAlienScopes(topScope);
+#endif
 
   return topScope;
 }
@@ -1812,8 +1824,7 @@ buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
 
 static void
 doLoopTree(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
-	   Prof::Struct::ACodeNode * topScope, Prof::Struct::ACodeNode * curScope,
-	   ProcNameMgr * nameMgr)
+	   StringTable & strTab, ProcNameMgr * nameMgr)
 {
   if (ltnode == NULL) {
     return;
@@ -1824,25 +1835,27 @@ doLoopTree(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
   // forest.
   //
   if (ltnode->loop != NULL) {
-    curScope = doLoop(pinfo, visited, ltnode, topScope, curScope, nameMgr);
+    doLoop(pinfo, visited, ltnode, strTab, nameMgr);
   }
 
   // process the children of the loop tree
   vector <LoopTreeNode *> clist = ltnode->children;
 
   for (uint i = 0; i < clist.size(); i++) {
-    doLoopTree(pinfo, visited, clist[i], topScope, curScope, nameMgr);
+    doLoopTree(pinfo, visited, clist[i], strTab, nameMgr);
   }
 }
 
 
-static Prof::Struct::ACodeNode *
+static void
 doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
-       Prof::Struct::ACodeNode * topScope, Prof::Struct::ACodeNode * curScope,
-       ProcNameMgr * nameMgr)
+       StringTable & strTab, ProcNameMgr * nameMgr)
 {
   // promised not to be null
   Loop * loop = ltnode->loop;
+
+  // inline tree for this loop
+  Inline::TreeNode root;
 
   // the loop's entry blocks
   vector <Block *> entBlocks;
@@ -1861,6 +1874,7 @@ doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
   findLoopBegin(pinfo, loop, entBlocks, backEdges, filenm, procnm, line, vma);
   procnm = BinUtil::canonicalizeProcName(procnm, nameMgr);
 
+  // this is now deprecated and used only for debug info
   Prof::Struct::Loop * loopNode =
     new Prof::Struct::Loop(NULL, filenm, line, line);
 
@@ -1874,7 +1888,7 @@ doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
   // scope, starting with the entry blocks first.
   //
   for (uint i = 0; i < entBlocks.size(); i++) {
-    doBlock(pinfo, visited, entBlocks[i], topScope, loopNode, nameMgr);
+    doBlock(pinfo, visited, entBlocks[i], &root, strTab, nameMgr);
   }
 
   // add the remaining exclusive blocks
@@ -1882,32 +1896,22 @@ doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
   loop->getLoopBasicBlocksExclusive(blist);
 
   for (uint i = 0; i < blist.size(); i++) {
-    doBlock(pinfo, visited, blist[i], topScope, loopNode, nameMgr);
+    doBlock(pinfo, visited, blist[i], &root, strTab, nameMgr);
   }
 
-  // insert the loop node in the tree
-  // fixme: the alien is just a temporary hack because otherwise the
-  // viewer totally screws up the file names.  (not the real solution)
-
-  if (curScope->type() == Prof::Struct::ANode::TyLoop
-      && filenm != (dynamic_cast <Prof::Struct::Loop *> (curScope))->fileName())
-  {
-    Prof::Struct::Alien * alien =
-      new Prof::Struct::Alien(curScope, filenm, procnm, procnm, line, line);
-    loopNode->link(alien);
-  }
-  else {
-    loopNode->link(curScope);
-  }
-
-  return loopNode;
+#if DEBUG_CFG_SOURCE
+  cout << "\ninline tree for loop:  " << ltnode->name()
+       << "  0x" << hex << vma << dec << "\n"
+       << "l=" << line << "  f='" << filenm << "'  p='" << procnm << "'\n\n";
+  debugInlineTree(&root, strTab, 0);
+  cout << "\nend loop:  " << ltnode->name() << "  0x" << hex << vma << dec << "\n";
+#endif
 }
 
 
 static void
 doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
-	Prof::Struct::ACodeNode * topScope, Prof::Struct::ACodeNode * curScope,
-	ProcNameMgr * nameMgr)
+	Inline::TreeNode * root, StringTable & strTab, ProcNameMgr * nameMgr)
 {
   if (block == NULL || visited[block]) {
     return;
@@ -1932,6 +1936,7 @@ doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
     pinfo.proc_bin->findSrcCodeInfo(vma, 0, procnm, filenm, line);
     procnm = BinUtil::canonicalizeProcName(procnm, nameMgr);
 
+    // this is now deprecated and used only for debug info
     Prof::Struct::Stmt * stmt =
       new Prof::Struct::Stmt(NULL, line, line, vma, vma_end);
 
@@ -1939,19 +1944,7 @@ doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
     debugStmt(stmt, vma, filenm, procnm, line);
 #endif
 
-    // fixme: the alien is just a temporary hack because otherwise the
-    // viewer totally screws up the file names.  (not the real solution)
-
-    if (curScope->type() == Prof::Struct::ANode::TyLoop
-	&& filenm != (dynamic_cast <Prof::Struct::Loop *> (curScope))->fileName())
-    {
-      Prof::Struct::Alien * alien =
-	new Prof::Struct::Alien(curScope, filenm, procnm, procnm, line, line);
-      stmt->link(alien);
-    }
-    else {
-      stmt->link(curScope);
-    }
+    addStmtToTree(root, strTab, vma, filenm, line, procnm);
   }
 }
 
@@ -2033,6 +2026,38 @@ debugLoop(LoopTreeNode * ltnode, Prof::Struct::Loop * loopNode,
     cout << "  0x" << block->start();
   }
   cout << "\n" << dec;
+}
+
+
+void
+debugInlineTree(Inline::TreeNode * node, StringTable & strTab, int depth)
+{
+  for (auto sit = node->stmtMap.begin(); sit != node->stmtMap.end(); ++sit) {
+    Inline::StmtInfo *sinfo = sit->second;
+
+    for (int i = 1; i <= depth; i++) {
+      cout << INDENT;
+    }
+    cout << "stmt:  0x" << hex << sinfo->addr << dec
+	 << "  l=" << sinfo->line_num
+	 << "  f='" << strTab.index2str(sinfo->file_index)
+	 << "'  p='" << strTab.index2str(sinfo->proc_index) << "'\n";
+  }
+
+  for (auto nit = node->nodeMap.begin(); nit != node->nodeMap.end(); ++nit) {
+    Inline::FLPIndex flp = nit->first;
+
+    for (int i = 1; i <= depth; i++) {
+      cout << INDENT;
+    }
+    cout << "inline:  flp=(" << flp.file_index << ","
+	 << flp.line_num << "," << flp.proc_index << ")"
+	 << "  l=" << flp.line_num
+	 << "  f='"  << strTab.index2str(flp.file_index)
+	 << "'  p='" << strTab.index2str(flp.proc_index) << "'\n";
+
+    debugInlineTree(nit->second, strTab, depth + 1);
+  }
 }
 #endif  // parseAPI
 
