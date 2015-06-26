@@ -516,6 +516,16 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     }
     else if (type == 3) { // Proc
       nm = strct->name().c_str();
+
+      // filter out a few names that we don't want to see
+      // FIXME: these are names known to libmonitor. filtering
+      //        also needs to happen in hpcviewer. 
+      //        this should be specified differently.
+      if (strcmp(nm,"monitor_main_fence2") == 0) {
+        nm = "program root";
+      } else if (strcmp(nm, "monitor_thread_fence") == 0) {
+        nm = "thread root";
+      }
     }
     else {
       DIAG_Die(DIAG_UnexpectedInput);
