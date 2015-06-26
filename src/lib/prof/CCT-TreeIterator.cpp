@@ -299,9 +299,9 @@ ANodeSortedIterator::cmpByDynInfo(const void* a, const void* b)
   uint y_id = y->structureId();
   if (x_id != Prof::Struct::ANode::Id_NULL
       && y_id != Prof::Struct::ANode::Id_NULL) {
-    int cmp_id = cmp(x_id, y_id);
-    if (cmp_id != 0) {
-      return cmp_id;
+    int cmp_sid = cmp(x_id, y_id);
+    if (cmp_sid != 0) {
+      return cmp_sid;
     }
   }
 
@@ -309,6 +309,13 @@ ANodeSortedIterator::cmpByDynInfo(const void* a, const void* b)
   int cmp_ty = (int)x->type() - (int)y->type();
   if (cmp_ty != 0) {
     return cmp_ty;
+  }
+
+
+  // 4. distinguish by id
+  int cmp_id = (int)x->id() - (int)y->id();
+  if (cmp_id != 0) {
+    return cmp_id;
   }
 
   // *. Could compare childCount() and other aspects of children.
