@@ -34,7 +34,7 @@ ompt_placeholders_t ompt_placeholders;
 //----------------------------------------------------------------------------
 
 void 
-omp_idle(void)
+omp_idle_state(void)
 {
   // this function is a placeholder that represents the calling context of
   // idle OpenMP worker threads. It is not meant to be invoked.
@@ -42,7 +42,7 @@ omp_idle(void)
 
 
 void 
-omp_overhead(void)
+omp_overhead_state(void)
 {
   // this function is a placeholder that represents the calling context of
   // threads working in the OpenMP runtime.  It is not meant to be invoked.
@@ -50,7 +50,7 @@ omp_overhead(void)
 
 
 void 
-omp_barrier_wait(void)
+omp_barrier_wait_state(void)
 {
   // this function is a placeholder that represents the calling context of
   // threads waiting for a barrier in the OpenMP runtime. It is not meant 
@@ -59,7 +59,7 @@ omp_barrier_wait(void)
 
 
 void 
-omp_task_wait(void)
+omp_task_wait_state(void)
 {
   // this function is a placeholder that represents the calling context of
   // threads waiting for a task in the OpenMP runtime. It is not meant 
@@ -68,7 +68,7 @@ omp_task_wait(void)
 
 
 void 
-omp_mutex_wait(void)
+omp_mutex_wait_state(void)
 {
   // this function is a placeholder that represents the calling context of
   // threads waiting for a mutex in the OpenMP runtime. It is not meant 
@@ -114,7 +114,7 @@ init_placeholder(ompt_placeholder_t *p, void *pc)
 #define OMPT_PLACEHOLDER_MACRO(f)               \
   {                                             \
     f ## _t fn = (f ## _t) ompt_fn_lookup(#f);  \
-    if (!fn) fn = f;                            \
+    if (!fn) fn = f ## _state;                            \
     init_placeholder(&ompt_placeholders.f, fn); \
   }
 
