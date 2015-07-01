@@ -111,13 +111,13 @@ RealPathMgr& s_realpathMgr = RealPathMgr::singleton();
 
 uint ANode::s_nextUniqueId = 1;
 
-const std::string Tree::UnknownLMNm   = "~unknown-load-module~";
+const std::string Tree::UnknownLMNm   = "<unknown load module>";
 
-const std::string Tree::UnknownFileNm = "~unknown-file~";
+const std::string Tree::UnknownFileNm = "<unknown file>";
 
-const std::string Tree::UnknownProcNm = "~unknown-proc~";
+const std::string Tree::UnknownProcNm = "<unknown procedure>";
 
-const std::string Tree::PartialUnwindProcNm = "Partial Call Paths";
+const std::string Tree::PartialUnwindProcNm = "<partial call paths>";
 
 const SrcFile::ln Tree::UnknownLine = SrcFile::ln_NULL;
 

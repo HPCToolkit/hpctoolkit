@@ -89,7 +89,8 @@ MYSOURCES = \
 	\
 	Flat-ProfileData.hpp Flat-ProfileData.cpp \
 	\
-	CallPath-Profile.hpp CallPath-Profile.cpp
+	CallPath-Profile.hpp CallPath-Profile.cpp \
+	NameMappings.hpp NameMappings.cpp 
 
 
 # GNU binutils flags are needed for HPCLIB_ISA.
