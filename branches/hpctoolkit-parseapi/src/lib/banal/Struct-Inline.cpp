@@ -303,4 +303,72 @@ addStmtToTree(TreeNode * root, StringTable & strTab,
   node->stmtMap[vma] = sinfo;
 }
 
+
+// Merge the StmtInfo nodes from the 'src' node to 'dest' and delete
+// them from src.  If there are duplicate statement vma's, then we
+// keep the original.
+//
+void
+mergeInlineStmts(TreeNode * dest, TreeNode * src)
+{
+  if (src == dest) {
+    return;
+  }
+
+  for (auto sit = src->stmtMap.begin(); sit != src->stmtMap.end(); ++sit) {
+    VMA vma = sit->first;
+    auto dit = dest->stmtMap.find(vma);
+
+    if (dit == dest->stmtMap.end()) {
+      dest->stmtMap[vma] = sit->second;
+    }
+  }
+
+  src->stmtMap.clear();
+}
+
+
+// Merge the edge 'flp' and tree 'src' into 'dest' tree.  Delete any
+// leftover nodes from src that are not linked into dest.
+//
+void
+mergeInlineEdge(TreeNode * dest, FLPIndex flp, TreeNode * src)
+{
+  auto dit = dest->nodeMap.find(flp);
+
+  // if flp not in dest, then attach and done
+  if (dit == dest->nodeMap.end()) {
+    dest->nodeMap[flp] = src;
+    return;
+  }
+
+  // merge src into dest's subtree with flp index
+  mergeInlineTree(dit->second, src);
+}
+
+
+// Merge the tree 'src' into 'dest' tree.  Merge the statements, then
+// iterate through src's subtrees.  Delete any leftover nodes from src
+// that are not linked into dest.
+//
+void
+mergeInlineTree(TreeNode * dest, TreeNode * src)
+{
+  if (src == dest) {
+    return;
+  }
+
+  mergeInlineStmts(dest, src);
+  src->stmtMap.clear();
+
+  // merge the subtrees
+  for (auto sit = src->nodeMap.begin(); sit != src->nodeMap.end(); ++sit) {
+    mergeInlineEdge(dest, sit->first, sit->second);
+  }
+  src->nodeMap.clear();
+
+  // now empty
+  delete src;
+}
+
 }  // namespace Inline

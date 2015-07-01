@@ -90,6 +90,7 @@ class StmtInfo;
 class TreeNode;
 
 typedef list <InlineNode> InlineSeqn;
+typedef list <FLPIndex> FLPSeqn;
 typedef map <FLPIndex, TreeNode *, FLPCompare> NodeMap;
 typedef map <VMA, StmtInfo *> StmtMap;
 
@@ -135,6 +136,18 @@ public:
     file_index = strTab.str2index(node.getFileName());
     line_num = (long) node.getLineNum();
     proc_index = strTab.str2index(node.getProcName());
+  }
+
+  bool operator == (const FLPIndex rhs)
+  {
+    return file_index == rhs.file_index
+      && line_num == rhs.line_num
+      && proc_index == rhs.proc_index;
+  }
+
+  bool operator != (const FLPIndex rhs)
+  {
+    return ! (*this == rhs);
   }
 };
 
@@ -195,15 +208,18 @@ public:
     stmtMap.clear();
   }
 
-  // recursively delete the subtrees and stmts
+  // recursively delete the stmts and subtrees
   ~TreeNode()
   {
-    for (NodeMap::iterator nit = nodeMap.begin(); nit != nodeMap.end(); ++nit) {
-      delete nit->second;
-    }
     for (StmtMap::iterator sit = stmtMap.begin(); sit != stmtMap.end(); ++sit) {
       delete sit->second;
     }
+    stmtMap.clear();
+
+    for (NodeMap::iterator nit = nodeMap.begin(); nit != nodeMap.end(); ++nit) {
+      delete nit->second;
+    }
+    nodeMap.clear();
   }
 };
 
@@ -216,6 +232,15 @@ bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
 void
 addStmtToTree(TreeNode * root, StringTable & strTab,
 	      VMA vma, string & filenm, SrcFile::ln line, string & procnm);
+
+void
+mergeInlineStmts(TreeNode * dest, TreeNode * src);
+
+void
+mergeInlineEdge(TreeNode * dest, FLPIndex flp, TreeNode * src);
+
+void
+mergeInlineTree(TreeNode * dest, TreeNode * src);
 
 }  // namespace Inline
 

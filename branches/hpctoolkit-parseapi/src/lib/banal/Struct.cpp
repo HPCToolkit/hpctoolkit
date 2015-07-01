@@ -135,6 +135,7 @@ using namespace Prof;
 
 using namespace Dyninst;
 using namespace SymtabAPI;
+using namespace Inline;
 #endif
 
 #ifdef BANAL_USE_PARSEAPI
@@ -1758,12 +1759,15 @@ doLoop(ProcInfo, BlockSet &, LoopTreeNode *,
        StringTable &, ProcNameMgr *);
 
 static void
-doBlock(ProcInfo, BlockSet &, Block *, Inline::TreeNode *,
+doBlock(ProcInfo, BlockSet &, Block *, TreeNode *,
 	StringTable &, ProcNameMgr *);
 
 static void
 findLoopBegin(ProcInfo, Loop *, vector <Block *> &, vector <Edge *> &,
 	      string &, string &, SrcFile::ln &, VMA &);
+
+static void
+reparentInlineLoop(TreeNode *, FLPSeqn &, VMA);
 
 //****************************************************************************
 
@@ -1797,7 +1801,7 @@ buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
 #endif
 
   // process any blocks not in a loop
-  Inline::TreeNode root;
+  TreeNode root;
 
   for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
     Block * block = *bit;
@@ -1855,7 +1859,7 @@ doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
   Loop * loop = ltnode->loop;
 
   // inline tree for this loop
-  Inline::TreeNode root;
+  TreeNode root;
 
   // the loop's entry blocks
   vector <Block *> entBlocks;
@@ -1900,7 +1904,25 @@ doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
   }
 
 #if DEBUG_CFG_SOURCE
-  cout << "\ninline tree for loop:  " << ltnode->name()
+  cout << "\nraw inline tree for loop:  " << ltnode->name()
+       << "  0x" << hex << vma << dec << "\n"
+       << "l=" << line << "  f='" << filenm << "'  p='" << procnm << "'\n\n";
+  debugInlineTree(&root, strTab, 0);
+#endif
+
+  // path to loop node in inline tree
+  InlineSeqn vma_seqn;
+  FLPSeqn path;
+
+  analyzeAddr(vma_seqn, vma);
+  for (auto it = vma_seqn.begin(); it != vma_seqn.end(); ++it) {
+    path.push_back(FLPIndex(strTab, *it));
+  }
+
+  reparentInlineLoop(&root, path, vma);
+
+#if DEBUG_CFG_SOURCE
+  cout << "\nreparented inline tree for loop:  " << ltnode->name()
        << "  0x" << hex << vma << dec << "\n"
        << "l=" << line << "  f='" << filenm << "'  p='" << procnm << "'\n\n";
   debugInlineTree(&root, strTab, 0);
@@ -1911,7 +1933,7 @@ doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
 
 static void
 doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
-	Inline::TreeNode * root, StringTable & strTab, ProcNameMgr * nameMgr)
+	TreeNode * root, StringTable & strTab, ProcNameMgr * nameMgr)
 {
   if (block == NULL || visited[block]) {
     return;
@@ -1973,6 +1995,62 @@ findLoopBegin(ProcInfo pinfo, Loop * loop,
   }
 }
 
+
+// Move any statements or nodes in the inline tree for a loop that are
+// not within the subtree of the loop's header to inside that subtree.
+// After reparenting, the tree should be a single spine down to the
+// loop header and then a subtree.  This happens when the inline info
+// does not match up with the ParseAPI loop tree.
+//
+static void
+reparentInlineLoop(TreeNode * root, FLPSeqn & path, VMA vma)
+{
+  TreeNode *node, *loopNode;
+
+  // find loop node and verify vma.  FIXME: this will fail if vma is
+  // not in the tree (improve loop header algorithm).
+  node = root;
+  for (auto pit = path.begin(); pit != path.end(); ++pit) {
+    auto nit = node->nodeMap.find(*pit);
+
+    if (nit == node->nodeMap.end()) {
+      DIAG_Die("reparentInlineLoop: unable to follow flp path");
+    }
+    node = nit->second;
+  }
+  loopNode = node;
+
+  if (loopNode->stmtMap.find(vma) == loopNode->stmtMap.end()) {
+    DIAG_Die("reparentInlineLoop: unable to find vma in loop tree");
+  }
+
+  // reparent all stmts and edges not on path to loop node
+  node = root;
+  auto pit = path.begin();
+  while (node != loopNode) {
+    mergeInlineStmts(loopNode, node);
+
+    for (auto nit = node->nodeMap.begin(); nit != node->nodeMap.end(); ) {
+      FLPIndex flp = nit->first;
+      TreeNode *subtree = nit->second;
+      auto next_it = nit;  next_it++;
+
+      if (flp != *pit) {
+	node->nodeMap.erase(nit);
+	mergeInlineEdge(loopNode, flp, subtree);
+      }
+      nit = next_it;
+    }
+
+    if (node->nodeMap.size() != 1) {
+      DIAG_Die("reparentInlineLoop: failed to reparent all subtrees");
+    }
+
+    node = node->nodeMap.find(*pit)->second;
+    pit++;
+  }
+}
+
 }  // namespace Struct
 }  // namespace BAnal
 
@@ -2030,10 +2108,10 @@ debugLoop(LoopTreeNode * ltnode, Prof::Struct::Loop * loopNode,
 
 
 void
-debugInlineTree(Inline::TreeNode * node, StringTable & strTab, int depth)
+debugInlineTree(TreeNode * node, StringTable & strTab, int depth)
 {
   for (auto sit = node->stmtMap.begin(); sit != node->stmtMap.end(); ++sit) {
-    Inline::StmtInfo *sinfo = sit->second;
+    StmtInfo *sinfo = sit->second;
 
     for (int i = 1; i <= depth; i++) {
       cout << INDENT;
@@ -2045,7 +2123,7 @@ debugInlineTree(Inline::TreeNode * node, StringTable & strTab, int depth)
   }
 
   for (auto nit = node->nodeMap.begin(); nit != node->nodeMap.end(); ++nit) {
-    Inline::FLPIndex flp = nit->first;
+    FLPIndex flp = nit->first;
 
     for (int i = 1; i <= depth; i++) {
       cout << INDENT;
