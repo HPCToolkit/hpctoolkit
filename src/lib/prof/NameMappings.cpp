@@ -49,11 +49,17 @@ typedef struct {
 //******************************************************************************
 
 static NameMapping renamingTable[] = { 
-  { "monitor_main_fence2",    "<program root>"     },
   { "monitor_main",           "<program root>"     },
+  { "monitor_main_fence1",    "<program root>"     },
+  { "monitor_main_fence2",    "<program root>"     },
+  { "monitor_main_fence3",    "<program root>"     },
+  { "monitor_main_fence4",    "<program root>"     },
 
-  { "monitor_thread_fence",   "<thread root>"      },
   { "monitor_begin_thread",   "<thread root>"      },
+  { "monitor_thread_fence1",  "<thread root>"      },
+  { "monitor_thread_fence2",  "<thread root>"      },
+  { "monitor_thread_fence3",  "<thread root>"      },
+  { "monitor_thread_fence4",  "<thread root>"      },
 
   { "omp_idle_state",         "<omp idle>"         },
   { "omp_idle",               "<omp idle>"         },
