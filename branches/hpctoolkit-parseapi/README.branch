@@ -62,6 +62,9 @@ we don't really need it.
 into patches-82.  At some point, Wisconsin will add this to git head
 and then this patch will become a duplicate.
 
+As of June 24, 2015, this patch is now included in git master,
+so don't apply this step.
+
 4.D -- if the patch 'patch-symtab-dwarfwalker' fails to apply cleanly
 in symtabAPI 'make fetch', then delete or rename it.
 
