@@ -230,16 +230,6 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 #define DEBUG_CFG_SOURCE  0
 
 #if DEBUG_CFG_SOURCE
-
-#ifdef BANAL_USE_PARSEAPI
-static void
-debugLoop(LoopTreeNode *, Prof::Struct::Loop *, vector <Block *> &,
-	  vector <Edge *> &, string &, string &, SrcFile::ln, VMA);
-
-static void
-debugInlineTree(Inline::TreeNode *, StringTable &, int);
-#endif
-
 static void
 debugStmt(Prof::Struct::Stmt *, VMA, string &, string &, SrcFile::ln);
 
@@ -1726,6 +1716,7 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 // 3. findLoopBegin() -- look at entry blocks, back edges and line
 // numbers and make an intelligent decision for where a loop begins in
 // the source code.
+// ---> mostly done, except for advanced heuristics
 //
 // 4. Decide how to handle basic blocks that belong to multiple
 // functions.
@@ -1747,27 +1738,34 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 namespace BAnal {
 namespace Struct {
 
+class HeaderInfo;
+
 typedef map <Block *, bool> BlockSet;
-typedef list <Prof::Struct::ACodeNode *> NodeList;
+typedef map <VMA, HeaderInfo> HeaderList;
 
 static void
 doLoopTree(ProcInfo, BlockSet &, LoopTreeNode *,
 	   StringTable &, ProcNameMgr *);
 
 static void
-doLoop(ProcInfo, BlockSet &, LoopTreeNode *,
+doLoop(ProcInfo, BlockSet &, Loop *, const string &,
        StringTable &, ProcNameMgr *);
 
 static void
 doBlock(ProcInfo, BlockSet &, Block *, TreeNode *,
 	StringTable &, ProcNameMgr *);
 
-static void
-findLoopBegin(ProcInfo, Loop *, vector <Block *> &, vector <Edge *> &,
-	      string &, string &, SrcFile::ln &, VMA &);
+static VMA
+findLoopBegin(ProcInfo, Loop *, const string &);
 
 static void
 reparentInlineLoop(TreeNode *, FLPSeqn &, VMA);
+
+static void
+debugLoop(Loop *, const string &, vector <Edge *> &, HeaderList &);
+
+static void
+debugInlineTree(TreeNode *, StringTable &, int);
 
 //****************************************************************************
 
@@ -1834,12 +1832,11 @@ doLoopTree(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
     return;
   }
 
-  // the top-level loop becomes the new curScope for its children.
   // note: the root of the loop tree is empty to represent a loop
   // forest.
-  //
   if (ltnode->loop != NULL) {
-    doLoop(pinfo, visited, ltnode, strTab, nameMgr);
+    string loopName(ltnode->name());
+    doLoop(pinfo, visited, ltnode->loop, loopName, strTab, nameMgr);
   }
 
   // process the children of the loop tree
@@ -1852,50 +1849,35 @@ doLoopTree(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
 
 
 static void
-doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
+doLoop(ProcInfo pinfo, BlockSet & visited,
+       Loop * loop, const string & loopName,
        StringTable & strTab, ProcNameMgr * nameMgr)
 {
-  // promised not to be null
-  Loop * loop = ltnode->loop;
-
   // inline tree for this loop
   TreeNode root;
 
-  // the loop's entry blocks
-  vector <Block *> entBlocks;
-  int num_ents = loop->getLoopEntries(entBlocks);
-
   // the loop's back edges
   vector <Edge *> backEdges;
-  int num_back = loop->getBackEdges(backEdges);
+  loop->getBackEdges(backEdges);
 
-  // create the loop scope node, but don't locate it.
+  // put the loop header into the tree.  for some irreducible loops,
+  // the header is not inside one of the exclusive blocks.
+  VMA loop_vma = findLoopBegin(pinfo, loop, loopName);
   string filenm;
   string procnm;
   SrcFile::ln line;
-  VMA vma;
 
-  findLoopBegin(pinfo, loop, entBlocks, backEdges, filenm, procnm, line, vma);
+  pinfo.proc_bin->findSrcCodeInfo(loop_vma, 0, procnm, filenm, line);
   procnm = BinUtil::canonicalizeProcName(procnm, nameMgr);
-
-  // this is now deprecated and used only for debug info
-  Prof::Struct::Loop * loopNode =
-    new Prof::Struct::Loop(NULL, filenm, line, line);
-
-  loopNode->vmaSet().insert(vma, vma + 1);
+  addStmtToTree(&root, strTab, loop_vma, filenm, line, procnm);
 
 #if DEBUG_CFG_SOURCE
-  debugLoop(ltnode, loopNode, entBlocks, backEdges, filenm, procnm, line, vma);
+  cout << "\nheader:  " << loopName << "  0x" << hex << loop_vma << dec
+       << "\nl=" << line << "  f='" << filenm
+       << "'  p='" << procnm << "'\n";
 #endif
 
-  // insert the loop's exclusive blocks at the function's top-level
-  // scope, starting with the entry blocks first.
-  //
-  for (uint i = 0; i < entBlocks.size(); i++) {
-    doBlock(pinfo, visited, entBlocks[i], &root, strTab, nameMgr);
-  }
-
-  // add the remaining exclusive blocks
+  // insert the loop's exclusive blocks
   vector <Block *> blist;
   loop->getLoopBasicBlocksExclusive(blist);
 
@@ -1904,29 +1886,30 @@ doLoop(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
   }
 
 #if DEBUG_CFG_SOURCE
-  cout << "\nraw inline tree for loop:  " << ltnode->name()
-       << "  0x" << hex << vma << dec << "\n"
+  cout << "\nraw inline tree for loop:  " << loopName
+       << "  0x" << hex << loop_vma << dec << "\n"
        << "l=" << line << "  f='" << filenm << "'  p='" << procnm << "'\n\n";
   debugInlineTree(&root, strTab, 0);
 #endif
 
-  // path to loop node in inline tree
-  InlineSeqn vma_seqn;
-  FLPSeqn path;
+  // reparent the inline tree so that all loop statements are inside
+  // the inline sequence for the loop.
+  InlineSeqn seqn;
+  FLPSeqn flp_path;
 
-  analyzeAddr(vma_seqn, vma);
-  for (auto it = vma_seqn.begin(); it != vma_seqn.end(); ++it) {
-    path.push_back(FLPIndex(strTab, *it));
+  analyzeAddr(seqn, loop_vma);
+  for (auto it = seqn.begin(); it != seqn.end(); ++it) {
+    flp_path.push_back(FLPIndex(strTab, *it));
   }
 
-  reparentInlineLoop(&root, path, vma);
+  reparentInlineLoop(&root, flp_path, loop_vma);
 
 #if DEBUG_CFG_SOURCE
-  cout << "\nreparented inline tree for loop:  " << ltnode->name()
-       << "  0x" << hex << vma << dec << "\n"
+  cout << "\nreparented inline tree for loop:  " << loopName
+       << "  0x" << hex << loop_vma << dec << "\n"
        << "l=" << line << "  f='" << filenm << "'  p='" << procnm << "'\n\n";
   debugInlineTree(&root, strTab, 0);
-  cout << "\nend loop:  " << ltnode->name() << "  0x" << hex << vma << dec << "\n";
+  cout << "\nend loop:  " << loopName << "  0x" << hex << loop_vma << dec << "\n";
 #endif
 }
 
@@ -1958,12 +1941,8 @@ doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
     pinfo.proc_bin->findSrcCodeInfo(vma, 0, procnm, filenm, line);
     procnm = BinUtil::canonicalizeProcName(procnm, nameMgr);
 
-    // this is now deprecated and used only for debug info
-    Prof::Struct::Stmt * stmt =
-      new Prof::Struct::Stmt(NULL, line, line, vma, vma_end);
-
 #if DEBUG_CFG_SOURCE
-    debugStmt(stmt, vma, filenm, procnm, line);
+    debugStmt(NULL, vma, filenm, procnm, line);
 #endif
 
     addStmtToTree(root, strTab, vma, filenm, line, procnm);
@@ -1971,28 +1950,128 @@ doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
 }
 
 
-static void
-findLoopBegin(ProcInfo pinfo, Loop * loop,
-	      vector <Block *> & entBlocks, vector <Edge *> & backEdges,
-	      string & filenm, string & procnm, SrcFile::ln & line, VMA & vma)
-{
-  // FIXME: this is a naive placeholder function that just uses the
-  // location of the first back edge.  But actually, back edges work
-  // pretty well and most loops have only one back edge, so it
-  // probably produces a decent answer much of the time.
+// Info on candidates for loop header.
+class HeaderInfo {
+public:
+  bool  is_src;
+  bool  in_incl;
+  bool  in_excl;
+  int   depth;
 
-  filenm = "";
-  procnm = "";
-  line = 0;
-  vma = 0;
-
-  auto eit = backEdges.begin();
-
-  if (eit != backEdges.end()) {
-    Block * block = (*eit)->src();
-    vma = block->last();
-    pinfo.proc_bin->findSrcCodeInfo(vma, 0, procnm, filenm, line);
+  HeaderInfo(bool src = false)
+  {
+    is_src = src;
+    in_incl = false;
+    in_excl = false;
+    depth = 0;
   }
+};
+
+
+// Select the vma to represent the loop header.  Candidates are the
+// source and target of all back edges.  Select the best candidate
+// based the following order:
+//
+//  1. must be within the loop's exclusive blocks.
+//  2. prefer most shallow inline depth.
+//  3. prefer source over target.
+//
+// FIXME: need to add more advanced heuristics for irreducible loops.
+//
+static VMA
+findLoopBegin(ProcInfo pinfo, Loop * loop, const string & loopName)
+{
+  string procName = pinfo.proc_parse->name();
+
+  vector <Edge *> backEdges;
+  loop->getBackEdges(backEdges);
+
+  // all loops must have at least one back edge.
+  if (backEdges.empty()) {
+    DIAG_Die("loop '" << loopName << "' in function '" << procName
+	     << "' has no back edge");
+  }
+
+  // Step 1 -- build the list of candidates.
+  HeaderList clist;
+  HeaderList copy;
+
+  for (auto eit = backEdges.begin(); eit != backEdges.end(); ++eit) {
+    VMA src_vma = (*eit)->src()->last();
+    VMA targ_vma = (*eit)->trg()->start();
+
+    auto cit = clist.find(src_vma);
+    if (cit == clist.end()) {
+      clist[src_vma] = HeaderInfo(true);
+    }
+    else {
+      cit->second.is_src = true;
+    }
+
+    cit = clist.find(targ_vma);
+    if (cit == clist.end()) {
+      clist[targ_vma] = HeaderInfo(false);
+    }
+  }
+
+  // add inline depth and incl/excl inside loop.
+  for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
+    VMA vma = cit->first;
+    InlineSeqn seqn;
+
+    analyzeAddr(seqn, vma);
+    cit->second.in_incl = loop->containsAddressInclusive(vma);
+    cit->second.in_excl = loop->containsAddress(vma);
+    cit->second.depth = seqn.size();
+  }
+
+#if DEBUG_CFG_SOURCE
+  debugLoop(loop, loopName, backEdges, clist);
+#endif
+
+  // Step 2 -- eliminate any candidates not in the loop.
+  copy = clist;
+  for (auto cit = clist.begin(); cit != clist.end(); ) {
+    auto next_it = cit;  next_it++;
+
+    if (! (cit->second.in_incl && cit->second.in_excl)) {
+      clist.erase(cit);
+    }
+    cit = next_it;
+  }
+
+  // something wrong if no back edge is inside the loop.
+  if (clist.empty()) {
+    DIAG_WMsgIf(1, "loop '" << loopName << "' in function '" << procName
+		<< "' near addr 0x" << hex << copy.begin()->first << dec
+		<< " has no back edge inside the loop");
+    clist = copy;
+  }
+
+  // Step 3 -- sort by inline depth (most shallow).
+  int min_depth = INT_MAX;
+  for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
+    min_depth = std::min(min_depth, cit->second.depth);
+  }
+
+  for (auto cit = clist.begin(); cit != clist.end(); ) {
+    auto next_it = cit;  next_it++;
+
+    if (cit->second.depth > min_depth) {
+      clist.erase(cit);
+    }
+    cit = next_it;
+  }
+
+  // Step 4 -- prefer source over target.
+  for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
+    if (cit->second.is_src) {
+      return cit->first;
+    }
+  }
+
+  // Step 5 -- take anything left over.
+  return clist.begin()->first;
 }
 
 
@@ -2075,35 +2154,38 @@ namespace Struct {
 
 #ifdef BANAL_USE_PARSEAPI
 static void
-debugLoop(LoopTreeNode * ltnode, Prof::Struct::Loop * loopNode,
-	  vector <Block *> & entBlocks, vector <Edge *> & backEdges,
-	  string & filenm, string & procnm, SrcFile::ln line, VMA vma)
+debugLoop(Loop * loop, const string & loopName,
+	  vector <Edge *> & backEdges, HeaderList & clist)
 {
-  cout << "\nloop:  " << ltnode->name()
-       << ((entBlocks.size() == 1) ? "  (reducible)" : "  (irreducible)") << "\n";
+  vector <Block *> entBlocks;
+  int num_ents = loop->getLoopEntries(entBlocks);
 
-  cout << "loop node: (n=" << loopNode->id() << ")"
-       << "  0x" << hex << vma << dec << "  l=" << line
-       << "  f='" << filenm << "'  p='" << procnm << "'\n";
+  cout << "\nloop:  " << loopName
+       << ((num_ents == 1) ? "  (reducible)" : "  (irreducible)") << "\n";
 
   cout << "entry blocks:" << hex;
   for (auto bit = entBlocks.begin(); bit != entBlocks.end(); ++bit) {
-    Block * block = *bit;
-    cout << "  0x" << block->start();
+    cout << "  0x" << (*bit)->start();
   }
 
   cout << "\nback edge sources:";
   for (auto eit = backEdges.begin(); eit != backEdges.end(); ++eit) {
-    Block * block = (*eit)->src();
-    cout << "  0x" << block->last();
+    cout << "  0x" << (*eit)->src()->last();
   }
 
   cout << "\nback edge targets:";
   for (auto eit = backEdges.begin(); eit != backEdges.end(); ++eit) {
-    Block * block = (*eit)->trg();
-    cout << "  0x" << block->start();
+    cout << "  0x" << (*eit)->trg()->start();
   }
-  cout << "\n" << dec;
+
+  cout << "\n\ncandidates:\n";
+  for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
+    cout << "0x" << hex << cit->first << dec
+	 << "  incl: " << cit->second.in_incl
+	 << "  excl: " << cit->second.in_excl
+	 << "  depth: " << cit->second.depth << "  "
+	 << ((cit->second.is_src) ? "src" : "targ") << "\n";
+  }
 }
 
 
@@ -2144,8 +2226,12 @@ static void
 debugStmt(Prof::Struct::Stmt * stmt, VMA vma,
 	  string & filenm, string & procnm, SrcFile::ln line)
 {
-  cout << INDENT << "stmt: (n=" << stmt->id() << ")"
-       << "  0x" << hex << vma << dec
+  cout << INDENT << "stmt:";
+
+  if (stmt != NULL) {
+    cout << " (n=" << stmt->id() << ")";
+  }
+  cout << "  0x" << hex << vma << dec
        << "  l=" << line << "  f='" << filenm << "'  p='" << procnm << "'\n";
 
 #ifdef BANAL_USE_SYMTAB

@@ -291,16 +291,14 @@ addStmtToTree(TreeNode * root, StringTable & strTab,
     }
   }
 
-  // add statement to last node in the sequence.  statements are
-  // defined by their vma, so there should be no duplicates.
-  StmtInfo *sinfo = new StmtInfo(strTab, vma, filenm, line, procnm);
+  // add statement to last node in the sequence.  if there are
+  // duplicates, then keep the original.
   auto sit = node->stmtMap.find(vma);
 
-  if (sit != node->stmtMap.end()) {
-    DIAG_WMsgIf(1, "addStmtToTree: duplicate vma in inline tree: 0x"
-		<< hex << vma << dec);
+  if (sit == node->stmtMap.end()) {
+    StmtInfo *sinfo = new StmtInfo(strTab, vma, filenm, line, procnm);
+    node->stmtMap[vma] = sinfo;
   }
-  node->stmtMap[vma] = sinfo;
 }
 
 
