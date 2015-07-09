@@ -227,6 +227,37 @@ AC_ARG_ENABLE([develop],
 AC_MSG_RESULT([${OPT_ENABLE_DEVELOP}])
 AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
 
+
+#-------------------------------------------------
+# enable-strip-debug
+#-------------------------------------------------
+
+# Strip the debug section from the libraries used in hpcrun/hpclink so
+# that our code does not appear in the viewer.
+
+default=yes
+if test "$OPT_ENABLE_DEVELOP" = yes ; then
+  default=no
+fi
+
+AC_ARG_ENABLE([strip-debug],
+  [AS_HELP_STRING([--enable-strip-debug],
+      [strip the debug section from the hpcrun libraries
+       (default yes, unless --enable-develop is used)])],
+  [],
+  [enable_strip_debug="$default"])
+
+case "$enable_strip_debug" in
+  no ) ;;
+  * )  enable_strip_debug=yes ;;
+esac
+
+AC_MSG_CHECKING([whether to strip debug section from hpcrun libraries])
+AC_MSG_RESULT([$enable_strip_debug])
+
+AM_CONDITIONAL(OPT_STRIP_HPCRUN_LIBS, [test "$enable_strip_debug" = yes])
+
+
 #----------------------------------------------------------------------------
 # Prerequisites: compilers, tools, system libraries
 #----------------------------------------------------------------------------
