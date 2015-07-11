@@ -57,11 +57,20 @@
 #include <hpcrun/trace.h>
 #include <hpcrun/unresolved.h>
 
+#include "ompt-callstack.h"
 #include "ompt-interface.h"
 #include "ompt-state-placeholders.h"
 #include "ompt-defer.h"
 #include "ompt-region.h"
 #include "ompt-task-map.h"
+
+#if defined(HOST_CPU_PPC) 
+#include "ppc64-gnu-omp.h"
+#elif defined(HOST_CPU_x86) || defined(HOST_CPU_x86_64)
+#include "x86-gnu-omp.h"
+#else
+#error "invalid architecture type"
+#endif
 
 
 //******************************************************************************
@@ -175,7 +184,7 @@ ompt_elide_runtime_frame(
   if (state == ompt_state_idle) {
     int master = TD_GET(master);
     if (!master) { 
-      set_frame(*bt_outer, &ompt_placeholders.omp_idle);
+      set_frame(*bt_outer, &ompt_placeholders.ompt_idle);
       *bt_inner = *bt_outer; 
       bt->bottom_frame_elided = false;
       bt->partial_unwind = false;
@@ -346,7 +355,7 @@ ompt_elide_runtime_frame(
   {
     int master = TD_GET(master);
     if (!master) { 
-      set_frame(*bt_outer, &ompt_placeholders.omp_idle);
+      set_frame(*bt_outer, &ompt_placeholders.ompt_idle);
       *bt_inner = *bt_outer; 
       bt->bottom_frame_elided = false;
       bt->partial_unwind = false;
@@ -434,8 +443,16 @@ lookup_region_id(uint64_t region_id)
   return result;
 }
 
+int gomp_api()
+{
+  return 1;
+} 
+
+
 cct_node_t *
-ompt_region_context(uint64_t region_id, int levels_to_skip)
+ompt_region_context(uint64_t region_id, 
+		    ompt_context_type_t ctype, 
+		    int levels_to_skip)
 {
   cct_node_t *node;
   ucontext_t uc;
@@ -444,16 +461,32 @@ ompt_region_context(uint64_t region_id, int levels_to_skip)
   node = hpcrun_sample_callpath(&uc, 0, 0, ++levels_to_skip, 1).sample_node;
   TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
 
-#ifdef GOMP
-  cct_node_t *sibling = NULL;
-  if (node) {
-    sibling = hpcrun_cct_insert_addr
-      (hpcrun_cct_parent(node), 
-       &(ADDR2(hpcrun_cct_addr(node)->ip_norm.lm_id, 
-	       hpcrun_cct_addr(node)->ip_norm.lm_ip-5L)));
+  if (node && gomp_api()) {
+    // extract the load module and offset of the leaf CCT node at the 
+    // end of a call path representing a parallel region
+    cct_addr_t *n = hpcrun_cct_addr(node);
+    cct_node_t *n_parent = hpcrun_cct_parent(node); 
+    uint16_t lm_id = n->ip_norm.lm_id; 
+    uintptr_t lm_ip = n->ip_norm.lm_ip;
+    uintptr_t master_outlined_fn_return_addr;
+
+    // adjust the address to point to return address of the call to 
+    // the outlined function in the master
+    if (ctype == ompt_context_begin) {
+      void *ip = hpcrun_denormalize_ip(&(n->ip_norm));
+      uint64_t offset = offset_to_pc_after_next_call(ip);
+      master_outlined_fn_return_addr = lm_ip + offset;
+    } else { 
+      uint64_t offset = length_of_call_instruction();
+      master_outlined_fn_return_addr = lm_ip - offset;
+    }
+    // ensure that there is a leaf CCT node with the proper return address
+    // to use as the context. when using the GNU API for OpenMP, it will 
+    // be a sibling to one returned by sample_callpath.
+    cct_node_t *sibling = hpcrun_cct_insert_addr
+      (n_parent, &(ADDR2(lm_id, master_outlined_fn_return_addr)));
+    node = sibling;
   }
-  node = sibling;
-#endif
 
   return node;
 }
@@ -462,7 +495,7 @@ cct_node_t *
 ompt_parallel_begin_context(ompt_parallel_id_t region_id, int levels_to_skip)
 {
   if (ompt_eager_context) 
-    return ompt_region_context(region_id, ++levels_to_skip);
+    return ompt_region_context(region_id, ompt_context_begin, ++levels_to_skip);
   else return NULL;
 }
 
