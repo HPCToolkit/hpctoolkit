@@ -58,7 +58,6 @@ ompt_parallel_begin_internal(
 ) 
 {
   hpcrun_safe_enter();
-  cct_node_t *callpath = ompt_parallel_begin_context(region_id, ++levels_to_skip);
   thread_data_t *td = hpcrun_get_thread_data();
   uint64_t parent_region_id = hpcrun_ompt_get_parallel_id(0);
 
@@ -67,6 +66,8 @@ ompt_parallel_begin_internal(
     // (the one that unwinds to FENCE_MAIN)
     td->master = 1;
   }
+
+  cct_node_t *callpath = ompt_parallel_begin_context(region_id, ++levels_to_skip);
 
   assert(region_id != 0);
   ompt_region_map_insert((uint64_t) region_id, callpath);
@@ -121,6 +122,7 @@ ompt_parallel_end_internal(
       if (ompt_region_map_entry_callpath_get(record) == NULL) {
 	ompt_region_map_entry_callpath_set(record, 
 					   ompt_region_context(parallel_id, 
+                                                               ompt_context_end, 
                                                                ++levels_to_skip));
       }
     } else {

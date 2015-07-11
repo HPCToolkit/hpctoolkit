@@ -131,6 +131,7 @@
 
 #define PPC_OP_D_MASK    0xfc000000  /* opcode */
 #define PPC_OP_DS_MASK   0xfc000003  /* opcode, extra-opc */
+#define PPC_OP_I_MASK    0xfc000003  /* opcode, AA, LK */
 #define PPC_OP_X_MASK    0xfc0007fe  /* opcode, extra-opc */
 #define PPC_OP_XFX_MASK  0xfc0007fe  /* opcode, extra-opc */
 #define PPC_OP_XFX_SPR_MASK (PPC_OP_XFX_MASK | PPC_OPND_REG_SPR_MASK)
@@ -153,9 +154,8 @@
 #define PPC_OP_OR     0x7c000378 /* X-form */
 #define PPC_OP_MR     PPC_OP_OR  /* X-form: mr Rx Ry = or Rx Ry Ry */
 
-
 #define PPC_OP_BLR    0x4e800020 /* XL-form */
-
+#define PPC_OP_BL     0x48000001 /* I-form */
 
 #define PPC_OP_MFSPR  0x7c0002a6  /* XFX-form (2 args) */
 #define PPC_OP_MFLR   0x7c0802a6  /* XFX-form (1 arg) */
