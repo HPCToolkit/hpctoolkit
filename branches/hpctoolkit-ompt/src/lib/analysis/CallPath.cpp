@@ -86,7 +86,6 @@ using std::string;
 #include <lib/profxml/XercesUtil.hpp>
 #include <lib/profxml/PGMReader.hpp>
 
-#include <lib/prof/CCT-Merge.hpp>
 #include <lib/prof-lean/hpcrun-metric.h>
 
 #include <lib/binutils/LM.hpp>
@@ -786,9 +785,6 @@ static void
 pruneTrivialNodes(Prof::CallPath::Profile& prof);
 
 static void
-coalesceOpenMPRegions(Prof::CallPath::Profile& prof);
-
-static void
 mergeCilkMain(Prof::CallPath::Profile& prof);
 
 static void
@@ -821,7 +817,6 @@ void
 Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
 			      string agent, bool GCC_ATTR_UNUSED doNormalizeTy)
 {
-  coalesceOpenMPRegions(prof);
   pruneTrivialNodes(prof);
 
   if (agent == "agent-cilk") {
@@ -846,140 +841,6 @@ Analysis::CallPath::pruneStructTree(Prof::CallPath::Profile& prof)
   Prof::Struct::Root* rootStrct = prof.structure()->root();
   rootStrct->aggregateMetrics(Prof::CallPath::Profile::StructMetricIdFlg);
   rootStrct->pruneByMetrics();
-}
-
-
-//***************************************************************************
-
-// coalesceOpenMPRegions:
-// 
-// When using the GOMP API for OpenMP, the calling context for work by the
-// master differs from the context seen in the begin and end callbacks.
-// Here, we unify peer nodes that represent calls to the same outlined 
-// parallel procedure. If I could envision a better way, I certainly 
-// wouldn't do this.
-//
-
-typedef std::pair<int, std::string> ProcFrameMapKey;
-typedef std::set<Prof::CCT::ProcFrm *> ProcFrameSet;
-
-typedef std::pair<ProcFrameMapKey,  Prof::CCT::ProcFrm *> ProcFrameMapEntry;
-typedef std::multimap<ProcFrameMapKey,  Prof::CCT::ProcFrm *> ProcFrameMap;
-
-static void
-coalesceOpenMPRegions(Prof::CCT::ANode* node, Prof::CCT::MergeContext &mctxt);
-
-static void
-coalesceOpenMPRegions(Prof::CallPath::Profile& prof)
-{
-  Prof::CCT::MergeContext mctxt(prof.cct(), true);
-  coalesceOpenMPRegions(prof.cct()->root(), mctxt);
-}
-
-
-static void
-OMP_frame_insert(Prof::CCT::ANode* node, ProcFrameMap &pfm)
-{
-  using namespace Prof;
-
-  if (node->isLeaf()) { return; }
-
-  for (CCT::ANodeChildIterator it(node); it.Current(); it++) {
-    CCT::ANode* x = it.current();
-
-    CCT::ProcFrm *p =  dynamic_cast<CCT::ProcFrm*>(x);
-    if (p && strstr(p->procName().c_str(), "omp_fn")) {
-      std::cout << "inserting: node " << p->id() 
-                << ", name =" << p->procName() 
-                << ", parent line number = " << p->parent()->begLine() 
-                << std::endl;
-      ProcFrameMapKey key(p->parent()->begLine(), std::string(p->procName()));
-      pfm.insert(ProcFrameMapEntry(key, p)); 
-    }
-  }
-}
-
-
-void OMP_frame_dump(Prof::CCT::ProcFrm *p)
-{
-      std::cout << "  node = " << p << ", id = " << p->id() 
-                << ", name = " << p->procName()
-                << ", parent = " << p->parent() << std::endl;
-}
-
-
-
-void OMP_frame_merge(ProcFrameMap &pfm, Prof::CCT::MergeContext &mctxt)
-{
-  using namespace Prof;
-
-  ProcFrameMap::iterator oi;
-  for (oi = pfm.begin(); oi != pfm.end();) {
-    ProcFrameMap::iterator ii = oi;
-    ProcFrameMap::iterator ii_end = pfm.upper_bound((*oi).first);
-    CCT::ProcFrm *p1 =  (*ii).second;
-    std::cout << "Merging: " << std::endl;
-    OMP_frame_dump(p1);
-    for (ii++; ii != ii_end; ii++) {
-      CCT::ProcFrm *p2 =  (*ii).second;
-      OMP_frame_dump(p2);
-
-#if 0
-      // merge p2 into p1
-      p1->parent()->mergeDeep(p2->parent(), 0, mctxt); // merge the parent callsites 
-      p1->parent()->merge(p2->parent()); // merge the parent callsites 
-      p1->merge(p2); // merge the callees
-#endif
-    }
-    oi = ii_end;
-  }
-}
-
-
-static void
-OMP_frame_find_at_level(Prof::CCT::ANode* node, ProcFrameMap &pfm)
-{
-  using namespace Prof;
-
-  if (node->isLeaf()) { return; }
-
-  for (CCT::ANodeChildIterator it(node); it.Current(); it++) {
-    CCT::ANode* x = it.current();
-
-    if (typeid(*x) == typeid(CCT::Call)) {
-       OMP_frame_insert(x, pfm); 
-    }
-  }
-}
-
-
-static void
-coalesceOpenMPRegions(Prof::CCT::ANode* node, Prof::CCT::MergeContext &mctxt)
-{
-  using namespace Prof;
-
-  if (node->isLeaf()) { return; }
-
-  ProcFrameMap pfm;
-
-  // look for opportunities to coalesce at this level
-  for (CCT::ANodeChildIterator it(node); it.Current(); /* */) {
-    CCT::ANode* x = it.current();
-    it++; // advance iterator -- it is pointing at 'x'
-
-    if (x->isLeaf()) continue;
-
-    OMP_frame_find_at_level(x, pfm);
-  }
-
-  // coalesce at this level
-  if (pfm.size() > 1) OMP_frame_merge(pfm, mctxt);
-
-  // recursively apply coalescing to each subtree of node.
-  for (CCT::ANodeChildIterator it(node); it.Current(); it++) {
-    CCT::ANode* x = it.current();
-    if (!x->isLeaf()) coalesceOpenMPRegions(x, mctxt);
-  }
 }
 
 
