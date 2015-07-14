@@ -369,4 +369,40 @@ mergeInlineTree(TreeNode * dest, TreeNode * src)
   delete src;
 }
 
+
+// Merge the detached loop 'info' into tree 'dest'.  If dest is a
+// detached loop, then 'path' is the FLP path above it.
+void
+mergeInlineLoop(TreeNode * dest, FLPSeqn & path, LoopInfo * info)
+{
+  // follow source and dest paths and remove any common prefix.
+  auto dit = path.begin();
+  auto sit = info->path.begin();
+
+  while (dit != path.end() && sit != info->path.end() && *dit == *sit) {
+    dit++;
+    sit++;
+  }
+
+  // follow or insert the rest of source path in the dest tree.
+  while (sit != info->path.end()) {
+    FLPIndex flp = *sit;
+    auto nit = dest->nodeMap.find(flp);
+    TreeNode *node;
+
+    if (nit != dest->nodeMap.end()) {
+      node = nit->second;
+    }
+    else {
+      node = new TreeNode();
+      dest->nodeMap[flp] = node;
+    }
+
+    dest = node;
+    sit++;
+  }
+
+  dest->loopList.push_back(info);
+}
+
 }  // namespace Inline

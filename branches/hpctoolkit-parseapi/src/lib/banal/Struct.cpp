@@ -1780,6 +1780,7 @@ buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
   Prof::Struct::Proc * topScope = pinfo.proc;
   ParseAPI::Function * func = pinfo.proc_parse;
   StringTable strTab;
+  TreeNode root;
 
 #if DEBUG_CFG_SOURCE
   cout << "\n------------------------------------------------------------\n"
@@ -1796,15 +1797,13 @@ buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
   }
 
   // traverse the loop (Tarjan) tree
-  doLoopTree(pinfo, visited, func->getLoopTree(), strTab, nameMgr);
+  LoopList *llist = doLoopTree(pinfo, visited, func->getLoopTree(), strTab, nameMgr);
 
 #if DEBUG_CFG_SOURCE
   cout << "\nnon-loop blocks:\n";
 #endif
 
   // process any blocks not in a loop
-  TreeNode root;
-
   for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
     Block * block = *bit;
     if (! visited[block]) {
@@ -1812,10 +1811,17 @@ buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
     }
   }
 
+  // merge the loops into the proc's inline tree
+  FLPSeqn empty;
+
+  for (auto it = llist->begin(); it != llist->end(); ++it) {
+    mergeInlineLoop(&root, empty, *it);
+  }
+
 #if DEBUG_CFG_SOURCE
-  cout << "\ninline tree for non-loop blocks:\n\n";
+  cout << "\nfinal inline tree:  '" << func->name() << "'\n\n";
   debugInlineTree(&root, NULL, strTab, 0);
-  cout << "\nend non-loop blocks\n";
+  cout << "\nend proc:  '" << func->name() << "'\n";
 #endif
 
   // fixme: may or may not use these
@@ -1872,11 +1878,16 @@ doLoopTree(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
     return myList;
   }
 
-  // otherwise, finish this loop and insert the children into this
-  // loop's tree ....
+  // otherwise, finish this loop, put into LoopInfo format, insert the
+  // subloops and return a list of one.
+  LoopInfo *myInfo = doLoopLate(pinfo, visited, myLoop, loop, loopName, strTab, nameMgr);
 
-  LoopInfo *info = doLoopLate(pinfo, visited, myLoop, loop, loopName, strTab, nameMgr);
-  myList->push_front(info);
+  for (auto it = myList->begin(); it != myList->end(); ++it) {
+    mergeInlineLoop(myInfo->node, myInfo->path, *it);
+  }
+
+  myList->clear();
+  myList->push_back(myInfo);
 
   return myList;
 }
@@ -1917,12 +1928,6 @@ doLoopEarly(ProcInfo pinfo, BlockSet & visited,
   for (uint i = 0; i < blist.size(); i++) {
     doBlock(pinfo, visited, blist[i], root, strTab, nameMgr);
   }
-
-#if DEBUG_CFG_SOURCE
-  cout << "\nraw inline tree:  " << loopName
-       << "  '" << pinfo.proc_parse->name() << "'\n\n";
-  debugInlineTree(root, NULL, strTab, 0);
-#endif
 
   return root;
 }
@@ -1997,7 +2002,7 @@ doLoopLate(ProcInfo pinfo, BlockSet & visited, TreeNode * root,
 
   // reparent the tree and return as LoopInfo format.
   reparentInlineLoop(root, node, path);
-  LoopInfo *info = new LoopInfo(node, path, loop_vma);
+  LoopInfo *info = new LoopInfo(node, path, loopName, loop_vma);
 
 #if DEBUG_CFG_SOURCE
   cout << "\nreparented inline tree:  " << loopName
@@ -2275,12 +2280,15 @@ debugLoop(Loop * loop, const string & loopName,
 }
 
 
-// If the LoopInfo is null, then the tree starts at 'node', else
-// prepend the FLP seqn from 'info' above the rest of the tree.
+// If LoopInfo is non-null, then treat 'node' as a detached loop and
+// prepend the FLP seqn from 'info' above the tree.  Else, 'node' is
+// the tree.
+//
 void
 debugInlineTree(TreeNode * node, LoopInfo * info,
 		StringTable & strTab, int depth)
 {
+  // treat node as a detached loop with FLP seqn above it.
   if (info != NULL) {
     depth = 0;
     for (auto pit = info->path.begin(); pit != info->path.end(); ++pit) {
@@ -2300,10 +2308,12 @@ debugInlineTree(TreeNode * node, LoopInfo * info,
     for (int i = 1; i <= depth; i++) {
       cout << INDENT;
     }
-    cout << "loop:  0x" << hex << info->vma << dec << "\n";
+    cout << "loop:  " << info->name
+	 << "  0x" << hex << info->vma << dec << "\n";
     depth++;
   }
 
+  // print the terminal statements
   for (auto sit = node->stmtMap.begin(); sit != node->stmtMap.end(); ++sit) {
     StmtInfo *sinfo = sit->second;
 
@@ -2316,6 +2326,7 @@ debugInlineTree(TreeNode * node, LoopInfo * info,
 	 << "'  p='" << strTab.index2str(sinfo->proc_index) << "'\n";
   }
 
+  // recur on the subtrees
   for (auto nit = node->nodeMap.begin(); nit != node->nodeMap.end(); ++nit) {
     FLPIndex flp = nit->first;
 
@@ -2329,6 +2340,19 @@ debugInlineTree(TreeNode * node, LoopInfo * info,
 	 << "'  p='" << strTab.index2str(flp.proc_index) << "'\n";
 
     debugInlineTree(nit->second, NULL, strTab, depth + 1);
+  }
+
+  // recur on the loops
+  for (auto lit = node->loopList.begin(); lit != node->loopList.end(); ++lit) {
+    LoopInfo *info = *lit;
+
+    for (int i = 1; i <= depth; i++) {
+      cout << INDENT;
+    }
+    cout << "loop:  " << info->name
+	 << "  0x" << hex << info->vma << dec << "\n";
+
+    debugInlineTree(info->node, NULL, strTab, depth + 1);
   }
 }
 #endif  // parseAPI

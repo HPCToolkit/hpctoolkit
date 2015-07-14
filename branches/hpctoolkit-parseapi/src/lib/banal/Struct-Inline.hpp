@@ -203,14 +203,20 @@ public:
 class LoopInfo {
 public:
   TreeNode *node;
-  FLPSeqn  path;
+  FLPSeqn   path;
+  std::string  name;
   VMA  vma;
 
-  LoopInfo(TreeNode *n, FLPSeqn &p, VMA v)
+  LoopInfo(TreeNode *nd, FLPSeqn &pt, const std::string &nm, VMA vm)
   {
-    node = n;
-    path = p;
-    vma = v;
+    node = nd;
+    path = pt;
+    name = nm;
+    vma = vm;
+  }
+
+  // delete the subtree 'node' in ~TreeNode(), not here.
+  ~LoopInfo() {
   }
 };
 
@@ -237,6 +243,11 @@ public:
     }
     stmtMap.clear();
 
+    for (LoopList::iterator lit = loopList.begin(); lit != loopList.end(); ++lit) {
+      delete (*lit)->node;
+    }
+    loopList.clear();
+
     for (NodeMap::iterator nit = nodeMap.begin(); nit != nodeMap.end(); ++nit) {
       delete nit->second;
     }
@@ -262,6 +273,9 @@ mergeInlineEdge(TreeNode * dest, FLPIndex flp, TreeNode * src);
 
 void
 mergeInlineTree(TreeNode * dest, TreeNode * src);
+
+void
+mergeInlineLoop(TreeNode * dest, FLPSeqn & path, LoopInfo * info);
 
 }  // namespace Inline
 
