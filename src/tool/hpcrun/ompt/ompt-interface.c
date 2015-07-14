@@ -88,7 +88,7 @@
  * global variables
  *****************************************************************************/
 
-omp_idle_t ompt_idle_placeholder_fn;
+ompt_idle_t ompt_idle_placeholder_fn;
 
 
 

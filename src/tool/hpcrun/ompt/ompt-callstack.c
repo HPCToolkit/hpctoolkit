@@ -443,16 +443,12 @@ lookup_region_id(uint64_t region_id)
   return result;
 }
 
-int gomp_api()
-{
-  return 1;
-} 
-
 
 cct_node_t *
 ompt_region_context(uint64_t region_id, 
 		    ompt_context_type_t ctype, 
-		    int levels_to_skip)
+		    int levels_to_skip,
+                    int adjust_callsite)
 {
   cct_node_t *node;
   ucontext_t uc;
@@ -461,7 +457,7 @@ ompt_region_context(uint64_t region_id,
   node = hpcrun_sample_callpath(&uc, 0, 0, ++levels_to_skip, 1).sample_node;
   TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
 
-  if (node && gomp_api()) {
+  if (node && adjust_callsite) {
     // extract the load module and offset of the leaf CCT node at the 
     // end of a call path representing a parallel region
     cct_addr_t *n = hpcrun_cct_addr(node);
@@ -492,10 +488,12 @@ ompt_region_context(uint64_t region_id,
 }
 
 cct_node_t *
-ompt_parallel_begin_context(ompt_parallel_id_t region_id, int levels_to_skip)
+ompt_parallel_begin_context(ompt_parallel_id_t region_id, int levels_to_skip, 
+                            int adjust_callsite)
 {
   if (ompt_eager_context) 
-    return ompt_region_context(region_id, ompt_context_begin, ++levels_to_skip);
+    return ompt_region_context(region_id, ompt_context_begin, 
+                               ++levels_to_skip, adjust_callsite);
   else return NULL;
 }
 

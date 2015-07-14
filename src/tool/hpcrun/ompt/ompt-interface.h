@@ -31,7 +31,7 @@ extern void ompt_idle_blame_shift_request();
 //------------------------------------------------------------------------------
 extern int hpcrun_ompt_state_is_overhead();
 
-extern omp_idle_t ompt_idle_placeholder_fn;
+extern ompt_idle_t ompt_idle_placeholder_fn;
 
 #if 1
 //FIXME for tasks
