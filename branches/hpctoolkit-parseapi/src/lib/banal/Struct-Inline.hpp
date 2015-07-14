@@ -87,12 +87,14 @@ class InlineNode;
 class FLPIndex;
 class FLPCompare;
 class StmtInfo;
+class LoopInfo;
 class TreeNode;
 
 typedef list <InlineNode> InlineSeqn;
 typedef list <FLPIndex> FLPSeqn;
-typedef map <FLPIndex, TreeNode *, FLPCompare> NodeMap;
-typedef map <VMA, StmtInfo *> StmtMap;
+typedef list <LoopInfo *> LoopList;
+typedef map  <VMA, StmtInfo *> StmtMap;
+typedef map  <FLPIndex, TreeNode *, FLPCompare> NodeMap;
 
 
 // File, proc, line we get from Symtab inline call sites.
@@ -196,16 +198,35 @@ public:
 };
 
 
+// Info for one loop scope in the inline tree.  Note: 'node' is the
+// TreeNode containing the loop vma without the FLP path above it.
+class LoopInfo {
+public:
+  TreeNode *node;
+  FLPSeqn  path;
+  VMA  vma;
+
+  LoopInfo(TreeNode *n, FLPSeqn &p, VMA v)
+  {
+    node = n;
+    path = p;
+    vma = v;
+  }
+};
+
+
 // One node in the inline tree.
 class TreeNode {
 public:
   NodeMap  nodeMap;
   StmtMap  stmtMap;
+  LoopList loopList;
 
   TreeNode()
   {
     nodeMap.clear();
     stmtMap.clear();
+    loopList.clear();
   }
 
   // recursively delete the stmts and subtrees
