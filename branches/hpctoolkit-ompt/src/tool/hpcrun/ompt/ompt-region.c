@@ -55,7 +55,7 @@ static void
 ompt_parallel_begin_internal(
   ompt_parallel_id_t region_id, 
   int levels_to_skip,
-  ompt_runtime_invokes_t invoker
+  ompt_invoker_t invoker
 ) 
 {
   hpcrun_safe_enter();
@@ -70,7 +70,7 @@ ompt_parallel_begin_internal(
 
   cct_node_t *callpath = 
    ompt_parallel_begin_context(region_id, ++levels_to_skip, 
-                               invoker == ompt_runtime_invokes_sometimes);
+                               invoker == ompt_invoker_program);
 
   assert(region_id != 0);
   ompt_region_map_insert((uint64_t) region_id, callpath);
@@ -115,7 +115,7 @@ static void
 ompt_parallel_end_internal( 
   ompt_parallel_id_t parallel_id,    /* id of parallel region       */
   int levels_to_skip,
-  ompt_runtime_invokes_t invoker
+  ompt_invoker_t invoker
 )
 {
   hpcrun_safe_enter();
@@ -127,7 +127,7 @@ ompt_parallel_end_internal(
 	ompt_region_map_entry_callpath_set
             (record, 
              ompt_region_context(parallel_id, ompt_context_end, 
-                                 ++levels_to_skip, invoker == ompt_runtime_invokes_sometimes));
+                                 ++levels_to_skip, invoker == ompt_invoker_program));
       }
     } else {
       ompt_region_map_refcnt_update(parallel_id, 0L);
@@ -172,7 +172,7 @@ ompt_parallel_begin(
   ompt_parallel_id_t region_id, 
   uint32_t requested_team_size, 
   void *parallel_fn,
-  ompt_runtime_invokes_t invoker
+  ompt_invoker_t invoker
 )
 {
 #if 0
@@ -204,7 +204,7 @@ void
 ompt_parallel_end(
   ompt_parallel_id_t parallel_id,    /* id of parallel region       */
   ompt_task_id_t task_id,            /* id of task                  */ 
-  ompt_runtime_invokes_t invoker     /* runtime invokes all tasks?  */
+  ompt_invoker_t invoker             /* runtime invokes all tasks?  */
 )
 {
   hpcrun_safe_enter();
@@ -212,7 +212,7 @@ ompt_parallel_end(
        hpcrun_ompt_get_parallel_id(0));
   hpcrun_safe_exit();
   int levels_to_skip = LEVELS_TO_SKIP;
-  ompt_parallel_end_internal(parallel_id, ++levels_to_skip, invoker == ompt_runtime_invokes_sometimes);
+  ompt_parallel_end_internal(parallel_id, ++levels_to_skip, invoker == ompt_invoker_program);
 }
 #endif
 
