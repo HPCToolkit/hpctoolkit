@@ -268,9 +268,9 @@ typedef enum {
 } ompt_thread_type_t;
 
 typedef enum {
-    ompt_runtime_invokes_sometimes = 0, /* some task invoked outside  */
-    ompt_runtime_invokes_always    = 1  /* all tasks invoked by rts   */
-} ompt_runtime_invokes_t;
+    ompt_invoker_program = 0,         /* program invokes master task  */
+    ompt_invoker_runtime = 1          /* runtime invokes master task  */
+} ompt_invoker_t;
 
 typedef void (*ompt_thread_type_callback_t) (
     ompt_thread_type_t thread_type,   /* type of thread               */
@@ -299,13 +299,13 @@ typedef void (*ompt_new_parallel_callback_t) (
     ompt_parallel_id_t parallel_id,   /* id of parallel region        */
     uint32_t requested_team_size,     /* number of threads in team    */
     void *parallel_function,          /* pointer to outlined function */
-    ompt_runtime_invokes_t invoker    /* all tasks invoked by runtime */
+    ompt_invoker_t invoker            /* who invokes master task?    */
 );
 
 typedef void (*ompt_end_parallel_callback_t) (
-    ompt_parallel_id_t parallel_id,    /* id of parallel region       */
-    ompt_task_id_t task_id,            /* id of task                  */
-    ompt_runtime_invokes_t invoker    /* all tasks invoked by runtime */
+    ompt_parallel_id_t parallel_id,   /* id of parallel region       */
+    ompt_task_id_t task_id,           /* id of task                  */
+    ompt_invoker_t invoker            /* who invokes master task?    */
 );
 
 /* tasks */
