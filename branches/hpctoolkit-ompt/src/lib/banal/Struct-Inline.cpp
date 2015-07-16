@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -258,6 +258,11 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 	InlinedFunction *ifunc = static_cast <InlinedFunction *> (func);
 	pair <string, Offset> callsite = ifunc->getCallsite();
 
+#ifdef SYMTAB_NEW_NAME_ITERATOR
+#error this needs to use mangled names rather than pretty names
+        auto it = func->pretty_names_begin();
+        string procnm = (it != func->pretty_names_end()) ? *it : UNKNOWN_PROC;
+#else
         // Surprisingly, demangling is a many --> one mapping.
         // To avoid inadvertant merging as a result of name collisions, we 
         // use mangle names through the bulk of processing in hpcstruct. 
@@ -265,6 +270,7 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 	vector <string> name_vec = func->getAllMangledNames();
 
 	string procnm = (! name_vec.empty()) ? name_vec[0] : UNKNOWN_PROC;
+#endif
 	string &filenm = getRealPath(callsite.first.c_str());
 	long lineno = callsite.second;
 	nodelist.push_front(InlineNode(filenm, procnm, lineno));

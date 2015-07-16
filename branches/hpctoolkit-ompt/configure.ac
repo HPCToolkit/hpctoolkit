@@ -11,7 +11,7 @@ dnl Information about sources of support for research and development of
 dnl HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 dnl --------------------------------------------------------------------------
 dnl
-dnl Copyright ((c)) 2002-2014, Rice University
+dnl Copyright ((c)) 2002-2015, Rice University
 dnl All rights reserved.
 dnl
 dnl Redistribution and use in source and binary forms, with or without
@@ -226,6 +226,37 @@ AC_ARG_ENABLE([develop],
 
 AC_MSG_RESULT([${OPT_ENABLE_DEVELOP}])
 AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
+
+
+#-------------------------------------------------
+# enable-strip-debug
+#-------------------------------------------------
+
+# Strip the debug section from the libraries used in hpcrun/hpclink so
+# that our code does not appear in the viewer.
+
+default=yes
+if test "$OPT_ENABLE_DEVELOP" = yes ; then
+  default=no
+fi
+
+AC_ARG_ENABLE([strip-debug],
+  [AS_HELP_STRING([--enable-strip-debug],
+      [strip the debug section from the hpcrun libraries
+       (default yes, unless --enable-develop is used)])],
+  [],
+  [enable_strip_debug="$default"])
+
+case "$enable_strip_debug" in
+  no ) ;;
+  * )  enable_strip_debug=yes ;;
+esac
+
+AC_MSG_CHECKING([whether to strip debug section from hpcrun libraries])
+AC_MSG_RESULT([$enable_strip_debug])
+
+AM_CONDITIONAL(OPT_STRIP_HPCRUN_LIBS, [test "$enable_strip_debug" = yes])
+
 
 #----------------------------------------------------------------------------
 # Prerequisites: compilers, tools, system libraries
@@ -721,6 +752,66 @@ HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
 
 
 #-------------------------------------------------
+# Big or little endian and byteswap
+#-------------------------------------------------
+
+# Test if host is big or little endian with an option to override in
+# the rare case that autoconf detects the wrong value.
+
+AC_C_BIGENDIAN([default=big], [default=little], [default=none], [default=none])
+
+AC_ARG_ENABLE([endian],
+  [AS_HELP_STRING([--enable-endian],
+      [host endianness (big, little), only needed if autoconf fails
+       to detect correctly])],
+  [host_endian="$enable_endian"],
+  [host_endian="$default"])
+
+case "$host_endian" in
+  big )
+    AC_DEFINE([HOST_BIG_ENDIAN], [1], [Host is big endian.])
+    ;;
+  little )
+    AC_DEFINE([HOST_LITTLE_ENDIAN], [1], [Host is little endian.])
+    ;;
+  none )
+    AC_MSG_WARN([Unable to autodetect host endianness.])
+    AC_MSG_ERROR([Set --enable-endian to 'big' or 'little' and rerun configure.])
+    ;;
+  * )
+    AC_MSG_WARN([Bad value for host endianness: $host_endian])
+    AC_MSG_ERROR([Set --enable-endian to 'big' or 'little' and rerun configure.])
+    ;;
+esac
+
+AC_MSG_NOTICE([host endian: $host_endian])
+
+# Test if <byteswap.h> exists and defines bswap_64.  If yes, then it
+# has assembly code for the fastest way to convert between big/little
+# endian.
+
+AC_LANG_PUSH([C++])
+AC_LINK_IFELSE([
+#include <stdio.h>
+#include <stdint.h>
+#include <byteswap.h>
+int main(int argc, char **argv)
+{
+  uint64_t x = (uint64_t) argc;
+  uint64_t y = bswap_64(x);
+  return y > 2;
+}
+], [use_byteswap=yes], [use_byteswap=no])
+AC_LANG_POP()
+
+AC_MSG_NOTICE([use system byteswap.h: $use_byteswap])
+
+if test "$use_byteswap" = yes ; then
+  AC_DEFINE([USE_SYSTEM_BYTESWAP], [1], [Use system byteswap.h])
+fi
+
+
+#-------------------------------------------------
 # LD -- find correct arch type for ld
 #-------------------------------------------------
 
@@ -907,10 +998,13 @@ ext_cc_path=unknown
 ext_cxx_path=unknown
 ext_wordsize=unknown
 
+warn_no_externals=no
+
 AC_ARG_WITH([dummy-blank-line], [AS_HELP_STRING([], [])])
 AC_ARG_WITH([externals],
   [AS_HELP_STRING([--with-externals=PATH],
-	  [path to external prereqs tree])],
+	  [path to hpctoolkit-externals build or install directory
+	   (normally required)])],
   [],
   [with_externals=no])
 
@@ -935,6 +1029,7 @@ else
   AC_MSG_WARN([not using --with-externals])
   use_externals=no
   externals_mesg=no
+  warn_no_externals=yes
 fi
 
 
@@ -2062,6 +2157,11 @@ AC_ARG_ENABLE([hpcserver],
   [],
   [enable_hpcserver=no])
 
+case "$enable_hpcserver" in
+  yes | Yes | YES ) enable_hpcserver=yes ;;
+  * ) enable_hpcserver=no ;;
+esac
+
 AM_CONDITIONAL([OPT_ENABLE_HPCSERVER], [test "$enable_hpcserver" = yes])
 
 
@@ -2131,6 +2231,22 @@ fi
 AM_CONDITIONAL(OPT_HPCSTRUCT_LAUNCH_SCRIPT, [test "$hpcstruct_launch_script" = yes])
 
 
+# Temporary option to allow using the new symtab from git.  The new
+# version has an incompatible change in the iterator for getting a
+# function's list of pretty names.
+
+AC_ARG_ENABLE([new-symtab],
+  [AS_HELP_STRING([--enable-new-symtab],
+      [temporary option to allow using new symtabAPI from git,
+       requires -std=c++11 (default no)])],
+  [], [enable_new_symtab=no])
+
+if test "$enable_new_symtab" = yes ; then
+  AC_MSG_NOTICE([using new symtabAPI from git])
+  AC_DEFINE([SYMTAB_NEW_NAME_ITERATOR], [1], [Use new symtabAPI pretty names iterator])
+fi
+
+
 #-------------------------------------------------
 # enable-mpi:
 #-------------------------------------------------
@@ -2188,11 +2304,14 @@ if test "${OPT_REQ_ENABLE_MPI_WRAP}" != "no" ; then
   AC_MSG_CHECKING([whether can compile MPI code with CFLAGS='$CFLAGS'])
 
   AC_LANG_PUSH([C])
+  OLD_CC="$CC"
+  CC="$MPICC"
   CFLAGS="$CFLAGS"
   AC_COMPILE_IFELSE([#include <mpi.h>],
         [ans=yes],
         [ans=no])
 
+  CC="$OLD_CC"
   OPT_ENABLE_MPI_WRAP=$ans
   AC_LANG_POP
 fi
@@ -2936,6 +3055,7 @@ AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  prefix: $prefix])
 AC_MSG_NOTICE([  build:  $build])
 AC_MSG_NOTICE([  host:   $host])
+AC_MSG_NOTICE([  host endian: $host_endian])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
 AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])
@@ -2943,6 +3063,7 @@ AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
 AC_MSG_NOTICE([  mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
+AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
 AC_MSG_NOTICE([  Path:      $CC_PATH])
@@ -2986,19 +3107,28 @@ if test "$warn_config_site" = yes ; then
   AC_MSG_WARN([from your environment and rerun configure.])
 fi
 
+if test "$warn_bgq_backend" = yes ; then
+    AC_MSG_NOTICE([])
+    AC_MSG_WARN([On the Blue Gene/Q compute nodes, hpcrun needs a separate,])
+    AC_MSG_WARN([back-end compiler.  Use --enable-bgq to build for the back end,])
+    AC_MSG_WARN([or else --disable-bgq to build for the front end.])
+fi
+
+if test "$warn_no_externals" = yes ; then
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([Not using hpctoolkit-externals.])
+  AC_MSG_WARN([Unless you're building hpctoolkit only for docs or make dist,])
+  AC_MSG_WARN([this is probably an error.  First, svn checkout, configure])
+  AC_MSG_WARN([and build externals and then reconfigure hpctoolkit with:])
+  AC_MSG_WARN([--with-externals=/path/to/externals/install/directory])
+fi
+
 if test "$warn_non_gcc" = yes ; then
   AC_MSG_NOTICE([])
   AC_MSG_WARN([Not using the GNU C or C++ compiler.])
   AC_MSG_WARN([This is not necessarily an error, but some parts of hpctoolkit])
   AC_MSG_WARN([may not compile cleanly without gcc or g++.  If the build fails,])
   AC_MSG_WARN([try using GNU gcc and g++ before reporting an error.])
-fi
-
-if test "$warn_bgq_backend" = yes ; then
-    AC_MSG_NOTICE([])
-    AC_MSG_WARN([On the Blue Gene/Q compute nodes, hpcrun needs a separate,])
-    AC_MSG_WARN([back-end compiler.  Use --enable-bgq to build for the back end,])
-    AC_MSG_WARN([or else --disable-bgq to build for the front end.])
 fi
 
 if test "$warn_compiler_mismatch" = yes ; then

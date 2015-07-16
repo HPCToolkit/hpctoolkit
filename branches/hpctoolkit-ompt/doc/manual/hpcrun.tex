@@ -397,6 +397,29 @@ times, all from the same source location.  And you only have to find
 that location once.  So, this option can be a useful tool if the
 overhead of recording all mallocs is prohibitive.
 
+Rarely, for some programs with complicated memory usage patterns, the
+\verb|MEMLEAK| source can interfere with the application's memory
+allocation causing the program to segfault.  If this happens, use the
+\verb|hpcrun| debug ({\tt dd}) variable \verb|MEMLEAK_NO_HEADER| as a
+workaround.
+
+\begin{quote}
+\begin{tabular}{@{}cl}
+(dynamic) & \verb|hpcrun -e MEMLEAK -dd MEMLEAK_NO_HEADER app arg ...| \\
+(static)  & \verb|export HPCRUN_EVENT_LIST=MEMLEAK| \\
+& \verb|export HPCRUN_DEBUG_FLAGS=MEMLEAK_NO_HEADER| \\
+& \verb|app arg ...|
+\end{tabular}
+\end{quote}
+
+The \verb|MEMLEAK| source works by attaching a header or a footer to
+the application's \verb|malloc|'d regions.  Headers are faster but
+have a greater potential for interfering with an application.  Footers
+have higher overhead (require an external lookup) but have almost no
+chance of interfering with an application.  The
+\verb|MEMLEAK_NO_HEADER| variable disables headers and uses only
+footers.
+
 % ===========================================================================
 
 \section{Process Fraction}
@@ -566,6 +589,7 @@ would be convenient for users.
 % system specific notes for titan, keenland?
 %
 \subsection{Cray XE6 and XK6}
+\label{sec:platform-specific}
 
 The ALPS job launcher used on Cray XE6 and XK6 systems copies 
 programs to a special staging area before launching them,

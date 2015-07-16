@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -115,6 +115,15 @@
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
+/******************************************************************************
+ * external thread-local variables
+ *****************************************************************************/
+extern __thread bool hpcrun_thread_suppress_sample;
+
+/******************************************************************************
+ * local variables
+ *****************************************************************************/
+
 // FIXME: there is no good way for sighandler to find self.
 static sample_source_t *myself = NULL;
 
@@ -179,6 +188,11 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
 {
   int64_t counter, threshold;
   int ev, k;
+
+  
+
+  // if sampling disabled explicitly for this thread, skip all processing
+  if (hpcrun_thread_suppress_sample) return;
 
   BGP_UPC_Stop();
 

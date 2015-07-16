@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -229,7 +229,9 @@ int
 hpcrun_memleak_active() 
 {
   if (hpcrun_is_initialized()) {
-    return (TD_GET(ss_state)[obj_name().sel_idx] == START);
+    thread_data_t* td = hpcrun_safe_get_td();
+    if (!td) return 0;
+    return (td->ss_state[obj_name().sel_idx] == START);
   }
   else {
     return 0;

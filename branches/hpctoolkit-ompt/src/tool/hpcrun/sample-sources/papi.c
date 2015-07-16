@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -140,6 +140,10 @@ static int derived[MAX_EVENTS];
 static int some_derived;
 static int some_overflow;
 
+/******************************************************************************
+ * external thread-local variables
+ *****************************************************************************/
+extern __thread bool hpcrun_thread_suppress_sample;
 
 /******************************************************************************
  * method functions
@@ -521,9 +525,11 @@ METHOD_FN(display_events)
   ret = PAPI_enum_event(&ev, PAPI_ENUM_FIRST);
 #endif
   while (ret == PAPI_OK) {
-    if (PAPI_query_event(ev) == PAPI_OK) {
+    if (PAPI_query_event(ev) == PAPI_OK
+	&& PAPI_get_event_info(ev, &info) == PAPI_OK
+	&& info.count != 0)
+    {
       PAPI_event_code_to_name(ev, name);
-      PAPI_get_event_info(ev, &info);
       if (event_is_derived(ev)) {
 	prof = "No";
       } else {
@@ -640,6 +646,10 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int my_event_count = MAX_EVENTS;
   int nevents  = self->evl.nevents;
   int i, ret;
+
+  // if sampling disabled explicitly for this thread, skip all processing
+  if (hpcrun_thread_suppress_sample) return;
+
 
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.

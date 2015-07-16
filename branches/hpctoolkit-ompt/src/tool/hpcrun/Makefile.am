@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2014, Rice University
+## Copyright ((c)) 2002-2015, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -653,22 +653,17 @@ libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt \
         $(OPT_LIBUNWIND_LDFLAGS)
 
-libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic	\
-	-Wl,--strip-debug
+libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 
-libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic	\
-	-Wl,--strip-debug
+libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
 
-libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-Wl,--strip-debug
+libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
 
-libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-Wl,--strip-debug
+libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic
 
-libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-Wl,--strip-debug
+libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS)
 

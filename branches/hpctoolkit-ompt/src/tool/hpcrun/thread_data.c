@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -82,6 +82,10 @@ enum _local_int_const {
 // 
 //***************************************************************************
 
+#ifdef USE_GCC_THREAD
+__thread int monitor_tid = -1;
+#endif // USE_GCC_THREAD
+
 static thread_data_t _local_td;
 
 static pthread_key_t _hpcrun_key;
@@ -129,6 +133,12 @@ hpcrun_get_thread_data_local_avail(void)
 }
 
 
+thread_data_t*
+hpcrun_safe_get_td(void)
+{
+  return (thread_data_t*) pthread_getspecific(_hpcrun_key);
+}
+
 static thread_data_t*
 hpcrun_get_thread_data_specific(void)
 {
@@ -138,7 +148,6 @@ hpcrun_get_thread_data_specific(void)
   }
   return ret;
 }
-
 
 static bool
 hpcrun_get_thread_data_specific_avail(void)
@@ -188,14 +197,14 @@ hpcrun_threaded_data(void)
 //***************************************************************************
 
 thread_data_t*
-hpcrun_allocate_thread_data(void)
+hpcrun_allocate_thread_data(int id)
 {
-  TMSG(THREAD_SPECIFIC,"malloc thread data");
+  TMSG(THREAD_SPECIFIC,"malloc thread data for thread %d", id);
   return hpcrun_mmap_anon(sizeof(thread_data_t));
 }
 
-
-static inline void core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_t* thr_ctxt) 
+static inline void
+core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_t* thr_ctxt) 
 {
   // ----------------------------------------
   // id

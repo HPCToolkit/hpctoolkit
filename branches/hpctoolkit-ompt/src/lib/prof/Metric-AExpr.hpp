@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -97,6 +97,8 @@
 
 //****************************************************************************
 
+#define epsilon  (0.000001)
+
 namespace Prof {
 
 namespace Metric {
@@ -114,7 +116,8 @@ class AExpr
 public:
   typedef std::vector<AExpr*> AExprVec;
 
-  static const double epsilon = 0.000001;
+  // fixme: return this with 'constexpr' after switching to std C++11
+  // static const double epsilon = 0.000001;
 
 public:
   AExpr()

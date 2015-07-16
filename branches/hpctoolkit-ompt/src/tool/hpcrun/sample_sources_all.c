@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -80,13 +80,11 @@
 #define THREAD_NOSAMPLING       1
 #define THREAD_SAMPLING         2
 
-
-
 //*******************************************************************
 // Function Defining Macros
 //*******************************************************************
 
-#define _AS0(n,necessary)					     \
+#define _AS0(n, necessary)					     \
 void                                                                 \
 hpcrun_all_sources_ ##n(void)                                        \
 {								     \
@@ -163,13 +161,12 @@ ignore_this_thread()
 
       if (strstr(all_str, myid_str)) {
         ignore_thread = THREAD_NOSAMPLING;
+	TMSG(IGNORE, "Thread %d ignore sampling", myid);
       }
     }
   }
   return ignore_thread == THREAD_NOSAMPLING;
 }
-
-
 
 //*******************************************************************
 // Interface functions
@@ -261,12 +258,12 @@ hpcrun_sample_sources_from_eventlist(char* evl)
 // The mapped operations
 
 _AS1(process_event_list, int, lush_metrics)
-_AS0(init,0)
-_AS0(thread_init,0)
-_AS0(thread_init_action,0)
+_AS0(init, 0)
+_AS0(thread_init, 0)
+_AS0(thread_init_action, 0)
 _AS1(gen_event_set, int, lush_metrics)
-_AS0(start,1)
-_AS0(thread_fini_action,0)
-_AS0(stop,1)
-_AS0(shutdown,0)
+_AS0(start, 1)
+_AS0(thread_fini_action, 0)
+_AS0(stop, 1)
+_AS0(shutdown, 0)
 _ASB(started)

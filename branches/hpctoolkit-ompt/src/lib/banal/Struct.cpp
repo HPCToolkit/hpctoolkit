@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -112,6 +112,8 @@ using namespace Prof;
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
+#include <lib/support/StrUtil.hpp>
+
 
 #ifdef BANAL_USE_SYMTAB
 #include "Struct-Inline.hpp"
@@ -194,24 +196,69 @@ removeEmptyNodes(Prof::Struct::ANode* node);
 // ------------------------------------------------------------
 // Helpers for normalizing the structure tree
 // ------------------------------------------------------------
-class StmtData;
 
-class SortIdToStmtMap
-  : public std::map<int, StmtData*> {
+class StmtKey { // cf. AlienStrctMapKey
 public:
-  typedef std::map<int, StmtData*> My_t;
+  StmtKey(int sortId = 0)
+    : m_filenm(StmtKey::DefaultFileNm), m_sortId(sortId)
+  { }
+
+  StmtKey(const std::string& filenm, int sortId = 0)
+    : m_filenm(filenm), m_sortId(sortId)
+  { }
+
+  ~StmtKey()
+  { /* owns no data */ }
+
+  bool
+  operator<(const StmtKey& y) const
+  {
+    const StmtKey& x = *this;
+
+    if ((x.sortId() < y.sortId())
+	|| (x.sortId() == y.sortId() && (x.filenm() < y.filenm()))) {
+      return true;
+    }
+
+    return false;
+  }
+
+  const std::string&
+  filenm() const
+  { return m_filenm; }
+
+  int
+  sortId() const
+  { return m_sortId; }
+
+  std::string
+  toString() const
+  {
+    std::string str = StrUtil::toStr((long)sortId()) + ":[" + filenm() + "]";
+    return str;
+  }
+
+  
+private:
+  const std::string m_filenm; // should not be a pointer or reference
+  int m_sortId;
 
 public:
-  SortIdToStmtMap() { }
-  virtual ~SortIdToStmtMap() { clear(); }
-  virtual void clear();
+  static std::string DefaultFileNm;
 };
+
+std::string StmtKey::DefaultFileNm;
+
 
 class StmtData {
 public:
   StmtData(Prof::Struct::Stmt* stmt = NULL, int level = 0)
-    : m_stmt(stmt), m_level(level) { }
-  ~StmtData() { /* owns no data */ }
+    : m_stmt(stmt), m_level(level)
+  { }
+
+  ~StmtData()
+  { /* owns no data */ }
+
 
   Prof::Struct::Stmt*
   stmt() const
@@ -220,6 +267,7 @@ public:
   void
   stmt(Prof::Struct::Stmt* x)
   { m_stmt = x; }
+
 
   int
   level() const
@@ -230,28 +278,53 @@ public:
   { m_level = x; }
   
 private:
-  Prof::Struct::Stmt* m_stmt;
+  Prof::Struct::Stmt* m_stmt; // does not own
   int m_level;
 };
 
-static void
-deleteContents(Prof::Struct::ANodeSet* s);
 
-
-// ------------------------------------------------------------
-// Helpers for normalizing the structure tree
-// ------------------------------------------------------------
-
-class CDS_RestartException {
+class StmtKeyToStmtMap
+{
 public:
-  CDS_RestartException(Prof::Struct::ACodeNode* n) : m_node(n) { }
-  ~CDS_RestartException() { }
+  typedef StmtKey                                           key_type;
+  typedef StmtData*                                         mapped_type;
+  
+  typedef std::map<key_type, mapped_type>                   My_t;
+  typedef std::pair<const key_type, mapped_type>            value_type;
+  typedef My_t::iterator                                    iterator;
 
-  Prof::Struct::ACodeNode* node() const { return m_node; }
+public:
+  StmtKeyToStmtMap()
+  { }
+
+  ~StmtKeyToStmtMap()
+  { clear(); }
+
+  std::pair<iterator,bool>
+  insert(const value_type& val)
+  { return m_map.insert(val); }
+
+  iterator
+  find(const key_type& x)
+  { return m_map.find(x); }
+
+  iterator
+  end()
+  { return m_map.end(); }
+
+  void
+  clear()
+  {
+    for (iterator it = m_map.begin(); it != m_map.end(); ++it) {
+      delete it->second;
+    }
+    m_map.clear();
+  }
 
 private:
-  Prof::Struct::ACodeNode* m_node;
+  My_t m_map;
 };
+
 
 } // namespace Struct
 
@@ -1424,60 +1497,81 @@ namespace Struct {
 // coalesceDuplicateStmts: Coalesce duplicate statement instances that
 // may appear in the scope tree.  There are two basic cases:
 //
-// Case 1a:
-// If the same statement exists at multiple levels within a loop nest,
-//   discard all but the innermost instance.
-// Rationale: Compiler optimizations may hoist loop-invariant
+// Case 1: Multiple instances of the same statement, where one
+//   statement is a child of the least common ancestor. Discard all
+//   but the innermost instance.  Consider the following examples:
+//
+//   lca --- ... --- S
+//      \--- S'
+//
+//   Comment: Compiler optimizations may hoist loop-invariant
 //   operations out of inner loops.  Note however that in rare cases,
 //   code may be moved deeper into a nest (e.g. to free registers).
 //   Even so, we want to associate statements within loop nests to the
 //   deepest level in which they appear.
-// E.g.: lca --- ... --- s1
-//          \--- s2
 //
-// Case 1b:
-// If the same statement exists within the same loop, discard all but one.
-// Rationale: Multiple statements exist at the same level because of
-//   multiple basic blocks containing the same statement, cf. buildStmts().
-//   [FIXME -- LocationMgr]
-//   Also, the merging in case 2 may result in duplicate statements.
-// E.g.: lca --- s1
-//          \--- s2
+//   lca --- S
+//      \--- S'
 //
-// Case 2:
-// If duplicate statements appear in different loops, find the least
-//   common ancestor (deepest nested common ancestor) in the scope tree
-//   and merge the corresponding loops along the paths to each of the
-//   duplicate statements.  Note that merging can create instances of
-//   case 1.
-// Rationale: Compiler optimizations such as loop unrolling (start-up,
+//   Comment: Multiple statements exist at the same level because of
+//   multiple basic blocks containing the same statement,
+//   cf. buildStmts().
+//
+// Case 2: Multiple instances of the same statement where no instance
+//   is a child of the least common ancestor.  Merge the distinct
+//   paths to each statement instance into one.
+//
+//   lca ---...--- S
+//      \---...--- S'
+//
+//   Comment: Compiler optimizations such as loop unrolling (start-up,
 //   steady-state, wind-down), e.g., can produce multiple statement
 //   instances.
-// E.g.: lca ---...--- s1
-//          \---...--- s2
-static bool CDS_doNormalizeUnsafe = true;
+//
+// Observation: the merging of Case 2 may result in instances of Case
+//   1 (but not vice versa).  Therefore, we are guaranteed to reach a
+//   fixed point if we apply coalescing in two phases, considering all
+//   instances of Case 2 before any instances of Case 1.
+//
+// In the presence of inlining (Struct::Alien scopes), one can think
+// of multiple Struct::Alien (instead of Struct::Stmt) instances.
+// 
+// - Apply Case 1 only in the context of a single file (Struct::File,
+//   Struct::Alien).  That is, do not attempt to delete the shallower
+//   Alien in the following example (since it could represent two
+//   inlined instances).
+//
+//   alien --- L --- S
+//        \--- S'
+//
+// - Apply Case 2 to merge overlapping sibling Aliens scopes:
+//   lca --- A1 --- S
+//      \--- A2 --- S'
+//
+//   E.g., do not merge something like this, as it is unlikely that L1
+//   and L2 are the same.
+//
+//   lca --- L1 --- A1 --- S
+//      \--- L2 --- A2 --- S'
 
 static bool
-coalesceDuplicateStmts(Prof::Struct::ACodeNode* scope,
-		       SortIdToStmtMap* stmtMap,
-		       Prof::Struct::ANodeSet* visited,
-		       Prof::Struct::ANodeSet* toDelete,
-		       int level);
+cds_main(Prof::Struct::ACodeNode* node, int level,
+	 Prof::Struct::ACodeNode* fileCtxt, StmtKeyToStmtMap* stmtMap,
+	 bool mayCase1, bool mayCase2);
 
 static bool
-CDS_Main(Prof::Struct::ACodeNode* scope, SortIdToStmtMap* stmtMap,
-	 Prof::Struct::ANodeSet* visited, Prof::Struct::ANodeSet* toDelete,
-	 int level);
+cds_processStmt(Prof::Struct::Stmt* stmt1, int level1,
+		Prof::Struct::ACodeNode* fileCtxt, StmtKeyToStmtMap* stmtMap,
+		bool mayCase1, bool mayCase2);
 
 static bool
-CDS_InspectStmt(Prof::Struct::Stmt* stmt1, SortIdToStmtMap* stmtMap,
-		Prof::Struct::ANodeSet* toDelete, int level);
+cds_mayCase2(Prof::Struct::ACodeNode* fileCtxt, Prof::Struct::ANode* lca,
+	     Prof::Struct::Stmt* stmt1, Prof::Struct::Stmt* stmt2);
 
 static bool
-CDS_ScopeFilter(const Prof::Struct::ANode& x, long GCC_ATTR_UNUSED type)
+cds_nodeFilter(const Prof::Struct::ANode& x, long GCC_ATTR_UNUSED type)
 {
-  return (x.type() == Prof::Struct::ANode::TyProc
-	  || x.type() == Prof::Struct::ANode::TyAlien);
+  return (typeid(x) == typeid(Prof::Struct::Proc));
 }
 
 
@@ -1485,227 +1579,207 @@ static bool
 coalesceDuplicateStmts(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe)
 {
   bool changed = false;
-  CDS_doNormalizeUnsafe = doNormalizeUnsafe;
-  SortIdToStmtMap stmtMap;    // line to statement data map
-  Prof::Struct::ANodeSet visitedScopes; // all children of a scope have been visited
-  Prof::Struct::ANodeSet toDelete;      // nodes to delete
 
-  // Apply the normalization routine to each Struct::Proc and Struct::Alien
-  // so that 1) we are guaranteed to only process Struct::ACodeNodes and 2) we
-  // can assume that all line numbers encountered are within the same
-  // file (keeping the SortIdToStmtMap simple and fast).  (Children
-  // Struct::Alien's are skipped.)
+  StmtKeyToStmtMap stmtMap; // tracks deepest statement instance
 
-  Prof::Struct::ANodeFilter filter(CDS_ScopeFilter, "CDS_ScopeFilter", 0);
+  const bool mayCase1 = true;
+  bool mayCase2 = doNormalizeUnsafe;
+  
+  // Apply the normalization routine to each Struct::Proc
+
+  Prof::Struct::ANodeFilter filter(cds_nodeFilter, "cds_nodeFilter", 0);
   for (Prof::Struct::ANodeIterator it(lmStrct, &filter); it.Current(); ++it) {
-    Prof::Struct::ACodeNode* scope = dynamic_cast<Prof::Struct::ACodeNode*>(it.Current());
-    changed |= coalesceDuplicateStmts(scope, &stmtMap, &visitedScopes,
-				      &toDelete, 1);
-    stmtMap.clear();           // Clear statement table
-    visitedScopes.clear();     // Clear visited set
-    deleteContents(&toDelete); // Clear 'toDelete'
+    Prof::Struct::ACodeNode* x =
+      dynamic_cast<Prof::Struct::ACodeNode*>(it.Current());
+    DIAG_Assert(x, DIAG_UnexpectedInput);
+
+    Prof::Struct::ACodeNode* fileCtxt = x->ancestorFile();
+    DIAG_Assert(fileCtxt, DIAG_UnexpectedInput);
+
+    // Perform Case 2 coalescing
+    if (mayCase2) {
+      changed |= cds_main(x, 1, fileCtxt, &stmtMap, false, mayCase2);
+      stmtMap.clear(); // deletes contents
+    }
+
+    // Perform Case 1 coalescing
+    changed |= cds_main(x, 1, fileCtxt, &stmtMap, mayCase1, false);
+    stmtMap.clear(); // deletes contents
   }
 
   return changed;
 }
 
 
-// coalesceDuplicateStmts Helper:
-//
-// Because instances of case 2 can create instances of case 1, we need
-// to restart the algorithm at the lca after merging has been applied.
-//
-// This has some implications:
-// - We can delete nodes during the merging. (Deletion of nodes will
-//   invalidate the current *and* ancestor iterators out to the
-//   lca!)
-// - We cannot simply delete nodes in case 1.  The restarting means
-//   that nodes that we have already seen are in the statement map and
-//   could therefore be deleted out from under us during iteration.
-//   Consider this snippet of code:
-//
-//   <L b=... >  // level 3
-//     ...
-//     <L b="1484" e="1485">  // level 4
-//        <S b="1484" />
-//        <S b="1484" />
-//        <S b="1485" />
-//        <S b="1485" />
-//     </L>
-//     <S b="1485">
-//     ...
-//   </L>
-//
-//   CDS_Main loops on the children of the current scope.  It saves the
-//   current value of the iterator to 'child' and then increments it (an
-//   attempt to prevet this problem!). After that it recursively calls CDS
-//   on 'child'.
-//
-//   When 'child' points to the 4th level loop in the picture above, the
-//   iterator has been incremented and points to the next child which
-//   happens to be a statement for line 1485.
-//
-//   When CDS processes the inner loop and reaches a statement for line
-//   1485, it realizes a duplicate was found in the level 3 loop -- the
-//   statement to which level 3 loop iterator points to.  Because the
-//   current statement is on a deeper level (4 as opposed to 3 in the map),
-//   the statement on level 3 is unlinked and deleted.  After the level 4
-//   loop is completely processed, it returns back to the level 3 loop
-//   where it points to a block of memory that was freed already.
-//
-// Solution: After application of case 2, unwind the recursion stack
-//   and restart the algorithm at the least common ancestor.  Retain a
-//   set of visited nodes so that we do not have to revisit fully
-//   explored and unchanged nodes.  Since the most recently merged
-//   path will not be in the visited set, it will be propertly visited
-//
-// Notes:
-// - We always merge *into* the current path to avoid deleting all nodes
-//   on the current recursion stack.
-// - Note that the merging of Struct::ACodeNodes can trigger a reordering based
-//   on begin/end lines; new children will not simply end up at the
-//   end of the child list.
-//
-// Another solution: Divide into two distinct phases.  Phase 1 collects all
-//   statements into a multi-map (that handles sorted iteration and
-//   fast local resorts).  Phase 2 iterates over the map, applying
-//   case 1 and 2 until all duplicate entries are removed.
 static bool
-coalesceDuplicateStmts(Prof::Struct::ACodeNode* scope,
-		       SortIdToStmtMap* stmtMap,
-		       Prof::Struct::ANodeSet* visited,
-		       Prof::Struct::ANodeSet* toDelete,
-		       int level)
-{
-  try {
-    return CDS_Main(scope, stmtMap, visited, toDelete, level);
-  }
-  catch (CDS_RestartException& x) {
-    // Unwind the recursion stack until we find the node
-    if (x.node() == scope) {
-      return coalesceDuplicateStmts(x.node(), stmtMap, visited,
-				    toDelete, level);
-    }
-    else {
-      throw;
-    }
-  }
-}
-
-
-// CDS_Main: Helper for the above. Assumes that all statement line
-// numbers are within the same file.  We operate on the children of
-// 'scope' to support support node deletion (case 1 above).  When we
-// have visited all children of 'scope' we place it in 'visited'.
-static bool
-CDS_Main(Prof::Struct::ACodeNode* scope, SortIdToStmtMap* stmtMap,
-	 Prof::Struct::ANodeSet* visited, Prof::Struct::ANodeSet* toDelete,
-	 int level)
+cds_main(Prof::Struct::ACodeNode* node, int level,
+	 Prof::Struct::ACodeNode* fileCtxt, StmtKeyToStmtMap* stmtMap,
+	 bool mayCase1, bool mayCase2)
 {
   bool changed = false;
-  
-  if (!scope) { return changed; }
-  if (visited->find(scope) != visited->end()) { return changed; }
-  if (toDelete->find(scope) != toDelete->end()) { return changed; }
 
-  // A post-order traversal of this node (visit children before parent)...
-  for (Prof::Struct::ANodeChildIterator it(scope); it.Current(); ++it) {
-    Prof::Struct::ACodeNode* child =
-      dynamic_cast<Prof::Struct::ACodeNode*>(it.Current()); // always true
-    DIAG_Assert(child, "");
-    
-    if (toDelete->find(child) != toDelete->end()) { continue; }
-    
-    if (typeid(*child) == typeid(Prof::Struct::Alien)) { continue; }
-    
-    DIAG_DevMsgIf(DBG_CDS, "CDS: " << child);
+  if (!node) { return changed; }
 
-    // 1. Recursively perform re-nesting on 'child'.
-    changed |= coalesceDuplicateStmts(child, stmtMap, visited, toDelete,
-				      level + 1);
+  DIAG_DevMsgIf(DBG_CDS, "CDS: " << node);
+
+  // A post-order traversal of this node (visit children before parent).
+  // N.B.: Iteration must support tree modification.
+  for (Prof::Struct::ACodeNodeChildIterator it(node); it.Current(); /* */) {
+    Prof::Struct::ACodeNode* x = it.current();
+    it++; // advance iterator so that 'x' may be deleted
     
-    // 2. Examine 'child'
-    if (typeid(*child) == typeid(Prof::Struct::Stmt)) {
-      // Note: 'child' may be deleted or a restart exception may be thrown
-      Prof::Struct::Stmt* stmt = dynamic_cast<Prof::Struct::Stmt*>(child);
-      changed |= CDS_InspectStmt(stmt, stmtMap, toDelete, level);
+    Prof::Struct::ACodeNode* fileCtxt1 = fileCtxt;
+    StmtKeyToStmtMap* stmtMap1 = stmtMap, *stmtMap_new = NULL;
+    if (typeid(*x) == typeid(Prof::Struct::Alien)) {
+      fileCtxt1 = x;
+      if (mayCase1) {
+	stmtMap1 = stmtMap_new = new StmtKeyToStmtMap; // push new 'stmtMap'
+      }
     }
+    
+    // 1. Process the children of 'x'
+    changed |= cds_main(x, level + 1, fileCtxt1, stmtMap1, mayCase1, mayCase2);
+
+    // 2. Process 'x'
+    if (typeid(*x) == typeid(Prof::Struct::Stmt)) {
+      Prof::Struct::Stmt* stmt = static_cast<Prof::Struct::Stmt*>(x);
+      changed |= cds_processStmt(stmt, level, fileCtxt, stmtMap,
+				 mayCase1, mayCase2);
+    }
+
+    delete stmtMap_new; // pop 'stmtMap'
   }
   
-  visited->insert(scope);
   return changed;
 }
 
-  
-// CDS_InspectStmt: applies case 1 or 2, as described above
+
+// cds_processStmt: Applies case 1 or 2, as described above.
+//   'fileCtxt' is the file context/name for 'stmt1'.
+// 
+// N.B.: Assume that we are always within the context of exactly one
+//   Struct::File node but possibly several Struct::Alien nodes.
 static bool
-CDS_InspectStmt(Prof::Struct::Stmt* stmt1, SortIdToStmtMap* stmtMap,
-		Prof::Struct::ANodeSet* toDelete, int level)
+cds_processStmt(Prof::Struct::Stmt* stmt1, int level1,
+		Prof::Struct::ACodeNode* fileCtxt, StmtKeyToStmtMap* stmtMap,
+		bool mayCase1, bool mayCase2)
 {
   bool changed = false;
   
-  int sortid = stmt1->sortId();
-  StmtData* stmtdata = (*stmtMap)[sortid];
-  if (stmtdata) {
-    
+  std::string filenm = StmtKey::DefaultFileNm; // see assumption above
+  if (typeid(*fileCtxt) == typeid(Prof::Struct::Alien)) {
+    Prof::Struct::Alien* alien = static_cast<Prof::Struct::Alien*>(fileCtxt);
+    filenm = alien->name() + alien->fileName(); // cf. AlienStrctMapKey
+  }
+
+  // N.B.: 'filenm' should be copied b/c a Struct::Alien can be deleted
+  StmtKey stmtkey(filenm, stmt1->sortId());
+  StmtKeyToStmtMap::iterator it = stmtMap->find(stmtkey);
+
+  if (it != stmtMap->end()) {
+    StmtData* stmtdata = it->second;
+
     Prof::Struct::Stmt* stmt2 = stmtdata->stmt();
+    DIAG_Assert(stmt1 != stmt2, DIAG_UnexpectedInput);
     DIAG_DevMsgIf(DBG_CDS, " Find: " << stmt1 << " " << stmt2);
     
-    // Ensure we have two different instances of the same sortid (line)
-    if (stmt1 == stmt2) { return false; }
+    // --------------------------------------------------------
+    // Determine which case to consider
+    // --------------------------------------------------------
     
-    // Find the least common ancestor.  At most it should be a
-    // procedure scope.
+    // Find least common ancestor.  N.B.: the enclosing Struct::Proc
+    // is always a common ancestor.
     Prof::Struct::ANode* lca =
       Prof::Struct::ANode::leastCommonAncestor(stmt1, stmt2);
     DIAG_Assert(lca, "");
     
-    // Because we have the lca and know that the descendent nodes are
-    // statements (leafs), the test for case 1 is very simple:
-    bool case1 = (stmt1->Parent() == lca || stmt2->Parent() == lca);
-    if (case1) {
-      // Case 1: Duplicate statements. Delete shallower one.
-      Prof::Struct::Stmt* toRemove = NULL;
-      
-      if (stmtdata->level() < level) { // stmt2.level < stmt1.level
-	toRemove = stmt2;
-	stmtdata->stmt(stmt1);  // replace stmt2 with stmt1
-	stmtdata->level(level);
-      }
-      else {
-	toRemove = stmt1;
-      }
-      
-      toDelete->insert(toRemove);
-      stmtdata->stmt()->vmaSet().merge(toRemove->vmaSet()); // merge VMAs
-      DIAG_DevMsgIf(DBG_CDS, "  Delete: " << toRemove);
+    bool isCase1 = (stmt1->parent() == lca || stmt2->parent() == lca);
+    bool isCase2 = !isCase1;
+
+    // --------------------------------------------------------
+    // Determine deepest Stmt instance
+    // --------------------------------------------------------
+
+    Prof::Struct::Stmt* deep_stmt = stmt1;
+    int deep_lvl = level1;
+    if (stmtdata->level() > level1) { // stmt2.level > stmt1.level
+      deep_stmt = stmt2;
+      deep_lvl = stmtdata->level();
+    }
+
+    // --------------------------------------------------------
+    // Case 1: Duplicate Stmts, where at least one Stmt is a child of
+    //   'lca'.  Delete the most shallow instance.
+    // --------------------------------------------------------
+    if (isCase1 && mayCase1) {
+      Prof::Struct::Stmt* shallow = (deep_stmt == stmt1) ? stmt2 : stmt1;
+
+      DIAG_DevMsgIf(DBG_CDS, "  Delete: " << shallow);
+      deep_stmt->vmaSet().merge(shallow->vmaSet()); // merge VMAs
+
+      shallow->unlink();
+      delete shallow;
       changed = true;
     }
-    else if (CDS_doNormalizeUnsafe) {
-      // Case 2: Duplicate statements in different loops (or scopes).
-      // Merge the nodes from stmt2->lca into those from stmt1->lca.
-      DIAG_DevMsgIf(DBG_CDS, "  Merge: " << stmt1 << " <- " << stmt2);
-      changed = Prof::Struct::ANode::mergePaths(lca, stmt1, stmt2);
-      if (changed) {
-	// We may have created instances of case 1.  Furthermore,
-	// while neither statement is deleted ('stmtMap' is still
-	// valid), iterators between stmt1 and 'lca' are invalidated.
-	// Restart at lca.
-	Prof::Struct::ACodeNode* lca_CI =
-	  dynamic_cast<Prof::Struct::ACodeNode*>(lca);
-	DIAG_Assert(lca_CI, "");
-	throw CDS_RestartException(lca_CI);
-      }
+
+    // --------------------------------------------------------
+    // Case 2: Merge the path lca->...->stmt2 into the path lca->...->stmt1
+    // --------------------------------------------------------
+    if (isCase2 && mayCase2) {
+      mayCase2 = cds_mayCase2(fileCtxt, lca, stmt1, stmt2);
     }
+
+    if (isCase2 && mayCase2) {
+      DIAG_DevMsgIf(DBG_CDS, "  Merge: " << stmt1 << " <- " << stmt2);
+      DIAG_Assert(Logic::implies(level1 == stmtdata->level(),
+				 deep_stmt == stmt1),
+		  "If stmt2 is merged into stmt1, ensure we keep stmt1");
+
+      // N.B.: the iterator stack is still valid because
+      //   Struct::ANode::merge() only relocates a Struct::Proc
+      changed = Prof::Struct::ANode::mergePaths(lca, stmt1, stmt2);
+    }
+
+    // --------------------------------------------------------
+    // Update 'stmtMap' with deepest statement (which was not deleted)
+    // --------------------------------------------------------
+    stmtdata->stmt(deep_stmt);
+    stmtdata->level(deep_lvl);
   }
   else {
     // Add the statement instance to the map
-    stmtdata = new StmtData(stmt1, level);
-    (*stmtMap)[sortid] = stmtdata;
+    StmtData* stmtdata = new StmtData(stmt1, level1);
+    stmtMap->insert(make_pair(stmtkey, stmtdata));
     DIAG_DevMsgIf(DBG_CDS, " Map: " << stmt1);
   }
 
   return changed;
+}
+
+
+static bool
+cds_mayCase2(Prof::Struct::ACodeNode* GCC_ATTR_UNUSED fileCtxt,
+	     Prof::Struct::ANode* lca,
+	     Prof::Struct::Stmt* stmt1, Prof::Struct::Stmt* stmt2)
+{
+  // INVARIANT:  Case 2 means that 'stmt1' and 'stmt2' match w.r.t. 'fileCtxt'
+
+  const std::type_info& alien_ty = typeid(Prof::Struct::Alien);
+
+  Prof::Struct::ANode* stmt1_parent = stmt1->parent();
+  Prof::Struct::ANode* stmt2_parent = stmt2->parent();
+
+  if (typeid(*stmt1_parent) == alien_ty && typeid(*stmt2_parent) == alien_ty) {
+    if (stmt1_parent->parent() == lca && stmt2_parent->parent() == lca) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  else {
+    return true;
+  }
 }
 
 
@@ -1722,33 +1796,27 @@ mergePerfectlyNestedLoops(Prof::Struct::ANode* node)
   
   // A post-order traversal of this node (visit children before parent)...
   for (Prof::Struct::ANodeChildIterator it(node); it.Current(); /* */) {
-    Prof::Struct::ACodeNode* child =
+    Prof::Struct::ACodeNode* x =
       dynamic_cast<Prof::Struct::ACodeNode*>(it.Current()); // always true
-    DIAG_Assert(child, "");
-    it++; // advance iterator -- it is pointing at 'child'
+    DIAG_Assert(x, "");
+    it++; // advance iterator -- it is pointing at 'x'
     
-    // 1. Recursively do any merging for this tree's children
-    changed |= mergePerfectlyNestedLoops(child);
+    // 1. Process children of 'x'
+    changed |= mergePerfectlyNestedLoops(x);
     
-    // 2. Test if this is a perfectly nested loop with identical loop
-    //    bounds and merge if so.
-
-    // The following cast may be illegal but the 'perfect nesting' test
-    //   will ensure it doesn't cause a problem (Loops are Struct::ACodeNode's).
-    // Perfectly nested test: child is a loop; parent is a loop; and
-    //   this is only child.
-    Prof::Struct::ACodeNode* n_CI =
-      dynamic_cast<Prof::Struct::ACodeNode*>(node);
-    bool perfNested = (typeid(*child) == typeid(Prof::Struct::Loop) &&
-		       typeid(*node) == typeid(Prof::Struct::Loop) &&
-		       node->childCount() == 1);
-    if (perfNested && SrcFile::isValid(child->begLine(), child->endLine()) &&
-	child->begLine() == n_CI->begLine() &&
-	child->endLine() == n_CI->endLine()) {
-
-      // Move all children of 'child' so that they are children of 'node'
-      changed = Prof::Struct::ANode::merge(node, child);
-      DIAG_Assert(changed, "mergePerfectlyNestedLoops: merge failed.");
+    // 2. If perfectly nested, merge.  Perfectly nested: 'x' is a
+    //   loop; parent is a loop; and 'x' is parent's only child.
+    if (typeid(*x) == typeid(Prof::Struct::Loop)
+	&& typeid(*node) == typeid(Prof::Struct::Loop)
+	&& node->childCount() == 1) {
+      Prof::Struct::Loop* node_lp = static_cast<Prof::Struct::Loop*>(node);
+      if (SrcFile::isValid(x->begLine(), x->endLine())
+	  && x->begLine() == node_lp->begLine()
+	  && x->endLine() == node_lp->endLine()) {
+	// Move all children of 'x' so that they are children of 'node'
+	changed = Prof::Struct::ANode::merge(node, x);
+	DIAG_Assert(changed, "mergePerfectlyNestedLoops: merge failed.");
+      }
     }
   }
   
@@ -1773,17 +1841,16 @@ removeEmptyNodes(Prof::Struct::ANode* node)
 
   // A post-order traversal of this node (visit children before parent)...
   for (Prof::Struct::ANodeChildIterator it(node); it.Current(); /* */) {
-    Prof::Struct::ANode* child =
-      dynamic_cast<Prof::Struct::ANode*>(it.Current());
-    it++; // advance iterator -- it is pointing at 'child'
+    Prof::Struct::ANode* x = dynamic_cast<Prof::Struct::ANode*>(it.Current());
+    it++; // advance iterator -- it is pointing at 'x'
     
     // 1. Recursively do any trimming for this tree's children
-    changed |= removeEmptyNodes(child);
+    changed |= removeEmptyNodes(x);
 
     // 2. Trim this node if necessary
-    if (removeEmptyNodes_isEmpty(child)) {
-      child->unlink(); // unlink 'child' from tree
-      delete child;
+    if (removeEmptyNodes_isEmpty(x)) {
+      x->unlink(); // unlink 'x' from tree
+      delete x;
       changed = true;
     }
   }
@@ -1813,36 +1880,6 @@ removeEmptyNodes_isEmpty(const Prof::Struct::ANode* node)
     return n->vmaSet().empty();
   }
   return false;
-}
-
-
-//****************************************************************************
-// Helpers for traversing the Nested SCR (Tarjan Tree)
-//****************************************************************************
-
-void
-SortIdToStmtMap::clear()
-{
-  for (iterator it = begin(); it != end(); ++it) {
-    delete (*it).second;
-  }
-  My_t::clear();
-}
-
-//****************************************************************************
-// Helper Routines
-//****************************************************************************
-
-static void
-deleteContents(Prof::Struct::ANodeSet* s)
-{
-  // Delete nodes in toDelete
-  for (Prof::Struct::ANodeSet::iterator it = s->begin(); it != s->end(); ++it) {
-    Prof::Struct::ANode* n = (*it);
-    n->unlink(); // unlink 'n' from tree
-    delete n;
-  }
-  s->clear();
 }
 
 

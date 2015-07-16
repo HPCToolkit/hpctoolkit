@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -90,26 +90,48 @@ namespace TraceviewerServer
 	int mainPortNumber = DEFAULT_PORT;
 	int xmlPortNumber = 0;
 
-
-
 	Server::Server()
 	{
 		DataSocketStream* socketptr = NULL;
+		DataSocketStream* xmlSocketPtr = NULL;
 
 		//Port 21590 is used by vofr-gateway. Do we want to change it?
 		DataSocketStream socket(mainPortNumber, true);
 		socketptr = &socket;
-		//socketptr = new DataSocketStream(mainPortNumber, true);
 
 		mainPortNumber = socketptr->getPort();
 		cout << "Received connection" << endl;
 
-
 		int command = socketptr->readInt();
 		if (command == OPEN)
 		{
-			while( runConnection(socketptr)==START_NEW_CONNECTION_IMMEDIATELY)
-				;
+ 			// Laksono 2014.11.11: Somehow the class Args.cpp cannot accept -1 as an integer argument
+	 		// (not sure if this is a feature or it's a bug to confuse between a flag and negative number)
+ 			// Temporary, we can specify that if the xml port is 1 then it will be the same as the main port
+			if (xmlPortNumber == 1)
+			  xmlPortNumber = mainPortNumber;
+
+			if (xmlPortNumber != mainPortNumber)
+			{//On a different port. Create another socket.
+			  xmlSocketPtr = new DataSocketStream(xmlPortNumber, false);
+			}
+			else
+			{
+			  //Same port, simply use this socket
+			  xmlSocketPtr = socketptr;
+			}
+
+			// ----------------------------------------------------------------------------------
+			// Loop for the Server: As long as the client doesn't close the socket communication
+			// 			we'll remain in this loop
+			// ----------------------------------------------------------------------------------
+
+			while( runConnection(socketptr, xmlSocketPtr)==START_NEW_CONNECTION_IMMEDIATELY) ;
+
+			if (xmlPortNumber != mainPortNumber)
+			{
+			  delete (xmlSocketPtr);
+			}
 		}
 		else
 		{
@@ -124,12 +146,12 @@ namespace TraceviewerServer
 	}
 
 
-	int Server::runConnection(DataSocketStream* socketptr)
+	int Server::runConnection(DataSocketStream* socketptr, DataSocketStream* xmlSocket)
 	{
 #ifdef HPCTOOLKIT_PROFILE
 		hpctoolkit_sampling_start();
 #endif
-		parseOpenDB(socketptr);
+		controller = parseOpenDB(socketptr);
 
 		if (controller == NULL)
 		{
@@ -146,7 +168,7 @@ namespace TraceviewerServer
 		else
 		{
 			DEBUGCOUT(1) << "Database opened" << endl;
-			sendDBOpenedSuccessfully(socketptr);
+			sendDBOpenedSuccessfully(socketptr, xmlSocket);
 		}
 
 		int Message = socketptr->readInt();
@@ -158,6 +180,11 @@ namespace TraceviewerServer
 #ifdef HPCTOOLKIT_PROFILE
 		hpctoolkit_sampling_stop();
 #endif
+		// ------------------------------------------------------------------
+		// main loop for a communication session
+		// as long as the client doesn't send OPEN or DONE, we remain in 
+		// in this loop 
+		// ------------------------------------------------------------------
 		while (true)
 		{
 			int nextCommand = socketptr->readInt();
@@ -203,26 +230,12 @@ namespace TraceviewerServer
 
 		Communication::sendParseInfo(minBegTime, maxEndTime, headerSize);//Send to MPI if necessary
 	}
-	void Server::sendDBOpenedSuccessfully(DataSocketStream* socket)
+
+	void Server::sendDBOpenedSuccessfully(DataSocketStream* socket, DataSocketStream* xmlSocket)
 	{
-
 		socket->writeInt(DBOK);
-
-		DataSocketStream* xmlSocket;
-		if (xmlPortNumber == -1)
-			xmlPortNumber = mainPortNumber;
-
-		int actualXMLPort = xmlPortNumber;
-		if (xmlPortNumber != mainPortNumber)
-		{//On a different port. Create another socket.
-			xmlSocket = new DataSocketStream(xmlPortNumber, false);
-			actualXMLPort = xmlSocket->getPort();//Could be different if XMLPort is 0
-		}
-		else
-		{
-			//Same port, simply use this socket
-			xmlSocket = socket;
-		}
+ 	
+		int actualXMLPort = xmlSocket->getPort();
 		socket->writeInt(actualXMLPort);
 
 		int numFiles = controller->getNumRanks();
@@ -254,9 +267,6 @@ namespace TraceviewerServer
 
 
 		sendXML(xmlSocket);
-
-		if(actualXMLPort != mainPortNumber)
-			delete (xmlSocket);
 	}
 
 	void Server::sendXML(DataSocketStream* xmlSocket)
@@ -315,21 +325,21 @@ namespace TraceviewerServer
 		cout << dec;//Switch it back to decimal mode
 	}
 
-	void Server::parseOpenDB(DataSocketStream* receiver)
+	SpaceTimeDataController* Server::parseOpenDB(DataSocketStream* receiver)
 	{
 		checkProtocolVersions(receiver);
 
 		string pathToDB = receiver->readString();
 		DBOpener DBO;
 		cout << "Opening database: " << pathToDB << endl;
-		controller = DBO.openDbAndCreateStdc(pathToDB);
+		SpaceTimeDataController* controller = DBO.openDbAndCreateStdc(pathToDB);
 
 		if (controller != NULL)
 		{
 			Communication::sendParseOpenDB(pathToDB);
 		}
 
-
+		return controller;
 
 	}
 
