@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -284,13 +284,13 @@ void hpcrun_set_thread_data(thread_data_t *td);
 
 extern thread_data_t* (*hpcrun_get_thread_data)(void);
 extern bool           (*hpcrun_td_avail)(void);
+extern thread_data_t* hpcrun_safe_get_td(void);
 
 void hpcrun_unthreaded_data(void);
 void hpcrun_threaded_data(void);
 
 
-thread_data_t*
-hpcrun_allocate_thread_data(void);
+extern thread_data_t* hpcrun_allocate_thread_data(int id);
 
 void
 hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sources);

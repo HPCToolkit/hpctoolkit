@@ -1,0 +1,91 @@
+------------
+DOCS README
+------------
+
+This file contains notes for developers on how to edit and install
+files in the docs subdirectory.  The toolkit docs are handled
+differently from the rest of the source code.
+
+Briefly, we keep both source and generated doc files in the svn tree.
+In some cases (manual), building the doc files from source requires
+tools (latex) outside the normal build procedure.  In that case,
+'make' doesn't regenerate the doc files, and 'make install' merely
+copies the files into the install tree.
+
+------------------------------------
+Manual directory, tex and pdf files
+------------------------------------
+
+The HPCToolkit User's Manual is kept in Latex in the doc/manual
+directory.  To update the manual, edit the .tex file(s) and then
+regenerate the manual using Makefile.latex:
+
+   make -f Makefile.latex
+
+Note that you run make from the doc/manual source directory.
+Use either no target or target 'all'.
+
+-----------------------------
+WWW directory and html files
+-----------------------------
+
+To edit the www/html files in the svn source tree:
+
+1. Svn checkout and configure as usual.  If you're using this sandbox
+only to edit doc files, then you can omit the --with-externals option.
+
+2. In the source doc/www directory, edit the *.html.in files.  Just
+use a regular text editor (eg, emacs in html mode) and follow the
+style that's there.
+
+3. From the *build* directory, eg, build/doc/www, run 'make'.  This
+will remake the *.html files back in the source directory.  You can
+check this with svn stat or diff.  There should be corresponding diffs
+in both the html.in and html files.
+
+4. Still in the build/doc/www directory, run 'make install'.  This
+installs a copy of the html files into install/share/doc/hpctoolkit/.
+
+5. View the new files by opening a web browser on index.html in the
+*install* directory: install/share/doc/hpctoolkit/index.html.
+
+6. When you're satisfied with your edits, then 'svn commit' from the
+svn source tree.
+
+Note: always edit the html.in files (source directory) and run make
+from the build directory.  If you're only editing doc files, you may
+find it more convenient to run ./configure in place, that is, not use
+a separate build directory.
+
+To install the www/html files to the hpctoolkit.org web site:
+
+1. Configure, make and make install as above.
+
+2. The html files for hpctoolkit.org are on orion/carme in:
+
+   /net/www1/sites/hpctoolkit/htdocs/hpctoolkit/
+
+Tar-copy the share/doc/hpctoolkit *install* directory into the live
+web site on orion or carme with:
+
+   cd install/share/doc
+   tar cf hpctk.tar hpctoolkit
+
+   on orion/carme ...
+   cd /net/www1/sites/hpctoolkit/htdocs
+   tar xf hpctk.tar
+   (ignore 'Cannot utime: Operation not permitted' errors)
+
+3. Go to http://hpctoolkit.org/, click a few links and make sure that
+you haven't broken anything.
+
+Note: do NOT try moving the old htdocs/hpctoolkit directory and then
+creating a new one from scratch.  There are files in the old directory
+that are not in the tar file and you would lose those files.
+
+Note: you will likely need to tar-copy the files instead of manually
+cp-ing them.  The htdocs/hpctoolkit directory is group writable, but
+unless you're the last one to install a given file, you probably don't
+have write permission for individual files.  But tar will delete the
+old file and install a new one (with you as owner).
+

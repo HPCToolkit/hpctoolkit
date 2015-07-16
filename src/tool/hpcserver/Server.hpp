@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2013, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -79,10 +79,11 @@ namespace TraceviewerServer
 		static int main(int argc, char *argv[]);
 
 	private:
-		int runConnection(DataSocketStream*);
+		int runConnection(DataSocketStream*, DataSocketStream* xmlSocket);
+		void sendDBOpenedSuccessfully(DataSocketStream* socket, DataSocketStream* xmlSocket);
+
 		void parseInfo(DataSocketStream*);
-		void sendDBOpenedSuccessfully(DataSocketStream*);
-		void parseOpenDB(DataSocketStream*);
+		SpaceTimeDataController* parseOpenDB(DataSocketStream*);
 		void filter(DataSocketStream*);
 		void getAndSendData(DataSocketStream*);
 		void sendXML(DataSocketStream*);

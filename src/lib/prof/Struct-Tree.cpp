@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -165,7 +165,7 @@ Tree::dump(ostream& os, uint oFlags) const
 void
 Tree::ddump() const
 {
-  dump();
+  dump(std::cerr, Tree::OFlg_Debug);
 }
 
 
@@ -773,45 +773,36 @@ ANode::arePathsOverlapping(ANode* lca, ANode* desc1, ANode* desc2)
 
 
 bool
-ANode::mergePaths(ANode* lca, ANode* toDesc, ANode* fromDesc)
+ANode::mergePaths(ANode* lca, ANode* node_dst, ANode* node_src)
 {
   bool merged = false;
   // Should we verify that lca is really the lca?
   
-  // Collect nodes along paths between 'lca' and 'toDesc', 'fromDesc'.
-  // The descendent nodes will be at the end of the list.
-  ANodeList toPath, fromPath;
-  for (ANode* x = toDesc; x != lca; x = x->parent()) {
-    toPath.push_front(x);
+  // Collect nodes along the paths 'lca' --> 'node_dst', 'node_src'.
+  // Exclude 'lca'.  Shallowest nodes are at beginning of list.
+  ANodeList path_dst, path_src;
+  for (ANode* x = node_dst; x != lca; x = x->parent()) {
+    path_dst.push_front(x);
   }
-  for (ANode* x = fromDesc; x != lca; x = x->parent()) {
-    fromPath.push_front(x);
+  for (ANode* x = node_src; x != lca; x = x->parent()) {
+    path_src.push_front(x);
   }
-  DIAG_Assert(toPath.size() > 0 && fromPath.size() > 0, "");
+  DIAG_Assert(path_dst.size() > 0 && path_src.size() > 0, "");
   
-  // We merge from the deepest _common_ level of nesting out to lca
-  // (shallowest).
-  ANodeList::reverse_iterator toPathIt = toPath.rbegin();
-  ANodeList::reverse_iterator fromPathIt = fromPath.rbegin();
-  
-  // Determine which path is longer (of course, they can be equal) so
-  // we can properly set up the iterators
-  ANodeList::reverse_iterator* lPathIt = &toPathIt; // long path iter
-  int difference = toPath.size() - fromPath.size();
-  if (difference < 0) {
-    lPathIt = &fromPathIt;
-    difference = -difference;
-  }
-  
-  // Align the iterators
-  for (int i = 0; i < difference; ++i) { (*lPathIt)++; }
-  
-  // Now merge the nodes in 'fromPath' into 'toPath'
-  for ( ; fromPathIt != fromPath.rend(); ++fromPathIt, ++toPathIt) {
-    ANode* from = (*fromPathIt);
-    ANode* to = (*toPathIt);
-    if (isMergable(to, from)) {
-      merged |= merge(to, from);
+  // Merge nodes in 'path_src' into 'path_dst', shallowest to deepest,
+  // exiting as soon as a merge fails
+  ANodeList::iterator it_dst = path_dst.begin();
+  ANodeList::iterator it_src = path_src.begin();
+
+  for ( ; (it_dst != path_dst.end() && it_src != path_src.end());
+	++it_src, ++it_dst) {
+    ANode* x_src = *it_src;
+    ANode* x_dst = *it_dst;
+    if (isMergable(x_dst, x_src)) {
+      merged |= merge(x_dst, x_src);
+    }
+    else {
+      break; // done
     }
   }
   
@@ -820,61 +811,60 @@ ANode::mergePaths(ANode* lca, ANode* toDesc, ANode* fromDesc)
 
 
 bool
-ANode::merge(ANode* toNode, ANode* fromNode)
+ANode::merge(ANode* node_dst, ANode* node_src)
 {
   // Do we really want this?
-  //if (!IsMergable(toNode, fromNode)) {
+  //if (!IsMergable(node_dst, node_src)) {
   //  return false;
   //}
   
   // Perform the merge
-  // 1. Move all children of 'fromNode' into 'toNode'
-  for (ANodeChildIterator it(fromNode); it.Current(); /* */) {
-    ANode* child = dynamic_cast<ANode*>(it.Current());
-    it++; // advance iterator -- it is pointing at 'child'
+  // 1. Move all children of 'node_src' into 'node_dst'
+  for (ANodeChildIterator it(node_src); it.Current(); /* */) {
+    ANode* x = it.current();
+    it++; // advance iterator so we can unlink 'x'
     
-    child->unlink();
-    child->link(toNode);
+    x->unlink();
+    x->link(node_dst);
   }
   
   // 2. If merging ACodeNodes, update line ranges
-  ACodeNode* toCI = dynamic_cast<ACodeNode*>(toNode);
-  ACodeNode* fromCI = dynamic_cast<ACodeNode*>(fromNode);
-  DIAG_Assert(Logic::equiv(toCI, fromCI), "Invariant broken!");
-  if (toCI && fromCI) {
-    SrcFile::ln begLn = std::min(toCI->begLine(), fromCI->begLine());
-    SrcFile::ln endLn = std::max(toCI->endLine(), fromCI->endLine());
-    toCI->setLineRange(begLn, endLn);
-    toCI->vmaSet().merge(fromCI->vmaSet()); // merge VMAs
+  ACodeNode* dst0 = dynamic_cast<ACodeNode*>(node_dst);
+  ACodeNode* src0 = dynamic_cast<ACodeNode*>(node_src);
+  DIAG_Assert(Logic::equiv(dst0, src0), "Invariant broken!");
+  if (dst0 && src0) {
+    SrcFile::ln begLn = std::min(dst0->begLine(), src0->begLine());
+    SrcFile::ln endLn = std::max(dst0->endLine(), src0->endLine());
+    dst0->setLineRange(begLn, endLn);
+    dst0->vmaSet().merge(src0->vmaSet()); // merge VMAs
   }
   
-  // 3. Unlink 'fromNode' from the tree and delete it
-  fromNode->unlink();
-  delete fromNode;
+  // 3. Unlink 'node_src' from the tree and delete it
+  node_src->unlink();
+  delete node_src;
   
   return true;
 }
 
 
 bool
-ANode::isMergable(ANode* toNode, ANode* fromNode)
+ANode::isMergable(ANode* node_dst, ANode* node_src)
 {
-  ANode::ANodeTy toTy = toNode->type(), fromTy = fromNode->type();
+  ANode::ANodeTy ty_dst = node_dst->type(), ty_src = node_src->type();
 
-  // 1. For now, merges are only defined on TyLoops and TyGroups
-  bool goodTy = (toTy == TyLoop || toTy == TyGroup);
+  // 1. For now, merges are only defined on following types
+  bool goodTy = (ty_dst == TyLoop || ty_dst == TyAlien || ty_dst == TyGroup);
 
   // 2. Check bounds
   bool goodBnds = true;
   if (goodTy) {
-    ACodeNode* toCI = dynamic_cast<ACodeNode*>(toNode);
-    ACodeNode* fromCI = dynamic_cast<ACodeNode*>(fromNode);
-    goodBnds =
-      Logic::equiv(SrcFile::isValid(toCI->begLine(), toCI->endLine()),
-		   SrcFile::isValid(fromCI->begLine(), fromCI->endLine()));
+    ACodeNode* dst0 = dynamic_cast<ACodeNode*>(node_dst);
+    ACodeNode* src0 = dynamic_cast<ACodeNode*>(node_src);
+    goodBnds = Logic::equiv(SrcFile::isValid(dst0->begLine(), dst0->endLine()),
+			    SrcFile::isValid(src0->begLine(), src0->endLine()));
   }
 
-  return ((toTy == fromTy) && goodTy && goodBnds);
+  return ((ty_dst == ty_src) && goodTy && goodBnds);
 }
 
 
@@ -1607,7 +1597,7 @@ ANode::writeXML(ostream& os, uint oFlags, const char* pfx) const
 void
 ANode::ddumpXML() const
 {
-  writeXML();
+  writeXML(std::cerr, Tree::OFlg_Debug);
 }
 
 
@@ -1834,7 +1824,7 @@ void
 ANode::ddump() const
 {
   //writeXML(std::cerr, 0, "");
-  dump(std::cerr, 0, "");
+  dump(std::cerr, Tree::OFlg_Debug, "");
 }
 
 

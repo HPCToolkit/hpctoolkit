@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -68,7 +68,7 @@
 int
 hpcrun_options__init(hpcrun_options_t *x)
 {
-  NMSG(OPTIONS,"__init");
+  TMSG(OPTIONS,"__init");
   memset(x, 0, sizeof(*x));
   return HPCRUN_OK;
 }
@@ -92,7 +92,7 @@ hpcrun_options__getopts(hpcrun_options_t* x)
     x->lush_agent_paths[0] = '\0';
   }
 
-  NMSG(OPTIONS,"--at end of getopts");
+  TMSG(OPTIONS,"--at end of getopts");
 
   return HPCRUN_OK;
 }

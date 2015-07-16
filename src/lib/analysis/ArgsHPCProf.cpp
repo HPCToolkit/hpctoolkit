@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -150,8 +150,8 @@ Options: Metrics:\n\
 Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
                        Specify Experiment database name <db-path>.\n\
-                       {./"Analysis_DB_DIR"}\n\
-                       Experiment format {"Analysis_OUT_DB_EXPERIMENT"}\n\
+                       {./" Analysis_DB_DIR "}\n\
+                       Experiment format {" Analysis_OUT_DB_EXPERIMENT "}\n\
   --metric-db <yes|no>\n\
                        Control whether to generate a thread-level metric\n\
                        value database for hpcviewer scatter plots. {yes}\n\

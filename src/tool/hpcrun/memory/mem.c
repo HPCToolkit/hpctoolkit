@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -187,7 +187,7 @@ hpcrun_mmap_anon(size_t size)
     total_allocation += size;
   }
 
-  NMSG(MALLOC, "%s: size = %ld, fd = %d, addr = %p",
+  TMSG(MALLOC, "%s: size = %ld, fd = %d, addr = %p",
        __func__, size, fd, addr);
   return addr;
 }
@@ -252,7 +252,7 @@ hpcrun_make_memstore(hpcrun_meminfo_t *mi, int is_child)
   mi->mi_low = mi->mi_start;
   mi->mi_high = mi->mi_start + memsize;
 
-  NMSG(MALLOC, "new memstore: [%p, %p)", mi->mi_start, mi->mi_high);
+  TMSG(MALLOC, "new memstore: [%p, %p)", mi->mi_start, mi->mi_high);
 }
 
 // Reclaim the freeable CCT memory at the low end.

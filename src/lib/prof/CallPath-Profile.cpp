@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -1227,7 +1227,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
   // ------------------------------------------------------------
 
   if (outfs) {
-    fprintf(outfs, "[cct: (num-nodes: %"PRIu64")\n", numNodes);
+    fprintf(outfs, "[cct: (num-nodes: %" PRIu64 ")\n", numNodes);
   }
 
   CCT::Tree* cct = prof.cct();
