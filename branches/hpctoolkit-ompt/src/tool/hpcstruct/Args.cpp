@@ -147,9 +147,9 @@ Options: Demangling\n\
   --demangle-library <C++ Standard Library path>\n\
                        Specify the pathname for the dynamically-linked C++\n\
                        Standard library whose __cxa_demangle function should \n\
-                       be used for demangling. A good choice is the C++\n\
-                       Standard Library used by your application. The \n\
-                       default library used is the one linked into hpcstruct.\n\
+                       be used for demangling.  By default, the demangler used\n\
+                       is the one in the C++ Standard Library linked into\n\
+                       hpcstruct.\n\
 \n\
 Options: Output:\n\
   -o <file>, --output <file>\n\
