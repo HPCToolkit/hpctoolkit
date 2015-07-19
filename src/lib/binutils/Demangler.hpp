@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: $
+// $Id: $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,101 +44,36 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
 //***************************************************************************
 //
-// File:
-//   $HeadURL$
+// File: Demangler.hpp
 //
-// Purpose:
-//   [The purpose of this file]
+// Purpose: 
+//   Define an API that enables an HPCToolkit user to provide and employ 
+//   an arbitrary C++ Standard to demangle symbols.
 //
 // Description:
-//   [The set of functions, macros, etc. defined in the file]
+//   The API includes an interface to register a C++ Standard Library that
+//   will be used to demangle symbols and a demangler interface that will
+//   employ the specified library to perform demangling.
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
+#ifndef __Demangler_hpp__
+#define __Demangler_hpp__
 
-//************************* System Include Files ****************************
+extern "C" {
 
-#include <iostream>
-#include <string>
+void
+hpctoolkit_demangler_library(const char *filename);
 
-//*************************** User Include Files ****************************
 
-#include <include/uint.h>
+char *
+hpctoolkit_demangle(const char *mangled_name, 
+                    char *output_buffer, 
+                    size_t *length, 
+                    int *status);
+};
 
-#include <lib/banal/Struct.hpp>
-
-#include <lib/support/CmdLineParser.hpp>
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
-class Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  ~Args(); 
-
-  // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
-
-  // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
-
-  void
-  printUsage(std::ostream& os) const;
-  
-  // Error
-  void
-  printError(std::ostream& os, const char* msg) const;
-
-  void
-  printError(std::ostream& os, const std::string& msg) const;
-
-  // Dump
-  void
-  dump(std::ostream& os = std::cerr) const;
-
-  void
-  ddump() const;
-
-public:
-  // Parsed Data: Command
-  const std::string& getCmd() const;
-
-  // Parsed Data: optional arguments
-  std::string lush_agent;
-  std::string searchPathStr;          // default: "."
-  std::string demangle_library;       // default: ""
-  bool isIrreducibleIntervalLoop;     // default: true
-  bool isForwardSubstitution;         // default: false
-  BAnal::Struct::NormTy doNormalizeTy; // default: NormTy_All
-  std::string dbgProcGlob;
-
-  std::string out_filenm;
-  bool prettyPrintOutput;         // default: true
-
-  bool useBinutils;		  // default: false
-
-  // Parsed Data: arguments
-  std::string in_filenm;
-
-private:
-  void
-  Ctor();
-
-  BAnal::Struct::NormTy
-  parseArg_norm(const std::string& value, const char* err_note);
-
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
-
-#endif // Args_hpp 
+#endif

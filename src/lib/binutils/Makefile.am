@@ -71,6 +71,7 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
+        Demangler.hpp Demangler.cpp \
 	LM.hpp LM.cpp \
 	Seg.hpp Seg.cpp \
 	Proc.hpp Proc.cpp \

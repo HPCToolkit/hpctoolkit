@@ -75,6 +75,7 @@ using std::string;
 //*************************** User Include Files ****************************
 
 #include "BinUtils.hpp"
+#include "Demangler.hpp"
 
 
 //****************************************************************************
@@ -127,36 +128,15 @@ demangleProcName(const std::string& name)
 {
   string bestname = name;
 
-  // -------------------------------------------------------
-  // Try the system demangler first
-  // -------------------------------------------------------
-#if defined(HOST_OS_SOLARIS)
-  static char outbuf[DEMANGLE_BUF_SZ] = { '\0' };
-  if (cplus_demangle(name, outbuf, DEMANGLE_BUF_SZ) == 0) {
-    // Sun has a liberal interpretation of 'valid encoded name'.)
-    // Ensure, a change has occured.
-    if (strcmp(name, outbuf) != 0) {
-      bestname = outbuf;
-    }
-  }
-  if (!bestname.empty()) {
-    return bestname;
-  }
-#endif
-  // Note: on Linux, system demangler is same as GNU's
-
-#if defined(HAVE_CXXABI_H)
+  //----------------------------------------------------------
+  // demangle using the API for the C++ demangler
+  //----------------------------------------------------------
   int status;
-  char *str = abi::__cxa_demangle(name.c_str(), 0, 0, &status);
-#else
-  // -------------------------------------------------------
-  // Now try GNU's demangler
-  // -------------------------------------------------------
-  char* str = GNU_CPLUS_DEMANGLE(name.c_str(), DMGL_PARAMS | DMGL_ANSI);
-#endif
+  char *str = hpctoolkit_demangle(name.c_str(), 0, 0, &status);
+
   if (str) {
     bestname = str;
-    free(str); // gnu_cplus_demangle caller is responsible for memory cleanup
+    free(str);
   }
 
   return bestname;
