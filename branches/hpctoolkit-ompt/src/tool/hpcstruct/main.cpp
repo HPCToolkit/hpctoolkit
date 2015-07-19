@@ -76,6 +76,7 @@ using std::endl;
 #include <lib/prof/Struct-Tree.hpp>
 #include <lib/prof-lean/hpcio.h>
 
+#include <lib/binutils/Demangler.hpp>
 #include <lib/binutils/LM.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -120,6 +121,14 @@ realmain(int argc, char* argv[])
 {
   Args args(argc, argv);
   RealPathMgr::singleton().searchPaths(args.searchPathStr);
+
+
+  // ------------------------------------------------------------
+  // Set the demangler before reading the executable 
+  // ------------------------------------------------------------
+  const char* demangle_library = args.demangle_library.c_str();
+  if (demangle_library) hpctoolkit_demangler_library(demangle_library);
+
   
   // ------------------------------------------------------------
   // Read executable

@@ -143,6 +143,14 @@ Options: Structure recovery\n\
   --use-binutils       Use binutils as the default binary instruction decoder\n\
                        On x86 default is Intel XED library.\n\
 \n\
+Options: Demangling\n\
+  --demangle-library <C++ Standard Library path>\n\
+                       Specify the pathname for the dynamically-linked C++\n\
+                       Standard library whose __cxa_demangle function should \n\
+                       be used for demangling. A good choice is the C++\n\
+                       Standard Library used by your application. The \n\
+                       default library used is the one linked into hpcstruct.\n\
+\n\
 Options: Output:\n\
   -o <file>, --output <file>\n\
                        Write results to <file>.  Use '-' for stdout.\n\
@@ -162,6 +170,10 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 , "agent-c++",       CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
   {  0 , "agent-cilk",      CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+
+  // Demangler library
+  {  0 , "demangle-library",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // Structure recovery options
@@ -367,6 +379,11 @@ Args::parse(int argc, const char* const argv[])
 
     useBinutils = parser.isOpt("use-binutils");
 
+    // Check for other options: Demangling
+    if (parser.isOpt("demangle-library")) {
+      demangle_library = parser.getOptArg("demangle-library");
+    }
+    
     // Check for other options: Output options
     if (parser.isOpt("output")) {
       out_filenm = parser.getOptArg("output");
