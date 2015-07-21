@@ -74,6 +74,17 @@ x86_fnbounds(void* addr)
   return &local;
 }
 
+
+void
+x86_print_intervals(interval_status intervals)
+{
+  unwind_interval *u;
+  for(u = (unwind_interval *)intervals.first; u; 
+      u = (unwind_interval *)(u->common).next) {
+    dump_ui_dbg(u);
+  }
+}
+
 void
 x86_dump_intervals(void* addr) 
 {
@@ -85,10 +96,7 @@ x86_dump_intervals(void* addr)
 
   intervals = x86_build_intervals(s, e - s, 0);
 
-  for(u = (unwind_interval *)intervals.first; u; 
-      u = (unwind_interval *)(u->common).next) {
-    dump_ui_dbg(u);
-  }
+  x86_print_intervals(intervals);
 }
 
 void
