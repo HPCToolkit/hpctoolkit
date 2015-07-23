@@ -172,25 +172,28 @@ public:
 // Info for one terminal statement (vma) in the inline tree.
 class StmtInfo {
 public:
-  VMA   addr;
+  VMA   vma;
+  int   len;
   long  file_index;
   long  line_num;
   long  proc_index;
 
   // constructor by index
-  StmtInfo(VMA vma, long file, long line, long proc)
+  StmtInfo(VMA vm, int ln, long file, long line, long proc)
   {
-    addr = vma;
+    vma = vm;
+    len = ln;
     file_index = file;
     line_num = line;
     proc_index = proc;
   }
 
   // constructor by string name
-  StmtInfo(StringTable & strTab, VMA vma, const std::string & filenm,
-	   long line, const std::string & procnm)
+  StmtInfo(StringTable & strTab, VMA vm, int ln,
+	   const std::string & filenm, long line, const std::string & procnm)
   {
-    addr = vma;
+    vma = vm;
+    len = ln;
     file_index = strTab.str2index(filenm);
     line_num = line;
     proc_index = strTab.str2index(procnm);
@@ -203,16 +206,16 @@ public:
 class LoopInfo {
 public:
   TreeNode *node;
+  StmtInfo *header;
   FLPSeqn   path;
   std::string  name;
-  VMA  vma;
 
-  LoopInfo(TreeNode *nd, FLPSeqn &pt, const std::string &nm, VMA vm)
+  LoopInfo(TreeNode *nd, StmtInfo *hd, FLPSeqn &pt, const std::string &nm)
   {
     node = nd;
+    header = hd;
     path = pt;
     name = nm;
-    vma = vm;
   }
 
   // delete the subtree 'node' in ~TreeNode(), not here.
@@ -261,9 +264,9 @@ Symtab * openSymtab(std::string filename);
 bool closeSymtab();
 bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
 
-void
-addStmtToTree(TreeNode * root, StringTable & strTab,
-	      VMA vma, string & filenm, SrcFile::ln line, string & procnm);
+StmtInfo *
+addStmtToTree(TreeNode * root, StringTable & strTab, VMA vma, int len,
+	      string & filenm, SrcFile::ln line, string & procnm);
 
 void
 mergeInlineStmts(TreeNode * dest, TreeNode * src);

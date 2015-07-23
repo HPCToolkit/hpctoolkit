@@ -1699,7 +1699,7 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 // ParseAPI code for functions, loops and blocks
 //****************************************************************************
 
-// Major TO-DO items:
+// Mostly done items:
 //
 // 1. There is a major regression in the pretty_names_begin() iterator
 // between Dyninst 8.2-release and git head in analyzeAddr() in
@@ -1707,26 +1707,44 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 // procedure names are always "unknown-proc".  Wisconsin is working on
 // it, but until it is fixed, the inline part of the struct files will
 // be badly broken.
-// ---> now fixed with the 'patch-getName' patch
+// ---> now fixed in dyninst git master
 //
 // 2. Figure out interaction between reparentNode() and location
 // manager and make sure they don't work at cross purposes.
 // ---> don't use the location manager
 //
+// --------------------------------------------------
+//
+// Remaining TO-DO items:
+//
 // 3. findLoopBegin() -- look at entry blocks, back edges and line
 // numbers and make an intelligent decision for where a loop begins in
 // the source code.
-// ---> mostly done, except for advanced heuristics
+// ---> partially done, need more advanced heuristics
 //
-// 4. Decide how to handle basic blocks that belong to multiple
+// 4. Irreducible loops -- study entry blocks, loop header, adjacent
+// nested loops.  Some nested irreducible loops share entry blocks and
+// maybe should be merged.
+//
+// 5. Compute line ranges for loops and procs to help decide what is
+// alien code when the symtab inline info is not available.
+//
+// 6. Handle code movement wrt loops: loop fusion, fission, moving
+// code in/out of loops.
+//
+// 7. Maybe write our own functions for coalescing statements and
+// aliens and normalizing source code transforms.
+//
+// 8. Demangle proc names for the hpcstruct file.
+//
+// 9. Improve scope info and alien map in makeScopeTree().
+//
+// 10. Decide how to handle basic blocks that belong to multiple
 // functions.
 //
-// 5. Some blocks are the entry block to multiple, nested loops.  This
-// happens when one or both of the loops is irreducible.
+// 11. Add address ranges to buildLMSkeleton().
 //
-// 6. Add address ranges to buildLMSkeleton().
-//
-// 7. Add call_sortId from buildStmts() to doBlock().
+// 12. Add call_sortId from buildStmts() to doBlock().
 //
 
 #ifdef BANAL_USE_PARSEAPI
@@ -1739,9 +1757,11 @@ namespace BAnal {
 namespace Struct {
 
 class HeaderInfo;
+class ScopeInfo;
 
 typedef map <Block *, bool> BlockSet;
 typedef map <VMA, HeaderInfo> HeaderList;
+typedef map <long, Prof::Struct::ACodeNode *> AlienScopeMap;
 
 static LoopList *
 doLoopTree(ProcInfo, BlockSet &, LoopTreeNode *,
@@ -1766,10 +1786,45 @@ static void
 reparentInlineLoop(TreeNode *, TreeNode *, FLPSeqn &);
 
 static void
+makeScopeTree(Prof::Struct::ACodeNode *, ScopeInfo, TreeNode *, StringTable &);
+
+static void
 debugLoop(Loop *, const string &, vector <Edge *> &, HeaderList &);
 
 static void
 debugInlineTree(TreeNode *, LoopInfo *, StringTable &, int);
+
+// Info on candidates for loop header.
+class HeaderInfo {
+public:
+  bool  is_src;
+  bool  in_incl;
+  bool  in_excl;
+  int   depth;
+
+  HeaderInfo(bool src = false)
+  {
+    is_src = src;
+    in_incl = false;
+    in_excl = false;
+    depth = 0;
+  }
+};
+
+// Info on enclosing node in scope tree.
+class ScopeInfo {
+public:
+  long  file_index;
+  bool  is_alien;
+  long  proc_index;
+
+  ScopeInfo(long file, bool alien = false, long proc = 0)
+  {
+    file_index = file;
+    is_alien = alien;
+    proc_index = proc;
+  }
+};
 
 //****************************************************************************
 
@@ -1777,10 +1832,14 @@ static Prof::Struct::Proc *
 buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
 		   ProcNameMgr * nameMgr, const std::string & dbgProcGlob)
 {
-  Prof::Struct::Proc * topScope = pinfo.proc;
+  Prof::Struct::Proc * procScope = pinfo.proc;
+  Prof::Struct::File * file = dynamic_cast <Prof::Struct::File *> (procScope->parent());
+  string fname = file->name();
+
   ParseAPI::Function * func = pinfo.proc_parse;
   StringTable strTab;
   TreeNode root;
+  long file_index = strTab.str2index(fname);
 
 #if DEBUG_CFG_SOURCE
   cout << "\n------------------------------------------------------------\n"
@@ -1824,13 +1883,16 @@ buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
   cout << "\nend proc:  '" << func->name() << "'\n";
 #endif
 
+  // convert inline tree to Prof::Struct scope tree
+  makeScopeTree(procScope, ScopeInfo(file_index), &root, strTab);
+
   // fixme: may or may not use these
-#if 0
-  coalesceAlienChildren(topScope);
-  renumberAlienScopes(topScope);
+#if 1
+  coalesceAlienChildren(procScope);
+  renumberAlienScopes(procScope);
 #endif
 
-  return topScope;
+  return procScope;
 }
 
 
@@ -1969,9 +2031,13 @@ doLoopLate(ProcInfo pinfo, BlockSet & visited, TreeNode * root,
   string procnm;
   SrcFile::ln line;
 
+  // FIXME: need to find end vma for loop header
+
   pinfo.proc_bin->findSrcCodeInfo(loop_vma, 0, procnm, filenm, line);
   procnm = BinUtil::canonicalizeProcName(procnm, nameMgr);
-  addStmtToTree(root, strTab, loop_vma, filenm, line, procnm);
+
+  StmtInfo *sinfo =
+    addStmtToTree(root, strTab, loop_vma, loop_vma + 1, filenm, line, procnm);
 
 #if DEBUG_CFG_SOURCE
   cout << "\nheader:  0x" << hex << loop_vma << dec
@@ -2002,7 +2068,7 @@ doLoopLate(ProcInfo pinfo, BlockSet & visited, TreeNode * root,
 
   // reparent the tree and return as LoopInfo format.
   reparentInlineLoop(root, node, path);
-  LoopInfo *info = new LoopInfo(node, path, loopName, loop_vma);
+  LoopInfo *info = new LoopInfo(node, sinfo, path, loopName);
 
 #if DEBUG_CFG_SOURCE
   cout << "\nreparented inline tree:  " << loopName
@@ -2035,7 +2101,7 @@ doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
 
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
     Offset vma = iit->first;
-    Offset vma_end = vma + iit->second->size();
+    int    len = iit->second->size();
     string procnm;
     string filenm;
     SrcFile::ln line;
@@ -2047,27 +2113,9 @@ doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
     debugStmt(NULL, vma, filenm, procnm, line);
 #endif
 
-    addStmtToTree(root, strTab, vma, filenm, line, procnm);
+    addStmtToTree(root, strTab, vma, len, filenm, line, procnm);
   }
 }
-
-
-// Info on candidates for loop header.
-class HeaderInfo {
-public:
-  bool  is_src;
-  bool  in_incl;
-  bool  in_excl;
-  int   depth;
-
-  HeaderInfo(bool src = false)
-  {
-    is_src = src;
-    in_incl = false;
-    in_excl = false;
-    depth = 0;
-  }
-};
 
 
 // Select the vma to represent the loop header.  Candidates are the
@@ -2221,6 +2269,113 @@ reparentInlineLoop(TreeNode * root, TreeNode * loopNode, FLPSeqn & path)
   }
 }
 
+
+// Convert inline TreeNode 'tree' to Prof::Struct scope tree format
+// and merge into 'enclScope'.
+//
+static void
+makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
+	      TreeNode * tree, StringTable & strTab)
+{
+  if (tree == NULL) {
+    return;
+  }
+
+  // FIXME: this is a primitive alien map based only on file name.
+  // We should also consider if the stmt's line num is outside the
+  // enclosing scope's line range, whether the stmt's inline seqn
+  // exists, and whether the stmt was reparented.
+  //
+  AlienScopeMap alienMap;
+  Prof::Struct::ACodeNode * scope;
+
+  // add terminal statements.  if the file name does not match the
+  // enclosing scope, then add a single guard alien.
+  //
+  for (auto sit = tree->stmtMap.begin(); sit != tree->stmtMap.end(); ++sit) {
+    StmtInfo *info = sit->second;
+    VMA vma = info->vma;
+    long myfile = info->file_index;
+    SrcFile::ln line = info->line_num;
+    scope = enclScope;
+
+    if (scinfo.is_alien || myfile != scinfo.file_index) {
+      auto ait = alienMap.find(myfile);
+
+      if (ait != alienMap.end()) {
+	scope = ait->second;
+      }
+      else {
+	// prefer the inline proc name to stmt's proc name.
+	long proc = (scinfo.is_alien) ? scinfo.proc_index : info->proc_index;
+	const string & filenm = strTab.index2str(myfile);
+	const string & procnm = strTab.index2str(proc);
+
+	scope = new Prof::Struct::Alien(scope, filenm, procnm, procnm, line, line);
+	alienMap[myfile] = scope;
+      }
+    }
+
+    new Prof::Struct::Stmt(scope, line, line, vma, vma + info->len);
+  }
+
+  // add loops, located by their header.  again, if the file name does
+  // not match the enclosing scope, then add a single guard alien.
+  //
+  for (auto lit = tree->loopList.begin(); lit != tree->loopList.end(); ++lit) {
+    StmtInfo *info = (*lit)->header;
+    VMA vma = info->vma;
+    long myfile = info->file_index;
+    string filenm = strTab.index2str(myfile);
+    SrcFile::ln line = info->line_num;
+    scope = enclScope;
+
+    if (scinfo.is_alien || myfile != scinfo.file_index) {
+      auto ait = alienMap.find(myfile);
+
+      if (ait != alienMap.end()) {
+	scope = ait->second;
+      }
+      else {
+	// prefer the inline proc name to stmt's proc name.
+	long proc = (scinfo.is_alien) ? scinfo.proc_index : info->proc_index;
+	const string & procnm = strTab.index2str(proc);
+
+	scope = new Prof::Struct::Alien(scope, filenm, procnm, procnm, line, line);
+	alienMap[myfile] = scope;
+      }
+    }
+
+    Prof::Struct::Loop *loop = new Prof::Struct::Loop(scope, filenm, line, line);
+
+    loop->vmaSet().insert(vma, vma + 1);
+    makeScopeTree(loop, ScopeInfo(myfile), (*lit)->node, strTab);
+  }
+
+  // add inline subtrees.  always add a call site alien above the
+  // subtree.  if the parent is also an alien, then add a target alien
+  // between the two call site aliens.
+  //
+  for (auto nit = tree->nodeMap.begin(); nit != tree->nodeMap.end(); ++nit) {
+    FLPIndex flp = nit->first;
+    const string & filenm = strTab.index2str(flp.file_index);
+    const string & procnm = strTab.index2str(flp.proc_index);
+    long line = flp.line_num;
+    scope = enclScope;
+
+    // add a target alien between two call site aliens.
+    if (scinfo.is_alien) {
+      scope = new Prof::Struct::Alien(scope, filenm, procnm, procnm, line, line);
+    }
+
+    // add the call site alien with no proc name.
+    scope = new Prof::Struct::Alien(scope, filenm, "", "", line, line);
+
+    makeScopeTree(scope, ScopeInfo(flp.file_index, true, flp.proc_index),
+		  nit->second, strTab);
+  }
+}
+
 }  // namespace Struct
 }  // namespace BAnal
 
@@ -2309,7 +2464,7 @@ debugInlineTree(TreeNode * node, LoopInfo * info,
       cout << INDENT;
     }
     cout << "loop:  " << info->name
-	 << "  0x" << hex << info->vma << dec << "\n";
+	 << "  0x" << hex << info->header->vma << dec << "\n";
     depth++;
   }
 
@@ -2320,7 +2475,7 @@ debugInlineTree(TreeNode * node, LoopInfo * info,
     for (int i = 1; i <= depth; i++) {
       cout << INDENT;
     }
-    cout << "stmt:  0x" << hex << sinfo->addr << dec
+    cout << "stmt:  0x" << hex << sinfo->vma << dec
 	 << "  l=" << sinfo->line_num
 	 << "  f='" << strTab.index2str(sinfo->file_index)
 	 << "'  p='" << strTab.index2str(sinfo->proc_index) << "'\n";
@@ -2350,7 +2505,7 @@ debugInlineTree(TreeNode * node, LoopInfo * info,
       cout << INDENT;
     }
     cout << "loop:  " << info->name
-	 << "  0x" << hex << info->vma << dec << "\n";
+	 << "  0x" << hex << info->header->vma << dec << "\n";
 
     debugInlineTree(info->node, NULL, strTab, depth + 1);
   }

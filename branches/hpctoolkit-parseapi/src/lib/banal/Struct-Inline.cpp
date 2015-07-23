@@ -265,9 +265,9 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 
 
 // Add one terminal statement to the inline tree.
-void
-addStmtToTree(TreeNode * root, StringTable & strTab,
-	      VMA vma, string & filenm, SrcFile::ln line, string & procnm)
+StmtInfo *
+addStmtToTree(TreeNode * root, StringTable & strTab, VMA vma, int len,
+	      string & filenm, SrcFile::ln line, string & procnm)
 {
   InlineSeqn path;
   TreeNode *node;
@@ -294,11 +294,17 @@ addStmtToTree(TreeNode * root, StringTable & strTab,
   // add statement to last node in the sequence.  if there are
   // duplicates, then keep the original.
   auto sit = node->stmtMap.find(vma);
+  StmtInfo *info;
 
-  if (sit == node->stmtMap.end()) {
-    StmtInfo *sinfo = new StmtInfo(strTab, vma, filenm, line, procnm);
-    node->stmtMap[vma] = sinfo;
+  if (sit != node->stmtMap.end()) {
+    info = sit->second;
   }
+  else {
+    info = new StmtInfo(strTab, vma, len, filenm, line, procnm);
+    node->stmtMap[vma] = info;
+  }
+
+  return info;
 }
 
 
