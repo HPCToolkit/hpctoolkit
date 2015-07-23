@@ -86,6 +86,12 @@ namespace SrcFile {
     else             { return 1; }
   }
 
+  // true if src1 includes src2 
+  inline bool
+  include(SrcFile::ln beg1, SrcFile::ln end1, SrcFile::ln beg2, SrcFile::ln end2)
+  {
+    return (beg1<=beg2 && end1>=end2); // src1 includes src2 ? 
+  }
 
 } // namespace SrcFile
 
