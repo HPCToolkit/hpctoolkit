@@ -127,6 +127,7 @@ namespace Prof {
 // this variable will be used by getFileIdFromMap in CCT-Tree.cpp
 // ---------------------------------------------------
 std::map<uint, uint> m_mapFileIDs;      // map between file IDs
+std::map<uint, uint> m_mapProcIDs;      // map between proc IDs
 
 namespace CallPath {
 
@@ -454,7 +455,10 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
 
 
 
-class FilenameCompare {
+// ---------------------------------------------------
+// String comparison used for hash map
+// ---------------------------------------------------
+class StringCompare {
 public:
   bool operator()(const std::string n1,  const std::string n2) const {
     return n1.compare(n2)<0;
@@ -466,8 +470,41 @@ public:
 // this hack is needed to avoid duplicate filenames
 // which occurs with alien nodes
 // ---------------------------------------------------
-static std::map<std::string, uint, FilenameCompare> m_mapFiles; // map the filenames and the ID
+static std::map<std::string, uint, StringCompare> m_mapFiles; // map the filenames and the ID
+static std::map<std::string, uint, StringCompare> m_mapProcs; // map the procedure names and the ID
 
+// attempt to retrieve the filename of a node
+// if the node is an alien or a loop or a file, then we are guaranteed to
+// retrieve the current filename associated to the node.
+//
+// However, if the node is not of those types, we'll try to get 
+// the ancestor file of the node. This is not the proper way to get the
+// filename, but it's the closest we can get (AFAIK).
+static const char *
+getFileName(Struct::ANode* strct)
+{
+  const char *nm = NULL;
+  if (strct)
+  {
+    const std::type_info &tid = typeid(*strct);
+
+    if (tid == typeid(Struct::Alien)) {
+	nm = static_cast<Struct::Alien*>(strct)->fileName().c_str();
+    } else if (tid == typeid(Struct::Loop)) {
+	nm = static_cast<Struct::Loop*>(strct)->fileName().c_str();
+    } else if (tid == typeid(Struct::File)){
+	nm = static_cast<Struct::File*>(strct)->name().c_str();
+    } else {
+      	Prof::Struct::File *file = strct->ancestorFile();
+      	if (file) {
+	  nm = file->name().c_str();
+      	}
+    }
+  }
+  return nm;
+}
+
+// writing XML dictionary in the header part of experiment.xml
 static void
 writeXML_help(std::ostream& os, const char* entry_nm,
 	      Struct::Tree* structure, const Struct::ANodeFilter* filter,
@@ -488,13 +525,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       nm = strct->name().c_str();
     }
     else if (type == 2) { // File
-      if (typeid(*strct) == typeid(Struct::Alien)) {
-	nm = static_cast<Struct::Alien*>(strct)->fileName().c_str();
-      } else if (typeid(*strct) == typeid(Struct::Loop)) {
-	nm = static_cast<Struct::Loop*>(strct)->fileName().c_str();
-      } else {
-	nm = static_cast<Struct::File*>(strct)->name().c_str();
-      }
+      nm = getFileName(strct);	
       // ---------------------------------------
       // avoid redundancy in XML filename dictionary
       // (exception for unknown-file)
@@ -517,6 +548,31 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     }
     else if (type == 3) { // Proc
       nm = normalize_name(strct->name().c_str());
+
+      // -------------------------------------------------------
+      // avoid redundancy in XML procedure dictionary
+      // a procedure can have the same name if they are from different
+      // file or different load module
+      // -------------------------------------------------------
+      const char *filename = getFileName(strct);	
+      // we need to allow the same function name from a different file
+      std::string completProcName(filename);
+      completProcName.append(":");
+      completProcName.append(nm);
+      if (m_mapProcs.find(completProcName) == m_mapProcs.end()) 
+      {
+	 // the proc is not in dictionary. Add it into the map.
+	 m_mapProcs[completProcName] = id;
+      } else 
+      {
+	 // the same procedure name already exists, we need to reuse
+	 // the previous ID instead of the original one.
+	 uint id_orig = m_mapProcs[completProcName];
+
+	 // remember that this ID needs redirection to the existing ID
+	 Prof::m_mapProcIDs[id] = id_orig;
+	 continue;
+      }
     }
     else {
       DIAG_Die(DIAG_UnexpectedInput);

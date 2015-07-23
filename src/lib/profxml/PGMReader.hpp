@@ -77,6 +77,7 @@ namespace Prof {
 
 namespace Struct {
 
+
 void
 readStructure(Tree& structure, 
 	      const std::vector<string>& structureFiles,
