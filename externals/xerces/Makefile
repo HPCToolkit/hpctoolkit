@@ -9,5 +9,7 @@ SRC_DIR = xerces-c-3.1.1
 
 FETCH_TARFILE = $(SRC_DIR).tar.gz
 
+POST_INSTALL_CMD = ./post-install
+
 include ../build-utils/Makefile.inc
 

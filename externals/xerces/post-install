@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+#  Xerces post-install
+#
+#  Work around some broken paths for libstdc++.la.
+#
+#  $Id$
+#
+
+PKG_NAME=xerces
+src=xerces-c-3.1.1
+
+. ../build-utils/configure.inc
+prefix="$xerces_prefix"
+
+if test "x$is_cross_compile" = x ; then
+    exit 0
+fi
+
+#
+# On some newer Intel Phi systems (phi.cs), the libdir path in the
+# back end (k1om) libstdc++.la is broken.  (It contains the back end
+# path and won't link from the front end.)  This propagates to
+# dependency_libs in xerces and breaks the build for hpcprof.
+#
+# This is an approximate work around that removes libstdc++.la from
+# dependency_libs in libxerces-c.la.  We already add libstdc++.so in
+# hpcprof and struct.  So far, this only happens in a cross compile
+# for xerces, but we may need to modify or extend the work around
+# going forward.
+#
+
+cd "${prefix}/lib" || die "unable to cd: ${prefix}/lib"
+
+file='libxerces-c.la'
+orig="orig-${file}"
+
+rm -f "$orig"
+mv -f "$file" "$orig"
+rm -f "$file"
+
+echo "remove libstdc++.la from dependency_libs in $file"
+
+sed -e 's,\(dependency_libs=.*\)\(/usr[^ ]*libstdc++.la\),\1,' \
+    <"$orig"  >"$file"
+
+if test $? -ne 0 ; then
+    die "sed-edit $file failed"
+fi
