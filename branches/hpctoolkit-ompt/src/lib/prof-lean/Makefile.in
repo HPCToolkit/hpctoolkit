@@ -85,10 +85,12 @@ libHPCprof_lean_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = libHPCprof_lean_la-hpcrun-fmt.lo \
 	libHPCprof_lean_la-hpcfmt.lo libHPCprof_lean_la-hpcio.lo \
 	libHPCprof_lean_la-hpcio-buffer.lo \
+	libHPCprof_lean_la-binarytree.lo \
 	libHPCprof_lean_la-mcs-lock.lo \
 	libHPCprof_lean_la-QueuingRWLock.lo \
 	libHPCprof_lean_la-pfq-rwlock.lo \
-	libHPCprof_lean_la-spinlock.lo \
+	libHPCprof_lean_la-spinlock.lo libHPCprof_lean_la-urand.lo \
+	libHPCprof_lean_la-usec_time.lo \
 	libHPCprof_lean_la-BalancedTree.lo \
 	libHPCprof_lean_la-placeholders.lo \
 	libHPCprof_lean_la-lush-support.lo
@@ -377,10 +379,13 @@ MYSOURCES = \
 	\
 	atomic.h \
 	atomic-op.h atomic-op.i \
+	binarytree.h binarytree.c \
 	mcs-lock.h mcs-lock.c \
 	QueuingRWLock.h QueuingRWLock.c \
 	pfq-rwlock.h pfq-rwlock.c \
 	spinlock.h spinlock.c \
+        urand.h urand.c \
+	usec_time.h usec_time.c \
 	\
 	BalancedTree.h BalancedTree.c \
 	\
@@ -465,6 +470,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-BalancedTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-QueuingRWLock.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-binarytree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcfmt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcio-buffer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcio.Plo@am__quote@
@@ -474,6 +480,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-pfq-rwlock.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-placeholders.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-spinlock.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-urand.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-usec_time.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -524,6 +532,13 @@ libHPCprof_lean_la-hpcio-buffer.lo: hpcio-buffer.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-hpcio-buffer.lo `test -f 'hpcio-buffer.c' || echo '$(srcdir)/'`hpcio-buffer.c
 
+libHPCprof_lean_la-binarytree.lo: binarytree.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-binarytree.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-binarytree.Tpo -c -o libHPCprof_lean_la-binarytree.lo `test -f 'binarytree.c' || echo '$(srcdir)/'`binarytree.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-binarytree.Tpo $(DEPDIR)/libHPCprof_lean_la-binarytree.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='binarytree.c' object='libHPCprof_lean_la-binarytree.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-binarytree.lo `test -f 'binarytree.c' || echo '$(srcdir)/'`binarytree.c
+
 libHPCprof_lean_la-mcs-lock.lo: mcs-lock.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-mcs-lock.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-mcs-lock.Tpo -c -o libHPCprof_lean_la-mcs-lock.lo `test -f 'mcs-lock.c' || echo '$(srcdir)/'`mcs-lock.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-mcs-lock.Tpo $(DEPDIR)/libHPCprof_lean_la-mcs-lock.Plo
@@ -551,6 +566,20 @@ libHPCprof_lean_la-spinlock.lo: spinlock.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='spinlock.c' object='libHPCprof_lean_la-spinlock.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-spinlock.lo `test -f 'spinlock.c' || echo '$(srcdir)/'`spinlock.c
+
+libHPCprof_lean_la-urand.lo: urand.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-urand.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-urand.Tpo -c -o libHPCprof_lean_la-urand.lo `test -f 'urand.c' || echo '$(srcdir)/'`urand.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-urand.Tpo $(DEPDIR)/libHPCprof_lean_la-urand.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='urand.c' object='libHPCprof_lean_la-urand.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-urand.lo `test -f 'urand.c' || echo '$(srcdir)/'`urand.c
+
+libHPCprof_lean_la-usec_time.lo: usec_time.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-usec_time.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-usec_time.Tpo -c -o libHPCprof_lean_la-usec_time.lo `test -f 'usec_time.c' || echo '$(srcdir)/'`usec_time.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-usec_time.Tpo $(DEPDIR)/libHPCprof_lean_la-usec_time.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='usec_time.c' object='libHPCprof_lean_la-usec_time.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-usec_time.lo `test -f 'usec_time.c' || echo '$(srcdir)/'`usec_time.c
 
 libHPCprof_lean_la-BalancedTree.lo: BalancedTree.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-BalancedTree.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-BalancedTree.Tpo -c -o libHPCprof_lean_la-BalancedTree.lo `test -f 'BalancedTree.c' || echo '$(srcdir)/'`BalancedTree.c
