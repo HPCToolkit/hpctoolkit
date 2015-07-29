@@ -1713,6 +1713,9 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 // manager and make sure they don't work at cross purposes.
 // ---> don't use the location manager
 //
+// 8. Demangle proc names for the hpcstruct file.
+// ---> added the binutils version, may need parseapi names
+//
 // --------------------------------------------------
 //
 // Remaining TO-DO items:
@@ -1735,9 +1738,9 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 // 7. Maybe write our own functions for coalescing statements and
 // aliens and normalizing source code transforms.
 //
-// 8. Demangle proc names for the hpcstruct file.
-//
 // 9. Improve scope info and alien map in makeScopeTree().
+// ---> partially done, open ended on how to handle cases where
+// ---> inline info does match parseapi tree
 //
 // 10. Decide how to handle basic blocks that belong to multiple
 // functions.
@@ -2271,6 +2274,43 @@ reparentInlineLoop(TreeNode * root, TreeNode * loopNode, FLPSeqn & path)
 }
 
 
+// Find the alien node in 'alienMap' that matches 'file_index'.
+// Create new node and link into map and 'enclScope' if needed.
+// Expand the line range of an earlier node if needed.
+//
+static Prof::Struct::ACodeNode *
+findAlienScope(Prof::Struct::ACodeNode * enclScope, AlienScopeMap & alienMap,
+	       long file_index, SrcFile::ln line, long proc_index,
+	       StringTable & strTab, ProcNameMgr * nameMgr)
+{
+  Prof::Struct::ACodeNode * alien;
+  auto ait = alienMap.find(file_index);
+
+  if (ait != alienMap.end()) {
+    // alien node exists, expand the line range
+    alien = ait->second;
+
+    if (line < alien->begLine()) {
+      alien->begLine(line);
+    }
+    if (line > alien->endLine()) {
+      alien->endLine(line);
+    }
+  }
+  else {
+    // create new alien, link into map and enclScope
+    const string & filenm = strTab.index2str(file_index);
+    const string & procnm = strTab.index2str(proc_index);
+    const string & display = BinUtil::canonicalizeProcName(procnm, nameMgr);
+
+    alien = new Prof::Struct::Alien(enclScope, filenm, procnm, display, line, line);
+    alienMap[file_index] = alien;
+  }
+
+  return alien;
+}
+
+
 // Convert inline TreeNode 'tree' to Prof::Struct scope tree format
 // and merge into 'enclScope'.
 //
@@ -2298,24 +2338,11 @@ makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
     VMA vma = info->vma;
     long myfile = info->file_index;
     SrcFile::ln line = info->line_num;
+    long proc = (scinfo.is_alien) ? scinfo.proc_index : info->proc_index;
     scope = enclScope;
 
     if (scinfo.is_alien || myfile != scinfo.file_index) {
-      auto ait = alienMap.find(myfile);
-
-      if (ait != alienMap.end()) {
-	scope = ait->second;
-      }
-      else {
-	// prefer the inline proc name to stmt's proc name.
-	long proc = (scinfo.is_alien) ? scinfo.proc_index : info->proc_index;
-	const string & filenm = strTab.index2str(myfile);
-	const string & procnm = strTab.index2str(proc);
-	const string & display = BinUtil::canonicalizeProcName(procnm, nameMgr);
-
-	scope = new Prof::Struct::Alien(scope, filenm, procnm, display, line, line);
-	alienMap[myfile] = scope;
-      }
+      scope = findAlienScope(scope, alienMap, myfile, line, proc, strTab, nameMgr);
     }
 
     new Prof::Struct::Stmt(scope, line, line, vma, vma + info->len);
@@ -2330,28 +2357,16 @@ makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
     long myfile = info->file_index;
     string filenm = strTab.index2str(myfile);
     SrcFile::ln line = info->line_num;
+    long proc = (scinfo.is_alien) ? scinfo.proc_index : info->proc_index;
     scope = enclScope;
 
     if (scinfo.is_alien || myfile != scinfo.file_index) {
-      auto ait = alienMap.find(myfile);
-
-      if (ait != alienMap.end()) {
-	scope = ait->second;
-      }
-      else {
-	// prefer the inline proc name to stmt's proc name.
-	long proc = (scinfo.is_alien) ? scinfo.proc_index : info->proc_index;
-	const string & procnm = strTab.index2str(proc);
-	const string & display = BinUtil::canonicalizeProcName(procnm, nameMgr);
-
-	scope = new Prof::Struct::Alien(scope, filenm, procnm, display, line, line);
-	alienMap[myfile] = scope;
-      }
+      scope = findAlienScope(scope, alienMap, myfile, line, proc, strTab, nameMgr);
     }
 
     Prof::Struct::Loop *loop = new Prof::Struct::Loop(scope, filenm, line, line);
-
     loop->vmaSet().insert(vma, vma + 1);
+
     makeScopeTree(loop, ScopeInfo(myfile), (*lit)->node, strTab, nameMgr);
   }
 
@@ -2361,21 +2376,21 @@ makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
   //
   for (auto nit = tree->nodeMap.begin(); nit != tree->nodeMap.end(); ++nit) {
     FLPIndex flp = nit->first;
-    const string & filenm = strTab.index2str(flp.file_index);
-    const string & procnm = strTab.index2str(flp.proc_index);
-    const string & display = BinUtil::canonicalizeProcName(procnm, nameMgr);
+    long myfile = flp.file_index;
     long line = flp.line_num;
+    long proc = (scinfo.is_alien) ? scinfo.proc_index : flp.proc_index;
+    const string & filenm = strTab.index2str(myfile);
     scope = enclScope;
 
     // add a target alien between two call site aliens.
-    if (scinfo.is_alien) {
-      scope = new Prof::Struct::Alien(scope, filenm, procnm, display, line, line);
+    if (scinfo.is_alien || myfile != scinfo.file_index) {
+      scope = findAlienScope(scope, alienMap, myfile, line, proc, strTab, nameMgr);
     }
 
     // add the call site alien with no proc name.
     scope = new Prof::Struct::Alien(scope, filenm, "", "", line, line);
 
-    makeScopeTree(scope, ScopeInfo(flp.file_index, true, flp.proc_index),
+    makeScopeTree(scope, ScopeInfo(myfile, true, flp.proc_index),
 		  nit->second, strTab, nameMgr);
   }
 }
