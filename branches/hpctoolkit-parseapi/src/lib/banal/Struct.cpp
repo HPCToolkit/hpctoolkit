@@ -326,8 +326,7 @@ private:
 // ------------------------------------------------------------
 
 // Write the Control-Flow Graph for each procedure to the ostream
-// dotFile.  This code will likely migrate somewhere down inside
-// buildProcStructure at some later time.
+// dotFile.
 
 #ifdef BANAL_USE_PARSEAPI
 static void
@@ -623,12 +622,6 @@ buildLMSkeleton(Prof::Struct::LM* lmStrct,
 // address.  We still use BinUtil::Proc for the line map info, even in
 // the ParseAPI case.
 //
-// FIXME: The ParseAPI and BinUtil function entry points agree about
-// 99% of the time, but not always.  To handle the last 1%, we should
-// store the BinUtil::Proc address *ranges* and lookup the ParseAPI
-// entry point in the BinUtil range.  But this will do for now to see
-// how the rest of the code works.
-//
 #ifdef BANAL_USE_PARSEAPI
 static ProcInfoVec *
 buildLMSkeleton(Prof::Struct::LM* lmStrct,
@@ -638,25 +631,14 @@ buildLMSkeleton(Prof::Struct::LM* lmStrct,
 {
   ProcInfoVec * pvec = new ProcInfoVec;
 
-  // match up the ParseAPI and BinUtil procs by entry address
-  map <VMA, BinUtil::Proc *> proc_map;
-  map <VMA, BinUtil::Proc *>::iterator pmit;
-
-  for (auto it = lm->procs().begin(); it != lm->procs().end(); ++it) {
-    VMA vma = it->first.beg();
-    BinUtil::Proc * proc = it->second;
-    proc_map[vma] = proc;
-  }
-
   // iterate over the ParseAPI Functions
   const CodeObject::funclist & funcList = code_obj->funcs();
 
   for (auto fit = funcList.begin(); fit != funcList.end(); ++fit) {
-    ParseAPI::Function * func = *fit;
-    pmit = proc_map.find((VMA) func->addr());
+    ParseAPI::Function *func = *fit;
+    BinUtil::Proc *p = lm->findProc((VMA) func->addr());
 
-    if (pmit != proc_map.end() && pmit->second->size() != 0) {
-      BinUtil::Proc *p = pmit->second;
+    if (p != NULL) {
       Prof::Struct::File * fStrct = demandFileNode(lmStrct, p);
       Prof::Struct::Proc * pStrct = demandProcNode(fStrct, p, procNmMgr);
       pvec->push_back(ProcInfo(pStrct, p, func));
@@ -1716,6 +1698,9 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 // 8. Demangle proc names for the hpcstruct file.
 // ---> added the binutils version, may need parseapi names
 //
+// 11. Add address ranges to buildLMSkeleton().
+// ---> use LM->findProc() to lookup BinUtils proc
+//
 // --------------------------------------------------
 //
 // Remaining TO-DO items:
@@ -1745,9 +1730,14 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 // 10. Decide how to handle basic blocks that belong to multiple
 // functions.
 //
-// 11. Add address ranges to buildLMSkeleton().
-//
 // 12. Add call_sortId from buildStmts() to doBlock().
+//
+// 13. Demangle names in the Open Analysis case.
+//
+// 14. Import fix for duplicate proc names (pretty vs. typed/mangled).
+//
+// 15. Some missing file names are "~unknown-file~", some are "", they
+// string match to not equal, causing a spurious alien.
 //
 
 #ifdef BANAL_USE_PARSEAPI
@@ -2041,7 +2031,7 @@ doLoopLate(ProcInfo pinfo, BlockSet & visited, TreeNode * root,
   procnm = BinUtil::canonicalizeProcName(procnm, nameMgr);
 
   StmtInfo *sinfo =
-    addStmtToTree(root, strTab, loop_vma, loop_vma + 1, filenm, line, procnm);
+    addStmtToTree(root, strTab, loop_vma, 1, filenm, line, procnm);
 
 #if DEBUG_CFG_SOURCE
   cout << "\nheader:  0x" << hex << loop_vma << dec
