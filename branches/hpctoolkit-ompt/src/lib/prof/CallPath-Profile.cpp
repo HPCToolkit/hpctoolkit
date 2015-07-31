@@ -558,7 +558,26 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       // we need to allow the same function name from a different file
       std::string completProcName(filename);
       completProcName.append(":");
-      completProcName.append(nm);
+      const char *lnm;
+
+      // a procedure name within the same file has to be unique.
+      // However, for codes compiled with GCC, binutils (or parseAPI) 
+      // it's better to compare internally with the mangled names
+      Struct::Proc *proc = dynamic_cast<Struct::Proc *>(strct);
+      if (proc)
+      {
+	if (proc->linkName().empty()) {
+	  // the proc has no mangled name
+	  lnm = proc->name().c_str();
+	} else
+	{ // get the mangled name
+       	  lnm = proc->linkName().c_str();
+	}
+      } else
+      {
+	lnm = strct->name().c_str();
+      }
+      completProcName.append(lnm);
       if (m_mapProcs.find(completProcName) == m_mapProcs.end()) 
       {
 	 // the proc is not in dictionary. Add it into the map.
