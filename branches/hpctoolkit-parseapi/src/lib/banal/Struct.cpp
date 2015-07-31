@@ -2368,12 +2368,12 @@ makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
     FLPIndex flp = nit->first;
     long myfile = flp.file_index;
     long line = flp.line_num;
-    long proc = (scinfo.is_alien) ? scinfo.proc_index : flp.proc_index;
+    long proc = scinfo.proc_index;
     const string & filenm = strTab.index2str(myfile);
     scope = enclScope;
 
     // add a target alien between two call site aliens.
-    if (scinfo.is_alien || myfile != scinfo.file_index) {
+    if (scinfo.is_alien) {
       scope = findAlienScope(scope, alienMap, myfile, line, proc, strTab, nameMgr);
     }
 
