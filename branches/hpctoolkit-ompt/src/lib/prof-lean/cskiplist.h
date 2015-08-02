@@ -42,86 +42,63 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
+
 //******************************************************************************
 //
 // File:
 //   $HeadURL$
 //
 // Purpose:
-//   Implement an API for generating thread-local streams of uniform random 
-//   numbers. 
+//   Define an API for a concurrent skip list.
 //
 //******************************************************************************
 
+#ifndef __cskiplist_h__
+#define __cskiplist_h__
 
-
-//******************************************************************************
-// global includes
-//******************************************************************************
-
-#include <stdio.h>
-
-#define __USE_POSIX 1  // needed to get decl for rand_r with -std=c99
-
-#include <stdlib.h>
+#include "mcs-lock.h"
 
 
 
 //******************************************************************************
-// local includes
+// types
 //******************************************************************************
 
-#include "usec_time.h"
+typedef struct node_s {
+  int value;
+  int height;
+  bool fully_linked;
+  bool marked;
+
+  mcs_lock_t lock;
+
+  // memory allocated for a node will include space for its vector of  pointers 
+  struct node_s *nexts[]; 
+} node_t;
+
+
+typedef struct cskiplist_s {
+  node_t *left_sentinel;
+  node_t *right_sentinel;
+  int max_height;
+} cskiplist_t;
+
 
 
 //******************************************************************************
-// macros
+// interface operations
 //******************************************************************************
 
-#define LOW_32BITS ((unsigned int) ~0)
+cskiplist_t *cskiplist_new(int max_height);
+
+node_t *cskiplist_find(cskiplist_t *l,   int value);
+
+bool cskiplist_insert(cskiplist_t *l, int value);
+
+bool cskiplist_delete(cskiplist_t *l, int value);
+
+bool cskiplist_delete_bulk_unsynchronized(cskiplist_t *l, int low, int high);
 
 
-
-//******************************************************************************
-// local thread private data
-//******************************************************************************
-
-static __thread int urand_initialized = 0;
-static __thread unsigned int urand_data; 
-
-
-
-//******************************************************************************
-// interface functions
-//******************************************************************************
-
-
-// Function: urand
-//
-// Purpose:
-//   generate a pseudo-random number between [0 .. RAND_MAX]. a thread-local 
-//   seed is initialized using the time of day in microseconds when a thread 
-//   first calls the generator.
-// 
-// NOTE: 
-//   you might be tempted to use srandom_r and random_r instead. my experience
-//   is that this led to a SIGSEGV when used according to the man page on an
-//   x86_64. this random number generator satisfies our modest requirements. 
-int
-urand()
-{
-  if (!urand_initialized) {
-    int i;
-    urand_data = usec_time() & LOW_32BITS;
-    urand_initialized = 1;
-  } 
-  return rand_r(&urand_data);
-}
-
-
-// generate a pseudo-random number [0 .. n], where n <= RAND_MAX
-int 
-urand_bounded(int n) 
-{
-  return urand() % n;
-}
+#endif

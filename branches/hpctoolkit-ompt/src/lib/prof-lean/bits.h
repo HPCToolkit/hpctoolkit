@@ -48,80 +48,87 @@
 //   $HeadURL$
 //
 // Purpose:
-//   Implement an API for generating thread-local streams of uniform random 
-//   numbers. 
-//
+//   Define common operations for examining bits in a 64-bit quantity.
 //******************************************************************************
+
+#ifndef __bits_h__
+#define __bits_h__
+
+
+#include <stdint.h> 
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+static inline uint64_t
+bits_clear_first_1(uint64_t v)
+{
+  return v & (v-1);
+}
+
+
+static inline uint64_t
+bits_find_first_1(uint64_t v)
+{
+  return v - bits_clear_first_1(v);
+}
+
+
+// if no bit is set, return -1
+// otherwise return position of highest bit set
+static inline int
+bits_hibit(uint64_t v)
+{
+  int result = -1; 
+  while (v) { result++; v>>=1; }
+  return result;
+}
+
+
+// bits are numbered 63 .. 0
+// extract bits from low to high
+static inline uint64_t
+bits_extract(uint64_t v, int low, int high)
+{
+  uint64_t top_mask = (~0ULL) >> (63-high);
+  uint64_t bottom_mask = (~0ULL) << low;
+  return (v & top_mask & bottom_mask);
+}
 
 
 
 //******************************************************************************
-// global includes
+// unit test
 //******************************************************************************
+
+#define UNIT_TEST__bits__h__ 0
+#if UNIT_TEST__bits__h__
 
 #include <stdio.h>
-
-#define __USE_POSIX 1  // needed to get decl for rand_r with -std=c99
-
-#include <stdlib.h>
-
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include "usec_time.h"
-
-
-//******************************************************************************
-// macros
-//******************************************************************************
-
-#define LOW_32BITS ((unsigned int) ~0)
-
-
-
-//******************************************************************************
-// local thread private data
-//******************************************************************************
-
-static __thread int urand_initialized = 0;
-static __thread unsigned int urand_data; 
-
-
-
-//******************************************************************************
-// interface functions
-//******************************************************************************
-
-
-// Function: urand
-//
-// Purpose:
-//   generate a pseudo-random number between [0 .. RAND_MAX]. a thread-local 
-//   seed is initialized using the time of day in microseconds when a thread 
-//   first calls the generator.
-// 
-// NOTE: 
-//   you might be tempted to use srandom_r and random_r instead. my experience
-//   is that this led to a SIGSEGV when used according to the man page on an
-//   x86_64. this random number generator satisfies our modest requirements. 
-int
-urand()
+int main()
 {
-  if (!urand_initialized) {
-    int i;
-    urand_data = usec_time() & LOW_32BITS;
-    urand_initialized = 1;
-  } 
-  return rand_r(&urand_data);
-}
+  for (int v = 0; v < 32; v++)
+    printf("testing ff1 %d:\n\t%0x\n\t%0x\n\n", v, v, bits_find_first_1(v));
+
+  int v = 0;
+  printf("testing hibit %d:\n\t%0x\n\t%d\n\n", v, v, bits_hibit(v));
+  for (int v = 1; v <= 32; v <<=1)
+    printf("testing hibit %d:\n\t%0x\n\t%d\n\n", v, v, bits_hibit(v));
 
 
-// generate a pseudo-random number [0 .. n], where n <= RAND_MAX
-int 
-urand_bounded(int n) 
-{
-  return urand() % n;
+  uint64_t vv = ~0ULL;
+  for (int l = 0; l < 31; l++) 
+    printf("testing extract(low=%d,high=%d)\n\t%016lx\n\t%016lx\n\n", l, 63, vv, bits_extract(vv,l,63));
+
+  for (int l = 0; l < 31; l++) 
+    printf("testing extract(low=%d,high=%d)\n\t%016lx\n\t%016lx\n\n", l, 63, vv, bits_extract(vv,0,63-l));
+
+  for (int l = 0; l < 31; l++) 
+    printf("testing extract(low=%d,high=%d)\n\t%016lx\n\t%016lx\n\n", l, 63, vv, bits_extract(vv,l,63-l));
+
+  return 0;
 }
+#endif
+
+#endif

@@ -90,7 +90,7 @@ typedef struct {
 // interface functions
 //******************************************************************************
 
-static inline
+static inline void
 mcs_init(mcs_lock_t *l)
 {
   l->tail = 0;
