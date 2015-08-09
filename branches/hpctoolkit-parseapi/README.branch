@@ -25,6 +25,10 @@ Note: these directions are for this branch only and will break with
 trunk.  So, DO NOT commit anything back to externals (and don't branch
 externals either).
 
+Note: use dyninst from git after about Aug 1, 2015 or else the
+soon-to-be-released dyninst 9.0.  Before then, some of the patches and
+config parameters are different.
+
 1. Clone a recent dyninst.  This should checkout the branch 'master'
 automatically, but if not, then checkout master.  It's simplest to
 name the directory 'dyninst-8.2' to match the tar file in
@@ -48,54 +52,22 @@ uncompressed and about 6.5 Meg compressed.
 3. Checkout externals as usual and replace 'dyninst-8.2.tar.gz' in
 externals/distfiles with this new one.
 
-4. Cd to externals/symtabAPI/patches-82 and make the following
-changes:
+4. Patch the symtabAPI config scripts with 'patch-symtab' as follows:
 
-4.A -- delete or rename the file 'patch-181' to something that doesn't
-match 'patch-*'.  This patch no longer applies cleanly to git head,
-but it's only for Intel MIC, so it's not needed here.
+cd externals/symtabAPI
+patch -p0 < .../patch-symtab
 
-4.B -- delete or rename 'patch-rt'.  Again, it won't apply cleanly and
-we don't really need it.
+5. In the patches-82 subdirectory, delete or rename the following
+patches.  They either won't apply cleanly or have been incorporated
+into git head.  But they're not really needed.
 
-4.C -- copy 'patch-getName' from this directory (hpctoolkit-parseapi)
-into patches-82.  At some point, Wisconsin will add this to git head
-and then this patch will become a duplicate.
-
-As of June 24, 2015, this patch is now included in git master,
-so don't apply this step.
-
-4.D -- if the patch 'patch-symtab-dwarfwalker' fails to apply cleanly
-in symtabAPI 'make fetch', then delete or rename it.
-
-Again, this patch fixes a certain bug.  At some point, Wisconsin will
-add the fix to git head and this patch will become a duplicate.
-
-5. Make one manual edit in symtabAPI/Makefile to add 'instructionAPI'
-and 'parseAPI' to BUILD_SUBDIRS.  Put these at the end of the list.
-
---- symtabAPI/Makefile  (revision 4737)
-+++ symtabAPI/Makefile  (working copy)
-@@ -33,7 +33,7 @@
- PATCH_DIR = patches-82
- FETCH_COPY_FILES = cmake/optimization.cmake
- CONFIG_CMD = ./configure-82
--BUILD_SUBDIRS = common elf dwarf symtabAPI
-+BUILD_SUBDIRS = common elf dwarf symtabAPI instructionAPI parseAPI
- PREREQS += binutils
- 
- endif
-
-If the tar file is not named 'dyninst-8.2.tar.gz' or the directory is
-not named 'dyninst-8.2', then you'll also need to edit FETCH_TARFILE
-and SRC_DIR in symtabAPI/Makefile and set 'src' in configure-8.2.
+patch-181
+patch-rt
+patch-symtab-dwarfwalker
 
 6. Configure and build externals as usual.  Check that the symtabAPI
 include directory contains 'CFG.h' and 'CodeObject.h', and that lib
 contains 'libparseAPI.so' and 'libinstructionAPI.so'.
-
-If the 'patch-symtab-dwarfwalker' patch fails, then remove or rename
-it and try again.  'make fetch' from inside symtabAPI will test this.
 
 7. Configure and build hpctoolkit from this branch as usual.
 Configure will auto-detect the new parseAPI code.

@@ -1,0 +1,34 @@
+This patch updates the symtab build scripts to build symtabAPI +
+parseAPI from a recent git head.  Apply this patch from inside the
+externals/symtabAPI directory.
+
+cd externals/symtabAPI
+patch -p0 < patch-symtab
+
+
+Index: Makefile
+===================================================================
+--- Makefile	(revision 4802)
++++ Makefile	(working copy)
+@@ -33,7 +33,7 @@
+ PATCH_DIR = patches-82
+ FETCH_COPY_FILES = cmake/optimization.cmake
+ CONFIG_CMD = ./configure-82
+-BUILD_SUBDIRS = common elf dwarf symtabAPI
++BUILD_SUBDIRS = common elf dwarf symtabAPI instructionAPI parseAPI
+ PREREQS += binutils
+ 
+ endif
+Index: configure-82
+===================================================================
+--- configure-82	(revision 4802)
++++ configure-82	(working copy)
+@@ -21,7 +21,7 @@
+     -DCMAKE_C_COMPILER="$symtab_cc_path" \
+     -DCMAKE_CXX_COMPILER="$symtab_cxx_path" \
+     -DPATH_BOOST="$boost_prefix" \
+-    -DIBERTY_LIBRARY="$binutils_prefix/lib/libiberty.a" \
++    -DIBERTY_LIBRARIES="$binutils_prefix/lib/libiberty.a" \
+     -DLIBELF_INCLUDE_DIR="$libelf_inc" \
+     -DLIBELF_LIBRARIES="$libelf_lib/libelf.so" \
+     -DLIBDWARF_INCLUDE_DIR="$libdwarf_inc" \
