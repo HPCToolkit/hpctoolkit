@@ -63,10 +63,26 @@
 #ifndef __Demangler_hpp__
 #define __Demangler_hpp__
 
+//***************************************************************************
+// types
+//***************************************************************************
+
+typedef char *(*demangler_t)
+  (const char *mangled_name, 
+   char *output_buffer, 
+   size_t *length, 
+   int *status);
+
+
+
+//***************************************************************************
+// interface operations
+//***************************************************************************
+
 extern "C" {
 
 void
-hpctoolkit_demangler_library(const char *filename);
+hpctoolkit_demangler_set(demangler_t _demangle_fn);
 
 
 char *

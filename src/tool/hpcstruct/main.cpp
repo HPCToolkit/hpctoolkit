@@ -63,9 +63,12 @@
 using std::cerr;
 using std::endl;
 
+#include <dlfcn.h>
 #include <fstream>
+#include <stdio.h>
 #include <streambuf>
 #include <new>
+
 
 //*************************** User Include Files ****************************
 
@@ -83,13 +86,57 @@ using std::endl;
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
 
+
+
+//******************************************************************************
+// macros
+//******************************************************************************
+
+#define CXX_DEMANGLER_FN_NAME "__cxa_demangle"
+
+
+
 //*************************** Forward Declarations ***************************
 
 static int
 realmain(int argc, char* argv[]);
 
 
-//****************************************************************************
+static void
+hpctoolkit_demangler_error(char *error_string, const char *demangler_library_filename)
+{
+  std::cerr << "WARNING: Unable to open user-specified C++ demangler library '" 
+            << demangler_library_filename << "'" << std::endl; 
+
+  std::cerr << "         Dynamic library error: '" << error_string <<  "'" 
+            << std::endl; 
+
+  std::cerr << "         Using default demangler instead." << std::endl;
+}
+
+
+static void
+hpctoolkit_demangler_init(const char *demangler_library_filename)
+{
+  if (demangler_library_filename) {
+    static void *demangler_library_handle =
+      dlopen(demangler_library_filename, RTLD_LAZY | RTLD_LOCAL);
+
+    if (demangler_library_handle) {
+      dlerror(); // clear error condition before calling dlsym
+
+      demangler_t demangle_fn = (demangler_t) 
+        dlsym(demangler_library_handle, CXX_DEMANGLER_FN_NAME);
+
+      if (demangle_fn) {
+        hpctoolkit_demangler_set(demangle_fn);
+        return; 
+      }
+    }
+    hpctoolkit_demangler_error(dlerror(), demangler_library_filename);
+  } 
+}
+
 
 int
 main(int argc, char* argv[])
@@ -127,7 +174,7 @@ realmain(int argc, char* argv[])
   // Set the demangler before reading the executable 
   // ------------------------------------------------------------
   const char* demangle_library = args.demangle_library.c_str();
-  if (demangle_library) hpctoolkit_demangler_library(demangle_library);
+  if (demangle_library) hpctoolkit_demangler_init(demangle_library);
 
   
   // ------------------------------------------------------------

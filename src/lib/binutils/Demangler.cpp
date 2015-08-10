@@ -66,10 +66,6 @@
 // global includes
 //******************************************************************************
 
-#include <iostream>
-
-#include <stdio.h>
-#include <dlfcn.h>
 #include <cxxabi.h>
 
 
@@ -83,75 +79,10 @@
 
 
 //******************************************************************************
-// macros
-//******************************************************************************
-
-#define CXX_DEMANGLER_FN_NAME "__cxa_demangle"
-
-
-
-//******************************************************************************
-// type definitions
-//******************************************************************************
-
-typedef char *(*demangler_t)
-  (const char *mangled_name, 
-   char *output_buffer, 
-   size_t *length, 
-   int *status);
-
-
-
-//******************************************************************************
 // local variables
 //******************************************************************************
 
-static const char *demangler_library_filename = NULL;
-
-static void       *demangler_library_handle   = NULL;
-
-static demangler_t demangle_fn                = NULL;
-
-
-
-//******************************************************************************
-// private operations
-//******************************************************************************
-
-static void
-hpctoolkit_demangler_error(char *error_string)
-{
-  std::cerr << "WARNING: Unable to open user-specified C++ demangler library '" 
-            << demangler_library_filename << "'" << std::endl; 
-
-  std::cerr << "         Dynamic library error: '" << error_string <<  "'" 
-            << std::endl; 
-
-  std::cerr << "         Using default demangler instead." << std::endl;
-}
-
-
-static void
-hpctoolkit_demangler_init()
-{
-  if (demangler_library_filename) {
-    demangler_library_handle = 
-      dlopen(demangler_library_filename, RTLD_LAZY | RTLD_LOCAL);
-
-    if (demangler_library_handle) {
-      dlerror(); // clear error condition before calling dlsym
-
-      demangle_fn = (demangler_t) 
-        dlsym(demangler_library_handle, CXX_DEMANGLER_FN_NAME);
-
-      if (demangle_fn) return;
-    }
-    hpctoolkit_demangler_error(dlerror());
-  } 
-
-  demangle_fn = abi::__cxa_demangle;
-}
-
+static demangler_t demangle_fn = abi::__cxa_demangle;
 
 
 //******************************************************************************
@@ -159,9 +90,9 @@ hpctoolkit_demangler_init()
 //******************************************************************************
 
 void 
-hpctoolkit_demangler_library(const char *filename)
+hpctoolkit_demangler_set(demangler_t _demangle_fn)
 {
-  demangler_library_filename = filename;
+  demangle_fn = _demangle_fn;
 }
 
 
@@ -171,7 +102,5 @@ hpctoolkit_demangle(const char *mangled_name,
                     size_t *length, 
                     int *status)
 {
-  if (demangle_fn == NULL) hpctoolkit_demangler_init();  
-
   return demangle_fn(mangled_name, output_buffer, length, status);
 }
