@@ -61,20 +61,20 @@ static NameMapping renamingTable[] = {
   { "monitor_thread_fence3",  "<thread root>"      },
   { "monitor_thread_fence4",  "<thread root>"      },
 
-  { "omp_idle_state",         "<omp idle>"         },
-  { "omp_idle",               "<omp idle>"         },
+  { "ompt_idle_state",         "<omp idle>"         },
+  { "ompt_idle",               "<omp idle>"         },
 
-  { "omp_overhead_state",     "<omp overhead>"     },
+  { "ompt_overhead_state",     "<omp overhead>"     },
   { "omp_overhead",           "<omp overhead>"     },
 
-  { "omp_barrier_wait_state", "<omp barrier wait>" },
-  { "omp_barrier_wait",       "<omp barrier wait>" },
+  { "ompt_barrier_wait_state", "<omp barrier wait>" },
+  { "ompt_barrier_wait",       "<omp barrier wait>" },
 
-  { "omp_task_wait_state",    "<omp task wait>"    },
-  { "omp_task_wait",          "<omp task wait>"    },
+  { "ompt_task_wait_state",    "<omp task wait>"    },
+  { "ompt_task_wait",          "<omp task wait>"    },
 
-  { "omp_mutex_wait_state",   "<omp mutex wait>"   },
-  { "omp_mutex_wait",         "<omp mutex wait>"   }
+  { "ompt_mutex_wait_state",   "<omp mutex wait>"   },
+  { "ompt_mutex_wait",         "<omp mutex wait>"   }
 
 };
 

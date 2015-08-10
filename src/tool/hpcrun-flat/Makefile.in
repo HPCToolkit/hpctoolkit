@@ -119,8 +119,7 @@ am__objects_2 = hpcrun_flat-hpcrun.$(OBJEXT) \
 	hpcrun_flat-dlpapi.$(OBJEXT)
 am_hpcrun_flat_OBJECTS = $(am__objects_2)
 hpcrun_flat_OBJECTS = $(am_hpcrun_flat_OBJECTS)
-am__DEPENDENCIES_2 = $(HPCLIB_Support)
-hpcrun_flat_DEPENDENCIES = $(am__DEPENDENCIES_2)
+hpcrun_flat_DEPENDENCIES = $(MYLDADD_HPCRUN)
 hpcrun_flat_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcrun_flat_CXXFLAGS) \
 	$(CXXFLAGS) $(hpcrun_flat_LDFLAGS) $(LDFLAGS) -o $@
@@ -447,12 +446,10 @@ MYLDFLAGS_LIBHPCRUN_STATIC = \
 	@HOST_CXXFLAGS@ -all-static
 
 MYLDADD_HPCRUN = \
-	$(HPCLIB_Support) \
-	-ldl
+	$(HPCLIB_Support)
 
 MYLDADD_LIBHPCRUN_PRELOAD = \
 	$(HPCLIB_ProfLean) \
-	-ldl \
 	@OPT_PAPI_LDFLAGS@
 
 MYLDADD_LIBHPCRUN_STATIC = \
