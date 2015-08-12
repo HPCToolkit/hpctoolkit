@@ -522,12 +522,22 @@ demandProcNode(Prof::Struct::File* fStrct, BinUtil::Proc* p,
   DIAG_Assert(!bounds.empty(), "Attempting to add empty procedure "
 	      << bounds.toString());
   
-  // Find procedure name
-  string procNm   = BinUtil::canonicalizeProcName(p->name(), procNmMgr);
-
   // don't demangle the link name. because demangling is a many-->one mapping,
   // we need to keep the link name (the mangled name) for use as a unique key
   string procLnNm = p->linkName(); 
+
+  // Binutils often uses simpler procedure names than what we would get from 
+  // demangling the procedure's linkName. We need to compute the procedure
+  // name from the demangled linkName to match what we get from symtabAPI. 
+  const char *linkName = p->linkName().c_str();
+
+  // On powerpc, linkNames for procedures have a leading period. We need to clip 
+  // that off before trying to demangle. This approach will work whether
+  // the leading character is a period or not.
+  if (linkName && linkName[0] == '.') linkName++;
+
+  // Compute the procedure name by demangling the link name.
+  string procNm   = BinUtil::canonicalizeProcName(linkName, procNmMgr);
   
   // Find preliminary source line bounds
   string file, proc;
