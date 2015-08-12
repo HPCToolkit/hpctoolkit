@@ -363,6 +363,7 @@ SUBDIRS = src $(am__append_1)
 # It's up to configure to decide if the library exists, whether to
 # copy it and where to put it, so we don't treat errors as fatal here.
 #
+BASE_LIBS_DIR = $(DESTDIR)$(pkglibdir)
 EXT_LIBS_DIR = $(DESTDIR)$(pkglibdir)/ext-libs
 MYMONITORDIR = $(DESTDIR)$(pkglibdir)/monitor
 
@@ -670,6 +671,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+@OPT_STRIP_HPCRUN_LIBS_FALSE@install-exec-hook:
 clean: clean-recursive
 
 clean-am: clean-generic clean-libtool mostlyclean-am
@@ -692,14 +694,15 @@ info: info-recursive
 
 info-am:
 
-install-data-am: install-data-local install-dist_docDATA
+install-data-am: install-dist_docDATA
 
 install-dvi: install-dvi-recursive
 
 install-dvi-am:
 
-install-exec-am: install-pkglibexecSCRIPTS
-
+install-exec-am: install-exec-local install-pkglibexecSCRIPTS
+	@$(NORMAL_INSTALL)
+	$(MAKE) $(AM_MAKEFLAGS) install-exec-hook
 install-html: install-html-recursive
 
 install-html-am:
@@ -741,23 +744,24 @@ ps-am:
 uninstall-am: uninstall-dist_docDATA uninstall-pkglibexecSCRIPTS
 
 .MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) ctags-recursive \
-	install-am install-strip tags-recursive
+	install-am install-exec-am install-strip tags-recursive
 
 .PHONY: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) CTAGS GTAGS \
 	all all-am am--refresh check check-am clean clean-generic \
 	clean-libtool ctags ctags-recursive distclean \
 	distclean-generic distclean-hdr distclean-libtool \
 	distclean-tags dvi dvi-am html html-am info info-am install \
-	install-am install-data install-data-am install-data-local \
-	install-dist_docDATA install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-pkglibexecSCRIPTS install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	installdirs-am maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-generic mostlyclean-libtool pdf pdf-am \
-	ps ps-am tags tags-recursive uninstall uninstall-am \
-	uninstall-dist_docDATA uninstall-pkglibexecSCRIPTS
+	install-am install-data install-data-am install-dist_docDATA \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-exec-hook install-exec-local install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-pkglibexecSCRIPTS \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs installdirs-am maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-recursive \
+	uninstall uninstall-am uninstall-dist_docDATA \
+	uninstall-pkglibexecSCRIPTS
 
 
 define copy-libs
@@ -767,7 +771,7 @@ define copy-libs
     fi
 endef
 
-install-data-local: myinstall-monitor
+install-exec-local: myinstall-monitor
 	@echo "Copying external package libraries ..."
 	$(mkinstalldirs) "$(EXT_LIBS_DIR)"
 	$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*)
@@ -789,6 +793,39 @@ myinstall-monitor:
 	fi
 
 .PHONY: myinstall-monitor
+
+# Strip the debug sections from the libraries (ours and externals)
+# used in hpcrun and hpclink.  This prevents our code from being
+# displayed in the viewer.
+#
+#  $1 = directory containing the libraries
+#  $2 = glob pattern for library name
+#
+
+define strip-debug
+    @if cd "$1" 2>/dev/null ; then  \
+	for lib in $2 ; do  \
+	    if test -f "$$lib" && test ! -L "$$lib" ; then  \
+		echo "$$lib" ;  \
+		objcopy --strip-debug "$$lib" ;  \
+	    fi ;  \
+	    true ; \
+	done ;  \
+    fi
+endef
+
+@OPT_STRIP_HPCRUN_LIBS_TRUE@install-exec-hook:
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	@echo "Strip debug sections from hpcrun libraries ..."
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun*.so*)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun.o)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun*wrap*.a)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(BASE_LIBS_DIR),libhpctoolkit.so*)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(BASE_LIBS_DIR),libhpctoolkit.a)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(EXT_LIBS_DIR),libmonitor.so*)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(EXT_LIBS_DIR),libmonitor_wrap.a)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(EXT_LIBS_DIR),libunwind*.so*)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(EXT_LIBS_DIR),libunwind*.a)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(MYMONITORDIR),libmonitor.so*)
 
 ############################################################
 # Dist

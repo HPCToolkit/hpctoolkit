@@ -1419,22 +1419,12 @@ libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread -lrt $(OPT_LIBUNWIND_LDFLAGS) $(am__append_58) \
 	$(am__append_87) $(am__append_96) $(UNW_LD_FLAGS)
-libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic	\
-	-Wl,--strip-debug
-
-libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic	\
-	-Wl,--strip-debug
-
-libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-Wl,--strip-debug
-
-libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-Wl,--strip-debug
-
+libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
+libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
+libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
+libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_104)
-libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-Wl,--strip-debug
-
+libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS) $(am__append_59) \
 	$(am__append_91) $(UNW_LD_FLAGS)
 MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_71) \
@@ -4772,19 +4762,11 @@ uninstall-am: uninstall-binSCRIPTS uninstall-includeHEADERS \
 # 
 ############################################################
 
-# arguments: ($1: binary)
-define HPC_isBinaryStaticallyLinked
-  if ldd "$1" | ${GREP} ".so" >/dev/null 2>&1 ; then \
-    false ; \
-  else \
-    true ; \
-  fi
-endef
-
 # arguments: ($1: from) ($2: to)
 define HPC_moveIfStaticallyLinked
-  if test -r "$1" && $(call HPC_isBinaryStaticallyLinked,"$1") ; then \
-    mv -f "$1" "$2" ; \
+  if file "$1" 2>&1 | $(GREP) -E -i -e 'static.*link' >/dev/null ; then \
+    rm -f "$2" ;  \
+    mv -f "$1" "$2" ;  \
   fi
 endef
 

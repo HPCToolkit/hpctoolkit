@@ -501,21 +501,22 @@ public:
   static bool
   arePathsOverlapping(ANode* lca, ANode* desc1, ANode* desc2);
 
-  // mergePaths: Given divergent paths (as defined above), merges the path
-  // from 'toDesc' into 'fromDesc'. If a merge takes place returns true.
+  // mergePaths: Given divergent paths (as defined above), merges the
+  // path 'lca' -> 'node_src' into the path 'lca' --> 'node_dst'. If a
+  // merge takes place returns true.
   static bool
-  mergePaths(ANode* lca, ANode* toDesc, ANode* fromDesc);
+  mergePaths(ANode* lca, ANode* node_dst, ANode* node_src);
 
-  // merge: Given two nodes, 'fromNode' and 'toNode', merges the
+  // merge: Given two nodes, 'node_src' and 'node_dst', merges the
   // former into the latter, if possible.  If the merge takes place,
-  // deletes 'fromNode' and returns true; otherwise returns false.
+  // deletes 'node_src' and returns true; otherwise returns false.
   static bool
-  merge(ANode* toNode, ANode* fromNode);
+  merge(ANode* node_dst, ANode* node_src);
 
-  // isMergable: Returns whether 'fromNode' is capable of being merged
-  // into 'toNode'
+  // isMergable: Returns whether 'node_src' is capable of being merged
+  // into 'node_dst'
   static bool
-  isMergable(ANode* toNode, ANode* fromNode);
+  isMergable(ANode* node_dst, ANode* node_src);
 
 
   // --------------------------------------------------------

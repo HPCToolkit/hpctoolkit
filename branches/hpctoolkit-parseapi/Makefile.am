@@ -112,6 +112,7 @@ endif
 # It's up to configure to decide if the library exists, whether to
 # copy it and where to put it, so we don't treat errors as fatal here.
 #
+BASE_LIBS_DIR = $(DESTDIR)$(pkglibdir)
 EXT_LIBS_DIR = $(DESTDIR)$(pkglibdir)/ext-libs
 MYMONITORDIR = $(DESTDIR)$(pkglibdir)/monitor
 
@@ -122,7 +123,7 @@ define copy-libs
     fi
 endef
 
-install-data-local: myinstall-monitor
+install-exec-local: myinstall-monitor
 	@echo "Copying external package libraries ..."
 	$(mkinstalldirs) "$(EXT_LIBS_DIR)"
 	$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*)
@@ -144,6 +145,41 @@ myinstall-monitor:
 	fi
 
 .PHONY: myinstall-monitor
+
+# Strip the debug sections from the libraries (ours and externals)
+# used in hpcrun and hpclink.  This prevents our code from being
+# displayed in the viewer.
+#
+#  $1 = directory containing the libraries
+#  $2 = glob pattern for library name
+#
+
+define strip-debug
+    @if cd "$1" 2>/dev/null ; then  \
+	for lib in $2 ; do  \
+	    if test -f "$$lib" && test ! -L "$$lib" ; then  \
+		echo "$$lib" ;  \
+		objcopy --strip-debug "$$lib" ;  \
+	    fi ;  \
+	    true ; \
+	done ;  \
+    fi
+endef
+
+if OPT_STRIP_HPCRUN_LIBS
+install-exec-hook:
+	@echo "Strip debug sections from hpcrun libraries ..."
+	$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun*.so*)
+	$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun.o)
+	$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun*wrap*.a)
+	$(call strip-debug,$(BASE_LIBS_DIR),libhpctoolkit.so*)
+	$(call strip-debug,$(BASE_LIBS_DIR),libhpctoolkit.a)
+	$(call strip-debug,$(EXT_LIBS_DIR),libmonitor.so*)
+	$(call strip-debug,$(EXT_LIBS_DIR),libmonitor_wrap.a)
+	$(call strip-debug,$(EXT_LIBS_DIR),libunwind*.so*)
+	$(call strip-debug,$(EXT_LIBS_DIR),libunwind*.a)
+	$(call strip-debug,$(MYMONITORDIR),libmonitor.so*)
+endif
 
 
 ############################################################

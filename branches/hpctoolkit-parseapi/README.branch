@@ -15,6 +15,7 @@ point, I'll write config tests and #ifdefs, but not yet.
 origin: 2015-04-05 from trunk rev 4732
 
 sync: 2015-06-05 with trunk rev 4757
+sync: 2015-08-12 with trunk rev 4807
 
 ------------------------------------------------------------
 
