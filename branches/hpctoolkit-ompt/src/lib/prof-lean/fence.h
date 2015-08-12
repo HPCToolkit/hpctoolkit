@@ -124,6 +124,8 @@
 // no-op: S -> S by 8.2.3.2
 #define enforce_store_to_store_order() 
 
+// no-op: S -> S and L -> L by 8.2.3.2
+#define enforce_load_to_load_and_store_to_store_order() 
 
 #endif
 
