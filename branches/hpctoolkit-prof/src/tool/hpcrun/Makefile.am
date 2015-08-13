@@ -635,22 +635,17 @@ libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt \
         $(OPT_LIBUNWIND_LDFLAGS)
 
-libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic	\
-	-Wl,--strip-debug
+libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 
-libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic	\
-	-Wl,--strip-debug
+libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
 
-libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-Wl,--strip-debug
+libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
 
-libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-Wl,--strip-debug
+libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic
 
-libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-Wl,--strip-debug
+libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS)
 

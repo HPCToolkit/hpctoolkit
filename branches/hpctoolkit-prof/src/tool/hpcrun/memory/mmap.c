@@ -77,11 +77,13 @@ hpcrun_mmap_anon(size_t size)
     addr = NULL;
   }
 
+#ifdef FIXME
+#endif
   //
   // *** MUST use NMSG,
   //     as this function is called before thread_id is established
   //
-  NMSG(MMAP, "%s: size = %ld, fd = %d, addr = %p",
+  TMSG(MMAP, "%s: size = %ld, fd = %d, addr = %p",
        __func__, size, fd, addr);
   return addr;
 }

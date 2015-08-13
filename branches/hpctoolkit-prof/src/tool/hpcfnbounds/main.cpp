@@ -450,10 +450,12 @@ dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy 
   for (unsigned int i = 0; i < symvec.size(); i++) {
     Symbol *s = symvec[i];
     Symbol::SymbolLinkage sl = s->getLinkage();
-    if (report_symbol(s) && s->getOffset() != 0) 
-      add_function_entry((void *) s->getOffset(), &s->getMangledName(), 
+    if (report_symbol(s) && s->getOffset() != 0) {
+      string mname = s->getMangledName();
+      add_function_entry((void *) s->getOffset(), &mname,
 			 ((sl & Symbol::SL_GLOBAL) ||
 			  (sl & Symbol::SL_WEAK)));
+    }
   }
 
   seed_dwarf_info(dwarf_fd);
@@ -586,8 +588,10 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
     syms->getAllSymbolsByType(vec, Symbol::ST_NOTYPE);
     for (unsigned int i = 0; i < vec.size(); i++) {
       Symbol *s = vec[i];
-      if (matches_contains(s->getMangledName(), "long_branch") && s->getOffset() != 0)
-	add_function_entry((void *) s->getOffset(), &s->getMangledName(), true);
+      string mname = s->getMangledName();
+      if (matches_contains(mname, "long_branch") && s->getOffset() != 0) {
+	add_function_entry((void *) s->getOffset(), &mname, true);
+      }
     }
   }
 #endif

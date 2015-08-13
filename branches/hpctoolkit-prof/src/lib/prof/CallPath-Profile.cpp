@@ -1277,7 +1277,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
   // ------------------------------------------------------------
 
   if (outfs) {
-    fprintf(outfs, "[cct: (num-nodes: %"PRIu64")\n", numNodes);
+    fprintf(outfs, "[cct: (num-nodes: %" PRIu64 ")\n", numNodes);
   }
 
   CCT::Tree* cct = prof.cct();

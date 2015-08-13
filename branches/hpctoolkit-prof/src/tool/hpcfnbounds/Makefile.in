@@ -944,19 +944,11 @@ uninstall-am: uninstall-pkglibexecPROGRAMS uninstall-pkglibexecSCRIPTS
 # 
 ############################################################
 
-# arguments: ($1: binary)
-define HPC_isBinaryStaticallyLinked
-  if ldd "$1" | ${GREP} ".so" >/dev/null 2>&1 ; then \
-    false ; \
-  else \
-    true ; \
-  fi
-endef
-
 # arguments: ($1: from) ($2: to)
 define HPC_moveIfStaticallyLinked
-  if test -r "$1" && $(call HPC_isBinaryStaticallyLinked,"$1") ; then \
-    mv -f "$1" "$2" ; \
+  if file "$1" 2>&1 | $(GREP) -E -i -e 'static.*link' >/dev/null ; then \
+    rm -f "$2" ;  \
+    mv -f "$1" "$2" ;  \
   fi
 endef
 

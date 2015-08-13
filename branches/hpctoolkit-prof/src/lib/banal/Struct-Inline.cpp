@@ -232,9 +232,14 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 	//
 	InlinedFunction *ifunc = static_cast <InlinedFunction *> (func);
 	pair <string, Offset> callsite = ifunc->getCallsite();
-	vector <string> name_vec = func->getAllPrettyNames();
 
+#ifdef SYMTAB_NEW_NAME_ITERATOR
+        auto it = func->pretty_names_begin();
+        string procnm = (it != func->pretty_names_end()) ? *it : UNKNOWN_PROC;
+#else
+	vector <string> name_vec = func->getAllPrettyNames();
 	string procnm = (! name_vec.empty()) ? name_vec[0] : UNKNOWN_PROC;
+#endif
 	string &filenm = getRealPath(callsite.first.c_str());
 	long lineno = callsite.second;
 	nodelist.push_front(InlineNode(filenm, procnm, lineno));

@@ -227,6 +227,37 @@ AC_ARG_ENABLE([develop],
 AC_MSG_RESULT([${OPT_ENABLE_DEVELOP}])
 AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
 
+
+#-------------------------------------------------
+# enable-strip-debug
+#-------------------------------------------------
+
+# Strip the debug section from the libraries used in hpcrun/hpclink so
+# that our code does not appear in the viewer.
+
+default=yes
+if test "$OPT_ENABLE_DEVELOP" = yes ; then
+  default=no
+fi
+
+AC_ARG_ENABLE([strip-debug],
+  [AS_HELP_STRING([--enable-strip-debug],
+      [strip the debug section from the hpcrun libraries
+       (default yes, unless --enable-develop is used)])],
+  [],
+  [enable_strip_debug="$default"])
+
+case "$enable_strip_debug" in
+  no ) ;;
+  * )  enable_strip_debug=yes ;;
+esac
+
+AC_MSG_CHECKING([whether to strip debug section from hpcrun libraries])
+AC_MSG_RESULT([$enable_strip_debug])
+
+AM_CONDITIONAL(OPT_STRIP_HPCRUN_LIBS, [test "$enable_strip_debug" = yes])
+
+
 #----------------------------------------------------------------------------
 # Prerequisites: compilers, tools, system libraries
 #----------------------------------------------------------------------------
@@ -2122,8 +2153,13 @@ AM_CONDITIONAL([OPT_ENABLE_HPCRUN_DYNAMIC],
 AC_ARG_ENABLE([hpcserver],
   [AS_HELP_STRING([--enable-hpcserver],
           [build hpcserver and hpcserver-mpi (default no)])],
-  [enable_hpcserver=yes],
+  [],
   [enable_hpcserver=no])
+
+case "$enable_hpcserver" in
+  yes | Yes | YES ) enable_hpcserver=yes ;;
+  * ) enable_hpcserver=no ;;
+esac
 
 AM_CONDITIONAL([OPT_ENABLE_HPCSERVER], [test "$enable_hpcserver" = yes])
 
@@ -2192,6 +2228,22 @@ if test "$enable_inline" = yes ; then
 fi
 
 AM_CONDITIONAL(OPT_HPCSTRUCT_LAUNCH_SCRIPT, [test "$hpcstruct_launch_script" = yes])
+
+
+# Temporary option to allow using the new symtab from git.  The new
+# version has an incompatible change in the iterator for getting a
+# function's list of pretty names.
+
+AC_ARG_ENABLE([new-symtab],
+  [AS_HELP_STRING([--enable-new-symtab],
+      [temporary option to allow using new symtabAPI from git,
+       requires -std=c++11 (default no)])],
+  [], [enable_new_symtab=no])
+
+if test "$enable_new_symtab" = yes ; then
+  AC_MSG_NOTICE([using new symtabAPI from git])
+  AC_DEFINE([SYMTAB_NEW_NAME_ITERATOR], [1], [Use new symtabAPI pretty names iterator])
+fi
 
 
 #-------------------------------------------------

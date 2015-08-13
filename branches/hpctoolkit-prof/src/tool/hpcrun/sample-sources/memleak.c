@@ -229,7 +229,9 @@ int
 hpcrun_memleak_active() 
 {
   if (hpcrun_is_initialized()) {
-    return (TD_GET(ss_state)[obj_name().sel_idx] == START);
+    thread_data_t* td = hpcrun_safe_get_td();
+    if (!td) return 0;
+    return (td->ss_state[obj_name().sel_idx] == START);
   }
   else {
     return 0;

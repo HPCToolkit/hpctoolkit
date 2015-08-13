@@ -115,6 +115,7 @@
 #include "thread_use.h"
 #include "trace.h"
 #include "write_data.h"
+#include <utilities/token-iter.h>
 
 #include <memory/hpcrun-malloc.h>
 #include <memory/mmap.h>
@@ -181,6 +182,10 @@ struct hpcrun_aux_cleanup_t {
 
 int lush_metrics = 0; // FIXME: global variable for now
 
+/******************************************************************************
+ * (public declaration) thread-local variables
+ *****************************************************************************/
+ __thread bool hpcrun_thread_suppress_sample = true;
 
 
 //***************************************************************************
@@ -624,6 +629,10 @@ hpcrun_fini_internal()
 // thread level 
 //------------------------------------
 
+#ifdef USE_GCC_THREAD
+extern __thread monitor_tid;
+#endif // USE_GCC_THREAD
+
 void
 hpcrun_init_thread_support()
 {
@@ -651,7 +660,7 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
   hpcrun_mmap_init();
-  thread_data_t* td = hpcrun_allocate_thread_data();
+  thread_data_t* td = hpcrun_allocate_thread_data(id);
   td->inside_hpcrun = 1;  // safe enter, disable signals
 
   hpcrun_set_thread_data(td);
@@ -677,7 +686,8 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   // release the wallclock handler -for this thread-
   hpcrun_itimer_wallclock_ok(true);
   // start the sample sources
-  SAMPLE_SOURCES(start);
+  if (! hpcrun_thread_suppress_sample)
+    SAMPLE_SOURCES(start);
 
   return (void*) epoch;
 }
@@ -687,6 +697,10 @@ void
 hpcrun_thread_fini(epoch_t *epoch)
 {
   TMSG(FINI,"thread fini");
+
+  // take no action if this thread is suppressed
+  if (hpcrun_thread_suppress_sample) return;
+
   if (hpcrun_is_initialized()) {
     TMSG(FINI,"thread finit stops sampling");
     SAMPLE_SOURCES(stop);
@@ -717,6 +731,8 @@ monitor_init_process(int *argc, char **argv, void* data)
 {
   char* process_name;
   char  buf[PROC_NAME_LEN];
+
+  hpcrun_thread_suppress_sample = false;
 
   fork_data_t* fork_data = (fork_data_t*) data;
   bool is_child = data && fork_data->is_child;
@@ -998,6 +1014,22 @@ monitor_thread_post_create(void* data)
 void* 
 monitor_init_thread(int tid, void* data)
 {
+#ifdef USE_GCC_THREAD
+  monitor_tid = tid;
+#endif
+
+  hpcrun_thread_suppress_sample = false;
+  //
+  // Do nothing if ignoring thread
+  //
+  Token_iterate(tok, getenv("HPCRUN_IGNORE_THREAD"), " ,",
+		{
+		  if (atoi(tok) == tid) {
+		    hpcrun_thread_suppress_sample = true;
+		  }
+		});
+
+
   TMSG(THREAD,"init thread %d",tid);
   void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data);
   TMSG(THREAD,"back from init thread %d",tid);

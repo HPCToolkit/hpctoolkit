@@ -820,6 +820,8 @@ CPPFLAGS
 LDFLAGS
 CXXFLAGS
 CXX
+OPT_STRIP_HPCRUN_LIBS_FALSE
+OPT_STRIP_HPCRUN_LIBS_TRUE
 OPT_ENABLE_DEVELOP_FALSE
 OPT_ENABLE_DEVELOP_TRUE
 HPCPROFMPI_LT_LDFLAGS
@@ -903,6 +905,7 @@ ac_user_opts='
 enable_option_checking
 enable_maintainer_mode
 enable_develop
+enable_strip_debug
 enable_dependency_tracking
 enable_shared
 enable_static
@@ -933,6 +936,7 @@ enable_hpcrun
 enable_hpcrun_static
 enable_hpcserver
 enable_inline
+enable_new_symtab
 enable_mpi
 enable_mpi_wrapper
 enable_lush
@@ -1594,6 +1598,8 @@ Optional Features:
   --enable-maintainer-mode  enable make rules and dependencies not useful
 			  (and sometimes confusing) to the casual installer
   --enable-develop        Build development version (enable debugging)
+  --enable-strip-debug    strip the debug section from the hpcrun libraries
+                          (default yes, unless --enable-develop is used)
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
   --enable-shared[=PKGS]  build shared libraries [default=yes]
@@ -1616,6 +1622,8 @@ Optional Features:
   --enable-hpcserver      build hpcserver and hpcserver-mpi (default no)
   --enable-inline         enable static inline support, requires linking
                           symtab into hpcstruct (default check)
+  --enable-new-symtab     temporary option to allow using new symtabAPI from
+                          git, requires -std=c++11 (default no)
   --enable-mpi            Enable MPI support (uses MPICXX variable)
   --enable-mpi-wrapper    Enable MPI wrapper support (uses MPIF77 and CFLAGS)
   --enable-lush           use lush backtrace in hpcrun
@@ -3952,6 +3960,47 @@ else
   OPT_ENABLE_DEVELOP_TRUE='#'
   OPT_ENABLE_DEVELOP_FALSE=
 fi
+
+
+
+#-------------------------------------------------
+# enable-strip-debug
+#-------------------------------------------------
+
+# Strip the debug section from the libraries used in hpcrun/hpclink so
+# that our code does not appear in the viewer.
+
+default=yes
+if test "$OPT_ENABLE_DEVELOP" = yes ; then
+  default=no
+fi
+
+# Check whether --enable-strip-debug was given.
+if test "${enable_strip_debug+set}" = set; then :
+  enableval=$enable_strip_debug;
+else
+  enable_strip_debug="$default"
+fi
+
+
+case "$enable_strip_debug" in
+  no ) ;;
+  * )  enable_strip_debug=yes ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to strip debug section from hpcrun libraries" >&5
+$as_echo_n "checking whether to strip debug section from hpcrun libraries... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_strip_debug" >&5
+$as_echo "$enable_strip_debug" >&6; }
+
+ if test "$enable_strip_debug" = yes; then
+  OPT_STRIP_HPCRUN_LIBS_TRUE=
+  OPT_STRIP_HPCRUN_LIBS_FALSE='#'
+else
+  OPT_STRIP_HPCRUN_LIBS_TRUE='#'
+  OPT_STRIP_HPCRUN_LIBS_FALSE=
+fi
+
 
 
 #----------------------------------------------------------------------------
@@ -18748,11 +18797,16 @@ fi
 
 # Check whether --enable-hpcserver was given.
 if test "${enable_hpcserver+set}" = set; then :
-  enableval=$enable_hpcserver; enable_hpcserver=yes
+  enableval=$enable_hpcserver;
 else
   enable_hpcserver=no
 fi
 
+
+case "$enable_hpcserver" in
+  yes | Yes | YES ) enable_hpcserver=yes ;;
+  * ) enable_hpcserver=no ;;
+esac
 
  if test "$enable_hpcserver" = yes; then
   OPT_ENABLE_HPCSERVER_TRUE=
@@ -18865,6 +18919,27 @@ else
   OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE=
 fi
 
+
+
+# Temporary option to allow using the new symtab from git.  The new
+# version has an incompatible change in the iterator for getting a
+# function's list of pretty names.
+
+# Check whether --enable-new-symtab was given.
+if test "${enable_new_symtab+set}" = set; then :
+  enableval=$enable_new_symtab;
+else
+  enable_new_symtab=no
+fi
+
+
+if test "$enable_new_symtab" = yes ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: using new symtabAPI from git" >&5
+$as_echo "$as_me: using new symtabAPI from git" >&6;}
+
+$as_echo "#define SYMTAB_NEW_NAME_ITERATOR 1" >>confdefs.h
+
+fi
 
 
 #-------------------------------------------------
@@ -20001,6 +20076,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_DEVELOP_TRUE}" && test -z "${OPT_ENABLE_DEVELOP_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_DEVELOP\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_STRIP_HPCRUN_LIBS_TRUE}" && test -z "${OPT_STRIP_HPCRUN_LIBS_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_STRIP_HPCRUN_LIBS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${AMDEP_TRUE}" && test -z "${AMDEP_FALSE}"; then
