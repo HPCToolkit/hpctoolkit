@@ -155,6 +155,18 @@ set_frame(frame_t *f, ompt_placeholder_t *ph)
 }
 
 
+static void 
+collapse_callstack(backtrace_info_t *bt, ompt_placeholder_t *placeholder) 
+
+{
+  set_frame(bt->last, placeholder);
+  bt->begin = bt->last; 
+  bt->bottom_frame_elided = false;
+  bt->partial_unwind = false;
+  bt->trace_pc = bt->begin->cursor.pc_unnorm;
+}
+
+
 static void
 ompt_elide_runtime_frame(
   backtrace_info_t *bt, 
@@ -162,36 +174,27 @@ ompt_elide_runtime_frame(
   int isSync
 )
 {
+  // collapse callstack if a thread is idle or waiting in a barrier
+  switch(check_state()) {
+  case ompt_state_wait_barrier:
+  case ompt_state_wait_barrier_implicit:
+  case ompt_state_wait_barrier_explicit:
+    break; // FIXME: skip barrier collapsing until the kinks are worked out.
+    collapse_callstack(bt, &ompt_placeholders.ompt_barrier_wait);
+    return;
+  case ompt_state_idle:
+    if (!TD_GET(master)) { 
+      collapse_callstack(bt, &ompt_placeholders.ompt_idle);
+      return;
+    }
+  default: break;
+  }
+
   frame_t **bt_outer = &bt->last; 
   frame_t **bt_inner = &bt->begin;
 
   frame_t *bt_outer_at_entry = *bt_outer;
 
-  ompt_state_t state = check_state();
-
- #if 0
-  // FIXME
-  if ((state == ompt_state_wait_barrier) ||
-      (state == ompt_state_wait_barrier_explicit) ||
-      (state == ompt_state_wait_barrier_implicit)) {
-     set_frame(*bt_inner, &ompt_placeholders.omp_barrier_wait);
-     *bt_outer = *bt_inner; 
-     bt->bottom_frame_elided = true;
-     return;
-  }
-#endif
-
-  if (state == ompt_state_idle) {
-    int master = TD_GET(master);
-    if (!master) { 
-      set_frame(*bt_outer, &ompt_placeholders.ompt_idle);
-      *bt_inner = *bt_outer; 
-      bt->bottom_frame_elided = false;
-      bt->partial_unwind = false;
-      bt->trace_pc = (*bt_inner)->cursor.pc_unnorm;
-      return;
-    }
-  }
 
   int i = 0;
   frame_t *it = NULL;
