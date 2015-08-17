@@ -5,6 +5,19 @@ $Id$
 
 HPCToolkit/README
 
+As of August 17, 2015, the Rice HPCToolkit repositories (hpctoolkit,
+hpcviewer, libmonitor) have moved to GitHub.
+
+https://github.com/HPCToolkit
+
+To clone the hpctoolkit repository:
+
+git clone https://github.com/HPCToolkit/hpctoolkit.git
+
+More directions to appear on the HPCToolkit web site:
+
+http://hpctoolkit.org
+
 =============================================================================
 =============================================================================
 
