@@ -184,57 +184,26 @@ endif
 # Dist
 ############################################################
 
-dist-hook: my-dist
+DIST_FILES = Makefile* README* aclocal.m4 autogen configure*  \
+	config doc lib src tools
 
-my-dist:
-	rm -rf `find $(distdir) -name CVS -o -name ".svn"`
-
-.PHONY: my-dist
-
-
-############################################################
-# Create hpctoolkit distribution
-# 
-# (Requires GNU tar)
-#
-# PACKAGE_NAME, PACKAGE_TARNAME, PACKAGE_VERSION
-############################################################
-
-MYTAR = tar
-MYDIST = @PACKAGE_TARNAME@-@PACKAGE_VERSION@
-MYTOUCH = @abs_top_srcdir@/config/hpcautotouch
-MYSRC = @abs_top_srcdir@
-MYINFO = @abs_top_srcdir@/configure
-MYPREFIX = @abs_top_builddir@
+MY_DIST_DIR = $(PACKAGE_TARNAME)-$(PACKAGE_VERSION)
+MY_TAR_FILE = $(MY_DIST_DIR).tar
+SRCDIR = @srcdir@
 
 dist hpc-dist:
-	top_dir=`$(SHELL) -c "cd $(MYSRC) && pwd"` ; \
-	nm_cur=`basename $${top_dir}` ; \
-	nm_new="$(MYDIST)" ; \
-	\
-	cd $${top_dir}/.. ; \
-	ln -s $${nm_cur} $${nm_new} ; \
-	\
-        $(MYTAR) zcvf $(MYPREFIX)/$${nm_new}.tar.gz \
-	  --dereference --exclude="CVS" --exclude=".svn" \
-	  \
-	  $${nm_new}/.svn-revision \
-	  $${nm_new}/aclocal.m4 \
-	  $${nm_new}/autogen \
-	  $${nm_new}/configure* \
-	  $${nm_new}/Makefile* \
-	  $${nm_new}/README* \
-	  \
-	  $${nm_new}/config \
-	  \
-          $${nm_new}/doc \
-          $${nm_new}/lib \
-          $${nm_new}/src \
-	  $${nm_new}/tools \
-	  ; \
-	\
-	rm $${nm_new} 
+	@echo "cleaning source tree (ignore errors) ..."
+	-cd "$(SRCDIR)" && test -f Makefile && $(MAKE) clean
+	rm -f "$(MY_DIST_DIR)" "$(MY_TAR_FILE)" "$(MY_TAR_FILE).gz"
+	ln -s "$(SRCDIR)" "$(MY_DIST_DIR)"
+	tar cf "$(MY_TAR_FILE)"  \
+		--exclude .git   \
+		--exclude .svn   \
+		$(addprefix $(MY_DIST_DIR)/,$(DIST_FILES))
+	rm -f "$(MY_DIST_DIR)"
+	gzip "$(MY_TAR_FILE)"
+	@ls -l "$(MY_TAR_FILE).gz"
 
-.PHONY: hpc-dist
+.PHONY: dist hpc-dist
 
 ############################################################
