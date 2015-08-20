@@ -547,53 +547,56 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       }
     }
     else if (type == 3) { // Proc
-      nm = normalize_name(strct->name().c_str());
+      const char *proc_name = strct->name().c_str();
+      nm = normalize_name(proc_name);
 
-      // -------------------------------------------------------
-      // avoid redundancy in XML procedure dictionary
-      // a procedure can have the same name if they are from different
-      // file or different load module
-      // -------------------------------------------------------
-      const char *filename = getFileName(strct);	
-      // we need to allow the same function name from a different file
-      std::string completProcName(filename);
-      completProcName.append(":");
-      const char *lnm;
-
-      // a procedure name within the same file has to be unique.
-      // However, for codes compiled with GCC, binutils (or parseAPI) 
-      // it's better to compare internally with the mangled names
-      Struct::Proc *proc = dynamic_cast<Struct::Proc *>(strct);
-      if (proc)
-      {
-	if (proc->linkName().empty()) {
-	  // the proc has no mangled name
-	  lnm = proc->name().c_str();
-	} else
-	{ // get the mangled name
-       	  lnm = proc->linkName().c_str();
-	}
-      } else
-      {
-	lnm = strct->name().c_str();
+      if (proc_name != Prof::Struct::Tree::UnknownProcNm)
+      {  
+        // -------------------------------------------------------
+        // avoid redundancy in XML procedure dictionary
+        // a procedure can have the same name if they are from different
+        // file or different load module
+        // -------------------------------------------------------
+        const char *filename = getFileName(strct);	
+        // we need to allow the same function name from a different file
+        std::string completProcName(filename);
+        completProcName.append(":");
+        const char *lnm;
+  
+        // a procedure name within the same file has to be unique.
+        // However, for codes compiled with GCC, binutils (or parseAPI) 
+        // it's better to compare internally with the mangled names
+        Struct::Proc *proc = dynamic_cast<Struct::Proc *>(strct);
+        if (proc)
+        {
+  	  if (proc->linkName().empty()) {
+  	    // the proc has no mangled name
+  	    lnm = proc_name;
+  	  } else
+  	  { // get the mangled name
+           	  lnm = proc->linkName().c_str();
+  	  }
+        } else
+        {
+  	  lnm = strct->name().c_str();
+        }
+        completProcName.append(lnm);
+        if (m_mapProcs.find(completProcName) == m_mapProcs.end()) 
+        {
+  	  // the proc is not in dictionary. Add it into the map.
+  	  m_mapProcs[completProcName] = id;
+        } else 
+        {
+  	  // the same procedure name already exists, we need to reuse
+  	  // the previous ID instead of the original one.
+  	  uint id_orig = m_mapProcs[completProcName];
+  
+   	  // remember that this ID needs redirection to the existing ID
+  	  Prof::m_mapProcIDs[id] = id_orig;
+  	  continue;
+        }
       }
-      completProcName.append(lnm);
-      if (m_mapProcs.find(completProcName) == m_mapProcs.end()) 
-      {
-	 // the proc is not in dictionary. Add it into the map.
-	 m_mapProcs[completProcName] = id;
-      } else 
-      {
-	 // the same procedure name already exists, we need to reuse
-	 // the previous ID instead of the original one.
-	 uint id_orig = m_mapProcs[completProcName];
-
-	 // remember that this ID needs redirection to the existing ID
-	 Prof::m_mapProcIDs[id] = id_orig;
-	 continue;
-      }
-    }
-    else {
+    } else {
       DIAG_Die(DIAG_UnexpectedInput);
     }
     
