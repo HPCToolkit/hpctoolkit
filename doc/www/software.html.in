@@ -29,34 +29,39 @@
 <h2><a href="software-instructions.html">Prerequisites &amp; Instructions</a></h2>
 
 
-
 <h2>Source code for HPCToolkit</h2>
 
-To build HPCToolkit from source, you need to download and build both hpctoolkit and hpctoolkit-externals.
+To build HPCToolkit from source, you need to download and build both
+the hpctoolkit project and hpctoolkit-externals (prereqs for hpctoolkit).
+As of August 2015, the
+<a href="https://github.com/HPCToolkit">HPCToolkit repositories</a>
+are now hosted in git on
+<a href="https://github.com">GitHub</a>.
+
 <ul>
   <table cellpadding="2" cellspacing="2" border="1" width="100%">
-
   <tr>
-  <td><a href="https://code.google.com/p/hpctoolkit/source/browse/#svn%2Ftrunk">hpctoolkit</a>
+  <td><a href="https://github.com/HPCToolkit/hpctoolkit">hpctoolkit</a>
   </td>
-  <td><code>svn co http://hpctoolkit.googlecode.com/svn/trunk hpctoolkit</code>
+  <td><code>git clone https://github.com/HPCToolkit/hpctoolkit.git</code>
   </td>
   </tr>
-
   <tr>
-  <td><a href="https://code.google.com/p/hpctoolkit/source/browse/#svn%2Fexternals">hpctoolkit-externals</a>
+  <td><a href="https://github.com/HPCToolkit/hpctoolkit-externals">hpctoolkit-externals</a>
   </td>
-  <td><code>svn co http://hpctoolkit.googlecode.com/svn/externals hpctoolkit-externals</code>
+  <td><code>git clone https://github.com/HPCToolkit/hpctoolkit-externals.git</code>
   </td>
   </tr>
   </table>
 </ul>
 
+
 <h2>Binary releases for HPCToolkit GUI interfaces (recommended for tool users)</h2>
 
+Due to the difficulty of building the hpcviewer and hpctraceviewer
+graphical user interfaces from source using Eclipse, we provide binary
+releases for these tools.
 
-Due to the difficulty of building the hpcviewer and hpctraceviewer graphical user interfaces from source using 
-Eclipse, we provide binary releases for these tools. 
 <ul>
   <table cellpadding="2" cellspacing="2" border="1" width="100%">
 
@@ -81,51 +86,32 @@ Eclipse, we provide binary releases for these tools.
 
   </table>
 </li>
-
 </ul>
+
 
 <h2>Source code for HPCToolkit GUI interfaces (recommended for tool developers only)</h2>
 
-Source code for HPCToolkit's hpcviewer and hpctraceviewer graphical user interfaces is available from their 
-subversion repositories. 
-Unless you are a tool developer who wants to modify the capabilities of these graphical user interfaces,
-we recommend downloading the binary releases. 
+Source code for HPCToolkit's hpcviewer and hpctraceviewer graphical
+user interfaces is available from the
+<a href="https://github.com/HPCToolkit/hpcviewer">HPCViewer repository</a>
+on GitHub.  Unless you are a tool developer who wants to modify the
+capabilities of these graphical user interfaces, we recommend
+downloading the binary releases.
+
 <ul>
   <table cellpadding="2" cellspacing="2" border="1" width="100%">
   <tr>
   <td>
-    <a href="https://code.google.com/p/hpcviewer/source/browse/#svn%2Ftrunk">hpcviewer</a>
+    <a href="https://github.com/HPCToolkit/hpcviewer">hpcviewer</a> and
     <br />
-    <a href="http://www.eclipse.org/rcp">(based on Eclipse RCP)</a>
+    <a href="https://github.com/HPCToolkit/hpcviewer">hpctraceviewer</a>
   </td>
   <td>
-<code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.common</code>
-      <br />
-<code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.data</code>
-      <br />
-      <code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.viewer</code>
+    <code>git clone https://github.com/HPCToolkit/hpcviewer.git</code>
   </td>
   </tr>
-
-  <tr>
-  <td>
-    <a href="https://code.google.com/p/hpcviewer/source/browse/#svn%2Ftrunk">hpctraceviewer</a>
-    <br />
-    <a href="http://www.eclipse.org/rcp">(based on Eclipse RCP)</a>
-  </td>
-  <td>
-<code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.common</code>
-      <br />
-<code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.data</code>
-      <br />
-      <code>svn co http://hpcviewer.googlecode.com/svn/trunk/edu.rice.cs.hpc.traceviewer</code>
-  </td>
-  </tr>
-
   </table>
-
   <br />
-
 </ul>
 
 <h2>Questions, Problems, Bugs</h2>
@@ -134,7 +120,7 @@ we recommend downloading the binary releases.
 </p>
 
 
-<p>[<span class="lastupdated">Page last updated: 2013/04/19</span>]
+<p>[<span class="lastupdated">Page last updated: 2015/08/21</span>]
 </p>
 
 <!-- ********************************************************************** -->

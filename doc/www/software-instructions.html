@@ -55,9 +55,9 @@ The following prerequisites apply to our default source code distribution.
 
 <li><p>HPCToolkit can be installed on the following platforms:</p>
 
-  <table cellpadding="2" cellspacing="2" border="1" width="100%">
+  <table cellpadding="2" cellspacing="2" border="1" width="90%">
     <tr>
-      <th>Platform</th>
+      <th>Platform (Supported)</th>
       <th>Notes</th>
     </tr>
     <tr>
@@ -65,7 +65,7 @@ The following prerequisites apply to our default source code distribution.
       <td></td>
     </tr>
     <tr>
-      <td>Linux + x86</td>
+      <td>Linux + x86 (32-bit)</td>
       <td></td>
     </tr>
     <tr>
@@ -84,11 +84,10 @@ The following prerequisites apply to our default source code distribution.
       <td>IBM Blue Gene/P (BG/P kernel + ppc32)</td>
       <td>BG/P kernel &ge; V1R3M0</td>
     </tr>
-
     <tr>
-      <td colspan="2"><hr /></td>
+      <th>Platform (Legacy and Not Supported)</th>
+      <th> </th>
     </tr>
-
     <tr>
       <td>Linux + IA64 </td>
       <td>testing (uses <a href="http://www.nongnu.org/libunwind/">libunwind</a>)</td>
@@ -102,62 +101,19 @@ The following prerequisites apply to our default source code distribution.
 </li>
 
 <li>
-<p>Compiler: HPCToolkit requires an ANSI/ISO C/C++ compliant compiler that supports a few GNU extensions.
-Generally speaking, any recent GCC (4.x, 3.3+) should be fine.
-Some vendor compilers that support GNU extensions also work.
-</p>
-<!--    
-  <ul class="noindent">
-    <li>Linux-x86_64, Cray XT:
-      <ul class="noindent">
-        <li>GCC C++/C 4.x, 3.4</li>
-        <li>Intel C++/C 10.x, 9.x</li>
-      </ul>
-    </li>
-
-    <li>Linux-ia64:
-      <ul class="noindent">
-        <li>GCC C++/C 4.x, 3.4</li>
-        <li>Intel C++/C 9.x</li>
-      </ul>
-    </li>
-
-    <li>Linux-MIPS:
-      <ul class="noindent">
-        <li>GCC C++/C 4.x</li>
-      </ul>
-    </li>
-
-    <li>Linux-POWER, Blue Gene/Q:
-      <ul class="noindent">
-        <li>GCC C++/C 4.x</li>
-      </ul>
-    </li>
-    
-    <li>Linux-POWER, Blue Gene/P:
-      <ul class="noindent">
-        <li>GCC C++/C 4.x</li>
-      </ul>
-    </li>
-    
-    <li>SunOS-sparc:
-      <ul class="noindent">
-        <li>Sun Forte C++/C 5.3 (WorkShop 6 update 2 with patch 111685-01
-            or greater (bug id 4466915))</li>
-        <li>Sun Forte C++/C 5.1 (WorkShop 6)</li>
-        <li>GCC C++/C 3.x</li>
-      </ul>
-    </li>
-  </ul>
--->
-
-<p>Additionally, HPCToolkit requires a basic version of GNU make, not a vendor supplied make.  We have successfully used versions 3.70, 3.76, 3.77, 3.78, 3.79, 3.80.
+<p>Compiler: HPCToolkit requires GNU GCC version 4.4 or later.  Some
+vendor compilers that support GNU extensions may also work, but we
+recommend building with GNU gcc/g++.  HPCToolkit also requires GNU
+make, preferably version 3.81 or later.
 </p>
 </li>
 
 <li>
-<p>To use <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> (HPCToolkit's interactive presentation tools) on MacOS, Windows, or Linux, a Java runtime environment (JRE) &ge; 1.5 is required.
-Use the Oracle or IBM version; we have had problems with OpenJDK.
+<p>To use <span class="hpctool">hpcviewer</span>
+and <span class="hpctool">hpctraceviewer</span> (HPCToolkit's
+graphical interface) on MacOS, Windows, or Linux, a Java runtime
+environment (JRE) &ge; 1.6 is required.  Use the Oracle or IBM
+version; we have had problems with OpenJDK.
 </p>
 
 <p>
@@ -169,7 +125,7 @@ To use <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctrace
 </li>
 
 <li>
-<p>Highly recommended: To collect measurements based on hardware performance monitoring unit (PMU) information, <a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> &ge; 3.5 is required.
+<p>Highly recommended: To collect measurements based on hardware performance monitoring unit (PMU) information, <a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> &ge; 4.1 is required.
 Without PAPI, HPCToolkit can only collect measurements based on an operating system timer.
 (Exception: On IBM Blue Gene/P, PAPI is not required. On this system, HPCToolkit uses 
 IBM's native Universal Performance Counters directly.)
@@ -223,8 +179,15 @@ We have successfully used versions 5.6.x - 5.10.x.
 <a href="software.html">Download</a> HPCToolkit components as follows:
 </p>
 <ol>
-  <li><p>Download hpctoolkit from our subversion repository.</p></li>
-  <li><p>Download hpctoolkit-externals from our subversion repository.</p>
+  <li><p>Download hpctoolkit from GitHub.</p>
+    <div class="indent">
+      <code>git clone https://github.com/HPCToolkit/hpctoolkit.git</code>
+    </div>
+
+  <li><p>Download hpctoolkit-externals from GitHub.</p>
+    <div class="indent">
+      <code>git clone https://github.com/HPCToolkit/hpctoolkit-externals.git</code>
+    </div>
       <p>
       Think of hpctoolkit-externals as a "package manager" that automatically configures and builds 
       support libraries that hpctoolkit needs.
@@ -238,6 +201,10 @@ We have successfully used versions 5.6.x - 5.10.x.
   </li>
 
   <li><p>Download binary releases of <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> for the platform on which your are building HPCToolkit.</p>
+    <div class="indent">
+      <a href="http://hpctoolkit.org/download/hpcviewer">
+	http://hpctoolkit.org/download/hpcviewer</a>
+    </div>
 
   <p>Note: It is perfectly reasonable to install <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> in multiple locations.
     Since HPCToolkit's databases are portable, we often install <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> on local laptops/desktops to avoid sending display traffic over relatively slow network connections from systems where we collect measurement data.</p>
@@ -698,12 +665,12 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2013/08/22</span>]
+<p>[<span class="lastupdated">Page last updated: 2015/08/21</span>]
 </p>
 
 <!-- ********************************************************************** -->
 
-<div style="width: 100%; font-size: small;">   <hr />   <p style="margin: 0px; font-size: small;">     &copy;2000-2012 <a href="http://www.rice.edu">Rice University</a>     &bull;     <a href="http://www.cs.rice.edu">Rice Computer Science</a>   </p>   <a href="http://validator.w3.org/check/referer">     <img src="http://www.w3.org/Icons/valid-xhtml10-blue" alt="" height="15" /></a>   <a href="http://jigsaw.w3.org/css-validator/check/referer">     <img src="http://www.w3.org/Icons/valid-css-blue" alt="" height="15" /></a> </div> 
+<div style="width: 100%; font-size: small;">   <hr />   <p style="margin: 0px; font-size: small;">     &copy;2000-2015 <a href="http://www.rice.edu">Rice University</a>     &bull;     <a href="http://www.cs.rice.edu">Rice Computer Science</a>   </p>   <a href="http://validator.w3.org/check/referer">     <img src="http://www.w3.org/Icons/valid-xhtml10-blue" alt="" height="15" /></a>   <a href="http://jigsaw.w3.org/css-validator/check/referer">     <img src="http://www.w3.org/Icons/valid-css-blue" alt="" height="15" /></a> </div> 
 <!-- ********************************************************************** -->
 
 </body>
