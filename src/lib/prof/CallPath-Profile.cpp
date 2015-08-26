@@ -508,7 +508,7 @@ getFileName(Struct::ANode* strct)
 static void
 writeXML_help(std::ostream& os, const char* entry_nm,
 	      Struct::Tree* structure, const Struct::ANodeFilter* filter,
-	      int type)
+	      int type, bool remove_redundancy)
 {
   Struct::ANode* root = structure ? structure->root() : NULL;
   if (!root) {
@@ -550,7 +550,8 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       const char *proc_name = strct->name().c_str();
       nm = normalize_name(proc_name);
 
-      if (proc_name != Prof::Struct::Tree::UnknownProcNm)
+      if (remove_redundancy && 
+	  proc_name != Prof::Struct::Tree::UnknownProcNm)
       {  
         // -------------------------------------------------------
         // avoid redundancy in XML procedure dictionary
@@ -743,7 +744,8 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   // -------------------------------------------------------
   os << "  <LoadModuleTable>\n";
   writeXML_help(os, "LoadModule", m_structure,
-		&Struct::ANodeTyFilter[Struct::ANode::TyLM], 1);
+		&Struct::ANodeTyFilter[Struct::ANode::TyLM], 1,
+		m_remove_redundancy);
   os << "  </LoadModuleTable>\n";
 
   // -------------------------------------------------------
@@ -751,7 +753,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   // -------------------------------------------------------
   os << "  <FileTable>\n";
   Struct::ANodeFilter filt1(writeXML_FileFilter, "FileTable", 0);
-  writeXML_help(os, "File", m_structure, &filt1, 2);
+  writeXML_help(os, "File", m_structure, &filt1, 2, m_remove_redundancy);
   os << "  </FileTable>\n";
 
   // -------------------------------------------------------
@@ -760,7 +762,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   if ( !(oFlags & CCT::Tree::OFlg_Debug) ) {
     os << "  <ProcedureTable>\n";
     Struct::ANodeFilter filt2(writeXML_ProcFilter, "ProcTable", 0);
-    writeXML_help(os, "Procedure", m_structure, &filt2, 3);
+    writeXML_help(os, "Procedure", m_structure, &filt2, 3, m_remove_redundancy);
     os << "  </ProcedureTable>\n";
   }
 

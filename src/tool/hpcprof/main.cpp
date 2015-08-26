@@ -170,6 +170,9 @@ realmain(int argc, char* const* argv)
   Prof::CallPath::Profile* prof =
     Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy, rFlags, mrgFlags);
 
+  prof->disable_redundancy(args.remove_redundancy);
+
+
   // ------------------------------------------------------------
   // 1b. Add static structure to canonical CCT
   // ------------------------------------------------------------

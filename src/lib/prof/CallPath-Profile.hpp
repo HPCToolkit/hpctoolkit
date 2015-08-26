@@ -125,6 +125,12 @@ public:
   traceFileNameSet()
   { return m_traceFileNameSet; }
   
+  // enable/disable redundancy of procedure names
+  // @param flag: true  -- redundancy is eliminated
+  // 		  false -- redundancy is allowed
+  void disable_redundancy(bool flag) {
+    m_remove_redundancy = flag;
+  }
 
   // -------------------------------------------------------
   // MetricMgr
@@ -357,6 +363,8 @@ private:
   CCT::Tree* m_cct;
 
   Prof::Struct::Tree* m_structure;
+ 
+  bool m_remove_redundancy;
 };
 
 } // namespace CallPath

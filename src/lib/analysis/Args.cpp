@@ -119,6 +119,9 @@ Args::Ctor()
   out_txt           = Analysis_OUT_TXT;
   txt_summary       = TxtSum_NULL;
   txt_srcAnnotation = false;
+
+  // laks: disable redundancy elimination by default
+  remove_redundancy = false;
 }
 
 
