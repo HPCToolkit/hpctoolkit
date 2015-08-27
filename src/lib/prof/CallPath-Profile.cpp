@@ -520,6 +520,8 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     
     uint id = strct->id();
     const char* nm = NULL;
+
+    bool change = false;
     
     if (type == 1) { // LoadModule
       nm = strct->name().c_str();
@@ -548,7 +550,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     }
     else if (type == 3) { // Proc
       const char *proc_name = strct->name().c_str();
-      nm = normalize_name(proc_name);
+      nm = normalize_name(proc_name, change);
 
       if (remove_redundancy && 
 	  proc_name != Prof::Struct::Tree::UnknownProcNm)
@@ -602,7 +604,13 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     }
     
     os << "    <" << entry_nm << " i" << MakeAttrNum(id)
-       << " n" << MakeAttrStr(nm) << "/>\n";
+       << " n" << MakeAttrStr(nm);
+    
+    if (change) {
+       os << " f" << MakeAttrNum(1); 
+    } 
+   
+    os << "/>\n";
   }
 }
 

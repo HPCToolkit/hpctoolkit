@@ -74,7 +74,9 @@ static NameMapping renamingTable[] = {
   { "ompt_task_wait",          "<omp task wait>"    },
 
   { "ompt_mutex_wait_state",   "<omp mutex wait>"   },
-  { "ompt_mutex_wait",         "<omp mutex wait>"   }
+  { "ompt_mutex_wait",         "<omp mutex wait>"   },
+
+  { "<partial call paths>",    "<partial call paths>"}
 
 };
 
@@ -102,11 +104,16 @@ normalize_name_load_renamings()
 
 
 static const char *
-normalize_name_rename(const char *in)
+normalize_name_rename(const char *in, bool &change)
 {
   NameMappings_t::iterator it = renamingMap.find(in);
-  if (it == renamingMap.end()) return in;
-  else return it->second;
+  change = (it != renamingMap.end());
+  if (!change) {
+    return in;
+  }
+  else {
+    return it->second;
+  }
 }
 
 
@@ -116,10 +123,10 @@ normalize_name_rename(const char *in)
 //******************************************************************************
 
 const char *
-normalize_name(const char *in)
+normalize_name(const char *in, bool &change)
 {
   normalize_name_load_renamings();
-  return normalize_name_rename(in);
+  return normalize_name_rename(in, change);
 }
 
 #if 0

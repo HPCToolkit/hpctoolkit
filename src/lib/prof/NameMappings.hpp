@@ -18,6 +18,6 @@
 // interface operations
 //******************************************************************************
 
-const char *normalize_name(const char *in);
+const char *normalize_name(const char *in, bool &changed);
 
 #endif
