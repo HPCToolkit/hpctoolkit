@@ -83,6 +83,8 @@ using std::string;
 #include "CallPath-MetricComponentsFact.hpp"
 #include "Util.hpp"
 
+#include <lib/prof/CCT-Tree.hpp>
+
 #include <lib/profxml/XercesUtil.hpp>
 #include <lib/profxml/PGMReader.hpp>
 
@@ -1027,6 +1029,10 @@ namespace Analysis {
 
 namespace CallPath {
 
+static void
+write(Prof::CallPath::Profile& prof, std::ostream& os,
+      const Analysis::Args& args);
+
 
 // makeDatabase: assumes Analysis::Args::makeDatabaseDir() has been called
 void
@@ -1054,17 +1060,16 @@ makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args)
   os_buf->pubsetbuf(outBuf, HPCIO_RWBufferSz);
 
   // 4. Write data for 'experiment.xml'
-  bool prettyPrint = (Diagnostics_GetDiagnosticFilterLevel() >= 5);
-  Analysis::CallPath::write(prof, *os, args.title, prettyPrint);
+  Analysis::CallPath::write(prof, *os, args);
   IOUtil::CloseStream(os);
 
   delete[] outBuf;
 }
 
 
-void
+static void
 write(Prof::CallPath::Profile& prof, std::ostream& os,
-      const string& title, bool prettyPrint)
+      const Analysis::Args& args)
 {
   static const char* experimentDTD =
 #include <lib/xml/hpc-experiment.dtd.h>
@@ -1072,11 +1077,15 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   using namespace Prof;
 
   int oFlags = 0; // CCT::Tree::OFlg_LeafMetricsOnly;
-  if (!prettyPrint) {
+  if (Diagnostics_GetDiagnosticFilterLevel() < 5) {
     oFlags |= CCT::Tree::OFlg_Compressed;
   }
   DIAG_If(5) {
     oFlags |= CCT::Tree::OFlg_Debug;
+  }
+
+  if (args.db_addStructId) {
+    oFlags |= CCT::Tree::OFlg_StructId;
   }
 
   uint metricBegId = 0;
@@ -1089,7 +1098,7 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
     metricEndId = (mEnd) ? mEnd->id() + 1 : Metric::Mgr::npos;
   }
 
-  string name = (title.empty()) ? prof.name() : title;
+  string name = (args.title.empty()) ? prof.name() : args.title;
 
   os << "<?xml version=\"1.0\"?>\n";
   os << "<!DOCTYPE HPCToolkitExperiment [\n" << experimentDTD << "]>\n";

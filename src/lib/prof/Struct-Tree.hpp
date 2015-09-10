@@ -287,6 +287,7 @@ public:
       m_visible(true)
   {
     m_id = s_nextUniqueId++;
+    m_origId = 0;
   }
 
   virtual ~ANode()
@@ -315,6 +316,7 @@ protected:
       m_type    = x.m_type;
       m_id      = x.m_id;
       m_visible = x.m_visible;
+      m_origId  = x.m_origId;
     }
     return *this;
   }
@@ -594,6 +596,10 @@ protected:
   ANodeTy m_type; // obsolete with typeid(), but hard to replace
   uint m_id;
   bool m_visible;
+
+public:
+  // original node id from .hpcstruct file (for debug)
+  uint m_origId;
 };
 
 

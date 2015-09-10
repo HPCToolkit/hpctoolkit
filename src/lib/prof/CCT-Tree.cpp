@@ -1167,6 +1167,10 @@ ProcFrm::toStringMe(uint oFlags) const
     }
 
     self += " lm" + lm_nm + " f" + fnm + " n" + pnm;
+
+    if ((oFlags & CCT::Tree::OFlg_StructId) && structure() != NULL) {
+      self += " str" + xml::MakeAttrNum(structure()->m_origId);
+    }
   }
 
   return self; 
@@ -1192,8 +1196,12 @@ Proc::toStringMe(uint oFlags) const
     }
 
     self += " lm" + lm_nm + " f" + fnm + " n" + pnm;
+
     if (isAlien()) {
       self = self + " a=\"1\"";
+    }
+    if ((oFlags & CCT::Tree::OFlg_StructId) && structure() != NULL) {
+      self += " str" + xml::MakeAttrNum(structure()->m_origId);
     }
   }
 
@@ -1207,6 +1215,11 @@ Loop::toStringMe(uint oFlags) const
   uint file_id = getFileIdFromMap(fileId());
   string fnm = xml::MakeAttrNum(file_id);
   string self = ANode::toStringMe(oFlags) + " f" + fnm;
+
+  if ((oFlags & CCT::Tree::OFlg_StructId) && structure() != NULL) {
+    self += " str" + xml::MakeAttrNum(structure()->m_origId);
+  }
+
   return self;
 }
 
@@ -1215,9 +1228,14 @@ string
 Call::toStringMe(uint oFlags) const
 {
   string self = ANode::toStringMe(oFlags);
+
   if ((oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll)) {
     self += " n=\"" + nameDyn() + "\"";
   }
+  if ((oFlags & CCT::Tree::OFlg_StructId) && structure() != NULL) {
+    self += " str" + xml::MakeAttrNum(structure()->m_origId);
+  }
+
   return self;
 }
 
@@ -1226,12 +1244,17 @@ string
 Stmt::toStringMe(uint oFlags) const
 {
   string self = ANode::toStringMe(oFlags);
+
   if ((oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll)) {
     self += " n=\"" + nameDyn() + "\"";
   }
   if (hpcrun_fmt_doRetainId(cpId())) {
     self += " it" + xml::MakeAttrNum(cpId());
   }
+  if ((oFlags & CCT::Tree::OFlg_StructId) && structure() != NULL) {
+    self += " str" + xml::MakeAttrNum(structure()->m_origId);
+  }
+
   return self;
 }
 

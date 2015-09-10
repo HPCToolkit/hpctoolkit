@@ -181,9 +181,6 @@ applySummaryMetricAgents(Prof::CallPath::Profile& prof, string agent);
 void
 makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args);
 
-void 
-write(Prof::CallPath::Profile& prof, std::ostream& os, 
-      const std::string& title, bool prettyPrint = true);
 
 } // namespace CallPath
 

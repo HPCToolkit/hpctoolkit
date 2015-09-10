@@ -133,6 +133,7 @@
       <!--   (f)ile name: a string or an id in LoadModuleTable -->
       <!--   (l)ine range: "beg-end" (inclusive range) -->
       <!--   (a)lien: whether frame is alien to enclosing P -->
+      <!--   (str)uct: hpcstruct node id -->
       <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
       <!ELEMENT PF (PF|Pr|L|C|S|M)*>
       <!ATTLIST PF
@@ -142,6 +143,7 @@
 		lm CDATA #IMPLIED
 		f  CDATA #IMPLIED
 		l  CDATA #IMPLIED
+		str  CDATA #IMPLIED
 		v  CDATA #IMPLIED>
       <!-- Procedure (static): GOAL: replace with 'P' -->
       <!ELEMENT Pr (Pr|L|C|S|M)*>
@@ -153,6 +155,7 @@
 		f  CDATA #IMPLIED
                 l  CDATA #IMPLIED
 		a  (1|0) "0"
+		str  CDATA #IMPLIED
 		v  CDATA #IMPLIED>
       <!-- Callsite (a special StatementRange) -->
       <!ELEMENT C (PF|M)*>
@@ -160,6 +163,7 @@
 		i CDATA #IMPLIED
 		s CDATA #IMPLIED
 		l CDATA #IMPLIED
+		str CDATA #IMPLIED
 		v CDATA #IMPLIED>
 
   <!-- ****************************************************************** -->
@@ -188,6 +192,7 @@
                 i CDATA #IMPLIED
                 n CDATA #REQUIRED
                 l CDATA #IMPLIED
+		str CDATA #IMPLIED
 		v CDATA #IMPLIED>
       <!-- Alien (Note 1) -->
       <!ELEMENT A (A|L|S|C|M)*>
@@ -196,6 +201,7 @@
                 f CDATA #IMPLIED
                 n CDATA #IMPLIED
                 l CDATA #IMPLIED
+		str CDATA #IMPLIED
 		v CDATA #IMPLIED>
       <!-- Loop (Note 1,2) -->
       <!ELEMENT L (A|Pr|L|S|C|M)*>
@@ -204,6 +210,7 @@
 		s CDATA #IMPLIED
 		l CDATA #IMPLIED
 	        f CDATA #IMPLIED
+		str CDATA #IMPLIED
 		v CDATA #IMPLIED>
       <!-- Statement (Note 2) -->
       <!--   (it): trace record identifier -->
@@ -213,6 +220,7 @@
 		it CDATA #IMPLIED
 		s  CDATA #IMPLIED
 		l  CDATA #IMPLIED
+		str  CDATA #IMPLIED
 		v  CDATA #IMPLIED>
       <!-- Note 1: Contained Cs may not contain PFs -->
       <!-- Note 2: The 's' attribute is not used for flat profiles -->

@@ -59,6 +59,8 @@
 
 //************************ System Include Files ******************************
 
+#include <stdlib.h>
+
 #include <iostream>
 using std::cerr;
 using std::endl;
@@ -322,6 +324,7 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
     getLineAttr(begLn, endLn, attributes);
 
     string vma = getAttr(attributes, attrVMA);
+    string node_id = getAttr(attributes, attrId);
 
     DIAG_Assert(m_curLM && m_curFile && !m_curProc, "Parse error: Support for nested procedures is disabled (cf. buildLMSkeleton())!");
 
@@ -346,6 +349,7 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
       if (!vma.empty()) {
 	m_curProc->vmaSet().fromString(vma.c_str());
       }
+      m_curProc->m_origId = atoi(node_id.c_str());
     }
     else {
       if (m_docty == Doc_STRUCT) {
@@ -372,8 +376,11 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
     getLineAttr(begLn, endLn, attributes);
 
     Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(getCurrentScope());
-
     Struct::ACodeNode* alien = new Struct::Alien(parent, fnm, nm, nm, begLn, endLn);
+
+    string node_id = getAttr(attributes, attrId);
+    alien->m_origId = atoi(node_id.c_str());
+
     DIAG_DevMsgIf(DBG, "PGMDocHandler: " << alien->toStringMe());
 
     curStrct = alien;
@@ -395,8 +402,11 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
 
     // by now the file and function names should have been found
     Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(getCurrentScope());
-
     Struct::ACodeNode* loopNode = new Struct::Loop(parent, fnm, begLn, endLn);
+
+    string node_id = getAttr(attributes, attrId);
+    loopNode->m_origId = atoi(node_id.c_str());
+
     DIAG_DevMsgIf(DBG, "PGMDocHandler: " << loopNode->toStringMe());
 
     curStrct = loopNode;
@@ -425,6 +435,9 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
     if (!vma.empty()) {
       stmtNode->vmaSet().fromString(vma.c_str());
     }
+    string node_id = getAttr(attributes, attrId);
+    stmtNode->m_origId = atoi(node_id.c_str());
+
     DIAG_DevMsgIf(DBG, "PGMDocHandler: " << stmtNode->toStringMe());
 
     curStrct = stmtNode;

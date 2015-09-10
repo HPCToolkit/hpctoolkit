@@ -202,6 +202,7 @@ public:
   std::string out_db_config;     // disable: "", stdout: "-"
 
   bool db_makeMetricDB;
+  bool db_addStructId;
 
   // -------------------------------------------------------
   // Output arguments: textual output
