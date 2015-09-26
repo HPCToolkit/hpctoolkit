@@ -212,7 +212,7 @@ ompt_parallel_end(
        hpcrun_ompt_get_parallel_id(0));
   hpcrun_safe_exit();
   int levels_to_skip = LEVELS_TO_SKIP;
-  ompt_parallel_end_internal(parallel_id, ++levels_to_skip, invoker == ompt_invoker_program);
+  ompt_parallel_end_internal(parallel_id, ++levels_to_skip, invoker);
 }
 #endif
 
