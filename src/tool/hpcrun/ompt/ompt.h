@@ -299,13 +299,13 @@ typedef void (*ompt_new_parallel_callback_t) (
     ompt_parallel_id_t parallel_id,   /* id of parallel region        */
     uint32_t requested_team_size,     /* number of threads in team    */
     void *parallel_function,          /* pointer to outlined function */
-    ompt_invoker_t invoker            /* who invokes master task?    */
+    ompt_invoker_t invoker            /* who invokes master task?    */ 
 );
 
 typedef void (*ompt_end_parallel_callback_t) (
     ompt_parallel_id_t parallel_id,   /* id of parallel region       */
     ompt_task_id_t task_id,           /* id of task                  */
-    ompt_invoker_t invoker            /* who invokes master task?    */
+    ompt_invoker_t invoker            /* who invokes master task?    */ 
 );
 
 /* tasks */
@@ -418,12 +418,15 @@ OMPT_API_FUNCTION(void, ompt_mutex_wait, (
  * INITIALIZATION FUNCTIONS
  ***************************************************************************/
 
-/* initialization interface to be defined by tool */
-int ompt_initialize(
+OMPT_API_FUNCTION(void, ompt_initialize, (
     ompt_function_lookup_t ompt_fn_lookup,
     const char *runtime_version,
     unsigned int ompt_version
-);
+));
+
+
+/* initialization interface to be defined by tool */
+ompt_initialize_t ompt_tool(void);
 
 typedef enum opt_init_mode_e {
     ompt_init_mode_never  = 0,
