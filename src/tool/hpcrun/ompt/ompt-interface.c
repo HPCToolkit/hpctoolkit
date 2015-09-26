@@ -486,12 +486,11 @@ init_idle_blame_shift(const char *version)
 // runtime system immediately after it initializes
 // itself.
 //-------------------------------------------------
-int 
-ompt_initialize_internal(
-  ompt_function_lookup_t ompt_fn_lookup,
-  const char *runtime_version,
-  unsigned int ompt_version
-)
+
+void
+ompt_initialize(ompt_function_lookup_t ompt_fn_lookup,
+                const char*            runtime_version,
+                unsigned int           ompt_version)
 {
   ompt_initialized = 1;
 
@@ -517,39 +516,14 @@ ompt_initialize_internal(
     ompt_elide = 1;
     ompt_callstack_register_handlers();
   }
-
-  return 1; // indicate tool present
 }
 
 
-#ifdef OMPT_V2013_07
-
-#define macro(fn) extern void fn (void); 
-FOREACH_OMPT_INQUIRY_FN( macro )
-
-#undef macro
-static ompt_interface_fn_t
-ompt_lookup(const char *fname)
+ompt_initialize_t 
+ompt_tool(void)
 {
-#define macro( fn ) if (strcmp(fname, #fn) == 0) return (ompt_interface_fn_t) fn;
-FOREACH_OMPT_INQUIRY_FN( macro )
-#undef macro
-return 0;
+  return ompt_initialize;
 }
-
-int ompt_initialize(void)
-{
-  return ompt_initialize_internal(ompt_lookup, "", 1);
-}
-#else
-int
-ompt_initialize( ompt_function_lookup_t lookup,
-                 const char*            runtime_version,
-                 unsigned int           ompt_version )
-{
-  return ompt_initialize_internal(lookup, runtime_version, ompt_version);
-}
-#endif
 
 
 int 
@@ -574,6 +548,7 @@ hpcrun_ompt_state_is_overhead()
   }
   return 0;
 }
+
 
 //-------------------------------------------------
 // returns true if OpenMP runtime frames should
