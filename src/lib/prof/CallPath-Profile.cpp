@@ -636,7 +636,11 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     if (m->hasDBInfo()) {
       os << "    <MetricDB i" << MakeAttrNum(i)
 	 << " n" << MakeAttrStr(m->name())
-	 << " db-glob=\"" << m->dbFileGlob() << "\""
+       	 << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\"";
+      if (m->partner()) {
+         os << " partner" << MakeAttrNum(m->partner()->id());
+      }
+      os << " db-glob=\"" << m->dbFileGlob() << "\""
 	 << " db-id=\"" << m->dbId() << "\""
 	 << " db-num-metrics=\"" << m->dbNumMetrics() << "\""
 	 << " db-header-sz=\"" << HPCMETRICDB_FMT_HeaderLen << "\""
