@@ -755,6 +755,8 @@ HOST_LIBTREPOSITORY
 HOST_AR
 HOST_CXXFLAGS
 HOST_CFLAGS
+cxx_c11_flag
+CXX11_FLAG
 HOST_CPU_IA64_FALSE
 HOST_CPU_IA64_TRUE
 HOST_CPU_X86_FAMILY_FALSE
@@ -936,7 +938,6 @@ enable_hpcrun
 enable_hpcrun_static
 enable_hpcserver
 enable_inline
-enable_new_symtab
 enable_mpi
 enable_mpi_wrapper
 enable_lush
@@ -974,7 +975,8 @@ CXXCPP
 CCAS
 CCASFLAGS
 LD
-MPICXX'
+MPICXX
+CXX11_FLAG'
 
 
 # Initialize some variables set by options.
@@ -1622,8 +1624,6 @@ Optional Features:
   --enable-hpcserver      build hpcserver and hpcserver-mpi (default no)
   --enable-inline         enable static inline support, requires linking
                           symtab into hpcstruct (default check)
-  --enable-new-symtab     temporary option to allow using new symtabAPI from
-                          git, requires -std=c++11 (default no)
   --enable-mpi            Enable MPI support (uses MPICXX variable)
   --enable-mpi-wrapper    Enable MPI wrapper support (uses MPIF77 and CFLAGS)
   --enable-lush           use lush backtrace in hpcrun
@@ -1700,6 +1700,8 @@ Some influential environment variables:
   LD          ld program for binaries produced by CC, only needed if autoconf
               fails to find a suitable program
   MPICXX      MPI C++ compiler
+  CXX11_FLAG  CXX flag for C++11 standard, normally only needed for non-GNU
+              CXX
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -17073,6 +17075,89 @@ fi
 
 
 #-------------------------------------------------
+# CXXFLAGS for std C++11
+#-------------------------------------------------
+
+# Find a CXX flag for standard C++11 and add to CXXFLAGS if needed.
+# We use some C++11 features (auto) in the parseAPI code in
+# src/lib/banal.  Unfortunately, due to include files, we pretty much
+# need this everywhere for C++ code.
+
+
+
+c11_list='argvar none -std=c++11 -std=c++0x -std=gnu++0x'
+cxx_c11_avail=no
+cxx_c11_flag=
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking CXXFLAGS for C++11 standard" >&5
+$as_echo_n "checking CXXFLAGS for C++11 standard... " >&6; }
+
+for opt in $c11_list
+do
+  case "$opt" in
+    argvar ) flag="$CXX11_FLAG" ;;
+    none )   flag=  ;;
+    * )      flag="$opt" ;;
+  esac
+  CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $flag"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <list>
+int mylen(std::list <int> lst)
+{
+  int ans = 0;
+  for (auto it = lst.begin(); it != lst.end(); it++) {
+    ans += 1;
+  }
+  return ans;
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  ans=yes
+else
+  ans=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  if test "$ans" = yes ; then
+    cxx_c11_avail=yes
+    cxx_c11_flag="$flag"
+    break
+  fi
+done
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $cxx_c11_flag" >&5
+$as_echo "$cxx_c11_flag" >&6; }
+
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+if test "$cxx_c11_avail" = no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find CXXFLAGS for std C++11" >&5
+$as_echo "$as_me: WARNING: unable to find CXXFLAGS for std C++11" >&2;}
+  as_fn_error $? "set the CXX11_FLAG variable and rerun configure" "$LINENO" 5
+fi
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx_c11_flag"
+
+
+
+
+#-------------------------------------------------
 # LD -- find correct arch type for ld
 #-------------------------------------------------
 
@@ -18873,26 +18958,59 @@ else
 fi
 
 
+# Test if symtabAPI is using the new method for inline function names.
+# Symtab 9.0 uses a new method (getName) for function names which is
+# incompatible with the old method (getAllPrettyNames).
 
-# Temporary option to allow using the new symtab from git.  The new
-# version has an incompatible change in the iterator for getting a
-# function's list of pretty names.
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking symtabAPI for new func name iterator" >&5
+$as_echo_n "checking symtabAPI for new func name iterator... " >&6; }
 
-# Check whether --enable-new-symtab was given.
-if test "${enable_new_symtab+set}" = set; then :
-  enableval=$enable_new_symtab;
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$cxx_c11_flag -I${BOOST_INC} -I${SYMTABAPI_INC}"
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <iostream>
+#include <Symtab.h>
+#include <Function.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+void print_name(FunctionBase * func)
+{
+  std::cout << func->getName();
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  enable_new_symtab=yes
 else
   enable_new_symtab=no
 fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_new_symtab" >&5
+$as_echo "$enable_new_symtab" >&6; }
 
 if test "$enable_new_symtab" = yes ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: using new symtabAPI from git" >&5
-$as_echo "$as_me: using new symtabAPI from git" >&6;}
 
 $as_echo "#define SYMTAB_NEW_NAME_ITERATOR 1" >>confdefs.h
 
 fi
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
 
 
 #-------------------------------------------------
@@ -22861,6 +22979,8 @@ $as_echo "$as_me:   Path:      $CXX_PATH" >&6;}
 $as_echo "$as_me:   CXX:       '${CXX}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   CXXFLAGS:  '${CXXFLAGS} ${HOST_CXXFLAGS}'" >&5
 $as_echo "$as_me:   CXXFLAGS:  '${CXXFLAGS} ${HOST_CXXFLAGS}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   C++11:     '${cxx_c11_flag}'" >&5
+$as_echo "$as_me:   C++11:     '${cxx_c11_flag}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   CCAS:      '${CCAS}'" >&5
 $as_echo "$as_me:   CCAS:      '${CCAS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   CCASFLAGS: '${CCASFLAGS}'" >&5

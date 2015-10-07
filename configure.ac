@@ -781,6 +781,68 @@ fi
 
 
 #-------------------------------------------------
+# CXXFLAGS for std C++11
+#-------------------------------------------------
+
+# Find a CXX flag for standard C++11 and add to CXXFLAGS if needed.
+# We use some C++11 features (auto) in the parseAPI code in
+# src/lib/banal.  Unfortunately, due to include files, we pretty much
+# need this everywhere for C++ code.
+
+AC_ARG_VAR([CXX11_FLAG],
+  [CXX flag for C++11 standard, normally only needed for non-GNU CXX])
+
+c11_list='argvar none -std=c++11 -std=c++0x -std=gnu++0x'
+cxx_c11_avail=no
+cxx_c11_flag=
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+AC_LANG_PUSH([C++])
+
+AC_MSG_CHECKING([CXXFLAGS for C++11 standard])
+
+for opt in $c11_list
+do
+  case "$opt" in
+    argvar ) flag="$CXX11_FLAG" ;;
+    none )   flag=  ;;
+    * )      flag="$opt" ;;
+  esac
+  CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $flag"
+  AC_COMPILE_IFELSE([
+#include <list>
+int mylen(std::list <int> lst)
+{
+  int ans = 0;
+  for (auto it = lst.begin(); it != lst.end(); it++) {
+    ans += 1;
+  }
+  return ans;
+}
+], [ans=yes], [ans=no])
+  if test "$ans" = yes ; then
+    cxx_c11_avail=yes
+    cxx_c11_flag="$flag"
+    break
+  fi
+done
+
+AC_MSG_RESULT([$cxx_c11_flag])
+
+AC_LANG_POP
+
+if test "$cxx_c11_avail" = no ; then
+  AC_MSG_WARN([unable to find CXXFLAGS for std C++11])
+  AC_MSG_ERROR([set the CXX11_FLAG variable and rerun configure])
+fi
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx_c11_flag"
+
+AC_SUBST([cxx_c11_flag])
+
+
+#-------------------------------------------------
 # LD -- find correct arch type for ld
 #-------------------------------------------------
 
@@ -2187,21 +2249,36 @@ fi
 
 AM_CONDITIONAL(OPT_HPCSTRUCT_LAUNCH_SCRIPT, [test "$hpcstruct_launch_script" = yes])
 
+# Test if symtabAPI is using the new method for inline function names.
+# Symtab 9.0 uses a new method (getName) for function names which is
+# incompatible with the old method (getAllPrettyNames).
 
-# Temporary option to allow using the new symtab from git.  The new
-# version has an incompatible change in the iterator for getting a
-# function's list of pretty names.
+AC_MSG_CHECKING([symtabAPI for new func name iterator])
 
-AC_ARG_ENABLE([new-symtab],
-  [AS_HELP_STRING([--enable-new-symtab],
-      [temporary option to allow using new symtabAPI from git,
-       requires -std=c++11 (default no)])],
-  [], [enable_new_symtab=no])
+AC_LANG_PUSH([C++])
+ORIG_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$cxx_c11_flag -I${BOOST_INC} -I${SYMTABAPI_INC}"
+
+AC_COMPILE_IFELSE([
+#include <iostream>
+#include <Symtab.h>
+#include <Function.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+void print_name(FunctionBase * func)
+{
+  std::cout << func->getName();
+}
+], [enable_new_symtab=yes], [enable_new_symtab=no])
+
+AC_MSG_RESULT([$enable_new_symtab])
 
 if test "$enable_new_symtab" = yes ; then
-  AC_MSG_NOTICE([using new symtabAPI from git])
-  AC_DEFINE([SYMTAB_NEW_NAME_ITERATOR], [1], [Use new symtabAPI pretty names iterator])
+  AC_DEFINE([SYMTAB_NEW_NAME_ITERATOR], [1], [Use new symtabAPI getName iterator])
 fi
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+AC_LANG_POP()
 
 
 #-------------------------------------------------
@@ -3029,6 +3106,7 @@ AC_MSG_NOTICE([  C++ compiler: $CXX_VERSION])
 AC_MSG_NOTICE([  Path:      $CXX_PATH])
 AC_MSG_NOTICE([  CXX:       '${CXX}'])
 AC_MSG_NOTICE([  CXXFLAGS:  '${CXXFLAGS} ${HOST_CXXFLAGS}'])
+AC_MSG_NOTICE([  C++11:     '${cxx_c11_flag}'])
 AC_MSG_NOTICE([  CCAS:      '${CCAS}'])
 AC_MSG_NOTICE([  CCASFLAGS: '${CCASFLAGS}'])
 AC_MSG_NOTICE([  LDFLAGS:   '${LDFLAGS}'])
