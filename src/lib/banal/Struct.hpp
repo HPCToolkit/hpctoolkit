@@ -88,6 +88,7 @@ namespace Struct {
 
   Prof::Struct::LM* 
   makeStructure(BinUtil::LM* lm, 
+		std::ostream * dotFile,
 		NormTy doNormalizeTy,
 		bool isIrrIvalLoop = false,
 		bool isFwdSubst = false,

@@ -57,8 +57,23 @@
 //
 //***************************************************************************
 
+// Makefile.am should define exactly one of BANAL_USE_PARSEAPI and
+// BANAL_USE_OA for this file.  Also, BANAL_USE_PARSEAPI implies
+// BANAL_USE_SYMTAB.
+
+#if ! defined(BANAL_USE_PARSEAPI) && ! defined(BANAL_USE_OA)
+#error must define one of BANAL_USE_PARSEAPI and BANAL_USE_OA
+#endif
+#if defined(BANAL_USE_PARSEAPI) && defined(BANAL_USE_OA)
+#error cannot define both BANAL_USE_PARSEAPI and BANAL_USE_OA
+#endif
+#if defined(BANAL_USE_PARSEAPI) && ! defined(BANAL_USE_SYMTAB)
+#error cannot define BANAL_USE_PARSEAPI without BANAL_USE_SYMTAB
+#endif
+
 //************************* System Include Files ****************************
 
+#include <sys/types.h>
 #include <limits.h>
 
 #include <iostream>
@@ -67,7 +82,6 @@ using std::cerr;
 using std::endl;
 
 #include <iomanip>
-
 #include <fstream>
 #include <sstream>
 
@@ -76,28 +90,29 @@ using std::string;
 
 #include <map>
 #include <list>
+#include <set>
 #include <vector>
-
 #include <typeinfo>
-
 #include <algorithm>
-
 #include <cstring>
 
 //************************ OpenAnalysis Include Files ***********************
 
+#ifdef BANAL_USE_OA
 #include <OpenAnalysis/CFG/ManagerCFG.hpp>
 #include <OpenAnalysis/Utils/RIFG.hpp>
 #include <OpenAnalysis/Utils/NestedSCR.hpp>
 #include <OpenAnalysis/Utils/Exception.hpp>
+#include "OAInterface.hpp"
+#endif
 
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
+#include <include/uint.h>
 
 #include "Struct.hpp"
 #include "Struct-LocationMgr.hpp"
-#include "OAInterface.hpp"
 
 #include <lib/prof/Struct-Tree.hpp>
 #include <lib/prof/Struct-TreeIterator.hpp>
@@ -106,35 +121,77 @@ using namespace Prof;
 #include <lib/binutils/LM.hpp>
 #include <lib/binutils/Seg.hpp>
 #include <lib/binutils/Proc.hpp>
+#include <lib/binutils/Insn.hpp>
 #include <lib/binutils/BinUtils.hpp>
 
 #include <lib/xml/xml.hpp>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
+#include <lib/support/StringTable.hpp>
 #include <lib/support/StrUtil.hpp>
 
-
 #ifdef BANAL_USE_SYMTAB
+#include <Symtab.h>
+#include <Function.h>
 #include "Struct-Inline.hpp"
+
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace Inline;
+#endif
+
+#ifdef BANAL_USE_PARSEAPI
+#include <CFG.h>
+#include <CodeObject.h>
+#include <CodeSource.h>
+#include <Instruction.h>
+
+using namespace InstructionAPI;
+using namespace ParseAPI;
 #endif
 
 #define FULL_STRUCT_DEBUG 0
 
+
 //*************************** Forward Declarations ***************************
 
 namespace BAnal {
-
 namespace Struct {
 
 // ------------------------------------------------------------
 // Helpers for building a structure tree
 // ------------------------------------------------------------
 
-typedef std::multimap<Prof::Struct::Proc*, BinUtil::Proc*> ProcStrctToProcMap;
+// The three views of a procedure: scope tree, binutils and parseAPI.
+// This is how we combine the open analysis and parseAPI cases to
+// simplify passing different arguments.
 
-static ProcStrctToProcMap*
-buildLMSkeleton(Prof::Struct::LM* lmStrct, BinUtil::LM* lm,
+class ProcInfo {
+public:
+  Prof::Struct::Proc * proc;
+  BinUtil::Proc * proc_bin;
+#ifdef BANAL_USE_PARSEAPI
+  ParseAPI::Function * proc_parse;
+#endif
+
+#ifdef BANAL_USE_PARSEAPI
+  ProcInfo(Prof::Struct::Proc *p, BinUtil::Proc *pb, ParseAPI::Function *f)
+  { proc = p;  proc_bin = pb;  proc_parse = f; }
+#else
+  ProcInfo(Prof::Struct::Proc *p, BinUtil::Proc *pb)
+  { proc = p;  proc_bin = pb; }
+#endif
+};
+
+typedef std::vector <ProcInfo> ProcInfoVec;
+
+static ProcInfoVec *
+buildLMSkeleton(Prof::Struct::LM* lmStrct,
+		BinUtil::LM* lm,
+#ifdef BANAL_USE_PARSEAPI
+		ParseAPI::CodeObject *code_obj,
+#endif
 		ProcNameMgr* procNmMgr);
 
 static Prof::Struct::File*
@@ -144,11 +201,12 @@ static Prof::Struct::Proc*
 demandProcNode(Prof::Struct::File* fStrct, BinUtil::Proc* p,
 	       ProcNameMgr* procNmMgr);
 
-
 static Prof::Struct::Proc*
-buildProcStructure(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
+buildProcStructure(ProcInfo pinfo,
 		   bool isIrrIvalLoop, bool isFwdSubst,
 		   ProcNameMgr* procNmMgr, const std::string& dbgProcGlob);
+
+#ifdef BANAL_USE_OA
 
 static int
 buildProcLoopNests(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
@@ -161,22 +219,38 @@ buildStmts(Struct::LocationMgr& locMgr,
 	   OA::OA_ptr<OA::CFG::NodeInterface> bb, ProcNameMgr* procNmMgr,
 	   std::list<Prof::Struct::ACodeNode *> &insertions, int targetScopeID);
 
-
 static void
 findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj, 
 		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
 		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn, VMA &loop_vma);
 
+#endif  // open analysis
+
+// ------------------------------------------------------------
+// Debug functions to display input data for loops, blocks and stmts
+// ------------------------------------------------------------
+
+#define DEBUG_CFG_SOURCE  0
+
+#if DEBUG_CFG_SOURCE
+static void
+debugStmt(Prof::Struct::Stmt *, VMA, string &, string &, SrcFile::ln);
+
+#define DEBUG_MESG(expr)  std::cout << expr
+
+#else
+
+#define DEBUG_MESG(expr)
+
+#endif  // DEBUG_CFG_SOURCE
 
 } // namespace Struct
-
 } // namespace BAnal
 
 
 //*************************** Forward Declarations ***************************
 
 namespace BAnal {
-
 namespace Struct {
 
 // ------------------------------------------------------------
@@ -326,9 +400,117 @@ private:
 };
 
 
-} // namespace Struct
+// ------------------------------------------------------------
+// Make a dot (graphviz) file for the Control-Flow Graph
+// ------------------------------------------------------------
 
+// Write the Control-Flow Graph for each procedure to the ostream
+// dotFile.
+
+#ifdef BANAL_USE_PARSEAPI
+static void
+makeDotFile(std::ostream * dotFile, CodeObject * code_obj)
+{
+  const CodeObject::funclist & funcList = code_obj->funcs();
+
+  for (auto fit = funcList.begin(); fit != funcList.end(); ++fit)
+  {
+    ParseAPI::Function * func = *fit;
+    map <Block *, int> blockNum;
+    map <Block *, int>::iterator mit;
+    int num;
+
+    *dotFile << "--------------------------------------------------\n"
+	     << "Procedure: '" << func->name() << "'\n\n"
+	     << "digraph " << func->name() << " {\n"
+	     << "  1 [ label=\"start\" shape=\"diamond\" ];\n";
+
+    const ParseAPI::Function::blocklist & blist = func->blocks();
+
+    // write the list of nodes (blocks)
+    num = 1;
+    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+      Block * block = *bit;
+      num++;
+
+      blockNum[block] = num;
+      *dotFile << "  " << num << " [ label=\"0x" << hex << block->start()
+	       << dec << "\" ];\n";
+    }
+    int endNum = num + 1;
+    *dotFile << "  " << endNum << " [ label=\"end\" shape=\"diamond\" ];\n";
+
+    // in parseAPI, functions have a unique entry point
+    mit = blockNum.find(func->entry());
+    if (mit != blockNum.end()) {
+      *dotFile << "  1 -> " << mit->second << ";\n";
+    }
+
+    // write the list of internal edges
+    num = 1;
+    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+      Block * block = *bit;
+      const ParseAPI::Block::edgelist & elist = block->targets();
+      num++;
+
+      for (auto eit = elist.begin(); eit != elist.end(); ++eit) {
+	mit = blockNum.find((*eit)->trg());
+	if (mit != blockNum.end()) {
+	  *dotFile << "  " << num << " -> " << mit->second << ";\n";
+	}
+      }
+    }
+
+    // add any exit edges
+    const ParseAPI::Function::const_blocklist & eblist = func->exitBlocks();
+    for (auto bit = eblist.begin(); bit != eblist.end(); ++bit) {
+      Block * block = *bit;
+      mit = blockNum.find(block);
+      if (mit != blockNum.end()) {
+	*dotFile << "  " << mit->second << " -> " << endNum << ";\n";
+      }
+    }
+
+    *dotFile << "}\n" << endl;
+  }
+}
+#endif  // parseAPI
+
+
+#ifdef BANAL_USE_OA
+static void
+makeDotFile(std::ostream * dotFile, BinUtil::LM * lm)
+{
+  BinUtil::LM::ProcMap & pmap = lm->procs();
+
+  for (BinUtil::LM::ProcMap::iterator it = pmap.begin();
+       it != pmap.end(); ++it)
+  {
+    BinUtil::Proc * proc = it->second;
+
+    OA::OA_ptr <OAInterface> irIF;
+    irIF = new OAInterface(proc);
+
+    OA::OA_ptr <OA::CFG::ManagerCFGStandard> cfgmanstd;
+    cfgmanstd = new OA::CFG::ManagerCFGStandard(irIF);
+
+    OA::OA_ptr <OA::CFG::CFG> cfg =
+      cfgmanstd->performAnalysis(TY_TO_IRHNDL(proc, OA::ProcHandle));
+
+    OA::OA_ptr <OA::RIFG> rifg;
+    rifg = new OA::RIFG(cfg, cfg->getEntry(), cfg->getExit());
+
+    *dotFile << "--------------------------------------------------\n"
+	     << "Procedure: '" << proc->name() << "'\n\n";
+    rifg->dump(*dotFile);
+    *dotFile << endl;
+  }
+}
+#endif  // open analysis
+
+} // namespace Struct
 } // namespace BAnal
+
 
 //*************************** Forward Declarations ***************************
 
@@ -355,6 +537,7 @@ static const string& OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm;
 //   optimizations such as loop unrolling.
 Prof::Struct::LM*
 BAnal::Struct::makeStructure(BinUtil::LM* lm,
+			     std::ostream * dotFile,
 			     NormTy doNormalizeTy,
 			     bool isIrrIvalLoop,
 			     bool isFwdSubst,
@@ -364,35 +547,55 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
   // Assume lm->Read() has been performed
   DIAG_Assert(lm, DIAG_UnexpectedInput);
 
-  // FIXME (minor): relocate
-  //OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm + lm->name();
-
   Prof::Struct::LM* lmStrct = new Prof::Struct::LM(lm->name(), NULL);
 
-  // 1. Build Struct::File/Struct::Proc skeletal structure
-  ProcStrctToProcMap* mp = buildLMSkeleton(lmStrct, lm, procNmMgr);
-
 #ifdef BANAL_USE_SYMTAB
-  Inline::openSymtab(lm->name());
+  Symtab * symtab = Inline::openSymtab(lm->name());
+
+#ifdef BANAL_USE_PARSEAPI
+  SymtabCodeSource * code_src;
+  CodeObject * code_obj;
+
+  if (symtab != NULL) {
+    code_src = new SymtabCodeSource(symtab);
+    code_obj = new CodeObject(code_src);
+    code_obj->parse();
+  }
 #endif
-  
+#endif
+
+  // 1. Build Struct::File/Struct::Proc skeletal structure
+#ifdef BANAL_USE_PARSEAPI
+  ProcInfoVec * pvec = buildLMSkeleton(lmStrct, lm, code_obj, procNmMgr);
+#else
+  ProcInfoVec * pvec = buildLMSkeleton(lmStrct, lm, procNmMgr);
+#endif
+
   // 2. For each [Struct::Proc, BinUtil::Proc] pair, complete the build.
   // Note that a Struct::Proc may be associated with more than one
   // BinUtil::Proc.
-  for (ProcStrctToProcMap::iterator it = mp->begin(); it != mp->end(); ++it) {
-    Prof::Struct::Proc* pStrct = it->first;
-    BinUtil::Proc* p = it->second;
+  for (auto it = pvec->begin(); it != pvec->end(); ++it) {
+    BinUtil::Proc* p = it->proc_bin;
 
     DIAG_Msg(2, "Building scope tree for [" << p->name()  << "] ... ");
-    buildProcStructure(pStrct, p, isIrrIvalLoop, isFwdSubst,
+    buildProcStructure(*it, isIrrIvalLoop, isFwdSubst,
 		       procNmMgr, dbgProcGlob);
   }
-  delete mp;
+  delete pvec;
 
   // 3. Normalize
   if (doNormalizeTy != NormTy_None) {
     bool doNormalizeUnsafe = (doNormalizeTy == NormTy_All);
     normalize(lmStrct, doNormalizeUnsafe);
+  }
+
+  // 4. Write CFG in dot (graphviz) format to file.
+  if (dotFile != NULL) {
+#ifdef BANAL_USE_PARSEAPI
+    makeDotFile(dotFile, code_obj);
+#else
+    makeDotFile(dotFile, lm);
+#endif
   }
 
 #ifdef BANAL_USE_SYMTAB
@@ -426,7 +629,6 @@ BAnal::Struct::normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe)
 //****************************************************************************
 
 namespace BAnal {
-
 namespace Struct {
 
 // buildLMSkeleton: Build skeletal file-procedure structure.  This
@@ -437,23 +639,26 @@ namespace Struct {
 // A Struct::Proc can be associated with multiple BinUtil::Procs
 //
 // Struct::Procs will be sorted by begLn (cf. Struct::ACodeNode::Reorder)
-static ProcStrctToProcMap*
-buildLMSkeleton(Prof::Struct::LM* lmStrct, BinUtil::LM* lm,
+//
+#ifdef BANAL_USE_OA
+static ProcInfoVec *
+buildLMSkeleton(Prof::Struct::LM* lmStrct,
+		BinUtil::LM* lm,
 		ProcNameMgr* procNmMgr)
 {
-  ProcStrctToProcMap* mp = new ProcStrctToProcMap;
+  ProcInfoVec * pvec = new ProcInfoVec;
   
   // -------------------------------------------------------
   // 1. Create basic structure for each procedure
   // -------------------------------------------------------
 
-  for (BinUtil::LM::ProcMap::iterator it = lm->procs().begin();
-       it != lm->procs().end(); ++it) {
+  for (auto it = lm->procs().begin(); it != lm->procs().end(); ++it) {
     BinUtil::Proc* p = it->second;
+
     if (p->size() != 0) {
       Prof::Struct::File* fStrct = demandFileNode(lmStrct, p);
       Prof::Struct::Proc* pStrct = demandProcNode(fStrct, p, procNmMgr);
-      mp->insert(make_pair(pStrct, p));
+      pvec->push_back(ProcInfo(pStrct, p));
     }
   }
 
@@ -462,9 +667,9 @@ buildLMSkeleton(Prof::Struct::LM* lmStrct, BinUtil::LM* lm,
   // -------------------------------------------------------
   // FIXME: disable until we are sure we can handle this (cf. MOAB)
 #if 0
-  for (ProcStrctToProcMap::iterator it = mp->begin(); it != mp->end(); ++it) {
-    Prof::Struct::Proc* pStrct = it->first;
-    BinUtil::Proc* p = it->second;
+  for (auto it = pvec->begin(); it != pvec->end(); ++it) {
+    Prof::Struct::Proc* pStrct = it->proc;
+    BinUtil::Proc* p = it->proc_bin;
     BinUtil::Proc* parent = p->parent();
 
     if (parent) {
@@ -485,8 +690,47 @@ buildLMSkeleton(Prof::Struct::LM* lmStrct, BinUtil::LM* lm,
 
   // 4. Establish procedure groups: [FIXME: more stuff from DWARF]
   //      template instantiations, class member functions
-  return mp;
+
+  return pvec;
 }
+#endif  // open analysis
+
+
+// In the ParseAPI version, we iterate over the ParseAPI list of
+// functions and match them up with the BinUtil procedures by entry
+// address.  We still use BinUtil::Proc for the line map info, even in
+// the ParseAPI case.
+//
+#ifdef BANAL_USE_PARSEAPI
+static ProcInfoVec *
+buildLMSkeleton(Prof::Struct::LM* lmStrct,
+		BinUtil::LM* lm,
+		ParseAPI::CodeObject *code_obj,
+		ProcNameMgr* procNmMgr)
+{
+  ProcInfoVec * pvec = new ProcInfoVec;
+
+  // iterate over the ParseAPI Functions
+  const CodeObject::funclist & funcList = code_obj->funcs();
+
+  for (auto fit = funcList.begin(); fit != funcList.end(); ++fit) {
+    ParseAPI::Function *func = *fit;
+    BinUtil::Proc *p = lm->findProc((VMA) func->addr());
+
+    if (p != NULL) {
+      Prof::Struct::File * fStrct = demandFileNode(lmStrct, p);
+      Prof::Struct::Proc * pStrct = demandProcNode(fStrct, p, procNmMgr);
+      pvec->push_back(ProcInfo(pStrct, p, func));
+    }
+    else {
+      DIAG_WMsgIf(1, "no matching BinUtil::Proc for function '" << func->name()
+		  << "' at address 0x" << std::hex << func->addr() << std::dec);
+    }
+  }
+
+  return pvec;
+}
+#endif  // parseAPI
 
 
 // demandFileNode:
@@ -571,43 +815,17 @@ demandProcNode(Prof::Struct::File* fStrct, BinUtil::Proc* p,
 }
 
 } // namespace Struct
-
 } // namespace BAnal
 
 
 //****************************************************************************
-//
+// Helpers for Alien nodes
 //****************************************************************************
 
 namespace BAnal {
-
 namespace Struct {
 
-
-static int
-buildProcLoopNests(Prof::Struct::Proc* enclosingProc, BinUtil::Proc* p,
-		   OA::OA_ptr<OA::NestedSCR> tarj,
-		   OA::OA_ptr<OA::CFG::CFGInterface> cfg,
-		   OA::RIFG::NodeId fgRoot,
-		   bool isIrrIvalLoop, bool isFwdSubst,
-		   ProcNameMgr* procNmMgr, bool isDbg);
-
-static Prof::Struct::ACodeNode*
-buildLoopAndStmts(Struct::LocationMgr& locMgr,
-		  Prof::Struct::ACodeNode* topScope, Prof::Struct::ACodeNode* enclosingScope, 
-	  	  BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
-		  OA::OA_ptr<OA::CFG::CFGInterface> cfg,
-		  OA::RIFG::NodeId fgNode,
-		  bool isIrrIvalLoop, ProcNameMgr* procNmMgr);
-
-
-
-static bool
-AlienScopeFilter(const Prof::Struct::ANode& x, long GCC_ATTR_UNUSED type)
-{
-  return (x.type() == Prof::Struct::ANode::TyAlien);
-}
-
+#define DEBUG_COMPARE  0
 
 #if DEBUG_COMPARE
 static int debug_compare = 0;
@@ -618,6 +836,13 @@ static int debug_compare = 0;
 #else
 #define MAINTAIN_REASON(x) 
 #endif
+
+
+static bool
+AlienScopeFilter(const Prof::Struct::ANode& x, long GCC_ATTR_UNUSED type)
+{
+  return (x.type() == Prof::Struct::ANode::TyAlien);
+}
 
 
 class AlienCompare {
@@ -716,7 +941,8 @@ renumberAlienScopes(Prof::Struct::ANode* node)
 typedef std::list<Prof::Struct::Alien*> AlienList;
 typedef std::map<Prof::Struct::Alien*, AlienList *, AlienCompare> AlienMap;
 
-void dumpMap(AlienMap &alienMap)
+static void
+dumpMap(AlienMap &alienMap)
 {
     std::cout << "map " << &alienMap << 
                  " (" << alienMap.size() << " items)" << std::endl;
@@ -732,6 +958,7 @@ void dumpMap(AlienMap &alienMap)
         std::cout << "}" << std::endl; 
     }
 }
+
 
 static void
 coalesceAlienChildren(Prof::Struct::ANode* node)
@@ -820,133 +1047,6 @@ coalesceAlienChildren(Prof::Struct::ANode* node)
 }
 
 
-// buildProcStructure: Complete the representation for 'pStrct' given the
-// BinUtil::Proc 'p'.  Note that pStrcts parent may itself be a Struct::Proc.
-static Prof::Struct::Proc*
-buildProcStructure(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
-		   bool isIrrIvalLoop, bool isFwdSubst,
-		   ProcNameMgr* procNmMgr, const std::string& dbgProcGlob)
-{
-  DIAG_Msg(3, "==> Proc `" << p->name() << "' (" << p->id() << ") <==");
-  
-  bool isDbg = false;
-  if (!dbgProcGlob.empty()) {
-    //uint dbgId = p->id();
-    isDbg = FileUtil::fnmatch(dbgProcGlob, p->name().c_str());
-  }
-#if FULL_STRUCT_DEBUG
-  // heavy handed knob for full debug output, left in place for convenience
-  isDbg = true;
-#endif
-  
-  buildProcLoopNests(pStrct, p, isIrrIvalLoop, isFwdSubst, procNmMgr, isDbg);
-  coalesceAlienChildren(pStrct);
-  renumberAlienScopes(pStrct);
-  
-  return pStrct;
-}
-
-
-void
-debugCFGInfo(BinUtil::Proc* p)
-{
-  static const int sepWidth = 77;
-
-  using std::setfill;
-  using std::setw;
-  using BAnal::OAInterface;
-    
-  OA::OA_ptr<OAInterface> irIF; irIF = new OAInterface(p);
-    
-  OA::OA_ptr<OA::CFG::ManagerCFGStandard> cfgmanstd;
-  cfgmanstd = new OA::CFG::ManagerCFGStandard(irIF);
-
-  OA::OA_ptr<OA::CFG::CFG> cfg =
-    cfgmanstd->performAnalysis(TY_TO_IRHNDL(p, OA::ProcHandle));
-    
-  OA::OA_ptr<OA::RIFG> rifg; 
-  rifg = new OA::RIFG(cfg, cfg->getEntry(), cfg->getExit());
-
-  OA::OA_ptr<OA::NestedSCR> tarj;
-  tarj = new OA::NestedSCR(rifg);
-    
-  cerr << setfill('=') << setw(sepWidth) << "=" << endl;
-  cerr << "Procedure: " << p->name() << endl << endl;
-
-  OA::OA_ptr<OA::OutputBuilder> ob1, ob2;
-  ob1 = new OA::OutputBuilderText(cerr);
-  ob2 = new OA::OutputBuilderDOT(cerr);
-
-  cerr << setfill('-') << setw(sepWidth) << "-" << endl;
-  cerr << "*** CFG Text: [nodes, edges: "
-       << cfg->getNumNodes() << ", " << cfg->getNumEdges() << "]\n";
-  cfg->configOutput(ob1);
-  cfg->output(*irIF);
-
-  cerr << setfill('-') << setw(sepWidth) << "-" << endl;
-  cerr << "*** CFG DOT:\n";
-  cfg->configOutput(ob2);
-  cfg->output(*irIF);
-  cerr << endl;
-
-  cerr << setfill('-') << setw(sepWidth) << "-" << endl;
-  cerr << "*** Nested SCR (Tarjan) Tree\n";
-  tarj->dump(cerr);
-  cerr << endl;
-
-  cerr << setfill('-') << setw(sepWidth) << "-" << endl;
-  cerr << endl << flush;
-}
-
-// buildProcLoopNests: Build procedure structure by traversing
-// the Nested SCR (Tarjan tree) to create loop nests and statement
-// scopes.
-static int
-buildProcLoopNests(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
-		   bool isIrrIvalLoop, bool isFwdSubst,
-		   ProcNameMgr* procNmMgr, bool isDbg)
-{
-  static const int sepWidth = 77;
-  using std::setfill;
-  using std::setw;
-
-  try {
-    using BAnal::OAInterface;
-    
-    OA::OA_ptr<OAInterface> irIF; irIF = new OAInterface(p);
-    
-    OA::OA_ptr<OA::CFG::ManagerCFGStandard> cfgmanstd;
-    cfgmanstd = new OA::CFG::ManagerCFGStandard(irIF);
-    OA::OA_ptr<OA::CFG::CFG> cfg =
-      cfgmanstd->performAnalysis(TY_TO_IRHNDL(p, OA::ProcHandle));
-    
-    OA::OA_ptr<OA::RIFG> rifg;
-    rifg = new OA::RIFG(cfg, cfg->getEntry(), cfg->getExit());
-    OA::OA_ptr<OA::NestedSCR> tarj; tarj = new OA::NestedSCR(rifg);
-    
-    OA::RIFG::NodeId fgRoot = rifg->getSource();
-
-    if (isDbg) {
-      debugCFGInfo(p);
-    }
-
-    int r = buildProcLoopNests(pStrct, p, tarj, cfg, fgRoot,
-			       isIrrIvalLoop, isFwdSubst, procNmMgr, isDbg);
-
-    if (isDbg) {
-      cerr << setfill('-') << setw(sepWidth) << "-" << endl;
-    }
-
-    return r;
-  }
-  catch (const OA::Exception& x) {
-    std::ostringstream os;
-    x.report(os);
-    DIAG_Throw("[OpenAnalysis] " << os.str());
-  }
-}
-
-
 static Prof::Struct::ANode * 
 getVisibleAncestor(Prof::Struct::ANode *node)
 {
@@ -989,7 +1089,7 @@ ancestorIsLoop(Prof::Struct::ANode *node)
   }
   return 0;
 }
-#endif
+#endif  // full_struct_debug
 
 
 static bool
@@ -1058,6 +1158,173 @@ reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop,
     }
     node->unlink();
     node->link(loop);
+  }
+}
+
+} // namespace Struct
+} // namespace BAnal
+
+
+//****************************************************************************
+// Open Analysis code for procedures, loops and blocks
+//****************************************************************************
+
+#ifdef BANAL_USE_OA
+
+namespace BAnal {
+namespace Struct {
+
+static int
+buildProcLoopNests(Prof::Struct::Proc* enclosingProc, BinUtil::Proc* p,
+		   OA::OA_ptr<OA::NestedSCR> tarj,
+		   OA::OA_ptr<OA::CFG::CFGInterface> cfg,
+		   OA::RIFG::NodeId fgRoot,
+		   bool isIrrIvalLoop, bool isFwdSubst,
+		   ProcNameMgr* procNmMgr, bool isDbg);
+
+
+static Prof::Struct::ACodeNode*
+buildLoopAndStmts(Struct::LocationMgr& locMgr,
+		  Prof::Struct::ACodeNode* topScope, Prof::Struct::ACodeNode* enclosingScope, 
+	  	  BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
+		  OA::OA_ptr<OA::CFG::CFGInterface> cfg,
+		  OA::RIFG::NodeId fgNode,
+		  bool isIrrIvalLoop, ProcNameMgr* procNmMgr);
+
+
+// buildProcStructure: Complete the representation for 'pStrct' given the
+// BinUtil::Proc 'p'.  Note that pStrcts parent may itself be a Struct::Proc.
+//
+static Prof::Struct::Proc*
+buildProcStructure(ProcInfo pinfo,
+		   bool isIrrIvalLoop, bool isFwdSubst,
+		   ProcNameMgr* procNmMgr, const std::string& dbgProcGlob)
+{
+  Prof::Struct::Proc * pStrct = pinfo.proc;
+  BinUtil::Proc *p = pinfo.proc_bin;
+
+#if DEBUG_CFG_SOURCE
+  cout << "\n------------------------------------------------------------\n"
+       << "func:  0x" << hex << p->begVMA() << dec << "  '" << p->name() << "'\n";
+#endif
+
+  DIAG_Msg(3, "==> Proc `" << p->name() << "' (" << p->id() << ") <==");
+  
+  bool isDbg = false;
+  if (!dbgProcGlob.empty()) {
+    //uint dbgId = p->id();
+    isDbg = FileUtil::fnmatch(dbgProcGlob, p->name().c_str());
+  }
+#if FULL_STRUCT_DEBUG
+  // heavy handed knob for full debug output, left in place for convenience
+  isDbg = true;
+#endif
+  
+  buildProcLoopNests(pStrct, p, isIrrIvalLoop, isFwdSubst, procNmMgr, isDbg);
+  coalesceAlienChildren(pStrct);
+  renumberAlienScopes(pStrct);
+  
+  return pStrct;
+}
+
+
+static void
+debugCFGInfo(BinUtil::Proc* p)
+{
+  static const int sepWidth = 77;
+
+  using std::setfill;
+  using std::setw;
+  using BAnal::OAInterface;
+    
+  OA::OA_ptr<OAInterface> irIF; irIF = new OAInterface(p);
+    
+  OA::OA_ptr<OA::CFG::ManagerCFGStandard> cfgmanstd;
+  cfgmanstd = new OA::CFG::ManagerCFGStandard(irIF);
+
+  OA::OA_ptr<OA::CFG::CFG> cfg =
+    cfgmanstd->performAnalysis(TY_TO_IRHNDL(p, OA::ProcHandle));
+    
+  OA::OA_ptr<OA::RIFG> rifg; 
+  rifg = new OA::RIFG(cfg, cfg->getEntry(), cfg->getExit());
+
+  OA::OA_ptr<OA::NestedSCR> tarj;
+  tarj = new OA::NestedSCR(rifg);
+    
+  cerr << setfill('=') << setw(sepWidth) << "=" << endl;
+  cerr << "Procedure: " << p->name() << endl << endl;
+
+  OA::OA_ptr<OA::OutputBuilder> ob1, ob2;
+  ob1 = new OA::OutputBuilderText(cerr);
+  ob2 = new OA::OutputBuilderDOT(cerr);
+
+  cerr << setfill('-') << setw(sepWidth) << "-" << endl;
+  cerr << "*** CFG Text: [nodes, edges: "
+       << cfg->getNumNodes() << ", " << cfg->getNumEdges() << "]\n";
+  cfg->configOutput(ob1);
+  cfg->output(*irIF);
+
+  cerr << setfill('-') << setw(sepWidth) << "-" << endl;
+  cerr << "*** CFG DOT:\n";
+  cfg->configOutput(ob2);
+  cfg->output(*irIF);
+  cerr << endl;
+
+  cerr << setfill('-') << setw(sepWidth) << "-" << endl;
+  cerr << "*** Nested SCR (Tarjan) Tree\n";
+  tarj->dump(cerr);
+  cerr << endl;
+
+  cerr << setfill('-') << setw(sepWidth) << "-" << endl;
+  cerr << endl << flush;
+}
+
+
+// buildProcLoopNests: Build procedure structure by traversing
+// the Nested SCR (Tarjan tree) to create loop nests and statement
+// scopes.
+static int
+buildProcLoopNests(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
+		   bool isIrrIvalLoop, bool isFwdSubst,
+		   ProcNameMgr* procNmMgr, bool isDbg)
+{
+  static const int sepWidth = 77;
+  using std::setfill;
+  using std::setw;
+
+  try {
+    using BAnal::OAInterface;
+    
+    OA::OA_ptr<OAInterface> irIF; irIF = new OAInterface(p);
+    
+    OA::OA_ptr<OA::CFG::ManagerCFGStandard> cfgmanstd;
+    cfgmanstd = new OA::CFG::ManagerCFGStandard(irIF);
+    OA::OA_ptr<OA::CFG::CFG> cfg =
+      cfgmanstd->performAnalysis(TY_TO_IRHNDL(p, OA::ProcHandle));
+    
+    OA::OA_ptr<OA::RIFG> rifg;
+    rifg = new OA::RIFG(cfg, cfg->getEntry(), cfg->getExit());
+    OA::OA_ptr<OA::NestedSCR> tarj; tarj = new OA::NestedSCR(rifg);
+    
+    OA::RIFG::NodeId fgRoot = rifg->getSource();
+
+    if (isDbg) {
+      debugCFGInfo(p);
+    }
+
+    int r = buildProcLoopNests(pStrct, p, tarj, cfg, fgRoot,
+			       isIrrIvalLoop, isFwdSubst, procNmMgr, isDbg);
+
+    if (isDbg) {
+      cerr << setfill('-') << setw(sepWidth) << "-" << endl;
+    }
+
+    return r;
+  }
+  catch (const OA::Exception& x) {
+    std::ostringstream os;
+    x.report(os);
+    DIAG_Throw("[OpenAnalysis] " << os.str());
   }
 }
 
@@ -1223,6 +1490,15 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
     loop = new Prof::Struct::Loop(NULL, fnm, line, line);
     loop->vmaSet().insert(loop_vma, loop_vma + 1); // a loop id
     targetScope = loop;
+
+#if DEBUG_CFG_SOURCE
+    cout << "\nloop:  " << ((ity == OA::NestedSCR::NODE_INTERVAL) ?
+			    "(reducible)" : "(irreducible)") << "\n";
+    cout << "loop node: (n=" << loop->id() << ")"
+	 << "  0x" << hex << loop_vma << dec<< "  l=" << line
+	 << "  f='" << fnm << "'  p='" << pnm << "'\n"
+	 << "entry block:  0x" << hex << begVMA << dec << "\n";
+#endif
   } else if (!isIrrIvalLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
     // -----------------------------------------------------
     // IRREDUCIBLE as no loop: May contain loops
@@ -1273,6 +1549,10 @@ buildStmts(Struct::LocationMgr& locMgr,
 {
   static int call_sortId = 0;
 
+#if DEBUG_CFG_SOURCE
+  cout << "\nblock:\n";
+#endif
+
   OA::OA_ptr<OA::CFG::NodeStatementsIteratorInterface> it =
     bb->getNodeStatementsIterator();
   for ( ; it->isValid(); ) {
@@ -1309,6 +1589,11 @@ buildStmts(Struct::LocationMgr& locMgr,
     // 4. locate stmt
     Prof::Struct::Stmt* stmt =
       new Prof::Struct::Stmt(NULL, line, line, vmaint.beg(), vmaint.end());
+
+#if DEBUG_CFG_SOURCE
+    debugStmt(stmt, vma, filenm, procnm, line);
+#endif
+
     if (idesc.isSubr()) {
       stmt->sortId(--call_sortId);
     }
@@ -1317,7 +1602,6 @@ buildStmts(Struct::LocationMgr& locMgr,
   }
   return 0;
 }
-
 
 
 // findLoopBegLineInfo: Given the head basic block node of the loop,
@@ -1462,13 +1746,953 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
       p->findSrcCodeInfo(headVMA, headOpIdx, begProcNm, begFileNm, begLn);
       loop_vma = headVMA;
     }
-}
+  }
 #endif
 }
 
 } // namespace Struct
-
 } // namespace BAnal
+
+#endif  // open analysis
+
+
+//****************************************************************************
+// ParseAPI code for functions, loops and blocks
+//****************************************************************************
+
+// Mostly done items:
+//
+// 1. There is a major regression in the pretty_names_begin() iterator
+// between Dyninst 8.2-release and git head in analyzeAddr() in
+// Struct-Inline.cpp.  The iterator is always empty, so our inlined
+// procedure names are always "unknown-proc".  Wisconsin is working on
+// it, but until it is fixed, the inline part of the struct files will
+// be badly broken.
+// ---> now fixed in dyninst git master
+//
+// 2. Figure out interaction between reparentNode() and location
+// manager and make sure they don't work at cross purposes.
+// ---> don't use the location manager
+//
+// 3. findLoopHeader() -- look at entry blocks, back edges and line
+// numbers and make an intelligent decision for where a loop begins in
+// the source code.
+// ---> mostly done, need to fine-tune heuristics, reparenting
+//
+// 8. Demangle proc names for the hpcstruct file.
+// ---> added the binutils version, may need parseapi names
+//
+// 9. Improve scope info and alien map in makeScopeTree().
+// ---> partially done, open ended on how to handle cases where
+// ---> inline info does match parseapi tree
+//
+// 11. Add address ranges to buildLMSkeleton().
+// ---> use LM->findProc() to lookup BinUtils proc
+//
+// 12. Add call_sortId from buildStmts() to doBlock().
+// ---> probably don't need this
+//
+// 13. Demangle names in the Open Analysis case.
+// ---> now using __cxa_demangle() in BinUtils.cpp.
+//
+// --------------------------------------------------
+//
+// Remaining TO-DO items:
+//
+// 4. Irreducible loops -- study entry blocks, loop header, adjacent
+// nested loops.  Some nested irreducible loops share entry blocks and
+// maybe should be merged.
+//
+// 5. Compute line ranges for loops and procs to help decide what is
+// alien code when the symtab inline info is not available.
+//
+// 6. Handle code movement wrt loops: loop fusion, fission, moving
+// code in/out of loops.
+//
+// 7. Maybe write our own functions for coalescing statements and
+// aliens and normalizing source code transforms.
+//
+// 10. Decide how to handle basic blocks that belong to multiple
+// functions.
+//
+// 14. Import fix for duplicate proc names (pretty vs. typed/mangled).
+//
+// 15. Some missing file names are "~unknown-file~", some are "", they
+// string match to not equal, causing a spurious alien.
+//
+
+#ifdef BANAL_USE_PARSEAPI
+
+// The ParseAPI version of traversing functions, CFGs, loops, basic
+// blocks and instructions.  This is the code between makeStructure()
+// and creating Prof::Struct nodes for loops, stmts, etc.
+
+namespace BAnal {
+namespace Struct {
+
+class HeaderInfo;
+class ScopeInfo;
+
+typedef map <Block *, bool> BlockSet;
+typedef map <VMA, HeaderInfo> HeaderList;
+typedef map <long, Prof::Struct::ACodeNode *> AlienScopeMap;
+
+static LoopList *
+doLoopTree(ProcInfo, BlockSet &, LoopTreeNode *,
+	   StringTable &, ProcNameMgr *);
+
+static TreeNode *
+doLoopLate(ProcInfo, BlockSet &, Loop *, const string &,
+	   StringTable &, ProcNameMgr *);
+
+static void
+doBlock(ProcInfo, BlockSet &, Block *, TreeNode *,
+	StringTable &, ProcNameMgr *);
+
+static LoopInfo *
+findLoopHeader(ProcInfo, TreeNode *, Loop *, const string &,
+	       StringTable &, ProcNameMgr *);
+
+static void
+makeScopeTree(Prof::Struct::ACodeNode *, ScopeInfo, TreeNode *,
+	      StringTable &, ProcNameMgr *);
+
+#if DEBUG_CFG_SOURCE
+static string
+debugPrettyName(const string &);
+
+static void
+debugLoop(ProcInfo, Loop *, const string &, vector <Edge *> &, HeaderList &);
+
+static void
+debugInlineTree(TreeNode *, LoopInfo *, StringTable &, int, bool);
+#endif
+
+// Info on candidates for loop header.
+class HeaderInfo {
+public:
+  Block * block;
+  bool  is_src;
+  bool  is_targ;
+  bool  is_cond;
+  bool  in_incl;
+  bool  in_excl;
+  int   depth;
+  int   score;
+
+  HeaderInfo(Block * blk = NULL)
+  {
+    block = blk;
+    is_src = false;
+    is_targ = false;
+    is_cond = false;
+    in_incl = false;
+    in_excl = false;
+    depth = 0;
+    score = 0;
+  }
+};
+
+// Info on enclosing node in scope tree.
+class ScopeInfo {
+public:
+  long  file_index;
+  bool  is_alien;
+  long  proc_index;
+
+  ScopeInfo(long file, bool alien = false, long proc = 0)
+  {
+    file_index = file;
+    is_alien = alien;
+    proc_index = proc;
+  }
+};
+
+//****************************************************************************
+
+static Prof::Struct::Proc *
+buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
+		   ProcNameMgr * nameMgr, const std::string & dbgProcGlob)
+{
+  Prof::Struct::Proc * procScope = pinfo.proc;
+  Prof::Struct::File * file = dynamic_cast <Prof::Struct::File *> (procScope->parent());
+  string fname = file->name();
+
+  ParseAPI::Function * func = pinfo.proc_parse;
+  StringTable strTab;
+  TreeNode root;
+  long file_index = strTab.str2index(fname);
+
+#if DEBUG_CFG_SOURCE
+  cout << "\n------------------------------------------------------------\n"
+       << "func:  0x" << hex << func->addr() << dec << "  '" << func->name() << "'\n";
+#endif
+
+  // make a map of visited blocks
+  const ParseAPI::Function::blocklist & blist = func->blocks();
+  BlockSet visited;
+
+  for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+    Block * block = *bit;
+    visited[block] = false;
+  }
+
+  // traverse the loop (Tarjan) tree
+  LoopList *llist = doLoopTree(pinfo, visited, func->getLoopTree(), strTab, nameMgr);
+
+#if DEBUG_CFG_SOURCE
+  cout << "\nnon-loop blocks:\n";
+#endif
+
+  // process any blocks not in a loop
+  for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+    Block * block = *bit;
+    if (! visited[block]) {
+      doBlock(pinfo, visited, block, &root, strTab, nameMgr);
+    }
+  }
+
+  // merge the loops into the proc's inline tree
+  FLPSeqn empty;
+
+  for (auto it = llist->begin(); it != llist->end(); ++it) {
+    mergeInlineLoop(&root, empty, *it);
+  }
+
+#if DEBUG_CFG_SOURCE
+  cout << "\nfinal inline tree:  '" << func->name() << "'\n\n";
+  debugInlineTree(&root, NULL, strTab, 0, true);
+  cout << "\nend proc:  '" << func->name() << "'\n";
+#endif
+
+  // convert inline tree to Prof::Struct scope tree
+  makeScopeTree(procScope, ScopeInfo(file_index), &root, strTab, nameMgr);
+
+  // fixme: may or may not use these
+#if 0
+  coalesceAlienChildren(procScope);
+  renumberAlienScopes(procScope);
+#endif
+
+  return procScope;
+}
+
+
+// Returns: list of LoopInfo objects.
+//
+// If the loop at this node is non-null (internal node), then the list
+// contains one element for that loop.  If the loop is null (root),
+// then the list contains one element for each subtree.
+//
+static LoopList *
+doLoopTree(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
+	   StringTable & strTab, ProcNameMgr * nameMgr)
+{
+  LoopList * myList = new LoopList;
+
+  if (ltnode == NULL) {
+    return myList;
+  }
+  Loop *loop = ltnode->loop;
+
+  // process the children of the loop tree
+  vector <LoopTreeNode *> clist = ltnode->children;
+
+  for (uint i = 0; i < clist.size(); i++) {
+    LoopList *subList = doLoopTree(pinfo, visited, clist[i], strTab, nameMgr);
+
+    for (auto sit = subList->begin(); sit != subList->end(); ++sit) {
+      myList->push_back(*sit);
+    }
+    delete subList;
+  }
+
+  // if no loop at this node (root node), then return the list of
+  // children.
+  if (loop == NULL) {
+    return myList;
+  }
+
+  // otherwise, finish this loop, put into LoopInfo format, insert the
+  // subloops and return a list of one.
+  string loopName = ltnode->name();
+  FLPSeqn empty;
+
+  TreeNode * myLoop = doLoopLate(pinfo, visited, loop, loopName, strTab, nameMgr);
+
+  for (auto it = myList->begin(); it != myList->end(); ++it) {
+    mergeInlineLoop(myLoop, empty, *it);
+  }
+
+  // reparent the tree and put into LoopInfo format
+  LoopInfo * myInfo = findLoopHeader(pinfo, myLoop, loop, loopName, strTab, nameMgr);
+
+  myList->clear();
+  myList->push_back(myInfo);
+
+  return myList;
+}
+
+
+// Post-order process for one loop, after the subloops.  Add any
+// leftover inclusive blocks, select the loop header, reparent as
+// needed, remove the top inline spine, and put into the LoopInfo
+// format.
+//
+// Returns: the raw inline tree for this loop.
+//
+static TreeNode *
+doLoopLate(ProcInfo pinfo, BlockSet & visited, Loop * loop, const string & loopName,
+	   StringTable & strTab, ProcNameMgr * nameMgr)
+{
+  TreeNode * root = new TreeNode;
+
+  DEBUG_MESG("\nbegin loop:  " << loopName << "  '"
+	     << pinfo.proc_parse->name() << "'\n");
+
+  // add the inclusive blocks not contained in a subloop
+  vector <Block *> blist;
+  loop->getLoopBasicBlocks(blist);
+
+  for (uint i = 0; i < blist.size(); i++) {
+    if (! visited[blist[i]]) {
+      doBlock(pinfo, visited, blist[i], root, strTab, nameMgr);
+    }
+  }
+
+  return root;
+}
+
+
+// Process one basic block.
+//
+static void
+doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
+	TreeNode * root, StringTable & strTab, ProcNameMgr * nameMgr)
+{
+  if (block == NULL || visited[block]) {
+    return;
+  }
+  visited[block] = true;
+
+#if DEBUG_CFG_SOURCE
+  cout << "\nblock:\n";
+#endif
+
+  // iterate through the instructions in this block
+  map <Offset, InstructionAPI::Instruction::Ptr> imap;
+  block->getInsns(imap);
+
+  for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
+    Offset vma = iit->first;
+    int    len = iit->second->size();
+    string procnm;
+    string filenm;
+    SrcFile::ln line;
+
+    pinfo.proc_bin->findSrcCodeInfo(vma, 0, procnm, filenm, line);
+    procnm = BinUtil::canonicalizeProcName(procnm, nameMgr);
+
+#if DEBUG_CFG_SOURCE
+    debugStmt(NULL, vma, filenm, procnm, line);
+#endif
+
+    addStmtToTree(root, strTab, vma, len, filenm, line, procnm);
+  }
+}
+
+
+// New heuristic for identifying loop header inside inline tree.
+// Start at the root, descend the inline tree and try to find where
+// the loop begins.  This is the central problem of all hpcstruct:
+// where to locate a loop inside an inline sequence.
+//
+// Note: loop "headers" are no longer tied to a specific VMA and
+// machine instruction.  They are strictly file and line number.
+// (For some loops, there is no right VMA.)
+//
+// Returns: detached LoopInfo object.
+//
+static LoopInfo *
+findLoopHeader(ProcInfo pinfo, TreeNode * root,
+	       Loop * loop, const string & loopName,
+	       StringTable & strTab, ProcNameMgr * nameMgr)
+{
+  string procName = pinfo.proc_parse->name();
+
+  //------------------------------------------------------------
+  // Step 1 -- build the list of loop exit conditions
+  //------------------------------------------------------------
+
+  vector <Block *> inclBlocks;
+  set <Block *> bset;
+  HeaderList clist;
+
+  loop->getLoopBasicBlocks(inclBlocks);
+  for (auto bit = inclBlocks.begin(); bit != inclBlocks.end(); ++bit) {
+    bset.insert(*bit);
+  }
+
+  // a stmt is a loop exit condition if it has outgoing edges to
+  // blocks both inside and outside the loop.
+  //
+  for (auto bit = inclBlocks.begin(); bit != inclBlocks.end(); ++bit) {
+    const Block::edgelist & outEdges = (*bit)->targets();
+    VMA src_vma = (*bit)->last();
+    bool in_loop = false, out_loop = false;
+
+    for (auto eit = outEdges.begin(); eit != outEdges.end(); ++eit) {
+      Block *dest = (*eit)->trg();
+
+      if (bset.find(dest) != bset.end()) { in_loop = true; }
+      else { out_loop = true; }
+    }
+
+    if (in_loop && out_loop) {
+      clist[src_vma] = HeaderInfo(*bit);
+      clist[src_vma].is_cond = true;
+      clist[src_vma].score = 2;
+    }
+  }
+
+  // add bonus points if the stmt is also a back edge source
+  vector <Edge *> backEdges;
+  loop->getBackEdges(backEdges);
+
+  for (auto eit = backEdges.begin(); eit != backEdges.end(); ++eit) {
+    VMA src_vma = (*eit)->src()->last();
+
+    auto it = clist.find(src_vma);
+    if (it != clist.end()) {
+      it->second.is_src = true;
+      it->second.score += 1;
+    }
+  }
+
+#if DEBUG_CFG_SOURCE
+  cout << "\nraw inline tree:  " << loopName
+       << "  '" << pinfo.proc_parse->name() << "'\n\n";
+  debugInlineTree(root, NULL, strTab, 0, false);
+  debugLoop(pinfo, loop, loopName, backEdges, clist);
+  cout << "\nsearching inline tree:\n";
+#endif
+
+  //------------------------------------------------------------
+  // Step 2 -- find the right inline depth
+  //------------------------------------------------------------
+
+  // start at the root, descend the inline tree and try to find the
+  // right level for the loop.  an inline branch or subloop is an
+  // absolute stopping point.  the hard case is one inline subtree
+  // plus statements.  we stop if there is a loop condition, else
+  // continue and reparent the stmts.  always reparent any stmt in a
+  // different file from the inline callsite.
+
+  FLPSeqn  path;
+  StmtMap  stmts;
+
+  while (root->nodeMap.size() == 1 && root->loopList.size() == 0) {
+    FLPIndex flp = root->nodeMap.begin()->first;
+
+    // look for loop cond at this level
+    for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
+      if (sit->second->base_index == flp.base_index) {
+	auto it = clist.find(sit->first);
+
+	if (it != clist.end() && it->second.is_cond) {
+	  goto found_level;
+	}
+      }
+    }
+
+    for (auto sit = stmts.begin(); sit != stmts.end(); ++sit) {
+      if (sit->second->base_index == flp.base_index) {
+	auto it = clist.find(sit->first);
+
+	if (it != clist.end() && it->second.is_cond) {
+	  goto found_level;
+	}
+      }
+    }
+
+    // reparent the stmts and proceed to the next level
+    for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
+      stmts[sit->first] = sit->second;
+    }
+    root->stmtMap.clear();
+
+    TreeNode *subtree = root->nodeMap.begin()->second;
+    root->nodeMap.clear();
+    delete root;
+    root = subtree;
+    path.push_back(flp);
+
+    DEBUG_MESG("inline:  l=" << flp.line_num
+	       << "  f='" << strTab.index2str(flp.file_index)
+	       << "'  p='" << debugPrettyName(strTab.index2str(flp.proc_index))
+	       << "'\n");
+  }
+found_level:
+
+  //------------------------------------------------------------
+  // Step 3 -- reattach stmts into this level
+  //------------------------------------------------------------
+
+  // fixme: want to attach some stmts below this level
+
+  for (auto sit = stmts.begin(); sit != stmts.end(); ++sit) {
+    root->stmtMap[sit->first] = sit->second;
+  }
+  stmts.clear();
+
+  //------------------------------------------------------------
+  // Step 4 -- choose a loop header file/line at this level
+  //------------------------------------------------------------
+
+  long file_ans = 0;
+  long base_ans = 0;
+  long line_ans = 0;
+
+  if (root->nodeMap.size() > 0 || root->loopList.size() > 0) {
+    //
+    // if there is an inline callsite or subloop, then use that file
+    // name and the minimum line number among all callsites, subloops
+    // and loop conditions with the same file.
+    //
+    if (root->nodeMap.size() > 0) {
+      FLPIndex flp = root->nodeMap.begin()->first;
+      file_ans = flp.file_index;
+      base_ans = flp.base_index;
+      line_ans = flp.line_num;
+    }
+    else {
+      LoopInfo *info = *(root->loopList.begin());
+      file_ans = info->file_index;
+      base_ans = info->base_index;
+      line_ans = info->line_num;
+    }
+
+    // min of inline callsites
+    for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
+      FLPIndex flp = nit->first;
+
+      if (flp.base_index == base_ans && flp.line_num < line_ans) {
+	line_ans = flp.line_num;
+      }
+    }
+
+    // min of subloops
+    for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
+      LoopInfo *info = *lit;
+
+      if (info->base_index == base_ans && info->line_num < line_ans) {
+	line_ans = info->line_num;
+      }
+    }
+
+    // min of loop cond stmts
+    for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
+      VMA vma = sit->first;
+      StmtInfo *info = sit->second;
+
+      if (info->base_index == base_ans && info->line_num < line_ans
+	  && clist.find(vma) != clist.end()) {
+	line_ans = info->line_num;
+      }
+    }
+  }
+  else {
+    //
+    // if there are only terminal stmts, then select the file name of
+    // the best candidate (loop cond + back edge source, loop cond,
+    // then any stmt) and then the min line number.
+    //
+    int max_score = -1;
+
+    for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
+      VMA vma = sit->first;
+      StmtInfo *info = sit->second;
+      auto it = clist.find(vma);
+      int score = (it != clist.end()) ? it->second.score : 0;
+
+      if (score > max_score) {
+	max_score = score;
+	file_ans = info->file_index;
+	base_ans = info->base_index;
+	line_ans = info->line_num;
+      }
+      else if (score == max_score && info->base_index == base_ans
+	       && info->line_num < line_ans) {
+	line_ans = info->line_num;
+      }
+    }
+  }
+
+  DEBUG_MESG("header:  l=" << line_ans << "  f='"
+	     << strTab.index2str(file_ans) << "'\n");
+
+  vector <Block *> entryBlocks;
+  loop->getLoopEntries(entryBlocks);
+  VMA entry_vma = (*(entryBlocks.begin()))->start();
+
+  LoopInfo *info = new LoopInfo(root, path, loopName, entry_vma,
+				file_ans, base_ans, line_ans);
+
+#if DEBUG_CFG_SOURCE
+  cout << "\nreparented inline tree:  " << loopName
+       << "  '" << pinfo.proc_parse->name() << "'\n\n";
+  debugInlineTree(root, info, strTab, 0, false);
+#endif
+
+  return info;
+}
+
+
+// Find the alien node in 'alienMap' that matches 'file_index'.
+// Create new node and link into map and 'enclScope' if needed.
+// Expand the line range of an earlier node if needed.
+//
+static Prof::Struct::ACodeNode *
+findAlienScope(Prof::Struct::ACodeNode * enclScope, AlienScopeMap & alienMap,
+	       long file_index, SrcFile::ln line, long proc_index,
+	       StringTable & strTab, ProcNameMgr * nameMgr)
+{
+  Prof::Struct::ACodeNode * alien;
+  auto ait = alienMap.find(file_index);
+
+  if (ait != alienMap.end()) {
+    // alien node exists, expand the line range
+    alien = ait->second;
+
+    if (line < alien->begLine()) {
+      alien->begLine(line);
+    }
+    if (line > alien->endLine()) {
+      alien->endLine(line);
+    }
+  }
+  else {
+    // create new alien, link into map and enclScope
+    const string & filenm = strTab.index2str(file_index);
+    const string & procnm = strTab.index2str(proc_index);
+    const string & display = BinUtil::canonicalizeProcName(procnm, nameMgr);
+
+    alien = new Prof::Struct::Alien(enclScope, filenm, procnm, display, line, line);
+    alienMap[file_index] = alien;
+  }
+
+  return alien;
+}
+
+
+// Convert inline TreeNode 'tree' to Prof::Struct scope tree format
+// and merge into 'enclScope'.
+//
+static void
+makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
+	      TreeNode * tree, StringTable & strTab, ProcNameMgr * nameMgr)
+{
+  if (tree == NULL) {
+    return;
+  }
+
+  // FIXME: this is a primitive alien map based only on file name.
+  // We should also consider if the stmt's line num is outside the
+  // enclosing scope's line range, whether the stmt's inline seqn
+  // exists, and whether the stmt was reparented.
+  //
+  AlienScopeMap alienMap;
+  Prof::Struct::ACodeNode * scope;
+
+  // add terminal statements.  if the file name does not match the
+  // enclosing scope, then add a single guard alien.
+  //
+  for (auto sit = tree->stmtMap.begin(); sit != tree->stmtMap.end(); ++sit) {
+    StmtInfo *info = sit->second;
+    VMA vma = info->vma;
+    long myfile = info->file_index;
+    SrcFile::ln line = info->line_num;
+    long proc = (scinfo.is_alien) ? scinfo.proc_index : info->proc_index;
+    scope = enclScope;
+
+    if (scinfo.is_alien || myfile != scinfo.file_index) {
+      scope = findAlienScope(scope, alienMap, myfile, line, proc, strTab, nameMgr);
+    }
+
+    new Prof::Struct::Stmt(scope, line, line, vma, vma + info->len);
+  }
+
+  // add loops, located by their header.  again, if the file name does
+  // not match the enclosing scope, then add a single guard alien.
+  //
+  for (auto lit = tree->loopList.begin(); lit != tree->loopList.end(); ++lit) {
+    VMA vma = (*lit)->entry_vma;
+    long myfile = (*lit)->file_index;
+    string filenm = strTab.index2str(myfile);
+    SrcFile::ln line = (*lit)->line_num;
+    long proc = (scinfo.is_alien) ? scinfo.proc_index : strTab.str2index("");
+    scope = enclScope;
+
+    if (scinfo.is_alien || myfile != scinfo.file_index) {
+      scope = findAlienScope(scope, alienMap, myfile, line, proc, strTab, nameMgr);
+    }
+
+    Prof::Struct::Loop *loop = new Prof::Struct::Loop(scope, filenm, line, line);
+    loop->vmaSet().insert(vma, vma + 1);
+
+    makeScopeTree(loop, ScopeInfo(myfile), (*lit)->node, strTab, nameMgr);
+  }
+
+  // add inline subtrees.  always add a call site alien above the
+  // subtree.  if the parent is also an alien, then add a target alien
+  // between the two call site aliens.
+  //
+  for (auto nit = tree->nodeMap.begin(); nit != tree->nodeMap.end(); ++nit) {
+    FLPIndex flp = nit->first;
+    long myfile = flp.file_index;
+    long line = flp.line_num;
+    long proc = scinfo.proc_index;
+    const string & filenm = strTab.index2str(myfile);
+    scope = enclScope;
+
+    // add a target alien between two call site aliens.
+    if (scinfo.is_alien) {
+      scope = findAlienScope(scope, alienMap, myfile, line, proc, strTab, nameMgr);
+    }
+
+    // add the call site alien with no proc name.
+    scope = new Prof::Struct::Alien(scope, filenm, "", "", line, line);
+
+    makeScopeTree(scope, ScopeInfo(myfile, true, flp.proc_index),
+		  nit->second, strTab, nameMgr);
+  }
+}
+
+}  // namespace Struct
+}  // namespace BAnal
+
+#endif  // parseAPI
+
+
+//****************************************************************************
+// Debug functions
+//****************************************************************************
+
+#if DEBUG_CFG_SOURCE
+
+// Debug functions to display the raw input data for loops, blocks,
+// stmts, file names, proc names and line numbers.  We compute the
+// loop and alien nesting based on this input.  This applies to both
+// Open Analysis and ParseAPI.
+
+#define INDENT   "   "
+
+namespace BAnal {
+namespace Struct {
+
+// Cleanup and shorten the proc name: demangle plus collapse nested
+// <...> and (...) to just <> and ().  For example:
+//
+//   std::map<int,long>::myfunc(int) --> std::map<>::myfunc()
+//
+// This is only for more compact debug output.  Internal decisions are
+// always made on the full string.
+//
+static string
+debugPrettyName(const string & procnm)
+{
+  string str = BinUtil::demangleProcName(procnm);
+  string ans = "";
+  size_t str_len = str.size();
+  size_t pos = 0;
+
+  while (pos < str_len) {
+    size_t next = str.find_first_of("<(", pos);
+    char open, close;
+
+    if (next == string::npos) {
+      ans += str.substr(pos);
+      break;
+    }
+    if (str[next] == '<') { open = '<';  close = '>'; }
+    else { open = '(';  close = ')'; }
+
+    ans += str.substr(pos, next - pos) + open + close;
+
+    int depth = 1;
+    for (pos = next + 1; pos < str_len && depth > 0; pos++) {
+      if (str[pos] == open) { depth++; }
+      else if (str[pos] == close) { depth--; }
+    }
+  }
+
+  return ans;
+}
+
+
+static void
+debugStmt(Prof::Struct::Stmt * stmt, VMA vma,
+	  string & filenm, string & procnm, SrcFile::ln line)
+{
+  cout << INDENT << "stmt:";
+
+  if (stmt != NULL) {
+    cout << " (n=" << stmt->id() << ")";
+  }
+  cout << "  0x" << hex << vma << dec
+       << "  l=" << line << "  f='" << filenm << "'\n";
+
+#ifdef BANAL_USE_SYMTAB
+  Inline::InlineSeqn nodeList;
+  Inline::analyzeAddr(nodeList, vma);
+
+  // list is outermost to innermost
+  for (auto nit = nodeList.begin(); nit != nodeList.end(); ++nit) {
+    cout << INDENT << INDENT << "inline:  l=" << nit->getLineNum()
+	 << "  f='" << nit->getFileName()
+	 << "'  p='" << debugPrettyName(nit->getProcName()) << "'\n";
+  }
+#endif
+}
+
+
+#ifdef BANAL_USE_PARSEAPI
+static void
+debugLoop(ProcInfo pinfo, Loop * loop, const string & loopName,
+	  vector <Edge *> & backEdges, HeaderList & clist)
+{
+  vector <Block *> entBlocks;
+  int num_ents = loop->getLoopEntries(entBlocks);
+
+  cout << "\nheader info:  " << loopName
+       << ((num_ents == 1) ? "  (reducible)" : "  (irreducible)")
+       << "  '" << pinfo.proc_parse->name() << "'\n\n";
+
+  cout << "entry blocks:" << hex;
+  for (auto bit = entBlocks.begin(); bit != entBlocks.end(); ++bit) {
+    cout << "  0x" << (*bit)->start();
+  }
+
+  cout << "\nback edge sources:";
+  for (auto eit = backEdges.begin(); eit != backEdges.end(); ++eit) {
+    cout << "  0x" << (*eit)->src()->last();
+  }
+
+  cout << "\nback edge targets:";
+  for (auto eit = backEdges.begin(); eit != backEdges.end(); ++eit) {
+    cout << "  0x" << (*eit)->trg()->start();
+  }
+
+  cout << "\n\nexit conditions:\n";
+  for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
+    VMA vma = cit->first;
+    HeaderInfo * info = &(cit->second);
+    SrcFile::ln line;
+    string filenm, procnm, label;
+    InlineSeqn seqn;
+
+    pinfo.proc_bin->findSrcCodeInfo(vma, 0, procnm, filenm, line);
+    analyzeAddr(seqn, vma);
+
+    if (info->is_src) { label = "src "; }
+    else if (info->is_targ) { label = "targ"; }
+    else if (info->is_cond) { label = "cond"; }
+    else { label = "??? "; }
+
+    cout << "0x" << hex << vma << dec
+	 << "  " << label
+	 << "  excl: " << loop->hasBlockExclusive(info->block)
+	 << "  cond: " << info->is_cond
+	 << "  depth: " << seqn.size()
+	 << "  l=" << line
+	 << "  f='" << filenm << "'\n";
+  }
+}
+
+
+// If LoopInfo is non-null, then treat 'node' as a detached loop and
+// prepend the FLP seqn from 'info' above the tree.  Else, 'node' is
+// the tree.
+//
+void
+debugInlineTree(TreeNode * node, LoopInfo * info, StringTable & strTab,
+		int depth, bool expand_loops)
+{
+  // treat node as a detached loop with FLP seqn above it.
+  if (info != NULL) {
+    depth = 0;
+    for (auto pit = info->path.begin(); pit != info->path.end(); ++pit) {
+      for (int i = 1; i <= depth; i++) {
+	cout << INDENT;
+      }
+      FLPIndex flp = *pit;
+
+      cout << "inline:  l=" << flp.line_num
+	   << "  f='" << strTab.index2str(flp.file_index)
+	   << "'  p='" << debugPrettyName(strTab.index2str(flp.proc_index))
+	   << "'\n";
+      depth++;
+    }
+
+    for (int i = 1; i <= depth; i++) {
+      cout << INDENT;
+    }
+    cout << "loop:  " << info->name
+	 << "  l=" << info->line_num
+	 << "  f='" << strTab.index2str(info->file_index) << "'\n";
+    depth++;
+  }
+
+  // print the terminal statements
+  for (auto sit = node->stmtMap.begin(); sit != node->stmtMap.end(); ++sit) {
+    StmtInfo *sinfo = sit->second;
+
+    for (int i = 1; i <= depth; i++) {
+      cout << INDENT;
+    }
+    cout << "stmt:  0x" << hex << sinfo->vma << dec
+	 << "  l=" << sinfo->line_num
+	 << "  f='" << strTab.index2str(sinfo->file_index) << "'\n";
+  }
+
+  // recur on the subtrees
+  for (auto nit = node->nodeMap.begin(); nit != node->nodeMap.end(); ++nit) {
+    FLPIndex flp = nit->first;
+
+    for (int i = 1; i <= depth; i++) {
+      cout << INDENT;
+    }
+    cout << "inline:  l=" << flp.line_num
+	 << "  f='"  << strTab.index2str(flp.file_index)
+	 << "'  p='" << debugPrettyName(strTab.index2str(flp.proc_index))
+	 << "'\n";
+
+    debugInlineTree(nit->second, NULL, strTab, depth + 1, expand_loops);
+  }
+
+  // recur on the loops
+  for (auto lit = node->loopList.begin(); lit != node->loopList.end(); ++lit) {
+    LoopInfo *info = *lit;
+
+    for (int i = 1; i <= depth; i++) {
+      cout << INDENT;
+    }
+
+    cout << "loop:  " << info->name
+	 << "  l=" << info->line_num
+	 << "  f='" << strTab.index2str(info->file_index) << "'\n";
+
+    if (expand_loops) {
+      debugInlineTree(info->node, NULL, strTab, depth + 1, expand_loops);
+    }
+  }
+}
+#endif  // parseAPI
+
+}  // namespace Struct
+}  // namespace BAnal
+
+#endif  // DEBUG_CFG_SOURCE
 
 
 //****************************************************************************
@@ -1476,11 +2700,7 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 //****************************************************************************
 
 namespace BAnal {
-
 namespace Struct {
-
-
-//****************************************************************************
 
 // coalesceDuplicateStmts: Coalesce duplicate statement instances that
 // may appear in the scope tree.  There are two basic cases:
@@ -1872,6 +3092,5 @@ removeEmptyNodes_isEmpty(const Prof::Struct::ANode* node)
 
 
 } // namespace Struct
-
 } // namespace BAnal
 

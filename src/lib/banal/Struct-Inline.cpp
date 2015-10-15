@@ -82,9 +82,12 @@
 
 #include <list>
 #include <vector>
+
 #include <lib/support/diagnostics.h>
 #include <lib/support/FileNameMap.hpp>
 #include <lib/support/realpath.h>
+#include <lib/support/StringTable.hpp>
+
 #include "Struct-Inline.hpp"
 
 #include <Symtab.h>
@@ -148,7 +151,7 @@ restore_sighandler(void)
 namespace Inline {
 
 // These functions return true on success.
-bool
+Symtab *
 openSymtab(string filename)
 {
   bool ret = false;
@@ -178,7 +181,7 @@ openSymtab(string filename)
     the_symtab = NULL;
   }
 
-  return ret;
+  return the_symtab;
 }
 
 bool
@@ -258,6 +261,154 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
   jbuf_active = 0;
 
   return ret;
+}
+
+
+// Add one terminal statement to the inline tree.
+StmtInfo *
+addStmtToTree(TreeNode * root, StringTable & strTab, VMA vma, int len,
+	      string & filenm, SrcFile::ln line, string & procnm)
+{
+  InlineSeqn path;
+  TreeNode *node;
+
+  analyzeAddr(path, vma);
+
+  // follow 'path' down the tree and insert any edges that don't exist
+  node = root;
+  for (auto it = path.begin(); it != path.end(); ++it) {
+    FLPIndex flp(strTab, *it);
+    auto nit = node->nodeMap.find(flp);
+
+    if (nit != node->nodeMap.end()) {
+      node = nit->second;
+    }
+    else {
+      // add new node with edge 'flp'
+      TreeNode *child = new TreeNode();
+      node->nodeMap[flp] = child;
+      node = child;
+    }
+  }
+
+  // add statement to last node in the sequence.  if there are
+  // duplicates, then keep the original.
+  auto sit = node->stmtMap.find(vma);
+  StmtInfo *info;
+
+  if (sit != node->stmtMap.end()) {
+    info = sit->second;
+  }
+  else {
+    info = new StmtInfo(strTab, vma, len, filenm, line, procnm);
+    node->stmtMap[vma] = info;
+  }
+
+  return info;
+}
+
+
+// Merge the StmtInfo nodes from the 'src' node to 'dest' and delete
+// them from src.  If there are duplicate statement vma's, then we
+// keep the original.
+//
+void
+mergeInlineStmts(TreeNode * dest, TreeNode * src)
+{
+  if (src == dest) {
+    return;
+  }
+
+  for (auto sit = src->stmtMap.begin(); sit != src->stmtMap.end(); ++sit) {
+    VMA vma = sit->first;
+    auto dit = dest->stmtMap.find(vma);
+
+    if (dit == dest->stmtMap.end()) {
+      dest->stmtMap[vma] = sit->second;
+    }
+  }
+
+  src->stmtMap.clear();
+}
+
+
+// Merge the edge 'flp' and tree 'src' into 'dest' tree.  Delete any
+// leftover nodes from src that are not linked into dest.
+//
+void
+mergeInlineEdge(TreeNode * dest, FLPIndex flp, TreeNode * src)
+{
+  auto dit = dest->nodeMap.find(flp);
+
+  // if flp not in dest, then attach and done
+  if (dit == dest->nodeMap.end()) {
+    dest->nodeMap[flp] = src;
+    return;
+  }
+
+  // merge src into dest's subtree with flp index
+  mergeInlineTree(dit->second, src);
+}
+
+
+// Merge the tree 'src' into 'dest' tree.  Merge the statements, then
+// iterate through src's subtrees.  Delete any leftover nodes from src
+// that are not linked into dest.
+//
+void
+mergeInlineTree(TreeNode * dest, TreeNode * src)
+{
+  if (src == dest) {
+    return;
+  }
+
+  mergeInlineStmts(dest, src);
+  src->stmtMap.clear();
+
+  // merge the subtrees
+  for (auto sit = src->nodeMap.begin(); sit != src->nodeMap.end(); ++sit) {
+    mergeInlineEdge(dest, sit->first, sit->second);
+  }
+  src->nodeMap.clear();
+
+  // now empty
+  delete src;
+}
+
+
+// Merge the detached loop 'info' into tree 'dest'.  If dest is a
+// detached loop, then 'path' is the FLP path above it.
+void
+mergeInlineLoop(TreeNode * dest, FLPSeqn & path, LoopInfo * info)
+{
+  // follow source and dest paths and remove any common prefix.
+  auto dit = path.begin();
+  auto sit = info->path.begin();
+
+  while (dit != path.end() && sit != info->path.end() && *dit == *sit) {
+    dit++;
+    sit++;
+  }
+
+  // follow or insert the rest of source path in the dest tree.
+  while (sit != info->path.end()) {
+    FLPIndex flp = *sit;
+    auto nit = dest->nodeMap.find(flp);
+    TreeNode *node;
+
+    if (nit != dest->nodeMap.end()) {
+      node = nit->second;
+    }
+    else {
+      node = new TreeNode();
+      dest->nodeMap[flp] = node;
+    }
+
+    dest = node;
+    sit++;
+  }
+
+  dest->loopList.push_back(info);
 }
 
 }  // namespace Inline

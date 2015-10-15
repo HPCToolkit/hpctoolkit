@@ -44,101 +44,97 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+// This file defines a simple string table to convert between C++
+// string and long.  This saves space when there are many copies of
+// the same string by storing an index for the string instead of the
+// actual string itself.
+//
+// Notes:
+// 1. You can test for string equality by testing their indices.
+//
+// 2. str2index() inserts the string if not already in the table.
+//
+// 3. index2str() returns "invalid-string" if the index is out of
+// range.  We could possibly throw an exception instead.
+//
+// 4. This version manages the strings via new and delete.  We could
+// add a custom allocator to store the strings in a common area for
+// faster bulk deletion.
+
 //***************************************************************************
-//
-// File:
-//   $HeadURL$
-//
-// Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
-//***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
+#ifndef Support_String_Table_hpp
+#define Support_String_Table_hpp
 
-//************************* System Include Files ****************************
-
-#include <iostream>
+#include <map>
 #include <string>
+#include <vector>
 
-//*************************** User Include Files ****************************
+// compare the strings, not the pointers
+class StringCompare {
+public:
+  bool operator() (const std::string *s1, const std::string *s2)
+  {
+    return *s1 < *s2;
+  }
+};
 
-#include <include/uint.h>
+class StringTable {
+  typedef std::map <const std::string *, long, StringCompare> StringMap;
+  typedef std::vector <const std::string *> StringVec;
 
-#include <lib/banal/Struct.hpp>
-
-#include <lib/support/CmdLineParser.hpp>
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
-class Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  ~Args(); 
-
-  // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
-
-  // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
-
-  void
-  printUsage(std::ostream& os) const;
-  
-  // Error
-  void
-  printError(std::ostream& os, const char* msg) const;
-
-  void
-  printError(std::ostream& os, const std::string& msg) const;
-
-  // Dump
-  void
-  dump(std::ostream& os = std::cerr) const;
-
-  void
-  ddump() const;
+private:
+  StringMap    m_map;
+  StringVec    m_vec;
+  std::string  m_invalid;
 
 public:
-  // Parsed Data: Command
-  const std::string& getCmd() const;
+  StringTable()
+  {
+    m_map.clear();
+    m_vec.clear();
+    m_invalid = "invalid-string";
+  }
 
-  // Parsed Data: optional arguments
-  std::string lush_agent;
-  std::string searchPathStr;          // default: "."
-  bool isIrreducibleIntervalLoop;     // default: true
-  bool isForwardSubstitution;         // default: false
-  BAnal::Struct::NormTy doNormalizeTy; // default: NormTy_All
-  std::string dbgProcGlob;
+  // delete each string individually
+  ~StringTable()
+  {
+    for (long i = 0; i < (long) m_vec.size(); i++) {
+      delete m_vec[i];
+    }
+  }
 
-  std::string out_filenm;
-  std::string dot_filenm;
-  bool doDot;
-  bool prettyPrintOutput;         // default: true
-  bool useBinutils;		  // default: false
+  // lookup the string in the map and insert if not there
+  long str2index(const std::string & str)
+  {
+    StringMap::iterator it = m_map.find(&str);
 
-  // Parsed Data: arguments
-  std::string in_filenm;
+    if (it != m_map.end()) {
+      return it->second;
+    }
 
-private:
-  void
-  Ctor();
+    // add string to table
+    const std::string *copy = new std::string(str);
+    m_vec.push_back(copy);
+    long index = m_vec.size() - 1;
+    m_map[copy] = index;
 
-  BAnal::Struct::NormTy
-  parseArg_norm(const std::string& value, const char* err_note);
+    return index;
+  }
 
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
+  const std::string & index2str(long index)
+  {
+    if (index < 0 || index >= (long) m_vec.size()) {
+      return m_invalid;
+    }
+    return *(m_vec[index]);
+  }
 
-#endif // Args_hpp 
+  long size()
+  {
+    return m_vec.size();
+  }
+
+};  // class StringTable
+
+#endif

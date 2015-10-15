@@ -66,6 +66,7 @@ using std::string;
 #include <cstdlib> // for 'free'
 #include <cstring> // for 'strlen', 'strcpy'
 
+#include <cxxabi.h>
 
 //*************************** User Include Files ****************************
 
@@ -116,6 +117,7 @@ canonicalizeProcName(const std::string& name, ProcNameMgr* procNameMgr)
 }
 
 
+ #if 0
 // Returns the demangled function name (if possible) or the original name.
 string
 demangleProcName(const std::string& name)
@@ -151,6 +153,27 @@ demangleProcName(const std::string& name)
 
   return bestname;
 }
+#endif
 
+
+// Returns the demangled function name (if possible) or the original name.
+string
+demangleProcName(const std::string& name)
+{
+  string bestname = name;
+
+  //----------------------------------------------------------
+  // demangle using the API for the C++ demangler
+  //----------------------------------------------------------
+  int status;
+  char *str =  abi::__cxa_demangle(name.c_str(), 0, 0, &status);
+
+  if (str) {
+    bestname = str;
+    free(str);
+  }
+
+  return bestname;
+}
 
 } // namespace BinUtil

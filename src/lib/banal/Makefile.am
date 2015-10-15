@@ -76,15 +76,14 @@ SYMTABAPI_INC = @SYMTABAPI_INC@
 MYSOURCES = \
 	Struct.hpp Struct.cpp \
 	StructSimple.hpp StructSimple.cpp \
-	Struct-LocationMgr.hpp Struct-LocationMgr.cpp \
-	\
-	OAInterface.hpp OAInterface.cpp
+	Struct-LocationMgr.hpp Struct-LocationMgr.cpp
+
+SIMPLE_SRCS = StructSimple.hpp StructSimple.cpp
+INLINE_SRCS = Struct-Inline.hpp Struct-Inline.cpp
+OA_SRCS =     OAInterface.hpp OAInterface.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @OA_IFLAGS@
-
-INLINE_SRCS = Struct-Inline.hpp Struct-Inline.cpp
-INLINE_FLGS = -DBANAL_USE_SYMTAB -I$(BOOST_INC) -I$(SYMTABAPI_INC)
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 
 if IS_HOST_AR
   MYAR = @HOST_AR@
@@ -100,7 +99,7 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-noinst_LTLIBRARIES = libHPCbanal.la
+noinst_LTLIBRARIES = libHPCbanal.la libHPCbanal_simple.la
 
 libHPCbanal_la_SOURCES  = $(MYSOURCES)
 libHPCbanal_la_CFLAGS   = $(MYCFLAGS)
@@ -108,13 +107,22 @@ libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS)
 libHPCbanal_la_AR       = $(MYAR)
 libHPCbanal_la_LIBADD   = $(MYLIBADD)
 
+libHPCbanal_simple_la_SOURCES  = $(SIMPLE_SRCS)
+libHPCbanal_simple_la_CFLAGS   = $(MYCFLAGS)
+libHPCbanal_simple_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCbanal_simple_la_AR       = $(MYAR)
+libHPCbanal_simple_la_LIBADD   = $(MYLIBADD)
+
 if OPT_ENABLE_BANAL_WITH_SYMTAB
-noinst_LTLIBRARIES += libHPCbanal_symtab.la
-libHPCbanal_symtab_la_SOURCES  = $(MYSOURCES)  $(INLINE_SRCS)
-libHPCbanal_symtab_la_CFLAGS   = $(MYCFLAGS)   $(INLINE_FLGS)
-libHPCbanal_symtab_la_CXXFLAGS = $(MYCXXFLAGS) $(INLINE_FLGS)
-libHPCbanal_symtab_la_AR       = $(MYAR)
-libHPCbanal_symtab_la_LIBADD   = $(MYLIBADD)
+libHPCbanal_la_SOURCES  += $(INLINE_SRCS)
+libHPCbanal_la_CXXFLAGS += -I$(BOOST_INC) -I$(SYMTABAPI_INC) -DBANAL_USE_SYMTAB
+endif
+
+if OPT_ENABLE_BANAL_WITH_PARSEAPI
+libHPCbanal_la_CXXFLAGS += -DBANAL_USE_PARSEAPI
+else
+libHPCbanal_la_SOURCES += $(OA_SRCS)
+libHPCbanal_la_CXXFLAGS += -DBANAL_USE_OA @OA_IFLAGS@
 endif
 
 MOSTLYCLEANFILES = $(MYCLEAN)

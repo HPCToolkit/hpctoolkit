@@ -1799,6 +1799,7 @@ AC_MSG_CHECKING([for symtabAPI])
 
 SYMTABAPI_COPY=no
 SYMTABAPI_COPY_DYN=no
+SYMTABAPI_COPY_PARSE=no
 SYMTABAPI_LIB_LIST=
 
 case "${SYMTABAPI}" in
@@ -1814,6 +1815,9 @@ case "${SYMTABAPI}" in
     if test -f "${SYMTABAPI}/lib/libdynElf.so" ; then
       SYMTABAPI_COPY_DYN=yes
       SYMTABAPI_LIB_LIST="$SYMTABAPI_LIB_LIST -ldynDwarf -ldynElf"
+    fi
+    if test -f "${SYMTABAPI}/lib/libparseAPI.so" ; then
+      SYMTABAPI_COPY_PARSE=yes
     fi
     ;;
   no )
@@ -1833,6 +1837,7 @@ AC_SUBST([SYMTABAPI_LIB])
 AC_SUBST([SYMTABAPI_LIB_LIST])
 AC_SUBST([SYMTABAPI_COPY])
 AC_SUBST([SYMTABAPI_COPY_DYN])
+AC_SUBST([SYMTABAPI_COPY_PARSE])
 
 
 #-------------------------------------------------
@@ -2197,7 +2202,7 @@ AM_CONDITIONAL([OPT_ENABLE_HPCSERVER], [test "$enable_hpcserver" = yes])
 
 
 #-------------------------------------------------
-# enable-inline:
+# enable-inline and enable-parseapi:
 #-------------------------------------------------
 
 # Enable the static inline support from symtabAPI.  This involves
@@ -2210,18 +2215,32 @@ AC_ARG_ENABLE([inline],
   [],
   [enable_inline=check])
 
-AC_MSG_CHECKING([symtabAPI for static inline support])
+AC_ARG_ENABLE([parseapi],
+  [AS_HELP_STRING([--enable-parseapi],
+      [use parseapi instead of open analysis to construct control
+       flow graphs in hpcstruct (default no)])],
+  [],
+  [enable_parseapi=no])
 
-if test "$enable_inline" = no ; then
-  enable_inline=disabled
+ORIG_CXXFLAGS="$CXXFLAGS"
+ORIG_LIBS="$LIBS"
+AC_LANG_PUSH([C++])
+
+#
+# test for SymtabAPI and getInlinedParent()
+#
+orig_inline="$enable_inline"
+
+if test "x$enable_inline" = xno
+then
+  AC_MSG_NOTICE([skipping test for symtabAPI inline support])
 else
-  ORIG_CXXFLAGS="$CXXFLAGS"
-  ORIG_LIBS="$LIBS"
-  AC_LANG_PUSH([C++])
-  CXXFLAGS="-I${BOOST_INC} -I${SYMTABAPI_INC}"
-  LIBS="-L${LIBELF_LIB} -L${LIBDWARF_LIB} -L${SYMTABAPI_LIB}"
-  LIBS="${LIBS} ${SYMTABAPI_LIB_LIST} -ldwarf -lelf"
+  CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
+  LIBS="-L${SYMTABAPI_LIB} ${SYMTABAPI_LIB_LIST}"
+  LIBS="${LIBS} -L${LIBELF_LIB} -L${LIBDWARF_LIB} -ldwarf -lelf"
   LIBS="${LIBS} ${GNUBINUTILS_LDFLAGS} -liberty"
+
+  AC_MSG_CHECKING([symtabAPI for static inline support])
 
   AC_LINK_IFELSE([
 #include <iostream>
@@ -2239,14 +2258,76 @@ int main()
 }
 ], [enable_inline=yes], [enable_inline=no])
 
-  AC_LANG_POP()
-  CXXFLAGS="$ORIG_CXXFLAGS"
-  LIBS="$ORIG_LIBS"
+  AC_MSG_RESULT([$enable_inline])
 fi
 
-AC_MSG_RESULT([$enable_inline])
+if test "$orig_inline" = yes && test "$enable_inline" = no ; then
+  AC_MSG_ERROR([symtabAPI does not support static inline analysis])
+fi
+
+#
+# test for ParseAPI, CodeObject, Function and Block
+#
+orig_parseapi="$enable_parseapi"
+
+if test "$enable_inline" = no ; then
+  enable_parseapi=no
+fi
+
+if test "x$enable_parseapi" = xno
+then
+  AC_MSG_NOTICE([skipping test for parseAPI and CFG support])
+else
+  CXXFLAGS="$CXXFLAGS $cxx_c11_flag"
+  LIBS="-L${SYMTABAPI_LIB} -lparseAPI -linstructionAPI $LIBS"
+
+  AC_MSG_CHECKING([parseAPI for support for control flow graphs])
+
+  AC_LINK_IFELSE([
+#include <iostream>
+#include <CFG.h>
+#include <CodeObject.h>
+#include <CodeSource.h>
+#include <Function.h>
+#include <Symtab.h>
+using namespace Dyninst;
+using namespace ParseAPI;
+using namespace SymtabAPI;
+using namespace std;
+int main()
+{
+  Symtab * symtab = NULL;
+  SymtabCodeSource * code_src = new SymtabCodeSource(symtab);
+  CodeObject * code_obj = new CodeObject(code_src);
+  code_obj->parse();
+  const CodeObject::funclist & funcList = code_obj->funcs();
+  for (auto fit = funcList.begin(); fit != funcList.end(); ++fit) {
+    ParseAPI::Function * func = *fit;
+    const ParseAPI::Function::blocklist & blist = func->blocks();
+    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+      Block * block = *bit;
+      Address beg = block->start();
+      Address end = block->end();
+      cout << func->name() << beg << end << endl;
+    }
+  }
+  return 0;
+}
+], [enable_parseapi=yes], [enable_parseapi=no])
+
+  AC_MSG_RESULT([$enable_parseapi])
+fi
+
+if test "$orig_parseapi" = yes && test "$enable_parseapi" = no ; then
+  AC_MSG_ERROR([parseAPI does not support control flow graphs])
+fi
+
+AC_LANG_POP()
+CXXFLAGS="$ORIG_CXXFLAGS"
+LIBS="$ORIG_LIBS"
 
 AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_SYMTAB], [test "$enable_inline" = yes])
+AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_PARSEAPI], [test "$enable_parseapi" = yes])
 
 # Hpcstruct gets a launch script if (1) Xed is shared (some versions
 # of MIC), or (2) use symtab for inline support.
@@ -3144,6 +3225,7 @@ AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
 AC_MSG_NOTICE([  inline:       ${enable_inline}])
+AC_MSG_NOTICE([  parseapi:     ${enable_parseapi}])
 
 if test "$warn_config_site" = yes ; then
   AC_MSG_NOTICE([])

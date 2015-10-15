@@ -646,6 +646,8 @@ OPT_ENABLE_MPI_FALSE
 OPT_ENABLE_MPI_TRUE
 OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE
 OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE
+OPT_ENABLE_BANAL_WITH_PARSEAPI_FALSE
+OPT_ENABLE_BANAL_WITH_PARSEAPI_TRUE
 OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE
 OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE
 OPT_ENABLE_HPCSERVER_FALSE
@@ -681,6 +683,7 @@ XED2_HPCLINK_OPTS
 XED2_LIB_FLAGS
 XED2_LIB
 XED2_INC
+SYMTABAPI_COPY_PARSE
 SYMTABAPI_COPY_DYN
 SYMTABAPI_COPY
 SYMTABAPI_LIB_LIST
@@ -938,6 +941,7 @@ enable_hpcrun
 enable_hpcrun_static
 enable_hpcserver
 enable_inline
+enable_parseapi
 enable_mpi
 enable_mpi_wrapper
 enable_lush
@@ -1624,6 +1628,8 @@ Optional Features:
   --enable-hpcserver      build hpcserver and hpcserver-mpi (default no)
   --enable-inline         enable static inline support, requires linking
                           symtab into hpcstruct (default check)
+  --enable-parseapi       use parseapi instead of open analysis to construct
+                          control flow graphs in hpcstruct (default no)
   --enable-mpi            Enable MPI support (uses MPICXX variable)
   --enable-mpi-wrapper    Enable MPI wrapper support (uses MPIF77 and CFLAGS)
   --enable-lush           use lush backtrace in hpcrun
@@ -18382,6 +18388,7 @@ $as_echo_n "checking for symtabAPI... " >&6; }
 
 SYMTABAPI_COPY=no
 SYMTABAPI_COPY_DYN=no
+SYMTABAPI_COPY_PARSE=no
 SYMTABAPI_LIB_LIST=
 
 case "${SYMTABAPI}" in
@@ -18398,6 +18405,9 @@ case "${SYMTABAPI}" in
       SYMTABAPI_COPY_DYN=yes
       SYMTABAPI_LIB_LIST="$SYMTABAPI_LIB_LIST -ldynDwarf -ldynElf"
     fi
+    if test -f "${SYMTABAPI}/lib/libparseAPI.so" ; then
+      SYMTABAPI_COPY_PARSE=yes
+    fi
     ;;
   no )
     ;;
@@ -18411,6 +18421,7 @@ SYMTABAPI_LIB="${SYMTABAPI}/lib"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $SYMTABAPI" >&5
 $as_echo "$SYMTABAPI" >&6; }
+
 
 
 
@@ -18869,7 +18880,7 @@ fi
 
 
 #-------------------------------------------------
-# enable-inline:
+# enable-inline and enable-parseapi:
 #-------------------------------------------------
 
 # Enable the static inline support from symtabAPI.  This involves
@@ -18883,24 +18894,40 @@ else
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking symtabAPI for static inline support" >&5
-$as_echo_n "checking symtabAPI for static inline support... " >&6; }
-
-if test "$enable_inline" = no ; then
-  enable_inline=disabled
+# Check whether --enable-parseapi was given.
+if test "${enable_parseapi+set}" = set; then :
+  enableval=$enable_parseapi;
 else
-  ORIG_CXXFLAGS="$CXXFLAGS"
-  ORIG_LIBS="$LIBS"
-  ac_ext=cpp
+  enable_parseapi=no
+fi
+
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+ORIG_LIBS="$LIBS"
+ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
-  CXXFLAGS="-I${BOOST_INC} -I${SYMTABAPI_INC}"
-  LIBS="-L${LIBELF_LIB} -L${LIBDWARF_LIB} -L${SYMTABAPI_LIB}"
-  LIBS="${LIBS} ${SYMTABAPI_LIB_LIST} -ldwarf -lelf"
+
+#
+# test for SymtabAPI and getInlinedParent()
+#
+orig_inline="$enable_inline"
+
+if test "x$enable_inline" = xno
+then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: skipping test for symtabAPI inline support" >&5
+$as_echo "$as_me: skipping test for symtabAPI inline support" >&6;}
+else
+  CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
+  LIBS="-L${SYMTABAPI_LIB} ${SYMTABAPI_LIB_LIST}"
+  LIBS="${LIBS} -L${LIBELF_LIB} -L${LIBDWARF_LIB} -ldwarf -lelf"
   LIBS="${LIBS} ${GNUBINUTILS_LDFLAGS} -liberty"
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking symtabAPI for static inline support" >&5
+$as_echo_n "checking symtabAPI for static inline support... " >&6; }
 
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -18928,18 +18955,92 @@ fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 
-  ac_ext=cpp
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_inline" >&5
+$as_echo "$enable_inline" >&6; }
+fi
+
+if test "$orig_inline" = yes && test "$enable_inline" = no ; then
+  as_fn_error $? "symtabAPI does not support static inline analysis" "$LINENO" 5
+fi
+
+#
+# test for ParseAPI, CodeObject, Function and Block
+#
+orig_parseapi="$enable_parseapi"
+
+if test "$enable_inline" = no ; then
+  enable_parseapi=no
+fi
+
+if test "x$enable_parseapi" = xno
+then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: skipping test for parseAPI and CFG support" >&5
+$as_echo "$as_me: skipping test for parseAPI and CFG support" >&6;}
+else
+  CXXFLAGS="$CXXFLAGS $cxx_c11_flag"
+  LIBS="-L${SYMTABAPI_LIB} -lparseAPI -linstructionAPI $LIBS"
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking parseAPI for support for control flow graphs" >&5
+$as_echo_n "checking parseAPI for support for control flow graphs... " >&6; }
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <iostream>
+#include <CFG.h>
+#include <CodeObject.h>
+#include <CodeSource.h>
+#include <Function.h>
+#include <Symtab.h>
+using namespace Dyninst;
+using namespace ParseAPI;
+using namespace SymtabAPI;
+using namespace std;
+int main()
+{
+  Symtab * symtab = NULL;
+  SymtabCodeSource * code_src = new SymtabCodeSource(symtab);
+  CodeObject * code_obj = new CodeObject(code_src);
+  code_obj->parse();
+  const CodeObject::funclist & funcList = code_obj->funcs();
+  for (auto fit = funcList.begin(); fit != funcList.end(); ++fit) {
+    ParseAPI::Function * func = *fit;
+    const ParseAPI::Function::blocklist & blist = func->blocks();
+    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+      Block * block = *bit;
+      Address beg = block->start();
+      Address end = block->end();
+      cout << func->name() << beg << end << endl;
+    }
+  }
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  enable_parseapi=yes
+else
+  enable_parseapi=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_parseapi" >&5
+$as_echo "$enable_parseapi" >&6; }
+fi
+
+if test "$orig_parseapi" = yes && test "$enable_parseapi" = no ; then
+  as_fn_error $? "parseAPI does not support control flow graphs" "$LINENO" 5
+fi
+
+ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
-  CXXFLAGS="$ORIG_CXXFLAGS"
-  LIBS="$ORIG_LIBS"
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_inline" >&5
-$as_echo "$enable_inline" >&6; }
+CXXFLAGS="$ORIG_CXXFLAGS"
+LIBS="$ORIG_LIBS"
 
  if test "$enable_inline" = yes; then
   OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE=
@@ -18947,6 +19048,14 @@ $as_echo "$enable_inline" >&6; }
 else
   OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE='#'
   OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE=
+fi
+
+ if test "$enable_parseapi" = yes; then
+  OPT_ENABLE_BANAL_WITH_PARSEAPI_TRUE=
+  OPT_ENABLE_BANAL_WITH_PARSEAPI_FALSE='#'
+else
+  OPT_ENABLE_BANAL_WITH_PARSEAPI_TRUE='#'
+  OPT_ENABLE_BANAL_WITH_PARSEAPI_FALSE=
 fi
 
 
@@ -20291,6 +20400,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE}" && test -z "${OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_BANAL_WITH_SYMTAB\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_BANAL_WITH_PARSEAPI_TRUE}" && test -z "${OPT_ENABLE_BANAL_WITH_PARSEAPI_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_BANAL_WITH_PARSEAPI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE}" && test -z "${OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE}"; then
@@ -23043,6 +23156,8 @@ $as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
 $as_echo "$as_me:   upc (BG/P):   ${opt_upc_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   inline:       ${enable_inline}" >&5
 $as_echo "$as_me:   inline:       ${enable_inline}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   parseapi:     ${enable_parseapi}" >&5
+$as_echo "$as_me:   parseapi:     ${enable_parseapi}" >&6;}
 
 if test "$warn_config_site" = yes ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
