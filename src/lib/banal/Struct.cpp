@@ -127,6 +127,7 @@ using namespace Prof;
 #include <lib/xml/xml.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/FileUtil.hpp>
 #include <lib/support/Logic.hpp>
 #include <lib/support/StringTable.hpp>
 #include <lib/support/StrUtil.hpp>
@@ -2358,7 +2359,9 @@ findAlienScope(Prof::Struct::ACodeNode * enclScope, AlienScopeMap & alienMap,
 	       StringTable & strTab, ProcNameMgr * nameMgr)
 {
   Prof::Struct::ACodeNode * alien;
-  auto ait = alienMap.find(file_index);
+  const string & filenm = strTab.index2str(file_index);
+  long base_index = strTab.str2index(FileUtil::basename(filenm.c_str()));
+  auto ait = alienMap.find(base_index);
 
   if (ait != alienMap.end()) {
     // alien node exists, expand the line range
@@ -2373,12 +2376,11 @@ findAlienScope(Prof::Struct::ACodeNode * enclScope, AlienScopeMap & alienMap,
   }
   else {
     // create new alien, link into map and enclScope
-    const string & filenm = strTab.index2str(file_index);
     const string & procnm = strTab.index2str(proc_index);
     const string & display = BinUtil::canonicalizeProcName(procnm, nameMgr);
 
     alien = new Prof::Struct::Alien(enclScope, filenm, procnm, display, line, line);
-    alienMap[file_index] = alien;
+    alienMap[base_index] = alien;
   }
 
   return alien;
@@ -2401,8 +2403,13 @@ makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
   // enclosing scope's line range, whether the stmt's inline seqn
   // exists, and whether the stmt was reparented.
   //
+  // FIXME: need a better algorithm for matching absolute and relative
+  // file names with '..' (this just uses basename).
+  //
   AlienScopeMap alienMap;
   Prof::Struct::ACodeNode * scope;
+  const string & sc_filenm = strTab.index2str(scinfo.file_index);
+  long sc_base = strTab.str2index(FileUtil::basename(sc_filenm.c_str()));
 
   // add terminal statements.  if the file name does not match the
   // enclosing scope, then add a single guard alien.
@@ -2411,11 +2418,12 @@ makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
     StmtInfo *info = sit->second;
     VMA vma = info->vma;
     long myfile = info->file_index;
+    long mybase = info->base_index;
     SrcFile::ln line = info->line_num;
     long proc = (scinfo.is_alien) ? scinfo.proc_index : info->proc_index;
     scope = enclScope;
 
-    if (scinfo.is_alien || myfile != scinfo.file_index) {
+    if (scinfo.is_alien || mybase != sc_base) {
       scope = findAlienScope(scope, alienMap, myfile, line, proc, strTab, nameMgr);
     }
 
@@ -2428,12 +2436,13 @@ makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
   for (auto lit = tree->loopList.begin(); lit != tree->loopList.end(); ++lit) {
     VMA vma = (*lit)->entry_vma;
     long myfile = (*lit)->file_index;
+    long mybase = (*lit)->base_index;
     string filenm = strTab.index2str(myfile);
     SrcFile::ln line = (*lit)->line_num;
     long proc = (scinfo.is_alien) ? scinfo.proc_index : strTab.str2index("");
     scope = enclScope;
 
-    if (scinfo.is_alien || myfile != scinfo.file_index) {
+    if (scinfo.is_alien || mybase != sc_base) {
       scope = findAlienScope(scope, alienMap, myfile, line, proc, strTab, nameMgr);
     }
 
