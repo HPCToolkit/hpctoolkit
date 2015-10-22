@@ -1561,25 +1561,44 @@ AC_SUBST([OPT_INSTALL_MONITOR])
 # Check for Open Analysis (CFG builder, etc.)
 #-------------------------------------------------
 
-AC_MSG_CHECKING([for OpenAnalysis])
-
 OA=no
+OA_IFLAGS=
+OA_LDFLAGS=
+OA_AVAIL=no
+
 if test "$use_externals" = yes ; then
   OA="$ext_open_analysis_prefix"
 fi
 
 AC_ARG_WITH([open-analysis],
-  AS_HELP_STRING([--with-open-analysis=PATH],
-                 [use given OpenAnalysis installation]),
-  [if test $withval != no; then
-     OA=${withval}
-   fi],
+  [AS_HELP_STRING([--with-open-analysis=PATH],
+      [path to OpenAnalysis install directory])],
+  [OA="$withval"],
   [])
 
-OA_IFLAGS="-DOA_IRHANDLETYPE_SZ64 -I${OA}/include"
-OA_LDFLAGS="-L${OA}/lib -lOAsz64"
+AC_MSG_CHECKING([for OpenAnalysis])
 
-AC_MSG_RESULT([${OA}])
+case "$OA" in
+  /* )
+    if test -f "${OA}/include/OpenAnalysis/Utils/RIFG.hpp" \
+       && test -f "${OA}/lib/libOAsz64.a"
+    then :
+    else
+      AC_MSG_ERROR([invalid OpenAnalysis directory: $OA])
+    fi
+    OA_IFLAGS="-DOA_IRHANDLETYPE_SZ64 -I${OA}/include"
+    OA_LDFLAGS="${OA}/lib/libOAsz64.a"
+    OA_AVAIL=yes
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([OpenAnalysis directory must be absolute path: $OA])
+    ;;
+esac
+
+AC_MSG_RESULT([$OA])
+
 AC_SUBST([OA_IFLAGS])
 AC_SUBST([OA_LDFLAGS])
 
@@ -1791,16 +1810,16 @@ fi
 
 AC_ARG_WITH([symtabAPI],
   [AS_HELP_STRING([--with-symtabAPI=PATH],
-  	    [path to symtabAPI install directory])],
+      [path to symtabAPI install directory])],
   [SYMTABAPI="$withval"],
   [])
-
-AC_MSG_CHECKING([for symtabAPI])
 
 SYMTABAPI_COPY=no
 SYMTABAPI_COPY_DYN=no
 SYMTABAPI_COPY_PARSE=no
 SYMTABAPI_LIB_LIST=
+
+AC_MSG_CHECKING([for symtabAPI])
 
 case "${SYMTABAPI}" in
   /* )
@@ -1816,9 +1835,6 @@ case "${SYMTABAPI}" in
       SYMTABAPI_COPY_DYN=yes
       SYMTABAPI_LIB_LIST="$SYMTABAPI_LIB_LIST -ldynDwarf -ldynElf"
     fi
-    if test -f "${SYMTABAPI}/lib/libparseAPI.so" ; then
-      SYMTABAPI_COPY_PARSE=yes
-    fi
     ;;
   no )
     ;;
@@ -1827,10 +1843,24 @@ case "${SYMTABAPI}" in
     ;;
 esac
 
+AC_MSG_RESULT([$SYMTABAPI])
+
+AC_MSG_CHECKING([for parseAPI])
+
+PARSEAPI_AVAIL=no
+
+if test "$SYMTABAPI" != no \
+   && test -f "${SYMTABAPI}/include/CFG.h" \
+   && test -f "${SYMTABAPI}/lib/libparseAPI.so"
+then
+  SYMTABAPI_COPY_PARSE=yes
+  PARSEAPI_AVAIL=yes
+fi
+
+AC_MSG_RESULT([$PARSEAPI_AVAIL])
+
 SYMTABAPI_INC="${SYMTABAPI}/include"
 SYMTABAPI_LIB="${SYMTABAPI}/lib"
-
-AC_MSG_RESULT([$SYMTABAPI])
 
 AC_SUBST([SYMTABAPI_INC])
 AC_SUBST([SYMTABAPI_LIB])
@@ -2202,18 +2232,108 @@ AM_CONDITIONAL([OPT_ENABLE_HPCSERVER], [test "$enable_hpcserver" = yes])
 
 
 #-------------------------------------------------
-# enable-inline and enable-parseapi:
+# hpcstruct: CFG support from OpenAnalysis and ParseAPI
 #-------------------------------------------------
 
-# Enable the static inline support from symtabAPI.  This involves
-# linking symtab into hpcstruct and banal.
+# Test symtabAPI/parseAPI for inline function and CFG loop tree
+# support, and test for old or new method for getting an inline
+# function name.
 
-AC_ARG_ENABLE([inline],
-  [AS_HELP_STRING([--enable-inline],
-      [enable static inline support, requires linking symtab
-       into hpcstruct (default check)])],
-  [],
-  [enable_inline=check])
+ORIG_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
+AC_LANG_PUSH([C++])
+
+#
+# Test for inline function support, getInlinedParent().
+#
+inline_avail=no
+
+AC_MSG_CHECKING([symtabAPI for inline function support])
+
+if test "$SYMTABAPI" != no
+then
+  AC_COMPILE_IFELSE([
+#include <iostream>
+#include <Symtab.h>
+#include <Function.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace std;
+void get_parent(FunctionBase * func)
+{
+  FunctionBase *parent = func->getInlinedParent();
+  cout << parent;
+}
+], [inline_avail=yes], [inline_avail=no])
+fi
+
+AC_MSG_RESULT([$inline_avail])
+
+#
+# Test if symtabAPI is using the new method for inline function names.
+# Symtab 9.0 uses a new method (getName) for function names which is
+# incompatible with the old method (getAllPrettyNames).
+#
+new_symtab_getname=no
+
+AC_MSG_CHECKING([symtabAPI for new function name iterator])
+
+if test "$inline_avail" = yes
+then
+  AC_COMPILE_IFELSE([
+#include <iostream>
+#include <Symtab.h>
+#include <Function.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+void get_name(FunctionBase * func)
+{
+  std::cout << func->getName();
+}
+], [new_symtab_getname=yes], [new_symtab_getname=no])
+fi
+
+AC_MSG_RESULT([$new_symtab_getname])
+
+#
+# Test if symtabAPI includes parseAPI CFG loop support.
+#
+parseapi_avail=no
+
+AC_MSG_CHECKING([parseAPI for CFG loop support])
+
+if test "$inline_avail" = yes && test "$PARSEAPI_AVAIL" = yes
+then
+  AC_COMPILE_IFELSE([
+#include <iostream>
+#include <vector>
+#include <Symtab.h>
+#include <Function.h>
+#include <CFG.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace ParseAPI;
+using namespace std;
+void get_blocks(LoopTreeNode * node)
+{
+  Loop * loop = node->loop;
+  vector <Block *> bvec;
+  loop->getLoopBasicBlocks(bvec);
+  std::cout << bvec.size();
+}
+], [parseapi_avail=yes], [parseapi_avail=no])
+fi
+
+AC_MSG_RESULT([$parseapi_avail])
+
+AC_LANG_POP
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+#
+# For now, OpenAnalysis and ParseAPI CFG loop support are mutually
+# exclusive and we select one at config time.  And for now, use
+# OpenAnalysis unless explicitly ask for ParseAPI.
+#
 
 AC_ARG_ENABLE([parseapi],
   [AS_HELP_STRING([--enable-parseapi],
@@ -2222,112 +2342,29 @@ AC_ARG_ENABLE([parseapi],
   [],
   [enable_parseapi=no])
 
-ORIG_CXXFLAGS="$CXXFLAGS"
-ORIG_LIBS="$LIBS"
-AC_LANG_PUSH([C++])
-
-#
-# test for SymtabAPI and getInlinedParent()
-#
-orig_inline="$enable_inline"
-
-if test "x$enable_inline" = xno
-then
-  AC_MSG_NOTICE([skipping test for symtabAPI inline support])
-else
-  CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
-  LIBS="-L${SYMTABAPI_LIB} ${SYMTABAPI_LIB_LIST}"
-  LIBS="${LIBS} -L${LIBELF_LIB} -L${LIBDWARF_LIB} -ldwarf -lelf"
-  LIBS="${LIBS} ${GNUBINUTILS_LDFLAGS} -liberty"
-
-  AC_MSG_CHECKING([symtabAPI for static inline support])
-
-  AC_LINK_IFELSE([
-#include <iostream>
-#include <Symtab.h>
-#include <Function.h>
-using namespace Dyninst;
-using namespace SymtabAPI;
-using namespace std;
-int main()
-{
-  FunctionBase *func = (FunctionBase *) 0x0400400;
-  FunctionBase *parent = func->getInlinedParent();
-  cout << parent;
-  return 0;
-}
-], [enable_inline=yes], [enable_inline=no])
-
-  AC_MSG_RESULT([$enable_inline])
+if test "$enable_parseapi" = yes && test "$parseapi_avail" = no ; then
+  AC_MSG_ERROR([symtabAPI does not contain parseAPI CFG loop support])
 fi
 
-if test "$orig_inline" = yes && test "$enable_inline" = no ; then
-  AC_MSG_ERROR([symtabAPI does not support static inline analysis])
+use_parseapi=no
+cfg_mesg='open-analysis'
+
+if test "$parseapi_avail" = yes ; then
+  if test "$enable_parseapi" = yes || test "$OA_AVAIL" = no ; then
+    use_parseapi=yes
+    cfg_mesg='parseapi'
+  fi
+elif test "$OA_AVAIL" = no ; then
+  cfg_mesg='none'
 fi
 
-#
-# test for ParseAPI, CodeObject, Function and Block
-#
-orig_parseapi="$enable_parseapi"
-
-if test "$enable_inline" = no ; then
-  enable_parseapi=no
+if test "$new_symtab_getname" = yes ; then
+  AC_DEFINE([SYMTAB_NEW_NAME_ITERATOR], [1], [Use new symtabAPI getName iterator])
 fi
 
-if test "x$enable_parseapi" = xno
-then
-  AC_MSG_NOTICE([skipping test for parseAPI and CFG support])
-else
-  CXXFLAGS="$CXXFLAGS $cxx_c11_flag"
-  LIBS="-L${SYMTABAPI_LIB} -lparseAPI -linstructionAPI $LIBS"
-
-  AC_MSG_CHECKING([parseAPI for support for control flow graphs])
-
-  AC_LINK_IFELSE([
-#include <iostream>
-#include <CFG.h>
-#include <CodeObject.h>
-#include <CodeSource.h>
-#include <Function.h>
-#include <Symtab.h>
-using namespace Dyninst;
-using namespace ParseAPI;
-using namespace SymtabAPI;
-using namespace std;
-int main()
-{
-  Symtab * symtab = NULL;
-  SymtabCodeSource * code_src = new SymtabCodeSource(symtab);
-  CodeObject * code_obj = new CodeObject(code_src);
-  code_obj->parse();
-  const CodeObject::funclist & funcList = code_obj->funcs();
-  for (auto fit = funcList.begin(); fit != funcList.end(); ++fit) {
-    ParseAPI::Function * func = *fit;
-    const ParseAPI::Function::blocklist & blist = func->blocks();
-    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
-      Block * block = *bit;
-      Address beg = block->start();
-      Address end = block->end();
-      cout << func->name() << beg << end << endl;
-    }
-  }
-  return 0;
-}
-], [enable_parseapi=yes], [enable_parseapi=no])
-
-  AC_MSG_RESULT([$enable_parseapi])
-fi
-
-if test "$orig_parseapi" = yes && test "$enable_parseapi" = no ; then
-  AC_MSG_ERROR([parseAPI does not support control flow graphs])
-fi
-
-AC_LANG_POP()
-CXXFLAGS="$ORIG_CXXFLAGS"
-LIBS="$ORIG_LIBS"
-
-AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_SYMTAB], [test "$enable_inline" = yes])
-AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_PARSEAPI], [test "$enable_parseapi" = yes])
+AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_SYMTAB], [test "$inline_avail" = yes])
+AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_PARSEAPI], [test "$use_parseapi" = yes])
+AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_OA], [test "$use_parseapi" = no])
 
 # Hpcstruct gets a launch script if (1) Xed is shared (some versions
 # of MIC), or (2) use symtab for inline support.
@@ -2336,42 +2373,11 @@ hpcstruct_launch_script=no
 if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
   hpcstruct_launch_script=yes
 fi
-if test "$enable_inline" = yes ; then
+if test "$inline_avail" = yes ; then
   hpcstruct_launch_script=yes
 fi
 
 AM_CONDITIONAL(OPT_HPCSTRUCT_LAUNCH_SCRIPT, [test "$hpcstruct_launch_script" = yes])
-
-# Test if symtabAPI is using the new method for inline function names.
-# Symtab 9.0 uses a new method (getName) for function names which is
-# incompatible with the old method (getAllPrettyNames).
-
-AC_MSG_CHECKING([symtabAPI for new func name iterator])
-
-AC_LANG_PUSH([C++])
-ORIG_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS="$CXXFLAGS $HOST_CXXFLAGS -I${BOOST_INC} -I${SYMTABAPI_INC}"
-
-AC_COMPILE_IFELSE([
-#include <iostream>
-#include <Symtab.h>
-#include <Function.h>
-using namespace Dyninst;
-using namespace SymtabAPI;
-void print_name(FunctionBase * func)
-{
-  std::cout << func->getName();
-}
-], [enable_new_symtab=yes], [enable_new_symtab=no])
-
-AC_MSG_RESULT([$enable_new_symtab])
-
-if test "$enable_new_symtab" = yes ; then
-  AC_DEFINE([SYMTAB_NEW_NAME_ITERATOR], [1], [Use new symtabAPI getName iterator])
-fi
-
-CXXFLAGS="$ORIG_CXXFLAGS"
-AC_LANG_POP()
 
 
 #-------------------------------------------------
@@ -3190,6 +3196,7 @@ AC_MSG_NOTICE([  mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
+AC_MSG_NOTICE([  hpcstruct:    $cfg_mesg])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
 AC_MSG_NOTICE([  Path:      $CC_PATH])
@@ -3224,8 +3231,6 @@ AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
-AC_MSG_NOTICE([  inline:       ${enable_inline}])
-AC_MSG_NOTICE([  parseapi:     ${enable_parseapi}])
 
 if test "$warn_config_site" = yes ; then
   AC_MSG_NOTICE([])
