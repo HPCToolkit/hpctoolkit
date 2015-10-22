@@ -476,24 +476,32 @@ ANode::aggregateMetricsExcl(const VMAIntervalSet& ivalset)
     return; // short circuit
   }
 
-  ProcFrm* frame = NULL; // will be set during tree traversal
+  AProcNode* frame = NULL; // will be set during tree traversal
   aggregateMetricsExcl(frame, ivalset);
 }
 
 
 void
-ANode::aggregateMetricsExcl(ProcFrm* frame, const VMAIntervalSet& ivalset)
+ANode::aggregateMetricsExcl(AProcNode* frame, const VMAIntervalSet& ivalset)
 {
   ANode* n = this;
 
   // -------------------------------------------------------
   // Pre-order visit
   // -------------------------------------------------------
+  //
+  // laks 2015.10.21: we don't want accumulate the exclusive cost of 
+  // an inlined statement to the caller. Instead, we assume an inline
+  // function (Proc) as the same as a normal procedure (ProcFrm).
+  // And the lowest common ancestor for Proc and ProcFrm is AProcNode.
+  //
   bool isFrame = (typeid(*n) == typeid(ProcFrm));
-  ProcFrm* frameNxt = (isFrame) ? static_cast<ProcFrm*>(n) : frame;
+  bool isProc  = (typeid(*n) == typeid(Proc));
+  bool isLogicalProc   = isFrame || isProc;
+  AProcNode * frameNxt = (isLogicalProc) ? static_cast<AProcNode*>(n) : frame;
 
   // -------------------------------------------------------
-  //
+  // Tree traversal
   // -------------------------------------------------------
   for (ANodeChildIterator it(n); it.Current(); ++it) {
     ANode* x = it.current();
