@@ -125,6 +125,7 @@ public:
   bool doDot;
   bool prettyPrintOutput;         // default: true
   bool useBinutils;		  // default: false
+  int  cfgRequest;
 
   // Parsed Data: arguments
   std::string in_filenm;

@@ -539,6 +539,7 @@ static const string& OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm;
 Prof::Struct::LM*
 BAnal::Struct::makeStructure(BinUtil::LM* lm,
 			     std::ostream * dotFile,
+			     int cfgRequest,
 			     NormTy doNormalizeTy,
 			     bool isIrrIvalLoop,
 			     bool isFwdSubst,

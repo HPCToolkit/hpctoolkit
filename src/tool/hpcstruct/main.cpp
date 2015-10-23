@@ -190,6 +190,7 @@ realmain(int argc, char* argv[])
 
   using namespace BAnal::Struct;
   Prof::Struct::LM* lmStrct = makeStructure(lm, dotFile,
+					    args.cfgRequest,
 					    args.doNormalizeTy,
 					    args.isIrreducibleIntervalLoop,
 					    args.isForwardSubstitution,

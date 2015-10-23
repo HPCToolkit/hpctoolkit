@@ -73,6 +73,7 @@ using std::string;
 #include "Args.hpp"
 
 #include <lib/analysis/Util.hpp>
+#include <lib/banal/Struct.hpp>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/FileUtil.hpp>
@@ -142,6 +143,8 @@ Options: Structure recovery\n\
                        times.\n\
   --use-binutils       Use binutils as the default binary instruction decoder\n\
                        On x86 default is Intel XED library.\n\
+  --cfg <old|new>      Use old (OpenAnalysis) or new (ParseAPI) support\n\
+                       for building Control Flow Graphs (default old).\n\
 \n\
 Options: Output:\n\
   -o <file>, --output <file>\n\
@@ -205,8 +208,10 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 , "debug-proc",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
-  // Instruction decoder pptions
+  // Instruction decoder options
   { 0, "use-binutils",     CLP::ARG_NONE,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  {  0 , "cfg",            CLP::ARG_REQ ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
@@ -242,6 +247,7 @@ Args::Ctor()
   doDot = false;
   prettyPrintOutput = true;
   useBinutils = false;
+  cfgRequest = BAnal::Struct::CFG_DEFAULT;
 }
 
 
@@ -374,7 +380,18 @@ Args::parse(int argc, const char* const argv[])
       }
     }
 
+    // Instruction decoder options
     useBinutils = parser.isOpt("use-binutils");
+
+    if (parser.isOpt("cfg")) {
+      string arg = parser.getOptArg("cfg");
+      if (arg == "old") { cfgRequest = BAnal::Struct::CFG_OA; }
+      else if (arg == "new") { cfgRequest = BAnal::Struct::CFG_PARSEAPI; }
+      else {
+	DIAG_EMsg("unknown argument for --cfg (old|new): '" << arg << "'");
+	exit(1);
+      }
+    }
 
     // Check for other options: Output options
     if (parser.isOpt("output")) {

@@ -79,6 +79,12 @@ namespace BAnal {
 
 namespace Struct {
 
+  enum CFG {
+    CFG_DEFAULT = 1,
+    CFG_OA,
+    CFG_PARSEAPI
+  };
+
   enum NormTy {
     // TODO: redo along the lines of BinUtil::LM::ReadFlg
     NormTy_None,
@@ -89,6 +95,7 @@ namespace Struct {
   Prof::Struct::LM* 
   makeStructure(BinUtil::LM* lm, 
 		std::ostream * dotFile,
+		int cfgRequest,
 		NormTy doNormalizeTy,
 		bool isIrrIvalLoop = false,
 		bool isFwdSubst = false,
