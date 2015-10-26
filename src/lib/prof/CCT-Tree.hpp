@@ -511,8 +511,13 @@ public:
   { aggregateMetricsExcl(mBegId, mBegId + 1); }
 
 private:
+  //
+  // laks 2015.10.21: we don't want accumulate the exclusive cost of 
+  // an inlined statement to the caller. Instead, we assume an inline
+  // function (Proc) as the same as a normal procedure (ProcFrm).
+  // And the lowest common ancestor for Proc and ProcFrm is AProcNode.
   void
-  aggregateMetricsExcl(ProcFrm* frame, const VMAIntervalSet& ivalset);
+  aggregateMetricsExcl(AProcNode* frame, const VMAIntervalSet& ivalset);
 
 public:
   // computeMetrics: compute this subtree's Metric::DerivedDesc metric

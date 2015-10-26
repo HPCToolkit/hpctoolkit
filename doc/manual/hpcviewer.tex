@@ -25,7 +25,7 @@ Without this argument, \hpcviewer{} will prompt for the location of a database.
 
 The possible options are as follows:
 \begin{itemize}
- \item \texttt{-n}: Do not display the Callers View.  (Saves memory and time.)
+ \item \texttt{-n}: Do not display the Callers View.  (May save memory and time.)
 
  \item \texttt{-consolelog}: Send log entries to a console in addition to a log file.
    (To get a console window, be sure to use java as the VM instead of javaw.)
@@ -42,8 +42,8 @@ The possible options are as follows:
 
 \subsection{Requirements}
 \begin{itemize}
- \item Java Runtime Environment (JRE) 1.5 or greater.
-   Use the Oracle or IBM version; we have had problems with OpenJDK.
+ \item Java Runtime Environment (JRE) 1.6 or greater.
+   Use the Oracle or IBM version or the latest version of OpenJDK.
    Specifically we recommend Oracle on x86 platforms, and IBM java on POWER.
    Take special note on POWER systems: we require the 64-bit java, even on a 32-bit
    platform.
@@ -56,7 +56,7 @@ The possible options are as follows:
 \begin{enumerate}
   \item Download \hpcviewer{} package that is suitable for your platform from 
     \begin{quote}
-      \url{https://outreach.scidac.gov/frs/?group\_id=22} 
+      \url{http://hpctoolkit.org/download/hpcviewer} 
     \end{quote}
   \item Untar the tarball into a temporary directory (Linux) or an installation directory (Windows and Mac).
 \end{enumerate}
@@ -662,7 +662,7 @@ If you want to display more than five, you need to close an existing open databa
 \item \textbf{Merge database CCT.../Merge database flat tree...}
   Merging two database that are currently in the viewer. If \hpcviewer{} has more than two
 open database, then you need to choose which database you want to merge.
-Currently \hpcviewer{} doesn't support storing a merged database into a file.
+Currently \hpcviewer{} does not support storing a merged database into a file.
 
 \item \textbf{Preferences...}
   Display the settings dialog box.
@@ -685,10 +685,10 @@ By default, the menu is hidden. Once you open a database, the menu is then shown
 
 \begin{itemize}
  \item \textbf{Show views}
- Display all the list of views (calling context views, callers view and flat view) for each database. If a view was closed, it will be suffixed by a "\texttt{*closed*}" sign.
+ Display all the list of views (calling context views, callers view and flat view) for each database. If a view was closed, it will be suffixed by a "\texttt{*closed*}" sign and can be reactivated by double-clicking the name of the view in the tree.
 
  \item \textbf{Show metric properties}
- Display a list of metrics in a window. From this window, you can modify the name of the metric and in case of derived metrics, modify the formula as well as the format.
+ Display a list of metrics in a window. From this window, you can modify the name of the metric. For derived metrics, this also allows to modify the formula as well as the format.
 
  \item \textbf{Debug}
  A special set of menus for advanced users. These menus are useful to debug \HPCToolkit{} and \hpcviewer{}. The menu consists of:
@@ -698,7 +698,7 @@ By default, the menu is hidden. Once you open a database, the menu is then shown
  	Enable one to request display of \HPCToolkit{}'s raw XML representation for performance data.
 
      \item \textbf{Show CCT label}
- 	Display calling context ID for each node in the tree.
+ 	Display calling context ID for each node in the tree. This option is important to match between the node tree in hpcviewer with the data in experiment.xml.
 
      \item \textbf{Show flat label}
  	Display static ID for each node in the tree.
