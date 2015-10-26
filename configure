@@ -1627,8 +1627,8 @@ Optional Features:
   --enable-hpcrun-static  build hpcrun for statically linked executables
                           (default yes)
   --enable-hpcserver      build hpcserver and hpcserver-mpi (default no)
-  --enable-parseapi       use parseapi instead of open analysis to construct
-                          control flow graphs in hpcstruct (default no)
+  --disable-parseapi      disable using parseapi for building control flow
+                          graphs in hpcstruct (default is to use if available)
   --enable-mpi            Enable MPI support (uses MPICXX variable)
   --enable-mpi-wrapper    Enable MPI wrapper support (uses MPIF77 and CFLAGS)
   --enable-lush           use lush backtrace in hpcrun
@@ -19052,33 +19052,38 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 CXXFLAGS="$ORIG_CXXFLAGS"
 
 #
-# For now, OpenAnalysis and ParseAPI CFG loop support are mutually
-# exclusive and we select one at config time.  And for now, use
-# OpenAnalysis unless explicitly ask for ParseAPI.
+# Use OpenAnalysis or ParseAPI or both as available for building CFG's
+# in hpcstruct.  Warn if neither is available.
+#
+# OpenAnalysis can be disabled with '--without-open-analysis' and
+# ParseAPI can be disabled with '--disable-parseapi'.
 #
 
 # Check whether --enable-parseapi was given.
 if test "${enable_parseapi+set}" = set; then :
   enableval=$enable_parseapi;
 else
-  enable_parseapi=no
+  enable_parseapi=use
 fi
 
 
-if test "$enable_parseapi" = yes && test "$parseapi_avail" = no ; then
-  as_fn_error $? "symtabAPI does not contain parseAPI CFG loop support" "$LINENO" 5
+if test "$enable_parseapi" = no ; then
+  parseapi_avail=no
 fi
 
-use_parseapi=no
-cfg_mesg='open-analysis'
-
+cfg_mesg=
+if test "$OA_AVAIL" = yes ; then
+  cfg_mesg='open-analysis'
+fi
 if test "$parseapi_avail" = yes ; then
-  if test "$enable_parseapi" = yes || test "$OA_AVAIL" = no ; then
-    use_parseapi=yes
-    cfg_mesg='parseapi'
-  fi
-elif test "$OA_AVAIL" = no ; then
-  cfg_mesg='none'
+  cfg_mesg="$cfg_mesg parseapi"
+fi
+cfg_mesg=`echo $cfg_mesg`
+
+if test "$OA_AVAIL" = no && test "$parseapi_avail" = no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to build hpcstruct: no open-analysis or parseapi" >&5
+$as_echo "$as_me: WARNING: unable to build hpcstruct: no open-analysis or parseapi" >&2;}
+  cfg_mesg=no
 fi
 
 if test "$new_symtab_getname" = yes ; then
@@ -19095,7 +19100,7 @@ else
   OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE=
 fi
 
- if test "$use_parseapi" = yes; then
+ if test "$parseapi_avail" = yes; then
   OPT_ENABLE_BANAL_WITH_PARSEAPI_TRUE=
   OPT_ENABLE_BANAL_WITH_PARSEAPI_FALSE='#'
 else
@@ -19103,7 +19108,7 @@ else
   OPT_ENABLE_BANAL_WITH_PARSEAPI_FALSE=
 fi
 
- if test "$use_parseapi" = no; then
+ if test "$OA_AVAIL" = yes; then
   OPT_ENABLE_BANAL_WITH_OA_TRUE=
   OPT_ENABLE_BANAL_WITH_OA_FALSE='#'
 else

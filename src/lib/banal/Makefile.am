@@ -120,7 +120,9 @@ endif
 
 if OPT_ENABLE_BANAL_WITH_PARSEAPI
 libHPCbanal_la_CXXFLAGS += -DBANAL_USE_PARSEAPI
-else
+endif
+
+if OPT_ENABLE_BANAL_WITH_OA
 libHPCbanal_la_SOURCES += $(OA_SRCS)
 libHPCbanal_la_CXXFLAGS += -DBANAL_USE_OA @OA_IFLAGS@
 endif

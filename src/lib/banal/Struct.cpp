@@ -57,16 +57,14 @@
 //
 //***************************************************************************
 
-// Makefile.am should define exactly one of BANAL_USE_PARSEAPI and
-// BANAL_USE_OA for this file.  Also, BANAL_USE_PARSEAPI implies
-// BANAL_USE_SYMTAB.
+// Now allow using both BANAL_USE_PARSEAPI and BANAL_USE_OA at the
+// same time, but must define at least one of them.  Also,
+// BANAL_USE_PARSEAPI implies BANAL_USE_SYMTAB.
 
 #if ! defined(BANAL_USE_PARSEAPI) && ! defined(BANAL_USE_OA)
 #error must define one of BANAL_USE_PARSEAPI and BANAL_USE_OA
 #endif
-#if defined(BANAL_USE_PARSEAPI) && defined(BANAL_USE_OA)
-#error cannot define both BANAL_USE_PARSEAPI and BANAL_USE_OA
-#endif
+
 #if defined(BANAL_USE_PARSEAPI) && ! defined(BANAL_USE_SYMTAB)
 #error cannot define BANAL_USE_PARSEAPI without BANAL_USE_SYMTAB
 #endif
@@ -75,6 +73,7 @@
 
 #include <sys/types.h>
 #include <limits.h>
+#include <stdlib.h>
 
 #include <iostream>
 using std::cout;
@@ -179,21 +178,15 @@ public:
 #ifdef BANAL_USE_PARSEAPI
   ProcInfo(Prof::Struct::Proc *p, BinUtil::Proc *pb, ParseAPI::Function *f)
   { proc = p;  proc_bin = pb;  proc_parse = f; }
-#else
+#endif
+
+#ifdef BANAL_USE_OA
   ProcInfo(Prof::Struct::Proc *p, BinUtil::Proc *pb)
   { proc = p;  proc_bin = pb; }
 #endif
 };
 
 typedef std::vector <ProcInfo> ProcInfoVec;
-
-static ProcInfoVec *
-buildLMSkeleton(Prof::Struct::LM* lmStrct,
-		BinUtil::LM* lm,
-#ifdef BANAL_USE_PARSEAPI
-		ParseAPI::CodeObject *code_obj,
-#endif
-		ProcNameMgr* procNmMgr);
 
 static Prof::Struct::File*
 demandFileNode(Prof::Struct::LM* lmStrct, BinUtil::Proc* p);
@@ -202,12 +195,27 @@ static Prof::Struct::Proc*
 demandProcNode(Prof::Struct::File* fStrct, BinUtil::Proc* p,
 	       ProcNameMgr* procNmMgr);
 
+#ifdef BANAL_USE_PARSEAPI
+static ProcInfoVec *
+buildLMSkeleton(Prof::Struct::LM* lmStrct,
+		BinUtil::LM* lm,
+		ParseAPI::CodeObject *code_obj,
+		ProcNameMgr* procNmMgr);
+
+static Prof::Struct::Proc *
+buildProcStructure(ProcInfo pinfo, ProcNameMgr* procNmMgr);
+#endif
+
+#ifdef BANAL_USE_OA
+static ProcInfoVec*
+buildLMSkeleton(Prof::Struct::LM* lmStrct,
+		BinUtil::LM* lm,
+		ProcNameMgr* procNmMgr);
+
 static Prof::Struct::Proc*
 buildProcStructure(ProcInfo pinfo,
 		   bool isIrrIvalLoop, bool isFwdSubst,
 		   ProcNameMgr* procNmMgr, const std::string& dbgProcGlob);
-
-#ifdef BANAL_USE_OA
 
 static int
 buildProcLoopNests(Prof::Struct::Proc* pStrct, BinUtil::Proc* p,
@@ -536,42 +544,29 @@ static const string& OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm;
 //   to 'clean up' the resulting scope tree.  Among other things, the
 //   normalizer employs heuristics to reverse certain compiler
 //   optimizations such as loop unrolling.
-Prof::Struct::LM*
-BAnal::Struct::makeStructure(BinUtil::LM* lm,
-			     std::ostream * dotFile,
-			     int cfgRequest,
-			     NormTy doNormalizeTy,
-			     bool isIrrIvalLoop,
-			     bool isFwdSubst,
-			     ProcNameMgr* procNmMgr,
-			     const std::string& dbgProcGlob)
-{
-  // Assume lm->Read() has been performed
-  DIAG_Assert(lm, DIAG_UnexpectedInput);
 
-  Prof::Struct::LM* lmStrct = new Prof::Struct::LM(lm->name(), NULL);
+namespace BAnal {
+namespace Struct {
+
+#ifdef BANAL_USE_OA
+
+static Prof::Struct::LM *
+makeStructure_OA(BinUtil::LM * lm,
+		 std::ostream * dotFile,
+		 NormTy doNormalizeTy,
+		 bool isIrrIvalLoop,
+		 bool isFwdSubst,
+		 ProcNameMgr* procNmMgr,
+		 const std::string& dbgProcGlob)
+{
+  Prof::Struct::LM* lmStruct = new Prof::Struct::LM(lm->name(), NULL);
 
 #ifdef BANAL_USE_SYMTAB
   Symtab * symtab = Inline::openSymtab(lm->name());
-
-#ifdef BANAL_USE_PARSEAPI
-  SymtabCodeSource * code_src;
-  CodeObject * code_obj;
-
-  if (symtab != NULL) {
-    code_src = new SymtabCodeSource(symtab);
-    code_obj = new CodeObject(code_src);
-    code_obj->parse();
-  }
-#endif
 #endif
 
   // 1. Build Struct::File/Struct::Proc skeletal structure
-#ifdef BANAL_USE_PARSEAPI
-  ProcInfoVec * pvec = buildLMSkeleton(lmStrct, lm, code_obj, procNmMgr);
-#else
-  ProcInfoVec * pvec = buildLMSkeleton(lmStrct, lm, procNmMgr);
-#endif
+  ProcInfoVec * pvec = buildLMSkeleton(lmStruct, lm, procNmMgr);
 
   // 2. For each [Struct::Proc, BinUtil::Proc] pair, complete the build.
   // Note that a Struct::Proc may be associated with more than one
@@ -588,23 +583,141 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
   // 3. Normalize
   if (doNormalizeTy != NormTy_None) {
     bool doNormalizeUnsafe = (doNormalizeTy == NormTy_All);
-    normalize(lmStrct, doNormalizeUnsafe);
+    normalize(lmStruct, doNormalizeUnsafe);
   }
 
   // 4. Write CFG in dot (graphviz) format to file.
   if (dotFile != NULL) {
-#ifdef BANAL_USE_PARSEAPI
-    makeDotFile(dotFile, code_obj);
-#else
     makeDotFile(dotFile, lm);
-#endif
   }
 
 #ifdef BANAL_USE_SYMTAB
   Inline::closeSymtab();
 #endif
 
-  return lmStrct;
+  return lmStruct;
+}
+#endif  // open analysis
+
+
+#ifdef BANAL_USE_PARSEAPI
+
+static Prof::Struct::LM *
+makeStructure_ParseAPI(BinUtil::LM * lm,
+		       std::ostream * dotFile,
+		       NormTy doNormalizeTy,
+		       bool isIrrIvalLoop,
+		       bool isFwdSubst,
+		       ProcNameMgr* procNmMgr,
+		       const std::string& dbgProcGlob)
+{
+  Prof::Struct::LM* lmStruct = new Prof::Struct::LM(lm->name(), NULL);
+
+  Symtab * symtab = Inline::openSymtab(lm->name());
+
+  SymtabCodeSource * code_src;
+  CodeObject * code_obj;
+
+  if (symtab != NULL) {
+    code_src = new SymtabCodeSource(symtab);
+    code_obj = new CodeObject(code_src);
+    code_obj->parse();
+  }
+
+  // 1. Build Struct::File/Struct::Proc skeletal structure
+  ProcInfoVec * pvec = buildLMSkeleton(lmStruct, lm, code_obj, procNmMgr);
+
+  // 2. For each [Struct::Proc, BinUtil::Proc] pair, complete the build.
+  // Note that a Struct::Proc may be associated with more than one
+  // BinUtil::Proc.
+  for (auto it = pvec->begin(); it != pvec->end(); ++it) {
+    BinUtil::Proc* p = it->proc_bin;
+
+    DIAG_Msg(2, "Building scope tree for [" << p->name()  << "] ... ");
+    buildProcStructure(*it, procNmMgr);
+  }
+  delete pvec;
+
+  // 3. Normalize
+  if (doNormalizeTy != NormTy_None) {
+    bool doNormalizeUnsafe = (doNormalizeTy == NormTy_All);
+    normalize(lmStruct, doNormalizeUnsafe);
+  }
+
+  // 4. Write CFG in dot (graphviz) format to file.
+  if (dotFile != NULL) {
+    makeDotFile(dotFile, code_obj);
+  }
+
+  Inline::closeSymtab();
+
+  return lmStruct;
+}
+#endif  // parseapi
+
+}  // namespace Struct
+}  // namespace BAnal
+
+
+// The top-level split for makeStructure() between OpenAnalysis and
+// ParseAPI based on --cfg.  This is where we transition from variable
+// (cfgRequest) to #ifdef.  Clumsy, but anything would be awkward for
+// this case.
+//
+Prof::Struct::LM*
+BAnal::Struct::makeStructure(BinUtil::LM* lm,
+			     std::ostream * dotFile,
+			     int cfgRequest,
+			     NormTy doNormalizeTy,
+			     bool isIrrIvalLoop,
+			     bool isFwdSubst,
+			     ProcNameMgr* procNmMgr,
+			     const std::string& dbgProcGlob)
+{
+  // Assume lm->Read() has been performed
+  DIAG_Assert(lm, DIAG_UnexpectedInput);
+
+  // Select default if --cfg was not specified.
+  if (cfgRequest == BAnal::Struct::CFG_DEFAULT) {
+#ifdef BANAL_USE_OA
+    cfgRequest = BAnal::Struct::CFG_OA;
+#else
+    cfgRequest = BAnal::Struct::CFG_PARSEAPI;
+#endif
+  }
+
+  // Verify that the requested CFG support was compiled in and then
+  // call the OA or ParseAPI version.
+  Prof::Struct::LM * lmStruct;
+
+  switch (cfgRequest) {
+
+  case BAnal::Struct::CFG_OA:
+#ifdef BANAL_USE_OA
+    lmStruct = makeStructure_OA(lm, dotFile, doNormalizeTy, isIrrIvalLoop,
+				isFwdSubst, procNmMgr, dbgProcGlob);
+#else
+    DIAG_EMsg("hpcstruct was not compiled with OpenAnalysis");
+    exit(1);
+#endif
+    break;
+
+  case BAnal::Struct::CFG_PARSEAPI:
+#ifdef BANAL_USE_PARSEAPI
+    lmStruct = makeStructure_ParseAPI(lm, dotFile, doNormalizeTy, isIrrIvalLoop,
+				      isFwdSubst, procNmMgr, dbgProcGlob);
+#else
+    DIAG_EMsg("hpcstruct was not compiled with ParseAPI");
+    exit(1);
+#endif
+    break;
+
+  default:
+    DIAG_Die("internal error: unknown value for cfgRequest: " << cfgRequest);
+    break;
+  }
+
+  return lmStruct;
 }
 
 
@@ -1913,8 +2026,7 @@ public:
 //****************************************************************************
 
 static Prof::Struct::Proc *
-buildProcStructure(ProcInfo pinfo, bool isIrrIvalLoop, bool isFwdSubst,
-		   ProcNameMgr * nameMgr, const std::string & dbgProcGlob)
+buildProcStructure(ProcInfo pinfo, ProcNameMgr * nameMgr)
 {
   Prof::Struct::Proc * procScope = pinfo.proc;
   Prof::Struct::File * file = dynamic_cast <Prof::Struct::File *> (procScope->parent());

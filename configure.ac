@@ -2330,32 +2330,36 @@ AC_LANG_POP
 CXXFLAGS="$ORIG_CXXFLAGS"
 
 #
-# For now, OpenAnalysis and ParseAPI CFG loop support are mutually
-# exclusive and we select one at config time.  And for now, use
-# OpenAnalysis unless explicitly ask for ParseAPI.
+# Use OpenAnalysis or ParseAPI or both as available for building CFG's
+# in hpcstruct.  Warn if neither is available.
+#
+# OpenAnalysis can be disabled with '--without-open-analysis' and
+# ParseAPI can be disabled with '--disable-parseapi'.
 #
 
 AC_ARG_ENABLE([parseapi],
-  [AS_HELP_STRING([--enable-parseapi],
-      [use parseapi instead of open analysis to construct control
-       flow graphs in hpcstruct (default no)])],
+  [AS_HELP_STRING([--disable-parseapi],
+      [disable using parseapi for building control flow graphs in
+       hpcstruct (default is to use if available)])],
   [],
-  [enable_parseapi=no])
+  [enable_parseapi=use])
 
-if test "$enable_parseapi" = yes && test "$parseapi_avail" = no ; then
-  AC_MSG_ERROR([symtabAPI does not contain parseAPI CFG loop support])
+if test "$enable_parseapi" = no ; then
+  parseapi_avail=no
 fi
 
-use_parseapi=no
-cfg_mesg='open-analysis'
-
+cfg_mesg=
+if test "$OA_AVAIL" = yes ; then
+  cfg_mesg='open-analysis'
+fi
 if test "$parseapi_avail" = yes ; then
-  if test "$enable_parseapi" = yes || test "$OA_AVAIL" = no ; then
-    use_parseapi=yes
-    cfg_mesg='parseapi'
-  fi
-elif test "$OA_AVAIL" = no ; then
-  cfg_mesg='none'
+  cfg_mesg="$cfg_mesg parseapi"
+fi
+cfg_mesg=`echo $cfg_mesg`
+
+if test "$OA_AVAIL" = no && test "$parseapi_avail" = no ; then
+  AC_MSG_WARN([unable to build hpcstruct: no open-analysis or parseapi])
+  cfg_mesg=no
 fi
 
 if test "$new_symtab_getname" = yes ; then
@@ -2363,8 +2367,8 @@ if test "$new_symtab_getname" = yes ; then
 fi
 
 AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_SYMTAB], [test "$inline_avail" = yes])
-AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_PARSEAPI], [test "$use_parseapi" = yes])
-AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_OA], [test "$use_parseapi" = no])
+AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_PARSEAPI], [test "$parseapi_avail" = yes])
+AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_OA], [test "$OA_AVAIL" = yes])
 
 # Hpcstruct gets a launch script if (1) Xed is shared (some versions
 # of MIC), or (2) use symtab for inline support.
