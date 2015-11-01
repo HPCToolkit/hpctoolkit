@@ -16125,6 +16125,18 @@ fi
 
 done
 
+for ac_header in cxxabi.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "cxxabi.h" "ac_cv_header_cxxabi_h" "$ac_includes_default"
+if test "x$ac_cv_header_cxxabi_h" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_CXXABI_H 1
+_ACEOF
+
+fi
+
+done
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CXX-CC} supports C++ style C headers (<cheader>)" >&5
 $as_echo_n "checking whether ${CXX-CC} supports C++ style C headers (<cheader>)... " >&6; }
 if test "${ac_cv_check_cxx_ctd_cheaders+set}" = set; then :

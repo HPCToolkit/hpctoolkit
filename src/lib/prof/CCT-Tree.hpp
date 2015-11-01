@@ -629,8 +629,18 @@ public:
 	   uint metricEnd = Metric::IData::npos,
 	   uint oFlags = 0, const char* pfx = "") const;
 
+
+  std::ostream&
+  writeXML_path(std::ostream& os,
+	   uint metricBeg = Metric::IData::npos,
+	   uint metricEnd = Metric::IData::npos,
+	   uint oFlags = 0, const char* pfx = "") const;
+
   std::ostream&
   dump(std::ostream& os = std::cerr, uint oFlags = 0, const char* pfx = "") const;
+
+  void
+  adump() const;
 
   void
   ddump() const;

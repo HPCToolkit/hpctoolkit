@@ -319,6 +319,7 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
   else if (XMLString::equals(name, elemProc)) {
     string nm  = getAttr(attributes, attrName);   // must exist
     string lnm = getAttr(attributes, attrLnName); // optional
+    string id  = getAttr(attributes, attrId); 	  // ID: must exist
 
     SrcFile::ln begLn, endLn;
     getLineAttr(begLn, endLn, attributes);
@@ -361,6 +362,7 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
     DIAG_DevMsgIf(DBG, "PGMDocHandler: " << m_curProc->toStringMe());
 
     curStrct = m_curProc;
+    PGMDocHandler::idToProcMap[id] = (Prof::Struct::Proc*) m_curProc;
   }
 
   // Alien
@@ -368,7 +370,8 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
     int numAttr = attributes.getLength();
     DIAG_Assert(0 <= numAttr && numAttr <= 6, DIAG_UnexpectedInput);
 
-    string nm = getAttr(attributes, attrName);
+    string nm  = getAttr(attributes, attrName);
+    string ln  = getAttr(attributes, attrLnName);
     string fnm = getAttr(attributes, attrFile);
     fnm = m_args.realpath(fnm);
 
@@ -376,7 +379,8 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
     getLineAttr(begLn, endLn, attributes);
 
     Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(getCurrentScope());
-    Struct::ACodeNode* alien = new Struct::Alien(parent, fnm, nm, nm, begLn, endLn);
+    Struct::Alien* alien = new Struct::Alien(parent, fnm, nm, nm, begLn, endLn);
+    alien->proc( idToProcMap[ln] );
 
     string node_id = getAttr(attributes, attrId);
     alien->m_origId = atoi(node_id.c_str());

@@ -105,6 +105,23 @@ using SrcFile::ln_NULL;
 namespace Prof {
 
 extern std::map<uint, uint> m_mapFileIDs;      // map between file IDs
+extern std::map<uint, uint> m_mapProcIDs;      // map between proc IDs
+
+// local function to convert from the original procedure ID into a 
+// a "compact" id to reduce redundancy if the procedure of the same
+// file has exactly the same name.
+// Note that this map doesn't differentiate between "foo" and "foo(int)"
+static uint
+getProcIdFromMap(uint proc_id)
+{
+  uint id = proc_id;
+  if (Prof::m_mapProcIDs.find(proc_id) != Prof::m_mapProcIDs.end()) {
+    // the file ID should redirected to another file ID which has 
+    // exactly the same filename
+    id = Prof::m_mapProcIDs[proc_id];
+  }
+  return id;
+}
 
 namespace CCT {
   
@@ -1054,7 +1071,8 @@ string
 ANode::toStringMe(uint oFlags) const
 { 
   string self;
-  self = ANodeTyToName(type());
+  ANodeTy node_type = type();
+  self = ANodeTyToName(node_type);
 
   SrcFile::ln lnBeg = begLine();
   string line = StrUtil::toStr(lnBeg);
@@ -1064,6 +1082,9 @@ ANode::toStringMe(uint oFlags) const
   //}
 
   uint sId = (m_strct) ? m_strct->id() : 0;
+  if (node_type == TyProcFrm || node_type == TyProc) {
+    sId = getProcIdFromMap(sId);
+  }
 
   self += " i" + xml::MakeAttrNum(m_id);
   self += " s" + xml::MakeAttrNum(sId) + " l" + xml::MakeAttrStr(line);
@@ -1164,7 +1185,8 @@ ProcFrm::toStringMe(uint oFlags) const
     uint file_id = getFileIdFromMap(fileId());
     string fnm = xml::MakeAttrNum(file_id);
 
-    string pnm = xml::MakeAttrNum(procId());
+    uint proc_id = getProcIdFromMap(procId());
+    string pnm = xml::MakeAttrNum(proc_id);
 
     if (oFlags & Tree::OFlg_DebugAll) {
       lm_nm = xml::MakeAttrStr(lmName());
@@ -1175,6 +1197,13 @@ ProcFrm::toStringMe(uint oFlags) const
     }
 
     self += " lm" + lm_nm + " f" + fnm + " n" + pnm;
+
+    // print the vma for debugging purpose
+    int dbg_level = Diagnostics_GetDiagnosticFilterLevel();
+    if (dbg_level > 2) {
+      VMAIntervalSet &vma = m_strct->vmaSet();
+      self += " v=\"" + vma.toString() + "\"";
+    }
 
     if ((oFlags & CCT::Tree::OFlg_StructId) && structure() != NULL) {
       self += " str" + xml::MakeAttrNum(structure()->m_origId);
@@ -1195,7 +1224,9 @@ Proc::toStringMe(uint oFlags) const
 
     uint file_id = getFileIdFromMap(fileId());
     string fnm = xml::MakeAttrNum(file_id);
-    string pnm = xml::MakeAttrNum(procId());
+
+    uint proc_id = getProcIdFromMap(procId());
+    string pnm = xml::MakeAttrNum(proc_id);
 
     if (oFlags & Tree::OFlg_DebugAll) {
       lm_nm = xml::MakeAttrStr(lmName());
@@ -1205,6 +1236,11 @@ Proc::toStringMe(uint oFlags) const
 
     self += " lm" + lm_nm + " f" + fnm + " n" + pnm;
 
+    int dbg_level = Diagnostics_GetDiagnosticFilterLevel();
+    if (dbg_level > 2) {
+      VMAIntervalSet &vma = m_strct->vmaSet();
+      self += " v=\"" + vma.toString() + "\"";
+    }
     if (isAlien()) {
       self = self + " a=\"1\"";
     }
@@ -1224,6 +1260,11 @@ Loop::toStringMe(uint oFlags) const
   string fnm = xml::MakeAttrNum(file_id);
   string self = ANode::toStringMe(oFlags) + " f" + fnm;
 
+  int dbg_level = Diagnostics_GetDiagnosticFilterLevel();
+  if (dbg_level > 2) {
+    VMAIntervalSet &vma = m_strct->vmaSet();
+    self += " v=\"" + vma.toString() + "\"";
+  }
   if ((oFlags & CCT::Tree::OFlg_StructId) && structure() != NULL) {
     self += " str" + xml::MakeAttrNum(structure()->m_origId);
   }
@@ -1239,6 +1280,12 @@ Call::toStringMe(uint oFlags) const
 
   if ((oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll)) {
     self += " n=\"" + nameDyn() + "\"";
+  }
+
+  int dbg_level = Diagnostics_GetDiagnosticFilterLevel();
+  if (dbg_level > 2) {
+    VMAIntervalSet &vma = m_strct->vmaSet();
+    self += " v=\"" + vma.toString() + "\"";
   }
   if ((oFlags & CCT::Tree::OFlg_StructId) && structure() != NULL) {
     self += " str" + xml::MakeAttrNum(structure()->m_origId);
@@ -1258,6 +1305,12 @@ Stmt::toStringMe(uint oFlags) const
   }
   if (hpcrun_fmt_doRetainId(cpId())) {
     self += " it" + xml::MakeAttrNum(cpId());
+  }
+
+  int dbg_level = Diagnostics_GetDiagnosticFilterLevel();
+  if (dbg_level > 2) {
+    VMAIntervalSet &vma = m_strct->vmaSet();
+    self += " v=\"" + vma.toString() + "\"";
   }
   if ((oFlags & CCT::Tree::OFlg_StructId) && structure() != NULL) {
     self += " str" + xml::MakeAttrNum(structure()->m_origId);
@@ -1292,11 +1345,39 @@ ANode::writeXML(ostream& os, uint metricBeg, uint metricEnd,
 
 
 std::ostream&
+ANode::writeXML_path(ostream& os, uint metricBeg, uint metricEnd,
+		     uint oFlags, const char* pfx) const
+{
+  string indent = "  ";
+  if (oFlags & CCT::Tree::OFlg_Compressed) {
+    pfx = "";
+    indent = "";
+  }
+
+  ANode *parent = this->parent();
+  if (parent) {
+    parent->writeXML_path(os, metricBeg, metricEnd, oFlags, pfx);
+  }
+  
+  writeXML_pre(os, metricBeg, metricEnd, oFlags, pfx);
+  return os;
+}
+
+
+std::ostream&
 ANode::dump(ostream& os, uint oFlags, const char* pfx) const 
 {
   writeXML(os, Metric::IData::npos, Metric::IData::npos, oFlags, pfx); 
   return os;
 }
+
+
+void
+ANode::adump() const
+{
+  writeXML_path(std::cerr, Metric::IData::npos, Metric::IData::npos,
+	        Tree::OFlg_DebugAll, "");
+} 
 
 
 void

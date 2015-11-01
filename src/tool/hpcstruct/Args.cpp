@@ -146,6 +146,14 @@ Options: Structure recovery\n\
   --cfg <old|new>      Use old (OpenAnalysis) or new (ParseAPI) support\n\
                        for building Control Flow Graphs (default old).\n\
 \n\
+Options: Demangling\n\
+  --demangle-library <C++ Standard Library path>\n\
+                       Specify the pathname for the dynamically-linked C++\n\
+                       Standard library whose __cxa_demangle function should \n\
+                       be used for demangling.  By default, the demangler used\n\
+                       is the one in the C++ Standard Library linked into\n\
+                       hpcstruct.\n\
+\n\
 Options: Output:\n\
   -o <file>, --output <file>\n\
                        Write hpcstruct file to <file>.\n\
@@ -169,6 +177,10 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 , "agent-c++",       CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
   {  0 , "agent-cilk",      CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+
+  // Demangler library
+  {  0 , "demangle-library",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // Structure recovery options
@@ -391,6 +403,11 @@ Args::parse(int argc, const char* const argv[])
 	DIAG_EMsg("unknown argument for --cfg (old|new): '" << arg << "'");
 	exit(1);
       }
+    }
+
+    // Check for other options: Demangling
+    if (parser.isOpt("demangle-library")) {
+      demangle_library = parser.getOptArg("demangle-library");
     }
 
     // Check for other options: Output options

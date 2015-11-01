@@ -449,6 +449,63 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
 
 //****************************************************************************
 
+static void 
+clipDuplicateContext(Prof::CCT::ANode* haystack, Prof::CCT::ANode* n) 
+{
+   Prof::CCT::ANode* n_parent  = n->parent(); 
+   if (n_parent == NULL) return;
+
+   Prof::CCT::ANode* n_grand_parent  = n_parent->parent(); 
+   if (n_grand_parent == NULL) return;
+
+   if (typeid(*n_grand_parent) != typeid(Prof::CCT::Proc)) return;  
+
+   Prof::CCT::Proc *proc  = dynamic_cast<Prof::CCT::Proc*>(n_grand_parent);
+   if (proc == NULL || !proc->isAlien()) return;
+
+   // grand parent node is an alien procedure
+   // capture its name. if this name appears in the scope_frame chain we are adding,
+   // the interval between the uses 
+   // will use this name to identify duplicate context.
+
+   const std::string& alienProcName = proc->procName();
+   
+   Prof::CCT::ANode* node = haystack; 
+   Prof::CCT::ANode* prev = 0; 
+   while (node) {
+     Prof::CCT::ANode* parent = node->parent(); 
+     if (node == n_grand_parent) {
+       // we encountered the grand parent node without finding a duplicate. 
+       // no duplicate exists on this chain. 
+       return;
+     }
+
+     // check if node is an alien procedure. it might be a loop. if it is a duplicate,
+     // it will be an alien procedure. 
+     // redundant if 
+     if (typeid(*node) == typeid( Prof::CCT::Proc)) { 
+       Prof::CCT::Proc *nproc  = dynamic_cast<Prof::CCT::Proc*>(node);
+       if (nproc != NULL && proc->isAlien()) {
+	 if (nproc->procName().compare(alienProcName) == 0) {
+       	   // found the base of a duplicate chain 
+           if (prev) {
+             // can only eliminate a duplicate if prev is non-empty. if a match is 
+             // found, prev should be non-empty.
+             // eliminate duplicate context between prev and n_grand_parent.
+             prev->unlink();
+             prev->link(n_grand_parent);
+             // FIXME: the context between prev and needle could be garbage collected.
+           }
+           return;
+         }
+       }
+     }
+     prev = node;
+     node = parent;
+   }
+   // duplicate not found. node needs should have full context
+}
+
 static void
 overlayStaticStructure(Prof::CCT::ANode* node,
 		       Prof::LoadMap::LM* loadmap_lm,
@@ -523,6 +580,8 @@ overlayStaticStructure(Prof::CCT::ANode* node,
 
       Prof::CCT::ANode* scope_frame =
 	demandScopeInFrame(n_dyn, scope_strct, *strctToCCTMap);
+
+      clipDuplicateContext(scope_frame, n);
 
       // 3. Link 'n' to its parent
       n->unlink();

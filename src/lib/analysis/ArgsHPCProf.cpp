@@ -155,6 +155,8 @@ Options: Output:\n\
   --metric-db <yes|no>\n\
                        Control whether to generate a thread-level metric\n\
                        value database for hpcviewer scatter plots. {yes}\n\
+  --remove-redundancy \n\
+                       Eliminate procedure name redundancy in experiment.xml\n\
   --struct-id          Add 'str=nnn' field to profile data with the hpcstruct\n\
                        node id (for debug, default no).\n\
 ";
@@ -212,6 +214,8 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
      NULL },
   { 'h', "help",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
+  { 0, "remove-redundancy", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
   {  0 , "debug",           CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,  // hidden
      CLP::isOptArg_long },
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
@@ -234,6 +238,7 @@ ArgsHPCProf::ArgsHPCProf()
   prof_metrics = Analysis::Args::MetricFlg_StatsSum;
 
   db_makeMetricDB = true;
+  remove_redundancy = false;
 }
 
 
@@ -298,6 +303,9 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
     if (parser.isOpt("help")) { 
       printUsage(std::cerr); 
       exit(1);
+    }
+    if (parser.isOpt("remove-redundancy")) { 
+      remove_redundancy = true;
     }
     if (parser.isOpt("version")) { 
       printVersion(std::cerr);

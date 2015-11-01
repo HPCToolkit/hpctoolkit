@@ -1595,6 +1595,10 @@ public:
   name(const std::string& n)
   { m_name = n; }
 
+  void
+  proc(Prof::Struct::Proc *proc)
+  { m_proc = proc; }
+
   const std::string&
   displayName() const
   { return m_displaynm; }
@@ -1628,6 +1632,8 @@ private:
   std::string m_filenm;
   std::string m_name;
   std::string m_displaynm;
+
+  Prof::Struct::Proc *m_proc;
 
 #if 0
   static RealPathMgr& s_realpathMgr;

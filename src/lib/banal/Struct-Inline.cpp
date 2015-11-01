@@ -240,7 +240,7 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 	string procnm = func->getName();
         if (procnm == "") { procnm = UNKNOWN_PROC; }
 #else
-	vector <string> name_vec = func->getAllPrettyNames();
+	vector <string> name_vec = func->getAllMangledNames();
 	string procnm = (! name_vec.empty()) ? name_vec[0] : UNKNOWN_PROC;
 #endif
 	string &filenm = getRealPath(callsite.first.c_str());

@@ -233,6 +233,12 @@ public:
   bool txt_srcAnnotation;
   std::vector<std::string> txt_srcFileGlobs;
 
+  // flag to remove procedure name redundancy
+  // this feature is not fully reliable to remove procedure
+  // name redundancy, especially if compiled with g++ -O2
+  // since the compiler doesn't generate function parameters
+  // and cannot distinguish between foo(int) and foo(int, int)
+  bool remove_redundancy;
 
 public:
   // -------------------------------------------------------

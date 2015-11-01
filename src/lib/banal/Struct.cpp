@@ -881,9 +881,22 @@ demandProcNode(Prof::Struct::File* fStrct, BinUtil::Proc* p,
   DIAG_Assert(!bounds.empty(), "Attempting to add empty procedure "
 	      << bounds.toString());
   
-  // Find procedure name
-  string procNm   = BinUtil::canonicalizeProcName(p->name(), procNmMgr);
-  string procLnNm = BinUtil::canonicalizeProcName(p->linkName(), procNmMgr);
+  // don't demangle the link name. because demangling is a many-->one mapping,
+  // we need to keep the link name (the mangled name) for use as a unique key
+  string procLnNm = p->linkName(); 
+
+  // Binutils often uses simpler procedure names than what we would get from 
+  // demangling the procedure's linkName. We need to compute the procedure
+  // name from the demangled linkName to match what we get from symtabAPI. 
+  const char *linkName = p->linkName().c_str();
+
+  // On powerpc, linkNames for procedures have a leading period. We need to clip 
+  // that off before trying to demangle. This approach will work whether
+  // the leading character is a period or not.
+  if (linkName && linkName[0] == '.') linkName++;
+
+  // Compute the procedure name by demangling the link name.
+  string procNm   = BinUtil::canonicalizeProcName(linkName, procNmMgr);
   
   // Find preliminary source line bounds
   string file, proc;
@@ -1208,7 +1221,7 @@ ancestorIsLoop(Prof::Struct::ANode *node)
 
 
 static bool
-aliensMatch(Prof::Struct::Alien *n1, Prof::Struct::Alien *n2)
+matchAliens(Prof::Struct::Alien *n1, Prof::Struct::Alien *n2)
 {
   return 
     n1->fileName() == n2->fileName() &&
@@ -1218,17 +1231,27 @@ aliensMatch(Prof::Struct::Alien *n1, Prof::Struct::Alien *n2)
 
 
 static bool
-pathsMatch(Prof::Struct::ANode *n1, Prof::Struct::ANode *n2)
+matchPaths(Prof::Struct::ANode *n1, Prof::Struct::ANode *n2, Prof::Struct::ANode *child, Prof::Struct::ANode **result)
 {
-  if (n1 != n2) {
-    bool result = pathsMatch(n1->parent(), n2->parent());
-    if (result &&
-	(typeid(*n1) == typeid(Prof::Struct::Alien)) &&
+  if (n1 == n2) { 
+    // n1 and n2 are identical; they trivially match
+    *result = child;
+    return true;
+  }
+
+  // n1 and n2 are not identical; check to see if they are equivalent
+  bool parentsMatch = matchPaths(n1->parent(), n2->parent(), n1, result);
+  if (parentsMatch) {
+    if ((typeid(*n1) == typeid(Prof::Struct::Alien)) &&
 	(typeid(*n2) == typeid(Prof::Struct::Alien))) {
-      return aliensMatch((Prof::Struct::Alien *)n1, 
-			 (Prof::Struct::Alien *)n2);
-    } else return false;
-  } return true;
+      if (matchAliens((Prof::Struct::Alien *)n1, (Prof::Struct::Alien *)n2)) {
+	// parents match, n1 and n2 are equivalent, so the paths match to this point
+	*result = child; 
+	return true;
+      }
+    }
+  }
+  return false;
 } 
 
 
@@ -1250,13 +1273,12 @@ reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop,
       node = node->parent();
       nodeDepth--;
     }
-    //  this seems to have an off by one error
-    // if (node == loopParent) return;
+
     if (child == loop) return;
-    else if (pathsMatch(node, loopParent)) {
-      node = child;
-    } else {
-      node = kid;
+    else {
+      Prof::Struct::ANode *result = kid;
+      matchPaths(node, loopParent, child, &result);
+      node = result;
     }
   }
 
@@ -1629,7 +1651,7 @@ buildLoopAndStmts(Struct::LocationMgr& locMgr,
   buildStmts(locMgr, topScope, p, bb, procNmMgr, kids, targetScope->id());
   
   if (loop) { 
-    locMgr.locate(loop, topScope, fnm, pnm, line, targetScope->id());
+    locMgr.locate(loop, topScope, fnm, pnm, line, targetScope->id(), procNmMgr);
 #if FULL_STRUCT_DEBUG
     if (ancestorIsLoop(loop)) willBeCycle();
 #endif
@@ -1713,7 +1735,7 @@ buildStmts(Struct::LocationMgr& locMgr,
       stmt->sortId(--call_sortId);
     }
     insertions.push_back(stmt);
-    locMgr.locate(stmt, enclosingStrct, filenm, procnm, line, targetScopeID);
+    locMgr.locate(stmt, enclosingStrct, filenm, procnm, line, targetScopeID, procNmMgr);
   }
   return 0;
 }

@@ -497,7 +497,17 @@ after_unconditional(char *ins, long offset, xed_decoded_inst_t *xptr)
               //     ==> strong evidence f fn start.
       }
 #endif
-      add_stripped_function_entry(new_func_addr + offset); 
+      if (is_push_bp_seq(ins)) {
+	// consider this to be strong evidence. this case is necessary
+	// for recognizing OpenMP tasks and parallel regions outlined 
+	// by the icc compiler. since they aren't called directly, there
+	// wasn't enough evidence to cause them to rate reporting as 
+	// stripped functions with the case below.
+	// johnmc 10/20/13
+	add_function_entry(new_func_addr + offset, NULL, true /* isvisible */, 0);
+      } else {
+	add_stripped_function_entry(new_func_addr + offset); 
+      }
     }
   }
 }
@@ -677,6 +687,16 @@ is_sub_immed_sp(char* ins, char** next)
 //
 
 static bool
+is_sub_immed_prologue(char* ins)
+{
+  char* next = NULL;
+  if (is_sub_immed_sp(ins, &next)) {
+    return true;
+  }
+  return false;
+}
+
+static bool
 is_2step_push_bp(char* ins)
 {
   char* next = NULL;
@@ -691,6 +711,7 @@ is_push_bp_seq(char* ins)
 {
   return is_push_bp(ins) ||
     contains_bp_save_window(ins, 1) ||
+    is_sub_immed_prologue(ins) ||
     is_2step_push_bp(ins);
 }
 

@@ -1,0 +1,33 @@
+-------------------------
+How to update .dtd files
+-------------------------
+
+The *.dtd files in this directory:  hpctoolkit/src/lib/xml/*.dtd.h
+are automatically generated from:   hpctoolkit/lib/dtd/*.dtd
+
+DO NOT edit the *.dtd.h files directly.  Instead, follow these steps:
+
+1. Cd to hpctoolkit/lib/dtd/ in the source tree.
+
+2. Edit the *.dtd files (which look like source files).
+
+3. Run 'touch *.dtd' to make sure the time stamps in the lib/dtd/
+directory are newer than the src/lib/xml/ files.  (Not strictly
+necessary if you've just edited the .dtd files.)
+
+4. Run 'make' in the top-level build directory (or in the src/lib/xml/
+build directory).  This will regenerate the src/lib/xml/*.dtd.h files
+in the source tree.
+
+FIXME: We should not use 'make' to regenerate files in the source
+tree.  It's too easy to make a mistake.  For example: if you did edit
+the .dtd.h files directly, then make would say that the generated
+files are newer than the source files and not regenerate them.  Yuck.
+
+Instead, write a script in the lib/dtd/ directory to explicitly
+regenerate the files.  Or, delete the .dtd.h files from the repository
+and regenerate them on evey build.
+
+Better still, put the source and generated files in the same
+directory.
+

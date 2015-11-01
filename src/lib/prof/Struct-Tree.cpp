@@ -111,13 +111,13 @@ RealPathMgr& s_realpathMgr = RealPathMgr::singleton();
 
 uint ANode::s_nextUniqueId = 1;
 
-const std::string Tree::UnknownLMNm   = "~unknown-load-module~";
+const std::string Tree::UnknownLMNm   = "<unknown load module>";
 
-const std::string Tree::UnknownFileNm = "~unknown-file~";
+const std::string Tree::UnknownFileNm = "<unknown file>";
 
-const std::string Tree::UnknownProcNm = "~unknown-proc~";
+const std::string Tree::UnknownProcNm = "<unknown procedure>";
 
-const std::string Tree::PartialUnwindProcNm = "Partial Call Paths";
+const std::string Tree::PartialUnwindProcNm = "<partial call paths>";
 
 const SrcFile::ln Tree::UnknownLine = SrcFile::ln_NULL;
 
@@ -1501,6 +1501,35 @@ Alien::toXML(uint oFlags) const
   string self = ANode::toXML(oFlags)
     + " f" + MakeAttrStr(m_filenm) + " n" + MakeAttrStr(m_displaynm);
   self = self + " " + XMLLineRange(oFlags) + " " + XMLVMAIntervals(oFlags);
+
+  // add information on the function definition
+  // If the alien has an ancestor and the same procedure definition exists,
+  // we'll add an attribute 'ln' to point to the ID of the function definition.
+  // This is needed to inform hpcprof that the alien shouldn't be considered
+  // as different function.
+  
+  // 1a: get the load module of the alien
+  LM   *lm   = ancestorLM();
+
+  // 1b: check if the alien has the file pointer to its definition
+  File *file = lm->findFile(m_filenm);
+  if (file) {
+    
+    // 2: check if there's the same procedure name in the file
+    Proc *proc = file->findProc(m_displaynm);
+    
+    if (proc) {
+#if 0
+      // 3: check if alien's line range is within the function definition
+      bool inc = SrcFile::include(proc->begLine(), proc->endLine(), begLine(), endLine());
+      if (inc) {
+	// 4: add the link attribute to the function definition
+      	self = self + " ln" + xml::MakeAttrStr(StrUtil::toStr(proc->id())); 
+      }
+#endif
+      self = self + " ln" + xml::MakeAttrStr(StrUtil::toStr(proc->id())); 
+    }
+  }
   return self;
 }
 

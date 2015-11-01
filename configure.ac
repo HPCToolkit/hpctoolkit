@@ -326,6 +326,7 @@ AC_LANG([C++])
 #AC_HEADER_STDC()
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(inttypes.h)
+AC_CHECK_HEADERS(cxxabi.h)
 HPC_CHECK_CXX_STDC_HEADERS()
 
 # Check for types

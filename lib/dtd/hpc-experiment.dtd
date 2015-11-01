@@ -65,6 +65,7 @@
     <!ELEMENT MetricDBTable (MetricDB)*>
 
     <!-- MetricDB: (i)d; (n)ame -->
+    <!--   (t)ype: persistent type of metric -->
     <!--   db-glob:        file glob describing files in metric db -->
     <!--   db-id:          id within metric db -->
     <!--   db-num-metrics: number of metrics in db -->
@@ -73,6 +74,8 @@
     <!ATTLIST MetricDB
 	      i              CDATA #REQUIRED
 	      n              CDATA #REQUIRED
+	      t              (inclusive|exclusive|nil) "nil"
+	      partner        CDATA #IMPLIED
 	      db-glob        CDATA #IMPLIED
 	      db-id          CDATA #IMPLIED
 	      db-num-metrics CDATA #IMPLIED

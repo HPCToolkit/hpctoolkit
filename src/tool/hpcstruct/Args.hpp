@@ -115,6 +115,7 @@ public:
   // Parsed Data: optional arguments
   std::string lush_agent;
   std::string searchPathStr;          // default: "."
+  std::string demangle_library;       // default: ""
   bool isIrreducibleIntervalLoop;     // default: true
   bool isForwardSubstitution;         // default: false
   BAnal::Struct::NormTy doNormalizeTy; // default: NormTy_All

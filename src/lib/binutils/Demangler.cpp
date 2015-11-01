@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: $
+// $Id: $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,73 +44,63 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef support_SrcFile_hpp
-#define support_SrcFile_hpp 
-
-//************************** System Include Files ***************************
-
-#include <iostream>
-
-//*************************** User Include Files ****************************
-
-//*************************** Forward Declarations **************************
-
 //***************************************************************************
-// ln: type of a source line number
-//***************************************************************************
-
-namespace SrcFile {
-
-  // Use same trick as in OpenAnalysis if there is ambiguity with typedefs
-  //   make isValid a member function.
-  typedef unsigned int ln;
-  const ln ln_NULL = 0;
-
-  inline bool
-  isValid(SrcFile::ln line)
-  { return (line > ln_NULL); }
-
-  inline bool
-  isValid(SrcFile::ln begLine, SrcFile::ln endLine)
-  { return (isValid(begLine) && isValid(endLine)); }
-  
-
-  // - if x < y; 0 if x == y; + otherwise
-  inline int 
-  compare(SrcFile::ln x, SrcFile::ln y)
-  {
-    // The elegant implementation "return (x - y)" may fail since the
-    // differences between two 'uints' may be greater than an 'int'
-    if (x < y)       { return -1; }
-    else if (x == y) { return 0; }
-    else             { return 1; }
-  }
-
-  // true if src1 includes src2 
-  inline bool
-  include(SrcFile::ln beg1, SrcFile::ln end1, SrcFile::ln beg2, SrcFile::ln end2)
-  {
-    return (beg1<=beg2 && end1>=end2); // src1 includes src2 ? 
-  }
-
-} // namespace SrcFile
-
-
-//***************************************************************************
-// 
+//
+// File: Demangler.cpp
+//   $HeadURL: $
+//
+// Purpose: 
+//   Implement an API that enables an HPCToolkit user to provide and employ 
+//   an arbitrary C++ Standard to demangle symbols.
+//
+// Description:
+//   The API includes an interface to register a C++ Standard Library that
+//   will be used to demangle symbols and a demangler interface that will
+//   employ the specified library to perform demangling.
+//
 //***************************************************************************
 
-namespace SrcFile {
 
-  // -------------------------------------------------------
-  // pos: type of a source position
-  // -------------------------------------------------------
-  
-  //typedef pair<> pos; // line, col
-  
 
-} // namespace SrcFile
+//******************************************************************************
+// global includes
+//******************************************************************************
+
+#include <cxxabi.h>
 
 
 
-#endif /* support_SrcFile_hpp */
+//******************************************************************************
+// local includes
+//******************************************************************************
+
+#include "Demangler.hpp"
+
+
+
+//******************************************************************************
+// local variables
+//******************************************************************************
+
+static demangler_t demangle_fn = abi::__cxa_demangle;
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+void 
+hpctoolkit_demangler_set(demangler_t _demangle_fn)
+{
+  demangle_fn = _demangle_fn;
+}
+
+
+char *
+hpctoolkit_demangle(const char *mangled_name, 
+                    char *output_buffer, 
+                    size_t *length, 
+                    int *status)
+{
+  return demangle_fn(mangled_name, output_buffer, length, status);
+}

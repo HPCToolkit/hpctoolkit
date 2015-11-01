@@ -77,8 +77,9 @@
 
 #include <include/uint.h>
 
-#include <lib/prof/Struct-Tree.hpp>
 #include <lib/isa/ISATypes.hpp>
+#include <lib/prof/Struct-Tree.hpp>
+#include <lib/support/ProcNameMgr.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -158,7 +159,8 @@ public:
   void
   locate(Prof::Struct::Loop* loop,
 	 Prof::Struct::ACodeNode* proposed_scope,
-	 std::string& filenm, std::string& procnm, SrcFile::ln line, uint targetScopeID);
+	 std::string& filenm, std::string& procnm, SrcFile::ln line, uint targetScopeID,
+	 ProcNameMgr *procNmMgr);
   
   // locate: Given a parentless Struct::Stmt 'stmt', the original
   //   enclosing scope 'proposed_scope' and best-guess source-line
@@ -170,7 +172,8 @@ public:
   void
   locate(Prof::Struct::Stmt* stmt,
 	 Prof::Struct::ACodeNode* proposed_scope,
-	 std::string& filenm, std::string& procnm, SrcFile::ln line, uint targetScopeID);
+	 std::string& filenm, std::string& procnm, SrcFile::ln line, uint targetScopeID,
+	 ProcNameMgr *procNmMgr);
 
   // endSeq: 
   void endSeq();
@@ -373,7 +376,8 @@ private:
   CtxtChange_t
   determineContext(Prof::Struct::ACodeNode* proposed_scope,
 		   std::string& filenm, std::string& procnm, SrcFile::ln line,
-		   VMA begVMA, Prof::Struct::ACodeNode* loop, uint targetScopeID);
+		   VMA begVMA, Prof::Struct::ACodeNode* loop, uint targetScopeID,
+	           ProcNameMgr *procNmMgr);
   
   // fixCtxtStack: Yuck.
   void

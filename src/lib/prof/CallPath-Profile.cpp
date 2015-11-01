@@ -90,6 +90,7 @@ using std::string;
 #include <include/uint.h>
 
 #include "CallPath-Profile.hpp"
+#include "NameMappings.hpp"
 #include "Struct-Tree.hpp"
 
 #include <lib/xml/xml.hpp>
@@ -126,6 +127,7 @@ namespace Prof {
 // this variable will be used by getFileIdFromMap in CCT-Tree.cpp
 // ---------------------------------------------------
 std::map<uint, uint> m_mapFileIDs;      // map between file IDs
+std::map<uint, uint> m_mapProcIDs;      // map between proc IDs
 
 namespace CallPath {
 
@@ -453,7 +455,10 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
 
 
 
-class FilenameCompare {
+// ---------------------------------------------------
+// String comparison used for hash map
+// ---------------------------------------------------
+class StringCompare {
 public:
   bool operator()(const std::string n1,  const std::string n2) const {
     return n1.compare(n2)<0;
@@ -465,12 +470,45 @@ public:
 // this hack is needed to avoid duplicate filenames
 // which occurs with alien nodes
 // ---------------------------------------------------
-static std::map<std::string, uint, FilenameCompare> m_mapFiles; // map the filenames and the ID
+static std::map<std::string, uint, StringCompare> m_mapFiles; // map the filenames and the ID
+static std::map<std::string, uint, StringCompare> m_mapProcs; // map the procedure names and the ID
 
+// attempt to retrieve the filename of a node
+// if the node is an alien or a loop or a file, then we are guaranteed to
+// retrieve the current filename associated to the node.
+//
+// However, if the node is not of those types, we'll try to get 
+// the ancestor file of the node. This is not the proper way to get the
+// filename, but it's the closest we can get (AFAIK).
+static const char *
+getFileName(Struct::ANode* strct)
+{
+  const char *nm = NULL;
+  if (strct)
+  {
+    const std::type_info &tid = typeid(*strct);
+
+    if (tid == typeid(Struct::Alien)) {
+	nm = static_cast<Struct::Alien*>(strct)->fileName().c_str();
+    } else if (tid == typeid(Struct::Loop)) {
+	nm = static_cast<Struct::Loop*>(strct)->fileName().c_str();
+    } else if (tid == typeid(Struct::File)){
+	nm = static_cast<Struct::File*>(strct)->name().c_str();
+    } else {
+      	Prof::Struct::File *file = strct->ancestorFile();
+      	if (file) {
+	  nm = file->name().c_str();
+      	}
+    }
+  }
+  return nm;
+}
+
+// writing XML dictionary in the header part of experiment.xml
 static void
 writeXML_help(std::ostream& os, const char* entry_nm,
 	      Struct::Tree* structure, const Struct::ANodeFilter* filter,
-	      int type)
+	      int type, bool remove_redundancy)
 {
   Struct::ANode* root = structure ? structure->root() : NULL;
   if (!root) {
@@ -482,18 +520,14 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     
     uint id = strct->id();
     const char* nm = NULL;
+
+    bool change = false;
     
     if (type == 1) { // LoadModule
       nm = strct->name().c_str();
     }
     else if (type == 2) { // File
-      if (typeid(*strct) == typeid(Struct::Alien)) {
-	nm = static_cast<Struct::Alien*>(strct)->fileName().c_str();
-      } else if (typeid(*strct) == typeid(Struct::Loop)) {
-	nm = static_cast<Struct::Loop*>(strct)->fileName().c_str();
-      } else {
-	nm = static_cast<Struct::File*>(strct)->name().c_str();
-      }
+      nm = getFileName(strct);	
       // ---------------------------------------
       // avoid redundancy in XML filename dictionary
       // (exception for unknown-file)
@@ -515,14 +549,68 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       }
     }
     else if (type == 3) { // Proc
-      nm = strct->name().c_str();
-    }
-    else {
+      const char *proc_name = strct->name().c_str();
+      nm = normalize_name(proc_name, change);
+
+      if (remove_redundancy && 
+	  proc_name != Prof::Struct::Tree::UnknownProcNm)
+      {  
+        // -------------------------------------------------------
+        // avoid redundancy in XML procedure dictionary
+        // a procedure can have the same name if they are from different
+        // file or different load module
+        // -------------------------------------------------------
+        const char *filename = getFileName(strct);	
+        // we need to allow the same function name from a different file
+        std::string completProcName(filename);
+        completProcName.append(":");
+        const char *lnm;
+  
+        // a procedure name within the same file has to be unique.
+        // However, for codes compiled with GCC, binutils (or parseAPI) 
+        // it's better to compare internally with the mangled names
+        Struct::Proc *proc = dynamic_cast<Struct::Proc *>(strct);
+        if (proc)
+        {
+  	  if (proc->linkName().empty()) {
+  	    // the proc has no mangled name
+  	    lnm = proc_name;
+  	  } else
+  	  { // get the mangled name
+           	  lnm = proc->linkName().c_str();
+  	  }
+        } else
+        {
+  	  lnm = strct->name().c_str();
+        }
+        completProcName.append(lnm);
+        if (m_mapProcs.find(completProcName) == m_mapProcs.end()) 
+        {
+  	  // the proc is not in dictionary. Add it into the map.
+  	  m_mapProcs[completProcName] = id;
+        } else 
+        {
+  	  // the same procedure name already exists, we need to reuse
+  	  // the previous ID instead of the original one.
+  	  uint id_orig = m_mapProcs[completProcName];
+  
+   	  // remember that this ID needs redirection to the existing ID
+  	  Prof::m_mapProcIDs[id] = id_orig;
+  	  continue;
+        }
+      }
+    } else {
       DIAG_Die(DIAG_UnexpectedInput);
     }
     
     os << "    <" << entry_nm << " i" << MakeAttrNum(id)
-       << " n" << MakeAttrStr(nm) << "/>\n";
+       << " n" << MakeAttrStr(nm);
+    
+    if (change) {
+       os << " f" << MakeAttrNum(1); 
+    } 
+   
+    os << "/>\n";
   }
 }
 
@@ -668,7 +756,8 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   // -------------------------------------------------------
   os << "  <LoadModuleTable>\n";
   writeXML_help(os, "LoadModule", m_structure,
-		&Struct::ANodeTyFilter[Struct::ANode::TyLM], 1);
+		&Struct::ANodeTyFilter[Struct::ANode::TyLM], 1,
+		m_remove_redundancy);
   os << "  </LoadModuleTable>\n";
 
   // -------------------------------------------------------
@@ -676,7 +765,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   // -------------------------------------------------------
   os << "  <FileTable>\n";
   Struct::ANodeFilter filt1(writeXML_FileFilter, "FileTable", 0);
-  writeXML_help(os, "File", m_structure, &filt1, 2);
+  writeXML_help(os, "File", m_structure, &filt1, 2, m_remove_redundancy);
   os << "  </FileTable>\n";
 
   // -------------------------------------------------------
@@ -685,7 +774,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   if ( !(oFlags & CCT::Tree::OFlg_Debug) ) {
     os << "  <ProcedureTable>\n";
     Struct::ANodeFilter filt2(writeXML_ProcFilter, "ProcTable", 0);
-    writeXML_help(os, "Procedure", m_structure, &filt2, 3);
+    writeXML_help(os, "Procedure", m_structure, &filt2, 3, m_remove_redundancy);
     os << "  </ProcedureTable>\n";
   }
 
@@ -1559,12 +1648,14 @@ Profile::canonicalize(uint rFlags)
 
   if (root_dyn && root_dyn->isPrimarySynthRoot()) {
     splicePoint = root;
+#if 0
     if (rFlags & RFlg_HpcrunData) {
       // hpcrun generates CCTs in the form diagrammed above
       if (splicePoint->childCount() == 1) {
 	splicePoint = splicePoint->firstChild();
-      }
+      } 
     }
+#endif
   }
 
   // ------------------------------------------------------------

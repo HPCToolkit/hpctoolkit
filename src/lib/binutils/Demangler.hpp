@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: $
+// $Id: $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2014, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,100 +44,52 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
 //***************************************************************************
 //
-// File:
-//   $HeadURL$
+// File: Demangler.hpp
 //
-// Purpose:
-//   [The purpose of this file]
+// Purpose: 
+//   Define an API that enables an HPCToolkit user to provide and employ 
+//   an arbitrary C++ Standard to demangle symbols.
 //
 // Description:
-//   [The set of functions, macros, etc. defined in the file]
+//   The API includes an interface to register a C++ Standard Library that
+//   will be used to demangle symbols and a demangler interface that will
+//   employ the specified library to perform demangling.
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
+#ifndef __Demangler_hpp__
+#define __Demangler_hpp__
 
-#include <iostream>
-#include <string>
-using std::string;
+//***************************************************************************
+// types
+//***************************************************************************
 
-#include <cstdlib> // for 'free'
-#include <cstring> // for 'strlen', 'strcpy'
-
-#include <hpctoolkit-config.h>
-
-#include <cxxabi.h>
-
-//*************************** User Include Files ****************************
-
-#include "BinUtils.hpp"
-#include "Demangler.hpp"
+typedef char *(*demangler_t)
+  (const char *mangled_name, 
+   char *output_buffer, 
+   size_t *length, 
+   int *status);
 
 
-//****************************************************************************
 
-// Include the system demangle
-#if defined(HOST_OS_SOLARIS)
-# include <../../usr/include/demangle.h> // demangle (don't confuse with GNU)
-  const int DEMANGLE_BUF_SZ = 32768; // see MAXDBUF in SGI's dem.h
-#elif defined(HOST_OS_LINUX) || defined(HOST_OS_MACOS)
-  // the system demangle is GNU's demangle
-#else
-# error "binutils::BinUtils does not recognize your platform."
+//***************************************************************************
+// interface operations
+//***************************************************************************
+
+extern "C" {
+
+void
+hpctoolkit_demangler_set(demangler_t _demangle_fn);
+
+
+char *
+hpctoolkit_demangle(const char *mangled_name, 
+                    char *output_buffer, 
+                    size_t *length, 
+                    int *status);
+};
+
 #endif
-
-// Include GNU's demangle
-#include <include/gnu_demangle.h> // GNU's demangle
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
-
-namespace BinUtil {
-
-//***************************************************************************
-// 
-//***************************************************************************
-
-// 'canonicalizeProcName': If 'name' is non-empty, uses 'demangleProcName' 
-// to attempt to demangle it.  If there is an error in demangling,
-// return 'name'; otherwise return the demangled version.
-string
-canonicalizeProcName(const std::string& name, ProcNameMgr* procNameMgr)
-{
-  if (name.empty()) {
-    return name; 
-  }
-
-  string bestname = demangleProcName(name.c_str());
-  if (procNameMgr) {
-    bestname = procNameMgr->canonicalize(bestname);
-  }
-  
-  return bestname;
-}
-
-
-// Returns the demangled function name (if possible) or the original name.
-string
-demangleProcName(const std::string& name)
-{
-  string bestname = name;
-
-  //----------------------------------------------------------
-  // demangle using the API for the C++ demangler
-  //----------------------------------------------------------
-  int status;
-  char *str = hpctoolkit_demangle(name.c_str(), 0, 0, &status);
-
-  if (str) {
-    bestname = str;
-    free(str);
-  }
-
-  return bestname;
-}
-
-} // namespace BinUtil

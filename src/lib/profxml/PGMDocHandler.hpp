@@ -83,6 +83,9 @@ public:
   enum Doc_t { Doc_NULL, Doc_STRUCT, Doc_GROUP };
   static const char* ToString(Doc_t docty);
 
+private:
+    std::map<std::string, Prof::Struct::Proc*> idToProcMap;
+
 public:
 
   PGMDocHandler(Doc_t ty, Prof::Struct::Tree* structure,

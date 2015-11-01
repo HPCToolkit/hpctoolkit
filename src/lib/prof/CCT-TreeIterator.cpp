@@ -223,9 +223,9 @@ ANodeSortedIterator::cmpByStructureInfo(const void* a, const void* b)
     // 1. distinguish by structure ids
     uint x_id = x->structureId();
     uint y_id = y->structureId();
-    int cmp_id = cmp(x_id, y_id);
-    if (cmp_id != 0) {
-      return cmp_id;
+    int cmp_sid = cmp(x_id, y_id);
+    if (cmp_sid != 0) {
+      return cmp_sid;
     }
 
     // 2. distinguish by types
@@ -245,6 +245,13 @@ ANodeSortedIterator::cmpByStructureInfo(const void* a, const void* b)
       }
     }
     
+    
+    // 5. distinguish by id
+    int cmp_id = (int)x->id() - (int)y->id();
+    if (cmp_id != 0) {
+      return cmp_id;
+    }
+
     // 4. distinguish by tree context
     ANode* x_parent = x->parent();
     ANode* y_parent = y->parent();
@@ -254,7 +261,6 @@ ANodeSortedIterator::cmpByStructureInfo(const void* a, const void* b)
 	return cmp_ctxt;
       }
     }
-    
     // *. Could compare childCount() and other aspects of children.
     DIAG_Die("Prof::CCT::ANodeSortedIterator::cmpByStructureInfo: cannot compare:"
 		<< "\n\tx: " << x->toStringMe(Prof::CCT::Tree::OFlg_Debug)
@@ -299,9 +305,9 @@ ANodeSortedIterator::cmpByDynInfo(const void* a, const void* b)
   uint y_id = y->structureId();
   if (x_id != Prof::Struct::ANode::Id_NULL
       && y_id != Prof::Struct::ANode::Id_NULL) {
-    int cmp_id = cmp(x_id, y_id);
-    if (cmp_id != 0) {
-      return cmp_id;
+    int cmp_sid = cmp(x_id, y_id);
+    if (cmp_sid != 0) {
+      return cmp_sid;
     }
   }
 
@@ -310,6 +316,15 @@ ANodeSortedIterator::cmpByDynInfo(const void* a, const void* b)
   if (cmp_ty != 0) {
     return cmp_ty;
   }
+
+
+#if 1
+  // 4. distinguish by id
+  int cmp_id = (int)x->id() - (int)y->id();
+  if (cmp_id != 0) {
+    return cmp_id;
+  }
+#endif
 
   // *. Could compare childCount() and other aspects of children.
   DIAG_Die("Prof::CCT::ANodeSortedIterator::cmpByDynInfo: cannot compare:"
