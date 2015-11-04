@@ -2536,6 +2536,7 @@ makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
   }
 
   long guard_index = strTab.str2index(GUARD_ALIEN);
+  long empty_index = strTab.str2index("");
 
   // FIXME: this is a primitive alien map based only on file name.
   // We should also consider if the stmt's line num is outside the
@@ -2562,7 +2563,7 @@ makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
     long proc = (scinfo.is_alien) ? scinfo.proc_index : guard_index;
     scope = enclScope;
 
-    if (scinfo.is_alien || mybase != sc_base) {
+    if (scinfo.is_alien || (myfile != empty_index && mybase != sc_base)) {
       scope = findAlienScope(scope, alienMap, myfile, line, proc, strTab, nameMgr);
     }
 
@@ -2581,7 +2582,7 @@ makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
     long proc = (scinfo.is_alien) ? scinfo.proc_index : guard_index;
     scope = enclScope;
 
-    if (scinfo.is_alien || mybase != sc_base) {
+    if (scinfo.is_alien || (myfile != empty_index && mybase != sc_base)) {
       scope = findAlienScope(scope, alienMap, myfile, line, proc, strTab, nameMgr);
     }
 
