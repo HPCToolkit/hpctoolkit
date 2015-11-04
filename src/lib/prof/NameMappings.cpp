@@ -65,7 +65,7 @@ static NameMapping renamingTable[] = {
   { "ompt_idle",               "<omp idle>"         },
 
   { "ompt_overhead_state",     "<omp overhead>"     },
-  { "omp_overhead",           "<omp overhead>"     },
+  { "omp_overhead",            "<omp overhead>"     },
 
   { "ompt_barrier_wait_state", "<omp barrier wait>" },
   { "ompt_barrier_wait",       "<omp barrier wait>" },
@@ -76,6 +76,7 @@ static NameMapping renamingTable[] = {
   { "ompt_mutex_wait_state",   "<omp mutex wait>"   },
   { "ompt_mutex_wait",         "<omp mutex wait>"   },
 
+  { "<inline>",                "<inline>"           },
   { "<partial call paths>",    "<partial call paths>"}
 
 };

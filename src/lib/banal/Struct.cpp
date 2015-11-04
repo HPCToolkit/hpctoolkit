@@ -2525,6 +2525,8 @@ findAlienScope(Prof::Struct::ACodeNode * enclScope, AlienScopeMap & alienMap,
 // Convert inline TreeNode 'tree' to Prof::Struct scope tree format
 // and merge into 'enclScope'.
 //
+#define GUARD_ALIEN  "<inline>"
+
 static void
 makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
 	      TreeNode * tree, StringTable & strTab, ProcNameMgr * nameMgr)
@@ -2532,6 +2534,8 @@ makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
   if (tree == NULL) {
     return;
   }
+
+  long guard_index = strTab.str2index(GUARD_ALIEN);
 
   // FIXME: this is a primitive alien map based only on file name.
   // We should also consider if the stmt's line num is outside the
@@ -2555,7 +2559,7 @@ makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
     long myfile = info->file_index;
     long mybase = info->base_index;
     SrcFile::ln line = info->line_num;
-    long proc = (scinfo.is_alien) ? scinfo.proc_index : info->proc_index;
+    long proc = (scinfo.is_alien) ? scinfo.proc_index : guard_index;
     scope = enclScope;
 
     if (scinfo.is_alien || mybase != sc_base) {
@@ -2574,7 +2578,7 @@ makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
     long mybase = (*lit)->base_index;
     string filenm = strTab.index2str(myfile);
     SrcFile::ln line = (*lit)->line_num;
-    long proc = (scinfo.is_alien) ? scinfo.proc_index : strTab.str2index("");
+    long proc = (scinfo.is_alien) ? scinfo.proc_index : guard_index;
     scope = enclScope;
 
     if (scinfo.is_alien || mybase != sc_base) {
