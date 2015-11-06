@@ -259,9 +259,8 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 	pair <string, Offset> callsite = ifunc->getCallsite();
 
 #ifdef SYMTAB_NEW_NAME_ITERATOR
-#error this needs to use mangled names rather than pretty names
-        auto it = func->pretty_names_begin();
-        string procnm = (it != func->pretty_names_end()) ? *it : UNKNOWN_PROC;
+	string procnm = func->getName();
+        if (procnm == "") { procnm = UNKNOWN_PROC; }
 #else
         // Surprisingly, demangling is a many --> one mapping.
         // To avoid inadvertant merging as a result of name collisions, we 

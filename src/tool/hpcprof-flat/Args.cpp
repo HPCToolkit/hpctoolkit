@@ -152,7 +152,7 @@ Options: Source Structure Correlation:\n\
 Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
                        Specify Experiment database name <db-path>.\n\
-                       {./"Analysis_DB_DIR"}\n\
+                       {./" Analysis_DB_DIR "}\n\
   --src [yes|no], --source [yes|no]\n\
                        Whether to copy source code files into Experiment\n\
                        database. {yes} By default, hpcprof-flat copies source\n\
@@ -168,11 +168,11 @@ output filename <file> (located within the Experiment database). The output\n\
 is sparse in the sense that it ignores program areas without profiling\n\
 information. (Set <file> to '-' to write to stdout.)\n\
   -x [<file>], --experiment [<file>]\n\
-                       Default. ExperimentXML format. {"Analysis_OUT_DB_EXPERIMENT"}\n\
+                       Default. ExperimentXML format. {" Analysis_OUT_DB_EXPERIMENT "}\n\
                        NOTE: To disable, set <file> to 'no'.\n";
 
 // FIXME: tallent: do we want this?
-//--csv [<file>]       Comma-separated-value format. {"Analysis_OUT_DB_CSV"}\n
+//--csv [<file>]       Comma-separated-value format. {" Analysis_OUT_DB_CSVi "}\n
 //                     Includes flat scope tree and loops. Useful for\n
 //                     downstream external tools.\n";
 

@@ -82,7 +82,7 @@ m4_include(config/hpc-mpiutils.m4)
 # Initialization: 
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [5.3.2],
+AC_INIT([hpctoolkit], [5.3.4-ompt],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -140,38 +140,8 @@ libdir='${exec_prefix}/lib'
 # SVN version
 #-------------------------------------------------
 
-# Append svn revision to PACKAGE_VERSION.
-#
-# If this directory is an svn sandbox, then use svn info (and store
-# the result in a file), else expect the answer to be in the file.
-# Note: svn update changes the revision number, so svn info must take
-# precedence over the file.
-#
-# *** N.B.: since PACKAGE_VERSION is also used in the 'dist' tarball,
-# it is better not to use spaces or special characters ***
-
-version_file="${srcdir}/.svn-revision"
-
-AC_MSG_CHECKING([for svn revision])
-
-svn_revision=`svn info $srcdir 2>/dev/null | grep -e '^Revision' | awk '{ print $2 }'`
-if test -n "${svn_revision}" ; then
-  PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
-  rm -f "$version_file"
-  echo "$svn_revision" > "$version_file"
-elif test -f "$version_file" ; then
-  svn_revision=`cat $version_file`
-  PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
-else
-  svn_revision=0
-fi
-
-AC_MSG_RESULT([$svn_revision])
-
-if test "$svn_revision" = 0 ; then
-  AC_MSG_WARN([unable to find svn revision])
-fi
-
+# Git does not provide linear rev numbers, so we can't append this to
+# the package version (sigh).
 
 AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION],
 	  ["${PACKAGE_VERSION}"],
@@ -751,6 +721,18 @@ HOST_HPCPROF_LDFLAGS="${HOST_HPCPROF_LDFLAGS} ${my_demangle_ldflags}"
 HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
 
 
+# FIXME: Boost >= 1.55 misreads the features of the g++ k1om compiler,
+# so we add these flags as a workaround.  But this should be a compile
+# test for the CXX compiler.
+
+case "$host" in
+  *k1om* )
+      HOST_CXXFLAGS="$HOST_CXXFLAGS -DBOOST_NO_CXX11_ALLOCATOR"
+      HOST_CXXFLAGS="$HOST_CXXFLAGS -DBOOST_NO_CXX11_VARIADIC_TEMPLATES"
+      ;;
+esac
+
+
 #-------------------------------------------------
 # Big or little endian and byteswap
 #-------------------------------------------------
@@ -809,6 +791,68 @@ AC_MSG_NOTICE([use system byteswap.h: $use_byteswap])
 if test "$use_byteswap" = yes ; then
   AC_DEFINE([USE_SYSTEM_BYTESWAP], [1], [Use system byteswap.h])
 fi
+
+
+#-------------------------------------------------
+# CXXFLAGS for std C++11
+#-------------------------------------------------
+
+# Find a CXX flag for standard C++11 and add to CXXFLAGS if needed.
+# We use some C++11 features (auto) in the parseAPI code in
+# src/lib/banal.  Unfortunately, due to include files, we pretty much
+# need this everywhere for C++ code.
+
+AC_ARG_VAR([CXX11_FLAG],
+  [CXX flag for C++11 standard, normally only needed for non-GNU CXX])
+
+c11_list='argvar none -std=c++11 -std=c++0x -std=gnu++0x'
+cxx_c11_avail=no
+cxx_c11_flag=
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+AC_LANG_PUSH([C++])
+
+AC_MSG_CHECKING([CXXFLAGS for C++11 standard])
+
+for opt in $c11_list
+do
+  case "$opt" in
+    argvar ) flag="$CXX11_FLAG" ;;
+    none )   flag=  ;;
+    * )      flag="$opt" ;;
+  esac
+  CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $flag"
+  AC_COMPILE_IFELSE([
+#include <list>
+int mylen(std::list <int> lst)
+{
+  int ans = 0;
+  for (auto it = lst.begin(); it != lst.end(); it++) {
+    ans += 1;
+  }
+  return ans;
+}
+], [ans=yes], [ans=no])
+  if test "$ans" = yes ; then
+    cxx_c11_avail=yes
+    cxx_c11_flag="$flag"
+    break
+  fi
+done
+
+AC_MSG_RESULT([$cxx_c11_flag])
+
+AC_LANG_POP
+
+if test "$cxx_c11_avail" = no ; then
+  AC_MSG_WARN([unable to find CXXFLAGS for std C++11])
+  AC_MSG_ERROR([set the CXX11_FLAG variable and rerun configure])
+fi
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx_c11_flag"
+
+AC_SUBST([cxx_c11_flag])
 
 
 #-------------------------------------------------
@@ -991,9 +1035,6 @@ AC_SUBST([hpc_ext_libs_dir])
 # pass them all to configure.
 #-------------------------------------------------
 
-# External's minimum svn rev number, or else a fatal error.
-EXTERNALS_MIN_REV=4009
-
 ext_cc_path=unknown
 ext_cxx_path=unknown
 ext_wordsize=unknown
@@ -1016,19 +1057,10 @@ if test "${with_externals}" != "no"; then
   AC_MSG_NOTICE([using externals tree: $with_externals])
   externals_root=`( cd "$with_externals" && pwd )`
   . "$ext_file"
-  AC_MSG_NOTICE([externals svn revision: $ext_version])
-  if test "$ext_version" -eq 0 ; then
-    AC_MSG_WARN([missing externals svn revision number])
-    ext_warning=' (warning: missing externals svn revision)'
-  elif test "$ext_version" -lt "$EXTERNALS_MIN_REV" ; then
-    AC_MSG_ERROR([externals tree too old, update to revision $EXTERNALS_MIN_REV or later])
-  fi
   use_externals=yes
-  externals_mesg="${ext_version}${ext_warning}"
 else
   AC_MSG_WARN([not using --with-externals])
   use_externals=no
-  externals_mesg=no
   warn_no_externals=yes
 fi
 
@@ -1530,25 +1562,44 @@ AC_SUBST([OPT_INSTALL_MONITOR])
 # Check for Open Analysis (CFG builder, etc.)
 #-------------------------------------------------
 
-AC_MSG_CHECKING([for OpenAnalysis])
-
 OA=no
+OA_IFLAGS=
+OA_LDFLAGS=
+OA_AVAIL=no
+
 if test "$use_externals" = yes ; then
   OA="$ext_open_analysis_prefix"
 fi
 
 AC_ARG_WITH([open-analysis],
-  AS_HELP_STRING([--with-open-analysis=PATH],
-                 [use given OpenAnalysis installation]),
-  [if test $withval != no; then
-     OA=${withval}
-   fi],
+  [AS_HELP_STRING([--with-open-analysis=PATH],
+      [path to OpenAnalysis install directory])],
+  [OA="$withval"],
   [])
 
-OA_IFLAGS="-DOA_IRHANDLETYPE_SZ64 -I${OA}/include"
-OA_LDFLAGS="-L${OA}/lib -lOAsz64"
+AC_MSG_CHECKING([for OpenAnalysis])
 
-AC_MSG_RESULT([${OA}])
+case "$OA" in
+  /* )
+    if test -f "${OA}/include/OpenAnalysis/Utils/RIFG.hpp" \
+       && test -f "${OA}/lib/libOAsz64.a"
+    then :
+    else
+      AC_MSG_ERROR([invalid OpenAnalysis directory: $OA])
+    fi
+    OA_IFLAGS="-DOA_IRHANDLETYPE_SZ64 -I${OA}/include"
+    OA_LDFLAGS="${OA}/lib/libOAsz64.a"
+    OA_AVAIL=yes
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([OpenAnalysis directory must be absolute path: $OA])
+    ;;
+esac
+
+AC_MSG_RESULT([$OA])
+
 AC_SUBST([OA_IFLAGS])
 AC_SUBST([OA_LDFLAGS])
 
@@ -1760,15 +1811,16 @@ fi
 
 AC_ARG_WITH([symtabAPI],
   [AS_HELP_STRING([--with-symtabAPI=PATH],
-  	    [path to symtabAPI install directory])],
+      [path to symtabAPI install directory])],
   [SYMTABAPI="$withval"],
   [])
 
-AC_MSG_CHECKING([for symtabAPI])
-
 SYMTABAPI_COPY=no
 SYMTABAPI_COPY_DYN=no
+SYMTABAPI_COPY_PARSE=no
 SYMTABAPI_LIB_LIST=
+
+AC_MSG_CHECKING([for symtabAPI])
 
 case "${SYMTABAPI}" in
   /* )
@@ -1792,16 +1844,31 @@ case "${SYMTABAPI}" in
     ;;
 esac
 
+AC_MSG_RESULT([$SYMTABAPI])
+
+AC_MSG_CHECKING([for parseAPI])
+
+PARSEAPI_AVAIL=no
+
+if test "$SYMTABAPI" != no \
+   && test -f "${SYMTABAPI}/include/CFG.h" \
+   && test -f "${SYMTABAPI}/lib/libparseAPI.so"
+then
+  SYMTABAPI_COPY_PARSE=yes
+  PARSEAPI_AVAIL=yes
+fi
+
+AC_MSG_RESULT([$PARSEAPI_AVAIL])
+
 SYMTABAPI_INC="${SYMTABAPI}/include"
 SYMTABAPI_LIB="${SYMTABAPI}/lib"
-
-AC_MSG_RESULT([$SYMTABAPI])
 
 AC_SUBST([SYMTABAPI_INC])
 AC_SUBST([SYMTABAPI_LIB])
 AC_SUBST([SYMTABAPI_LIB_LIST])
 AC_SUBST([SYMTABAPI_COPY])
 AC_SUBST([SYMTABAPI_COPY_DYN])
+AC_SUBST([SYMTABAPI_COPY_PARSE])
 
 
 #-------------------------------------------------
@@ -2166,56 +2233,143 @@ AM_CONDITIONAL([OPT_ENABLE_HPCSERVER], [test "$enable_hpcserver" = yes])
 
 
 #-------------------------------------------------
-# enable-inline:
+# hpcstruct: CFG support from OpenAnalysis and ParseAPI
 #-------------------------------------------------
 
-# Enable the static inline support from symtabAPI.  This involves
-# linking symtab into hpcstruct and banal.
+# Test symtabAPI/parseAPI for inline function and CFG loop tree
+# support, and test for old or new method for getting an inline
+# function name.
 
-AC_ARG_ENABLE([inline],
-  [AS_HELP_STRING([--enable-inline],
-      [enable static inline support, requires linking symtab
-       into hpcstruct (default check)])],
-  [],
-  [enable_inline=check])
+ORIG_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
+AC_LANG_PUSH([C++])
 
-AC_MSG_CHECKING([symtabAPI for static inline support])
+#
+# Test for inline function support, getInlinedParent().
+#
+inline_avail=no
 
-if test "$enable_inline" = no ; then
-  enable_inline=disabled
-else
-  ORIG_CXXFLAGS="$CXXFLAGS"
-  ORIG_LIBS="$LIBS"
-  AC_LANG_PUSH([C++])
-  CXXFLAGS="-I${BOOST_INC} -I${SYMTABAPI_INC}"
-  LIBS="-L${LIBELF_LIB} -L${LIBDWARF_LIB} -L${SYMTABAPI_LIB}"
-  LIBS="${LIBS} ${SYMTABAPI_LIB_LIST} -ldwarf -lelf"
-  LIBS="${LIBS} ${GNUBINUTILS_LDFLAGS} -liberty"
+AC_MSG_CHECKING([symtabAPI for inline function support])
 
-  AC_LINK_IFELSE([
+if test "$SYMTABAPI" != no
+then
+  AC_COMPILE_IFELSE([
 #include <iostream>
 #include <Symtab.h>
 #include <Function.h>
 using namespace Dyninst;
 using namespace SymtabAPI;
 using namespace std;
-int main()
+void get_parent(FunctionBase * func)
 {
-  FunctionBase *func = (FunctionBase *) 0x0400400;
   FunctionBase *parent = func->getInlinedParent();
   cout << parent;
-  return 0;
 }
-], [enable_inline=yes], [enable_inline=no])
-
-  AC_LANG_POP()
-  CXXFLAGS="$ORIG_CXXFLAGS"
-  LIBS="$ORIG_LIBS"
+], [inline_avail=yes], [inline_avail=no])
 fi
 
-AC_MSG_RESULT([$enable_inline])
+AC_MSG_RESULT([$inline_avail])
 
-AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_SYMTAB], [test "$enable_inline" = yes])
+#
+# Test if symtabAPI is using the new method for inline function names.
+# Symtab 9.0 uses a new method (getName) for function names which is
+# incompatible with the old method (getAllPrettyNames).
+#
+new_symtab_getname=no
+
+AC_MSG_CHECKING([symtabAPI for new function name iterator])
+
+if test "$inline_avail" = yes
+then
+  AC_COMPILE_IFELSE([
+#include <iostream>
+#include <Symtab.h>
+#include <Function.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+void get_name(FunctionBase * func)
+{
+  std::cout << func->getName();
+}
+], [new_symtab_getname=yes], [new_symtab_getname=no])
+fi
+
+AC_MSG_RESULT([$new_symtab_getname])
+
+#
+# Test if symtabAPI includes parseAPI CFG loop support.
+#
+parseapi_avail=no
+
+AC_MSG_CHECKING([parseAPI for CFG loop support])
+
+if test "$inline_avail" = yes && test "$PARSEAPI_AVAIL" = yes
+then
+  AC_COMPILE_IFELSE([
+#include <iostream>
+#include <vector>
+#include <Symtab.h>
+#include <Function.h>
+#include <CFG.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace ParseAPI;
+using namespace std;
+void get_blocks(LoopTreeNode * node)
+{
+  Loop * loop = node->loop;
+  vector <Block *> bvec;
+  loop->getLoopBasicBlocks(bvec);
+  std::cout << bvec.size();
+}
+], [parseapi_avail=yes], [parseapi_avail=no])
+fi
+
+AC_MSG_RESULT([$parseapi_avail])
+
+AC_LANG_POP
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+#
+# Use OpenAnalysis or ParseAPI or both as available for building CFG's
+# in hpcstruct.  Warn if neither is available.
+#
+# OpenAnalysis can be disabled with '--without-open-analysis' and
+# ParseAPI can be disabled with '--disable-parseapi'.
+#
+
+AC_ARG_ENABLE([parseapi],
+  [AS_HELP_STRING([--disable-parseapi],
+      [disable using parseapi for building control flow graphs in
+       hpcstruct (default is to use if available)])],
+  [],
+  [enable_parseapi=use])
+
+if test "$enable_parseapi" = no ; then
+  parseapi_avail=no
+fi
+
+cfg_mesg=
+if test "$OA_AVAIL" = yes ; then
+  cfg_mesg='open-analysis'
+fi
+if test "$parseapi_avail" = yes ; then
+  cfg_mesg="$cfg_mesg parseapi"
+fi
+cfg_mesg=`echo $cfg_mesg`
+
+if test "$OA_AVAIL" = no && test "$parseapi_avail" = no ; then
+  AC_MSG_WARN([unable to build hpcstruct: no open-analysis or parseapi])
+  cfg_mesg=no
+fi
+
+if test "$new_symtab_getname" = yes ; then
+  AC_DEFINE([SYMTAB_NEW_NAME_ITERATOR], [1], [Use new symtabAPI getName iterator])
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_SYMTAB], [test "$inline_avail" = yes])
+AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_PARSEAPI], [test "$parseapi_avail" = yes])
+AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_OA], [test "$OA_AVAIL" = yes])
 
 # Hpcstruct gets a launch script if (1) Xed is shared (some versions
 # of MIC), or (2) use symtab for inline support.
@@ -2224,27 +2378,11 @@ hpcstruct_launch_script=no
 if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
   hpcstruct_launch_script=yes
 fi
-if test "$enable_inline" = yes ; then
+if test "$inline_avail" = yes ; then
   hpcstruct_launch_script=yes
 fi
 
 AM_CONDITIONAL(OPT_HPCSTRUCT_LAUNCH_SCRIPT, [test "$hpcstruct_launch_script" = yes])
-
-
-# Temporary option to allow using the new symtab from git.  The new
-# version has an incompatible change in the iterator for getting a
-# function's list of pretty names.
-
-AC_ARG_ENABLE([new-symtab],
-  [AS_HELP_STRING([--enable-new-symtab],
-      [temporary option to allow using new symtabAPI from git,
-       requires -std=c++11 (default no)])],
-  [], [enable_new_symtab=no])
-
-if test "$enable_new_symtab" = yes ; then
-  AC_MSG_NOTICE([using new symtabAPI from git])
-  AC_DEFINE([SYMTAB_NEW_NAME_ITERATOR], [1], [Use new symtabAPI pretty names iterator])
-fi
 
 
 #-------------------------------------------------
@@ -3050,7 +3188,6 @@ AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([HPCToolkit summary])
 AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([  HPCToolkit version: ${PACKAGE_VERSION}])
-AC_MSG_NOTICE([  Externals revision: ${externals_mesg}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  prefix: $prefix])
 AC_MSG_NOTICE([  build:  $build])
@@ -3073,6 +3210,7 @@ AC_MSG_NOTICE([  C++ compiler: $CXX_VERSION])
 AC_MSG_NOTICE([  Path:      $CXX_PATH])
 AC_MSG_NOTICE([  CXX:       '${CXX}'])
 AC_MSG_NOTICE([  CXXFLAGS:  '${CXXFLAGS} ${HOST_CXXFLAGS}'])
+AC_MSG_NOTICE([  C++11:     '${cxx_c11_flag}'])
 AC_MSG_NOTICE([  CCAS:      '${CCAS}'])
 AC_MSG_NOTICE([  CCASFLAGS: '${CCASFLAGS}'])
 AC_MSG_NOTICE([  LDFLAGS:   '${LDFLAGS}'])
@@ -3097,7 +3235,7 @@ AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
-AC_MSG_NOTICE([  inline:       ${enable_inline}])
+AC_MSG_NOTICE([  inline:       ${inline_avail}])
 
 if test "$warn_config_site" = yes ; then
   AC_MSG_NOTICE([])
@@ -3118,8 +3256,8 @@ if test "$warn_no_externals" = yes ; then
   AC_MSG_NOTICE([])
   AC_MSG_WARN([Not using hpctoolkit-externals.])
   AC_MSG_WARN([Unless you're building hpctoolkit only for docs or make dist,])
-  AC_MSG_WARN([this is probably an error.  First, svn checkout, configure])
-  AC_MSG_WARN([and build externals and then reconfigure hpctoolkit with:])
+  AC_MSG_WARN([this is probably an error.  First, checkout, configure and])
+  AC_MSG_WARN([build externals and then reconfigure hpctoolkit with:])
   AC_MSG_WARN([--with-externals=/path/to/externals/install/directory])
 fi
 
