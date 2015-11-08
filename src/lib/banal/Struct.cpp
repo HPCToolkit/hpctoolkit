@@ -638,11 +638,16 @@ makeStructure_ParseAPI(BinUtil::LM * lm,
   }
   delete pvec;
 
+#if 0
   // 3. Normalize
   if (doNormalizeTy != NormTy_None) {
     bool doNormalizeUnsafe = (doNormalizeTy == NormTy_All);
     normalize(lmStruct, doNormalizeUnsafe);
   }
+#endif
+
+  // FIXME: write this directly in StmtInfo and TreeNode format.
+  coalesceDuplicateStmts(lmStruct, false);
 
   // 4. Write CFG in dot (graphviz) format to file.
   if (dotFile != NULL) {
