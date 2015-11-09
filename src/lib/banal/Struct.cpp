@@ -2039,12 +2039,14 @@ public:
 class ScopeInfo {
 public:
   long  file_index;
+  SrcFile::ln line;
   bool  is_alien;
   long  proc_index;
 
-  ScopeInfo(long file, bool alien = false, long proc = 0)
+  ScopeInfo(long file, SrcFile::ln ln, bool alien = false, long proc = 0)
   {
     file_index = file;
+    line = ln;
     is_alien = alien;
     proc_index = proc;
   }
@@ -2106,8 +2108,12 @@ buildProcStructure(ProcInfo pinfo, ProcNameMgr * nameMgr)
   cout << "\nend proc:  '" << func->name() << "'\n";
 #endif
 
-  // convert inline tree to Prof::Struct scope tree
-  makeScopeTree(procScope, ScopeInfo(file_index), &root, strTab, nameMgr);
+  // convert inline tree to Prof::Struct scope tree.  need to preserve
+  // the original procScope begin line, or else it gets reset too low.
+  SrcFile::ln beg_line = procScope->begLine();
+
+  makeScopeTree(procScope, ScopeInfo(file_index, beg_line), &root, strTab, nameMgr);
+  procScope->begLine(beg_line);
 
   // fixme: may or may not use these
 #if 0
@@ -2557,22 +2563,29 @@ makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
   long sc_base = strTab.str2index(FileUtil::basename(sc_filenm.c_str()));
 
   // add terminal statements.  if the file name does not match the
-  // enclosing scope, then add a single guard alien.
+  // enclosing scope, or if the stmt's line number comes before its
+  // scope, then add a single guard alien.
   //
   for (auto sit = tree->stmtMap.begin(); sit != tree->stmtMap.end(); ++sit) {
     StmtInfo *info = sit->second;
     VMA vma = info->vma;
     long myfile = info->file_index;
     long mybase = info->base_index;
-    SrcFile::ln line = info->line_num;
-    long proc = (scinfo.is_alien) ? scinfo.proc_index : guard_index;
+    SrcFile::ln myline = info->line_num;
     scope = enclScope;
 
-    if (scinfo.is_alien || (myfile != empty_index && mybase != sc_base)) {
-      scope = findAlienScope(scope, alienMap, myfile, line, proc, strTab, nameMgr);
+    if (scinfo.is_alien) {
+      // target alien, second half of callsite alien
+      scope = findAlienScope(scope, alienMap, myfile, myline, scinfo.proc_index,
+			     strTab, nameMgr);
+    }
+    else if (myfile != empty_index && (mybase != sc_base || myline < scinfo.line)) {
+      // guard alien
+      scope = findAlienScope(scope, alienMap, myfile, myline, guard_index,
+			     strTab, nameMgr);
     }
 
-    new Prof::Struct::Stmt(scope, line, line, vma, vma + info->len);
+    new Prof::Struct::Stmt(scope, myline, myline, vma, vma + info->len);
   }
 
   // add loops, located by their header.  again, if the file name does
@@ -2583,18 +2596,24 @@ makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
     long myfile = (*lit)->file_index;
     long mybase = (*lit)->base_index;
     string filenm = strTab.index2str(myfile);
-    SrcFile::ln line = (*lit)->line_num;
-    long proc = (scinfo.is_alien) ? scinfo.proc_index : guard_index;
+    SrcFile::ln myline = (*lit)->line_num;
     scope = enclScope;
 
-    if (scinfo.is_alien || (myfile != empty_index && mybase != sc_base)) {
-      scope = findAlienScope(scope, alienMap, myfile, line, proc, strTab, nameMgr);
+    if (scinfo.is_alien) {
+      // target alien, second half of callsite alien
+      scope = findAlienScope(scope, alienMap, myfile, myline, scinfo.proc_index,
+			     strTab, nameMgr);
+    }
+    else if (myfile != empty_index && (mybase != sc_base || myline < scinfo.line)) {
+      // guard alien
+      scope = findAlienScope(scope, alienMap, myfile, myline, guard_index,
+			     strTab, nameMgr);
     }
 
-    Prof::Struct::Loop *loop = new Prof::Struct::Loop(scope, filenm, line, line);
+    Prof::Struct::Loop *loop = new Prof::Struct::Loop(scope, filenm, myline, myline);
     loop->vmaSet().insert(vma, vma + 1);
 
-    makeScopeTree(loop, ScopeInfo(myfile), (*lit)->node, strTab, nameMgr);
+    makeScopeTree(loop, ScopeInfo(myfile, myline), (*lit)->node, strTab, nameMgr);
   }
 
   // add inline subtrees.  always add a call site alien above the
@@ -2617,7 +2636,7 @@ makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
     // add the call site alien with no proc name.
     scope = new Prof::Struct::Alien(scope, filenm, "", "", line, line);
 
-    makeScopeTree(scope, ScopeInfo(myfile, true, flp.proc_index),
+    makeScopeTree(scope, ScopeInfo(myfile, 0, true, flp.proc_index),
 		  nit->second, strTab, nameMgr);
   }
 }
