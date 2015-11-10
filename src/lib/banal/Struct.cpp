@@ -2116,7 +2116,7 @@ buildProcStructure(ProcInfo pinfo, ProcNameMgr * nameMgr)
   procScope->begLine(beg_line);
 
   // fixme: may or may not use these
-#if 0
+#if 1
   coalesceAlienChildren(procScope);
   renumberAlienScopes(procScope);
 #endif
