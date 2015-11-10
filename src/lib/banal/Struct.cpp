@@ -843,8 +843,11 @@ buildLMSkeleton(Prof::Struct::LM* lmStrct,
       pvec->push_back(ProcInfo(pStrct, p, func));
     }
     else {
+      // these are mostly from plt headers on ppc64
+#if 0
       DIAG_WMsgIf(1, "no matching BinUtil::Proc for function '" << func->name()
 		  << "' at address 0x" << std::hex << func->addr() << std::dec);
+#endif
     }
   }
 
