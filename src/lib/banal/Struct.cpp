@@ -684,10 +684,10 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
 
   // Select default if --cfg was not specified.
   if (cfgRequest == BAnal::Struct::CFG_DEFAULT) {
-#ifdef BANAL_USE_OA
-    cfgRequest = BAnal::Struct::CFG_OA;
-#else
+#ifdef BANAL_USE_PARSEAPI
     cfgRequest = BAnal::Struct::CFG_PARSEAPI;
+#else
+    cfgRequest = BAnal::Struct::CFG_OA;
 #endif
   }
 
