@@ -554,8 +554,9 @@ Currently, it is only possible to generate scatter plots for metrics directly co
 % ===========================================================================
 \section{Filtering Tree nodes}
 
-It is sometimes useful to omit uninterested nodes in a CCT so that users can just focus on the important parts of the code. 
-For instance, users may need to hide all call chains within an OpenMP runtime, and just show all nodes and metrics from their own application. 
+It is sometimes useful to omit uninterested nodes in a CCT so that users can just focus on important parts of the code. 
+For instance, users may want to hide all nodes associated with OpenMP runtime to better , 
+and just show all nodes and metrics from their own application. 
 For this purpose, \hpcviewer{} provides \emph{filtering} to elide nodes that match a certain filter patterns.
 There are three types of filter: ``\emph{self only}'' to omit the matched nodes, 
 ``\emph{children only}'' to exclude only the children of the matched nodes, and ``\emph{self and children}'' to
@@ -566,7 +567,7 @@ exclude the matched nodes including all its children.
   \begin{subfigure}{.45\textwidth}
     \centering
     \includegraphics[scale=.4]{fig/hpcviewer-filter-cct.pdf}
-    \caption{Example of a CCT tree. \texttt{Main} is the root of the tree, and has inclusive cost 9 and exclusive cost 1.}
+    \caption{an original CCT tree.}
     \label{fig:filter-cct}
   \end{subfigure}%
   \qquad
@@ -594,8 +595,9 @@ Nodes \texttt{C} and its children are elided, and their exclusive cost is augmen
     \label{fig:filter-selfchildren}
   \end{subfigure}
 
-  \caption{Example of applying three different types of filter on node \texttt{C} against the tree from Figure~\ref{fig:filter-cct}. Each node is attributed with two boxes on its right. 
-The leftmost box signifies the node's inclusive cost, while the right box signifies the exclusive cost.}
+  \caption{Example of CCTs: Figure~\ref{fig:filter-cct} shows the original CCT, Figure~\ref{fig:filter-self} shows the result of \emph{self only} filter,
+	   Figure~\ref{fig:filter-children} shows the result of \emph{children only} filter, and Figure~\ref{fig:filter-selfchildren} shows the result of \emph{self and children} filter.
+ Each node is attributed with two boxes on its right.  The left box signifies the node's inclusive cost, while the right box signifies the exclusive cost.}
   \label{fig:filter}
 \end{figure}
 \begin{figure}
@@ -617,8 +619,11 @@ This type is useful to exclude any unnecessary details such as glibc or malloc f
 Figure~\ref{fig:filter-selfchildren} shows that filtering node \texttt{C} will elide the node and its children (nodes \texttt{D} and \texttt{E}). 
 The exclusive cost of the elided nodes is augmented to node \texttt{A}.
 
-On \hpcviewer{}, the filter feature can be accessed by clicking the menu "Filter" and then submenu "Show filter property" which then will show the filter property window as shown in Figure~\ref{fig:filter-window}.
-Users can specify multiple filter patterns and enable/disable some of them by clicking into the checkbox on the left of the pattern.
+The filter feature in \hpcviewer{} can be accessed by clicking the menu "Filter" and then submenu "Show filter property", which will then show a  Filter property window (Figure~\ref{fig:filter-window}).
+The window consists of a table of filters, and a group of action buttons: \emph{add} to create a new filter; \emph{edit} to modify a selected filter; and \emph{delete} to remove a set of selected filters..
+The table comprises of two columns: the left one to display a filter's switch whether the filter is enabled or disabled, and a 'glob-like' filter pattern; and the other one to show the type of pattern (self only, children only or self and children).
+If the checkbox is checked, is signifies the filter is enabled; otherwise the filter is disabled.
+
 
 % ===========================================================================
 % ===========================================================================
