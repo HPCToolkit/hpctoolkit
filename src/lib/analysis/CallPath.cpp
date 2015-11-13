@@ -581,7 +581,12 @@ overlayStaticStructure(Prof::CCT::ANode* node,
       Prof::CCT::ANode* scope_frame =
 	demandScopeInFrame(n_dyn, scope_strct, *strctToCCTMap);
 
+      // FIXME: currently, this breaks prof-mpi with these messages:
+      // Prof::CCT::ANodeSortedIterator::cmpByDynInfo: cannot compare
+      // CCT::ANode::mergeDeep: adding not permitted
+#if 0
       clipDuplicateContext(scope_frame, n);
+#endif
 
       // 3. Link 'n' to its parent
       n->unlink();
