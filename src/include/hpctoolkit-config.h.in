@@ -157,7 +157,7 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
-/* Use new symtabAPI pretty names iterator */
+/* Use new symtabAPI getName iterator */
 #undef SYMTAB_NEW_NAME_ITERATOR
 
 /* libunwind is the specified unwinder */
