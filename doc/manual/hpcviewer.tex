@@ -573,7 +573,7 @@ If there are more than one selected threads, then the metrics are the average of
 % ===========================================================================
 % ===========================================================================
 \section{Filtering Tree nodes}
-
+\label{sec:filter}
 It is sometimes useful to omit uninterested nodes in a CCT so that users can just focus on important parts. 
 For instance, you may want to hide all nodes associated with OpenMP runtime and just show all nodes and metrics from the application. 
 For this purpose, \hpcviewer{} provides \emph{filtering} to elide nodes that match a filter pattern.
@@ -715,7 +715,7 @@ For the metric pane, \hpcviewer{} has some convenient features:
   The icon \includegraphics[scale=.7]{fig/hpcviewer-button-checkcolumns.png} above the metric pane will bring up the column selection dialog shown in Figure~\ref{fig:hpcviewer-hide-show-columns}.
 
 \begin{figure}[t]
-\centering{\includegraphics[width=0.8\textwidth]{fig/hpcviewer-dialog-checkcolumns.png}}
+\centering{\includegraphics[width=0.6\textwidth]{fig/hpcviewer-dialog-checkcolumns.png}}
 \caption{Hide/Show columns dialog box}
 \label{fig:hpcviewer-hide-show-columns}
 \end{figure}
@@ -736,7 +736,7 @@ Otherwise, the configuration will be applied only on the current view.
 
 \section{Menus}
 
-\hpcviewer{} provides three main menus:
+\hpcviewer{} provides five main menus:
 
 % ==========================================================
 % ==========================================================
@@ -774,6 +774,16 @@ Currently \hpcviewer{} does not support storing a merged database into a file.
 % ==========================================================
 % ==========================================================
 
+\subsection{Filter}
+This menu only contains one submenu:
+\begin{itemize}
+ \item \textbf{Show filter property}
+  Open a filter property window which lists a set of filters and its properties (Section~\ref{sec:filter}).
+\end{itemize}
+
+% ==========================================================
+% ==========================================================
+
 \subsection{View}
 This menu is only visible if at least one database is loaded.
 All actions in this menu are intended primarily for tool developer use. 
@@ -801,6 +811,14 @@ By default, the menu is hidden. Once you open a database, the menu is then shown
   \end{itemize}
 
 \end{itemize}
+% ==========================================================
+% ==========================================================
+
+\subsection{Window}
+This menu contains only one submenu to reset the position of the views to the original default position.
+Since \hpcviewer{} is built on top of Eclipse, sometimes Eclipse fails to reposition its views due to its bugs.
+A work-around to fix this issue is an ongoing work.
+
 % ==========================================================
 % ==========================================================
 
