@@ -167,22 +167,33 @@ namespace Struct {
 // This is how we combine the open analysis and parseAPI cases to
 // simplify passing different arguments.
 
+#ifdef BANAL_USE_PARSEAPI
+typedef std::list <ParseAPI::Function *> FuncList;
+#endif
+
 class ProcInfo {
 public:
   Prof::Struct::Proc * proc;
   BinUtil::Proc * proc_bin;
 #ifdef BANAL_USE_PARSEAPI
-  ParseAPI::Function * proc_parse;
+  FuncList * func_list;
 #endif
 
 #ifdef BANAL_USE_PARSEAPI
-  ProcInfo(Prof::Struct::Proc *p, BinUtil::Proc *pb, ParseAPI::Function *f)
-  { proc = p;  proc_bin = pb;  proc_parse = f; }
+  ProcInfo(Prof::Struct::Proc *p, BinUtil::Proc *pb, FuncList *fl)
+  {
+    proc = p;
+    proc_bin = pb;
+    func_list = fl;
+  }
 #endif
 
 #ifdef BANAL_USE_OA
   ProcInfo(Prof::Struct::Proc *p, BinUtil::Proc *pb)
-  { proc = p;  proc_bin = pb; }
+  {
+    proc = p;
+    proc_bin = pb;
+  }
 #endif
 };
 
@@ -203,7 +214,7 @@ buildLMSkeleton(Prof::Struct::LM* lmStrct,
 		ProcNameMgr* procNmMgr);
 
 static Prof::Struct::Proc *
-buildProcStructure(ProcInfo pinfo, ProcNameMgr* procNmMgr);
+doFunctionList(ProcInfo pinfo, StringTable &, ProcNameMgr* procNmMgr);
 #endif
 
 #ifdef BANAL_USE_OA
@@ -612,6 +623,7 @@ makeStructure_ParseAPI(BinUtil::LM * lm,
 		       const std::string& dbgProcGlob)
 {
   Prof::Struct::LM* lmStruct = new Prof::Struct::LM(lm->name(), NULL);
+  StringTable strTab;
 
   Symtab * symtab = Inline::openSymtab(lm->name());
 
@@ -634,7 +646,12 @@ makeStructure_ParseAPI(BinUtil::LM * lm,
     BinUtil::Proc* p = it->proc_bin;
 
     DIAG_Msg(2, "Building scope tree for [" << p->name()  << "] ... ");
-    buildProcStructure(*it, procNmMgr);
+    doFunctionList(*it, strTab, procNmMgr);
+  }
+
+  // delete pvec and the func lists
+  for (auto it = pvec->begin(); it != pvec->end(); ++it) {
+    delete it->func_list;
   }
   delete pvec;
 
@@ -821,6 +838,9 @@ buildLMSkeleton(Prof::Struct::LM* lmStrct,
 // address.  We still use BinUtil::Proc for the line map info, even in
 // the ParseAPI case.
 //
+// Note: several parseapi functions (targ410aa7) may map to the same
+// binutils procedure, so we create a func list.
+//
 #ifdef BANAL_USE_PARSEAPI
 static ProcInfoVec *
 buildLMSkeleton(Prof::Struct::LM* lmStrct,
@@ -828,6 +848,7 @@ buildLMSkeleton(Prof::Struct::LM* lmStrct,
 		ParseAPI::CodeObject *code_obj,
 		ProcNameMgr* procNmMgr)
 {
+  std::map <BinUtil::Proc *, FuncList *> pmap;
   ProcInfoVec * pvec = new ProcInfoVec;
 
   // iterate over the ParseAPI Functions
@@ -838,9 +859,24 @@ buildLMSkeleton(Prof::Struct::LM* lmStrct,
     BinUtil::Proc *p = lm->findProc((VMA) func->addr());
 
     if (p != NULL) {
-      Prof::Struct::File * fStrct = demandFileNode(lmStrct, p);
-      Prof::Struct::Proc * pStrct = demandProcNode(fStrct, p, procNmMgr);
-      pvec->push_back(ProcInfo(pStrct, p, func));
+      auto pit = pmap.find(p);
+
+      if (pit != pmap.end()) {
+	// two or more parseapi funcs correspond to the same binutils
+	// proc -- add to func_list
+	pit->second->push_back(func);
+      }
+      else {
+	// new binutils proc -- create new ProcInfo, add to pvec, and
+	// add to pmap
+	Prof::Struct::File * fStrct = demandFileNode(lmStrct, p);
+	Prof::Struct::Proc * pStrct = demandProcNode(fStrct, p, procNmMgr);
+	FuncList * flist = new FuncList;
+
+	flist->push_back(func);
+	pvec->push_back(ProcInfo(pStrct, p, flist));
+	pmap[p] = flist;
+      }
     }
     else {
       // these are mostly from plt headers on ppc64
@@ -1983,19 +2019,19 @@ typedef map <VMA, HeaderInfo> HeaderList;
 typedef map <long, Prof::Struct::ACodeNode *> AlienScopeMap;
 
 static LoopList *
-doLoopTree(ProcInfo, BlockSet &, LoopTreeNode *,
+doLoopTree(ProcInfo, ParseAPI::Function *, BlockSet &, LoopTreeNode *,
 	   StringTable &, ProcNameMgr *);
 
 static TreeNode *
-doLoopLate(ProcInfo, BlockSet &, Loop *, const string &,
+doLoopLate(ProcInfo, ParseAPI::Function *, BlockSet &, Loop *, const string &,
 	   StringTable &, ProcNameMgr *);
 
 static void
-doBlock(ProcInfo, BlockSet &, Block *, TreeNode *,
+doBlock(ProcInfo, ParseAPI::Function *, BlockSet &, Block *, TreeNode *,
 	StringTable &, ProcNameMgr *);
 
 static LoopInfo *
-findLoopHeader(ProcInfo, TreeNode *, Loop *, const string &,
+findLoopHeader(ProcInfo, ParseAPI::Function *, TreeNode *, Loop *, const string &,
 	       StringTable &, ProcNameMgr *);
 
 static void
@@ -2007,7 +2043,8 @@ static string
 debugPrettyName(const string &);
 
 static void
-debugLoop(ProcInfo, Loop *, const string &, vector <Edge *> &, HeaderList &);
+debugLoop(ProcInfo, ParseAPI::Function *, Loop *, const string &,
+	  vector <Edge *> &, HeaderList &);
 
 static void
 debugInlineTree(TreeNode *, LoopInfo *, StringTable &, int, bool);
@@ -2057,58 +2094,73 @@ public:
 
 //****************************************************************************
 
+// One binutils procedure may contain several parseapi functions.
+// Assemble the parseapi funcs as one proc scope object.
+//
 static Prof::Struct::Proc *
-buildProcStructure(ProcInfo pinfo, ProcNameMgr * nameMgr)
+doFunctionList(ProcInfo pinfo, StringTable & strTab, ProcNameMgr * nameMgr)
 {
   Prof::Struct::Proc * procScope = pinfo.proc;
   Prof::Struct::File * file = dynamic_cast <Prof::Struct::File *> (procScope->parent());
+  FuncList * func_list = pinfo.func_list;
   string fname = file->name();
-
-  ParseAPI::Function * func = pinfo.proc_parse;
-  StringTable strTab;
-  TreeNode root;
   long file_index = strTab.str2index(fname);
-
-#if DEBUG_CFG_SOURCE
-  cout << "\n------------------------------------------------------------\n"
-       << "func:  0x" << hex << func->addr() << dec << "  '" << func->name() << "'\n";
-#endif
-
-  // make a map of visited blocks
-  const ParseAPI::Function::blocklist & blist = func->blocks();
+  long num_funcs = func_list->size();
+  TreeNode root;
   BlockSet visited;
 
-  for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
-    Block * block = *bit;
-    visited[block] = false;
-  }
-
-  // traverse the loop (Tarjan) tree
-  LoopList *llist = doLoopTree(pinfo, visited, func->getLoopTree(), strTab, nameMgr);
+  // one binutils proc may contain several parseapi funcs
+  long num = 0;
+  for (auto fit = func_list->begin(); fit != func_list->end(); ++fit)
+  {
+    ParseAPI::Function * func = *fit;
+    num++;
 
 #if DEBUG_CFG_SOURCE
-  cout << "\nnon-loop blocks:\n";
+    cout << "\n------------------------------------------------------------\n"
+	 << "func:  0x" << hex << func->addr() << dec
+	 << "  (" << num << "/" << num_funcs << ")"
+	 << "  bin='" << pinfo.proc_bin->name()
+	 << "'  parse='" << func->name() << "'\n";
 #endif
 
-  // process any blocks not in a loop
-  for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
-    Block * block = *bit;
-    if (! visited[block]) {
-      doBlock(pinfo, visited, block, &root, strTab, nameMgr);
+    // add blocks from this function
+    const ParseAPI::Function::blocklist & blist = func->blocks();
+
+    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+      Block * block = *bit;
+      if (visited.find(block) == visited.end()) {
+	visited[block] = false;
+      }
+    }
+
+    // traverse the loop (Tarjan) tree
+    LoopList *llist = doLoopTree(pinfo, func, visited, func->getLoopTree(), strTab, nameMgr);
+
+#if DEBUG_CFG_SOURCE
+    cout << "\nnon-loop blocks:\n";
+#endif
+
+    // process any blocks not in a loop
+    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+      Block * block = *bit;
+      if (! visited[block]) {
+	doBlock(pinfo, func, visited, block, &root, strTab, nameMgr);
+      }
+    }
+
+    // merge the loops into the proc's inline tree
+    FLPSeqn empty;
+
+    for (auto it = llist->begin(); it != llist->end(); ++it) {
+      mergeInlineLoop(&root, empty, *it);
     }
   }
 
-  // merge the loops into the proc's inline tree
-  FLPSeqn empty;
-
-  for (auto it = llist->begin(); it != llist->end(); ++it) {
-    mergeInlineLoop(&root, empty, *it);
-  }
-
 #if DEBUG_CFG_SOURCE
-  cout << "\nfinal inline tree:  '" << func->name() << "'\n\n";
+  cout << "\nfinal inline tree:  bin='" << pinfo.proc_bin->name() << "'\n\n";
   debugInlineTree(&root, NULL, strTab, 0, true);
-  cout << "\nend proc:  '" << func->name() << "'\n";
+  cout << "\nend proc:  bin='" << pinfo.proc_bin->name() << "'\n";
 #endif
 
   // convert inline tree to Prof::Struct scope tree.  need to preserve
@@ -2119,7 +2171,7 @@ buildProcStructure(ProcInfo pinfo, ProcNameMgr * nameMgr)
   procScope->begLine(beg_line);
 
   // fixme: may or may not use these
-#if 1
+#if 0
   coalesceAlienChildren(procScope);
   renumberAlienScopes(procScope);
 #endif
@@ -2135,7 +2187,8 @@ buildProcStructure(ProcInfo pinfo, ProcNameMgr * nameMgr)
 // then the list contains one element for each subtree.
 //
 static LoopList *
-doLoopTree(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
+doLoopTree(ProcInfo pinfo, ParseAPI::Function * func,
+	   BlockSet & visited, LoopTreeNode * ltnode,
 	   StringTable & strTab, ProcNameMgr * nameMgr)
 {
   LoopList * myList = new LoopList;
@@ -2149,7 +2202,7 @@ doLoopTree(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
   vector <LoopTreeNode *> clist = ltnode->children;
 
   for (uint i = 0; i < clist.size(); i++) {
-    LoopList *subList = doLoopTree(pinfo, visited, clist[i], strTab, nameMgr);
+    LoopList *subList = doLoopTree(pinfo, func, visited, clist[i], strTab, nameMgr);
 
     for (auto sit = subList->begin(); sit != subList->end(); ++sit) {
       myList->push_back(*sit);
@@ -2168,14 +2221,14 @@ doLoopTree(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
   string loopName = ltnode->name();
   FLPSeqn empty;
 
-  TreeNode * myLoop = doLoopLate(pinfo, visited, loop, loopName, strTab, nameMgr);
+  TreeNode * myLoop = doLoopLate(pinfo, func, visited, loop, loopName, strTab, nameMgr);
 
   for (auto it = myList->begin(); it != myList->end(); ++it) {
     mergeInlineLoop(myLoop, empty, *it);
   }
 
   // reparent the tree and put into LoopInfo format
-  LoopInfo * myInfo = findLoopHeader(pinfo, myLoop, loop, loopName, strTab, nameMgr);
+  LoopInfo * myInfo = findLoopHeader(pinfo, func, myLoop, loop, loopName, strTab, nameMgr);
 
   myList->clear();
   myList->push_back(myInfo);
@@ -2192,13 +2245,14 @@ doLoopTree(ProcInfo pinfo, BlockSet & visited, LoopTreeNode * ltnode,
 // Returns: the raw inline tree for this loop.
 //
 static TreeNode *
-doLoopLate(ProcInfo pinfo, BlockSet & visited, Loop * loop, const string & loopName,
+doLoopLate(ProcInfo pinfo, ParseAPI::Function * func,
+	   BlockSet & visited, Loop * loop, const string & loopName,
 	   StringTable & strTab, ProcNameMgr * nameMgr)
 {
   TreeNode * root = new TreeNode;
 
   DEBUG_MESG("\nbegin loop:  " << loopName << "  '"
-	     << pinfo.proc_parse->name() << "'\n");
+	     << func->name() << "'\n");
 
   // add the inclusive blocks not contained in a subloop
   vector <Block *> blist;
@@ -2206,7 +2260,7 @@ doLoopLate(ProcInfo pinfo, BlockSet & visited, Loop * loop, const string & loopN
 
   for (uint i = 0; i < blist.size(); i++) {
     if (! visited[blist[i]]) {
-      doBlock(pinfo, visited, blist[i], root, strTab, nameMgr);
+      doBlock(pinfo, func, visited, blist[i], root, strTab, nameMgr);
     }
   }
 
@@ -2217,8 +2271,9 @@ doLoopLate(ProcInfo pinfo, BlockSet & visited, Loop * loop, const string & loopN
 // Process one basic block.
 //
 static void
-doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
-	TreeNode * root, StringTable & strTab, ProcNameMgr * nameMgr)
+doBlock(ProcInfo pinfo, ParseAPI::Function * func,
+	BlockSet & visited, Block * block, TreeNode * root,
+	StringTable & strTab, ProcNameMgr * nameMgr)
 {
   if (block == NULL || visited[block]) {
     return;
@@ -2264,11 +2319,11 @@ doBlock(ProcInfo pinfo, BlockSet & visited, Block * block,
 // Returns: detached LoopInfo object.
 //
 static LoopInfo *
-findLoopHeader(ProcInfo pinfo, TreeNode * root,
+findLoopHeader(ProcInfo pinfo, ParseAPI::Function * func, TreeNode * root,
 	       Loop * loop, const string & loopName,
 	       StringTable & strTab, ProcNameMgr * nameMgr)
 {
-  string procName = pinfo.proc_parse->name();
+  string procName = func->name();
 
   //------------------------------------------------------------
   // Step 1 -- build the list of loop exit conditions
@@ -2321,9 +2376,9 @@ findLoopHeader(ProcInfo pinfo, TreeNode * root,
 
 #if DEBUG_CFG_SOURCE
   cout << "\nraw inline tree:  " << loopName
-       << "  '" << pinfo.proc_parse->name() << "'\n\n";
+       << "  '" << func->name() << "'\n\n";
   debugInlineTree(root, NULL, strTab, 0, false);
-  debugLoop(pinfo, loop, loopName, backEdges, clist);
+  debugLoop(pinfo, func, loop, loopName, backEdges, clist);
   cout << "\nsearching inline tree:\n";
 #endif
 
@@ -2490,7 +2545,7 @@ found_level:
 
 #if DEBUG_CFG_SOURCE
   cout << "\nreparented inline tree:  " << loopName
-       << "  '" << pinfo.proc_parse->name() << "'\n\n";
+       << "  '" << func->name() << "'\n\n";
   debugInlineTree(root, info, strTab, 0, false);
 #endif
 
@@ -2734,7 +2789,8 @@ debugStmt(Prof::Struct::Stmt * stmt, VMA vma,
 
 #ifdef BANAL_USE_PARSEAPI
 static void
-debugLoop(ProcInfo pinfo, Loop * loop, const string & loopName,
+debugLoop(ProcInfo pinfo, ParseAPI::Function * func,
+	  Loop * loop, const string & loopName,
 	  vector <Edge *> & backEdges, HeaderList & clist)
 {
   vector <Block *> entBlocks;
@@ -2742,7 +2798,7 @@ debugLoop(ProcInfo pinfo, Loop * loop, const string & loopName,
 
   cout << "\nheader info:  " << loopName
        << ((num_ents == 1) ? "  (reducible)" : "  (irreducible)")
-       << "  '" << pinfo.proc_parse->name() << "'\n\n";
+       << "  '" << func->name() << "'\n\n";
 
   cout << "entry blocks:" << hex;
   for (auto bit = entBlocks.begin(); bit != entBlocks.end(); ++bit) {

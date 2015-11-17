@@ -365,6 +365,12 @@ mergeInlineTree(TreeNode * dest, TreeNode * src)
   mergeInlineStmts(dest, src);
   src->stmtMap.clear();
 
+  // merge the loops
+  for (auto lit = src->loopList.begin(); lit != src->loopList.end(); ++lit) {
+    dest->loopList.push_back(*lit);
+  }
+  src->loopList.clear();
+
   // merge the subtrees
   for (auto sit = src->nodeMap.begin(); sit != src->nodeMap.end(); ++sit) {
     mergeInlineEdge(dest, sit->first, sit->second);
