@@ -839,16 +839,16 @@ buildLMSkeleton(Prof::Struct::LM* lmStrct,
 // the ParseAPI case.
 //
 // Note: several parseapi functions (targ410aa7) may map to the same
-// binutils procedure, so we create a func list.
+// proc scope node and/or binutils proc, so we make a func list.
 //
 #ifdef BANAL_USE_PARSEAPI
 static ProcInfoVec *
-buildLMSkeleton(Prof::Struct::LM* lmStrct,
+buildLMSkeleton(Prof::Struct::LM* lmStruct,
 		BinUtil::LM* lm,
 		ParseAPI::CodeObject *code_obj,
 		ProcNameMgr* procNmMgr)
 {
-  std::map <BinUtil::Proc *, FuncList *> pmap;
+  std::map <Prof::Struct::Proc *, FuncList *> smap;
   ProcInfoVec * pvec = new ProcInfoVec;
 
   // iterate over the ParseAPI Functions
@@ -859,23 +859,23 @@ buildLMSkeleton(Prof::Struct::LM* lmStrct,
     BinUtil::Proc *p = lm->findProc((VMA) func->addr());
 
     if (p != NULL) {
-      auto pit = pmap.find(p);
+      Prof::Struct::File * fStruct = demandFileNode(lmStruct, p);
+      Prof::Struct::Proc * pStruct = demandProcNode(fStruct, p, procNmMgr);
+      auto sit = smap.find(pStruct);
 
-      if (pit != pmap.end()) {
-	// two or more parseapi funcs correspond to the same binutils
-	// proc -- add to func_list
-	pit->second->push_back(func);
+      if (sit != smap.end()) {
+	// two or more parseapi functions map to the same proc scope
+	// node -- add to func_list for this proc
+	sit->second->push_back(func);
       }
       else {
-	// new binutils proc -- create new ProcInfo, add to pvec, and
-	// add to pmap
-	Prof::Struct::File * fStrct = demandFileNode(lmStrct, p);
-	Prof::Struct::Proc * pStrct = demandProcNode(fStrct, p, procNmMgr);
+	// new proc scope node -- create ProcInfo object for this
+	// scope, add to pvec and smap
 	FuncList * flist = new FuncList;
 
 	flist->push_back(func);
-	pvec->push_back(ProcInfo(pStrct, p, flist));
-	pmap[p] = flist;
+	pvec->push_back(ProcInfo(pStruct, p, flist));
+	smap[pStruct] = flist;
       }
     }
     else {
