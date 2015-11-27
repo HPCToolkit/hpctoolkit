@@ -144,7 +144,7 @@ Options: Structure recovery\n\
   --use-binutils       Use binutils as the default binary instruction decoder\n\
                        On x86 default is Intel XED library.\n\
   --cfg <old|new>      Use old (OpenAnalysis) or new (ParseAPI) support\n\
-                       for building Control Flow Graphs (default old).\n\
+                       for building Control Flow Graphs (default new).\n\
 \n\
 Options: Demangling\n\
   --demangle-library <C++ Standard Library path>\n\
