@@ -579,7 +579,7 @@ For instance, you may want to hide all nodes associated with OpenMP runtime and 
 For this purpose, \hpcviewer{} provides \emph{filtering} to elide nodes that match a filter pattern.
 \hpcviewer{} allows  users to define multiple filters, and each filter is associated with a glob pattern~\footnote{A glob pattern specifies which name to be removed by using wildcard characters such as *, ? and +} and a type of filter.
 There are three types of filter: ``\emph{self only}'' to omit the matched nodes, 
-``\emph{children only}'' to exclude only the children of the matched nodes, and ``\emph{self and children}'' to
+``\emph{descendants only}'' to exclude only the subtree of the matched nodes, and ``\emph{self and descendants}'' to
 exclude the matched nodes including all its children.
 
 \begin{figure}
@@ -587,14 +587,14 @@ exclude the matched nodes including all its children.
   \begin{subfigure}{.45\textwidth}
     \centering
     \includegraphics[scale=.4]{fig/hpcviewer-filter-cct.pdf}
-    \caption{an original CCT tree.}
+    \caption{The original CCT tree.}
     \label{fig:filter-cct}
   \end{subfigure}%
   \qquad
   \begin{subfigure}{.45\textwidth}
     \centering
     \includegraphics[scale=.4]{fig/hpcviewer-filter-self.pdf}
-    \caption{The result of applying \emph{self only} filter. % on node \texttt{C} against the CCT from Figure~\ref{fig:filter-cct}. 
+    \caption{The result of applying \emph{self only} filter on node \texttt{C}. % against the CCT from Figure~\ref{fig:filter-cct}. 
 Node \texttt{C} is elided and its children (nodes \texttt{D} and \texttt{E}) are augmented to the parent of node \texttt{C}. 
 The exclusive cost of node \texttt{C} is also augmented to node \texttt{A}.}
     \label{fig:filter-self}
@@ -602,22 +602,22 @@ The exclusive cost of node \texttt{C} is also augmented to node \texttt{A}.}
   \begin{subfigure}{.45\textwidth}
     \centering
     \includegraphics[scale=.4]{fig/hpcviewer-filter-children.pdf}
-    \caption{The result of applying \emph{Children only} filter. % on node \texttt{C} against the CCT from Figure~\ref{fig:filter-cct}.
-The children of node \texttt{C} (nodes \texttt{D} and \texttt{E}) are elided, and their exclusive cost is augmented to node \texttt{C}. }
+    \caption{The result of applying \emph{Descendants only} filter on node \texttt{C}. % against the CCT from Figure~\ref{fig:filter-cct}.
+All the children of node \texttt{C} (nodes \texttt{D} and \texttt{E}) are elided, and the total of their exclusive cost is added to node \texttt{C}. }
     \label{fig:filter-children}
   \end{subfigure}%
   \qquad
   \begin{subfigure}{.45\textwidth}
     \centering
     \includegraphics[scale=.4]{fig/hpcviewer-filter-self_children.pdf}
-    \caption{The result of applying \emph{self and children} filter. % on node \texttt{C} against the CCT from Figure~\ref{fig:filter-cct}. }
-Nodes \texttt{C} and its children are elided, and their exclusive cost is augmented to node \texttt{A} which is the parent of node \texttt{C}.}
+    \caption{The result of applying \emph{self and descendants} filter on node \texttt{C}. %against the CCT from Figure~\ref{fig:filter-cct}. }
+Nodes \texttt{C} and its descendants are elided, and their exclusive cost is augmented to node \texttt{A} which is the parent of node \texttt{C}.}
     \label{fig:filter-selfchildren}
   \end{subfigure}
 
-  \caption{Example of CCTs: Figure~\ref{fig:filter-cct} shows the original CCT, Figure~\ref{fig:filter-self} shows the result of \emph{self only} filter,
-	   Figure~\ref{fig:filter-children} shows the result of \emph{children only} filter, and Figure~\ref{fig:filter-selfchildren} shows the result of \emph{self and children} filter.
- Each node is attributed with two boxes on its right.  The left box represents the node's inclusive cost, while the right box represents an exclusive cost.}
+  \caption{Different results of filtering on node \texttt{C} from Figure~\ref{fig:filter-cct} (the original CCT). Figure~\ref{fig:filter-self} shows the result of \emph{self only} filter,
+	   Figure~\ref{fig:filter-children} shows the result of \emph{descendants only} filter, and Figure~\ref{fig:filter-selfchildren} shows the result of \emph{self and descendants} filter.
+ Each node is attributed with two boxes on its right.  The left box represents the node's inclusive cost, while the right box represents the exclusive cost.}
   \label{fig:filter}
 \end{figure}
 \begin{figure}
@@ -631,18 +631,23 @@ Nodes \texttt{C} and its children are elided, and their exclusive cost is augmen
 Nodes that match filter patterns will be removed, and their children will be augmented to the parent of the elided nodes.
 The exclusive cost of the elided nodes will be augmented into the exclusive cost of the parent of the elided nodes.
 Figure~\ref{fig:filter-self} shows the result of filtering node \texttt{C} against the CCT from Figure~\ref{fig:filter-cct}. Node \texttt{C} is elided and its exclusive cost is augmented into the exclusive cost of its parent (node \texttt{A}). The children of node \texttt{C} (nodes \texttt{D} and \texttt{E}) are now the children of node \texttt{A}.
-\paragraph{Children only}: This filter elides only the children of the matched node, while the matched node itself is not removed. 
+\paragraph{Descendants only}: This filter elides only the children of the matched node, while the matched node itself is not removed. 
 A common usage of this filter is to exclude any call chains under MPI runtimes.
-As shown in Figure~\ref{fig:filter-children}, filtering node \texttt{C} causes nodes \texttt{D} and \texttt{E} to be elided and their cost is augmented to node \texttt{C}. 
-\paragraph{Self and children}: This filter elides both the matched node and all its children. 
+As shown in Figure~\ref{fig:filter-children}, filtering node \texttt{C} causes nodes \texttt{D} and \texttt{E} to be elided and their exclusive cost is augmented to node \texttt{C}. 
+\paragraph{Self and descendants}: This filter elides both the matched node and all its children. 
 This type is useful to exclude any unnecessary details such as glibc or malloc functions.
 Figure~\ref{fig:filter-selfchildren} shows that filtering node \texttt{C} will elide the node and its children (nodes \texttt{D} and \texttt{E}). 
-The exclusive cost of the elided nodes is augmented to node \texttt{A}.
+The total of the exclusive cost of the elided nodes is augmented to the exclusive cost of node \texttt{A}.
 
 The filter feature in \hpcviewer{} can be accessed by clicking the menu "Filter" and then submenu "Show filter property", which will then show a  Filter property window (Figure~\ref{fig:filter-window}).
 The window consists of a table of filters, and a group of action buttons: \emph{add} to create a new filter; \emph{edit} to modify a selected filter; and \emph{delete} to remove a set of selected filters..
 The table comprises of two columns: the left one to display a filter's switch whether the filter is enabled or disabled, and a glob-like filter pattern; and the other one to show the type of pattern (self only, children only or self and children).
 If a checkbox is checked, it signifies the filter is enabled; otherwise the filter is disabled.
+
+You have to be careful when using filter feature since it can result different the tree, thus affects different interpretation of performance analysis.
+If the filtered nodes are children of a ``fake'' procedures (such as \texttt{<program root>} and \texttt{<thread root>}), the exclusive metrics in callers view and flat view can be misleading. 
+This occurs since these views do not show ``fake'' procedures.
+Furthermore, \hpcviewer{} does not verify if the filter will remove all the entire tree or not.
 
 
 % ===========================================================================
