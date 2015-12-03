@@ -213,8 +213,9 @@ buildLMSkeleton(Prof::Struct::LM* lmStrct,
 		ParseAPI::CodeObject *code_obj,
 		ProcNameMgr* procNmMgr);
 
-static Prof::Struct::Proc *
-doFunctionList(ProcInfo pinfo, StringTable &, ProcNameMgr* procNmMgr);
+static void
+doFunctionList(Prof::Struct::LM * lm, ProcInfo pinfo,
+	       StringTable & strTab, ProcNameMgr * nameMgr);
 #endif
 
 #ifdef BANAL_USE_OA
@@ -643,10 +644,7 @@ makeStructure_ParseAPI(BinUtil::LM * lm,
   // Note that a Struct::Proc may be associated with more than one
   // BinUtil::Proc.
   for (auto it = pvec->begin(); it != pvec->end(); ++it) {
-    BinUtil::Proc* p = it->proc_bin;
-
-    DIAG_Msg(2, "Building scope tree for [" << p->name()  << "] ... ");
-    doFunctionList(*it, strTab, procNmMgr);
+    doFunctionList(lmStruct, *it, strTab, procNmMgr);
   }
 
   // delete pvec and the func lists
@@ -2018,6 +2016,13 @@ typedef map <Block *, bool> BlockSet;
 typedef map <VMA, HeaderInfo> HeaderList;
 typedef map <long, Prof::Struct::ACodeNode *> AlienScopeMap;
 
+static Prof::Struct::Proc *
+makeProcScope(Prof::Struct::LM *, ProcInfo, ParseAPI::Function *,
+	      TreeNode *, const ParseAPI::Function::blocklist &, StringTable &);
+
+static TreeNode *
+deleteInlinePrefix(TreeNode *, Inline::InlineSeqn, StringTable &);
+
 static LoopList *
 doLoopTree(ProcInfo, ParseAPI::Function *, BlockSet &, LoopTreeNode *,
 	   StringTable &, ProcNameMgr *);
@@ -2094,27 +2099,54 @@ public:
 
 //****************************************************************************
 
-// One binutils procedure may contain several parseapi functions.
-// Assemble the parseapi funcs as one proc scope object.
-//
-static Prof::Struct::Proc *
-doFunctionList(ProcInfo pinfo, StringTable & strTab, ProcNameMgr * nameMgr)
+// One binutils proc may contain multiple embedded parseapi functions.
+// In that case, we create new proc/file scope nodes for each function
+// and strip the inline prefix at the call source from the embed
+// function.  This often happens with openmp parallel pragmas.
+// 
+static void
+doFunctionList(Prof::Struct::LM * lm, ProcInfo pinfo,
+	       StringTable & strTab, ProcNameMgr * nameMgr)
 {
   Prof::Struct::Proc * procScope = pinfo.proc;
-  Prof::Struct::File * file = dynamic_cast <Prof::Struct::File *> (procScope->parent());
   FuncList * func_list = pinfo.func_list;
-  string fname = file->name();
-  long file_index = strTab.str2index(fname);
   long num_funcs = func_list->size();
-  TreeNode root;
-  BlockSet visited;
+
+  // make a map of internal call edges (from target to source) across
+  // all funcs in this group.  we use this to strip the inline seqn at
+  // the call source from the target func.
+  //
+  std::map <VMA, VMA> callMap;
+
+  if (num_funcs > 1) {
+    for (auto fit = func_list->begin(); fit != func_list->end(); ++fit) {
+      ParseAPI::Function * func = *fit;
+      const ParseAPI::Function::edgelist & elist = func->callEdges();
+
+      for (auto eit = elist.begin(); eit != elist.end(); ++eit) {
+	VMA src = (*eit)->src()->last();
+	VMA targ = (*eit)->trg()->start();
+	callMap[targ] = src;
+      }
+    }
+  }
 
   // one binutils proc may contain several parseapi funcs
   long num = 0;
   for (auto fit = func_list->begin(); fit != func_list->end(); ++fit)
   {
     ParseAPI::Function * func = *fit;
+    TreeNode * root = new TreeNode;
     num++;
+
+    // compute the inline seqn for the call site for this func, if
+    // there is one.
+    Inline::InlineSeqn prefix;
+    auto call_it = callMap.find(func->addr());
+
+    if (call_it != callMap.end()) {
+      Inline::analyzeAddr(prefix, call_it->second);
+    }
 
 #if DEBUG_CFG_SOURCE
     cout << "\n------------------------------------------------------------\n"
@@ -2122,16 +2154,25 @@ doFunctionList(ProcInfo pinfo, StringTable & strTab, ProcNameMgr * nameMgr)
 	 << "  (" << num << "/" << num_funcs << ")"
 	 << "  bin='" << pinfo.proc_bin->name()
 	 << "'  parse='" << func->name() << "'\n";
+
+    if (call_it != callMap.end()) {
+      cout << "\ncall site prefix:  0x" << hex << call_it->second
+	   << " -> 0x" << call_it->first << dec << "\n";
+      for (auto pit = prefix.begin(); pit != prefix.end(); ++pit) {
+	cout << "inline:  l=" << pit->getLineNum()
+	     << "  f='" << pit->getFileName()
+	     << "'  p='" << debugPrettyName(pit->getProcName()) << "'\n";
+      }
+    }
 #endif
 
-    // add blocks from this function
+    // basic blocks for this function
     const ParseAPI::Function::blocklist & blist = func->blocks();
+    BlockSet visited;
 
     for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
       Block * block = *bit;
-      if (visited.find(block) == visited.end()) {
-	visited[block] = false;
-      }
+      visited[block] = false;
     }
 
     // traverse the loop (Tarjan) tree
@@ -2145,7 +2186,7 @@ doFunctionList(ProcInfo pinfo, StringTable & strTab, ProcNameMgr * nameMgr)
     for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
       Block * block = *bit;
       if (! visited[block]) {
-	doBlock(pinfo, func, visited, block, &root, strTab, nameMgr);
+	doBlock(pinfo, func, visited, block, root, strTab, nameMgr);
       }
     }
 
@@ -2153,30 +2194,181 @@ doFunctionList(ProcInfo pinfo, StringTable & strTab, ProcNameMgr * nameMgr)
     FLPSeqn empty;
 
     for (auto it = llist->begin(); it != llist->end(); ++it) {
-      mergeInlineLoop(&root, empty, *it);
+      mergeInlineLoop(root, empty, *it);
+    }
+
+    // delete the inline prefix from this func, if non-empty
+    if (! prefix.empty()) {
+      root = deleteInlinePrefix(root, prefix, strTab);
+    }
+
+#if DEBUG_CFG_SOURCE
+    cout << "\nfinal inline tree:  (" << num << "/" << num_funcs << ")"
+	 << "  bin='" << pinfo.proc_bin->name()
+	 << "'  parse='" << func->name() << "'\n";
+
+    if (call_it != callMap.end()) {
+      cout << "\ncall site prefix:  0x" << hex << call_it->second
+	   << " -> 0x" << call_it->first << dec << "\n";
+      for (auto pit = prefix.begin(); pit != prefix.end(); ++pit) {
+	cout << "inline:  l=" << pit->getLineNum()
+	     << "  f='" << pit->getFileName()
+	     << "'  p='" << debugPrettyName(pit->getProcName()) << "'\n";
+      }
+    }
+    cout << "\n";
+    debugInlineTree(root, NULL, strTab, 0, true);
+    cout << "\nend proc:  (" << num << "/" << num_funcs << ")"
+	 << "  bin='" << pinfo.proc_bin->name()
+	 << "'  parse='" << func->name() << "'\n";
+#endif
+
+    // multiple funcs get their own proc/file scope nodes
+    if (num > 1) {
+      procScope = makeProcScope(lm, pinfo, func, root, blist, strTab);
+    }
+    Prof::Struct::File * fileScope = dynamic_cast <Prof::Struct::File *> (procScope->parent());
+    long file_index = strTab.str2index(fileScope->name());
+
+    // convert inline tree to Prof::Struct scope tree.  need to preserve
+    // the original procScope begin line, or else it gets reset too low.
+    SrcFile::ln beg_line = procScope->begLine();
+
+    makeScopeTree(procScope, ScopeInfo(file_index, beg_line), root, strTab, nameMgr);
+    procScope->begLine(beg_line);
+
+    // fixme: may or may not use these
+#if 0
+    coalesceAlienChildren(procScope);
+    renumberAlienScopes(procScope);
+#endif
+
+    delete root;
+  }
+}
+
+
+// Locate the beginning line number and VMA range for the inline tree
+// 'root' and make new Proc and File scope nodes for this function.
+// This is only for multiple parseAPI funcs within one binutils proc.
+//
+// Returns: proc scope node
+//
+static Prof::Struct::Proc *
+makeProcScope(Prof::Struct::LM * lm, ProcInfo pinfo, ParseAPI::Function * func,
+	      TreeNode * root, const ParseAPI::Function::blocklist & blist,
+	      StringTable & strTab)
+{
+  long empty_index = strTab.str2index("");
+  long file_index = empty_index;
+  SrcFile::ln beg_line = 0;
+
+  // locate the func at the file/line of the lowest VMA among root's
+  // stmts (no inline steps) that has a non-empty file.  fall back on
+  // the original binutils proc name (eg, no debug info).
+  //
+  for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
+    StmtInfo *sinfo = sit->second;
+
+    if (sinfo->file_index != empty_index && sinfo->line_num != 0) {
+      file_index = sinfo->file_index;
+      beg_line = sinfo->line_num;
+      break;
     }
   }
 
-#if DEBUG_CFG_SOURCE
-  cout << "\nfinal inline tree:  bin='" << pinfo.proc_bin->name() << "'\n\n";
-  debugInlineTree(&root, NULL, strTab, 0, true);
-  cout << "\nend proc:  bin='" << pinfo.proc_bin->name() << "'\n";
-#endif
+  string filenm = (file_index != empty_index) ?
+      strTab.index2str(file_index) : pinfo.proc_bin->filename();
+  string basenm = FileUtil::basename(filenm.c_str());
+  stringstream buf;
 
-  // convert inline tree to Prof::Struct scope tree.  need to preserve
-  // the original procScope begin line, or else it gets reset too low.
-  SrcFile::ln beg_line = procScope->begLine();
+  buf << "outline " << basenm << ":" << beg_line
+      << " (0x" << hex << func->addr() << dec << ")";
 
-  makeScopeTree(procScope, ScopeInfo(file_index, beg_line), &root, strTab, nameMgr);
-  procScope->begLine(beg_line);
+  Prof::Struct::File * fileScope = Prof::Struct::File::demand(lm, filenm);
+  Prof::Struct::Proc * procScope =
+      Prof::Struct::Proc::demand(fileScope, buf.str(), func->name(),
+				 beg_line, beg_line, NULL);
 
-  // fixme: may or may not use these
-#if 0
-  coalesceAlienChildren(procScope);
-  renumberAlienScopes(procScope);
-#endif
+  // scan the func's basic blocks and set min/max VMA
+  VMA beg_vma = 0;
+  VMA end_vma = 0;
+
+  auto bit = blist.begin();
+  if (bit != blist.end()) {
+    beg_vma = (*bit)->start();
+    end_vma = (*bit)->end();
+  }
+  for (; bit != blist.end(); ++bit) {
+    beg_vma = std::min(beg_vma, (VMA) (*bit)->start());
+    end_vma = std::max(end_vma, (VMA) (*bit)->end());
+  }
+  procScope->vmaSet().insert(beg_vma, end_vma);
 
   return procScope;
+}
+
+
+// Delete the inline sequence 'prefix' from root's tree and reparent
+// any statements or loops.  We expect there to be no statements,
+// loops or subtrees along the deleted spine, but if there are, move
+// them to the subtree.
+//
+// Returns: the subtree at the end of prefix.
+//
+static TreeNode *
+deleteInlinePrefix(TreeNode * root, Inline::InlineSeqn prefix, StringTable & strTab)
+{
+  StmtMap  stmts;
+  LoopList loops;
+
+  // walk the prefix and collect any stmts or loops
+  for (auto pit = prefix.begin(); pit != prefix.end(); ++pit)
+  {
+    FLPIndex flp(strTab, *pit);
+    auto nit = root->nodeMap.find(flp);
+
+    if (nit != root->nodeMap.end()) {
+      TreeNode * subtree = nit->second;
+
+      // statements
+      for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
+	stmts[sit->first] = sit->second;
+      }
+      root->stmtMap.clear();
+
+      // loops
+      for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
+	loops.push_back(*lit);
+      }
+      root->loopList.clear();
+
+      // subtrees
+      for (auto it = root->nodeMap.begin(); it != root->nodeMap.end(); ++it) {
+	TreeNode * node = it->second;
+	if (node != subtree) {
+	  mergeInlineEdge(subtree, it->first, node);
+	}
+      }
+      root->nodeMap.clear();
+      delete root;
+
+      root = subtree;
+    }
+  }
+
+  // reattach the stmts and loops
+  for (auto sit = stmts.begin(); sit != stmts.end(); ++sit) {
+    root->stmtMap[sit->first] = sit->second;
+  }
+  stmts.clear();
+
+  for (auto lit = loops.begin(); lit != loops.end(); ++lit) {
+    root->loopList.push_back(*lit);
+  }
+  loops.clear();
+
+  return root;
 }
 
 
