@@ -181,6 +181,24 @@ Contents:
 2. Revision History
 ------------------------------------------------------------
 
+----------------------------------------
+HPCToolkit Version 5.4.x, Dec 2015
+----------------------------------------
+
+Merged the hpctoolkit-parseapi branch into trunk.  Overhaul hpcstruct
+and banal code to use ParseAPI to parse functions, blocks and loops.
+Rework how hpcstruct identifies loop headers to use a top-down search
+of the inline tree.
+
+Partial merge of the non-openmp features from the hpctoolkit-ompt
+branch into trunk.  Support for name mappings for <program root>,
+<thread root>, etc, removing redundant procedure names, and better
+name demangling.
+
+Support for filtering nodes in the viewer, allows hiding a subset of
+the CCT nodes according to some pattern.
+
+Move repository to github.
 
 ----------------------------------------
 HPCToolkit Version 5.3.2 [2012.09.21]
