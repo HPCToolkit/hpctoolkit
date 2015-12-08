@@ -87,8 +87,9 @@ __thread int monitor_tid = -1;
 #endif // USE_GCC_THREAD
 
 static thread_data_t _local_td;
-
 static pthread_key_t _hpcrun_key;
+static int use_getspecific = 0;
+
 
 void
 hpcrun_init_pthread_key(void)
@@ -98,6 +99,7 @@ hpcrun_init_pthread_key(void)
   if (bad){
     EMSG("pthread_key_create returned non-zero = %d",bad);
   }
+  use_getspecific = 1;
 }
 
 
@@ -136,7 +138,12 @@ hpcrun_get_thread_data_local_avail(void)
 thread_data_t*
 hpcrun_safe_get_td(void)
 {
-  return (thread_data_t*) pthread_getspecific(_hpcrun_key);
+  if (use_getspecific) {
+    return (thread_data_t *) pthread_getspecific(_hpcrun_key);
+  }
+  else {
+    return hpcrun_get_thread_data_local();
+  }
 }
 
 static thread_data_t*
