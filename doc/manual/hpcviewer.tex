@@ -556,19 +556,28 @@ Hence, if the ranks are 0.0, 0.1, \dots{} 31.0, 31.1 it means MPI process 0 has 
 Currently, it is only possible to generate scatter plots for metrics directly collected by \hpcrun{}, which excludes derived metrics created within \hpcviewer{}.
 
 
-\subsection{Table of thread-level metrics}
+% ===========================================================================
+\subsection{Thread View}
 \label{sec:thread-level-table}
 
-This Section describes \hpcviewer's feature to view the CCT of a certain threads (or processes).
+\begin{figure}[t]
+\centering{\includegraphics[width=0.8\textwidth]{fig/hpcviewer-thread-table.png}}
+\caption{Example of a Thread View which display thread-level metrics of a set of threads. The first column is a CCT equivalent to the CCT in the Calling Context View, the second and third columns represent the metrics of the selected threads (in this case they are threads from 0.0, to 15.0)}
+\label{fig:hpcviewer-view-thread-level}
+\end{figure}
+
+\hpcviewer{} also provides a feature to view the metrics of a certain threads (or processes) named Thread View.
 First, you need to select a thread or a set of threads of interest.
 To select a single thread, you can click on the dot from the plot graph (see Figure~\ref{fig:hpcviewer-view-scatterplot}).
-On the other hand, to select a group of threads, you need to use the thread selection window by clicking \includegraphics[scale=.6]{fig/hpcviewer-thread.png} button from the calling-context view.
+Then click the context menu ``Show thread X'' to activate the thread view.
+
+To select a group of threads, you need to use the thread selection window by clicking \includegraphics[scale=.6]{fig/hpcviewer-thread.png} button from the calling-context view.
 On the thread selection window, you need to select the checkbox of the threads of interest. 
 To  narrow the list, you can specify the thread name on the filter part of the window.
 Recall that the format of the thread is ``\texttt{process\_id . thread\_id}'' (see Section~\ref{sec:hpcviewer:thread-level}).
-Hence, to specify just a main thread (thread zero), you can type '.0' on the filter, and the view only list threads 0 (such as 1.0, 2.0, 3.0 ....).
+Hence, to specify just a main thread (thread zero), you can type '.0' on the filter, and the view only list threads 0 (such as 1.0, 2.0, 3.0 \dots).
 
-Once threads have been selected, you can click \textbf{OK}, and the Thread view will be activated. 
+Once threads have been selected, you can click \textbf{OK}, and the Thread view (Figure~\ref{fig:hpcviewer-view-thread-level}) will be activated. 
 The tree of the view is the same as the tree from calling context view, with the metrics only from the selected threads.
 If there are more than one selected threads, the metrics are the average of the values of the selected threads.
 
@@ -577,13 +586,13 @@ If there are more than one selected threads, the metrics are the average of the 
 % ===========================================================================
 \section{Filtering Tree nodes}
 \label{sec:filter}
-Occasionally, It is useful to omit uninterested nodes in the CCT so that you can focus on important parts. 
+Occasionally, It is useful to omit uninterested nodes in the CCT and to focus on important parts. 
 For instance, you may want to hide all nodes associated with OpenMP runtime and just show all nodes and metrics from the application. 
 For this purpose, \hpcviewer{} provides \emph{filtering} to elide nodes that match a filter pattern.
-\hpcviewer{} allows  users to define multiple filters, and each filter is associated with a glob pattern~\footnote{A glob pattern specifies which name to be removed by using wildcard characters such as *, ? and +} and a type of filter.
+\hpcviewer{} allows  users to define multiple filters, and each filter is associated with a glob pattern~\footnote{A glob pattern specifies which name to be removed by using wildcard characters such as *, ? and +} and a type.
 There are three types of filter: ``\emph{self only}'' to omit the matched nodes, 
 ``\emph{descendants only}'' to exclude only the subtree of the matched nodes, and ``\emph{self and descendants}'' to
-exclude the matched nodes including all its children.
+remove the matched nodes and its descendants.
 
 \begin{figure}
   \centering
@@ -631,26 +640,26 @@ Nodes \texttt{C} and its descendants are elided, and their exclusive cost is aug
 \end{figure}
 
 \paragraph{Self only}: This filter is useful to hide intermediary runtime functions such as pthread or OpenMP runtime functions. 
-Nodes that match filter patterns will be removed, and their children will be augmented to the parent of the elided nodes.
-The exclusive cost of the elided nodes will be augmented into the exclusive cost of the parent of the elided nodes.
-Figure~\ref{fig:filter-self} shows the result of filtering node \texttt{C} against the CCT from Figure~\ref{fig:filter-cct}. Node \texttt{C} is elided and its exclusive cost is augmented into the exclusive cost of its parent (node \texttt{A}). The children of node \texttt{C} (nodes \texttt{D} and \texttt{E}) are now the children of node \texttt{A}.
-\paragraph{Descendants only}: This filter elides only the children of the matched node, while the matched node itself is not removed. 
-A common usage of this filter is to exclude any call chains under MPI runtimes.
+All nodes that match filter patterns will be removed, and their children will be augmented to the parent of the elided nodes.
+The exclusive cost of the elided nodes will be also augmented into the exclusive cost of the parent of the elided nodes.
+Figure~\ref{fig:filter-self} shows the result of filtering node \texttt{C} of the CCT from Figure~\ref{fig:filter-cct}. Node \texttt{C} is elided and its exclusive cost is augmented into the exclusive cost of its parent (node \texttt{A}). The children of node \texttt{C} (nodes \texttt{D} and \texttt{E}) are now the children of node \texttt{A}.
+\paragraph{Descendants only}: This filter elides only the subtree of the matched node, while the matched node itself is not removed. 
+A common usage of this filter is to exclude any call chains after MPI functions.
 As shown in Figure~\ref{fig:filter-children}, filtering node \texttt{C} causes nodes \texttt{D} and \texttt{E} to be elided and their exclusive cost is augmented to node \texttt{C}. 
-\paragraph{Self and descendants}: This filter elides both the matched node and all its children. 
+\paragraph{Self and descendants}: This filter elides both the matched node and its subtree. 
 This type is useful to exclude any unnecessary details such as glibc or malloc functions.
 Figure~\ref{fig:filter-selfchildren} shows that filtering node \texttt{C} will elide the node and its children (nodes \texttt{D} and \texttt{E}). 
 The total of the exclusive cost of the elided nodes is augmented to the exclusive cost of node \texttt{A}.
 
-The filter feature in \hpcviewer{} can be accessed by clicking the menu "Filter" and then submenu "Show filter property", which will then show a  Filter property window (Figure~\ref{fig:filter-window}).
+The filter feature can be accessed by clicking the menu "Filter" and then submenu "Show filter property", which will then show a  Filter property window (Figure~\ref{fig:filter-window}).
 The window consists of a table of filters, and a group of action buttons: \emph{add} to create a new filter; \emph{edit} to modify a selected filter; and \emph{delete} to remove a set of selected filters..
-The table comprises of two columns: the left one to display a filter's switch whether the filter is enabled or disabled, and a glob-like filter pattern; and the other one to show the type of pattern (self only, children only or self and children).
+The table comprises of two columns: the left column is to display a filter's switch whether the filter is enabled or disabled, and a glob-like filter pattern; and the second column is to show the type of pattern (self only, children only or self and children).
 If a checkbox is checked, it signifies the filter is enabled; otherwise the filter is disabled.
 
-You have to be careful when using filter feature since it can result different the tree, thus affects different interpretation of performance analysis.
-If the filtered nodes are children of a ``fake'' procedures (such as \texttt{<program root>} and \texttt{<thread root>}), the exclusive metrics in callers view and flat view can be misleading. 
+Cautious is needed when using filter feature since it can change the shape of the tree, thus affects different interpretation of performance analysis.
+Furthermore, if the filtered nodes are children of a ``fake'' procedures (such as \texttt{<program root>} and \texttt{<thread root>}), the exclusive metrics in callers view and flat view can be misleading. 
 This occurs since these views do not show ``fake'' procedures.
-Furthermore, \hpcviewer{} does not verify if the filter will remove all the entire tree or not.
+%Furthermore, \hpcviewer{} does not verify if the filter will remove all the entire tree or not.
 
 
 % ===========================================================================
