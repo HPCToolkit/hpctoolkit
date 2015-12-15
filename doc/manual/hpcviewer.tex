@@ -559,22 +559,25 @@ Currently, it is only possible to generate scatter plots for metrics directly co
 \subsection{Table of thread-level metrics}
 \label{sec:thread-level-table}
 
-To analyze a certain threads or processes, \hpcviewer{} supports a view of CCT for a set of threads (or processes).
-To pick a thread, either clicking on the dot from the plot graph, or by clicking on the thread selection button \includegraphics[scale=.6]{fig/hpcviewer-thread.png} from the calling-context view.
-The later will show a window to select which threads to be viewed. You can narrow the list by specifying on the filter a part of the thread name.
-For instance, to specify just a main thread (a thread zero), you can type '.0' on the filter.
+This Section describes \hpcviewer's feature to view the CCT of a certain threads (or processes).
+First, you need to select a thread or a set of threads of interest.
+To select a single thread, you can click on the dot from the plot graph (see Figure~\ref{fig:hpcviewer-view-scatterplot}).
+On the other hand, to select a group of threads, you need to use the thread selection window by clicking \includegraphics[scale=.6]{fig/hpcviewer-thread.png} button from the calling-context view.
+On the thread selection window, you need to select the checkbox of the threads of interest. 
+To  narrow the list, you can specify the thread name on the filter part of the window.
+Recall that the format of the thread is ``\texttt{process\_id . thread\_id}'' (see Section~\ref{sec:hpcviewer:thread-level}).
+Hence, to specify just a main thread (thread zero), you can type '.0' on the filter, and the view only list threads 0 (such as 1.0, 2.0, 3.0 ....).
 
-To select interested threads, you need to check on the table. To remove uninterested threads, you need to uncheck the thread.
 Once threads have been selected, you can click \textbf{OK}, and the Thread view will be activated. 
-The tree of the view is exactly the same as the one from calling context view, with the metrics only from the selected threads.
-If there are more than one selected threads, then the metrics are the average of the values of the selected threads.
+The tree of the view is the same as the tree from calling context view, with the metrics only from the selected threads.
+If there are more than one selected threads, the metrics are the average of the values of the selected threads.
 
 
 % ===========================================================================
 % ===========================================================================
 \section{Filtering Tree nodes}
 \label{sec:filter}
-It is sometimes useful to omit uninterested nodes in a CCT so that users can just focus on important parts. 
+Occasionally, It is useful to omit uninterested nodes in the CCT so that you can focus on important parts. 
 For instance, you may want to hide all nodes associated with OpenMP runtime and just show all nodes and metrics from the application. 
 For this purpose, \hpcviewer{} provides \emph{filtering} to elide nodes that match a filter pattern.
 \hpcviewer{} allows  users to define multiple filters, and each filter is associated with a glob pattern~\footnote{A glob pattern specifies which name to be removed by using wildcard characters such as *, ? and +} and a type of filter.
