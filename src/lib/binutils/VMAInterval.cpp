@@ -185,123 +185,68 @@ VMAInterval::ddump() const
 //   5) x subsumes all intervals
 //        < {} ... {} >
 
+typedef std::pair <VMAIntervalSet::iterator, bool> iteratorPair;
 
 // insert: See above for cases
-std::pair<VMAIntervalSet::iterator, bool>
+iteratorPair
 VMAIntervalSet::insert(const VMAIntervalSet::value_type& x)
 {
   DIAG_DevMsgIf(DBG, "VMAIntervalSet::insert [begin]\n"
 		<< "  this: " << toString() << endl 
 		<< "  add : " << x.toString());
-  
-  std::pair<VMAIntervalSet::iterator, bool> ret(end(), false);
 
+  // empty interval
   if (x.empty()) {
-    return ret;
+    return iteratorPair (end(), false);
   }
 
-  // -------------------------------------------------------
-  // find [lb, ub) where lb is the first element !< x and ub is the
-  // first element > x.  IOW, if lb != end() then (x <= lb < ub).
-  // -------------------------------------------------------
-  std::pair<VMAIntervalSet::iterator, VMAIntervalSet::iterator> lu = 
-    equal_range(x);
-  VMAIntervalSet::iterator lb = lu.first;
-  VMAIntervalSet::iterator ub = lu.second;
-
-  // find (lb <= x < ub) such that lb != x
-  if (lb == end()) {
-    if (!empty()) { // all elements are less than x
-      lb = --end();
-    }
-  }
-  else {
-    if (lb == begin()) { // no element is less than x
-      lb = end();
-    }
-    else {
-      --lb;
-    }
-  }
-  
-  // -------------------------------------------------------
-  // Detect the appropriate case.  Note that case 0 is a NOP.
-  // -------------------------------------------------------
-  VMA lb_beg = (lb != end()) ? lb->beg() : 0;
-  VMA ub_end = (ub != end()) ? ub->end() : 0;
-
-  if (lb != end() && lb->contains(x)) {
-    // Case 0: do nothing
-  }
-  else if (lb == end() && ub == end()) {
-    if (empty()) {
-      // Case 1a: insert x
-      ret = My_t::insert(x);
-    }
-    else {
-      // Case 5: erase everything and insert x
-      My_t::clear();
-      ret = My_t::insert(x);
-    }
-  }
-  else if (lb == end()) {
-    // INVARIANT: ub != end()
-    
-    if (x.end() < ub->beg()) {
-      // Case 1b: insert x
-      ret = My_t::insert(x);
-    }
-    else {
-      // Case 3a: erase [begin(), ub + 1); insert [x.beg(), ub->end())
-      VMAIntervalSet::iterator end = ub;
-      My_t::erase(begin(), ++end);
-      ret = My_t::insert( VMAInterval(x.beg(), ub_end) );
-    }
-  }
-  else if (ub == end()) {
-    // INVARIANT: lb != end() 
-
-    if (lb->end() < x.beg()) {
-      // Case 1c: insert x
-      ret = My_t::insert(x);
-    }
-    else {
-      // Case 2a: erase [lb, end()); insert [lb->beg(), x.end())
-      My_t::erase(lb, end());
-      ret = My_t::insert( VMAInterval(lb_beg, x.end()) );
-    }
-  }
-  else {
-    // INVARIANT: lb != end() && ub != end()
-
-    if (lb->end() < x.beg() && x.end() < ub->beg()) {
-      // Case 1d: insert x
-      ret = My_t::insert(x);
-    }
-    else if (x.beg() <= lb->end() && x.end() < ub->beg()) {
-      // Case 2b: erase [lb, ub); insert [lb->beg(), x.end())
-      My_t::erase(lb, ub);
-      ret = My_t::insert( VMAInterval(lb_beg, x.end()) );
-    }
-    else if (lb->end() < x.beg() && ub->beg() <= x.end()) {
-      // Case 3b: erase [lb + 1, ub + 1): insert [x.beg(), ub->end())
-      VMAIntervalSet::iterator beg = lb;
-      VMAIntervalSet::iterator end = ub;
-      My_t::erase(++beg, ++end);
-      ret = My_t::insert( VMAInterval(x.beg(), ub_end) );
-    }
-    else {
-      // Case 4: erase [lb, ub + 1); insert [lb->beg(), ub->end()).
-      VMAIntervalSet::iterator end = ub;
-      My_t::erase(lb, ++end);
-      ret = My_t::insert( VMAInterval(lb_beg, ub_end) );
-    }
+  // empty set
+  if (empty()) {
+    return My_t::insert(x);
   }
 
-  DIAG_DevMsgIf(DBG, "VMAIntervalSet::insert [end]\n"
-		<< "  this: " << toString() << endl);
-  
-  return ret;
+  VMA low = x.beg();
+  VMA high = x.end();
+
+  // find it = last interval with it.beg <= low if there is one, or
+  // else first interval with it.beg > low, but it is never end().
+  // this is the only interval that could contain low.
+  auto it = upper_bound(VMAInterval(low, low));
+
+  if (it != begin() && (it == end() || it->beg() > low)) {
+    it--;
+  }
+
+  // if x is a subset of it, then return it.  this is the only case
+  // that returns false (not created).
+  if (it->beg() <= low && high <= it->end()) {
+    return iteratorPair (it, false);
+  }
+
+  // if x intersects interval to the left, then extend low.  this can
+  // only happen once at it.
+  if (it->beg() <= low) {
+    auto next_it = it;  next_it++;
+
+    if (it->end() >= low) {
+      low = std::min(low, it->beg());
+      My_t::erase(it);
+    }
+    it = next_it;
+  }
+
+  // if x intersects intervals to the right, then extend high.  this
+  // can happen multiple times.
+  while (it != end() && it->beg() <= high) {
+    auto next_it = it;  next_it++;
+    high = std::max(high, it->end());
+    My_t::erase(it);
+    it = next_it;
+  }
+
+  // finally, re-insert [low, high) which covers all of the erased
+  // intervals plus the original x.
+  return My_t::insert(VMAInterval(low, high));
 }
 
 
