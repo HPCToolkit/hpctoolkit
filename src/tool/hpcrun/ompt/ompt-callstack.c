@@ -216,9 +216,11 @@ ompt_elide_runtime_frame(
     goto clip_base_frames;
   }
 
-  while ((frame0->reenter_runtime_frame == 0) && (frame0->exit_runtime_frame == 0)) {
-    // corner case: the top frame has been set up, but not filled in. 
-    // ignore this frame.
+  while ((frame0->reenter_runtime_frame == 0) && 
+         (frame0->exit_runtime_frame == 0)) {
+
+    // corner case: the top frame has been set up, 
+    // but not filled in. ignore this frame.
     frame0 = hpcrun_ompt_get_task_frame(++i);
 
     if (!frame0) {
@@ -228,7 +230,8 @@ ompt_elide_runtime_frame(
   }
 
   if (frame0->exit_runtime_frame && 
-      (((uint64_t) frame0->exit_runtime_frame) < ((uint64_t) (*bt_inner)->cursor.sp))) {
+      (((uint64_t) frame0->exit_runtime_frame) < 
+       ((uint64_t) (*bt_inner)->cursor.sp))) {
     // corner case: the top frame has been set up, exit frame has been filled in; 
     // however, exit_runtime_frame points beyond the top of stack. the final call 
     // to user code hasn't been made yet. ignore this frame.
@@ -320,21 +323,15 @@ ompt_elide_runtime_frame(
     }
 
     if (exit0 && reenter1) {
-// FIXME: IBM and INTEL need to agree
-#if 1
+      // FIXME: IBM and INTEL need to agree
       // laksono 2014.07.08: hack removing one more frame to avoid redundancy with the parent
       // It seems the last frame of the master is the same as the first frame of the workers thread
       // By eliminating the topmost frame we should avoid the appearance of the same frame twice 
       //  in the callpath
       memmove(*bt_inner+(reenter1-exit0+1), *bt_inner, 
 	      (exit0 - *bt_inner)*sizeof(frame_t));
+
       *bt_inner = *bt_inner + (reenter1 - exit0 + 1);
-#else
-      // was missing a frame with intel's runtime; eliminate +1 -- johnmc
-      memmove(*bt_inner+(reenter1-exit0), *bt_inner, 
-	      (exit0 - *bt_inner)*sizeof(frame_t));
-      *bt_inner = *bt_inner + (reenter1 - exit0);
-#endif
       exit0 = reenter1 = NULL;
     } else if (exit0 && !reenter1) {
       // corner case: reenter1 is in the team master's stack, not mine. eliminate all
@@ -457,7 +454,12 @@ ompt_region_context(uint64_t region_id,
   ucontext_t uc;
   getcontext(&uc);
 
+#if 0
   node = hpcrun_sample_callpath(&uc, 0, 0, ++levels_to_skip, 1).sample_node;
+#else
+  // levels to skip will be broken if inlining occurs.
+  node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1).sample_node;
+#endif
   TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
 
   if (node && adjust_callsite) {
