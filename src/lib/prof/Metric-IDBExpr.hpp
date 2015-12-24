@@ -203,7 +203,7 @@ public:
     // more accurate if we divide the sum with the aggregate
     // since the num of callers view and flat view will be 
     // accumulated
-    std::string n = aggSrcStr();
+    std::string n = numSrcStr();
     std::string a = accumStr();
     std::string z = a + " / " + n;
     return z;
@@ -253,8 +253,9 @@ public:
   combineString1NumSource() const
   {
     std::string a = accumStr();
-    std::string z = "sum(" + a + ", " + a + ")"; // a + numSrcFix()
-    return z;
+    // laks: avoid accumulation of NumSrc for callers view and flat view
+    // std::string z = "sum(" + a + ", " + a + ")"; // a + numSrcFix()
+    return a; // originally: z;
   }
 
   std::string
@@ -300,13 +301,6 @@ public:
   numSrcStr() const
   { return (hasNumSrcVar()) ? numSrcVarStr() : numSrcFxdStr(); }
 
-  // Laks: aggSrcStr is similar with numSrcStr with the exception of
-  // using aggSrcVarStr instead of numSrcVarStr
-  // perhaps we should parameterize numSrcVarStr instead ?
-  std::string
-  aggSrcStr() const
-  { return (hasNumSrcVar()) ? aggSrcVarStr() : numSrcFxdStr(); }
-
 
   virtual uint
   numSrcFxd() const = 0;
@@ -322,13 +316,6 @@ public:
   std::string
   numSrcVarStr() const
   { return "$" + StrUtil::toStr(numSrcVarId()); }
-
-  // for some metrics such as Mean, it is more suitable to divide the 
-  // the total sum of var with the aggregate of NumSrc instead of the
-  // individual NumSrc
-  std::string
-  aggSrcVarStr() const
-  { return "@" + StrUtil::toStr(numSrcVarId()); }
 
 
   // --------------------------------------------------------
