@@ -67,8 +67,7 @@ ext_libs_dir='@hpc_ext_libs_dir@'
 hpcfnbounds_dir='libexec/hpctoolkit'
 libhpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
-xed2_dir='@XED2_RUN_DIR@'
-xed2_link_opts='@XED2_HPCLINK_OPTS@'
+xed2_link_opts='@XED2_HPCLINK_LIBS@'
 libunwind_dir='@LIBUNWIND_RUN_DIR@'
 libunwind_hpclink_libs='@LIBUNWIND_HPCLINK_LIBS@'
 
@@ -205,10 +204,6 @@ esac
 case "$libmonitor_dir" in
     /* ) ;;
     * )  libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
-esac
-case "$xed2_dir" in
-    /* ) ;;
-    * )  xed2_dir="${HPCTOOLKIT}/${xed2_dir}" ;;
 esac
 case "$libunwind_dir" in
     /* ) ;;
@@ -451,8 +446,8 @@ if test -d "$papi_dir" ; then
     set -- "$@" "-L${papi_dir}" -lpapi $papi_extra_libs
 fi
 
-if test -d "$xed2_dir" ; then
-    set -- "$@" "-L${xed2_dir}" $xed2_link_opts
+if test "x$xed2_link_opts" != x ; then
+    set -- "$@" $xed2_link_opts
 fi
 
 if test -d "$libunwind_dir" ; then
