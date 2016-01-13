@@ -1324,13 +1324,6 @@ invalid_routine_start(unsigned char *ins)
 }
 
 
-// The xed format function changed from 'xed_format_xed()' in XED 2013
-// to 'xed_decoded_inst_dump_xed_format()' in XED 2015.
-//
-// x86_dump_ins() is only for debugging inside gdb (nothing in the
-// code calls it), so a configure test seems overkill.
-//
-#if 0
 void x86_dump_ins(void *ins)
 {
   xed_decoded_inst_t xedd;
@@ -1349,7 +1342,6 @@ void x86_dump_ins(void *ins)
     printf("x86_dump_ins: xed decode addr=%p, error = %d\n", ins, xed_error);
   }
 }
-#endif
 
 
 // #define DEBUG_ADDSUB

@@ -110,8 +110,8 @@ x86_dump_ins(void *ins)
   xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
   
   if (xed_error == XED_ERROR_NONE) {
-    xed_format_xed(xptr, inst_buf, sizeof(inst_buf), 
-		   (xed_uint64_t)(uintptr_t)ins);
+    xed_decoded_inst_dump_xed_format(xptr, inst_buf, sizeof(inst_buf), 
+				     (xed_uint64_t)(uintptr_t)ins);
     sprintf(errbuf, "(%p, %d bytes, %s) %s \n" , ins, 
 	    xed_decoded_inst_get_length(xptr), 
 	    xed_iclass_enum_t2str(iclass(xptr)), inst_buf);
