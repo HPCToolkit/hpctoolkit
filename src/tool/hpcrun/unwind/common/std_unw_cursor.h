@@ -69,9 +69,9 @@
 
 #else
 
-#  include "splay-interval.h"
+#  include "binarytree_uwi.h"
 #  include <hpcrun/utilities/ip-normalized.h>
-#  define UNW_CURSOR_INTERVAL_t splay_interval_t*
+#  define UNW_CURSOR_INTERVAL_t bitree_uwi_t*
 
 #endif
 
@@ -92,6 +92,7 @@ typedef struct hpcrun_unw_cursor_t {
   fence_enum_t fence; // Details on which fence stopped an unwind
 
   UNW_CURSOR_INTERVAL_t intvl;
+  load_module_t *lm; // DXN: should correspond to intvl at initialization
 
   ip_normalized_t the_function; // (normalized) ip for function
 

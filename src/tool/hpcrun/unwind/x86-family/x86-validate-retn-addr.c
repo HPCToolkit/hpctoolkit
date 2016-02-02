@@ -271,17 +271,15 @@ confirm_tail_call(void *addr, void *target_fn)
   void *callee;
 
   if ( ! confirm_call_fetch_addr(addr, 5, &callee)) {
-    TMSG(VALIDATE_UNW,"No call instruction found @ %p, so tail call REJECTED",
-         addr - 5);
+    TMSG(VALIDATE_UNW,"No call instruction found @ %p, so tail call REJECTED", addr - 5);
     return UNW_ADDR_WRONG; // soft error: this case doesn't apply
   }
 
   TMSG(VALIDATE_UNW,"Checking routine %p for possible tail calls", callee);
-  unwind_interval *ri =
-    (unwind_interval *) hpcrun_addr_to_interval(callee, NULL, NULL);
-  bool rv = (ri && ri->has_tail_calls);
 
-  if (rv) return contains_tail_call_to_f(callee, target_fn);
+  unwind_interval *ri;
+  bool found = uw_recipe_map_lookup(callee, NULL, &ri);
+  if (found && UWI_RECIPE(ri)->has_tail_calls)	return contains_tail_call_to_f(callee, target_fn);
 
   return status_is_wrong();
 }
@@ -335,9 +333,9 @@ confirm_plt_call(void *addr, void *callee)
   void *plt_callee = x86_plt_branch_target(plt_ins, xptr);
   if (plt_callee == callee) return UNW_ADDR_CONFIRMED;
 
-  unwind_interval *plt_callee_ui =
-    (unwind_interval *) hpcrun_addr_to_interval(plt_callee, NULL, NULL);
-  if (plt_callee_ui && plt_callee_ui->has_tail_calls) return contains_tail_call_to_f(plt_callee, callee);
+  unwind_interval *plt_callee_ui;
+  bool found = uw_recipe_map_lookup(plt_callee, NULL, &plt_callee_ui);
+  if (found && UWI_RECIPE(plt_callee_ui)->has_tail_calls) return contains_tail_call_to_f(plt_callee, callee);
 
   return UNW_ADDR_WRONG;
 }

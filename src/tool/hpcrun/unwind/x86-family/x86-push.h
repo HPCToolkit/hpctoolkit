@@ -59,9 +59,11 @@
  *****************************************************************************/
 
 unwind_interval *
-process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg);
+process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg,
+	mem_alloc m_alloc);
 
 unwind_interval *
-process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg);
+process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg,
+	mem_alloc m_alloc);
 
 #endif

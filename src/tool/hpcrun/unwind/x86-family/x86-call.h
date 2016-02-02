@@ -56,7 +56,8 @@
  *****************************************************************************/
 
 unwind_interval*
-process_call(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg);
+process_call(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg,
+	mem_alloc m_alloc);
 
 #endif
 

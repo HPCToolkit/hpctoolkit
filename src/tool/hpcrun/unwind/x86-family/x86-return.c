@@ -63,30 +63,31 @@ static bool plt_is_next(char *ins);
  *****************************************************************************/
 
 unwind_interval *
-process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
+process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg,
+	mem_alloc m_alloc)
 {
   unwind_interval *next = iarg->current;
 
-  if (iarg->current->ra_status == RA_SP_RELATIVE) {
-    int offset = iarg->current->sp_ra_pos;
+  if (UWI_RECIPE(iarg->current)->ra_status == RA_SP_RELATIVE) {
+    int offset = UWI_RECIPE(iarg->current)->sp_ra_pos;
     if (offset != 0) {
       unwind_interval *u = iarg->current;
       for (;;) {
 	// fix offset
-	u->sp_ra_pos -= offset;
-	u->sp_bp_pos -= offset;
+    	UWI_RECIPE(u)->sp_ra_pos -= offset;
+    	UWI_RECIPE(u)->sp_bp_pos -= offset;
 
-	if (u->restored_canonical == 1) {
+	if (UWI_RECIPE(u)->restored_canonical == 1) {
 	  break;
 	}
-	u = (unwind_interval *) u->common.prev;
+	u = UWI_PREV(u);
 	if (! u) {
 	  break;
 	}
       }
     }
   }
-  if (iarg->current->bp_status == BP_SAVED) {
+  if (UWI_RECIPE(iarg->current)->bp_status == BP_SAVED) {
      suspicious_interval(iarg->ins);
   }
   if (iarg->ins + xed_decoded_inst_get_length(xptr) < iarg->end) {
@@ -106,7 +107,7 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
       iarg->canonical_interval = iarg->current;
     }
     else {
-      reset_to_canonical_interval(xptr, &next, irdebug, iarg);
+      reset_to_canonical_interval(xptr, &next, irdebug, iarg, m_alloc);
     }
   }
   return next;

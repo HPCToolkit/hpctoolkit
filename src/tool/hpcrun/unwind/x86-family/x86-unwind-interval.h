@@ -49,11 +49,46 @@
 
 #include <stdbool.h>
 
-#include "splay-interval.h"
+#include <unwind/common/binarytree_uwi.h>
+
+/******************************************************************************
+ * macros
+ ******************************************************************************/
+
+#define lstartaddr ((unsigned long) startaddr)
+#define lendaddr ((unsigned long) endaddr)
+
+/*
+ * macros to convert the old unwind interval data structure
+ *
+
+struct unwind_interval_t {
+  struct splay_interval_s common;
+  ra_loc ra_status;
+  int sp_ra_pos;
+  int sp_bp_pos;
+  bp_loc bp_status;
+  int bp_ra_pos;
+  int bp_bp_pos;
+  struct unwind_interval_t *prev_canonical;
+  int restored_canonical;
+  bool has_tail_calls;
+};
+typedef struct unwind_interval_t unwind_interval;
+
+ * to the new one, which is bitree_uwi_t, a binary tree of uwi_t.
+ *
+ */
+
+#define UWI_RECIPE(btuwi) ((x86recipe_t*)bitree_uwi_recipe(btuwi))
+
 
 /*************************************************************************************
  * type declarations 
  ************************************************************************************/
+
+typedef bitree_uwi_t unwind_interval;
+
 typedef enum {
   RA_SP_RELATIVE, RA_STD_FRAME, RA_BP_FRAME, RA_REGISTER, POISON
 } ra_loc;
@@ -62,9 +97,7 @@ typedef enum {
   BP_UNCHANGED, BP_SAVED, BP_HOSED
 } bp_loc;
 
-struct unwind_interval_t {
-  struct splay_interval_s common; // common splay tree fields
-
+typedef struct x86recipe_s {
   ra_loc ra_status; /* how to find the return address */
 
   int sp_ra_pos; /* return address offset from sp */
@@ -75,21 +108,11 @@ struct unwind_interval_t {
   int bp_ra_pos; /* return address offset from bp */
   int bp_bp_pos; /* (caller's) BP offset from bp */
 
-  struct unwind_interval_t *prev_canonical;
+  bitree_uwi_t* prev_canonical;
   int restored_canonical;
 
   bool has_tail_calls;
-};
-
-#define lstartaddr ((unsigned long) startaddr)
-#define lendaddr ((unsigned long) endaddr)
-
-typedef struct unwind_interval_t unwind_interval;
-
-/*************************************************************************************
- * global variables 
- ************************************************************************************/
-extern const unwind_interval poison_ui;
+} x86recipe_t;
 
 
 /*************************************************************************************
@@ -106,15 +129,15 @@ extern "C" {
   void set_ui_restored_canonical(unwind_interval *u, unwind_interval *value);
 
 
-  interval_status build_intervals(char  *ins, unsigned int len);
+  btuwi_status_t build_intervals(char  *ins, unsigned int len, mem_alloc m_alloc);
 
   unwind_interval *
   new_ui(char *startaddr, 
 	 ra_loc ra_status, unsigned int sp_ra_pos, int bp_ra_pos, 
 	 bp_loc bp_status,          int sp_bp_pos, int bp_bp_pos,
-	 unwind_interval *prev);
+	 unwind_interval *prev, mem_alloc m_alloc);
 
-  unwind_interval *fluke_ui(char *pc,unsigned int sp_ra_pos);
+  unwind_interval *fluke_ui(char *pc,unsigned int sp_ra_pos, mem_alloc m_alloc);
 
   void link_ui(unwind_interval *current, unwind_interval *next);
   void dump_ui(unwind_interval *u, int dump_to_stderr);
@@ -124,6 +147,22 @@ extern "C" {
   void dump_ui_troll(unwind_interval *u);
 
   void suspicious_interval(void *pc);
+
+  x86recipe_t *
+  x86recipe_new(ra_loc ra_status, int sp_ra_pos, int bp_ra_pos,
+  	 bp_loc bp_status, int sp_bp_pos, int bp_bp_pos, mem_alloc m_alloc);
+
+  /*
+   * Concrete implementation of the abstract val_tostr function of the
+   * generic_val class.
+   * pre-condition: recipe is of type x86recipe_t*
+   */
+  void
+  x86recipe_tostr(void* recipe, char str[]);
+
+  void
+  x86recipe_print(void* recipe);
+
 
 #ifdef __cplusplus
 };

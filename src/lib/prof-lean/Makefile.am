@@ -82,12 +82,24 @@ MYSOURCES = \
 	\
 	atomic.h \
 	atomic-op.h atomic-op.i \
+	mcs-lock.h mcs-lock.c \
 	QueuingRWLock.h QueuingRWLock.c \
+	pfq-rwlock.h pfq-rwlock.c \
 	spinlock.h spinlock.c \
+        urand.h urand.c \
+	usec_time.h usec_time.c \
 	\
 	BalancedTree.h BalancedTree.c \
 	\
-	lush/lush-support.h lush/lush-support.c
+	placeholders.c \
+	\
+	lush/lush-support.h lush/lush-support.c \
+	\
+	binarytree.h binarytree.c \
+	cskiplist.h cskiplist.c \
+	generic_pair.h generic_pair.c \
+	generic_val.h  mem_manager.h \
+	randomizer.h randomizer.c 
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
 

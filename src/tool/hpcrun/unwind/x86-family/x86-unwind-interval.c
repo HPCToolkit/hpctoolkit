@@ -70,31 +70,6 @@ static const char *ra_status_string(ra_loc l);
 static const char *bp_status_string(bp_loc l);
 
 
-
-/*************************************************************************************
- * global variables
- ************************************************************************************/
-
-const unwind_interval poison_ui = {
-  .common    = {
-    .next  = NULL,
-    .prev  = NULL
-  },
-
-  .ra_status = POISON,
-  .sp_ra_pos = 0,
-  .sp_bp_pos = 0,
-
-  .bp_status = BP_HOSED,
-  .bp_ra_pos = 0,
-  .bp_bp_pos = 0,
-
-  .prev_canonical     = NULL,
-  .restored_canonical = 0
-};
-
-
-
 /*************************************************************************************
  * interface operations 
  ************************************************************************************/
@@ -106,36 +81,24 @@ suspicious_interval(void *pc)
   hpcrun_stats_num_unwind_intervals_suspicious_inc();
 }
 
-unwind_interval *
+unwind_interval*
 new_ui(char *start, 
        ra_loc ra_status, unsigned int sp_ra_pos, int bp_ra_pos, 
        bp_loc bp_status,          int sp_bp_pos, int bp_bp_pos,
-       unwind_interval *prev)
+       unwind_interval *prev, mem_alloc m_alloc)
 {
-  unwind_interval *u = (unwind_interval *) hpcrun_ui_malloc(sizeof(unwind_interval)); 
+  bitree_uwi_t *u = bitree_uwi_new(NULL, prev, NULL, m_alloc);
 
+  // DXN TODO: what is this?
 # include "mem_error_gen.h" // **** SPECIAL PURPOSE CODE TO INDUCE MEM FAILURE (conditionally included) ***
 
   hpcrun_stats_num_unwind_intervals_total_inc();
 
-  u->common.start = start;
-  u->common.end = 0;
-
-  u->ra_status = ra_status;
-  u->sp_ra_pos = sp_ra_pos;
-  u->sp_bp_pos = sp_bp_pos;
-
-  u->bp_status = bp_status;
-  u->bp_bp_pos = bp_bp_pos;
-  u->bp_ra_pos = bp_ra_pos;
-
-  u->common.prev = (splay_interval_t *) prev;
-  u->common.next = NULL;
-  u->prev_canonical = NULL;
-  u->restored_canonical = 0;
-  
-  u->has_tail_calls = false;
-
+  interval_t *interval =
+	  interval_t_new(start, 0, m_alloc);
+  x86recipe_t* x86recipe =
+	  x86recipe_new(ra_status, sp_ra_pos, bp_ra_pos, bp_status, sp_bp_pos, bp_bp_pos, m_alloc);
+  bitree_uwi_set_rootval(u, uwi_t_new(interval, (uw_recipe_t*)x86recipe, m_alloc));
   return u; 
 }
 
@@ -143,39 +106,35 @@ new_ui(char *start,
 void
 set_ui_canonical(unwind_interval *u, unwind_interval *value)
 {
-  u->prev_canonical = value;
+  UWI_RECIPE(u)->prev_canonical = value;
 } 
 
 void
 set_ui_restored_canonical(unwind_interval *u, unwind_interval *value)
 {
-  u->restored_canonical = 1;
-  u->prev_canonical = value;
+  UWI_RECIPE(u)->prev_canonical = value;
+  UWI_RECIPE(u)->restored_canonical = 1;
 } 
 
 
 unwind_interval *
-fluke_ui(char *loc,unsigned int pos)
+fluke_ui(char *loc, unsigned int pos, mem_alloc m_alloc)
 {
-  unwind_interval *u = (unwind_interval *) hpcrun_ui_malloc(sizeof(unwind_interval)); 
+  bitree_uwi_t *u = bitree_uwi_new(NULL, NULL, NULL, m_alloc);
+  interval_t *interval =
+	  interval_t_new(loc, loc, m_alloc);
+  x86recipe_t* x86recipe =
+	  x86recipe_new(RA_SP_RELATIVE, pos, 0, 0, 0, 0, m_alloc);
+  bitree_uwi_set_rootval(u, uwi_t_new(interval, (uw_recipe_t*)x86recipe, m_alloc));
+  return u;
 
-  u->common.start = loc;
-  u->common.end = loc;
-
-  u->ra_status = RA_SP_RELATIVE;
-  u->sp_ra_pos = pos;
-
-  u->common.next = NULL;
-  u->common.prev = NULL;
-
-  return u; 
 }
 
 void 
 link_ui(unwind_interval *current, unwind_interval *next)
 {
-  current->common.end = next->common.start;
-  current->common.next= (splay_interval_t *)next;
+  UWI_END_ADDR(current) = UWI_START_ADDR(next);
+  bitree_uwi_set_rightsubtree(current, next);
 }
 
 static void
@@ -184,12 +143,14 @@ _dump_ui_str(unwind_interval *u, char *buf, size_t len)
   snprintf(buf, len, "UNW: start=%p end =%p ra_status=%s sp_ra_pos=%d sp_bp_pos=%d bp_status=%s "
            "bp_ra_pos = %d bp_bp_pos=%d next=%p prev=%p prev_canonical=%p rest_canon=%d\n"
            "has_tail_calls = %d",
-           (void *) u->common.start, (void *) u->common.end, ra_status_string(u->ra_status),
-           u->sp_ra_pos, u->sp_bp_pos, 
-           bp_status_string(u->bp_status),
-           u->bp_ra_pos, u->bp_bp_pos,
-           u->common.next, u->common.prev, u->prev_canonical, u->restored_canonical,
-           u->has_tail_calls);
+           (void *) UWI_START_ADDR(u), (void *) UWI_END_ADDR(u),
+		   ra_status_string(UWI_RECIPE(u)->ra_status),
+		   UWI_RECIPE(u)->sp_ra_pos, UWI_RECIPE(u)->sp_bp_pos,
+           bp_status_string(UWI_RECIPE(u)->bp_status),
+           UWI_RECIPE(u)->bp_ra_pos, UWI_RECIPE(u)->bp_bp_pos,
+		   UWI_NEXT(u), UWI_PREV(u),
+		   UWI_RECIPE(u)->prev_canonical, UWI_RECIPE(u)->restored_canonical,
+           UWI_RECIPE(u)->has_tail_calls);
 }
 
 
@@ -250,6 +211,58 @@ dump_ui_troll(unwind_interval *u)
 
   TMSG(TROLL,buf);
 }
+
+x86recipe_t*
+x86recipe_new(ra_loc ra_status, int sp_ra_pos, int bp_ra_pos,
+	 bp_loc bp_status, int sp_bp_pos, int bp_bp_pos, mem_alloc m_alloc)
+{
+  x86recipe_t* recipe = (x86recipe_t*)m_alloc(sizeof(x86recipe_t));
+  recipe->ra_status = ra_status;
+  recipe->sp_ra_pos = sp_ra_pos;
+  recipe->sp_bp_pos = sp_bp_pos;
+  recipe->bp_status = bp_status;
+  recipe->bp_bp_pos = bp_bp_pos;
+  recipe->bp_ra_pos = bp_ra_pos;
+  recipe->prev_canonical = NULL;
+  recipe->restored_canonical = 0;
+  recipe->has_tail_calls = false;
+  return recipe;
+}
+
+void
+x86recipe_tostr(void* recipe, char str[])
+{
+  // TODO
+  x86recipe_t* x86recipe = (x86recipe_t*)recipe;
+  snprintf(str, MAX_RECIPE_STR, "%s%d%s",
+	  "x86recipe ", x86recipe->sp_ra_pos,
+	  ": tail_call = ", x86recipe->has_tail_calls? "true": "false");
+}
+
+void
+x86recipe_print(void* recipe)
+{
+  char str[MAX_RECIPE_STR];
+  x86recipe_tostr(recipe, str);
+  printf("%s", str);
+}
+
+/*
+ * concrete implementation of the abstract function for printing an abstract
+ * unwind recipe specified in uw_recipe.h
+ */
+void
+uw_recipe_tostr(void* recipe, char str[])
+{
+  x86recipe_tostr((x86recipe_t*)recipe, str);
+}
+
+void
+uw_recipe_print(void* recipe)
+{
+  x86recipe_print((x86recipe_t*)recipe);
+}
+
 
 /*************************************************************************************
  * private operations 

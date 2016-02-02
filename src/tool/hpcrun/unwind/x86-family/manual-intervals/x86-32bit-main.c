@@ -58,26 +58,25 @@ static char main32_signature[] = {
 
 
 static int 
-adjust_32bit_main_intervals(char *ins, int len, interval_status *stat)
+adjust_32bit_main_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(main32_signature);
 
   if (len > siglen && strncmp((char *)main32_signature, ins, siglen) == 0) {
     // signature matched 
-    unwind_interval *ui = (unwind_interval *) stat->first;
+    unwind_interval *ui = stat->first;
 
     // this won't fix all of the intervals, but it will fix the ones 
     // that we care about.
     while(ui) {
-      if (ui->ra_status == RA_STD_FRAME){
-	ui->bp_ra_pos = 4;
-	ui->bp_bp_pos = 0;
-	ui->sp_ra_pos = 4;
-	ui->sp_bp_pos = 0;
+      if (UWI_RECIPE(ui)->ra_status == RA_STD_FRAME){
+    	UWI_RECIPE(ui)->bp_ra_pos = 4;
+    	UWI_RECIPE(ui)->bp_bp_pos = 0;
+    	UWI_RECIPE(ui)->sp_ra_pos = 4;
+    	UWI_RECIPE(ui)->sp_bp_pos = 0;
       }
-      ui = (unwind_interval *)(ui->common).next;
+      ui = UWI_NEXT(ui);
     }
-
     return 1;
   } 
   return 0;

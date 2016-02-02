@@ -65,7 +65,8 @@
  *****************************************************************************/
 
 unwind_interval *
-process_unconditional_branch(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
+process_unconditional_branch(xed_decoded_inst_t *xptr, bool irdebug,
+	interval_arg_t *iarg, mem_alloc m_alloc)
 {
   unwind_interval *next = iarg->current;
 
@@ -74,18 +75,18 @@ process_unconditional_branch(xed_decoded_inst_t *xptr, bool irdebug, interval_ar
     (iarg->highwatermark).state = HW_INITIALIZED;
   }
 
-  reset_to_canonical_interval(xptr, &next, irdebug, iarg);
+  reset_to_canonical_interval(xptr, &next, irdebug, iarg, m_alloc);
 
   TMSG(TAIL_CALL,"checking for tail call via unconditional branch @ %p",iarg->ins);
   void *possible = x86_get_branch_target(iarg->ins, xptr);
   if (possible == NULL) {
     TMSG(TAIL_CALL,"indirect unconditional branch ==> possible tail call");
-    next->has_tail_calls = true;
+    UWI_RECIPE(next)->has_tail_calls = true;
   }
-  else if ((possible >= iarg->end) || (possible < iarg->first->common.start)) {
+  else if ((possible >= iarg->end) || ((uintptr_t)possible < UWI_START_ADDR(iarg->first))) {
     TMSG(TAIL_CALL,"unconditional branch to address %p outside of current routine (%p to %p)",
-         possible, iarg->first->common.start, iarg->end);
-    next->has_tail_calls = true;
+         possible, UWI_START_ADDR(iarg->first), iarg->end);
+    UWI_RECIPE(next)->has_tail_calls = true;
   }
 
   return next;
@@ -106,12 +107,12 @@ process_conditional_branch(xed_decoded_inst_t *xptr,
   void *possible = x86_get_branch_target(iarg->ins, xptr);
   if (possible == NULL) {
     TMSG(TAIL_CALL,"indirect unconditional branch ==> possible tail call");
-    iarg->current->has_tail_calls = true;
+    UWI_RECIPE(iarg->current)->has_tail_calls = true;
   }
-  else if ((possible > iarg->end) || (possible < iarg->first->common.start)) {
+  else if ((possible > iarg->end) || ((uintptr_t)possible < UWI_START_ADDR(iarg->first))) {
     TMSG(TAIL_CALL,"unconditional branch to address %p outside of current routine (%p to %p)",
-         possible, iarg->first->common.start, iarg->end);
-    iarg->current->has_tail_calls = true;
+         possible, UWI_START_ADDR(iarg->first), iarg->end);
+    UWI_RECIPE(iarg->current)->has_tail_calls = true;
   }
 
   return iarg->current;

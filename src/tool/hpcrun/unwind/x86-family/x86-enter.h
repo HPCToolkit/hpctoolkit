@@ -67,7 +67,9 @@
  * interface operations 
  *****************************************************************************/
 
-unwind_interval * process_enter(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg);
+unwind_interval*
+process_enter(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg,
+	mem_alloc m_alloc);
 
 #endif
 

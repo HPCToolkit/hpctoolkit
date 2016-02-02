@@ -53,21 +53,35 @@
 #define _UI_TREE_H_
 
 #include <sys/types.h>
-#include <hpcrun/utilities/ip-normalized.h>
-#include "splay-interval.h"
-#include "splay.h"
+//#include <hpcrun/utilities/ip-normalized.h>
+#include "binarytree_uwi.h"
+#include "ildmod_btuwi_pair.h"
 
-void hpcrun_interval_tree_init(void);
-void hpcrun_release_splay_lock(void);
+void
+uw_recipe_map_init(void);
+
+/*
+ * add a "poisoned" bounding interval with a NULL load module and non-null
+ * bitree_uiw_t tree to the map.
+ */
+bool
+uw_recipe_map_poisoned(uintptr_t start, uintptr_t end);
+
+bool
+uw_recipe_map_lookup(void *addr, load_module_t** ldmod, bitree_uwi_t **uwi);
+
+ildmod_btuwi_pair_t*
+uw_recipe_map_lookup_ildmod_btuwi_pair(void *addr);
+
+void uw_recipe_map_delete_range(void *start, void *end);
+
+void free_ui_node_locked(void *node);
+
+void uw_recipe_map_print(void);
+
+#if 0
 void *hpcrun_ui_malloc(size_t ui_size);
+#endif
 
-splay_interval_t *hpcrun_addr_to_interval(void *addr,
-					  void *ip, ip_normalized_t* ip_norm);
-splay_interval_t *hpcrun_addr_to_interval_locked(void *addr);
-
-void hpcrun_delete_ui_range(void *start, void *end);
-void free_ui_node_locked(interval_tree_node *node);
-
-void hpcrun_print_interval_tree(void);
 
 #endif  /* !_UI_TREE_H_ */

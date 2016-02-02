@@ -57,7 +57,8 @@
 //***************************************************************************
 
 unwind_interval *
-process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
+process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg,
+	mem_alloc m_alloc)
 {
   highwatermark_t *hw_tmp = &(iarg->highwatermark);
 
@@ -76,7 +77,7 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
       if (xed_operand_name(op1) == XED_OPERAND_IMM0) {
 	int sign = (iclass_eq(xptr, XED_ICLASS_ADD)) ? -1 : 1;
 	long immedv = sign * xed_decoded_inst_get_signed_immediate(xptr);
-	ra_loc istatus = iarg->current->ra_status;
+	ra_loc istatus = UWI_RECIPE(iarg->current)->ra_status;
 	if ((istatus == RA_STD_FRAME) && (immedv > 0) &&
 	    (hw_tmp->state & HW_SP_DECREMENTED)) {
 	  //-------------------------------------------------------------------
@@ -92,9 +93,9 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
 	  //-------------------------------------------------------------------
 	}
 	next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), 
-		      istatus, iarg->current->sp_ra_pos + immedv, iarg->current->bp_ra_pos, 
-		      iarg->current->bp_status, iarg->current->sp_bp_pos + immedv, 
-		      iarg->current->bp_bp_pos, iarg->current);
+		      istatus, UWI_RECIPE(iarg->current)->sp_ra_pos + immedv, UWI_RECIPE(iarg->current)->bp_ra_pos, 
+		      UWI_RECIPE(iarg->current)->bp_status, UWI_RECIPE(iarg->current)->sp_bp_pos + immedv, 
+		      UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);
 
 	if (immedv > 0) {
 	  if (HW_TEST_STATE(hw_tmp->state, 0, HW_SP_DECREMENTED)) {
@@ -120,7 +121,7 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
 	  }
 	}
       } else {
-	if (iarg->current->ra_status != RA_BP_FRAME){
+	if (UWI_RECIPE(iarg->current)->ra_status != RA_BP_FRAME){
 	  //-------------------------------------------------------------------
 	  // no immediate in add/subtract from stack pointer; switch to
 	  // BP_FRAME
@@ -128,9 +129,9 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
 	  // 9 December 2007 -- John Mellor-Crummey
 	  //-------------------------------------------------------------------
 	  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), RA_BP_FRAME, 
-			iarg->current->sp_ra_pos, iarg->current->bp_ra_pos, 
-			iarg->current->bp_status, iarg->current->sp_bp_pos, 
-			iarg->current->bp_bp_pos, iarg->current);
+			UWI_RECIPE(iarg->current)->sp_ra_pos, UWI_RECIPE(iarg->current)->bp_ra_pos, 
+			UWI_RECIPE(iarg->current)->bp_status, UWI_RECIPE(iarg->current)->sp_bp_pos, 
+			UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);
 	  iarg->bp_frames_found = true;
 	}
       }

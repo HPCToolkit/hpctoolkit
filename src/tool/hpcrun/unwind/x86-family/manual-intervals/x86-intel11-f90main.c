@@ -60,23 +60,22 @@ static char intel11_f90main_signature[] = {
 };
 
 static int 
-adjust_intel11_f90main_intervals(char *ins, int len, interval_status *stat)
+adjust_intel11_f90main_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(intel11_f90main_signature);
 
   if (len > siglen && strncmp((char *)intel11_f90main_signature, ins, siglen) == 0) {
     // signature matched 
-    unwind_interval *ui = (unwind_interval *) stat->first;
+    unwind_interval *ui = stat->first;
 
     // this won't fix all of the intervals, but it will fix the one we care about.
     while(ui) {
-      if (ui->ra_status == RA_STD_FRAME){
-	ui->bp_ra_pos = 8;
-	ui->bp_bp_pos = 0;
+      if (UWI_RECIPE(ui)->ra_status == RA_STD_FRAME){
+    	UWI_RECIPE(ui)->bp_ra_pos = 8;
+    	UWI_RECIPE(ui)->bp_bp_pos = 0;
       }
-      ui = (unwind_interval *)(ui->common).next;
+      ui = UWI_NEXT(ui);
     }
-
     return 1;
   } 
   return 0;

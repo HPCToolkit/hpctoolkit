@@ -51,8 +51,7 @@
 #include <stdbool.h>
 
 #include <include/hpctoolkit-config.h>
-#include "splay-interval.h"
-#include "x86-unwind-interval.h"
+#include "x86-build-intervals.h"
 
 #include "ui_tree.h"
 
@@ -68,16 +67,17 @@
 
 #include <messages/messages.h>
 
-
+extern void x86_dump_ins(void* addr);
 
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
 
-static void set_status(interval_status *status, char *fui, int errcode, 
-		       unwind_interval *first);
+static void set_status(btuwi_status_t *status, char *fui, int errcode,
+	unwind_interval *first);
 
-interval_status x86_build_intervals(void *ins, unsigned int len, int noisy);
+btuwi_status_t x86_build_intervals(void *ins, unsigned int len, int noisy,
+	mem_alloc m_alloc);
 
 static void x86_coalesce_unwind_intervals(unwind_interval *ui);
 
@@ -85,20 +85,17 @@ static void x86_coalesce_unwind_intervals(unwind_interval *ui);
  * interface operations 
  *****************************************************************************/
 
-interval_status 
-build_intervals(char *ins, unsigned int len)
+btuwi_status_t
+build_intervals(char *ins, unsigned int len, mem_alloc m_alloc)
 {
-  return x86_build_intervals(ins, len, 0);
+  return x86_build_intervals(ins, len, 0, m_alloc);
 }
 
-
-extern void x86_dump_ins(void* addr);
-
-interval_status 
-x86_build_intervals(void *ins, unsigned int len, int noisy)
+btuwi_status_t
+x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
 {
 
-  interval_status status;
+  btuwi_status_t status;
 
   xed_decoded_inst_t xedd;
   xed_decoded_inst_t *xptr = &xedd;
@@ -125,7 +122,7 @@ x86_build_intervals(void *ins, unsigned int len, int noisy)
   iarg.end           = end;
   iarg.highwatermark = _h;
   iarg.ins           = ins;
-  iarg.current       = new_ui(ins, RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, NULL);
+  iarg.current       = new_ui(ins, RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, NULL, m_alloc);
   iarg.first         = iarg.current;
 
   // handle return is different if there are any bp frames
@@ -141,82 +138,78 @@ x86_build_intervals(void *ins, unsigned int len, int noisy)
   if (noisy) dump_ui(iarg.current, true);
 
   while (iarg.ins < end) {
-    if (noisy) {
-      x86_dump_ins(iarg.ins);
-    }
-    xed_decoded_inst_zero_keep_mode(xptr);
-    xed_error = xed_decode(xptr, (uint8_t*) iarg.ins, 15);
-
-    if (xed_error != XED_ERROR_NONE) {
-#if defined(ENABLE_XOP) && defined (HOST_CPU_x86_64)
-      amd_decode_t decode_res;
-      adv_amd_decode(&decode_res, iarg.ins);
-      if (decode_res.success) {
-	if (decode_res.weak) {
-	  // keep count of successes that are not robust
+	if (noisy) {
+	  x86_dump_ins(iarg.ins);
 	}
-	iarg.ins += decode_res.len;
-	continue;
-      }
+	xed_decoded_inst_zero_keep_mode(xptr);
+	xed_error = xed_decode(xptr, (uint8_t*) iarg.ins, 15);
+
+	if (xed_error != XED_ERROR_NONE) {
+#if defined(ENABLE_XOP) && defined (HOST_CPU_x86_64)
+	  amd_decode_t decode_res;
+	  adv_amd_decode(&decode_res, iarg.ins);
+	  if (decode_res.success) {
+		if (decode_res.weak) {
+		  // keep count of successes that are not robust
+		}
+		iarg.ins += decode_res.len;
+		continue;
+	  }
 #endif // ENABLE_XOP and HOST_CPU_x86_64
-      error_count++; /* note the error      */
-      iarg.ins++;         /* skip this byte      */
-      continue;      /* continue onward ... */
-    }
+	  error_count++; /* note the error      */
+	  iarg.ins++;         /* skip this byte      */
+	  continue;      /* continue onward ... */
+	}
 
-    // ensure that we don't move past the end of the interval because of a misaligned instruction
-    void *nextins = iarg.ins + xed_decoded_inst_get_length(xptr);
-    if (nextins > end) break;
+	// ensure that we don't move past the end of the interval because of a misaligned instruction
+	void *nextins = iarg.ins + xed_decoded_inst_get_length(xptr);
+	if (nextins > end) break;
 
-    next = process_inst(xptr, &iarg);
-    
-    if (next == &poison_ui) {
-      set_status(&status, iarg.ins, -1, NULL);
-      return status;
-    }
+	next = process_inst(xptr, &iarg, m_alloc);
 
-    if (next != iarg.current) {
-      link_ui(iarg.current, next);
-      iarg.current = next;
+	if (next != iarg.current) {
+	  link_ui(iarg.current, next);
+	  iarg.current = next;
 
-      if (noisy) dump_ui(iarg.current, true);
-    }
-    iarg.ins += xed_decoded_inst_get_length(xptr);
-    (iarg.current->common).end = iarg.ins;
+	  if (noisy) dump_ui(iarg.current, true);
+	}
+	iarg.ins += xed_decoded_inst_get_length(xptr);
+	UWI_END_ADDR(iarg.current) = (uintptr_t)iarg.ins;
   }
 
-  (iarg.current->common).end = end;
+  UWI_END_ADDR(iarg.current) = (uintptr_t)end;
 
-  set_status(&status, iarg.ins, error_count, iarg.first);
+  set_status(&status, iarg.ins, error_count, bitree_uwi_finalize(iarg.first));
 
   x86_fix_unwind_intervals(iarg.beg, len, &status);
-  x86_coalesce_unwind_intervals((unwind_interval *)status.first);
+  x86_coalesce_unwind_intervals(status.first);
   return status;
-}
-
-bool
-x86_ui_same_data(unwind_interval *proto, unwind_interval *cand)
-{
-  return ( (proto->ra_status == cand->ra_status) &&
-	   (proto->sp_ra_pos == cand->sp_ra_pos) &&
-	   (proto->sp_bp_pos == cand->sp_bp_pos) &&
-	   (proto->bp_status == cand->bp_status) &&
-	   (proto->bp_ra_pos == cand->bp_ra_pos) &&
-	   (proto->bp_bp_pos == cand->bp_bp_pos) );
 }
 
 
 /******************************************************************************
- * private operations 
+ * private operations
  *****************************************************************************/
 
+static bool
+x86_ui_same_data(x86recipe_t *proto, x86recipe_t *cand)
+{
+  return ( (proto->ra_status == cand->ra_status) &&
+	  (proto->sp_ra_pos == cand->sp_ra_pos) &&
+	  (proto->sp_bp_pos == cand->sp_bp_pos) &&
+	  (proto->bp_status == cand->bp_status) &&
+	  (proto->bp_ra_pos == cand->bp_ra_pos) &&
+	  (proto->bp_bp_pos == cand->bp_bp_pos) );
+}
+
+
 static void
-set_status(interval_status *status, char *fui, int errcode, 
-	   unwind_interval *first)
+set_status(btuwi_status_t *status, char *fui, int errcode,
+	unwind_interval *first)
 {
   status->first_undecoded_ins = fui;
   status->errcode = errcode;
-  status->first   = (splay_interval_t *)first;
+  status->first   = first;
 }
 
 // NOTE: following routine has an additional side effect!
@@ -233,63 +226,65 @@ set_status(interval_status *status, char *fui, int errcode,
 //       building time. If more routine-level information items come up, the reduction side
 //       effect of the coalesce routine can be expanded to accomodate.
 
-/* static */ void
+static void
 x86_coalesce_unwind_intervals(unwind_interval *ui)
 {
   TMSG(COALESCE,"coalescing interval list starting @ %p",ui);
   if (! ui) {
-    TMSG(COALESCE,"  --interval list empty, so no work");
-    return;
+	TMSG(COALESCE,"  --interval list empty, so no work");
+	return;
   }
 
   unwind_interval *first   = ui;
   unwind_interval *current = first;
-  ui                       = (unwind_interval *) ui->common.next;
-  
-  bool routine_has_tail_calls = first->has_tail_calls;
+  ui                       = UWI_NEXT(ui);
+
+  bool routine_has_tail_calls = UWI_RECIPE(first)->has_tail_calls;
 
   TMSG(COALESCE," starting prototype interval =");
   if (ENABLED(COALESCE)){
-    dump_ui_log(current);
-  }
-  for (; ui; ui = (unwind_interval *)ui->common.next) {
-    TMSG(COALESCE,"comparing this interval to prototype:");
-    if (ENABLED(COALESCE)){
-      dump_ui_log(ui);
-    }
-    
-    routine_has_tail_calls = routine_has_tail_calls || current->has_tail_calls || ui->has_tail_calls;
-
-    if (x86_ui_same_data(current,ui)){
-      current->common.end  = ui->common.end;
-      current->common.next = ui->common.next;
-      current->has_tail_calls = current->has_tail_calls || ui->has_tail_calls;
-      free_ui_node_locked((interval_tree_node *) ui);
-      ui = current;
-      TMSG(COALESCE,"Intervals match! Extended interval:");
-      if (ENABLED(COALESCE)){
 	dump_ui_log(current);
-      }
-    }
-    else {
-      TMSG(COALESCE,"Interval does not match prototype. Reset prototype to current interval");
-      current = ui;
-    }
+  }
+  for (; ui; ui = UWI_NEXT(ui)) {
+	TMSG(COALESCE,"comparing this interval to prototype:");
+	if (ENABLED(COALESCE)){
+	  dump_ui_log(ui);
+	}
+
+	routine_has_tail_calls =
+		routine_has_tail_calls || UWI_RECIPE(current)->has_tail_calls || UWI_RECIPE(ui)->has_tail_calls;
+
+	if (x86_ui_same_data(UWI_RECIPE(current), UWI_RECIPE(ui))){
+	  UWI_END_ADDR(current) = UWI_END_ADDR(ui);
+	  bitree_uwi_set_rightsubtree(current, UWI_NEXT(ui));
+	  UWI_RECIPE(current)->has_tail_calls =
+		  UWI_RECIPE(current)->has_tail_calls || UWI_RECIPE(ui)->has_tail_calls;
+	  free_ui_node_locked(ui);   // DXN: TODO  Let it leak for now!!!!
+	  ui = current;
+	  TMSG(COALESCE,"Intervals match! Extended interval:");
+	  if (ENABLED(COALESCE)){
+		dump_ui_log(current);
+	  }
+	}
+	else {
+	  TMSG(COALESCE,"Interval does not match prototype. Reset prototype to current interval");
+	  current = ui;
+	}
   }
 
   // update first interval with collected info
-  first->has_tail_calls = routine_has_tail_calls;
+  UWI_RECIPE(first)->has_tail_calls = routine_has_tail_calls;
 
   return;
 }
 
 //*************************** Debug stuff ****************************
 
-static interval_status d_istat;
+static btuwi_status_t d_istat;
 
-interval_status*
-d_build_intervals(void* b, unsigned l)
+btuwi_status_t*
+d_build_intervals(void* b, unsigned l, mem_alloc m_alloc)
 {
-  d_istat = build_intervals(b, l);
+  d_istat = build_intervals(b, l, m_alloc);
   return &d_istat;
 }

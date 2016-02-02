@@ -74,21 +74,27 @@ x86_fnbounds(void* addr)
   return &local;
 }
 
+
 void
-x86_dump_intervals(void* addr) 
+x86_print_intervals(btuwi_status_t intervals)
+{
+  unwind_interval *u;
+  for(u = intervals.first; u; u = UWI_NEXT(u)) {
+    dump_ui_dbg(u);
+  }
+}
+
+void
+x86_dump_intervals(void* addr)
 {
   void *s, *e;
-  unwind_interval *u;
-  interval_status intervals;
+  btuwi_status_t intervals;
 
   fnbounds_enclosing_addr(addr, &s, &e, NULL);
 
-  intervals = x86_build_intervals(s, e - s, 0);
+  intervals = x86_build_intervals(s, e - s, 0, hpcrun_malloc);  // DXN: shelf hcprun_ui_malloc for now
 
-  for(u = (unwind_interval *)intervals.first; u; 
-      u = (unwind_interval *)(u->common).next) {
-    dump_ui_dbg(u);
-  }
+  x86_print_intervals(intervals);
 }
 
 void
@@ -110,8 +116,8 @@ x86_dump_ins(void *ins)
   xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
   
   if (xed_error == XED_ERROR_NONE) {
-    xed_decoded_inst_dump_xed_format(xptr, inst_buf, sizeof(inst_buf), 
-				     (xed_uint64_t)(uintptr_t)ins);
+    xed_format_xed(xptr, inst_buf, sizeof(inst_buf), 
+		   (xed_uint64_t)(uintptr_t)ins);
     sprintf(errbuf, "(%p, %d bytes, %s) %s \n" , ins, 
 	    xed_decoded_inst_get_length(xptr), 
 	    xed_iclass_enum_t2str(iclass(xptr)), inst_buf);
@@ -141,14 +147,13 @@ hpcrun_dump_intervals_noisy(void* addr)
 {
   void *s, *e;
   unwind_interval *u;
-  interval_status intervals;
+  btuwi_status_t intervals;
 
   fnbounds_enclosing_addr(addr, &s, &e, NULL);
 
-  intervals = x86_build_intervals(s, e - s, 1);
+  intervals = x86_build_intervals(s, e - s, 1, hpcrun_malloc); // DXN: shelf hcprun_ui_malloc for now
 
-  for(u = (unwind_interval *)intervals.first; u; 
-      u = (unwind_interval *)(u->common).next) {
+  for(u = intervals.first; u; u = UWI_NEXT(u)) {
     dump_ui_dbg(u);
   }
 }
