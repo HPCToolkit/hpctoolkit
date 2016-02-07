@@ -227,6 +227,7 @@ MONITOR_EXT_WRAP_NAME(fread)(void *ptr, size_t size, size_t count, FILE *stream)
 
   // insert samples before and after the slow functions to make the
   // traces look better.
+
   getcontext(&uc);
   hpcrun_sample_callpath(&uc, metric_id_read, 0, 0, 1);
 

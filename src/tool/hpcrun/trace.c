@@ -210,7 +210,6 @@ hpcrun_trace_close(core_profile_trace_data_t * cptd)
   TMSG(TRACE, "trace close done");
 }
 
-
 //*********************************************************************
 // private operations
 //*********************************************************************

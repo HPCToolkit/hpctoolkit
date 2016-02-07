@@ -131,6 +131,8 @@ ip_normalized_gt(const ip_normalized_t* a, const ip_normalized_t* b)
 ip_normalized_t
 hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm);
 
+void *hpcrun_denormalize_ip(ip_normalized_t *normalized_ip);
+
 //***************************************************************************
 
 #endif // ip_normalized_h

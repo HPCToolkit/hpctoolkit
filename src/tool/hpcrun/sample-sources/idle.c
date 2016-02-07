@@ -99,16 +99,16 @@
  * forward declarations 
  *****************************************************************************/
 
-static void idle_metric_process_blame_for_sample(void* arg, int metric_id, cct_node_t *node, int metric_value);
-
-static void init_hack(void);
+static void idle_metric_process_blame_for_sample(void* arg, int metric_id, 
+						 cct_node_t *node, int metric_value);
 
 
 
 /******************************************************************************
  * local variables
  *****************************************************************************/
-static uintptr_t active_worker_count = 1;// by default is 1 (1 thread)
+static long active_worker_count = 1; // by default is 1 (1 thread)
+static long total_threads       = 1; // by default is 1 (1 thread)
 
 static int idle_metric_id = -1;
 static int work_metric_id = -1;
@@ -117,7 +117,6 @@ static bs_fn_entry_t bs_entry;
 static bool idleness_measurement_enabled = false;
 static bool idleness_blame_information_source_present = false;
 
-double total_threads; 
 
 
 
@@ -147,16 +146,10 @@ METHOD_FN(thread_init_action)
 static void
 METHOD_FN(start)
 {
-  if (!blame_shift_source_available(bs_type_timer) && !blame_shift_source_available(bs_type_cycles)) {
-    STDERR_MSG("HPCToolkit: IDLE metric needs either a REALTIME, CPUTIME, WALLCLOCK, or PAPI_TOT_CYC source.");
-    monitor_real_exit(1);
-  }
-
-  if (idleness_blame_information_source_present == false) {
-    STDERR_MSG("HPCToolkit: IDLE metric specified without a plugin that measures "
-        "idleness and work.\n" 
-        "For dynamic binaries, specify an appropriate plugin with an argument to hpcrun.\n"
-	"For static binaries, specify an appropriate plugin with an argument to hpclink.\n");
+  if (!blame_shift_source_available(bs_type_timer) && 
+      !blame_shift_source_available(bs_type_cycles)) {
+    STDERR_MSG("HPCToolkit: IDLE metric needs either a REALTIME, " 
+	       "CPUTIME, WALLCLOCK, or PAPI_TOT_CYC source.");
     monitor_real_exit(1);
   }
 }
@@ -177,6 +170,14 @@ METHOD_FN(stop)
 static void
 METHOD_FN(shutdown)
 {
+  if (idleness_blame_information_source_present == false) {
+    STDERR_MSG("HPCToolkit: IDLE metric specified without a plugin that measures "
+        "idleness and work.\n" 
+        "For dynamic binaries, specify an appropriate plugin with an argument to hpcrun.\n"
+	"For static binaries, specify an appropriate plugin with an argument to hpclink.\n");
+    monitor_real_exit(1);
+  }
+
   self->state = UNINIT;
 }
 
@@ -187,6 +188,7 @@ METHOD_FN(supports_event,const char *ev_str)
 {
   return hpcrun_ev_is(ev_str, "IDLE");
 }
+
 
 static void
 METHOD_FN(process_event_list, int lush_metrics)
@@ -207,7 +209,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
   TMSG(IDLE, "Metric ids = idle (%d), work(%d)",
        idle_metric_id, work_metric_id);
-  init_hack();
 
 }
 
@@ -270,16 +271,12 @@ idle_metric_process_blame_for_sample(void* arg, int metric_id, cct_node_t *node,
 
 
 static void 
-init_hack()
+idle_metric_adjust_workers(long adjustment)
 {
-  char * num_threads = getenv("OMP_NUM_THREADS");
-  if (!num_threads)
-    active_worker_count = 1;
-  else 
-    active_worker_count = atoi(num_threads);
-  total_threads = active_worker_count;
+  atomic_add(&active_worker_count, adjustment);
+  atomic_add(&total_threads, adjustment);
 
-  TMSG(IDLE, "init_hack called, work = %d", active_worker_count);
+  TMSG(IDLE, "idle_metric_adjust_workers called, work = %d", active_worker_count);
 }
 
 
@@ -287,6 +284,20 @@ init_hack()
 /******************************************************************************
  * interface operations 
  *****************************************************************************/
+
+void 
+idle_metric_thread_start()
+{
+  idle_metric_adjust_workers(1);
+}
+
+
+void 
+idle_metric_thread_end()
+{
+  idle_metric_adjust_workers(-1);
+}
+
 
 void
 idle_metric_register_blame_source()

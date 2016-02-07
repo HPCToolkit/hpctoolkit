@@ -115,6 +115,8 @@
 #define compare_and_swap_ptr(addr, oldval, newval) \
 	compare_and_swap(addr, oldval, newval) 
 
+#define compare_and_swap_bool(addr, oldval, newval) \
+	__sync_bool_compare_and_swap(addr, oldval, newval)
 
 
 #endif

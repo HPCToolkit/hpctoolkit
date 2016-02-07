@@ -87,6 +87,8 @@ MYSOURCES = \
 	\
 	BalancedTree.h BalancedTree.c \
 	\
+	placeholders.c \
+	\
 	lush/lush-support.h lush/lush-support.c
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)

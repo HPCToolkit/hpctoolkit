@@ -69,9 +69,8 @@ typedef struct cct_bundle_t {
   cct_node_t* thread_root;        // root for full unwinds that terminate in 'pthread_create'
 
   cct_node_t* partial_unw_root;   // adjunct tree for partial unwinds
-
+  cct_node_t* unresolved_root;    // special collection of ccts for omp deferred context
   cct_node_t* special_idle_node;  // node to signify "idle" resource (used by trace facility).
-
   cct_ctxt_t* ctxt;               // creation context for bundle
 
   unsigned long num_nodes;        // utility to count nodes. NB: MIGHT go away

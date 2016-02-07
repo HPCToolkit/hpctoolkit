@@ -329,34 +329,42 @@ libagent_tbb_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 libhpcrun_la_DEPENDENCIES = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 	$(am__append_21)
 am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
-	disabled.c cct_insert_backtrace.c env.c epoch.c files.c \
-	handling_sample.c hpcrun_options.c hpcrun_stats.c loadmap.c \
-	metrics.c name.c rank.c sample_event.c sample_prob.c \
-	sample_sources_all.c sample-sources/blame-shift/blame-shift.c \
-	sample-sources/blame-shift/blame-map.c sample-sources/common.c \
-	sample-sources/ga.c sample-sources/io.c \
-	sample-sources/itimer.c sample-sources/idle.c \
-	sample-sources/memleak.c sample-sources/pthread-blame.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c term_handler.c thread_data.c \
-	thread_use.c threadmgr.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	sample-sources/mpi.c fnbounds/fnbounds_client.c \
-	fnbounds/fnbounds_dynamic.c monitor-exts/openmp.c \
-	hpcrun_dlfns.c custom-init-dynamic.c os/linux/dylib.c \
-	unwind/common/default_validation_summary.c \
+	disabled.c cct_insert_backtrace.c cct_backtrace_finalize.c \
+	env.c epoch.c files.c handling_sample.c hpcrun_options.c \
+	hpcrun_stats.c loadmap.c metrics.c name.c rank.c \
+	sample_event.c sample_prob.c sample_sources_all.c \
+	sample-sources/blame-shift/blame-shift.c \
+	sample-sources/blame-shift/blame-map.c \
+	sample-sources/blame-shift/directed.c \
+	sample-sources/blame-shift/undirected.c \
+	sample-sources/omp-mutex.c sample-sources/omp-idle.c \
+	sample-sources/common.c sample-sources/ga.c \
+	sample-sources/io.c sample-sources/itimer.c \
+	sample-sources/idle.c sample-sources/memleak.c \
+	sample-sources/pthread-blame.c sample-sources/none.c \
+	sample-sources/retcnt.c sample-sources/sync.c \
+	sample_sources_registered.c segv_handler.c start-stop.c \
+	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
+	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct2metrics.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c ompt/ompt-callstack.c \
+	ompt/ompt-defer.c ompt/ompt-defer-write.c \
+	ompt/ompt-interface.c ompt/ompt-region.c \
+	ompt/ompt-region-map.c ompt/ompt-state-placeholders.c \
+	ompt/ompt-task.c ompt/ompt-task-map.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c sample-sources/mpi.c \
+	fnbounds/fnbounds_client.c fnbounds/fnbounds_dynamic.c \
+	monitor-exts/openmp.c hpcrun_dlfns.c custom-init-dynamic.c \
+	os/linux/dylib.c unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
 	trampoline/x86-family/x86-tramp.S \
@@ -378,31 +386,35 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind-interval.c \
 	unwind/x86-family/x86-unwind-interval-fixup.c \
 	unwind/x86-family/x86-unwind.c \
+	unwind/x86-family/x86-libunwind.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
 	unwind/x86-family/manual-intervals/x86-intel14-omp.c \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
+	unwind/x86-family/manual-intervals/x86-gcc-adjust.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c \
 	utilities/last_func.c
 @OPT_ENABLE_MPI_WRAP_TRUE@am__objects_7 = libhpcrun_la-mpi.lo
 am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-disabled.lo libhpcrun_la-cct_insert_backtrace.lo \
-	libhpcrun_la-env.lo libhpcrun_la-epoch.lo \
-	libhpcrun_la-files.lo libhpcrun_la-handling_sample.lo \
-	libhpcrun_la-hpcrun_options.lo libhpcrun_la-hpcrun_stats.lo \
-	libhpcrun_la-loadmap.lo libhpcrun_la-metrics.lo \
-	libhpcrun_la-name.lo libhpcrun_la-rank.lo \
-	libhpcrun_la-sample_event.lo libhpcrun_la-sample_prob.lo \
-	libhpcrun_la-sample_sources_all.lo libhpcrun_la-blame-shift.lo \
-	libhpcrun_la-blame-map.lo libhpcrun_la-common.lo \
-	libhpcrun_la-ga.lo libhpcrun_la-io.lo libhpcrun_la-itimer.lo \
-	libhpcrun_la-idle.lo libhpcrun_la-memleak.lo \
-	libhpcrun_la-pthread-blame.lo libhpcrun_la-none.lo \
-	libhpcrun_la-retcnt.lo libhpcrun_la-sync.lo \
-	libhpcrun_la-sample_sources_registered.lo \
+	libhpcrun_la-cct_backtrace_finalize.lo libhpcrun_la-env.lo \
+	libhpcrun_la-epoch.lo libhpcrun_la-files.lo \
+	libhpcrun_la-handling_sample.lo libhpcrun_la-hpcrun_options.lo \
+	libhpcrun_la-hpcrun_stats.lo libhpcrun_la-loadmap.lo \
+	libhpcrun_la-metrics.lo libhpcrun_la-name.lo \
+	libhpcrun_la-rank.lo libhpcrun_la-sample_event.lo \
+	libhpcrun_la-sample_prob.lo libhpcrun_la-sample_sources_all.lo \
+	libhpcrun_la-blame-shift.lo libhpcrun_la-blame-map.lo \
+	libhpcrun_la-directed.lo libhpcrun_la-undirected.lo \
+	libhpcrun_la-omp-mutex.lo libhpcrun_la-omp-idle.lo \
+	libhpcrun_la-common.lo libhpcrun_la-ga.lo libhpcrun_la-io.lo \
+	libhpcrun_la-itimer.lo libhpcrun_la-idle.lo \
+	libhpcrun_la-memleak.lo libhpcrun_la-pthread-blame.lo \
+	libhpcrun_la-none.lo libhpcrun_la-retcnt.lo \
+	libhpcrun_la-sync.lo libhpcrun_la-sample_sources_registered.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-start-stop.lo \
 	libhpcrun_la-term_handler.lo libhpcrun_la-thread_data.lo \
 	libhpcrun_la-thread_use.lo libhpcrun_la-threadmgr.lo \
@@ -416,6 +428,12 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-mem.lo libhpcrun_la-mmap.lo \
 	libhpcrun_la-debug-flag.lo libhpcrun_la-messages-sync.lo \
 	libhpcrun_la-messages-async.lo libhpcrun_la-fmt.lo \
+	libhpcrun_la-ompt-callstack.lo libhpcrun_la-ompt-defer.lo \
+	libhpcrun_la-ompt-defer-write.lo \
+	libhpcrun_la-ompt-interface.lo libhpcrun_la-ompt-region.lo \
+	libhpcrun_la-ompt-region-map.lo \
+	libhpcrun_la-ompt-state-placeholders.lo \
+	libhpcrun_la-ompt-task.lo libhpcrun_la-ompt-task-map.lo \
 	libhpcrun_la-executable-path.lo libhpcrun_la-ip-normalized.lo \
 	libhpcrun_la-tokenize.lo libhpcrun_la-unlink.lo \
 	$(am__objects_7)
@@ -462,12 +480,13 @@ am__objects_32 = $(am__objects_30) libhpcrun_la-x86-all.lo \
 	libhpcrun_la-x86-validate-retn-addr.lo \
 	libhpcrun_la-x86-unwind-interval.lo \
 	libhpcrun_la-x86-unwind-interval-fixup.lo \
-	libhpcrun_la-x86-unwind.lo libhpcrun_la-x86-unwind-support.lo \
+	libhpcrun_la-x86-unwind.lo libhpcrun_la-x86-libunwind.lo \
+	libhpcrun_la-x86-unwind-support.lo \
 	libhpcrun_la-x86-linux-dlresolver.lo \
 	libhpcrun_la-x86-intel11-f90main.lo \
 	libhpcrun_la-x86-intel14-omp.lo \
 	libhpcrun_la-x86-intel-composer2013-mic.lo \
-	libhpcrun_la-x86-32bit-main.lo \
+	libhpcrun_la-x86-32bit-main.lo libhpcrun_la-x86-gcc-adjust.lo \
 	libhpcrun_la-x86-32bit-icc-variant.lo \
 	libhpcrun_la-x86-pgi-mp_pexit.lo
 @UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_33 = $(am__objects_32)
@@ -547,32 +566,40 @@ libhpctoolkit_la_OBJECTS = $(am_libhpctoolkit_la_OBJECTS)
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@am__EXEEXT_1 = libhpcrun.o$(EXEEXT)
 PROGRAMS = $(pkglib_PROGRAMS)
 am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
-	disabled.c cct_insert_backtrace.c env.c epoch.c files.c \
-	handling_sample.c hpcrun_options.c hpcrun_stats.c loadmap.c \
-	metrics.c name.c rank.c sample_event.c sample_prob.c \
-	sample_sources_all.c sample-sources/blame-shift/blame-shift.c \
-	sample-sources/blame-shift/blame-map.c sample-sources/common.c \
-	sample-sources/ga.c sample-sources/io.c \
-	sample-sources/itimer.c sample-sources/idle.c \
-	sample-sources/memleak.c sample-sources/pthread-blame.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c term_handler.c thread_data.c \
-	thread_use.c threadmgr.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	sample-sources/mpi.c fnbounds/fnbounds_static.c \
-	custom-init-static.c \
+	disabled.c cct_insert_backtrace.c cct_backtrace_finalize.c \
+	env.c epoch.c files.c handling_sample.c hpcrun_options.c \
+	hpcrun_stats.c loadmap.c metrics.c name.c rank.c \
+	sample_event.c sample_prob.c sample_sources_all.c \
+	sample-sources/blame-shift/blame-shift.c \
+	sample-sources/blame-shift/blame-map.c \
+	sample-sources/blame-shift/directed.c \
+	sample-sources/blame-shift/undirected.c \
+	sample-sources/omp-mutex.c sample-sources/omp-idle.c \
+	sample-sources/common.c sample-sources/ga.c \
+	sample-sources/io.c sample-sources/itimer.c \
+	sample-sources/idle.c sample-sources/memleak.c \
+	sample-sources/pthread-blame.c sample-sources/none.c \
+	sample-sources/retcnt.c sample-sources/sync.c \
+	sample_sources_registered.c segv_handler.c start-stop.c \
+	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
+	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct2metrics.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c ompt/ompt-callstack.c \
+	ompt/ompt-defer.c ompt/ompt-defer-write.c \
+	ompt/ompt-interface.c ompt/ompt-region.c \
+	ompt/ompt-region-map.c ompt/ompt-state-placeholders.c \
+	ompt/ompt-task.c ompt/ompt-task-map.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c sample-sources/mpi.c \
+	fnbounds/fnbounds_static.c custom-init-static.c \
 	unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
@@ -593,12 +620,14 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind-interval.c \
 	unwind/x86-family/x86-unwind-interval-fixup.c \
 	unwind/x86-family/x86-unwind.c \
+	unwind/x86-family/x86-libunwind.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
 	unwind/x86-family/manual-intervals/x86-intel14-omp.c \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
+	unwind/x86-family/manual-intervals/x86-gcc-adjust.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c \
 	utilities/last_func.c
@@ -606,6 +635,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 am__objects_35 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-main.$(OBJEXT) libhpcrun_o-disabled.$(OBJEXT) \
 	libhpcrun_o-cct_insert_backtrace.$(OBJEXT) \
+	libhpcrun_o-cct_backtrace_finalize.$(OBJEXT) \
 	libhpcrun_o-env.$(OBJEXT) libhpcrun_o-epoch.$(OBJEXT) \
 	libhpcrun_o-files.$(OBJEXT) \
 	libhpcrun_o-handling_sample.$(OBJEXT) \
@@ -617,10 +647,12 @@ am__objects_35 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-sample_prob.$(OBJEXT) \
 	libhpcrun_o-sample_sources_all.$(OBJEXT) \
 	libhpcrun_o-blame-shift.$(OBJEXT) \
-	libhpcrun_o-blame-map.$(OBJEXT) libhpcrun_o-common.$(OBJEXT) \
-	libhpcrun_o-ga.$(OBJEXT) libhpcrun_o-io.$(OBJEXT) \
-	libhpcrun_o-itimer.$(OBJEXT) libhpcrun_o-idle.$(OBJEXT) \
-	libhpcrun_o-memleak.$(OBJEXT) \
+	libhpcrun_o-blame-map.$(OBJEXT) libhpcrun_o-directed.$(OBJEXT) \
+	libhpcrun_o-undirected.$(OBJEXT) \
+	libhpcrun_o-omp-mutex.$(OBJEXT) libhpcrun_o-omp-idle.$(OBJEXT) \
+	libhpcrun_o-common.$(OBJEXT) libhpcrun_o-ga.$(OBJEXT) \
+	libhpcrun_o-io.$(OBJEXT) libhpcrun_o-itimer.$(OBJEXT) \
+	libhpcrun_o-idle.$(OBJEXT) libhpcrun_o-memleak.$(OBJEXT) \
 	libhpcrun_o-pthread-blame.$(OBJEXT) libhpcrun_o-none.$(OBJEXT) \
 	libhpcrun_o-retcnt.$(OBJEXT) libhpcrun_o-sync.$(OBJEXT) \
 	libhpcrun_o-sample_sources_registered.$(OBJEXT) \
@@ -644,6 +676,15 @@ am__objects_35 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-debug-flag.$(OBJEXT) \
 	libhpcrun_o-messages-sync.$(OBJEXT) \
 	libhpcrun_o-messages-async.$(OBJEXT) libhpcrun_o-fmt.$(OBJEXT) \
+	libhpcrun_o-ompt-callstack.$(OBJEXT) \
+	libhpcrun_o-ompt-defer.$(OBJEXT) \
+	libhpcrun_o-ompt-defer-write.$(OBJEXT) \
+	libhpcrun_o-ompt-interface.$(OBJEXT) \
+	libhpcrun_o-ompt-region.$(OBJEXT) \
+	libhpcrun_o-ompt-region-map.$(OBJEXT) \
+	libhpcrun_o-ompt-state-placeholders.$(OBJEXT) \
+	libhpcrun_o-ompt-task.$(OBJEXT) \
+	libhpcrun_o-ompt-task-map.$(OBJEXT) \
 	libhpcrun_o-executable-path.$(OBJEXT) \
 	libhpcrun_o-ip-normalized.$(OBJEXT) \
 	libhpcrun_o-tokenize.$(OBJEXT) libhpcrun_o-unlink.$(OBJEXT) \
@@ -689,12 +730,14 @@ am__objects_54 = $(am__objects_52) libhpcrun_o-x86-all.$(OBJEXT) \
 	libhpcrun_o-x86-unwind-interval.$(OBJEXT) \
 	libhpcrun_o-x86-unwind-interval-fixup.$(OBJEXT) \
 	libhpcrun_o-x86-unwind.$(OBJEXT) \
+	libhpcrun_o-x86-libunwind.$(OBJEXT) \
 	libhpcrun_o-x86-unwind-support.$(OBJEXT) \
 	libhpcrun_o-x86-linux-dlresolver.$(OBJEXT) \
 	libhpcrun_o-x86-intel11-f90main.$(OBJEXT) \
 	libhpcrun_o-x86-intel14-omp.$(OBJEXT) \
 	libhpcrun_o-x86-intel-composer2013-mic.$(OBJEXT) \
 	libhpcrun_o-x86-32bit-main.$(OBJEXT) \
+	libhpcrun_o-x86-gcc-adjust.$(OBJEXT) \
 	libhpcrun_o-x86-32bit-icc-variant.$(OBJEXT) \
 	libhpcrun_o-x86-pgi-mp_pexit.$(OBJEXT)
 @UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_55 = $(am__objects_54)
@@ -1114,12 +1157,14 @@ UNW_X86_FILES = \
 	unwind/x86-family/x86-unwind-interval.c		\
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
 	unwind/x86-family/x86-unwind.c		        \
+	unwind/x86-family/x86-libunwind.c               \
 	unwind/x86-family/x86-unwind-support.c		\
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
 	unwind/x86-family/manual-intervals/x86-intel14-omp.c \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
+	unwind/x86-family/manual-intervals/x86-gcc-adjust.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c
 
@@ -1165,31 +1210,38 @@ UNW_MIPS_INCLUDE_DIRS = \
 
 UNW_MIPS_LD_FLAGS = 
 MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
-	cct_insert_backtrace.c env.c epoch.c files.c handling_sample.c \
-	hpcrun_options.c hpcrun_stats.c loadmap.c metrics.c name.c \
-	rank.c sample_event.c sample_prob.c sample_sources_all.c \
-	sample-sources/blame-shift/blame-shift.c \
-	sample-sources/blame-shift/blame-map.c sample-sources/common.c \
-	sample-sources/ga.c sample-sources/io.c \
-	sample-sources/itimer.c sample-sources/idle.c \
-	sample-sources/memleak.c sample-sources/pthread-blame.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c start-stop.c term_handler.c thread_data.c \
-	thread_use.c threadmgr.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	$(am__append_16)
+	cct_insert_backtrace.c cct_backtrace_finalize.c env.c epoch.c \
+	files.c handling_sample.c hpcrun_options.c hpcrun_stats.c \
+	loadmap.c metrics.c name.c rank.c sample_event.c sample_prob.c \
+	sample_sources_all.c sample-sources/blame-shift/blame-shift.c \
+	sample-sources/blame-shift/blame-map.c \
+	sample-sources/blame-shift/directed.c \
+	sample-sources/blame-shift/undirected.c \
+	sample-sources/omp-mutex.c sample-sources/omp-idle.c \
+	sample-sources/common.c sample-sources/ga.c \
+	sample-sources/io.c sample-sources/itimer.c \
+	sample-sources/idle.c sample-sources/memleak.c \
+	sample-sources/pthread-blame.c sample-sources/none.c \
+	sample-sources/retcnt.c sample-sources/sync.c \
+	sample_sources_registered.c segv_handler.c start-stop.c \
+	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
+	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct2metrics.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c ompt/ompt-callstack.c \
+	ompt/ompt-defer.c ompt/ompt-defer-write.c \
+	ompt/ompt-interface.c ompt/ompt-region.c \
+	ompt/ompt-region-map.c ompt/ompt-state-placeholders.c \
+	ompt/ompt-task.c ompt/ompt-task-map.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c $(am__append_16)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -1236,6 +1288,7 @@ MY_INCLUDE_DIRS = \
 	-I$(srcdir)/memory		\
 	-I$(srcdir)/os/linux		\
 	-I$(srcdir)/cct			\
+	-I$(srcdir)/ompt                \
 	-I$(srcdir)/unwind/common	\
 	-I$(srcdir)/utilities		\
 	$(HPC_IFLAGS)			\
@@ -1786,6 +1839,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-blame-shift.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct2metrics.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct_backtrace_finalize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct_bundle.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct_ctxt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct_insert_backtrace.Plo@am__quote@
@@ -1793,6 +1847,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-custom-init-dynamic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-debug-flag.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-default_validation_summary.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-directed.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-disabled.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-dylib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-env.Plo@am__quote@
@@ -1836,6 +1891,17 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-mpi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-name.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-none.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-omp-idle.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-omp-mutex.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ompt-callstack.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ompt-defer-write.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ompt-defer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ompt-interface.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ompt-region-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ompt-region.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ompt-state-placeholders.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ompt-task-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ompt-task.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-openmp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-papi-c-cupti.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-papi-c-extended-info.Plo@am__quote@
@@ -1864,6 +1930,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-trace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-trampoline.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ui_tree.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-undirected.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-unlink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-unw-throw.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-upc.Plo@am__quote@
@@ -1874,9 +1941,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-all.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-cold-path.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-context-pc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-gcc-adjust.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-intel-composer2013-mic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-intel11-f90main.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-intel14-omp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-libunwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-linux-dlresolver.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-pgi-mp_pexit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-tramp.Plo@am__quote@
@@ -1894,6 +1963,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-blame-shift.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct2metrics.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct_backtrace_finalize.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct_bundle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct_ctxt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct_insert_backtrace.Po@am__quote@
@@ -1901,6 +1971,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-custom-init-static.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-debug-flag.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-default_validation_summary.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-directed.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-disabled.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-env.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-epoch.Po@am__quote@
@@ -1937,6 +2008,17 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-mpi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-name.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-none.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-omp-idle.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-omp-mutex.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ompt-callstack.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ompt-defer-write.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ompt-defer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ompt-interface.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ompt-region-map.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ompt-region.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ompt-state-placeholders.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ompt-task-map.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ompt-task.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi-c-cupti.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi-c-extended-info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi-c.Po@am__quote@
@@ -1964,6 +2046,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-trace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-trampoline.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ui_tree.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-undirected.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-unlink.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-unw-throw.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-upc.Po@am__quote@
@@ -1974,9 +2057,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-all.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-cold-path.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-context-pc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-gcc-adjust.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-intel-composer2013-mic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-intel11-f90main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-intel14-omp.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-libunwind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-linux-dlresolver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-pgi-mp_pexit.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-tramp.Po@am__quote@
@@ -2264,6 +2349,13 @@ libhpcrun_la-cct_insert_backtrace.lo: cct_insert_backtrace.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-cct_insert_backtrace.lo `test -f 'cct_insert_backtrace.c' || echo '$(srcdir)/'`cct_insert_backtrace.c
 
+libhpcrun_la-cct_backtrace_finalize.lo: cct_backtrace_finalize.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-cct_backtrace_finalize.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-cct_backtrace_finalize.Tpo -c -o libhpcrun_la-cct_backtrace_finalize.lo `test -f 'cct_backtrace_finalize.c' || echo '$(srcdir)/'`cct_backtrace_finalize.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-cct_backtrace_finalize.Tpo $(DEPDIR)/libhpcrun_la-cct_backtrace_finalize.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cct_backtrace_finalize.c' object='libhpcrun_la-cct_backtrace_finalize.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-cct_backtrace_finalize.lo `test -f 'cct_backtrace_finalize.c' || echo '$(srcdir)/'`cct_backtrace_finalize.c
+
 libhpcrun_la-env.lo: env.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-env.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-env.Tpo -c -o libhpcrun_la-env.lo `test -f 'env.c' || echo '$(srcdir)/'`env.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-env.Tpo $(DEPDIR)/libhpcrun_la-env.Plo
@@ -2368,6 +2460,34 @@ libhpcrun_la-blame-map.lo: sample-sources/blame-shift/blame-map.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift/blame-map.c' object='libhpcrun_la-blame-map.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-blame-map.lo `test -f 'sample-sources/blame-shift/blame-map.c' || echo '$(srcdir)/'`sample-sources/blame-shift/blame-map.c
+
+libhpcrun_la-directed.lo: sample-sources/blame-shift/directed.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-directed.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-directed.Tpo -c -o libhpcrun_la-directed.lo `test -f 'sample-sources/blame-shift/directed.c' || echo '$(srcdir)/'`sample-sources/blame-shift/directed.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-directed.Tpo $(DEPDIR)/libhpcrun_la-directed.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift/directed.c' object='libhpcrun_la-directed.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-directed.lo `test -f 'sample-sources/blame-shift/directed.c' || echo '$(srcdir)/'`sample-sources/blame-shift/directed.c
+
+libhpcrun_la-undirected.lo: sample-sources/blame-shift/undirected.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-undirected.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-undirected.Tpo -c -o libhpcrun_la-undirected.lo `test -f 'sample-sources/blame-shift/undirected.c' || echo '$(srcdir)/'`sample-sources/blame-shift/undirected.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-undirected.Tpo $(DEPDIR)/libhpcrun_la-undirected.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift/undirected.c' object='libhpcrun_la-undirected.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-undirected.lo `test -f 'sample-sources/blame-shift/undirected.c' || echo '$(srcdir)/'`sample-sources/blame-shift/undirected.c
+
+libhpcrun_la-omp-mutex.lo: sample-sources/omp-mutex.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-omp-mutex.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-omp-mutex.Tpo -c -o libhpcrun_la-omp-mutex.lo `test -f 'sample-sources/omp-mutex.c' || echo '$(srcdir)/'`sample-sources/omp-mutex.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-omp-mutex.Tpo $(DEPDIR)/libhpcrun_la-omp-mutex.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/omp-mutex.c' object='libhpcrun_la-omp-mutex.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-omp-mutex.lo `test -f 'sample-sources/omp-mutex.c' || echo '$(srcdir)/'`sample-sources/omp-mutex.c
+
+libhpcrun_la-omp-idle.lo: sample-sources/omp-idle.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-omp-idle.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-omp-idle.Tpo -c -o libhpcrun_la-omp-idle.lo `test -f 'sample-sources/omp-idle.c' || echo '$(srcdir)/'`sample-sources/omp-idle.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-omp-idle.Tpo $(DEPDIR)/libhpcrun_la-omp-idle.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/omp-idle.c' object='libhpcrun_la-omp-idle.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-omp-idle.lo `test -f 'sample-sources/omp-idle.c' || echo '$(srcdir)/'`sample-sources/omp-idle.c
 
 libhpcrun_la-common.lo: sample-sources/common.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-common.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-common.Tpo -c -o libhpcrun_la-common.lo `test -f 'sample-sources/common.c' || echo '$(srcdir)/'`sample-sources/common.c
@@ -2627,6 +2747,69 @@ libhpcrun_la-fmt.lo: messages/fmt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/fmt.c' object='libhpcrun_la-fmt.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-fmt.lo `test -f 'messages/fmt.c' || echo '$(srcdir)/'`messages/fmt.c
+
+libhpcrun_la-ompt-callstack.lo: ompt/ompt-callstack.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ompt-callstack.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ompt-callstack.Tpo -c -o libhpcrun_la-ompt-callstack.lo `test -f 'ompt/ompt-callstack.c' || echo '$(srcdir)/'`ompt/ompt-callstack.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-ompt-callstack.Tpo $(DEPDIR)/libhpcrun_la-ompt-callstack.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-callstack.c' object='libhpcrun_la-ompt-callstack.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ompt-callstack.lo `test -f 'ompt/ompt-callstack.c' || echo '$(srcdir)/'`ompt/ompt-callstack.c
+
+libhpcrun_la-ompt-defer.lo: ompt/ompt-defer.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ompt-defer.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ompt-defer.Tpo -c -o libhpcrun_la-ompt-defer.lo `test -f 'ompt/ompt-defer.c' || echo '$(srcdir)/'`ompt/ompt-defer.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-ompt-defer.Tpo $(DEPDIR)/libhpcrun_la-ompt-defer.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-defer.c' object='libhpcrun_la-ompt-defer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ompt-defer.lo `test -f 'ompt/ompt-defer.c' || echo '$(srcdir)/'`ompt/ompt-defer.c
+
+libhpcrun_la-ompt-defer-write.lo: ompt/ompt-defer-write.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ompt-defer-write.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ompt-defer-write.Tpo -c -o libhpcrun_la-ompt-defer-write.lo `test -f 'ompt/ompt-defer-write.c' || echo '$(srcdir)/'`ompt/ompt-defer-write.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-ompt-defer-write.Tpo $(DEPDIR)/libhpcrun_la-ompt-defer-write.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-defer-write.c' object='libhpcrun_la-ompt-defer-write.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ompt-defer-write.lo `test -f 'ompt/ompt-defer-write.c' || echo '$(srcdir)/'`ompt/ompt-defer-write.c
+
+libhpcrun_la-ompt-interface.lo: ompt/ompt-interface.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ompt-interface.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ompt-interface.Tpo -c -o libhpcrun_la-ompt-interface.lo `test -f 'ompt/ompt-interface.c' || echo '$(srcdir)/'`ompt/ompt-interface.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-ompt-interface.Tpo $(DEPDIR)/libhpcrun_la-ompt-interface.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-interface.c' object='libhpcrun_la-ompt-interface.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ompt-interface.lo `test -f 'ompt/ompt-interface.c' || echo '$(srcdir)/'`ompt/ompt-interface.c
+
+libhpcrun_la-ompt-region.lo: ompt/ompt-region.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ompt-region.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ompt-region.Tpo -c -o libhpcrun_la-ompt-region.lo `test -f 'ompt/ompt-region.c' || echo '$(srcdir)/'`ompt/ompt-region.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-ompt-region.Tpo $(DEPDIR)/libhpcrun_la-ompt-region.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-region.c' object='libhpcrun_la-ompt-region.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ompt-region.lo `test -f 'ompt/ompt-region.c' || echo '$(srcdir)/'`ompt/ompt-region.c
+
+libhpcrun_la-ompt-region-map.lo: ompt/ompt-region-map.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ompt-region-map.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ompt-region-map.Tpo -c -o libhpcrun_la-ompt-region-map.lo `test -f 'ompt/ompt-region-map.c' || echo '$(srcdir)/'`ompt/ompt-region-map.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-ompt-region-map.Tpo $(DEPDIR)/libhpcrun_la-ompt-region-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-region-map.c' object='libhpcrun_la-ompt-region-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ompt-region-map.lo `test -f 'ompt/ompt-region-map.c' || echo '$(srcdir)/'`ompt/ompt-region-map.c
+
+libhpcrun_la-ompt-state-placeholders.lo: ompt/ompt-state-placeholders.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ompt-state-placeholders.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ompt-state-placeholders.Tpo -c -o libhpcrun_la-ompt-state-placeholders.lo `test -f 'ompt/ompt-state-placeholders.c' || echo '$(srcdir)/'`ompt/ompt-state-placeholders.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-ompt-state-placeholders.Tpo $(DEPDIR)/libhpcrun_la-ompt-state-placeholders.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-state-placeholders.c' object='libhpcrun_la-ompt-state-placeholders.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ompt-state-placeholders.lo `test -f 'ompt/ompt-state-placeholders.c' || echo '$(srcdir)/'`ompt/ompt-state-placeholders.c
+
+libhpcrun_la-ompt-task.lo: ompt/ompt-task.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ompt-task.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ompt-task.Tpo -c -o libhpcrun_la-ompt-task.lo `test -f 'ompt/ompt-task.c' || echo '$(srcdir)/'`ompt/ompt-task.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-ompt-task.Tpo $(DEPDIR)/libhpcrun_la-ompt-task.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-task.c' object='libhpcrun_la-ompt-task.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ompt-task.lo `test -f 'ompt/ompt-task.c' || echo '$(srcdir)/'`ompt/ompt-task.c
+
+libhpcrun_la-ompt-task-map.lo: ompt/ompt-task-map.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ompt-task-map.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ompt-task-map.Tpo -c -o libhpcrun_la-ompt-task-map.lo `test -f 'ompt/ompt-task-map.c' || echo '$(srcdir)/'`ompt/ompt-task-map.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-ompt-task-map.Tpo $(DEPDIR)/libhpcrun_la-ompt-task-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-task-map.c' object='libhpcrun_la-ompt-task-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ompt-task-map.lo `test -f 'ompt/ompt-task-map.c' || echo '$(srcdir)/'`ompt/ompt-task-map.c
 
 libhpcrun_la-executable-path.lo: utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-executable-path.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-executable-path.Tpo -c -o libhpcrun_la-executable-path.lo `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c
@@ -2901,6 +3084,13 @@ libhpcrun_la-x86-unwind.lo: unwind/x86-family/x86-unwind.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-x86-unwind.lo `test -f 'unwind/x86-family/x86-unwind.c' || echo '$(srcdir)/'`unwind/x86-family/x86-unwind.c
 
+libhpcrun_la-x86-libunwind.lo: unwind/x86-family/x86-libunwind.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-x86-libunwind.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-x86-libunwind.Tpo -c -o libhpcrun_la-x86-libunwind.lo `test -f 'unwind/x86-family/x86-libunwind.c' || echo '$(srcdir)/'`unwind/x86-family/x86-libunwind.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-x86-libunwind.Tpo $(DEPDIR)/libhpcrun_la-x86-libunwind.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/x86-libunwind.c' object='libhpcrun_la-x86-libunwind.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-x86-libunwind.lo `test -f 'unwind/x86-family/x86-libunwind.c' || echo '$(srcdir)/'`unwind/x86-family/x86-libunwind.c
+
 libhpcrun_la-x86-unwind-support.lo: unwind/x86-family/x86-unwind-support.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-x86-unwind-support.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-x86-unwind-support.Tpo -c -o libhpcrun_la-x86-unwind-support.lo `test -f 'unwind/x86-family/x86-unwind-support.c' || echo '$(srcdir)/'`unwind/x86-family/x86-unwind-support.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-x86-unwind-support.Tpo $(DEPDIR)/libhpcrun_la-x86-unwind-support.Plo
@@ -2942,6 +3132,13 @@ libhpcrun_la-x86-32bit-main.lo: unwind/x86-family/manual-intervals/x86-32bit-mai
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-32bit-main.c' object='libhpcrun_la-x86-32bit-main.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-x86-32bit-main.lo `test -f 'unwind/x86-family/manual-intervals/x86-32bit-main.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-32bit-main.c
+
+libhpcrun_la-x86-gcc-adjust.lo: unwind/x86-family/manual-intervals/x86-gcc-adjust.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-x86-gcc-adjust.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-x86-gcc-adjust.Tpo -c -o libhpcrun_la-x86-gcc-adjust.lo `test -f 'unwind/x86-family/manual-intervals/x86-gcc-adjust.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-gcc-adjust.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-x86-gcc-adjust.Tpo $(DEPDIR)/libhpcrun_la-x86-gcc-adjust.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-gcc-adjust.c' object='libhpcrun_la-x86-gcc-adjust.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-x86-gcc-adjust.lo `test -f 'unwind/x86-family/manual-intervals/x86-gcc-adjust.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-gcc-adjust.c
 
 libhpcrun_la-x86-32bit-icc-variant.lo: unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-x86-32bit-icc-variant.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-x86-32bit-icc-variant.Tpo -c -o libhpcrun_la-x86-32bit-icc-variant.lo `test -f 'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c
@@ -3082,6 +3279,20 @@ libhpcrun_o-cct_insert_backtrace.obj: cct_insert_backtrace.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cct_insert_backtrace.c' object='libhpcrun_o-cct_insert_backtrace.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-cct_insert_backtrace.obj `if test -f 'cct_insert_backtrace.c'; then $(CYGPATH_W) 'cct_insert_backtrace.c'; else $(CYGPATH_W) '$(srcdir)/cct_insert_backtrace.c'; fi`
+
+libhpcrun_o-cct_backtrace_finalize.o: cct_backtrace_finalize.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-cct_backtrace_finalize.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-cct_backtrace_finalize.Tpo -c -o libhpcrun_o-cct_backtrace_finalize.o `test -f 'cct_backtrace_finalize.c' || echo '$(srcdir)/'`cct_backtrace_finalize.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-cct_backtrace_finalize.Tpo $(DEPDIR)/libhpcrun_o-cct_backtrace_finalize.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cct_backtrace_finalize.c' object='libhpcrun_o-cct_backtrace_finalize.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-cct_backtrace_finalize.o `test -f 'cct_backtrace_finalize.c' || echo '$(srcdir)/'`cct_backtrace_finalize.c
+
+libhpcrun_o-cct_backtrace_finalize.obj: cct_backtrace_finalize.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-cct_backtrace_finalize.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-cct_backtrace_finalize.Tpo -c -o libhpcrun_o-cct_backtrace_finalize.obj `if test -f 'cct_backtrace_finalize.c'; then $(CYGPATH_W) 'cct_backtrace_finalize.c'; else $(CYGPATH_W) '$(srcdir)/cct_backtrace_finalize.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-cct_backtrace_finalize.Tpo $(DEPDIR)/libhpcrun_o-cct_backtrace_finalize.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cct_backtrace_finalize.c' object='libhpcrun_o-cct_backtrace_finalize.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-cct_backtrace_finalize.obj `if test -f 'cct_backtrace_finalize.c'; then $(CYGPATH_W) 'cct_backtrace_finalize.c'; else $(CYGPATH_W) '$(srcdir)/cct_backtrace_finalize.c'; fi`
 
 libhpcrun_o-env.o: env.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-env.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-env.Tpo -c -o libhpcrun_o-env.o `test -f 'env.c' || echo '$(srcdir)/'`env.c
@@ -3292,6 +3503,62 @@ libhpcrun_o-blame-map.obj: sample-sources/blame-shift/blame-map.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift/blame-map.c' object='libhpcrun_o-blame-map.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-blame-map.obj `if test -f 'sample-sources/blame-shift/blame-map.c'; then $(CYGPATH_W) 'sample-sources/blame-shift/blame-map.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/blame-shift/blame-map.c'; fi`
+
+libhpcrun_o-directed.o: sample-sources/blame-shift/directed.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-directed.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-directed.Tpo -c -o libhpcrun_o-directed.o `test -f 'sample-sources/blame-shift/directed.c' || echo '$(srcdir)/'`sample-sources/blame-shift/directed.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-directed.Tpo $(DEPDIR)/libhpcrun_o-directed.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift/directed.c' object='libhpcrun_o-directed.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-directed.o `test -f 'sample-sources/blame-shift/directed.c' || echo '$(srcdir)/'`sample-sources/blame-shift/directed.c
+
+libhpcrun_o-directed.obj: sample-sources/blame-shift/directed.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-directed.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-directed.Tpo -c -o libhpcrun_o-directed.obj `if test -f 'sample-sources/blame-shift/directed.c'; then $(CYGPATH_W) 'sample-sources/blame-shift/directed.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/blame-shift/directed.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-directed.Tpo $(DEPDIR)/libhpcrun_o-directed.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift/directed.c' object='libhpcrun_o-directed.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-directed.obj `if test -f 'sample-sources/blame-shift/directed.c'; then $(CYGPATH_W) 'sample-sources/blame-shift/directed.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/blame-shift/directed.c'; fi`
+
+libhpcrun_o-undirected.o: sample-sources/blame-shift/undirected.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-undirected.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-undirected.Tpo -c -o libhpcrun_o-undirected.o `test -f 'sample-sources/blame-shift/undirected.c' || echo '$(srcdir)/'`sample-sources/blame-shift/undirected.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-undirected.Tpo $(DEPDIR)/libhpcrun_o-undirected.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift/undirected.c' object='libhpcrun_o-undirected.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-undirected.o `test -f 'sample-sources/blame-shift/undirected.c' || echo '$(srcdir)/'`sample-sources/blame-shift/undirected.c
+
+libhpcrun_o-undirected.obj: sample-sources/blame-shift/undirected.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-undirected.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-undirected.Tpo -c -o libhpcrun_o-undirected.obj `if test -f 'sample-sources/blame-shift/undirected.c'; then $(CYGPATH_W) 'sample-sources/blame-shift/undirected.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/blame-shift/undirected.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-undirected.Tpo $(DEPDIR)/libhpcrun_o-undirected.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/blame-shift/undirected.c' object='libhpcrun_o-undirected.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-undirected.obj `if test -f 'sample-sources/blame-shift/undirected.c'; then $(CYGPATH_W) 'sample-sources/blame-shift/undirected.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/blame-shift/undirected.c'; fi`
+
+libhpcrun_o-omp-mutex.o: sample-sources/omp-mutex.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-omp-mutex.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-omp-mutex.Tpo -c -o libhpcrun_o-omp-mutex.o `test -f 'sample-sources/omp-mutex.c' || echo '$(srcdir)/'`sample-sources/omp-mutex.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-omp-mutex.Tpo $(DEPDIR)/libhpcrun_o-omp-mutex.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/omp-mutex.c' object='libhpcrun_o-omp-mutex.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-omp-mutex.o `test -f 'sample-sources/omp-mutex.c' || echo '$(srcdir)/'`sample-sources/omp-mutex.c
+
+libhpcrun_o-omp-mutex.obj: sample-sources/omp-mutex.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-omp-mutex.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-omp-mutex.Tpo -c -o libhpcrun_o-omp-mutex.obj `if test -f 'sample-sources/omp-mutex.c'; then $(CYGPATH_W) 'sample-sources/omp-mutex.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/omp-mutex.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-omp-mutex.Tpo $(DEPDIR)/libhpcrun_o-omp-mutex.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/omp-mutex.c' object='libhpcrun_o-omp-mutex.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-omp-mutex.obj `if test -f 'sample-sources/omp-mutex.c'; then $(CYGPATH_W) 'sample-sources/omp-mutex.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/omp-mutex.c'; fi`
+
+libhpcrun_o-omp-idle.o: sample-sources/omp-idle.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-omp-idle.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-omp-idle.Tpo -c -o libhpcrun_o-omp-idle.o `test -f 'sample-sources/omp-idle.c' || echo '$(srcdir)/'`sample-sources/omp-idle.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-omp-idle.Tpo $(DEPDIR)/libhpcrun_o-omp-idle.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/omp-idle.c' object='libhpcrun_o-omp-idle.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-omp-idle.o `test -f 'sample-sources/omp-idle.c' || echo '$(srcdir)/'`sample-sources/omp-idle.c
+
+libhpcrun_o-omp-idle.obj: sample-sources/omp-idle.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-omp-idle.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-omp-idle.Tpo -c -o libhpcrun_o-omp-idle.obj `if test -f 'sample-sources/omp-idle.c'; then $(CYGPATH_W) 'sample-sources/omp-idle.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/omp-idle.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-omp-idle.Tpo $(DEPDIR)/libhpcrun_o-omp-idle.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/omp-idle.c' object='libhpcrun_o-omp-idle.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-omp-idle.obj `if test -f 'sample-sources/omp-idle.c'; then $(CYGPATH_W) 'sample-sources/omp-idle.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/omp-idle.c'; fi`
 
 libhpcrun_o-common.o: sample-sources/common.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-common.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-common.Tpo -c -o libhpcrun_o-common.o `test -f 'sample-sources/common.c' || echo '$(srcdir)/'`sample-sources/common.c
@@ -3811,6 +4078,132 @@ libhpcrun_o-fmt.obj: messages/fmt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-fmt.obj `if test -f 'messages/fmt.c'; then $(CYGPATH_W) 'messages/fmt.c'; else $(CYGPATH_W) '$(srcdir)/messages/fmt.c'; fi`
 
+libhpcrun_o-ompt-callstack.o: ompt/ompt-callstack.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-callstack.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-callstack.Tpo -c -o libhpcrun_o-ompt-callstack.o `test -f 'ompt/ompt-callstack.c' || echo '$(srcdir)/'`ompt/ompt-callstack.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-callstack.Tpo $(DEPDIR)/libhpcrun_o-ompt-callstack.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-callstack.c' object='libhpcrun_o-ompt-callstack.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-callstack.o `test -f 'ompt/ompt-callstack.c' || echo '$(srcdir)/'`ompt/ompt-callstack.c
+
+libhpcrun_o-ompt-callstack.obj: ompt/ompt-callstack.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-callstack.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-callstack.Tpo -c -o libhpcrun_o-ompt-callstack.obj `if test -f 'ompt/ompt-callstack.c'; then $(CYGPATH_W) 'ompt/ompt-callstack.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-callstack.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-callstack.Tpo $(DEPDIR)/libhpcrun_o-ompt-callstack.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-callstack.c' object='libhpcrun_o-ompt-callstack.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-callstack.obj `if test -f 'ompt/ompt-callstack.c'; then $(CYGPATH_W) 'ompt/ompt-callstack.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-callstack.c'; fi`
+
+libhpcrun_o-ompt-defer.o: ompt/ompt-defer.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-defer.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-defer.Tpo -c -o libhpcrun_o-ompt-defer.o `test -f 'ompt/ompt-defer.c' || echo '$(srcdir)/'`ompt/ompt-defer.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-defer.Tpo $(DEPDIR)/libhpcrun_o-ompt-defer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-defer.c' object='libhpcrun_o-ompt-defer.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-defer.o `test -f 'ompt/ompt-defer.c' || echo '$(srcdir)/'`ompt/ompt-defer.c
+
+libhpcrun_o-ompt-defer.obj: ompt/ompt-defer.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-defer.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-defer.Tpo -c -o libhpcrun_o-ompt-defer.obj `if test -f 'ompt/ompt-defer.c'; then $(CYGPATH_W) 'ompt/ompt-defer.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-defer.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-defer.Tpo $(DEPDIR)/libhpcrun_o-ompt-defer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-defer.c' object='libhpcrun_o-ompt-defer.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-defer.obj `if test -f 'ompt/ompt-defer.c'; then $(CYGPATH_W) 'ompt/ompt-defer.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-defer.c'; fi`
+
+libhpcrun_o-ompt-defer-write.o: ompt/ompt-defer-write.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-defer-write.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-defer-write.Tpo -c -o libhpcrun_o-ompt-defer-write.o `test -f 'ompt/ompt-defer-write.c' || echo '$(srcdir)/'`ompt/ompt-defer-write.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-defer-write.Tpo $(DEPDIR)/libhpcrun_o-ompt-defer-write.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-defer-write.c' object='libhpcrun_o-ompt-defer-write.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-defer-write.o `test -f 'ompt/ompt-defer-write.c' || echo '$(srcdir)/'`ompt/ompt-defer-write.c
+
+libhpcrun_o-ompt-defer-write.obj: ompt/ompt-defer-write.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-defer-write.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-defer-write.Tpo -c -o libhpcrun_o-ompt-defer-write.obj `if test -f 'ompt/ompt-defer-write.c'; then $(CYGPATH_W) 'ompt/ompt-defer-write.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-defer-write.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-defer-write.Tpo $(DEPDIR)/libhpcrun_o-ompt-defer-write.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-defer-write.c' object='libhpcrun_o-ompt-defer-write.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-defer-write.obj `if test -f 'ompt/ompt-defer-write.c'; then $(CYGPATH_W) 'ompt/ompt-defer-write.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-defer-write.c'; fi`
+
+libhpcrun_o-ompt-interface.o: ompt/ompt-interface.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-interface.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-interface.Tpo -c -o libhpcrun_o-ompt-interface.o `test -f 'ompt/ompt-interface.c' || echo '$(srcdir)/'`ompt/ompt-interface.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-interface.Tpo $(DEPDIR)/libhpcrun_o-ompt-interface.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-interface.c' object='libhpcrun_o-ompt-interface.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-interface.o `test -f 'ompt/ompt-interface.c' || echo '$(srcdir)/'`ompt/ompt-interface.c
+
+libhpcrun_o-ompt-interface.obj: ompt/ompt-interface.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-interface.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-interface.Tpo -c -o libhpcrun_o-ompt-interface.obj `if test -f 'ompt/ompt-interface.c'; then $(CYGPATH_W) 'ompt/ompt-interface.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-interface.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-interface.Tpo $(DEPDIR)/libhpcrun_o-ompt-interface.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-interface.c' object='libhpcrun_o-ompt-interface.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-interface.obj `if test -f 'ompt/ompt-interface.c'; then $(CYGPATH_W) 'ompt/ompt-interface.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-interface.c'; fi`
+
+libhpcrun_o-ompt-region.o: ompt/ompt-region.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-region.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-region.Tpo -c -o libhpcrun_o-ompt-region.o `test -f 'ompt/ompt-region.c' || echo '$(srcdir)/'`ompt/ompt-region.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-region.Tpo $(DEPDIR)/libhpcrun_o-ompt-region.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-region.c' object='libhpcrun_o-ompt-region.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-region.o `test -f 'ompt/ompt-region.c' || echo '$(srcdir)/'`ompt/ompt-region.c
+
+libhpcrun_o-ompt-region.obj: ompt/ompt-region.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-region.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-region.Tpo -c -o libhpcrun_o-ompt-region.obj `if test -f 'ompt/ompt-region.c'; then $(CYGPATH_W) 'ompt/ompt-region.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-region.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-region.Tpo $(DEPDIR)/libhpcrun_o-ompt-region.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-region.c' object='libhpcrun_o-ompt-region.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-region.obj `if test -f 'ompt/ompt-region.c'; then $(CYGPATH_W) 'ompt/ompt-region.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-region.c'; fi`
+
+libhpcrun_o-ompt-region-map.o: ompt/ompt-region-map.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-region-map.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-region-map.Tpo -c -o libhpcrun_o-ompt-region-map.o `test -f 'ompt/ompt-region-map.c' || echo '$(srcdir)/'`ompt/ompt-region-map.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-region-map.Tpo $(DEPDIR)/libhpcrun_o-ompt-region-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-region-map.c' object='libhpcrun_o-ompt-region-map.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-region-map.o `test -f 'ompt/ompt-region-map.c' || echo '$(srcdir)/'`ompt/ompt-region-map.c
+
+libhpcrun_o-ompt-region-map.obj: ompt/ompt-region-map.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-region-map.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-region-map.Tpo -c -o libhpcrun_o-ompt-region-map.obj `if test -f 'ompt/ompt-region-map.c'; then $(CYGPATH_W) 'ompt/ompt-region-map.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-region-map.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-region-map.Tpo $(DEPDIR)/libhpcrun_o-ompt-region-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-region-map.c' object='libhpcrun_o-ompt-region-map.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-region-map.obj `if test -f 'ompt/ompt-region-map.c'; then $(CYGPATH_W) 'ompt/ompt-region-map.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-region-map.c'; fi`
+
+libhpcrun_o-ompt-state-placeholders.o: ompt/ompt-state-placeholders.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-state-placeholders.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-state-placeholders.Tpo -c -o libhpcrun_o-ompt-state-placeholders.o `test -f 'ompt/ompt-state-placeholders.c' || echo '$(srcdir)/'`ompt/ompt-state-placeholders.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-state-placeholders.Tpo $(DEPDIR)/libhpcrun_o-ompt-state-placeholders.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-state-placeholders.c' object='libhpcrun_o-ompt-state-placeholders.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-state-placeholders.o `test -f 'ompt/ompt-state-placeholders.c' || echo '$(srcdir)/'`ompt/ompt-state-placeholders.c
+
+libhpcrun_o-ompt-state-placeholders.obj: ompt/ompt-state-placeholders.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-state-placeholders.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-state-placeholders.Tpo -c -o libhpcrun_o-ompt-state-placeholders.obj `if test -f 'ompt/ompt-state-placeholders.c'; then $(CYGPATH_W) 'ompt/ompt-state-placeholders.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-state-placeholders.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-state-placeholders.Tpo $(DEPDIR)/libhpcrun_o-ompt-state-placeholders.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-state-placeholders.c' object='libhpcrun_o-ompt-state-placeholders.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-state-placeholders.obj `if test -f 'ompt/ompt-state-placeholders.c'; then $(CYGPATH_W) 'ompt/ompt-state-placeholders.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-state-placeholders.c'; fi`
+
+libhpcrun_o-ompt-task.o: ompt/ompt-task.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-task.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-task.Tpo -c -o libhpcrun_o-ompt-task.o `test -f 'ompt/ompt-task.c' || echo '$(srcdir)/'`ompt/ompt-task.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-task.Tpo $(DEPDIR)/libhpcrun_o-ompt-task.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-task.c' object='libhpcrun_o-ompt-task.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-task.o `test -f 'ompt/ompt-task.c' || echo '$(srcdir)/'`ompt/ompt-task.c
+
+libhpcrun_o-ompt-task.obj: ompt/ompt-task.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-task.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-task.Tpo -c -o libhpcrun_o-ompt-task.obj `if test -f 'ompt/ompt-task.c'; then $(CYGPATH_W) 'ompt/ompt-task.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-task.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-task.Tpo $(DEPDIR)/libhpcrun_o-ompt-task.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-task.c' object='libhpcrun_o-ompt-task.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-task.obj `if test -f 'ompt/ompt-task.c'; then $(CYGPATH_W) 'ompt/ompt-task.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-task.c'; fi`
+
+libhpcrun_o-ompt-task-map.o: ompt/ompt-task-map.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-task-map.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-task-map.Tpo -c -o libhpcrun_o-ompt-task-map.o `test -f 'ompt/ompt-task-map.c' || echo '$(srcdir)/'`ompt/ompt-task-map.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-task-map.Tpo $(DEPDIR)/libhpcrun_o-ompt-task-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-task-map.c' object='libhpcrun_o-ompt-task-map.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-task-map.o `test -f 'ompt/ompt-task-map.c' || echo '$(srcdir)/'`ompt/ompt-task-map.c
+
+libhpcrun_o-ompt-task-map.obj: ompt/ompt-task-map.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-task-map.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-task-map.Tpo -c -o libhpcrun_o-ompt-task-map.obj `if test -f 'ompt/ompt-task-map.c'; then $(CYGPATH_W) 'ompt/ompt-task-map.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-task-map.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-task-map.Tpo $(DEPDIR)/libhpcrun_o-ompt-task-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-task-map.c' object='libhpcrun_o-ompt-task-map.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-task-map.obj `if test -f 'ompt/ompt-task-map.c'; then $(CYGPATH_W) 'ompt/ompt-task-map.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-task-map.c'; fi`
+
 libhpcrun_o-executable-path.o: utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-executable-path.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-executable-path.Tpo -c -o libhpcrun_o-executable-path.o `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-executable-path.Tpo $(DEPDIR)/libhpcrun_o-executable-path.Po
@@ -4245,6 +4638,20 @@ libhpcrun_o-x86-unwind.obj: unwind/x86-family/x86-unwind.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-unwind.obj `if test -f 'unwind/x86-family/x86-unwind.c'; then $(CYGPATH_W) 'unwind/x86-family/x86-unwind.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/x86-unwind.c'; fi`
 
+libhpcrun_o-x86-libunwind.o: unwind/x86-family/x86-libunwind.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-libunwind.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-libunwind.Tpo -c -o libhpcrun_o-x86-libunwind.o `test -f 'unwind/x86-family/x86-libunwind.c' || echo '$(srcdir)/'`unwind/x86-family/x86-libunwind.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-x86-libunwind.Tpo $(DEPDIR)/libhpcrun_o-x86-libunwind.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/x86-libunwind.c' object='libhpcrun_o-x86-libunwind.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-libunwind.o `test -f 'unwind/x86-family/x86-libunwind.c' || echo '$(srcdir)/'`unwind/x86-family/x86-libunwind.c
+
+libhpcrun_o-x86-libunwind.obj: unwind/x86-family/x86-libunwind.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-libunwind.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-libunwind.Tpo -c -o libhpcrun_o-x86-libunwind.obj `if test -f 'unwind/x86-family/x86-libunwind.c'; then $(CYGPATH_W) 'unwind/x86-family/x86-libunwind.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/x86-libunwind.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-x86-libunwind.Tpo $(DEPDIR)/libhpcrun_o-x86-libunwind.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/x86-libunwind.c' object='libhpcrun_o-x86-libunwind.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-libunwind.obj `if test -f 'unwind/x86-family/x86-libunwind.c'; then $(CYGPATH_W) 'unwind/x86-family/x86-libunwind.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/x86-libunwind.c'; fi`
+
 libhpcrun_o-x86-unwind-support.o: unwind/x86-family/x86-unwind-support.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-unwind-support.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-unwind-support.Tpo -c -o libhpcrun_o-x86-unwind-support.o `test -f 'unwind/x86-family/x86-unwind-support.c' || echo '$(srcdir)/'`unwind/x86-family/x86-unwind-support.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-x86-unwind-support.Tpo $(DEPDIR)/libhpcrun_o-x86-unwind-support.Po
@@ -4328,6 +4735,20 @@ libhpcrun_o-x86-32bit-main.obj: unwind/x86-family/manual-intervals/x86-32bit-mai
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-32bit-main.c' object='libhpcrun_o-x86-32bit-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-32bit-main.obj `if test -f 'unwind/x86-family/manual-intervals/x86-32bit-main.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-32bit-main.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-32bit-main.c'; fi`
+
+libhpcrun_o-x86-gcc-adjust.o: unwind/x86-family/manual-intervals/x86-gcc-adjust.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-gcc-adjust.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-gcc-adjust.Tpo -c -o libhpcrun_o-x86-gcc-adjust.o `test -f 'unwind/x86-family/manual-intervals/x86-gcc-adjust.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-gcc-adjust.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-x86-gcc-adjust.Tpo $(DEPDIR)/libhpcrun_o-x86-gcc-adjust.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-gcc-adjust.c' object='libhpcrun_o-x86-gcc-adjust.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-gcc-adjust.o `test -f 'unwind/x86-family/manual-intervals/x86-gcc-adjust.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-gcc-adjust.c
+
+libhpcrun_o-x86-gcc-adjust.obj: unwind/x86-family/manual-intervals/x86-gcc-adjust.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-gcc-adjust.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-gcc-adjust.Tpo -c -o libhpcrun_o-x86-gcc-adjust.obj `if test -f 'unwind/x86-family/manual-intervals/x86-gcc-adjust.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-gcc-adjust.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-gcc-adjust.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-x86-gcc-adjust.Tpo $(DEPDIR)/libhpcrun_o-x86-gcc-adjust.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-gcc-adjust.c' object='libhpcrun_o-x86-gcc-adjust.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-gcc-adjust.obj `if test -f 'unwind/x86-family/manual-intervals/x86-gcc-adjust.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-gcc-adjust.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-gcc-adjust.c'; fi`
 
 libhpcrun_o-x86-32bit-icc-variant.o: unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-32bit-icc-variant.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-32bit-icc-variant.Tpo -c -o libhpcrun_o-x86-32bit-icc-variant.o `test -f 'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c

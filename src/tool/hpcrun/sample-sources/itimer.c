@@ -93,6 +93,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/thread_data.h>
+#include <hpcrun/ompt/ompt-region.h>
 
 #include <lush/lush-backtrace.h>
 #include <messages/messages.h>
@@ -105,6 +106,8 @@
 #include <lib/support-lean/timer.h>
 
 #include <sample-sources/blame-shift/blame-shift.h>
+
+
 
 /******************************************************************************
  * macros
@@ -393,6 +396,7 @@ static void
 METHOD_FN(thread_fini_action)
 {
   TMSG(ITIMER_CTL, "thread fini action");
+  resolve_cntxt_fini(hpcrun_get_thread_data());
 }
 
 static void
@@ -683,11 +687,15 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   metric_incr = cur_time_us - TD_GET(last_time_us);
 #endif
 
-  int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
-  sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_incr,
-					    0/*skipInner*/, 0/*isSync*/);
-  blame_shift_apply(metric_id, sv.sample_node, metric_incr);
+  int metric_id = hpcrun_event2metric(&_itimer_obj, ITIMER_EVENT);
 
+  sample_val_t sv = 
+    hpcrun_sample_callpath(context, metric_id, metric_incr,
+			   0/*skipInner*/, 0/*isSync*/);
+
+  if(sv.sample_node) {
+    blame_shift_apply(metric_id, sv.sample_node, metric_incr);
+  }
   if (hpcrun_is_sampling_disabled()) {
     TMSG(ITIMER_HANDLER, "No itimer restart, due to disabled sampling");
   }

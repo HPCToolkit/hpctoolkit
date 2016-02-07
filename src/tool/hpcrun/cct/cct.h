@@ -100,9 +100,15 @@
 #define ADDR(L)      (cct_addr_t) NON_LUSH_ADDR_INI(L)
 #define ADDR2_I(id, ip) NON_LUSH_ADDR_INI(id, ip)
 #define ADDR2(id, ip) (cct_addr_t) ADDR2_I(id, ip)
+
 //***************************************************************************
 // Calling context tree node (abstract data type)
 //***************************************************************************
+
+
+#define IS_PARTIAL_ROOT(addr) \
+	(addr->ip_norm.lm_id == HPCRUN_FMT_LMId_NULL) && \
+	(addr->ip_norm.lm_ip == HPCRUN_FMT_LMIp_Flag1)
 
 typedef struct cct_node_t cct_node_t;
 //
@@ -131,6 +137,8 @@ extern cct_node_t* hpcrun_cct_parent(cct_node_t* node);
 extern int32_t hpcrun_cct_persistent_id(cct_node_t* node);
 extern cct_addr_t* hpcrun_cct_addr(cct_node_t* node);
 extern bool hpcrun_cct_is_leaf(cct_node_t* node);
+extern cct_node_t* hpcrun_cct_insert_path_return_leaf(cct_node_t *root, cct_node_t *path);
+extern void hpcrun_cct_delete_self(cct_node_t *node);
 //
 // NOTE: having no children is not exactly the same as being a leaf
 //       A leaf represents a full path. There might be full paths

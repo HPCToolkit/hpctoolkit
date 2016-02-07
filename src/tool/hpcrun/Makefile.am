@@ -191,12 +191,14 @@ UNW_X86_FILES = \
 	unwind/x86-family/x86-unwind-interval.c		\
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
 	unwind/x86-family/x86-unwind.c		        \
+	unwind/x86-family/x86-libunwind.c               \
 	unwind/x86-family/x86-unwind-support.c		\
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
 	unwind/x86-family/manual-intervals/x86-intel14-omp.c \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
+	unwind/x86-family/manual-intervals/x86-gcc-adjust.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c
 
@@ -251,6 +253,7 @@ MY_BASE_FILES =				\
 	main.h main.c			\
 	disabled.c			\
         cct_insert_backtrace.c          \
+        cct_backtrace_finalize.c        \
 	env.c				\
 	epoch.c				\
 	files.c				\
@@ -264,8 +267,12 @@ MY_BASE_FILES =				\
 	sample_event.c			\
 	sample_prob.c			\
 	sample_sources_all.c		\
-	sample-sources/blame-shift/blame-shift.c          \
-	sample-sources/blame-shift/blame-map.c            \
+	sample-sources/blame-shift/blame-shift.c \
+	sample-sources/blame-shift/blame-map.c   \
+	sample-sources/blame-shift/directed.c    \
+	sample-sources/blame-shift/undirected.c    \
+	sample-sources/omp-mutex.c      \
+	sample-sources/omp-idle.c       \
         sample-sources/common.c         \
 	sample-sources/ga.c		\
 	sample-sources/io.c 		\
@@ -312,6 +319,16 @@ MY_BASE_FILES =				\
 	messages/messages-sync.c	\
 	messages/messages-async.c	\
 	messages/fmt.c	                \
+	\
+	ompt/ompt-callstack.c           \
+	ompt/ompt-defer.c               \
+	ompt/ompt-defer-write.c         \
+	ompt/ompt-interface.c           \
+	ompt/ompt-region.c              \
+	ompt/ompt-region-map.c          \
+	ompt/ompt-state-placeholders.c  \
+	ompt/ompt-task.c                \
+	ompt/ompt-task-map.c            \
 	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
@@ -389,6 +406,7 @@ MY_INCLUDE_DIRS =			\
 	-I$(srcdir)/memory		\
 	-I$(srcdir)/os/linux		\
 	-I$(srcdir)/cct			\
+	-I$(srcdir)/ompt                \
 	-I$(srcdir)/unwind/common	\
 	-I$(srcdir)/utilities		\
 	$(HPC_IFLAGS)			\

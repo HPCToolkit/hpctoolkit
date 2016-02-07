@@ -76,16 +76,25 @@ extern cct_node_t* hpcrun_cct_insert_backtrace_w_metric(cct_node_t* cct,
 							frame_t* path_beg, frame_t* path_end,
 							cct_metric_data_t datum);
 
-extern cct_node_t* hpcrun_cct_record_backtrace(cct_bundle_t* bndl, bool partial, bool thread_stop,
+extern cct_node_t* hpcrun_cct_record_backtrace(cct_bundle_t* bndl, bool partial, 
+backtrace_info_t *bt,
+#if 0
+bool thread_stop,
 					       frame_t* bt_beg, frame_t* bt_last,
+#endif
 					       bool tramp_found);
 
-extern cct_node_t* hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* bndl, bool partial, bool thread_stop,
+extern cct_node_t* hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* bndl, bool partial, 
+backtrace_info_t *bt,
+#if 0
+bool thread_stop,
 							frame_t* bt_beg, frame_t* bt_last,
+#endif
 							bool tramp_found,
 							int metricId, uint64_t metricIncr);
 
 extern cct_node_t* hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context, 
+                                        void **trace_pc,
                                         int metricId, uint64_t metricIncr,
                                         int skipInner, int isSync);
 //
@@ -94,6 +103,7 @@ extern cct_node_t* hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 //
 
 extern cct_node_t* hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
+                                            void **trace_pc,
                                             int metricId, uint64_t metricIncr,
                                             int skipInner);
 #endif // CCT_INSERT_BACKTRACE_H

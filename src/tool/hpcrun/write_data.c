@@ -141,7 +141,6 @@ static const uint32_t default_ra_to_callsite_distance =
 static FILE *
 lazy_open_data_file(core_profile_trace_data_t * cptd)
 {
-
   FILE* fs = cptd->hpcrun_file;
   if (fs) {
     return fs;
@@ -335,6 +334,8 @@ hpcrun_flush_epochs(core_profile_trace_data_t * cptd)
 int
 hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
 {
+  if(cptd->scale_fn) cptd->scale_fn((void*)cptd);
+
   TMSG(DATA_WRITE,"Writing hpcrun profile data");
   FILE* fs = lazy_open_data_file(cptd);
   if (fs == NULL)

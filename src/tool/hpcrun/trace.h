@@ -51,6 +51,7 @@
 #include "core_profile_trace_data.h"
 
 #include <include/uint.h>
+void trace_other_close(void *thread_data);
 
 void hpcrun_trace_init();
 void hpcrun_trace_open(core_profile_trace_data_t * cptd);
