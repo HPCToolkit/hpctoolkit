@@ -329,7 +329,7 @@ public:
   std::string
   toString() const
   {
-    std::string str = StrUtil::toStr((long)sortId()) + ":[" + filenm() + "]";
+    std::string str = StrUtil::toStr(sortId()) + ":[" + filenm() + "]";
     return str;
   }
 
