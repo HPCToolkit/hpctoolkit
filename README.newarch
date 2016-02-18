@@ -1,0 +1,9 @@
+This, the newarch branch of hpctoolkit, is Mark's branch for updating
+hpctoolkit to run on new architectures such as powerpc/le and ARM.
+
+Note: use devtools's newarch branch for autoreconf on this branch to
+keep the autotools revs in sync.
+
+Note: this branch may be unstable at times, and not everything may
+build cleanly, especially for the new platforms.
+
