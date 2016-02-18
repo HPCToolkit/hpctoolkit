@@ -97,9 +97,9 @@ AC_MSG_NOTICE([*** INFO: from user: MPICXX='${MPICXX}' ***])
 AC_MSG_NOTICE([*** INFO: from user: MPIF77='${MPIF77}' ***])
 
 # NOTE: please update config/README.version
-AC_PREREQ(2.67)
-AM_INIT_AUTOMAKE(1.11.1)
-LT_PREREQ([2.2.10])
+AC_PREREQ(2.69)
+AM_INIT_AUTOMAKE(1.15)
+LT_PREREQ([2.4.6])
 
 AM_MAINTAINER_MODE()
 
@@ -774,6 +774,7 @@ AC_MSG_NOTICE([host endian: $host_endian])
 
 AC_LANG_PUSH([C++])
 AC_LINK_IFELSE([
+AC_LANG_SOURCE([[
 #include <stdio.h>
 #include <stdint.h>
 #include <byteswap.h>
@@ -783,7 +784,7 @@ int main(int argc, char **argv)
   uint64_t y = bswap_64(x);
   return y > 2;
 }
-], [use_byteswap=yes], [use_byteswap=no])
+]])], [use_byteswap=yes], [use_byteswap=no])
 AC_LANG_POP()
 
 AC_MSG_NOTICE([use system byteswap.h: $use_byteswap])
@@ -823,6 +824,7 @@ do
   esac
   CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $flag"
   AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
 #include <list>
 int mylen(std::list <int> lst)
 {
@@ -832,7 +834,7 @@ int mylen(std::list <int> lst)
   }
   return ans;
 }
-], [ans=yes], [ans=no])
+]])], [ans=yes], [ans=no])
   if test "$ans" = yes ; then
     cxx_c11_avail=yes
     cxx_c11_flag="$flag"
@@ -1743,12 +1745,13 @@ if test "$use_papi_c" = check ; then
   AC_LANG_PUSH([C])
 
   AC_LINK_IFELSE([
+  AC_LANG_SOURCE([[
 #include "papi.h"
 int main()
 {
   return PAPI_get_eventset_component(0);
 }
-], [use_papi_c=yes], [use_papi_c=no])
+]])], [use_papi_c=yes], [use_papi_c=no])
 
   AC_LANG_POP
   CFLAGS="$ORIG_CFLAGS"
@@ -1784,13 +1787,14 @@ if test "$use_papi_c_component" = yes ; then
   AC_LANG_PUSH([C])
 
   AC_LINK_IFELSE([
+  AC_LANG_SOURCE([[
 #include "papi.h"
 extern void CUDA_init_component(void);
 int main()
 {
   CUDA_init_component();
 }
-], [use_papi_c_cupti=yes], [use_papi_c_cupti=no])
+]])], [use_papi_c_cupti=yes], [use_papi_c_cupti=no])
 
   AC_LANG_POP
   CFLAGS="$ORIG_CFLAGS"
@@ -1950,6 +1954,7 @@ if test "$xed2_avail" = yes ; then
     AC_LANG_PUSH([C])
     AC_MSG_CHECKING([if libxed.a was compiled with -fPIC])
     AC_LINK_IFELSE([
+    AC_LANG_SOURCE([[
 #include <stdio.h>
 #include <xed-interface.h>
 int my_xed_init(void)
@@ -1957,7 +1962,7 @@ int my_xed_init(void)
   xed_tables_init();
   return 0;
 }
-], [xed2_static_fpic=yes], [xed2_static_fpic=no])
+]])], [xed2_static_fpic=yes], [xed2_static_fpic=no])
     AC_MSG_RESULT([$xed2_static_fpic])
     AC_LANG_POP
     CFLAGS="$ORIG_CFLAGS"
@@ -2332,6 +2337,7 @@ AC_MSG_CHECKING([symtabAPI for inline function support])
 if test "$SYMTABAPI" != no
 then
   AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
 #include <iostream>
 #include <Symtab.h>
 #include <Function.h>
@@ -2343,7 +2349,7 @@ void get_parent(FunctionBase * func)
   FunctionBase *parent = func->getInlinedParent();
   cout << parent;
 }
-], [inline_avail=yes], [inline_avail=no])
+]])], [inline_avail=yes], [inline_avail=no])
 fi
 
 AC_MSG_RESULT([$inline_avail])
@@ -2360,6 +2366,7 @@ AC_MSG_CHECKING([symtabAPI for new function name iterator])
 if test "$inline_avail" = yes
 then
   AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
 #include <iostream>
 #include <Symtab.h>
 #include <Function.h>
@@ -2369,7 +2376,7 @@ void get_name(FunctionBase * func)
 {
   std::cout << func->getName();
 }
-], [new_symtab_getname=yes], [new_symtab_getname=no])
+]])], [new_symtab_getname=yes], [new_symtab_getname=no])
 fi
 
 AC_MSG_RESULT([$new_symtab_getname])
@@ -2384,6 +2391,7 @@ AC_MSG_CHECKING([parseAPI for CFG loop support])
 if test "$inline_avail" = yes && test "$PARSEAPI_AVAIL" = yes
 then
   AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
 #include <iostream>
 #include <vector>
 #include <Symtab.h>
@@ -2400,7 +2408,7 @@ void get_blocks(LoopTreeNode * node)
   loop->getLoopBasicBlocks(bvec);
   std::cout << bvec.size();
 }
-], [parseapi_avail=yes], [parseapi_avail=no])
+]])], [parseapi_avail=yes], [parseapi_avail=no])
 fi
 
 AC_MSG_RESULT([$parseapi_avail])
@@ -2517,9 +2525,10 @@ if test "${OPT_REQ_ENABLE_MPI_WRAP}" != "no" ; then
   OLD_CC="$CC"
   CC="$MPICC"
   CFLAGS="$CFLAGS"
-  AC_COMPILE_IFELSE([#include <mpi.h>],
-        [ans=yes],
-        [ans=no])
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <mpi.h>
+]])], [ans=yes], [ans=no])
 
   CC="$OLD_CC"
   OPT_ENABLE_MPI_WRAP=$ans
@@ -2701,6 +2710,7 @@ LIBS="-lrt"
 AC_MSG_CHECKING([for CLOCK_REALTIME and SIGEV_THREAD_ID])
 
 AC_LINK_IFELSE([
+AC_LANG_SOURCE([[
 #include <sys/syscall.h>
 #include <signal.h>
 #include <time.h>
@@ -2718,7 +2728,7 @@ int main()
   sigev.sigev_notify_thread_id = syscall(SYS_gettid);
   return timer_create(CLOCK_REALTIME, &sigev, &timerid);
 }
-], [ans=yes], [ans=no])
+]])], [ans=yes], [ans=no])
 
 AC_MSG_RESULT([$ans])
 
@@ -2730,6 +2740,7 @@ if test "$ans" = yes ; then
 
   AC_MSG_CHECKING([for CLOCK_THREAD_CPUTIME_ID])
   AC_LINK_IFELSE([
+  AC_LANG_SOURCE([[
 #include <sys/time.h>
 #include <time.h>
 int main()
@@ -2737,7 +2748,7 @@ int main()
   clockid_t clock = CLOCK_THREAD_CPUTIME_ID;
   return 0;
 }
-], [ans=yes], [ans=no])
+]])], [ans=yes], [ans=no])
   AC_MSG_RESULT([$ans])
 
   if test "$ans" = yes ; then

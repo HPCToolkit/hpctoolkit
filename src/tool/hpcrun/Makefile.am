@@ -58,7 +58,7 @@
 #############################################################################
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign subdir-objects
 
 #############################################################################
 # Common settings
@@ -106,7 +106,7 @@ plugin_instdir = $(pkglibdir)/plugins
 bin_SCRIPTS =
 pkglibexec_SCRIPTS =
 include_HEADERS =
-pkglib_PROGRAMS =
+pkglibexec_PROGRAMS =
 pkglib_LIBRARIES =
 pkglib_LTLIBRARIES =
 
@@ -129,8 +129,11 @@ endif
   bin_SCRIPTS += scripts/hpcrun
 endif
 
+# FIXME: need to rework the target directory for libhpcrun.o.
+# this currently breaks the static case.
+
 if OPT_ENABLE_HPCRUN_STATIC
-  pkglib_PROGRAMS  += libhpcrun.o
+  pkglibexec_PROGRAMS  += libhpcrun.o
   pkglib_LIBRARIES += libhpcrun_wrap.a
   pkglib_LIBRARIES += libhpcrun_ga_wrap.a
   pkglib_LIBRARIES += libhpcrun_io_wrap.a
