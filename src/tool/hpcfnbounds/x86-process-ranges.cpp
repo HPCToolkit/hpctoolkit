@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2016, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -1324,7 +1324,6 @@ invalid_routine_start(unsigned char *ins)
 }
 
 
-
 void x86_dump_ins(void *ins)
 {
   xed_decoded_inst_t xedd;
@@ -1336,13 +1335,14 @@ void x86_dump_ins(void *ins)
   xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
 
   if (xed_error == XED_ERROR_NONE) {
-    xed_format_xed(xptr, inst_buf, sizeof(inst_buf), (uint64_t) ins);
+    xed_decoded_inst_dump_xed_format(xptr, inst_buf, sizeof(inst_buf), (uint64_t) ins);
     printf("(%p, %d bytes, %s) %s \n" , ins, xed_decoded_inst_get_length(xptr),
 	   xed_iclass_enum_t2str(xed_decoded_inst_get_iclass(xptr)), inst_buf);
   } else {
     printf("x86_dump_ins: xed decode addr=%p, error = %d\n", ins, xed_error);
   }
 }
+
 
 // #define DEBUG_ADDSUB
 

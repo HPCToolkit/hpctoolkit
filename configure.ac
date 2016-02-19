@@ -11,7 +11,7 @@ dnl Information about sources of support for research and development of
 dnl HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 dnl --------------------------------------------------------------------------
 dnl
-dnl Copyright ((c)) 2002-2015, Rice University
+dnl Copyright ((c)) 2002-2016, Rice University
 dnl All rights reserved.
 dnl
 dnl Redistribution and use in source and binary forms, with or without
@@ -1875,12 +1875,24 @@ AC_SUBST([SYMTABAPI_COPY_PARSE])
 # Option: --with-xed2=PATH
 #-------------------------------------------------
 
-# Now support static or shared libxed.
+# Now use static and shared libxed.  hpcrun requires .so or .a + fPIC,
+# hpclink requires .a, and fnbounds, etc can use either.  hpcprof-mpi
+# requires .a, but only if fully static (Cray).
+#
+# We support both old XED (2013) with single .a + fPIC and new (2015)
+# XED with separate .so and .a without fPIC, so we test if .a can link
+# into a shared library.
 
 XED2=no
-XED2_STATIC=no
+XED2_INC=
+XED2_LIB_DIR=no
 XED2_LIB_FLAGS=
-XED2_HPCLINK_OPTS=
+XED2_HPCRUN_LIBS=
+XED2_HPCLINK_LIBS=
+XED2_PROF_MPI_LIBS=
+XED2_COPY=no
+no_xed_for_hpcrun=no
+no_xed_for_hpclink=no
 
 if test "$use_externals" = yes ; then
   XED2="$ext_xed2_prefix"
@@ -1892,54 +1904,123 @@ AC_ARG_WITH([xed2],
   [XED2="$withval"],
   [])
 
+# initial test that include and lib files exist
+
 AC_MSG_CHECKING([for xed2])
 
-case "${XED2}" in
+xed2_avail=no
+case "$XED2" in
   /* )
-    if test -f "${XED2}/include/xed-interface.h" ; then :
-    else
+    if test ! -f "${XED2}/include/xed-interface.h" ; then
       AC_MSG_ERROR([invalid xed2 directory: $XED2])
     fi
-    if test -f "${XED2}/lib/libxed.a" ; then
-      XED2_STATIC=yes
-      XED2_LIB_FLAGS="${XED2}/lib/libxed.a"
-      XED2_HPCLINK_OPTS='-lxed'
-    elif test -f "${XED2}/lib/libxed.so" ; then
-      XED2_LIB_FLAGS="-L${XED2}/lib -lxed"
-    else
+    if test ! -f "${XED2}/lib/libxed.so" && test ! -f "${XED2}/lib/libxed.a" ; then
       AC_MSG_ERROR([invalid xed2 directory: $XED2])
     fi
-    if test -f "${XED2}/lib/libirc.a" ; then
-      XED2_LIB_FLAGS="${XED2_LIB_FLAGS} ${XED2}/lib/libirc.a"
-      XED2_HPCLINK_OPTS="$XED2_HPCLINK_OPTS -lirc"
-    fi
+    XED2_INC="${XED2}/include"
+    XED2_LIB_DIR="${XED2}/lib"
     XED2_COPY=yes
-    XED2_RUN_DIR="$hpc_ext_libs_dir"
+    xed2_avail=yes
     ;;
   no )
-    XED2_COPY=no
-    XED2_RUN_DIR=no
     ;;
   * )
     AC_MSG_ERROR([xed2 directory must be absolute path: $XED2])
     ;;
 esac
 
-if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2" = no ; then
-  AC_MSG_WARN([xed2 is required for x86 platforms])
-fi
-
-XED2_INC="${XED2}/include"
-XED2_LIB="${XED2}/lib"
-
 AC_MSG_RESULT([$XED2])
 
+if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2" = no ; then
+  AC_MSG_WARN([xed2 is required for x86 platforms])
+  no_xed_for_hpcrun=yes
+  no_xed_for_hpclink=yes
+fi
+
+if test "$xed2_avail" = yes ; then
+  #
+  # test if libxed.a was compiled with -fPIC
+  #
+  xed2_static_fpic=no
+  if test -f "${XED2}/lib/libxed.a" ; then
+    ORIG_CFLAGS="$CFLAGS"
+    ORIG_LIBS="$LIBS"
+    CFLAGS="-shared -fPIC -I${XED2}/include"
+    LIBS="${XED2}/lib/libxed.a"
+    AC_LANG_PUSH([C])
+    AC_MSG_CHECKING([if libxed.a was compiled with -fPIC])
+    AC_LINK_IFELSE([
+#include <stdio.h>
+#include <xed-interface.h>
+int my_xed_init(void)
+{
+  xed_tables_init();
+  return 0;
+}
+], [xed2_static_fpic=yes], [xed2_static_fpic=no])
+    AC_MSG_RESULT([$xed2_static_fpic])
+    AC_LANG_POP
+    CFLAGS="$ORIG_CFLAGS"
+    LIBS="$ORIG_LIBS"
+  fi
+  #
+  # default lib flags: .so if exists, else .a
+  #
+  if test -f "${XED2}/lib/libxed.so" ; then
+    XED2_LIB_FLAGS="-L${XED2}/lib -lxed"
+  elif test -f "${XED2}/lib/libxed.a" ; then
+    XED2_LIB_FLAGS="${XED2}/lib/libxed.a"
+  else
+    AC_MSG_ERROR([unable to find libxed.so or libxed.a])
+  fi
+  #
+  # hpcrun: .so, or .a + fPIC, else fail
+  #
+  if test -f "${XED2}/lib/libxed.so" ; then
+    XED2_HPCRUN_LIBS="-L${XED2}/lib -lxed"
+  elif test "$xed2_static_fpic" = yes ; then
+    XED2_HPCRUN_LIBS="${XED2}/lib/libxed.a"
+  else
+    AC_MSG_WARN([unable to build hpcrun: no libxed with -fPIC])
+    no_xed_for_hpcrun=yes
+  fi
+  #
+  # hpclink: .a only (with or without -fPIC)
+  #
+  if test -f "${XED2}/lib/libxed.a" ; then
+    XED2_HPCLINK_LIBS="${XED2}/lib/libxed.a"
+  else
+    AC_MSG_WARN([unable to build hpclink: no static libxed.a])
+    no_xed_for_hpclink=yes
+  fi
+  #
+  # hpcprof-mpi: same as hpclink if fully static, else default
+  #
+  echo "x$HPC_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
+  if test $? = 0 ; then
+    XED2_PROF_MPI_LIBS="$XED2_HPCLINK_LIBS"
+  else
+    XED2_PROF_MPI_LIBS="$XED2_LIB_FLAGS"
+  fi
+  #
+  # add libirc.a, if exists for k1om
+  #
+  if test -f "${XED2}/lib/libirc.a" ; then
+    XED2_LIB_FLAGS="${XED2_LIB_FLAGS} ${XED2}/lib/libirc.a"
+    XED2_HPCRUN_LIBS="${XED2_HPCRUN_LIBS} ${XED2}/lib/libirc.a"
+    XED2_HPCLINK_LIBS="${XED2_HPCLINK_LIBS} ${XED2}/lib/libirc.a"
+    XED2_PROF_MPI_LIBS="${XED2_PROF_MPI_LIBS} ${XED2}/lib/libirc.a"
+  fi
+  AC_MSG_NOTICE([xed2 lib flags: $XED2_LIB_FLAGS])
+fi
+
 AC_SUBST([XED2_INC])
-AC_SUBST([XED2_LIB])
+AC_SUBST([XED2_LIB_DIR])
 AC_SUBST([XED2_LIB_FLAGS])
-AC_SUBST([XED2_HPCLINK_OPTS])
+AC_SUBST([XED2_HPCRUN_LIBS])
+AC_SUBST([XED2_HPCLINK_LIBS])
+AC_SUBST([XED2_PROF_MPI_LIBS])
 AC_SUBST([XED2_COPY])
-AC_SUBST([XED2_RUN_DIR])
 
 
 #-------------------------------------------------
@@ -2089,7 +2170,8 @@ if test "$enable_hpcrun" = no ; then
   OPT_ENABLE_HPCRUN=no
   enable_hpcrun_mesg='no (disabled)'
 elif test "$LIBDWARF" = no   || test "$LIBELF" = no ||  \
-     test "$LIBMONITOR" = no || test "$SYMTABAPI" = no
+     test "$LIBMONITOR" = no || test "$SYMTABAPI" = no || \
+     test "$no_xed_for_hpcrun" = yes
 then
   OPT_ENABLE_HPCRUN=no
   enable_hpcrun_mesg='no (missing prerequisites)'
@@ -2186,11 +2268,7 @@ AC_ARG_ENABLE([hpcrun-static],
    esac],
   [OPT_ENABLE_HPCRUN_STATIC=yes])
 
-if test "$OPT_LIBMONITOR_STATIC" = no ; then
-  OPT_ENABLE_HPCRUN_STATIC=no
-fi
-
-if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
+if test "$OPT_LIBMONITOR_STATIC" = no || test "$no_xed_for_hpclink" = yes ; then
   OPT_ENABLE_HPCRUN_STATIC=no
 fi
 
@@ -2374,13 +2452,7 @@ AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_OA], [test "$OA_AVAIL" = yes])
 # Hpcstruct gets a launch script if (1) Xed is shared (some versions
 # of MIC), or (2) use symtab for inline support.
 
-hpcstruct_launch_script=no
-if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
-  hpcstruct_launch_script=yes
-fi
-if test "$inline_avail" = yes ; then
-  hpcstruct_launch_script=yes
-fi
+hpcstruct_launch_script=yes
 
 AM_CONDITIONAL(OPT_HPCSTRUCT_LAUNCH_SCRIPT, [test "$hpcstruct_launch_script" = yes])
 
@@ -3195,6 +3267,7 @@ AC_MSG_NOTICE([  host:   $host])
 AC_MSG_NOTICE([  host endian: $host_endian])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
+AC_MSG_NOTICE([  hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}])
 AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])
 AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
 AC_MSG_NOTICE([  mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}])

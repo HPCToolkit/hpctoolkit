@@ -679,11 +679,12 @@ XERCES_LDLIBS
 XERCES_LDFLAGS
 XERCES_IFLAGS
 XERCES
-XED2_RUN_DIR
 XED2_COPY
-XED2_HPCLINK_OPTS
+XED2_PROF_MPI_LIBS
+XED2_HPCLINK_LIBS
+XED2_HPCRUN_LIBS
 XED2_LIB_FLAGS
-XED2_LIB
+XED2_LIB_DIR
 XED2_INC
 SYMTABAPI_COPY_PARSE
 SYMTABAPI_COPY_DYN
@@ -18477,12 +18478,24 @@ SYMTABAPI_LIB="${SYMTABAPI}/lib"
 # Option: --with-xed2=PATH
 #-------------------------------------------------
 
-# Now support static or shared libxed.
+# Now use static and shared libxed.  hpcrun requires .so or .a + fPIC,
+# hpclink requires .a, and fnbounds, etc can use either.  hpcprof-mpi
+# requires .a, but only if fully static (Cray).
+#
+# We support both old XED (2013) with single .a + fPIC and new (2015)
+# XED with separate .so and .a without fPIC, so we test if .a can link
+# into a shared library.
 
 XED2=no
-XED2_STATIC=no
+XED2_INC=
+XED2_LIB_DIR=no
 XED2_LIB_FLAGS=
-XED2_HPCLINK_OPTS=
+XED2_HPCRUN_LIBS=
+XED2_HPCLINK_LIBS=
+XED2_PROF_MPI_LIBS=
+XED2_COPY=no
+no_xed_for_hpcrun=no
+no_xed_for_hpclink=no
 
 if test "$use_externals" = yes ; then
   XED2="$ext_xed2_prefix"
@@ -18495,50 +18508,144 @@ if test "${with_xed2+set}" = set; then :
 fi
 
 
+# initial test that include and lib files exist
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for xed2" >&5
 $as_echo_n "checking for xed2... " >&6; }
 
-case "${XED2}" in
+xed2_avail=no
+case "$XED2" in
   /* )
-    if test -f "${XED2}/include/xed-interface.h" ; then :
-    else
+    if test ! -f "${XED2}/include/xed-interface.h" ; then
       as_fn_error $? "invalid xed2 directory: $XED2" "$LINENO" 5
     fi
-    if test -f "${XED2}/lib/libxed.a" ; then
-      XED2_STATIC=yes
-      XED2_LIB_FLAGS="${XED2}/lib/libxed.a"
-      XED2_HPCLINK_OPTS='-lxed'
-    elif test -f "${XED2}/lib/libxed.so" ; then
-      XED2_LIB_FLAGS="-L${XED2}/lib -lxed"
-    else
+    if test ! -f "${XED2}/lib/libxed.so" && test ! -f "${XED2}/lib/libxed.a" ; then
       as_fn_error $? "invalid xed2 directory: $XED2" "$LINENO" 5
     fi
-    if test -f "${XED2}/lib/libirc.a" ; then
-      XED2_LIB_FLAGS="${XED2_LIB_FLAGS} ${XED2}/lib/libirc.a"
-      XED2_HPCLINK_OPTS="$XED2_HPCLINK_OPTS -lirc"
-    fi
+    XED2_INC="${XED2}/include"
+    XED2_LIB_DIR="${XED2}/lib"
     XED2_COPY=yes
-    XED2_RUN_DIR="$hpc_ext_libs_dir"
+    xed2_avail=yes
     ;;
   no )
-    XED2_COPY=no
-    XED2_RUN_DIR=no
     ;;
   * )
     as_fn_error $? "xed2 directory must be absolute path: $XED2" "$LINENO" 5
     ;;
 esac
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $XED2" >&5
+$as_echo "$XED2" >&6; }
+
 if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2" = no ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: xed2 is required for x86 platforms" >&5
 $as_echo "$as_me: WARNING: xed2 is required for x86 platforms" >&2;}
+  no_xed_for_hpcrun=yes
+  no_xed_for_hpclink=yes
 fi
 
-XED2_INC="${XED2}/include"
-XED2_LIB="${XED2}/lib"
+if test "$xed2_avail" = yes ; then
+  #
+  # test if libxed.a was compiled with -fPIC
+  #
+  xed2_static_fpic=no
+  if test -f "${XED2}/lib/libxed.a" ; then
+    ORIG_CFLAGS="$CFLAGS"
+    ORIG_LIBS="$LIBS"
+    CFLAGS="-shared -fPIC -I${XED2}/include"
+    LIBS="${XED2}/lib/libxed.a"
+    ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $XED2" >&5
-$as_echo "$XED2" >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking if libxed.a was compiled with -fPIC" >&5
+$as_echo_n "checking if libxed.a was compiled with -fPIC... " >&6; }
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stdio.h>
+#include <xed-interface.h>
+int my_xed_init(void)
+{
+  xed_tables_init();
+  return 0;
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  xed2_static_fpic=yes
+else
+  xed2_static_fpic=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $xed2_static_fpic" >&5
+$as_echo "$xed2_static_fpic" >&6; }
+    ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+    CFLAGS="$ORIG_CFLAGS"
+    LIBS="$ORIG_LIBS"
+  fi
+  #
+  # default lib flags: .so if exists, else .a
+  #
+  if test -f "${XED2}/lib/libxed.so" ; then
+    XED2_LIB_FLAGS="-L${XED2}/lib -lxed"
+  elif test -f "${XED2}/lib/libxed.a" ; then
+    XED2_LIB_FLAGS="${XED2}/lib/libxed.a"
+  else
+    as_fn_error $? "unable to find libxed.so or libxed.a" "$LINENO" 5
+  fi
+  #
+  # hpcrun: .so, or .a + fPIC, else fail
+  #
+  if test -f "${XED2}/lib/libxed.so" ; then
+    XED2_HPCRUN_LIBS="-L${XED2}/lib -lxed"
+  elif test "$xed2_static_fpic" = yes ; then
+    XED2_HPCRUN_LIBS="${XED2}/lib/libxed.a"
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to build hpcrun: no libxed with -fPIC" >&5
+$as_echo "$as_me: WARNING: unable to build hpcrun: no libxed with -fPIC" >&2;}
+    no_xed_for_hpcrun=yes
+  fi
+  #
+  # hpclink: .a only (with or without -fPIC)
+  #
+  if test -f "${XED2}/lib/libxed.a" ; then
+    XED2_HPCLINK_LIBS="${XED2}/lib/libxed.a"
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to build hpclink: no static libxed.a" >&5
+$as_echo "$as_me: WARNING: unable to build hpclink: no static libxed.a" >&2;}
+    no_xed_for_hpclink=yes
+  fi
+  #
+  # hpcprof-mpi: same as hpclink if fully static, else default
+  #
+  echo "x$HPC_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
+  if test $? = 0 ; then
+    XED2_PROF_MPI_LIBS="$XED2_HPCLINK_LIBS"
+  else
+    XED2_PROF_MPI_LIBS="$XED2_LIB_FLAGS"
+  fi
+  #
+  # add libirc.a, if exists for k1om
+  #
+  if test -f "${XED2}/lib/libirc.a" ; then
+    XED2_LIB_FLAGS="${XED2_LIB_FLAGS} ${XED2}/lib/libirc.a"
+    XED2_HPCRUN_LIBS="${XED2_HPCRUN_LIBS} ${XED2}/lib/libirc.a"
+    XED2_HPCLINK_LIBS="${XED2_HPCLINK_LIBS} ${XED2}/lib/libirc.a"
+    XED2_PROF_MPI_LIBS="${XED2_PROF_MPI_LIBS} ${XED2}/lib/libirc.a"
+  fi
+  { $as_echo "$as_me:${as_lineno-$LINENO}: xed2 lib flags: $XED2_LIB_FLAGS" >&5
+$as_echo "$as_me: xed2 lib flags: $XED2_LIB_FLAGS" >&6;}
+fi
+
 
 
 
@@ -18741,7 +18848,8 @@ if test "$enable_hpcrun" = no ; then
   OPT_ENABLE_HPCRUN=no
   enable_hpcrun_mesg='no (disabled)'
 elif test "$LIBDWARF" = no   || test "$LIBELF" = no ||  \
-     test "$LIBMONITOR" = no || test "$SYMTABAPI" = no
+     test "$LIBMONITOR" = no || test "$SYMTABAPI" = no || \
+     test "$no_xed_for_hpcrun" = yes
 then
   OPT_ENABLE_HPCRUN=no
   enable_hpcrun_mesg='no (missing prerequisites)'
@@ -18851,11 +18959,7 @@ else
 fi
 
 
-if test "$OPT_LIBMONITOR_STATIC" = no ; then
-  OPT_ENABLE_HPCRUN_STATIC=no
-fi
-
-if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
+if test "$OPT_LIBMONITOR_STATIC" = no || test "$no_xed_for_hpclink" = yes ; then
   OPT_ENABLE_HPCRUN_STATIC=no
 fi
 
@@ -19132,13 +19236,7 @@ fi
 # Hpcstruct gets a launch script if (1) Xed is shared (some versions
 # of MIC), or (2) use symtab for inline support.
 
-hpcstruct_launch_script=no
-if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2_STATIC" = no ; then
-  hpcstruct_launch_script=yes
-fi
-if test "$inline_avail" = yes ; then
-  hpcstruct_launch_script=yes
-fi
+hpcstruct_launch_script=yes
 
  if test "$hpcstruct_launch_script" = yes; then
   OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE=
@@ -23094,6 +23192,8 @@ $as_echo "$as_me:   host endian: $host_endian" >&6;}
 $as_echo "$as_me: " >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun?:      ${enable_hpcrun_mesg}" >&5
 $as_echo "$as_me:   hpcrun?:      ${enable_hpcrun_mesg}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}" >&5
+$as_echo "$as_me:   hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}" >&5
 $as_echo "$as_me:   hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   mpi support?: ${OPT_ENABLE_MPI}" >&5

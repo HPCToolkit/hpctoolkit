@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2016, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -329,7 +329,7 @@ public:
   std::string
   toString() const
   {
-    std::string str = StrUtil::toStr((long)sortId()) + ":[" + filenm() + "]";
+    std::string str = StrUtil::toStr(sortId()) + ":[" + filenm() + "]";
     return str;
   }
 

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2016, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -199,6 +199,10 @@ public:
   std::string
   finalizeStringMean() const
   {
+    // Laks hack: for callers view and flat view, it would be
+    // more accurate if we divide the sum with the aggregate
+    // since the num of callers view and flat view will be 
+    // accumulated
     std::string n = numSrcStr();
     std::string a = accumStr();
     std::string z = a + " / " + n;
@@ -249,8 +253,9 @@ public:
   combineString1NumSource() const
   {
     std::string a = accumStr();
-    std::string z = "sum(" + a + ", " + a + ")"; // a + numSrcFix()
-    return z;
+    // laks: avoid accumulation of NumSrc for callers view and flat view
+    // std::string z = "sum(" + a + ", " + a + ")"; // a + numSrcFix()
+    return a; // originally: z;
   }
 
   std::string

@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2015, Rice University
+## Copyright ((c)) 2002-2016, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -105,7 +105,7 @@ MYLDADD = \
 	@HOST_HPCPROF_LDFLAGS@
 
 if HOST_CPU_X86_FAMILY
-MY_LIB_XED = $(XED2_LIB_FLAGS)
+MY_LIB_XED = $(XED2_PROF_MPI_LIBS)
 else
 MY_LIB_XED =
 endif

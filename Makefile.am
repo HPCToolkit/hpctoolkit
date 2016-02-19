@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2015, Rice University
+## Copyright ((c)) 2002-2016, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -135,7 +135,7 @@ install-exec-local: myinstall-monitor
 	$(call copy-libs,$(SYMTABAPI_COPY_DYN),$(SYMTABAPI_LIB),libdyn*)
 	$(call copy-libs,$(SYMTABAPI_COPY_PARSE),$(SYMTABAPI_LIB),libparse*)
 	$(call copy-libs,$(SYMTABAPI_COPY_PARSE),$(SYMTABAPI_LIB),libinstruct*)
-	$(call copy-libs,$(XED2_COPY),$(XED2_LIB),lib*)
+	$(call copy-libs,$(XED2_COPY),$(XED2_LIB_DIR),lib*)
 	$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
 
 myinstall-monitor:

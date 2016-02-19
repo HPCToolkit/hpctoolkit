@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2015, Rice University
+## Copyright ((c)) 2002-2016, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -160,7 +160,8 @@ LIBMONITOR_LIB = @LIBMONITOR_LIB@
 PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
 XED2_INC = @XED2_INC@
-XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
+XED2_HPCRUN_LIBS =  @XED2_HPCRUN_LIBS@
+XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 
@@ -206,9 +207,6 @@ UNW_X86_FILES = \
 UNW_X86_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/x86-family	\
 	-I$(XED2_INC)
-
-UNW_X86_LD_FLAGS = \
-        $(XED2_LIB_FLAGS)
 
 UNW_PPC64_FILES = \
         $(UNW_COMMON_FILES) \
@@ -729,8 +727,8 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
-  libhpcrun_la_LDFLAGS  += $(XED2_LIB_FLAGS)
-  libhpcrun_o_LDFLAGS   += $(XED2_LIB_FLAGS)
+  libhpcrun_la_LDFLAGS  += $(XED2_HPCRUN_LIBS)
+  libhpcrun_o_LDFLAGS   += $(XED2_HPCLINK_LIBS)
   libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
@@ -798,13 +796,15 @@ endif
 if UNW_X86
   UNW_SOURCE_FILES = $(UNW_X86_FILES)
   UNW_INCLUDE_DIRS = $(UNW_X86_INCLUDE_DIRS)
-  UNW_LD_FLAGS     = $(UNW_X86_LD_FLAGS)
+  UNW_DYNAMIC_LD_FLAGS = $(XED2_HPCRUN_LIBS)
+  UNW_STATIC_LD_FLAGS =  $(XED2_HPCLINK_LIBS)
 endif
 
 if UNW_PPC64
   UNW_SOURCE_FILES = $(UNW_PPC64_FILES)
   UNW_INCLUDE_DIRS = $(UNW_PPC64_INCLUDE_DIRS)
-  UNW_LD_FLAGS     = $(UNW_PPC64_LD_FLAGS)
+  UNW_DYNAMIC_LD_FLAGS = $(UNW_PPC64_LD_FLAGS)
+  UNW_STATIC_LD_FLAGS =  $(UNW_PPC64_LD_FLAGS)
 endif
 
 if OPT_ENABLE_CUDA
@@ -823,9 +823,10 @@ if OPT_ENABLE_CUDA
 endif
 
 if UNW_LIBUNW
-    UNW_SOURCE_FILES = $(UNW_LIBUNW_FILES)
-    UNW_INCLUDE_DIRS = $(UNW_LIBUNW_INCLUDE_DIRS)
-    UNW_LD_FLAGS     = $(UNW_LIBUNW_LD_FLAGS)
+  UNW_SOURCE_FILES = $(UNW_LIBUNW_FILES)
+  UNW_INCLUDE_DIRS = $(UNW_LIBUNW_INCLUDE_DIRS)
+  UNW_DYNAMIC_LD_FLAGS = $(UNW_LIBUNW_LD_FLAGS)
+  UNW_STATIC_LD_FLAGS =  $(UNW_LIBUNW_LD_FLAGS)
 endif
 
 libhpcrun_la_SOURCES  +=  $(UNW_SOURCE_FILES)
@@ -843,8 +844,8 @@ libhpcrun_pthread_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
-libhpcrun_la_LDFLAGS  += $(UNW_LD_FLAGS)
-libhpcrun_o_LDFLAGS   += $(UNW_LD_FLAGS)
+libhpcrun_la_LDFLAGS  += $(UNW_DYNAMIC_LD_FLAGS)
+libhpcrun_o_LDFLAGS   += $(UNW_STATIC_LD_FLAGS)
 MY_AGENT_INCLUDE_DIRS += $(UNW_INCLUDE_DIRS)
 
 libhpcrun_la_SOURCES += utilities/last_func.c
