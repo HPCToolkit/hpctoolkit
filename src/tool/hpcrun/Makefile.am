@@ -181,8 +181,9 @@ UNW_COMMON_FILES = \
         $(UNW_UNIV_FILES)               \
 	unwind/common/addr_to_recipe_map.c		    \
 	unwind/common/binarytree_uwi.c		    \
-	unwind/common/cskiplist_ildmod_btuwi_pair.c	\
-	unwind/common/ildmod_btuwi_pair.c	    \
+	unwind/common/cskiplist_ilmstat_btuwi_pair.c	\
+	unwind/common/ildmod_stat.c \
+	unwind/common/ilmstat_btuwi_pair.c	    \
 	unwind/common/interval_ldmod_pair.c	    \
 	unwind/common/interval_t.c	    \
 	unwind/common/splay.c		\
@@ -256,6 +257,7 @@ MY_BASE_FILES =				\
 	main.h main.c			\
 	disabled.c			\
         cct_insert_backtrace.c          \
+        cct_backtrace_finalize.c        \
 	env.c				\
 	epoch.c				\
 	files.c				\

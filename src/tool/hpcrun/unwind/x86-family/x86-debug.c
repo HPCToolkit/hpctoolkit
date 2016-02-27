@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -69,8 +69,18 @@ static fnbounds_t local;
 fnbounds_t*
 x86_fnbounds(void* addr)
 {
-  //  fnbounds_t local;
+#if 0
+  // DXN: replacing fnbounds_enclosing_addr with uw_recipe_map_get_fnbounds_ldmod
   fnbounds_enclosing_addr(addr, &local.begin, &local.end, NULL);
+
+#else
+
+  ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(addr);
+  local.begin = ildmod_stat_interval(ilmstat)->start;
+  local.end   = ildmod_stat_interval(ilmstat)->end;
+
+#endif
+
   return &local;
 }
 
@@ -90,7 +100,16 @@ x86_dump_intervals(void* addr)
   void *s, *e;
   btuwi_status_t intervals;
 
+#if 0
+  // DXN: replacing fnbounds_enclosing_addr with uw_recipe_map_get_fnbounds_ldmod
   fnbounds_enclosing_addr(addr, &s, &e, NULL);
+#else
+
+  ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(addr);
+  s = ildmod_stat_interval(ilmstat)->start;
+  e = ildmod_stat_interval(ilmstat)->end;
+
+#endif
 
   intervals = x86_build_intervals(s, e - s, 0, hpcrun_malloc);  // DXN: shelf hcprun_ui_malloc for now
 
@@ -149,7 +168,16 @@ hpcrun_dump_intervals_noisy(void* addr)
   unwind_interval *u;
   btuwi_status_t intervals;
 
+  #if 0
+  // DXN: replacing fnbounds_enclosing_addr with uw_recipe_map_get_fnbounds_ldmod
   fnbounds_enclosing_addr(addr, &s, &e, NULL);
+#else
+
+  ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(addr);
+  s = ildmod_stat_interval(ilmstat)->start;
+  e = ildmod_stat_interval(ilmstat)->end;
+
+#endif
 
   intervals = x86_build_intervals(s, e - s, 1, hpcrun_malloc); // DXN: shelf hcprun_ui_malloc for now
 

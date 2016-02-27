@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -77,10 +77,9 @@ process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg, mem_alloc m_alloc)
 	if (hpcrun_is_cold_code(xptr, iarg)) {
 	  TMSG(COLD_CODE,"  --cold code routine detected!");
 	  TMSG(COLD_CODE,"fetching interval from location %p",iarg->return_addr);
-	  ildmod_btuwi_pair_t *ildmod_btuwi =
-		  uw_recipe_map_lookup_ildmod_btuwi_pair(iarg->return_addr);
-	  bitree_uwi_t *ui =
-		  bitree_uwi_inrange(ildmod_btuwi_pair_btuwi(ildmod_btuwi), (uintptr_t)iarg->return_addr);
+	  ilmstat_btuwi_pair_t *ilmstat_btuwi =
+		  uw_recipe_map_lookup_ilmstat_btuwi_pair(iarg->return_addr);
+	  bitree_uwi_t *ui = bitree_uwi_inrange(ilmstat_btuwi_pair_btuwi(ilmstat_btuwi), (uintptr_t)iarg->return_addr);  // DXN
 	  TMSG(COLD_CODE,"got unwind interval from hpcrun_addr_to_interval");
 	  if (ENABLED(COLD_CODE)) {
 		dump_ui_stderr(ui);

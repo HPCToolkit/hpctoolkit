@@ -286,7 +286,7 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
   int hlayer = cskiplist_find_helper(cmpfn, cskl, hi,
 	  other, hsuccs, cskiplist_find_full);
 
-  bool hfound = hlayer != NO_LAYER;
+//  bool hfound = hlayer != NO_LAYER;
 
   csklnode_t *first = lpreds[0]->nexts[0];
   csklnode_t *last = AFTER_HIGH(hsuccs, 0, hlayer);

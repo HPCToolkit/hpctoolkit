@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -129,13 +129,15 @@ static addr_to_recipe_map_t *addr2recipe_map = NULL;
 // and inserting entries into addr2recipe_map:
 static mem_alloc m_alloc = hpcrun_malloc;
 
+#if 0
 static bitree_uwi_t *ui_free_list = NULL;
 static size_t the_ui_size = 0;
+#endif
 
 
 extern btuwi_status_t build_intervals(char *ins, unsigned int len, mem_alloc m_alloc);
 static void free_ui_tree_locked(bitree_uwi_t *tree);
-
+static ilmstat_btuwi_pair_t *uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr);
 
 //---------------------------------------------------------------------
 // interface operations
@@ -166,39 +168,19 @@ uw_recipe_map_init(void)
 bool
 uw_recipe_map_poisoned(uintptr_t start, uintptr_t end)
 {
-  ildmod_btuwi_pair_t* itpair =
-	  ildmod_btuwi_pair_t_build(start, end, NULL,
-		  bitree_uwi_new(NULL, NULL, NULL, m_alloc), m_alloc);
+  ilmstat_btuwi_pair_t* itpair =
+	  ilmstat_btuwi_pair_build(start, end, NULL, NEVER, NULL, m_alloc);
   return a2r_map_insert(addr2recipe_map, itpair, m_alloc);
 }
 
-bool
-uw_recipe_map_lookup(void *addr,  load_module_t** ldmod, bitree_uwi_t **uwi)
-{
-  ildmod_btuwi_pair_t *ilm_btui = uw_recipe_map_lookup_ildmod_btuwi_pair(addr);
-  if ( ilm_btui == NULL ) return false;
-  load_module_t *lm = ildmod_btuwi_pair_loadmod(ilm_btui);
-  if (lm == NULL) return false;
-  if (ldmod) *ldmod = lm;
-  bitree_uwi_t *ui = bitree_uwi_inrange(ildmod_btuwi_pair_btuwi(ilm_btui), (uintptr_t)addr);
-  *uwi =  ui;
-  return true;
-}
-
-/*
- *
- */
-ildmod_btuwi_pair_t *
-uw_recipe_map_lookup_ildmod_btuwi_pair(void *addr)
-{
-  load_module_t *lm;
-  btuwi_status_t istat;
-
-  /* See if addr is already in the map. */
-  ildmod_btuwi_pair_t* ildmod_btuwi =
+static ilmstat_btuwi_pair_t *
+uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr) {
+  // See check addr is already in the range of an interval key in the map
+  ilmstat_btuwi_pair_t* ilmstat_btuwi =
 	  a2r_map_inrange_find(addr2recipe_map, (uintptr_t)addr);
 
-  if (!ildmod_btuwi) {
+  if (!ilmstat_btuwi) {
+	load_module_t *lm;
 	void *fcn_start, *fcn_end;
 	bool ret = fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end, &lm);
 	if (!ret) {
@@ -211,35 +193,95 @@ uw_recipe_map_lookup_ildmod_btuwi_pair(void *addr)
 	  return (NULL);
 	}
 
-	// enclosing addresses found; now pair it with an NULL bitree_uwi_t and
-	// try to insert into map:
-	ildmod_btuwi_pair_t* ibtuwi =
-		ildmod_btuwi_pair_t_build((uintptr_t)fcn_start, (uintptr_t)fcn_end, lm,
-			NULL, m_alloc);
-	bool inserted = a2r_map_insert(addr2recipe_map, ibtuwi, m_alloc);
-	if (inserted) {
-	  ildmod_btuwi = ibtuwi;
-	} else {
-	  ildmod_btuwi = a2r_map_inrange_find(addr2recipe_map, (uintptr_t)addr);
-	  goto found_in_map;
-	}
+	// bounding addresses found; set DEFERRED state and pair it with
+	// (bitree_uwi_t*)NULL and try to insert into map:
+	ilmstat_btuwi =
+		ilmstat_btuwi_pair_build((uintptr_t)fcn_start, (uintptr_t)fcn_end, lm,
+			DEFERRED, NULL, m_alloc);
 
-	istat = build_intervals(fcn_start, fcn_end - fcn_start, m_alloc);
-
-	if (istat.first == NULL) {
-	  TMSG(UITREE, "BAD build_intervals failed: fcn range %p to %p",
-		  fcn_start, fcn_end);
-	  return (NULL);
+	bool inserted =  a2r_map_insert(addr2recipe_map, ilmstat_btuwi, m_alloc);
+	// if successful: ilmstat_btuwi is now in the map.
+	if (!inserted) {
+		// if not: the interval_ldmod_pair key ([fcn_start, fcn_end), lm) is already in the map.
+		// FIXME: memory leak if insertion fails.
+	  ilmstat_btuwi =
+	  	  a2r_map_inrange_find(addr2recipe_map, (uintptr_t)addr);
 	}
-	ildmod_btuwi_pair_set_btuwi(ildmod_btuwi, bitree_uwi_rebalance(istat.first));
   }
-
-  found_in_map: // invariant: ildmod_btuwi is non-null
-  while(!ildmod_btuwi_pair_btuwi(ildmod_btuwi));
-  TMSG(UITREE_LOOKUP, "found in unwind tree: addr %p", addr);
-  return ildmod_btuwi;
+  assert(ilmstat_btuwi != NULL);  // DXN: just checking
+  return ilmstat_btuwi;
 }
 
+bool
+uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
+{
+  ilmstat_btuwi_pair_t *ilm_btui = uw_recipe_map_lookup_ilmstat_btuwi_pair(addr);
+
+  if (ilm_btui == NULL) return false;  // lookup fails for various reasons.
+
+  bitree_uwi_t *btuwi = ilmstat_btuwi_pair_btuwi(ilm_btui);
+  unwr_info->btuwi    = bitree_uwi_inrange(btuwi, addr);
+  unwr_info->treestat = ilmstat_btuwi_pair_stat(ilm_btui);
+  unwr_info->lm       = ilmstat_btuwi_pair_loadmod(ilm_btui);
+  unwr_info->start    = ilmstat_btuwi_pair_interval(ilm_btui)->start;
+  unwr_info->end      = ilmstat_btuwi_pair_interval(ilm_btui)->end;
+
+  return (unwr_info->treestat == READY);
+}
+
+/*
+ *
+ */
+ilmstat_btuwi_pair_t *
+uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
+{
+  ilmstat_btuwi_pair_t* ilmstat_btuwi =
+	  uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(addr);
+  if (!ilmstat_btuwi)
+	return NULL;
+
+  ildmod_stat_t *ilmstat = ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi);
+  switch(ilmstat->stat) {
+  case NEVER:
+	// addr is in the range of some poisoned load module
+	return NULL;
+  case DEFERRED:
+	if (compare_and_swap_bool(&(ilmstat->stat), DEFERRED, FORTHCOMING)) {
+	  // it is my responsibility to build the tree of intervals for the function
+	  void *fcn_start = interval_ldmod_pair_interval(ilmstat->ildmod)->start;
+	  void *fcn_end   = interval_ldmod_pair_interval(ilmstat->ildmod)->end;
+	  btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, m_alloc);
+	  if (btuwi_stat.first == NULL) {
+		TMSG(UITREE, "BAD build_intervals failed: fcn range %p to %p",
+			fcn_start, fcn_end);
+		return (NULL);
+	  }
+	  ilmstat_btuwi_pair_set_btuwi(ilmstat_btuwi, bitree_uwi_rebalance(btuwi_stat.first));
+	  ilmstat_btuwi_pair_set_status(ilmstat_btuwi, READY);
+	}
+	break;
+  case READY:
+	break;
+  case FORTHCOMING:
+	// invariant: ilmstat_btuwi is non-null
+	while(ilmstat_btuwi_pair_stat(ilmstat_btuwi) != READY);
+	break;
+  }
+
+  TMSG(UITREE_LOOKUP, "found in unwind tree: addr %p", addr);
+  return ilmstat_btuwi;
+}
+
+ildmod_stat_t*
+uw_recipe_map_get_fnbounds_ldmod(void *addr)
+{
+  // See check addr is already in the range of an interval key in the map
+  ilmstat_btuwi_pair_t* ilmstat_btuwi =
+	  uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(addr);
+  if (!ilmstat_btuwi)
+	return NULL;
+  return ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi);
+}
 
 /*
  * Remove intervals in the range [start, end) from the unwind interval
@@ -263,7 +305,8 @@ uw_recipe_map_delete_range(void* start, void* end)
   UI_TREE_UNLOCK;
 #endif
 
-  a2r_map_inrange_del_bulk_unsynch(addr2recipe_map, (uintptr_t)start, (uintptr_t)end, free_ui_node_locked );  // DXN: TODO
+  // DXN: TODO - Let memory leak for now
+  a2r_map_inrange_del_bulk_unsynch(addr2recipe_map, (uintptr_t)start, (uintptr_t)end, free_ui_node_locked );
 }
 
 
@@ -283,7 +326,7 @@ uw_recipe_map_delete_range(void* start, void* end)
 static void
 free_ui_tree_locked(bitree_uwi_t *tree)
 {
-  // DXN: Let it leak!!!!
+  // DXN: TODO - Let memory leak for now
 #if 0
   if (tree == NULL)
 	return;
@@ -299,7 +342,7 @@ free_ui_tree_locked(bitree_uwi_t *tree)
 void
 free_ui_node_locked(void *node)
 {
-  // DXN: Let it leak!!!!
+  // DXN: TODO - Let memory leak for now
 #if 0
   RIGHT(node) = ui_free_list;
   ui_free_list = node;

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -53,9 +53,9 @@
 #define _UI_TREE_H_
 
 #include <sys/types.h>
-//#include <hpcrun/utilities/ip-normalized.h>
 #include "binarytree_uwi.h"
-#include "ildmod_btuwi_pair.h"
+#include "ilmstat_btuwi_pair.h"
+#include "std_unw_cursor.h"
 
 void
 uw_recipe_map_init(void);
@@ -67,17 +67,36 @@ uw_recipe_map_init(void);
 bool
 uw_recipe_map_poisoned(uintptr_t start, uintptr_t end);
 
+/*
+ * if addr is found in range in the map, return true and
+ *   *unwr_info is the ilmstat_btuwi_pair_t ( ([start, end), ldmod, status), btuwi ),
+ *   where the root of btuwi is the uwi_t for addr
+ * else return false
+ */
 bool
-uw_recipe_map_lookup(void *addr, load_module_t** ldmod, bitree_uwi_t **uwi);
+uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info);
 
-ildmod_btuwi_pair_t*
-uw_recipe_map_lookup_ildmod_btuwi_pair(void *addr);
+ilmstat_btuwi_pair_t*
+uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr);
 
-void uw_recipe_map_delete_range(void *start, void *end);
+/*
+ * Wrapper (decorator pattern) for fnbounds_enclosing_addr(...).
+ * Given an instruction pointer (IP) 'ip',
+ * return the bounds [start, end) of the function that contains 'ip'.
+ * Also return the load module that contains 'ip' to make
+ * normalization easy.  All IPs are unnormalized.
+ */
+ildmod_stat_t*
+uw_recipe_map_get_fnbounds_ldmod(void *ip);
 
-void free_ui_node_locked(void *node);
+void
+uw_recipe_map_delete_range(void *start, void *end);
 
-void uw_recipe_map_print(void);
+void
+free_ui_node_locked(void *node);
+
+void
+uw_recipe_map_print(void);
 
 #if 0
 void *hpcrun_ui_malloc(size_t ui_size);

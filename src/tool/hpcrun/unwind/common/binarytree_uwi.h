@@ -87,13 +87,13 @@ bitree_uwi_leftsubtree(bitree_uwi_t *tree);
 bitree_uwi_t*
 bitree_uwi_rightsubtree(bitree_uwi_t *tree);
 
-void*
+void
 bitree_uwi_set_rootval(bitree_uwi_t *tree, uwi_t* rootval);
 
-void*
+void
 bitree_uwi_set_leftsubtree(bitree_uwi_t *tree, bitree_uwi_t* subtree);
 
-void*
+void
 bitree_uwi_set_rightsubtree(bitree_uwi_t *tree, bitree_uwi_t* subtree);
 
 // return the interval_t part of the interval_t key of the tree root

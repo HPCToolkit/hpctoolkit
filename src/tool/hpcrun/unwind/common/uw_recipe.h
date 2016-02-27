@@ -1,7 +1,8 @@
 /*
  * uw_recipe.h
  *
- * Abstract unwind recipe
+ * Specification of uw_recipe_t, an abstract unwind recipe.
+ * Known concrete implementation: x86recipe_t defined in x86-unwind-interval.h
  *
  *      Author: dxnguyen
  */
@@ -9,11 +10,6 @@
 #ifndef __UW_RECIPE_H__
 #define __UW_RECIPE_H__
 
-//******************************************************************************
-// local include files
-//******************************************************************************
-
-#include <lib/prof-lean/mem_manager.h>
 
 //******************************************************************************
 // macro

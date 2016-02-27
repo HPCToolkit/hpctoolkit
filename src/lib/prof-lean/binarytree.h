@@ -116,13 +116,13 @@ binarytree_rightsubtree(binarytree_t *tree);
 /*
  * Settors
  */
-void*
+void
 binarytree_set_rootval(binarytree_t *tree, void* rootval);
 
-void*
+void
 binarytree_set_leftsubtree(binarytree_t *tree, binarytree_t* subtree);
 
-void*
+void
 binarytree_set_rightsubtree(binarytree_t *tree, binarytree_t* subtree);
 
 // count the number of nodes in the binary tree.

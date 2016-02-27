@@ -210,21 +210,21 @@ binarytree_rightsubtree(binarytree_t *tree)
   return tree->right;
 }
 
-void*
+void
 binarytree_set_rootval(binarytree_t *tree, void* rootval)
 {
   assert(tree != NULL);
   tree->val = rootval;
 }
 
-void*
+void
 binarytree_set_leftsubtree(binarytree_t *tree, binarytree_t* subtree)
 {
   assert(tree != NULL);
   tree->left = subtree;
 }
 
-void*
+void
 binarytree_set_rightsubtree(binarytree_t *tree, binarytree_t* subtree)
 {
   assert(tree != NULL);

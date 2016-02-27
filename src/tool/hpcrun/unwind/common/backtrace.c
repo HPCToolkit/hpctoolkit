@@ -65,6 +65,7 @@
 
 #include <cct/cct.h>
 
+#include <unwind/common/ui_tree.h>
 #include <unwind/common/unwind.h>
 #include <unwind/common/backtrace.h>
 #include <unwind/common/unw-throw.h>
@@ -347,6 +348,8 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
   bt->trolled  = false;
   bt->n_trolls = 0;
   bt->fence = FENCE_BAD;
+  bt->bottom_frame_elided = false;
+  bt->partial_unwind = true;
 
   bool tramp_found = false;
 
@@ -408,9 +411,24 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 			       &td->btbuf_cur->ip_norm);
     td->btbuf_cur->ra_loc = NULL;
 
-    void *func_start_pc = NULL, *func_end_pc = NULL;
-    load_module_t* lm = NULL;
-    fnbounds_enclosing_addr(cursor.pc_unnorm, &func_start_pc, &func_end_pc, &lm);
+#if 0
+    // DXN: replacing call to fnbounds_enclosing_addr:
+    // DXN: note this is not even needed because the cursor already has the info.
+    ildmod_stat_t* ilmp = uw_recipe_map_get_fnbounds_ldmod(cursor.pc_unnorm);
+    interval_t* fnbounds = ildmod_stat_interval(ilmp);
+    void *func_start_pc = fnbounds->start;
+    void *func_end_pc = fnbounds->end;
+    load_module_t* lm = ildmod_stat_loadmod(ilmp);
+
+//    fnbounds_enclosing_addr(cursor.pc_unnorm, &func_start_pc, &func_end_pc, &lm);  // DXN
+#else
+
+    void *func_start_pc =  cursor.unwr_info.start;
+//    void *func_end_pc = cursor.unwr_info.end;
+    load_module_t* lm = cursor.unwr_info.lm;
+
+#endif
+
     td->btbuf_cur->the_function = hpcrun_normalize_ip(func_start_pc, lm);
 
     frame_t* prev = td->btbuf_cur;
@@ -463,7 +481,9 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
     TMSG(BT, "** Soft Failure **");
     return false;
   }
+
   TMSG(BT, "succeeds");
+  bt->partial_unwind = false;
   return true;
 }
 
@@ -558,6 +578,8 @@ hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
   bt->has_tramp = false;
   bt->trolled  = false;
   bt->n_trolls = 0;
+  bt->bottom_frame_elided = false;
+  bt->partial_unwind = true;
 
   bool tramp_found = false;
 
@@ -687,6 +709,7 @@ hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
     bt->begin = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
   }
 
+  bt->partial_unwind = false;
   return true;
 }
 
@@ -774,7 +797,7 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
       }
     }
     
-    ip_normalized_t ip_norm = hpcrun_normalize_ip((void*) ip, cursor.lm);
+    ip_normalized_t ip_norm = hpcrun_normalize_ip((void*)ip, cursor.unwr_info.lm);  // DXN
     frame_t* prev = hpcrun_bt_push(bt,
 				   &((frame_t){.cursor = cursor, 
 					       .ip_norm = ip_norm,

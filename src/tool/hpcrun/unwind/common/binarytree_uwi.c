@@ -61,19 +61,19 @@ bitree_uwi_rightsubtree(bitree_uwi_t *tree)
   return (bitree_uwi_t*) binarytree_rightsubtree((binarytree_t*) tree);
 }
 
-void*
+void
 bitree_uwi_set_rootval(bitree_uwi_t *tree, uwi_t* rootval)
 {
   binarytree_set_rootval((binarytree_t*) tree, rootval);
 }
 
-void*
+void
 bitree_uwi_set_leftsubtree(bitree_uwi_t *tree, bitree_uwi_t* subtree)
 {
   binarytree_set_leftsubtree((binarytree_t*) tree, (binarytree_t*)subtree);
 }
 
-void*
+void
 bitree_uwi_set_rightsubtree(bitree_uwi_t *tree, bitree_uwi_t* subtree)
 {
   binarytree_set_rightsubtree((binarytree_t*) tree, (binarytree_t*)subtree);

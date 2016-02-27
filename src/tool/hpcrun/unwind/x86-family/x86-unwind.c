@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -248,7 +248,8 @@ hpcrun_unw_set_cursor(hpcrun_unw_cursor_t* cursor, void **sp, void **bp, void *i
   cursor->flags = 0; // trolling_used
 
   load_module_t *lm;
-  bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &lm, &(cursor->intvl));
+//  bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &lm, &(cursor->intvl));
+  bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &(cursor->unwr_info));  // DXN
 
   cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, NULL);
 
@@ -272,11 +273,18 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 
   cursor->flags = 0; // trolling_used
 
+#if 0
+  // DXN: TODO need to return the quadruple (s, e, lm, recipe)
   load_module_t *lm;
   bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &lm, &(cursor->intvl));
+#else
+
+  bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &(cursor->unwr_info));
+
+#endif
+
   if (found) {
-	cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, lm);
-	cursor->lm = lm;  // DXN
+	cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, cursor->unwr_info.lm);
   }
   else {
     EMSG("unw_init: cursor could NOT build an interval for initial pc = %p",
@@ -284,7 +292,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
     cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, NULL);
   }
 
-  if (MYDBG) { dump_ui(cursor->intvl, 0); }
+  if (MYDBG) { dump_ui(cursor->unwr_info.btuwi, 0); }
 }
 
 //
@@ -329,7 +337,7 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
   void** bp = cursor->bp;
   void*  sp = cursor->sp;
   void*  pc = cursor->pc_unnorm;
-  unwind_interval* uw = cursor->intvl;
+  unwind_interval* uw = cursor->unwr_info.btuwi;
 
   int unw_res;
 
@@ -355,7 +363,7 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
 
   default:
     EMSG("unw_step: ILLEGAL UNWIND INTERVAL");
-    dump_ui(cursor->intvl, 0);
+    dump_ui(cursor->unwr_info.btuwi, 0);
     assert(0);
   }
   if (unw_res == STEP_STOP_WEAK) unw_res = STEP_STOP; 
@@ -483,7 +491,7 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
   void** bp = cursor->bp;
   void*  sp = cursor->sp;
   void*  pc = cursor->pc_unnorm;
-  unwind_interval* uw = (unwind_interval *)cursor->intvl;
+  unwind_interval* uw = cursor->unwr_info.btuwi;
   
   TMSG(UNW,"step_sp: cursor { bp=%p, sp=%p, pc=%p }", bp, sp, pc);
   if (MYDBG) { dump_ui(uw, 0); }
@@ -514,8 +522,9 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
   }
   next_sp += 1;
 
-  load_module_t *lm;
-  bool found = uw_recipe_map_lookup(((char *)next_pc) - 1, &lm, &(cursor->intvl));
+//  load_module_t *lm;
+//  bool found = uw_recipe_map_lookup(((char *)next_pc) - 1, &lm, &(cursor->intvl));
+  bool found = uw_recipe_map_lookup(((char *)next_pc) - 1, &(cursor->unwr_info));  // DXN
   if (!found){
     if (((void *)next_sp) >= monitor_stack_bottom()){
       TMSG(UNW,"  step_sp: STEP_STOP_WEAK, no next interval and next_sp >= stack bottom,"
@@ -536,7 +545,7 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
       
       return STEP_ERROR;
     }
-    unwind_interval* uw = cursor->intvl;
+    unwind_interval* uw = cursor->unwr_info.btuwi;
     if ((RA_BP_FRAME == UWI_RECIPE(uw)->ra_status) ||
 	(RA_STD_FRAME == UWI_RECIPE(uw)->ra_status)) { // Makes sense to sanity check BP, do it
       //-----------------------------------------------------------
@@ -564,11 +573,11 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
     cursor->bp 	      = next_bp;
     cursor->sp 	      = next_sp;
     cursor->ra_loc    = ra_loc;
-    cursor->pc_norm   = hpcrun_normalize_ip(next_pc, lm);
+    cursor->pc_norm   = hpcrun_normalize_ip(next_pc, cursor->unwr_info.lm);
   }
 
   TMSG(UNW,"  step_sp: STEP_OK, has_intvl=%d, bp=%p, sp=%p, pc=%p",
-	   cursor->intvl != NULL, next_bp, next_sp, next_pc);
+	  cursor->unwr_info.btuwi != NULL, next_bp, next_sp, next_pc);
   return STEP_OK;
 }
 
@@ -586,7 +595,7 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
   bp = cursor->bp;
   sp = cursor->sp;
   pc = cursor->pc_unnorm;
-  uw = cursor->intvl;
+  uw = cursor->unwr_info.btuwi;
 
   TMSG(UNW,"step_bp: cursor { bp=%p, sp=%p, pc=%p }", bp, sp, pc);
   if (MYDBG) { dump_ui(uw, 0); }
@@ -615,8 +624,9 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
     // this condition is a weak correctness check. only
     // try building an interval for the return address again if it succeeds
 
-    load_module_t *lm;
-    bool found = uw_recipe_map_lookup(((char *)next_pc) - 1, &lm, &uw);
+//    load_module_t *lm;
+//    bool found = uw_recipe_map_lookup(((char *)next_pc) - 1, &lm, &uw);
+    bool found = uw_recipe_map_lookup(((char *)next_pc) - 1, &(cursor->unwr_info));
     if (!found){
       if (((void *)next_sp) >= monitor_stack_bottom()) {
         TMSG(UNW,"  step_bp: STEP_STOP_WEAK, next_sp >= monitor_stack_bottom,"
@@ -627,15 +637,16 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
       return STEP_ERROR;
     }
     else {
-      cursor->pc_unnorm = next_pc;
-      cursor->bp        = next_bp;
-      cursor->sp        = next_sp;
-      cursor->ra_loc    = ra_loc;
-      cursor->pc_norm   = hpcrun_normalize_ip(next_pc, lm);
+      cursor->pc_unnorm = next_pc;  // DXN: update needed?
+      cursor->bp        = next_bp;  // DXN: update needed?
+      cursor->sp        = next_sp;  // DXN: update needed?
+      cursor->ra_loc    = ra_loc;   // DXN: update needed?
+//      cursor->pc_norm   = hpcrun_normalize_ip(next_pc, lm);
+      cursor->pc_norm   = hpcrun_normalize_ip(next_pc, cursor->unwr_info.lm);
       
-      cursor->intvl = uw;
+//      cursor->intvl = uw;   // DXN: no longer needed?
       TMSG(UNW,"  step_bp: STEP_OK, has_intvl=%d, bp=%p, sp=%p, pc=%p",
-	   cursor->intvl != NULL, next_bp, next_sp, next_pc);
+    	  cursor->unwr_info.btuwi != NULL, next_bp, next_sp, next_pc);
       return STEP_OK;
     }
   }
@@ -792,8 +803,9 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
       hpcrun_unw_throw();
     }
 
-    load_module_t *lm;
-    bool found = uw_recipe_map_lookup(((char *)next_pc) + offset, &lm, &(cursor->intvl));
+//    load_module_t *lm;
+//    bool found = uw_recipe_map_lookup(((char *)next_pc) + offset, &lm, &(cursor->intvl));
+    bool found = uw_recipe_map_lookup(((char *)next_pc) + offset, &(cursor->unwr_info));  // DXN
 
     if (found) {
       TMSG(TROLL,"Trolling advances cursor to pc = %p, sp = %p", 
@@ -804,7 +816,7 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
       cursor->bp        = next_bp;
       cursor->sp        = next_sp;
       cursor->ra_loc    = ra_loc;
-      cursor->pc_norm   = hpcrun_normalize_ip(next_pc, lm);
+      cursor->pc_norm   = hpcrun_normalize_ip(next_pc, cursor->unwr_info.lm);
       cursor->flags = 1; // trolling_used
 
       return; // success!
