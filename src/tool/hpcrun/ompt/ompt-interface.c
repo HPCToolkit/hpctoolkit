@@ -66,6 +66,7 @@
 #include "ompt-interface.h"
 #include "ompt-callstack.h"
 #include "ompt-state-placeholders.h"
+#include "ompt-thread.h"
 
 #include "sample-sources/blame-shift/directed.h"
 #include "sample-sources/blame-shift/undirected.h"
@@ -180,6 +181,48 @@ ompt_get_idle_count_ptr()
 
 
 //----------------------------------------------------------------------------
+// identify whether a thread is an OpenMP thread or not
+//----------------------------------------------------------------------------
+
+static _Bool
+ompt_thread_participates(void)
+{
+  switch(ompt_thread_type_get()) {
+  case ompt_thread_initial:
+  case ompt_thread_worker:
+    return true;
+  case ompt_thread_other:
+  case ompt_thread_unknown:
+  default:
+    break;
+  }
+  return false;
+}
+
+
+static _Bool
+ompt_thread_needs_blame(void)
+{
+  if (ompt_initialized) {
+    ompt_wait_id_t wait_id;
+    ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
+    switch(state) {
+    case ompt_state_idle:
+    case ompt_state_wait_barrier:
+    case ompt_state_wait_barrier_implicit:
+    case ompt_state_wait_barrier_explicit:
+    case ompt_state_wait_taskwait:
+    case ompt_state_wait_taskgroup:
+       return false;
+    default:
+      return true;
+    }
+  }
+  return true;
+}
+
+
+//----------------------------------------------------------------------------
 // interface function to register support for directed blame shifting for 
 // OpenMP operations on mutexes if event OMP_MUTEX is present
 //----------------------------------------------------------------------------
@@ -235,6 +278,8 @@ ompt_idle_blame_shift_register(void)
   idle_bs_entry.arg = &omp_idle_blame_info;
 
   omp_idle_blame_info.get_idle_count_ptr = ompt_get_idle_count_ptr;
+  omp_idle_blame_info.participates = ompt_thread_participates;
+  omp_idle_blame_info.working = ompt_thread_needs_blame;
 
   blame_shift_register(&idle_bs_entry);
 }
@@ -259,18 +304,6 @@ FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 
  ompt_idle_placeholder_fn = omp_idle_fn;
 #endif
-}
-
-
-//----------------------------------------------------------------------------
-// identify whether a thread is an OpenMP thread or not
-//----------------------------------------------------------------------------
-
-static int
-ompt_thread_participates(void)
-{
-  uint64_t wait_id;
-  return hpcrun_ompt_get_state(&wait_id) != ompt_state_undefined;
 }
 
 
@@ -316,8 +349,9 @@ void ompt_task_begin(ompt_task_id_t parent_task_id,
 //-------------------------------------------------
 
 static void
-ompt_thread_begin()
+ompt_thread_begin(ompt_thread_type_t ttype)
 {
+  ompt_thread_type_set(ttype);
   undirected_blame_thread_start(&omp_idle_blame_info);
 }
 

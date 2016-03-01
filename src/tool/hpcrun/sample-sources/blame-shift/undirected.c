@@ -80,6 +80,8 @@
  *****************************************************************************/
 
 #define idle_count(bi) (*(bi->get_idle_count_ptr())) 
+#define participates(bi) (bi->participates()) 
+#define working(bi) (bi->working()) 
 
 
 /******************************************************************************
@@ -128,7 +130,7 @@ undirected_blame_thread_end(undirected_blame_info_t *bi)
 inline void
 undirected_blame_idle_begin(undirected_blame_info_t *bi)
 {
-  if ((idle_count(bi))++ > 0) return;
+  //  if ((idle_count(bi))++ > 0) return;
   atomic_add(&bi->active_worker_count, -1L);
 }
 
@@ -136,7 +138,7 @@ undirected_blame_idle_begin(undirected_blame_info_t *bi)
 inline void
 undirected_blame_idle_end(undirected_blame_info_t *bi)
 {
-  if (--(idle_count(bi)) > 0) return;
+  // if (--(idle_count(bi)) > 0) return;
   atomic_add(&bi->active_worker_count, 1);
 }
 
@@ -161,13 +163,17 @@ undirected_blame_sample(void* arg, int metric_id, cct_node_t *node,
                         int metric_incr)
 {
   undirected_blame_info_t *bi = (undirected_blame_info_t *) arg;
+
+  if (!participates(bi) || !working(bi)) return;
+
   int metric_period;
 
   if (!metric_is_timebase(metric_id, &metric_period)) return;
   
   double metric_value = metric_period * metric_incr;
 
-  if (idle_count(bi) == 0) { // if this thread is not idle
+  // if (idle_count(bi) == 0) 
+  { // if this thread is not idle
     // capture active_worker_count into a local variable to make sure 
     // that the count doesn't change between the time we test it and 
     // the time we use the value
@@ -189,4 +195,3 @@ undirected_blame_sample(void* arg, int metric_id, cct_node_t *node,
                               (cct_metric_data_t){.i = metric_value});
   }
 }
-

@@ -63,6 +63,7 @@
 #include "ompt-defer.h"
 #include "ompt-region.h"
 #include "ompt-task-map.h"
+#include "ompt-thread.h"
 
 #if defined(HOST_CPU_PPC) 
 #include "ppc64-gnu-omp.h"
@@ -174,6 +175,18 @@ ompt_elide_runtime_frame(
   int isSync
 )
 {
+  // eliding only if the thread is an OpenMP initial or worker thread 
+  switch(ompt_thread_type_get()) {
+  case ompt_thread_initial:
+    break;
+  case ompt_thread_worker:
+    if (hpcrun_ompt_get_parallel_id(0) != ompt_parallel_id_none) break;
+  case ompt_thread_other: 
+  case ompt_thread_unknown: 
+  default:
+    return;
+  }
+
   // collapse callstack if a thread is idle or waiting in a barrier
   switch(check_state()) {
   case ompt_state_wait_barrier:
@@ -523,6 +536,11 @@ ompt_backtrace_finalize(
 }
 
 
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
 cct_node_t *
 ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt, 
                            cct_node_t *cct_cursor)
@@ -584,3 +602,4 @@ ompt_callstack_register_handlers(void)
   cct_backtrace_finalize_register(&ompt_finalizer);
   cct_cursor_finalize_register(ompt_cct_cursor_finalize);
 }
+

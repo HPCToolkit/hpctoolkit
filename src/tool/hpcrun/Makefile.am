@@ -326,6 +326,7 @@ MY_BASE_FILES =				\
 	ompt/ompt-region-map.c          \
 	ompt/ompt-state-placeholders.c  \
 	ompt/ompt-task.c                \
+	ompt/ompt-thread.c              \
 	ompt/ompt-task-map.c            \
 	\
 	utilities/executable-path.h utilities/executable-path.c \

@@ -264,7 +264,8 @@ typedef void (*ompt_thread_callback_t) (
 typedef enum {
     ompt_thread_initial = 1, // start the enumeration at 1
     ompt_thread_worker  = 2,
-    ompt_thread_other   = 3
+    ompt_thread_other   = 3,
+    ompt_thread_unknown = 4
 } ompt_thread_type_t;
 
 typedef enum {

@@ -357,7 +357,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-defer.c ompt/ompt-defer-write.c \
 	ompt/ompt-interface.c ompt/ompt-region.c \
 	ompt/ompt-region-map.c ompt/ompt-state-placeholders.c \
-	ompt/ompt-task.c ompt/ompt-task-map.c \
+	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -433,10 +433,10 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-ompt-interface.lo libhpcrun_la-ompt-region.lo \
 	libhpcrun_la-ompt-region-map.lo \
 	libhpcrun_la-ompt-state-placeholders.lo \
-	libhpcrun_la-ompt-task.lo libhpcrun_la-ompt-task-map.lo \
-	libhpcrun_la-executable-path.lo libhpcrun_la-ip-normalized.lo \
-	libhpcrun_la-tokenize.lo libhpcrun_la-unlink.lo \
-	$(am__objects_7)
+	libhpcrun_la-ompt-task.lo libhpcrun_la-ompt-thread.lo \
+	libhpcrun_la-ompt-task-map.lo libhpcrun_la-executable-path.lo \
+	libhpcrun_la-ip-normalized.lo libhpcrun_la-tokenize.lo \
+	libhpcrun_la-unlink.lo $(am__objects_7)
 am__objects_9 = libhpcrun_la-fnbounds_client.lo \
 	libhpcrun_la-fnbounds_dynamic.lo libhpcrun_la-openmp.lo \
 	libhpcrun_la-hpcrun_dlfns.lo \
@@ -594,7 +594,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-defer.c ompt/ompt-defer-write.c \
 	ompt/ompt-interface.c ompt/ompt-region.c \
 	ompt/ompt-region-map.c ompt/ompt-state-placeholders.c \
-	ompt/ompt-task.c ompt/ompt-task-map.c \
+	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -684,6 +684,7 @@ am__objects_35 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-ompt-region-map.$(OBJEXT) \
 	libhpcrun_o-ompt-state-placeholders.$(OBJEXT) \
 	libhpcrun_o-ompt-task.$(OBJEXT) \
+	libhpcrun_o-ompt-thread.$(OBJEXT) \
 	libhpcrun_o-ompt-task-map.$(OBJEXT) \
 	libhpcrun_o-executable-path.$(OBJEXT) \
 	libhpcrun_o-ip-normalized.$(OBJEXT) \
@@ -1235,7 +1236,7 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	ompt/ompt-defer.c ompt/ompt-defer-write.c \
 	ompt/ompt-interface.c ompt/ompt-region.c \
 	ompt/ompt-region-map.c ompt/ompt-state-placeholders.c \
-	ompt/ompt-task.c ompt/ompt-task-map.c \
+	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -1903,6 +1904,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ompt-state-placeholders.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ompt-task-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ompt-task.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ompt-thread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-openmp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-papi-c-cupti.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-papi-c-extended-info.Plo@am__quote@
@@ -2020,6 +2022,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ompt-state-placeholders.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ompt-task-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ompt-task.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ompt-thread.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi-c-cupti.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi-c-extended-info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi-c.Po@am__quote@
@@ -2804,6 +2807,13 @@ libhpcrun_la-ompt-task.lo: ompt/ompt-task.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-task.c' object='libhpcrun_la-ompt-task.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ompt-task.lo `test -f 'ompt/ompt-task.c' || echo '$(srcdir)/'`ompt/ompt-task.c
+
+libhpcrun_la-ompt-thread.lo: ompt/ompt-thread.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ompt-thread.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ompt-thread.Tpo -c -o libhpcrun_la-ompt-thread.lo `test -f 'ompt/ompt-thread.c' || echo '$(srcdir)/'`ompt/ompt-thread.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-ompt-thread.Tpo $(DEPDIR)/libhpcrun_la-ompt-thread.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-thread.c' object='libhpcrun_la-ompt-thread.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ompt-thread.lo `test -f 'ompt/ompt-thread.c' || echo '$(srcdir)/'`ompt/ompt-thread.c
 
 libhpcrun_la-ompt-task-map.lo: ompt/ompt-task-map.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ompt-task-map.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ompt-task-map.Tpo -c -o libhpcrun_la-ompt-task-map.lo `test -f 'ompt/ompt-task-map.c' || echo '$(srcdir)/'`ompt/ompt-task-map.c
@@ -4190,6 +4200,20 @@ libhpcrun_o-ompt-task.obj: ompt/ompt-task.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-task.c' object='libhpcrun_o-ompt-task.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-task.obj `if test -f 'ompt/ompt-task.c'; then $(CYGPATH_W) 'ompt/ompt-task.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-task.c'; fi`
+
+libhpcrun_o-ompt-thread.o: ompt/ompt-thread.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-thread.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-thread.Tpo -c -o libhpcrun_o-ompt-thread.o `test -f 'ompt/ompt-thread.c' || echo '$(srcdir)/'`ompt/ompt-thread.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-thread.Tpo $(DEPDIR)/libhpcrun_o-ompt-thread.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-thread.c' object='libhpcrun_o-ompt-thread.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-thread.o `test -f 'ompt/ompt-thread.c' || echo '$(srcdir)/'`ompt/ompt-thread.c
+
+libhpcrun_o-ompt-thread.obj: ompt/ompt-thread.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-thread.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-thread.Tpo -c -o libhpcrun_o-ompt-thread.obj `if test -f 'ompt/ompt-thread.c'; then $(CYGPATH_W) 'ompt/ompt-thread.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-thread.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ompt-thread.Tpo $(DEPDIR)/libhpcrun_o-ompt-thread.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ompt/ompt-thread.c' object='libhpcrun_o-ompt-thread.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ompt-thread.obj `if test -f 'ompt/ompt-thread.c'; then $(CYGPATH_W) 'ompt/ompt-thread.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-thread.c'; fi`
 
 libhpcrun_o-ompt-task-map.o: ompt/ompt-task-map.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ompt-task-map.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ompt-task-map.Tpo -c -o libhpcrun_o-ompt-task-map.o `test -f 'ompt/ompt-task-map.c' || echo '$(srcdir)/'`ompt/ompt-task-map.c

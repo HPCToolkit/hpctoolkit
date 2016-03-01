@@ -6,6 +6,7 @@
  *****************************************************************************/
 
 typedef int *(*undirected_idle_cnt_ptr_fn)(void);
+typedef _Bool (*undirected_predicate_fn)(void);
 
 
 typedef struct undirected_blame_info_t {
@@ -13,6 +14,8 @@ typedef struct undirected_blame_info_t {
   long total_worker_count;
 
   undirected_idle_cnt_ptr_fn get_idle_count_ptr;
+  undirected_predicate_fn participates;
+  undirected_predicate_fn working;
 
   int work_metric_id;
   int idle_metric_id;
