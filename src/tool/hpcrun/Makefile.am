@@ -149,9 +149,14 @@ endif
   bin_SCRIPTS += scripts/hpclink
 endif
 
-if OPT_ENABLE_MPI_WRAP
-  pkglib_LTLIBRARIES += libhpcrun_mpi.la
-endif
+# FIXME: temporarily comment-out the mpi overrides.  There is a bad
+# interaction between the mpi built sources and the new automake that
+# breaks the build, even when OPT_ENABLE_MPI_WRAP is false.
+# This is part 1 of 4.
+
+## if OPT_ENABLE_MPI_WRAP
+##   pkglib_LTLIBRARIES += libhpcrun_mpi.la
+## endif
 
 
 #-----------------------------------------------------------
@@ -319,10 +324,10 @@ MY_BASE_FILES =				\
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c
 
-if OPT_ENABLE_MPI_WRAP
-MY_BASE_FILES +=  			\
-	sample-sources/mpi.c
-endif
+## if OPT_ENABLE_MPI_WRAP
+## MY_BASE_FILES +=  			\
+## 	sample-sources/mpi.c
+## endif
 
 
 MY_DYNAMIC_FILES = 			\
@@ -458,8 +463,8 @@ libhpcrun_gpu_wrap_a_SOURCES = 	\
 	gpu_blame-driver-overrides-generated.c \
 	gpu_blame-runtime-overrides-generated.c
 
-libhpcrun_mpi_la_SOURCES = 		\
-	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
+## libhpcrun_mpi_la_SOURCES = 		\
+## 	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
 
 libibm_xlomp_wrappers_a_SOURCES =              \
         plugins/ibm-xlomp-wrappers.c
@@ -546,9 +551,9 @@ libhpcrun_mpi_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
-$(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
-	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
-		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
+## $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
+## 	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
+## 		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
 
 CUDA_TABLES = gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
 CUDA_FILES = sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c $(CUDA_TABLES)
