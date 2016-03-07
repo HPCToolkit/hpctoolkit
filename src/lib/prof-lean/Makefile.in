@@ -85,10 +85,18 @@ libHPCprof_lean_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = libHPCprof_lean_la-hpcrun-fmt.lo \
 	libHPCprof_lean_la-hpcfmt.lo libHPCprof_lean_la-hpcio.lo \
 	libHPCprof_lean_la-hpcio-buffer.lo \
+	libHPCprof_lean_la-mcs-lock.lo \
 	libHPCprof_lean_la-QueuingRWLock.lo \
-	libHPCprof_lean_la-spinlock.lo \
+	libHPCprof_lean_la-pfq-rwlock.lo \
+	libHPCprof_lean_la-spinlock.lo libHPCprof_lean_la-urand.lo \
+	libHPCprof_lean_la-usec_time.lo \
 	libHPCprof_lean_la-BalancedTree.lo \
-	libHPCprof_lean_la-lush-support.lo
+	libHPCprof_lean_la-placeholders.lo \
+	libHPCprof_lean_la-lush-support.lo \
+	libHPCprof_lean_la-binarytree.lo \
+	libHPCprof_lean_la-cskiplist.lo \
+	libHPCprof_lean_la-generic_pair.lo \
+	libHPCprof_lean_la-randomizer.lo
 am_libHPCprof_lean_la_OBJECTS = $(am__objects_1)
 libHPCprof_lean_la_OBJECTS = $(am_libHPCprof_lean_la_OBJECTS)
 libHPCprof_lean_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -377,12 +385,24 @@ MYSOURCES = \
 	\
 	atomic.h \
 	atomic-op.h atomic-op.i \
+	mcs-lock.h mcs-lock.c \
 	QueuingRWLock.h QueuingRWLock.c \
+	pfq-rwlock.h pfq-rwlock.c \
 	spinlock.h spinlock.c \
+        urand.h urand.c \
+	usec_time.h usec_time.c \
 	\
 	BalancedTree.h BalancedTree.c \
 	\
-	lush/lush-support.h lush/lush-support.c
+	placeholders.c \
+	\
+	lush/lush-support.h lush/lush-support.c \
+	\
+	binarytree.h binarytree.c \
+	cskiplist.h cskiplist.c \
+	generic_pair.h generic_pair.c \
+	generic_val.h  mem_manager.h \
+	randomizer.h randomizer.c 
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
@@ -461,12 +481,21 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-BalancedTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-QueuingRWLock.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-binarytree.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-cskiplist.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-generic_pair.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcfmt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcio-buffer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcio.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcrun-fmt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-lush-support.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-mcs-lock.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-pfq-rwlock.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-placeholders.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-randomizer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-spinlock.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-urand.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-usec_time.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -517,12 +546,26 @@ libHPCprof_lean_la-hpcio-buffer.lo: hpcio-buffer.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-hpcio-buffer.lo `test -f 'hpcio-buffer.c' || echo '$(srcdir)/'`hpcio-buffer.c
 
+libHPCprof_lean_la-mcs-lock.lo: mcs-lock.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-mcs-lock.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-mcs-lock.Tpo -c -o libHPCprof_lean_la-mcs-lock.lo `test -f 'mcs-lock.c' || echo '$(srcdir)/'`mcs-lock.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-mcs-lock.Tpo $(DEPDIR)/libHPCprof_lean_la-mcs-lock.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='mcs-lock.c' object='libHPCprof_lean_la-mcs-lock.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-mcs-lock.lo `test -f 'mcs-lock.c' || echo '$(srcdir)/'`mcs-lock.c
+
 libHPCprof_lean_la-QueuingRWLock.lo: QueuingRWLock.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-QueuingRWLock.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-QueuingRWLock.Tpo -c -o libHPCprof_lean_la-QueuingRWLock.lo `test -f 'QueuingRWLock.c' || echo '$(srcdir)/'`QueuingRWLock.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-QueuingRWLock.Tpo $(DEPDIR)/libHPCprof_lean_la-QueuingRWLock.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='QueuingRWLock.c' object='libHPCprof_lean_la-QueuingRWLock.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-QueuingRWLock.lo `test -f 'QueuingRWLock.c' || echo '$(srcdir)/'`QueuingRWLock.c
+
+libHPCprof_lean_la-pfq-rwlock.lo: pfq-rwlock.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-pfq-rwlock.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-pfq-rwlock.Tpo -c -o libHPCprof_lean_la-pfq-rwlock.lo `test -f 'pfq-rwlock.c' || echo '$(srcdir)/'`pfq-rwlock.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-pfq-rwlock.Tpo $(DEPDIR)/libHPCprof_lean_la-pfq-rwlock.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pfq-rwlock.c' object='libHPCprof_lean_la-pfq-rwlock.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-pfq-rwlock.lo `test -f 'pfq-rwlock.c' || echo '$(srcdir)/'`pfq-rwlock.c
 
 libHPCprof_lean_la-spinlock.lo: spinlock.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-spinlock.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-spinlock.Tpo -c -o libHPCprof_lean_la-spinlock.lo `test -f 'spinlock.c' || echo '$(srcdir)/'`spinlock.c
@@ -531,6 +574,20 @@ libHPCprof_lean_la-spinlock.lo: spinlock.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-spinlock.lo `test -f 'spinlock.c' || echo '$(srcdir)/'`spinlock.c
 
+libHPCprof_lean_la-urand.lo: urand.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-urand.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-urand.Tpo -c -o libHPCprof_lean_la-urand.lo `test -f 'urand.c' || echo '$(srcdir)/'`urand.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-urand.Tpo $(DEPDIR)/libHPCprof_lean_la-urand.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='urand.c' object='libHPCprof_lean_la-urand.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-urand.lo `test -f 'urand.c' || echo '$(srcdir)/'`urand.c
+
+libHPCprof_lean_la-usec_time.lo: usec_time.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-usec_time.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-usec_time.Tpo -c -o libHPCprof_lean_la-usec_time.lo `test -f 'usec_time.c' || echo '$(srcdir)/'`usec_time.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-usec_time.Tpo $(DEPDIR)/libHPCprof_lean_la-usec_time.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='usec_time.c' object='libHPCprof_lean_la-usec_time.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-usec_time.lo `test -f 'usec_time.c' || echo '$(srcdir)/'`usec_time.c
+
 libHPCprof_lean_la-BalancedTree.lo: BalancedTree.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-BalancedTree.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-BalancedTree.Tpo -c -o libHPCprof_lean_la-BalancedTree.lo `test -f 'BalancedTree.c' || echo '$(srcdir)/'`BalancedTree.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-BalancedTree.Tpo $(DEPDIR)/libHPCprof_lean_la-BalancedTree.Plo
@@ -538,12 +595,47 @@ libHPCprof_lean_la-BalancedTree.lo: BalancedTree.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-BalancedTree.lo `test -f 'BalancedTree.c' || echo '$(srcdir)/'`BalancedTree.c
 
+libHPCprof_lean_la-placeholders.lo: placeholders.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-placeholders.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-placeholders.Tpo -c -o libHPCprof_lean_la-placeholders.lo `test -f 'placeholders.c' || echo '$(srcdir)/'`placeholders.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-placeholders.Tpo $(DEPDIR)/libHPCprof_lean_la-placeholders.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='placeholders.c' object='libHPCprof_lean_la-placeholders.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-placeholders.lo `test -f 'placeholders.c' || echo '$(srcdir)/'`placeholders.c
+
 libHPCprof_lean_la-lush-support.lo: lush/lush-support.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-lush-support.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-lush-support.Tpo -c -o libHPCprof_lean_la-lush-support.lo `test -f 'lush/lush-support.c' || echo '$(srcdir)/'`lush/lush-support.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-lush-support.Tpo $(DEPDIR)/libHPCprof_lean_la-lush-support.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lush-support.c' object='libHPCprof_lean_la-lush-support.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-lush-support.lo `test -f 'lush/lush-support.c' || echo '$(srcdir)/'`lush/lush-support.c
+
+libHPCprof_lean_la-binarytree.lo: binarytree.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-binarytree.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-binarytree.Tpo -c -o libHPCprof_lean_la-binarytree.lo `test -f 'binarytree.c' || echo '$(srcdir)/'`binarytree.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-binarytree.Tpo $(DEPDIR)/libHPCprof_lean_la-binarytree.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='binarytree.c' object='libHPCprof_lean_la-binarytree.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-binarytree.lo `test -f 'binarytree.c' || echo '$(srcdir)/'`binarytree.c
+
+libHPCprof_lean_la-cskiplist.lo: cskiplist.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-cskiplist.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-cskiplist.Tpo -c -o libHPCprof_lean_la-cskiplist.lo `test -f 'cskiplist.c' || echo '$(srcdir)/'`cskiplist.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-cskiplist.Tpo $(DEPDIR)/libHPCprof_lean_la-cskiplist.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cskiplist.c' object='libHPCprof_lean_la-cskiplist.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-cskiplist.lo `test -f 'cskiplist.c' || echo '$(srcdir)/'`cskiplist.c
+
+libHPCprof_lean_la-generic_pair.lo: generic_pair.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-generic_pair.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-generic_pair.Tpo -c -o libHPCprof_lean_la-generic_pair.lo `test -f 'generic_pair.c' || echo '$(srcdir)/'`generic_pair.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-generic_pair.Tpo $(DEPDIR)/libHPCprof_lean_la-generic_pair.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='generic_pair.c' object='libHPCprof_lean_la-generic_pair.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-generic_pair.lo `test -f 'generic_pair.c' || echo '$(srcdir)/'`generic_pair.c
+
+libHPCprof_lean_la-randomizer.lo: randomizer.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-randomizer.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-randomizer.Tpo -c -o libHPCprof_lean_la-randomizer.lo `test -f 'randomizer.c' || echo '$(srcdir)/'`randomizer.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_lean_la-randomizer.Tpo $(DEPDIR)/libHPCprof_lean_la-randomizer.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='randomizer.c' object='libHPCprof_lean_la-randomizer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-randomizer.lo `test -f 'randomizer.c' || echo '$(srcdir)/'`randomizer.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
