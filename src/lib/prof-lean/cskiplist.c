@@ -93,8 +93,8 @@
 typedef struct csklnode_s {
   void *val;
   int height;
-  bool fully_linked;
-  bool marked;
+  volatile bool fully_linked;
+  volatile bool marked;
 
   mcs_lock_t lock;
 
