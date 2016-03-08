@@ -464,9 +464,6 @@ BinUtil::LM::open(const char* filenm)
   // Create a new ISA (this may not be necessary, but it is cheap)
   ISA* newisa = NULL;
   switch (bfd_get_arch(m_bfd)) {
-    case bfd_arch_alpha:
-      newisa = new AlphaISA;
-      break;
     case bfd_arch_i386: // x86 and x86_64
       if (m_useBinutils) {
         newisa = new x86ISABinutils(bfd_get_mach(m_bfd) == bfd_mach_x86_64);
@@ -486,15 +483,22 @@ BinUtil::LM::open(const char* filenm)
       }
       break;
 #endif
-    case bfd_arch_mips:
-      newisa = new MipsISA;
-      break;
     case bfd_arch_powerpc:
       newisa = new PowerISA;
+      break;
+
+    // old, unsupported platforms
+#if 0
+    case bfd_arch_alpha:
+      newisa = new AlphaISA;
+      break;
+    case bfd_arch_mips:
+      newisa = new MipsISA;
       break;
     case bfd_arch_sparc:
       newisa = new SparcISA;
       break;
+#endif
     default:
       DIAG_Die("Unknown bfd arch: " << bfd_get_arch(m_bfd));
   }
