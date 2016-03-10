@@ -1163,48 +1163,169 @@ AC_SUBST([wordsize_cflag])
 #-------------------------------------------------
 # Check for GNU's binutils (binary interface)
 #-------------------------------------------------
-# cf. enable-hpc-binutils
-
-AC_MSG_CHECKING([for GNU binutils])
 
 GNUBINUTILS=no
+GNUBINUTILS_IFLAGS=
+GNUBINUTILS_LDFLAGS=
+GNUBINUTILS_LDLIBS=
+
 if test "$use_externals" = yes ; then
   GNUBINUTILS="$ext_binutils_prefix"
 fi
 
 AC_ARG_WITH([binutils],
-  AS_HELP_STRING([--with-binutils=PATH],
-                 [use given GNU binutils installation]),
-  [if test $withval != no; then
-     GNUBINUTILS=${withval}
-   fi],
+  [AS_HELP_STRING([--with-binutils=PATH],
+	[path to binutils install directory])],
+  [GNUBINUTILS="$withval"],
   [])
 
-# Note: With binutils 2.20.1, libiberty may be installed in a
-# different lib than libbfd and libopcodes (e.g., lib64 vs. lib).
-#
-# Note: With prior versions of binutils and libtool, we had to supply
-# an absolute path for libiberty.  Will this suffice?
-GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
+AC_MSG_CHECKING([for binutils])
 
-GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib"
-if test "${host_sizeof_voidp}" = "8"; then
-  # -lbfd -lopcodes are in lib; -liberty is in lib64
-  GNUBINUTILS_LDFLAGS="${GNUBINUTILS_LDFLAGS} -L${GNUBINUTILS}/lib64"
-fi
+case "$GNUBINUTILS" in
+  /* )
+    if test -f "${GNUBINUTILS}/include/bfd.h" ; then
+      GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
+      GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib"
+      for dir in lib32 lib64 ; do
+        if test -d "${GNUBINUTILS}/$dir" ; then
+	  GNUBINUTILS_LDFLAGS="$GNUBINUTILS_LDFLAGS -L${GNUBINUTILS}/$dir"
+	fi
+      done
+    else
+      AC_MSG_ERROR([invalid binutils directory: $GNUBINUTILS])
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([binutils directory must be absolute path])
+    ;;
+esac
 
-GNUBINUTILS_LDLIBS="-lbfd -lopcodes -liberty"
+AC_MSG_RESULT([$GNUBINUTILS])
 
-# on non-Linux systems we build libintl
-if test "${HOST_OS}" != "Linux"; then
-  GNUBINUTILS_LDLIBS="${GNUBINUTILS_LDLIBS} ${GNUBINUTILS}/lib/libintl.a"
-fi
+# Test if binutils links with libs in GNUBINUTILS_LDLIBS.
+test_binutils_libs()
+{
+  LIBS="$GNUBINUTILS_LDFLAGS $GNUBINUTILS_LDLIBS"
 
+  AC_LINK_IFELSE([
+  AC_LANG_SOURCE([[
+#include <iostream>
+#include <bfd.h>
+#include <bfdlink.h>
+int main(int argc, char **argv)
+{
+  bfd_init();
+  bfd *abfd = bfd_openr(argv[1], "default");
+  long size = bfd_get_symtab_upper_bound(abfd);
+  std::cout << size;
+  return 0;
+}
+]])], [ans=0], [ans=1])
 
-AC_MSG_RESULT([${GNUBINUTILS}])
+  return $ans
+}
+
+AC_LANG_PUSH([C++])
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+ORIG_LIBS="$LIBS"
+CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $GNUBINUTILS_IFLAGS"
+
+# Test for binutils libs.  We always use bfd, opcodes and libiberty,
+# and newer binutils also use libdl and libz.
+
+case "$GNUBINUTILS" in
+  /* )
+    GNUBINUTILS_LDLIBS="-lopcodes -lbfd -liberty"
+    if test_binutils_libs ; then :
+    else
+      GNUBINUTILS_LDLIBS="$GNUBINUTILS_LDLIBS -ldl -lz"
+      if test_binutils_libs ; then :
+      else
+        AC_MSG_WARN([unable to find link flags for binutils])
+      fi
+    fi
+    AC_MSG_NOTICE([binutils libraries: $GNUBINUTILS_LDLIBS])
+    ;;
+esac
+
 AC_SUBST([GNUBINUTILS_IFLAGS])
 AC_SUBST([GNUBINUTILS_LDFLAGS])
 AC_SUBST([GNUBINUTILS_LDLIBS])
+
+# Test for special, hpctoolkit-patched binutils.
+
+hpc_binutils=no
+LIBS="$GNUBINUTILS_LDFLAGS $GNUBINUTILS_LDLIBS"
+
+case "$GNUBINUTILS" in
+  /* )
+    AC_MSG_CHECKING([for hpctoolkit patched binutils])
+
+    AC_LINK_IFELSE([
+    AC_LANG_SOURCE([[
+#include <iostream>
+#include <bfd.h>
+#include <bfdlink.h>
+int main(int argc, char **argv)
+{
+  bfd_init();
+  bfd *abfd = bfd_openr(argv[1], "default");
+  bfd_vma vma = bfd_get_first_addr(abfd);
+  int ret = bfd_elf_forall_dbg_funcinfo(abfd, NULL, NULL, NULL);
+  std::cout << vma << ret;
+  return 0;
+}
+]])], [hpc_binutils=yes], [hpc_binutils=no])
+
+    AC_MSG_RESULT([$hpc_binutils])
+    ;;
+esac
+
+if test "$hpc_binutils" = yes ; then
+  AC_DEFINE([HAVE_HPC_GNUBINUTILS], [1], [HPCToolkit patched binutils])
+fi
+
+# Test if binutils has support for IA64 (Itanium).
+
+binutils_ia64=no
+
+case "$GNUBINUTILS" in
+  /* )
+    AC_MSG_CHECKING([if binutils supports ia64])
+
+    AC_LINK_IFELSE([
+    AC_LANG_SOURCE([[
+#include <iostream>
+#include <bfd.h>
+#include <bfdlink.h>
+#include <dis-asm.h>
+int main(int argc, char **argv)
+{
+  disassemble_info myinfo;
+  bfd_init();
+  int ret = print_insn_ia64(0x400400, &myinfo);
+  std::cout << ret;
+  return 0;
+}
+]])], [binutils_ia64=yes], [binutils_ia64=no])
+
+    AC_MSG_RESULT([$binutils_ia64])
+    ;;
+esac
+
+if test "$binutils_ia64" = yes ; then
+  AC_DEFINE([ENABLE_BINUTILS_IA64], [1], [Binutils has support for ia64])
+fi
+
+AM_CONDITIONAL([OPT_HAVE_BINUTILS_IA64], [test "$binutils_ia64" = yes])
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+LIBS="$ORIG_LIBS"
+
+AC_LANG_POP
 
 
 #-------------------------------------------------
@@ -3089,31 +3210,6 @@ AC_ARG_WITH([objcopy],
 AC_MSG_RESULT([yes (${OPT_OBJCOPY})])
 
 AC_SUBST(OPT_OBJCOPY)
-
-
-#-------------------------------------------------
-# enable-hpc-binutils: Enable use of HPCToolkit's binutils 
-#-------------------------------------------------
-
-AC_MSG_CHECKING([whether to enable HPCToolkit GNU binutils functionality])
-
-OPT_ENABLE_HPC_GNUBINUTILS="yes"
-
-AC_ARG_ENABLE([hpc-binutils],
-  AS_HELP_STRING([--enable-hpc-binutils],
-                 [Enable extra HPCToolkit GNU binutils functionality]),
-  [case "${enableval}" in
-     yes) OPT_ENABLE_HPC_GNUBINUTILS="yes" ;;
-     no)  OPT_ENABLE_HPC_GNUBINUTILS="no" ;;
-     *) AC_MSG_ERROR([bad value ${enableval} for --enable-hpc-binutils]) ;;
-   esac],
-  [OPT_ENABLE_HPC_GNUBINUTILS=yes])
-
-AC_MSG_RESULT([${OPT_ENABLE_HPC_GNUBINUTILS}])
-
-if test "${OPT_ENABLE_HPC_GNUBINUTILS}" = "yes" ; then
-  AC_DEFINE([HAVE_HPC_GNUBINUTILS], [1], [HPCToolkit binutils])
-fi
 
 
 #-------------------------------------------------

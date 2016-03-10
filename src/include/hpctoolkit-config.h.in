@@ -3,6 +3,9 @@
 /* Data-centric tracing */
 #undef DATACENTRIC_TRACE
 
+/* Binutils has support for ia64 */
+#undef ENABLE_BINUTILS_IA64
+
 /* Support for CLOCK_THREAD_CPUTIME_ID */
 #undef ENABLE_CLOCK_CPUTIME
 
@@ -18,7 +21,7 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
-/* HPCToolkit binutils */
+/* HPCToolkit patched binutils */
 #undef HAVE_HPC_GNUBINUTILS
 
 /* Define to 1 if you have the <inttypes.h> header file. */

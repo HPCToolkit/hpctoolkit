@@ -769,6 +769,8 @@ LIBDWARF_COPY
 LIBDWARF_INC
 LIBDWARF_LIB
 BOOST_INC
+OPT_HAVE_BINUTILS_IA64_FALSE
+OPT_HAVE_BINUTILS_IA64_TRUE
 GNUBINUTILS_LDLIBS
 GNUBINUTILS_LDFLAGS
 GNUBINUTILS_IFLAGS
@@ -1000,7 +1002,6 @@ with_cuda_lib
 with_cupti
 enable_data_centric_tracing
 with_objcopy
-enable_hpc_binutils
 enable_devtools
 '
       ac_precious_vars='build_alias
@@ -1685,7 +1686,6 @@ Optional Features:
                           hpcrun with back-end powerpc64-bgq-linux-gcc
   --enable-data-centric-tracing
                           Enable data-centric tracing (prototype)
-  --enable-hpc-binutils   Enable extra HPCToolkit GNU binutils functionality
   --enable-devtools       Build development tools (enable debugging)
 
 Optional Packages:
@@ -1702,7 +1702,7 @@ Optional Packages:
 
   --with-externals=PATH   path to hpctoolkit-externals build or install
                           directory (normally required)
-  --with-binutils=PATH    use given GNU binutils installation
+  --with-binutils=PATH    path to binutils install directory
   --with-boost=PATH       path to boost install directory
   --with-libdwarf=PATH    path to libdwarf install directory
   --with-libelf=PATH      path to libelf install directory
@@ -19196,12 +19196,12 @@ fi
 #-------------------------------------------------
 # Check for GNU's binutils (binary interface)
 #-------------------------------------------------
-# cf. enable-hpc-binutils
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for GNU binutils" >&5
-$as_echo_n "checking for GNU binutils... " >&6; }
 
 GNUBINUTILS=no
+GNUBINUTILS_IFLAGS=
+GNUBINUTILS_LDFLAGS=
+GNUBINUTILS_LDLIBS=
+
 if test "$use_externals" = yes ; then
   GNUBINUTILS="$ext_binutils_prefix"
 fi
@@ -19209,37 +19209,215 @@ fi
 
 # Check whether --with-binutils was given.
 if test "${with_binutils+set}" = set; then :
-  withval=$with_binutils; if test $withval != no; then
-     GNUBINUTILS=${withval}
-   fi
+  withval=$with_binutils; GNUBINUTILS="$withval"
 fi
 
 
-# Note: With binutils 2.20.1, libiberty may be installed in a
-# different lib than libbfd and libopcodes (e.g., lib64 vs. lib).
-#
-# Note: With prior versions of binutils and libtool, we had to supply
-# an absolute path for libiberty.  Will this suffice?
-GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for binutils" >&5
+$as_echo_n "checking for binutils... " >&6; }
 
-GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib"
-if test "${host_sizeof_voidp}" = "8"; then
-  # -lbfd -lopcodes are in lib; -liberty is in lib64
-  GNUBINUTILS_LDFLAGS="${GNUBINUTILS_LDFLAGS} -L${GNUBINUTILS}/lib64"
+case "$GNUBINUTILS" in
+  /* )
+    if test -f "${GNUBINUTILS}/include/bfd.h" ; then
+      GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
+      GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib"
+      for dir in lib32 lib64 ; do
+        if test -d "${GNUBINUTILS}/$dir" ; then
+	  GNUBINUTILS_LDFLAGS="$GNUBINUTILS_LDFLAGS -L${GNUBINUTILS}/$dir"
+	fi
+      done
+    else
+      as_fn_error $? "invalid binutils directory: $GNUBINUTILS" "$LINENO" 5
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "binutils directory must be absolute path" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $GNUBINUTILS" >&5
+$as_echo "$GNUBINUTILS" >&6; }
+
+# Test if binutils links with libs in GNUBINUTILS_LDLIBS.
+test_binutils_libs()
+{
+  LIBS="$GNUBINUTILS_LDFLAGS $GNUBINUTILS_LDLIBS"
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <iostream>
+#include <bfd.h>
+#include <bfdlink.h>
+int main(int argc, char **argv)
+{
+  bfd_init();
+  bfd *abfd = bfd_openr(argv[1], "default");
+  long size = bfd_get_symtab_upper_bound(abfd);
+  std::cout << size;
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ans=0
+else
+  ans=1
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+  return $ans
+}
+
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+ORIG_LIBS="$LIBS"
+CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $GNUBINUTILS_IFLAGS"
+
+# Test for binutils libs.  We always use bfd, opcodes and libiberty,
+# and newer binutils also use libdl and libz.
+
+case "$GNUBINUTILS" in
+  /* )
+    GNUBINUTILS_LDLIBS="-lopcodes -lbfd -liberty"
+    if test_binutils_libs ; then :
+    else
+      GNUBINUTILS_LDLIBS="$GNUBINUTILS_LDLIBS -ldl -lz"
+      if test_binutils_libs ; then :
+      else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find link flags for binutils" >&5
+$as_echo "$as_me: WARNING: unable to find link flags for binutils" >&2;}
+      fi
+    fi
+    { $as_echo "$as_me:${as_lineno-$LINENO}: binutils libraries: $GNUBINUTILS_LDLIBS" >&5
+$as_echo "$as_me: binutils libraries: $GNUBINUTILS_LDLIBS" >&6;}
+    ;;
+esac
+
+
+
+
+
+# Test for special, hpctoolkit-patched binutils.
+
+hpc_binutils=no
+LIBS="$GNUBINUTILS_LDFLAGS $GNUBINUTILS_LDLIBS"
+
+case "$GNUBINUTILS" in
+  /* )
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for hpctoolkit patched binutils" >&5
+$as_echo_n "checking for hpctoolkit patched binutils... " >&6; }
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <iostream>
+#include <bfd.h>
+#include <bfdlink.h>
+int main(int argc, char **argv)
+{
+  bfd_init();
+  bfd *abfd = bfd_openr(argv[1], "default");
+  bfd_vma vma = bfd_get_first_addr(abfd);
+  int ret = bfd_elf_forall_dbg_funcinfo(abfd, NULL, NULL, NULL);
+  std::cout << vma << ret;
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  hpc_binutils=yes
+else
+  hpc_binutils=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $hpc_binutils" >&5
+$as_echo "$hpc_binutils" >&6; }
+    ;;
+esac
+
+if test "$hpc_binutils" = yes ; then
+
+$as_echo "#define HAVE_HPC_GNUBINUTILS 1" >>confdefs.h
+
 fi
 
-GNUBINUTILS_LDLIBS="-lbfd -lopcodes -liberty"
+# Test if binutils has support for IA64 (Itanium).
 
-# on non-Linux systems we build libintl
-if test "${HOST_OS}" != "Linux"; then
-  GNUBINUTILS_LDLIBS="${GNUBINUTILS_LDLIBS} ${GNUBINUTILS}/lib/libintl.a"
+binutils_ia64=no
+
+case "$GNUBINUTILS" in
+  /* )
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking if binutils supports ia64" >&5
+$as_echo_n "checking if binutils supports ia64... " >&6; }
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <iostream>
+#include <bfd.h>
+#include <bfdlink.h>
+#include <dis-asm.h>
+int main(int argc, char **argv)
+{
+  disassemble_info myinfo;
+  bfd_init();
+  int ret = print_insn_ia64(0x400400, &myinfo);
+  std::cout << ret;
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  binutils_ia64=yes
+else
+  binutils_ia64=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $binutils_ia64" >&5
+$as_echo "$binutils_ia64" >&6; }
+    ;;
+esac
+
+if test "$binutils_ia64" = yes ; then
+
+$as_echo "#define ENABLE_BINUTILS_IA64 1" >>confdefs.h
+
+fi
+
+ if test "$binutils_ia64" = yes; then
+  OPT_HAVE_BINUTILS_IA64_TRUE=
+  OPT_HAVE_BINUTILS_IA64_FALSE='#'
+else
+  OPT_HAVE_BINUTILS_IA64_TRUE='#'
+  OPT_HAVE_BINUTILS_IA64_FALSE=
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${GNUBINUTILS}" >&5
-$as_echo "${GNUBINUTILS}" >&6; }
+CXXFLAGS="$ORIG_CXXFLAGS"
+LIBS="$ORIG_LIBS"
 
-
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
 
@@ -21727,37 +21905,6 @@ $as_echo "yes (${OPT_OBJCOPY})" >&6; }
 
 
 #-------------------------------------------------
-# enable-hpc-binutils: Enable use of HPCToolkit's binutils
-#-------------------------------------------------
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable HPCToolkit GNU binutils functionality" >&5
-$as_echo_n "checking whether to enable HPCToolkit GNU binutils functionality... " >&6; }
-
-OPT_ENABLE_HPC_GNUBINUTILS="yes"
-
-# Check whether --enable-hpc-binutils was given.
-if test "${enable_hpc_binutils+set}" = set; then :
-  enableval=$enable_hpc_binutils; case "${enableval}" in
-     yes) OPT_ENABLE_HPC_GNUBINUTILS="yes" ;;
-     no)  OPT_ENABLE_HPC_GNUBINUTILS="no" ;;
-     *) as_fn_error $? "bad value ${enableval} for --enable-hpc-binutils" "$LINENO" 5 ;;
-   esac
-else
-  OPT_ENABLE_HPC_GNUBINUTILS=yes
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_HPC_GNUBINUTILS}" >&5
-$as_echo "${OPT_ENABLE_HPC_GNUBINUTILS}" >&6; }
-
-if test "${OPT_ENABLE_HPC_GNUBINUTILS}" = "yes" ; then
-
-$as_echo "#define HAVE_HPC_GNUBINUTILS 1" >>confdefs.h
-
-fi
-
-
-#-------------------------------------------------
 # enable-devtools: Tools of interest to developers
 #-------------------------------------------------
 
@@ -22054,6 +22201,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${IS_HOST_AR_TRUE}" && test -z "${IS_HOST_AR_FALSE}"; then
   as_fn_error $? "conditional \"IS_HOST_AR\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_HAVE_BINUTILS_IA64_TRUE}" && test -z "${OPT_HAVE_BINUTILS_IA64_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_HAVE_BINUTILS_IA64\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_HAVE_LIBUNWIND_TRUE}" && test -z "${OPT_HAVE_LIBUNWIND_FALSE}"; then

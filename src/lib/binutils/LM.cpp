@@ -471,9 +471,6 @@ BinUtil::LM::open(const char* filenm)
         newisa = new x86ISAXed(bfd_get_mach(m_bfd) == bfd_mach_x86_64);
       }
       break;
-    case bfd_arch_ia64:
-      newisa = new IA64ISA;
-      break;
 #ifdef bfd_mach_k1om
     case bfd_arch_k1om: // Intel MIC, 64-bit only
       if (m_useBinutils) {
@@ -486,6 +483,13 @@ BinUtil::LM::open(const char* filenm)
     case bfd_arch_powerpc:
       newisa = new PowerISA;
       break;
+
+    // semi-supported platforms
+#ifdef ENABLE_BINUTILS_IA64
+    case bfd_arch_ia64:
+      newisa = new IA64ISA;
+      break;
+#endif
 
     // old, unsupported platforms
 #if 0
