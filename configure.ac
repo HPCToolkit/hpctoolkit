@@ -1694,6 +1694,17 @@ if test "$use_externals" = yes ; then
   OA="$ext_open_analysis_prefix"
 fi
 
+# The open-analysis CFG support in lib/isa is broken on power8/le and
+# doesn't exist on ARM.  So, disable OA on those platforms.
+
+case "$host" in
+  *powerpc64le* | *aarch* )
+    myhosttype=`echo $host | awk -F- '{ print $1 }'`
+    AC_MSG_NOTICE([disable open-analysis cfg support on $myhosttype])
+    OA=no
+    ;;
+esac
+
 AC_ARG_WITH([open-analysis],
   [AS_HELP_STRING([--with-open-analysis=PATH],
       [path to OpenAnalysis install directory])],
