@@ -2235,7 +2235,9 @@ doFunctionList(Prof::Struct::LM * lm, ProcInfo pinfo,
     SrcFile::ln beg_line = procScope->begLine();
 
     makeScopeTree(procScope, ScopeInfo(file_index, beg_line), root, strTab, nameMgr);
-    procScope->begLine(beg_line);
+    if (beg_line > 0) {
+      procScope->begLine(beg_line);
+    }
 
     // fixme: may or may not use these
 #if 0

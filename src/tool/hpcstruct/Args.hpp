@@ -116,6 +116,7 @@ public:
   std::string lush_agent;
   std::string searchPathStr;          // default: "."
   std::string demangle_library;       // default: ""
+  std::string demangle_function;       // default: ""
   bool isIrreducibleIntervalLoop;     // default: true
   bool isForwardSubstitution;         // default: false
   BAnal::Struct::NormTy doNormalizeTy; // default: NormTy_All
