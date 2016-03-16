@@ -154,6 +154,9 @@ Options: Profiling (Defaults shown in curly brackets {})
   -t, --trace          Generate a call path trace (in addition to a call
                        path profile).
 
+  --omp-serial-only    When profiling using the OMPT interface for OpenMP,
+                       suppress all samples not in serial code.
+
   -ds, --delay-sampling
                        Delay starting sampling until the application calls
                        hpctoolkit_sampling_start().
@@ -286,6 +289,13 @@ do
 	    export HPCRUN_OUT_PATH="$1"
 	    shift
 	    ;;
+
+	# --------------------------------------------------
+
+	--omp-serial-only )
+	    export HPCRUN_OMP_SERIAL_ONLY=1
+	    ;;
+
 
 	# --------------------------------------------------
 

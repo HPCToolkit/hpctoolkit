@@ -342,22 +342,23 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/io.c sample-sources/itimer.c \
 	sample-sources/idle.c sample-sources/memleak.c \
 	sample-sources/pthread-blame.c sample-sources/none.c \
-	sample-sources/retcnt.c sample-sources/sync.c \
-	sample_sources_registered.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c ompt/ompt-callstack.c \
-	ompt/ompt-defer.c ompt/ompt-defer-write.c \
-	ompt/ompt-interface.c ompt/ompt-region.c \
-	ompt/ompt-region-map.c ompt/ompt-state-placeholders.c \
-	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
+	sample-sources/retcnt.c sample-sources/sample-filters.c \
+	sample-sources/sync.c sample_sources_registered.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c threadmgr.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c ompt/ompt-callstack.c ompt/ompt-defer.c \
+	ompt/ompt-defer-write.c ompt/ompt-interface.c \
+	ompt/ompt-region.c ompt/ompt-region-map.c \
+	ompt/ompt-state-placeholders.c ompt/ompt-task.c \
+	ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -414,7 +415,8 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-itimer.lo libhpcrun_la-idle.lo \
 	libhpcrun_la-memleak.lo libhpcrun_la-pthread-blame.lo \
 	libhpcrun_la-none.lo libhpcrun_la-retcnt.lo \
-	libhpcrun_la-sync.lo libhpcrun_la-sample_sources_registered.lo \
+	libhpcrun_la-sample-filters.lo libhpcrun_la-sync.lo \
+	libhpcrun_la-sample_sources_registered.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-start-stop.lo \
 	libhpcrun_la-term_handler.lo libhpcrun_la-thread_data.lo \
 	libhpcrun_la-thread_use.lo libhpcrun_la-threadmgr.lo \
@@ -579,22 +581,23 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/io.c sample-sources/itimer.c \
 	sample-sources/idle.c sample-sources/memleak.c \
 	sample-sources/pthread-blame.c sample-sources/none.c \
-	sample-sources/retcnt.c sample-sources/sync.c \
-	sample_sources_registered.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c ompt/ompt-callstack.c \
-	ompt/ompt-defer.c ompt/ompt-defer-write.c \
-	ompt/ompt-interface.c ompt/ompt-region.c \
-	ompt/ompt-region-map.c ompt/ompt-state-placeholders.c \
-	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
+	sample-sources/retcnt.c sample-sources/sample-filters.c \
+	sample-sources/sync.c sample_sources_registered.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c threadmgr.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c ompt/ompt-callstack.c ompt/ompt-defer.c \
+	ompt/ompt-defer-write.c ompt/ompt-interface.c \
+	ompt/ompt-region.c ompt/ompt-region-map.c \
+	ompt/ompt-state-placeholders.c ompt/ompt-task.c \
+	ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -654,7 +657,9 @@ am__objects_35 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-io.$(OBJEXT) libhpcrun_o-itimer.$(OBJEXT) \
 	libhpcrun_o-idle.$(OBJEXT) libhpcrun_o-memleak.$(OBJEXT) \
 	libhpcrun_o-pthread-blame.$(OBJEXT) libhpcrun_o-none.$(OBJEXT) \
-	libhpcrun_o-retcnt.$(OBJEXT) libhpcrun_o-sync.$(OBJEXT) \
+	libhpcrun_o-retcnt.$(OBJEXT) \
+	libhpcrun_o-sample-filters.$(OBJEXT) \
+	libhpcrun_o-sync.$(OBJEXT) \
 	libhpcrun_o-sample_sources_registered.$(OBJEXT) \
 	libhpcrun_o-segv_handler.$(OBJEXT) \
 	libhpcrun_o-start-stop.$(OBJEXT) \
@@ -1221,22 +1226,23 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/io.c sample-sources/itimer.c \
 	sample-sources/idle.c sample-sources/memleak.c \
 	sample-sources/pthread-blame.c sample-sources/none.c \
-	sample-sources/retcnt.c sample-sources/sync.c \
-	sample_sources_registered.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c ompt/ompt-callstack.c \
-	ompt/ompt-defer.c ompt/ompt-defer-write.c \
-	ompt/ompt-interface.c ompt/ompt-region.c \
-	ompt/ompt-region-map.c ompt/ompt-state-placeholders.c \
-	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
+	sample-sources/retcnt.c sample-sources/sample-filters.c \
+	sample-sources/sync.c sample_sources_registered.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c threadmgr.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c ompt/ompt-callstack.c ompt/ompt-defer.c \
+	ompt/ompt-defer-write.c ompt/ompt-interface.c \
+	ompt/ompt-region.c ompt/ompt-region-map.c \
+	ompt/ompt-state-placeholders.c ompt/ompt-task.c \
+	ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -1916,6 +1922,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-pthread-blame.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-rank.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-retcnt.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-sample-filters.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-sample_event.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-sample_prob.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-sample_sources_all.Plo@am__quote@
@@ -2033,6 +2040,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-pthread-blame.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-rank.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-retcnt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-sample-filters.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-sample_event.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-sample_prob.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-sample_sources_all.Po@am__quote@
@@ -2555,6 +2563,13 @@ libhpcrun_la-retcnt.lo: sample-sources/retcnt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/retcnt.c' object='libhpcrun_la-retcnt.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-retcnt.lo `test -f 'sample-sources/retcnt.c' || echo '$(srcdir)/'`sample-sources/retcnt.c
+
+libhpcrun_la-sample-filters.lo: sample-sources/sample-filters.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-sample-filters.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-sample-filters.Tpo -c -o libhpcrun_la-sample-filters.lo `test -f 'sample-sources/sample-filters.c' || echo '$(srcdir)/'`sample-sources/sample-filters.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-sample-filters.Tpo $(DEPDIR)/libhpcrun_la-sample-filters.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/sample-filters.c' object='libhpcrun_la-sample-filters.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-sample-filters.lo `test -f 'sample-sources/sample-filters.c' || echo '$(srcdir)/'`sample-sources/sample-filters.c
 
 libhpcrun_la-sync.lo: sample-sources/sync.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-sync.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-sync.Tpo -c -o libhpcrun_la-sync.lo `test -f 'sample-sources/sync.c' || echo '$(srcdir)/'`sample-sources/sync.c
@@ -3696,6 +3711,20 @@ libhpcrun_o-retcnt.obj: sample-sources/retcnt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/retcnt.c' object='libhpcrun_o-retcnt.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-retcnt.obj `if test -f 'sample-sources/retcnt.c'; then $(CYGPATH_W) 'sample-sources/retcnt.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/retcnt.c'; fi`
+
+libhpcrun_o-sample-filters.o: sample-sources/sample-filters.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-sample-filters.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-sample-filters.Tpo -c -o libhpcrun_o-sample-filters.o `test -f 'sample-sources/sample-filters.c' || echo '$(srcdir)/'`sample-sources/sample-filters.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-sample-filters.Tpo $(DEPDIR)/libhpcrun_o-sample-filters.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/sample-filters.c' object='libhpcrun_o-sample-filters.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-sample-filters.o `test -f 'sample-sources/sample-filters.c' || echo '$(srcdir)/'`sample-sources/sample-filters.c
+
+libhpcrun_o-sample-filters.obj: sample-sources/sample-filters.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-sample-filters.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-sample-filters.Tpo -c -o libhpcrun_o-sample-filters.obj `if test -f 'sample-sources/sample-filters.c'; then $(CYGPATH_W) 'sample-sources/sample-filters.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/sample-filters.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-sample-filters.Tpo $(DEPDIR)/libhpcrun_o-sample-filters.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/sample-filters.c' object='libhpcrun_o-sample-filters.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-sample-filters.obj `if test -f 'sample-sources/sample-filters.c'; then $(CYGPATH_W) 'sample-sources/sample-filters.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/sample-filters.c'; fi`
 
 libhpcrun_o-sync.o: sample-sources/sync.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-sync.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-sync.Tpo -c -o libhpcrun_o-sync.o `test -f 'sample-sources/sync.c' || echo '$(srcdir)/'`sample-sources/sync.c

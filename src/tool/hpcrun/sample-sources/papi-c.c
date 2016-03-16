@@ -78,6 +78,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 #include "papi-c-extended-info.h"
+#include "sample-filters.h"
 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -847,7 +848,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int my_event_codes_count = MAX_EVENTS;
 
   // if sampling disabled explicitly for this thread, skip all processing
-  if (hpcrun_thread_suppress_sample) return;
+  if (hpcrun_thread_suppress_sample || sample_filters_apply()) return;
 
   if (!ovec) {
     TMSG(PAPI_SAMPLE, "papi overflow event: event set %d ovec = %ld",

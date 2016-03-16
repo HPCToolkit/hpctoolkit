@@ -68,6 +68,7 @@
 #include "ompt-state-placeholders.h"
 #include "ompt-thread.h"
 
+#include "sample-sources/sample-filters.h"
 #include "sample-sources/blame-shift/directed.h"
 #include "sample-sources/blame-shift/undirected.h"
 #include "sample-sources/blame-shift/blame-shift.h"
@@ -107,6 +108,7 @@ static int ompt_idle_blame_enabled = 0;
 
 static bs_fn_entry_t mutex_bs_entry;
 static bs_fn_entry_t idle_bs_entry;
+static sf_fn_entry_t serial_only_sf_entry;
 
 // state for directed blame shifting away from spinning on a mutex
 static directed_blame_info_t omp_mutex_blame_info;
@@ -168,6 +170,23 @@ ompt_mutex_blame_target()
       return wait_id;
     default: break;
     }
+  }
+  return 0;
+}
+
+
+static int
+ompt_serial_only(void *arg)
+{
+  if (ompt_initialized) {
+    ompt_wait_id_t wait_id;
+    ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
+
+    ompt_thread_type_t ttype = ompt_thread_type_get();
+    if (ttype != ompt_thread_initial) return 1;
+
+    if (state == ompt_state_work_serial) return 0;
+    return 1;
   }
   return 0;
 }
@@ -549,6 +568,11 @@ ompt_initialize(ompt_function_lookup_t ompt_fn_lookup,
   if(!ENABLED(OMPT_KEEP_ALL_FRAMES)) {
     ompt_elide = 1;
     ompt_callstack_register_handlers();
+  }
+  if (getenv("HPCRUN_OMP_SERIAL_ONLY")) {
+     serial_only_sf_entry.fn = ompt_serial_only;
+     serial_only_sf_entry.arg = 0;
+     sample_filters_register(&serial_only_sf_entry);
   }
 }
 

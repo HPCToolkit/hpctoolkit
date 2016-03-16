@@ -280,6 +280,7 @@ MY_BASE_FILES =				\
 	sample-sources/pthread-blame.c  \
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \
+        sample-sources/sample-filters.c \
         sample-sources/sync.c           \
 	sample_sources_registered.c	\
 	segv_handler.c			\

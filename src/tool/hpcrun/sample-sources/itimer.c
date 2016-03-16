@@ -84,6 +84,7 @@
 
 #include "sample_source_obj.h"
 #include "common.h"
+#include "sample-filters.h"
 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -645,7 +646,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   sample_source_t *self = &_itimer_obj;
 
   // if sampling is suppressed for this thread, restart timer, & exit
-  if (hpcrun_thread_suppress_sample) {
+  if (hpcrun_thread_suppress_sample || sample_filters_apply()) {
     TMSG(ITIMER_HANDLER, "thread sampling suppressed");
     hpcrun_restart_timer(self, 1);
     return 0;
