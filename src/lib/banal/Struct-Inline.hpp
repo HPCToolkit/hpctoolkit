@@ -183,29 +183,26 @@ public:
   long  file_index;
   long  base_index;
   long  line_num;
-  long  proc_index;
 
   // constructor by index
-  StmtInfo(VMA vm, int ln, long file, long base, long line, long proc)
+  StmtInfo(VMA vm, int ln, long file, long base, long line)
   {
     vma = vm;
     len = ln;
     file_index = file;
     base_index = base;
     line_num = line;
-    proc_index = proc;
   }
 
   // constructor by string name
   StmtInfo(StringTable & strTab, VMA vm, int ln,
-	   const std::string & filenm, long line, const std::string & procnm)
+	   const std::string & filenm, long line)
   {
     vma = vm;
     len = ln;
     file_index = strTab.str2index(filenm);
     base_index = strTab.str2index(FileUtil::basename(filenm.c_str()));
     line_num = line;
-    proc_index = strTab.str2index(procnm);
   }
 };
 
@@ -282,7 +279,7 @@ bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
 
 StmtInfo *
 addStmtToTree(TreeNode * root, StringTable & strTab, VMA vma, int len,
-	      string & filenm, SrcFile::ln line, string & procnm);
+	      string & filenm, SrcFile::ln line);
 
 void
 mergeInlineStmts(TreeNode * dest, TreeNode * src);

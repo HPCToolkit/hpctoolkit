@@ -151,6 +151,11 @@ using namespace InstructionAPI;
 using namespace ParseAPI;
 #endif
 
+// FIXME: fix global variable, both here and in Struct-Inline.cpp.
+#ifdef BANAL_USE_SYMTAB
+static Symtab * the_symtab = NULL;
+#endif
+
 #define FULL_STRUCT_DEBUG 0
 
 
@@ -255,7 +260,7 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 
 #if DEBUG_CFG_SOURCE
 static void
-debugStmt(Prof::Struct::Stmt *, VMA, string &, string &, SrcFile::ln);
+debugStmt(VMA, string &, SrcFile::ln);
 
 #define DEBUG_MESG(expr)  std::cout << expr
 
@@ -627,6 +632,7 @@ makeStructure_ParseAPI(BinUtil::LM * lm,
   StringTable strTab;
 
   Symtab * symtab = Inline::openSymtab(lm->name());
+  the_symtab = symtab;
 
   SymtabCodeSource * code_src;
   CodeObject * code_obj;
@@ -1770,7 +1776,7 @@ buildStmts(Struct::LocationMgr& locMgr,
       new Prof::Struct::Stmt(NULL, line, line, vmaint.beg(), vmaint.end());
 
 #if DEBUG_CFG_SOURCE
-    debugStmt(stmt, vma, filenm, procnm, line);
+    debugStmt(vma, filenm, line);
 #endif
 
     if (idesc.isSubr()) {
@@ -2483,18 +2489,29 @@ doBlock(ProcInfo pinfo, ParseAPI::Function * func,
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
     Offset vma = iit->first;
     int    len = iit->second->size();
-    string procnm;
-    string filenm;
-    SrcFile::ln line;
+    string procnm = "";
+    string filenm = "";
+    SrcFile::ln line = 0;
 
-    pinfo.proc_bin->findSrcCodeInfo(vma, 0, procnm, filenm, line);
-    procnm = BinUtil::canonicalizeProcName(procnm, nameMgr);
+    vector <Statement *> svec;
+    the_symtab->getSourceLines(svec, vma);
+
+    if (! svec.empty()) {
+      // use symtab line map info, if avail
+      filenm = svec[0]->getFile();
+      line = svec[0]->getLine();
+      pinfo.proc_bin->lm()->realpath(filenm);
+    }
+    else {
+      // fall back on binutils's line map info
+      pinfo.proc_bin->findSrcCodeInfo(vma, 0, procnm, filenm, line);
+    }
 
 #if DEBUG_CFG_SOURCE
-    debugStmt(NULL, vma, filenm, procnm, line);
+    debugStmt(vma, filenm, line);
 #endif
 
-    addStmtToTree(root, strTab, vma, len, filenm, line, procnm);
+    addStmtToTree(root, strTab, vma, len, filenm, line);
   }
 }
 
@@ -2954,15 +2971,9 @@ debugPrettyName(const string & procnm)
 
 
 static void
-debugStmt(Prof::Struct::Stmt * stmt, VMA vma,
-	  string & filenm, string & procnm, SrcFile::ln line)
+debugStmt(VMA vma, string & filenm, SrcFile::ln line)
 {
-  cout << INDENT << "stmt:";
-
-  if (stmt != NULL) {
-    cout << " (n=" << stmt->id() << ")";
-  }
-  cout << "  0x" << hex << vma << dec
+  cout << INDENT << "stmt:  0x" << hex << vma << dec
        << "  l=" << line << "  f='" << filenm << "'\n";
 
 #ifdef BANAL_USE_SYMTAB
