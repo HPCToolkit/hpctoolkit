@@ -2482,6 +2482,12 @@ doBlock(ProcInfo pinfo, ParseAPI::Function * func,
   cout << "\nblock:\n";
 #endif
 
+  // save the last symtab line map query
+  Offset low_vma = 1;
+  Offset high_vma = 0;
+  string cache_filenm = "";
+  SrcFile::ln cache_line = 0;
+
   // iterate through the instructions in this block
   map <Offset, InstructionAPI::Instruction::Ptr> imap;
   block->getInsns(imap);
@@ -2493,18 +2499,29 @@ doBlock(ProcInfo pinfo, ParseAPI::Function * func,
     string filenm = "";
     SrcFile::ln line = 0;
 
-    vector <Statement *> svec;
-    the_symtab->getSourceLines(svec, vma);
-
-    if (! svec.empty()) {
-      // use symtab line map info, if avail
-      filenm = svec[0]->getFile();
-      line = svec[0]->getLine();
-      pinfo.proc_bin->lm()->realpath(filenm);
+    if (low_vma <= vma && vma < high_vma) {
+      // use cached value
+      filenm = cache_filenm;
+      line = cache_line;
     }
     else {
-      // fall back on binutils's line map info
-      pinfo.proc_bin->findSrcCodeInfo(vma, 0, procnm, filenm, line);
+      vector <Statement *> svec;
+      the_symtab->getSourceLines(svec, vma);
+
+      if (! svec.empty()) {
+	// use symtab value and save in cache
+	low_vma = svec[0]->startAddr();
+	high_vma = svec[0]->endAddr();
+	cache_filenm = svec[0]->getFile();
+	cache_line = svec[0]->getLine();
+	pinfo.proc_bin->lm()->realpath(cache_filenm);
+	filenm = cache_filenm;
+	line = cache_line;
+      }
+      else {
+	// fall back on binutils's value
+	pinfo.proc_bin->findSrcCodeInfo(vma, 0, procnm, filenm, line);
+      }
     }
 
 #if DEBUG_CFG_SOURCE
