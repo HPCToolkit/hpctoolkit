@@ -14,6 +14,7 @@
 #include "../fnbounds/fnbounds_interface.h"
 #include "../../../lib/prof-lean/placeholders.h"
 #include "../safe-sampling.h"
+#include "../hpcrun-initializers.h"
 
 
 
@@ -22,6 +23,14 @@
 //***************************************************************************
 
 ompt_placeholders_t ompt_placeholders;
+
+
+
+//***************************************************************************
+// local variables 
+//***************************************************************************
+
+static closure_t ompt_placeholder_init_closure;
 
 
 
@@ -119,7 +128,23 @@ init_placeholder(ompt_placeholder_t *p, void *pc)
   }
 
 void
+ompt_init_placeholders_internal(void *arg)
+{
+  ompt_function_lookup_t ompt_fn_lookup = (ompt_function_lookup_t) arg;
+  FOREACH_OMPT_PLACEHOLDER_FN(OMPT_PLACEHOLDER_MACRO)
+}
+
+
+// placeholders can only be initialized after fnbounds module is initialized.
+// for this reason, defer placeholder initialization until the end of 
+// hpcrun initialization.
+void
 ompt_init_placeholders(ompt_function_lookup_t ompt_fn_lookup)
 {
-  FOREACH_OMPT_PLACEHOLDER_FN(OMPT_PLACEHOLDER_MACRO)
+  // initialize closure for initializer
+  ompt_placeholder_init_closure.fn = ompt_init_placeholders_internal; 
+  ompt_placeholder_init_closure.arg = ompt_fn_lookup;
+
+  // register closure
+  hpcrun_initializers_defer(&ompt_placeholder_init_closure);
 }

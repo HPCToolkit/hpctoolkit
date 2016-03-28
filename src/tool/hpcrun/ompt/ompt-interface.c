@@ -62,6 +62,7 @@
 #include <hpcrun/ompt/ompt-task.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/cct/cct.h>
+#include <hpcrun/hpcrun-initializers.h>
 
 #include "ompt-interface.h"
 #include "ompt-callstack.h"
@@ -83,14 +84,6 @@
 
 #define ompt_event_may_occur(r) \
   ((r ==  ompt_has_event_may_callback) | (r ==  ompt_has_event_must_callback))
-
-
-
-/******************************************************************************
- * global variables
- *****************************************************************************/
-
-ompt_idle_t ompt_idle_placeholder_fn;
 
 
 
@@ -317,12 +310,6 @@ ompt_init_inquiry_fn_ptrs(ompt_function_lookup_t ompt_fn_lookup)
 FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 
 #undef ompt_interface_fn
-
-#if 0
- if (!omp_idle_fn) omp_idle_fn = omp_idle;
-
- ompt_idle_placeholder_fn = omp_idle_fn;
-#endif
 }
 
 

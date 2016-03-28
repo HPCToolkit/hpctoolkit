@@ -88,6 +88,7 @@
 #include "fnbounds_interface.h"
 #include "fnbounds_table_interface.h"
 #include "hpcrun_dlfns.h"
+#include "hpcrun-initializers.h"
 #include "hpcrun_options.h"
 #include "hpcrun_return_codes.h"
 #include "hpcrun_stats.h"
@@ -510,6 +511,7 @@ hpcrun_init_internal(bool is_child)
   if (hpctoolkit_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
       SAMPLE_SOURCES(start);
   }
+  hpcrun_initializers_apply();
   hpcrun_is_initialized_private = true;
 }
 
