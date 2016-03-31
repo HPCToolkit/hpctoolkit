@@ -2,7 +2,9 @@
  * uw_recipe.h
  *
  * Specification of uw_recipe_t, an abstract unwind recipe.
- * Known concrete implementation: x86recipe_t defined in x86-unwind-interval.h
+ * Known concrete implementations:
+ *   x86recipe_t defined in x86-unwind-interval.h
+ *   ppc64recipe_t defined in ppc64-unwind-interval.h
  *
  *      Author: dxnguyen
  */

@@ -84,11 +84,11 @@
 
 #define MYDBG 0
 
-static interval_status 
-ppc64_build_intervals(char *ins, unsigned int len);
+static btuwi_status_t
+ppc64_build_intervals(char *ins, unsigned int len, mem_alloc m_alloc);
 
 static void
-ppc64_print_interval_set(unw_interval_t *first);
+ppc64_print_interval_set(unwind_interval *first);
 
 static const char *
 ra_ty_string(ra_ty_t ty); 
@@ -101,29 +101,40 @@ sp_ty_string(sp_ty_t ty);
 //***************************************************************************
 // interface operations
 //***************************************************************************
-
+#if 0
 interval_status 
 build_intervals(char *ins, unsigned int len)
 {
   interval_status stat = ppc64_build_intervals(ins, len);
-  
   if (MYDBG) {
-    ppc64_print_interval_set((unw_interval_t *) stat.first);
+    ppc64_print_interval_set((unwind_interval *) stat.first);
   }
+  return stat;
+}
+#else
 
+btuwi_status_t
+build_intervals(char  *ins, unsigned int len, mem_alloc m_alloc)
+{
+  btuwi_status_t stat = ppc64_build_intervals(ins, len, m_alloc);
+  if (MYDBG) {
+    ppc64_print_interval_set(stat.first);
+  }
   return stat;
 }
 
+#endif
+
 
 //***************************************************************************
-// unw_interval_t interface
+// unwind_interval interface
 //***************************************************************************
-
+#if 0
 unw_interval_t *
 new_ui(char *start_addr, sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
-       unw_interval_t *prev)
+       unwind_interval *prev)
 {
-  unw_interval_t* u = (unw_interval_t*)hpcrun_ui_malloc(sizeof(unw_interval_t));
+  unwind_interval* u = (unwind_interval*)hpcrun_ui_malloc(sizeof(unwind_interval));
 
   u->common.start = start_addr;
   u->common.end = 0;
@@ -131,7 +142,7 @@ new_ui(char *start_addr, sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
   u->common.next = NULL;
 
   if (prev) {
-    ui_link(prev, u);
+    link_ui(prev, u);
   }
 
   u->sp_ty  = sp_ty;
@@ -143,19 +154,86 @@ new_ui(char *start_addr, sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
 
   return u;
 }
+#else
+
+unwind_interval *
+new_ui(char *startaddr, sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
+		unwind_interval *prev,  mem_alloc m_alloc)
+{
+  bitree_uwi_t *u = bitree_uwi_new(NULL, prev, NULL, m_alloc);
+  interval_t *interval = interval_t_new(startaddr, 0, m_alloc);
+  ppc64recipe_t *ppc64recipe =
+	  ppc64recipe_new(sp_ty, ra_ty, sp_arg, ra_arg, m_alloc);
+  bitree_uwi_set_rootval(u, uwi_t_new(interval, (uw_recipe_t*)ppc64recipe, m_alloc));
+  hpcrun_stats_num_unwind_intervals_total_inc();
+  return u;
+}
+
+ppc64recipe_t *
+ppc64recipe_new(sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
+		mem_alloc m_alloc)
+{
+  ppc64recipe_t *recipe = (ppc64recipe_t*)m_alloc(sizeof(ppc64recipe_t));
+  recipe->sp_ty  = sp_ty;
+  recipe->ra_ty  = ra_ty;
+  recipe->sp_arg = sp_arg;
+  recipe->ra_arg = ra_arg;
+  return recipe;
+}
+
+/*
+ * Concrete implementation of the abstract val_tostr function of the
+ * generic_val class.
+ * pre-condition: recipe is of type ppc64recipe_t*
+ */
+void
+ppc64recipe_tostr(void* recipe, char str[])
+{
+  // TODO
+  ppc64recipe_t *ppc64recipe = (ppc64recipe_t*)recipe;
+  snprintf(str, MAX_RECIPE_STR, "%s%d",
+	  "ppc64recipe sp_ty = ", ppc64recipe->sp_ty);
+}
+
+void
+ppc64recipe_print(void* recipe)
+{
+  char str[MAX_RECIPE_STR];
+  ppc64recipe_tostr(recipe, str);
+  printf("%s", str);
+}
+
+/*
+ * concrete implementation of the abstract function for printing an abstract
+ * unwind recipe specified in uw_recipe.h
+ */
+void
+uw_recipe_tostr(void* recipe, char str[])
+{
+  ppc64recipe_tostr(recipe, str);
+}
+
+void
+uw_recipe_print(void* recipe)
+{
+  ppc64recipe_print(recipe);
+}
+
+#endif
 
 
 void 
-ui_dump(unw_interval_t* u)
+ui_dump(unwind_interval* u)
 {
   if (!u) {
     return;
   }
 
   printf("  [%p, %p) ty=%-10s,%-10s sp_arg=%5d ra_arg=%5d\n",
-       (void *) u->common.start, (void *) u->common.end, 
-       sp_ty_string(u->sp_ty), ra_ty_string(u->ra_ty), u->sp_arg, u->ra_arg);
-  // printf("     next=%p prev=%p", u->common.next, u->common.prev);
+      (void*)UWI_START_ADDR(u),  (void*)UWI_END_ADDR(u),
+       sp_ty_string(UWI_RECIPE(u)->sp_ty),
+       ra_ty_string(UWI_RECIPE(u)->ra_ty),
+       UWI_RECIPE(u)->sp_arg, UWI_RECIPE(u)->ra_arg);
 }
 
 
@@ -170,10 +248,15 @@ suspicious_interval(void *pc)
 
 
 void 
-ui_link(unw_interval_t* current, unw_interval_t* next)
+link_ui(unwind_interval* current, unwind_interval* next)
 {
+#if 0
   current->common.end = next->common.start;
   current->common.next= (splay_interval_t*)next;
+#else
+  UWI_END_ADDR(current) = UWI_START_ADDR(next);
+  bitree_uwi_set_rightsubtree(current, next);
+#endif
 }
 
 
@@ -355,10 +438,10 @@ getRADispFromSPDisp(int sp_disp)
 
 
 static inline int
-getSPDispFromUI(unw_interval_t* ui)
+getSPDispFromUI(unwind_interval* ui)
 { 
   // if sp_ty != SPTy_SPRel, then frame size is 0
-  return (ui->sp_ty == SPTy_SPRel) ? ui->sp_arg : 0;
+  return (UWI_RECIPE(ui)->sp_ty == SPTy_SPRel) ? UWI_RECIPE(ui)->sp_arg : 0;
 }
 
 
@@ -462,14 +545,14 @@ nextInsn(uint32_t* insn)
 
 
 
-static interval_status 
-ppc64_build_intervals(char *beg_insn, unsigned int len)
+static btuwi_status_t
+ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
 {
-  unw_interval_t* beg_ui = 
-    new_ui(beg_insn, SPTy_Reg, RATy_Reg, PPC_REG_SP, PPC_REG_LR, NULL);
-  unw_interval_t* ui = beg_ui;
-  unw_interval_t* nxt_ui = NULL;
-  unw_interval_t* canon_ui = beg_ui;
+  unwind_interval* beg_ui = 
+    new_ui(beg_insn, SPTy_Reg, RATy_Reg, PPC_REG_SP, PPC_REG_LR, NULL, m_alloc);
+  unwind_interval* ui = beg_ui;
+  unwind_interval* nxt_ui = NULL;
+  unwind_interval* canon_ui = beg_ui;
 
   uint32_t* cur_insn = (uint32_t*) beg_insn;
   uint32_t* end_insn = (uint32_t*) (beg_insn + len);
@@ -482,11 +565,12 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     //--------------------------------------------------
     // move return address from LR (to 'reg')
     //--------------------------------------------------
-    if (ui->ra_ty == RATy_Reg &&
-	ui->ra_arg == PPC_REG_LR &&
+    if (UWI_RECIPE(ui)->ra_ty == RATy_Reg &&
+	UWI_RECIPE(ui)->ra_arg == PPC_REG_LR &&
 	isInsn_MFLR(*cur_insn, &reg)) {
-      nxt_ui = new_ui(nextInsn(cur_insn), 
-		      ui->sp_ty, RATy_Reg, ui->sp_arg, reg, ui);
+      nxt_ui =
+    	  new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_Reg,
+    		  UWI_RECIPE(ui)->sp_arg, reg, ui, m_alloc);
       ui = nxt_ui;
     }
     //--------------------------------------------------
@@ -494,22 +578,24 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     //--------------------------------------------------
     else if (isInsn_MTLR(*cur_insn, &reg)) {
       // TODO: could scan backwards based on 'reg' (e.g., isInsn_LWZ)
-      nxt_ui = new_ui(nextInsn(cur_insn), 
-		      ui->sp_ty, RATy_Reg, ui->sp_arg, PPC_REG_LR, ui);
+      nxt_ui =
+    	  new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_Reg,
+    		  UWI_RECIPE(ui)->sp_arg, PPC_REG_LR, ui, m_alloc);
       ui = nxt_ui;
     }
     //--------------------------------------------------
     // store return address into parent's frame
     //   (may come before or after frame allocation)
     //--------------------------------------------------
-    else if (ui->ra_ty == RATy_Reg && 
-	     ui->ra_arg >= PPC_REG_R0 &&
-	     isInsn_STW(*cur_insn, ui->ra_arg, PPC_REG_SP)) {
+    else if (UWI_RECIPE(ui)->ra_ty == RATy_Reg &&
+	     UWI_RECIPE(ui)->ra_arg >= PPC_REG_R0 &&
+	     isInsn_STW(*cur_insn, UWI_RECIPE(ui)->ra_arg, PPC_REG_SP)) {
       int sp_disp = getSPDispFromUI(ui);
       int ra_disp = PPC_OPND_DISP(*cur_insn);
       if (getRADispFromSPDisp(sp_disp) == ra_disp) {
-        nxt_ui = new_ui(nextInsn(cur_insn), 
-			ui->sp_ty, RATy_SPRel, ui->sp_arg, ra_disp, ui);
+        nxt_ui =
+        	new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_SPRel,
+        		UWI_RECIPE(ui)->sp_arg, ra_disp, ui, m_alloc);
         ui = nxt_ui;
 
 	canon_ui = nxt_ui;
@@ -519,14 +605,15 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     // store return address into parent's frame
     //   (may come before or after frame allocation)
     //--------------------------------------------------
-    else if (ui->ra_ty == RATy_Reg && 
-	     ui->ra_arg >= PPC_REG_R0 &&
-	     isInsn_STD(*cur_insn, ui->ra_arg, PPC_REG_SP)) {
+    else if (UWI_RECIPE(ui)->ra_ty == RATy_Reg &&
+	     UWI_RECIPE(ui)->ra_arg >= PPC_REG_R0 &&
+	     isInsn_STD(*cur_insn, UWI_RECIPE(ui)->ra_arg, PPC_REG_SP)) {
       int sp_disp = getSPDispFromUI(ui);
       int ra_disp = PPC_OPND_DISP_DS(*cur_insn);
       if (getRADispFromSPDisp(sp_disp) == ra_disp) {
-        nxt_ui = new_ui(nextInsn(cur_insn), 
-			ui->sp_ty, RATy_SPRel, ui->sp_arg, ra_disp, ui);
+        nxt_ui =
+        	new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_SPRel,
+        		UWI_RECIPE(ui)->sp_arg, ra_disp, ui, m_alloc);
         ui = nxt_ui;
 
 	canon_ui = nxt_ui;
@@ -539,8 +626,9 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
       int sp_disp = getSPDispFromUI(ui);
       int ra_disp = PPC_OPND_DISP(*cur_insn);
       if (getRADispFromSPDisp(sp_disp) == ra_disp) {
-	nxt_ui = new_ui(nextInsn(cur_insn), 
-			ui->sp_ty, RATy_Reg, ui->sp_arg, PPC_REG_R0, ui);
+	nxt_ui =
+		new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_Reg,
+			UWI_RECIPE(ui)->sp_arg, PPC_REG_R0, ui, m_alloc);
 	ui = nxt_ui;
       }
     }
@@ -550,10 +638,11 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     //--------------------------------------------------
     else if (isInsn_STWU(*cur_insn, PPC_REG_SP, PPC_REG_SP)) {
       int sp_disp = - PPC_OPND_DISP(*cur_insn);
-      int ra_arg = ((ui->ra_ty == RATy_SPRel) ? 
-		    ui->ra_arg + sp_disp : ui->ra_arg);
-      nxt_ui = new_ui(nextInsn(cur_insn), 
-		      SPTy_SPRel, ui->ra_ty, sp_disp, ra_arg, ui);
+      int ra_arg = ((UWI_RECIPE(ui)->ra_ty == RATy_SPRel) ?
+		    UWI_RECIPE(ui)->ra_arg + sp_disp : UWI_RECIPE(ui)->ra_arg);
+      nxt_ui =
+    	  new_ui(nextInsn(cur_insn), SPTy_SPRel, UWI_RECIPE(ui)->ra_ty,
+    		  sp_disp, ra_arg, ui, m_alloc);
       ui = nxt_ui;
 
       canon_ui = nxt_ui;
@@ -564,26 +653,29 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     //--------------------------------------------------
     else if (isInsn_STDU(*cur_insn, PPC_REG_SP, PPC_REG_SP)) {
       int sp_disp = - PPC_OPND_DISP_DS(*cur_insn);  
-      int ra_arg = ((ui->ra_ty == RATy_SPRel) ? 
-		    ui->ra_arg + sp_disp : ui->ra_arg);
-      nxt_ui = new_ui(nextInsn(cur_insn), 
-		      SPTy_SPRel, ui->ra_ty, sp_disp, ra_arg, ui);
+      int ra_arg = ((UWI_RECIPE(ui)->ra_ty == RATy_SPRel) ?
+		    UWI_RECIPE(ui)->ra_arg + sp_disp : UWI_RECIPE(ui)->ra_arg);
+      nxt_ui =
+    	  new_ui(nextInsn(cur_insn), SPTy_SPRel, UWI_RECIPE(ui)->ra_ty,
+    		  sp_disp, ra_arg, ui, m_alloc);
       ui = nxt_ui;
 
       canon_ui = nxt_ui;
     }
     else if (isInsn_STWUX(*cur_insn, PPC_REG_SP)) {
       int sp_disp = -1; // N.B. currently we do not track this
-      nxt_ui = new_ui(nextInsn(cur_insn),
-		      SPTy_SPRel, ui->ra_ty, sp_disp, ui->ra_arg, ui);
+      nxt_ui =
+    	  new_ui(nextInsn(cur_insn),SPTy_SPRel, UWI_RECIPE(ui)->ra_ty,
+    		  sp_disp, UWI_RECIPE(ui)->ra_arg, ui, m_alloc);
       ui = nxt_ui;
 
       canon_ui = nxt_ui;
     }
     else if (isInsn_STDUX(*cur_insn, PPC_REG_SP)) {
       int sp_disp = -1; // N.B. currently we do not track this
-      nxt_ui = new_ui(nextInsn(cur_insn),
-		      SPTy_SPRel, ui->ra_ty, sp_disp, ui->ra_arg, ui);
+      nxt_ui =
+    	  new_ui(nextInsn(cur_insn), SPTy_SPRel, UWI_RECIPE(ui)->ra_ty,
+    		  sp_disp, UWI_RECIPE(ui)->ra_arg, ui, m_alloc);
       ui = nxt_ui;
 
       canon_ui = nxt_ui;
@@ -594,23 +686,25 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     else if (isInsn_ADDI(*cur_insn, PPC_REG_SP, PPC_REG_SP)
 	     && (PPC_OPND_DISP(*cur_insn) == getSPDispFromUI(ui))) {
       int sp_disp = - PPC_OPND_DISP(*cur_insn);  
-      int ra_arg = ((ui->ra_ty == RATy_SPRel) ? 
-		    ui->ra_arg + sp_disp : ui->ra_arg);
+      int ra_arg = ((UWI_RECIPE(ui)->ra_ty == RATy_SPRel) ?
+		    UWI_RECIPE(ui)->ra_arg + sp_disp : UWI_RECIPE(ui)->ra_arg);
 #if 0
       // debug return address offset not being adjusted properly.
       // now fixed.
-      printf("addi: ra_ty=%d, sp_disp = %d, ui->ra_arg = %d, ra_arg = %d\n", ui->ra_ty, sp_disp, ui->ra_arg, ra_arg);
+      printf("addi: ra_ty=%d, sp_disp = %d, UWI_RECIPE(ui)->ra_arg = %d, ra_arg = %d\n", UWI_RECIPE(ui)->ra_ty, sp_disp, UWI_RECIPE(ui)->ra_arg, ra_arg);
 #endif
-      nxt_ui = new_ui(nextInsn(cur_insn), 
-		      SPTy_Reg, ui->ra_ty, PPC_REG_SP, ra_arg, ui);
+      nxt_ui =
+    	  new_ui(nextInsn(cur_insn), SPTy_Reg, UWI_RECIPE(ui)->ra_ty,
+    		  PPC_REG_SP, ra_arg, ui, m_alloc);
       ui = nxt_ui;
     }
     else if (isInsn_MR(*cur_insn, PPC_REG_SP)) {
       // N.B. To be sure the MR restores SP, we would have to track
       // registers.  As a sanity check, test for a non-zero frame size
       if (getSPDispFromUI(ui) != 0) {
-	nxt_ui = new_ui(nextInsn(cur_insn), 
-			SPTy_Reg, ui->ra_ty, PPC_REG_SP, ui->ra_arg, ui);
+	nxt_ui =
+		new_ui(nextInsn(cur_insn), SPTy_Reg, UWI_RECIPE(ui)->ra_ty,
+			PPC_REG_SP, UWI_RECIPE(ui)->ra_arg, ui, m_alloc);
 	ui = nxt_ui;
       }
     }
@@ -623,31 +717,32 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 
       // An interior return.  Restore the canonical interval if necessary.
       if (!ui_cmp(ui, canon_ui)) {
-	nxt_ui = new_ui(nextInsn(cur_insn), canon_ui->sp_ty, canon_ui->ra_ty,
-			canon_ui->sp_arg, canon_ui->ra_arg, ui);
-	ui = nxt_ui;
+    	nxt_ui =
+    		new_ui(nextInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty, UWI_RECIPE(canon_ui)->ra_ty,
+    		UWI_RECIPE(canon_ui)->sp_arg, UWI_RECIPE(canon_ui)->ra_arg, ui, m_alloc);
+    	ui = nxt_ui;
       }
     }
     
     cur_insn++;
   }
 
-  ui->common.end = end_insn;
+  UWI_END_ADDR(ui) = end_insn;  // DXN
 
-  interval_status stat;
+  btuwi_status_t stat;
   stat.first_undecoded_ins = NULL;
   stat.errcode = 0;
-  stat.first = (splay_interval_t *) beg_ui;
+  stat.first = beg_ui;
 
   return stat; 
 }
 
 
 static void 
-ppc64_print_interval_set(unw_interval_t *beg_ui) 
+ppc64_print_interval_set(unwind_interval *beg_ui) 
 {
   TMSG(INTV, "");
-  for (unw_interval_t* u = beg_ui; u; u = (unw_interval_t*)u->common.next) {
+  for (unwind_interval* u = beg_ui; u; u = UWI_NEXT(u)) {
     ui_dump(u);
   }
   TMSG(INTV, "");
@@ -658,16 +753,16 @@ void
 ppc64_dump_intervals(void* addr)
 {
   void *s, *e;
-  interval_status intervals;
+  btuwi_status_t intervals;
 
   fnbounds_enclosing_addr(addr, &s, &e, NULL);
 
   uintptr_t llen = ((uintptr_t)e) - (uintptr_t)s;
 
   printf("build intervals from %p to %p (%"PRIuPTR")\n", s, e, llen);
-  intervals = ppc64_build_intervals(s, (unsigned int) llen);
+  intervals = ppc64_build_intervals(s, (unsigned int) llen, hpcrun_malloc);  // TODO DXN: shelf hcprun_ui_malloc for now, as in x86_dump_intervals
 
-  ppc64_print_interval_set((unw_interval_t *) intervals.first);
+  ppc64_print_interval_set((unwind_interval *) intervals.first);
 }
 
 void

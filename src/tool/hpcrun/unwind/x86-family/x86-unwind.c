@@ -339,7 +339,7 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
   void*  pc = cursor->pc_unnorm;
   unwind_interval* uw = cursor->unwr_info.btuwi;
 
-  int unw_res;
+  step_state unw_res;
 
   if (!uw){
     TMSG(UNW, "unw_step: invalid unw interval for cursor, trolling ...");
