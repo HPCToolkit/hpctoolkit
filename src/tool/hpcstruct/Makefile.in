@@ -119,8 +119,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @OPT_ENABLE_BANAL_WITH_PARSEAPI_TRUE@am__append_1 = -L$(SYMTABAPI_LIB) -lparseAPI -linstructionAPI
-@OPT_ENABLE_BANAL_WITH_OA_TRUE@am__append_2 = @OA_LDFLAGS@
-@OPT_ENABLE_BANAL_WITH_OA_TRUE@am__append_3 = @OA_IFLAGS@
+@OPT_ENABLE_BANAL_WITH_PARSEAPI_TRUE@am__append_2 = -DBANAL_USE_PARSEAPI
+@OPT_ENABLE_BANAL_WITH_OA_TRUE@am__append_3 = @OA_LDFLAGS@
+@OPT_ENABLE_BANAL_WITH_OA_TRUE@am__append_4 = @OA_IFLAGS@
 pkglibexec_PROGRAMS = hpcstruct-bin$(EXEEXT)
 subdir = src/tool/hpcstruct
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -544,7 +545,7 @@ MYSOURCES = \
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ \
-	$(am__append_3)
+	$(am__append_2) $(am__append_4)
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
 	@GNUBINUTILS_LDFLAGS@ \
@@ -566,7 +567,7 @@ MYLDADD = \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@
 
-MY_LIB_CFG = $(am__append_1) $(am__append_2)
+MY_LIB_CFG = $(am__append_1) $(am__append_3)
 @OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE@MY_LIB_Symtab = 
 @OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@MY_LIB_Symtab = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
 @OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@	-L$(LIBDWARF_LIB) -ldwarf \

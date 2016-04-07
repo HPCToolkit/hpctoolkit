@@ -703,15 +703,6 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
   // Assume lm->Read() has been performed
   DIAG_Assert(lm, DIAG_UnexpectedInput);
 
-  // Select default if --cfg was not specified.
-  if (cfgRequest == BAnal::Struct::CFG_DEFAULT) {
-#ifdef BANAL_USE_PARSEAPI
-    cfgRequest = BAnal::Struct::CFG_PARSEAPI;
-#else
-    cfgRequest = BAnal::Struct::CFG_OA;
-#endif
-  }
-
   // Verify that the requested CFG support was compiled in and then
   // call the OA or ParseAPI version.
   Prof::Struct::LM * lmStruct;
@@ -728,7 +719,7 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
 #endif
     break;
 
-  case BAnal::Struct::CFG_PARSEAPI:
+  default:
 #ifdef BANAL_USE_PARSEAPI
     lmStruct = makeStructure_ParseAPI(lm, dotFile, doNormalizeTy, isIrrIvalLoop,
 				      isFwdSubst, procNmMgr, dbgProcGlob);
@@ -736,10 +727,6 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
     DIAG_EMsg("hpcstruct was not compiled with ParseAPI");
     exit(1);
 #endif
-    break;
-
-  default:
-    DIAG_Die("internal error: unknown value for cfgRequest: " << cfgRequest);
     break;
   }
 
