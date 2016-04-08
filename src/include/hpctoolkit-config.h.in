@@ -81,6 +81,9 @@
 /* Host is big endian. */
 #undef HOST_BIG_ENDIAN
 
+/* HOST CPU: ARM 64 (aarch64 */
+#undef HOST_CPU_ARM64
+
 /* HOST CPU: ia64 (itanium) */
 #undef HOST_CPU_IA64
 

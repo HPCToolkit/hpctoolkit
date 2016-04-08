@@ -87,6 +87,7 @@ using std::endl;
 #include "Dbg-LM.hpp"
 
 #include <lib/isa/AlphaISA.hpp>
+#include <lib/isa/EmptyISA.hpp>
 #include <lib/isa/IA64ISA.hpp>
 #include <lib/isa/MipsISA.hpp>
 #include <lib/isa/PowerISA.hpp>
@@ -504,7 +505,8 @@ BinUtil::LM::open(const char* filenm)
       break;
 #endif
     default:
-      DIAG_Die("Unknown bfd arch: " << bfd_get_arch(m_bfd));
+      newisa = new EmptyISA;
+      break;
   }
 
   // Sanity check.  Test to make sure the new LM is using the

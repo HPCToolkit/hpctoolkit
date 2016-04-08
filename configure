@@ -18102,6 +18102,17 @@ $as_echo "#define HOST_OS_TRU64 1" >>confdefs.h
 
     ;;
 
+  # ARM 64-bit
+  aarch64*linux* )
+    HOST_OS="Linux"
+
+$as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
+
+
+$as_echo "#define HOST_CPU_ARM64 1" >>confdefs.h
+
+    ;;
+
   *)
     as_fn_error $? "HPCToolkit is not configured for HOST=${host}!" "$LINENO" 5
     ;;

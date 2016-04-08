@@ -513,6 +513,13 @@ case "${host}" in
     AC_DEFINE([HOST_OS_TRU64], [1], [HOST OS: Tru64])
     ;;
 
+  # ARM 64-bit
+  aarch64*linux* )
+    HOST_OS="Linux"
+    AC_DEFINE([HOST_OS_LINUX], [1], [HOST OS: Linux])
+    AC_DEFINE([HOST_CPU_ARM64], [1], [HOST CPU: ARM 64 (aarch64])
+    ;;
+
   *)
     AC_MSG_ERROR([HPCToolkit is not configured for HOST=${host}!])
     ;;
