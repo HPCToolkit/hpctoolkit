@@ -87,11 +87,17 @@
 // implementation type
 //******************************************************************************
 
+#if 0
+// DXN: moved to header file
+// DXN: opaque type not supported by gcc 4.4.*
+
 typedef struct binarytree_s {
   struct binarytree_s *left;
   struct binarytree_s *right;
   void* val;
 } binarytree_t;
+
+#endif
 
 
 //******************************************************************************

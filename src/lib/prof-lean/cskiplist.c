@@ -66,8 +66,13 @@
 
 #include "randomizer.h"
 #include "cskiplist.h"
+
+#if 0
 #include "mcs-lock.h"
 #include "pfq-rwlock.h"
+#else
+// DXN: moved to header file
+#endif
 
 
 //******************************************************************************
@@ -90,14 +95,16 @@
 // implementation types
 //******************************************************************************
 
+#if 0
+// DXN: moved to header file
+// DXN: opaque type not supported by gcc 4.4.*
+
 typedef struct csklnode_s {
   void *val;
   int height;
   volatile bool fully_linked;
   volatile bool marked;
-
   mcs_lock_t lock;
-
   // memory allocated for a node will include space for its vector of  pointers
   struct csklnode_s *nexts[];
 } csklnode_t;
@@ -111,6 +118,7 @@ typedef struct cskiplist_s {
   pfq_rwlock_t pfq_lock;
 } cskiplist_t;
 
+#endif
 
 
 typedef enum {

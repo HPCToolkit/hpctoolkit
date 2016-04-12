@@ -81,7 +81,33 @@
 // abstract data type
 //******************************************************************************
 
+#if 0
+// DXN: opaque type not supported by gcc 4.4.*
 typedef struct cskiplist_s cskiplist_t;
+#else
+
+#include "mcs-lock.h"
+#include "pfq-rwlock.h"
+
+typedef struct csklnode_s {
+  void *val;
+  int height;
+  volatile bool fully_linked;
+  volatile bool marked;
+  mcs_lock_t lock;
+  // memory allocated for a node will include space for its vector of  pointers
+  struct csklnode_s *nexts[];
+} csklnode_t;
+
+typedef struct cskiplist_s {
+  csklnode_t *left_sentinel;
+  csklnode_t *right_sentinel;
+  int max_height;
+  val_cmp compare;
+  val_cmp inrange;
+  pfq_rwlock_t pfq_lock;
+} cskiplist_t;
+#endif
 
 /*
  * string representation of a node in the skip list.

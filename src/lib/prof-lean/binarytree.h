@@ -87,7 +87,18 @@
 // abstract data type
 //******************************************************************************
 
+#if 0
+// DXN: opaque type not supported by gcc 4.4.*
 typedef struct binarytree_s binarytree_t;
+#else
+
+typedef struct binarytree_s {
+  struct binarytree_s *left;
+  struct binarytree_s *right;
+  void* val;
+} binarytree_t;
+
+#endif
 
 // constructors
 binarytree_t *
