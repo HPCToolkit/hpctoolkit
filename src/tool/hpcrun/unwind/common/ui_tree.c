@@ -349,21 +349,24 @@ free_ui_node_locked(void *node)
 #endif
 }
 
-#if 0
-/*
- * Return a node from the free list if non-empty, else make a new one
- * via hpcrun_malloc().  Each architecture has a different struct
- * size, but they all extend interval tree nodes, which is all we use
- * here.
- *
- * Note: the claim is that all calls to hpcrun_ui_malloc() go through
- * hpcrun_addr_to_interval() and thus the free list doesn't need its
- * own lock (maybe a little sleazy, and be careful the code doesn't
- * grow to violate this assumption).
- */
+
 void *
 hpcrun_ui_malloc(size_t ui_size)
 {
+#if 0
+	/*
+	 * Old code:
+	 * Return a node from the free list if non-empty, else make a new one
+	 * via hpcrun_malloc().  Each architecture has a different struct
+	 * size, but they all extend interval tree nodes, which is all we use
+	 * here.
+	 *
+	 * Note: the claim is that all calls to hpcrun_ui_malloc() go through
+	 * hpcrun_addr_to_interval() and thus the free list doesn't need its
+	 * own lock (maybe a little sleazy, and be careful the code doesn't
+	 * grow to violate this assumption).
+	 */
+
   void *ans;
 
   /* Verify that all calls have the same ui_size. */
@@ -382,8 +385,77 @@ hpcrun_ui_malloc(size_t ui_size)
 	memset(ans, 0, ui_size);
 
   return (ans);
-}
 #endif
+  // DXN: TODO
+  return  hpcrun_malloc(ui_size);
+}
+
+/******************************************************************************
+ * The following are the old APIs for the unwind interval tree.
+ * They are kept for backward compatibility sake.
+ *
+ *****************************************************************************/
+
+void
+hpcrun_interval_tree_init(void)
+{
+#if 0
+  // DXN: old code
+  TMSG(UITREE, "init unwind interval tree");
+  ui_tree_root = NULL;
+  iter_count = DEADLOCK_DEFAULT;
+  if (getenv("HPCRUN_DEADLOCK_THRESHOLD")) {
+    iter_count = atoi(getenv("HPCRUN_DEADLOCK_THRESHOLD"));
+    if (iter_count < 0) iter_count = 0;
+  }
+  TMSG(DEADLOCK, "deadlock threshold set to %d", iter_count);
+  UI_TREE_UNLOCK;
+#endif
+  // DXN: TODO
+  uw_recipe_map_init();
+}
+
+
+void
+hpcrun_release_splay_lock(void)
+{
+#if 0
+  // DXN: old code
+  UI_TREE_UNLOCK;
+#endif
+}
+
+void
+hpcrun_delete_ui_range(void* start, void* end)
+{
+#if 0
+  /*
+   * Old code:
+   * Remove intervals in the range [start, end) from the unwind interval
+   * tree, and move the deleted nodes to the unwind free list.
+   */
+  interval_tree_node *del_tree;
+
+  UI_TREE_LOCK;
+
+  TMSG(UITREE, "begin unwind delete from %p to %p", start, end);
+  if (ENABLED(UITREE_VERIFY)) {
+    interval_tree_verify(ui_tree_root, "UITREE");
+  }
+
+  interval_tree_delete(&ui_tree_root, &del_tree, start, end);
+  free_ui_tree_locked(del_tree);
+
+  if (ENABLED(UITREE_VERIFY)) {
+    interval_tree_verify(ui_tree_root, "UITREE");
+  }
+
+  UI_TREE_UNLOCK;
+#endif
+  // DXN: TODO
+  uw_recipe_map_delete_range(start, end);
+}
+
 
 //---------------------------------------------------------------------
 // debug operations
@@ -395,3 +467,8 @@ uw_recipe_map_print(void)
   a2r_map_print(addr2recipe_map);
 }
 
+void
+hpcrun_print_interval_tree(void)
+{
+  uw_recipe_map_print();
+}

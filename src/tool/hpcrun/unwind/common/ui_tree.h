@@ -98,9 +98,27 @@ free_ui_node_locked(void *node);
 void
 uw_recipe_map_print(void);
 
-#if 0
 void *hpcrun_ui_malloc(size_t ui_size);
-#endif
 
+/******************************************************************************
+ * The following are the old APIs for the unwind interval tree.
+ * They are kept for backward compatibility sake.
+ *
+ *****************************************************************************/
+
+void hpcrun_interval_tree_init(void);
+void hpcrun_release_splay_lock(void);
+void hpcrun_delete_ui_range(void *start, void *end);
+void hpcrun_print_interval_tree(void);
+
+#if 0
+// DXN: splay_interval_t is deprecated.
+// The splay tree data structure is deprecated and replaced by cskiplist,
+// the concurrent skiplist data structure.
+splay_interval_t *hpcrun_addr_to_interval(void *addr,
+					  void *ip, ip_normalized_t* ip_norm);
+splay_interval_t *hpcrun_addr_to_interval_locked(void *addr);
+void free_ui_node_locked(interval_tree_node *node);
+#endif
 
 #endif  /* !_UI_TREE_H_ */
