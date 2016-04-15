@@ -423,7 +423,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 //    fnbounds_enclosing_addr(cursor.pc_unnorm, &func_start_pc, &func_end_pc, &lm);  // DXN
 #else
 
-    void *func_start_pc =  cursor.unwr_info.start;
+    void *func_start_pc =  (void*)cursor.unwr_info.start;
 //    void *func_end_pc = cursor.unwr_info.end;
     load_module_t* lm = cursor.unwr_info.lm;
 

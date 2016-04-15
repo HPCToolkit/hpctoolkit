@@ -46,6 +46,7 @@
 
 //************************* System Include Files ****************************
 
+#include <xed-interface.h>
 #include <stdint.h>
 
 //*************************** configuration ****************************
@@ -76,8 +77,8 @@ x86_fnbounds(void* addr)
 #else
 
   ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(addr);
-  local.begin = ildmod_stat_interval(ilmstat)->start;
-  local.end   = ildmod_stat_interval(ilmstat)->end;
+  local.begin = (void*)ildmod_stat_interval(ilmstat)->start;
+  local.end   = (void*)ildmod_stat_interval(ilmstat)->end;
 
 #endif
 
@@ -106,8 +107,8 @@ x86_dump_intervals(void* addr)
 #else
 
   ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(addr);
-  s = ildmod_stat_interval(ilmstat)->start;
-  e = ildmod_stat_interval(ilmstat)->end;
+  s = (void*)ildmod_stat_interval(ilmstat)->start;
+  e = (void*)ildmod_stat_interval(ilmstat)->end;
 
 #endif
 
@@ -174,8 +175,8 @@ hpcrun_dump_intervals_noisy(void* addr)
 #else
 
   ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(addr);
-  s = ildmod_stat_interval(ilmstat)->start;
-  e = ildmod_stat_interval(ilmstat)->end;
+  s = (void*)ildmod_stat_interval(ilmstat)->start;
+  e = (void*)ildmod_stat_interval(ilmstat)->end;
 
 #endif
 

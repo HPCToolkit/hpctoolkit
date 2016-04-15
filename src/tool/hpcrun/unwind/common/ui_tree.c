@@ -132,11 +132,11 @@ static mem_alloc m_alloc = hpcrun_malloc;
 #if 0
 static bitree_uwi_t *ui_free_list = NULL;
 static size_t the_ui_size = 0;
+static void free_ui_tree_locked(bitree_uwi_t *tree);  // DXN: TODO
 #endif
 
 
 extern btuwi_status_t build_intervals(char *ins, unsigned int len, mem_alloc m_alloc);
-static void free_ui_tree_locked(bitree_uwi_t *tree);
 static ilmstat_btuwi_pair_t *uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr);
 
 //---------------------------------------------------------------------
@@ -220,7 +220,7 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
   if (ilm_btui == NULL) return false;  // lookup fails for various reasons.
 
   bitree_uwi_t *btuwi = ilmstat_btuwi_pair_btuwi(ilm_btui);
-  unwr_info->btuwi    = bitree_uwi_inrange(btuwi, addr);
+  unwr_info->btuwi    = bitree_uwi_inrange(btuwi, (uintptr_t)addr);
   unwr_info->treestat = ilmstat_btuwi_pair_stat(ilm_btui);
   unwr_info->lm       = ilmstat_btuwi_pair_loadmod(ilm_btui);
   unwr_info->start    = ilmstat_btuwi_pair_interval(ilm_btui)->start;
@@ -248,8 +248,8 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
   case DEFERRED:
 	if (compare_and_swap_bool(&(ilmstat->stat), DEFERRED, FORTHCOMING)) {
 	  // it is my responsibility to build the tree of intervals for the function
-	  void *fcn_start = interval_ldmod_pair_interval(ilmstat->ildmod)->start;
-	  void *fcn_end   = interval_ldmod_pair_interval(ilmstat->ildmod)->end;
+	  void *fcn_start = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->start;
+	  void *fcn_end   = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->end;
 	  btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, m_alloc);
 	  if (btuwi_stat.first == NULL) {
 		TMSG(UITREE, "BAD build_intervals failed: fcn range %p to %p",
@@ -323,6 +323,8 @@ uw_recipe_map_delete_range(void* start, void* end)
  * Free the nodes in post order, since putting a node on the free list
  * modifies its child pointers.
  */
+#if 0
+// DXN: TODO
 static void
 free_ui_tree_locked(bitree_uwi_t *tree)
 {
@@ -337,6 +339,7 @@ free_ui_tree_locked(bitree_uwi_t *tree)
   ui_free_list = tree;
 #endif
 }
+#endif
 
 
 void

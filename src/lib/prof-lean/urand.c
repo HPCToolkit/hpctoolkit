@@ -111,7 +111,6 @@ int
 urand()
 {
   if (!urand_initialized) {
-    int i;
     urand_data = usec_time() & LOW_32BITS;
     urand_initialized = 1;
   } 

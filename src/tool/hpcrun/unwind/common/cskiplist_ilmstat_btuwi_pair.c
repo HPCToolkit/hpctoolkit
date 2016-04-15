@@ -73,7 +73,7 @@ bool
 cskl_ilmstat_btuwi_inrange_del_bulk_unsynch(cskl_ilmstat_btuwi_t *cskl,
 	uintptr_t low, uintptr_t high, mem_free m_free)
 {
-  return cskl_inrange_del_bulk_unsynch((cskiplist_t *)cskl, low, high, m_free);
+  return cskl_inrange_del_bulk_unsynch((cskiplist_t *)cskl, (void*)low, (void*)high, m_free);
 }
 
 /*

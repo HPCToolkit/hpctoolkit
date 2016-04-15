@@ -58,7 +58,7 @@ interval_t_tostr(void* ptrinterval, char result[])
 {
   interval_t* ptr_interval = (interval_t*)ptrinterval;
   snprintf(result, MAX_INTERVAL_STR, "%s%18p%s%18p%s",
-		   "[", ptr_interval->start, " ... ", ptr_interval->end, ")");
+		   "[", (void*)ptr_interval->start, " ... ", (void*)ptr_interval->end, ")");
 }
 
 void

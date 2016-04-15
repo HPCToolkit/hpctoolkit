@@ -94,7 +94,7 @@ new_ui(char *start,
 
   hpcrun_stats_num_unwind_intervals_total_inc();
 
-  interval_t *interval = interval_t_new(start, 0, m_alloc);
+  interval_t *interval = interval_t_new((uintptr_t)start, 0, m_alloc);
   x86recipe_t* x86recipe =
 	  x86recipe_new(ra_status, sp_ra_pos, bp_ra_pos, bp_status, sp_bp_pos, bp_bp_pos, m_alloc);
   bitree_uwi_set_rootval(u, uwi_t_new(interval, (uw_recipe_t*)x86recipe, m_alloc));
@@ -120,8 +120,7 @@ unwind_interval *
 fluke_ui(char *loc, unsigned int pos, mem_alloc m_alloc)
 {
   bitree_uwi_t *u = bitree_uwi_new(NULL, NULL, NULL, m_alloc);
-  interval_t *interval =
-	  interval_t_new(loc, loc, m_alloc);
+  interval_t *interval =  interval_t_new((uintptr_t)loc, (uintptr_t)loc, m_alloc);
   x86recipe_t* x86recipe =
 	  x86recipe_new(RA_SP_RELATIVE, pos, 0, 0, 0, 0, m_alloc);
   bitree_uwi_set_rootval(u, uwi_t_new(interval, (uw_recipe_t*)x86recipe, m_alloc));

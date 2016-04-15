@@ -415,7 +415,7 @@ deep_validate_return_addr(void* addr, void* generic)
 
   ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(cursor->pc_unnorm);
   if (ilmstat) {
-	 void* callee = ildmod_stat_interval(ilmstat)->start;
+	 void* callee = (void*)ildmod_stat_interval(ilmstat)->start;
 	    TMSG(VALIDATE_UNW, "beginning of my routine = %p", callee);
 	    if (confirm_call(addr, callee)) {
 	      TMSG(VALIDATE_UNW, "Instruction preceeding %p is a call to this routine. Unwind confirmed", addr);

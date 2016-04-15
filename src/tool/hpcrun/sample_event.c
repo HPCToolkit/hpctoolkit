@@ -93,10 +93,12 @@ help_hpcrun_sample_callpath(epoch_t *epoch, void *context, ip_normalized_t *leaf
 			    int metricId, uint64_t metricIncr,
 			    int skipInner, int isSync);
 
+#if 0
 static cct_node_t*
 hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context, void **trace_pc,
 			   int metricId, uint64_t metricIncr,
 			   int skipInner, int isSync);
+#endif
 
 //***************************************************************************
 
@@ -313,7 +315,7 @@ static int const PTHREAD_CTXT_SKIP_INNER = 1;
 cct_node_t*
 hpcrun_gen_thread_ctxt(void* context)
 {
-  void *trace_pc; // unused argument to callee
+//  void *trace_pc; // unused argument to callee
 
   if (monitor_block_shootdown()) {
     monitor_unblock_shootdown();
@@ -389,6 +391,7 @@ hpcrun_gen_thread_ctxt(void* context)
   return node;
 }
 
+#if 0
 static cct_node_t*
 hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context, void **trace_pc,
 			   int metricId,
@@ -409,7 +412,7 @@ hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context, void **trace_pc,
 
   return n;
 }
-
+#endif
 
 static cct_node_t*
 help_hpcrun_sample_callpath(epoch_t *epoch, void *context, ip_normalized_t *leaf_func,

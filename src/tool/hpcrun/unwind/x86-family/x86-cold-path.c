@@ -146,7 +146,7 @@ hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 	  }
 
 #endif
-	  void* beg = ildmod_stat_interval(ilmstat)->start;
+	  void* beg = (void*)ildmod_stat_interval(ilmstat)->start;
 	  if (branch_target == beg) {
 		TMSG(COLD_CODE,"  --jump is a regular tail call,"
 			" NOT a cold code return");

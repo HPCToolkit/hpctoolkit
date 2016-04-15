@@ -285,8 +285,7 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
   //----------------------------------------------------------------------------
   // Look for a node matching low
   //----------------------------------------------------------------------------
-  int llayer = cskiplist_find_helper(cmpfn, cskl, lo,
-	  lpreds, other, cskiplist_find_full);
+//  int llayer = cskiplist_find_helper(cmpfn, cskl, lo, lpreds, other, cskiplist_find_full);
 
   //----------------------------------------------------------------------------
   // Look for a node matching high
