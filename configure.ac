@@ -401,6 +401,7 @@ HOST_CPU_X86=no
 HOST_CPU_X86_64=no
 HOST_CPU_X86_FAMILY=no
 HOST_CPU_IA64=no
+HOST_CPU_AARCH64=no
 
 case "${host}" in
   # Linux
@@ -516,6 +517,8 @@ case "${host}" in
   # ARM 64-bit
   aarch64*linux* )
     HOST_OS="Linux"
+    HOST_CPU_AARCH64=yes
+    UNWINDER=libunw
     AC_DEFINE([HOST_OS_LINUX], [1], [HOST OS: Linux])
     AC_DEFINE([HOST_CPU_ARM64], [1], [HOST CPU: ARM 64 (aarch64])
     ;;
@@ -538,6 +541,7 @@ AM_CONDITIONAL([HOST_CPU_X86],    [test "${HOST_CPU_X86}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86_64], [test "${HOST_CPU_X86_64}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86_FAMILY], [test "${HOST_CPU_X86_FAMILY}" = yes])
 AM_CONDITIONAL([HOST_CPU_IA64], [test "$HOST_CPU_IA64" = yes])
+AM_CONDITIONAL([HOST_CPU_AARCH64], [test "$HOST_CPU_AARCH64" = yes])
 
 #-------------------------------------------------
 # Host-specific compiler settings

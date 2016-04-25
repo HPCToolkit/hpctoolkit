@@ -229,31 +229,46 @@ pkglibexec_PROGRAMS = $(am__EXEEXT_1)
 @HOST_CPU_IA64_TRUE@am__append_80 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_81 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_82 = $(MY_IA64_INCLUDE_DIRS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_83 = $(MY_PAPI_FILES)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_84 = $(PAPI_INC_FLGS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_85 = $(PAPI_LD_FLGS)
-@OPT_PAPI_CUPTI_TRUE@am__append_86 = $(CUPTI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_87 = $(MY_PAPI_FILES)
-@OPT_PAPI_STATIC_TRUE@am__append_88 = $(PAPI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_89 = $(PAPI_LD_FLGS)
-@OPT_ENABLE_UPC_TRUE@am__append_90 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_91 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_92 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_93 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_94 = $(OPT_UPC_LDFLAGS)
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_95 = -DLUSH_PTHREADS
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_96 = -DLUSH_PTHREADS
-@OPT_ENABLE_CUDA_TRUE@am__append_97 = $(CUDA_FILES)
-@OPT_ENABLE_CUDA_TRUE@am__append_98 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_99 = $(OPT_CUDA_IFLAGS) -g
+@HOST_CPU_AARCH64_TRUE@am__append_83 = $(MY_AARCH64_FILES)
+@HOST_CPU_AARCH64_TRUE@am__append_84 = $(MY_AARCH64_FILES)
+@HOST_CPU_AARCH64_TRUE@am__append_85 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_86 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_87 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_88 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_89 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_90 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_91 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_92 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_93 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_94 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_95 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_96 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_97 = $(MY_AARCH64_INCLUDE_DIRS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_98 = $(MY_PAPI_FILES)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_99 = $(PAPI_INC_FLGS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_100 = $(PAPI_LD_FLGS)
+@OPT_PAPI_CUPTI_TRUE@am__append_101 = $(CUPTI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_102 = $(MY_PAPI_FILES)
+@OPT_PAPI_STATIC_TRUE@am__append_103 = $(PAPI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_104 = $(PAPI_LD_FLGS)
+@OPT_ENABLE_UPC_TRUE@am__append_105 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_106 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_107 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_108 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_109 = $(OPT_UPC_LDFLAGS)
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_110 = -DLUSH_PTHREADS
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_111 = -DLUSH_PTHREADS
+@OPT_ENABLE_CUDA_TRUE@am__append_112 = $(CUDA_FILES)
+@OPT_ENABLE_CUDA_TRUE@am__append_113 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_114 = $(OPT_CUDA_IFLAGS) -g
 #  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_100 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_101 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_102 = $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_103 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_104 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_105 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_106 = libagent-pthread.la \
+@OPT_ENABLE_CUDA_TRUE@am__append_115 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_116 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_117 = $(OPT_CUDA_LDFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_118 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_119 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_120 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_121 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -437,10 +452,13 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	trampoline/x86-family/x86-tramp.S \
 	utilities/arch/x86-family/x86-context-pc.c \
 	trampoline/ia64/ia64-tramp.s \
-	utilities/arch/ia64/ia64-context-pc.c sample-sources/papi.c \
-	sample-sources/papi-c-cupti.c sample-sources/papi-c.c \
-	sample-sources/papi-c-extended-info.c sample-sources/upc.c \
-	sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c \
+	utilities/arch/ia64/ia64-context-pc.c \
+	trampoline/aarch64/aarch64-tramp.c \
+	utilities/arch/libunwind/libunwind-context-pc.c \
+	sample-sources/papi.c sample-sources/papi-c-cupti.c \
+	sample-sources/papi-c.c sample-sources/papi-c-extended-info.c \
+	sample-sources/upc.c sample-sources/gpu_blame.c \
+	sample-sources/gpu_ctxt_actions.c \
 	gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/generic-libunwind/libunw-unwind.c unwind/common/splay.c \
@@ -527,34 +545,37 @@ am__objects_15 = trampoline/x86-family/libhpcrun_la-x86-tramp.lo \
 am__objects_17 = trampoline/ia64/libhpcrun_la-ia64-tramp.lo \
 	utilities/arch/ia64/libhpcrun_la-ia64-context-pc.lo
 @HOST_CPU_IA64_TRUE@am__objects_18 = $(am__objects_17)
-@OPT_PAPI_CUPTI_TRUE@am__objects_19 = sample-sources/libhpcrun_la-papi-c-cupti.lo
-@OPT_PAPI_COMPONENT_FALSE@am__objects_20 =  \
+am__objects_19 = trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo \
+	utilities/arch/libunwind/libhpcrun_la-libunwind-context-pc.lo
+@HOST_CPU_AARCH64_TRUE@am__objects_20 = $(am__objects_19)
+@OPT_PAPI_CUPTI_TRUE@am__objects_21 = sample-sources/libhpcrun_la-papi-c-cupti.lo
+@OPT_PAPI_COMPONENT_FALSE@am__objects_22 =  \
 @OPT_PAPI_COMPONENT_FALSE@	sample-sources/libhpcrun_la-papi.lo \
-@OPT_PAPI_COMPONENT_FALSE@	$(am__objects_19)
-@OPT_PAPI_COMPONENT_TRUE@am__objects_20 = sample-sources/libhpcrun_la-papi-c.lo \
+@OPT_PAPI_COMPONENT_FALSE@	$(am__objects_21)
+@OPT_PAPI_COMPONENT_TRUE@am__objects_22 = sample-sources/libhpcrun_la-papi-c.lo \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/libhpcrun_la-papi-c-extended-info.lo \
-@OPT_PAPI_COMPONENT_TRUE@	$(am__objects_19)
-@OPT_PAPI_DYNAMIC_TRUE@am__objects_21 = $(am__objects_20)
-am__objects_22 = sample-sources/libhpcrun_la-upc.lo
-@OPT_ENABLE_UPC_TRUE@am__objects_23 = $(am__objects_22)
-am__objects_24 = libhpcrun_la-gpu_blame-cuda-driver-table.lo \
+@OPT_PAPI_COMPONENT_TRUE@	$(am__objects_21)
+@OPT_PAPI_DYNAMIC_TRUE@am__objects_23 = $(am__objects_22)
+am__objects_24 = sample-sources/libhpcrun_la-upc.lo
+@OPT_ENABLE_UPC_TRUE@am__objects_25 = $(am__objects_24)
+am__objects_26 = libhpcrun_la-gpu_blame-cuda-driver-table.lo \
 	libhpcrun_la-gpu_blame-cuda-runtime-table.lo
-am__objects_25 = sample-sources/libhpcrun_la-gpu_blame.lo \
+am__objects_27 = sample-sources/libhpcrun_la-gpu_blame.lo \
 	sample-sources/libhpcrun_la-gpu_ctxt_actions.lo \
-	$(am__objects_24)
-@OPT_ENABLE_CUDA_TRUE@am__objects_26 = $(am__objects_25)
-am__objects_27 = unwind/common/libhpcrun_la-backtrace.lo \
+	$(am__objects_26)
+@OPT_ENABLE_CUDA_TRUE@am__objects_28 = $(am__objects_27)
+am__objects_29 = unwind/common/libhpcrun_la-backtrace.lo \
 	unwind/common/libhpcrun_la-unw-throw.lo
-am__objects_28 = $(am__objects_27) \
+am__objects_30 = $(am__objects_29) \
 	unwind/generic-libunwind/libhpcrun_la-libunw-unwind.lo \
 	unwind/common/libhpcrun_la-default_validation_summary.lo
-am__objects_29 = $(am__objects_27) unwind/common/libhpcrun_la-splay.lo \
+am__objects_31 = $(am__objects_29) unwind/common/libhpcrun_la-splay.lo \
 	unwind/common/libhpcrun_la-stack_troll.lo \
 	unwind/common/libhpcrun_la-ui_tree.lo
-am__objects_30 = $(am__objects_29) \
+am__objects_32 = $(am__objects_31) \
 	unwind/ppc64/libhpcrun_la-ppc64-unwind.lo \
 	unwind/ppc64/libhpcrun_la-ppc64-unwind-interval.lo
-am__objects_31 = $(am__objects_29) \
+am__objects_33 = $(am__objects_31) \
 	unwind/x86-family/libhpcrun_la-x86-all.lo \
 	unwind/x86-family/libhpcrun_la-amd-xop.lo \
 	unwind/x86-family/libhpcrun_la-x86-cold-path.lo \
@@ -570,14 +591,14 @@ am__objects_31 = $(am__objects_29) \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-32bit-main.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-32bit-icc-variant.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-pgi-mp_pexit.lo
-@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_32 = $(am__objects_31)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_32 = $(am__objects_30)
-@UNW_LIBUNW_TRUE@am__objects_32 = $(am__objects_28)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_34 = $(am__objects_33)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_34 = $(am__objects_32)
+@UNW_LIBUNW_TRUE@am__objects_34 = $(am__objects_30)
 am_libhpcrun_la_OBJECTS = $(am__objects_7) $(am__objects_8) \
 	$(am__objects_10) $(am__objects_12) $(am__objects_14) \
-	$(am__objects_16) $(am__objects_18) $(am__objects_21) \
-	$(am__objects_23) $(am__objects_26) $(am__objects_32) \
-	utilities/libhpcrun_la-last_func.lo
+	$(am__objects_16) $(am__objects_18) $(am__objects_20) \
+	$(am__objects_23) $(am__objects_25) $(am__objects_28) \
+	$(am__objects_34) utilities/libhpcrun_la-last_func.lo
 libhpcrun_la_OBJECTS = $(am_libhpcrun_la_OBJECTS)
 libhpcrun_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libhpcrun_la_CFLAGS) \
@@ -675,10 +696,13 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	trampoline/x86-family/x86-tramp.S \
 	utilities/arch/x86-family/x86-context-pc.c \
 	trampoline/ia64/ia64-tramp.s \
-	utilities/arch/ia64/ia64-context-pc.c sample-sources/papi.c \
-	sample-sources/papi-c-cupti.c sample-sources/papi-c.c \
-	sample-sources/papi-c-extended-info.c sample-sources/upc.c \
-	unwind/common/backtrace.c unwind/common/unw-throw.c \
+	utilities/arch/ia64/ia64-context-pc.c \
+	trampoline/aarch64/aarch64-tramp.c \
+	utilities/arch/libunwind/libunwind-context-pc.c \
+	sample-sources/papi.c sample-sources/papi-c-cupti.c \
+	sample-sources/papi-c.c sample-sources/papi-c-extended-info.c \
+	sample-sources/upc.c unwind/common/backtrace.c \
+	unwind/common/unw-throw.c \
 	unwind/generic-libunwind/libunw-unwind.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
 	unwind/ppc64/ppc64-unwind.c \
@@ -698,7 +722,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c \
 	utilities/last_func.c
-am__objects_33 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
+am__objects_35 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-main.$(OBJEXT) libhpcrun_o-disabled.$(OBJEXT) \
 	libhpcrun_o-cct_insert_backtrace.$(OBJEXT) \
 	libhpcrun_o-env.$(OBJEXT) libhpcrun_o-epoch.$(OBJEXT) \
@@ -752,43 +776,47 @@ am__objects_33 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	utilities/libhpcrun_o-ip-normalized.$(OBJEXT) \
 	utilities/libhpcrun_o-tokenize.$(OBJEXT) \
 	utilities/libhpcrun_o-unlink.$(OBJEXT)
-am__objects_34 = fnbounds/libhpcrun_o-fnbounds_static.$(OBJEXT) \
+am__objects_36 = fnbounds/libhpcrun_o-fnbounds_static.$(OBJEXT) \
 	libhpcrun_o-custom-init-static.$(OBJEXT)
-am__objects_35 = unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
-@HOST_CPU_MIPS_TRUE@am__objects_36 = $(am__objects_35)
-am__objects_37 = unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT) \
+am__objects_37 = unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
+@HOST_CPU_MIPS_TRUE@am__objects_38 = $(am__objects_37)
+am__objects_39 = unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT) \
 	trampoline/ppc64/libhpcrun_o-ppc64-tramp.$(OBJEXT) \
 	utilities/arch/ppc64/libhpcrun_o-ppc64-context-pc.$(OBJEXT)
-@HOST_CPU_PPC_TRUE@am__objects_38 = $(am__objects_37)
-am__objects_39 =  \
+@HOST_CPU_PPC_TRUE@am__objects_40 = $(am__objects_39)
+am__objects_41 =  \
 	trampoline/x86-family/libhpcrun_o-x86-tramp.$(OBJEXT) \
 	utilities/arch/x86-family/libhpcrun_o-x86-context-pc.$(OBJEXT)
-@HOST_CPU_X86_FAMILY_TRUE@am__objects_40 = $(am__objects_39)
-am__objects_41 = trampoline/ia64/libhpcrun_o-ia64-tramp.$(OBJEXT) \
+@HOST_CPU_X86_FAMILY_TRUE@am__objects_42 = $(am__objects_41)
+am__objects_43 = trampoline/ia64/libhpcrun_o-ia64-tramp.$(OBJEXT) \
 	utilities/arch/ia64/libhpcrun_o-ia64-context-pc.$(OBJEXT)
-@HOST_CPU_IA64_TRUE@am__objects_42 = $(am__objects_41)
-@OPT_PAPI_CUPTI_TRUE@am__objects_43 = sample-sources/libhpcrun_o-papi-c-cupti.$(OBJEXT)
-@OPT_PAPI_COMPONENT_FALSE@am__objects_44 = sample-sources/libhpcrun_o-papi.$(OBJEXT) \
-@OPT_PAPI_COMPONENT_FALSE@	$(am__objects_43)
-@OPT_PAPI_COMPONENT_TRUE@am__objects_44 = sample-sources/libhpcrun_o-papi-c.$(OBJEXT) \
+@HOST_CPU_IA64_TRUE@am__objects_44 = $(am__objects_43)
+am__objects_45 =  \
+	trampoline/aarch64/libhpcrun_o-aarch64-tramp.$(OBJEXT) \
+	utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.$(OBJEXT)
+@HOST_CPU_AARCH64_TRUE@am__objects_46 = $(am__objects_45)
+@OPT_PAPI_CUPTI_TRUE@am__objects_47 = sample-sources/libhpcrun_o-papi-c-cupti.$(OBJEXT)
+@OPT_PAPI_COMPONENT_FALSE@am__objects_48 = sample-sources/libhpcrun_o-papi.$(OBJEXT) \
+@OPT_PAPI_COMPONENT_FALSE@	$(am__objects_47)
+@OPT_PAPI_COMPONENT_TRUE@am__objects_48 = sample-sources/libhpcrun_o-papi-c.$(OBJEXT) \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/libhpcrun_o-papi-c-extended-info.$(OBJEXT) \
-@OPT_PAPI_COMPONENT_TRUE@	$(am__objects_43)
-@OPT_PAPI_STATIC_TRUE@am__objects_45 = $(am__objects_44)
-am__objects_46 = sample-sources/libhpcrun_o-upc.$(OBJEXT)
-@OPT_ENABLE_UPC_TRUE@am__objects_47 = $(am__objects_46)
-am__objects_48 = unwind/common/libhpcrun_o-backtrace.$(OBJEXT) \
+@OPT_PAPI_COMPONENT_TRUE@	$(am__objects_47)
+@OPT_PAPI_STATIC_TRUE@am__objects_49 = $(am__objects_48)
+am__objects_50 = sample-sources/libhpcrun_o-upc.$(OBJEXT)
+@OPT_ENABLE_UPC_TRUE@am__objects_51 = $(am__objects_50)
+am__objects_52 = unwind/common/libhpcrun_o-backtrace.$(OBJEXT) \
 	unwind/common/libhpcrun_o-unw-throw.$(OBJEXT)
-am__objects_49 = $(am__objects_48) \
+am__objects_53 = $(am__objects_52) \
 	unwind/generic-libunwind/libhpcrun_o-libunw-unwind.$(OBJEXT) \
 	unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
-am__objects_50 = $(am__objects_48) \
+am__objects_54 = $(am__objects_52) \
 	unwind/common/libhpcrun_o-splay.$(OBJEXT) \
 	unwind/common/libhpcrun_o-stack_troll.$(OBJEXT) \
 	unwind/common/libhpcrun_o-ui_tree.$(OBJEXT)
-am__objects_51 = $(am__objects_50) \
+am__objects_55 = $(am__objects_54) \
 	unwind/ppc64/libhpcrun_o-ppc64-unwind.$(OBJEXT) \
 	unwind/ppc64/libhpcrun_o-ppc64-unwind-interval.$(OBJEXT)
-am__objects_52 = $(am__objects_50) \
+am__objects_56 = $(am__objects_54) \
 	unwind/x86-family/libhpcrun_o-x86-all.$(OBJEXT) \
 	unwind/x86-family/libhpcrun_o-amd-xop.$(OBJEXT) \
 	unwind/x86-family/libhpcrun_o-x86-cold-path.$(OBJEXT) \
@@ -804,13 +832,14 @@ am__objects_52 = $(am__objects_50) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-32bit-main.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-32bit-icc-variant.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-pgi-mp_pexit.$(OBJEXT)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_53 = $(am__objects_52)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_53 = $(am__objects_51)
-@UNW_LIBUNW_TRUE@am__objects_53 = $(am__objects_49)
-am_libhpcrun_o_OBJECTS = $(am__objects_33) $(am__objects_34) \
-	$(am__objects_36) $(am__objects_38) $(am__objects_40) \
-	$(am__objects_42) $(am__objects_45) $(am__objects_47) \
-	$(am__objects_53) utilities/libhpcrun_o-last_func.$(OBJEXT)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_57 = $(am__objects_56)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_57 = $(am__objects_55)
+@UNW_LIBUNW_TRUE@am__objects_57 = $(am__objects_53)
+am_libhpcrun_o_OBJECTS = $(am__objects_35) $(am__objects_36) \
+	$(am__objects_38) $(am__objects_40) $(am__objects_42) \
+	$(am__objects_44) $(am__objects_46) $(am__objects_49) \
+	$(am__objects_51) $(am__objects_57) \
+	utilities/libhpcrun_o-last_func.$(OBJEXT)
 libhpcrun_o_OBJECTS = $(am_libhpcrun_o_OBJECTS)
 libhpcrun_o_DEPENDENCIES = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 	$(am__append_20)
@@ -1267,7 +1296,7 @@ include_HEADERS = $(am__append_3)
 pkglib_LIBRARIES = $(am__append_9) $(am__append_10) $(am__append_11) \
 	$(am__append_12)
 pkglib_LTLIBRARIES = $(am__append_4) $(am__append_5) $(am__append_6) \
-	$(am__append_105) $(am__append_106)
+	$(am__append_120) $(am__append_121)
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
@@ -1445,6 +1474,10 @@ MY_IA64_FILES = \
         trampoline/ia64/ia64-tramp.s \
         utilities/arch/ia64/ia64-context-pc.c
 
+MY_AARCH64_FILES = \
+	trampoline/aarch64/aarch64-tramp.c \
+	utilities/arch/libunwind/libunwind-context-pc.c
+
 @OPT_PAPI_COMPONENT_FALSE@MY_PAPI_FILES = sample-sources/papi.c \
 @OPT_PAPI_COMPONENT_FALSE@	$(am__append_15)
 @OPT_PAPI_COMPONENT_TRUE@MY_PAPI_FILES = sample-sources/papi-c.c \
@@ -1480,15 +1513,18 @@ MY_X86_INCLUDE_DIRS = \
 MY_IA64_INCLUDE_DIRS = \
         -I$(srcdir)/utilities/arch/ia64
 
+MY_AARCH64_INCLUDE_DIRS = \
+	-I$(srcdir)/utilities/arch/aarch64
+
 libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
 	$(am__append_21) $(am__append_22) $(am__append_37) \
 	$(am__append_52) $(am__append_70) $(am__append_83) \
-	$(am__append_90) $(am__append_97) $(UNW_SOURCE_FILES) \
-	utilities/last_func.c
+	$(am__append_98) $(am__append_105) $(am__append_112) \
+	$(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
 	$(am__append_23) $(am__append_38) $(am__append_53) \
-	$(am__append_71) $(am__append_87) $(am__append_91) \
-	$(UNW_SOURCE_FILES) utilities/last_func.c
+	$(am__append_71) $(am__append_84) $(am__append_102) \
+	$(am__append_106) $(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_wrap_a_SOURCES = \
 	monitor-exts/openmp.c
 
@@ -1541,14 +1577,14 @@ libhpctoolkit_a_SOURCES = \
 #-----------------------------------------------------------
 libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_17) $(am__append_24) $(am__append_39) \
-	$(am__append_54) $(am__append_72) $(am__append_84) \
-	$(am__append_86) $(am__append_92) $(am__append_95) \
-	$(am__append_98) $(UNW_INCLUDE_DIRS)
+	$(am__append_54) $(am__append_72) $(am__append_85) \
+	$(am__append_99) $(am__append_101) $(am__append_107) \
+	$(am__append_110) $(am__append_113) $(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(MY_INCLUDE_DIRS) $(am__append_18) $(am__append_25) \
 	$(am__append_40) $(am__append_55) $(am__append_73) \
-	$(am__append_88) $(am__append_93) $(am__append_96) \
-	$(UNW_INCLUDE_DIRS)
+	$(am__append_86) $(am__append_103) $(am__append_108) \
+	$(am__append_111) $(UNW_INCLUDE_DIRS)
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
@@ -1556,39 +1592,42 @@ libhpcrun_wrap_a_CPPFLAGS = \
 
 libhpcrun_ga_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_26) $(am__append_41) $(am__append_58) \
-	$(am__append_74) $(UNW_INCLUDE_DIRS)
+	$(am__append_74) $(am__append_87) $(UNW_INCLUDE_DIRS)
 libhpcrun_ga_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(MY_INCLUDE_DIRS) $(am__append_27) $(am__append_42) \
-	$(am__append_59) $(am__append_75) $(UNW_INCLUDE_DIRS)
+	$(am__append_59) $(am__append_75) $(am__append_88) \
+	$(UNW_INCLUDE_DIRS)
 libhpcrun_io_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_28) $(am__append_43) $(am__append_60) \
-	$(am__append_76) $(UNW_INCLUDE_DIRS)
+	$(am__append_76) $(am__append_89) $(UNW_INCLUDE_DIRS)
 libhpcrun_io_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(MY_INCLUDE_DIRS) $(am__append_29) $(am__append_44) \
-	$(am__append_61) $(am__append_77) $(UNW_INCLUDE_DIRS)
+	$(am__append_61) $(am__append_77) $(am__append_90) \
+	$(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_30) $(am__append_45) $(am__append_62) \
-	$(am__append_78) $(UNW_INCLUDE_DIRS)
+	$(am__append_78) $(am__append_91) $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
 	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_31) \
 	$(am__append_46) $(am__append_63) $(am__append_79) \
-	$(UNW_INCLUDE_DIRS)
+	$(am__append_92) $(UNW_INCLUDE_DIRS)
 libhpcrun_pthread_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_32) $(am__append_47) $(am__append_64) \
-	$(am__append_80) $(UNW_INCLUDE_DIRS)
+	$(am__append_80) $(am__append_93) $(UNW_INCLUDE_DIRS)
 libhpcrun_pthread_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
 	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_33) \
 	$(am__append_48) $(am__append_65) $(am__append_81) \
-	$(UNW_INCLUDE_DIRS)
+	$(am__append_94) $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_34) $(am__append_49) $(am__append_66) \
-	$(am__append_100) $(UNW_INCLUDE_DIRS)
+	$(am__append_95) $(am__append_115) $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(MY_INCLUDE_DIRS) $(am__append_35) $(am__append_50) \
-	$(am__append_67) $(am__append_103) $(UNW_INCLUDE_DIRS)
+	$(am__append_67) $(am__append_96) $(am__append_118) \
+	$(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_36) $(am__append_51) $(am__append_68) \
-	$(am__append_82) $(UNW_INCLUDE_DIRS)
+	$(am__append_82) $(am__append_97) $(UNW_INCLUDE_DIRS)
 CUDA_TABLES = gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
 CUDA_FILES = sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c $(CUDA_TABLES)
 @OPT_ENABLE_CUDA_TRUE@generated_file_base = .
@@ -1612,7 +1651,7 @@ libhpctoolkit_a_CPPFLAGS = \
 #-----------------------------------------------------------
 # cflags
 #-----------------------------------------------------------
-libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_99)
+libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_114)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -1624,9 +1663,9 @@ libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_101)
+	$(am__append_116)
 libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_104)
+	$(am__append_119)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 #-----------------------------------------------------------
@@ -1638,19 +1677,21 @@ libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 	$(am__append_20)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread -lrt $(OPT_LIBUNWIND_LDFLAGS) $(am__append_56) \
-	$(am__append_85) $(am__append_94) $(UNW_DYNAMIC_LD_FLAGS)
+	$(am__append_100) $(am__append_109) $(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
-libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_102)
+libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_117)
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS) $(am__append_57) \
-	$(am__append_89) $(UNW_STATIC_LD_FLAGS)
+	$(am__append_104) $(UNW_STATIC_LD_FLAGS)
 MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_69) \
 	$(UNW_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
 @HOST_CPU_PPC_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
 @HOST_CPU_X86_FAMILY_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
+@HOST_CPU_AARCH64_TRUE@libhpcrun_o_CCASFLAGS = $(AM_CCASFLAGS)
 @HOST_CPU_PPC_TRUE@libhpcrun_o_CCASFLAGS = $(AM_CCASFLAGS)
 @HOST_CPU_X86_FAMILY_TRUE@libhpcrun_o_CCASFLAGS = $(AM_CCASFLAGS)
 @UNW_LIBUNW_TRUE@UNW_SOURCE_FILES = $(UNW_LIBUNW_FILES)
@@ -2117,6 +2158,24 @@ utilities/arch/ia64/$(DEPDIR)/$(am__dirstamp):
 utilities/arch/ia64/libhpcrun_la-ia64-context-pc.lo:  \
 	utilities/arch/ia64/$(am__dirstamp) \
 	utilities/arch/ia64/$(DEPDIR)/$(am__dirstamp)
+trampoline/aarch64/$(am__dirstamp):
+	@$(MKDIR_P) trampoline/aarch64
+	@: > trampoline/aarch64/$(am__dirstamp)
+trampoline/aarch64/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) trampoline/aarch64/$(DEPDIR)
+	@: > trampoline/aarch64/$(DEPDIR)/$(am__dirstamp)
+trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo:  \
+	trampoline/aarch64/$(am__dirstamp) \
+	trampoline/aarch64/$(DEPDIR)/$(am__dirstamp)
+utilities/arch/libunwind/$(am__dirstamp):
+	@$(MKDIR_P) utilities/arch/libunwind
+	@: > utilities/arch/libunwind/$(am__dirstamp)
+utilities/arch/libunwind/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) utilities/arch/libunwind/$(DEPDIR)
+	@: > utilities/arch/libunwind/$(DEPDIR)/$(am__dirstamp)
+utilities/arch/libunwind/libhpcrun_la-libunwind-context-pc.lo:  \
+	utilities/arch/libunwind/$(am__dirstamp) \
+	utilities/arch/libunwind/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-papi.lo: sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-papi-c-cupti.lo:  \
@@ -2415,6 +2474,12 @@ trampoline/ia64/libhpcrun_o-ia64-tramp.$(OBJEXT):  \
 utilities/arch/ia64/libhpcrun_o-ia64-context-pc.$(OBJEXT):  \
 	utilities/arch/ia64/$(am__dirstamp) \
 	utilities/arch/ia64/$(DEPDIR)/$(am__dirstamp)
+trampoline/aarch64/libhpcrun_o-aarch64-tramp.$(OBJEXT):  \
+	trampoline/aarch64/$(am__dirstamp) \
+	trampoline/aarch64/$(DEPDIR)/$(am__dirstamp)
+utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.$(OBJEXT):  \
+	utilities/arch/libunwind/$(am__dirstamp) \
+	utilities/arch/libunwind/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_o-papi.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -2599,6 +2664,8 @@ mostlyclean-compile:
 	-rm -f sample-sources/*.lo
 	-rm -f sample-sources/blame-shift/*.$(OBJEXT)
 	-rm -f sample-sources/blame-shift/*.lo
+	-rm -f trampoline/aarch64/*.$(OBJEXT)
+	-rm -f trampoline/aarch64/*.lo
 	-rm -f trampoline/common/*.$(OBJEXT)
 	-rm -f trampoline/common/*.lo
 	-rm -f trampoline/ia64/*.$(OBJEXT)
@@ -2621,6 +2688,8 @@ mostlyclean-compile:
 	-rm -f utilities/*.lo
 	-rm -f utilities/arch/ia64/*.$(OBJEXT)
 	-rm -f utilities/arch/ia64/*.lo
+	-rm -f utilities/arch/libunwind/*.$(OBJEXT)
+	-rm -f utilities/arch/libunwind/*.lo
 	-rm -f utilities/arch/ppc64/*.$(OBJEXT)
 	-rm -f utilities/arch/ppc64/*.lo
 	-rm -f utilities/arch/x86-family/*.$(OBJEXT)
@@ -2783,6 +2852,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/blame-shift/$(DEPDIR)/libhpcrun_la-blame-shift.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/blame-shift/$(DEPDIR)/libhpcrun_o-blame-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/blame-shift/$(DEPDIR)/libhpcrun_o-blame-shift.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@trampoline/aarch64/$(DEPDIR)/libhpcrun_la-aarch64-tramp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@trampoline/aarch64/$(DEPDIR)/libhpcrun_o-aarch64-tramp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/x86-family/$(DEPDIR)/libhpcrun_la-x86-tramp.Plo@am__quote@
@@ -2849,6 +2920,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-unlink.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/ia64/$(DEPDIR)/libhpcrun_la-ia64-context-pc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/ia64/$(DEPDIR)/libhpcrun_o-ia64-context-pc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/libunwind/$(DEPDIR)/libhpcrun_la-libunwind-context-pc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/libunwind/$(DEPDIR)/libhpcrun_o-libunwind-context-pc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/ppc64/$(DEPDIR)/libhpcrun_la-ppc64-context-pc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/ppc64/$(DEPDIR)/libhpcrun_o-ppc64-context-pc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/x86-family/$(DEPDIR)/libhpcrun_la-x86-context-pc.Plo@am__quote@
@@ -3580,6 +3653,20 @@ utilities/arch/ia64/libhpcrun_la-ia64-context-pc.lo: utilities/arch/ia64/ia64-co
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/arch/ia64/ia64-context-pc.c' object='utilities/arch/ia64/libhpcrun_la-ia64-context-pc.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o utilities/arch/ia64/libhpcrun_la-ia64-context-pc.lo `test -f 'utilities/arch/ia64/ia64-context-pc.c' || echo '$(srcdir)/'`utilities/arch/ia64/ia64-context-pc.c
+
+trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo: trampoline/aarch64/aarch64-tramp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo -MD -MP -MF trampoline/aarch64/$(DEPDIR)/libhpcrun_la-aarch64-tramp.Tpo -c -o trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo `test -f 'trampoline/aarch64/aarch64-tramp.c' || echo '$(srcdir)/'`trampoline/aarch64/aarch64-tramp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/aarch64/$(DEPDIR)/libhpcrun_la-aarch64-tramp.Tpo trampoline/aarch64/$(DEPDIR)/libhpcrun_la-aarch64-tramp.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='trampoline/aarch64/aarch64-tramp.c' object='trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo `test -f 'trampoline/aarch64/aarch64-tramp.c' || echo '$(srcdir)/'`trampoline/aarch64/aarch64-tramp.c
+
+utilities/arch/libunwind/libhpcrun_la-libunwind-context-pc.lo: utilities/arch/libunwind/libunwind-context-pc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT utilities/arch/libunwind/libhpcrun_la-libunwind-context-pc.lo -MD -MP -MF utilities/arch/libunwind/$(DEPDIR)/libhpcrun_la-libunwind-context-pc.Tpo -c -o utilities/arch/libunwind/libhpcrun_la-libunwind-context-pc.lo `test -f 'utilities/arch/libunwind/libunwind-context-pc.c' || echo '$(srcdir)/'`utilities/arch/libunwind/libunwind-context-pc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/arch/libunwind/$(DEPDIR)/libhpcrun_la-libunwind-context-pc.Tpo utilities/arch/libunwind/$(DEPDIR)/libhpcrun_la-libunwind-context-pc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/arch/libunwind/libunwind-context-pc.c' object='utilities/arch/libunwind/libhpcrun_la-libunwind-context-pc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o utilities/arch/libunwind/libhpcrun_la-libunwind-context-pc.lo `test -f 'utilities/arch/libunwind/libunwind-context-pc.c' || echo '$(srcdir)/'`utilities/arch/libunwind/libunwind-context-pc.c
 
 sample-sources/libhpcrun_la-papi.lo: sample-sources/papi.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-papi.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-papi.Tpo -c -o sample-sources/libhpcrun_la-papi.lo `test -f 'sample-sources/papi.c' || echo '$(srcdir)/'`sample-sources/papi.c
@@ -4792,6 +4879,34 @@ utilities/arch/ia64/libhpcrun_o-ia64-context-pc.obj: utilities/arch/ia64/ia64-co
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/arch/ia64/libhpcrun_o-ia64-context-pc.obj `if test -f 'utilities/arch/ia64/ia64-context-pc.c'; then $(CYGPATH_W) 'utilities/arch/ia64/ia64-context-pc.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/ia64/ia64-context-pc.c'; fi`
 
+trampoline/aarch64/libhpcrun_o-aarch64-tramp.o: trampoline/aarch64/aarch64-tramp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT trampoline/aarch64/libhpcrun_o-aarch64-tramp.o -MD -MP -MF trampoline/aarch64/$(DEPDIR)/libhpcrun_o-aarch64-tramp.Tpo -c -o trampoline/aarch64/libhpcrun_o-aarch64-tramp.o `test -f 'trampoline/aarch64/aarch64-tramp.c' || echo '$(srcdir)/'`trampoline/aarch64/aarch64-tramp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/aarch64/$(DEPDIR)/libhpcrun_o-aarch64-tramp.Tpo trampoline/aarch64/$(DEPDIR)/libhpcrun_o-aarch64-tramp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='trampoline/aarch64/aarch64-tramp.c' object='trampoline/aarch64/libhpcrun_o-aarch64-tramp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o trampoline/aarch64/libhpcrun_o-aarch64-tramp.o `test -f 'trampoline/aarch64/aarch64-tramp.c' || echo '$(srcdir)/'`trampoline/aarch64/aarch64-tramp.c
+
+trampoline/aarch64/libhpcrun_o-aarch64-tramp.obj: trampoline/aarch64/aarch64-tramp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT trampoline/aarch64/libhpcrun_o-aarch64-tramp.obj -MD -MP -MF trampoline/aarch64/$(DEPDIR)/libhpcrun_o-aarch64-tramp.Tpo -c -o trampoline/aarch64/libhpcrun_o-aarch64-tramp.obj `if test -f 'trampoline/aarch64/aarch64-tramp.c'; then $(CYGPATH_W) 'trampoline/aarch64/aarch64-tramp.c'; else $(CYGPATH_W) '$(srcdir)/trampoline/aarch64/aarch64-tramp.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/aarch64/$(DEPDIR)/libhpcrun_o-aarch64-tramp.Tpo trampoline/aarch64/$(DEPDIR)/libhpcrun_o-aarch64-tramp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='trampoline/aarch64/aarch64-tramp.c' object='trampoline/aarch64/libhpcrun_o-aarch64-tramp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o trampoline/aarch64/libhpcrun_o-aarch64-tramp.obj `if test -f 'trampoline/aarch64/aarch64-tramp.c'; then $(CYGPATH_W) 'trampoline/aarch64/aarch64-tramp.c'; else $(CYGPATH_W) '$(srcdir)/trampoline/aarch64/aarch64-tramp.c'; fi`
+
+utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.o: utilities/arch/libunwind/libunwind-context-pc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.o -MD -MP -MF utilities/arch/libunwind/$(DEPDIR)/libhpcrun_o-libunwind-context-pc.Tpo -c -o utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.o `test -f 'utilities/arch/libunwind/libunwind-context-pc.c' || echo '$(srcdir)/'`utilities/arch/libunwind/libunwind-context-pc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/arch/libunwind/$(DEPDIR)/libhpcrun_o-libunwind-context-pc.Tpo utilities/arch/libunwind/$(DEPDIR)/libhpcrun_o-libunwind-context-pc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/arch/libunwind/libunwind-context-pc.c' object='utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.o `test -f 'utilities/arch/libunwind/libunwind-context-pc.c' || echo '$(srcdir)/'`utilities/arch/libunwind/libunwind-context-pc.c
+
+utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.obj: utilities/arch/libunwind/libunwind-context-pc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.obj -MD -MP -MF utilities/arch/libunwind/$(DEPDIR)/libhpcrun_o-libunwind-context-pc.Tpo -c -o utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.obj `if test -f 'utilities/arch/libunwind/libunwind-context-pc.c'; then $(CYGPATH_W) 'utilities/arch/libunwind/libunwind-context-pc.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/libunwind/libunwind-context-pc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/arch/libunwind/$(DEPDIR)/libhpcrun_o-libunwind-context-pc.Tpo utilities/arch/libunwind/$(DEPDIR)/libhpcrun_o-libunwind-context-pc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/arch/libunwind/libunwind-context-pc.c' object='utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.obj `if test -f 'utilities/arch/libunwind/libunwind-context-pc.c'; then $(CYGPATH_W) 'utilities/arch/libunwind/libunwind-context-pc.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/libunwind/libunwind-context-pc.c'; fi`
+
 sample-sources/libhpcrun_o-papi.o: sample-sources/papi.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-papi.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-papi.Tpo -c -o sample-sources/libhpcrun_o-papi.o `test -f 'sample-sources/papi.c' || echo '$(srcdir)/'`sample-sources/papi.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_o-papi.Tpo sample-sources/$(DEPDIR)/libhpcrun_o-papi.Po
@@ -5240,6 +5355,7 @@ clean-libtool:
 	-rm -rf os/linux/.libs os/linux/_libs
 	-rm -rf sample-sources/.libs sample-sources/_libs
 	-rm -rf sample-sources/blame-shift/.libs sample-sources/blame-shift/_libs
+	-rm -rf trampoline/aarch64/.libs trampoline/aarch64/_libs
 	-rm -rf trampoline/common/.libs trampoline/common/_libs
 	-rm -rf trampoline/ia64/.libs trampoline/ia64/_libs
 	-rm -rf trampoline/ppc64/.libs trampoline/ppc64/_libs
@@ -5251,6 +5367,7 @@ clean-libtool:
 	-rm -rf unwind/x86-family/manual-intervals/.libs unwind/x86-family/manual-intervals/_libs
 	-rm -rf utilities/.libs utilities/_libs
 	-rm -rf utilities/arch/ia64/.libs utilities/arch/ia64/_libs
+	-rm -rf utilities/arch/libunwind/.libs utilities/arch/libunwind/_libs
 	-rm -rf utilities/arch/ppc64/.libs utilities/arch/ppc64/_libs
 	-rm -rf utilities/arch/x86-family/.libs utilities/arch/x86-family/_libs
 install-includeHEADERS: $(include_HEADERS)
@@ -5489,6 +5606,8 @@ distclean-generic:
 	-rm -f sample-sources/$(am__dirstamp)
 	-rm -f sample-sources/blame-shift/$(DEPDIR)/$(am__dirstamp)
 	-rm -f sample-sources/blame-shift/$(am__dirstamp)
+	-rm -f trampoline/aarch64/$(DEPDIR)/$(am__dirstamp)
+	-rm -f trampoline/aarch64/$(am__dirstamp)
 	-rm -f trampoline/common/$(DEPDIR)/$(am__dirstamp)
 	-rm -f trampoline/common/$(am__dirstamp)
 	-rm -f trampoline/ia64/$(DEPDIR)/$(am__dirstamp)
@@ -5511,6 +5630,8 @@ distclean-generic:
 	-rm -f utilities/$(am__dirstamp)
 	-rm -f utilities/arch/ia64/$(DEPDIR)/$(am__dirstamp)
 	-rm -f utilities/arch/ia64/$(am__dirstamp)
+	-rm -f utilities/arch/libunwind/$(DEPDIR)/$(am__dirstamp)
+	-rm -f utilities/arch/libunwind/$(am__dirstamp)
 	-rm -f utilities/arch/ppc64/$(DEPDIR)/$(am__dirstamp)
 	-rm -f utilities/arch/ppc64/$(am__dirstamp)
 	-rm -f utilities/arch/x86-family/$(DEPDIR)/$(am__dirstamp)
@@ -5527,7 +5648,7 @@ clean-am: clean-generic clean-libtool clean-pkglibLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) os/linux/$(DEPDIR) plugins/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) os/linux/$(DEPDIR) plugins/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -5576,7 +5697,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) os/linux/$(DEPDIR) plugins/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) os/linux/$(DEPDIR) plugins/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

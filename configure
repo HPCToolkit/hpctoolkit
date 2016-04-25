@@ -793,6 +793,8 @@ HOST_CXXFLAGS
 HOST_CFLAGS
 cxx_c11_flag
 CXX11_FLAG
+HOST_CPU_AARCH64_FALSE
+HOST_CPU_AARCH64_TRUE
 HOST_CPU_IA64_FALSE
 HOST_CPU_IA64_TRUE
 HOST_CPU_X86_FAMILY_FALSE
@@ -17949,6 +17951,7 @@ HOST_CPU_X86=no
 HOST_CPU_X86_64=no
 HOST_CPU_X86_FAMILY=no
 HOST_CPU_IA64=no
+HOST_CPU_AARCH64=no
 
 case "${host}" in
   # Linux
@@ -18105,6 +18108,8 @@ $as_echo "#define HOST_OS_TRU64 1" >>confdefs.h
   # ARM 64-bit
   aarch64*linux* )
     HOST_OS="Linux"
+    HOST_CPU_AARCH64=yes
+    UNWINDER=libunw
 
 $as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
 
@@ -18185,6 +18190,14 @@ fi
 else
   HOST_CPU_IA64_TRUE='#'
   HOST_CPU_IA64_FALSE=
+fi
+
+ if test "$HOST_CPU_AARCH64" = yes; then
+  HOST_CPU_AARCH64_TRUE=
+  HOST_CPU_AARCH64_FALSE='#'
+else
+  HOST_CPU_AARCH64_TRUE='#'
+  HOST_CPU_AARCH64_FALSE=
 fi
 
 
@@ -22220,6 +22233,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HOST_CPU_IA64_TRUE}" && test -z "${HOST_CPU_IA64_FALSE}"; then
   as_fn_error $? "conditional \"HOST_CPU_IA64\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HOST_CPU_AARCH64_TRUE}" && test -z "${HOST_CPU_AARCH64_FALSE}"; then
+  as_fn_error $? "conditional \"HOST_CPU_AARCH64\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${IS_HOST_AR_TRUE}" && test -z "${IS_HOST_AR_FALSE}"; then

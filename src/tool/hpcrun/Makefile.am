@@ -363,6 +363,10 @@ MY_IA64_FILES = \
         trampoline/ia64/ia64-tramp.s \
         utilities/arch/ia64/ia64-context-pc.c
 
+MY_AARCH64_FILES = \
+	trampoline/aarch64/aarch64-tramp.c \
+	utilities/arch/libunwind/libunwind-context-pc.c
+
 if OPT_PAPI_COMPONENT
 MY_PAPI_FILES = \
     sample-sources/papi-c.c \
@@ -416,6 +420,9 @@ MY_X86_INCLUDE_DIRS =		\
 
 MY_IA64_INCLUDE_DIRS =         \
         -I$(srcdir)/utilities/arch/ia64
+
+MY_AARCH64_INCLUDE_DIRS = \
+	-I$(srcdir)/utilities/arch/aarch64
 
 libhpcrun_la_SOURCES = 			\
 	$(MY_BASE_FILES)		\
@@ -747,6 +754,26 @@ if HOST_CPU_IA64
   libhpcrun_pthread_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+endif
+
+if HOST_CPU_AARCH64
+  libhpcrun_la_SOURCES  += $(MY_AARCH64_FILES)
+  libhpcrun_o_SOURCES   += $(MY_AARCH64_FILES)
+  libhpcrun_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_o_CPPFLAGS  += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
+  libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
+  libhpcrun_ga_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_io_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_io_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_memleak_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_pthread_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_gpu_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_gpu_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_mpi_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 endif
 
 if OPT_PAPI_DYNAMIC
