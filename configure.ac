@@ -1168,6 +1168,13 @@ if test "$HOST_CPU_IA64" = yes ; then
   wordsize_cflag=
 fi
 
+# multilib path based on wordsize of host machine
+multilib_path=lib
+case "$host_wordsize" in
+  32 ) multilib_path='lib32 lib' ;;
+  64 ) multilib_path='lib64 lib' ;;
+esac
+
 AC_SUBST([wordsize_cflag])
 
 
@@ -1373,7 +1380,30 @@ AC_MSG_RESULT([$BOOST])
 
 BOOST_INC="${BOOST}/include"
 
+# Test for libboost_thread-mt.so and libboost_system-mt.so.
+# If exist, then copy to ext-libs.  Recent dyninst uses these.
+
+AC_MSG_CHECKING([whether to copy boost libraries])
+
+BOOST_LIB=
+BOOST_COPY=no
+
+for lib in $multilib_path ; do
+  boost_libdir="${BOOST}/$lib"
+  for f in "$boost_libdir"/libboost_thread* ; do
+    if test -f "$f" ; then
+      BOOST_LIB="$boost_libdir"
+      BOOST_COPY=yes
+      break 2
+    fi
+  done
+done
+
+AC_MSG_RESULT([$BOOST_COPY])
+
 AC_SUBST([BOOST_INC])
+AC_SUBST([BOOST_LIB])
+AC_SUBST([BOOST_COPY])
 
 
 #-------------------------------------------------

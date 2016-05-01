@@ -768,6 +768,8 @@ LIBELF_LIB
 LIBDWARF_COPY
 LIBDWARF_INC
 LIBDWARF_LIB
+BOOST_COPY
+BOOST_LIB
 BOOST_INC
 OPT_HAVE_BINUTILS_IA64_FALSE
 OPT_HAVE_BINUTILS_IA64_TRUE
@@ -19214,6 +19216,13 @@ if test "$HOST_CPU_IA64" = yes ; then
   wordsize_cflag=
 fi
 
+# multilib path based on wordsize of host machine
+multilib_path=lib
+case "$host_wordsize" in
+  32 ) multilib_path='lib32 lib' ;;
+  64 ) multilib_path='lib64 lib' ;;
+esac
+
 
 
 
@@ -19481,6 +19490,31 @@ esac
 $as_echo "$BOOST" >&6; }
 
 BOOST_INC="${BOOST}/include"
+
+# Test for libboost_thread-mt.so and libboost_system-mt.so.
+# If exist, then copy to ext-libs.  Recent dyninst uses these.
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to copy boost libraries" >&5
+$as_echo_n "checking whether to copy boost libraries... " >&6; }
+
+BOOST_LIB=
+BOOST_COPY=no
+
+for lib in $multilib_path ; do
+  boost_libdir="${BOOST}/$lib"
+  for f in "$boost_libdir"/libboost_thread* ; do
+    if test -f "$f" ; then
+      BOOST_LIB="$boost_libdir"
+      BOOST_COPY=yes
+      break 2
+    fi
+  done
+done
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $BOOST_COPY" >&5
+$as_echo "$BOOST_COPY" >&6; }
+
+
 
 
 
