@@ -24,6 +24,26 @@ Date:   Mon Feb 15 13:31:40 2016 -0600
 
 ------------------------------------------------------------
 
+Mostly done.
+
+(3) Replace the line map info.  Unpatched binutils is very bad for
+time, and current symtab is very bad for memory and time, so may need
+to use libdwarf directly.
+---> mostly done in Struct.cpp, but symtab misses line map info from
+---> some modules.
+
+(10) (power8/le) More structured patch for symtab for little endian
+powerpc.
+---> patch now in dyninst master
+
+(11) (ARM) Dyninst branch arm64 for symtabAPI.
+
+(12) (ARM) Generic ISA class for src/lib/isa/.
+
+(13) (ARM) New libunwind and/or custom unwind for aarch64.
+
+------------------------------------------------------------
+
 To-do list and known issues.
 
 (1) The static case is broken.  The latest autotools won't install
@@ -32,10 +52,6 @@ libhpcrun.o in the pkglib directory, so this breaks hpclink.
 (2) The MPI wrappers are not available.  There is a bad interaction
 between the latest autotools and how we build the MPI wrappers, so
 they are currently disabled.
-
-(3) Replace the line map info.  Unpatched binutils is very bad for
-time, and current symtab is very bad for memory and time, so may need
-to use libdwarf directly.
 
 (4) Update libmonitor to fix main and thread fences (move to separate
 file), various warnings and probably several other things.
@@ -52,15 +68,6 @@ from rest of binutils.
 
 (9) Update externals distfiles for binutils, libmonitor, libunwind,
 etc.
-
-(10) (power8/le) More structured patch for symtab for little endian
-powerpc.
-
-(11) (ARM) Dyninst branch arm64 for symtabAPI.
-
-(12) (ARM) Generic ISA class for src/lib/isa/.
-
-(13) (ARM) New libunwind and/or custom unwind for aarch64.
 
 ------------------------------------------------------------
 
@@ -79,19 +86,11 @@ externals's newarch branch.
 Moving forward, we want to use externals newarch on all platforms, but
 for now, old externals can still be used for old platforms.
 
-For externals newarch, there are a few necessary manual steps that are
-covered in the externals README.newarch file.
-
 ------------------------------------------------------------
 
 Steps specific to power8 little-endian (powerpc64le).
+Steps specific to ARM (aarch64).
 
 Use the externals newarch branch and follow the manual steps in
 externals's README.newarch.
-
-------------------------------------------------------------
-
-Steps specific to ARM (aarch64).
-
-Does not yet build on ARM.
 
