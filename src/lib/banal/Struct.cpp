@@ -155,6 +155,9 @@ using namespace ParseAPI;
 
 #define FULL_STRUCT_DEBUG 0
 
+// FIXME: temporary until the line map problems are resolved
+Symtab * the_symtab = NULL;
+
 
 //*************************** Forward Declarations ***************************
 
@@ -629,6 +632,8 @@ makeStructure_ParseAPI(BinUtil::LM * lm,
   StringTable strTab;
 
   Symtab * symtab = Inline::openSymtab(lm->name());
+  the_symtab = symtab;
+
   SymtabCodeSource * code_src;
   CodeObject * code_obj;
 
@@ -2489,6 +2494,7 @@ doBlock(ProcInfo pinfo, ParseAPI::Function * func,
   Offset high_vma = 0;
   string cache_filenm = "";
   SrcFile::ln cache_line = 0;
+  int try_symtab = 1;
 
   // iterate through the instructions in this block
   map <Offset, InstructionAPI::Instruction::Ptr> imap;
@@ -2512,6 +2518,17 @@ doBlock(ProcInfo pinfo, ParseAPI::Function * func,
       if (lmap != NULL) {
 	lmap->getSourceLines(vma, svec);
       }
+#if 1
+      // fall back on full symtab if module LineInfo fails.
+      // symtab lookups are very expensive, so limit to one failure
+      // per block.
+      if (svec.empty() && try_symtab) {
+	the_symtab->getSourceLines(svec, vma);
+	if (svec.empty()) {
+	  try_symtab = 0;
+	}
+      }
+#endif
       if (! svec.empty()) {
 	// use symtab value and save in cache
 	low_vma = svec[0]->startAddr();
