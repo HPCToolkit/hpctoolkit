@@ -26,6 +26,8 @@
 // system includes
 //************************************************
 
+#define UNW_LOCAL_ONLY
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -53,16 +55,6 @@
 #include <unwind/common/unwind.h>
 
 #include <utilities/arch/context-pc.h>
-
-//************************************************
-// local utility functions and definitions
-//************************************************
-
-static inline size_t
-pabs(ptrdiff_t diff)
-{
-  return diff < 0 ? -diff : diff;
-}
 
 
 //************************************************
@@ -123,10 +115,47 @@ hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* c)
 // hpcrun_unw_init_cursor
 // ----------------------------------------------------------
 
+// Takes a sigaction() context pointer and makes a libunwind
+// unw_cursor_t.  The other fields in hpcrun_unw_cursor_t are unused,
+// except for pc_norm and pc_unnorm.
+//
+void
+hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* h_cursor, void* context)
+{
+  unw_cursor_t *cursor = &(h_cursor->uc);
+  unw_context_t *ctx = (unw_context_t *) context;
+  unw_word_t pc;
+
+  if (ctx != NULL && unw_init_local(cursor, ctx) == 0) {
+    unw_get_reg(cursor, UNW_REG_IP, &pc);
+  } else {
+    pc = 0;
+  }
+
+  h_cursor->sp = NULL;
+  h_cursor->bp = NULL;
+  h_cursor->pc_unnorm = (void *) pc;
+  h_cursor->pc_norm = hpcrun_normalize_ip((void *) pc, NULL);
+  h_cursor->intvl = &(h_cursor->real_intvl);
+  h_cursor->real_intvl.lm = NULL;
+
+  TMSG(UNW, "init cursor pc = %p\n", h_cursor->pc_unnorm);
+}
+
+// Old version that uses libunwind unw_getcontext() to troll out of
+// the signal handler.  Badly broken for current libunwind.
+
+#if 0
 static unsigned UNW_LIMIT = 10;   // empirically determined
 static unsigned THRESHOLD = 256;  // empirically determined
 
 bool unw_cursor_trace = false;
+
+static inline size_t
+pabs(ptrdiff_t diff)
+{
+  return diff < 0 ? -diff : diff;
+}
 
 void
 hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* h_cursor, void* context)
@@ -167,6 +196,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* h_cursor, void* context)
   h_cursor->intvl->lm = NULL;
   h_cursor->pc_norm = hpcrun_normalize_ip(ipp, NULL);
 }
+#endif
 
 //
 // fence checking function
