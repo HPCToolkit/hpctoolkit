@@ -9,7 +9,7 @@ typedef enum {
   ompt_context_end
 } ompt_context_type_t;
 
-void ompt_callstack_register_handlers(void);
+void ompt_callstack_init(void);
 
 cct_node_t *
 ompt_region_context(uint64_t region_id, 

@@ -57,6 +57,8 @@
 #include <hpcrun/trace.h>
 #include <hpcrun/unresolved.h>
 
+#include "../hpcrun-initializers.h"
+
 #include "ompt-callstack.h"
 #include "ompt-interface.h"
 #include "ompt-state-placeholders.h"
@@ -92,6 +94,8 @@
 //******************************************************************************
 
 static cct_backtrace_finalize_entry_t ompt_finalizer;
+
+static closure_t ompt_callstack_init_closure;
 
 static int ompt_eager_context = 0;
 static int ompt_callstack_debug = 0;
@@ -509,10 +513,12 @@ cct_node_t *
 ompt_parallel_begin_context(ompt_parallel_id_t region_id, int levels_to_skip, 
                             int adjust_callsite)
 {
-  if (ompt_eager_context) 
+  if (ompt_eager_context) { 
     return ompt_region_context(region_id, ompt_context_begin, 
                                ++levels_to_skip, adjust_callsite);
-  else return NULL;
+  } else {
+    return NULL;
+  }
 }
 
 
@@ -591,15 +597,24 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
   return cct_cursor;
 }
 
-
-void 
-ompt_callstack_register_handlers(void)
+ompt_callstack_init_deferred(void)
 {
   if (hpcrun_trace_isactive()) ompt_eager_context = 1;
+}
 
+void 
+ompt_callstack_init(void)
+{
   ompt_finalizer.next = 0;
   ompt_finalizer.fn = ompt_backtrace_finalize;
   cct_backtrace_finalize_register(&ompt_finalizer);
   cct_cursor_finalize_register(ompt_cct_cursor_finalize);
+
+  // initialize closure for initializer
+  ompt_callstack_init_closure.fn = ompt_callstack_init_deferred; 
+  ompt_callstack_init_closure.arg = 0;
+
+  // register closure
+  hpcrun_initializers_defer(&ompt_callstack_init_closure);
 }
 

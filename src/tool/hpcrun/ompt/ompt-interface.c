@@ -554,7 +554,7 @@ ompt_initialize(ompt_function_lookup_t ompt_fn_lookup,
 
   if(!ENABLED(OMPT_KEEP_ALL_FRAMES)) {
     ompt_elide = 1;
-    ompt_callstack_register_handlers();
+    ompt_callstack_init();
   }
   if (getenv("HPCRUN_OMP_SERIAL_ONLY")) {
      serial_only_sf_entry.fn = ompt_serial_only;

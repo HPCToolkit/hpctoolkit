@@ -85,6 +85,7 @@
 #include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
+#define HPCRUN_DEBUG_TRACING 0
 
 //*************************** Forward Declarations **************************
 
@@ -261,29 +262,50 @@ hpcrun_sample_callpath(void* context, int metricId,
   bool trace_ok = ! td->deadlock_drop;
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
   if (trace_ok && hpcrun_trace_isactive()) {
-    TMSG(TRACE, "Sample event encountered");
 
     void* func_start_pc = NULL;
     void* func_end_pc = NULL;
     load_module_t* lm = NULL;
     fnbounds_enclosing_addr(trace_pc, &func_start_pc, &func_end_pc, &lm);
 
-    TMSG(TRACE, "func start = %p, pc = %p, func_end = %p");
     ip_normalized_t pc_proxy = hpcrun_normalize_ip(func_start_pc, lm);
 
     cct_addr_t frm = { .ip_norm = pc_proxy };
-    TMSG(TRACE,"parent node = %p, &frm = %p", hpcrun_cct_parent(node), &frm);
-    cct_node_t* func_proxy = 
-      hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);
+    cct_node_t* parent = hpcrun_cct_parent(node); 
+    cct_node_t* func_proxy = hpcrun_cct_insert_addr(parent, &frm);
 
-    TMSG(TRACE, "inserted func start addr into parent node, func_proxy = %p", func_proxy);
     ret.trace_node = func_proxy;
 
     // modify the persistent id
     hpcrun_cct_persistent_id_trace_mutate(func_proxy);
-    TMSG(TRACE, "Changed persistent id to indicate mutation of func_proxy node");
     hpcrun_trace_append(&td->core_profile_trace_data, hpcrun_cct_persistent_id(func_proxy), metricId);
-    TMSG(TRACE, "Appended func_proxy node to trace");
+
+#if HPCRUN_DEBUG_TRACING
+    TMSG(TRACE, "pc = %p func start = %p, func_end = %p "
+                "pc_proxy=(lm=%d,ip=%p) proxy pid=%d "
+                "parent node %p (lm=%d,ip=%p) pid=%d",
+                trace_pc,  func_start_pc, func_end_pc, 
+                pc_proxy.lm_id, pc_proxy.lm_ip, hpcrun_cct_persistent_id(func_proxy),
+                parent, 
+                hpcrun_cct_addr(parent)->ip_norm.lm_id, hpcrun_cct_addr(parent)->ip_norm.lm_ip,
+                hpcrun_cct_persistent_id(parent));
+    {
+      int i;
+      cct_node_t* ancestor = parent;
+      for(i = 0; ancestor; i++) { 
+	      cct_addr_t *addr = hpcrun_cct_addr(ancestor);
+	      TMSG(TRACE, "pc = %p "
+                   "pc_proxy=(lm=%d,ip=%p) proxy pid=%d "
+		   "ancestor %d node %p (lm=%d,ip=%p) pid=%d",
+		   trace_pc, 
+		   pc_proxy.lm_id, pc_proxy.lm_ip, hpcrun_cct_persistent_id(func_proxy),
+		   i, ancestor, 
+		   addr->ip_norm.lm_id, addr->ip_norm.lm_ip,
+		   hpcrun_cct_persistent_id(ancestor));
+	      ancestor = hpcrun_cct_parent(ancestor); 
+      }
+    }
+#endif
   }
 
   hpcrun_clear_handling_sample(td);
@@ -306,8 +328,6 @@ static int const PTHREAD_CTXT_SKIP_INNER = 1;
 cct_node_t*
 hpcrun_gen_thread_ctxt(void* context)
 {
-  void *trace_pc; // unused argument to callee
-
   if (monitor_block_shootdown()) {
     monitor_unblock_shootdown();
     return NULL;
