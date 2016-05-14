@@ -149,7 +149,7 @@ ompt_region_map_refcnt_update(uint64_t region_id, int val)
 {
   bool result = false; 
 
-  TMSG(DEFER_CTXT, "region map refcnt_update: id=0x%lx (update %ld)", 
+  TMSG(DEFER_CTXT, "region map refcnt_update: id=0x%lx (update %d)", 
        region_id, val);
 
   spinlock_lock(&ompt_region_map_lock);
@@ -157,9 +157,10 @@ ompt_region_map_refcnt_update(uint64_t region_id, int val)
 
   if (ompt_region_map_root && 
       ompt_region_map_root->region_id == region_id) {
+    uint64_t old = ompt_region_map_root->refcnt;
     ompt_region_map_root->refcnt += val;
     TMSG(DEFER_CTXT, "region map refcnt_update: id=0x%lx (%ld --> %ld)", 
-	 region_id, val, ompt_region_map_root->refcnt);
+	 region_id, old, ompt_region_map_root->refcnt);
     if (ompt_region_map_root->refcnt == 0) {
       TMSG(DEFER_CTXT, "region map refcnt_update: id=0x%lx (deleting)",
            region_id);
