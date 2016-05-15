@@ -390,6 +390,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind.c \
 	unwind/x86-family/x86-libunwind.c \
 	unwind/x86-family/x86-unwind-support.c \
+	unwind/x86-family/manual-intervals/x86-gcc-main64.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
 	unwind/x86-family/manual-intervals/x86-intel14-omp.c \
@@ -487,6 +488,7 @@ am__objects_32 = $(am__objects_30) libhpcrun_la-x86-all.lo \
 	libhpcrun_la-x86-unwind-interval-fixup.lo \
 	libhpcrun_la-x86-unwind.lo libhpcrun_la-x86-libunwind.lo \
 	libhpcrun_la-x86-unwind-support.lo \
+	libhpcrun_la-x86-gcc-main64.lo \
 	libhpcrun_la-x86-linux-dlresolver.lo \
 	libhpcrun_la-x86-intel11-f90main.lo \
 	libhpcrun_la-x86-intel14-omp.lo \
@@ -629,6 +631,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind.c \
 	unwind/x86-family/x86-libunwind.c \
 	unwind/x86-family/x86-unwind-support.c \
+	unwind/x86-family/manual-intervals/x86-gcc-main64.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
 	unwind/x86-family/manual-intervals/x86-intel14-omp.c \
@@ -744,6 +747,7 @@ am__objects_54 = $(am__objects_52) libhpcrun_o-x86-all.$(OBJEXT) \
 	libhpcrun_o-x86-unwind.$(OBJEXT) \
 	libhpcrun_o-x86-libunwind.$(OBJEXT) \
 	libhpcrun_o-x86-unwind-support.$(OBJEXT) \
+	libhpcrun_o-x86-gcc-main64.$(OBJEXT) \
 	libhpcrun_o-x86-linux-dlresolver.$(OBJEXT) \
 	libhpcrun_o-x86-intel11-f90main.$(OBJEXT) \
 	libhpcrun_o-x86-intel14-omp.$(OBJEXT) \
@@ -1172,6 +1176,7 @@ UNW_X86_FILES = \
 	unwind/x86-family/x86-unwind.c		        \
 	unwind/x86-family/x86-libunwind.c               \
 	unwind/x86-family/x86-unwind-support.c		\
+	unwind/x86-family/manual-intervals/x86-gcc-main64.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
 	unwind/x86-family/manual-intervals/x86-intel14-omp.c \
@@ -1962,6 +1967,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-cold-path.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-context-pc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-gcc-adjust.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-gcc-main64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-intel-composer2013-mic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-intel11-f90main.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-intel14-omp.Plo@am__quote@
@@ -2082,6 +2088,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-cold-path.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-context-pc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-gcc-adjust.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-gcc-main64.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-intel-composer2013-mic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-intel11-f90main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-intel14-omp.Po@am__quote@
@@ -3149,6 +3156,13 @@ libhpcrun_la-x86-unwind-support.lo: unwind/x86-family/x86-unwind-support.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/x86-unwind-support.c' object='libhpcrun_la-x86-unwind-support.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-x86-unwind-support.lo `test -f 'unwind/x86-family/x86-unwind-support.c' || echo '$(srcdir)/'`unwind/x86-family/x86-unwind-support.c
+
+libhpcrun_la-x86-gcc-main64.lo: unwind/x86-family/manual-intervals/x86-gcc-main64.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-x86-gcc-main64.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-x86-gcc-main64.Tpo -c -o libhpcrun_la-x86-gcc-main64.lo `test -f 'unwind/x86-family/manual-intervals/x86-gcc-main64.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-gcc-main64.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-x86-gcc-main64.Tpo $(DEPDIR)/libhpcrun_la-x86-gcc-main64.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-gcc-main64.c' object='libhpcrun_la-x86-gcc-main64.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-x86-gcc-main64.lo `test -f 'unwind/x86-family/manual-intervals/x86-gcc-main64.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-gcc-main64.c
 
 libhpcrun_la-x86-linux-dlresolver.lo: unwind/x86-family/manual-intervals/x86-linux-dlresolver.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-x86-linux-dlresolver.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-x86-linux-dlresolver.Tpo -c -o libhpcrun_la-x86-linux-dlresolver.lo `test -f 'unwind/x86-family/manual-intervals/x86-linux-dlresolver.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-linux-dlresolver.c
@@ -4773,6 +4787,20 @@ libhpcrun_o-x86-unwind-support.obj: unwind/x86-family/x86-unwind-support.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/x86-unwind-support.c' object='libhpcrun_o-x86-unwind-support.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-unwind-support.obj `if test -f 'unwind/x86-family/x86-unwind-support.c'; then $(CYGPATH_W) 'unwind/x86-family/x86-unwind-support.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/x86-unwind-support.c'; fi`
+
+libhpcrun_o-x86-gcc-main64.o: unwind/x86-family/manual-intervals/x86-gcc-main64.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-gcc-main64.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-gcc-main64.Tpo -c -o libhpcrun_o-x86-gcc-main64.o `test -f 'unwind/x86-family/manual-intervals/x86-gcc-main64.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-gcc-main64.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-x86-gcc-main64.Tpo $(DEPDIR)/libhpcrun_o-x86-gcc-main64.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-gcc-main64.c' object='libhpcrun_o-x86-gcc-main64.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-gcc-main64.o `test -f 'unwind/x86-family/manual-intervals/x86-gcc-main64.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-gcc-main64.c
+
+libhpcrun_o-x86-gcc-main64.obj: unwind/x86-family/manual-intervals/x86-gcc-main64.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-gcc-main64.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-gcc-main64.Tpo -c -o libhpcrun_o-x86-gcc-main64.obj `if test -f 'unwind/x86-family/manual-intervals/x86-gcc-main64.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-gcc-main64.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-gcc-main64.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-x86-gcc-main64.Tpo $(DEPDIR)/libhpcrun_o-x86-gcc-main64.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-gcc-main64.c' object='libhpcrun_o-x86-gcc-main64.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-gcc-main64.obj `if test -f 'unwind/x86-family/manual-intervals/x86-gcc-main64.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-gcc-main64.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-gcc-main64.c'; fi`
 
 libhpcrun_o-x86-linux-dlresolver.o: unwind/x86-family/manual-intervals/x86-linux-dlresolver.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-linux-dlresolver.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-linux-dlresolver.Tpo -c -o libhpcrun_o-x86-linux-dlresolver.o `test -f 'unwind/x86-family/manual-intervals/x86-linux-dlresolver.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-linux-dlresolver.c
