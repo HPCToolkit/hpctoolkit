@@ -2784,13 +2784,18 @@ findAlienScope(Prof::Struct::ACodeNode * enclScope, AlienScopeMap & alienMap,
   auto ait = alienMap.find(base_index);
 
   if (ait != alienMap.end()) {
-    // alien node exists, expand the line range
+    // alien node exists, expand the line range, but preserve the
+    // invariant that beg = 0 iff end = 0.
     alien = ait->second;
 
-    if (line < alien->begLine()) {
+    if (alien->begLine() == 0 && line > 0) {
+      alien->begLine(line);
+      alien->endLine(line);
+    }
+    else if (line < alien->begLine() && line > 0) {
       alien->begLine(line);
     }
-    if (line > alien->endLine()) {
+    else if (line > alien->endLine() && alien->endLine() > 0) {
       alien->endLine(line);
     }
   }
