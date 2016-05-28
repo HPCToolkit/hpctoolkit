@@ -119,6 +119,7 @@ ompt_task_map_entry_t *
 ompt_task_map_lookup(uint64_t task_id)
 {
   ompt_task_map_entry_t *result = NULL;
+#if 0 // fixme task map disabled!
   spinlock_lock(&ompt_task_map_lock);
 
   ompt_task_map_root = ompt_task_map_splay(ompt_task_map_root, task_id);
@@ -127,6 +128,7 @@ ompt_task_map_lookup(uint64_t task_id)
   }
 
   spinlock_unlock(&ompt_task_map_lock);
+#endif
   return result;
 }
 

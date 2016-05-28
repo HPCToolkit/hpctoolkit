@@ -84,8 +84,10 @@
 
 #if OMPT_DEBUG
 #define elide_debug_dump(t,i,o,r) if (ompt_callstack_debug) stack_dump(t,i,o,r)
+#define elide_frame_dump() if (ompt_callstack_debug) frame_dump()
 #else
 #define elide_debug_dump(t,i,o,r)
+#define elide_frame_dump() if (ompt_callstack_debug) frame_dump()
 #endif
 
 
@@ -122,10 +124,27 @@ stack_dump(
     load_module_t* lm = hpcrun_loadmap_findById(x->ip_norm.lm_id);
     const char* lm_name = (lm) ? lm->name : "(null)";
 
-    EMSG("ip = %p (%p), load module = %s", ip, x->ip_norm.lm_ip, lm_name);
+    EMSG("ip = %p (%p), sp = %p, load module = %s", 
+	 ip, x->ip_norm.lm_ip, x->cursor.sp, lm_name);
   }
   EMSG("-----%s end", tag); 
   EMSG("<0x%lx>\n", region_id); 
+}
+
+
+static void 
+frame_dump() 
+{
+  EMSG("-----frame start"); 
+  for (int i=0;; i++) {
+    ompt_frame_t *frame = hpcrun_ompt_get_task_frame(i);
+    if (frame == NULL) break;
+
+    void *r = frame->reenter_runtime_frame;
+    void *e = frame->exit_runtime_frame;
+    EMSG("frame %d: (r=%p, e=%p)", i, r, e);
+  }
+  EMSG("-----frame end"); 
 }
 
 
@@ -221,6 +240,7 @@ ompt_elide_runtime_frame(
   TD_GET(omp_task_context) = 0;
 
   elide_debug_dump("ORIGINAL", *bt_inner, *bt_outer, region_id); 
+  elide_frame_dump();
 
   //---------------------------------------------------------------
   // handle all of the corner cases that can occur at the top of 
@@ -292,7 +312,7 @@ ompt_elide_runtime_frame(
     if (!frame0) break;
 
     ompt_task_id_t tid = hpcrun_ompt_get_task_id(i);
-    cct_node_t *omp_task_context = task_map_lookup(tid);
+    cct_node_t *omp_task_context = ompt_task_map_lookup(tid);
 
     void *low_sp = (*bt_inner)->cursor.sp;
     void *high_sp = (*bt_outer)->cursor.sp;
@@ -597,12 +617,13 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
   return cct_cursor;
 }
 
+void
 ompt_callstack_init_deferred(void)
 {
   if (hpcrun_trace_isactive()) ompt_eager_context = 1;
 }
 
-void 
+void
 ompt_callstack_init(void)
 {
   ompt_finalizer.next = 0;
@@ -611,7 +632,8 @@ ompt_callstack_init(void)
   cct_cursor_finalize_register(ompt_cct_cursor_finalize);
 
   // initialize closure for initializer
-  ompt_callstack_init_closure.fn = ompt_callstack_init_deferred; 
+  ompt_callstack_init_closure.fn = 
+    (closure_fn_t) ompt_callstack_init_deferred; 
   ompt_callstack_init_closure.arg = 0;
 
   // register closure
