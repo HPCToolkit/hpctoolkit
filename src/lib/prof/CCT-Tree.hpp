@@ -900,6 +900,13 @@ public:
   // merging
   // -------------------------------------------------------
 
+  static Struct::ACodeNode *
+  ancestorIfNotProc(Struct::ACodeNode* n) 
+  {
+    if (n->type() != Struct::ANode::TyProc) n = n->ACodeNodeParent();
+    return n;
+  }
+
   static bool
   isMergable(const ADynNode& x, const ADynNode& y)
   {
@@ -925,7 +932,7 @@ public:
 	  // fast and slow cases when (a) CCT scopes obey
 	  // Non-Overlapping Principle and (b) when they don't.
 	  && ((x_strct == y_strct) ||
-	      (x_strct->parent() == y_strct->parent()
+	      (ancestorIfNotProc(x_strct) == ancestorIfNotProc(y_strct)
 	       && x_strct->begLine() == y_strct->begLine()) )) {
 	return true;
       }

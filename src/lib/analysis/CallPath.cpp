@@ -102,9 +102,17 @@ using namespace xml;
 #include <lib/support/StrUtil.hpp>
 
 
+
+//********************************** Macros **********************************
+
+#define DEBUG_COALESCING 0
+
+
+
 //*************************** Forward Declarations ***************************
 
 std::ostream* Analysis::CallPath::dbgOs = NULL; // for parallel debugging
+
 
 
 //****************************************************************************
@@ -743,6 +751,12 @@ coalesceStmts(Prof::CCT::ANode* node)
       if (it_stmt != stmtMap->end()) {
 	// found -- we have a duplicate
 	Prof::CCT::Stmt* n_stmtOrig = (*it_stmt).second;
+
+        DIAG_MsgIf(DEBUG_COALESCING, "Coalescing:\n" 
+		   << "\tx: " 
+		   << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) 
+		   << "\n\ty: " 
+		   << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug));
 
 	// N.B.: Because (a) trace records contain a function's
 	// representative IP and (b) two traces that contain samples
