@@ -1046,20 +1046,17 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // parallelism context (mpi rank, thread id)
   // -------------------------
   string mpiRankStr, tidStr;
-  long   mpiRank = -1, tid = -1;
 
   // val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_jobId);
   
   val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_mpiRank);
   if (val) {
     mpiRankStr = val;
-    if (val[0] != '\0') { mpiRank = StrUtil::toLong(mpiRankStr); }
-  }
+  } 
 
   val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_tid);
   if (val) {
     tidStr = val;
-    if (val[0] != '\0') { tid = StrUtil::toLong(tidStr); }
   }
 
   // -------------------------

@@ -1428,8 +1428,8 @@ libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_104)
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
-libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS) $(am__append_59) \
-	$(am__append_91) $(UNW_STATIC_LD_FLAGS)
+libhpcrun_o_LDFLAGS = $(am__append_59) $(am__append_91) \
+	$(UNW_STATIC_LD_FLAGS)
 MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_71) \
 	$(UNW_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)

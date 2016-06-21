@@ -646,7 +646,7 @@ libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 
-libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS)
+libhpcrun_o_LDFLAGS = 
 
 
 #-----------------------------------------------------------
