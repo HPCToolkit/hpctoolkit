@@ -101,6 +101,10 @@ void
 mcs_lock(mcs_lock_t *l, mcs_node_t *me);
 
 
+bool
+mcs_trylock(mcs_lock_t *l, mcs_node_t *me);
+
+
 void
 mcs_unlock(mcs_lock_t *l, mcs_node_t *me);
 

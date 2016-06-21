@@ -143,6 +143,35 @@ mcs_lock(mcs_lock_t *l, mcs_node_t *me)
 }
 
 
+bool
+mcs_trylock(mcs_lock_t *l, mcs_node_t *me)
+{
+  //--------------------------------------------------------------------
+  // initialize my queue node
+  //--------------------------------------------------------------------
+  me->next = 0;           
+
+  //--------------------------------------------------------------------
+  // initialization must complete before anyone sees my node
+  //--------------------------------------------------------------------
+  enforce_store_to_rmw_order(); 
+
+  //--------------------------------------------------------------------
+  // if the tail pointer is nil, swap it with a pointer to me, which 
+  // acquires the lock and installs myself at the tail of the queue.
+  //--------------------------------------------------------------------
+  bool locked = cas_bool(&(l->tail), 0, me);
+
+  //------------------------------------------------------------------
+  // no reads or writes in the critical section may occur until after 
+  // my compare-and-swap 
+  //------------------------------------------------------------------
+  enforce_rmw_to_access_order();
+
+  return locked;
+}
+
+
 void
 mcs_unlock(mcs_lock_t *l, mcs_node_t *me)
 {
