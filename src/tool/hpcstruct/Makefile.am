@@ -70,6 +70,9 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+BOOST_LIB = @BOOST_LIB@
+BOOST_LIB_LIST = @BOOST_LIB_LIST@
+
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_LIB   = @LIBELF_LIB@
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
@@ -122,6 +125,10 @@ MY_LIB_Symtab = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
 	-L$(LIBELF_LIB) -lelf
 else
 MY_LIB_Symtab =
+endif
+
+if USE_BOOST_LIBS
+MYLDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
 endif
 
 if HOST_CPU_X86_FAMILY

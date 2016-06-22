@@ -1386,6 +1386,7 @@ BOOST_INC="${BOOST}/include"
 AC_MSG_CHECKING([whether to copy boost libraries])
 
 BOOST_LIB=
+BOOST_LIB_LIST=
 BOOST_COPY=no
 
 for lib in $multilib_path ; do
@@ -1399,11 +1400,18 @@ for lib in $multilib_path ; do
   done
 done
 
+if test "$BOOST_COPY" = yes ; then
+  BOOST_LIB_LIST='-lboost_atomic -lboost_chrono -lboost_date_time -lboost_system -lboost_thread'
+fi
+
 AC_MSG_RESULT([$BOOST_COPY])
 
 AC_SUBST([BOOST_INC])
 AC_SUBST([BOOST_LIB])
+AC_SUBST([BOOST_LIB_LIST])
 AC_SUBST([BOOST_COPY])
+
+AM_CONDITIONAL([USE_BOOST_LIBS], [test "$BOOST_COPY" = yes])
 
 
 #-------------------------------------------------

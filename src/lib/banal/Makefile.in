@@ -278,6 +278,7 @@ BOOST_COPY = @BOOST_COPY@
 #############################################################################
 BOOST_INC = @BOOST_INC@
 BOOST_LIB = @BOOST_LIB@
+BOOST_LIB_LIST = @BOOST_LIB_LIST@
 CC = @CC@
 CCAS = @CCAS@
 CCASDEPMODE = @CCASDEPMODE@

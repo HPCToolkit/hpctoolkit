@@ -768,7 +768,10 @@ LIBELF_LIB
 LIBDWARF_COPY
 LIBDWARF_INC
 LIBDWARF_LIB
+USE_BOOST_LIBS_FALSE
+USE_BOOST_LIBS_TRUE
 BOOST_COPY
+BOOST_LIB_LIST
 BOOST_LIB
 BOOST_INC
 OPT_HAVE_BINUTILS_IA64_FALSE
@@ -19498,6 +19501,7 @@ BOOST_INC="${BOOST}/include"
 $as_echo_n "checking whether to copy boost libraries... " >&6; }
 
 BOOST_LIB=
+BOOST_LIB_LIST=
 BOOST_COPY=no
 
 for lib in $multilib_path ; do
@@ -19511,11 +19515,25 @@ for lib in $multilib_path ; do
   done
 done
 
+if test "$BOOST_COPY" = yes ; then
+  BOOST_LIB_LIST='-lboost_atomic -lboost_chrono -lboost_date_time -lboost_system -lboost_thread'
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $BOOST_COPY" >&5
 $as_echo "$BOOST_COPY" >&6; }
 
 
 
+
+
+
+ if test "$BOOST_COPY" = yes; then
+  USE_BOOST_LIBS_TRUE=
+  USE_BOOST_LIBS_FALSE='#'
+else
+  USE_BOOST_LIBS_TRUE='#'
+  USE_BOOST_LIBS_FALSE=
+fi
 
 
 
@@ -22279,6 +22297,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_HAVE_BINUTILS_IA64_TRUE}" && test -z "${OPT_HAVE_BINUTILS_IA64_FALSE}"; then
   as_fn_error $? "conditional \"OPT_HAVE_BINUTILS_IA64\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${USE_BOOST_LIBS_TRUE}" && test -z "${USE_BOOST_LIBS_FALSE}"; then
+  as_fn_error $? "conditional \"USE_BOOST_LIBS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_HAVE_LIBUNWIND_TRUE}" && test -z "${OPT_HAVE_LIBUNWIND_FALSE}"; then

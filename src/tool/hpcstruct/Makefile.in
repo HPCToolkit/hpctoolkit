@@ -122,6 +122,7 @@ host_triplet = @host@
 @OPT_ENABLE_BANAL_WITH_PARSEAPI_TRUE@am__append_2 = -DBANAL_USE_PARSEAPI
 @OPT_ENABLE_BANAL_WITH_OA_TRUE@am__append_3 = @OA_LDFLAGS@
 @OPT_ENABLE_BANAL_WITH_OA_TRUE@am__append_4 = @OA_IFLAGS@
+@USE_BOOST_LIBS_TRUE@am__append_5 = -L$(BOOST_LIB) $(BOOST_LIB_LIST)
 pkglibexec_PROGRAMS = hpcstruct-bin$(EXEEXT)
 subdir = src/tool/hpcstruct
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -151,11 +152,13 @@ am__DEPENDENCIES_1 =
 am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 @OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@am__DEPENDENCIES_4 =  \
 @OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@	$(am__DEPENDENCIES_1)
-am__DEPENDENCIES_5 = $(HPCLIB_Analysis) $(HPCLIB_Banal) $(HPCLIB_Prof) \
+@USE_BOOST_LIBS_TRUE@am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_6 = $(HPCLIB_Analysis) $(HPCLIB_Banal) $(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(am__DEPENDENCIES_2) \
 	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean) \
-	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4)
-hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_5)
+	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4) \
+	$(am__DEPENDENCIES_5)
+hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_6)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -293,7 +296,16 @@ AWK = @AWK@
 BACK_END_LABEL = @BACK_END_LABEL@
 BOOST_COPY = @BOOST_COPY@
 BOOST_INC = @BOOST_INC@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 BOOST_LIB = @BOOST_LIB@
+BOOST_LIB_LIST = @BOOST_LIB_LIST@
 CC = @CC@
 CCAS = @CCAS@
 CCASDEPMODE = @CCASDEPMODE@
@@ -352,14 +364,6 @@ LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBDWARF_COPY = @LIBDWARF_COPY@
 LIBDWARF_INC = @LIBDWARF_INC@
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_COPY = @LIBELF_COPY@
 LIBELF_INC = @LIBELF_INC@
@@ -553,22 +557,11 @@ MYLDFLAGS = \
 	@GNUBINUTILS_LDFLAGS@ \
 	-ldl
 
-MYLDADD = \
-	@HOST_LIBTREPOSITORY@ \
-	$(HPCLIB_Analysis) \
-	$(HPCLIB_Banal) \
-	$(HPCLIB_Prof) \
-	$(HPCLIB_Binutils) \
-	$(HPCLIB_ISA) \
-	$(MY_LIB_XED) \
-	$(HPCLIB_XML) \
-	$(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) \
-	$(MY_LIB_CFG) \
-	$(MY_LIB_Symtab) \
-	@GNUBINUTILS_LDLIBS@ \
-	@HOST_HPCSTRUCT_LDFLAGS@
-
+MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Analysis) $(HPCLIB_Banal) \
+	$(HPCLIB_Prof) $(HPCLIB_Binutils) $(HPCLIB_ISA) $(MY_LIB_XED) \
+	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean) \
+	$(MY_LIB_CFG) $(MY_LIB_Symtab) @GNUBINUTILS_LDLIBS@ \
+	@HOST_HPCSTRUCT_LDFLAGS@ $(am__append_5)
 MY_LIB_CFG = $(am__append_1) $(am__append_3)
 @OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE@MY_LIB_Symtab = 
 @OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@MY_LIB_Symtab = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
