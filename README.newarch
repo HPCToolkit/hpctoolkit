@@ -26,6 +26,10 @@ Date:   Mon Feb 15 13:31:40 2016 -0600
 
 Mostly done.
 
+(1) The static case is broken.  The latest autotools won't install
+libhpcrun.o in the pkglib directory, so this breaks hpclink.
+---> set libhpcrun.o to noinst and install manually
+
 (3) Replace the line map info.  Unpatched binutils is very bad for
 time, and current symtab is very bad for memory and time, so may need
 to use libdwarf directly.
@@ -45,9 +49,6 @@ powerpc.
 ------------------------------------------------------------
 
 To-do list and known issues.
-
-(1) The static case is broken.  The latest autotools won't install
-libhpcrun.o in the pkglib directory, so this breaks hpclink.
 
 (2) The MPI wrappers are not available.  There is a bad interaction
 between the latest autotools and how we build the MPI wrappers, so

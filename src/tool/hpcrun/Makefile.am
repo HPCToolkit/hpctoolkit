@@ -129,11 +129,8 @@ endif
   bin_SCRIPTS += scripts/hpcrun
 endif
 
-# FIXME: need to rework the target directory for libhpcrun.o.
-# this currently breaks the static case.
-
 if OPT_ENABLE_HPCRUN_STATIC
-  pkglibexec_PROGRAMS  += libhpcrun.o
+  noinst_PROGRAMS  = libhpcrun.o
   pkglib_LIBRARIES += libhpcrun_wrap.a
   pkglib_LIBRARIES += libhpcrun_ga_wrap.a
   pkglib_LIBRARIES += libhpcrun_io_wrap.a
@@ -931,6 +928,12 @@ install-data-hook:
 	-for file in $(PLUGIN_CONFIG_FILES) ; do \
 	    cp -f "$(plugin_srcdir)/$$file" "$(DESTDIR)$(plugin_instdir)/$$file" ; \
 	done
+
+# Install libhpcrun.o into pkglibdir.  New automake won't install a
+# program into a libdir, so we use noinst and install it manually.
+
+install-exec-hook:
+	cp libhpcrun.o $(DESTDIR)$(pkglibdir)
 
 
 #############################################################################
