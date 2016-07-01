@@ -639,9 +639,12 @@ OPT_WITH_CILK_TRUE
 OPT_ENABLE_LUSH_FALSE
 OPT_ENABLE_LUSH_TRUE
 F77_SYMBOLS
-MPIF77
 OPT_ENABLE_MPI_WRAP_FALSE
 OPT_ENABLE_MPI_WRAP_TRUE
+MPI_PROTO_FILE
+MPI_INC
+MPIF77
+MPICC
 OPT_ENABLE_MPI_FALSE
 OPT_ENABLE_MPI_TRUE
 OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE
@@ -982,7 +985,10 @@ CCAS
 CCASFLAGS
 LD
 MPICXX
-CXX11_FLAG'
+CXX11_FLAG
+MPICC
+MPIF77
+MPI_INC'
 
 
 # Initialize some variables set by options.
@@ -1631,7 +1637,8 @@ Optional Features:
   --disable-parseapi      disable using parseapi for building control flow
                           graphs in hpcstruct (default is to use if available)
   --enable-mpi            Enable MPI support (uses MPICXX variable)
-  --enable-mpi-wrapper    Enable MPI wrapper support (uses MPIF77 and CFLAGS)
+  --enable-mpi-wrapper    enable MPI wrapper support, requires MPICC, MPIF77
+                          and MPI_INC (default no)
   --enable-lush           use lush backtrace in hpcrun
   --enable-lush-pthreads  enable lush pthreads (temp)
   --enable-xop            include support for decoding AMD XOP instructions,
@@ -1708,6 +1715,9 @@ Some influential environment variables:
   MPICXX      MPI C++ compiler
   CXX11_FLAG  CXX flag for C++11 standard, normally only needed for non-GNU
               CXX
+  MPICC       MPI C compiler for MPI wrapper support
+  MPIF77      MPI Fortran compiler for MPI wrapper support
+  MPI_INC     MPI include directory for MPI wrapper support
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -19298,25 +19308,38 @@ fi
 # enable-mpi-wrapper: check MPI compiler
 #-------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build MPI monitoring support" >&5
-$as_echo_n "checking whether to build MPI monitoring support... " >&6; }
-
-OPT_REQ_ENABLE_MPI_WRAP="no" # yes, no, auto
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build MPI wrapper support" >&5
+$as_echo_n "checking whether to build MPI wrapper support... " >&6; }
 
 # Check whether --enable-mpi-wrapper was given.
 if test "${enable_mpi_wrapper+set}" = set; then :
-  enableval=$enable_mpi_wrapper; case "${enableval}" in
-     yes) OPT_REQ_ENABLE_MPI_WRAP="yes" ;;
-     no)  OPT_REQ_ENABLE_MPI_WRAP="no" ;;
-     *)   as_fn_error $? "bad value ${enableval} for --enable-mpi-wrapper" "$LINENO" 5 ;;
-   esac
+  enableval=$enable_mpi_wrapper;
+else
+  enable_mpi_wrapper=no
 fi
 
 
-OPT_ENABLE_MPI_WRAP=no
-if test "${OPT_REQ_ENABLE_MPI_WRAP}" != "no" ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether can compile MPI code with CFLAGS='$CFLAGS'" >&5
-$as_echo_n "checking whether can compile MPI code with CFLAGS='$CFLAGS'... " >&6; }
+case "$enable_mpi_wrapper" in
+  yes | Yes | YES ) enable_mpi_wrapper=yes ;;
+  * ) enable_mpi_wrapper=no ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_mpi_wrapper" >&5
+$as_echo "$enable_mpi_wrapper" >&6; }
+
+
+
+
+
+mpi_const_type=no
+
+if test "$enable_mpi_wrapper" = yes ; then
+  #
+  # check that MPICC works
+  #
+  if test "x$MPICC" = x ; then
+    MPICC=mpicc
+  fi
 
   ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -19324,12 +19347,22 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
-  OLD_CC="$CC"
+  ORIG_CC="$CC"
   CC="$MPICC"
-  CFLAGS="$CFLAGS"
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking MPI wrapper C compiler: $MPICC " >&5
+$as_echo_n "checking MPI wrapper C compiler: $MPICC ... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
+
 #include <mpi.h>
+int my_size(void)
+{
+  int size;
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  return size;
+}
+
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
   ans=yes
@@ -19337,9 +19370,56 @@ else
   ans=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
+$as_echo "$ans" >&6; }
 
-  CC="$OLD_CC"
-  OPT_ENABLE_MPI_WRAP=$ans
+  if test "$ans" = no ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: invalid MPICC compiler for MPI wrappers: $MPICC " >&5
+$as_echo "$as_me: WARNING: invalid MPICC compiler for MPI wrappers: $MPICC " >&2;}
+    as_fn_error $? "reconfigure with MPICC set to valid MPI compiler" "$LINENO" 5
+  fi
+  #
+  # check MPI_INC include path
+  #
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking MPI wrapper include path: $MPI_INC " >&5
+$as_echo_n "checking MPI wrapper include path: $MPI_INC ... " >&6; }
+  ans=no
+  if test -f "${MPI_INC}/mpi.h" ; then
+    ans=yes
+  fi
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
+$as_echo "$ans" >&6; }
+
+  if test "$ans" = no ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: no mpi.h in MPI_INC include path: $MPI_INC" >&5
+$as_echo "$as_me: WARNING: no mpi.h in MPI_INC include path: $MPI_INC" >&2;}
+    as_fn_error $? "reconfigure with MPI_INC set to MPI include directory" "$LINENO" 5
+  fi
+  #
+  # check if MPI uses 'void *buf' or 'const void *buf'
+  #
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if MPI types use 'const void *buf'" >&5
+$as_echo_n "checking if MPI types use 'const void *buf'... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <mpi.h>
+int MPI_Send(void *buf, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm)
+{
+  return 0;
+}
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  mpi_const_type=no
+else
+  mpi_const_type=yes
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mpi_const_type" >&5
+$as_echo "$mpi_const_type" >&6; }
+
+  CC="$ORIG_CC"
   ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -19348,15 +19428,13 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_MPI_WRAP} (request: ${OPT_REQ_ENABLE_MPI_WRAP})" >&5
-$as_echo "${OPT_ENABLE_MPI_WRAP} (request: ${OPT_REQ_ENABLE_MPI_WRAP})" >&6; }
-
-
-if test "${OPT_REQ_ENABLE_MPI_WRAP}" = "yes" -a "${OPT_ENABLE_MPI_WRAP}" = no ; then
-  as_fn_error $? "MPI wrapper support requested but MPI compiler is invalid!" "$LINENO" 5
+MPI_PROTO_FILE=mpi.protos
+if test "$mpi_const_type" = yes ; then
+  MPI_PROTO_FILE=mpi.protos.const
 fi
 
- if test "${OPT_ENABLE_MPI_WRAP}" = "yes"; then
+
+ if test "$enable_mpi_wrapper" = yes; then
   OPT_ENABLE_MPI_WRAP_TRUE=
   OPT_ENABLE_MPI_WRAP_FALSE='#'
 else
@@ -19365,11 +19443,12 @@ else
 fi
 
 
+
 #-------------------------------------------------
 # enable-mpi-wrapper: check F77 symbols
 #-------------------------------------------------
 
-if test "${OPT_ENABLE_MPI_WRAP}" = "yes" ; then
+if test "$enable_mpi_wrapper" = yes ; then
 
   if test -z "${MPIF77}" ; then
     for ac_prog in mpif77 mpxlf_r mpixlf77 mpxlf cmpifc xlf f77 g77 pgf77 fort ifc
@@ -23198,8 +23277,8 @@ $as_echo "$as_me:   hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}" >&6;}
 $as_echo "$as_me:   hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   mpi support?: ${OPT_ENABLE_MPI}" >&5
 $as_echo "$as_me:   mpi support?: ${OPT_ENABLE_MPI}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}" >&5
-$as_echo "$as_me:   mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   mpi wrapper?: ${enable_mpi_wrapper}" >&5
+$as_echo "$as_me:   mpi wrapper?: ${enable_mpi_wrapper}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun/lush?: ${opt_enable_lush}" >&5
 $as_echo "$as_me:   hpcrun/lush?: ${opt_enable_lush}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}" >&5

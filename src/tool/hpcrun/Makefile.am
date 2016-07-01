@@ -110,6 +110,9 @@ pkglib_PROGRAMS =
 pkglib_LIBRARIES =
 pkglib_LTLIBRARIES =
 
+BUILT_SOURCES =
+CLEANFILES =
+
 if OPT_BUILD_FRONT_END
   bin_SCRIPTS += scripts/hpcsummary
   pkglibexec_SCRIPTS += scripts/hpclog
@@ -164,6 +167,9 @@ XED2_HPCRUN_LIBS =  @XED2_HPCRUN_LIBS@
 XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
+
+MPI_INC = @MPI_INC@
+MPI_PROTO_FILE = @MPI_PROTO_FILE@
 
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
@@ -457,7 +463,7 @@ libhpcrun_gpu_wrap_a_SOURCES = 	\
 	gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_mpi_la_SOURCES = 		\
-	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
+	./mpi-overrides.c
 
 libibm_xlomp_wrappers_a_SOURCES =              \
         plugins/ibm-xlomp-wrappers.c
@@ -542,11 +548,18 @@ libhpcrun_gpu_wrap_a_CPPFLAGS =	\
 
 libhpcrun_mpi_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
+	-I$(MPI_INC)			\
 	$(MY_INCLUDE_DIRS)
 
-$(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
-	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
-		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
+libhpctoolkit_la_CPPFLAGS =		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpctoolkit_a_CPPFLAGS =		\
+	-DHPCRUN_STATIC_LINK		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
 
 CUDA_TABLES = gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
 CUDA_FILES = sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c $(CUDA_TABLES)
@@ -561,9 +574,9 @@ generated_cuda_driver_api_files = $(addprefix $(generated_file_base)/, cuda_driv
 generated_cuda_runtime_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-runtime-header.h gpu_blame-cuda-runtime-table.c gpu_blame-runtime-overrides-generated.c)
 generated_cuda_runtime_api_files = $(addprefix $(generated_file_base)/, cuda_runtime_apis.h)
 
-BUILT_SOURCES = $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
+BUILT_SOURCES += $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
 
-CLEANFILES  =  $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
+CLEANFILES  +=  $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
 
 $(generated_cuda_runtime_api_files) : $(generated_file_src_path)/cuda_runtime_dummy.c
 	$(CC) $(OPT_CUDA_IFLAGS) -E -B -c $(generated_file_src_path)/cuda_runtime_dummy.c  -o  $(generated_file_base)/cuda_runtime_apis.h 
@@ -587,14 +600,16 @@ $(generated_file_base)/gpu_blame-cuda-driver-table.c : $(generated_file_base)/gp
 
 endif
 
-libhpctoolkit_la_CPPFLAGS =		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
+if OPT_ENABLE_MPI_WRAP
 
-libhpctoolkit_a_CPPFLAGS =		\
-	-DHPCRUN_STATIC_LINK		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
+BUILT_SOURCES += mpi-overrides.c
+CLEANFILES += mpi-overrides.c
+
+mpi-overrides.c: $(srcdir)/sample-sources/$(MPI_PROTO_FILE)
+	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
+		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/$(MPI_PROTO_FILE)
+
+endif
 
 
 #-----------------------------------------------------------
