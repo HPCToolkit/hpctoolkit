@@ -70,18 +70,9 @@ static fnbounds_t local;
 fnbounds_t*
 x86_fnbounds(void* addr)
 {
-#if 0
-  // DXN: replacing fnbounds_enclosing_addr with uw_recipe_map_get_fnbounds_ldmod
-  fnbounds_enclosing_addr(addr, &local.begin, &local.end, NULL);
-
-#else
-
   ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(addr);
   local.begin = (void*)ildmod_stat_interval(ilmstat)->start;
   local.end   = (void*)ildmod_stat_interval(ilmstat)->end;
-
-#endif
-
   return &local;
 }
 
@@ -100,20 +91,11 @@ x86_dump_intervals(void* addr)
 {
   void *s, *e;
   btuwi_status_t intervals;
-
-#if 0
-  // DXN: replacing fnbounds_enclosing_addr with uw_recipe_map_get_fnbounds_ldmod
-  fnbounds_enclosing_addr(addr, &s, &e, NULL);
-#else
-
   ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(addr);
   s = (void*)ildmod_stat_interval(ilmstat)->start;
   e = (void*)ildmod_stat_interval(ilmstat)->end;
 
-#endif
-
-  intervals = x86_build_intervals(s, e - s, 0, hpcrun_malloc);  // DXN: shelf hcprun_ui_malloc for now
-
+  intervals = x86_build_intervals(s, e - s, 0, hpcrun_malloc);
   x86_print_intervals(intervals);
 }
 
@@ -136,7 +118,7 @@ x86_dump_ins(void *ins)
   xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
   
   if (xed_error == XED_ERROR_NONE) {
-    xed_format_xed(xptr, inst_buf, sizeof(inst_buf), 
+	xed_decoded_inst_dump_xed_format(xptr, inst_buf, sizeof(inst_buf),
 		   (xed_uint64_t)(uintptr_t)ins);
     sprintf(errbuf, "(%p, %d bytes, %s) %s \n" , ins, 
 	    xed_decoded_inst_get_length(xptr), 
@@ -169,18 +151,11 @@ hpcrun_dump_intervals_noisy(void* addr)
   unwind_interval *u;
   btuwi_status_t intervals;
 
-  #if 0
-  // DXN: replacing fnbounds_enclosing_addr with uw_recipe_map_get_fnbounds_ldmod
-  fnbounds_enclosing_addr(addr, &s, &e, NULL);
-#else
-
   ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(addr);
   s = (void*)ildmod_stat_interval(ilmstat)->start;
   e = (void*)ildmod_stat_interval(ilmstat)->end;
 
-#endif
-
-  intervals = x86_build_intervals(s, e - s, 1, hpcrun_malloc); // DXN: shelf hcprun_ui_malloc for now
+  intervals = x86_build_intervals(s, e - s, 1, hpcrun_malloc);
 
   for(u = intervals.first; u; u = UWI_NEXT(u)) {
     dump_ui_dbg(u);

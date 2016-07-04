@@ -12,6 +12,7 @@
 #ifndef __UW_RECIPE_H__
 #define __UW_RECIPE_H__
 
+#include <lib/prof-lean/mem_manager.h>
 
 //******************************************************************************
 // macro
@@ -25,6 +26,12 @@
 //******************************************************************************
 
 typedef struct recipe_s uw_recipe_t;
+
+static inline uw_recipe_t*
+uw_recipe_t_new(mem_alloc m_alloc, size_t recipe_size)
+{
+  return (uw_recipe_t*)m_alloc(recipe_size);
+}
 
 /*
  * Concrete implementation of the abstract val_tostr function of the

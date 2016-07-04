@@ -64,7 +64,7 @@
 #include "splay-interval.h"
 #else
 
-#include <unwind/common/binarytree_uwi.h>  // DXN
+#include <unwind/common/binarytree_uwi.h>
 
 /******************************************************************************
  * macro
@@ -95,7 +95,7 @@ typedef struct {
 
 #endif
 
-// DXN: same as in x8-unwind-interval.h
+// same as in x8-unwind-interval.h
 typedef bitree_uwi_t unwind_interval;
 
 typedef enum {
@@ -111,25 +111,6 @@ typedef enum {
   RATy_SPRel,   // RA is relative to SP
 } ra_ty_t;
 
-#if 0
-typedef struct {
-  struct splay_interval_s common; // common splay tree fields
-
-  // frame type
-  sp_ty_t sp_ty : 16;
-  ra_ty_t ra_ty : 16;
-
-  // SPTy_Reg  : Parent SP's register
-  // RATy_SPRel: Parent SP's offset from appropriate pointer
-  int sp_arg;
-
-  // RATy_Reg  : Parent RA's register
-  // RATy_SPRel: Parent RA's offset from appropriate pointer
-  int ra_arg;
-
-} unw_interval_t;
-#else
-
 typedef struct ppc64recipe_s{
   // frame type
   sp_ty_t sp_ty : 16;
@@ -142,24 +123,23 @@ typedef struct ppc64recipe_s{
   // RATy_Reg  : Parent RA's register
   // RATy_SPRel: Parent RA's offset from appropriate pointer
   int ra_arg;
-
 } ppc64recipe_t;
 
-#endif
+unwind_interval *
+new_ui(
+	char *startaddr,
+	sp_ty_t sp_ty,
+	ra_ty_t ra_ty,
+	int sp_arg,
+	int ra_arg,
+	unwind_interval *prev,
+	mem_alloc m_alloc);
 
 #if 0
-unw_interval_t *
-new_ui(char *startaddr, sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
-       unwind_interval *prev);
-#else
-
-unwind_interval *
-new_ui(char *startaddr, sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
-		unwind_interval *prev,  mem_alloc m_alloc);
-
 ppc64recipe_t *
 ppc64recipe_new(sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
 		mem_alloc m_alloc);
+#endif
 
 /*
  * Concrete implementation of the abstract val_tostr function of the
@@ -173,13 +153,11 @@ void
 ppc64recipe_print(void* recipe);
 
 
-#endif
-
 static inline bool 
 ui_cmp(unwind_interval* ux, unwind_interval* uy)
 {
-  ppc64recipe_t *x = UWI_RECIPE(ux);  // DXN
-  ppc64recipe_t *y = UWI_RECIPE(uy);  // DXN
+  ppc64recipe_t *x = UWI_RECIPE(ux);
+  ppc64recipe_t *y = UWI_RECIPE(uy);
   return ((x->sp_ty  == y->sp_ty) &&
 	  (x->ra_ty  == y->ra_ty) && 
 	  (x->sp_arg == y->sp_arg) &&
@@ -198,15 +176,8 @@ void link_ui(unwind_interval *current, unwind_interval *next);
 // external interface
 //***************************************************************************
 
-#if 0
-interval_status 
-build_intervals(char *ins, unsigned int len);
-#else
-
 btuwi_status_t
 build_intervals(char  *ins, unsigned int len, mem_alloc m_alloc);
-
-#endif
 
 
 //***************************************************************************

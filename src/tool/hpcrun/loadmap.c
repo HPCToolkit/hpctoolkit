@@ -59,6 +59,7 @@
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/spinlock.h>
 
+#define LOADMAP_DEBUG 1
 
 static hpcrun_loadmap_t  s_loadmap;
 static hpcrun_loadmap_t* s_loadmap_ptr = NULL;
@@ -403,9 +404,12 @@ hpcrun_loadmap_map(dso_info_t* dso)
     msg = "(reuse)";
   }
   else {
-    lm = hpcrun_loadModule_new(dso->name);
-    lm->dso_info = dso;
-    hpcrun_loadmap_pushFront(lm);
+	lm = hpcrun_loadModule_new(dso->name);
+	lm->dso_info = dso;
+	hpcrun_loadmap_pushFront(lm);
+
+	// split poisoned interval here
+	uw_recipe_map_unpoison((uintptr_t)lm->dso_info->start_addr, (uintptr_t)lm->dso_info->end_addr);
   }
 
   TMSG(LOADMAP, "hpcrun_loadmap_map: '%s' size=%d %s",
@@ -438,7 +442,15 @@ hpcrun_loadmap_unmap(load_module_t* lm)
     }
     s_dso_free_list = old_dso;
     TMSG(LOADMAP, "Deleting unw intervals");
-    hpcrun_delete_ui_range(old_dso->start_addr, old_dso->end_addr+1);
+
+#if LOADMAP_DEBUG
+    assert((uintptr_t)old_dso->end_addr < UINTPTR_MAX) ;
+#endif
+
+    uw_recipe_map_delete_range(old_dso->start_addr, old_dso->end_addr);
+
+    // join poisoned intervals here.
+    uw_recipe_map_repoison((uintptr_t)old_dso->start_addr,(uintptr_t)old_dso->end_addr);
   }
 }
 

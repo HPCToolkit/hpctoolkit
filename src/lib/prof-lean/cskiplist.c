@@ -63,15 +63,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include "randomizer.h"
 #include "cskiplist.h"
 
-#if 0
+#if OPAQUE_TYPE
+
 #include "mcs-lock.h"
 #include "pfq-rwlock.h"
-#else
-// DXN: moved to header file
+
 #endif
 
 
@@ -83,21 +84,26 @@
 #define NULL 0
 #endif
 
-#define NO_LAYER -1
-#define DXN_DBG 1
+#define CSKL_DEBUG 0
 
+#define NO_LAYER -1
 
 #define AFTER_HIGH(succs, layer, found) \
 	(layer <= found ? succs[layer]->nexts[layer] : succs[layer])
+
+// number of bytes in a skip list node with L levels
+#define SIZEOF_CSKLNODE_T(L) (sizeof(csklnode_t) + sizeof(void*) * L)
+
+#define NUM_NODES 10
 
 
 //******************************************************************************
 // implementation types
 //******************************************************************************
 
-#if 0
-// DXN: moved to header file
-// DXN: opaque type not supported by gcc 4.4.*
+#if OPAQUE_TYPE
+
+// opaque type not supported by gcc 4.4.*
 
 typedef struct csklnode_s {
   void *val;
@@ -126,23 +132,99 @@ typedef enum {
   cskiplist_find_full
 } cskiplist_find_type;
 
+
+static csklnode_t *GF_cskl_nodes = NULL; // global free csklnode list
+static mcs_lock_t GFCN_lock;  // lock for GF_cskl_nodes
+static __thread  csklnode_t *_lf_cskl_nodes = NULL;  // thread local free csklnode list
+
+
 //******************************************************************************
 // private operations
 //******************************************************************************
 
-// number of bytes in a skip list node with L levels
-#define SIZEOF_CSKLNODE_T(L) (sizeof(csklnode_t) + sizeof(void*) * L)
+/*
+ * add a bunch of nodes to _lf_cskl_nodes
+ */
+static void
+csklnode_add_nodes_to_lfl(
+	int maxheight,
+	mem_alloc m_alloc)
+{
+  for (int i = 0; i < NUM_NODES; i++) {
+	csklnode_t* node = (csklnode_t*)m_alloc(SIZEOF_CSKLNODE_T(maxheight));
+	node->fully_linked = 0;
+	node->marked = 0;
+	mcs_init(&(node->lock));
+	node->nexts[0] = _lf_cskl_nodes;
+	_lf_cskl_nodes = node;
+  }
+}
+
+
+/*
+ * remove and return the head of _lf_cskl_nodes
+ * pre-condtion: _lf_cskl_nodes != NULL
+ */
+static csklnode_t*
+csklnode_alloc_from_lfl(
+	void* val,
+	int height)
+{
+  csklnode_t *ans = _lf_cskl_nodes;
+  _lf_cskl_nodes = _lf_cskl_nodes->nexts[0];
+  ans->nexts[0] = NULL;
+  ans->val = val;
+  ans->height = height;
+  return ans;
+}
+
+/*
+ * trylock GF_cskl_nodes;
+ * if GF_cskl_nodes != NULL, transfer a bunch of nodes to _lf_cskl_nodes,
+ * otherwise add a few nodes to _lf_cskl_nodes.
+ */
+static void
+csklnode_populate_lfl(
+	int maxheight,
+	mem_alloc m_alloc)
+{
+  mcs_node_t me;
+  bool acquired = mcs_trylock(&GFCN_lock, &me);
+  if (acquired) {
+	if (GF_cskl_nodes) {
+	  // transfer a bunch of nodes the global free list to the local free list
+	  int n = 0;
+	  while (GF_cskl_nodes && n < NUM_NODES) {
+		csklnode_t *head = GF_cskl_nodes;
+		GF_cskl_nodes = GF_cskl_nodes->nexts[0];
+		head->nexts[0] = _lf_cskl_nodes;
+		_lf_cskl_nodes = head;
+		n++;
+	  }
+	}
+	mcs_unlock(&GFCN_lock, &me);
+  }
+  if (!_lf_cskl_nodes) {
+	csklnode_add_nodes_to_lfl(maxheight, m_alloc);
+  }
+}
 
 static csklnode_t*
-csklnode_new(void* val, int height, mem_alloc m_alloc)
+csklnode_malloc(
+	void* val,
+	int height,
+	int maxheight,
+	mem_alloc m_alloc)
 {
-  csklnode_t* node = (csklnode_t*)m_alloc(SIZEOF_CSKLNODE_T(height));
-  node->val = val;
-  node->height = height;
-  node->fully_linked = 0;
-  node->marked = 0;
-  mcs_init(&(node->lock));
-  return node;
+  if (!_lf_cskl_nodes) {
+	csklnode_populate_lfl(maxheight, m_alloc);
+  }
+
+#if CSKL_DEBUG
+  assert(_lf_cskl_nodes);
+#endif
+
+  return csklnode_alloc_from_lfl(val, height);
 }
 
 static inline bool
@@ -154,18 +236,20 @@ cskiplist_node_is_removable(csklnode_t *candidate, int layer)
 }
 
 /**
- * pre: preds[] and succs[] are arrays of csklnode_t* of length cskl->max_height.
- * post: if val is in the slip list, return the first layer where val is found,
- *       otherwise return NO_LAYER.
+ * pre-conditions:
+ * preds[] and succs[] are arrays of csklnode_t* of length cskl->max_height.
  *
- *       if val is found,
- *       preds[i]->val < val <= succs[i] for i = low..cskl->max_height-1, where
- *       low = (ft == cskiplist_find_full)? 0: found_layer
- *       in other words,
- *       preds[i] is the node that precedes the found node at level i
- *       succs[i] is the node that follows the found node at level i.
+ * post-conditions:
+ *   if val is in cskl, return the first layer where val is found,
+ *     otherwise return NO_LAYER.
  *
- *       if v is found, v == succs[findNode(v, preds, succs)]
+ *   preds[i]->val < val <= succs[i] for i = low..cskl->max_height-1, where
+ *     low = (ft == cskiplist_find_full)? 0: found_layer, in other words,
+ *   preds[i] is the node that precedes the found node at level i
+ *   succs[i] is the node that follows the found node at level i.
+ *
+ *   if val is found,
+ *     val == succs[cskiplist_find_helper(compare, val, preds, succs, ft)]
  */
 static int
 cskiplist_find_helper
@@ -177,9 +261,8 @@ cskiplist_find_helper
 	cskiplist_find_type ft) // is info needed at all layers?
 {
   int    max_height = cskl->max_height;
-  csklnode_t *pred  = cskl->left_sentinel; // invariant: pred->val < val
-
   int found_layer = NO_LAYER;
+  csklnode_t *pred  = cskl->left_sentinel; // invariant: pred->val < val
   for (int layer = max_height-1; layer >= 0; layer--) {
 	csklnode_t *current = pred->nexts[layer];
 
@@ -189,8 +272,8 @@ cskiplist_find_helper
 	  pred = current; // invariant pred->val < val is maintained
 	  current = pred->nexts[layer];
 	}
-	// loop exit condition: v <= curr->val
-	// loop invariant: pred->val < v
+	// loop exit condition: val <= curr->val
+	// loop invariant: pred->val < val
 
 	// remember the 'layer' node < val:
 	preds[layer] = pred; // preds[layer]->val < val, by the loop invariant
@@ -281,20 +364,15 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
   pfq_rwlock_node_t me;
   pfq_rwlock_start_write(&cskl->pfq_lock, &me);
 
-
   //----------------------------------------------------------------------------
   // Look for a node matching low
   //----------------------------------------------------------------------------
-//  int llayer = cskiplist_find_helper(cmpfn, cskl, lo, lpreds, other, cskiplist_find_full);
+  cskiplist_find_helper(cmpfn, cskl, lo, lpreds, other, cskiplist_find_full);
 
   //----------------------------------------------------------------------------
   // Look for a node matching high
   //----------------------------------------------------------------------------
-  int hlayer = cskiplist_find_helper(cmpfn, cskl, hi,
-	  other, hsuccs, cskiplist_find_full);
-
-//  bool hfound = hlayer != NO_LAYER;
-
+  int hlayer = cskiplist_find_helper(cmpfn, cskl, hi, other, hsuccs, cskiplist_find_full);
   csklnode_t *first = lpreds[0]->nexts[0];
   csklnode_t *last = AFTER_HIGH(hsuccs, 0, hlayer);
 
@@ -313,10 +391,7 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
 
   for (csklnode_t *node = first; node != last;) {
 	csklnode_t *next = node->nexts[0]; // remember the pointer before trashing node
-
-	// delete node
-	m_free(node);
-
+	m_free(node); // delete node
 	node = next;
 	removed_something = true;
   }
@@ -331,10 +406,44 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
 // interface operations
 //******************************************************************************
 
+void
+cskl_init()
+{
+#if CSKL_DEBUG
+  printf("DXN_DBG: cskl_init  mcs_init(&GFCN_lock)\n");
+#endif
+  mcs_init(&GFCN_lock);
+}
+
+/*
+ * only free non null csklnode_t*
+ * pre-condition: anode is of type csklnpde_t*
+ */
+void
+cskl_free(void* anode)
+{
+  if (!anode) return;
+  // add node to the front of the global free csklnode list.
+  mcs_node_t me;
+  csklnode_t *node = (csklnode_t*)anode;
+  for (int i = 0; i < node->height; i++) {
+	node->nexts[i] = NULL;
+  }
+  mcs_lock(&GFCN_lock, &me);
+  node->nexts[0] = GF_cskl_nodes;
+  GF_cskl_nodes = node;
+  mcs_unlock(&GFCN_lock, &me);
+}
+
 
 cskiplist_t*
-cskl_new(void* lsentinel, void* rsentinel, int max_height,
-	val_cmp compare, val_cmp inrange, mem_alloc m_alloc)
+cskl_new(
+	void* lsentinel,
+	void* rsentinel,
+	int max_height,
+	val_cmp compare,
+	val_cmp inrange,
+	mem_alloc m_alloc)
 {
   cskiplist_t* cskl = (cskiplist_t*)m_alloc(sizeof(cskiplist_t));
   cskl->max_height = max_height;
@@ -343,8 +452,10 @@ cskl_new(void* lsentinel, void* rsentinel, int max_height,
   pfq_rwlock_init(&cskl->pfq_lock);
 
   // create sentinel nodes
-  csklnode_t *left = cskl->left_sentinel   = csklnode_new(lsentinel, max_height, m_alloc);
-  csklnode_t *right = cskl->right_sentinel = csklnode_new(rsentinel, max_height, m_alloc);
+//  csklnode_t *left = cskl->left_sentinel   = csklnode_new(lsentinel, max_height, max_height, m_alloc);
+//  csklnode_t *right = cskl->right_sentinel = csklnode_new(rsentinel, max_height, max_height, m_alloc);
+  csklnode_t *left = cskl->left_sentinel   = csklnode_malloc(lsentinel, max_height, max_height, m_alloc);
+  csklnode_t *right = cskl->right_sentinel = csklnode_malloc(rsentinel, max_height, max_height, m_alloc);
   // hook sentinel nodes in empty list
   for(int i = 0; i < max_height; left->nexts[i++] = right);
 
@@ -440,7 +551,8 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	}
 
 	// allocate my node
-	csklnode_t *node = csklnode_new(value, my_height, m_alloc);
+//	csklnode_t *node = csklnode_new(value, my_height, max_height, m_alloc);
+	csklnode_t *node = csklnode_malloc(value, my_height, max_height, m_alloc);
 
 	// link it in at levels [0 .. my_height-1]
 	for (int layer = 0; layer < my_height; layer++) {
@@ -461,7 +573,9 @@ cskl_insert(cskiplist_t *cskl, void *value,
   }
 }
 
-
+/*
+ * TODO: this function is not used anywhere and leaks memory.
+ */
 bool
 cskl_delete(cskiplist_t *cskl, void *value)
 {

@@ -28,10 +28,12 @@
 // type
 //******************************************************************************
 
+// Tree status
 typedef enum {
   NEVER, DEFERRED, FORTHCOMING, READY
 } tree_stat_t;
 
+// {<interval, load_module>, tree status}
 typedef struct ildmod_stat_s {
   interval_ldmod_pair_t* ildmod;
   volatile tree_stat_t stat;

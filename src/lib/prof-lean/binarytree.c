@@ -87,10 +87,9 @@
 // implementation type
 //******************************************************************************
 
-#if 0
-// DXN: moved to header file
-// DXN: opaque type not supported by gcc 4.4.*
+#if OPAQUE_TYPE
 
+// opaque type not supported by gcc 4.4.*
 typedef struct binarytree_s {
   struct binarytree_s *left;
   struct binarytree_s *right;
@@ -98,15 +97,6 @@ typedef struct binarytree_s {
 } binarytree_t;
 
 #endif
-
-
-//******************************************************************************
-// Abstract functions
-//******************************************************************************
-
-// reserved for treaps where a priority is associated with each value in each node.
-typedef int (*get_priority)(binarytree_t* treapnode);
-
 
 
 //******************************************************************************
@@ -217,21 +207,27 @@ binarytree_rightsubtree(binarytree_t *tree)
 }
 
 void
-binarytree_set_rootval(binarytree_t *tree, void* rootval)
+binarytree_set_rootval(
+	binarytree_t *tree,
+	void* rootval)
 {
   assert(tree != NULL);
   tree->val = rootval;
 }
 
 void
-binarytree_set_leftsubtree(binarytree_t *tree, binarytree_t* subtree)
+binarytree_set_leftsubtree(
+	binarytree_t *tree,
+	binarytree_t* subtree)
 {
   assert(tree != NULL);
   tree->left = subtree;
 }
 
 void
-binarytree_set_rightsubtree(binarytree_t *tree, binarytree_t* subtree)
+binarytree_set_rightsubtree(
+	binarytree_t *tree,
+	binarytree_t* subtree)
 {
   assert(tree != NULL);
   tree->right = subtree;
@@ -242,15 +238,6 @@ binarytree_count(binarytree_t *tree)
 {
   return tree?
 	  binarytree_count(tree->left) + binarytree_count(tree->right) + 1: 0;
-
-#if 0
-  if (!tree) {
-	return 0;
-  }
-  else {
-	return binarytree_count(tree->left) + binarytree_count(tree->right) + 1;
-  }
-#endif
 }
 
 void
@@ -399,56 +386,31 @@ binarytree_insert(binarytree_t *root, val_cmp compare, void *val, mem_alloc m_al
   return root;
 }
 
-
-#if 0
-
-//******************************************************************************
-// Abstract functions
-//******************************************************************************
-
-// reserved for treaps where a priority is associated with each value in each node.
-typedef int (*get_priority)(binarytree_t* treapnode);
-
-
-
-static void
-split(binarytree_t** treap, binarytree_node_cmp compare, void* key,
-		binarytree_t** left, binarytree_t** right)
-  {
-	binarytree_t** subtree;
-    if (*treap == NULL){
-      *left = *right = NULL;
-    }
-    else if (compare(*treap, key) > 0) {
-      subtree = &((*treap)->left);
-      split(subtree, compare, key, left, subtree);
-      *right = *treap;
-    }
-    else {
-      subtree = &((*treap)->right);
-      split(subtree, compare, key, subtree, right);
-      *left = *treap;
-    }
+binarytree_t*
+binarytree_remove_leftmostleaf(binarytree_t **tree)
+{
+  if (*tree == NULL) {
+	return NULL;
   }
-
-// heap property: root heap priority >= subtrees' priorities
-void
-binarytree_treapinsert(binarytree_t **treap, binarytree_node_cmp compare,
-		get_priority getprior, binarytree_t* newnode) {
-  if (*treap == NULL) {
-	*treap = newnode;   // empty tree case
-	return;
+  if ((*tree)->left){
+	return binarytree_remove_leftmostleaf(&((*tree)->left));
   }
-  if (getprior(*treap) > getprior(newnode)) {
-	binarytree_t** subtree = compare(*treap, newnode->val) > 0?
-										&((*treap)->left): &((*treap)->right);
-	binarytree_treapinsert(subtree, compare, getprior, newnode);
+  else   if ((*tree)->right) {
+	return binarytree_remove_leftmostleaf(&((*tree)->right));
   }
   else {
-	// do some tree splitting here
-	split(treap, compare, newnode->val, &(newnode->left), &(newnode->right));
-	*treap = newnode;
+	binarytree_t *rml = *tree;
+	*tree = NULL;
+	return rml;
   }
 }
-#endif
 
+void
+binarytree_leftmostleaf_to_root(binarytree_t **tree)
+{
+  if (*tree) {
+	binarytree_t *lml = binarytree_remove_leftmostleaf(tree);
+	lml->left = *tree;
+	*tree = lml;
+  }
+}

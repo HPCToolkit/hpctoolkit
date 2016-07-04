@@ -82,20 +82,24 @@
 
 #define MAX_TREE_STR 65536
 #define MAX_INDENTS  512
+#define OPAQUE_TYPE 0
 
 //******************************************************************************
 // abstract data type
 //******************************************************************************
 
-#if 0
-// DXN: opaque type not supported by gcc 4.4.*
+#if OPAQUE_TYPE
+
+// opaque type not supported by gcc 4.4.*
 typedef struct binarytree_s binarytree_t;
+
 #else
 
+// DXN_DBG: make all fields volatile
 typedef struct binarytree_s {
-  struct binarytree_s *left;
-  struct binarytree_s *right;
-  void* val;
+  volatile struct binarytree_s *left;
+  volatile struct binarytree_s *right;
+  volatile void* val;
 } binarytree_t;
 
 #endif
@@ -128,13 +132,19 @@ binarytree_rightsubtree(binarytree_t *tree);
  * Settors
  */
 void
-binarytree_set_rootval(binarytree_t *tree, void* rootval);
+binarytree_set_rootval(
+	binarytree_t *tree,
+	void* rootval);
 
 void
-binarytree_set_leftsubtree(binarytree_t *tree, binarytree_t* subtree);
+binarytree_set_leftsubtree(
+	binarytree_t *tree,
+	binarytree_t* subtree);
 
 void
-binarytree_set_rightsubtree(binarytree_t *tree, binarytree_t* subtree);
+binarytree_set_rightsubtree(
+	binarytree_t *tree,
+	binarytree_t* subtree);
 
 // count the number of nodes in the binary tree.
 int
@@ -195,10 +205,19 @@ binarytree_is_inorder(binarytree_t *tree, val_cmp compare);
 binarytree_t *
 binarytree_insert(binarytree_t *tree, val_cmp compare, void *val, mem_alloc m_alloc);
 
-#if 0
+/*
+ * if the tree is not NULL, remove the leftmost left node from the tree, make it
+ * the new root of the tree, and set its left subtree to the old tree.
+ * if the tree is NULL, do nothing.
+ */
 void
-binarytree_treapinsert(binarytree_t **treap, val_cmp compare,
-		get_priority getprior, binarytree_t *new_node);
-#endif
+binarytree_leftmostleaf_to_root(binarytree_t **tree);
+
+/*
+ * if the tree != NULL, remove and return the leftmost leaf node from the tree,
+ * otherwise return NULL.
+ */
+binarytree_t*
+binarytree_remove_leftmostleaf(binarytree_t **tree);
 
 #endif

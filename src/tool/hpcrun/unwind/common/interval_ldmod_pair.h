@@ -1,7 +1,7 @@
 /*
  * interval_ldmod_pair.h
  *
- * A generic pair whose first is an interval_t and whose second is a load_module_t.
+ * A generic pair whose first is an interval_t* and whose second is a load_module_t*.
  *
  *      Author: dxnguyen
  */

@@ -16,10 +16,12 @@
 // local include files
 //******************************************************************************
 
+#include <lib/prof-lean/mcs-lock.h>
 #include "interval_t.h"
 
 static char
 Interval_MaxSpaces[] = "                                               ";
+
 
 // pre-condition: start <= end
 interval_t*
@@ -46,7 +48,13 @@ interval_t_inrange(void* lhs, void* val)
 {
   interval_t* interval = (interval_t*)lhs;
   uintptr_t address = (uintptr_t)val;
-  return (address <interval->start)? 1: (address < interval->end)? 0: -1;
+  // special boundary case:
+  if (address == UINTPTR_MAX && interval->start == UINTPTR_MAX) {
+	return 0;
+  }
+  else {
+	return (address < interval->start)? 1: (address < interval->end)? 0: -1;
+  }
 }
 
 /*

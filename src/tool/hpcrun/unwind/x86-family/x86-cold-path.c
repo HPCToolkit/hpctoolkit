@@ -128,16 +128,6 @@ hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 	  TMSG(COLD_CODE,"potential cold code jmp detected in routine starting @"
 		  " %p (location in routine = %p)",iarg->beg,ins);
 
-#if 0
-	  // DXN: replacing fnbounds_enclosing_addr with uw_recipe_map_get_fnbounds_ldmod
-	  void *beg, *end;
-	  if (! fnbounds_enclosing_addr(branch_target, &beg, &end, NULL)) {
-		EMSG("Weird result! jmp @ %p branch_target %p has no function bounds",
-			ins, branch_target);
-		return false;
-	  }
-#else
-
 	  ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(branch_target);
 	  if (!ilmstat) {
 		EMSG("Weird result! jmp @ %p branch_target %p has no function bounds",
@@ -145,7 +135,6 @@ hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 		return false;
 	  }
 
-#endif
 	  void* beg = (void*)ildmod_stat_interval(ilmstat)->start;
 	  if (branch_target == beg) {
 		TMSG(COLD_CODE,"  --jump is a regular tail call,"

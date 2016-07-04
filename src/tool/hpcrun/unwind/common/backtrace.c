@@ -411,23 +411,8 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 			       &td->btbuf_cur->ip_norm);
     td->btbuf_cur->ra_loc = NULL;
 
-#if 0
-    // DXN: replacing call to fnbounds_enclosing_addr:
-    // DXN: note this is not even needed because the cursor already has the info.
-    ildmod_stat_t* ilmp = uw_recipe_map_get_fnbounds_ldmod(cursor.pc_unnorm);
-    interval_t* fnbounds = ildmod_stat_interval(ilmp);
-    void *func_start_pc = fnbounds->start;
-    void *func_end_pc = fnbounds->end;
-    load_module_t* lm = ildmod_stat_loadmod(ilmp);
-
-//    fnbounds_enclosing_addr(cursor.pc_unnorm, &func_start_pc, &func_end_pc, &lm);  // DXN
-#else
-
     void *func_start_pc =  (void*)cursor.unwr_info.start;
-//    void *func_end_pc = cursor.unwr_info.end;
     load_module_t* lm = cursor.unwr_info.lm;
-
-#endif
 
     td->btbuf_cur->the_function = hpcrun_normalize_ip(func_start_pc, lm);
 
@@ -797,7 +782,7 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
       }
     }
     
-    ip_normalized_t ip_norm = hpcrun_normalize_ip((void*)ip, cursor.unwr_info.lm);  // DXN
+    ip_normalized_t ip_norm = hpcrun_normalize_ip((void*)ip, cursor.unwr_info.lm);
     frame_t* prev = hpcrun_bt_push(bt,
 				   &((frame_t){.cursor = cursor, 
 					       .ip_norm = ip_norm,

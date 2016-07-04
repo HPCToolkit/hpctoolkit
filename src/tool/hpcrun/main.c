@@ -388,6 +388,10 @@ hpcrun_init_internal(bool is_child)
   hpcrun_mmap_init();
   hpcrun_thread_data_init(0, NULL, is_child, hpcrun_get_num_sample_sources());
 
+  // must initialize unwind recipe map before initializing fnbounds
+  // because mapping of load modules affects the recipe map.
+  hpcrun_unw_init();
+
   // WARNING: a perfmon bug requires us to fork off the fnbounds
   // server before we call PAPI_init, which is done in argument
   // processing below. Also, fnbounds_init must be done after the
@@ -425,7 +429,6 @@ hpcrun_init_internal(bool is_child)
   lushPthr_processInit();
 
   hpcrun_setup_segv();
-  hpcrun_unw_init();
 
 
 #ifndef USE_LIBUNW

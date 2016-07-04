@@ -27,13 +27,10 @@ struct hpcrun_unw_cursor_t {
   ip_normalized_t pc_norm;
   fence_enum_t fence; // Details on which fence stopped an unwind
   intvl_t* intvl;
-  load_module_t *lm; // DXN: should correspond to intvl at initialization
+  load_module_t *lm;  // should correspond to intvl at initialization
   intvl_t real_intvl; // other unwinders get intervals from elsewhere,
                       // libunwind does not use intervals, so space for pointer
                       // allocated internally in cursor      
 };
-
-// cursor.sp, cursor.bp, cursor.pc_unnorm, fence, intvl
-
 
 #endif // _UNWIND_DATATYPE_H

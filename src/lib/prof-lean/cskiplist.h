@@ -76,14 +76,16 @@
 //******************************************************************************
 
 #define MAX_CSKIPLIST_STR 65536
-
+#define OPAQUE_TYPE 0
 //******************************************************************************
 // abstract data type
 //******************************************************************************
 
-#if 0
-// DXN: opaque type not supported by gcc 4.4.*
+#if OPAQUE_TYPE
+
+// opaque type not supported by gcc 4.4.*
 typedef struct cskiplist_s cskiplist_t;
+
 #else
 
 #include "mcs-lock.h"
@@ -107,6 +109,7 @@ typedef struct cskiplist_s {
   val_cmp inrange;
   pfq_rwlock_t pfq_lock;
 } cskiplist_t;
+
 #endif
 
 /*
@@ -120,9 +123,23 @@ typedef void (*cskl_node_tostr)(void* node_val, int node_height, int max_height,
 // interface operations
 //******************************************************************************
 
+/*
+ * Inititalize mcs lock on global free csklnode list.
+ */
+void
+cskl_init();
+
 cskiplist_t*
-cskl_new(void *lsentinel, void *rsentinel, int maxheight,
-		val_cmp compare, val_cmp inrange, mem_alloc m_alloc);
+cskl_new(
+	void *lsentinel,
+	void *rsentinel,
+	int maxheight,
+	val_cmp compare,
+	val_cmp inrange,
+	mem_alloc m_alloc);
+
+void
+cskl_free(void* node);
 
 /*
  * If cskl has a node that matches val then return that node's value,

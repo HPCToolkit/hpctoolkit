@@ -87,18 +87,28 @@ new_ui(char *start,
        bp_loc bp_status,          int sp_bp_pos, int bp_bp_pos,
        unwind_interval *prev, mem_alloc m_alloc)
 {
-  bitree_uwi_t *u = bitree_uwi_new(NULL, prev, NULL, m_alloc);
+  bitree_uwi_t *u = bitree_uwi_malloc(m_alloc, sizeof(x86recipe_t));
 
-  // DXN TODO: what is this?
+  // DXN: what is this?
 # include "mem_error_gen.h" // **** SPECIAL PURPOSE CODE TO INDUCE MEM FAILURE (conditionally included) ***
 
   hpcrun_stats_num_unwind_intervals_total_inc();
 
-  interval_t *interval = interval_t_new((uintptr_t)start, 0, m_alloc);
-  x86recipe_t* x86recipe =
-	  x86recipe_new(ra_status, sp_ra_pos, bp_ra_pos, bp_status, sp_bp_pos, bp_bp_pos, m_alloc);
-  bitree_uwi_set_rootval(u, uwi_t_new(interval, (uw_recipe_t*)x86recipe, m_alloc));
-  return u; 
+  bitree_uwi_set_leftsubtree(u, prev);
+  uwi_t *uwi =  bitree_uwi_rootval(u);
+
+  interval_t *interval =  uwi_t_interval(uwi);
+  interval->start = (uintptr_t)start;
+
+  x86recipe_t* x86recipe = (x86recipe_t*) uwi_t_recipe(uwi);
+  x86recipe->ra_status = ra_status;
+  x86recipe->sp_ra_pos = sp_ra_pos;
+  x86recipe->bp_ra_pos = bp_ra_pos;
+  x86recipe->bp_status = bp_status;
+  x86recipe->sp_bp_pos = sp_bp_pos;
+  x86recipe->bp_bp_pos = bp_bp_pos;
+
+  return u;
 }
 
 
@@ -119,13 +129,21 @@ set_ui_restored_canonical(unwind_interval *u, unwind_interval *value)
 unwind_interval *
 fluke_ui(char *loc, unsigned int pos, mem_alloc m_alloc)
 {
-  bitree_uwi_t *u = bitree_uwi_new(NULL, NULL, NULL, m_alloc);
-  interval_t *interval =  interval_t_new((uintptr_t)loc, (uintptr_t)loc, m_alloc);
-  x86recipe_t* x86recipe =
-	  x86recipe_new(RA_SP_RELATIVE, pos, 0, 0, 0, 0, m_alloc);
-  bitree_uwi_set_rootval(u, uwi_t_new(interval, (uw_recipe_t*)x86recipe, m_alloc));
-  return u;
+  bitree_uwi_t *u = bitree_uwi_malloc(m_alloc, sizeof(x86recipe_t));
+  uwi_t *uwi =  bitree_uwi_rootval(u);
 
+  interval_t *interval =  uwi_t_interval(uwi);
+  interval->start = (uintptr_t)loc;
+  interval->end = (uintptr_t)loc;
+
+  x86recipe_t* x86recipe = (x86recipe_t*) uwi_t_recipe(uwi);
+  x86recipe->ra_status = RA_SP_RELATIVE;
+  x86recipe->sp_ra_pos = pos;
+  x86recipe->bp_ra_pos = 0;
+  x86recipe->bp_status = 0;
+  x86recipe->sp_bp_pos = 0;
+  x86recipe->bp_bp_pos = 0;
+  return u;
 }
 
 void 

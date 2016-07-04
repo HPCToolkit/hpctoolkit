@@ -113,7 +113,6 @@ extern void hpcrun_set_real_siglongjmp(void);
 void
 hpcrun_unw_init(void)
 {
-  // hpcrun_interval_tree_init();  // DXN: this function is not defined anywhere!!!!
   uw_recipe_map_init();
   hpcrun_set_real_siglongjmp();
 }
@@ -191,24 +190,6 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
                      { .lm_id = HPCRUN_FMT_LMId_NULL,
 		       .lm_ip = (uintptr_t) cursor->pc_unnorm });
 
-// DXN
-#if 0
-  unwind_interval* intvl = (unwind_interval*)
-    hpcrun_addr_to_interval(cursor->pc_unnorm,
-			    cursor->pc_unnorm, &cursor->pc_norm);
-
-  cursor->intvl = (splay_interval_t*)intvl;
-  
-  if (intvl && intvl->ra_ty == RATy_Reg) {
-    if (intvl->ra_arg == PPC_REG_LR) {
-      cursor->ra = (void*)(ctxt->uc_mcontext.regs->link);
-    }
-    else {
-      cursor->ra = (void*)(ctxt->uc_mcontext.regs->gpr[intvl->ra_arg]);
-    }
-  }
-#else
-
   bitree_uwi_t* intvl = NULL;
   bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &(cursor->unwr_info));
   if (found) {
@@ -226,10 +207,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   else {
     EMSG("unw_init: cursor could NOT build an interval for initial pc = %p",
 	 cursor->pc_unnorm);
-//    cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, NULL);
   }
-
-#endif
 
   TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, fp=%p", 
        cursor->pc_unnorm, cursor->ra, cursor->sp, cursor->bp);
@@ -240,7 +218,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 // --FIXME--: add advanced fence processing and enclosing function to cursor here
 //
 
-step_state  // DXN
+step_state
 hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 {
 
@@ -248,7 +226,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   void*  pc = cursor->pc_unnorm;
   void** sp = cursor->sp;
   void** fp = cursor->bp; // unused
-  unwind_interval* intvl = (unwind_interval*)(cursor->unwr_info.btuwi);  // DXN
+  unwind_interval* intvl = (unwind_interval*)(cursor->unwr_info.btuwi);
 
   bool isInteriorFrm = (cursor->flags != UnwFlg_StackTop);
   
@@ -268,16 +246,6 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   
   cursor->fence = hpcrun_check_fence(cursor->pc_unnorm);
 
-#if 0
-  //-----------------------------------------------------------
-  // check for outermost frame (return STEP_STOP only after outermost
-  // frame has been identified as valid)
-  //-----------------------------------------------------------
-  if (monitor_in_start_func_wide(pc)) {
-    TMSG(UNW, "stop: monitor_in_start_func_wide, pc=%p", pc);
-    return STEP_STOP;
-  }
-#endif  
   //-----------------------------------------------------------
   // check if we have reached the end of our unwind, which is
   // demarcated with a fence. 
@@ -344,15 +312,10 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   //-----------------------------------------------------------
   // compute unwind information for the caller's pc
   //-----------------------------------------------------------
-#if 0
-  nxt_intvl = (unwind_interval*)hpcrun_addr_to_interval(nxt_pc,
-						       nxt_pc, &nxt_pc_norm);
-#else
-  bool found = uw_recipe_map_lookup(nxt_pc, &(cursor->unwr_info)); // DXN
+  bool found = uw_recipe_map_lookup(nxt_pc, &(cursor->unwr_info));
   if (found) {
 	nxt_intvl = cursor->unwr_info.btuwi;
   }
-#endif
  
   // if nxt_pc is invalid for some reason...
   if (!nxt_intvl) {
@@ -369,14 +332,10 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 	  // Sanity check SP: Once in a while SP is clobbered.
 	  if (isPossibleParentSP(nxt_sp, try_sp)) {
 		nxt_pc = getNxtPCFromSP(try_sp);
-#if 0
-		nxt_intvl = (unwind_interval*)hpcrun_addr_to_interval(nxt_pc, nxt_pc, &nxt_pc_norm);
-#else
-		bool found2 = uw_recipe_map_lookup(nxt_pc, &(cursor->unwr_info)); // DXN
+		bool found2 = uw_recipe_map_lookup(nxt_pc, &(cursor->unwr_info));
 		if (found2) {
 		  nxt_intvl = cursor->unwr_info.btuwi;
 		}
-#endif
 	  }
 	}
 

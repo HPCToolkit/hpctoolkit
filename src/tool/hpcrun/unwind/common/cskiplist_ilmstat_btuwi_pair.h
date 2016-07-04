@@ -30,6 +30,9 @@ typedef struct cskl_ilmstat_btuwi_s cskl_ilmstat_btuwi_t;
 // interface operations
 //******************************************************************************
 
+void
+cskl_ilmstat_btuwi_init(int maxheight, mem_alloc m_alloc);
+
 cskl_ilmstat_btuwi_t *
 cskl_ilmstat_btuwi_new(int maxheight, mem_alloc m_alloc);
 
@@ -43,15 +46,16 @@ bool
 cskl_ilmstat_btuwi_insert(cskl_ilmstat_btuwi_t *cskl, ilmstat_btuwi_pair_t* value, mem_alloc m_alloc);
 
 bool
-cskl_ilmstat_btuwi_delete(cskl_ilmstat_btuwi_t *cskl, ilmstat_btuwi_pair_t* value);
+cskl_ilmstat_btuwi_cmp_del_bulk_unsynch(
+	cskl_ilmstat_btuwi_t *cskl,
+	ilmstat_btuwi_pair_t* low,
+	ilmstat_btuwi_pair_t* high);
 
 bool
-cskl_ilmstat_btuwi_cmp_del_bulk_unsynch(cskl_ilmstat_btuwi_t *cskl,
-	ilmstat_btuwi_pair_t* low, ilmstat_btuwi_pair_t* high, mem_free m_free);
-
-bool
-cskl_ilmstat_btuwi_inrange_del_bulk_unsynch(cskl_ilmstat_btuwi_t *cskl,
-	uintptr_t low, uintptr_t high, mem_free m_free);
+cskl_ilmstat_btuwi_inrange_del_bulk_unsynch(
+	cskl_ilmstat_btuwi_t *cskl,
+	uintptr_t low,
+	uintptr_t high);
 
 /*
  * pre-condition: *nodeval is an ilmstat_btuwi_pair_t.

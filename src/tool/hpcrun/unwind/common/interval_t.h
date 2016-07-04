@@ -64,10 +64,22 @@ int
 interval_t_cmp(void* p1, void* p2);
 
 /*
- * pre-condition: interval is a interval_t*, address is uintptr_t
- * if address < interval->start return 1
- * if interval->start <= address < interval.end return 0
- * else returns -1
+ * pre-condition:
+ *   interval is a interval_t* of the form [start, end),
+ *   address is uintptr_t
+ * check if address is inside of interval, i.e. start <= address < end
+ *
+ *  // special boundary case:
+ *  if (address == UINTPTR_MAX && interval->start == UINTPTR_MAX)
+ *    return 0;
+ *
+ * if address < interval->start , i.e. interval is "greater than" address
+ *   return 1
+ * if interval->start <= address < interval.end, i.e. address is inside interval
+ *   return 0
+ * else , i.e. interval is "less than" address
+ *   returns -1
+ *
  */
 int
 interval_t_inrange(void* interval, void* address);

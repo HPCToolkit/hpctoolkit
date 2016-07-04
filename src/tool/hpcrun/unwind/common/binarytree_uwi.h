@@ -66,13 +66,36 @@ typedef struct btuwi_status_s {
   int errcode;
 } btuwi_status_t;
 
+/*
+ * initialize the MCS lock for the hidden global free unwind interval tree.
+ */
+void
+bitree_uwi_init();
+
 // constructors
 bitree_uwi_t*
 bitree_uwi_new(uwi_t *val, bitree_uwi_t *left, bitree_uwi_t *right,
 	mem_alloc m_alloc);
 
+/*
+ * Returns a bitree_uwi_t node whose left and right subtree nodes are NULL.
+ * The root value of the returned node is a non-null uwi_t*, which is a pair
+ * of the form (interval_t* interval, uw_recipe_t* recipe).
+ * interval is non-null and *interval = [0, 0).
+ * recipe is non-null and points to a concrete instance of an unwind recipe.
+ */
+bitree_uwi_t*
+bitree_uwi_malloc(mem_alloc m_alloc, size_t recipe_size);
+
 // destructor
 void bitree_uwi_del(bitree_uwi_t **tree, mem_free m_free);
+
+/*
+ * If tree != NULL return tree to global free tree,
+ * otherwise do nothing.
+ */
+void bitree_uwi_free(bitree_uwi_t *tree);
+
 
 // return the value at the root
 // pre-condition: tree != NULL
@@ -88,13 +111,19 @@ bitree_uwi_t*
 bitree_uwi_rightsubtree(bitree_uwi_t *tree);
 
 void
-bitree_uwi_set_rootval(bitree_uwi_t *tree, uwi_t* rootval);
+bitree_uwi_set_rootval(
+	bitree_uwi_t *tree,
+	uwi_t* rootval);
 
 void
-bitree_uwi_set_leftsubtree(bitree_uwi_t *tree, bitree_uwi_t* subtree);
+bitree_uwi_set_leftsubtree(
+	bitree_uwi_t *tree,
+	bitree_uwi_t* subtree);
 
 void
-bitree_uwi_set_rightsubtree(bitree_uwi_t *tree, bitree_uwi_t* subtree);
+bitree_uwi_set_rightsubtree(
+	bitree_uwi_t *tree,
+	bitree_uwi_t* subtree);
 
 // return the interval_t part of the interval_t key of the tree root
 // pre-condition: tree != NULL
@@ -164,5 +193,11 @@ bitree_uwi_insert(bitree_uwi_t *tree, uwi_t *val, mem_alloc m_alloc);
 
 bitree_uwi_t*
 bitree_uwi_finalize(bitree_uwi_t *tree);
+
+void
+bitree_uwi_leftmostleaf_to_root(bitree_uwi_t **tree);
+
+bitree_uwi_t*
+bitree_uwi_remove_leftmostleaf(bitree_uwi_t **tree);
 
 #endif /* __BINARYTREE_UWI_H__ */

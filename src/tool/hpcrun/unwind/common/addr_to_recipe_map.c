@@ -1,10 +1,15 @@
 /*
  * addr_to_recipe_map.c
  *
- * addr_to_recipe_map implemented as a cskiplist of interval_tree_pair.
+ * address to recipe map implemented as a cskiplist whose node values are of type
+ * ilmstat_btuwi_pair_t*.
+ * ilmstat_btuwi_pair_t is a <key, value> pair of the form
+ *   <interval_load_module/tree status, binary tree of unwind intervals)
  *
  *      Author: dxnguyen
  */
+
+#define A2R_MAP_DEBUG 0
 
 //******************************************************************************
 // local include files
@@ -23,6 +28,18 @@
 // interface operations
 //******************************************************************************
 
+void
+a2r_map_init(mem_alloc m_alloc)
+{
+#if A2R_MAP_DEBUG
+  printf("DXN_DBG a2r_map_init: call cskl_ilmstat_btuwi_init(SKIPLIST_HEIGHT, m_alloc)... \n");
+#endif
+
+  cskl_ilmstat_btuwi_init(SKIPLIST_HEIGHT, m_alloc);
+}
+
+
+// returns an empty cskl_ilmstat_btuwi_t*, cskiplist of ilmstat_btuwi_pair_t*
 addr_to_recipe_map_t*
 a2r_map_new(mem_alloc m_alloc)
 {
@@ -30,6 +47,10 @@ a2r_map_new(mem_alloc m_alloc)
   return (addr_to_recipe_map_t *)map;
 }
 
+/*
+ * if the given address, value, is in the range of a node in the cskiplist,
+ * return that node, otherwise return NULL.
+ */
 ilmstat_btuwi_pair_t*
 a2r_map_inrange_find(addr_to_recipe_map_t *map, uintptr_t addr)
 {
@@ -43,6 +64,13 @@ a2r_map_insert(addr_to_recipe_map_t *map, ilmstat_btuwi_pair_t* itp,
   return cskl_ilmstat_btuwi_insert((cskl_ilmstat_btuwi_t*) map, itp, m_alloc);
 }
 
+
+/*
+ * if the given address, value, is in the range of a node in the cskiplist,
+ * return the root node of the binary tree of unwind intervals whose interval
+ * key contains the given address,
+ * otherwise return NULL.
+ */
 bitree_uwi_t*
 a2r_map_get_btuwi(addr_to_recipe_map_t *map, uintptr_t addr )
 {
@@ -58,17 +86,21 @@ a2r_map_get_recipe(addr_to_recipe_map_t *map, uintptr_t addr )
 }
 
 bool
-a2r_map_cmp_del_bulk_unsynch(addr_to_recipe_map_t *map,
-	ilmstat_btuwi_pair_t* lo, ilmstat_btuwi_pair_t* hi, mem_free m_free)
+a2r_map_cmp_del_bulk_unsynch(
+	addr_to_recipe_map_t *map,
+	ilmstat_btuwi_pair_t* lo,
+	ilmstat_btuwi_pair_t* hi)
 {
-  return cskl_ilmstat_btuwi_cmp_del_bulk_unsynch((cskl_ilmstat_btuwi_t*) map, lo, hi, m_free);
+  return cskl_ilmstat_btuwi_cmp_del_bulk_unsynch((cskl_ilmstat_btuwi_t*) map, lo, hi);
 }
 
 bool
-a2r_map_inrange_del_bulk_unsynch(addr_to_recipe_map_t *map,
-	uintptr_t lo, uintptr_t hi, mem_free m_free)
+a2r_map_inrange_del_bulk_unsynch(
+	addr_to_recipe_map_t *map,
+	uintptr_t lo,
+	uintptr_t hi)
 {
-  return cskl_ilmstat_btuwi_inrange_del_bulk_unsynch((cskl_ilmstat_btuwi_t*) map, lo, hi, m_free);
+  return cskl_ilmstat_btuwi_inrange_del_bulk_unsynch((cskl_ilmstat_btuwi_t*) map, lo, hi);
 }
 
 /*

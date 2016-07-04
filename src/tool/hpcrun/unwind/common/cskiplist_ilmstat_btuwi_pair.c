@@ -11,18 +11,44 @@
 #include <string.h>
 #include <stdio.h>
 
+#define CSKL_ILS_BTU 0
 
 //******************************************************************************
 // local include files
 //******************************************************************************
 
+#include <lib/prof-lean/mcs-lock.h>
 #include <lib/prof-lean/cskiplist.h>
 #include "cskiplist_ilmstat_btuwi_pair.h"
 
+static void
+cskl_ilmstat_btuwi_free(void *anode)
+{
+#if CSKL_ILS_BTU
+//  printf("DXN_DBG cskl_ilmstat_btuwi_free(%p)...\n", anode);
+#endif
+
+  csklnode_t *node = (csklnode_t*) anode;
+  ilmstat_btuwi_pair_t *ilmstat_btuwi = (ilmstat_btuwi_pair_t*)node->val;
+  ilmstat_btuwi_pair_free(ilmstat_btuwi);
+  node->val = NULL;
+  cskl_free(node);
+}
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
+
+void
+cskl_ilmstat_btuwi_init(int maxheight, mem_alloc m_alloc)
+{
+#if CSKL_ILS_BTU
+  printf("DXN_DBG cskl_ilmstat_btuwi_init: call cskl_init(), ilmstat_btuwi_pair_init()...\n");
+#endif
+  cskl_init();
+  ilmstat_btuwi_pair_init();
+}
+
 
 cskl_ilmstat_btuwi_t *
 cskl_ilmstat_btuwi_new(int maxheight, mem_alloc m_alloc)
@@ -44,6 +70,10 @@ cskl_ilmstat_btuwi_cmp_find(cskl_ilmstat_btuwi_t *cskl, ilmstat_btuwi_pair_t* va
   return (ilmstat_btuwi_pair_t*)cskl_cmp_find((cskiplist_t*)cskl, value);
 }
 
+/*
+ * if the given address, value, is in the range of a node in the cskiplist,
+ * return that node, otherwise return NULL.
+ */
 ilmstat_btuwi_pair_t*
 cskl_ilmstat_btuwi_inrange_find(cskl_ilmstat_btuwi_t *cskl, uintptr_t value)
 {
@@ -57,23 +87,21 @@ cskl_ilmstat_btuwi_insert(cskl_ilmstat_btuwi_t *cskl, ilmstat_btuwi_pair_t* valu
 }
 
 bool
-cskl_ilmstat_btuwi_delete(cskl_ilmstat_btuwi_t *cskl, ilmstat_btuwi_pair_t* value)
+cskl_ilmstat_btuwi_cmp_del_bulk_unsynch(
+	cskl_ilmstat_btuwi_t *cskl,
+	ilmstat_btuwi_pair_t* low,
+	ilmstat_btuwi_pair_t* high)
 {
-  return cskl_delete((cskiplist_t *)cskl, value);
+  return cskl_cmp_del_bulk_unsynch((cskiplist_t *)cskl, low, high, cskl_ilmstat_btuwi_free);
 }
 
 bool
-cskl_ilmstat_btuwi_cmp_del_bulk_unsynch(cskl_ilmstat_btuwi_t *cskl,
-	ilmstat_btuwi_pair_t* low, ilmstat_btuwi_pair_t* high, mem_free m_free)
+cskl_ilmstat_btuwi_inrange_del_bulk_unsynch(
+	cskl_ilmstat_btuwi_t *cskl,
+	uintptr_t low,
+	uintptr_t high)
 {
-  return cskl_cmp_del_bulk_unsynch((cskiplist_t *)cskl, low, high, m_free);
-}
-
-bool
-cskl_ilmstat_btuwi_inrange_del_bulk_unsynch(cskl_ilmstat_btuwi_t *cskl,
-	uintptr_t low, uintptr_t high, mem_free m_free)
-{
-  return cskl_inrange_del_bulk_unsynch((cskiplist_t *)cskl, (void*)low, (void*)high, m_free);
+  return cskl_cmp_del_bulk_unsynch((cskiplist_t *)cskl, (void*)low, (void*)high, cskl_ilmstat_btuwi_free);
 }
 
 /*

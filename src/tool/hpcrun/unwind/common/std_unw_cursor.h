@@ -98,18 +98,7 @@ typedef struct hpcrun_unw_cursor_t {
   void *ra_loc;  // for trampolines
 
   fence_enum_t fence; // Details on which fence stopped an unwind
-
-#if 0
-  UNW_CURSOR_INTERVAL_t intvl;
-  load_module_t *lm; // DXN: should correspond to intvl at initialization
-  // DXN: TODO add a quaruple (s, e, lm, recipe)
-#else
-
   unwindr_info_t unwr_info; // unwind recipe info
-
-#endif
-
-
   ip_normalized_t the_function; // (normalized) ip for function
 
   //NOTE: will fail if HPC_UWN_LITE defined

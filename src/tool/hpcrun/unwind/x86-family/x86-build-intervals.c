@@ -69,6 +69,7 @@
 
 extern void x86_dump_ins(void* addr);
 
+
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
@@ -259,7 +260,10 @@ x86_coalesce_unwind_intervals(unwind_interval *ui)
 	  bitree_uwi_set_rightsubtree(current, UWI_NEXT(ui));
 	  UWI_RECIPE(current)->has_tail_calls =
 		  UWI_RECIPE(current)->has_tail_calls || UWI_RECIPE(ui)->has_tail_calls;
-	  free_ui_node_locked(ui);   // DXN: TODO  Let it leak for now!!!!
+	  // disconnect ui's right subtree and free ui:
+	  bitree_uwi_set_rightsubtree(ui, NULL);
+	  bitree_uwi_free(ui);
+
 	  ui = current;
 	  TMSG(COALESCE,"Intervals match! Extended interval:");
 	  if (ENABLED(COALESCE)){

@@ -64,19 +64,13 @@
 #include <include/gcc-attr.h>
 #include <include/uint.h>
 #include <include/min-max.h>
-
 #include "ppc64-unwind-interval.h"
-
 #include "hpcrun-malloc.h"
 #include "ui_tree.h"
-
 #include "fnbounds_interface.h"
-
 #include <hpcrun/hpcrun_stats.h>
 #include <messages/messages.h>
-
 #include <lib/isa-lean/power/instruction-set.h>
-
 #include <lib/prof-lean/atomic-op.h>
 
 
@@ -97,21 +91,9 @@ static const char *
 sp_ty_string(sp_ty_t ty);
 
 
-
 //***************************************************************************
 // interface operations
 //***************************************************************************
-#if 0
-interval_status 
-build_intervals(char *ins, unsigned int len)
-{
-  interval_status stat = ppc64_build_intervals(ins, len);
-  if (MYDBG) {
-    ppc64_print_interval_set((unwind_interval *) stat.first);
-  }
-  return stat;
-}
-#else
 
 btuwi_status_t
 build_intervals(char  *ins, unsigned int len, mem_alloc m_alloc)
@@ -123,43 +105,22 @@ build_intervals(char  *ins, unsigned int len, mem_alloc m_alloc)
   return stat;
 }
 
-#endif
-
-
 //***************************************************************************
 // unwind_interval interface
 //***************************************************************************
-#if 0
-unw_interval_t *
-new_ui(char *start_addr, sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
-       unwind_interval *prev)
-{
-  unwind_interval* u = (unwind_interval*)hpcrun_ui_malloc(sizeof(unwind_interval));
-
-  u->common.start = start_addr;
-  u->common.end = 0;
-  u->common.prev = (splay_interval_t*)prev;
-  u->common.next = NULL;
-
-  if (prev) {
-    link_ui(prev, u);
-  }
-
-  u->sp_ty  = sp_ty;
-  u->ra_ty  = ra_ty;
-  u->sp_arg = sp_arg;
-  u->ra_arg = ra_arg;
-
-  hpcrun_stats_num_unwind_intervals_total_inc();
-
-  return u;
-}
-#else
 
 unwind_interval *
-new_ui(char *startaddr, sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
-		unwind_interval *prev,  mem_alloc m_alloc)
+new_ui(
+	char *startaddr,
+	sp_ty_t sp_ty,
+	ra_ty_t ra_ty,
+	int sp_arg,
+	int ra_arg,
+	unwind_interval *prev,
+	mem_alloc m_alloc)
 {
+#if 0
+
   bitree_uwi_t *u = bitree_uwi_new(NULL, prev, NULL, m_alloc);
   interval_t *interval = interval_t_new(startaddr, 0, m_alloc);
   ppc64recipe_t *ppc64recipe =
@@ -167,8 +128,28 @@ new_ui(char *startaddr, sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
   bitree_uwi_set_rootval(u, uwi_t_new(interval, (uw_recipe_t*)ppc64recipe, m_alloc));
   hpcrun_stats_num_unwind_intervals_total_inc();
   return u;
+
+#else
+
+  bitree_uwi_t *u = bitree_uwi_malloc(m_alloc, sizeof(ppc64recipe_t));
+  bitree_uwi_set_leftsubtree(u, prev);
+  uwi_t *uwi =  bitree_uwi_rootval(u);
+
+  interval_t *interval =  uwi_t_interval(uwi);
+  interval->start = (uintptr_t)startaddr;
+
+  ppc64recipe_t *ppc64recipe = (ppc64recipe_t*) uwi_t_recipe(uwi);
+  ppc64recipe->sp_ty = sp_ty;
+  ppc64recipe->ra_ty = ra_ty;
+  ppc64recipe->sp_arg = sp_arg;
+  ppc64recipe->ra_arg = ra_arg;
+
+  return u;
+
+#endif
 }
 
+#if 0
 ppc64recipe_t *
 ppc64recipe_new(sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
 		mem_alloc m_alloc)
@@ -180,6 +161,7 @@ ppc64recipe_new(sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
   recipe->ra_arg = ra_arg;
   return recipe;
 }
+#endif
 
 /*
  * Concrete implementation of the abstract val_tostr function of the
@@ -218,9 +200,6 @@ uw_recipe_print(void* recipe)
 {
   ppc64recipe_print(recipe);
 }
-
-#endif
-
 
 void 
 ui_dump(unwind_interval* u)
@@ -727,7 +706,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
     cur_insn++;
   }
 
-  UWI_END_ADDR(ui) = end_insn;  // DXN
+  UWI_END_ADDR(ui) = end_insn;
 
   btuwi_status_t stat;
   stat.first_undecoded_ins = NULL;
@@ -760,7 +739,7 @@ ppc64_dump_intervals(void* addr)
   uintptr_t llen = ((uintptr_t)e) - (uintptr_t)s;
 
   printf("build intervals from %p to %p (%"PRIuPTR")\n", s, e, llen);
-  intervals = ppc64_build_intervals(s, (unsigned int) llen, hpcrun_malloc);  // TODO DXN: shelf hcprun_ui_malloc for now, as in x86_dump_intervals
+  intervals = ppc64_build_intervals(s, (unsigned int) llen, hpcrun_malloc);  // TODO: shelf hcprun_ui_malloc for now, as in x86_dump_intervals
 
   ppc64_print_interval_set((unwind_interval *) intervals.first);
 }

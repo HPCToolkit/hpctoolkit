@@ -152,7 +152,7 @@ set_frame(frame_t *f, ompt_placeholder_t *ph)
 {
   f->cursor.pc_unnorm = ph->pc;
   f->ip_norm = ph->pc_norm;
-  f->the_function = ph->pc_norm;  // DXN: per JMC
+  f->the_function = ph->pc_norm;
 }
 
 
@@ -164,7 +164,6 @@ collapse_callstack(backtrace_info_t *bt, ompt_placeholder_t *placeholder)
   bt->begin = bt->last; 
   bt->bottom_frame_elided = false;
   bt->partial_unwind = false;
- // bt->trace_pc = bt->begin->cursor.pc_unnorm;  // DXN: per JMC
 }
 
 

@@ -120,9 +120,13 @@ hpcrun_cleanup_partial_unwind(void)
     hpcrun_stats_num_samples_dropped_inc();
 
   hpcrun_up_pmsg_count();
+
+#if 0
   if (TD_GET(splay_lock)) {
-    hpcrun_release_splay_lock();
+    hpcrun_release_splay_lock(); // splay tree lock is no longer used.
   }
+#endif
+
   if (TD_GET(fnbounds_lock)) {
     fnbounds_release_lock();
   }
@@ -228,8 +232,6 @@ hpcrun_sample_callpath(void* context, int metricId,
   epoch_t* epoch = td->core_profile_trace_data.epoch;
 
   hpcrun_set_handling_sample(td);
-
-//  void* trace_pc = hpcrun_context_pc(context);  // DXN no longer needed
   ip_normalized_t leaf_func;
 
   td->btbuf_cur = NULL;
@@ -237,19 +239,13 @@ hpcrun_sample_callpath(void* context, int metricId,
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
 
-    if (epoch != NULL) {
-      if (ENABLED(DEBUG_PARTIAL_UNW)){
-//	EMSG("PARTIAL UNW debug sampler invoked @ sample %d", hpcrun_stats_num_samples_attempted());
-//	node = hpcrun_dbg_sample_callpath(epoch, context, &trace_pc, metricId, metricIncr,  // DXN: dead code
-//					  skipInner, isSync);
-      }
-      else {
-	node = help_hpcrun_sample_callpath(epoch, context, &leaf_func, metricId, metricIncr,
-					   skipInner, isSync);  // DXN: TODO change the interface to return the function containing trace_pc.
-      }
-      if (ENABLED(DUMP_BACKTRACES)) {
-	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
-      }
+	if (epoch != NULL) {
+	  node = help_hpcrun_sample_callpath(epoch, context, &leaf_func, metricId, metricIncr,
+		  skipInner, isSync);  // TODO change the interface to return the function containing trace_pc.
+
+	  if (ENABLED(DUMP_BACKTRACES)) {
+		hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
+	  }
     }
   }
   else {
@@ -265,20 +261,6 @@ hpcrun_sample_callpath(void* context, int metricId,
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
   if (trace_ok && hpcrun_trace_isactive()) {
     TMSG(TRACE, "Sample event encountered");
-
-#if 0
-    void* func_start_pc = NULL;
-    void* func_end_pc = NULL;
-    load_module_t* lm = NULL;
-    fnbounds_enclosing_addr(trace_pc, &func_start_pc, &func_end_pc, &lm);
-    // DXN: TODO fnbounds_enclosing_addr not needed because the info can obtained by help_hpcrun_sample_callpath
-    // DXN: help_hpcrun_sample_callpath sets epoch to contain the corresponding load module lm.
-    // Need to figure out where func_start_pc and func_end_pc are set.
-
-    TMSG(TRACE, "func start = %p, pc = %p, func_end = %p");
-    ip_normalized_t leaf_func = hpcrun_normalize_ip(func_start_pc, lm);
-
-#endif
 
     cct_addr_t frm = { .ip_norm = leaf_func };
     TMSG(TRACE,"parent node = %p, &frm = %p", hpcrun_cct_parent(node), &frm);

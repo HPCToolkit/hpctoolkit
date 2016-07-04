@@ -74,70 +74,22 @@
 
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/atomic.h>
+#include <lib/prof-lean/mcs-lock.h>
 
-// Locks both the UI tree and the UI free list.
-spinlock_t ui_tree_lock = SPINLOCK_UNLOCKED;
+#define UITREE_DEBUG 0
 
-#define DEADLOCK_PROTECT
-#ifndef DEADLOCK_PROTECT
-#define UI_TREE_LOCK  do {	 \
-	TD_GET(splay_lock) = 0;	 \
-	spinlock_lock(&ui_tree_lock);  \
-	TD_GET(splay_lock) = 1;	 \
-} while (0)
-
-#define UI_TREE_UNLOCK  do {       \
-	spinlock_unlock(&ui_tree_lock);  \
-	TD_GET(splay_lock) = 0;	   \
-} while (0)
-#else // defined(DEADLOCK_PROTECT)
-
-#ifdef USE_HW_THREAD_ID
-#include <hardware-thread-id.h>
-#define lock_val get_hw_tid()
-#define safe_spinlock_lock hwt_limit_spinlock_lock
-#else  // ! defined(USE_HW_THREAD_ID)
-#define lock_val SPINLOCK_LOCKED_VALUE
-#define safe_spinlock_lock limit_spinlock_lock
-#endif // USE_HW_THREAD_ID
 static size_t iter_count = 0;
-extern void hpcrun_drop_sample(void);
-static inline void
-lock_ui(void)
-{
-  if (! safe_spinlock_lock(&ui_tree_lock, iter_count, lock_val)) {
-	//    EMSG("Abandon Lock for hwt id = %d", lock_val);
-	TD_GET(deadlock_drop) = true;
-	hpcrun_stats_num_samples_yielded_inc();
-	hpcrun_drop_sample();
-  }
-}
 
-static inline void
-unlock_ui(void) {
-  spinlock_unlock(&ui_tree_lock);
-}
-#define UI_TREE_LOCK TD_GET(splay_lock) = 0; lock_ui(); TD_GET(splay_lock) = 1
-#define UI_TREE_UNLOCK unlock_ui(); TD_GET(splay_lock) = 0
-#endif // DEADLOCK_PROTECT
-
-// Invariant: For any interval_ldmod_t key in the map, the corresponding
-// bitree_uwi_t tree is not NULL:
+// The concrete representation of the abstract data type unwind recipe map.
 static addr_to_recipe_map_t *addr2recipe_map = NULL;
 
-// DXN: memory allocator for creating addr2recipe_map
+// memory allocator for creating addr2recipe_map
 // and inserting entries into addr2recipe_map:
-static mem_alloc m_alloc = hpcrun_malloc;
-
-#if 0
-static bitree_uwi_t *ui_free_list = NULL;
-static size_t the_ui_size = 0;
-static void free_ui_tree_locked(bitree_uwi_t *tree);  // DXN: TODO
-#endif
-
+static mem_alloc my_alloc = hpcrun_malloc;
 
 extern btuwi_status_t build_intervals(char *ins, unsigned int len, mem_alloc m_alloc);
 static ilmstat_btuwi_pair_t *uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr);
+static ilmstat_btuwi_pair_t* uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr);
 
 //---------------------------------------------------------------------
 // interface operations
@@ -152,8 +104,19 @@ static ilmstat_btuwi_pair_t *uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void
 void
 uw_recipe_map_init(void)
 {
+
+#if UITREE_DEBUG
+  printf("DXN_DBG uw_recipe_map_init: call a2r_map_init(my_alloc) ... \n");
+#endif
+
+  a2r_map_init(my_alloc);
+
   TMSG(UITREE, "init address-to-recipe map");
-  addr2recipe_map = a2r_map_new(m_alloc);
+  addr2recipe_map = a2r_map_new(my_alloc);
+
+  // initialize the map with a POISONED node ({([0, UINTPTR_MAX), NULL), NEVER}, NULL)
+  uw_recipe_map_poison(0, UINTPTR_MAX);
+
   iter_count = DEADLOCK_DEFAULT;
   if (getenv("HPCRUN_DEADLOCK_THRESHOLD")) {
 	iter_count = atoi(getenv("HPCRUN_DEADLOCK_THRESHOLD"));
@@ -166,16 +129,62 @@ uw_recipe_map_init(void)
  *
  */
 bool
-uw_recipe_map_poisoned(uintptr_t start, uintptr_t end)
+uw_recipe_map_poison(uintptr_t start, uintptr_t end)
 {
   ilmstat_btuwi_pair_t* itpair =
-	  ilmstat_btuwi_pair_build(start, end, NULL, NEVER, NULL, m_alloc);
-  return a2r_map_insert(addr2recipe_map, itpair, m_alloc);
+	  ilmstat_btuwi_pair_build(start, end, NULL, NEVER, NULL, my_alloc);
+  return a2r_map_insert(addr2recipe_map, itpair, my_alloc);
 }
 
+bool
+uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
+{
+  ilmstat_btuwi_pair_t* ilmstat_btuwi =	a2r_map_inrange_find(addr2recipe_map, start);
+
+#if UITREE_DEBUG
+  assert(ilmstat_btuwi != NULL); // start should be in range of some poisoned interval
+#endif
+
+  ildmod_stat_t* ilmstat = ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi);
+#if UITREE_DEBUG
+  assert(ilmstat->stat == NEVER);  // should be a poisoned node
+#endif
+  interval_t* interval = ilmstat_btuwi_pair_interval(ilmstat_btuwi);
+  uintptr_t s0 = interval->start;
+  uintptr_t e0 = interval->end;
+  a2r_map_cmp_del_bulk_unsynch(addr2recipe_map, ilmstat_btuwi, ilmstat_btuwi);
+  uw_recipe_map_poison(s0, start);
+  return uw_recipe_map_poison(end, e0);
+}
+
+bool
+uw_recipe_map_repoison(uintptr_t start, uintptr_t end)
+{
+  if (start > 0) {
+    ilmstat_btuwi_pair_t* itp_left = a2r_map_inrange_find(addr2recipe_map, start - 1);
+    if (itp_left) { // poisoned interval on the left
+            interval_t* interval_left = ilmstat_btuwi_pair_interval(itp_left);
+            start = interval_left->start;
+            a2r_map_cmp_del_bulk_unsynch(addr2recipe_map, itp_left, itp_left);
+    }
+  }
+  if (end < UINTPTR_MAX) {
+    ilmstat_btuwi_pair_t* itp_right = a2r_map_inrange_find(addr2recipe_map, end);
+    if (itp_right) { // poisoned interval on the right
+            interval_t* interval_right = ilmstat_btuwi_pair_interval(itp_right);
+            end = interval_right->start;
+            a2r_map_cmp_del_bulk_unsynch(addr2recipe_map, itp_right, itp_right);
+    }
+  }
+  return uw_recipe_map_poison(start,end);
+}
+
+/*
+ *
+ */
 static ilmstat_btuwi_pair_t *
 uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr) {
-  // See check addr is already in the range of an interval key in the map
+  // first check if addr is already in the range of an interval key in the map
   ilmstat_btuwi_pair_t* ilmstat_btuwi =
 	  a2r_map_inrange_find(addr2recipe_map, (uintptr_t)addr);
 
@@ -196,28 +205,53 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr) {
 	// bounding addresses found; set DEFERRED state and pair it with
 	// (bitree_uwi_t*)NULL and try to insert into map:
 	ilmstat_btuwi =
-		ilmstat_btuwi_pair_build((uintptr_t)fcn_start, (uintptr_t)fcn_end, lm,
-			DEFERRED, NULL, m_alloc);
+		ilmstat_btuwi_pair_malloc((uintptr_t)fcn_start, (uintptr_t)fcn_end, lm,
+			DEFERRED, NULL, my_alloc);
 
-	bool inserted =  a2r_map_insert(addr2recipe_map, ilmstat_btuwi, m_alloc);
+	bool inserted =  a2r_map_insert(addr2recipe_map, ilmstat_btuwi, my_alloc);
 	// if successful: ilmstat_btuwi is now in the map.
+
 	if (!inserted) {
-		// if not: the interval_ldmod_pair key ([fcn_start, fcn_end), lm) is already in the map.
-		// FIXME: memory leak if insertion fails.
+		// interval_ldmod_pair ([fcn_start, fcn_end), lm) is already in the map,
+	    // so free it:
+	  ilmstat_btuwi_pair_free(ilmstat_btuwi);
+
+	  // look for it in the map and it should be there:
 	  ilmstat_btuwi =
 	  	  a2r_map_inrange_find(addr2recipe_map, (uintptr_t)addr);
 	}
   }
-  assert(ilmstat_btuwi != NULL);  // DXN: just checking
+#if UITREE_DEBUG
+  assert(ilmstat_btuwi != NULL);
+#endif
   return ilmstat_btuwi;
 }
 
+/*
+ *
+ */
 bool
 uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
 {
   ilmstat_btuwi_pair_t *ilm_btui = uw_recipe_map_lookup_ilmstat_btuwi_pair(addr);
 
-  if (ilm_btui == NULL) return false;  // lookup fails for various reasons.
+  if (ilm_btui == NULL) {  // lookup fails for various reasons.
+	// fill unwr_info with appropriate values to indicate that the lookup fails and the unwind recipe
+	// information is invalid.
+	// known use case:
+	// hpcrun_generate_backtrace_no_trampoline calls
+	//   1. hpcrun_unw_init_cursor(&cursor, context), which calls
+	//        uw_recipe_map_lookup,
+	//   2. hpcrun_unw_step(&cursor), which calls
+	//        hpcrun_unw_step_real(cursor), which looks at cursor->unwr_info
+
+	unwr_info->btuwi    = NULL;
+	unwr_info->treestat = NEVER;
+	unwr_info->lm       = NULL;
+	unwr_info->start    = 0;
+	unwr_info->end      = 0;
+	return false;
+  }
 
   bitree_uwi_t *btuwi = ilmstat_btuwi_pair_btuwi(ilm_btui);
   unwr_info->btuwi    = bitree_uwi_inrange(btuwi, (uintptr_t)addr);
@@ -250,7 +284,7 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
 	  // it is my responsibility to build the tree of intervals for the function
 	  void *fcn_start = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->start;
 	  void *fcn_end   = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->end;
-	  btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, m_alloc);
+	  btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, my_alloc);
 	  if (btuwi_stat.first == NULL) {
 		TMSG(UITREE, "BAD build_intervals failed: fcn range %p to %p",
 			fcn_start, fcn_end);
@@ -275,7 +309,7 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
 ildmod_stat_t*
 uw_recipe_map_get_fnbounds_ldmod(void *addr)
 {
-  // See check addr is already in the range of an interval key in the map
+  // check if addr is already in the range of an interval key in the map
   ilmstat_btuwi_pair_t* ilmstat_btuwi =
 	  uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(addr);
   if (!ilmstat_btuwi)
@@ -285,180 +319,15 @@ uw_recipe_map_get_fnbounds_ldmod(void *addr)
 
 /*
  * Remove intervals in the range [start, end) from the unwind interval
- * tree, and move the deleted nodes to the unwind free list.
+ * tree.
  */
 void
 uw_recipe_map_delete_range(void* start, void* end)
 {
-#if 0
-  bitree_uwi_t *del_tree;
-  UI_TREE_LOCK;
-  TMSG(UITREE, "begin unwind delete from %p to %p", start, end);
-  if (ENABLED(UITREE_VERIFY)) {
-	interval_tree_verify(addr2recipe_map, "UITREE");
-  }
-  interval_tree_delete(&addr2recipe_map, &del_tree, start, end);
-  free_ui_tree_locked(del_tree);
-  if (ENABLED(UITREE_VERIFY)) {
-	interval_tree_verify(addr2recipe_map, "UITREE");
-  }
-  UI_TREE_UNLOCK;
-#endif
-
-  // DXN: TODO - Let memory leak for now
-  a2r_map_inrange_del_bulk_unsynch(addr2recipe_map, (uintptr_t)start, (uintptr_t)end, free_ui_node_locked );
+  //  use EMSG to log this call.
+  EMSG("uw_recipe_map_delete_range from %p to %p \n", start, end);
+  a2r_map_inrange_del_bulk_unsynch(addr2recipe_map, (uintptr_t)start, (uintptr_t)end - 1);
 }
-
-
-//---------------------------------------------------------------------
-// private operations
-//---------------------------------------------------------------------
-
-
-/*
- * The ui free routines are in the private section in order to enforce
- * locking.  Free is only called from hpcrun_addr_to_interval() or
- * hpcrun_delete_ui_range() where the free list is already locked.
- *
- * Free the nodes in post order, since putting a node on the free list
- * modifies its child pointers.
- */
-#if 0
-// DXN: TODO
-static void
-free_ui_tree_locked(bitree_uwi_t *tree)
-{
-  // DXN: TODO - Let memory leak for now
-#if 0
-  if (tree == NULL)
-	return;
-
-  free_ui_tree_locked(LEFT(tree));
-  free_ui_tree_locked(RIGHT(tree));
-  RIGHT(tree) = ui_free_list;
-  ui_free_list = tree;
-#endif
-}
-#endif
-
-
-void
-free_ui_node_locked(void *node)
-{
-  // DXN: TODO - Let memory leak for now
-#if 0
-  RIGHT(node) = ui_free_list;
-  ui_free_list = node;
-#endif
-}
-
-
-void *
-hpcrun_ui_malloc(size_t ui_size)
-{
-#if 0
-	/*
-	 * Old code:
-	 * Return a node from the free list if non-empty, else make a new one
-	 * via hpcrun_malloc().  Each architecture has a different struct
-	 * size, but they all extend interval tree nodes, which is all we use
-	 * here.
-	 *
-	 * Note: the claim is that all calls to hpcrun_ui_malloc() go through
-	 * hpcrun_addr_to_interval() and thus the free list doesn't need its
-	 * own lock (maybe a little sleazy, and be careful the code doesn't
-	 * grow to violate this assumption).
-	 */
-
-  void *ans;
-
-  /* Verify that all calls have the same ui_size. */
-  if (the_ui_size == 0)
-	the_ui_size = ui_size;
-  assert(ui_size == the_ui_size);
-
-  if (ui_free_list != NULL) {
-	ans = (void *)ui_free_list;
-	ui_free_list = bitree_uwi_rightsubtree(ui_free_list);
-  } else {
-	ans = hpcrun_malloc(ui_size);
-  }
-
-  if (ans != NULL)
-	memset(ans, 0, ui_size);
-
-  return (ans);
-#endif
-  // DXN: TODO
-  return  hpcrun_malloc(ui_size);
-}
-
-/******************************************************************************
- * The following are the old APIs for the unwind interval tree.
- * They are kept for backward compatibility sake.
- *
- *****************************************************************************/
-
-void
-hpcrun_interval_tree_init(void)
-{
-#if 0
-  // DXN: old code
-  TMSG(UITREE, "init unwind interval tree");
-  ui_tree_root = NULL;
-  iter_count = DEADLOCK_DEFAULT;
-  if (getenv("HPCRUN_DEADLOCK_THRESHOLD")) {
-    iter_count = atoi(getenv("HPCRUN_DEADLOCK_THRESHOLD"));
-    if (iter_count < 0) iter_count = 0;
-  }
-  TMSG(DEADLOCK, "deadlock threshold set to %d", iter_count);
-  UI_TREE_UNLOCK;
-#endif
-  // DXN: TODO
-  uw_recipe_map_init();
-}
-
-
-void
-hpcrun_release_splay_lock(void)
-{
-#if 0
-  // DXN: old code
-  UI_TREE_UNLOCK;
-#endif
-}
-
-void
-hpcrun_delete_ui_range(void* start, void* end)
-{
-#if 0
-  /*
-   * Old code:
-   * Remove intervals in the range [start, end) from the unwind interval
-   * tree, and move the deleted nodes to the unwind free list.
-   */
-  interval_tree_node *del_tree;
-
-  UI_TREE_LOCK;
-
-  TMSG(UITREE, "begin unwind delete from %p to %p", start, end);
-  if (ENABLED(UITREE_VERIFY)) {
-    interval_tree_verify(ui_tree_root, "UITREE");
-  }
-
-  interval_tree_delete(&ui_tree_root, &del_tree, start, end);
-  free_ui_tree_locked(del_tree);
-
-  if (ENABLED(UITREE_VERIFY)) {
-    interval_tree_verify(ui_tree_root, "UITREE");
-  }
-
-  UI_TREE_UNLOCK;
-#endif
-  // DXN: TODO
-  uw_recipe_map_delete_range(start, end);
-}
-
 
 //---------------------------------------------------------------------
 // debug operations
@@ -470,8 +339,3 @@ uw_recipe_map_print(void)
   a2r_map_print(addr2recipe_map);
 }
 
-void
-hpcrun_print_interval_tree(void)
-{
-  uw_recipe_map_print();
-}

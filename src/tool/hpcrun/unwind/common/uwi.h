@@ -1,7 +1,7 @@
 /*
  * uwi.h
  *
- * uwi_t is a key/value pair whose key is an interval,
+ * uwi_t is a <key, value> pair whose key is an interval,
  * interval_t, as specified in interval.h, and whose
  * value is an unwind recipe, recipe_t, as specified in uw_recipe.h.
  *
