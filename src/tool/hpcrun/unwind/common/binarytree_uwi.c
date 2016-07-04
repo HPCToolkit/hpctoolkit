@@ -135,11 +135,7 @@ bitree_uwi_del(bitree_uwi_t **tree, mem_free m_free)
  */
 void bitree_uwi_free(bitree_uwi_t *tree)
 {
-
   if(!tree) return;
-
-#if 1
-
   bitree_uwi_leftmostleaf_to_root(&tree);
   // link to the global free unwind interval tree:
   mcs_node_t me;
@@ -147,65 +143,7 @@ void bitree_uwi_free(bitree_uwi_t *tree)
   bitree_uwi_set_rightsubtree(tree, GF_uwi_tree);
   GF_uwi_tree = tree;
   bitree_uwi_set_rightsubtree(tree, NULL);
-
   mcs_unlock(&GFT_lock, &me);
-
-#else
-  // attach to the global free unwind interval tree:
-  mcs_node_t me;
-  mcs_lock(&GFT_lock, &me);
-
-  if (!GF_uwi_tree) {  // empty global tree
-
-#if BTUWI_DEBUG
-	printf("\n Empty GF_uwi_tree case:\n input tree to be FREED:\n ");
-	bitree_uwi_print(tree);
-	printf("\n Empty GF_uwi_tree case:\n GF_uwi_tree before FREEING tree:\n ");
-	bitree_uwi_print(GF_uwi_tree);
-#endif
-
-	GF_uwi_tree = tree;
-
-#if BTUWI_DEBUG
-	printf("\n Empty GF_uwi_tree case:\n Input tree  after freed:\n ");
-	bitree_uwi_print(tree);
-	printf("\n Empty GF_uwi_tree case:  GF_uwi_tree after tree is freed:\n ");
-	bitree_uwi_print(GF_uwi_tree);
-#endif
-
-  }
-  else {  // non-empty global tree
-
-#if BTUWI_DEBUG
-	printf("\n Non Empty GF_uwi_tree case:\n Input tree to be FREED: Note that it is the right subtree of the previous input tree and is the right subtree of the current GF_uwi_tree \n ");
-	bitree_uwi_print(tree);
-	printf("\n Non Empty GF_uwi_tree case:\n GF_uwi_tree before moving its leftmost leaf to root:\n ");
-	bitree_uwi_print(GF_uwi_tree);
-#endif
-
-	bitree_uwi_leftmostleaf_to_root(&GF_uwi_tree);
-
-#if BTUWI_DEBUG
-	printf("\n Non Empty GF_uwi_tree case:\n GF_uwi_tree after moving its leftmost leaf to root:\n ");
-	bitree_uwi_print(GF_uwi_tree);
-	printf("\n Non Empty GF_uwi_tree case:\n Input tree after GF_uwi_tree moves its leftmost leaf to root: NOTE that is has mutated:\n ");
-	bitree_uwi_print(tree);
-#endif
-
-	bitree_uwi_set_rightsubtree(GF_uwi_tree, tree);
-
-#if BTUWI_DEBUG
-	printf("\n Non Empty GF_uwi_tree case:\n Input tree after GF_uwi_tree sets its right subtree to the INPUT tree:\n ");
-	bitree_uwi_print(tree);
-	printf("\n Non Empty GF_uwi_tree case:\n GF_uwi_tree after setting its right subtree to the INPUT tree:\n ");
-	bitree_uwi_print(GF_uwi_tree);
-#endif
-
-  }
-
-  mcs_unlock(&GFT_lock, &me);
-
-#endif
 }
 
 // return the value at the root

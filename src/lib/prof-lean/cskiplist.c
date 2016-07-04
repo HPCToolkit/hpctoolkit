@@ -452,8 +452,6 @@ cskl_new(
   pfq_rwlock_init(&cskl->pfq_lock);
 
   // create sentinel nodes
-//  csklnode_t *left = cskl->left_sentinel   = csklnode_new(lsentinel, max_height, max_height, m_alloc);
-//  csklnode_t *right = cskl->right_sentinel = csklnode_new(rsentinel, max_height, max_height, m_alloc);
   csklnode_t *left = cskl->left_sentinel   = csklnode_malloc(lsentinel, max_height, max_height, m_alloc);
   csklnode_t *right = cskl->right_sentinel = csklnode_malloc(rsentinel, max_height, max_height, m_alloc);
   // hook sentinel nodes in empty list

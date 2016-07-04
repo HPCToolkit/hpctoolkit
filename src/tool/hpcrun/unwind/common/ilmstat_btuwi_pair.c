@@ -172,7 +172,7 @@ void
 ilmstat_btuwi_pair_init()
 {
 #if ILMSTAT_BTUWI_DEBUG
-  printf("ilmstat_btuwi_pair_init: mcs_init(&GFL_lock), call bitree_uwi_init() \n");
+  printf("DXN_DGB ilmstat_btuwi_pair_init: mcs_init(&GFL_lock), call bitree_uwi_init() \n");
   fflush(stdout);
 #endif
   mcs_init(&GFL_lock);
