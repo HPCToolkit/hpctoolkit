@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/trunk/src/tool/hpcrun/unwind/x86-family/manual-intervals/x86-intel11-f90main.c $
-// $Id: x86-intel11-f90main.c 4422 2014-02-10 21:24:59Z mwkrentel $
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -48,7 +45,7 @@
 #include "x86-unwind-interval-fixup.h"
 #include "x86-unwind-interval.h"
 
-static char intel14_fork_call_signature[] = { 
+static char intel_align64_signature[] = { 
  0x53,                      	// push   %rbx
  0x48, 0x89, 0xe3,              // mov    %rsp,%rbx
  0x48, 0x83, 0xe4, 0xc0,        // and    $0xffffffffffffffc0,%rsp
@@ -60,11 +57,11 @@ static char intel14_fork_call_signature[] = {
 };
 
 static int 
-adjust_intel14_fork_call_intervals(char *ins, int len, interval_status *stat)
+adjust_intel_align64_intervals(char *ins, int len, interval_status *stat)
 {
-  int siglen = sizeof(intel14_fork_call_signature);
+  int siglen = sizeof(intel_align64_signature);
 
-  if (len > siglen && strncmp((char *)intel14_fork_call_signature, ins, siglen) == 0) {
+  if (len > siglen && strncmp((char *)intel_align64_signature, ins, siglen) == 0) {
     // signature matched 
     unwind_interval *ui = (unwind_interval *) stat->first;
 
@@ -82,7 +79,8 @@ adjust_intel14_fork_call_intervals(char *ins, int len, interval_status *stat)
     // this is only correct for 64-bit code
     for(; ui; ui = (unwind_interval *)(ui->common).next) {
       if (ui->ra_status == RA_SP_RELATIVE) continue;
-      if ((ui->ra_status == RA_STD_FRAME) || (ui->ra_status == RA_BP_FRAME)) {  
+      if (((ui->ra_status == RA_STD_FRAME) || (ui->ra_status == RA_BP_FRAME)) && 
+          (ui->bp_status == BP_SAVED)) {
          ui->ra_status = RA_BP_FRAME;
          ui->bp_ra_pos = 8;
          ui->bp_bp_pos = 0;
@@ -99,7 +97,7 @@ static void
 __attribute__ ((constructor))
 register_unwind_interval_fixup_function(void)
 {
-  add_x86_unwind_interval_fixup_function(adjust_intel14_fork_call_intervals);
+  add_x86_unwind_interval_fixup_function(adjust_intel_align64_intervals);
 }
 
 
