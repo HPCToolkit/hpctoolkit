@@ -2496,50 +2496,101 @@ AM_CONDITIONAL(OPT_ENABLE_MPI, test "${OPT_ENABLE_MPI}" = "yes")
 # enable-mpi-wrapper: check MPI compiler
 #-------------------------------------------------
 
-AC_MSG_CHECKING([whether to build MPI monitoring support])
-
-OPT_REQ_ENABLE_MPI_WRAP="no" # yes, no, auto
+AC_MSG_CHECKING([whether to build MPI wrapper support])
 
 AC_ARG_ENABLE([mpi-wrapper],
-  AS_HELP_STRING([--enable-mpi-wrapper],
-                 [Enable MPI wrapper support (uses MPIF77 and CFLAGS)]),
-  [case "${enableval}" in
-     yes) OPT_REQ_ENABLE_MPI_WRAP="yes" ;;
-     no)  OPT_REQ_ENABLE_MPI_WRAP="no" ;;
-     *)   AC_MSG_ERROR([bad value ${enableval} for --enable-mpi-wrapper]) ;;
-   esac])
+  [AS_HELP_STRING([--enable-mpi-wrapper],
+      [enable MPI wrapper support, requires MPICC, MPIF77 and MPI_INC
+       (default no)])],
+  [],
+  [enable_mpi_wrapper=no])
 
-OPT_ENABLE_MPI_WRAP=no
-if test "${OPT_REQ_ENABLE_MPI_WRAP}" != "no" ; then
-  AC_MSG_CHECKING([whether can compile MPI code with CFLAGS='$CFLAGS'])
+case "$enable_mpi_wrapper" in
+  yes | Yes | YES ) enable_mpi_wrapper=yes ;;
+  * ) enable_mpi_wrapper=no ;;
+esac
+
+AC_MSG_RESULT([$enable_mpi_wrapper])
+
+AC_ARG_VAR([MPICC], [MPI C compiler for MPI wrapper support])
+AC_ARG_VAR([MPIF77], [MPI Fortran compiler for MPI wrapper support])
+AC_ARG_VAR([MPI_INC], [MPI include directory for MPI wrapper support])
+
+mpi_const_type=no
+
+if test "$enable_mpi_wrapper" = yes ; then
+  #
+  # check that MPICC works
+  #
+  if test "x$MPICC" = x ; then
+    MPICC=mpicc
+  fi
 
   AC_LANG_PUSH([C])
-  OLD_CC="$CC"
+  ORIG_CC="$CC"
   CC="$MPICC"
-  CFLAGS="$CFLAGS"
-  AC_COMPILE_IFELSE([#include <mpi.h>],
-        [ans=yes],
-        [ans=no])
 
-  CC="$OLD_CC"
-  OPT_ENABLE_MPI_WRAP=$ans
+  AC_MSG_CHECKING([MPI wrapper C compiler: $MPICC ])
+  AC_COMPILE_IFELSE([
+#include <mpi.h>
+int my_size(void)
+{
+  int size;
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  return size;
+}
+], [ans=yes], [ans=no])
+  AC_MSG_RESULT([$ans])
+
+  if test "$ans" = no ; then
+    AC_MSG_WARN([invalid MPICC compiler for MPI wrappers: $MPICC ])
+    AC_MSG_ERROR([reconfigure with MPICC set to valid MPI compiler])
+  fi
+  #
+  # check MPI_INC include path
+  #
+  AC_MSG_CHECKING([MPI wrapper include path: $MPI_INC ])
+  ans=no
+  if test -f "${MPI_INC}/mpi.h" ; then
+    ans=yes
+  fi
+  AC_MSG_RESULT([$ans])
+
+  if test "$ans" = no ; then
+    AC_MSG_WARN([no mpi.h in MPI_INC include path: $MPI_INC])
+    AC_MSG_ERROR([reconfigure with MPI_INC set to MPI include directory])
+  fi
+  #
+  # check if MPI uses 'void *buf' or 'const void *buf'
+  #
+  AC_MSG_CHECKING([if MPI types use 'const void *buf'])
+  AC_COMPILE_IFELSE([
+#include <mpi.h>
+int MPI_Send(void *buf, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm)
+{
+  return 0;
+}
+], [mpi_const_type=no], [mpi_const_type=yes])
+  AC_MSG_RESULT([$mpi_const_type])
+
+  CC="$ORIG_CC"
   AC_LANG_POP
 fi
 
-AC_MSG_RESULT([${OPT_ENABLE_MPI_WRAP} (request: ${OPT_REQ_ENABLE_MPI_WRAP})])
-
-
-if test "${OPT_REQ_ENABLE_MPI_WRAP}" = "yes" -a "${OPT_ENABLE_MPI_WRAP}" = no ; then
-  AC_MSG_ERROR([MPI wrapper support requested but MPI compiler is invalid!])
+MPI_PROTO_FILE=mpi.protos
+if test "$mpi_const_type" = yes ; then
+  MPI_PROTO_FILE=mpi.protos.const
 fi
 
-AM_CONDITIONAL(OPT_ENABLE_MPI_WRAP, test "${OPT_ENABLE_MPI_WRAP}" = "yes")
+AC_SUBST([MPI_PROTO_FILE])
+AM_CONDITIONAL(OPT_ENABLE_MPI_WRAP, [test "$enable_mpi_wrapper" = yes])
+
 
 #-------------------------------------------------
 # enable-mpi-wrapper: check F77 symbols
 #-------------------------------------------------
 
-if test "${OPT_ENABLE_MPI_WRAP}" = "yes" ; then
+if test "$enable_mpi_wrapper" = yes ; then
 
   if test -z "${MPIF77}" ; then
     AC_CHECK_PROGS(MPIF77, mpif77 mpxlf_r mpixlf77 mpxlf cmpifc xlf f77 g77 pgf77 fort ifc, mpif77)
@@ -3270,7 +3321,7 @@ AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
 AC_MSG_NOTICE([  hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}])
 AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])
 AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
-AC_MSG_NOTICE([  mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}])
+AC_MSG_NOTICE([  mpi wrapper?: ${enable_mpi_wrapper}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
