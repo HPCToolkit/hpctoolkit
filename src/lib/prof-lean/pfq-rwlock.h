@@ -108,8 +108,8 @@ typedef struct {
   //----------------------------------------------------------------------------
   // reader management
   //----------------------------------------------------------------------------
-  CLA(uint32_t rin);  // = 0
-  CLA(uint32_t rout);  // = 0
+  CLA(volatile uint32_t rin);  // = 0
+  CLA(volatile uint32_t rout);  // = 0
   CLA(uint32_t last);  // = 0  not really needed
 
   pfq_rwlock_flag_t flag[2]; // false
