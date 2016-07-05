@@ -728,6 +728,7 @@ hpcrun_thread_fini(epoch_t *epoch)
 //***************************************************************************
 // process control (via libmonitor)
 //***************************************************************************
+volatile int HPCRUN_DEBUGGER_WAIT = 1;
 
 void*
 monitor_init_process(int *argc, char **argv, void* data)
@@ -742,8 +743,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   const char* HPCRUN_WAIT = getenv("HPCRUN_WAIT");
   if (HPCRUN_WAIT) {
-    volatile int DEBUGGER_WAIT = 1;
-    while (DEBUGGER_WAIT);
+    while (HPCRUN_DEBUGGER_WAIT);
 
     // when the user program forks, we don't want to wait to have a debugger 
     // attached for each exec along a chain of fork/exec. if that is what

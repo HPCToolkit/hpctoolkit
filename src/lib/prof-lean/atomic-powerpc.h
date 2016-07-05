@@ -28,6 +28,7 @@
 #error "no definition for Power LL and SC primitives"
 #endif
 
+#define DEBUG_PPC_FAA 0 
 
 static inline void *
 fetch_and_store(volatile void **ptr, void *val)
@@ -48,14 +49,21 @@ static inline uint32_t
 fetch_and_add_i32(volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t result;
+  uint32_t tmp;
+#if DEBUG_PPC_FAA 
+  printf("before: *ptr=%d, val=%d, tmp=%d, result=%d\n", *ptr, val, tmp, result);
+#endif
   __asm__ __volatile__(              
-        "lwarx   %0,0,%1 \n\t"             
-        "add     %2,%2,%0   \n\t"        
-        "stwcx.  %2,0,%1 \n\t"        
+        "lwarx   %0,0,%2 \n\t"             
+        "add     %1,%3,%0   \n\t"        
+        "stwcx.  %1,0,%2 \n\t"        
         "bne     $-12    \n\t"        
-                 : "=&r" (result)
+                 : "=&r" (result), "=&r" (tmp)
                  : "r" (ptr), "r" (val) 
                  : "cr0", "memory");
+#if DEBUG_PPC_FAA 
+  printf("after: *ptr=%d, val=%d, tmp=%d, result=%d\n", *ptr, val, tmp, result);
+#endif
   return result;
 }
 
@@ -64,14 +72,21 @@ static inline uint64_t
 fetch_and_add_i64(volatile uint64_t *ptr, uint64_t val)
 {
   uint64_t result;
+  uint32_t tmp;
+#if DEBUG_PPC_FAA 
+  printf("before: *ptr=%ld, val=%ld, tmp=%ld, result=%ld\n", *ptr, val, tmp, result);
+#endif
   __asm__ __volatile__(              
-        "ldarx   %0,0,%1 \n\t"             
-        "add     %2,%2,%0   \n\t"        
-        "stdcx.  %2,0,%1 \n\t"        
+        "ldarx   %0,0,%2 \n\t"             
+        "add     %1,%3,%0   \n\t"        
+        "stdcx.  %1,0,%2 \n\t"        
         "bne     $-12    \n\t"        
-                 : "=&r" (result)
+                 : "=&r" (result), "=&r" (tmp)
                  : "r" (ptr), "r" (val) 
                  : "cr0", "memory");
+#if DEBUG_PPC_FAA 
+  printf("after: *ptr=%ld, val=%ld, tmp=%ld, result=%ld\n", *ptr, val, tmp, result);
+#endif
   return result;
 }
 
