@@ -399,7 +399,7 @@ MY_INCLUDE_DIRS =			\
 	-I$(srcdir)/unwind/common	\
 	-I$(srcdir)/utilities		\
 	$(HPC_IFLAGS)			\
-	$(OPT_LIBUNWIND_IFLAGS)         \
+	$(LIBUNWIND_IFLAGS)		\
 	-I$(HPCFNBOUNDS_INC)		\
         $(OPT_CUPTI_IFLAGS)             \
 	-I$(LIBMONITOR_INC)
@@ -486,6 +486,7 @@ libhpctoolkit_a_SOURCES = 		\
 
 libhpcrun_la_CPPFLAGS =			\
 	$(MY_CPP_DEFINES)		\
+	$(LIBUNWIND_CPPFLAGS_DYN)	\
 	$(MY_INCLUDE_DIRS)
 
 if OPT_BGQ_BACKEND
@@ -495,6 +496,7 @@ endif
 libhpcrun_o_CPPFLAGS =			\
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
+	$(LIBUNWIND_CPPFLAGS_STAT)	\
 	$(MY_INCLUDE_DIRS)
 
 if OPT_BGQ_BACKEND
@@ -643,7 +645,7 @@ endif
 
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt \
-        $(OPT_LIBUNWIND_LDFLAGS)
+        $(LIBUNWIND_LDFLAGS_DYN)
 
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 
@@ -657,7 +659,7 @@ libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 
-libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS)
+libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT)
 
 
 #-----------------------------------------------------------

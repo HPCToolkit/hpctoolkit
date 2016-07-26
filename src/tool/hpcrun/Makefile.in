@@ -1090,9 +1090,12 @@ LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIBTOOL_DEPS = @LIBTOOL_DEPS@
 LIBUNWIND_COPY = @LIBUNWIND_COPY@
-LIBUNWIND_HPCLINK_LIBS = @LIBUNWIND_HPCLINK_LIBS@
+LIBUNWIND_CPPFLAGS_DYN = @LIBUNWIND_CPPFLAGS_DYN@
+LIBUNWIND_CPPFLAGS_STAT = @LIBUNWIND_CPPFLAGS_STAT@
+LIBUNWIND_IFLAGS = @LIBUNWIND_IFLAGS@
+LIBUNWIND_LDFLAGS_DYN = @LIBUNWIND_LDFLAGS_DYN@
+LIBUNWIND_LDFLAGS_STAT = @LIBUNWIND_LDFLAGS_STAT@
 LIBUNWIND_LIB = @LIBUNWIND_LIB@
-LIBUNWIND_RUN_DIR = @LIBUNWIND_RUN_DIR@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -1117,11 +1120,6 @@ OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
 OPT_CUPTI = @OPT_CUPTI@
 OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
 OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
-OPT_LIBUNWIND_IFLAGS = @OPT_LIBUNWIND_IFLAGS@
-OPT_LIBUNWIND_LDFLAGS = @OPT_LIBUNWIND_LDFLAGS@
-OPT_LIBUNWIND_LIBA = @OPT_LIBUNWIND_LIBA@
-OPT_LIBUNWIND_LIBPATH = @OPT_LIBUNWIND_LIBPATH@
-OPT_LIBUNWIND_LIBSO = @OPT_LIBUNWIND_LIBSO@
 OPT_OBJCOPY = @OPT_OBJCOPY@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
@@ -1494,7 +1492,7 @@ MY_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/common	\
 	-I$(srcdir)/utilities		\
 	$(HPC_IFLAGS)			\
-	$(OPT_LIBUNWIND_IFLAGS)         \
+	$(LIBUNWIND_IFLAGS)		\
 	-I$(HPCFNBOUNDS_INC)		\
         $(OPT_CUPTI_IFLAGS)             \
 	-I$(LIBMONITOR_INC)
@@ -1574,16 +1572,17 @@ libhpctoolkit_a_SOURCES = \
 #-----------------------------------------------------------
 # cppflags
 #-----------------------------------------------------------
-libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_16) $(am__append_23) $(am__append_38) \
-	$(am__append_53) $(am__append_71) $(am__append_84) \
-	$(am__append_98) $(am__append_100) $(am__append_106) \
-	$(am__append_109) $(am__append_112) $(UNW_INCLUDE_DIRS)
+libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(LIBUNWIND_CPPFLAGS_DYN) \
+	$(MY_INCLUDE_DIRS) $(am__append_16) $(am__append_23) \
+	$(am__append_38) $(am__append_53) $(am__append_71) \
+	$(am__append_84) $(am__append_98) $(am__append_100) \
+	$(am__append_106) $(am__append_109) $(am__append_112) \
+	$(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_17) $(am__append_24) \
-	$(am__append_39) $(am__append_54) $(am__append_72) \
-	$(am__append_85) $(am__append_102) $(am__append_107) \
-	$(am__append_110) $(UNW_INCLUDE_DIRS)
+	$(LIBUNWIND_CPPFLAGS_STAT) $(MY_INCLUDE_DIRS) $(am__append_17) \
+	$(am__append_24) $(am__append_39) $(am__append_54) \
+	$(am__append_72) $(am__append_85) $(am__append_102) \
+	$(am__append_107) $(am__append_110) $(UNW_INCLUDE_DIRS)
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
@@ -1675,7 +1674,7 @@ libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 	$(am__append_19)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
-	-lpthread -lrt $(OPT_LIBUNWIND_LDFLAGS) $(am__append_55) \
+	-lpthread -lrt $(LIBUNWIND_LDFLAGS_DYN) $(am__append_55) \
 	$(am__append_99) $(am__append_108) $(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
@@ -1683,7 +1682,7 @@ libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_116)
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
-libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS) $(am__append_56) \
+libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) $(am__append_56) \
 	$(am__append_103) $(UNW_STATIC_LD_FLAGS)
 MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_68) \
 	$(UNW_INCLUDE_DIRS)

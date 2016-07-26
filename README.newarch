@@ -30,11 +30,20 @@ Mostly done.
 libhpcrun.o in the pkglib directory, so this breaks hpclink.
 ---> set libhpcrun.o to noinst and install manually
 
+(2) The MPI wrappers are not available.  There is a bad interaction
+between the latest autotools and how we build the MPI wrappers, so
+they are currently disabled.
+---> fixed in master
+
 (3) Replace the line map info.  Unpatched binutils is very bad for
 time, and current symtab is very bad for memory and time, so may need
 to use libdwarf directly.
 ---> mostly done in Struct.cpp, but symtab misses line map info from
 ---> some modules.
+
+(5) Libunwind configure.
+---> reworked configure to allow libunwind as primary or secondary
+---> unwinder.
 
 (10) (power8/le) More structured patch for symtab for little endian
 powerpc.
@@ -49,10 +58,6 @@ powerpc.
 ------------------------------------------------------------
 
 To-do list and known issues.
-
-(2) The MPI wrappers are not available.  There is a bad interaction
-between the latest autotools and how we build the MPI wrappers, so
-they are currently disabled.
 
 (4) Update libmonitor to fix main and thread fences (move to separate
 file), various warnings and probably several other things.

@@ -746,17 +746,13 @@ UNW_PPC64_FALSE
 UNW_PPC64_TRUE
 UNW_X86_FALSE
 UNW_X86_TRUE
-LIBUNWIND_HPCLINK_LIBS
-LIBUNWIND_RUN_DIR
 LIBUNWIND_LIB
 LIBUNWIND_COPY
-OPT_LIBUNWIND_LIBA
-OPT_LIBUNWIND_LIBSO
-OPT_LIBUNWIND_LDFLAGS
-OPT_LIBUNWIND_LIBPATH
-OPT_LIBUNWIND_IFLAGS
-OPT_HAVE_LIBUNWIND_FALSE
-OPT_HAVE_LIBUNWIND_TRUE
+LIBUNWIND_LDFLAGS_STAT
+LIBUNWIND_LDFLAGS_DYN
+LIBUNWIND_CPPFLAGS_STAT
+LIBUNWIND_CPPFLAGS_DYN
+LIBUNWIND_IFLAGS
 LIBMONITOR_WRAP_NAMES
 LIBMONITOR_RUN_DIR
 LIBMONITOR_COPY
@@ -979,6 +975,7 @@ with_libdwarf
 with_libelf
 with_libmonitor
 with_libunwind
+enable_libunwind_primary
 with_monitor
 with_open_analysis
 with_papi
@@ -1669,6 +1666,9 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-endian         host endianness (big, little), only needed if
                           autoconf fails to detect correctly
+  --enable-libunwind-primary
+                          use libunwind as primary unwinder for hpcrun
+                          (default no)
   --enable-papi-c         use new papi component sample source, requires papi
                           5.1 or later
   --enable-papi-c-cupti   enable component PAPI's CUPTI functionality
@@ -1714,8 +1714,7 @@ Optional Packages:
   --with-libdwarf=PATH    path to libdwarf install directory
   --with-libelf=PATH      path to libelf install directory
   --with-libmonitor=PATH  path to libmonitor install directory
-  --with-libunwind=PATH   use given LIBUNWIND installation (absolute path)
-                          with hpcrun (default is NO)
+  --with-libunwind=PATH   path to libunwind install directory
   --with-monitor=PATH     use given (old) libmonitor installation
   --with-open-analysis=PATH
                           path to OpenAnalysis install directory
@@ -19700,98 +19699,128 @@ echo "$LIBMONITOR_WRAP_NAMES" >&5
 
 
 #-------------------------------------------------
-# with-libunwind
+# Option: --with-libunwind=PATH, --enable-libunwind-primary
 #-------------------------------------------------
 
-#
-# ### FIXME: rationalize this: libunw chosen EITHER when ia64 or when --with-libunwind is set
-# ###        current configure will NOT do the right thing if libunw turned off but arch=ia64
-#
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether configured to use libunwind instead of native" >&5
-$as_echo_n "checking whether configured to use libunwind instead of native... " >&6; }
+# Libunwind can be the primary unwinder (any platform), the secondary
+# unwinder or not used at all.  So, keep it optional and test static
+# and dynamic versions separately.  But if libunwind is the primary
+# unwinder, then can't build hpcrun or hpclink without it.
 
-OPT_HAVE_LIBUNWIND=no
-OPT_LIBUNWIND=
-OPT_LIBUNWIND_IFLAGS=
-OPT_LIBUNWIND_LIBPATH=
-OPT_LIBUNWIND_LDFLAGS=
-OPT_LIBUNWIND_LIBSO=
-OPT_LIBUNWIND_LIBA=
+LIBUNWIND=no
+LIBUNWIND_STAT=no
+
+LIBUNWIND_IFLAGS=
+LIBUNWIND_CPPFLAGS_DYN=
+LIBUNWIND_CPPFLAGS_STAT=
+LIBUNWIND_LDFLAGS_DYN=
+LIBUNWIND_LDFLAGS_STAT=
+
 LIBUNWIND_COPY=no
-LIBUNWIND_RUN_DIR=
-LIBUNWIND_HPCLINK_LIBS=
+LIBUNWIND_LIB=
 
 if test "$use_externals" = yes ; then
-  OPT_LIBUNWIND="$ext_libunwind_prefix"
-  case "$OPT_LIBUNWIND" in
-    /* ) OPT_HAVE_LIBUNWIND=yes ;;
-  esac
+  LIBUNWIND="$ext_libunwind_prefix"
 fi
 
 
 # Check whether --with-libunwind was given.
 if test "${with_libunwind+set}" = set; then :
-  withval=$with_libunwind; case $withval in
-      yes) : ;;
-      /*) OPT_LIBUNWIND=${withval} ;;
-      *) as_fn_error $? "--with-libunwind requires absolute path as argument; given '${withval}'" "$LINENO" 5 ;;
-   esac
-   OPT_HAVE_LIBUNWIND=yes
-   UNWINDER=libunw
+  withval=$with_libunwind; LIBUNWIND="$withval"
 fi
 
 
+# Check whether --enable-libunwind-primary was given.
+if test "${enable_libunwind_primary+set}" = set; then :
+  enableval=$enable_libunwind_primary;
+else
+  enable_libunwind_primary=no
+fi
+
+
+# If libunwind is available, require dynamic (.so) version, and make
+# static (.a) optional.  Note: may need to expand to multilib dir at
+# some point.
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libunwind" >&5
+$as_echo_n "checking for libunwind... " >&6; }
+
+case "$LIBUNWIND" in
+  /* )
+    if test -f "${LIBUNWIND}/include/libunwind.h" \
+       && test -f "${LIBUNWIND}/lib/libunwind.so"
+    then : ; else
+      as_fn_error $? "invalid libunwind directory: $LIBUNWIND" "$LINENO" 5
+    fi
+    LIBUNWIND_IFLAGS="-I${LIBUNWIND}/include"
+    LIBUNWIND_LDFLAGS_DYN="-L${LIBUNWIND}/lib -lunwind"
+    LIBUNWIND_COPY=yes
+    LIBUNWIND_LIB="${LIBUNWIND}/lib"
+    if test -f "${LIBUNWIND}/lib/libunwind.a" ; then
+      LIBUNWIND_STAT=yes
+      LIBUNWIND_LDFLAGS_STAT="${LIBUNWIND}/lib/libunwind.a"
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "libunwind directory must be absolute path: $LIBUNWIND" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBUNWIND" >&5
+$as_echo "$LIBUNWIND" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: libunwind static: $LIBUNWIND_STAT" >&5
+$as_echo "$as_me: libunwind static: $LIBUNWIND_STAT" >&6;}
+
+case "$enable_libunwind_primary" in
+  yes | Yes | YES )
+    if test "$LIBUNWIND" = no ; then
+      as_fn_error $? "enable libunwind primary requires libunwind" "$LINENO" 5
+    fi
+    UNWINDER=libunw
+    ;;
+esac
+
+no_unwind_for_hpcrun=no
+no_unwind_for_hpclink=no
+unwinder_mesg="$UNWINDER"
+
+if test "$UNWINDER" = libunw ; then
+  #
+  # libunwind is the primary unwinder.  must have libunwind or else
+  # can't build hpcrun or hpclink.  don't need CPPFLAGS in this case.
+  #
+  if test "$LIBUNWIND" = no ; then
+    no_unwind_for_hpcrun=yes
+  fi
+  if test "$LIBUNWIND_STAT" = no ; then
+    no_unwind_for_hpclink=yes
+  fi
+else
+  #
+  # libunwind is the secondary unwinder or not available.  can build
+  # hpcrun without libunwind, but set CPPFLAGS when available.
+  #
+  if test "$LIBUNWIND" != no ; then
+    LIBUNWIND_CPPFLAGS_DYN='-DUSE_LIBUNWIND'
+    unwinder_mesg="$UNWINDER + libunw"
+  fi
+  if test "$LIBUNWIND_STAT" = yes ; then
+    LIBUNWIND_CPPFLAGS_STAT='-DUSE_LIBUNWIND'
+  fi
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: hpcrun unwinder: $unwinder_mesg" >&5
+$as_echo "$as_me: hpcrun unwinder: $unwinder_mesg" >&6;}
+
+# fixme: only used in hpcrun/main.c because we don't have a libunwind
+# version of hpcrun_dump_intervals().
 if test "$UNWINDER" = "libunw"; then
 
 $as_echo "#define USE_LIBUNW 1" >>confdefs.h
 
 fi
-
-# Check for LIBUNWIND > .9xxx [skip for now]
-
-# Check for libunwind sanity
-if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
-  if ! test -f "$OPT_LIBUNWIND/include/libunwind.h"; then
-     as_fn_error $? "libunwind required, but specified library path is invalid (no libunwind.h)" "$LINENO" 5
-  fi
-  if test ! \( -f "$OPT_LIBUNWIND/lib/libunwind.so" -o -f "$OPT_LIBUNWIND/lib/libunwind.a" \) ; then
-     as_fn_error $? "libunwind required, but specified library path is invalid (no libunwind.a or libunwind.so)" "$LINENO" 5
-  fi
-fi
-
-if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes (${OPT_LIBUNWIND_LIBSO})" >&5
-$as_echo "yes (${OPT_LIBUNWIND_LIBSO})" >&6; }
-
-  LIBUNWIND_COPY=yes
-  LIBUNWIND_LIB="$OPT_LIBUNWIND/lib"
-  LIBUNWIND_RUN_DIR="$hpc_ext_libs_dir"
-  OPT_LIBUNWIND_IFLAGS="-I$OPT_LIBUNWIND/include"
-  OPT_LIBUNWIND_LIBPATH="$OPT_LIBUNWIND"
-
-  LIBUNWIND_HPCLINK_LIBS=" -lunwind -lunwind-generic"
-
-  OPT_LIBUNWIND_LDFLAGS="-L$LIBUNWIND_LIB $LIBUNWIND_HPCLINK_LIBS"
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-if test -z "$HPCLINK_LD_FLAGS"; then
-   HPCLINK_LD_FLAGS="$OPT_LIBUNWIND_LDFLAGS"
-else
-   HPCLINK_LD_FLAGS="$HPCLINK_LD_FLAGS $OPT_LIBUNWIND_LDFLAGS"
-fi
-
- if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
-  OPT_HAVE_LIBUNWIND_TRUE=
-  OPT_HAVE_LIBUNWIND_FALSE='#'
-else
-  OPT_HAVE_LIBUNWIND_TRUE='#'
-  OPT_HAVE_LIBUNWIND_FALSE=
-fi
-
 
 
 
@@ -19804,8 +19833,6 @@ fi
 
 #
 # set up automake choice of unwinder
-#
-# -- NOTE: ia64 ALWAYS uses libunw
 #
  if test "$UNWINDER" = x86-family; then
   UNW_X86_TRUE=
@@ -19838,6 +19865,7 @@ else
   UNW_LIBUNW_TRUE='#'
   UNW_LIBUNW_FALSE=
 fi
+
 
 
 #-------------------------------------------------
@@ -20704,7 +20732,7 @@ if test "$enable_hpcrun" = no ; then
   enable_hpcrun_mesg='no (disabled)'
 elif test "$LIBDWARF" = no   || test "$LIBELF" = no ||  \
      test "$LIBMONITOR" = no || test "$SYMTABAPI" = no || \
-     test "$no_xed_for_hpcrun" = yes
+     test "$no_xed_for_hpcrun" = yes || test "$no_unwind_for_hpcrun" = yes
 then
   OPT_ENABLE_HPCRUN=no
   enable_hpcrun_mesg='no (missing prerequisites)'
@@ -20814,7 +20842,9 @@ else
 fi
 
 
-if test "$OPT_LIBMONITOR_STATIC" = no || test "$no_xed_for_hpclink" = yes ; then
+if test "$OPT_LIBMONITOR_STATIC" = no || test "$no_xed_for_hpclink" = yes \
+   || test "$no_unwind_for_hpclink" = yes
+then
   OPT_ENABLE_HPCRUN_STATIC=no
 fi
 
@@ -22301,10 +22331,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${USE_BOOST_LIBS_TRUE}" && test -z "${USE_BOOST_LIBS_FALSE}"; then
   as_fn_error $? "conditional \"USE_BOOST_LIBS\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_HAVE_LIBUNWIND_TRUE}" && test -z "${OPT_HAVE_LIBUNWIND_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_HAVE_LIBUNWIND\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${UNW_X86_TRUE}" && test -z "${UNW_X86_FALSE}"; then
@@ -24969,6 +24995,8 @@ $as_echo "$as_me:   hpcrun?:      ${enable_hpcrun_mesg}" >&6;}
 $as_echo "$as_me:   hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}" >&5
 $as_echo "$as_me:   hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   unwinder:     ${unwinder_mesg}" >&5
+$as_echo "$as_me:   unwinder:     ${unwinder_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   mpi support?: ${OPT_ENABLE_MPI}" >&5
 $as_echo "$as_me:   mpi support?: ${OPT_ENABLE_MPI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}" >&5
@@ -25031,8 +25059,8 @@ $as_echo "$as_me:   libelf:       ${LIBELF}" >&6;}
 $as_echo "$as_me:   libmonitor:   ${LIBMONITOR}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   monitor/old:  ${MONITOR}" >&5
 $as_echo "$as_me:   monitor/old:  ${MONITOR}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   libunwind:    ${OPT_LIBUNWIND}" >&5
-$as_echo "$as_me:   libunwind:    ${OPT_LIBUNWIND}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   libunwind:    ${LIBUNWIND}" >&5
+$as_echo "$as_me:   libunwind:    ${LIBUNWIND}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   OpenAnalysis: ${OA}" >&5
 $as_echo "$as_me:   OpenAnalysis: ${OA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   symtabAPI:    ${SYMTABAPI}" >&5
