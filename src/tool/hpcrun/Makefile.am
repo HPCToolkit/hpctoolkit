@@ -160,6 +160,8 @@ endif
 
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
+CALIPER_INC_FLGS = @OPT_CALIPER_IFLAGS@
+CALIPER_LD_FLGS = @OPT_CALIPER_LDFLAGS@
 PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
 XED2_INC = @XED2_INC@
@@ -363,6 +365,10 @@ MY_IA64_FILES = \
         trampoline/ia64/ia64-tramp.s \
         utilities/arch/ia64/ia64-context-pc.c
 
+MY_CALIPER_FILES = \
+	    sample-sources/caliper-stub.c \
+		sample-sources/caliper.cpp
+
 if OPT_PAPI_COMPONENT
 MY_PAPI_FILES = \
     sample-sources/papi-c.c \
@@ -483,6 +489,8 @@ libhpctoolkit_a_SOURCES = 		\
 libhpcrun_la_CPPFLAGS =			\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
+
+libhpcrun_la_CXXFLAGS =	
 
 if OPT_BGQ_BACKEND
   libhpcrun_la_CPPFLAGS += -I$(srcdir)/utilities/bgq-cnk
@@ -756,6 +764,13 @@ if HOST_CPU_IA64
   libhpcrun_pthread_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+endif
+
+if OPT_CALIPER_ENABLED
+  libhpcrun_la_SOURCES  += $(MY_CALIPER_FILES)
+  libhpcrun_la_CPPFLAGS += $(CALIPER_INC_FLGS)
+  libhpcrun_la_CXXFLAGS += -std=c++11
+  libhpcrun_la_LDFLAGS  += $(CALIPER_LD_FLGS)
 endif
 
 if OPT_PAPI_DYNAMIC

@@ -122,6 +122,7 @@ static pmsg_category all_list_entries [] = {
  E(SWIZZLE),
  E(FINALIZE),
  E(DATA_WRITE),
+ E(CALIPER),
  E(PAPI),
  E(PAPI_SAMPLE),
  E(PAPI_EVENT_NAME),

@@ -708,6 +708,12 @@ OPT_PAPI_STATIC_FALSE
 OPT_PAPI_STATIC_TRUE
 OPT_PAPI_DYNAMIC_FALSE
 OPT_PAPI_DYNAMIC_TRUE
+OPT_CALIPER_LIBPATH
+OPT_CALIPER_LDFLAGS
+OPT_CALIPER_IFLAGS
+OPT_CALIPER
+OPT_CALIPER_ENABLED_FALSE
+OPT_CALIPER_ENABLED_TRUE
 OA_LDFLAGS
 OA_IFLAGS
 OPT_INSTALL_MONITOR
@@ -935,6 +941,7 @@ with_libmonitor
 with_libunwind
 with_monitor
 with_open_analysis
+with_caliper
 with_papi
 enable_papi_c
 enable_papi_c_cupti
@@ -1670,6 +1677,8 @@ Optional Packages:
   --with-monitor=PATH     use given (old) libmonitor installation
   --with-open-analysis=PATH
                           path to OpenAnalysis install directory
+  --with-caliper=PATH     use given Caliper installation (absolute path) with
+                          hpcrun (default is NO)
   --with-papi=PATH        use given PAPI installation (absolute path) with
                           hpcrun (default is NO)
   --with-symtabAPI=PATH   path to symtabAPI install directory
@@ -18127,6 +18136,72 @@ $as_echo "$OA" >&6; }
 
 
 
+#-------------------------------------------------
+# with-caliper
+#-------------------------------------------------
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether configured with Caliper" >&5
+$as_echo_n "checking whether configured with Caliper... " >&6; }
+
+OPT_HAVE_CALIPER=no
+OPT_CALIPER=
+OPT_CALIPER_IFLAGS=
+OPT_CALIPER_LDFLAGS=
+OPT_CALIPER_LIBPATH=
+
+
+# Check whether --with-caliper was given.
+if test "${with_caliper+set}" = set; then :
+  withval=$with_caliper; if test $withval != no; then
+     OPT_HAVE_CALIPER=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-caliper requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CALIPER=${withval}
+   fi
+fi
+
+
+if test "$OPT_HAVE_CALIPER" = "yes" ; then
+  if test -f "${OPT_CALIPER}/include/caliper/Caliper.h"; then
+    OPT_CALIPER_IFLAGS="-I${OPT_CALIPER}/include"
+  else
+    as_fn_error $? "no Caliper.h in ${OPT_CALIPER}/include/caliper" "$LINENO" 5
+  fi
+
+  for lib in ${LIB_SEARCH_PATH} ; do
+    if test -r "${OPT_CALIPER}/${lib}/libcaliper.so"
+    then
+      OPT_CALIPER_LIBPATH="${OPT_CALIPER}/${lib}"
+      OPT_CALIPER_LDFLAGS="-L${OPT_CALIPER_LIBPATH} -lcaliper"
+      break
+    fi
+  done
+  if test -z "${OPT_CALIPER_LIBPATH}" ; then
+    as_fn_error $? "no libcaliper.so in $LIB_SEARCH_PATH" "$LINENO" 5
+  fi
+fi
+
+ if test "$OPT_HAVE_CALIPER" = yes; then
+  OPT_CALIPER_ENABLED_TRUE=
+  OPT_CALIPER_ENABLED_FALSE='#'
+else
+  OPT_CALIPER_ENABLED_TRUE='#'
+  OPT_CALIPER_ENABLED_FALSE=
+fi
+
+
+
+
+
+
+
+if test "${OPT_HAVE_CALIPER}" = "yes"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes (${OPT_CALIPER})" >&5
+$as_echo "yes (${OPT_CALIPER})" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
 
 #-------------------------------------------------
 # with-papi
@@ -20537,6 +20612,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${UNW_LIBUNW_TRUE}" && test -z "${UNW_LIBUNW_FALSE}"; then
   as_fn_error $? "conditional \"UNW_LIBUNW\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_CALIPER_ENABLED_TRUE}" && test -z "${OPT_CALIPER_ENABLED_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_CALIPER_ENABLED\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PAPI_DYNAMIC_TRUE}" && test -z "${OPT_PAPI_DYNAMIC_FALSE}"; then
@@ -23347,6 +23426,8 @@ $as_echo "$as_me:   symtabAPI:    ${SYMTABAPI}" >&6;}
 $as_echo "$as_me:   xed2:         ${XED2}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   xerces:       ${XERCES}" >&5
 $as_echo "$as_me:   xerces:       ${XERCES}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   caliper:      ${OPT_CALIPER}" >&5
+$as_echo "$as_me:   caliper:      ${OPT_CALIPER}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi:         ${OPT_PAPI}" >&5
 $as_echo "$as_me:   papi:         ${OPT_PAPI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   cuda:         ${OPT_CUDA}" >&5

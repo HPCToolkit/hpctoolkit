@@ -1603,6 +1603,60 @@ AC_MSG_RESULT([$OA])
 AC_SUBST([OA_IFLAGS])
 AC_SUBST([OA_LDFLAGS])
 
+#-------------------------------------------------
+# with-caliper
+#-------------------------------------------------
+AC_MSG_CHECKING([whether configured with Caliper])
+
+OPT_HAVE_CALIPER=no
+OPT_CALIPER=
+OPT_CALIPER_IFLAGS=
+OPT_CALIPER_LDFLAGS=
+OPT_CALIPER_LIBPATH=
+
+AC_ARG_WITH([caliper],
+  AS_HELP_STRING([--with-caliper=PATH],
+                 [use given Caliper installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_CALIPER=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-caliper requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CALIPER=${withval}
+   fi])
+
+if test "$OPT_HAVE_CALIPER" = "yes" ; then
+  if test -f "${OPT_CALIPER}/include/caliper/Caliper.h"; then
+    OPT_CALIPER_IFLAGS="-I${OPT_CALIPER}/include"
+  else
+    AC_MSG_ERROR([no Caliper.h in ${OPT_CALIPER}/include/caliper])
+  fi
+  
+  for lib in ${LIB_SEARCH_PATH} ; do
+    if test -r "${OPT_CALIPER}/${lib}/libcaliper.so"
+    then
+      OPT_CALIPER_LIBPATH="${OPT_CALIPER}/${lib}"
+      OPT_CALIPER_LDFLAGS="-L${OPT_CALIPER_LIBPATH} -lcaliper"
+      break
+    fi
+  done
+  if test -z "${OPT_CALIPER_LIBPATH}" ; then
+    AC_MSG_ERROR([no libcaliper.so in $LIB_SEARCH_PATH])
+  fi
+fi
+
+AM_CONDITIONAL(OPT_CALIPER_ENABLED, test "$OPT_HAVE_CALIPER" = yes)
+
+AC_SUBST(OPT_CALIPER)
+AC_SUBST(OPT_CALIPER_IFLAGS)
+AC_SUBST(OPT_CALIPER_LDFLAGS)
+AC_SUBST(OPT_CALIPER_LIBPATH)
+
+if test "${OPT_HAVE_CALIPER}" = "yes"; then
+  AC_MSG_RESULT([yes (${OPT_CALIPER})])
+else
+  AC_MSG_RESULT([no])
+fi
 
 #-------------------------------------------------
 # with-papi
@@ -3356,6 +3410,7 @@ AC_MSG_NOTICE([  OpenAnalysis: ${OA}])
 AC_MSG_NOTICE([  symtabAPI:    ${SYMTABAPI}])
 AC_MSG_NOTICE([  xed2:         ${XED2}])
 AC_MSG_NOTICE([  xerces:       ${XERCES}])
+AC_MSG_NOTICE([  caliper:      ${OPT_CALIPER}])
 AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
