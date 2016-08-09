@@ -57,13 +57,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <ucontext.h>
 #include <stdbool.h>
 
 #include <pthread.h>
 */
 
 #include <string.h>
+#include <ucontext.h>
+#include <stdint.h>
 
 /******************************************************************************
  * libmonitor
@@ -83,6 +84,9 @@ extern "C" {
   #include "caliper-stub.h"
 
   #include <hpcrun/metrics.h>
+  #include <hpcrun/thread_data.h>
+  #include <hpcrun/safe-sampling.h>
+  #include <hpcrun/sample_event.h>
 
   #include <utilities/tokenize.h>
   #include <messages/messages.h>
@@ -92,9 +96,6 @@ extern "C" {
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/sample_sources_registered.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/thread_data.h>
 
 #include <sample-sources/blame-shift/blame-shift.h>
 #include <lush/lush-backtrace.h>
@@ -104,6 +105,8 @@ extern "C" {
 #include <caliper/Caliper.h>
 using namespace cali;
 
+#include <unordered_map>
+using namespace std;
 
 /******************************************************************************
  * macros
@@ -111,9 +114,11 @@ using namespace cali;
 #define DEFAULT_THRESHOLD 0
 
 /******************************************************************************
- * forward declarations 
+ * type declarations
  *****************************************************************************/
-static void calier_event_handler(); //TODO
+typedef struct {
+  uint64_t prev_values[MAX_EVENTS];
+} caliper_info_t;
 
 /******************************************************************************
  * caliper constants 
@@ -125,7 +130,10 @@ const char counter_prefix[] = "counter_";
  *****************************************************************************/
 static int caliper_unavail = 0;
 
-static int caliper_total_events = 0;
+static sample_source_t* caliper_sample_obj = NULL;
+static Caliper caliper = Caliper::instance();
+
+static unordered_map<string, int> map;
 
 /*
 // Support for derived events (proxy sampling).
@@ -136,7 +144,49 @@ static int some_overflow;
 /******************************************************************************
  * external thread-local variables
  *****************************************************************************/
-//ddextern __thread bool hpcrun_thread_suppress_sample;
+extern __thread bool hpcrun_thread_suppress_sample;
+
+/******************************************************************************
+ * callback functions
+ *****************************************************************************/
+
+static void
+caliper_post_set_handler(Caliper* caliper, const Attribute& attr, const Variant& var)
+{
+  // if sampling disabled explicitly for this thread, skip all processing
+  if (hpcrun_thread_suppress_sample) return;
+
+  TMSG(CALIPER, "caliper event happened, name = ", attr.name().c_str());
+
+  unordered_map<string, int>::const_iterator entry = map.find(attr.name());
+  if (entry == map.end()) {
+    return;
+  }
+
+  int event_idx = entry -> second;
+
+  sample_source_t *self = caliper_sample_obj;
+  thread_data_t *td = hpcrun_get_thread_data();
+  caliper_info_t *info = td->ss_info[self->sel_idx].ptr;
+
+  uint64_t prev_value = info -> prev_values[event_idx];
+  uint64_t curr_value = (uint64_t)var.to_double();
+
+  if (curr_value > prev_value) {
+    info->prev_values[event_idx] = curr_value;
+    
+    ucontext_t uc;
+    getcontext(&uc);
+    
+    if (!hpcrun_safe_enter()) {
+      return;
+    }
+    
+    hpcrun_sample_callpath(&uc, hpcrun_event2metric(self, event_idx), curr_value - prev_value,
+        0, 0);
+    hpcrun_safe_exit();
+  }
+}
 
 /******************************************************************************
  * method functions
@@ -144,8 +194,13 @@ static int some_overflow;
 
 void caliper_init(sample_source_t *self)
 {
-   Caliper caliper = Caliper::instance();
-
+  if (!caliper) {
+    caliper_unavail = 1;
+    return;
+  }
+  caliper_sample_obj = self;
+  self->state = INIT;
+  caliper.events().post_set_evt.connect(&caliper_post_set_handler);
 }
 
 void caliper_thread_init(sample_source_t *self)
@@ -158,6 +213,17 @@ void caliper_thread_init_action(sample_source_t *self)
 
 void caliper_start(sample_source_t *self)
 {
+  TMSG(CALIPER, "start");
+  if (caliper_unavail) { return; }
+
+  thread_data_t *td = hpcrun_get_thread_data();
+  source_state_t my_state = TD_GET(ss_state)[self->sel_idx];
+
+  if (my_state == START) {
+    return;
+  }
+
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 void caliper_thread_fini_action(sample_source_t *self)
@@ -166,10 +232,35 @@ void caliper_thread_fini_action(sample_source_t *self)
 
 void caliper_stop(sample_source_t *self)
 {
+  TMSG(CALIPER, "stop");
+  if (caliper_unavail) { return; }
+
+  thread_data_t *td = hpcrun_get_thread_data();
+  source_state_t my_state = TD_GET(ss_state)[self->sel_idx];
+
+  if (my_state == STOP) {
+    TMSG(CALIPER,"--stop called on an already stopped event set");
+    return;
+  }
+
+  if (my_state != START) {
+    TMSG(CALIPER,"*WARNING* Stop called on event set that has not been started");
+    return;
+  }
+
+  TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 void caliper_shutdown(sample_source_t *self)
 {
+  TMSG(CALIPER, "shutdown");
+  if (caliper_unavail) { return; }
+
+  if (TD_GET(ss_state)[self->sel_idx] != STOP) {
+    caliper_stop(self);
+  }
+
+  self->state = UNINIT;
 }
 
 bool caliper_supports_event(sample_source_t *self, const char *ev_str)
@@ -199,7 +290,7 @@ void caliper_process_event_list(sample_source_t *self, int lush_metrics)
 
   char *event;
   int i, ret;
-  int num_lush_metrics = 0;
+  static int num_events = 0;
 
   char* evlist = METHOD_CALL(self, get_event_str);
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
@@ -212,29 +303,37 @@ void caliper_process_event_list(sample_source_t *self, int lush_metrics)
 	   "better to use an explicit threshold.", name, DEFAULT_THRESHOLD);
     }
 
-    int metric_id = hpcrun_new_metric();
-    hpcrun_set_metric_info(metric_id, name);
+    char* metric = (char*) hpcrun_malloc(sizeof(char) * (strlen(name) + 1) );
+    strcpy(metric, name);
 
-	int event_idx = caliper_total_events++;
+    int metric_id = hpcrun_new_metric();
+    hpcrun_set_metric_info(metric_id, metric);
+
+	int event_idx = num_events++;
     METHOD_CALL(self, store_event, event_idx, thresh);
     METHOD_CALL(self, store_metric_id, event_idx, metric_id);	
-  
-	printf("name = %s, event_idx = %d, metric_id = %d.\n", name, event_idx, metric_id);
+
+    map[string(metric)]=event_idx;	
   }
 }
 
 void caliper_gen_event_set(sample_source_t *self, int lush_metrics)
 {
+  TMSG(CALIPER, "gen event list");
+  if (caliper_unavail) { return; }
+  
+  caliper_info_t* info = (caliper_info_t*) hpcrun_malloc(sizeof(caliper_info_t));
+  if (info == NULL) {
+    hpcrun_abort("Failure to allocate space for Caliper sample source");
+  }
+
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->ss_info[self->sel_idx].ptr = info;
+
+  memset(info->prev_values, 0, sizeof(info->prev_values));
 }
 
 void caliper_display_events(sample_source_t *self)
 {
 }
 
-/******************************************************************************
- * public operations
- *****************************************************************************/
-static void
-caliper_event_handler()
-{
-}

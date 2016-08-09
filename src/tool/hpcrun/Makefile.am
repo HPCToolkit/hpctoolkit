@@ -769,7 +769,7 @@ endif
 if OPT_CALIPER_ENABLED
   libhpcrun_la_SOURCES  += $(MY_CALIPER_FILES)
   libhpcrun_la_CPPFLAGS += $(CALIPER_INC_FLGS)
-  libhpcrun_la_CXXFLAGS += -std=c++11
+  libhpcrun_la_CXXFLAGS += -std=c++11 -fpermissive
   libhpcrun_la_LDFLAGS  += $(CALIPER_LD_FLGS)
 endif
 
