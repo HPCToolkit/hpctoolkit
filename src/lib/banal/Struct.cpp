@@ -110,6 +110,7 @@ using std::string;
 #include <include/gcc-attr.h>
 #include <include/uint.h>
 
+#include "Linemap.hpp"
 #include "Struct.hpp"
 #include "Struct-LocationMgr.hpp"
 
@@ -153,10 +154,15 @@ using namespace InstructionAPI;
 using namespace ParseAPI;
 #endif
 
+#define USE_DYNINST_LINE_MAP    1
+#define USE_LIBDWARF_LINE_MAP   0
+#define USE_FULL_SYMTAB_BACKUP  1
+
 #define FULL_STRUCT_DEBUG 0
 
 // FIXME: temporary until the line map problems are resolved
-Symtab * the_symtab = NULL;
+static Symtab * the_symtab = NULL;
+static LineMap * the_linemap = NULL;
 
 
 //*************************** Forward Declarations ***************************
@@ -630,6 +636,11 @@ makeStructure_ParseAPI(BinUtil::LM * lm,
 {
   Prof::Struct::LM* lmStruct = new Prof::Struct::LM(lm->name(), NULL);
   StringTable strTab;
+
+#if USE_LIBDWARF_LINE_MAP
+  the_linemap = new LineMap;
+  the_linemap->readFile(lm->name().c_str());
+#endif
 
   Symtab * symtab = Inline::openSymtab(lm->name());
   the_symtab = symtab;
@@ -2135,6 +2146,7 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
     TreeNode * root = new TreeNode;
     num++;
 
+#if USE_DYNINST_LINE_MAP
     // get the line map for the module containing this function.  the
     // module's line map is much faster than the full symtab line map.
     //
@@ -2150,6 +2162,7 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
 	lmap = mod->getLineInformation();
       }
     }
+#endif
 
     // compute the inline seqn for the call site for this func, if
     // there is one.
@@ -2503,10 +2516,18 @@ doBlock(ProcInfo pinfo, ParseAPI::Function * func,
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
     Offset vma = iit->first;
     int    len = iit->second->size();
-    string procnm = "";
     string filenm = "";
     SrcFile::ln line = 0;
 
+#if USE_LIBDWARF_LINE_MAP
+    LineRange lr;
+
+    the_linemap->getLineRange(vma, lr);
+    filenm = lr.filenm;
+    line = lr.lineno;
+#endif
+
+#if USE_DYNINST_LINE_MAP
     if (low_vma <= vma && vma < high_vma) {
       // use cached value
       filenm = cache_filenm;
@@ -2518,7 +2539,8 @@ doBlock(ProcInfo pinfo, ParseAPI::Function * func,
       if (lmap != NULL) {
 	lmap->getSourceLines(vma, svec);
       }
-#if 1
+
+#if USE_FULL_SYMTAB_BACKUP
       // fall back on full symtab if module LineInfo fails.
       // symtab lookups are very expensive, so limit to one failure
       // per block.
@@ -2540,6 +2562,7 @@ doBlock(ProcInfo pinfo, ParseAPI::Function * func,
 	line = cache_line;
       }
     }
+#endif
 
 #if DEBUG_CFG_SOURCE
     debugStmt(vma, filenm, line);
