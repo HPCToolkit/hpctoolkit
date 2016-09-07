@@ -55,6 +55,10 @@ powerpc.
 
 (13) (ARM) New libunwind and/or custom unwind for aarch64.
 
+(14) Fix libunwind init_cursor() and unw_step() functions.
+---> old code based on trolling.  new libunwind provides context
+---> struct that works from signal handler, now fixed.
+
 ------------------------------------------------------------
 
 To-do list and known issues.
