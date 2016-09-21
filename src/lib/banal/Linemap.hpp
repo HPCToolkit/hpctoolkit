@@ -99,8 +99,8 @@ public:
 
 class LineMap {
 private:
-  InternalLineMap  m_line_map;
-  StringTable  m_str_tab;
+  InternalLineMap   m_line_map;
+  HPC::StringTable  m_str_tab;
   uint  m_empty_index;
 
   void do_line_map(Dwarf_Debug, Dwarf_Die);

@@ -226,7 +226,7 @@ buildLMSkeleton(Prof::Struct::LM* lmStrct,
 
 static void
 doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
-	       StringTable & strTab, ProcNameMgr * nameMgr);
+	       HPC::StringTable & strTab, ProcNameMgr * nameMgr);
 #endif
 
 #ifdef BANAL_USE_OA
@@ -635,7 +635,7 @@ makeStructure_ParseAPI(BinUtil::LM * lm,
 		       const std::string& dbgProcGlob)
 {
   Prof::Struct::LM* lmStruct = new Prof::Struct::LM(lm->name(), NULL);
-  StringTable strTab;
+  HPC::StringTable strTab;
 
 #if USE_LIBDWARF_LINE_MAP
   the_linemap = new LineMap;
@@ -2022,30 +2022,30 @@ typedef map <long, Prof::Struct::ACodeNode *> AlienScopeMap;
 
 static Prof::Struct::Proc *
 makeProcScope(Prof::Struct::LM *, ProcInfo, ParseAPI::Function *,
-	      TreeNode *, const ParseAPI::Function::blocklist &, StringTable &);
+	      TreeNode *, const ParseAPI::Function::blocklist &, HPC::StringTable &);
 
 static TreeNode *
-deleteInlinePrefix(TreeNode *, Inline::InlineSeqn, StringTable &);
+deleteInlinePrefix(TreeNode *, Inline::InlineSeqn, HPC::StringTable &);
 
 static LoopList *
 doLoopTree(ProcInfo, ParseAPI::Function *, BlockSet &, LoopTreeNode *,
-	   LineInformation *, StringTable &, ProcNameMgr *);
+	   LineInformation *, HPC::StringTable &, ProcNameMgr *);
 
 static TreeNode *
 doLoopLate(ProcInfo, ParseAPI::Function *, BlockSet &, Loop *, const string &,
-	   LineInformation *, StringTable &, ProcNameMgr *);
+	   LineInformation *, HPC::StringTable &, ProcNameMgr *);
 
 static void
 doBlock(ProcInfo, ParseAPI::Function *, BlockSet &, Block *, TreeNode *,
-	LineInformation *, StringTable &, ProcNameMgr *);
+	LineInformation *, HPC::StringTable &, ProcNameMgr *);
 
 static LoopInfo *
 findLoopHeader(ProcInfo, ParseAPI::Function *, TreeNode *, Loop *, const string &,
-	       StringTable &, ProcNameMgr *);
+	       HPC::StringTable &, ProcNameMgr *);
 
 static void
 makeScopeTree(Prof::Struct::ACodeNode *, ScopeInfo, TreeNode *,
-	      StringTable &, ProcNameMgr *);
+	      HPC::StringTable &, ProcNameMgr *);
 
 #if DEBUG_CFG_SOURCE
 static string
@@ -2056,7 +2056,7 @@ debugLoop(ProcInfo, ParseAPI::Function *, Loop *, const string &,
 	  vector <Edge *> &, HeaderList &);
 
 static void
-debugInlineTree(TreeNode *, LoopInfo *, StringTable &, int, bool);
+debugInlineTree(TreeNode *, LoopInfo *, HPC::StringTable &, int, bool);
 #endif
 
 // Info on candidates for loop header.
@@ -2110,7 +2110,7 @@ public:
 // 
 static void
 doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
-	       StringTable & strTab, ProcNameMgr * nameMgr)
+	       HPC::StringTable & strTab, ProcNameMgr * nameMgr)
 {
   Prof::Struct::Proc * procScope = pinfo.proc;
   FuncList * func_list = pinfo.func_list;
@@ -2283,7 +2283,7 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
 static Prof::Struct::Proc *
 makeProcScope(Prof::Struct::LM * lm, ProcInfo pinfo, ParseAPI::Function * func,
 	      TreeNode * root, const ParseAPI::Function::blocklist & blist,
-	      StringTable & strTab)
+	      HPC::StringTable & strTab)
 {
   long empty_index = strTab.str2index("");
   long file_index = empty_index;
@@ -2343,7 +2343,7 @@ makeProcScope(Prof::Struct::LM * lm, ProcInfo pinfo, ParseAPI::Function * func,
 // Returns: the subtree at the end of prefix.
 //
 static TreeNode *
-deleteInlinePrefix(TreeNode * root, Inline::InlineSeqn prefix, StringTable & strTab)
+deleteInlinePrefix(TreeNode * root, Inline::InlineSeqn prefix, HPC::StringTable & strTab)
 {
   StmtMap  stmts;
   LoopList loops;
@@ -2407,7 +2407,7 @@ deleteInlinePrefix(TreeNode * root, Inline::InlineSeqn prefix, StringTable & str
 static LoopList *
 doLoopTree(ProcInfo pinfo, ParseAPI::Function * func,
 	   BlockSet & visited, LoopTreeNode * ltnode,
-	   LineInformation * lmap, StringTable & strTab, ProcNameMgr * nameMgr)
+	   LineInformation * lmap, HPC::StringTable & strTab, ProcNameMgr * nameMgr)
 {
   LoopList * myList = new LoopList;
 
@@ -2465,7 +2465,7 @@ doLoopTree(ProcInfo pinfo, ParseAPI::Function * func,
 static TreeNode *
 doLoopLate(ProcInfo pinfo, ParseAPI::Function * func,
 	   BlockSet & visited, Loop * loop, const string & loopName,
-	   LineInformation * lmap, StringTable & strTab, ProcNameMgr * nameMgr)
+	   LineInformation * lmap, HPC::StringTable & strTab, ProcNameMgr * nameMgr)
 {
   TreeNode * root = new TreeNode;
 
@@ -2491,7 +2491,7 @@ doLoopLate(ProcInfo pinfo, ParseAPI::Function * func,
 static void
 doBlock(ProcInfo pinfo, ParseAPI::Function * func,
 	BlockSet & visited, Block * block, TreeNode * root,
-	LineInformation * lmap, StringTable & strTab, ProcNameMgr * nameMgr)
+	LineInformation * lmap, HPC::StringTable & strTab, ProcNameMgr * nameMgr)
 {
   if (block == NULL || visited[block]) {
     return;
@@ -2587,7 +2587,7 @@ doBlock(ProcInfo pinfo, ParseAPI::Function * func,
 static LoopInfo *
 findLoopHeader(ProcInfo pinfo, ParseAPI::Function * func, TreeNode * root,
 	       Loop * loop, const string & loopName,
-	       StringTable & strTab, ProcNameMgr * nameMgr)
+	       HPC::StringTable & strTab, ProcNameMgr * nameMgr)
 {
   string procName = func->name();
 
@@ -2826,7 +2826,7 @@ found_level:
 static Prof::Struct::ACodeNode *
 findAlienScope(Prof::Struct::ACodeNode * enclScope, AlienScopeMap & alienMap,
 	       long file_index, SrcFile::ln line, long proc_index,
-	       StringTable & strTab, ProcNameMgr * nameMgr)
+	       HPC::StringTable & strTab, ProcNameMgr * nameMgr)
 {
   Prof::Struct::ACodeNode * alien;
   const string & filenm = strTab.index2str(file_index);
@@ -2864,7 +2864,7 @@ findAlienScope(Prof::Struct::ACodeNode * enclScope, AlienScopeMap & alienMap,
 
 static void
 makeScopeTree(Prof::Struct::ACodeNode * enclScope, ScopeInfo scinfo,
-	      TreeNode * tree, StringTable & strTab, ProcNameMgr * nameMgr)
+	      TreeNode * tree, HPC::StringTable & strTab, ProcNameMgr * nameMgr)
 {
   if (tree == NULL) {
     return;
@@ -3107,7 +3107,7 @@ debugLoop(ProcInfo pinfo, ParseAPI::Function * func,
 // the tree.
 //
 void
-debugInlineTree(TreeNode * node, LoopInfo * info, StringTable & strTab,
+debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
 		int depth, bool expand_loops)
 {
   // treat node as a detached loop with FLP seqn above it.

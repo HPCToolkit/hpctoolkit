@@ -266,8 +266,8 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 
 // Add one terminal statement to the inline tree.
 StmtInfo *
-addStmtToTree(TreeNode * root, StringTable & strTab, VMA vma, int len,
-	      string & filenm, SrcFile::ln line)
+addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
+	      int len, string & filenm, SrcFile::ln line)
 {
   InlineSeqn path;
   TreeNode *node;

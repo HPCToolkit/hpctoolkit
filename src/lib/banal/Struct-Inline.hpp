@@ -136,7 +136,7 @@ public:
   }
 
   // constructor by InlineNode strings
-  FLPIndex(StringTable & strTab, InlineNode & node)
+  FLPIndex(HPC::StringTable & strTab, InlineNode & node)
   {
     string & fname = node.getFileName();
 
@@ -195,7 +195,7 @@ public:
   }
 
   // constructor by string name
-  StmtInfo(StringTable & strTab, VMA vm, int ln,
+  StmtInfo(HPC::StringTable & strTab, VMA vm, int ln,
 	   const std::string & filenm, long line)
   {
     vma = vm;
@@ -278,8 +278,8 @@ bool closeSymtab();
 bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
 
 StmtInfo *
-addStmtToTree(TreeNode * root, StringTable & strTab, VMA vma, int len,
-	      string & filenm, SrcFile::ln line);
+addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
+	      int len, string & filenm, SrcFile::ln line);
 
 void
 mergeInlineStmts(TreeNode * dest, TreeNode * src);
