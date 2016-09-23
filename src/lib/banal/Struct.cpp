@@ -154,9 +154,10 @@ using namespace InstructionAPI;
 using namespace ParseAPI;
 #endif
 
-#define USE_DYNINST_LINE_MAP    1
-#define USE_LIBDWARF_LINE_MAP   0
+#define USE_DYNINST_LINE_MAP    0
+#define USE_LIBDWARF_LINE_MAP   1
 #define USE_FULL_SYMTAB_BACKUP  1
+#define NEW_GET_SOURCE_LINES    0
 
 #define FULL_STRUCT_DEBUG 0
 
@@ -2103,6 +2104,52 @@ public:
 
 //****************************************************************************
 
+// The API for getSourceLines() changed between Dyninst 9.2 and 9.3,
+// so we abstract that out until the API settles down.
+
+#if NEW_GET_SOURCE_LINES
+
+typedef vector <Statement::Ptr> StatementVector;
+
+static void
+getStatement(Offset vma, StatementVector & svec)
+{
+  set <Module *> mods;
+
+  svec.clear();
+  the_symtab->findModuleByOffset(mods, vma);
+
+  for (auto mit = mods.begin(); mit != mods.end(); ++mit) {
+    (*mit)->getSourceLines(svec, vma);
+    if (! svec.empty()) {
+      break;
+    }
+  }
+}
+
+#else  // old getSourceLines()
+
+typedef vector <Statement *> StatementVector;
+
+static void
+getStatement(Offset vma, StatementVector & svec)
+{
+  SymtabAPI::Function * sym_func = NULL;
+  SymtabAPI::Module * mod = NULL;
+
+  svec.clear();
+
+  if (the_symtab->getContainingFunction(vma, sym_func)
+      && sym_func != NULL)
+  {
+    mod = sym_func->getModule();
+    mod->getSourceLines(svec, vma);
+  }
+}
+
+#endif
+
+
 // One binutils proc may contain multiple embedded parseapi functions.
 // In that case, we create new proc/file scope nodes for each function
 // and strip the inline prefix at the call source from the embed
@@ -2146,6 +2193,7 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
     TreeNode * root = new TreeNode;
     num++;
 
+#if 0
 #if USE_DYNINST_LINE_MAP
     // get the line map for the module containing this function.  the
     // module's line map is much faster than the full symtab line map.
@@ -2162,6 +2210,7 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
 	lmap = mod->getLineInformation();
       }
     }
+#endif
 #endif
 
     // compute the inline seqn for the call site for this func, if
@@ -2534,11 +2583,8 @@ doBlock(ProcInfo pinfo, ParseAPI::Function * func,
       line = cache_line;
     }
     else {
-      vector <Statement *> svec;
-
-      if (lmap != NULL) {
-	lmap->getSourceLines(vma, svec);
-      }
+      StatementVector svec;
+      getStatement(vma, svec);
 
 #if USE_FULL_SYMTAB_BACKUP
       // fall back on full symtab if module LineInfo fails.
