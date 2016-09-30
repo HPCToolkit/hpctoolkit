@@ -2107,6 +2107,7 @@ public:
 // The API for getSourceLines() changed between Dyninst 9.2 and 9.3,
 // so we abstract that out until the API settles down.
 
+#if USE_DYNINST_LINE_MAP
 #if NEW_GET_SOURCE_LINES
 
 typedef vector <Statement::Ptr> StatementVector;
@@ -2147,6 +2148,7 @@ getStatement(Offset vma, StatementVector & svec)
   }
 }
 
+#endif
 #endif
 
 
