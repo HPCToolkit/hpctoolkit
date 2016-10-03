@@ -41,9 +41,17 @@ to use libdwarf directly.
 ---> mostly done in Struct.cpp, but symtab misses line map info from
 ---> some modules.
 
+(4) Update libmonitor to fix main and thread fences (move to separate
+file), various warnings and probably several other things.
+---> done
+
 (5) Libunwind configure.
 ---> reworked configure to allow libunwind as primary or secondary
 ---> unwinder.
+
+(9) Update externals distfiles for binutils, libmonitor, libunwind,
+etc.
+---> done
 
 (10) (power8/le) More structured patch for symtab for little endian
 powerpc.
@@ -63,11 +71,9 @@ powerpc.
 
 To-do list and known issues.
 
-(4) Update libmonitor to fix main and thread fences (move to separate
-file), various warnings and probably several other things.
-
 (5) Libunwind and xerces don't build .so shared libraries.  Either
 update to later versions, or commit to static only, or both.
+---> they work with static versions, will revisit later
 
 (6) Integrate binutils with libz.
 
@@ -75,9 +81,6 @@ update to later versions, or commit to static only, or both.
 from rest of binutils.
 
 (8) Replace libelf with elfutils.
-
-(9) Update externals distfiles for binutils, libmonitor, libunwind,
-etc.
 
 ------------------------------------------------------------
 
