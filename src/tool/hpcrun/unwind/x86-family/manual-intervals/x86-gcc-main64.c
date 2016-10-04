@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://hpctoolkit.googlecode.com/svn/trunk/src/tool/hpcrun/unwind/x86-family/manual-intervals/x86-intel11-f90main.c $
+// $Id: x86-intel11-f90main.c 4422 2014-02-10 21:24:59Z mwkrentel $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -44,41 +44,59 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef SPECIFIC_INLINE_ASM_GCTXT
-#define SPECIFIC_INLINE_ASM_GCTXT
+#include <string.h>
+#include "x86-unwind-interval-fixup.h"
+#include "x86-unwind-interval.h"
 
-//***************************************************************************
-// local include files 
-//***************************************************************************
+static char gcc_main64_signature[] = { 
+ 0x4c, 0x8d, 0x54, 0x24, 0x08,  // lea    0x8(%rsp),%r10
+ 0x48, 0x83, 0xe4, 0xe0,        // and    $0xffffffffffffffe0,%rsp
+ 0x41, 0xff, 0x72, 0xf8,        // pushq  -0x8(%r10)
+ 0x55,                          // push   %rbp
+ 0x48, 0x89, 0xe5,              // mov    %rsp,%rbp
+};
 
-#include <utilities/arch/ucontext-manip.h>
+static int 
+adjust_gcc_main64_intervals(char *ins, int len, interval_status *stat)
+{
+  int siglen = sizeof(gcc_main64_signature);
+
+  if (len > siglen && strncmp((char *)gcc_main64_signature, ins, siglen) == 0) {
+    // signature matched 
+    unwind_interval *ui = (unwind_interval *) stat->first;
+
+    // this won't fix all of the intervals, but it will fix the ones 
+    // that we care about.
+    //
+    // The method is as follows:
+    // Ignore (do not correct) intervals before 1st std frame
+    // For 1st STD_FRAME, compute the corrections for this interval and subsequent intervals
+    // For this interval and subsequent interval, apply the corrected offsets
+    //
+
+    for(; ui->ra_status != RA_STD_FRAME; ui = (unwind_interval *)(ui->common).next);
+
+    // this is only correct for 64-bit code
+    for(; ui; ui = (unwind_interval *)(ui->common).next) {
+      if (ui->ra_status == RA_SP_RELATIVE) continue;
+      if ((ui->ra_status == RA_STD_FRAME) || (ui->ra_status == RA_BP_FRAME)) {  
+         ui->ra_status = RA_BP_FRAME;
+         ui->bp_ra_pos = 8;
+         ui->bp_bp_pos = 0;
+      }
+    }
+
+    return 1;
+  } 
+  return 0;
+}
 
 
-
-//***************************************************************************
-// macros 
-//***************************************************************************
-
-// macro: INLINE_ASM_GCTXT 
-// purpose:
-//   lightweight version of getcontext, which saves 
-//   PC, BP, SP into a ucontext structure in their
-//   normal positions 
-
-#define INLINE_ASM_GCTXT(uc)                               \
-  /* load PC into RAX; save RAX into uc structure   */     \
-  asm volatile ("leaq 0(%%rip), %%rax\n\t"                 \
-                "movq %%rax, %0"                           \
-                : "=m" (UC_REG_IP(uc)) /* output    */     \
-                :                      /* no inputs */     \
-                : "%rax"               /* clobbered */ );  \
-  /* save BP into uc structure                      */     \
-  asm volatile ("movq %%rbp, %0"                           \
-                : "=m" (UC_REG_BP(uc)) /* output    */ );  \
-  /* save SP into uc structure                      */     \
-  asm volatile ("movq %%rsp, %0"                           \
-                : "=m" (UC_REG_SP(uc)) /* output    */ )
+static void 
+__attribute__ ((constructor))
+register_unwind_interval_fixup_function(void)
+{
+  add_x86_unwind_interval_fixup_function(adjust_gcc_main64_intervals);
+}
 
 
-
-#endif // SPECIFIC_INLINE_ASM_GCTXT

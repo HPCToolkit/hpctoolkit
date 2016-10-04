@@ -123,6 +123,8 @@ hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
   char *ins_end = ins + xed_decoded_inst_get_length(xptr);
   if (ins_end == iarg->end) {
     void *branch_target = x86_get_branch_target(ins,xptr);
+    // branch is indirect. this is not cold path code
+    if (branch_target == NULL) return false;
     // branch target is outside bounds of current routine
     if (branch_target < iarg->beg || iarg->end <= branch_target) {
       // this is a possible cold code routine

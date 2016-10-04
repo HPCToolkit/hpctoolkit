@@ -2225,11 +2225,14 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
     }
 
 #if DEBUG_CFG_SOURCE
+    Prof::Struct::File * file = dynamic_cast <Prof::Struct::File *> (pinfo.proc->parent());
+
     cout << "\n------------------------------------------------------------\n"
 	 << "func:  0x" << hex << entry_addr << dec
 	 << "  (" << num << "/" << num_funcs << ")"
 	 << "  bin='" << pinfo.proc_bin->name()
-	 << "'  parse='" << func->name() << "'\n";
+	 << "'  parse='" << func->name() << "'\n"
+	 << "file:  '" << file->name() << "'\n";
 
     if (call_it != callMap.end()) {
       cout << "\ncall site prefix:  0x" << hex << call_it->second
@@ -2312,7 +2315,9 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
     SrcFile::ln beg_line = procScope->begLine();
 
     makeScopeTree(procScope, ScopeInfo(file_index, beg_line), root, strTab, nameMgr);
-    procScope->begLine(beg_line);
+    if (beg_line > 0) {
+      procScope->begLine(beg_line);
+    }
 
     // fixme: may or may not use these
 #if 0
@@ -2637,6 +2642,8 @@ findLoopHeader(ProcInfo pinfo, ParseAPI::Function * func, TreeNode * root,
 	       Loop * loop, const string & loopName,
 	       HPC::StringTable & strTab, ProcNameMgr * nameMgr)
 {
+  Prof::Struct::File * file = dynamic_cast <Prof::Struct::File *> (pinfo.proc->parent());
+  long base_index = strTab.str2index(FileUtil::basename(file->name()));
   string procName = func->name();
 
   //------------------------------------------------------------
@@ -2690,7 +2697,8 @@ findLoopHeader(ProcInfo pinfo, ParseAPI::Function * func, TreeNode * root,
 
 #if DEBUG_CFG_SOURCE
   cout << "\nraw inline tree:  " << loopName
-       << "  '" << func->name() << "'\n\n";
+       << "  '" << func->name() << "'\n"
+       << "file:  '" << file->name() << "'\n\n";
   debugInlineTree(root, NULL, strTab, 0, false);
   debugLoop(pinfo, func, loop, loopName, backEdges, clist);
   cout << "\nsearching inline tree:\n";
@@ -2745,6 +2753,7 @@ findLoopHeader(ProcInfo pinfo, ParseAPI::Function * func, TreeNode * root,
     delete root;
     root = subtree;
     path.push_back(flp);
+    base_index = -1;
 
     DEBUG_MESG("inline:  l=" << flp.line_num
 	       << "  f='" << strTab.index2str(flp.file_index)
@@ -2778,18 +2787,33 @@ found_level:
     // name and the minimum line number among all callsites, subloops
     // and loop conditions with the same file.
     //
-    if (root->nodeMap.size() > 0) {
-      FLPIndex flp = root->nodeMap.begin()->first;
+    // if there is an inconsistent choice of file name, prefer the
+    // file matching the function, but do this only at top-level (no
+    // inline steps).  inline call sites show only where called from,
+    // not where defined.
+    //
+    for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
+      FLPIndex flp = nit->first;
       file_ans = flp.file_index;
       base_ans = flp.base_index;
       line_ans = flp.line_num;
+
+      if (base_index < 0 || flp.base_index == base_index) {
+	goto found_file;
+      }
     }
-    else {
-      LoopInfo *info = *(root->loopList.begin());
+
+    for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
+      LoopInfo *info = *lit;
       file_ans = info->file_index;
       base_ans = info->base_index;
       line_ans = info->line_num;
+
+      if (base_index < 0 || info->base_index == base_index) {
+	goto found_file;
+      }
     }
+found_file:
 
     // min of inline callsites
     for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
@@ -2882,13 +2906,18 @@ findAlienScope(Prof::Struct::ACodeNode * enclScope, AlienScopeMap & alienMap,
   auto ait = alienMap.find(base_index);
 
   if (ait != alienMap.end()) {
-    // alien node exists, expand the line range
+    // alien node exists, expand the line range, but preserve the
+    // invariant that beg = 0 iff end = 0.
     alien = ait->second;
 
-    if (line < alien->begLine()) {
+    if (alien->begLine() == 0 && line > 0) {
+      alien->begLine(line);
+      alien->endLine(line);
+    }
+    else if (line < alien->begLine() && line > 0) {
       alien->begLine(line);
     }
-    if (line > alien->endLine()) {
+    else if (line > alien->endLine() && alien->endLine() > 0) {
       alien->endLine(line);
     }
   }

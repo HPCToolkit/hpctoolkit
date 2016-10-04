@@ -59,6 +59,13 @@
 
 //************************ System Include Files ******************************
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <string.h>
+#include <unistd.h>
+
 #include <iostream> 
 using std::cerr;
 using std::endl;
@@ -70,8 +77,6 @@ using std::string;
 
 #include "PGMReader.hpp"
 #include "XercesUtil.hpp"
-
-#include <lib/support/pathfind.h>
 
 //*********************** Xerces Include Files *******************************
 
@@ -85,6 +90,43 @@ using XERCES_CPP_NAMESPACE::XMLString;
 namespace Prof {
 
 namespace Struct {
+
+// Simple sanity check for struct file that we can open it and it
+// begins with '<?xml'.  Otherwise, the xerces error messages are
+// rather unhelpful.
+//
+// FIXME: better to check for DOCTYPE tag:
+// <!DOCTYPE HPCToolkitStructure
+//
+#define BUF_SIZE  10
+static void
+xmlSanityCheck(const char *filenm, string & docType)
+{
+  char buf[BUF_SIZE];
+
+  int fd = open(filenm, O_RDONLY);
+  if (fd < 0) {
+    cerr << "unable to open " << docType << " file: '" << filenm << "': "
+	 << strerror(errno) << endl;
+    exit(1);
+  }
+
+  memset(buf, 0, BUF_SIZE);
+  ssize_t ret = read(fd, buf, 5);
+  if (ret < 0) {
+    cerr << "unable to read " << docType << " file: '" << filenm << "': "
+	 << strerror(errno) << endl;
+    exit(1);
+  }
+
+  if (strncasecmp(buf, "<?xml", 5) != 0) {
+    cerr << "unable to parse " << docType << " file: '" << filenm << "': "
+	 << "not an xml file" << endl;
+    exit(1);
+  }
+
+  close(fd);
+}
 
 
 void
@@ -106,7 +148,6 @@ readStructure(Struct::Tree& structure,
 }
 
 
-
 void
 read_PGM(Struct::Tree& structure,
 	 const char* filenm,
@@ -116,9 +157,12 @@ read_PGM(Struct::Tree& structure,
   if (!filenm || filenm[0] == '\0') {
     return;
   }
-  
-  const char* pf = pathfind(".", filenm, "r");
-  string fpath = (pf) ? pf : "";
+
+  string fpath = filenm;
+  string docType = PGMDocHandler::ToString(docty);
+
+  xmlSanityCheck(filenm, docType);
+
   if (!fpath.empty()) {
     try {
       SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();

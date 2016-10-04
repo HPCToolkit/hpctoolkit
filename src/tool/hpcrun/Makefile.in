@@ -143,29 +143,29 @@ pkglibexec_PROGRAMS =
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_10 = libhpctoolkit.a
 @HOST_CPU_PPC_TRUE@@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_11 = libibm_xlomp_wrappers.a
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_12 = scripts/hpclink
-@HOST_CPU_PPC_TRUE@am__append_13 = ibm-xlomp
-@OPT_PAPI_CUPTI_TRUE@am__append_14 = sample-sources/papi-c-cupti.c
+@OPT_ENABLE_MPI_WRAP_TRUE@am__append_13 = libhpcrun_mpi.la
+@HOST_CPU_PPC_TRUE@am__append_14 = ibm-xlomp
+@OPT_PAPI_CUPTI_TRUE@am__append_15 = sample-sources/papi-c-cupti.c
 
 #
 # BG/Q backend requires special treatment to avoid deadlocks
 #
-@OPT_BGQ_BACKEND_TRUE@am__append_15 = -DUSE_HW_THREAD_ID -DNONZERO_THRESHOLD
-@OPT_BGQ_BACKEND_TRUE@am__append_16 = -I$(srcdir)/utilities/bgq-cnk
+@OPT_BGQ_BACKEND_TRUE@am__append_16 = -DUSE_HW_THREAD_ID -DNONZERO_THRESHOLD
 @OPT_BGQ_BACKEND_TRUE@am__append_17 = -I$(srcdir)/utilities/bgq-cnk
-@OPT_BGQ_BACKEND_TRUE@am__append_18 = utilities/bgq-cnk/libhardware-thread-id.la
-@OPT_BGQ_BACKEND_TRUE@am__append_19 = utilities/bgq-cnk/libhardware-thread-id.la
+@OPT_BGQ_BACKEND_TRUE@am__append_18 = -I$(srcdir)/utilities/bgq-cnk
+@OPT_ENABLE_CUDA_TRUE@am__append_19 = $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
+@OPT_ENABLE_CUDA_TRUE@am__append_20 = $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
+@OPT_ENABLE_MPI_WRAP_TRUE@am__append_21 = mpi-overrides.c
+@OPT_ENABLE_MPI_WRAP_TRUE@am__append_22 = mpi-overrides.c
+@OPT_BGQ_BACKEND_TRUE@am__append_23 = utilities/bgq-cnk/libhardware-thread-id.la
+@OPT_BGQ_BACKEND_TRUE@am__append_24 = utilities/bgq-cnk/libhardware-thread-id.la
 
 #-----------------------------------------------------------
 # whirled peas
 #-----------------------------------------------------------
-@HOST_OS_LINUX_TRUE@am__append_20 = $(MY_LINUX_DYNAMIC_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_21 = $(MY_MIPS_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_22 = $(MY_MIPS_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_23 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_24 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_25 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_26 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_27 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_OS_LINUX_TRUE@am__append_25 = $(MY_LINUX_DYNAMIC_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_26 = $(MY_MIPS_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_27 = $(MY_MIPS_FILES)
 @HOST_CPU_MIPS_TRUE@am__append_28 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_29 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_30 = $(MY_MIPS_INCLUDE_DIRS)
@@ -174,19 +174,19 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_MIPS_TRUE@am__append_33 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_34 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_35 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_36 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_37 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_38 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_39 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_40 = $(MY_MIPS_INCLUDE_DIRS)
 
 # Note: setting CCASFLAGS here is a no-op hack with the side effect of
 # prefixing the tramp.s file names so they will be compiled separately
 # for .o and .so targets.  CFLAGS does this for the .c files, but
 # CFLAGS doesn't apply to .s files.  See the automake docs section
 # 8.3.9.2, Objects created with both libtool and without.
-@HOST_CPU_PPC_TRUE@am__append_36 = $(MY_PPC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_37 = $(MY_PPC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_38 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_39 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_40 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_41 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_42 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_41 = $(MY_PPC_FILES)
+@HOST_CPU_PPC_TRUE@am__append_42 = $(MY_PPC_FILES)
 @HOST_CPU_PPC_TRUE@am__append_43 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_44 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_45 = $(MY_PPC_INCLUDE_DIRS)
@@ -195,17 +195,17 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_PPC_TRUE@am__append_48 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_49 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_50 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_51 = $(MY_X86_FILES)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_52 = $(MY_X86_FILES)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_53 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_54 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_55 = $(XED2_HPCRUN_LIBS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_56 = $(XED2_HPCLINK_LIBS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_57 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_51 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_52 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_53 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_54 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_55 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_56 = $(MY_X86_FILES)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_57 = $(MY_X86_FILES)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_58 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_59 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_60 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_61 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_60 = $(XED2_HPCRUN_LIBS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_61 = $(XED2_HPCLINK_LIBS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_62 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_63 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_64 = $(MY_X86_INCLUDE_DIRS)
@@ -213,26 +213,26 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_X86_FAMILY_TRUE@am__append_66 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_67 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_68 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_69 = $(MY_IA64_FILES)
-@HOST_CPU_IA64_TRUE@am__append_70 = $(MY_IA64_FILES)
-@HOST_CPU_IA64_TRUE@am__append_71 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_72 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_73 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_74 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_75 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_69 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_70 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_71 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_72 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_73 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_74 = $(MY_IA64_FILES)
+@HOST_CPU_IA64_TRUE@am__append_75 = $(MY_IA64_FILES)
 @HOST_CPU_IA64_TRUE@am__append_76 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_77 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_78 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_79 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_80 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_81 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_AARCH64_TRUE@am__append_82 = $(MY_AARCH64_FILES)
-@HOST_CPU_AARCH64_TRUE@am__append_83 = $(MY_AARCH64_FILES)
-@HOST_CPU_AARCH64_TRUE@am__append_84 = $(MY_AARCH64_INCLUDE_DIRS)
-@HOST_CPU_AARCH64_TRUE@am__append_85 = $(MY_AARCH64_INCLUDE_DIRS)
-@HOST_CPU_AARCH64_TRUE@am__append_86 = $(MY_AARCH64_INCLUDE_DIRS)
-@HOST_CPU_AARCH64_TRUE@am__append_87 = $(MY_AARCH64_INCLUDE_DIRS)
-@HOST_CPU_AARCH64_TRUE@am__append_88 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_82 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_83 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_84 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_85 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_86 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_87 = $(MY_AARCH64_FILES)
+@HOST_CPU_AARCH64_TRUE@am__append_88 = $(MY_AARCH64_FILES)
 @HOST_CPU_AARCH64_TRUE@am__append_89 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_90 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_91 = $(MY_AARCH64_INCLUDE_DIRS)
@@ -241,31 +241,36 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_AARCH64_TRUE@am__append_94 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_95 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_96 = $(MY_AARCH64_INCLUDE_DIRS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_97 = $(MY_PAPI_FILES)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_98 = $(PAPI_INC_FLGS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_99 = $(PAPI_LD_FLGS)
-@OPT_PAPI_CUPTI_TRUE@am__append_100 = $(CUPTI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_101 = $(MY_PAPI_FILES)
-@OPT_PAPI_STATIC_TRUE@am__append_102 = $(PAPI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_103 = $(PAPI_LD_FLGS)
-@OPT_ENABLE_UPC_TRUE@am__append_104 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_105 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_106 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_107 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_108 = $(OPT_UPC_LDFLAGS)
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_109 = -DLUSH_PTHREADS
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_110 = -DLUSH_PTHREADS
-@OPT_ENABLE_CUDA_TRUE@am__append_111 = $(CUDA_FILES)
-@OPT_ENABLE_CUDA_TRUE@am__append_112 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_113 = $(OPT_CUDA_IFLAGS) -g
-#  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_114 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_115 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_116 = $(OPT_CUDA_LDFLAGS)
+@HOST_CPU_AARCH64_TRUE@am__append_97 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_98 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_99 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_100 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_101 = $(MY_AARCH64_INCLUDE_DIRS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_102 = $(MY_PAPI_FILES)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_103 = $(PAPI_INC_FLGS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_104 = $(PAPI_LD_FLGS)
+@OPT_PAPI_CUPTI_TRUE@am__append_105 = $(CUPTI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_106 = $(MY_PAPI_FILES)
+@OPT_PAPI_STATIC_TRUE@am__append_107 = $(PAPI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_108 = $(PAPI_LD_FLGS)
+@OPT_ENABLE_UPC_TRUE@am__append_109 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_110 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_111 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_112 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_113 = $(OPT_UPC_LDFLAGS)
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_114 = -DLUSH_PTHREADS
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_115 = -DLUSH_PTHREADS
+@OPT_ENABLE_CUDA_TRUE@am__append_116 = $(CUDA_FILES)
 @OPT_ENABLE_CUDA_TRUE@am__append_117 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_118 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_119 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_120 = libagent-pthread.la \
+@OPT_ENABLE_CUDA_TRUE@am__append_118 = $(OPT_CUDA_IFLAGS) -g
+#  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_119 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_120 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_121 = $(OPT_CUDA_LDFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_122 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_123 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_124 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_125 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -415,7 +420,7 @@ libagent_tbb_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	-o $@
 @OPT_ENABLE_LUSH_TRUE@am_libagent_tbb_la_rpath = -rpath $(pkglibdir)
 libhpcrun_la_DEPENDENCIES = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
-	$(am__append_18)
+	$(am__append_23)
 am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	disabled.c cct_insert_backtrace.c env.c epoch.c files.c \
 	handling_sample.c hpcrun_options.c hpcrun_stats.c loadmap.c \
@@ -469,9 +474,11 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind-interval-fixup.c \
 	unwind/x86-family/x86-unwind.c \
 	unwind/x86-family/x86-unwind-support.c \
+	unwind/x86-family/manual-intervals/x86-gcc-main64.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
-	unwind/x86-family/manual-intervals/x86-intel14-omp.c \
+	unwind/x86-family/manual-intervals/x86-intel-align32.c \
+	unwind/x86-family/manual-intervals/x86-intel-align64.c \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
@@ -581,9 +588,11 @@ am__objects_33 = $(am__objects_31) \
 	unwind/x86-family/libhpcrun_la-x86-unwind-interval-fixup.lo \
 	unwind/x86-family/libhpcrun_la-x86-unwind.lo \
 	unwind/x86-family/libhpcrun_la-x86-unwind-support.lo \
+	unwind/x86-family/manual-intervals/libhpcrun_la-x86-gcc-main64.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-linux-dlresolver.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel11-f90main.lo \
-	unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel14-omp.lo \
+	unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-align32.lo \
+	unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-align64.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-composer2013-mic.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-32bit-main.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-32bit-icc-variant.lo \
@@ -645,6 +654,15 @@ libhpcrun_memleak_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(libhpcrun_memleak_la_LDFLAGS) $(LDFLAGS) -o $@
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpcrun_memleak_la_rpath =  \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	-rpath $(pkglibdir)
+libhpcrun_mpi_la_LIBADD =
+am_libhpcrun_mpi_la_OBJECTS = ./libhpcrun_mpi_la-mpi-overrides.lo
+libhpcrun_mpi_la_OBJECTS = $(am_libhpcrun_mpi_la_OBJECTS)
+libhpcrun_mpi_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(libhpcrun_mpi_la_CFLAGS) $(CFLAGS) \
+	$(libhpcrun_mpi_la_LDFLAGS) $(LDFLAGS) -o $@
+@OPT_ENABLE_MPI_WRAP_TRUE@am_libhpcrun_mpi_la_rpath = -rpath \
+@OPT_ENABLE_MPI_WRAP_TRUE@	$(pkglibdir)
 libhpcrun_pthread_la_LIBADD =
 am_libhpcrun_pthread_la_OBJECTS = sample-sources/libhpcrun_pthread_la-pthread-blame-overrides.lo
 libhpcrun_pthread_la_OBJECTS = $(am_libhpcrun_pthread_la_OBJECTS)
@@ -710,9 +728,11 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind-interval-fixup.c \
 	unwind/x86-family/x86-unwind.c \
 	unwind/x86-family/x86-unwind-support.c \
+	unwind/x86-family/manual-intervals/x86-gcc-main64.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
-	unwind/x86-family/manual-intervals/x86-intel14-omp.c \
+	unwind/x86-family/manual-intervals/x86-intel-align32.c \
+	unwind/x86-family/manual-intervals/x86-intel-align64.c \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
@@ -821,9 +841,11 @@ am__objects_56 = $(am__objects_54) \
 	unwind/x86-family/libhpcrun_o-x86-unwind-interval-fixup.$(OBJEXT) \
 	unwind/x86-family/libhpcrun_o-x86-unwind.$(OBJEXT) \
 	unwind/x86-family/libhpcrun_o-x86-unwind-support.$(OBJEXT) \
+	unwind/x86-family/manual-intervals/libhpcrun_o-x86-gcc-main64.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-linux-dlresolver.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel11-f90main.$(OBJEXT) \
-	unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel14-omp.$(OBJEXT) \
+	unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align32.$(OBJEXT) \
+	unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align64.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-composer2013-mic.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-32bit-main.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-32bit-icc-variant.$(OBJEXT) \
@@ -838,7 +860,7 @@ am_libhpcrun_o_OBJECTS = $(am__objects_35) $(am__objects_36) \
 	utilities/libhpcrun_o-last_func.$(OBJEXT)
 libhpcrun_o_OBJECTS = $(am_libhpcrun_o_OBJECTS)
 libhpcrun_o_DEPENDENCIES = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
-	$(am__append_19)
+	$(am__append_24)
 libhpcrun_o_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libhpcrun_o_CFLAGS) \
 	$(CFLAGS) $(libhpcrun_o_LDFLAGS) $(LDFLAGS) -o $@
@@ -904,7 +926,7 @@ SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
 	$(libagent_pthread_la_SOURCES) $(libagent_tbb_la_SOURCES) \
 	$(libhpcrun_la_SOURCES) $(libhpcrun_ga_la_SOURCES) \
 	$(libhpcrun_gpu_la_SOURCES) $(libhpcrun_io_la_SOURCES) \
-	$(libhpcrun_memleak_la_SOURCES) \
+	$(libhpcrun_memleak_la_SOURCES) $(libhpcrun_mpi_la_SOURCES) \
 	$(libhpcrun_pthread_la_SOURCES) $(libhpctoolkit_la_SOURCES) \
 	$(libhpcrun_o_SOURCES)
 DIST_SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
@@ -918,7 +940,7 @@ DIST_SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
 	$(am__libagent_tbb_la_SOURCES_DIST) \
 	$(am__libhpcrun_la_SOURCES_DIST) $(libhpcrun_ga_la_SOURCES) \
 	$(libhpcrun_gpu_la_SOURCES) $(libhpcrun_io_la_SOURCES) \
-	$(libhpcrun_memleak_la_SOURCES) \
+	$(libhpcrun_memleak_la_SOURCES) $(libhpcrun_mpi_la_SOURCES) \
 	$(libhpcrun_pthread_la_SOURCES) $(libhpctoolkit_la_SOURCES) \
 	$(am__libhpcrun_o_SOURCES_DIST)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
@@ -1073,11 +1095,6 @@ LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB = @LIBELF_LIB@
 LIBMONITOR_COPY = @LIBMONITOR_COPY@
 
-# FIXME: temporarily comment-out the mpi overrides.  There is a bad
-# interaction between the mpi built sources and the new automake that
-# breaks the build, even when OPT_ENABLE_MPI_WRAP is false.
-# This is part 1 of 4.
-
 #-----------------------------------------------------------
 # source files, part 1
 #-----------------------------------------------------------
@@ -1105,8 +1122,11 @@ MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
 MONITOR = @MONITOR@
+MPICC = @MPICC@
 MPICXX = @MPICXX@
 MPIF77 = @MPIF77@
+MPI_INC = @MPI_INC@
+MPI_PROTO_FILE = @MPI_PROTO_FILE@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OA_IFLAGS = @OA_IFLAGS@
@@ -1293,13 +1313,15 @@ include_HEADERS = $(am__append_3)
 pkglib_LIBRARIES = $(am__append_8) $(am__append_9) $(am__append_10) \
 	$(am__append_11)
 pkglib_LTLIBRARIES = $(am__append_4) $(am__append_5) $(am__append_6) \
-	$(am__append_119) $(am__append_120)
+	$(am__append_13) $(am__append_124) $(am__append_125)
+BUILT_SOURCES = $(am__append_19) $(am__append_21)
+CLEANFILES = $(am__append_20) $(am__append_22)
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
-PLUGIN_CONFIG_FILES = ga io memleak pthread $(am__append_13)
+PLUGIN_CONFIG_FILES = ga io memleak pthread $(am__append_14)
 UNW_UNIV_FILES = \
 	unwind/common/backtrace.c	\
         unwind/common/unw-throw.c
@@ -1320,9 +1342,11 @@ UNW_X86_FILES = \
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
 	unwind/x86-family/x86-unwind.c		        \
 	unwind/x86-family/x86-unwind-support.c		\
+	unwind/x86-family/manual-intervals/x86-gcc-main64.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
-	unwind/x86-family/manual-intervals/x86-intel14-omp.c \
+	unwind/x86-family/manual-intervals/x86-intel-align32.c \
+	unwind/x86-family/manual-intervals/x86-intel-align64.c \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
@@ -1476,12 +1500,12 @@ MY_AARCH64_FILES = \
 	utilities/arch/libunwind/libunwind-context-pc.c
 
 @OPT_PAPI_COMPONENT_FALSE@MY_PAPI_FILES = sample-sources/papi.c \
-@OPT_PAPI_COMPONENT_FALSE@	$(am__append_14)
+@OPT_PAPI_COMPONENT_FALSE@	$(am__append_15)
 @OPT_PAPI_COMPONENT_TRUE@MY_PAPI_FILES = sample-sources/papi-c.c \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/papi-c-extended-info.c \
-@OPT_PAPI_COMPONENT_TRUE@	$(am__append_14)
+@OPT_PAPI_COMPONENT_TRUE@	$(am__append_15)
 MY_UPC_FILES = sample-sources/upc.c
-MY_CPP_DEFINES = -D_GNU_SOURCE -DINLINE_FN=1 $(am__append_15)
+MY_CPP_DEFINES = -D_GNU_SOURCE -DINLINE_FN=1 $(am__append_16)
 MY_INCLUDE_DIRS = \
         -I$(top_srcdir)/src/tool        \
 	-I$(srcdir)/messages	        \
@@ -1514,14 +1538,14 @@ MY_AARCH64_INCLUDE_DIRS = \
 	-I$(srcdir)/utilities/arch/aarch64
 
 libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
-	$(am__append_20) $(am__append_21) $(am__append_36) \
-	$(am__append_51) $(am__append_69) $(am__append_82) \
-	$(am__append_97) $(am__append_104) $(am__append_111) \
+	$(am__append_25) $(am__append_26) $(am__append_41) \
+	$(am__append_56) $(am__append_74) $(am__append_87) \
+	$(am__append_102) $(am__append_109) $(am__append_116) \
 	$(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
-	$(am__append_22) $(am__append_37) $(am__append_52) \
-	$(am__append_70) $(am__append_83) $(am__append_101) \
-	$(am__append_105) $(UNW_SOURCE_FILES) utilities/last_func.c
+	$(am__append_27) $(am__append_42) $(am__append_57) \
+	$(am__append_75) $(am__append_88) $(am__append_106) \
+	$(am__append_110) $(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_wrap_a_SOURCES = \
 	monitor-exts/openmp.c
 
@@ -1559,6 +1583,9 @@ libhpcrun_gpu_wrap_a_SOURCES = \
 	gpu_blame-driver-overrides-generated.c \
 	gpu_blame-runtime-overrides-generated.c
 
+libhpcrun_mpi_la_SOURCES = \
+	./mpi-overrides.c
+
 libibm_xlomp_wrappers_a_SOURCES = \
         plugins/ibm-xlomp-wrappers.c
 
@@ -1573,69 +1600,60 @@ libhpctoolkit_a_SOURCES = \
 # cppflags
 #-----------------------------------------------------------
 libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(LIBUNWIND_CPPFLAGS_DYN) \
-	$(MY_INCLUDE_DIRS) $(am__append_16) $(am__append_23) \
-	$(am__append_38) $(am__append_53) $(am__append_71) \
-	$(am__append_84) $(am__append_98) $(am__append_100) \
-	$(am__append_106) $(am__append_109) $(am__append_112) \
+	$(MY_INCLUDE_DIRS) $(am__append_17) $(am__append_28) \
+	$(am__append_43) $(am__append_58) $(am__append_76) \
+	$(am__append_89) $(am__append_103) $(am__append_105) \
+	$(am__append_111) $(am__append_114) $(am__append_117) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(LIBUNWIND_CPPFLAGS_STAT) $(MY_INCLUDE_DIRS) $(am__append_17) \
-	$(am__append_24) $(am__append_39) $(am__append_54) \
-	$(am__append_72) $(am__append_85) $(am__append_102) \
-	$(am__append_107) $(am__append_110) $(UNW_INCLUDE_DIRS)
+	$(LIBUNWIND_CPPFLAGS_STAT) $(MY_INCLUDE_DIRS) $(am__append_18) \
+	$(am__append_29) $(am__append_44) $(am__append_59) \
+	$(am__append_77) $(am__append_90) $(am__append_107) \
+	$(am__append_112) $(am__append_115) $(UNW_INCLUDE_DIRS)
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
 libhpcrun_ga_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_25) $(am__append_40) $(am__append_57) \
-	$(am__append_73) $(am__append_86) $(UNW_INCLUDE_DIRS)
+	$(am__append_30) $(am__append_45) $(am__append_62) \
+	$(am__append_78) $(am__append_91) $(UNW_INCLUDE_DIRS)
 libhpcrun_ga_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_26) $(am__append_41) \
-	$(am__append_58) $(am__append_74) $(am__append_87) \
+	$(MY_INCLUDE_DIRS) $(am__append_31) $(am__append_46) \
+	$(am__append_63) $(am__append_79) $(am__append_92) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_io_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_27) $(am__append_42) $(am__append_59) \
-	$(am__append_75) $(am__append_88) $(UNW_INCLUDE_DIRS)
+	$(am__append_32) $(am__append_47) $(am__append_64) \
+	$(am__append_80) $(am__append_93) $(UNW_INCLUDE_DIRS)
 libhpcrun_io_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_28) $(am__append_43) \
-	$(am__append_60) $(am__append_76) $(am__append_89) \
+	$(MY_INCLUDE_DIRS) $(am__append_33) $(am__append_48) \
+	$(am__append_65) $(am__append_81) $(am__append_94) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_29) $(am__append_44) $(am__append_61) \
-	$(am__append_77) $(am__append_90) $(UNW_INCLUDE_DIRS)
+	$(am__append_34) $(am__append_49) $(am__append_66) \
+	$(am__append_82) $(am__append_95) $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
-	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_30) \
-	$(am__append_45) $(am__append_62) $(am__append_78) \
-	$(am__append_91) $(UNW_INCLUDE_DIRS)
+	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_35) \
+	$(am__append_50) $(am__append_67) $(am__append_83) \
+	$(am__append_96) $(UNW_INCLUDE_DIRS)
 libhpcrun_pthread_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_31) $(am__append_46) $(am__append_63) \
-	$(am__append_79) $(am__append_92) $(UNW_INCLUDE_DIRS)
+	$(am__append_36) $(am__append_51) $(am__append_68) \
+	$(am__append_84) $(am__append_97) $(UNW_INCLUDE_DIRS)
 libhpcrun_pthread_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
-	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_32) \
-	$(am__append_47) $(am__append_64) $(am__append_80) \
-	$(am__append_93) $(UNW_INCLUDE_DIRS)
+	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_37) \
+	$(am__append_52) $(am__append_69) $(am__append_85) \
+	$(am__append_98) $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_33) $(am__append_48) $(am__append_65) \
-	$(am__append_94) $(am__append_114) $(UNW_INCLUDE_DIRS)
+	$(am__append_38) $(am__append_53) $(am__append_70) \
+	$(am__append_99) $(am__append_119) $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_34) $(am__append_49) \
-	$(am__append_66) $(am__append_95) $(am__append_117) \
+	$(MY_INCLUDE_DIRS) $(am__append_39) $(am__append_54) \
+	$(am__append_71) $(am__append_100) $(am__append_122) \
 	$(UNW_INCLUDE_DIRS)
-libhpcrun_mpi_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_35) $(am__append_50) $(am__append_67) \
-	$(am__append_81) $(am__append_96) $(UNW_INCLUDE_DIRS)
-CUDA_TABLES = gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
-CUDA_FILES = sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c $(CUDA_TABLES)
-@OPT_ENABLE_CUDA_TRUE@generated_file_base = .
-@OPT_ENABLE_CUDA_TRUE@generated_file_src_path = $(srcdir)/sample-sources
-@OPT_ENABLE_CUDA_TRUE@generated_cuda_driver_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-driver-header.h gpu_blame-cuda-driver-table.c gpu_blame-driver-overrides-generated.c)
-@OPT_ENABLE_CUDA_TRUE@generated_cuda_driver_api_files = $(addprefix $(generated_file_base)/, cuda_driver_apis.h)
-@OPT_ENABLE_CUDA_TRUE@generated_cuda_runtime_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-runtime-header.h gpu_blame-cuda-runtime-table.c gpu_blame-runtime-overrides-generated.c)
-@OPT_ENABLE_CUDA_TRUE@generated_cuda_runtime_api_files = $(addprefix $(generated_file_base)/, cuda_runtime_apis.h)
-@OPT_ENABLE_CUDA_TRUE@BUILT_SOURCES = $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
-@OPT_ENABLE_CUDA_TRUE@CLEANFILES = $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
+libhpcrun_mpi_la_CPPFLAGS = $(MY_CPP_DEFINES) -I$(MPI_INC) \
+	$(MY_INCLUDE_DIRS) $(am__append_40) $(am__append_55) \
+	$(am__append_72) $(am__append_86) $(am__append_101) \
+	$(UNW_INCLUDE_DIRS)
 libhpctoolkit_la_CPPFLAGS = \
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
@@ -1645,11 +1663,19 @@ libhpctoolkit_a_CPPFLAGS = \
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
+CUDA_TABLES = gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
+CUDA_FILES = sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c $(CUDA_TABLES)
+@OPT_ENABLE_CUDA_TRUE@generated_file_base = .
+@OPT_ENABLE_CUDA_TRUE@generated_file_src_path = $(srcdir)/sample-sources
+@OPT_ENABLE_CUDA_TRUE@generated_cuda_driver_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-driver-header.h gpu_blame-cuda-driver-table.c gpu_blame-driver-overrides-generated.c)
+@OPT_ENABLE_CUDA_TRUE@generated_cuda_driver_api_files = $(addprefix $(generated_file_base)/, cuda_driver_apis.h)
+@OPT_ENABLE_CUDA_TRUE@generated_cuda_runtime_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-runtime-header.h gpu_blame-cuda-runtime-table.c gpu_blame-runtime-overrides-generated.c)
+@OPT_ENABLE_CUDA_TRUE@generated_cuda_runtime_api_files = $(addprefix $(generated_file_base)/, cuda_runtime_apis.h)
 
 #-----------------------------------------------------------
 # cflags
 #-----------------------------------------------------------
-libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_113)
+libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_118)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -1661,30 +1687,30 @@ libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_115)
+	$(am__append_120)
 libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_118)
+	$(am__append_123)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 #-----------------------------------------------------------
 # ldflags
 #-----------------------------------------------------------
 libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
-	$(am__append_18)
+	$(am__append_23)
 libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
-	$(am__append_19)
+	$(am__append_24)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
-	-lpthread -lrt $(LIBUNWIND_LDFLAGS_DYN) $(am__append_55) \
-	$(am__append_99) $(am__append_108) $(UNW_DYNAMIC_LD_FLAGS)
+	-lpthread -lrt $(LIBUNWIND_LDFLAGS_DYN) $(am__append_60) \
+	$(am__append_104) $(am__append_113) $(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
-libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_116)
+libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_121)
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
-libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) $(am__append_56) \
-	$(am__append_103) $(UNW_STATIC_LD_FLAGS)
-MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_68) \
+libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) $(am__append_61) \
+	$(am__append_108) $(UNW_STATIC_LD_FLAGS)
+MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_73) \
 	$(UNW_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
 @HOST_CPU_PPC_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
@@ -2262,13 +2288,19 @@ unwind/x86-family/manual-intervals/$(am__dirstamp):
 unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) unwind/x86-family/manual-intervals/$(DEPDIR)
 	@: > unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
+unwind/x86-family/manual-intervals/libhpcrun_la-x86-gcc-main64.lo:  \
+	unwind/x86-family/manual-intervals/$(am__dirstamp) \
+	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
 unwind/x86-family/manual-intervals/libhpcrun_la-x86-linux-dlresolver.lo:  \
 	unwind/x86-family/manual-intervals/$(am__dirstamp) \
 	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
 unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel11-f90main.lo:  \
 	unwind/x86-family/manual-intervals/$(am__dirstamp) \
 	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
-unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel14-omp.lo:  \
+unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-align32.lo:  \
+	unwind/x86-family/manual-intervals/$(am__dirstamp) \
+	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
+unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-align64.lo:  \
 	unwind/x86-family/manual-intervals/$(am__dirstamp) \
 	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
 unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-composer2013-mic.lo:  \
@@ -2312,6 +2344,17 @@ sample-sources/libhpcrun_memleak_la-memleak-overrides.lo:  \
 
 libhpcrun_memleak.la: $(libhpcrun_memleak_la_OBJECTS) $(libhpcrun_memleak_la_DEPENDENCIES) $(EXTRA_libhpcrun_memleak_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libhpcrun_memleak_la_LINK) $(am_libhpcrun_memleak_la_rpath) $(libhpcrun_memleak_la_OBJECTS) $(libhpcrun_memleak_la_LIBADD) $(LIBS)
+./$(am__dirstamp):
+	@$(MKDIR_P) .
+	@: > ./$(am__dirstamp)
+$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) ./$(DEPDIR)
+	@: > $(DEPDIR)/$(am__dirstamp)
+./libhpcrun_mpi_la-mpi-overrides.lo: ./$(am__dirstamp) \
+	$(DEPDIR)/$(am__dirstamp)
+
+libhpcrun_mpi.la: $(libhpcrun_mpi_la_OBJECTS) $(libhpcrun_mpi_la_DEPENDENCIES) $(EXTRA_libhpcrun_mpi_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libhpcrun_mpi_la_LINK) $(am_libhpcrun_mpi_la_rpath) $(libhpcrun_mpi_la_OBJECTS) $(libhpcrun_mpi_la_LIBADD) $(LIBS)
 sample-sources/libhpcrun_pthread_la-pthread-blame-overrides.lo:  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -2550,13 +2593,19 @@ unwind/x86-family/libhpcrun_o-x86-unwind.$(OBJEXT):  \
 unwind/x86-family/libhpcrun_o-x86-unwind-support.$(OBJEXT):  \
 	unwind/x86-family/$(am__dirstamp) \
 	unwind/x86-family/$(DEPDIR)/$(am__dirstamp)
+unwind/x86-family/manual-intervals/libhpcrun_o-x86-gcc-main64.$(OBJEXT):  \
+	unwind/x86-family/manual-intervals/$(am__dirstamp) \
+	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
 unwind/x86-family/manual-intervals/libhpcrun_o-x86-linux-dlresolver.$(OBJEXT):  \
 	unwind/x86-family/manual-intervals/$(am__dirstamp) \
 	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
 unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel11-f90main.$(OBJEXT):  \
 	unwind/x86-family/manual-intervals/$(am__dirstamp) \
 	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
-unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel14-omp.$(OBJEXT):  \
+unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align32.$(OBJEXT):  \
+	unwind/x86-family/manual-intervals/$(am__dirstamp) \
+	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
+unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align64.$(OBJEXT):  \
 	unwind/x86-family/manual-intervals/$(am__dirstamp) \
 	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
 unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-composer2013-mic.$(OBJEXT):  \
@@ -2650,6 +2699,8 @@ uninstall-pkglibexecSCRIPTS:
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f ./*.$(OBJEXT)
+	-rm -f ./*.lo
 	-rm -f cct/*.$(OBJEXT)
 	-rm -f cct/*.lo
 	-rm -f fnbounds/*.$(OBJEXT)
@@ -2740,6 +2791,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-trace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-weak.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-write_data.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_mpi_la-mpi-overrides.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct2metrics.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct_insert_backtrace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-custom-init-static.Po@am__quote@
@@ -2901,16 +2953,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/$(DEPDIR)/libhpcrun_o-x86-validate-retn-addr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-32bit-icc-variant.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-32bit-main.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-gcc-main64.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel-align32.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel-align64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel-composer2013-mic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel11-f90main.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel14-omp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-linux-dlresolver.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-pgi-mp_pexit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-32bit-icc-variant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-32bit-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-gcc-main64.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align32.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align64.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-composer2013-mic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel11-f90main.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel14-omp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-linux-dlresolver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-pgi-mp_pexit.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-executable-path.Plo@am__quote@
@@ -3850,6 +3906,13 @@ unwind/x86-family/libhpcrun_la-x86-unwind-support.lo: unwind/x86-family/x86-unwi
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/libhpcrun_la-x86-unwind-support.lo `test -f 'unwind/x86-family/x86-unwind-support.c' || echo '$(srcdir)/'`unwind/x86-family/x86-unwind-support.c
 
+unwind/x86-family/manual-intervals/libhpcrun_la-x86-gcc-main64.lo: unwind/x86-family/manual-intervals/x86-gcc-main64.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_la-x86-gcc-main64.lo -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-gcc-main64.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-gcc-main64.lo `test -f 'unwind/x86-family/manual-intervals/x86-gcc-main64.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-gcc-main64.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-gcc-main64.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-gcc-main64.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-gcc-main64.c' object='unwind/x86-family/manual-intervals/libhpcrun_la-x86-gcc-main64.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-gcc-main64.lo `test -f 'unwind/x86-family/manual-intervals/x86-gcc-main64.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-gcc-main64.c
+
 unwind/x86-family/manual-intervals/libhpcrun_la-x86-linux-dlresolver.lo: unwind/x86-family/manual-intervals/x86-linux-dlresolver.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_la-x86-linux-dlresolver.lo -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-linux-dlresolver.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-linux-dlresolver.lo `test -f 'unwind/x86-family/manual-intervals/x86-linux-dlresolver.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-linux-dlresolver.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-linux-dlresolver.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-linux-dlresolver.Plo
@@ -3864,12 +3927,19 @@ unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel11-f90main.lo: unwind/x
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel11-f90main.lo `test -f 'unwind/x86-family/manual-intervals/x86-intel11-f90main.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel11-f90main.c
 
-unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel14-omp.lo: unwind/x86-family/manual-intervals/x86-intel14-omp.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel14-omp.lo -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel14-omp.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel14-omp.lo `test -f 'unwind/x86-family/manual-intervals/x86-intel14-omp.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel14-omp.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel14-omp.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel14-omp.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-intel14-omp.c' object='unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel14-omp.lo' libtool=yes @AMDEPBACKSLASH@
+unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-align32.lo: unwind/x86-family/manual-intervals/x86-intel-align32.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-align32.lo -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel-align32.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-align32.lo `test -f 'unwind/x86-family/manual-intervals/x86-intel-align32.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel-align32.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel-align32.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel-align32.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-intel-align32.c' object='unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-align32.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel14-omp.lo `test -f 'unwind/x86-family/manual-intervals/x86-intel14-omp.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel14-omp.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-align32.lo `test -f 'unwind/x86-family/manual-intervals/x86-intel-align32.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel-align32.c
+
+unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-align64.lo: unwind/x86-family/manual-intervals/x86-intel-align64.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-align64.lo -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel-align64.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-align64.lo `test -f 'unwind/x86-family/manual-intervals/x86-intel-align64.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel-align64.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel-align64.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel-align64.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-intel-align64.c' object='unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-align64.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-align64.lo `test -f 'unwind/x86-family/manual-intervals/x86-intel-align64.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel-align64.c
 
 unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-composer2013-mic.lo: unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-composer2013-mic.lo -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel-composer2013-mic.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-composer2013-mic.lo `test -f 'unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c
@@ -3947,6 +4017,13 @@ sample-sources/libhpcrun_memleak_la-memleak-overrides.lo: sample-sources/memleak
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/memleak-overrides.c' object='sample-sources/libhpcrun_memleak_la-memleak-overrides.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_memleak_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_memleak_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_memleak_la-memleak-overrides.lo `test -f 'sample-sources/memleak-overrides.c' || echo '$(srcdir)/'`sample-sources/memleak-overrides.c
+
+./libhpcrun_mpi_la-mpi-overrides.lo: ./mpi-overrides.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_mpi_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_mpi_la_CFLAGS) $(CFLAGS) -MT ./libhpcrun_mpi_la-mpi-overrides.lo -MD -MP -MF $(DEPDIR)/libhpcrun_mpi_la-mpi-overrides.Tpo -c -o ./libhpcrun_mpi_la-mpi-overrides.lo `test -f './mpi-overrides.c' || echo '$(srcdir)/'`./mpi-overrides.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_mpi_la-mpi-overrides.Tpo $(DEPDIR)/libhpcrun_mpi_la-mpi-overrides.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='./mpi-overrides.c' object='./libhpcrun_mpi_la-mpi-overrides.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_mpi_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_mpi_la_CFLAGS) $(CFLAGS) -c -o ./libhpcrun_mpi_la-mpi-overrides.lo `test -f './mpi-overrides.c' || echo '$(srcdir)/'`./mpi-overrides.c
 
 sample-sources/libhpcrun_pthread_la-pthread-blame-overrides.lo: sample-sources/pthread-blame-overrides.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_pthread_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_pthread_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_pthread_la-pthread-blame-overrides.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_pthread_la-pthread-blame-overrides.Tpo -c -o sample-sources/libhpcrun_pthread_la-pthread-blame-overrides.lo `test -f 'sample-sources/pthread-blame-overrides.c' || echo '$(srcdir)/'`sample-sources/pthread-blame-overrides.c
@@ -5208,6 +5285,20 @@ unwind/x86-family/libhpcrun_o-x86-unwind-support.obj: unwind/x86-family/x86-unwi
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/libhpcrun_o-x86-unwind-support.obj `if test -f 'unwind/x86-family/x86-unwind-support.c'; then $(CYGPATH_W) 'unwind/x86-family/x86-unwind-support.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/x86-unwind-support.c'; fi`
 
+unwind/x86-family/manual-intervals/libhpcrun_o-x86-gcc-main64.o: unwind/x86-family/manual-intervals/x86-gcc-main64.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_o-x86-gcc-main64.o -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-gcc-main64.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-gcc-main64.o `test -f 'unwind/x86-family/manual-intervals/x86-gcc-main64.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-gcc-main64.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-gcc-main64.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-gcc-main64.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-gcc-main64.c' object='unwind/x86-family/manual-intervals/libhpcrun_o-x86-gcc-main64.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-gcc-main64.o `test -f 'unwind/x86-family/manual-intervals/x86-gcc-main64.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-gcc-main64.c
+
+unwind/x86-family/manual-intervals/libhpcrun_o-x86-gcc-main64.obj: unwind/x86-family/manual-intervals/x86-gcc-main64.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_o-x86-gcc-main64.obj -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-gcc-main64.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-gcc-main64.obj `if test -f 'unwind/x86-family/manual-intervals/x86-gcc-main64.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-gcc-main64.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-gcc-main64.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-gcc-main64.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-gcc-main64.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-gcc-main64.c' object='unwind/x86-family/manual-intervals/libhpcrun_o-x86-gcc-main64.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-gcc-main64.obj `if test -f 'unwind/x86-family/manual-intervals/x86-gcc-main64.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-gcc-main64.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-gcc-main64.c'; fi`
+
 unwind/x86-family/manual-intervals/libhpcrun_o-x86-linux-dlresolver.o: unwind/x86-family/manual-intervals/x86-linux-dlresolver.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_o-x86-linux-dlresolver.o -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-linux-dlresolver.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-linux-dlresolver.o `test -f 'unwind/x86-family/manual-intervals/x86-linux-dlresolver.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-linux-dlresolver.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-linux-dlresolver.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-linux-dlresolver.Po
@@ -5236,19 +5327,33 @@ unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel11-f90main.obj: unwind/x
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel11-f90main.obj `if test -f 'unwind/x86-family/manual-intervals/x86-intel11-f90main.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-intel11-f90main.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-intel11-f90main.c'; fi`
 
-unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel14-omp.o: unwind/x86-family/manual-intervals/x86-intel14-omp.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel14-omp.o -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel14-omp.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel14-omp.o `test -f 'unwind/x86-family/manual-intervals/x86-intel14-omp.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel14-omp.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel14-omp.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel14-omp.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-intel14-omp.c' object='unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel14-omp.o' libtool=no @AMDEPBACKSLASH@
+unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align32.o: unwind/x86-family/manual-intervals/x86-intel-align32.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align32.o -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align32.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align32.o `test -f 'unwind/x86-family/manual-intervals/x86-intel-align32.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel-align32.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align32.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align32.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-intel-align32.c' object='unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align32.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel14-omp.o `test -f 'unwind/x86-family/manual-intervals/x86-intel14-omp.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel14-omp.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align32.o `test -f 'unwind/x86-family/manual-intervals/x86-intel-align32.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel-align32.c
 
-unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel14-omp.obj: unwind/x86-family/manual-intervals/x86-intel14-omp.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel14-omp.obj -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel14-omp.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel14-omp.obj `if test -f 'unwind/x86-family/manual-intervals/x86-intel14-omp.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-intel14-omp.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-intel14-omp.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel14-omp.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel14-omp.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-intel14-omp.c' object='unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel14-omp.obj' libtool=no @AMDEPBACKSLASH@
+unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align32.obj: unwind/x86-family/manual-intervals/x86-intel-align32.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align32.obj -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align32.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align32.obj `if test -f 'unwind/x86-family/manual-intervals/x86-intel-align32.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-intel-align32.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-intel-align32.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align32.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align32.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-intel-align32.c' object='unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align32.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel14-omp.obj `if test -f 'unwind/x86-family/manual-intervals/x86-intel14-omp.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-intel14-omp.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-intel14-omp.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align32.obj `if test -f 'unwind/x86-family/manual-intervals/x86-intel-align32.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-intel-align32.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-intel-align32.c'; fi`
+
+unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align64.o: unwind/x86-family/manual-intervals/x86-intel-align64.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align64.o -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align64.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align64.o `test -f 'unwind/x86-family/manual-intervals/x86-intel-align64.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel-align64.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align64.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align64.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-intel-align64.c' object='unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align64.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align64.o `test -f 'unwind/x86-family/manual-intervals/x86-intel-align64.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel-align64.c
+
+unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align64.obj: unwind/x86-family/manual-intervals/x86-intel-align64.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align64.obj -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align64.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align64.obj `if test -f 'unwind/x86-family/manual-intervals/x86-intel-align64.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-intel-align64.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-intel-align64.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align64.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align64.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-intel-align64.c' object='unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align64.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-align64.obj `if test -f 'unwind/x86-family/manual-intervals/x86-intel-align64.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-intel-align64.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-intel-align64.c'; fi`
 
 unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-composer2013-mic.o: unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-composer2013-mic.o -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-composer2013-mic.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-composer2013-mic.o `test -f 'unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c
@@ -5591,6 +5696,7 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f ./$(am__dirstamp)
 	-rm -f cct/$(DEPDIR)/$(am__dirstamp)
 	-rm -f cct/$(am__dirstamp)
 	-rm -f fnbounds/$(DEPDIR)/$(am__dirstamp)
@@ -5643,6 +5749,7 @@ distclean-generic:
 	-rm -f utilities/arch/ppc64/$(am__dirstamp)
 	-rm -f utilities/arch/x86-family/$(DEPDIR)/$(am__dirstamp)
 	-rm -f utilities/arch/x86-family/$(am__dirstamp)
+	-test -z "$(DEPDIR)/$(am__dirstamp)" || rm -f $(DEPDIR)/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -5787,6 +5894,10 @@ endef
 @OPT_ENABLE_CUDA_TRUE@$(generated_file_base)/gpu_blame-cuda-driver-header.h : $(generated_file_base)/gpu_blame-cuda-driver-table.c
 
 @OPT_ENABLE_CUDA_TRUE@$(generated_file_base)/gpu_blame-cuda-driver-table.c : $(generated_file_base)/gpu_blame-driver-overrides-generated.c
+
+@OPT_ENABLE_MPI_WRAP_TRUE@mpi-overrides.c: $(srcdir)/sample-sources/$(MPI_PROTO_FILE)
+@OPT_ENABLE_MPI_WRAP_TRUE@	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
+@OPT_ENABLE_MPI_WRAP_TRUE@		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/$(MPI_PROTO_FILE)
 
 #-----------------------------------------------------------
 # local hooks
