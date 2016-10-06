@@ -5755,6 +5755,7 @@ maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
+@OPT_ENABLE_HPCRUN_STATIC_FALSE@install-exec-hook:
 clean: clean-recursive
 
 clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
@@ -5914,8 +5915,8 @@ install-data-hook:
 # Install libhpcrun.o into pkglibdir.  New automake won't install a
 # program into a libdir, so we use noinst and install it manually.
 
-install-exec-hook:
-	cp libhpcrun.o $(DESTDIR)$(pkglibdir)
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@install-exec-hook:
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@	cp libhpcrun.o $(DESTDIR)$(pkglibdir)
 
 %.cpp.pp : %.cpp
 	$(CXXCPP) $(MYCPPFLAGS_0_CXX) $< > $@
