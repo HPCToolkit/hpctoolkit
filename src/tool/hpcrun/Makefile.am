@@ -277,6 +277,7 @@ MY_BASE_FILES =				\
 	sample-sources/io.c 		\
 	sample-sources/itimer.c		\
 	sample-sources/idle.c		\
+	sample-sources/linux_perf.c	\
 	sample-sources/memleak.c	\
 	sample-sources/pthread-blame.c  \
 	sample-sources/none.c           \
@@ -324,6 +325,10 @@ MY_BASE_FILES =				\
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c
 
+if OPT_PERFMON
+MY_BASE_FILES +=  			\
+	sample-sources/perfmon-util.c	
+endif
 ## if OPT_ENABLE_MPI_WRAP
 ## MY_BASE_FILES +=  			\
 ## 	sample-sources/mpi.c
@@ -407,6 +412,9 @@ MY_INCLUDE_DIRS =			\
         $(OPT_CUPTI_IFLAGS)             \
 	-I$(LIBMONITOR_INC)
 
+if OPT_PERFMON
+MY_INCLUDE_DIRS += -I$(PERFMON_INC)
+endif
 
 MY_MIPS_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/mips
@@ -659,6 +667,10 @@ libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt \
         $(LIBUNWIND_LDFLAGS_DYN)
 
+if OPT_PERFMON
+libhpcrun_la_LDFLAGS += -L$(PERFMON_LIB) -lpfm
+endif
+
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
@@ -848,6 +860,10 @@ if OPT_ENABLE_CUDA
   libhpcrun_gpu_wrap_a_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_gpu_wrap_a_CFLAGS  += $(OPT_CUDA_IFLAGS)
 
+endif
+
+if OPT_PERFMON
+  libhpcrun_la_CPPFLAGS += -DENABLE_PERFMON
 endif
 
 if UNW_LIBUNW

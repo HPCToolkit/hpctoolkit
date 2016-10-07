@@ -74,6 +74,16 @@ extern bool hpcrun_inbounds_main(void* addr);
 //
 static bool retain_recursion = false;
 
+
+static hpcrun_kernel_callpath_t hpcrun_kernel_callpath;
+
+
+void
+hpcrun_kernel_callpath_register(hpcrun_kernel_callpath_t kcp) 
+{
+	hpcrun_kernel_callpath = kcp;
+}
+
 static cct_node_t*
 cct_insert_raw_backtrace(cct_node_t* cct,
                             frame_t* path_beg, frame_t* path_end)
@@ -158,6 +168,10 @@ hpcrun_cct_insert_backtrace_w_metric(cct_node_t* treenode,
 				     cct_metric_data_t datum)
 {
   cct_node_t* path = hpcrun_cct_insert_backtrace(treenode, path_beg, path_end);
+
+  if (hpcrun_kernel_callpath) {
+    path = hpcrun_kernel_callpath(path);
+  }
 
   metric_set_t* mset = hpcrun_reify_metric_set(path);
 

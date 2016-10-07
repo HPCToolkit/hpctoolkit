@@ -184,6 +184,7 @@ hpcrun_loadModule_new(const char* name)
 }
 
 
+
 //***************************************************************************
 // 
 //***************************************************************************
@@ -440,6 +441,16 @@ hpcrun_loadmap_unmap(load_module_t* lm)
     TMSG(LOADMAP, "Deleting unw intervals");
     hpcrun_delete_ui_range(old_dso->start_addr, old_dso->end_addr+1);
   }
+}
+
+
+// used only to add a load module for the kernel 
+uint16_t 
+hpcrun_loadModule_add(const char* name)
+{
+  load_module_t *lm = hpcrun_loadModule_new(name);
+  hpcrun_loadmap_pushFront(lm);
+  return lm->id;
 }
 
 

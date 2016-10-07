@@ -723,6 +723,10 @@ SYMTABAPI_COPY
 SYMTABAPI_LIB_LIST
 SYMTABAPI_LIB
 SYMTABAPI_INC
+PERFMON_LIB
+PERFMON_INC
+OPT_PERFMON_FALSE
+OPT_PERFMON_TRUE
 OPT_PAPI_CUPTI_FALSE
 OPT_PAPI_CUPTI_TRUE
 OPT_PAPI_COMPONENT_FALSE
@@ -984,6 +988,7 @@ with_open_analysis
 with_papi
 enable_papi_c
 enable_papi_c_cupti
+with_perfmon
 with_symtabAPI
 with_xed2
 with_xerces
@@ -1727,6 +1732,8 @@ Optional Packages:
                           path to OpenAnalysis install directory
   --with-papi=PATH        use given PAPI installation (absolute path) with
                           hpcrun (default is NO)
+  --with-perfmon=PATH     path to perfmon2 (pfmlib4) build or install
+                          directory (default is NO)
   --with-symtabAPI=PATH   path to symtabAPI install directory
   --with-xed2=PATH        path to xed2 install directory
   --with-xerces=PATH      use given XercesC installation
@@ -20291,6 +20298,56 @@ fi
 
 
 #-------------------------------------------------
+# Option: --with-perfmon=PATH
+#
+# If specified, then use PATH as the root of the perfmon tree
+# May be absolute or relative path.
+#
+# Note: using perfmon is not strictly necessary, but if not used,
+# then you cannot use event name PMU
+#-------------------------------------------------
+
+PERFMON=no
+OPT_PERFMON=
+
+
+# Check whether --with-perfmon was given.
+if test "${with_perfmon+set}" = set; then :
+  withval=$with_perfmon; PERFMON="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PERFMON" >&5
+$as_echo "$PERFMON" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for perfmon" >&5
+$as_echo_n "checking for perfmon... " >&6; }
+
+if test "$PERFMON" != no \
+   && test -f "${PERFMON}/include/perfmon/pfmlib.h" \
+   && test -f "${PERFMON}/lib/libpfm.a"
+then
+  OPT_PERFMON=yes
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $OPT_PERFMON" >&5
+$as_echo "$OPT_PERFMON" >&6; }
+
+PERFMON_INC="${PERFMON}/include"
+PERFMON_LIB="${PERFMON}/lib"
+
+ if test "$OPT_PERFMON" = yes; then
+  OPT_PERFMON_TRUE=
+  OPT_PERFMON_FALSE='#'
+else
+  OPT_PERFMON_TRUE='#'
+  OPT_PERFMON_FALSE=
+fi
+
+
+
+
+#-------------------------------------------------
 # Option: --with-symtabAPI=PATH
 #-------------------------------------------------
 
@@ -22441,6 +22498,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PAPI_CUPTI_TRUE}" && test -z "${OPT_PAPI_CUPTI_FALSE}"; then
   as_fn_error $? "conditional \"OPT_PAPI_CUPTI\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_PERFMON_TRUE}" && test -z "${OPT_PERFMON_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_PERFMON\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_BUILD_BACK_END_TRUE}" && test -z "${OPT_BUILD_BACK_END_FALSE}"; then
@@ -25141,6 +25202,8 @@ $as_echo "$as_me:   monitor/old:  ${MONITOR}" >&6;}
 $as_echo "$as_me:   libunwind:    ${LIBUNWIND}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   OpenAnalysis: ${OA}" >&5
 $as_echo "$as_me:   OpenAnalysis: ${OA}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   Perfmon:      ${PERFMON}" >&5
+$as_echo "$as_me:   Perfmon:      ${PERFMON}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   symtabAPI:    ${SYMTABAPI}" >&5
 $as_echo "$as_me:   symtabAPI:    ${SYMTABAPI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   xed2:         ${XED2}" >&5

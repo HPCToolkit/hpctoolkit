@@ -52,6 +52,8 @@
 #include <unwind/common/backtrace.h>
 #include "metrics.h"
 
+typedef  cct_node_t *(*hpcrun_kernel_callpath_t)(cct_node_t *path);
+
 //
 // interface routines
 //
@@ -88,6 +90,10 @@ extern cct_node_t* hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* bndl, bool
 extern cct_node_t* hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context, 
                                         int metricId, uint64_t metricIncr,
                                         int skipInner, int isSync);
+
+
+extern void hpcrun_kernel_callpath_register(hpcrun_kernel_callpath_t kcp);
+
 //
 // debug version of hpcrun_backtrace2cct:
 //   simulates errors to test partial unwind capability

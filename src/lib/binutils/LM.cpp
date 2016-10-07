@@ -100,6 +100,8 @@ using std::endl;
 #include <lib/support/Logic.hpp>
 #include <lib/support/QuickSort.hpp>
 
+#include <include/linux_info.h>
+
 
 
 //***************************************************************************
@@ -354,7 +356,7 @@ BinUtil::LM::LM(bool useBinutils)
     m_bfdDynSymTab(NULL), m_bfdSynthTab(NULL),
     m_bfdSymTabSort(NULL), m_bfdSymTabSz(0), m_bfdDynSymTabSz(0),
     m_bfdSymTabSortSz(0), m_bfdSynthTabSz(0), m_noreturns(0), 
-    m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils)
+    m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils), ksyms(0)
 {
 }
 
@@ -404,6 +406,11 @@ BinUtil::LM::open(const char* filenm)
 {
   DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filenm), "Cannot open a different file!");
   
+  if (strcmp(filenm, LINUX_KERNEL_NAME) == 0) {
+    m_name = filenm;
+    return;
+  }
+
   // -------------------------------------------------------
   // 1. Initialize bfd and open the object file.
   // -------------------------------------------------------
@@ -532,6 +539,12 @@ BinUtil::LM::read(LM::ReadFlg readflg)
 
   m_readFlags = (ReadFlg)(readflg | LM::ReadFlg_fSeg); // enforce ReadFlg rules
 
+  if (strcmp(m_name.c_str(), LINUX_KERNEL_NAME) == 0) {
+    ksyms = new KernelSymbols;
+    ksyms->parseLinuxKernelSymbols();
+    return;
+  }
+
   readSymbolTables();
   readSegs();
   computeNoReturns();
@@ -580,6 +593,11 @@ BinUtil::LM::findSrcCodeInfo(VMA vma, ushort opIndex,
   bool STATUS = false;
   func = file = "";
   line = 0;
+
+  if (ksyms) {
+    STATUS = ksyms->find(vma, func);  
+    return STATUS;
+  }
 
   if (!m_bfdSymTab) { 
     return STATUS; 

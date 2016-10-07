@@ -2019,6 +2019,46 @@ AC_MSG_RESULT([$use_papi_c_cupti])
 AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
 
 #-------------------------------------------------
+# Option: --with-perfmon=PATH
+#
+# If specified, then use PATH as the root of the perfmon tree
+# May be absolute or relative path.
+#
+# Note: using perfmon is not strictly necessary, but if not used,
+# then you cannot use event name PMU
+#-------------------------------------------------
+
+PERFMON=no
+OPT_PERFMON=
+
+AC_ARG_WITH([perfmon],
+  [AS_HELP_STRING([--with-perfmon=PATH],
+	  [path to perfmon2 (pfmlib4) build or install directory
+	   (default is NO)])],
+  [PERFMON="$withval"],
+  [])
+
+AC_MSG_RESULT([$PERFMON])
+
+AC_MSG_CHECKING([for perfmon])
+
+if test "$PERFMON" != no \
+   && test -f "${PERFMON}/include/perfmon/pfmlib.h" \
+   && test -f "${PERFMON}/lib/libpfm.a"
+then
+  OPT_PERFMON=yes
+fi
+
+AC_MSG_RESULT([$OPT_PERFMON])
+
+PERFMON_INC="${PERFMON}/include"
+PERFMON_LIB="${PERFMON}/lib"
+
+AM_CONDITIONAL(OPT_PERFMON, [test "$OPT_PERFMON" = yes])
+AC_SUBST([PERFMON_INC])
+AC_SUBST([PERFMON_LIB])
+
+#-------------------------------------------------
 # Option: --with-symtabAPI=PATH
 #-------------------------------------------------
 
@@ -3557,6 +3597,7 @@ AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
 AC_MSG_NOTICE([  monitor/old:  ${MONITOR}])
 AC_MSG_NOTICE([  libunwind:    ${LIBUNWIND}])
 AC_MSG_NOTICE([  OpenAnalysis: ${OA}])
+AC_MSG_NOTICE([  Perfmon:      ${PERFMON}])
 AC_MSG_NOTICE([  symtabAPI:    ${SYMTABAPI}])
 AC_MSG_NOTICE([  xed2:         ${XED2}])
 AC_MSG_NOTICE([  xerces:       ${XERCES}])
