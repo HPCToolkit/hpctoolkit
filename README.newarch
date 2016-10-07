@@ -1,75 +1,107 @@
+Notes on running HPCToolkit on KNL, power8/le and ARM.
 
-This, the newarch branch of hpctoolkit, is Mark's branch for updating
-hpctoolkit to run on new architectures such as powerpc/le and ARM.
+Beginning with the merge of newarch and master, hpctoolkit has
+preliminary support for three new platforms: KNL, power8/le and ARM.
+Old platforms: x86-64, powerpc, Blue Gene/Q and Cray XT/XK should
+build and run as usual without any noticeable difference.
 
-Note: use devtools's newarch branch for autoreconf on this branch to
-keep the autotools revs in sync.
+There are two main steps with the merge.
 
-Note: this branch may be unstable at times, and not everything may
-build cleanly, especially for the new platforms.
+1. Autotools -- the new platforms require a newer version of
+autotools.  Unless you're a developer (see below) and modifying the
+Makefiles, this should work transparently without any manual effort.
+But there are several moving parts, and it's possible that some corner
+cases might be broken.
 
-------------------------------------------------------------
-
-Branched from hpctoolkit master on Feb 16, 2016.
-
-Last common commit:
-
-commit 23b9d7803cc78a1bc1951fb86b857e56594b8949
-Author: Mark W. Krentel <krentel@rice.edu>
-Date:   Mon Feb 15 13:31:40 2016 -0600
-
-    Fix a bug that was breaking the build in 32-bit mode.  For 32-bit,
-    sizeof(int) = sizeof(long) and the build failed on "call of overloaded
-    'toStr(long int)' is ambiguous."
+2. Dyninst -- at the time of the merge (Oct 6, 2016), a released
+version of Dyninst that supports the new platforms is not yet
+finished.  Until that happens, the merge is not finished and the new
+platforms are not yet supported.
 
 ------------------------------------------------------------
 
-Mostly done.
+Building externals with an alternate Dyninst.
 
-(1) The static case is broken.  The latest autotools won't install
-libhpcrun.o in the pkglib directory, so this breaks hpclink.
----> set libhpcrun.o to noinst and install manually
+Until the next Dyninst release is finished, the version in externals
+(9.1.0 + AVX patches) may not be suitable for new platforms,
+especially power8/le and ARM.  As a temporary measure, you can try
+building externals and hpctoolkit with an alternate version of Dyninst
+by the following steps.
 
-(2) The MPI wrappers are not available.  There is a bad interaction
-between the latest autotools and how we build the MPI wrappers, so
-they are currently disabled.
----> fixed in master
+1. Clone dyninst from github.
 
-(3) Replace the line map info.  Unpatched binutils is very bad for
-time, and current symtab is very bad for memory and time, so may need
-to use libdwarf directly.
----> mostly done in Struct.cpp, but symtab misses line map info from
----> some modules.
+git clone https://github.com/dyninst/dyninst
 
-(4) Update libmonitor to fix main and thread fences (move to separate
-file), various warnings and probably several other things.
----> done
+2. Checkout a version of dyninst, this choice is platform dependent.
 
-(5) Libunwind configure.
----> reworked configure to allow libunwind as primary or secondary
----> unwinder.
+cd dyninst
+git checkout ...
 
-(9) Update externals distfiles for binutils, libmonitor, libunwind,
-etc.
----> done
+3. Configure externals with this option to specify the path to the
+dyninst source tree.
 
-(10) (power8/le) More structured patch for symtab for little endian
-powerpc.
----> patch now in dyninst master
+configure --with-dyninst-src=/path/to/dyninst/src/tree
 
-(11) (ARM) Dyninst branch arm64 for symtabAPI.
+4. Continue building externals and hpctoolkit as usual.
 
-(12) (ARM) Generic ISA class for src/lib/isa/.
-
-(13) (ARM) New libunwind and/or custom unwind for aarch64.
-
-(14) Fix libunwind init_cursor() and unw_step() functions.
----> old code based on trolling.  new libunwind provides context
----> struct that works from signal handler, now fixed.
+Not every version of Dyninst will build or run correctly, and you may
+need to adjust the patches in externals/symtabAPI/patches.
 
 ------------------------------------------------------------
 
-To-do list and known issues.
+Notes for specific platforms.
+
+KNL -- The key issue for KNL is for ParseAPI and InstructionAPI to
+understand the new AVX instructions.  If ParseAPI does not understand
+some instructions, then it will produce a poor control flow graph and
+will miss large sections of some functions, resulting in poor results
+in the viewer.  This is mostly an issue with the Intel compiler.
+
+The version of Dyninst in externals (9.1.0 + AVX patches) understands
+most AVX instructions, but there may be some gaps.  This is not yet
+fully tested.
+
+Power8/little-endian -- This version of Dyninst causes hpcstruct to go
+into an infinite loop.  I'm working on finding a better rev.
+
+ARM -- This version of Dyninst causes hpcstruct to throw an assert.
+Again, I'm working on finding a better rev.
+
+Also, we currently don't have a native unwinder for ARM and so we use
+libunwind.  Applications that perform a high number of calls to short
+functions from shared libraries may see a high number (5-10%) of
+partial unwinds.  Libunwind does not do well on interrupts taken
+inside the PLT, so for every call to a function inside a shared
+library, there is a small window of vulnerability where the unwind
+will fail.
+
+------------------------------------------------------------
+
+Notes for developers.
+
+1. After the merge, hpctoolkit and externals use a newer version of
+autotools: autoconf 2.69, automake 1.15 and libtool 2.4.6.
+
+Hpctoolkit-devtools is updated with the current version needed after
+the merge.  This is only needed if you're modifying the build files
+(configure.ac and Makefile.am) and rerunning autoreconf.
+
+git clone https://github.com/hpctoolkit/hpctoolkit-devtools
+cd hpctoolkit-devtools
+./make.sh /path/to/install/prefix
+
+add install prefix to PATH
+
+2. If you're working on a branch that is not yet merged from the new
+master, then you will need an older version of both externals and
+devtools.  There are tags 'oldarch' and 'pre-newarch' (same revs) for
+the old versions.
+
+git checkout oldarch
+
+------------------------------------------------------------
+
+Leftover to-do list and known issues.
 
 (5) Libunwind and xerces don't build .so shared libraries.  Either
 update to later versions, or commit to static only, or both.
@@ -81,29 +113,4 @@ update to later versions, or commit to static only, or both.
 from rest of binutils.
 
 (8) Replace libelf with elfutils.
-
-------------------------------------------------------------
-
-Build instructions for newarch branch.
-
-Checkout the 'newarch' branch for hpctoolkit, hpctoolkit-externals and
-hpctoolkit-devtools.  Note: devtools is only needed for modifying
-autotools files (configure.ac, Makefile.am), otherwise it's not
-needed.
-
-On old platforms (x86, powerpc, blue gene, xeon phi), hpctoolkit
-newarch branch should auto-detect and build with either old (master)
-or newarch externals.  New platforms (powerpc/le, ARM) require the
-externals's newarch branch.
-
-Moving forward, we want to use externals newarch on all platforms, but
-for now, old externals can still be used for old platforms.
-
-------------------------------------------------------------
-
-Steps specific to power8 little-endian (powerpc64le).
-Steps specific to ARM (aarch64).
-
-Use the externals newarch branch and follow the manual steps in
-externals's README.newarch.
 
