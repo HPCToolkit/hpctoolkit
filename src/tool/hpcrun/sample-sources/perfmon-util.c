@@ -72,35 +72,12 @@
 // local variables
 //******************************************************************************
 
-static const char *srcs[PFM_ATTR_CTRL_MAX]={
-	[PFM_ATTR_CTRL_UNKNOWN] = "???",
-	[PFM_ATTR_CTRL_PMU] = "PMU",
-	[PFM_ATTR_CTRL_PERF_EVENT] = "perf_event",
-};
 
 
 //******************************************************************************
 // local operations
 //******************************************************************************
 
-static void
-print_attr_flags(pfm_event_attr_info_t *info)
-{
-	int n = 0;
-
-	if (info->is_dfl) {
-		printf("[default] ");
-		n++;
-	}
-
-	if (info->is_precise) {
-		printf("[precise] ");
-		n++;
-	}
-
-	if (!n)
-		printf("None ");
-}
 
 
 static int
@@ -110,18 +87,6 @@ event_has_pname(char *s)
 	return (p = strchr(s, ':')) && *(p+1) == ':';
 }
 
-static void
-print_event_flags(pfm_event_info_t *info)
-{
-	int n = 0;
-
-	if (info->is_precise) {
-		printf("[precise] ");
-		n++;
-	}
-	if (!n)
-		printf("None");
-}
 
 const int MAXBUF = 1024;
 
@@ -130,9 +95,9 @@ show_event_info(pfm_event_info_t *info)
 {
 	pfm_event_attr_info_t ainfo;
 	pfm_pmu_info_t pinfo;
-	int mod = 0, um = 0;
+	//int mod = 0, um = 0;
 	int i, ret;
-	const char *src;
+	//const char *src;
 	char buffer[MAXBUF];	
 
 	memset(&ainfo, 0, sizeof(ainfo));
@@ -152,13 +117,15 @@ show_event_info(pfm_event_info_t *info)
 	else
 		lpname = 50-lpname;
 
+        //printf("%-30s\t%s %s\n", buffer, pinfo.desc, info->desc ? info->desc : "");
   	printf("%s %*s %s\n", buffer, lpname, " ", info->desc ? info->desc : "");
 
 	pfm_for_each_event_attr(i, info) {
 		ret = pfm_get_event_attr_info(info->idx, i, PFM_OS_NONE, &ainfo);
 		if (ret != PFM_SUCCESS)
 			errx(1, "cannot retrieve event %s attribute info: %s", info->name, pfm_strerror(ret));
-	  	printf("%s:%s  %s %s\n", buffer, ainfo.name, info->desc ? info->desc : "", ainfo.desc);
+	  	printf("%s:%s \t %s %s\n", buffer, ainfo.name, info->desc ? info->desc : "", ainfo.desc);
+        	//printf("%30s:%s %s %s\n", buffer, ainfo.name, info->desc ? info->desc : "", ainfo.desc);
 	}
 #if 0
 	printf("#-----------------------------\n"
@@ -231,7 +198,7 @@ show_info(char *event )
    pfm_pmu_info_t pinfo;
    pfm_event_info_t info;
    int i, j, ret, match = 0, pname;
-   size_t len, l = 0;
+   //size_t len, l = 0;
 
    memset(&pinfo, 0, sizeof(pinfo));
    memset(&info, 0, sizeof(info));
@@ -269,15 +236,44 @@ show_info(char *event )
 }
 
 /*
- * interface to get the info of an event (if matched)
+ * interface to check if an event is "supported"
+ * "supported" here means, it matches with the perfmon PMU event 
+ *
+ * return 1 (true) if the event is supported, 0 (false) otherwise
  */
+int
+pfm_isSupported(const char *eventname)
+{
+  unsigned int eventcode;
+  return getEventCode(eventname, &eventcode);
+}
 
+
+/**
+ * interface to convert from event name into event code
+ *
+ * return 1 (true) if the event is supported, 0 (false) otherwise
+ **/
+int
+pfm_getEventCode(const char *eventname, unsigned int *eventcode)
+{
+
+  pfm_pmu_encode_arg_t raw;
+  memset(&raw, 0, sizeof(raw));
+
+  int ret = pfm_get_os_event_encoding(eventname, PFM_PLM0|PFM_PLM3, PFM_OS_NONE, &raw);
+  int result = (ret == PFM_SUCCESS);
+  if (result) {
+     *eventcode = raw.codes;
+  }
+  return result;
+}
 
 /*
  * interface function to print the list of supported PMUs
  */
 int
-getEvent()
+pfm_showEventList()
 {
    static char *argv_all =  ".*";
    /* to allow encoding of events from non detected PMU models */
@@ -340,6 +336,8 @@ getEvent()
    printf("Total events: %d available, %d supported\n", total_available_events, total_supported_events);
 
    show_info(argv_all);
+
+   pfm_terminate();
 
    return 0;
 }

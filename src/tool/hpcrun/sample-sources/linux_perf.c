@@ -171,7 +171,7 @@ extern __thread bool hpcrun_thread_suppress_sample;
 //******************************************************************************
 
 static bool 
-perf_thread_init();
+perf_thread_init(const char *name);
 
 static void 
 perf_thread_fini();
@@ -423,6 +423,7 @@ perf_init()
 
 static void
 perf_attr_init(
+  unsigned int event_code,
   struct perf_event_attr *attr
 )
 {
@@ -430,7 +431,8 @@ perf_attr_init(
 
   attr->type = PERF_TYPE_HARDWARE;
   attr->size = sizeof(struct perf_event_attr);
-  attr->config = PERF_COUNT_HW_CPU_CYCLES;
+  attr->config = event_code;
+  //attr->config = PERF_COUNT_HW_CPU_CYCLES;
 
   attr->sample_period = threshold;
   attr->sample_type = PERF_SAMPLE_CALLCHAIN;
@@ -450,11 +452,17 @@ perf_attr_init(
 
 
 static bool
-perf_thread_init()
+perf_thread_init(const char *name)
 {
   if (perf_thread_initialized == 0) {
+    unsigned int event_code = 0;
+    if (!pfm_getEventCode(name, &event_code)) {
+      EMSG("Linux perf event not recognized: %s", name);
+      return false;
+    }
+
     struct perf_event_attr attr;
-    perf_attr_init(&attr);
+    perf_attr_init(event_code, &attr);
     perf_thread_fd = perf_event_open(&attr, THREAD_SELF, CPU_ANY, 
 			      GROUP_FD, PERF_FLAGS);
 
@@ -636,7 +644,7 @@ METHOD_FN(thread_init_action)
   if (perf_unavail) { return; }
 
   perf_thread_state = INIT;
-  perf_thread_init();
+  perf_thread_init(event_name);
 }
 
 
@@ -723,9 +731,9 @@ METHOD_FN(supports_event, const char *ev_str)
     METHOD_CALL(self, init);
   }
 
-  if (strncmp(event_name, ev_str, strlen(event_name)) == 0) return true; 
-  
-  return false;
+  //if (strncmp(event_name, ev_str, strlen(event_name)) == 0) return true; 
+  //return false;
+  return pfm_isSupported(ev_str);
 }
 
  
@@ -758,14 +766,9 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
 #endif
 
-#if 0 
-  char *name = "PERF_COUNT_HW_CPU_CYCLES";
-  threshold = DEFAULT_THRESHOLD;
-#endif
-
   perf_initialized = true;
   perf_init();
-  perf_thread_init();
+  perf_thread_init(name);
 
   metric_id = hpcrun_new_metric();
 
@@ -785,13 +788,13 @@ static void
 METHOD_FN(display_events)
 {
   if (perf_event_avail()) {
-#ifdef ENABLE_PERFMON
-    getEvent();
-#else
     printf(equals_separator);
     printf("Available Linux perf events\n");
     printf(equals_separator);
 
+#ifdef ENABLE_PERFMON
+    pfm_showEventList();
+#else
     printf("Name\t\tDescription\n");
     printf(dashes_separator);
 
