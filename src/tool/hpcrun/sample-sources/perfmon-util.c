@@ -117,7 +117,6 @@ show_event_info(pfm_event_info_t *info)
 	else
 		lpname = 50-lpname;
 
-        //printf("%-30s\t%s %s\n", buffer, pinfo.desc, info->desc ? info->desc : "");
   	printf("%s %*s %s\n", buffer, lpname, " ", info->desc ? info->desc : "");
 
 	pfm_for_each_event_attr(i, info) {
@@ -125,71 +124,7 @@ show_event_info(pfm_event_info_t *info)
 		if (ret != PFM_SUCCESS)
 			errx(1, "cannot retrieve event %s attribute info: %s", info->name, pfm_strerror(ret));
 	  	printf("%s:%s \t %s %s\n", buffer, ainfo.name, info->desc ? info->desc : "", ainfo.desc);
-        	//printf("%30s:%s %s %s\n", buffer, ainfo.name, info->desc ? info->desc : "", ainfo.desc);
 	}
-#if 0
-	printf("#-----------------------------\n"
-	       "IDX	 : %d\n"
-	       "PMU name : %s (%s)\n"
-	       "Name     : %s\n"
-	       "Equiv	 : %s\n",
-		info->idx,
-		pinfo.name,
-		pinfo.desc,
-		info->name,
-		info->equiv ? info->equiv : "None");
-
-	printf("Flags    : ");
-	print_event_flags(info);
-	putchar('\n');
-
-	printf("Desc     : %s\n", info->desc ? info->desc : "no description available");
-	printf("Code     : 0x%"PRIx64"\n", info->code);
-
-	pfm_for_each_event_attr(i, info) {
-		ret = pfm_get_event_attr_info(info->idx, i, PFM_OS_NONE, &ainfo);
-		if (ret != PFM_SUCCESS)
-			errx(1, "cannot retrieve event %s attribute info: %s", info->name, pfm_strerror(ret));
-
-		if (ainfo.ctrl >= PFM_ATTR_CTRL_MAX) {
-			warnx("event: %s has unsupported attribute source %d", info->name, ainfo.ctrl);
-			ainfo.ctrl = PFM_ATTR_CTRL_UNKNOWN;
-		}
-		src = srcs[ainfo.ctrl];
-		switch(ainfo.type) {
-		case PFM_ATTR_UMASK:
-
-			printf("Umask-%02u : 0x%02"PRIx64" : %s : [%s] : ",
-				um,
-				ainfo.code,
-				src,
-				ainfo.name);
-
-			print_attr_flags(&ainfo);
-
-			putchar(':');
-
-			if (ainfo.equiv)
-				printf(" Alias to %s", ainfo.equiv);
-			else
-				printf(" %s", ainfo.desc);
-
-			putchar('\n');
-			um++;
-			break;
-		case PFM_ATTR_MOD_BOOL:
-			printf("Modif-%02u : 0x%02"PRIx64" : %s : [%s] : %s (boolean)\n", mod, ainfo.code, src, ainfo.name, ainfo.desc);
-			mod++;
-			break;
-		case PFM_ATTR_MOD_INTEGER:
-			printf("Modif-%02u : 0x%02"PRIx64" : %s : [%s] : %s (integer)\n", mod, ainfo.code, src, ainfo.name, ainfo.desc);
-			mod++;
-			break;
-		default:
-			printf("Attr-%02u  : 0x%02"PRIx64" : %s : [%s] : %s\n", i, ainfo.code, ainfo.name, src, ainfo.desc);
-		}
-	}
-#endif
 }
 
 static int
@@ -198,7 +133,6 @@ show_info(char *event )
    pfm_pmu_info_t pinfo;
    pfm_event_info_t info;
    int i, j, ret, match = 0, pname;
-   //size_t len, l = 0;
 
    memset(&pinfo, 0, sizeof(pinfo));
    memset(&info, 0, sizeof(info));
@@ -245,7 +179,7 @@ int
 pfm_isSupported(const char *eventname)
 {
   unsigned int eventcode;
-  return getEventCode(eventname, &eventcode);
+  return pfm_getEventCode(eventname, &eventcode);
 }
 
 
