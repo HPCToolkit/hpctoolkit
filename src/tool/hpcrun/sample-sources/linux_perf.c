@@ -108,6 +108,8 @@
 // macros
 //******************************************************************************
 
+#define DEFAULT_THRESHOLD  2000000L
+
 #ifndef sigev_notify_thread_id
 #define sigev_notify_thread_id  _sigev_un._tid
 #endif
@@ -123,7 +125,6 @@
 
 #define EXCLUDE_CALLCHAIN_USER   1
 
-#define DEFAULT_THRESHOLD  2000000L
 
 #define PERF_SIGNAL SIGIO
 
@@ -283,6 +284,9 @@ perf_start()
   }
 
   perf_started = 1;
+#ifdef ENABLE_PERFMON
+  pfmu_init();
+#endif
 }
 
 
@@ -455,11 +459,13 @@ static bool
 perf_thread_init(const char *name)
 {
   if (perf_thread_initialized == 0) {
-    unsigned int event_code = 0;
-    if (!pfm_getEventCode(name, &event_code)) {
+    unsigned int event_code = PERF_COUNT_HW_CPU_CYCLES;
+#ifdef ENABLE_PERFMON
+    if (!pfmu_getEventCode(name, &event_code)) {
       EMSG("Linux perf event not recognized: %s", name);
       return false;
     }
+#endif
 
     struct perf_event_attr attr;
     perf_attr_init(event_code, &attr);
@@ -619,6 +625,7 @@ perf_event_handler(
 static void
 METHOD_FN(init)
 {
+  TMSG(LINUX_PERF, "init");
   perf_process_state = INIT;
   self->state = INIT;
 }
@@ -725,15 +732,31 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
   TMSG(LINUX_PERF, "supports event");
+#ifdef ENABLE_PERFMON
+  static bool perfmon_initialized = false;
+  if (!perfmon_initialized) {
+    perfmon_initialized = true;
+    pfmu_init();
+  }
+#endif
+
   if (perf_unavail) { return false; }
 
   if (perf_process_state == UNINIT){
     METHOD_CALL(self, init);
   }
 
-  //if (strncmp(event_name, ev_str, strlen(event_name)) == 0) return true; 
-  //return false;
-  return pfm_isSupported(ev_str);
+#ifdef ENABLE_PERFMON
+  long thresh;
+  char ev_tmp[1024];
+  if (! hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, DEFAULT_THRESHOLD)) {
+    AMSG("WARNING: %s using default threshold %ld, "
+   	"better to use an explicit threshold.", ev_str, DEFAULT_THRESHOLD);
+  }
+  return pfmu_isSupported(ev_tmp);
+#else
+  return (strncmp(event_name, ev_str, strlen(event_name)) == 0); 
+#endif
 }
 
  
@@ -793,7 +816,8 @@ METHOD_FN(display_events)
     printf(equals_separator);
 
 #ifdef ENABLE_PERFMON
-    pfm_showEventList();
+    pfmu_init();
+    pfmu_showEventList();
 #else
     printf("Name\t\tDescription\n");
     printf(dashes_separator);

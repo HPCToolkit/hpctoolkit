@@ -176,10 +176,10 @@ show_info(char *event )
  * return 1 (true) if the event is supported, 0 (false) otherwise
  */
 int
-pfm_isSupported(const char *eventname)
+pfmu_isSupported(const char *eventname)
 {
   unsigned int eventcode;
-  return pfm_getEventCode(eventname, &eventcode);
+  return pfmu_getEventCode(eventname, &eventcode);
 }
 
 
@@ -189,7 +189,7 @@ pfm_isSupported(const char *eventname)
  * return 1 (true) if the event is supported, 0 (false) otherwise
  **/
 int
-pfm_getEventCode(const char *eventname, unsigned int *eventcode)
+pfmu_getEventCode(const char *eventname, unsigned int *eventcode)
 {
 
   pfm_pmu_encode_arg_t raw;
@@ -198,31 +198,44 @@ pfm_getEventCode(const char *eventname, unsigned int *eventcode)
   int ret = pfm_get_os_event_encoding(eventname, PFM_PLM0|PFM_PLM3, PFM_OS_NONE, &raw);
   int result = (ret == PFM_SUCCESS);
   if (result) {
-     *eventcode = raw.codes;
+     if (raw.count>0) {
+	// TODO: by default we use the first event code 
+       *eventcode = raw.codes[0];
+     }
   }
   return result;
+}
+
+/**
+ * Initializing perfmon
+ * return 1 if the initialization passes successfully
+ **/
+int
+pfmu_init()
+{
+   /* to allow encoding of events from non detected PMU models */
+   int ret = setenv("LIBPFM_ENCODE_INACTIVE", "1", 1);
+   if (ret != PFM_SUCCESS)
+      errx(1, "cannot force inactive encoding");
+
+   ret = pfm_initialize();
+   if (ret != PFM_SUCCESS)
+      errx(1, "cannot initialize libpfm: %s", pfm_strerror(ret));
+
+   return 1;
 }
 
 /*
  * interface function to print the list of supported PMUs
  */
 int
-pfm_showEventList()
+pfmu_showEventList()
 {
    static char *argv_all =  ".*";
-   /* to allow encoding of events from non detected PMU models */
-   int ret = setenv("LIBPFM_ENCODE_INACTIVE", "1", 1);
-   if (ret != PFM_SUCCESS)
-      errx(1, "cannot force inactive encoding");
-
-
-   ret = pfm_initialize();
-   if (ret != PFM_SUCCESS)
-      errx(1, "cannot initialize libpfm: %s", pfm_strerror(ret));
              
    int total_supported_events = 0;
    int total_available_events = 0;
-   int i;
+   int i, ret;
    pfm_pmu_info_t pinfo;
 
    memset(&pinfo, 0, sizeof(pinfo));

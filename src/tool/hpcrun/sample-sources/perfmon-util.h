@@ -45,8 +45,9 @@
 #ifndef __LINUX_PERF_H__
 #define __LINUX_PERF_H__
 
-int pfm_showEventList();
-int pfm_isSupported(const char *eventname);
-int pfm_getEventCode(const char *eventname, unsigned int *eventcode);
+int pfmu_init();
+int pfmu_showEventList();
+int pfmu_isSupported(const char *eventname);
+int pfmu_getEventCode(const char *eventname, unsigned int *eventcode);
 
 #endif
