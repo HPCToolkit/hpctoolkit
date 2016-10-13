@@ -771,13 +771,13 @@ METHOD_FN(process_event_list, int lush_metrics)
   if (perf_unavail) { return; }
 
   char* evlist = METHOD_CALL(self, get_event_str);
-#if 1
+#if 0
   char *event = start_tok(evlist); 
   char name[1024];
   hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold, 
 			   DEFAULT_THRESHOLD);
 #else
-  NEEDS WORK FOR MULTIPLE EVENTS
+  char *event;
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
     char name[1024];
 
@@ -786,18 +786,24 @@ METHOD_FN(process_event_list, int lush_metrics)
     hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold, 
 			     DEFAULT_THRESHOLD);
 
-  }
-#endif
+    if (!pfmu_isSupported((const char*)name)) {
+      EMSG("unexpected failure in Perfmon-util: pfmu_isSupported ");
+      hpcrun_ssfail_unsupported("PERF", name);
+    }
 
-  perf_initialized = true;
-  perf_init();
-  perf_thread_init(name);
+    if (!perf_initialized) {
+      perf_initialized = true;
+      perf_init();
+    }
+    perf_thread_init(name);
 
-  metric_id = hpcrun_new_metric();
+    metric_id = hpcrun_new_metric();
 
-  hpcrun_set_metric_info_and_period(metric_id, strdup(name),
+    hpcrun_set_metric_info_and_period(metric_id, strdup(name),
 				    MetricFlags_ValFmt_Int,
 				    threshold, prop);
+  }
+#endif
 }
 
 
