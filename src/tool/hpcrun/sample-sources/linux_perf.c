@@ -97,6 +97,8 @@
 #include <hpcrun/utilities/tokenize.h>
 #include <hpcrun/utilities/arch/context-pc.h>
 
+#include <evlist.h>
+
 #include <include/linux_info.h> 
 
 #ifdef ENABLE_PERFMON
@@ -172,7 +174,7 @@ extern __thread bool hpcrun_thread_suppress_sample;
 //******************************************************************************
 
 static bool 
-perf_thread_init(const char *name);
+perf_thread_init(const char *name, long threshold);
 
 static void 
 perf_thread_fini();
@@ -202,7 +204,6 @@ static int perf_process_state;
 static int perf_initialized;
 
 static int metric_id;
-static long threshold;
 
 static sigset_t sig_mask;
 
@@ -284,9 +285,6 @@ perf_start()
   }
 
   perf_started = 1;
-#ifdef ENABLE_PERFMON
-  pfmu_init();
-#endif
 }
 
 
@@ -404,8 +402,6 @@ perf_event_avail()
 static void 
 perf_init()
 {
-  perf_ksyms_avail = perf_kernel_syms_avail();
-
   pagesize = sysconf(_SC_PAGESIZE);
   tail_mask = PERF_TAIL_MASK(pagesize);
 
@@ -415,6 +411,8 @@ perf_init()
 
   // if kernel symbols are available, we will attempt to collect kernel 
   // callchains and add them to our call paths 
+  perf_ksyms_avail = perf_kernel_syms_avail();
+
   if (perf_ksyms_avail) {
     hpcrun_kernel_callpath_register(perf_add_kernel_callchain);
     perf_kernel_lm_id = 
@@ -428,7 +426,8 @@ perf_init()
 static void
 perf_attr_init(
   unsigned int event_code,
-  struct perf_event_attr *attr
+  struct perf_event_attr *attr,
+  long threshold
 )
 {
   memset(attr, 0, sizeof(struct perf_event_attr));
@@ -456,7 +455,7 @@ perf_attr_init(
 
 
 static bool
-perf_thread_init(const char *name)
+perf_thread_init(const char *name, long threshold)
 {
   if (perf_thread_initialized == 0) {
     unsigned int event_code = PERF_COUNT_HW_CPU_CYCLES;
@@ -468,9 +467,15 @@ perf_thread_init(const char *name)
 #endif
 
     struct perf_event_attr attr;
-    perf_attr_init(event_code, &attr);
+    perf_attr_init(event_code, &attr, threshold);
     perf_thread_fd = perf_event_open(&attr, THREAD_SELF, CPU_ANY, 
 			      GROUP_FD, PERF_FLAGS);
+
+    // check if perf_event_open is successful
+    if (perf_thread_fd<0) {
+      EMSG("Linux perf event open failed: %s", strerror(errno));
+      return false;
+    }
 
     void *map_result = 
       mmap(NULL, PERF_MMAP_SIZE(pagesize), PROT_WRITE | PROT_READ, 
@@ -573,20 +578,6 @@ perf_event_handler(
     return 1; // tell monitor the signal has not been handled.
   }
 
-#if 0
-  if (siginfo->si_code != POLL_HUP) {
-    // expect POLL_HUP and not POLL_IN
-    TMSG(LINUX_PERF, "signal for si_code %d is not POLL_HUP", siginfo->si_code);
-    return 1; // tell monitor the signal has not been handled.
-  }
-
-  if (siginfo->si_fd != perf_thread_fd) {
-    TMSG(LINUX_PERF, "signal for fd %d is not for perf_thread_fd %d", 
-	 siginfo->si_fd, perf_thread_fd);
-    return 1; // tell monitor the signal has not been handled.
-  }
-#endif
-
   void *pc = hpcrun_context_pc(context); 
 
   // if sampling disabled explicitly for this thread, skip all processing
@@ -628,6 +619,11 @@ METHOD_FN(init)
   TMSG(LINUX_PERF, "init");
   perf_process_state = INIT;
   self->state = INIT;
+
+#ifdef ENABLE_PERFMON
+  // perfmon is smart enough to detect if pfmu has been initialized or not
+  pfmu_init();
+#endif
 }
 
 
@@ -639,6 +635,10 @@ METHOD_FN(thread_init)
 
   perf_thread_state = INIT;
 
+#ifdef ENABLE_PERFMON
+  // perfmon is smart enough to detect if pfmu has been initialized or not
+  pfmu_init();
+#endif
   TMSG(LINUX_PERF, "thread init OK");
 }
 
@@ -651,7 +651,7 @@ METHOD_FN(thread_init_action)
   if (perf_unavail) { return; }
 
   perf_thread_state = INIT;
-  perf_thread_init(event_name);
+  perf_thread_init(event_name, DEFAULT_THRESHOLD);
 }
 
 
@@ -732,13 +732,6 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
   TMSG(LINUX_PERF, "supports event");
-#ifdef ENABLE_PERFMON
-  static bool perfmon_initialized = false;
-  if (!perfmon_initialized) {
-    perfmon_initialized = true;
-    pfmu_init();
-  }
-#endif
 
   if (perf_unavail) { return false; }
 
@@ -763,23 +756,17 @@ METHOD_FN(supports_event, const char *ev_str)
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-  metric_desc_properties_t prop = metric_property_none;
-  prop = metric_property_cycles;
-
   TMSG(LINUX_PERF, "process event list");
-
   if (perf_unavail) { return; }
 
-  char* evlist = METHOD_CALL(self, get_event_str);
-#if 0
-  char *event = start_tok(evlist); 
-  char name[1024];
-  hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold, 
-			   DEFAULT_THRESHOLD);
-#else
+  metric_desc_properties_t prop = metric_property_none;
+  prop = metric_property_cycles;
   char *event;
+
+  char *evlist = METHOD_CALL(self, get_event_str);
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
     char name[1024];
+    long threshold;
 
     TMSG(LINUX_PERF,"checking event spec = %s",event);
 
@@ -795,15 +782,14 @@ METHOD_FN(process_event_list, int lush_metrics)
       perf_initialized = true;
       perf_init();
     }
-    perf_thread_init(name);
+    if (perf_thread_init(name, threshold)) { 
+      metric_id = hpcrun_new_metric();
 
-    metric_id = hpcrun_new_metric();
-
-    hpcrun_set_metric_info_and_period(metric_id, strdup(name),
+      hpcrun_set_metric_info_and_period(metric_id, strdup(name),
 				    MetricFlags_ValFmt_Int,
 				    threshold, prop);
+    }
   }
-#endif
 }
 
 
@@ -822,6 +808,7 @@ METHOD_FN(display_events)
     printf(equals_separator);
 
 #ifdef ENABLE_PERFMON
+    // perfmon is smart enough to detect if pfmu has been initialized or not
     pfmu_init();
     pfmu_showEventList();
 #else

@@ -100,7 +100,6 @@ using std::endl;
 #include <lib/support/Logic.hpp>
 #include <lib/support/QuickSort.hpp>
 
-#include <include/linux_info.h>
 
 
 
@@ -337,6 +336,9 @@ public:
 static void
 dumpSymFlag(std::ostream& o, asymbol* sym, int flag, const char* txt, bool& hasPrinted);
 
+static bool 
+isFakeLoadModule(const char *lm);
+
 //***************************************************************************
 
 
@@ -406,7 +408,7 @@ BinUtil::LM::open(const char* filenm)
 {
   DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filenm), "Cannot open a different file!");
   
-  if (strcmp(filenm, LINUX_KERNEL_NAME) == 0) {
+  if (isFakeLoadModule(filenm)) {
     m_name = filenm;
     return;
   }
@@ -539,7 +541,7 @@ BinUtil::LM::read(LM::ReadFlg readflg)
 
   m_readFlags = (ReadFlg)(readflg | LM::ReadFlg_fSeg); // enforce ReadFlg rules
 
-  if (strcmp(m_name.c_str(), LINUX_KERNEL_NAME) == 0) {
+ if (isFakeLoadModule(m_name.c_str())) {
     ksyms = new KernelSymbols;
     ksyms->parseLinuxKernelSymbols();
     return;
@@ -1189,7 +1191,13 @@ dumpSymFlag(std::ostream& o,
   }
 }
 
-
+static bool
+isFakeLoadModule(const char *lm)
+{
+  if (lm)
+    return (lm[0] == '<' && lm[strlen(lm)-1] == '>');
+  return false;
+}
 
 
 //***************************************************************************
