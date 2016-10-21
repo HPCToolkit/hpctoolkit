@@ -61,6 +61,8 @@
 #include <string.h>
 #include <regex.h>
 
+#include <linux/perf_event.h>
+
 /******************************************************************************
  * libmonitor
  *****************************************************************************/
@@ -204,6 +206,20 @@ pfmu_getEventCode(const char *eventname, unsigned int *eventcode)
      }
   }
   return result;
+}
+
+int
+pfmu_getEventAttribute(const char *event_str, struct perf_event_attr *pea)
+{
+  char *fstr = NULL;
+  int ret = 0;
+
+  if (pea) {
+    pea->size = sizeof(struct perf_event_attr);
+    ret = pfm_get_perf_event_encoding(event_str, PFM_PLM0|PFM_PLM3|PFM_PLMH, pea,
+          &fstr, NULL);
+  }
+  return ret == PFM_SUCCESS;
 }
 
 /**

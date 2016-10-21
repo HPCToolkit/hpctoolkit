@@ -174,7 +174,7 @@ extern __thread bool hpcrun_thread_suppress_sample;
 //******************************************************************************
 
 static bool 
-perf_thread_init(const char *name, long threshold);
+perf_thread_init(int event_num, const char *name, long threshold);
 
 static void 
 perf_thread_fini();
@@ -242,9 +242,10 @@ struct sigevent             __thread sigev;
 struct timespec             __thread real_start; 
 struct timespec             __thread cpu_start; 
 
-int                         __thread perf_thread_fd;
+int                         __thread perf_thread_fd[MAX_EVENTS];
 pe_mmap_t                   __thread *perf_mmap;
 
+int			    __thread num_events = 0;
 
 
 //******************************************************************************
@@ -269,19 +270,19 @@ perf_start()
 
   monitor_real_pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
 
-  ioctl(perf_thread_fd, PERF_EVENT_IOC_RESET, 0);
-  ioctl(perf_thread_fd, PERF_EVENT_IOC_ENABLE, 0);
+  ioctl(perf_thread_fd[0], PERF_EVENT_IOC_RESET, 0);
+  ioctl(perf_thread_fd[0], PERF_EVENT_IOC_ENABLE, 0);
 
-  fcntl(perf_thread_fd, F_SETFL,  O_ASYNC | O_NONBLOCK);
+  fcntl(perf_thread_fd[0], F_SETFL,  O_ASYNC | O_NONBLOCK);
 
   struct f_owner_ex owner;
   owner.type = F_OWNER_TID;
   owner.pid  = syscall(SYS_gettid);
-  ret = fcntl(perf_thread_fd, F_SETOWN_EX, &owner);
+  ret = fcntl(perf_thread_fd[0], F_SETOWN_EX, &owner);
 
   if (ret == -1) {
     fprintf(stderr, "can't set fcntl(F_SETOWN_EX) on %d: %s\n", 
-	    perf_thread_fd, strerror(errno));
+	    perf_thread_fd[0], strerror(errno));
   }
 
   perf_started = 1;
@@ -294,7 +295,7 @@ perf_stop()
   if (!perf_initialized) return;
 
   monitor_real_pthread_sigmask(SIG_BLOCK, &sig_mask, NULL);
-  ioctl(perf_thread_fd, PERF_EVENT_IOC_DISABLE, 0);
+  ioctl(perf_thread_fd[0], PERF_EVENT_IOC_DISABLE, 0);
 
   perf_started = 0;
 }
@@ -443,7 +444,6 @@ perf_attr_init(
   attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
   attr->sample_stack_user = 4096;
 
-
   if (perf_ksyms_avail) {
     attr->sample_type = PERF_SAMPLE_CALLCHAIN;
     attr->exclude_callchain_user = EXCLUDE_CALLCHAIN_USER;
@@ -455,48 +455,56 @@ perf_attr_init(
 
 
 static bool
-perf_thread_init(const char *name, long threshold)
+perf_thread_init(int event_num, const char *name, long threshold)
 {
-  if (perf_thread_initialized == 0) {
-    unsigned int event_code = PERF_COUNT_HW_CPU_CYCLES;
+  unsigned int event_code = PERF_COUNT_HW_CPU_CYCLES;
 #ifdef ENABLE_PERFMON
-    if (!pfmu_getEventCode(name, &event_code)) {
+  if (!pfmu_getEventCode(name, &event_code)) {
       EMSG("Linux perf event not recognized: %s", name);
       return false;
-    }
+  }
 #endif
+  struct perf_event_attr attr;
+  perf_attr_init(event_code, &attr, threshold);
 
-    struct perf_event_attr attr;
-    perf_attr_init(event_code, &attr, threshold);
-    perf_thread_fd = perf_event_open(&attr, THREAD_SELF, CPU_ANY, 
-			      GROUP_FD, PERF_FLAGS);
+  // if this is the leader event, parent_fd is GROUP_FD
+  //  otherwise parent_fd is the leader fd
+  int parent_fd = (perf_thread_fd[0] >= 0? perf_thread_fd[0] : GROUP_FD);
+  if (perf_thread_initialized == 0) {
+    perf_thread_initialized = 1;
+    parent_fd = GROUP_FD;
+  } 
+  perf_thread_fd[event_num] = perf_event_open(&attr, THREAD_SELF, CPU_ANY, 
+			      parent_fd, PERF_FLAGS);
 
-    // check if perf_event_open is successful
-    if (perf_thread_fd<0) {
+  // check if perf_event_open is successful
+  if (perf_thread_fd[event_num] <0 ) {
       EMSG("Linux perf event open failed: %s", strerror(errno));
       return false;
-    }
+  }
+  return true;
+}
 
-    void *map_result = 
-      mmap(NULL, PERF_MMAP_SIZE(pagesize), PROT_WRITE | PROT_READ, 
-	   MAP_SHARED, perf_thread_fd, MMAP_OFFSET_0);
+static bool
+set_mmap(int perf_fd)
+{
+  void *map_result = 
+    mmap(NULL, PERF_MMAP_SIZE(pagesize), PROT_WRITE | PROT_READ, 
+	   MAP_SHARED, perf_fd, MMAP_OFFSET_0);
 
-    if (map_result == MAP_FAILED) {
+  if (map_result == MAP_FAILED) {
       EMSG("Linux perf mmap failed: %s", strerror(errno));
       return false;
-    }
+  }
 
-    perf_mmap  = (pe_mmap_t *) map_result;
+  perf_mmap  = (pe_mmap_t *) map_result;
 
-    if (perf_mmap) {
+  if (perf_mmap) {
       memset(perf_mmap, 0, sizeof(pe_mmap_t));
       perf_mmap->version = 0; 
       perf_mmap->compat_version = 0; 
       perf_mmap->data_head = 0; 
       perf_mmap->data_tail = 0; 
-    }
-
-    perf_thread_initialized = 1;
   }
   return true;
 }
@@ -507,7 +515,10 @@ perf_thread_fini()
 {
   if (perf_thread_initialized) {
     munmap(perf_mmap, PERF_MMAP_SIZE(pagesize));
-    close(perf_thread_fd);
+    int i = 0;
+    
+    for (; i< num_events; i++)
+      close(perf_thread_fd[i]);
   }
   perf_thread_initialized = 0;
 }
@@ -550,12 +561,12 @@ perf_add_kernel_callchain(
 	    }
 	  } else {
 	    TMSG(LINUX_PERF, "unable to read all frames on fd %d", 
-		 perf_thread_fd);
+		 perf_thread_fd[0]);
 	  }
 	}
       } else {
 	TMSG(LINUX_PERF, "unable to read number of frames on fd %d", 
-	     perf_thread_fd);
+	     perf_thread_fd[0]);
       }
     }
   }
@@ -599,7 +610,7 @@ perf_event_handler(
 
   hpcrun_safe_exit();
 
-  int rc = ioctl(perf_thread_fd, PERF_EVENT_IOC_REFRESH, 1);
+  int rc = ioctl(perf_thread_fd[0], PERF_EVENT_IOC_REFRESH, 1);
   if (rc == -1) {
     TMSG(LINUX_PERF, "error in IOC_REFRESH");
   }
@@ -651,7 +662,9 @@ METHOD_FN(thread_init_action)
   if (perf_unavail) { return; }
 
   perf_thread_state = INIT;
-  perf_thread_init(event_name, DEFAULT_THRESHOLD);
+  if (perf_thread_init(0, event_name, DEFAULT_THRESHOLD)) {
+    set_mmap(perf_thread_fd[0]);
+  }
 }
 
 
@@ -763,7 +776,13 @@ METHOD_FN(process_event_list, int lush_metrics)
   prop = metric_property_cycles;
   char *event;
 
+  if (!perf_initialized) {
+      perf_init();
+      perf_initialized = true;
+  }
   char *evlist = METHOD_CALL(self, get_event_str);
+  num_events   = 0;
+
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
     char name[1024];
     long threshold;
@@ -773,23 +792,17 @@ METHOD_FN(process_event_list, int lush_metrics)
     hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold, 
 			     DEFAULT_THRESHOLD);
 
-    if (!pfmu_isSupported((const char*)name)) {
-      EMSG("unexpected failure in Perfmon-util: pfmu_isSupported ");
-      hpcrun_ssfail_unsupported("PERF", name);
-    }
-
-    if (!perf_initialized) {
-      perf_initialized = true;
-      perf_init();
-    }
-    if (perf_thread_init(name, threshold)) { 
+    if (perf_thread_init(num_events, name, threshold)) { 
       metric_id = hpcrun_new_metric();
 
       hpcrun_set_metric_info_and_period(metric_id, strdup(name),
 				    MetricFlags_ValFmt_Int,
 				    threshold, prop);
     }
+    num_events++;
   }
+  if (perf_thread_fd[0] >= 0)
+    set_mmap(perf_thread_fd[0]);
 }
 
 

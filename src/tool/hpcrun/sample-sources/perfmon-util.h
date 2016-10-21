@@ -42,12 +42,15 @@
 // ******************************************************* EndRiceCopyright *
 
 
-#ifndef __LINUX_PERF_H__
-#define __LINUX_PERF_H__
+#ifndef __PERFMON_UTIL_H__
+#define __PERFMON_UTIL_H__
+
+#include <linux/perf_event.h>
 
 int pfmu_init();
 int pfmu_showEventList();
 int pfmu_isSupported(const char *eventname);
 int pfmu_getEventCode(const char *eventname, unsigned int *eventcode);
+int pfmu_getEventAttribute(const char *event_str, struct perf_event_attr *pea);
 
 #endif
