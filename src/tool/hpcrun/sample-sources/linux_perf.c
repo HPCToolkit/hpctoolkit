@@ -300,8 +300,8 @@ perf_stop()
 
   monitor_real_pthread_sigmask(SIG_BLOCK, &sig_mask, NULL);
 
-  if (perf_thread_fd[i]) {
-    ioctl(perf_thread_fd[i], PERF_EVENT_IOC_DISABLE, 0);
+  if (perf_thread_fd[0]) {
+    ioctl(perf_thread_fd[0], PERF_EVENT_IOC_DISABLE, 0);
   }
 }
 
@@ -673,12 +673,13 @@ METHOD_FN(init)
 {
   TMSG(LINUX_PERF, "init");
   perf_process_state = INIT;
-  self->state = INIT;
 
 #ifdef ENABLE_PERFMON
   // perfmon is smart enough to detect if pfmu has been initialized or not
   pfmu_init();
 #endif
+
+  self->state = INIT;
 }
 
 
@@ -722,11 +723,14 @@ METHOD_FN(start)
     return; 
   }
 
+  //thread_data_t* td = hpcrun_get_thread_data();
+  source_state_t my_state = TD_GET(ss_state)[self->sel_idx];
+
   // make LINUX_PERF start idempotent.  the application can turn on sampling
   // anywhere via the start-stop interface, so we can't control what
   // state LINUX_PERF is in.
 
-  if (perf_thread_state == START) {
+  if (my_state == START) {
     TMSG(LINUX_PERF,"*NOTE* LINUX_PERF start called when already in state START");
     return;
   }
