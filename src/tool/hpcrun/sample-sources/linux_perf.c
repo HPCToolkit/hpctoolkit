@@ -235,7 +235,6 @@ long                        __thread my_user_samples;
 int                         __thread myid;
 
 int                         __thread perf_threadinit = 0;
-long                        __thread perf_started = 0;
 
 struct sigevent             __thread sigev;
 struct timespec             __thread real_start; 
@@ -244,7 +243,7 @@ struct timespec             __thread cpu_start;
 int                         perf_thread_fd[MAX_EVENTS];
 pe_mmap_t                   __thread *perf_mmap;
 
-int			    __thread num_events = 0;
+int			    num_events = 0;
 
 
 //******************************************************************************
@@ -262,6 +261,9 @@ perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
 }
 
 
+//----------------------------------------------------------
+// starting a perf event by setting the signal and enabling the event
+//----------------------------------------------------------
 static int
 perf_start(int event_num)
 {
@@ -283,21 +285,24 @@ perf_start(int event_num)
 	    perf_thread_fd[event_num], strerror(errno));
   } else {
     ioctl(perf_thread_fd[event_num], PERF_EVENT_IOC_RESET, 0);
-    ioctl(perf_thread_fd[event_num], PERF_EVENT_IOC_ENABLE, 0);
   }
   return (ret >= 0);
 }
 
 
+//----------------------------------------------------------
+// stop all events
+//----------------------------------------------------------
 static void
 perf_stop()
 {
   if (!perf_initialized) return;
 
   monitor_real_pthread_sigmask(SIG_BLOCK, &sig_mask, NULL);
-  ioctl(perf_thread_fd[0], PERF_EVENT_IOC_DISABLE, 0);
 
-  perf_started = 0;
+  if (perf_thread_fd[i]) {
+    ioctl(perf_thread_fd[i], PERF_EVENT_IOC_DISABLE, 0);
+  }
 }
 
 
@@ -423,6 +428,9 @@ perf_init()
 }
 
 
+//----------------------------------------------------------
+// generic initialization for event attributes
+//----------------------------------------------------------
 static void
 perf_attr_init(
   unsigned int event_code,
@@ -452,9 +460,16 @@ perf_attr_init(
 }
 
 
+//----------------------------------------------------------
+// initialize an event
+//  event_num: event number
+//  name: name of event (has to be recognized by perf event)
+//  threshold: sampling threshold 
+//----------------------------------------------------------
 static bool
 perf_thread_init(int event_num, const char *name, long threshold)
 {
+  // if perfmon is disabled, by default the event is cycle
   unsigned int event_code = PERF_COUNT_HW_CPU_CYCLES;
 #ifdef ENABLE_PERFMON
   if (!pfmu_getEventCode(name, &event_code)) {
@@ -462,6 +477,8 @@ perf_thread_init(int event_num, const char *name, long threshold)
       return false;
   }
 #endif
+
+  // initialize the event attributes
   struct perf_event_attr attr;
   perf_attr_init(event_code, &attr, threshold);
 
@@ -471,6 +488,7 @@ perf_thread_init(int event_num, const char *name, long threshold)
   attr.pinned    = (event_num==0? 1: 0);
   int parent_fd  = (event_num==0? GROUP_FD : perf_thread_fd[0]) ;
 
+  // "create"the event
   perf_thread_fd[event_num] = perf_event_open(&attr, THREAD_SELF, CPU_ANY, 
 			      parent_fd, PERF_FLAGS);
 
@@ -481,13 +499,12 @@ perf_thread_init(int event_num, const char *name, long threshold)
       EMSG("Linux perf event open failed: %s", strerror(errno));
       return false;
   }
-  if (!perf_start(event_num))
-    return false;;
-
-  TMSG(LINUX_PERF, "dbg: register event %d : %s", event_num, name);
-  return true;
+  return (perf_start(event_num));
 }
 
+//----------------------------------------------------------
+// allocate mmap for a given file descriptor
+//----------------------------------------------------------
 static bool
 set_mmap(int perf_fd)
 {
@@ -512,6 +529,11 @@ set_mmap(int perf_fd)
 }
 
 
+//----------------------------------------------------------
+// actions when the program terminates: 
+//  - unmap the memory
+//  - close file descriptors used by each event
+//----------------------------------------------------------
 void
 perf_thread_fini()
 {
@@ -632,7 +654,7 @@ perf_event_handler(
 
   hpcrun_safe_exit();
 
-  int rc = ioctl(perf_thread_fd[0], PERF_EVENT_IOC_REFRESH, 1);
+  int rc = ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
   if (rc == -1) {
     TMSG(LINUX_PERF, "error in IOC_REFRESH");
   }
@@ -686,6 +708,7 @@ METHOD_FN(thread_init_action)
   perf_thread_state = INIT;
   if (perf_thread_init(0, event_name, DEFAULT_THRESHOLD)) {
     set_mmap(perf_thread_fd[0]);
+    ioctl(perf_thread_fd[0], PERF_EVENT_IOC_ENABLE, 0);
   }
 }
 
@@ -824,6 +847,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     }
     num_events++;
   }
+  ioctl(perf_thread_fd[0], PERF_EVENT_IOC_ENABLE, 0);
 }
 
 
