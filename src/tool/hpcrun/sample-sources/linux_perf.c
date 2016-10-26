@@ -203,7 +203,7 @@ static bool perf_ksyms_avail;
 static int perf_process_state;
 static int perf_initialized;
 
-static int metric_id;
+static int metric_id[MAX_EVENTS];
 
 static sigset_t sig_mask;
 
@@ -227,7 +227,6 @@ static int perf_unavail = 0;
 // thread local variables
 //******************************************************************************
 
-int                  	    __thread perf_thread_initialized;
 int                         __thread perf_thread_state;
 
 long                        __thread my_kernel_samples;
@@ -242,7 +241,7 @@ struct sigevent             __thread sigev;
 struct timespec             __thread real_start; 
 struct timespec             __thread cpu_start; 
 
-int                         __thread perf_thread_fd[MAX_EVENTS];
+int                         perf_thread_fd[MAX_EVENTS];
 pe_mmap_t                   __thread *perf_mmap;
 
 int			    __thread num_events = 0;
@@ -263,29 +262,30 @@ perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
 }
 
 
-static void
-perf_start()
+static int
+perf_start(int event_num)
 {
   int ret;
 
   monitor_real_pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
 
-  ioctl(perf_thread_fd[0], PERF_EVENT_IOC_RESET, 0);
-  ioctl(perf_thread_fd[0], PERF_EVENT_IOC_ENABLE, 0);
-
-  fcntl(perf_thread_fd[0], F_SETFL,  O_ASYNC | O_NONBLOCK);
+  fcntl(perf_thread_fd[event_num], F_SETSIG, SIGIO);
+  fcntl(perf_thread_fd[event_num], F_SETOWN,getpid());
+  fcntl(perf_thread_fd[event_num], F_SETFL, O_RDWR |  O_ASYNC | O_NONBLOCK);
 
   struct f_owner_ex owner;
   owner.type = F_OWNER_TID;
   owner.pid  = syscall(SYS_gettid);
-  ret = fcntl(perf_thread_fd[0], F_SETOWN_EX, &owner);
+  ret = fcntl(perf_thread_fd[event_num], F_SETOWN_EX, &owner);
 
   if (ret == -1) {
-    fprintf(stderr, "can't set fcntl(F_SETOWN_EX) on %d: %s\n", 
-	    perf_thread_fd[0], strerror(errno));
+    TMSG(LINUX_PERF, "can't set fcntl(F_SETOWN_EX) on %d: %s\n", 
+	    perf_thread_fd[event_num], strerror(errno));
+  } else {
+    ioctl(perf_thread_fd[event_num], PERF_EVENT_IOC_RESET, 0);
+    ioctl(perf_thread_fd[event_num], PERF_EVENT_IOC_ENABLE, 0);
   }
-
-  perf_started = 1;
+  return (ret >= 0);
 }
 
 
@@ -416,8 +416,7 @@ perf_init()
 
   if (perf_ksyms_avail) {
     hpcrun_kernel_callpath_register(perf_add_kernel_callchain);
-    perf_kernel_lm_id = 
-      hpcrun_loadModule_add(LINUX_KERNEL_NAME);
+    perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
   }
  
   monitor_sigaction(PERF_SIGNAL, &perf_event_handler, 0, NULL);
@@ -433,14 +432,14 @@ perf_attr_init(
 {
   memset(attr, 0, sizeof(struct perf_event_attr));
 
-  attr->type = PERF_TYPE_HARDWARE;
-  attr->size = sizeof(struct perf_event_attr);
+  attr->type   = PERF_TYPE_HARDWARE;
+  attr->size   = sizeof(struct perf_event_attr);
   attr->config = event_code;
-  //attr->config = PERF_COUNT_HW_CPU_CYCLES;
 
+  attr->read_format   = PERF_FORMAT_GROUP;
   attr->sample_period = threshold;
-  attr->sample_type = PERF_SAMPLE_CALLCHAIN;
-  attr->precise_ip = PERF_REQUEST_0_SKID;
+  attr->sample_type   = PERF_SAMPLE_CALLCHAIN;
+  attr->precise_ip    = PERF_REQUEST_0_SKID;
   attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
   attr->sample_stack_user = 4096;
 
@@ -450,7 +449,6 @@ perf_attr_init(
   } else {
     attr->sample_type = PERF_SAMPLE_IP;
   }
-
 }
 
 
@@ -469,19 +467,24 @@ perf_thread_init(int event_num, const char *name, long threshold)
 
   // if this is the leader event, parent_fd is GROUP_FD
   //  otherwise parent_fd is the leader fd
-  int parent_fd = (perf_thread_fd[0] >= 0? perf_thread_fd[0] : GROUP_FD);
-  if (perf_thread_initialized == 0) {
-    perf_thread_initialized = 1;
-    parent_fd = GROUP_FD;
-  } 
+  attr.disabled  = (event_num==0? 1: 0);
+  attr.pinned    = (event_num==0? 1: 0);
+  int parent_fd  = (event_num==0? GROUP_FD : perf_thread_fd[0]) ;
+
   perf_thread_fd[event_num] = perf_event_open(&attr, THREAD_SELF, CPU_ANY, 
 			      parent_fd, PERF_FLAGS);
+
+  TMSG(LINUX_PERF, "dbg register event %d, fd: %d", event_num, perf_thread_fd[event_num]);
 
   // check if perf_event_open is successful
   if (perf_thread_fd[event_num] <0 ) {
       EMSG("Linux perf event open failed: %s", strerror(errno));
       return false;
   }
+  if (!perf_start(event_num))
+    return false;;
+
+  TMSG(LINUX_PERF, "dbg: register event %d : %s", event_num, name);
   return true;
 }
 
@@ -499,13 +502,12 @@ set_mmap(int perf_fd)
 
   perf_mmap  = (pe_mmap_t *) map_result;
 
-  if (perf_mmap) {
-      memset(perf_mmap, 0, sizeof(pe_mmap_t));
-      perf_mmap->version = 0; 
-      perf_mmap->compat_version = 0; 
-      perf_mmap->data_head = 0; 
-      perf_mmap->data_tail = 0; 
-  }
+  memset(perf_mmap, 0, sizeof(pe_mmap_t));
+  perf_mmap->version = 0; 
+  perf_mmap->compat_version = 0; 
+  perf_mmap->data_head = 0; 
+  perf_mmap->data_tail = 0; 
+
   return true;
 }
 
@@ -513,14 +515,13 @@ set_mmap(int perf_fd)
 void
 perf_thread_fini()
 {
-  if (perf_thread_initialized) {
+  if (perf_thread_fd[0]) {
     munmap(perf_mmap, PERF_MMAP_SIZE(pagesize));
-    int i = 0;
+    int i;
     
-    for (; i< num_events; i++)
+    for (i=0; i< num_events; i++)
       close(perf_thread_fd[i]);
   }
-  perf_thread_initialized = 0;
 }
 
 
@@ -574,6 +575,17 @@ perf_add_kernel_callchain(
   return parent;
 }
 
+static int
+get_fd_index(int fd)
+{
+  int i;
+  for (i=0; i<num_events; i++) {
+    if (perf_thread_fd[i] == fd)
+      return i;
+  } 
+  // file descriptor not recognized
+  return -1; 
+}
 
 static int
 perf_event_handler(
@@ -584,17 +596,24 @@ perf_event_handler(
 {
   if (siginfo->si_code < 0) {
     // signal not generated by kernel for profiling
-    TMSG(LINUX_PERF, "signal si_code %d >= 0 indicates not from kernel", 
+    TMSG(LINUX_PERF, "signal si_code %d < 0 indicates not from kernel", 
 	 siginfo->si_code);
     return 1; // tell monitor the signal has not been handled.
   }
 
+  int fd = siginfo->si_fd;
+  ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
+
+  int index = get_fd_index(fd);
+
   void *pc = hpcrun_context_pc(context); 
 
+#if 0
   // if sampling disabled explicitly for this thread, skip all processing
   if (hpcrun_thread_suppress_sample) {
     return 0; // tell monitor the signal has been handled.
   }
+#endif
 
   // if the interrupt came while inside our code, then drop the sample
   // and return and avoid the potential for deadlock.
@@ -603,10 +622,13 @@ perf_event_handler(
     return 0; // tell monitor the signal has been handled.
   }
 
-  sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 1,
+  // store the metric if the metric index is correct
+  if ( index >= 0 ) {
+    sample_val_t sv = hpcrun_sample_callpath(context, metric_id[index], 1,
 					   0/*skipInner*/, 0/*isSync*/);
 
-  blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
+    blame_shift_apply(metric_id[index], sv.sample_node, 1 /*metricIncr*/);
+  }
 
   hpcrun_safe_exit();
 
@@ -686,7 +708,6 @@ METHOD_FN(start)
     return;
   }
 
-  perf_start();
 
   perf_thread_state = START;
 }
@@ -793,16 +814,16 @@ METHOD_FN(process_event_list, int lush_metrics)
 			     DEFAULT_THRESHOLD);
 
     if (perf_thread_init(num_events, name, threshold)) { 
-      metric_id = hpcrun_new_metric();
+      set_mmap(perf_thread_fd[num_events]);
 
-      hpcrun_set_metric_info_and_period(metric_id, strdup(name),
+      metric_id[num_events] = hpcrun_new_metric();
+
+      hpcrun_set_metric_info_and_period(metric_id[num_events], strdup(name),
 				    MetricFlags_ValFmt_Int,
 				    threshold, prop);
     }
     num_events++;
   }
-  if (perf_thread_fd[0] >= 0)
-    set_mmap(perf_thread_fd[0]);
 }
 
 
