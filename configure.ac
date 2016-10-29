@@ -82,7 +82,7 @@ m4_include(config/hpc-mpiutils.m4)
 # Initialization: 
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [5.4.2],
+AC_INIT([hpctoolkit], [5.5.1],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -97,9 +97,9 @@ AC_MSG_NOTICE([*** INFO: from user: MPICXX='${MPICXX}' ***])
 AC_MSG_NOTICE([*** INFO: from user: MPIF77='${MPIF77}' ***])
 
 # NOTE: please update config/README.version
-AC_PREREQ(2.67)
-AM_INIT_AUTOMAKE(1.11.1)
-LT_PREREQ([2.2.10])
+AC_PREREQ(2.69)
+AM_INIT_AUTOMAKE(1.15)
+LT_PREREQ([2.4.6])
 
 AM_MAINTAINER_MODE()
 
@@ -401,6 +401,7 @@ HOST_CPU_X86=no
 HOST_CPU_X86_64=no
 HOST_CPU_X86_FAMILY=no
 HOST_CPU_IA64=no
+HOST_CPU_AARCH64=no
 
 case "${host}" in
   # Linux
@@ -513,6 +514,15 @@ case "${host}" in
     AC_DEFINE([HOST_OS_TRU64], [1], [HOST OS: Tru64])
     ;;
 
+  # ARM 64-bit
+  aarch64*linux* )
+    HOST_OS="Linux"
+    HOST_CPU_AARCH64=yes
+    UNWINDER=libunw
+    AC_DEFINE([HOST_OS_LINUX], [1], [HOST OS: Linux])
+    AC_DEFINE([HOST_CPU_ARM64], [1], [HOST CPU: ARM 64 (aarch64])
+    ;;
+
   *)
     AC_MSG_ERROR([HPCToolkit is not configured for HOST=${host}!])
     ;;
@@ -531,6 +541,7 @@ AM_CONDITIONAL([HOST_CPU_X86],    [test "${HOST_CPU_X86}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86_64], [test "${HOST_CPU_X86_64}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86_FAMILY], [test "${HOST_CPU_X86_FAMILY}" = yes])
 AM_CONDITIONAL([HOST_CPU_IA64], [test "$HOST_CPU_IA64" = yes])
+AM_CONDITIONAL([HOST_CPU_AARCH64], [test "$HOST_CPU_AARCH64" = yes])
 
 #-------------------------------------------------
 # Host-specific compiler settings
@@ -774,6 +785,7 @@ AC_MSG_NOTICE([host endian: $host_endian])
 
 AC_LANG_PUSH([C++])
 AC_LINK_IFELSE([
+AC_LANG_SOURCE([[
 #include <stdio.h>
 #include <stdint.h>
 #include <byteswap.h>
@@ -783,7 +795,7 @@ int main(int argc, char **argv)
   uint64_t y = bswap_64(x);
   return y > 2;
 }
-], [use_byteswap=yes], [use_byteswap=no])
+]])], [use_byteswap=yes], [use_byteswap=no])
 AC_LANG_POP()
 
 AC_MSG_NOTICE([use system byteswap.h: $use_byteswap])
@@ -823,6 +835,7 @@ do
   esac
   CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $flag"
   AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
 #include <list>
 int mylen(std::list <int> lst)
 {
@@ -832,7 +845,7 @@ int mylen(std::list <int> lst)
   }
   return ans;
 }
-], [ans=yes], [ans=no])
+]])], [ans=yes], [ans=no])
   if test "$ans" = yes ; then
     cxx_c11_avail=yes
     cxx_c11_flag="$flag"
@@ -1155,54 +1168,182 @@ if test "$HOST_CPU_IA64" = yes ; then
   wordsize_cflag=
 fi
 
+# multilib path based on wordsize of host machine
+multilib_path=lib
+case "$host_wordsize" in
+  32 ) multilib_path='lib32 lib' ;;
+  64 ) multilib_path='lib64 lib' ;;
+esac
+
 AC_SUBST([wordsize_cflag])
 
 
 #-------------------------------------------------
 # Check for GNU's binutils (binary interface)
 #-------------------------------------------------
-# cf. enable-hpc-binutils
-
-AC_MSG_CHECKING([for GNU binutils])
 
 GNUBINUTILS=no
+GNUBINUTILS_IFLAGS=
+GNUBINUTILS_LDFLAGS=
+GNUBINUTILS_LDLIBS=
+
 if test "$use_externals" = yes ; then
   GNUBINUTILS="$ext_binutils_prefix"
 fi
 
 AC_ARG_WITH([binutils],
-  AS_HELP_STRING([--with-binutils=PATH],
-                 [use given GNU binutils installation]),
-  [if test $withval != no; then
-     GNUBINUTILS=${withval}
-   fi],
+  [AS_HELP_STRING([--with-binutils=PATH],
+	[path to binutils install directory])],
+  [GNUBINUTILS="$withval"],
   [])
 
-# Note: With binutils 2.20.1, libiberty may be installed in a
-# different lib than libbfd and libopcodes (e.g., lib64 vs. lib).
-#
-# Note: With prior versions of binutils and libtool, we had to supply
-# an absolute path for libiberty.  Will this suffice?
-GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
+AC_MSG_CHECKING([for binutils])
 
-GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib"
-if test "${host_sizeof_voidp}" = "8"; then
-  # -lbfd -lopcodes are in lib; -liberty is in lib64
-  GNUBINUTILS_LDFLAGS="${GNUBINUTILS_LDFLAGS} -L${GNUBINUTILS}/lib64"
-fi
+case "$GNUBINUTILS" in
+  /* )
+    if test -f "${GNUBINUTILS}/include/bfd.h" ; then
+      GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
+      GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib"
+      for dir in lib32 lib64 ; do
+        if test -d "${GNUBINUTILS}/$dir" ; then
+	  GNUBINUTILS_LDFLAGS="$GNUBINUTILS_LDFLAGS -L${GNUBINUTILS}/$dir"
+	fi
+      done
+    else
+      AC_MSG_ERROR([invalid binutils directory: $GNUBINUTILS])
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([binutils directory must be absolute path])
+    ;;
+esac
 
-GNUBINUTILS_LDLIBS="-lbfd -lopcodes -liberty"
+AC_MSG_RESULT([$GNUBINUTILS])
 
-# on non-Linux systems we build libintl
-if test "${HOST_OS}" != "Linux"; then
-  GNUBINUTILS_LDLIBS="${GNUBINUTILS_LDLIBS} ${GNUBINUTILS}/lib/libintl.a"
-fi
+# Test if binutils links with libs in GNUBINUTILS_LDLIBS.
+test_binutils_libs()
+{
+  LIBS="$GNUBINUTILS_LDFLAGS $GNUBINUTILS_LDLIBS"
 
+  AC_LINK_IFELSE([
+  AC_LANG_SOURCE([[
+#include <iostream>
+#include <bfd.h>
+#include <bfdlink.h>
+int main(int argc, char **argv)
+{
+  bfd_init();
+  bfd *abfd = bfd_openr(argv[1], "default");
+  long size = bfd_get_symtab_upper_bound(abfd);
+  std::cout << size;
+  return 0;
+}
+]])], [ans=0], [ans=1])
 
-AC_MSG_RESULT([${GNUBINUTILS}])
+  return $ans
+}
+
+AC_LANG_PUSH([C++])
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+ORIG_LIBS="$LIBS"
+CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $GNUBINUTILS_IFLAGS"
+
+# Test for binutils libs.  We always use bfd, opcodes and libiberty,
+# and newer binutils also use libdl and libz.
+
+case "$GNUBINUTILS" in
+  /* )
+    GNUBINUTILS_LDLIBS="-lopcodes -lbfd -liberty"
+    if test_binutils_libs ; then :
+    else
+      GNUBINUTILS_LDLIBS="$GNUBINUTILS_LDLIBS -ldl -lz"
+      if test_binutils_libs ; then :
+      else
+        AC_MSG_WARN([unable to find link flags for binutils])
+      fi
+    fi
+    AC_MSG_NOTICE([binutils libraries: $GNUBINUTILS_LDLIBS])
+    ;;
+esac
+
 AC_SUBST([GNUBINUTILS_IFLAGS])
 AC_SUBST([GNUBINUTILS_LDFLAGS])
 AC_SUBST([GNUBINUTILS_LDLIBS])
+
+# Test for special, hpctoolkit-patched binutils.
+
+hpc_binutils=no
+LIBS="$GNUBINUTILS_LDFLAGS $GNUBINUTILS_LDLIBS"
+
+case "$GNUBINUTILS" in
+  /* )
+    AC_MSG_CHECKING([for hpctoolkit patched binutils])
+
+    AC_LINK_IFELSE([
+    AC_LANG_SOURCE([[
+#include <iostream>
+#include <bfd.h>
+#include <bfdlink.h>
+int main(int argc, char **argv)
+{
+  bfd_init();
+  bfd *abfd = bfd_openr(argv[1], "default");
+  bfd_vma vma = bfd_get_first_addr(abfd);
+  int ret = bfd_elf_forall_dbg_funcinfo(abfd, NULL, NULL, NULL);
+  std::cout << vma << ret;
+  return 0;
+}
+]])], [hpc_binutils=yes], [hpc_binutils=no])
+
+    AC_MSG_RESULT([$hpc_binutils])
+    ;;
+esac
+
+if test "$hpc_binutils" = yes ; then
+  AC_DEFINE([HAVE_HPC_GNUBINUTILS], [1], [HPCToolkit patched binutils])
+fi
+
+# Test if binutils has support for IA64 (Itanium).
+
+binutils_ia64=no
+
+case "$GNUBINUTILS" in
+  /* )
+    AC_MSG_CHECKING([if binutils supports ia64])
+
+    AC_LINK_IFELSE([
+    AC_LANG_SOURCE([[
+#include <iostream>
+#include <bfd.h>
+#include <bfdlink.h>
+#include <dis-asm.h>
+int main(int argc, char **argv)
+{
+  disassemble_info myinfo;
+  bfd_init();
+  int ret = print_insn_ia64(0x400400, &myinfo);
+  std::cout << ret;
+  return 0;
+}
+]])], [binutils_ia64=yes], [binutils_ia64=no])
+
+    AC_MSG_RESULT([$binutils_ia64])
+    ;;
+esac
+
+if test "$binutils_ia64" = yes ; then
+  AC_DEFINE([ENABLE_BINUTILS_IA64], [1], [Binutils has support for ia64])
+fi
+
+AM_CONDITIONAL([OPT_HAVE_BINUTILS_IA64], [test "$binutils_ia64" = yes])
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+LIBS="$ORIG_LIBS"
+
+AC_LANG_POP
 
 
 #-------------------------------------------------
@@ -1239,7 +1380,38 @@ AC_MSG_RESULT([$BOOST])
 
 BOOST_INC="${BOOST}/include"
 
+# Test for libboost_thread-mt.so and libboost_system-mt.so.
+# If exist, then copy to ext-libs.  Recent dyninst uses these.
+
+AC_MSG_CHECKING([whether to copy boost libraries])
+
+BOOST_LIB=
+BOOST_LIB_LIST=
+BOOST_COPY=no
+
+for lib in $multilib_path ; do
+  boost_libdir="${BOOST}/$lib"
+  for f in "$boost_libdir"/libboost_thread* ; do
+    if test -f "$f" ; then
+      BOOST_LIB="$boost_libdir"
+      BOOST_COPY=yes
+      break 2
+    fi
+  done
+done
+
+if test "$BOOST_COPY" = yes ; then
+  BOOST_LIB_LIST='-lboost_atomic -lboost_chrono -lboost_date_time -lboost_system -lboost_thread'
+fi
+
+AC_MSG_RESULT([$BOOST_COPY])
+
 AC_SUBST([BOOST_INC])
+AC_SUBST([BOOST_LIB])
+AC_SUBST([BOOST_LIB_LIST])
+AC_SUBST([BOOST_COPY])
+
+AM_CONDITIONAL([USE_BOOST_LIBS], [test "$BOOST_COPY" = yes])
 
 
 #-------------------------------------------------
@@ -1396,104 +1568,137 @@ AC_SUBST([LIBMONITOR_WRAP_NAMES])
 
 
 #-------------------------------------------------
-# with-libunwind
+# Option: --with-libunwind=PATH, --enable-libunwind-primary
 #-------------------------------------------------
 
-#
-# ### FIXME: rationalize this: libunw chosen EITHER when ia64 or when --with-libunwind is set
-# ###        current configure will NOT do the right thing if libunw turned off but arch=ia64
-#
-AC_MSG_CHECKING([whether configured to use libunwind instead of native])
+# Libunwind can be the primary unwinder (any platform), the secondary
+# unwinder or not used at all.  So, keep it optional and test static
+# and dynamic versions separately.  But if libunwind is the primary
+# unwinder, then can't build hpcrun or hpclink without it.
 
-OPT_HAVE_LIBUNWIND=no
-OPT_LIBUNWIND=
-OPT_LIBUNWIND_IFLAGS=
-OPT_LIBUNWIND_LIBPATH=
-OPT_LIBUNWIND_LDFLAGS=
-OPT_LIBUNWIND_LIBSO=
-OPT_LIBUNWIND_LIBA=
+LIBUNWIND=no
+LIBUNWIND_STAT=no
+
+LIBUNWIND_IFLAGS=
+LIBUNWIND_CPPFLAGS_DYN=
+LIBUNWIND_CPPFLAGS_STAT=
+LIBUNWIND_LDFLAGS_DYN=
+LIBUNWIND_LDFLAGS_STAT=
+
 LIBUNWIND_COPY=no
-LIBUNWIND_RUN_DIR=
-LIBUNWIND_HPCLINK_LIBS=
+LIBUNWIND_LIB=
 
 if test "$use_externals" = yes ; then
-  OPT_LIBUNWIND="$ext_libunwind_prefix"
-  case "$OPT_LIBUNWIND" in
-    /* ) OPT_HAVE_LIBUNWIND=yes ;;
-  esac
+  LIBUNWIND="$ext_libunwind_prefix"
 fi
 
 AC_ARG_WITH([libunwind],
-  AS_HELP_STRING([--with-libunwind=PATH],
-                 [use given LIBUNWIND installation (absolute path) with hpcrun (default is NO)]),
-  [case $withval in
-      yes) : ;;
-      /*) OPT_LIBUNWIND=${withval} ;;
-      *) AC_MSG_ERROR([--with-libunwind requires absolute path as argument; given '${withval}']) ;;
-   esac
-   OPT_HAVE_LIBUNWIND=yes
-   UNWINDER=libunw],
+  [AS_HELP_STRING([--with-libunwind=PATH],
+      [path to libunwind install directory])],
+  [LIBUNWIND="$withval"],
   [])
 
+AC_ARG_ENABLE([libunwind-primary],
+  [AS_HELP_STRING([--enable-libunwind-primary],
+      [use libunwind as primary unwinder for hpcrun (default no)])],
+  [],
+  [enable_libunwind_primary=no])
+
+# If libunwind is available, require dynamic (.so) version, and make
+# static (.a) optional.  Note: may need to expand to multilib dir at
+# some point.
+
+AC_MSG_CHECKING([for libunwind])
+
+case "$LIBUNWIND" in
+  /* )
+    if test -f "${LIBUNWIND}/include/libunwind.h" \
+       && test -f "${LIBUNWIND}/lib/libunwind.so"
+    then : ; else
+      AC_MSG_ERROR([invalid libunwind directory: $LIBUNWIND])
+    fi
+    LIBUNWIND_IFLAGS="-I${LIBUNWIND}/include"
+    LIBUNWIND_LDFLAGS_DYN="-L${LIBUNWIND}/lib -lunwind"
+    LIBUNWIND_COPY=yes
+    LIBUNWIND_LIB="${LIBUNWIND}/lib"
+    if test -f "${LIBUNWIND}/lib/libunwind.a" ; then
+      LIBUNWIND_STAT=yes
+      LIBUNWIND_LDFLAGS_STAT="${LIBUNWIND}/lib/libunwind.a"
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([libunwind directory must be absolute path: $LIBUNWIND])
+    ;;
+esac
+
+AC_MSG_RESULT([$LIBUNWIND])
+AC_MSG_NOTICE([libunwind static: $LIBUNWIND_STAT])
+
+case "$enable_libunwind_primary" in
+  yes | Yes | YES )
+    if test "$LIBUNWIND" = no ; then
+      AC_MSG_ERROR([enable libunwind primary requires libunwind])
+    fi
+    UNWINDER=libunw
+    ;;
+esac
+
+no_unwind_for_hpcrun=no
+no_unwind_for_hpclink=no
+unwinder_mesg="$UNWINDER"
+
+if test "$UNWINDER" = libunw ; then
+  #
+  # libunwind is the primary unwinder.  must have libunwind or else
+  # can't build hpcrun or hpclink.  don't need CPPFLAGS in this case.
+  #
+  if test "$LIBUNWIND" = no ; then
+    no_unwind_for_hpcrun=yes
+  fi
+  if test "$LIBUNWIND_STAT" = no ; then
+    no_unwind_for_hpclink=yes
+  fi
+else
+  #
+  # libunwind is the secondary unwinder or not available.  can build
+  # hpcrun without libunwind, but set CPPFLAGS when available.
+  #
+  if test "$LIBUNWIND" != no ; then
+    LIBUNWIND_CPPFLAGS_DYN='-DUSE_LIBUNWIND'
+    unwinder_mesg="$UNWINDER + libunw"
+  fi
+  if test "$LIBUNWIND_STAT" = yes ; then
+    LIBUNWIND_CPPFLAGS_STAT='-DUSE_LIBUNWIND'
+  fi
+fi
+
+AC_MSG_NOTICE([hpcrun unwinder: $unwinder_mesg])
+
+# fixme: only used in hpcrun/main.c because we don't have a libunwind
+# version of hpcrun_dump_intervals().
 if test "$UNWINDER" = "libunw"; then
    AC_DEFINE([USE_LIBUNW], [1], [libunwind is the specified unwinder])
 fi
 
-# Check for LIBUNWIND > .9xxx [skip for now]
+AC_SUBST(LIBUNWIND_IFLAGS)
+AC_SUBST(LIBUNWIND_CPPFLAGS_DYN)
+AC_SUBST(LIBUNWIND_CPPFLAGS_STAT)
+AC_SUBST(LIBUNWIND_LDFLAGS_DYN)
+AC_SUBST(LIBUNWIND_LDFLAGS_STAT)
 
-# Check for libunwind sanity
-if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then
-  if ! test -f "$OPT_LIBUNWIND/include/libunwind.h"; then
-     AC_MSG_ERROR([libunwind required, but specified library path is invalid (no libunwind.h)])
-  fi
-  if test ! \( -f "$OPT_LIBUNWIND/lib/libunwind.so" -o -f "$OPT_LIBUNWIND/lib/libunwind.a" \) ; then
-     AC_MSG_ERROR([libunwind required, but specified library path is invalid (no libunwind.a or libunwind.so)])
-  fi
-fi
-
-if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then 
-  AC_MSG_RESULT([yes (${OPT_LIBUNWIND_LIBSO})])
-
-  LIBUNWIND_COPY=yes
-  LIBUNWIND_LIB="$OPT_LIBUNWIND/lib"
-  LIBUNWIND_RUN_DIR="$hpc_ext_libs_dir"
-  OPT_LIBUNWIND_IFLAGS="-I$OPT_LIBUNWIND/include"
-  OPT_LIBUNWIND_LIBPATH="$OPT_LIBUNWIND"
-
-  LIBUNWIND_HPCLINK_LIBS=" -lunwind -lunwind-generic"
-
-  OPT_LIBUNWIND_LDFLAGS="-L$LIBUNWIND_LIB $LIBUNWIND_HPCLINK_LIBS"
-
-else
-  AC_MSG_RESULT([no])
-fi
-
-if test -z "$HPCLINK_LD_FLAGS"; then
-   HPCLINK_LD_FLAGS="$OPT_LIBUNWIND_LDFLAGS"
-else
-   HPCLINK_LD_FLAGS="$HPCLINK_LD_FLAGS $OPT_LIBUNWIND_LDFLAGS"
-fi
-
-AM_CONDITIONAL(OPT_HAVE_LIBUNWIND, test "${OPT_HAVE_LIBUNWIND}" = "yes")
-AC_SUBST(OPT_LIBUNWIND_IFLAGS)
-AC_SUBST(OPT_LIBUNWIND_LIBPATH)
-AC_SUBST(OPT_LIBUNWIND_LDFLAGS)
-AC_SUBST(OPT_LIBUNWIND_LIBSO)
-AC_SUBST(OPT_LIBUNWIND_LIBA)
 AC_SUBST(LIBUNWIND_COPY)
 AC_SUBST(LIBUNWIND_LIB)
-AC_SUBST(LIBUNWIND_RUN_DIR)
-AC_SUBST(LIBUNWIND_HPCLINK_LIBS)
 
 #
 # set up automake choice of unwinder
-#
-# -- NOTE: ia64 ALWAYS uses libunw
 #
 AM_CONDITIONAL([UNW_X86], [test "$UNWINDER" = x86-family])
 AM_CONDITIONAL([UNW_PPC64], [test "$UNWINDER" = ppc64])
 AM_CONDITIONAL([UNW_MIPS], [test "$UNWINDER" = mips])
 AM_CONDITIONAL([UNW_LIBUNW], [test "$UNWINDER" = libunw])
+
 
 #-------------------------------------------------
 # with-monitor
@@ -1570,6 +1775,17 @@ OA_AVAIL=no
 if test "$use_externals" = yes ; then
   OA="$ext_open_analysis_prefix"
 fi
+
+# The open-analysis CFG support in lib/isa is broken on power8/le and
+# doesn't exist on ARM.  So, disable OA on those platforms.
+
+case "$host" in
+  *powerpc64le* | *aarch* )
+    myhosttype=`echo $host | awk -F- '{ print $1 }'`
+    AC_MSG_NOTICE([disable open-analysis cfg support on $myhosttype])
+    OA=no
+    ;;
+esac
 
 AC_ARG_WITH([open-analysis],
   [AS_HELP_STRING([--with-open-analysis=PATH],
@@ -1743,12 +1959,13 @@ if test "$use_papi_c" = check ; then
   AC_LANG_PUSH([C])
 
   AC_LINK_IFELSE([
+  AC_LANG_SOURCE([[
 #include "papi.h"
 int main()
 {
   return PAPI_get_eventset_component(0);
 }
-], [use_papi_c=yes], [use_papi_c=no])
+]])], [use_papi_c=yes], [use_papi_c=no])
 
   AC_LANG_POP
   CFLAGS="$ORIG_CFLAGS"
@@ -1784,13 +2001,14 @@ if test "$use_papi_c_component" = yes ; then
   AC_LANG_PUSH([C])
 
   AC_LINK_IFELSE([
+  AC_LANG_SOURCE([[
 #include "papi.h"
 extern void CUDA_init_component(void);
 int main()
 {
   CUDA_init_component();
 }
-], [use_papi_c_cupti=yes], [use_papi_c_cupti=no])
+]])], [use_papi_c_cupti=yes], [use_papi_c_cupti=no])
 
   AC_LANG_POP
   CFLAGS="$ORIG_CFLAGS"
@@ -1950,6 +2168,7 @@ if test "$xed2_avail" = yes ; then
     AC_LANG_PUSH([C])
     AC_MSG_CHECKING([if libxed.a was compiled with -fPIC])
     AC_LINK_IFELSE([
+    AC_LANG_SOURCE([[
 #include <stdio.h>
 #include <xed-interface.h>
 int my_xed_init(void)
@@ -1957,7 +2176,7 @@ int my_xed_init(void)
   xed_tables_init();
   return 0;
 }
-], [xed2_static_fpic=yes], [xed2_static_fpic=no])
+]])], [xed2_static_fpic=yes], [xed2_static_fpic=no])
     AC_MSG_RESULT([$xed2_static_fpic])
     AC_LANG_POP
     CFLAGS="$ORIG_CFLAGS"
@@ -2171,7 +2390,7 @@ if test "$enable_hpcrun" = no ; then
   enable_hpcrun_mesg='no (disabled)'
 elif test "$LIBDWARF" = no   || test "$LIBELF" = no ||  \
      test "$LIBMONITOR" = no || test "$SYMTABAPI" = no || \
-     test "$no_xed_for_hpcrun" = yes
+     test "$no_xed_for_hpcrun" = yes || test "$no_unwind_for_hpcrun" = yes
 then
   OPT_ENABLE_HPCRUN=no
   enable_hpcrun_mesg='no (missing prerequisites)'
@@ -2268,7 +2487,9 @@ AC_ARG_ENABLE([hpcrun-static],
    esac],
   [OPT_ENABLE_HPCRUN_STATIC=yes])
 
-if test "$OPT_LIBMONITOR_STATIC" = no || test "$no_xed_for_hpclink" = yes ; then
+if test "$OPT_LIBMONITOR_STATIC" = no || test "$no_xed_for_hpclink" = yes \
+   || test "$no_unwind_for_hpclink" = yes
+then
   OPT_ENABLE_HPCRUN_STATIC=no
 fi
 
@@ -2332,6 +2553,7 @@ AC_MSG_CHECKING([symtabAPI for inline function support])
 if test "$SYMTABAPI" != no
 then
   AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
 #include <iostream>
 #include <Symtab.h>
 #include <Function.h>
@@ -2343,7 +2565,7 @@ void get_parent(FunctionBase * func)
   FunctionBase *parent = func->getInlinedParent();
   cout << parent;
 }
-], [inline_avail=yes], [inline_avail=no])
+]])], [inline_avail=yes], [inline_avail=no])
 fi
 
 AC_MSG_RESULT([$inline_avail])
@@ -2360,6 +2582,7 @@ AC_MSG_CHECKING([symtabAPI for new function name iterator])
 if test "$inline_avail" = yes
 then
   AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
 #include <iostream>
 #include <Symtab.h>
 #include <Function.h>
@@ -2369,7 +2592,7 @@ void get_name(FunctionBase * func)
 {
   std::cout << func->getName();
 }
-], [new_symtab_getname=yes], [new_symtab_getname=no])
+]])], [new_symtab_getname=yes], [new_symtab_getname=no])
 fi
 
 AC_MSG_RESULT([$new_symtab_getname])
@@ -2384,6 +2607,7 @@ AC_MSG_CHECKING([parseAPI for CFG loop support])
 if test "$inline_avail" = yes && test "$PARSEAPI_AVAIL" = yes
 then
   AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
 #include <iostream>
 #include <vector>
 #include <Symtab.h>
@@ -2400,7 +2624,7 @@ void get_blocks(LoopTreeNode * node)
   loop->getLoopBasicBlocks(bvec);
   std::cout << bvec.size();
 }
-], [parseapi_avail=yes], [parseapi_avail=no])
+]])], [parseapi_avail=yes], [parseapi_avail=no])
 fi
 
 AC_MSG_RESULT([$parseapi_avail])
@@ -2496,50 +2720,103 @@ AM_CONDITIONAL(OPT_ENABLE_MPI, test "${OPT_ENABLE_MPI}" = "yes")
 # enable-mpi-wrapper: check MPI compiler
 #-------------------------------------------------
 
-AC_MSG_CHECKING([whether to build MPI monitoring support])
-
-OPT_REQ_ENABLE_MPI_WRAP="no" # yes, no, auto
+AC_MSG_CHECKING([whether to build MPI wrapper support])
 
 AC_ARG_ENABLE([mpi-wrapper],
-  AS_HELP_STRING([--enable-mpi-wrapper],
-                 [Enable MPI wrapper support (uses MPIF77 and CFLAGS)]),
-  [case "${enableval}" in
-     yes) OPT_REQ_ENABLE_MPI_WRAP="yes" ;;
-     no)  OPT_REQ_ENABLE_MPI_WRAP="no" ;;
-     *)   AC_MSG_ERROR([bad value ${enableval} for --enable-mpi-wrapper]) ;;
-   esac])
+  [AS_HELP_STRING([--enable-mpi-wrapper],
+      [enable MPI wrapper support, requires MPICC, MPIF77 and MPI_INC
+       (default no)])],
+  [],
+  [enable_mpi_wrapper=no])
 
-OPT_ENABLE_MPI_WRAP=no
-if test "${OPT_REQ_ENABLE_MPI_WRAP}" != "no" ; then
-  AC_MSG_CHECKING([whether can compile MPI code with CFLAGS='$CFLAGS'])
+case "$enable_mpi_wrapper" in
+  yes | Yes | YES ) enable_mpi_wrapper=yes ;;
+  * ) enable_mpi_wrapper=no ;;
+esac
+
+AC_MSG_RESULT([$enable_mpi_wrapper])
+
+AC_ARG_VAR([MPICC], [MPI C compiler for MPI wrapper support])
+AC_ARG_VAR([MPIF77], [MPI Fortran compiler for MPI wrapper support])
+AC_ARG_VAR([MPI_INC], [MPI include directory for MPI wrapper support])
+
+mpi_const_type=no
+
+if test "$enable_mpi_wrapper" = yes ; then
+  #
+  # check that MPICC works
+  #
+  if test "x$MPICC" = x ; then
+    MPICC=mpicc
+  fi
 
   AC_LANG_PUSH([C])
-  OLD_CC="$CC"
+  ORIG_CC="$CC"
   CC="$MPICC"
-  CFLAGS="$CFLAGS"
-  AC_COMPILE_IFELSE([#include <mpi.h>],
-        [ans=yes],
-        [ans=no])
 
-  CC="$OLD_CC"
-  OPT_ENABLE_MPI_WRAP=$ans
+  AC_MSG_CHECKING([MPI wrapper C compiler: $MPICC ])
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <mpi.h>
+int my_size(void)
+{
+  int size;
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  return size;
+}
+]])], [ans=yes], [ans=no])
+  AC_MSG_RESULT([$ans])
+
+  if test "$ans" = no ; then
+    AC_MSG_WARN([invalid MPICC compiler for MPI wrappers: $MPICC ])
+    AC_MSG_ERROR([reconfigure with MPICC set to valid MPI compiler])
+  fi
+  #
+  # check MPI_INC include path
+  #
+  AC_MSG_CHECKING([MPI wrapper include path: $MPI_INC ])
+  ans=no
+  if test -f "${MPI_INC}/mpi.h" ; then
+    ans=yes
+  fi
+  AC_MSG_RESULT([$ans])
+
+  if test "$ans" = no ; then
+    AC_MSG_WARN([no mpi.h in MPI_INC include path: $MPI_INC])
+    AC_MSG_ERROR([reconfigure with MPI_INC set to MPI include directory])
+  fi
+  #
+  # check if MPI uses 'void *buf' or 'const void *buf'
+  #
+  AC_MSG_CHECKING([if MPI types use 'const void *buf'])
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <mpi.h>
+int MPI_Send(void *buf, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm)
+{
+  return 0;
+}
+]])], [mpi_const_type=no], [mpi_const_type=yes])
+  AC_MSG_RESULT([$mpi_const_type])
+
+  CC="$ORIG_CC"
   AC_LANG_POP
 fi
 
-AC_MSG_RESULT([${OPT_ENABLE_MPI_WRAP} (request: ${OPT_REQ_ENABLE_MPI_WRAP})])
-
-
-if test "${OPT_REQ_ENABLE_MPI_WRAP}" = "yes" -a "${OPT_ENABLE_MPI_WRAP}" = no ; then
-  AC_MSG_ERROR([MPI wrapper support requested but MPI compiler is invalid!])
+MPI_PROTO_FILE=mpi.protos
+if test "$mpi_const_type" = yes ; then
+  MPI_PROTO_FILE=mpi.protos.const
 fi
 
-AM_CONDITIONAL(OPT_ENABLE_MPI_WRAP, test "${OPT_ENABLE_MPI_WRAP}" = "yes")
+AC_SUBST([MPI_PROTO_FILE])
+AM_CONDITIONAL(OPT_ENABLE_MPI_WRAP, [test "$enable_mpi_wrapper" = yes])
+
 
 #-------------------------------------------------
 # enable-mpi-wrapper: check F77 symbols
 #-------------------------------------------------
 
-if test "${OPT_ENABLE_MPI_WRAP}" = "yes" ; then
+if test "$enable_mpi_wrapper" = yes ; then
 
   if test -z "${MPIF77}" ; then
     AC_CHECK_PROGS(MPIF77, mpif77 mpxlf_r mpixlf77 mpxlf cmpifc xlf f77 g77 pgf77 fort ifc, mpif77)
@@ -2701,6 +2978,7 @@ LIBS="-lrt"
 AC_MSG_CHECKING([for CLOCK_REALTIME and SIGEV_THREAD_ID])
 
 AC_LINK_IFELSE([
+AC_LANG_SOURCE([[
 #include <sys/syscall.h>
 #include <signal.h>
 #include <time.h>
@@ -2718,7 +2996,7 @@ int main()
   sigev.sigev_notify_thread_id = syscall(SYS_gettid);
   return timer_create(CLOCK_REALTIME, &sigev, &timerid);
 }
-], [ans=yes], [ans=no])
+]])], [ans=yes], [ans=no])
 
 AC_MSG_RESULT([$ans])
 
@@ -2730,6 +3008,7 @@ if test "$ans" = yes ; then
 
   AC_MSG_CHECKING([for CLOCK_THREAD_CPUTIME_ID])
   AC_LINK_IFELSE([
+  AC_LANG_SOURCE([[
 #include <sys/time.h>
 #include <time.h>
 int main()
@@ -2737,7 +3016,7 @@ int main()
   clockid_t clock = CLOCK_THREAD_CPUTIME_ID;
   return 0;
 }
-], [ans=yes], [ans=no])
+]])], [ans=yes], [ans=no])
   AC_MSG_RESULT([$ans])
 
   if test "$ans" = yes ; then
@@ -3081,31 +3360,6 @@ AC_SUBST(OPT_OBJCOPY)
 
 
 #-------------------------------------------------
-# enable-hpc-binutils: Enable use of HPCToolkit's binutils 
-#-------------------------------------------------
-
-AC_MSG_CHECKING([whether to enable HPCToolkit GNU binutils functionality])
-
-OPT_ENABLE_HPC_GNUBINUTILS="yes"
-
-AC_ARG_ENABLE([hpc-binutils],
-  AS_HELP_STRING([--enable-hpc-binutils],
-                 [Enable extra HPCToolkit GNU binutils functionality]),
-  [case "${enableval}" in
-     yes) OPT_ENABLE_HPC_GNUBINUTILS="yes" ;;
-     no)  OPT_ENABLE_HPC_GNUBINUTILS="no" ;;
-     *) AC_MSG_ERROR([bad value ${enableval} for --enable-hpc-binutils]) ;;
-   esac],
-  [OPT_ENABLE_HPC_GNUBINUTILS=yes])
-
-AC_MSG_RESULT([${OPT_ENABLE_HPC_GNUBINUTILS}])
-
-if test "${OPT_ENABLE_HPC_GNUBINUTILS}" = "yes" ; then
-  AC_DEFINE([HAVE_HPC_GNUBINUTILS], [1], [HPCToolkit binutils])
-fi
-
-
-#-------------------------------------------------
 # enable-devtools: Tools of interest to developers
 #-------------------------------------------------
 
@@ -3269,8 +3523,9 @@ AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
 AC_MSG_NOTICE([  hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}])
 AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])
+AC_MSG_NOTICE([  unwinder:     ${unwinder_mesg}])
 AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
-AC_MSG_NOTICE([  mpi wrapper support?: ${OPT_ENABLE_MPI_WRAP}])
+AC_MSG_NOTICE([  mpi wrapper?: ${enable_mpi_wrapper}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
@@ -3300,7 +3555,7 @@ AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
 AC_MSG_NOTICE([  libelf:       ${LIBELF}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
 AC_MSG_NOTICE([  monitor/old:  ${MONITOR}])
-AC_MSG_NOTICE([  libunwind:    ${OPT_LIBUNWIND}])
+AC_MSG_NOTICE([  libunwind:    ${LIBUNWIND}])
 AC_MSG_NOTICE([  OpenAnalysis: ${OA}])
 AC_MSG_NOTICE([  symtabAPI:    ${SYMTABAPI}])
 AC_MSG_NOTICE([  xed2:         ${XED2}])

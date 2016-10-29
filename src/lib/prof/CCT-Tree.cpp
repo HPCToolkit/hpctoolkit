@@ -800,12 +800,20 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, MergeContext& mrgCtxt,
 
     ADynNode* x_child_dyn = x->findDynChild(*y_child_dyn);
 
+#define MERGE_ACTION 0
+#define MERGE_ERROR 0
+
     if (!x_child_dyn) {
       // case 1: insert nodes
-      DIAG_Assert( !(mrgCtxt.flags() & MrgFlg_AssertCCTMergeOnly),
-		   "CCT::ANode::mergeDeep: adding not permitted");
+      if (mrgCtxt.flags() & MrgFlg_AssertCCTMergeOnly) {
+	DIAG_MsgIf(MERGE_ERROR /*(oFlag & Tree::OFlg_Debug)*/,
+		   "CCT::ANode::mergeDeep: Adding not permitted:\n     "
+		   << y_child->toStringMe(Tree::OFlg_Debug));
+        DIAG_Assert( !(mrgCtxt.flags() & MrgFlg_AssertCCTMergeOnly),
+		     "CCT::ANode::mergeDeep: adding not permitted");
+      }
       if ( !(mrgCtxt.flags() & MrgFlg_CCTMergeOnly) ) {
-	DIAG_MsgIf(0 /*(oFlag & Tree::OFlg_Debug)*/,
+	DIAG_MsgIf(MERGE_ACTION /*(oFlag & Tree::OFlg_Debug)*/,
 		   "CCT::ANode::mergeDeep: Adding:\n     "
 		   << y_child->toStringMe(Tree::OFlg_Debug));
 	y_child->unlink();
@@ -817,7 +825,7 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, MergeContext& mrgCtxt,
     }
     else {
       // case 2: merge nodes
-      DIAG_MsgIf(0 /*(oFlag & Tree::OFlg_Debug)*/,
+      DIAG_MsgIf(MERGE_ACTION /*(oFlag & Tree::OFlg_Debug)*/,
 		 "CCT::ANode::mergeDeep: Merging x <= y:\n"
 		 << "  x: " << x_child_dyn->toStringMe(Tree::OFlg_Debug)
 		 << "\n  y: " << y_child_dyn->toStringMe(Tree::OFlg_Debug));
@@ -967,6 +975,9 @@ ANode::mergeDeep_fixInsert(int newMetrics, MergeContext& mrgCtxt)
 
   for (ANodeIterator it(this); it.Current(); ++it) {
     ANode* n = it.current();
+    DIAG_MsgIf(MERGE_ACTION /*(oFlag & Tree::OFlg_Debug)*/,
+	   "CCT:ANode::mergeDeep_fixInsert: Adding:\n     "
+	   << n->toStringMe(Tree::OFlg_Debug));
 
     // -----------------------------------------------------
     // 1. Ensure no cpId in subtree 'this' conflicts with an existing

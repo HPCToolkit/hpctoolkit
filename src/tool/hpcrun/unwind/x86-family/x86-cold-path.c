@@ -121,32 +121,37 @@ hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
   void *ins     = iarg->ins;
   char *ins_end = ins + xed_decoded_inst_get_length(xptr);
   if (ins_end == iarg->end) {
-	void *branch_target = x86_get_branch_target(ins,xptr);
-	// branch target is outside bounds of current routine
-	if (branch_target < iarg->beg || iarg->end <= branch_target) {
-	  // this is a possible cold code routine
-	  TMSG(COLD_CODE,"potential cold code jmp detected in routine starting @"
-		  " %p (location in routine = %p)",iarg->beg,ins);
+    void *branch_target = x86_get_branch_target(ins,xptr);
 
-	  ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(branch_target);
-	  if (!ilmstat) {
-		EMSG("Weird result! jmp @ %p branch_target %p has no function bounds",
-			ins, branch_target);
-		return false;
-	  }
+    // branch is indirect. this is not cold path code
+    if (branch_target == NULL) return false;
 
-	  void* beg = (void*)ildmod_stat_interval(ilmstat)->start;
-	  if (branch_target == beg) {
-		TMSG(COLD_CODE,"  --jump is a regular tail call,"
-			" NOT a cold code return");
-		return false;
-	  }
-	  // store the address of the branch, in case this turns out to be a
-	  // cold path routine.
-	  iarg->return_addr = branch_target;
+    // branch target is outside bounds of current routine
+    if (branch_target < iarg->beg || iarg->end <= branch_target) {
+      // this is a possible cold code routine
+      TMSG(COLD_CODE,"potential cold code jmp detected in routine starting @"
+	   " %p (location in routine = %p)",iarg->beg,ins);
 
-	  return confirm_cold_path_call(branch_target,iarg);
-	}
+      ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(branch_target);
+      if (!ilmstat) {
+        EMSG("Weird result! jmp @ %p branch_target %p has no function bounds",
+              ins, branch_target);
+        return false;
+      }
+
+      beg = (void*)ildmod_stat_interval(ilmstat)->start;
+      if (branch_target == beg) {
+	TMSG(COLD_CODE,"  --jump is a regular tail call,"
+	     " NOT a cold code return");
+	return false;
+      }
+
+      // store the address of the branch, in case this turns out to be a
+      // cold path routine.
+      iarg->return_addr = branch_target; 
+
+      return confirm_cold_path_call(branch_target,iarg);
+    }
   }
   return false;
 }

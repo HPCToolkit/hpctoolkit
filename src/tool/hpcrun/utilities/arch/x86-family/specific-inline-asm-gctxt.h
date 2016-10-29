@@ -1,21 +1,84 @@
+// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2016, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
 #ifndef SPECIFIC_INLINE_ASM_GCTXT
 #define SPECIFIC_INLINE_ASM_GCTXT
 
+//***************************************************************************
+// local include files 
+//***************************************************************************
+
 #include <utilities/arch/ucontext-manip.h>
 
-#define icat(pre, base) pre ## base
-#define lcl_label(txt) icat(local_, txt)
-#define INLINE_ASM_GCTXT_IP(LABEL, uc)       \
-  extern void lcl_label(LABEL);              \
-  asm volatile (".globl " "local_" #LABEL);  \
-  asm volatile ("local_" #LABEL ":");        \
-  UC_REG_IP(uc) = (greg_t) &lcl_label(LABEL)
 
-#define INLINE_ASM_GCTXT(LABEL, uc)          \
-  INLINE_ASM_GCTXT_IP(LABEL, uc);            \
-  asm volatile ("movq %%rbp, %0"             \
-                : "=m" (UC_REG_BP(uc)));     \
-  asm volatile ("movq %%rsp, %0"             \
-                : "=m" (UC_REG_SP(uc)))
+
+//***************************************************************************
+// macros 
+//***************************************************************************
+
+// macro: INLINE_ASM_GCTXT 
+// purpose:
+//   lightweight version of getcontext, which saves 
+//   PC, BP, SP into a ucontext structure in their
+//   normal positions 
+
+#define INLINE_ASM_GCTXT(uc)                               \
+  /* load PC into RAX; save RAX into uc structure   */     \
+  asm volatile ("leaq 0(%%rip), %%rax\n\t"                 \
+                "movq %%rax, %0"                           \
+                : "=m" (UC_REG_IP(uc)) /* output    */     \
+                :                      /* no inputs */     \
+                : "%rax"               /* clobbered */ );  \
+  /* save BP into uc structure                      */     \
+  asm volatile ("movq %%rbp, %0"                           \
+                : "=m" (UC_REG_BP(uc)) /* output    */ );  \
+  /* save SP into uc structure                      */     \
+  asm volatile ("movq %%rsp, %0"                           \
+                : "=m" (UC_REG_SP(uc)) /* output    */ )
+
+
 
 #endif // SPECIFIC_INLINE_ASM_GCTXT

@@ -118,7 +118,7 @@ hpctoolkit_demangler_error(char *error_string, const char *demangler_library_fil
 
 
 static void
-hpctoolkit_demangler_init(const char *demangler_library_filename)
+hpctoolkit_demangler_init(const char *demangler_library_filename, const char *demangler_function)
 {
   if (demangler_library_filename) {
     static void *demangler_library_handle =
@@ -128,8 +128,7 @@ hpctoolkit_demangler_init(const char *demangler_library_filename)
       dlerror(); // clear error condition before calling dlsym
 
       demangler_t demangle_fn = (demangler_t) 
-        dlsym(demangler_library_handle, CXX_DEMANGLER_FN_NAME);
-
+        dlsym(demangler_library_handle, demangler_function);
       if (demangle_fn) {
         hpctoolkit_demangler_set(demangle_fn);
         return; 
@@ -175,8 +174,14 @@ realmain(int argc, char* argv[])
   // ------------------------------------------------------------
   // Set the demangler before reading the executable 
   // ------------------------------------------------------------
-  const char* demangle_library = args.demangle_library.c_str();
-  if (demangle_library) hpctoolkit_demangler_init(demangle_library);
+  if (!args.demangle_library.empty()) {
+    const char* demangle_library = args.demangle_library.c_str();
+    const char* demangle_function = CXX_DEMANGLER_FN_NAME;
+    if (!args.demangle_function.empty()) {
+      demangle_function = args.demangle_function.c_str();
+    }
+    hpctoolkit_demangler_init(demangle_library, demangle_function);
+  }
 
   
   // ------------------------------------------------------------
@@ -184,9 +189,12 @@ realmain(int argc, char* argv[])
   // ------------------------------------------------------------
   BinUtil::LM* lm = NULL;
   try {
+    BinUtil::LM::ReadFlg read_flag = (args.cfgRequest == BAnal::Struct::CFG_OA) ?
+      BinUtil::LM::ReadFlg_ALL : BinUtil::LM::ReadFlg_Proc;
+
     lm = new BinUtil::LM(args.useBinutils);
     lm->open(args.in_filenm.c_str());
-    lm->read(BinUtil::LM::ReadFlg_ALL);
+    lm->read(read_flag);
   }
   catch (...) {
     DIAG_EMsg("Exception encountered while reading '" << args.in_filenm << "'");

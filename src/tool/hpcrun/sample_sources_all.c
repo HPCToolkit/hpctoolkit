@@ -60,6 +60,8 @@
 // Local Includes
 //*******************************************************************
 
+#include <monitor.h>
+
 #include "sample_sources_all.h"
 #include "sample_sources_registered.h"
 

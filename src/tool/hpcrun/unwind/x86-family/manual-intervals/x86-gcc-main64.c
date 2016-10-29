@@ -48,25 +48,22 @@
 #include "x86-unwind-interval-fixup.h"
 #include "x86-unwind-interval.h"
 
-static char intel14_fork_call_signature[] = { 
- 0x53,                      	// push   %rbx
- 0x48, 0x89, 0xe3,              // mov    %rsp,%rbx
- 0x48, 0x83, 0xe4, 0xc0,        // and    $0xffffffffffffffc0,%rsp
- 0x55,                      	// push   %rbp
- 0x55,                      	// push   %rbp
- 0x48, 0x8b, 0x6b, 0x08,        // mov    0x8(%rbx),%rbp
- 0x48, 0x89, 0x6c, 0x24, 0x08,  // mov    %rbp,0x8(%rsp)
+static char gcc_main64_signature[] = { 
+ 0x4c, 0x8d, 0x54, 0x24, 0x08,  // lea    0x8(%rsp),%r10
+ 0x48, 0x83, 0xe4, 0xe0,        // and    $0xffffffffffffffe0,%rsp
+ 0x41, 0xff, 0x72, 0xf8,        // pushq  -0x8(%r10)
+ 0x55,                          // push   %rbp
  0x48, 0x89, 0xe5,              // mov    %rsp,%rbp
 };
 
 static int 
-adjust_intel14_fork_call_intervals(char *ins, int len, btuwi_status_t *stat)
+adjust_gcc_main64_intervals(char *ins, int len, interval_status *stat)
 {
-  int siglen = sizeof(intel14_fork_call_signature);
+  int siglen = sizeof(gcc_main64_signature);
 
-  if (len > siglen && strncmp((char *)intel14_fork_call_signature, ins, siglen) == 0) {
+  if (len > siglen && strncmp((char *)gcc_main64_signature, ins, siglen) == 0) {
     // signature matched 
-    unwind_interval *ui = stat->first;
+    unwind_interval *ui = (unwind_interval *) stat->first;
 
     // this won't fix all of the intervals, but it will fix the ones 
     // that we care about.
@@ -77,15 +74,15 @@ adjust_intel14_fork_call_intervals(char *ins, int len, btuwi_status_t *stat)
     // For this interval and subsequent interval, apply the corrected offsets
     //
 
-    for(; UWI_RECIPE(ui)->ra_status != RA_STD_FRAME; ui = UWI_NEXT(ui));
+    for(; ui->ra_status != RA_STD_FRAME; ui = (unwind_interval *)(ui->common).next);
 
     // this is only correct for 64-bit code
-    for(; ui; ui = UWI_NEXT(ui)) {
-      if (UWI_RECIPE(ui)->ra_status == RA_SP_RELATIVE) continue;
-      if ((UWI_RECIPE(ui)->ra_status == RA_STD_FRAME) || (UWI_RECIPE(ui)->ra_status == RA_BP_FRAME)) {
-    	UWI_RECIPE(ui)->ra_status = RA_BP_FRAME;
-    	UWI_RECIPE(ui)->bp_ra_pos = 8;
-    	UWI_RECIPE(ui)->bp_bp_pos = 0;
+    for(; ui; ui = (unwind_interval *)(ui->common).next) {
+      if (ui->ra_status == RA_SP_RELATIVE) continue;
+      if ((ui->ra_status == RA_STD_FRAME) || (ui->ra_status == RA_BP_FRAME)) {  
+         ui->ra_status = RA_BP_FRAME;
+         ui->bp_ra_pos = 8;
+         ui->bp_bp_pos = 0;
       }
     }
 
@@ -99,7 +96,7 @@ static void
 __attribute__ ((constructor))
 register_unwind_interval_fixup_function(void)
 {
-  add_x86_unwind_interval_fixup_function(adjust_intel14_fork_call_intervals);
+  add_x86_unwind_interval_fixup_function(adjust_gcc_main64_intervals);
 }
 
 

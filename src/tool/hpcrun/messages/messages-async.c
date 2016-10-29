@@ -254,8 +254,8 @@ static char*
 safely_get_tid_str(char* buf, size_t len)
 {
 #ifndef USE_GCC_THREAD
-  thread_data_t* td;
-  if ( td = hpcrun_safe_get_td()) {
+  thread_data_t* td = hpcrun_safe_get_td();
+  if (td) {
     hpcrun_msg_ns(buf, len, "%d", (td->core_profile_trace_data).id);
   }
   else {

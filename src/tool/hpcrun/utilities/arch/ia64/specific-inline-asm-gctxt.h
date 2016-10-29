@@ -3,6 +3,6 @@
 
 // inline getcontext unknown for ia64 platform
 
-#define INLINE_ASM_GCTXT(LABEL, uc)  getcontext(&uc)
+#define INLINE_ASM_GCTXT(uc)  getcontext(&uc)
 
 #endif // SPECIFIC_INLINE_ASM_GCTXT

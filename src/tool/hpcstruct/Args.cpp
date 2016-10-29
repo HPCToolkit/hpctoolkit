@@ -147,12 +147,18 @@ Options: Structure recovery\n\
                        for building Control Flow Graphs (default new).\n\
 \n\
 Options: Demangling\n\
-  --demangle-library <C++ Standard Library path>\n\
-                       Specify the pathname for the dynamically-linked C++\n\
-                       Standard library whose __cxa_demangle function should \n\
-                       be used for demangling.  By default, the demangler used\n\
-                       is the one in the C++ Standard Library linked into\n\
+  --demangle-library <path to demangling library>\n\
+                       Specify the pathname for a dynamically-linked\n\
+                       library whose demangler function should \n\
+                       be used for demangling. By default, the demangler used\n\
+                       is __cxa_demangle in the C++ Standard Library linked into\n\
                        hpcstruct.\n\
+\n\
+  --demangle-function <name of the demangler>\n\
+                       By default, the demangler used is __cxa_demangle, a function\n\
+                       provided by the C++ Standard Library. This option enables\n\
+                       one to specify an alternate demangler, e.g., cplus_demangle\n\
+                       provided by the BFD library.\n\
 \n\
 Options: Output:\n\
   -o <file>, --output <file>\n\
@@ -181,6 +187,10 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
 
   // Demangler library
   {  0 , "demangle-library",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
+
+  // Demangler function
+  {  0 , "demangle-function",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // Structure recovery options
@@ -259,7 +269,11 @@ Args::Ctor()
   doDot = false;
   prettyPrintOutput = true;
   useBinutils = false;
-  cfgRequest = BAnal::Struct::CFG_DEFAULT;
+#ifdef BANAL_USE_PARSEAPI
+  cfgRequest = BAnal::Struct::CFG_PARSEAPI;
+#else
+  cfgRequest = BAnal::Struct::CFG_OA;
+#endif
 }
 
 
@@ -408,6 +422,12 @@ Args::parse(int argc, const char* const argv[])
     // Check for other options: Demangling
     if (parser.isOpt("demangle-library")) {
       demangle_library = parser.getOptArg("demangle-library");
+    }
+
+
+    // Check for other options: Demangling
+    if (parser.isOpt("demangle-function")) {
+      demangle_function = parser.getOptArg("demangle-function");
     }
 
     // Check for other options: Output options

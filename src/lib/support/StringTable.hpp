@@ -70,6 +70,8 @@
 #include <string>
 #include <vector>
 
+namespace HPC {
+
 // compare the strings, not the pointers
 class StringCompare {
 public:
@@ -136,5 +138,7 @@ public:
   }
 
 };  // class StringTable
+
+}  // namespace HPC
 
 #endif

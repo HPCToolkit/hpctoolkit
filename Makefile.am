@@ -126,15 +126,20 @@ endef
 install-exec-local: myinstall-monitor
 	@echo "Copying external package libraries ..."
 	$(mkinstalldirs) "$(EXT_LIBS_DIR)"
+	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost_atomic*)
+	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost_chrono*)
+	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost_date_time*)
+	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost_system*)
+	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost_thread*)
 	$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*)
 	$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*)
 	$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
-	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind*)
-	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libsymtabAPI*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libcommon*)
+	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libsymtabAPI*)
 	$(call copy-libs,$(SYMTABAPI_COPY_DYN),$(SYMTABAPI_LIB),libdyn*)
 	$(call copy-libs,$(SYMTABAPI_COPY_PARSE),$(SYMTABAPI_LIB),libparse*)
 	$(call copy-libs,$(SYMTABAPI_COPY_PARSE),$(SYMTABAPI_LIB),libinstruct*)
+	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.so*)
 	$(call copy-libs,$(XED2_COPY),$(XED2_LIB_DIR),lib*)
 	$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
 

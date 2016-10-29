@@ -71,6 +71,8 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 BOOST_INC = @BOOST_INC@
+BOOST_LIB = @BOOST_LIB@
+BOOST_LIB_LIST = @BOOST_LIB_LIST@
 
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
@@ -101,6 +103,10 @@ MYLDADD = $(HPCLIB_SupportLean) \
 	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
 	-L$(LIBDWARF_LIB) -ldwarf \
 	-L$(LIBELF_LIB) -lelf
+
+if USE_BOOST_LIBS
+  MYLDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
+endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 

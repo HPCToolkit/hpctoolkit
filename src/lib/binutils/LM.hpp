@@ -408,6 +408,14 @@ public:
   bool
   findProcSrcCodeInfo(VMA vma, ushort opIndex, SrcFile::ln& line) const;
 
+  // Normalize 'filenm' directly with RealPathMgr, outside of
+  // findSrcCodeInfo().
+  bool
+  realpath(std::string & filenm)
+  {
+    return m_realpathMgr.realpath(filenm);
+  }
+
 
   // -------------------------------------------------------
   // BFD details

@@ -521,7 +521,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     uint id = strct->id();
     const char* nm = NULL;
 
-    bool change = false;
+    bool fake_procedure = false;
     
     if (type == 1) { // LoadModule
       nm = strct->name().c_str();
@@ -550,7 +550,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     }
     else if (type == 3) { // Proc
       const char *proc_name = strct->name().c_str();
-      nm = normalize_name(proc_name, change);
+      nm = normalize_name(proc_name, fake_procedure);
 
       if (remove_redundancy && 
 	  proc_name != Prof::Struct::Tree::UnknownProcNm)
@@ -606,7 +606,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     os << "    <" << entry_nm << " i" << MakeAttrNum(id)
        << " n" << MakeAttrStr(nm);
     
-    if (change) {
+    if (fake_procedure) {
        os << " f" << MakeAttrNum(1); 
     } 
    
@@ -1046,20 +1046,17 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // parallelism context (mpi rank, thread id)
   // -------------------------
   string mpiRankStr, tidStr;
-  long   mpiRank = -1, tid = -1;
 
   // val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_jobId);
   
   val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_mpiRank);
   if (val) {
     mpiRankStr = val;
-    if (val[0] != '\0') { mpiRank = StrUtil::toLong(mpiRankStr); }
-  }
+  } 
 
   val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_tid);
   if (val) {
     tidStr = val;
-    if (val[0] != '\0') { tid = StrUtil::toLong(tidStr); }
   }
 
   // -------------------------

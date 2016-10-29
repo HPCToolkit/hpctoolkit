@@ -86,6 +86,26 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg,
 	}
       }
     }
+    if (iarg->current->bp_status == BP_HOSED) {
+      // invariant: when we reach a return, if the BP was overwritten, it
+      // should have been restored. this must be incorrect. let's reset
+      // the bp status for all intervals leading up to this one since
+      // the last canonical restore. 
+      unwind_interval *u = iarg->current;
+      for (;;) {
+        if (u->bp_status != BP_HOSED) {
+          break;
+        }
+        u->bp_status = BP_UNCHANGED;
+	if (u->restored_canonical == 1) {
+	  break;
+	}
+	u = (unwind_interval *) u->common.prev;
+	if (! u) {
+	  break;
+	}
+      }
+    }
   }
   if (UWI_RECIPE(iarg->current)->bp_status == BP_SAVED) {
      suspicious_interval(iarg->ins);

@@ -75,17 +75,13 @@ XED2_INC = @XED2_INC@
 MYSOURCES = \
 	ISATypes.hpp \
 	ISA.hpp ISA.cpp \
-	\
-	AlphaISA.hpp AlphaISA.cpp \
-	IA64ISA.hpp IA64ISA.cpp \
-	MipsISA.hpp MipsISA.cpp \
 	PowerISA.hpp PowerISA.cpp \
-	SparcISA.hpp SparcISA.cpp \
 	x86ISA.hpp  x86ISA.cpp \
-	x86ISABinutils.hpp  x86ISABinutils.cpp \
-	\
-	instructionSets/alpha.h \
-	instructionSets/mips.h
+	x86ISABinutils.hpp  x86ISABinutils.cpp
+
+if OPT_HAVE_BINUTILS_IA64
+  MYSOURCES += IA64ISA.hpp IA64ISA.cpp
+endif
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
@@ -99,6 +95,11 @@ endif
 MYLIBADD = @HOST_LIBTREPOSITORY@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
+
+## old, unsupported platforms
+##	AlphaISA.hpp AlphaISA.cpp \
+##	MipsISA.hpp MipsISA.cpp \
+##	SparcISA.hpp SparcISA.cpp \
 
 #############################################################################
 # Automake rules

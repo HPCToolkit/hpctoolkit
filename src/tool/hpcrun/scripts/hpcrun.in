@@ -55,7 +55,6 @@ VERSION='@PACKAGE_VERSION@'
 hpcfnbounds_dir='libexec/hpctoolkit'
 hpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
-libunwind_dir='@LIBUNWIND_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
 
 #------------------------------------------------------------
@@ -77,10 +76,6 @@ esac
 case "$libmonitor_dir" in
     /* ) ;;
     * ) libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
-esac
-case "$libunwind_dir" in
-    /* ) ;;
-    * )  libunwind_dir="${HPCTOOLKIT}/${libunwind_dir}" ;;
 esac
 case "$papi_libdir" in
     /* ) ;;
