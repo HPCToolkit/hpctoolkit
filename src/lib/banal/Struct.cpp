@@ -2189,7 +2189,9 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
   for (auto fit = func_list->begin(); fit != func_list->end(); ++fit)
   {
     ParseAPI::Function * func = *fit;
+#if USE_DYNINST_LINE_MAP
     SymtabAPI::Function * sym_func = NULL;
+#endif
     SymtabAPI::LineInformation * lmap = NULL;
     Address entry_addr = func->addr();
     TreeNode * root = new TreeNode;
@@ -2558,12 +2560,14 @@ doBlock(ProcInfo pinfo, ParseAPI::Function * func,
   cout << "\nblock:\n";
 #endif
 
+#if USE_DYNINST_LINE_MAP
   // save the last symtab line map query
   Offset low_vma = 1;
   Offset high_vma = 0;
   string cache_filenm = "";
   SrcFile::ln cache_line = 0;
   int try_symtab = 1;
+#endif
 
   // iterate through the instructions in this block
   map <Offset, InstructionAPI::Instruction::Ptr> imap;
