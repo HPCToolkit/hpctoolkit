@@ -1069,7 +1069,7 @@ inlinedProceduresFilter(const Prof::Struct::ANode& x, long GCC_ATTR_UNUSED type)
 
 // iterate over all nodes that represent inlined procedure scopes. compute an approximate
 // beginning line based on the minimum line number in scopes directly within.
-static void
+void
 renumberAlienScopes(Prof::Struct::ANode* node)
 {
   // use a filter that selects scopes that represent inlined procedures (not call sites)
@@ -1116,7 +1116,7 @@ renumberAlienScopes(Prof::Struct::ANode* node)
 typedef std::list<Prof::Struct::Alien*> AlienList;
 typedef std::map<Prof::Struct::Alien*, AlienList *, AlienCompare> AlienMap;
 
-static void
+void
 dumpMap(AlienMap &alienMap)
 {
     std::cout << "map " << &alienMap << 
@@ -1222,7 +1222,7 @@ coalesceAlienChildren(Prof::Struct::ANode* node)
 }
 
 
-static Prof::Struct::ANode * 
+Prof::Struct::ANode * 
 getVisibleAncestor(Prof::Struct::ANode *node)
 {
   for (;;) {
@@ -1302,7 +1302,7 @@ matchPaths(Prof::Struct::ANode *n1, Prof::Struct::ANode *n2, Prof::Struct::ANode
 } 
 
 
-static void
+void
 reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop, 
 	      Prof::Struct::ANode *loopParent, Struct::LocationMgr& locMgr,
 	      int nodeDepth, int loopParentDepth)
