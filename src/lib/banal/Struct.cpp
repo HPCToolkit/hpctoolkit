@@ -1069,7 +1069,7 @@ inlinedProceduresFilter(const Prof::Struct::ANode& x, long GCC_ATTR_UNUSED type)
 
 // iterate over all nodes that represent inlined procedure scopes. compute an approximate
 // beginning line based on the minimum line number in scopes directly within.
-static void
+void
 renumberAlienScopes(Prof::Struct::ANode* node)
 {
   // use a filter that selects scopes that represent inlined procedures (not call sites)
@@ -1116,7 +1116,7 @@ renumberAlienScopes(Prof::Struct::ANode* node)
 typedef std::list<Prof::Struct::Alien*> AlienList;
 typedef std::map<Prof::Struct::Alien*, AlienList *, AlienCompare> AlienMap;
 
-static void
+void
 dumpMap(AlienMap &alienMap)
 {
     std::cout << "map " << &alienMap << 
@@ -1222,7 +1222,7 @@ coalesceAlienChildren(Prof::Struct::ANode* node)
 }
 
 
-static Prof::Struct::ANode * 
+Prof::Struct::ANode * 
 getVisibleAncestor(Prof::Struct::ANode *node)
 {
   for (;;) {
@@ -1302,7 +1302,7 @@ matchPaths(Prof::Struct::ANode *n1, Prof::Struct::ANode *n2, Prof::Struct::ANode
 } 
 
 
-static void
+void
 reparentNode(Prof::Struct::ANode *kid, Prof::Struct::ANode *loop, 
 	      Prof::Struct::ANode *loopParent, Struct::LocationMgr& locMgr,
 	      int nodeDepth, int loopParentDepth)
@@ -2189,7 +2189,9 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
   for (auto fit = func_list->begin(); fit != func_list->end(); ++fit)
   {
     ParseAPI::Function * func = *fit;
+#if USE_DYNINST_LINE_MAP
     SymtabAPI::Function * sym_func = NULL;
+#endif
     SymtabAPI::LineInformation * lmap = NULL;
     Address entry_addr = func->addr();
     TreeNode * root = new TreeNode;
@@ -2558,12 +2560,14 @@ doBlock(ProcInfo pinfo, ParseAPI::Function * func,
   cout << "\nblock:\n";
 #endif
 
+#if USE_DYNINST_LINE_MAP
   // save the last symtab line map query
   Offset low_vma = 1;
   Offset high_vma = 0;
   string cache_filenm = "";
   SrcFile::ln cache_line = 0;
   int try_symtab = 1;
+#endif
 
   // iterate through the instructions in this block
   map <Offset, InstructionAPI::Instruction::Ptr> imap;
