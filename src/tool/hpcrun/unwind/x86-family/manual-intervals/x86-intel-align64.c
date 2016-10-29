@@ -57,7 +57,7 @@ static char intel_align64_signature[] = {
 };
 
 static int 
-adjust_intel_align64_intervals(char *ins, int len, interval_status *stat)
+adjust_intel_align64_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(intel_align64_signature);
 
