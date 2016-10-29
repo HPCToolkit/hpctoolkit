@@ -210,9 +210,11 @@ PowerISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
     case dis_condjsr:
       d.set(InsnDesc::OTHER);
       break;
+#if defined(HAVE_HPC_GNUBINUTILS)
     case dis_return:
       d.set(InsnDesc::SUBR_RET);
       break;
+#endif
     case dis_dref:
     case dis_dref2:
       d.set(InsnDesc::MEM_OTHER);
