@@ -238,7 +238,7 @@ struct sigevent             __thread sigev;
 struct timespec             __thread real_start; 
 struct timespec             __thread cpu_start; 
 
-int                         perf_thread_fd[MAX_EVENTS];
+int                         __thread perf_thread_fd[MAX_EVENTS];
 pe_mmap_t                   __thread *perf_mmap;
 
 
@@ -681,6 +681,27 @@ METHOD_FN(start)
     return;
   }
 
+  // setup all requested events
+  // if an event cannot be initialized, we still keep it in our list
+  //  but there will be no samples
+
+  char *evlist = METHOD_CALL(self, get_event_str);
+  int i=0;
+
+  for (char *event = start_tok(evlist); more_tok(); event = next_tok(), i++) {
+    char name[1024];
+    long threshold;
+
+    hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold, 
+			     DEFAULT_THRESHOLD);
+
+    // initialize this event. If it's valid, we set the metric for the event
+    if (perf_thread_init(i, name, threshold)) { 
+      set_mmap(perf_thread_fd[i]);
+    }
+  }
+  ioctl(perf_thread_fd[0], PERF_EVENT_IOC_ENABLE, 0);
+
   thread_data_t* td = hpcrun_get_thread_data();
   td->ss_state[self->sel_idx] = START;
 
@@ -796,11 +817,18 @@ METHOD_FN(process_event_list, int lush_metrics)
   char *evlist = METHOD_CALL(self, get_event_str);
   int num_events = 0;
 
+  // TODO: stupid way to count the number of events
+
+  for (event = start_tok(evlist); more_tok(); event = next_tok()) {
+    num_events++;
+  }
+  self->evl.nevents = num_events;
+
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
   //  but there will be no samples
-
-  for (event = start_tok(evlist); more_tok(); event = next_tok()) {
+  int i=0;
+  for (event = start_tok(evlist); more_tok(); event = next_tok(), i++) {
     char name[1024];
     long threshold;
 
@@ -808,16 +836,12 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold, 
 			     DEFAULT_THRESHOLD);
-
-    // initialize this event. If it's valid, we set the metric for the event
-    if (perf_thread_init(num_events, name, threshold)) { 
-      set_mmap(perf_thread_fd[num_events]);
-
+    {
       // set the metric
-      metric_id[num_events] = hpcrun_new_metric();
+      metric_id[i] = hpcrun_new_metric();
 
       // store the metric
-      METHOD_CALL(self, store_metric_id, num_events, metric_id[num_events]);
+      METHOD_CALL(self, store_metric_id, i, metric_id[i]);
       
       // initialize the property of the metric
       // if the metric's name has "CYCLES" it mostly a cycle metric 
@@ -825,14 +849,11 @@ METHOD_FN(process_event_list, int lush_metrics)
 
       prop = (strstr(name, "CYCLES") != NULL) ? metric_property_cycles : metric_property_none;
 
-      hpcrun_set_metric_info_and_period(metric_id[num_events], strdup(name),
+      hpcrun_set_metric_info_and_period(metric_id[i], strdup(name),
 				    MetricFlags_ValFmt_Int,
 				    threshold, prop);
     }
-    num_events++;
   }
-  self->evl.nevents = num_events;
-  ioctl(perf_thread_fd[0], PERF_EVENT_IOC_ENABLE, 0);
 }
 
 
