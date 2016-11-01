@@ -621,7 +621,7 @@ get_fd_index(int num_events, int fd)
 static void
 METHOD_FN(init)
 {
-  TMSG(LINUX_PERF, "init");
+  TMSG(LINUX_PERF, "%d: init", self->sel_idx);
 
 #ifdef ENABLE_PERFMON
   // perfmon is smart enough to detect if pfmu has been initialized or not
@@ -630,42 +630,40 @@ METHOD_FN(init)
   perf_unavail = ( !perf_event_avail() );
 
   self->state = INIT;
-  TMSG(LINUX_PERF, "init OK");
+  TMSG(LINUX_PERF, "%d: init OK", self->sel_idx);
 }
 
 
 static void
 METHOD_FN(thread_init)
 {
-  TMSG(LINUX_PERF, "thread init");
+  TMSG(LINUX_PERF, "%d: thread init", self->sel_idx);
   if (perf_unavail) { return; }
 
 #ifdef ENABLE_PERFMON
   // perfmon is smart enough to detect if pfmu has been initialized or not
   pfmu_init();
 #endif
-  thread_data_t* td = hpcrun_get_thread_data();
-  td->ss_state[self->sel_idx] = INIT;
 
-  TMSG(LINUX_PERF, "thread init OK");
+  TMSG(LINUX_PERF, "%d: thread init OK", self->sel_idx);
 }
 
 
 static void
 METHOD_FN(thread_init_action)
 {
-  TMSG(LINUX_PERF, "thread init action");
+  TMSG(LINUX_PERF, "%d: thread init action", self->sel_idx);
 
   if (perf_unavail) { return; }
 
-  TMSG(LINUX_PERF, "thread init action OK");
+  TMSG(LINUX_PERF, "%d: thread init action OK", self->sel_idx);
 }
 
 
 static void
 METHOD_FN(start)
 {
-  TMSG(LINUX_PERF, "start");
+  TMSG(LINUX_PERF, "%d: start", self->sel_idx);
 
   if (perf_unavail) { 
     return; 
@@ -678,43 +676,46 @@ METHOD_FN(start)
   // state LINUX_PERF is in.
 
   if (my_state == START) {
-    TMSG(LINUX_PERF,"*NOTE* LINUX_PERF start called when already in state START");
+    TMSG(LINUX_PERF,"%d: *NOTE* LINUX_PERF start called when already in state START",
+		     self->sel_idx);
     return;
   }
 
   thread_data_t* td = hpcrun_get_thread_data();
   td->ss_state[self->sel_idx] = START;
 
-  TMSG(LINUX_PERF, "start OK");
+  TMSG(LINUX_PERF, "%d: start OK", self->sel_idx);
 }
 
 static void
 METHOD_FN(thread_fini_action)
 {
-  TMSG(LINUX_PERF, "unregister thread");
+  TMSG(LINUX_PERF, "%d: unregister thread", self->sel_idx);
   if (perf_unavail) { return; }
 
   int nevents = (self->evl).nevents; 
   perf_thread_fini(nevents);
-  TMSG(LINUX_PERF, "unregister thread OK");
+  TMSG(LINUX_PERF, "%d: unregister thread OK", self->sel_idx);
 }
 
 
 static void
 METHOD_FN(stop)
 {
-  TMSG(LINUX_PERF, "stop");
+  TMSG(LINUX_PERF, "%d: stop", self->sel_idx);
 
   if (perf_unavail) return; 
 
   source_state_t my_state = TD_GET(ss_state)[self->sel_idx];
   if (my_state == STOP) {
-    TMSG(LINUX_PERF,"*NOTE* PERF stop called when already in state STOP");
+    TMSG(LINUX_PERF,"%d: *NOTE* PERF stop called when already in state STOP",
+	 	    self->sel_idx);
     return;
   }
 
   if (my_state != START) {
-    TMSG(LINUX_PERF,"*WARNING* PERF stop called when not in state START");
+    TMSG(LINUX_PERF,"%d: *WARNING* PERF stop called when not in state START",
+		     self->sel_idx);
     return;
   }
 
@@ -723,7 +724,7 @@ METHOD_FN(stop)
   thread_data_t* td = hpcrun_get_thread_data();
   td->ss_state[self->sel_idx] = STOP;
 
-  TMSG(LINUX_PERF, "stop OK");
+  TMSG(LINUX_PERF, "%d: stop OK", self->sel_idx);
 }
 
 static void
@@ -907,6 +908,10 @@ perf_event_handler(
     return 0; // tell monitor the signal has been handled.
   }
 
+  // get the index of the file descriptor (if we have multiple events)
+  // if the file descriptor is not on the list, we shouldn't store the 
+  // metrics. Perhaps we should throw away?
+
   sample_source_t *self = &obj_name();
 
   int nevents = self->evl.nevents;
@@ -918,6 +923,11 @@ perf_event_handler(
 					   0/*skipInner*/, 0/*isSync*/);
 
     blame_shift_apply(metric_id[index], sv.sample_node, 1 /*metricIncr*/);
+  } else {
+    // signal not from perf event
+    TMSG(LINUX_PERF, "signal si_code %d with fd %d: unknown perf event", 
+	 siginfo->si_code, fd);
+    return 1; // tell monitor the signal has not been handled.
   }
 
   hpcrun_safe_exit();
