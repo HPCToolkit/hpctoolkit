@@ -440,9 +440,8 @@ perf_attr_init(
   attr->size   = sizeof(struct perf_event_attr);
   attr->config = event_code;
 
-  attr->read_format   = PERF_FORMAT_GROUP;
   attr->sample_period = threshold;
-  attr->sample_type   = PERF_SAMPLE_CALLCHAIN;
+  attr->sample_type   = PERF_SAMPLE_READ | PERF_SAMPLE_CALLCHAIN | PERF_SAMPLE_STACK_USER;
   attr->precise_ip    = PERF_REQUEST_0_SKID;
   attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
   attr->sample_stack_user = 4096;
@@ -480,9 +479,10 @@ perf_thread_init(int event_num, const char *name, long threshold)
 
   // if this is the leader event, parent_fd is GROUP_FD
   //  otherwise parent_fd is the leader fd
-  attr.disabled  = (event_num==0? 1: 0);
-  attr.pinned    = (event_num==0? 1: 0);
-  int parent_fd  = (event_num==0? GROUP_FD : perf_thread_fd[0]) ;
+  attr.read_format = PERF_FORMAT_GROUP; //(event_num==0? PERF_FORMAT_GROUP : 0);
+  attr.disabled    = 1; //(event_num==0? 1: 0);
+  attr.pinned      = 0; //(event_num==0? 1: 0);
+  int parent_fd    = -1; //(event_num==0? GROUP_FD : perf_thread_fd[0]) ;
 
   // "create"the event
   perf_thread_fd[event_num] = perf_event_open(&attr, THREAD_SELF, CPU_ANY, 
@@ -698,9 +698,9 @@ METHOD_FN(start)
     // initialize this event. If it's valid, we set the metric for the event
     if (perf_thread_init(i, name, threshold)) { 
       set_mmap(perf_thread_fd[i]);
+      ioctl(perf_thread_fd[i], PERF_EVENT_IOC_ENABLE, 0);
     }
   }
-  ioctl(perf_thread_fd[0], PERF_EVENT_IOC_ENABLE, 0);
 
   thread_data_t* td = hpcrun_get_thread_data();
   td->ss_state[self->sel_idx] = START;
@@ -714,8 +714,8 @@ METHOD_FN(thread_fini_action)
   TMSG(LINUX_PERF, "%d: unregister thread", self->sel_idx);
   if (perf_unavail) { return; }
 
-  int nevents = (self->evl).nevents; 
-  perf_thread_fini(nevents);
+  //int nevents = (self->evl).nevents; 
+  //perf_thread_fini(nevents);
   TMSG(LINUX_PERF, "%d: unregister thread OK", self->sel_idx);
 }
 
@@ -760,6 +760,11 @@ METHOD_FN(shutdown)
 
   int nevents = (self->evl).nevents; 
   perf_thread_fini(nevents);
+
+#ifdef ENABLE_PERFMON
+  // terminate perfmon
+  pfmu_fini();
+#endif
 
   self->state = UNINIT;
   TMSG(LINUX_PERF, "shutdown OK");
@@ -822,6 +827,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
     num_events++;
   }
+  // manually, setup the number of events
   self->evl.nevents = num_events;
 
   // setup all requested events
@@ -836,23 +842,21 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold, 
 			     DEFAULT_THRESHOLD);
-    {
-      // set the metric
-      metric_id[i] = hpcrun_new_metric();
+    // set the metric
+    metric_id[i] = hpcrun_new_metric();
 
-      // store the metric
-      METHOD_CALL(self, store_metric_id, i, metric_id[i]);
+    // store the metric
+    METHOD_CALL(self, store_metric_id, i, metric_id[i]);
       
-      // initialize the property of the metric
-      // if the metric's name has "CYCLES" it mostly a cycle metric 
-      //  this assumption is not true, but it's quite closed
+    // initialize the property of the metric
+    // if the metric's name has "CYCLES" it mostly a cycle metric 
+    //  this assumption is not true, but it's quite closed
 
-      prop = (strstr(name, "CYCLES") != NULL) ? metric_property_cycles : metric_property_none;
+    prop = (strstr(name, "CYCLES") != NULL) ? metric_property_cycles : metric_property_none;
 
-      hpcrun_set_metric_info_and_period(metric_id[i], strdup(name),
+    hpcrun_set_metric_info_and_period(metric_id[i], strdup(name),
 				    MetricFlags_ValFmt_Int,
 				    threshold, prop);
-    }
   }
 }
 
@@ -875,6 +879,7 @@ METHOD_FN(display_events)
     // perfmon is smart enough to detect if pfmu has been initialized or not
     pfmu_init();
     pfmu_showEventList();
+    pfmu_fini();
 #else
     printf("Name\t\tDescription\n");
     printf(dashes_separator);
@@ -887,6 +892,33 @@ METHOD_FN(display_events)
 }
 
 
+
+// ------------------------------------------------------------
+// Disable perf event
+// ------------------------------------------------------------
+
+static int
+disable_perf_event(int fd)
+{
+  int rc = (0>ioctl(fd, PERF_EVENT_IOC_DISABLE, 0));
+  if (rc) {
+    TMSG(LINUX_PERF, "error fd %d in IOC_DISABLE", fd);
+  }
+  return rc;
+}
+
+// ------------------------------------------------------------
+// Refresh a disabled perf event
+// ------------------------------------------------------------
+
+static void 
+restart_perf_event(int fd)
+{
+  int rc = ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
+  if (rc == -1) {
+    TMSG(LINUX_PERF, "error fd %d in IOC_REFRESH", fd);
+  }
+}
 
 /***************************************************************************
  * object
@@ -917,7 +949,7 @@ perf_event_handler(
 
   // first, we need to disable the event
   int fd = siginfo->si_fd;
-  ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
+  // disable_perf_event(fd);
 
   // if the interrupt came while inside our code, then drop the sample
   // and return and avoid the potential for deadlock.
@@ -926,6 +958,7 @@ perf_event_handler(
 
   if (! hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
+    // restart_perf_event(fd);
     return 0; // tell monitor the signal has been handled.
   }
 
@@ -948,16 +981,14 @@ perf_event_handler(
     // signal not from perf event
     TMSG(LINUX_PERF, "signal si_code %d with fd %d: unknown perf event", 
 	 siginfo->si_code, fd);
+    // restart_perf_event(fd);
     return 1; // tell monitor the signal has not been handled.
   }
 
   hpcrun_safe_exit();
 
   // restart the event 
-  int rc = ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
-  if (rc == -1) {
-    TMSG(LINUX_PERF, "error in IOC_REFRESH");
-  }
+ // restart_perf_event(fd);
 
   return 0; // tell monitor the signal has been handled.
 }

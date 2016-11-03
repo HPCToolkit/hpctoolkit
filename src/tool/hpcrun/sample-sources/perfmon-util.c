@@ -241,6 +241,12 @@ pfmu_init()
    return 1;
 }
 
+void
+pfmu_fini()
+{
+   pfm_terminate();
+}
+
 /*
  * interface function to print the list of supported PMUs
  */
