@@ -479,10 +479,10 @@ perf_thread_init(int event_num, const char *name, long threshold)
 
   // if this is the leader event, parent_fd is GROUP_FD
   //  otherwise parent_fd is the leader fd
-  attr.read_format = PERF_FORMAT_GROUP; //(event_num==0? PERF_FORMAT_GROUP : 0);
-  attr.disabled    = 1; //(event_num==0? 1: 0);
-  attr.pinned      = 0; //(event_num==0? 1: 0);
-  int parent_fd    = -1; //(event_num==0? GROUP_FD : perf_thread_fd[0]) ;
+  attr.read_format = PERF_FORMAT_GROUP; 
+  attr.disabled    = 1; 
+  attr.pinned      = 0; 
+  int parent_fd    = -1; 
 
   // "create"the event
   perf_thread_fd[event_num] = perf_event_open(&attr, THREAD_SELF, CPU_ANY, 
@@ -878,6 +878,7 @@ METHOD_FN(display_events)
 #ifdef ENABLE_PERFMON
     // perfmon is smart enough to detect if pfmu has been initialized or not
     pfmu_init();
+    printf(dashes_separator);
     pfmu_showEventList();
     pfmu_fini();
 #else

@@ -327,6 +327,7 @@ MY_BASE_FILES =				\
 
 if OPT_PERFMON
 MY_BASE_FILES +=  			\
+	utilities/line_wrapping.c	\
 	sample-sources/perfmon-util.c	
 endif
 ## if OPT_ENABLE_MPI_WRAP

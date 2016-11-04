@@ -71,9 +71,17 @@
 
 
 //******************************************************************************
+// Constants
+//******************************************************************************
+
+const int MAXBUF   		= 1024;
+const int MAX_CHARS_PER_LINE 	= 74;
+
+//******************************************************************************
 // local variables
 //******************************************************************************
 
+#include "line_wrapping.h"
 
 
 //******************************************************************************
@@ -89,18 +97,29 @@ event_has_pname(char *s)
 	return (p = strchr(s, ':')) && *(p+1) == ':';
 }
 
+static void printw(const char *desc)
+{
+  char **line;
+  int *len;
+  char sdesc[MAX_CHARS_PER_LINE];
 
-const int MAXBUF = 1024;
+  int lines = strwrap(desc, MAX_CHARS_PER_LINE, &line, &len);
+  for (int i=0; i<lines; i++) {
+    strncpy(sdesc, line[i], len[i]);
+    sdesc[len[i]] = '\0';
+    printf("\t%s\n", sdesc);
+  }
+  free (line);
+  free (len);
+}
+
 
 static void
 show_event_info(pfm_event_info_t *info)
 {
 	pfm_event_attr_info_t ainfo;
 	pfm_pmu_info_t pinfo;
-	//int mod = 0, um = 0;
 	int i, ret;
-	//const char *src;
-	char buffer[MAXBUF];	
 
 	memset(&ainfo, 0, sizeof(ainfo));
 	memset(&pinfo, 0, sizeof(pinfo));
@@ -112,20 +131,17 @@ show_event_info(pfm_event_info_t *info)
 	if (ret)
 		errx(1, "cannot get pmu info: %s", pfm_strerror(ret));
 
-	sprintf(buffer, "%s::%s", pinfo.name, info->name);
-	int lpname = strlen(buffer);
-	if (lpname >50)
-		lpname = 80-lpname;
-	else
-		lpname = 50-lpname;
+	printf("%s::%s\n", pinfo.name, info->name);
 
-  	printf("%s %*s %s\n", buffer, lpname, " ", info->desc ? info->desc : "");
+	printw(info->desc); 
 
 	pfm_for_each_event_attr(i, info) {
 		ret = pfm_get_event_attr_info(info->idx, i, PFM_OS_NONE, &ainfo);
 		if (ret != PFM_SUCCESS)
 			errx(1, "cannot retrieve event %s attribute info: %s", info->name, pfm_strerror(ret));
-	  	printf("%s:%s \t %s %s\n", buffer, ainfo.name, info->desc ? info->desc : "", ainfo.desc);
+	  	printf("%s::%s:%s\n", pinfo.name, info->name, ainfo.name); 
+		//printw(info->desc);
+		printw(ainfo.desc);
 	}
 }
 
@@ -171,19 +187,6 @@ show_info(char *event )
    return match;
 }
 
-/*
- * interface to check if an event is "supported"
- * "supported" here means, it matches with the perfmon PMU event 
- *
- * return 1 (true) if the event is supported, 0 (false) otherwise
- */
-int
-pfmu_isSupported(const char *eventname)
-{
-  unsigned int eventcode;
-  return pfmu_getEventCode(eventname, &eventcode);
-}
-
 
 /**
  * interface to convert from event name into event code
@@ -206,6 +209,19 @@ pfmu_getEventCode(const char *eventname, unsigned int *eventcode)
      }
   }
   return result;
+}
+
+/*
+ * interface to check if an event is "supported"
+ * "supported" here means, it matches with the perfmon PMU event 
+ *
+ * return 1 (true) if the event is supported, 0 (false) otherwise
+ */
+int
+pfmu_isSupported(const char *eventname)
+{
+  unsigned int eventcode;
+  return pfmu_getEventCode(eventname, &eventcode);
 }
 
 int
@@ -247,6 +263,8 @@ pfmu_fini()
    pfm_terminate();
 }
 
+static const char * dashes_separator = 
+  "---------------------------------------------------------------------------\n";
 /*
  * interface function to print the list of supported PMUs
  */
@@ -303,6 +321,8 @@ pfmu_showEventList()
 	total_available_events += pinfo.nevents;
    }    
    printf("Total events: %d available, %d supported\n", total_available_events, total_supported_events);
+
+   printf(dashes_separator);
 
    show_info(argv_all);
 
