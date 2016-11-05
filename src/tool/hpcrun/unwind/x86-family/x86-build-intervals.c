@@ -69,6 +69,8 @@
 
 extern void x86_dump_ins(void* addr);
 
+static int dump_ins = 0;
+
 
 /******************************************************************************
  * forward declarations 
@@ -139,7 +141,7 @@ x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
   if (noisy) dump_ui(iarg.current, true);
 
   while (iarg.ins < end) {
-	if (noisy) {
+	if (noisy && dump_ins) {
 	  x86_dump_ins(iarg.ins);
 	}
 	xed_decoded_inst_zero_keep_mode(xptr);
