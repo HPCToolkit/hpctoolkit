@@ -105,10 +105,16 @@ build_intervals(char  *ins, unsigned int len, mem_alloc m_alloc)
   return stat;
 }
 
+
 //***************************************************************************
 // unwind_interval interface
 //***************************************************************************
 
+// --------------------------------------------------------------------------
+// Function: new_ui 
+// Purpose:  
+//   Allocate and initialize an unwind recipe for a new code address range.
+// --------------------------------------------------------------------------
 unwind_interval *
 new_ui(char *startaddr,
        sp_ty_t sp_ty,
@@ -121,9 +127,20 @@ new_ui(char *startaddr,
   bitree_uwi_t *u = bitree_uwi_malloc(m_alloc, sizeof(ppc64recipe_t));
   uwi_t *uwi =  bitree_uwi_rootval(u);
 
-  UWI_END_ADDR(u) = 0; 
-  UWI_START_ADDR(u) = (uintptr_t)startaddr;
+  // ----------------------------------------------------------------
+  // Initialize the address range (referred to as an interval) to 
+  // which this recipe applies. The interval begins at startaddr. 
+  // for now, use 0 as the end address. The end address will be 
+  // filled in when a successor recipe is linked behind this one or
+  // when the end of the enclosing routine is reached 
+  // ----------------------------------------------------------------
+  interval_t *interval =  uwi_t_interval(uwi);
+  interval->start = (uintptr_t)startaddr;
+  interval->end = 0; 
 
+  // ----------------------------------------------------------------
+  // initialize the unwind recipe for the given interval as specified
+  // ----------------------------------------------------------------
   ppc64recipe_t *ppc64recipe = (ppc64recipe_t*) uwi_t_recipe(uwi);
   ppc64recipe->sp_ty = sp_ty;
   ppc64recipe->ra_ty = ra_ty;
@@ -133,19 +150,14 @@ new_ui(char *startaddr,
   return u;
 }
 
-#if 0
-ppc64recipe_t *
-ppc64recipe_new(sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
-		mem_alloc m_alloc)
+
+void 
+link_ui(unwind_interval* current, unwind_interval* next)
 {
-  ppc64recipe_t *recipe = (ppc64recipe_t*)m_alloc(sizeof(ppc64recipe_t));
-  recipe->sp_ty  = sp_ty;
-  recipe->ra_ty  = ra_ty;
-  recipe->sp_arg = sp_arg;
-  recipe->ra_arg = ra_arg;
-  return recipe;
+  UWI_END_ADDR(current) = UWI_START_ADDR(next);
+  bitree_uwi_set_rightsubtree(current, next);
 }
-#endif
+
 
 /*
  * Concrete implementation of the abstract val_tostr function of the
@@ -169,6 +181,7 @@ ppc64recipe_print(void* recipe)
   printf("%s", str);
 }
 
+
 /*
  * concrete implementation of the abstract function for printing an abstract
  * unwind recipe specified in uw_recipe.h
@@ -178,6 +191,7 @@ uw_recipe_tostr(void* recipe, char str[])
 {
   ppc64recipe_tostr(recipe, str);
 }
+
 
 void
 uw_recipe_print(void* recipe)
@@ -207,19 +221,6 @@ suspicious_interval(void *pc)
 {
   EMSG("suspicous interval for pc = %p", pc);
   hpcrun_stats_num_unwind_intervals_suspicious_inc();
-}
-
-
-void 
-link_ui(unwind_interval* current, unwind_interval* next)
-{
-#if 0
-  current->common.end = next->common.start;
-  current->common.next= (splay_interval_t*)next;
-#else
-  UWI_END_ADDR(current) = UWI_START_ADDR(next);
-  bitree_uwi_set_rightsubtree(current, next);
-#endif
 }
 
 
@@ -409,10 +410,11 @@ getSPDispFromUI(unwind_interval* ui)
 
 
 #define INSN(insn) ((char*)(insn))
-
 static inline char*
 nextInsn(uint32_t* insn) 
-{ return INSN(insn + 1); }
+{ 
+  return INSN(insn + 1); 
+}
 
 
 //***************************************************************************
@@ -505,7 +507,6 @@ nextInsn(uint32_t* insn)
 //   mr      r1,r11
 
 // Another nasty frame now in t1:
-
 
 
 static btuwi_status_t
@@ -653,11 +654,6 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
       int sp_disp = - PPC_OPND_DISP(*cur_insn);  
       int ra_arg = ((UWI_RECIPE(ui)->ra_ty == RATy_SPRel) ?
 		    UWI_RECIPE(ui)->ra_arg + sp_disp : UWI_RECIPE(ui)->ra_arg);
-#if 0
-      // debug return address offset not being adjusted properly.
-      // now fixed.
-      printf("addi: ra_ty=%d, sp_disp = %d, UWI_RECIPE(ui)->ra_arg = %d, ra_arg = %d\n", UWI_RECIPE(ui)->ra_ty, sp_disp, UWI_RECIPE(ui)->ra_arg, ra_arg);
-#endif
       nxt_ui =
     	  new_ui(nextInsn(cur_insn), SPTy_Reg, UWI_RECIPE(ui)->ra_ty,
     		  PPC_REG_SP, ra_arg, ui, m_alloc);
@@ -733,6 +729,7 @@ ppc64_dump_intervals(void* addr)
 
   ppc64_print_interval_set((unwind_interval *) intervals.first);
 }
+
 
 void
 hpcrun_dump_intervals(void* addr)

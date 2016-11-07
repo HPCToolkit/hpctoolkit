@@ -84,22 +84,54 @@
 #include <lib/isa-lean/power/instruction-set.h>
 #include <unwind/common/fence_enum.h>
 
+
 //***************************************************************************
-// forward declarations
+// external declarations
+//***************************************************************************
+
+extern void 
+hpcrun_set_real_siglongjmp(void);
+
+
+
+//***************************************************************************
+// macros
 //***************************************************************************
 
 #define MYDBG 0
+
+
+
+//***************************************************************************
+// type declarations
+//***************************************************************************
+
+//
+// register codes (only 1 at the moment)
+//
+typedef enum {
+  UNW_REG_IP
+} unw_reg_code_t;
+
 
 typedef enum {
   UnwFlg_NULL = 0,
   UnwFlg_StackTop,
 } unw_flag_t;
 
+
+
+//***************************************************************************
+// forward declarations
+//***************************************************************************
+
 static fence_enum_t
 hpcrun_check_fence(void* ip);
 
+
+
 //***************************************************************************
-// interface functions
+// private functions
 //***************************************************************************
 
 static bool
@@ -108,21 +140,20 @@ fence_stop(fence_enum_t fence)
   return (fence == FENCE_MAIN) || (fence == FENCE_THREAD);
 }
 
-extern void hpcrun_set_real_siglongjmp(void);
 
-void
-hpcrun_unw_init(void)
+static fence_enum_t
+hpcrun_check_fence(void* ip)
 {
-  uw_recipe_map_init();
-  hpcrun_set_real_siglongjmp();
-}
+  fence_enum_t rv = FENCE_NONE;
+  if (monitor_unwind_process_bottom_frame(ip))
+    rv = FENCE_MAIN;
+  else if (monitor_unwind_thread_bottom_frame(ip))
+    rv = FENCE_THREAD;
 
-//
-// register codes (only 1 at the moment)
-//
-typedef enum {
-  UNW_REG_IP
-} unw_reg_code_t;
+   if (ENABLED(FENCE_UNW) && rv != FENCE_NONE)
+     TMSG(FENCE_UNW, "%s", fence_enum_name(rv));
+   return rv;
+}
 
 
 static int 
@@ -146,6 +177,17 @@ hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
   return 0;
 }
 
+
+//***************************************************************************
+// interface functions
+//***************************************************************************
+
+void
+hpcrun_unw_init(void)
+{
+  uw_recipe_map_init();
+  hpcrun_set_real_siglongjmp();
+}
 
 int
 hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c, ip_normalized_t* reg_value)
@@ -373,18 +415,4 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   cursor->flags     = UnwFlg_NULL;
 
   return STEP_OK;
-}
-
-static fence_enum_t
-hpcrun_check_fence(void* ip)
-{
-  fence_enum_t rv = FENCE_NONE;
-  if (monitor_unwind_process_bottom_frame(ip))
-    rv = FENCE_MAIN;
-  else if (monitor_unwind_thread_bottom_frame(ip))
-    rv = FENCE_THREAD;
-
-   if (ENABLED(FENCE_UNW) && rv != FENCE_NONE)
-     TMSG(FENCE_UNW, "%s", fence_enum_name(rv));
-   return rv;
 }
