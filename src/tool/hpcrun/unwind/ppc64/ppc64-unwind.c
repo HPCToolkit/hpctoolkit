@@ -366,11 +366,10 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   if (MYDBG) { ui_dump(nxt_intvl); }
 
   cursor->pc_unnorm = nxt_pc;
-  cursor->pc_norm   = nxt_pc_norm;
+  cursor->pc_norm   = hpcrun_normalize_ip(nxt_pc, cursor->unwr_info.lm);
   cursor->ra        = nxt_ra;
   cursor->sp        = nxt_sp;
   cursor->bp        = nxt_fp;
-//  cursor->intvl     = (splay_interval_t*)nxt_intvl;
   cursor->flags     = UnwFlg_NULL;
 
   return STEP_OK;

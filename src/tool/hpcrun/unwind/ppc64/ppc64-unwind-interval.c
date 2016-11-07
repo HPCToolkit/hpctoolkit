@@ -132,11 +132,20 @@ new_ui(
 #else
 
   bitree_uwi_t *u = bitree_uwi_malloc(m_alloc, sizeof(ppc64recipe_t));
-  bitree_uwi_set_leftsubtree(u, prev);
-  uwi_t *uwi =  bitree_uwi_rootval(u);
 
+  uwi_t *uwi =  bitree_uwi_rootval(u);
   interval_t *interval =  uwi_t_interval(uwi);
   interval->start = (uintptr_t)startaddr;
+
+#if 0
+  bitree_uwi_set_leftsubtree(u, prev);
+  if (prev) {
+    // interval_t *pinterval =  uwi_t_interval(prev);
+    // pinterval->end = interval->start;
+    UWI_END_ADDR(prev) = UWI_START_ADDR(u);
+  }
+#endif
+
 
   ppc64recipe_t *ppc64recipe = (ppc64recipe_t*) uwi_t_recipe(uwi);
   ppc64recipe->sp_ty = sp_ty;
@@ -530,7 +539,6 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
   unwind_interval* beg_ui = 
     new_ui(beg_insn, SPTy_Reg, RATy_Reg, PPC_REG_SP, PPC_REG_LR, NULL, m_alloc);
   unwind_interval* ui = beg_ui;
-  unwind_interval* nxt_ui = NULL;
   unwind_interval* canon_ui = beg_ui;
 
   uint32_t* cur_insn = (uint32_t*) beg_insn;
@@ -539,6 +547,9 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
   int reg;
 
   while (cur_insn < end_insn) {
+    unwind_interval* prev_ui = ui;
+    unwind_interval* nxt_ui = NULL;
+
     //TMSG(INTV, "insn: 0x%x [%p,%p)", *cur_insn, cur_insn, end_insn);
 
     //--------------------------------------------------
@@ -701,6 +712,10 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
     		UWI_RECIPE(canon_ui)->sp_arg, UWI_RECIPE(canon_ui)->ra_arg, ui, m_alloc);
     	ui = nxt_ui;
       }
+    }
+
+    if (prev_ui != ui) {
+      link_ui(prev_ui, ui);
     }
     
     cur_insn++;
