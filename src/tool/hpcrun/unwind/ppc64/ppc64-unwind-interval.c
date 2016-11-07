@@ -110,42 +110,19 @@ build_intervals(char  *ins, unsigned int len, mem_alloc m_alloc)
 //***************************************************************************
 
 unwind_interval *
-new_ui(
-	char *startaddr,
-	sp_ty_t sp_ty,
-	ra_ty_t ra_ty,
-	int sp_arg,
-	int ra_arg,
-	unwind_interval *prev,
-	mem_alloc m_alloc)
+new_ui(char *startaddr,
+       sp_ty_t sp_ty,
+       ra_ty_t ra_ty,
+       int sp_arg,
+       int ra_arg,
+       unwind_interval *prev,
+       mem_alloc m_alloc)
 {
-#if 0
-
-  bitree_uwi_t *u = bitree_uwi_new(NULL, prev, NULL, m_alloc);
-  interval_t *interval = interval_t_new(startaddr, 0, m_alloc);
-  ppc64recipe_t *ppc64recipe =
-	  ppc64recipe_new(sp_ty, ra_ty, sp_arg, ra_arg, m_alloc);
-  bitree_uwi_set_rootval(u, uwi_t_new(interval, (uw_recipe_t*)ppc64recipe, m_alloc));
-  hpcrun_stats_num_unwind_intervals_total_inc();
-  return u;
-
-#else
-
   bitree_uwi_t *u = bitree_uwi_malloc(m_alloc, sizeof(ppc64recipe_t));
-
   uwi_t *uwi =  bitree_uwi_rootval(u);
-  interval_t *interval =  uwi_t_interval(uwi);
-  interval->start = (uintptr_t)startaddr;
 
-#if 0
-  bitree_uwi_set_leftsubtree(u, prev);
-  if (prev) {
-    // interval_t *pinterval =  uwi_t_interval(prev);
-    // pinterval->end = interval->start;
-    UWI_END_ADDR(prev) = UWI_START_ADDR(u);
-  }
-#endif
-
+  UWI_END_ADDR(u) = 0; 
+  UWI_START_ADDR(u) = (uintptr_t)startaddr;
 
   ppc64recipe_t *ppc64recipe = (ppc64recipe_t*) uwi_t_recipe(uwi);
   ppc64recipe->sp_ty = sp_ty;
@@ -154,8 +131,6 @@ new_ui(
   ppc64recipe->ra_arg = ra_arg;
 
   return u;
-
-#endif
 }
 
 #if 0
