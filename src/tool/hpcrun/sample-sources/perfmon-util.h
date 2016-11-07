@@ -48,6 +48,7 @@
 #include <linux/perf_event.h>
 
 int pfmu_init();
+int pfmu_getEventType(const char *eventname);
 int pfmu_showEventList();
 int pfmu_isSupported(const char *eventname);
 int pfmu_getEventCode(const char *eventname, unsigned int *eventcode);

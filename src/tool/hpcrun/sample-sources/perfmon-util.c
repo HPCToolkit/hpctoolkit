@@ -68,14 +68,17 @@
  *****************************************************************************/
 #include <perfmon/err.h>
 #include <perfmon/pfmlib.h>
+#include <perfmon/pfmlib_perf_event.h>
 
 
 //******************************************************************************
 // Constants
 //******************************************************************************
 
-const int MAXBUF   		= 1024;
-const int MAX_CHARS_PER_LINE 	= 74;
+const int MAXBUF   		     = 1024;
+const int MAX_CHARS_PER_LINE 	     = 74;
+static const char * dashes_separator = 
+  "---------------------------------------------------------------------------\n";
 
 //******************************************************************************
 // local variables
@@ -117,32 +120,33 @@ static void printw(const char *desc)
 static void
 show_event_info(pfm_event_info_t *info)
 {
-	pfm_event_attr_info_t ainfo;
-	pfm_pmu_info_t pinfo;
-	int i, ret;
+  pfm_event_attr_info_t ainfo;
+  pfm_pmu_info_t pinfo;
+  int i, ret;
 
-	memset(&ainfo, 0, sizeof(ainfo));
-	memset(&pinfo, 0, sizeof(pinfo));
+  memset(&ainfo, 0, sizeof(ainfo));
+  memset(&pinfo, 0, sizeof(pinfo));
 
-	pinfo.size = sizeof(pinfo);
-	ainfo.size = sizeof(ainfo);
+  pinfo.size = sizeof(pinfo);
+  ainfo.size = sizeof(ainfo);
 
-	ret = pfm_get_pmu_info(info->pmu, &pinfo);
-	if (ret)
-		errx(1, "cannot get pmu info: %s", pfm_strerror(ret));
+  ret = pfm_get_pmu_info(info->pmu, &pinfo);
+  if (ret)
+	errx(1, "cannot get pmu info: %s", pfm_strerror(ret));
 
-	printf("%s::%s\n", pinfo.name, info->name);
+  printf(dashes_separator );
+  printf("%s::%s\n", pinfo.name, info->name);
 
-	printw(info->desc); 
+  printw(info->desc); 
 
-	pfm_for_each_event_attr(i, info) {
-		ret = pfm_get_event_attr_info(info->idx, i, PFM_OS_NONE, &ainfo);
-		if (ret != PFM_SUCCESS)
-			errx(1, "cannot retrieve event %s attribute info: %s", info->name, pfm_strerror(ret));
-	  	printf("%s::%s:%s\n", pinfo.name, info->name, ainfo.name); 
-		//printw(info->desc);
-		printw(ainfo.desc);
-	}
+  pfm_for_each_event_attr(i, info) {
+    ret = pfm_get_event_attr_info(info->idx, i, PFM_OS_NONE, &ainfo);
+    if (ret != PFM_SUCCESS)
+	errx(1, "cannot retrieve event %s attribute info: %s", info->name, pfm_strerror(ret));
+    printf("%s::%s:%s\n", pinfo.name, info->name, ainfo.name); 
+    //printw(info->desc);
+    printw(ainfo.desc);
+  }
 }
 
 static int
@@ -183,10 +187,33 @@ show_info(char *event )
 		match++;
 	}
    }
-
    return match;
 }
 
+
+//******************************************************************************
+// Supported operations
+//******************************************************************************
+
+int 
+pfmu_getEventType(const char *eventname)
+{
+  pfm_perf_encode_arg_t arg;
+  char *fqstr = NULL;
+
+  arg.fstr = &fqstr;
+  arg.size = sizeof(pfm_perf_encode_arg_t);
+  struct perf_event_attr attr;
+  arg.attr = &attr;
+  int ret = pfm_get_os_event_encoding(eventname, PFM_PLM0|PFM_PLM3, PFM_OS_PERF_EVENT, &arg);
+
+  if (ret == PFM_SUCCESS) {
+    return arg.attr->type;
+  }
+
+  free(arg.fstr);
+  return -1;
+}
 
 /**
  * interface to convert from event name into event code
@@ -263,8 +290,6 @@ pfmu_fini()
    pfm_terminate();
 }
 
-static const char * dashes_separator = 
-  "---------------------------------------------------------------------------\n";
 /*
  * interface function to print the list of supported PMUs
  */

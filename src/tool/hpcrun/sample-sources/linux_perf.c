@@ -426,18 +426,36 @@ perf_init()
 
 //----------------------------------------------------------
 // generic initialization for event attributes
+// return true if the initialization is successful,
+//   false otherwise.
 //----------------------------------------------------------
-static void
+static int
 perf_attr_init(
-  unsigned int event_code,
+  const char *name,
   struct perf_event_attr *attr,
   long threshold
 )
 {
+  // if perfmon is disabled, by default the event is cycle
+  unsigned int event_code = PERF_COUNT_HW_CPU_CYCLES;
+  unsigned int event_type = PERF_TYPE_HARDWARE;
+
+#ifdef ENABLE_PERFMON
+  if (!pfmu_getEventCode(name, &event_code)) {
+      EMSG("Linux perf event not recognized: %s", name);
+      return false;
+  }
+  event_type = pfmu_getEventType(name);
+  if (event_type<0) {
+      EMSG("Linux perf event type not recognized: %s", name);
+      return false;
+  }
+#endif
+
   memset(attr, 0, sizeof(struct perf_event_attr));
 
-  attr->type   = PERF_TYPE_HARDWARE;
   attr->size   = sizeof(struct perf_event_attr);
+  attr->type   = event_type;
   attr->config = event_code;
 
   attr->sample_period = threshold;
@@ -446,12 +464,18 @@ perf_attr_init(
   attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
   attr->sample_stack_user = 4096;
 
+  attr->read_format = PERF_FORMAT_GROUP; 
+  attr->disabled    = 1; 
+  attr->pinned      = 0; 
+
   if (perf_ksyms_avail) {
     attr->sample_type = PERF_SAMPLE_CALLCHAIN;
     attr->exclude_callchain_user = EXCLUDE_CALLCHAIN_USER;
   } else {
     attr->sample_type = PERF_SAMPLE_IP;
   }
+  TMSG(LINUX_PERF, "init event %s: type: %d, code: %x", name, event_type, event_code);
+  return true;
 }
 
 
@@ -464,24 +488,11 @@ perf_attr_init(
 static bool
 perf_thread_init(int event_num, const char *name, long threshold)
 {
-  // if perfmon is disabled, by default the event is cycle
-  unsigned int event_code = PERF_COUNT_HW_CPU_CYCLES;
-#ifdef ENABLE_PERFMON
-  if (!pfmu_getEventCode(name, &event_code)) {
-      EMSG("Linux perf event not recognized: %s", name);
-      return false;
-  }
-#endif
 
   // initialize the event attributes
   struct perf_event_attr attr;
-  perf_attr_init(event_code, &attr, threshold);
+  perf_attr_init(name, &attr, threshold);
 
-  // if this is the leader event, parent_fd is GROUP_FD
-  //  otherwise parent_fd is the leader fd
-  attr.read_format = PERF_FORMAT_GROUP; 
-  attr.disabled    = 1; 
-  attr.pinned      = 0; 
   int parent_fd    = -1; 
 
   // "create"the event
