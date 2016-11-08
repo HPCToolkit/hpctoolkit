@@ -5,8 +5,8 @@
 // position of the Defense Department, the United States government, or
 // Rice University.
 //
-#ifndef _UNWIND_DATATYPE_H
-#define _UNWIND_DATATYPE_H
+#ifndef UNW_DATATYPES_SPECIFIC_H 
+#define UNW_DATATYPES_SPECIFIC_H 
 
 #include <libunwind.h>
 
@@ -33,4 +33,4 @@ struct hpcrun_unw_cursor_t {
                       // allocated internally in cursor      
 };
 
-#endif // _UNWIND_DATATYPE_H
+#endif // UNW_DATATYPES_SPECIFIC_H 
