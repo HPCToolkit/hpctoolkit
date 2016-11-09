@@ -19749,26 +19749,34 @@ fi
 
 
 # If libunwind is available, require dynamic (.so) version, and make
-# static (.a) optional.  Note: may need to expand to multilib dir at
-# some point.
+# static (.a) optional.  On powerpc, libunwind installs libs into
+# lib64, so test for multilib here.
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libunwind" >&5
 $as_echo_n "checking for libunwind... " >&6; }
 
 case "$LIBUNWIND" in
   /* )
-    if test -f "${LIBUNWIND}/include/libunwind.h" \
-       && test -f "${LIBUNWIND}/lib/libunwind.so"
-    then : ; else
+    if test ! -f "${LIBUNWIND}/include/libunwind.h" ; then
       as_fn_error $? "invalid libunwind directory: $LIBUNWIND" "$LINENO" 5
     fi
     LIBUNWIND_IFLAGS="-I${LIBUNWIND}/include"
-    LIBUNWIND_LDFLAGS_DYN="-L${LIBUNWIND}/lib -lunwind"
-    LIBUNWIND_COPY=yes
-    LIBUNWIND_LIB="${LIBUNWIND}/lib"
-    if test -f "${LIBUNWIND}/lib/libunwind.a" ; then
-      LIBUNWIND_STAT=yes
-      LIBUNWIND_LDFLAGS_STAT="${LIBUNWIND}/lib/libunwind.a"
+
+    for lib in $multilib_path ; do
+      unw_libdir="${LIBUNWIND}/$lib"
+      if test -f "$unw_libdir/libunwind.so" ; then
+        LIBUNWIND_LDFLAGS_DYN="-L${unw_libdir} -lunwind"
+    	LIBUNWIND_COPY=yes
+	LIBUNWIND_LIB="$unw_libdir"
+	if test -f "${unw_libdir}/libunwind.a" ; then
+	  LIBUNWIND_STAT=yes
+      	  LIBUNWIND_LDFLAGS_STAT="${unw_libdir}/libunwind.a"
+	fi
+	break
+      fi
+    done
+    if test "x$LIBUNWIND_LIB" = x ; then
+      as_fn_error $? "invalid libunwind directory: $LIBUNWIND" "$LINENO" 5
     fi
     ;;
   no )

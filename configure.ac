@@ -1605,25 +1605,33 @@ AC_ARG_ENABLE([libunwind-primary],
   [enable_libunwind_primary=no])
 
 # If libunwind is available, require dynamic (.so) version, and make
-# static (.a) optional.  Note: may need to expand to multilib dir at
-# some point.
+# static (.a) optional.  On powerpc, libunwind installs libs into
+# lib64, so test for multilib here.
 
 AC_MSG_CHECKING([for libunwind])
 
 case "$LIBUNWIND" in
   /* )
-    if test -f "${LIBUNWIND}/include/libunwind.h" \
-       && test -f "${LIBUNWIND}/lib/libunwind.so"
-    then : ; else
+    if test ! -f "${LIBUNWIND}/include/libunwind.h" ; then
       AC_MSG_ERROR([invalid libunwind directory: $LIBUNWIND])
     fi
     LIBUNWIND_IFLAGS="-I${LIBUNWIND}/include"
-    LIBUNWIND_LDFLAGS_DYN="-L${LIBUNWIND}/lib -lunwind"
-    LIBUNWIND_COPY=yes
-    LIBUNWIND_LIB="${LIBUNWIND}/lib"
-    if test -f "${LIBUNWIND}/lib/libunwind.a" ; then
-      LIBUNWIND_STAT=yes
-      LIBUNWIND_LDFLAGS_STAT="${LIBUNWIND}/lib/libunwind.a"
+
+    for lib in $multilib_path ; do
+      unw_libdir="${LIBUNWIND}/$lib"
+      if test -f "$unw_libdir/libunwind.so" ; then
+        LIBUNWIND_LDFLAGS_DYN="-L${unw_libdir} -lunwind"
+    	LIBUNWIND_COPY=yes
+	LIBUNWIND_LIB="$unw_libdir"
+	if test -f "${unw_libdir}/libunwind.a" ; then
+	  LIBUNWIND_STAT=yes
+      	  LIBUNWIND_LDFLAGS_STAT="${unw_libdir}/libunwind.a"
+	fi
+	break
+      fi
+    done
+    if test "x$LIBUNWIND_LIB" = x ; then
+      AC_MSG_ERROR([invalid libunwind directory: $LIBUNWIND])
     fi
     ;;
   no )
