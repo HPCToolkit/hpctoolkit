@@ -53,7 +53,6 @@
 
 //*************************** User Include Files ****************************
 
-#include "unwind-cfg.h"
 #include <unwind/common/fence_enum.h>
 #include <utilities/ip-normalized.h>
 
@@ -69,10 +68,7 @@
 
 #else
 
-#include "binarytree_uwi.h"
-#include "ildmod_stat.h"
 #include "unwindr_info.h"
-#include <hpcrun/utilities/ip-normalized.h>
 #define UNW_CURSOR_INTERVAL_t bitree_uwi_t*
 
 #endif
@@ -103,7 +99,6 @@ typedef struct hpcrun_unw_cursor_t {
 
 } hpcrun_unw_cursor_t;
 
-#define CURSOR_TO_LM(cursor) (cursor.unwr_info.lm)
 
 //***************************************************************************
 
