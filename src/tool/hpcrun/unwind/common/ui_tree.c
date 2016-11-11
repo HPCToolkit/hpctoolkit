@@ -145,8 +145,8 @@ uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
   assert(ilmstat_btuwi != NULL); // start should be in range of some poisoned interval
 #endif
 
-  ildmod_stat_t* ilmstat = ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi);
 #if UITREE_DEBUG
+  ildmod_stat_t* ilmstat = ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi);
   assert(ilmstat->stat == NEVER);  // should be a poisoned node
 #endif
   interval_t* interval = ilmstat_btuwi_pair_interval(ilmstat_btuwi);
