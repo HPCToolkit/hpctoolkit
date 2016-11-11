@@ -53,30 +53,11 @@
 
 //*************************** User Include Files ****************************
 
-#include "unwind-cfg.h"
-#include <unwind/common/fence_enum.h>
-#include <utilities/ip-normalized.h>
-
-//*************************** Forward Declarations **************************
-
-// HPC_UNW_LITE: It is not safe to have a pointer to the interval
-// since we cannot use dynamic storage.
-#if (HPC_UNW_LITE)
-
-   // there should probably have a check to ensure this is big enough
-   typedef struct { char data[128]; } unw_interval_opaque_t;
-#  define UNW_CURSOR_INTERVAL_t unw_interval_opaque_t
-
-#else
-
-#include "binarytree_uwi.h"
 #include "ildmod_stat.h"
-#include <hpcrun/utilities/ip-normalized.h>
-#define UNW_CURSOR_INTERVAL_t bitree_uwi_t*
+#include "binarytree_uwi.h"
 
-#endif
+//******************************* Types *************************************
 
-//***************************************************************************
 typedef struct unwindr_info_s {
   uintptr_t start;
   uintptr_t end;
@@ -85,7 +66,5 @@ typedef struct unwindr_info_s {
   bitree_uwi_t *btuwi;
 } unwindr_info_t;
 
-
-//***************************************************************************
 
 #endif
