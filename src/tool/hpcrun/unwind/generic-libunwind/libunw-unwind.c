@@ -200,10 +200,6 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* h_cursor, void* context)
 
   compute_normalized_ips(h_cursor);
 
-#if FIXME_JOHNMC
-  h_cursor->pc_norm = hpcrun_normalize_ip((void *) pc, NULL);
-#endif
-
   TMSG(UNW, "init cursor pc = %p\n", h_cursor->pc_unnorm);
 }
 
@@ -269,10 +265,6 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* h_cursor)
   h_cursor->real_intvl.lm = NULL;
 
   compute_normalized_ips(h_cursor);
-
-#if FIXME_JOHNMC
-  h_cursor->pc_norm = hpcrun_normalize_ip((void *) pc, NULL);
-#endif
 
   TMSG(UNW, "unw_step: advance pc: %p\n", pc);
   return STEP_OK;
