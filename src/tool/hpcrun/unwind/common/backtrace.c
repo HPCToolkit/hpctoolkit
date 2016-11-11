@@ -411,15 +411,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 			       &td->btbuf_cur->ip_norm);
     td->btbuf_cur->ra_loc = NULL;
 
-#define NOT_ARM 1
-#if NOT_ARM
-    // non-libunwind unwinders
-    void *func_start_pc =  (void*)cursor.unwr_info.start;
-    load_module_t* lm = cursor.unwr_info.lm;
-    td->btbuf_cur->the_function = hpcrun_normalize_ip(func_start_pc, lm);
-#else
     td->btbuf_cur->the_function = cursor.the_function;
-#endif
 
     frame_t* prev = td->btbuf_cur;
     td->btbuf_cur++;
