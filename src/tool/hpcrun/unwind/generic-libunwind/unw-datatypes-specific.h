@@ -18,19 +18,25 @@ typedef struct {
   load_module_t* lm;
 } intvl_t;
 
-typedef struct hpcrun_unw_cursor_t hpcrun_unw_cursor_t;
-struct hpcrun_unw_cursor_t {
+
+typedef struct hpcrun_unw_cursor_t {
   unw_cursor_t uc;
   void* sp;
   void* bp;
   void* pc_unnorm;
   ip_normalized_t pc_norm;
+
+  // normalized ip for first instruction in enclosing function
+  ip_normalized_t the_function;
+
   fence_enum_t fence; // Details on which fence stopped an unwind
   intvl_t* intvl;
   load_module_t *lm;  // should correspond to intvl at initialization
   intvl_t real_intvl; // other unwinders get intervals from elsewhere,
                       // libunwind does not use intervals, so space for pointer
                       // allocated internally in cursor      
-};
+} hpcrun_unw_cursor_t;
+
+#define CURSOR_TO_LM(cursor) (cursor.lm)
 
 #endif // UNW_DATATYPES_SPECIFIC_H 

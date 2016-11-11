@@ -55,7 +55,8 @@
 #include <sys/types.h>
 #include "binarytree_uwi.h"
 #include "ilmstat_btuwi_pair.h"
-#include "std_unw_cursor.h"
+#include "unw-datatypes.h"
+#include "unwindr_info.h"
 
 
 void

@@ -411,11 +411,23 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 			       &td->btbuf_cur->ip_norm);
     td->btbuf_cur->ra_loc = NULL;
 
+#if FIXME_JOHNMC
+    // non-libunwind unwinders
     void *func_start_pc =  (void*)cursor.unwr_info.start;
     load_module_t* lm = cursor.unwr_info.lm;
-
     td->btbuf_cur->the_function = hpcrun_normalize_ip(func_start_pc, lm);
+#else
+    td->btbuf_cur->the_function = cursor.the_function;
+#endif
 
+
+#if FIXME_JOHNMC
+    // libunwind unwinder now does nothing
+    void *func_start_pc = NULL, *func_end_pc = NULL;
+    load_module_t* lm = NULL;
+    fnbounds_enclosing_addr(cursor.pc_unnorm, &func_start_pc, &func_end_pc, &lm);
+#endif
+    
     frame_t* prev = td->btbuf_cur;
     td->btbuf_cur++;
     unw_len++;
@@ -724,6 +736,8 @@ hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
 }
 #endif // 0 for old dbg backtrace
 
+
+#if 0
 //
 // generate a backtrace, store it in thread-local data
 // return success/failure
@@ -782,7 +796,13 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
       }
     }
     
-    ip_normalized_t ip_norm = hpcrun_normalize_ip((void*)ip, cursor.unwr_info.lm);
+#if FIXME_JOHNMC  
+    ip_normalized_t ip_norm =
+      hpcrun_normalize_ip((void*)ip, CURSOR_TO_LM(cursor));
+#else
+    ip_normalized_t ip_norm = cursor.pc_norm;
+#endif
+
     frame_t* prev = hpcrun_bt_push(bt,
 				   &((frame_t){.cursor = cursor, 
 					       .ip_norm = ip_norm,
@@ -869,6 +889,7 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
 
   return true;
 }
+#endif
 
 //***************************************************************************
 // private operations 

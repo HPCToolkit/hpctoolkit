@@ -71,19 +71,11 @@
 
 #include "binarytree_uwi.h"
 #include "ildmod_stat.h"
+#include "unwindr_info.h"
 #include <hpcrun/utilities/ip-normalized.h>
 #define UNW_CURSOR_INTERVAL_t bitree_uwi_t*
 
 #endif
-
-//***************************************************************************
-typedef struct unwindr_info_s {
-  uintptr_t start;
-  uintptr_t end;
-  load_module_t *lm;
-  tree_stat_t treestat;
-  bitree_uwi_t *btuwi;
-} unwindr_info_t;
 
 typedef struct hpcrun_unw_cursor_t {
 
@@ -111,6 +103,7 @@ typedef struct hpcrun_unw_cursor_t {
 
 } hpcrun_unw_cursor_t;
 
+#define CURSOR_TO_LM(cursor) (cursor.unwr_info.lm)
 
 //***************************************************************************
 

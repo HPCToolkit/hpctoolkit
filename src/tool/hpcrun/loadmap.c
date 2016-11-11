@@ -408,8 +408,11 @@ hpcrun_loadmap_map(dso_info_t* dso)
 	lm->dso_info = dso;
 	hpcrun_loadmap_pushFront(lm);
 
+#if FIXME_JOHNMC 
 	// split poisoned interval here
-	uw_recipe_map_unpoison((uintptr_t)lm->dso_info->start_addr, (uintptr_t)lm->dso_info->end_addr);
+	uw_recipe_map_unpoison((uintptr_t)lm->dso_info->start_addr,
+			       (uintptr_t)lm->dso_info->end_addr);
+#endif
   }
 
   TMSG(LOADMAP, "hpcrun_loadmap_map: '%s' size=%d %s",

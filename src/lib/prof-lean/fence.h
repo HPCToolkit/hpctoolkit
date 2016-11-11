@@ -129,9 +129,37 @@
 
 #endif
 
+#if defined(__aarch64__)
+
+#define arm_fence _DSB()
+
+#define enforce_rmw_to_access_order()  arm_fence
+
+#define enforce_rmw_to_load_order()  arm_fence
+
+#define enforce_access_to_rmw_order()  arm_fence
+
+#define enforce_load_to_rmw_order()  arm_fence
+
+#define enforce_store_to_rmw_order()  arm_fence
+
+#define enforce_load_to_access_order() arm_fence
+
+#define enforce_load_to_load_order() arm_fence
+
+#define enforce_access_to_store_order() arm_fence
+
+#define enforce_store_to_store_order() arm_fence
+
+#define enforce_load_to_load_and_store_to_store_order() arm_fence
+
+#endif
+
 #ifndef enforce_access_to_store_order
 #error missing fence definitions: unknown processor type
 #endif
 
 #endif
+
+
 
