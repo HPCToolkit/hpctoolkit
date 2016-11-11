@@ -62,19 +62,6 @@
 void
 uw_recipe_map_init(void);
 
-/*
- * add to the unwind recipe map a "poisoned" bounding interval with a NULL load
- * module and NULL bitree_uiw_t tree: ({([start, end), NULL), NEVER}, NULL)
- * return true if the insertion is successful, false otherwise.
- */
-bool
-uw_recipe_map_poison(uintptr_t start, uintptr_t end);
-
-bool
-uw_recipe_map_unpoison(uintptr_t start, uintptr_t end);
-
-bool
-uw_recipe_map_repoison(uintptr_t start, uintptr_t end);
 
 /*
  * if addr is found in range in the map, return true and
@@ -95,9 +82,6 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info);
  */
 ildmod_stat_t*
 uw_recipe_map_get_fnbounds_ldmod(void *ip);
-
-void
-uw_recipe_map_delete_range(void *start, void *end);
 
 
 void
