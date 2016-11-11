@@ -37,6 +37,4 @@ typedef struct hpcrun_unw_cursor_t {
                       // allocated internally in cursor      
 } hpcrun_unw_cursor_t;
 
-#define CURSOR_TO_LM(cursor) (cursor.lm)
-
 #endif // UNW_DATATYPES_SPECIFIC_H 
