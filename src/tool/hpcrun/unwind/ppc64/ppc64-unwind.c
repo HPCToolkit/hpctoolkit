@@ -134,6 +134,18 @@ hpcrun_check_fence(void* ip);
 // private functions
 //***************************************************************************
 
+static void
+compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
+{
+  void *func_start_pc =  (void*) cursor->unwr_info.start;
+  load_module_t* lm = cursor->unwr_info.lm;
+
+  cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, lm);
+  cursor->the_function = hpcrun_normalize_ip(func_start_pc, lm);
+}
+
+
+
 static bool
 fence_stop(fence_enum_t fence)
 {
@@ -226,16 +238,9 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   cursor->bp        = NULL;
   cursor->flags     = UnwFlg_StackTop;
 
-  // Capture unnormalized ip here b/c hpcrun_addr_to_interval() will
-  // not call hpcrun_normalize_ip() in exceptional cases.
-  cursor->pc_norm = ((ip_normalized_t)
-                     { .lm_id = HPCRUN_FMT_LMId_NULL,
-		       .lm_ip = (uintptr_t) cursor->pc_unnorm });
-
   bitree_uwi_t* intvl = NULL;
   bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &(cursor->unwr_info));
   if (found) {
-	cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, cursor->unwr_info.lm);
 	intvl = cursor->unwr_info.btuwi;
 	  if (intvl && UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
 	    if (UWI_RECIPE(intvl)->ra_arg == PPC_REG_LR) {
@@ -250,6 +255,8 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
     EMSG("unw_init: cursor could NOT build an interval for initial pc = %p",
 	 cursor->pc_unnorm);
   }
+
+  compute_normalized_ips(cursor);
 
   TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, fp=%p", 
        cursor->pc_unnorm, cursor->ra, cursor->sp, cursor->bp);
@@ -408,11 +415,12 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   if (MYDBG) { ui_dump(nxt_intvl); }
 
   cursor->pc_unnorm = nxt_pc;
-  cursor->pc_norm   = hpcrun_normalize_ip(nxt_pc, cursor->unwr_info.lm);
   cursor->ra        = nxt_ra;
   cursor->sp        = nxt_sp;
   cursor->bp        = nxt_fp;
   cursor->flags     = UnwFlg_NULL;
+
+  compute_normalized_ips(cursor);
 
   return STEP_OK;
 }
