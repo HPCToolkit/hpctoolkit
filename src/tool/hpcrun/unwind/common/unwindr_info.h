@@ -44,8 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef UNWIND_CURSOR_H
-#define UNWIND_CURSOR_H
+#ifndef UNWINR_INFO_H
+#define UNWINR_INFO_H
 
 //************************* System Include Files ****************************
 
