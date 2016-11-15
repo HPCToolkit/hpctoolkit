@@ -133,7 +133,7 @@
 #define PERF_DATA_PAGE_EXP        0      // use 2^PERF_DATA_PAGE_EXP pages
 #define PERF_DATA_PAGES           (1 << PERF_DATA_PAGE_EXP)  
 
-#define BUFFER_FRONT              ((char *) perf_mmap + pagesize)
+#define BUFFER_FRONT              ((char *) current_perf_mmap + pagesize)
 #define BUFFER_SIZE               (tail_mask + 1)
 #define BUFFER_OFFSET(tail)       ((tail) & tail_mask)
 
@@ -241,8 +241,9 @@ struct timespec             __thread real_start;
 struct timespec             __thread cpu_start; 
 
 int                         __thread perf_thread_fd[MAX_EVENTS];
-pe_mmap_t                   __thread *perf_mmap;
+pe_mmap_t                   __thread *perf_mmap[MAX_EVENTS];
 
+pe_mmap_t                   __thread *current_perf_mmap;
 
 
 //******************************************************************************
@@ -318,12 +319,12 @@ perf_read(
   char *data = BUFFER_FRONT; 
 
   // compute bytes available in the circular buffer 
-  size_t bytes_available = perf_mmap->data_head - perf_mmap->data_tail;
+  size_t bytes_available = current_perf_mmap->data_head - current_perf_mmap->data_tail;
 
   if (bytes_wanted > bytes_available) return -1;
 
   // compute offset of tail in the circular buffer
-  unsigned long tail = BUFFER_OFFSET(perf_mmap->data_tail);
+  unsigned long tail = BUFFER_OFFSET(current_perf_mmap->data_tail);
 
   long bytes_at_right = BUFFER_SIZE - tail;
 
@@ -340,7 +341,7 @@ perf_read(
   }
 
   // update tail after consuming bytes_wanted
-  perf_mmap->data_tail += bytes_wanted;
+  current_perf_mmap->data_tail += bytes_wanted;
 
   return 0;
 }
@@ -484,7 +485,7 @@ perf_attr_init(
 //----------------------------------------------------------
 // allocate mmap for a given file descriptor
 //----------------------------------------------------------
-static bool
+static pe_mmap_t*
 set_mmap(int perf_fd)
 {
   void *map_result = 
@@ -493,19 +494,19 @@ set_mmap(int perf_fd)
 
   if (map_result == MAP_FAILED) {
       EMSG("Linux perf mmap failed: %s", strerror(errno));
-      return false;
+      return NULL;
   }
 
-  perf_mmap  = (pe_mmap_t *) map_result;
+  pe_mmap_t *mmap  = (pe_mmap_t *) map_result;
 
-  if (perf_mmap) {
-    memset(perf_mmap, 0, sizeof(pe_mmap_t));
-    perf_mmap->version = 0; 
-    perf_mmap->compat_version = 0; 
-    perf_mmap->data_head = 0; 
-    perf_mmap->data_tail = 0; 
+  if (mmap) {
+    memset(mmap, 0, sizeof(pe_mmap_t));
+    mmap->version = 0; 
+    mmap->compat_version = 0; 
+    mmap->data_head = 0; 
+    mmap->data_tail = 0; 
   }
-  return true;
+  return mmap;
 }
 
 //----------------------------------------------------------
@@ -529,7 +530,7 @@ perf_thread_init(int event_num)
       EMSG("Linux perf event open failed: %s", strerror(errno));
       return false;
   }
-  set_mmap(perf_thread_fd[event_num]);
+  perf_mmap[event_num] = set_mmap(perf_thread_fd[event_num]);
 
   return (perf_start(event_num));
 }
@@ -544,11 +545,12 @@ void
 perf_thread_fini(int nevents)
 {
   if (perf_thread_fd[0]) {
-    munmap(perf_mmap, PERF_MMAP_SIZE(pagesize));
     int i;
     
-    for (i=0; i< nevents; i++)
+    for (i=0; i< nevents; i++) {
       close(perf_thread_fd[i]);
+      munmap(perf_mmap[i], PERF_MMAP_SIZE(pagesize));
+    }
   }
 }
 
@@ -901,7 +903,7 @@ METHOD_FN(display_events)
 // ------------------------------------------------------------
 // Disable perf event
 // ------------------------------------------------------------
-static int
+static void
 disable_perf_event(int fd)
 {
 #if 0
@@ -909,7 +911,6 @@ disable_perf_event(int fd)
   if (rc) {
     TMSG(LINUX_PERF, "error fd %d in IOC_DISABLE", fd);
   }
-  return rc;
 #endif
 }
 
@@ -980,6 +981,11 @@ perf_event_handler(
 
   // store the metric if the metric index is correct
   if ( index >= 0 ) {
+    // TODO: hack solution to point to the mmap of the current event
+    // a more reliable way to do this is to pass by argument to hpcrun_sample
+    // however, this solution requires too much changes
+    current_perf_mmap = perf_mmap[index];
+
     sample_val_t sv = hpcrun_sample_callpath(context, metric_id[index], 1,
 					   0/*skipInner*/, 0/*isSync*/);
 

@@ -279,6 +279,7 @@ MY_BASE_FILES =				\
 	sample-sources/idle.c		\
 	sample-sources/linux_perf.c	\
 	sample-sources/memleak.c	\
+	sample-sources/mmap_read.c	\
 	sample-sources/pthread-blame.c  \
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \
