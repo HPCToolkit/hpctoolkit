@@ -57,7 +57,7 @@
   ints, describing how wide the corresponding line is. If an error
   occurs 0 is returned; line_ret and len_ret are then left unmodified.
 */
-int strwrap(char * s, int w, char *** line_ret, int ** len_ret)
+int strwrap(const char * s, int w, char *** line_ret, int ** len_ret)
 {
   int allocated; /* lines allocated */
   int lines; /* lines used */

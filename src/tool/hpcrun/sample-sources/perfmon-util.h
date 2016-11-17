@@ -52,7 +52,6 @@ int pfmu_getEventType(const char *eventname);
 int pfmu_showEventList();
 int pfmu_isSupported(const char *eventname);
 int pfmu_getEventCode(const char *eventname, unsigned int *eventcode);
-int pfmu_getEventAttribute(const char *event_str, struct perf_event_attr *pea);
 void pfmu_fini();
 
 #endif

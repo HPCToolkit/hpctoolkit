@@ -64,11 +64,32 @@
 #include <linux/perf_event.h>
 
 /******************************************************************************
- * libmonitor
+ * perfmon
  *****************************************************************************/
 #include <perfmon/err.h>
 #include <perfmon/pfmlib.h>
-#include <perfmon/pfmlib_perf_event.h>
+
+
+//******************************************************************************
+// data structure
+//******************************************************************************
+
+// taken from perfmon/pfmlib_perf_event.h
+// we don't want to include this file because it requires perfmon's perf_event.h
+// which is not compatible with the official perf_event.h
+/*
+ * use with PFM_OS_PERF, PFM_OS_PERF_EXT for pfm_get_os_event_encoding()
+ */
+typedef struct {
+        struct perf_event_attr *attr;   /* in/out: perf_event struct pointer */
+        char **fstr;                    /* out/in: fully qualified event string */
+        size_t size;                    /* sizeof struct */
+        int idx;                        /* out: opaque event identifier */
+        int cpu;                        /* out: cpu to program, -1 = not set */
+        int flags;                      /* out: perf_event_open() flags */
+        int pad0;                       /* explicit 64-bit mode padding */
+} pfm_perf_encode_arg_t;
+
 
 
 //******************************************************************************
@@ -253,19 +274,6 @@ pfmu_isSupported(const char *eventname)
   return pfmu_getEventCode(eventname, &eventcode);
 }
 
-int
-pfmu_getEventAttribute(const char *event_str, struct perf_event_attr *pea)
-{
-  char *fstr = NULL;
-  int ret = 0;
-
-  if (pea) {
-    pea->size = sizeof(struct perf_event_attr);
-    ret = pfm_get_perf_event_encoding(event_str, PFM_PLM0|PFM_PLM3|PFM_PLMH, pea,
-          &fstr, NULL);
-  }
-  return ret == PFM_SUCCESS;
-}
 
 /**
  * Initializing perfmon
