@@ -201,6 +201,8 @@ pfmu_getEventType(const char *eventname)
   pfm_perf_encode_arg_t arg;
   char *fqstr = NULL;
 
+  memset(&arg.attr, 0, sizeof(struct perf_event_attr));
+
   arg.fstr = &fqstr;
   arg.size = sizeof(pfm_perf_encode_arg_t);
   struct perf_event_attr attr;

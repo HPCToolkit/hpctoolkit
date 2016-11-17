@@ -127,12 +127,7 @@ long long perf_mmap_read( void *our_mmap, int mmap_size,
 
 	bytesize=mmap_size*getpagesize();
 
-	if (size>bytesize) {
-	//	printf("error!  we overflowed the mmap buffer %d>%lld bytes\n",
-	//		size,bytesize);
-	}
-
-	if (data==NULL) {
+	if ((data == NULL) || (size>bytesize)) {
 		return -1;
 	}
 
@@ -153,45 +148,6 @@ long long perf_mmap_read( void *our_mmap, int mmap_size,
 	while(offset<size) {
 
 		event = ( struct perf_event_header * ) & data[offset];
-
-			switch(event->misc & PERF_RECORD_MISC_CPUMODE_MASK) {
-				case PERF_RECORD_MISC_CPUMODE_UNKNOWN:
-					break; 
-				case PERF_RECORD_MISC_KERNEL:
-					break;
-				case PERF_RECORD_MISC_USER:
-					break;
-				case PERF_RECORD_MISC_HYPERVISOR:
-					break;
-				case PERF_RECORD_MISC_GUEST_KERNEL:
-					break;
-				case PERF_RECORD_MISC_GUEST_USER:
-					break;
-				default:
-					break;
-			}
-
-			/* All three have the same value */
-			if (event->misc & PERF_RECORD_MISC_MMAP_DATA) {
-				if (event->type==PERF_RECORD_MMAP) {
-				}
-				else if (event->type==PERF_RECORD_COMM) {
-				}
-#if 0
-				else if ((event->type==PERF_RECORD_SWITCH) ||
-					(event->type==PERF_RECORD_SWITCH_CPU_WIDE)) {
-				}
-#endif
-				else {
-				}
-			}
-
-			if (event->misc & PERF_RECORD_MISC_EXACT_IP) {
-			}
-
-			if (event->misc & PERF_RECORD_MISC_EXT_RESERVED) {
-			}
-
 		offset+=8; /* skip header */
 
 		/***********************/

@@ -570,6 +570,9 @@ perf_add_kernel_callchain(
 
   if (perf_read_header(&hdr) == 0) {
     if (hdr.type == PERF_RECORD_SAMPLE) {
+      if (hdr.size <= 0) {
+	return parent;
+      }
       uint64_t n_frames;
       // determine how many frames in the call chain 
       if (perf_read_uint64_t(&n_frames) == 0) {
