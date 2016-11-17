@@ -224,11 +224,11 @@ pfmu_getEventType(const char *eventname)
   pfm_perf_encode_arg_t arg;
   char *fqstr = NULL;
 
-  memset(&arg.attr, 0, sizeof(struct perf_event_attr));
-
   arg.fstr = &fqstr;
   arg.size = sizeof(pfm_perf_encode_arg_t);
   struct perf_event_attr attr;
+  memset(&attr, 0, sizeof(struct perf_event_attr));
+
   arg.attr = &attr;
   int ret = pfm_get_os_event_encoding(eventname, PFM_PLM0|PFM_PLM3, PFM_OS_PERF_EVENT, &arg);
 
