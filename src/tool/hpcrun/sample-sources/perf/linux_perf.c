@@ -81,9 +81,9 @@
  * local includes
  *****************************************************************************/
 
-#include "simple_oo.h"
-#include "sample_source_obj.h"
-#include "common.h"
+#include "sample-sources/simple_oo.h"
+#include "sample-sources/sample_source_obj.h"
+#include "sample-sources/common.h"
 
 #include <hpcrun/cct_insert_backtrace.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -938,7 +938,7 @@ restart_perf_event(int fd)
 #define ss_name linux_perf
 #define ss_cls SS_HARDWARE
 
-#include "ss_obj.h"
+#include "sample-sources/ss_obj.h"
 
 // ---------------------------------------------
 // signal handler

@@ -277,9 +277,9 @@ MY_BASE_FILES =				\
 	sample-sources/io.c 		\
 	sample-sources/itimer.c		\
 	sample-sources/idle.c		\
-	sample-sources/linux_perf.c	\
+	sample-sources/perf/linux_perf.c	\
+	sample-sources/perf/mmap_read.c	\
 	sample-sources/memleak.c	\
-	sample-sources/mmap_read.c	\
 	sample-sources/pthread-blame.c  \
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \
@@ -329,7 +329,7 @@ MY_BASE_FILES =				\
 if OPT_PERFMON
 MY_BASE_FILES +=  			\
 	utilities/line_wrapping.c	\
-	sample-sources/perfmon-util.c	
+	sample-sources/perf/perfmon-util.c	
 endif
 ## if OPT_ENABLE_MPI_WRAP
 ## MY_BASE_FILES +=  			\

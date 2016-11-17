@@ -66,7 +66,6 @@
 /******************************************************************************
  * perfmon
  *****************************************************************************/
-#include <perfmon/err.h>
 #include <perfmon/pfmlib.h>
 
 
@@ -152,9 +151,10 @@ show_event_info(pfm_event_info_t *info)
   ainfo.size = sizeof(ainfo);
 
   ret = pfm_get_pmu_info(info->pmu, &pinfo);
-  if (ret)
-	errx(1, "cannot get pmu info: %s", pfm_strerror(ret));
-
+  if (ret) {
+    EMSG( "cannot get pmu info: %s", pfm_strerror(ret));
+    return;
+  }
   printf(dashes_separator );
   printf("%s::%s\n", pinfo.name, info->name);
 
@@ -163,50 +163,52 @@ show_event_info(pfm_event_info_t *info)
   pfm_for_each_event_attr(i, info) {
     ret = pfm_get_event_attr_info(info->idx, i, PFM_OS_NONE, &ainfo);
     if (ret != PFM_SUCCESS)
-	errx(1, "cannot retrieve event %s attribute info: %s", info->name, pfm_strerror(ret));
-    printf("%s::%s:%s\n", pinfo.name, info->name, ainfo.name); 
-    //printw(info->desc);
-    printw(ainfo.desc);
+	EMSG( "cannot retrieve event %s attribute info: %s", info->name, pfm_strerror(ret));
+    else {
+      printf("%s::%s:%s\n", pinfo.name, info->name, ainfo.name); 
+      printw(ainfo.desc);
+    }
   }
 }
 
 static int
 show_info(char *event )
 {
-   pfm_pmu_info_t pinfo;
-   pfm_event_info_t info;
-   int i, j, ret, match = 0, pname;
+  pfm_pmu_info_t pinfo;
+  pfm_event_info_t info;
+  int i, j, ret, match = 0, pname;
 
-   memset(&pinfo, 0, sizeof(pinfo));
-   memset(&info, 0, sizeof(info));
+  memset(&pinfo, 0, sizeof(pinfo));
+  memset(&info, 0, sizeof(info));
 
-   pinfo.size = sizeof(pinfo);
-   info.size = sizeof(info);
+  pinfo.size = sizeof(pinfo);
+  info.size = sizeof(info);
 
-   pname = event_has_pname(event);
+  pname = event_has_pname(event);
 
-/*
- * scan all supported events, incl. those
- * from undetected PMU models
- */
-   pfm_for_all_pmus(j) {
+ /*
+  * scan all supported events, incl. those
+  * from undetected PMU models
+  */
+  pfm_for_all_pmus(j) {
 
-	ret = pfm_get_pmu_info(j, &pinfo);
+    ret = pfm_get_pmu_info(j, &pinfo);
+      if (ret != PFM_SUCCESS)
+	continue;
+
+     /* no pmu prefix, just look for detected PMU models */
+     if (!pname && !pinfo.is_present)
+	continue;
+
+     for (i = pinfo.first_event; i != -1; i = pfm_get_event_next(i)) {
+	ret = pfm_get_event_info(i, PFM_OS_NONE, &info);
 	if (ret != PFM_SUCCESS)
-			continue;
-
-	/* no pmu prefix, just look for detected PMU models */
-	if (!pname && !pinfo.is_present)
-		continue;
-
-	for (i = pinfo.first_event; i != -1; i = pfm_get_event_next(i)) {
-		ret = pfm_get_event_info(i, PFM_OS_NONE, &info);
-		if (ret != PFM_SUCCESS)
-			errx(1, "cannot get event info: %s", pfm_strerror(ret));
-
-		show_event_info(&info);
+	  EMSG( "cannot get event info: %s", pfm_strerror(ret));
+        else {
+	  show_event_info(&info);
 		match++;
 	}
+      } 
    }
    return match;
 }
@@ -285,11 +287,11 @@ pfmu_init()
    /* to allow encoding of events from non detected PMU models */
    int ret = setenv("LIBPFM_ENCODE_INACTIVE", "1", 1);
    if (ret != PFM_SUCCESS)
-      errx(1, "cannot force inactive encoding");
+      EMSG( "cannot force inactive encoding");
 
    ret = pfm_initialize();
    if (ret != PFM_SUCCESS)
-      errx(1, "cannot initialize libpfm: %s", pfm_strerror(ret));
+      EMSG( "cannot initialize libpfm: %s", pfm_strerror(ret));
 
    return 1;
 }
