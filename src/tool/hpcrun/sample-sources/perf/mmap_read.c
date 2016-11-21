@@ -446,6 +446,7 @@ long long perf_mmap_read( void *our_mmap, int mmap_size,
 				offset+=8;
 			}
 
+#if 0
 			if (sample_type & PERF_SAMPLE_TRANSACTION) {
 				long long abi;
 
@@ -454,6 +455,7 @@ long long perf_mmap_read( void *our_mmap, int mmap_size,
 
 			}
 			break;
+#endif
 
 #if 0
 		/* AUX */
