@@ -85,16 +85,6 @@ bool
 uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info);
 
 
-/*
- * Wrapper (decorator pattern) for fnbounds_enclosing_addr(...).
- * Given an instruction pointer (IP) 'ip',
- * return the bounds [start, end) of the function that contains 'ip'.
- * Also return the load module that contains 'ip' to make
- * normalization easy.  All IPs are unnormalized.
- */
-ildmod_stat_t*
-uw_recipe_map_get_fnbounds_ldmod(void *ip);
-
 void
 uw_recipe_map_delete_range(void *start, void *end);
 

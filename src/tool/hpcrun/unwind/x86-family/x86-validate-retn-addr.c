@@ -363,14 +363,14 @@ deep_validate_return_addr(void* addr, void* generic)
   TMSG(VALIDATE_UNW,"validating unwind step from %p ==> %p",cursor->pc_unnorm,
        addr);
 
-  if (!uw_recipe_map_get_fnbounds_ldmod(addr)) {
-    TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid", addr);
+  unwindr_info_t *unwr_info;
+  if( !uw_recipe_map_lookup(addr, &unwr_info) ) {
+	TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid", addr);
     return status_is_wrong();
   }
 
-  ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(cursor->pc_unnorm);
-  if (ilmstat) {
-	 void* callee = (void*)ildmod_stat_interval(ilmstat)->start;
+  if( uw_recipe_map_lookup(cursor->pc_unnorm, &unwr_info) ) {
+	 void* callee = (void*)unwr_info->start;
 	    TMSG(VALIDATE_UNW, "beginning of my routine = %p", callee);
 	    if (confirm_call(addr, callee)) {
 	      TMSG(VALIDATE_UNW, "Instruction preceeding %p is a call to this routine. Unwind confirmed", addr);
@@ -413,7 +413,8 @@ dbg_val(void *addr, void *pc)
 validation_status
 validate_return_addr(void *addr, void *generic)
 {
-  if (!uw_recipe_map_get_fnbounds_ldmod(addr)) {
+    unwindr_info_t *unwr_info;
+	if( !uw_recipe_map_lookup(addr, &unwr_info) ) {
     return UNW_ADDR_WRONG;
   }
   return UNW_ADDR_PROBABLE;

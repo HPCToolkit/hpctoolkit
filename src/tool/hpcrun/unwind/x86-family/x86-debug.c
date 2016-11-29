@@ -70,9 +70,11 @@ static fnbounds_t local;
 fnbounds_t*
 x86_fnbounds(void* addr)
 {
-  ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(addr);
-  local.begin = (void*)ildmod_stat_interval(ilmstat)->start;
-  local.end   = (void*)ildmod_stat_interval(ilmstat)->end;
+  unwindr_info_t unwr_info;
+  if( !uw_recipe_map_lookup(addr, &unwr_info) )
+	  EMSG("x86_fnbounds: bounds of addr %p taken, but no bounds known", addr);
+  local.begin = (void*)unwr_info.start;
+  local.end   = (void*)unwr_info.end;
   return &local;
 }
 
@@ -89,12 +91,13 @@ x86_print_intervals(btuwi_status_t intervals)
 void
 x86_dump_intervals(void* addr)
 {
-  void *s, *e;
-  btuwi_status_t intervals;
-  ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(addr);
-  s = (void*)ildmod_stat_interval(ilmstat)->start;
-  e = (void*)ildmod_stat_interval(ilmstat)->end;
+  unwindr_info_t unwr_info;
+  if( !uw_recipe_map_lookup(addr, &unwr_info) )
+	  EMSG("x86_fnbounds: bounds of addr %p taken, but no bounds known", addr);
+  void * s = (void*)unwr_info.start;
+  void * e = (void*)unwr_info.end;
 
+  btuwi_status_t intervals;
   intervals = x86_build_intervals(s, e - s, 0, hpcrun_malloc);
   x86_print_intervals(intervals);
 }
@@ -147,16 +150,15 @@ x86_dump_ins(void *ins)
 void
 hpcrun_dump_intervals_noisy(void* addr)
 {
-  void *s, *e;
-  unwind_interval *u;
-  btuwi_status_t intervals;
+  unwindr_info_t unwr_info;
+  if (!uw_recipe_map_lookup(addr, &unwr_info))
+	  EMSG("hpcrun_dump_intervals_noisy: bounds of addr %p taken, but no bounds known", addr);
+  void * s = (void*)unwr_info.start;
+  void * e = (void*)unwr_info.end;
 
-  ildmod_stat_t *ilmstat = uw_recipe_map_get_fnbounds_ldmod(addr);
-  s = (void*)ildmod_stat_interval(ilmstat)->start;
-  e = (void*)ildmod_stat_interval(ilmstat)->end;
+  btuwi_status_t intervals = x86_build_intervals(s, e - s, 1, hpcrun_malloc);
 
-  intervals = x86_build_intervals(s, e - s, 1, hpcrun_malloc);
-
+  unwind_interval * u;
   for(u = intervals.first; u; u = UWI_NEXT(u)) {
     dump_ui_dbg(u);
   }

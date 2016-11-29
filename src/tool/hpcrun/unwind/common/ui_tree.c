@@ -266,8 +266,7 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
 /*
  *
  */
-ilmstat_btuwi_pair_t *
-uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
+static ilmstat_btuwi_pair_t * uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
 {
   ilmstat_btuwi_pair_t* ilmstat_btuwi =
 	  uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(addr);
@@ -304,17 +303,6 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
 
   TMSG(UITREE_LOOKUP, "found in unwind tree: addr %p", addr);
   return ilmstat_btuwi;
-}
-
-ildmod_stat_t*
-uw_recipe_map_get_fnbounds_ldmod(void *addr)
-{
-  // check if addr is already in the range of an interval key in the map
-  ilmstat_btuwi_pair_t* ilmstat_btuwi =
-	  uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(addr);
-  if (!ilmstat_btuwi)
-	return NULL;
-  return ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi);
 }
 
 /*
