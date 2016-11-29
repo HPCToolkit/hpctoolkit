@@ -1468,40 +1468,46 @@ fi
 
 AC_ARG_WITH([libelf],
   [AS_HELP_STRING([--with-libelf=PATH],
-  	    [path to libelf install directory])],
+      [path to libelf install directory])],
   [LIBELF="$withval"],
   [])
 
 AC_MSG_CHECKING([for libelf])
 
-valid_libelf_dir()
-{
-    test -f "$1/include/libelf.h" || test -f "$1/include/libelf/libelf.h"
-}
+LIBELF_INC=no
+LIBELF_LIB=no
+LIBELF_COPY=no
 
-case "${LIBELF}" in
+case "$LIBELF" in
   /* )
-    if valid_libelf_dir "$LIBELF" ; then :
-    else
-        AC_MSG_ERROR([invalid libelf directory: $LIBELF])
+    if test ! -f "${LIBELF}/include/libelf.h" \
+        && test ! -f "${LIBELF}/include/libelf/libelf.h"
+    then
+      AC_MSG_ERROR([unable to find libelf.h in: $LIBELF])
+    fi
+    LIBELF_INC="${LIBELF}/include"
+    for lib in $multilib_path ; do
+      if test -f "${LIBELF}/${lib}/libelf.so" ; then
+        LIBELF_LIB="${LIBELF}/${lib}"
+	break
+      fi
+    done
+    if test "$LIBELF_LIB" = no ; then
+      AC_MSG_ERROR([unable to find libelf.so in: $LIBELF])
     fi
     LIBELF_COPY=yes
     ;;
   no )
-    LIBELF_COPY=no
     ;;
   * )
     AC_MSG_ERROR([libelf directory must be absolute path: $LIBELF])
     ;;
 esac
 
-LIBELF_LIB="${LIBELF}/lib"
-LIBELF_INC="${LIBELF}/include"
-
 AC_MSG_RESULT([$LIBELF])
 
-AC_SUBST([LIBELF_LIB])
 AC_SUBST([LIBELF_INC])
+AC_SUBST([LIBELF_LIB])
 AC_SUBST([LIBELF_COPY])
 
 
@@ -2300,6 +2306,60 @@ AC_SUBST([XERCES_LDFLAGS])
 AC_SUBST([XERCES_LDLIBS])
 AC_SUBST([XERCES_COPY])
 AC_SUBST([XERCES_LIB])
+
+
+#-------------------------------------------------
+# Option: --with-zlib=PATH
+#-------------------------------------------------
+
+ZLIB=no
+if test "$use_externals" = yes ; then
+  ZLIB="$ext_zlib_prefix"
+fi
+
+AC_ARG_WITH([zlib],
+  [AS_HELP_STRING([--with-zlib=PATH],
+      [path to zlib install directory])],
+  [ZLIB="$withval"],
+  [])
+
+AC_MSG_CHECKING([zlib])
+
+ZLIB_INC=no
+ZLIB_LIB=no
+ZLIB_COPY=no
+
+case "$ZLIB" in
+  /* )
+    if test ! -f "${ZLIB}/include/zlib.h" ; then
+      AC_MSG_ERROR([unable to find zlib.h in: $ZLIB])
+    fi
+    ZLIB_INC="${ZLIB}/include"
+    for lib in $multilib_path ; do
+      if test -f "${ZLIB}/${lib}/libz.so" ; then
+        ZLIB_LIB="${ZLIB}/${lib}"
+	break
+      fi
+    done
+    if test "$ZLIB_LIB" = no ; then
+      AC_MSG_ERROR([unable to find zlib.so in: $ZLIB])
+    fi
+    ZLIB_COPY=yes
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([zlib directory must be absolute path: $ZLIB])
+    ;;
+esac
+
+AC_MSG_RESULT([$ZLIB])
+
+AM_CONDITIONAL([OPT_USE_ZLIB], [test "$ZLIB" != no])
+
+AC_SUBST([ZLIB_INC])
+AC_SUBST([ZLIB_LIB])
+AC_SUBST([ZLIB_COPY])
 
 
 #----------------------------------------------------------------------------
@@ -3568,6 +3628,7 @@ AC_MSG_NOTICE([  OpenAnalysis: ${OA}])
 AC_MSG_NOTICE([  symtabAPI:    ${SYMTABAPI}])
 AC_MSG_NOTICE([  xed2:         ${XED2}])
 AC_MSG_NOTICE([  xerces:       ${XERCES}])
+AC_MSG_NOTICE([  zlib:         ${ZLIB}])
 AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])

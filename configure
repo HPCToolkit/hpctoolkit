@@ -704,6 +704,11 @@ OPT_BUILD_FRONT_END_TRUE
 OPT_BUILD_BACK_END_FALSE
 OPT_BUILD_BACK_END_TRUE
 BACK_END_LABEL
+ZLIB_COPY
+ZLIB_LIB
+ZLIB_INC
+OPT_USE_ZLIB_FALSE
+OPT_USE_ZLIB_TRUE
 XERCES_LIB
 XERCES_COPY
 XERCES_LDLIBS
@@ -762,8 +767,8 @@ LIBMONITOR_COPY
 LIBMONITOR_LIB
 LIBMONITOR_INC
 LIBELF_COPY
-LIBELF_INC
 LIBELF_LIB
+LIBELF_INC
 LIBDWARF_COPY
 LIBDWARF_INC
 LIBDWARF_LIB
@@ -987,6 +992,7 @@ enable_papi_c_cupti
 with_symtabAPI
 with_xed2
 with_xerces
+with_zlib
 enable_back_end
 enable_hpcrun_flat
 enable_hpcrun
@@ -1730,6 +1736,7 @@ Optional Packages:
   --with-symtabAPI=PATH   path to symtabAPI install directory
   --with-xed2=PATH        path to xed2 install directory
   --with-xerces=PATH      use given XercesC installation
+  --with-zlib=PATH        path to zlib install directory
   --with-cilk=PATH        use given (MIT) Cilk installation for LUSH agents
   --with-upc=PATH         path to IBM BlueGene UPC installation
   --with-upc-lib=LIBRARY  path to UPC library(s), absolute or relative to
@@ -19611,29 +19618,35 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libelf" >&5
 $as_echo_n "checking for libelf... " >&6; }
 
-valid_libelf_dir()
-{
-    test -f "$1/include/libelf.h" || test -f "$1/include/libelf/libelf.h"
-}
+LIBELF_INC=no
+LIBELF_LIB=no
+LIBELF_COPY=no
 
-case "${LIBELF}" in
+case "$LIBELF" in
   /* )
-    if valid_libelf_dir "$LIBELF" ; then :
-    else
-        as_fn_error $? "invalid libelf directory: $LIBELF" "$LINENO" 5
+    if test ! -f "${LIBELF}/include/libelf.h" \
+        && test ! -f "${LIBELF}/include/libelf/libelf.h"
+    then
+      as_fn_error $? "unable to find libelf.h in: $LIBELF" "$LINENO" 5
+    fi
+    LIBELF_INC="${LIBELF}/include"
+    for lib in $multilib_path ; do
+      if test -f "${LIBELF}/${lib}/libelf.so" ; then
+        LIBELF_LIB="${LIBELF}/${lib}"
+	break
+      fi
+    done
+    if test "$LIBELF_LIB" = no ; then
+      as_fn_error $? "unable to find libelf.so in: $LIBELF" "$LINENO" 5
     fi
     LIBELF_COPY=yes
     ;;
   no )
-    LIBELF_COPY=no
     ;;
   * )
     as_fn_error $? "libelf directory must be absolute path: $LIBELF" "$LINENO" 5
     ;;
 esac
-
-LIBELF_LIB="${LIBELF}/lib"
-LIBELF_INC="${LIBELF}/include"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBELF" >&5
 $as_echo "$LIBELF" >&6; }
@@ -20604,6 +20617,70 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${XERCES}" >&5
 $as_echo "${XERCES}" >&6; }
 
+
+
+
+
+
+
+
+#-------------------------------------------------
+# Option: --with-zlib=PATH
+#-------------------------------------------------
+
+ZLIB=no
+if test "$use_externals" = yes ; then
+  ZLIB="$ext_zlib_prefix"
+fi
+
+
+# Check whether --with-zlib was given.
+if test "${with_zlib+set}" = set; then :
+  withval=$with_zlib; ZLIB="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking zlib" >&5
+$as_echo_n "checking zlib... " >&6; }
+
+ZLIB_INC=no
+ZLIB_LIB=no
+ZLIB_COPY=no
+
+case "$ZLIB" in
+  /* )
+    if test ! -f "${ZLIB}/include/zlib.h" ; then
+      as_fn_error $? "unable to find zlib.h in: $ZLIB" "$LINENO" 5
+    fi
+    ZLIB_INC="${ZLIB}/include"
+    for lib in $multilib_path ; do
+      if test -f "${ZLIB}/${lib}/libz.so" ; then
+        ZLIB_LIB="${ZLIB}/${lib}"
+	break
+      fi
+    done
+    if test "$ZLIB_LIB" = no ; then
+      as_fn_error $? "unable to find zlib.so in: $ZLIB" "$LINENO" 5
+    fi
+    ZLIB_COPY=yes
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "zlib directory must be absolute path: $ZLIB" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ZLIB" >&5
+$as_echo "$ZLIB" >&6; }
+
+ if test "$ZLIB" != no; then
+  OPT_USE_ZLIB_TRUE=
+  OPT_USE_ZLIB_FALSE='#'
+else
+  OPT_USE_ZLIB_TRUE='#'
+  OPT_USE_ZLIB_FALSE=
+fi
 
 
 
@@ -22449,6 +22526,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PAPI_CUPTI_TRUE}" && test -z "${OPT_PAPI_CUPTI_FALSE}"; then
   as_fn_error $? "conditional \"OPT_PAPI_CUPTI\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_USE_ZLIB_TRUE}" && test -z "${OPT_USE_ZLIB_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_USE_ZLIB\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_BUILD_BACK_END_TRUE}" && test -z "${OPT_BUILD_BACK_END_FALSE}"; then
@@ -25155,6 +25236,8 @@ $as_echo "$as_me:   symtabAPI:    ${SYMTABAPI}" >&6;}
 $as_echo "$as_me:   xed2:         ${XED2}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   xerces:       ${XERCES}" >&5
 $as_echo "$as_me:   xerces:       ${XERCES}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   zlib:         ${ZLIB}" >&5
+$as_echo "$as_me:   zlib:         ${ZLIB}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi:         ${OPT_PAPI}" >&5
 $as_echo "$as_me:   papi:         ${OPT_PAPI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   cuda:         ${OPT_CUDA}" >&5
