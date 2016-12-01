@@ -472,14 +472,6 @@ long long perf_mmap_read( void *our_mmap, int mmap_size,
         offset+=8;
       }
 
-      if (sample_type & PERF_SAMPLE_TRANSACTION) {
-        long long abi;
-
-        memcpy(&abi,&data[offset],sizeof(long long));
-        offset+=8;
-
-      }
-      break;
 
 #if 0
     /* AUX */
