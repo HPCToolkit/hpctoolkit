@@ -105,6 +105,7 @@
 #include "perfmon-util.h"
 #endif
 
+#include "mmap_read.h" 
 
 //******************************************************************************
 // macros
@@ -133,7 +134,7 @@
 #define PERF_DATA_PAGE_EXP        0      // use 2^PERF_DATA_PAGE_EXP pages
 #define PERF_DATA_PAGES           (1 << PERF_DATA_PAGE_EXP)  
 
-#define BUFFER_FRONT              ((char *) current_perf_mmap + pagesize)
+#define BUFFER_FRONT(current_perf_mmap)              ((char *) current_perf_mmap + pagesize)
 #define BUFFER_SIZE               (tail_mask + 1)
 #define BUFFER_OFFSET(tail)       ((tail) & tail_mask)
 
@@ -144,6 +145,9 @@
 #define PERF_EVENT_AVAILABLE_NO      1
 #define PERF_EVENT_AVAILABLE_YES     2
 
+#define RAW_NONE        0
+#define RAW_IBS_FETCH   1
+#define RAW_IBS_OP      2
 
 
 //******************************************************************************
@@ -243,7 +247,7 @@ struct timespec             __thread cpu_start;
 int                         __thread perf_thread_fd[MAX_EVENTS];
 pe_mmap_t                   __thread *perf_mmap[MAX_EVENTS];
 
-pe_mmap_t                   __thread *current_perf_mmap;
+int                         __thread current_event_index;
 
 
 //******************************************************************************
@@ -310,14 +314,34 @@ perf_stop()
 //----------------------------------------------------------
 
 static int 
+perf_read_ad(
+  void *buf, 
+  size_t bytes_wanted
+)
+{
+  pe_mmap_t *current_perf_mmap = perf_mmap[current_event_index];
+  struct perf_event_attr *current_event = &(events[current_event_index]);
+
+  long long prev = perf_mmap_read( current_perf_mmap, PERF_DATA_PAGES,
+      current_perf_mmap->data_tail,
+      current_event->sample_type, current_event->read_format, 0,
+      NULL, 
+      RAW_NONE, buf); 
+
+  current_perf_mmap->data_tail += bytes_wanted;
+  return prev;
+}
+
+static int 
 perf_read(
   void *buf, 
   size_t bytes_wanted
 )
 {
   // front of the circular data buffer
-  char *data = BUFFER_FRONT; 
-
+  pe_mmap_t *current_perf_mmap = perf_mmap[current_event_index];
+  char *data = BUFFER_FRONT(current_perf_mmap); 
+  
   // compute bytes available in the circular buffer 
   size_t bytes_available = current_perf_mmap->data_head - current_perf_mmap->data_tail;
 
@@ -462,14 +486,10 @@ perf_attr_init(
   attr->config = event_code;			 /* Type-specific configuration */
 
   attr->sample_period = threshold;		 /* Period of sampling 		*/
-  /* PERF_SAMPLE_READ | PERF_SAMPLE_CALLCHAIN | PERF_SAMPLE_STACK_USER; */
   attr->precise_ip    = PERF_REQUEST_0_SKID;	 /*  requested to have 0 skid.  */
   attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
   attr->disabled      = 1; 			/* the counter will be enabled later  */
   attr->sample_stack_user = 4096;
-
-  //attr->read_format = PERF_FORMAT_GROUP; 
-  // attr->pinned      = 0; 
 
   if (perf_ksyms_avail) {
     attr->sample_type   = PERF_SAMPLE_CALLCHAIN;  /* Records the callchain */
@@ -987,7 +1007,7 @@ perf_event_handler(
     // TODO: hack solution to point to the mmap of the current event
     // a more reliable way to do this is to pass by argument to hpcrun_sample
     // however, this solution requires too much changes
-    current_perf_mmap = perf_mmap[index];
+    current_event_index = index;
 
     sample_val_t sv = hpcrun_sample_callpath(context, metric_id[index], 1,
 					   0/*skipInner*/, 0/*isSync*/);
