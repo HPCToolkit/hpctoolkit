@@ -118,7 +118,7 @@ MYMONITORDIR = $(DESTDIR)$(pkglibdir)/monitor
 
 define copy-libs
     @if test "$1" = yes ; then \
-	( cd "$2" && tar cf - $3 ) | ( cd "$(EXT_LIBS_DIR)" && tar xvf - ) ; \
+	( cd "$2" && tar cf - $3 2>/dev/null ) | ( cd "$(EXT_LIBS_DIR)" && tar xvf - ) ; \
 	true ; \
     fi
 endef
@@ -143,6 +143,7 @@ install-exec-local: myinstall-monitor
 	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.a)
 	$(call copy-libs,$(XED2_COPY),$(XED2_LIB_DIR),lib*)
 	$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
+	$(call copy-libs,$(ZLIB_COPY),$(ZLIB_LIB),libz.a libz.so*)
 
 myinstall-monitor:
 	if test "@OPT_INSTALL_MONITOR@" = "yes"; then \

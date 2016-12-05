@@ -123,6 +123,7 @@ host_triplet = @host@
 @OPT_ENABLE_BANAL_WITH_OA_TRUE@am__append_3 = @OA_LDFLAGS@
 @OPT_ENABLE_BANAL_WITH_OA_TRUE@am__append_4 = @OA_IFLAGS@
 @USE_BOOST_LIBS_TRUE@am__append_5 = -L$(BOOST_LIB) $(BOOST_LIB_LIST)
+@OPT_USE_ZLIB_TRUE@am__append_6 = -L$(ZLIB_LIB) -lz
 pkglibexec_PROGRAMS = hpcstruct-bin$(EXEEXT)
 subdir = src/tool/hpcstruct
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -157,7 +158,7 @@ am__DEPENDENCIES_6 = $(HPCLIB_Analysis) $(HPCLIB_Banal) $(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(am__DEPENDENCIES_2) \
 	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean) \
 	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4) \
-	$(am__DEPENDENCIES_5)
+	$(am__DEPENDENCIES_5) $(am__DEPENDENCIES_1)
 hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_6)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -453,6 +454,9 @@ XERCES_IFLAGS = @XERCES_IFLAGS@
 XERCES_LDFLAGS = @XERCES_LDFLAGS@
 XERCES_LDLIBS = @XERCES_LDLIBS@
 XERCES_LIB = @XERCES_LIB@
+ZLIB_COPY = @ZLIB_COPY@
+ZLIB_INC = @ZLIB_INC@
+ZLIB_LIB = @ZLIB_LIB@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -562,7 +566,7 @@ MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_Prof) $(HPCLIB_Binutils) $(HPCLIB_ISA) $(MY_LIB_XED) \
 	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean) \
 	$(MY_LIB_CFG) $(MY_LIB_Symtab) @GNUBINUTILS_LDLIBS@ \
-	@HOST_HPCSTRUCT_LDFLAGS@ $(am__append_5)
+	@HOST_HPCSTRUCT_LDFLAGS@ $(am__append_5) $(am__append_6)
 MY_LIB_CFG = $(am__append_1) $(am__append_3)
 @OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE@MY_LIB_Symtab = 
 @OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@MY_LIB_Symtab = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
