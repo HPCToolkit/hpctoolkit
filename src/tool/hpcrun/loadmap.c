@@ -52,7 +52,6 @@
 #include "hpcrun_stats.h"
 #include "sample_event.h"
 #include "epoch.h"
-#include <unwind/common/ui_tree.h>
 
 #include <messages/messages.h>
 
@@ -70,6 +69,36 @@ static dso_info_t* s_dso_free_list = NULL;
 /* locking functions to ensure that loadmaps are consistent */
 static spinlock_t loadmap_lock = SPINLOCK_UNLOCKED;
 
+static loadmap_notify_t *notification_recipients = NULL;
+
+void
+hpcrun_loadmap_notify_register(loadmap_notify_t *n)
+{
+  n->next = notification_recipients;
+  notification_recipients = n;
+}
+
+
+static void
+hpcrun_loadmap_notify_map(void *start, void *end)
+{
+  loadmap_notify_t * n = notification_recipients;
+  while (n) {
+     n->map(start, end);
+     n = n->next;
+  }
+}
+
+
+static void
+hpcrun_loadmap_notify_unmap(void *start, void *end)
+{
+  loadmap_notify_t * n = notification_recipients;
+  while (n) {
+     n->unmap(start, end);
+     n = n->next;
+  }
+}
 
 
 //***************************************************************************
@@ -408,8 +437,8 @@ hpcrun_loadmap_map(dso_info_t* dso)
 	lm->dso_info = dso;
 	hpcrun_loadmap_pushFront(lm);
 
-	// split poisoned interval here
-	uw_recipe_map_unpoison((uintptr_t)lm->dso_info->start_addr, (uintptr_t)lm->dso_info->end_addr);
+        hpcrun_loadmap_notify_map(lm->dso_info->start_addr, 
+                                  lm->dso_info->end_addr);
   }
 
   TMSG(LOADMAP, "hpcrun_loadmap_map: '%s' size=%d %s",
@@ -447,10 +476,7 @@ hpcrun_loadmap_unmap(load_module_t* lm)
     assert((uintptr_t)old_dso->end_addr < UINTPTR_MAX) ;
 #endif
 
-    uw_recipe_map_delete_range(old_dso->start_addr, old_dso->end_addr);
-
-    // join poisoned intervals here.
-    uw_recipe_map_repoison((uintptr_t)old_dso->start_addr,(uintptr_t)old_dso->end_addr);
+    hpcrun_loadmap_notify_unmap(old_dso->start_addr, old_dso->end_addr);
   }
 }
 

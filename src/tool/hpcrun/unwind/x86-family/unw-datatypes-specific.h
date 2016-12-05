@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2016, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,40 +44,10 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/*
- * Interface to unwind recipe map.
- *
- */
+#ifndef UNW_DATATYPES_SPECIFIC_H
+#define UNW_DATATYPES_SPECIFIC_H
 
-#ifndef _UI_TREE_H_
-#define _UI_TREE_H_
+#include <unwind/common/std_unw_cursor.h>
+typedef void* unw_word_t;
 
-#include <sys/types.h>
-#include "binarytree_uwi.h"
-#include "ilmstat_btuwi_pair.h"
-#include "unw-datatypes.h"
-#include "unwindr_info.h"
-
-
-void
-uw_recipe_map_init(void);
-
-
-/*
- * if addr is found in range in the map, return true and
- *   *unwr_info is the ilmstat_btuwi_pair_t ( ([start, end), ldmod, status), btuwi ),
- *   where the root of btuwi is the uwi_t for addr
- * else return false
- */
-bool
-uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info);
-
-
-void
-uw_recipe_map_delete_range(void *start, void *end);
-
-
-void
-uw_recipe_map_print(void);
-
-#endif  /* !_UI_TREE_H_ */
+#endif // UNW_DATATYPES_SPECIFIC_H 

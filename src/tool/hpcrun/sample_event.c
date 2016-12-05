@@ -373,28 +373,6 @@ hpcrun_gen_thread_ctxt(void* context)
   return node;
 }
 
-#if 0
-static cct_node_t*
-hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context, void **trace_pc,
-			   int metricId,
-			   uint64_t metricIncr,
-			   int skipInner, int isSync)
-{
-  void* pc = hpcrun_context_pc(context);
-
-  TMSG(DEBUG_PARTIAL_UNW, "hpcrun take profile sample @ %p",pc);
-
-  /* check to see if shared library loadmap (of current epoch) has changed out from under us */
-  epoch = hpcrun_check_for_new_loadmap(epoch);
-
-  cct_node_t* n = hpcrun_dbg_backtrace2cct(&(epoch->csdata),
-					   context, trace_pc,
-					   metricId, metricIncr,
-					   skipInner);
-
-  return n;
-}
-#endif
 
 static cct_node_t*
 help_hpcrun_sample_callpath(epoch_t *epoch, void *context, ip_normalized_t *leaf_func,

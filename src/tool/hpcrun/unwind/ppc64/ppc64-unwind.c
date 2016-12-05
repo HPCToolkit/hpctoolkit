@@ -84,38 +84,27 @@
 #include <lib/isa-lean/power/instruction-set.h>
 #include <unwind/common/fence_enum.h>
 
+
 //***************************************************************************
-// forward declarations
+// external declarations
+//***************************************************************************
+
+extern void 
+hpcrun_set_real_siglongjmp(void);
+
+
+
+//***************************************************************************
+// macros
 //***************************************************************************
 
 #define MYDBG 0
 
-typedef enum {
-  UnwFlg_NULL = 0,
-  UnwFlg_StackTop,
-} unw_flag_t;
 
-static fence_enum_t
-hpcrun_check_fence(void* ip);
 
 //***************************************************************************
-// interface functions
+// type declarations
 //***************************************************************************
-
-static bool
-fence_stop(fence_enum_t fence)
-{
-  return (fence == FENCE_MAIN) || (fence == FENCE_THREAD);
-}
-
-extern void hpcrun_set_real_siglongjmp(void);
-
-void
-hpcrun_unw_init(void)
-{
-  uw_recipe_map_init();
-  hpcrun_set_real_siglongjmp();
-}
 
 //
 // register codes (only 1 at the moment)
@@ -123,6 +112,60 @@ hpcrun_unw_init(void)
 typedef enum {
   UNW_REG_IP
 } unw_reg_code_t;
+
+
+typedef enum {
+  UnwFlg_NULL = 0,
+  UnwFlg_StackTop,
+} unw_flag_t;
+
+
+
+//***************************************************************************
+// forward declarations
+//***************************************************************************
+
+static fence_enum_t
+hpcrun_check_fence(void* ip);
+
+
+
+//***************************************************************************
+// private functions
+//***************************************************************************
+
+static void
+compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
+{
+  void *func_start_pc =  (void*) cursor->unwr_info.start;
+  load_module_t* lm = cursor->unwr_info.lm;
+
+  cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, lm);
+  cursor->the_function = hpcrun_normalize_ip(func_start_pc, lm);
+}
+
+
+
+static bool
+fence_stop(fence_enum_t fence)
+{
+  return (fence == FENCE_MAIN) || (fence == FENCE_THREAD);
+}
+
+
+static fence_enum_t
+hpcrun_check_fence(void* ip)
+{
+  fence_enum_t rv = FENCE_NONE;
+  if (monitor_unwind_process_bottom_frame(ip))
+    rv = FENCE_MAIN;
+  else if (monitor_unwind_thread_bottom_frame(ip))
+    rv = FENCE_THREAD;
+
+   if (ENABLED(FENCE_UNW) && rv != FENCE_NONE)
+     TMSG(FENCE_UNW, "%s", fence_enum_name(rv));
+   return rv;
+}
 
 
 static int 
@@ -146,6 +189,17 @@ hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
   return 0;
 }
 
+
+//***************************************************************************
+// interface functions
+//***************************************************************************
+
+void
+hpcrun_unw_init(void)
+{
+  uw_recipe_map_init();
+  hpcrun_set_real_siglongjmp();
+}
 
 int
 hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c, ip_normalized_t* reg_value)
@@ -184,16 +238,9 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   cursor->bp        = NULL;
   cursor->flags     = UnwFlg_StackTop;
 
-  // Capture unnormalized ip here b/c hpcrun_addr_to_interval() will
-  // not call hpcrun_normalize_ip() in exceptional cases.
-  cursor->pc_norm = ((ip_normalized_t)
-                     { .lm_id = HPCRUN_FMT_LMId_NULL,
-		       .lm_ip = (uintptr_t) cursor->pc_unnorm });
-
   bitree_uwi_t* intvl = NULL;
   bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &(cursor->unwr_info));
   if (found) {
-	cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, cursor->unwr_info.lm);
 	intvl = cursor->unwr_info.btuwi;
 	  if (intvl && UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
 	    if (UWI_RECIPE(intvl)->ra_arg == PPC_REG_LR) {
@@ -208,6 +255,8 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
     EMSG("unw_init: cursor could NOT build an interval for initial pc = %p",
 	 cursor->pc_unnorm);
   }
+
+  compute_normalized_ips(cursor);
 
   TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, fp=%p", 
        cursor->pc_unnorm, cursor->ra, cursor->sp, cursor->bp);
@@ -366,26 +415,12 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   if (MYDBG) { ui_dump(nxt_intvl); }
 
   cursor->pc_unnorm = nxt_pc;
-  cursor->pc_norm   = nxt_pc_norm;
   cursor->ra        = nxt_ra;
   cursor->sp        = nxt_sp;
   cursor->bp        = nxt_fp;
-//  cursor->intvl     = (splay_interval_t*)nxt_intvl;
   cursor->flags     = UnwFlg_NULL;
 
+  compute_normalized_ips(cursor);
+
   return STEP_OK;
-}
-
-static fence_enum_t
-hpcrun_check_fence(void* ip)
-{
-  fence_enum_t rv = FENCE_NONE;
-  if (monitor_unwind_process_bottom_frame(ip))
-    rv = FENCE_MAIN;
-  else if (monitor_unwind_thread_bottom_frame(ip))
-    rv = FENCE_THREAD;
-
-   if (ENABLED(FENCE_UNW) && rv != FENCE_NONE)
-     TMSG(FENCE_UNW, "%s", fence_enum_name(rv));
-   return rv;
 }

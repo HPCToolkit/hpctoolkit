@@ -140,6 +140,7 @@ install-exec-local: myinstall-monitor
 	$(call copy-libs,$(SYMTABAPI_COPY_PARSE),$(SYMTABAPI_LIB),libparse*)
 	$(call copy-libs,$(SYMTABAPI_COPY_PARSE),$(SYMTABAPI_LIB),libinstruct*)
 	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.so*)
+	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.a)
 	$(call copy-libs,$(XED2_COPY),$(XED2_LIB_DIR),lib*)
 	$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
 

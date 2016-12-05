@@ -182,6 +182,53 @@ Contents:
 ------------------------------------------------------------
 
 ----------------------------------------
+HPCToolkit Version 2016.12, Dec 2016
+----------------------------------------
+
+Added preliminary measurement, analysis, attribution, and GUI support
+for Power8/LE.
+
+Added preliminary measurement, analysis, and attribution support for
+ARM64.
+
+Added support for KNL, Knights Landing (configure as x86-64).
+
+Overhauled data structures for managing shared state (binary analysis results) 
+in hpcrun to avoid mutual exclusion in the common case. This improves manycore
+scalability.
+
+Overhaul binary analysis to better attribute performance to highly-optimized
+code that involves inlined functions, inlined templates, outlined OpenMP 
+functions.
+
+Removed dependence on a locally-modified copy of binutils and switched
+to use binutils 2.27, which supports Power8/LE and ARM64.
+
+Updated build infrastructure to use newer versions of autotools that that 
+recognize the Power8 little-endian system type.
+ - autoconf 2.69.
+ - automake 1.15.
+ - libtool 2.4.6.
+
+Use boost version 1.59.0.
+Use elfutils version 0.167.
+Use libmonitor version from Sept 15, 2016. 
+Use libunwind version from Feb 29, 2016.
+
+Known problems:
+
+HPCToolkit's GUI's are not yet available for ARM64 platforms.
+
+Binary analysis on Power8/LE may fail to fully analyze routines that contain 
+switch tables. This has several effects. 
+(1) Samples attributed to code regions in a routine that are overlooked by 
+    the binary analyzer will be attributed to the first source line of the 
+    enclosing routine.
+(2) Loops in code regions that are overlooked will not be reported in 
+    hpcviewer.
+
+
+----------------------------------------
 HPCToolkit Version 5.4.x, Dec 2015
 ----------------------------------------
 

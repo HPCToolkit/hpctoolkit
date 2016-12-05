@@ -168,6 +168,26 @@ static step_state (*dbg_unw_step)(hpcrun_unw_cursor_t* cursor) = t1_dbg_unw_step
 
 extern void hpcrun_set_real_siglongjmp(void);
 
+//************************************************
+// private functions
+//************************************************
+
+static void
+compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
+{
+  void *func_start_pc =  (void*) cursor->unwr_info.start;
+  load_module_t* lm = cursor->unwr_info.lm;
+
+  cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, lm);
+  cursor->the_function = hpcrun_normalize_ip(func_start_pc, lm);
+}
+
+
+
+//************************************************
+// interface functions
+//************************************************
+
 void
 hpcrun_unw_init(void)
 {
@@ -250,7 +270,7 @@ hpcrun_unw_set_cursor(hpcrun_unw_cursor_t* cursor, void **sp, void **bp, void *i
   load_module_t *lm;
   bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &(cursor->unwr_info));
 
-  cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, NULL);
+  compute_normalized_ips(cursor);
 
   return found;
 }
@@ -272,14 +292,13 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 
   cursor->flags = 0; // trolling_used
   bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &(cursor->unwr_info));
-  if (found) {
-	cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, cursor->unwr_info.lm);
-  }
-  else {
+
+  if (!found) {
     EMSG("unw_init: cursor could NOT build an interval for initial pc = %p",
 	 cursor->pc_unnorm);
-    cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, NULL);
   }
+
+  compute_normalized_ips(cursor);
 
   if (MYDBG) { dump_ui(cursor->unwr_info.btuwi, 0); }
 }
@@ -562,7 +581,8 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
     cursor->sp 	      = next_sp;
     cursor->ra_loc    = ra_loc;
     cursor->unwr_info = unwr_info;
-    cursor->pc_norm   = hpcrun_normalize_ip(next_pc, cursor->unwr_info.lm);
+
+    compute_normalized_ips(cursor);
   }
 
   TMSG(UNW,"  step_sp: STEP_OK, has_intvl=%d, bp=%p, sp=%p, pc=%p",
@@ -633,7 +653,9 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
       cursor->sp        = next_sp;
       cursor->ra_loc    = ra_loc;
       cursor->unwr_info = unwr_info;
-      cursor->pc_norm   = hpcrun_normalize_ip(next_pc, cursor->unwr_info.lm);
+
+      compute_normalized_ips(cursor);
+
       TMSG(UNW,"  step_bp: STEP_OK, has_intvl=%d, bp=%p, sp=%p, pc=%p",
     	  cursor->unwr_info.btuwi != NULL, next_bp, next_sp, next_pc);
       return STEP_OK;
@@ -802,7 +824,8 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
       cursor->bp        = next_bp;
       cursor->sp        = next_sp;
       cursor->ra_loc    = ra_loc;
-      cursor->pc_norm   = hpcrun_normalize_ip(next_pc, cursor->unwr_info.lm);
+
+      compute_normalized_ips(cursor);
       cursor->flags = 1; // trolling_used
 
       return; // success!
@@ -833,25 +856,4 @@ hpcrun_check_fence(void* ip)
    if (ENABLED(FENCE_UNW) && rv != FENCE_NONE)
      TMSG(FENCE_UNW, "%s", fence_enum_name(rv));
    return rv;
-}
-
-//****************************************************************************
-// debug operations
-//****************************************************************************
-
-static hpcrun_unw_cursor_t _dbg_cursor;
-
-static void GCC_ATTR_UNUSED
-dbg_init_cursor(void* context)
-{
-  DEBUG_NO_LONGJMP = 1;
-
-  mcontext_t *mc = GET_MCONTEXT(context);
-
-  _dbg_cursor.pc_unnorm = MCONTEXT_PC(mc);
-  _dbg_cursor.bp        = MCONTEXT_BP(mc);
-  _dbg_cursor.sp        = MCONTEXT_SP(mc);
-  _dbg_cursor.pc_norm = hpcrun_normalize_ip(_dbg_cursor.pc_unnorm, NULL);
-
-  DEBUG_NO_LONGJMP = 0;
 }

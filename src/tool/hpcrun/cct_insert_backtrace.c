@@ -350,43 +350,6 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
 
 }
 
-cct_node_t*
-hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-                         void **trace_pc,
-			 int metricId,
-			 uint64_t metricIncr,
-			 int skipInner)
-{
-  thread_data_t* td = hpcrun_get_thread_data();
-  backtrace_info_t bt;
-
-  if (! hpcrun_dbg_generate_backtrace(&bt, context, skipInner)) {
-    if (ENABLED(NO_PARTIAL_UNW)){
-      return NULL;
-    }
-    else {
-      TMSG(PARTIAL_UNW, "recording partial unwind from graceful failure");
-      hpcrun_stats_num_samples_partial_inc();
-    }
-  }
-
-  cct_node_t* n = 
-    hpcrun_cct_record_backtrace_w_metric(cct, true, &bt,
-					 bt.has_tramp,
-					 metricId, metricIncr);
-
-  hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));
-  hpcrun_stats_trolled_frames_inc((long) bt.n_trolls);
-
-  if (ENABLED(USE_TRAMP)){
-    hpcrun_trampoline_remove();
-    td->tramp_frame = td->cached_bt;
-    hpcrun_trampoline_insert(n);
-  }
-
-  return n;
-}
-
 
 static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,

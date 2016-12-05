@@ -53,7 +53,6 @@
 
 //*************************** User Include Files ****************************
 
-#include "unwind-cfg.h"
 #include <unwind/common/fence_enum.h>
 #include <utilities/ip-normalized.h>
 
@@ -69,21 +68,10 @@
 
 #else
 
-#include "binarytree_uwi.h"
-#include "ildmod_stat.h"
-#include <hpcrun/utilities/ip-normalized.h>
+#include "unwindr_info.h"
 #define UNW_CURSOR_INTERVAL_t bitree_uwi_t*
 
 #endif
-
-//***************************************************************************
-typedef struct unwindr_info_s {
-  uintptr_t start;
-  uintptr_t end;
-  load_module_t *lm;
-  tree_stat_t treestat;
-  bitree_uwi_t *btuwi;
-} unwindr_info_t;
 
 typedef struct hpcrun_unw_cursor_t {
 

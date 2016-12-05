@@ -53,6 +53,10 @@
  * $Id$
  */
 
+//---------------------------------------------------------------------
+// system include files
+//---------------------------------------------------------------------
+
 #include <sys/types.h>
 #include <assert.h>
 #include <string.h>
@@ -60,6 +64,11 @@
 #include <unistd.h>
 #include <stdio.h>
 
+
+
+//---------------------------------------------------------------------
+// local include files
+//---------------------------------------------------------------------
 #include <memory/hpcrun-malloc.h>
 #include "fnbounds_interface.h"
 #include "thread_data.h"
@@ -67,6 +76,7 @@
 #include "hpcrun_stats.h"
 #include "addr_to_recipe_map.h"
 
+#include <loadmap.h>
 #include <messages/messages.h>
 
 // libmonitor functions
@@ -76,7 +86,25 @@
 #include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/mcs-lock.h>
 
+
+
+//---------------------------------------------------------------------
+// macros
+//---------------------------------------------------------------------
+
 #define UITREE_DEBUG 0
+
+#ifdef NONZERO_THRESHOLD
+#define DEADLOCK_DEFAULT 5000
+#else  // ! NONZERO_THRESHOLD ==> DEADLOCK_DEFAULT = 0
+#define DEADLOCK_DEFAULT 0
+#endif // NONZERO_THRESHOLD
+
+
+
+//---------------------------------------------------------------------
+// local data
+//---------------------------------------------------------------------
 
 static size_t iter_count = 0;
 
@@ -87,48 +115,34 @@ static addr_to_recipe_map_t *addr2recipe_map = NULL;
 // and inserting entries into addr2recipe_map:
 static mem_alloc my_alloc = hpcrun_malloc;
 
-extern btuwi_status_t build_intervals(char *ins, unsigned int len, mem_alloc m_alloc);
-static ilmstat_btuwi_pair_t *uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr);
-static ilmstat_btuwi_pair_t* uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr);
+
 
 //---------------------------------------------------------------------
-// interface operations
+// external declarations 
 //---------------------------------------------------------------------
 
-#ifdef NONZERO_THRESHOLD
-#define DEADLOCK_DEFAULT 5000
-#else  // ! NONZERO_THRESHOLD ==> DEADLOCK_DEFAULT = 0
-#define DEADLOCK_DEFAULT 0
-#endif // NONZERO_THRESHOLD
+extern btuwi_status_t 
+build_intervals(char *ins, unsigned int len, mem_alloc m_alloc);
 
-void
-uw_recipe_map_init(void)
-{
 
-#if UITREE_DEBUG
-  printf("DXN_DBG uw_recipe_map_init: call a2r_map_init(my_alloc) ... \n");
-#endif
 
-  a2r_map_init(my_alloc);
+//---------------------------------------------------------------------
+// forward declarations 
+//---------------------------------------------------------------------
 
-  TMSG(UITREE, "init address-to-recipe map");
-  addr2recipe_map = a2r_map_new(my_alloc);
+static ilmstat_btuwi_pair_t *
+uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr);
 
-  // initialize the map with a POISONED node ({([0, UINTPTR_MAX), NULL), NEVER}, NULL)
-  uw_recipe_map_poison(0, UINTPTR_MAX);
+static ilmstat_btuwi_pair_t * 
+uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr);
 
-  iter_count = DEADLOCK_DEFAULT;
-  if (getenv("HPCRUN_DEADLOCK_THRESHOLD")) {
-	iter_count = atoi(getenv("HPCRUN_DEADLOCK_THRESHOLD"));
-	if (iter_count < 0) iter_count = 0;
-  }
-  TMSG(DEADLOCK, "deadlock threshold set to %d", iter_count);
-}
 
-/*
- *
- */
-bool
+
+//---------------------------------------------------------------------
+// private operations
+//---------------------------------------------------------------------
+
+static bool
 uw_recipe_map_poison(uintptr_t start, uintptr_t end)
 {
   ilmstat_btuwi_pair_t* itpair =
@@ -136,7 +150,8 @@ uw_recipe_map_poison(uintptr_t start, uintptr_t end)
   return a2r_map_insert(addr2recipe_map, itpair, my_alloc);
 }
 
-bool
+
+static bool
 uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
 {
   ilmstat_btuwi_pair_t* ilmstat_btuwi =	a2r_map_inrange_find(addr2recipe_map, start);
@@ -145,8 +160,8 @@ uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
   assert(ilmstat_btuwi != NULL); // start should be in range of some poisoned interval
 #endif
 
-  ildmod_stat_t* ilmstat = ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi);
 #if UITREE_DEBUG
+  ildmod_stat_t* ilmstat = ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi);
   assert(ilmstat->stat == NEVER);  // should be a poisoned node
 #endif
   interval_t* interval = ilmstat_btuwi_pair_interval(ilmstat_btuwi);
@@ -157,7 +172,8 @@ uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
   return uw_recipe_map_poison(end, e0);
 }
 
-bool
+
+static bool
 uw_recipe_map_repoison(uintptr_t start, uintptr_t end)
 {
   if (start > 0) {
@@ -179,9 +195,7 @@ uw_recipe_map_repoison(uintptr_t start, uintptr_t end)
   return uw_recipe_map_poison(start,end);
 }
 
-/*
- *
- */
+
 static ilmstat_btuwi_pair_t *
 uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr) {
   // first check if addr is already in the range of an interval key in the map
@@ -226,6 +240,79 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr) {
 #endif
   return ilmstat_btuwi;
 }
+
+
+/*
+ * Remove intervals in the range [start, end) from the unwind interval
+ * tree.
+ */
+static void
+uw_recipe_map_delete_range(void* start, void* end)
+{
+  //  use EMSG to log this call.
+  EMSG("uw_recipe_map_delete_range from %p to %p \n", start, end);
+  a2r_map_inrange_del_bulk_unsynch(addr2recipe_map, (uintptr_t)start, (uintptr_t)end - 1);
+}
+
+
+static void
+uw_recipe_map_notify_map(void *start, void *end)
+{
+   uw_recipe_map_unpoison((uintptr_t)start, (uintptr_t)end);
+}
+
+
+static void
+uw_recipe_map_notify_unmap(void *start, void *end)
+{
+  uw_recipe_map_delete_range(start, end);
+
+  // join poisoned intervals here.
+  uw_recipe_map_repoison((uintptr_t)start, (uintptr_t)end);
+}
+
+static void
+uw_recipe_map_notify_init()
+{
+   static loadmap_notify_t uw_recipe_map_notifiers;
+
+   uw_recipe_map_notifiers.map = uw_recipe_map_notify_map;
+   uw_recipe_map_notifiers.unmap = uw_recipe_map_notify_unmap;
+   hpcrun_loadmap_notify_register(&uw_recipe_map_notifiers);
+}
+
+
+
+//---------------------------------------------------------------------
+// interface operations
+//---------------------------------------------------------------------
+
+void
+uw_recipe_map_init(void)
+{
+
+#if UITREE_DEBUG
+  printf("DXN_DBG uw_recipe_map_init: call a2r_map_init(my_alloc) ... \n");
+#endif
+
+  a2r_map_init(my_alloc);
+
+  TMSG(UITREE, "init address-to-recipe map");
+  addr2recipe_map = a2r_map_new(my_alloc);
+  
+  uw_recipe_map_notify_init();
+
+  // initialize the map with a POISONED node ({([0, UINTPTR_MAX), NULL), NEVER}, NULL)
+  uw_recipe_map_poison(0, UINTPTR_MAX);
+
+  iter_count = DEADLOCK_DEFAULT;
+  if (getenv("HPCRUN_DEADLOCK_THRESHOLD")) {
+	iter_count = atoi(getenv("HPCRUN_DEADLOCK_THRESHOLD"));
+	if (iter_count < 0) iter_count = 0;
+  }
+  TMSG(DEADLOCK, "deadlock threshold set to %d", iter_count);
+}
+
 
 /*
  *
