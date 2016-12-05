@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,40 +44,46 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-// MEMLEAK overrides the malloc family of functions and provides two
+// This overrides the malloc family of functions and provides two
 // metrics: number of bytes allocated and number of bytes freed per
-// dynamic context.  Subtracting these two values is a way to find
-// memory leaks.
+// dynamic context.  
 //
 // Override functions:
 // posix_memalign, memalign, valloc
 // malloc, calloc, free, realloc
 
-/******************************************************************************
- * standard include files
- *****************************************************************************/
+#ifndef __MEMORY_OVERRIDES_H__
+#define __MEMORY_OVERRIDES_H__
 
-/******************************************************************************
- * local include files
- *****************************************************************************/
-#include "memory-overrides.h"
-#include "memleak.h"
+#include <stdlib.h>
+#include "sample_event.h"
+#include "cct_insert_backtrace.h"
 
+typedef struct mem_info_s {
+  long magic;
+  cct_node_t *context;
+  size_t bytes;
+  void *memblock;
+  void *rmemblock;
+  struct mem_info_s *left;
+  struct mem_info_s *right;
+} mem_info_t;
 
-sample_val_t 
-callpath_sample(ucontext_t * uc, size_t bytes)
-{
-  return hpcrun_sample_callpath(uc, hpcrun_memleak_alloc_id(), bytes, 0, 1);
-}
+typedef void mem_action_fcn(void *, mem_info_t *);
+typedef sample_val_t sample_callpath(ucontext_t *, size_t);
 
-void 
-memleak_init()
-{
-  mem_registry_t mem_item;
-  mem_item.byte_threshold = 1;
-  mem_item.action_fcn     = NULL;
-  mem_item.sample_fcn     = callpath_sample;
-  add_mem_registry(mem_item);
-}
+typedef struct mem_registry_s {
+  // Interface to add restriction for the minimum threshold
+  // of allocated bytes we want to collect
+  // If the allocation function allocates less than the threshold, 
+  // we will not collect the samples
+  size_t byte_threshold;
+  
+  mem_action_fcn  *action_fcn;
+  sample_callpath *sample_fcn;
 
+} mem_registry_t;
 
+int add_mem_registry(mem_registry_t mem_item);
+
+#endif

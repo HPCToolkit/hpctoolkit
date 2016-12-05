@@ -459,6 +459,7 @@ libhpcrun_io_wrap_a_SOURCES = 		\
 	sample-sources/io-over.c
 
 libhpcrun_memleak_la_SOURCES = 		\
+	sample-sources/memory-overrides.c \
 	sample-sources/memleak-overrides.c
 
 libhpcrun_memleak_wrap_a_SOURCES = 	\

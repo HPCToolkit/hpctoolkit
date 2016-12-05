@@ -83,6 +83,8 @@
 #include <messages/messages.h>
 #include <utilities/tokenize.h>
 
+#include "memleak-overrides.h"
+
 static int alloc_metric_id = -1;
 static int free_metric_id = -1;
 
@@ -100,6 +102,8 @@ METHOD_FN(init)
   // reset static variables to their virgin state
   alloc_metric_id = -1;
   free_metric_id = -1;
+  
+  memleak_init();
 }
 
 

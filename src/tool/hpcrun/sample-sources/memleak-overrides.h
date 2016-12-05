@@ -49,35 +49,12 @@
 // dynamic context.  Subtracting these two values is a way to find
 // memory leaks.
 //
-// Override functions:
-// posix_memalign, memalign, valloc
-// malloc, calloc, free, realloc
 
-/******************************************************************************
- * standard include files
- *****************************************************************************/
+#ifndef __MEMLEAK_OVERRIDES_H__
+#define __MEMLEAK_OVERRIDES_H__
 
-/******************************************************************************
- * local include files
- *****************************************************************************/
-#include "memory-overrides.h"
-#include "memleak.h"
+void memleak_init();
 
 
-sample_val_t 
-callpath_sample(ucontext_t * uc, size_t bytes)
-{
-  return hpcrun_sample_callpath(uc, hpcrun_memleak_alloc_id(), bytes, 0, 1);
-}
-
-void 
-memleak_init()
-{
-  mem_registry_t mem_item;
-  mem_item.byte_threshold = 1;
-  mem_item.action_fcn     = NULL;
-  mem_item.sample_fcn     = callpath_sample;
-  add_mem_registry(mem_item);
-}
-
+#endif
 
