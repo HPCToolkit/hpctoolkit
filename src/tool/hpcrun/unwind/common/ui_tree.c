@@ -392,18 +392,6 @@ static ilmstat_btuwi_pair_t * uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr
   return ilmstat_btuwi;
 }
 
-/*
- * Remove intervals in the range [start, end) from the unwind interval
- * tree.
- */
-void
-uw_recipe_map_delete_range(void* start, void* end)
-{
-  //  use EMSG to log this call.
-  EMSG("uw_recipe_map_delete_range from %p to %p \n", start, end);
-  a2r_map_inrange_del_bulk_unsynch(addr2recipe_map, (uintptr_t)start, (uintptr_t)end - 1);
-}
-
 //---------------------------------------------------------------------
 // debug operations
 //---------------------------------------------------------------------
