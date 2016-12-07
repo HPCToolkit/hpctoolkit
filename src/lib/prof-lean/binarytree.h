@@ -95,11 +95,10 @@ typedef struct binarytree_s binarytree_t;
 
 #else
 
-// DXN_DBG: make all fields volatile
 typedef struct binarytree_s {
-  volatile struct binarytree_s *left;
-  volatile struct binarytree_s *right;
-  volatile void* val;
+  struct binarytree_s *left;
+  struct binarytree_s *right;
+  void* val;
 } binarytree_t;
 
 #endif

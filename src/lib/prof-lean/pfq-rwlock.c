@@ -69,8 +69,6 @@
 // local includes
 //******************************************************************************
 
-#define HOST_BIG_ENDIAN
-
 #include "hpctoolkit-config.h"
 #include "pfq-rwlock.h"
 #include "fence.h"
