@@ -609,7 +609,7 @@ MONITOR_EXT_WRAP_NAME(posix_memalign)(void **memptr, size_t alignment,
                                       size_t bytes)
 {
   ucontext_t uc;
-  int ret;
+  int ret = 0;
 
   if (! hpcrun_safe_enter()) {
     *memptr = real_memalign(alignment, bytes);

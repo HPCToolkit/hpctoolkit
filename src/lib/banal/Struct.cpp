@@ -647,7 +647,7 @@ makeStructure_ParseAPI(BinUtil::LM * lm,
   the_symtab = symtab;
 
   SymtabCodeSource * code_src;
-  CodeObject * code_obj;
+  CodeObject * code_obj = NULL;
 
   if (symtab != NULL) {
     code_src = new SymtabCodeSource(symtab);
