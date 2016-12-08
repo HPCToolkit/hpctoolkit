@@ -71,7 +71,7 @@ callpath_sample(ucontext_t * uc, size_t bytes)
 }
 
 void 
-memleak_init()
+mo_external_init()
 {
   mem_registry_t mem_item;
   mem_item.byte_threshold = 1;

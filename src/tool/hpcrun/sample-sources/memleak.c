@@ -102,8 +102,6 @@ METHOD_FN(init)
   // reset static variables to their virgin state
   alloc_metric_id = -1;
   free_metric_id = -1;
-  
-  memleak_init();
 }
 
 

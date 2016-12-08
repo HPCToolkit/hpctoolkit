@@ -108,7 +108,6 @@
 #include <utilities/arch/mcontext.h>
 #endif
 
-#define MIN_BYTES 8192
 
 /******************************************************************************
  * type definitions
@@ -185,12 +184,15 @@ static char *loc_name[4] = {
   NULL, "header", "footer", "none"
 };
 
-// number of memory registries
-static unsigned int   num_reg_items = 0;
+// memory registry plugin
+static mem_registry_t mem_reg_item;
 
-// list of memory registry
-static mem_registry_t mem_reg_items[MAX_MEM_REGISTRY];
 
+/******************************************************************************
+ * function to be called by an external plugin
+ *****************************************************************************/
+
+extern void mo_external_init();
 
 /******************************************************************************
  * splay operations
@@ -369,6 +371,8 @@ memleak_initialize(void)
   leak_detection_enabled = 1;
   leak_detection_init = 1;
 
+  mo_external_init();
+
   TMSG(MEMLEAK, "init");
 }
 
@@ -490,18 +494,15 @@ memleak_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
   info_ptr->right = NULL;
   if (hpcrun_memleak_active()) {
     // run the plugins
-    for(int i=0; i<num_reg_items; i++) {
-        if (mem_reg_items[i].sample_fcn) {
-          sample_val_t smpl = mem_reg_items[i].sample_fcn(uc, bytes);
-    	  info_ptr->context = smpl.sample_node;
-    	  loc_str = loc_name[loc];
+    if (mem_reg_item.sample_fcn) {
+      sample_val_t smpl = mem_reg_item.sample_fcn(uc, bytes);
+      info_ptr->context = smpl.sample_node;
+      loc_str = loc_name[loc];
 
-  	  if (loc == MEMLEAK_LOC_FOOT) {
-    	    splay_insert(info_ptr);
-  	  }
-	}
+      if (loc == MEMLEAK_LOC_FOOT) {
+    	splay_insert(info_ptr);
+      }
     }
-    
   } else {
     info_ptr->context = NULL;
     loc_str = "inactive";
@@ -575,12 +576,10 @@ memleak_malloc_helper(const char *name, size_t bytes, size_t align,
   memleak_add_leakinfo(name, sys_ptr, appl_ptr, info_ptr, bytes, uc, loc);
 
   // run the plugins
-  for(int i=0; i<num_reg_items; i++) {
-    // do not continue if the threshold is not reached
-    if (bytes > mem_reg_items[i].byte_threshold) {
-      if (mem_reg_items[i].action_fcn)
-      	mem_reg_items[i].action_fcn(sys_ptr, info_ptr);
-    }
+  // do not continue if the threshold is not reached
+  if (bytes > mem_reg_item.byte_threshold) {
+    if (mem_reg_item.action_fcn)
+  	mem_reg_item.action_fcn(sys_ptr, info_ptr);
   }
 
   return appl_ptr;
@@ -917,12 +916,8 @@ copy_mem_registry(mem_registry_t *target, mem_registry_t source)
 int
 add_mem_registry(mem_registry_t mem_item)
 {
-  if (num_reg_items < MAX_MEM_REGISTRY) {
-    copy_mem_registry(&(mem_reg_items[num_reg_items]), mem_item);
-    num_reg_items++;
-    return num_reg_items;
-  }
-  return -1;
+  copy_mem_registry(&mem_reg_item, mem_item);
+  return 1;
 }
 
 
