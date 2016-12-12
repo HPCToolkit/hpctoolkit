@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,24 +44,62 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include <sys/mman.h>
+#include <unistd.h>
 
-#ifndef __MEMLEAK_OVERRIDES_H__
-#define __MEMLEAK_OVERRIDES_H__
+#include "thread_data.h"
+#include "memory-overrides.h"
+
+void
+first_touch(void *sys_ptr, mem_info_t *info_ptr)
+{
+  // support for first touch analysis
+
+  // Change the permission for the newly allocated memory ranges (rounded to 
+  // the page boundary). Will segfault at the first touch of the memory range.
+  int pagesize = getpagesize();
+  // round to the upper-bound of the next page
+  void *p = (void *)(((uint64_t)(uintptr_t) sys_ptr + pagesize-1) & ~(pagesize-1));
+  // monitor all pages of the allocation (expect the page of splay section)
+  uint64_t msize = (uint64_t)(uintptr_t) info_ptr-(uint64_t)(uintptr_t) p - pagesize;
+  if (msize <= 0 ) msize = pagesize - 1;
+  mprotect (p, msize, PROT_NONE);
+  // change the splay node section to be read/write.
+  // make sure pages with the splay section have correct permissions
+  p = (void *)((uint64_t)(uintptr_t) info_ptr & ~(pagesize - 1));
+  int mem_info_size = sizeof(struct mem_info_s);
+  mprotect (p, (uint64_t)(uintptr_t) info_ptr + mem_info_size - (uint64_t)(uintptr_t) p, PROT_READ | PROT_WRITE);
+}
+
+sample_val_t
+data_sample_callpath(ucontext_t *uc, size_t bytes)
+{
+  TD_GET(mem_data.in_malloc) = 1;
+  sample_val_t smpl =
+    hpcrun_sample_callpath(uc, hpcrun_datacentric_alloc_id(), bytes, 0, 1);
+  TD_GET(mem_data.in_malloc) = 0;
+  return smpl;
+}
 
 // ----------------------------------------------
 // API has to be implemented by external plugin
 // ----------------------------------------------
 
-// function needs to be implemented by the plugin
-// this function will be called by memory-overrides.c during the initialiation
+void 
+mo_external_init()
+{
+  mem_registry_t mem_item;
+  mem_item.byte_threshold = 1024 * 8;
+  mem_item.action_fcn     = first_touch;
+  mem_item.sample_fcn	  = data_sample_callpath;
 
-void mo_external_init();
+  add_mem_registry(mem_item);
+}
 
-// function needs to be implemented by the plugin
-// this function returns true if the external is active.
-//  false otherwise
 
-int mo_external_active();
-
-#endif
+int 
+mo_external_active()
+{
+  return hpcrun_datacentric_active();
+}
 

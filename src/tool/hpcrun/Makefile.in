@@ -126,6 +126,7 @@ pkglibexec_PROGRAMS =
 @OPT_BUILD_FRONT_END_TRUE@am__append_2 = scripts/hpclog
 @OPT_BUILD_FRONT_END_TRUE@am__append_3 = hpctoolkit.h
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_4 = libhpcrun.la \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_datacentric.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_ga.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_io.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_memleak.la \
@@ -135,6 +136,7 @@ pkglibexec_PROGRAMS =
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_7 = scripts/hpcrun
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@noinst_PROGRAMS = libhpcrun.o$(EXEEXT)
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_8 = libhpcrun_wrap.a \
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_datacentric_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_ga_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_io_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_memleak_wrap.a \
@@ -185,16 +187,16 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_MIPS_TRUE@am__append_41 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_42 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_43 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_44 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_45 = $(MY_MIPS_INCLUDE_DIRS)
 
 # Note: setting CCASFLAGS here is a no-op hack with the side effect of
 # prefixing the tramp.s file names so they will be compiled separately
 # for .o and .so targets.  CFLAGS does this for the .c files, but
 # CFLAGS doesn't apply to .s files.  See the automake docs section
 # 8.3.9.2, Objects created with both libtool and without.
-@HOST_CPU_PPC_TRUE@am__append_44 = $(MY_PPC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_45 = $(MY_PPC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_46 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_47 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_46 = $(MY_PPC_FILES)
+@HOST_CPU_PPC_TRUE@am__append_47 = $(MY_PPC_FILES)
 @HOST_CPU_PPC_TRUE@am__append_48 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_49 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_50 = $(MY_PPC_INCLUDE_DIRS)
@@ -206,16 +208,16 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_PPC_TRUE@am__append_56 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_57 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_58 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_59 = $(MY_X86_FILES)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_60 = $(MY_X86_FILES)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_61 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_62 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_63 = $(XED2_HPCRUN_LIBS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_64 = $(XED2_HPCLINK_LIBS)
+@HOST_CPU_PPC_TRUE@am__append_59 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_60 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_61 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_62 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_63 = $(MY_X86_FILES)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_64 = $(MY_X86_FILES)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_65 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_66 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_67 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_68 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_67 = $(XED2_HPCRUN_LIBS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_68 = $(XED2_HPCLINK_LIBS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_69 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_70 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_71 = $(MY_X86_INCLUDE_DIRS)
@@ -224,60 +226,70 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_X86_FAMILY_TRUE@am__append_74 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_75 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_76 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_77 = $(MY_IA64_FILES)
-@HOST_CPU_IA64_TRUE@am__append_78 = $(MY_IA64_FILES)
-@HOST_CPU_IA64_TRUE@am__append_79 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_80 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_81 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_82 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_83 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_84 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_77 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_78 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_79 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_80 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_81 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_82 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_83 = $(MY_IA64_FILES)
+@HOST_CPU_IA64_TRUE@am__append_84 = $(MY_IA64_FILES)
 @HOST_CPU_IA64_TRUE@am__append_85 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_86 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_87 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_88 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_89 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_AARCH64_TRUE@am__append_90 = $(MY_AARCH64_FILES)
-@HOST_CPU_AARCH64_TRUE@am__append_91 = $(MY_AARCH64_FILES)
-@HOST_CPU_AARCH64_TRUE@am__append_92 = $(MY_AARCH64_INCLUDE_DIRS)
-@HOST_CPU_AARCH64_TRUE@am__append_93 = $(MY_AARCH64_INCLUDE_DIRS)
-@HOST_CPU_AARCH64_TRUE@am__append_94 = $(MY_AARCH64_INCLUDE_DIRS)
-@HOST_CPU_AARCH64_TRUE@am__append_95 = $(MY_AARCH64_INCLUDE_DIRS)
-@HOST_CPU_AARCH64_TRUE@am__append_96 = $(MY_AARCH64_INCLUDE_DIRS)
-@HOST_CPU_AARCH64_TRUE@am__append_97 = $(MY_AARCH64_INCLUDE_DIRS)
-@HOST_CPU_AARCH64_TRUE@am__append_98 = $(MY_AARCH64_INCLUDE_DIRS)
-@HOST_CPU_AARCH64_TRUE@am__append_99 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_90 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_91 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_92 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_93 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_94 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_95 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_96 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_97 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_98 = $(MY_AARCH64_FILES)
+@HOST_CPU_AARCH64_TRUE@am__append_99 = $(MY_AARCH64_FILES)
 @HOST_CPU_AARCH64_TRUE@am__append_100 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_101 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_102 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_103 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_104 = $(MY_AARCH64_INCLUDE_DIRS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_105 = $(MY_PAPI_FILES)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_106 = $(PAPI_INC_FLGS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_107 = $(PAPI_LD_FLGS)
-@OPT_PAPI_CUPTI_TRUE@am__append_108 = $(CUPTI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_109 = $(MY_PAPI_FILES)
-@OPT_PAPI_STATIC_TRUE@am__append_110 = $(PAPI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_111 = $(PAPI_LD_FLGS)
-@OPT_ENABLE_UPC_TRUE@am__append_112 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_113 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_114 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_115 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_116 = $(OPT_UPC_LDFLAGS)
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_117 = -DLUSH_PTHREADS
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_118 = -DLUSH_PTHREADS
-@OPT_ENABLE_CUDA_TRUE@am__append_119 = $(CUDA_FILES)
-@OPT_ENABLE_CUDA_TRUE@am__append_120 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_121 = $(OPT_CUDA_IFLAGS) -g
+@HOST_CPU_AARCH64_TRUE@am__append_105 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_106 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_107 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_108 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_109 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_110 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_111 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_112 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_113 = $(MY_AARCH64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_114 = $(MY_AARCH64_INCLUDE_DIRS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_115 = $(MY_PAPI_FILES)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_116 = $(PAPI_INC_FLGS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_117 = $(PAPI_LD_FLGS)
+@OPT_PAPI_CUPTI_TRUE@am__append_118 = $(CUPTI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_119 = $(MY_PAPI_FILES)
+@OPT_PAPI_STATIC_TRUE@am__append_120 = $(PAPI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_121 = $(PAPI_LD_FLGS)
+@OPT_ENABLE_UPC_TRUE@am__append_122 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_123 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_124 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_125 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_126 = $(OPT_UPC_LDFLAGS)
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_127 = -DLUSH_PTHREADS
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_128 = -DLUSH_PTHREADS
+@OPT_ENABLE_CUDA_TRUE@am__append_129 = $(CUDA_FILES)
+@OPT_ENABLE_CUDA_TRUE@am__append_130 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_131 = $(OPT_CUDA_IFLAGS) -g
 #  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_122 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_123 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_124 = $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_125 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_126 = $(OPT_CUDA_IFLAGS)
-@OPT_PERFMON_TRUE@am__append_127 = -DENABLE_PERFMON
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_128 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_129 = libagent-pthread.la \
+@OPT_ENABLE_CUDA_TRUE@am__append_132 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_133 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_134 = $(OPT_CUDA_LDFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_135 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_136 = $(OPT_CUDA_IFLAGS)
+@OPT_PERFMON_TRUE@am__append_137 = -DENABLE_PERFMON
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_138 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_139 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -333,9 +345,15 @@ AM_V_AR = $(am__v_AR_@AM_V@)
 am__v_AR_ = $(am__v_AR_@AM_DEFAULT_V@)
 am__v_AR_0 = @echo "  AR      " $@;
 am__v_AR_1 = 
+libhpcrun_datacentric_wrap_a_AR = $(AR) $(ARFLAGS)
+libhpcrun_datacentric_wrap_a_LIBADD =
+am__dirstamp = $(am__leading_dot)dirstamp
+am_libhpcrun_datacentric_wrap_a_OBJECTS = sample-sources/libhpcrun_datacentric_wrap_a-memory-overrides.$(OBJEXT) \
+	sample-sources/libhpcrun_datacentric_wrap_a-data-overrides.$(OBJEXT)
+libhpcrun_datacentric_wrap_a_OBJECTS =  \
+	$(am_libhpcrun_datacentric_wrap_a_OBJECTS)
 libhpcrun_ga_wrap_a_AR = $(AR) $(ARFLAGS)
 libhpcrun_ga_wrap_a_LIBADD =
-am__dirstamp = $(am__leading_dot)dirstamp
 am_libhpcrun_ga_wrap_a_OBJECTS =  \
 	sample-sources/libhpcrun_ga_wrap_a-ga-overrides.$(OBJEXT)
 libhpcrun_ga_wrap_a_OBJECTS = $(am_libhpcrun_ga_wrap_a_OBJECTS)
@@ -352,7 +370,8 @@ am_libhpcrun_io_wrap_a_OBJECTS =  \
 libhpcrun_io_wrap_a_OBJECTS = $(am_libhpcrun_io_wrap_a_OBJECTS)
 libhpcrun_memleak_wrap_a_AR = $(AR) $(ARFLAGS)
 libhpcrun_memleak_wrap_a_LIBADD =
-am_libhpcrun_memleak_wrap_a_OBJECTS = sample-sources/libhpcrun_memleak_wrap_a-memleak-overrides.$(OBJEXT)
+am_libhpcrun_memleak_wrap_a_OBJECTS = sample-sources/libhpcrun_memleak_wrap_a-memory-overrides.$(OBJEXT) \
+	sample-sources/libhpcrun_memleak_wrap_a-memleak-overrides.$(OBJEXT)
 libhpcrun_memleak_wrap_a_OBJECTS =  \
 	$(am_libhpcrun_memleak_wrap_a_OBJECTS)
 libhpcrun_pthread_wrap_a_AR = $(AR) $(ARFLAGS)
@@ -437,28 +456,28 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/ga.c sample-sources/io.c \
 	sample-sources/itimer.c sample-sources/idle.c \
 	sample-sources/perf/linux_perf.c \
-	sample-sources/perf/mmap_read.c sample-sources/memleak.c \
-	sample-sources/pthread-blame.c sample-sources/none.c \
-	sample-sources/retcnt.c sample-sources/sync.c \
-	sample_sources_registered.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c utilities/line_wrapping.c \
-	sample-sources/perf/perfmon-util.c fnbounds/fnbounds_client.c \
-	fnbounds/fnbounds_dynamic.c monitor-exts/openmp.c \
-	hpcrun_dlfns.c custom-init-dynamic.c os/linux/dylib.c \
-	unwind/common/default_validation_summary.c \
+	sample-sources/perf/mmap_read.c sample-sources/datacentric.c \
+	sample-sources/memleak.c sample-sources/pthread-blame.c \
+	sample-sources/none.c sample-sources/retcnt.c \
+	sample-sources/sync.c sample_sources_registered.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c threadmgr.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/tokenize.h \
+	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	utilities/line_wrapping.c sample-sources/perf/perfmon-util.c \
+	fnbounds/fnbounds_client.c fnbounds/fnbounds_dynamic.c \
+	monitor-exts/openmp.c hpcrun_dlfns.c custom-init-dynamic.c \
+	os/linux/dylib.c unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
 	trampoline/x86-family/x86-tramp.S \
@@ -515,6 +534,7 @@ am__objects_8 = utilities/libhpcrun_la-first_func.lo \
 	sample-sources/libhpcrun_la-idle.lo \
 	sample-sources/perf/libhpcrun_la-linux_perf.lo \
 	sample-sources/perf/libhpcrun_la-mmap_read.lo \
+	sample-sources/libhpcrun_la-datacentric.lo \
 	sample-sources/libhpcrun_la-memleak.lo \
 	sample-sources/libhpcrun_la-pthread-blame.lo \
 	sample-sources/libhpcrun_la-none.lo \
@@ -626,6 +646,18 @@ libhpcrun_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(CFLAGS) $(libhpcrun_la_LDFLAGS) $(LDFLAGS) -o $@
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpcrun_la_rpath = -rpath \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	$(pkglibdir)
+libhpcrun_datacentric_la_LIBADD =
+am_libhpcrun_datacentric_la_OBJECTS =  \
+	sample-sources/libhpcrun_datacentric_la-memory-overrides.lo \
+	sample-sources/libhpcrun_datacentric_la-data-overrides.lo
+libhpcrun_datacentric_la_OBJECTS =  \
+	$(am_libhpcrun_datacentric_la_OBJECTS)
+libhpcrun_datacentric_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(libhpcrun_datacentric_la_CFLAGS) $(CFLAGS) \
+	$(libhpcrun_datacentric_la_LDFLAGS) $(LDFLAGS) -o $@
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpcrun_datacentric_la_rpath =  \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	-rpath $(pkglibdir)
 libhpcrun_ga_la_LIBADD =
 am_libhpcrun_ga_la_OBJECTS =  \
 	sample-sources/libhpcrun_ga_la-ga-overrides.lo
@@ -703,26 +735,26 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/ga.c sample-sources/io.c \
 	sample-sources/itimer.c sample-sources/idle.c \
 	sample-sources/perf/linux_perf.c \
-	sample-sources/perf/mmap_read.c sample-sources/memleak.c \
-	sample-sources/pthread-blame.c sample-sources/none.c \
-	sample-sources/retcnt.c sample-sources/sync.c \
-	sample_sources_registered.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c utilities/line_wrapping.c \
-	sample-sources/perf/perfmon-util.c fnbounds/fnbounds_static.c \
-	custom-init-static.c \
+	sample-sources/perf/mmap_read.c sample-sources/datacentric.c \
+	sample-sources/memleak.c sample-sources/pthread-blame.c \
+	sample-sources/none.c sample-sources/retcnt.c \
+	sample-sources/sync.c sample_sources_registered.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c threadmgr.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/tokenize.h \
+	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	utilities/line_wrapping.c sample-sources/perf/perfmon-util.c \
+	fnbounds/fnbounds_static.c custom-init-static.c \
 	unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
@@ -781,6 +813,7 @@ am__objects_37 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	sample-sources/libhpcrun_o-idle.$(OBJEXT) \
 	sample-sources/perf/libhpcrun_o-linux_perf.$(OBJEXT) \
 	sample-sources/perf/libhpcrun_o-mmap_read.$(OBJEXT) \
+	sample-sources/libhpcrun_o-datacentric.$(OBJEXT) \
 	sample-sources/libhpcrun_o-memleak.$(OBJEXT) \
 	sample-sources/libhpcrun_o-pthread-blame.$(OBJEXT) \
 	sample-sources/libhpcrun_o-none.$(OBJEXT) \
@@ -940,20 +973,22 @@ AM_V_CCAS = $(am__v_CCAS_@AM_V@)
 am__v_CCAS_ = $(am__v_CCAS_@AM_DEFAULT_V@)
 am__v_CCAS_0 = @echo "  CCAS    " $@;
 am__v_CCAS_1 = 
-SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
-	$(libhpcrun_gpu_wrap_a_SOURCES) $(libhpcrun_io_wrap_a_SOURCES) \
+SOURCES = $(libhpcrun_datacentric_wrap_a_SOURCES) \
+	$(libhpcrun_ga_wrap_a_SOURCES) $(libhpcrun_gpu_wrap_a_SOURCES) \
+	$(libhpcrun_io_wrap_a_SOURCES) \
 	$(libhpcrun_memleak_wrap_a_SOURCES) \
 	$(libhpcrun_pthread_wrap_a_SOURCES) \
 	$(libhpcrun_wrap_a_SOURCES) $(libhpctoolkit_a_SOURCES) \
 	$(libibm_xlomp_wrappers_a_SOURCES) $(libagent_cilk_la_SOURCES) \
 	$(libagent_pthread_la_SOURCES) $(libagent_tbb_la_SOURCES) \
-	$(libhpcrun_la_SOURCES) $(libhpcrun_ga_la_SOURCES) \
-	$(libhpcrun_gpu_la_SOURCES) $(libhpcrun_io_la_SOURCES) \
-	$(libhpcrun_memleak_la_SOURCES) $(libhpcrun_mpi_la_SOURCES) \
-	$(libhpcrun_pthread_la_SOURCES) $(libhpctoolkit_la_SOURCES) \
-	$(libhpcrun_o_SOURCES)
-DIST_SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
-	$(libhpcrun_gpu_wrap_a_SOURCES) $(libhpcrun_io_wrap_a_SOURCES) \
+	$(libhpcrun_la_SOURCES) $(libhpcrun_datacentric_la_SOURCES) \
+	$(libhpcrun_ga_la_SOURCES) $(libhpcrun_gpu_la_SOURCES) \
+	$(libhpcrun_io_la_SOURCES) $(libhpcrun_memleak_la_SOURCES) \
+	$(libhpcrun_mpi_la_SOURCES) $(libhpcrun_pthread_la_SOURCES) \
+	$(libhpctoolkit_la_SOURCES) $(libhpcrun_o_SOURCES)
+DIST_SOURCES = $(libhpcrun_datacentric_wrap_a_SOURCES) \
+	$(libhpcrun_ga_wrap_a_SOURCES) $(libhpcrun_gpu_wrap_a_SOURCES) \
+	$(libhpcrun_io_wrap_a_SOURCES) \
 	$(libhpcrun_memleak_wrap_a_SOURCES) \
 	$(libhpcrun_pthread_wrap_a_SOURCES) \
 	$(libhpcrun_wrap_a_SOURCES) $(libhpctoolkit_a_SOURCES) \
@@ -961,7 +996,8 @@ DIST_SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
 	$(am__libagent_cilk_la_SOURCES_DIST) \
 	$(am__libagent_pthread_la_SOURCES_DIST) \
 	$(am__libagent_tbb_la_SOURCES_DIST) \
-	$(am__libhpcrun_la_SOURCES_DIST) $(libhpcrun_ga_la_SOURCES) \
+	$(am__libhpcrun_la_SOURCES_DIST) \
+	$(libhpcrun_datacentric_la_SOURCES) $(libhpcrun_ga_la_SOURCES) \
 	$(libhpcrun_gpu_la_SOURCES) $(libhpcrun_io_la_SOURCES) \
 	$(libhpcrun_memleak_la_SOURCES) $(libhpcrun_mpi_la_SOURCES) \
 	$(libhpcrun_pthread_la_SOURCES) $(libhpctoolkit_la_SOURCES) \
@@ -1338,7 +1374,7 @@ include_HEADERS = $(am__append_3)
 pkglib_LIBRARIES = $(am__append_8) $(am__append_9) $(am__append_10) \
 	$(am__append_11)
 pkglib_LTLIBRARIES = $(am__append_4) $(am__append_5) $(am__append_6) \
-	$(am__append_13) $(am__append_128) $(am__append_129)
+	$(am__append_13) $(am__append_138) $(am__append_139)
 BUILT_SOURCES = $(am__append_21) $(am__append_23)
 CLEANFILES = $(am__append_22) $(am__append_24)
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
@@ -1346,7 +1382,8 @@ PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
-PLUGIN_CONFIG_FILES = ga io memleak pthread $(am__append_14)
+PLUGIN_CONFIG_FILES = datacentric ga io memleak pthread \
+	$(am__append_14)
 UNW_UNIV_FILES = \
 	unwind/common/backtrace.c	\
         unwind/common/unw-throw.c
@@ -1424,24 +1461,25 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/ga.c sample-sources/io.c \
 	sample-sources/itimer.c sample-sources/idle.c \
 	sample-sources/perf/linux_perf.c \
-	sample-sources/perf/mmap_read.c sample-sources/memleak.c \
-	sample-sources/pthread-blame.c sample-sources/none.c \
-	sample-sources/retcnt.c sample-sources/sync.c \
-	sample_sources_registered.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c $(am__append_15)
+	sample-sources/perf/mmap_read.c sample-sources/datacentric.c \
+	sample-sources/memleak.c sample-sources/pthread-blame.c \
+	sample-sources/none.c sample-sources/retcnt.c \
+	sample-sources/sync.c sample_sources_registered.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c threadmgr.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/tokenize.h \
+	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	$(am__append_15)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -1508,14 +1546,14 @@ MY_AARCH64_INCLUDE_DIRS = \
 	-I$(srcdir)/utilities/arch/aarch64
 
 libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
-	$(am__append_28) $(am__append_29) $(am__append_44) \
-	$(am__append_59) $(am__append_77) $(am__append_90) \
-	$(am__append_105) $(am__append_112) $(am__append_119) \
+	$(am__append_28) $(am__append_29) $(am__append_46) \
+	$(am__append_63) $(am__append_83) $(am__append_98) \
+	$(am__append_115) $(am__append_122) $(am__append_129) \
 	$(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
-	$(am__append_30) $(am__append_45) $(am__append_60) \
-	$(am__append_78) $(am__append_91) $(am__append_109) \
-	$(am__append_113) $(UNW_SOURCE_FILES) utilities/last_func.c
+	$(am__append_30) $(am__append_47) $(am__append_64) \
+	$(am__append_84) $(am__append_99) $(am__append_119) \
+	$(am__append_123) $(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_wrap_a_SOURCES = \
 	monitor-exts/openmp.c
 
@@ -1531,11 +1569,20 @@ libhpcrun_io_la_SOURCES = \
 libhpcrun_io_wrap_a_SOURCES = \
 	sample-sources/io-over.c
 
+libhpcrun_datacentric_la_SOURCES = \
+	sample-sources/memory-overrides.c \
+	sample-sources/data-overrides.c
+
+libhpcrun_datacentric_wrap_a_SOURCES = \
+	sample-sources/memory-overrides.c \
+	sample-sources/data-overrides.c
+
 libhpcrun_memleak_la_SOURCES = \
 	sample-sources/memory-overrides.c \
 	sample-sources/memleak-overrides.c
 
 libhpcrun_memleak_wrap_a_SOURCES = \
+	sample-sources/memory-overrides.c \
 	sample-sources/memleak-overrides.c
 
 libhpcrun_pthread_la_SOURCES = \
@@ -1572,58 +1619,66 @@ libhpctoolkit_a_SOURCES = \
 #-----------------------------------------------------------
 libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(LIBUNWIND_CPPFLAGS_DYN) \
 	$(MY_INCLUDE_DIRS) $(am__append_19) $(am__append_31) \
-	$(am__append_46) $(am__append_61) $(am__append_79) \
-	$(am__append_92) $(am__append_106) $(am__append_108) \
-	$(am__append_114) $(am__append_117) $(am__append_120) \
-	$(am__append_127) $(UNW_INCLUDE_DIRS)
+	$(am__append_48) $(am__append_65) $(am__append_85) \
+	$(am__append_100) $(am__append_116) $(am__append_118) \
+	$(am__append_124) $(am__append_127) $(am__append_130) \
+	$(am__append_137) $(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(LIBUNWIND_CPPFLAGS_STAT) $(MY_INCLUDE_DIRS) $(am__append_20) \
-	$(am__append_32) $(am__append_47) $(am__append_62) \
-	$(am__append_80) $(am__append_93) $(am__append_110) \
-	$(am__append_115) $(am__append_118) $(UNW_INCLUDE_DIRS)
+	$(am__append_32) $(am__append_49) $(am__append_66) \
+	$(am__append_86) $(am__append_101) $(am__append_120) \
+	$(am__append_125) $(am__append_128) $(UNW_INCLUDE_DIRS)
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
 libhpcrun_ga_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_33) $(am__append_48) $(am__append_65) \
-	$(am__append_81) $(am__append_94) $(UNW_INCLUDE_DIRS)
+	$(am__append_33) $(am__append_50) $(am__append_69) \
+	$(am__append_87) $(am__append_102) $(UNW_INCLUDE_DIRS)
 libhpcrun_ga_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_34) $(am__append_49) \
-	$(am__append_66) $(am__append_82) $(am__append_95) \
+	$(MY_INCLUDE_DIRS) $(am__append_34) $(am__append_51) \
+	$(am__append_70) $(am__append_88) $(am__append_103) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_io_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_35) $(am__append_50) $(am__append_67) \
-	$(am__append_83) $(am__append_96) $(UNW_INCLUDE_DIRS)
+	$(am__append_35) $(am__append_52) $(am__append_71) \
+	$(am__append_89) $(am__append_104) $(UNW_INCLUDE_DIRS)
 libhpcrun_io_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_36) $(am__append_51) \
-	$(am__append_68) $(am__append_84) $(am__append_97) \
+	$(MY_INCLUDE_DIRS) $(am__append_36) $(am__append_53) \
+	$(am__append_72) $(am__append_90) $(am__append_105) \
 	$(UNW_INCLUDE_DIRS)
-libhpcrun_memleak_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_37) $(am__append_52) $(am__append_69) \
-	$(am__append_85) $(am__append_98) $(UNW_INCLUDE_DIRS)
-libhpcrun_memleak_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
+libhpcrun_datacentric_la_CPPFLAGS = $(MY_CPP_DEFINES) \
+	$(MY_INCLUDE_DIRS) $(am__append_37) $(am__append_54) \
+	$(am__append_73) $(am__append_91) $(am__append_106) \
+	$(UNW_INCLUDE_DIRS)
+libhpcrun_datacentric_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
 	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_38) \
-	$(am__append_53) $(am__append_70) $(am__append_86) \
-	$(am__append_99) $(UNW_INCLUDE_DIRS)
-libhpcrun_pthread_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_39) $(am__append_54) $(am__append_71) \
-	$(am__append_87) $(am__append_100) $(UNW_INCLUDE_DIRS)
-libhpcrun_pthread_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
+	$(am__append_55) $(am__append_74) $(am__append_92) \
+	$(am__append_107) $(UNW_INCLUDE_DIRS)
+libhpcrun_memleak_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
+	$(am__append_39) $(am__append_56) $(am__append_75) \
+	$(am__append_93) $(am__append_108) $(UNW_INCLUDE_DIRS)
+libhpcrun_memleak_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
 	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_40) \
-	$(am__append_55) $(am__append_72) $(am__append_88) \
-	$(am__append_101) $(UNW_INCLUDE_DIRS)
+	$(am__append_57) $(am__append_76) $(am__append_94) \
+	$(am__append_109) $(UNW_INCLUDE_DIRS)
+libhpcrun_pthread_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
+	$(am__append_41) $(am__append_58) $(am__append_77) \
+	$(am__append_95) $(am__append_110) $(UNW_INCLUDE_DIRS)
+libhpcrun_pthread_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
+	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_42) \
+	$(am__append_59) $(am__append_78) $(am__append_96) \
+	$(am__append_111) $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_41) $(am__append_56) $(am__append_73) \
-	$(am__append_102) $(am__append_122) $(UNW_INCLUDE_DIRS)
+	$(am__append_43) $(am__append_60) $(am__append_79) \
+	$(am__append_112) $(am__append_132) $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_42) $(am__append_57) \
-	$(am__append_74) $(am__append_103) $(am__append_125) \
+	$(MY_INCLUDE_DIRS) $(am__append_44) $(am__append_61) \
+	$(am__append_80) $(am__append_113) $(am__append_135) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS = $(MY_CPP_DEFINES) -I$(MPI_INC) \
-	$(MY_INCLUDE_DIRS) $(am__append_43) $(am__append_58) \
-	$(am__append_75) $(am__append_89) $(am__append_104) \
+	$(MY_INCLUDE_DIRS) $(am__append_45) $(am__append_62) \
+	$(am__append_81) $(am__append_97) $(am__append_114) \
 	$(UNW_INCLUDE_DIRS)
 libhpctoolkit_la_CPPFLAGS = \
 	$(MY_CPP_DEFINES)		\
@@ -1646,21 +1701,23 @@ CUDA_FILES = sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c $(CUDA
 #-----------------------------------------------------------
 # cflags
 #-----------------------------------------------------------
-libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_121)
+libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_131)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_datacentric_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_datacentric_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_123)
+	$(am__append_133)
 libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_126)
+	$(am__append_136)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 #-----------------------------------------------------------
@@ -1672,17 +1729,18 @@ libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 	$(am__append_26)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread -lrt $(LIBUNWIND_LDFLAGS_DYN) $(am__append_27) \
-	$(am__append_63) $(am__append_107) $(am__append_116) \
+	$(am__append_67) $(am__append_117) $(am__append_126) \
 	$(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
+libhpcrun_datacentric_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
-libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_124)
+libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_134)
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
-libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) $(am__append_64) \
-	$(am__append_111) $(UNW_STATIC_LD_FLAGS)
-MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_76) \
+libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) $(am__append_68) \
+	$(am__append_121) $(UNW_STATIC_LD_FLAGS)
+MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_82) \
 	$(UNW_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
 @HOST_CPU_PPC_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
@@ -1822,6 +1880,17 @@ sample-sources/$(am__dirstamp):
 sample-sources/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) sample-sources/$(DEPDIR)
 	@: > sample-sources/$(DEPDIR)/$(am__dirstamp)
+sample-sources/libhpcrun_datacentric_wrap_a-memory-overrides.$(OBJEXT):  \
+	sample-sources/$(am__dirstamp) \
+	sample-sources/$(DEPDIR)/$(am__dirstamp)
+sample-sources/libhpcrun_datacentric_wrap_a-data-overrides.$(OBJEXT):  \
+	sample-sources/$(am__dirstamp) \
+	sample-sources/$(DEPDIR)/$(am__dirstamp)
+
+libhpcrun_datacentric_wrap.a: $(libhpcrun_datacentric_wrap_a_OBJECTS) $(libhpcrun_datacentric_wrap_a_DEPENDENCIES) $(EXTRA_libhpcrun_datacentric_wrap_a_DEPENDENCIES) 
+	$(AM_V_at)-rm -f libhpcrun_datacentric_wrap.a
+	$(AM_V_AR)$(libhpcrun_datacentric_wrap_a_AR) libhpcrun_datacentric_wrap.a $(libhpcrun_datacentric_wrap_a_OBJECTS) $(libhpcrun_datacentric_wrap_a_LIBADD)
+	$(AM_V_at)$(RANLIB) libhpcrun_datacentric_wrap.a
 sample-sources/libhpcrun_ga_wrap_a-ga-overrides.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -1846,6 +1915,9 @@ libhpcrun_io_wrap.a: $(libhpcrun_io_wrap_a_OBJECTS) $(libhpcrun_io_wrap_a_DEPEND
 	$(AM_V_at)-rm -f libhpcrun_io_wrap.a
 	$(AM_V_AR)$(libhpcrun_io_wrap_a_AR) libhpcrun_io_wrap.a $(libhpcrun_io_wrap_a_OBJECTS) $(libhpcrun_io_wrap_a_LIBADD)
 	$(AM_V_at)$(RANLIB) libhpcrun_io_wrap.a
+sample-sources/libhpcrun_memleak_wrap_a-memory-overrides.$(OBJEXT):  \
+	sample-sources/$(am__dirstamp) \
+	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_memleak_wrap_a-memleak-overrides.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -2006,6 +2078,9 @@ sample-sources/perf/libhpcrun_la-linux_perf.lo:  \
 sample-sources/perf/libhpcrun_la-mmap_read.lo:  \
 	sample-sources/perf/$(am__dirstamp) \
 	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
+sample-sources/libhpcrun_la-datacentric.lo:  \
+	sample-sources/$(am__dirstamp) \
+	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-memleak.lo:  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -2309,6 +2384,15 @@ utilities/libhpcrun_la-last_func.lo: utilities/$(am__dirstamp) \
 
 libhpcrun.la: $(libhpcrun_la_OBJECTS) $(libhpcrun_la_DEPENDENCIES) $(EXTRA_libhpcrun_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libhpcrun_la_LINK) $(am_libhpcrun_la_rpath) $(libhpcrun_la_OBJECTS) $(libhpcrun_la_LIBADD) $(LIBS)
+sample-sources/libhpcrun_datacentric_la-memory-overrides.lo:  \
+	sample-sources/$(am__dirstamp) \
+	sample-sources/$(DEPDIR)/$(am__dirstamp)
+sample-sources/libhpcrun_datacentric_la-data-overrides.lo:  \
+	sample-sources/$(am__dirstamp) \
+	sample-sources/$(DEPDIR)/$(am__dirstamp)
+
+libhpcrun_datacentric.la: $(libhpcrun_datacentric_la_OBJECTS) $(libhpcrun_datacentric_la_DEPENDENCIES) $(EXTRA_libhpcrun_datacentric_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libhpcrun_datacentric_la_LINK) $(am_libhpcrun_datacentric_la_rpath) $(libhpcrun_datacentric_la_OBJECTS) $(libhpcrun_datacentric_la_LIBADD) $(LIBS)
 sample-sources/libhpcrun_ga_la-ga-overrides.lo:  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -2443,6 +2527,9 @@ sample-sources/perf/libhpcrun_o-linux_perf.$(OBJEXT):  \
 sample-sources/perf/libhpcrun_o-mmap_read.$(OBJEXT):  \
 	sample-sources/perf/$(am__dirstamp) \
 	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
+sample-sources/libhpcrun_o-datacentric.$(OBJEXT):  \
+	sample-sources/$(am__dirstamp) \
+	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_o-memleak.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -2870,6 +2957,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@monitor-exts/$(DEPDIR)/libhpcrun_wrap_a-openmp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@os/linux/$(DEPDIR)/libhpcrun_la-dylib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@plugins/$(DEPDIR)/ibm-xlomp-wrappers.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_datacentric_la-data-overrides.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_datacentric_la-memory-overrides.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data-overrides.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_datacentric_wrap_a-memory-overrides.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_ga_la-ga-overrides.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_ga_wrap_a-ga-overrides.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_gpu_la-gpu_blame-overrides.Plo@am__quote@
@@ -2877,6 +2968,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_io_la-io-over.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_io_wrap_a-io-over.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-common.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-datacentric.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-ga.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-gpu_blame.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-gpu_ctxt_actions.Plo@am__quote@
@@ -2896,7 +2988,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_memleak_la-memleak-overrides.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_memleak_la-memory-overrides.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_memleak_wrap_a-memleak-overrides.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_memleak_wrap_a-memory-overrides.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-common.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-datacentric.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-ga.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-idle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-io.Po@am__quote@
@@ -3073,6 +3167,34 @@ trampoline/x86-family/libhpcrun_o-x86-tramp.obj: trampoline/x86-family/x86-tramp
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
+sample-sources/libhpcrun_datacentric_wrap_a-memory-overrides.o: sample-sources/memory-overrides.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_wrap_a_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_datacentric_wrap_a-memory-overrides.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_datacentric_wrap_a-memory-overrides.Tpo -c -o sample-sources/libhpcrun_datacentric_wrap_a-memory-overrides.o `test -f 'sample-sources/memory-overrides.c' || echo '$(srcdir)/'`sample-sources/memory-overrides.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_datacentric_wrap_a-memory-overrides.Tpo sample-sources/$(DEPDIR)/libhpcrun_datacentric_wrap_a-memory-overrides.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/memory-overrides.c' object='sample-sources/libhpcrun_datacentric_wrap_a-memory-overrides.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_wrap_a_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_datacentric_wrap_a-memory-overrides.o `test -f 'sample-sources/memory-overrides.c' || echo '$(srcdir)/'`sample-sources/memory-overrides.c
+
+sample-sources/libhpcrun_datacentric_wrap_a-memory-overrides.obj: sample-sources/memory-overrides.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_wrap_a_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_datacentric_wrap_a-memory-overrides.obj -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_datacentric_wrap_a-memory-overrides.Tpo -c -o sample-sources/libhpcrun_datacentric_wrap_a-memory-overrides.obj `if test -f 'sample-sources/memory-overrides.c'; then $(CYGPATH_W) 'sample-sources/memory-overrides.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/memory-overrides.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_datacentric_wrap_a-memory-overrides.Tpo sample-sources/$(DEPDIR)/libhpcrun_datacentric_wrap_a-memory-overrides.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/memory-overrides.c' object='sample-sources/libhpcrun_datacentric_wrap_a-memory-overrides.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_wrap_a_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_datacentric_wrap_a-memory-overrides.obj `if test -f 'sample-sources/memory-overrides.c'; then $(CYGPATH_W) 'sample-sources/memory-overrides.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/memory-overrides.c'; fi`
+
+sample-sources/libhpcrun_datacentric_wrap_a-data-overrides.o: sample-sources/data-overrides.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_wrap_a_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_datacentric_wrap_a-data-overrides.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data-overrides.Tpo -c -o sample-sources/libhpcrun_datacentric_wrap_a-data-overrides.o `test -f 'sample-sources/data-overrides.c' || echo '$(srcdir)/'`sample-sources/data-overrides.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data-overrides.Tpo sample-sources/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data-overrides.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/data-overrides.c' object='sample-sources/libhpcrun_datacentric_wrap_a-data-overrides.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_wrap_a_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_datacentric_wrap_a-data-overrides.o `test -f 'sample-sources/data-overrides.c' || echo '$(srcdir)/'`sample-sources/data-overrides.c
+
+sample-sources/libhpcrun_datacentric_wrap_a-data-overrides.obj: sample-sources/data-overrides.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_wrap_a_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_datacentric_wrap_a-data-overrides.obj -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data-overrides.Tpo -c -o sample-sources/libhpcrun_datacentric_wrap_a-data-overrides.obj `if test -f 'sample-sources/data-overrides.c'; then $(CYGPATH_W) 'sample-sources/data-overrides.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/data-overrides.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data-overrides.Tpo sample-sources/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data-overrides.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/data-overrides.c' object='sample-sources/libhpcrun_datacentric_wrap_a-data-overrides.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_wrap_a_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_datacentric_wrap_a-data-overrides.obj `if test -f 'sample-sources/data-overrides.c'; then $(CYGPATH_W) 'sample-sources/data-overrides.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/data-overrides.c'; fi`
+
 sample-sources/libhpcrun_ga_wrap_a-ga-overrides.o: sample-sources/ga-overrides.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_ga_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_ga_wrap_a_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_ga_wrap_a-ga-overrides.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_ga_wrap_a-ga-overrides.Tpo -c -o sample-sources/libhpcrun_ga_wrap_a-ga-overrides.o `test -f 'sample-sources/ga-overrides.c' || echo '$(srcdir)/'`sample-sources/ga-overrides.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_ga_wrap_a-ga-overrides.Tpo sample-sources/$(DEPDIR)/libhpcrun_ga_wrap_a-ga-overrides.Po
@@ -3142,6 +3264,20 @@ sample-sources/libhpcrun_io_wrap_a-io-over.obj: sample-sources/io-over.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/io-over.c' object='sample-sources/libhpcrun_io_wrap_a-io-over.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_io_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_io_wrap_a_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_io_wrap_a-io-over.obj `if test -f 'sample-sources/io-over.c'; then $(CYGPATH_W) 'sample-sources/io-over.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/io-over.c'; fi`
+
+sample-sources/libhpcrun_memleak_wrap_a-memory-overrides.o: sample-sources/memory-overrides.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_memleak_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_memleak_wrap_a_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_memleak_wrap_a-memory-overrides.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_memleak_wrap_a-memory-overrides.Tpo -c -o sample-sources/libhpcrun_memleak_wrap_a-memory-overrides.o `test -f 'sample-sources/memory-overrides.c' || echo '$(srcdir)/'`sample-sources/memory-overrides.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_memleak_wrap_a-memory-overrides.Tpo sample-sources/$(DEPDIR)/libhpcrun_memleak_wrap_a-memory-overrides.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/memory-overrides.c' object='sample-sources/libhpcrun_memleak_wrap_a-memory-overrides.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_memleak_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_memleak_wrap_a_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_memleak_wrap_a-memory-overrides.o `test -f 'sample-sources/memory-overrides.c' || echo '$(srcdir)/'`sample-sources/memory-overrides.c
+
+sample-sources/libhpcrun_memleak_wrap_a-memory-overrides.obj: sample-sources/memory-overrides.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_memleak_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_memleak_wrap_a_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_memleak_wrap_a-memory-overrides.obj -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_memleak_wrap_a-memory-overrides.Tpo -c -o sample-sources/libhpcrun_memleak_wrap_a-memory-overrides.obj `if test -f 'sample-sources/memory-overrides.c'; then $(CYGPATH_W) 'sample-sources/memory-overrides.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/memory-overrides.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_memleak_wrap_a-memory-overrides.Tpo sample-sources/$(DEPDIR)/libhpcrun_memleak_wrap_a-memory-overrides.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/memory-overrides.c' object='sample-sources/libhpcrun_memleak_wrap_a-memory-overrides.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_memleak_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_memleak_wrap_a_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_memleak_wrap_a-memory-overrides.obj `if test -f 'sample-sources/memory-overrides.c'; then $(CYGPATH_W) 'sample-sources/memory-overrides.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/memory-overrides.c'; fi`
 
 sample-sources/libhpcrun_memleak_wrap_a-memleak-overrides.o: sample-sources/memleak-overrides.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_memleak_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_memleak_wrap_a_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_memleak_wrap_a-memleak-overrides.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_memleak_wrap_a-memleak-overrides.Tpo -c -o sample-sources/libhpcrun_memleak_wrap_a-memleak-overrides.o `test -f 'sample-sources/memleak-overrides.c' || echo '$(srcdir)/'`sample-sources/memleak-overrides.c
@@ -3422,6 +3558,13 @@ sample-sources/perf/libhpcrun_la-mmap_read.lo: sample-sources/perf/mmap_read.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/mmap_read.c' object='sample-sources/perf/libhpcrun_la-mmap_read.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_la-mmap_read.lo `test -f 'sample-sources/perf/mmap_read.c' || echo '$(srcdir)/'`sample-sources/perf/mmap_read.c
+
+sample-sources/libhpcrun_la-datacentric.lo: sample-sources/datacentric.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-datacentric.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-datacentric.Tpo -c -o sample-sources/libhpcrun_la-datacentric.lo `test -f 'sample-sources/datacentric.c' || echo '$(srcdir)/'`sample-sources/datacentric.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_la-datacentric.Tpo sample-sources/$(DEPDIR)/libhpcrun_la-datacentric.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric.c' object='sample-sources/libhpcrun_la-datacentric.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_la-datacentric.lo `test -f 'sample-sources/datacentric.c' || echo '$(srcdir)/'`sample-sources/datacentric.c
 
 sample-sources/libhpcrun_la-memleak.lo: sample-sources/memleak.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-memleak.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-memleak.Tpo -c -o sample-sources/libhpcrun_la-memleak.lo `test -f 'sample-sources/memleak.c' || echo '$(srcdir)/'`sample-sources/memleak.c
@@ -4018,6 +4161,20 @@ utilities/libhpcrun_la-last_func.lo: utilities/last_func.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_la-last_func.lo `test -f 'utilities/last_func.c' || echo '$(srcdir)/'`utilities/last_func.c
 
+sample-sources/libhpcrun_datacentric_la-memory-overrides.lo: sample-sources/memory-overrides.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_datacentric_la-memory-overrides.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_datacentric_la-memory-overrides.Tpo -c -o sample-sources/libhpcrun_datacentric_la-memory-overrides.lo `test -f 'sample-sources/memory-overrides.c' || echo '$(srcdir)/'`sample-sources/memory-overrides.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_datacentric_la-memory-overrides.Tpo sample-sources/$(DEPDIR)/libhpcrun_datacentric_la-memory-overrides.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/memory-overrides.c' object='sample-sources/libhpcrun_datacentric_la-memory-overrides.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_datacentric_la-memory-overrides.lo `test -f 'sample-sources/memory-overrides.c' || echo '$(srcdir)/'`sample-sources/memory-overrides.c
+
+sample-sources/libhpcrun_datacentric_la-data-overrides.lo: sample-sources/data-overrides.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_datacentric_la-data-overrides.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_datacentric_la-data-overrides.Tpo -c -o sample-sources/libhpcrun_datacentric_la-data-overrides.lo `test -f 'sample-sources/data-overrides.c' || echo '$(srcdir)/'`sample-sources/data-overrides.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_datacentric_la-data-overrides.Tpo sample-sources/$(DEPDIR)/libhpcrun_datacentric_la-data-overrides.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/data-overrides.c' object='sample-sources/libhpcrun_datacentric_la-data-overrides.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_datacentric_la-data-overrides.lo `test -f 'sample-sources/data-overrides.c' || echo '$(srcdir)/'`sample-sources/data-overrides.c
+
 sample-sources/libhpcrun_ga_la-ga-overrides.lo: sample-sources/ga-overrides.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_ga_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_ga_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_ga_la-ga-overrides.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_ga_la-ga-overrides.Tpo -c -o sample-sources/libhpcrun_ga_la-ga-overrides.lo `test -f 'sample-sources/ga-overrides.c' || echo '$(srcdir)/'`sample-sources/ga-overrides.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_ga_la-ga-overrides.Tpo sample-sources/$(DEPDIR)/libhpcrun_ga_la-ga-overrides.Plo
@@ -4451,6 +4608,20 @@ sample-sources/perf/libhpcrun_o-mmap_read.obj: sample-sources/perf/mmap_read.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/mmap_read.c' object='sample-sources/perf/libhpcrun_o-mmap_read.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_o-mmap_read.obj `if test -f 'sample-sources/perf/mmap_read.c'; then $(CYGPATH_W) 'sample-sources/perf/mmap_read.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/perf/mmap_read.c'; fi`
+
+sample-sources/libhpcrun_o-datacentric.o: sample-sources/datacentric.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-datacentric.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-datacentric.Tpo -c -o sample-sources/libhpcrun_o-datacentric.o `test -f 'sample-sources/datacentric.c' || echo '$(srcdir)/'`sample-sources/datacentric.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_o-datacentric.Tpo sample-sources/$(DEPDIR)/libhpcrun_o-datacentric.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric.c' object='sample-sources/libhpcrun_o-datacentric.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_o-datacentric.o `test -f 'sample-sources/datacentric.c' || echo '$(srcdir)/'`sample-sources/datacentric.c
+
+sample-sources/libhpcrun_o-datacentric.obj: sample-sources/datacentric.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-datacentric.obj -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-datacentric.Tpo -c -o sample-sources/libhpcrun_o-datacentric.obj `if test -f 'sample-sources/datacentric.c'; then $(CYGPATH_W) 'sample-sources/datacentric.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/datacentric.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_o-datacentric.Tpo sample-sources/$(DEPDIR)/libhpcrun_o-datacentric.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric.c' object='sample-sources/libhpcrun_o-datacentric.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_o-datacentric.obj `if test -f 'sample-sources/datacentric.c'; then $(CYGPATH_W) 'sample-sources/datacentric.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/datacentric.c'; fi`
 
 sample-sources/libhpcrun_o-memleak.o: sample-sources/memleak.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-memleak.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-memleak.Tpo -c -o sample-sources/libhpcrun_o-memleak.o `test -f 'sample-sources/memleak.c' || echo '$(srcdir)/'`sample-sources/memleak.c

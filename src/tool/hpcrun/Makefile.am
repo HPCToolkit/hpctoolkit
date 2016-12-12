@@ -121,6 +121,7 @@ endif
 
 if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcrun.la
+  pkglib_LTLIBRARIES += libhpcrun_datacentric.la
   pkglib_LTLIBRARIES += libhpcrun_ga.la
   pkglib_LTLIBRARIES += libhpcrun_io.la
   pkglib_LTLIBRARIES += libhpcrun_memleak.la
@@ -135,6 +136,7 @@ endif
 if OPT_ENABLE_HPCRUN_STATIC
   noinst_PROGRAMS  = libhpcrun.o
   pkglib_LIBRARIES += libhpcrun_wrap.a
+  pkglib_LIBRARIES += libhpcrun_datacentric_wrap.a
   pkglib_LIBRARIES += libhpcrun_ga_wrap.a
   pkglib_LIBRARIES += libhpcrun_io_wrap.a
   pkglib_LIBRARIES += libhpcrun_memleak_wrap.a
@@ -173,7 +175,7 @@ MPI_PROTO_FILE = @MPI_PROTO_FILE@
 
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
-PLUGIN_CONFIG_FILES = ga io memleak pthread
+PLUGIN_CONFIG_FILES = datacentric ga io memleak pthread
 
 if HOST_CPU_PPC
   PLUGIN_CONFIG_FILES += ibm-xlomp
@@ -279,6 +281,7 @@ MY_BASE_FILES =				\
 	sample-sources/idle.c		\
 	sample-sources/perf/linux_perf.c	\
 	sample-sources/perf/mmap_read.c	\
+	sample-sources/datacentric.c	\
 	sample-sources/memleak.c	\
 	sample-sources/pthread-blame.c  \
 	sample-sources/none.c           \
@@ -458,11 +461,20 @@ libhpcrun_io_la_SOURCES = 		\
 libhpcrun_io_wrap_a_SOURCES = 		\
 	sample-sources/io-over.c
 
+libhpcrun_datacentric_la_SOURCES = 		\
+	sample-sources/memory-overrides.c \
+	sample-sources/data-overrides.c
+
+libhpcrun_datacentric_wrap_a_SOURCES = 	\
+	sample-sources/memory-overrides.c \
+	sample-sources/data-overrides.c
+
 libhpcrun_memleak_la_SOURCES = 		\
 	sample-sources/memory-overrides.c \
 	sample-sources/memleak-overrides.c
 
 libhpcrun_memleak_wrap_a_SOURCES = 	\
+	sample-sources/memory-overrides.c \
 	sample-sources/memleak-overrides.c
 
 libhpcrun_pthread_la_SOURCES = 		\
@@ -536,6 +548,15 @@ libhpcrun_io_la_CPPFLAGS =		\
 	$(MY_INCLUDE_DIRS)
 
 libhpcrun_io_wrap_a_CPPFLAGS =		\
+	-DHPCRUN_STATIC_LINK		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_datacentric_la_CPPFLAGS =		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_datacentric_wrap_a_CPPFLAGS =	\
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
@@ -645,6 +666,8 @@ libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_datacentric_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_datacentric_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -678,6 +701,8 @@ libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
 
+libhpcrun_datacentric_la_LDFLAGS = -Wl,-Bsymbolic
+
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
@@ -708,6 +733,8 @@ if HOST_CPU_MIPS
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_datacentric_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_datacentric_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_pthread_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
@@ -732,6 +759,8 @@ if HOST_CPU_PPC
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_datacentric_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_datacentric_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_pthread_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
@@ -756,6 +785,8 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_datacentric_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_datacentric_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_pthread_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
@@ -775,6 +806,8 @@ if HOST_CPU_IA64
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+  libhpcrun_datacentric_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+  libhpcrun_datacentric_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_pthread_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
@@ -793,6 +826,8 @@ if HOST_CPU_AARCH64
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_datacentric_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_datacentric_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_pthread_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
@@ -884,6 +919,8 @@ libhpcrun_ga_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_ga_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_io_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_io_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
+libhpcrun_datacentric_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
+libhpcrun_datacentric_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_pthread_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)

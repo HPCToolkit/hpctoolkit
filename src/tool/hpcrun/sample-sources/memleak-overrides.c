@@ -70,6 +70,10 @@ callpath_sample(ucontext_t * uc, size_t bytes)
   return hpcrun_sample_callpath(uc, hpcrun_memleak_alloc_id(), bytes, 0, 1);
 }
 
+// ----------------------------------------------
+// API has to be implemented by external plugin
+// ----------------------------------------------
+
 void 
 mo_external_init()
 {
@@ -80,4 +84,11 @@ mo_external_init()
   add_mem_registry(mem_item);
 }
 
+
+
+int 
+mo_external_active()
+{
+  return hpcrun_memleak_active();
+}
 

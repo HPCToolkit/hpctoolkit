@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2012, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,24 +44,11 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef __DATA_OVERRIDES_H
+#define __DATA_OVERRIDES_H
 
-#ifndef __MEMLEAK_OVERRIDES_H__
-#define __MEMLEAK_OVERRIDES_H__
-
-// ----------------------------------------------
-// API has to be implemented by external plugin
-// ----------------------------------------------
-
-// function needs to be implemented by the plugin
-// this function will be called by memory-overrides.c during the initialiation
-
-void mo_external_init();
-
-// function needs to be implemented by the plugin
-// this function returns true if the external is active.
-//  false otherwise
-
-int mo_external_active();
+int hpcrun_datacentric_alloc_id(); 
+int hpcrun_datacentric_active();
 
 #endif
 
