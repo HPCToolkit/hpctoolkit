@@ -253,16 +253,9 @@ hpcrun_alloc_inc(cct_node_t* node, int incr)
   }
 }
 
-
-void
-hpcrun_free_inc(cct_node_t* node, int incr)
+// interface
+int 
+get_free_metric_id()
 {
-  if (node != NULL) {
-    TMSG(MEMLEAK, "\tfree (cct node %p): metric[%d] += %d", 
-	 node, free_metric_id, incr);
-    
-    cct_metric_data_increment(free_metric_id,
-			      node,
-			      (cct_metric_data_t){.i = incr});
-  }
+  return free_metric_id;
 }

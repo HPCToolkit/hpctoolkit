@@ -491,7 +491,7 @@ memory_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
   info_ptr->rmemblock = info_ptr->memblock + info_ptr->bytes;
   info_ptr->left = NULL;
   info_ptr->right = NULL;
-  if (hpcrun_memory_active()) {
+  if (mo_external_active()) {
     // run the plugins
     if (mem_reg_item.sample_fcn) {
       sample_val_t smpl = mem_reg_item.sample_fcn(uc, bytes);
@@ -535,7 +535,7 @@ memory_malloc_helper(const char *name, size_t bytes, size_t align,
   // do the real malloc, aligned or not.  note: we can't track malloc
   // inside dlopen, that would lead to deadlock.
   active = 1;
-  if (! (leak_detection_enabled && hpcrun_memory_active())) {
+  if (! (leak_detection_enabled && mo_external_active())) {
     active = 0;
   } else if (TD_GET(inside_dlfcn)) {
     active = 0;
@@ -585,6 +585,19 @@ memory_malloc_helper(const char *name, size_t bytes, size_t align,
 }
 
 
+static void
+hpcrun_free_inc(cct_node_t* node, int incr)
+{
+  if (node != NULL) {
+    int free_metric_id = get_free_metric_id();
+    TMSG(MEMLEAK, "\tfree (cct node %p): metric[%d] += %d", 
+	 node, free_metric_id, incr);
+    cct_metric_data_increment(free_metric_id,
+			      node,
+			      (cct_metric_data_t){.i = incr});
+  }
+}
+
 // Reclaim the data in the leakinfo struct, add metric to CCT,
 // invalidate the struct and print TMSG.
 //
@@ -604,7 +617,7 @@ memory_free_helper(const char *name, void *sys_ptr, void *appl_ptr,
     return;
   }
 
-  if (info_ptr->context != NULL && hpcrun_memory_active()) {
+  if (info_ptr->context != NULL && mo_external_active()) {
     hpcrun_free_inc(info_ptr->context, info_ptr->bytes);
     loc_str = loc_name[loc];
   } else {
@@ -856,7 +869,7 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
   // but if there used to be a header, then must slide user data.
   // again, can't track malloc inside dlopen.
   active = 1;
-  if (! (leak_detection_enabled && hpcrun_memory_active())) {
+  if (! (leak_detection_enabled && mo_external_active())) {
     active = 0;
   } else if (TD_GET(inside_dlfcn)) {
     active = 0;

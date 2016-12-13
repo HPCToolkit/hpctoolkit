@@ -48,20 +48,5 @@
 #ifndef __MEMLEAK_OVERRIDES_H__
 #define __MEMLEAK_OVERRIDES_H__
 
-// ----------------------------------------------
-// API has to be implemented by external plugin
-// ----------------------------------------------
-
-// function needs to be implemented by the plugin
-// this function will be called by memory-overrides.c during the initialiation
-
-void mo_external_init();
-
-// function needs to be implemented by the plugin
-// this function returns true if the external is active.
-//  false otherwise
-
-int mo_external_active();
-
 #endif
 

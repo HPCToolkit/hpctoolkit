@@ -48,6 +48,7 @@
 #include <unistd.h>
 
 #include "thread_data.h"
+#include "datacentric.h"
 #include "memory-overrides.h"
 
 void

@@ -240,6 +240,3 @@ hpcrun_datacentric_active()
   }
 }
 
-
-
-
