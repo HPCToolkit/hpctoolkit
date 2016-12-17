@@ -598,14 +598,14 @@ remove the matched nodes and its descendants.
   \centering
   \begin{subfigure}{.45\textwidth}
     \centering
-    \includegraphics[scale=.4]{fig/hpcviewer-filter-cct.pdf}
+    \includegraphics[scale=.8]{fig/hpcviewer-filter-cct.png}
     \caption{The original CCT tree.}
     \label{fig:filter-cct}
   \end{subfigure}%
   \qquad
   \begin{subfigure}{.45\textwidth}
     \centering
-    \includegraphics[scale=.4]{fig/hpcviewer-filter-self.pdf}
+    \includegraphics[scale=.8]{fig/hpcviewer-filter-self.png}
     \caption{The result of applying \emph{self only} filter on node \texttt{C}. % against the CCT from Figure~\ref{fig:filter-cct}. 
 Node \texttt{C} is elided and its children (nodes \texttt{D} and \texttt{E}) are augmented to the parent of node \texttt{C}. 
 The exclusive cost of node \texttt{C} is also augmented to node \texttt{A}.}
@@ -613,7 +613,7 @@ The exclusive cost of node \texttt{C} is also augmented to node \texttt{A}.}
   \end{subfigure}
   \begin{subfigure}{.45\textwidth}
     \centering
-    \includegraphics[scale=.4]{fig/hpcviewer-filter-children.pdf}
+    \includegraphics[scale=.8]{fig/hpcviewer-filter-children.png}
     \caption{The result of applying \emph{Descendants only} filter on node \texttt{C}. % against the CCT from Figure~\ref{fig:filter-cct}.
 All the children of node \texttt{C} (nodes \texttt{D} and \texttt{E}) are elided, and the total of their exclusive cost is added to node \texttt{C}. }
     \label{fig:filter-children}
@@ -621,7 +621,7 @@ All the children of node \texttt{C} (nodes \texttt{D} and \texttt{E}) are elided
   \qquad
   \begin{subfigure}{.45\textwidth}
     \centering
-    \includegraphics[scale=.4]{fig/hpcviewer-filter-self_children.pdf}
+    \includegraphics[scale=.8]{fig/hpcviewer-filter-self_children.png}
     \caption{The result of applying \emph{self and descendants} filter on node \texttt{C}. %against the CCT from Figure~\ref{fig:filter-cct}. }
 Nodes \texttt{C} and its descendants are elided, and their exclusive cost is augmented to node \texttt{A} which is the parent of node \texttt{C}.}
     \label{fig:filter-selfchildren}
@@ -634,7 +634,7 @@ Nodes \texttt{C} and its descendants are elided, and their exclusive cost is aug
 \end{figure}
 \begin{figure}
  \centering
- \includegraphics[scale=.6]{fig/hpcviewer-filter-window.png}
+ \includegraphics{fig/hpcviewer-filter-window.png}
  \caption{The window of filter property.}
  \label{fig:filter-window}
 \end{figure}
