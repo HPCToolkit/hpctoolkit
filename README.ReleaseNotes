@@ -211,7 +211,9 @@ recognize the Power8 little-endian system type.
  - libtool 2.4.6.
 
 Use boost version 1.59.0.
+Use dyninst version 9.3.0.
 Use elfutils version 0.167.
+Use libdwarf version 2016-11-24.
 Use libmonitor version from Sept 15, 2016. 
 Use libunwind version from Feb 29, 2016.
 
