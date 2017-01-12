@@ -83,8 +83,6 @@
 #include <messages/messages.h>
 #include <utilities/tokenize.h>
 
-#include "memleak-overrides.h"
-
 static int alloc_metric_id = -1;
 static int free_metric_id = -1;
 
@@ -253,9 +251,16 @@ hpcrun_alloc_inc(cct_node_t* node, int incr)
   }
 }
 
-// interface
-int 
-get_free_metric_id()
+
+void
+hpcrun_free_inc(cct_node_t* node, int incr)
 {
-  return free_metric_id;
+  if (node != NULL) {
+    TMSG(MEMLEAK, "\tfree (cct node %p): metric[%d] += %d", 
+	 node, free_metric_id, incr);
+    
+    cct_metric_data_increment(free_metric_id,
+			      node,
+			      (cct_metric_data_t){.i = incr});
+  }
 }

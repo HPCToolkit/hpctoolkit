@@ -462,19 +462,15 @@ libhpcrun_io_wrap_a_SOURCES = 		\
 	sample-sources/io-over.c
 
 libhpcrun_datacentric_la_SOURCES = 		\
-	sample-sources/memory-overrides.c \
 	sample-sources/data-overrides.c
 
 libhpcrun_datacentric_wrap_a_SOURCES = 	\
-	sample-sources/memory-overrides.c \
 	sample-sources/data-overrides.c
 
 libhpcrun_memleak_la_SOURCES = 		\
-	sample-sources/memory-overrides.c \
 	sample-sources/memleak-overrides.c
 
 libhpcrun_memleak_wrap_a_SOURCES = 	\
-	sample-sources/memory-overrides.c \
 	sample-sources/memleak-overrides.c
 
 libhpcrun_pthread_la_SOURCES = 		\

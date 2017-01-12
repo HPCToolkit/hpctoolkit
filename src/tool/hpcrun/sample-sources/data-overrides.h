@@ -47,8 +47,6 @@
 #ifndef __DATA_OVERRIDES_H
 #define __DATA_OVERRIDES_H
 
-int hpcrun_datacentric_alloc_id(); 
-int hpcrun_datacentric_active();
 
 #endif
 

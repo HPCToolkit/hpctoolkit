@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -54,6 +54,7 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
+#include <sys/mman.h>
 
 
 
@@ -83,12 +84,62 @@
 #include <messages/messages.h>
 #include <utilities/tokenize.h>
 
-#include "data-overrides.h"
+#include "datacentric.h"
+#include <safe-sampling.h>
+
+#define DEFAULT_THRESHOLD (8 * 1024)
 
 static int alloc_metric_id = -1;
 static int free_metric_id = -1;
+static long threshold = DEFAULT_THRESHOLD;
 
 
+/******************************************************************************
+ * segv signal handler
+ *****************************************************************************/
+// this segc handler is used to monitor first touches
+void 
+segv_handler (int signal_number, siginfo_t *si, void *context)
+{
+  int pagesize = getpagesize();
+  if (TD_GET(inside_hpcrun) && si && si->si_addr) {
+    void *p = (void *)(((uint64_t)(uintptr_t) si->si_addr) & ~(pagesize-1));
+    mprotect (p, pagesize, PROT_READ | PROT_WRITE);
+    return;
+  }
+  hpcrun_safe_enter();
+  if (!si || !si->si_addr) {
+    hpcrun_safe_exit();
+    return;
+  }
+  void *start, *end;
+  cct_node_t *data_node = splay_lookup((void *)si->si_addr, &start, &end);
+  if (data_node) {
+    void *p = (void *)(((uint64_t)(uintptr_t) start + pagesize-1) & ~(pagesize-1));
+    mprotect (p, (uint64_t)(uintptr_t) end - (uint64_t)(uintptr_t) p, PROT_READ|PROT_WRITE);
+    TD_GET(mem_data.data_node) = data_node;
+    TD_GET(mem_data.first_touch) = 1;
+    hpcrun_sample_callpath(context, alloc_metric_id, 0, 0/*skipInner*/, 0/*isSync*/);
+    TD_GET(mem_data.first_touch) = 0;
+    TD_GET(mem_data.data_node) = NULL;
+  }
+  else {
+    void *p = (void *)(((uint64_t)(uintptr_t) si->si_addr) & ~(pagesize-1));
+    mprotect (p, pagesize, PROT_READ | PROT_WRITE);
+  }
+  hpcrun_safe_exit();
+}
+
+void
+set_segv_handler()
+{
+  struct sigaction sa;
+
+  sa.sa_flags = SA_SIGINFO;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_sigaction = segv_handler;
+  sigaction(SIGSEGV, &sa, NULL);
+}
 
 /******************************************************************************
  * method definitions
@@ -102,6 +153,8 @@ METHOD_FN(init)
   // reset static variables to their virgin state
   alloc_metric_id = -1;
   free_metric_id = -1;
+
+  set_segv_handler();
 }
 
 
@@ -161,13 +214,22 @@ METHOD_FN(process_event_list,int lush_metrics)
 {
   alloc_metric_id = hpcrun_new_metric();
   free_metric_id = hpcrun_new_metric();
+  char *event;
 
-  TMSG(DATACENTRIC, "Setting up metrics for memory leak detection");
+  char* evlist = METHOD_CALL(self, get_event_str);
+  for (event = start_tok(evlist); more_tok(); event = next_tok()) {
+    char name[1024];
+    long threshold;
+    hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold, 
+			   DEFAULT_THRESHOLD);
 
-  hpcrun_set_metric_info(alloc_metric_id, "Bytes Allocated");
+    TMSG(DATACENTRIC, "Setting up metrics for memory leak detection");
 
-  hpcrun_set_metric_info(free_metric_id, "Bytes Freed");
+    hpcrun_set_metric_info(alloc_metric_id, "Bytes Allocated");
+    hpcrun_set_metric_info(free_metric_id, "Bytes Freed");
+  }
 }
+
 
 
 //
@@ -187,11 +249,11 @@ static void
 METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
-  printf("Available Data-centric events\n");
+  printf("Available memory leak detection events\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("DATACENTRIC\t\tThe number of bytes allocated per dynamic context\n");
+  printf("DATACENTRIC\t\tThe number of bytes allocated and freed per dynamic context\n");
   printf("\n");
 }
 
@@ -231,12 +293,23 @@ int
 hpcrun_datacentric_active() 
 {
   if (hpcrun_is_initialized()) {
-    thread_data_t* td = hpcrun_safe_get_td();
-    if (!td) return 0;
-    return (td->ss_state[obj_name().sel_idx] == START);
-  }
-  else {
+    return (TD_GET(ss_state)[obj_name().sel_idx] == START);
+  } else {
     return 0;
   }
 }
 
+
+
+void
+hpcrun_datacentric_free_inc(cct_node_t* node, int incr)
+{
+  if (node != NULL) {
+    TMSG(DATACENTRIC, "\tfree (cct node %p): metric[%d] += %d", 
+	 node, free_metric_id, incr);
+    
+    cct_metric_data_increment(free_metric_id,
+			      node,
+			      (cct_metric_data_t){.i = incr});
+  }
+}
