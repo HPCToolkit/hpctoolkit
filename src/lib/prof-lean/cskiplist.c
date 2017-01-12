@@ -297,7 +297,7 @@ cskiplist_find_helper
 static csklnode_t *
 cskiplist_find(val_cmp compare, cskiplist_t *cskl, void* value)
 {
-  // Acquire pfq-rwlock before reading:
+  // Acquire pfq_lock before reading:
   pfq_rwlock_start_read(&cskl->pfq_lock);
 
   int     max_height  = cskl->max_height;
@@ -308,13 +308,13 @@ cskiplist_find(val_cmp compare, cskiplist_t *cskl, void* value)
   if (layer != NO_LAYER) {
 	csklnode_t *node = succs[layer];
 	if (node->fully_linked && !node->marked) {
-	  // Release pfq-rwlock after reading:
+	  // Release pfq_lock after reading:
 	  pfq_rwlock_end_read(&cskl->pfq_lock);
 	  return node;
 	}
   }
 
-  // Release pfq-rwlock after reading:
+  // Release pfq_lock after reading:
   pfq_rwlock_end_read(&cskl->pfq_lock);
 
   return NULL;
@@ -360,7 +360,7 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
   csklnode_t* other[max_height];
   csklnode_t* hsuccs[max_height];
 
-  // Acquire pfq-rwlock before writing:
+  // Acquire pfq_lock before writing:
   pfq_rwlock_node_t me;
   pfq_rwlock_start_write(&cskl->pfq_lock, &me);
 
@@ -487,7 +487,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
   mcs_node_t mcs_nodes[max_height];
 
   for (;;) {
-	// Acquire pfq-rwlock before reading:
+	// Acquire pfq_lock before reading:
 	pfq_rwlock_start_read(&cskl->pfq_lock);
 
 	int found_layer= cskiplist_find_helper(cskl->compare,
@@ -498,7 +498,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	  csklnode_t *node = succs[found_layer];
 	  if (!node->marked) {
 		while (!node->fully_linked);
-		// Release pfq-rwlock before returning:
+		// Release pfq_lock before returning:
 		pfq_rwlock_end_read(&cskl->pfq_lock);
 		return false;
 	  }
@@ -507,7 +507,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	  // this thread tries to insert again, there may be another the thread
 	  // that succeeds in inserting value before this thread gets a chance to.
 
-	  // Release pfq-rwlock before trying to insert again:
+	  // Release pfq_lock before trying to insert again:
 	  pfq_rwlock_end_read(&cskl->pfq_lock);
 
 	  continue;
@@ -543,7 +543,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	  // unlock each of my predecessors, as necessary
 	  unlock_preds(preds, mcs_nodes, highestLocked);
 
-	  // Release pfq-rwlock before trying to insert again:
+	  // Release pfq_lock before trying to insert again:
 	  pfq_rwlock_end_read(&cskl->pfq_lock);
 	  continue;
 	}
@@ -564,7 +564,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	// unlock each of my predecessors, as necessary
 	unlock_preds(preds, mcs_nodes, highestLocked);
 
-	// Release pfq-rwlock before returning:
+	// Release pfq_lock before returning:
 	pfq_rwlock_end_read(&cskl->pfq_lock);
 
 	return true;
@@ -714,7 +714,7 @@ cskl_append_node_str(char nodestr[], char str[], int max_cskl_str_len)
 void
 cskl_tostr(cskiplist_t *cskl, cskl_node_tostr node_tostr, char csklstr[], int max_cskl_str_len)
 {
-  // Acquire pfq-rwlock before reading the cskiplist to build its string representation:
+  // Acquire pfq_lock before reading the cskiplist to build its string representation:
   pfq_rwlock_start_read(&cskl->pfq_lock);
 
   csklnode_t *node = cskl->left_sentinel;
@@ -732,7 +732,7 @@ cskl_tostr(cskiplist_t *cskl, cskl_node_tostr node_tostr, char csklstr[], int ma
   }
   strncat(csklstr, "\n", max_cskl_str_len - str_len - 1);
 
-  // Release pfq-rwlock after building the string representation:
+  // Release pfq_lock after building the string representation:
   pfq_rwlock_end_read(&cskl->pfq_lock);
 
 }
