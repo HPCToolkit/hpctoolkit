@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -56,23 +56,22 @@ static char pgi_mp_pexit_signature[] = {
 };
 
 static int 
-adjust_pgi_mp_pexit_intervals(char *ins, int len, interval_status *stat)
+adjust_pgi_mp_pexit_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(pgi_mp_pexit_signature);
 
   if (len > siglen && strncmp((char *)pgi_mp_pexit_signature, ins, siglen) == 0) {
     // signature matched 
-    unwind_interval *ui = (unwind_interval *) stat->first;
+    unwind_interval *ui = stat->first;
 
     // this won't fix all of the intervals, but it will fix the one we care about.
     while(ui) {
-      if (ui->ra_status == RA_SP_RELATIVE){
-	ui->sp_ra_pos = 0xb0;
-	ui->sp_bp_pos = 0;
+      if (UWI_RECIPE(ui)->ra_status == RA_SP_RELATIVE){
+    	UWI_RECIPE(ui)->sp_ra_pos = 0xb0;
+    	UWI_RECIPE(ui)->sp_bp_pos = 0;
       }
-      ui = (unwind_interval *)(ui->common).next;
+      ui = UWI_NEXT(ui);
     }
-
     return 1;
   } 
   return 0;

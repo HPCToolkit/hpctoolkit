@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -49,7 +49,7 @@
 
 #include "x86-unwind-interval.h"
 
-interval_status 
-x86_build_intervals(void *ins, unsigned int len, int noisy);
+btuwi_status_t
+x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc);
 
 #endif

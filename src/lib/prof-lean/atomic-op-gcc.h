@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -115,6 +115,8 @@
 #define compare_and_swap_ptr(addr, oldval, newval) \
 	compare_and_swap(addr, oldval, newval) 
 
+#define compare_and_swap_bool(addr, oldval, newval) \
+	__sync_bool_compare_and_swap(addr, oldval, newval)
 
 
 #endif

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -133,6 +133,9 @@ LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die)
     fileVec[n] = m_str_tab.str2index(file_names[n]);
   }
 
+  // create unsigned copy of count to avoid type errors in the loop
+  Dwarf_Unsigned ufile_count = (Dwarf_Unsigned) file_count; 
+
   for (n = 0; n < count; n++) {
     Dwarf_Addr addr;
     Dwarf_Unsigned lineno = 0;
@@ -156,7 +159,7 @@ LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die)
       warnx("dwarf_line_srcfileno failed");
     }
 
-    if (fileno > 0 && fileno <= file_count && lineno > 0) {
+    if (fileno > 0 && fileno <= ufile_count && lineno > 0) {
       file_index = fileVec[fileno - 1];
     }
 

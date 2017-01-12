@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2016, Rice University
+## Copyright ((c)) 2002-2017, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -78,6 +78,7 @@ LIBELF_LIB   = @LIBELF_LIB@
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
+ZLIB_LIB = @ZLIB_LIB@
 
 MYSOURCES = \
 	main.cpp \
@@ -135,6 +136,10 @@ if HOST_CPU_X86_FAMILY
 MY_LIB_XED = $(XED2_LIB_FLAGS)
 else
 MY_LIB_XED =
+endif
+
+if OPT_USE_ZLIB
+MYLDADD += -L$(ZLIB_LIB) -lz
 endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@

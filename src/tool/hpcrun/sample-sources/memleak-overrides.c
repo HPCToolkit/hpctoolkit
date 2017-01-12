@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -609,7 +609,7 @@ MONITOR_EXT_WRAP_NAME(posix_memalign)(void **memptr, size_t alignment,
                                       size_t bytes)
 {
   ucontext_t uc;
-  int ret;
+  int ret = 0;
 
   if (! hpcrun_safe_enter()) {
     *memptr = real_memalign(alignment, bytes);

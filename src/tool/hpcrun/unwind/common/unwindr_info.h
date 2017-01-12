@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,10 +44,27 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef _UNWIND_DATATYPE_H
-#define _UNWIND_DATATYPE_H
+#ifndef UNWINR_INFO_H
+#define UNWINR_INFO_H
 
-#include <unwind/common/std_unw_cursor.h>
-typedef void* unw_word_t;
+//************************* System Include Files ****************************
+
+#include <inttypes.h>
+
+//*************************** User Include Files ****************************
+
+#include "ildmod_stat.h"
+#include "binarytree_uwi.h"
+
+//******************************* Types *************************************
+
+typedef struct unwindr_info_s {
+  uintptr_t start;
+  uintptr_t end;
+  load_module_t *lm;
+  tree_stat_t treestat;
+  bitree_uwi_t *btuwi;
+} unwindr_info_t;
+
 
 #endif

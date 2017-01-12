@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -50,6 +50,7 @@
 #include "x86-interval-highwatermark.h"
 #include "x86-interval-arg.h"
 
-unwind_interval *process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg);
+unwind_interval*
+process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg, mem_alloc m_alloc);
 
 #endif

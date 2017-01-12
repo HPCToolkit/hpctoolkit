@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -138,10 +138,5 @@ bool hpcrun_generate_backtrace(backtrace_info_t* bt,
 
 bool hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 					     ucontext_t* context, int skipInner);
-
-bool hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
-			       ucontext_t* context, int skipInner);
-
-bool hpcrun_gen_bt(ucontext_t* context, bool* has_tramp, bt_mut_fn bt_fn, bt_fn_arg bt_arg);
 
 #endif // hpcrun_backtrace_h

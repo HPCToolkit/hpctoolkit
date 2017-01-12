@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -61,13 +61,14 @@
  *****************************************************************************/
 
 unwind_interval *
-process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
+process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg,
+	mem_alloc m_alloc)
 {
   unwind_interval *next;
 
   const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
   xed_operand_enum_t   op0_name = xed_operand_name(op0);
-  bp_loc bp_status = iarg->current->bp_status;
+  bp_loc bp_status = UWI_RECIPE(iarg->current)->bp_status;
   int sp_bp_pos, size;
 
   switch(iclass(xptr)) {
@@ -78,7 +79,7 @@ process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
   default: assert(0);
   }
 
-  sp_bp_pos = iarg->current->sp_bp_pos + size; 
+  sp_bp_pos = UWI_RECIPE(iarg->current)->sp_bp_pos + size; 
   if (op0_name == XED_OPERAND_REG0) { 
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
     if (x86_isReg_BP(regname) && bp_status == BP_UNCHANGED) {
@@ -87,22 +88,23 @@ process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
     }
   }
 
-  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), iarg->current->ra_status, 
-		iarg->current->sp_ra_pos + size, iarg->current->bp_ra_pos, bp_status,
-		sp_bp_pos, iarg->current->bp_bp_pos, iarg->current);
+  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), UWI_RECIPE(iarg->current)->ra_status, 
+		UWI_RECIPE(iarg->current)->sp_ra_pos + size, UWI_RECIPE(iarg->current)->bp_ra_pos, bp_status,
+		sp_bp_pos, UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);
 
   return next;
 }
 
 
 unwind_interval *
-process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
+process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg,
+	mem_alloc m_alloc)
 {
   unwind_interval *next;
 
   const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
   xed_operand_enum_t   op0_name = xed_operand_name(op0);
-  bp_loc bp_status = iarg->current->bp_status;
+  bp_loc bp_status = UWI_RECIPE(iarg->current)->bp_status;
   int size;
 
   switch(iclass(xptr)) {
@@ -118,8 +120,9 @@ process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
     if (x86_isReg_BP(regname)) bp_status = BP_UNCHANGED;
   }
 
-  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), iarg->current->ra_status, 
-		iarg->current->sp_ra_pos + size, iarg->current->bp_ra_pos, bp_status, 
-		iarg->current->sp_bp_pos + size, iarg->current->bp_bp_pos, iarg->current);
+  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), UWI_RECIPE(iarg->current)->ra_status, 
+		UWI_RECIPE(iarg->current)->sp_ra_pos + size, UWI_RECIPE(iarg->current)->bp_ra_pos, bp_status, 
+		UWI_RECIPE(iarg->current)->sp_bp_pos + size, UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current,
+		m_alloc);
   return next;
 }

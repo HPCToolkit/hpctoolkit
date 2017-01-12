@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -238,6 +238,15 @@ hpcrun_initLoadmap();
 hpcrun_loadmap_t*
 hpcrun_getLoadmap();
 
+typedef void (*loadmap_notify_range_t)(void *start, void *end);
+
+typedef struct loadmap_notify_t {
+  loadmap_notify_range_t map;
+  loadmap_notify_range_t unmap;
+  struct loadmap_notify_t *next;
+} loadmap_notify_t;
+
+void hpcrun_loadmap_notify_register(loadmap_notify_t *n);
 
 //***************************************************************************
 

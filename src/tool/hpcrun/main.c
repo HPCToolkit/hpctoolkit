@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -388,6 +388,10 @@ hpcrun_init_internal(bool is_child)
   hpcrun_mmap_init();
   hpcrun_thread_data_init(0, NULL, is_child, hpcrun_get_num_sample_sources());
 
+  // must initialize unwind recipe map before initializing fnbounds
+  // because mapping of load modules affects the recipe map.
+  hpcrun_unw_init();
+
   // WARNING: a perfmon bug requires us to fork off the fnbounds
   // server before we call PAPI_init, which is done in argument
   // processing below. Also, fnbounds_init must be done after the
@@ -425,7 +429,6 @@ hpcrun_init_internal(bool is_child)
   lushPthr_processInit();
 
   hpcrun_setup_segv();
-  hpcrun_unw_init();
 
 
 #ifndef USE_LIBUNW
@@ -725,6 +728,7 @@ hpcrun_thread_fini(epoch_t *epoch)
 //***************************************************************************
 // process control (via libmonitor)
 //***************************************************************************
+volatile int HPCRUN_DEBUGGER_WAIT = 1;
 
 void*
 monitor_init_process(int *argc, char **argv, void* data)
@@ -739,8 +743,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   const char* HPCRUN_WAIT = getenv("HPCRUN_WAIT");
   if (HPCRUN_WAIT) {
-    volatile int DEBUGGER_WAIT = 1;
-    while (DEBUGGER_WAIT);
+    while (HPCRUN_DEBUGGER_WAIT);
 
     // when the user program forks, we don't want to wait to have a debugger 
     // attached for each exec along a chain of fork/exec. if that is what
