@@ -68,14 +68,6 @@
 #include "randomizer.h"
 #include "cskiplist.h"
 
-#if OPAQUE_TYPE
-
-#include "mcs-lock.h"
-#include "pfq-rwlock.h"
-
-#endif
-
-
 //******************************************************************************
 // macros
 //******************************************************************************
@@ -102,28 +94,8 @@
 //******************************************************************************
 
 #if OPAQUE_TYPE
-
 // opaque type not supported by gcc 4.4.*
-
-typedef struct csklnode_s {
-  void *val;
-  int height;
-  volatile bool fully_linked;
-  volatile bool marked;
-  mcs_lock_t lock;
-  // memory allocated for a node will include space for its vector of  pointers
-  struct csklnode_s *nexts[];
-} csklnode_t;
-
-typedef struct cskiplist_s {
-  csklnode_t *left_sentinel;
-  csklnode_t *right_sentinel;
-  int max_height;
-  val_cmp compare;
-  val_cmp inrange;
-  pfq_rwlock_t lock;
-} cskiplist_t;
-
+#include "cskiplist_defs.h"
 #endif
 
 
