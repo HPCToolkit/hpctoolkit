@@ -305,19 +305,17 @@ cskiplist_find(val_cmp compare, cskiplist_t *cskl, void* value)
   csklnode_t *succs[max_height];
   int layer = cskiplist_find_helper(compare, cskl, value, preds, succs,
 	  cskiplist_find_early_exit);
+  csklnode_t *node = NULL;
   if (layer != NO_LAYER) {
-	csklnode_t *node = succs[layer];
-	if (node->fully_linked && !node->marked) {
-	  // Release lock after reading:
-	  pfq_rwlock_end_read(&cskl->lock);
-	  return node;
-	}
+	node = succs[layer];
+	if (!node->fully_linked || node->marked)
+	  node = NULL;
   }
 
   // Release lock after reading:
   pfq_rwlock_end_read(&cskl->lock);
 
-  return NULL;
+  return node;
 }
 
 static void inline
@@ -485,6 +483,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
   csklnode_t *preds[max_height];
   csklnode_t *succs[max_height];
   mcs_node_t mcs_nodes[max_height];
+  bool completed = false;
 
   for (;;) {
 	// Acquire lock before reading:
@@ -498,9 +497,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	  csklnode_t *node = succs[found_layer];
 	  if (!node->marked) {
 		while (!node->fully_linked);
-		// Release lock before returning:
-		pfq_rwlock_end_read(&cskl->lock);
-		return false;
+		break;
 	  }
 	  // node is marked for deletion by some other thread, so this thread needs
 	  // to try to insert again by going to the end of this for(;;) loop. As
@@ -509,7 +506,6 @@ cskl_insert(cskiplist_t *cskl, void *value,
 
 	  // Release lock before trying to insert again:
 	  pfq_rwlock_end_read(&cskl->lock);
-
 	  continue;
 	}
 
@@ -564,11 +560,13 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	// unlock each of my predecessors, as necessary
 	unlock_preds(preds, mcs_nodes, highestLocked);
 
-	// Release lock before returning:
-	pfq_rwlock_end_read(&cskl->lock);
-
-	return true;
+	completed = true;
+	break;
   }
+  // Release lock before returning:
+  pfq_rwlock_end_read(&cskl->lock);
+
+  return completed;
 }
 
 /*
