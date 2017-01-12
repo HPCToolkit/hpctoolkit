@@ -107,7 +107,7 @@ typedef struct cskiplist_s {
   int max_height;
   val_cmp compare;
   val_cmp inrange;
-  pfq_rwlock_t pfq_lock;
+  pfq_rwlock_t lock;
 } cskiplist_t;
 
 #endif

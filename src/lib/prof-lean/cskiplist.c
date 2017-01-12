@@ -121,7 +121,7 @@ typedef struct cskiplist_s {
   int max_height;
   val_cmp compare;
   val_cmp inrange;
-  pfq_rwlock_t pfq_lock;
+  pfq_rwlock_t lock;
 } cskiplist_t;
 
 #endif
@@ -297,8 +297,8 @@ cskiplist_find_helper
 static csklnode_t *
 cskiplist_find(val_cmp compare, cskiplist_t *cskl, void* value)
 {
-  // Acquire pfq_lock before reading:
-  pfq_rwlock_start_read(&cskl->pfq_lock);
+  // Acquire lock before reading:
+  pfq_rwlock_start_read(&cskl->lock);
 
   int     max_height  = cskl->max_height;
   csklnode_t *preds[max_height];
@@ -308,14 +308,14 @@ cskiplist_find(val_cmp compare, cskiplist_t *cskl, void* value)
   if (layer != NO_LAYER) {
 	csklnode_t *node = succs[layer];
 	if (node->fully_linked && !node->marked) {
-	  // Release pfq_lock after reading:
-	  pfq_rwlock_end_read(&cskl->pfq_lock);
+	  // Release lock after reading:
+	  pfq_rwlock_end_read(&cskl->lock);
 	  return node;
 	}
   }
 
-  // Release pfq_lock after reading:
-  pfq_rwlock_end_read(&cskl->pfq_lock);
+  // Release lock after reading:
+  pfq_rwlock_end_read(&cskl->lock);
 
   return NULL;
 }
@@ -360,9 +360,9 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
   csklnode_t* other[max_height];
   csklnode_t* hsuccs[max_height];
 
-  // Acquire pfq_lock before writing:
+  // Acquire lock before writing:
   pfq_rwlock_node_t me;
-  pfq_rwlock_start_write(&cskl->pfq_lock, &me);
+  pfq_rwlock_start_write(&cskl->lock, &me);
 
   //----------------------------------------------------------------------------
   // Look for a node matching low
@@ -397,7 +397,7 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
   }
 
   // Release pfq_rwlock after writing:
-  pfq_rwlock_end_write(&cskl->pfq_lock, &me);
+  pfq_rwlock_end_write(&cskl->lock, &me);
 
   return removed_something;
 }
@@ -449,7 +449,7 @@ cskl_new(
   cskl->max_height = max_height;
   cskl->compare = compare;
   cskl->inrange = inrange;
-  pfq_rwlock_init(&cskl->pfq_lock);
+  pfq_rwlock_init(&cskl->lock);
 
   // create sentinel nodes
   csklnode_t *left = cskl->left_sentinel   = csklnode_malloc(lsentinel, max_height, max_height, m_alloc);
@@ -487,8 +487,8 @@ cskl_insert(cskiplist_t *cskl, void *value,
   mcs_node_t mcs_nodes[max_height];
 
   for (;;) {
-	// Acquire pfq_lock before reading:
-	pfq_rwlock_start_read(&cskl->pfq_lock);
+	// Acquire lock before reading:
+	pfq_rwlock_start_read(&cskl->lock);
 
 	int found_layer= cskiplist_find_helper(cskl->compare,
 		cskl, value, preds, succs,
@@ -498,8 +498,8 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	  csklnode_t *node = succs[found_layer];
 	  if (!node->marked) {
 		while (!node->fully_linked);
-		// Release pfq_lock before returning:
-		pfq_rwlock_end_read(&cskl->pfq_lock);
+		// Release lock before returning:
+		pfq_rwlock_end_read(&cskl->lock);
 		return false;
 	  }
 	  // node is marked for deletion by some other thread, so this thread needs
@@ -507,8 +507,8 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	  // this thread tries to insert again, there may be another the thread
 	  // that succeeds in inserting value before this thread gets a chance to.
 
-	  // Release pfq_lock before trying to insert again:
-	  pfq_rwlock_end_read(&cskl->pfq_lock);
+	  // Release lock before trying to insert again:
+	  pfq_rwlock_end_read(&cskl->lock);
 
 	  continue;
 	}
@@ -543,8 +543,8 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	  // unlock each of my predecessors, as necessary
 	  unlock_preds(preds, mcs_nodes, highestLocked);
 
-	  // Release pfq_lock before trying to insert again:
-	  pfq_rwlock_end_read(&cskl->pfq_lock);
+	  // Release lock before trying to insert again:
+	  pfq_rwlock_end_read(&cskl->lock);
 	  continue;
 	}
 
@@ -564,8 +564,8 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	// unlock each of my predecessors, as necessary
 	unlock_preds(preds, mcs_nodes, highestLocked);
 
-	// Release pfq_lock before returning:
-	pfq_rwlock_end_read(&cskl->pfq_lock);
+	// Release lock before returning:
+	pfq_rwlock_end_read(&cskl->lock);
 
 	return true;
   }
@@ -714,8 +714,8 @@ cskl_append_node_str(char nodestr[], char str[], int max_cskl_str_len)
 void
 cskl_tostr(cskiplist_t *cskl, cskl_node_tostr node_tostr, char csklstr[], int max_cskl_str_len)
 {
-  // Acquire pfq_lock before reading the cskiplist to build its string representation:
-  pfq_rwlock_start_read(&cskl->pfq_lock);
+  // Acquire lock before reading the cskiplist to build its string representation:
+  pfq_rwlock_start_read(&cskl->lock);
 
   csklnode_t *node = cskl->left_sentinel;
   node_tostr(node->val, node->height, cskl->max_height, csklstr, max_cskl_str_len); // abstract function
@@ -732,7 +732,7 @@ cskl_tostr(cskiplist_t *cskl, cskl_node_tostr node_tostr, char csklstr[], int ma
   }
   strncat(csklstr, "\n", max_cskl_str_len - str_len - 1);
 
-  // Release pfq_lock after building the string representation:
-  pfq_rwlock_end_read(&cskl->pfq_lock);
+  // Release lock after building the string representation:
+  pfq_rwlock_end_read(&cskl->lock);
 
 }
