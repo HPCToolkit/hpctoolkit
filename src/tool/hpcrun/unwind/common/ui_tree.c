@@ -288,7 +288,7 @@ uw_recipe_map_notify_unmap(void *start, void *end)
 {
   // Remove intervals in the range [start, end) from the unwind interval tree.
   TMSG(UITREE, "uw_recipe_map_delete_range from %p to %p", start, end);
-  cskl_inrange_del_bulk_unsynch(addr2recipe_map, start, end - 1, cskl_ilmstat_btuwi_free);
+  cskl_inrange_del_bulk_unsynch(addr2recipe_map, start, ((void*)(intptr_t)end - 1), cskl_ilmstat_btuwi_free);
 
   // join poisoned intervals here.
   uw_recipe_map_repoison((uintptr_t)start, (uintptr_t)end);
