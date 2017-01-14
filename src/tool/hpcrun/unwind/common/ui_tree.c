@@ -74,7 +74,6 @@
 #include "thread_data.h"
 #include "ui_tree.h"
 #include "hpcrun_stats.h"
-#include "addr_to_recipe_map.h"
 #include <lib/prof-lean/cskiplist.h>
 
 #include <loadmap.h>
@@ -112,7 +111,7 @@
 static size_t iter_count = 0;
 
 // The concrete representation of the abstract data type unwind recipe map.
-static addr_to_recipe_map_t *addr2recipe_map = NULL;
+static cskiplist_t *addr2recipe_map = NULL;
 
 // memory allocator for creating addr2recipe_map
 // and inserting entries into addr2recipe_map:
@@ -150,7 +149,7 @@ uw_recipe_map_poison(uintptr_t start, uintptr_t end)
 {
   ilmstat_btuwi_pair_t* itpair =
 	  ilmstat_btuwi_pair_build(start, end, NULL, NEVER, NULL, my_alloc);
-  return cskl_insert((cskiplist_t*)addr2recipe_map, itpair, my_alloc);
+  return cskl_insert(addr2recipe_map, itpair, my_alloc);
 }
 
 
@@ -161,7 +160,7 @@ uw_recipe_map_poison(uintptr_t start, uintptr_t end)
 static ilmstat_btuwi_pair_t*
 uw_recipe_map_inrange_find(uintptr_t addr)
 {
-  return (ilmstat_btuwi_pair_t*)cskl_inrange_find((cskiplist_t*)addr2recipe_map, (void*)addr);
+  return (ilmstat_btuwi_pair_t*)cskl_inrange_find(addr2recipe_map, (void*)addr);
 }
 
 static void
@@ -257,7 +256,7 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr) {
 		ilmstat_btuwi_pair_malloc((uintptr_t)fcn_start, (uintptr_t)fcn_end, lm,
 			DEFERRED, NULL, my_alloc);
 
-	bool inserted =  cskl_insert((cskiplist_t*)addr2recipe_map, ilmstat_btuwi, my_alloc);
+	bool inserted =  cskl_insert(addr2recipe_map, ilmstat_btuwi, my_alloc);
 	// if successful: ilmstat_btuwi is now in the map.
 
 	if (!inserted) {
@@ -277,18 +276,6 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr) {
 }
 
 
-/*
- * Remove intervals in the range [start, end) from the unwind interval
- * tree.
- */
-static void
-uw_recipe_map_delete_range(void* start, void* end)
-{
-  TMSG(UITREE, "uw_recipe_map_delete_range from %p to %p", start, end);
-  cskl_inrange_del_bulk_unsynch((cskiplist_t*)addr2recipe_map, start, end - 1, cskl_ilmstat_btuwi_free);
-}
-
-
 static void
 uw_recipe_map_notify_map(void *start, void *end)
 {
@@ -299,7 +286,9 @@ uw_recipe_map_notify_map(void *start, void *end)
 static void
 uw_recipe_map_notify_unmap(void *start, void *end)
 {
-  uw_recipe_map_delete_range(start, end);
+  // Remove intervals in the range [start, end) from the unwind interval tree.
+  TMSG(UITREE, "uw_recipe_map_delete_range from %p to %p", start, end);
+  cskl_inrange_del_bulk_unsynch(addr2recipe_map, start, end - 1, cskl_ilmstat_btuwi_free);
 
   // join poisoned intervals here.
   uw_recipe_map_repoison((uintptr_t)start, (uintptr_t)end);
@@ -337,11 +326,10 @@ uw_recipe_map_init(void)
 	  ilmstat_btuwi_pair_build(0, 0, NULL, NEVER, NULL, my_alloc );
   ilmstat_btuwi_pair_t* rsentinel =
 	  ilmstat_btuwi_pair_build(UINTPTR_MAX, UINTPTR_MAX, NULL, NEVER, NULL, my_alloc );
-  cskiplist_t *cskl =
+  addr2recipe_map =  
 	  cskl_new( lsentinel, rsentinel, SKIPLIST_HEIGHT,
 		  ilmstat_btuwi_pair_cmp, ilmstat_btuwi_pair_inrange, my_alloc);
-  addr2recipe_map = (addr_to_recipe_map_t *)cskl;
-  
+
   uw_recipe_map_notify_init();
 
   // initialize the map with a POISONED node ({([0, UINTPTR_MAX), NULL), NEVER}, NULL)
@@ -472,7 +460,7 @@ void
 uw_recipe_map_print(void)
 {
   char buf[MAX_CSKIPLIST_STR];
-  cskl_tostr((cskiplist_t*) addr2recipe_map, cskl_ilmstat_btuwi_node_tostr, buf, MAX_CSKIPLIST_STR);
+  cskl_tostr(addr2recipe_map, cskl_ilmstat_btuwi_node_tostr, buf, MAX_CSKIPLIST_STR);
   printf("%s", buf);
 }
 
