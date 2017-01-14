@@ -182,7 +182,7 @@ uw_recipe_map_cmp_del_bulk_unsynch(
 	ilmstat_btuwi_pair_t* lo,
 	ilmstat_btuwi_pair_t* hi)
 {
-  return cskl_cmp_del_bulk_unsynch((cskiplist_t*) addr2recipe_map, lo, hi, cskl_ilmstat_btuwi_free);
+  return cskl_cmp_del_bulk_unsynch(addr2recipe_map, lo, hi, cskl_ilmstat_btuwi_free);
 }
 
 static bool
