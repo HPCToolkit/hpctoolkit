@@ -75,6 +75,7 @@
 #include "ui_tree.h"
 #include "hpcrun_stats.h"
 #include "addr_to_recipe_map.h"
+#include <lib/prof-lean/cskiplist.h>
 
 #include <loadmap.h>
 #include <messages/messages.h>
@@ -91,6 +92,8 @@
 //---------------------------------------------------------------------
 // macros
 //---------------------------------------------------------------------
+
+#define SKIPLIST_HEIGHT 8
 
 #define UITREE_DEBUG 0
 
@@ -147,14 +150,46 @@ uw_recipe_map_poison(uintptr_t start, uintptr_t end)
 {
   ilmstat_btuwi_pair_t* itpair =
 	  ilmstat_btuwi_pair_build(start, end, NULL, NEVER, NULL, my_alloc);
-  return a2r_map_insert(addr2recipe_map, itpair, my_alloc);
+  return cskl_insert((cskiplist_t*)addr2recipe_map, itpair, my_alloc);
 }
 
+
+/*
+ * if the given address, value, is in the range of a node in the cskiplist,
+ * return that node, otherwise return NULL.
+ */
+static ilmstat_btuwi_pair_t*
+uw_recipe_map_inrange_find(uintptr_t addr)
+{
+  return (ilmstat_btuwi_pair_t*)cskl_inrange_find((cskiplist_t*)addr2recipe_map, (void*)addr);
+}
+
+static void
+cskl_ilmstat_btuwi_free(void *anode)
+{
+#if CSKL_ILS_BTU
+//  printf("DXN_DBG cskl_ilmstat_btuwi_free(%p)...\n", anode);
+#endif
+
+  csklnode_t *node = (csklnode_t*) anode;
+  ilmstat_btuwi_pair_t *ilmstat_btuwi = (ilmstat_btuwi_pair_t*)node->val;
+  ilmstat_btuwi_pair_free(ilmstat_btuwi);
+  node->val = NULL;
+  cskl_free(node);
+}
+
+static bool
+uw_recipe_map_cmp_del_bulk_unsynch(
+	ilmstat_btuwi_pair_t* lo,
+	ilmstat_btuwi_pair_t* hi)
+{
+  return cskl_cmp_del_bulk_unsynch((cskiplist_t*) addr2recipe_map, lo, hi, cskl_ilmstat_btuwi_free);
+}
 
 static bool
 uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
 {
-  ilmstat_btuwi_pair_t* ilmstat_btuwi =	a2r_map_inrange_find(addr2recipe_map, start);
+  ilmstat_btuwi_pair_t* ilmstat_btuwi =	uw_recipe_map_inrange_find(start);
 
 #if UITREE_DEBUG
   assert(ilmstat_btuwi != NULL); // start should be in range of some poisoned interval
@@ -167,7 +202,7 @@ uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
   interval_t* interval = ilmstat_btuwi_pair_interval(ilmstat_btuwi);
   uintptr_t s0 = interval->start;
   uintptr_t e0 = interval->end;
-  a2r_map_cmp_del_bulk_unsynch(addr2recipe_map, ilmstat_btuwi, ilmstat_btuwi);
+  uw_recipe_map_cmp_del_bulk_unsynch(ilmstat_btuwi, ilmstat_btuwi);
   uw_recipe_map_poison(s0, start);
   return uw_recipe_map_poison(end, e0);
 }
@@ -177,19 +212,19 @@ static bool
 uw_recipe_map_repoison(uintptr_t start, uintptr_t end)
 {
   if (start > 0) {
-    ilmstat_btuwi_pair_t* itp_left = a2r_map_inrange_find(addr2recipe_map, start - 1);
+    ilmstat_btuwi_pair_t* itp_left = uw_recipe_map_inrange_find(start - 1);
     if (itp_left) { // poisoned interval on the left
             interval_t* interval_left = ilmstat_btuwi_pair_interval(itp_left);
             start = interval_left->start;
-            a2r_map_cmp_del_bulk_unsynch(addr2recipe_map, itp_left, itp_left);
+            uw_recipe_map_cmp_del_bulk_unsynch(itp_left, itp_left);
     }
   }
   if (end < UINTPTR_MAX) {
-    ilmstat_btuwi_pair_t* itp_right = a2r_map_inrange_find(addr2recipe_map, end);
+    ilmstat_btuwi_pair_t* itp_right = uw_recipe_map_inrange_find(end);
     if (itp_right) { // poisoned interval on the right
             interval_t* interval_right = ilmstat_btuwi_pair_interval(itp_right);
             end = interval_right->start;
-            a2r_map_cmp_del_bulk_unsynch(addr2recipe_map, itp_right, itp_right);
+            uw_recipe_map_cmp_del_bulk_unsynch(itp_right, itp_right);
     }
   }
   return uw_recipe_map_poison(start,end);
@@ -200,7 +235,7 @@ static ilmstat_btuwi_pair_t *
 uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr) {
   // first check if addr is already in the range of an interval key in the map
   ilmstat_btuwi_pair_t* ilmstat_btuwi =
-	  a2r_map_inrange_find(addr2recipe_map, (uintptr_t)addr);
+	  uw_recipe_map_inrange_find((uintptr_t)addr);
 
   if (!ilmstat_btuwi) {
 	load_module_t *lm;
@@ -222,7 +257,7 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr) {
 		ilmstat_btuwi_pair_malloc((uintptr_t)fcn_start, (uintptr_t)fcn_end, lm,
 			DEFERRED, NULL, my_alloc);
 
-	bool inserted =  a2r_map_insert(addr2recipe_map, ilmstat_btuwi, my_alloc);
+	bool inserted =  cskl_insert((cskiplist_t*)addr2recipe_map, ilmstat_btuwi, my_alloc);
 	// if successful: ilmstat_btuwi is now in the map.
 
 	if (!inserted) {
@@ -232,7 +267,7 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr) {
 
 	  // look for it in the map and it should be there:
 	  ilmstat_btuwi =
-	  	  a2r_map_inrange_find(addr2recipe_map, (uintptr_t)addr);
+	  	  uw_recipe_map_inrange_find((uintptr_t)addr);
 	}
   }
 #if UITREE_DEBUG
@@ -250,7 +285,7 @@ static void
 uw_recipe_map_delete_range(void* start, void* end)
 {
   TMSG(UITREE, "uw_recipe_map_delete_range from %p to %p", start, end);
-  a2r_map_inrange_del_bulk_unsynch(addr2recipe_map, (uintptr_t)start, (uintptr_t)end - 1);
+  cskl_inrange_del_bulk_unsynch((cskiplist_t*)addr2recipe_map, start, end - 1, cskl_ilmstat_btuwi_free);
 }
 
 
@@ -294,10 +329,18 @@ uw_recipe_map_init(void)
   printf("DXN_DBG uw_recipe_map_init: call a2r_map_init(my_alloc) ... \n");
 #endif
 
-  a2r_map_init(my_alloc);
+  cskl_init();
+  ilmstat_btuwi_pair_init();
 
   TMSG(UITREE, "init address-to-recipe map");
-  addr2recipe_map = a2r_map_new(my_alloc);
+  ilmstat_btuwi_pair_t* lsentinel =
+	  ilmstat_btuwi_pair_build(0, 0, NULL, NEVER, NULL, my_alloc );
+  ilmstat_btuwi_pair_t* rsentinel =
+	  ilmstat_btuwi_pair_build(UINTPTR_MAX, UINTPTR_MAX, NULL, NEVER, NULL, my_alloc );
+  cskiplist_t *cskl =
+	  cskl_new( lsentinel, rsentinel, SKIPLIST_HEIGHT,
+		  ilmstat_btuwi_pair_cmp, ilmstat_btuwi_pair_inrange, my_alloc);
+  addr2recipe_map = (addr_to_recipe_map_t *)cskl;
   
   uw_recipe_map_notify_init();
 
@@ -395,9 +438,41 @@ static ilmstat_btuwi_pair_t * uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr
 // debug operations
 //---------------------------------------------------------------------
 
+/*
+ * Compute a string representation of map and store result in str.
+ */
+/*
+ * pre-condition: *nodeval is an ilmstat_btuwi_pair_t.
+ */
+
+static void
+cskl_ilmstat_btuwi_node_tostr(void* nodeval, int node_height, int max_height,
+	char str[], int max_cskl_str_len)
+{
+  cskl_levels_tostr(node_height, max_height, str, max_cskl_str_len);
+
+  // build needed indentation to print the binary tree inside the skiplist:
+  char cskl_itpair_treeIndent[MAX_CSKIPLIST_STR];
+  cskl_itpair_treeIndent[0] = '\0';
+  int indentlen= strlen(cskl_itpair_treeIndent);
+  strncat(cskl_itpair_treeIndent, str, MAX_CSKIPLIST_STR - indentlen -1);
+  indentlen= strlen(cskl_itpair_treeIndent);
+  strncat(cskl_itpair_treeIndent, ildmod_stat_maxspaces(), MAX_CSKIPLIST_STR - indentlen -1);
+
+  // print the binary tree with the proper indentation:
+  char itpairstr[max_ilmstat_btuwi_pair_len()];
+  ilmstat_btuwi_pair_t* node_val = (ilmstat_btuwi_pair_t*)nodeval;
+  ilmstat_btuwi_pair_tostr_indent(node_val, cskl_itpair_treeIndent, itpairstr);
+
+  // add new line:
+  cskl_append_node_str(itpairstr, str, max_cskl_str_len);
+}
+
 void
 uw_recipe_map_print(void)
 {
-  a2r_map_print(addr2recipe_map);
+  char buf[MAX_CSKIPLIST_STR];
+  cskl_tostr((cskiplist_t*) addr2recipe_map, cskl_ilmstat_btuwi_node_tostr, buf, MAX_CSKIPLIST_STR);
+  printf("%s", buf);
 }
 

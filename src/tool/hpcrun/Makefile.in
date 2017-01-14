@@ -465,7 +465,6 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/generic-libunwind/libunw-unwind.c \
-	unwind/common/addr_to_recipe_map.c \
 	unwind/common/binarytree_uwi.c \
 	unwind/common/ildmod_stat.c unwind/common/ilmstat_btuwi_pair.c \
 	unwind/common/interval_ldmod_pair.c unwind/common/interval_t.c \
@@ -581,7 +580,6 @@ am__objects_30 = $(am__objects_29) \
 	unwind/generic-libunwind/libhpcrun_la-libunw-unwind.lo \
 	unwind/common/libhpcrun_la-default_validation_summary.lo
 am__objects_31 = $(am__objects_29) \
-	unwind/common/libhpcrun_la-addr_to_recipe_map.lo \
 	unwind/common/libhpcrun_la-binarytree_uwi.lo \
 	unwind/common/libhpcrun_la-ildmod_stat.lo \
 	unwind/common/libhpcrun_la-ilmstat_btuwi_pair.lo \
@@ -734,7 +732,6 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/upc.c unwind/common/backtrace.c \
 	unwind/common/unw-throw.c \
 	unwind/generic-libunwind/libunw-unwind.c \
-	unwind/common/addr_to_recipe_map.c \
 	unwind/common/binarytree_uwi.c \
 	unwind/common/ildmod_stat.c unwind/common/ilmstat_btuwi_pair.c \
 	unwind/common/interval_ldmod_pair.c unwind/common/interval_t.c \
@@ -848,7 +845,6 @@ am__objects_53 = $(am__objects_52) \
 	unwind/generic-libunwind/libhpcrun_o-libunw-unwind.$(OBJEXT) \
 	unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
 am__objects_54 = $(am__objects_52) \
-	unwind/common/libhpcrun_o-addr_to_recipe_map.$(OBJEXT) \
 	unwind/common/libhpcrun_o-binarytree_uwi.$(OBJEXT) \
 	unwind/common/libhpcrun_o-ildmod_stat.$(OBJEXT) \
 	unwind/common/libhpcrun_o-ilmstat_btuwi_pair.$(OBJEXT) \
@@ -1360,7 +1356,6 @@ UNW_UNIV_FILES = \
 
 UNW_COMMON_FILES = \
         $(UNW_UNIV_FILES)               \
-	unwind/common/addr_to_recipe_map.c		    \
 	unwind/common/binarytree_uwi.c		    \
 	unwind/common/ildmod_stat.c \
 	unwind/common/ilmstat_btuwi_pair.c	    \
@@ -2273,7 +2268,6 @@ unwind/generic-libunwind/$(DEPDIR)/$(am__dirstamp):
 unwind/generic-libunwind/libhpcrun_la-libunw-unwind.lo:  \
 	unwind/generic-libunwind/$(am__dirstamp) \
 	unwind/generic-libunwind/$(DEPDIR)/$(am__dirstamp)
-unwind/common/libhpcrun_la-addr_to_recipe_map.lo:  \
 	unwind/common/$(am__dirstamp) \
 	unwind/common/$(DEPDIR)/$(am__dirstamp)
 unwind/common/libhpcrun_la-binarytree_uwi.lo:  \
@@ -2616,7 +2610,6 @@ unwind/common/libhpcrun_o-unw-throw.$(OBJEXT):  \
 unwind/generic-libunwind/libhpcrun_o-libunw-unwind.$(OBJEXT):  \
 	unwind/generic-libunwind/$(am__dirstamp) \
 	unwind/generic-libunwind/$(DEPDIR)/$(am__dirstamp)
-unwind/common/libhpcrun_o-addr_to_recipe_map.$(OBJEXT):  \
 	unwind/common/$(am__dirstamp) \
 	unwind/common/$(DEPDIR)/$(am__dirstamp)
 unwind/common/libhpcrun_o-binarytree_uwi.$(OBJEXT):  \
@@ -3004,7 +2997,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/x86-family/$(DEPDIR)/libhpcrun_la-x86-tramp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/x86-family/$(DEPDIR)/libhpcrun_o-x86-tramp.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-addr_to_recipe_map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-backtrace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-binarytree_uwi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-default_validation_summary.Plo@am__quote@
@@ -3017,7 +3009,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-ui_tree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-unw-throw.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-uwi.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-addr_to_recipe_map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-backtrace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-binarytree_uwi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-default_validation_summary.Po@am__quote@
@@ -3923,12 +3914,7 @@ unwind/generic-libunwind/libhpcrun_la-libunw-unwind.lo: unwind/generic-libunwind
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/generic-libunwind/libhpcrun_la-libunw-unwind.lo `test -f 'unwind/generic-libunwind/libunw-unwind.c' || echo '$(srcdir)/'`unwind/generic-libunwind/libunw-unwind.c
 
-unwind/common/libhpcrun_la-addr_to_recipe_map.lo: unwind/common/addr_to_recipe_map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_la-addr_to_recipe_map.lo -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_la-addr_to_recipe_map.Tpo -c -o unwind/common/libhpcrun_la-addr_to_recipe_map.lo `test -f 'unwind/common/addr_to_recipe_map.c' || echo '$(srcdir)/'`unwind/common/addr_to_recipe_map.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/common/$(DEPDIR)/libhpcrun_la-addr_to_recipe_map.Tpo unwind/common/$(DEPDIR)/libhpcrun_la-addr_to_recipe_map.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/common/addr_to_recipe_map.c' object='unwind/common/libhpcrun_la-addr_to_recipe_map.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/common/libhpcrun_la-addr_to_recipe_map.lo `test -f 'unwind/common/addr_to_recipe_map.c' || echo '$(srcdir)/'`unwind/common/addr_to_recipe_map.c
 
 unwind/common/libhpcrun_la-binarytree_uwi.lo: unwind/common/binarytree_uwi.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_la-binarytree_uwi.lo -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_la-binarytree_uwi.Tpo -c -o unwind/common/libhpcrun_la-binarytree_uwi.lo `test -f 'unwind/common/binarytree_uwi.c' || echo '$(srcdir)/'`unwind/common/binarytree_uwi.c
@@ -5276,19 +5262,9 @@ unwind/generic-libunwind/libhpcrun_o-libunw-unwind.obj: unwind/generic-libunwind
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/generic-libunwind/libhpcrun_o-libunw-unwind.obj `if test -f 'unwind/generic-libunwind/libunw-unwind.c'; then $(CYGPATH_W) 'unwind/generic-libunwind/libunw-unwind.c'; else $(CYGPATH_W) '$(srcdir)/unwind/generic-libunwind/libunw-unwind.c'; fi`
 
-unwind/common/libhpcrun_o-addr_to_recipe_map.o: unwind/common/addr_to_recipe_map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_o-addr_to_recipe_map.o -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_o-addr_to_recipe_map.Tpo -c -o unwind/common/libhpcrun_o-addr_to_recipe_map.o `test -f 'unwind/common/addr_to_recipe_map.c' || echo '$(srcdir)/'`unwind/common/addr_to_recipe_map.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/common/$(DEPDIR)/libhpcrun_o-addr_to_recipe_map.Tpo unwind/common/$(DEPDIR)/libhpcrun_o-addr_to_recipe_map.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/common/addr_to_recipe_map.c' object='unwind/common/libhpcrun_o-addr_to_recipe_map.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/common/libhpcrun_o-addr_to_recipe_map.o `test -f 'unwind/common/addr_to_recipe_map.c' || echo '$(srcdir)/'`unwind/common/addr_to_recipe_map.c
 
-unwind/common/libhpcrun_o-addr_to_recipe_map.obj: unwind/common/addr_to_recipe_map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_o-addr_to_recipe_map.obj -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_o-addr_to_recipe_map.Tpo -c -o unwind/common/libhpcrun_o-addr_to_recipe_map.obj `if test -f 'unwind/common/addr_to_recipe_map.c'; then $(CYGPATH_W) 'unwind/common/addr_to_recipe_map.c'; else $(CYGPATH_W) '$(srcdir)/unwind/common/addr_to_recipe_map.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/common/$(DEPDIR)/libhpcrun_o-addr_to_recipe_map.Tpo unwind/common/$(DEPDIR)/libhpcrun_o-addr_to_recipe_map.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/common/addr_to_recipe_map.c' object='unwind/common/libhpcrun_o-addr_to_recipe_map.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/common/libhpcrun_o-addr_to_recipe_map.obj `if test -f 'unwind/common/addr_to_recipe_map.c'; then $(CYGPATH_W) 'unwind/common/addr_to_recipe_map.c'; else $(CYGPATH_W) '$(srcdir)/unwind/common/addr_to_recipe_map.c'; fi`
 
 unwind/common/libhpcrun_o-binarytree_uwi.o: unwind/common/binarytree_uwi.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_o-binarytree_uwi.o -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_o-binarytree_uwi.Tpo -c -o unwind/common/libhpcrun_o-binarytree_uwi.o `test -f 'unwind/common/binarytree_uwi.c' || echo '$(srcdir)/'`unwind/common/binarytree_uwi.c
