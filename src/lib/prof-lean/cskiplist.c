@@ -366,7 +366,7 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
 	removed_something = true;
   }
 
-  // Release pfq_rwlock after writing:
+  // Release lock after writing:
   pfq_rwlock_end_write(&cskl->lock, &me);
 
   return removed_something;
