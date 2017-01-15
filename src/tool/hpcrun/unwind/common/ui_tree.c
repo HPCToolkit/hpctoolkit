@@ -326,7 +326,7 @@ uw_recipe_map_init(void)
 	  ilmstat_btuwi_pair_build(0, 0, NULL, NEVER, NULL, my_alloc );
   ilmstat_btuwi_pair_t* rsentinel =
 	  ilmstat_btuwi_pair_build(UINTPTR_MAX, UINTPTR_MAX, NULL, NEVER, NULL, my_alloc );
-  addr2recipe_map =  
+  addr2recipe_map =
 	  cskl_new( lsentinel, rsentinel, SKIPLIST_HEIGHT,
 		  ilmstat_btuwi_pair_cmp, ilmstat_btuwi_pair_inrange, my_alloc);
 
