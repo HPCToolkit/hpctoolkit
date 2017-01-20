@@ -51,9 +51,9 @@
 //   Implement an API for the MCS lock: a fair queue-based lock.
 //
 // Reference:
-//   John M. Mellor-Crummey and Michael L. Scott. 1991. Algorithms for scalable 
-//   synchronization on shared-memory multiprocessors. ACM Transactions on 
-//   Computing Systems 9, 1 (February 1991), 21-65. 
+//   John M. Mellor-Crummey and Michael L. Scott. 1991. Algorithms for scalable
+//   synchronization on shared-memory multiprocessors. ACM Transactions on
+//   Computing Systems 9, 1 (February 1991), 21-65.
 //   http://doi.acm.org/10.1145/103727.103729
 //******************************************************************************
 
@@ -97,15 +97,15 @@ mcs_lock(mcs_lock_t *l, mcs_node_t *me)
   //--------------------------------------------------------------------
   // initialize my queue node
   //--------------------------------------------------------------------
-  me->next = 0;           
+  me->next = 0;
 
   //--------------------------------------------------------------------
   // initialization must complete before anyone sees my node
   //--------------------------------------------------------------------
-  enforce_store_to_rmw_order(); 
+  enforce_store_to_rmw_order();
 
   //--------------------------------------------------------------------
-  // install my node at the tail of the lock queue. 
+  // install my node at the tail of the lock queue.
   // determine my predecessor, if any.
   //--------------------------------------------------------------------
   mcs_node_t *predecessor = fas(&(l->tail), me);
@@ -117,25 +117,25 @@ mcs_lock(mcs_lock_t *l, mcs_node_t *me)
     //------------------------------------------------------------------
     // prepare to block until signaled by my predecessor
     //------------------------------------------------------------------
-    me->blocked = true; 
+    me->blocked = true;
 
     //------------------------------------------------------------------
     // blocked field must be set before linking behind my predecessor
     //------------------------------------------------------------------
-    enforce_store_to_store_order(); 
+    enforce_store_to_store_order();
 
     predecessor->next = me; // link behind my predecessor
 
     while (me->blocked);    // wait for my predecessor to clear my flag
-  
+
     //------------------------------------------------------------------
-    // no reads or writes in the critical section may occur until my 
+    // no reads or writes in the critical section may occur until my
     // flag is set
     //------------------------------------------------------------------
-    enforce_load_to_access_order(); 
+    enforce_load_to_access_order();
   } else {
     //------------------------------------------------------------------
-    // no reads or writes in the critical section may occur until after 
+    // no reads or writes in the critical section may occur until after
     // my fetch-and-store
     //------------------------------------------------------------------
     enforce_rmw_to_access_order();
@@ -149,22 +149,22 @@ mcs_trylock(mcs_lock_t *l, mcs_node_t *me)
   //--------------------------------------------------------------------
   // initialize my queue node
   //--------------------------------------------------------------------
-  me->next = 0;           
+  me->next = 0;
 
   //--------------------------------------------------------------------
   // initialization must complete before anyone sees my node
   //--------------------------------------------------------------------
-  enforce_store_to_rmw_order(); 
+  enforce_store_to_rmw_order();
 
   //--------------------------------------------------------------------
-  // if the tail pointer is nil, swap it with a pointer to me, which 
+  // if the tail pointer is nil, swap it with a pointer to me, which
   // acquires the lock and installs myself at the tail of the queue.
   //--------------------------------------------------------------------
   bool locked = cas_bool(&(l->tail), 0, me);
 
   //------------------------------------------------------------------
-  // no reads or writes in the critical section may occur until after 
-  // my compare-and-swap 
+  // no reads or writes in the critical section may occur until after
+  // my compare-and-swap
   //------------------------------------------------------------------
   enforce_rmw_to_access_order();
 
@@ -175,24 +175,24 @@ mcs_trylock(mcs_lock_t *l, mcs_node_t *me)
 void
 mcs_unlock(mcs_lock_t *l, mcs_node_t *me)
 {
-  if (!me->next) {            
+  if (!me->next) {
     //--------------------------------------------------------------------
     // I don't currently have a successor, so I may be at the tail
     //--------------------------------------------------------------------
 
     //--------------------------------------------------------------------
-    // all accesses in the critical section must occur before releasing 
+    // all accesses in the critical section must occur before releasing
     // the lock by unlinking myself from the tail with a compare-and-swap
     //--------------------------------------------------------------------
-    enforce_access_to_rmw_order(); 
+    enforce_access_to_rmw_order();
 
     //--------------------------------------------------------------------
     // if my node is at the tail of the queue, attempt to remove myself
     //--------------------------------------------------------------------
     if (cas_bool(&(l->tail), me, 0)) {
       //------------------------------------------------------------------
-      // I removed myself from the queue; I will never have a 
-      // successor, so I'm done 
+      // I removed myself from the queue; I will never have a
+      // successor, so I'm done
       //------------------------------------------------------------------
       return;
     }
@@ -203,7 +203,7 @@ mcs_unlock(mcs_lock_t *l, mcs_node_t *me)
     // all accesses in the critical section must occur before passing the
     // lock to a successor by clearing its flag.
     //--------------------------------------------------------------------
-    enforce_access_to_store_order(); 
+    enforce_access_to_store_order();
   }
 
   me->next->blocked = false; // signal my successor

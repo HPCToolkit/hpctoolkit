@@ -51,9 +51,9 @@
 //   Define an API for the MCS lock: a fair queue-based lock.
 //
 // Reference:
-//   John M. Mellor-Crummey and Michael L. Scott. 1991. Algorithms for scalable 
-//   synchronization on shared-memory multiprocessors. ACM Transactions on 
-//   Computing Systems 9, 1 (February 1991), 21-65. 
+//   John M. Mellor-Crummey and Michael L. Scott. 1991. Algorithms for scalable
+//   synchronization on shared-memory multiprocessors. ACM Transactions on
+//   Computing Systems 9, 1 (February 1991), 21-65.
 //   http://doi.acm.org/10.1145/103727.103729
 //***************************************************************************
 
@@ -63,15 +63,14 @@
 #define _mcs_lock_h_
 
 //******************************************************************************
-// global includes 
+// global includes
 //******************************************************************************
 
 #include <stdbool.h>
 
 
-
 //******************************************************************************
-// types 
+// types
 //******************************************************************************
 
 typedef struct mcs_node_s {
@@ -107,7 +106,5 @@ mcs_trylock(mcs_lock_t *l, mcs_node_t *me);
 
 void
 mcs_unlock(mcs_lock_t *l, mcs_node_t *me);
-
-
 
 #endif
