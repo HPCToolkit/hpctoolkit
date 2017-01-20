@@ -130,12 +130,12 @@ typedef struct {
 
 void pfq_rwlock_init(pfq_rwlock_t *l);
 
-void pfq_rwlock_start_read(pfq_rwlock_t *l);
+void pfq_rwlock_read_lock(pfq_rwlock_t *l);
 
-void pfq_rwlock_end_read(pfq_rwlock_t *l);
+void pfq_rwlock_read_unlock(pfq_rwlock_t *l);
 
-void pfq_rwlock_start_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me);
+void pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me);
 
-void pfq_rwlock_end_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me);
+void pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me);
 
 #endif

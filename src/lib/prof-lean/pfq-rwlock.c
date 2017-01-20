@@ -130,7 +130,7 @@ pfq_rwlock_init(pfq_rwlock_t *l)
 }
 
 void
-pfq_rwlock_start_read(pfq_rwlock_t *l)
+pfq_rwlock_read_lock(pfq_rwlock_t *l)
 {
   uint32_t ticket = fetch_and_add_i32(&(l->rin), READER_INCREMENT);
 
@@ -152,7 +152,7 @@ pfq_rwlock_start_read(pfq_rwlock_t *l)
 
 
 void 
-pfq_rwlock_end_read(pfq_rwlock_t *l)
+pfq_rwlock_read_unlock(pfq_rwlock_t *l)
 {
   //----------------------------------------------------------------------------
   // finish reads before the counter is incremented
@@ -169,7 +169,7 @@ pfq_rwlock_end_read(pfq_rwlock_t *l)
 
 
 void
-pfq_rwlock_start_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
+pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 {
   //--------------------------------------------------------------------
   // use MCS lock to enforce mutual exclusion with other writers
@@ -239,7 +239,7 @@ pfq_rwlock_start_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 
 
 void 
-pfq_rwlock_end_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
+pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 {
   unsigned char *lsb;
   //----------------------------------------------------------------------------
