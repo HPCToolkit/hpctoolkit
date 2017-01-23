@@ -68,14 +68,6 @@
 #include "randomizer.h"
 #include "cskiplist.h"
 
-#if OPAQUE_TYPE
-
-#include "mcs-lock.h"
-#include "pfq-rwlock.h"
-
-#endif
-
-
 //******************************************************************************
 // macros
 //******************************************************************************
@@ -102,28 +94,8 @@
 //******************************************************************************
 
 #if OPAQUE_TYPE
-
 // opaque type not supported by gcc 4.4.*
-
-typedef struct csklnode_s {
-  void *val;
-  int height;
-  volatile bool fully_linked;
-  volatile bool marked;
-  mcs_lock_t lock;
-  // memory allocated for a node will include space for its vector of  pointers
-  struct csklnode_s *nexts[];
-} csklnode_t;
-
-typedef struct cskiplist_s {
-  csklnode_t *left_sentinel;
-  csklnode_t *right_sentinel;
-  int max_height;
-  val_cmp compare;
-  val_cmp inrange;
-  pfq_rwlock_t pfq_lock;
-} cskiplist_t;
-
+#include "cskiplist_defs.h"
 #endif
 
 
@@ -297,27 +269,25 @@ cskiplist_find_helper
 static csklnode_t *
 cskiplist_find(val_cmp compare, cskiplist_t *cskl, void* value)
 {
-  // Acquire pfq-rwlock before reading:
-  pfq_rwlock_start_read(&cskl->pfq_lock);
+  // Acquire lock before reading:
+  pfq_rwlock_read_lock(&cskl->lock);
 
   int     max_height  = cskl->max_height;
   csklnode_t *preds[max_height];
   csklnode_t *succs[max_height];
   int layer = cskiplist_find_helper(compare, cskl, value, preds, succs,
 	  cskiplist_find_early_exit);
+  csklnode_t *node = NULL;
   if (layer != NO_LAYER) {
-	csklnode_t *node = succs[layer];
-	if (node->fully_linked && !node->marked) {
-	  // Release pfq-rwlock after reading:
-	  pfq_rwlock_end_read(&cskl->pfq_lock);
-	  return node;
-	}
+	node = succs[layer];
+	if (!node->fully_linked || node->marked)
+	  node = NULL;
   }
 
-  // Release pfq-rwlock after reading:
-  pfq_rwlock_end_read(&cskl->pfq_lock);
+  // Release lock after reading:
+  pfq_rwlock_read_unlock(&cskl->lock);
 
-  return NULL;
+  return node;
 }
 
 static void inline
@@ -360,9 +330,9 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
   csklnode_t* other[max_height];
   csklnode_t* hsuccs[max_height];
 
-  // Acquire pfq-rwlock before writing:
+  // Acquire lock before writing:
   pfq_rwlock_node_t me;
-  pfq_rwlock_start_write(&cskl->pfq_lock, &me);
+  pfq_rwlock_write_lock(&cskl->lock, &me);
 
   //----------------------------------------------------------------------------
   // Look for a node matching low
@@ -396,8 +366,8 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
 	removed_something = true;
   }
 
-  // Release pfq_rwlock after writing:
-  pfq_rwlock_end_write(&cskl->pfq_lock, &me);
+  // Release lock after writing:
+  pfq_rwlock_write_unlock(&cskl->lock, &me);
 
   return removed_something;
 }
@@ -449,7 +419,7 @@ cskl_new(
   cskl->max_height = max_height;
   cskl->compare = compare;
   cskl->inrange = inrange;
-  pfq_rwlock_init(&cskl->pfq_lock);
+  pfq_rwlock_init(&cskl->lock);
 
   // create sentinel nodes
   csklnode_t *left = cskl->left_sentinel   = csklnode_malloc(lsentinel, max_height, max_height, m_alloc);
@@ -485,10 +455,11 @@ cskl_insert(cskiplist_t *cskl, void *value,
   csklnode_t *preds[max_height];
   csklnode_t *succs[max_height];
   mcs_node_t mcs_nodes[max_height];
+  bool completed = false;
 
   for (;;) {
-	// Acquire pfq-rwlock before reading:
-	pfq_rwlock_start_read(&cskl->pfq_lock);
+	// Acquire lock before reading:
+	pfq_rwlock_read_lock(&cskl->lock);
 
 	int found_layer= cskiplist_find_helper(cskl->compare,
 		cskl, value, preds, succs,
@@ -498,18 +469,15 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	  csklnode_t *node = succs[found_layer];
 	  if (!node->marked) {
 		while (!node->fully_linked);
-		// Release pfq-rwlock before returning:
-		pfq_rwlock_end_read(&cskl->pfq_lock);
-		return false;
+		break;
 	  }
 	  // node is marked for deletion by some other thread, so this thread needs
 	  // to try to insert again by going to the end of this for(;;) loop. As
 	  // this thread tries to insert again, there may be another the thread
 	  // that succeeds in inserting value before this thread gets a chance to.
 
-	  // Release pfq-rwlock before trying to insert again:
-	  pfq_rwlock_end_read(&cskl->pfq_lock);
-
+	  // Release lock before trying to insert again:
+	  pfq_rwlock_read_unlock(&cskl->lock);
 	  continue;
 	}
 
@@ -543,8 +511,8 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	  // unlock each of my predecessors, as necessary
 	  unlock_preds(preds, mcs_nodes, highestLocked);
 
-	  // Release pfq-rwlock before trying to insert again:
-	  pfq_rwlock_end_read(&cskl->pfq_lock);
+	  // Release lock before trying to insert again:
+	  pfq_rwlock_read_unlock(&cskl->lock);
 	  continue;
 	}
 
@@ -564,11 +532,13 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	// unlock each of my predecessors, as necessary
 	unlock_preds(preds, mcs_nodes, highestLocked);
 
-	// Release pfq-rwlock before returning:
-	pfq_rwlock_end_read(&cskl->pfq_lock);
-
-	return true;
+	completed = true;
+	break;
   }
+  // Release lock before returning:
+  pfq_rwlock_read_unlock(&cskl->lock);
+
+  return completed;
 }
 
 /*
@@ -714,8 +684,8 @@ cskl_append_node_str(char nodestr[], char str[], int max_cskl_str_len)
 void
 cskl_tostr(cskiplist_t *cskl, cskl_node_tostr node_tostr, char csklstr[], int max_cskl_str_len)
 {
-  // Acquire pfq-rwlock before reading the cskiplist to build its string representation:
-  pfq_rwlock_start_read(&cskl->pfq_lock);
+  // Acquire lock before reading the cskiplist to build its string representation:
+  pfq_rwlock_read_lock(&cskl->lock);
 
   csklnode_t *node = cskl->left_sentinel;
   node_tostr(node->val, node->height, cskl->max_height, csklstr, max_cskl_str_len); // abstract function
@@ -732,7 +702,7 @@ cskl_tostr(cskiplist_t *cskl, cskl_node_tostr node_tostr, char csklstr[], int ma
   }
   strncat(csklstr, "\n", max_cskl_str_len - str_len - 1);
 
-  // Release pfq-rwlock after building the string representation:
-  pfq_rwlock_end_read(&cskl->pfq_lock);
+  // Release lock after building the string representation:
+  pfq_rwlock_read_unlock(&cskl->lock);
 
 }

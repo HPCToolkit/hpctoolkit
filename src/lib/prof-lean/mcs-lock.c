@@ -51,9 +51,9 @@
 //   Implement an API for the MCS lock: a fair queue-based lock.
 //
 // Reference:
-//   John M. Mellor-Crummey and Michael L. Scott. 1991. Algorithms for scalable 
-//   synchronization on shared-memory multiprocessors. ACM Transactions on 
-//   Computing Systems 9, 1 (February 1991), 21-65. 
+//   John M. Mellor-Crummey and Michael L. Scott. 1991. Algorithms for scalable
+//   synchronization on shared-memory multiprocessors. ACM Transactions on
+//   Computing Systems 9, 1 (February 1991), 21-65.
 //   http://doi.acm.org/10.1145/103727.103729
 //******************************************************************************
 
@@ -64,28 +64,10 @@
 //******************************************************************************
 
 #include "mcs-lock.h"
-#include "fence.h"
-#include "atomics.h"
-
-
 
 //******************************************************************************
 // private operations
 //******************************************************************************
-
-static inline mcs_node_t *
-fas(volatile mcs_node_t **p, mcs_node_t *n)
-{
-  return (mcs_node_t *) fetch_and_store((volatile void **) p, n);
-}
-
-
-static inline bool
-cas_bool(volatile mcs_node_t **p, mcs_node_t *o, mcs_node_t *n)
-{
-  return compare_and_swap_bool((volatile void **) p, o, n);
-}
-
 
 //******************************************************************************
 // interface operations
@@ -97,18 +79,17 @@ mcs_lock(mcs_lock_t *l, mcs_node_t *me)
   //--------------------------------------------------------------------
   // initialize my queue node
   //--------------------------------------------------------------------
-  me->next = 0;           
+  atomic_store_explicit( &(me->next), mcs_nil, memory_order_relaxed);
 
   //--------------------------------------------------------------------
-  // initialization must complete before anyone sees my node
-  //--------------------------------------------------------------------
-  enforce_store_to_rmw_order(); 
-
-  //--------------------------------------------------------------------
-  // install my node at the tail of the lock queue. 
+  // install my node at the tail of the lock queue.
   // determine my predecessor, if any.
+  //
+  // note: the rel aspect of the ordering below ensures that
+  // initialization of me->next completes before anyone sees my node
   //--------------------------------------------------------------------
-  mcs_node_t *predecessor = fas(&(l->tail), me);
+  mcs_node_t *predecessor =
+    atomic_exchange_explicit(&(l->tail), me, memory_order_acq_rel);
 
   //--------------------------------------------------------------------
   // if I have a predecessor, wait until it signals me
@@ -117,28 +98,24 @@ mcs_lock(mcs_lock_t *l, mcs_node_t *me)
     //------------------------------------------------------------------
     // prepare to block until signaled by my predecessor
     //------------------------------------------------------------------
-    me->blocked = true; 
+    atomic_store_explicit(&me->blocked, true, memory_order_relaxed);
 
     //------------------------------------------------------------------
-    // blocked field must be set before linking behind my predecessor
+    // link behind my predecessor
+    // note: use release to ensure that prior assignment to blocked
+    //       occurs first
     //------------------------------------------------------------------
-    enforce_store_to_store_order(); 
+    atomic_store_explicit(&(predecessor->next), me,
+                               memory_order_release);
 
-    predecessor->next = me; // link behind my predecessor
-
-    while (me->blocked);    // wait for my predecessor to clear my flag
-  
     //------------------------------------------------------------------
-    // no reads or writes in the critical section may occur until my 
-    // flag is set
+    // wait for my predecessor to clear my flag
+    // note: use acquire order to ensure that reads or writes in the
+    //       critical section will not occur until after blocked is
+    //       cleared
     //------------------------------------------------------------------
-    enforce_load_to_access_order(); 
-  } else {
-    //------------------------------------------------------------------
-    // no reads or writes in the critical section may occur until after 
-    // my fetch-and-store
-    //------------------------------------------------------------------
-    enforce_rmw_to_access_order();
+    while (atomic_load_explicit(&me->blocked,
+				memory_order_acquire));
   }
 }
 
@@ -149,24 +126,21 @@ mcs_trylock(mcs_lock_t *l, mcs_node_t *me)
   //--------------------------------------------------------------------
   // initialize my queue node
   //--------------------------------------------------------------------
-  me->next = 0;           
+  atomic_store_explicit(&(me->next), mcs_nil, memory_order_relaxed);
 
   //--------------------------------------------------------------------
-  // initialization must complete before anyone sees my node
-  //--------------------------------------------------------------------
-  enforce_store_to_rmw_order(); 
-
-  //--------------------------------------------------------------------
-  // if the tail pointer is nil, swap it with a pointer to me, which 
+  // if the tail pointer is nil, swap it with a pointer to me, which
   // acquires the lock and installs myself at the tail of the queue.
+  // note: the acq_rel ordering ensures that
+  // (1) rel: my store of me->next above completes before the CAS
+  // (2) acq: any accesses after the CAS can't begin until after the CAS
+  //     completes.
   //--------------------------------------------------------------------
-  bool locked = cas_bool(&(l->tail), 0, me);
-
-  //------------------------------------------------------------------
-  // no reads or writes in the critical section may occur until after 
-  // my compare-and-swap 
-  //------------------------------------------------------------------
-  enforce_rmw_to_access_order();
+  mcs_node_t* old = mcs_nil;
+  bool locked =
+    atomic_compare_exchange_strong_explicit(&(l->tail), &old, me,
+					    memory_order_acq_rel,
+					    memory_order_relaxed);
 
   return locked;
 }
@@ -175,36 +149,41 @@ mcs_trylock(mcs_lock_t *l, mcs_node_t *me)
 void
 mcs_unlock(mcs_lock_t *l, mcs_node_t *me)
 {
-  if (!me->next) {            
+  struct mcs_node_s* successor =
+    atomic_load_explicit(&(me->next), memory_order_relaxed);
+
+  if (successor == mcs_nil) {
     //--------------------------------------------------------------------
     // I don't currently have a successor, so I may be at the tail
     //--------------------------------------------------------------------
 
     //--------------------------------------------------------------------
-    // all accesses in the critical section must occur before releasing 
-    // the lock by unlinking myself from the tail with a compare-and-swap
-    //--------------------------------------------------------------------
-    enforce_access_to_rmw_order(); 
-
-    //--------------------------------------------------------------------
     // if my node is at the tail of the queue, attempt to remove myself
+    // note: release order below on success guarantees that all accesses
+    //       above the CAS must complete before the CAS if the CAS unlinks
+    //       me from the tail of the queue
     //--------------------------------------------------------------------
-    if (cas_bool(&(l->tail), me, 0)) {
+    mcs_node_t* old = me;
+    bool swap_done =
+      atomic_compare_exchange_strong_explicit(&(l->tail), &old, mcs_nil,
+					      memory_order_release,
+					      memory_order_relaxed);
+
+    if (swap_done) {
       //------------------------------------------------------------------
-      // I removed myself from the queue; I will never have a 
-      // successor, so I'm done 
+      // I removed myself from the queue; I will never have a
+      // successor, so I'm done
       //------------------------------------------------------------------
       return;
     }
 
-    while (!me->next);       // wait for arriving successor
-  } else {
-    //--------------------------------------------------------------------
-    // all accesses in the critical section must occur before passing the
-    // lock to a successor by clearing its flag.
-    //--------------------------------------------------------------------
-    enforce_access_to_store_order(); 
+    for (;;) {
+     successor = atomic_load_explicit(&(me->next),
+				      memory_order_relaxed);
+     if (successor != mcs_nil) break;
+    }
   }
 
-  me->next->blocked = false; // signal my successor
+  atomic_store_explicit(&successor->blocked, false,
+			memory_order_release);
 }

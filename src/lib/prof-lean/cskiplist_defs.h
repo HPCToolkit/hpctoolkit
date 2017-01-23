@@ -42,76 +42,42 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
+
+
+//******************************************************************************
 //
-// File:
+// File: cskiplist_defs.h
 //   $HeadURL$
 //
 // Purpose:
-//   Define an API for the MCS lock: a fair queue-based lock.
+//   Define data structures for a concurrent skip list.
 //
-// Reference:
-//   John M. Mellor-Crummey and Michael L. Scott. 1991. Algorithms for scalable
-//   synchronization on shared-memory multiprocessors. ACM Transactions on
-//   Computing Systems 9, 1 (February 1991), 21-65.
-//   http://doi.acm.org/10.1145/103727.103729
-//***************************************************************************
-
-
-
-#ifndef _mcs_lock_h_
-#define _mcs_lock_h_
-
-//******************************************************************************
-// global includes
 //******************************************************************************
 
-#include "stdatomic.h"
-#include <stdbool.h>
 
+#ifndef __CSKIPLIST_DEFS_H__
+#define __CSKIPLIST_DEFS_H__
 
-//******************************************************************************
-// types
-//******************************************************************************
+#include "mcs-lock.h"
+#include "pfq-rwlock.h"
 
-typedef struct mcs_node_s {
-  _Atomic(struct mcs_node_s*) next;
-  atomic_bool blocked;
-} mcs_node_t;
+typedef struct csklnode_s {
+  void *val;
+  int height;
+  volatile bool fully_linked;
+  volatile bool marked;
+  mcs_lock_t lock;
+  // memory allocated for a node will include space for its vector of  pointers
+  struct csklnode_s *nexts[];
+} csklnode_t;
 
+typedef struct cskiplist_s {
+  csklnode_t *left_sentinel;
+  csklnode_t *right_sentinel;
+  int max_height;
+  val_cmp compare;
+  val_cmp inrange;
+  pfq_rwlock_t lock;
+} cskiplist_t;
 
-typedef struct {
-  _Atomic(mcs_node_t *) tail;
-} mcs_lock_t;
-
-
-
-//******************************************************************************
-// constants
-//******************************************************************************
-
-#define mcs_nil (struct mcs_node_s*) 0
-
-//******************************************************************************
-// interface functions
-//******************************************************************************
-
-static inline void
-mcs_init(mcs_lock_t *l)
-{
-  atomic_init(&l->tail, mcs_nil);
-}
-
-
-void
-mcs_lock(mcs_lock_t *l, mcs_node_t *me);
-
-
-bool
-mcs_trylock(mcs_lock_t *l, mcs_node_t *me);
-
-
-void
-mcs_unlock(mcs_lock_t *l, mcs_node_t *me);
-
-#endif
+#endif /* __CSKIPLIST_DEFS_H__ */
