@@ -115,7 +115,7 @@ pfq_rwlock_init(pfq_rwlock_t *l)
 {
   l->rin = 0;
   l->rout = 0;
-  l->last = 0;
+  l->last = WRITER_PRESENT;
   l->writer_blocking_readers[0].bit = false;
   l->writer_blocking_readers[1].bit = false;
   mcs_init(&l->wtail);
@@ -154,8 +154,7 @@ pfq_rwlock_read_unlock(pfq_rwlock_t *l)
 
   uint32_t ticket = fetch_and_add_i32(&l->rout, READER_INCREMENT);
 
-  if ((ticket & WRITER_PRESENT) && 
-      ((ticket & TICKET_MASK) == l->last - READER_INCREMENT)) {
+  if (ticket == l->last) {
     atomic_store_explicit(&l->whead->blocked, false,
 			  memory_order_release);
   }
@@ -195,12 +194,12 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // acquire an "in" sequence number to see how many readers arrived
   // set the WRITER_PRESENT bit so subsequent readers will wait
   //--------------------------------------------------------------------
-  uint32_t in = fetch_and_add_i32(&l->rin, WRITER_PRESENT) & TICKET_MASK;
+  uint32_t in = fetch_and_add_i32(&l->rin, WRITER_PRESENT);
 
   //--------------------------------------------------------------------
   // save the identity of the last reader 
   //--------------------------------------------------------------------
-  l->last = in;
+  l->last = in - READER_INCREMENT + WRITER_PRESENT;
   
   //----------------------------------------------------------------------------
   // store to last must complete before notifying readers of writer 
@@ -216,7 +215,7 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // set the WRITER_PRESENT bit so the last reader will know to signal
   // it is responsible for signaling the waiting writer
   //-------------------------------------------------------------
-  uint32_t out = fetch_and_add_i32(&l->rout, WRITER_PRESENT) & TICKET_MASK;
+  uint32_t out = fetch_and_add_i32(&l->rout, WRITER_PRESENT);
 
   //--------------------------------------------------------------------
   // if any reads are active, wait for last reader to signal me
@@ -244,10 +243,10 @@ pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   enforce_access_to_store_order();
 
   //--------------------------------------------------------------------
-  // clear WRITER_PRESENT in rout
+  // toggle phase and clear WRITER_PRESENT in rout
   //--------------------------------------------------------------------
   lsb = LSB_PTR(&l->rout);
-  *lsb = 0; 
+  *lsb ^= PHASE_BIT | WRITER_PRESENT;
 
   //----------------------------------------------------------------------------
   // no fence needed because readers don't modify LSB(rout) 
@@ -260,13 +259,12 @@ pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // low-order byte containing the phase bit
   //--------------------------------------------------------------------
   lsb = LSB_PTR(&l->rin);
-  uint32_t phase = *lsb;
+  uint32_t phase = *lsb & PHASE_BIT;
 
   //--------------------------------------------------------------------
   // toggle phase and clear WRITER_PRESENT in rin
   //--------------------------------------------------------------------
-  *lsb = (~phase) & PHASE_BIT;
-  phase &= PHASE_BIT;
+  *lsb ^= PHASE_BIT | WRITER_PRESENT;
 
   //----------------------------------------------------------------------------
   // clearing writer present in rin can be reordered with writer_blocking_readers set below
