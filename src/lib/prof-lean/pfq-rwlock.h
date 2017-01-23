@@ -110,7 +110,7 @@ typedef struct {
   volatile uint32_t rin cache_aligned;  // = 0
   volatile uint32_t rout cache_aligned;  // = 0
   uint32_t last cache_aligned;  // = 0  not really needed
-  bigbool wr_ready[2]; // false
+  bigbool writer_blocking_readers[2]; // false
 
   //----------------------------------------------------------------------------
   // writer management
