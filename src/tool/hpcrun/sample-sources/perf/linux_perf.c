@@ -185,7 +185,7 @@ perf_thread_fini(int nevents);
 
 static cct_node_t *
 perf_add_kernel_callchain(
-  cct_node_t *leaf
+  cct_node_t *leaf, void *data
 );
 
 static int perf_event_handler(
@@ -233,17 +233,6 @@ static int perf_unavail = 0;
 //******************************************************************************
 
 
-long                        __thread my_kernel_samples;
-long                        __thread my_user_samples;
-
-int                         __thread myid;
-
-int                         __thread perf_threadinit = 0;
-
-struct sigevent             __thread sigev;
-struct timespec             __thread real_start; 
-struct timespec             __thread cpu_start; 
-
 int                         __thread perf_thread_fd[MAX_EVENTS];
 pe_mmap_t                   __thread *perf_mmap[MAX_EVENTS];
 
@@ -265,34 +254,6 @@ perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
 }
 
 
-//----------------------------------------------------------
-// starting a perf event by setting the signal and enabling the event
-//----------------------------------------------------------
-static int
-perf_start(int event_num)
-{
-  int ret;
-
-  monitor_real_pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
-
-  fcntl(perf_thread_fd[event_num], F_SETSIG, SIGIO);
-  fcntl(perf_thread_fd[event_num], F_SETOWN,getpid());
-  fcntl(perf_thread_fd[event_num], F_SETFL, O_RDWR |  O_ASYNC | O_NONBLOCK);
-
-  struct f_owner_ex owner;
-  owner.type = F_OWNER_TID;
-  owner.pid  = syscall(SYS_gettid);
-  ret = fcntl(perf_thread_fd[event_num], F_SETOWN_EX, &owner);
-
-  if (ret == -1) {
-    TMSG(LINUX_PERF, "can't set fcntl(F_SETOWN_EX) on %d: %s\n", 
-	    perf_thread_fd[event_num], strerror(errno));
-  } else {
-    ioctl(perf_thread_fd[event_num], PERF_EVENT_IOC_RESET, 0);
-  }
-  return (ret >= 0);
-}
-
 
 //----------------------------------------------------------
 // stop all events
@@ -313,35 +274,14 @@ perf_stop()
 // read from perf_events mmap'ed buffer
 //----------------------------------------------------------
 
-
-
-static int 
-perf_read_ad(
-  void *buf, 
-  size_t bytes_wanted
-)
-{
-  pe_mmap_t *current_perf_mmap = perf_mmap[current_event_index];
-  struct perf_event_attr *current_event = &(events[current_event_index]);
-
-  long long prev = perf_mmap_read( current_perf_mmap, PERF_DATA_PAGES,
-      current_perf_mmap->data_tail,
-      current_event->sample_type, current_event->read_format, 0,
-      NULL, 
-      RAW_NONE, buf); 
-
-  current_perf_mmap->data_tail += bytes_wanted;
-  return prev;
-}
-
 static int 
 perf_read(
+  pe_mmap_t *current_perf_mmap,
   void *buf, 
   size_t bytes_wanted
 )
 {
   // front of the circular data buffer
-  pe_mmap_t *current_perf_mmap = perf_mmap[current_event_index];
   char *data = BUFFER_FRONT(current_perf_mmap); 
   
   // compute bytes available in the circular buffer 
@@ -375,19 +315,21 @@ perf_read(
 
 static inline int
 perf_read_header(
+  pe_mmap_t *current_perf_mmap,
   pe_header_t *hdr
 )
 {
-  return perf_read(hdr, sizeof(pe_header_t));
+  return perf_read(current_perf_mmap, hdr, sizeof(pe_header_t));
 }
 
 
 static inline int
 perf_read_uint64_t(
+  pe_mmap_t *current_perf_mmap,
   uint64_t *val
 )
 {
-  return perf_read(val, sizeof(uint64_t));
+  return perf_read(current_perf_mmap, val, sizeof(uint64_t));
 }
 
 
@@ -494,7 +436,9 @@ perf_attr_init(
   attr->sample_stack_user = 4096;
 
   if (perf_ksyms_avail) {
-    attr->sample_type   = PERF_SAMPLE_CALLCHAIN;  /* Records the callchain */
+    /* Records the callchain */
+    unsigned int type = PERF_SAMPLE_CALLCHAIN | PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID | PERF_SAMPLE_TIME;
+    attr->sample_type = type ;  
     attr->exclude_callchain_user = EXCLUDE_CALLCHAIN_USER;
   } else {
     attr->sample_type = PERF_SAMPLE_IP;
@@ -540,7 +484,8 @@ set_mmap(int perf_fd)
 static bool
 perf_thread_init(int event_num)
 {
-  // "create"the event
+  // ask sys to "create" the event
+  // it returns -1 if it fails.
   perf_thread_fd[event_num] = perf_event_open(&events[event_num],
 			      THREAD_SELF, CPU_ANY, 
 			      GROUP_FD, PERF_FLAGS);
@@ -554,7 +499,24 @@ perf_thread_init(int event_num)
   }
   perf_mmap[event_num] = set_mmap(perf_thread_fd[event_num]);
 
-  return (perf_start(event_num));
+  monitor_real_pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
+
+  fcntl(perf_thread_fd[event_num], F_SETSIG, SIGIO);
+  fcntl(perf_thread_fd[event_num], F_SETOWN,getpid());
+  fcntl(perf_thread_fd[event_num], F_SETFL, O_RDWR |  O_ASYNC | O_NONBLOCK);
+
+  struct f_owner_ex owner;
+  owner.type = F_OWNER_TID;
+  owner.pid  = syscall(SYS_gettid);
+  int ret = fcntl(perf_thread_fd[event_num], F_SETOWN_EX, &owner);
+
+  if (ret == -1) {
+    TMSG(LINUX_PERF, "can't set fcntl(F_SETOWN_EX) on %d: %s\n", 
+	    perf_thread_fd[event_num], strerror(errno));
+  } else {
+    ioctl(perf_thread_fd[event_num], PERF_EVENT_IOC_RESET, 0);
+  }
+  return (ret >= 0);
 }
 
 
@@ -578,33 +540,90 @@ perf_thread_fini(int nevents)
 
 
 //----------------------------------------------------------
+// special mmap buffer reading for PERF_SAMPLE_READ
+//----------------------------------------------------------
+static int 
+handle_struct_read_format(unsigned char *sample,
+             int read_format) {
+
+  int offset=0,i;
+
+  if (read_format & PERF_FORMAT_GROUP) {
+    long long nr,time_enabled,time_running;
+
+    memcpy(&nr,&sample[offset],sizeof(long long));
+    offset+=8;
+
+    if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
+      memcpy(&time_enabled,&sample[offset],sizeof(long long));
+      offset+=8;
+    }
+    if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING) {
+      memcpy(&time_running,&sample[offset],sizeof(long long));
+      offset+=8;
+    }
+
+    for(i=0;i<nr;i++) {
+      long long value, id;
+
+      memcpy(&value,&sample[offset],sizeof(long long));
+      offset+=8;
+
+      if (read_format & PERF_FORMAT_ID) {
+        memcpy(&id,&sample[offset],sizeof(long long));
+        offset+=8;
+      }
+
+    }
+  }
+  else {
+
+    long long value,time_enabled,time_running,id;
+
+    memcpy(&value,&sample[offset],sizeof(long long));
+    offset+=8;
+
+    if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
+      memcpy(&time_enabled,&sample[offset],sizeof(long long));
+      offset+=8;
+    }
+    if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING) {
+      memcpy(&time_running,&sample[offset],sizeof(long long));
+      offset+=8;
+    }
+    if (read_format & PERF_FORMAT_ID) {
+      memcpy(&id,&sample[offset],sizeof(long long));
+      offset+=8;
+    }
+  }
+
+  return offset;
+}
+
+
+
+//----------------------------------------------------------
 // signal handling and processing of kernel callchains
 //----------------------------------------------------------
 
-// extend a user-mode callchain with kernel frames (if any)
 static cct_node_t *
-perf_add_kernel_callchain(
-  cct_node_t *leaf
-)
+perf_sample_callchain(pe_mmap_t *current_perf_mmap, cct_node_t *leaf, 
+  long long *offset)
 {
-  cct_node_t *parent = leaf;
-  pe_header_t hdr; 
+  long long index    = *offset; // current index of mmap
+  cct_node_t *parent = leaf;	// parent of the cct
+  uint64_t n_frames; 		// check of sample type
 
-  if (perf_read_header(&hdr) == 0) {
-    if (hdr.type == PERF_RECORD_SAMPLE) {
-      if (hdr.size <= 0) {
-	return parent;
-      }
-      uint64_t n_frames;
-      // determine how many frames in the call chain 
-      if (perf_read_uint64_t(&n_frames) == 0) {
+  // determine how many frames in the call chain 
+  if (perf_read_uint64_t( &current_perf_mmap[index], &n_frames) == 0) {
 
+	index += 8;
 	if (n_frames > 0) {
 	  // allocate space to receive IPs for kernel callchain 
 	  uint64_t *ips = alloca(n_frames * sizeof(uint64_t));
 
 	  // read the IPs for the frames 
-	  if (perf_read(ips, n_frames * sizeof(uint64_t)) == 0) {
+	  if (perf_read( &current_perf_mmap[index], ips, n_frames * sizeof(uint64_t)) == 0) {
 
 	    // add kernel IPs to the call chain top down, which is the 
 	    // reverse of the order in which they appear in ips
@@ -614,15 +633,103 @@ perf_add_kernel_callchain(
 	      cct_addr_t frm = { .ip_norm = npc };
 	      cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
 	      parent = child;
+
+	      index += 8;
 	    }
 	  } else {
-	    TMSG(LINUX_PERF, "unable to read all frames on fd %d", 
-		 perf_thread_fd[0]);
+	    TMSG(LINUX_PERF, "unable to read all %d frames", n_frames );
 	  }
 	}
-      } else {
-	TMSG(LINUX_PERF, "unable to read number of frames on fd %d", 
-	     perf_thread_fd[0]);
+	*offset = index;
+  } else {
+    TMSG(LINUX_PERF, "unable to read the number of frames" );
+  }
+  return parent;
+}
+
+
+//----------------------------------------------------------
+// extend a user-mode callchain with kernel frames (if any)
+//----------------------------------------------------------
+static cct_node_t *
+perf_add_kernel_callchain(
+  cct_node_t *leaf, void *data_aux
+)
+{
+  cct_node_t *parent = leaf;
+  pe_header_t hdr; 
+  int current_event_index = (int) data_aux;
+  pe_mmap_t *current_perf_mmap = perf_mmap[current_event_index];
+  uint64_t offset = 0;
+
+  if (perf_read_header(current_perf_mmap, &hdr) == 0) {
+    if (hdr.type == PERF_RECORD_SAMPLE) {
+      if (hdr.size <= 0) {
+	return parent;
+      }
+      struct perf_event_attr *current_event = &(events[current_event_index]);
+      int sample_type = current_event->sample_type;
+
+      if (sample_type & PERF_SAMPLE_IP) {
+	uint64_t ip;
+	perf_read(&current_perf_mmap[offset], &ip, sizeof(uint64_t));
+	offset += 8;
+      }
+      if (sample_type & PERF_SAMPLE_TID) {
+	offset += 8;
+      }
+      if (sample_type & PERF_SAMPLE_TIME) {
+	offset += 8;
+      }
+      if (sample_type & PERF_SAMPLE_ADDR) {
+	uint64_t addr;
+	perf_read(&current_perf_mmap[offset], &addr, sizeof(uint64_t));
+	offset += 8;
+      }
+      if (sample_type & PERF_SAMPLE_ID) {
+	offset += 8;
+      }
+      if (sample_type & PERF_SAMPLE_STREAM_ID) {
+	offset += 8;
+      }
+      if (sample_type & PERF_SAMPLE_CPU) {
+	offset += 8;
+      }
+      if (sample_type & PERF_SAMPLE_PERIOD) {
+	offset += 8;
+      }
+      if (sample_type & PERF_SAMPLE_READ) {
+	uint64_t len = handle_struct_read_format(&current_perf_mmap[offset],
+			 current_event->read_format);
+	offset += len;
+      }
+      if (sample_type & PERF_SAMPLE_CALLCHAIN) {
+	// add call chain from the kernel
+ 	parent = perf_sample_callchain(current_perf_mmap, parent, &offset);
+      }
+      if (sample_type & PERF_SAMPLE_RAW) {
+	offset += 8;
+      }
+      if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
+	offset += 8;
+      }
+      if (sample_type & PERF_SAMPLE_REGS_USER) {
+	offset += 8;
+      }
+      if (sample_type & PERF_SAMPLE_REGS_INTR) {
+	offset += 8;
+      }
+      if (sample_type & PERF_SAMPLE_STACK_USER) {
+	offset += 8;
+      }
+      if (sample_type & PERF_SAMPLE_WEIGHT) {
+	offset += 8;
+      }
+      if (sample_type & PERF_SAMPLE_DATA_SRC) {
+	offset += 8;
+      }
+      if (sample_type & PERF_SAMPLE_IDENTIFIER) {
+	offset += 8;
       }
     }
   }
@@ -655,6 +762,9 @@ get_fd_index(int num_events, int fd)
  * method functions
  *****************************************************************************/
 
+// --------------------------------------------------------------------------
+// event occurs when the sample source is initialized
+// --------------------------------------------------------------------------
 static void
 METHOD_FN(init)
 {
@@ -671,6 +781,9 @@ METHOD_FN(init)
 }
 
 
+// --------------------------------------------------------------------------
+// when a new thread is created
+// --------------------------------------------------------------------------
 static void
 METHOD_FN(thread_init)
 {
@@ -686,6 +799,9 @@ METHOD_FN(thread_init)
 }
 
 
+// --------------------------------------------------------------------------
+// start of the thread
+// --------------------------------------------------------------------------
 static void
 METHOD_FN(thread_init_action)
 {
@@ -697,6 +813,9 @@ METHOD_FN(thread_init_action)
 }
 
 
+// --------------------------------------------------------------------------
+// start of the application 
+// --------------------------------------------------------------------------
 static void
 METHOD_FN(start)
 {
@@ -738,6 +857,9 @@ METHOD_FN(start)
   TMSG(LINUX_PERF, "%d: start OK", self->sel_idx);
 }
 
+// --------------------------------------------------------------------------
+// end of thread
+// --------------------------------------------------------------------------
 static void
 METHOD_FN(thread_fini_action)
 {
@@ -750,6 +872,9 @@ METHOD_FN(thread_fini_action)
 }
 
 
+// --------------------------------------------------------------------------
+// end of the application
+// --------------------------------------------------------------------------
 static void
 METHOD_FN(stop)
 {
@@ -778,6 +903,9 @@ METHOD_FN(stop)
   TMSG(LINUX_PERF, "%d: stop OK", self->sel_idx);
 }
 
+// --------------------------------------------------------------------------
+// really end
+// --------------------------------------------------------------------------
 static void
 METHOD_FN(shutdown)
 {
@@ -801,8 +929,10 @@ METHOD_FN(shutdown)
 }
 
 
+// --------------------------------------------------------------------------
 // Return true if Linux perf recognizes the name, whether supported or not.
 // We'll handle unsupported events later.
+// --------------------------------------------------------------------------
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
@@ -833,6 +963,9 @@ METHOD_FN(supports_event, const char *ev_str)
 }
 
  
+// --------------------------------------------------------------------------
+// handle a list of events
+// --------------------------------------------------------------------------
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
@@ -892,12 +1025,17 @@ METHOD_FN(process_event_list, int lush_metrics)
 }
 
 
+// --------------------------------------------------------------------------
+// --------------------------------------------------------------------------
 static void
 METHOD_FN(gen_event_set, int lush_metrics)
 {
 }
 
 
+// --------------------------------------------------------------------------
+// list events
+// --------------------------------------------------------------------------
 static void
 METHOD_FN(display_events)
 {
@@ -1012,7 +1150,7 @@ perf_event_handler(
     current_event_index = index;
 
     sample_val_t sv = hpcrun_sample_callpath(context, metric_id[index], 1,
-					   0/*skipInner*/, 0/*isSync*/);
+					   0/*skipInner*/, 0/*isSync*/, (void*) index);
 
     blame_shift_apply(metric_id[index], sv.sample_node, 1 /*metricIncr*/);
   } else {

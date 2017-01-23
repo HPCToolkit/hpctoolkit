@@ -248,7 +248,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   cct_node_t* node = NULL;
   node = hpcrun_cct_insert_backtrace_w_metric(cct_cursor, metricId,
 					      bt_end, bt_beg,
-					      (cct_metric_data_t){.i = metricIncr});
+					      (cct_metric_data_t){.i = metricIncr}, NULL);
 
   if (doMetricIdleness) {
     // lush_agentid_t aid = aidMetricIdleness;

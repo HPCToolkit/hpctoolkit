@@ -211,7 +211,7 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
     if (counter >= threshold) {
       if (safe) {
 	hpcrun_sample_callpath(context, myself->evl.events[k].metric_id,
-			       1, 0, 0);
+			       1, 0, 0, NULL);
       }
       BGP_UPC_Set_Counter_Value(ev, 0);
       BGP_UPC_Set_Counter_Threshold_Value(ev, threshold);

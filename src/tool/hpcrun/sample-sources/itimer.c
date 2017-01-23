@@ -685,7 +685,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 
   int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
   sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_incr,
-					    0/*skipInner*/, 0/*isSync*/);
+					    0/*skipInner*/, 0/*isSync*/, NULL);
   blame_shift_apply(metric_id, sv.sample_node, metric_incr);
 
   if (hpcrun_is_sampling_disabled()) {

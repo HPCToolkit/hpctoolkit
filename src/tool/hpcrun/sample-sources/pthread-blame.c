@@ -284,7 +284,7 @@ pthread_directed_blame_accept(void* obj)
     getcontext(&uc);
     hpcrun_safe_enter();
     hpcrun_sample_callpath(&uc, get_blame_metric_id(), blame, 
-                           SKIP_ONE_FRAME, 1);
+                           SKIP_ONE_FRAME, 1, NULL);
     hpcrun_safe_exit();
   }
 }

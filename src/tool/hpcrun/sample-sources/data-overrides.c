@@ -492,7 +492,7 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
   if (hpcrun_datacentric_active()) {
     TD_GET(mem_data.in_malloc) = 1;
     sample_val_t smpl =
-      hpcrun_sample_callpath(uc, hpcrun_datacentric_alloc_id(), bytes, 0, 1);
+      hpcrun_sample_callpath(uc, hpcrun_datacentric_alloc_id(), bytes, 0, 1, NULL);
     TD_GET(mem_data.in_malloc) = 0;
     info_ptr->context = smpl.sample_node;
     

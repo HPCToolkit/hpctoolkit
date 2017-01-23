@@ -925,7 +925,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     }
 
     sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metricIncrement,
-			   0/*skipInner*/, 0/*isSync*/);
+			   0/*skipInner*/, 0/*isSync*/, NULL);
 
     blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
   }
@@ -939,7 +939,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     for (i = 0; i < nevents; i++) {
       if (derived[i]) {
 	hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),
-			       values[i] - ci->prev_values[i], 0, 0);
+			       values[i] - ci->prev_values[i], 0, 0, NULL);
       }
     }
 
