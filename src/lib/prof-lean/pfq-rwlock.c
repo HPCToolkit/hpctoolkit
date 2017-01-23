@@ -88,9 +88,6 @@
 #define WRITER_MASK      (PHASE_BIT | WRITER_PRESENT)
 #define TICKET_MASK      ~(WRITER_MASK)
 
-#define PFQ_NIL          ((pfq_rwlock_node_t *) 0)
-
-
 //------------------------------------------------------------------
 // define a macro to point to the low-order byte of an integer type
 // in a way that will work on both big-endian and little-endian 
@@ -109,10 +106,6 @@
        "use --enable-endian to force configuration"
 #endif
 
-#ifndef NULL
-#define NULL 0
-#endif
-
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -126,7 +119,7 @@ pfq_rwlock_init(pfq_rwlock_t *l)
   (l->flag[0]).flag = false;
   (l->flag[1]).flag = false;
   mcs_init(&l->wtail);
-  l->whead = NULL;
+  l->whead = mcs_nil;
 }
 
 void
