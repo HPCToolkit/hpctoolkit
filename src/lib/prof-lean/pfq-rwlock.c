@@ -163,7 +163,8 @@ pfq_rwlock_read_unlock(pfq_rwlock_t *l)
 
   if ((ticket & WRITER_PRESENT) && 
       ((ticket & TICKET_MASK) == l->last - READER_INCREMENT)) {
-    l->whead->blocked = false;
+    atomic_store_explicit(&l->whead->blocked, false,
+			  memory_order_release);
   }
 }
 
@@ -179,7 +180,7 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   //--------------------------------------------------------------------
   // this may be false when at the head of the mcs queue
   //--------------------------------------------------------------------
-  me->blocked = true;
+  atomic_store_explicit(&me->blocked, true, memory_order_relaxed);
 
   //--------------------------------------------------------------------
   // announce myself as next writer
@@ -228,7 +229,8 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // if any reads are active, wait for last reader to signal me
   //--------------------------------------------------------------------
   if (in != out) {
-    while (me->blocked); // wait for active reads to drain
+    while (atomic_load_explicit(&me->blocked,
+				memory_order_acquire)); // wait for active reads to drain
   
     //--------------------------------------------------------------------------
     // store to flag must complete before notifying readers of writer 

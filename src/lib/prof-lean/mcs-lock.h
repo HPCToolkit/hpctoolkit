@@ -66,6 +66,7 @@
 // global includes
 //******************************************************************************
 
+#include "stdatomic.h"
 #include <stdbool.h>
 
 
@@ -74,16 +75,22 @@
 //******************************************************************************
 
 typedef struct mcs_node_s {
-  struct mcs_node_s * volatile next;
-  volatile bool blocked;
+  _Atomic(struct mcs_node_s*) next;
+  atomic_bool blocked;
 } mcs_node_t;
 
 
 typedef struct {
-  volatile mcs_node_t *tail;
+  _Atomic(mcs_node_t *) tail;
 } mcs_lock_t;
 
 
+
+//******************************************************************************
+// constants
+//******************************************************************************
+
+#define mcs_nil (struct mcs_node_s*) 0
 
 //******************************************************************************
 // interface functions
@@ -92,7 +99,7 @@ typedef struct {
 static inline void
 mcs_init(mcs_lock_t *l)
 {
-  l->tail = 0;
+  atomic_init(&(l->tail), mcs_nil);
 }
 
 
