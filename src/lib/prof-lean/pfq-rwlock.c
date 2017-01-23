@@ -116,8 +116,8 @@ pfq_rwlock_init(pfq_rwlock_t *l)
   l->rin = 0;
   l->rout = 0;
   l->last = 0;
-  (l->flag[0]).flag = false;
-  (l->flag[1]).flag = false;
+  l->wr_ready[0].bit = false;
+  l->wr_ready[1].bit = false;
   mcs_init(&l->wtail);
   l->whead = mcs_nil;
 }
@@ -129,10 +129,10 @@ pfq_rwlock_read_lock(pfq_rwlock_t *l)
 
   if (ticket & WRITER_PRESENT) {
     uint32_t phase = ticket & PHASE_BIT;
-    while (l->flag[phase].flag);
+    while (l->wr_ready[phase].bit);
 
     //--------------------------------------------------------------------------
-    // prevent speculative reads until after flag is set
+    // prevent speculative reads until after wr_ready is set
     //--------------------------------------------------------------------------
     enforce_load_to_load_order();
   } else {
@@ -181,13 +181,13 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   l->whead = me;
 
   //--------------------------------------------------------------------
-  // set the flag to block any readers in the next batch 
+  // set wr_ready to block any readers in the next batch 
   //--------------------------------------------------------------------
   uint32_t phase = l->rin & PHASE_BIT;
-  l->flag[phase].flag = true; 
+  l->wr_ready[phase].bit = true; 
 
   //----------------------------------------------------------------------------
-  // store to flag must complete before incrementing rin
+  // store to wr_ready must complete before incrementing rin
   //----------------------------------------------------------------------------
   enforce_store_to_rmw_order();
 
@@ -226,7 +226,7 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 				memory_order_acquire)); // wait for active reads to drain
   
     //--------------------------------------------------------------------------
-    // store to flag must complete before notifying readers of writer 
+    // store to blocked must complete before notifying readers of writer 
     //--------------------------------------------------------------------------
     enforce_load_to_access_order();
   }
@@ -269,14 +269,14 @@ pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   phase &= PHASE_BIT;
 
   //----------------------------------------------------------------------------
-  // clearing writer present in rin can be reordered with flag set below
-  // because any arriving reader will see the cleared flag and proceed.
+  // clearing writer present in rin can be reordered with wr_ready set below
+  // because any arriving reader will see the cleared wr_ready and proceed.
   //----------------------------------------------------------------------------
 
   //--------------------------------------------------------------------
-  // clear the flag to release waiting readers in the current read phase 
+  // clear wr_ready to release waiting readers in the current read phase 
   //--------------------------------------------------------------------
-  l->flag[phase].flag = false; 
+  l->wr_ready[phase].bit = false; 
 
   //--------------------------------------------------------------------
   // pass writer lock to next writer 

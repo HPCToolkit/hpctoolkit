@@ -89,8 +89,7 @@
 //******************************************************************************
 
 // align a variable at the start of a cache line
-// CLA = Cache Line Aligned
-#define CLA(x) x __attribute__((aligned(128)))
+#define cache_aligned __attribute__((aligned(128)))
 
 
 
@@ -100,25 +99,24 @@
 
 typedef mcs_node_t pfq_rwlock_node_t;
 
-typedef struct {
-  CLA(volatile bool flag);
-} pfq_rwlock_flag_t;
+typedef struct bigbool {
+  volatile bool bit cache_aligned;
+} bigbool;
 
 typedef struct {
   //----------------------------------------------------------------------------
   // reader management
   //----------------------------------------------------------------------------
-  CLA(volatile uint32_t rin);  // = 0
-  CLA(volatile uint32_t rout);  // = 0
-  CLA(uint32_t last);  // = 0  not really needed
-
-  pfq_rwlock_flag_t flag[2]; // false
+  volatile uint32_t rin cache_aligned;  // = 0
+  volatile uint32_t rout cache_aligned;  // = 0
+  uint32_t last cache_aligned;  // = 0  not really needed
+  bigbool wr_ready[2]; // false
 
   //----------------------------------------------------------------------------
   // writer management
   //----------------------------------------------------------------------------
-  CLA(mcs_lock_t wtail);  // init
-  CLA(mcs_node_t *whead);  // null
+  mcs_lock_t wtail cache_aligned;  // init
+  mcs_node_t *whead cache_aligned;  // null
 
 } pfq_rwlock_t;
 
