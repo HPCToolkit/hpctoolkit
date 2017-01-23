@@ -51,12 +51,12 @@
 //   Implement the API for a fair, phased reader-writer lock with local spinning
 //
 // Reference:
-//   Björn B. Brandenburg and James H. Anderson. 2010. Spin-based reader-writer 
+//   Björn B. Brandenburg and James H. Anderson. 2010. Spin-based reader-writer
 //   synchronization for multiprocessor real-time systems. Real-Time Systems
 //   46(1):25-87 (September 2010).  http://dx.doi.org/10.1007/s11241-010-9097-2
 //
 // Notes:
-//   the reference uses a queue for arriving readers. on a cache coherent 
+//   the reference uses a queue for arriving readers. on a cache coherent
 //   machine, the local spinning property for waiting readers can be achieved
 //   by simply using a cacheable flag. the implementation here uses that
 //   simplification.
@@ -126,7 +126,7 @@ pfq_rwlock_read_lock(pfq_rwlock_t *l)
 }
 
 
-void 
+void
 pfq_rwlock_read_unlock(pfq_rwlock_t *l)
 {
   //----------------------------------------------------------------------------
@@ -162,7 +162,7 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   l->whead = me;
 
   //--------------------------------------------------------------------
-  // set writer_blocking_readers to block any readers in the next batch 
+  // set writer_blocking_readers to block any readers in the next batch
   //--------------------------------------------------------------------
   uint32_t phase = atomic_load_explicit(&l->rin,
 					memory_order_acquire) & PHASE_BIT;
@@ -180,15 +180,15 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   uint32_t in = atomic_fetch_or_explicit(&l->rin, WRITER_PRESENT, memory_order_acq_rel);
 
   //--------------------------------------------------------------------
-  // save the identity of the last reader 
+  // save the identity of the last reader
   //--------------------------------------------------------------------
   atomic_store_explicit(&l->last, in - READER_INCREMENT + WRITER_PRESENT, memory_order_release);
-  
+
   //----------------------------------------------------------------------------
-  // store to last must complete before notifying readers of writer 
+  // store to last must complete before notifying readers of writer
   // stores to whead and me->blocked also were already committed
   // before last fetch-and-add_i32
-  // the LL of l->rout must not occur before before the LL of l->rin. 
+  // the LL of l->rout must not occur before before the LL of l->rin.
   // the fence below enforces that too.
   //----------------------------------------------------------------------------
   enforce_load_to_load_and_store_to_store_order();
@@ -206,33 +206,33 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   if (in != out) {
     while (atomic_load_explicit(&me->blocked,
 				memory_order_acquire)); // wait for active reads to drain
-  
+
     //--------------------------------------------------------------------------
-    // store to blocked must complete before notifying readers of writer 
+    // store to blocked must complete before notifying readers of writer
     //--------------------------------------------------------------------------
     enforce_load_to_access_order();
   }
 }
 
 
-void 
+void
 pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 {
   unsigned char *lsb;
   //----------------------------------------------------------------------------
   // finish accesses in the critical section before signaling next
-  // readers or next writer  
+  // readers or next writer
   //----------------------------------------------------------------------------
   enforce_access_to_store_order();
 
   //--------------------------------------------------------------------
   // toggle phase and clear WRITER_PRESENT in rout
   //--------------------------------------------------------------------
-  atomic_fetch_xor_explicit(&l->rout, PHASE_BIT | WRITER_PRESENT, memory_order_relaxed);
+  atomic_fetch_xor_explicit(&l->rout, WRITER_MASK, memory_order_relaxed);
 
   //----------------------------------------------------------------------------
-  // no fence needed because readers don't modify LSB(rout) 
-  // mcs_unlock will ensure this store commits before next writer proceeds 
+  // no fence needed because readers don't modify LSB(rout)
+  // mcs_unlock will ensure this store commits before next writer proceeds
   //----------------------------------------------------------------------------
 
   //--------------------------------------------------------------------
@@ -241,7 +241,7 @@ pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // low-order byte containing the phase bit
   //--------------------------------------------------------------------
   uint32_t phase = PHASE_BIT &
-    atomic_fetch_xor_explicit(&l->rin, PHASE_BIT | WRITER_PRESENT, memory_order_relaxed);
+    atomic_fetch_xor_explicit(&l->rin, WRITER_MASK, memory_order_relaxed);
 
   //----------------------------------------------------------------------------
   // clearing writer present in rin can be reordered with writer_blocking_readers set below
@@ -249,12 +249,12 @@ pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   //----------------------------------------------------------------------------
 
   //--------------------------------------------------------------------
-  // clear writer_blocking_readers to release waiting readers in the current read phase 
+  // clear writer_blocking_readers to release waiting readers in the current read phase
   //--------------------------------------------------------------------
   atomic_store_explicit(&l->writer_blocking_readers[phase].bit, false, memory_order_release);
 
   //--------------------------------------------------------------------
-  // pass writer lock to next writer 
+  // pass writer lock to next writer
   //--------------------------------------------------------------------
   mcs_unlock(&l->wtail, me);
 }

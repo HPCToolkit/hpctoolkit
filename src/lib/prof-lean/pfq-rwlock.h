@@ -51,12 +51,12 @@
 //   Define the API for a fair, phased reader-writer lock with local spinning
 //
 // Reference:
-//   Björn B. Brandenburg and James H. Anderson. 2010. Spin-based reader-writer 
+//   Björn B. Brandenburg and James H. Anderson. 2010. Spin-based reader-writer
 //   synchronization for multiprocessor real-time systems. Real-Time Systems
 //   46(1):25-87 (September 2010).  http://dx.doi.org/10.1007/s11241-010-9097-2
 //
 // Notes:
-//   the reference uses a queue for arriving readers. on a cache coherent 
+//   the reference uses a queue for arriving readers. on a cache coherent
 //   machine, the local spinning property for waiting readers can be achieved
 //   by simply using a cacheble flag. the implementation here uses that
 //   simplification.
