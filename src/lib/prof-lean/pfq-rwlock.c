@@ -125,7 +125,7 @@ pfq_rwlock_init(pfq_rwlock_t *l)
 void
 pfq_rwlock_read_lock(pfq_rwlock_t *l)
 {
-  uint32_t ticket = fetch_and_add_i32(&(l->rin), READER_INCREMENT);
+  uint32_t ticket = fetch_and_add_i32(&l->rin, READER_INCREMENT);
 
   if (ticket & WRITER_PRESENT) {
     uint32_t phase = ticket & PHASE_BIT;
@@ -152,7 +152,7 @@ pfq_rwlock_read_unlock(pfq_rwlock_t *l)
   //----------------------------------------------------------------------------
   enforce_load_to_rmw_order();
 
-  uint32_t ticket = fetch_and_add_i32(&(l->rout), READER_INCREMENT);
+  uint32_t ticket = fetch_and_add_i32(&l->rout, READER_INCREMENT);
 
   if ((ticket & WRITER_PRESENT) && 
       ((ticket & TICKET_MASK) == l->last - READER_INCREMENT)) {
@@ -168,7 +168,7 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   //--------------------------------------------------------------------
   // use MCS lock to enforce mutual exclusion with other writers
   //--------------------------------------------------------------------
-  mcs_lock(&(l->wtail), me);
+  mcs_lock(&l->wtail, me);
 
   //--------------------------------------------------------------------
   // this may be false when at the head of the mcs queue
@@ -195,7 +195,7 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // acquire an "in" sequence number to see how many readers arrived
   // set the WRITER_PRESENT bit so subsequent readers will wait
   //--------------------------------------------------------------------
-  uint32_t in = fetch_and_add_i32(&(l->rin), WRITER_PRESENT) & TICKET_MASK;
+  uint32_t in = fetch_and_add_i32(&l->rin, WRITER_PRESENT) & TICKET_MASK;
 
   //--------------------------------------------------------------------
   // save the identity of the last reader 
@@ -216,7 +216,7 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // set the WRITER_PRESENT bit so the last reader will know to signal
   // it is responsible for signaling the waiting writer
   //-------------------------------------------------------------
-  uint32_t out = fetch_and_add_i32(&(l->rout), WRITER_PRESENT) & TICKET_MASK;
+  uint32_t out = fetch_and_add_i32(&l->rout, WRITER_PRESENT) & TICKET_MASK;
 
   //--------------------------------------------------------------------
   // if any reads are active, wait for last reader to signal me
@@ -246,7 +246,7 @@ pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   //--------------------------------------------------------------------
   // clear WRITER_PRESENT in rout
   //--------------------------------------------------------------------
-  lsb = LSB_PTR(&(l->rout));
+  lsb = LSB_PTR(&l->rout);
   *lsb = 0; 
 
   //----------------------------------------------------------------------------
@@ -259,7 +259,7 @@ pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // non-atomicity is OK since there are no concurrent updates of the
   // low-order byte containing the phase bit
   //--------------------------------------------------------------------
-  lsb = LSB_PTR(&(l->rin));
+  lsb = LSB_PTR(&l->rin);
   uint32_t phase = *lsb;
 
   //--------------------------------------------------------------------
@@ -281,5 +281,5 @@ pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   //--------------------------------------------------------------------
   // pass writer lock to next writer 
   //--------------------------------------------------------------------
-  mcs_unlock(&(l->wtail), me);
+  mcs_unlock(&l->wtail, me);
 }
