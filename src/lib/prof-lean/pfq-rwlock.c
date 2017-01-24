@@ -70,6 +70,7 @@
 //******************************************************************************
 
 #include "pfq-rwlock.h"
+#include "hpctoolkit-config.h"
 
 //******************************************************************************
 // macros
@@ -82,6 +83,24 @@
 
 #define WRITER_MASK      (PHASE_BIT | WRITER_PRESENT)
 #define TICKET_MASK      ~(WRITER_MASK)
+
+//------------------------------------------------------------------
+// define a macro to point to the low-order byte of an integer type
+// in a way that will work on both big-endian and little-endian 
+// processors
+//------------------------------------------------------------------
+#ifdef HOST_BIG_ENDIAN
+#define LSB_PTR(p) (((unsigned char *) p) + (sizeof(*p) - 1))
+#endif
+
+#ifdef HOST_LITTLE_ENDIAN
+#define LSB_PTR(p) ((unsigned char *) p)
+#endif
+
+#ifndef LSB_PTR
+#error "endianness must be configured. " \
+       "use --enable-endian to force configuration"
+#endif
 
 //******************************************************************************
 // interface operations
@@ -174,18 +193,22 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 void
 pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 {
+  unsigned char *lsb;
   //--------------------------------------------------------------------
   // toggle phase and clear WRITER_PRESENT in rout. No synch issues
   // since the low-order byte modified here isn't modified again until
   // another writer has the mcs_lock.
   //--------------------------------------------------------------------
-  atomic_fetch_xor_explicit(&l->rout, WRITER_MASK, memory_order_relaxed);
+  lsb = LSB_PTR(&l->rout);
+  *lsb ^= WRITER_MASK;
 
   //--------------------------------------------------------------------
   // toggle phase and clear WRITER_PRESENT in rin. No synch issues
   // since there are no concurrent updates of the low-order byte
   //--------------------------------------------------------------------
-  uint32_t phase = atomic_fetch_xor_explicit(&l->rin, WRITER_MASK, memory_order_relaxed) & PHASE_BIT;
+  lsb = LSB_PTR(&l->rin);
+  uint32_t phase = *lsb & PHASE_BIT;
+  *lsb ^= WRITER_MASK;
 
   //----------------------------------------------------------------------------
   // clearing writer present in rin can be reordered with writer_blocking_readers set below
