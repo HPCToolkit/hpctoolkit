@@ -112,7 +112,7 @@ addtest(int num_secs, int num_threads, const char msg[], void *(*adder)(void *))
     printf("ops for thread %d: %d\n", i, thread_sum[i]);
     if (thread_sum[i] > maxOps)
       maxOps = thread_sum[i];
-    else if (thread_sum[i] < minOps)
+    if (thread_sum[i] < minOps)
       minOps = thread_sum[i];
 
     /* update avg, variance */ {
