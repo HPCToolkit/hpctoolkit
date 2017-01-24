@@ -1,4 +1,4 @@
-CFLAGS = -O3 -g -Wall -I.. -std=c99
+CFLAGS = -O3 -g -Wall -I.. -I../../../../BUILD/src/include -std=c99
 MCS_OBJS = mcs-test.o mcs-lock.o
 PFQ_OBJS = pfq-test.o pfq-rwlock.o mcs-lock.o
 
