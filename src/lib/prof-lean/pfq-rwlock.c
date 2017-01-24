@@ -161,7 +161,8 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   //--------------------------------------------------------------------
   // set writer_blocking_readers to block any readers in the next batch
   //--------------------------------------------------------------------
-  uint32_t phase = atomic_load_explicit(&l->rin, memory_order_acquire) & PHASE_BIT;
+  unsigned char *lsb = LSB_PTR(&l->rin);
+  uint32_t phase = *lsb & PHASE_BIT;
   atomic_store_explicit(&l->writer_blocking_readers[phase].bit, true, memory_order_release);
 
   //--------------------------------------------------------------------
@@ -193,21 +194,20 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 void
 pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 {
-  unsigned char *lsb;
+  //--------------------------------------------------------------------
+  // toggle phase and clear WRITER_PRESENT in rin. No synch issues
+  // since there are no concurrent updates of the low-order byte
+  //--------------------------------------------------------------------
+  unsigned char *lsb = LSB_PTR(&l->rin);
+  uint32_t phase = *lsb & PHASE_BIT;
+  *lsb ^= WRITER_MASK;
+
   //--------------------------------------------------------------------
   // toggle phase and clear WRITER_PRESENT in rout. No synch issues
   // since the low-order byte modified here isn't modified again until
   // another writer has the mcs_lock.
   //--------------------------------------------------------------------
   lsb = LSB_PTR(&l->rout);
-  *lsb ^= WRITER_MASK;
-
-  //--------------------------------------------------------------------
-  // toggle phase and clear WRITER_PRESENT in rin. No synch issues
-  // since there are no concurrent updates of the low-order byte
-  //--------------------------------------------------------------------
-  lsb = LSB_PTR(&l->rin);
-  uint32_t phase = *lsb & PHASE_BIT;
   *lsb ^= WRITER_MASK;
 
   //----------------------------------------------------------------------------
