@@ -10,7 +10,7 @@
 #include "pfq-rwlock.h"
 
 static volatile int finished;
-static unsigned long int total_sum;
+static volatile unsigned long int total_sum;
 static int *thread_sum;
 static int *thread_odds;
 static pthread_barrier_t barrier;

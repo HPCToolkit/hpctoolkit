@@ -10,7 +10,7 @@
 #include "mcs-lock.h"
 
 static volatile int finished;
-static int total_sum;
+static volatile int total_sum;
 static int *thread_sum;
 static pthread_barrier_t barrier;
 static pthread_mutex_t mutex;
