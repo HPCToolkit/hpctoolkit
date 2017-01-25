@@ -23,4 +23,4 @@ pfq-rwlock.o: ../pfq-rwlock.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f *.o mcs-test
+	rm -f *.o mcs-test pfq-test
