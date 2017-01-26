@@ -127,7 +127,7 @@ pfq_rwlock_read_lock(pfq_rwlock_t *l)
     uint32_t phase = ticket & PHASE_BIT;
     while (atomic_load_explicit(&l->writer_blocking_readers[phase].bit, memory_order_relaxed));
   }
-  atomic_thread_fence(memory_order_acquire);
+  atomic_thread_fence(memory_order_release);
 }
 
 
@@ -167,9 +167,9 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   //--------------------------------------------------------------------
   // set writer_blocking_readers to block any readers in the next batch
   //--------------------------------------------------------------------
-  unsigned char *lsb = LSB_PTR(&l->rin);
-  uint32_t phase = *lsb & PHASE_BIT;
-  atomic_store_explicit(&l->writer_blocking_readers[phase].bit, true, memory_order_release);
+  uint32_t phase = atomic_load_explicit(&l->rin, memory_order_relaxed) & PHASE_BIT;
+  atomic_store_explicit(&l->writer_blocking_readers[phase].bit, true, memory_order_relaxed); 
+  atomic_thread_fence(memory_order_release);
 
   //--------------------------------------------------------------------
   // acquire an "in" sequence number to see how many readers arrived
@@ -180,7 +180,7 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   //--------------------------------------------------------------------
   // save the ticket that the last reader will see
   //--------------------------------------------------------------------
-  atomic_store_explicit(&l->last, in - READER_INCREMENT + WRITER_PRESENT, memory_order_relaxed);
+  atomic_store_explicit(&l->last, in - READER_INCREMENT + WRITER_PRESENT, memory_order_release);
 
   //-------------------------------------------------------------
   // update to 'last' must complete before others see changed value of rout.
@@ -188,7 +188,7 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // set the WRITER_PRESENT bit so the last reader will know to signal
   // it is responsible for signaling the waiting writer
   //-------------------------------------------------------------
-  uint32_t out = atomic_fetch_or_explicit(&l->rout, WRITER_PRESENT, memory_order_acq_rel);
+  uint32_t out = atomic_fetch_or_explicit(&l->rout, WRITER_PRESENT, memory_order_relaxed);
 
   //--------------------------------------------------------------------
   // if any reads are active, wait for last reader to signal me
@@ -203,6 +203,7 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 void
 pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 {
+  atomic_thread_fence(memory_order_acquire);
   //--------------------------------------------------------------------
   // toggle phase and clear WRITER_PRESENT in rin. No synch issues
   // since there are no concurrent updates of the low-order byte
@@ -227,7 +228,7 @@ pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   //--------------------------------------------------------------------
   // clear writer_blocking_readers to release waiting readers in the current read phase
   //--------------------------------------------------------------------
-  atomic_store_explicit(&l->writer_blocking_readers[phase].bit, false, memory_order_release);
+  atomic_store_explicit(&l->writer_blocking_readers[phase].bit, false, memory_order_relaxed);
 
   //--------------------------------------------------------------------
   // pass writer lock to next writer
