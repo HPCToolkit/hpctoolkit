@@ -139,8 +139,6 @@
 #define __ATOMIC_RELAXED		0
 #endif
 #ifndef __ATOMIC_CONSUME
-typedef enum memory_order memory_order;
-
 #define __ATOMIC_CONSUME		1
 #endif
 #ifndef __ATOMIC_ACQUIRE
