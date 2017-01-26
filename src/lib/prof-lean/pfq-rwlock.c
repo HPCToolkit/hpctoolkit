@@ -134,13 +134,15 @@ pfq_rwlock_read_lock(pfq_rwlock_t *l)
 void
 pfq_rwlock_read_unlock(pfq_rwlock_t *l)
 {
-  uint32_t ticket = atomic_fetch_add_explicit(&l->rout, READER_INCREMENT, memory_order_acquire);
+  atomic_thread_fence(memory_order_acquire);
+  uint32_t ticket = atomic_fetch_add_explicit(&l->rout, READER_INCREMENT, memory_order_relaxed);
 
   if (ticket & WRITER_PRESENT) {
     //----------------------------------------------------------------------------
     // finish reading counter before reading last
     //----------------------------------------------------------------------------
-    if (ticket == atomic_load_explicit(&l->last, memory_order_acquire))
+    atomic_thread_fence(memory_order_acquire);
+    if (ticket == atomic_load_explicit(&l->last, memory_order_relaxed))
       atomic_store_explicit(&l->whead->blocked, false, memory_order_relaxed);
   }
 }
