@@ -121,22 +121,23 @@ pfq_rwlock_init(pfq_rwlock_t *l)
 void
 pfq_rwlock_read_lock(pfq_rwlock_t *l)
 {
-  uint32_t ticket = atomic_fetch_add_explicit(&l->rin, READER_INCREMENT, memory_order_acq_rel);
+  uint32_t ticket = atomic_fetch_add_explicit(&l->rin, READER_INCREMENT, memory_order_relaxed);
 
   if (ticket & WRITER_PRESENT) {
     uint32_t phase = ticket & PHASE_BIT;
-    while (atomic_load_explicit(&l->writer_blocking_readers[phase].bit, memory_order_acquire));
+    while (atomic_load_explicit(&l->writer_blocking_readers[phase].bit, memory_order_relaxed));
   }
+  atomic_thread_fence(memory_order_acquire);
 }
 
 
 void
 pfq_rwlock_read_unlock(pfq_rwlock_t *l)
 {
-  uint32_t ticket = atomic_fetch_add_explicit(&l->rout, READER_INCREMENT, memory_order_acq_rel);
+  uint32_t ticket = atomic_fetch_add_explicit(&l->rout, READER_INCREMENT, memory_order_release);
 
-  if (ticket == atomic_load_explicit(&l->last, memory_order_acquire))
-    atomic_store_explicit(&l->whead->blocked, false, memory_order_release);
+  if (ticket == atomic_load_explicit(&l->last, memory_order_relaxed))
+    atomic_store_explicit(&l->whead->blocked, false, memory_order_relaxed);
 }
 
 
@@ -169,14 +170,15 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // acquire an "in" sequence number to see how many readers arrived
   // set the WRITER_PRESENT bit so subsequent readers will wait
   //--------------------------------------------------------------------
-  uint32_t in = atomic_fetch_or_explicit(&l->rin, WRITER_PRESENT, memory_order_acq_rel);
+  uint32_t in = atomic_fetch_or_explicit(&l->rin, WRITER_PRESENT, memory_order_relaxed);
 
   //--------------------------------------------------------------------
   // save the ticket that the last reader will see
   //--------------------------------------------------------------------
-  atomic_store_explicit(&l->last, in - READER_INCREMENT + WRITER_PRESENT, memory_order_release);
+  atomic_store_explicit(&l->last, in - READER_INCREMENT + WRITER_PRESENT, memory_order_relaxed);
 
   //-------------------------------------------------------------
+  // update to 'last' must complete before others see changed value of rout.
   // acquire an "out" sequence number to see how many readers left
   // set the WRITER_PRESENT bit so the last reader will know to signal
   // it is responsible for signaling the waiting writer
@@ -186,8 +188,10 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   //--------------------------------------------------------------------
   // if any reads are active, wait for last reader to signal me
   //--------------------------------------------------------------------
-  if (in != out)
-    while (atomic_load_explicit(&me->blocked, memory_order_acquire));
+  if (in != out) {
+    while (atomic_load_explicit(&me->blocked, memory_order_relaxed));
+    atomic_thread_fence(memory_order_acquire);
+  }
 }
 
 
