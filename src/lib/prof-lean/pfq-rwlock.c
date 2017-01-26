@@ -171,13 +171,17 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   //--------------------------------------------------------------------
   uint32_t phase = atomic_load_explicit(&l->rin, memory_order_relaxed) & PHASE_BIT;
   atomic_store_explicit(&l->writer_blocking_readers[phase].bit, true, memory_order_relaxed); 
+
+  //----------------------------------------------------------------------------
+  // store to writer_blocking_headers bit must complete before incrementing rin
+  //----------------------------------------------------------------------------
   atomic_thread_fence(memory_order_release);
 
   //--------------------------------------------------------------------
   // acquire an "in" sequence number to see how many readers arrived
   // set the WRITER_PRESENT bit so subsequent readers will wait
   //--------------------------------------------------------------------
-  uint32_t in = atomic_fetch_or_explicit(&l->rin, WRITER_PRESENT, memory_order_relaxed);
+  uint32_t in = atomic_fetch_add_explicit(&l->rin, WRITER_PRESENT, memory_order_relaxed);
 
   //--------------------------------------------------------------------
   // save the ticket that the last reader will see
@@ -196,8 +200,13 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // if any reads are active, wait for last reader to signal me
   //--------------------------------------------------------------------
   if (in != out) {
-    while (atomic_load_explicit(&me->blocked, memory_order_relaxed));
-    atomic_thread_fence(memory_order_acquire);
+    while (atomic_load_explicit(&me->blocked, memory_order_relaxed)); // wait for active reads to drain
+
+    //--------------------------------------------------------------------------
+    // store to writer_blocking headers bit must complete before notifying
+    // readers of writer
+    //--------------------------------------------------------------------------
+    atomic_load_explicit(&me->blocked, memory_order_acquire);
   }
 }
 
