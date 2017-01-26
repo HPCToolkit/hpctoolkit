@@ -69,8 +69,8 @@
 // local includes
 //******************************************************************************
 
-#include "pfq-rwlock.h"
 #include "hpctoolkit-config.h"
+#include "pfq-rwlock.h"
 
 //******************************************************************************
 // macros
@@ -111,7 +111,7 @@ pfq_rwlock_init(pfq_rwlock_t *l)
 {
   atomic_init(&l->rin, 0);
   atomic_init(&l->rout, 0);
-  atomic_init(&l->last, WRITER_PRESENT);
+  atomic_init(&l->last, 0);
   atomic_init(&l->writer_blocking_readers[0].bit, false);
   atomic_init(&l->writer_blocking_readers[1].bit, false);
   mcs_init(&l->wtail);
@@ -136,8 +136,13 @@ pfq_rwlock_read_unlock(pfq_rwlock_t *l)
 {
   uint32_t ticket = atomic_fetch_add_explicit(&l->rout, READER_INCREMENT, memory_order_release);
 
-  if (ticket == atomic_load_explicit(&l->last, memory_order_relaxed))
-    atomic_store_explicit(&l->whead->blocked, false, memory_order_relaxed);
+  if (ticket & WRITER_PRESENT) {
+    //----------------------------------------------------------------------------
+    // finish reading counter before reading last
+    //----------------------------------------------------------------------------
+    if (ticket == atomic_load_explicit(&l->last, memory_order_release))
+      atomic_store_explicit(&l->whead->blocked, false, memory_order_relaxed);
+  }
 }
 
 
