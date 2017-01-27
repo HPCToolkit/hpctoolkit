@@ -1,13 +1,13 @@
 CFLAGS = -O3 -g -Wall -I.. -I../../../../BUILD/src/include -std=c99
-MCS_OBJS = mcs-test.o mcs-lock.o
+LOCK_OBJS = lock-test.o mcs-lock.o
 PFQ_OBJS = pfq-test.o pfq-rwlock.o mcs-lock.o
 
-all: mcs-test pfq-test
+all: lock-test pfq-test
 
-mcs-test: $(MCS_OBJS)
-	$(CC) $(CFLAGS) -o $@ $(MCS_OBJS) -pthread -lm
+lock-test: $(LOCK_OBJS)
+	$(CC) $(CFLAGS) -o $@ $(LOCK_OBJS) -pthread -lm
 
-mcs-test.o: mcs-test.c
+lock-test.o: lock-test.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 pfq-test: $(PFQ_OBJS)
@@ -23,4 +23,4 @@ pfq-rwlock.o: ../pfq-rwlock.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f *.o mcs-test pfq-test
+	rm -f *.o lock-test pfq-test

@@ -8,6 +8,7 @@
 #include <limits.h>
 #include <unistd.h>
 #include "mcs-lock.h"
+#include "spinlock.h"
 
 static volatile int finished;
 static volatile int total_sum;
@@ -16,6 +17,7 @@ static pthread_barrier_t barrier;
 static pthread_mutex_t mutex;
 static pthread_spinlock_t spinlock;
 static mcs_lock_t m_c_s_lock;
+static spinlock_t spin_lock;
 
 static void *
 sync_add_test(void *ndx)
@@ -74,6 +76,22 @@ pthread_mcs_test(void *ndx)
     mcs_lock(&m_c_s_lock, &me);
     ++total_sum;
     mcs_unlock(&m_c_s_lock, &me);
+    ++sum;
+  }
+  thread_sum[i] = sum;
+  return NULL;
+}
+
+static void *
+our_spinlock_test(void *ndx)
+{
+  int i = (int)(intptr_t)ndx;
+  int sum = 0;
+  pthread_barrier_wait(&barrier);
+  while (!finished) {
+    spinlock_lock(&spin_lock);
+    ++total_sum;
+    spinlock_unlock(&spin_lock);
     ++sum;
   }
   thread_sum[i] = sum;
@@ -147,11 +165,14 @@ compute(int num_secs, int num_threads)
   pthread_mutex_destroy(&mutex);
 
   pthread_spin_init(&spinlock, PTHREAD_PROCESS_PRIVATE);
-  addtest(num_secs, num_threads, "Results for pthread_spinlock test", pthread_spin_test);
+  addtest(num_secs, num_threads, "Results for pthread_spin_lock test", pthread_spin_test);
   pthread_spin_destroy(&spinlock);
 
   mcs_init(&m_c_s_lock);
   addtest(num_secs, num_threads, "Results for pthread_mcs test", pthread_mcs_test);
+
+  spinlock_init(&spin_lock);
+  addtest(num_secs, num_threads, "Results for our spinlock test", our_spinlock_test);
 
   pthread_barrier_destroy(&barrier);
   return 0;
