@@ -76,8 +76,6 @@
 #endif
 #endif
 
-#define __unused
-
 /*
  * 7.17.1 Atomic lock-free macros.
  */
@@ -174,6 +172,8 @@ typedef enum {
  * 7.17.4 Fences.
  */
 
+#define __unused
+
 static __inline void
 atomic_thread_fence(memory_order __order __unused)
 {
@@ -199,6 +199,8 @@ atomic_signal_fence(memory_order __order __unused)
 	__asm volatile ("" ::: "memory");
 #endif
 }
+
+#undef __unused
 
 /*
  * 7.17.5 Lock-free property.
