@@ -85,6 +85,12 @@ typedef struct spinlock_s {
 #define SPINLOCK_LOCKED INITIALIZE_SPINLOCK(SPINLOCK_LOCKED_VALUE)
 
 
+static inline void
+spinlock_init(spinlock_t *l)
+{
+  atomic_store_explicit(&l->thelock, SPINLOCK_UNLOCKED_VALUE, memory_order_relaxed);
+}
+
 /*
  * Note: powerpc needs two memory barriers: isync at the end of _lock
  * and lwsync at the beginning of _unlock.  See JohnMC's Comp 422
