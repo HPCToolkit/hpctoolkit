@@ -81,9 +81,6 @@
 #include <messages/messages.h>
 #include <utilities/tokenize.h>
 
-#include <lib/prof-lean/atomic.h>
-
-
 
 /******************************************************************************
  * macros

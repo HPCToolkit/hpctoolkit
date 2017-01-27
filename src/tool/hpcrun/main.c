@@ -133,7 +133,6 @@
 #include <lush/lush-backtrace.h>
 #include <lush/lush-pthread.h>
 
-#include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcio.h>
 

@@ -84,7 +84,6 @@
 
 #include <metrics.h>
 
-#include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/BalancedTree.h>
 
 #include <lib/support-lean/timer.h>

@@ -83,7 +83,6 @@
 #include <monitor.h>
 
 #include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/mcs-lock.h>
 
 
