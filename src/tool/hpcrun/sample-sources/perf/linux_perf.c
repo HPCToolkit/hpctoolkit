@@ -149,6 +149,7 @@
 #define RAW_IBS_FETCH   1
 #define RAW_IBS_OP      2
 
+#define EVENT_DATA_CENTRIC "DATACENTRIC"
 
 //******************************************************************************
 // type declarations
@@ -408,18 +409,22 @@ perf_attr_init(
 )
 {
   // if perfmon is disabled, by default the event is cycle
-  unsigned int event_code = PERF_COUNT_HW_CPU_CYCLES;
-  unsigned int event_type = PERF_TYPE_HARDWARE;
+  unsigned int event_code  = PERF_COUNT_HW_CPU_CYCLES;
+  unsigned int event_type  = PERF_TYPE_HARDWARE;
+  unsigned int sample_type = 0;
 
 #ifdef ENABLE_PERFMON
+  if (strcmp(name, EVENT_DATA_CENTRIC)==0) {
+    sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID | PERF_SAMPLE_TIME;
+  } else 
   if (!pfmu_getEventCode(name, &event_code)) {
-      EMSG("Linux perf event not recognized: %s", name);
-      return false;
+     EMSG("Linux perf event not recognized: %s", name);
+     return false;
   }
   event_type = pfmu_getEventType(name);
   if (event_type<0) {
-      EMSG("Linux perf event type not recognized: %s", name);
-      return false;
+     EMSG("Linux perf event type not recognized: %s", name);
+     return false;
   }
 #endif
 
@@ -437,8 +442,8 @@ perf_attr_init(
 
   if (perf_ksyms_avail) {
     /* Records the callchain */
-    unsigned int type = PERF_SAMPLE_CALLCHAIN | PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID | PERF_SAMPLE_TIME;
-    attr->sample_type = type ;  
+    sample_type = sample_type | PERF_SAMPLE_CALLCHAIN; 
+    attr->sample_type = sample_type ;  
     attr->exclude_callchain_user = EXCLUDE_CALLCHAIN_USER;
   } else {
     attr->sample_type = PERF_SAMPLE_IP;
@@ -615,7 +620,7 @@ perf_sample_callchain(pe_mmap_t *current_perf_mmap, cct_node_t *leaf,
   uint64_t n_frames; 		// check of sample type
 
   // determine how many frames in the call chain 
-  if (perf_read_uint64_t( &current_perf_mmap[index], &n_frames) == 0) {
+  if (perf_read_uint64_t( current_perf_mmap, &n_frames) == 0) {
 
 	index += 8;
 	if (n_frames > 0) {
@@ -623,7 +628,7 @@ perf_sample_callchain(pe_mmap_t *current_perf_mmap, cct_node_t *leaf,
 	  uint64_t *ips = alloca(n_frames * sizeof(uint64_t));
 
 	  // read the IPs for the frames 
-	  if (perf_read( &current_perf_mmap[index], ips, n_frames * sizeof(uint64_t)) == 0) {
+	  if (perf_read( current_perf_mmap, ips, n_frames * sizeof(uint64_t)) == 0) {
 
 	    // add kernel IPs to the call chain top down, which is the 
 	    // reverse of the order in which they appear in ips
