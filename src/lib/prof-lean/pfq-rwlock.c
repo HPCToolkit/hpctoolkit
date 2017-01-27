@@ -206,7 +206,7 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
     // store to writer_blocking headers bit must complete before notifying
     // readers of writer
     //--------------------------------------------------------------------------
-    atomic_load_explicit(&me->blocked, memory_order_acquire);
+    atomic_thread_fence(memory_order_release);
   }
 }
 
