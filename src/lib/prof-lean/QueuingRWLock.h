@@ -71,6 +71,7 @@
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
+#include "stdatomic.h"
 
 //*************************** Forward Declarations **************************
 
@@ -119,8 +120,8 @@ typedef enum QueuingRWLockStatus {
 typedef struct QueuingRWLockLcl {
 
   // A queue node
-  volatile struct QueuingRWLockLcl* next;
-  volatile QueuingRWLockStatus_t status;
+  _Atomic(struct QueuingRWLockLcl *) next;
+  _Atomic(QueuingRWLockStatus_t) status;
   QueuingRWLockOp_t op;
 
 } QueuingRWLockLcl_t;
@@ -129,8 +130,8 @@ typedef struct QueuingRWLockLcl {
 static inline void 
 QueuingRWLockLcl_init(QueuingRWLockLcl_t* x)
 {
-  x->next = NULL;
-  x->status = QueuingRWLockStatus_NULL;
+  atomic_store_explicit(&x->next, NULL, memory_order_relaxed);
+  atomic_store_explicit(&x->status, QueuingRWLockStatus_NULL, memory_order_relaxed);
   x->op = QueuingRWLockOp_NULL;
 }
 
@@ -141,7 +142,7 @@ QueuingRWLockLcl_init(QueuingRWLockLcl_t* x)
 
 typedef struct QueuingRWLock {
 
-  volatile QueuingRWLockLcl_t* lock; // points to tail
+  _Atomic(QueuingRWLockLcl_t *) lock; // points to tail
 
 } QueuingRWLock_t;
 
@@ -149,7 +150,7 @@ typedef struct QueuingRWLock {
 static inline void 
 QueuingRWLock_init(QueuingRWLock_t* x) 
 {
-  x->lock = NULL;
+  atomic_store_explicit(&x->lock, NULL, memory_order_relaxed);
 }
 
 

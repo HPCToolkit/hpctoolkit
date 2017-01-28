@@ -66,8 +66,6 @@
 
 #include "QueuingRWLock.h"
 
-#include "atomic-op.h"
-
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
@@ -85,23 +83,23 @@ void
 QueuingRWLock_lock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl, 
 		   QueuingRWLockOp_t op)
 {
-  lcl->next = NULL;
-  lcl->status = QueuingRWLockStatus_Blocked;
+  atomic_store_explicit(&lcl->next, NULL, memory_order_relaxed);
+  atomic_store_explicit(&lcl->status, QueuingRWLockStatus_Blocked, memory_order_relaxed);
   lcl->op = op;
 
-  volatile QueuingRWLockLcl_t* prev = fetch_and_store_ptr(&lock->lock, lcl);
+  QueuingRWLockLcl_t *prev = atomic_exchange_explicit(&lock->lock, lcl, memory_order_relaxed);
   if (prev) {
     // INVARIANT: queue was non-empty
-    if (prev->status != QueuingRWLockStatus_Blocked 
+    if (atomic_load_explicit(&prev->status, memory_order_relaxed) != QueuingRWLockStatus_Blocked 
 	&& QueuingRWLockOp_isParallel(prev->op, op)) {
       // self-initiate early parallel start
-      lcl->status = QueuingRWLockStatus_SelfSignaled;
+      atomic_store_explicit(&lcl->status, QueuingRWLockStatus_SelfSignaled, memory_order_relaxed);
     }
-    prev->next = lcl;
-    while (lcl->status == QueuingRWLockStatus_Blocked) {;} // spin
+    atomic_store_explicit(&prev->next, lcl, memory_order_relaxed);
+    while (atomic_load_explicit(&lcl->status, memory_order_relaxed) == QueuingRWLockStatus_Blocked) {;} // spin
   }
   else {
-    lcl->status = QueuingRWLockStatus_Signaled;
+    atomic_store_explicit(&lcl->status, QueuingRWLockStatus_Signaled, memory_order_relaxed);
   }
   // INVARIANT: lcl->status == SelfSignaled || Signaled
 }
@@ -110,28 +108,28 @@ QueuingRWLock_lock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl,
 void
 QueuingRWLock_unlock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl)
 {
-  while (lcl->status != QueuingRWLockStatus_Signaled) {;} // spin
-  if (!lcl->next) {
+  while (atomic_load_explicit(&lcl->status, memory_order_relaxed) != QueuingRWLockStatus_Signaled) {;} // spin
+  if (!atomic_load_explicit(&lcl->next, memory_order_relaxed)) {
     // INVARIANT: no known successor
-    if (compare_and_swap_ptr(&lock->lock, lcl, NULL) == lcl) {
+    if (atomic_exchange_explicit(&lock->lock, lcl, memory_order_relaxed) == lcl) {
       return; // CAS returns *old* value iff successful
     }
     // another node is linking itself to me
-    while (!lcl->next) {;}
+    while (!atomic_load_explicit(&lcl->next, memory_order_relaxed)) {;}
   }
   // INVARIANT: a successor exists
   
-  volatile QueuingRWLockLcl_t* next = lcl->next;
-  volatile QueuingRWLockStatus_t old_nextStatus = next->status;
-  next->status = QueuingRWLockStatus_SelfSignaled; // begin passing baton
+  QueuingRWLockLcl_t* next = atomic_load_explicit(&lcl->next, memory_order_relaxed);
+  QueuingRWLockStatus_t old_nextStatus = // begin passing baton
+    atomic_exchange_explicit(&next->status, QueuingRWLockStatus_SelfSignaled, memory_order_relaxed);
 
   if (old_nextStatus == QueuingRWLockStatus_Blocked) {
     // initiate parallel start for successors of 'next'
-    for (volatile QueuingRWLockLcl_t* x = next->next;
-	 x && QueuingRWLockOp_isParallel(next->op, x->op); x = x->next) {
-      x->status = QueuingRWLockStatus_SelfSignaled;
+    for (QueuingRWLockLcl_t* x = atomic_load_explicit(&next->next, memory_order_relaxed);
+	 x && QueuingRWLockOp_isParallel(next->op, x->op); x = atomic_load_explicit(&x->next, memory_order_relaxed)) {
+      atomic_store_explicit(&x->status, QueuingRWLockStatus_SelfSignaled, memory_order_relaxed);
     }
   }
 
-  next->status = QueuingRWLockStatus_Signaled; // complete passing baton
+  atomic_store_explicit(&next->status, QueuingRWLockStatus_Signaled, memory_order_relaxed); // complete passing baton
 }
