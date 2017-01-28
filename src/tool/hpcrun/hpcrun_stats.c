@@ -54,7 +54,7 @@
 #include <memory/hpcrun-malloc.h>
 #include <messages/messages.h>
 
-#include <lib/prof-lean/atomic-op.h>
+#include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <unwind/common/validate_return_addr.h>
 
@@ -63,21 +63,21 @@
 // local variables
 //***************************************************************************
 
-static long num_samples_total = 0;
-static long num_samples_attempted = 0;
-static long num_samples_blocked_async = 0;
-static long num_samples_blocked_dlopen = 0;
-static long num_samples_dropped = 0;
-static long num_samples_segv = 0;
-static long num_samples_partial = 0;
-static long num_samples_yielded = 0;
+static _Atomic(long) num_samples_total = ATOMIC_VAR_INIT(0);
+static _Atomic(long) num_samples_attempted = ATOMIC_VAR_INIT(0);
+static _Atomic(long) num_samples_blocked_async = ATOMIC_VAR_INIT(0);
+static _Atomic(long) num_samples_blocked_dlopen = ATOMIC_VAR_INIT(0);
+static _Atomic(long) num_samples_dropped = ATOMIC_VAR_INIT(0);
+static _Atomic(long) num_samples_segv = ATOMIC_VAR_INIT(0);
+static _Atomic(long) num_samples_partial = ATOMIC_VAR_INIT(0);
+static _Atomic(long) num_samples_yielded = ATOMIC_VAR_INIT(0);
 
-static long num_unwind_intervals_total = 0;
-static long num_unwind_intervals_suspicious = 0;
+static _Atomic(long) num_unwind_intervals_total = ATOMIC_VAR_INIT(0);
+static _Atomic(long) num_unwind_intervals_suspicious = ATOMIC_VAR_INIT(0);
 
-static long trolled = 0;
-static long frames_total = 0;
-static long trolled_frames = 0;
+static _Atomic(long) trolled = ATOMIC_VAR_INIT(0);
+static _Atomic(long) frames_total = ATOMIC_VAR_INIT(0);
+static _Atomic(long) trolled_frames = ATOMIC_VAR_INIT(0);
 
 //***************************************************************************
 // interface operations
@@ -86,17 +86,17 @@ static long trolled_frames = 0;
 void
 hpcrun_stats_reinit(void)
 {
-  num_samples_total = 0;
-  num_samples_attempted = 0;
-  num_samples_blocked_async = 0;
-  num_samples_blocked_dlopen = 0;
-  num_samples_dropped = 0;
-  num_samples_segv = 0;
-  num_unwind_intervals_total = 0;
-  num_unwind_intervals_suspicious = 0;
-  trolled = 0;
-  frames_total = 0;
-  trolled_frames = 0;
+  atomic_store_explicit(&num_samples_total, 0, memory_order_relaxed);
+  atomic_store_explicit(&num_samples_attempted, 0, memory_order_relaxed);
+  atomic_store_explicit(&num_samples_blocked_async, 0, memory_order_relaxed);
+  atomic_store_explicit(&num_samples_blocked_dlopen, 0, memory_order_relaxed);
+  atomic_store_explicit(&num_samples_dropped, 0, memory_order_relaxed);
+  atomic_store_explicit(&num_samples_segv, 0, memory_order_relaxed);
+  atomic_store_explicit(&num_unwind_intervals_total, 0, memory_order_relaxed);
+  atomic_store_explicit(&num_unwind_intervals_suspicious, 0, memory_order_relaxed);
+  atomic_store_explicit(&trolled, 0, memory_order_relaxed);
+  atomic_store_explicit(&frames_total, 0, memory_order_relaxed);
+  atomic_store_explicit(&trolled_frames, 0, memory_order_relaxed);
 }
 
 
@@ -107,14 +107,14 @@ hpcrun_stats_reinit(void)
 void
 hpcrun_stats_num_samples_total_inc(void)
 {
-  atomic_add_i64(&num_samples_total, 1L);
+  atomic_fetch_add_explicit(&num_samples_total, 1L, memory_order_relaxed);
 }
 
 
 long
 hpcrun_stats_num_samples_total(void)
 {
-  return num_samples_total;
+  return atomic_load_explicit(&num_samples_total, memory_order_relaxed);
 }
 
 
@@ -126,14 +126,14 @@ hpcrun_stats_num_samples_total(void)
 void
 hpcrun_stats_num_samples_attempted_inc(void)
 {
-  atomic_add_i64(&num_samples_attempted, 1L);
+  atomic_fetch_add_explicit(&num_samples_attempted, 1L, memory_order_relaxed);
 }
 
 
 long
 hpcrun_stats_num_samples_attempted(void)
 {
-  return num_samples_attempted;
+  return atomic_load_explicit(&num_samples_attempted, memory_order_relaxed);
 }
 
 
@@ -147,15 +147,15 @@ hpcrun_stats_num_samples_attempted(void)
 void
 hpcrun_stats_num_samples_blocked_async_inc(void)
 {
-  atomic_add_i64(&num_samples_blocked_async, 1L);
-  atomic_add_i64(&num_samples_total, 1L);
+  atomic_fetch_add_explicit(&num_samples_blocked_async, 1L, memory_order_relaxed);
+  atomic_fetch_add_explicit(&num_samples_total, 1L, memory_order_relaxed);
 }
 
 
 long
 hpcrun_stats_num_samples_blocked_async(void)
 {
-  return num_samples_blocked_async;
+  return atomic_load_explicit(&num_samples_blocked_async, memory_order_relaxed);
 }
 
 
@@ -167,14 +167,14 @@ hpcrun_stats_num_samples_blocked_async(void)
 void
 hpcrun_stats_num_samples_blocked_dlopen_inc(void)
 {
-  atomic_add_i64(&num_samples_blocked_dlopen, 1L);
+  atomic_fetch_add_explicit(&num_samples_blocked_dlopen, 1L, memory_order_relaxed);
 }
 
 
 long
 hpcrun_stats_num_samples_blocked_dlopen(void)
 {
-  return num_samples_blocked_dlopen;
+  return atomic_load_explicit(&num_samples_blocked_dlopen, memory_order_relaxed);
 }
 
 
@@ -186,13 +186,13 @@ hpcrun_stats_num_samples_blocked_dlopen(void)
 void
 hpcrun_stats_num_samples_dropped_inc(void)
 {
-  atomic_add_i64(&num_samples_dropped, 1L);
+  atomic_fetch_add_explicit(&num_samples_dropped, 1L, memory_order_relaxed);
 }
 
 long
 hpcrun_stats_num_samples_dropped(void)
 {
-  return num_samples_dropped;
+  return atomic_load_explicit(&num_samples_dropped, memory_order_relaxed);
 }
 
 //----------------------------
@@ -202,13 +202,13 @@ hpcrun_stats_num_samples_dropped(void)
 void
 hpcrun_stats_num_samples_partial_inc(void)
 {
-  atomic_add_i64(&num_samples_partial, 1L);
+  atomic_fetch_add_explicit(&num_samples_partial, 1L, memory_order_relaxed);
 }
 
 long
 hpcrun_stats_num_samples_partial(void)
 {
-  return num_samples_partial;
+  return atomic_load_explicit(&num_samples_partial, memory_order_relaxed);
 }
 
 //-----------------------------
@@ -218,14 +218,14 @@ hpcrun_stats_num_samples_partial(void)
 void
 hpcrun_stats_num_samples_segv_inc(void)
 {
-  atomic_add_i64(&num_samples_segv, 1L);
+  atomic_fetch_add_explicit(&num_samples_segv, 1L, memory_order_relaxed);
 }
 
 
 long
 hpcrun_stats_num_samples_segv(void)
 {
-  return num_samples_segv;
+  return atomic_load_explicit(&num_samples_segv, memory_order_relaxed);
 }
 
 
@@ -238,14 +238,14 @@ hpcrun_stats_num_samples_segv(void)
 void
 hpcrun_stats_num_unwind_intervals_total_inc(void)
 {
-  atomic_add_i64(&num_unwind_intervals_total, 1L);
+  atomic_fetch_add_explicit(&num_unwind_intervals_total, 1L, memory_order_relaxed);
 }
 
 
 long
 hpcrun_stats_num_unwind_intervals_total(void)
 {
-  return num_unwind_intervals_total;
+  return atomic_load_explicit(&num_unwind_intervals_total, memory_order_relaxed);
 }
 
 
@@ -257,14 +257,14 @@ hpcrun_stats_num_unwind_intervals_total(void)
 void
 hpcrun_stats_num_unwind_intervals_suspicious_inc(void)
 {
-  atomic_add_i64(&num_unwind_intervals_suspicious, 1L);
+  atomic_fetch_add_explicit(&num_unwind_intervals_suspicious, 1L, memory_order_relaxed);
 }
 
 
 long
 hpcrun_stats_num_unwind_intervals_suspicious(void)
 {
-  return num_unwind_intervals_suspicious;
+  return atomic_load_explicit(&num_unwind_intervals_suspicious, memory_order_relaxed);
 }
 
 //------------------------------------------------------
@@ -274,13 +274,13 @@ hpcrun_stats_num_unwind_intervals_suspicious(void)
 void
 hpcrun_stats_trolled_inc(void)
 {
-  atomic_add_i64(&trolled, 1L);
+  atomic_fetch_add_explicit(&trolled, 1L, memory_order_relaxed);
 }
 
 long
 hpcrun_stats_trolled(void)
 {
-  return trolled;
+  return atomic_load_explicit(&trolled, memory_order_relaxed);
 }
 
 //------------------------------------------------------
@@ -290,13 +290,13 @@ hpcrun_stats_trolled(void)
 void
 hpcrun_stats_frames_total_inc(long amt)
 {
-  atomic_add_i64(&frames_total, amt);
+  atomic_fetch_add_explicit(&frames_total, amt, memory_order_relaxed);
 }
 
 long
 hpcrun_stats_frames_total(void)
 {
-  return frames_total;
+  return atomic_load_explicit(&frames_total, memory_order_relaxed);
 }
 
 //---------------------------------------------------------------------
@@ -306,13 +306,13 @@ hpcrun_stats_frames_total(void)
 void
 hpcrun_stats_trolled_frames_inc(long amt)
 {
-  atomic_add_i64(&trolled_frames, amt);
+  atomic_fetch_add_explicit(&trolled_frames, amt, memory_order_relaxed);
 }
 
 long
 hpcrun_stats_trolled_frames(void)
 {
-  return trolled_frames;
+  return atomic_load_explicit(&trolled_frames, memory_order_relaxed);
 }
 
 //----------------------------
@@ -322,13 +322,13 @@ hpcrun_stats_trolled_frames(void)
 void
 hpcrun_stats_num_samples_yielded_inc(void)
 {
-  atomic_add_i64(&num_samples_yielded, 1L);
+  atomic_fetch_add_explicit(&num_samples_yielded, 1L, memory_order_relaxed);
 }
 
 long
 hpcrun_stats_num_samples_yielded(void)
 {
-  return num_samples_yielded;
+  return atomic_load_explicit(&num_samples_yielded, memory_order_relaxed);
 }
 
 //-----------------------------
@@ -338,12 +338,14 @@ hpcrun_stats_num_samples_yielded(void)
 void
 hpcrun_stats_print_summary(void)
 {
-  long blocked = num_samples_blocked_async + num_samples_blocked_dlopen;
-  long errant = num_samples_dropped;
-  long soft = num_samples_dropped - num_samples_segv;
-  long valid = num_samples_attempted;
+  long blocked = atomic_load_explicit(&num_samples_blocked_async, memory_order_relaxed) +
+    atomic_load_explicit(&num_samples_blocked_dlopen, memory_order_relaxed);
+  long errant = atomic_load_explicit(&num_samples_dropped, memory_order_relaxed);
+  long soft = atomic_load_explicit(&num_samples_dropped, memory_order_relaxed) -
+    atomic_load_explicit(&num_samples_segv, memory_order_relaxed);
+  long valid = atomic_load_explicit(&num_samples_attempted, memory_order_relaxed);
   if (ENABLED(NO_PARTIAL_UNW)) {
-    valid = num_samples_attempted - errant;
+    valid = atomic_load_explicit(&num_samples_attempted, memory_order_relaxed) - errant;
   }
 
   hpcrun_memory_summary();
