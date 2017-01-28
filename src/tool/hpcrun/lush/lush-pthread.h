@@ -675,7 +675,7 @@ lushPthr_makeSyncObjData_spin(lushPthr_t* restrict pthr,
   lushPtr_SyncObjData_init(x); 
 #if (LUSH_DBG_STATS)
   hpcrun_atomicIncr(&DBG_numLockAlloc);
-  long lockAllocCur = (((lushPthr_mem_ptr - lushPthr_mem_beg)
+  long lockAllocCur = (((atomic_load_explicit(&lushPthr_mem_ptr, memory_order_relaxed) - lushPthr_mem_beg)
 			/ sizeof(lushPtr_SyncObjData_t))
 		       - 1 - DBG_numLockFreelistCur);
   long result;

@@ -94,7 +94,7 @@ lushPtr_SyncObjData_t lushPthr_mem[lushPthr_memSizeElem] GCC_ATTR_VAR_CACHE_ALIG
 void* lushPthr_mem_beg;
 void* lushPthr_mem_end;
 
-void* lushPthr_mem_ptr;
+lushPthr_mem_ptr_t lushPthr_mem_ptr;
 
 
 #if (LUSH_DBG_STATS)
@@ -165,10 +165,12 @@ lushPthr_processInit()
   lushPthr_mem_end = (void*)lushPthr_mem + lushPthr_memSize;
 
   // align with next cache line
-  lushPthr_mem_ptr = (void*)( (uintptr_t)(lushPthr_mem_beg 
-					  + lushPthr_maxValueOfLock
-					  + (HOST_CACHE_LINE_SZ - 1))
-			      & (uintptr_t)~(HOST_CACHE_LINE_SZ - 1) );
+  atomic_store_explicit(&lushPthr_mem_ptr,
+			(void*)( (uintptr_t)(lushPthr_mem_beg 
+					     + lushPthr_maxValueOfLock
+					     + (HOST_CACHE_LINE_SZ - 1))
+				 & (uintptr_t)~(HOST_CACHE_LINE_SZ - 1)),
+			memory_order_relaxed);
   
 #if (LUSH_PTHR_FN_TY == 3)
   // sanity check

@@ -73,6 +73,7 @@
 
 #include <include/gcc-attr.h>
 #include <lib/prof-lean/atomic.h>
+#include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/BalancedTree.h>
 #include <lib/prof-lean/QueuingRWLock.h>
 
@@ -182,13 +183,14 @@ typedef struct lushPthr {
 
 extern void* lushPthr_mem_beg; // memory begin
 extern void* lushPthr_mem_end; // memory end
-extern void* lushPthr_mem_ptr; // current pointer
+typedef _Atomic(void *) lushPthr_mem_ptr_t;
+extern lushPthr_mem_ptr_t lushPthr_mem_ptr; // current pointer
 
 
 static inline void* 
 lushPthr_malloc(size_t size) 
 {
-  void* memEnd = hpcrun_atomicAdd(&lushPthr_mem_ptr, size);
+  void* memEnd = atomic_fetch_add_explicit(&lushPthr_mem_ptr, size, memory_order_relaxed);
   if (memEnd < lushPthr_mem_end) {
     return (memEnd - size);
   }
