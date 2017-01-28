@@ -72,6 +72,7 @@
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
+#include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/BalancedTree.h>
 #include <lib/prof-lean/QueuingRWLock.h>
 
