@@ -74,7 +74,7 @@
 //
 
 typedef struct spinlock_s {
-	_Atomic(long) thelock;
+	atomic_long thelock;
 } spinlock_t;
 
 #define SPINLOCK_UNLOCKED_VALUE (-1L)

@@ -63,21 +63,21 @@
 // local variables
 //***************************************************************************
 
-static _Atomic(long) num_samples_total = ATOMIC_VAR_INIT(0);
-static _Atomic(long) num_samples_attempted = ATOMIC_VAR_INIT(0);
-static _Atomic(long) num_samples_blocked_async = ATOMIC_VAR_INIT(0);
-static _Atomic(long) num_samples_blocked_dlopen = ATOMIC_VAR_INIT(0);
-static _Atomic(long) num_samples_dropped = ATOMIC_VAR_INIT(0);
-static _Atomic(long) num_samples_segv = ATOMIC_VAR_INIT(0);
-static _Atomic(long) num_samples_partial = ATOMIC_VAR_INIT(0);
-static _Atomic(long) num_samples_yielded = ATOMIC_VAR_INIT(0);
+static atomic_long num_samples_total = ATOMIC_VAR_INIT(0);
+static atomic_long num_samples_attempted = ATOMIC_VAR_INIT(0);
+static atomic_long num_samples_blocked_async = ATOMIC_VAR_INIT(0);
+static atomic_long num_samples_blocked_dlopen = ATOMIC_VAR_INIT(0);
+static atomic_long num_samples_dropped = ATOMIC_VAR_INIT(0);
+static atomic_long num_samples_segv = ATOMIC_VAR_INIT(0);
+static atomic_long num_samples_partial = ATOMIC_VAR_INIT(0);
+static atomic_long num_samples_yielded = ATOMIC_VAR_INIT(0);
 
-static _Atomic(long) num_unwind_intervals_total = ATOMIC_VAR_INIT(0);
-static _Atomic(long) num_unwind_intervals_suspicious = ATOMIC_VAR_INIT(0);
+static atomic_long num_unwind_intervals_total = ATOMIC_VAR_INIT(0);
+static atomic_long num_unwind_intervals_suspicious = ATOMIC_VAR_INIT(0);
 
-static _Atomic(long) trolled = ATOMIC_VAR_INIT(0);
-static _Atomic(long) frames_total = ATOMIC_VAR_INIT(0);
-static _Atomic(long) trolled_frames = ATOMIC_VAR_INIT(0);
+static atomic_long trolled = ATOMIC_VAR_INIT(0);
+static atomic_long frames_total = ATOMIC_VAR_INIT(0);
+static atomic_long trolled_frames = ATOMIC_VAR_INIT(0);
 
 //***************************************************************************
 // interface operations
