@@ -101,11 +101,12 @@ extern atomic_long DBG_maxLockAllocCur;
 extern atomic_long DBG_numLockFreelistCur;
 #endif
 
+typedef _Atomic(pthread_spinlock_t) atomic_pthread_spinlock_t;
 
 typedef struct lushPtr_SyncObjData {
 
   union {
-    pthread_spinlock_t spin; // usually an int
+    atomic_pthread_spinlock_t spin; // usually an int
     //pthread_mutex_t  mutexlock
   } lock GCC_ATTR_VAR_CACHE_ALIGN;
 
