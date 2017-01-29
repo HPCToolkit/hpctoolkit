@@ -107,9 +107,9 @@ typedef struct {
   //----------------------------------------------------------------------------
   // reader management
   //----------------------------------------------------------------------------
-  _Atomic(uint32_t) rin cache_aligned;  // = 0
-  _Atomic(uint32_t) rout cache_aligned;  // = 0
-  _Atomic(uint32_t) last cache_aligned;  // = WRITER_PRESENT
+  atomic_uint_least32_t rin cache_aligned;  // = 0
+  atomic_uint_least32_t rout cache_aligned;  // = 0
+  atomic_uint_least32_t last cache_aligned;  // = WRITER_PRESENT
   bigbool writer_blocking_readers[2]; // false
 
   //----------------------------------------------------------------------------
