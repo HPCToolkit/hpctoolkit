@@ -343,9 +343,9 @@ lushPthr_thread_init_ty2(lushPthr_t* x)
   x->num_locks  = 0;
   x->cond_lock  = 0;
 
-  hpcrun_atomicIncr(x->ps_num_threads);
+  atomic_fetch_add_explicit(x->ps_num_threads, 1, memory_order_relaxed);
 
-  hpcrun_atomicIncr(x->ps_num_working);
+  atomic_fetch_add_explicit(x->ps_num_working, 1, memory_order_relaxed);
   // x->ps_num_working_lock: same
 
   // x->ps_num_idle_cond: same
@@ -359,9 +359,9 @@ lushPthr_thread_fini_ty2(lushPthr_t* x)
   x->num_locks  = 0;
   x->cond_lock  = 0;
 
-  hpcrun_atomicDecr(x->ps_num_threads);
+  atomic_fetch_add_explicit(x->ps_num_threads, -1, memory_order_relaxed);
   
-  hpcrun_atomicDecr(x->ps_num_working);
+  atomic_fetch_add_explicit(x->ps_num_working, -1, memory_order_relaxed);
   // x->ps_num_working_lock: same
 
   // x->ps_num_idle_cond: same
@@ -371,7 +371,7 @@ lushPthr_thread_fini_ty2(lushPthr_t* x)
 static inline void
 lushPthr_lock_pre_ty2(lushPthr_t* x)
 {
-  hpcrun_atomicDecr(x->ps_num_working);
+  atomic_fetch_add_explicit(x->ps_num_working, -1, memory_order_relaxed);
   // x->ps_num_working_lock: same
 
   // x->ps_num_idle_cond: same
@@ -392,9 +392,9 @@ lushPthr_lock_post_ty2(lushPthr_t* x)
   x->num_locks++;
   // x->cond_lock: same
 
-  hpcrun_atomicIncr(x->ps_num_working);
+  atomic_fetch_add_explicit(x->ps_num_working, 1, memory_order_relaxed);
   if (do_addLock) {
-    hpcrun_atomicIncr(x->ps_num_working_lock);
+    atomic_fetch_add_explicit(x->ps_num_working_lock, 1, memory_order_relaxed);
   }
 
   // x->ps_num_idle_cond: same
@@ -413,7 +413,7 @@ lushPthr_trylock_ty2(lushPthr_t* x)
 
   // x->ps_num_working: // same
   if (do_addLock) {
-    hpcrun_atomicIncr(x->ps_num_working_lock);
+    atomic_fetch_add_explicit(x->ps_num_working_lock, 1, memory_order_relaxed);
   }
 
   // x->ps_num_idle_cond: same
@@ -434,7 +434,7 @@ lushPthr_unlock_ty2(lushPthr_t* x)
   // x->ps_num_working: same
   if ((x->num_locks == 0 && !wasDirectlyInCond) 
       || lushPthr_isDirectlyInCond(x)) {
-    hpcrun_atomicDecr(x->ps_num_working_lock);
+    atomic_fetch_add_explicit(x->ps_num_working_lock, -1, memory_order_relaxed);
   }
 
   // x->ps_num_idle_cond: same
@@ -545,11 +545,11 @@ lushPthr_condwait_pre_ty2(lushPthr_t* x)
   
   // N.B. this order ensures that (num_working - num_working_lock) >= 0
   if (new_num_locks == 0 && !wasDirectlyInCond) {
-    hpcrun_atomicDecr(x->ps_num_working_lock);
+    atomic_fetch_add_explicit(x->ps_num_working_lock, -1, memory_order_relaxed);
   }
-  hpcrun_atomicDecr(x->ps_num_working);
+  atomic_fetch_add_explicit(x->ps_num_working, -1, memory_order_relaxed);
 
-  hpcrun_atomicIncr(x->ps_num_idle_cond);
+  atomic_fetch_add_explicit(x->ps_num_idle_cond, 1, memory_order_relaxed);
 
   x->is_working = false;
   x->num_locks = new_num_locks;
@@ -564,10 +564,10 @@ lushPthr_condwait_post_ty2(lushPthr_t* x)
   x->num_locks++;
   x->cond_lock = x->num_locks;
 
-  hpcrun_atomicIncr(x->ps_num_working);
+  atomic_fetch_add_explicit(x->ps_num_working, 1, memory_order_relaxed);
   // x->ps_num_working_lock: same, b/c thread is part of 'num_working_cond'
 
-  hpcrun_atomicDecr(x->ps_num_idle_cond);
+  atomic_fetch_add_explicit(x->ps_num_idle_cond, -1, memory_order_relaxed);
 }
 
 
@@ -629,7 +629,7 @@ lushPthr_freelstEnq(lushPthr_t* restrict pthr,
     pthr->freelstTail = x;
   }
 #if (LUSH_DBG_STATS)
-  hpcrun_atomicIncr(&DBG_numLockFreelistCur);
+  atomic_fetch_add_explicit(&DBG_numLockFreelistCur, 1, memory_order_relaxed);
 #endif
 }
 
@@ -653,7 +653,7 @@ lushPthr_freelstDeq(lushPthr_t* pthr)
       pthr->freelstTail = NULL;
     }
 #if (LUSH_DBG_STATS)
-    hpcrun_atomicDecr(&DBG_numLockFreelistCur);
+    atomic_fetch_add_explicit(&DBG_numLockFreelistCur, -1, memory_order_relaxed);
 #endif
     
     return x;
@@ -674,13 +674,11 @@ lushPthr_makeSyncObjData_spin(lushPthr_t* restrict pthr,
   }
   lushPtr_SyncObjData_init(x); 
 #if (LUSH_DBG_STATS)
-  hpcrun_atomicIncr(&DBG_numLockAlloc);
+  atomic_fetch_add_explicit(&DBG_numLockAlloc, 1, memory_order_relaxed);
   long lockAllocCur = (((atomic_load_explicit(&lushPthr_mem_ptr, memory_order_relaxed) - lushPthr_mem_beg)
 			/ sizeof(lushPtr_SyncObjData_t))
 		       - 1 - DBG_numLockFreelistCur);
-  long result;
-  read_modify_write(long, &DBG_maxLockAllocCur, 
-		    MAX(DBG_maxLockAllocCur, lockAllocCur), result);
+  atomic_store_explicit(&DBG_maxLockAllocCur, MAX(DBG_maxLockAllocCur, lockAllocCur), memory_order_relaxed);
 #endif
   return x;
 }
@@ -743,7 +741,7 @@ lushPthr_demandSyncObjData_ps(lushPthr_t* restrict x, void* restrict syncObj)
     fnd = BalancedTree_insert(x->ps_syncObjToData, syncObj, &x->locklcl);
     lushPtr_SyncObjData_init(fnd->data);
 #if (LUSH_DBG_STATS)
-    hpcrun_atomicIncr(&DBG_numLockAlloc);
+    atomic_fetch_add_explicit(&DBG_numLockAlloc, 1, memory_order_relaxed);
 #endif
   }
 
@@ -888,7 +886,7 @@ lushPthr_mutexLock_pre_ty3(lushPthr_t* restrict x,
   syncData->isBlockingWork = (syncData->isLocked);
 
 #if (LUSH_DBG_STATS)
-  hpcrun_atomicIncr(&DBG_numLockAcq);
+  atomic_fetch_add_explicit(&DBG_numLockAcq, 1, memory_order_relaxed);
 #endif
 
   lushPthr_begSmplIdleness(x);
@@ -952,7 +950,7 @@ lushPthr_spinLock_pre_ty3(lushPthr_t* restrict x,
     lushPthr_demandCachedSyncObjData_spin(x, lock);
 
 #if (LUSH_DBG_STATS)
-  hpcrun_atomicIncr(&DBG_numLockAcq);
+  atomic_fetch_add_explicit(&DBG_numLockAcq, 1, memory_order_relaxed);
 #endif
 
   x->syncObjData = syncData;

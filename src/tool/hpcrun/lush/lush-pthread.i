@@ -72,7 +72,7 @@
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
-#include <lib/prof-lean/atomic.h>
+//#include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/BalancedTree.h>
 #include <lib/prof-lean/QueuingRWLock.h>
@@ -95,10 +95,10 @@ extern "C" {
 //***************************************************************************
 
 #if (LUSH_DBG_STATS)
-extern long DBG_numLockAcq;
-extern long DBG_numLockAlloc;
-extern long DBG_maxLockAllocCur;
-extern long DBG_numLockFreelistCur;
+extern atomic_long DBG_numLockAcq;
+extern atomic_long DBG_numLockAlloc;
+extern atomic_long DBG_maxLockAllocCur;
+extern atomic_long DBG_numLockFreelistCur;
 #endif
 
 
@@ -151,15 +151,15 @@ typedef struct lushPthr {
   // -------------------------------------------------------
   // process wide metrics
   // -------------------------------------------------------
-  long* ps_num_procs;        // available processor cores
-  long* ps_num_threads;
+  atomic_long* ps_num_procs;        // available processor cores
+  atomic_long* ps_num_threads;
 
-  long* ps_num_working;      // working (W_l) + (W_c) + (W_o)
-  long* ps_num_working_lock; // working (W_l)
+  atomic_long* ps_num_working;      // working (W_l) + (W_c) + (W_o)
+  atomic_long* ps_num_working_lock; // working (W_l)
   //    ps_num_working_othr  // working (W_c) + (W_o)
 
   //    ps_num_idle_lock     // idleness (I_l)
-  long* ps_num_idle_cond;    // idleness (I_cl) + (I_cv)
+  atomic_long* ps_num_idle_cond;    // idleness (I_cl) + (I_cv)
 
   // -------------------------------------------------------
   // LUSH_PTHR_FN_TY == 3

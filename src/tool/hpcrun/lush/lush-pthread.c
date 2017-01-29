@@ -98,12 +98,12 @@ lushPthr_mem_ptr_t lushPthr_mem_ptr;
 
 
 #if (LUSH_DBG_STATS)
-long DBG_numLockAcq        = 0; // total lock acquires
+atomic_long DBG_numLockAcq        = 0; // total lock acquires
 
-long DBG_numLockAlloc      = 0; // total locks allocated
+atomic_long DBG_numLockAlloc      = 0; // total locks allocated
 
-long DBG_maxLockAllocCur    = 0; // max locks allocated simultaneously
-long DBG_numLockFreelistCur = 0; // number of (spin) locks cur. on freelists
+atomic_long DBG_maxLockAllocCur    = 0; // max locks allocated simultaneously
+atomic_long DBG_numLockFreelistCur = 0; // number of (spin) locks cur. on freelists
 #endif
 
 
@@ -114,14 +114,14 @@ long DBG_numLockFreelistCur = 0; // number of (spin) locks cur. on freelists
 
 typedef struct {
    
-  long ps_num_procs        GCC_ATTR_VAR_CACHE_ALIGN;
-  long ps_num_threads;
+  atomic_long ps_num_procs        GCC_ATTR_VAR_CACHE_ALIGN;
+  atomic_long ps_num_threads;
 
-  long ps_num_working      GCC_ATTR_VAR_CACHE_ALIGN;
+  atomic_long ps_num_working      GCC_ATTR_VAR_CACHE_ALIGN;
 
-  long ps_num_working_lock GCC_ATTR_VAR_CACHE_ALIGN;
+  atomic_long ps_num_working_lock GCC_ATTR_VAR_CACHE_ALIGN;
   
-  long ps_num_idle_cond    GCC_ATTR_VAR_CACHE_ALIGN;
+  atomic_long ps_num_idle_cond    GCC_ATTR_VAR_CACHE_ALIGN;
 
   // LUSH_PTHR_FN_TY == 3
   BalancedTree_t ps_syncObjToData; // synch-obj -> data
@@ -130,11 +130,11 @@ typedef struct {
 
 
 lushPthr_globals_t globals = {
-  .ps_num_procs = 0,
-  .ps_num_threads = 0,
-  .ps_num_working = 0,
-  .ps_num_working_lock = 0,
-  .ps_num_idle_cond = 0
+  .ps_num_procs = ATOMIC_VAR_INIT(0),
+  .ps_num_threads = ATOMIC_VAR_INIT(0),
+  .ps_num_working = ATOMIC_VAR_INIT(0),
+  .ps_num_working_lock = ATOMIC_VAR_INIT(0),
+  .ps_num_idle_cond = ATOMIC_VAR_INIT(0)
   // ps_syncObjToData
 };
 
@@ -149,13 +149,13 @@ lushPthr_processInit()
   // WARNING: At the moment, this routine is called *after*
   // lushPthr_init(), at least for the first thread.
 
-  globals.ps_num_procs   = sysconf(_SC_NPROCESSORS_ONLN);
-  globals.ps_num_threads = 0;
-  
-  globals.ps_num_working      = 0;
-  globals.ps_num_working_lock = 0;
+  atomic_store_explicit(&globals.ps_num_procs, sysconf(_SC_NPROCESSORS_ONLN), memory_order_relaxed);
+  atomic_store_explicit(&globals.ps_num_threads, 0, memory_order_relaxed);
+ 
+  atomic_store_explicit(&globals.ps_num_working, 0, memory_order_relaxed);
+  atomic_store_explicit(&globals.ps_num_working_lock, 0, memory_order_relaxed);
 
-  globals.ps_num_idle_cond    = 0;
+  atomic_store_explicit(&globals.ps_num_idle_cond, 0, memory_order_relaxed);
 
   // LUSH_PTHR_FN_TY == 3
   BalancedTree_init(&globals.ps_syncObjToData, hpcrun_malloc, 
@@ -238,8 +238,11 @@ lushPthr_dump(lushPthr_t* x, const char* nm, void* lock)
        "# wrking %ld, wrking_lck %ld, idle_cnd %ld | "
        "# procs %ld, threads %d",
        nm, x->is_working, x->num_locks, x->cond_lock,
-       *x->ps_num_working, *x->ps_num_working_lock, *x->ps_num_idle_cond,
-       *x->ps_num_procs, *x->ps_num_threads);
+       atomic_load_explicit(x->ps_num_working, memory_order_relaxed),
+       atomic_load_explicit(x->ps_num_working_lock, memory_order_relaxed),
+       atomic_load_explicit(x->ps_num_idle_cond, memory_order_relaxed),
+       atomic_load_explicit(x->ps_num_procs,  memory_order_relaxed),
+       atomic_load_explicit(x->ps_num_threads, memory_order_relaxed));
 #endif
 }
 
