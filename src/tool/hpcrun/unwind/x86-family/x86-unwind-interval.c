@@ -56,8 +56,6 @@
 
 #include <messages/messages.h>
 
-#include <lib/prof-lean/atomic-op.h>
-
 #define STR(s) case s: return #s
 
 
