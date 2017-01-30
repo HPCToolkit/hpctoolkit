@@ -96,6 +96,7 @@ pthread_pfq_writer(void *ndx)
     ++sum;
   }
   thread_sum[i] = sum;
+  thread_odds = num_odds;
   return NULL;
 }
 
