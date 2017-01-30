@@ -61,13 +61,17 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <linux/perf_event.h>
-
 #include <sys/syscall.h> 
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 
+
+/******************************************************************************
+ * linux specific headers
+ *****************************************************************************/
+#include <linux/perf_event.h>
+#include <linux/types.h>
 
 
 /******************************************************************************
@@ -151,15 +155,20 @@
 
 #define EVENT_DATA_CENTRIC "DATACENTRIC"
 
+
 //******************************************************************************
 // type declarations
 //******************************************************************************
 
+#ifndef u64
+typedef __u64 u64;
+#endif
+
 typedef struct perf_event_header pe_header_t;
 
 typedef struct perf_event_callchain_s {
-  uint64_t    nr;        /* number of IPs */ 
-  uint64_t    ips[];     /* vector of IPs */
+  u64 nr;        /* number of IPs */ 
+  u64 ips[];     /* vector of IPs */
 } pe_callchain_t;
 
 typedef struct perf_event_mmap_page pe_mmap_t;
@@ -325,12 +334,12 @@ perf_read_header(
 
 
 static inline int
-perf_read_uint64_t(
+perf_read_u64(
   pe_mmap_t *current_perf_mmap,
-  uint64_t *val
+  u64 *val
 )
 {
-  return perf_read(current_perf_mmap, val, sizeof(uint64_t));
+  return perf_read(current_perf_mmap, val, sizeof(u64));
 }
 
 
@@ -612,40 +621,33 @@ handle_struct_read_format(unsigned char *sample,
 //----------------------------------------------------------
 
 static cct_node_t *
-perf_sample_callchain(pe_mmap_t *current_perf_mmap, cct_node_t *leaf, 
-  long long *offset)
+perf_sample_callchain(pe_mmap_t *current_perf_mmap, cct_node_t *leaf)
 {
-  long long index    = *offset; // current index of mmap
   cct_node_t *parent = leaf;	// parent of the cct
-  uint64_t n_frames; 		// check of sample type
+  u64 n_frames; 		// check of sample type
 
   // determine how many frames in the call chain 
-  if (perf_read_uint64_t( current_perf_mmap, &n_frames) == 0) {
+  if (perf_read_u64( current_perf_mmap, &n_frames) == 0) {
+    if (n_frames > 0) {
+      // allocate space to receive IPs for kernel callchain 
+      u64 *ips = alloca(n_frames * sizeof(u64));
 
-	index += 8;
-	if (n_frames > 0) {
-	  // allocate space to receive IPs for kernel callchain 
-	  uint64_t *ips = alloca(n_frames * sizeof(uint64_t));
+      // read the IPs for the frames 
+      if (perf_read( current_perf_mmap, ips, n_frames * sizeof(u64)) == 0) {
 
-	  // read the IPs for the frames 
-	  if (perf_read( current_perf_mmap, ips, n_frames * sizeof(uint64_t)) == 0) {
-
-	    // add kernel IPs to the call chain top down, which is the 
-	    // reverse of the order in which they appear in ips
-	    for (int i = n_frames - 1; i > 0; i--) {
-	      ip_normalized_t npc = 
+	// add kernel IPs to the call chain top down, which is the 
+	// reverse of the order in which they appear in ips
+	for (int i = n_frames - 1; i > 0; i--) {
+	  ip_normalized_t npc = 
 		{ .lm_id = perf_kernel_lm_id, .lm_ip = ips[i] };
-	      cct_addr_t frm = { .ip_norm = npc };
-	      cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
-	      parent = child;
-
-	      index += 8;
-	    }
-	  } else {
-	    TMSG(LINUX_PERF, "unable to read all %d frames", n_frames );
-	  }
+	  cct_addr_t frm = { .ip_norm = npc };
+	  cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
+	  parent = child;
 	}
-	*offset = index;
+      } else {
+	TMSG(LINUX_PERF, "unable to read all %d frames", n_frames );
+      }
+    }
   } else {
     TMSG(LINUX_PERF, "unable to read the number of frames" );
   }
@@ -665,7 +667,6 @@ perf_add_kernel_callchain(
   pe_header_t hdr; 
   int current_event_index = (int) data_aux;
   pe_mmap_t *current_perf_mmap = perf_mmap[current_event_index];
-  uint64_t offset = 0;
 
   if (perf_read_header(current_perf_mmap, &hdr) == 0) {
     if (hdr.type == PERF_RECORD_SAMPLE) {
@@ -676,65 +677,48 @@ perf_add_kernel_callchain(
       int sample_type = current_event->sample_type;
 
       if (sample_type & PERF_SAMPLE_IP) {
-	uint64_t ip;
-	perf_read(&current_perf_mmap[offset], &ip, sizeof(uint64_t));
-	offset += 8;
+	u64 ip;
+	perf_read_u64(&current_perf_mmap, &ip);
       }
       if (sample_type & PERF_SAMPLE_TID) {
-	offset += 8;
       }
       if (sample_type & PERF_SAMPLE_TIME) {
-	offset += 8;
       }
       if (sample_type & PERF_SAMPLE_ADDR) {
-	uint64_t addr;
-	perf_read(&current_perf_mmap[offset], &addr, sizeof(uint64_t));
-	offset += 8;
+	u64 addr;
+	perf_read_u64(&current_perf_mmap, &addr);
       }
       if (sample_type & PERF_SAMPLE_ID) {
-	offset += 8;
       }
       if (sample_type & PERF_SAMPLE_STREAM_ID) {
-	offset += 8;
       }
       if (sample_type & PERF_SAMPLE_CPU) {
-	offset += 8;
       }
       if (sample_type & PERF_SAMPLE_PERIOD) {
-	offset += 8;
       }
       if (sample_type & PERF_SAMPLE_READ) {
-	uint64_t len = handle_struct_read_format(&current_perf_mmap[offset],
+	u64 len = handle_struct_read_format(&current_perf_mmap,
 			 current_event->read_format);
-	offset += len;
       }
       if (sample_type & PERF_SAMPLE_CALLCHAIN) {
 	// add call chain from the kernel
- 	parent = perf_sample_callchain(current_perf_mmap, parent, &offset);
+ 	parent = perf_sample_callchain(current_perf_mmap, parent);
       }
       if (sample_type & PERF_SAMPLE_RAW) {
-	offset += 8;
       }
       if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
-	offset += 8;
       }
       if (sample_type & PERF_SAMPLE_REGS_USER) {
-	offset += 8;
       }
       if (sample_type & PERF_SAMPLE_REGS_INTR) {
-	offset += 8;
       }
       if (sample_type & PERF_SAMPLE_STACK_USER) {
-	offset += 8;
       }
       if (sample_type & PERF_SAMPLE_WEIGHT) {
-	offset += 8;
       }
       if (sample_type & PERF_SAMPLE_DATA_SRC) {
-	offset += 8;
       }
       if (sample_type & PERF_SAMPLE_IDENTIFIER) {
-	offset += 8;
       }
     }
   }
