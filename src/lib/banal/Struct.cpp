@@ -267,7 +267,7 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 
 #if DEBUG_CFG_SOURCE
 static void
-debugStmt(VMA, string &, SrcFile::ln);
+debugStmt(VMA, int, string &, SrcFile::ln);
 
 #define DEBUG_MESG(expr)  std::cout << expr
 
@@ -1775,7 +1775,7 @@ buildStmts(Struct::LocationMgr& locMgr,
       new Prof::Struct::Stmt(NULL, line, line, vmaint.beg(), vmaint.end());
 
 #if DEBUG_CFG_SOURCE
-    debugStmt(vma, filenm, line);
+    debugStmt(vma, 0, filenm, line);
 #endif
 
     if (idesc.isSubr()) {
@@ -2630,7 +2630,7 @@ doBlock(ProcInfo pinfo, ParseAPI::Function * func,
 #endif
 
 #if DEBUG_CFG_SOURCE
-    debugStmt(vma, filenm, line);
+    debugStmt(vma, len, filenm, line);
 #endif
 
     addStmtToTree(root, strTab, vma, len, filenm, line);
@@ -3117,9 +3117,9 @@ debugPrettyName(const string & procnm)
 
 
 static void
-debugStmt(VMA vma, string & filenm, SrcFile::ln line)
+debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line)
 {
-  cout << INDENT << "stmt:  0x" << hex << vma << dec
+  cout << INDENT << "stmt:  0x" << hex << vma << dec << " (" << len << ")"
        << "  l=" << line << "  f='" << filenm << "'\n";
 
 #ifdef BANAL_USE_SYMTAB
@@ -3231,7 +3231,7 @@ debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
     for (int i = 1; i <= depth; i++) {
       cout << INDENT;
     }
-    cout << "stmt:  0x" << hex << sinfo->vma << dec
+    cout << "stmt:  0x" << hex << sinfo->vma << dec << " (" << sinfo->len << ")"
 	 << "  l=" << sinfo->line_num
 	 << "  f='" << strTab.index2str(sinfo->file_index) << "'\n";
   }

@@ -85,6 +85,7 @@
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/FileNameMap.hpp>
+#include <lib/support/FileUtil.hpp>
 #include <lib/support/realpath.h>
 #include <lib/support/StringTable.hpp>
 
@@ -264,7 +265,9 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 }
 
 
-// Add one terminal statement to the inline tree.
+// Add one terminal statement to the inline tree and merge with
+// adjacent stmts if their file and line match.
+//
 StmtInfo *
 addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
 	      int len, string & filenm, SrcFile::ln line)
@@ -291,17 +294,72 @@ addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
     }
   }
 
-  // add statement to last node in the sequence.  if there are
-  // duplicates, then keep the original.
-  auto sit = node->stmtMap.find(vma);
-  StmtInfo *info;
+  // add statement and merge with adjacent stmts if their file and
+  // line match.  note: we add single stmts one at a time.  one stmt
+  // may merge with an adjacent stmt, but we assume that it doesn't
+  // extend past its immediate neighbors.
 
+  long file_index = strTab.str2index(filenm);
+  long base_index = strTab.str2index(FileUtil::basename(filenm.c_str()));
+  StmtInfo *info = NULL;
+  StmtInfo *left = NULL;
+  StmtInfo *right = NULL;
+  VMA end_vma = vma + len;
+  VMA left_end = 0;
+
+  // find stmts left and right of vma, if they exist
+  auto sit = node->stmtMap.upper_bound(vma);
+
+  if (sit != node->stmtMap.begin()) {
+    auto it = sit;  --it;
+    left = it->second;
+    left_end = left->vma + left->len;
+  }
   if (sit != node->stmtMap.end()) {
-    info = sit->second;
+    right = sit->second;
+  }
+
+  // compare vma with stmt to the left
+  if (left == NULL || left_end < vma) {
+    // intervals don't overlap, insert new one
+    info = new StmtInfo(vma, len, file_index, base_index, line);
+    node->stmtMap[vma] = info;
+  }
+  else if (left->base_index == base_index && left->line_num == line) {
+    // intervals overlap and match file and line
+    // merge with left stmt
+    if (left_end < end_vma && (right == NULL || left_end < right->vma)) {
+      left->len = end_vma - left->vma;
+      info = left;
+    }
   }
   else {
-    info = new StmtInfo(strTab, vma, len, filenm, line);
-    node->stmtMap[vma] = info;
+    // intervals overlap but don't match file and line
+    // truncate interval to start at left_end and insert
+    if (left_end < end_vma && (right == NULL || left_end < right->vma)) {
+      vma = left_end;
+      len = end_vma - vma;
+      info = new StmtInfo(vma, len, file_index, base_index, line);
+      node->stmtMap[vma] = info;
+    }
+  }
+
+  // compare interval with stmt to the right
+  if (info != NULL && right != NULL && end_vma >= right->vma) {
+
+    if (right->base_index == base_index && right->line_num == line) {
+      // intervals overlap and match file and line
+      // merge with right stmt
+      end_vma = right->vma + right->len;
+      info->len = end_vma - info->vma;
+      node->stmtMap.erase(sit);
+      delete right;
+    }
+    else {
+      // intervals overlap but don't match file and line
+      // truncate info at right vma
+      info->len = right->vma - info->vma;
+    }
   }
 
   return info;

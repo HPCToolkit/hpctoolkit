@@ -175,7 +175,10 @@ public:
 };
 
 
-// Info for one terminal statement (vma) in the inline tree.
+// Info for one terminal statement (vma) in the inline tree.  Now used
+// for multiple, consecutive instructions, all with the same file and
+// line info.
+//
 class StmtInfo {
 public:
   VMA   vma;
