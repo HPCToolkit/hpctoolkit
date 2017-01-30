@@ -110,7 +110,7 @@ typedef struct lushPtr_SyncObjData {
     //pthread_mutex_t  mutexlock
   } lock GCC_ATTR_VAR_CACHE_ALIGN;
 
-  uint64_t idleness GCC_ATTR_VAR_CACHE_ALIGN;
+  atomic_uint_least64_t idleness GCC_ATTR_VAR_CACHE_ALIGN;
   void*    cct_node;
   bool isBlockingWork;
   bool isLocked;
@@ -123,7 +123,7 @@ typedef struct lushPtr_SyncObjData {
 static inline void 
 lushPtr_SyncObjData_init(lushPtr_SyncObjData_t* x)
 {
-  x->idleness = 0;
+  atomic_store_explicit(&x->idleness, 0, memory_order_relaxed);
   x->cct_node = NULL;
   x->isBlockingWork = false;
   x->isLocked = false;
