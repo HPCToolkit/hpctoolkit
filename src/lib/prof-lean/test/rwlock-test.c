@@ -109,7 +109,7 @@ addtest(int num_secs, int num_readers, int num_writers, const char msg[], void *
   pthread_t *thread = alloca((num_readers+num_writers) * sizeof(thread[0]));
   int *tsums = alloca((num_readers+num_writers) * sizeof(tsums[0]));
   thread_sum = &tsums[0];
-  int *todds = alloca((num_readers+num_writers) * sizeof(tsums[0]));
+  int *todds = alloca((num_readers+num_writers) * sizeof(todds[0]));
   thread_odds = todds;
 
   finished = 0;
