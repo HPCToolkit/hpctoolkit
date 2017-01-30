@@ -42,15 +42,19 @@ pthread_rwlock_writer(void *ndx)
 {
   int i = (int)(intptr_t)ndx;
   int sum = 0;
+  int num_odds = 0;
   pthread_barrier_wait(&barrier);
   while (!finished) {
     pthread_rwlock_wrlock(&rw_lock);
+    if (total_sum & 1)
+      ++num_odds;
     ++total_sum;
     ++total_sum;
     pthread_rwlock_unlock(&rw_lock);
     ++sum;
   }
   thread_sum[i] = sum;
+  thread_odds[i] = num_odds;
   return NULL;
 }
 
@@ -101,7 +105,7 @@ addtest(int num_secs, int num_readers, int num_writers, const char msg[], void *
   pthread_t *thread = alloca((num_readers+num_writers) * sizeof(thread[0]));
   int *tsums = alloca((num_readers+num_writers) * sizeof(tsums[0]));
   thread_sum = &tsums[0];
-  int *todds = alloca(num_readers * sizeof(tsums[0]));
+  int *todds = alloca((num_readers+num_writers) * sizeof(tsums[0]));
   thread_odds = todds;
 
   finished = 0;
@@ -135,7 +139,7 @@ addtest(int num_secs, int num_readers, int num_writers, const char msg[], void *
   maxOps = 0, minOps = INT_MAX;
   meanOps = 0., dMeanOps = 0., varOps = 0., dVarOps = 0.;
   for (i = 0; i < num_readers; ++i) {
-    printf("ops, odds counts for thread %d: %d %d\n", i, thread_sum[i], thread_odds[i]);
+    printf("ops, odds counts for reader thread %d: %d %d\n", i, thread_sum[i], thread_odds[i]);
     if (thread_sum[i] > maxOps)
       maxOps = thread_sum[i];
     if (thread_sum[i] < minOps)
@@ -163,7 +167,8 @@ addtest(int num_secs, int num_readers, int num_writers, const char msg[], void *
   maxOps = 0, minOps = INT_MAX;
   meanOps = 0., dMeanOps = 0., varOps = 0., dVarOps = 0.;
   for (i = 0; i < num_writers; ++i) {
-    printf("ops for thread %d: %d\n", i, thread_sum[i]);
+    printf("ops, odds counts for writer thread %d: %d %d\n", i,
+	   thread_sum[num_readers+i], thread_odds[num_readers+i]);
     if (thread_sum[i] > maxOps)
       maxOps = thread_sum[i];
     if (thread_sum[i] < minOps)
