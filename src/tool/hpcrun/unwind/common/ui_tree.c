@@ -195,7 +195,7 @@ uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
 
 #if UITREE_DEBUG
   ildmod_stat_t* ilmstat = ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi);
-  assert(ilmstat->stat == NEVER);  // should be a poisoned node
+  assert(atomic_load_explicit(&ilmstat->stat, memory_order_relaxed) == NEVER);  // should be a poisoned node
 #endif
   interval_t* interval = ilmstat_btuwi_pair_interval(ilmstat_btuwi);
   uintptr_t s0 = interval->start;
@@ -390,12 +390,14 @@ static ilmstat_btuwi_pair_t * uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr
 	return NULL;
 
   ildmod_stat_t *ilmstat = ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi);
-  switch(ilmstat->stat) {
+  tree_stat_t deferred = DEFERRED;
+  switch(atomic_load_explicit(&ilmstat->stat, memory_order_relaxed)) {
   case NEVER:
 	// addr is in the range of some poisoned load module
 	return NULL;
   case DEFERRED:
-	if (compare_and_swap_bool(&(ilmstat->stat), DEFERRED, FORTHCOMING)) {
+      if (atomic_compare_exchange_strong_explicit(&ilmstat->stat, &deferred, FORTHCOMING,
+						  memory_order_relaxed, memory_order_relaxed)) {
 	  // it is my responsibility to build the tree of intervals for the function
 	  void *fcn_start = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->start;
 	  void *fcn_end   = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->end;

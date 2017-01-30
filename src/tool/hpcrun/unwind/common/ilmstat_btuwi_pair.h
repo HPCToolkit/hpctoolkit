@@ -95,7 +95,7 @@ ilmstat_btuwi_pair_loadmod(ilmstat_btuwi_pair_t* itp)
 inline tree_stat_t
 ilmstat_btuwi_pair_stat(ilmstat_btuwi_pair_t* itp)
 {
-  return ilmstat_btuwi_pair_ilmstat(itp)->stat;
+  return atomic_load_explicit(&ilmstat_btuwi_pair_ilmstat(itp)->stat, memory_order_relaxed);
 }
 
 uw_recipe_t*
@@ -114,7 +114,8 @@ ilmstat_btuwi_pair_set_btuwi(ilmstat_btuwi_pair_t* itp, bitree_uwi_t* tree)
 inline void
 ilmstat_btuwi_pair_set_status(ilmstat_btuwi_pair_t* itp, tree_stat_t stat)
 {
-  ((ildmod_stat_t*)itp->ilmstat_btuwi->first)->stat = stat;
+  ildmod_stat_t *ildmod = (ildmod_stat_t*)itp->ilmstat_btuwi->first;
+  atomic_store_explicit(&ildmod->stat, stat, memory_order_relaxed);
 }
 
 inline void

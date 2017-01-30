@@ -42,7 +42,7 @@ ildmod_stat_new(interval_ldmod_pair_t *key,  tree_stat_t treestat,
 {
   ildmod_stat_t* result = (ildmod_stat_t*)m_alloc(sizeof(ildmod_stat_t));
   result->ildmod = key;
-  result->stat = treestat;
+  atomic_store_explicit(&result->stat, treestat, memory_order_relaxed);
   return result;
 }
 
@@ -68,7 +68,7 @@ ildmod_stat_tostr(void* ilms, char str[])
   ildmod_stat_t* ildmod_stat = (ildmod_stat_t*)ilms;
   interval_ldmod_pair_tostr(ildmod_stat->ildmod, str);
   char statstr[MAX_STAT_STR];
-  treestat_tostr(ildmod_stat->stat, statstr);
+  treestat_tostr(atomic_load_explicit(&ildmod_stat->stat, memory_order_relaxed), statstr);
   strcat(str, " ");
   strcat(str, statstr);
   strcat(str, ")");
