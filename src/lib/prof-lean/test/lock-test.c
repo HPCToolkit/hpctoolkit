@@ -178,7 +178,6 @@ addtest(int num_secs, int num_threads, const char msg[], void *(*adder)(void *))
   printf("avg ops: %10.5f\n", meanOps);
   printf("stddev ops: %10.5f\n", sqrt(varOps/(num_threads - 1)));
   printf("total ops: %d\n", total_sum / 2);
-
 }
 
 static int
