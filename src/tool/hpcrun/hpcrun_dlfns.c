@@ -66,7 +66,6 @@
 #include "thread_data.h"
 
 #include <messages/messages.h>
-#include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/spinlock.h>
 #include <monitor.h>
 
@@ -95,17 +94,17 @@
 // locks for the benefit of the fnbounds functions.
 //
 static spinlock_t dlopen_lock = SPINLOCK_UNLOCKED;
-static volatile long dlopen_num_readers = 0;
+static atomic_long dlopen_num_readers = ATOMIC_VAR_INIT(0);
 static volatile long dlopen_num_writers = 0;
 static int  dlopen_writer_tid = -1;
-static long num_dlopen_pending = 0;
+static atomic_long num_dlopen_pending = ATOMIC_VAR_INIT(0);
 
 
 // We use this only in the DLOPEN_RISKY case.
 long
 hpcrun_dlopen_pending(void)
 {
-  return num_dlopen_pending;
+  return atomic_load_explicit(&num_dlopen_pending, memory_order_relaxed);
 }
 
 
@@ -129,7 +128,7 @@ hpcrun_dlopen_write_lock(void)
 
   // Wait for any readers to finish.
   if (! ENABLED(DLOPEN_RISKY)) {
-    while (dlopen_num_readers > 0) ;
+    while (atomic_load_explicit(&dlopen_num_readers, memory_order_relaxed) > 0) ;
   }
 }
 
@@ -146,7 +145,7 @@ hpcrun_dlopen_write_unlock(void)
 static void
 hpcrun_dlopen_downgrade_lock(void)
 {
-  atomic_add_i64(&dlopen_num_readers, 1L);
+  atomic_fetch_add_explicit(&dlopen_num_readers, 1L, memory_order_relaxed);
   dlopen_num_writers = 0;
 }
 
@@ -160,7 +159,7 @@ hpcrun_dlopen_read_lock(void)
 
   spinlock_lock(&dlopen_lock);
   if (dlopen_num_writers == 0 || ENABLED(DLOPEN_RISKY)) {
-    atomic_add_i64(&dlopen_num_readers, 1L);
+    atomic_fetch_add_explicit(&dlopen_num_readers, 1L, memory_order_relaxed);
     acquire = 1;
   }
   spinlock_unlock(&dlopen_lock);
@@ -172,7 +171,7 @@ hpcrun_dlopen_read_lock(void)
 void
 hpcrun_dlopen_read_unlock(void)
 {
-  atomic_add_i64(&dlopen_num_readers, -1L);
+  atomic_fetch_add_explicit(&dlopen_num_readers, -1L, memory_order_relaxed);
 }
 
 
@@ -180,7 +179,7 @@ void
 hpcrun_pre_dlopen(const char *path, int flags)
 {
   hpcrun_dlopen_write_lock();
-  atomic_add_i64(&num_dlopen_pending, 1L);
+  atomic_fetch_add_explicit(&num_dlopen_pending, 1L, memory_order_relaxed);
   TD_GET(inside_dlfcn) = true;
 }
 
@@ -200,7 +199,7 @@ hpcrun_dlopen(const char *module_name, int flags, void *handle)
     hpcrun_dlopen_downgrade_lock();
   }
   fnbounds_map_open_dsos();
-  atomic_add_i64(&num_dlopen_pending, -1L);
+  atomic_fetch_add_explicit(&num_dlopen_pending, -1L, memory_order_relaxed);
   if (outermost) {
     TD_GET(inside_dlfcn) = false;
     hpcrun_dlopen_read_unlock();
