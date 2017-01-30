@@ -1015,8 +1015,9 @@ static inline atomic_pthread_spinlock_t*
 lushPthr_spinDestroy_pre_ty3(lushPthr_t* restrict x, 
 			     atomic_pthread_spinlock_t* restrict lock)
 {
-  atomic_pthread_spinlock_t* real_lock = atomic_load_explicit(lock, memory_order_relaxed);
-  if (lushPthr_isSyncDataPointer(real_lock)) {
+  atomic_pthread_spinlock_t* real_lock = lock;
+  int lockval = atomic_load_explicit(real_lock, memory_order_relaxed);
+  if (lushPthr_isSyncDataPointer(lockval)) {
     lushPtr_SyncObjData_t* syncData = lushPthr_getSyncDataPointer(*lock);
     real_lock = &syncData->lock.spin;
   }
