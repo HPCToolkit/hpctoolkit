@@ -82,8 +82,6 @@
 #  include "fnbounds_interface.h"
 #  include "ui_tree.h"
 
-#include <lib/prof-lean/atomic-op.h>
-
 #else
 
 // hpcrun includes
