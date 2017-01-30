@@ -82,7 +82,6 @@
 
 #include <messages/messages.h>
 
-#include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 
