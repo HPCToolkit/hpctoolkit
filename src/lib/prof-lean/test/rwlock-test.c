@@ -83,10 +83,13 @@ pthread_pfq_writer(void *ndx)
 {
   int i = (int)(intptr_t)ndx;
   int sum = 0;
+  int num_odds = 0;
   pthread_barrier_wait(&barrier);
   while (!finished) {
     pfq_rwlock_node_t me;
     pfq_rwlock_write_lock(&pfq_lock, &me);
+    if (total_sum & 1)
+      ++num_odds;
     ++total_sum;
     ++total_sum;
     pfq_rwlock_write_unlock(&pfq_lock, &me);
