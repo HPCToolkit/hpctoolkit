@@ -13,6 +13,7 @@
 static volatile int finished;
 static volatile int total_sum;
 static int *thread_sum;
+static int *thread_odds;
 static pthread_barrier_t barrier;
 static pthread_mutex_t mutex;
 static pthread_spinlock_t spinlock;
@@ -24,12 +25,16 @@ sync_add_test(void *ndx)
 {
   int i = (int)(intptr_t)ndx;
   int sum = 0;
+  int num_odds = 0;
   pthread_barrier_wait(&barrier);
   while (!finished) {
-    __sync_add_and_fetch(&total_sum, 1);
+    if (total_sum & 1)
+      ++num_odds;
+    __sync_add_and_fetch(&total_sum, 2);
     ++sum;
   }
   thread_sum[i] = sum;
+  thread_odds[i] = num_odds;
   return NULL;
 }
 
@@ -38,14 +43,19 @@ pthread_mutex_test(void *ndx)
 {
   int i = (int)(intptr_t)ndx;
   int sum = 0;
+  int num_odds = 0;
   pthread_barrier_wait(&barrier);
   while (!finished) {
     pthread_mutex_lock(&mutex);
+    if (total_sum & 1)
+      ++num_odds;
+    ++total_sum;
     ++total_sum;
     pthread_mutex_unlock(&mutex);
     ++sum;
   }
   thread_sum[i] = sum;
+  thread_odds[i] = num_odds;
   return NULL;
 }
 
@@ -54,14 +64,19 @@ pthread_spin_test(void *ndx)
 {
   int i = (int)(intptr_t)ndx;
   int sum = 0;
+  int num_odds = 0;
   pthread_barrier_wait(&barrier);
   while (!finished) {
     pthread_spin_lock(&spinlock);
+    if (total_sum & 1)
+      ++num_odds;
+    ++total_sum;
     ++total_sum;
     pthread_spin_unlock(&spinlock);
     ++sum;
   }
   thread_sum[i] = sum;
+  thread_odds[i] = num_odds;
   return NULL;
 }
 
@@ -70,15 +85,20 @@ pthread_mcs_test(void *ndx)
 {
   int i = (int)(intptr_t)ndx;
   int sum = 0;
+  int num_odds = 0;
   pthread_barrier_wait(&barrier);
   while (!finished) {
     mcs_node_t me;
     mcs_lock(&m_c_s_lock, &me);
+    if (total_sum & 1)
+      ++num_odds;
+    ++total_sum;
     ++total_sum;
     mcs_unlock(&m_c_s_lock, &me);
     ++sum;
   }
   thread_sum[i] = sum;
+  thread_odds[i] = num_odds;
   return NULL;
 }
 
@@ -87,14 +107,19 @@ our_spinlock_test(void *ndx)
 {
   int i = (int)(intptr_t)ndx;
   int sum = 0;
+  int num_odds = 0;
   pthread_barrier_wait(&barrier);
   while (!finished) {
     spinlock_lock(&spin_lock);
+    if (total_sum & 1)
+      ++num_odds;
+    ++total_sum;
     ++total_sum;
     spinlock_unlock(&spin_lock);
     ++sum;
   }
   thread_sum[i] = sum;
+  thread_odds[i] = num_odds;
   return NULL;
 }
 
@@ -107,6 +132,8 @@ addtest(int num_secs, int num_threads, const char msg[], void *(*adder)(void *))
   pthread_t *adder_thread = alloca(num_threads * sizeof(adder_thread[0]));
   int *tsums = alloca(num_threads * sizeof(tsums[0]));
   thread_sum = &tsums[0];
+  int *todds = alloca(num_threads * sizeof(todds[0]));
+  thread_odds = todds;
 
   finished = 0;
   total_sum = 0;
@@ -127,7 +154,7 @@ addtest(int num_secs, int num_threads, const char msg[], void *(*adder)(void *))
       fprintf(stderr, "Error finishing thread %d\n", i);
       exit(-1);
     }
-    printf("ops for thread %d: %d\n", i, thread_sum[i]);
+    printf("ops, odds counts for reader thread %d: %d %d\n", i, thread_sum[i], thread_odds[i]);
     if (thread_sum[i] > maxOps)
       maxOps = thread_sum[i];
     if (thread_sum[i] < minOps)
@@ -150,7 +177,7 @@ addtest(int num_secs, int num_threads, const char msg[], void *(*adder)(void *))
   printf("max ops: %d\n", maxOps);
   printf("avg ops: %10.5f\n", meanOps);
   printf("stddev ops: %10.5f\n", sqrt(varOps/(num_threads - 1)));
-  printf("total ops: %d\n", total_sum);
+  printf("total ops: %d\n", total_sum / 2);
 
 }
 
