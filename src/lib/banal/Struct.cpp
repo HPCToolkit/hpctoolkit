@@ -2734,6 +2734,20 @@ findLoopHeader(ProcInfo pinfo, ParseAPI::Function * func, TreeNode * root,
     FLPIndex flp = root->nodeMap.begin()->first;
 
     // look for loop cond at this level
+    for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
+      VMA vma = cit->first;
+      auto it = root->stmtMap.upper_bound(vma);
+
+      if (it != root->stmtMap.begin()) {
+	--it;
+	StmtInfo *sinfo = it->second;
+	if (sinfo->vma <= vma && vma < sinfo->vma + sinfo->len) {
+	  goto found_level;
+	}
+      }
+    }
+
+#if 0
     for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
       if (sit->second->base_index == flp.base_index) {
 	auto it = clist.find(sit->first);
@@ -2743,6 +2757,7 @@ findLoopHeader(ProcInfo pinfo, ParseAPI::Function * func, TreeNode * root,
 	}
       }
     }
+#endif
 
     for (auto sit = stmts.begin(); sit != stmts.end(); ++sit) {
       if (sit->second->base_index == flp.base_index) {
