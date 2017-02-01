@@ -269,13 +269,12 @@ perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
 // stop all events
 //----------------------------------------------------------
 static void
-perf_stop()
+perf_stop(int num_event)
 {
-//  if (!perf_initialized) return;
-
-  if (perf_thread_fd[0]) {
+  if (perf_thread_fd[num_event]) {
     monitor_real_pthread_sigmask(SIG_BLOCK, &sig_mask, NULL);
-    ioctl(perf_thread_fd[0], PERF_EVENT_IOC_DISABLE, 0);
+    // disable the counter
+    ioctl(perf_thread_fd[num_event], PERF_EVENT_IOC_DISABLE, 0);
   }
 }
 
@@ -884,8 +883,11 @@ METHOD_FN(stop)
     return;
   }
 
-  perf_stop();
-
+  int nevents = (self->evl).nevents; 
+  for (int i=0; i<nevents; i++)
+  {
+    perf_stop(i);
+  }
   thread_data_t* td = hpcrun_get_thread_data();
   td->ss_state[self->sel_idx] = STOP;
 
