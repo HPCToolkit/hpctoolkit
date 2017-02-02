@@ -72,6 +72,7 @@
  *****************************************************************************/
 #include <linux/perf_event.h>
 #include <linux/types.h>
+#include <linux/version.h>
 
 
 /******************************************************************************
@@ -668,6 +669,8 @@ perf_add_kernel_callchain(
       struct perf_event_attr *current_event = &(events[current_event_index]);
       int sample_type = current_event->sample_type;
 
+      if (sample_type & PERF_SAMPLE_IDENTIFIER) {
+      }
       if (sample_type & PERF_SAMPLE_IP) {
 	u64 ip;
 	perf_read_u64(current_perf_mmap, &ip);
@@ -702,19 +705,22 @@ perf_add_kernel_callchain(
       }
       if (sample_type & PERF_SAMPLE_REGS_USER) {
       }
-#if 0
-      // only available since kernel 3.19
-      if (sample_type & PERF_SAMPLE_REGS_INTR) {
-      }
-#endif
       if (sample_type & PERF_SAMPLE_STACK_USER) {
       }
       if (sample_type & PERF_SAMPLE_WEIGHT) {
       }
       if (sample_type & PERF_SAMPLE_DATA_SRC) {
       }
-      if (sample_type & PERF_SAMPLE_IDENTIFIER) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,13,0)
+      // only available since kernel 3.19
+      if (sample_type & PERF_SAMPLE_TRANSACTION) {
       }
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,19,0)
+      // only available since kernel 3.19
+      if (sample_type & PERF_SAMPLE_REGS_INTR) {
+      }
+#endif
     }
   }
 
