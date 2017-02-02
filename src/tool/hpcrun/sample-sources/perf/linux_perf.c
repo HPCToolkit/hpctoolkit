@@ -154,7 +154,7 @@
 #define RAW_IBS_OP      2
 
 #define EVENT_DATA_CENTRIC "DATACENTRIC"
-
+#define DATA_CENTRIC_ID 1
 
 //******************************************************************************
 // type declarations
@@ -173,7 +173,10 @@ typedef struct perf_event_callchain_s {
 
 typedef struct perf_event_mmap_page pe_mmap_t;
 
-
+typedef struct event_predefined_s {
+  const char *name;
+  u64 id;
+} event_predefined_t;
 
 /******************************************************************************
  * external thread-local variables
@@ -209,6 +212,7 @@ static int perf_event_handler(
 // local variables
 //******************************************************************************
 
+static event_predefined_t events_predefined[] = {{EVENT_DATA_CENTRIC, DATA_CENTRIC_ID} };
 
 static uint16_t perf_kernel_lm_id;
 
@@ -246,8 +250,6 @@ static int perf_unavail = 0;
 int                         __thread perf_thread_fd[MAX_EVENTS];
 pe_mmap_t                   __thread *perf_mmap[MAX_EVENTS];
 
-int                         __thread current_event_index;
-
 
 //******************************************************************************
 // private operations 
@@ -264,6 +266,21 @@ perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
 }
 
 
+// return the ID of the predefined event if the name matches
+// return -1 otherwise
+static int
+getPredefinedEventID(const char *event_name)
+{
+  int elems = sizeof(events_predefined) / sizeof(event_predefined_t);
+  
+  for (int i=0; i<elems; i++) {
+    const char  *event = events_predefined[i].name;
+    if (strncmp(event, event_name, strlen(event)) == 0) {
+      return events_predefined[i].id;
+    }
+  }
+  return -1;
+}
 
 //----------------------------------------------------------
 // stop all events
@@ -423,7 +440,7 @@ perf_attr_init(
 
 #ifdef ENABLE_PERFMON
   if (strcmp(name, EVENT_DATA_CENTRIC)==0) {
-    sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID | PERF_SAMPLE_TIME;
+    sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID ;
   } else 
   if (!pfmu_getEventCode(name, &event_code)) {
      EMSG("Linux perf event not recognized: %s", name);
@@ -555,62 +572,38 @@ perf_thread_fini(int nevents)
 //----------------------------------------------------------
 // special mmap buffer reading for PERF_SAMPLE_READ
 //----------------------------------------------------------
-static int 
-handle_struct_read_format(unsigned char *sample,
-             int read_format) {
-
-  int offset=0,i;
+static void
+handle_struct_read_format( pe_mmap_t *perf_mmap, int read_format) 
+{
+  u64 value, id, nr, time_enabled, time_running;
 
   if (read_format & PERF_FORMAT_GROUP) {
-    long long nr,time_enabled,time_running;
+    perf_read_u64(perf_mmap, &nr);
+  } else {
+    perf_read_u64(perf_mmap, &value);
+  }
+  
+  if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
+    perf_read_u64(perf_mmap, &time_enabled);
+  }
+  if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING) {
+    perf_read_u64(perf_mmap, &time_running);
+  }
 
-    memcpy(&nr,&sample[offset],sizeof(long long));
-    offset+=8;
-
-    if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
-      memcpy(&time_enabled,&sample[offset],sizeof(long long));
-      offset+=8;
-    }
-    if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING) {
-      memcpy(&time_running,&sample[offset],sizeof(long long));
-      offset+=8;
-    }
-
-    for(i=0;i<nr;i++) {
-      long long value, id;
-
-      memcpy(&value,&sample[offset],sizeof(long long));
-      offset+=8;
+  if (read_format & PERF_FORMAT_GROUP) {
+    for(int i=0;i<nr;i++) {
+      perf_read_u64(perf_mmap, &value);
 
       if (read_format & PERF_FORMAT_ID) {
-        memcpy(&id,&sample[offset],sizeof(long long));
-        offset+=8;
+        perf_read_u64(perf_mmap, &id);
       }
-
     }
   }
   else {
-
-    long long value,time_enabled,time_running,id;
-
-    memcpy(&value,&sample[offset],sizeof(long long));
-    offset+=8;
-
-    if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
-      memcpy(&time_enabled,&sample[offset],sizeof(long long));
-      offset+=8;
-    }
-    if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING) {
-      memcpy(&time_running,&sample[offset],sizeof(long long));
-      offset+=8;
-    }
     if (read_format & PERF_FORMAT_ID) {
-      memcpy(&id,&sample[offset],sizeof(long long));
-      offset+=8;
+      perf_read_u64(perf_mmap, &id);
     }
   }
-
-  return offset;
 }
 
 
@@ -664,7 +657,7 @@ perf_add_kernel_callchain(
 {
   cct_node_t *parent = leaf;
   pe_header_t hdr; 
-  int current_event_index = (int) data_aux;
+  int current_event_index = *((int*) data_aux);
   pe_mmap_t *current_perf_mmap = perf_mmap[current_event_index];
 
   if (perf_read_header(current_perf_mmap, &hdr) == 0) {
@@ -677,7 +670,7 @@ perf_add_kernel_callchain(
 
       if (sample_type & PERF_SAMPLE_IP) {
 	u64 ip;
-	perf_read_u64(&current_perf_mmap, &ip);
+	perf_read_u64(current_perf_mmap, &ip);
       }
       if (sample_type & PERF_SAMPLE_TID) {
       }
@@ -685,7 +678,7 @@ perf_add_kernel_callchain(
       }
       if (sample_type & PERF_SAMPLE_ADDR) {
 	u64 addr;
-	perf_read_u64(&current_perf_mmap, &addr);
+	perf_read_u64(current_perf_mmap, &addr);
       }
       if (sample_type & PERF_SAMPLE_ID) {
       }
@@ -696,7 +689,7 @@ perf_add_kernel_callchain(
       if (sample_type & PERF_SAMPLE_PERIOD) {
       }
       if (sample_type & PERF_SAMPLE_READ) {
-	u64 len = handle_struct_read_format(&current_perf_mmap,
+	handle_struct_read_format(current_perf_mmap,
 			 current_event->read_format);
       }
       if (sample_type & PERF_SAMPLE_CALLCHAIN) {
@@ -935,19 +928,23 @@ METHOD_FN(supports_event, const char *ev_str)
     METHOD_CALL(self, init);
   }
 
-  bool ret;
+  // first, check if the event is a predefined event
+  bool ret = getPredefinedEventID(ev_str) >= 0;
 
+  // this is not a predefined event, we need to consult to perfmon (if enabled)
+  if (!ret) {
 #ifdef ENABLE_PERFMON
-  long thresh;
-  char ev_tmp[1024];
-  if (! hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, DEFAULT_THRESHOLD)) {
-    AMSG("WARNING: %s using default threshold %ld, "
+    long thresh;
+    char ev_tmp[1024];
+    if (! hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, DEFAULT_THRESHOLD)) {
+      AMSG("WARNING: %s using default threshold %ld, "
    	"better to use an explicit threshold.", ev_str, DEFAULT_THRESHOLD);
-  }
-  ret = pfmu_isSupported(ev_tmp);
+    }
+    ret = pfmu_isSupported(ev_tmp);
 #else
-  ret = (strncmp(event_name, ev_str, strlen(event_name)) == 0); 
+    ret = (strncmp(event_name, ev_str, strlen(event_name)) == 0); 
 #endif
+  }
 
   TMSG(LINUX_PERF, "supports event %s", (ret? "OK" : "FAIL"));
   return ret;
@@ -1135,13 +1132,8 @@ perf_event_handler(
 
   // store the metric if the metric index is correct
   if ( index >= 0 ) {
-    // TODO: hack solution to point to the mmap of the current event
-    // a more reliable way to do this is to pass by argument to hpcrun_sample
-    // however, this solution requires too much changes
-    current_event_index = index;
-
     sample_val_t sv = hpcrun_sample_callpath(context, metric_id[index], 1,
-					   0/*skipInner*/, 0/*isSync*/, (void*) index);
+					   0/*skipInner*/, 0/*isSync*/, (void*) &index);
 
     blame_shift_apply(metric_id[index], sv.sample_node, 1 /*metricIncr*/);
   } else {
