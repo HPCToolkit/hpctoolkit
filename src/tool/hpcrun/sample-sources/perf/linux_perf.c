@@ -721,9 +721,12 @@ perf_add_kernel_callchain(
       if (sample_type & PERF_SAMPLE_REGS_USER) {
 	offset += 8;
       }
+#if 0
+      // only available since kernel 3.19
       if (sample_type & PERF_SAMPLE_REGS_INTR) {
 	offset += 8;
       }
+#endif
       if (sample_type & PERF_SAMPLE_STACK_USER) {
 	offset += 8;
       }
