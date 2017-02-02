@@ -176,7 +176,7 @@ mcs_unlock(mcs_lock_t *l, mcs_node_t *me)
     // another thread is writing me->next to define itself as our successor;
     // wait for it to finish that
     //------------------------------------------------------------------
-    while (mcs_nul !=
+    while (mcs_nil !=
 	   (successor = atomic_load_explicit(&me->next, memory_order_acquire)));
   }
 
