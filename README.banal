@@ -29,6 +29,8 @@ To-do list and known issues.
 
 (1) Change StmtInfo from a single instruction VMA to a range of
 multiple instructions.
+---> mostly done, except for handling the rare case of inserting a new
+---> interval that spans several existing intervals.
 
 (2) Write struct file directly from TreeNode instead of converting to
 a scope tree.

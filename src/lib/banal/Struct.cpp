@@ -2425,7 +2425,7 @@ deleteInlinePrefix(TreeNode * root, Inline::InlineSeqn prefix, HPC::StringTable 
 
       // statements
       for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
-	stmts[sit->first] = sit->second;
+	stmts.insert(sit->second);
       }
       root->stmtMap.clear();
 
@@ -2451,7 +2451,7 @@ deleteInlinePrefix(TreeNode * root, Inline::InlineSeqn prefix, HPC::StringTable 
 
   // reattach the stmts and loops
   for (auto sit = stmts.begin(); sit != stmts.end(); ++sit) {
-    root->stmtMap[sit->first] = sit->second;
+    root->stmtMap.insert(sit->second);
   }
   stmts.clear();
 
@@ -2736,42 +2736,21 @@ findLoopHeader(ProcInfo pinfo, ParseAPI::Function * func, TreeNode * root,
     // look for loop cond at this level
     for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
       VMA vma = cit->first;
-      auto it = root->stmtMap.upper_bound(vma);
 
-      if (it != root->stmtMap.begin()) {
-	--it;
-	StmtInfo *sinfo = it->second;
-	if (sinfo->vma <= vma && vma < sinfo->vma + sinfo->len) {
-	  goto found_level;
-	}
+      if (cit->second.is_cond && root->stmtMap.member(vma)) {
+	goto found_level;
       }
-    }
 
-#if 0
-    for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
-      if (sit->second->base_index == flp.base_index) {
-	auto it = clist.find(sit->first);
-
-	if (it != clist.end() && it->second.is_cond) {
-	  goto found_level;
-	}
-      }
-    }
-#endif
-
-    for (auto sit = stmts.begin(); sit != stmts.end(); ++sit) {
-      if (sit->second->base_index == flp.base_index) {
-	auto it = clist.find(sit->first);
-
-	if (it != clist.end() && it->second.is_cond) {
-	  goto found_level;
-	}
+      // reparented stmts must also match file name
+      StmtInfo * sinfo = stmts.findStmt(vma);
+      if (cit->second.is_cond && sinfo != NULL && sinfo->base_index == flp.base_index) {
+	goto found_level;
       }
     }
 
     // reparent the stmts and proceed to the next level
     for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
-      stmts[sit->first] = sit->second;
+      stmts.insert(sit->second);
     }
     root->stmtMap.clear();
 
@@ -2796,7 +2775,7 @@ found_level:
   // fixme: want to attach some stmts below this level
 
   for (auto sit = stmts.begin(); sit != stmts.end(); ++sit) {
-    root->stmtMap[sit->first] = sit->second;
+    root->stmtMap.insert(sit->second);
   }
   stmts.clear();
 
@@ -2861,12 +2840,12 @@ found_file:
     }
 
     // min of loop cond stmts
-    for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
-      VMA vma = sit->first;
-      StmtInfo *info = sit->second;
+    for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
+      VMA vma = cit->first;
+      StmtInfo *info = root->stmtMap.findStmt(vma);
 
-      if (info->base_index == base_ans && info->line_num < line_ans
-	  && clist.find(vma) != clist.end()) {
+      if (cit->second.is_cond && info != NULL && info->base_index == base_ans
+	  && info->line_num < line_ans) {
 	line_ans = info->line_num;
       }
     }
@@ -2882,8 +2861,9 @@ found_file:
     for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
       VMA vma = sit->first;
       StmtInfo *info = sit->second;
-      auto it = clist.find(vma);
-      int score = (it != clist.end()) ? it->second.score : 0;
+      auto it = clist.lower_bound(vma);
+      int score = (it != clist.end() && info->member(it->first))
+                   ? it->second.score : 0;
 
       if (score > max_score) {
 	max_score = score;

@@ -264,11 +264,94 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
   return ret;
 }
 
+//***************************************************************************
+
+// Insert one statement range into the map.
+//
+// Note: we pass the stmt info in 'sinfo', but we don't link sinfo
+// itself into the map.  Instead, insert a copy.
+//
+void
+StmtMap::insert(StmtInfo * sinfo)
+{
+  if (sinfo == NULL) {
+    return;
+  }
+
+  VMA  vma = sinfo->vma;
+  VMA  end_vma = vma + sinfo->len;
+  long file = sinfo->file_index;
+  long base = sinfo->base_index;
+  long line = sinfo->line_num;
+
+  StmtInfo * info = NULL;
+  StmtInfo * left = NULL;
+  StmtInfo * right = NULL;
+  VMA left_end = 0;
+
+  // fixme: this is the single interval implementation (for now).
+  // one stmt may merge with an adjacent stmt, but we assume that it
+  // doesn't extend past its immediate neighbors.
+
+  // find stmts left and right of vma, if they exist
+  auto sit = this->upper_bound(vma);
+
+  if (sit != this->begin()) {
+    auto it = sit;  --it;
+    left = it->second;
+    left_end = left->vma + left->len;
+  }
+  if (sit != this->end()) {
+    right = sit->second;
+  }
+
+  // compare vma with stmt to the left
+  if (left == NULL || left_end < vma) {
+    // intervals don't overlap, insert new one
+    info = new StmtInfo(vma, end_vma - vma, file, base, line);
+    (*this)[vma] = info;
+  }
+  else if (left->base_index == base && left->line_num == line) {
+    // intervals overlap and match file and line
+    // merge with left stmt
+    end_vma = std::max(end_vma, left_end);
+    left->len = end_vma - left->vma;
+    info = left;
+  }
+  else {
+    // intervals overlap but don't match file and line
+    // truncate interval to start at left_end and insert
+    if (left_end < end_vma && (right == NULL || left_end < right->vma)) {
+      vma = left_end;
+      info = new StmtInfo(vma, end_vma - vma, file, base, line);
+      (*this)[vma] = info;
+    }
+  }
+
+  // compare interval with stmt to the right
+  if (info != NULL && right != NULL && end_vma >= right->vma) {
+
+    if (right->base_index == base && right->line_num == line) {
+      // intervals overlap and match file and line
+      // merge with right stmt
+      end_vma = right->vma + right->len;
+      info->len = end_vma - info->vma;
+      this->erase(sit);
+      delete right;
+    }
+    else {
+      // intervals overlap but don't match file and line
+      // truncate info at right vma
+      info->len = right->vma - info->vma;
+    }
+  }
+}
+
 
 // Add one terminal statement to the inline tree and merge with
 // adjacent stmts if their file and line match.
 //
-StmtInfo *
+void
 addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
 	      int len, string & filenm, SrcFile::ln line)
 {
@@ -294,75 +377,12 @@ addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
     }
   }
 
-  // add statement and merge with adjacent stmts if their file and
-  // line match.  note: we add single stmts one at a time.  one stmt
-  // may merge with an adjacent stmt, but we assume that it doesn't
-  // extend past its immediate neighbors.
+  // insert statement at this level
+  long file = strTab.str2index(filenm);
+  long base = strTab.str2index(FileUtil::basename(filenm.c_str()));
+  StmtInfo info(vma, len, file, base, line);
 
-  long file_index = strTab.str2index(filenm);
-  long base_index = strTab.str2index(FileUtil::basename(filenm.c_str()));
-  StmtInfo *info = NULL;
-  StmtInfo *left = NULL;
-  StmtInfo *right = NULL;
-  VMA end_vma = vma + len;
-  VMA left_end = 0;
-
-  // find stmts left and right of vma, if they exist
-  auto sit = node->stmtMap.upper_bound(vma);
-
-  if (sit != node->stmtMap.begin()) {
-    auto it = sit;  --it;
-    left = it->second;
-    left_end = left->vma + left->len;
-  }
-  if (sit != node->stmtMap.end()) {
-    right = sit->second;
-  }
-
-  // compare vma with stmt to the left
-  if (left == NULL || left_end < vma) {
-    // intervals don't overlap, insert new one
-    info = new StmtInfo(vma, len, file_index, base_index, line);
-    node->stmtMap[vma] = info;
-  }
-  else if (left->base_index == base_index && left->line_num == line) {
-    // intervals overlap and match file and line
-    // merge with left stmt
-    if (left_end < end_vma && (right == NULL || left_end < right->vma)) {
-      left->len = end_vma - left->vma;
-      info = left;
-    }
-  }
-  else {
-    // intervals overlap but don't match file and line
-    // truncate interval to start at left_end and insert
-    if (left_end < end_vma && (right == NULL || left_end < right->vma)) {
-      vma = left_end;
-      len = end_vma - vma;
-      info = new StmtInfo(vma, len, file_index, base_index, line);
-      node->stmtMap[vma] = info;
-    }
-  }
-
-  // compare interval with stmt to the right
-  if (info != NULL && right != NULL && end_vma >= right->vma) {
-
-    if (right->base_index == base_index && right->line_num == line) {
-      // intervals overlap and match file and line
-      // merge with right stmt
-      end_vma = right->vma + right->len;
-      info->len = end_vma - info->vma;
-      node->stmtMap.erase(sit);
-      delete right;
-    }
-    else {
-      // intervals overlap but don't match file and line
-      // truncate info at right vma
-      info->len = right->vma - info->vma;
-    }
-  }
-
-  return info;
+  node->stmtMap.insert(&info);
 }
 
 
@@ -378,14 +398,8 @@ mergeInlineStmts(TreeNode * dest, TreeNode * src)
   }
 
   for (auto sit = src->stmtMap.begin(); sit != src->stmtMap.end(); ++sit) {
-    VMA vma = sit->first;
-    auto dit = dest->stmtMap.find(vma);
-
-    if (dit == dest->stmtMap.end()) {
-      dest->stmtMap[vma] = sit->second;
-    }
+    dest->stmtMap.insert(sit->second);
   }
-
   src->stmtMap.clear();
 }
 
