@@ -79,7 +79,7 @@ mcs_lock(mcs_lock_t *l, mcs_node_t *me)
   //--------------------------------------------------------------------
   // initialize my queue node
   //--------------------------------------------------------------------
-  atomic_store_explicit(&me->next, mcs_nil, memory_order_relaxed);
+  atomic_init(&me->next, mcs_nil);
 
   //--------------------------------------------------------------------
   // install my node at the tail of the lock queue.
@@ -94,11 +94,11 @@ mcs_lock(mcs_lock_t *l, mcs_node_t *me)
   //--------------------------------------------------------------------
   // if I have a predecessor, wait until it signals me
   //--------------------------------------------------------------------
-  if (predecessor) {
+  if (predecessor != mcs_nil) {
     //------------------------------------------------------------------
     // prepare to block until signaled by my predecessor
     //------------------------------------------------------------------
-    atomic_store_explicit(&me->blocked, true, memory_order_relaxed);
+    atomic_init(&me->blocked, true);
 
     //------------------------------------------------------------------
     // link behind my predecessor
@@ -130,9 +130,9 @@ mcs_trylock(mcs_lock_t *l, mcs_node_t *me)
   // if the tail pointer is nil, swap it with a pointer to me, which
   // acquires the lock and installs myself at the tail of the queue.
   // note: the acq_rel ordering ensures that
-  // (1) rel: my store of me->next above completes before the CAS
-  // (2) acq: any accesses after the CAS can't begin until after the CAS
-  //     completes.
+  // (1) rel: my store of me->next above completes before the exchange
+  // (2) acq: any accesses after the exchange can't begin until after
+  //     the exchange completes.
   //--------------------------------------------------------------------
   mcs_node_t* oldme = mcs_nil;
   return
@@ -145,11 +145,9 @@ mcs_trylock(mcs_lock_t *l, mcs_node_t *me)
 void
 mcs_unlock(mcs_lock_t *l, mcs_node_t *me)
 {
-  struct mcs_node_s* successor = atomic_load_explicit(&me->next, memory_order_relaxed);
+  struct mcs_node_s* successor = atomic_load_explicit(&me->next, memory_order_acquire);
 
-  if (successor == mcs_nil)
-    atomic_thread_fence(memory_order_acquire);
-  else {
+  if (successor == mcs_nil) {
     //--------------------------------------------------------------------
     // I don't currently have a successor, so I may be at the tail
     //--------------------------------------------------------------------
@@ -157,8 +155,8 @@ mcs_unlock(mcs_lock_t *l, mcs_node_t *me)
     //--------------------------------------------------------------------
     // if my node is at the tail of the queue, attempt to remove myself
     // note: release order below on success guarantees that all accesses
-    //       above the CAS must complete before the CAS if the CAS unlinks
-    //       me from the tail of the queue
+    //       above the exchange must complete before the exchange if the
+    //       exchange unlinks me from the tail of the queue
     //--------------------------------------------------------------------
     mcs_node_t* oldme = me;
 
@@ -176,8 +174,7 @@ mcs_unlock(mcs_lock_t *l, mcs_node_t *me)
     // another thread is writing me->next to define itself as our successor;
     // wait for it to finish that
     //------------------------------------------------------------------
-    while (mcs_nil !=
-	   (successor = atomic_load_explicit(&me->next, memory_order_acquire)));
+    while (mcs_nil == (successor = atomic_load_explicit(&me->next, memory_order_acquire)));
   }
 
   atomic_store_explicit(&successor->blocked, false, memory_order_release);
