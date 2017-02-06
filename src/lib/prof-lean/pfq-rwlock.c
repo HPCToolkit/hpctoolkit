@@ -121,29 +121,26 @@ pfq_rwlock_init(pfq_rwlock_t *l)
 void
 pfq_rwlock_read_lock(pfq_rwlock_t *l)
 {
-  uint32_t ticket = atomic_fetch_add_explicit(&l->rin, READER_INCREMENT, memory_order_relaxed);
+  uint32_t ticket = atomic_fetch_add_explicit(&l->rin, READER_INCREMENT, memory_order_acq_rel);
 
   if (ticket & WRITER_PRESENT) {
     uint32_t phase = ticket & PHASE_BIT;
-    while (atomic_load_explicit(&l->writer_blocking_readers[phase].bit, memory_order_relaxed));
+    while (atomic_load_explicit(&l->writer_blocking_readers[phase].bit, memory_order_acquire));
   }
-  atomic_thread_fence(memory_order_release);
 }
 
 
 void
 pfq_rwlock_read_unlock(pfq_rwlock_t *l)
 {
-  atomic_thread_fence(memory_order_acquire);
-  uint32_t ticket = atomic_fetch_add_explicit(&l->rout, READER_INCREMENT, memory_order_relaxed);
+  uint32_t ticket = atomic_fetch_add_explicit(&l->rout, READER_INCREMENT, memory_order_acq_rel);
 
   if (ticket & WRITER_PRESENT) {
     //----------------------------------------------------------------------------
     // finish reading counter before reading last
     //----------------------------------------------------------------------------
-    atomic_thread_fence(memory_order_acquire);
-    if (ticket == atomic_load_explicit(&l->last, memory_order_relaxed))
-      atomic_store_explicit(&l->whead->blocked, false, memory_order_relaxed);
+    if (ticket == atomic_load_explicit(&l->last, memory_order_acquire))
+      atomic_store_explicit(&l->whead->blocked, false, memory_order_release);
   }
 }
 
@@ -170,18 +167,17 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // set writer_blocking_readers to block any readers in the next batch
   //--------------------------------------------------------------------
   uint32_t phase = atomic_load_explicit(&l->rin, memory_order_relaxed) & PHASE_BIT;
-  atomic_store_explicit(&l->writer_blocking_readers[phase].bit, true, memory_order_relaxed); 
+  atomic_store_explicit(&l->writer_blocking_readers[phase].bit, true, memory_order_release); 
 
   //----------------------------------------------------------------------------
   // store to writer_blocking_headers bit must complete before incrementing rin
   //----------------------------------------------------------------------------
-  atomic_thread_fence(memory_order_release);
 
   //--------------------------------------------------------------------
   // acquire an "in" sequence number to see how many readers arrived
   // set the WRITER_PRESENT bit so subsequent readers will wait
   //--------------------------------------------------------------------
-  uint32_t in = atomic_fetch_add_explicit(&l->rin, WRITER_PRESENT, memory_order_relaxed);
+  uint32_t in = atomic_fetch_or_explicit(&l->rin, WRITER_PRESENT, memory_order_acq_rel);
 
   //--------------------------------------------------------------------
   // save the ticket that the last reader will see
@@ -194,19 +190,19 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // set the WRITER_PRESENT bit so the last reader will know to signal
   // it is responsible for signaling the waiting writer
   //-------------------------------------------------------------
-  uint32_t out = atomic_fetch_or_explicit(&l->rout, WRITER_PRESENT, memory_order_relaxed);
+  uint32_t out = atomic_fetch_or_explicit(&l->rout, WRITER_PRESENT, memory_order_acq_rel);
 
   //--------------------------------------------------------------------
   // if any reads are active, wait for last reader to signal me
   //--------------------------------------------------------------------
   if (in != out) {
-    while (atomic_load_explicit(&me->blocked, memory_order_relaxed)); // wait for active reads to drain
+    while (atomic_load_explicit(&me->blocked, memory_order_acquire));
+    // wait for active reads to drain
 
     //--------------------------------------------------------------------------
     // store to writer_blocking headers bit must complete before notifying
     // readers of writer
     //--------------------------------------------------------------------------
-    atomic_thread_fence(memory_order_release);
   }
 }
 
@@ -214,21 +210,21 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 void
 pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 {
-  atomic_thread_fence(memory_order_acquire);
   //--------------------------------------------------------------------
   // toggle phase and clear WRITER_PRESENT in rin. No synch issues
   // since there are no concurrent updates of the low-order byte
   //--------------------------------------------------------------------
-  atomic_uchar *lsb = (atomic_uchar *)LSB_PTR(&l->rin);
-  uint32_t phase = atomic_fetch_xor_explicit(lsb, WRITER_MASK, memory_order_relaxed) & PHASE_BIT;
+  unsigned char *lsb = LSB_PTR(&l->rin);
+  uint32_t phase = *lsb & PHASE_BIT;
+  *lsb ^= WRITER_MASK;
 
   //--------------------------------------------------------------------
   // toggle phase and clear WRITER_PRESENT in rout. No synch issues
   // since the low-order byte modified here isn't modified again until
   // another writer has the mcs_lock.
   //--------------------------------------------------------------------
-  lsb = (atomic_uchar *)LSB_PTR(&l->rout);
-  atomic_fetch_xor_explicit(lsb, WRITER_MASK, memory_order_relaxed);
+  lsb = LSB_PTR(&l->rout);
+  *lsb ^= WRITER_MASK;
 
   //----------------------------------------------------------------------------
   // clearing writer present in rin can be reordered with writer_blocking_readers set below
@@ -238,7 +234,7 @@ pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   //--------------------------------------------------------------------
   // clear writer_blocking_readers to release waiting readers in the current read phase
   //--------------------------------------------------------------------
-  atomic_store_explicit(&l->writer_blocking_readers[phase].bit, false, memory_order_relaxed);
+  atomic_store_explicit(&l->writer_blocking_readers[phase].bit, false, memory_order_release);
 
   //--------------------------------------------------------------------
   // pass writer lock to next writer
