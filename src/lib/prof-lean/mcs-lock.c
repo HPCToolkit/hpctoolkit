@@ -134,7 +134,7 @@ mcs_trylock(mcs_lock_t *l, mcs_node_t *me)
   // (2) acq: any accesses after the exchange can't begin until after
   //     the exchange completes.
   //--------------------------------------------------------------------
-  mcs_node_t* oldme = mcs_nil;
+  mcs_node_t *oldme = mcs_nil;
   return
     atomic_compare_exchange_strong_explicit(&l->tail, &oldme, me,
 					    memory_order_acq_rel,
@@ -145,7 +145,7 @@ mcs_trylock(mcs_lock_t *l, mcs_node_t *me)
 void
 mcs_unlock(mcs_lock_t *l, mcs_node_t *me)
 {
-  struct mcs_node_s* successor = atomic_load_explicit(&me->next, memory_order_acquire);
+  mcs_node_t *successor = atomic_load_explicit(&me->next, memory_order_acquire);
 
   if (successor == mcs_nil) {
     //--------------------------------------------------------------------
@@ -158,7 +158,7 @@ mcs_unlock(mcs_lock_t *l, mcs_node_t *me)
     //       above the exchange must complete before the exchange if the
     //       exchange unlinks me from the tail of the queue
     //--------------------------------------------------------------------
-    mcs_node_t* oldme = me;
+    mcs_node_t *oldme = me;
 
     if (atomic_compare_exchange_strong_explicit(&l->tail, &oldme, mcs_nil,
 						memory_order_release,
