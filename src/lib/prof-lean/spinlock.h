@@ -88,32 +88,8 @@ typedef struct spinlock_s {
 static inline void
 spinlock_init(spinlock_t *l)
 {
-  atomic_store_explicit(&l->thelock, SPINLOCK_UNLOCKED_VALUE, memory_order_relaxed);
+  atomic_init(&l->thelock, SPINLOCK_UNLOCKED_VALUE);
 }
-
-/*
- * Note: powerpc needs two memory barriers: isync at the end of _lock
- * and lwsync at the beginning of _unlock.  See JohnMC's Comp 422
- * slides on "IBM Power Weak Memory Model."
- *
- * Technically, the isync could be moved to the assembly code for
- * fetch_and_store().
- */
-static inline
-void 
-spinlock_lock(spinlock_t *l)
-{
-  /* test-and-test-and-set lock */
-  for(;;) {
-    while (atomic_load_explicit(&l->thelock, memory_order_relaxed) != SPINLOCK_UNLOCKED_VALUE);
-
-    if (atomic_exchange_explicit(&l->thelock, SPINLOCK_LOCKED_VALUE, memory_order_relaxed) == SPINLOCK_UNLOCKED_VALUE) {
-      break;
-    }
-  }
-  atomic_thread_fence(memory_order_acquire);
-}
-
 
 static inline
 void 
@@ -130,6 +106,19 @@ spinlock_is_locked(spinlock_t *l)
   return (atomic_load_explicit(&l->thelock, memory_order_relaxed) != SPINLOCK_UNLOCKED_VALUE);
 }
 
+static inline
+void 
+spinlock_lock(spinlock_t *l)
+{
+  /* test-and-set lock */
+  long old_lockval = SPINLOCK_UNLOCKED_VALUE;
+  while (!atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, SPINLOCK_LOCKED_VALUE,
+						memory_order_acquire, memory_order_relaxed)) {
+    old_lockval = SPINLOCK_UNLOCKED_VALUE;
+  }
+}
+
+
 // deadlock avoiding lock primitives:
 //
 // test-and-test-and-set lock acquisition, but make a bounded 
@@ -144,19 +133,18 @@ static inline
 bool
 limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 {
-  for(size_t i=0;;i++) {
-    if (limit && (i > limit))
-      return false;
-    while (atomic_load_explicit(&l->thelock, memory_order_relaxed) != SPINLOCK_UNLOCKED_VALUE) {
-      if (limit && (i > limit))
-	return false;
-      i++;
-    }
-    if (atomic_exchange_explicit(&l->thelock, SPINLOCK_LOCKED_VALUE, memory_order_relaxed) == SPINLOCK_UNLOCKED_VALUE)
-      break;
+  if (limit == 0) {
+    spinlock_lock(l);
+    return true;
   }
-  atomic_thread_fence(memory_order_acquire);
-  return true;
+
+  long old_lockval = SPINLOCK_UNLOCKED_VALUE;
+  while (limit-- > 0 &&
+	 !atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, SPINLOCK_LOCKED_VALUE,
+						memory_order_acquire, memory_order_relaxed)) {
+    old_lockval = SPINLOCK_UNLOCKED_VALUE;
+  }
+  return (limit + 1 > 0);
 }
 
 //
@@ -172,17 +160,14 @@ static inline
 bool
 hwt_cas_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 {
-  for(;;) {
+  long old_lockval = SPINLOCK_UNLOCKED_VALUE;
+  while (!atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, locked_val,
+						memory_order_acquire, memory_order_relaxed)) {
     // if we are already locked by the same id, prevent deadlock by
     // abandoning lock acquisition
-    while (atomic_load_explicit(&l->thelock, memory_order_relaxed) != SPINLOCK_UNLOCKED_VALUE) {
-      if (atomic_load_explicit(&l->thelock, memory_order_relaxed) == locked_val)
-	return false;
-    }
-    long unlocked = SPINLOCK_UNLOCKED_VALUE;
-    if (atomic_compare_exchange_strong_explicit(&l->thelock, &unlocked, locked_val,
-						memory_order_acquire, memory_order_relaxed))
-      break;
+    if (old_lockval == locked_val)
+      return false;
+    old_lockval = SPINLOCK_UNLOCKED_VALUE;
   }
   return true;
 }
@@ -205,21 +190,19 @@ static inline
 bool
 hwt_limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 {
-  for(size_t i=0;;i++) {
+  if (limit == 0)
+    return hwt_cas_spinlock_lock(l, limit, locked_val);
+
+  long old_lockval = SPINLOCK_UNLOCKED_VALUE;
+  while (limit-- > 0 &&
+	 !atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, locked_val,
+						memory_order_acquire, memory_order_relaxed)) {
     // if we are already locked by the same id, prevent deadlock by
     // abandoning lock acquisition
-    while (atomic_load_explicit(&l->thelock, memory_order_relaxed) != SPINLOCK_UNLOCKED_VALUE) {
-      if (atomic_load_explicit(&l->thelock, memory_order_relaxed) == locked_val)
-	return false;
-      if (limit && (i > limit))
-	return false;
-      i++;
-    }
-    long unlocked = SPINLOCK_UNLOCKED_VALUE;
-    if (atomic_compare_exchange_strong_explicit(&l->thelock, &unlocked, locked_val,
-						memory_order_acquire, memory_order_relaxed))
-      break;
+    if (old_lockval == locked_val)
+      return false;
+    old_lockval = SPINLOCK_UNLOCKED_VALUE;
   }
-  return true;
+  return (limit + 1 > 0);
 }
 #endif // prof_lean_spinlock_h
