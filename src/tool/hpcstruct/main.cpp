@@ -76,8 +76,6 @@ using std::endl;
 #include "Args.hpp"
 
 #include <lib/banal/Struct.hpp>
-
-#include <lib/prof/Struct-Tree.hpp>
 #include <lib/prof-lean/hpcio.h>
 
 #include <lib/binutils/Demangler.hpp>
@@ -89,13 +87,11 @@ using std::endl;
 #include <lib/support/RealPathMgr.hpp>
 
 
-
 //******************************************************************************
 // macros
 //******************************************************************************
 
 #define CXX_DEMANGLER_FN_NAME "__cxa_demangle"
-
 
 
 //*************************** Forward Declarations ***************************
@@ -211,10 +207,10 @@ realmain(int argc, char* argv[])
   // ------------------------------------------------------------
 
   const char* osnm = (args.out_filenm == "-") ? NULL : args.out_filenm.c_str();
-  std::ostream* os = IOUtil::OpenOStream(osnm);
+  std::ostream* outFile = IOUtil::OpenOStream(osnm);
   char* outBuf = new char[HPCIO_RWBufferSz];
 
-  std::streambuf* os_buf = os->rdbuf();
+  std::streambuf* os_buf = outFile->rdbuf();
   os_buf->pubsetbuf(outBuf, HPCIO_RWBufferSz);
 
   std::ostream* dotFile = NULL;
@@ -248,35 +244,23 @@ realmain(int argc, char* argv[])
   else if (args.lush_agent == "agent-cilk") {
     procNameMgr = new CilkNameMgr;
   }
-  
-  Prof::Struct::Root* rootStrct = new Prof::Struct::Root("");
-  Prof::Struct::Tree* strctTree = new Prof::Struct::Tree("", rootStrct);
 
-  using namespace BAnal::Struct;
-  Prof::Struct::LM* lmStrct = makeStructure(lm, dotFile,
-					    args.cfgRequest,
-					    args.doNormalizeTy,
-					    args.isIrreducibleIntervalLoop,
-					    args.isForwardSubstitution,
-					    procNameMgr,
-					    args.dbgProcGlob);
-  lmStrct->link(rootStrct);
-  
-  Prof::Struct::writeXML(*os, *strctTree, args.prettyPrintOutput);
-  IOUtil::CloseStream(os);
+  makeStructure(lm, outFile, dotFile,
+		args.cfgRequest, args.doNormalizeTy,
+		args.isIrreducibleIntervalLoop,
+		args.isForwardSubstitution,
+		procNameMgr, args.dbgProcGlob);
+
+  // Cleanup
+  delete lm;
+
+  IOUtil::CloseStream(outFile);
+  delete[] outBuf;
 
   if (dotFile != NULL) {
     IOUtil::CloseStream(dotFile);
+    delete[] dotBuf;
   }
-  
-  // Cleanup
 
-  delete strctTree;
-  delete lm;
-  delete[] outBuf;
-  
   return (0);
 }
-
-//****************************************************************************
-

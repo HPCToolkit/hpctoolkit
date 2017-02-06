@@ -113,6 +113,7 @@ using std::string;
 #include "Linemap.hpp"
 #include "Struct.hpp"
 #include "Struct-LocationMgr.hpp"
+#include "Struct-Output.hpp"
 
 #include <lib/prof/Struct-Tree.hpp>
 #include <lib/prof/Struct-TreeIterator.hpp>
@@ -628,6 +629,7 @@ makeStructure_OA(BinUtil::LM * lm,
 
 static Prof::Struct::LM *
 makeStructure_ParseAPI(BinUtil::LM * lm,
+		       std::ostream * outFile,
 		       std::ostream * dotFile,
 		       NormTy doNormalizeTy,
 		       bool isIrrIvalLoop,
@@ -655,6 +657,8 @@ makeStructure_ParseAPI(BinUtil::LM * lm,
     code_obj->parse();
   }
 
+  Output::printStructBegin(outFile);
+
   // 1. Build Struct::File/Struct::Proc skeletal structure
   ProcInfoVec * pvec = buildLMSkeleton(lmStruct, lm, code_obj, procNmMgr);
 
@@ -664,6 +668,8 @@ makeStructure_ParseAPI(BinUtil::LM * lm,
   for (auto it = pvec->begin(); it != pvec->end(); ++it) {
     doFunctionList(symtab, lmStruct, *it, strTab, procNmMgr);
   }
+
+  Output::printStructEnd(outFile);
 
   // delete pvec and the func lists
   for (auto it = pvec->begin(); it != pvec->end(); ++it) {
@@ -677,10 +683,10 @@ makeStructure_ParseAPI(BinUtil::LM * lm,
     bool doNormalizeUnsafe = (doNormalizeTy == NormTy_All);
     normalize(lmStruct, doNormalizeUnsafe);
   }
-#endif
 
   // FIXME: write this directly in StmtInfo and TreeNode format.
   coalesceDuplicateStmts(lmStruct, false);
+#endif
 
   // 4. Write CFG in dot (graphviz) format to file.
   if (dotFile != NULL) {
@@ -704,6 +710,7 @@ makeStructure_ParseAPI(BinUtil::LM * lm,
 //
 Prof::Struct::LM*
 BAnal::Struct::makeStructure(BinUtil::LM* lm,
+			     std::ostream * outFile,
 			     std::ostream * dotFile,
 			     int cfgRequest,
 			     NormTy doNormalizeTy,
@@ -733,7 +740,7 @@ BAnal::Struct::makeStructure(BinUtil::LM* lm,
 
   default:
 #ifdef BANAL_USE_PARSEAPI
-    lmStruct = makeStructure_ParseAPI(lm, dotFile, doNormalizeTy, isIrrIvalLoop,
+    lmStruct = makeStructure_ParseAPI(lm, outFile, dotFile, doNormalizeTy, isIrrIvalLoop,
 				      isFwdSubst, procNmMgr, dbgProcGlob);
 #else
     DIAG_EMsg("hpcstruct was not compiled with ParseAPI");
@@ -2313,6 +2320,7 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
 	 << "'  parse='" << func->name() << "'\n";
 #endif
 
+#if 0
     // multiple funcs get their own proc/file scope nodes
     if (num > 1) {
       procScope = makeProcScope(lm, pinfo, func, root, blist, strTab);
@@ -2330,7 +2338,6 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
     }
 
     // fixme: may or may not use these
-#if 0
     coalesceAlienChildren(procScope);
     renumberAlienScopes(procScope);
 #endif

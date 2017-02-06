@@ -78,6 +78,7 @@ MYSOURCES = \
 	Linemap.hpp Linemap.cpp \
 	Struct.hpp Struct.cpp \
 	StructSimple.hpp StructSimple.cpp \
+	Struct-Output.cpp \
 	Struct-LocationMgr.hpp Struct-LocationMgr.cpp
 
 SIMPLE_SRCS = StructSimple.hpp StructSimple.cpp

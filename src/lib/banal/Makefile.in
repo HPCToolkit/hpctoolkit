@@ -145,12 +145,12 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCbanal_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__libHPCbanal_la_SOURCES_DIST = Linemap.hpp Linemap.cpp Struct.hpp \
-	Struct.cpp StructSimple.hpp StructSimple.cpp \
+	Struct.cpp StructSimple.hpp StructSimple.cpp Struct-Output.cpp \
 	Struct-LocationMgr.hpp Struct-LocationMgr.cpp \
 	Struct-Inline.hpp Struct-Inline.cpp OAInterface.hpp \
 	OAInterface.cpp
 am__objects_1 = libHPCbanal_la-Linemap.lo libHPCbanal_la-Struct.lo \
-	libHPCbanal_la-StructSimple.lo \
+	libHPCbanal_la-StructSimple.lo libHPCbanal_la-Struct-Output.lo \
 	libHPCbanal_la-Struct-LocationMgr.lo
 am__objects_2 = libHPCbanal_la-Struct-Inline.lo
 @OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@am__objects_3 = $(am__objects_2)
@@ -527,6 +527,7 @@ MYSOURCES = \
 	Linemap.hpp Linemap.cpp \
 	Struct.hpp Struct.cpp \
 	StructSimple.hpp StructSimple.cpp \
+	Struct-Output.cpp \
 	Struct-LocationMgr.hpp Struct-LocationMgr.cpp
 
 SIMPLE_SRCS = StructSimple.hpp StructSimple.cpp
@@ -625,6 +626,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-OAInterface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-Struct-Inline.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-Struct-LocationMgr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-Struct-Output.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-Struct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-StructSimple.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_simple_la-StructSimple.Plo@am__quote@
@@ -670,6 +672,13 @@ libHPCbanal_la-StructSimple.lo: StructSimple.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='StructSimple.cpp' object='libHPCbanal_la-StructSimple.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbanal_la-StructSimple.lo `test -f 'StructSimple.cpp' || echo '$(srcdir)/'`StructSimple.cpp
+
+libHPCbanal_la-Struct-Output.lo: Struct-Output.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-Struct-Output.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-Struct-Output.Tpo -c -o libHPCbanal_la-Struct-Output.lo `test -f 'Struct-Output.cpp' || echo '$(srcdir)/'`Struct-Output.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbanal_la-Struct-Output.Tpo $(DEPDIR)/libHPCbanal_la-Struct-Output.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Struct-Output.cpp' object='libHPCbanal_la-Struct-Output.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbanal_la-Struct-Output.lo `test -f 'Struct-Output.cpp' || echo '$(srcdir)/'`Struct-Output.cpp
 
 libHPCbanal_la-Struct-LocationMgr.lo: Struct-LocationMgr.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-Struct-LocationMgr.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-Struct-LocationMgr.Tpo -c -o libHPCbanal_la-Struct-LocationMgr.lo `test -f 'Struct-LocationMgr.cpp' || echo '$(srcdir)/'`Struct-LocationMgr.cpp

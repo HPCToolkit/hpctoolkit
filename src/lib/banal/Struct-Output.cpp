@@ -44,76 +44,59 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
+// This file writes an hpcstruct file directly from the internal
+// TreeNode format (Struct-Inline.hpp) to an output stream without
+// using the Prof::Struct objects (prof/Struct-Tree.hpp).
 //
-// File:
-//   $HeadURL$
+// Notes:
+// 1. Opening the file and creating the ostream is handled in
+// tool/hpcstruct/main.c and lib/support/IOUtil.hpp.
 //
-// Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
-//***************************************************************************
-
-#ifndef BAnal_Struct_hpp
-#define BAnal_Struct_hpp
-
-//************************* System Include Files ****************************
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h> 
-
-#include <lib/prof/Struct-Tree.hpp>
-
-#include <lib/binutils/LM.hpp>
-
-#include <lib/support/ProcNameMgr.hpp>
-
+// 2. We allow outFile = NULL to mean that we don't want output.
 
 //***************************************************************************
+
+#include <ostream>
+
+#include "Struct-Inline.hpp"
+#include "Struct-Output.hpp"
+
+using namespace std;
+
+static const char * hpcstruct_xml_head =
+#include <lib/xml/hpc-structure.dtd.h>
+  ;
+
+//----------------------------------------------------------------------
 
 namespace BAnal {
+namespace Output {
 
-namespace Struct {
+void
+printStructBegin(ostream *outFile)
+{
+  if (outFile == NULL) {
+    return;
+  }
 
-  enum CFG {
-    CFG_DEFAULT = 1,
-    CFG_OA,
-    CFG_PARSEAPI
-  };
+  *outFile << "<?xml version=\"1.0\"?>\n"
+	   << "<!DOCTYPE HPCToolkitStructure [\n"
+	   << hpcstruct_xml_head
+	   << "]>\n"
+	   << "<HPCToolkitStructure i=\"0\" version=\"4.6\" n=\"\">\n";
 
-  enum NormTy {
-    // TODO: redo along the lines of BinUtil::LM::ReadFlg
-    NormTy_None,
-    NormTy_Safe, // Safe-only
-    NormTy_All
-  };
-
-  Prof::Struct::LM* 
-  makeStructure(BinUtil::LM* lm, 
-		std::ostream * outFile,
-		std::ostream * dotFile,
-		int cfgRequest,
-		NormTy doNormalizeTy,
-		bool isIrrIvalLoop = false,
-		bool isFwdSubst = false,
-		ProcNameMgr* procNameMgr = NULL,
-		const std::string& dbgProcGlob = "");
-  
-  Prof::Struct::Stmt*
-  makeStructureSimple(Prof::Struct::LM* lmStrct, BinUtil::LM* lm, VMA vma);
+  *outFile << "\n\n";
+}
 
 
-  bool 
-  normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe = true);
+void printStructEnd(ostream *outFile)
+{
+  if (outFile == NULL) {
+    return;
+  }
 
-} // namespace Struct
+  *outFile << "</HPCToolkitStructure>\n";
+}
 
-} // namespace BAnal
-
-//****************************************************************************
-
-#endif // BAnal_Struct_hpp
+}  // namespace Output
+}  // namespace BAnal

@@ -44,76 +44,23 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File:
-//   $HeadURL$
-//
-// Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
-//***************************************************************************
-
-#ifndef BAnal_Struct_hpp
-#define BAnal_Struct_hpp
-
-//************************* System Include Files ****************************
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h> 
-
-#include <lib/prof/Struct-Tree.hpp>
-
-#include <lib/binutils/LM.hpp>
-
-#include <lib/support/ProcNameMgr.hpp>
-
+// This file defines the API for writing an hpcstruct file directly
+// from the TreeNode format.
 
 //***************************************************************************
+
+#ifndef Banal_Struct_Output_hpp
+#define Banal_Struct_Output_hpp
+
+#include <ostream>
 
 namespace BAnal {
+namespace Output {
 
-namespace Struct {
+void printStructBegin(std::ostream *);
+void printStructEnd(std::ostream *);
 
-  enum CFG {
-    CFG_DEFAULT = 1,
-    CFG_OA,
-    CFG_PARSEAPI
-  };
+}  // namespace Output
+}  // namespace BAnal
 
-  enum NormTy {
-    // TODO: redo along the lines of BinUtil::LM::ReadFlg
-    NormTy_None,
-    NormTy_Safe, // Safe-only
-    NormTy_All
-  };
-
-  Prof::Struct::LM* 
-  makeStructure(BinUtil::LM* lm, 
-		std::ostream * outFile,
-		std::ostream * dotFile,
-		int cfgRequest,
-		NormTy doNormalizeTy,
-		bool isIrrIvalLoop = false,
-		bool isFwdSubst = false,
-		ProcNameMgr* procNameMgr = NULL,
-		const std::string& dbgProcGlob = "");
-  
-  Prof::Struct::Stmt*
-  makeStructureSimple(Prof::Struct::LM* lmStrct, BinUtil::LM* lm, VMA vma);
-
-
-  bool 
-  normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe = true);
-
-} // namespace Struct
-
-} // namespace BAnal
-
-//****************************************************************************
-
-#endif // BAnal_Struct_hpp
+#endif
