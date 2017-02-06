@@ -71,7 +71,6 @@
  * linux specific headers
  *****************************************************************************/
 #include <linux/perf_event.h>
-#include <linux/types.h>
 #include <linux/version.h>
 
 
@@ -110,6 +109,7 @@
 #include "perfmon-util.h"
 #endif
 
+#include "perf-util.h" 
 #include "mmap_read.h" 
 
 //******************************************************************************
@@ -156,14 +156,11 @@
 
 #define EVENT_DATA_CENTRIC "DATACENTRIC"
 #define DATA_CENTRIC_ID 1
+#define HPCRUN_OPTION_MULTIPLEX "HPCRUN_MULTIPLEX"
 
 //******************************************************************************
 // type declarations
 //******************************************************************************
-
-#ifndef u64
-typedef __u64 u64;
-#endif
 
 typedef struct perf_event_header pe_header_t;
 
@@ -241,6 +238,11 @@ static const char * equals_separator =
 // Make sure that we don't use perf if it won't work.
 static int perf_unavail = 0;
 
+// flag if multiplex is allowed, detected, etc...
+// 0: use the default multiplex
+// 1: detect multiplex
+// 2: do not allow multiplex
+static int perf_multiplex = 0;
 
 
 //******************************************************************************
@@ -760,11 +762,18 @@ METHOD_FN(init)
 {
   TMSG(LINUX_PERF, "%d: init", self->sel_idx);
 
-#ifdef ENABLE_PERFMON
-  // perfmon is smart enough to detect if pfmu has been initialized or not
-  pfmu_init();
-#endif
   perf_unavail = ( !perf_event_avail() );
+
+  // checking the option of multiplexing:
+  // the env variable is set by hpcrun or by user (case for static exec)
+  const char *multiplex_var = getenv(HPCRUN_OPTION_MULTIPLEX);
+  if (multiplex_var) {
+    char *end_ptr;
+    long val = strtol( multiplex_var, &end_ptr, 10 );
+    if ( end_ptr != multiplex_var && (val < LONG_MAX && val > LONG_MIN) ) {
+      perf_multiplex = val;
+    }
+  }
 
   self->state = INIT;
   TMSG(LINUX_PERF, "%d: init OK", self->sel_idx);
@@ -779,11 +788,6 @@ METHOD_FN(thread_init)
 {
   TMSG(LINUX_PERF, "%d: thread init", self->sel_idx);
   if (perf_unavail) { return; }
-
-#ifdef ENABLE_PERFMON
-  // perfmon is smart enough to detect if pfmu has been initialized or not
-  pfmu_init();
-#endif
 
   TMSG(LINUX_PERF, "%d: thread init OK", self->sel_idx);
 }
@@ -931,6 +935,11 @@ METHOD_FN(supports_event, const char *ev_str)
 {
   TMSG(LINUX_PERF, "supports event %s", ev_str);
 
+#ifdef ENABLE_PERFMON
+  // perfmon is smart enough to detect if pfmu has been initialized or not
+  pfmu_init();
+#endif
+
   if (perf_unavail) { return false; }
 
   if (self->state == UNINIT){
@@ -986,6 +995,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   //  automatically. But in practice, it didn't. Not sure why.
   self->evl.nevents = num_events;
 
+  
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
   //  but there will be no samples
@@ -1003,7 +1013,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     struct perf_event_attr *attr = &events[i];
     perf_attr_init(name, attr, threshold);
 
-    // set the metric
+    // set the metric for this perf event
     metric_id[i] = hpcrun_new_metric();
 
     // store the metric
@@ -1015,9 +1025,27 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     prop = (strstr(name, "CYCLES") != NULL) ? metric_property_cycles : metric_property_none;
 
-    hpcrun_set_metric_info_and_period(metric_id[i], strdup(name),
+    char *name_dup = strdup(name);
+    hpcrun_set_metric_info_and_period(metric_id[i], name_dup,
 				    MetricFlags_ValFmt_Int,
 				    threshold, prop);
+
+    // we need to add additional metric for each event if the
+    // multiplex detection is turned on
+    if (perf_multiplex == 1) {
+      // set the metric to see if we are multiplexing or not
+      i++;
+      metric_id[i] = hpcrun_new_metric();
+
+      // store the metric
+      char buff[80];
+      sprintf(buff, "MTPX-%.60s", name);
+      METHOD_CALL(self, store_metric_id, i, metric_id[i]);
+
+      hpcrun_set_metric_info_and_period(metric_id[i], strdup(buff), 
+				    MetricFlags_ValFmt_Real,
+				    1, metric_property_none);
+    }
   }
 }
 
