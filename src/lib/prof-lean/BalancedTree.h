@@ -159,26 +159,15 @@ static inline BalancedTreeNode_t*
 BalancedTree_find(BalancedTree_t* tree, void* key)
 {
   pfq_rwlock_read_lock(&tree->rwlock);
-
-  BalancedTreeNode_t* found = NULL;
-
-  BalancedTreeNode_t* x = tree->root;
-  while (x != NULL) {
-    if (key == x->key) {
-      found = x; // found!
-      goto fini;
-    }
-    else if (key < x->key) {
-      x = x->left;
-    }
-    else {
-      x = x->right;
-    }
+  BalancedTreeNode_t* curr = tree->root;
+  while (curr != NULL && curr->key != key) {
+    if (key < curr->key)
+      curr = curr->left;
+    else
+      curr = curr->right;
   }
-
- fini:
   pfq_rwlock_read_unlock(&tree->rwlock);
-  return found;
+  return curr;
 }
 
 
