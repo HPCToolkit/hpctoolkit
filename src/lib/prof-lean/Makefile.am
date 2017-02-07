@@ -83,7 +83,6 @@ MYSOURCES = \
 	atomic.h \
 	atomic-op.h atomic-op.i \
 	mcs-lock.h mcs-lock.c \
-	QueuingRWLock.h QueuingRWLock.c \
 	pfq-rwlock.h pfq-rwlock.c \
 	spinlock.h spinlock.c \
         urand.h urand.c \
