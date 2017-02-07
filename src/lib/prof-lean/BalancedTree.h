@@ -73,7 +73,7 @@
 
 #include <include/uint.h>
 
-#include "QueuingRWLock.h"
+#include "pfq-rwlock.h"
 #include "spinlock.h"
 
 
@@ -137,7 +137,7 @@ typedef struct BalancedTree
   BalancedTree_alloc_fn_t allocFn;
   size_t nodeDataSz; // size of BalancedTreeNode_t.data
 
-  QueuingRWLock_t lock;
+  pfq_rwlock_t rwlock;
   spinlock_t spinlock;
   
 } BalancedTree_t;
@@ -156,12 +156,9 @@ BalancedTree_size(BalancedTree_t* tree)
 
 
 static inline BalancedTreeNode_t*
-BalancedTree_find(BalancedTree_t* tree, void* key, QueuingRWLockLcl_t* locklcl)
+BalancedTree_find(BalancedTree_t* tree, void* key)
 {
-  if (locklcl) {
-    QueuingRWLock_lock(&tree->lock, locklcl, QueuingRWLockOp_read);
-    //while (spinlock_is_locked(&tree->spinlock));
-  }
+  pfq_rwlock_read_lock(&tree->rwlock);
 
   BalancedTreeNode_t* found = NULL;
 
@@ -180,9 +177,7 @@ BalancedTree_find(BalancedTree_t* tree, void* key, QueuingRWLockLcl_t* locklcl)
   }
 
  fini:
-  if (locklcl) {
-    QueuingRWLock_unlock(&tree->lock, locklcl);
-  }
+  pfq_rwlock_read_unlock(&tree->rwlock);
   return found;
 }
 
@@ -191,14 +186,7 @@ BalancedTree_find(BalancedTree_t* tree, void* key, QueuingRWLockLcl_t* locklcl)
 // already exist).  Returns the node containing the key, which may
 // have already existed or be newly allocated.
 BalancedTreeNode_t*
-BalancedTree_insert(BalancedTree_t* tree, void* key, 
-		    QueuingRWLockLcl_t* locklcl);
-
-
-#if 0
-typedef void (*BalancedTree_foreach_func) (BalancedTreeNode_t*, void*);
-void BalancedTree_foreach(BalancedTree_t*, BalancedTree_foreach_func, void*);
-#endif
+BalancedTree_insert(BalancedTree_t* tree, void* key);
 
 
 #endif /* prof_lean_BalancedTree_h */

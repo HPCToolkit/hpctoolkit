@@ -72,10 +72,8 @@
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
-//#include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/BalancedTree.h>
-#include <lib/prof-lean/QueuingRWLock.h>
 
 //*************************** Forward Declarations **************************
 
@@ -169,7 +167,6 @@ typedef struct lushPthr {
   BalancedTree_t         syncObjToData;    // synch-obj -> data
 
   lushPtr_SyncObjData_t* syncObjData;
-  QueuingRWLockLcl_t     locklcl;
 
   void*                  cache_syncObj;
   lushPtr_SyncObjData_t* cache_syncObjData;

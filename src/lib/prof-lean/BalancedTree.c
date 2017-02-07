@@ -109,19 +109,16 @@ BalancedTree_init(BalancedTree_t* tree,
   tree->allocFn = allocFn;
   tree->nodeDataSz = nodeDataSz;
 
-  QueuingRWLock_init(&tree->lock);
+  pfq_rwlock_init(&tree->rwlock);
   spinlock_unlock(&tree->spinlock);
 }
 
 
 BalancedTreeNode_t*
-BalancedTree_insert(BalancedTree_t* tree, void* key,
-		    QueuingRWLockLcl_t* locklcl)
+BalancedTree_insert(BalancedTree_t* tree, void* key)
 {
-  if (locklcl) {
-    QueuingRWLock_lock(&tree->lock, locklcl, QueuingRWLockOp_write);
-    //spinlock_lock(&tree->spinlock);
-  }
+  pfq_rwlock_node_t locklcl;
+  pfq_rwlock_write_lock(&tree->rwlock, &locklcl);
  
   BalancedTreeNode_t* found = NULL;
 
@@ -232,10 +229,7 @@ BalancedTree_insert(BalancedTree_t* tree, void* key,
   tree->root->color = BalancedTreeColor_BLACK;
 
  fini:
-  if (locklcl) {
-    QueuingRWLock_unlock(&tree->lock, locklcl);
-    //spinlock_unlock(&tree->spinlock);
-  }
+  pfq_rwlock_write_unlock(&tree->rwlock, &locklcl);
   return found;
 }
 

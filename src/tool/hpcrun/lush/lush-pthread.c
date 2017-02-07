@@ -212,7 +212,6 @@ lushPthr_init(lushPthr_t* x)
   BalancedTree_init(&x->syncObjToData, hpcrun_malloc, 0/*nodeDataSz*/);
 
   x->syncObjData = NULL;
-  QueuingRWLockLcl_init(&x->locklcl);
 
   x->cache_syncObj = NULL;
   x->cache_syncObjData = NULL;

@@ -736,9 +736,9 @@ lushPthr_demandSyncObjData_ps(lushPthr_t* restrict x, void* restrict syncObj)
   //hpcrun_safe_enter(); // inherited
 
   BalancedTreeNode_t* fnd = 
-    BalancedTree_find(x->ps_syncObjToData, syncObj, &x->locklcl);
+    BalancedTree_find(x->ps_syncObjToData, syncObj);
   if (!fnd) {
-    fnd = BalancedTree_insert(x->ps_syncObjToData, syncObj, &x->locklcl);
+    fnd = BalancedTree_insert(x->ps_syncObjToData, syncObj);
     lushPtr_SyncObjData_init(fnd->data);
 #if (LUSH_DBG_STATS)
     atomic_fetch_add_explicit(&DBG_numLockAlloc, 1, memory_order_relaxed);
@@ -757,9 +757,9 @@ lushPthr_demandSyncObjData(lushPthr_t* restrict x, void* restrict syncObj)
   hpcrun_safe_enter();
 
   BalancedTreeNode_t* fnd = 
-    BalancedTree_find(&x->syncObjToData, syncObj, NULL/*lock*/);
+    BalancedTree_find(&x->syncObjToData, syncObj);
   if (!fnd) {
-    fnd = BalancedTree_insert(&x->syncObjToData, syncObj, NULL/*lock*/);
+    fnd = BalancedTree_insert(&x->syncObjToData, syncObj);
     fnd->data = lushPthr_demandSyncObjData_ps(x, syncObj);
   }
 
