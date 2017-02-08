@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -407,6 +407,14 @@ public:
 
   bool
   findProcSrcCodeInfo(VMA vma, ushort opIndex, SrcFile::ln& line) const;
+
+  // Normalize 'filenm' directly with RealPathMgr, outside of
+  // findSrcCodeInfo().
+  bool
+  realpath(std::string & filenm)
+  {
+    return m_realpathMgr.realpath(filenm);
+  }
 
 
   // -------------------------------------------------------

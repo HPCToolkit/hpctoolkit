@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -46,6 +46,8 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <assert.h>
+
 #include "x86-addsub.h"
 #include "x86-and.h"
 #include "x86-call.h"
@@ -59,9 +61,12 @@
 #include "x86-return.h"
 #include "x86-cold-path.h"
 #include "x86-interval-arg.h"
-#include "ui_tree.h"
+#include "ui_tree.h"  // uw_recipe_map_lookup
 
-unwind_interval *process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
+#define UWRECIPE_DEBUG 1
+
+unwind_interval*
+process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg, mem_alloc m_alloc)
 {
   xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
   const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
@@ -72,18 +77,24 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 
   case XED_ICLASS_JMP: 
   case XED_ICLASS_JMP_FAR:
-    next = process_unconditional_branch(xptr, irdebug, iarg);
-    if (hpcrun_is_cold_code(xptr, iarg)) {
-      TMSG(COLD_CODE,"  --cold code routine detected!");
-      TMSG(COLD_CODE,"fetching interval from location %p",iarg->return_addr);
-      unwind_interval *ui = (unwind_interval *) 
-	hpcrun_addr_to_interval_locked(iarg->return_addr);
-      TMSG(COLD_CODE,"got unwind interval from hpcrun_addr_to_interval");
-      if (ENABLED(COLD_CODE)) {
-        dump_ui_stderr(ui);
-      }
-      // Fixup current intervals w.r.t. the warm code interval
-      hpcrun_cold_code_fixup(iarg->current, ui);
+	next = process_unconditional_branch(xptr, irdebug, iarg, m_alloc);
+	if (hpcrun_is_cold_code(xptr, iarg)) {
+	  TMSG(COLD_CODE,"  --cold code routine detected!");
+	  TMSG(COLD_CODE,"fetching interval from location %p",iarg->return_addr);
+
+	  unwindr_info_t unwr_info;
+	  bool found = uw_recipe_map_lookup(iarg->return_addr, &unwr_info);
+#if UWRECIPE_DEBUG
+	  assert(found);
+#endif
+	  bitree_uwi_t *ui = unwr_info.btuwi;
+
+	  TMSG(COLD_CODE,"got unwind interval from hpcrun_addr_to_interval");
+	  if (ENABLED(COLD_CODE)) {
+		dump_ui_stderr(ui);
+	  }
+	  // Fixup current intervals w.r.t. the warm code interval
+	  hpcrun_cold_code_fixup(iarg->current, ui);
     }
 
     break;
@@ -123,52 +134,52 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
     break;
 
   case XED_ICLASS_LEA: 
-    next = process_lea(xptr, xi, iarg);
+    next = process_lea(xptr, xi, iarg, m_alloc);
     break;
 
   case XED_ICLASS_MOV:
-    next = process_move(xptr, xi, iarg);
+    next = process_move(xptr, xi, iarg, m_alloc);
     break;
 
   case XED_ICLASS_ENTER:
-    next = process_enter(xptr, xi, iarg);
+    next = process_enter(xptr, xi, iarg, m_alloc);
     break;
 
   case XED_ICLASS_LEAVE:
-    next = process_leave(xptr, xi, iarg);
+    next = process_leave(xptr, xi, iarg, m_alloc);
     break;
 
   case XED_ICLASS_CALL_FAR:
   case XED_ICLASS_CALL_NEAR:
-    next = process_call(xptr, xi, iarg);
+    next = process_call(xptr, xi, iarg, m_alloc);
     break;
 
   case XED_ICLASS_RET_FAR:
   case XED_ICLASS_RET_NEAR:
-    next = process_return(xptr, irdebug, iarg);
+    next = process_return(xptr, irdebug, iarg, m_alloc);
     break;
 
   case XED_ICLASS_ADD:   
   case XED_ICLASS_SUB: 
-    next = process_addsub(xptr, xi, iarg);
+    next = process_addsub(xptr, xi, iarg, m_alloc);
     break;
 
   case XED_ICLASS_PUSH:
   case XED_ICLASS_PUSHF:  
   case XED_ICLASS_PUSHFD: 
   case XED_ICLASS_PUSHFQ: 
-    next = process_push(xptr, xi, iarg);
+    next = process_push(xptr, xi, iarg, m_alloc);
     break;
 
   case XED_ICLASS_POP:   
   case XED_ICLASS_POPF:  
   case XED_ICLASS_POPFD: 
   case XED_ICLASS_POPFQ: 
-    next = process_pop(xptr, xi, iarg);
+    next = process_pop(xptr, xi, iarg, m_alloc);
     break;
 
   case XED_ICLASS_AND:
-    next = process_and(xptr, xi, iarg);
+    next = process_and(xptr, xi, iarg, m_alloc);
     break;
 
   default:

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -189,9 +189,12 @@ realmain(int argc, char* argv[])
   // ------------------------------------------------------------
   BinUtil::LM* lm = NULL;
   try {
+    BinUtil::LM::ReadFlg read_flag = (args.cfgRequest == BAnal::Struct::CFG_OA) ?
+      BinUtil::LM::ReadFlg_ALL : BinUtil::LM::ReadFlg_Proc;
+
     lm = new BinUtil::LM(args.useBinutils);
     lm->open(args.in_filenm.c_str());
-    lm->read(BinUtil::LM::ReadFlg_ALL);
+    lm->read(read_flag);
   }
   catch (...) {
     DIAG_EMsg("Exception encountered while reading '" << args.in_filenm << "'");

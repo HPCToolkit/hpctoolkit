@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -329,7 +329,7 @@ extern void hpcrun_set_real_siglongjmp(void);
 void
 hpcrun_unw_init(void)
 {
-  HPC_IFNO_UNW_LITE(hpcrun_interval_tree_init(););
+  HPC_IFNO_UNW_LITE(uw_recipe_map_init(););
   hpcrun_set_real_siglongjmp();
 }
 

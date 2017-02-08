@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,10 +44,69 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef _UNWIND_DATATYPE_H
-#define _UNWIND_DATATYPE_H
+// This file defines empty methods for the virtual functions in the
+// ISA class.  This allows creating an instance of the ISA class that
+// we don't actually use, but where a NULL object would cause other
+// things to fail.
+//
+// For example, this is useful for the new platforms (power8/le and
+// ARM) that have no ISA extension for their architecture.  For those
+// platforms and whenever using the ParseAPI CFG support, binutils's
+// LM class creates an ISA object but doesn't use it.
+//
+// The alternative would be to walk through the code and add #ifdef
+// and tests for NULL as needed.  But this is probably simpler.
 
-#include <unwind/common/std_unw_cursor.h>
-typedef void* unw_word_t;
+//***************************************************************************
 
-#endif
+#ifndef isa_EmptyISA_hpp
+#define isa_EmptyISA_hpp
+
+#include <include/gcc-attr.h>
+#include <include/uint.h>
+
+#include "ISA.hpp"
+
+class EmptyISA : public ISA {
+public:
+  EmptyISA() { }
+
+  virtual ~EmptyISA() { }
+
+  virtual ushort
+  getInsnSize(MachInsn* GCC_ATTR_UNUSED mi)
+  { return 4; }
+
+  virtual ushort
+  getInsnNumOps(MachInsn* GCC_ATTR_UNUSED mi)
+  { return 1; }
+
+  virtual InsnDesc
+  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0)
+  {
+    ISA::InsnDesc d;
+    return d;
+  }
+
+  virtual VMA
+  getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0)
+  { return 0; }
+
+  virtual ushort
+  getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0)
+  { return 0; }
+
+  virtual bool
+  isParallelWithSuccessor(MachInsn* GCC_ATTR_UNUSED mi1,
+                          ushort GCC_ATTR_UNUSED opIndex1,
+                          ushort GCC_ATTR_UNUSED sz1,
+                          MachInsn* GCC_ATTR_UNUSED mi2,
+                          ushort GCC_ATTR_UNUSED opIndex2,
+                          ushort GCC_ATTR_UNUSED sz2) const
+  { return false; }
+
+  virtual void
+  decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex) { }
+};
+
+#endif  // isa_EmptyISA_hpp

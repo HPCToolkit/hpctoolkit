@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -76,24 +76,26 @@ extern cct_node_t* hpcrun_cct_insert_backtrace_w_metric(cct_node_t* cct,
 							frame_t* path_beg, frame_t* path_end,
 							cct_metric_data_t datum);
 
-extern cct_node_t* hpcrun_cct_record_backtrace(cct_bundle_t* bndl, bool partial, bool thread_stop,
+extern cct_node_t* hpcrun_cct_record_backtrace(cct_bundle_t* bndl, bool partial, 
+backtrace_info_t *bt,
+#if 0
+bool thread_stop,
 					       frame_t* bt_beg, frame_t* bt_last,
+#endif
 					       bool tramp_found);
 
-extern cct_node_t* hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* bndl, bool partial, bool thread_stop,
+extern cct_node_t* hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* bndl, bool partial, 
+backtrace_info_t *bt,
+#if 0
+bool thread_stop,
 							frame_t* bt_beg, frame_t* bt_last,
+#endif
 							bool tramp_found,
 							int metricId, uint64_t metricIncr);
 
 extern cct_node_t* hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context, 
-                                        int metricId, uint64_t metricIncr,
-                                        int skipInner, int isSync);
-//
-// debug version of hpcrun_backtrace2cct:
-//   simulates errors to test partial unwind capability
-//
+	ip_normalized_t *leaf_func,  // JMC
+	int metricId, uint64_t metricIncr,
+	int skipInner, int isSync);
 
-extern cct_node_t* hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-                                            int metricId, uint64_t metricIncr,
-                                            int skipInner);
 #endif // CCT_INSERT_BACKTRACE_H

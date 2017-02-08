@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 /*
- * The interface to the unwind interval tree.
+ * Interface to unwind recipe map.
  *
  */
 
@@ -53,21 +53,27 @@
 #define _UI_TREE_H_
 
 #include <sys/types.h>
-#include <hpcrun/utilities/ip-normalized.h>
-#include "splay-interval.h"
-#include "splay.h"
+#include "binarytree_uwi.h"
+#include "ilmstat_btuwi_pair.h"
+#include "unw-datatypes.h"
+#include "unwindr_info.h"
 
-void hpcrun_interval_tree_init(void);
-void hpcrun_release_splay_lock(void);
-void *hpcrun_ui_malloc(size_t ui_size);
 
-splay_interval_t *hpcrun_addr_to_interval(void *addr,
-					  void *ip, ip_normalized_t* ip_norm);
-splay_interval_t *hpcrun_addr_to_interval_locked(void *addr);
+void
+uw_recipe_map_init(void);
 
-void hpcrun_delete_ui_range(void *start, void *end);
-void free_ui_node_locked(interval_tree_node *node);
 
-void hpcrun_print_interval_tree(void);
+/*
+ * if addr is found in range in the map, return true and
+ *   *unwr_info is the ilmstat_btuwi_pair_t ( ([start, end), ldmod, status), btuwi ),
+ *   where the root of btuwi is the uwi_t for addr
+ * else return false
+ */
+bool
+uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info);
+
+
+void
+uw_recipe_map_print(void);
 
 #endif  /* !_UI_TREE_H_ */

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -63,50 +63,51 @@ static bool plt_is_next(char *ins);
  *****************************************************************************/
 
 unwind_interval *
-process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
+process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg,
+               mem_alloc m_alloc)
 {
   unwind_interval *next = iarg->current;
 
-  if (iarg->current->ra_status == RA_SP_RELATIVE) {
-    int offset = iarg->current->sp_ra_pos;
+  if (UWI_RECIPE(iarg->current)->ra_status == RA_SP_RELATIVE) {
+    int offset = UWI_RECIPE(iarg->current)->sp_ra_pos;
     if (offset != 0) {
       unwind_interval *u = iarg->current;
       for (;;) {
-	// fix offset
-	u->sp_ra_pos -= offset;
-	u->sp_bp_pos -= offset;
+        // fix offset
+        UWI_RECIPE(u)->sp_ra_pos -= offset;
+        UWI_RECIPE(u)->sp_bp_pos -= offset;
 
-	if (u->restored_canonical == 1) {
-	  break;
-	}
-	u = (unwind_interval *) u->common.prev;
-	if (! u) {
-	  break;
-	}
+        if (UWI_RECIPE(u)->restored_canonical == 1) {
+          break;
+        }
+        u = UWI_PREV(u);
+        if (! u) {
+          break;
+        }
       }
     }
-    if (iarg->current->bp_status == BP_HOSED) {
+    if (UWI_RECIPE(iarg->current)->bp_status == BP_HOSED) {
       // invariant: when we reach a return, if the BP was overwritten, it
       // should have been restored. this must be incorrect. let's reset
       // the bp status for all intervals leading up to this one since
       // the last canonical restore. 
       unwind_interval *u = iarg->current;
       for (;;) {
-        if (u->bp_status != BP_HOSED) {
+        if (UWI_RECIPE(u)->bp_status != BP_HOSED) {
           break;
         }
-        u->bp_status = BP_UNCHANGED;
-	if (u->restored_canonical == 1) {
-	  break;
-	}
-	u = (unwind_interval *) u->common.prev;
-	if (! u) {
-	  break;
-	}
+        UWI_RECIPE(u)->bp_status = BP_UNCHANGED;
+        if (UWI_RECIPE(u)->restored_canonical == 1) {
+          break;
+        }
+        u = UWI_PREV(u);
+        if (! u) {
+          break;
+        }
       }
     }
   }
-  if (iarg->current->bp_status == BP_SAVED) {
+  if (UWI_RECIPE(iarg->current)->bp_status == BP_SAVED) {
      suspicious_interval(iarg->ins);
   }
   if (iarg->ins + xed_decoded_inst_get_length(xptr) < iarg->end) {
@@ -126,7 +127,7 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
       iarg->canonical_interval = iarg->current;
     }
     else {
-      reset_to_canonical_interval(xptr, &next, irdebug, iarg);
+      reset_to_canonical_interval(xptr, &next, irdebug, iarg, m_alloc);
     }
   }
   return next;
@@ -171,10 +172,10 @@ plt_is_next(char *ins)
       const xed_inst_t* xi = xed_decoded_inst_inst(xptr);
       const xed_operand_t* op0 = xed_inst_operand(xi, 0);
       if ((xed_operand_name(op0) == XED_OPERAND_MEM0) && 
-	    x86_isReg_IP(xed_decoded_inst_get_base_reg(xptr, 0))) {
-	int64_t offset = xed_decoded_inst_get_memory_displacement(xptr, 0);
-	push_succ_addr = ins + xed_decoded_inst_get_length(xptr);
-	val_pushed = push_succ_addr + offset;
+        x86_isReg_IP(xed_decoded_inst_get_base_reg(xptr, 0))) {
+        int64_t offset = xed_decoded_inst_get_memory_displacement(xptr, 0);
+        push_succ_addr = ins + xed_decoded_inst_get_length(xptr);
+        val_pushed = push_succ_addr + offset;
       }
     }
   }
@@ -200,9 +201,9 @@ plt_is_next(char *ins)
       const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
       const xed_operand_t *op0 =  xed_inst_operand(xi,0);
       if ((xed_operand_name(op0) == XED_OPERAND_MEM0) && 
-	  x86_isReg_IP(xed_decoded_inst_get_base_reg(xptr, 0))) {
-	long long offset = xed_decoded_inst_get_memory_displacement(xptr,0);
-	jmp_target = push_succ_addr + xed_decoded_inst_get_length(xptr) + offset;
+         x86_isReg_IP(xed_decoded_inst_get_base_reg(xptr, 0))) {
+         long long offset = xed_decoded_inst_get_memory_displacement(xptr,0);
+         jmp_target = push_succ_addr + xed_decoded_inst_get_length(xptr) + offset;
       }
     }
   }

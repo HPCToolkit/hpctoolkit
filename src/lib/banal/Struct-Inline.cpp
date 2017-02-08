@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -266,8 +266,8 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 
 // Add one terminal statement to the inline tree.
 StmtInfo *
-addStmtToTree(TreeNode * root, StringTable & strTab, VMA vma, int len,
-	      string & filenm, SrcFile::ln line, string & procnm)
+addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
+	      int len, string & filenm, SrcFile::ln line)
 {
   InlineSeqn path;
   TreeNode *node;
@@ -300,7 +300,7 @@ addStmtToTree(TreeNode * root, StringTable & strTab, VMA vma, int len,
     info = sit->second;
   }
   else {
-    info = new StmtInfo(strTab, vma, len, filenm, line, procnm);
+    info = new StmtInfo(strTab, vma, len, filenm, line);
     node->stmtMap[vma] = info;
   }
 

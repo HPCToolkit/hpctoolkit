@@ -1,5 +1,3 @@
-// -*-Mode: C++;-*- // technically C99
-
 // * BeginRiceCopyright *****************************************************
 //
 // $HeadURL$
@@ -12,7 +10,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,10 +42,27 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef _UNWIND_DATATYPE_H
-#define _UNWIND_DATATYPE_H
 
-#include <unwind/common/std_unw_cursor.h>
-typedef void* unw_word_t;
 
-#endif
+//******************************************************************************
+//
+// File:
+//   $HeadURL$
+//
+// Purpose:
+//   Define the interface for a function that returns the time of day in 
+//   microseconds as a long integer.
+//
+//******************************************************************************
+
+#ifndef __usec_time_h__
+#define __usec_time_h__
+
+//******************************************************************************
+// interface functions
+//******************************************************************************
+
+// return the time of day in microseconds as a long integer
+unsigned long usec_time();
+
+#endif  

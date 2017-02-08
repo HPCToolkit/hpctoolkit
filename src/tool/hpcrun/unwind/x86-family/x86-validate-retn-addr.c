@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -271,17 +271,17 @@ confirm_tail_call(void *addr, void *target_fn)
   void *callee;
 
   if ( ! confirm_call_fetch_addr(addr, 5, &callee)) {
-    TMSG(VALIDATE_UNW,"No call instruction found @ %p, so tail call REJECTED",
-         addr - 5);
+    TMSG(VALIDATE_UNW,"No call instruction found @ %p, so tail call REJECTED", addr - 5);
     return UNW_ADDR_WRONG; // soft error: this case doesn't apply
   }
 
   TMSG(VALIDATE_UNW,"Checking routine %p for possible tail calls", callee);
-  unwind_interval *ri =
-    (unwind_interval *) hpcrun_addr_to_interval(callee, NULL, NULL);
-  bool rv = (ri && ri->has_tail_calls);
 
-  if (rv) return contains_tail_call_to_f(callee, target_fn);
+  unwindr_info_t unwr_info;
+  bool found = uw_recipe_map_lookup(callee, &unwr_info);
+  if (found && (unwr_info.treestat == READY)
+	  && UWI_RECIPE(unwr_info.btuwi)->has_tail_calls)
+	return contains_tail_call_to_f(callee, target_fn);
 
   return status_is_wrong();
 }
@@ -335,9 +335,19 @@ confirm_plt_call(void *addr, void *callee)
   void *plt_callee = x86_plt_branch_target(plt_ins, xptr);
   if (plt_callee == callee) return UNW_ADDR_CONFIRMED;
 
-  unwind_interval *plt_callee_ui =
-    (unwind_interval *) hpcrun_addr_to_interval(plt_callee, NULL, NULL);
-  if (plt_callee_ui && plt_callee_ui->has_tail_calls) return contains_tail_call_to_f(plt_callee, callee);
+#if 0
+  unwind_interval *plt_callee_ui;
+  bool found = uw_recipe_map_lookup(plt_callee, NULL, &plt_callee_ui);
+  if (found && UWI_RECIPE(plt_callee_ui)->has_tail_calls) return contains_tail_call_to_f(plt_callee, callee);
+#else
+
+  unwindr_info_t unwr_info;
+  bool found = uw_recipe_map_lookup(plt_callee, &unwr_info);
+  if (found && (unwr_info.treestat == READY)
+	  && UWI_RECIPE(unwr_info.btuwi)->has_tail_calls)
+	return contains_tail_call_to_f(plt_callee, callee);
+
+#endif
 
   return UNW_ADDR_WRONG;
 }
@@ -353,32 +363,33 @@ deep_validate_return_addr(void* addr, void* generic)
   TMSG(VALIDATE_UNW,"validating unwind step from %p ==> %p",cursor->pc_unnorm,
        addr);
 
-  void* dont_care;
-  if (! fnbounds_enclosing_addr(addr, &dont_care, &dont_care, NULL)) {
-    TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid", addr);
+  unwindr_info_t unwr_info;
+  if( !uw_recipe_map_lookup(addr, &unwr_info) ) {
+	TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid", addr);
     return status_is_wrong();
   }
 
-  void* callee;
-  if (fnbounds_enclosing_addr(cursor->pc_unnorm, &callee, &dont_care, NULL)) {
-    TMSG(VALIDATE_UNW, "beginning of my routine = %p", callee);
-    if (confirm_call(addr, callee)) {
-      TMSG(VALIDATE_UNW, "Instruction preceeding %p is a call to this routine. Unwind confirmed", addr);
-      return UNW_ADDR_CONFIRMED;
-    }
-    validation_status result = confirm_plt_call(addr, callee);
-    if (result != UNW_ADDR_WRONG) {
-      TMSG(VALIDATE_UNW,
-	   "Instruction preceeding %p is a call through the PLT to this routine. Unwind confirmed",
-	   addr);
-      return result;
-    }
-    result = confirm_tail_call(addr, callee);
-    if (result != UNW_ADDR_WRONG) {
-      TMSG(VALIDATE_UNW,"Instruction preceeding %p is a call to a routine that has tail calls. Unwind is LIKELY ok", addr);
-      return result;
-    }
+  if( uw_recipe_map_lookup(cursor->pc_unnorm, &unwr_info) ) {
+	 void* callee = (void*)unwr_info.start;
+	    TMSG(VALIDATE_UNW, "beginning of my routine = %p", callee);
+	    if (confirm_call(addr, callee)) {
+	      TMSG(VALIDATE_UNW, "Instruction preceeding %p is a call to this routine. Unwind confirmed", addr);
+	      return UNW_ADDR_CONFIRMED;
+	    }
+	    validation_status result = confirm_plt_call(addr, callee);
+	    if (result != UNW_ADDR_WRONG) {
+	      TMSG(VALIDATE_UNW,
+		   "Instruction preceeding %p is a call through the PLT to this routine. Unwind confirmed",
+		   addr);
+	      return result;
+	    }
+	    result = confirm_tail_call(addr, callee);
+	    if (result != UNW_ADDR_WRONG) {
+	      TMSG(VALIDATE_UNW,"Instruction preceeding %p is a call to a routine that has tail calls. Unwind is LIKELY ok", addr);
+	      return result;
+	    }
   }
+
   void* call_ins;
   if (confirm_indirect_call(addr, &call_ins)){
     TMSG(VALIDATE_UNW,"Instruction preceeding %p is an indirect call. Unwind is LIKELY ok", addr);
@@ -402,10 +413,9 @@ dbg_val(void *addr, void *pc)
 validation_status
 validate_return_addr(void *addr, void *generic)
 {
-  void *beg, *end;
-  if (fnbounds_enclosing_addr(addr, &beg, &end, NULL)) {
+    unwindr_info_t unwr_info;
+	if( !uw_recipe_map_lookup(addr, &unwr_info) ) {
     return UNW_ADDR_WRONG;
   }
-
   return UNW_ADDR_PROBABLE;
 }

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -78,7 +78,8 @@ call_is_push_next_addr_idiom(xed_decoded_inst_t* xptr, interval_arg_t* iarg)
  *****************************************************************************/
 
 unwind_interval*
-process_call(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
+process_call(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg,
+	mem_alloc m_alloc)
 {
   unwind_interval *next = iarg->current;
   highwatermark_t *hw_tmp = &(iarg->highwatermark);
@@ -96,10 +97,10 @@ process_call(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
   // As if it were a push
   //
   if (call_is_push_next_addr_idiom(xptr, iarg)) {
-    next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), iarg->current->ra_status,
-		  iarg->current->sp_ra_pos + sizeof(void*), iarg->current->bp_ra_pos, 
-                  iarg->current->bp_status, iarg->current->sp_bp_pos + sizeof(void*), 
-                  iarg->current->bp_bp_pos, iarg->current);
+    next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), UWI_RECIPE(iarg->current)->ra_status,
+		  UWI_RECIPE(iarg->current)->sp_ra_pos + sizeof(void*), UWI_RECIPE(iarg->current)->bp_ra_pos, 
+                  UWI_RECIPE(iarg->current)->bp_status, UWI_RECIPE(iarg->current)->sp_bp_pos + sizeof(void*), 
+                  UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);
   }
 #ifdef USE_CALL_LOOKAHEAD
   next = call_lookahead(xptr, iarg->current, iarg->ins);

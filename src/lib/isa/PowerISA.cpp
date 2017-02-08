@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -210,9 +210,11 @@ PowerISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
     case dis_condjsr:
       d.set(InsnDesc::OTHER);
       break;
+#if defined(HAVE_HPC_GNUBINUTILS)
     case dis_return:
       d.set(InsnDesc::SUBR_RET);
       break;
+#endif
     case dis_dref:
     case dis_dref2:
       d.set(InsnDesc::MEM_OTHER);

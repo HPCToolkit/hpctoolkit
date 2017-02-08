@@ -5,7 +5,7 @@
 # Part of HPCToolkit (hpctoolkit.org)
 #------------------------------------
 #
-# Copyright (c) 2002-2016, Rice University.
+# Copyright (c) 2002-2017, Rice University.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -67,8 +67,6 @@ ext_libs_dir='@hpc_ext_libs_dir@'
 hpcfnbounds_dir='libexec/hpctoolkit'
 libhpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
-libunwind_dir='@LIBUNWIND_RUN_DIR@'
-libunwind_hpclink_libs='@LIBUNWIND_HPCLINK_LIBS@'
 
 # Absolute path or empty.
 papi_dir='@OPT_PAPI_LIBPATH@'
@@ -203,10 +201,6 @@ esac
 case "$libmonitor_dir" in
     /* ) ;;
     * )  libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
-esac
-case "$libunwind_dir" in
-    /* ) ;;
-    * )  libunwind_dir="${HPCTOOLKIT}/${libunwind_dir}" ;;
 esac
 
 LD_LIBRARY_PATH="${ext_libs_dir}:${LD_LIBRARY_PATH}"
@@ -443,10 +437,6 @@ set -- "$@" "$libmonitor" $extra_plugin_files
 
 if test -d "$papi_dir" ; then
     set -- "$@" "-L${papi_dir}" -lpapi $papi_extra_libs
-fi
-
-if test -d "$libunwind_dir" ; then
-    set -- "$@" "-L$libunwind_dir" $libunwind_hpclink_libs
 fi
 
 set -- "$@" $upc_libs

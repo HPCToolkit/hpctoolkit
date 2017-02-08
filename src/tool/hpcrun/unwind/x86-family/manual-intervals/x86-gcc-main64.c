@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -57,7 +57,7 @@ static char gcc_main64_signature[] = {
 };
 
 static int 
-adjust_gcc_main64_intervals(char *ins, int len, interval_status *stat)
+adjust_gcc_main64_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(gcc_main64_signature);
 
@@ -74,15 +74,16 @@ adjust_gcc_main64_intervals(char *ins, int len, interval_status *stat)
     // For this interval and subsequent interval, apply the corrected offsets
     //
 
-    for(; ui->ra_status != RA_STD_FRAME; ui = (unwind_interval *)(ui->common).next);
+    for(; UWI_RECIPE(ui)->ra_status != RA_STD_FRAME; ui = UWI_NEXT(ui));
 
     // this is only correct for 64-bit code
-    for(; ui; ui = (unwind_interval *)(ui->common).next) {
-      if (ui->ra_status == RA_SP_RELATIVE) continue;
-      if ((ui->ra_status == RA_STD_FRAME) || (ui->ra_status == RA_BP_FRAME)) {  
-         ui->ra_status = RA_BP_FRAME;
-         ui->bp_ra_pos = 8;
-         ui->bp_bp_pos = 0;
+    for(; ui; ui =  UWI_NEXT(ui)) {
+      if (UWI_RECIPE(ui)->ra_status == RA_SP_RELATIVE) continue;
+      if ((UWI_RECIPE(ui)->ra_status == RA_STD_FRAME) || 
+          (UWI_RECIPE(ui)->ra_status == RA_BP_FRAME)) {  
+         UWI_RECIPE(ui)->ra_status = RA_BP_FRAME;
+         UWI_RECIPE(ui)->bp_ra_pos = 8;
+         UWI_RECIPE(ui)->bp_bp_pos = 0;
       }
     }
 

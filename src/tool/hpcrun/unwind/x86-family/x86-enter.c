@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,8 @@
  *****************************************************************************/
 
 unwind_interval *
-process_enter(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
+process_enter(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg,
+	mem_alloc m_alloc)
 {
   unsigned int i;
   unwind_interval *next;
@@ -80,8 +81,9 @@ process_enter(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *ia
   TMSG(INTV,"new interval from ENTER");
   next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
 		RA_STD_FRAME,
-		iarg->current->sp_ra_pos + offset, 8, BP_SAVED,
-		iarg->current->sp_bp_pos + offset - 8, 0, iarg->current);
+		UWI_RECIPE(iarg->current)->sp_ra_pos + offset, 8, BP_SAVED,
+		UWI_RECIPE(iarg->current)->sp_bp_pos + offset - 8, 0, iarg->current,
+		m_alloc);
   hw_tmp->uwi = next;
   hw_tmp->state = 
     HW_NEW_STATE(hw_tmp->state, HW_BP_SAVED | 

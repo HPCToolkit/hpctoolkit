@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -51,11 +51,11 @@
 
 #include <messages/messages.h>
 
-#define HW_INITIALIZED		0x8
-#define HW_BP_SAVED			0x4
-#define HW_BP_OVERWRITTEN	0x2
-#define HW_SP_DECREMENTED	0x1
-#define HW_UNINITIALIZED	0x0
+#define HW_INITIALIZED          0x8
+#define HW_BP_SAVED             0x4
+#define HW_BP_OVERWRITTEN       0x2
+#define HW_SP_DECREMENTED       0x1
+#define HW_UNINITIALIZED        0x0
 
 
 /******************************************************************************
@@ -73,10 +73,8 @@ unwind_interval *find_first_non_decr(unwind_interval *first,
  *****************************************************************************/
 
 void 
-reset_to_canonical_interval(xed_decoded_inst_t *xptr,
-			    unwind_interval **next,
-			    bool irdebug,
-                            interval_arg_t *iarg)
+reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval **next,
+	bool irdebug, interval_arg_t *iarg, mem_alloc m_alloc)
 {
   unwind_interval *current             = iarg->current;
   unwind_interval *first               = iarg->first;
@@ -91,10 +89,10 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr,
       set_ui_canonical(first, iarg->canonical_interval);
       iarg->canonical_interval = first;
     } else if (iarg->canonical_interval) {
-      if (hw_uwi && hw_uwi->bp_status != BP_UNCHANGED)
-	if ((iarg->canonical_interval->bp_status == BP_UNCHANGED) || 
-	    ((iarg->canonical_interval->bp_status == BP_SAVED) && 
-             (hw_uwi->bp_status == BP_HOSED))) {
+      if (hw_uwi && UWI_RECIPE(hw_uwi)->bp_status != BP_UNCHANGED)
+	if ((UWI_RECIPE(iarg->canonical_interval)->bp_status == BP_UNCHANGED) ||
+	    ((UWI_RECIPE(iarg->canonical_interval)->bp_status == BP_SAVED) &&
+             (UWI_RECIPE(hw_uwi)->bp_status == BP_HOSED))) {
          set_ui_canonical(hw_uwi, iarg->canonical_interval);
          iarg->canonical_interval = hw_uwi;
       }
@@ -106,23 +104,24 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr,
       iarg->canonical_interval = first;
     }
     {
-      ra_loc ra_status = first->ra_status;
-      bp_loc bp_status = (current->bp_status == BP_HOSED) ? BP_HOSED : first->bp_status;
+      ra_loc ra_status = UWI_RECIPE(first)->ra_status;
+      bp_loc bp_status =
+    	  (UWI_RECIPE(current)->bp_status == BP_HOSED) ? BP_HOSED : UWI_RECIPE(first)->bp_status;
 #ifndef FIX_INTERVALS_AT_RETURN
-      if ((current->ra_status != ra_status) ||
-	  (current->bp_status != bp_status) ||
-	  (current->sp_ra_pos != first->sp_ra_pos) ||
-	  (current->bp_ra_pos != first->bp_ra_pos) ||
-	  (current->bp_bp_pos != first->bp_bp_pos) ||
-	  (current->sp_bp_pos != first->sp_bp_pos)) 
+      if ((UWI_RECIPE(current)->ra_status != ra_status) ||
+	  (UWI_RECIPE(current)->bp_status != bp_status) ||
+	  (UWI_RECIPE(current)->sp_ra_pos != UWI_RECIPE(first)->sp_ra_pos) ||
+	  (UWI_RECIPE(current)->bp_ra_pos != UWI_RECIPE(first)->bp_ra_pos) ||
+	  (UWI_RECIPE(current)->bp_bp_pos != UWI_RECIPE(first)->bp_bp_pos) ||
+	  (UWI_RECIPE(current)->sp_bp_pos != UWI_RECIPE(first)->sp_bp_pos))
 #endif
 	{
 	*next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
-		       ra_status, first->sp_ra_pos, first->bp_ra_pos,
-		       bp_status, first->sp_bp_pos, first->bp_bp_pos,
-		       current);
-        set_ui_restored_canonical(*next, iarg->canonical_interval->prev_canonical);
-        if (first->bp_status != BP_HOSED && bp_status == BP_HOSED) {
+		       ra_status, UWI_RECIPE(first)->sp_ra_pos, UWI_RECIPE(first)->bp_ra_pos,
+		       bp_status, UWI_RECIPE(first)->sp_bp_pos, UWI_RECIPE(first)->bp_bp_pos,
+		       current, m_alloc);
+        set_ui_restored_canonical(*next, UWI_RECIPE(iarg->canonical_interval)->prev_canonical);
+        if (UWI_RECIPE(first)->bp_status != BP_HOSED && bp_status == BP_HOSED) {
           set_ui_canonical(*next, iarg->canonical_interval);
           iarg->canonical_interval = *next;
         }
@@ -143,16 +142,18 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr,
 unwind_interval *
 find_first_bp_frame(unwind_interval *first)
 {
-  while (first && (first->ra_status != RA_BP_FRAME)) first = (unwind_interval *)(first->common).next;
+  while (first && (UWI_RECIPE(first)->ra_status != RA_BP_FRAME))
+	first = UWI_NEXT(first);
   return first;
 }
 
 unwind_interval *
 find_first_non_decr(unwind_interval *first, unwind_interval *highwatermark)
 {
-  while (first && (first->common).next && (first->sp_ra_pos <= ((unwind_interval *)((first->common).next))->sp_ra_pos) && 
+  while (first && UWI_NEXT(first) &&
+	  (UWI_RECIPE(first)->sp_ra_pos <= UWI_RECIPE(UWI_NEXT(first))->sp_ra_pos) &&
 	 (first != highwatermark)) {
-    first = (unwind_interval *)(first->common).next;
+    first = UWI_NEXT(first);
   }
   return first;
 }

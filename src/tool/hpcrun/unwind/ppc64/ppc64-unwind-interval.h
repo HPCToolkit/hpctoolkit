@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -60,16 +60,43 @@
 
 //*************************** User Include Files ****************************
 
+#if 0
 #include "splay-interval.h"
+#else
 
+#include <unwind/common/binarytree_uwi.h>
 
-//*************************** Forward Declarations **************************
+/******************************************************************************
+ * macro
+ ******************************************************************************/
+/*
+ * to convert from the old unwind interval data structure
+ *
 
-//***************************************************************************
+typedef struct {
+  struct splay_interval_s common; // common splay tree fields
+  // frame type
+  sp_ty_t sp_ty : 16;
+  ra_ty_t ra_ty : 16;
+  // SPTy_Reg  : Parent SP's register
+  // RATy_SPRel: Parent SP's offset from appropriate pointer
+  int sp_arg;
+  // RATy_Reg  : Parent RA's register
+  // RATy_SPRel: Parent RA's offset from appropriate pointer
+  int ra_arg;
+} unw_interval_t;
 
-//***************************************************************************
-// unw_interval_t
-//***************************************************************************
+ * to the new one, which is bitree_uwi_t, a binary tree of uwi_t,
+ * and extract the unwind recipe for ppc64.
+ *
+ */
+
+#define UWI_RECIPE(btuwi) ((ppc64recipe_t*)bitree_uwi_recipe(btuwi))
+
+#endif
+
+// same as in x8-unwind-interval.h
+typedef bitree_uwi_t unwind_interval;
 
 typedef enum {
   SPTy_NULL = 0,
@@ -84,10 +111,7 @@ typedef enum {
   RATy_SPRel,   // RA is relative to SP
 } ra_ty_t;
 
-
-typedef struct {
-  struct splay_interval_s common; // common splay tree fields
-
+typedef struct ppc64recipe_s{
   // frame type
   sp_ty_t sp_ty : 16;
   ra_ty_t ra_ty : 16;
@@ -99,17 +123,41 @@ typedef struct {
   // RATy_Reg  : Parent RA's register
   // RATy_SPRel: Parent RA's offset from appropriate pointer
   int ra_arg;
+} ppc64recipe_t;
 
-} unw_interval_t;
+unwind_interval *
+new_ui(
+	char *startaddr,
+	sp_ty_t sp_ty,
+	ra_ty_t ra_ty,
+	int sp_arg,
+	int ra_arg,
+	unwind_interval *prev,
+	mem_alloc m_alloc);
 
+#if 0
+ppc64recipe_t *
+ppc64recipe_new(sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
+		mem_alloc m_alloc);
+#endif
 
-unw_interval_t *
-new_ui(char *startaddr, sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
-       unw_interval_t *prev);
+/*
+ * Concrete implementation of the abstract val_tostr function of the
+ * generic_val class.
+ * pre-condition: recipe is of type ppc64recipe_t*
+ */
+void
+ppc64recipe_tostr(void* recipe, char str[]);
+
+void
+ppc64recipe_print(void* recipe);
+
 
 static inline bool 
-ui_cmp(unw_interval_t* x, unw_interval_t* y)
+ui_cmp(unwind_interval* ux, unwind_interval* uy)
 {
+  ppc64recipe_t *x = UWI_RECIPE(ux);
+  ppc64recipe_t *y = UWI_RECIPE(uy);
   return ((x->sp_ty  == y->sp_ty) &&
 	  (x->ra_ty  == y->ra_ty) && 
 	  (x->sp_arg == y->sp_arg) &&
@@ -117,19 +165,19 @@ ui_cmp(unw_interval_t* x, unw_interval_t* y)
 }
 
 void 
-ui_dump(unw_interval_t *u);
+ui_dump(unwind_interval *u);
 
 // FIXME: these should be part of the common interface
 void suspicious_interval(void *pc);
-void ui_link(unw_interval_t *current, unw_interval_t *next);
+void link_ui(unwind_interval *current, unwind_interval *next);
 
 
 //***************************************************************************
 // external interface
 //***************************************************************************
 
-interval_status 
-build_intervals(char *ins, unsigned int len);
+btuwi_status_t
+build_intervals(char  *ins, unsigned int len, mem_alloc m_alloc);
 
 
 //***************************************************************************

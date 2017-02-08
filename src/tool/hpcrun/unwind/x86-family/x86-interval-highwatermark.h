@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -47,10 +47,11 @@
 #ifndef X86_INTERVAL_HIGHWATERMARK_H
 #define X86_INTERVAL_HIGHWATERMARK_H
 
+//#include <unwind/common/binarytree_uwi.h>
 #include "x86-unwind-interval.h"
 
 typedef struct highwatermark_t {
-  unwind_interval *uwi;
+  bitree_uwi_t *uwi;
   void *succ_inst_ptr; // pointer to successor (support for pathscale idiom)
   int state;
 } highwatermark_t;
