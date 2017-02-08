@@ -109,8 +109,8 @@
 #include "perfmon-util.h"
 #endif
 
-#include "perf-util.h" 
-#include "mmap_read.h" 
+#include "perf-util.h" 	 // u64
+#include "perf-metric.h" // metric_perf_info_t
 
 //******************************************************************************
 // macros
@@ -156,7 +156,8 @@
 
 #define EVENT_DATA_CENTRIC "DATACENTRIC"
 #define DATA_CENTRIC_ID 1
-#define HPCRUN_OPTION_MULTIPLEX "HPCRUN_MULTIPLEX"
+#define HPCRUN_OPTION_MULTIPLEX  "HPCRUN_MULTIPLEX"
+#define HPCRUN_OPTION_PRECISE_IP "HPCRUN_PRECISE_IP"
 
 //******************************************************************************
 // type declarations
@@ -224,6 +225,7 @@ static sigset_t sig_mask;
 
 static int pagesize;
 static size_t tail_mask;
+static int perf_precise_ip;
 
 #ifndef ENABLE_PERFMON
 static const char *event_name = "PERF_COUNT_HW_CPU_CYCLES";
@@ -441,11 +443,11 @@ perf_attr_init(
   unsigned int event_type  = PERF_TYPE_HARDWARE;
   unsigned int sample_type = 0;
 
-#ifdef ENABLE_PERFMON
   if (strcmp(name, EVENT_DATA_CENTRIC)==0) {
     sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID ;
-  } else 
-  if (!pfmu_getEventCode(name, &event_code)) {
+  } 
+#ifdef ENABLE_PERFMON
+  else if (!pfmu_getEventCode(name, &event_code)) {
      EMSG("Linux perf event not recognized: %s", name);
      return false;
   }
@@ -463,15 +465,14 @@ perf_attr_init(
   attr->config = event_code;			 /* Type-specific configuration */
 
   attr->sample_period = threshold;		 /* Period of sampling 		*/
-  attr->precise_ip    = PERF_REQUEST_0_SKID;	 /*  requested to have 0 skid.  */
+  attr->precise_ip    = perf_precise_ip;	 /*  requested to have 0 skid.  */
   attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
   attr->disabled      = 1; 			/* the counter will be enabled later  */
   attr->sample_stack_user = 4096;
 
   if (perf_ksyms_avail) {
     /* Records the callchain */
-    sample_type = sample_type | PERF_SAMPLE_CALLCHAIN; 
-    attr->sample_type = sample_type ;  
+    attr->sample_type 		 = sample_type | PERF_SAMPLE_CALLCHAIN;  
     attr->exclude_callchain_user = EXCLUDE_CALLCHAIN_USER;
   } else {
     attr->sample_type = PERF_SAMPLE_IP;
@@ -748,7 +749,20 @@ get_fd_index(int num_events, int fd)
 }
 
 
+static long
+getEnvLong(const char *env_var)
+{
+  const char *precise_ip = getenv(env_var);
 
+  if (precise_ip) {
+    char *end_ptr;
+    long val = strtol( precise_ip, &end_ptr, 10 );
+    if ( end_ptr != env_var && (val < LONG_MAX && val > LONG_MIN) ) {
+      return val;
+    }
+  }
+  return 0;
+}
 
 /******************************************************************************
  * method functions
@@ -766,14 +780,9 @@ METHOD_FN(init)
 
   // checking the option of multiplexing:
   // the env variable is set by hpcrun or by user (case for static exec)
-  const char *multiplex_var = getenv(HPCRUN_OPTION_MULTIPLEX);
-  if (multiplex_var) {
-    char *end_ptr;
-    long val = strtol( multiplex_var, &end_ptr, 10 );
-    if ( end_ptr != multiplex_var && (val < LONG_MAX && val > LONG_MIN) ) {
-      perf_multiplex = val;
-    }
-  }
+  perf_multiplex  = getEnvLong( HPCRUN_OPTION_MULTIPLEX );
+
+  perf_precise_ip = getEnvLong( HPCRUN_OPTION_PRECISE_IP );
 
   self->state = INIT;
   TMSG(LINUX_PERF, "%d: init OK", self->sel_idx);
@@ -1029,23 +1038,6 @@ METHOD_FN(process_event_list, int lush_metrics)
     hpcrun_set_metric_info_and_period(metric_id[i], name_dup,
 				    MetricFlags_ValFmt_Int,
 				    threshold, prop);
-
-    // we need to add additional metric for each event if the
-    // multiplex detection is turned on
-    if (perf_multiplex == 1) {
-      // set the metric to see if we are multiplexing or not
-      i++;
-      metric_id[i] = hpcrun_new_metric();
-
-      // store the metric
-      char buff[80];
-      sprintf(buff, "MTPX-%.60s", name);
-      METHOD_CALL(self, store_metric_id, i, metric_id[i]);
-
-      hpcrun_set_metric_info_and_period(metric_id[i], strdup(buff), 
-				    MetricFlags_ValFmt_Real,
-				    1, metric_property_none);
-    }
   }
 }
 
@@ -1172,6 +1164,19 @@ perf_event_handler(
     sample_val_t sv = hpcrun_sample_callpath(context, metric_id[index], 1,
 					   0/*skipInner*/, 0/*isSync*/, (void*) &index);
 
+    // check if we have multiplexing or not with this counter
+    // if the time enabled is not the same as running time, then it's multiplexed
+    metric_desc_t* metric = hpcrun_id2metric(metric_id[index]);
+
+    metric->flags.fields.time_enabled = perf_mmap[index]->time_enabled;
+    metric->flags.fields.time_running = perf_mmap[index]->time_running;
+
+#if 0
+    if (info->time_enabled != info->time_running) {
+      TMSG(LINUX_PERF, "Multiplex: enabled: %d, running: %d ", 
+	info->time_enabled, info->time_running);
+    }
+#endif
     blame_shift_apply(metric_id[index], sv.sample_node, 1 /*metricIncr*/);
   } else {
     // signal not from perf event

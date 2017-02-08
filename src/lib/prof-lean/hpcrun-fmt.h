@@ -266,6 +266,13 @@ typedef struct hpcrun_metricFlags_fields {
   uint8_t /*bool*/     show;
   uint8_t /*bool*/     showPercent;
 
+  // Laks: this field is used to have additional info
+  // For instance, for perf events, we can use this field
+  //  to store the information about the event counter:
+  //  whether they are multiplexed, running time, etc.
+  uint64_t time_enabled; // in case of multiplexing, this variable is the scale ratio 
+  uint64_t time_running; // between time enabled and time running
+
   uint64_t unused1;
 } hpcrun_metricFlags_fields;
 

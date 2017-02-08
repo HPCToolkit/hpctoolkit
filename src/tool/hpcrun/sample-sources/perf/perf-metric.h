@@ -38,13 +38,13 @@
 #ifndef __PERF_METRIC_H__
 #define __PERF_METRIC_H__
 
-#include <hpcrun-fmt.h>
 
-typedef struct metric_perf_desc_t {
-  struct metric_desc_t base;
+#include "perf-util.h"		// u64
+
+typedef struct metric_perf_info_s {
   u64 time_enabled;
   u64 time_running;
-}
+} metric_perf_info_t;
 
 
 #endif

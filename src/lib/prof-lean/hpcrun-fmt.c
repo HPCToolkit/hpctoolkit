@@ -265,6 +265,11 @@ const hpcrun_metricFlags_t hpcrun_metricFlags_NULL = {
   .fields.partner     = 0,
   .fields.show        = (uint8_t)true,
   .fields.showPercent = (uint8_t)true,
+
+  // laks: perf event 
+  .fields.time_enabled = (uint64_t)true,
+  .fields.time_running = (uint64_t)true,
+
   .fields.unused1     = 0,
 };
 
@@ -392,13 +397,15 @@ hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* fs, const char* pre)
 {
   fprintf(fs, "%s[(nm: %s) (desc: %s) "
 	  "((ty: %d) (val-ty: %d) (val-fmt: %d) (partner: %u) (show: %d) (showPercent: %d)) "
-	  "(period: %"PRIu64") (formula: %s) (format: %s)]\n",
+	  "(period: %"PRIu64") (formula: %s) (format: %s)" 
+	  " (time-enabled: %"PRIu64", time-running: %"PRIu64")]\n",
 	  pre, hpcfmt_str_ensure(x->name), hpcfmt_str_ensure(x->description),
 	  (int)x->flags.fields.ty, (int)x->flags.fields.valTy,
 	  (int)x->flags.fields.valFmt,
 	  (uint)x->flags.fields.partner, x->flags.fields.show, x->flags.fields.showPercent,
 	  x->period,
-	  hpcfmt_str_ensure(x->formula), hpcfmt_str_ensure(x->format));
+	  hpcfmt_str_ensure(x->formula), hpcfmt_str_ensure(x->format),
+	  x->flags.fields.time_enabled, x->flags.fields.time_running);
   return HPCFMT_OK;
 }
 

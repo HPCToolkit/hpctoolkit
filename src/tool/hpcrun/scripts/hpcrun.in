@@ -159,6 +159,15 @@ Options: Profiling (Defaults shown in curly brackets {})
                        Delay starting sampling until the application calls
                        hpctoolkit_sampling_start().
 
+  -p,  --precise-ip <level>
+                       Specify the precise ip level (used for perf events)
+                       0: sample ip can have arbitrary skid
+                       1: sample ip must have constant skid
+                       2: sample ip requested to have 0 skid
+                       3: sample ip must have 0 skid
+                       NOTE: Some architectures support a precise IP with 0 skid.
+                             Incorrect level will unable hpcrun to sample the events.
+   
   -f <frac>, -fp <frac>, --process-fraction <frac>
                        Measure only a fraction <frac> of the execution's
                        processes.  For each process, enable measurement
@@ -279,6 +288,11 @@ do
 
 	-M | --multiplex )
 	    export HPCRUN_MULTIPLEX=1
+	    ;;
+
+	-p | --precise-ip )
+	    export HPCRUN_PRECISE_IP="$1"
+	    shift
 	    ;;
 
 	# --------------------------------------------------
