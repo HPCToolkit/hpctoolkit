@@ -499,6 +499,8 @@ hpcrun_loadModule_add(const char* name)
 void
 hpcrun_initLoadmap()
 {
+  notification_recipients = NULL; // necessary for forked executable
+
   s_loadmap_ptr = &s_loadmap;
   hpcrun_loadmap_init(s_loadmap_ptr);
 
