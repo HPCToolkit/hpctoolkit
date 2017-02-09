@@ -225,7 +225,6 @@ static sigset_t sig_mask;
 
 static int pagesize;
 static size_t tail_mask;
-static int perf_precise_ip;
 
 #ifndef ENABLE_PERFMON
 static const char *event_name = "PERF_COUNT_HW_CPU_CYCLES";
@@ -246,6 +245,7 @@ static int perf_unavail = 0;
 // 2: do not allow multiplex
 static int perf_multiplex = 0;
 
+static int perf_precise_ip = 0;
 
 //******************************************************************************
 // thread local variables
@@ -869,8 +869,6 @@ METHOD_FN(thread_fini_action)
   TMSG(LINUX_PERF, "%d: unregister thread", self->sel_idx);
   if (perf_unavail) { return; }
 
-  //int nevents = (self->evl).nevents; 
-  //perf_thread_fini(nevents);
   TMSG(LINUX_PERF, "%d: unregister thread OK", self->sel_idx);
 }
 

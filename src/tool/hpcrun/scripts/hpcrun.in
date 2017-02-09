@@ -159,8 +159,20 @@ Options: Profiling (Defaults shown in curly brackets {})
                        Delay starting sampling until the application calls
                        hpctoolkit_sampling_start().
 
+  -m,  --multiplex <level>
+                       Option whether to allow multiplexing counters or not.
+                       Multiplexing enables to sample more events than counter
+                       registers can handle with less accuracy. 
+                       To estimate the total count, it requires to also store
+                       time enabled and time running of the application.
+                       This additional metrics will consume more memory.
+                       Argument for this option:
+                       0: Allow multiplexing
+                       1: Allow multiplexing and record scaling factor
+                       2: Do not allow multiplexing
+
   -p,  --precise-ip <level>
-                       Specify the precise ip level (used for perf events)
+                       Specify the precise ip level (used for perf events):
                        0: sample ip can have arbitrary skid
                        1: sample ip must have constant skid
                        2: sample ip requested to have 0 skid
@@ -286,8 +298,9 @@ do
 
 	# --------------------------------------------------
 
-	-M | --multiplex )
-	    export HPCRUN_MULTIPLEX=1
+	-m | --multiplex )
+	    export HPCRUN_MULTIPLEX="$1"
+	    shift
 	    ;;
 
 	-p | --precise-ip )
