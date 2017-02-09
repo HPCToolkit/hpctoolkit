@@ -76,7 +76,6 @@
 //***************************************************************************
 
 namespace BAnal {
-
 namespace Struct {
 
   enum CFG {
@@ -92,11 +91,10 @@ namespace Struct {
     NormTy_All
   };
 
-  Prof::Struct::LM* 
+  void
   makeStructure(BinUtil::LM* lm, 
 		std::ostream * outFile,
 		std::ostream * dotFile,
-		int cfgRequest,
 		NormTy doNormalizeTy,
 		bool isIrrIvalLoop = false,
 		bool isFwdSubst = false,
@@ -111,9 +109,6 @@ namespace Struct {
   normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe = true);
 
 } // namespace Struct
-
 } // namespace BAnal
-
-//****************************************************************************
 
 #endif // BAnal_Struct_hpp

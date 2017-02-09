@@ -232,11 +232,6 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
 #endif
 
 #ifdef BANAL_USE_OA
-static ProcInfoVec*
-buildLMSkeleton(Prof::Struct::LM* lmStrct,
-		BinUtil::LM* lm,
-		ProcNameMgr* procNmMgr);
-
 static Prof::Struct::Proc*
 buildProcStructure(ProcInfo pinfo,
 		   bool isIrrIvalLoop, bool isFwdSubst,
@@ -264,7 +259,7 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 // Debug functions to display input data for loops, blocks and stmts
 // ------------------------------------------------------------
 
-#define DEBUG_CFG_SOURCE  0
+#define DEBUG_CFG_SOURCE  1
 
 #if DEBUG_CFG_SOURCE
 static void
@@ -573,69 +568,15 @@ static const string& OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm;
 namespace BAnal {
 namespace Struct {
 
-#ifdef BANAL_USE_OA
-
-static Prof::Struct::LM *
-makeStructure_OA(BinUtil::LM * lm,
-		 std::ostream * dotFile,
-		 NormTy doNormalizeTy,
-		 bool isIrrIvalLoop,
-		 bool isFwdSubst,
-		 ProcNameMgr* procNmMgr,
-		 const std::string& dbgProcGlob)
-{
-  Prof::Struct::LM* lmStruct = new Prof::Struct::LM(lm->name(), NULL);
-
-#ifdef BANAL_USE_SYMTAB
-  Symtab * symtab = Inline::openSymtab(lm->name());
-#endif
-
-  // 1. Build Struct::File/Struct::Proc skeletal structure
-  ProcInfoVec * pvec = buildLMSkeleton(lmStruct, lm, procNmMgr);
-
-  // 2. For each [Struct::Proc, BinUtil::Proc] pair, complete the build.
-  // Note that a Struct::Proc may be associated with more than one
-  // BinUtil::Proc.
-  for (auto it = pvec->begin(); it != pvec->end(); ++it) {
-    BinUtil::Proc* p = it->proc_bin;
-
-    DIAG_Msg(2, "Building scope tree for [" << p->name()  << "] ... ");
-    buildProcStructure(*it, isIrrIvalLoop, isFwdSubst,
-		       procNmMgr, dbgProcGlob);
-  }
-  delete pvec;
-
-  // 3. Normalize
-  if (doNormalizeTy != NormTy_None) {
-    bool doNormalizeUnsafe = (doNormalizeTy == NormTy_All);
-    normalize(lmStruct, doNormalizeUnsafe);
-  }
-
-  // 4. Write CFG in dot (graphviz) format to file.
-  if (dotFile != NULL) {
-    makeDotFile(dotFile, lm);
-  }
-
-#ifdef BANAL_USE_SYMTAB
-  Inline::closeSymtab();
-#endif
-
-  return lmStruct;
-}
-#endif  // open analysis
-
-
-#ifdef BANAL_USE_PARSEAPI
-
-static Prof::Struct::LM *
-makeStructure_ParseAPI(BinUtil::LM * lm,
-		       std::ostream * outFile,
-		       std::ostream * dotFile,
-		       NormTy doNormalizeTy,
-		       bool isIrrIvalLoop,
-		       bool isFwdSubst,
-		       ProcNameMgr* procNmMgr,
-		       const std::string& dbgProcGlob)
+void
+makeStructure(BinUtil::LM * lm,
+	      std::ostream * outFile,
+	      std::ostream * dotFile,
+	      NormTy doNormalizeTy,
+	      bool isIrrIvalLoop,
+	      bool isFwdSubst,
+	      ProcNameMgr* procNmMgr,
+	      const std::string& dbgProcGlob)
 {
   Prof::Struct::LM* lmStruct = new Prof::Struct::LM(lm->name(), NULL);
   HPC::StringTable strTab;
@@ -657,7 +598,7 @@ makeStructure_ParseAPI(BinUtil::LM * lm,
     code_obj->parse();
   }
 
-  Output::printStructBegin(outFile);
+  Output::printStructBegin(outFile, lm->name());
 
   // 1. Build Struct::File/Struct::Proc skeletal structure
   ProcInfoVec * pvec = buildLMSkeleton(lmStruct, lm, code_obj, procNmMgr);
@@ -694,63 +635,10 @@ makeStructure_ParseAPI(BinUtil::LM * lm,
   }
 
   Inline::closeSymtab();
-
-  return lmStruct;
 }
-#endif  // parseapi
 
 }  // namespace Struct
 }  // namespace BAnal
-
-
-// The top-level split for makeStructure() between OpenAnalysis and
-// ParseAPI based on --cfg.  This is where we transition from variable
-// (cfgRequest) to #ifdef.  Clumsy, but anything would be awkward for
-// this case.
-//
-Prof::Struct::LM*
-BAnal::Struct::makeStructure(BinUtil::LM* lm,
-			     std::ostream * outFile,
-			     std::ostream * dotFile,
-			     int cfgRequest,
-			     NormTy doNormalizeTy,
-			     bool isIrrIvalLoop,
-			     bool isFwdSubst,
-			     ProcNameMgr* procNmMgr,
-			     const std::string& dbgProcGlob)
-{
-  // Assume lm->Read() has been performed
-  DIAG_Assert(lm, DIAG_UnexpectedInput);
-
-  // Verify that the requested CFG support was compiled in and then
-  // call the OA or ParseAPI version.
-  Prof::Struct::LM * lmStruct;
-
-  switch (cfgRequest) {
-
-  case BAnal::Struct::CFG_OA:
-#ifdef BANAL_USE_OA
-    lmStruct = makeStructure_OA(lm, dotFile, doNormalizeTy, isIrrIvalLoop,
-				isFwdSubst, procNmMgr, dbgProcGlob);
-#else
-    DIAG_EMsg("hpcstruct was not compiled with OpenAnalysis");
-    exit(1);
-#endif
-    break;
-
-  default:
-#ifdef BANAL_USE_PARSEAPI
-    lmStruct = makeStructure_ParseAPI(lm, outFile, dotFile, doNormalizeTy, isIrrIvalLoop,
-				      isFwdSubst, procNmMgr, dbgProcGlob);
-#else
-    DIAG_EMsg("hpcstruct was not compiled with ParseAPI");
-    exit(1);
-#endif
-    break;
-  }
-
-  return lmStruct;
-}
 
 
 // normalize: Because of compiler optimizations and other things, it
@@ -778,71 +666,6 @@ BAnal::Struct::normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe)
 namespace BAnal {
 namespace Struct {
 
-// buildLMSkeleton: Build skeletal file-procedure structure.  This
-// will be useful later when detecting alien lines.  Also, the
-// nesting structure allows inference of accurate boundaries on
-// procedure end lines.
-//
-// A Struct::Proc can be associated with multiple BinUtil::Procs
-//
-// Struct::Procs will be sorted by begLn (cf. Struct::ACodeNode::Reorder)
-//
-#ifdef BANAL_USE_OA
-static ProcInfoVec *
-buildLMSkeleton(Prof::Struct::LM* lmStrct,
-		BinUtil::LM* lm,
-		ProcNameMgr* procNmMgr)
-{
-  ProcInfoVec * pvec = new ProcInfoVec;
-  
-  // -------------------------------------------------------
-  // 1. Create basic structure for each procedure
-  // -------------------------------------------------------
-
-  for (auto it = lm->procs().begin(); it != lm->procs().end(); ++it) {
-    BinUtil::Proc* p = it->second;
-
-    if (p->size() != 0) {
-      Prof::Struct::File* fStrct = demandFileNode(lmStrct, p);
-      Prof::Struct::Proc* pStrct = demandProcNode(fStrct, p, procNmMgr);
-      pvec->push_back(ProcInfo(pStrct, p));
-    }
-  }
-
-  // -------------------------------------------------------
-  // 2. Establish nesting information:
-  // -------------------------------------------------------
-  // FIXME: disable until we are sure we can handle this (cf. MOAB)
-#if 0
-  for (auto it = pvec->begin(); it != pvec->end(); ++it) {
-    Prof::Struct::Proc* pStrct = it->proc;
-    BinUtil::Proc* p = it->proc_bin;
-    BinUtil::Proc* parent = p->parent();
-
-    if (parent) {
-      Prof::Struct::Proc* parentScope = lmStrct->findProc(parent->begVMA());
-      pStrct->unlink();
-      pStrct->link(parentScope);
-    }
-  }
-#endif
-
-  // FIXME (minor): The following order is appropriate when we have
-  // symbolic information. I.e. we, 1) establish nesting information
-  // and then attempt to refine procedure bounds using nesting
-  // information.  If such nesting information is not available,
-  // assume correct bounds and attempt to establish nesting.
-  
-  // 3. Establish procedure bounds: nesting + first line ... [FIXME]
-
-  // 4. Establish procedure groups: [FIXME: more stuff from DWARF]
-  //      template instantiations, class member functions
-
-  return pvec;
-}
-#endif  // open analysis
-
-
 // In the ParseAPI version, we iterate over the ParseAPI list of
 // functions and match them up with the BinUtil procedures by entry
 // address.  We still use BinUtil::Proc for the line map info, even in
@@ -851,7 +674,6 @@ buildLMSkeleton(Prof::Struct::LM* lmStrct,
 // Note: several parseapi functions (targ410aa7) may map to the same
 // proc scope node and/or binutils proc, so we make a func list.
 //
-#ifdef BANAL_USE_PARSEAPI
 static ProcInfoVec *
 buildLMSkeleton(Prof::Struct::LM* lmStruct,
 		BinUtil::LM* lm,
@@ -899,7 +721,6 @@ buildLMSkeleton(Prof::Struct::LM* lmStruct,
 
   return pvec;
 }
-#endif  // parseAPI
 
 
 // demandFileNode:
@@ -2028,9 +1849,11 @@ typedef map <Block *, bool> BlockSet;
 typedef map <VMA, HeaderInfo> HeaderList;
 typedef map <long, Prof::Struct::ACodeNode *> AlienScopeMap;
 
+#if 0
 static Prof::Struct::Proc *
 makeProcScope(Prof::Struct::LM *, ProcInfo, ParseAPI::Function *,
 	      TreeNode *, const ParseAPI::Function::blocklist &, HPC::StringTable &);
+#endif
 
 static TreeNode *
 deleteInlinePrefix(TreeNode *, Inline::InlineSeqn, HPC::StringTable &);
@@ -2346,6 +2169,7 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
   }
 }
 
+#if 0
 
 // Locate the beginning line number and VMA range for the inline tree
 // 'root' and make new Proc and File scope nodes for this function.
@@ -2406,6 +2230,7 @@ makeProcScope(Prof::Struct::LM * lm, ProcInfo pinfo, ParseAPI::Function * func,
 
   return procScope;
 }
+#endif
 
 
 // Delete the inline sequence 'prefix' from root's tree and reparent

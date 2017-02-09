@@ -57,6 +57,7 @@
 //***************************************************************************
 
 #include <ostream>
+#include <string>
 
 #include "Struct-Inline.hpp"
 #include "Struct-Output.hpp"
@@ -73,7 +74,7 @@ namespace BAnal {
 namespace Output {
 
 void
-printStructBegin(ostream *outFile)
+printStructBegin(ostream *outFile, string lmName)
 {
   if (outFile == NULL) {
     return;
@@ -83,7 +84,8 @@ printStructBegin(ostream *outFile)
 	   << "<!DOCTYPE HPCToolkitStructure [\n"
 	   << hpcstruct_xml_head
 	   << "]>\n"
-	   << "<HPCToolkitStructure i=\"0\" version=\"4.6\" n=\"\">\n";
+	   << "<HPCToolkitStructure i=\"0\" version=\"4.6\" n=\"\">\n"
+	   << "<LM i=\"2\" n=\"" << lmName << "\" v=\"{}\">\n";
 
   *outFile << "\n\n";
 }
@@ -95,7 +97,8 @@ void printStructEnd(ostream *outFile)
     return;
   }
 
-  *outFile << "</HPCToolkitStructure>\n";
+  *outFile << "</LM>\n"
+	   << "</HPCToolkitStructure>\n";
 }
 
 }  // namespace Output

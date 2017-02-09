@@ -246,7 +246,7 @@ realmain(int argc, char* argv[])
   }
 
   makeStructure(lm, outFile, dotFile,
-		args.cfgRequest, args.doNormalizeTy,
+		args.doNormalizeTy,
 		args.isIrreducibleIntervalLoop,
 		args.isForwardSubstitution,
 		procNameMgr, args.dbgProcGlob);

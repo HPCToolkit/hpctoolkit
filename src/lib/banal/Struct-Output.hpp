@@ -57,7 +57,7 @@
 namespace BAnal {
 namespace Output {
 
-void printStructBegin(std::ostream *);
+void printStructBegin(std::ostream *, std::string);
 void printStructEnd(std::ostream *);
 
 }  // namespace Output
