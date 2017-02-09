@@ -2194,7 +2194,6 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
 #endif
     SymtabAPI::LineInformation * lmap = NULL;
     Address entry_addr = func->addr();
-    TreeNode * root = new TreeNode;
     num++;
 
 #if 0
@@ -2246,6 +2245,15 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
       }
     }
 #endif
+
+    // if this function is entirely contained within another function
+    // (as determined by its entry block), then skip it.
+    if (num_funcs > 1 && func->entry()->containingFuncs() > 1) {
+      DEBUG_MESG("\nskipping duplicated function:  '" << func->name() << "'\n");
+      continue;
+    }
+
+    TreeNode * root = new TreeNode;
 
     // basic blocks for this function
     const ParseAPI::Function::blocklist & blist = func->blocks();
