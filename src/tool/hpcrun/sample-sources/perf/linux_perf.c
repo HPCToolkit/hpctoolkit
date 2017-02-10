@@ -110,7 +110,6 @@
 #endif
 
 #include "perf-util.h" 	 // u64
-#include "perf-metric.h" // metric_perf_info_t
 
 //******************************************************************************
 // macros
@@ -732,6 +731,25 @@ perf_add_kernel_callchain(
 
 
 // ---------------------------------------------
+// create a metric and return the descriptor of the new metric
+// ---------------------------------------------
+
+static metric_desc_t*
+create_metric(sample_source_t *self, int index, MetricFlags_ValFmt_t type,
+	char *name, long threshold, metric_desc_properties_t prop)
+{
+  // set the metric for this perf event
+  metric_id[index] = hpcrun_new_metric();
+
+  metric_desc_t *m = hpcrun_set_metric_info_and_period(metric_id[index], name,
+				    type, threshold, prop);
+  if (m == NULL) {
+    EMSG("Error: unable to create metric #%d: %s", index, name);
+  }
+  return m;
+}
+
+// ---------------------------------------------
 // get the index of the file descriptor
 // ---------------------------------------------
 
@@ -1020,22 +1038,35 @@ METHOD_FN(process_event_list, int lush_metrics)
     struct perf_event_attr *attr = &events[i];
     perf_attr_init(name, attr, threshold);
 
-    // set the metric for this perf event
-    metric_id[i] = hpcrun_new_metric();
-
-    // store the metric
-    METHOD_CALL(self, store_metric_id, i, metric_id[i]);
-      
     // initialize the property of the metric
     // if the metric's name has "CYCLES" it mostly a cycle metric 
     //  this assumption is not true, but it's quite closed
 
     prop = (strstr(name, "CYCLES") != NULL) ? metric_property_cycles : metric_property_none;
 
-    char *name_dup = strdup(name);
-    hpcrun_set_metric_info_and_period(metric_id[i], name_dup,
-				    MetricFlags_ValFmt_Int,
-				    threshold, prop);
+    char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
+				   // since the OS will free it, we don't have to do it in hpcrun
+    struct metric_desc_t *m = create_metric(self, i, MetricFlags_ValFmt_Int, name_dup, threshold, prop);
+
+    // detecting multiplex and compute the scale factor
+    if (perf_multiplex == 1) {
+      const size_t MAX_LABEL_CHARS = 80;
+
+      // the formula for the estimate count = raw_count * scale_factor
+      // 				    = metric(i) * metric(i+1)
+      if (m != NULL) {
+      	char buffer[MAX_LABEL_CHARS]; 
+      	sprintf(buffer, "($%d*$%d)", i, i+1);
+        m -> formula = buffer;
+      }
+
+      // create metric for application's scale factor (i.e  time enabled/time running)
+      char *scale_factor_metric = (char *) hpcrun_malloc(sizeof (char)*MAX_LABEL_CHARS);
+      snprintf(scale_factor_metric, MAX_LABEL_CHARS, "SF-%s", name ); // SF: Scale factor
+
+      i++;
+      create_metric(self, i, MetricFlags_ValFmt_Real, scale_factor_metric, 1, metric_property_none);
+    }
   }
 }
 
@@ -1164,11 +1195,19 @@ perf_event_handler(
 
     // check if we have multiplexing or not with this counter
     // if the time enabled is not the same as running time, then it's multiplexed
-    metric_desc_t* metric = hpcrun_id2metric(metric_id[index]);
+    //metric_desc_t* metric = hpcrun_id2metric(metric_id[index]);
 
-    metric->flags.fields.time_enabled = perf_mmap[index]->time_enabled;
-    metric->flags.fields.time_running = perf_mmap[index]->time_running;
+    if (perf_multiplex == 1) {
+      // record time enabled and time running
+      // if the time enabled is not the same as running time, then it's multiplexed
+      
+      u64 time_enabled = perf_mmap[index]->time_enabled;
+      u64 time_running = perf_mmap[index]->time_running;
 
+      cct_node_t *node = sv.sample_node;
+      cct_metric_data_set(metric_id[index+1], node, 
+        (cct_metric_data_t){.r =  (double) time_enabled / time_running });
+    }
 #if 0
     if (info->time_enabled != info->time_running) {
       TMSG(LINUX_PERF, "Multiplex: enabled: %d, running: %d ", 
