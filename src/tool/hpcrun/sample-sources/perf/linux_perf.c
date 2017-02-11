@@ -1055,7 +1055,7 @@ METHOD_FN(process_event_list, int lush_metrics)
       // the formula for the estimate count = raw_count * scale_factor
       // 				    = metric(i) * metric(i+1)
       if (m != NULL) {
-      	char buffer[MAX_LABEL_CHARS]; 
+      	char *buffer = (char*)hpcrun_malloc(sizeof(char) * MAX_LABEL_CHARS); 
       	sprintf(buffer, "($%d*$%d)", i, i+1);
         m -> formula = buffer;
       }
