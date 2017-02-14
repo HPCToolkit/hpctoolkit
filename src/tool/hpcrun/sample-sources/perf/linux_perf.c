@@ -516,6 +516,43 @@ set_mmap(int perf_fd)
   return mmap;
 }
 
+// find the best precise ip value in this platform
+static u64
+get_precise_ip()
+{
+  static int precise_ip = -1;
+
+  if (precise_ip >= 0)
+    return precise_ip;
+
+  struct perf_event_attr attr;
+  attr.config = 0; // PERF_COUNT_HW_CPU_CYCLES
+  attr.type   = 0; // PERF_TYPE_HARDWARE
+
+  memset(&attr, 0, sizeof(attr));
+
+  // start with the most restrict skid (3) then 2, 1 and 0
+  // this is specified in perf_event_open man page
+  // if there's a change in the specification, we need to change 
+  // this one too (unfortunately)
+  for(int i=3; i>=0; i--) {
+    attr.precise_ip = i;
+
+    // ask sys to "create" the event
+    // it returns -1 if it fails.
+    int ret = perf_event_open(&attr,
+			      THREAD_SELF, CPU_ANY, 
+			      GROUP_FD, PERF_FLAGS);
+    if (ret >= 0) {
+      precise_ip = i;
+      // just quit when the returned value is correct
+      return i;
+    }
+  }
+  precise_ip = 0;
+  return precise_ip;
+}
+
 //----------------------------------------------------------
 // initialize an event
 //  event_num: event number
@@ -526,29 +563,14 @@ static bool
 perf_thread_init(int event_num)
 {
   if (perf_precise_ip == OPTION_AUTODETECT_SKID) {
-    // start with the most restrict skid (3) then 2, 1 and 0
-    // this is specified in perf_event_open man page
-    // if there's a change in the specification, we need to change 
-    // this one too (unfortunately)
-    for(int i=3; i>=0; i--) {
-      events[event_num].precise_ip = i;
-
-      // ask sys to "create" the event
-      // it returns -1 if it fails.
-      perf_thread_fd[event_num] = perf_event_open(&events[event_num],
-			      THREAD_SELF, CPU_ANY, 
-			      GROUP_FD, PERF_FLAGS);
-      if (perf_thread_fd[event_num] >= 0)
-	// just quit when the returned value is correct
-	break;
-    }
-  } else {
-    // ask sys to "create" the event
-    // it returns -1 if it fails.
-    perf_thread_fd[event_num] = perf_event_open(&events[event_num],
-			      THREAD_SELF, CPU_ANY, 
-			      GROUP_FD, PERF_FLAGS);
+    u64 precise_ip = get_precise_ip();
+    events[event_num].precise_ip = precise_ip;
   }
+  // ask sys to "create" the event
+  // it returns -1 if it fails.
+  perf_thread_fd[event_num] = perf_event_open(&events[event_num],
+			      THREAD_SELF, CPU_ANY, 
+			      GROUP_FD, PERF_FLAGS);
   TMSG(LINUX_PERF, "dbg register event %d, fd: %d, skid: %d", 
     event_num, perf_thread_fd[event_num], events[event_num].precise_ip);
 
@@ -802,7 +824,7 @@ get_fd_index(int num_events, int fd)
 
 
 static long
-getEnvLong(const char *env_var)
+getEnvLong(const char *env_var, long default_value)
 {
   const char *str_val= getenv(env_var);
 
@@ -813,7 +835,8 @@ getEnvLong(const char *env_var)
       return val;
     }
   }
-  return 0;
+  // invalid value
+  return default_value;
 }
 
 /******************************************************************************
@@ -832,9 +855,9 @@ METHOD_FN(init)
 
   // checking the option of multiplexing:
   // the env variable is set by hpcrun or by user (case for static exec)
-  perf_multiplex  = getEnvLong( HPCRUN_OPTION_MULTIPLEX );
+  perf_multiplex  = getEnvLong( HPCRUN_OPTION_MULTIPLEX, 0 );
 
-  perf_precise_ip = getEnvLong( HPCRUN_OPTION_PRECISE_IP );
+  perf_precise_ip = getEnvLong( HPCRUN_OPTION_PRECISE_IP, OPTION_AUTODETECT_SKID );
   if (perf_precise_ip<0 || perf_precise_ip>OPTION_AUTODETECT_SKID ) {
     // make sure the user has the correct value of precise ip
     perf_precise_ip = OPTION_AUTODETECT_SKID;
