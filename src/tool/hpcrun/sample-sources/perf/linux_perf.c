@@ -158,6 +158,8 @@
 #define HPCRUN_OPTION_MULTIPLEX  "HPCRUN_MULTIPLEX"
 #define HPCRUN_OPTION_PRECISE_IP "HPCRUN_PRECISE_IP"
 
+#define OPTION_AUTODETECT_SKID  4
+
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -244,7 +246,13 @@ static int perf_unavail = 0;
 // 2: do not allow multiplex
 static int perf_multiplex = 0;
 
-static int perf_precise_ip = 0;
+// Possible value of precise ip:
+//  0  SAMPLE_IP can have arbitrary skid.
+//  1  SAMPLE_IP must have constant skid.
+//  2  SAMPLE_IP requested to have 0 skid.
+//  3  SAMPLE_IP must have 0 skid.
+//  4  Detect automatically to have the most precise possible (default)
+static int perf_precise_ip = OPTION_AUTODETECT_SKID;
 
 //******************************************************************************
 // thread local variables
@@ -517,13 +525,32 @@ set_mmap(int perf_fd)
 static bool
 perf_thread_init(int event_num)
 {
-  // ask sys to "create" the event
-  // it returns -1 if it fails.
-  perf_thread_fd[event_num] = perf_event_open(&events[event_num],
+  if (perf_precise_ip == OPTION_AUTODETECT_SKID) {
+    // start with the most restrict skid (3) then 2, 1 and 0
+    // this is specified in perf_event_open man page
+    // if there's a change in the specification, we need to change 
+    // this one too (unfortunately)
+    for(int i=3; i>=0; i--) {
+      events[event_num].precise_ip = i;
+
+      // ask sys to "create" the event
+      // it returns -1 if it fails.
+      perf_thread_fd[event_num] = perf_event_open(&events[event_num],
 			      THREAD_SELF, CPU_ANY, 
 			      GROUP_FD, PERF_FLAGS);
-
-  TMSG(LINUX_PERF, "dbg register event %d, fd: %d", event_num, perf_thread_fd[event_num]);
+      if (perf_thread_fd[event_num] >= 0)
+	// just quit when the returned value is correct
+	break;
+    }
+  } else {
+    // ask sys to "create" the event
+    // it returns -1 if it fails.
+    perf_thread_fd[event_num] = perf_event_open(&events[event_num],
+			      THREAD_SELF, CPU_ANY, 
+			      GROUP_FD, PERF_FLAGS);
+  }
+  TMSG(LINUX_PERF, "dbg register event %d, fd: %d, skid: %d", 
+    event_num, perf_thread_fd[event_num], events[event_num].precise_ip);
 
   // check if perf_event_open is successful
   if (perf_thread_fd[event_num] <0 ) {
@@ -660,6 +687,10 @@ perf_add_kernel_callchain(
 {
   cct_node_t *parent = leaf;
   pe_header_t hdr; 
+  
+  if (data_aux == NULL) // this is very unlikely, but it's possible 
+    return parent;
+
   int current_event_index = *((int*) data_aux);
   pe_mmap_t *current_perf_mmap = perf_mmap[current_event_index];
 
@@ -674,6 +705,7 @@ perf_add_kernel_callchain(
       if (sample_type & PERF_SAMPLE_IDENTIFIER) {
       }
       if (sample_type & PERF_SAMPLE_IP) {
+	// to be used by datacentric event
 	u64 ip;
 	perf_read_u64(current_perf_mmap, &ip);
       }
@@ -682,6 +714,7 @@ perf_add_kernel_callchain(
       if (sample_type & PERF_SAMPLE_TIME) {
       }
       if (sample_type & PERF_SAMPLE_ADDR) {
+	// to be used by datacentric event
 	u64 addr;
 	perf_read_u64(current_perf_mmap, &addr);
       }
@@ -694,6 +727,7 @@ perf_add_kernel_callchain(
       if (sample_type & PERF_SAMPLE_PERIOD) {
       }
       if (sample_type & PERF_SAMPLE_READ) {
+	// to be used by datacentric event
 	handle_struct_read_format(current_perf_mmap,
 			 current_event->read_format);
       }
@@ -770,11 +804,11 @@ get_fd_index(int num_events, int fd)
 static long
 getEnvLong(const char *env_var)
 {
-  const char *precise_ip = getenv(env_var);
+  const char *str_val= getenv(env_var);
 
-  if (precise_ip) {
+  if (str_val) {
     char *end_ptr;
-    long val = strtol( precise_ip, &end_ptr, 10 );
+    long val = strtol( str_val, &end_ptr, 10 );
     if ( end_ptr != env_var && (val < LONG_MAX && val > LONG_MIN) ) {
       return val;
     }
@@ -801,7 +835,10 @@ METHOD_FN(init)
   perf_multiplex  = getEnvLong( HPCRUN_OPTION_MULTIPLEX );
 
   perf_precise_ip = getEnvLong( HPCRUN_OPTION_PRECISE_IP );
-
+  if (perf_precise_ip<0 || perf_precise_ip>OPTION_AUTODETECT_SKID ) {
+    // make sure the user has the correct value of precise ip
+    perf_precise_ip = OPTION_AUTODETECT_SKID;
+  }
   self->state = INIT;
   TMSG(LINUX_PERF, "%d: init OK", self->sel_idx);
 }
