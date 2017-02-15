@@ -158,7 +158,14 @@
 #define HPCRUN_OPTION_MULTIPLEX  "HPCRUN_MULTIPLEX"
 #define HPCRUN_OPTION_PRECISE_IP "HPCRUN_PRECISE_IP"
 
-#define OPTION_AUTODETECT_SKID  4
+// default option for precise_ip: autodetect skid
+#define PERF_EVENT_AUTODETECT_SKID  	4
+
+// constants of precise_ip (see the man page)
+#define PERF_EVENT_SKID_ZERO_REQUIRED 	3
+#define PERF_EVENT_SKID_ZERO_REQUESTED 	2
+#define PERF_EVENT_SKID_CONSTANT 	1
+#define PERF_EVENT_SKID_ARBITRARY 	0
 
 //******************************************************************************
 // type declarations
@@ -208,6 +215,31 @@ static int perf_event_handler(
 );
 
 
+
+//******************************************************************************
+// constants
+//******************************************************************************
+
+// ordered in increasing precision
+const int perf_skid_precision[] = {
+  PERF_EVENT_SKID_ARBITRARY,
+  PERF_EVENT_SKID_CONSTANT,
+  PERF_EVENT_SKID_ZERO_REQUESTED,
+  PERF_EVENT_SKID_ZERO_REQUIRED
+};
+
+const int perf_skid_flavors = sizeof(perf_skid_precision)/sizeof(int);
+
+
+#ifndef ENABLE_PERFMON
+static const char *event_name = "PERF_COUNT_HW_CPU_CYCLES";
+#endif
+
+static const char * dashes_separator = 
+  "---------------------------------------------------------------------------\n";
+static const char * equals_separator =
+  "===========================================================================\n";
+
 //******************************************************************************
 // local variables
 //******************************************************************************
@@ -227,15 +259,6 @@ static sigset_t sig_mask;
 static int pagesize;
 static size_t tail_mask;
 
-#ifndef ENABLE_PERFMON
-static const char *event_name = "PERF_COUNT_HW_CPU_CYCLES";
-#endif
-
-static const char * dashes_separator = 
-  "---------------------------------------------------------------------------\n";
-static const char * equals_separator =
-  "===========================================================================\n";
-
 // Special case to make perf init a soft failure.
 // Make sure that we don't use perf if it won't work.
 static int perf_unavail = 0;
@@ -252,7 +275,7 @@ static int perf_multiplex = 0;
 //  2  SAMPLE_IP requested to have 0 skid.
 //  3  SAMPLE_IP must have 0 skid.
 //  4  Detect automatically to have the most precise possible (default)
-static int perf_precise_ip = OPTION_AUTODETECT_SKID;
+static int perf_precise_ip = PERF_EVENT_AUTODETECT_SKID;
 
 //******************************************************************************
 // thread local variables
@@ -526,8 +549,8 @@ get_precise_ip()
     return precise_ip;
 
   struct perf_event_attr attr;
-  attr.config = 0; // PERF_COUNT_HW_CPU_CYCLES
-  attr.type   = 0; // PERF_TYPE_HARDWARE
+  attr.config = PERF_COUNT_HW_CPU_CYCLES; // Perf's cycle event
+  attr.type   = PERF_TYPE_HARDWARE; 	  // it's a hardware event
 
   memset(&attr, 0, sizeof(attr));
 
@@ -535,8 +558,8 @@ get_precise_ip()
   // this is specified in perf_event_open man page
   // if there's a change in the specification, we need to change 
   // this one too (unfortunately)
-  for(int i=3; i>=0; i--) {
-    attr.precise_ip = i;
+  for(int i=perf_skid_flavors-1; i>=0; i--) {
+    attr.precise_ip = perf_skid_precision[i];
 
     // ask sys to "create" the event
     // it returns -1 if it fails.
@@ -562,7 +585,7 @@ get_precise_ip()
 static bool
 perf_thread_init(int event_num)
 {
-  if (perf_precise_ip == OPTION_AUTODETECT_SKID) {
+  if (perf_precise_ip == PERF_EVENT_AUTODETECT_SKID) {
     u64 precise_ip = get_precise_ip();
     events[event_num].precise_ip = precise_ip;
   }
@@ -857,10 +880,10 @@ METHOD_FN(init)
   // the env variable is set by hpcrun or by user (case for static exec)
   perf_multiplex  = getEnvLong( HPCRUN_OPTION_MULTIPLEX, 0 );
 
-  perf_precise_ip = getEnvLong( HPCRUN_OPTION_PRECISE_IP, OPTION_AUTODETECT_SKID );
-  if (perf_precise_ip<0 || perf_precise_ip>OPTION_AUTODETECT_SKID ) {
+  perf_precise_ip = getEnvLong( HPCRUN_OPTION_PRECISE_IP, PERF_EVENT_AUTODETECT_SKID );
+  if (perf_precise_ip<0 || perf_precise_ip>PERF_EVENT_AUTODETECT_SKID ) {
     // make sure the user has the correct value of precise ip
-    perf_precise_ip = OPTION_AUTODETECT_SKID;
+    perf_precise_ip = PERF_EVENT_AUTODETECT_SKID;
   }
   self->state = INIT;
   TMSG(LINUX_PERF, "%d: init OK", self->sel_idx);
