@@ -566,7 +566,8 @@ makeStructure(BinUtil::LM * lm,
 
   FileMap * fileMap = makeSkeleton(lm, code_obj, procNmMgr);
 
-  Output::printStructBegin(outFile, lm->name());
+  Output::printStructFileBegin(outFile);
+  Output::printLoadModuleBegin(outFile, lm->name());
 
   for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
     FileInfo * finfo = fit->second;
@@ -587,7 +588,8 @@ makeStructure(BinUtil::LM * lm,
     Output::printFileEnd(outFile, finfo);
   }
 
-  Output::printStructEnd(outFile);
+  Output::printLoadModuleEnd(outFile);
+  Output::printStructFileEnd(outFile);
 
 #if 0
   // 1. Build Struct::File/Struct::Proc skeletal structure

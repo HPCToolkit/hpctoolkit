@@ -64,8 +64,11 @@ namespace Output {
 using namespace Struct;
 using namespace std;
 
-void printStructBegin(ostream *, string);
-void printStructEnd(ostream *);
+void printStructFileBegin(ostream *);
+void printStructFileEnd(ostream *);
+
+void printLoadModuleBegin(ostream *, string);
+void printLoadModuleEnd(ostream *);
 
 void printFileBegin(ostream *, FileInfo *);
 void printFileEnd(ostream *, FileInfo *);

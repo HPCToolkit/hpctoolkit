@@ -58,8 +58,6 @@
 
 // FIXME and TODO:
 //
-// 2. Add escapes for xml delimeters, '<foo>' --> '&lt;foo&gt;'.
-//
 // 3. Fill in empty file name, "" --> "<unknown file>".
 //
 // 4. Add vma ranges v="{[0x400c2d-0x400c32) [0x400c8c-0x400c94)}"
@@ -79,6 +77,8 @@
 #include <string>
 
 #include <CFG.h>
+
+#include <lib/xml/xml.hpp>
 #include "Struct-Inline.hpp"
 #include "Struct-Output.hpp"
 #include "Struct-Skel.hpp"
@@ -90,9 +90,6 @@ using namespace std;
 #define INDENT  "  "
 #define INIT_LM_INDEX  2
 
-// this generates pre-order
-#define NEXT_INDEX  " i=\"" << next_index++ << "\""
-
 static long next_index;
 
 static const char * hpcstruct_xml_head =
@@ -101,12 +98,53 @@ static const char * hpcstruct_xml_head =
 
 //----------------------------------------------------------------------
 
+// Helpers to generate fields inside tags.  These are all designed to
+// fit within << operators.
+
+// this generates pre-order
+#define NEXT_INDEX  " i=\"" << next_index++ << "\""
+
+#define NUM_FIELD(label, num)  " " << label << "=\"" << num << "\""
+
+#define STR_FIELD(label, str)  " " << label << "=\"" << xml::EscapeStr(str) << "\""
+
+//----------------------------------------------------------------------
+
 namespace BAnal {
 namespace Output {
 
-// DOCTYPE header and begin <LM> load module tag.
+// DOCTYPE header and <HPCToolkitStructure> tag.
 void
-printStructBegin(ostream * os, string lmName)
+printStructFileBegin(ostream * os)
+{
+  if (os == NULL) {
+    return;
+  }
+
+  *os << "<?xml version=\"1.0\"?>\n"
+      << "<!DOCTYPE HPCToolkitStructure [\n"
+      << hpcstruct_xml_head
+      << "]>\n"
+      << "<HPCToolkitStructure i=\"0\" version=\"4.6\" n=\"\">\n";
+}
+
+// Closing tag.
+void
+printStructFileEnd(ostream * os)
+{
+  if (os == NULL) {
+    return;
+  }
+
+  *os << "</HPCToolkitStructure>\n";
+  os->flush();
+}
+
+//----------------------------------------------------------------------
+
+// Begin <LM> load module tag.
+void
+printLoadModuleBegin(ostream * os, string lmName)
 {
   if (os == NULL) {
     return;
@@ -114,24 +152,21 @@ printStructBegin(ostream * os, string lmName)
 
   next_index = INIT_LM_INDEX;
 
-  *os << "<?xml version=\"1.0\"?>\n"
-      << "<!DOCTYPE HPCToolkitStructure [\n"
-      << hpcstruct_xml_head
-      << "]>\n"
-      << "<HPCToolkitStructure i=\"0\" version=\"4.6\" n=\"\">\n"
-      << "<LM" << NEXT_INDEX << " n=\"" << lmName << "\" v=\"{}\">\n";
+  *os << "<LM"
+      << NEXT_INDEX
+      << STR_FIELD("n", lmName)
+      << " v=\"{}\">\n";
 }
 
 // Closing </LM> tag.
 void
-printStructEnd(ostream * os)
+printLoadModuleEnd(ostream * os)
 {
   if (os == NULL) {
     return;
   }
 
-  *os << "</LM>\n"
-      << "</HPCToolkitStructure>\n";
+  *os << "</LM>\n";
 }
 
 //----------------------------------------------------------------------
@@ -146,7 +181,7 @@ printFileBegin(ostream * os, FileInfo * finfo)
 
   *os << INDENT << "<F"
       << NEXT_INDEX
-      << " n=\"" << finfo->name << "\""
+      << STR_FIELD("n", finfo->name)
       << ">\n";
 }
 
@@ -176,8 +211,9 @@ printProc(ostream * os, ProcInfo * pinfo)
 
   *os << INDENT << INDENT << "<P"
       << NEXT_INDEX
-      << " n=\"" << pinfo->name << "\""
-      << " v=\"{[0x" << hex << func->addr() << dec << ")}\""
+      << STR_FIELD("n", pinfo->name)
+      << " v=\"{[0x" << hex << func->addr()
+      << "-0x" << func->addr() + 1 << dec << ")}\""
       << ">\n";
 
   // temp placeholder for proc body
@@ -186,8 +222,8 @@ printProc(ostream * os, ProcInfo * pinfo)
 
     *os << INDENT << INDENT << INDENT << "<S"
 	<< NEXT_INDEX
-	<< " l=\"" << sinfo->line_num << "\""
-	<< " v={[0x" << hex << sinfo->vma
+	<< NUM_FIELD("l", sinfo->line_num)
+	<< " v=\"{[0x" << hex << sinfo->vma
 	<< "-0x" << sinfo->vma + sinfo->len << dec << ")}\""
 	<< "/>\n";
   }
