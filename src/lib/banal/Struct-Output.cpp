@@ -57,7 +57,6 @@
 // 3. We allow ostream = NULL to mean that we don't want output.
 
 // FIXME and TODO:
-// 1. Add real index numbers, i="2".
 //
 // 2. Add escapes for xml delimeters, '<foo>' --> '&lt;foo&gt;'.
 //
@@ -89,6 +88,12 @@ using namespace Inline;
 using namespace std;
 
 #define INDENT  "  "
+#define INIT_LM_INDEX  2
+
+// this generates pre-order
+#define NEXT_INDEX  " i=\"" << next_index++ << "\""
+
+static long next_index;
 
 static const char * hpcstruct_xml_head =
 #include <lib/xml/hpc-structure.dtd.h>
@@ -107,12 +112,14 @@ printStructBegin(ostream * os, string lmName)
     return;
   }
 
+  next_index = INIT_LM_INDEX;
+
   *os << "<?xml version=\"1.0\"?>\n"
       << "<!DOCTYPE HPCToolkitStructure [\n"
       << hpcstruct_xml_head
       << "]>\n"
       << "<HPCToolkitStructure i=\"0\" version=\"4.6\" n=\"\">\n"
-      << "<LM i=\"2\" n=\"" << lmName << "\" v=\"{}\">\n";
+      << "<LM" << NEXT_INDEX << " n=\"" << lmName << "\" v=\"{}\">\n";
 }
 
 // Closing </LM> tag.
@@ -138,7 +145,7 @@ printFileBegin(ostream * os, FileInfo * finfo)
   }
 
   *os << INDENT << "<F"
-      << " i=\"3\""
+      << NEXT_INDEX
       << " n=\"" << finfo->name << "\""
       << ">\n";
 }
@@ -168,7 +175,7 @@ printProc(ostream * os, ProcInfo * pinfo)
   TreeNode * root = pinfo->root;
 
   *os << INDENT << INDENT << "<P"
-      << " i=\"4\""
+      << NEXT_INDEX
       << " n=\"" << pinfo->name << "\""
       << " v=\"{[0x" << hex << func->addr() << dec << ")}\""
       << ">\n";
@@ -178,7 +185,7 @@ printProc(ostream * os, ProcInfo * pinfo)
     StmtInfo * sinfo = root->stmtMap.begin()->second;
 
     *os << INDENT << INDENT << INDENT << "<S"
-	<< " i=\"5\""
+	<< NEXT_INDEX
 	<< " l=\"" << sinfo->line_num << "\""
 	<< " v={[0x" << hex << sinfo->vma
 	<< "-0x" << sinfo->vma + sinfo->len << dec << ")}\""
