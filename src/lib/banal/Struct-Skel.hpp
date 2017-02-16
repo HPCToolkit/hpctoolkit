@@ -44,57 +44,98 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-// This file defines the external API that Struct.cpp provides for
-// tool/hpcstruct/main.cpp.
+// This file defines the top-level FileInfo, GroupInfo and ProcInfo
+// classes for makeSkeleton(), doFunctionList() and the Output
+// functions.
+//
+// The Inline Tree Node classes below ProcInfo: TreeNode, LoopInfo and
+// StmtInfo are in Struct-Inline.hpp.
 
 //***************************************************************************
 
-#ifndef BAnal_Struct_hpp
-#define BAnal_Struct_hpp
+#ifndef BAnal_Struct_Skel_hpp
+#define BAnal_Struct_Skel_hpp
 
-#include <ostream>
+#include <map>
 #include <string>
 
-#include <include/uint.h>
-#include <lib/prof/Struct-Tree.hpp>
+#include <CFG.h>
 #include <lib/binutils/LM.hpp>
-#include <lib/support/ProcNameMgr.hpp>
+#include "Struct-Inline.hpp"
 
 namespace BAnal {
 namespace Struct {
 
-  enum CFG {
-    CFG_DEFAULT = 1,
-    CFG_OA,
-    CFG_PARSEAPI
-  };
+using namespace Dyninst;
+using namespace Inline;
+using namespace std;
 
-  enum NormTy {
-    // TODO: redo along the lines of BinUtil::LM::ReadFlg
-    NormTy_None,
-    NormTy_Safe, // Safe-only
-    NormTy_All
-  };
+class FileInfo;
+class GroupInfo;
+class ProcInfo;
 
-  void
-  makeStructure(BinUtil::LM* lm, 
-		std::ostream * outFile,
-		std::ostream * dotFile,
-		NormTy doNormalizeTy,
-		bool isIrrIvalLoop = false,
-		bool isFwdSubst = false,
-		ProcNameMgr* procNameMgr = NULL,
-		const std::string& dbgProcGlob = "");
-  
-  Prof::Struct::Stmt*
-  makeStructureSimple(Prof::Struct::LM* lmStrct, BinUtil::LM* lm, VMA vma);
+typedef map <string, FileInfo *> FileMap;
+typedef map <string, GroupInfo *> GroupMap;
+typedef map <VMA, ProcInfo *> ProcMap;
 
-#if 0
-  bool 
-  normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe = true);
-#endif
+
+// FileInfo and FileMap are the top-level classes for files and
+// procedures.  A FileInfo object contains the procs that belong to
+// one file.
+//
+// GroupMap is indexed by the proc's linkname.
+//
+class FileInfo {
+public:
+  string   name;
+  GroupMap groupMap;
+
+  FileInfo(string nm)
+  {
+    name = nm;
+    groupMap.clear();
+  }
+};
+
+
+// GroupInfo contains the subset of procs that belong to one binutils
+// group as determined by the proc linkname.  Normally, this includes
+// the unnamed procs between two binutils symbols, eg, internal openmp
+// regions.
+//
+// ProcMap is indexed by the proc's entry address.
+//
+class GroupInfo {
+public:
+  BinUtil::Proc * proc_bin;
+  ProcMap procMap;
+
+  GroupInfo(BinUtil::Proc * pb)
+  {
+    proc_bin = pb;
+    procMap.clear();
+  }
+};
+
+
+// Info on one ParseAPI Function and Tree Node for one <P> tag as
+// determined by the func's entry address.
+//
+class ProcInfo {
+public:
+  string name;
+  ParseAPI::Function * func;
+  TreeNode * root;
+
+  ProcInfo(string nm, ParseAPI::Function * fn, TreeNode * rt)
+  {
+    name = nm;
+    func = fn;
+    root = rt;
+  }
+};
 
 } // namespace Struct
 } // namespace BAnal
 
-#endif // BAnal_Struct_hpp
+#endif // BAnal_Struct_Skel_hpp

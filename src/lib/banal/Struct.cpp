@@ -57,16 +57,14 @@
 //
 //***************************************************************************
 
-// Now allow using both BANAL_USE_PARSEAPI and BANAL_USE_OA at the
-// same time, but must define at least one of them.  Also,
-// BANAL_USE_PARSEAPI implies BANAL_USE_SYMTAB.
+// Now require BANAL_USE_PARSEAPI and BANAL_USE_SYMTAB.
 
-#if ! defined(BANAL_USE_PARSEAPI) && ! defined(BANAL_USE_OA)
-#error must define one of BANAL_USE_PARSEAPI and BANAL_USE_OA
+#if ! defined(BANAL_USE_PARSEAPI)
+#error must define BANAL_USE_PARSEAPI
 #endif
 
-#if defined(BANAL_USE_PARSEAPI) && ! defined(BANAL_USE_SYMTAB)
-#error cannot define BANAL_USE_PARSEAPI without BANAL_USE_SYMTAB
+#if ! defined(BANAL_USE_SYMTAB)
+#error must define BANAL_USE_SYMTAB
 #endif
 
 //************************* System Include Files ****************************
@@ -114,6 +112,7 @@ using std::string;
 #include "Struct.hpp"
 #include "Struct-LocationMgr.hpp"
 #include "Struct-Output.hpp"
+#include "Struct-Skel.hpp"
 
 #include <lib/prof/Struct-Tree.hpp>
 #include <lib/prof/Struct-TreeIterator.hpp>
@@ -176,42 +175,14 @@ namespace Struct {
 // Helpers for building a structure tree
 // ------------------------------------------------------------
 
-// The three views of a procedure: scope tree, binutils and parseAPI.
-// This is how we combine the open analysis and parseAPI cases to
-// simplify passing different arguments.
+static FileMap *
+makeSkeleton(BinUtil::LM *, CodeObject *, ProcNameMgr *);
 
-#ifdef BANAL_USE_PARSEAPI
-typedef std::list <ParseAPI::Function *> FuncList;
-#endif
+static void
+doFunctionList(Symtab *, Prof::Struct::LM *, FileInfo *,
+	       GroupInfo *, HPC::StringTable &, ProcNameMgr *);
 
-class ProcInfo {
-public:
-  Prof::Struct::Proc * proc;
-  BinUtil::Proc * proc_bin;
-#ifdef BANAL_USE_PARSEAPI
-  FuncList * func_list;
-#endif
-
-#ifdef BANAL_USE_PARSEAPI
-  ProcInfo(Prof::Struct::Proc *p, BinUtil::Proc *pb, FuncList *fl)
-  {
-    proc = p;
-    proc_bin = pb;
-    func_list = fl;
-  }
-#endif
-
-#ifdef BANAL_USE_OA
-  ProcInfo(Prof::Struct::Proc *p, BinUtil::Proc *pb)
-  {
-    proc = p;
-    proc_bin = pb;
-  }
-#endif
-};
-
-typedef std::vector <ProcInfo> ProcInfoVec;
-
+#if 0
 static Prof::Struct::File*
 demandFileNode(Prof::Struct::LM* lmStrct, BinUtil::Proc* p);
 
@@ -219,16 +190,11 @@ static Prof::Struct::Proc*
 demandProcNode(Prof::Struct::File* fStrct, BinUtil::Proc* p,
 	       ProcNameMgr* procNmMgr);
 
-#ifdef BANAL_USE_PARSEAPI
 static ProcInfoVec *
 buildLMSkeleton(Prof::Struct::LM* lmStrct,
 		BinUtil::LM* lm,
 		ParseAPI::CodeObject *code_obj,
 		ProcNameMgr* procNmMgr);
-
-static void
-doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
-	       HPC::StringTable & strTab, ProcNameMgr * nameMgr);
 #endif
 
 #ifdef BANAL_USE_OA
@@ -259,7 +225,7 @@ findLoopBegLineInfo(BinUtil::Proc* p, OA::OA_ptr<OA::NestedSCR> tarj,
 // Debug functions to display input data for loops, blocks and stmts
 // ------------------------------------------------------------
 
-#define DEBUG_CFG_SOURCE  1
+#define DEBUG_CFG_SOURCE  0
 
 #if DEBUG_CFG_SOURCE
 static void
@@ -598,8 +564,32 @@ makeStructure(BinUtil::LM * lm,
     code_obj->parse();
   }
 
+  FileMap * fileMap = makeSkeleton(lm, code_obj, procNmMgr);
+
   Output::printStructBegin(outFile, lm->name());
 
+  for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
+    FileInfo * finfo = fit->second;
+
+    Output::printFileBegin(outFile, finfo);
+
+    for (auto git = finfo->groupMap.begin(); git != finfo->groupMap.end(); ++git) {
+      GroupInfo * ginfo = git->second;
+
+      doFunctionList(symtab, lmStruct, finfo, ginfo, strTab, procNmMgr);
+
+      for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
+	ProcInfo * pinfo = pit->second;
+
+	Output::printProc(outFile, pinfo);
+      }
+    }
+    Output::printFileEnd(outFile, finfo);
+  }
+
+  Output::printStructEnd(outFile);
+
+#if 0
   // 1. Build Struct::File/Struct::Proc skeletal structure
   ProcInfoVec * pvec = buildLMSkeleton(lmStruct, lm, code_obj, procNmMgr);
 
@@ -610,13 +600,12 @@ makeStructure(BinUtil::LM * lm,
     doFunctionList(symtab, lmStruct, *it, strTab, procNmMgr);
   }
 
-  Output::printStructEnd(outFile);
-
   // delete pvec and the func lists
   for (auto it = pvec->begin(); it != pvec->end(); ++it) {
     delete it->func_list;
   }
   delete pvec;
+#endif
 
 #if 0
   // 3. Normalize
@@ -637,10 +626,85 @@ makeStructure(BinUtil::LM * lm,
   Inline::closeSymtab();
 }
 
+
+// makeSkeleton -- the new buildLMSkeleton
+//
+static FileMap *
+makeSkeleton(BinUtil::LM * lm, CodeObject * code_obj, ProcNameMgr * procNmMgr)
+{
+  FileMap * fileMap = new FileMap;
+
+  // iterate over the ParseAPI Functions
+  const CodeObject::funclist & funcList = code_obj->funcs();
+
+  for (auto flit = funcList.begin(); flit != funcList.end(); ++flit) {
+    ParseAPI::Function * func = *flit;
+    BinUtil::Proc * p = lm->findProc((VMA) func->addr());
+
+    VMA  vma = func->addr();
+    SrcFile::ln  line = 0;
+    string  filenm;
+    string  procnm;
+    string  linknm;
+
+    if (p != NULL) {
+      p->findSrcCodeInfo(vma, 0, procnm, filenm, line);
+      linknm = p->linkName();
+
+      const char * cname = linknm.c_str();
+      if (cname != NULL && cname[0] == '.') {
+	++cname;
+      }
+      procnm = BinUtil::canonicalizeProcName(cname, procNmMgr);
+    }
+
+#if 0
+    cout << "\nfunc:  0x" << hex << vma << dec << "\n"
+	 << "parse:  " << func->name() << "\n"
+	 << "bin:    " << procnm << "\n"
+	 << "link:   " << linknm << "\n"
+	 << "file:   '" << filenm << "'\n"
+	 << "line:   " << line << "\n";
+#endif
+
+    //
+    // locate in file map, or else insert
+    //
+    FileInfo * finfo = NULL;
+
+    auto fit = fileMap->find(filenm);
+    if (fit != fileMap->end()) {
+      finfo = fit->second;
+    }
+    else {
+      finfo = new FileInfo(filenm);
+      (*fileMap)[filenm] = finfo;
+    }
+
+    //
+    // insert into group map for this file
+    //
+    GroupInfo * ginfo = NULL;
+
+    auto git = finfo->groupMap.find(linknm);
+    if (git != finfo->groupMap.end()) {
+      ginfo = git->second;
+    }
+    else {
+      ginfo = new GroupInfo(p);
+      finfo->groupMap[linknm] = ginfo;
+    }
+    ginfo->procMap[vma] = new ProcInfo(procnm, func, NULL);
+  }
+
+  return fileMap;
+}
+
 }  // namespace Struct
 }  // namespace BAnal
 
 
+#if 0
 // normalize: Because of compiler optimizations and other things, it
 // is almost always desirable normalize a scope tree.  For example,
 // almost all unnormalized scope tree contain duplicate statement
@@ -657,6 +721,7 @@ BAnal::Struct::normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe)
   
   return changed;
 }
+#endif
 
 
 //****************************************************************************
@@ -665,6 +730,8 @@ BAnal::Struct::normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe)
 
 namespace BAnal {
 namespace Struct {
+
+#if 0
 
 // In the ParseAPI version, we iterate over the ParseAPI list of
 // functions and match them up with the BinUtil procedures by entry
@@ -706,7 +773,7 @@ buildLMSkeleton(Prof::Struct::LM* lmStruct,
 	FuncList * flist = new FuncList;
 
 	flist->push_back(func);
-	pvec->push_back(ProcInfo(pStruct, p, flist));
+	pvec->push_back(ProcInfo(fStruct->name(), p, flist));
 	smap[pStruct] = flist;
       }
     }
@@ -816,6 +883,8 @@ demandProcNode(Prof::Struct::File* fStrct, BinUtil::Proc* p,
   
   return pStrct;
 }
+
+#endif
 
 } // namespace Struct
 } // namespace BAnal
@@ -1859,19 +1928,21 @@ static TreeNode *
 deleteInlinePrefix(TreeNode *, Inline::InlineSeqn, HPC::StringTable &);
 
 static LoopList *
-doLoopTree(ProcInfo, ParseAPI::Function *, BlockSet &, LoopTreeNode *,
-	   LineInformation *, HPC::StringTable &, ProcNameMgr *);
+doLoopTree(FileInfo *, GroupInfo *, ParseAPI::Function *,
+	   BlockSet &, LoopTreeNode *, LineInformation *,
+	   HPC::StringTable &, ProcNameMgr *);
 
 static TreeNode *
-doLoopLate(ProcInfo, ParseAPI::Function *, BlockSet &, Loop *, const string &,
+doLoopLate(GroupInfo *, ParseAPI::Function *, BlockSet &, Loop *, const string &,
 	   LineInformation *, HPC::StringTable &, ProcNameMgr *);
 
 static void
-doBlock(ProcInfo, ParseAPI::Function *, BlockSet &, Block *, TreeNode *,
+doBlock(GroupInfo *, ParseAPI::Function *, BlockSet &, Block *, TreeNode *,
 	LineInformation *, HPC::StringTable &, ProcNameMgr *);
 
 static LoopInfo *
-findLoopHeader(ProcInfo, ParseAPI::Function *, TreeNode *, Loop *, const string &,
+findLoopHeader(FileInfo *, GroupInfo *, ParseAPI::Function *,
+	       TreeNode *, Loop *, const string &,
 	       HPC::StringTable &, ProcNameMgr *);
 
 static void
@@ -1883,7 +1954,7 @@ static string
 debugPrettyName(const string &);
 
 static void
-debugLoop(ProcInfo, ParseAPI::Function *, Loop *, const string &,
+debugLoop(GroupInfo *, ParseAPI::Function *, Loop *, const string &,
 	  vector <Edge *> &, HeaderList &);
 
 static void
@@ -1986,14 +2057,13 @@ getStatement(Offset vma, StatementVector & svec)
 // In that case, we create new proc/file scope nodes for each function
 // and strip the inline prefix at the call source from the embed
 // function.  This often happens with openmp parallel pragmas.
-// 
+//
 static void
-doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
+doFunctionList(Symtab * symtab, Prof::Struct::LM * lm,
+	       FileInfo * finfo, GroupInfo * ginfo,
 	       HPC::StringTable & strTab, ProcNameMgr * nameMgr)
 {
-  Prof::Struct::Proc * procScope = pinfo.proc;
-  FuncList * func_list = pinfo.func_list;
-  long num_funcs = func_list->size();
+  long num_funcs = ginfo->procMap.size();
 
   // make a map of internal call edges (from target to source) across
   // all funcs in this group.  we use this to strip the inline seqn at
@@ -2002,8 +2072,8 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
   std::map <VMA, VMA> callMap;
 
   if (num_funcs > 1) {
-    for (auto fit = func_list->begin(); fit != func_list->end(); ++fit) {
-      ParseAPI::Function * func = *fit;
+    for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
+      ParseAPI::Function * func = pit->second->func;
       const ParseAPI::Function::edgelist & elist = func->callEdges();
 
       for (auto eit = elist.begin(); eit != elist.end(); ++eit) {
@@ -2016,9 +2086,9 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
 
   // one binutils proc may contain several parseapi funcs
   long num = 0;
-  for (auto fit = func_list->begin(); fit != func_list->end(); ++fit)
-  {
-    ParseAPI::Function * func = *fit;
+  for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
+    ProcInfo * pinfo = pit->second;
+    ParseAPI::Function * func = pinfo->func;
 #if USE_DYNINST_LINE_MAP
     SymtabAPI::Function * sym_func = NULL;
 #endif
@@ -2056,14 +2126,12 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
     }
 
 #if DEBUG_CFG_SOURCE
-    Prof::Struct::File * file = dynamic_cast <Prof::Struct::File *> (pinfo.proc->parent());
-
     cout << "\n------------------------------------------------------------\n"
 	 << "func:  0x" << hex << entry_addr << dec
 	 << "  (" << num << "/" << num_funcs << ")"
-	 << "  bin='" << pinfo.proc_bin->name()
+	 << "  bin='" << ginfo->proc_bin->name()
 	 << "'  parse='" << func->name() << "'\n"
-	 << "file:  '" << file->name() << "'\n";
+	 << "file:  '" << finfo->name << "'\n";
 
     if (call_it != callMap.end()) {
       cout << "\ncall site prefix:  0x" << hex << call_it->second
@@ -2095,8 +2163,9 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
     }
 
     // traverse the loop (Tarjan) tree
-    LoopList *llist = doLoopTree(pinfo, func, visited, func->getLoopTree(),
-				 lmap, strTab, nameMgr);
+    LoopList *llist =
+	doLoopTree(finfo, ginfo, func, visited, func->getLoopTree(), lmap,
+		   strTab, nameMgr);
 
 #if DEBUG_CFG_SOURCE
     cout << "\nnon-loop blocks:\n";
@@ -2106,7 +2175,7 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
     for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
       Block * block = *bit;
       if (! visited[block]) {
-	doBlock(pinfo, func, visited, block, root, lmap, strTab, nameMgr);
+	doBlock(ginfo, func, visited, block, root, lmap, strTab, nameMgr);
       }
     }
 
@@ -2122,9 +2191,12 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
       root = deleteInlinePrefix(root, prefix, strTab);
     }
 
+    // add inline tree to proc info
+    pinfo->root = root;
+
 #if DEBUG_CFG_SOURCE
     cout << "\nfinal inline tree:  (" << num << "/" << num_funcs << ")"
-	 << "  bin='" << pinfo.proc_bin->name()
+	 << "  bin='" << ginfo->proc_bin->name()
 	 << "'  parse='" << func->name() << "'\n";
 
     if (call_it != callMap.end()) {
@@ -2139,14 +2211,14 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
     cout << "\n";
     debugInlineTree(root, NULL, strTab, 0, true);
     cout << "\nend proc:  (" << num << "/" << num_funcs << ")"
-	 << "  bin='" << pinfo.proc_bin->name()
+	 << "  bin='" << ginfo->proc_bin->name()
 	 << "'  parse='" << func->name() << "'\n";
 #endif
 
 #if 0
     // multiple funcs get their own proc/file scope nodes
     if (num > 1) {
-      procScope = makeProcScope(lm, pinfo, func, root, blist, strTab);
+      procScope = makeProcScope(lm, ginfo, func, root, blist, strTab);
     }
     Prof::Struct::File * fileScope = dynamic_cast <Prof::Struct::File *> (procScope->parent());
     long file_index = strTab.str2index(fileScope->name());
@@ -2164,8 +2236,6 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
     coalesceAlienChildren(procScope);
     renumberAlienScopes(procScope);
 #endif
-
-    delete root;
   }
 }
 
@@ -2178,7 +2248,7 @@ doFunctionList(Symtab * symtab, Prof::Struct::LM * lm, ProcInfo pinfo,
 // Returns: proc scope node
 //
 static Prof::Struct::Proc *
-makeProcScope(Prof::Struct::LM * lm, ProcInfo pinfo, ParseAPI::Function * func,
+makeProcScope(Prof::Struct::LM * lm, ProcInfo * pinfo, ParseAPI::Function * func,
 	      TreeNode * root, const ParseAPI::Function::blocklist & blist,
 	      HPC::StringTable & strTab)
 {
@@ -2201,7 +2271,7 @@ makeProcScope(Prof::Struct::LM * lm, ProcInfo pinfo, ParseAPI::Function * func,
   }
 
   string filenm = (file_index != empty_index) ?
-      strTab.index2str(file_index) : pinfo.proc_bin->filename();
+      strTab.index2str(file_index) : pinfo->proc_bin->filename();
   string basenm = FileUtil::basename(filenm.c_str());
   stringstream buf;
 
@@ -2303,7 +2373,7 @@ deleteInlinePrefix(TreeNode * root, Inline::InlineSeqn prefix, HPC::StringTable 
 // then the list contains one element for each subtree.
 //
 static LoopList *
-doLoopTree(ProcInfo pinfo, ParseAPI::Function * func,
+doLoopTree(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 	   BlockSet & visited, LoopTreeNode * ltnode,
 	   LineInformation * lmap, HPC::StringTable & strTab, ProcNameMgr * nameMgr)
 {
@@ -2318,7 +2388,8 @@ doLoopTree(ProcInfo pinfo, ParseAPI::Function * func,
   vector <LoopTreeNode *> clist = ltnode->children;
 
   for (uint i = 0; i < clist.size(); i++) {
-    LoopList *subList = doLoopTree(pinfo, func, visited, clist[i], lmap, strTab, nameMgr);
+    LoopList *subList =
+	doLoopTree(finfo, ginfo, func, visited, clist[i], lmap, strTab, nameMgr);
 
     for (auto sit = subList->begin(); sit != subList->end(); ++sit) {
       myList->push_back(*sit);
@@ -2337,14 +2408,16 @@ doLoopTree(ProcInfo pinfo, ParseAPI::Function * func,
   string loopName = ltnode->name();
   FLPSeqn empty;
 
-  TreeNode * myLoop = doLoopLate(pinfo, func, visited, loop, loopName, lmap, strTab, nameMgr);
+  TreeNode * myLoop =
+      doLoopLate(ginfo, func, visited, loop, loopName, lmap, strTab, nameMgr);
 
   for (auto it = myList->begin(); it != myList->end(); ++it) {
     mergeInlineLoop(myLoop, empty, *it);
   }
 
   // reparent the tree and put into LoopInfo format
-  LoopInfo * myInfo = findLoopHeader(pinfo, func, myLoop, loop, loopName, strTab, nameMgr);
+  LoopInfo * myInfo =
+      findLoopHeader(finfo, ginfo, func, myLoop, loop, loopName, strTab, nameMgr);
 
   myList->clear();
   myList->push_back(myInfo);
@@ -2361,7 +2434,7 @@ doLoopTree(ProcInfo pinfo, ParseAPI::Function * func,
 // Returns: the raw inline tree for this loop.
 //
 static TreeNode *
-doLoopLate(ProcInfo pinfo, ParseAPI::Function * func,
+doLoopLate(GroupInfo * ginfo, ParseAPI::Function * func,
 	   BlockSet & visited, Loop * loop, const string & loopName,
 	   LineInformation * lmap, HPC::StringTable & strTab, ProcNameMgr * nameMgr)
 {
@@ -2376,7 +2449,7 @@ doLoopLate(ProcInfo pinfo, ParseAPI::Function * func,
 
   for (uint i = 0; i < blist.size(); i++) {
     if (! visited[blist[i]]) {
-      doBlock(pinfo, func, visited, blist[i], root, lmap, strTab, nameMgr);
+      doBlock(ginfo, func, visited, blist[i], root, lmap, strTab, nameMgr);
     }
   }
 
@@ -2387,7 +2460,7 @@ doLoopLate(ProcInfo pinfo, ParseAPI::Function * func,
 // Process one basic block.
 //
 static void
-doBlock(ProcInfo pinfo, ParseAPI::Function * func,
+doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 	BlockSet & visited, Block * block, TreeNode * root,
 	LineInformation * lmap, HPC::StringTable & strTab, ProcNameMgr * nameMgr)
 {
@@ -2454,7 +2527,7 @@ doBlock(ProcInfo pinfo, ParseAPI::Function * func,
 	high_vma = svec[0]->endAddr();
 	cache_filenm = svec[0]->getFile();
 	cache_line = svec[0]->getLine();
-	pinfo.proc_bin->lm()->realpath(cache_filenm);
+	ginfo->proc_bin->lm()->realpath(cache_filenm);
 	filenm = cache_filenm;
 	line = cache_line;
       }
@@ -2482,12 +2555,11 @@ doBlock(ProcInfo pinfo, ParseAPI::Function * func,
 // Returns: detached LoopInfo object.
 //
 static LoopInfo *
-findLoopHeader(ProcInfo pinfo, ParseAPI::Function * func, TreeNode * root,
-	       Loop * loop, const string & loopName,
+findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
+	       TreeNode * root, Loop * loop, const string & loopName,
 	       HPC::StringTable & strTab, ProcNameMgr * nameMgr)
 {
-  Prof::Struct::File * file = dynamic_cast <Prof::Struct::File *> (pinfo.proc->parent());
-  long base_index = strTab.str2index(FileUtil::basename(file->name()));
+  long base_index = strTab.str2index(FileUtil::basename(finfo->name));
   string procName = func->name();
 
   //------------------------------------------------------------
@@ -2542,9 +2614,9 @@ findLoopHeader(ProcInfo pinfo, ParseAPI::Function * func, TreeNode * root,
 #if DEBUG_CFG_SOURCE
   cout << "\nraw inline tree:  " << loopName
        << "  '" << func->name() << "'\n"
-       << "file:  '" << file->name() << "'\n\n";
+       << "file:  '" << finfo->name << "'\n\n";
   debugInlineTree(root, NULL, strTab, 0, false);
-  debugLoop(pinfo, func, loop, loopName, backEdges, clist);
+  debugLoop(ginfo, func, loop, loopName, backEdges, clist);
   cout << "\nsearching inline tree:\n";
 #endif
 
@@ -2965,7 +3037,7 @@ debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line)
 
 #ifdef BANAL_USE_PARSEAPI
 static void
-debugLoop(ProcInfo pinfo, ParseAPI::Function * func,
+debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
 	  Loop * loop, const string & loopName,
 	  vector <Edge *> & backEdges, HeaderList & clist)
 {
@@ -2999,7 +3071,7 @@ debugLoop(ProcInfo pinfo, ParseAPI::Function * func,
     string filenm, procnm, label;
     InlineSeqn seqn;
 
-    pinfo.proc_bin->findSrcCodeInfo(vma, 0, procnm, filenm, line);
+    ginfo->proc_bin->findSrcCodeInfo(vma, 0, procnm, filenm, line);
     analyzeAddr(seqn, vma);
 
     if (info->is_src) { label = "src "; }

@@ -53,12 +53,24 @@
 #define Banal_Struct_Output_hpp
 
 #include <ostream>
+#include <string>
+
+#include "Struct-Inline.hpp"
+#include "Struct-Skel.hpp"
 
 namespace BAnal {
 namespace Output {
 
-void printStructBegin(std::ostream *, std::string);
-void printStructEnd(std::ostream *);
+using namespace Struct;
+using namespace std;
+
+void printStructBegin(ostream *, string);
+void printStructEnd(ostream *);
+
+void printFileBegin(ostream *, FileInfo *);
+void printFileEnd(ostream *, FileInfo *);
+
+void printProc(ostream *, ProcInfo *);
 
 }  // namespace Output
 }  // namespace BAnal

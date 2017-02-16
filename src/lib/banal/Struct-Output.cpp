@@ -49,20 +49,46 @@
 // using the Prof::Struct objects (prof/Struct-Tree.hpp).
 //
 // Notes:
-// 1. Opening the file and creating the ostream is handled in
+// 1. All output to the hpcstruct file should come from this file.
+//
+// 2. Opening the file and creating the ostream is handled in
 // tool/hpcstruct/main.c and lib/support/IOUtil.hpp.
 //
-// 2. We allow outFile = NULL to mean that we don't want output.
+// 3. We allow ostream = NULL to mean that we don't want output.
+
+// FIXME and TODO:
+// 1. Add real index numbers, i="2".
+//
+// 2. Add escapes for xml delimeters, '<foo>' --> '&lt;foo&gt;'.
+//
+// 3. Fill in empty file name, "" --> "<unknown file>".
+//
+// 4. Add vma ranges v="{[0x400c2d-0x400c32) [0x400c8c-0x400c94)}"
+// with multiple ranges.
+//
+// 5. Add full vma ranges for <P> proc tags.
+//
+// 6. Add linkname to <P> tags.
+//
+// 7. Fix targ401420 names in <P> tags.
+//
+// 8. Fill in proc body with <L>, <A> and <S> tags (duh).
 
 //***************************************************************************
 
 #include <ostream>
 #include <string>
 
+#include <CFG.h>
 #include "Struct-Inline.hpp"
 #include "Struct-Output.hpp"
+#include "Struct-Skel.hpp"
 
+using namespace Dyninst;
+using namespace Inline;
 using namespace std;
+
+#define INDENT  "  "
 
 static const char * hpcstruct_xml_head =
 #include <lib/xml/hpc-structure.dtd.h>
@@ -73,32 +99,93 @@ static const char * hpcstruct_xml_head =
 namespace BAnal {
 namespace Output {
 
+// DOCTYPE header and begin <LM> load module tag.
 void
-printStructBegin(ostream *outFile, string lmName)
+printStructBegin(ostream * os, string lmName)
 {
-  if (outFile == NULL) {
+  if (os == NULL) {
     return;
   }
 
-  *outFile << "<?xml version=\"1.0\"?>\n"
-	   << "<!DOCTYPE HPCToolkitStructure [\n"
-	   << hpcstruct_xml_head
-	   << "]>\n"
-	   << "<HPCToolkitStructure i=\"0\" version=\"4.6\" n=\"\">\n"
-	   << "<LM i=\"2\" n=\"" << lmName << "\" v=\"{}\">\n";
-
-  *outFile << "\n\n";
+  *os << "<?xml version=\"1.0\"?>\n"
+      << "<!DOCTYPE HPCToolkitStructure [\n"
+      << hpcstruct_xml_head
+      << "]>\n"
+      << "<HPCToolkitStructure i=\"0\" version=\"4.6\" n=\"\">\n"
+      << "<LM i=\"2\" n=\"" << lmName << "\" v=\"{}\">\n";
 }
 
-
-void printStructEnd(ostream *outFile)
+// Closing </LM> tag.
+void
+printStructEnd(ostream * os)
 {
-  if (outFile == NULL) {
+  if (os == NULL) {
     return;
   }
 
-  *outFile << "</LM>\n"
-	   << "</HPCToolkitStructure>\n";
+  *os << "</LM>\n"
+      << "</HPCToolkitStructure>\n";
+}
+
+//----------------------------------------------------------------------
+
+// Begin <F> file tag.
+void
+printFileBegin(ostream * os, FileInfo * finfo)
+{
+  if (os == NULL || finfo == NULL) {
+    return;
+  }
+
+  *os << INDENT << "<F"
+      << " i=\"3\""
+      << " n=\"" << finfo->name << "\""
+      << ">\n";
+}
+
+// Closing </F> tag.
+void
+printFileEnd(ostream * os, FileInfo * finfo)
+{
+  if (os == NULL || finfo == NULL) {
+    return;
+  }
+
+  *os << INDENT << "</F>\n";
+}
+
+//----------------------------------------------------------------------
+
+// Entry point for <P> proc tag and its subtree.
+void
+printProc(ostream * os, ProcInfo * pinfo)
+{
+  if (os == NULL || pinfo == NULL) {
+    return;
+  }
+
+  ParseAPI::Function * func = pinfo->func;
+  TreeNode * root = pinfo->root;
+
+  *os << INDENT << INDENT << "<P"
+      << " i=\"4\""
+      << " n=\"" << pinfo->name << "\""
+      << " v=\"{[0x" << hex << func->addr() << dec << ")}\""
+      << ">\n";
+
+  // temp placeholder for proc body
+  if (root != NULL && ! root->stmtMap.empty()) {
+    StmtInfo * sinfo = root->stmtMap.begin()->second;
+
+    *os << INDENT << INDENT << INDENT << "<S"
+	<< " i=\"5\""
+	<< " l=\"" << sinfo->line_num << "\""
+	<< " v={[0x" << hex << sinfo->vma
+	<< "-0x" << sinfo->vma + sinfo->len << dec << ")}\""
+	<< "/>\n";
+  }
+
+  *os << INDENT << INDENT << "</P>\n";
 }
 
 }  // namespace Output
