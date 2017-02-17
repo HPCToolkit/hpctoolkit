@@ -58,14 +58,10 @@
 
 // FIXME and TODO:
 //
-// 3. Fill in empty file name, "" --> "<unknown file>".
-//
 // 4. Add vma ranges v="{[0x400c2d-0x400c32) [0x400c8c-0x400c94)}"
 // with multiple ranges.
 //
 // 5. Add full vma ranges for <P> proc tags.
-//
-// 6. Add linkname to <P> tags.
 //
 // 7. Fix targ401420 names in <P> tags.
 //
@@ -211,8 +207,13 @@ printProc(ostream * os, ProcInfo * pinfo)
 
   *os << INDENT << INDENT << "<P"
       << NEXT_INDEX
-      << STR_FIELD("n", pinfo->name)
-      << " v=\"{[0x" << hex << func->addr()
+      << STR_FIELD("n", pinfo->prettyName);
+
+  if (pinfo->linkName != pinfo->prettyName) {
+    *os << STR_FIELD("ln", pinfo->linkName);
+  }
+
+  *os << " v=\"{[0x" << hex << func->addr()
       << "-0x" << func->addr() + 1 << dec << ")}\""
       << ">\n";
 

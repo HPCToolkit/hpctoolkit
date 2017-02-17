@@ -165,6 +165,9 @@ using namespace ParseAPI;
 static Symtab * the_symtab = NULL;
 static LineMap * the_linemap = NULL;
 
+// "<unknown file>" from lib/prof/Struct-Tree.cpp
+static const string & unknown_file = Prof::Struct::Tree::UnknownFileNm;
+
 
 //*************************** Forward Declarations ***************************
 
@@ -641,9 +644,9 @@ makeSkeleton(BinUtil::LM * lm, CodeObject * code_obj, ProcNameMgr * procNmMgr)
 
   for (auto flit = funcList.begin(); flit != funcList.end(); ++flit) {
     ParseAPI::Function * func = *flit;
-    BinUtil::Proc * p = lm->findProc((VMA) func->addr());
-
     VMA  vma = func->addr();
+    BinUtil::Proc * p = lm->findProc(vma);
+
     SrcFile::ln  line = 0;
     string  filenm;
     string  procnm;
@@ -658,6 +661,9 @@ makeSkeleton(BinUtil::LM * lm, CodeObject * code_obj, ProcNameMgr * procNmMgr)
 	++cname;
       }
       procnm = BinUtil::canonicalizeProcName(cname, procNmMgr);
+    }
+    if (filenm == "") {
+      filenm = unknown_file;
     }
 
 #if 0
@@ -696,7 +702,7 @@ makeSkeleton(BinUtil::LM * lm, CodeObject * code_obj, ProcNameMgr * procNmMgr)
       ginfo = new GroupInfo(p);
       finfo->groupMap[linknm] = ginfo;
     }
-    ginfo->procMap[vma] = new ProcInfo(procnm, func, NULL);
+    ginfo->procMap[vma] = new ProcInfo(procnm, linknm, func, NULL);
   }
 
   return fileMap;
