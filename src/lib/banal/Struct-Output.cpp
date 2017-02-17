@@ -94,15 +94,29 @@ static const char * hpcstruct_xml_head =
 
 //----------------------------------------------------------------------
 
-// Helpers to generate fields inside tags.  These are all designed to
+// Helpers to generate fields inside tags.  The macros are designed to
 // fit within << operators.
 
 // this generates pre-order
-#define NEXT_INDEX  " i=\"" << next_index++ << "\""
+#define INDEX  \
+  " i=\"" << next_index++ << "\""
 
-#define NUM_FIELD(label, num)  " " << label << "=\"" << num << "\""
+#define NUMBER(label, num)  \
+  " " << label << "=\"" << num << "\""
 
-#define STR_FIELD(label, str)  " " << label << "=\"" << xml::EscapeStr(str) << "\""
+#define STRING(label, str)  \
+  " " << label << "=\"" << xml::EscapeStr(str) << "\""
+
+#define VRANGE(vma, len)  \
+  " v=\"{[0x" << hex << vma << "-0x" << vma + len << dec << ")}\""
+
+static void
+doIndent(ostream * os, int depth)
+{
+  for (int n = 1; n <= depth; n++) {
+    *os << INDENT;
+  }
+}
 
 //----------------------------------------------------------------------
 
@@ -149,8 +163,8 @@ printLoadModuleBegin(ostream * os, string lmName)
   next_index = INIT_LM_INDEX;
 
   *os << "<LM"
-      << NEXT_INDEX
-      << STR_FIELD("n", lmName)
+      << INDEX
+      << STRING("n", lmName)
       << " v=\"{}\">\n";
 }
 
@@ -175,9 +189,10 @@ printFileBegin(ostream * os, FileInfo * finfo)
     return;
   }
 
-  *os << INDENT << "<F"
-      << NEXT_INDEX
-      << STR_FIELD("n", finfo->name)
+  doIndent(os, 1);
+  *os << "<F"
+      << INDEX
+      << STRING("n", finfo->name)
       << ">\n";
 }
 
@@ -189,7 +204,8 @@ printFileEnd(ostream * os, FileInfo * finfo)
     return;
   }
 
-  *os << INDENT << "</F>\n";
+  doIndent(os, 1);
+  *os << "</F>\n";
 }
 
 //----------------------------------------------------------------------
@@ -205,31 +221,32 @@ printProc(ostream * os, ProcInfo * pinfo)
   ParseAPI::Function * func = pinfo->func;
   TreeNode * root = pinfo->root;
 
-  *os << INDENT << INDENT << "<P"
-      << NEXT_INDEX
-      << STR_FIELD("n", pinfo->prettyName);
+  doIndent(os, 2);
+  *os << "<P"
+      << INDEX
+      << STRING("n", pinfo->prettyName);
 
   if (pinfo->linkName != pinfo->prettyName) {
-    *os << STR_FIELD("ln", pinfo->linkName);
+    *os << STRING("ln", pinfo->linkName);
   }
 
-  *os << " v=\"{[0x" << hex << func->addr()
-      << "-0x" << func->addr() + 1 << dec << ")}\""
+  *os << VRANGE(func->addr(), 1)
       << ">\n";
 
   // temp placeholder for proc body
   if (root != NULL && ! root->stmtMap.empty()) {
     StmtInfo * sinfo = root->stmtMap.begin()->second;
 
-    *os << INDENT << INDENT << INDENT << "<S"
-	<< NEXT_INDEX
-	<< NUM_FIELD("l", sinfo->line_num)
-	<< " v=\"{[0x" << hex << sinfo->vma
-	<< "-0x" << sinfo->vma + sinfo->len << dec << ")}\""
+    doIndent(os, 3);
+    *os << "<S"
+	<< INDEX
+	<< NUMBER("l", sinfo->line_num)
+	<< VRANGE(sinfo->vma, sinfo->len)
 	<< "/>\n";
   }
 
-  *os << INDENT << INDENT << "</P>\n";
+  doIndent(os, 2);
+  *os << "</P>\n";
 }
 
 }  // namespace Output
