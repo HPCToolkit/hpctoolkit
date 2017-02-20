@@ -296,6 +296,8 @@ pe_mmap_t                   __thread *perf_mmap[MAX_EVENTS];
 // private operations 
 //******************************************************************************
 
+
+// calling perf event open system call
 static long
 perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
 	       int cpu, int group_fd, unsigned long flags)
@@ -332,7 +334,11 @@ perf_stop(int num_event)
   if (perf_thread_fd[num_event]) {
     monitor_real_pthread_sigmask(SIG_BLOCK, &sig_mask, NULL);
     // disable the counter
-    ioctl(perf_thread_fd[num_event], PERF_EVENT_IOC_DISABLE, 0);
+    int ret = ioctl(perf_thread_fd[num_event], PERF_EVENT_IOC_DISABLE, 0);
+    if (ret == -1) {
+      EMSG("Warning: cannot disable counter %d, fd %d: %s,", 
+	num_event, perf_thread_fd[num_event], strerror(errno));
+    }
   }
 }
 
@@ -459,6 +465,7 @@ perf_init()
   }
  
   monitor_sigaction(PERF_SIGNAL, &perf_event_handler, 0, NULL);
+  monitor_real_pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
 }
 
 
@@ -529,8 +536,8 @@ set_mmap(int perf_fd)
 	   MAP_SHARED, perf_fd, MMAP_OFFSET_0);
 
   if (map_result == MAP_FAILED) {
-      EMSG("Linux perf mmap failed: %s", strerror(errno));
-      return NULL;
+    EMSG("Linux perf mmap failed: %s", strerror(errno));
+    return NULL;
   }
 
   pe_mmap_t *mmap  = (pe_mmap_t *) map_result;
@@ -541,7 +548,7 @@ set_mmap(int perf_fd)
     mmap->compat_version = 0; 
     mmap->data_head = 0; 
     mmap->data_tail = 0; 
-  }
+  } 
   return mmap;
 }
 
@@ -573,6 +580,7 @@ get_precise_ip()
 			      THREAD_SELF, CPU_ANY, 
 			      GROUP_FD, PERF_FLAGS);
     if (ret >= 0) {
+      close(ret);
       precise_ip = i;
       // just quit when the returned value is correct
       return i;
@@ -605,28 +613,41 @@ perf_thread_init(int event_num)
 
   // check if perf_event_open is successful
   if (perf_thread_fd[event_num] <0 ) {
-      EMSG("Linux perf event open failed: %s", strerror(errno));
-      return false;
+    EMSG("Linux perf event open failed: %s", strerror(errno));
+    return false;
   }
-  perf_mmap[event_num] = set_mmap(perf_thread_fd[event_num]);
+  int fd = perf_thread_fd[event_num];
 
-  monitor_real_pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
+  // create mmap buffer for this file 
+  perf_mmap[event_num] = set_mmap(fd);
 
-  fcntl(perf_thread_fd[event_num], F_SETSIG, SIGIO);
-  fcntl(perf_thread_fd[event_num], F_SETOWN,getpid());
-  fcntl(perf_thread_fd[event_num], F_SETFL, O_RDWR |  O_ASYNC | O_NONBLOCK);
+  // make sure the file I/O is asynchronous
+  int flag = fcntl(fd, F_GETFL, 0);
+  int ret = fcntl(fd, F_SETFL, flag | O_ASYNC );
+  if (ret == -1) {
+    EMSG("Can't set notification for event %d, fd: %d: %s", 
+      event_num, fd, strerror(errno));
+  }
 
+  // need to set PERF_SIGNAL to this file descriptor
+  // to avoid POLL_HUP in the signal handler
+  ret = fcntl(fd, F_SETSIG, PERF_SIGNAL);
+  if (ret == -1) {
+    EMSG("Can't set SIGIO for event %d, fd: %d: %s", 
+      event_num, fd, strerror(errno));
+  }
+
+  // set file descriptor owner to this specific thread
   struct f_owner_ex owner;
   owner.type = F_OWNER_TID;
   owner.pid  = syscall(SYS_gettid);
-  int ret = fcntl(perf_thread_fd[event_num], F_SETOWN_EX, &owner);
-
+  ret = fcntl(fd, F_SETOWN_EX, &owner);
   if (ret == -1) {
-    TMSG(LINUX_PERF, "can't set fcntl(F_SETOWN_EX) on %d: %s\n", 
-	    perf_thread_fd[event_num], strerror(errno));
-  } else {
-    ioctl(perf_thread_fd[event_num], PERF_EVENT_IOC_RESET, 0);
+    EMSG("Can't set thread owner for event %d, fd: %d: %s", 
+      event_num, fd, strerror(errno));
   }
+
+  ioctl(fd, PERF_EVENT_IOC_RESET, 0);
   return (ret >= 0);
 }
 
@@ -896,6 +917,7 @@ getEnvLong(const char *env_var, long default_value)
 
 // --------------------------------------------------------------------------
 // event occurs when the sample source is initialized
+// this method is called first before others
 // --------------------------------------------------------------------------
 static void
 METHOD_FN(init)
@@ -919,13 +941,13 @@ METHOD_FN(init)
 
 
 // --------------------------------------------------------------------------
-// when a new thread is created
+// when a new thread is created and has been started
+// this method is called after "start"
 // --------------------------------------------------------------------------
 static void
 METHOD_FN(thread_init)
 {
   TMSG(LINUX_PERF, "%d: thread init", self->sel_idx);
-  if (perf_unavail) { return; }
 
   TMSG(LINUX_PERF, "%d: thread init OK", self->sel_idx);
 }
@@ -939,14 +961,12 @@ METHOD_FN(thread_init_action)
 {
   TMSG(LINUX_PERF, "%d: thread init action", self->sel_idx);
 
-  if (perf_unavail) { return; }
-
   TMSG(LINUX_PERF, "%d: thread init action OK", self->sel_idx);
 }
 
 
 // --------------------------------------------------------------------------
-// start of the application 
+// start of application thread
 // --------------------------------------------------------------------------
 static void
 METHOD_FN(start)
@@ -974,13 +994,10 @@ METHOD_FN(start)
   //  but there will be no samples
 
   int nevents = (self->evl).nevents; 
-
   for (int i=0; i<nevents; i++) {
-
     // initialize this event. If it's valid, we set the metric for the event
     if (perf_thread_init(i)) { 
       restart_perf_event( perf_thread_fd[i] );
-      // ioctl(perf_thread_fd[i], PERF_EVENT_IOC_ENABLE, 0);
     }
   }
 
@@ -1118,8 +1135,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   metric_desc_properties_t prop = metric_property_none;
   char *event;
 
-  perf_init();
-
   char *evlist = METHOD_CALL(self, get_event_str);
   int num_events = 0;
 
@@ -1132,6 +1147,8 @@ METHOD_FN(process_event_list, int lush_metrics)
   //  automatically. But in practice, it didn't. Not sure why.
   self->evl.nevents = num_events;
 
+  if (num_events > 0)
+    perf_init();
   
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
