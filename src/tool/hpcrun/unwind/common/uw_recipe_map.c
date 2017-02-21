@@ -70,10 +70,8 @@
 // local include files
 //---------------------------------------------------------------------
 #include <memory/hpcrun-malloc.h>
-#include "fnbounds_interface.h"
-#include "thread_data.h"
 #include "uw_recipe_map.h"
-#include "hpcrun_stats.h"
+#include "ilmstat_btuwi_pair.h"
 #include <lib/prof-lean/cskiplist.h>
 
 #include <loadmap.h>
@@ -81,9 +79,6 @@
 
 // libmonitor functions
 #include <monitor.h>
-
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/mcs-lock.h>
 
 
 

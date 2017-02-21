@@ -52,10 +52,6 @@
 #ifndef _UI_TREE_H_
 #define _UI_TREE_H_
 
-#include <sys/types.h>
-#include "binarytree_uwi.h"
-#include "ilmstat_btuwi_pair.h"
-#include "unw-datatypes.h"
 #include "unwindr_info.h"
 
 
