@@ -69,7 +69,6 @@
 #include "unwind.h"
 #include <utilities/arch/context-pc.h>
 #include "hpcrun-malloc.h"
-#include "splay-interval.h"
 #include "sample_event.h"
 #include "sample_sources_all.h"
 #include "start-stop.h"

@@ -124,7 +124,7 @@ demand_interval(void* pc, bool isTopFrame)
 
 
 #if (!HPC_UNW_LITE)
-interval_status 
+btuwi_status_t
 build_intervals(char* insn_beg, unsigned int len)
 {
   // [my_insn_beg, my_insn_end)
@@ -133,9 +133,9 @@ build_intervals(char* insn_beg, unsigned int len)
 
   UNW_INTERVAL_t beg_ui = mips_build_intervals(beg, end, true/*retFirst*/, 0);
 
-  interval_status x = (interval_status){.first_undecoded_ins = NULL,
-					.errcode = 0,
-					.first = (splay_interval_t*)beg_ui};
+  btuwi_status_t x = (btuwi_status_t){.first_undecoded_ins = NULL,
+				      .errcode = 0,
+				      .first = (bitree_uwi_t*)beg_ui};
   return x;
 }
 #endif

@@ -269,7 +269,7 @@ demand_interval(void* pc, bool isTopFrame);
 
 
 #if (!HPC_UNW_LITE)
-interval_status 
+btuwi_status_t
 build_intervals(char* ins, unsigned int len);
 #endif
 

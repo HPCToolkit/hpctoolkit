@@ -190,7 +190,6 @@ UNW_COMMON_FILES = \
 	unwind/common/ilmstat_btuwi_pair.c	    \
 	unwind/common/interval_ldmod_pair.c	    \
 	unwind/common/interval_t.c	    \
-	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\
 	unwind/common/ui_tree.c  \
 	unwind/common/uwi.c

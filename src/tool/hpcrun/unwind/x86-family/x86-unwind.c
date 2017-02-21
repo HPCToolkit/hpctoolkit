@@ -88,7 +88,6 @@
 #include <unwind/common/unw-throw.h>
 #include <unwind/common/fence_enum.h>
 #include <fnbounds/fnbounds_interface.h>
-#include "splay.h"
 #include "ui_tree.h"
 #include <utilities/arch/mcontext.h>
 #include <utilities/ip-normalized.h>

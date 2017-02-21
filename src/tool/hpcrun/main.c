@@ -126,7 +126,6 @@
 
 #include <unwind/common/backtrace.h>
 #include <unwind/common/unwind.h>
-#include <unwind/common/splay-interval.h>
 
 #include <utilities/arch/context-pc.h>
 

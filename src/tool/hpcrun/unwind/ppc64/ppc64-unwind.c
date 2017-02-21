@@ -73,7 +73,6 @@
 
 #include "sample_event.h"
 
-#include "splay.h"
 #include "ui_tree.h"
 
 #include <messages/messages.h>
