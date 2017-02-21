@@ -49,8 +49,8 @@
  *
  */
 
-#ifndef _UI_TREE_H_
-#define _UI_TREE_H_
+#ifndef _UW_RECIPE_MAP_H_
+#define _UW_RECIPE_MAP_H_
 
 #include "unwindr_info.h"
 
@@ -72,4 +72,4 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info);
 void
 uw_recipe_map_print(void);
 
-#endif  /* !_UI_TREE_H_ */
+#endif  /* !_UW_RECIPE_MAP_H_ */

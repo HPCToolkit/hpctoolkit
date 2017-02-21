@@ -57,7 +57,7 @@
 // system include files
 //---------------------------------------------------------------------
 
-#if UITREE_DEBUG
+#if UW_RECIPE_MAP_DEBUG
 #include <assert.h>
 #endif
 
@@ -83,7 +83,7 @@
 
 #define SKIPLIST_HEIGHT 8
 
-#define UITREE_DEBUG 0
+#define UW_RECIPE_MAP_DEBUG 0
 
 
 //---------------------------------------------------------------------
@@ -147,11 +147,11 @@ uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
 {
   ilmstat_btuwi_pair_t* ilmstat_btuwi =	uw_recipe_map_inrange_find(start);
 
-#if UITREE_DEBUG
+#if UW_RECIPE_MAP_DEBUG
   assert(ilmstat_btuwi != NULL); // start should be in range of some poisoned interval
 #endif
 
-#if UITREE_DEBUG
+#if UW_RECIPE_MAP_DEBUG
   ildmod_stat_t* ilmstat = ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi);
   assert(atomic_load_explicit(&ilmstat->stat, memory_order_relaxed) == NEVER);  // should be a poisoned node
 #endif
@@ -198,11 +198,11 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr) {
 	void *fcn_start, *fcn_end;
 	bool ret = fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end, &lm);
 	if (!ret) {
-	  TMSG(UITREE, "BAD fnbounds_enclosing_addr failed: addr %p", addr);
+	  TMSG(UW_RECIPE_MAP, "BAD fnbounds_enclosing_addr failed: addr %p", addr);
 	  return (NULL);
 	}
 	if (addr < fcn_start || fcn_end <= addr) {
-	  TMSG(UITREE, "BAD fnbounds_enclosing_addr failed: addr %p "
+	  TMSG(UW_RECIPE_MAP, "BAD fnbounds_enclosing_addr failed: addr %p "
 		  "not within fcn range %p to %p", addr, fcn_start, fcn_end);
 	  return (NULL);
 	}
@@ -226,7 +226,7 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr) {
 	  	  uw_recipe_map_inrange_find((uintptr_t)addr);
 	}
   }
-#if UITREE_DEBUG
+#if UW_RECIPE_MAP_DEBUG
   assert(ilmstat_btuwi != NULL);
 #endif
   return ilmstat_btuwi;
@@ -244,7 +244,7 @@ static void
 uw_recipe_map_notify_unmap(void *start, void *end)
 {
   // Remove intervals in the range [start, end) from the unwind interval tree.
-  TMSG(UITREE, "uw_recipe_map_delete_range from %p to %p", start, end);
+  TMSG(UW_RECIPE_MAP, "uw_recipe_map_delete_range from %p to %p", start, end);
   cskl_inrange_del_bulk_unsynch(addr2recipe_map, start, ((void*)(intptr_t)end - 1), cskl_ilmstat_btuwi_free);
 
   // join poisoned intervals here.
@@ -271,14 +271,14 @@ void
 uw_recipe_map_init(void)
 {
 
-#if UITREE_DEBUG
+#if UW_RECIPE_MAP_DEBUG
   printf("DXN_DBG uw_recipe_map_init: call a2r_map_init(my_alloc) ... \n");
 #endif
 
   cskl_init();
   ilmstat_btuwi_pair_init();
 
-  TMSG(UITREE, "init address-to-recipe map");
+  TMSG(UW_RECIPE_MAP, "init address-to-recipe map");
   ilmstat_btuwi_pair_t* lsentinel =
 	  ilmstat_btuwi_pair_build(0, 0, NULL, NEVER, NULL, my_alloc );
   ilmstat_btuwi_pair_t* rsentinel =
@@ -319,7 +319,7 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
 	  void *fcn_end   = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->end;
 	  btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, my_alloc);
 	  if (btuwi_stat.first == NULL) {
-		TMSG(UITREE, "BAD build_intervals failed: fcn range %p to %p",
+		TMSG(UW_RECIPE_MAP, "BAD build_intervals failed: fcn range %p to %p",
 			fcn_start, fcn_end);
 		return (NULL);
 	  }
@@ -335,7 +335,7 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
 	break;
   }
 
-  TMSG(UITREE_LOOKUP, "found in unwind tree: addr %p", addr);
+  TMSG(UW_RECIPE_MAP_LOOKUP, "found in unwind tree: addr %p", addr);
   return ilmstat_btuwi;
 }
 
