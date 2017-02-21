@@ -319,7 +319,8 @@ uw_recipe_map_init(void)
 /*
  *
  */
-static ilmstat_btuwi_pair_t * uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
+static ilmstat_btuwi_pair_t *
+uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
 {
   ilmstat_btuwi_pair_t* ilmstat_btuwi =
 	  uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(addr);
