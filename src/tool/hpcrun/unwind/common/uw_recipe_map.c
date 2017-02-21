@@ -123,18 +123,6 @@ build_intervals(char *ins, unsigned int len, mem_alloc m_alloc);
 
 
 //---------------------------------------------------------------------
-// forward declarations 
-//---------------------------------------------------------------------
-
-static ilmstat_btuwi_pair_t *
-uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr);
-
-static ilmstat_btuwi_pair_t * 
-uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr);
-
-
-
-//---------------------------------------------------------------------
 // private operations
 //---------------------------------------------------------------------
 
@@ -341,42 +329,6 @@ uw_recipe_map_init(void)
 /*
  *
  */
-bool
-uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
-{
-  ilmstat_btuwi_pair_t *ilm_btui = uw_recipe_map_lookup_ilmstat_btuwi_pair(addr);
-
-  if (ilm_btui == NULL) {  // lookup fails for various reasons.
-	// fill unwr_info with appropriate values to indicate that the lookup fails and the unwind recipe
-	// information is invalid.
-	// known use case:
-	// hpcrun_generate_backtrace_no_trampoline calls
-	//   1. hpcrun_unw_init_cursor(&cursor, context), which calls
-	//        uw_recipe_map_lookup,
-	//   2. hpcrun_unw_step(&cursor), which calls
-	//        hpcrun_unw_step_real(cursor), which looks at cursor->unwr_info
-
-	unwr_info->btuwi    = NULL;
-	unwr_info->treestat = NEVER;
-	unwr_info->lm       = NULL;
-	unwr_info->start    = 0;
-	unwr_info->end      = 0;
-	return false;
-  }
-
-  bitree_uwi_t *btuwi = ilmstat_btuwi_pair_btuwi(ilm_btui);
-  unwr_info->btuwi    = bitree_uwi_inrange(btuwi, (uintptr_t)addr);
-  unwr_info->treestat = ilmstat_btuwi_pair_stat(ilm_btui);
-  unwr_info->lm       = ilmstat_btuwi_pair_loadmod(ilm_btui);
-  unwr_info->start    = ilmstat_btuwi_pair_interval(ilm_btui)->start;
-  unwr_info->end      = ilmstat_btuwi_pair_interval(ilm_btui)->end;
-
-  return (unwr_info->treestat == READY);
-}
-
-/*
- *
- */
 static ilmstat_btuwi_pair_t * uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
 {
   ilmstat_btuwi_pair_t* ilmstat_btuwi =
@@ -416,6 +368,42 @@ static ilmstat_btuwi_pair_t * uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr
 
   TMSG(UITREE_LOOKUP, "found in unwind tree: addr %p", addr);
   return ilmstat_btuwi;
+}
+
+/*
+ *
+ */
+bool
+uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
+{
+  ilmstat_btuwi_pair_t *ilm_btui = uw_recipe_map_lookup_ilmstat_btuwi_pair(addr);
+
+  if (ilm_btui == NULL) {  // lookup fails for various reasons.
+	// fill unwr_info with appropriate values to indicate that the lookup fails and the unwind recipe
+	// information is invalid.
+	// known use case:
+	// hpcrun_generate_backtrace_no_trampoline calls
+	//   1. hpcrun_unw_init_cursor(&cursor, context), which calls
+	//        uw_recipe_map_lookup,
+	//   2. hpcrun_unw_step(&cursor), which calls
+	//        hpcrun_unw_step_real(cursor), which looks at cursor->unwr_info
+
+	unwr_info->btuwi    = NULL;
+	unwr_info->treestat = NEVER;
+	unwr_info->lm       = NULL;
+	unwr_info->start    = 0;
+	unwr_info->end      = 0;
+	return false;
+  }
+
+  bitree_uwi_t *btuwi = ilmstat_btuwi_pair_btuwi(ilm_btui);
+  unwr_info->btuwi    = bitree_uwi_inrange(btuwi, (uintptr_t)addr);
+  unwr_info->treestat = ilmstat_btuwi_pair_stat(ilm_btui);
+  unwr_info->lm       = ilmstat_btuwi_pair_loadmod(ilm_btui);
+  unwr_info->start    = ilmstat_btuwi_pair_interval(ilm_btui)->start;
+  unwr_info->end      = ilmstat_btuwi_pair_interval(ilm_btui)->end;
+
+  return (unwr_info->treestat == READY);
 }
 
 //---------------------------------------------------------------------
