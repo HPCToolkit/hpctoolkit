@@ -85,19 +85,10 @@
 
 #define UITREE_DEBUG 0
 
-#ifdef NONZERO_THRESHOLD
-#define DEADLOCK_DEFAULT 5000
-#else  // ! NONZERO_THRESHOLD ==> DEADLOCK_DEFAULT = 0
-#define DEADLOCK_DEFAULT 0
-#endif // NONZERO_THRESHOLD
-
-
 
 //---------------------------------------------------------------------
 // local data
 //---------------------------------------------------------------------
-
-static size_t iter_count = 0;
 
 // The concrete representation of the abstract data type unwind recipe map.
 static cskiplist_t *addr2recipe_map = NULL;
@@ -300,13 +291,6 @@ uw_recipe_map_init(void)
 
   // initialize the map with a POISONED node ({([0, UINTPTR_MAX), NULL), NEVER}, NULL)
   uw_recipe_map_poison(0, UINTPTR_MAX);
-
-  iter_count = DEADLOCK_DEFAULT;
-  if (getenv("HPCRUN_DEADLOCK_THRESHOLD")) {
-	iter_count = atoi(getenv("HPCRUN_DEADLOCK_THRESHOLD"));
-	if (iter_count < 0) iter_count = 0;
-  }
-  TMSG(DEADLOCK, "deadlock threshold set to %d", iter_count);
 }
 
 
