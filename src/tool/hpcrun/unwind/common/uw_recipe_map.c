@@ -57,14 +57,9 @@
 // system include files
 //---------------------------------------------------------------------
 
-#include <sys/types.h>
+#if UITREE_DEBUG
 #include <assert.h>
-#include <string.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <stdio.h>
-
-
+#endif
 
 //---------------------------------------------------------------------
 // local include files
@@ -75,7 +70,6 @@
 #include "ilmstat_btuwi_pair.h"
 #include <lib/prof-lean/cskiplist.h>
 
-#include <loadmap.h>
 #include <messages/messages.h>
 
 // libmonitor functions
