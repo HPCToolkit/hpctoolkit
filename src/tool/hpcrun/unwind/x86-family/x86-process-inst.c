@@ -61,7 +61,7 @@
 #include "x86-return.h"
 #include "x86-cold-path.h"
 #include "x86-interval-arg.h"
-#include "ui_tree.h"  // uw_recipe_map_lookup
+#include "uw_recipe_map.h"
 
 #define UWRECIPE_DEBUG 1
 

@@ -191,7 +191,7 @@ UNW_COMMON_FILES = \
 	unwind/common/interval_ldmod_pair.c	    \
 	unwind/common/interval_t.c	    \
 	unwind/common/stack_troll.c	\
-	unwind/common/ui_tree.c  \
+	unwind/common/uw_recipe_map.c  \
 	unwind/common/uwi.c
 
 UNW_X86_FILES = \

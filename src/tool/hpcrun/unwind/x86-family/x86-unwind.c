@@ -88,7 +88,7 @@
 #include <unwind/common/unw-throw.h>
 #include <unwind/common/fence_enum.h>
 #include <fnbounds/fnbounds_interface.h>
-#include "ui_tree.h"
+#include "uw_recipe_map.h"
 #include <utilities/arch/mcontext.h>
 #include <utilities/ip-normalized.h>
 

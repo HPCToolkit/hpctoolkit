@@ -53,7 +53,7 @@
 #include <include/hpctoolkit-config.h>
 #include "x86-build-intervals.h"
 
-#include "ui_tree.h"
+#include "uw_recipe_map.h"
 
 #include "x86-decoder.h"
 #include "x86-process-inst.h"

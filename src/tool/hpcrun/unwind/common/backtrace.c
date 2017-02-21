@@ -65,7 +65,7 @@
 
 #include <cct/cct.h>
 
-#include <unwind/common/ui_tree.h>
+#include <unwind/common/uw_recipe_map.h>
 #include <unwind/common/unwind.h>
 #include <unwind/common/backtrace.h>
 #include <unwind/common/unw-throw.h>

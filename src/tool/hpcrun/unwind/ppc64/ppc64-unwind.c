@@ -73,7 +73,7 @@
 
 #include "sample_event.h"
 
-#include "ui_tree.h"
+#include "uw_recipe_map.h"
 
 #include <messages/messages.h>
 

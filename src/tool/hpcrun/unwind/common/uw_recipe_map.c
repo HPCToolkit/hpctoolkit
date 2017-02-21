@@ -72,7 +72,7 @@
 #include <memory/hpcrun-malloc.h>
 #include "fnbounds_interface.h"
 #include "thread_data.h"
-#include "ui_tree.h"
+#include "uw_recipe_map.h"
 #include "hpcrun_stats.h"
 #include <lib/prof-lean/cskiplist.h>
 
