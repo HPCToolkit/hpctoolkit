@@ -71,6 +71,7 @@
 //---------------------------------------------------------------------
 #include <memory/hpcrun-malloc.h>
 #include "uw_recipe_map.h"
+#include "unwind-interval.h"
 #include "ilmstat_btuwi_pair.h"
 #include <lib/prof-lean/cskiplist.h>
 
@@ -110,17 +111,6 @@ static cskiplist_t *addr2recipe_map = NULL;
 // memory allocator for creating addr2recipe_map
 // and inserting entries into addr2recipe_map:
 static mem_alloc my_alloc = hpcrun_malloc;
-
-
-
-//---------------------------------------------------------------------
-// external declarations 
-//---------------------------------------------------------------------
-
-extern btuwi_status_t 
-build_intervals(char *ins, unsigned int len, mem_alloc m_alloc);
-
-
 
 //---------------------------------------------------------------------
 // private operations
