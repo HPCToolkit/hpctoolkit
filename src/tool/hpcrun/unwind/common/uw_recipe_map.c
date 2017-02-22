@@ -68,6 +68,7 @@
 #include "uw_recipe_map.h"
 #include "unwind-interval.h"
 #include "ilmstat_btuwi_pair.h"
+#include <fnbounds/fnbounds_interface.h>
 #include <lib/prof-lean/cskiplist.h>
 
 #include <messages/messages.h>
@@ -187,52 +188,6 @@ uw_recipe_map_repoison(uintptr_t start, uintptr_t end)
 }
 
 
-static ilmstat_btuwi_pair_t *
-uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(void *addr) {
-  // first check if addr is already in the range of an interval key in the map
-  ilmstat_btuwi_pair_t* ilmstat_btuwi =
-	  uw_recipe_map_inrange_find((uintptr_t)addr);
-
-  if (!ilmstat_btuwi) {
-	load_module_t *lm;
-	void *fcn_start, *fcn_end;
-	bool ret = fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end, &lm);
-	if (!ret) {
-	  TMSG(UW_RECIPE_MAP, "BAD fnbounds_enclosing_addr failed: addr %p", addr);
-	  return (NULL);
-	}
-	if (addr < fcn_start || fcn_end <= addr) {
-	  TMSG(UW_RECIPE_MAP, "BAD fnbounds_enclosing_addr failed: addr %p "
-		  "not within fcn range %p to %p", addr, fcn_start, fcn_end);
-	  return (NULL);
-	}
-
-	// bounding addresses found; set DEFERRED state and pair it with
-	// (bitree_uwi_t*)NULL and try to insert into map:
-	ilmstat_btuwi =
-		ilmstat_btuwi_pair_malloc((uintptr_t)fcn_start, (uintptr_t)fcn_end, lm,
-			DEFERRED, NULL, my_alloc);
-
-	bool inserted =  cskl_insert(addr2recipe_map, ilmstat_btuwi, my_alloc);
-	// if successful: ilmstat_btuwi is now in the map.
-
-	if (!inserted) {
-		// interval_ldmod_pair ([fcn_start, fcn_end), lm) is already in the map,
-	    // so free it:
-	  ilmstat_btuwi_pair_free(ilmstat_btuwi);
-
-	  // look for it in the map and it should be there:
-	  ilmstat_btuwi =
-	  	  uw_recipe_map_inrange_find((uintptr_t)addr);
-	}
-  }
-#if UW_RECIPE_MAP_DEBUG
-  assert(ilmstat_btuwi != NULL);
-#endif
-  return ilmstat_btuwi;
-}
-
-
 static void
 uw_recipe_map_notify_map(void *start, void *end)
 {
@@ -300,14 +255,47 @@ uw_recipe_map_init(void)
 static ilmstat_btuwi_pair_t *
 uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
 {
+  // first check if addr is already in the range of an interval key in the map
   ilmstat_btuwi_pair_t* ilmstat_btuwi =
-	  uw_recipe_map_lookup_ilmstat_btuwi_pair_helper(addr);
-  if (!ilmstat_btuwi)
-	return NULL;
+	  uw_recipe_map_inrange_find((uintptr_t)addr);
+
+  if (!ilmstat_btuwi) {
+	load_module_t *lm;
+	void *fcn_start, *fcn_end;
+	if (!fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end, &lm)) {
+	  TMSG(UW_RECIPE_MAP, "BAD fnbounds_enclosing_addr failed: addr %p", addr);
+	  return (NULL);
+	}
+	if (addr < fcn_start || fcn_end <= addr) {
+	  TMSG(UW_RECIPE_MAP, "BAD fnbounds_enclosing_addr failed: addr %p "
+		  "not within fcn range %p to %p", addr, fcn_start, fcn_end);
+	  return (NULL);
+	}
+
+	// bounding addresses found; set DEFERRED state and pair it with
+	// (bitree_uwi_t*)NULL and try to insert into map:
+	ilmstat_btuwi =
+		ilmstat_btuwi_pair_malloc((uintptr_t)fcn_start, (uintptr_t)fcn_end, lm,
+			DEFERRED, NULL, my_alloc);
+
+	if (!cskl_insert(addr2recipe_map, ilmstat_btuwi, my_alloc)) {
+	  // interval_ldmod_pair ([fcn_start, fcn_end), lm) is already in the map,
+	  // so free it:
+	  ilmstat_btuwi_pair_free(ilmstat_btuwi);
+
+	  // look for it in the map and it should be there:
+	  ilmstat_btuwi =
+	  	  uw_recipe_map_inrange_find((uintptr_t)addr);
+	}
+	// ilmstat_btuwi is now in the map.
+  }
+#if UW_RECIPE_MAP_DEBUG
+  assert(ilmstat_btuwi != NULL);
+#endif
 
   ildmod_stat_t *ilmstat = ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi);
   tree_stat_t deferred = DEFERRED;
-  switch(atomic_load_explicit(&ilmstat->stat, memory_order_relaxed)) {
+  switch (atomic_load_explicit(&ilmstat->stat, memory_order_relaxed)) {
   case NEVER:
 	// addr is in the range of some poisoned load module
 	return NULL;
@@ -331,7 +319,7 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
 	break;
   case FORTHCOMING:
 	// invariant: ilmstat_btuwi is non-null
-	while(ilmstat_btuwi_pair_stat(ilmstat_btuwi) != READY);
+	while (ilmstat_btuwi_pair_stat(ilmstat_btuwi) != READY);
 	break;
   }
 
