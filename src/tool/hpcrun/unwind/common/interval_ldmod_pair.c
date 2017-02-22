@@ -19,13 +19,6 @@
 #include "interval_ldmod_pair.h"
 
 //******************************************************************************
-// Gettors (inline)
-//******************************************************************************
-
-extern interval_t* interval_ldmod_pair_interval(interval_ldmod_pair_t* itp);
-extern load_module_t* interval_ldmod_pair_loadmod(interval_ldmod_pair_t* itp);
-
-//******************************************************************************
 // Constructors
 //******************************************************************************
 

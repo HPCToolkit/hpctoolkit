@@ -17,9 +17,6 @@
 
 #include "uwi.h"
 
-extern interval_t* uwi_t_interval(uwi_t* uwi);
-extern uw_recipe_t* uwi_t_recipe(uwi_t* uwi);
-
 uwi_t*
 uwi_t_new(interval_t* key, uw_recipe_t* val, mem_alloc m_alloc)
 {

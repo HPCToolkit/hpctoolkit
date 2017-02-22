@@ -30,14 +30,8 @@ static __thread  ilmstat_btuwi_pair_t *_lf_ilmstat_btuwi = NULL;  // thread loca
 
 
 //******************************************************************************
-// Gettors (externs are inlined)
+// Gettors
 //******************************************************************************
-
-extern ildmod_stat_t* ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi_pair_t* itp);
-extern bitree_uwi_t* ilmstat_btuwi_pair_btuwi(ilmstat_btuwi_pair_t* itp);
-extern interval_t* ilmstat_btuwi_pair_interval(ilmstat_btuwi_pair_t* itp);
-extern load_module_t* ilmstat_btuwi_pair_loadmod(ilmstat_btuwi_pair_t* itp);
-extern tree_stat_t ilmstat_btuwi_pair_stat(ilmstat_btuwi_pair_t* itp);
 
 uw_recipe_t*
 ilmstat_btuwi_pair_recipe(ilmstat_btuwi_pair_t* itp, uintptr_t addr)
@@ -54,10 +48,6 @@ ilmstat_btuwi_pair_recipe(ilmstat_btuwi_pair_t* itp, uintptr_t addr)
 //******************************************************************************
 // Constructors
 //******************************************************************************
-
-extern ilmstat_btuwi_pair_t*
-ilmstat_btuwi_pair_build(uintptr_t start, uintptr_t end, load_module_t *ldmod,
-	tree_stat_t treestat, bitree_uwi_t *tree,	mem_alloc m_alloc);
 
 ilmstat_btuwi_pair_t*
 ilmstat_btuwi_pair_new(ildmod_stat_t *key,  bitree_uwi_t *tree,
@@ -191,14 +181,6 @@ ilmstat_btuwi_pair_free(ilmstat_btuwi_pair_t* pair)
   GF_ilmstat_btuwi = pair;
   mcs_unlock(&GFL_lock, &me);
 }
-
-//******************************************************************************
-// Comparators
-//******************************************************************************
-
-extern int ilmstat_btuwi_pair_cmp(void *lhs, void *rhs);
-extern int ilmstat_btuwi_pair_inrange(void *itp, void *address);
-extern bitree_uwi_t* ilmstat_btuwi_pair_find(ilmstat_btuwi_pair_t itp, uintptr_t address);
 
 //******************************************************************************
 // String output
