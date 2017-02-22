@@ -1361,6 +1361,7 @@ perf_event_handler(
     // signal not from perf event
     TMSG(LINUX_PERF, "signal si_code %d with fd %d: unknown perf event", 
 	 siginfo->si_code, fd);
+    hpcrun_safe_exit();
     restart_perf_event(fd);
     return 1; // tell monitor the signal has not been handled.
   }

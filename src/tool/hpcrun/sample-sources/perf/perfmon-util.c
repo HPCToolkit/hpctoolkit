@@ -324,7 +324,7 @@ pfmu_showEventList()
 	"uncore",
 	"OS generic",
    };
-
+#if 0
    printf("Supported PMU models:\n");
    pfm_for_all_pmus(i) {
 	ret = pfm_get_pmu_info(i, &pinfo);
@@ -333,7 +333,7 @@ pfmu_showEventList()
 
 	printf("\t[%d, %s, \"%s\"]\n", i, pinfo.name,  pinfo.desc);
    }  
-
+#endif
    printf("Detected PMU models:\n");
    pfm_for_all_pmus(i) {
 	ret = pfm_get_pmu_info(i, &pinfo);
