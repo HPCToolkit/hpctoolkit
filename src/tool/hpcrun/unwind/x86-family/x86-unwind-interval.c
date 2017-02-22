@@ -52,7 +52,6 @@
 #include <memory/hpcrun-malloc.h>
 #include <hpcrun/hpcrun_stats.h>
 #include "x86-unwind-interval.h"
-#include "uw_recipe_map.h"
 
 #include <messages/messages.h>
 
