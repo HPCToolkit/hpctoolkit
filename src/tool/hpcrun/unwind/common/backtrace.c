@@ -63,24 +63,12 @@
 // local include files
 //***************************************************************************
 
-#include <cct/cct.h>
-
-#include <unwind/common/uw_recipe_map.h>
-#include <unwind/common/unwind.h>
-#include <unwind/common/backtrace.h>
 #include <unwind/common/unw-throw.h>
 #include <hpcrun/hpcrun_stats.h>
-#include <hpcrun/thread_data.h>
 
-#include <hpcrun/epoch.h>
 #include <monitor.h>
-#include <hpcrun/sample_event.h>
-#include <fnbounds/fnbounds_interface.h>
 
-#include <messages/messages.h>
-#include <lush/lush-backtrace.h>
 #include <trampoline/common/trampoline.h>
-#include <memory/hpcrun-malloc.h>
 #include <dbg_backtrace.h>
 
 extern void hpcrun_trampoline(void); // trampoline function, needed only for debug
