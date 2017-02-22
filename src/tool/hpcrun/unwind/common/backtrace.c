@@ -71,8 +71,6 @@
 #include <trampoline/common/trampoline.h>
 #include <dbg_backtrace.h>
 
-extern void hpcrun_trampoline(void); // trampoline function, needed only for debug
-
 //***************************************************************************
 // local constants & macros
 //***************************************************************************
