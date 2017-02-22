@@ -52,14 +52,6 @@ ilmstat_btuwi_pair_recipe(ilmstat_btuwi_pair_t* itp, uintptr_t addr)
 
 
 //******************************************************************************
-// Settors
-//******************************************************************************
-extern void ilmstat_btuwi_pair_set_btuwi(ilmstat_btuwi_pair_t* itp, bitree_uwi_t* tree);
-extern void ilmstat_btuwi_pair_set_status(ilmstat_btuwi_pair_t* itp, tree_stat_t stat);
-extern void ilmstat_btuwi_pair_set_loadmod(ilmstat_btuwi_pair_t* itp, load_module_t *lmod);
-
-
-//******************************************************************************
 // Constructors
 //******************************************************************************
 
