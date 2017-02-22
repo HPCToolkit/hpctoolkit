@@ -47,18 +47,26 @@
 #ifndef VALIDATE_RETURN_ADDR_H
 #define VALIDATE_RETURN_ADDR_H
 
-#undef _MM
-#define _MM(a,v) UNW_ADDR_ ## a = v
+#define VSTAT_ENUMS \
+  _MM(CONFIRMED) \
+  _MM(PROBABLE_INDIRECT) \
+  _MM(PROBABLE_TAIL) \
+  _MM(PROBABLE) \
+  _MM(CYCLE) \
+  _MM(WRONG)
+
 
 typedef enum {
-#include "validate_return_addr.src"
+#define _MM(a) UNW_ADDR_ ## a,
+VSTAT_ENUMS
+#undef _MM
 } validation_status;
 
-#undef _MM
-#define _MM(a,v) [UNW_ADDR_ ## a] = "UNW_ADDR_" #a
 
 static char *_vstat2str_tbl[] = {
-#include "validate_return_addr.src"
+#define _MM(a) [UNW_ADDR_ ## a] = "UNW_ADDR_" #a,
+VSTAT_ENUMS
+#undef _MM
 };
 
 static inline

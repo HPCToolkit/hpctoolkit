@@ -86,6 +86,7 @@
 #include <unwind/common/unwind.h>
 #include <unwind/common/backtrace.h>
 #include <unwind/common/unw-throw.h>
+#include <unwind/common/validate_return_addr.h>
 #include <unwind/common/fence_enum.h>
 #include <fnbounds/fnbounds_interface.h>
 #include "uw_recipe_map.h"
@@ -412,13 +413,11 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
   return STEP_TROLL;
 }
 
-#undef _MM
-#define _MM(a,v) [v] = 0
-
 size_t hpcrun_validation_counts[] = {
-#include "validate_return_addr.src"
+#define _MM(a) [UNW_ADDR_ ## a] = 0,
+VSTAT_ENUMS
+#undef _MM
 };
-
 
 void
 hpcrun_validation_summary(void)
