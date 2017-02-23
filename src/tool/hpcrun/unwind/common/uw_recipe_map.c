@@ -102,16 +102,14 @@ static mem_alloc my_alloc = hpcrun_malloc;
 // private operations
 //---------------------------------------------------------------------
 
-static bool
+static void
 uw_recipe_map_poison(uintptr_t start, uintptr_t end)
 {
   ilmstat_btuwi_pair_t* itpair =
 	  ilmstat_btuwi_pair_build(start, end, NULL, NEVER, NULL, my_alloc);
   csklnode_t *node = cskl_insert(addr2recipe_map, itpair, my_alloc);
-  bool res = (itpair == (ilmstat_btuwi_pair_t*)node->val);
-  if (!res)
+  if (itpair != (ilmstat_btuwi_pair_t*)node->val)
     ilmstat_btuwi_pair_free(itpair);
-  return res;
 }
 
 
@@ -147,7 +145,7 @@ uw_recipe_map_cmp_del_bulk_unsynch(
   return cskl_cmp_del_bulk_unsynch(addr2recipe_map, lo, hi, cskl_ilmstat_btuwi_free);
 }
 
-static bool
+static void
 uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
 {
   ilmstat_btuwi_pair_t* ilmstat_btuwi =	uw_recipe_map_inrange_find(start);
@@ -165,11 +163,11 @@ uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
   uintptr_t e0 = interval->end;
   uw_recipe_map_cmp_del_bulk_unsynch(ilmstat_btuwi, ilmstat_btuwi);
   uw_recipe_map_poison(s0, start);
-  return uw_recipe_map_poison(end, e0);
+  uw_recipe_map_poison(end, e0);
 }
 
 
-static bool
+static void
 uw_recipe_map_repoison(uintptr_t start, uintptr_t end)
 {
   if (start > 0) {
@@ -188,7 +186,7 @@ uw_recipe_map_repoison(uintptr_t start, uintptr_t end)
             uw_recipe_map_cmp_del_bulk_unsynch(itp_right, itp_right);
     }
   }
-  return uw_recipe_map_poison(start,end);
+  uw_recipe_map_poison(start,end);
 }
 
 
