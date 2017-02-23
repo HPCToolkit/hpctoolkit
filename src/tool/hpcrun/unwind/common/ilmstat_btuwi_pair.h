@@ -112,13 +112,6 @@ ilmstat_btuwi_pair_set_btuwi(ilmstat_btuwi_pair_t* itp, bitree_uwi_t* tree)
 }
 
 inline void
-ilmstat_btuwi_pair_set_status(ilmstat_btuwi_pair_t* itp, tree_stat_t stat)
-{
-  ildmod_stat_t *ildmod = (ildmod_stat_t*)itp->ilmstat_btuwi->first;
-  atomic_store_explicit(&ildmod->stat, stat, memory_order_relaxed);
-}
-
-inline void
 ilmstat_btuwi_pair_set_loadmod(ilmstat_btuwi_pair_t* itp, load_module_t *lmod)
 {
   ((ildmod_stat_t*)itp->ilmstat_btuwi->first)->ildmod->second = lmod;

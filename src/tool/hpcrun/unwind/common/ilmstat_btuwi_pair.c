@@ -94,7 +94,8 @@ ilmstat_btuwi_pair_alloc_from_lfl(
   interval->start = start;
   interval->end = end;
   ilmstat_btuwi_pair_set_loadmod(ans, ldmod);
-  ilmstat_btuwi_pair_set_status(ans, treestat);
+  ildmod_stat_t *ilmstat = ilmstat_btuwi_pair_ilmstat(ans);
+  atomic_store_explicit(&ilmstat->stat, treestat, memory_order_relaxed);
   ilmstat_btuwi_pair_set_btuwi(ans, tree);
   return ans;
 }
