@@ -297,7 +297,7 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
   ildmod_stat_t *ilmstat = ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi);
   tree_stat_t oldstat = DEFERRED;
   if (atomic_compare_exchange_strong_explicit(&ilmstat->stat, &oldstat, FORTHCOMING,
-					      memory_order_relaxed, memory_order_relaxed)) {
+					      memory_order_release, memory_order_relaxed)) {
     // it is my responsibility to build the tree of intervals for the function
     void *fcn_start = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->start;
     void *fcn_end   = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->end;
@@ -308,7 +308,7 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
       return (NULL);
     }
     ilmstat_btuwi_pair_set_btuwi(ilmstat_btuwi, bitree_uwi_rebalance(btuwi_stat.first));
-    atomic_store_explicit(&ilmstat->stat, READY, memory_order_relaxed);
+    atomic_store_explicit(&ilmstat->stat, READY, memory_order_release);
   }
   else switch (oldstat) {
     case NEVER:
@@ -316,7 +316,7 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
       return NULL;
   case FORTHCOMING:
 	// invariant: ilmstat_btuwi is non-null
-    while (atomic_load_explicit(&ilmstat->stat, memory_order_relaxed) != READY);
+    while (atomic_load_explicit(&ilmstat->stat, memory_order_acquire) != READY);
 	break;
     default:
 	break;
