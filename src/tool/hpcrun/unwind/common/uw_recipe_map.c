@@ -295,32 +295,30 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
 #endif
 
   ildmod_stat_t *ilmstat = ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi);
-  tree_stat_t deferred = DEFERRED;
-  switch (atomic_load_explicit(&ilmstat->stat, memory_order_relaxed)) {
-  case NEVER:
-	// addr is in the range of some poisoned load module
-	return NULL;
-  case DEFERRED:
-      if (atomic_compare_exchange_strong_explicit(&ilmstat->stat, &deferred, FORTHCOMING,
-						  memory_order_relaxed, memory_order_relaxed)) {
-	  // it is my responsibility to build the tree of intervals for the function
-	  void *fcn_start = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->start;
-	  void *fcn_end   = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->end;
-	  btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, my_alloc);
-	  if (btuwi_stat.first == NULL) {
-		TMSG(UW_RECIPE_MAP, "BAD build_intervals failed: fcn range %p to %p",
-			fcn_start, fcn_end);
-		return (NULL);
-	  }
-	  ilmstat_btuwi_pair_set_btuwi(ilmstat_btuwi, bitree_uwi_rebalance(btuwi_stat.first));
-	  ilmstat_btuwi_pair_set_status(ilmstat_btuwi, READY);
-	}
-	break;
-  case READY:
-	break;
+  tree_stat_t oldstat = DEFERRED;
+  if (atomic_compare_exchange_strong_explicit(&ilmstat->stat, &oldstat, FORTHCOMING,
+					      memory_order_relaxed, memory_order_relaxed)) {
+    // it is my responsibility to build the tree of intervals for the function
+    void *fcn_start = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->start;
+    void *fcn_end   = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->end;
+    btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, my_alloc);
+    if (btuwi_stat.first == NULL) {
+      TMSG(UW_RECIPE_MAP, "BAD build_intervals failed: fcn range %p to %p",
+	   fcn_start, fcn_end);
+      return (NULL);
+    }
+    ilmstat_btuwi_pair_set_btuwi(ilmstat_btuwi, bitree_uwi_rebalance(btuwi_stat.first));
+    atomic_store_explicit(&ilmstat->stat, READY, memory_order_relaxed);
+  }
+  else switch (oldstat) {
+    case NEVER:
+      // addr is in the range of some poisoned load module
+      return NULL;
   case FORTHCOMING:
 	// invariant: ilmstat_btuwi is non-null
-	while (ilmstat_btuwi_pair_stat(ilmstat_btuwi) != READY);
+    while (atomic_load_explicit(&ilmstat->stat, memory_order_relaxed) != READY);
+	break;
+    default:
 	break;
   }
 
