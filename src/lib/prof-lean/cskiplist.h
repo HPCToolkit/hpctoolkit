@@ -134,9 +134,9 @@ cskl_cmp_find(cskiplist_t *cskl, void *val);
 void*
 cskl_inrange_find(cskiplist_t *cskl, void *val);
 
-bool
+csklnode_t *
 cskl_insert(cskiplist_t *cskl, void *value,
-	mem_alloc m_alloc);
+	    mem_alloc m_alloc);
 
 bool
 cskl_delete(cskiplist_t *cskl, void *value);

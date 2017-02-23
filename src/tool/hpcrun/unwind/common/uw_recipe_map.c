@@ -107,7 +107,11 @@ uw_recipe_map_poison(uintptr_t start, uintptr_t end)
 {
   ilmstat_btuwi_pair_t* itpair =
 	  ilmstat_btuwi_pair_build(start, end, NULL, NEVER, NULL, my_alloc);
-  return cskl_insert(addr2recipe_map, itpair, my_alloc);
+  csklnode_t *node = cskl_insert(addr2recipe_map, itpair, my_alloc);
+  bool res = (itpair == (ilmstat_btuwi_pair_t*)node->val);
+  if (!res)
+    ilmstat_btuwi_pair_free(itpair);
+  return res;
 }
 
 
@@ -278,14 +282,13 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
 		ilmstat_btuwi_pair_malloc((uintptr_t)fcn_start, (uintptr_t)fcn_end, lm,
 			DEFERRED, NULL, my_alloc);
 
-	if (!cskl_insert(addr2recipe_map, ilmstat_btuwi, my_alloc)) {
+	
+	csklnode_t *node = cskl_insert(addr2recipe_map, ilmstat_btuwi, my_alloc);
+	if (ilmstat_btuwi !=  (ilmstat_btuwi_pair_t*)node->val) {
 	  // interval_ldmod_pair ([fcn_start, fcn_end), lm) is already in the map,
-	  // so free it:
+	  // so free the unused copy and use the mapped one
 	  ilmstat_btuwi_pair_free(ilmstat_btuwi);
-
-	  // look for it in the map and it should be there:
-	  ilmstat_btuwi =
-	  	  uw_recipe_map_inrange_find((uintptr_t)addr);
+	  ilmstat_btuwi = (ilmstat_btuwi_pair_t*)node->val;
 	}
 	// ilmstat_btuwi is now in the map.
   }

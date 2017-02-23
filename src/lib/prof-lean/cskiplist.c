@@ -445,7 +445,7 @@ cskl_inrange_find(cskiplist_t *cskl, void *value)
 }
 
 
-bool
+csklnode_t *
 cskl_insert(cskiplist_t *cskl, void *value,
 	mem_alloc m_alloc)
 {
@@ -455,7 +455,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
   csklnode_t *preds[max_height];
   csklnode_t *succs[max_height];
   mcs_node_t mcs_nodes[max_height];
-  bool completed = false;
+  csklnode_t *node;
 
   for (;;) {
 	// Acquire lock before reading:
@@ -466,7 +466,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
 		cskiplist_find_full);
 
 	if (found_layer != NO_LAYER) {
-	  csklnode_t *node = succs[found_layer];
+	  node = succs[found_layer];
 	  if (!node->marked) {
 		while (!node->fully_linked);
 		break;
@@ -517,8 +517,8 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	}
 
 	// allocate my node
-//	csklnode_t *node = csklnode_new(value, my_height, max_height, m_alloc);
-	csklnode_t *node = csklnode_malloc(value, my_height, max_height, m_alloc);
+//	node = csklnode_new(value, my_height, max_height, m_alloc);
+	node = csklnode_malloc(value, my_height, max_height, m_alloc);
 
 	// link it in at levels [0 .. my_height-1]
 	for (int layer = 0; layer < my_height; layer++) {
@@ -532,13 +532,12 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	// unlock each of my predecessors, as necessary
 	unlock_preds(preds, mcs_nodes, highestLocked);
 
-	completed = true;
 	break;
   }
   // Release lock before returning:
   pfq_rwlock_read_unlock(&cskl->lock);
 
-  return completed;
+  return node;
 }
 
 /*
