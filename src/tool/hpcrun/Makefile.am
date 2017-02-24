@@ -187,7 +187,6 @@ UNW_COMMON_FILES = \
         $(UNW_UNIV_FILES)               \
 	unwind/common/binarytree_uwi.c		    \
 	unwind/common/ildmod_stat.c \
-	unwind/common/ilmstat_btuwi_pair.c	    \
 	unwind/common/interval_ldmod_pair.c	    \
 	unwind/common/interval_t.c	    \
 	unwind/common/stack_troll.c	\
