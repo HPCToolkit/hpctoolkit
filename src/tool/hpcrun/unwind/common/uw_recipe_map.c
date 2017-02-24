@@ -73,7 +73,7 @@
 #include <lib/prof-lean/binarytree.h>
 #include "ildmod_stat.h"
 #include "binarytree_uwi.h"
-
+#include "segv_handler.h"
 #include <messages/messages.h>
 
 // libmonitor functions
@@ -155,6 +155,8 @@ ilmstat_btuwi_pair_inrange(void *itp, void *address)
 static ilmstat_btuwi_pair_t *GF_ilmstat_btuwi = NULL; // global free list of ilmstat_btuwi_pair_t*
 static mcs_lock_t GFL_lock;  // lock for GF_ilmstat_btuwi
 static __thread  ilmstat_btuwi_pair_t *_lf_ilmstat_btuwi = NULL;  // thread local free list of ilmstat_btuwi_pair_t*
+// for storing the current btuwi in case of segv
+static  __thread  ilmstat_btuwi_pair_t *current_btuwi = NULL;
 
 //******************************************************************************
 // Constructors
@@ -437,6 +439,15 @@ uw_recipe_map_notify_init()
 }
 
 
+/*
+ * clean-up the state in case of emergency such as SEGV
+ */
+static void
+uw_cleanup(void)
+{
+  ildmod_stat_t *ilmstat = current_btuwi->ilmstat;
+  atomic_store_explicit(&ilmstat->stat, NEVER, memory_order_release);
+}
 
 //---------------------------------------------------------------------
 // interface operations
@@ -468,6 +479,9 @@ uw_recipe_map_init(void)
 		  ilmstat_btuwi_pair_cmp, ilmstat_btuwi_pair_inrange, my_alloc);
 
   uw_recipe_map_notify_init();
+
+  // register to segv signal handler to call this function 
+  hpcrun_segv_register_cb(uw_cleanup);
 
   // initialize the map with a POISONED node ({([0, UINTPTR_MAX), NULL), NEVER}, NULL)
   uw_recipe_map_poison(0, UINTPTR_MAX);
@@ -539,6 +553,10 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
     // it is my responsibility to build the tree of intervals for the function
     void *fcn_start = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->start;
     void *fcn_end   = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->end;
+
+    // potentially crash in this statement. need to save the state 
+    current_btuwi = ilm_btui;
+
     btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, my_alloc);
     if (btuwi_stat.first == NULL) {
       TMSG(UW_RECIPE_MAP, "BAD build_intervals failed: fcn range %p to %p",

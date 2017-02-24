@@ -488,6 +488,8 @@ hpcrun_loadmap_unmap(load_module_t* lm)
 void
 hpcrun_initLoadmap()
 {
+  notification_recipients = NULL; // necessary for forked executable
+
   s_loadmap_ptr = &s_loadmap;
   hpcrun_loadmap_init(s_loadmap_ptr);
 
