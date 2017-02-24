@@ -173,19 +173,58 @@ ilmstat_btuwi_pair_build(uintptr_t start, uintptr_t end, load_module_t *ldmod,
   return node;
 }
 
+static ilmstat_btuwi_pair_t*
+ilmstat_btuwi_pair_malloc(
+	uintptr_t start,
+	uintptr_t end,
+	load_module_t *ldmod,
+	tree_stat_t treestat,
+	bitree_uwi_t *tree,
+	mem_alloc m_alloc)
+{
+  if (!_lf_ilmstat_btuwi) {
+    /*
+     * Look for nodes in the global free list.
+     * If the global free list is not empty,
+     *   transfer a bunch of nodes to the local free list,
+     * otherwise add a bunch of nodes to the local free list.
+     */
+    mcs_node_t me;
+    bool acquired = mcs_trylock(&GFL_lock, &me);
+    if (acquired) {
+      if (GF_ilmstat_btuwi) {
+	// transfer a bunch of nodes the global free list to the local free list
+	int n = 0;
+	while (GF_ilmstat_btuwi && n < NUM_NODES) {
+	  ilmstat_btuwi_pair_t *head = GF_ilmstat_btuwi;
+	  GF_ilmstat_btuwi = GF_ilmstat_btuwi->next;
+	  head->next = _lf_ilmstat_btuwi;
+	  _lf_ilmstat_btuwi = head;
+	  n++;
+	}
+      }
+      mcs_unlock(&GFL_lock, &me);
+    }
+    if (!_lf_ilmstat_btuwi) {
+      /* add a bunch of nodes to _lf_ilmstat_btuwi */
+      for (int i = 0; i < NUM_NODES; i++) {
+	ilmstat_btuwi_pair_t *node =
+	  ilmstat_btuwi_pair_build(0, 0, NULL, DEFERRED, NULL, m_alloc);
+	node->next = _lf_ilmstat_btuwi;
+	_lf_ilmstat_btuwi = node;
+      }
+    }
+  }
+
+#if UW_RECIPE_MAP_DEBUG
+  assert (_lf_ilmstat_btuwi);
+#endif
+
 /*
  * remove the head node of the local free list
  * set its fields using the appropriate parameters
  * return the head node.
  */
-static ilmstat_btuwi_pair_t*
-ilmstat_btuwi_pair_alloc_from_lfl(
-	uintptr_t start,
-	uintptr_t end,
-	load_module_t *ldmod,
-	tree_stat_t treestat,
-	bitree_uwi_t *tree)
-{
   ilmstat_btuwi_pair_t *ans = _lf_ilmstat_btuwi;
   _lf_ilmstat_btuwi = _lf_ilmstat_btuwi->next;
   ans->next = NULL;
@@ -197,63 +236,6 @@ ilmstat_btuwi_pair_alloc_from_lfl(
   atomic_store_explicit(&ilmstat->stat, treestat, memory_order_relaxed);
   ans->btuwi = tree;
   return ans;
-}
-
-/*
- * Look for nodes in the global free list.
- * If the global free list is not empty,
- *   transfer a bunch of nodes to the local free list,
- * otherwise add a bunch of nodes to the local free list.
- */
-static void
-ilmstat_btuwi_pair_populate_lfl(
-	mem_alloc m_alloc)
-{
-  mcs_node_t me;
-  bool acquired = mcs_trylock(&GFL_lock, &me);
-  if (acquired) {
-	if (GF_ilmstat_btuwi) {
-	  // transfer a bunch of nodes the global free list to the local free list
-	  int n = 0;
-	  while (GF_ilmstat_btuwi && n < NUM_NODES) {
-		ilmstat_btuwi_pair_t *head = GF_ilmstat_btuwi;
-		GF_ilmstat_btuwi = GF_ilmstat_btuwi->next;
-		head->next = _lf_ilmstat_btuwi;
-		_lf_ilmstat_btuwi = head;
-		n++;
-	  }
-	}
-	mcs_unlock(&GFL_lock, &me);
-  }
-  if (!_lf_ilmstat_btuwi) {
-	/* add a bunch of nodes to _lf_ilmstat_btuwi */
-	for (int i = 0; i < NUM_NODES; i++) {
-	  ilmstat_btuwi_pair_t *node =
-		  ilmstat_btuwi_pair_build(0, 0, NULL, DEFERRED, NULL, m_alloc);
-	  node->next = _lf_ilmstat_btuwi;
-	  _lf_ilmstat_btuwi = node;
-	}
-  }
-}
-
-static ilmstat_btuwi_pair_t*
-ilmstat_btuwi_pair_malloc(
-	uintptr_t start,
-	uintptr_t end,
-	load_module_t *ldmod,
-	tree_stat_t treestat,
-	bitree_uwi_t *tree,
-	mem_alloc m_alloc)
-{
-  if (!_lf_ilmstat_btuwi) {
-	ilmstat_btuwi_pair_populate_lfl(m_alloc);
-  }
-
-#if UW_RECIPE_MAP_DEBUG
-  assert (_lf_ilmstat_btuwi);
-#endif
-
-  return ilmstat_btuwi_pair_alloc_from_lfl(start, end, ldmod, treestat, tree);
 }
 
 //******************************************************************************
