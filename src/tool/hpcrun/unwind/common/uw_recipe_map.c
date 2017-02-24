@@ -122,8 +122,9 @@
 //******************************************************************************
 
 typedef struct ilmstat_btuwi_pair_s {
-  struct ilmstat_btuwi_pair_s* next;
-  generic_pair_t *ilmstat_btuwi;
+  struct ilmstat_btuwi_pair_s *next;
+  ildmod_stat_t *ilmstat;
+  bitree_uwi_t *btuwi;
 } ilmstat_btuwi_pair_t;
 
 //******************************************************************************
@@ -133,13 +134,13 @@ typedef struct ilmstat_btuwi_pair_s {
 inline ildmod_stat_t*
 ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi_pair_t* itp)
 {
-  return (ildmod_stat_t*)itp->ilmstat_btuwi->first;
+  return itp->ilmstat;
 }
 
 inline bitree_uwi_t*
 ilmstat_btuwi_pair_btuwi(ilmstat_btuwi_pair_t* itp)
 {
-  return (bitree_uwi_t*)itp->ilmstat_btuwi->second;
+  return itp->btuwi;
 }
 
 inline interval_t*
@@ -155,7 +156,7 @@ ilmstat_btuwi_pair_interval(ilmstat_btuwi_pair_t* itp)
 inline void
 ilmstat_btuwi_pair_set_btuwi(ilmstat_btuwi_pair_t* itp, bitree_uwi_t* tree)
 {
-  itp->ilmstat_btuwi->second = tree;
+  itp->btuwi = tree;
 }
 
 //******************************************************************************
@@ -197,8 +198,8 @@ ilmstat_btuwi_pair_build(uintptr_t start, uintptr_t end, load_module_t *ldmod,
 {
   ilmstat_btuwi_pair_t* node = m_alloc(sizeof(*node));
   node->next = NULL;
-  ildmod_stat_t *key = ildmod_stat_build(start, end, ldmod, treestat, m_alloc);
-  node->ilmstat_btuwi = generic_pair_t_new(key, tree, m_alloc);
+  node->ilmstat = ildmod_stat_build(start, end, ldmod, treestat, m_alloc);
+  node->btuwi = tree; 
   return node;
 }
 
