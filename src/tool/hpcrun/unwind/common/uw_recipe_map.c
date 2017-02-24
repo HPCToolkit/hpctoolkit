@@ -254,47 +254,62 @@ uw_recipe_map_init(void)
 /*
  *
  */
-static ilmstat_btuwi_pair_t *
-uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
+bool
+uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
 {
-  // first check if addr is already in the range of an interval key in the map
-  ilmstat_btuwi_pair_t* ilmstat_btuwi =
+  // fill unwr_info with appropriate values to indicate that the lookup fails and the unwind recipe
+  // information is invalid, in case of failure.
+  // known use case:
+  // hpcrun_generate_backtrace_no_trampoline calls
+  //   1. hpcrun_unw_init_cursor(&cursor, context), which calls
+  //        uw_recipe_map_lookup,
+  //   2. hpcrun_unw_step(&cursor), which calls
+  //        hpcrun_unw_step_real(cursor), which looks at cursor->unwr_info
+
+  unwr_info->btuwi    = NULL;
+  unwr_info->treestat = NEVER;
+  unwr_info->lm       = NULL;
+  unwr_info->start    = 0;
+  unwr_info->end      = 0;
+
+  // check if addr is already in the range of an interval key in the map
+  ilmstat_btuwi_pair_t* ilm_btui =
 	  uw_recipe_map_inrange_find((uintptr_t)addr);
 
-  if (!ilmstat_btuwi) {
+  if (!ilm_btui) {
 	load_module_t *lm;
 	void *fcn_start, *fcn_end;
 	if (!fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end, &lm)) {
 	  TMSG(UW_RECIPE_MAP, "BAD fnbounds_enclosing_addr failed: addr %p", addr);
-	  return (NULL);
+	  return false;
 	}
 	if (addr < fcn_start || fcn_end <= addr) {
 	  TMSG(UW_RECIPE_MAP, "BAD fnbounds_enclosing_addr failed: addr %p "
 		  "not within fcn range %p to %p", addr, fcn_start, fcn_end);
-	  return (NULL);
+	  return false;
 	}
 
 	// bounding addresses found; set DEFERRED state and pair it with
 	// (bitree_uwi_t*)NULL and try to insert into map:
-	ilmstat_btuwi =
+	ilm_btui =
 		ilmstat_btuwi_pair_malloc((uintptr_t)fcn_start, (uintptr_t)fcn_end, lm,
 			DEFERRED, NULL, my_alloc);
 
 	
-	csklnode_t *node = cskl_insert(addr2recipe_map, ilmstat_btuwi, my_alloc);
-	if (ilmstat_btuwi !=  (ilmstat_btuwi_pair_t*)node->val) {
+	csklnode_t *node = cskl_insert(addr2recipe_map, ilm_btui, my_alloc);
+	if (ilm_btui !=  (ilmstat_btuwi_pair_t*)node->val) {
 	  // interval_ldmod_pair ([fcn_start, fcn_end), lm) is already in the map,
 	  // so free the unused copy and use the mapped one
-	  ilmstat_btuwi_pair_free(ilmstat_btuwi);
-	  ilmstat_btuwi = (ilmstat_btuwi_pair_t*)node->val;
+	  ilmstat_btuwi_pair_free(ilm_btui);
+	  ilm_btui = (ilmstat_btuwi_pair_t*)node->val;
 	}
-	// ilmstat_btuwi is now in the map.
+	// ilm_btui is now in the map.
   }
 #if UW_RECIPE_MAP_DEBUG
-  assert(ilmstat_btuwi != NULL);
+  assert(ilm_btui != NULL);
 #endif
 
-  ildmod_stat_t *ilmstat = ilmstat_btuwi_pair_ilmstat(ilmstat_btuwi);
+  ildmod_stat_t *ilmstat = ilmstat_btuwi_pair_ilmstat(ilm_btui);
   tree_stat_t oldstat = DEFERRED;
   if (atomic_compare_exchange_strong_explicit(&ilmstat->stat, &oldstat, FORTHCOMING,
 					      memory_order_release, memory_order_relaxed)) {
@@ -305,61 +320,33 @@ uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr)
     if (btuwi_stat.first == NULL) {
       TMSG(UW_RECIPE_MAP, "BAD build_intervals failed: fcn range %p to %p",
 	   fcn_start, fcn_end);
-      return (NULL);
+      return false;
     }
-    ilmstat_btuwi_pair_set_btuwi(ilmstat_btuwi, bitree_uwi_rebalance(btuwi_stat.first));
+    ilmstat_btuwi_pair_set_btuwi(ilm_btui, bitree_uwi_rebalance(btuwi_stat.first));
     atomic_store_explicit(&ilmstat->stat, READY, memory_order_release);
   }
   else switch (oldstat) {
     case NEVER:
       // addr is in the range of some poisoned load module
-      return NULL;
+      return false;
   case FORTHCOMING:
-	// invariant: ilmstat_btuwi is non-null
-    while (atomic_load_explicit(&ilmstat->stat, memory_order_acquire) != READY);
+	// invariant: ilm_btui is non-null
+        while (READY != (oldstat = atomic_load_explicit(&ilmstat->stat, memory_order_acquire)));
 	break;
     default:
 	break;
   }
 
   TMSG(UW_RECIPE_MAP_LOOKUP, "found in unwind tree: addr %p", addr);
-  return ilmstat_btuwi;
-}
-
-/*
- *
- */
-bool
-uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
-{
-  ilmstat_btuwi_pair_t *ilm_btui = uw_recipe_map_lookup_ilmstat_btuwi_pair(addr);
-
-  if (ilm_btui == NULL) {  // lookup fails for various reasons.
-	// fill unwr_info with appropriate values to indicate that the lookup fails and the unwind recipe
-	// information is invalid.
-	// known use case:
-	// hpcrun_generate_backtrace_no_trampoline calls
-	//   1. hpcrun_unw_init_cursor(&cursor, context), which calls
-	//        uw_recipe_map_lookup,
-	//   2. hpcrun_unw_step(&cursor), which calls
-	//        hpcrun_unw_step_real(cursor), which looks at cursor->unwr_info
-
-	unwr_info->btuwi    = NULL;
-	unwr_info->treestat = NEVER;
-	unwr_info->lm       = NULL;
-	unwr_info->start    = 0;
-	unwr_info->end      = 0;
-	return false;
-  }
 
   bitree_uwi_t *btuwi = ilmstat_btuwi_pair_btuwi(ilm_btui);
   unwr_info->btuwi    = bitree_uwi_inrange(btuwi, (uintptr_t)addr);
-  unwr_info->treestat = ilmstat_btuwi_pair_stat(ilm_btui);
+  unwr_info->treestat = oldstat;
   unwr_info->lm       = ilmstat_btuwi_pair_loadmod(ilm_btui);
   unwr_info->start    = ilmstat_btuwi_pair_interval(ilm_btui)->start;
   unwr_info->end      = ilmstat_btuwi_pair_interval(ilm_btui)->end;
 
-  return (unwr_info->treestat == READY);
+  return (oldstat == READY);
 }
 
 //---------------------------------------------------------------------
