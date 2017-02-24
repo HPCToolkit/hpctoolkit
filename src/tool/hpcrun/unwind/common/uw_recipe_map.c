@@ -331,7 +331,7 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
       return false;
   case FORTHCOMING:
 	// invariant: ilm_btui is non-null
-        while (READY != (oldstat = atomic_load_explicit(&ilmstat->stat, memory_order_acquire)));
+        while (READY != atomic_load_explicit(&ilmstat->stat, memory_order_acquire));
 	break;
     default:
 	break;
@@ -346,7 +346,7 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
   unwr_info->start    = ilmstat_btuwi_pair_interval(ilm_btui)->start;
   unwr_info->end      = ilmstat_btuwi_pair_interval(ilm_btui)->end;
 
-  return (oldstat == READY);
+  return true;
 }
 
 //---------------------------------------------------------------------
