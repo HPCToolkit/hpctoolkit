@@ -85,7 +85,6 @@
 #include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
-
 //*************************** Forward Declarations **************************
 
 static cct_node_t*
@@ -396,5 +395,4 @@ help_hpcrun_sample_callpath(epoch_t *epoch, void *context, ip_normalized_t *leaf
 
   return n;
 }
-
 
