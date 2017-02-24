@@ -301,14 +301,17 @@ static int perf_multiplex = 0;
 //  4  Detect automatically to have the most precise possible (default)
 static int perf_precise_ip = PERF_EVENT_AUTODETECT_SKID;
 
-static event_info_t  *event_root; // once initialize, this doesn't change
+// a list of main description of events, shared between threads
+// once initialize, this doesn't change
+static event_info_t  *event_desc; 
 
 
 //******************************************************************************
 // thread local variables
 //******************************************************************************
 
-static event_thread_t   __thread   *event_thread; // event for each thread
+// a list of event information, private for each thread
+static event_thread_t   __thread   *event_thread; 
 
 
 //******************************************************************************
@@ -981,13 +984,13 @@ METHOD_FN(start)
 
   int nevents  = (self->evl).nevents; 
   event_thread = (event_thread_t*) hpcrun_malloc(sizeof(event_thread) * nevents); 
+  
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
   //  but there will be no samples
-  int i=0;
-  for (event_info_t *e=event_root; e != NULL; e=e->next, i++) {
+  for (int i=0; i<nevents; i++) {
     // initialize this event. If it's valid, we set the metric for the event
-    if (perf_thread_init(e, &(event_thread[i])) ) { 
+    if (perf_thread_init( &(event_desc[i]), &(event_thread[i])) ) { 
       restart_perf_event( event_thread[i].fd );
     }
   }
@@ -1144,8 +1147,9 @@ METHOD_FN(process_event_list, int lush_metrics)
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
   //  but there will be no samples
-  event_info_t *current = event_root;
+  event_desc = (event_info_t*) hpcrun_malloc(sizeof(event_info_t) * num_events);
   int i=0;
+
   for (event = start_tok(evlist); more_tok(); event = next_tok(), i++) {
     char name[1024];
     long threshold;
@@ -1156,18 +1160,10 @@ METHOD_FN(process_event_list, int lush_metrics)
 			     DEFAULT_THRESHOLD);
 
     // initialize the event attributes
-    event_info_t *item = (event_info_t *) hpcrun_malloc(sizeof(event_info_t));
-    if (event_root == NULL) {
-      event_root = item;
-      current    = item;
-    } else {
-      current->next = item;
-      current 	    = item; 
-    }
-    item->id   = i;
-    item->next = NULL;
+    event_desc[i].id   = i;
+    event_desc[i].next = NULL;
 
-    perf_attr_init(name, &(item->attr), threshold);
+    perf_attr_init(name, &(event_desc[i].attr), threshold);
 
     // initialize the property of the metric
     // if the metric's name has "CYCLES" it mostly a cycle metric 
@@ -1178,9 +1174,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
 				   // since the OS will free it, we don't have to do it in hpcrun
     // set the metric for this perf event
-    item->metric = hpcrun_new_metric();
+    event_desc[i].metric = hpcrun_new_metric();
 
-    metric_desc_t *m = hpcrun_set_metric_info_and_period(item->metric, name_dup,
+    metric_desc_t *m = hpcrun_set_metric_info_and_period(event_desc[i].metric, name_dup,
 				    MetricFlags_ValFmt_Int, threshold, prop);
     if (m == NULL) {
       EMSG("Error: unable to create metric #%d: %s", index, name);
@@ -1202,9 +1198,9 @@ METHOD_FN(process_event_list, int lush_metrics)
       char *scale_factor_metric = (char *) hpcrun_malloc(sizeof (char)*MAX_LABEL_CHARS);
       snprintf(scale_factor_metric, MAX_LABEL_CHARS, "SF-%s", name ); // SF: Scale factor
 
-      item->metric_scale = hpcrun_new_metric();
+      event_desc[i].metric_scale = hpcrun_new_metric();
 
-      metric_desc_t *ms = hpcrun_set_metric_info_and_period(item->metric_scale, 
+      metric_desc_t *ms = hpcrun_set_metric_info_and_period(event_desc[i].metric_scale, 
 				scale_factor_metric, MetricFlags_ValFmt_Real, 
 				1, metric_property_none);
       if (ms == NULL) {
@@ -1364,8 +1360,9 @@ perf_event_handler(
       u64 time_running = current->mmap->time_running;
 
       cct_node_t *node = sv.sample_node;
+      double scale_f   = (double) time_enabled / time_running;
       cct_metric_data_set( current->event->metric_scale, node, 
-        (cct_metric_data_t){.r =  (double) time_enabled / time_running });
+        (cct_metric_data_t){.r =  scale_f });
     }
     blame_shift_apply( current->event->metric, sv.sample_node, 1 /*metricIncr*/);
   } else {
