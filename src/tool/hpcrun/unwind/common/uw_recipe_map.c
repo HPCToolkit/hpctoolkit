@@ -45,10 +45,10 @@
 // ******************************************************* EndRiceCopyright *
 
 /*
- * Interval tree code specific to unwind intervals.
- * This is the interface to the unwind interval tree.
+ * Maintain a map from address Intervals to unwind intervals.
  *
- * Note: the external functions assume the tree is not yet locked.
+ * Note: the caller need not acquire/release locks as part
+ * of using the map.
  *
  * $Id$
  */
