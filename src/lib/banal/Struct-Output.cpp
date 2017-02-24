@@ -65,26 +65,39 @@
 //
 // 7. Fix targ401420 names in <P> tags.
 //
-// 8. Fill in proc body with <L>, <A> and <S> tags (duh).
+// 9. Add stmts and loops that use guard aliens.
+//
+// 10. Rework locateSubtree() to better identify callee scope.
+//
+// 11. Demangle proc names.
+//
+// 12. Better method for proc line num.
+//
+// 13. Handle unknown file/line more explicitly.
 
 //***************************************************************************
 
+#include <list>
+#include <map>
 #include <ostream>
 #include <string>
 
 #include <CFG.h>
 
+#include <lib/support/FileUtil.hpp>
+#include <lib/support/StringTable.hpp>
 #include <lib/xml/xml.hpp>
+
 #include "Struct-Inline.hpp"
 #include "Struct-Output.hpp"
 #include "Struct-Skel.hpp"
 
+#define INDENT  "  "
+#define INIT_LM_INDEX  2
+
 using namespace Dyninst;
 using namespace Inline;
 using namespace std;
-
-#define INDENT  "  "
-#define INIT_LM_INDEX  2
 
 static long next_index;
 
@@ -122,6 +135,24 @@ doIndent(ostream * os, int depth)
 
 namespace BAnal {
 namespace Output {
+
+class ScopeInfo {
+public:
+  long  base_index;
+
+  ScopeInfo(long base)
+  {
+    base_index = base;
+  }
+};
+
+static void
+doTreeNode(ostream *, int, TreeNode *, ScopeInfo, HPC::StringTable &);
+
+static void
+locateSubtree(TreeNode *, long &, long &);
+
+//----------------------------------------------------------------------
 
 // DOCTYPE header and <HPCToolkitStructure> tag.
 void
@@ -212,14 +243,16 @@ printFileEnd(ostream * os, FileInfo * finfo)
 
 // Entry point for <P> proc tag and its subtree.
 void
-printProc(ostream * os, ProcInfo * pinfo)
+printProc(ostream * os, FileInfo * finfo, ProcInfo * pinfo,
+	  HPC::StringTable & strTab)
 {
-  if (os == NULL || pinfo == NULL) {
+  if (os == NULL || finfo == NULL || pinfo == NULL) {
     return;
   }
 
   ParseAPI::Function * func = pinfo->func;
   TreeNode * root = pinfo->root;
+  long base_index = strTab.str2index(FileUtil::basename(finfo->name.c_str()));
 
   doIndent(os, 2);
   *os << "<P"
@@ -229,24 +262,133 @@ printProc(ostream * os, ProcInfo * pinfo)
   if (pinfo->linkName != pinfo->prettyName) {
     *os << STRING("ln", pinfo->linkName);
   }
-
-  *os << VRANGE(func->addr(), 1)
+  *os << NUMBER("l", pinfo->line_num)
+      << VRANGE(func->addr(), 1)
       << ">\n";
 
-  // temp placeholder for proc body
-  if (root != NULL && ! root->stmtMap.empty()) {
-    StmtInfo * sinfo = root->stmtMap.begin()->second;
-
-    doIndent(os, 3);
-    *os << "<S"
-	<< INDEX
-	<< NUMBER("l", sinfo->line_num)
-	<< VRANGE(sinfo->vma, sinfo->len)
-	<< "/>\n";
-  }
+  doTreeNode(os, 3, root, ScopeInfo(base_index), strTab);
 
   doIndent(os, 2);
   *os << "</P>\n";
+}
+
+//----------------------------------------------------------------------
+
+static void
+doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scinfo,
+	   HPC::StringTable & strTab)
+{
+  if (root == NULL) {
+    return;
+  }
+
+  // statements that match this scope (no guard alien)
+  for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
+    StmtInfo * sinfo = sit->second;
+
+    if (1 || sinfo->base_index == scinfo.base_index) {
+      doIndent(os, depth);
+      *os << "<S"
+	  << INDEX
+	  << NUMBER("l", sinfo->line_num)
+	  << VRANGE(sinfo->vma, sinfo->len)
+	  << "/>\n";
+    }
+  }
+
+  // loops that match this scope (no guard alien)
+  for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
+    LoopInfo * linfo = *lit;
+
+    if (1 || linfo->base_index == scinfo.base_index) {
+      doIndent(os, depth);
+      *os << "<L"
+	  << INDEX
+	  << NUMBER("l", linfo->line_num)
+	  << STRING("f", strTab.index2str(linfo->file_index))
+	  << VRANGE(linfo->entry_vma, 1)
+	  << ">\n";
+
+      doTreeNode(os, depth + 1, linfo->node, ScopeInfo(linfo->base_index), strTab);
+
+      doIndent(os, depth);
+      *os << "</L>\n";
+    }
+  }
+
+  // inline call sites, use double alien
+  for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
+    FLPIndex flp = nit->first;
+    TreeNode * subtree = nit->second;
+    long subtree_file;
+    long subtree_line;
+
+    locateSubtree(subtree, subtree_file, subtree_line);
+
+    // outer, caller alien.  use file and line from flp call site, but
+    // empty proc name.
+    doIndent(os, depth);
+    *os << "<A"
+	<< INDEX
+	<< NUMBER("l", flp.line_num)
+	<< STRING("f", strTab.index2str(flp.file_index))
+	<< STRING("n", "")
+	<< " v=\"{}\""
+	<< ">\n";
+
+    // inner, callee alien.  use proc name from flp call site, but
+    // file and line from subtree.
+    doIndent(os, depth + 1);
+    *os << "<A"
+	<< INDEX
+	<< NUMBER("l", subtree_line)
+	<< STRING("f", strTab.index2str(subtree_file))
+	<< STRING("n", strTab.index2str(flp.proc_index))
+	<< " v=\"{}\""
+	<< ">\n";
+
+    doTreeNode(os, depth + 2, subtree, ScopeInfo(flp.base_index), strTab);
+
+    doIndent(os, depth + 1);
+    *os << "</A>\n";
+
+    doIndent(os, depth);
+    *os << "</A>\n";
+  }
+}
+
+//----------------------------------------------------------------------
+
+static void
+locateSubtree(TreeNode * tree, long & file, long & line)
+{
+  // try inline subtree
+  if (! tree->nodeMap.empty()) {
+    FLPIndex flp = tree->nodeMap.begin()->first;
+    file = flp.file_index;
+    line = flp.line_num;
+    return;
+  }
+
+  // try loop
+  if (! tree->loopList.empty()) {
+    LoopInfo * linfo = *(tree->loopList.begin());
+    file = linfo->file_index;
+    line = linfo->line_num;
+    return;
+  }
+
+  // try stmt
+  if (! tree->stmtMap.empty()) {
+    StmtInfo * sinfo = tree->stmtMap.begin()->second;
+    file = sinfo->file_index;
+    line = sinfo->line_num;
+    return;
+  }
+
+  // should not happen
+  file = 0;
+  line = 0;
 }
 
 }  // namespace Output

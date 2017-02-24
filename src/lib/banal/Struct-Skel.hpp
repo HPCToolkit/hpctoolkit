@@ -125,13 +125,15 @@ class ProcInfo {
 public:
   string prettyName;
   string linkName;
+  long   line_num;
   ParseAPI::Function * func;
   TreeNode * root;
 
-  ProcInfo(string pn, string ln, ParseAPI::Function * fn, TreeNode * rt)
+  ProcInfo(string pn, string ln, long l, ParseAPI::Function * fn, TreeNode * rt)
   {
     prettyName = pn;
     linkName = ln;
+    line_num = l;
     func = fn;
     root = rt;
   }

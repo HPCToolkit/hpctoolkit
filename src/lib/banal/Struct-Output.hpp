@@ -55,6 +55,8 @@
 #include <ostream>
 #include <string>
 
+#include <lib/support/StringTable.hpp>
+
 #include "Struct-Inline.hpp"
 #include "Struct-Skel.hpp"
 
@@ -73,7 +75,7 @@ void printLoadModuleEnd(ostream *);
 void printFileBegin(ostream *, FileInfo *);
 void printFileEnd(ostream *, FileInfo *);
 
-void printProc(ostream *, ProcInfo *);
+void printProc(ostream *, FileInfo *, ProcInfo *, HPC::StringTable & strTab);
 
 }  // namespace Output
 }  // namespace BAnal

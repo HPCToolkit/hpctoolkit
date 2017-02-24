@@ -585,7 +585,7 @@ makeStructure(BinUtil::LM * lm,
       for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
 	ProcInfo * pinfo = pit->second;
 
-	Output::printProc(outFile, pinfo);
+	Output::printProc(outFile, finfo, pinfo, strTab);
       }
     }
     Output::printFileEnd(outFile, finfo);
@@ -702,7 +702,7 @@ makeSkeleton(BinUtil::LM * lm, CodeObject * code_obj, ProcNameMgr * procNmMgr)
       ginfo = new GroupInfo(p);
       finfo->groupMap[linknm] = ginfo;
     }
-    ginfo->procMap[vma] = new ProcInfo(procnm, linknm, func, NULL);
+    ginfo->procMap[vma] = new ProcInfo(procnm, linknm, line, func, NULL);
   }
 
   return fileMap;
