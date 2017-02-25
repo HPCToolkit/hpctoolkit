@@ -68,6 +68,8 @@
 // user include files 
 //***************************************************************************
 
+#include "include/queue.h" // Singly-linkled list macros
+
 #include "main.h"
 #include "thread_data.h"
 #include "handling_sample.h"
@@ -82,17 +84,21 @@
 
 //*************************** MACROS **************************
 
-#define MAX_SEGV_CALLBACK 10
 
 
 //*************************** type data structure **************************
 
+// list of callbacks
+typedef struct segv_list_s {
+  hpcrun_sig_callback_t callback;
+  SLIST_ENTRY(segv_list_s) entries;
+} segv_list_t;
+
 
 //*************************** Local variables **************************
 
-static hpcrun_sig_callback_t list_of_cb[MAX_SEGV_CALLBACK];
-static int num_of_cb = 0;
-
+static SLIST_HEAD(segv_list_head, segv_list_s) list_cb_head = 
+	SLIST_HEAD_INITIALIZER(segv_list_head);
 
 //***************************************************************************
 // catch SIGSEGVs
@@ -134,9 +140,10 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
     hpcrun_bt_dump(td->btbuf_cur, "SEGV");
 
     // call clean-up callback functions 
-    for (int i=0; i<num_of_cb; i++) {
-      if (list_of_cb[i] != NULL)
-	(*list_of_cb[i])();
+    segv_list_t *item;
+    SLIST_FOREACH(item, &list_cb_head, entries) {
+      if (item->callback != NULL)
+	(*item->callback)();
     }
 
     (*hpcrun_get_real_siglongjmp())(it->jb, 9);
@@ -171,21 +178,30 @@ hpcrun_setup_segv()
 
 // Interface for callback registerations when a segv occurs.
 // The callback function will be called when a segv happens.
-// Returns: zero or posistive if successful, -1 otherwise.
+// Returns: 0 if the function is already registered, 
+//  	1 if the function is now added to the list
+//  	-1 if there's something wrong
 // Warnning: this function is not thread safe. 
 
 int 
 hpcrun_segv_register_cb( hpcrun_sig_callback_t cb )
 {
-  if (num_of_cb+1 < MAX_SEGV_CALLBACK) {
-    for (int i=0; i<num_of_cb; i++) {
-      if (list_of_cb[i] == cb)
-	return i; // the function is already registered
-    }
-    list_of_cb[num_of_cb] = cb;
-    num_of_cb++;
-    return num_of_cb;
+  segv_list_t *list_item = NULL; 
+
+  // searching if the callback is already registered
+  SLIST_FOREACH(list_item, &list_cb_head, entries) {
+    if (list_item->callback == cb)
+      return 0;
   }
-  return -1;
+
+  list_item = (segv_list_t*) hpcrun_malloc(sizeof(segv_list_t));
+  if (list_item == NULL)
+	return -1;
+  list_item->callback = cb;
+
+  // add the callback into the list
+  SLIST_INSERT_HEAD(&list_cb_head, list_item, entries);
+  return 1;
 }
+
 
