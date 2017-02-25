@@ -78,6 +78,21 @@
 #include <messages/messages.h>
 #include <utilities/arch/context-pc.h>
 
+#include "segv_handler.h"
+
+//*************************** MACROS **************************
+
+#define MAX_SEGV_CALLBACK 10
+
+
+//*************************** type data structure **************************
+
+
+//*************************** Local variables **************************
+
+static hpcrun_sig_callback_t list_of_cb[MAX_SEGV_CALLBACK];
+static int num_of_cb = 0;
+
 
 //***************************************************************************
 // catch SIGSEGVs
@@ -118,6 +133,12 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
 
     hpcrun_bt_dump(td->btbuf_cur, "SEGV");
 
+    // call clean-up callback functions 
+    for (int i=0; i<num_of_cb; i++) {
+      if (list_of_cb[i] != NULL)
+	(*list_of_cb[i])();
+    }
+
     (*hpcrun_get_real_siglongjmp())(it->jb, 9);
     return 0;
   }
@@ -144,3 +165,27 @@ hpcrun_setup_segv()
 
   return ret;
 }
+
+// ------------------------------------------------------------
+// ------------------------------------------------------------
+
+// Interface for callback registerations when a segv occurs.
+// The callback function will be called when a segv happens.
+// Returns: zero or posistive if successful, -1 otherwise.
+// Warnning: this function is not thread safe. 
+
+int 
+hpcrun_segv_register_cb( hpcrun_sig_callback_t cb )
+{
+  if (num_of_cb+1 < MAX_SEGV_CALLBACK) {
+    for (int i=0; i<num_of_cb; i++) {
+      if (list_of_cb[i] == cb)
+	return i; // the function is already registered
+    }
+    list_of_cb[num_of_cb] = cb;
+    num_of_cb++;
+    return num_of_cb;
+  }
+  return -1;
+}
+
