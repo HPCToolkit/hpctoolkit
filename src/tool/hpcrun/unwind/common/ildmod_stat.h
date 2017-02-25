@@ -40,22 +40,6 @@ typedef struct ildmod_stat_s {
 } ildmod_stat_t;
 
 //******************************************************************************
-// Gettors
-//******************************************************************************
-
-inline interval_t*
-ildmod_stat_interval(ildmod_stat_t* itp)
-{
-  return (interval_t*)(itp->ildmod->first);
-}
-
-inline load_module_t*
-ildmod_stat_loadmod(ildmod_stat_t* itp)
-{
-  return (load_module_t*)(itp->ildmod->second);
-}
-
-//******************************************************************************
 // Comparators
 //******************************************************************************
 

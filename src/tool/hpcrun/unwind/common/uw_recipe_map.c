@@ -230,13 +230,14 @@ ilmstat_btuwi_pair_malloc(
   ilmstat_btuwi_pair_t *ans = _lf_ilmstat_btuwi;
   _lf_ilmstat_btuwi = _lf_ilmstat_btuwi->next;
   ans->next = NULL;
-  interval_t *interval = ildmod_stat_interval(ans->ilmstat);
+  ans->btuwi = tree;
+  ildmod_stat_t *ilmstat = ans->ilmstat;
+  atomic_store_explicit(&ilmstat->stat, treestat, memory_order_relaxed);
+  interval_ldmod_pair_t* ildmod = ilmstat->ildmod;
+  interval_ldmod_pair_set_loadmod(ildmod, ldmod);
+  interval_t *interval = interval_ldmod_pair_interval(ildmod);
   interval->start = start;
   interval->end = end;
-  ildmod_stat_t *ilmstat = ans->ilmstat;
-  interval_ldmod_pair_set_loadmod(ilmstat->ildmod, ldmod);
-  atomic_store_explicit(&ilmstat->stat, treestat, memory_order_relaxed);
-  ans->btuwi = tree;
   return ans;
 }
 
@@ -362,7 +363,7 @@ uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
   ildmod_stat_t* ilmstat = ilmstat_btuwi->ilmstat;
   assert(atomic_load_explicit(&ilmstat->stat, memory_order_relaxed) == NEVER);  // should be a poisoned node
 #endif
-  interval_t* interval = ildmod_stat_interval(ilmstat_btuwi->ilmstat);
+  interval_t* interval = interval_ldmod_pair_interval(ilmstat_btuwi->ilmstat->ildmod);
   uintptr_t s0 = interval->start;
   uintptr_t e0 = interval->end;
   uw_recipe_map_cmp_del_bulk_unsynch(ilmstat_btuwi, ilmstat_btuwi);
@@ -377,7 +378,7 @@ uw_recipe_map_repoison(uintptr_t start, uintptr_t end)
   if (start > 0) {
     ilmstat_btuwi_pair_t* itp_left = uw_recipe_map_inrange_find(start - 1);
     if (itp_left) { // poisoned interval on the left
-            interval_t* interval_left = ildmod_stat_interval(itp_left->ilmstat);
+            interval_t* interval_left = interval_ldmod_pair_interval(itp_left->ilmstat->ildmod);
             start = interval_left->start;
             uw_recipe_map_cmp_del_bulk_unsynch(itp_left, itp_left);
     }
@@ -385,7 +386,7 @@ uw_recipe_map_repoison(uintptr_t start, uintptr_t end)
   if (end < UINTPTR_MAX) {
     ilmstat_btuwi_pair_t* itp_right = uw_recipe_map_inrange_find(end);
     if (itp_right) { // poisoned interval on the right
-            interval_t* interval_right = ildmod_stat_interval(itp_right->ilmstat);
+            interval_t* interval_right = interval_ldmod_pair_interval(itp_right->ilmstat->ildmod);
             end = interval_right->start;
             uw_recipe_map_cmp_del_bulk_unsynch(itp_right, itp_right);
     }
@@ -535,8 +536,9 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
   if (atomic_compare_exchange_strong_explicit(&ilmstat->stat, &oldstat, FORTHCOMING,
 					      memory_order_release, memory_order_relaxed)) {
     // it is my responsibility to build the tree of intervals for the function
-    void *fcn_start = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->start;
-    void *fcn_end   = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->end;
+    interval_t *interval = interval_ldmod_pair_interval(ilmstat->ildmod);
+    void *fcn_start = (void*)interval->start;
+    void *fcn_end   = (void*)interval->end;
 
     // potentially crash in this statement. need to save the state 
     current_btuwi = ilm_btui;
@@ -568,9 +570,9 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
   unwr_info->btuwi    = bitree_uwi_inrange(btuwi, (uintptr_t)addr);
   unwr_info->treestat = oldstat;
 
-  ildmod_stat_t *ildmod = ilm_btui->ilmstat;
-  unwr_info->lm         = ildmod_stat_loadmod(ildmod);
-  interval_t *interval  = ildmod_stat_interval(ildmod);
+  interval_ldmod_pair_t* ildmod = ilm_btui->ilmstat->ildmod;
+  unwr_info->lm         = interval_ldmod_pair_loadmod(ildmod);
+  interval_t *interval  = interval_ldmod_pair_interval(ildmod);
   unwr_info->start      = interval->start;
   unwr_info->end        = interval->end;
 
