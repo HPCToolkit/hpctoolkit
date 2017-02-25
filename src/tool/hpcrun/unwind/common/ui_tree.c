@@ -299,6 +299,14 @@ uw_cleanup(void)
   ilmstat_btuwi_pair_set_status(current_btuwi, NEVER);
 }
 
+#if 0
+// testing only
+static void
+uw_foo(void)
+{
+  printf("testingi only\n");
+}
+#endif
 //---------------------------------------------------------------------
 // interface operations
 //---------------------------------------------------------------------
@@ -320,7 +328,12 @@ uw_recipe_map_init(void)
 
   // register to segv signal handler to call this function 
   hpcrun_segv_register_cb(uw_cleanup);
-  
+#if 0
+  // testing only
+  hpcrun_segv_register_cb(uw_cleanup);
+  hpcrun_segv_register_cb(uw_foo);
+#endif
+
   // initialize the map with a POISONED node ({([0, UINTPTR_MAX), NULL), NEVER}, NULL)
   uw_recipe_map_poison(0, UINTPTR_MAX);
 
