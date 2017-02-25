@@ -18,9 +18,46 @@
 
 #include "ildmod_stat.h"
 
+
+
+//******************************************************************************
+// Constructors
+//******************************************************************************
+
+ildmod_stat_t *
+ildmod_stat_build(uintptr_t start, uintptr_t end, load_module_t *ldmod,
+		  tree_stat_t treestat, mem_alloc m_alloc)
+{
+  ildmod_stat_t *ilmstat = m_alloc(sizeof(*ilmstat));
+  ilmstat->interval = interval_t_new(start, end, m_alloc);
+  ilmstat->loadmod = ldmod;
+  atomic_store_explicit(&ilmstat->stat, treestat, memory_order_relaxed);
+  return ilmstat;
+}
+
 //******************************************************************************
 // String output
 //******************************************************************************
+
+void
+load_module_tostr(void* lm, char str[])
+{
+  load_module_t* ldmod = (load_module_t*)lm;
+  if (ldmod) {
+	snprintf(str, LDMOD_NAME_LEN, "%s%s%d", ldmod->name, " ", ldmod->id);
+  }
+  else {
+	snprintf(str, LDMOD_NAME_LEN, "%s", "nil");
+  }
+}
+
+void
+load_module_print(void* lm)
+{
+  char str[LDMOD_NAME_LEN];
+  load_module_tostr(lm, str);
+  printf("%s", str);
+}
 
 static char
 ILdMod_Stat_MaxSpaces[] = "                                                                              ";
@@ -29,12 +66,13 @@ void
 ildmod_stat_tostr(void* ilms, char str[])
 {
   ildmod_stat_t* ildmod_stat = (ildmod_stat_t*)ilms;
-  interval_ldmod_pair_tostr(ildmod_stat->ildmod, str);
+  char intervalstr[MAX_INTERVAL_STR];
+  interval_t_tostr(ildmod_stat->interval, intervalstr);
+  char ldmodstr[LDMOD_NAME_LEN];
+  load_module_tostr(ildmod_stat->loadmod, ldmodstr);
   char statstr[MAX_STAT_STR];
   treestat_tostr(atomic_load_explicit(&ildmod_stat->stat, memory_order_relaxed), statstr);
-  strcat(str, " ");
-  strcat(str, statstr);
-  strcat(str, ")");
+  sprintf(str, "(%s %s %s)", intervalstr, ldmodstr, statstr);
 }
 
 void

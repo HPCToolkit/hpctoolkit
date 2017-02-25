@@ -14,7 +14,10 @@
 // local include files
 //******************************************************************************
 
-#include "interval_ldmod_pair.h"
+#include <lib/prof-lean/generic_pair.h>
+#include <lib/prof-lean/mem_manager.h>
+#include <hpcrun/loadmap.h>
+#include "interval_t.h"
 
 
 //******************************************************************************
@@ -22,7 +25,8 @@
 //******************************************************************************
 
 #define MAX_STAT_STR 14
-#define MAX_ILDMODSTAT_STR MAX_ILDMODPAIR_STR+MAX_STAT_STR
+#define LDMOD_NAME_LEN 128
+#define MAX_ILDMODSTAT_STR MAX_INTERVAL_STR+LDMOD_NAME_LEN+MAX_STAT_STR
 
 //******************************************************************************
 // type
@@ -33,34 +37,20 @@ typedef enum {
   NEVER, DEFERRED, FORTHCOMING, READY
 } tree_stat_t;
 
-// {<interval, load_module>, tree status}
+// {interval, load_module, tree status}
 typedef struct ildmod_stat_s {
-  interval_ldmod_pair_t* ildmod;
+  interval_t *interval;
+  load_module_t *loadmod;
   _Atomic(tree_stat_t) stat;
 } ildmod_stat_t;
 
 //******************************************************************************
-// Comparators
+// Constructors
 //******************************************************************************
 
-/*
- * pre-condition: ilms1, ilms2 are ildmod_stat_t*
- */
-inline int
-ildmod_stat_cmp(void *ilms1, void *ilms2)
-{
-  return interval_ldmod_pair_cmp(((ildmod_stat_t*)ilms1)->ildmod,
-	  ((ildmod_stat_t*)ilms2)->ildmod);
-}
-
-/*
- * pre-condition: ilms1, ilms2 are ildmod_stat_t*
- */
-inline int
-ildmod_stat_inrange(void *ilms, void *address)
-{
-  return interval_ldmod_pair_inrange(((ildmod_stat_t*)ilms)->ildmod, address);
-}
+ildmod_stat_t *
+ildmod_stat_build(uintptr_t start, uintptr_t end, load_module_t *ldmod,
+		  tree_stat_t treestat, mem_alloc m_alloc);
 
 //******************************************************************************
 // String output
@@ -69,6 +59,25 @@ ildmod_stat_inrange(void *ilms, void *address)
 /*
  *  Concrete implementation of the abstract function val_tostr
  *  of the generic_val class.
+ *  pre-condition: ilmp is of type interval_ldmod_pair_t*
+ */
+
+void
+load_module_tostr(void* lm, char str[]);
+
+void
+load_module_print(void* lm);
+
+/*
+ * the max spaces occupied by "([start_address ... end_address), load module xx)
+ */
+char*
+interval_ldmod_maxspaces();
+
+
+/*
+ *  Concrete implementation of the abstract function val_tostr
+ *  of the ildmod_stat class.
  *  pre-condition: ilms is of type ildmod_stat_t*
  */
 void
