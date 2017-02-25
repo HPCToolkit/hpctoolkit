@@ -168,7 +168,9 @@ ilmstat_btuwi_pair_build(uintptr_t start, uintptr_t end, load_module_t *ldmod,
 {
   ilmstat_btuwi_pair_t* node = m_alloc(sizeof(*node));
   node->next = NULL;
-  node->ilmstat = ildmod_stat_build(start, end, ldmod, treestat, m_alloc);
+  node->ilmstat = m_alloc(sizeof(*node->ilmstat));
+  node->ilmstat->ildmod = interval_ldmod_pair_build(start, end, ldmod, m_alloc);
+  atomic_store_explicit(&node->ilmstat->stat, treestat, memory_order_relaxed);
   node->btuwi = tree; 
   return node;
 }
