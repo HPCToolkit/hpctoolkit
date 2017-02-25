@@ -44,10 +44,6 @@ typedef struct ildmod_stat_s {
 //******************************************************************************
 
 ildmod_stat_t*
-ildmod_stat_new(interval_ldmod_pair_t *key,  tree_stat_t treestat,
-	mem_alloc m_alloc);
-
-ildmod_stat_t*
 ildmod_stat_build(uintptr_t start, uintptr_t end, load_module_t *ldmod,
 	tree_stat_t treestat, mem_alloc m_alloc);
 

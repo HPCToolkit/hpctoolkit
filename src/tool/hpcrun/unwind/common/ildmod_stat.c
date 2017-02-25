@@ -23,22 +23,15 @@
 //******************************************************************************
 
 ildmod_stat_t*
-ildmod_stat_new(interval_ldmod_pair_t *key,  tree_stat_t treestat,
-	mem_alloc m_alloc)
-{
-  ildmod_stat_t* result = (ildmod_stat_t*)m_alloc(sizeof(ildmod_stat_t));
-  result->ildmod = key;
-  atomic_store_explicit(&result->stat, treestat, memory_order_relaxed);
-  return result;
-}
-
-ildmod_stat_t*
 ildmod_stat_build(uintptr_t start, uintptr_t end, load_module_t *ldmod,
 	tree_stat_t treestat, mem_alloc m_alloc)
 {
   interval_ldmod_pair_t *ilm = interval_ldmod_pair_build(start, end,
 	  ldmod, m_alloc);
-  return ildmod_stat_new(ilm, treestat, m_alloc);
+  ildmod_stat_t* result = (ildmod_stat_t*)m_alloc(sizeof(ildmod_stat_t));
+  result->ildmod = ilm;
+  atomic_store_explicit(&result->stat, treestat, memory_order_relaxed);
+  return result;
 }
 
 //******************************************************************************
