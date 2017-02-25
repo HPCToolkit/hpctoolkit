@@ -96,7 +96,6 @@ using namespace SymtabAPI;
 #define SECTION_FINI   ".fini"
 #define SECTION_TEXT   ".text"
 #define SECTION_PLT    ".plt"
-#define SECTION_GOT    ".got"
 
 #define PATHSCALE_EXCEPTION_HANDLER_PREFIX "Handler."
 #define USE_PATHSCALE_SYMBOL_FILTER
@@ -357,7 +356,6 @@ note_code_ranges(Symtab *syms, DiscoverFnTy fn_discovery)
   note_section(syms, SECTION_INIT, fn_discovery);
   note_section(syms, SECTION_PLT,  DiscoverFnTy_Aggressive);
   note_section(syms, SECTION_TEXT, fn_discovery);
-  note_section(syms, SECTION_GOT,  DiscoverFnTy_None);
   note_section(syms, SECTION_FINI, fn_discovery);
 }
 
