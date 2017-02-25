@@ -76,6 +76,8 @@
 #include "hpcrun_stats.h"
 #include "addr_to_recipe_map.h"
 
+#include "segv_handler.h"
+
 #include <loadmap.h>
 #include <messages/messages.h>
 
@@ -116,6 +118,13 @@ static addr_to_recipe_map_t *addr2recipe_map = NULL;
 static mem_alloc my_alloc = hpcrun_malloc;
 
 
+
+//---------------------------------------------------------------------
+// local thread data
+//---------------------------------------------------------------------
+
+// for storing the current btuwi in case of segv
+static  __thread  ilmstat_btuwi_pair_t *current_btuwi = NULL;
 
 //---------------------------------------------------------------------
 // external declarations 
@@ -281,7 +290,23 @@ uw_recipe_map_notify_init()
 }
 
 
+/*
+ * clean-up the state in case of emergency such as SEGV
+ */
+static void
+uw_cleanup(void)
+{
+  ilmstat_btuwi_pair_set_status(current_btuwi, NEVER);
+}
 
+#if 0
+// testing only
+static void
+uw_foo(void)
+{
+  printf("testingi only\n");
+}
+#endif
 //---------------------------------------------------------------------
 // interface operations
 //---------------------------------------------------------------------
@@ -300,6 +325,14 @@ uw_recipe_map_init(void)
   addr2recipe_map = a2r_map_new(my_alloc);
   
   uw_recipe_map_notify_init();
+
+  // register to segv signal handler to call this function 
+  hpcrun_segv_register_cb(uw_cleanup);
+#if 0
+  // testing only
+  hpcrun_segv_register_cb(uw_cleanup);
+  hpcrun_segv_register_cb(uw_foo);
+#endif
 
   // initialize the map with a POISONED node ({([0, UINTPTR_MAX), NULL), NEVER}, NULL)
   uw_recipe_map_poison(0, UINTPTR_MAX);
@@ -349,6 +382,17 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
   return (unwr_info->treestat == READY);
 }
 
+
+//---------------------------------------------------------------------
+// helper operations
+//---------------------------------------------------------------------
+
+static void
+save_state(ilmstat_btuwi_pair_t* ilmstat_btuwi)
+{
+  current_btuwi = ilmstat_btuwi;
+}
+
 /*
  *
  */
@@ -369,6 +413,10 @@ static ilmstat_btuwi_pair_t * uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr
 	  // it is my responsibility to build the tree of intervals for the function
 	  void *fcn_start = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->start;
 	  void *fcn_end   = (void*)interval_ldmod_pair_interval(ilmstat->ildmod)->end;
+
+	  // potentially crash in this statement. need to save the state 
+     	  save_state(ilmstat_btuwi);
+
 	  btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, my_alloc);
 	  if (btuwi_stat.first == NULL) {
 		TMSG(UITREE, "BAD build_intervals failed: fcn range %p to %p",
@@ -390,6 +438,7 @@ static ilmstat_btuwi_pair_t * uw_recipe_map_lookup_ilmstat_btuwi_pair(void *addr
   TMSG(UITREE_LOOKUP, "found in unwind tree: addr %p", addr);
   return ilmstat_btuwi;
 }
+
 
 //---------------------------------------------------------------------
 // debug operations
