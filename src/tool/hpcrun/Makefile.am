@@ -189,8 +189,7 @@ UNW_COMMON_FILES = \
 	unwind/common/ildmod_stat.c \
 	unwind/common/interval_t.c	    \
 	unwind/common/stack_troll.c	\
-	unwind/common/uw_recipe_map.c  \
-	unwind/common/uwi.c
+	unwind/common/uw_recipe_map.c
 
 UNW_X86_FILES = \
        $(UNW_COMMON_FILES) \
