@@ -702,7 +702,7 @@ makeSkeleton(BinUtil::LM * lm, CodeObject * code_obj, ProcNameMgr * procNmMgr)
       ginfo = new GroupInfo(p);
       finfo->groupMap[linknm] = ginfo;
     }
-    ginfo->procMap[vma] = new ProcInfo(procnm, linknm, line, func, NULL);
+    ginfo->procMap[vma] = new ProcInfo(func, NULL, procnm, linknm, line);
   }
 
   return fileMap;

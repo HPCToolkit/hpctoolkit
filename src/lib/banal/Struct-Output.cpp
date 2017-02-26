@@ -69,11 +69,11 @@
 //
 // 10. Rework locateSubtree() to better identify callee scope.
 //
-// 11. Demangle proc names.
-//
 // 12. Better method for proc line num.
 //
 // 13. Handle unknown file/line more explicitly.
+//
+// 14. Deal with alien ln fields.
 
 //***************************************************************************
 
@@ -82,8 +82,8 @@
 #include <ostream>
 #include <string>
 
-#include <CFG.h>
-
+#include <lib/binutils/BinUtils.hpp>
+#include <lib/isa/ISATypes.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/StringTable.hpp>
 #include <lib/xml/xml.hpp>
@@ -95,7 +95,6 @@
 #define INDENT  "  "
 #define INIT_LM_INDEX  2
 
-using namespace Dyninst;
 using namespace Inline;
 using namespace std;
 
@@ -250,7 +249,6 @@ printProc(ostream * os, FileInfo * finfo, ProcInfo * pinfo,
     return;
   }
 
-  ParseAPI::Function * func = pinfo->func;
   TreeNode * root = pinfo->root;
   long base_index = strTab.str2index(FileUtil::basename(finfo->name.c_str()));
 
@@ -263,7 +261,7 @@ printProc(ostream * os, FileInfo * finfo, ProcInfo * pinfo,
     *os << STRING("ln", pinfo->linkName);
   }
   *os << NUMBER("l", pinfo->line_num)
-      << VRANGE(func->addr(), 1)
+      << VRANGE(pinfo->entry_vma, 1)
       << ">\n";
 
   doTreeNode(os, 3, root, ScopeInfo(base_index), strTab);
@@ -322,6 +320,7 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scinfo,
     TreeNode * subtree = nit->second;
     long subtree_file;
     long subtree_line;
+    string callname = BinUtil::demangleProcName(strTab.index2str(flp.proc_index));
 
     locateSubtree(subtree, subtree_file, subtree_line);
 
@@ -343,7 +342,7 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scinfo,
 	<< INDEX
 	<< NUMBER("l", subtree_line)
 	<< STRING("f", strTab.index2str(subtree_file))
-	<< STRING("n", strTab.index2str(flp.proc_index))
+	<< STRING("n", callname)
 	<< " v=\"{}\""
 	<< ">\n";
 

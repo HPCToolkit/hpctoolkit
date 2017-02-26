@@ -123,19 +123,24 @@ public:
 //
 class ProcInfo {
 public:
+  ParseAPI::Function * func;
+  TreeNode * root;
   string prettyName;
   string linkName;
   long   line_num;
-  ParseAPI::Function * func;
-  TreeNode * root;
+  VMA    entry_vma;
 
-  ProcInfo(string pn, string ln, long l, ParseAPI::Function * fn, TreeNode * rt)
+  ProcInfo(ParseAPI::Function * fn, TreeNode * rt, string pn, string ln, long l)
   {
+    func = fn;
+    root = rt;
     prettyName = pn;
     linkName = ln;
     line_num = l;
-    func = fn;
-    root = rt;
+
+    if (func != NULL) {
+      entry_vma = func->addr();
+    }
   }
 };
 
