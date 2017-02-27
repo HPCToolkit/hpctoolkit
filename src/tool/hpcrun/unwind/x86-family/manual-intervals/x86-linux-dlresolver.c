@@ -48,9 +48,9 @@
 #include "x86-unwind-interval-fixup.h"
 #include "x86-unwind-interval.h"
 
-// code snippet from ld-2.17.so
+// code snippets from ld-2.17.so
 
-static char dl_runtime_resolve_signature[] = { 
+static char dl_runtime_resolve_signature_1[] = { 
    0x48, 0x83, 0xec, 0x78,                   // sub    $0x78,%rsp
    0x48, 0x89, 0x44, 0x24, 0x40,             // mov    %rax,0x40(%rsp)
    0x48, 0x89, 0x4c, 0x24, 0x48,             // mov    %rcx,0x48(%rsp)
@@ -66,13 +66,34 @@ static char dl_runtime_resolve_signature[] = {
    0x48, 0x8b, 0xb4, 0x24, 0x80, 0x00, 0x00  // mov    0x80(%rsp),%rsi
 };
 
+
+static char dl_runtime_resolve_signature_2[] = { 
+ 0x48, 0x83, 0xec, 0x38,        // sub    $0x38,%rsp
+ 0x48, 0x89, 0x04, 0x24,        // mov    %rax,(%rsp)
+ 0x48, 0x89, 0x4c, 0x24, 0x08,  // mov    %rcx,0x8(%rsp)
+ 0x48, 0x89, 0x54, 0x24, 0x10,  // mov    %rdx,0x10(%rsp)
+ 0x48, 0x89, 0x74, 0x24, 0x18,  // mov    %rsi,0x18(%rsp)
+ 0x48, 0x89, 0x7c, 0x24, 0x20,  // mov    %rdi,0x20(%rsp)
+ 0x4c, 0x89, 0x44, 0x24, 0x28,  // mov    %r8,0x28(%rsp)
+ 0x4c, 0x89, 0x4c, 0x24, 0x30,  // mov    %r9,0x30(%rsp)
+ 0x48, 0x8b, 0x74, 0x24, 0x40   // mov    0x40(%rsp),%rsi
+};
+
+
+static int matches(char *ins, int len, const char *sig)
+{
+  int siglen = sizeof(sig);
+  return (len > siglen && strncmp((char *)sig, ins, siglen) == 0);
+}
+
+
 static int 
 adjust_dl_runtime_resolve_unwind_intervals(char *ins, int len, btuwi_status_t *stat)
 {
-  int siglen = sizeof(dl_runtime_resolve_signature);
 
-  if (len > siglen && strncmp((char *)dl_runtime_resolve_signature, ins, siglen) == 0) {
-	// signature matched
+  if (matches(ins, len, dl_runtime_resolve_signature_1) ||
+      matches(ins, len, dl_runtime_resolve_signature_2)) {
+	// one of the signatures matched
 	unwind_interval *ui = stat->first;
 	while(ui) {
 	  UWI_RECIPE(ui)->sp_ra_pos += 16;
