@@ -41,11 +41,6 @@ bitree_uwi_init()
   mcs_init(&GFT_lock);
 }
 
-typedef struct uwi_s {
-  interval_t *interval;
-  uw_recipe_t *recipe;
-} uwi_t;
-
 // constructors
 static uwi_t*
 uwi_t_new(interval_t* interval, uw_recipe_t* recipe, mem_alloc m_alloc)
