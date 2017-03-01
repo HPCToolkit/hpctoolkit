@@ -103,13 +103,15 @@
 
 #include <evlist.h>
 
+#include <lib/prof-lean/hpcrun-metric.h> // prefix for metric helper
+
 #include <include/linux_info.h> 
 
 #ifdef ENABLE_PERFMON
 #include "perfmon-util.h"
 #endif
 
-#include "perf-util.h" 	 // u64
+#include "perf-util.h"    // u64
 
 //******************************************************************************
 // macros
@@ -121,14 +123,14 @@
 #define sigev_notify_thread_id  _sigev_un._tid
 #endif
 
-#define THREAD_SELF 	 	 0
-#define CPU_ANY 	        -1
-#define GROUP_FD 	        -1
-#define PERF_FLAGS 		 0
-#define PERF_REQUEST_0_SKID 	 2
+#define THREAD_SELF     0
+#define CPU_ANY        -1
+#define GROUP_FD       -1
+#define PERF_FLAGS      0
+#define PERF_REQUEST_0_SKID      2
 #define PERF_WAKEUP_EACH_SAMPLE  1
 
-#define MMAP_OFFSET_0 0
+#define MMAP_OFFSET_0            0
 
 #define EXCLUDE_CALLCHAIN_USER   1
 
@@ -153,22 +155,22 @@
 #define RAW_IBS_FETCH   1
 #define RAW_IBS_OP      2
 
-#define EVENT_DATA_CENTRIC "DATACENTRIC"
-#define DATA_CENTRIC_ID 1
+#define EVENT_DATA_CENTRIC       "DATACENTRIC"
+#define DATA_CENTRIC_ID          1
 #define HPCRUN_OPTION_MULTIPLEX  "HPCRUN_MULTIPLEX"
 #define HPCRUN_OPTION_PRECISE_IP "HPCRUN_PRECISE_IP"
 
 // default option for precise_ip: autodetect skid
-#define PERF_EVENT_AUTODETECT_SKID  	4
+#define PERF_EVENT_AUTODETECT_SKID    4
 
 // constants of precise_ip (see the man page)
-#define PERF_EVENT_SKID_ZERO_REQUIRED 	3
-#define PERF_EVENT_SKID_ZERO_REQUESTED 	2
-#define PERF_EVENT_SKID_CONSTANT 	1
-#define PERF_EVENT_SKID_ARBITRARY 	0
+#define PERF_EVENT_SKID_ZERO_REQUIRED    3
+#define PERF_EVENT_SKID_ZERO_REQUESTED   2
+#define PERF_EVENT_SKID_CONSTANT         1
+#define PERF_EVENT_SKID_ARBITRARY        0
 
-#define PATH_KERNEL_KPTR_RESTICT 	"/proc/sys/kernel/kptr_restrict"
-#define PATH_KERNEL_PERF_PARANOID 	"/proc/sys/kernel/perf_event_paranoid"
+#define PATH_KERNEL_KPTR_RESTICT    "/proc/sys/kernel/kptr_restrict"
+#define PATH_KERNEL_PERF_PARANOID   "/proc/sys/kernel/perf_event_paranoid"
 
 //******************************************************************************
 // type declarations
@@ -192,21 +194,21 @@ typedef struct event_predefined_s {
 // this is a linked list structure, and should use a linked list library 
 // instead of reinventing the wheel. 
 typedef struct event_info_s {
-  int			 id;
+  int       id;
   struct perf_event_attr attr; // the event attribute
-  int 			 metric;	// metric of the event
-  int			 metric_scale;	// scale factor (if multiplexed)
+  int       metric;  // metric of the event
+  int       metric_scale;  // scale factor (if multiplexed)
 
-  struct event_info_s 	 *next; // pointer to the next item
+  struct event_info_s    *next; // pointer to the next item
 } event_info_t;
 
 
 // data perf event per thread per event
 // this data is designed to be used within a thread
 typedef struct event_thread_s {
-  pe_mmap_t 	*mmap;	// mmap buffer
-  int		fd;	// file descriptor of the event 
-  event_info_t	*event; // pointer to main event description
+  pe_mmap_t   *mmap;  // mmap buffer
+  int    fd;  // file descriptor of the event 
+  event_info_t  *event; // pointer to main event description
 } event_thread_t;
 
 
@@ -322,7 +324,7 @@ static event_thread_t   __thread   *event_thread;
 // calling perf event open system call
 static long
 perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
-	       int cpu, int group_fd, unsigned long flags)
+         int cpu, int group_fd, unsigned long flags)
 {
    int ret;
 
@@ -359,7 +361,7 @@ perf_stop(event_thread_t event)
     int ret = ioctl(event.fd, PERF_EVENT_IOC_DISABLE, 0);
     if (ret == -1) {
       EMSG("Warning: cannot disable counter fd %d: %s,", 
-	event.fd, strerror(errno));
+  event.fd, strerror(errno));
     }
   }
 }
@@ -526,18 +528,18 @@ perf_attr_init(
   memset(attr, 0, sizeof(struct perf_event_attr));
 
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
-  attr->type   = event_type;			 /* Type of event 		*/
-  attr->config = event_code;			 /* Type-specific configuration */
+  attr->type   = event_type;       /* Type of event     */
+  attr->config = event_code;       /* Type-specific configuration */
 
-  attr->sample_period = threshold;		 /* Period of sampling 		*/
-  attr->precise_ip    = perf_precise_ip;	 /*  requested to have 0 skid.  */
+  attr->sample_period = threshold;     /* Period of sampling     */
+  attr->precise_ip    = perf_precise_ip;   /*  requested to have 0 skid.  */
   attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
-  attr->disabled      = 1; 			/* the counter will be enabled later  */
+  attr->disabled      = 1;       /* the counter will be enabled later  */
   attr->sample_stack_user = 4096;
 
   if (perf_ksyms_avail) {
     /* Records the callchain */
-    attr->sample_type 		 = sample_type | PERF_SAMPLE_CALLCHAIN;  
+    attr->sample_type      = sample_type | PERF_SAMPLE_CALLCHAIN;  
     attr->exclude_callchain_user = EXCLUDE_CALLCHAIN_USER;
   } else {
     attr->sample_type = PERF_SAMPLE_IP;
@@ -555,7 +557,7 @@ set_mmap(int perf_fd)
 {
   void *map_result = 
     mmap(NULL, PERF_MMAP_SIZE(pagesize), PROT_WRITE | PROT_READ, 
-	   MAP_SHARED, perf_fd, MMAP_OFFSET_0);
+     MAP_SHARED, perf_fd, MMAP_OFFSET_0);
 
   if (map_result == MAP_FAILED) {
     EMSG("Linux perf mmap failed: %s", strerror(errno));
@@ -585,7 +587,7 @@ get_precise_ip()
 
   struct perf_event_attr attr;
   attr.config = PERF_COUNT_HW_CPU_CYCLES; // Perf's cycle event
-  attr.type   = PERF_TYPE_HARDWARE; 	  // it's a hardware event
+  attr.type   = PERF_TYPE_HARDWARE;     // it's a hardware event
 
   memset(&attr, 0, sizeof(attr));
 
@@ -599,8 +601,8 @@ get_precise_ip()
     // ask sys to "create" the event
     // it returns -1 if it fails.
     int ret = perf_event_open(&attr,
-			      THREAD_SELF, CPU_ANY, 
-			      GROUP_FD, PERF_FLAGS);
+            THREAD_SELF, CPU_ANY, 
+            GROUP_FD, PERF_FLAGS);
     if (ret >= 0) {
       close(ret);
       precise_ip = i;
@@ -628,15 +630,15 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   // ask sys to "create" the event
   // it returns -1 if it fails.
   et->fd = perf_event_open(&event->attr,
-			      THREAD_SELF, CPU_ANY, 
-			      GROUP_FD, PERF_FLAGS);
+            THREAD_SELF, CPU_ANY, 
+            GROUP_FD, PERF_FLAGS);
   TMSG(LINUX_PERF, "dbg register event %d, fd: %d, skid: %d", 
     event->id, et->fd, event->attr.precise_ip);
 
   // check if perf_event_open is successful
   if ( et->fd <0 ) {
     EMSG("Linux perf event open %d failed: %s", 
-	event->id, strerror(errno));
+  event->id, strerror(errno));
     return false;
   }
 
@@ -736,8 +738,8 @@ handle_struct_read_format( pe_mmap_t *perf_mmap, int read_format)
 static cct_node_t *
 perf_sample_callchain(pe_mmap_t *current_perf_mmap, cct_node_t *leaf)
 {
-  cct_node_t *parent = leaf;	// parent of the cct
-  u64 n_frames; 		// check of sample type
+  cct_node_t *parent = leaf;  // parent of the cct
+  u64 n_frames;     // check of sample type
 
   // determine how many frames in the call chain 
   if (perf_read_u64( current_perf_mmap, &n_frames) == 0) {
@@ -748,17 +750,17 @@ perf_sample_callchain(pe_mmap_t *current_perf_mmap, cct_node_t *leaf)
       // read the IPs for the frames 
       if (perf_read( current_perf_mmap, ips, n_frames * sizeof(u64)) == 0) {
 
-	// add kernel IPs to the call chain top down, which is the 
-	// reverse of the order in which they appear in ips
-	for (int i = n_frames - 1; i > 0; i--) {
-	  ip_normalized_t npc = 
-		{ .lm_id = perf_kernel_lm_id, .lm_ip = ips[i] };
-	  cct_addr_t frm = { .ip_norm = npc };
-	  cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
-	  parent = child;
-	}
+  // add kernel IPs to the call chain top down, which is the 
+  // reverse of the order in which they appear in ips
+  for (int i = n_frames - 1; i > 0; i--) {
+    ip_normalized_t npc = 
+    { .lm_id = perf_kernel_lm_id, .lm_ip = ips[i] };
+    cct_addr_t frm = { .ip_norm = npc };
+    cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
+    parent = child;
+  }
       } else {
-	TMSG(LINUX_PERF, "unable to read all %d frames", n_frames );
+  TMSG(LINUX_PERF, "unable to read all %d frames", n_frames );
       }
     }
   } else {
@@ -803,25 +805,25 @@ perf_add_kernel_callchain(
   if (perf_read_header(current_perf_mmap, &hdr) == 0) {
     if (hdr.type == PERF_RECORD_SAMPLE) {
       if (hdr.size <= 0) {
-	return parent;
+  return parent;
       }
       int sample_type = current->event->attr.sample_type;
 
       if (sample_type & PERF_SAMPLE_IDENTIFIER) {
       }
       if (sample_type & PERF_SAMPLE_IP) {
-	// to be used by datacentric event
-	u64 ip;
-	perf_read_u64(current_perf_mmap, &ip);
+  // to be used by datacentric event
+  u64 ip;
+  perf_read_u64(current_perf_mmap, &ip);
       }
       if (sample_type & PERF_SAMPLE_TID) {
       }
       if (sample_type & PERF_SAMPLE_TIME) {
       }
       if (sample_type & PERF_SAMPLE_ADDR) {
-	// to be used by datacentric event
-	u64 addr;
-	perf_read_u64(current_perf_mmap, &addr);
+  // to be used by datacentric event
+  u64 addr;
+  perf_read_u64(current_perf_mmap, &addr);
       }
       if (sample_type & PERF_SAMPLE_ID) {
       }
@@ -832,13 +834,13 @@ perf_add_kernel_callchain(
       if (sample_type & PERF_SAMPLE_PERIOD) {
       }
       if (sample_type & PERF_SAMPLE_READ) {
-	// to be used by datacentric event
-	handle_struct_read_format(current_perf_mmap,
-			 current->event->attr.read_format);
+  // to be used by datacentric event
+  handle_struct_read_format(current_perf_mmap,
+       current->event->attr.read_format);
       }
       if (sample_type & PERF_SAMPLE_CALLCHAIN) {
-	// add call chain from the kernel
- 	parent = perf_sample_callchain(current_perf_mmap, parent);
+  // add call chain from the kernel
+   parent = perf_sample_callchain(current_perf_mmap, parent);
       }
       if (sample_type & PERF_SAMPLE_RAW) {
       }
@@ -978,7 +980,7 @@ METHOD_FN(start)
 
   if (my_state == START) {
     TMSG(LINUX_PERF,"%d: *NOTE* LINUX_PERF start called when already in state START",
-		     self->sel_idx);
+         self->sel_idx);
     return;
   }
 
@@ -1027,13 +1029,13 @@ METHOD_FN(stop)
   source_state_t my_state = TD_GET(ss_state)[self->sel_idx];
   if (my_state == STOP) {
     TMSG(LINUX_PERF,"%d: *NOTE* PERF stop called when already in state STOP",
-	 	    self->sel_idx);
+         self->sel_idx);
     return;
   }
 
   if (my_state != START) {
     TMSG(LINUX_PERF,"%d: *WARNING* PERF stop called when not in state START",
-		     self->sel_idx);
+         self->sel_idx);
     return;
   }
 
@@ -1104,7 +1106,7 @@ METHOD_FN(supports_event, const char *ev_str)
     char ev_tmp[1024];
     if (! hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, DEFAULT_THRESHOLD)) {
       AMSG("WARNING: %s using default threshold %ld, "
-   	"better to use an explicit threshold.", ev_str, DEFAULT_THRESHOLD);
+     "better to use an explicit threshold.", ev_str, DEFAULT_THRESHOLD);
     }
     ret = pfmu_isSupported(ev_tmp);
 #else
@@ -1157,7 +1159,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     TMSG(LINUX_PERF,"checking event spec = %s",event);
 
     hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold, 
-			     DEFAULT_THRESHOLD);
+       DEFAULT_THRESHOLD);
 
     // initialize the event attributes
     event_desc[i].id   = i;
@@ -1172,12 +1174,12 @@ METHOD_FN(process_event_list, int lush_metrics)
     prop = (strstr(name, "CYCLES") != NULL) ? metric_property_cycles : metric_property_none;
 
     char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
-				   // since the OS will free it, we don't have to do it in hpcrun
+           // since the OS will free it, we don't have to do it in hpcrun
     // set the metric for this perf event
     event_desc[i].metric = hpcrun_new_metric();
 
     metric_desc_t *m = hpcrun_set_metric_info_and_period(event_desc[i].metric, name_dup,
-				    MetricFlags_ValFmt_Int, threshold, prop);
+            MetricFlags_ValFmt_Int, threshold, prop);
     if (m == NULL) {
       EMSG("Error: unable to create metric #%d: %s", index, name);
     }
@@ -1187,22 +1189,22 @@ METHOD_FN(process_event_list, int lush_metrics)
       const size_t MAX_LABEL_CHARS = 80;
 
       // the formula for the estimate count = raw_count * scale_factor
-      // 				    = metric(i) * metric(i+1)
+      //             = metric(i) * metric(i+1)
       if (m != NULL) {
-      	char *buffer = (char*)hpcrun_malloc(sizeof(char) * MAX_LABEL_CHARS); 
-      	sprintf(buffer, "($%d*$%d)", i, i+1);
+        char *buffer = (char*)hpcrun_malloc(sizeof(char) * MAX_LABEL_CHARS); 
+        sprintf(buffer, "($%d*$%d)", i, i+1);
         m -> formula = buffer;
       }
 
       // create metric for application's scale factor (i.e  time enabled/time running)
       char *scale_factor_metric = (char *) hpcrun_malloc(sizeof (char)*MAX_LABEL_CHARS);
-      snprintf(scale_factor_metric, MAX_LABEL_CHARS, "SF-%s", name ); // SF: Scale factor
+      snprintf(scale_factor_metric, MAX_LABEL_CHARS, "%s%s", PREFIX_HELPER_METRIC, name ); // SF: Scale factor
 
       event_desc[i].metric_scale = hpcrun_new_metric();
 
       metric_desc_t *ms = hpcrun_set_metric_info_and_period(event_desc[i].metric_scale, 
-				scale_factor_metric, MetricFlags_ValFmt_Real, 
-				1, metric_property_none);
+        scale_factor_metric, MetricFlags_ValFmt_Real, 
+        1, metric_property_none);
       if (ms == NULL) {
         EMSG("Error: unable to create metric #%d: %s", index, name);
       }
@@ -1241,7 +1243,7 @@ METHOD_FN(display_events)
     printf(dashes_separator);
 
     printf("%s\tTotal cycles.\n", 
-	   "PERF_COUNT_HW_CPU_CYCLES");
+     "PERF_COUNT_HW_CPU_CYCLES");
     printf("\n");
 #endif
   }
@@ -1313,13 +1315,13 @@ perf_event_handler(
   if (siginfo->si_code < 0) {
     // signal not generated by kernel for profiling
     TMSG(LINUX_PERF, "signal si_code %d < 0 indicates not from kernel", 
-	 siginfo->si_code);
+   siginfo->si_code);
     return 1; // tell monitor the signal has not been handled.
   }
   if (siginfo->si_code != POLL_HUP) {
     // SIGPOLL = SIGIO, expect POLL_HUP instead of POLL_IN
     TMSG(LINUX_PERF, "signal si_code %d not generated by SIGIO", 
-	 siginfo->si_code);
+   siginfo->si_code);
     return 1; // tell monitor the signal has not been handled.
   }
 
@@ -1349,7 +1351,7 @@ perf_event_handler(
   // store the metric if the metric index is correct
   if ( current != NULL ) {
     sample_val_t sv = hpcrun_sample_callpath(context, current->event->metric, 1,
-					   0/*skipInner*/, 0/*isSync*/, (void*) current);
+             0/*skipInner*/, 0/*isSync*/, (void*) current);
 
     // check if we have multiplexing or not with this counter
     if (perf_multiplex == 1) {
@@ -1368,7 +1370,7 @@ perf_event_handler(
   } else {
     // signal not from perf event
     TMSG(LINUX_PERF, "signal si_code %d with fd %d: unknown perf event", 
-	 siginfo->si_code, fd);
+       siginfo->si_code, fd);
     hpcrun_safe_exit();
     restart_perf_event(fd);
     return 1; // tell monitor the signal has not been handled.

@@ -106,6 +106,7 @@ using namespace xml;
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StrUtil.hpp>
 
+#include <lib/support/ExprEval.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -831,7 +832,7 @@ namespace Prof {
 namespace CallPath {
 
 const char* Profile::FmtEpoch_NV_virtualMetrics = "is-virtual-metrics";
-
+const string helper_metric_prefix = string(PREFIX_HELPER_METRIC);
 
 Profile*
 Profile::make(uint rFlags)
@@ -1170,10 +1171,11 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     string profRelId = StrUtil::toStr(i);
 
     bool doMakeInclExcl = (rFlags & RFlg_MakeInclExcl);
-    
+    bool isHelperMetric = nm.compare(0, helper_metric_prefix.size(), 
+			    helper_metric_prefix) == 0;
 
     // Certain metrics do not have both incl/excl values
-    if (nm == HPCRUN_METRIC_RetCnt) {
+    if (nm == HPCRUN_METRIC_RetCnt || isHelperMetric) {
       doMakeInclExcl = false;
     }
     
@@ -1197,7 +1199,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       m->type(Metric::ADesc::TyIncl);
     }
     else {
-      if (nm == HPCRUN_METRIC_RetCnt) {
+      if (nm == HPCRUN_METRIC_RetCnt || isHelperMetric) {
 	m->type(Metric::ADesc::TyExcl);
       }
       else {
@@ -1339,6 +1341,8 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     (hpcrun_metricVal_t*)alloca(numMetricsSrc * sizeof(hpcrun_metricVal_t))
     : NULL;
 
+  ExprEval eval;
+
   for (uint i = 0; i < numNodes; ++i) {
     // ----------------------------------------------------------
     // Read the node
@@ -1351,7 +1355,18 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, prof.m_flags,
 				 &metricTbl, "  ");
     }
-
+    // ------------------------------------------
+    // check if the metric has a formula
+    // ------------------------------------------
+    metric_desc_t* m_lst = metricTbl.lst;
+    for (uint i = 0; i < numMetricsSrc; i++) {
+      const metric_desc_t& mdesc = m_lst[i];
+      char *expr = (char*) mdesc.formula;
+      double res = eval.Eval( expr, nodeFmt.num_metrics, (nodeFmt.metrics));
+      if (eval.GetErr() == EEE_NO_ERROR) {
+        nodeFmt.metrics[i].r = res;
+      }
+    }
     int nodeId   = (int)nodeFmt.id;
     int parentId = (int)nodeFmt.id_parent;
 

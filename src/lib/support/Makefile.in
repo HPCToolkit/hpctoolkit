@@ -156,7 +156,7 @@ am__objects_1 = libHPCsupport_la-CmdLineParser.lo \
 	libHPCsupport_la-WordSet.lo libHPCsupport_la-HashTable.lo \
 	libHPCsupport_la-HashTableSortedIterator.lo \
 	libHPCsupport_la-PointerStack.lo libHPCsupport_la-QuickSort.lo \
-	libHPCsupport_la-Unique.lo
+	libHPCsupport_la-Unique.lo libHPCsupport_la-ExprEval.lo
 am_libHPCsupport_la_OBJECTS = $(am__objects_1)
 libHPCsupport_la_OBJECTS = $(am_libHPCsupport_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -551,7 +551,9 @@ MYSOURCES = \
 	\
 	PointerStack.hpp PointerStack.cpp \
 	QuickSort.hpp QuickSort.cpp \
-	Unique.hpp Unique.cpp
+	Unique.hpp Unique.cpp \
+	\
+	ExprEval.hpp ExprEval.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
@@ -636,6 +638,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-CStrUtil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-CmdLineParser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-Exception.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-ExprEval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-FileNameMap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-FileUtil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-HashTable.Plo@am__quote@
@@ -899,6 +902,13 @@ libHPCsupport_la-Unique.lo: Unique.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Unique.cpp' object='libHPCsupport_la-Unique.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-Unique.lo `test -f 'Unique.cpp' || echo '$(srcdir)/'`Unique.cpp
+
+libHPCsupport_la-ExprEval.lo: ExprEval.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-ExprEval.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-ExprEval.Tpo -c -o libHPCsupport_la-ExprEval.lo `test -f 'ExprEval.cpp' || echo '$(srcdir)/'`ExprEval.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCsupport_la-ExprEval.Tpo $(DEPDIR)/libHPCsupport_la-ExprEval.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='ExprEval.cpp' object='libHPCsupport_la-ExprEval.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-ExprEval.lo `test -f 'ExprEval.cpp' || echo '$(srcdir)/'`ExprEval.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo
