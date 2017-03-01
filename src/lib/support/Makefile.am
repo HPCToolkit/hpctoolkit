@@ -107,6 +107,7 @@ MYSOURCES = \
 	QuickSort.hpp QuickSort.cpp \
 	Unique.hpp Unique.cpp \
 	\
+	VarMap.hpp VarMap.cpp \
 	ExprEval.hpp ExprEval.cpp
 
 

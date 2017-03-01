@@ -1359,14 +1359,19 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     // check if the metric has a formula
     // ------------------------------------------
     metric_desc_t* m_lst = metricTbl.lst;
+    VarMap var_map(nodeFmt.metrics, m_lst);
+
     for (uint i = 0; i < numMetricsSrc; i++) {
       const metric_desc_t& mdesc = m_lst[i];
       char *expr = (char*) mdesc.formula;
-      double res = eval.Eval( expr, nodeFmt.num_metrics, (nodeFmt.metrics));
+      if (expr == NULL || strlen(expr)==0) continue;
+
+      double res = eval.Eval( expr, &var_map);
       if (eval.GetErr() == EEE_NO_ERROR) {
         nodeFmt.metrics[i].r = res;
       }
     }
+
     int nodeId   = (int)nodeFmt.id;
     int parentId = (int)nodeFmt.id_parent;
 

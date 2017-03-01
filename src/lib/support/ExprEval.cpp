@@ -7,14 +7,11 @@
 #include <string.h>
 #include <iostream>
 
-#include "ExprEval.hpp"
+#include "lib/support/ExprEval.hpp"
 
 // ================================
 //   Simple expression evaluator
 // ================================
-
-static hpcfmt_uint_t _num_metrics;
-static hpcrun_metricVal_t *_metrics;
 
 // Parse a number or an expression in parenthesis
 double ExprEval::ParseAtom(EVAL_CHAR*& expr) 
@@ -50,10 +47,9 @@ double ExprEval::ParseAtom(EVAL_CHAR*& expr)
     }
   
     // check if this is variable
-    bool variable = false;
-    if (*expr == '$') {
+    bool variable = _var_map->isVariable(expr);
+    if (variable) {
       expr++;
-      variable = true;
     }
 
     // It should be a number; convert it to double
@@ -67,10 +63,11 @@ double ExprEval::ParseAtom(EVAL_CHAR*& expr)
     }
 
     // if the atom is a variable, substitute it 
-    if (variable && _metrics != NULL) {
+    if (variable) {
       unsigned int index_metric = (unsigned int) res;
-      if (index_metric >= 0  &&  index_metric < _num_metrics) {
-        res = _metrics[(unsigned int) res].r;
+      double val = _var_map->getValue(index_metric);
+      if (_var_map->getErrorCode() == 0) {
+        res = val;
       } else {
         _err = EEE_INCORRECT_VAR;
         return 0;
@@ -132,13 +129,11 @@ double ExprEval::ParseSummands(EVAL_CHAR*& expr)
     }
 }
 
-double ExprEval::Eval(EVAL_CHAR* expr, hpcfmt_uint_t num_metrics, 
-   hpcrun_metricVal_t *metrics) 
+double ExprEval::Eval(EVAL_CHAR* expr, VarMap *var_map)
 {
-  _num_metrics = num_metrics;
-  _metrics     = metrics;
   _paren_count  = 0;
   _err          = EEE_NO_ERROR;
+  _var_map	= var_map;
 
   double res    = ParseSummands(expr);
 

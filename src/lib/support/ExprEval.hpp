@@ -4,7 +4,7 @@
 #ifndef __ExprEval_H__
 #define  __ExprEval_H__
 
-#include <lib/prof-lean/hpcrun-fmt.h> // metric stuffs
+#include <lib/support/VarMap.hpp>
 
 // Error codes enumeration
 enum EXPR_EVAL_ERR {
@@ -18,6 +18,7 @@ enum EXPR_EVAL_ERR {
 //typedef char EVAL_CHAR;
 #define EVAL_CHAR char
 
+
 // Parser class to evaluate math expression
 // The math expression has to be simple operators:
 // +,-,*, /, ( and ) 
@@ -28,9 +29,8 @@ private:
   EVAL_CHAR* _err_pos;
   int _paren_count;
 
-  // metrics for variable substitution
-  hpcrun_metricVal_t *metrics;
-  hpcfmt_uint_t       num_metrics;
+  // variable maps for value substitution
+  VarMap *_var_map;
 
   // Parse a number or an expression in parenthesis
   double ParseAtom(EVAL_CHAR*& expr) ;
@@ -43,8 +43,7 @@ private:
 
 public:
   // main method to evaluate a math expression
-  double  Eval(EVAL_CHAR* expr, 
-    hpcfmt_uint_t num_metrics, hpcrun_metricVal_t *metrics);
+  double  Eval(EVAL_CHAR* expr, VarMap *var_map);
 
   // get the error code
   EXPR_EVAL_ERR GetErr();
