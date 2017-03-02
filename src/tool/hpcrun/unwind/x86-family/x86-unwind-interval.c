@@ -52,11 +52,8 @@
 #include <memory/hpcrun-malloc.h>
 #include <hpcrun/hpcrun_stats.h>
 #include "x86-unwind-interval.h"
-#include "ui_tree.h"
 
 #include <messages/messages.h>
-
-#include <lib/prof-lean/atomic-op.h>
 
 #define STR(s) case s: return #s
 

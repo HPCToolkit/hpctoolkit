@@ -81,9 +81,6 @@
 #include <messages/messages.h>
 #include <utilities/tokenize.h>
 
-#include <lib/prof-lean/atomic.h>
-
-
 
 /******************************************************************************
  * macros
@@ -108,7 +105,7 @@ static void init_hack(void);
 /******************************************************************************
  * local variables
  *****************************************************************************/
-static uintptr_t active_worker_count = 1;// by default is 1 (1 thread)
+static atomic_uintptr_t active_worker_count = ATOMIC_VAR_INIT(1);// by default is 1 (1 thread)
 
 static int idle_metric_id = -1;
 static int work_metric_id = -1;
@@ -258,7 +255,7 @@ idle_metric_process_blame_for_sample(void* arg, int metric_id, cct_node_t *node,
   if (td->idle == 0) { // if this thread is not idle
     // capture active_worker_count into a local variable to make sure that the count doesn't change
     // between the time we test it and the time we use the value
-    long workers = active_worker_count;
+    long workers = atomic_load_explicit(&active_worker_count, memory_order_relaxed);
     double working_threads = (workers > 0 ? workers : 1.0 );
 
     double idle_threads = (total_threads - working_threads);
@@ -274,12 +271,12 @@ init_hack()
 {
   char * num_threads = getenv("OMP_NUM_THREADS");
   if (!num_threads)
-    active_worker_count = 1;
+    total_threads = 1;
   else 
-    active_worker_count = atoi(num_threads);
-  total_threads = active_worker_count;
+   total_threads = atoi(num_threads);
+  atomic_store_explicit(&active_worker_count, total_threads, memory_order_relaxed);
 
-  TMSG(IDLE, "init_hack called, work = %d", active_worker_count);
+  TMSG(IDLE, "init_hack called, work = %d", total_threads);
 }
 
 
@@ -303,8 +300,8 @@ idle_metric_blame_shift_idle(void)
   thread_data_t *td = hpcrun_get_thread_data();
   if (td->idle++ > 0) return;
 
-  TMSG(IDLE, "blame shift idle work BEFORE decr: %ld", active_worker_count);
-  atomic_add(&active_worker_count, -1L);
+  TMSG(IDLE, "blame shift idle work BEFORE decr: %ld", atomic_load_explicit(&active_worker_count, memory_order_relaxed));
+  atomic_fetch_add_explicit(&active_worker_count, -1, memory_order_relaxed);
   TMSG(IDLE, "blame shift idle after td->idle incr = %d", td->idle);
 
   // get a tracing sample out
@@ -327,8 +324,8 @@ idle_metric_blame_shift_work(void)
   TMSG(IDLE, "blame shift idle before td->idle decr = %d", td->idle);
   if (--td->idle > 0) return;
 
-  TMSG(IDLE, "blame shift work, work BEFORE incr: %ld", active_worker_count);
-  atomic_add(&active_worker_count, 1);
+  TMSG(IDLE, "blame shift work, work BEFORE incr: %ld", atomic_load_explicit(&active_worker_count, memory_order_relaxed));
+  atomic_fetch_add_explicit(&active_worker_count, 1, memory_order_relaxed);
 
   // get a tracing sample out
   if(hpcrun_trace_isactive()) {

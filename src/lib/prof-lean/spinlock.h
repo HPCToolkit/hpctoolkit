@@ -67,60 +67,35 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "atomic-op.h"
+#include "stdatomic.h"
 
 //
 // Simple spin lock.
 //
 
 typedef struct spinlock_s {
-	volatile long thelock;
+	atomic_long thelock;
 } spinlock_t;
 
 #define SPINLOCK_UNLOCKED_VALUE (-1L)
 #define SPINLOCK_LOCKED_VALUE (1L)
-#define INITIALIZE_SPINLOCK(x) { .thelock = (x) }
+#define INITIALIZE_SPINLOCK(x) { .thelock = ATOMIC_VAR_INIT(x) }
 
 #define SPINLOCK_UNLOCKED INITIALIZE_SPINLOCK(SPINLOCK_UNLOCKED_VALUE)
 #define SPINLOCK_LOCKED INITIALIZE_SPINLOCK(SPINLOCK_LOCKED_VALUE)
 
 
-/*
- * Note: powerpc needs two memory barriers: isync at the end of _lock
- * and lwsync at the beginning of _unlock.  See JohnMC's Comp 422
- * slides on "IBM Power Weak Memory Model."
- *
- * Technically, the isync could be moved to the assembly code for
- * fetch_and_store().
- */
-static inline
-void 
-spinlock_lock(spinlock_t *l)
+static inline void
+spinlock_init(spinlock_t *l)
 {
-  /* test-and-test-and-set lock */
-  for(;;) {
-    while (l->thelock != SPINLOCK_UNLOCKED_VALUE); 
-
-    if (fetch_and_store(&l->thelock, SPINLOCK_LOCKED_VALUE) == SPINLOCK_UNLOCKED_VALUE) {
-      break;
-    }
-  }
-
-#if defined(__powerpc__)
-  __asm__ __volatile__ ("isync\n");
-#endif
+  atomic_init(&l->thelock, SPINLOCK_UNLOCKED_VALUE);
 }
-
 
 static inline
 void 
 spinlock_unlock(spinlock_t *l)
 {
-#if defined(__powerpc__)
-  __asm__ __volatile__ ("lwsync\n");
-#endif
-
-  l->thelock = SPINLOCK_UNLOCKED_VALUE;
+  atomic_store_explicit(&l->thelock, SPINLOCK_UNLOCKED_VALUE, memory_order_release);
 }
 
 
@@ -128,8 +103,21 @@ static inline
 bool 
 spinlock_is_locked(spinlock_t *l)
 {
-  return (l->thelock != SPINLOCK_UNLOCKED_VALUE);
+  return (atomic_load_explicit(&l->thelock, memory_order_relaxed) != SPINLOCK_UNLOCKED_VALUE);
 }
+
+static inline
+void 
+spinlock_lock(spinlock_t *l)
+{
+  /* test-and-set lock */
+  long old_lockval = SPINLOCK_UNLOCKED_VALUE;
+  while (!atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, SPINLOCK_LOCKED_VALUE,
+						memory_order_acquire, memory_order_relaxed)) {
+    old_lockval = SPINLOCK_UNLOCKED_VALUE;
+  }
+}
+
 
 // deadlock avoiding lock primitives:
 //
@@ -145,22 +133,18 @@ static inline
 bool
 limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 {
-  for(size_t i=0;;i++) {
-    if (limit && (i > limit))
-      return false;
-    while (l->thelock != SPINLOCK_UNLOCKED_VALUE) {
-      if (limit && (i > limit))
-	return false;
-      i++;
-    }
-    if (fetch_and_store(&l->thelock, SPINLOCK_LOCKED_VALUE) == SPINLOCK_UNLOCKED_VALUE)
-      break;
+  if (limit == 0) {
+    spinlock_lock(l);
+    return true;
   }
 
-#if defined(__powerpc__)
-  __asm__ __volatile__ ("isync\n");
-#endif
-  return true;
+  long old_lockval = SPINLOCK_UNLOCKED_VALUE;
+  while (limit-- > 0 &&
+	 !atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, SPINLOCK_LOCKED_VALUE,
+						memory_order_acquire, memory_order_relaxed)) {
+    old_lockval = SPINLOCK_UNLOCKED_VALUE;
+  }
+  return (limit + 1 > 0);
 }
 
 //
@@ -176,20 +160,15 @@ static inline
 bool
 hwt_cas_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 {
-  for(;;) {
+  long old_lockval = SPINLOCK_UNLOCKED_VALUE;
+  while (!atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, locked_val,
+						memory_order_acquire, memory_order_relaxed)) {
     // if we are already locked by the same id, prevent deadlock by
     // abandoning lock acquisition
-    while (l->thelock != SPINLOCK_UNLOCKED_VALUE) {
-      if (l->thelock == locked_val)
-	return false;
-    }
-    if (compare_and_swap(&l->thelock, SPINLOCK_UNLOCKED_VALUE, locked_val) == SPINLOCK_UNLOCKED_VALUE)
-      break;
+    if (old_lockval == locked_val)
+      return false;
+    old_lockval = SPINLOCK_UNLOCKED_VALUE;
   }
-
-#if defined(__powerpc__)
-  __asm__ __volatile__ ("isync\n");
-#endif
   return true;
 }
 
@@ -211,23 +190,19 @@ static inline
 bool
 hwt_limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 {
-  for(size_t i=0;;i++) {
+  if (limit == 0)
+    return hwt_cas_spinlock_lock(l, limit, locked_val);
+
+  long old_lockval = SPINLOCK_UNLOCKED_VALUE;
+  while (limit-- > 0 &&
+	 !atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, locked_val,
+						memory_order_acquire, memory_order_relaxed)) {
     // if we are already locked by the same id, prevent deadlock by
     // abandoning lock acquisition
-    while (l->thelock != SPINLOCK_UNLOCKED_VALUE) {
-      if (l->thelock == locked_val)
-	return false;
-      if (limit && (i > limit))
-	return false;
-      i++;
-    }
-    if (compare_and_swap(&l->thelock, SPINLOCK_UNLOCKED_VALUE, locked_val) == SPINLOCK_UNLOCKED_VALUE)
-      break;
+    if (old_lockval == locked_val)
+      return false;
+    old_lockval = SPINLOCK_UNLOCKED_VALUE;
   }
-
-#if defined(__powerpc__)
-  __asm__ __volatile__ ("isync\n");
-#endif
-  return true;
+  return (limit + 1 > 0);
 }
 #endif // prof_lean_spinlock_h

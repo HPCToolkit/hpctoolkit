@@ -73,8 +73,7 @@
 
 #include "sample_event.h"
 
-#include "splay.h"
-#include "ui_tree.h"
+#include "uw_recipe_map.h"
 
 #include <messages/messages.h>
 
@@ -281,7 +280,6 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   
   // next (parent) frame
   void*           nxt_pc = NULL;
-  ip_normalized_t nxt_pc_norm = ip_normalized_NULL;
   void** nxt_sp = NULL;
   void** nxt_fp = NULL; // unused
   void*  nxt_ra = NULL; // always NULL unless we go through a signal handler

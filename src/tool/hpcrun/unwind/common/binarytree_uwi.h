@@ -22,7 +22,8 @@
 //******************************************************************************
 
 #include <lib/prof-lean/mem_manager.h>
-#include "uwi.h"
+#include "interval_t.h"
+#include "uw_recipe.h"
 
 
 /******************************************************************************
@@ -57,6 +58,7 @@ typedef struct unwind_interval_t unwind_interval;
 // abstract data type
 //******************************************************************************
 
+typedef struct uwi_s uwi_t;
 typedef struct bitree_uwi_s bitree_uwi_t;
 
 // to replace the old interval_status_t:

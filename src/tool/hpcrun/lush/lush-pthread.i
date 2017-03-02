@@ -71,9 +71,9 @@
 
 //*************************** User Include Files ****************************
 
-#include <lib/prof-lean/atomic.h>
+#include <include/gcc-attr.h>
+#include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/BalancedTree.h>
-#include <lib/prof-lean/QueuingRWLock.h>
 
 //*************************** Forward Declarations **************************
 
@@ -93,21 +93,22 @@ extern "C" {
 //***************************************************************************
 
 #if (LUSH_DBG_STATS)
-extern long DBG_numLockAcq;
-extern long DBG_numLockAlloc;
-extern long DBG_maxLockAllocCur;
-extern long DBG_numLockFreelistCur;
+extern atomic_long DBG_numLockAcq;
+extern atomic_long DBG_numLockAlloc;
+extern atomic_long DBG_maxLockAllocCur;
+extern atomic_long DBG_numLockFreelistCur;
 #endif
 
+typedef _Atomic(pthread_spinlock_t) atomic_pthread_spinlock_t;
 
 typedef struct lushPtr_SyncObjData {
 
   union {
-    pthread_spinlock_t spin; // usually an int
+    atomic_pthread_spinlock_t spin; // usually an int
     //pthread_mutex_t  mutexlock
   } lock GCC_ATTR_VAR_CACHE_ALIGN;
 
-  uint64_t idleness GCC_ATTR_VAR_CACHE_ALIGN;
+  atomic_uint_least64_t idleness GCC_ATTR_VAR_CACHE_ALIGN;
   void*    cct_node;
   bool isBlockingWork;
   bool isLocked;
@@ -120,7 +121,7 @@ typedef struct lushPtr_SyncObjData {
 static inline void 
 lushPtr_SyncObjData_init(lushPtr_SyncObjData_t* x)
 {
-  x->idleness = 0;
+  atomic_store_explicit(&x->idleness, 0, memory_order_relaxed);
   x->cct_node = NULL;
   x->isBlockingWork = false;
   x->isLocked = false;
@@ -149,15 +150,15 @@ typedef struct lushPthr {
   // -------------------------------------------------------
   // process wide metrics
   // -------------------------------------------------------
-  long* ps_num_procs;        // available processor cores
-  long* ps_num_threads;
+  atomic_long* ps_num_procs;        // available processor cores
+  atomic_long* ps_num_threads;
 
-  long* ps_num_working;      // working (W_l) + (W_c) + (W_o)
-  long* ps_num_working_lock; // working (W_l)
+  atomic_long* ps_num_working;      // working (W_l) + (W_c) + (W_o)
+  atomic_long* ps_num_working_lock; // working (W_l)
   //    ps_num_working_othr  // working (W_c) + (W_o)
 
   //    ps_num_idle_lock     // idleness (I_l)
-  long* ps_num_idle_cond;    // idleness (I_cl) + (I_cv)
+  atomic_long* ps_num_idle_cond;    // idleness (I_cl) + (I_cv)
 
   // -------------------------------------------------------
   // LUSH_PTHR_FN_TY == 3
@@ -166,7 +167,6 @@ typedef struct lushPthr {
   BalancedTree_t         syncObjToData;    // synch-obj -> data
 
   lushPtr_SyncObjData_t* syncObjData;
-  QueuingRWLockLcl_t     locklcl;
 
   void*                  cache_syncObj;
   lushPtr_SyncObjData_t* cache_syncObjData;
@@ -181,13 +181,14 @@ typedef struct lushPthr {
 
 extern void* lushPthr_mem_beg; // memory begin
 extern void* lushPthr_mem_end; // memory end
-extern void* lushPthr_mem_ptr; // current pointer
+typedef _Atomic(void *) lushPthr_mem_ptr_t;
+extern lushPthr_mem_ptr_t lushPthr_mem_ptr; // current pointer
 
 
 static inline void* 
 lushPthr_malloc(size_t size) 
 {
-  void* memEnd = hpcrun_atomicAdd(&lushPthr_mem_ptr, size);
+  void* memEnd = atomic_fetch_add_explicit(&lushPthr_mem_ptr, size, memory_order_relaxed);
   if (memEnd < lushPthr_mem_end) {
     return (memEnd - size);
   }

@@ -51,20 +51,20 @@
 //   Define the API for a fair, phased reader-writer lock with local spinning
 //
 // Reference:
-//   Björn B. Brandenburg and James H. Anderson. 2010. Spin-based reader-writer 
+//   Björn B. Brandenburg and James H. Anderson. 2010. Spin-based reader-writer
 //   synchronization for multiprocessor real-time systems. Real-Time Systems
 //   46(1):25-87 (September 2010).  http://dx.doi.org/10.1007/s11241-010-9097-2
 //
 // Notes:
-//   the reference uses a queue for arriving readers. on a cache coherent 
+//   the reference uses a queue for arriving readers. on a cache coherent
 //   machine, the local spinning property for waiting readers can be achieved
 //   by simply using a cacheble flag. the implementation here uses that
 //   simplification.
 //
 //******************************************************************************
 
+#ifndef __pfq_rwlock_h__
 #define __pfq_rwlock_h__
-#ifndef __pfq_rwlock__h__
 
 
 
@@ -89,8 +89,7 @@
 //******************************************************************************
 
 // align a variable at the start of a cache line
-// CLA = Cache Line Aligned
-#define CLA(x) x __attribute__((aligned(128)))
+#define cache_aligned __attribute__((aligned(128)))
 
 
 
@@ -100,25 +99,24 @@
 
 typedef mcs_node_t pfq_rwlock_node_t;
 
-typedef struct {
-  CLA(volatile bool flag);
-} pfq_rwlock_flag_t;
+typedef struct bigbool {
+  atomic_bool bit cache_aligned;
+} bigbool;
 
 typedef struct {
   //----------------------------------------------------------------------------
   // reader management
   //----------------------------------------------------------------------------
-  CLA(volatile uint32_t rin);  // = 0
-  CLA(volatile uint32_t rout);  // = 0
-  CLA(uint32_t last);  // = 0  not really needed
-
-  pfq_rwlock_flag_t flag[2]; // false
+  atomic_uint_least32_t rin cache_aligned;  // = 0
+  atomic_uint_least32_t rout cache_aligned;  // = 0
+  atomic_uint_least32_t last cache_aligned;  // = WRITER_PRESENT
+  bigbool writer_blocking_readers[2]; // false
 
   //----------------------------------------------------------------------------
   // writer management
   //----------------------------------------------------------------------------
-  CLA(mcs_lock_t wtail);  // init
-  CLA(mcs_node_t *whead);  // null
+  mcs_lock_t wtail cache_aligned;  // init
+  mcs_node_t *whead cache_aligned;  // null
 
 } pfq_rwlock_t;
 
@@ -130,12 +128,12 @@ typedef struct {
 
 void pfq_rwlock_init(pfq_rwlock_t *l);
 
-void pfq_rwlock_start_read(pfq_rwlock_t *l);
+void pfq_rwlock_read_lock(pfq_rwlock_t *l);
 
-void pfq_rwlock_end_read(pfq_rwlock_t *l);
+void pfq_rwlock_read_unlock(pfq_rwlock_t *l);
 
-void pfq_rwlock_start_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me);
+void pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me);
 
-void pfq_rwlock_end_write(pfq_rwlock_t *l, pfq_rwlock_node_t *me);
+void pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me);
 
 #endif

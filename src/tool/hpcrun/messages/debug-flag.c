@@ -108,7 +108,7 @@ static pmsg_category all_list_entries [] = {
  E(_TST_HANDLER),
  E(_TST_CTL),
  E(UNW),
- // E(UITREE),
+ // E(UW_RECIPE_MAP),
  E(TRAMP),
  E(SEGV),
  E(MPI),

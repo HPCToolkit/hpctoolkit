@@ -66,12 +66,11 @@
 #include <include/min-max.h>
 #include "ppc64-unwind-interval.h"
 #include "hpcrun-malloc.h"
-#include "ui_tree.h"
+#include "uw_recipe_map.h"
 #include "fnbounds_interface.h"
 #include <hpcrun/hpcrun_stats.h>
 #include <messages/messages.h>
 #include <lib/isa-lean/power/instruction-set.h>
-#include <lib/prof-lean/atomic-op.h>
 
 
 //*************************** Forward Declarations **************************

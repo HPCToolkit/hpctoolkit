@@ -67,7 +67,7 @@
 #include "x86-unwind-analysis.h"
 #include "fnbounds_interface.h"
 #include "validate_return_addr.h"
-#include "ui_tree.h"
+#include "uw_recipe_map.h"
 #include "x86-unwind-interval.h"
 
 #include <unwind/common/unw-datatypes.h>
