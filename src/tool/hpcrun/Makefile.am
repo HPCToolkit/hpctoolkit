@@ -293,6 +293,7 @@ MY_BASE_FILES =				\
         sample-sources/sync.c           \
 	sample_sources_registered.c	\
 	segv_handler.c			\
+	skw.cpp			\
 	start-stop.c			\
 	term_handler.c			\
 	thread_data.c			\

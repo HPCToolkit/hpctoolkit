@@ -75,6 +75,9 @@
 // user include files 
 //***************************************************************************
 
+#include "skw.h"	// SKW FOR TESTING
+
+
 #include <include/uint.h>
 
 #include <include/hpctoolkit-config.h>
@@ -735,6 +738,8 @@ monitor_init_process(int *argc, char **argv, void* data)
 {
   char* process_name;
   char  buf[PROC_NAME_LEN];
+
+  skw_test();	// SKW FOR TESTING
 
   hpcrun_thread_suppress_sample = false;
 
