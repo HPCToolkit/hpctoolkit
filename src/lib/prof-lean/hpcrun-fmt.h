@@ -422,6 +422,24 @@ hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* outfs, const char* pre);
 extern void
 hpcrun_fmt_metricDesc_free(metric_desc_t* x, hpcfmt_free_fn dealloc);
 
+// ---------------------------------------------------------
+// metric get and set
+// ---------------------------------------------------------
+
+double 
+hpcrun_fmt_metric_get_value(metric_desc_t metric_desc, hpcrun_metricVal_t metric);
+
+void
+hpcrun_fmt_metric_set_value(metric_desc_t metric_desc, 
+   hpcrun_metricVal_t *metric, double value);
+
+void
+hpcrun_fmt_metric_set_value_int( hpcrun_metricFlags_t *flags,
+   hpcrun_metricVal_t *metric, int value);
+
+void
+hpcrun_fmt_metric_set_value_real( hpcrun_metricFlags_t *flags,
+   hpcrun_metricVal_t *metric, double value);
 
 //***************************************************************************
 // loadmap

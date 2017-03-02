@@ -129,7 +129,7 @@ double ExprEval::ParseSummands(EVAL_CHAR*& expr)
     }
 }
 
-double ExprEval::Eval(EVAL_CHAR* expr, VarMap *var_map)
+double ExprEval::Eval(EVAL_CHAR* expr, BaseVarMap *var_map)
 {
   _paren_count  = 0;
   _err          = EEE_NO_ERROR;

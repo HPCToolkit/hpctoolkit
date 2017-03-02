@@ -44,41 +44,18 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <lib/prof-lean/hpcrun-fmt.h> // metric stuffs
-#include <lib/support/VarMap.hpp>
+#ifndef __BASEVARMAP_HPP__
+#define __BASEVARMAP_HPP__
 
-#define VAR_PREFIX '$'
+class BaseVarMap {
 
-VarMap::VarMap(hpcrun_metricVal_t *metrics, metric_desc_t* list_metric_desc,
-   size_t num_metrics)
-{
-  m_metrics          = metrics;
-  m_list_metric_desc = list_metric_desc;
-  m_error_code       = 0;
-  m_num_metrics      = num_metrics;
-}
+public:
+  virtual bool   isVariable(char *expr) = 0;
+  virtual double getValue(int var) = 0;
+  virtual int    getErrorCode() = 0;
 
-bool VarMap::isVariable(char *expr)
-{
-  return (expr[0] == VAR_PREFIX);
-}
+};
 
 
-
-double VarMap::getValue(int var)
-{
-  if ( var>=0 && var<m_num_metrics );
-    return hpcrun_fmt_metric_get_value(m_list_metric_desc[var], 
-              m_metrics[var]);
-  m_error_code = 1;
-  return (double) var;
-}
-
-
-int 
-VarMap::getErrorCode()
-{
-   return m_error_code;
-}
-
+#endif
 

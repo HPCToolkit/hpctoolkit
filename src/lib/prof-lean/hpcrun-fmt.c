@@ -417,6 +417,52 @@ hpcrun_fmt_metricDesc_free(metric_desc_t* x, hpcfmt_free_fn dealloc)
   x->format = NULL;
 }
 
+double 
+hpcrun_fmt_metric_get_value(metric_desc_t metric_desc, hpcrun_metricVal_t metric)
+{
+  if (metric_desc.flags.fields.valFmt == MetricFlags_ValFmt_Int) {
+    return (double) metric.i;
+  } 
+  else if (metric_desc.flags.fields.valFmt == MetricFlags_ValFmt_Real) {
+    return metric.r;
+  }
+  // TODO: default value
+  return metric.r;
+}
+
+// set a new value into a metric
+void
+hpcrun_fmt_metric_set_value(metric_desc_t metric_desc, 
+   hpcrun_metricVal_t *metric, double value)
+{
+  if (metric_desc.flags.fields.valFmt == MetricFlags_ValFmt_Int) {
+    metric->i = (int) value;
+  } 
+  else if (metric_desc.flags.fields.valFmt == MetricFlags_ValFmt_Real) {
+    metric->r = value;
+  }
+}
+
+// set a new integer value into a metric, and force it to be
+// an integer type metric
+void
+hpcrun_fmt_metric_set_value_int( hpcrun_metricFlags_t *flags,
+   hpcrun_metricVal_t *metric, int value)
+{
+  flags->fields.valFmt = MetricFlags_ValFmt_Int;
+  metric->i = value;
+}
+
+// set a new double value into a metric, and force it to be
+// a real type metric
+void
+hpcrun_fmt_metric_set_value_real( hpcrun_metricFlags_t *flags,
+   hpcrun_metricVal_t *metric, double value)
+{
+  flags->fields.valFmt = MetricFlags_ValFmt_Real;
+  metric->r = value;
+}
+
 
 //***************************************************************************
 // loadmap

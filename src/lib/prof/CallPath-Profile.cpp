@@ -107,6 +107,7 @@ using namespace xml;
 #include <lib/support/StrUtil.hpp>
 
 #include <lib/support/ExprEval.hpp>
+#include <lib/support/VarMap.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -1356,19 +1357,19 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 				 &metricTbl, "  ");
     }
     // ------------------------------------------
-    // check if the metric has a formula
+    // check if the metric contains a formula
     // ------------------------------------------
     metric_desc_t* m_lst = metricTbl.lst;
-    VarMap var_map(nodeFmt.metrics, m_lst);
+    VarMap var_map(nodeFmt.metrics, m_lst, numMetricsSrc);
 
     for (uint i = 0; i < numMetricsSrc; i++) {
-      const metric_desc_t& mdesc = m_lst[i];
-      char *expr = (char*) mdesc.formula;
+      char *expr = (char*) m_lst[i].formula;
       if (expr == NULL || strlen(expr)==0) continue;
 
-      double res = eval.Eval( expr, &var_map);
+      double res = eval.Eval(expr, &var_map);
       if (eval.GetErr() == EEE_NO_ERROR) {
-        nodeFmt.metrics[i].r = res;
+        hpcrun_fmt_metric_set_value_real(&(m_lst[i].flags), 
+             &(nodeFmt.metrics[i]), res);
       }
     }
 

@@ -46,22 +46,27 @@
 
 #ifndef __VARMAP_HPP__
 #define __VARMAP_HPP__
+
 #include <lib/prof-lean/hpcrun-fmt.h> // metric stuffs
-class VarMap {
+#include <lib/support/BaseVarMap.hpp>   // basic var map class
+
+class VarMap : public BaseVarMap {
 
 private:
   // metrics for variable substitution
   hpcrun_metricVal_t *m_metrics;	   // metric values
   metric_desc_t*      m_list_metric_desc;  // metric descriptions
 
-  int m_error_code;
+  size_t m_num_metrics;
+  int    m_error_code;
 
 public:
   bool   isVariable(char *expr);
   double getValue(int var);
   int    getErrorCode();
 
-  VarMap(hpcrun_metricVal_t *metrics, metric_desc_t* m_list_metric_desc);
+  VarMap(hpcrun_metricVal_t *metrics, 
+    metric_desc_t* m_list_metric_desc, size_t num_metrics);
 };
 
 

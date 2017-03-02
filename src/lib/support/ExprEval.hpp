@@ -4,7 +4,7 @@
 #ifndef __ExprEval_H__
 #define  __ExprEval_H__
 
-#include <lib/support/VarMap.hpp>
+#include <lib/support/BaseVarMap.hpp>   // basic var map class
 
 // Error codes enumeration
 enum EXPR_EVAL_ERR {
@@ -30,7 +30,7 @@ private:
   int _paren_count;
 
   // variable maps for value substitution
-  VarMap *_var_map;
+  BaseVarMap *_var_map;
 
   // Parse a number or an expression in parenthesis
   double ParseAtom(EVAL_CHAR*& expr) ;
@@ -43,7 +43,7 @@ private:
 
 public:
   // main method to evaluate a math expression
-  double  Eval(EVAL_CHAR* expr, VarMap *var_map);
+  double  Eval(EVAL_CHAR* expr, BaseVarMap *var_map);
 
   // get the error code
   EXPR_EVAL_ERR GetErr();
