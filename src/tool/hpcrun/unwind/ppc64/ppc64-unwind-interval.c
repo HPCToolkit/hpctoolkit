@@ -133,14 +133,14 @@ new_ui(char *startaddr,
   // filled in when a successor recipe is linked behind this one or
   // when the end of the enclosing routine is reached 
   // ----------------------------------------------------------------
-  interval_t *interval =  uwi_t_interval(uwi);
+  interval_t *interval =  uwi->interval;
   interval->start = (uintptr_t)startaddr;
   interval->end = 0; 
 
   // ----------------------------------------------------------------
   // initialize the unwind recipe for the given interval as specified
   // ----------------------------------------------------------------
-  ppc64recipe_t *ppc64recipe = (ppc64recipe_t*) uwi_t_recipe(uwi);
+  ppc64recipe_t *ppc64recipe = (ppc64recipe_t*) uwi->recipe;
   ppc64recipe->sp_ty = sp_ty;
   ppc64recipe->ra_ty = ra_ty;
   ppc64recipe->sp_arg = sp_arg;
