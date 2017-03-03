@@ -154,8 +154,6 @@ t1_dbg_unw_step(hpcrun_unw_cursor_t* cursor);
 
 static step_state (*dbg_unw_step)(hpcrun_unw_cursor_t* cursor) = t1_dbg_unw_step;
 
-extern void hpcrun_set_real_siglongjmp(void);
-
 //************************************************
 // private functions
 //************************************************

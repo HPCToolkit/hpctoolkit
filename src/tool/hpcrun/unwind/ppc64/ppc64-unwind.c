@@ -66,6 +66,7 @@
 
 //*************************** User Include Files ****************************
 
+#include <hpcrun/main.h>
 #include <unwind/common/unwind.h>
 #include <unwind/common/unw-datatypes.h>
 
@@ -82,14 +83,6 @@
 
 #include <lib/isa-lean/power/instruction-set.h>
 #include <unwind/common/fence_enum.h>
-
-
-//***************************************************************************
-// external declarations
-//***************************************************************************
-
-extern void 
-hpcrun_set_real_siglongjmp(void);
 
 
 
