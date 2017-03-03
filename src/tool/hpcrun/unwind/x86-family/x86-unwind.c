@@ -135,9 +135,6 @@ static int DEBUG_NO_LONGJMP = 0;
 static void 
 update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset);
 
-static int
-unw_step_prefer_sp(void);
-
 static step_state 
 unw_step_sp(hpcrun_unw_cursor_t* cursor);
 
@@ -465,20 +462,6 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
 // hpcrun_unw_step helpers
 //****************************************************************************
 
-// FIXME: make this a selectable paramter, so that all manner of strategies 
-// can be selected
-static int
-unw_step_prefer_sp(void)
-{
-  if (ENABLED(PREFER_SP)){
-    return 1;
-  } else {
-    return 0;
-  }
-  // return cursor->flags; // trolling_used
-}
-
-
 static step_state
 unw_step_sp(hpcrun_unw_cursor_t* cursor)
 {
@@ -698,7 +681,7 @@ unw_step_std(hpcrun_unw_cursor_t* cursor)
 {
   int unw_res;
 
-  if (unw_step_prefer_sp()){
+  if (ENABLED(PREFER_SP)) {
     TMSG(UNW_STRATEGY,"--STD_FRAME: STARTing with SP");
     unw_res = unw_step_sp(cursor);
     if (unw_res == STEP_ERROR || unw_res == STEP_STOP_WEAK) {
