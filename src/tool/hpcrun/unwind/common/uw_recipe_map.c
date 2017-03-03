@@ -165,7 +165,7 @@ static  __thread  ilmstat_btuwi_pair_t *current_btuwi = NULL;
 // Constructors
 //******************************************************************************
 
-inline ilmstat_btuwi_pair_t*
+static inline ilmstat_btuwi_pair_t*
 ilmstat_btuwi_pair_build(uintptr_t start, uintptr_t end, load_module_t *ldmod,
 	tree_stat_t treestat, bitree_uwi_t *tree,	mem_alloc m_alloc)
 {
