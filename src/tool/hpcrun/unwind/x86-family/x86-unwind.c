@@ -135,9 +135,6 @@ static int DEBUG_NO_LONGJMP = 0;
 static void 
 update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset);
 
-static fence_enum_t
-hpcrun_check_fence(void* ip);
-
 static int
 unw_step_prefer_sp(void);
 
@@ -323,25 +320,26 @@ fence_stop(fence_enum_t fence)
 static step_state
 hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
 {
-
-  cursor->fence = hpcrun_check_fence(cursor->pc_unnorm);
+  void *pc = cursor->pc_unnorm;
+  cursor->fence = (monitor_unwind_process_bottom_frame(pc) ? FENCE_MAIN :
+		   monitor_unwind_thread_bottom_frame(pc)? FENCE_THREAD : FENCE_NONE);
+		   
+   if (ENABLED(FENCE_UNW) && cursor->fence != FENCE_NONE)
+     TMSG(FENCE_UNW, "%s", fence_enum_name(cursor->fence));
 
   //-----------------------------------------------------------
   // check if we have reached the end of our unwind, which is
   // demarcated with a fence. 
   //-----------------------------------------------------------
   if (fence_stop(cursor->fence)) {
-    TMSG(UNW,"unw_step: STEP_STOP, current pc in monitor fence pc=%p\n", cursor->pc_unnorm);
+    TMSG(UNW,"unw_step: STEP_STOP, current pc in monitor fence pc=%p\n", pc);
     return STEP_STOP;
   }
 
   // current frame  
   void** bp = cursor->bp;
   void*  sp = cursor->sp;
-  void*  pc = cursor->pc_unnorm;
   unwind_interval* uw = cursor->unwr_info.btuwi;
-
-  step_state unw_res;
 
   if (!uw){
     TMSG(UNW, "unw_step: invalid unw interval for cursor, trolling ...");
@@ -350,6 +348,7 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
     return STEP_TROLL;
   }
 
+  step_state unw_res;
   switch (UWI_RECIPE(uw)->ra_status){
   case RA_SP_RELATIVE:
     unw_res = unw_step_sp(cursor);
@@ -818,18 +817,4 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
   }
   // assert(0);
   hpcrun_unw_throw();
-}
-
-static fence_enum_t
-hpcrun_check_fence(void* ip)
-{
-  fence_enum_t rv = FENCE_NONE;
-  if (monitor_unwind_process_bottom_frame(ip))
-    rv = FENCE_MAIN;
-  else if (monitor_unwind_thread_bottom_frame(ip))
-    rv = FENCE_THREAD;
-
-   if (ENABLED(FENCE_UNW) && rv != FENCE_NONE)
-     TMSG(FENCE_UNW, "%s", fence_enum_name(rv));
-   return rv;
 }
