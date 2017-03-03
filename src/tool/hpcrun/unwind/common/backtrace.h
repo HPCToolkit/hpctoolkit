@@ -102,14 +102,10 @@ typedef void (*bt_mut_fn)(backtrace_t* bt, bt_fn_arg arg);
 
 bool hpcrun_backtrace_std(backtrace_t* bt, ucontext_t* context);
 
-bool hpcrun_filter_sample(int len, frame_t* start, frame_t* last);
-
 frame_t* hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
 			    int skip);
 
 void hpcrun_bt_dump(frame_t* unwind, const char* tag);
-
-frame_t* hpcrun_bt_reset(backtrace_t* bt);
 
 void     hpcrun_bt_init(backtrace_t* bt, size_t size);
 
@@ -118,8 +114,6 @@ frame_t* hpcrun_bt_beg(backtrace_t* bt);
 frame_t* hpcrun_bt_last(backtrace_t* bt);
 
 bool     hpcrun_backtrace_std(backtrace_t* bt, ucontext_t* context);
-
-void hpcrun_dump_bt(backtrace_t* bt);
 
 bool hpcrun_generate_backtrace(backtrace_info_t* bt,
 			       ucontext_t* context, int skipInner);

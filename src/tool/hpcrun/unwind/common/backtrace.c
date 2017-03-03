@@ -86,12 +86,6 @@ static void lush_lip2str(char* buf, size_t len, lush_lip_t* lip);
 // interface functions
 //***************************************************************************
 
-void
-hpcrun_show_backtrace(char* label, frame_t* beg, frame_t* end)
-{
-  ;
-}
-
 void 
 hpcrun_bt_dump(frame_t* unwind, const char* tag)
 {
@@ -144,21 +138,14 @@ hpcrun_bt_dump(frame_t* unwind, const char* tag)
   EMSG("-- end backtrace ------------------------------------\n");
 }
 
-frame_t*
-hpcrun_bt_reset(backtrace_t* bt)
-{
-  bt->cur = bt->beg;
-  bt->len = 0;
-  return bt->cur;
-}
-
 void
 hpcrun_bt_init(backtrace_t* bt, size_t size)
 {
   bt->beg   = (frame_t*) hpcrun_malloc(sizeof(frame_t) * size);
   bt->end   = bt->beg + (size - 1);
   bt->size  = size;
-  hpcrun_bt_reset(bt);
+  bt->cur = bt->beg;
+  bt->len = 0;
 }
 
 frame_t*
@@ -173,65 +160,22 @@ hpcrun_bt_last(backtrace_t* bt)
   return (bt->beg + bt->len -1);
 }
 
-//
-// Some sample backtrace mutator functions
-//
-
-void
-hpcrun_bt_skip_inner(backtrace_t* bt, void* skip)
-{
-  size_t realskip = (size_t) skip;
-  bt->beg += realskip;
-}
-
-void
-hpcrun_dump_bt(backtrace_t* bt)
-{
-  for(frame_t* _f = bt->beg; _f < bt->beg + bt->len; _f++) {
-    TMSG(BT, "ip_norm.lm_id = %d, and ip_norm.lm_ip = %p ", _f->ip_norm.lm_id,
-	 _f->ip_norm.lm_ip);
-  }
-}
-
-//---------------------------------------------------------------------------
-// function: hpcrun_filter_sample
-//
-// purpose:
-//     ignore any samples that aren't rooted at designated call sites in 
-//     monitor that should be at the base of all process and thread call 
-//     stacks. 
-//
-// implementation notes:
-//     to support this, in monitor we define a pair of labels surrounding the 
-//     call site of interest. it is possible to get a sample between the pair 
-//     of labels that is outside the call. in that case, the length of the 
-//     sample's callstack would be 1, and we ignore it.
-//-----------------------------------------------------------------------------
-bool
-hpcrun_filter_sample(int len, frame_t* start, frame_t* last)
-{
-  void* ip_unnorm;
-  hpcrun_unw_get_ip_unnorm_reg(&last->cursor, &ip_unnorm);
-  return ( !(monitor_in_start_func_narrow(ip_unnorm)
-	     && (len > 1)) );
-}
-
 frame_t*
 hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
 		   int skip)
 {
   // N.B.: INVARIANT: bt_inner < bt_outer
-  frame_t* x_inner = bt_inner;
-  for (int i = 0; (x_inner < bt_outer && i < skip); ++i) {
+  int nFrames = bt_outer - bt_inner;
+  if (skip > nFrames)
+    skip = nFrames;
+  for (int i = 0; i < skip; ++i) {
     // for now, do not support M chords
-    lush_assoc_t as = lush_assoc_info__get_assoc(x_inner->as_info);
+    lush_assoc_t as = lush_assoc_info__get_assoc(bt_inner[i].as_info);
     assert(as == LUSH_ASSOC_NULL || as == LUSH_ASSOC_1_to_1 ||
 	   as == LUSH_ASSOC_1_to_0);
-    
-    x_inner++;
+
   }
-  
-  return x_inner;
+  return &bt_inner[skip];
 }
 
 //
