@@ -58,9 +58,6 @@
 
 // FIXME and TODO:
 //
-// 4. Add vma ranges v="{[0x400c2d-0x400c32) [0x400c8c-0x400c94)}"
-// with multiple ranges.
-//
 // 5. Add full vma ranges for <P> proc tags.
 //
 // 7. Fix targ401420 names in <P> tags.
@@ -81,7 +78,7 @@
 #include <string>
 
 #include <lib/binutils/BinUtils.hpp>
-#include <lib/isa/ISATypes.hpp>
+#include <lib/binutils/VMAInterval.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/StringTable.hpp>
 #include <lib/xml/xml.hpp>
@@ -136,6 +133,7 @@ namespace BAnal {
 namespace Output {
 
 typedef map <long, TreeNode *> AlienMap;
+typedef map <long, VMAIntervalSet *> LineNumberMap;
 
 class ScopeInfo {
 public:
@@ -439,22 +437,46 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
 
 //----------------------------------------------------------------------
 
-// Print the terminal statements at 'node'.  Any guard alien, if
-// needed, has already been printed.
+// Print the terminal statements at 'node' and compact multiple vma
+// ranges with the same line number to a single stmt.  Any guard
+// alien, if needed, has already been printed.
 //
 static void
 doStmtList(ostream * os, int depth, TreeNode * node)
 {
+  LineNumberMap lineMap;
+
+  // merge stmts with the same line number into a single vma set
   for (auto sit = node->stmtMap.begin(); sit != node->stmtMap.end(); ++sit) {
     StmtInfo * sinfo = sit->second;
+    VMAIntervalSet * vset = NULL;
+
+    auto mit = lineMap.find(sinfo->line_num);
+    if (mit != lineMap.end()) {
+      vset = mit->second;
+    }
+    else {
+      vset = new VMAIntervalSet;
+      lineMap[sinfo->line_num] = vset;
+    }
+    vset->insert(sinfo->vma, sinfo->vma + sinfo->len);
+  }
+
+  // print each vma set as a single <S> stmt
+  for (auto mit = lineMap.begin(); mit != lineMap.end(); ++mit) {
+    long line = mit->first;
+    VMAIntervalSet * vset = mit->second;
 
     doIndent(os, depth);
     *os << "<S"
 	<< INDEX
-	<< NUMBER("l", sinfo->line_num)
-	<< VRANGE(sinfo->vma, sinfo->len)
+	<< NUMBER("l", line)
+	<< " v=\"" << vset->toString() << "\""
 	<< "/>\n";
+
+    delete vset;
   }
+  lineMap.clear();
 }
 
 // Print the loops at 'node' and their subtrees.  Any guard alien, if
