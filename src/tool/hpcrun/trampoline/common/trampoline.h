@@ -97,4 +97,6 @@ extern void hpcrun_trampoline_insert(cct_node_t* node);
 extern void hpcrun_trampoline_remove(void);
 extern void hpcrun_trampoline_bt_dump(void);
 
+extern void hpcrun_trampoline(void);
+extern void hpcrun_trampoline_end(void);
 #endif // trampoline_h

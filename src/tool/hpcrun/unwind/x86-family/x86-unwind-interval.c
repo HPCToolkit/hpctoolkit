@@ -52,11 +52,8 @@
 #include <memory/hpcrun-malloc.h>
 #include <hpcrun/hpcrun_stats.h>
 #include "x86-unwind-interval.h"
-#include "ui_tree.h"
 
 #include <messages/messages.h>
-
-#include <lib/prof-lean/atomic-op.h>
 
 #define STR(s) case s: return #s
 
@@ -97,10 +94,10 @@ new_ui(char *start,
   bitree_uwi_set_leftsubtree(u, prev);
   uwi_t *uwi =  bitree_uwi_rootval(u);
 
-  interval_t *interval =  uwi_t_interval(uwi);
+  interval_t *interval =  uwi->interval;
   interval->start = (uintptr_t)start;
 
-  x86recipe_t* x86recipe = (x86recipe_t*) uwi_t_recipe(uwi);
+  x86recipe_t* x86recipe = (x86recipe_t*) uwi->recipe;
   x86recipe->ra_status = ra_status;
   x86recipe->sp_ra_pos = sp_ra_pos;
   x86recipe->bp_ra_pos = bp_ra_pos;
@@ -132,11 +129,11 @@ fluke_ui(char *loc, unsigned int pos, mem_alloc m_alloc)
   bitree_uwi_t *u = bitree_uwi_malloc(m_alloc, sizeof(x86recipe_t));
   uwi_t *uwi =  bitree_uwi_rootval(u);
 
-  interval_t *interval =  uwi_t_interval(uwi);
+  interval_t *interval =  uwi->interval;
   interval->start = (uintptr_t)loc;
   interval->end = (uintptr_t)loc;
 
-  x86recipe_t* x86recipe = (x86recipe_t*) uwi_t_recipe(uwi);
+  x86recipe_t* x86recipe = (x86recipe_t*) uwi->recipe;
   x86recipe->ra_status = RA_SP_RELATIVE;
   x86recipe->sp_ra_pos = pos;
   x86recipe->bp_ra_pos = 0;

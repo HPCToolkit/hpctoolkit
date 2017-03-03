@@ -97,4 +97,4 @@ OSUtil_hostid();
 
 //***************************************************************************
 
-#endif /* prof_lean_QueuingRWLock_h */
+#endif /* support_lean_OSUtil_h */

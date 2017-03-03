@@ -187,17 +187,11 @@ UNW_UNIV_FILES = \
 
 UNW_COMMON_FILES = \
         $(UNW_UNIV_FILES)               \
-	unwind/common/addr_to_recipe_map.c		    \
 	unwind/common/binarytree_uwi.c		    \
-	unwind/common/cskiplist_ilmstat_btuwi_pair.c	\
 	unwind/common/ildmod_stat.c \
-	unwind/common/ilmstat_btuwi_pair.c	    \
-	unwind/common/interval_ldmod_pair.c	    \
 	unwind/common/interval_t.c	    \
-	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\
-	unwind/common/ui_tree.c  \
-	unwind/common/uwi.c
+	unwind/common/uw_recipe_map.c
 
 UNW_X86_FILES = \
        $(UNW_COMMON_FILES) \

@@ -126,14 +126,12 @@
 
 #include <unwind/common/backtrace.h>
 #include <unwind/common/unwind.h>
-#include <unwind/common/splay-interval.h>
 
 #include <utilities/arch/context-pc.h>
 
 #include <lush/lush-backtrace.h>
 #include <lush/lush-pthread.h>
 
-#include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcio.h>
 

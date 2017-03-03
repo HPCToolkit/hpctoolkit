@@ -44,36 +44,19 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef unwind_interval_h
+#define unwind_interval_h
+
+#include <lib/prof-lean/mem_manager.h>
+#include "binarytree_uwi.h"
+
 //***************************************************************************
-//
-// File: atomic-op.h 
-//
-// Description:
-//   define the small set of atomic operations needed by hpctoolkit
-//
-// Author:
-//   23 July 2009 - John Mellor-Crummey
-//     default to gnu atomics if they are available 
-//
-//     relegate the rest of the asm-based implementations to a separate
-//     file
-//
+// external interface
 //***************************************************************************
 
-#ifndef prof_lean_atomic_op_h
-#define prof_lean_atomic_op_h
+btuwi_status_t
+build_intervals(char  *ins, unsigned int len, mem_alloc m_alloc);
 
-#include <include/gcc-attr.h>
+//***************************************************************************
 
-
-#if (HPC_GCC_VERSION >= 4100)
-
-#  include "atomic-op-gcc.h"
-
-#else
-
-#  include "atomic-op-asm.h"
-
-#endif
-
-#endif // prof_lean_atomic_op_h
+#endif // unwind_interval_h

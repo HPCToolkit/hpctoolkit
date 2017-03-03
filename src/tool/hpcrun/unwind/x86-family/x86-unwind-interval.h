@@ -123,13 +123,12 @@ typedef struct x86recipe_s {
 extern "C" {
 #endif
 
+#include <unwind/common/unwind-interval.h>
 
   void set_ui_canonical(unwind_interval *u, unwind_interval *value);
 
   void set_ui_restored_canonical(unwind_interval *u, unwind_interval *value);
 
-
-  btuwi_status_t build_intervals(char  *ins, unsigned int len, mem_alloc m_alloc);
 
   unwind_interval *
   new_ui(char *startaddr, 

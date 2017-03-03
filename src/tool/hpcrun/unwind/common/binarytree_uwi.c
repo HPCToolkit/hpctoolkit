@@ -42,6 +42,15 @@ bitree_uwi_init()
 }
 
 // constructors
+static uwi_t*
+uwi_t_new(interval_t* interval, uw_recipe_t* recipe, mem_alloc m_alloc)
+{
+  uwi_t *uwi = m_alloc(sizeof(*uwi));
+  uwi->interval = interval;
+  uwi->recipe = recipe;
+  return uwi;
+}
+
 bitree_uwi_t*
 bitree_uwi_new(uwi_t *val,
 	bitree_uwi_t *left, bitree_uwi_t *right, mem_alloc m_alloc)
@@ -200,7 +209,7 @@ bitree_uwi_interval(bitree_uwi_t *tree)
   assert(tree != NULL);
   uwi_t* uwi = bitree_uwi_rootval(tree);
   assert(uwi != NULL);
-  return uwi_t_interval(uwi);
+  return uwi->interval;
 }
 
 // return the recipe_t value of the tree root
@@ -211,7 +220,7 @@ bitree_uwi_recipe(bitree_uwi_t *tree)
   assert(tree != NULL);
   uwi_t* uwi = bitree_uwi_rootval(tree);
   assert(uwi != NULL);
-  return uwi_t_recipe(uwi);
+  return uwi->recipe;
 }
 
 // count the number of nodes in the binary tree.
@@ -230,6 +239,14 @@ bitree_uwi_rebalance(bitree_uwi_t * tree)
   return (bitree_uwi_t*)balanced;
 }
 
+static int
+uwi_t_cmp(void* lhs, void* rhs)
+{
+  uwi_t* uwi1 = (uwi_t*)lhs;
+  uwi_t* uwi2 = (uwi_t*)rhs;
+  return interval_t_cmp(uwi1->interval, uwi2->interval);
+}
+
 // use uwi_t_cmp to find a matching node in a binary search tree of uwi_t
 // empty tree is returned if no match is found.
 bitree_uwi_t*
@@ -243,12 +260,36 @@ bitree_uwi_find(bitree_uwi_t *tree, uwi_t *val)
 // use uwi_t_inrange to find a node in a binary search tree of uwi_t that
 // contains the given address
 // empty tree is returned if no such node is found.
+static int
+uwi_t_inrange(void* lhs, void* address)
+{
+  uwi_t* uwi = (uwi_t*)lhs;
+  return interval_t_inrange(uwi->interval, address);
+}
+
 bitree_uwi_t*
 bitree_uwi_inrange(bitree_uwi_t *tree, uintptr_t address)
 {
   binarytree_t * found =
 	  binarytree_find((binarytree_t*)tree, uwi_t_inrange, (void*)address);
   return (bitree_uwi_t*)found;
+}
+
+
+//******************************************************************************
+// String output
+//******************************************************************************
+
+#define MAX_UWI_STR MAX_INTERVAL_STR+MAX_RECIPE_STR+4
+static void
+uwi_t_tostr(void* uwip, char str[])
+{
+  uwi_t *uwi = uwip;
+  char intervalstr[MAX_INTERVAL_STR];
+  interval_t_tostr(uwi->interval, intervalstr);
+  char recipestr[MAX_RECIPE_STR];
+  uw_recipe_tostr(uwi->recipe, recipestr);
+  sprintf(str, "(%s %s)", intervalstr, recipestr);
 }
 
 // compute a string representing the binary tree printed vertically and
@@ -335,4 +376,3 @@ bitree_uwi_remove_leftmostleaf(bitree_uwi_t **tree)
 {
   return (bitree_uwi_t*) binarytree_remove_leftmostleaf((binarytree_t**)tree);
 }
-
