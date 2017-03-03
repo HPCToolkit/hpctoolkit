@@ -65,10 +65,6 @@
 //
 // 7. Fix targ401420 names in <P> tags.
 //
-// 9. Add stmts and loops that use guard aliens.
-//
-// 10. Rework locateSubtree() to better identify callee scope.
-//
 // 12. Better method for proc line num.
 //
 // 13. Handle unknown file/line more explicitly.
@@ -76,6 +72,8 @@
 // 14. Deal with alien ln fields.
 
 //***************************************************************************
+
+#include <limits.h>
 
 #include <list>
 #include <map>
@@ -94,6 +92,8 @@
 
 #define INDENT  "  "
 #define INIT_LM_INDEX  2
+
+#define GUARD_NAME  "<inline>"
 
 using namespace Inline;
 using namespace std;
@@ -135,13 +135,19 @@ doIndent(ostream * os, int depth)
 namespace BAnal {
 namespace Output {
 
+typedef map <long, TreeNode *> AlienMap;
+
 class ScopeInfo {
 public:
+  long  file_index;
   long  base_index;
+  long  line_num;
 
-  ScopeInfo(long base)
+  ScopeInfo(long file, long base, long line = 0)
   {
+    file_index = file;
     base_index = base;
+    line_num = line;
   }
 };
 
@@ -149,7 +155,13 @@ static void
 doTreeNode(ostream *, int, TreeNode *, ScopeInfo, HPC::StringTable &);
 
 static void
-locateSubtree(TreeNode *, long &, long &);
+doStmtList(ostream *, int, TreeNode *);
+
+static void
+doLoopList(ostream *, int, TreeNode *, HPC::StringTable &);
+
+static void
+locateTree(TreeNode *, ScopeInfo &, bool = false);
 
 //----------------------------------------------------------------------
 
@@ -250,7 +262,9 @@ printProc(ostream * os, FileInfo * finfo, ProcInfo * pinfo,
   }
 
   TreeNode * root = pinfo->root;
+  long file_index = strTab.str2index(finfo->name);
   long base_index = strTab.str2index(FileUtil::basename(finfo->name.c_str()));
+  ScopeInfo scope(file_index, base_index, pinfo->line_num);
 
   doIndent(os, 2);
   *os << "<P"
@@ -264,7 +278,7 @@ printProc(ostream * os, FileInfo * finfo, ProcInfo * pinfo,
       << VRANGE(pinfo->entry_vma, 1)
       << ">\n";
 
-  doTreeNode(os, 3, root, ScopeInfo(base_index), strTab);
+  doTreeNode(os, 3, root, scope, strTab);
 
   doIndent(os, 2);
   *os << "</P>\n";
@@ -272,57 +286,124 @@ printProc(ostream * os, FileInfo * finfo, ProcInfo * pinfo,
 
 //----------------------------------------------------------------------
 
+// Print the inline tree at 'root' and its statements, loops, inline
+// subtrees and guard aliens.
+//
+// Note: 'scope' is the enclosing file scope such that stmts and loops
+// that don't match this scope require a guard alien.
+//
 static void
-doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scinfo,
+doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
 	   HPC::StringTable & strTab)
 {
   if (root == NULL) {
     return;
   }
 
-  // statements that match this scope (no guard alien)
+  // partition the stmts and loops into separate trees by file (base)
+  // name.  the ones that don't match the enclosing scope require a
+  // guard alien.  this doesn't apply to inline subtrees.
+  //
+  AlienMap alienMap;
+
+  // divide stmts by file name
   for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
     StmtInfo * sinfo = sit->second;
+    VMA vma = sinfo->vma;
+    TreeNode * node;
 
-    if (1 || sinfo->base_index == scinfo.base_index) {
-      doIndent(os, depth);
-      *os << "<S"
-	  << INDEX
-	  << NUMBER("l", sinfo->line_num)
-	  << VRANGE(sinfo->vma, sinfo->len)
-	  << "/>\n";
+    // stmts with unknown file/line do not need a guard alien
+    long base_index = sinfo->base_index;
+    if (sinfo->line_num == 0) {
+      base_index = scope.base_index;
     }
+
+    auto ait = alienMap.find(base_index);
+    if (ait != alienMap.end()) {
+      node = ait->second;
+    }
+    else {
+      node = new TreeNode(sinfo->file_index);
+      alienMap[base_index] = node;
+    }
+    node->stmtMap[vma] = sinfo;
   }
 
-  // loops that match this scope (no guard alien)
+  // divide loops by file name
   for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
     LoopInfo * linfo = *lit;
+    TreeNode * node;
 
-    if (1 || linfo->base_index == scinfo.base_index) {
-      doIndent(os, depth);
-      *os << "<L"
-	  << INDEX
-	  << NUMBER("l", linfo->line_num)
-	  << STRING("f", strTab.index2str(linfo->file_index))
-	  << VRANGE(linfo->entry_vma, 1)
-	  << ">\n";
-
-      doTreeNode(os, depth + 1, linfo->node, ScopeInfo(linfo->base_index), strTab);
-
-      doIndent(os, depth);
-      *os << "</L>\n";
+    // loops with unknown file/line do not need a guard alien
+    long base_index = linfo->base_index;
+    if (linfo->line_num == 0) {
+      base_index = scope.base_index;
     }
+
+    auto ait = alienMap.find(base_index);
+    if (ait != alienMap.end()) {
+      node = ait->second;
+    }
+    else {
+      node = new TreeNode(linfo->file_index);
+      alienMap[base_index] = node;
+    }
+    node->loopList.push_back(linfo);
   }
+
+  // first, print the stmts and loops that don't need a guard alien.
+  // delete the one tree node and remove it from the map.
+  auto ait = alienMap.find(scope.base_index);
+
+  if (ait != alienMap.end()) {
+    TreeNode * node = ait->second;
+
+    doStmtList(os, depth, node);
+    doLoopList(os, depth, node, strTab);
+    alienMap.erase(ait);
+    node->clear();
+    delete node;
+  }
+
+  // second, print the stmts and loops that do need a guard alien and
+  // delete the remaining tree nodes.
+  for (auto nit = alienMap.begin(); nit != alienMap.end(); ++nit) {
+    TreeNode * node = nit->second;
+    long file_index = node->file_index;
+    long base_index = nit->first;
+    ScopeInfo alien_scope(file_index, base_index);
+
+    locateTree(node, alien_scope, true);
+
+    // guard alien
+    doIndent(os, depth);
+    *os << "<A"
+	<< INDEX
+	<< NUMBER("l", alien_scope.line_num)
+	<< STRING("f", strTab.index2str(file_index))
+	<< STRING("n", GUARD_NAME)
+	<< " v=\"{}\""
+	<< ">\n";
+
+    doStmtList(os, depth + 1, node);
+    doLoopList(os, depth + 1, node, strTab);
+
+    doIndent(os, depth);
+    *os << "</A>\n";
+
+    node->clear();
+    delete node;
+  }
+  alienMap.clear();
 
   // inline call sites, use double alien
   for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
     FLPIndex flp = nit->first;
     TreeNode * subtree = nit->second;
-    long subtree_file;
-    long subtree_line;
     string callname = BinUtil::demangleProcName(strTab.index2str(flp.proc_index));
+    ScopeInfo subscope(0, 0);
 
-    locateSubtree(subtree, subtree_file, subtree_line);
+    locateTree(subtree, subscope);
 
     // outer, caller alien.  use file and line from flp call site, but
     // empty proc name.
@@ -340,13 +421,13 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scinfo,
     doIndent(os, depth + 1);
     *os << "<A"
 	<< INDEX
-	<< NUMBER("l", subtree_line)
-	<< STRING("f", strTab.index2str(subtree_file))
+	<< NUMBER("l", subscope.line_num)
+	<< STRING("f", strTab.index2str(subscope.file_index))
 	<< STRING("n", callname)
 	<< " v=\"{}\""
 	<< ">\n";
 
-    doTreeNode(os, depth + 2, subtree, ScopeInfo(flp.base_index), strTab);
+    doTreeNode(os, depth + 2, subtree, subscope, strTab);
 
     doIndent(os, depth + 1);
     *os << "</A>\n";
@@ -358,36 +439,152 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scinfo,
 
 //----------------------------------------------------------------------
 
+// Print the terminal statements at 'node'.  Any guard alien, if
+// needed, has already been printed.
+//
 static void
-locateSubtree(TreeNode * tree, long & file, long & line)
+doStmtList(ostream * os, int depth, TreeNode * node)
 {
-  // try inline subtree
-  if (! tree->nodeMap.empty()) {
-    FLPIndex flp = tree->nodeMap.begin()->first;
-    file = flp.file_index;
-    line = flp.line_num;
+  for (auto sit = node->stmtMap.begin(); sit != node->stmtMap.end(); ++sit) {
+    StmtInfo * sinfo = sit->second;
+
+    doIndent(os, depth);
+    *os << "<S"
+	<< INDEX
+	<< NUMBER("l", sinfo->line_num)
+	<< VRANGE(sinfo->vma, sinfo->len)
+	<< "/>\n";
+  }
+}
+
+// Print the loops at 'node' and their subtrees.  Any guard alien, if
+// needed, has already been printed.
+//
+static void
+doLoopList(ostream * os, int depth, TreeNode * node, HPC::StringTable & strTab)
+{
+  for (auto lit = node->loopList.begin(); lit != node->loopList.end(); ++lit) {
+    LoopInfo * linfo = *lit;
+    ScopeInfo scope(linfo->file_index, linfo->base_index);
+
+    doIndent(os, depth);
+    *os << "<L"
+	<< INDEX
+	<< NUMBER("l", linfo->line_num)
+	<< STRING("f", strTab.index2str(linfo->file_index))
+	<< VRANGE(linfo->entry_vma, 1)
+	<< ">\n";
+
+    doTreeNode(os, depth + 1, linfo->node, scope, strTab);
+
+    doIndent(os, depth);
+    *os << "</L>\n";
+  }
+}
+
+//----------------------------------------------------------------------
+
+// Try to guess the file and line location of a subtree based on info
+// in the subtree and return the answer in 'scope'.
+//
+// This is used as the target location for alien nodes (both guard and
+// double aliens).  Inline subtrees are the most reliable, then loops
+// and statements.
+//
+// Note: if 'use_file' is true, then use the file from 'scope',
+// otherwise try to guess the correct file.
+//
+static void
+locateTree(TreeNode * node, ScopeInfo & scope, bool use_file)
+{
+  const long max_line = LONG_MAX;
+
+  if (node == NULL) {
     return;
   }
 
-  // try loop
-  if (! tree->loopList.empty()) {
-    LoopInfo * linfo = *(tree->loopList.begin());
-    file = linfo->file_index;
-    line = linfo->line_num;
+  // first, find the correct file and base.  if use_file is true, then
+  // use the answer in 'scope', else try to guess the file.
+  //
+  if (! use_file) {
+
+    // inline subtrees are the most reliable
+    for (auto nit = node->nodeMap.begin(); nit != node->nodeMap.end(); ++nit) {
+      FLPIndex flp = nit->first;
+
+      if (flp.line_num != 0) {
+	scope.file_index = flp.file_index;
+	scope.base_index = flp.base_index;
+	goto found_file;
+      }
+    }
+
+    // next, try loops
+    for (auto lit = node->loopList.begin(); lit != node->loopList.end(); ++lit) {
+      LoopInfo * linfo = *lit;
+
+      if (linfo->line_num != 0) {
+	scope.file_index = linfo->file_index;
+	scope.base_index = linfo->base_index;
+	goto found_file;
+      }
+    }
+
+    // finally, try stmts
+    for (auto sit = node->stmtMap.begin(); sit != node->stmtMap.end(); ++sit) {
+      StmtInfo * sinfo = sit->second;
+
+      if (sinfo->line_num != 0) {
+	scope.file_index = sinfo->file_index;
+	scope.base_index = sinfo->base_index;
+	goto found_file;
+      }
+    }
+  }
+found_file:
+
+  // second, guess the line number.  rescan the inline trees and loops
+  // and take the min line number among files that match.
+  //
+  scope.line_num = max_line;
+
+  for (auto nit = node->nodeMap.begin(); nit != node->nodeMap.end(); ++nit) {
+    FLPIndex flp = nit->first;
+
+    if (flp.base_index == scope.base_index && flp.line_num > 0
+	&& flp.line_num < scope.line_num) {
+      scope.line_num = flp.line_num;
+    }
+  }	
+ 
+  for (auto lit = node->loopList.begin(); lit != node->loopList.end(); ++lit) {
+    LoopInfo * linfo = *lit;
+
+    if (linfo->base_index == scope.base_index && linfo->line_num > 0
+	&& linfo->line_num < scope.line_num) {
+      scope.line_num = linfo->line_num;
+    }
+  }
+
+  // found valid line number
+  if (scope.line_num < max_line) {
     return;
   }
 
-  // try stmt
-  if (! tree->stmtMap.empty()) {
-    StmtInfo * sinfo = tree->stmtMap.begin()->second;
-    file = sinfo->file_index;
-    line = sinfo->line_num;
-    return;
+  // use stmts as a backup only if no inlines or loops
+  for (auto sit = node->stmtMap.begin(); sit != node->stmtMap.end(); ++sit) {
+    StmtInfo * sinfo = sit->second;
+
+    if (sinfo->base_index == scope.base_index && sinfo->line_num > 0
+	&& sinfo->line_num < scope.line_num) {
+      scope.line_num = sinfo->line_num;
+    }
   }
 
-  // should not happen
-  file = 0;
-  line = 0;
+  // if nothing matches, then 0 is the unknown line number
+  if (scope.line_num == max_line) {
+    scope.line_num = 0;
+  }
 }
 
 }  // namespace Output

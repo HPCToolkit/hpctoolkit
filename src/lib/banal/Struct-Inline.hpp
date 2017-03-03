@@ -287,8 +287,20 @@ public:
   NodeMap  nodeMap;
   StmtMap  stmtMap;
   LoopList loopList;
+  long  file_index;
 
-  TreeNode()
+  TreeNode(long file = 0)
+  {
+    nodeMap.clear();
+    stmtMap.clear();
+    loopList.clear();
+    file_index = file;
+  }
+
+  // shallow delete: erase the maps, but don't delete their contents.
+  // we use this when the elements are copies from other trees.
+  void
+  clear()
   {
     nodeMap.clear();
     stmtMap.clear();

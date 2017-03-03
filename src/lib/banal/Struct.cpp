@@ -550,6 +550,9 @@ makeStructure(BinUtil::LM * lm,
   Prof::Struct::LM* lmStruct = new Prof::Struct::LM(lm->name(), NULL);
   HPC::StringTable strTab;
 
+  // insert empty string "" first
+  strTab.str2index("");
+
 #if USE_LIBDWARF_LINE_MAP
   the_linemap = new LineMap;
   the_linemap->readFile(lm->name().c_str());
