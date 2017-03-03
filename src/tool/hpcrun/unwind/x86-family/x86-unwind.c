@@ -138,12 +138,6 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset);
 static fence_enum_t
 hpcrun_check_fence(void* ip);
 
-static void 
-simulate_segv(void);
-
-static void 
-help_simulate_segv(bool no_backtrace);
-
 static int
 unw_step_prefer_sp(void);
 
@@ -731,7 +725,17 @@ unw_step_std(hpcrun_unw_cursor_t* cursor)
 static step_state
 t1_dbg_unw_step(hpcrun_unw_cursor_t* cursor)
 {
-  simulate_segv();
+  if (!DEBUG_NO_LONGJMP) {
+
+    if (hpcrun_below_pmsg_threshold()) {
+      hpcrun_bt_dump(TD_GET(btbuf_cur), "DROP");
+    }
+
+    hpcrun_up_pmsg_count();
+
+    sigjmp_buf_t *it = &(TD_GET(bad_unwind));
+    (*hpcrun_get_real_siglongjmp())(it->jb, 9);
+  }
 
   return STEP_ERROR;
 }
@@ -757,32 +761,6 @@ t2_dbg_unw_step(hpcrun_unw_cursor_t* cursor)
 //****************************************************************************
 // private operations
 //****************************************************************************
-
-static void 
-help_simulate_segv(bool no_backtrace)
-{
-  if (DEBUG_NO_LONGJMP) return;
-
-  if (no_backtrace) {
-    return;
-  }
-  if (hpcrun_below_pmsg_threshold()) {
-    hpcrun_bt_dump(TD_GET(btbuf_cur), "DROP");
-  }
-
-  hpcrun_up_pmsg_count();
-
-  sigjmp_buf_t *it = &(TD_GET(bad_unwind));
-  (*hpcrun_get_real_siglongjmp())(it->jb, 9);
-}
-
-
-static void
-simulate_segv(void)
-{
-  help_simulate_segv(false);
-}
-
 
 static void
 update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
