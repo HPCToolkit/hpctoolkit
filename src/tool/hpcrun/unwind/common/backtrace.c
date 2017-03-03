@@ -162,31 +162,6 @@ hpcrun_bt_init(backtrace_t* bt, size_t size)
 }
 
 frame_t*
-hpcrun_bt_push(backtrace_t* bt, frame_t* frame)
-{
-  TMSG(BT, "pushing frame onto bt");
-  if (bt->cur > bt->end) {
-    
-    TMSG(BT, "-- push requires allocate new block and copy");
-    size_t size = 2 * bt->size;
-    // reallocate & copy
-    frame_t* new = hpcrun_malloc(sizeof(frame_t) * size);
-    memcpy(new, (void*) bt->beg, bt->len * sizeof(frame_t));
-
-    bt->beg  = new;
-    bt->size = size;
-    bt->cur  = new + bt->len;
-    bt->end  = new + (size - 1);
-  }
-  *(bt->cur) = *frame;
-  frame_t* rv = bt->cur;
-  bt->cur++;
-  bt->len++;
-  TMSG(BT, "after push, len(bt) = %d", bt->len);
-  return rv;
-}
-
-frame_t*
 hpcrun_bt_beg(backtrace_t* bt)
 {
   return bt->beg;
@@ -198,65 +173,9 @@ hpcrun_bt_last(backtrace_t* bt)
   return (bt->beg + bt->len -1);
 }
 
-size_t
-hpcrun_bt_len(backtrace_t* bt)
-{
-  return bt->len;
-}
-
-bool
-hpcrun_bt_empty(backtrace_t* bt)
-{
-  return (bt->len == 0);
-}
-
-frame_t*
-hpcrun_bt_cur(backtrace_t* bt)
-{
-  return bt->cur;
-}
-
 //
 // Some sample backtrace mutator functions
 //
-
-void
-hpcrun_bt_modify_leaf_addr(backtrace_t* bt, ip_normalized_t ip_norm)
-{
-  bt->beg->ip_norm = ip_norm;
-}
-
-void
-hpcrun_bt_add_leaf_child(backtrace_t* bt, ip_normalized_t ip_norm)
-{
-  if (bt->cur > bt->end) {
-    TMSG(BT, "adding a leaf child of ip ==> lm_id = %d and lm_ip = %p", 
-	 ip_norm.lm_id, ip_norm.lm_ip);
-  }
-  if (bt->cur > bt->end) {
-    
-    TMSG(BT, "-- bt is full, reallocate and copy current data");
-    size_t size = 2 * bt->size;
-    // reallocate & copy
-    frame_t* new = hpcrun_malloc(sizeof(frame_t) * size);
-    memmove(new, (void*) bt->beg, bt->len * sizeof(frame_t));
-
-    bt->beg  = new;
-    bt->size = size;
-    bt->cur  = new + bt->len;
-    bt->end  = new + (size - 1);
-  }
-  TMSG(BT, "BEFORE copy, innermost ip ==> lm_id = %d and lm_ip = %p", 
-       bt->beg->ip_norm.lm_id, bt->beg->ip_norm.lm_ip);
-  memcpy((void*)(bt->beg + 1), (void*) bt->beg, bt->len * sizeof(frame_t));
-  TMSG(BT, "AFTER copy, innermost ip ==> lm_id = %d and lm_ip = %p", 
-       (bt->beg + 1)->ip_norm.lm_id, (bt->beg + 1)->ip_norm.lm_ip);
-  bt->cur++;
-  bt->len++;
-  bt->beg->ip_norm = ip_norm;
-  TMSG(BT, "Leaf child added, new ip ==> lm_id = %d and lm_ip = %p", 
-       bt->beg->ip_norm.lm_id, bt->beg->ip_norm.lm_ip);
-}
 
 void
 hpcrun_bt_skip_inner(backtrace_t* bt, void* skip)

@@ -113,23 +113,11 @@ frame_t* hpcrun_bt_reset(backtrace_t* bt);
 
 void     hpcrun_bt_init(backtrace_t* bt, size_t size);
 
-frame_t* hpcrun_bt_push(backtrace_t* bt, frame_t* frame);
-
 frame_t* hpcrun_bt_beg(backtrace_t* bt);
 
 frame_t* hpcrun_bt_last(backtrace_t* bt);
 
-frame_t* hpcrun_bt_cur(backtrace_t* bt);
-
-size_t   hpcrun_bt_len(backtrace_t* bt);
-
-bool     hpcrun_bt_empty(backtrace_t* bt);
-
 bool     hpcrun_backtrace_std(backtrace_t* bt, ucontext_t* context);
-
-void hpcrun_bt_modify_leaf_addr(backtrace_t* bt, ip_normalized_t ip_norm);
-
-void hpcrun_bt_add_leaf_child(backtrace_t* bt, ip_normalized_t ip_norm);
 
 void hpcrun_dump_bt(backtrace_t* bt);
 
