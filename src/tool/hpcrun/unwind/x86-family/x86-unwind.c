@@ -251,8 +251,6 @@ hpcrun_unw_set_cursor(hpcrun_unw_cursor_t* cursor, void **sp, void **bp, void *i
   TMSG(UNW, "unw_set_cursor: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
 
-  cursor->flags = 0; // trolling_used
-
   load_module_t *lm;
   bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &(cursor->unwr_info));
 
@@ -276,7 +274,6 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   TMSG(UNW, "unw_init: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
 
-  cursor->flags = 0; // trolling_used
   bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &(cursor->unwr_info));
 
   if (!found) {
@@ -782,8 +779,6 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
       cursor->ra_loc    = ra_loc;
 
       compute_normalized_ips(cursor);
-      cursor->flags = 1; // trolling_used
-
       return; // success!
     }
     TMSG(TROLL, "No interval found for trolled pc, dropping sample,"
