@@ -59,8 +59,7 @@
 //******************************* Types *************************************
 
 typedef struct unwindr_info_s {
-  uintptr_t start;
-  uintptr_t end;
+  interval_t interval;
   load_module_t *lm;
   tree_stat_t treestat;
   bitree_uwi_t *btuwi;

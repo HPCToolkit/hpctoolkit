@@ -491,8 +491,8 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
   unwr_info->btuwi    = NULL;
   unwr_info->treestat = NEVER;
   unwr_info->lm       = NULL;
-  unwr_info->start    = 0;
-  unwr_info->end      = 0;
+  unwr_info->interval.start = 0;
+  unwr_info->interval.end   = 0;
 
   // check if addr is already in the range of an interval key in the map
   ilmstat_btuwi_pair_t* ilm_btui =
@@ -571,8 +571,7 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
   unwr_info->treestat = oldstat;
   unwr_info->lm         = ilmstat->loadmod;
   interval_t *interval  = ilmstat->interval;
-  unwr_info->start      = interval->start;
-  unwr_info->end        = interval->end;
+  unwr_info->interval   = *interval;
 
   return true;
 }

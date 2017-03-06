@@ -362,7 +362,7 @@ deep_validate_return_addr(void* addr, void* generic)
   }
 
   if( uw_recipe_map_lookup(cursor->pc_unnorm, &unwr_info) ) {
-	 void* callee = (void*)unwr_info.start;
+	 void* callee = (void*)unwr_info.interval.start;
 	    TMSG(VALIDATE_UNW, "beginning of my routine = %p", callee);
 	    if (confirm_call(addr, callee)) {
 	      TMSG(VALIDATE_UNW, "Instruction preceeding %p is a call to this routine. Unwind confirmed", addr);

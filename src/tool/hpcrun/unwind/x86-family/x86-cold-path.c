@@ -139,7 +139,7 @@ hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
         return false;
       }
 
-      void *beg = (void*)unwr_info.start;
+      void *beg = (void*)unwr_info.interval.start;
       if (branch_target == beg) {
     	TMSG(COLD_CODE,"  --jump is a regular tail call,"
 	     " NOT a cold code return");
