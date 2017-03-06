@@ -269,11 +269,7 @@ Args::Ctor()
   doDot = false;
   prettyPrintOutput = true;
   useBinutils = false;
-#ifdef BANAL_USE_PARSEAPI
   cfgRequest = BAnal::Struct::CFG_PARSEAPI;
-#else
-  cfgRequest = BAnal::Struct::CFG_OA;
-#endif
 }
 
 
