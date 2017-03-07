@@ -60,11 +60,6 @@
 #include "x86-decoder.h"
 #include "fnbounds_interface.h"
 
-typedef struct {
-  void* begin;
-  void* end;
-} fnbounds_t;
-
 static void
 x86_print_intervals(btuwi_status_t intervals)
 {
