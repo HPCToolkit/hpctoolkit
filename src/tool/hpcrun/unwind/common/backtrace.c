@@ -211,7 +211,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
     void* ip;
     hpcrun_unw_get_ip_unnorm_reg(&cursor, &ip);
 
-    if (hpcrun_trampoline_interior((void*) ip)) {
+    if (hpcrun_trampoline_interior(ip)) {
       // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
       // counting a return from a sampled frame using a trampoline.
       // drop the sample. 
@@ -220,7 +220,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
       hpcrun_unw_drop();
     }
 
-    if (hpcrun_trampoline_at_entry((void*) ip)) {
+    if (hpcrun_trampoline_at_entry(ip)) {
       if (unw_len == 0){
 	// we are about to enter the trampoline code to synchronously 
 	// record a return. for now, simply do nothing ...
