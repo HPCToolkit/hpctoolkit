@@ -303,12 +303,6 @@ hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* cursor)
   return cursor->ra_loc;
 }
 
-static bool
-fence_stop(fence_enum_t fence)
-{
-  return (fence == FENCE_MAIN) || (fence == FENCE_THREAD);
-}
-
 static step_state
 hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
 {
@@ -316,14 +310,14 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
   cursor->fence = (monitor_unwind_process_bottom_frame(pc) ? FENCE_MAIN :
 		   monitor_unwind_thread_bottom_frame(pc)? FENCE_THREAD : FENCE_NONE);
 		   
-   if (ENABLED(FENCE_UNW) && cursor->fence != FENCE_NONE)
-     TMSG(FENCE_UNW, "%s", fence_enum_name(cursor->fence));
+  if (cursor->fence != FENCE_NONE) {
+    if (ENABLED(FENCE_UNW))
+      TMSG(FENCE_UNW, "%s", fence_enum_name(cursor->fence));
 
-  //-----------------------------------------------------------
-  // check if we have reached the end of our unwind, which is
-  // demarcated with a fence. 
-  //-----------------------------------------------------------
-  if (fence_stop(cursor->fence)) {
+    //-----------------------------------------------------------
+    // check if we have reached the end of our unwind, which is
+    // demarcated with a fence. 
+    //-----------------------------------------------------------
     TMSG(UNW,"unw_step: STEP_STOP, current pc in monitor fence pc=%p\n", pc);
     return STEP_STOP;
   }
