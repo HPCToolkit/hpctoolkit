@@ -109,10 +109,6 @@ void hpcrun_bt_dump(frame_t* unwind, const char* tag);
 
 void     hpcrun_bt_init(backtrace_t* bt, size_t size);
 
-frame_t* hpcrun_bt_beg(backtrace_t* bt);
-
-frame_t* hpcrun_bt_last(backtrace_t* bt);
-
 bool     hpcrun_backtrace_std(backtrace_t* bt, ucontext_t* context);
 
 bool hpcrun_generate_backtrace(backtrace_info_t* bt,

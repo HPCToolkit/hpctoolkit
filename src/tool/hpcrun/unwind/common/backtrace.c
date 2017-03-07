@@ -149,18 +149,6 @@ hpcrun_bt_init(backtrace_t* bt, size_t size)
 }
 
 frame_t*
-hpcrun_bt_beg(backtrace_t* bt)
-{
-  return bt->beg;
-}
-
-frame_t*
-hpcrun_bt_last(backtrace_t* bt)
-{
-  return (bt->beg + bt->len -1);
-}
-
-frame_t*
 hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
 		   int skip)
 {
