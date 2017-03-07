@@ -21,21 +21,6 @@
 
 
 //******************************************************************************
-// Constructors
-//******************************************************************************
-
-ildmod_stat_t *
-ildmod_stat_build(uintptr_t start, uintptr_t end, load_module_t *ldmod,
-		  tree_stat_t treestat, mem_alloc m_alloc)
-{
-  ildmod_stat_t *ilmstat = m_alloc(sizeof(*ilmstat));
-  ilmstat->interval = interval_t_new(start, end, m_alloc);
-  ilmstat->loadmod = ldmod;
-  atomic_store_explicit(&ilmstat->stat, treestat, memory_order_relaxed);
-  return ilmstat;
-}
-
-//******************************************************************************
 // String output
 //******************************************************************************
 
