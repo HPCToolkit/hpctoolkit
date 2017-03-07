@@ -266,9 +266,62 @@ ilmstat_btuwi_pair_free(ilmstat_btuwi_pair_t* pair)
   mcs_unlock(&GFL_lock, &me);
 }
 
+//---------------------------------------------------------------------
+// local data
+//---------------------------------------------------------------------
+
+// The concrete representation of the abstract data type unwind recipe map.
+static cskiplist_t *addr2recipe_map = NULL;
+
+// memory allocator for creating addr2recipe_map
+// and inserting entries into addr2recipe_map:
+static mem_alloc my_alloc = hpcrun_malloc;
+
 //******************************************************************************
 // String output
 //******************************************************************************
+
+
+#define MAX_STAT_STR 14
+#define LDMOD_NAME_LEN 128
+#define MAX_ILDMODSTAT_STR MAX_INTERVAL_STR+LDMOD_NAME_LEN+MAX_STAT_STR
+
+static void
+load_module_tostr(void* lm, char str[])
+{
+  load_module_t* ldmod = (load_module_t*)lm;
+  if (ldmod) {
+	snprintf(str, LDMOD_NAME_LEN, "%s%s%d", ldmod->name, " ", ldmod->id);
+  }
+  else {
+	snprintf(str, LDMOD_NAME_LEN, "%s", "nil");
+  }
+}
+
+static void
+treestat_tostr(tree_stat_t stat, char str[])
+{
+  switch (stat) {
+  case NEVER: strcpy(str, "      NEVER"); break;
+  case DEFERRED: strcpy(str, "   DEFERRED"); break;
+  case FORTHCOMING: strcpy(str, "FORTHCOMING"); break;
+  case READY: strcpy(str, "      READY"); break;
+  default: strcpy(str, "STAT_ERROR");
+  }
+}
+
+static void
+ildmod_stat_tostr(void* ilms, char str[])
+{
+  ildmod_stat_t* ildmod_stat = (ildmod_stat_t*)ilms;
+  char intervalstr[MAX_INTERVAL_STR];
+  interval_t_tostr(ildmod_stat->interval, intervalstr);
+  char ldmodstr[LDMOD_NAME_LEN];
+  load_module_tostr(ildmod_stat->loadmod, ldmodstr);
+  char statstr[MAX_STAT_STR];
+  treestat_tostr(atomic_load_explicit(&ildmod_stat->stat, memory_order_relaxed), statstr);
+  sprintf(str, "(%s %s %s)", intervalstr, ldmodstr, statstr);
+}
 
 /*
  * Compute the string representation of ilmstat_btuwi_pair_t with appropriate
@@ -296,16 +349,55 @@ max_ilmstat_btuwi_pair_len()
 }
 
 
-//---------------------------------------------------------------------
-// local data
-//---------------------------------------------------------------------
+static char
+ILdMod_Stat_MaxSpaces[] = "                                                                              ";
 
-// The concrete representation of the abstract data type unwind recipe map.
-static cskiplist_t *addr2recipe_map = NULL;
+/*
+ * the max spaces occupied by "([start_address ... end_address), load module xx, status)
+ */
+static char*
+ildmod_stat_maxspaces()
+{
+  return ILdMod_Stat_MaxSpaces;
+}
 
-// memory allocator for creating addr2recipe_map
-// and inserting entries into addr2recipe_map:
-static mem_alloc my_alloc = hpcrun_malloc;
+/*
+ * Compute a string representation of map and store result in str.
+ */
+/*
+ * pre-condition: *nodeval is an ilmstat_btuwi_pair_t.
+ */
+
+static void
+cskl_ilmstat_btuwi_node_tostr(void* nodeval, int node_height, int max_height,
+	char str[], int max_cskl_str_len)
+{
+  cskl_levels_tostr(node_height, max_height, str, max_cskl_str_len);
+
+  // build needed indentation to print the binary tree inside the skiplist:
+  char cskl_itpair_treeIndent[MAX_CSKIPLIST_STR];
+  cskl_itpair_treeIndent[0] = '\0';
+  int indentlen= strlen(cskl_itpair_treeIndent);
+  strncat(cskl_itpair_treeIndent, str, MAX_CSKIPLIST_STR - indentlen -1);
+  indentlen= strlen(cskl_itpair_treeIndent);
+  strncat(cskl_itpair_treeIndent, ildmod_stat_maxspaces(), MAX_CSKIPLIST_STR - indentlen -1);
+
+  // print the binary tree with the proper indentation:
+  char itpairstr[max_ilmstat_btuwi_pair_len()];
+  ilmstat_btuwi_pair_t* node_val = (ilmstat_btuwi_pair_t*)nodeval;
+  ilmstat_btuwi_pair_tostr_indent(node_val, cskl_itpair_treeIndent, itpairstr);
+
+  // add new line:
+  cskl_append_node_str(itpairstr, str, max_cskl_str_len);
+}
+
+void
+uw_recipe_map_print(void)
+{
+  char buf[MAX_CSKIPLIST_STR];
+  cskl_tostr(addr2recipe_map, cskl_ilmstat_btuwi_node_tostr, buf, MAX_CSKIPLIST_STR);
+  printf("%s", buf);
+}
 
 //---------------------------------------------------------------------
 // private operations
@@ -583,41 +675,3 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
 //---------------------------------------------------------------------
 // debug operations
 //---------------------------------------------------------------------
-
-/*
- * Compute a string representation of map and store result in str.
- */
-/*
- * pre-condition: *nodeval is an ilmstat_btuwi_pair_t.
- */
-
-static void
-cskl_ilmstat_btuwi_node_tostr(void* nodeval, int node_height, int max_height,
-	char str[], int max_cskl_str_len)
-{
-  cskl_levels_tostr(node_height, max_height, str, max_cskl_str_len);
-
-  // build needed indentation to print the binary tree inside the skiplist:
-  char cskl_itpair_treeIndent[MAX_CSKIPLIST_STR];
-  cskl_itpair_treeIndent[0] = '\0';
-  int indentlen= strlen(cskl_itpair_treeIndent);
-  strncat(cskl_itpair_treeIndent, str, MAX_CSKIPLIST_STR - indentlen -1);
-  indentlen= strlen(cskl_itpair_treeIndent);
-  strncat(cskl_itpair_treeIndent, ildmod_stat_maxspaces(), MAX_CSKIPLIST_STR - indentlen -1);
-
-  // print the binary tree with the proper indentation:
-  char itpairstr[max_ilmstat_btuwi_pair_len()];
-  ilmstat_btuwi_pair_t* node_val = (ilmstat_btuwi_pair_t*)nodeval;
-  ilmstat_btuwi_pair_tostr_indent(node_val, cskl_itpair_treeIndent, itpairstr);
-
-  // add new line:
-  cskl_append_node_str(itpairstr, str, max_cskl_str_len);
-}
-
-void
-uw_recipe_map_print(void)
-{
-  char buf[MAX_CSKIPLIST_STR];
-  cskl_tostr(addr2recipe_map, cskl_ilmstat_btuwi_node_tostr, buf, MAX_CSKIPLIST_STR);
-  printf("%s", buf);
-}
