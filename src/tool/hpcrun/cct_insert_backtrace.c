@@ -409,7 +409,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
 
   // *trace_pc = bt.trace_pc;  // JMC
 
-  if (bt.trolled) hpcrun_stats_trolled_inc();
+  if (bt.n_trolls != 0) hpcrun_stats_trolled_inc();
   hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));
   hpcrun_stats_trolled_frames_inc((long) bt.n_trolls);
 

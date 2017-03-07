@@ -20,7 +20,6 @@ typedef struct {
   frame_t* last;      // ending frame of backtrace (inclusive)
   fence_enum_t fence; // Type of stop -- thread or main *only meaninful when good unwind
   bool     has_tramp; // true when a trampoline short-circuited the unwind
-  bool     trolled;   // true when ANY frame in the backtrace came from a troll
   size_t   n_trolls;  // # of frames that resulted from trolling
   bool     bottom_frame_elided; // true if bottom frame has been elided 
   bool     partial_unwind; // true if not a full unwind

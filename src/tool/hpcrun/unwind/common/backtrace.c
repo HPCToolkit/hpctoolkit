@@ -182,7 +182,6 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 {
   TMSG(BT, "Generate backtrace (no tramp), skip inner = %d", skipInner);
   bt->has_tramp = false;
-  bt->trolled  = false;
   bt->n_trolls = 0;
   bt->fence = FENCE_BAD;
   bt->bottom_frame_elided = false;
@@ -254,7 +253,6 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 
     ret = hpcrun_unw_step(&cursor);
     if (ret == STEP_TROLL) {
-      bt->trolled = true;
       bt->n_trolls++;
     }
     if (ret <= 0) {
