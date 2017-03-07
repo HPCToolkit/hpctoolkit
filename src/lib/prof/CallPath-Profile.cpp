@@ -833,7 +833,7 @@ namespace Prof {
 namespace CallPath {
 
 const char* Profile::FmtEpoch_NV_virtualMetrics = "is-virtual-metrics";
-const string helper_metric_prefix = string(PREFIX_HELPER_METRIC);
+//const string helper_metric_prefix = string(PREFIX_HELPER_METRIC);
 
 Profile*
 Profile::make(uint rFlags)
@@ -1172,11 +1172,9 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     string profRelId = StrUtil::toStr(i);
 
     bool doMakeInclExcl = (rFlags & RFlg_MakeInclExcl);
-    bool isHelperMetric = nm.compare(0, helper_metric_prefix.size(), 
-			    helper_metric_prefix) == 0;
 
     // Certain metrics do not have both incl/excl values
-    if (nm == HPCRUN_METRIC_RetCnt || isHelperMetric) {
+    if (nm == HPCRUN_METRIC_RetCnt) {
       doMakeInclExcl = false;
     }
     
@@ -1200,7 +1198,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       m->type(Metric::ADesc::TyIncl);
     }
     else {
-      if (nm == HPCRUN_METRIC_RetCnt || isHelperMetric) {
+      if (nm == HPCRUN_METRIC_RetCnt) {
 	m->type(Metric::ADesc::TyExcl);
       }
       else {
@@ -1368,7 +1366,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 
       double res = eval.Eval(expr, &var_map);
       if (eval.GetErr() == EEE_NO_ERROR) {
-        hpcrun_fmt_metric_set_value_real(&(m_lst[i].flags), 
+        hpcrun_fmt_metric_set_value_real(&(m_lst[i].flags),
              &(nodeFmt.metrics[i]), res);
       }
     }

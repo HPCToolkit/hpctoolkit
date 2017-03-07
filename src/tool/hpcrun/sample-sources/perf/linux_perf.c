@@ -1188,25 +1188,20 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (perf_multiplex == 1) {
       const size_t MAX_LABEL_CHARS = 80;
 
-      // the formula for the estimate count = raw_count * scale_factor
-      //             = metric(i) * metric(i+1)
-      if (m != NULL) {
-        char *buffer = (char*)hpcrun_malloc(sizeof(char) * MAX_LABEL_CHARS); 
-        sprintf(buffer, "($%d*$%d)", i, i+1);
-        m -> formula = buffer;
-      }
-
       // create metric for application's scale factor (i.e  time enabled/time running)
       char *scale_factor_metric = (char *) hpcrun_malloc(sizeof (char)*MAX_LABEL_CHARS);
-      snprintf(scale_factor_metric, MAX_LABEL_CHARS, "%s%s", PREFIX_HELPER_METRIC, name ); // SF: Scale factor
+      snprintf(scale_factor_metric, MAX_LABEL_CHARS, "%s%s", PREFIX_HELPER_METRIC, name ); 
 
       event_desc[i].metric_scale = hpcrun_new_metric();
 
       metric_desc_t *ms = hpcrun_set_metric_info_and_period(event_desc[i].metric_scale, 
-        scale_factor_metric, MetricFlags_ValFmt_Real, 
-        1, metric_property_none);
+        scale_factor_metric, MetricFlags_ValFmt_Real, threshold, metric_property_none);
       if (ms == NULL) {
         EMSG("Error: unable to create metric #%d: %s", index, name);
+      } else {
+    	// specific metric, just to help to compute the scale factor
+    	// hpcprof can remove it if needed.
+    	// ms->flags.fields.ty = MetricFlags_Ty_Helper;
       }
     }
   }
@@ -1361,9 +1356,12 @@ perf_event_handler(
       u64 time_enabled = current->mmap->time_enabled;
       u64 time_running = current->mmap->time_running;
 
-      cct_node_t *node = sv.sample_node;
+      // the formula for the estimate count = raw_count * scale_factor
+      //									= 1 * time_enabled / time running
       double scale_f   = (double) time_enabled / time_running;
-      cct_metric_data_set( current->event->metric_scale, node, 
+
+      cct_node_t *node = sv.sample_node;
+      cct_metric_data_increment( current->event->metric_scale, node,
         (cct_metric_data_t){.r =  scale_f });
     }
     blame_shift_apply( current->event->metric, sv.sample_node, 1 /*metricIncr*/);

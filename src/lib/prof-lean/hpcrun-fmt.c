@@ -343,7 +343,7 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs,
 
   // FIXME: tallent: temporarily support old non-portable convention
   if ( !(x->flags.fields.ty == MetricFlags_Ty_Raw
-	 || x->flags.fields.ty == MetricFlags_Ty_Final)
+	   || x->flags.fields.ty == MetricFlags_Ty_Final)
        || x->flags.fields.unused0 != 0
        || x->flags.fields.unused1 != 0) {
     fseek(fs, -sizeof(x->flags), SEEK_CUR);
