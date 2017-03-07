@@ -188,8 +188,6 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
   bt->bottom_frame_elided = false;
   bt->partial_unwind = true;
 
-  bool tramp_found = false;
-
   step_state ret = STEP_ERROR; // default return value from stepper
 
   //--------------------------------------------------------------------
@@ -230,7 +228,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
       }
       else {
 	// we have encountered a trampoline in the middle of an unwind.
-	bt->has_tramp = (tramp_found = true);
+	bt->has_tramp = true;
 	TMSG(TRAMP, "--CURRENT UNWIND FINDS TRAMPOLINE @ (sp:%p, bp:%p", cursor.sp, cursor.bp);
 	// no need to unwind further. the outer frames are already known.
 
