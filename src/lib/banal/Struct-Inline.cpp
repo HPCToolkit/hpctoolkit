@@ -237,10 +237,11 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 	InlinedFunction *ifunc = static_cast <InlinedFunction *> (func);
 	pair <string, Offset> callsite = ifunc->getCallsite();
 
-#ifdef SYMTAB_NEW_NAME_ITERATOR
+#if 1
 	string procnm = func->getName();
         if (procnm == "") { procnm = UNKNOWN_PROC; }
 #else
+	// pre-9.0 version
 	vector <string> name_vec = func->getAllMangledNames();
 	string procnm = (! name_vec.empty()) ? name_vec[0] : UNKNOWN_PROC;
 #endif
