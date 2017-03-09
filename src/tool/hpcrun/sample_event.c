@@ -228,6 +228,9 @@ hpcrun_sample_callpath(void* context, int metricId,
   cct_node_t* node = NULL;
   epoch_t* epoch = td->core_profile_trace_data.epoch;
 
+  // --------------------------------------
+  // start of handling sample
+  // --------------------------------------
   hpcrun_set_handling_sample(td);
   ip_normalized_t leaf_func;
 
@@ -264,6 +267,10 @@ hpcrun_sample_callpath(void* context, int metricId,
 				 metricId, metricIncr, skipInner, NULL);
     hpcrun_cleanup_partial_unwind();
   }
+  // --------------------------------------
+  // end of handling sample
+  // --------------------------------------
+  hpcrun_clear_handling_sample(td);
 
   ret.sample_node = node;
 
@@ -287,7 +294,6 @@ hpcrun_sample_callpath(void* context, int metricId,
     TMSG(TRACE, "Appended func_proxy node to trace");
   }
 
-  hpcrun_clear_handling_sample(td);
   if (TD_GET(mem_low) || ENABLED(FLUSH_EVERY_SAMPLE)) {
     hpcrun_flush_epochs(&(TD_GET(core_profile_trace_data)));
     hpcrun_reclaim_freeable_mem();

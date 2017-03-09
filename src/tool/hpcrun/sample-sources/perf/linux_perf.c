@@ -216,7 +216,6 @@ typedef struct event_thread_s {
  * external thread-local variables
  *****************************************************************************/
 
-extern __thread bool hpcrun_thread_suppress_sample;
 
 
 
@@ -805,25 +804,25 @@ perf_add_kernel_callchain(
   if (perf_read_header(current_perf_mmap, &hdr) == 0) {
     if (hdr.type == PERF_RECORD_SAMPLE) {
       if (hdr.size <= 0) {
-  return parent;
+        return parent;
       }
       int sample_type = current->event->attr.sample_type;
 
       if (sample_type & PERF_SAMPLE_IDENTIFIER) {
       }
       if (sample_type & PERF_SAMPLE_IP) {
-  // to be used by datacentric event
-  u64 ip;
-  perf_read_u64(current_perf_mmap, &ip);
+       // to be used by datacentric event
+       u64 ip;
+       perf_read_u64(current_perf_mmap, &ip);
       }
       if (sample_type & PERF_SAMPLE_TID) {
       }
       if (sample_type & PERF_SAMPLE_TIME) {
       }
       if (sample_type & PERF_SAMPLE_ADDR) {
-  // to be used by datacentric event
-  u64 addr;
-  perf_read_u64(current_perf_mmap, &addr);
+        // to be used by datacentric event
+       u64 addr;
+       perf_read_u64(current_perf_mmap, &addr);
       }
       if (sample_type & PERF_SAMPLE_ID) {
       }
@@ -834,13 +833,13 @@ perf_add_kernel_callchain(
       if (sample_type & PERF_SAMPLE_PERIOD) {
       }
       if (sample_type & PERF_SAMPLE_READ) {
-  // to be used by datacentric event
-  handle_struct_read_format(current_perf_mmap,
-       current->event->attr.read_format);
+        // to be used by datacentric event
+        handle_struct_read_format(current_perf_mmap,
+        current->event->attr.read_format);
       }
       if (sample_type & PERF_SAMPLE_CALLCHAIN) {
-  // add call chain from the kernel
-   parent = perf_sample_callchain(current_perf_mmap, parent);
+        // add call chain from the kernel
+        parent = perf_sample_callchain(current_perf_mmap, parent);
       }
       if (sample_type & PERF_SAMPLE_RAW) {
       }
@@ -985,7 +984,7 @@ METHOD_FN(start)
   }
 
   int nevents  = (self->evl).nevents; 
-  event_thread = (event_thread_t*) hpcrun_malloc(sizeof(event_thread) * nevents); 
+  event_thread = (event_thread_t*) hpcrun_malloc(sizeof(event_thread_t) * nevents);
   
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
@@ -1365,6 +1364,7 @@ perf_event_handler(
         (cct_metric_data_t){.r =  scale_f });
     }
     blame_shift_apply( current->event->metric, sv.sample_node, 1 /*metricIncr*/);
+    TMSG(LINUX_PERF, "node: %x", sv.sample_node);
   } else {
     // signal not from perf event
     TMSG(LINUX_PERF, "signal si_code %d with fd %d: unknown perf event", 
