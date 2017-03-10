@@ -568,7 +568,7 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
 
   bitree_uwi_t *btuwi = ilm_btui->btuwi;
   unwr_info->btuwi    = bitree_uwi_inrange(btuwi, (uintptr_t)addr);
-  unwr_info->treestat = oldstat;
+  unwr_info->treestat = READY;
   unwr_info->lm         = ilmstat->loadmod;
   interval_t *interval  = ilmstat->interval;
   unwr_info->start      = interval->start;
