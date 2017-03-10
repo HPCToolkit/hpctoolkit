@@ -58,9 +58,7 @@ MYSOURCES = \
 	Linemap.cpp  \
 	Struct.cpp  \
 	Struct-Inline.cpp  \
-	Struct-LocationMgr.cpp  \
-	Struct-Output.cpp  \
-	StructSimple.cpp
+	Struct-Output.cpp
 
 SIMPLE_SRCS = StructSimple.cpp
 
@@ -71,8 +69,6 @@ MYCXXFLAGS = \
 	-I$(BOOST_INC)  \
 	-I$(LIBDWARF_INC)  \
 	-I$(SYMTABAPI_INC)
-
-MYCXXFLAGS += -DBANAL_USE_SYMTAB -DBANAL_USE_PARSEAPI
 
 MYLIBADD = @HOST_LIBTREPOSITORY@
 
