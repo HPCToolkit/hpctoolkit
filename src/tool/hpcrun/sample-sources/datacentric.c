@@ -97,19 +97,19 @@ static int free_metric_id = -1;
  * segv signal handler
  *****************************************************************************/
 // this segv handler is used to monitor first touches
-int
+void
 segv_handler (int signal_number, siginfo_t *si, void *context)
 {
   int pagesize = getpagesize();
   if (TD_GET(inside_hpcrun) && si && si->si_addr) {
     void *p = (void *)(((uint64_t)(uintptr_t) si->si_addr) & ~(pagesize-1));
     mprotect (p, pagesize, PROT_READ | PROT_WRITE);
-    return 1;
+    return;
   }
   hpcrun_safe_enter();
   if (!si || !si->si_addr) {
     hpcrun_safe_exit();
-    return 1;
+    return;
   }
   void *start, *end;
   cct_node_t *data_node = splay_lookup((void *)si->si_addr, &start, &end);
@@ -127,13 +127,18 @@ segv_handler (int signal_number, siginfo_t *si, void *context)
     mprotect (p, pagesize, PROT_READ | PROT_WRITE);
   }
   hpcrun_safe_exit();
-  return 0;
+  return;
 }
 
 static inline void
 set_segv_handler()
 {
-  monitor_sigaction(SIGSEGV, segv_handler, 0, NULL);
+  struct sigaction sa;
+
+  sa.sa_flags = SA_SIGINFO;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_sigaction = segv_handler;
+  sigaction(SIGSEGV, &sa, NULL);
 }
 
 /******************************************************************************

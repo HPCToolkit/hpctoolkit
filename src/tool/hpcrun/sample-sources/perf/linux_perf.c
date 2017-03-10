@@ -1364,7 +1364,6 @@ perf_event_handler(
         (cct_metric_data_t){.r =  scale_f });
     }
     blame_shift_apply( current->event->metric, sv.sample_node, 1 /*metricIncr*/);
-    TMSG(LINUX_PERF, "node: %x", sv.sample_node);
   } else {
     // signal not from perf event
     TMSG(LINUX_PERF, "signal si_code %d with fd %d: unknown perf event", 
