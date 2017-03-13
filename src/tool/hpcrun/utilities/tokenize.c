@@ -57,6 +57,8 @@
 
 #define MIN(a,b)  (((a)<=(b))?(a):(b))
 
+#define EVENT_DELIMITER '@'
+
 static char *tmp;
 static char *tk;
 static char *last;
@@ -87,37 +89,49 @@ next_tok(void)
   return tk;
 }
 
-// Returns: 1 if event has explicit threshold, 0 if using default.
-//
+// event option syntax is event_name @ [f] threshold
+//   if the f indicator exist, the number is the frequency, otherwise
+//   it's a period number
+// Returns: 
+//   2 if event has explicit frequency
+//   1 if event has explicit period threshold, 
+//   0 if using default.
+// 
 int
 hpcrun_extract_ev_thresh(const char *in, int evlen, char *ev, long *th, long def)
 {
-  unsigned int len;
+  unsigned int len, threshold_pos;
+  int result = 0;
 
-  char *dlm = strrchr(in, '@');
+  char *dlm = strrchr(in, EVENT_DELIMITER);
   if (!dlm) {
     dlm = strrchr(in, ':');
   }
   if (dlm) {
-    if (isdigit(dlm[1])) { // assume this is the threshold
+    threshold_pos = 0;
+    if (dlm[1] == 'f') {        // frequency
+      result = 2;
+      threshold_pos = 1;        // increment position to remove the letter 'f'
+    } else if (isdigit(dlm[1])) 
+      result = 1;               // period threshold
+    else result = 0;            // no number, just gibrish characters
+
+    if (result > 0) {           // assume this is the threshold 
       len = MIN(dlm - in, evlen);
       strncpy(ev, in, len);
       ev[len] = '\0';
     }
-    else {
-      dlm = NULL;
-    }
   }
 
-  if (!dlm) {
+  if (result == 0) {     // no threshold or the threshold is not a number
     len = strlen(in);
     strncpy(ev, in, len);
     ev[len] = '\0';
   }
   
-  *th = dlm ? strtol(dlm+1,(char **)NULL,10) : def;
+  *th = result>0 ? strtol(dlm+1+threshold_pos,(char **)NULL,10) : def;
 
-  return dlm != NULL;
+  return result;
 }
 
 //
