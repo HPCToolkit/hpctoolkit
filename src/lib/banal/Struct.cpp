@@ -288,13 +288,9 @@ makeDotFile(std::ostream * dotFile, CodeObject * code_obj)
 //
 void
 makeStructure(BinUtil::LM * lm,
-	      std::ostream * outFile,
-	      std::ostream * dotFile,
-	      NormTy doNormalizeTy,
-	      bool isIrrIvalLoop,
-	      bool isFwdSubst,
-	      ProcNameMgr* procNmMgr,
-	      const std::string& dbgProcGlob)
+	      ostream * outFile,
+	      ostream * dotFile,
+	      ProcNameMgr * procNmMgr)
 {
   HPC::StringTable strTab;
 

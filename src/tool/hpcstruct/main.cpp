@@ -185,8 +185,7 @@ realmain(int argc, char* argv[])
   // ------------------------------------------------------------
   BinUtil::LM* lm = NULL;
   try {
-    BinUtil::LM::ReadFlg read_flag = (args.cfgRequest == BAnal::Struct::CFG_OA) ?
-      BinUtil::LM::ReadFlg_ALL : BinUtil::LM::ReadFlg_Proc;
+    BinUtil::LM::ReadFlg read_flag = BinUtil::LM::ReadFlg_Proc;
 
     lm = new BinUtil::LM(args.useBinutils);
     lm->open(args.in_filenm.c_str());
@@ -245,11 +244,7 @@ realmain(int argc, char* argv[])
     procNameMgr = new CilkNameMgr;
   }
 
-  makeStructure(lm, outFile, dotFile,
-		args.doNormalizeTy,
-		args.isIrreducibleIntervalLoop,
-		args.isForwardSubstitution,
-		procNameMgr, args.dbgProcGlob);
+  BAnal::Struct::makeStructure(lm, outFile, dotFile, procNameMgr);
 
   // Cleanup
   delete lm;

@@ -53,46 +53,18 @@
 #define BAnal_Struct_hpp
 
 #include <ostream>
-#include <string>
 
-#include <include/uint.h>
-#include <lib/prof/Struct-Tree.hpp>
 #include <lib/binutils/LM.hpp>
 #include <lib/support/ProcNameMgr.hpp>
 
 namespace BAnal {
 namespace Struct {
 
-  enum CFG {
-    CFG_DEFAULT = 1,
-    CFG_OA,
-    CFG_PARSEAPI
-  };
-
-  enum NormTy {
-    // TODO: redo along the lines of BinUtil::LM::ReadFlg
-    NormTy_None,
-    NormTy_Safe, // Safe-only
-    NormTy_All
-  };
-
-  void
-  makeStructure(BinUtil::LM* lm, 
-		std::ostream * outFile,
-		std::ostream * dotFile,
-		NormTy doNormalizeTy,
-		bool isIrrIvalLoop = false,
-		bool isFwdSubst = false,
-		ProcNameMgr* procNameMgr = NULL,
-		const std::string& dbgProcGlob = "");
-  
-  Prof::Struct::Stmt*
-  makeStructureSimple(Prof::Struct::LM* lmStrct, BinUtil::LM* lm, VMA vma);
-
-#if 0
-  bool 
-  normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe = true);
-#endif
+void
+makeStructure(BinUtil::LM* lm, 
+	      std::ostream * outFile,
+	      std::ostream * dotFile,
+	      ProcNameMgr* procNameMgr = NULL);
 
 } // namespace Struct
 } // namespace BAnal
