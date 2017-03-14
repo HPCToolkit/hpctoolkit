@@ -323,20 +323,25 @@ makeStructure(BinUtil::LM * lm,
   Output::printStructFileBegin(outFile);
   Output::printLoadModuleBegin(outFile, lm->name());
 
+  // process the files in the skeleton map
   for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
     FileInfo * finfo = fit->second;
 
     Output::printFileBegin(outFile, finfo);
 
+    // process the groups within one file
     for (auto git = finfo->groupMap.begin(); git != finfo->groupMap.end(); ++git) {
       GroupInfo * ginfo = git->second;
 
+      // make the inline tree for all funcs in one group
       doFunctionList(symtab, finfo, ginfo, strTab);
 
       for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
 	ProcInfo * pinfo = pit->second;
-
 	Output::printProc(outFile, finfo, pinfo, strTab);
+
+	delete pinfo->root;
+	pinfo->root = NULL;
       }
     }
     Output::printFileEnd(outFile, finfo);
@@ -469,6 +474,10 @@ makeSkeleton(BinUtil::LM * lm, CodeObject * code_obj, ProcNameMgr * procNmMgr)
 
 //----------------------------------------------------------------------
 
+// Process the functions in one binutils group.  For each ParseAPI
+// function in the group, create the inline tree and fill in the
+// TreeNode ptr in ProcInfo.
+//
 // One binutils proc may contain multiple embedded parseapi functions.
 // In that case, we create new proc/file scope nodes for each function
 // and strip the inline prefix at the call source from the embed
