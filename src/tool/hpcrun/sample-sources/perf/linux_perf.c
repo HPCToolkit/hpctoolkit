@@ -111,13 +111,13 @@
 #include "perfmon-util.h"
 #endif
 
-#include "perf-util.h"    // u64
+#include "perf-util.h"    // u64, u32 and perf_mmap_data_t
 
 //******************************************************************************
 // macros
 //******************************************************************************
 
-#define DEFAULT_THRESHOLD  2000000L
+#define DEFAULT_THRESHOLD  1000
 
 #ifndef sigev_notify_thread_id
 #define sigev_notify_thread_id  _sigev_un._tid
@@ -196,18 +196,19 @@ typedef struct event_predefined_s {
 typedef struct event_info_s {
   int       id;
   struct perf_event_attr attr; // the event attribute
-  int       metric;  // metric of the event
-  int       metric_scale;  // scale factor (if multiplexed)
+  int       metric;            // metric ID of the event (raw counter)
+  int       metric_scale;      // metric ID of the adjusted counter
+  metric_desc_t *metric_desc;  // pointer on hpcrun metric descriptor 
 
-  struct event_info_s    *next; // pointer to the next item
+  struct event_info_s   *next; // pointer to the next item
 } event_info_t;
 
 
 // data perf event per thread per event
 // this data is designed to be used within a thread
 typedef struct event_thread_s {
-  pe_mmap_t   *mmap;  // mmap buffer
-  int    fd;  // file descriptor of the event 
+  pe_mmap_t   *mmap;    // mmap buffer
+  int    fd;            // file descriptor of the event 
   event_info_t  *event; // pointer to main event description
 } event_thread_t;
 
@@ -303,7 +304,7 @@ static int perf_multiplex = 0;
 static int perf_precise_ip = PERF_EVENT_AUTODETECT_SKID;
 
 // a list of main description of events, shared between threads
-// once initialize, this doesn't change
+// once initialize, this list doesn't change (but event description can change)
 static event_info_t  *event_desc; 
 
 
@@ -420,6 +421,16 @@ perf_read_header(
 
 
 static inline int
+perf_read_u32(
+  pe_mmap_t *current_perf_mmap,
+  u32 *val
+)
+{
+  return perf_read(current_perf_mmap, val, sizeof(u32));
+}
+
+
+static inline int
 perf_read_u64(
   pe_mmap_t *current_perf_mmap,
   u64 *val
@@ -501,6 +512,7 @@ static int
 perf_attr_init(
   const char *name,
   struct perf_event_attr *attr,
+  bool usePeriod,
   long threshold
 )
 {
@@ -530,7 +542,14 @@ perf_attr_init(
   attr->type   = event_type;       /* Type of event     */
   attr->config = event_code;       /* Type-specific configuration */
 
-  attr->sample_period = threshold;     /* Period of sampling     */
+  if (!usePeriod) {
+    sample_type        |= PERF_SAMPLE_PERIOD;
+    attr->freq          = 1;
+    attr->sample_freq   = threshold;         /* Frequency of sampling  */
+  } else {
+    attr->freq          = 0;
+    attr->sample_period = threshold;         /* Period of sampling     */
+  }
   attr->precise_ip    = perf_precise_ip;   /*  requested to have 0 skid.  */
   attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
   attr->disabled      = 1;       /* the counter will be enabled later  */
@@ -731,41 +750,32 @@ handle_struct_read_format( pe_mmap_t *perf_mmap, int read_format)
 
 
 //----------------------------------------------------------
-// signal handling and processing of kernel callchains
+// processing of kernel callchains
 //----------------------------------------------------------
 
-static cct_node_t *
-perf_sample_callchain(pe_mmap_t *current_perf_mmap, cct_node_t *leaf)
+static int
+perf_sample_callchain(pe_mmap_t *current_perf_mmap, perf_mmap_data_t* mmap_data)
 {
-  cct_node_t *parent = leaf;  // parent of the cct
-  u64 n_frames;     // check of sample type
+  mmap_data->nr = 0;     // initialze the number of records to be 0
 
   // determine how many frames in the call chain 
-  if (perf_read_u64( current_perf_mmap, &n_frames) == 0) {
-    if (n_frames > 0) {
+  if (perf_read_u64( current_perf_mmap, &mmap_data->nr) == 0) {
+    if (mmap_data->nr > 0) {
       // allocate space to receive IPs for kernel callchain 
-      u64 *ips = alloca(n_frames * sizeof(u64));
+      mmap_data->ips = alloca(mmap_data->nr * sizeof(u64));
 
       // read the IPs for the frames 
-      if (perf_read( current_perf_mmap, ips, n_frames * sizeof(u64)) == 0) {
-
-  // add kernel IPs to the call chain top down, which is the 
-  // reverse of the order in which they appear in ips
-  for (int i = n_frames - 1; i > 0; i--) {
-    ip_normalized_t npc = 
-    { .lm_id = perf_kernel_lm_id, .lm_ip = ips[i] };
-    cct_addr_t frm = { .ip_norm = npc };
-    cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
-    parent = child;
-  }
+      if (perf_read( current_perf_mmap, mmap_data->ips, mmap_data->nr * sizeof(u64)) == 0) {
+        // the data seems valid
       } else {
-  TMSG(LINUX_PERF, "unable to read all %d frames", n_frames );
+        mmap_data->nr = 0;
+        TMSG(LINUX_PERF, "unable to read all %d frames", mmap_data->nr);
       }
     }
   } else {
     TMSG(LINUX_PERF, "unable to read the number of frames" );
   }
-  return parent;
+  return mmap_data->nr;
 }
 
 
@@ -793,74 +803,126 @@ perf_add_kernel_callchain(
 )
 {
   cct_node_t *parent = leaf;
-  pe_header_t hdr; 
   
-  if (data_aux == NULL) // this is very unlikely, but it's possible 
+  if (data_aux == NULL)  {
     return parent;
+  }
+  perf_mmap_data_t *data = (perf_mmap_data_t*) data_aux;
+  if (data->nr > 0) {
+    // add kernel IPs to the call chain top down, which is the 
+    // reverse of the order in which they appear in ips
+    for (int i = data->nr - 1; i >= 0; i--) {
+      ip_normalized_t npc = { .lm_id = perf_kernel_lm_id, .lm_ip = data->ips[i] };
+      cct_addr_t frm = { .ip_norm = npc };
+      cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
+      parent = child;
+    }
+  }
+  return parent;
+}
 
-  event_thread_t *current = (event_thread_t *) data_aux;
+//----------------------------------------------------------
+// reading mmap buffer from the kernel
+// in/out: mmapped data of type perf_mmap_data_t. 
+// return the number of data read. 
+//        0 if the mmapped data is not from perf sampling
+//----------------------------------------------------------
+static int
+read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
+{
+  pe_header_t hdr; 
   pe_mmap_t *current_perf_mmap = current->mmap;
+  int data_read = 0;
 
   if (perf_read_header(current_perf_mmap, &hdr) == 0) {
     if (hdr.type == PERF_RECORD_SAMPLE) {
       if (hdr.size <= 0) {
-        return parent;
+        return 0;
       }
       int sample_type = current->event->attr.sample_type;
 
       if (sample_type & PERF_SAMPLE_IDENTIFIER) {
+        perf_read_u64(current_perf_mmap, &mmap_info->sample_id);
+        data_read++;
       }
       if (sample_type & PERF_SAMPLE_IP) {
-       // to be used by datacentric event
-       u64 ip;
-       perf_read_u64(current_perf_mmap, &ip);
+        // to be used by datacentric event
+        perf_read_u64(current_perf_mmap, &mmap_info->ip);
+        data_read++;
       }
       if (sample_type & PERF_SAMPLE_TID) {
+        perf_read_u32(current_perf_mmap, &mmap_info->pid);
+        perf_read_u32(current_perf_mmap, &mmap_info->tid);
+        data_read++;
       }
       if (sample_type & PERF_SAMPLE_TIME) {
+        perf_read_u64(current_perf_mmap, &mmap_info->time);
+        data_read++;
       }
       if (sample_type & PERF_SAMPLE_ADDR) {
         // to be used by datacentric event
-       u64 addr;
-       perf_read_u64(current_perf_mmap, &addr);
+        perf_read_u64(current_perf_mmap, &mmap_info->addr);
+        data_read++;
       }
       if (sample_type & PERF_SAMPLE_ID) {
+        perf_read_u64(current_perf_mmap, &mmap_info->id);
+        data_read++;
       }
       if (sample_type & PERF_SAMPLE_STREAM_ID) {
+        perf_read_u64(current_perf_mmap, &mmap_info->stream_id);
+        data_read++;
       }
       if (sample_type & PERF_SAMPLE_CPU) {
+        perf_read_u32(current_perf_mmap, &mmap_info->cpu);
+        perf_read_u32(current_perf_mmap, &mmap_info->res);
+        data_read++;
       }
       if (sample_type & PERF_SAMPLE_PERIOD) {
+        perf_read_u64(current_perf_mmap, &mmap_info->period);
+        data_read++;
       }
       if (sample_type & PERF_SAMPLE_READ) {
         // to be used by datacentric event
         handle_struct_read_format(current_perf_mmap,
         current->event->attr.read_format);
+        data_read++;
       }
       if (sample_type & PERF_SAMPLE_CALLCHAIN) {
         // add call chain from the kernel
-        parent = perf_sample_callchain(current_perf_mmap, parent);
+        perf_sample_callchain(current_perf_mmap, mmap_info);
+        data_read++;
       }
       if (sample_type & PERF_SAMPLE_RAW) {
+        perf_read_u32(current_perf_mmap, &mmap_info->size);
+        mmap_info->data = alloca( sizeof(char) * mmap_info->size );
+        perf_read( current_perf_mmap, mmap_info->data, mmap_info->size) ;
+        data_read++;
       }
       if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
+        data_read++;
       }
       if (sample_type & PERF_SAMPLE_REGS_USER) {
+        data_read++;
       }
       if (sample_type & PERF_SAMPLE_STACK_USER) {
+        data_read++;
       }
       if (sample_type & PERF_SAMPLE_WEIGHT) {
+        data_read++;
       }
       if (sample_type & PERF_SAMPLE_DATA_SRC) {
+        data_read++;
       }
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,13,0)
       // only available since kernel 3.19
       if (sample_type & PERF_SAMPLE_TRANSACTION) {
+        data_read++;
       }
 #endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,19,0)
       // only available since kernel 3.19
       if (sample_type & PERF_SAMPLE_REGS_INTR) {
+        data_read++;
       }
 #endif
     } else {
@@ -870,7 +932,7 @@ perf_add_kernel_callchain(
     }
   }
 
-  return parent;
+  return data_read;
 }
 
 
@@ -1104,8 +1166,7 @@ METHOD_FN(supports_event, const char *ev_str)
     long thresh;
     char ev_tmp[1024];
     if (! hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, DEFAULT_THRESHOLD)) {
-      AMSG("WARNING: %s using default threshold %ld, "
-     "better to use an explicit threshold.", ev_str, DEFAULT_THRESHOLD);
+      AMSG("WARNING: %s using default frequency %ld, ", ev_str, DEFAULT_THRESHOLD);
     }
     ret = pfmu_isSupported(ev_tmp);
 #else
@@ -1157,14 +1218,14 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     TMSG(LINUX_PERF,"checking event spec = %s",event);
 
-    hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold, 
+    int event_type = hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold, 
        DEFAULT_THRESHOLD);
 
     // initialize the event attributes
     event_desc[i].id   = i;
     event_desc[i].next = NULL;
 
-    perf_attr_init(name, &(event_desc[i].attr), threshold);
+    perf_attr_init(name, &(event_desc[i].attr), event_type==1, threshold);
 
     // initialize the property of the metric
     // if the metric's name has "CYCLES" it mostly a cycle metric 
@@ -1176,12 +1237,25 @@ METHOD_FN(process_event_list, int lush_metrics)
            // since the OS will free it, we don't have to do it in hpcrun
     // set the metric for this perf event
     event_desc[i].metric = hpcrun_new_metric();
-
-    metric_desc_t *m = hpcrun_set_metric_info_and_period(event_desc[i].metric, name_dup,
+   
+    // if we use frequency (event_type=1) then the periodd is not deterministic, 
+    // it can change dynamically. In this case, the period is 1
+    metric_desc_t *m = NULL;
+    if (event_type == 1) {
+      // using period
+      m = hpcrun_set_metric_info_and_period(event_desc[i].metric, name_dup,
             MetricFlags_ValFmt_Int, threshold, prop);
+    } else {
+      // using frequency : the threshold is always 1, 
+      //                   since the period is determine dynamically
+      m = hpcrun_set_metric_info_and_period(event_desc[i].metric, name_dup,
+            MetricFlags_ValFmt_Int, 1, prop);
+    }
+
     if (m == NULL) {
       EMSG("Error: unable to create metric #%d: %s", index, name);
     }
+    event_desc[i].metric_desc = m;
 
     // detecting multiplex and compute the scale factor
     if (perf_multiplex == 1) {
@@ -1344,8 +1418,18 @@ perf_event_handler(
 
   // store the metric if the metric index is correct
   if ( current != NULL ) {
-    sample_val_t sv = hpcrun_sample_callpath(context, current->event->metric, 1,
-             0/*skipInner*/, 0/*isSync*/, (void*) current);
+    // reading info from mmapped buffer
+    perf_mmap_data_t mmap_data;
+    memset(&mmap_data, 0, sizeof(perf_mmap_data_t));
+
+    read_perf_buffer(current, &mmap_data);
+    uint64_t metric_inc = 1;
+    if (current->event->attr.freq == 1)
+      metric_inc = mmap_data.period;
+
+    // update the cct and add callchain if necessary
+    sample_val_t sv = hpcrun_sample_callpath(context, current->event->metric, 
+             metric_inc, 0/*skipInner*/, 0/*isSync*/, (void*) &mmap_data);
 
     // check if we have multiplexing or not with this counter
     if (perf_multiplex == 1) {

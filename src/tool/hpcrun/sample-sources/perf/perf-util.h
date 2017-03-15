@@ -41,8 +41,48 @@
 #include <linux/types.h>
 
 
+#ifndef u32
+typedef __u32 u32;
+#endif
+
+
 #ifndef u64
 typedef __u64 u64;
 #endif
+
+// data from perf's mmap
+typedef struct perf_mmap_data_s {
+  struct perf_event_header header;
+  u64    sample_id;  /* if PERF_SAMPLE_IDENTIFIER */
+  u64    ip;         /* if PERF_SAMPLE_IP */
+  u32    pid, tid;   /* if PERF_SAMPLE_TID */
+  u64    time;       /* if PERF_SAMPLE_TIME */
+  u64    addr;       /* if PERF_SAMPLE_ADDR */
+  u64    id;         /* if PERF_SAMPLE_ID */
+  u64    stream_id;  /* if PERF_SAMPLE_STREAM_ID */
+  u32    cpu, res;   /* if PERF_SAMPLE_CPU */
+  u64    period;     /* if PERF_SAMPLE_PERIOD */
+                     /* if PERF_SAMPLE_READ */
+  u64    nr;         /* if PERF_SAMPLE_CALLCHAIN */
+  u64    *ips;       /* if PERF_SAMPLE_CALLCHAIN */
+  u32    size;       /* if PERF_SAMPLE_RAW */
+  char   *data;      /* if PERF_SAMPLE_RAW */
+  /* if PERF_SAMPLE_BRANCH_STACK */
+  
+                     /* if PERF_SAMPLE_BRANCH_STACK */
+  u64    abi;        /* if PERF_SAMPLE_REGS_USER */
+  u64    *regs;
+                     /* if PERF_SAMPLE_REGS_USER */
+  u64    stack_size;             /* if PERF_SAMPLE_STACK_USER */
+  char   *stack_data; /* if PERF_SAMPLE_STACK_USER */
+  u64    stack_dyn_size;         /* if PERF_SAMPLE_STACK_USER &&
+                                     size != 0 */
+  u64    weight;     /* if PERF_SAMPLE_WEIGHT */
+  u64    data_src;   /* if PERF_SAMPLE_DATA_SRC */
+  u64    transaction;/* if PERF_SAMPLE_TRANSACTION */
+  u64    intr_abi;        /* if PERF_SAMPLE_REGS_INTR */
+  u64    *intr_regs;
+                     /* if PERF_SAMPLE_REGS_INTR */
+} perf_mmap_data_t;
 
 #endif
