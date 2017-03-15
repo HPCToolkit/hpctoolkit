@@ -361,7 +361,12 @@ perf_stop(event_thread_t event)
     int ret = ioctl(event.fd, PERF_EVENT_IOC_DISABLE, 0);
     if (ret == -1) {
       EMSG("Warning: cannot disable counter fd %d: %s,", 
-  event.fd, strerror(errno));
+            event.fd, strerror(errno));
+    }
+    ret = close(event.fd);
+    if (ret == -1) {
+      EMSG("Error while closing fd %d: %s", 
+            event.fd, strerror(errno));
     }
   }
 }
