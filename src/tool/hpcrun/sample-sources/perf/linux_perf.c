@@ -1450,7 +1450,7 @@ perf_event_handler(
 
       cct_node_t *node = sv.sample_node;
       cct_metric_data_increment( current->event->metric_scale, node,
-        (cct_metric_data_t){.r =  scale_f });
+        (cct_metric_data_t){.r =  scale_f * metric_inc});
     }
     blame_shift_apply( current->event->metric, sv.sample_node, 1 /*metricIncr*/);
   } else {
