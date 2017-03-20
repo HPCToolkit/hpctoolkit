@@ -106,7 +106,8 @@ bool is_lush_agent = false;
 
 cct_node_t*
 lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-		   int metricId, uint64_t metricIncr,
+		   int metricId, MetricFlags_ValFmt_t metricFlag,
+                   hpcrun_metricVal_t metricIncr,
 		   int skipInner, int isSync)
 {
   // ---------------------------------------------------------
@@ -116,7 +117,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   //   3) a synchronous unwind (may have a lush relevant metric)
   // ---------------------------------------------------------
   bool     doMetric = false;
-  uint64_t incrMetric = metricIncr;
+  uint64_t incrMetric = metricIncr.i;
 
   bool     doMetricIdleness = false;
   double   incrMetricIdleness = 0.0;
@@ -124,7 +125,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
   if (metricId == lush_agents->metric_time) {
     lush_agentid_t aid = 1; // TODO: multiple agents
-    if (lush_agents->LUSHI_do_metric[aid](metricIncr, 
+    if (lush_agents->LUSHI_do_metric[aid](metricIncr.i, 
 					  &doMetric, &doMetricIdleness,
 					  &incrMetric, &incrMetricIdleness)) {
       //aidMetricIdleness = aid; // case 1
@@ -248,7 +249,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   cct_node_t* node = NULL;
   node = hpcrun_cct_insert_backtrace_w_metric(cct_cursor, metricId,
 					      bt_end, bt_beg,
-					      (cct_metric_data_t){.i = metricIncr}, NULL);
+					      metricIncr, NULL);
 
   if (doMetricIdleness) {
     // lush_agentid_t aid = aidMetricIdleness;

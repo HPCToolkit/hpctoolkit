@@ -197,7 +197,7 @@ typedef struct event_info_s {
   int       id;
   struct perf_event_attr attr; // the event attribute
   int       metric;            // metric ID of the event (raw counter)
-  int       metric_scale;      // metric ID of the adjusted counter
+  int       metric_raw;      // metric ID of the adjusted counter
   metric_desc_t *metric_desc;  // pointer on hpcrun metric descriptor 
 
   struct event_info_s   *next; // pointer to the next item
@@ -1249,12 +1249,12 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (event_type == 1) {
       // using period
       m = hpcrun_set_metric_info_and_period(event_desc[i].metric, name_dup,
-            MetricFlags_ValFmt_Int, threshold, prop);
+            MetricFlags_ValFmt_Real, threshold, prop);
     } else {
       // using frequency : the threshold is always 1, 
       //                   since the period is determine dynamically
       m = hpcrun_set_metric_info_and_period(event_desc[i].metric, name_dup,
-            MetricFlags_ValFmt_Int, 1, prop);
+            MetricFlags_ValFmt_Real, 1, prop);
     }
 
     if (m == NULL) {
@@ -1267,13 +1267,13 @@ METHOD_FN(process_event_list, int lush_metrics)
       const size_t MAX_LABEL_CHARS = 80;
 
       // create metric for application's scale factor (i.e  time enabled/time running)
-      char *scale_factor_metric = (char *) hpcrun_malloc(sizeof (char)*MAX_LABEL_CHARS);
-      snprintf(scale_factor_metric, MAX_LABEL_CHARS, "%s%s", PREFIX_HELPER_METRIC, name ); 
+      char *raw_metric = (char *) hpcrun_malloc(sizeof (char)*MAX_LABEL_CHARS);
+      snprintf(raw_metric, MAX_LABEL_CHARS, "%s%s", PREFIX_HELPER_METRIC, name ); 
 
-      event_desc[i].metric_scale = hpcrun_new_metric();
+      event_desc[i].metric_raw = hpcrun_new_metric();
 
-      metric_desc_t *ms = hpcrun_set_metric_info_and_period(event_desc[i].metric_scale, 
-        scale_factor_metric, MetricFlags_ValFmt_Real, threshold, metric_property_none);
+      metric_desc_t *ms = hpcrun_set_metric_info_and_period(event_desc[i].metric_raw, 
+        raw_metric, MetricFlags_ValFmt_Real, threshold, metric_property_none);
       if (ms == NULL) {
         EMSG("Error: unable to create metric #%d: %s", index, name);
       } else {
@@ -1432,25 +1432,29 @@ perf_event_handler(
     if (current->event->attr.freq == 1)
       metric_inc = mmap_data.period;
 
+    // ----------------------------------------------------------------------------  
+    // record time enabled and time running
+    // if the time enabled is not the same as running time, then it's multiplexed
+    // ----------------------------------------------------------------------------  
+    u64 time_enabled = current->mmap->time_enabled;
+    u64 time_running = current->mmap->time_running;
+
+    // the estimate count = raw_count * scale_factor
+    //	            = metric_inc * time_enabled / time running
+    double scale_f   = (double) time_enabled / time_running;
+
     // update the cct and add callchain if necessary
     sample_val_t sv = hpcrun_sample_callpath(context, current->event->metric, 
-             metric_inc, 0/*skipInner*/, 0/*isSync*/, (void*) &mmap_data);
+		      MetricFlags_ValFmt_Int, (hpcrun_metricVal_t) {.r=metric_inc * scale_f},
+                      0/*skipInner*/, 0/*isSync*/, 
+                      (void*) &mmap_data);
 
     // check if we have multiplexing or not with this counter
     if (perf_multiplex == 1) {
-      // record time enabled and time running
-      // if the time enabled is not the same as running time, then it's multiplexed
-      
-      u64 time_enabled = current->mmap->time_enabled;
-      u64 time_running = current->mmap->time_running;
-
-      // the formula for the estimate count = raw_count * scale_factor
-      //									= 1 * time_enabled / time running
-      double scale_f   = (double) time_enabled / time_running;
 
       cct_node_t *node = sv.sample_node;
-      cct_metric_data_increment( current->event->metric_scale, node,
-        (cct_metric_data_t){.r =  scale_f * metric_inc});
+      cct_metric_data_increment( current->event->metric_raw, node,
+        (cct_metric_data_t){.r =  metric_inc});
     }
     blame_shift_apply( current->event->metric, sv.sample_node, 1 /*metricIncr*/);
   } else {

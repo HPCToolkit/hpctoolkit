@@ -129,8 +129,8 @@ cct_insert_raw_backtrace(cct_node_t* cct,
 static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 	ip_normalized_t *leaf_func,
-			  int metricId, uint64_t metricIncr,
-			  int skipInner, int isSync, void *data);
+	int metricId, MetricFlags_ValFmt_t flag, hpcrun_metricVal_t metricIncr,
+	int skipInner, int isSync, void *data);
 
 //
 // 
@@ -231,20 +231,19 @@ hpcrun_cct_insert_bt(cct_node_t* node,
 
 cct_node_t*
 hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,  ip_normalized_t *leaf_func,
-		     int metricId,
-		     uint64_t metricIncr,
+	             int metricId, MetricFlags_ValFmt_t metricFlag, hpcrun_metricVal_t metricIncr,
 		     int skipInner, int isSync, void *data)
 {
   cct_node_t* n = NULL;
   if (hpcrun_isLogicalUnwind()) {
     TMSG(LUSH,"lush backtrace2cct invoked");
-    n = lush_backtrace2cct(cct, context, metricId, metricIncr, skipInner,
+    n = lush_backtrace2cct(cct, context, metricId, metricFlag, metricIncr, skipInner,
 			   isSync);
   }
   else {
     TMSG(BT_INSERT,"regular (NON-lush) backtrace2cct invoked");
     n = help_hpcrun_backtrace2cct(cct, context, leaf_func,
-				  metricId, metricIncr,
+				  metricId, metricFlag, metricIncr,
 				  skipInner, isSync, data);
   }
 
@@ -327,13 +326,13 @@ hpcrun_cct_record_backtrace(
 
 cct_node_t*
 hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, 
-                                     backtrace_info_t *bt, 
-                                     bool tramp_found,
-				     int metricId, uint64_t metricIncr, void *data)
+                                     backtrace_info_t *bt, bool tramp_found,
+	                             int metricId, MetricFlags_ValFmt_t flag, hpcrun_metricVal_t metricIncr,
+				     void *data)
 {
   TMSG(FENCE, "Recording backtrace");
   TMSG(BT_INSERT, "Record backtrace w metric to id %d, incr = %d", 
-       metricId, metricIncr);
+       metricId, metricIncr.i);
 
   thread_data_t* td = hpcrun_get_thread_data();
   cct_node_t* cct_cursor = cct->tree_root;
@@ -359,8 +358,8 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
        bt->last->ip_norm.lm_id, bt->last->ip_norm.lm_ip);
 
   return hpcrun_cct_insert_backtrace_w_metric(cct_cursor, metricId,
-					      bt->last, bt->begin,
-					      (cct_metric_data_t){.i = metricIncr}, data);
+					      bt->last, bt->begin, 
+					      (cct_metric_data_t) metricIncr, data);
 
 }
 
@@ -368,8 +367,8 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
 static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
                           ip_normalized_t *leaf_func,
-			  int metricId,
-			  uint64_t metricIncr,
+			  int metricId, MetricFlags_ValFmt_t metricFlag,
+			  hpcrun_metricVal_t metricIncr,
 			  int skipInner, int isSync, void *data)
 {
   bool tramp_found;
@@ -418,7 +417,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
   cct_node_t* n = 
     hpcrun_cct_record_backtrace_w_metric(bundle, bt.partial_unwind, &bt, 
 					 tramp_found,
-					 metricId, metricIncr, data);
+					 metricId, metricFlag, metricIncr, data);
 
   // *trace_pc = bt.trace_pc;  // JMC
 

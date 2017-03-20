@@ -113,7 +113,8 @@ hpcrun_logicalUnwind(bool x)
 
 cct_node_t*
 lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-		   int metricId, uint64_t metricIncr,
+		   int metricId, MetricFlags_ValFmt_t metricFlag, 
+                   hpcrun_metricVal_t metricIncr,
 		   int skipInner, int isSync);
 
 

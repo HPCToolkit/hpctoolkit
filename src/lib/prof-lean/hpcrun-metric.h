@@ -82,7 +82,7 @@ extern "C" {
 #define /*const char**/ HPCRUN_METRIC_RetCnt "RETCNT"
 
 // prefix for virtual metric that needs special treatement in hpcprof 
-#define PREFIX_HELPER_METRIC ":-"
+#define PREFIX_HELPER_METRIC "H:"
 
 //***************************************************************************
 

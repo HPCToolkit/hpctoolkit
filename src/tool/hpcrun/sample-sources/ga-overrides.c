@@ -276,7 +276,8 @@ extern global_array_t *GA;
     /* N.B.: when tracing, this call generates a trace record */	\
     /* TODO: should return a 'metric_set_t*' */				\
     sample_val_t smplVal =						\
-      hpcrun_sample_callpath(&uc, dataMetricId, 0/*metricIncr*/,	\
+      hpcrun_sample_callpath(&uc, dataMetricId, 			\
+               MetricFlags_ValFmt_Int, (hpcrun_metricVal_t) {.i=0},     \
 			     0/*skipInner*/, 1/*isSync*/, NULL);	\
     									\
     /* namespace: g_a, ga_desc, dataMetricId, smplVal, metricVec */	\

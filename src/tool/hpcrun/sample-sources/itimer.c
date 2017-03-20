@@ -681,10 +681,12 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     monitor_real_abort();
   }
   metric_incr = cur_time_us - TD_GET(last_time_us);
+  hpcrun_metricVal_t metric_delta = {.i = metric_incr};
 #endif
 
   int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
-  sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_incr,
+  sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 
+			MetricFlags_ValFmt_Int, metric_delta,
 					    0/*skipInner*/, 0/*isSync*/, NULL);
   blame_shift_apply(metric_id, sv.sample_node, metric_incr);
 
