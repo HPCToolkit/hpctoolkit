@@ -194,13 +194,10 @@ typedef struct event_predefined_s {
 // this is a linked list structure, and should use a linked list library 
 // instead of reinventing the wheel. 
 typedef struct event_info_s {
-  int       id;
+  int    id;
   struct perf_event_attr attr; // the event attribute
-  int       metric;            // metric ID of the event (raw counter)
-  int       metric_raw;      // metric ID of the adjusted counter
+  int    metric;               // metric ID of the event (raw counter)
   metric_desc_t *metric_desc;  // pointer on hpcrun metric descriptor 
-
-  struct event_info_s   *next; // pointer to the next item
 } event_info_t;
 
 
@@ -289,12 +286,6 @@ static size_t tail_mask;
 // Make sure that we don't use perf if it won't work.
 static int perf_unavail = 0;
 
-// flag if multiplex is allowed, detected, etc...
-// 0: use the default multiplex
-// 1: detect multiplex
-// 2: do not allow multiplex
-static int perf_multiplex = 0;
-
 // Possible value of precise ip:
 //  0  SAMPLE_IP can have arbitrary skid.
 //  1  SAMPLE_IP must have constant skid.
@@ -363,11 +354,13 @@ perf_stop(event_thread_t event)
       EMSG("Warning: cannot disable counter fd %d: %s,", 
             event.fd, strerror(errno));
     }
+    TMSG(LINUX_PERF, "disabled: %d", event.fd);
     ret = close(event.fd);
     if (ret == -1) {
       EMSG("Error while closing fd %d: %s", 
             event.fd, strerror(errno));
     }
+    TMSG(LINUX_PERF, "closed: %d", event.fd);
   }
 }
 
@@ -524,7 +517,9 @@ perf_attr_init(
   // if perfmon is disabled, by default the event is cycle
   unsigned int event_code  = PERF_COUNT_HW_CPU_CYCLES;
   unsigned int event_type  = PERF_TYPE_HARDWARE;
-  unsigned int sample_type = 0;
+
+  // by default, we always ask for sampling period information
+  unsigned int sample_type = PERF_SAMPLE_PERIOD; 
 
   if (strcmp(name, EVENT_DATA_CENTRIC)==0) {
     sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID ;
@@ -548,7 +543,6 @@ perf_attr_init(
   attr->config = event_code;       /* Type-specific configuration */
 
   if (!usePeriod) {
-    sample_type        |= PERF_SAMPLE_PERIOD;
     attr->freq          = 1;
     attr->sample_freq   = threshold;         /* Frequency of sampling  */
   } else {
@@ -989,7 +983,6 @@ METHOD_FN(init)
 
   // checking the option of multiplexing:
   // the env variable is set by hpcrun or by user (case for static exec)
-  perf_multiplex  = getEnvLong( HPCRUN_OPTION_MULTIPLEX, 0 );
 
   perf_precise_ip = getEnvLong( HPCRUN_OPTION_PRECISE_IP, PERF_EVENT_AUTODETECT_SKID );
   if (perf_precise_ip<0 || perf_precise_ip>PERF_EVENT_AUTODETECT_SKID ) {
@@ -1170,7 +1163,7 @@ METHOD_FN(supports_event, const char *ev_str)
 #ifdef ENABLE_PERFMON
     long thresh;
     char ev_tmp[1024];
-    if (! hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, DEFAULT_THRESHOLD)) {
+    if ( hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, DEFAULT_THRESHOLD) == 0) {
       AMSG("WARNING: %s using default frequency %ld, ", ev_str, DEFAULT_THRESHOLD);
     }
     ret = pfmu_isSupported(ev_tmp);
@@ -1219,7 +1212,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   for (event = start_tok(evlist); more_tok(); event = next_tok(), i++) {
     char name[1024];
-    long threshold;
+    long threshold = 0;
 
     TMSG(LINUX_PERF,"checking event spec = %s",event);
 
@@ -1228,7 +1221,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     // initialize the event attributes
     event_desc[i].id   = i;
-    event_desc[i].next = NULL;
 
     perf_attr_init(name, &(event_desc[i].attr), event_type==1, threshold);
 
@@ -1246,42 +1238,18 @@ METHOD_FN(process_event_list, int lush_metrics)
     // if we use frequency (event_type=1) then the periodd is not deterministic, 
     // it can change dynamically. In this case, the period is 1
     metric_desc_t *m = NULL;
-    if (event_type == 1) {
-      // using period
-      m = hpcrun_set_metric_info_and_period(event_desc[i].metric, name_dup,
-            MetricFlags_ValFmt_Real, threshold, prop);
-    } else {
+    if (event_type != 1) {
       // using frequency : the threshold is always 1, 
       //                   since the period is determine dynamically
-      m = hpcrun_set_metric_info_and_period(event_desc[i].metric, name_dup,
-            MetricFlags_ValFmt_Real, 1, prop);
+      threshold = 1;
     }
+    m = hpcrun_set_metric_info_and_period(event_desc[i].metric, name_dup,
+            MetricFlags_ValFmt_Real, threshold, prop);
 
     if (m == NULL) {
       EMSG("Error: unable to create metric #%d: %s", index, name);
     }
     event_desc[i].metric_desc = m;
-
-    // detecting multiplex and compute the scale factor
-    if (perf_multiplex == 1) {
-      const size_t MAX_LABEL_CHARS = 80;
-
-      // create metric for application's scale factor (i.e  time enabled/time running)
-      char *raw_metric = (char *) hpcrun_malloc(sizeof (char)*MAX_LABEL_CHARS);
-      snprintf(raw_metric, MAX_LABEL_CHARS, "%s%s", PREFIX_HELPER_METRIC, name ); 
-
-      event_desc[i].metric_raw = hpcrun_new_metric();
-
-      metric_desc_t *ms = hpcrun_set_metric_info_and_period(event_desc[i].metric_raw, 
-        raw_metric, MetricFlags_ValFmt_Real, threshold, metric_property_none);
-      if (ms == NULL) {
-        EMSG("Error: unable to create metric #%d: %s", index, name);
-      } else {
-    	// specific metric, just to help to compute the scale factor
-    	// hpcprof can remove it if needed.
-    	// ms->flags.fields.ty = MetricFlags_Ty_Helper;
-      }
-    }
   }
 }
 
@@ -1388,16 +1356,20 @@ perf_event_handler(
   if (siginfo->si_code < 0) {
     // signal not generated by kernel for profiling
     TMSG(LINUX_PERF, "signal si_code %d < 0 indicates not from kernel", 
-   siginfo->si_code);
+         siginfo->si_code);
     return 1; // tell monitor the signal has not been handled.
   }
+#if 0
+  // FIXME: (laks) sometimes we have signal code other than POll_HUP
+  // and still has a valid information (x86 on les). Temporarily, we 
+  // don't have to guard on si_code, checking si_fd should be fine.
   if (siginfo->si_code != POLL_HUP) {
     // SIGPOLL = SIGIO, expect POLL_HUP instead of POLL_IN
-    TMSG(LINUX_PERF, "signal si_code %d not generated by SIGIO", 
-   siginfo->si_code);
+    TMSG(LINUX_PERF, "signal si_code %d (fd: %d) not generated by SIGIO", 
+   siginfo->si_code, siginfo->si_fd);
     return 1; // tell monitor the signal has not been handled.
   }
-
+#endif
   // first, we need to disable the event
   int fd = siginfo->si_fd;
   disable_perf_event(fd);
@@ -1445,17 +1417,10 @@ perf_event_handler(
 
     // update the cct and add callchain if necessary
     sample_val_t sv = hpcrun_sample_callpath(context, current->event->metric, 
-		      MetricFlags_ValFmt_Int, (hpcrun_metricVal_t) {.r=metric_inc * scale_f},
+		      MetricFlags_ValFmt_Real, (hpcrun_metricVal_t) {.r=metric_inc * scale_f},
                       0/*skipInner*/, 0/*isSync*/, 
                       (void*) &mmap_data);
 
-    // check if we have multiplexing or not with this counter
-    if (perf_multiplex == 1) {
-
-      cct_node_t *node = sv.sample_node;
-      cct_metric_data_increment( current->event->metric_raw, node,
-        (cct_metric_data_t){.r =  metric_inc});
-    }
     blame_shift_apply( current->event->metric, sv.sample_node, 1 /*metricIncr*/);
   } else {
     // signal not from perf event
