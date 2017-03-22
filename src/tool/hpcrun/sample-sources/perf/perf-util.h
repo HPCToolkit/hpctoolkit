@@ -39,7 +39,9 @@
 #define __PERF_UTIL_H__
 
 #include <linux/types.h>
+#include <linux/perf_event.h>
 
+#include <lib/prof-lean/hpcrun-fmt.h>
 
 #ifndef u32
 typedef __u32 u32;
@@ -84,5 +86,25 @@ typedef struct perf_mmap_data_s {
   u64    *intr_regs;
                      /* if PERF_SAMPLE_REGS_INTR */
 } perf_mmap_data_t;
+
+// main data structure to store the information of an event
+// this is a linked list structure, and should use a linked list library
+// instead of reinventing the wheel.
+typedef struct event_info_s {
+  int    id;
+  struct perf_event_attr attr; // the event attribute
+  int    metric;               // metric ID of the event (raw counter)
+  metric_desc_t *metric_desc;  // pointer on hpcrun metric descriptor
+} event_info_t;
+
+typedef struct perf_event_mmap_page pe_mmap_t;
+
+// data perf event per thread per event
+// this data is designed to be used within a thread
+typedef struct event_thread_s {
+  pe_mmap_t   *mmap;    // mmap buffer
+  int    fd;            // file descriptor of the event
+  event_info_t  *event; // pointer to main event description
+} event_thread_t;
 
 #endif

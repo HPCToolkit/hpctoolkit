@@ -283,6 +283,7 @@ MY_BASE_FILES =				\
 	sample-sources/itimer.c		\
 	sample-sources/idle.c		\
 	sample-sources/perf/linux_perf.c	\
+	sample-sources/perf/perf_mmap.c	\
 	sample-sources/datacentric.c	\
 	sample-sources/memleak.c	\
 	sample-sources/pthread-blame.c  \
