@@ -147,10 +147,6 @@
 // Predefined events
 // -----------------------------------------------------
 
-#define EVENT_DATA_CENTRIC       "DATACENTRIC"
-#define ID_DATA_CENTRIC          1
-#define EVENT_BLOCKING_KERNEL    "BLOCKING"
-#define ID_BLOCKING_KERNEL       2
 
 
 // -----------------------------------------------------
@@ -183,8 +179,9 @@ typedef struct perf_event_callchain_s {
 
 
 typedef struct event_predefined_s {
-  const char *name;
-  u64 id;
+  const char *name; // name of the event
+  u64 id; 			// index in the kernel perf event
+  u64 type;			// type of the event
 } event_predefined_t;
 
 
@@ -251,8 +248,8 @@ static const char * equals_separator =
 //******************************************************************************
 
 static event_predefined_t events_predefined[] = {
-		{EVENT_DATA_CENTRIC,    ID_DATA_CENTRIC},
-		{EVENT_BLOCKING_KERNEL, ID_BLOCKING_KERNEL}};
+		{"CYCLES",   PERF_COUNT_HW_CPU_CYCLES, 		 PERF_TYPE_HARDWARE},
+		{"BLOCKING", PERF_COUNT_SW_CONTEXT_SWITCHES, PERF_TYPE_SOFTWARE}};
 
 static uint16_t perf_kernel_lm_id;
 
@@ -302,7 +299,7 @@ perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
 }
 
 
-// return the ID of the predefined event if the name matches
+// return the index of the predefined event if the name matches
 // return -1 otherwise
 static int
 getPredefinedEventID(const char *event_name)
@@ -312,7 +309,7 @@ getPredefinedEventID(const char *event_name)
   for (int i=0; i<elems; i++) {
     const char  *event = events_predefined[i].name;
     if (strncmp(event, event_name, strlen(event)) == 0) {
-      return events_predefined[i].id;
+      return i;
     }
   }
   return -1;
@@ -413,7 +410,7 @@ perf_init()
 static int
 perf_attr_init(
   const char *name,
-  struct perf_event_attr *attr,
+  event_info_t *event,
   bool usePeriod,
   long threshold
 )
@@ -424,22 +421,26 @@ perf_attr_init(
 
   // by default, we always ask for sampling period information
   unsigned int sample_type = PERF_SAMPLE_PERIOD; 
+  int index = 0;
 
-  if (strcmp(name, EVENT_DATA_CENTRIC)==0) {
-    sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID ;
+  if ((index=getPredefinedEventID(name))>=0) {
+	// for datacentric:
+    // sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID ;
+	event_code = events_predefined[index].id;
+	event_type = events_predefined[index].type;
+	event->index_predefined = index;
   } 
 #ifdef ENABLE_PERFMON
-  else if (!pfmu_getEventCode(name, &event_code)) {
+  else if (!pfmu_getEventType(name, &event_code, &event_type)) {
      EMSG("Linux perf event not recognized: %s", name);
      return false;
   }
-  event_type = pfmu_getEventType(name);
   if (event_type<0) {
      EMSG("Linux perf event type not recognized: %s", name);
      return false;
   }
 #endif
-
+  struct perf_event_attr *attr = &(event->attr);
   memset(attr, 0, sizeof(struct perf_event_attr));
 
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
@@ -838,24 +839,21 @@ METHOD_FN(supports_event, const char *ev_str)
   }
 
   // first, check if the event is a predefined event
-  bool ret = getPredefinedEventID(ev_str) >= 0;
+  if (getPredefinedEventID(ev_str) >= 0)
+    return true;
 
+  bool result = false;
   // this is not a predefined event, we need to consult to perfmon (if enabled)
-  if (!ret) {
 #ifdef ENABLE_PERFMON
-    long thresh;
-    char ev_tmp[1024];
-    if ( hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, DEFAULT_THRESHOLD) == 0) {
-      AMSG("WARNING: %s using default frequency %ld, ", ev_str, DEFAULT_THRESHOLD);
-    }
-    ret = pfmu_isSupported(ev_tmp);
+  long thresh;
+  char ev_tmp[1024];
+  hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, DEFAULT_THRESHOLD) ;
+  result = pfmu_isSupported(ev_tmp) >= 0;
 #else
-    ret = (strncmp(event_name, ev_str, strlen(event_name)) == 0); 
+  result = (strncmp(event_name, ev_str, strlen(event_name)) == 0);
 #endif
-  }
 
-  TMSG(LINUX_PERF, "supports event %s", (ret? "OK" : "FAIL"));
-  return ret;
+  return result;
 }
 
  
@@ -882,9 +880,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   // manually, setup the number of events. In theory, this is to be done
   //  automatically. But in practice, it didn't. Not sure why.
   self->evl.nevents = num_events;
-
-  if (num_events > 0)
-    perf_init();
   
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
@@ -904,7 +899,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     // initialize the event attributes
     event_desc[i].id   = i;
 
-    perf_attr_init(name, &(event_desc[i].attr), event_type==1, threshold);
+    perf_attr_init(name, &(event_desc[i]), event_type==1, threshold);
 
     // initialize the property of the metric
     // if the metric's name has "CYCLES" it mostly a cycle metric 
@@ -933,6 +928,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     }
     event_desc[i].metric_desc = m;
   }
+
+  if (num_events > 0)
+    perf_init();
 }
 
 

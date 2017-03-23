@@ -64,6 +64,12 @@
 #include <linux/perf_event.h>
 
 /******************************************************************************
+ * hpcrun includes
+ *****************************************************************************/
+
+#include <hpcrun/messages/messages.h>
+
+/******************************************************************************
  * perfmon
  *****************************************************************************/
 #include <perfmon/pfmlib.h>
@@ -218,8 +224,10 @@ show_info(char *event )
 // Supported operations
 //******************************************************************************
 
+// return 0 or positive if the event exists, -1 otherwise
+// if the event exist, code and type are the code and type of the event
 int 
-pfmu_getEventType(const char *eventname)
+pfmu_getEventType(const char *eventname, unsigned int *code, unsigned int *type)
 {
   pfm_perf_encode_arg_t arg;
   char *fqstr = NULL;
@@ -233,47 +241,25 @@ pfmu_getEventType(const char *eventname)
   int ret = pfm_get_os_event_encoding(eventname, PFM_PLM0|PFM_PLM3, PFM_OS_PERF_EVENT, &arg);
 
   if (ret == PFM_SUCCESS) {
-    return arg.attr->type;
+    *type = arg.attr->type;
+    *code = arg.attr->config;
+    return 1;
   }
-
-  free(arg.fstr);
   return -1;
 }
 
-/**
- * interface to convert from event name into event code
- *
- * return 1 (true) if the event is supported, 0 (false) otherwise
- **/
-int
-pfmu_getEventCode(const char *eventname, unsigned int *eventcode)
-{
-
-  pfm_pmu_encode_arg_t raw;
-  memset(&raw, 0, sizeof(raw));
-
-  int ret = pfm_get_os_event_encoding(eventname, PFM_PLM0|PFM_PLM3, PFM_OS_NONE, &raw);
-  int result = (ret == PFM_SUCCESS);
-  if (result) {
-     if (raw.count>0) {
-	// TODO: by default we use the first event code 
-       *eventcode = raw.codes[0];
-     }
-  }
-  return result;
-}
 
 /*
  * interface to check if an event is "supported"
  * "supported" here means, it matches with the perfmon PMU event 
  *
- * return 1 (true) if the event is supported, 0 (false) otherwise
+ * return 0 or positive if the event exists, -1 otherwise
  */
 int
 pfmu_isSupported(const char *eventname)
 {
-  unsigned int eventcode;
-  return pfmu_getEventCode(eventname, &eventcode);
+  unsigned int eventcode, eventtype;
+  return pfmu_getEventType(eventname, &eventcode, &eventtype);
 }
 
 

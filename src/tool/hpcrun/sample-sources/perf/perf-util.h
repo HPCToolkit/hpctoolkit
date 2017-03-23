@@ -52,7 +52,7 @@ typedef __u32 u32;
 typedef __u64 u64;
 #endif
 
-// data from perf's mmap
+// data from perf's mmap. See perf_event_open man page
 typedef struct perf_mmap_data_s {
   struct perf_event_header header;
   u64    sample_id;  /* if PERF_SAMPLE_IDENTIFIER */
@@ -87,17 +87,22 @@ typedef struct perf_mmap_data_s {
                      /* if PERF_SAMPLE_REGS_INTR */
 } perf_mmap_data_t;
 
-// main data structure to store the information of an event
-// this is a linked list structure, and should use a linked list library
-// instead of reinventing the wheel.
+
+// main data structure to store the information of an event.
+// this structure is designed to be created once during the initialization.
+// this code doesn't work if the number of events change dynamically.
 typedef struct event_info_s {
   int    id;
   struct perf_event_attr attr; // the event attribute
   int    metric;               // metric ID of the event (raw counter)
   metric_desc_t *metric_desc;  // pointer on hpcrun metric descriptor
+  int  	 index_predefined;	   // index of the predefined metric (if this event is
+  	  	  	  	  	  	  	   // a customized hpcrun event)
 } event_info_t;
 
+
 typedef struct perf_event_mmap_page pe_mmap_t;
+
 
 // data perf event per thread per event
 // this data is designed to be used within a thread
