@@ -253,8 +253,6 @@ static event_predefined_t events_predefined[] = {
 
 static uint16_t perf_kernel_lm_id;
 
-static bool perf_ksyms_avail;
-
 static sigset_t sig_mask;
 
 // Special case to make perf init a soft failure.
@@ -344,15 +342,46 @@ perf_stop(event_thread_t event)
 // predicates that test perf availability
 //----------------------------------------------------------
 
-static bool
+static FILE*
 perf_kernel_syms_avail()
 {
   FILE *ksyms = fopen(LINUX_KERNEL_SYMBOL_FILE, "r");
   bool success = (ksyms != NULL);
   if (success) fclose(ksyms);
-  return success;
+  return ksyms;
 }
 
+//----------------------------------------------------------
+// Interface to see if the kernel symbol is available
+// this function caches the value so that we don't need
+//   enquiry the same question all the time.
+//----------------------------------------------------------
+static bool
+is_perf_ksym_available()
+{
+	enum perf_ksym_e {PERF_UNDEFINED, PERF_AVAILABLE, PERF_UNAVAILABLE} ;
+
+  // if kernel symbols are available, we will attempt to collect kernel
+  // callchains and add them to our call paths
+  static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
+
+  if (ksym_status == PERF_UNDEFINED) {
+  	FILE *file_ksyms = perf_kernel_syms_avail();
+
+    if (file_ksyms != NULL) {
+      hpcrun_kernel_callpath_register(perf_add_kernel_callchain);
+      perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
+      ksym_status = PERF_AVAILABLE;
+    } else {
+    	ksym_status = PERF_UNAVAILABLE;
+    }
+  }
+  return (ksym_status == PERF_AVAILABLE);
+}
+
+//----------------------------------------------------------
+// check if perf event is available
+//----------------------------------------------------------
 
 static bool
 perf_event_avail()
@@ -388,15 +417,6 @@ perf_init()
   sigemptyset(&sig_mask);
   sigaddset(&sig_mask, PERF_SIGNAL);
 
-  // if kernel symbols are available, we will attempt to collect kernel 
-  // callchains and add them to our call paths 
-  perf_ksyms_avail = perf_kernel_syms_avail();
-
-  if (perf_ksyms_avail) {
-    hpcrun_kernel_callpath_register(perf_add_kernel_callchain);
-    perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
-  }
- 
   monitor_sigaction(PERF_SIGNAL, &perf_event_handler, 0, NULL);
   monitor_real_pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
 }
@@ -459,12 +479,16 @@ perf_attr_init(
   attr->disabled      = 1;       /* the counter will be enabled later  */
   attr->sample_stack_user = 4096;
 
-  if (perf_ksyms_avail) {
+  if (is_perf_ksym_available()) {
     /* Records the callchain */
-    attr->sample_type      = sample_type | PERF_SAMPLE_CALLCHAIN;  
+    attr->sample_type            = sample_type | PERF_SAMPLE_CALLCHAIN;
     attr->exclude_callchain_user = EXCLUDE_CALLCHAIN_USER;
   } else {
-    attr->sample_type = PERF_SAMPLE_IP;
+    attr->sample_type 					 = sample_type | PERF_SAMPLE_IP;
+  }
+  if (event->index_predefined == 1) {
+  	// case of blocking event
+  	attr->sample_type |= PERF_SAMPLE_TIME;
   }
   TMSG(LINUX_PERF, "init event %s: type: %d, code: %x", name, event_type, event_code);
   return true;
@@ -884,12 +908,19 @@ METHOD_FN(process_event_list, int lush_metrics)
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
   //  but there will be no samples
-  event_desc = (event_info_t*) hpcrun_malloc(sizeof(event_info_t) * num_events);
+  size_t size = sizeof(event_info_t) * num_events;
+  event_desc = (event_info_t*) hpcrun_malloc(size);
+  if (event_desc == NULL) {
+	  EMSG("Unable to allocate %d bytes", size);
+	  return;
+  }
+  memset(event_desc, 0, size);
+
   int i=0;
 
   for (event = start_tok(evlist); more_tok(); event = next_tok(), i++) {
     char name[1024];
-    long threshold = 0;
+    long threshold = 1;
 
     TMSG(LINUX_PERF,"checking event spec = %s",event);
 
@@ -898,7 +929,16 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     // initialize the event attributes
     event_desc[i].id   = i;
+    event_desc[i].index_predefined = getPredefinedEventID(name);
+  	if (event_desc[i].index_predefined == 1) {
+  		event_desc[i].metric_predefined = hpcrun_new_metric();
+      event_desc[i].metric_desc_predefined = hpcrun_set_metric_info_and_period(
+      		event_desc[i].metric_predefined, "Blocking-Time", MetricFlags_ValFmt_Int,
+      		1, metric_property_none);
 
+      event_type = 0;
+      strcpy(name, "CS");
+  	}
     perf_attr_init(name, &(event_desc[i]), event_type==1, threshold);
 
     // initialize the property of the metric
@@ -985,11 +1025,6 @@ disable_perf_event(int fd)
       TMSG(LINUX_PERF, "error fd %d in IOC_DISABLE", fd);
     }
   }
-//#if 0
-  int rc = (0>ioctl(fd, PERF_EVENT_IOC_DISABLE, 0));
-  if (rc) {
-    TMSG(LINUX_PERF, "error fd %d in IOC_DISABLE", fd);
-  }
 #endif
 }
 
@@ -1075,7 +1110,7 @@ perf_event_handler(
 
     read_perf_buffer(current, &mmap_data);
     uint64_t metric_inc = 1;
-    if (current->event->attr.freq == 1)
+    if (current->event->attr.freq==1 && mmap_data.period>0)
       metric_inc = mmap_data.period;
 
     // ----------------------------------------------------------------------------  
@@ -1092,9 +1127,23 @@ perf_event_handler(
     // update the cct and add callchain if necessary
     sample_val_t sv = hpcrun_sample_callpath(context, current->event->metric, 
 		      MetricFlags_ValFmt_Real, (hpcrun_metricVal_t) {.r=metric_inc * scale_f},
-                      0/*skipInner*/, 0/*isSync*/, 
-                      (void*) &mmap_data);
+          0/*skipInner*/, 0/*isSync*/, (void*) &mmap_data);
 
+    if (current->event->metric_desc_predefined != NULL) {
+    	if (sv.sample_node != NULL) {
+      	uint64_t blocking_time = hpcrun_get_blocking_time(sv.sample_node);
+      	if (blocking_time == 0) {
+      		hpcrun_set_blocking_time(sv.sample_node, mmap_data.time);
+      	} else if (blocking_time <= mmap_data.time) {
+      		u64 delta = mmap_data.time - blocking_time;
+          cct_metric_data_increment(current->event->metric_predefined, sv.sample_node,
+                                          (cct_metric_data_t){.i = delta});
+        	hpcrun_set_blocking_time(sv.sample_node, 0);
+        } else {
+        	EMSG("Invalid blocking time on node %p: %d", sv.sample_node, blocking_time);
+        }
+    	}
+    }
     //blame_shift_apply( current->event->metric, sv.sample_node, 1 /*metricIncr*/);
 #if LINUX_PERF_DEBUG
     // this part is for debugging purpose

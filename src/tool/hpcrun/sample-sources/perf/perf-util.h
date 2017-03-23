@@ -98,6 +98,8 @@ typedef struct event_info_s {
   metric_desc_t *metric_desc;  // pointer on hpcrun metric descriptor
   int  	 index_predefined;	   // index of the predefined metric (if this event is
   	  	  	  	  	  	  	   // a customized hpcrun event)
+  int    metric_predefined;
+  metric_desc_t *metric_desc_predefined; // pointer to predefined metric
 } event_info_t;
 
 
