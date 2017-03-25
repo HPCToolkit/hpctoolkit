@@ -147,6 +147,8 @@
 // Predefined events
 // -----------------------------------------------------
 
+#define EVNAME_KERNEL_BLOCK     "KERNEL_BLOCK"
+#define EVNAME_CONTEXT_SWITCHES "CS"
 
 
 // -----------------------------------------------------
@@ -177,11 +179,13 @@ typedef struct perf_event_callchain_s {
   u64 ips[];     /* vector of IPs */
 } pe_callchain_t;
 
+typedef void (*register_event_t)(event_info_t *event_desc);
 
 typedef struct event_predefined_s {
-  const char *name; // name of the event
-  u64 id; 			// index in the kernel perf event
-  u64 type;			// type of the event
+  const char *name;     // name of the event
+  u64 id; 	        // index in the kernel perf event
+  u64 type;	        // type of the event
+  register_event_t fn;  // function to register the event
 } event_predefined_t;
 
 
@@ -243,13 +247,20 @@ static const char * dashes_separator =
 static const char * equals_separator =
   "===========================================================================\n";
 
+
+//******************************************************************************
+// forward declaration
+//******************************************************************************
+
+static void register_blocking(event_info_t *event_desc);
+
 //******************************************************************************
 // local variables
 //******************************************************************************
 
 static event_predefined_t events_predefined[] = {
-		{"CYCLES",   PERF_COUNT_HW_CPU_CYCLES, 		 PERF_TYPE_HARDWARE},
-		{"BLOCKING", PERF_COUNT_SW_CONTEXT_SWITCHES, PERF_TYPE_SOFTWARE}};
+		{EVNAME_KERNEL_BLOCK, PERF_COUNT_SW_CONTEXT_SWITCHES, 
+                 PERF_TYPE_SOFTWARE, register_blocking}};
 
 static uint16_t perf_kernel_lm_id;
 
@@ -432,7 +443,8 @@ perf_attr_init(
   const char *name,
   event_info_t *event,
   bool usePeriod,
-  long threshold
+  long threshold, 
+  u64  sampletype
 )
 {
   // if perfmon is disabled, by default the event is cycle
@@ -440,18 +452,12 @@ perf_attr_init(
   unsigned int event_type  = PERF_TYPE_HARDWARE;
 
   // by default, we always ask for sampling period information
-  unsigned int sample_type = PERF_SAMPLE_PERIOD; 
-  int index = 0;
+  unsigned int sample_type = sampletype | PERF_SAMPLE_PERIOD; 
 
-  if ((index=getPredefinedEventID(name))>=0) {
-	// for datacentric:
-    // sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID ;
-	event_code = events_predefined[index].id;
-	event_type = events_predefined[index].type;
-	event->index_predefined = index;
-  } 
+  // for datacentric:
+  // sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID ;
 #ifdef ENABLE_PERFMON
-  else if (!pfmu_getEventType(name, &event_code, &event_type)) {
+  if (!pfmu_getEventType(name, &event_code, &event_type)) {
      EMSG("Linux perf event not recognized: %s", name);
      return false;
   }
@@ -484,11 +490,7 @@ perf_attr_init(
     attr->sample_type            = sample_type | PERF_SAMPLE_CALLCHAIN;
     attr->exclude_callchain_user = EXCLUDE_CALLCHAIN_USER;
   } else {
-    attr->sample_type 					 = sample_type | PERF_SAMPLE_IP;
-  }
-  if (event->index_predefined == 1) {
-  	// case of blocking event
-  	attr->sample_type |= PERF_SAMPLE_TIME;
+    attr->sample_type            = sample_type | PERF_SAMPLE_IP;
   }
   TMSG(LINUX_PERF, "init event %s: type: %d, code: %x", name, event_type, event_code);
   return true;
@@ -671,6 +673,35 @@ getEnvLong(const char *env_var, long default_value)
   }
   // invalid value
   return default_value;
+}
+
+
+static void
+register_blocking(event_info_t *event_desc)
+{
+  // ------------------------------------------
+  // create metric to compute blocking time
+  // ------------------------------------------
+  event_desc->metric_predefined = hpcrun_new_metric();
+  event_desc->metric_desc_predefined = hpcrun_set_metric_info_and_period(
+      	event_desc->metric_predefined, EVNAME_KERNEL_BLOCK, 
+        MetricFlags_ValFmt_Int, 1 /* period */, metric_property_none);
+
+  // ------------------------------------------
+  // create context switch event sampled everytime cs occurs
+  // ------------------------------------------
+  perf_attr_init(EVNAME_CONTEXT_SWITCHES, event_desc, 
+       true /* use_period*/, 1 /* sample every context switch*/, 
+       PERF_SAMPLE_TIME /* need time info for sample type */);
+
+  // ------------------------------------------
+  // create metric to store context switch
+  // ------------------------------------------
+  event_desc->metric      = hpcrun_new_metric();
+  event_desc->metric_desc = hpcrun_set_metric_info_and_period(
+      event_desc->metric, EVNAME_CONTEXT_SWITCHES,
+      MetricFlags_ValFmt_Real, 1 /* period*/, metric_property_none);
+
 }
 
 /******************************************************************************
@@ -918,6 +949,10 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   int i=0;
 
+  // ----------------------------------------------------------------------
+  // for each perf's event, create the metric descriptor which will be used later
+  // during thread initialization for perf event creation
+  // ----------------------------------------------------------------------
   for (event = start_tok(evlist); more_tok(); event = next_tok(), i++) {
     char name[1024];
     long threshold = 1;
@@ -927,19 +962,17 @@ METHOD_FN(process_event_list, int lush_metrics)
     int event_type = hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold, 
        DEFAULT_THRESHOLD);
 
-    // initialize the event attributes
-    event_desc[i].id   = i;
+    // need a special case if we have our own customized  predefined  event
+    // This "customized" event will use one or more perf events
+    //
     event_desc[i].index_predefined = getPredefinedEventID(name);
-  	if (event_desc[i].index_predefined == 1) {
-  		event_desc[i].metric_predefined = hpcrun_new_metric();
-      event_desc[i].metric_desc_predefined = hpcrun_set_metric_info_and_period(
-      		event_desc[i].metric_predefined, "Blocking-Time", MetricFlags_ValFmt_Int,
-      		1, metric_property_none);
 
-      event_type = 0;
-      strcpy(name, "CS");
-  	}
-    perf_attr_init(name, &(event_desc[i]), event_type==1, threshold);
+    if (event_desc[i].index_predefined >= 0) {
+      events_predefined[event_desc[i].index_predefined].fn( &event_desc[i] );
+      continue;
+    }
+    // Normal perf event: initialize the event attributes
+    perf_attr_init(name, &(event_desc[i]), event_type==1, threshold, 0);
 
     // initialize the property of the metric
     // if the metric's name has "CYCLES" it mostly a cycle metric 
@@ -948,19 +981,18 @@ METHOD_FN(process_event_list, int lush_metrics)
     prop = (strstr(name, "CYCLES") != NULL) ? metric_property_cycles : metric_property_none;
 
     char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
-           // since the OS will free it, we don't have to do it in hpcrun
+                                   // since the OS will free it, we don't have to do it in hpcrun
     // set the metric for this perf event
     event_desc[i].metric = hpcrun_new_metric();
    
     // if we use frequency (event_type=1) then the periodd is not deterministic, 
     // it can change dynamically. In this case, the period is 1
-    metric_desc_t *m = NULL;
     if (event_type != 1) {
       // using frequency : the threshold is always 1, 
       //                   since the period is determine dynamically
       threshold = 1;
     }
-    m = hpcrun_set_metric_info_and_period(event_desc[i].metric, name_dup,
+    metric_desc_t *m = hpcrun_set_metric_info_and_period(event_desc[i].metric, name_dup,
             MetricFlags_ValFmt_Real, threshold, prop);
 
     if (m == NULL) {
@@ -1130,19 +1162,19 @@ perf_event_handler(
           0/*skipInner*/, 0/*isSync*/, (void*) &mmap_data);
 
     if (current->event->metric_desc_predefined != NULL) {
-    	if (sv.sample_node != NULL) {
-      	uint64_t blocking_time = hpcrun_get_blocking_time(sv.sample_node);
+      if (sv.sample_node != NULL) {
+        uint64_t blocking_time = hpcrun_get_blocking_time(sv.sample_node);
       	if (blocking_time == 0) {
-      		hpcrun_set_blocking_time(sv.sample_node, mmap_data.time);
+      	  hpcrun_set_blocking_time(sv.sample_node, mmap_data.time);
       	} else if (blocking_time <= mmap_data.time) {
-      		u64 delta = mmap_data.time - blocking_time;
+      	  u64 delta = mmap_data.time - blocking_time;
           cct_metric_data_increment(current->event->metric_predefined, sv.sample_node,
                                           (cct_metric_data_t){.i = delta});
-        	hpcrun_set_blocking_time(sv.sample_node, 0);
+          hpcrun_set_blocking_time(sv.sample_node, 0);
         } else {
-        	EMSG("Invalid blocking time on node %p: %d", sv.sample_node, blocking_time);
+          EMSG("Invalid blocking time on node %p: %d", sv.sample_node, blocking_time);
         }
-    	}
+      }
     }
     //blame_shift_apply( current->event->metric, sv.sample_node, 1 /*metricIncr*/);
 #if LINUX_PERF_DEBUG
