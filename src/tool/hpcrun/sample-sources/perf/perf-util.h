@@ -42,6 +42,7 @@
 #include <linux/perf_event.h>
 
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <sample_event.h>
 
 #ifndef u32
 typedef __u32 u32;
@@ -87,6 +88,29 @@ typedef struct perf_mmap_data_s {
                      /* if PERF_SAMPLE_REGS_INTR */
 } perf_mmap_data_t;
 
+// forward type declaration
+struct event_info_s;
+struct event_thread_s;
+
+// callback functions
+typedef void (*register_event_t)(struct event_info_s *);
+typedef void (*event_handler_t)(struct event_thread_s*, sample_val_t , perf_mmap_data_t );
+
+// data structure for our customized event
+// this type should be used only within perf module.
+typedef struct event_predefined_s {
+  const char *name;            // unique name of the event
+  u64 id; 	                   // perf index in the kernel perf event
+  u64 type;	                   // perf type of the event
+
+  int            metric_index; // hpcrun's index metric
+  metric_desc_t *metric_desc;  // pointer to predefined metric
+
+  register_event_t register_fn;// function to register the event
+  event_handler_t  handler_fn; // callback to be used during the sampling
+} event_predefined_t;
+
+
 
 // main data structure to store the information of an event.
 // this structure is designed to be created once during the initialization.
@@ -96,10 +120,9 @@ typedef struct event_info_s {
   struct perf_event_attr attr; // the event attribute
   int    metric;               // metric ID of the event (raw counter)
   metric_desc_t *metric_desc;  // pointer on hpcrun metric descriptor
-  int  	 index_predefined;	   // index of the predefined metric (if this event is
-  	  	  	  	  	  	  	   // a customized hpcrun event)
-  int    metric_predefined;
-  metric_desc_t *metric_desc_predefined; // pointer to predefined metric
+
+  // predefined metric
+  event_predefined_t *metric_predefined;	// pointer to the predefined metric
 } event_info_t;
 
 

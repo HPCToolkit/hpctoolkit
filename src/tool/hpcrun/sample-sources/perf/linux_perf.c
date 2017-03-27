@@ -179,16 +179,6 @@ typedef struct perf_event_callchain_s {
   u64 ips[];     /* vector of IPs */
 } pe_callchain_t;
 
-typedef void (*register_event_t)(event_info_t *event_desc);
-
-typedef struct event_predefined_s {
-  const char *name;     // name of the event
-  u64 id; 	        // index in the kernel perf event
-  u64 type;	        // type of the event
-  register_event_t fn;  // function to register the event
-} event_predefined_t;
-
-
 
 /******************************************************************************
  * external thread-local variables
@@ -221,6 +211,9 @@ static int perf_event_handler(
   void* context
 );
 
+static void
+kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
+    perf_mmap_data_t mmap_data);
 
 
 //******************************************************************************
@@ -259,8 +252,9 @@ static void register_blocking(event_info_t *event_desc);
 //******************************************************************************
 
 static event_predefined_t events_predefined[] = {
-		{EVNAME_KERNEL_BLOCK, PERF_COUNT_SW_CONTEXT_SWITCHES, 
-                 PERF_TYPE_SOFTWARE, register_blocking}};
+		{EVNAME_KERNEL_BLOCK, PERF_COUNT_SW_CONTEXT_SWITCHES, PERF_TYPE_SOFTWARE,
+		 0, NULL, // these fields to be defined later
+		 register_blocking, kernel_block_handler}};
 
 static uint16_t perf_kernel_lm_id;
 
@@ -310,7 +304,7 @@ perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
 
 // return the index of the predefined event if the name matches
 // return -1 otherwise
-static int
+static event_predefined_t*
 getPredefinedEventID(const char *event_name)
 {
   int elems = sizeof(events_predefined) / sizeof(event_predefined_t);
@@ -318,10 +312,10 @@ getPredefinedEventID(const char *event_name)
   for (int i=0; i<elems; i++) {
     const char  *event = events_predefined[i].name;
     if (strncmp(event, event_name, strlen(event)) == 0) {
-      return i;
+      return &events_predefined[i];
     }
   }
-  return -1;
+  return NULL;
 }
 
 //----------------------------------------------------------
@@ -675,24 +669,52 @@ getEnvLong(const char *env_var, long default_value)
   return default_value;
 }
 
+/***********************************************************************
+ * Method to handle kernel blocking. Called for every context switch event
+ ***********************************************************************/ 
+static void
+kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
+    perf_mmap_data_t mmap_data)
+{
+  if (current_event != NULL && sv.sample_node != NULL) {
+    uint64_t blocking_time = hpcrun_get_blocking_time(sv.sample_node);
 
+    if (blocking_time == 0) {
+      hpcrun_set_blocking_time(sv.sample_node, mmap_data.time);
+    } else if (blocking_time <= mmap_data.time) {
+      u64 delta = mmap_data.time - blocking_time;
+
+      int metric_index =  current_event->event->metric_predefined->metric_index;
+      cct_metric_data_increment(metric_index,
+                                sv.sample_node,
+                               (cct_metric_data_t){.i = delta});
+      hpcrun_set_blocking_time(sv.sample_node, 0);
+    } else {
+      EMSG("Invalid blocking time on node %p: %d", sv.sample_node, blocking_time);
+    }
+  }
+}
+
+/***************************************************************
+ * Register events to compute blocking time in the kernel
+ * We use perf's sofrware context switch event to compute the 
+ * time spent inside the kernel. For this, we need to sample everytime
+ * a context switch occurs, and compute the time when entering the
+ * kernel vs leaving the kernel. See perf_event_handler.
+ * We need two metrics for this:
+ * - blocking time metric to store the time spent in the kernel
+ * - context switch metric to store the number of context switches
+ ****************************************************************/ 
 static void
 register_blocking(event_info_t *event_desc)
 {
   // ------------------------------------------
   // create metric to compute blocking time
   // ------------------------------------------
-  event_desc->metric_predefined = hpcrun_new_metric();
-  event_desc->metric_desc_predefined = hpcrun_set_metric_info_and_period(
-      	event_desc->metric_predefined, EVNAME_KERNEL_BLOCK, 
+  event_desc->metric_predefined->metric_index = hpcrun_new_metric();
+  event_desc->metric_predefined->metric_desc  = hpcrun_set_metric_info_and_period(
+      	event_desc->metric_predefined->metric_index, EVNAME_KERNEL_BLOCK,
         MetricFlags_ValFmt_Int, 1 /* period */, metric_property_none);
-
-  // ------------------------------------------
-  // create context switch event sampled everytime cs occurs
-  // ------------------------------------------
-  perf_attr_init(EVNAME_CONTEXT_SWITCHES, event_desc, 
-       true /* use_period*/, 1 /* sample every context switch*/, 
-       PERF_SAMPLE_TIME /* need time info for sample type */);
 
   // ------------------------------------------
   // create metric to store context switch
@@ -701,6 +723,13 @@ register_blocking(event_info_t *event_desc)
   event_desc->metric_desc = hpcrun_set_metric_info_and_period(
       event_desc->metric, EVNAME_CONTEXT_SWITCHES,
       MetricFlags_ValFmt_Real, 1 /* period*/, metric_property_none);
+
+  // ------------------------------------------
+  // create context switch event sampled everytime cs occurs
+  // ------------------------------------------
+  perf_attr_init(EVNAME_CONTEXT_SWITCHES, event_desc, 
+       true /* use_period*/, 1 /* sample every context switch*/, 
+       PERF_SAMPLE_TIME /* need time info for sample type */);
 
 }
 
@@ -894,7 +923,7 @@ METHOD_FN(supports_event, const char *ev_str)
   }
 
   // first, check if the event is a predefined event
-  if (getPredefinedEventID(ev_str) >= 0)
+  if (getPredefinedEventID(ev_str) != NULL)
     return true;
 
   bool result = false;
@@ -965,11 +994,14 @@ METHOD_FN(process_event_list, int lush_metrics)
     // need a special case if we have our own customized  predefined  event
     // This "customized" event will use one or more perf events
     //
-    event_desc[i].index_predefined = getPredefinedEventID(name);
+    event_desc[i].metric_predefined = getPredefinedEventID(name);
 
-    if (event_desc[i].index_predefined >= 0) {
-      events_predefined[event_desc[i].index_predefined].fn( &event_desc[i] );
-      continue;
+    if (event_desc[i].metric_predefined != NULL) {
+    	if (event_desc[i].metric_predefined->register_fn != NULL) {
+    	  // special registration for customized event
+        event_desc[i].metric_predefined->register_fn( &event_desc[i] );
+        continue;
+    	}
     }
     // Normal perf event: initialize the event attributes
     perf_attr_init(name, &(event_desc[i]), event_type==1, threshold, 0);
@@ -1161,19 +1193,9 @@ perf_event_handler(
 		      MetricFlags_ValFmt_Real, (hpcrun_metricVal_t) {.r=metric_inc * scale_f},
           0/*skipInner*/, 0/*isSync*/, (void*) &mmap_data);
 
-    if (current->event->metric_desc_predefined != NULL) {
-      if (sv.sample_node != NULL) {
-        uint64_t blocking_time = hpcrun_get_blocking_time(sv.sample_node);
-      	if (blocking_time == 0) {
-      	  hpcrun_set_blocking_time(sv.sample_node, mmap_data.time);
-      	} else if (blocking_time <= mmap_data.time) {
-      	  u64 delta = mmap_data.time - blocking_time;
-          cct_metric_data_increment(current->event->metric_predefined, sv.sample_node,
-                                          (cct_metric_data_t){.i = delta});
-          hpcrun_set_blocking_time(sv.sample_node, 0);
-        } else {
-          EMSG("Invalid blocking time on node %p: %d", sv.sample_node, blocking_time);
-        }
+    if (current->event->metric_predefined != NULL) {
+      if (current->event->metric_predefined->handler_fn != NULL) {
+      		current->event->metric_predefined->handler_fn(current, sv, mmap_data);
       }
     }
     //blame_shift_apply( current->event->metric, sv.sample_node, 1 /*metricIncr*/);
