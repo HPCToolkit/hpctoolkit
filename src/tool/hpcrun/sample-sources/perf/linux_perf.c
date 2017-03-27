@@ -680,14 +680,19 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
     uint64_t blocking_time = hpcrun_get_blocking_time(sv.sample_node);
 
     if (blocking_time == 0) {
+    	// we are entering the kernel: store the time
       hpcrun_set_blocking_time(sv.sample_node, mmap_data.time);
+
     } else if (blocking_time <= mmap_data.time) {
+    	// we are leaving the kernel: add the time spent in the kernel into the metric
       u64 delta = mmap_data.time - blocking_time;
 
       int metric_index =  current_event->event->metric_predefined->metric_index;
       cct_metric_data_increment(metric_index,
                                 sv.sample_node,
                                (cct_metric_data_t){.i = delta});
+
+      // reset the time
       hpcrun_set_blocking_time(sv.sample_node, 0);
     } else {
       EMSG("Invalid blocking time on node %p: %d", sv.sample_node, blocking_time);
@@ -1071,6 +1076,21 @@ METHOD_FN(display_events)
      "PERF_COUNT_HW_CPU_CYCLES");
     printf("\n");
 #endif
+    printf("\n");
+    if (events_predefined != NULL) {
+      printf("\n%s",equals_separator);
+      printf("Available customized events\n");
+      printf(equals_separator);
+      printf("Name\t\tDescription\n");
+
+      int elems = sizeof(events_predefined) / sizeof(event_predefined_t);
+
+      for (int i=0; i<elems; i++) {
+        const char  *event = events_predefined[i].name;
+        printf("%s\n", event);
+      }
+      printf("\n");
+    }
   }
 }
 

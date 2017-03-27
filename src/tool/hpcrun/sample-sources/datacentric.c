@@ -251,13 +251,15 @@ METHOD_FN(gen_event_set,int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
+#if DATACENTRIC_DEBUG
   printf("===========================================================================\n");
   printf("Available memory leak detection events\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("DATACENTRIC\t\tThe number of bytes allocated and freed per dynamic context\n");
+  printf("DATACENTRIC\tThe number of bytes allocated and freed per dynamic context\n");
   printf("\n");
+#endif
 }
 
 /***************************************************************************
