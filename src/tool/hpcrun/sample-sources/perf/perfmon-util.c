@@ -68,6 +68,7 @@
  *****************************************************************************/
 
 #include <hpcrun/messages/messages.h>
+#include "perf-util.h"    // u64, u32 and perf_mmap_data_t
 
 /******************************************************************************
  * perfmon
@@ -227,7 +228,7 @@ show_info(char *event )
 // return 0 or positive if the event exists, -1 otherwise
 // if the event exist, code and type are the code and type of the event
 int 
-pfmu_getEventType(const char *eventname, unsigned int *code, unsigned int *type)
+pfmu_getEventType(const char *eventname, u64 *code, u64 *type)
 {
   pfm_perf_encode_arg_t arg;
   char *fqstr = NULL;
@@ -258,7 +259,7 @@ pfmu_getEventType(const char *eventname, unsigned int *code, unsigned int *type)
 int
 pfmu_isSupported(const char *eventname)
 {
-  unsigned int eventcode, eventtype;
+  u64 eventcode, eventtype;
   return pfmu_getEventType(eventname, &eventcode, &eventtype);
 }
 

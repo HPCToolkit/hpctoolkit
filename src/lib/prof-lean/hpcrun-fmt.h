@@ -375,6 +375,11 @@ typedef struct metric_desc_t {
   char* formula;
   char* format;
 
+  // laks 03.30.2017 : add additional field
+  // misc info about the metric. perf-event module
+  // adds info: multiplexing, frequency, etc..
+  void *aux_info;
+
 } metric_desc_t;
 
 extern const metric_desc_t metricDesc_NULL;

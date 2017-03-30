@@ -232,7 +232,7 @@ const int perf_skid_flavors = sizeof(perf_skid_precision)/sizeof(int);
 
 
 #ifndef ENABLE_PERFMON
-static const char *event_name = "PERF_COUNT_HW_CPU_CYCLES";
+static const char *event_name = "CPU_CYCLES";
 #endif
 
 static const char * dashes_separator = 
@@ -251,10 +251,13 @@ static void register_blocking(event_info_t *event_desc);
 // local variables
 //******************************************************************************
 
-static event_predefined_t events_predefined[] = {
-		{EVNAME_KERNEL_BLOCK, PERF_COUNT_SW_CONTEXT_SWITCHES, PERF_TYPE_SOFTWARE,
-		 0, NULL, // these fields to be defined later
-		 register_blocking, kernel_block_handler}};
+static event_custom_t events_predefined[] = {
+		{.name         = EVNAME_KERNEL_BLOCK,
+		 .register_fn  = register_blocking,   // call backs
+		 .handler_fn   = kernel_block_handler, // call backs
+		 .metric_index = 0,   // these fields to be defined later
+		 .metric_desc  = NULL // these fields to be defined later
+		}};
 
 static uint16_t perf_kernel_lm_id;
 
@@ -304,14 +307,14 @@ perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
 
 // return the index of the predefined event if the name matches
 // return -1 otherwise
-static event_predefined_t*
-getPredefinedEventID(const char *event_name)
+static event_custom_t*
+getPredefinedEventID(const char *name)
 {
-  int elems = sizeof(events_predefined) / sizeof(event_predefined_t);
+  int elems = sizeof(events_predefined) / sizeof(event_custom_t);
   
   for (int i=0; i<elems; i++) {
     const char  *event = events_predefined[i].name;
-    if (strncmp(event, event_name, strlen(event)) == 0) {
+    if (strncmp(event, name, strlen(event)) == 0) {
       return &events_predefined[i];
     }
   }
@@ -426,6 +429,27 @@ perf_init()
   monitor_real_pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
 }
 
+static int
+perf_get_pmu_code_type(const char *name, u64 *event_code, u64* event_type)
+{
+#ifdef ENABLE_PERFMON
+  if (!pfmu_getEventType(name, event_code, event_type)) {
+     EMSG("Linux perf event not recognized: %s", name);
+     return -1;
+  }
+  if (event_type<0) {
+     EMSG("Linux perf event type not recognized: %s", name);
+     return -1;
+  }
+  return 1;
+#else
+	// default pmu if we don't have perfmon
+	*event_code = PERF_COUNT_HW_BUS_CYCLES;
+	*event_type = PERF_TYPE_HARDWARE;
+
+  return 0;
+#endif
+}
 
 //----------------------------------------------------------
 // generic initialization for event attributes
@@ -434,33 +458,17 @@ perf_init()
 //----------------------------------------------------------
 static int
 perf_attr_init(
-  const char *name,
-  event_info_t *event,
-  bool usePeriod,
-  long threshold, 
+  u64 event_code, u64 event_type,
+  struct perf_event_attr *attr,
+  bool usePeriod, u64 threshold,
   u64  sampletype
 )
 {
-  // if perfmon is disabled, by default the event is cycle
-  unsigned int event_code  = PERF_COUNT_HW_CPU_CYCLES;
-  unsigned int event_type  = PERF_TYPE_HARDWARE;
-
   // by default, we always ask for sampling period information
   unsigned int sample_type = sampletype | PERF_SAMPLE_PERIOD; 
 
   // for datacentric:
   // sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID ;
-#ifdef ENABLE_PERFMON
-  if (!pfmu_getEventType(name, &event_code, &event_type)) {
-     EMSG("Linux perf event not recognized: %s", name);
-     return false;
-  }
-  if (event_type<0) {
-     EMSG("Linux perf event type not recognized: %s", name);
-     return false;
-  }
-#endif
-  struct perf_event_attr *attr = &(event->attr);
   memset(attr, 0, sizeof(struct perf_event_attr));
 
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
@@ -486,7 +494,6 @@ perf_attr_init(
   } else {
     attr->sample_type            = sample_type | PERF_SAMPLE_IP;
   }
-  TMSG(LINUX_PERF, "init event %s: type: %d, code: %x", name, event_type, event_code);
   return true;
 }
 
@@ -687,7 +694,7 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
     	// we are leaving the kernel: add the time spent in the kernel into the metric
       u64 delta = mmap_data.time - blocking_time;
 
-      int metric_index =  current_event->event->metric_predefined->metric_index;
+      int metric_index =  current_event->event->metric_custom->metric_index;
       cct_metric_data_increment(metric_index,
                                 sv.sample_node,
                                (cct_metric_data_t){.i = delta});
@@ -716,9 +723,9 @@ register_blocking(event_info_t *event_desc)
   // ------------------------------------------
   // create metric to compute blocking time
   // ------------------------------------------
-  event_desc->metric_predefined->metric_index = hpcrun_new_metric();
-  event_desc->metric_predefined->metric_desc  = hpcrun_set_metric_info_and_period(
-      	event_desc->metric_predefined->metric_index, EVNAME_KERNEL_BLOCK,
+  event_desc->metric_custom->metric_index = hpcrun_new_metric();
+  event_desc->metric_custom->metric_desc  = hpcrun_set_metric_info_and_period(
+      	event_desc->metric_custom->metric_index, EVNAME_KERNEL_BLOCK,
         MetricFlags_ValFmt_Int, 1 /* period */, metric_property_none);
 
   // ------------------------------------------
@@ -732,9 +739,16 @@ register_blocking(event_info_t *event_desc)
   // ------------------------------------------
   // create context switch event sampled everytime cs occurs
   // ------------------------------------------
-  perf_attr_init(EVNAME_CONTEXT_SWITCHES, event_desc, 
-       true /* use_period*/, 1 /* sample every context switch*/, 
-       PERF_SAMPLE_TIME /* need time info for sample type */);
+  perf_attr_init(PERF_COUNT_SW_CONTEXT_SWITCHES, PERF_TYPE_SOFTWARE,
+                 &(event_desc->attr),
+                 true /* use_period*/, 1 /* sample every context switch*/,
+                 PERF_SAMPLE_TIME /* need time info for sample type */);
+
+  // ------------------------------------------
+  // create additional info for perf event metric
+  // ------------------------------------------
+  event_desc->metric_desc->aux_info = (metric_aux_info_t *) hpcrun_malloc(sizeof(metric_aux_info_t));
+	((metric_aux_info_t*)event_desc->metric_desc->aux_info)->is_frequency = (event_desc->attr.freq == 1);
 
 }
 
@@ -993,23 +1007,32 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     TMSG(LINUX_PERF,"checking event spec = %s",event);
 
-    int event_type = hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold, 
+    int period_type = hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold,
        DEFAULT_THRESHOLD);
 
     // need a special case if we have our own customized  predefined  event
     // This "customized" event will use one or more perf events
     //
-    event_desc[i].metric_predefined = getPredefinedEventID(name);
+    event_desc[i].metric_custom = getPredefinedEventID(name);
 
-    if (event_desc[i].metric_predefined != NULL) {
-    	if (event_desc[i].metric_predefined->register_fn != NULL) {
+    if (event_desc[i].metric_custom != NULL) {
+    	if (event_desc[i].metric_custom->register_fn != NULL) {
     	  // special registration for customized event
-        event_desc[i].metric_predefined->register_fn( &event_desc[i] );
+        event_desc[i].metric_custom->register_fn( &event_desc[i] );
         continue;
     	}
     }
+    u64 event_code, event_type;
+    int isPMU = perf_get_pmu_code_type(name, &event_code, &event_type);
+    if (isPMU < 0)
+    	// case for unknown event
+    	// it is impossible to be here, unless the code is buggy
+    	continue;
+
+    bool is_period = (period_type == 1);
+
     // Normal perf event: initialize the event attributes
-    perf_attr_init(name, &(event_desc[i]), event_type==1, threshold, 0);
+    perf_attr_init(event_code, event_type, &(event_desc[i].attr), is_period, threshold, 0);
 
     // initialize the property of the metric
     // if the metric's name has "CYCLES" it mostly a cycle metric 
@@ -1024,7 +1047,7 @@ METHOD_FN(process_event_list, int lush_metrics)
    
     // if we use frequency (event_type=1) then the periodd is not deterministic, 
     // it can change dynamically. In this case, the period is 1
-    if (event_type != 1) {
+    if (!is_period) {
       // using frequency : the threshold is always 1, 
       //                   since the period is determine dynamically
       threshold = 1;
@@ -1034,6 +1057,9 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     if (m == NULL) {
       EMSG("Error: unable to create metric #%d: %s", index, name);
+    } else {
+    		m->aux_info = (metric_aux_info_t *) hpcrun_malloc(sizeof(metric_aux_info_t));
+    		((metric_aux_info_t*)m->aux_info)->is_frequency = (event_desc[i].attr.freq == 1);
     }
     event_desc[i].metric_desc = m;
   }
@@ -1083,7 +1109,7 @@ METHOD_FN(display_events)
       printf(equals_separator);
       printf("Name\t\tDescription\n");
 
-      int elems = sizeof(events_predefined) / sizeof(event_predefined_t);
+      int elems = sizeof(events_predefined) / sizeof(event_custom_t);
 
       for (int i=0; i<elems; i++) {
         const char  *event = events_predefined[i].name;
@@ -1178,9 +1204,12 @@ perf_event_handler(
     return 0; // tell monitor the signal has been handled.
   }
 
+  // ----------------------------------------------------------------------------
   // get the index of the file descriptor (if we have multiple events)
   // if the file descriptor is not on the list, we shouldn't store the 
   // metrics. Perhaps we should throw away?
+  // ----------------------------------------------------------------------------
+
   sample_source_t *self = &obj_name();
 
   int nevents = self->evl.nevents;
@@ -1193,6 +1222,11 @@ perf_event_handler(
     memset(&mmap_data, 0, sizeof(perf_mmap_data_t));
 
     read_perf_buffer(current, &mmap_data);
+
+    // ----------------------------------------------------------------------------
+    // for event with frequency, we need to increase the counter by its period
+    // sampling taken by perf event kernel
+    // ----------------------------------------------------------------------------
     uint64_t metric_inc = 1;
     if (current->event->attr.freq==1 && mmap_data.period>0)
       metric_inc = mmap_data.period;
@@ -1204,18 +1238,36 @@ perf_event_handler(
     u64 time_enabled = current->mmap->time_enabled;
     u64 time_running = current->mmap->time_running;
 
+    // ----------------------------------------------------------------------------
     // the estimate count = raw_count * scale_factor
     //	            = metric_inc * time_enabled / time running
-    double scale_f   = (double) time_enabled / time_running;
+    // ----------------------------------------------------------------------------
+    double scale_f = (double) time_enabled / time_running;
+    double counter = scale_f * metric_inc;
+		metric_aux_info_t* aux = (metric_aux_info_t*)current->event->metric_desc->aux_info;
+
+		if (aux != NULL) {
+				// check if this event is multiplexed. we need to notify the user that a multiplexed
+				//  event is not accurate at all.
+				aux->is_multiplexed    = (scale_f > 1);
+
+		    // case of multiplexed or frequency-based sampling, we need to store the mean and
+		    // the standard deviation of the sampling period
+				double prev_mean       = aux->threshold_mean;
+				aux->num_samples++;
+				aux->threshold_mean    += (counter-aux->threshold_mean) / aux->num_samples;
+				aux->threshold_stdev   += (counter-aux->threshold_mean) * (counter-prev_mean);
+		}
 
     // update the cct and add callchain if necessary
     sample_val_t sv = hpcrun_sample_callpath(context, current->event->metric, 
-		      MetricFlags_ValFmt_Real, (hpcrun_metricVal_t) {.r=metric_inc * scale_f},
+		      MetricFlags_ValFmt_Real, (hpcrun_metricVal_t) {.r=counter},
           0/*skipInner*/, 0/*isSync*/, (void*) &mmap_data);
 
-    if (current->event->metric_predefined != NULL) {
-      if (current->event->metric_predefined->handler_fn != NULL) {
-      		current->event->metric_predefined->handler_fn(current, sv, mmap_data);
+    // if the current event is a customized one, it requires a special handling
+    if (current->event->metric_custom != NULL) {
+      if (current->event->metric_custom->handler_fn != NULL) {
+      		current->event->metric_custom->handler_fn(current, sv, mmap_data);
       }
     }
     //blame_shift_apply( current->event->metric, sv.sample_node, 1 /*metricIncr*/);

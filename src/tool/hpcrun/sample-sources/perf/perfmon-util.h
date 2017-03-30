@@ -46,11 +46,12 @@
 #define __PERFMON_UTIL_H__
 
 #include <linux/perf_event.h>
+#include "perf-util.h"    // u64, u32 and perf_mmap_data_t
 
 int pfmu_init();
 int pfmu_showEventList();
 int pfmu_isSupported(const char *eventname);
-int pfmu_getEventType(const char *eventname, unsigned int *code, unsigned int *type);
+int pfmu_getEventType(const char *eventname, u64 *code, u64 *type);
 
 void pfmu_fini();
 

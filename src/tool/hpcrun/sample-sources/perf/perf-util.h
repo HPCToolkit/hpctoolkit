@@ -96,25 +96,26 @@ struct event_thread_s;
 typedef void (*register_event_t)(struct event_info_s *);
 typedef void (*event_handler_t)(struct event_thread_s*, sample_val_t , perf_mmap_data_t );
 
+// --------------------------------------------------------------
 // data structure for our customized event
 // this type should be used only within perf module.
+// --------------------------------------------------------------
 typedef struct event_predefined_s {
   const char *name;            // unique name of the event
-  u64 id; 	                   // perf index in the kernel perf event
-  u64 type;	                   // perf type of the event
-
-  int            metric_index; // hpcrun's index metric
-  metric_desc_t *metric_desc;  // pointer to predefined metric
 
   register_event_t register_fn;// function to register the event
   event_handler_t  handler_fn; // callback to be used during the sampling
-} event_predefined_t;
+
+  int            metric_index; // hpcrun's index metric
+  metric_desc_t *metric_desc;  // pointer to predefined metric
+} event_custom_t;
 
 
-
+// --------------------------------------------------------------
 // main data structure to store the information of an event.
 // this structure is designed to be created once during the initialization.
 // this code doesn't work if the number of events change dynamically.
+// --------------------------------------------------------------
 typedef struct event_info_s {
   int    id;
   struct perf_event_attr attr; // the event attribute
@@ -122,19 +123,33 @@ typedef struct event_info_s {
   metric_desc_t *metric_desc;  // pointer on hpcrun metric descriptor
 
   // predefined metric
-  event_predefined_t *metric_predefined;	// pointer to the predefined metric
+  event_custom_t *metric_custom;	// pointer to the predefined metric
 } event_info_t;
 
 
 typedef struct perf_event_mmap_page pe_mmap_t;
 
 
+// --------------------------------------------------------------
 // data perf event per thread per event
 // this data is designed to be used within a thread
+// --------------------------------------------------------------
 typedef struct event_thread_s {
   pe_mmap_t   *mmap;    // mmap buffer
   int    fd;            // file descriptor of the event
   event_info_t  *event; // pointer to main event description
 } event_thread_t;
+
+
+// --------------------------------------------------------------
+// additional metric information
+// --------------------------------------------------------------
+typedef struct metric_aux_info_s {
+	bool is_frequency;      // flag if the threshold is based on frequency
+	bool is_multiplexed;    // flag if the event is multiplexed
+	double threshold_mean;   // average threshold (if multiplexed)
+	double threshold_stdev;  // standadrd deviation
+	unsigned int num_samples;   // number of samples
+} metric_aux_info_t;
 
 #endif
