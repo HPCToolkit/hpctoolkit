@@ -23,7 +23,6 @@
 
 #include <lib/prof-lean/mem_manager.h>
 #include "interval_t.h"
-#include "uw_recipe.h"
 
 
 /******************************************************************************
@@ -58,6 +57,8 @@ typedef struct unwind_interval_t unwind_interval;
 // abstract data type
 //******************************************************************************
 
+typedef struct recipe_s uw_recipe_t;
+
 typedef struct uwi_s {
   interval_t *interval;
   uw_recipe_t *recipe;
@@ -79,6 +80,12 @@ void
 bitree_uwi_init();
 
 // constructors
+static inline uw_recipe_t*
+uw_recipe_t_new(mem_alloc m_alloc, size_t recipe_size)
+{
+  return (uw_recipe_t*)m_alloc(recipe_size);
+}
+
 bitree_uwi_t*
 bitree_uwi_new(uwi_t *val, bitree_uwi_t *left, bitree_uwi_t *right,
 	mem_alloc m_alloc);
@@ -160,6 +167,17 @@ bitree_uwi_find(bitree_uwi_t *tree, uwi_t *val);
 // empty tree is returned if no such node is found.
 bitree_uwi_t*
 bitree_uwi_inrange(bitree_uwi_t *tree, uintptr_t address);
+
+/*
+ * Concrete implementation of the abstract val_tostr function of the
+ * generic_val class.
+ * pre-condition: uwr is of type uw_recipe_t*
+ */
+void
+uw_recipe_tostr(void* uwr, char str[]);
+
+void
+uw_recipe_print(void* uwr);
 
 // compute a string representing the binary tree printed vertically and
 // return result in the treestr parameter.
