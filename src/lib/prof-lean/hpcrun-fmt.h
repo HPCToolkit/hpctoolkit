@@ -357,6 +357,21 @@ hpcrun_metricVal_isZero(hpcrun_metricVal_t x)
 }
 
 
+
+// --------------------------------------------------------------
+// additional metric information
+// this data is optional in metric description.
+// at the moment, only perf event sample source needs this info
+// --------------------------------------------------------------
+typedef struct metric_aux_info_s {
+	bool is_frequency;      // flag if the threshold is based on frequency
+	bool is_multiplexed;    // flag if the event is multiplexed
+	double threshold_mean;   // average threshold (if multiplexed)
+	double threshold_stdev;  // standadrd deviation
+	uint64_t num_samples;   // number of samples
+} metric_aux_info_t;
+
+
 // --------------------------------------------------------------------------
 // metric_desc_t
 // --------------------------------------------------------------------------
@@ -375,11 +390,12 @@ typedef struct metric_desc_t {
   char* formula;
   char* format;
 
-  // laks 03.30.2017 : add additional field
+  // --------------------------------------------------
+  // laks 03.30.2017 : add generic additional fields
   // misc info about the metric. perf-event module
   // adds info: multiplexing, frequency, etc..
-  void *aux_info;
-
+  // --------------------------------------------------
+  metric_aux_info_t info_data;
 } metric_desc_t;
 
 extern const metric_desc_t metricDesc_NULL;

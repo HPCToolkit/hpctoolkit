@@ -745,11 +745,9 @@ register_blocking(event_info_t *event_desc)
                  PERF_SAMPLE_TIME /* need time info for sample type */);
 
   // ------------------------------------------
-  // create additional info for perf event metric
+  // additional info for perf event metric
   // ------------------------------------------
-  event_desc->metric_desc->aux_info = (metric_aux_info_t *) hpcrun_malloc(sizeof(metric_aux_info_t));
-	((metric_aux_info_t*)event_desc->metric_desc->aux_info)->is_frequency = (event_desc->attr.freq == 1);
-
+  event_desc->metric_desc->info_data.is_frequency = (event_desc->attr.freq == 1);
 }
 
 /******************************************************************************
@@ -1058,8 +1056,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (m == NULL) {
       EMSG("Error: unable to create metric #%d: %s", index, name);
     } else {
-    		m->aux_info = (metric_aux_info_t *) hpcrun_malloc(sizeof(metric_aux_info_t));
-    		((metric_aux_info_t*)m->aux_info)->is_frequency = (event_desc[i].attr.freq == 1);
+    		m->info_data.is_frequency = (event_desc[i].attr.freq == 1);
     }
     event_desc[i].metric_desc = m;
   }
@@ -1244,27 +1241,34 @@ perf_event_handler(
     // ----------------------------------------------------------------------------
     double scale_f = (double) time_enabled / time_running;
     double counter = scale_f * metric_inc;
-		metric_aux_info_t* aux = (metric_aux_info_t*)current->event->metric_desc->aux_info;
 
-		if (aux != NULL) {
-				// check if this event is multiplexed. we need to notify the user that a multiplexed
-				//  event is not accurate at all.
-				aux->is_multiplexed    = (scale_f > 1);
+    // ----------------------------------------------------------------------------
+    // set additional information for the metric description
+    // ----------------------------------------------------------------------------
+		metric_aux_info_t *info_aux = &(current->event->metric_desc->info_data);
+		// check if this event is multiplexed. we need to notify the user that a multiplexed
+		//  event is not accurate at all.
+		// Note: perf event can report the scale to be close to 1 (like 1.02 or 0.99).
+		//       we need to use a range of value to see if it's multiplexed or not
+		info_aux->is_multiplexed    |= (scale_f>1.5);
 
-		    // case of multiplexed or frequency-based sampling, we need to store the mean and
-		    // the standard deviation of the sampling period
-				double prev_mean       = aux->threshold_mean;
-				aux->num_samples++;
-				aux->threshold_mean    += (counter-aux->threshold_mean) / aux->num_samples;
-				aux->threshold_stdev   += (counter-aux->threshold_mean) * (counter-prev_mean);
-		}
+    // case of multiplexed or frequency-based sampling, we need to store the mean and
+    // the standard deviation of the sampling period
+		double prev_mean             = info_aux->threshold_mean;
+		info_aux->num_samples++;
+		info_aux->threshold_mean    += (counter-info_aux->threshold_mean) / info_aux->num_samples;
+		info_aux->threshold_stdev   += (counter-info_aux->threshold_mean) * (counter-prev_mean);
 
+    // ----------------------------------------------------------------------------
     // update the cct and add callchain if necessary
+    // ----------------------------------------------------------------------------
     sample_val_t sv = hpcrun_sample_callpath(context, current->event->metric, 
 		      MetricFlags_ValFmt_Real, (hpcrun_metricVal_t) {.r=counter},
           0/*skipInner*/, 0/*isSync*/, (void*) &mmap_data);
 
+    // ----------------------------------------------------------------------------
     // if the current event is a customized one, it requires a special handling
+    // ----------------------------------------------------------------------------
     if (current->event->metric_custom != NULL) {
       if (current->event->metric_custom->handler_fn != NULL) {
       		current->event->metric_custom->handler_fn(current, sv, mmap_data);

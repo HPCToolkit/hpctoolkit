@@ -100,7 +100,7 @@ typedef void (*event_handler_t)(struct event_thread_s*, sample_val_t , perf_mmap
 // data structure for our customized event
 // this type should be used only within perf module.
 // --------------------------------------------------------------
-typedef struct event_predefined_s {
+typedef struct event_custom_s {
   const char *name;            // unique name of the event
 
   register_event_t register_fn;// function to register the event
@@ -140,16 +140,5 @@ typedef struct event_thread_s {
   event_info_t  *event; // pointer to main event description
 } event_thread_t;
 
-
-// --------------------------------------------------------------
-// additional metric information
-// --------------------------------------------------------------
-typedef struct metric_aux_info_s {
-	bool is_frequency;      // flag if the threshold is based on frequency
-	bool is_multiplexed;    // flag if the event is multiplexed
-	double threshold_mean;   // average threshold (if multiplexed)
-	double threshold_stdev;  // standadrd deviation
-	unsigned int num_samples;   // number of samples
-} metric_aux_info_t;
 
 #endif

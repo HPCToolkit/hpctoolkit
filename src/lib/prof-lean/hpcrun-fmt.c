@@ -254,6 +254,12 @@ const metric_desc_t metricDesc_NULL = {
   .properties = {.time = 0,.cycles = 0},
   .formula       = NULL,
   .format        = NULL,
+
+  .info_data.is_frequency    = false,
+  .info_data.is_multiplexed  = false,
+  .info_data.threshold_mean  = 0.0,
+  .info_data.threshold_stdev = 0.0,
+  .info_data.num_samples     = 0
 };
 
 const hpcrun_metricFlags_t hpcrun_metricFlags_NULL = {
@@ -367,6 +373,12 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs,
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->formula), fs, alloc));
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->format), fs, alloc));
 
+  HPCFMT_ThrowIfError(hpcfmt_int2_fread ((uint16_t*)&(x->info_data.is_frequency),    fs));
+  HPCFMT_ThrowIfError(hpcfmt_int2_fread ((uint16_t*)&(x->info_data.is_multiplexed),  fs));
+  HPCFMT_ThrowIfError(hpcfmt_real8_fread(&(x->info_data.threshold_mean),  fs));
+  HPCFMT_ThrowIfError(hpcfmt_real8_fread(&(x->info_data.threshold_stdev), fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread ((&x->info_data.num_samples),     fs));
+
   // These two aren't written into the hpcrun file; hence manually set them.
   x->properties.time = 0;
   x->properties.cycles = 0;
@@ -384,6 +396,12 @@ hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* fs)
   hpcfmt_int8_fwrite(x->period, fs);
   hpcfmt_str_fwrite(x->formula, fs);
   hpcfmt_str_fwrite(x->format, fs);
+
+  hpcfmt_int2_fwrite (x->info_data.is_frequency   , fs);
+  hpcfmt_int2_fwrite (x->info_data.is_multiplexed , fs);
+  hpcfmt_real8_fwrite(x->info_data.threshold_mean , fs);
+  hpcfmt_real8_fwrite(x->info_data.threshold_stdev, fs);
+  hpcfmt_int8_fwrite (x->info_data.num_samples    , fs);
   return HPCFMT_OK;
 }
 
@@ -393,13 +411,16 @@ hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* fs, const char* pre)
 {
   fprintf(fs, "%s[(nm: %s) (desc: %s) "
 	  "((ty: %d) (val-ty: %d) (val-fmt: %d) (partner: %u) (show: %d) (showPercent: %d)) "
-	  "(period: %"PRIu64") (formula: %s) (format: %s)\n" , 
+	  "(period: %"PRIu64") (formula: %s) (format: %s)\n" ,
 	  pre, hpcfmt_str_ensure(x->name), hpcfmt_str_ensure(x->description),
 	  (int)x->flags.fields.ty, (int)x->flags.fields.valTy,
 	  (int)x->flags.fields.valFmt,
 	  (uint)x->flags.fields.partner, x->flags.fields.show, x->flags.fields.showPercent,
 	  x->period,
 	  hpcfmt_str_ensure(x->formula), hpcfmt_str_ensure(x->format));
+  fprintf(fs, "    (frequency: %d) (multiplexed: %d) (period-mean: %f) (period-stdev: %f) (num-samples: %d)]\n",
+          (int)x->info_data.is_frequency, (int)x->info_data.is_multiplexed,
+          x->info_data.threshold_mean, x->info_data.threshold_stdev, (int) x->info_data.num_samples);
   return HPCFMT_OK;
 }
 

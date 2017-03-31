@@ -141,6 +141,11 @@ typedef void  hpcfmt_free_fn(void* mem);
 // Generic reader/writer primitives
 //***************************************************************************
 
+int hpcfmt_fread(void *data, size_t size, FILE *infs);
+
+int hpcfmt_fwrite(void *data, size_t size, FILE *outfs);
+
+
 static inline int
 hpcfmt_int2_fread(uint16_t* val, FILE* infs)
 {
