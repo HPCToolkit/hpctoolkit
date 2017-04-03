@@ -225,23 +225,6 @@ dump_ui_troll(unwind_interval *u)
   TMSG(TROLL,buf);
 }
 
-x86recipe_t*
-x86recipe_new(ra_loc ra_status, int sp_ra_pos, int bp_ra_pos,
-	 bp_loc bp_status, int sp_bp_pos, int bp_bp_pos, mem_alloc m_alloc)
-{
-  x86recipe_t* recipe = (x86recipe_t*)m_alloc(sizeof(x86recipe_t));
-  recipe->ra_status = ra_status;
-  recipe->sp_ra_pos = sp_ra_pos;
-  recipe->sp_bp_pos = sp_bp_pos;
-  recipe->bp_status = bp_status;
-  recipe->bp_bp_pos = bp_bp_pos;
-  recipe->bp_ra_pos = bp_ra_pos;
-  recipe->prev_canonical = NULL;
-  recipe->restored_canonical = 0;
-  recipe->has_tail_calls = false;
-  return recipe;
-}
-
 void
 x86recipe_tostr(void* recipe, char str[])
 {

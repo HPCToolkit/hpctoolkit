@@ -147,10 +147,6 @@ extern "C" {
 
   void suspicious_interval(void *pc);
 
-  x86recipe_t *
-  x86recipe_new(ra_loc ra_status, int sp_ra_pos, int bp_ra_pos,
-  	 bp_loc bp_status, int sp_bp_pos, int bp_bp_pos, mem_alloc m_alloc);
-
   /*
    * Concrete implementation of the abstract val_tostr function of the
    * generic_val class.
