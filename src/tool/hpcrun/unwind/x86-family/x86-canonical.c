@@ -104,24 +104,25 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval **next,
       iarg->canonical_interval = first;
     }
     {
-      ra_loc ra_status = UWI_RECIPE(first)->ra_status;
+      x86recipe_t *xr = UWI_RECIPE(current);
+      x86recipe_t *r1 = UWI_RECIPE(first);
+      x86registers_t reg = r1->reg;
+      ra_loc ra_status = r1->ra_status;
       bp_loc bp_status =
-    	  (UWI_RECIPE(current)->bp_status == BP_HOSED) ? BP_HOSED : UWI_RECIPE(first)->bp_status;
+    	  (xr->reg.bp_status == BP_HOSED) ? BP_HOSED : reg.bp_status;
 #ifndef FIX_INTERVALS_AT_RETURN
-      if ((UWI_RECIPE(current)->ra_status != ra_status) ||
-	  (UWI_RECIPE(current)->bp_status != bp_status) ||
-	  (UWI_RECIPE(current)->sp_ra_pos != UWI_RECIPE(first)->sp_ra_pos) ||
-	  (UWI_RECIPE(current)->bp_ra_pos != UWI_RECIPE(first)->bp_ra_pos) ||
-	  (UWI_RECIPE(current)->bp_bp_pos != UWI_RECIPE(first)->bp_bp_pos) ||
-	  (UWI_RECIPE(current)->sp_bp_pos != UWI_RECIPE(first)->sp_bp_pos))
+      if (xr->ra_status != ra_status) ||
+	  xr->reg.bp_status != bp_status) ||
+	  xr->reg.sp_ra_pos != reg.sp_ra_pos) ||
+	  xr->reg.bp_ra_pos != reg.bp_ra_pos) ||
+	  xr->reg.bp_bp_pos != reg.bp_bp_pos) ||
+	  xr->reg.sp_bp_pos != reg.sp_bp_pos))
 #endif
 	{
-	*next = new_ui(nextInsn(iarg, xptr),
-		       ra_status, UWI_RECIPE(first)->sp_ra_pos, UWI_RECIPE(first)->bp_ra_pos,
-		       bp_status, UWI_RECIPE(first)->sp_bp_pos, UWI_RECIPE(first)->bp_bp_pos,
-		       current, m_alloc);
+	  reg.bp_status = bp_status;
+	*next = new_ui(nextInsn(iarg, xptr), ra_status, &reg, current, m_alloc);
         set_ui_restored_canonical(*next, UWI_RECIPE(iarg->canonical_interval)->prev_canonical);
-        if (UWI_RECIPE(first)->bp_status != BP_HOSED && bp_status == BP_HOSED) {
+        if (r1->reg.bp_status != BP_HOSED && bp_status == BP_HOSED) {
           set_ui_canonical(*next, iarg->canonical_interval);
           iarg->canonical_interval = *next;
         }

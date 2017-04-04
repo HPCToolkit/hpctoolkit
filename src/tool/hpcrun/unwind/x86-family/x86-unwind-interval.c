@@ -79,9 +79,7 @@ suspicious_interval(void *pc)
 }
 
 unwind_interval*
-new_ui(char *start, 
-       ra_loc ra_status, unsigned int sp_ra_pos, int bp_ra_pos, 
-       bp_loc bp_status,          int sp_bp_pos, int bp_bp_pos,
+new_ui(char *start, const x86registers_t *reg,
        unwind_interval *prev, mem_alloc m_alloc)
 {
   bitree_uwi_t *u = bitree_uwi_malloc(m_alloc, sizeof(x86recipe_t));
@@ -98,12 +96,7 @@ new_ui(char *start,
   interval->start = (uintptr_t)start;
 
   x86recipe_t* x86recipe = (x86recipe_t*) uwi->recipe;
-  x86recipe->ra_status = ra_status;
-  x86recipe->sp_ra_pos = sp_ra_pos;
-  x86recipe->bp_ra_pos = bp_ra_pos;
-  x86recipe->bp_status = bp_status;
-  x86recipe->sp_bp_pos = sp_bp_pos;
-  x86recipe->bp_bp_pos = bp_bp_pos;
+  x86recipe->reg = *reg;
 
   return u;
 }

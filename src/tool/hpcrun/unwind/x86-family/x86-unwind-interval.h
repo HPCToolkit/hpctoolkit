@@ -97,9 +97,7 @@ typedef enum {
   BP_UNCHANGED, BP_SAVED, BP_HOSED
 } bp_loc;
 
-typedef struct x86recipe_s {
-  ra_loc ra_status; /* how to find the return address */
-
+typedef struct x86registers_s {
   int sp_ra_pos; /* return address offset from sp */
   int sp_bp_pos; /* BP offset from sp */
 
@@ -107,6 +105,11 @@ typedef struct x86recipe_s {
 
   int bp_ra_pos; /* return address offset from bp */
   int bp_bp_pos; /* (caller's) BP offset from bp */
+} x86registers_t;
+
+typedef struct x86recipe_s {
+  ra_loc ra_status; /* how to find the return address */
+  x86registers_t reg;
 
   bitree_uwi_t* prev_canonical;
   int restored_canonical;
@@ -134,9 +137,7 @@ extern "C" {
   }
 
   unwind_interval *
-  new_ui(char *startaddr, 
-	 ra_loc ra_status, unsigned int sp_ra_pos, int bp_ra_pos, 
-	 bp_loc bp_status,          int sp_bp_pos, int bp_bp_pos,
+  new_ui(char *startaddr, const x86registers_t *reg,
 	 unwind_interval *prev, mem_alloc m_alloc);
 
   unwind_interval *fluke_ui(char *pc,unsigned int sp_ra_pos, mem_alloc m_alloc);

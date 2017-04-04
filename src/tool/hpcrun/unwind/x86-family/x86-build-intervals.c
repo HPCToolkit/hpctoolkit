@@ -125,7 +125,8 @@ x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
   iarg.end           = end;
   iarg.highwatermark = _h;
   iarg.ins           = ins;
-  iarg.current       = new_ui(ins, RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, NULL, m_alloc);
+  x86registers_t reg = {0, 0, BP_UNCHANGED, 0, 0};
+  iarg.current       = new_ui(ins, RA_SP_RELATIVE, &reg, NULL, m_alloc);
   iarg.first         = iarg.current;
 
   // handle return is different if there are any bp frames
