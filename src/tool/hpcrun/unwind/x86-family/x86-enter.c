@@ -79,7 +79,7 @@ process_enter(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *ia
     }
   }
   TMSG(INTV,"new interval from ENTER");
-  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
+  next = new_ui(nextInsn(iarg, xptr),
 		RA_STD_FRAME,
 		UWI_RECIPE(iarg->current)->sp_ra_pos + offset, 8, BP_SAVED,
 		UWI_RECIPE(iarg->current)->sp_bp_pos + offset - 8, 0, iarg->current,

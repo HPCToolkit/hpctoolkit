@@ -97,7 +97,7 @@ process_call(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
   // As if it were a push
   //
   if (call_is_push_next_addr_idiom(xptr, iarg)) {
-    next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), UWI_RECIPE(iarg->current)->ra_status,
+    next = new_ui(nextInsn(iarg, xptr), UWI_RECIPE(iarg->current)->ra_status,
 		  UWI_RECIPE(iarg->current)->sp_ra_pos + sizeof(void*), UWI_RECIPE(iarg->current)->bp_ra_pos, 
                   UWI_RECIPE(iarg->current)->bp_status, UWI_RECIPE(iarg->current)->sp_bp_pos + sizeof(void*), 
                   UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);

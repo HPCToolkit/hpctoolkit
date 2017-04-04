@@ -116,7 +116,7 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval **next,
 	  (UWI_RECIPE(current)->sp_bp_pos != UWI_RECIPE(first)->sp_bp_pos))
 #endif
 	{
-	*next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
+	*next = new_ui(nextInsn(iarg, xptr),
 		       ra_status, UWI_RECIPE(first)->sp_ra_pos, UWI_RECIPE(first)->bp_ra_pos,
 		       bp_status, UWI_RECIPE(first)->sp_bp_pos, UWI_RECIPE(first)->bp_bp_pos,
 		       current, m_alloc);

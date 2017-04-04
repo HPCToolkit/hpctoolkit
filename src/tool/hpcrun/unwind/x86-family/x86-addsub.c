@@ -92,7 +92,7 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
 	  // 9 December 2007 -- John Mellor-Crummey
 	  //-------------------------------------------------------------------
 	}
-	next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), 
+	next = new_ui(nextInsn(iarg, xptr), 
 		      istatus, UWI_RECIPE(iarg->current)->sp_ra_pos + immedv, UWI_RECIPE(iarg->current)->bp_ra_pos, 
 		      UWI_RECIPE(iarg->current)->bp_status, UWI_RECIPE(iarg->current)->sp_bp_pos + immedv, 
 		      UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);
@@ -114,7 +114,7 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
 	    //-----------------------------------------------------------------
 	    hw_tmp->uwi = next;
 	    hw_tmp->succ_inst_ptr = 
-	      iarg->ins + xed_decoded_inst_get_length(xptr);
+	      nextInsn(iarg, xptr);
 	    hw_tmp->state = 
 	      HW_NEW_STATE(hw_tmp->state, HW_SP_DECREMENTED);
 	    iarg->canonical_interval = next;
@@ -128,7 +128,7 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
 	  //
 	  // 9 December 2007 -- John Mellor-Crummey
 	  //-------------------------------------------------------------------
-	  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), RA_BP_FRAME, 
+	  next = new_ui(nextInsn(iarg, xptr), RA_BP_FRAME, 
 			UWI_RECIPE(iarg->current)->sp_ra_pos, UWI_RECIPE(iarg->current)->bp_ra_pos, 
 			UWI_RECIPE(iarg->current)->bp_status, UWI_RECIPE(iarg->current)->sp_bp_pos, 
 			UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);

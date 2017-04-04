@@ -87,7 +87,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	  //                (2) BP position relative to the stack pointer set 
 	  //                    to the offset from SP 
 	  //==================================================================
-	  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
+	  next = new_ui(nextInsn(iarg, xptr),
 			UWI_RECIPE(iarg->current)->ra_status, UWI_RECIPE(iarg->current)->sp_ra_pos, 
 			UWI_RECIPE(iarg->current)->bp_ra_pos,
 			BP_SAVED,
@@ -118,7 +118,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	  // action:      create a new interval with BP status reset to 
 	  //              BP_UNCHANGED
 	  //================================================================
-	  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
+	  next = new_ui(nextInsn(iarg, xptr),
 			RA_SP_RELATIVE, UWI_RECIPE(iarg->current)->sp_ra_pos, 
 			UWI_RECIPE(iarg->current)->bp_ra_pos, BP_UNCHANGED, UWI_RECIPE(iarg->current)->sp_bp_pos, 
 			UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);
@@ -130,7 +130,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	  //              BP_HOSED
 	  //================================================================
 	  if (UWI_RECIPE(iarg->current)->bp_status != BP_HOSED) {
-	    next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
+	    next = new_ui(nextInsn(iarg, xptr),
 			  RA_SP_RELATIVE, UWI_RECIPE(iarg->current)->sp_ra_pos, 
 			  UWI_RECIPE(iarg->current)->bp_ra_pos, BP_HOSED, UWI_RECIPE(iarg->current)->sp_bp_pos,
 			  UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);
@@ -155,7 +155,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	// action:      create a new interval with SP status reset to 
 	//              BP_UNCHANGED
 	//================================================================
-	next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
+	next = new_ui(nextInsn(iarg, xptr),
 	 	      RA_SP_RELATIVE, 0, 0,
 		      UWI_RECIPE(iarg->current)->bp_status, UWI_RECIPE(iarg->current)->sp_bp_pos, 
 		      UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);
@@ -172,7 +172,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
       // instruction: restore SP from BP
       // action:      begin a new SP_RELATIVE interval 
       //====================================================================
-      next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
+      next = new_ui(nextInsn(iarg, xptr),
 		    RA_SP_RELATIVE, UWI_RECIPE(iarg->current)->bp_ra_pos, UWI_RECIPE(iarg->current)->bp_ra_pos,
 		    UWI_RECIPE(iarg->current)->bp_status, UWI_RECIPE(iarg->current)->bp_bp_pos, UWI_RECIPE(iarg->current)->bp_bp_pos,
 		    iarg->current, m_alloc);
@@ -181,7 +181,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
       // instruction: initialize BP with value of SP to set up a frame ptr
       // action:      begin a new SP_RELATIVE interval 
       //====================================================================
-      next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), 
+      next = new_ui(nextInsn(iarg, xptr), 
 		    RA_STD_FRAME,
 		    UWI_RECIPE(iarg->current)->sp_ra_pos, UWI_RECIPE(iarg->current)->sp_ra_pos, BP_SAVED,
 		    UWI_RECIPE(iarg->current)->sp_bp_pos, UWI_RECIPE(iarg->current)->sp_bp_pos, iarg->current,
@@ -196,7 +196,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
       //====================================================================
       // instruction: copy BP to RAX
       //====================================================================
-      iarg->rax_rbp_equivalent_at = iarg->ins + xed_decoded_inst_get_length(xptr);
+      iarg->rax_rbp_equivalent_at = nextInsn(iarg, xptr);
     } else if (x86_isReg_BP(reg0)) {
       if (UWI_RECIPE(iarg->current)->bp_status != BP_HOSED){
 	//==================================================================
@@ -204,7 +204,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	// state:       bp_status is NOT BP_HOSED
 	// action:      begin a new RA_SP_RELATIVE,BP_HOSED interval
 	//==================================================================
-	next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), 
+	next = new_ui(nextInsn(iarg, xptr), 
 		      RA_SP_RELATIVE,
 		      UWI_RECIPE(iarg->current)->sp_ra_pos, UWI_RECIPE(iarg->current)->sp_ra_pos, BP_HOSED,
 		      UWI_RECIPE(iarg->current)->sp_bp_pos, UWI_RECIPE(iarg->current)->sp_bp_pos, iarg->current,

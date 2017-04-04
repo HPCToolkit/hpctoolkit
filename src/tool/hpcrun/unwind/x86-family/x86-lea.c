@@ -63,7 +63,7 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
   if ((op0_name == XED_OPERAND_REG0)) { 
     x86recipe_t *xr = UWI_RECIPE(next);
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
-    char *next_ins = iarg->ins + xed_decoded_inst_get_length(xptr);
+    char *next_ins = nextInsn(iarg, xptr);
     if (x86_isReg_BP(regname)) {
       //=======================================================================
       // action: clobbering the base pointer; begin a new SP_RELATIVE interval

@@ -69,7 +69,7 @@ process_and(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 	  //-----------------------------------------------------------------------
 	  // we are adjusting the stack pointer via 'and' instruction
 	  //-----------------------------------------------------------------------
-	  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
+	  next = new_ui(nextInsn(iarg, xptr),
 		  RA_BP_FRAME, UWI_RECIPE(iarg->current)->sp_ra_pos, UWI_RECIPE(iarg->current)->bp_ra_pos,
 		  UWI_RECIPE(iarg->current)->bp_status, UWI_RECIPE(iarg->current)->sp_bp_pos,
 		  UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);

@@ -88,7 +88,7 @@ process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
     }
   }
 
-  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), UWI_RECIPE(iarg->current)->ra_status, 
+  next = new_ui(nextInsn(iarg, xptr), UWI_RECIPE(iarg->current)->ra_status, 
 		UWI_RECIPE(iarg->current)->sp_ra_pos + size, UWI_RECIPE(iarg->current)->bp_ra_pos, bp_status,
 		sp_bp_pos, UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);
 
@@ -120,7 +120,7 @@ process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
     if (x86_isReg_BP(regname)) bp_status = BP_UNCHANGED;
   }
 
-  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), UWI_RECIPE(iarg->current)->ra_status, 
+  next = new_ui(nextInsn(iarg, xptr), UWI_RECIPE(iarg->current)->ra_status, 
 		UWI_RECIPE(iarg->current)->sp_ra_pos + size, UWI_RECIPE(iarg->current)->bp_ra_pos, bp_status, 
 		UWI_RECIPE(iarg->current)->sp_bp_pos + size, UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current,
 		m_alloc);

@@ -129,6 +129,9 @@ extern "C" {
 
   void set_ui_restored_canonical(unwind_interval *u, unwind_interval *value);
 
+  static inline char *nextInsn(interval_arg_t *iarg, xed_decoded_int_t *xptr) {
+    return iarg->ins + xed_decoded_inst_get_length(xptr);
+  }
 
   unwind_interval *
   new_ui(char *startaddr, 
