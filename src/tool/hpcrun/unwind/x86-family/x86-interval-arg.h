@@ -73,4 +73,8 @@ typedef struct interval_arg_t {
   void *return_addr; // A place to store void * return values.
 } interval_arg_t;
 
+static inline char *nextInsn(interval_arg_t *iarg, xed_decoded_inst_t *xptr) {
+  return iarg->ins + xed_decoded_inst_get_length(xptr);
+}
+
 #endif // X86_INTERVAL_ARG_H

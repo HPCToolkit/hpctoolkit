@@ -73,7 +73,7 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
       reg.bp_status = BP_HOSED;
       next = new_ui(next_ins, RA_SP_RELATIVE, &reg, next, m_alloc);
       if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED, HW_BP_OVERWRITTEN) &&
-	  (UWI_RECIPE(hw_tmp->uwi)->sp_ra_pos == xr->sp_ra_pos)) {
+	  (UWI_RECIPE(hw_tmp->uwi)->reg.sp_ra_pos == xr->reg.sp_ra_pos)) {
 	hw_tmp->uwi = next;
 	hw_tmp->state = HW_NEW_STATE(hw_tmp->state, HW_BP_OVERWRITTEN);
       }
@@ -89,7 +89,7 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 	    // begin a new interval where sp_ra_pos is adjusted by the displacement.        
 	    //========================================================================
 	    xed_int64_t disp = xed_decoded_inst_get_memory_displacement(xptr, mem_op_index);
-	    reg.ra_pos -= disp;
+	    reg.sp_ra_pos -= disp;
 	    next = new_ui(next_ins, xr->ra_status, &reg, next, m_alloc);
 
 	    if (disp < 0) {

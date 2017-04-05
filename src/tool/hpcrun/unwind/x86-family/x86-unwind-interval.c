@@ -79,7 +79,7 @@ suspicious_interval(void *pc)
 }
 
 unwind_interval*
-new_ui(char *start, const x86registers_t *reg,
+new_ui(char *start, ra_loc ra_status, const x86registers_t *reg,
        unwind_interval *prev, mem_alloc m_alloc)
 {
   bitree_uwi_t *u = bitree_uwi_malloc(m_alloc, sizeof(x86recipe_t));
@@ -96,6 +96,7 @@ new_ui(char *start, const x86registers_t *reg,
   interval->start = (uintptr_t)start;
 
   x86recipe_t* x86recipe = (x86recipe_t*) uwi->recipe;
+  x86recipe->ra_status = ra_status;
   x86recipe->reg = *reg;
 
   return u;
@@ -128,11 +129,11 @@ fluke_ui(char *loc, unsigned int pos, mem_alloc m_alloc)
 
   x86recipe_t* x86recipe = (x86recipe_t*) uwi->recipe;
   x86recipe->ra_status = RA_SP_RELATIVE;
-  x86recipe->sp_ra_pos = pos;
-  x86recipe->bp_ra_pos = 0;
-  x86recipe->bp_status = 0;
-  x86recipe->sp_bp_pos = 0;
-  x86recipe->bp_bp_pos = 0;
+  x86recipe->reg.sp_ra_pos = pos;
+  x86recipe->reg.bp_ra_pos = 0;
+  x86recipe->reg.bp_status = 0;
+  x86recipe->reg.sp_bp_pos = 0;
+  x86recipe->reg.bp_bp_pos = 0;
   return u;
 }
 
@@ -146,16 +147,18 @@ link_ui(unwind_interval *current, unwind_interval *next)
 static void
 _dump_ui_str(unwind_interval *u, char *buf, size_t len)
 {
+  x86recipe_t *xr = UWI_RECIPE(u);
+  x86registers_t reg = xr->reg;
   snprintf(buf, len, "UNW: start=%p end =%p ra_status=%s sp_ra_pos=%d sp_bp_pos=%d bp_status=%s "
            "bp_ra_pos = %d bp_bp_pos=%d next=%p prev=%p prev_canonical=%p rest_canon=%d\n"
            "has_tail_calls = %d",
            (void *) UWI_START_ADDR(u), (void *) UWI_END_ADDR(u),
-		   ra_status_string(UWI_RECIPE(u)->ra_status),
-		   UWI_RECIPE(u)->sp_ra_pos, UWI_RECIPE(u)->sp_bp_pos,
-           bp_status_string(UWI_RECIPE(u)->bp_status),
-           UWI_RECIPE(u)->bp_ra_pos, UWI_RECIPE(u)->bp_bp_pos,
+		   ra_status_string(xr->ra_status),
+		   reg.sp_ra_pos, reg.sp_bp_pos,
+           bp_status_string(reg.bp_status),
+           reg.bp_ra_pos, reg.bp_bp_pos,
 		   UWI_NEXT(u), UWI_PREV(u),
-		   UWI_RECIPE(u)->prev_canonical, UWI_RECIPE(u)->restored_canonical,
+		   xr->prev_canonical, xr->restored_canonical,
            UWI_RECIPE(u)->has_tail_calls);
 }
 
@@ -224,7 +227,7 @@ x86recipe_tostr(void* recipe, char str[])
   // TODO
   x86recipe_t* x86recipe = (x86recipe_t*)recipe;
   snprintf(str, MAX_RECIPE_STR, "%s%d%s%s",
-	  "x86recipe ", x86recipe->sp_ra_pos,
+	  "x86recipe ", x86recipe->reg.sp_ra_pos,
 	  ": tail_call = ", x86recipe->has_tail_calls? "true": "false");
 }
 

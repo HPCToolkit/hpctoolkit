@@ -94,8 +94,8 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
 	  // 9 December 2007 -- John Mellor-Crummey
 	  //-------------------------------------------------------------------
 	}
-	reg->sp_ra_pos += immedv;
-	reg->sp_bp_pos += immedv;
+	reg.sp_ra_pos += immedv;
+	reg.sp_bp_pos += immedv;
 	next = new_ui(nextInsn(iarg, xptr), istatus, &reg, iarg->current, m_alloc);
 
 	if (immedv > 0) {

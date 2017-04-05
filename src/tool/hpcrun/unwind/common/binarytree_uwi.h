@@ -51,7 +51,7 @@ typedef struct unwind_interval_t unwind_interval;
 #define UWI_PREV(btuwi) (bitree_uwi_leftsubtree(btuwi))
 #define UWI_START_ADDR(btuwi) (bitree_uwi_interval(btuwi))->start
 #define UWI_END_ADDR(btuwi) (bitree_uwi_interval(btuwi))->end
-
+#define MAX_RECIPE_STR 256
 
 //******************************************************************************
 // abstract data type

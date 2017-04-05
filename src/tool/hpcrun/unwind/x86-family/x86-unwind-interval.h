@@ -132,12 +132,8 @@ extern "C" {
 
   void set_ui_restored_canonical(unwind_interval *u, unwind_interval *value);
 
-  static inline char *nextInsn(interval_arg_t *iarg, xed_decoded_int_t *xptr) {
-    return iarg->ins + xed_decoded_inst_get_length(xptr);
-  }
-
   unwind_interval *
-  new_ui(char *startaddr, const x86registers_t *reg,
+  new_ui(char *startaddr, ra_loc ra_status, const x86registers_t *reg,
 	 unwind_interval *prev, mem_alloc m_alloc);
 
   unwind_interval *fluke_ui(char *pc,unsigned int sp_ra_pos, mem_alloc m_alloc);

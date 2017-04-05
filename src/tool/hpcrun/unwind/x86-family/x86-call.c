@@ -68,7 +68,7 @@ call_is_push_next_addr_idiom(xed_decoded_inst_t* xptr, interval_arg_t* iarg)
 {
   void* ins = iarg->ins;
   void* call_addr = x86_get_branch_target(ins, xptr);
-  void* next_addr = ((char *) ins) + xed_decoded_inst_get_length(xptr);
+  void* next_addr = nextInsn(iarg, xptr);
   
   return (call_addr == next_addr);
 }
@@ -98,7 +98,7 @@ process_call(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
   //
   if (call_is_push_next_addr_idiom(xptr, iarg)) {
     x86recipe_t *xr = UWI_RECIPE(iarg->current);
-    x86registers reg = xr->reg;
+    x86registers_t reg = xr->reg;
     reg.sp_ra_pos += sizeof(void*);
     reg.sp_bp_pos += sizeof(void*);
     next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg, iarg->current, m_alloc);

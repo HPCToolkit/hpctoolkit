@@ -68,8 +68,8 @@ process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 
   const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
   xed_operand_enum_t   op0_name = xed_operand_name(op0);
-  x86_recipe_t *xr = UWI_RECIPE(iarg->current);
-  x86_registers_t reg = xr->reg;
+  x86recipe_t *xr = UWI_RECIPE(iarg->current);
+  x86registers_t reg = xr->reg;
   bp_loc bp_status = reg.bp_status;
   int size;
 
@@ -105,8 +105,8 @@ process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 
   const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
   xed_operand_enum_t   op0_name = xed_operand_name(op0);
-  x86_recipe_t *xr = UWI_RECIPE(iarg->current);
-  x86_registers_t reg = xr->reg;
+  x86recipe_t *xr = UWI_RECIPE(iarg->current);
+  x86registers_t reg = xr->reg;
   int size;
 
   switch(iclass(xptr)) {

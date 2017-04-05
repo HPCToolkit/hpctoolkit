@@ -69,15 +69,16 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg,
   unwind_interval *next = iarg->current;
 
   if (UWI_RECIPE(iarg->current)->ra_status == RA_SP_RELATIVE) {
-    int offset = UWI_RECIPE(iarg->current)->sp_ra_pos;
+    int offset = UWI_RECIPE(iarg->current)->reg.sp_ra_pos;
     if (offset != 0) {
       unwind_interval *u = iarg->current;
       for (;;) {
         // fix offset
-        UWI_RECIPE(u)->sp_ra_pos -= offset;
-        UWI_RECIPE(u)->sp_bp_pos -= offset;
+	x86recipe_t *xr = UWI_RECIPE(u);
+        xr->reg.sp_ra_pos -= offset;
+        xr->reg.sp_bp_pos -= offset;
 
-        if (UWI_RECIPE(u)->restored_canonical == 1) {
+        if (xr->restored_canonical == 1) {
           break;
         }
         u = UWI_PREV(u);
@@ -86,18 +87,19 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg,
         }
       }
     }
-    if (UWI_RECIPE(iarg->current)->bp_status == BP_HOSED) {
+    if (UWI_RECIPE(iarg->current)->reg.bp_status == BP_HOSED) {
       // invariant: when we reach a return, if the BP was overwritten, it
       // should have been restored. this must be incorrect. let's reset
       // the bp status for all intervals leading up to this one since
       // the last canonical restore. 
       unwind_interval *u = iarg->current;
       for (;;) {
-        if (UWI_RECIPE(u)->bp_status != BP_HOSED) {
+	x86recipe_t *xr = UWI_RECIPE(u);
+        if (xr->reg.bp_status != BP_HOSED) {
           break;
         }
-        UWI_RECIPE(u)->bp_status = BP_UNCHANGED;
-        if (UWI_RECIPE(u)->restored_canonical == 1) {
+        xr->reg.bp_status = BP_UNCHANGED;
+        if (xr->restored_canonical == 1) {
           break;
         }
         u = UWI_PREV(u);
@@ -107,15 +109,15 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg,
       }
     }
   }
-  if (UWI_RECIPE(iarg->current)->bp_status == BP_SAVED) {
+  if (UWI_RECIPE(iarg->current)->reg.bp_status == BP_SAVED) {
      suspicious_interval(iarg->ins);
   }
-  if (iarg->ins + xed_decoded_inst_get_length(xptr) < iarg->end) {
+  if ((void*)nextInsn(iarg, xptr) < iarg->end) {
     //-------------------------------------------------------------------------
     // the return is not the last instruction in the interval; 
     // set up an interval for code after the return 
     //-------------------------------------------------------------------------
-    if (plt_is_next(iarg->ins + xed_decoded_inst_get_length(xptr))) {
+    if (plt_is_next(nextInsn(iarg, xptr))) {
       //-------------------------------------------------------------------------
       // the code following the return is a program linkage table. each entry in 
       // the program linkage table should be invoked with the return address at 

@@ -100,8 +100,9 @@ void
 hpcrun_cold_code_fixup(unwind_interval *current, unwind_interval *warm)
 {
   TMSG(COLD_CODE,"  --fixing up current intervals with the warm interval");
-  int ra_offset = UWI_RECIPE(warm)->sp_ra_pos;
-  int bp_offset = UWI_RECIPE(warm)->sp_bp_pos;
+  x86recipe_t *xr = UWI_RECIPE(warm);
+  int ra_offset = xr->reg.sp_ra_pos;
+  int bp_offset = xr->reg.sp_bp_pos;
   if (ra_offset == 0) {
 	TMSG(COLD_CODE,"  --warm code calling routine has offset 0,"
 		" so no action taken");
@@ -109,8 +110,9 @@ hpcrun_cold_code_fixup(unwind_interval *current, unwind_interval *warm)
   }
   TMSG(COLD_CODE,"  --updating sp_ra_pos with offset %d",ra_offset);
   for(unwind_interval *intv = current; intv; intv = UWI_PREV(intv)) {
-	UWI_RECIPE(intv)->sp_ra_pos += ra_offset;
-	UWI_RECIPE(intv)->sp_bp_pos += bp_offset;
+        xr = UWI_RECIPE(intv);
+	xr->reg.sp_ra_pos += ra_offset;
+	xr->reg.sp_bp_pos += bp_offset;
   }
 }
 
@@ -119,7 +121,7 @@ bool
 hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 {
   void *ins     = iarg->ins;
-  char *ins_end = ins + xed_decoded_inst_get_length(xptr);
+  char *ins_end = nextInsn(iarg, xptr);
   if (ins_end == iarg->end) {
     void *branch_target = x86_get_branch_target(ins,xptr);
 

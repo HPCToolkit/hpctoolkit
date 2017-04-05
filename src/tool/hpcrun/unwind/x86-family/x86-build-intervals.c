@@ -166,7 +166,7 @@ x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
 	}
 
 	// ensure that we don't move past the end of the interval because of a misaligned instruction
-	void *nextins = iarg.ins + xed_decoded_inst_get_length(xptr);
+	void *nextins = nextInsn(&iarg, xptr);
 	if (nextins > end) break;
 
 	next = process_inst(xptr, &iarg, m_alloc);
@@ -199,11 +199,11 @@ static bool
 x86_ui_same_data(x86recipe_t *proto, x86recipe_t *cand)
 {
   return ( (proto->ra_status == cand->ra_status) &&
-	  (proto->sp_ra_pos == cand->sp_ra_pos) &&
-	  (proto->sp_bp_pos == cand->sp_bp_pos) &&
-	  (proto->bp_status == cand->bp_status) &&
-	  (proto->bp_ra_pos == cand->bp_ra_pos) &&
-	  (proto->bp_bp_pos == cand->bp_bp_pos) );
+	  (proto->reg.sp_ra_pos == cand->reg.sp_ra_pos) &&
+	  (proto->reg.sp_bp_pos == cand->reg.sp_bp_pos) &&
+	  (proto->reg.bp_status == cand->reg.bp_status) &&
+	  (proto->reg.bp_ra_pos == cand->reg.bp_ra_pos) &&
+	  (proto->reg.bp_bp_pos == cand->reg.bp_bp_pos) );
 }
 
 

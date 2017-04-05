@@ -463,19 +463,20 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
   void*  sp = cursor->sp;
   void*  pc = cursor->pc_unnorm;
   unwind_interval* uw = cursor->unwr_info.btuwi;
+  x86recipe_t *xr = UWI_RECIPE(uw);
   
   TMSG(UNW,"step_sp: cursor { bp=%p, sp=%p, pc=%p }", bp, sp, pc);
   if (MYDBG) { dump_ui(uw, 0); }
 
   void** next_bp = NULL;
-  void** next_sp = (void **)(sp + UWI_RECIPE(uw)->sp_ra_pos);
+  void** next_sp = (void **)(sp + xr->reg.sp_ra_pos);
   void*  ra_loc  = (void*) next_sp;
   void*  next_pc  = *next_sp;
 
   TMSG(UNW,"  step_sp: potential next cursor next_sp=%p ==> next_pc = %p",
        next_sp, next_pc);
 
-  if (UWI_RECIPE(uw)->bp_status == BP_UNCHANGED){
+  if (xr->reg.bp_status == BP_UNCHANGED){
     next_bp = bp;
     TMSG(UNW,"  step_sp: unwind step has BP_UNCHANGED ==> next_bp=%p", next_bp);
   }
@@ -485,7 +486,7 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
     // save area in the activation frame according to the unwind 
     // information produced by binary analysis
     //-----------------------------------------------------------
-    next_bp = (void **)(sp + UWI_RECIPE(uw)->sp_bp_pos);
+    next_bp = (void **)(sp + xr->reg.sp_bp_pos);
     TMSG(UNW,"  step_sp: unwind next_bp loc = %p", next_bp);
     next_bp  = *next_bp; 
     TMSG(UNW,"  step_sp: sp unwind next_bp val = %p", next_bp);
@@ -516,8 +517,9 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
       return STEP_ERROR;
     }
     unwind_interval* uw = cursor->unwr_info.btuwi;
-    if ((RA_BP_FRAME == UWI_RECIPE(uw)->ra_status) ||
-	(RA_STD_FRAME == UWI_RECIPE(uw)->ra_status)) { // Makes sense to sanity check BP, do it
+    x86recipe_t *xr = UWI_RECIPE(uw);
+    if ((RA_BP_FRAME == xr->ra_status) ||
+	(RA_STD_FRAME == xr->ra_status)) { // Makes sense to sanity check BP, do it
       //-----------------------------------------------------------
       // if value of BP reloaded from the save area does not point 
       // into the stack, then it cannot possibly be useful as a frame 
@@ -557,17 +559,16 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
 static step_state
 unw_step_bp(hpcrun_unw_cursor_t* cursor)
 {
-  void *sp, **bp, *pc; 
   void **next_sp, **next_bp, *next_pc;
-
-  unwind_interval *uw;
 
   TMSG(UNW_STRATEGY,"Using BP step");
   // current frame
-  bp = cursor->bp;
-  sp = cursor->sp;
-  pc = cursor->pc_unnorm;
-  uw = cursor->unwr_info.btuwi;
+  void **bp = cursor->bp;
+  void *sp = cursor->sp;
+  void *pc = cursor->pc_unnorm;
+  unwind_interval *uw = cursor->unwr_info.btuwi;
+  x86recipe_t *xr = UWI_RECIPE(uw);
+  
 
   TMSG(UNW,"step_bp: cursor { bp=%p, sp=%p, pc=%p }", bp, sp, pc);
   if (MYDBG) { dump_ui(uw, 0); }
@@ -586,9 +587,9 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
     }
   }
   // bp relative
-  next_sp  = (void **)((void *)bp + UWI_RECIPE(uw)->bp_bp_pos);
+  next_sp  = (void **)((void *)bp + xr->reg.bp_bp_pos);
   next_bp  = *next_sp;
-  next_sp  = (void **)((void *)bp + UWI_RECIPE(uw)->bp_ra_pos);
+  next_sp  = (void **)((void *)bp + xr->reg.bp_ra_pos);
   void* ra_loc = (void*) next_sp;
   next_pc  = *next_sp;
   next_sp += 1;
