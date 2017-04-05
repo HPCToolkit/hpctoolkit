@@ -477,10 +477,10 @@ perf_attr_init(
 
   if (!usePeriod) {
     attr->freq          = 1;
-    attr->sample_freq   = threshold;         /* Frequency of sampling  */
+    attr->sample_freq   = threshold;       /* Frequency of sampling  */
   } else {
     attr->freq          = 0;
-    attr->sample_period = threshold;         /* Period of sampling     */
+    attr->sample_period = threshold;       /* Period of sampling     */
   }
   attr->precise_ip    = perf_precise_ip;   /*  requested to have 0 skid.  */
   attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
@@ -1008,9 +1008,10 @@ METHOD_FN(process_event_list, int lush_metrics)
     int period_type = hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold,
        DEFAULT_THRESHOLD);
 
+    // ------------------------------------------------------------
     // need a special case if we have our own customized  predefined  event
     // This "customized" event will use one or more perf events
-    //
+    // ------------------------------------------------------------
     event_desc[i].metric_custom = getPredefinedEventID(name);
 
     if (event_desc[i].metric_custom != NULL) {
@@ -1032,9 +1033,11 @@ METHOD_FN(process_event_list, int lush_metrics)
     // Normal perf event: initialize the event attributes
     perf_attr_init(event_code, event_type, &(event_desc[i].attr), is_period, threshold, 0);
 
+    // ------------------------------------------------------------
     // initialize the property of the metric
     // if the metric's name has "CYCLES" it mostly a cycle metric 
     //  this assumption is not true, but it's quite closed
+    // ------------------------------------------------------------
 
     prop = (strstr(name, "CYCLES") != NULL) ? metric_property_cycles : metric_property_none;
 
@@ -1043,8 +1046,10 @@ METHOD_FN(process_event_list, int lush_metrics)
     // set the metric for this perf event
     event_desc[i].metric = hpcrun_new_metric();
    
+    // ------------------------------------------------------------
     // if we use frequency (event_type=1) then the periodd is not deterministic, 
     // it can change dynamically. In this case, the period is 1
+    // ------------------------------------------------------------
     if (!is_period) {
       // using frequency : the threshold is always 1, 
       //                   since the period is determine dynamically
