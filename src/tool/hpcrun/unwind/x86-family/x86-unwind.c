@@ -516,8 +516,6 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
       
       return STEP_ERROR;
     }
-    unwind_interval* uw = cursor->unwr_info.btuwi;
-    x86recipe_t *xr = UWI_RECIPE(uw);
     if ((RA_BP_FRAME == xr->ra_status) ||
 	(RA_STD_FRAME == xr->ra_status)) { // Makes sense to sanity check BP, do it
       //-----------------------------------------------------------
