@@ -203,8 +203,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
   hpcrun_unw_cursor_t cursor;
   hpcrun_unw_init_cursor(&cursor, context);
 
-  int unw_len = 0;
-  while (true) {
+  do {
     void* ip;
     hpcrun_unw_get_ip_unnorm_reg(&cursor, &ip);
 
@@ -217,8 +216,8 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
       hpcrun_unw_drop();
     }
 
-    if (hpcrun_trampoline_at_entry(ip)) {
-      if (unw_len == 0){
+    else if (hpcrun_trampoline_at_entry(ip)) {
+      if (ret == STEP_ERROR){
 	// we are about to enter the trampoline code to synchronously 
 	// record a return. for now, simply do nothing ...
 	// FIXME: with a bit more effort, we could charge 
@@ -247,25 +246,25 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 
     td->btbuf_cur->the_function = cursor.the_function;
 
-    frame_t* prev = td->btbuf_cur;
-    td->btbuf_cur++;
-    unw_len++;
+    frame_t* prev = td->btbuf_cur++;
 
     ret = hpcrun_unw_step(&cursor);
-    if (ret == STEP_TROLL) {
+    switch (ret) {
+    case STEP_TROLL:
       bt->n_trolls++;
-    }
-    if (ret <= 0) {
-      if (ret == STEP_ERROR) {
-	hpcrun_stats_num_samples_dropped_inc();
-      }
-      else { // STEP_STOP
-	bt->fence = cursor.fence;
-      }
+      /* fallthrough */
+    default:
+      prev->ra_loc = hpcrun_unw_get_ra_loc(&cursor);
+      break;
+
+    case STEP_ERROR:
+      hpcrun_stats_num_samples_dropped_inc();
+      break;
+    case STEP_STOP:
+      bt->fence = cursor.fence;
       break;
     }
-    prev->ra_loc = hpcrun_unw_get_ra_loc(&cursor);
-  }
+  } while (ret != STEP_ERROR && ret != STEP_STOP);
 
   TMSG(FENCE, "backtrace generation detects fence = %s", fence_enum_name(bt->fence));
 
