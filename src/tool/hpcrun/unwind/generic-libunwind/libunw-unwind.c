@@ -184,7 +184,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* h_cursor, void* context)
   unw_context_t *ctx = (unw_context_t *) context;
   unw_word_t pc;
 
-  if (ctx != NULL && unw_init_local(cursor, ctx) == 0) {
+  if (ctx != NULL && unw_init_local_signal(cursor, ctx) == 0) {
     unw_get_reg(cursor, UNW_REG_IP, &pc);
   } else {
     pc = 0;
