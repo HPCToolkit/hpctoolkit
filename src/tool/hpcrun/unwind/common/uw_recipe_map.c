@@ -54,12 +54,26 @@
  */
 
 //---------------------------------------------------------------------
-// system include files
+// debugging support
 //---------------------------------------------------------------------
+
+#define UW_RECIPE_MAP_DEBUG 0
+
+#define UW_RECIPE_MAP_DEBUG_VERBOSE 0
+
+#if UW_RECIPE_MAP_DEBUG_VERBOSE
+#undef UW_RECIPE_MAP_DEBUG
+#define UW_RECIPE_MAP_DEBUG 1
+#endif
+
 
 #if UW_RECIPE_MAP_DEBUG
 #include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
 #endif
+
+
 
 //---------------------------------------------------------------------
 // local include files
@@ -99,10 +113,6 @@
 
 #define SKIPLIST_HEIGHT 8
 
-#define UW_RECIPE_MAP_DEBUG 0
-
-
-#define UW_RECIPE_MAP_DEBUG 0
 #define NUM_NODES 10
 
 /*
@@ -307,9 +317,21 @@ static mem_alloc my_alloc = hpcrun_malloc;
 // private operations
 //---------------------------------------------------------------------
 
+#if UW_RECIPE_MAP_DEBUG
+static void
+uw_recipe_map_report(const char *op, void *start, void *end)
+{
+  fprintf(stderr, "%s [start=%p, end=%p)\n", op, start, end);
+}
+#else
+#define uw_recipe_map_report(op, start, end)
+#endif
+
 static void
 uw_recipe_map_poison(uintptr_t start, uintptr_t end)
 {
+  uw_recipe_map_report("uw_recipe_map_poison", (void *) start, (void *) end);
+
   ilmstat_btuwi_pair_t* itpair =
 	  ilmstat_btuwi_pair_build(start, end, NULL, NEVER, NULL, my_alloc);
   csklnode_t *node = cskl_insert(addr2recipe_map, itpair, my_alloc);
@@ -355,14 +377,16 @@ uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
 {
   ilmstat_btuwi_pair_t* ilmstat_btuwi =	uw_recipe_map_inrange_find(start);
 
-#if UW_RECIPE_MAP_DEBUG
-  assert(ilmstat_btuwi != NULL); // start should be in range of some poisoned interval
-#endif
+  uw_recipe_map_report("uw_recipe_map_unpoison", (void *) start, (void *) end);
 
 #if UW_RECIPE_MAP_DEBUG
+  assert(ilmstat_btuwi != NULL); // start should be in range of some poisoned interval
+
   ildmod_stat_t* ilmstat = ilmstat_btuwi->ilmstat;
+  assert(ilmstat != NULL); 
   assert(atomic_load_explicit(&ilmstat->stat, memory_order_relaxed) == NEVER);  // should be a poisoned node
 #endif
+
   interval_t* interval = ilmstat_btuwi->ilmstat->interval;
   uintptr_t s0 = interval->start;
   uintptr_t e0 = interval->end;
@@ -376,41 +400,69 @@ static void
 uw_recipe_map_repoison(uintptr_t start, uintptr_t end)
 {
   if (start > 0) {
-    ilmstat_btuwi_pair_t* itp_left = uw_recipe_map_inrange_find(start - 1);
-    if (itp_left) { // poisoned interval on the left
-            interval_t* interval_left = itp_left->ilmstat->interval;
-            start = interval_left->start;
-            uw_recipe_map_cmp_del_bulk_unsynch(itp_left, itp_left);
+    ilmstat_btuwi_pair_t* ileft = uw_recipe_map_inrange_find(start - 1);
+    if (ileft) { 
+      ildmod_stat_t* ilmstat = ileft->ilmstat;
+      if ((ilmstat->interval->end == start) &&
+          (NEVER == atomic_load_explicit(&ilmstat->stat, memory_order_acquire))) {
+        // poisoned interval adjacent on the left
+        start = ilmstat->interval->start;
+        uw_recipe_map_cmp_del_bulk_unsynch(ileft, ileft);
+      }
     }
   }
   if (end < UINTPTR_MAX) {
-    ilmstat_btuwi_pair_t* itp_right = uw_recipe_map_inrange_find(end);
-    if (itp_right) { // poisoned interval on the right
-            interval_t* interval_right = itp_right->ilmstat->interval;
-            end = interval_right->start;
-            uw_recipe_map_cmp_del_bulk_unsynch(itp_right, itp_right);
+    ilmstat_btuwi_pair_t* iright = uw_recipe_map_inrange_find(end+1);
+    if (iright) { 
+      ildmod_stat_t* ilmstat = iright->ilmstat;
+      if ((ilmstat->interval->start == end) &&
+          (NEVER == atomic_load_explicit(&ilmstat->stat, memory_order_acquire))) {
+        // poisoned interval adjacent on the right
+        end = ilmstat->interval->end;
+        uw_recipe_map_cmp_del_bulk_unsynch(iright, iright);
+      }
     }
   }
-  uw_recipe_map_poison(start,end);
+  uw_recipe_map_poison(start, end);
 }
+
+
+#if UW_RECIPE_MAP_DEBUG_VERBOSE 
+static void
+uw_recipe_map_report_and_dump(const char *op, void *start, void *end)
+{
+  uw_recipe_map_report(op, start, end);
+  uw_recipe_map_print();
+}
+#else 
+#define uw_recipe_map_report_and_dump(op, start, end)
+#endif
 
 
 static void
 uw_recipe_map_notify_map(void *start, void *end)
 {
-   uw_recipe_map_unpoison((uintptr_t)start, (uintptr_t)end);
+  uw_recipe_map_report_and_dump("*** map: before unpoisoning", start, end);
+
+  uw_recipe_map_unpoison((uintptr_t)start, (uintptr_t)end);
+
+  uw_recipe_map_report_and_dump("*** map: after unpoisoning", start, end);
 }
 
 
 static void
 uw_recipe_map_notify_unmap(void *start, void *end)
 {
+  uw_recipe_map_report_and_dump("*** unmap: before poisoning", start, end);
+
   // Remove intervals in the range [start, end) from the unwind interval tree.
   TMSG(UW_RECIPE_MAP, "uw_recipe_map_delete_range from %p to %p", start, end);
-  cskl_inrange_del_bulk_unsynch(addr2recipe_map, start, ((void*)(intptr_t)end - 1), cskl_ilmstat_btuwi_free);
+  cskl_inrange_del_bulk_unsynch(addr2recipe_map, start, ((void*)((char *) end) - 1), cskl_ilmstat_btuwi_free);
 
   // join poisoned intervals here.
   uw_recipe_map_repoison((uintptr_t)start, (uintptr_t)end);
+
+  uw_recipe_map_report_and_dump("*** unmap: after poisoning", start, end);
 }
 
 static void
@@ -443,13 +495,12 @@ uw_recipe_map_init(void)
 {
 
 #if UW_RECIPE_MAP_DEBUG
-  printf("DXN_DBG uw_recipe_map_init: call a2r_map_init(my_alloc) ... \n");
+  fprintf(stderr, "uw_recipe_map_init: call a2r_map_init(my_alloc) ... \n");
 #endif
 
   cskl_init();
 #if UW_RECIPE_MAP_DEBUG
-  printf("DXN_DGB %s: mcs_init(&GFL_lock), call bitree_uwi_init() \n", __func__);
-  fflush(stdout);
+  fprintf(stderr, "%s: mcs_init(&GFL_lock), call bitree_uwi_init() \n", __func__);
 #endif
   mcs_init(&GFL_lock);
   bitree_uwi_init();
@@ -616,5 +667,5 @@ uw_recipe_map_print(void)
 {
   char buf[MAX_CSKIPLIST_STR];
   cskl_tostr(addr2recipe_map, cskl_ilmstat_btuwi_node_tostr, buf, MAX_CSKIPLIST_STR);
-  printf("%s", buf);
+  fprintf(stderr, "%s", buf);
 }
