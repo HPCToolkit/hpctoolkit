@@ -177,7 +177,7 @@ x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
 
 	  if (noisy) dump_ui(iarg.current, true);
 	}
-	iarg.ins = nextins;
+	iarg.ins += xed_decoded_inst_get_length(xptr);
 	UWI_END_ADDR(iarg.current) = (uintptr_t)iarg.ins;
   }
 
