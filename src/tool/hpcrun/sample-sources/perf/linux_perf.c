@@ -465,7 +465,7 @@ perf_attr_init(
 )
 {
   // by default, we always ask for sampling period information
-  unsigned int sample_type = sampletype | PERF_SAMPLE_PERIOD; 
+  unsigned int sample_type = sampletype | PERF_SAMPLE_PERIOD;
 
   // for datacentric:
   // sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID ;
@@ -494,6 +494,15 @@ perf_attr_init(
   } else {
     attr->sample_type            = sample_type | PERF_SAMPLE_IP;
   }
+  // DEBUG: this attributes are specified in perf tool
+#if 0
+  attr->sample_type = 39;
+  attr->mmap  = 1;
+  attr->mmap2 = 1;
+  attr->inherit = 1;
+  attr->task = 1;
+  attr->comm = 1;
+#endif
   return true;
 }
 
@@ -737,7 +746,8 @@ register_blocking(event_info_t *event_desc)
       MetricFlags_ValFmt_Real, 1 /* period*/, metric_property_none);
 
   // ------------------------------------------
-  // create context switch event sampled everytime cs occurs
+  // set context switch event description to be used when creating
+  //  perf event of this type on each thread
   // ------------------------------------------
   perf_attr_init(PERF_COUNT_SW_CONTEXT_SWITCHES, PERF_TYPE_SOFTWARE,
                  &(event_desc->attr),
@@ -1250,19 +1260,19 @@ perf_event_handler(
     // ----------------------------------------------------------------------------
     // set additional information for the metric description
     // ----------------------------------------------------------------------------
-		metric_aux_info_t *info_aux = &(current->event->metric_desc->info_data);
-		// check if this event is multiplexed. we need to notify the user that a multiplexed
-		//  event is not accurate at all.
-		// Note: perf event can report the scale to be close to 1 (like 1.02 or 0.99).
-		//       we need to use a range of value to see if it's multiplexed or not
-		info_aux->is_multiplexed    |= (scale_f>1.5);
+    metric_aux_info_t *info_aux = &(current->event->metric_desc->info_data);
+    // check if this event is multiplexed. we need to notify the user that a multiplexed
+    //  event is not accurate at all.
+    // Note: perf event can report the scale to be close to 1 (like 1.02 or 0.99).
+    //       we need to use a range of value to see if it's multiplexed or not
+    info_aux->is_multiplexed    |= (scale_f>1.5);
 
     // case of multiplexed or frequency-based sampling, we need to store the mean and
     // the standard deviation of the sampling period
-		double prev_mean             = info_aux->threshold_mean;
-		info_aux->num_samples++;
-		info_aux->threshold_mean    += (counter-info_aux->threshold_mean) / info_aux->num_samples;
-		info_aux->threshold_stdev   += (counter-info_aux->threshold_mean) * (counter-prev_mean);
+    double prev_mean             = info_aux->threshold_mean;
+    info_aux->num_samples++;
+    info_aux->threshold_mean    += (counter-info_aux->threshold_mean) / info_aux->num_samples;
+    info_aux->threshold_stdev   += (counter-info_aux->threshold_mean) * (counter-prev_mean);
 
     // ----------------------------------------------------------------------------
     // update the cct and add callchain if necessary
