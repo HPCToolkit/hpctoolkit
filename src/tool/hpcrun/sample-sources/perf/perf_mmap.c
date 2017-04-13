@@ -75,6 +75,7 @@
 
 #include "perf_mmap.h"
 #include "perf-util.h"
+#include "perf_barrier.h"
 
 /******************************************************************************
  * Constants
@@ -111,7 +112,10 @@ perf_read(
   char *data = BUFFER_FRONT(current_perf_mmap);
 
   // compute bytes available in the circular buffer
-  size_t bytes_available = current_perf_mmap->data_head - current_perf_mmap->data_tail;
+  u64 data_head          = current_perf_mmap->data_head;
+  rmb(); // required by the man page to issue a barrier for SMP-capable platforms
+
+  size_t bytes_available = data_head - current_perf_mmap->data_tail;
 
   if (bytes_wanted > bytes_available) return -1;
 
@@ -245,9 +249,11 @@ static void
 skip_perf_data(pe_mmap_t *current_perf_mmap, size_t sz)
 {
   struct perf_event_mmap_page *hdr = current_perf_mmap;
+  u64 data_head = hdr->data_head;
+  rmb();
 
-  if ((hdr->data_tail + sz) > hdr->data_head)
-     sz = hdr->data_head - hdr->data_tail;
+  if ((hdr->data_tail + sz) > data_head)
+     sz = data_head - hdr->data_tail;
 
   hdr->data_tail += sz;
 }
