@@ -106,7 +106,7 @@ hpcrun_sample_val_init(sample_val_t* x)
 
 
 extern sample_val_t hpcrun_sample_callpath(void *context, int metricId, 
-		                   MetricFlags_ValFmt_t flag, hpcrun_metricVal_t metricIncr,
+		                   hpcrun_metricVal_t metricIncr,
 				   int skipInner, int isSync, void *data);
 
 extern cct_node_t* hpcrun_gen_thread_ctxt(void *context);

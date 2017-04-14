@@ -164,7 +164,7 @@ MONITOR_EXT_WRAP_NAME(read)(int fd, void *buf, size_t count)
   // traces look better.
   getcontext(&uc);
   hpcrun_sample_callpath(&uc, metric_id_read, 
-        MetricFlags_ValFmt_Int, (hpcrun_metricVal_t) {.i=0}, 
+        (hpcrun_metricVal_t) {.i=0}, 
         0, 1, NULL);
 
   hpcrun_safe_exit();
@@ -176,7 +176,7 @@ MONITOR_EXT_WRAP_NAME(read)(int fd, void *buf, size_t count)
   TMSG(IO, "read: fd: %d, buf: %p, count: %ld, actual: %ld",
        fd, buf, count, ret);
   hpcrun_sample_callpath(&uc, metric_id_read, 
-        MetricFlags_ValFmt_Int, (hpcrun_metricVal_t) {.i=(ret > 0 ? ret : 0)}, 
+        (hpcrun_metricVal_t) {.i=(ret > 0 ? ret : 0)}, 
         0, 1, NULL);
   hpcrun_safe_exit();
 
@@ -201,7 +201,7 @@ MONITOR_EXT_WRAP_NAME(write)(int fd, const void *buf, size_t count)
   // traces look better.
   getcontext(&uc);
   hpcrun_sample_callpath(&uc, metric_id_write, 
-            MetricFlags_ValFmt_Int, (hpcrun_metricVal_t) {.i=0}, 
+            (hpcrun_metricVal_t) {.i=0}, 
             0, 1, NULL);
 
   hpcrun_safe_exit();
@@ -213,7 +213,7 @@ MONITOR_EXT_WRAP_NAME(write)(int fd, const void *buf, size_t count)
   TMSG(IO, "write: fd: %d, buf: %p, count: %ld, actual: %ld",
        fd, buf, count, ret);
   hpcrun_sample_callpath(&uc, metric_id_write, 
-        MetricFlags_ValFmt_Int, (hpcrun_metricVal_t) {.i=(ret > 0 ? ret : 0)}, 
+        (hpcrun_metricVal_t) {.i=(ret > 0 ? ret : 0)}, 
         0, 1, NULL);
   hpcrun_safe_exit();
 
@@ -237,7 +237,7 @@ MONITOR_EXT_WRAP_NAME(fread)(void *ptr, size_t size, size_t count, FILE *stream)
   // traces look better.
   getcontext(&uc);
   hpcrun_sample_callpath(&uc, metric_id_read, 
-            MetricFlags_ValFmt_Int, (hpcrun_metricVal_t) {.i=0}, 
+            (hpcrun_metricVal_t) {.i=0}, 
             0, 1, NULL);
 
   hpcrun_safe_exit();
@@ -248,7 +248,7 @@ MONITOR_EXT_WRAP_NAME(fread)(void *ptr, size_t size, size_t count, FILE *stream)
   TMSG(IO, "fread: size: %ld, count: %ld, bytes: %ld, actual: %ld",
        size, count, count*size, ret*size);
   hpcrun_sample_callpath(&uc, metric_id_read, 
-            MetricFlags_ValFmt_Int, (hpcrun_metricVal_t) {.i=ret*size}, 
+            (hpcrun_metricVal_t) {.i=ret*size}, 
             0, 1, NULL);
   hpcrun_safe_exit();
 
@@ -272,7 +272,7 @@ MONITOR_EXT_WRAP_NAME(fwrite)(const void *ptr, size_t size, size_t count,
   // traces look better.
   getcontext(&uc);
   hpcrun_sample_callpath(&uc, metric_id_write, 
-            MetricFlags_ValFmt_Int, (hpcrun_metricVal_t) {.i=0}, 
+            (hpcrun_metricVal_t) {.i=0}, 
             0, 1, NULL);
 
   hpcrun_safe_exit();
@@ -283,7 +283,7 @@ MONITOR_EXT_WRAP_NAME(fwrite)(const void *ptr, size_t size, size_t count,
   TMSG(IO, "fwrite: size: %ld, count: %ld, bytes: %ld, actual: %ld",
        size, count, count*size, ret*size);
   hpcrun_sample_callpath(&uc, metric_id_write, 
-            MetricFlags_ValFmt_Int, (hpcrun_metricVal_t) {.i=ret*size}, 
+            (hpcrun_metricVal_t) {.i=ret*size}, 
             0, 1, NULL);
   hpcrun_safe_exit();
 

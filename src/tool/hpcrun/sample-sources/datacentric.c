@@ -119,7 +119,7 @@ segv_handler (int signal_number, siginfo_t *si, void *context)
     TD_GET(mem_data.data_node) = data_node;
     TD_GET(mem_data.first_touch) = 1;
     hpcrun_sample_callpath(context, alloc_metric_id, 
-	MetricFlags_ValFmt_Int, (hpcrun_metricVal_t) {.i=0}, 
+	(hpcrun_metricVal_t) {.i=0}, 
 	0/*skipInner*/, 0/*isSync*/, NULL);
     TD_GET(mem_data.first_touch) = 0;
     TD_GET(mem_data.data_node) = NULL;

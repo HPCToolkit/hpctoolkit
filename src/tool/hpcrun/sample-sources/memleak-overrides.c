@@ -460,7 +460,7 @@ memleak_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
   if (hpcrun_memleak_active()) {
     sample_val_t smpl =
       hpcrun_sample_callpath(uc, hpcrun_memleak_alloc_id(), 
-        MetricFlags_ValFmt_Int, (hpcrun_metricVal_t) {.i=bytes}, 
+        (hpcrun_metricVal_t) {.i=bytes}, 
         0, 1, NULL);
     info_ptr->context = smpl.sample_node;
     loc_str = loc_name[loc];

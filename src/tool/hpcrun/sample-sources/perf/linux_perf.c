@@ -1278,7 +1278,7 @@ perf_event_handler(
     // update the cct and add callchain if necessary
     // ----------------------------------------------------------------------------
     sample_val_t sv = hpcrun_sample_callpath(context, current->event->metric, 
-		      MetricFlags_ValFmt_Real, (hpcrun_metricVal_t) {.r=counter},
+		      (hpcrun_metricVal_t) {.r=counter},
           0/*skipInner*/, 0/*isSync*/, (void*) &mmap_data);
 
     // ----------------------------------------------------------------------------

@@ -310,7 +310,7 @@ idle_metric_blame_shift_idle(void)
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_sample_callpath(&uc, idle_metric_id, 
-      MetricFlags_ValFmt_Int, (hpcrun_metricVal_t) {.i=0}, 1, 1, NULL);
+      (hpcrun_metricVal_t) {.i=0}, 1, 1, NULL);
     hpcrun_safe_exit();
   }
 }
@@ -334,7 +334,7 @@ idle_metric_blame_shift_work(void)
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_sample_callpath(&uc, idle_metric_id, 
-      MetricFlags_ValFmt_Int, (hpcrun_metricVal_t) {.i=0}, 1, 1, NULL);
+      (hpcrun_metricVal_t) {.i=0}, 1, 1, NULL);
     hpcrun_safe_exit();
   }
 }

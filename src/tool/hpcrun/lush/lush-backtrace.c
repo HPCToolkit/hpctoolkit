@@ -106,7 +106,7 @@ bool is_lush_agent = false;
 
 cct_node_t*
 lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-		   int metricId, MetricFlags_ValFmt_t metricFlag,
+		   int metricId, 
                    hpcrun_metricVal_t metricIncr,
 		   int skipInner, int isSync)
 {
