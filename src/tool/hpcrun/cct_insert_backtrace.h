@@ -93,12 +93,12 @@ bool thread_stop,
 							frame_t* bt_beg, frame_t* bt_last,
 #endif
 				bool tramp_found,
-	                        int metricId, MetricFlags_ValFmt_t flag, hpcrun_metricVal_t metricIncr,
+	                        int metricId, hpcrun_metricVal_t metricIncr,
 				void *data);
 
 extern cct_node_t* hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context, 
 	ip_normalized_t *leaf_func,  // JMC
-	int metricId, MetricFlags_ValFmt_t flag, hpcrun_metricVal_t metricIncr,
+	int metricId, hpcrun_metricVal_t metricIncr,
 	int skipInner, int isSync, void *data);
 
 
