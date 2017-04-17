@@ -141,7 +141,7 @@ metric_desc_t*
 hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 				       MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
 
-void hpcrun_set_metric_info(int metric_id, const char* name);
+metric_desc_t* hpcrun_set_metric_info(int metric_id, const char* name);
 
 void hpcrun_set_metric_name(int metric_id, char* name);
 

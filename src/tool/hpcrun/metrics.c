@@ -389,10 +389,11 @@ hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 //
 // utility routine to make an Async metric with period 1
 //
-void
+metric_desc_t*
 hpcrun_set_metric_info(int metric_id, const char* name)
 {
-  hpcrun_set_metric_info_and_period(metric_id, name, MetricFlags_ValFmt_Int, 1, metric_property_none);
+  return hpcrun_set_metric_info_and_period(metric_id, name,
+                                  MetricFlags_ValFmt_Int, 1, metric_property_none);
 }
 
 

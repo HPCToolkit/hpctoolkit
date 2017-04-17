@@ -1356,6 +1356,10 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     }
     // ------------------------------------------
     // check if the metric contains a formula
+    //  if this is the case, we'll compute the metric based on the formula
+    //  given by hpcrun.
+    // FIXME: we don't check the validity of the formula (yet).
+    //        If hpcrun has incorrect formula, the result can be anything
     // ------------------------------------------
     metric_desc_t* m_lst = metricTbl.lst;
     VarMap var_map(nodeFmt.metrics, m_lst, numMetricsSrc);
@@ -1366,8 +1370,8 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 
       double res = eval.Eval(expr, &var_map);
       if (eval.GetErr() == EEE_NO_ERROR) {
-        hpcrun_fmt_metric_set_value_real(&(m_lst[i].flags),
-             &(nodeFmt.metrics[i]), res);
+        // the formula syntax looks "correct". Update the the metric value
+      	hpcrun_fmt_metric_set_value(m_lst[i], &nodeFmt.metrics[i], res);
       }
     }
 
@@ -1379,10 +1383,10 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     if (parentId != HPCRUN_FMT_CCTNodeId_NULL) {
       CCTIdToCCTNodeMap::iterator it = cctNodeMap.find(parentId);
       if (it != cctNodeMap.end()) {
-	node_parent = it->second;
+	      node_parent = it->second;
       }
       else {
-	DIAG_Throw("Cannot find parent for CCT node " << nodeId);
+	      DIAG_Throw("Cannot find parent for CCT node " << nodeId);
       }
     }
 
