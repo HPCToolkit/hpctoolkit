@@ -97,6 +97,27 @@
 static int pagesize;
 static size_t tail_mask;
 
+
+/******************************************************************************
+ * local methods
+ *****************************************************************************/
+
+/*
+ * Not the data we need? Skip the data.
+ */
+/*static void skip_perf_data(pe_mmap_t *hdr, size_t sz)
+{
+  if ((hdr->data_tail + sz) > hdr->data_head)
+    sz = hdr->data_head - hdr->data_tail;
+
+  hdr->data_tail += sz;
+} */
+
+static int is_more_perf_data(pe_mmap_t *hdr)
+{
+  return (hdr->data_tail < hdr->data_head);
+}
+
 //----------------------------------------------------------
 // read from perf_events mmap'ed buffer
 //----------------------------------------------------------

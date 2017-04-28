@@ -64,6 +64,7 @@
 #include <sys/syscall.h> 
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <sys/wait.h>
 
 /******************************************************************************
  * linux specific headers
@@ -117,7 +118,11 @@
 //******************************************************************************
 
 #define LINUX_PERF_DEBUG 0
-#define DEFAULT_THRESHOLD  1000
+
+// default the number of samples per second
+// linux perf tool has default of 4000. It looks very high but
+// visually the overhead is still small
+#define DEFAULT_THRESHOLD  4000
 
 #ifndef sigev_notify_thread_id
 #define sigev_notify_thread_id  _sigev_un._tid
@@ -429,6 +434,11 @@ perf_init()
   monitor_real_pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
 }
 
+/*************************************
+ * get the perf code and type of the given event name
+ * if perfmon is enabled, we query the info from perfmon
+ * otherwise we depend on the predefined events
+ *************************************/
 static int
 perf_get_pmu_code_type(const char *name, u64 *event_code, u64* event_type)
 {
@@ -519,10 +529,10 @@ get_precise_ip()
     return precise_ip;
 
   struct perf_event_attr attr;
-  attr.config = PERF_COUNT_HW_CPU_CYCLES; // Perf's cycle event
-  attr.type   = PERF_TYPE_HARDWARE;     // it's a hardware event
 
   memset(&attr, 0, sizeof(attr));
+  attr.config = PERF_COUNT_HW_CPU_CYCLES; // Perf's cycle event
+  attr.type   = PERF_TYPE_HARDWARE;     // it's a hardware event
 
   // start with the most restrict skid (3) then 2, 1 and 0
   // this is specified in perf_event_open man page
@@ -644,7 +654,20 @@ perf_add_kernel_callchain(
     // add kernel IPs to the call chain top down, which is the 
     // reverse of the order in which they appear in ips
     for (int i = data->nr - 1; i >= 0; i--) {
-      ip_normalized_t npc = { .lm_id = perf_kernel_lm_id, .lm_ip = data->ips[i] };
+
+      uint16_t lm_id = perf_kernel_lm_id;
+#if 0
+      // ------------------------------------------------------------------
+      // case if we want to include user call chain as well:
+      // Wild assumption : if hpcrun cannot find the load module of a certain
+      //   address, it is possible the address is from the kernel
+      // ------------------------------------------------------------------
+      void *addr = (void *) data->ips[i];
+      load_module_t *lm = hpcrun_loadmap_findByAddr(addr, addr+1);
+      if (lm != NULL) lm_id = lm->id;
+      // ------------------------------------------------------------------
+#endif
+      ip_normalized_t npc = { .lm_id = lm_id, .lm_ip = data->ips[i] };
       cct_addr_t frm = { .ip_norm = npc };
       cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
       parent = child;
@@ -738,7 +761,7 @@ register_blocking(event_info_t *event_desc)
         MetricFlags_ValFmt_Int, 1 /* period */, metric_property_none);
 
   // ------------------------------------------
-  // create metric to store context switch
+  // create metric to store context switches
   // ------------------------------------------
   event_desc->metric      = hpcrun_new_metric();
   event_desc->metric_desc = hpcrun_set_metric_info_and_period(
