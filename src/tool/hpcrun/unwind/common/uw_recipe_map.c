@@ -497,6 +497,18 @@ uw_recipe_map_report_and_dump(const char *op, void *start, void *end)
 #endif
 
 
+#if UW_RECIPE_MAP_DEBUG_VERBOSE 
+static void
+uw_recipe_map_report_and_dump(const char *op, void *start, void *end)
+{
+  uw_recipe_map_report(op, start, end);
+  uw_recipe_map_print();
+}
+#else 
+#define uw_recipe_map_report_and_dump(op, start, end)
+#endif
+
+
 static void
 uw_recipe_map_notify_map(void *start, void *end)
 {
