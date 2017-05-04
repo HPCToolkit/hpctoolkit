@@ -266,7 +266,7 @@ perf_sample_callchain(pe_mmap_t *current_perf_mmap, perf_mmap_data_t* mmap_data)
 //----------------------------------------------------------
 // part of the buffer to be skipped
 //----------------------------------------------------------
-static void
+void
 skip_perf_data(pe_mmap_t *current_perf_mmap, size_t sz)
 {
   struct perf_event_mmap_page *hdr = current_perf_mmap;
@@ -293,7 +293,10 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
   pe_mmap_t *current_perf_mmap = current->mmap;
   int data_read = 0;
 
+again:
   if (perf_read_header(current_perf_mmap, &hdr) == 0) {
+    TMSG(LINUX_PERF, "buffer header t: %d, s: %d, head: %d, tail: %d", hdr.type, hdr.size,
+    		current_perf_mmap->data_tail, current_perf_mmap->data_head);
     if (hdr.type == PERF_RECORD_SAMPLE) {
       if (hdr.size <= 0) {
         return 0;
@@ -384,13 +387,45 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
         data_read++;
       }
 #endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
+    } else if (hdr.type == PERF_RECORD_SWITCH) {
+      // only available since kernel 4.3
+      u64 type, fmt, val64;
+      struct { uint32_t pid, tid; } pid;
+      size_t sz = hdr.size - sizeof(hdr);
+      struct { uint32_t cpu, reserved; } cpu;
+
+      type = current->event->attr.sample_type;
+      fmt = current->event->attr.read_format;
+
+      if (hdr.misc == PERF_RECORD_MISC_SWITCH_OUT) {
+	    TMSG(LINUX_PERF, "CONTEXT SWITCH: OUT");
+      } else {
+    	TMSG(LINUX_PERF, "CONTEXT SWITCH: IN");
+      }
+
+      if (type & PERF_SAMPLE_TID) {
+        perf_read( current_perf_mmap, &pid, sizeof(pid)) ;
+      }
+
+      if (type & PERF_SAMPLE_TIME) {
+        perf_read_u64( current_perf_mmap, &val64 ) ;
+      }
+      if (type & PERF_SAMPLE_CPU) {
+        perf_read( current_perf_mmap, &cpu, sizeof(cpu) ) ;
+      }
+      TMSG(LINUX_PERF, "Time: %d, tid: %d, cpu: %d", val64, pid.pid, cpu.cpu);
+#endif
     } else {
       // not a PERF_RECORD_SAMPLE
       // skip it
       skip_perf_data(current_perf_mmap, hdr.size);
+      TMSG(LINUX_PERF, "skipp header %d  %d : $d bytes", hdr.type, hdr.misc, hdr.size);
     }
   }
 
+  if (is_more_perf_data(current_perf_mmap))
+    goto again;
   return data_read;
 }
 

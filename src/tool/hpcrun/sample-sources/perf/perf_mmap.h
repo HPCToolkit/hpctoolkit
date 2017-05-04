@@ -86,4 +86,6 @@ void perf_unmmap(pe_mmap_t *mmap);
 
 int read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info);
 
+void skip_perf_data(pe_mmap_t *current_perf_mmap, size_t sz);
+
 #endif

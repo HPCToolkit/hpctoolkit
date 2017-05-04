@@ -723,7 +723,7 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
       hpcrun_set_blocking_time(sv.sample_node, mmap_data.time);
 
     } else if (blocking_time <= mmap_data.time) {
-    	// we are leaving the kernel: add the time spent in the kernel into the metric
+      // we are leaving the kernel: add the time spent in the kernel into the metric
       u64 delta = mmap_data.time - blocking_time;
 
       int metric_index =  current_event->event->metric_custom->metric_index;
@@ -772,11 +772,21 @@ register_blocking(event_info_t *event_desc)
   // set context switch event description to be used when creating
   //  perf event of this type on each thread
   // ------------------------------------------
+  /* PERF_SAMPLE_STACK_USER may also be good to use */
+  u64 sample_type = PERF_SAMPLE_IP   | PERF_SAMPLE_TID       |
+		    PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN | 
+		    PERF_SAMPLE_CPU  | PERF_SAMPLE_PERIOD;
+  
   perf_attr_init(PERF_COUNT_SW_CONTEXT_SWITCHES, PERF_TYPE_SOFTWARE,
                  &(event_desc->attr),
-                 true /* use_period*/, 1 /* sample every context switch*/,
-                 PERF_SAMPLE_TIME /* need time info for sample type */);
+                 true        /* use_period*/, 
+		         1           /* sample every context switch*/,
+                 sample_type /* need additional info for sample type */);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
+  event_desc->attr.context_switch = 1;
+#endif
+  event_desc->attr.sample_id_all = 1;
   // ------------------------------------------
   // additional info for perf event metric
   // ------------------------------------------
