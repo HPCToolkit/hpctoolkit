@@ -96,8 +96,11 @@
 
 #include <fnbounds/fnbounds_interface.h>
 #include <messages/messages.h>
+#include <main.h>
 #include <unwind/common/unw-datatypes.h>
 #include <unwind/common/unwind.h>
+#include <unwind/common/uw_recipe_map.h>
+#include <unwind/common/binarytree_uwi.h>
 #include <utilities/arch/context-pc.h>
 
 //************************************************
@@ -128,6 +131,7 @@ compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 void
 hpcrun_unw_init(void)
 {
+  uw_recipe_map_init();
   hpcrun_set_real_siglongjmp();
 }
 
@@ -178,27 +182,27 @@ hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* c)
 // except for pc_norm and pc_unnorm.
 //
 void
-hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* h_cursor, void* context)
+hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
-  unw_cursor_t *cursor = &(h_cursor->uc);
+  unw_cursor_t *unw_cursor = &(cursor->uc);
   unw_context_t *ctx = (unw_context_t *) context;
   unw_word_t pc;
 
-  if (ctx != NULL && unw_init_local_signal(cursor, ctx) == 0) {
-    unw_get_reg(cursor, UNW_REG_IP, &pc);
+  if (ctx != NULL && unw_init_local_signal(unw_cursor, ctx) == 0) {
+    unw_get_reg(unw_cursor, UNW_REG_IP, &pc);
   } else {
     pc = 0;
   }
 
-  h_cursor->sp = NULL;
-  h_cursor->bp = NULL;
-  h_cursor->pc_unnorm = (void *) pc;
-  h_cursor->intvl = &(h_cursor->real_intvl);
-  h_cursor->real_intvl.lm = NULL;
+  cursor->sp = NULL;
+  cursor->bp = NULL;
+  cursor->pc_unnorm = (void *) pc;
+  cursor->intvl = &(cursor->real_intvl);
+  cursor->real_intvl.lm = NULL;
 
-  compute_normalized_ips(h_cursor);
+  compute_normalized_ips(cursor);
 
-  TMSG(UNW, "init cursor pc = %p\n", h_cursor->pc_unnorm);
+  TMSG(UNW, "init cursor pc = %p\n", cursor->pc_unnorm);
 }
 
 
@@ -213,20 +217,20 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* h_cursor, void* context)
 // ---------------------------------------------------------
 
 step_state
-hpcrun_unw_step(hpcrun_unw_cursor_t* h_cursor)
+hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 {
   // this should never be NULL
-  if (h_cursor == NULL) {
+  if (cursor == NULL) {
     TMSG(UNW, "unw_step: internal error: cursor ptr is NULL\n");
     return STEP_ERROR;
   }
 
   // starting pc
-  unw_cursor_t *cursor = &(h_cursor->uc);
+  unw_cursor_t *unw_cursor = &(cursor->uc);
   unw_word_t tmp;
   void *pc;
 
-  unw_get_reg(cursor, UNW_REG_IP, &tmp);
+  unw_get_reg(unw_cursor, UNW_REG_IP, &tmp);
   pc = (void *) tmp;
 
   // full unwind: stop at libmonitor fence.  this is where we hope the
@@ -238,32 +242,88 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* h_cursor)
     return STEP_STOP;
   }
 
-  int ret = unw_step(cursor);
+  //-----------------------------------------------------------
+  // compute unwind information for the caller's pc
+  //-----------------------------------------------------------
+  unwindr_info_t unwr_info;
+  bool found = uw_recipe_map_lookup(pc, &unwr_info);
+  if (!found)
+    {
+      TMSG(UNW, "unw_step: error: unw_step failed at: %p\n", pc);
+      return STEP_ERROR;
+    }
 
-  // step error, almost never happens with libunwind.
-  if (ret < 0) {
-    TMSG(UNW, "unw_step: error: unw_step failed at: %p\n", pc);
-    return STEP_ERROR;
-  }
-
-  // we prefer to stop at monitor fence, but must also stop here.
-  if (ret == 0) {
-    TMSG(UNW, "unw_step: stop at unw_step: %p\n", pc);
-    return STEP_STOP;
-  }
+  bitree_uwi_t* uw = unwr_info.btuwi;
+  uwi_t *uwi = bitree_uwi_rootval(uw);
+  unw_apply_reg_state(unw_cursor, uwi->recipe);
 
   // update for new pc
-  unw_get_reg(cursor, UNW_REG_IP, &tmp);
+  unw_get_reg(unw_cursor, UNW_REG_IP, &tmp);
   pc = (void *) tmp;
 
-  h_cursor->sp = NULL;
-  h_cursor->bp = NULL;
-  h_cursor->pc_unnorm = pc;
-  h_cursor->intvl = &(h_cursor->real_intvl);
-  h_cursor->real_intvl.lm = NULL;
+  cursor->sp = NULL;
+  cursor->bp = NULL;
+  cursor->pc_unnorm = pc;
+  cursor->intvl = &(cursor->real_intvl);
+  cursor->real_intvl.lm = NULL;
 
-  compute_normalized_ips(h_cursor);
+  compute_normalized_ips(cursor);
 
   TMSG(UNW, "unw_step: advance pc: %p\n", pc);
   return STEP_OK;
 }
+
+//***************************************************************************
+// unwind_interval interface
+//***************************************************************************
+
+struct builder
+{
+  mem_alloc m_alloc;
+  bitree_uwi_t *root;
+};
+
+int dwarf_reg_states_callback(void *token,
+			      void *rs,
+			      size_t size,
+			      unw_word_t start_ip, unw_word_t end_ip)
+{
+  struct builder *b = token;
+  bitree_uwi_t *u = bitree_uwi_malloc(b->m_alloc, size);
+  bitree_uwi_set_leftsubtree(u, b->root);
+  uwi_t *uwi =  bitree_uwi_rootval(u);
+  interval_t *interval =  uwi->interval;
+  interval->start = (uintptr_t)start_ip;
+  interval->end = (uintptr_t)end_ip;
+  memcpy(uwi->recipe, rs, size);
+  b->root = u;
+  return 0;
+}
+
+
+static btuwi_status_t
+libunw_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
+{
+  unw_context_t uc;
+  unw_getcontext(&uc);
+  unw_cursor_t c;
+  unw_init_local_signal(&c, &uc);
+  unw_set_reg(&c, UNW_REG_IP, (intptr_t)beg_insn);
+  struct builder b = {m_alloc, NULL};
+  unw_reg_states_iterate(&c, dwarf_reg_states_callback, &b);
+
+  btuwi_status_t stat;
+  stat.first_undecoded_ins = NULL;
+  stat.errcode = 0;
+  stat.first = b.root;
+
+  return stat; 
+}
+
+btuwi_status_t
+build_intervals(char  *ins, unsigned int len, mem_alloc m_alloc)
+{
+  btuwi_status_t stat = libunw_build_intervals(ins, len, m_alloc);
+  return stat;
+}
+
