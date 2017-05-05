@@ -124,7 +124,6 @@ new_ui(char *startaddr,
        mem_alloc m_alloc)
 {
   bitree_uwi_t *u = bitree_uwi_malloc(m_alloc, sizeof(ppc64recipe_t));
-  bitree_uwi_set_leftsubtree(u, prev);
   uwi_t *uwi =  bitree_uwi_rootval(u);
 
   // ----------------------------------------------------------------
