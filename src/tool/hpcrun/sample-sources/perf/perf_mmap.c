@@ -411,10 +411,9 @@ again:
       type = current->event->attr.sample_type;
       fmt = current->event->attr.read_format;
 
+      char *cs_type = "CONTEXT SWITCH: IN";
       if (hdr.misc == PERF_RECORD_MISC_SWITCH_OUT) {
-	    TMSG(LINUX_PERF, "CONTEXT SWITCH: OUT");
-      } else {
-    	TMSG(LINUX_PERF, "CONTEXT SWITCH: IN");
+	    cs_type = "CONTEXT SWITCH: OUT";
       }
 
       if (type & PERF_SAMPLE_TID) {
@@ -427,7 +426,7 @@ again:
       if (type & PERF_SAMPLE_CPU) {
         perf_read( current_perf_mmap, &cpu, sizeof(cpu) ) ;
       }
-      TMSG(LINUX_PERF, "Time: %d, tid: %d, cpu: %d", val64, pid.pid, cpu.cpu);
+      TMSG(LINUX_PERF, "%s\nTime: %d, tid: %d, cpu: %d", cs_type, val64, pid.pid, cpu.cpu);
 #endif
     } else {
       // not a PERF_RECORD_SAMPLE
