@@ -119,7 +119,7 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval **next,
 	*next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
 		       ra_status, UWI_RECIPE(first)->sp_ra_pos, UWI_RECIPE(first)->bp_ra_pos,
 		       bp_status, UWI_RECIPE(first)->sp_bp_pos, UWI_RECIPE(first)->bp_bp_pos,
-		       current, m_alloc);
+		       m_alloc);
         set_ui_restored_canonical(*next, UWI_RECIPE(iarg->canonical_interval)->prev_canonical);
         if (UWI_RECIPE(first)->bp_status != BP_HOSED && bp_status == BP_HOSED) {
           set_ui_canonical(*next, iarg->canonical_interval);

@@ -76,7 +76,6 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 		    BP_HOSED, 
 		    xr->sp_bp_pos, 
 		    xr->bp_bp_pos,
-		    next,
 		    m_alloc);
       if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED, HW_BP_OVERWRITTEN) &&
 	  (UWI_RECIPE(hw_tmp->uwi)->sp_ra_pos == xr->sp_ra_pos)) {
@@ -102,7 +101,6 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 			  xr->bp_status,
 			  xr->sp_bp_pos, 
 			  xr->bp_bp_pos,
-			  next,
 			  m_alloc);
 
 	    if (disp < 0) {

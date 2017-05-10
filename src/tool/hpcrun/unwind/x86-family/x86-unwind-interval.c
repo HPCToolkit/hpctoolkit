@@ -82,7 +82,7 @@ unwind_interval*
 new_ui(char *start, 
        ra_loc ra_status, unsigned int sp_ra_pos, int bp_ra_pos, 
        bp_loc bp_status,          int sp_bp_pos, int bp_bp_pos,
-       unwind_interval *prev, mem_alloc m_alloc)
+       mem_alloc m_alloc)
 {
   bitree_uwi_t *u = bitree_uwi_malloc(m_alloc, sizeof(x86recipe_t));
 
@@ -91,7 +91,6 @@ new_ui(char *start,
 
   hpcrun_stats_num_unwind_intervals_total_inc();
 
-  bitree_uwi_set_leftsubtree(u, prev);
   uwi_t *uwi =  bitree_uwi_rootval(u);
 
   interval_t *interval =  uwi->interval;
