@@ -134,7 +134,7 @@ extern "C" {
 
   unwind_interval *
   new_ui(char *startaddr, ra_loc ra_status, const x86registers_t *reg,
-	 unwind_interval *prev, mem_alloc m_alloc);
+	 mem_alloc m_alloc);
 
   unwind_interval *fluke_ui(char *pc,unsigned int sp_ra_pos, mem_alloc m_alloc);
 

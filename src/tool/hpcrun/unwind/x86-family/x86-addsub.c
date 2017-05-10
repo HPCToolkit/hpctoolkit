@@ -96,7 +96,7 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
 	}
 	reg.sp_ra_pos += immedv;
 	reg.sp_bp_pos += immedv;
-	next = new_ui(nextInsn(iarg, xptr), istatus, &reg, iarg->current, m_alloc);
+	next = new_ui(nextInsn(iarg, xptr), istatus, &reg, m_alloc);
 
 	if (immedv > 0) {
 	  if (HW_TEST_STATE(hw_tmp->state, 0, HW_SP_DECREMENTED)) {
@@ -127,7 +127,7 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
 	  //
 	  // 9 December 2007 -- John Mellor-Crummey
 	  //-------------------------------------------------------------------
-	  next = new_ui(nextInsn(iarg, xptr), RA_BP_FRAME, &reg, iarg->current, m_alloc);
+	  next = new_ui(nextInsn(iarg, xptr), RA_BP_FRAME, &reg, m_alloc);
 	  iarg->bp_frames_found = true;
 	}
       }

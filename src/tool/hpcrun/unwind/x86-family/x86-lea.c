@@ -71,7 +71,7 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
       // note: we don't check that BP is BP_SAVED; we might have to
       //=======================================================================
       reg.bp_status = BP_HOSED;
-      next = new_ui(next_ins, RA_SP_RELATIVE, &reg, next, m_alloc);
+      next = new_ui(next_ins, RA_SP_RELATIVE, &reg, m_alloc);
       if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED, HW_BP_OVERWRITTEN) &&
 	  (UWI_RECIPE(hw_tmp->uwi)->reg.sp_ra_pos == xr->reg.sp_ra_pos)) {
 	hw_tmp->uwi = next;
@@ -90,7 +90,7 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 	    //========================================================================
 	    xed_int64_t disp = xed_decoded_inst_get_memory_displacement(xptr, mem_op_index);
 	    reg.sp_ra_pos -= disp;
-	    next = new_ui(next_ins, xr->ra_status, &reg, next, m_alloc);
+	    next = new_ui(next_ins, xr->ra_status, &reg, m_alloc);
 
 	    if (disp < 0) {
 	      if (HW_TEST_STATE(hw_tmp->state, 0, HW_SP_DECREMENTED)) {

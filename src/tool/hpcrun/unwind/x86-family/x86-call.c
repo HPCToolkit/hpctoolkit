@@ -101,7 +101,7 @@ process_call(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
     x86registers_t reg = xr->reg;
     reg.sp_ra_pos += sizeof(void*);
     reg.sp_bp_pos += sizeof(void*);
-    next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg, iarg->current, m_alloc);
+    next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg, m_alloc);
   }
 #ifdef USE_CALL_LOOKAHEAD
   next = call_lookahead(xptr, iarg->current, iarg->ins);

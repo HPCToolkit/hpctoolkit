@@ -57,7 +57,7 @@ process_leave(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *ia
 {
   x86registers_t reg = { 0, 0, BP_UNCHANGED, 0, 0};
   unwind_interval *next;
-  next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg, iarg->current, m_alloc);
+  next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg, m_alloc);
   return next;
 }
 

@@ -91,7 +91,7 @@ process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
     }
   }
 
-  next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg, iarg->current, m_alloc);
+  next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg, m_alloc);
 
   return next;
 }
@@ -124,6 +124,6 @@ process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
     if (x86_isReg_BP(regname)) reg.bp_status = BP_UNCHANGED;
   }
 
-  next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg, iarg->current, m_alloc);
+  next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg, m_alloc);
   return next;
 }
