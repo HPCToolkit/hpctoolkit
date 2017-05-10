@@ -72,7 +72,7 @@ process_and(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 	  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
 		  RA_BP_FRAME, UWI_RECIPE(iarg->current)->sp_ra_pos, UWI_RECIPE(iarg->current)->bp_ra_pos,
 		  UWI_RECIPE(iarg->current)->bp_status, UWI_RECIPE(iarg->current)->sp_bp_pos,
-		  UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);
+		  UWI_RECIPE(iarg->current)->bp_bp_pos, m_alloc);
 	}
   }
   return next;

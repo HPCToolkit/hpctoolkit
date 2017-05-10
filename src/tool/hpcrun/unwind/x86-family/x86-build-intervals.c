@@ -125,7 +125,7 @@ x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
   iarg.end           = end;
   iarg.highwatermark = _h;
   iarg.ins           = ins;
-  iarg.current       = new_ui(ins, RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, NULL, m_alloc);
+  iarg.current       = new_ui(ins, RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, m_alloc);
   iarg.first         = iarg.current;
 
   // handle return is different if there are any bp frames
@@ -182,7 +182,7 @@ x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
 
   UWI_END_ADDR(iarg.current) = (uintptr_t)end;
 
-  set_status(&status, iarg.ins, error_count, bitree_uwi_finalize(iarg.first));
+  set_status(&status, iarg.ins, error_count, iarg.first);
 
   x86_fix_unwind_intervals(iarg.beg, len, &status);
   x86_coalesce_unwind_intervals(status.first);

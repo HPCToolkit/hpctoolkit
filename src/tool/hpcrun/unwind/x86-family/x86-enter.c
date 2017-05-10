@@ -82,7 +82,7 @@ process_enter(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *ia
   next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
 		RA_STD_FRAME,
 		UWI_RECIPE(iarg->current)->sp_ra_pos + offset, 8, BP_SAVED,
-		UWI_RECIPE(iarg->current)->sp_bp_pos + offset - 8, 0, iarg->current,
+		UWI_RECIPE(iarg->current)->sp_bp_pos + offset - 8, 0,
 		m_alloc);
   hw_tmp->uwi = next;
   hw_tmp->state = 

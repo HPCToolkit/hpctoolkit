@@ -93,7 +93,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 			BP_SAVED,
 			xed_decoded_inst_get_memory_displacement(xptr, 0),
 			UWI_RECIPE(iarg->current)->bp_bp_pos,
-			iarg->current, m_alloc);
+			m_alloc);
 	  hw_tmp->uwi = next;
 	  hw_tmp->state = 
 	    HW_NEW_STATE(hw_tmp->state, HW_BP_SAVED);
@@ -121,7 +121,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
 			RA_SP_RELATIVE, UWI_RECIPE(iarg->current)->sp_ra_pos, 
 			UWI_RECIPE(iarg->current)->bp_ra_pos, BP_UNCHANGED, UWI_RECIPE(iarg->current)->sp_bp_pos, 
-			UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);
+			UWI_RECIPE(iarg->current)->bp_bp_pos, m_alloc);
 	} else {
 	  //================================================================
 	  // instruction: BP is loaded from a memory address DIFFERENT from 
@@ -133,7 +133,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	    next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
 			  RA_SP_RELATIVE, UWI_RECIPE(iarg->current)->sp_ra_pos, 
 			  UWI_RECIPE(iarg->current)->bp_ra_pos, BP_HOSED, UWI_RECIPE(iarg->current)->sp_bp_pos,
-			  UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);
+			  UWI_RECIPE(iarg->current)->bp_bp_pos, m_alloc);
 	    if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED, 
 			      HW_BP_OVERWRITTEN) && 
 		(UWI_RECIPE(hw_tmp->uwi)->sp_ra_pos == UWI_RECIPE(next)->sp_ra_pos)) {
@@ -158,7 +158,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
 	 	      RA_SP_RELATIVE, 0, 0,
 		      UWI_RECIPE(iarg->current)->bp_status, UWI_RECIPE(iarg->current)->sp_bp_pos, 
-		      UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);
+		      UWI_RECIPE(iarg->current)->bp_bp_pos, m_alloc);
       }
     }
   } else if ((op0_name == XED_OPERAND_REG0) && (op1_name == XED_OPERAND_REG1)){
@@ -175,7 +175,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
       next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
 		    RA_SP_RELATIVE, UWI_RECIPE(iarg->current)->bp_ra_pos, UWI_RECIPE(iarg->current)->bp_ra_pos,
 		    UWI_RECIPE(iarg->current)->bp_status, UWI_RECIPE(iarg->current)->bp_bp_pos, UWI_RECIPE(iarg->current)->bp_bp_pos,
-		    iarg->current, m_alloc);
+		    m_alloc);
     } else if (x86_isReg_BP(reg0) && x86_isReg_SP(reg1)) {
       //====================================================================
       // instruction: initialize BP with value of SP to set up a frame ptr
@@ -184,7 +184,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
       next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), 
 		    RA_STD_FRAME,
 		    UWI_RECIPE(iarg->current)->sp_ra_pos, UWI_RECIPE(iarg->current)->sp_ra_pos, BP_SAVED,
-		    UWI_RECIPE(iarg->current)->sp_bp_pos, UWI_RECIPE(iarg->current)->sp_bp_pos, iarg->current,
+		    UWI_RECIPE(iarg->current)->sp_bp_pos, UWI_RECIPE(iarg->current)->sp_bp_pos,
 			m_alloc);
       if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED, 
 			HW_BP_OVERWRITTEN)) { 
@@ -207,8 +207,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), 
 		      RA_SP_RELATIVE,
 		      UWI_RECIPE(iarg->current)->sp_ra_pos, UWI_RECIPE(iarg->current)->sp_ra_pos, BP_HOSED,
-		      UWI_RECIPE(iarg->current)->sp_bp_pos, UWI_RECIPE(iarg->current)->sp_bp_pos, iarg->current,
-			  m_alloc);
+		      UWI_RECIPE(iarg->current)->sp_bp_pos, UWI_RECIPE(iarg->current)->sp_bp_pos, m_alloc);
 	if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED, 
 			  HW_BP_OVERWRITTEN) && 
 	    (UWI_RECIPE(hw_tmp->uwi)->sp_ra_pos == UWI_RECIPE(next)->sp_ra_pos)) {
