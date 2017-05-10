@@ -461,60 +461,6 @@ perf_get_pmu_code_type(const char *name, u64 *event_code, u64* event_type)
 #endif
 }
 
-//----------------------------------------------------------
-// generic initialization for event attributes
-// return true if the initialization is successful,
-//   false otherwise.
-//----------------------------------------------------------
-static int
-perf_attr_init(
-  u64 event_code, u64 event_type,
-  struct perf_event_attr *attr,
-  bool usePeriod, u64 threshold,
-  u64  sampletype
-)
-{
-  // by default, we always ask for sampling period information
-  unsigned int sample_type = sampletype | PERF_SAMPLE_PERIOD;
-
-  // for datacentric:
-  // sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID ;
-  memset(attr, 0, sizeof(struct perf_event_attr));
-
-  attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
-  attr->type   = event_type;       /* Type of event     */
-  attr->config = event_code;       /* Type-specific configuration */
-
-  if (!usePeriod) {
-    attr->freq          = 1;
-    attr->sample_freq   = threshold;       /* Frequency of sampling  */
-  } else {
-    attr->freq          = 0;
-    attr->sample_period = threshold;       /* Period of sampling     */
-  }
-  attr->precise_ip    = perf_precise_ip;   /*  requested to have 0 skid.  */
-  attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
-  attr->disabled      = 1;       /* the counter will be enabled later  */
-  attr->sample_stack_user = 4096;
-
-  if (is_perf_ksym_available()) {
-    /* Records the callchain */
-    attr->sample_type            = sample_type | PERF_SAMPLE_CALLCHAIN;
-    attr->exclude_callchain_user = EXCLUDE_CALLCHAIN_USER;
-  } else {
-    attr->sample_type            = sample_type | PERF_SAMPLE_IP;
-  }
-  // DEBUG: this attributes are specified in perf tool
-#if 0
-  attr->sample_type = 39;
-  attr->mmap  = 1;
-  attr->mmap2 = 1;
-  attr->inherit = 1;
-  attr->task = 1;
-  attr->comm = 1;
-#endif
-  return true;
-}
 
 
 //----------------------------------------------------------
@@ -558,6 +504,62 @@ get_precise_ip()
 }
 
 //----------------------------------------------------------
+// generic initialization for event attributes
+// return true if the initialization is successful,
+//   false otherwise.
+//----------------------------------------------------------
+static int
+perf_attr_init(
+  u64 event_code, u64 event_type,
+  struct perf_event_attr *attr,
+  bool usePeriod, u64 threshold,
+  u64  sampletype
+)
+{
+  // by default, we always ask for sampling period information
+  unsigned int sample_type = sampletype | PERF_SAMPLE_PERIOD;
+
+  // for datacentric:
+  // sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID ;
+  memset(attr, 0, sizeof(struct perf_event_attr));
+
+  attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
+  attr->type   = event_type;       /* Type of event     */
+  attr->config = event_code;       /* Type-specific configuration */
+
+  if (!usePeriod) {
+    attr->freq          = 1;
+    attr->sample_freq   = threshold;       /* Frequency of sampling  */
+  } else {
+    attr->freq          = 0;
+    attr->sample_period = threshold;       /* Period of sampling     */
+  }
+
+  attr->precise_ip    = perf_precise_ip;   /* the precision is either detected automatically
+                                              as precise as possible or  on the user's variable.  */
+  attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
+  attr->disabled      = 1;       /* the counter will be enabled later  */
+  attr->sample_stack_user = 4096;
+
+  if (is_perf_ksym_available()) {
+    /* Records the callchain */
+    attr->sample_type            = sample_type | PERF_SAMPLE_CALLCHAIN;
+    attr->exclude_callchain_user = EXCLUDE_CALLCHAIN_USER;
+  } else {
+    attr->sample_type            = sample_type | PERF_SAMPLE_IP;
+  }
+  // DEBUG: this attributes are specified in perf tool
+#if 0
+  attr->sample_type = 39;
+  attr->mmap  = 1;
+  attr->mmap2 = 1;
+  attr->inherit = 1;
+  attr->task = 1;
+  attr->comm = 1;
+#endif
+  return true;
+}
+//----------------------------------------------------------
 // initialize an event
 //  event_num: event number
 //  name: name of event (has to be recognized by perf event)
@@ -566,9 +568,6 @@ get_precise_ip()
 static bool
 perf_thread_init(event_info_t *event, event_thread_t *et)
 {
-  if (perf_precise_ip == PERF_EVENT_AUTODETECT_SKID) {
-    event->attr.precise_ip = get_precise_ip();
-  }
   et->event = event;
   // ask sys to "create" the event
   // it returns -1 if it fails.
@@ -812,9 +811,9 @@ METHOD_FN(init)
   // the env variable is set by hpcrun or by user (case for static exec)
 
   perf_precise_ip = getEnvLong( HPCRUN_OPTION_PRECISE_IP, PERF_EVENT_AUTODETECT_SKID );
-  if (perf_precise_ip<0 || perf_precise_ip>PERF_EVENT_AUTODETECT_SKID ) {
+  if (perf_precise_ip<0 || perf_precise_ip>=PERF_EVENT_AUTODETECT_SKID ) {
     // make sure the user has the correct value of precise ip
-    perf_precise_ip = PERF_EVENT_AUTODETECT_SKID;
+    perf_precise_ip = get_precise_ip();   /*  requested to have 0 skid.  */
   }
   self->state = INIT;
   TMSG(LINUX_PERF, "%d: init OK", self->sel_idx);

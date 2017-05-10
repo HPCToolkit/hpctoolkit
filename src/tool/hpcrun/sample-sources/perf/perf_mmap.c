@@ -431,8 +431,11 @@ again:
     } else {
       // not a PERF_RECORD_SAMPLE
       // skip it
+      if (hdr.size <= 0) {
+        return 0;
+      }
       skip_perf_data(current_perf_mmap, hdr.size);
-      TMSG(LINUX_PERF, "skip header %d  %d : $d bytes", hdr.type, hdr.misc, hdr.size);
+      TMSG(LINUX_PERF, "skip header %d  %d : %d bytes", hdr.type, hdr.misc, hdr.size);
     }
   }
 
