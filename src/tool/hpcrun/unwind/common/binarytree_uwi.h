@@ -86,10 +86,6 @@ uw_recipe_t_new(mem_alloc m_alloc, size_t recipe_size)
   return (uw_recipe_t*)m_alloc(recipe_size);
 }
 
-bitree_uwi_t*
-bitree_uwi_new(uwi_t *val, bitree_uwi_t *left, bitree_uwi_t *right,
-	mem_alloc m_alloc);
-
 /*
  * Returns a bitree_uwi_t node whose left and right subtree nodes are NULL.
  * The root value of the returned node is a non-null uwi_t*, which is a pair

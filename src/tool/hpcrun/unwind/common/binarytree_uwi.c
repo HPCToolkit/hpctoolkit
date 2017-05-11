@@ -51,15 +51,6 @@ uwi_t_new(uw_recipe_t* recipe, mem_alloc m_alloc)
   return uwi;
 }
 
-bitree_uwi_t*
-bitree_uwi_new(uwi_t *val,
-	bitree_uwi_t *left, bitree_uwi_t *right, mem_alloc m_alloc)
-{
-  binarytree_t *bt =
-	  binarytree_new(val, (binarytree_t*)left, (binarytree_t*)right, m_alloc);
-  return (bitree_uwi_t*)bt;
-}
-
 static bitree_uwi_t*
 bitree_uwi_new_node(mem_alloc m_alloc, size_t recipe_size)
 {
