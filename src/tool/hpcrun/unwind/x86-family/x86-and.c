@@ -70,7 +70,7 @@ process_and(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 	  //-----------------------------------------------------------------------
 	  // we are adjusting the stack pointer via 'and' instruction
 	  //-----------------------------------------------------------------------
-	  next = new_ui(nextInsn(iarg, xptr), RA_BP_FRAME, &xr->reg, , m_alloc);
+	  next = new_ui(nextInsn(iarg, xptr), RA_BP_FRAME, &xr->reg, m_alloc);
 	}
   }
   return next;
