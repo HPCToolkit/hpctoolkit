@@ -150,8 +150,8 @@ ilmstat_btuwi_pair_cmp(void *lhs, void *rhs)
   ilmstat_btuwi_pair_t *l = (ilmstat_btuwi_pair_t*)lhs;
   ilmstat_btuwi_pair_t *r = (ilmstat_btuwi_pair_t*)rhs;
   return interval_t_cmp(
-	 l->ilmstat->interval,
-	 r->ilmstat->interval);
+	 &l->ilmstat->interval,
+	 &r->ilmstat->interval);
 }
 
 /*
@@ -162,7 +162,7 @@ extern int
 ilmstat_btuwi_pair_inrange(void *itp, void *address)
 {
   ilmstat_btuwi_pair_t *p = (ilmstat_btuwi_pair_t*)itp;
-  return interval_t_inrange(p->ilmstat->interval, address);
+  return interval_t_inrange(&p->ilmstat->interval, address);
 }
 
 static ilmstat_btuwi_pair_t *GF_ilmstat_btuwi = NULL; // global free list of ilmstat_btuwi_pair_t*
@@ -182,7 +182,8 @@ ilmstat_btuwi_pair_build(uintptr_t start, uintptr_t end, load_module_t *ldmod,
   ilmstat_btuwi_pair_t* node = m_alloc(sizeof(*node));
   node->next = NULL;
   ildmod_stat_t *ilmstat = m_alloc(sizeof(*ilmstat));
-  ilmstat->interval = interval_t_new(start, end, m_alloc);
+  ilmstat->interval.start = start;
+  ilmstat->interval.end = end;
   ilmstat->loadmod = ldmod;
   atomic_store_explicit(&ilmstat->stat, treestat, memory_order_relaxed);
   node->ilmstat = ilmstat;
@@ -249,9 +250,8 @@ ilmstat_btuwi_pair_malloc(
   ildmod_stat_t *ilmstat = ans->ilmstat;
   atomic_store_explicit(&ilmstat->stat, treestat, memory_order_relaxed);
   ilmstat->loadmod = ldmod;
-  interval_t *interval = ilmstat->interval;
-  interval->start = start;
-  interval->end = end;
+  ilmstat->interval.start = start;
+  ilmstat->interval.end = end;
   return ans;
 }
 
@@ -325,7 +325,7 @@ ildmod_stat_tostr(void* ilms, char str[])
 {
   ildmod_stat_t* ildmod_stat = (ildmod_stat_t*)ilms;
   char intervalstr[MAX_INTERVAL_STR];
-  interval_t_tostr(ildmod_stat->interval, intervalstr);
+  interval_t_tostr(&ildmod_stat->interval, intervalstr);
   char ldmodstr[LDMOD_NAME_LEN];
   load_module_tostr(ildmod_stat->loadmod, ldmodstr);
   char statstr[MAX_STAT_STR];
@@ -443,11 +443,12 @@ uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
   ildmod_stat_t* ilmstat = ilmstat_btuwi->ilmstat;
   assert(ilmstat != NULL); 
   assert(atomic_load_explicit(&ilmstat->stat, memory_order_relaxed) == NEVER);  // should be a poisoned node
+#else
+  ildmod_stat_t* ilmstat = ilmstat_btuwi->ilmstat;
 #endif
 
-  interval_t* interval = ilmstat_btuwi->ilmstat->interval;
-  uintptr_t s0 = interval->start;
-  uintptr_t e0 = interval->end;
+  uintptr_t s0 = ilmstat->interval.start;
+  uintptr_t e0 = ilmstat->interval.end;
   uw_recipe_map_cmp_del_bulk_unsynch(ilmstat_btuwi, ilmstat_btuwi);
   uw_recipe_map_poison(s0, start);
   uw_recipe_map_poison(end, e0);
@@ -461,10 +462,10 @@ uw_recipe_map_repoison(uintptr_t start, uintptr_t end)
     ilmstat_btuwi_pair_t* ileft = uw_recipe_map_inrange_find(start - 1);
     if (ileft) { 
       ildmod_stat_t* ilmstat = ileft->ilmstat;
-      if ((ilmstat->interval->end == start) &&
+      if ((ilmstat->interval.end == start) &&
           (NEVER == atomic_load_explicit(&ilmstat->stat, memory_order_acquire))) {
         // poisoned interval adjacent on the left
-        start = ilmstat->interval->start;
+        start = ilmstat->interval.start;
         uw_recipe_map_cmp_del_bulk_unsynch(ileft, ileft);
       }
     }
@@ -473,10 +474,10 @@ uw_recipe_map_repoison(uintptr_t start, uintptr_t end)
     ilmstat_btuwi_pair_t* iright = uw_recipe_map_inrange_find(end+1);
     if (iright) { 
       ildmod_stat_t* ilmstat = iright->ilmstat;
-      if ((ilmstat->interval->start == end) &&
+      if ((ilmstat->interval.start == end) &&
           (NEVER == atomic_load_explicit(&ilmstat->stat, memory_order_acquire))) {
         // poisoned interval adjacent on the right
-        end = ilmstat->interval->end;
+        end = ilmstat->interval.end;
         uw_recipe_map_cmp_del_bulk_unsynch(iright, iright);
       }
     }
@@ -657,9 +658,8 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
   if (atomic_compare_exchange_strong_explicit(&ilmstat->stat, &oldstat, FORTHCOMING,
 					      memory_order_release, memory_order_relaxed)) {
     // it is my responsibility to build the tree of intervals for the function
-    interval_t *interval = ilmstat->interval;
-    void *fcn_start = (void*)interval->start;
-    void *fcn_end   = (void*)interval->end;
+    void *fcn_start = (void*)ilmstat->interval.start;
+    void *fcn_end   = (void*)ilmstat->interval.end;
 
     // potentially crash in this statement. need to save the state 
     current_btuwi = ilm_btui;
@@ -691,8 +691,7 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
   unwr_info->btuwi    = bitree_uwi_inrange(btuwi, (uintptr_t)addr);
   unwr_info->treestat = READY;
   unwr_info->lm         = ilmstat->loadmod;
-  interval_t *interval  = ilmstat->interval;
-  unwr_info->interval   = *interval;
+  unwr_info->interval   = ilmstat->interval;
 
   return true;
 }
