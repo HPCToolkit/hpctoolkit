@@ -127,7 +127,6 @@ new_ui(
 	ra_ty_t ra_ty,
 	int sp_arg,
 	int ra_arg,
-	unwind_interval *prev,
 	mem_alloc m_alloc);
 
 #if 0
