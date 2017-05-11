@@ -292,9 +292,8 @@ int dwarf_reg_states_callback(void *token,
   bitree_uwi_t *u = bitree_uwi_malloc(b->m_alloc, size);
   bitree_uwi_set_rightsubtree(b->latest, u);
   uwi_t *uwi =  bitree_uwi_rootval(u);
-  interval_t *interval =  uwi->interval;
-  interval->start = (uintptr_t)start_ip;
-  interval->end = (uintptr_t)end_ip;
+  uwi->interval.start = (uintptr_t)start_ip;
+  uwi->interval.end = (uintptr_t)end_ip;
   memcpy(uwi->recipe, rs, size);
   b->latest = u;
   return 0;

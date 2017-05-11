@@ -60,7 +60,7 @@ typedef struct unwind_interval_t unwind_interval;
 typedef struct recipe_s uw_recipe_t;
 
 typedef struct uwi_s {
-  interval_t *interval;
+  interval_t interval;
   uw_recipe_t *recipe;
 } uwi_t;
 

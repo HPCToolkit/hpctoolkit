@@ -132,9 +132,8 @@ new_ui(char *startaddr,
   // filled in when a successor recipe is linked behind this one or
   // when the end of the enclosing routine is reached 
   // ----------------------------------------------------------------
-  interval_t *interval =  uwi->interval;
-  interval->start = (uintptr_t)startaddr;
-  interval->end = 0; 
+  uwi->interval.start = (uintptr_t)startaddr;
+  uwi->interval.end = 0; 
 
   // ----------------------------------------------------------------
   // initialize the unwind recipe for the given interval as specified

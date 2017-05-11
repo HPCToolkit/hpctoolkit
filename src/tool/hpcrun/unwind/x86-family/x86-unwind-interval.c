@@ -91,8 +91,7 @@ new_ui(char *start, ra_loc ra_status, const x86registers_t *reg,
 
   uwi_t *uwi =  bitree_uwi_rootval(u);
 
-  interval_t *interval =  uwi->interval;
-  interval->start = (uintptr_t)start;
+  uwi->interval.start = (uintptr_t)start;
 
   x86recipe_t* x86recipe = (x86recipe_t*) uwi->recipe;
   x86recipe->ra_status = ra_status;
@@ -122,9 +121,8 @@ fluke_ui(char *loc, unsigned int pos, mem_alloc m_alloc)
   bitree_uwi_t *u = bitree_uwi_malloc(m_alloc, sizeof(x86recipe_t));
   uwi_t *uwi =  bitree_uwi_rootval(u);
 
-  interval_t *interval =  uwi->interval;
-  interval->start = (uintptr_t)loc;
-  interval->end = (uintptr_t)loc;
+  uwi->interval.start = (uintptr_t)loc;
+  uwi->interval.end = (uintptr_t)loc;
 
   x86recipe_t* x86recipe = (x86recipe_t*) uwi->recipe;
   x86recipe->ra_status = RA_SP_RELATIVE;

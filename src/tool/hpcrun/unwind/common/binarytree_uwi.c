@@ -43,10 +43,10 @@ bitree_uwi_init()
 
 // constructors
 static uwi_t*
-uwi_t_new(interval_t* interval, uw_recipe_t* recipe, mem_alloc m_alloc)
+uwi_t_new(uw_recipe_t* recipe, mem_alloc m_alloc)
 {
   uwi_t *uwi = m_alloc(sizeof(*uwi));
-  uwi->interval = interval;
+  uwi->interval.start = uwi->interval.end = 0;
   uwi->recipe = recipe;
   return uwi;
 }
@@ -63,9 +63,8 @@ bitree_uwi_new(uwi_t *val,
 static bitree_uwi_t*
 bitree_uwi_new_node(mem_alloc m_alloc, size_t recipe_size)
 {
-  interval_t   *interval = interval_t_new(0, 0, m_alloc);
   uw_recipe_t  * recipe  =  uw_recipe_t_new(m_alloc, recipe_size);
-  binarytree_t *btuwi    = binarytree_new(uwi_t_new(interval, recipe, m_alloc), NULL, NULL, m_alloc);
+  binarytree_t *btuwi    = binarytree_new(uwi_t_new(recipe, m_alloc), NULL, NULL, m_alloc);
   return (bitree_uwi_t*) btuwi;
 }
 
@@ -209,7 +208,7 @@ bitree_uwi_interval(bitree_uwi_t *tree)
   assert(tree != NULL);
   uwi_t* uwi = bitree_uwi_rootval(tree);
   assert(uwi != NULL);
-  return uwi->interval;
+  return &uwi->interval;
 }
 
 // return the recipe_t value of the tree root
@@ -244,7 +243,7 @@ uwi_t_cmp(void* lhs, void* rhs)
 {
   uwi_t* uwi1 = (uwi_t*)lhs;
   uwi_t* uwi2 = (uwi_t*)rhs;
-  return interval_t_cmp(uwi1->interval, uwi2->interval);
+  return interval_t_cmp(&uwi1->interval, &uwi2->interval);
 }
 
 // use uwi_t_cmp to find a matching node in a binary search tree of uwi_t
@@ -264,7 +263,7 @@ static int
 uwi_t_inrange(void* lhs, void* address)
 {
   uwi_t* uwi = (uwi_t*)lhs;
-  return interval_t_inrange(uwi->interval, address);
+  return interval_t_inrange(&uwi->interval, address);
 }
 
 bitree_uwi_t*
@@ -286,7 +285,7 @@ uwi_t_tostr(void* uwip, char str[])
 {
   uwi_t *uwi = uwip;
   char intervalstr[MAX_INTERVAL_STR];
-  interval_t_tostr(uwi->interval, intervalstr);
+  interval_t_tostr(&uwi->interval, intervalstr);
   char recipestr[MAX_RECIPE_STR];
   uw_recipe_tostr(uwi->recipe, recipestr);
   sprintf(str, "(%s %s)", intervalstr, recipestr);
