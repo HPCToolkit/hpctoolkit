@@ -43,19 +43,17 @@ bitree_uwi_init()
 
 // constructors
 static uwi_t*
-uwi_t_new(uw_recipe_t* recipe, mem_alloc m_alloc)
+uwi_t_new(size_t recipe_size, mem_alloc m_alloc)
 {
-  uwi_t *uwi = m_alloc(sizeof(*uwi));
+  uwi_t *uwi = m_alloc(sizeof(*uwi) + recipe_size);
   uwi->interval.start = uwi->interval.end = 0;
-  uwi->recipe = recipe;
   return uwi;
 }
 
 static bitree_uwi_t*
 bitree_uwi_new_node(mem_alloc m_alloc, size_t recipe_size)
 {
-  uw_recipe_t  * recipe  =  uw_recipe_t_new(m_alloc, recipe_size);
-  binarytree_t *btuwi    = binarytree_new(uwi_t_new(recipe, m_alloc), NULL, NULL, m_alloc);
+  binarytree_t *btuwi    = binarytree_new(uwi_t_new(recipe_size, m_alloc), NULL, NULL, m_alloc);
   return (bitree_uwi_t*) btuwi;
 }
 

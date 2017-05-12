@@ -61,7 +61,7 @@ typedef struct recipe_s uw_recipe_t;
 
 typedef struct uwi_s {
   interval_t interval;
-  uw_recipe_t *recipe;
+  char recipe[];
 } uwi_t;
 
 typedef struct bitree_uwi_s bitree_uwi_t;
