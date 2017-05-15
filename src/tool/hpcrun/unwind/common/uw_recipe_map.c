@@ -175,20 +175,31 @@ static  __thread  ilmstat_btuwi_pair_t *current_btuwi = NULL;
 // Constructors
 //******************************************************************************
 
+static inline ilmstat_btuwi_pair_t *
+ilmstat__btuwi_pair_init(ilmstat_btuwi_pair_t *node,
+			 tree_stat_t treestat,
+			 load_module_t *ldmod,
+			 uintptr_t start,
+			 uintptr_t end,
+			 bitree_uwi_t *tree)
+{
+  ildmod_stat_t *ilmstat = node->ilmstat;
+  atomic_store_explicit(&ilmstat->stat, treestat, memory_order_relaxed);
+  ilmstat->loadmod = ldmod;
+  ilmstat->interval.start = start;
+  ilmstat->interval.end = end;
+  node->btuwi = tree;
+  node->next = NULL;
+  return node;
+}
+
 static inline ilmstat_btuwi_pair_t*
 ilmstat_btuwi_pair_build(uintptr_t start, uintptr_t end, load_module_t *ldmod,
 	tree_stat_t treestat, bitree_uwi_t *tree,	mem_alloc m_alloc)
 {
   ilmstat_btuwi_pair_t* node = m_alloc(sizeof(*node));
-  node->next = NULL;
-  ildmod_stat_t *ilmstat = m_alloc(sizeof(*ilmstat));
-  ilmstat->interval.start = start;
-  ilmstat->interval.end = end;
-  ilmstat->loadmod = ldmod;
-  atomic_store_explicit(&ilmstat->stat, treestat, memory_order_relaxed);
-  node->ilmstat = ilmstat;
-  node->btuwi = tree; 
-  return node;
+  node->ilmstat = m_alloc(sizeof(*node->ilmstat));
+  return ilmstat__btuwi_pair_init(node, treestat, ldmod, start, end, tree);
 }
 
 static ilmstat_btuwi_pair_t*
@@ -245,14 +256,7 @@ ilmstat_btuwi_pair_malloc(
  */
   ilmstat_btuwi_pair_t *ans = _lf_ilmstat_btuwi;
   _lf_ilmstat_btuwi = _lf_ilmstat_btuwi->next;
-  ans->next = NULL;
-  ans->btuwi = tree;
-  ildmod_stat_t *ilmstat = ans->ilmstat;
-  atomic_store_explicit(&ilmstat->stat, treestat, memory_order_relaxed);
-  ilmstat->loadmod = ldmod;
-  ilmstat->interval.start = start;
-  ilmstat->interval.end = end;
-  return ans;
+  return ilmstat__btuwi_pair_init(ans, treestat, ldmod, start, end, tree);
 }
 
 //******************************************************************************
