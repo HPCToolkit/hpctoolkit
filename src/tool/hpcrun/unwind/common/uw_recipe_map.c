@@ -670,6 +670,7 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
 
     btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, my_alloc);
     if (btuwi_stat.first == NULL) {
+      atomic_store_explicit(&ilmstat->stat, NEVER, memory_order_release);
       TMSG(UW_RECIPE_MAP, "BAD build_intervals failed: fcn range %p to %p",
 	   fcn_start, fcn_end);
       return false;
@@ -677,16 +678,12 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
     ilm_btui->btuwi = bitree_uwi_rebalance(btuwi_stat.first);
     atomic_store_explicit(&ilmstat->stat, READY, memory_order_release);
   }
-  else switch (oldstat) {
-    case NEVER:
+  else {
+    while (FORTHCOMING == (oldstat = atomic_load_explicit(&ilmstat->stat, memory_order_acquire)));
+    if (oldstat == NEVER) {
       // addr is in the range of some poisoned load module
       return false;
-  case FORTHCOMING:
-	// invariant: ilm_btui is non-null
-        while (READY != atomic_load_explicit(&ilmstat->stat, memory_order_acquire));
-	break;
-    default:
-	break;
+    }
   }
 
   TMSG(UW_RECIPE_MAP_LOOKUP, "found in unwind tree: addr %p", addr);
