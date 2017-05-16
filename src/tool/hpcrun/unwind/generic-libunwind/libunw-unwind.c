@@ -97,6 +97,7 @@
 #include <fnbounds/fnbounds_interface.h>
 #include <messages/messages.h>
 #include <main.h>
+#include <hpcrun/hpcrun_stats.h>
 #include <unwind/common/unw-datatypes.h>
 #include <unwind/common/unwind.h>
 #include <unwind/common/uw_recipe_map.h>
@@ -281,6 +282,7 @@ struct builder
 {
   mem_alloc m_alloc;
   bitree_uwi_t *latest;
+  int count;
 };
 
 int dwarf_reg_states_callback(void *token,
@@ -296,6 +298,8 @@ int dwarf_reg_states_callback(void *token,
   uwi->interval.end = (uintptr_t)end_ip;
   memcpy(uwi->recipe, rs, size);
   b->latest = u;
+  b->count++;
+  hpcrun_stats_num_unwind_intervals_total_inc();
   return 0;
 }
 
@@ -310,11 +314,13 @@ libunw_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
   unw_set_reg(&c, UNW_REG_IP, (intptr_t)beg_insn);
   void *space[3];		// enough space for any binarytree
   bitree_uwi_t *dummy = (bitree_uwi_t*)&space;
-  struct builder b = {m_alloc, dummy};
+  struct builder b = {m_alloc, dummy, 0};
   unw_reg_states_iterate(&c, dwarf_reg_states_callback, &b);
+  bitree_uwi_set_rightsubtree(b.latest, NULL);
 
   btuwi_status_t stat;
   stat.first_undecoded_ins = NULL;
+  stat.count = b.count;
   stat.errcode = 0;
   stat.first = bitree_uwi_rightsubtree(dummy);
 

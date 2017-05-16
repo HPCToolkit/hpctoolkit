@@ -265,11 +265,11 @@ vector_to_binarytree(binarytree_t *nvec[], int lo, int hi)
 }
 
 binarytree_t *
-binarytree_rebalance(binarytree_t * root)
+binarytree_rebalance(binarytree_t * root, int count)
 {
   if (!root) return root;
 
-  int n = binarytree_count(root);
+  int n = count < 0 ? binarytree_count(root) : count;
 
   // collect tree nodes in order into a vector
   binarytree_t *vec[n];

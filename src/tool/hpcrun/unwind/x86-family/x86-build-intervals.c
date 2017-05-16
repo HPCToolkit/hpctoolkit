@@ -120,6 +120,7 @@ x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
 
   void *first_ins    = ins;
   void *end          = ins + len;
+  int count          = 1;
 
   iarg.beg           = first_ins;
   iarg.end           = end;
@@ -174,6 +175,7 @@ x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
 	if (next != iarg.current) {
 	  link_ui(iarg.current, next);
 	  iarg.current = next;
+	  count++;
 
 	  if (noisy) dump_ui(iarg.current, true);
 	}
@@ -183,7 +185,10 @@ x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
 
   UWI_END_ADDR(iarg.current) = (uintptr_t)end;
 
-  set_status(&status, iarg.ins, error_count, iarg.first);
+  status.first_undecoded_ins = iarg.ins;
+  status.count   = count;
+  status.errcode = error_count;
+  status.first   = iarg.first;
 
   x86_fix_unwind_intervals(iarg.beg, len, &status);
   x86_coalesce_unwind_intervals(status.first);
@@ -204,16 +209,6 @@ x86_ui_same_data(x86recipe_t *proto, x86recipe_t *cand)
 	  (proto->reg.bp_status == cand->reg.bp_status) &&
 	  (proto->reg.bp_ra_pos == cand->reg.bp_ra_pos) &&
 	  (proto->reg.bp_bp_pos == cand->reg.bp_bp_pos) );
-}
-
-
-static void
-set_status(btuwi_status_t *status, char *fui, int errcode,
-	unwind_interval *first)
-{
-  status->first_undecoded_ins = fui;
-  status->errcode = errcode;
-  status->first   = first;
 }
 
 // NOTE: following routine has an additional side effect!

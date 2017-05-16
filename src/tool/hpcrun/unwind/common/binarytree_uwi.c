@@ -215,9 +215,9 @@ bitree_uwi_count(bitree_uwi_t *tree)
 // perform bulk rebalancing by gathering nodes into a vector and
 // rebuilding the tree from scratch using the same nodes.
 bitree_uwi_t*
-bitree_uwi_rebalance(bitree_uwi_t * tree)
+bitree_uwi_rebalance(bitree_uwi_t * tree, int count)
 {
-  binarytree_t *balanced = binarytree_rebalance((binarytree_t*)tree);
+  binarytree_t *balanced = binarytree_rebalance((binarytree_t*)tree, count);
   return (bitree_uwi_t*)balanced;
 }
 

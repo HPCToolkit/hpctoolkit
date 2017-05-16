@@ -161,7 +161,7 @@ vector_to_binarytree(binarytree_t *nvec[], int l, int u);
 // perform bulk rebalancing by gathering nodes into a vector and
 // rebuilding the tree from scratch using the same nodes.
 binarytree_t *
-binarytree_rebalance(binarytree_t *tree);
+binarytree_rebalance(binarytree_t *tree, int count);
 
 // use binarytree_node_cmp to find a matching node in a binary search tree.
 // NULL is returned

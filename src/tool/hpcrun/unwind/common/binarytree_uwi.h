@@ -70,6 +70,7 @@ typedef struct bitree_uwi_s bitree_uwi_t;
 typedef struct btuwi_status_s {
   char *first_undecoded_ins;
   bitree_uwi_t *first;
+  int count;
   int errcode;
 } btuwi_status_t;
 
@@ -151,7 +152,7 @@ bitree_uwi_count(bitree_uwi_t * tree);
 // perform bulk rebalancing by gathering nodes into a vector and
 // rebuilding the tree from scratch using the same nodes.
 bitree_uwi_t *
-bitree_uwi_rebalance(bitree_uwi_t * tree);
+bitree_uwi_rebalance(bitree_uwi_t * tree, int count);
 
 // use uwi_t_cmp to find a matching node in a binary search tree of uwi_t
 // empty tree is returned if no match is found.

@@ -675,7 +675,7 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
 	   fcn_start, fcn_end);
       return false;
     }
-    ilm_btui->btuwi = bitree_uwi_rebalance(btuwi_stat.first);
+    ilm_btui->btuwi = bitree_uwi_rebalance(btuwi_stat.first, btuwi_stat.count);
     atomic_store_explicit(&ilmstat->stat, READY, memory_order_release);
   }
   else {
