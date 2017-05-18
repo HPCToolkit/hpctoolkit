@@ -61,6 +61,9 @@
 #include <string.h>
 #include <regex.h>
 
+/******************************************************************************
+ * linux specific headers
+ *****************************************************************************/
 #include <linux/perf_event.h>
 
 /******************************************************************************
@@ -115,6 +118,13 @@ static const char * dashes_separator =
 
 
 //******************************************************************************
+// forward declarations
+//******************************************************************************
+
+int 
+pfmu_getEventType(const char *eventname, u64 *code, u64 *type);
+
+//******************************************************************************
 // local operations
 //******************************************************************************
 
@@ -143,6 +153,30 @@ static void printw(const char *desc)
   free (len);
 }
 
+/*
+ * test if the kernel can create the given event
+ * @param code: config, @type: type of event
+ * @return: file descriptor if successful, -1 otherwise
+ *  caller needs to check errno for the root cause
+ */ 
+static int
+test_pmu(uint64_t code, uint64_t type) 
+{
+  struct perf_event_attr event_attr;
+  memset(&event_attr, 0, sizeof(event_attr));
+  event_attr.disabled = 1;
+
+  event_attr.size = sizeof(struct perf_event_attr);
+  event_attr.type = type;
+  event_attr.config = code;
+
+  int fd = perf_event_open(&event_attr, 0, -1, -1, 0);
+  if (fd == -1) {
+    return -1;
+  }
+  close(fd);
+  return fd;
+}
 
 static void
 show_event_info(pfm_event_info_t *info)
@@ -162,18 +196,21 @@ show_event_info(pfm_event_info_t *info)
     EMSG( "cannot get pmu info: %s", pfm_strerror(ret));
     return;
   }
-  printf(dashes_separator );
-  printf("%s::%s\n", pinfo.name, info->name);
-
-  printw(info->desc); 
-
-  pfm_for_each_event_attr(i, info) {
-    ret = pfm_get_event_attr_info(info->idx, i, PFM_OS_NONE, &ainfo);
-    if (ret != PFM_SUCCESS)
-	EMSG( "cannot retrieve event %s attribute info: %s", info->name, pfm_strerror(ret));
-    else {
-      printf("%s::%s:%s\n", pinfo.name, info->name, ainfo.name); 
-      printw(ainfo.desc);
+  u64 code, type;
+  if (pfmu_getEventType(info->name, &code, &type) >0 ) {
+    if (test_pmu(code, type)>=0) {
+      printf(dashes_separator);
+      printf("%s::%s\n", pinfo.name, info->name);
+      printw(info->desc); 
+      pfm_for_each_event_attr(i, info) {
+        ret = pfm_get_event_attr_info(info->idx, i, PFM_OS_NONE, &ainfo);
+        if (ret != PFM_SUCCESS)
+	  EMSG( "cannot retrieve event %s attribute info: %s", info->name, pfm_strerror(ret));
+        else {
+          printf("%s::%s:%s\n", pinfo.name, info->name, ainfo.name); 
+          printw(ainfo.desc);
+        }
+      }
     }
   }
 }

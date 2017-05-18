@@ -279,21 +279,110 @@ skip_perf_data(pe_mmap_t *current_perf_mmap, size_t sz)
   hdr->data_tail += sz;
 }
 
+static int
+parse_buffer(int sample_type, event_thread_t *current, perf_mmap_data_t *mmap_info )
+{
+	pe_mmap_t *current_perf_mmap = current->mmap;
+
+	int data_read = 0;
+    if (sample_type & PERF_SAMPLE_IDENTIFIER) {
+      perf_read_u64(current_perf_mmap, &mmap_info->sample_id);
+      data_read++;
+    }
+    if (sample_type & PERF_SAMPLE_IP) {
+      // to be used by datacentric event
+      perf_read_u64(current_perf_mmap, &mmap_info->ip);
+      data_read++;
+    }
+    if (sample_type & PERF_SAMPLE_TID) {
+      perf_read_u32(current_perf_mmap, &mmap_info->pid);
+      perf_read_u32(current_perf_mmap, &mmap_info->tid);
+      data_read++;
+    }
+    if (sample_type & PERF_SAMPLE_TIME) {
+      perf_read_u64(current_perf_mmap, &mmap_info->time);
+      data_read++;
+    }
+    if (sample_type & PERF_SAMPLE_ADDR) {
+      // to be used by datacentric event
+      perf_read_u64(current_perf_mmap, &mmap_info->addr);
+      data_read++;
+    }
+    if (sample_type & PERF_SAMPLE_ID) {
+      perf_read_u64(current_perf_mmap, &mmap_info->id);
+      data_read++;
+    }
+    if (sample_type & PERF_SAMPLE_STREAM_ID) {
+      perf_read_u64(current_perf_mmap, &mmap_info->stream_id);
+      data_read++;
+    }
+    if (sample_type & PERF_SAMPLE_CPU) {
+      perf_read_u32(current_perf_mmap, &mmap_info->cpu);
+      perf_read_u32(current_perf_mmap, &mmap_info->res);
+      data_read++;
+    }
+    if (sample_type & PERF_SAMPLE_PERIOD) {
+      perf_read_u64(current_perf_mmap, &mmap_info->period);
+      data_read++;
+    }
+    if (sample_type & PERF_SAMPLE_READ) {
+      // to be used by datacentric event
+      handle_struct_read_format(current_perf_mmap,
+      		current->event->attr.read_format);
+      data_read++;
+    }
+    if (sample_type & PERF_SAMPLE_CALLCHAIN) {
+      // add call chain from the kernel
+      perf_sample_callchain(current_perf_mmap, mmap_info);
+      data_read++;
+    }
+    if (sample_type & PERF_SAMPLE_RAW) {
+      perf_read_u32(current_perf_mmap, &mmap_info->size);
+      mmap_info->data = alloca( sizeof(char) * mmap_info->size );
+      perf_read( current_perf_mmap, mmap_info->data, mmap_info->size) ;
+      data_read++;
+    }
+    if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
+      data_read++;
+    }
+    if (sample_type & PERF_SAMPLE_REGS_USER) {
+      data_read++;
+    }
+    if (sample_type & PERF_SAMPLE_STACK_USER) {
+      data_read++;
+    }
+    if (sample_type & PERF_SAMPLE_WEIGHT) {
+      data_read++;
+    }
+    if (sample_type & PERF_SAMPLE_DATA_SRC) {
+      data_read++;
+    }
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,13,0)
+    // only available since kernel 3.19
+    if (sample_type & PERF_SAMPLE_TRANSACTION) {
+      data_read++;
+    }
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,19,0)
+    // only available since kernel 3.19
+    if (sample_type & PERF_SAMPLE_REGS_INTR) {
+      data_read++;
+    }
+#endif
+    return data_read;
+}
 
 //----------------------------------------------------------
 // reading mmap buffer from the kernel
 // in/out: mmapped data of type perf_mmap_data_t.
-// return the number of data read.
-//        0 if the mmapped data is not from perf sampling
+// return the number of remaining data
 //----------------------------------------------------------
 int
 read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
 {
   pe_header_t hdr;
   pe_mmap_t *current_perf_mmap = current->mmap;
-  int data_read = 0;
 
-again:
   if (perf_read_header(current_perf_mmap, &hdr) == 0) {
 #if 0
 	  /* this tmsg may cause data races when profiling an omp application (test2)
@@ -315,101 +404,19 @@ again:
         return 0;
       }
       int sample_type = current->event->attr.sample_type;
+      parse_buffer(sample_type, current, mmap_info);
 
-      if (sample_type & PERF_SAMPLE_IDENTIFIER) {
-        perf_read_u64(current_perf_mmap, &mmap_info->sample_id);
-        data_read++;
-      }
-      if (sample_type & PERF_SAMPLE_IP) {
-        // to be used by datacentric event
-        perf_read_u64(current_perf_mmap, &mmap_info->ip);
-        data_read++;
-      }
-      if (sample_type & PERF_SAMPLE_TID) {
-        perf_read_u32(current_perf_mmap, &mmap_info->pid);
-        perf_read_u32(current_perf_mmap, &mmap_info->tid);
-        data_read++;
-      }
-      if (sample_type & PERF_SAMPLE_TIME) {
-        perf_read_u64(current_perf_mmap, &mmap_info->time);
-        data_read++;
-      }
-      if (sample_type & PERF_SAMPLE_ADDR) {
-        // to be used by datacentric event
-        perf_read_u64(current_perf_mmap, &mmap_info->addr);
-        data_read++;
-      }
-      if (sample_type & PERF_SAMPLE_ID) {
-        perf_read_u64(current_perf_mmap, &mmap_info->id);
-        data_read++;
-      }
-      if (sample_type & PERF_SAMPLE_STREAM_ID) {
-        perf_read_u64(current_perf_mmap, &mmap_info->stream_id);
-        data_read++;
-      }
-      if (sample_type & PERF_SAMPLE_CPU) {
-        perf_read_u32(current_perf_mmap, &mmap_info->cpu);
-        perf_read_u32(current_perf_mmap, &mmap_info->res);
-        data_read++;
-      }
-      if (sample_type & PERF_SAMPLE_PERIOD) {
-        perf_read_u64(current_perf_mmap, &mmap_info->period);
-        data_read++;
-      }
-      if (sample_type & PERF_SAMPLE_READ) {
-        // to be used by datacentric event
-        handle_struct_read_format(current_perf_mmap,
-        		current->event->attr.read_format);
-        data_read++;
-      }
-      if (sample_type & PERF_SAMPLE_CALLCHAIN) {
-        // add call chain from the kernel
-        perf_sample_callchain(current_perf_mmap, mmap_info);
-        data_read++;
-      }
-      if (sample_type & PERF_SAMPLE_RAW) {
-        perf_read_u32(current_perf_mmap, &mmap_info->size);
-        mmap_info->data = alloca( sizeof(char) * mmap_info->size );
-        perf_read( current_perf_mmap, mmap_info->data, mmap_info->size) ;
-        data_read++;
-      }
-      if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
-        data_read++;
-      }
-      if (sample_type & PERF_SAMPLE_REGS_USER) {
-        data_read++;
-      }
-      if (sample_type & PERF_SAMPLE_STACK_USER) {
-        data_read++;
-      }
-      if (sample_type & PERF_SAMPLE_WEIGHT) {
-        data_read++;
-      }
-      if (sample_type & PERF_SAMPLE_DATA_SRC) {
-        data_read++;
-      }
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,13,0)
-      // only available since kernel 3.19
-      if (sample_type & PERF_SAMPLE_TRANSACTION) {
-        data_read++;
-      }
-#endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,19,0)
-      // only available since kernel 3.19
-      if (sample_type & PERF_SAMPLE_REGS_INTR) {
-        data_read++;
-      }
-#endif
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
     } else if (hdr.type == PERF_RECORD_SWITCH) {
       // only available since kernel 4.3
-      u64 type, fmt, val64;
+      mmap_info->context_switch_type = hdr.misc;
+
+      u64 type, val64;
       struct { uint32_t pid, tid; } pid;
-      size_t sz = hdr.size - sizeof(hdr);
       struct { uint32_t cpu, reserved; } cpu;
 
       type = current->event->attr.sample_type;
-      fmt = current->event->attr.read_format;
 
       char *cs_type = "CONTEXT SWITCH: IN";
       if (hdr.misc == PERF_RECORD_MISC_SWITCH_OUT) {
@@ -439,9 +446,7 @@ again:
     }
   }
 
-  if (is_more_perf_data(current_perf_mmap))
-    goto again;
-  return data_read;
+  return (is_more_perf_data(current_perf_mmap));
 }
 
 //----------------------------------------------------------

@@ -298,17 +298,6 @@ static event_thread_t   __thread   *event_thread;
 //******************************************************************************
 
 
-// calling perf event open system call
-static long
-perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
-         int cpu, int group_fd, unsigned long flags)
-{
-   int ret;
-
-   ret = syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
-   return ret;
-}
-
 
 // return the index of the predefined event if the name matches
 // return -1 otherwise
@@ -572,15 +561,15 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   // ask sys to "create" the event
   // it returns -1 if it fails.
   et->fd = perf_event_open(&event->attr,
-            THREAD_SELF, CPU_ANY, 
-            GROUP_FD, PERF_FLAGS);
-  TMSG(LINUX_PERF, "dbg register event %d, fd: %d, skid: %d", 
-    event->id, et->fd, event->attr.precise_ip);
+            THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
+  TMSG(LINUX_PERF, "dbg register event %d, fd: %d, skid: %d, c: %d, period: %d, freq: %d",
+    event->id, et->fd, event->attr.precise_ip, event->attr.config,
+	event->attr.sample_freq, event->attr.freq);
 
   // check if perf_event_open is successful
   if ( et->fd <0 ) {
-    EMSG("Linux perf event open %d failed: %s", 
-  event->id, strerror(errno));
+    EMSG("Linux perf event open %d (%d) failed: %s",
+          event->id, event->attr.config, strerror(errno));
     return false;
   }
 
@@ -627,7 +616,9 @@ void
 perf_thread_fini(int nevents)
 {
   for(int i=0; i<nevents; i++) {
-    if (event_thread[i].fd) close(event_thread[i].fd);
+    if (event_thread[i].fd) 
+      close(event_thread[i].fd);
+
     if (event_thread[i].mmap) 
       perf_unmmap(event_thread[i].mmap);
   }
@@ -675,6 +666,51 @@ perf_add_kernel_callchain(
   return parent;
 }
 
+
+static cct_node_t *
+perf_add_callchain( cct_node_t        *parent_original, 
+		    perf_mmap_data_t  *data, 
+		    int               metric_id,
+		    cct_metric_data_t datum )
+{
+  cct_node_t *parent = parent_original;
+  
+  // ------------------------------------------------------------------
+  // insert cct
+  // ------------------------------------------------------------------
+  if (data != NULL && data->nr > 0) {
+    // add kernel IPs to the call chain top down, which is the 
+    // reverse of the order in which they appear in ips
+    for (int i = data->nr - 1; i >= 0; i--) {
+
+      uint16_t lm_id = perf_kernel_lm_id;
+      // ------------------------------------------------------------------
+      // case if we want to include user call chain as well:
+      // Wild assumption : if hpcrun cannot find the load module of a certain
+      //   address, it is possible the address is from the kernel
+      // ------------------------------------------------------------------
+      void *addr = (void *) data->ips[i];
+      load_module_t *lm = hpcrun_loadmap_findByAddr(addr, addr+1);
+      if (lm != NULL) lm_id = lm->id;
+
+      // ------------------------------------------------------------------
+      ip_normalized_t npc = { .lm_id = lm_id, .lm_ip = data->ips[i] };
+      cct_addr_t frm = { .ip_norm = npc };
+      cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
+      parent = child;
+    }
+  }
+  // ------------------------------------------------------------------
+  // adding metric to the leaf
+  // ------------------------------------------------------------------
+  metric_set_t* mset = hpcrun_reify_metric_set(parent);
+
+  metric_upd_proc_t* upd_proc = hpcrun_get_metric_proc(metric_id);
+  if (upd_proc) {
+    upd_proc(metric_id, mset, datum);
+  }
+  return parent;
+}
 
 // ---------------------------------------------
 // get the index of the file descriptor
@@ -1262,18 +1298,26 @@ perf_event_handler(
   // store the metric if the metric index is correct
   if ( current != NULL ) {
     // reading info from mmapped buffer
-    perf_mmap_data_t mmap_data;
-    memset(&mmap_data, 0, sizeof(perf_mmap_data_t));
+    perf_mmap_data_t mmap_data[3];
+    int num_mmap  = 0;
+    int more_data = 0;
 
-    read_perf_buffer(current, &mmap_data);
+    do {//
+    	// parse the buffer until it finishes reading all buffers
+    	//
+      memset(&mmap_data[num_mmap], 0, sizeof(perf_mmap_data_t));
+      more_data = read_perf_buffer(current, &mmap_data[num_mmap]);
+      num_mmap++;
+
+    } while (more_data && num_mmap<3);
 
     // ----------------------------------------------------------------------------
     // for event with frequency, we need to increase the counter by its period
     // sampling taken by perf event kernel
     // ----------------------------------------------------------------------------
     uint64_t metric_inc = 1;
-    if (current->event->attr.freq==1 && mmap_data.period>0)
-      metric_inc = mmap_data.period;
+    if (current->event->attr.freq==1 && mmap_data[0].period>0)
+      metric_inc = mmap_data[0].period;
 
     // ----------------------------------------------------------------------------  
     // record time enabled and time running
@@ -1311,14 +1355,14 @@ perf_event_handler(
     // ----------------------------------------------------------------------------
     sample_val_t sv = hpcrun_sample_callpath(context, current->event->metric, 
 		      (hpcrun_metricVal_t) {.r=counter},
-          0/*skipInner*/, 0/*isSync*/, (void*) &mmap_data);
+          0/*skipInner*/, 0/*isSync*/, (void*) &mmap_data[0]);
 
     // ----------------------------------------------------------------------------
     // if the current event is a customized one, it requires a special handling
     // ----------------------------------------------------------------------------
     if (current->event->metric_custom != NULL) {
       if (current->event->metric_custom->handler_fn != NULL) {
-      		current->event->metric_custom->handler_fn(current, sv, mmap_data);
+      		current->event->metric_custom->handler_fn(current, sv, mmap_data[0]);
       }
     }
     //blame_shift_apply( current->event->metric, sv.sample_node, 1 /*metricIncr*/);

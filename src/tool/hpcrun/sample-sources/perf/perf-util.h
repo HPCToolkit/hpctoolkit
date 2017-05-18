@@ -38,6 +38,9 @@
 #ifndef __PERF_UTIL_H__
 #define __PERF_UTIL_H__
 
+#include <sys/syscall.h> 
+
+#include <unistd.h>
 #include <linux/types.h>
 #include <linux/perf_event.h>
 
@@ -86,6 +89,10 @@ typedef struct perf_mmap_data_s {
   u64    intr_abi;        /* if PERF_SAMPLE_REGS_INTR */
   u64    *intr_regs;
                      /* if PERF_SAMPLE_REGS_INTR */
+
+  // only for PERF_RECORD_SWITCH
+  u32   context_switch_type;
+
 } perf_mmap_data_t;
 
 // forward type declaration
@@ -140,5 +147,16 @@ typedef struct event_thread_s {
   event_info_t  *event; // pointer to main event description
 } event_thread_t;
 
+
+// calling perf event open system call
+static inline long
+perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
+         int cpu, int group_fd, unsigned long flags)
+{
+   int ret;
+
+   ret = syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
+   return ret;
+}
 
 #endif
