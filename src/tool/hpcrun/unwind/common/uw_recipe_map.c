@@ -682,7 +682,8 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
     atomic_store_explicit(&ilmstat->stat, READY, memory_order_release);
   }
   else {
-    while (FORTHCOMING == (oldstat = atomic_load_explicit(&ilmstat->stat, memory_order_acquire)));
+    while (FORTHCOMING == oldstat)
+      oldstat = atomic_load_explicit(&ilmstat->stat, memory_order_acquire);
     if (oldstat == NEVER) {
       // addr is in the range of some poisoned load module
       return false;
