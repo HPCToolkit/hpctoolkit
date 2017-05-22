@@ -80,13 +80,6 @@ typedef struct btuwi_status_s {
 void
 bitree_uwi_init();
 
-// constructors
-static inline uw_recipe_t*
-uw_recipe_t_new(mem_alloc m_alloc, size_t recipe_size)
-{
-  return (uw_recipe_t*)m_alloc(recipe_size);
-}
-
 /*
  * Returns a bitree_uwi_t node whose left and right subtree nodes are NULL.
  * The root value of the returned node is a non-null uwi_t*, which is a pair
@@ -144,10 +137,6 @@ bitree_uwi_interval(bitree_uwi_t *tree);
 // pre-condition: tree != NULL
 uw_recipe_t*
 bitree_uwi_recipe(bitree_uwi_t *tree);
-
-// count the number of nodes in the binary tree.
-int
-bitree_uwi_count(bitree_uwi_t * tree);
 
 // perform bulk rebalancing by gathering nodes into a vector and
 // rebuilding the tree from scratch using the same nodes.

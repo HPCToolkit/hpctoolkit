@@ -205,13 +205,6 @@ bitree_uwi_recipe(bitree_uwi_t *tree)
   return uwi->recipe;
 }
 
-// count the number of nodes in the binary tree.
-int
-bitree_uwi_count(bitree_uwi_t *tree)
-{
-  return binarytree_count((binarytree_t *)tree);
-}
-
 // perform bulk rebalancing by gathering nodes into a vector and
 // rebuilding the tree from scratch using the same nodes.
 bitree_uwi_t*
