@@ -60,7 +60,6 @@
 #include <string>
 
 #include <CFG.h>
-#include <lib/binutils/LM.hpp>
 #include "Struct-Inline.hpp"
 
 namespace BAnal {
@@ -107,12 +106,12 @@ public:
 //
 class GroupInfo {
 public:
-  BinUtil::Proc * proc_bin;
+  SymtabAPI::Function * sym_func;
   ProcMap procMap;
 
-  GroupInfo(BinUtil::Proc * pb)
+  GroupInfo(SymtabAPI::Function * sf)
   {
-    proc_bin = pb;
+    sym_func = sf;
     procMap.clear();
   }
 };
@@ -137,10 +136,7 @@ public:
     prettyName = pn;
     linkName = ln;
     line_num = l;
-
-    if (func != NULL) {
-      entry_vma = func->addr();
-    }
+    entry_vma = (func != NULL) ? func->addr() : 0;
   }
 };
 

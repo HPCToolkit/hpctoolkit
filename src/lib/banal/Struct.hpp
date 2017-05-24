@@ -53,15 +53,15 @@
 #define BAnal_Struct_hpp
 
 #include <ostream>
+#include <string>
 
-#include <lib/binutils/LM.hpp>
 #include <lib/support/ProcNameMgr.hpp>
 
 namespace BAnal {
 namespace Struct {
 
 void
-makeStructure(BinUtil::LM* lm, 
+makeStructure(std::string filenm,
 	      std::ostream * outFile,
 	      std::ostream * dotFile,
 	      ProcNameMgr* procNameMgr = NULL);

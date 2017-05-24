@@ -66,7 +66,6 @@
 #include <sys/types.h>
 #include <include/uint.h>
 
-#include <list>
 #include <map>
 #include <set>
 #include <string>
@@ -75,8 +74,6 @@
 #include <sstream>
 
 #include <lib/binutils/BinUtils.hpp>
-#include <lib/binutils/LM.hpp>
-#include <lib/binutils/Proc.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/StringTable.hpp>
 
@@ -85,7 +82,6 @@
 #include <CodeSource.h>
 #include <Function.h>
 #include <Instruction.h>
-#include <LineInformation.h>
 #include <Module.h>
 #include <Symtab.h>
 
@@ -102,19 +98,20 @@ using namespace SymtabAPI;
 using namespace ParseAPI;
 using namespace std;
 
-// FIXME: temporary until the line map problems are resolved
-static Symtab * the_symtab = NULL;
-static LineMap * the_linemap = NULL;
+#define USE_DYNINST_LINE_MAP    1
+#define USE_LIBDWARF_LINE_MAP   0
+
+#define DEBUG_CFG_SOURCE  0
 
 // Copied from lib/prof/Struct-Tree.cpp
 static const string & unknown_file = "<unknown file>";
 
-#define USE_DYNINST_LINE_MAP    0
-#define USE_LIBDWARF_LINE_MAP   1
-#define USE_FULL_SYMTAB_BACKUP  1
-#define NEW_GET_SOURCE_LINES    0
+// FIXME: temporary until the line map problems are resolved
+static Symtab * the_symtab = NULL;
 
-#define DEBUG_CFG_SOURCE  0
+#if USE_LIBDWARF_LINE_MAP
+static LineMap * the_linemap = NULL;
+#endif
 
 //----------------------------------------------------------------------
 
@@ -125,30 +122,28 @@ class HeaderInfo;
 
 typedef map <Block *, bool> BlockSet;
 typedef map <VMA, HeaderInfo> HeaderList;
+typedef vector <Statement::Ptr> StatementVector;
 
 static FileMap *
-makeSkeleton(BinUtil::LM *, CodeObject *, ProcNameMgr *);
+makeSkeleton(CodeObject *, ProcNameMgr *);
 
 static void
 doFunctionList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &);
 
 static LoopList *
 doLoopTree(FileInfo *, GroupInfo *, ParseAPI::Function *,
-	   BlockSet &, LoopTreeNode *, LineInformation *,
-	   HPC::StringTable &);
+	   BlockSet &, LoopTreeNode *, HPC::StringTable &);
 
 static TreeNode *
 doLoopLate(GroupInfo *, ParseAPI::Function *, BlockSet &, Loop *,
-	   const string &, LineInformation *, HPC::StringTable &);
+	   const string &, HPC::StringTable &);
 
 static void
 doBlock(GroupInfo *, ParseAPI::Function *, BlockSet &, Block *,
-	TreeNode *, LineInformation *, HPC::StringTable &);
+	TreeNode *, HPC::StringTable &);
 
-#if USE_DYNINST_LINE_MAP
 static void
-getStatement(Offset, StatementVector &)
-#endif
+getStatement(StatementVector &, Offset, Module *);
 
 static LoopInfo *
 findLoopHeader(FileInfo *, GroupInfo *, ParseAPI::Function *,
@@ -287,7 +282,7 @@ makeDotFile(std::ostream * dotFile, CodeObject * code_obj)
 // file if 'dotFile' is non-null.
 //
 void
-makeStructure(BinUtil::LM * lm,
+makeStructure(string filename,
 	      ostream * outFile,
 	      ostream * dotFile,
 	      ProcNameMgr * procNmMgr)
@@ -299,11 +294,20 @@ makeStructure(BinUtil::LM * lm,
 
 #if USE_LIBDWARF_LINE_MAP
   the_linemap = new LineMap;
-  the_linemap->readFile(lm->name().c_str());
+  the_linemap->readFile(filename.c_str());
 #endif
 
-  Symtab * symtab = Inline::openSymtab(lm->name());
+  Symtab * symtab = Inline::openSymtab(filename);
   the_symtab = symtab;
+
+#if USE_DYNINST_LINE_MAP
+  vector <Module *> modVec;
+  the_symtab->getAllModules(modVec);
+
+  for (auto mit = modVec.begin(); mit != modVec.end(); ++mit) {
+    (*mit)->parseLineInformation();
+  }
+#endif
 
   SymtabCodeSource * code_src;
   CodeObject * code_obj = NULL;
@@ -314,10 +318,10 @@ makeStructure(BinUtil::LM * lm,
     code_obj->parse();
   }
 
-  FileMap * fileMap = makeSkeleton(lm, code_obj, procNmMgr);
+  FileMap * fileMap = makeSkeleton(code_obj, procNmMgr);
 
   Output::printStructFileBegin(outFile);
-  Output::printLoadModuleBegin(outFile, lm->name());
+  Output::printLoadModuleBegin(outFile, filename);
 
   // process the files in the skeleton map
   for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
@@ -359,15 +363,14 @@ makeStructure(BinUtil::LM * lm,
 // makeSkeleton -- the new buildLMSkeleton
 //
 // In the ParseAPI version, we iterate over the ParseAPI list of
-// functions and match them up with the BinUtil procedures by entry
-// address.  We still use BinUtil::Proc for the line map info, even in
-// the ParseAPI case.
+// functions and match them up with the SymtabAPI functions by entry
+// address.  We now use Symtab for the line map info.
 //
 // Note: several parseapi functions (targ410aa7) may map to the same
-// binutils proc, so we make a func list (group).
+// symtab proc, so we make a func list (group).
 //
 static FileMap *
-makeSkeleton(BinUtil::LM * lm, CodeObject * code_obj, ProcNameMgr * procNmMgr)
+makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr)
 {
   FileMap * fileMap = new FileMap;
 
@@ -376,34 +379,41 @@ makeSkeleton(BinUtil::LM * lm, CodeObject * code_obj, ProcNameMgr * procNmMgr)
 
   for (auto flit = funcList.begin(); flit != funcList.end(); ++flit) {
     ParseAPI::Function * func = *flit;
+    SymtabAPI::Function * sym_func = NULL;
     VMA  vma = func->addr();
-    BinUtil::Proc * p = lm->findProc(vma);
 
-    SrcFile::ln  line = 0;
-    string  filenm;
-    string  procnm;
     string  linknm;
+    string  procnm;
+    string  filenm(unknown_file);
+    SrcFile::ln  line = 0;
 
-    if (p != NULL) {
-      p->findSrcCodeInfo(vma, 0, procnm, filenm, line);
-      linknm = p->linkName();
+    // find the symtab symbol where this func is
+    if (the_symtab->getContainingFunction(vma, sym_func) && sym_func != NULL) {
+      auto mangled_it = sym_func->mangled_names_begin();
+      auto pretty_it = sym_func->pretty_names_begin();
 
-      const char * cname = linknm.c_str();
-      if (cname != NULL && cname[0] == '.') {
-	++cname;
+      if (mangled_it != sym_func->mangled_names_end()) {
+	linknm = *mangled_it;
       }
-      procnm = BinUtil::canonicalizeProcName(cname, procNmMgr);
-    }
-    if (filenm == "") {
-      filenm = unknown_file;
+      if (pretty_it != sym_func->pretty_names_end()) {
+	procnm = *pretty_it;
+      }
+
+      vector <Statement::Ptr> svec;
+      getStatement(svec, vma, sym_func->getModule());
+
+      if (! svec.empty()) {
+	filenm = svec[0]->getFile();
+	line = svec[0]->getLine();
+      }
     }
 
 #if 0
     cout << "\nfunc:  0x" << hex << vma << dec << "\n"
 	 << "parse:  " << func->name() << "\n"
-	 << "bin:    " << procnm << "\n"
+	 << "symtb:  " << procnm << "\n"
 	 << "link:   " << linknm << "\n"
-	 << "file:   '" << filenm << "'\n"
+	 << "file:   " << filenm << "\n"
 	 << "line:   " << line << "\n";
 #endif
 
@@ -431,7 +441,7 @@ makeSkeleton(BinUtil::LM * lm, CodeObject * code_obj, ProcNameMgr * procNmMgr)
       ginfo = git->second;
     }
     else {
-      ginfo = new GroupInfo(p);
+      ginfo = new GroupInfo(sym_func);
       finfo->groupMap[linknm] = ginfo;
     }
     ginfo->procMap[vma] = new ProcInfo(func, NULL, procnm, linknm, line);
@@ -509,32 +519,8 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
   for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
     ProcInfo * pinfo = pit->second;
     ParseAPI::Function * func = pinfo->func;
-#if USE_DYNINST_LINE_MAP
-    SymtabAPI::Function * sym_func = NULL;
-#endif
-    SymtabAPI::LineInformation * lmap = NULL;
     Address entry_addr = func->addr();
     num++;
-
-#if 0
-#if USE_DYNINST_LINE_MAP
-    // get the line map for the module containing this function.  the
-    // module's line map is much faster than the full symtab line map.
-    //
-    if (symtab->getContainingFunction(entry_addr, sym_func)
-	&& sym_func != NULL)
-    {
-      SymtabAPI::Module * mod = sym_func->getModule();
-      vector <Statement *> svec;
-
-      // trigger lazy eval of line map info
-      mod->getSourceLines(svec, entry_addr);
-      if (mod->hasLineInformation()) {
-	lmap = mod->getLineInformation();
-      }
-    }
-#endif
-#endif
 
     // compute the inline seqn for the call site for this func, if
     // there is one.
@@ -584,8 +570,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 
     // traverse the loop (Tarjan) tree
     LoopList *llist =
-	doLoopTree(finfo, ginfo, func, visited, func->getLoopTree(),
-		   lmap, strTab);
+	doLoopTree(finfo, ginfo, func, visited, func->getLoopTree(), strTab);
 
 #if DEBUG_CFG_SOURCE
     cout << "\nnon-loop blocks:\n";
@@ -595,7 +580,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
       Block * block = *bit;
       if (! visited[block]) {
-	doBlock(ginfo, func, visited, block, root, lmap, strTab);
+	doBlock(ginfo, func, visited, block, root, strTab);
       }
     }
 
@@ -715,7 +700,7 @@ makeProcScope(Prof::Struct::LM * lm, ProcInfo * pinfo, ParseAPI::Function * func
 static LoopList *
 doLoopTree(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 	   BlockSet & visited, LoopTreeNode * ltnode,
-	   LineInformation * lmap, HPC::StringTable & strTab)
+	   HPC::StringTable & strTab)
 {
   LoopList * myList = new LoopList;
 
@@ -729,7 +714,7 @@ doLoopTree(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 
   for (uint i = 0; i < clist.size(); i++) {
     LoopList *subList =
-	doLoopTree(finfo, ginfo, func, visited, clist[i], lmap, strTab);
+	doLoopTree(finfo, ginfo, func, visited, clist[i], strTab);
 
     for (auto sit = subList->begin(); sit != subList->end(); ++sit) {
       myList->push_back(*sit);
@@ -749,7 +734,7 @@ doLoopTree(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
   FLPSeqn empty;
 
   TreeNode * myLoop =
-      doLoopLate(ginfo, func, visited, loop, loopName, lmap, strTab);
+      doLoopLate(ginfo, func, visited, loop, loopName, strTab);
 
   for (auto it = myList->begin(); it != myList->end(); ++it) {
     mergeInlineLoop(myLoop, empty, *it);
@@ -777,7 +762,7 @@ doLoopTree(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 static TreeNode *
 doLoopLate(GroupInfo * ginfo, ParseAPI::Function * func,
 	   BlockSet & visited, Loop * loop, const string & loopName,
-	   LineInformation * lmap, HPC::StringTable & strTab)
+	   HPC::StringTable & strTab)
 {
   TreeNode * root = new TreeNode;
 
@@ -790,7 +775,7 @@ doLoopLate(GroupInfo * ginfo, ParseAPI::Function * func,
 
   for (uint i = 0; i < blist.size(); i++) {
     if (! visited[blist[i]]) {
-      doBlock(ginfo, func, visited, blist[i], root, lmap, strTab);
+      doBlock(ginfo, func, visited, blist[i], root, strTab);
     }
   }
 
@@ -804,7 +789,7 @@ doLoopLate(GroupInfo * ginfo, ParseAPI::Function * func,
 static void
 doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 	BlockSet & visited, Block * block, TreeNode * root,
-	LineInformation * lmap, HPC::StringTable & strTab)
+	HPC::StringTable & strTab)
 {
   if (block == NULL || visited[block]) {
     return;
@@ -821,11 +806,10 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
   Offset high_vma = 0;
   string cache_filenm = "";
   SrcFile::ln cache_line = 0;
-  int try_symtab = 1;
 #endif
 
   // iterate through the instructions in this block
-  map <Offset, InstructionAPI::Instruction::Ptr> imap;
+  map <Offset, Instruction::Ptr> imap;
   block->getInsns(imap);
 
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
@@ -849,27 +833,19 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
       line = cache_line;
     }
     else {
+      SymtabAPI::Function * sym_func = ginfo->sym_func;
+      Module * mod = (sym_func != NULL) ? sym_func->getModule() : NULL;
       StatementVector svec;
-      getStatement(vma, svec);
 
-#if USE_FULL_SYMTAB_BACKUP
-      // fall back on full symtab if module LineInfo fails.
-      // symtab lookups are very expensive, so limit to one failure
-      // per block.
-      if (svec.empty() && try_symtab) {
-	the_symtab->getSourceLines(svec, vma);
-	if (svec.empty()) {
-	  try_symtab = 0;
-	}
-      }
-#endif
+      getStatement(svec, vma, mod);
+
       if (! svec.empty()) {
 	// use symtab value and save in cache
 	low_vma = svec[0]->startAddr();
 	high_vma = svec[0]->endAddr();
 	cache_filenm = svec[0]->getFile();
 	cache_line = svec[0]->getLine();
-	ginfo->proc_bin->lm()->realpath(cache_filenm);
+	// ginfo->proc_bin->lm()->realpath(cache_filenm);
 	filenm = cache_filenm;
 	line = cache_line;
       }
@@ -888,52 +864,34 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 // Support functions
 //****************************************************************************
 
-// The API for getSourceLines() changed between Dyninst 9.2 and 9.3,
-// so we abstract that out until the API settles down.
-
-#if USE_DYNINST_LINE_MAP
-#if NEW_GET_SOURCE_LINES
-
-typedef vector <Statement::Ptr> StatementVector;
-
+// Line map info from SymtabAPI.  Try the Module associated with the
+// Symtab Function as a hint first, else look for other modules that
+// might contain vma.
+//
 static void
-getStatement(Offset vma, StatementVector & svec)
+getStatement(StatementVector & svec, Offset vma, Module * mod)
 {
-  set <Module *> mods;
-
   svec.clear();
-  the_symtab->findModuleByOffset(mods, vma);
 
-  for (auto mit = mods.begin(); mit != mods.end(); ++mit) {
+  // try mod hint first
+  if (mod != NULL) {
+    mod->getSourceLines(svec, vma);
+    if (! svec.empty()) {
+      return;
+    }
+  }
+
+  // else look for other modules
+  set <Module *> modSet;
+  the_symtab->findModuleByOffset(modSet, vma);
+
+  for (auto mit = modSet.begin(); mit != modSet.end(); ++mit) {
     (*mit)->getSourceLines(svec, vma);
     if (! svec.empty()) {
       break;
     }
   }
 }
-
-#else  // old getSourceLines()
-
-typedef vector <Statement *> StatementVector;
-
-static void
-getStatement(Offset vma, StatementVector & svec)
-{
-  SymtabAPI::Function * sym_func = NULL;
-  SymtabAPI::Module * mod = NULL;
-
-  svec.clear();
-
-  if (the_symtab->getContainingFunction(vma, sym_func)
-      && sym_func != NULL)
-  {
-    mod = sym_func->getModule();
-    mod->getSourceLines(svec, vma);
-  }
-}
-
-#endif
-#endif
 
 //----------------------------------------------------------------------
 

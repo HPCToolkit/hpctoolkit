@@ -81,6 +81,7 @@
 #include <string.h>
 
 #include <list>
+#include <utility>
 #include <vector>
 
 #include <lib/support/diagnostics.h>
@@ -167,6 +168,7 @@ openSymtab(string filename)
     ret = Symtab::openFile(the_symtab, filename);
     if (ret) {
       the_symtab->parseTypesNow();
+      the_symtab->parseFunctionRanges();
     }
   }
   else {
@@ -236,17 +238,11 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 	//
 	InlinedFunction *ifunc = static_cast <InlinedFunction *> (func);
 	pair <string, Offset> callsite = ifunc->getCallsite();
-
-#if 1
-	string procnm = func->getName();
-        if (procnm == "") { procnm = UNKNOWN_PROC; }
-#else
-	// pre-9.0 version
-	vector <string> name_vec = func->getAllMangledNames();
-	string procnm = (! name_vec.empty()) ? name_vec[0] : UNKNOWN_PROC;
-#endif
 	string &filenm = getRealPath(callsite.first.c_str());
 	long lineno = callsite.second;
+	string procnm = func->getName();
+        if (procnm == "") { procnm = UNKNOWN_PROC; }
+
 	nodelist.push_front(InlineNode(filenm, procnm, lineno));
 
 	func = parent;
