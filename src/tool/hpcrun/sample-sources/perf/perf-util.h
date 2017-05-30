@@ -47,6 +47,22 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <sample_event.h>
 
+
+/******************************************************************************
+ * macros
+ *****************************************************************************/
+
+#define THREAD_SELF     0
+#define CPU_ANY        -1
+#define GROUP_FD       -1
+#define PERF_FLAGS      0
+#define PERF_REQUEST_0_SKID      2
+#define PERF_WAKEUP_EACH_SAMPLE  1
+
+#define EXCLUDE_CALLCHAIN_USER   1
+
+
+
 #ifndef u32
 typedef __u32 u32;
 #endif
@@ -158,5 +174,13 @@ perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
    ret = syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
    return ret;
 }
+
+int
+perf_attr_init(
+  u64 event_code, u64 event_type,
+  struct perf_event_attr *attr,
+  bool usePeriod, u64 threshold,
+  u64  sampletype
+);
 
 #endif

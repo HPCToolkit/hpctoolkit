@@ -282,7 +282,10 @@ MY_BASE_FILES =				\
 	sample-sources/io.c 		\
 	sample-sources/itimer.c		\
 	sample-sources/idle.c		\
+	sample-sources/perf/event_custom.c	\
+	sample-sources/perf/kernel_blocking.c	\
 	sample-sources/perf/linux_perf.c	\
+	sample-sources/perf/perf-util.c	\
 	sample-sources/perf/perf_mmap.c	\
 	sample-sources/datacentric.c	\
 	sample-sources/memleak.c	\

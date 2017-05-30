@@ -454,7 +454,10 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/blame-shift/blame-map.c sample-sources/common.c \
 	sample-sources/ga.c sample-sources/io.c \
 	sample-sources/itimer.c sample-sources/idle.c \
+	sample-sources/perf/event_custom.c \
+	sample-sources/perf/kernel_blocking.c \
 	sample-sources/perf/linux_perf.c \
+	sample-sources/perf/perf-util.c \
 	sample-sources/perf/perf_mmap.c sample-sources/datacentric.c \
 	sample-sources/memleak.c sample-sources/pthread-blame.c \
 	sample-sources/none.c sample-sources/retcnt.c \
@@ -533,7 +536,10 @@ am__objects_8 = utilities/libhpcrun_la-first_func.lo \
 	sample-sources/libhpcrun_la-io.lo \
 	sample-sources/libhpcrun_la-itimer.lo \
 	sample-sources/libhpcrun_la-idle.lo \
+	sample-sources/perf/libhpcrun_la-event_custom.lo \
+	sample-sources/perf/libhpcrun_la-kernel_blocking.lo \
 	sample-sources/perf/libhpcrun_la-linux_perf.lo \
+	sample-sources/perf/libhpcrun_la-perf-util.lo \
 	sample-sources/perf/libhpcrun_la-perf_mmap.lo \
 	sample-sources/libhpcrun_la-datacentric.lo \
 	sample-sources/libhpcrun_la-memleak.lo \
@@ -737,7 +743,10 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/blame-shift/blame-map.c sample-sources/common.c \
 	sample-sources/ga.c sample-sources/io.c \
 	sample-sources/itimer.c sample-sources/idle.c \
+	sample-sources/perf/event_custom.c \
+	sample-sources/perf/kernel_blocking.c \
 	sample-sources/perf/linux_perf.c \
+	sample-sources/perf/perf-util.c \
 	sample-sources/perf/perf_mmap.c sample-sources/datacentric.c \
 	sample-sources/memleak.c sample-sources/pthread-blame.c \
 	sample-sources/none.c sample-sources/retcnt.c \
@@ -816,7 +825,10 @@ am__objects_37 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	sample-sources/libhpcrun_o-io.$(OBJEXT) \
 	sample-sources/libhpcrun_o-itimer.$(OBJEXT) \
 	sample-sources/libhpcrun_o-idle.$(OBJEXT) \
+	sample-sources/perf/libhpcrun_o-event_custom.$(OBJEXT) \
+	sample-sources/perf/libhpcrun_o-kernel_blocking.$(OBJEXT) \
 	sample-sources/perf/libhpcrun_o-linux_perf.$(OBJEXT) \
+	sample-sources/perf/libhpcrun_o-perf-util.$(OBJEXT) \
 	sample-sources/perf/libhpcrun_o-perf_mmap.$(OBJEXT) \
 	sample-sources/libhpcrun_o-datacentric.$(OBJEXT) \
 	sample-sources/libhpcrun_o-memleak.$(OBJEXT) \
@@ -1472,7 +1484,10 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/blame-shift/blame-map.c sample-sources/common.c \
 	sample-sources/ga.c sample-sources/io.c \
 	sample-sources/itimer.c sample-sources/idle.c \
+	sample-sources/perf/event_custom.c \
+	sample-sources/perf/kernel_blocking.c \
 	sample-sources/perf/linux_perf.c \
+	sample-sources/perf/perf-util.c \
 	sample-sources/perf/perf_mmap.c sample-sources/datacentric.c \
 	sample-sources/memleak.c sample-sources/pthread-blame.c \
 	sample-sources/none.c sample-sources/retcnt.c \
@@ -2074,7 +2089,16 @@ sample-sources/perf/$(am__dirstamp):
 sample-sources/perf/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) sample-sources/perf/$(DEPDIR)
 	@: > sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
+sample-sources/perf/libhpcrun_la-event_custom.lo:  \
+	sample-sources/perf/$(am__dirstamp) \
+	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
+sample-sources/perf/libhpcrun_la-kernel_blocking.lo:  \
+	sample-sources/perf/$(am__dirstamp) \
+	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
 sample-sources/perf/libhpcrun_la-linux_perf.lo:  \
+	sample-sources/perf/$(am__dirstamp) \
+	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
+sample-sources/perf/libhpcrun_la-perf-util.lo:  \
 	sample-sources/perf/$(am__dirstamp) \
 	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
 sample-sources/perf/libhpcrun_la-perf_mmap.lo:  \
@@ -2525,7 +2549,16 @@ sample-sources/libhpcrun_o-itimer.$(OBJEXT):  \
 sample-sources/libhpcrun_o-idle.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
+sample-sources/perf/libhpcrun_o-event_custom.$(OBJEXT):  \
+	sample-sources/perf/$(am__dirstamp) \
+	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
+sample-sources/perf/libhpcrun_o-kernel_blocking.$(OBJEXT):  \
+	sample-sources/perf/$(am__dirstamp) \
+	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
 sample-sources/perf/libhpcrun_o-linux_perf.$(OBJEXT):  \
+	sample-sources/perf/$(am__dirstamp) \
+	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
+sample-sources/perf/libhpcrun_o-perf-util.$(OBJEXT):  \
 	sample-sources/perf/$(am__dirstamp) \
 	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
 sample-sources/perf/libhpcrun_o-perf_mmap.$(OBJEXT):  \
@@ -3019,10 +3052,16 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/blame-shift/$(DEPDIR)/libhpcrun_la-blame-shift.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/blame-shift/$(DEPDIR)/libhpcrun_o-blame-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/blame-shift/$(DEPDIR)/libhpcrun_o-blame-shift.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-event_custom.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-kernel_blocking.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-linux_perf.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf-util.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf_mmap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-perfmon-util.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-event_custom.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-kernel_blocking.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-linux_perf.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf-util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_mmap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-perfmon-util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/aarch64/$(DEPDIR)/libhpcrun_la-aarch64-tramp.Plo@am__quote@
@@ -3536,12 +3575,33 @@ sample-sources/libhpcrun_la-idle.lo: sample-sources/idle.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_la-idle.lo `test -f 'sample-sources/idle.c' || echo '$(srcdir)/'`sample-sources/idle.c
 
+sample-sources/perf/libhpcrun_la-event_custom.lo: sample-sources/perf/event_custom.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_la-event_custom.lo -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_la-event_custom.Tpo -c -o sample-sources/perf/libhpcrun_la-event_custom.lo `test -f 'sample-sources/perf/event_custom.c' || echo '$(srcdir)/'`sample-sources/perf/event_custom.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_la-event_custom.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_la-event_custom.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/event_custom.c' object='sample-sources/perf/libhpcrun_la-event_custom.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_la-event_custom.lo `test -f 'sample-sources/perf/event_custom.c' || echo '$(srcdir)/'`sample-sources/perf/event_custom.c
+
+sample-sources/perf/libhpcrun_la-kernel_blocking.lo: sample-sources/perf/kernel_blocking.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_la-kernel_blocking.lo -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_la-kernel_blocking.Tpo -c -o sample-sources/perf/libhpcrun_la-kernel_blocking.lo `test -f 'sample-sources/perf/kernel_blocking.c' || echo '$(srcdir)/'`sample-sources/perf/kernel_blocking.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_la-kernel_blocking.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_la-kernel_blocking.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/kernel_blocking.c' object='sample-sources/perf/libhpcrun_la-kernel_blocking.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_la-kernel_blocking.lo `test -f 'sample-sources/perf/kernel_blocking.c' || echo '$(srcdir)/'`sample-sources/perf/kernel_blocking.c
+
 sample-sources/perf/libhpcrun_la-linux_perf.lo: sample-sources/perf/linux_perf.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_la-linux_perf.lo -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_la-linux_perf.Tpo -c -o sample-sources/perf/libhpcrun_la-linux_perf.lo `test -f 'sample-sources/perf/linux_perf.c' || echo '$(srcdir)/'`sample-sources/perf/linux_perf.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_la-linux_perf.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_la-linux_perf.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/linux_perf.c' object='sample-sources/perf/libhpcrun_la-linux_perf.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_la-linux_perf.lo `test -f 'sample-sources/perf/linux_perf.c' || echo '$(srcdir)/'`sample-sources/perf/linux_perf.c
+
+sample-sources/perf/libhpcrun_la-perf-util.lo: sample-sources/perf/perf-util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_la-perf-util.lo -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf-util.Tpo -c -o sample-sources/perf/libhpcrun_la-perf-util.lo `test -f 'sample-sources/perf/perf-util.c' || echo '$(srcdir)/'`sample-sources/perf/perf-util.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf-util.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf-util.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/perf-util.c' object='sample-sources/perf/libhpcrun_la-perf-util.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_la-perf-util.lo `test -f 'sample-sources/perf/perf-util.c' || echo '$(srcdir)/'`sample-sources/perf/perf-util.c
 
 sample-sources/perf/libhpcrun_la-perf_mmap.lo: sample-sources/perf/perf_mmap.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_la-perf_mmap.lo -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf_mmap.Tpo -c -o sample-sources/perf/libhpcrun_la-perf_mmap.lo `test -f 'sample-sources/perf/perf_mmap.c' || echo '$(srcdir)/'`sample-sources/perf/perf_mmap.c
@@ -4586,6 +4646,34 @@ sample-sources/libhpcrun_o-idle.obj: sample-sources/idle.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_o-idle.obj `if test -f 'sample-sources/idle.c'; then $(CYGPATH_W) 'sample-sources/idle.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/idle.c'; fi`
 
+sample-sources/perf/libhpcrun_o-event_custom.o: sample-sources/perf/event_custom.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_o-event_custom.o -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_o-event_custom.Tpo -c -o sample-sources/perf/libhpcrun_o-event_custom.o `test -f 'sample-sources/perf/event_custom.c' || echo '$(srcdir)/'`sample-sources/perf/event_custom.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_o-event_custom.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_o-event_custom.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/event_custom.c' object='sample-sources/perf/libhpcrun_o-event_custom.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_o-event_custom.o `test -f 'sample-sources/perf/event_custom.c' || echo '$(srcdir)/'`sample-sources/perf/event_custom.c
+
+sample-sources/perf/libhpcrun_o-event_custom.obj: sample-sources/perf/event_custom.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_o-event_custom.obj -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_o-event_custom.Tpo -c -o sample-sources/perf/libhpcrun_o-event_custom.obj `if test -f 'sample-sources/perf/event_custom.c'; then $(CYGPATH_W) 'sample-sources/perf/event_custom.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/perf/event_custom.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_o-event_custom.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_o-event_custom.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/event_custom.c' object='sample-sources/perf/libhpcrun_o-event_custom.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_o-event_custom.obj `if test -f 'sample-sources/perf/event_custom.c'; then $(CYGPATH_W) 'sample-sources/perf/event_custom.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/perf/event_custom.c'; fi`
+
+sample-sources/perf/libhpcrun_o-kernel_blocking.o: sample-sources/perf/kernel_blocking.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_o-kernel_blocking.o -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_o-kernel_blocking.Tpo -c -o sample-sources/perf/libhpcrun_o-kernel_blocking.o `test -f 'sample-sources/perf/kernel_blocking.c' || echo '$(srcdir)/'`sample-sources/perf/kernel_blocking.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_o-kernel_blocking.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_o-kernel_blocking.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/kernel_blocking.c' object='sample-sources/perf/libhpcrun_o-kernel_blocking.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_o-kernel_blocking.o `test -f 'sample-sources/perf/kernel_blocking.c' || echo '$(srcdir)/'`sample-sources/perf/kernel_blocking.c
+
+sample-sources/perf/libhpcrun_o-kernel_blocking.obj: sample-sources/perf/kernel_blocking.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_o-kernel_blocking.obj -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_o-kernel_blocking.Tpo -c -o sample-sources/perf/libhpcrun_o-kernel_blocking.obj `if test -f 'sample-sources/perf/kernel_blocking.c'; then $(CYGPATH_W) 'sample-sources/perf/kernel_blocking.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/perf/kernel_blocking.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_o-kernel_blocking.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_o-kernel_blocking.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/kernel_blocking.c' object='sample-sources/perf/libhpcrun_o-kernel_blocking.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_o-kernel_blocking.obj `if test -f 'sample-sources/perf/kernel_blocking.c'; then $(CYGPATH_W) 'sample-sources/perf/kernel_blocking.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/perf/kernel_blocking.c'; fi`
+
 sample-sources/perf/libhpcrun_o-linux_perf.o: sample-sources/perf/linux_perf.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_o-linux_perf.o -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_o-linux_perf.Tpo -c -o sample-sources/perf/libhpcrun_o-linux_perf.o `test -f 'sample-sources/perf/linux_perf.c' || echo '$(srcdir)/'`sample-sources/perf/linux_perf.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_o-linux_perf.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_o-linux_perf.Po
@@ -4599,6 +4687,20 @@ sample-sources/perf/libhpcrun_o-linux_perf.obj: sample-sources/perf/linux_perf.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/linux_perf.c' object='sample-sources/perf/libhpcrun_o-linux_perf.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_o-linux_perf.obj `if test -f 'sample-sources/perf/linux_perf.c'; then $(CYGPATH_W) 'sample-sources/perf/linux_perf.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/perf/linux_perf.c'; fi`
+
+sample-sources/perf/libhpcrun_o-perf-util.o: sample-sources/perf/perf-util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_o-perf-util.o -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf-util.Tpo -c -o sample-sources/perf/libhpcrun_o-perf-util.o `test -f 'sample-sources/perf/perf-util.c' || echo '$(srcdir)/'`sample-sources/perf/perf-util.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf-util.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf-util.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/perf-util.c' object='sample-sources/perf/libhpcrun_o-perf-util.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_o-perf-util.o `test -f 'sample-sources/perf/perf-util.c' || echo '$(srcdir)/'`sample-sources/perf/perf-util.c
+
+sample-sources/perf/libhpcrun_o-perf-util.obj: sample-sources/perf/perf-util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_o-perf-util.obj -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf-util.Tpo -c -o sample-sources/perf/libhpcrun_o-perf-util.obj `if test -f 'sample-sources/perf/perf-util.c'; then $(CYGPATH_W) 'sample-sources/perf/perf-util.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/perf/perf-util.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf-util.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf-util.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/perf-util.c' object='sample-sources/perf/libhpcrun_o-perf-util.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_o-perf-util.obj `if test -f 'sample-sources/perf/perf-util.c'; then $(CYGPATH_W) 'sample-sources/perf/perf-util.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/perf/perf-util.c'; fi`
 
 sample-sources/perf/libhpcrun_o-perf_mmap.o: sample-sources/perf/perf_mmap.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_o-perf_mmap.o -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_mmap.Tpo -c -o sample-sources/perf/libhpcrun_o-perf_mmap.o `test -f 'sample-sources/perf/perf_mmap.c' || echo '$(srcdir)/'`sample-sources/perf/perf_mmap.c

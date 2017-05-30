@@ -113,6 +113,9 @@
 #include "perf-util.h"    // u64, u32 and perf_mmap_data_t
 #include "perf_mmap.h"
 
+#include "event_custom.h"
+#include "kernel_blocking.h"
+
 //******************************************************************************
 // macros
 //******************************************************************************
@@ -128,16 +131,6 @@
 #define sigev_notify_thread_id  _sigev_un._tid
 #endif
 
-#define THREAD_SELF     0
-#define CPU_ANY        -1
-#define GROUP_FD       -1
-#define PERF_FLAGS      0
-#define PERF_REQUEST_0_SKID      2
-#define PERF_WAKEUP_EACH_SAMPLE  1
-
-#define EXCLUDE_CALLCHAIN_USER   1
-
-
 #define PERF_SIGNAL SIGIO
 
 #define PERF_EVENT_AVAILABLE_UNKNOWN 0
@@ -148,28 +141,7 @@
 #define RAW_IBS_FETCH   1
 #define RAW_IBS_OP      2
 
-// -----------------------------------------------------
-// Predefined events
-// -----------------------------------------------------
 
-#define EVNAME_KERNEL_BLOCK     "KERNEL_BLOCK"
-#define EVNAME_CONTEXT_SWITCHES "CS"
-
-
-// -----------------------------------------------------
-// precise ip / skid options
-// -----------------------------------------------------
-
-#define HPCRUN_OPTION_PRECISE_IP "HPCRUN_PRECISE_IP"
-
-// default option for precise_ip: autodetect skid
-#define PERF_EVENT_AUTODETECT_SKID    4
-
-// constants of precise_ip (see the man page)
-#define PERF_EVENT_SKID_ZERO_REQUIRED    3
-#define PERF_EVENT_SKID_ZERO_REQUESTED   2
-#define PERF_EVENT_SKID_CONSTANT         1
-#define PERF_EVENT_SKID_ARBITRARY        0
 
 #define PATH_KERNEL_KPTR_RESTICT    "/proc/sys/kernel/kptr_restrict"
 #define PATH_KERNEL_PERF_PARANOID   "/proc/sys/kernel/perf_event_paranoid"
@@ -205,35 +177,16 @@ perf_thread_init(event_info_t *event, event_thread_t *et);
 static void 
 perf_thread_fini(int nevents);
 
-static cct_node_t *
-perf_add_kernel_callchain(
-  cct_node_t *leaf, void *data
-);
-
 static int perf_event_handler(
   int sig, 
   siginfo_t* siginfo, 
   void* context
 );
 
-static void
-kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
-    perf_mmap_data_t mmap_data);
-
 
 //******************************************************************************
 // constants
 //******************************************************************************
-
-// ordered in increasing precision
-const int perf_skid_precision[] = {
-  PERF_EVENT_SKID_ARBITRARY,
-  PERF_EVENT_SKID_CONSTANT,
-  PERF_EVENT_SKID_ZERO_REQUESTED,
-  PERF_EVENT_SKID_ZERO_REQUIRED
-};
-
-const int perf_skid_flavors = sizeof(perf_skid_precision)/sizeof(int);
 
 
 #ifndef ENABLE_PERFMON
@@ -246,25 +199,11 @@ static const char * equals_separator =
   "===========================================================================\n";
 
 
-//******************************************************************************
-// forward declaration
-//******************************************************************************
-
-static void register_blocking(event_info_t *event_desc);
 
 //******************************************************************************
 // local variables
 //******************************************************************************
 
-static event_custom_t events_predefined[] = {
-		{.name         = EVNAME_KERNEL_BLOCK,
-		 .register_fn  = register_blocking,   // call backs
-		 .handler_fn   = kernel_block_handler, // call backs
-		 .metric_index = 0,   // these fields to be defined later
-		 .metric_desc  = NULL // these fields to be defined later
-		}};
-
-static uint16_t perf_kernel_lm_id;
 
 static sigset_t sig_mask;
 
@@ -272,13 +211,6 @@ static sigset_t sig_mask;
 // Make sure that we don't use perf if it won't work.
 static int perf_unavail = 0;
 
-// Possible value of precise ip:
-//  0  SAMPLE_IP can have arbitrary skid.
-//  1  SAMPLE_IP must have constant skid.
-//  2  SAMPLE_IP requested to have 0 skid.
-//  3  SAMPLE_IP must have 0 skid.
-//  4  Detect automatically to have the most precise possible (default)
-static int perf_precise_ip = PERF_EVENT_AUTODETECT_SKID;
 
 // a list of main description of events, shared between threads
 // once initialize, this list doesn't change (but event description can change)
@@ -299,21 +231,6 @@ static event_thread_t   __thread   *event_thread;
 
 
 
-// return the index of the predefined event if the name matches
-// return -1 otherwise
-static event_custom_t*
-getPredefinedEventID(const char *name)
-{
-  int elems = sizeof(events_predefined) / sizeof(event_custom_t);
-  
-  for (int i=0; i<elems; i++) {
-    const char  *event = events_predefined[i].name;
-    if (strncmp(event, name, strlen(event)) == 0) {
-      return &events_predefined[i];
-    }
-  }
-  return NULL;
-}
 
 //----------------------------------------------------------
 // stop all events
@@ -341,47 +258,6 @@ perf_stop(event_thread_t event)
 
 
 //----------------------------------------------------------
-// predicates that test perf availability
-//----------------------------------------------------------
-
-static FILE*
-perf_kernel_syms_avail()
-{
-  FILE *ksyms = fopen(LINUX_KERNEL_SYMBOL_FILE, "r");
-  bool success = (ksyms != NULL);
-  if (success) fclose(ksyms);
-  return ksyms;
-}
-
-//----------------------------------------------------------
-// Interface to see if the kernel symbol is available
-// this function caches the value so that we don't need
-//   enquiry the same question all the time.
-//----------------------------------------------------------
-static bool
-is_perf_ksym_available()
-{
-	enum perf_ksym_e {PERF_UNDEFINED, PERF_AVAILABLE, PERF_UNAVAILABLE} ;
-
-  // if kernel symbols are available, we will attempt to collect kernel
-  // callchains and add them to our call paths
-  static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
-
-  if (ksym_status == PERF_UNDEFINED) {
-  	FILE *file_ksyms = perf_kernel_syms_avail();
-
-    if (file_ksyms != NULL) {
-      hpcrun_kernel_callpath_register(perf_add_kernel_callchain);
-      perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
-      ksym_status = PERF_AVAILABLE;
-    } else {
-    	ksym_status = PERF_UNAVAILABLE;
-    }
-  }
-  return (ksym_status == PERF_AVAILABLE);
-}
-
-//----------------------------------------------------------
 // check if perf event is available
 //----------------------------------------------------------
 
@@ -395,7 +271,8 @@ perf_event_avail()
     {
       struct stat buf;
       int rc = stat(PATH_KERNEL_PERF_PARANOID, &buf);
-      checked = (rc == 0) ? PERF_EVENT_AVAILABLE_YES : PERF_EVENT_AVAILABLE_NO; 
+      checked = (rc == 0) ? PERF_EVENT_AVAILABLE_YES : PERF_EVENT_AVAILABLE_NO;
+      break;
     }
   case PERF_EVENT_AVAILABLE_NO:      
   case PERF_EVENT_AVAILABLE_YES:     
@@ -452,102 +329,7 @@ perf_get_pmu_code_type(const char *name, u64 *event_code, u64* event_type)
 
 
 
-//----------------------------------------------------------
-// find the best precise ip value in this platform
-//----------------------------------------------------------
-static u64
-get_precise_ip()
-{
-  static int precise_ip = -1;
 
-  if (precise_ip >= 0)
-    return precise_ip;
-
-  struct perf_event_attr attr;
-
-  memset(&attr, 0, sizeof(attr));
-  attr.config = PERF_COUNT_HW_CPU_CYCLES; // Perf's cycle event
-  attr.type   = PERF_TYPE_HARDWARE;     // it's a hardware event
-
-  // start with the most restrict skid (3) then 2, 1 and 0
-  // this is specified in perf_event_open man page
-  // if there's a change in the specification, we need to change 
-  // this one too (unfortunately)
-  for(int i=perf_skid_flavors-1; i>=0; i--) {
-    attr.precise_ip = perf_skid_precision[i];
-
-    // ask sys to "create" the event
-    // it returns -1 if it fails.
-    int ret = perf_event_open(&attr,
-            THREAD_SELF, CPU_ANY, 
-            GROUP_FD, PERF_FLAGS);
-    if (ret >= 0) {
-      close(ret);
-      precise_ip = i;
-      // just quit when the returned value is correct
-      return i;
-    }
-  }
-  precise_ip = 0;
-  return precise_ip;
-}
-
-//----------------------------------------------------------
-// generic initialization for event attributes
-// return true if the initialization is successful,
-//   false otherwise.
-//----------------------------------------------------------
-static int
-perf_attr_init(
-  u64 event_code, u64 event_type,
-  struct perf_event_attr *attr,
-  bool usePeriod, u64 threshold,
-  u64  sampletype
-)
-{
-  // by default, we always ask for sampling period information
-  unsigned int sample_type = sampletype | PERF_SAMPLE_PERIOD;
-
-  // for datacentric:
-  // sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID ;
-  memset(attr, 0, sizeof(struct perf_event_attr));
-
-  attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
-  attr->type   = event_type;       /* Type of event     */
-  attr->config = event_code;       /* Type-specific configuration */
-
-  if (!usePeriod) {
-    attr->freq          = 1;
-    attr->sample_freq   = threshold;       /* Frequency of sampling  */
-  } else {
-    attr->freq          = 0;
-    attr->sample_period = threshold;       /* Period of sampling     */
-  }
-
-  attr->precise_ip    = perf_precise_ip;   /* the precision is either detected automatically
-                                              as precise as possible or  on the user's variable.  */
-  attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
-  attr->disabled      = 1;       /* the counter will be enabled later  */
-  attr->sample_stack_user = 4096;
-
-  if (is_perf_ksym_available()) {
-    /* Records the callchain */
-    attr->sample_type            = sample_type | PERF_SAMPLE_CALLCHAIN;
-    attr->exclude_callchain_user = EXCLUDE_CALLCHAIN_USER;
-  } else {
-    attr->sample_type            = sample_type | PERF_SAMPLE_IP;
-  }
-  // DEBUG: this attributes are specified in perf tool
-#if 0
-  attr->sample_type = 39;
-  attr->mmap  = 1;
-  attr->mmap2 = 1;
-  attr->inherit = 1;
-  attr->task = 1;
-  attr->comm = 1;
-#endif
-  return true;
-}
 //----------------------------------------------------------
 // initialize an event
 //  event_num: event number
@@ -625,93 +407,6 @@ perf_thread_fini(int nevents)
 }
 
 
-
-//----------------------------------------------------------
-// extend a user-mode callchain with kernel frames (if any)
-//----------------------------------------------------------
-static cct_node_t *
-perf_add_kernel_callchain(
-  cct_node_t *leaf, void *data_aux
-)
-{
-  cct_node_t *parent = leaf;
-  
-  if (data_aux == NULL)  {
-    return parent;
-  }
-  perf_mmap_data_t *data = (perf_mmap_data_t*) data_aux;
-  if (data->nr > 0) {
-    // add kernel IPs to the call chain top down, which is the 
-    // reverse of the order in which they appear in ips
-    for (int i = data->nr - 1; i >= 0; i--) {
-
-      uint16_t lm_id = perf_kernel_lm_id;
-#if 0
-      // ------------------------------------------------------------------
-      // case if we want to include user call chain as well:
-      // Wild assumption : if hpcrun cannot find the load module of a certain
-      //   address, it is possible the address is from the kernel
-      // ------------------------------------------------------------------
-      void *addr = (void *) data->ips[i];
-      load_module_t *lm = hpcrun_loadmap_findByAddr(addr, addr+1);
-      if (lm != NULL) lm_id = lm->id;
-      // ------------------------------------------------------------------
-#endif
-      ip_normalized_t npc = { .lm_id = lm_id, .lm_ip = data->ips[i] };
-      cct_addr_t frm = { .ip_norm = npc };
-      cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
-      parent = child;
-    }
-  }
-  return parent;
-}
-
-
-static cct_node_t *
-perf_add_callchain( cct_node_t        *parent_original, 
-		    perf_mmap_data_t  *data, 
-		    int               metric_id,
-		    cct_metric_data_t datum )
-{
-  cct_node_t *parent = parent_original;
-  
-  // ------------------------------------------------------------------
-  // insert cct
-  // ------------------------------------------------------------------
-  if (data != NULL && data->nr > 0) {
-    // add kernel IPs to the call chain top down, which is the 
-    // reverse of the order in which they appear in ips
-    for (int i = data->nr - 1; i >= 0; i--) {
-
-      uint16_t lm_id = perf_kernel_lm_id;
-      // ------------------------------------------------------------------
-      // case if we want to include user call chain as well:
-      // Wild assumption : if hpcrun cannot find the load module of a certain
-      //   address, it is possible the address is from the kernel
-      // ------------------------------------------------------------------
-      void *addr = (void *) data->ips[i];
-      load_module_t *lm = hpcrun_loadmap_findByAddr(addr, addr+1);
-      if (lm != NULL) lm_id = lm->id;
-
-      // ------------------------------------------------------------------
-      ip_normalized_t npc = { .lm_id = lm_id, .lm_ip = data->ips[i] };
-      cct_addr_t frm = { .ip_norm = npc };
-      cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
-      parent = child;
-    }
-  }
-  // ------------------------------------------------------------------
-  // adding metric to the leaf
-  // ------------------------------------------------------------------
-  metric_set_t* mset = hpcrun_reify_metric_set(parent);
-
-  metric_upd_proc_t* upd_proc = hpcrun_get_metric_proc(metric_id);
-  if (upd_proc) {
-    upd_proc(metric_id, mset, datum);
-  }
-  return parent;
-}
-
 // ---------------------------------------------
 // get the index of the file descriptor
 // ---------------------------------------------
@@ -743,90 +438,6 @@ getEnvLong(const char *env_var, long default_value)
   return default_value;
 }
 
-/***********************************************************************
- * Method to handle kernel blocking. Called for every context switch event
- ***********************************************************************/ 
-static void
-kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
-    perf_mmap_data_t mmap_data)
-{
-  if (current_event != NULL && sv.sample_node != NULL) {
-    uint64_t blocking_time = hpcrun_get_blocking_time(sv.sample_node);
-
-    if (blocking_time == 0) {
-    	// we are entering the kernel: store the time
-      hpcrun_set_blocking_time(sv.sample_node, mmap_data.time);
-
-    } else if (blocking_time <= mmap_data.time) {
-      // we are leaving the kernel: add the time spent in the kernel into the metric
-      u64 delta = mmap_data.time - blocking_time;
-
-      int metric_index =  current_event->event->metric_custom->metric_index;
-      cct_metric_data_increment(metric_index,
-                                sv.sample_node,
-                               (cct_metric_data_t){.i = delta});
-
-      // reset the time
-      hpcrun_set_blocking_time(sv.sample_node, 0);
-    } else {
-      EMSG("Invalid blocking time on node %p: %d", sv.sample_node, blocking_time);
-    }
-  }
-}
-
-/***************************************************************
- * Register events to compute blocking time in the kernel
- * We use perf's sofrware context switch event to compute the 
- * time spent inside the kernel. For this, we need to sample everytime
- * a context switch occurs, and compute the time when entering the
- * kernel vs leaving the kernel. See perf_event_handler.
- * We need two metrics for this:
- * - blocking time metric to store the time spent in the kernel
- * - context switch metric to store the number of context switches
- ****************************************************************/ 
-static void
-register_blocking(event_info_t *event_desc)
-{
-  // ------------------------------------------
-  // create metric to compute blocking time
-  // ------------------------------------------
-  event_desc->metric_custom->metric_index = hpcrun_new_metric();
-  event_desc->metric_custom->metric_desc  = hpcrun_set_metric_info_and_period(
-      	event_desc->metric_custom->metric_index, EVNAME_KERNEL_BLOCK,
-        MetricFlags_ValFmt_Int, 1 /* period */, metric_property_none);
-
-  // ------------------------------------------
-  // create metric to store context switches
-  // ------------------------------------------
-  event_desc->metric      = hpcrun_new_metric();
-  event_desc->metric_desc = hpcrun_set_metric_info_and_period(
-      event_desc->metric, EVNAME_CONTEXT_SWITCHES,
-      MetricFlags_ValFmt_Real, 1 /* period*/, metric_property_none);
-
-  // ------------------------------------------
-  // set context switch event description to be used when creating
-  //  perf event of this type on each thread
-  // ------------------------------------------
-  /* PERF_SAMPLE_STACK_USER may also be good to use */
-  u64 sample_type = PERF_SAMPLE_IP   | PERF_SAMPLE_TID       |
-		    PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN | 
-		    PERF_SAMPLE_CPU  | PERF_SAMPLE_PERIOD;
-  
-  perf_attr_init(PERF_COUNT_SW_CONTEXT_SWITCHES, PERF_TYPE_SOFTWARE,
-                 &(event_desc->attr),
-                 true        /* use_period*/, 
-		         1           /* sample every context switch*/,
-                 sample_type /* need additional info for sample type */);
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
-  event_desc->attr.context_switch = 1;
-#endif
-  event_desc->attr.sample_id_all = 1;
-  // ------------------------------------------
-  // additional info for perf event metric
-  // ------------------------------------------
-  event_desc->metric_desc->info_data.is_frequency = (event_desc->attr.freq == 1);
-}
 
 /******************************************************************************
  * method functions
@@ -846,12 +457,11 @@ METHOD_FN(init)
   // checking the option of multiplexing:
   // the env variable is set by hpcrun or by user (case for static exec)
 
-  perf_precise_ip = getEnvLong( HPCRUN_OPTION_PRECISE_IP, PERF_EVENT_AUTODETECT_SKID );
-  if (perf_precise_ip<0 || perf_precise_ip>=PERF_EVENT_AUTODETECT_SKID ) {
-    // make sure the user has the correct value of precise ip
-    perf_precise_ip = get_precise_ip();   /*  requested to have 0 skid.  */
-  }
   self->state = INIT;
+
+  // init events
+  kernel_blocking_init();
+
   TMSG(LINUX_PERF, "%d: init OK", self->sel_idx);
 }
 
@@ -1018,7 +628,7 @@ METHOD_FN(supports_event, const char *ev_str)
   }
 
   // first, check if the event is a predefined event
-  if (getPredefinedEventID(ev_str) != NULL)
+  if (event_custom_find(ev_str) != NULL)
     return true;
 
   bool result = false;
@@ -1090,14 +700,14 @@ METHOD_FN(process_event_list, int lush_metrics)
     // need a special case if we have our own customized  predefined  event
     // This "customized" event will use one or more perf events
     // ------------------------------------------------------------
-    event_desc[i].metric_custom = getPredefinedEventID(name);
+    event_desc[i].metric_custom = event_custom_find(name);
 
     if (event_desc[i].metric_custom != NULL) {
-    	if (event_desc[i].metric_custom->register_fn != NULL) {
-    	  // special registration for customized event
+      if (event_desc[i].metric_custom->register_fn != NULL) {
+    	// special registration for customized event
         event_desc[i].metric_custom->register_fn( &event_desc[i] );
         continue;
-    	}
+      }
     }
     u64 event_code, event_type;
     int isPMU = perf_get_pmu_code_type(name, &event_code, &event_type);
@@ -1183,20 +793,6 @@ METHOD_FN(display_events)
     printf("\n");
 #endif
     printf("\n");
-    if (events_predefined != NULL) {
-      printf("\n%s",equals_separator);
-      printf("Available customized events\n");
-      printf(equals_separator);
-      printf("Name\t\tDescription\n");
-
-      int elems = sizeof(events_predefined) / sizeof(event_custom_t);
-
-      for (int i=0; i<elems; i++) {
-        const char  *event = events_predefined[i].name;
-        printf("%s\n", event);
-      }
-      printf("\n");
-    }
   }
 }
 
