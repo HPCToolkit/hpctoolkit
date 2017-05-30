@@ -104,9 +104,6 @@ struct cct_node_t {
   cct_addr_t addr;
 
   bool is_leaf;
-
-  // optional field only used for blocking event
-  uint64_t blocking;
   
   // ---------------------------------------------------------
   // tree structure
@@ -174,7 +171,6 @@ cct_node_create(cct_addr_t* addr, cct_node_t* parent)
   node->right = NULL;
 
   node->is_leaf = false;
-  node->blocking = 0;
 
   return node;
 }
@@ -639,18 +635,6 @@ hpcrun_cct_find_addr(cct_node_t* cct, cct_addr_t* addr)
     return found;
   }
   return NULL;
-}
-
-uint64_t
-hpcrun_get_blocking_time(cct_node_t *node)
-{
-	return node->blocking;
-}
-
-void
-hpcrun_set_blocking_time(cct_node_t *node, uint64_t blocking_time)
-{
-	node->blocking = blocking_time;
 }
 
 //

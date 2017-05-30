@@ -222,11 +222,6 @@ void hpcrun_cct_walk_node_1st(cct_node_t* cct,
   hpcrun_cct_walk_node_1st_w_level(cct, op, arg, 0);
 }
 
-// get the blocking time of a cct
-uint64_t hpcrun_get_blocking_time(cct_node_t *node);
-
-// set the blocking time
-void hpcrun_set_blocking_time(cct_node_t *node, uint64_t blocking_time);
 
 //
 // Special routine to walk a path represented by a cct node.

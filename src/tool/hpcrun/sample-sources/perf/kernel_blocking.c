@@ -46,6 +46,14 @@
  * local includes
  *****************************************************************************/
 
+/**
+ * WARNING : THIS IS AN EXPERIMENTAL FEATURE
+ *
+ * Kernel blocking event is not validated yet, and only works for Kernel 4.3
+ * (at least). This file will be updated once we find a way to make it work
+ * properly.
+ */
+
 #include <include/linux_info.h>
 #include <linux/version.h>
 
@@ -73,11 +81,6 @@
 // forward declaration
 //******************************************************************************
 
-static void register_blocking(event_info_t *event_desc);
-
-static void
-kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
-    perf_mmap_data_t mmap_data);
 
 
 //******************************************************************************
@@ -92,29 +95,15 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
  ***********************************************************************/
 static void
 kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
-    perf_mmap_data_t mmap_data)
+    perf_mmap_data_t *mmap_data)
 {
   if (current_event != NULL && sv.sample_node != NULL) {
-    uint64_t blocking_time = hpcrun_get_blocking_time(sv.sample_node);
+    u64 delta = mmap_data[1].time;
 
-    if (blocking_time == 0) {
-    	// we are entering the kernel: store the time
-      hpcrun_set_blocking_time(sv.sample_node, mmap_data.time);
-
-    } else if (blocking_time <= mmap_data.time) {
-      // we are leaving the kernel: add the time spent in the kernel into the metric
-      u64 delta = mmap_data.time - blocking_time;
-
-      int metric_index =  current_event->event->metric_custom->metric_index;
-      cct_metric_data_increment(metric_index,
+    int metric_index =  current_event->event->metric_custom->metric_index;
+    cct_metric_data_increment(metric_index,
                                 sv.sample_node,
                                (cct_metric_data_t){.i = delta});
-
-      // reset the time
-      hpcrun_set_blocking_time(sv.sample_node, 0);
-    } else {
-      EMSG("Invalid blocking time on node %p: %d", sv.sample_node, blocking_time);
-    }
   }
 }
 
@@ -176,6 +165,7 @@ register_blocking(event_info_t *event_desc)
 
 void kernel_blocking_init()
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
   event_custom_t *event_kernel_blocking = hpcrun_malloc(sizeof(event_custom_t));
   event_kernel_blocking->name = EVNAME_KERNEL_BLOCK;
   event_kernel_blocking->register_fn  = register_blocking;   // call backs
@@ -184,4 +174,5 @@ void kernel_blocking_init()
   event_kernel_blocking->metric_desc  = NULL; 	 	// these fields to be defined later
 
   event_custom_register(event_kernel_blocking);
+#endif
 }

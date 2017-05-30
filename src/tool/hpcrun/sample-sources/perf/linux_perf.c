@@ -878,74 +878,79 @@ perf_event_handler(
   // store the metric if the metric index is correct
   if ( current != NULL ) {
     // reading info from mmapped buffer
-    perf_mmap_data_t mmap_data[3];
     int num_mmap  = 0;
     int more_data = 0;
 
     do {//
     	// parse the buffer until it finishes reading all buffers
     	//
-      memset(&mmap_data[num_mmap], 0, sizeof(perf_mmap_data_t));
-      more_data = read_perf_buffer(current, &mmap_data[num_mmap]);
+      perf_mmap_data_t mmap_data;
+      memset(&mmap_data, 0, sizeof(perf_mmap_data_t));
+      more_data = read_perf_buffer(current, &mmap_data);
+
+      // ----------------------------------------------------------------------------
+      // start to handle the data from the buffer
+      // ----------------------------------------------------------------------------
+
+      // ----------------------------------------------------------------------------
+      // for event with frequency, we need to increase the counter by its period
+      // sampling taken by perf event kernel
+      // ----------------------------------------------------------------------------
+      uint64_t metric_inc = 1;
+      if (current->event->attr.freq==1 && mmap_data.period>0)
+        metric_inc = mmap_data.period;
+
+      // ----------------------------------------------------------------------------
+      // record time enabled and time running
+      // if the time enabled is not the same as running time, then it's multiplexed
+      // ----------------------------------------------------------------------------
+      u64 time_enabled = current->mmap->time_enabled;
+      u64 time_running = current->mmap->time_running;
+
+      // ----------------------------------------------------------------------------
+      // the estimate count = raw_count * scale_factor
+      //	            = metric_inc * time_enabled / time running
+      // ----------------------------------------------------------------------------
+      double scale_f = (double) time_enabled / time_running;
+      double counter = scale_f * metric_inc;
+
+      // ----------------------------------------------------------------------------
+      // set additional information for the metric description
+      // ----------------------------------------------------------------------------
+      metric_aux_info_t *info_aux = &(current->event->metric_desc->info_data);
+      // check if this event is multiplexed. we need to notify the user that a multiplexed
+      //  event is not accurate at all.
+      // Note: perf event can report the scale to be close to 1 (like 1.02 or 0.99).
+      //       we need to use a range of value to see if it's multiplexed or not
+      info_aux->is_multiplexed    |= (scale_f>1.5);
+
+      // case of multiplexed or frequency-based sampling, we need to store the mean and
+      // the standard deviation of the sampling period
+      double prev_mean             = info_aux->threshold_mean;
+      info_aux->num_samples++;
+      info_aux->threshold_mean    += (counter-info_aux->threshold_mean) / info_aux->num_samples;
+      info_aux->threshold_stdev   += (counter-info_aux->threshold_mean) * (counter-prev_mean);
+
+      // ----------------------------------------------------------------------------
+      // update the cct and add callchain if necessary
+      // ----------------------------------------------------------------------------
+      sample_val_t sv = hpcrun_sample_callpath(context, current->event->metric,
+  		      (hpcrun_metricVal_t) {.r=counter},
+            0/*skipInner*/, 0/*isSync*/, (void*) &mmap_data);
+
+      // ----------------------------------------------------------------------------
+      // if the current event is a customized one, it requires a special handling
+      // ----------------------------------------------------------------------------
+      if (current->event->metric_custom != NULL) {
+        if (current->event->metric_custom->handler_fn != NULL) {
+        		current->event->metric_custom->handler_fn(current, sv, &mmap_data);
+        }
+      }
+      //blame_shift_apply( current->event->metric, sv.sample_node, 1 /*metricIncr*/);
+
       num_mmap++;
 
     } while (more_data && num_mmap<3);
-
-    // ----------------------------------------------------------------------------
-    // for event with frequency, we need to increase the counter by its period
-    // sampling taken by perf event kernel
-    // ----------------------------------------------------------------------------
-    uint64_t metric_inc = 1;
-    if (current->event->attr.freq==1 && mmap_data[0].period>0)
-      metric_inc = mmap_data[0].period;
-
-    // ----------------------------------------------------------------------------  
-    // record time enabled and time running
-    // if the time enabled is not the same as running time, then it's multiplexed
-    // ----------------------------------------------------------------------------  
-    u64 time_enabled = current->mmap->time_enabled;
-    u64 time_running = current->mmap->time_running;
-
-    // ----------------------------------------------------------------------------
-    // the estimate count = raw_count * scale_factor
-    //	            = metric_inc * time_enabled / time running
-    // ----------------------------------------------------------------------------
-    double scale_f = (double) time_enabled / time_running;
-    double counter = scale_f * metric_inc;
-
-    // ----------------------------------------------------------------------------
-    // set additional information for the metric description
-    // ----------------------------------------------------------------------------
-    metric_aux_info_t *info_aux = &(current->event->metric_desc->info_data);
-    // check if this event is multiplexed. we need to notify the user that a multiplexed
-    //  event is not accurate at all.
-    // Note: perf event can report the scale to be close to 1 (like 1.02 or 0.99).
-    //       we need to use a range of value to see if it's multiplexed or not
-    info_aux->is_multiplexed    |= (scale_f>1.5);
-
-    // case of multiplexed or frequency-based sampling, we need to store the mean and
-    // the standard deviation of the sampling period
-    double prev_mean             = info_aux->threshold_mean;
-    info_aux->num_samples++;
-    info_aux->threshold_mean    += (counter-info_aux->threshold_mean) / info_aux->num_samples;
-    info_aux->threshold_stdev   += (counter-info_aux->threshold_mean) * (counter-prev_mean);
-
-    // ----------------------------------------------------------------------------
-    // update the cct and add callchain if necessary
-    // ----------------------------------------------------------------------------
-    sample_val_t sv = hpcrun_sample_callpath(context, current->event->metric, 
-		      (hpcrun_metricVal_t) {.r=counter},
-          0/*skipInner*/, 0/*isSync*/, (void*) &mmap_data[0]);
-
-    // ----------------------------------------------------------------------------
-    // if the current event is a customized one, it requires a special handling
-    // ----------------------------------------------------------------------------
-    if (current->event->metric_custom != NULL) {
-      if (current->event->metric_custom->handler_fn != NULL) {
-      		current->event->metric_custom->handler_fn(current, sv, mmap_data[0]);
-      }
-    }
-    //blame_shift_apply( current->event->metric, sv.sample_node, 1 /*metricIncr*/);
 #if LINUX_PERF_DEBUG
     // this part is for debugging purpose
     if (current->event->attr.freq == 0) {

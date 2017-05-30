@@ -117,7 +117,7 @@ struct event_thread_s;
 
 // callback functions
 typedef void (*register_event_t)(struct event_info_s *);
-typedef void (*event_handler_t)(struct event_thread_s*, sample_val_t , perf_mmap_data_t );
+typedef void (*event_handler_t)(struct event_thread_s*, sample_val_t , perf_mmap_data_t* );
 
 // --------------------------------------------------------------
 // data structure for our customized event
