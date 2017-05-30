@@ -45,10 +45,10 @@ bitree_uwi_init()
 static bitree_uwi_t*
 bitree_uwi_new_node(mem_alloc m_alloc, size_t recipe_size)
 {
-  uwi_t *uwi = m_alloc(sizeof(*uwi) + recipe_size);
+  bitree_uwi_t *btuwi = (bitree_uwi_t *)binarytree_new(sizeof(uwi_t) + recipe_size, m_alloc);
+  uwi_t* uwi = bitree_uwi_rootval(btuwi);
   uwi->interval.start = uwi->interval.end = 0;
-  binarytree_t *btuwi    = binarytree_new(uwi, NULL, NULL, m_alloc);
-  return (bitree_uwi_t*) btuwi;
+  return btuwi;
 }
 
 static void
@@ -160,14 +160,6 @@ bitree_uwi_rightsubtree(bitree_uwi_t *tree)
 }
 
 void
-bitree_uwi_set_rootval(
-	bitree_uwi_t *tree,
-	uwi_t* rootval)
-{
-  binarytree_set_rootval((binarytree_t*) tree, rootval);
-}
-
-void
 bitree_uwi_set_leftsubtree(
 	bitree_uwi_t *tree,
 	bitree_uwi_t* subtree)
@@ -202,7 +194,7 @@ bitree_uwi_recipe(bitree_uwi_t *tree)
   assert(tree != NULL);
   uwi_t* uwi = bitree_uwi_rootval(tree);
   assert(uwi != NULL);
-  return uwi->recipe;
+  return (uw_recipe_t *)uwi->recipe;
 }
 
 // perform bulk rebalancing by gathering nodes into a vector and

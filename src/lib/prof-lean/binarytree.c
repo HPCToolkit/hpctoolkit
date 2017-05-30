@@ -157,13 +157,11 @@ subtree_tostr2(binarytree_t *subtree, val_tostr tostr, char valstr[],
 
 
 binarytree_t *
-binarytree_new(void *value, binarytree_t *left, binarytree_t *right,
-	mem_alloc m_alloc)
+binarytree_new(size_t size, mem_alloc m_alloc)
 {
-  binarytree_t *node = (binarytree_t *)m_alloc(sizeof(binarytree_t));
-  node->right = right;
-  node->left  = left;
-  node->val   = value;
+  binarytree_t *node = (binarytree_t *)m_alloc(sizeof(binarytree_t) + size);
+  node->right = NULL;
+  node->left  = NULL;
   return node;
 }
 
@@ -204,15 +202,6 @@ binarytree_rightsubtree(binarytree_t *tree)
 {
   assert(tree != NULL);
   return tree->right;
-}
-
-void
-binarytree_set_rootval(
-	binarytree_t *tree,
-	void* rootval)
-{
-  assert(tree != NULL);
-  tree->val = rootval;
 }
 
 void
@@ -372,16 +361,16 @@ binarytree_is_inorder(binarytree_t *root, val_cmp compare)
 }
 
 binarytree_t *
-binarytree_insert(binarytree_t *root, val_cmp compare, void *val, mem_alloc m_alloc)
+binarytree_insert(binarytree_t *root, val_cmp compare, binarytree_t *key)
 {
   if(!root) {
-	return binarytree_new(val, NULL, NULL, m_alloc);  // empty tree case
+	return key;  // empty tree case
   }
-  else if (compare(root->val, val) > 0) {
-    root->left = binarytree_insert(root->left, compare, val, m_alloc);
+  else if (compare(root->val, key->val) > 0) {
+    root->left = binarytree_insert(root->left, compare, key);
   }
-  else if (compare(root->val, val) < 0) {
-	root->right = binarytree_insert(root->right, compare, val, m_alloc);
+  else if (compare(root->val, key->val) < 0) {
+	root->right = binarytree_insert(root->right, compare, key);
   }
   return root;
 }

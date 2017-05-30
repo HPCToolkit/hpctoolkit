@@ -98,15 +98,14 @@ typedef struct binarytree_s binarytree_t;
 typedef struct binarytree_s {
   struct binarytree_s *left;
   struct binarytree_s *right;
-  void* val;
+  char val[];
 } binarytree_t;
 
 #endif
 
 // constructors
 binarytree_t *
-binarytree_new(void* value, binarytree_t *left, binarytree_t *right,
-	mem_alloc m_alloc);
+binarytree_new(size_t size, mem_alloc m_alloc);
 
 // destructor
 void binarytree_del(binarytree_t **root, mem_free m_free);
@@ -130,11 +129,6 @@ binarytree_rightsubtree(binarytree_t *tree);
 /*
  * Settors
  */
-void
-binarytree_set_rootval(
-	binarytree_t *tree,
-	void* rootval);
-
 void
 binarytree_set_leftsubtree(
 	binarytree_t *tree,
@@ -202,7 +196,7 @@ binarytree_is_inorder(binarytree_t *tree, val_cmp compare);
 
 
 binarytree_t *
-binarytree_insert(binarytree_t *tree, val_cmp compare, void *val, mem_alloc m_alloc);
+binarytree_insert(binarytree_t *tree, val_cmp compare, binarytree_t *key);
 
 /*
  * if the tree is not NULL, remove the leftmost left node from the tree, make it

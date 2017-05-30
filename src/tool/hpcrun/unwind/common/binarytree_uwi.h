@@ -114,11 +114,6 @@ bitree_uwi_t*
 bitree_uwi_rightsubtree(bitree_uwi_t *tree);
 
 void
-bitree_uwi_set_rootval(
-	bitree_uwi_t *tree,
-	uwi_t* rootval);
-
-void
 bitree_uwi_set_leftsubtree(
 	bitree_uwi_t *tree,
 	bitree_uwi_t* subtree);
