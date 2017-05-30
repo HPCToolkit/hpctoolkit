@@ -65,7 +65,7 @@
 // Predefined events
 // -----------------------------------------------------
 
-#define EVNAME_KERNEL_BLOCK     "KERNEL_BLOCK"
+#define EVNAME_KERNEL_BLOCK     "KERNEL_BLOCKING"
 #define EVNAME_CONTEXT_SWITCHES "CS"
 
 

@@ -422,21 +422,6 @@ get_fd_index(int nevents, int fd)
 }
 
 
-static long
-getEnvLong(const char *env_var, long default_value)
-{
-  const char *str_val= getenv(env_var);
-
-  if (str_val) {
-    char *end_ptr;
-    long val = strtol( str_val, &end_ptr, 10 );
-    if ( end_ptr != env_var && (val < LONG_MAX && val > LONG_MIN) ) {
-      return val;
-    }
-  }
-  // invalid value
-  return default_value;
-}
 
 
 /******************************************************************************
@@ -627,22 +612,21 @@ METHOD_FN(supports_event, const char *ev_str)
     METHOD_CALL(self, init);
   }
 
-  // first, check if the event is a predefined event
-  if (event_custom_find(ev_str) != NULL)
-    return true;
-
-  bool result = false;
-  // this is not a predefined event, we need to consult to perfmon (if enabled)
-#ifdef ENABLE_PERFMON
+  // extract the event name and the threshold (unneeded in this phase)
   long thresh;
   char ev_tmp[1024];
   hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, DEFAULT_THRESHOLD) ;
-  result = pfmu_isSupported(ev_tmp) >= 0;
-#else
-  result = (strncmp(event_name, ev_str, strlen(event_name)) == 0);
-#endif
 
-  return result;
+  // check if the event is a predefined event
+  if (event_custom_find(ev_tmp) != NULL)
+    return true;
+
+  // this is not a predefined event, we need to consult to perfmon (if enabled)
+#ifdef ENABLE_PERFMON
+  return pfmu_isSupported(ev_tmp) >= 0;
+#else
+  return (strncmp(event_name, ev_str, strlen(event_name)) == 0);
+#endif
 }
 
  
