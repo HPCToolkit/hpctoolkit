@@ -171,9 +171,6 @@ void binarytree_del(binarytree_t **root, mem_free m_free)
   if (*root) {
 	binarytree_del(&((*root)->left), m_free);
 	binarytree_del(&((*root)->right), m_free);
-	if ((*root)->val) {
-	  m_free((*root)->val);
-	}
 	m_free(*root);
 	*root = NULL;
   }
