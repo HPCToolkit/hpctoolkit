@@ -143,7 +143,7 @@ doBlock(GroupInfo *, ParseAPI::Function *, BlockSet &, Block *,
 	TreeNode *, HPC::StringTable &);
 
 static void
-getStatement(StatementVector &, Offset, Module *);
+getStatement(StatementVector &, Offset, SymtabAPI::Function *);
 
 static LoopInfo *
 findLoopHeader(FileInfo *, GroupInfo *, ParseAPI::Function *,
@@ -400,7 +400,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr)
       }
 
       vector <Statement::Ptr> svec;
-      getStatement(svec, vma, sym_func->getModule());
+      getStatement(svec, vma, sym_func);
 
       if (! svec.empty()) {
 	filenm = svec[0]->getFile();
@@ -833,11 +833,8 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
       line = cache_line;
     }
     else {
-      SymtabAPI::Function * sym_func = ginfo->sym_func;
-      Module * mod = (sym_func != NULL) ? sym_func->getModule() : NULL;
       StatementVector svec;
-
-      getStatement(svec, vma, mod);
+      getStatement(svec, vma, ginfo->sym_func);
 
       if (! svec.empty()) {
 	// use symtab value and save in cache
@@ -869,11 +866,16 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 // might contain vma.
 //
 static void
-getStatement(StatementVector & svec, Offset vma, Module * mod)
+getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
 {
   svec.clear();
 
-  // try mod hint first
+  // try the Module in sym_func first as a hint
+  Module * mod = NULL;
+
+  if (sym_func != NULL) {
+    mod = sym_func->getModule();
+  }
   if (mod != NULL) {
     mod->getSourceLines(svec, vma);
     if (! svec.empty()) {
@@ -1321,20 +1323,17 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
     HeaderInfo * info = &(cit->second);
     SrcFile::ln line;
     string filenm, label;
-    InlineSeqn seqn;
-    Module * mod = NULL;
-    StatementVector svec;
 
-    if (ginfo->sym_func != NULL) {
-      mod = ginfo->sym_func->getModule();
-    }
-    getStatement(svec, vma, mod);
+    InlineSeqn seqn;
+    analyzeAddr(seqn, vma);
+
+    StatementVector svec;
+    getStatement(svec, vma, ginfo->sym_func);
 
     if (! svec.empty()) {
       filenm = svec[0]->getFile();
       line = svec[0]->getLine();
     }
-    analyzeAddr(seqn, vma);
 
     if (info->is_src) { label = "src "; }
     else if (info->is_targ) { label = "targ"; }
