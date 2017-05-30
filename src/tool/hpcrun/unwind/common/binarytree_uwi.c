@@ -324,13 +324,6 @@ bitree_uwi_is_inorder(bitree_uwi_t *tree)
 }
 
 
-bitree_uwi_t*
-bitree_uwi_insert(bitree_uwi_t *tree, uwi_t *val, mem_alloc m_alloc)
-{
-  return (bitree_uwi_t*)binarytree_insert((binarytree_t*)tree,
-	  uwi_t_cmp, val, m_alloc);
-}
-
 void
 bitree_uwi_leftmostleaf_to_root(bitree_uwi_t **tree)
 {
