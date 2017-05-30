@@ -75,7 +75,8 @@ void printLoadModuleEnd(ostream *);
 void printFileBegin(ostream *, FileInfo *);
 void printFileEnd(ostream *, FileInfo *);
 
-void printProc(ostream *, FileInfo *, ProcInfo *, HPC::StringTable & strTab);
+void printProc(ostream *, FileInfo *, GroupInfo *, ProcInfo *, 
+	       HPC::StringTable & strTab);
 
 }  // namespace Output
 }  // namespace BAnal

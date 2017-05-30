@@ -252,10 +252,11 @@ printFileEnd(ostream * os, FileInfo * finfo)
 
 // Entry point for <P> proc tag and its subtree.
 void
-printProc(ostream * os, FileInfo * finfo, ProcInfo * pinfo,
-	  HPC::StringTable & strTab)
+printProc(ostream * os, FileInfo * finfo, GroupInfo * ginfo,
+	  ProcInfo * pinfo, HPC::StringTable & strTab)
 {
-  if (os == NULL || finfo == NULL || pinfo == NULL) {
+  if (os == NULL || finfo == NULL || ginfo == NULL
+      || pinfo == NULL || pinfo->root == NULL) {
     return;
   }
 
@@ -267,10 +268,10 @@ printProc(ostream * os, FileInfo * finfo, ProcInfo * pinfo,
   doIndent(os, 2);
   *os << "<P"
       << INDEX
-      << STRING("n", pinfo->prettyName);
+      << STRING("n", ginfo->prettyName);
 
-  if (pinfo->linkName != pinfo->prettyName) {
-    *os << STRING("ln", pinfo->linkName);
+  if (ginfo->linkName != ginfo->prettyName) {
+    *os << STRING("ln", ginfo->linkName);
   }
   *os << NUMBER("l", pinfo->line_num)
       << VRANGE(pinfo->entry_vma, 1)

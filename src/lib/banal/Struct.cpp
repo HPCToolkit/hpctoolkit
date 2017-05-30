@@ -338,7 +338,7 @@ makeStructure(string filename,
 
       for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
 	ProcInfo * pinfo = pit->second;
-	Output::printProc(outFile, finfo, pinfo, strTab);
+	Output::printProc(outFile, finfo, ginfo, pinfo, strTab);
 
 	delete pinfo->root;
 	pinfo->root = NULL;
@@ -441,10 +441,10 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr)
       ginfo = git->second;
     }
     else {
-      ginfo = new GroupInfo(sym_func);
+      ginfo = new GroupInfo(sym_func, linknm, procnm);
       finfo->groupMap[linknm] = ginfo;
     }
-    ginfo->procMap[vma] = new ProcInfo(func, NULL, procnm, linknm, line);
+    ginfo->procMap[vma] = new ProcInfo(func, NULL, line);
   }
 
   return fileMap;
@@ -535,9 +535,9 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     cout << "\n------------------------------------------------------------\n"
 	 << "func:  0x" << hex << entry_addr << dec
 	 << "  (" << num << "/" << num_funcs << ")"
-	 << "  bin='" << ginfo->proc_bin->name()
-	 << "'  parse='" << func->name() << "'\n"
-	 << "file:  '" << finfo->name << "'\n";
+	 << "  link='" << ginfo->linkName << "'\n"
+	 << "parse:  '" << func->name() << "'\n"
+	 << "file:   '" << finfo->name << "'\n";
 
     if (call_it != callMap.end()) {
       cout << "\ncall site prefix:  0x" << hex << call_it->second
@@ -601,8 +601,8 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 
 #if DEBUG_CFG_SOURCE
     cout << "\nfinal inline tree:  (" << num << "/" << num_funcs << ")"
-	 << "  bin='" << ginfo->proc_bin->name()
-	 << "'  parse='" << func->name() << "'\n";
+	 << "  link='" << ginfo->linkName << "'\n"
+	 << "parse:  '" << func->name() << "'\n";
 
     if (call_it != callMap.end()) {
       cout << "\ncall site prefix:  0x" << hex << call_it->second
@@ -616,8 +616,8 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     cout << "\n";
     debugInlineTree(root, NULL, strTab, 0, true);
     cout << "\nend proc:  (" << num << "/" << num_funcs << ")"
-	 << "  bin='" << ginfo->proc_bin->name()
-	 << "'  parse='" << func->name() << "'\n";
+	 << "  link='" << ginfo->linkName << "'\n"
+	 << "parse:  '" << func->name() << "'\n";
 #endif
   }
 }
@@ -1320,10 +1320,20 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
     VMA vma = cit->first;
     HeaderInfo * info = &(cit->second);
     SrcFile::ln line;
-    string filenm, procnm, label;
+    string filenm, label;
     InlineSeqn seqn;
+    Module * mod = NULL;
+    StatementVector svec;
 
-    ginfo->proc_bin->findSrcCodeInfo(vma, 0, procnm, filenm, line);
+    if (ginfo->sym_func != NULL) {
+      mod = ginfo->sym_func->getModule();
+    }
+    getStatement(svec, vma, mod);
+
+    if (! svec.empty()) {
+      filenm = svec[0]->getFile();
+      line = svec[0]->getLine();
+    }
     analyzeAddr(seqn, vma);
 
     if (info->is_src) { label = "src "; }

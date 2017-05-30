@@ -107,11 +107,15 @@ public:
 class GroupInfo {
 public:
   SymtabAPI::Function * sym_func;
+  string linkName;
+  string prettyName;
   ProcMap procMap;
 
-  GroupInfo(SymtabAPI::Function * sf)
+  GroupInfo(SymtabAPI::Function * sf, string ln, string pn)
   {
     sym_func = sf;
+    linkName = ln;
+    prettyName = pn;
     procMap.clear();
   }
 };
@@ -124,18 +128,14 @@ class ProcInfo {
 public:
   ParseAPI::Function * func;
   TreeNode * root;
-  string prettyName;
-  string linkName;
-  long   line_num;
-  VMA    entry_vma;
+  long  line_num;
+  VMA   entry_vma;
 
-  ProcInfo(ParseAPI::Function * fn, TreeNode * rt, string pn, string ln, long l)
+  ProcInfo(ParseAPI::Function * fn, TreeNode * rt, long ln)
   {
     func = fn;
     root = rt;
-    prettyName = pn;
-    linkName = ln;
-    line_num = l;
+    line_num = ln;
     entry_vma = (func != NULL) ? func->addr() : 0;
   }
 };
