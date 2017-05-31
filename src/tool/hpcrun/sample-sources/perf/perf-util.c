@@ -100,10 +100,6 @@ static uint16_t perf_kernel_lm_id;
 // forward declaration
 //******************************************************************************
 
-static cct_node_t *
-perf_add_kernel_callchain(
-  cct_node_t *leaf, void *data
-);
 
 
 //******************************************************************************

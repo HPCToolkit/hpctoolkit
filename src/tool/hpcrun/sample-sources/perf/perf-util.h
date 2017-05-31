@@ -72,6 +72,11 @@ typedef __u32 u32;
 typedef __u64 u64;
 #endif
 
+// the number of maximum frames (call chains) 
+// For kernel only call chain, I think 32 is a good number.
+// If we include user call chains, it should be bigger than that.
+#define MAX_CALLCHAIN_FRAMES 32
+
 // data from perf's mmap. See perf_event_open man page
 typedef struct perf_mmap_data_s {
   struct perf_event_header header;
@@ -86,7 +91,7 @@ typedef struct perf_mmap_data_s {
   u64    period;     /* if PERF_SAMPLE_PERIOD */
                      /* if PERF_SAMPLE_READ */
   u64    nr;         /* if PERF_SAMPLE_CALLCHAIN */
-  u64    *ips;       /* if PERF_SAMPLE_CALLCHAIN */
+  u64    ips[MAX_CALLCHAIN_FRAMES];       /* if PERF_SAMPLE_CALLCHAIN */
   u32    size;       /* if PERF_SAMPLE_RAW */
   char   *data;      /* if PERF_SAMPLE_RAW */
   /* if PERF_SAMPLE_BRANCH_STACK */

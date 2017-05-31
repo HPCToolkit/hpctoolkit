@@ -141,7 +141,7 @@
 #define RAW_IBS_FETCH   1
 #define RAW_IBS_OP      2
 
-
+#define PERF_MULTIPLEX_RANGE 1.2
 
 #define PATH_KERNEL_KPTR_RESTICT    "/proc/sys/kernel/kptr_restrict"
 #define PATH_KERNEL_PERF_PARANOID   "/proc/sys/kernel/perf_event_paranoid"
@@ -881,9 +881,9 @@ perf_event_handler(
     int num_mmap  = 0;
     int more_data = 0;
 
-    do {//
+    do {// ----------------------------------------------------------------------------
     	// parse the buffer until it finishes reading all buffers
-    	//
+    	// ----------------------------------------------------------------------------
       perf_mmap_data_t mmap_data;
       memset(&mmap_data, 0, sizeof(perf_mmap_data_t));
       more_data = read_perf_buffer(current, &mmap_data);
@@ -922,7 +922,7 @@ perf_event_handler(
       //  event is not accurate at all.
       // Note: perf event can report the scale to be close to 1 (like 1.02 or 0.99).
       //       we need to use a range of value to see if it's multiplexed or not
-      info_aux->is_multiplexed    |= (scale_f>1.5);
+      info_aux->is_multiplexed    |= (scale_f>PERF_MULTIPLEX_RANGE);
 
       // case of multiplexed or frequency-based sampling, we need to store the mean and
       // the standard deviation of the sampling period

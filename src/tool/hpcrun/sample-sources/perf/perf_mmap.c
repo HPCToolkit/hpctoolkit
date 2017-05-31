@@ -246,14 +246,19 @@ perf_sample_callchain(pe_mmap_t *current_perf_mmap, perf_mmap_data_t* mmap_data)
   if (perf_read_u64( current_perf_mmap, &mmap_data->nr) == 0) {
     if (mmap_data->nr > 0) {
       // allocate space to receive IPs for kernel callchain
-      mmap_data->ips = alloca(mmap_data->nr * sizeof(u64));
+      u64 buffer[mmap_data->nr];
 
       // read the IPs for the frames
-      if (perf_read( current_perf_mmap, mmap_data->ips, mmap_data->nr * sizeof(u64)) == 0) {
-        // the data seems valid
-      } else {
+      if (perf_read( current_perf_mmap, buffer, mmap_data->nr * sizeof(u64)) != 0) {
+        // the data seems invalid
         mmap_data->nr = 0;
         TMSG(LINUX_PERF, "unable to read all %d frames", mmap_data->nr);
+      } else {
+	// warning: if the number of frames is bigger than the storage (MAX_CALLCHAIN_FRAMES)
+	// we have to truncate them. This is not a good practice, but so far it's the only
+	// simplest solution I can come up.
+	u64 num_frames_max = mmap_data->nr > MAX_CALLCHAIN_FRAMES ? MAX_CALLCHAIN_FRAMES : mmap_data->nr;
+	memcpy(mmap_data->ips, buffer, num_frames_max * sizeof(u64));
       }
     }
   } else {
