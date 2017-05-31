@@ -265,6 +265,19 @@ binarytree_rebalance(binarytree_t * root, int count)
   return vector_to_binarytree(vec, 0, n - 1);
 }
 
+binarytree_t *
+binarytree_list_to_tree(binarytree_t ** head, int count)
+{
+  if (count == 0)
+    return NULL;
+  int mid = count >> 1;
+  binarytree_t *left = binarytree_list_to_tree(head, mid);
+  binarytree_t *root = *head;
+  root->left = left;
+  *head = (*head)->right;
+  root->right = binarytree_list_to_tree(head, count - mid - 1);
+  return root;
+}
 
 binarytree_t *
 binarytree_find(binarytree_t * root,	val_cmp matches, void *val)

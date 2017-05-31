@@ -157,6 +157,11 @@ vector_to_binarytree(binarytree_t *nvec[], int l, int u);
 binarytree_t *
 binarytree_rebalance(binarytree_t *tree, int count);
 
+// given a tree that is a list, with all left children empty,
+// restructure to make a balanced tree
+binarytree_t *
+binarytree_list_to_tree(binarytree_t ** head, int count);
+
 // use binarytree_node_cmp to find a matching node in a binary search tree.
 // NULL is returned
 // if no match is found.

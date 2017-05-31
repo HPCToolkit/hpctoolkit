@@ -202,7 +202,7 @@ bitree_uwi_recipe(bitree_uwi_t *tree)
 bitree_uwi_t*
 bitree_uwi_rebalance(bitree_uwi_t * tree, int count)
 {
-  binarytree_t *balanced = binarytree_rebalance((binarytree_t*)tree, count);
+  binarytree_t *balanced = binarytree_list_to_tree((binarytree_t**)&tree, count);
   return (bitree_uwi_t*)balanced;
 }
 
