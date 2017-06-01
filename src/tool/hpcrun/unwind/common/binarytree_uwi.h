@@ -176,11 +176,4 @@ bitree_uwi_tostring_indent(bitree_uwi_t *tree, char *indents, char treestr[]);
 void
 bitree_uwi_print(bitree_uwi_t *tree);
 
-// compute the height of the binary tree.
-// the height of an empty tree is 0.
-// the height of an non-empty tree is  1+ the larger of the height of the left subtree
-// and the right subtree.
-int
-bitree_uwi_height(bitree_uwi_t *tree);
-
 #endif /* __BINARYTREE_UWI_H__ */
