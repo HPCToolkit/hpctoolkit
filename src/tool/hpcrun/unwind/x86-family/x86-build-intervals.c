@@ -82,7 +82,7 @@ static void set_status(btuwi_status_t *status, char *fui, int errcode,
 btuwi_status_t x86_build_intervals(void *ins, unsigned int len, int noisy,
 	mem_alloc m_alloc);
 
-static void x86_coalesce_unwind_intervals(unwind_interval *ui);
+static int x86_coalesce_unwind_intervals(unwind_interval *ui);
 
 /******************************************************************************
  * interface operations 
@@ -186,12 +186,11 @@ x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
   UWI_END_ADDR(iarg.current) = (uintptr_t)end;
 
   status.first_undecoded_ins = iarg.ins;
-  status.count   = count;
   status.errcode = error_count;
   status.first   = iarg.first;
 
   x86_fix_unwind_intervals(iarg.beg, len, &status);
-  x86_coalesce_unwind_intervals(status.first);
+  status.count = count - x86_coalesce_unwind_intervals(status.first);
   return status;
 }
 
@@ -225,9 +224,10 @@ x86_ui_same_data(x86recipe_t *proto, x86recipe_t *cand)
 //       building time. If more routine-level information items come up, the reduction side
 //       effect of the coalesce routine can be expanded to accomodate.
 
-static void
+static int
 x86_coalesce_unwind_intervals(unwind_interval *ui)
 {
+  int num_freed = 0;
   TMSG(COALESCE,"coalescing interval list starting @ %p",ui);
   if (! ui) {
 	TMSG(COALESCE,"  --interval list empty, so no work");
@@ -261,6 +261,7 @@ x86_coalesce_unwind_intervals(unwind_interval *ui)
 	  // disconnect ui's right subtree and free ui:
 	  bitree_uwi_set_rightsubtree(ui, NULL);
 	  bitree_uwi_free(ui);
+	  ++num_freed;
 
 	  ui = current;
 	  TMSG(COALESCE,"Intervals match! Extended interval:");
@@ -277,7 +278,7 @@ x86_coalesce_unwind_intervals(unwind_interval *ui)
   // update first interval with collected info
   UWI_RECIPE(first)->has_tail_calls = routine_has_tail_calls;
 
-  return;
+  return num_freed;
 }
 
 //*************************** Debug stuff ****************************
