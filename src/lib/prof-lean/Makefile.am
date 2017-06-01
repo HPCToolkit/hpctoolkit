@@ -92,7 +92,6 @@ MYSOURCES = \
 	\
 	placeholders.c \
 	\
-	lush/lush-support.h lush/lush-support.c
 	lush/lush-support.h lush/lush-support.c \
 	\
 	binarytree.h binarytree.c \

@@ -73,7 +73,7 @@
 #include <hpcrun/sample-sources/blame-shift/undirected.h>
 #include <hpcrun/sample-sources/blame-shift/metric_info.h>
 
-#include <lib/prof-lean/atomic.h>
+#include <lib/prof-lean/stdatomic.h>
 
 /******************************************************************************
  * macros

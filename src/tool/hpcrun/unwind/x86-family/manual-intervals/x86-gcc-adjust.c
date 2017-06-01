@@ -59,7 +59,7 @@ static char gcc_adjust_stack_signature[] = {
 
 
 static int 
-gcc_adjust_stack_intervals(char *ins, int len, interval_status *stat)
+gcc_adjust_stack_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(gcc_adjust_stack_signature);
 
@@ -70,17 +70,20 @@ gcc_adjust_stack_intervals(char *ins, int len, interval_status *stat)
     // this won't fix all of the intervals, but it will fix the ones 
     // that we care about.
     while(ui) {
-      if (ui->ra_status == RA_STD_FRAME){
-        ui->ra_status = RA_BP_FRAME;
-	ui->bp_ra_pos = 8;
-	ui->bp_bp_pos = 0;
+
+      x86recipe_t *xr = UWI_RECIPE(ui);
+      if (xr->ra_status == RA_STD_FRAME){
+        xr->ra_status = RA_BP_FRAME;
+	xr->bp_ra_pos = 8;
+	xr->bp_bp_pos = 0;
       }
-      if (ui->ra_status == RA_BP_FRAME){
-        if (ui->bp_status == BP_SAVED) ui->bp_ra_pos = 8;
-        else if (ui->bp_status == BP_UNCHANGED) ui->bp_ra_pos = 0;
-	ui->bp_bp_pos = 0;
+      if (xr->ra_status == RA_BP_FRAME){
+        if (xr->bp_status == BP_SAVED) xr->bp_ra_pos = 8;
+        else if (xr->bp_status == BP_UNCHANGED) xr->bp_ra_pos = 0;
+	xr->bp_bp_pos = 0;
       }
-      ui = (unwind_interval *)(ui->common).next;
+
+      ui = UWI_NEXT(ui);
     }
 
     return 1;

@@ -36,7 +36,7 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 #include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/atomic.h>
+#include <lib/prof-lean/stdatomic.h>
 
 #include <dlfcn.h>
 #include <hpcrun/loadmap.h>

@@ -258,10 +258,15 @@ idle_metric_process_blame_for_sample(void* arg, int metric_id, cct_node_t *node,
   if (td->idle == 0) { // if this thread is not idle
     // capture active_worker_count into a local variable to make sure that the count doesn't change
     // between the time we test it and the time we use the value
-    long workers = atomic_load_explicit(&active_worker_count, memory_order_relaxed);
-    double working_threads = (workers > 0 ? workers : 1.0 );
 
-    double idle_threads = (total_threads - working_threads);
+    long active = atomic_load_explicit(&active_worker_count, memory_order_relaxed);
+    long total  = atomic_load_explicit(&total_threads, memory_order_relaxed);
+
+    active = (active > 0 ? active : 1); // ensure active is positive
+
+    double working_threads = active;
+
+    double idle_threads = (total - active);
 		
     cct_metric_data_increment(idle_metric_id, node, (cct_metric_data_t){.r = (idle_threads / working_threads) * ((double) metric_value)});
     cct_metric_data_increment(work_metric_id, node, (cct_metric_data_t){.i = metric_value});
@@ -272,8 +277,8 @@ idle_metric_process_blame_for_sample(void* arg, int metric_id, cct_node_t *node,
 static void 
 idle_metric_adjust_workers(long adjustment)
 {
-  atomic_add(&active_worker_count, adjustment);
-  atomic_add(&total_threads, adjustment);
+  atomic_fetch_add_explicit(&active_worker_count, adjustment, memory_order_relaxed);
+  atomic_fetch_add_explicit(&total_threads, adjustment, memory_order_relaxed);
 
   TMSG(IDLE, "idle_metric_adjust_workers called, work = %d", active_worker_count);
 }
