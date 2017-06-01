@@ -83,6 +83,9 @@
 #define participates(bi) (bi->participates()) 
 #define working(bi) (bi->working()) 
 
+#define atomic_add(loc, value) \
+	atomic_fetch_add_explicit(loc, value, memory_order_relaxed) 
+
 
 /******************************************************************************
  * private operations 
@@ -177,12 +180,15 @@ undirected_blame_sample(void* arg, int metric_id, cct_node_t *node,
     // capture active_worker_count into a local variable to make sure 
     // that the count doesn't change between the time we test it and 
     // the time we use the value
-    long workers = bi->active_worker_count;
-    long total_threads = bi->total_worker_count;
 
-    double working_threads = (workers > 0 ? workers : 1.0 );
+    long active = atomic_load_explicit(&bi->active_worker_count, memory_order_relaxed);
+    long total = atomic_load_explicit(&bi->total_worker_count, memory_order_relaxed);
 
-    double idle_threads = (total_threads - working_threads);
+    active = (active > 0 ? active : 1 ); // ensure active is positive
+
+    double working_threads = active;
+
+    double idle_threads = (total - active);
 		
     if (idle_threads > 0) {
       double idleness = (idle_threads/working_threads) * metric_value;

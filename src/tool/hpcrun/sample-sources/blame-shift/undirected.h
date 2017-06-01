@@ -10,8 +10,8 @@ typedef _Bool (*undirected_predicate_fn)(void);
 
 
 typedef struct undirected_blame_info_t {
-  long active_worker_count;
-  long total_worker_count;
+  atomic_uintptr_t active_worker_count;
+  atomic_uintptr_t total_worker_count;
 
   undirected_idle_cnt_ptr_fn get_idle_count_ptr;
   undirected_predicate_fn participates;
