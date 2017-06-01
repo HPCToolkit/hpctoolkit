@@ -145,7 +145,9 @@ static int
 realmain(int argc, char* argv[])
 {
   Args args(argc, argv);
+
   RealPathMgr::singleton().searchPaths(args.searchPathStr);
+  RealPathMgr::singleton().realpath(args.in_filenm);
 
 
   // ------------------------------------------------------------

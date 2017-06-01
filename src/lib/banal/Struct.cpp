@@ -74,6 +74,7 @@
 #include <sstream>
 
 #include <lib/binutils/BinUtils.hpp>
+#include <lib/support/FileNameMap.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/StringTable.hpp>
 
@@ -384,19 +385,19 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr)
 
     string  linknm;
     string  procnm;
-    string  filenm(unknown_file);
+    string  filenm;
     SrcFile::ln  line = 0;
 
     // find the symtab symbol where this func is
     if (the_symtab->getContainingFunction(vma, sym_func) && sym_func != NULL) {
       auto mangled_it = sym_func->mangled_names_begin();
-      auto pretty_it = sym_func->pretty_names_begin();
+      auto typed_it = sym_func->typed_names_begin();
 
       if (mangled_it != sym_func->mangled_names_end()) {
 	linknm = *mangled_it;
       }
-      if (pretty_it != sym_func->pretty_names_end()) {
-	procnm = *pretty_it;
+      if (typed_it != sym_func->typed_names_end()) {
+	procnm = *typed_it;
       }
 
       vector <Statement::Ptr> svec;
@@ -406,6 +407,13 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr)
 	filenm = svec[0]->getFile();
 	line = svec[0]->getLine();
       }
+    }
+
+    if (filenm != "") {
+      filenm = getRealPath(filenm.c_str());
+    }
+    else {
+      filenm = unknown_file;
     }
 
 #if 0
@@ -840,11 +848,10 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 	// use symtab value and save in cache
 	low_vma = svec[0]->startAddr();
 	high_vma = svec[0]->endAddr();
-	cache_filenm = svec[0]->getFile();
-	cache_line = svec[0]->getLine();
-	// ginfo->proc_bin->lm()->realpath(cache_filenm);
-	filenm = cache_filenm;
-	line = cache_line;
+	filenm = getRealPath(svec[0]->getFile().c_str());
+	line = svec[0]->getLine();
+	cache_filenm = filenm;
+	cache_line = line;
       }
     }
 #endif
