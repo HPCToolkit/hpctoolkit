@@ -54,7 +54,7 @@ bitree_uwi_alloc_from_lft()
 static void
 bitree_uwi_populate_lft(
 	mem_alloc m_alloc,
-	size_t recipe_size)
+	size_t uwi_recipe_size)
 {
   mcs_node_t me;
   bool acquired = mcs_trylock(&GFT_lock, &me);
@@ -71,7 +71,7 @@ bitree_uwi_populate_lft(
 	}
   }
   if (!_lf_uwi_tree)
-    _lf_uwi_tree = (bitree_uwi_t *)binarytree_listalloc(recipe_size, NUM_NODES, m_alloc);
+    _lf_uwi_tree = (bitree_uwi_t *)binarytree_listalloc(uwi_recipe_size, NUM_NODES, m_alloc);
 }
 
 bitree_uwi_t*
@@ -80,7 +80,7 @@ bitree_uwi_malloc(
 	size_t recipe_size)
 {
   if (!_lf_uwi_tree) {
-	bitree_uwi_populate_lft(m_alloc, recipe_size);
+	bitree_uwi_populate_lft(m_alloc, sizeof(uwi_t) + recipe_size);
   }
 
 #if BTUWI_DEBUG
