@@ -279,6 +279,38 @@ binarytree_list_to_tree(binarytree_t ** head, int count)
   return root;
 }
 
+void
+binarytree_listify_helper(binarytree_t *root, binarytree_t **tail)
+{
+  if (root != NULL) {
+    binarytree_listify_helper(root->left, tail);
+    root->left = NULL;
+    *tail = root;
+    tail = &root->right;
+    binarytree_listify_helper(root->right, tail);
+  }
+}
+
+binarytree_t *
+binarytree_listify(binarytree_t *root)
+{
+  binarytree_t *head;
+  binarytree_listify_helper(root, &head);
+  return head;
+}
+
+binarytree_t *
+binarytree_listalloc(size_t elt_size, int num_elts, mem_alloc m_alloc)
+{
+  binarytree_t *head;
+  binarytree_t **tail = &head;
+  while (num_elts--) {
+    *tail = binarytree_new(elt_size, m_alloc);
+    tail = &(*tail)->right;
+  }
+  return head;
+}
+
 binarytree_t *
 binarytree_find(binarytree_t * root,	val_cmp matches, void *val)
 {
@@ -338,38 +370,6 @@ binarytree_height(binarytree_t *root)
   return 0;
 }
 
-bool
-binarytree_is_balanced(binarytree_t *root)
-{
-  if (root) {
-	int ldepth = binarytree_height(root->left);
-	int rdepth = binarytree_height(root->right);
-	if (rdepth - ldepth > 1) return 0;
-	if (!binarytree_is_balanced(root->left)) return 0;
-	if (!binarytree_is_balanced(root->right)) return 0;
-  }
-  return 1;
-}
-
-bool
-binarytree_is_inorder(binarytree_t *root, val_cmp compare)
-{
-  if (!root) return true; // empty tree is trivially in order
-  if (root->left) {
-	// value at node is smaller than left child's
-	if (compare(root->left->val, root->val) >= 0) return false;
-	// left subtree is not in order
-	if (!binarytree_is_inorder(root->left, compare)) return false;
-  }
-  if (root->right) {
-	// value at node is larger than right child's
-	if (compare(root->right->val, root->val) <= 0) return false;
-	// right subtree is not in order
-	if (!binarytree_is_inorder(root->right, compare)) return false;
-  }
-  return true; // tree is in order
-}
-
 binarytree_t *
 binarytree_insert(binarytree_t *root, val_cmp compare, binarytree_t *key)
 {
@@ -383,33 +383,4 @@ binarytree_insert(binarytree_t *root, val_cmp compare, binarytree_t *key)
 	root->right = binarytree_insert(root->right, compare, key);
   }
   return root;
-}
-
-binarytree_t*
-binarytree_remove_leftmostleaf(binarytree_t **tree)
-{
-  if (*tree == NULL) {
-	return NULL;
-  }
-  if ((*tree)->left){
-	return binarytree_remove_leftmostleaf(&((*tree)->left));
-  }
-  else   if ((*tree)->right) {
-	return binarytree_remove_leftmostleaf(&((*tree)->right));
-  }
-  else {
-	binarytree_t *rml = *tree;
-	*tree = NULL;
-	return rml;
-  }
-}
-
-void
-binarytree_leftmostleaf_to_root(binarytree_t **tree)
-{
-  if (*tree) {
-	binarytree_t *lml = binarytree_remove_leftmostleaf(tree);
-	lml->left = *tree;
-	*tree = lml;
-  }
 }

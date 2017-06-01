@@ -133,10 +133,14 @@ bitree_uwi_interval(bitree_uwi_t *tree);
 uw_recipe_t*
 bitree_uwi_recipe(bitree_uwi_t *tree);
 
-// perform bulk rebalancing by gathering nodes into a vector and
-// rebuilding the tree from scratch using the same nodes.
+// given a tree that is a list, with all left children empty,
+// restructure to make a balanced tree
 bitree_uwi_t *
 bitree_uwi_rebalance(bitree_uwi_t * tree, int count);
+
+// restructure a binary tree so that all its left children are null
+bitree_uwi_t*
+bitree_uwi_flatten(bitree_uwi_t * tree);
 
 // use uwi_t_cmp to find a matching node in a binary search tree of uwi_t
 // empty tree is returned if no match is found.
@@ -178,25 +182,5 @@ bitree_uwi_print(bitree_uwi_t *tree);
 // and the right subtree.
 int
 bitree_uwi_height(bitree_uwi_t *tree);
-
-// an empty binary tree is balanced.
-// a non-empty binary tree is balanced iff the difference in height between
-// the left and right subtrees is less or equal to 1.
-bool
-bitree_uwi_is_balanced(bitree_uwi_t *tree);
-
-// an empty binary tree is in order
-// an non-empty binary tree is in order iff
-// its left subtree is in order and all of its elements are < the root element
-// its right subtree is in order and all of its elements are > the root element
-bool
-bitree_uwi_is_inorder(bitree_uwi_t *tree);
-
-
-void
-bitree_uwi_leftmostleaf_to_root(bitree_uwi_t **tree);
-
-bitree_uwi_t*
-bitree_uwi_remove_leftmostleaf(bitree_uwi_t **tree);
 
 #endif /* __BINARYTREE_UWI_H__ */

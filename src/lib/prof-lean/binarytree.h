@@ -162,6 +162,14 @@ binarytree_rebalance(binarytree_t *tree, int count);
 binarytree_t *
 binarytree_list_to_tree(binarytree_t ** head, int count);
 
+// restructure a binary tree so that all its left children are null
+binarytree_t *
+binarytree_listify(binarytree_t *root);
+
+// allocate a binary tree so that all its left children are null
+binarytree_t *
+binarytree_listalloc(size_t elt_size, int num_elts, mem_alloc m_alloc);
+
 // use binarytree_node_cmp to find a matching node in a binary search tree.
 // NULL is returned
 // if no match is found.
@@ -186,36 +194,7 @@ binarytree_tostring_indent(binarytree_t *tree, val_tostr tostr,
 int
 binarytree_height(binarytree_t *tree);
 
-// an empty binary tree is balanced.
-// a non-empty binary tree is balanced iff the difference in height between
-// the left and right subtrees is less or equal to 1.
-bool
-binarytree_is_balanced(binarytree_t *tree);
-
-// an empty binary tree is in order
-// an non-empty binary tree is in order iff
-// its left subtree is in order and all of its elements are < the root element
-// its right subtree is in order and all of its elements are > the root element
-bool
-binarytree_is_inorder(binarytree_t *tree, val_cmp compare);
-
-
 binarytree_t *
 binarytree_insert(binarytree_t *tree, val_cmp compare, binarytree_t *key);
-
-/*
- * if the tree is not NULL, remove the leftmost left node from the tree, make it
- * the new root of the tree, and set its left subtree to the old tree.
- * if the tree is NULL, do nothing.
- */
-void
-binarytree_leftmostleaf_to_root(binarytree_t **tree);
-
-/*
- * if the tree != NULL, remove and return the leftmost leaf node from the tree,
- * otherwise return NULL.
- */
-binarytree_t*
-binarytree_remove_leftmostleaf(binarytree_t **tree);
 
 #endif

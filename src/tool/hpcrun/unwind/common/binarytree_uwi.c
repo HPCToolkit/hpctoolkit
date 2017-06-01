@@ -42,35 +42,13 @@ bitree_uwi_init()
 }
 
 // constructors
-static bitree_uwi_t*
-bitree_uwi_new_node(mem_alloc m_alloc, size_t recipe_size)
-{
-  bitree_uwi_t *btuwi = (bitree_uwi_t *)binarytree_new(sizeof(uwi_t) + recipe_size, m_alloc);
-  uwi_t* uwi = bitree_uwi_rootval(btuwi);
-  uwi->interval.start = uwi->interval.end = 0;
-  return btuwi;
-}
-
-static void
-bitree_uwi_add_nodes_to_lft(
-	mem_alloc m_alloc,
-	size_t recipe_size)
-{
-  bitree_uwi_t *btuwi = bitree_uwi_new_node(m_alloc, recipe_size);
-  bitree_uwi_t * current = btuwi;
-  for (int i = 1; i < NUM_NODES; i++) {
-	bitree_uwi_t *new_node =  bitree_uwi_new_node(m_alloc, recipe_size);
-	bitree_uwi_set_leftsubtree(current, new_node);
-	current = new_node;
-  }
-  bitree_uwi_set_rightsubtree(btuwi, _lf_uwi_tree);
-  _lf_uwi_tree = btuwi;
-}
-
 static bitree_uwi_t *
 bitree_uwi_alloc_from_lft()
 {
-  return bitree_uwi_remove_leftmostleaf(&_lf_uwi_tree);
+  bitree_uwi_t *top = _lf_uwi_tree;
+  _lf_uwi_tree = bitree_uwi_rightsubtree(top);
+  bitree_uwi_set_rightsubtree(top, NULL);
+  return top;
 }
 
 static void
@@ -83,19 +61,17 @@ bitree_uwi_populate_lft(
   if (acquired) {
 	// the global free list is locked, so use it
 	if (GF_uwi_tree) {
-	  bitree_uwi_t *btuwi = GF_uwi_tree;
-	  GF_uwi_tree = bitree_uwi_rightsubtree(GF_uwi_tree);
+	  _lf_uwi_tree = GF_uwi_tree;
+	  GF_uwi_tree = bitree_uwi_leftsubtree(_lf_uwi_tree);
 	  mcs_unlock(&GFT_lock, &me);
-	  bitree_uwi_set_rightsubtree(btuwi, _lf_uwi_tree);
-	  _lf_uwi_tree = btuwi;
+	  bitree_uwi_set_leftsubtree(_lf_uwi_tree, NULL);
 	}
 	else {
 	  mcs_unlock(&GFT_lock, &me);
 	}
   }
-  if (!_lf_uwi_tree) {
-	bitree_uwi_add_nodes_to_lft(m_alloc, recipe_size);
-  }
+  if (!_lf_uwi_tree)
+    _lf_uwi_tree = (bitree_uwi_t *)binarytree_listalloc(recipe_size, NUM_NODES, m_alloc);
 }
 
 bitree_uwi_t*
@@ -127,13 +103,12 @@ bitree_uwi_del(bitree_uwi_t **tree, mem_free m_free)
 void bitree_uwi_free(bitree_uwi_t *tree)
 {
   if(!tree) return;
-  bitree_uwi_leftmostleaf_to_root(&tree);
+  tree = bitree_uwi_flatten(tree);
   // link to the global free unwind interval tree:
   mcs_node_t me;
   mcs_lock(&GFT_lock, &me);
-  bitree_uwi_set_rightsubtree(tree, GF_uwi_tree);
+  bitree_uwi_set_leftsubtree(tree, GF_uwi_tree);
   GF_uwi_tree = tree;
-  bitree_uwi_set_rightsubtree(tree, NULL);
   mcs_unlock(&GFT_lock, &me);
 }
 
@@ -197,13 +172,19 @@ bitree_uwi_recipe(bitree_uwi_t *tree)
   return (uw_recipe_t *)uwi->recipe;
 }
 
-// perform bulk rebalancing by gathering nodes into a vector and
-// rebuilding the tree from scratch using the same nodes.
+// change a tree of all right children into a balanced tree
 bitree_uwi_t*
 bitree_uwi_rebalance(bitree_uwi_t * tree, int count)
 {
   binarytree_t *balanced = binarytree_list_to_tree((binarytree_t**)&tree, count);
   return (bitree_uwi_t*)balanced;
+}
+
+bitree_uwi_t*
+bitree_uwi_flatten(bitree_uwi_t * tree)
+{
+  binarytree_t *flattened = binarytree_listify((binarytree_t*)tree);
+  return (bitree_uwi_t*)flattened;
 }
 
 static int
@@ -294,36 +275,4 @@ int
 bitree_uwi_height(bitree_uwi_t *tree)
 {
   return binarytree_height((binarytree_t*)tree);
-}
-
-// an empty binary tree is balanced.
-// a non-empty binary tree is balanced iff the difference in height between
-// the left and right subtrees is less or equal to 1.
-bool
-bitree_uwi_is_balanced(bitree_uwi_t *tree)
-{
-  return binarytree_is_balanced((binarytree_t*)tree);
-}
-
-// an empty binary tree is in order
-// an non-empty binary tree is in order iff
-// its left subtree is in order and all of its elements are < the root element
-// its right subtree is in order and all of its elements are > the root element
-bool
-bitree_uwi_is_inorder(bitree_uwi_t *tree)
-{
-  return binarytree_is_inorder((binarytree_t*)tree, uwi_t_cmp);
-}
-
-
-void
-bitree_uwi_leftmostleaf_to_root(bitree_uwi_t **tree)
-{
-  binarytree_leftmostleaf_to_root((binarytree_t**)tree);
-}
-
-bitree_uwi_t*
-bitree_uwi_remove_leftmostleaf(bitree_uwi_t **tree)
-{
-  return (bitree_uwi_t*) binarytree_remove_leftmostleaf((binarytree_t**)tree);
 }
