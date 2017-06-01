@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -262,7 +262,6 @@ makeMetrics(Prof::CallPath::Profile& prof,
   uint numSrc = mMgr.size();
   uint mSrcBeg = 0, mSrcEnd = numSrc; // [ )
 
-  uint numDrvd = 0;
   uint mDrvdBeg = 0, mDrvdEnd = 0; // [ )
   
   bool needAllStats =
@@ -275,7 +274,6 @@ makeMetrics(Prof::CallPath::Profile& prof,
                                      mSrcBeg, mSrcEnd);
   if (mDrvdBeg != Prof::Metric::Mgr::npos) {
     mDrvdEnd = mMgr.size();
-    numDrvd = (mDrvdEnd - mDrvdBeg);
   }
 
   if (!Analysis::Args::MetricFlg_isThread(args.prof_metrics)) {

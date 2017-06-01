@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -73,7 +73,7 @@
 
 #include <include/uint.h>
 
-#include "QueuingRWLock.h"
+#include "pfq-rwlock.h"
 #include "spinlock.h"
 
 
@@ -137,7 +137,7 @@ typedef struct BalancedTree
   BalancedTree_alloc_fn_t allocFn;
   size_t nodeDataSz; // size of BalancedTreeNode_t.data
 
-  QueuingRWLock_t lock;
+  pfq_rwlock_t rwlock;
   spinlock_t spinlock;
   
 } BalancedTree_t;
@@ -156,34 +156,18 @@ BalancedTree_size(BalancedTree_t* tree)
 
 
 static inline BalancedTreeNode_t*
-BalancedTree_find(BalancedTree_t* tree, void* key, QueuingRWLockLcl_t* locklcl)
+BalancedTree_find(BalancedTree_t* tree, void* key)
 {
-  if (locklcl) {
-    QueuingRWLock_lock(&tree->lock, locklcl, QueuingRWLockOp_read);
-    //while (spinlock_is_locked(&tree->spinlock));
+  pfq_rwlock_read_lock(&tree->rwlock);
+  BalancedTreeNode_t* curr = tree->root;
+  while (curr != NULL && curr->key != key) {
+    if (key < curr->key)
+      curr = curr->left;
+    else
+      curr = curr->right;
   }
-
-  BalancedTreeNode_t* found = NULL;
-
-  BalancedTreeNode_t* x = tree->root;
-  while (x != NULL) {
-    if (key == x->key) {
-      found = x; // found!
-      goto fini;
-    }
-    else if (key < x->key) {
-      x = x->left;
-    }
-    else {
-      x = x->right;
-    }
-  }
-
- fini:
-  if (locklcl) {
-    QueuingRWLock_unlock(&tree->lock, locklcl);
-  }
-  return found;
+  pfq_rwlock_read_unlock(&tree->rwlock);
+  return curr;
 }
 
 
@@ -191,14 +175,7 @@ BalancedTree_find(BalancedTree_t* tree, void* key, QueuingRWLockLcl_t* locklcl)
 // already exist).  Returns the node containing the key, which may
 // have already existed or be newly allocated.
 BalancedTreeNode_t*
-BalancedTree_insert(BalancedTree_t* tree, void* key, 
-		    QueuingRWLockLcl_t* locklcl);
-
-
-#if 0
-typedef void (*BalancedTree_foreach_func) (BalancedTreeNode_t*, void*);
-void BalancedTree_foreach(BalancedTree_t*, BalancedTree_foreach_func, void*);
-#endif
+BalancedTree_insert(BalancedTree_t* tree, void* key);
 
 
 #endif /* prof_lean_BalancedTree_h */

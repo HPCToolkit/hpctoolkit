@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -61,15 +61,14 @@
 //******************************************************************************
 // local include files 
 //******************************************************************************
-#include <lib/prof-lean/atomic-op.h>
 #include "threadmgr.h"
-
+#include <lib/prof-lean/stdatomic.h>
 
 
 //******************************************************************************
 // private data
 //******************************************************************************
-static int32_t threadmgr_active_threads = 1; // one for the process main thread
+static atomic_int_least32_t threadmgr_active_threads = ATOMIC_VAR_INIT(1); // one for the process main thread
 
 
 
@@ -80,7 +79,7 @@ static int32_t threadmgr_active_threads = 1; // one for the process main thread
 static void
 adjust_thread_count(int32_t val)
 {
-	atomic_add_i32(&threadmgr_active_threads, val);
+	atomic_fetch_add_explicit(&threadmgr_active_threads, val, memory_order_relaxed);
 }
 
 
@@ -106,5 +105,5 @@ hpcrun_threadmgr_thread_delete()
 int 
 hpcrun_threadmgr_thread_count()
 {
-	return threadmgr_active_threads;
+	return atomic_load_explicit(&threadmgr_active_threads, memory_order_relaxed);
 }

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -104,7 +104,7 @@
 #include <sample_event.h>
 #include <thread_data.h>
 
-#include <unwind/common/ui_tree.h>
+#include <unwind/common/uw_recipe_map.h>
 #include <messages/messages.h>
 
 #include <lib/prof-lean/spinlock.h>

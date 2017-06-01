@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -81,9 +81,6 @@
 #include <messages/messages.h>
 #include <utilities/tokenize.h>
 
-#include <lib/prof-lean/atomic.h>
-
-
 
 /******************************************************************************
  * macros
@@ -107,8 +104,10 @@ static void idle_metric_process_blame_for_sample(void* arg, int metric_id,
 /******************************************************************************
  * local variables
  *****************************************************************************/
-static long active_worker_count = 1; // by default is 1 (1 thread)
-static long total_threads       = 1; // by default is 1 (1 thread)
+
+// start with 1 total thread, 1 worker
+static atomic_uintptr_t total_threads       = ATOMIC_VAR_INIT(1); 
+static atomic_uintptr_t active_worker_count = ATOMIC_VAR_INIT(1);
 
 static int idle_metric_id = -1;
 static int work_metric_id = -1;
@@ -259,7 +258,7 @@ idle_metric_process_blame_for_sample(void* arg, int metric_id, cct_node_t *node,
   if (td->idle == 0) { // if this thread is not idle
     // capture active_worker_count into a local variable to make sure that the count doesn't change
     // between the time we test it and the time we use the value
-    long workers = active_worker_count;
+    long workers = atomic_load_explicit(&active_worker_count, memory_order_relaxed);
     double working_threads = (workers > 0 ? workers : 1.0 );
 
     double idle_threads = (total_threads - working_threads);
@@ -314,8 +313,8 @@ idle_metric_blame_shift_idle(void)
   thread_data_t *td = hpcrun_get_thread_data();
   if (td->idle++ > 0) return;
 
-  TMSG(IDLE, "blame shift idle work BEFORE decr: %ld", active_worker_count);
-  atomic_add(&active_worker_count, -1L);
+  TMSG(IDLE, "blame shift idle work BEFORE decr: %ld", atomic_load_explicit(&active_worker_count, memory_order_relaxed));
+  atomic_fetch_add_explicit(&active_worker_count, -1, memory_order_relaxed);
   TMSG(IDLE, "blame shift idle after td->idle incr = %d", td->idle);
 
   // get a tracing sample out
@@ -338,8 +337,8 @@ idle_metric_blame_shift_work(void)
   TMSG(IDLE, "blame shift idle before td->idle decr = %d", td->idle);
   if (--td->idle > 0) return;
 
-  TMSG(IDLE, "blame shift work, work BEFORE incr: %ld", active_worker_count);
-  atomic_add(&active_worker_count, 1);
+  TMSG(IDLE, "blame shift work, work BEFORE incr: %ld", atomic_load_explicit(&active_worker_count, memory_order_relaxed));
+  atomic_fetch_add_explicit(&active_worker_count, 1, memory_order_relaxed);
 
   // get a tracing sample out
   if(hpcrun_trace_isactive()) {

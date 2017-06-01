@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -46,6 +46,11 @@
 
 #ifndef SEGV_HANDLER_H
 #define SEGV_HANDLER_H
+
+typedef void (*hpcrun_sig_callback_t) (void);
+
+int 
+hpcrun_segv_register_cb( hpcrun_sig_callback_t cb );
 
 int
 hpcrun_setup_segv();

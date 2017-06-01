@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -47,7 +47,7 @@
 #ifndef UNWIND_DATATYPE_H
 #define UNWIND_DATATYPE_H
 
-#include "_unw-datatypes.h"  // do NOT qualify: selected by -I to accomodate different datatypes for
-                               // different unwinders
+// selected by -I to accommodate different data types for different unwinders
+#include "unw-datatypes-specific.h"
 
 #endif // UNWIND_DATATYPE_H

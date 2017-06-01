@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2016, Rice University
+## Copyright ((c)) 2002-2017, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,7 @@
 #############################################################################
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign subdir-objects
 
 #############################################################################
 # Common settings
@@ -106,9 +106,12 @@ plugin_instdir = $(pkglibdir)/plugins
 bin_SCRIPTS =
 pkglibexec_SCRIPTS =
 include_HEADERS =
-pkglib_PROGRAMS =
+pkglibexec_PROGRAMS =
 pkglib_LIBRARIES =
 pkglib_LTLIBRARIES =
+
+BUILT_SOURCES =
+CLEANFILES =
 
 if OPT_BUILD_FRONT_END
   bin_SCRIPTS += scripts/hpcsummary
@@ -130,7 +133,7 @@ endif
 endif
 
 if OPT_ENABLE_HPCRUN_STATIC
-  pkglib_PROGRAMS  += libhpcrun.o
+  noinst_PROGRAMS  = libhpcrun.o
   pkglib_LIBRARIES += libhpcrun_wrap.a
   pkglib_LIBRARIES += libhpcrun_ga_wrap.a
   pkglib_LIBRARIES += libhpcrun_io_wrap.a
@@ -165,6 +168,9 @@ XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 
+MPI_INC = @MPI_INC@
+MPI_PROTO_FILE = @MPI_PROTO_FILE@
+
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
 PLUGIN_CONFIG_FILES = ga io memleak pthread
@@ -179,9 +185,11 @@ UNW_UNIV_FILES = \
 
 UNW_COMMON_FILES = \
         $(UNW_UNIV_FILES)               \
-	unwind/common/splay.c		\
+	unwind/common/binarytree_uwi.c		    \
+	unwind/common/ildmod_stat.c \
+	unwind/common/interval_t.c	    \
 	unwind/common/stack_troll.c	\
-	unwind/common/ui_tree.c
+	unwind/common/uw_recipe_map.c
 
 UNW_X86_FILES = \
        $(UNW_COMMON_FILES) \
@@ -197,7 +205,8 @@ UNW_X86_FILES = \
 	unwind/x86-family/manual-intervals/x86-gcc-main64.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
-	unwind/x86-family/manual-intervals/x86-intel14-omp.c \
+	unwind/x86-family/manual-intervals/x86-intel-align32.c \
+	unwind/x86-family/manual-intervals/x86-intel-align64.c \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
 	unwind/x86-family/manual-intervals/x86-gcc-adjust.c \
@@ -338,10 +347,10 @@ MY_BASE_FILES =				\
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c
 
-if OPT_ENABLE_MPI_WRAP
-MY_BASE_FILES +=  			\
-	sample-sources/mpi.c
-endif
+## if OPT_ENABLE_MPI_WRAP
+## MY_BASE_FILES +=  			\
+## 	sample-sources/mpi.c
+## endif
 
 
 MY_DYNAMIC_FILES = 			\
@@ -376,6 +385,10 @@ MY_X86_FILES = \
 MY_IA64_FILES = \
         trampoline/ia64/ia64-tramp.s \
         utilities/arch/ia64/ia64-context-pc.c
+
+MY_AARCH64_FILES = \
+	trampoline/aarch64/aarch64-tramp.c \
+	utilities/arch/libunwind/libunwind-context-pc.c
 
 if OPT_PAPI_COMPONENT
 MY_PAPI_FILES = \
@@ -413,7 +426,7 @@ MY_INCLUDE_DIRS =			\
 	-I$(srcdir)/unwind/common	\
 	-I$(srcdir)/utilities		\
 	$(HPC_IFLAGS)			\
-	$(OPT_LIBUNWIND_IFLAGS)         \
+	$(LIBUNWIND_IFLAGS)		\
 	-I$(HPCFNBOUNDS_INC)		\
         $(OPT_CUPTI_IFLAGS)             \
 	-I$(LIBMONITOR_INC)
@@ -431,6 +444,9 @@ MY_X86_INCLUDE_DIRS =		\
 
 MY_IA64_INCLUDE_DIRS =         \
         -I$(srcdir)/utilities/arch/ia64
+
+MY_AARCH64_INCLUDE_DIRS = \
+	-I$(srcdir)/utilities/arch/aarch64
 
 libhpcrun_la_SOURCES = 			\
 	$(MY_BASE_FILES)		\
@@ -479,7 +495,7 @@ libhpcrun_gpu_wrap_a_SOURCES = 	\
 	gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_mpi_la_SOURCES = 		\
-	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
+	./mpi-overrides.c
 
 libibm_xlomp_wrappers_a_SOURCES =              \
         plugins/ibm-xlomp-wrappers.c
@@ -497,6 +513,7 @@ libhpctoolkit_a_SOURCES = 		\
 
 libhpcrun_la_CPPFLAGS =			\
 	$(MY_CPP_DEFINES)		\
+	$(LIBUNWIND_CPPFLAGS_DYN)	\
 	$(MY_INCLUDE_DIRS)
 
 if OPT_BGQ_BACKEND
@@ -506,6 +523,7 @@ endif
 libhpcrun_o_CPPFLAGS =			\
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
+	$(LIBUNWIND_CPPFLAGS_STAT)	\
 	$(MY_INCLUDE_DIRS)
 
 if OPT_BGQ_BACKEND
@@ -564,11 +582,18 @@ libhpcrun_gpu_wrap_a_CPPFLAGS =	\
 
 libhpcrun_mpi_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
+	-I$(MPI_INC)			\
 	$(MY_INCLUDE_DIRS)
 
-$(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
-	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
-		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
+libhpctoolkit_la_CPPFLAGS =		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpctoolkit_a_CPPFLAGS =		\
+	-DHPCRUN_STATIC_LINK		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
 
 CUDA_TABLES = gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
 CUDA_FILES = sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c $(CUDA_TABLES)
@@ -583,9 +608,9 @@ generated_cuda_driver_api_files = $(addprefix $(generated_file_base)/, cuda_driv
 generated_cuda_runtime_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-runtime-header.h gpu_blame-cuda-runtime-table.c gpu_blame-runtime-overrides-generated.c)
 generated_cuda_runtime_api_files = $(addprefix $(generated_file_base)/, cuda_runtime_apis.h)
 
-BUILT_SOURCES = $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
+BUILT_SOURCES += $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
 
-CLEANFILES  =  $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
+CLEANFILES  +=  $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
 
 $(generated_cuda_runtime_api_files) : $(generated_file_src_path)/cuda_runtime_dummy.c
 	$(CC) $(OPT_CUDA_IFLAGS) -E -B -c $(generated_file_src_path)/cuda_runtime_dummy.c  -o  $(generated_file_base)/cuda_runtime_apis.h 
@@ -609,14 +634,16 @@ $(generated_file_base)/gpu_blame-cuda-driver-table.c : $(generated_file_base)/gp
 
 endif
 
-libhpctoolkit_la_CPPFLAGS =		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
+if OPT_ENABLE_MPI_WRAP
 
-libhpctoolkit_a_CPPFLAGS =		\
-	-DHPCRUN_STATIC_LINK		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
+BUILT_SOURCES += mpi-overrides.c
+CLEANFILES += mpi-overrides.c
+
+mpi-overrides.c: $(srcdir)/sample-sources/$(MPI_PROTO_FILE)
+	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
+		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/$(MPI_PROTO_FILE)
+
+endif
 
 
 #-----------------------------------------------------------
@@ -654,7 +681,7 @@ endif
 
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt \
-        $(OPT_LIBUNWIND_LDFLAGS)
+        $(LIBUNWIND_LDFLAGS_DYN)
 
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 
@@ -668,7 +695,7 @@ libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 
-libhpcrun_o_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS)
+libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT)
 
 
 #-----------------------------------------------------------
@@ -762,6 +789,26 @@ if HOST_CPU_IA64
   libhpcrun_pthread_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+endif
+
+if HOST_CPU_AARCH64
+  libhpcrun_la_SOURCES  += $(MY_AARCH64_FILES)
+  libhpcrun_o_SOURCES   += $(MY_AARCH64_FILES)
+  libhpcrun_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_o_CPPFLAGS  += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
+  libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
+  libhpcrun_ga_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_io_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_io_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_memleak_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_pthread_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_gpu_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_gpu_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_mpi_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 endif
 
 if OPT_PAPI_DYNAMIC
@@ -919,6 +966,14 @@ install-data-hook:
 	-for file in $(PLUGIN_CONFIG_FILES) ; do \
 	    cp -f "$(plugin_srcdir)/$$file" "$(DESTDIR)$(plugin_instdir)/$$file" ; \
 	done
+
+# Install libhpcrun.o into pkglibdir.  New automake won't install a
+# program into a libdir, so we use noinst and install it manually.
+
+if OPT_ENABLE_HPCRUN_STATIC
+install-exec-hook:
+	cp libhpcrun.o $(DESTDIR)$(pkglibdir)
+endif
 
 
 #############################################################################

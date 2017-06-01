@@ -3,6 +3,9 @@
 /* Data-centric tracing */
 #undef DATACENTRIC_TRACE
 
+/* Binutils has support for ia64 */
+#undef ENABLE_BINUTILS_IA64
+
 /* Support for CLOCK_THREAD_CPUTIME_ID */
 #undef ENABLE_CLOCK_CPUTIME
 
@@ -18,7 +21,7 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
-/* HPCToolkit binutils */
+/* HPCToolkit patched binutils */
 #undef HAVE_HPC_GNUBINUTILS
 
 /* Define to 1 if you have the <inttypes.h> header file. */
@@ -78,6 +81,9 @@
 /* Host is big endian. */
 #undef HOST_BIG_ENDIAN
 
+/* HOST CPU: ARM 64 (aarch64 */
+#undef HOST_CPU_ARM64
+
 /* HOST CPU: ia64 (itanium) */
 #undef HOST_CPU_IA64
 
@@ -120,12 +126,8 @@
 /* HPCToolkit version string */
 #undef HPCTOOLKIT_VERSION_STRING
 
-/* Define to the sub-directory in which libtool stores uninstalled libraries.
-   */
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
-
-/* Define to 1 if your C compiler doesn't accept -c and -o together. */
-#undef NO_MINUS_C_MINUS_O
 
 /* Standard C headers */
 #undef NO_STD_CHEADERS

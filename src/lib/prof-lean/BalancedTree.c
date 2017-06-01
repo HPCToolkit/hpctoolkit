@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -109,133 +109,101 @@ BalancedTree_init(BalancedTree_t* tree,
   tree->allocFn = allocFn;
   tree->nodeDataSz = nodeDataSz;
 
-  QueuingRWLock_init(&tree->lock);
+  pfq_rwlock_init(&tree->rwlock);
   spinlock_unlock(&tree->spinlock);
 }
 
 
 BalancedTreeNode_t*
-BalancedTree_insert(BalancedTree_t* tree, void* key,
-		    QueuingRWLockLcl_t* locklcl)
+BalancedTree_insert(BalancedTree_t* tree, void* key)
 {
-  if (locklcl) {
-    QueuingRWLock_lock(&tree->lock, locklcl, QueuingRWLockOp_write);
-    //spinlock_lock(&tree->spinlock);
-  }
+  pfq_rwlock_node_t locklcl;
+  pfq_rwlock_write_lock(&tree->rwlock, &locklcl);
  
-  BalancedTreeNode_t* found = NULL;
-
-  // ------------------------------------------------------------
-  // empty tree
-  // ------------------------------------------------------------
-  if (!tree->root) {
-    tree->root = BalancedTreeNode_alloc(tree->allocFn, tree->nodeDataSz);
-    BalancedTreeNode_init(tree->root, key, NULL);
-
-    tree->root->color = BalancedTreeColor_BLACK;
-    tree->size = 1;
-    found = tree->root;
-    goto fini;
-  }
-
+  BalancedTreeNode_t* x = tree->root;
+  BalancedTreeNode_t* x_parent = NULL;
 
   // ------------------------------------------------------------
   // find existing node or new location
   // ------------------------------------------------------------
-  BalancedTreeNode_t* x = tree->root;
-  BalancedTreeNode_t* x_parent = NULL;
 
-  int pathDir = 0;
-  while (x != NULL) {
-    if (key == x->key) {
-      found = x; // found!
-      goto fini;
-    }
-    else {
+  while (x != NULL && x->key != key) {
       x_parent = x;
-      if (key < x->key) {
+      if (key < x->key)
 	x = x->left;
-	pathDir = -1;
-      }
-      else {
+      else
 	x = x->right;
-	pathDir = +1;
-      }
-    }
   }
-
-  // insert (INVARIANT: pathDir is -1 or 1)
-  if (pathDir < 0) {
-    found = x = x_parent->left = 
-      BalancedTreeNode_alloc(tree->allocFn, tree->nodeDataSz);
-  }
+  BalancedTreeNode_t* found;
+  if (x != NULL)
+    found = x;
   else {
-    found = x = x_parent->right = 
+    found = x =
       BalancedTreeNode_alloc(tree->allocFn, tree->nodeDataSz);
-  }
-  BalancedTreeNode_init(x, key, x_parent);
-  tree->size++;
+    BalancedTreeNode_init(x, key, x_parent);
+    tree->size++;
+    // ------------------------------------------------------------
+    // empty tree
+    // ------------------------------------------------------------
+    if (!tree->root)
+      tree->root = x;
 
 
-  // ------------------------------------------------------------
-  // rebalance
-  // ------------------------------------------------------------
-  BalancedTreeNode_t* x_gparent = NULL;
+    // ------------------------------------------------------------
+    // rebalance
+    // ------------------------------------------------------------
 
-  while (x != tree->root && x->parent->color == BalancedTreeColor_RED) {
+    while (x != tree->root && x->parent->color == BalancedTreeColor_RED) {
 
-    x_parent = x->parent;
-    x_gparent = x_parent->parent;
+      x_parent = x->parent;
+      BalancedTreeNode_t* x_gparent = x_gparent = x_parent->parent;
 
-    if (x_parent == x_gparent->left) {
-      BalancedTreeNode_t* y = x_gparent->right;
-      if (y && y->color == BalancedTreeColor_RED) {
-	x_parent->color = BalancedTreeColor_BLACK;
-	y->color = BalancedTreeColor_BLACK;
-	x_gparent->color = BalancedTreeColor_RED;
-	x = x_gparent;
+      if (x_parent == x_gparent->left) {
+	BalancedTreeNode_t* y = x_gparent->right;
+	if (y && y->color == BalancedTreeColor_RED) {
+	  x_parent->color = BalancedTreeColor_BLACK;
+	  y->color = BalancedTreeColor_BLACK;
+	  x_gparent->color = BalancedTreeColor_RED;
+	  x = x_gparent;
+	}
+	else {
+	  if (x == x_parent->right) {
+	    x = x_parent;
+	    BalancedTree_leftRotate(tree, x);
+	    x_parent = x->parent;
+	    x_gparent = x_parent->parent;
+	  }
+	  x_parent->color = BalancedTreeColor_BLACK;
+	  x_gparent->color = BalancedTreeColor_RED;
+	  BalancedTree_rightRotate(tree, x_gparent);
+	}
       }
       else {
-	if (x == x_parent->right) {
-	  x = x_parent;
-	  BalancedTree_leftRotate(tree, x);
-	  x_parent = x->parent;
-	  x_gparent = x_parent->parent;
+	BalancedTreeNode_t* y = x_gparent->left;
+	if (y && y->color == BalancedTreeColor_RED) {
+	  x_parent->color = BalancedTreeColor_BLACK;
+	  y->color = BalancedTreeColor_BLACK;
+	  x_gparent->color = BalancedTreeColor_RED;
+	  x = x_gparent;
 	}
-	x_parent->color = BalancedTreeColor_BLACK;
-	x_gparent->color = BalancedTreeColor_RED;
-	BalancedTree_rightRotate(tree, x_gparent);
+	else {
+	  if (x == x_parent->left) {
+	    x = x_parent;
+	    BalancedTree_rightRotate(tree, x);
+	    x_parent = x->parent;
+	    x_gparent = x_parent->parent;
+	  }
+	  x_parent->color = BalancedTreeColor_BLACK;
+	  x_gparent->color = BalancedTreeColor_RED;
+	  BalancedTree_leftRotate(tree, x_gparent);
+	}
       }
     }
-    else {
-      BalancedTreeNode_t* y = x_gparent->left;
-      if (y && y->color == BalancedTreeColor_RED) {
-	x_parent->color = BalancedTreeColor_BLACK;
-	y->color = BalancedTreeColor_BLACK;
-	x_gparent->color = BalancedTreeColor_RED;
-	x = x_gparent;
-      }
-      else {
-	if (x == x_parent->left) {
-	  x = x_parent;
-	  BalancedTree_rightRotate(tree, x);
-	  x_parent = x->parent;
-	  x_gparent = x_parent->parent;
-	}
-	x_parent->color = BalancedTreeColor_BLACK;
-	x_gparent->color = BalancedTreeColor_RED;
-	BalancedTree_leftRotate(tree, x_gparent);
-      }
-    }
+
+    tree->root->color = BalancedTreeColor_BLACK;
   }
 
-  tree->root->color = BalancedTreeColor_BLACK;
-
- fini:
-  if (locklcl) {
-    QueuingRWLock_unlock(&tree->lock, locklcl);
-    //spinlock_unlock(&tree->spinlock);
-  }
+  pfq_rwlock_write_unlock(&tree->rwlock, &locklcl);
   return found;
 }
 

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -69,6 +69,8 @@
 #include <map>
 #include <string>
 #include <vector>
+
+namespace HPC {
 
 // compare the strings, not the pointers
 class StringCompare {
@@ -136,5 +138,7 @@ public:
   }
 
 };  // class StringTable
+
+}  // namespace HPC
 
 #endif

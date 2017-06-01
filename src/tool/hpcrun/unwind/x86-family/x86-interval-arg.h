@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -60,14 +60,14 @@ typedef struct interval_arg_t {
   // read only:
   void *beg;
   void *end;
-  unwind_interval *first;
+  bitree_uwi_t *first;
 
   // read/write:
   void *ins;
-  unwind_interval *current;
+  bitree_uwi_t *current;
   bool bp_just_pushed;
   highwatermark_t highwatermark;
-  unwind_interval *canonical_interval;
+  bitree_uwi_t *canonical_interval;
   bool bp_frames_found;
   void *rax_rbp_equivalent_at;
   void *return_addr; // A place to store void * return values.

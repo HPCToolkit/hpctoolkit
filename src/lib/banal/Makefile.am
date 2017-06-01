@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2016, Rice University
+## Copyright ((c)) 2002-2017, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -71,9 +71,11 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 BOOST_INC = @BOOST_INC@
+LIBDWARF_INC = @LIBDWARF_INC@
 SYMTABAPI_INC = @SYMTABAPI_INC@
 
 MYSOURCES = \
+	Linemap.hpp Linemap.cpp \
 	Struct.hpp Struct.cpp \
 	StructSimple.hpp StructSimple.cpp \
 	Struct-LocationMgr.hpp Struct-LocationMgr.cpp
@@ -83,7 +85,7 @@ INLINE_SRCS = Struct-Inline.hpp Struct-Inline.cpp
 OA_SRCS =     OAInterface.hpp OAInterface.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ -I$(LIBDWARF_INC)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -94,16 +94,8 @@ bool thread_stop,
 							int metricId, uint64_t metricIncr);
 
 extern cct_node_t* hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context, 
-                                        void **trace_pc,
-                                        int metricId, uint64_t metricIncr,
-                                        int skipInner, int isSync);
-//
-// debug version of hpcrun_backtrace2cct:
-//   simulates errors to test partial unwind capability
-//
+					ip_normalized_t *leaf_func,  // JMC
+					int metricId, uint64_t metricIncr,
+					int skipInner, int isSync);
 
-extern cct_node_t* hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-                                            void **trace_pc,
-                                            int metricId, uint64_t metricIncr,
-                                            int skipInner);
 #endif // CCT_INSERT_BACKTRACE_H

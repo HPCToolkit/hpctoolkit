@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2014, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -176,6 +176,7 @@ set_frame(frame_t *f, ompt_placeholder_t *ph)
 {
   f->cursor.pc_unnorm = ph->pc;
   f->ip_norm = ph->pc_norm;
+  f->the_function = ph->pc_norm;
 }
 
 
@@ -187,7 +188,6 @@ collapse_callstack(backtrace_info_t *bt, ompt_placeholder_t *placeholder)
   bt->begin = bt->last; 
   bt->bottom_frame_elided = false;
   bt->partial_unwind = false;
-  bt->trace_pc = bt->begin->cursor.pc_unnorm;
 }
 
 
@@ -255,7 +255,6 @@ ompt_elide_runtime_frame(
 
   while ((frame0->reenter_runtime_frame == 0) && 
          (frame0->exit_runtime_frame == 0)) {
-
     // corner case: the top frame has been set up, 
     // but not filled in. ignore this frame.
     frame0 = hpcrun_ompt_get_task_frame(++i);
@@ -491,12 +490,8 @@ ompt_region_context(uint64_t region_id,
   ucontext_t uc;
   getcontext(&uc);
 
-#if 0
-  node = hpcrun_sample_callpath(&uc, 0, 0, ++levels_to_skip, 1).sample_node;
-#else
   // levels to skip will be broken if inlining occurs.
   node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1).sample_node;
-#endif
   TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
 
   if (node && adjust_callsite) {
@@ -639,4 +634,3 @@ ompt_callstack_init(void)
   // register closure
   hpcrun_initializers_defer(&ompt_callstack_init_closure);
 }
-

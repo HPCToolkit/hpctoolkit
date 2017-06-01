@@ -73,7 +73,7 @@ The following prerequisites apply to our default source code distribution.
       <td></td>
     </tr>
     <tr>
-      <td>Cray XT/XE/XK (CNL + x86_64)</td>
+      <td>Cray XT/XE/XK/XC (CNL + x86_64)</td>
       <td>Compute Node Linux &ge; 2.1</td>
     </tr>
     <tr>
@@ -402,7 +402,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 	</dl>
     </li>
 
-    <li><p>Cray XT/XE/XK:</p>
+    <li><p>Cray XT/XE/XK/XC:</p>
 	<dl class="indent">
           <dt>N.B.: Use the GNU programming environment, e.g.:</dt>
 	  <dd><code>
@@ -419,7 +419,7 @@ Please note that a list of examples below provides <code>configure</code> comman
           <dt>HPCToolkit</dt>
 	  <dd><code>../configure \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; MPICXX="CC" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; HPC_LT_LDFLAGS="-all-static -L../../lib/stubs-gcc_s" \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; HPCPROFMPI_LT_LDFLAGS="-all-static" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>hpctoolkit-install</i>&gt; \<br />
               &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/x86_64-linux \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/opt/cray/papi/4.3.0.1/perf_events/no-cuda
@@ -665,12 +665,12 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2015/08/21</span>]
+<p>[<span class="lastupdated">Page last updated: 2017/01/20</span>]
 </p>
 
 <!-- ********************************************************************** -->
 
-<div style="width: 100%; font-size: small;">   <hr />   <p style="margin: 0px; font-size: small;">     &copy;2000-2015 <a href="http://www.rice.edu">Rice University</a>     &bull;     <a href="http://www.cs.rice.edu">Rice Computer Science</a>   </p>   <a href="http://validator.w3.org/check/referer">     <img src="http://www.w3.org/Icons/valid-xhtml10-blue" alt="" height="15" /></a>   <a href="http://jigsaw.w3.org/css-validator/check/referer">     <img src="http://www.w3.org/Icons/valid-css-blue" alt="" height="15" /></a> </div> 
+<div style="width: 100%; font-size: small;">   <hr />   <p style="margin: 0px; font-size: small;">     &copy;2000-2017 <a href="http://www.rice.edu">Rice University</a>     &bull;     <a href="http://www.cs.rice.edu">Rice Computer Science</a>   </p>   <a href="http://validator.w3.org/check/referer">     <img src="http://www.w3.org/Icons/valid-xhtml10-blue" alt="" height="15" /></a>   <a href="http://jigsaw.w3.org/css-validator/check/referer">     <img src="http://www.w3.org/Icons/valid-css-blue" alt="" height="15" /></a> </div> 
 <!-- ********************************************************************** -->
 
 </body>

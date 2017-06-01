@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -97,4 +97,4 @@ OSUtil_hostid();
 
 //***************************************************************************
 
-#endif /* prof_lean_QueuingRWLock_h */
+#endif /* support_lean_OSUtil_h */

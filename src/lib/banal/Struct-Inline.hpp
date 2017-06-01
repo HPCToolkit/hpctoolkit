@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -136,7 +136,7 @@ public:
   }
 
   // constructor by InlineNode strings
-  FLPIndex(StringTable & strTab, InlineNode & node)
+  FLPIndex(HPC::StringTable & strTab, InlineNode & node)
   {
     string & fname = node.getFileName();
 
@@ -183,29 +183,26 @@ public:
   long  file_index;
   long  base_index;
   long  line_num;
-  long  proc_index;
 
   // constructor by index
-  StmtInfo(VMA vm, int ln, long file, long base, long line, long proc)
+  StmtInfo(VMA vm, int ln, long file, long base, long line)
   {
     vma = vm;
     len = ln;
     file_index = file;
     base_index = base;
     line_num = line;
-    proc_index = proc;
   }
 
   // constructor by string name
-  StmtInfo(StringTable & strTab, VMA vm, int ln,
-	   const std::string & filenm, long line, const std::string & procnm)
+  StmtInfo(HPC::StringTable & strTab, VMA vm, int ln,
+	   const std::string & filenm, long line)
   {
     vma = vm;
     len = ln;
     file_index = strTab.str2index(filenm);
     base_index = strTab.str2index(FileUtil::basename(filenm.c_str()));
     line_num = line;
-    proc_index = strTab.str2index(procnm);
   }
 };
 
@@ -281,8 +278,8 @@ bool closeSymtab();
 bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
 
 StmtInfo *
-addStmtToTree(TreeNode * root, StringTable & strTab, VMA vma, int len,
-	      string & filenm, SrcFile::ln line, string & procnm);
+addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
+	      int len, string & filenm, SrcFile::ln line);
 
 void
 mergeInlineStmts(TreeNode * dest, TreeNode * src);

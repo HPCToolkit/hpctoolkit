@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -118,7 +118,7 @@ cct_insert_raw_backtrace(cct_node_t* cct,
 
 static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-                          void **trace_pc,
+			  ip_normalized_t *leaf_func,
 			  int metricId, uint64_t metricIncr,
 			  int skipInner, int isSync);
 
@@ -216,7 +216,7 @@ hpcrun_cct_insert_bt(cct_node_t* node,
 //             
 
 cct_node_t*
-hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,  void **trace_pc,
+hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,  ip_normalized_t *leaf_func,
 		     int metricId,
 		     uint64_t metricIncr,
 		     int skipInner, int isSync)
@@ -229,7 +229,7 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,  void **trace_pc,
   }
   else {
     TMSG(BT_INSERT,"regular (NON-lush) backtrace2cct invoked");
-    n = help_hpcrun_backtrace2cct(cct, context, trace_pc,
+    n = help_hpcrun_backtrace2cct(cct, context, leaf_func,
 				  metricId, metricIncr,
 				  skipInner, isSync);
   }
@@ -350,47 +350,10 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
 
 }
 
-cct_node_t*
-hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-                         void **trace_pc,
-			 int metricId,
-			 uint64_t metricIncr,
-			 int skipInner)
-{
-  thread_data_t* td = hpcrun_get_thread_data();
-  backtrace_info_t bt;
-
-  if (! hpcrun_dbg_generate_backtrace(&bt, context, skipInner)) {
-    if (ENABLED(NO_PARTIAL_UNW)){
-      return NULL;
-    }
-    else {
-      TMSG(PARTIAL_UNW, "recording partial unwind from graceful failure");
-      hpcrun_stats_num_samples_partial_inc();
-    }
-  }
-
-  cct_node_t* n = 
-    hpcrun_cct_record_backtrace_w_metric(cct, true, &bt,
-					 bt.has_tramp,
-					 metricId, metricIncr);
-
-  hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));
-  hpcrun_stats_trolled_frames_inc((long) bt.n_trolls);
-
-  if (ENABLED(USE_TRAMP)){
-    hpcrun_trampoline_remove();
-    td->tramp_frame = td->cached_bt;
-    hpcrun_trampoline_insert(n);
-  }
-
-  return n;
-}
-
 
 static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
-                          void **trace_pc,
+                          ip_normalized_t *leaf_func,
 			  int metricId,
 			  uint64_t metricIncr,
 			  int skipInner, int isSync)
@@ -422,9 +385,9 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     }
   }
 
-  bt.trace_pc = bt.begin->cursor.pc_unnorm;
-
   cct_backtrace_finalize(&bt, isSync); 
+
+  *leaf_func = bt.begin->the_function;  // JMC
 
   if (bt.partial_unwind) {
     if (ENABLED(NO_PARTIAL_UNW)){
@@ -440,8 +403,6 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     hpcrun_cct_record_backtrace_w_metric(bundle, bt.partial_unwind, &bt, 
 					 tramp_found,
 					 metricId, metricIncr);
-
-  *trace_pc = bt.trace_pc;
 
   if (bt.trolled) hpcrun_stats_trolled_inc();
   hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));

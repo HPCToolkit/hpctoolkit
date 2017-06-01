@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -230,7 +230,7 @@ hpcrun_make_memstore(hpcrun_meminfo_t *mi, int is_child)
   // If in the child after fork(), then continue to use the parent's
   // memstore if it looks ok, else mmap a new one.  Note: we can't
   // reset the memstore to empty unless we delete everything that was
-  // created via hpcrun_malloc() (cct, ui_tree, ...).
+  // created via hpcrun_malloc() (cct, uw_recipe_map, ...).
   if (is_child && mi->mi_start != NULL
       && mi->mi_start <= mi->mi_low && mi->mi_low <= mi->mi_high
       && mi->mi_high <= mi->mi_start + mi->mi_size) {

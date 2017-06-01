@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -52,13 +52,15 @@
 #include "hpcrun_stats.h"
 #include "sample_event.h"
 #include "epoch.h"
-#include <unwind/common/ui_tree.h>
 
 #include <messages/messages.h>
 
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/spinlock.h>
 
+#define LOADMAP_DEBUG 0
+
+#define UW_RECIPE_MAP_DEBUG 0
 
 static hpcrun_loadmap_t  s_loadmap;
 static hpcrun_loadmap_t* s_loadmap_ptr = NULL;
@@ -69,6 +71,36 @@ static dso_info_t* s_dso_free_list = NULL;
 /* locking functions to ensure that loadmaps are consistent */
 static spinlock_t loadmap_lock = SPINLOCK_UNLOCKED;
 
+static loadmap_notify_t *notification_recipients = NULL;
+
+void
+hpcrun_loadmap_notify_register(loadmap_notify_t *n)
+{
+  n->next = notification_recipients;
+  notification_recipients = n;
+}
+
+
+static void
+hpcrun_loadmap_notify_map(void *start, void *end)
+{
+  loadmap_notify_t * n = notification_recipients;
+  while (n) {
+     n->map(start, end);
+     n = n->next;
+  }
+}
+
+
+static void
+hpcrun_loadmap_notify_unmap(void *start, void *end)
+{
+  loadmap_notify_t * n = notification_recipients;
+  while (n) {
+     n->unmap(start, end);
+     n = n->next;
+  }
+}
 
 
 //***************************************************************************
@@ -403,9 +435,17 @@ hpcrun_loadmap_map(dso_info_t* dso)
     msg = "(reuse)";
   }
   else {
-    lm = hpcrun_loadModule_new(dso->name);
-    lm->dso_info = dso;
-    hpcrun_loadmap_pushFront(lm);
+	lm = hpcrun_loadModule_new(dso->name);
+	lm->dso_info = dso;
+	hpcrun_loadmap_pushFront(lm);
+
+#if UW_RECIPE_MAP_DEBUG
+        fprintf(stderr, "hpcrun_loadmap_map: '%s' start=%p end=%p\n", 
+                dso->name, lm->dso_info->start_addr, lm->dso_info->end_addr);
+#endif
+
+        hpcrun_loadmap_notify_map(lm->dso_info->start_addr, 
+                                  lm->dso_info->end_addr);
   }
 
   TMSG(LOADMAP, "hpcrun_loadmap_map: '%s' size=%d %s",
@@ -421,6 +461,12 @@ hpcrun_loadmap_unmap(load_module_t* lm)
   TMSG(LOADMAP,"hpcrun_loadmap_unmap: '%s'", lm->name);
 
   dso_info_t* old_dso = lm->dso_info;
+
+  if (old_dso == NULL) return; // nothing to do!
+
+  void *start_addr = old_dso->start_addr;
+  void *end_addr = old_dso->end_addr;
+
   lm->dso_info = NULL;
 
   // tallent: For now, do not move the loadmap to the back of the
@@ -430,16 +476,24 @@ hpcrun_loadmap_unmap(load_module_t* lm)
   //hpcrun_loadmap_moveToBack(lm);
 
   // add old_dso to the head of the s_dso_free_list
-  if (old_dso) {
-    old_dso->next = s_dso_free_list;
-    old_dso->prev = NULL;
-    if (s_dso_free_list) {
-      s_dso_free_list->prev = old_dso;
-    }
-    s_dso_free_list = old_dso;
-    TMSG(LOADMAP, "Deleting unw intervals");
-    hpcrun_delete_ui_range(old_dso->start_addr, old_dso->end_addr+1);
+  old_dso->next = s_dso_free_list;
+  old_dso->prev = NULL;
+  if (s_dso_free_list) {
+    s_dso_free_list->prev = old_dso;
   }
+  s_dso_free_list = old_dso;
+  TMSG(LOADMAP, "Deleting unw intervals");
+
+#if LOADMAP_DEBUG
+  assert((uintptr_t)end_addr < UINTPTR_MAX) ;
+#endif
+
+#if UW_RECIPE_MAP_DEBUG
+  fprintf(stderr, "hpcrun_loadmap_unmap: '%s' start=%p end=%p\n", 
+          lm->name, start_addr, end_addr);
+#endif
+
+  hpcrun_loadmap_notify_unmap(start_addr, end_addr);
 }
 
 
@@ -450,6 +504,8 @@ hpcrun_loadmap_unmap(load_module_t* lm)
 void
 hpcrun_initLoadmap()
 {
+  notification_recipients = NULL; // necessary for forked executable
+
   s_loadmap_ptr = &s_loadmap;
   hpcrun_loadmap_init(s_loadmap_ptr);
 

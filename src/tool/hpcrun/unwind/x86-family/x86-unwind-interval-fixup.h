@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -49,10 +49,10 @@
 
 #include "x86-unwind-interval.h"
 
-typedef int (*x86_ui_fixup_fn_t)(char *ins, int len, interval_status *stat);
+typedef int (*x86_ui_fixup_fn_t)(char *ins, int len, btuwi_status_t *stat);
 
 void add_x86_unwind_interval_fixup_function(x86_ui_fixup_fn_t fn);
 
-int x86_fix_unwind_intervals(char *ins, int len, interval_status *stat);
+int x86_fix_unwind_intervals(char *ins, int len, btuwi_status_t *stat);
 
 #endif

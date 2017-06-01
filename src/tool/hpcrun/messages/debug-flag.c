@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -108,7 +108,7 @@ static pmsg_category all_list_entries [] = {
  E(_TST_HANDLER),
  E(_TST_CTL),
  E(UNW),
- // E(UITREE),
+ // E(UW_RECIPE_MAP),
  E(TRAMP),
  E(SEGV),
  E(MPI),

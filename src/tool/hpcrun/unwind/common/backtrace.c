@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -63,26 +63,13 @@
 // local include files
 //***************************************************************************
 
-#include <cct/cct.h>
-
-#include <unwind/common/unwind.h>
-#include <unwind/common/backtrace.h>
 #include <unwind/common/unw-throw.h>
 #include <hpcrun/hpcrun_stats.h>
-#include <hpcrun/thread_data.h>
 
-#include <hpcrun/epoch.h>
 #include <monitor.h>
-#include <hpcrun/sample_event.h>
-#include <fnbounds/fnbounds_interface.h>
 
-#include <messages/messages.h>
-#include <lush/lush-backtrace.h>
 #include <trampoline/common/trampoline.h>
-#include <memory/hpcrun-malloc.h>
 #include <dbg_backtrace.h>
-
-extern void hpcrun_trampoline(void); // trampoline function, needed only for debug
 
 //***************************************************************************
 // local constants & macros
@@ -410,10 +397,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 			       &td->btbuf_cur->ip_norm);
     td->btbuf_cur->ra_loc = NULL;
 
-    void *func_start_pc = NULL, *func_end_pc = NULL;
-    load_module_t* lm = NULL;
-    fnbounds_enclosing_addr(cursor.pc_unnorm, &func_start_pc, &func_end_pc, &lm);
-    td->btbuf_cur->the_function = hpcrun_normalize_ip(func_start_pc, lm);
+    td->btbuf_cur->the_function = cursor.the_function;
 
     frame_t* prev = td->btbuf_cur;
     td->btbuf_cur++;
@@ -697,178 +681,6 @@ hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
   return true;
 }
 
-#if 0
-bool
-hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
-			      ucontext_t* context, int skipInner)
-{
-  thread_data_t* td = hpcrun_get_thread_data();
-
-  if (td->debug1) {
-    EMSG("2nd call to generated failing backtrace causes exit");
-    exit(0);
-  }
-  EMSG("Failing backtrace simulated");
-  td->debug1 = true;
-
-  bool rv = hpcrun_generate_backtrace(bt, context, skipInner);
-  if (!rv) return false;
-
-  size_t len = bt->last - bt->begin + 1;
-  EMSG("Length of recorded backtrace = %d", len);
-  bt->last -= (len > 2) ? 2 : 1;
-  bt->has_tramp   = false;
-
-  return false;
-}
-#endif // 0 for old dbg backtrace
-
-//
-// generate a backtrace, store it in thread-local data
-// return success/failure
-//
-bool
-hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
-	      bt_mut_fn bt_fn, bt_fn_arg bt_arg)
-{
-  int  backtrace_trolled = 0;
-  bool tramp_found       = false;
-
-  hpcrun_unw_cursor_t cursor;
-  hpcrun_unw_init_cursor(&cursor, context);
-
-  //--------------------------------------------------------------------
-  // note: these variables are not local variables so that if a SIGSEGV 
-  // occurs and control returns up several procedure frames, the values 
-  // are accessible to a dumping routine that will tell us where we ran 
-  // into a problem.
-  //--------------------------------------------------------------------
-
-  thread_data_t* td = hpcrun_get_thread_data();
-
-  backtrace_t* bt = &(td->bt);
-  hpcrun_bt_reset(bt);
-
-  int ret = STEP_ERROR;
-  while (true) {
-
-    void* ip = 0;
-    hpcrun_unw_get_ip_unnorm_reg(&cursor, &ip);
-
-    if (hpcrun_trampoline_interior((void*) ip)) {
-      // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
-      // counting a return from a sampled frame using a trampoline.
-      // drop the sample. 
-      // FIXME: sharpen the information to indicate why the sample is 
-      //        being dropped.
-      hpcrun_unw_throw();
-    }
-
-    if (hpcrun_trampoline_at_entry((void*) ip)) {
-      if (hpcrun_bt_len(bt) == 0){
-	// we are about to enter the trampoline code to synchronously 
-	// record a return. for now, simply do nothing ...
-	// FIXME: with a bit more effort, we could charge 
-	//        the sample to the return address in the caller. 
-	hpcrun_unw_throw();
-      }
-      else {
-	// we have encountered a trampoline in the middle of an unwind.
-	tramp_found = true;
-
-	// no need to unwind further. the outer frames are already known.
-	break;
-      }
-    }
-    
-    ip_normalized_t ip_norm = hpcrun_normalize_ip((void*) ip,
-						  cursor.intvl->lm);
-    frame_t* prev = hpcrun_bt_push(bt,
-				   &((frame_t){.cursor = cursor, 
-					       .ip_norm = ip_norm,
-					       .ra_loc = NULL}));
-    
-    ret = hpcrun_unw_step(&cursor);
-    backtrace_trolled = backtrace_trolled || (ret == STEP_TROLL);
-    if (ret <= 0) {
-      break;
-    }
-    prev->ra_loc = hpcrun_unw_get_ra_loc(&cursor);
-  }
-
-  if (backtrace_trolled || (ret == STEP_ERROR)){
-    hpcrun_up_pmsg_count();
-  }
-				    
-  frame_t* bt_beg  = hpcrun_bt_beg(bt);
-
-  size_t new_frame_count = hpcrun_bt_len(bt);
-
-  if (tramp_found) {
-    TMSG(BACKTRACE, "tramp stop: conjoining backtraces");
-    //
-    // join current backtrace fragment to previous trampoline-marked prefix
-    // and make this new conjoined backtrace the cached-backtrace
-    //
-    frame_t* prefix = td->tramp_frame + 1; // skip top frame
-    size_t old_frame_count = td->cached_bt_end - prefix;
-
-    hpcrun_cached_bt_adjust_size(new_frame_count + old_frame_count);
-
-    // put the old prefix in place
-    memmove(td->cached_bt + new_frame_count, prefix, 
-	   sizeof(frame_t) * old_frame_count);
-
-    // put the new suffix in place
-    memcpy(td->cached_bt, bt_beg, sizeof(frame_t) * new_frame_count);
-
-    // update the length of the conjoined backtrace
-    td->cached_bt_end = td->cached_bt + new_frame_count + old_frame_count;
-  }
-  else {
-    hpcrun_cached_bt_adjust_size(new_frame_count);
-    memmove(td->cached_bt, bt_beg, sizeof(frame_t) * new_frame_count);
-
-    td->cached_bt_end = td->cached_bt + new_frame_count;
-  }
-
-  // let clients know if a trampoline was found or not
-  *has_tramp = tramp_found;
-
-#if 0 // no sample filtering
-  if (! ENABLED(NO_SAMPLE_FILTERING)) {
-    frame_t* beg_frame  = td->cached_bt;
-    frame_t* last_frame = td->cached_bt_end - 1;
-    int num_frames      = last_frame - beg_frame + 1;
-	
-    if (hpcrun_filter_sample(num_frames, beg_frame, last_frame)){
-      TMSG(SAMPLE_FILTER, "filter sample of length %d", num_frames);
-      frame_t *fr = beg_frame;
-      for (int i = 0; i < num_frames; i++, fr++){
-	TMSG(SAMPLE_FILTER,"  frame ip[%d] ==> lm_id = %d and lm_ip = %p", i, fr->ip_norm.lm_id, fr->ip_norm.lm_ip);
-      }
-      hpcrun_stats_num_samples_filtered_inc();
-      return false;
-    }
-  }
-#endif // no sample filtering
-  //
-  // mutate the backtrace according to the passed in mutator function
-  //  (bt_fn == NULL means no mutation is necessary)
-  //
-  if (bt_fn) {
-    TMSG(BT, "Mutation function called");
-    TMSG(BT,"==== backtrace BEFORE mutation ========");
-    hpcrun_dump_bt(bt);
-    TMSG(BT,"-------------------------------");
-    bt_fn(bt, bt_arg);
-    TMSG(BT,"==== backtrace AFTER  mutation ========");
-    hpcrun_dump_bt(bt);
-    TMSG(BT,"-------------------------------");
-  }
-
-  return true;
-}
 
 //***************************************************************************
 // private operations 
