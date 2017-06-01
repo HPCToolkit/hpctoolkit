@@ -302,7 +302,7 @@ is_perf_ksym_available()
  **************************************************************/ 
 
 //----------------------------------------------------------
-// generic initialization for event attributes
+// generic default initialization for event attributes
 // return true if the initialization is successful,
 //   false otherwise.
 //----------------------------------------------------------
@@ -324,14 +324,9 @@ perf_attr_init(
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
   attr->type   = event_type;       /* Type of event     */
   attr->config = event_code;       /* Type-specific configuration */
+  attr->freq   = (usePeriod ? 0 : 1);
 
-  if (!usePeriod) {
-    attr->freq          = 1;
-  } else {
-    attr->freq          = 0;
-  }
   attr->sample_period = threshold;       /* Period of sampling     */
-
   attr->precise_ip    = get_precise_ip();   /* the precision is either detected automatically
                                               as precise as possible or  on the user's variable.  */
   attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
@@ -342,17 +337,6 @@ perf_attr_init(
     /* Records the callchain */
     attr->sample_type            = sample_type | PERF_SAMPLE_CALLCHAIN;
     attr->exclude_callchain_user = EXCLUDE_CALLCHAIN_USER;
-  } else {
-    attr->sample_type            = sample_type | PERF_SAMPLE_IP;
   }
-  // DEBUG: this attributes are specified in perf tool
-#if 0
-  attr->sample_type = 39;
-  attr->mmap  = 1;
-  attr->mmap2 = 1;
-  attr->inherit = 1;
-  attr->task = 1;
-  attr->comm = 1;
-#endif
   return true;
 }

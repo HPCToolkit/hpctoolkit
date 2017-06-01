@@ -60,6 +60,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <math.h>
 
 #include <sys/syscall.h> 
 #include <sys/stat.h>
@@ -146,22 +147,15 @@
 #define PATH_KERNEL_KPTR_RESTICT    "/proc/sys/kernel/kptr_restrict"
 #define PATH_KERNEL_PERF_PARANOID   "/proc/sys/kernel/perf_event_paranoid"
 
+
 //******************************************************************************
 // type declarations
 //******************************************************************************
-
 
 typedef struct perf_event_callchain_s {
   u64 nr;        /* number of IPs */ 
   u64 ips[];     /* vector of IPs */
 } pe_callchain_t;
-
-
-/******************************************************************************
- * external thread-local variables
- *****************************************************************************/
-
-
 
 
 //******************************************************************************
@@ -207,10 +201,6 @@ static const char * equals_separator =
 
 static sigset_t sig_mask;
 
-// Special case to make perf init a soft failure.
-// Make sure that we don't use perf if it won't work.
-static int perf_unavail = 0;
-
 
 // a list of main description of events, shared between threads
 // once initialize, this list doesn't change (but event description can change)
@@ -229,9 +219,6 @@ static event_thread_t   __thread   *event_thread;
 // private operations 
 //******************************************************************************
 
-
-
-
 //----------------------------------------------------------
 // stop all events
 //----------------------------------------------------------
@@ -240,19 +227,51 @@ perf_stop(event_thread_t event)
 {
   if ( event.fd >= 0 ) {
     monitor_real_pthread_sigmask(SIG_BLOCK, &sig_mask, NULL);
+
+    // ------------------------------
     // disable the counter
+    // ------------------------------
     int ret = ioctl(event.fd, PERF_EVENT_IOC_DISABLE, 0);
     if (ret == -1) {
       EMSG("Warning: cannot disable counter fd %d: %s,", 
             event.fd, strerror(errno));
     }
     TMSG(LINUX_PERF, "disabled: %d", event.fd);
+
+    // ------------------------------
+    // close the counter
+    // ------------------------------
     ret = close(event.fd);
     if (ret == -1) {
       EMSG("Error while closing fd %d: %s", 
             event.fd, strerror(errno));
     }
     TMSG(LINUX_PERF, "closed: %d", event.fd);
+
+    // ------------------------------
+    // finalizing the variance
+    // ------------------------------
+    /*
+     * using Knuth approach. see https://math.stackexchange.com/questions/198336/how-to-calculate-standard-deviation-with-streaming-inputs
+    def online_variance(data):
+        n = 0
+        mean = 0.0
+        M2 = 0.0
+
+        for x in data:
+            n += 1
+            delta = x - mean
+            mean += delta/n
+            M2 += delta*(x - mean)
+
+        if n < 2:
+            return float('nan')
+        else:
+            return M2 / (n - 1)
+    */
+    metric_aux_info_t *info_aux = &(event.event->metric_desc->info_data);
+    if (info_aux->num_samples > 1)
+      info_aux->threshold_stdev = sqrt(info_aux->threshold_stdev / (info_aux->num_samples-1));
   }
 }
 
@@ -262,7 +281,7 @@ perf_stop(event_thread_t event)
 //----------------------------------------------------------
 
 static bool
-perf_event_avail()
+is_perf_event_unavailable()
 {
   static int checked = PERF_EVENT_AVAILABLE_UNKNOWN;
   
@@ -279,7 +298,7 @@ perf_event_avail()
     break;
   }
 
-  return (checked == PERF_EVENT_AVAILABLE_YES);     
+  return (checked != PERF_EVENT_AVAILABLE_YES);
 }
 
 
@@ -437,8 +456,6 @@ METHOD_FN(init)
 {
   TMSG(LINUX_PERF, "%d: init", self->sel_idx);
 
-  perf_unavail = ( !perf_event_avail() );
-
   // checking the option of multiplexing:
   // the env variable is set by hpcrun or by user (case for static exec)
 
@@ -484,7 +501,9 @@ METHOD_FN(start)
 {
   TMSG(LINUX_PERF, "%d: start", self->sel_idx);
 
-  if (perf_unavail) { 
+  // Special case to make perf init a soft failure.
+  // Make sure that we don't use perf if it won't work.
+  if (is_perf_event_unavailable()) {
     return; 
   }
 
@@ -526,7 +545,7 @@ static void
 METHOD_FN(thread_fini_action)
 {
   TMSG(LINUX_PERF, "%d: unregister thread", self->sel_idx);
-  if (perf_unavail) { return; }
+  if (is_perf_event_unavailable()) { return; }
 
   TMSG(LINUX_PERF, "%d: unregister thread OK", self->sel_idx);
 }
@@ -540,7 +559,7 @@ METHOD_FN(stop)
 {
   TMSG(LINUX_PERF, "%d: stop", self->sel_idx);
 
-  if (perf_unavail) return; 
+  if (is_perf_event_unavailable()) return;
 
   source_state_t my_state = TD_GET(ss_state)[self->sel_idx];
   if (my_state == STOP) {
@@ -574,7 +593,7 @@ METHOD_FN(shutdown)
 {
   TMSG(LINUX_PERF, "shutdown");
 
-  if (perf_unavail) { return; }
+  if (is_perf_event_unavailable()) { return; }
 
   METHOD_CALL(self, stop); // make sure stop has been called
   // FIXME: add component shutdown code here
@@ -606,7 +625,7 @@ METHOD_FN(supports_event, const char *ev_str)
   pfmu_init();
 #endif
 
-  if (perf_unavail) { return false; }
+  if (is_perf_event_unavailable()) { return false; }
 
   if (self->state == UNINIT){
     METHOD_CALL(self, init);
@@ -637,7 +656,7 @@ static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
   TMSG(LINUX_PERF, "process event list");
-  if (perf_unavail) { return; }
+  if (is_perf_event_unavailable()) { return; }
 
   metric_desc_properties_t prop = metric_property_none;
   char *event;
@@ -647,9 +666,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // TODO: stupid way to count the number of events
 
-  for (event = start_tok(evlist); more_tok(); event = next_tok()) {
-    num_events++;
-  }
+  for (event = start_tok(evlist); more_tok(); event = next_tok(), num_events++);
+
   // manually, setup the number of events. In theory, this is to be done
   //  automatically. But in practice, it didn't. Not sure why.
   self->evl.nevents = num_events;
@@ -702,7 +720,10 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     bool is_period = (period_type == 1);
 
-    // Normal perf event: initialize the event attributes
+    // ------------------------------------------------------------
+    // initialize the perf event attributes
+    // all threads and file descriptor will reuse the same attributes.
+    // ------------------------------------------------------------
     perf_attr_init(event_code, event_type, &(event_desc[i].attr), is_period, threshold, 0);
 
     // ------------------------------------------------------------
@@ -719,7 +740,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     event_desc[i].metric = hpcrun_new_metric();
    
     // ------------------------------------------------------------
-    // if we use frequency (event_type=1) then the periodd is not deterministic, 
+    // if we use frequency (event_type=1) then the period is not deterministic,
     // it can change dynamically. In this case, the period is 1
     // ------------------------------------------------------------
     if (!is_period) {
@@ -733,7 +754,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (m == NULL) {
       EMSG("Error: unable to create metric #%d: %s", index, name);
     } else {
-    		m->info_data.is_frequency = (event_desc[i].attr.freq == 1);
+      m->info_data.is_frequency = (event_desc[i].attr.freq == 1);
     }
     event_desc[i].metric_desc = m;
   }
@@ -757,7 +778,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
-  if (perf_event_avail()) {
+  if (is_perf_event_unavailable()) {
     printf(equals_separator);
     printf("Available Linux perf events\n");
     printf(equals_separator);
@@ -878,7 +899,6 @@ perf_event_handler(
   // store the metric if the metric index is correct
   if ( current != NULL ) {
     // reading info from mmapped buffer
-    int num_mmap  = 0;
     int more_data = 0;
 
     do {// ----------------------------------------------------------------------------
@@ -926,10 +946,10 @@ perf_event_handler(
 
       // case of multiplexed or frequency-based sampling, we need to store the mean and
       // the standard deviation of the sampling period
-      double prev_mean             = info_aux->threshold_mean;
       info_aux->num_samples++;
-      info_aux->threshold_mean    += (counter-info_aux->threshold_mean) / info_aux->num_samples;
-      info_aux->threshold_stdev   += (counter-info_aux->threshold_mean) * (counter-prev_mean);
+      double delta				   = counter - info_aux->threshold_mean;
+      info_aux->threshold_mean    += delta / info_aux->num_samples;
+      info_aux->threshold_stdev   += delta * (counter-info_aux->threshold_mean);
 
       // ----------------------------------------------------------------------------
       // update the cct and add callchain if necessary
@@ -948,9 +968,7 @@ perf_event_handler(
       }
       //blame_shift_apply( current->event->metric, sv.sample_node, 1 /*metricIncr*/);
 
-      num_mmap++;
-
-    } while (more_data && num_mmap<3);
+    } while (more_data);
 #if LINUX_PERF_DEBUG
     // this part is for debugging purpose
     if (current->event->attr.freq == 0) {
