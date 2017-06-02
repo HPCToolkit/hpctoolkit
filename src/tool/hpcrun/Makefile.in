@@ -485,7 +485,6 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind-interval.c \
 	unwind/x86-family/x86-unwind-interval-fixup.c \
 	unwind/x86-family/x86-unwind.c \
-	unwind/x86-family/x86-libunwind.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-gcc-main64.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
@@ -623,7 +622,6 @@ am__objects_33 = $(am__objects_31) \
 	unwind/x86-family/libhpcrun_la-x86-unwind-interval.lo \
 	unwind/x86-family/libhpcrun_la-x86-unwind-interval-fixup.lo \
 	unwind/x86-family/libhpcrun_la-x86-unwind.lo \
-	unwind/x86-family/libhpcrun_la-x86-libunwind.lo \
 	unwind/x86-family/libhpcrun_la-x86-unwind-support.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-gcc-main64.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-linux-dlresolver.lo \
@@ -777,7 +775,6 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind-interval.c \
 	unwind/x86-family/x86-unwind-interval-fixup.c \
 	unwind/x86-family/x86-unwind.c \
-	unwind/x86-family/x86-libunwind.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-gcc-main64.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
@@ -912,7 +909,6 @@ am__objects_56 = $(am__objects_54) \
 	unwind/x86-family/libhpcrun_o-x86-unwind-interval.$(OBJEXT) \
 	unwind/x86-family/libhpcrun_o-x86-unwind-interval-fixup.$(OBJEXT) \
 	unwind/x86-family/libhpcrun_o-x86-unwind.$(OBJEXT) \
-	unwind/x86-family/libhpcrun_o-x86-libunwind.$(OBJEXT) \
 	unwind/x86-family/libhpcrun_o-x86-unwind-support.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-gcc-main64.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-linux-dlresolver.$(OBJEXT) \
@@ -1420,7 +1416,6 @@ UNW_X86_FILES = \
 	unwind/x86-family/x86-unwind-interval.c		\
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
 	unwind/x86-family/x86-unwind.c		        \
-	unwind/x86-family/x86-libunwind.c               \
 	unwind/x86-family/x86-unwind-support.c		\
 	unwind/x86-family/manual-intervals/x86-gcc-main64.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
@@ -1433,6 +1428,8 @@ UNW_X86_FILES = \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c
 
+
+# unwind/x86-family/x86-libunwind.c  # presently unused on x86
 UNW_X86_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/x86-family	\
 	-I$(XED2_INC)
@@ -2429,9 +2426,6 @@ unwind/x86-family/libhpcrun_la-x86-unwind-interval-fixup.lo:  \
 unwind/x86-family/libhpcrun_la-x86-unwind.lo:  \
 	unwind/x86-family/$(am__dirstamp) \
 	unwind/x86-family/$(DEPDIR)/$(am__dirstamp)
-unwind/x86-family/libhpcrun_la-x86-libunwind.lo:  \
-	unwind/x86-family/$(am__dirstamp) \
-	unwind/x86-family/$(DEPDIR)/$(am__dirstamp)
 unwind/x86-family/libhpcrun_la-x86-unwind-support.lo:  \
 	unwind/x86-family/$(am__dirstamp) \
 	unwind/x86-family/$(DEPDIR)/$(am__dirstamp)
@@ -2785,9 +2779,6 @@ unwind/x86-family/libhpcrun_o-x86-unwind-interval-fixup.$(OBJEXT):  \
 	unwind/x86-family/$(am__dirstamp) \
 	unwind/x86-family/$(DEPDIR)/$(am__dirstamp)
 unwind/x86-family/libhpcrun_o-x86-unwind.$(OBJEXT):  \
-	unwind/x86-family/$(am__dirstamp) \
-	unwind/x86-family/$(DEPDIR)/$(am__dirstamp)
-unwind/x86-family/libhpcrun_o-x86-libunwind.$(OBJEXT):  \
 	unwind/x86-family/$(am__dirstamp) \
 	unwind/x86-family/$(DEPDIR)/$(am__dirstamp)
 unwind/x86-family/libhpcrun_o-x86-unwind-support.$(OBJEXT):  \
@@ -3183,7 +3174,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/$(DEPDIR)/libhpcrun_la-amd-xop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/$(DEPDIR)/libhpcrun_la-x86-all.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/$(DEPDIR)/libhpcrun_la-x86-cold-path.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/$(DEPDIR)/libhpcrun_la-x86-libunwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/$(DEPDIR)/libhpcrun_la-x86-unwind-interval-fixup.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/$(DEPDIR)/libhpcrun_la-x86-unwind-interval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/$(DEPDIR)/libhpcrun_la-x86-unwind-support.Plo@am__quote@
@@ -3192,7 +3182,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/$(DEPDIR)/libhpcrun_o-amd-xop.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/$(DEPDIR)/libhpcrun_o-x86-all.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/$(DEPDIR)/libhpcrun_o-x86-cold-path.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/$(DEPDIR)/libhpcrun_o-x86-libunwind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/$(DEPDIR)/libhpcrun_o-x86-unwind-interval-fixup.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/$(DEPDIR)/libhpcrun_o-x86-unwind-interval.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/$(DEPDIR)/libhpcrun_o-x86-unwind-support.Po@am__quote@
@@ -4287,13 +4276,6 @@ unwind/x86-family/libhpcrun_la-x86-unwind.lo: unwind/x86-family/x86-unwind.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/x86-unwind.c' object='unwind/x86-family/libhpcrun_la-x86-unwind.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/libhpcrun_la-x86-unwind.lo `test -f 'unwind/x86-family/x86-unwind.c' || echo '$(srcdir)/'`unwind/x86-family/x86-unwind.c
-
-unwind/x86-family/libhpcrun_la-x86-libunwind.lo: unwind/x86-family/x86-libunwind.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/x86-family/libhpcrun_la-x86-libunwind.lo -MD -MP -MF unwind/x86-family/$(DEPDIR)/libhpcrun_la-x86-libunwind.Tpo -c -o unwind/x86-family/libhpcrun_la-x86-libunwind.lo `test -f 'unwind/x86-family/x86-libunwind.c' || echo '$(srcdir)/'`unwind/x86-family/x86-libunwind.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/$(DEPDIR)/libhpcrun_la-x86-libunwind.Tpo unwind/x86-family/$(DEPDIR)/libhpcrun_la-x86-libunwind.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/x86-libunwind.c' object='unwind/x86-family/libhpcrun_la-x86-libunwind.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/libhpcrun_la-x86-libunwind.lo `test -f 'unwind/x86-family/x86-libunwind.c' || echo '$(srcdir)/'`unwind/x86-family/x86-libunwind.c
 
 unwind/x86-family/libhpcrun_la-x86-unwind-support.lo: unwind/x86-family/x86-unwind-support.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/x86-family/libhpcrun_la-x86-unwind-support.lo -MD -MP -MF unwind/x86-family/$(DEPDIR)/libhpcrun_la-x86-unwind-support.Tpo -c -o unwind/x86-family/libhpcrun_la-x86-unwind-support.lo `test -f 'unwind/x86-family/x86-unwind-support.c' || echo '$(srcdir)/'`unwind/x86-family/x86-unwind-support.c
@@ -5953,20 +5935,6 @@ unwind/x86-family/libhpcrun_o-x86-unwind.obj: unwind/x86-family/x86-unwind.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/x86-unwind.c' object='unwind/x86-family/libhpcrun_o-x86-unwind.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/libhpcrun_o-x86-unwind.obj `if test -f 'unwind/x86-family/x86-unwind.c'; then $(CYGPATH_W) 'unwind/x86-family/x86-unwind.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/x86-unwind.c'; fi`
-
-unwind/x86-family/libhpcrun_o-x86-libunwind.o: unwind/x86-family/x86-libunwind.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/libhpcrun_o-x86-libunwind.o -MD -MP -MF unwind/x86-family/$(DEPDIR)/libhpcrun_o-x86-libunwind.Tpo -c -o unwind/x86-family/libhpcrun_o-x86-libunwind.o `test -f 'unwind/x86-family/x86-libunwind.c' || echo '$(srcdir)/'`unwind/x86-family/x86-libunwind.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/$(DEPDIR)/libhpcrun_o-x86-libunwind.Tpo unwind/x86-family/$(DEPDIR)/libhpcrun_o-x86-libunwind.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/x86-libunwind.c' object='unwind/x86-family/libhpcrun_o-x86-libunwind.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/libhpcrun_o-x86-libunwind.o `test -f 'unwind/x86-family/x86-libunwind.c' || echo '$(srcdir)/'`unwind/x86-family/x86-libunwind.c
-
-unwind/x86-family/libhpcrun_o-x86-libunwind.obj: unwind/x86-family/x86-libunwind.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/libhpcrun_o-x86-libunwind.obj -MD -MP -MF unwind/x86-family/$(DEPDIR)/libhpcrun_o-x86-libunwind.Tpo -c -o unwind/x86-family/libhpcrun_o-x86-libunwind.obj `if test -f 'unwind/x86-family/x86-libunwind.c'; then $(CYGPATH_W) 'unwind/x86-family/x86-libunwind.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/x86-libunwind.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/$(DEPDIR)/libhpcrun_o-x86-libunwind.Tpo unwind/x86-family/$(DEPDIR)/libhpcrun_o-x86-libunwind.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/x86-libunwind.c' object='unwind/x86-family/libhpcrun_o-x86-libunwind.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/libhpcrun_o-x86-libunwind.obj `if test -f 'unwind/x86-family/x86-libunwind.c'; then $(CYGPATH_W) 'unwind/x86-family/x86-libunwind.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/x86-libunwind.c'; fi`
 
 unwind/x86-family/libhpcrun_o-x86-unwind-support.o: unwind/x86-family/x86-unwind-support.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/libhpcrun_o-x86-unwind-support.o -MD -MP -MF unwind/x86-family/$(DEPDIR)/libhpcrun_o-x86-unwind-support.Tpo -c -o unwind/x86-family/libhpcrun_o-x86-unwind-support.o `test -f 'unwind/x86-family/x86-unwind-support.c' || echo '$(srcdir)/'`unwind/x86-family/x86-unwind-support.c
