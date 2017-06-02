@@ -248,12 +248,16 @@ hpcrun_sample_callpath(void* context, int metricId,
     hpcrun_cleanup_partial_unwind();
   }
 
+
   ret.sample_node = node;
 
   bool trace_ok = ! td->deadlock_drop;
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
   if (trace_ok && hpcrun_trace_isactive()) {
     TMSG(TRACE, "Sample event encountered");
+
+    // trace the function of the innermost frame rather than the PC in the innermost frame
+    leaf_func = td->btbuf_beg->the_function; 
 
     cct_addr_t frm = { .ip_norm = leaf_func };
     cct_node_t* parent = hpcrun_cct_parent(node); 
