@@ -312,8 +312,8 @@ libunw_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
   unw_cursor_t c;
   unw_init_local_signal(&c, &uc);
   unw_set_reg(&c, UNW_REG_IP, (intptr_t)beg_insn);
-  void *space[3];		// enough space for any binarytree
-  bitree_uwi_t *dummy = (bitree_uwi_t*)&space;
+  void *space[2];		// enough space for any binarytree
+  bitree_uwi_t *dummy = (bitree_uwi_t*)space;
   struct builder b = {m_alloc, dummy, 0};
   unw_reg_states_iterate(&c, dwarf_reg_states_callback, &b);
   bitree_uwi_set_rightsubtree(b.latest, NULL);
