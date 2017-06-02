@@ -233,7 +233,7 @@ hpcrun_sample_callpath(void* context, int metricId,
   if (ljmp == 0) {
     if (epoch != NULL) {
       node = help_hpcrun_sample_callpath(epoch, context, &leaf_func, metricId, metricIncr,
-					 skipInner, isSync);
+					 skipInner, isSync);  
 
       if (ENABLED(DUMP_BACKTRACES)) {
 	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
