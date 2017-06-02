@@ -103,7 +103,6 @@
 
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
-#include "main.h"
 
 
 //****************************************************************************

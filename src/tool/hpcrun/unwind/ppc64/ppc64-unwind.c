@@ -66,7 +66,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <hpcrun/main.h>
 #include <unwind/common/unwind.h>
 #include <unwind/common/unw-datatypes.h>
 

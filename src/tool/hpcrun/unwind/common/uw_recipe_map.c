@@ -79,6 +79,7 @@
 // local include files
 //---------------------------------------------------------------------
 #include <memory/hpcrun-malloc.h>
+#include <main.h>
 #include "uw_recipe_map.h"
 #include "unwind-interval.h"
 #include <fnbounds/fnbounds_interface.h>

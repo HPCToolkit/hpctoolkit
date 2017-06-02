@@ -42,59 +42,34 @@ bitree_uwi_init()
 }
 
 // constructors
-static bitree_uwi_t *
-bitree_uwi_alloc_from_lft()
-{
-  bitree_uwi_t *top = _lf_uwi_tree;
-  _lf_uwi_tree = bitree_uwi_rightsubtree(top);
-  bitree_uwi_set_rightsubtree(top, NULL);
-  return top;
-}
-
-static void
-bitree_uwi_populate_lft(
-	mem_alloc m_alloc,
-	size_t uwi_recipe_size)
-{
-  mcs_node_t me;
-  bool acquired = mcs_trylock(&GFT_lock, &me);
-  if (acquired) {
-	// the global free list is locked, so use it
-	if (GF_uwi_tree) {
-	  _lf_uwi_tree = GF_uwi_tree;
-	  GF_uwi_tree = bitree_uwi_leftsubtree(_lf_uwi_tree);
-	  mcs_unlock(&GFT_lock, &me);
-	  bitree_uwi_set_leftsubtree(_lf_uwi_tree, NULL);
-	}
-	else {
-	  mcs_unlock(&GFT_lock, &me);
-	}
-  }
-  if (!_lf_uwi_tree)
-    _lf_uwi_tree = (bitree_uwi_t *)binarytree_listalloc(uwi_recipe_size, NUM_NODES, m_alloc);
-}
-
 bitree_uwi_t*
 bitree_uwi_malloc(
 	mem_alloc m_alloc,
 	size_t recipe_size)
 {
   if (!_lf_uwi_tree) {
-	bitree_uwi_populate_lft(m_alloc, sizeof(uwi_t) + recipe_size);
+    mcs_node_t me;
+    if (mcs_trylock(&GFT_lock, &me)) {
+      // the global free list is locked, so use it
+      _lf_uwi_tree = GF_uwi_tree;
+      if (_lf_uwi_tree)
+	GF_uwi_tree = bitree_uwi_leftsubtree(_lf_uwi_tree);
+      mcs_unlock(&GFT_lock, &me);
+      if (_lf_uwi_tree)
+	bitree_uwi_set_leftsubtree(_lf_uwi_tree, NULL);
+    }
+    if (!_lf_uwi_tree)
+      _lf_uwi_tree =
+	(bitree_uwi_t *)binarytree_listalloc(sizeof(uwi_t) + recipe_size, 
+					     NUM_NODES, m_alloc);
   }
 
-#if BTUWI_DEBUG
-  assert(_lf_uwi_tree != NULL);
-#endif
-
-  return bitree_uwi_alloc_from_lft();
-}
-
-// destructor
-void
-bitree_uwi_del(bitree_uwi_t **tree, mem_free m_free)
-{
-  binarytree_del((binarytree_t**) tree, m_free);
+  bitree_uwi_t *top = _lf_uwi_tree;
+  if (top) {
+    _lf_uwi_tree = bitree_uwi_rightsubtree(top);
+    bitree_uwi_set_rightsubtree(top, NULL);
+  }
+  return top;
 }
 
 /*

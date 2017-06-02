@@ -90,9 +90,6 @@ bitree_uwi_init();
 bitree_uwi_t*
 bitree_uwi_malloc(mem_alloc m_alloc, size_t recipe_size);
 
-// destructor
-void bitree_uwi_del(bitree_uwi_t **tree, mem_free m_free);
-
 /*
  * If tree != NULL return tree to global free tree,
  * otherwise do nothing.

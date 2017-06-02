@@ -96,7 +96,6 @@
 
 #include <fnbounds/fnbounds_interface.h>
 #include <messages/messages.h>
-#include <main.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <unwind/common/unw-datatypes.h>
 #include <unwind/common/unwind.h>
@@ -284,10 +283,11 @@ struct builder
   int count;
 };
 
-int dwarf_reg_states_callback(void *token,
-			      void *rs,
-			      size_t size,
-			      unw_word_t start_ip, unw_word_t end_ip)
+int
+dwarf_reg_states_callback(void *token,
+			  void *rs,
+			  size_t size,
+			  unw_word_t start_ip, unw_word_t end_ip)
 {
   struct builder *b = token;
   bitree_uwi_t *u = bitree_uwi_malloc(b->m_alloc, size);
