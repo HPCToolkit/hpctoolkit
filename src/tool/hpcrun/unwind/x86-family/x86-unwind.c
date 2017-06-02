@@ -179,7 +179,6 @@ hpcrun_unw_init(void)
 {
   x86_family_decoder_init();
   uw_recipe_map_init();
-  hpcrun_set_real_siglongjmp();
 }
 
 

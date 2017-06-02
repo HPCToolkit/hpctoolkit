@@ -190,7 +190,6 @@ void
 hpcrun_unw_init(void)
 {
   uw_recipe_map_init();
-  hpcrun_set_real_siglongjmp();
 }
 
 int
