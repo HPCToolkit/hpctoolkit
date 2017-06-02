@@ -237,7 +237,7 @@ hpcrun_sample_callpath(void* context, int metricId,
 
 	if (epoch != NULL) {
 	  node = help_hpcrun_sample_callpath(epoch, context, &leaf_func, metricId, metricIncr,
-		  skipInner, isSync);  // TODO change the interface to return the function containing trace_pc.
+		  skipInner, isSync);  
 
 	  if (ENABLED(DUMP_BACKTRACES)) {
 		hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
@@ -248,6 +248,7 @@ hpcrun_sample_callpath(void* context, int metricId,
     cct_bundle_t* cct = &(td->core_profile_trace_data.epoch->csdata);
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
 				 metricId, metricIncr, skipInner);
+    leaf_func = td->btbuf_beg->the_function; 
     hpcrun_cleanup_partial_unwind();
   }
 
@@ -258,9 +259,6 @@ hpcrun_sample_callpath(void* context, int metricId,
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
   if (trace_ok && hpcrun_trace_isactive()) {
     TMSG(TRACE, "Sample event encountered");
-
-    // trace the function of the innermost frame rather than the PC in the innermost frame
-    leaf_func = td->btbuf_beg->the_function; 
 
     cct_addr_t frm = { .ip_norm = leaf_func };
     TMSG(TRACE,"parent node = %p, &frm = %p", hpcrun_cct_parent(node), &frm);
@@ -297,8 +295,6 @@ static int const PTHREAD_CTXT_SKIP_INNER = 1;
 cct_node_t*
 hpcrun_gen_thread_ctxt(void* context)
 {
-//  void *trace_pc; // unused argument to callee
-
   if (monitor_block_shootdown()) {
     monitor_unblock_shootdown();
     return NULL;
