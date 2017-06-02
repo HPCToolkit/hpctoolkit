@@ -224,9 +224,8 @@ hpcrun_sample_callpath(void* context, int metricId,
   epoch_t* epoch = td->core_profile_trace_data.epoch;
 
   hpcrun_set_handling_sample(td);
-  ip_normalized_t leaf_func;
 
-  void* trace_pc = hpcrun_context_pc(context);
+  ip_normalized_t leaf_func; // trace the function of the innermost frame rather than the PC in the innermost frame
 
   td->btbuf_cur = NULL;
   td->deadlock_drop = false;
@@ -234,7 +233,7 @@ hpcrun_sample_callpath(void* context, int metricId,
   if (ljmp == 0) {
     if (epoch != NULL) {
       node = help_hpcrun_sample_callpath(epoch, context, &leaf_func, metricId, metricIncr,
-					 skipInner, isSync);  // TODO change the interface to return the function containing trace_pc.
+					 skipInner, isSync);
 
       if (ENABLED(DUMP_BACKTRACES)) {
 	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
@@ -245,6 +244,7 @@ hpcrun_sample_callpath(void* context, int metricId,
     cct_bundle_t* cct = &(td->core_profile_trace_data.epoch->csdata);
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
 				 metricId, metricIncr, skipInner);
+    leaf_func = td->btbuf_beg->the_function; 
     hpcrun_cleanup_partial_unwind();
   }
 
@@ -256,8 +256,6 @@ hpcrun_sample_callpath(void* context, int metricId,
   if (trace_ok && hpcrun_trace_isactive()) {
     TMSG(TRACE, "Sample event encountered");
 
-    // trace the function of the innermost frame rather than the PC in the innermost frame
-    leaf_func = td->btbuf_beg->the_function; 
 
     cct_addr_t frm = { .ip_norm = leaf_func };
     cct_node_t* parent = hpcrun_cct_parent(node); 
@@ -269,33 +267,6 @@ hpcrun_sample_callpath(void* context, int metricId,
     // modify the persistent id
     hpcrun_cct_persistent_id_trace_mutate(func_proxy);
     hpcrun_trace_append(&td->core_profile_trace_data, hpcrun_cct_persistent_id(func_proxy), metricId);
-
-#if HPCRUN_DEBUG_TRACING
-    TMSG(TRACE, "pc = %p func start = %p, func_end = %p "
-                "pc_proxy=(lm=%d,ip=%p) proxy pid=%d "
-                "parent node %p (lm=%d,ip=%p) pid=%d",
-                trace_pc,  func_start_pc, func_end_pc, 
-                pc_proxy.lm_id, pc_proxy.lm_ip, hpcrun_cct_persistent_id(func_proxy),
-                parent, 
-                hpcrun_cct_addr(parent)->ip_norm.lm_id, hpcrun_cct_addr(parent)->ip_norm.lm_ip,
-                hpcrun_cct_persistent_id(parent));
-    {
-      int i;
-      cct_node_t* ancestor = parent;
-      for(i = 0; ancestor; i++) { 
-	      cct_addr_t *addr = hpcrun_cct_addr(ancestor);
-	      TMSG(TRACE, "pc = %p "
-                   "pc_proxy=(lm=%d,ip=%p) proxy pid=%d "
-		   "ancestor %d node %p (lm=%d,ip=%p) pid=%d",
-		   trace_pc, 
-		   pc_proxy.lm_id, pc_proxy.lm_ip, hpcrun_cct_persistent_id(func_proxy),
-		   i, ancestor, 
-		   addr->ip_norm.lm_id, addr->ip_norm.lm_ip,
-		   hpcrun_cct_persistent_id(ancestor));
-	      ancestor = hpcrun_cct_parent(ancestor); 
-      }
-    }
-#endif
   }
 
   hpcrun_clear_handling_sample(td);
@@ -318,8 +289,6 @@ static int const PTHREAD_CTXT_SKIP_INNER = 1;
 cct_node_t*
 hpcrun_gen_thread_ctxt(void* context)
 {
-//  void *trace_pc; // unused argument to callee
-
   if (monitor_block_shootdown()) {
     monitor_unblock_shootdown();
     return NULL;
