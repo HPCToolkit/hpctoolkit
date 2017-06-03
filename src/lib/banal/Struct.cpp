@@ -878,27 +878,33 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
   svec.clear();
 
   // try the Module in sym_func first as a hint
-  Module * mod = NULL;
-
   if (sym_func != NULL) {
-    mod = sym_func->getModule();
-  }
-  if (mod != NULL) {
-    mod->getSourceLines(svec, vma);
-    if (! svec.empty()) {
-      return;
+    Module * mod = sym_func->getModule();
+
+    if (mod != NULL) {
+      mod->getSourceLines(svec, vma);
     }
   }
 
   // else look for other modules
-  set <Module *> modSet;
-  the_symtab->findModuleByOffset(modSet, vma);
+  if (svec.empty()) {
+    set <Module *> modSet;
+    the_symtab->findModuleByOffset(modSet, vma);
 
-  for (auto mit = modSet.begin(); mit != modSet.end(); ++mit) {
-    (*mit)->getSourceLines(svec, vma);
-    if (! svec.empty()) {
-      break;
+    for (auto mit = modSet.begin(); mit != modSet.end(); ++mit) {
+      (*mit)->getSourceLines(svec, vma);
+      if (! svec.empty()) {
+	break;
+      }
     }
+  }
+
+  // make sure file and line are either both known or both unknown.
+  // this case probably never happens, but we do want to rely on it.
+  if (! svec.empty()
+      && (svec[0]->getFile() == "" || svec[0]->getLine() == 0))
+  {
+    svec.clear();
   }
 }
 

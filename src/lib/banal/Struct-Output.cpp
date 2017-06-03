@@ -59,10 +59,9 @@
 // FIXME and TODO:
 //
 // 5. Add full vma ranges for <P> proc tags.
+// ---> is this needed ?
 //
 // 7. Fix targ401420 names in <P> tags.
-//
-// 12. Better method for proc line num.
 //
 // 13. Handle unknown file/line more explicitly.
 //
@@ -289,7 +288,9 @@ printProc(ostream * os, FileInfo * finfo, GroupInfo * ginfo,
 // subtrees and guard aliens.
 //
 // Note: 'scope' is the enclosing file scope such that stmts and loops
-// that don't match this scope require a guard alien.
+// that don't match this scope require a guard alien.  This includes
+// stmts with an earlier line number (hpcprof reacts badly to this
+// inside a proc scope).
 //
 static void
 doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
@@ -303,7 +304,10 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
   // name.  the ones that don't match the enclosing scope require a
   // guard alien.  this doesn't apply to inline subtrees.
   //
+  // localNode contains the stmts and loops without a guard alien.
+  //
   AlienMap alienMap;
+  TreeNode localNode;
 
   // divide stmts by file name
   for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
@@ -311,20 +315,26 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     VMA vma = sinfo->vma;
     TreeNode * node;
 
-    // stmts with unknown file/line do not need a guard alien
-    long base_index = sinfo->base_index;
-    if (sinfo->line_num == 0) {
-      base_index = scope.base_index;
-    }
-
-    auto ait = alienMap.find(base_index);
-    if (ait != alienMap.end()) {
-      node = ait->second;
+    // use guard alien if files don't match or if earlier line number
+    // in same file (but must be known).  stmts with unknown file/line
+    // do not need a guard alien.
+    if (sinfo->line_num > 0
+	&& (sinfo->base_index != scope.base_index || sinfo->line_num < scope.line_num))
+    {
+      auto ait = alienMap.find(sinfo->base_index);
+      if (ait != alienMap.end()) {
+	node = ait->second;
+      }
+      else {
+	node = new TreeNode(sinfo->file_index);
+	alienMap[sinfo->base_index] = node;
+      }
     }
     else {
-      node = new TreeNode(sinfo->file_index);
-      alienMap[base_index] = node;
+      // not a guard alien
+      node = &localNode;
     }
+
     node->stmtMap[vma] = sinfo;
   }
 
@@ -333,36 +343,34 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     LoopInfo * linfo = *lit;
     TreeNode * node;
 
-    // loops with unknown file/line do not need a guard alien
-    long base_index = linfo->base_index;
-    if (linfo->line_num == 0) {
-      base_index = scope.base_index;
-    }
-
-    auto ait = alienMap.find(base_index);
-    if (ait != alienMap.end()) {
-      node = ait->second;
+    // use guard alien if files don't match or if earlier line number
+    // in same file (but must be known).  loops with unknown file/line
+    // do not need a guard alien.
+    if (linfo->line_num > 0
+	&& (linfo->base_index != scope.base_index || linfo->line_num < scope.line_num))
+    {
+      auto ait = alienMap.find(linfo->base_index);
+      if (ait != alienMap.end()) {
+	node = ait->second;
+      }
+      else {
+	node = new TreeNode(linfo->file_index);
+	alienMap[linfo->base_index] = node;
+      }
     }
     else {
-      node = new TreeNode(linfo->file_index);
-      alienMap[base_index] = node;
+      // not a guard alien
+      node = &localNode;
     }
+
     node->loopList.push_back(linfo);
   }
 
-  // first, print the stmts and loops that don't need a guard alien.
-  // delete the one tree node and remove it from the map.
-  auto ait = alienMap.find(scope.base_index);
-
-  if (ait != alienMap.end()) {
-    TreeNode * node = ait->second;
-
-    doStmtList(os, depth, node);
-    doLoopList(os, depth, node, strTab);
-    alienMap.erase(ait);
-    node->clear();
-    delete node;
-  }
+  // first, print the stmts and loops that don't need a guard alien
+  // and delete the local tree.
+  doStmtList(os, depth, &localNode);
+  doLoopList(os, depth, &localNode, strTab);
+  localNode.clear();
 
   // second, print the stmts and loops that do need a guard alien and
   // delete the remaining tree nodes.
