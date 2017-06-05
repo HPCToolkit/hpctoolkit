@@ -143,20 +143,6 @@ binarytree_set_rightsubtree(
 int
 binarytree_count(binarytree_t *node);
 
-// linearize a binary tree in order traversal into a vector
-void
-binarytree_to_vector(binarytree_t *nvec[], binarytree_t *tree);
-
-// construct a balanced binary tree from a vector of nodes.
-// post-condition: 0 <= |height(left subtree) - height(right subtree)| <= 1
-binarytree_t *
-vector_to_binarytree(binarytree_t *nvec[], int l, int u);
-
-// perform bulk rebalancing by gathering nodes into a vector and
-// rebuilding the tree from scratch using the same nodes.
-binarytree_t *
-binarytree_rebalance(binarytree_t *tree, int count);
-
 // given a tree that is a list, with all left children empty,
 // restructure to make a balanced tree
 binarytree_t *

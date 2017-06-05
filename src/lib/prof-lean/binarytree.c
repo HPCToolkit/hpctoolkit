@@ -103,25 +103,6 @@ typedef struct binarytree_s {
 // private operations
 //******************************************************************************
 
-// perform an in order traversal and collect nodes into a vector
-static void
-tree_to_vector_helper
-(binarytree_t *nvec[],
- binarytree_t *node,
- int *count)
-{
-  if (node) {
-    // add nodes in left subtree to vector
-    tree_to_vector_helper(nvec, node->left,  count);
-
-    // add subtree root to vector
-    nvec[(*count)++] = node;
-
-    // add nodes in right subtree to vector
-    tree_to_vector_helper(nvec, node->right, count);
-  }
-}
-
 static void
 subtree_tostr2(binarytree_t *subtree, val_tostr tostr, char valstr[],
 			   char* left_lead, char result[])
@@ -224,45 +205,6 @@ binarytree_count(binarytree_t *tree)
 {
   return tree?
 	  binarytree_count(tree->left) + binarytree_count(tree->right) + 1: 0;
-}
-
-void
-binarytree_to_vector(binarytree_t *nvec[], binarytree_t *tree)
-{
-  int count = 0;
-  tree_to_vector_helper(nvec, tree, &count);
-}
-
-// post-condition: 0 <= |depth(left subtree) - depth(right subtree)| <= 1
-binarytree_t *
-vector_to_binarytree(binarytree_t *nvec[], int lo, int hi)
-{
-  // the midpoint of the subvector is the root of the subtree
-  int mid = ((hi - lo) >> 1) + lo;
-  binarytree_t *root = nvec[mid];
-
-  // build left subtree, if any, from nodes to the left of the midpoint
-  root->left  = (mid != lo) ? vector_to_binarytree(nvec, lo, mid - 1) : NULL;
-
-  // build right subtree, if any, from nodes to the right of the midpoint
-  root->right = (mid != hi) ? vector_to_binarytree(nvec, mid + 1, hi) : NULL;
-
-  return root;
-}
-
-binarytree_t *
-binarytree_rebalance(binarytree_t * root, int count)
-{
-  if (!root) return root;
-
-  int n = count < 0 ? binarytree_count(root) : count;
-
-  // collect tree nodes in order into a vector
-  binarytree_t *vec[n];
-  binarytree_to_vector(vec, root);
-
-  // construct a balanced binary tree from an ordered vector of nodes
-  return vector_to_binarytree(vec, 0, n - 1);
 }
 
 binarytree_t *
