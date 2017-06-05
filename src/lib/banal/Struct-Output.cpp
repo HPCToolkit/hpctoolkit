@@ -366,11 +366,8 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     node->loopList.push_back(linfo);
   }
 
-  // first, print the stmts and loops that don't need a guard alien
-  // and delete the local tree.
+  // first, print the stmts with no alien
   doStmtList(os, depth, &localNode);
-  doLoopList(os, depth, &localNode, strTab);
-  localNode.clear();
 
   // second, print the stmts and loops that do need a guard alien and
   // delete the remaining tree nodes.
@@ -402,6 +399,10 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     delete node;
   }
   alienMap.clear();
+
+  // third, print the loops with no alien
+  doLoopList(os, depth, &localNode, strTab);
+  localNode.clear();
 
   // inline call sites, use double alien
   for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
