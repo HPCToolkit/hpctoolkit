@@ -276,10 +276,7 @@ static void
 ilmstat_btuwi_pair_free(ilmstat_btuwi_pair_t* pair)
 {
   if (!pair) return;
-
-  bitree_uwi_t *btuwi = pair->btuwi;
-  pair->btuwi = NULL;
-  bitree_uwi_free(btuwi);
+  bitree_uwi_free(pair->btuwi);
 
   // add pair to the front of the  global free list of ilmstat_btuwi_pair_t*:
   mcs_node_t me;
