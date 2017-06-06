@@ -248,8 +248,7 @@ ilmstat_btuwi_pair_malloc(
     if (!_lf_ilmstat_btuwi) {
       /* add a bunch of nodes to _lf_ilmstat_btuwi */
       for (int i = 0; i < NUM_NODES; i++) {
-	ilmstat_btuwi_pair_t *node =
-	  ilmstat_btuwi_pair_build(0, 0, NULL, DEFERRED, NULL, m_alloc);
+	ilmstat_btuwi_pair_t *node = m_alloc(sizeof(*node));
 	push_free_pair(&_lf_ilmstat_btuwi, node);
       }
     }
