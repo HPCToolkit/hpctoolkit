@@ -133,7 +133,6 @@
 //******************************************************************************
 
 typedef struct ilmstat_btuwi_pair_s {
-  struct ilmstat_btuwi_pair_s *next;
   ildmod_stat_t *ilmstat;
   bitree_uwi_t *btuwi;
 } ilmstat_btuwi_pair_t;
@@ -190,7 +189,6 @@ ilmstat__btuwi_pair_init(ilmstat_btuwi_pair_t *node,
   ilmstat->interval.start = start;
   ilmstat->interval.end = end;
   node->btuwi = tree;
-  node->next = NULL;
   return node;
 }
 
@@ -201,6 +199,21 @@ ilmstat_btuwi_pair_build(uintptr_t start, uintptr_t end, load_module_t *ldmod,
   ilmstat_btuwi_pair_t* node = m_alloc(sizeof(*node));
   node->ilmstat = m_alloc(sizeof(*node->ilmstat));
   return ilmstat__btuwi_pair_init(node, treestat, ldmod, start, end, tree);
+}
+
+static inline void
+push_free_pair(ilmstat_btuwi_pair_t **list, ilmstat_btuwi_pair_t *pair)
+{
+  pair->btuwi = (bitree_uwi_t *)*list;
+  *list = pair;
+}
+
+static inline ilmstat_btuwi_pair_t *
+pop_free_pair(ilmstat_btuwi_pair_t **list)
+{
+  ilmstat_btuwi_pair_t *head = *list;
+  *list = (ilmstat_btuwi_pair_t *)head->btuwi;
+  return head;
 }
 
 static ilmstat_btuwi_pair_t*
@@ -226,10 +239,8 @@ ilmstat_btuwi_pair_malloc(
 	// transfer a bunch of nodes the global free list to the local free list
 	int n = 0;
 	while (GF_ilmstat_btuwi && n < NUM_NODES) {
-	  ilmstat_btuwi_pair_t *head = GF_ilmstat_btuwi;
-	  GF_ilmstat_btuwi = GF_ilmstat_btuwi->next;
-	  head->next = _lf_ilmstat_btuwi;
-	  _lf_ilmstat_btuwi = head;
+	  ilmstat_btuwi_pair_t *head = pop_free_pair(&GF_ilmstat_btuwi);
+	  push_free_pair(&_lf_ilmstat_btuwi, head);
 	  n++;
 	}
       }
@@ -240,8 +251,7 @@ ilmstat_btuwi_pair_malloc(
       for (int i = 0; i < NUM_NODES; i++) {
 	ilmstat_btuwi_pair_t *node =
 	  ilmstat_btuwi_pair_build(0, 0, NULL, DEFERRED, NULL, m_alloc);
-	node->next = _lf_ilmstat_btuwi;
-	_lf_ilmstat_btuwi = node;
+	push_free_pair(&_lf_ilmstat_btuwi, node);
       }
     }
   }
@@ -255,8 +265,7 @@ ilmstat_btuwi_pair_malloc(
  * set its fields using the appropriate parameters
  * return the head node.
  */
-  ilmstat_btuwi_pair_t *ans = _lf_ilmstat_btuwi;
-  _lf_ilmstat_btuwi = _lf_ilmstat_btuwi->next;
+  ilmstat_btuwi_pair_t *ans = pop_free_pair(&_lf_ilmstat_btuwi);
   return ilmstat__btuwi_pair_init(ans, treestat, ldmod, start, end, tree);
 }
 
@@ -276,8 +285,7 @@ ilmstat_btuwi_pair_free(ilmstat_btuwi_pair_t* pair)
   // add pair to the front of the  global free list of ilmstat_btuwi_pair_t*:
   mcs_node_t me;
   mcs_lock(&GFL_lock, &me);
-  pair->next = GF_ilmstat_btuwi;
-  GF_ilmstat_btuwi = pair;
+  push_free_pair(&GF_ilmstat_btuwi, pair);
   mcs_unlock(&GFL_lock, &me);
 }
 
