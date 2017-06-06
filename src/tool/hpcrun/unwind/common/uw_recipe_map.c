@@ -86,7 +86,6 @@
 #include <lib/prof-lean/cskiplist.h>
 #include <lib/prof-lean/mcs-lock.h>
 #include <lib/prof-lean/binarytree.h>
-#include "ildmod_stat.h"
 #include "binarytree_uwi.h"
 #include "segv_handler.h"
 #include <messages/messages.h>
