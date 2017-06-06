@@ -269,9 +269,9 @@ perf_stop(event_thread_t event)
         else:
             return M2 / (n - 1)
     */
-    metric_aux_info_t *info_aux = &(event.event->metric_desc->info_data);
-    if (info_aux->num_samples > 1)
-      info_aux->threshold_stdev = sqrt(info_aux->threshold_stdev / (info_aux->num_samples-1));
+    //metric_aux_info_t *info_aux = &(event.event->metric_desc->info_data);
+    //if (info_aux->num_samples > 1)
+    //  info_aux->threshold_stdev = sqrt(info_aux->threshold_stdev / (info_aux->num_samples-1));
   }
 }
 
@@ -949,7 +949,7 @@ perf_event_handler(
       info_aux->num_samples++;
       double delta				   = counter - info_aux->threshold_mean;
       info_aux->threshold_mean    += delta / info_aux->num_samples;
-      info_aux->threshold_stdev   += delta * (counter-info_aux->threshold_mean);
+      //info_aux->threshold_stdev   += delta * (counter-info_aux->threshold_mean);
 
       // ----------------------------------------------------------------------------
       // update the cct and add callchain if necessary

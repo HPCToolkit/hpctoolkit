@@ -322,15 +322,15 @@ perf_attr_init(
   memset(attr, 0, sizeof(struct perf_event_attr));
 
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
-  attr->type   = event_type;       /* Type of event     */
-  attr->config = event_code;       /* Type-specific configuration */
+  attr->type   = event_type;       
+  attr->config = event_code;       
   attr->freq   = (usePeriod ? 0 : 1);
 
-  attr->sample_period = threshold;       /* Period of sampling     */
+  attr->sample_period = threshold;          /* Period or frequency of sampling     */
   attr->precise_ip    = get_precise_ip();   /* the precision is either detected automatically
                                               as precise as possible or  on the user's variable.  */
   attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
-  attr->disabled      = 1;       /* the counter will be enabled later  */
+  attr->disabled      = 1;                 /* the counter will be enabled later  */
   attr->sample_stack_user = 4096;
 
   if (is_perf_ksym_available()) {
