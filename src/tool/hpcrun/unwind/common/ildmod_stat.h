@@ -29,7 +29,7 @@ typedef enum {
 // {interval, load_module, tree status}
 typedef struct ildmod_stat_s {
   interval_t interval;
-  load_module_t *loadmod;
+  load_module_t *lm;
   _Atomic(tree_stat_t) stat;
 } ildmod_stat_t;
 

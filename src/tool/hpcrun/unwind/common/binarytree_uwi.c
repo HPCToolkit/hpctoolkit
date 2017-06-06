@@ -23,7 +23,6 @@
 #include "binarytree_uwi.h"
 
 #define NUM_NODES 10
-#define BTUWI_DEBUG 0
 
 static struct {
   bitree_uwi_t *tree;		// global free unwind interval tree
@@ -38,9 +37,6 @@ static __thread  bitree_uwi_t *_lf_uwi_tree = NULL;  // thread local free unwind
 void
 bitree_uwi_init()
 {
-#if BTUWI_DEBUG
-  printf("DXN_DBG: bitree_uwi_init mcs_init(&GF.lock) \n");
-#endif
   mcs_init(&GF.lock);
 }
 

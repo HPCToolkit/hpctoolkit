@@ -178,14 +178,14 @@ static  __thread  ilmstat_btuwi_pair_t *current_btuwi = NULL;
 static inline ilmstat_btuwi_pair_t *
 ilmstat__btuwi_pair_init(ilmstat_btuwi_pair_t *node,
 			 tree_stat_t treestat,
-			 load_module_t *ldmod,
+			 load_module_t *lm,
 			 uintptr_t start,
 			 uintptr_t end,
 			 bitree_uwi_t *tree)
 {
   ildmod_stat_t *ilmstat = node->ilmstat;
   atomic_store_explicit(&ilmstat->stat, treestat, memory_order_relaxed);
-  ilmstat->loadmod = ldmod;
+  ilmstat->lm = lm;
   ilmstat->interval.start = start;
   ilmstat->interval.end = end;
   node->btuwi = tree;
@@ -193,12 +193,12 @@ ilmstat__btuwi_pair_init(ilmstat_btuwi_pair_t *node,
 }
 
 static inline ilmstat_btuwi_pair_t*
-ilmstat_btuwi_pair_build(uintptr_t start, uintptr_t end, load_module_t *ldmod,
+ilmstat_btuwi_pair_build(uintptr_t start, uintptr_t end, load_module_t *lm,
 	tree_stat_t treestat, bitree_uwi_t *tree,	mem_alloc m_alloc)
 {
   ilmstat_btuwi_pair_t* node = m_alloc(sizeof(*node));
   node->ilmstat = m_alloc(sizeof(*node->ilmstat));
-  return ilmstat__btuwi_pair_init(node, treestat, ldmod, start, end, tree);
+  return ilmstat__btuwi_pair_init(node, treestat, lm, start, end, tree);
 }
 
 static inline void
@@ -220,7 +220,7 @@ static ilmstat_btuwi_pair_t*
 ilmstat_btuwi_pair_malloc(
 	uintptr_t start,
 	uintptr_t end,
-	load_module_t *ldmod,
+	load_module_t *lm,
 	tree_stat_t treestat,
 	bitree_uwi_t *tree,
 	mem_alloc m_alloc)
@@ -266,7 +266,7 @@ ilmstat_btuwi_pair_malloc(
  * return the head node.
  */
   ilmstat_btuwi_pair_t *ans = pop_free_pair(&_lf_ilmstat_btuwi);
-  return ilmstat__btuwi_pair_init(ans, treestat, ldmod, start, end, tree);
+  return ilmstat__btuwi_pair_init(ans, treestat, lm, start, end, tree);
 }
 
 //******************************************************************************
@@ -340,7 +340,7 @@ ildmod_stat_tostr(void* ilms, char str[])
   char intervalstr[MAX_INTERVAL_STR];
   interval_t_tostr(&ildmod_stat->interval, intervalstr);
   char ldmodstr[LDMOD_NAME_LEN];
-  load_module_tostr(ildmod_stat->loadmod, ldmodstr);
+  load_module_tostr(ildmod_stat->lm, ldmodstr);
   char statstr[MAX_STAT_STR];
   treestat_tostr(atomic_load_explicit(&ildmod_stat->stat, memory_order_relaxed), statstr);
   sprintf(str, "(%s %s %s)", intervalstr, ldmodstr, statstr);
@@ -704,7 +704,7 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
   bitree_uwi_t *btuwi = ilm_btui->btuwi;
   unwr_info->btuwi    = bitree_uwi_inrange(btuwi, (uintptr_t)addr);
   unwr_info->treestat = READY;
-  unwr_info->lm         = ilmstat->loadmod;
+  unwr_info->lm         = ilmstat->lm;
   unwr_info->interval   = ilmstat->interval;
 
   return true;
