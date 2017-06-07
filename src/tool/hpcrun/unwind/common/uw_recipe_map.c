@@ -127,7 +127,7 @@ typedef struct ilmstat_btuwi_pair_s {
 /*
  * pre-condition: lhs, rhs are ilmstat_btuwi_pair_t*
  */
-int
+static int
 ilmstat_btuwi_pair_cmp(void *lhs, void *rhs)
 {
   ilmstat_btuwi_pair_t *l = (ilmstat_btuwi_pair_t*)lhs;
@@ -141,7 +141,7 @@ ilmstat_btuwi_pair_cmp(void *lhs, void *rhs)
  * pre-condition: itp is a ilmstat_btuwi_pair_t*, address is a uintptr_t
  * return interval_ldmod_pair_inrange(itp->first, address)
  */
-extern int
+static int
 ilmstat_btuwi_pair_inrange(void *itp, void *address)
 {
   ilmstat_btuwi_pair_t *p = (ilmstat_btuwi_pair_t*)itp;
