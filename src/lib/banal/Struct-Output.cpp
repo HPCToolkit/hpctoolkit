@@ -231,7 +231,7 @@ printFileBegin(ostream * os, FileInfo * finfo)
   doIndent(os, 1);
   *os << "<F"
       << INDEX
-      << STRING("n", finfo->name)
+      << STRING("n", finfo->fileName)
       << ">\n";
 }
 
@@ -260,8 +260,8 @@ printProc(ostream * os, FileInfo * finfo, GroupInfo * ginfo,
   }
 
   TreeNode * root = pinfo->root;
-  long file_index = strTab.str2index(finfo->name);
-  long base_index = strTab.str2index(FileUtil::basename(finfo->name.c_str()));
+  long file_index = strTab.str2index(finfo->fileName);
+  long base_index = strTab.str2index(FileUtil::basename(finfo->fileName.c_str()));
   ScopeInfo scope(file_index, base_index, pinfo->line_num);
 
   doIndent(os, 2);

@@ -103,9 +103,12 @@ using namespace std;
 #define USE_LIBDWARF_LINE_MAP   0
 
 #define DEBUG_CFG_SOURCE  0
+#define DEBUG_MAKE_SKEL   0
 
 // Copied from lib/prof/Struct-Tree.cpp
 static const string & unknown_file = "<unknown file>";
+static const string & unknown_proc = "<unknown proc>";
+static const string & unknown_link = "_unknown_proc_";
 
 // FIXME: temporary until the line map problems are resolved
 static Symtab * the_symtab = NULL;
@@ -383,8 +386,8 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr)
     SymtabAPI::Function * sym_func = NULL;
     VMA  vma = func->addr();
 
-    string  linknm;
-    string  procnm;
+    string  linknm = unknown_link;
+    string  procnm = unknown_proc;
     string  filenm;
     SrcFile::ln  line = 0;
 
@@ -392,6 +395,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr)
     if (the_symtab->getContainingFunction(vma, sym_func) && sym_func != NULL) {
       auto mangled_it = sym_func->mangled_names_begin();
       auto typed_it = sym_func->typed_names_begin();
+      VMA sym_vma = sym_func->getOffset();
 
       if (mangled_it != sym_func->mangled_names_end()) {
 	linknm = *mangled_it;
@@ -401,7 +405,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr)
       }
 
       vector <Statement::Ptr> svec;
-      getStatement(svec, vma, sym_func);
+      getStatement(svec, sym_vma, sym_func);
 
       if (! svec.empty()) {
 	filenm = svec[0]->getFile();
@@ -415,15 +419,6 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr)
     else {
       filenm = unknown_file;
     }
-
-#if 0
-    cout << "\nfunc:  0x" << hex << vma << dec << "\n"
-	 << "parse:  " << func->name() << "\n"
-	 << "symtb:  " << procnm << "\n"
-	 << "link:   " << linknm << "\n"
-	 << "file:   " << filenm << "\n"
-	 << "line:   " << line << "\n";
-#endif
 
     //
     // locate in file map, or else insert
@@ -444,16 +439,45 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr)
     //
     GroupInfo * ginfo = NULL;
 
-    auto git = finfo->groupMap.find(linknm);
+    auto git = finfo->groupMap.find(sym_func);
     if (git != finfo->groupMap.end()) {
       ginfo = git->second;
     }
     else {
       ginfo = new GroupInfo(sym_func, linknm, procnm);
-      finfo->groupMap[linknm] = ginfo;
+      finfo->groupMap[sym_func] = ginfo;
     }
     ginfo->procMap[vma] = new ProcInfo(func, NULL, line);
   }
+
+#if DEBUG_MAKE_SKEL
+  // print the skeleton map
+
+  for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
+    auto finfo = fit->second;
+
+    for (auto git = finfo->groupMap.begin(); git != finfo->groupMap.end(); ++git) {
+      auto ginfo = git->second;
+      long size = ginfo->procMap.size();
+      long num = 0;
+
+      for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
+	auto pinfo = pit->second;
+	num++;
+
+	cout << "\nentry:   0x" << hex << pinfo->entry_vma << dec
+	     << "  (" << num << "/" << size << ")\n"
+	     << "symbol:  0x" << hex << ginfo->start
+	     << "--0x" << ginfo->end << dec << "\n"
+	     << "file:    " << finfo->fileName << "\n"
+	     << "link:    " << ginfo->linkName << "\n"
+	     << "pretty:  " << ginfo->prettyName << "\n"
+	     << "parse:   " << pinfo->func->name() << "\n"
+	     << "line:    " << pinfo->line_num << "\n";
+      }
+    }
+  }
+#endif
 
   return fileMap;
 }
@@ -545,7 +569,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 	 << "  (" << num << "/" << num_funcs << ")"
 	 << "  link='" << ginfo->linkName << "'\n"
 	 << "parse:  '" << func->name() << "'\n"
-	 << "file:   '" << finfo->name << "'\n";
+	 << "file:   '" << finfo->fileName << "'\n";
 
     if (call_it != callMap.end()) {
       cout << "\ncall site prefix:  0x" << hex << call_it->second
@@ -926,7 +950,7 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 	       TreeNode * root, Loop * loop, const string & loopName,
 	       HPC::StringTable & strTab)
 {
-  long base_index = strTab.str2index(FileUtil::basename(finfo->name));
+  long base_index = strTab.str2index(FileUtil::basename(finfo->fileName));
   string procName = func->name();
 
   //------------------------------------------------------------
@@ -981,7 +1005,7 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 #if DEBUG_CFG_SOURCE
   cout << "\nraw inline tree:  " << loopName
        << "  '" << func->name() << "'\n"
-       << "file:  '" << finfo->name << "'\n\n";
+       << "file:  '" << finfo->fileName << "'\n\n";
   debugInlineTree(root, NULL, strTab, 0, false);
   debugLoop(ginfo, func, loop, loopName, backEdges, clist);
   cout << "\nsearching inline tree:\n";

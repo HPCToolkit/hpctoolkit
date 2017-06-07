@@ -60,6 +60,8 @@
 #include <string>
 
 #include <CFG.h>
+#include <Symtab.h>
+#include <Function.h>
 #include "Struct-Inline.hpp"
 
 namespace BAnal {
@@ -74,7 +76,7 @@ class GroupInfo;
 class ProcInfo;
 
 typedef map <string, FileInfo *> FileMap;
-typedef map <string, GroupInfo *> GroupMap;
+typedef map <SymtabAPI::Function *, GroupInfo *> GroupMap;
 typedef map <VMA, ProcInfo *> ProcMap;
 
 
@@ -82,33 +84,35 @@ typedef map <VMA, ProcInfo *> ProcMap;
 // procedures.  A FileInfo object contains the procs that belong to
 // one file.
 //
-// GroupMap is indexed by the proc's linkname.
+// FileMap is indexed by file name.
 //
 class FileInfo {
 public:
-  string   name;
+  string  fileName;
   GroupMap groupMap;
 
   FileInfo(string nm)
   {
-    name = nm;
+    fileName = nm;
     groupMap.clear();
   }
 };
 
 
 // GroupInfo contains the subset of procs that belong to one binutils
-// group as determined by the proc linkname.  Normally, this includes
-// the unnamed procs between two binutils symbols, eg, internal openmp
-// regions.
+// group as determined by the SymtabAPI::Function.  Normally, this
+// includes the unnamed procs (targ4xxxxx) within one Function symbol,
+// eg, internal openmp regions.
 //
-// ProcMap is indexed by the proc's entry address.
+// GroupMap is indexed by the SymtabAPI Function.
 //
 class GroupInfo {
 public:
   SymtabAPI::Function * sym_func;
   string linkName;
   string prettyName;
+  VMA  start;
+  VMA  end;
   ProcMap procMap;
 
   GroupInfo(SymtabAPI::Function * sf, string ln, string pn)
@@ -116,6 +120,8 @@ public:
     sym_func = sf;
     linkName = ln;
     prettyName = pn;
+    start = (sf != NULL) ? sf->getOffset() : 0;
+    end = (sf != NULL) ? (start + sf->getSize()) : 0;
     procMap.clear();
   }
 };
@@ -123,6 +129,8 @@ public:
 
 // Info on one ParseAPI Function and Tree Node for one <P> tag as
 // determined by the func's entry address.
+//
+// ProcMap is indexed by the func's entry address.
 //
 class ProcInfo {
 public:
