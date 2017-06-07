@@ -128,7 +128,7 @@ hpcrun_check_fence(void* ip);
 static void
 compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 {
-  void *func_start_pc =  (void*) cursor->unwr_info.start;
+  void *func_start_pc =  (void*) cursor->unwr_info.interval.start;
   load_module_t* lm = cursor->unwr_info.lm;
 
   cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, lm);
