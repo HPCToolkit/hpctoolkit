@@ -1,15 +1,3 @@
-/*
- * interval_t.h
- *
- * Structure representing a right-opened interval of the form [a, b), where
- * a and b are pointers.
- *
- * Viewed as a concrete "subclass" of the generic_val class defined in
- * generic_val.h.
- *
- * Author: dxnguyen
- */
-
 #ifndef __PTRINTERVAL_T_H__
 #define __PTRINTERVAL_T_H__
 

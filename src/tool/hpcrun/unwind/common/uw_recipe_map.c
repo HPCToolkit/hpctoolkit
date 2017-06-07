@@ -93,12 +93,6 @@
 // libmonitor functions
 #include <monitor.h>
 
-/*
- * ilmstat_btuwi_pair.c
- *
- *      Author: dxnguyen
- */
-
 //******************************************************************************
 // global include files
 //******************************************************************************
@@ -114,18 +108,6 @@
 #define SKIPLIST_HEIGHT 8
 
 #define NUM_NODES 10
-
-/*
- * A <key, value> pair, whose key is a ildmod_stat_t* and whose value is a bitree_uwi_t.
- *   ildmod_stat_t (interval-load_module/stat) is a struct whose first component is
- *     an interval_ldmod_pair_t* and whose second component is a tree_stat_t (tree status)
- *   bitree_uwi_t (binary tree of unwind intervals) is binary search tree of unwind
- *     intervals uwi_t*.
- *     uwi_t is a <key, value> pair whose key is an interval interval_t, and whose
- *     value is an unwind recipe, recipe_t, as specified in uw_recipe.h.
- *
- *      Author: dxnguyen
- */
 
 //******************************************************************************
 // type

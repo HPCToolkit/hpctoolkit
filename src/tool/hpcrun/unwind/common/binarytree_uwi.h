@@ -1,11 +1,3 @@
-/*
- * binarytree_uwi.h
- *
- * binary search tree of unwind intervals uwi_t as specified in uwi.h.
- *
- * Author: dxnguyen
- */
-
 #ifndef __BINARYTREE_UWI_H__
 #define __BINARYTREE_UWI_H__
 
