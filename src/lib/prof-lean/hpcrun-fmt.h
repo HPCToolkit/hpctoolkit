@@ -367,7 +367,7 @@ typedef struct metric_aux_info_s {
 	bool is_frequency;      // flag if the threshold is based on frequency
 	bool is_multiplexed;    // flag if the event is multiplexed
 	double threshold_mean;   // average threshold (if multiplexed)
-	double threshold_stdev;  // standadrd deviation
+	//double threshold_stdev;  // standard deviation
 	uint64_t num_samples;   // number of samples
 } metric_aux_info_t;
 

@@ -258,7 +258,6 @@ const metric_desc_t metricDesc_NULL = {
   .info_data.is_frequency    = false,
   .info_data.is_multiplexed  = false,
   .info_data.threshold_mean  = 0.0,
-  .info_data.threshold_stdev = 0.0,
   .info_data.num_samples     = 0
 };
 
@@ -376,7 +375,8 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs,
   HPCFMT_ThrowIfError(hpcfmt_int2_fread ((uint16_t*)&(x->info_data.is_frequency),    fs));
   HPCFMT_ThrowIfError(hpcfmt_int2_fread ((uint16_t*)&(x->info_data.is_multiplexed),  fs));
   HPCFMT_ThrowIfError(hpcfmt_real8_fread(&(x->info_data.threshold_mean),  fs));
-  HPCFMT_ThrowIfError(hpcfmt_real8_fread(&(x->info_data.threshold_stdev), fs));
+  // disabled temporarily
+  //HPCFMT_ThrowIfError(hpcfmt_real8_fread(&(x->info_data.threshold_stdev), fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fread ((&x->info_data.num_samples),     fs));
 
   // These two aren't written into the hpcrun file; hence manually set them.
@@ -400,7 +400,8 @@ hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* fs)
   hpcfmt_int2_fwrite (x->info_data.is_frequency   , fs);
   hpcfmt_int2_fwrite (x->info_data.is_multiplexed , fs);
   hpcfmt_real8_fwrite(x->info_data.threshold_mean , fs);
-  hpcfmt_real8_fwrite(x->info_data.threshold_stdev, fs);
+  // disabled temporarily
+  //hpcfmt_real8_fwrite(x->info_data.threshold_stdev, fs);
   hpcfmt_int8_fwrite (x->info_data.num_samples    , fs);
   return HPCFMT_OK;
 }
@@ -418,9 +419,9 @@ hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* fs, const char* pre)
 	  (uint)x->flags.fields.partner, x->flags.fields.show, x->flags.fields.showPercent,
 	  x->period,
 	  hpcfmt_str_ensure(x->formula), hpcfmt_str_ensure(x->format));
-  fprintf(fs, "    (frequency: %d) (multiplexed: %d) (period-mean: %f) (period-stdev: %f) (num-samples: %d)]\n",
+  fprintf(fs, "    (frequency: %d) (multiplexed: %d) (period-mean: %f) (num-samples: %d)]\n",
           (int)x->info_data.is_frequency, (int)x->info_data.is_multiplexed,
-          x->info_data.threshold_mean, x->info_data.threshold_stdev, (int) x->info_data.num_samples);
+          x->info_data.threshold_mean,  (int) x->info_data.num_samples);
   return HPCFMT_OK;
 }
 
