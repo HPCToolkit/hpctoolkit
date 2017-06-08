@@ -73,7 +73,7 @@ static void
 x86_dump_intervals(void *addr, int noisy)
 {
   unwindr_info_t unwr_info;
-  if (!uw_recipe_map_lookup(addr, &unwr_info))
+  if (!uw_recipe_map_lookup(addr, NATIVE_UNWINDER, &unwr_info))
 	  EMSG("x86_dump_intervals: bounds of addr %p taken, but no bounds known", addr);
   void * s = (void*)unwr_info.interval.start;
   void * e = (void*)unwr_info.interval.end;

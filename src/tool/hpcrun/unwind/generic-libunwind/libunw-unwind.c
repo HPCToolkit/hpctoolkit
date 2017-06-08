@@ -245,7 +245,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   // compute unwind information for the caller's pc
   //-----------------------------------------------------------
   unwindr_info_t unwr_info;
-  bool found = uw_recipe_map_lookup(pc, &unwr_info);
+  bool found = uw_recipe_map_lookup(pc, DWARF_UNWINDER, &unwr_info);
   if (!found)
     {
       TMSG(UNW, "unw_step: error: unw_step failed at: %p\n", pc);

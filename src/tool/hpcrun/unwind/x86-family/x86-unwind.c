@@ -251,7 +251,7 @@ hpcrun_unw_set_cursor(hpcrun_unw_cursor_t* cursor, void **sp, void **bp, void *i
        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
 
   load_module_t *lm;
-  bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &(cursor->unwr_info));
+  bool found = uw_recipe_map_lookup(cursor->pc_unnorm, NATIVE_UNWINDER, &(cursor->unwr_info));
 
   compute_normalized_ips(cursor);
 
@@ -273,7 +273,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   TMSG(UNW, "unw_init: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
 
-  bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &(cursor->unwr_info));
+  bool found = uw_recipe_map_lookup(cursor->pc_unnorm, NATIVE_UNWINDER, &(cursor->unwr_info));
 
   if (!found) {
     EMSG("unw_init: cursor could NOT build an interval for initial pc = %p",
@@ -494,7 +494,7 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
   next_sp += 1;
 
  unwindr_info_t unwr_info;
-  bool found = uw_recipe_map_lookup(((char *)next_pc) - 1, &unwr_info);
+  bool found = uw_recipe_map_lookup(((char *)next_pc) - 1, NATIVE_UNWINDER, &unwr_info);
   if (!found){
     if (((void *)next_sp) >= monitor_stack_bottom()){
       TMSG(UNW,"  step_sp: STEP_STOP_WEAK, no next interval and next_sp >= stack bottom,"
@@ -595,10 +595,10 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
     // try building an interval for the return address again if it succeeds
 
 //    load_module_t *lm;
-//    bool found = uw_recipe_map_lookup(((char *)next_pc) - 1, &lm, &uw);
+//    bool found = uw_recipe_map_lookup(((char *)next_pc) - 1, &lm, NATIVE_UNWINDER, &uw);
 
 	unwindr_info_t unwr_info;
-    bool found = uw_recipe_map_lookup(((char *)next_pc) - 1, &unwr_info);
+    bool found = uw_recipe_map_lookup(((char *)next_pc) - 1, NATIVE_UNWINDER, &unwr_info);
     if (!found){
       if (((void *)next_sp) >= monitor_stack_bottom()) {
         TMSG(UNW,"  step_bp: STEP_STOP_WEAK, next_sp >= monitor_stack_bottom,"
@@ -759,7 +759,7 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
       hpcrun_unw_throw();
     }
 
-    bool found = uw_recipe_map_lookup(((char *)next_pc) + offset, &(cursor->unwr_info));
+    bool found = uw_recipe_map_lookup(((char *)next_pc) + offset, NATIVE_UNWINDER, &(cursor->unwr_info));
     if (found) {
       TMSG(TROLL,"Trolling advances cursor to pc = %p, sp = %p", 
 	   next_pc, next_sp);

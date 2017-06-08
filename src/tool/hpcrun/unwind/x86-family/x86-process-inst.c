@@ -82,7 +82,7 @@ process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 	  TMSG(COLD_CODE,"fetching interval from location %p",iarg->return_addr);
 
 	  unwindr_info_t unwr_info;
-	  bool found = uw_recipe_map_lookup(iarg->return_addr, &unwr_info);
+	  bool found = uw_recipe_map_lookup(iarg->return_addr, NATIVE_UNWINDER, &unwr_info);
 #if UWRECIPE_DEBUG
 	  assert(found);
 #endif
