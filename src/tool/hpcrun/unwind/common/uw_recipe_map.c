@@ -163,23 +163,22 @@ ilmstat__btuwi_pair_init(ilmstat_btuwi_pair_t *node,
 			 tree_stat_t treestat,
 			 load_module_t *lm,
 			 uintptr_t start,
-			 uintptr_t end,
-			 bitree_uwi_t *tree)
+			 uintptr_t end)
 {
   atomic_store_explicit(&node->stat, treestat, memory_order_relaxed);
   node->lm = lm;
   node->interval.start = start;
   node->interval.end = end;
-  node->btuwi = tree;
+  node->btuwi = NULL;
   return node;
 }
 
 static inline ilmstat_btuwi_pair_t*
 ilmstat_btuwi_pair_build(uintptr_t start, uintptr_t end, load_module_t *lm,
-	tree_stat_t treestat, bitree_uwi_t *tree,	mem_alloc m_alloc)
+	tree_stat_t treestat, mem_alloc m_alloc)
 {
   ilmstat_btuwi_pair_t* node = m_alloc(sizeof(*node));
-  return ilmstat__btuwi_pair_init(node, treestat, lm, start, end, tree);
+  return ilmstat__btuwi_pair_init(node, treestat, lm, start, end);
 }
 
 static inline void
@@ -203,7 +202,6 @@ ilmstat_btuwi_pair_malloc(
 	uintptr_t end,
 	load_module_t *lm,
 	tree_stat_t treestat,
-	bitree_uwi_t *tree,
 	mem_alloc m_alloc)
 {
   if (!_lf_ilmstat_btuwi) {
@@ -246,7 +244,7 @@ ilmstat_btuwi_pair_malloc(
  * return the head node.
  */
   ilmstat_btuwi_pair_t *ans = pop_free_pair(&_lf_ilmstat_btuwi);
-  return ilmstat__btuwi_pair_init(ans, treestat, lm, start, end, tree);
+  return ilmstat__btuwi_pair_init(ans, treestat, lm, start, end);
 }
 
 //******************************************************************************
@@ -380,7 +378,7 @@ uw_recipe_map_poison(uintptr_t start, uintptr_t end)
   uw_recipe_map_report("uw_recipe_map_poison", (void *) start, (void *) end);
 
   ilmstat_btuwi_pair_t* itpair =
-	  ilmstat_btuwi_pair_build(start, end, NULL, NEVER, NULL, my_alloc);
+	  ilmstat_btuwi_pair_build(start, end, NULL, NEVER, my_alloc);
   csklnode_t *node = cskl_insert(addr2recipe_map, itpair, my_alloc);
   if (itpair != (ilmstat_btuwi_pair_t*)node->val)
     ilmstat_btuwi_pair_free(itpair);
@@ -560,9 +558,9 @@ uw_recipe_map_init(void)
 
   TMSG(UW_RECIPE_MAP, "init address-to-recipe map");
   ilmstat_btuwi_pair_t* lsentinel =
-	  ilmstat_btuwi_pair_build(0, 0, NULL, NEVER, NULL, my_alloc );
+	  ilmstat_btuwi_pair_build(0, 0, NULL, NEVER, my_alloc );
   ilmstat_btuwi_pair_t* rsentinel =
-	  ilmstat_btuwi_pair_build(UINTPTR_MAX, UINTPTR_MAX, NULL, NEVER, NULL, my_alloc );
+	  ilmstat_btuwi_pair_build(UINTPTR_MAX, UINTPTR_MAX, NULL, NEVER, my_alloc );
   addr2recipe_map =
 	  cskl_new(lsentinel, rsentinel, SKIPLIST_HEIGHT,
 		  ilmstat_btuwi_pair_cmp, ilmstat_btuwi_pair_inrange, my_alloc);
@@ -619,7 +617,7 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
 	// (bitree_uwi_t*)NULL and try to insert into map:
 	ilm_btui =
 		ilmstat_btuwi_pair_malloc((uintptr_t)fcn_start, (uintptr_t)fcn_end, lm,
-			DEFERRED, NULL, my_alloc);
+			DEFERRED, my_alloc);
 
 	
 	csklnode_t *node = cskl_insert(addr2recipe_map, ilm_btui, my_alloc);
