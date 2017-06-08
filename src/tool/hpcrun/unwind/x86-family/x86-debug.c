@@ -79,7 +79,7 @@ x86_dump_intervals(void *addr, int noisy)
   void * e = (void*)unwr_info.interval.end;
 
   btuwi_status_t intervals;
-  intervals = x86_build_intervals(s, e - s, noisy, hpcrun_malloc);
+  intervals = x86_build_intervals(s, e - s, noisy);
   x86_print_intervals(intervals);
 }
 

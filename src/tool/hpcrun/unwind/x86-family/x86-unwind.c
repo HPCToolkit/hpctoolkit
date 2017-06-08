@@ -80,6 +80,7 @@
 #include <x86-decoder.h>
 
 #include <hpcrun/epoch.h>
+#include <hpcrun/main.h>
 #include "stack_troll.h"
 #include "thread_use.h"
 

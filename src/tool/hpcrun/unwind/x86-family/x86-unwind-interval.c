@@ -79,10 +79,9 @@ suspicious_interval(void *pc)
 }
 
 unwind_interval*
-new_ui(char *start, ra_loc ra_status, const x86registers_t *reg,
-       mem_alloc m_alloc)
+new_ui(char *start, ra_loc ra_status, const x86registers_t *reg)
 {
-  bitree_uwi_t *u = bitree_uwi_malloc(m_alloc, sizeof(x86recipe_t));
+  bitree_uwi_t *u = bitree_uwi_malloc(NATIVE_UNWINDER, sizeof(x86recipe_t));
 
   // DXN: what is this?
 # include "mem_error_gen.h" // **** SPECIAL PURPOSE CODE TO INDUCE MEM FAILURE (conditionally included) ***
@@ -116,9 +115,9 @@ set_ui_restored_canonical(unwind_interval *u, unwind_interval *value)
 
 
 unwind_interval *
-fluke_ui(char *loc, unsigned int pos, mem_alloc m_alloc)
+fluke_ui(char *loc, unsigned int pos)
 {
-  bitree_uwi_t *u = bitree_uwi_malloc(m_alloc, sizeof(x86recipe_t));
+  bitree_uwi_t *u = bitree_uwi_malloc(NATIVE_UNWINDER, sizeof(x86recipe_t));
   uwi_t *uwi =  bitree_uwi_rootval(u);
 
   uwi->interval.start = (uintptr_t)loc;

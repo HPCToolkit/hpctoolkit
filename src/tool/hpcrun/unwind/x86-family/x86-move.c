@@ -52,8 +52,7 @@
 
 
 unwind_interval *
-process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg,
-	mem_alloc m_alloc)
+process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
 {
   unwind_interval *next = iarg->current;
   highwatermark_t *hw_tmp = &(iarg->highwatermark);
@@ -91,7 +90,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	  //==================================================================
 	  reg.bp_status = BP_SAVED;
 	  reg.bp_ra_pos = xed_decoded_inst_get_memory_displacement(xptr, 0);
-	  next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg, m_alloc);
+	  next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg);
 	  hw_tmp->uwi = next;
 	  hw_tmp->state = 
 	    HW_NEW_STATE(hw_tmp->state, HW_BP_SAVED);
@@ -117,7 +116,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	  //              BP_UNCHANGED
 	  //================================================================
 	  reg.bp_status = BP_UNCHANGED;
-	  next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg, m_alloc);
+	  next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
 	} else {
 	  //================================================================
 	  // instruction: BP is loaded from a memory address DIFFERENT from 
@@ -127,7 +126,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	  //================================================================
 	  if (reg.bp_status != BP_HOSED) {
 	    reg.bp_status = BP_HOSED;
-	    next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg, m_alloc);
+	    next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
 	    if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED, 
 			      HW_BP_OVERWRITTEN) && 
 		(UWI_RECIPE(hw_tmp->uwi)->reg.sp_ra_pos == reg.sp_ra_pos)) {
@@ -151,7 +150,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	//================================================================
 	reg.sp_ra_pos = 0;
 	reg.sp_bp_pos = 0;
-	next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg, m_alloc);
+	next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
       }
     }
   } else if ((op0_name == XED_OPERAND_REG0) && (op1_name == XED_OPERAND_REG1)){
@@ -165,14 +164,14 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
       // instruction: restore SP from BP
       // action:      begin a new SP_RELATIVE interval 
       //====================================================================
-      next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg, m_alloc);
+      next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
     } else if (x86_isReg_BP(reg0) && x86_isReg_SP(reg1)) {
       //====================================================================
       // instruction: initialize BP with value of SP to set up a frame ptr
       // action:      begin a new SP_RELATIVE interval 
       //====================================================================
       reg.bp_status = BP_SAVED;
-      next = new_ui(nextInsn(iarg, xptr), RA_STD_FRAME, &reg, m_alloc);
+      next = new_ui(nextInsn(iarg, xptr), RA_STD_FRAME, &reg);
       if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED, 
 			HW_BP_OVERWRITTEN)) { 
 	hw_tmp->uwi = next;
@@ -192,7 +191,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	// action:      begin a new RA_SP_RELATIVE,BP_HOSED interval
 	//==================================================================
 	reg.bp_status = BP_HOSED;
-	next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg, m_alloc);
+	next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
 	if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED, 
 			  HW_BP_OVERWRITTEN) && 
 	    (UWI_RECIPE(hw_tmp->uwi)->reg.sp_ra_pos == reg.sp_ra_pos)) {

@@ -257,7 +257,7 @@ static void
 ilmstat_btuwi_pair_free(ilmstat_btuwi_pair_t* pair)
 {
   if (!pair) return;
-  bitree_uwi_free(pair->btuwi);
+  bitree_uwi_free(0, pair->btuwi);
 
   // add pair to the front of the  global free list of ilmstat_btuwi_pair_t*:
   mcs_node_t me;
@@ -556,7 +556,7 @@ uw_recipe_map_init(void)
   fprintf(stderr, "%s: mcs_init(&GFL_lock), call bitree_uwi_init() \n", __func__);
 #endif
   mcs_init(&GFL_lock);
-  bitree_uwi_init();
+  bitree_uwi_init(my_alloc);
 
   TMSG(UW_RECIPE_MAP, "init address-to-recipe map");
   ilmstat_btuwi_pair_t* lsentinel =
@@ -645,7 +645,7 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
     // potentially crash in this statement. need to save the state 
     current_btuwi = ilm_btui;
 
-    btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, my_alloc);
+    btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start);
     if (btuwi_stat.first == NULL) {
       atomic_store_explicit(&ilm_btui->stat, NEVER, memory_order_release);
       TMSG(UW_RECIPE_MAP, "BAD build_intervals failed: fcn range %p to %p",

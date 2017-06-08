@@ -61,8 +61,7 @@
  *****************************************************************************/
 
 unwind_interval *
-process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg,
-	mem_alloc m_alloc)
+process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
 {
   unwind_interval *next;
 
@@ -91,15 +90,14 @@ process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
     }
   }
 
-  next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg, m_alloc);
+  next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg);
 
   return next;
 }
 
 
 unwind_interval *
-process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg,
-	mem_alloc m_alloc)
+process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
 {
   unwind_interval *next;
 
@@ -124,6 +122,6 @@ process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
     if (x86_isReg_BP(regname)) reg.bp_status = BP_UNCHANGED;
   }
 
-  next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg, m_alloc);
+  next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg);
   return next;
 }

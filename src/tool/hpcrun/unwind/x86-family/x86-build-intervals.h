@@ -50,6 +50,6 @@
 #include "x86-unwind-interval.h"
 
 btuwi_status_t
-x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc);
+x86_build_intervals(void *ins, unsigned int len, int noisy);
 
 #endif

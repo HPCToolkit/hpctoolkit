@@ -63,8 +63,7 @@ static bool plt_is_next(char *ins);
  *****************************************************************************/
 
 unwind_interval *
-process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg,
-               mem_alloc m_alloc)
+process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
 {
   unwind_interval *next = iarg->current;
 
@@ -129,7 +128,7 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg,
       iarg->canonical_interval = iarg->current;
     }
     else {
-      reset_to_canonical_interval(xptr, &next, irdebug, iarg, m_alloc);
+      reset_to_canonical_interval(xptr, &next, irdebug, iarg);
     }
   }
   return next;

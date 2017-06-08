@@ -78,7 +78,7 @@
 #define MYDBG 0
 
 static btuwi_status_t
-ppc64_build_intervals(char *ins, unsigned int len, mem_alloc m_alloc);
+ppc64_build_intervals(char *ins, unsigned int len);
 
 static void
 ppc64_print_interval_set(unwind_interval *first);
@@ -95,9 +95,9 @@ sp_ty_string(sp_ty_t ty);
 //***************************************************************************
 
 btuwi_status_t
-build_intervals(char  *ins, unsigned int len, mem_alloc m_alloc)
+build_intervals(char  *ins, unsigned int len)
 {
-  btuwi_status_t stat = ppc64_build_intervals(ins, len, m_alloc);
+  btuwi_status_t stat = ppc64_build_intervals(ins, len);
   if (MYDBG) {
     ppc64_print_interval_set(stat.first);
   }
@@ -119,10 +119,9 @@ new_ui(char *startaddr,
        sp_ty_t sp_ty,
        ra_ty_t ra_ty,
        int sp_arg,
-       int ra_arg,
-       mem_alloc m_alloc)
+       int ra_arg)
 {
-  bitree_uwi_t *u = bitree_uwi_malloc(m_alloc, sizeof(ppc64recipe_t));
+  bitree_uwi_t *u = bitree_uwi_malloc(NATIVE_UNWINDER, sizeof(ppc64recipe_t));
   uwi_t *uwi =  bitree_uwi_rootval(u);
 
   // ----------------------------------------------------------------
@@ -507,10 +506,10 @@ nextInsn(uint32_t* insn)
 
 
 static btuwi_status_t
-ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
+ppc64_build_intervals(char *beg_insn, unsigned int len)
 {
   unwind_interval* beg_ui = 
-    new_ui(beg_insn, SPTy_Reg, RATy_Reg, PPC_REG_SP, PPC_REG_LR, m_alloc);
+    new_ui(beg_insn, SPTy_Reg, RATy_Reg, PPC_REG_SP, PPC_REG_LR);
   unwind_interval* ui = beg_ui;
   unwind_interval* canon_ui = beg_ui;
   int count = 1;
@@ -534,7 +533,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
 	isInsn_MFLR(*cur_insn, &reg)) {
       nxt_ui =
     	  new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_Reg,
-    		  UWI_RECIPE(ui)->sp_arg, reg, m_alloc);
+    		  UWI_RECIPE(ui)->sp_arg, reg);
       ui = nxt_ui;
     }
     //--------------------------------------------------
@@ -544,7 +543,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
       // TODO: could scan backwards based on 'reg' (e.g., isInsn_LWZ)
       nxt_ui =
     	  new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_Reg,
-    		  UWI_RECIPE(ui)->sp_arg, PPC_REG_LR, m_alloc);
+    		  UWI_RECIPE(ui)->sp_arg, PPC_REG_LR);
       ui = nxt_ui;
     }
     //--------------------------------------------------
@@ -559,7 +558,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
       if (getRADispFromSPDisp(sp_disp) == ra_disp) {
         nxt_ui =
         	new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_SPRel,
-        		UWI_RECIPE(ui)->sp_arg, ra_disp, m_alloc);
+        		UWI_RECIPE(ui)->sp_arg, ra_disp);
         ui = nxt_ui;
 
 	canon_ui = nxt_ui;
@@ -577,7 +576,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
       if (getRADispFromSPDisp(sp_disp) == ra_disp) {
         nxt_ui =
         	new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_SPRel,
-        		UWI_RECIPE(ui)->sp_arg, ra_disp, m_alloc);
+        		UWI_RECIPE(ui)->sp_arg, ra_disp);
         ui = nxt_ui;
 
 	canon_ui = nxt_ui;
@@ -592,7 +591,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
       if (getRADispFromSPDisp(sp_disp) == ra_disp) {
 	nxt_ui =
 		new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_Reg,
-			UWI_RECIPE(ui)->sp_arg, PPC_REG_R0, m_alloc);
+			UWI_RECIPE(ui)->sp_arg, PPC_REG_R0);
 	ui = nxt_ui;
       }
     }
@@ -606,7 +605,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
 		    UWI_RECIPE(ui)->ra_arg + sp_disp : UWI_RECIPE(ui)->ra_arg);
       nxt_ui =
     	  new_ui(nextInsn(cur_insn), SPTy_SPRel, UWI_RECIPE(ui)->ra_ty,
-    		  sp_disp, ra_arg, m_alloc);
+    		  sp_disp, ra_arg);
       ui = nxt_ui;
 
       canon_ui = nxt_ui;
@@ -621,7 +620,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
 		    UWI_RECIPE(ui)->ra_arg + sp_disp : UWI_RECIPE(ui)->ra_arg);
       nxt_ui =
     	  new_ui(nextInsn(cur_insn), SPTy_SPRel, UWI_RECIPE(ui)->ra_ty,
-    		  sp_disp, ra_arg, m_alloc);
+    		  sp_disp, ra_arg);
       ui = nxt_ui;
 
       canon_ui = nxt_ui;
@@ -630,7 +629,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
       int sp_disp = -1; // N.B. currently we do not track this
       nxt_ui =
     	  new_ui(nextInsn(cur_insn),SPTy_SPRel, UWI_RECIPE(ui)->ra_ty,
-    		  sp_disp, UWI_RECIPE(ui)->ra_arg, m_alloc);
+    		  sp_disp, UWI_RECIPE(ui)->ra_arg);
       ui = nxt_ui;
 
       canon_ui = nxt_ui;
@@ -639,7 +638,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
       int sp_disp = -1; // N.B. currently we do not track this
       nxt_ui =
     	  new_ui(nextInsn(cur_insn), SPTy_SPRel, UWI_RECIPE(ui)->ra_ty,
-    		  sp_disp, UWI_RECIPE(ui)->ra_arg, m_alloc);
+    		  sp_disp, UWI_RECIPE(ui)->ra_arg);
       ui = nxt_ui;
 
       canon_ui = nxt_ui;
@@ -654,7 +653,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
 		    UWI_RECIPE(ui)->ra_arg + sp_disp : UWI_RECIPE(ui)->ra_arg);
       nxt_ui =
     	  new_ui(nextInsn(cur_insn), SPTy_Reg, UWI_RECIPE(ui)->ra_ty,
-    		  PPC_REG_SP, ra_arg, m_alloc);
+    		  PPC_REG_SP, ra_arg);
       ui = nxt_ui;
     }
     else if (isInsn_MR(*cur_insn, PPC_REG_SP)) {
@@ -663,7 +662,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
       if (getSPDispFromUI(ui) != 0) {
 	nxt_ui =
 		new_ui(nextInsn(cur_insn), SPTy_Reg, UWI_RECIPE(ui)->ra_ty,
-			PPC_REG_SP, UWI_RECIPE(ui)->ra_arg, m_alloc);
+			PPC_REG_SP, UWI_RECIPE(ui)->ra_arg);
 	ui = nxt_ui;
       }
     }
@@ -678,7 +677,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
       if (!ui_cmp(ui, canon_ui)) {
     	nxt_ui =
     		new_ui(nextInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty, UWI_RECIPE(canon_ui)->ra_ty,
-    		UWI_RECIPE(canon_ui)->sp_arg, UWI_RECIPE(canon_ui)->ra_arg, m_alloc);
+    		UWI_RECIPE(canon_ui)->sp_arg, UWI_RECIPE(canon_ui)->ra_arg);
     	ui = nxt_ui;
       }
     }

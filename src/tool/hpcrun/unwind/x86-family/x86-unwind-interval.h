@@ -133,10 +133,9 @@ extern "C" {
   void set_ui_restored_canonical(unwind_interval *u, unwind_interval *value);
 
   unwind_interval *
-  new_ui(char *startaddr, ra_loc ra_status, const x86registers_t *reg,
-	 mem_alloc m_alloc);
+  new_ui(char *startaddr, ra_loc ra_status, const x86registers_t *reg);
 
-  unwind_interval *fluke_ui(char *pc,unsigned int sp_ra_pos, mem_alloc m_alloc);
+  unwind_interval *fluke_ui(char *pc,unsigned int sp_ra_pos);
 
   void link_ui(unwind_interval *current, unwind_interval *next);
   void dump_ui(unwind_interval *u, int dump_to_stderr);

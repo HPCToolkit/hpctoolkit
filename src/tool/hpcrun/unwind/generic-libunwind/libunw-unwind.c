@@ -278,7 +278,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 
 struct builder
 {
-  mem_alloc m_alloc;
+  unwinder_t uw;
   bitree_uwi_t *latest;
   int count;
 };
@@ -290,7 +290,7 @@ dwarf_reg_states_callback(void *token,
 			  unw_word_t start_ip, unw_word_t end_ip)
 {
   struct builder *b = token;
-  bitree_uwi_t *u = bitree_uwi_malloc(b->m_alloc, size);
+  bitree_uwi_t *u = bitree_uwi_malloc(b->uw, size);
   bitree_uwi_set_rightsubtree(b->latest, u);
   uwi_t *uwi =  bitree_uwi_rootval(u);
   uwi->interval.start = (uintptr_t)start_ip;
@@ -304,7 +304,7 @@ dwarf_reg_states_callback(void *token,
 
 
 static btuwi_status_t
-libunw_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
+libunw_build_intervals(char *beg_insn, unsigned int len)
 {
   unw_context_t uc;
   unw_getcontext(&uc);
@@ -313,7 +313,7 @@ libunw_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
   unw_set_reg(&c, UNW_REG_IP, (intptr_t)beg_insn);
   void *space[2];		// enough space for any binarytree
   bitree_uwi_t *dummy = (bitree_uwi_t*)space;
-  struct builder b = {m_alloc, dummy, 0};
+  struct builder b = {DWARF_UNWINDER, dummy, 0};
   unw_reg_states_iterate(&c, dwarf_reg_states_callback, &b);
   bitree_uwi_set_rightsubtree(b.latest, NULL);
 
@@ -327,9 +327,9 @@ libunw_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
 }
 
 btuwi_status_t
-build_intervals(char  *ins, unsigned int len, mem_alloc m_alloc)
+build_intervals(char  *ins, unsigned int len)
 {
-  btuwi_status_t stat = libunw_build_intervals(ins, len, m_alloc);
+  btuwi_status_t stat = libunw_build_intervals(ins, len);
   return stat;
 }
 
