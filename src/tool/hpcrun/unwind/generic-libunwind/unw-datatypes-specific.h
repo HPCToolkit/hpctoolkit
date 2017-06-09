@@ -22,7 +22,6 @@ typedef struct {
 typedef struct hpcrun_unw_cursor_t {
   void* pc_unnorm;
 
-  fence_enum_t fence; // Details on which fence stopped an unwind
   unw_cursor_t uc;
   // normalized ip for first instruction in enclosing function
   ip_normalized_t the_function;
