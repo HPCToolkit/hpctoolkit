@@ -193,8 +193,6 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
     pc = 0;
   }
 
-  cursor->sp = NULL;
-  cursor->bp = NULL;
   cursor->pc_unnorm = (void *) pc;
 
   compute_normalized_ips(cursor);
@@ -258,8 +256,6 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   unw_get_reg(unw_cursor, UNW_REG_IP, &tmp);
   pc = (void *) tmp;
 
-  cursor->sp = NULL;
-  cursor->bp = NULL;
   cursor->pc_unnorm = pc;
 
   compute_normalized_ips(cursor);

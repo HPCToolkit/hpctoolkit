@@ -21,8 +21,6 @@ typedef struct {
 
 typedef struct hpcrun_unw_cursor_t {
   void* pc_unnorm;
-  void* sp;
-  void* bp;
 
   fence_enum_t fence; // Details on which fence stopped an unwind
   unw_cursor_t uc;
