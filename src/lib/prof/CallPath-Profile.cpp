@@ -657,6 +657,16 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       os << " f" << MakeAttrNum(1);
     } 
 
+    if (type == 3) { // Procedure
+       Struct::ACodeNode *proc = dynamic_cast<Struct::ACodeNode *>(strct);
+	   if (proc) {
+	      const VMAIntervalSet &vma = proc->vmaSet();
+	      VMA addr = vma.begin()->beg();
+	      // print vma of procs for trace analysis
+	      os << " v=\"" << StrUtil::toStr(addr, 16) << "\"";
+	   }	
+	}
+  
     os << "/>\n";
   }
 }
