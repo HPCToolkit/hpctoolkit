@@ -147,21 +147,21 @@ link_ui(unwind_interval *current, unwind_interval *next)
 {
   UWI_END_ADDR(current) = UWI_START_ADDR(next);
   bitree_uwi_set_rightsubtree(current, next);
+  bitree_uwi_set_leftsubtree(next, current);
 }
 
 static void
-_dump_ui_str(unwind_interval *u, char *buf, size_t len)
+dump_ui_str(unwind_interval *u, char *buf, size_t len)
 {
-  snprintf(buf, len, "UNW: start=%p end =%p ra_status=%s sp_ra_pos=%d sp_bp_pos=%d bp_status=%s "
-           "bp_ra_pos = %d bp_bp_pos=%d next=%p prev=%p prev_canonical=%p rest_canon=%d\n"
-           "has_tail_calls = %d",
+  snprintf(buf, len, "UWI: [%8p, %8p) "
+           "ra_status=%14s sp_ra_pos=%4d sp_bp_pos=%4d "
+           "bp_status=%12s bp_ra_pos=%4d bp_bp_pos=%4d "
+           "prev=%14p next=%14p prev_canon=%14p rest_canon=%d "
+           "tail_call=%d\n",
            (void *) UWI_START_ADDR(u), (void *) UWI_END_ADDR(u),
-		   ra_status_string(UWI_RECIPE(u)->ra_status),
-		   UWI_RECIPE(u)->sp_ra_pos, UWI_RECIPE(u)->sp_bp_pos,
-           bp_status_string(UWI_RECIPE(u)->bp_status),
-           UWI_RECIPE(u)->bp_ra_pos, UWI_RECIPE(u)->bp_bp_pos,
-		   UWI_NEXT(u), UWI_PREV(u),
-		   UWI_RECIPE(u)->prev_canonical, UWI_RECIPE(u)->restored_canonical,
+           ra_status_string(UWI_RECIPE(u)->ra_status), UWI_RECIPE(u)->sp_ra_pos, UWI_RECIPE(u)->sp_bp_pos,
+           bp_status_string(UWI_RECIPE(u)->bp_status), UWI_RECIPE(u)->bp_ra_pos, UWI_RECIPE(u)->bp_bp_pos,
+           UWI_PREV(u), UWI_NEXT(u), UWI_RECIPE(u)->prev_canonical, UWI_RECIPE(u)->restored_canonical,
            UWI_RECIPE(u)->has_tail_calls);
 }
 
@@ -171,7 +171,7 @@ dump_ui_log(unwind_interval *u)
 {
   char buf[1000];
 
-  _dump_ui_str(u, buf, sizeof(buf));
+  dump_ui_str(u, buf, sizeof(buf));
 
   EMSG(buf);
 }
@@ -184,7 +184,7 @@ dump_ui(unwind_interval *u, int dump_to_stderr)
   }
 
   char buf[1000];
-  _dump_ui_str(u, buf, sizeof(buf));
+  dump_ui_str(u, buf, sizeof(buf));
 
   TMSG(UNW, buf);
   if (dump_to_stderr) { 
@@ -198,7 +198,7 @@ dump_ui_stderr(unwind_interval *u)
 {
   char buf[1000];
 
-  _dump_ui_str(u, buf, sizeof(buf));
+  dump_ui_str(u, buf, sizeof(buf));
 
   EEMSG(buf);
 }
@@ -208,9 +208,9 @@ dump_ui_dbg(unwind_interval *u)
 {
   char buf[1000];
 
-  _dump_ui_str(u, buf, sizeof(buf));
+  dump_ui_str(u, buf, sizeof(buf));
 
-  fprintf(stderr,"%s\n", buf);
+  fprintf(stderr,"%s", buf);
   fflush(stderr);
 }
 
@@ -219,7 +219,7 @@ dump_ui_troll(unwind_interval *u)
 {
   char buf[1000];
 
-  _dump_ui_str(u, buf, sizeof(buf));
+  dump_ui_str(u, buf, sizeof(buf));
 
   TMSG(TROLL,buf);
 }

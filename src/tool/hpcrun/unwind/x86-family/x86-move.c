@@ -50,6 +50,19 @@
 
 #include <lib/isa-lean/x86/instruction-set.h>
 
+int
+x86_bp_size(xed_reg_enum_t reg)
+{
+  switch(reg) {
+#if defined (HOST_CPU_x86_64)
+  case XED_REG_RBP: return 8;
+#endif
+  case XED_REG_EBP: return 4;
+  case XED_REG_BP: return 2;
+  default: return 1;
+  }
+}
+
 
 unwind_interval *
 process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg,
@@ -179,13 +192,20 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
     } else if (x86_isReg_BP(reg0) && x86_isReg_SP(reg1)) {
       //====================================================================
       // instruction: initialize BP with value of SP to set up a frame ptr
-      // action:      begin a new SP_RELATIVE interval 
+      // action:      begin a new interval 
       //====================================================================
       next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), 
 		    RA_STD_FRAME,
 		    UWI_RECIPE(iarg->current)->sp_ra_pos, UWI_RECIPE(iarg->current)->sp_ra_pos, BP_SAVED,
 		    UWI_RECIPE(iarg->current)->sp_bp_pos, UWI_RECIPE(iarg->current)->sp_bp_pos,
 			m_alloc);
+      if (iarg->sp_realigned) {
+	// SP was previously realigned 
+	// correct RA offsets based on typical frame alignment in these circumstances: the word below BP 
+	UWI_RECIPE(next)->ra_status = RA_BP_FRAME;
+	UWI_RECIPE(next)->sp_ra_pos = UWI_RECIPE(next)->bp_ra_pos = UWI_RECIPE(next)->bp_bp_pos + x86_bp_size(reg0);
+	iarg->sp_realigned = false; // once we've handled this once, we can forget about it
+      }
       if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED, 
 			HW_BP_OVERWRITTEN)) { 
 	hw_tmp->uwi = next;
