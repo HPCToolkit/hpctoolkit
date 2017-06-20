@@ -83,14 +83,14 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 	hw_tmp->state = HW_NEW_STATE(hw_tmp->state, HW_BP_OVERWRITTEN);
       }
     } else if (x86_isReg_SP(regname)) {
-      if (xr->ra_status == RA_SP_RELATIVE) {
+      if (xr->ra_status == RA_SP_RELATIVE || xr->ra_status == RA_STD_FRAME) {
 	unsigned int memops = xed_decoded_inst_number_of_memory_operands(xptr);
 	if (memops > 0) {
 	  int mem_op_index = 0;
 	  xed_reg_enum_t basereg = xed_decoded_inst_get_base_reg(xptr, mem_op_index);
 	  if (x86_isReg_SP(basereg)) {
 	    //========================================================================
-	    // instruction adjusts RSP with a displacement in an SP_RELATIVE interval.
+	    // instruction adjusts RSP with a displacement. 
 	    // begin a new interval where sp_ra_pos is adjusted by the displacement.        
 	    //========================================================================
 	    xed_int64_t disp = xed_decoded_inst_get_memory_displacement(xptr, mem_op_index);
