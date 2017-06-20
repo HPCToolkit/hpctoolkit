@@ -200,11 +200,19 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 		    UWI_RECIPE(iarg->current)->sp_bp_pos, UWI_RECIPE(iarg->current)->sp_bp_pos,
 			m_alloc);
       if (iarg->sp_realigned) {
-	// SP was previously realigned 
-	// correct RA offsets based on typical frame alignment in these circumstances: the word below BP 
-	UWI_RECIPE(next)->ra_status = RA_BP_FRAME;
-	UWI_RECIPE(next)->sp_ra_pos = UWI_RECIPE(next)->bp_ra_pos = UWI_RECIPE(next)->bp_bp_pos + x86_bp_size(reg0);
-	iarg->sp_realigned = false; // once we've handled this once, we can forget about it
+        // SP was previously realigned. correct RA offsets based on typical 
+	// frame layout in these circumstances. 
+
+	// assume RA is in word below BP
+        UWI_RECIPE(next)->bp_ra_pos = 
+	  (UWI_RECIPE(next)->bp_bp_pos + x86_bp_size(reg0));
+
+	// RA offset wrt SP is the same, since SP == BP 
+	UWI_RECIPE(next)->sp_ra_pos = UWI_RECIPE(next)->bp_ra_pos;
+
+	// once we've handled SP realignment in the routine prologue, we can
+	// ignore it for the rest of the routine.
+	iarg->sp_realigned = false; 
       }
       if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED, 
 			HW_BP_OVERWRITTEN)) { 
