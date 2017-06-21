@@ -112,7 +112,6 @@ typedef struct x86recipe_s {
   x86registers_t reg;
 
   bitree_uwi_t* prev_canonical;
-  int restored_canonical;
 
   bool has_tail_calls;
 } x86recipe_t;
@@ -129,8 +128,6 @@ extern "C" {
 #include <unwind/common/unwind-interval.h>
 
   void set_ui_canonical(unwind_interval *u, unwind_interval *value);
-
-  void set_ui_restored_canonical(unwind_interval *u, unwind_interval *value);
 
   unwind_interval *
   new_ui(char *startaddr, ra_loc ra_status, const x86registers_t *reg,

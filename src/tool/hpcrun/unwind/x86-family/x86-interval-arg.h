@@ -68,6 +68,7 @@ typedef struct interval_arg_t {
   bool bp_just_pushed;
   highwatermark_t highwatermark;
   bitree_uwi_t *canonical_interval;
+  unwind_interval *restored_canonical;
   bool bp_frames_found;
   void *rax_rbp_equivalent_at;
   void *return_addr; // A place to store void * return values.
