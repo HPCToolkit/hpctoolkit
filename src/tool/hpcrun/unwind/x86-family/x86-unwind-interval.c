@@ -139,14 +139,14 @@ _dump_ui_str(unwind_interval *u, char *buf, size_t len)
   x86recipe_t *xr = UWI_RECIPE(u);
   x86registers_t reg = xr->reg;
   snprintf(buf, len, "UNW: start=%p end =%p ra_status=%s sp_ra_pos=%d sp_bp_pos=%d bp_status=%s "
-           "bp_ra_pos = %d bp_bp_pos=%d next=%p prev=%p prev_canonical=%p\n"
+           "bp_ra_pos = %d bp_bp_pos=%d next=%p prev_canonical=%p\n"
            "has_tail_calls = %d",
            (void *) UWI_START_ADDR(u), (void *) UWI_END_ADDR(u),
 		   ra_status_string(xr->ra_status),
 		   reg.sp_ra_pos, reg.sp_bp_pos,
            bp_status_string(reg.bp_status),
            reg.bp_ra_pos, reg.bp_bp_pos,
-		   UWI_NEXT(u), UWI_PREV(u),
+		   UWI_NEXT(u),
 		   xr->prev_canonical,
            UWI_RECIPE(u)->has_tail_calls);
 }
