@@ -104,6 +104,10 @@ new_ui(char *start,
   x86recipe->sp_bp_pos = sp_bp_pos;
   x86recipe->bp_bp_pos = bp_bp_pos;
 
+  x86recipe->prev_canonical = NULL;
+  x86recipe->restored_canonical = 0;
+  x86recipe->has_tail_calls = false;
+
   return u;
 }
 
@@ -139,6 +143,11 @@ fluke_ui(char *loc, unsigned int pos, mem_alloc m_alloc)
   x86recipe->bp_status = 0;
   x86recipe->sp_bp_pos = 0;
   x86recipe->bp_bp_pos = 0;
+
+  x86recipe->prev_canonical = NULL;
+  x86recipe->restored_canonical = 0;
+  x86recipe->has_tail_calls = false;
+
   return u;
 }
 
