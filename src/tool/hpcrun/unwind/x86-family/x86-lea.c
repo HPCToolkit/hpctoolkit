@@ -83,37 +83,43 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 	hw_tmp->state = HW_NEW_STATE(hw_tmp->state, HW_BP_OVERWRITTEN);
       }
     } else if (x86_isReg_SP(regname)) {
-      if (xr->ra_status == RA_SP_RELATIVE) {
+      if (xr->ra_status == RA_SP_RELATIVE || xr->ra_status == RA_STD_FRAME) {
 	unsigned int memops = xed_decoded_inst_number_of_memory_operands(xptr);
 	if (memops > 0) {
 	  int mem_op_index = 0;
-	  xed_reg_enum_t basereg = xed_decoded_inst_get_base_reg(xptr, mem_op_index);
+
+	  xed_reg_enum_t basereg = 
+	    xed_decoded_inst_get_base_reg(xptr, mem_op_index);
+
 	  if (x86_isReg_SP(basereg)) {
-	    //========================================================================
-	    // instruction adjusts RSP with a displacement in an SP_RELATIVE interval.
-	    // begin a new interval where sp_ra_pos is adjusted by the displacement.        
-	    //========================================================================
-	    xed_int64_t disp = xed_decoded_inst_get_memory_displacement(xptr, mem_op_index);
+	    //==================================================================
+	    // the LEA instruction adjusts SP with a displacement. 
+	    // begin a new interval where sp_ra_pos is adjusted by the 
+	    // displacement.        
+	    //==================================================================
+	    xed_int64_t disp = 
+	      xed_decoded_inst_get_memory_displacement(xptr, mem_op_index);
+
 	    next = new_ui(next_ins,
 			  xr->ra_status, 
 			  xr->sp_ra_pos - disp, 
 			  xr->bp_ra_pos,
 			  xr->bp_status,
-			  xr->sp_bp_pos, 
+			  xr->sp_bp_pos - disp, 
 			  xr->bp_bp_pos,
 			  m_alloc);
 
 	    if (disp < 0) {
 	      if (HW_TEST_STATE(hw_tmp->state, 0, HW_SP_DECREMENTED)) {
-		//-----------------------------------------------------------------
+		//--------------------------------------------------------------
 		// set the highwatermark and canonical interval upon seeing
-		// the FIRST subtract (using lea with negative displacement) from 
-		// SP; take no action on subsequent subtracts.
+		// the FIRST subtract (using lea with negative displacement) 
+		// from SP; take no action on subsequent subtracts.
 		// test case: pthread_cond_wait@@GLIBC_2.3.2 in
 		// 3.10.0-327.el7.centos.mpsp_1.3.1.45.x86_64
 		//
 		// 5 November 2016 -- John Mellor-Crummey
-		//-----------------------------------------------------------------
+		//--------------------------------------------------------------
 		hw_tmp->uwi = next;
 		hw_tmp->succ_inst_ptr = next_ins; 
 		hw_tmp->state = HW_NEW_STATE(hw_tmp->state, HW_SP_DECREMENTED);

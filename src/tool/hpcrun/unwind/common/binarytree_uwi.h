@@ -197,6 +197,9 @@ bitree_uwi_is_inorder(bitree_uwi_t *tree);
 bitree_uwi_t *
 bitree_uwi_insert(bitree_uwi_t *tree, uwi_t *val, mem_alloc m_alloc);
 
+bitree_uwi_t*
+bitree_uwi_finalize(bitree_uwi_t *tree);
+
 void
 bitree_uwi_leftmostleaf_to_root(bitree_uwi_t **tree);
 

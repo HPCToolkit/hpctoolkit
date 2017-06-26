@@ -356,6 +356,17 @@ bitree_uwi_insert(bitree_uwi_t *tree, uwi_t *val, mem_alloc m_alloc)
 	  uwi_t_cmp, val, m_alloc);
 }
 
+
+bitree_uwi_t*		
+bitree_uwi_finalize(bitree_uwi_t *tree)		
+{		
+  if (tree == NULL) return tree;		
+  bitree_uwi_set_leftsubtree(tree, NULL);		
+  bitree_uwi_finalize(bitree_uwi_rightsubtree(tree));		
+  return tree;		
+}
+
+
 void
 bitree_uwi_leftmostleaf_to_root(bitree_uwi_t **tree)
 {

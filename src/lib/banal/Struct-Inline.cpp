@@ -83,6 +83,9 @@
 #include <list>
 #include <vector>
 
+#include <include/hpctoolkit-config.h>
+
+#include <lib/binutils/LM.hpp>
 #include <lib/support/diagnostics.h>
 #include <lib/support/FileNameMap.hpp>
 #include <lib/support/realpath.h>
@@ -101,6 +104,8 @@ static const string UNKNOWN_PROC ("unknown-proc");
 
 // FIXME: uses a single static buffer.
 static Symtab *the_symtab = NULL;
+
+static BinUtil::LM * the_lm = NULL;
 
 static struct sigaction old_act_abrt;
 static struct sigaction old_act_segv;
@@ -152,9 +157,10 @@ namespace Inline {
 
 // These functions return true on success.
 Symtab *
-openSymtab(string filename)
+openSymtab(string filename, BinUtil::LM * lm)
 {
   bool ret = false;
+  the_lm = lm;
 
   init_sighandler();
   num_queries = 0;
@@ -243,8 +249,10 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 	vector <string> name_vec = func->getAllMangledNames();
 	string procnm = (! name_vec.empty()) ? name_vec[0] : UNKNOWN_PROC;
 #endif
-	string &filenm = getRealPath(callsite.first.c_str());
+	string filenm = callsite.first;
 	long lineno = callsite.second;
+
+	the_lm->realpath(filenm);
 	nodelist.push_front(InlineNode(filenm, procnm, lineno));
 
 	func = parent;
