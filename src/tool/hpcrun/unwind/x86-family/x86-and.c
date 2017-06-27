@@ -66,7 +66,8 @@ process_and(xed_decoded_inst_t *xptr, const xed_inst_t *xi,
   if (op0_name == XED_OPERAND_REG0) {
     xed_reg_enum_t reg0 = xed_decoded_inst_get_reg(xptr, op0_name);
     if (x86_isReg_SP(reg0)) { 
-      if (UWI_RECIPE(iarg->current)->reg.bp_status != BP_UNCHANGED) {
+      x86recipe_t *xr = UWI_RECIPE(iarg->current);
+      if (xr->reg.bp_status != BP_UNCHANGED) {
 	//----------------------------------------------------------------------
 	// we are adjusting the stack pointer via 'and' instruction
 	//----------------------------------------------------------------------

@@ -237,7 +237,7 @@ x86_coalesce_unwind_intervals(unwind_interval *ui)
   TMSG(COALESCE,"coalescing interval list starting @ %p",ui);
   if (! ui) {
 	TMSG(COALESCE,"  --interval list empty, so no work");
-	return;
+	return num_freed;
   }
 
   unwind_interval *first   = ui;
