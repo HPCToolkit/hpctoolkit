@@ -72,6 +72,7 @@ typedef struct interval_arg_t {
   bool bp_frames_found;
   void *rax_rbp_equivalent_at;
   void *return_addr; // A place to store void * return values.
+  bool sp_realigned; // stack pointer was realigned by masking lower bits
 } interval_arg_t;
 
 static inline char *nextInsn(interval_arg_t *iarg, xed_decoded_inst_t *xptr) {

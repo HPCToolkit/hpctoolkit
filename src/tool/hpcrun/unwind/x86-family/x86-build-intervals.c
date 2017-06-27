@@ -91,8 +91,11 @@ static int x86_coalesce_unwind_intervals(unwind_interval *ui);
 btuwi_status_t
 build_intervals(char *ins, unsigned int len, mem_alloc m_alloc)
 {
-  return x86_build_intervals(ins, len, 0, m_alloc);
+  btuwi_status_t status = x86_build_intervals(ins, len, 0, m_alloc);
+  bitree_uwi_finalize(status.first);
+  return status;
 }
+
 
 btuwi_status_t
 x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
@@ -135,6 +138,7 @@ x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
 
   iarg.bp_frames_found 	     = false;
   iarg.bp_just_pushed  	     = false;
+  iarg.sp_realigned  	     = false;
 
   iarg.rax_rbp_equivalent_at = NULL;
   iarg.canonical_interval    = NULL;
@@ -192,6 +196,7 @@ x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
 
   x86_fix_unwind_intervals(iarg.beg, len, &status);
   status.count = count - x86_coalesce_unwind_intervals(status.first);
+
   return status;
 }
 
@@ -261,6 +266,7 @@ x86_coalesce_unwind_intervals(unwind_interval *ui)
 		  UWI_RECIPE(current)->has_tail_calls || UWI_RECIPE(ui)->has_tail_calls;
 	  // disconnect ui's right subtree and free ui:
 	  bitree_uwi_set_rightsubtree(ui, NULL);
+	  bitree_uwi_set_leftsubtree(ui, NULL);
 	  bitree_uwi_free(ui);
 	  ++num_freed;
 
@@ -280,15 +286,4 @@ x86_coalesce_unwind_intervals(unwind_interval *ui)
   UWI_RECIPE(first)->has_tail_calls = routine_has_tail_calls;
 
   return num_freed;
-}
-
-//*************************** Debug stuff ****************************
-
-static btuwi_status_t d_istat;
-
-btuwi_status_t*
-d_build_intervals(void* b, unsigned l, mem_alloc m_alloc)
-{
-  d_istat = build_intervals(b, l, m_alloc);
-  return &d_istat;
 }
