@@ -182,6 +182,37 @@ Contents:
 ------------------------------------------------------------
 
 ----------------------------------------
+HPCToolkit Version 2017.06, June 2017
+----------------------------------------
+
+Updated the 'ompt' branch and merged master into ompt.  This branch,
+together with the llvm-openmp runtime library (github project
+OpenMPToolsInterface) provides support for attributing idleness in
+openmp programs (event OMP_IDLE).
+
+Merged the 'atomics' branch into master.  This branch replaces the
+atomic operations in hpcrun with C11 atomics through the stdatomic.h
+header file.
+
+Updated Dyninst to version 9.3.2 in externals, plus a patch for better
+jump table support.
+
+Various bug fixes:
+
+-- fixed bugs in hpcrun and unwinding on x86-64 due to lea
+instructions that resulted in partial unwinds.
+
+-- fixed bug in hpcrun over failing to reinitialize data after fork()
+that affected programs with launch scripts.
+
+-- fixed bug in hpcrun over binary analysis related to ld.so.
+
+-- fixed bug in hpcstruct in getRealPath() that caused hpcstruct
+sometimes to report incorrect file names.
+
+-- fixed bug in hpcstruct over outlined function names on powerpc.
+
+----------------------------------------
 HPCToolkit Version 2016.12, Dec 2016
 ----------------------------------------
 
