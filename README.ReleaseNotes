@@ -239,6 +239,38 @@ bug prevented using hpcrun to profile programs launched with shell scripts.
 -- fixed bug in hpcstruct in getRealPath() that caused hpcstruct
 to sometimes report incorrect file names.
 
+
+Known issues:
+
+When profiling optimized code with HPCToolkit, one may find that a program 
+generates a significant number of "partial unwinds" where the call stack 
+can't be unwound all the way up to main.  This more commonly happens on
+x86-64 architectures than on PowerPC and ARM. A large number partial unwinds
+may make it harder to use the top-down calling context view in hpcviewer,
+which works best when call stacks unwind all the way up to main. Even 
+with significant numbers of partial unwinds, the bottom-up caller's view
+and the flat view in hpcviewer can be used effectively for analyzing 
+performance. Ongoing work aims to improve call stack unwinding of 
+optimized code by employing compiler-generated unwinding information 
+where available in addition to using binary analysis to discover unwinding
+recipes.
+ 
+On x86-64, hpcfnbounds occasionally is too aggressive about inferring the 
+presence of stripped functions in optimized programs. We have noticed
+this particularly for optimized Fortran. This can cause "partial unwinds", 
+where a call stack can't be unwound fully up to main.  Improving this 
+analysis is the subject of ongoing work.
+
+When using with the LLVM OpenMP runtime's OMPT support, measurements
+of programs compiled with GCC using HPCToolkit's ompt branch sometimes
+reveal implementation-level stack frames that belong to the OpenMP
+runtime system.  This will improve with the transition of HPCToolkit
+and the LLVM OpenMP runtime to the new OMPT ABI designed for OpenMP
+5.0. This transition should occur over the next 6 months. In the
+meantime, there is nothing wrong with the quality of the information
+collected. The only problem is HPCToolkit's measurements reveal more of
+an implementation-level view of OpenMP than intended.
+
 ----------------------------------------
 HPCToolkit Version 2016.12, Dec 2016
 ----------------------------------------
