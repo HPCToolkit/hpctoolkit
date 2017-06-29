@@ -94,6 +94,7 @@
 #include <utilities/arch/mcontext.h>
 #include <utilities/ip-normalized.h>
 
+#include <hpcrun/main.h>
 #include <hpcrun/thread_data.h>
 #include "x86-unwind-interval.h"
 #include "x86-validate-retn-addr.h"

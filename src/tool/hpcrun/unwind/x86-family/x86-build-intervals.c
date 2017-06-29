@@ -90,6 +90,7 @@ build_intervals(char *ins, unsigned int len)
   return x86_build_intervals(ins, len, 0);
 }
 
+
 btuwi_status_t
 x86_build_intervals(void *ins, unsigned int len, int noisy)
 {
@@ -125,11 +126,13 @@ x86_build_intervals(void *ins, unsigned int len, int noisy)
   x86registers_t reg = {0, 0, BP_UNCHANGED, 0, 0};
   iarg.current       = new_ui(ins, RA_SP_RELATIVE, &reg);
   iarg.first         = iarg.current;
+  iarg.restored_canonical = iarg.current;
 
   // handle return is different if there are any bp frames
 
   iarg.bp_frames_found 	     = false;
   iarg.bp_just_pushed  	     = false;
+  iarg.sp_realigned  	     = false;
 
   iarg.rax_rbp_equivalent_at = NULL;
   iarg.canonical_interval    = NULL;
@@ -187,6 +190,7 @@ x86_build_intervals(void *ins, unsigned int len, int noisy)
 
   x86_fix_unwind_intervals(iarg.beg, len, &status);
   status.count = count - x86_coalesce_unwind_intervals(status.first);
+
   return status;
 }
 
@@ -227,7 +231,7 @@ x86_coalesce_unwind_intervals(unwind_interval *ui)
   TMSG(COALESCE,"coalescing interval list starting @ %p",ui);
   if (! ui) {
 	TMSG(COALESCE,"  --interval list empty, so no work");
-	return;
+	return num_freed;
   }
 
   unwind_interval *first   = ui;

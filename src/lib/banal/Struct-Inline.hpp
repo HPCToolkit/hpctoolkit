@@ -70,6 +70,7 @@
 #include <list>
 #include <map>
 
+#include <lib/binutils/LM.hpp>
 #include <lib/isa/ISATypes.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/SrcFile.hpp>
@@ -273,7 +274,7 @@ public:
 
 //***************************************************************************
 
-Symtab * openSymtab(std::string filename);
+Symtab * openSymtab(std::string filename, BinUtil::LM *);
 bool closeSymtab();
 bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
 

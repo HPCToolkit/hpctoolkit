@@ -97,7 +97,7 @@ static bool confirm_cold_path_call(void *loc, interval_arg_t *iarg);
 //**************************************************************************
 
 void
-hpcrun_cold_code_fixup(unwind_interval *current, unwind_interval *warm)
+hpcrun_cold_code_fixup(unwind_interval *first, unwind_interval *current, unwind_interval *warm)
 {
   TMSG(COLD_CODE,"  --fixing up current intervals with the warm interval");
   x86recipe_t *xr = UWI_RECIPE(warm);
@@ -109,11 +109,12 @@ hpcrun_cold_code_fixup(unwind_interval *current, unwind_interval *warm)
 	return;
   }
   TMSG(COLD_CODE,"  --updating sp_ra_pos with offset %d",ra_offset);
-  for(unwind_interval *intv = current; intv; intv = UWI_PREV(intv)) {
+  unwind_interval *intv = first;
+  do {
         xr = UWI_RECIPE(intv);
 	xr->reg.sp_ra_pos += ra_offset;
 	xr->reg.sp_bp_pos += bp_offset;
-  }
+  } while (intv != current && (intv = UWI_NEXT(intv)));
 }
 
 // The cold code detector is called when unconditional jump is encountered

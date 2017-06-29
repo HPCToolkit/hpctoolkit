@@ -93,7 +93,7 @@ process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 		dump_ui_stderr(ui);
 	  }
 	  // Fixup current intervals w.r.t. the warm code interval
-	  hpcrun_cold_code_fixup(iarg->current, ui);
+	  hpcrun_cold_code_fixup(iarg->first, iarg->current, ui);
     }
 
     break;
