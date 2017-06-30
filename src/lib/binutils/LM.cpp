@@ -96,6 +96,8 @@ using std::endl;
 #include <lib/isa/x86ISABinutils.hpp>
 #include <lib/isa/x86ISAXed.hpp>
 
+#include <lib/prof-lean/vdso.h>
+
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
 #include <lib/support/QuickSort.hpp>
@@ -341,7 +343,6 @@ dumpSymFlag(std::ostream& o, asymbol* sym, int flag, const char* txt, bool& hasP
 //***************************************************************************
 // LM
 //***************************************************************************
-
 // current ISA (see comments in header)
 ISA* BinUtil::LM::isa = NULL;
 
@@ -423,7 +424,10 @@ BinUtil::LM::open(const char* filenm)
   }
   
   m_name = filenm;
-  m_realpathMgr.realpath(m_name);
+
+  if (!vdso_segment_p(filenm)) {
+    m_realpathMgr.realpath(m_name);
+  }
   
   // -------------------------------------------------------
   // 2. Collect data from BFD

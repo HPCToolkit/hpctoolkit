@@ -144,8 +144,8 @@ hpcprof_bin_OBJECTS = $(am_hpcprof_bin_OBJECTS)
 am__DEPENDENCIES_1 =
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 am__DEPENDENCIES_3 = $(HPCLIB_Analysis) $(HPCLIB_Banal_Simple) \
-	$(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_ProfLean) \
-	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(am__DEPENDENCIES_2) \
+	$(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
+	$(HPCLIB_ProfLean) $(HPCLIB_ISA) $(am__DEPENDENCIES_2) \
 	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean)
 hpcprof_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -555,8 +555,8 @@ MYLDADD = \
 	$(HPCLIB_Banal_Simple) \
 	$(HPCLIB_ProfXML) \
 	$(HPCLIB_Prof) \
-	$(HPCLIB_ProfLean) \
 	$(HPCLIB_Binutils) \
+	$(HPCLIB_ProfLean) \
 	$(HPCLIB_ISA) \
 	$(MY_LIB_XED) \
 	$(HPCLIB_XML) \

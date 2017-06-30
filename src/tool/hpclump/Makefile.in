@@ -142,8 +142,9 @@ am_hpclump_OBJECTS = $(am__objects_1)
 hpclump_OBJECTS = $(am_hpclump_OBJECTS)
 am__DEPENDENCIES_1 =
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-am__DEPENDENCIES_3 = $(HPCLIB_Binutils) $(HPCLIB_ISA) \
-	$(am__DEPENDENCIES_2) $(HPCLIB_Support) $(HPCLIB_SupportLean)
+am__DEPENDENCIES_3 = $(HPCLIB_Binutils) $(HPCLIB_ProfLean) \
+	$(HPCLIB_ISA) $(am__DEPENDENCIES_2) $(HPCLIB_Support) \
+	$(HPCLIB_SupportLean)
 hpclump_DEPENDENCIES = $(am__DEPENDENCIES_3)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -519,6 +520,7 @@ MYLDFLAGS = \
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Binutils) \
+	$(HPCLIB_ProfLean) \
 	$(HPCLIB_ISA) \
 	$(MY_LIB_XED) \
 	$(HPCLIB_Support) \
