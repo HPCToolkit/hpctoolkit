@@ -278,10 +278,13 @@ static int
 dylib_map_open_dsos_callback(struct dl_phdr_info *info, size_t size, 
 			     void *unused)
 {
+  struct dylib_seg_bounds_s bounds;
   if (strcmp(info->dlpi_name,"") != 0) {
-    struct dylib_seg_bounds_s bounds;
     dylib_get_segment_bounds(info, &bounds);
     fnbounds_ensure_mapped_dso(info->dlpi_name, bounds.start, bounds.end);
+  } else if (info->dlpi_addr > 0) {
+    dylib_get_segment_bounds(info, &bounds);
+    fnbounds_ensure_mapped_dso("[vdso]", bounds.start, bounds.end);
   }
 
   return 0;

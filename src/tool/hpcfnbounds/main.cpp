@@ -87,6 +87,8 @@ using namespace std;
 using namespace Dyninst;
 using namespace SymtabAPI;
 
+#include "vdso.cpp"
+
 //*****************************************************************************
 // macros
 //*****************************************************************************
@@ -529,15 +531,26 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
   vector<Symbol *> symvec;
   uintptr_t image_offset = 0;
 
-  assert_file_is_readable(filename);
+  if (strcmp(filename,"[vdso]") == 0) {
+    syms = symtabOpenVDSO();
+    if (syms == NULL) {
+      fprintf(stderr,
+	      "!!! INTERNAL hpcfnbounds-bin error !!!\n"
+	      "  -- Symtab::openFile fails for in-memory segment [vdso]!\n");
+      exit(1);
+    }
+  } else {
+    assert_file_is_readable(filename);
 
-  if ( ! Symtab::openFile(syms, sfile) ) {
-    fprintf(stderr,
-	    "!!! INTERNAL hpcfnbounds-bin error !!!\n"
-	    "  -- file %s is readable, but Symtab::openFile fails !\n",
-	    filename);
-    exit(1);
+    if ( ! Symtab::openFile(syms, sfile) ) {
+      fprintf(stderr,
+	      "!!! INTERNAL hpcfnbounds-bin error !!!\n"
+	      "  -- file %s is readable, but Symtab::openFile fails !\n",
+	      filename);
+      exit(1);
+    }
   }
+
   int relocatable = 0;
 
   // open for dwarf usage
