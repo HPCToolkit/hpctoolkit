@@ -65,8 +65,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <err.h>
-
 
 
 //******************************************************************************
@@ -200,11 +198,7 @@ dso_symbols
     if (elf) {
       status_ok = dso_symbols_internal(elf, note_symbol, callback_arg);
       elf_end(elf);
-    } else {
-      errx(1, "unable to open elf information for file %s", filename);
     }
-  } else {
-    errx(1, "unable to open file %s", filename);
   }
   return status_ok;
 }
