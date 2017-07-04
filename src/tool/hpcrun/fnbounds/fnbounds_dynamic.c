@@ -78,7 +78,6 @@
 #include <unistd.h>    // getpid
 
 
-#include <include/hpctoolkit-config.h>
 
 //*********************************************************************
 // external libraries
@@ -108,6 +107,10 @@
 #include <messages/messages.h>
 
 #include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/vdso.h>
+
+#include <include/hpctoolkit-config.h>
+
 
 
 //*********************************************************************
@@ -437,11 +440,11 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
     return (NULL);
   }
 
-  // linux-vdso.so and linux-gate.so are virtual files and don't exist
+  // [vdso] and linux-gate.so are virtual files and don't exist
   // in the file system.
-  if (strncmp(incoming_filename, "linux-vdso.so", 13) == 0
-      || strncmp(incoming_filename, "[vdso]", 6) == 0 
-      || strncmp(incoming_filename, "linux-gate.so", 13) == 0) {
+  if (vdso_segment_p(incoming_filename)) { 
+    strncpy(filename, VDSO_SEGMENT_NAME_SHORT, PATH_MAX);
+  } else if (strncmp(incoming_filename, "linux-gate.so", 13) == 0) {
     strncpy(filename, incoming_filename, PATH_MAX);
   } else {
     realpath(incoming_filename, filename);

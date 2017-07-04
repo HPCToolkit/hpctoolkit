@@ -64,6 +64,8 @@
 #include "dylib.h"
 #include "fnbounds_interface.h"
 
+#include <lib/prof-lean/vdso.h>
+
 #include <messages/messages.h>
 
 
@@ -125,6 +127,11 @@ void
 dylib_map_open_dsos()
 {
   dl_iterate_phdr(dylib_map_open_dsos_callback, (void *)0);
+  char *vdso_start = (char *) vdso_segment_addr();
+  if (vdso_start) {
+    char *vdso_end = vdso_start + vdso_segment_len();
+    fnbounds_ensure_mapped_dso(VDSO_SEGMENT_NAME_SHORT, vdso_start, vdso_end);
+  }
 }
 
 
@@ -282,9 +289,6 @@ dylib_map_open_dsos_callback(struct dl_phdr_info *info, size_t size,
   if (strcmp(info->dlpi_name,"") != 0) {
     dylib_get_segment_bounds(info, &bounds);
     fnbounds_ensure_mapped_dso(info->dlpi_name, bounds.start, bounds.end);
-  } else if (info->dlpi_addr > 0) {
-    dylib_get_segment_bounds(info, &bounds);
-    fnbounds_ensure_mapped_dso("[vdso]", bounds.start, bounds.end);
   }
 
   return 0;

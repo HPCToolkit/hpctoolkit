@@ -45,80 +45,87 @@
 //***************************************************************************
 //
 // File:
-//   vdso.c
+//   dso_symbols.h
 //
 // Purpose:
-//   interface for information about VDSO segment in linux
+//   interface for extracting dynamic symbols from a shared library
 //
 // Description:
-//   identify VDSO segment and its properties
+//   extract dynamic symbols from a shared library. this needs to be done
+//   at runtime to understand VDSOs.
+//   
 //
 //***************************************************************************
 
+#ifndef __DSO_SYMBOLS_H__
+#define __DSO_SYMBOLS_H__
 
-//***************************************************************************
+
+//******************************************************************************
 // system includes
-//***************************************************************************
+//******************************************************************************
 
-#include <string.h>
-
-#include <sys/auxv.h>
+#include <stdint.h>
 
 
 
-//***************************************************************************
-// local includes 
-//***************************************************************************
-
-#include "vdso.h"
-#include "procmaps.h"
-
-
-
-//***************************************************************************
+//******************************************************************************
 // type declarations
+//******************************************************************************
+
+typedef enum dso_symbol_bind_e {
+  dso_symbol_bind_local,
+  dso_symbol_bind_global,
+  dso_symbol_bind_weak,
+  dso_symbol_bind_other
+} dso_symbol_bind_t;
+
+
+typedef
+void
+(dso_symbols_symbol_callback_t)
+(
+ const char *func_sym_name,
+ int64_t func_sym_addr,
+ dso_symbol_bind_t func_sym_bind,
+ void *callback_arg // closure state
+); 
+
+
+
+//******************************************************************************
+// interface functions 
+//******************************************************************************
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+int 
+dso_symbols_vdso
+(
+ dso_symbols_symbol_callback_t note_symbol, // callback
+ void *callback_arg                         // closure state 
+);
+
+
+int 
+dso_symbols
+(
+ const char *loadmodule_pathname,
+ dso_symbols_symbol_callback_t note_symbol, // callback
+ void *callback_arg                         // closure state 
+);
+
+
+
+#ifdef __cplusplus
+};
+#endif
+
+
+
 //***************************************************************************
 
-typedef struct {
-  void *addr;
-  size_t size;
-} vdso_info_t;
-
-
-
-//***************************************************************************
-// interface operations
-//***************************************************************************
-
-int
-vdso_segment_p
-(
- const char *filename
-)
-{
-  int result = 0;
-  result |= (strcmp(filename, VDSO_SEGMENT_NAME_SHORT) == 0);
-  result |= (strcmp(filename, VDSO_SEGMENT_NAME_LONG) == 0);
-  return result;
-}
-
-
-void *
-vdso_segment_addr
-(
-)
-{
-  unsigned long vdso_addr = getauxval(AT_SYSINFO_EHDR);
-  return (void *) vdso_addr;
-}
-
-
-size_t 
-vdso_segment_len
-(
-)
-{
-  lm_seg_t *s = lm_segment_find_by_addr(vdso_segment_addr());
-  return (s ? lm_segment_length(s) : 0);
-}
-
+#endif
