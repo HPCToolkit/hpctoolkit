@@ -53,13 +53,13 @@
 // Description:
 //   extract dynamic symbols from a shared library. this needs to be done
 //   at runtime to understand VDSOs.
-//   
+//
 //
 //***************************************************************************
 
 
 //******************************************************************************
-// system includes 
+// system includes
 //******************************************************************************
 
 #include <stdio.h>
@@ -70,7 +70,7 @@
 
 
 //******************************************************************************
-// local includes 
+// local includes
 //******************************************************************************
 
 #include <libelf.h>
@@ -86,7 +86,7 @@
 
 
 //******************************************************************************
-// private functions 
+// private functions
 //******************************************************************************
 
 static int
@@ -109,7 +109,7 @@ dso_symbols_internal
 (
  Elf *elf,
  dso_symbols_symbol_callback_t note_symbol, // callback
- void *callback_arg                         // closure state 
+ void *callback_arg                         // closure state
 )
 {
   int status_ok = 0;
@@ -159,7 +159,7 @@ dso_symbols_internal
 			  addr_signed, binding, callback_arg);
 	      status_ok = 1; // at least one symbol found
 	    }
-	  } 
+	  }
 	}
       }
     }
@@ -170,20 +170,20 @@ dso_symbols_internal
 
 
 //******************************************************************************
-// interface functions 
+// interface functions
 //******************************************************************************
 
-int 
+int
 dso_symbols_vdso
 (
  dso_symbols_symbol_callback_t note_symbol, // callback
- void *callback_arg                         // closure state 
+ void *callback_arg                         // closure state
 )
 {
   int status_ok = 0;
   char *vdso_start = (char *) vdso_segment_addr();
   if (vdso_start) {
-    elf_version(EV_CURRENT); 
+    elf_version(EV_CURRENT);
     size_t vdso_len = vdso_segment_len();
     Elf *vdso_elf = elf_memory(vdso_start, vdso_len);
     if (vdso_elf) {
@@ -200,13 +200,13 @@ dso_symbols
 (
  const char *filename,
  dso_symbols_symbol_callback_t note_symbol, // callback
- void *callback_arg                         // closure state 
+ void *callback_arg                         // closure state
 )
 {
   int status_ok = 0;
   FILE *file = fopen(filename, "r");
   if (file) {
-    elf_version(EV_CURRENT); 
+    elf_version(EV_CURRENT);
     Elf *elf = elf_begin(fileno(file), ELF_C_READ, (Elf *) 0);
     if (elf) {
       status_ok = dso_symbols_internal(elf, note_symbol, callback_arg);

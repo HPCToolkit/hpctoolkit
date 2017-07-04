@@ -48,7 +48,7 @@
 //   procmaps.c
 //
 // Purpose:
-//   decode a line in Linux /proc/self/maps 
+//   decode a line in Linux /proc/self/maps
 //
 //***************************************************************************
 
@@ -77,7 +77,7 @@
 
 typedef struct {
   void *addr;
-  lm_seg_t *s; 
+  lm_seg_t *s;
 } lm_seg_by_addr_t;
 
 
@@ -128,7 +128,7 @@ lm_segment_find_by_addr_callback
 // interface operations
 //******************************************************************************
 
-int 
+int
 lm_segment_contains
 (
  lm_seg_t *s,
@@ -139,7 +139,7 @@ lm_segment_contains
 }
 
 
-size_t 
+size_t
 lm_segment_length
 (
  lm_seg_t *s
@@ -160,7 +160,7 @@ lm_segment_parse
 
   s->path[0] ='\0';
 
-  sscanf(line, "%p-%p %s %lx %s %d %s", &s->start_address, &s->end_address, item, 
+  sscanf(line, "%p-%p %s %lx %s %d %s", &s->start_address, &s->end_address, item,
 	 &s->offset, s->device, &s->inode, s->path);
 
   s->permissions = lm_segment_permissions_decode(item);

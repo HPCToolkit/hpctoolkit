@@ -101,7 +101,7 @@ MYSOURCES = \
 	generic_val.h  mem_manager.h \
 	procmaps.h procmaps.c \
 	randomizer.h randomizer.c \
-	vdso.h vdso.c 
+	vdso.h vdso.c
 
 MYCFLAGS = @HOST_CFLAGS@ -I@LIBELF_INC@ $(HPC_IFLAGS)
 
@@ -111,9 +111,9 @@ else
   MYAR = $(AR) cru
 endif
 
-MYLIBADD = 
+MYLIBADD =
 
-MYCLEAN = 
+MYCLEAN =
 
 #############################################################################
 # Automake rules

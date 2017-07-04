@@ -91,7 +91,7 @@ vdso_segment_addr
 
 
 // returns length of VDSO segment
-size_t 
+size_t
 vdso_segment_len
 (
 );

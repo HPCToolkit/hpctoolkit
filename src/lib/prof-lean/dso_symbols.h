@@ -53,7 +53,7 @@
 // Description:
 //   extract dynamic symbols from a shared library. this needs to be done
 //   at runtime to understand VDSOs.
-//   
+//
 //
 //***************************************************************************
 
@@ -89,12 +89,12 @@ void
  int64_t func_sym_addr,
  dso_symbol_bind_t func_sym_bind,
  void *callback_arg // closure state
-); 
+);
 
 
 
 //******************************************************************************
-// interface functions 
+// interface functions
 //******************************************************************************
 
 #ifdef __cplusplus
@@ -102,20 +102,20 @@ extern "C" {
 #endif
 
 
-int 
+int
 dso_symbols_vdso
 (
  dso_symbols_symbol_callback_t note_symbol, // callback
- void *callback_arg                         // closure state 
+ void *callback_arg                         // closure state
 );
 
 
-int 
+int
 dso_symbols
 (
  const char *loadmodule_pathname,
  dso_symbols_symbol_callback_t note_symbol, // callback
- void *callback_arg                         // closure state 
+ void *callback_arg                         // closure state
 );
 
 

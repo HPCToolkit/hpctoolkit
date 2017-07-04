@@ -4,7 +4,7 @@ Symtab *
 symtabOpenVDSO()
 {
   Symtab * the_symtab = NULL;
-  
+
   char *mem_image = (char *) vdso_segment_addr();
   size_t vdso_size = vdso_segment_len();
 
