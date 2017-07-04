@@ -79,10 +79,6 @@
 #include <vdso.h>
 #include <dso_symbols.h>
 
-#if 0
-#include <libeblP.h>
-#endif
-
 
 
 //******************************************************************************
@@ -114,14 +110,8 @@ dso_symbols_internal
 {
   int status_ok = 0;
   int nsymbols;
-#if 0
-  size_t shstrndx;
-#endif
-  if (elf) {
-#if 0
-    Ebl *ebl = ebl_openbackend(elf);
-#endif
 
+  if (elf) {
     Elf_Scn *scn = NULL;
     GElf_Shdr shdr;
     while ((scn = elf_nextscn(elf, scn)) != NULL) {
@@ -140,7 +130,6 @@ dso_symbols_internal
 	break;
       }
     }
-    // elf_getshdrstrndx(ebl->elf,&shstrndx);
     if (status_ok) {
       status_ok = 0; // no symbols found yet
       Elf_Data *datap = elf_getdata(scn, NULL);
