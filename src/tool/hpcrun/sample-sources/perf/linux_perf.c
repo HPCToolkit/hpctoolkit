@@ -247,31 +247,6 @@ perf_stop(event_thread_t event)
             event.fd, strerror(errno));
     }
     TMSG(LINUX_PERF, "closed: %d", event.fd);
-
-    // ------------------------------
-    // finalizing the variance
-    // ------------------------------
-    /*
-     * using Knuth approach. see https://math.stackexchange.com/questions/198336/how-to-calculate-standard-deviation-with-streaming-inputs
-    def online_variance(data):
-        n = 0
-        mean = 0.0
-        M2 = 0.0
-
-        for x in data:
-            n += 1
-            delta = x - mean
-            mean += delta/n
-            M2 += delta*(x - mean)
-
-        if n < 2:
-            return float('nan')
-        else:
-            return M2 / (n - 1)
-    */
-    //metric_aux_info_t *info_aux = &(event.event->metric_desc->info_data);
-    //if (info_aux->num_samples > 1)
-    //  info_aux->threshold_stdev = sqrt(info_aux->threshold_stdev / (info_aux->num_samples-1));
   }
 }
 
@@ -347,8 +322,6 @@ perf_get_pmu_code_type(const char *name, u64 *event_code, u64* event_type)
 }
 
 
-
-
 //----------------------------------------------------------
 // initialize an event
 //  event_num: event number
@@ -363,9 +336,9 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   // it returns -1 if it fails.
   et->fd = perf_event_open(&event->attr,
             THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
-  TMSG(LINUX_PERF, "dbg register event %d, fd: %d, skid: %d, c: %d, period: %d, freq: %d",
+  TMSG(LINUX_PERF, "dbg register event %d, fd: %d, skid: %d, c: %d, t: %d, period: %d, freq: %d",
     event->id, et->fd, event->attr.precise_ip, event->attr.config,
-	event->attr.sample_freq, event->attr.freq);
+	event->attr.type, event->attr.sample_freq, event->attr.freq);
 
   // check if perf_event_open is successful
   if ( et->fd <0 ) {
