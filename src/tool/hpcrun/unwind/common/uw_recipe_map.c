@@ -482,8 +482,10 @@ uw_recipe_map_notify_init()
 static void
 uw_cleanup(void)
 {
-  ildmod_stat_t *ilmstat = current_btuwi->ilmstat;
-  atomic_store_explicit(&ilmstat->stat, NEVER, memory_order_release);
+  if (current_btuwi) {
+    ildmod_stat_t *ilmstat = current_btuwi->ilmstat;
+    atomic_store_explicit(&ilmstat->stat, NEVER, memory_order_release);
+  }
 }
 
 //---------------------------------------------------------------------
@@ -601,6 +603,7 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
       return false;
     }
     ilm_btui->btuwi = bitree_uwi_rebalance(btuwi_stat.first);
+    current_btuwi = NULL;
     atomic_store_explicit(&ilmstat->stat, READY, memory_order_release);
   }
   else switch (oldstat) {
