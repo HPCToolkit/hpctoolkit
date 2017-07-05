@@ -586,7 +586,7 @@ makeStructure_OA(BinUtil::LM * lm,
   Prof::Struct::LM* lmStruct = new Prof::Struct::LM(lm->name(), NULL);
 
 #ifdef BANAL_USE_SYMTAB
-  Symtab * symtab = Inline::openSymtab(lm->name());
+  Symtab * symtab = Inline::openSymtab(lm->name(), lm);
 #endif
 
   // 1. Build Struct::File/Struct::Proc skeletal structure
@@ -643,7 +643,7 @@ makeStructure_ParseAPI(BinUtil::LM * lm,
   the_linemap->readFile(lm->name().c_str());
 #endif
 
-  Symtab * symtab = Inline::openSymtab(lm->name());
+  Symtab * symtab = Inline::openSymtab(lm->name(), lm);
   the_symtab = symtab;
 
   SymtabCodeSource * code_src;
