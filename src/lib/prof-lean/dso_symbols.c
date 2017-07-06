@@ -151,9 +151,15 @@ dso_symbols_internal
 	  GElf_Sym *symp = gelf_getsym(datap, i, &sym);
 	  if (symp) { // symbol properly read
 	    dso_symbol_bind_t binding = dso_symbol_binding(&sym);
-	    if (GELF_ST_TYPE(sym.st_info) == STT_FUNC &&
-		binding != dso_symbol_bind_other) {
-	      // known to be a function symbol of interest
+            int symtype = GELF_ST_TYPE(sym.st_info);
+	    if (binding != dso_symbol_bind_other &&
+	        (symtype == STT_FUNC || symtype == STT_NOTYPE)) {
+	      // if symtype is STT_FUNC, it is known to be a function 
+	      // symbol of interest
+	      //
+	      // for [vdso] on ppc64/BE, function symbols have been
+	      // observed to have STT_NOTYPE for 
+	      // Linux 2.6.32-642.6.2.el6.ppc64
 	      int64_t addr_signed = (int64_t) sym.st_value;
 	      note_symbol(elf_strptr(elf, shdr.sh_link, sym.st_name),
 			  addr_signed, binding, callback_arg);

@@ -76,9 +76,9 @@
 //***************************************************************************
 
 typedef struct {
-  void *addr;
+  void *val;
   lm_seg_t *s;
-} lm_seg_by_addr_t;
+} lm_seg_finder_t;
 
 
 
@@ -114,14 +114,29 @@ lm_segment_find_by_addr_callback
  void *arg
 )
 {
-  lm_seg_by_addr_t *sinfo = (lm_seg_by_addr_t *) arg;
-  if (lm_segment_contains(s, sinfo->addr)) {
+  lm_seg_finder_t *sinfo = (lm_seg_finder_t *) arg;
+  if (lm_segment_contains(s, sinfo->val)) {
     sinfo->s = s;
     return 1;
   }
   return 0;
 }
 
+
+static int
+lm_segment_find_by_name_callback
+(
+ lm_seg_t *s,
+ void *arg
+)
+{
+  lm_seg_finder_t *sinfo = (lm_seg_finder_t *) arg;
+  if (strcmp(s->path, (char *) sinfo->val) == 0) {
+    sinfo->s = s;
+    return 1;
+  }
+  return 0;
+}
 
 
 //******************************************************************************
@@ -193,8 +208,19 @@ lm_segment_find_by_addr
  void *addr
 )
 {
-  lm_seg_by_addr_t info = { addr, 0 };
+  lm_seg_finder_t info = { addr, 0 };
   lm_segment_iterate(lm_segment_find_by_addr_callback, &info);
   return info.s;
 }
 
+
+lm_seg_t *
+lm_segment_find_by_name
+(
+ const char *name
+)
+{
+  lm_seg_finder_t info = { name, 0 };
+  lm_segment_iterate(lm_segment_find_by_name_callback, &info);
+  return info.s;
+}
