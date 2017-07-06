@@ -56,13 +56,21 @@
 //***************************************************************************
 
 
+#include "hpctoolkit-config.h"
+
+
+
 //***************************************************************************
 // system includes
 //***************************************************************************
 
 #include <string.h>
 
+#if HAVE_SYS_AUXV_H
 #include <sys/auxv.h>
+#else
+#define getauxval(...) 0
+#endif
 
 
 
@@ -118,7 +126,12 @@ vdso_segment_len
 (
 )
 {
-  lm_seg_t *s = lm_segment_find_by_addr(vdso_segment_addr());
-  return (s ? lm_segment_length(s) : 0);
+  void *vdso_addr = vdso_segment_addr();
+  size_t len = 0; 
+  if (vdso_addr) {
+    lm_seg_t *s = lm_segment_find_by_addr(vdso_addr);
+    if (s) len = lm_segment_length(s);
+  }
+  return len;
 }
 

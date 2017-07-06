@@ -17605,6 +17605,18 @@ fi
 
 done
 
+for ac_header in sys/auxv.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "sys/auxv.h" "ac_cv_header_sys_auxv_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_auxv_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_SYS_AUXV_H 1
+_ACEOF
+
+fi
+
+done
+
 
 { ac_cv_header_unistd_h=; unset ac_cv_header_unistd_h;}   # retest for C++
 { ac_cv_header_inttypes_h=; unset ac_cv_header_inttypes_h;} # retest for C++
