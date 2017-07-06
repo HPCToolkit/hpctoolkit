@@ -236,10 +236,6 @@ hpcrun_sample_callpath(void* context, int metricId,
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
     if (epoch != NULL) {
-      node = help_hpcrun_sample_callpath(epoch, context, &leaf_func, metricId, metricIncr,
-					 skipInner, isSync);  
-
-      if (epoch != NULL) {
 	  // node = help_hpcrun_sample_callpath(epoch, context, &leaf_func, metricId, metricIncr,
 	  //	  skipInner, isSync);  // TODO change the interface to return the function containing trace_pc.
 
@@ -260,7 +256,6 @@ hpcrun_sample_callpath(void* context, int metricId,
 	  if (ENABLED(DUMP_BACKTRACES)) {
 		hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
 	  }
-      }
     }
   }
   else {
