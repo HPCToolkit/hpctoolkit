@@ -104,6 +104,10 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
     cct_metric_data_increment(metric_index,
                                 sv.sample_node,
                                (cct_metric_data_t){.i = delta});
+
+    // it's important to always count the number of samples for debugging purpose
+    metric_aux_info_t *info = &current_event->event->metric_custom->metric_desc->info_data;
+    info->num_samples++;
   }
 }
 

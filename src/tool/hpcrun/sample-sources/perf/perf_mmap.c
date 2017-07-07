@@ -417,28 +417,24 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
       // only available since kernel 4.3
       mmap_info->context_switch_type = hdr.misc;
 
-      u64 type, val64;
+      u64 type;
       struct { uint32_t pid, tid; } pid;
       struct { uint32_t cpu, reserved; } cpu;
 
       type = current->event->attr.sample_type;
-
-      char *cs_type = "CONTEXT SWITCH: IN";
-      if (hdr.misc == PERF_RECORD_MISC_SWITCH_OUT) {
-	    cs_type = "CONTEXT SWITCH: OUT";
-      }
 
       if (type & PERF_SAMPLE_TID) {
         perf_read( current_perf_mmap, &pid, sizeof(pid)) ;
       }
 
       if (type & PERF_SAMPLE_TIME) {
-        perf_read_u64( current_perf_mmap, &val64 ) ;
+        perf_read_u64( current_perf_mmap, &(mmap_info->context_switch_time) ) ;
       }
       if (type & PERF_SAMPLE_CPU) {
         perf_read( current_perf_mmap, &cpu, sizeof(cpu) ) ;
       }
-      TMSG(LINUX_PERF, "%s\nTime: %d, tid: %d, cpu: %d", cs_type, val64, pid.pid, cpu.cpu);
+      TMSG(LINUX_PERF, "SWITCH %d\nTime: %d, tid: %d, cpu: %d",
+    		  hdr.misc, mmap_info->context_switch_time, pid.pid, cpu.cpu);
 #endif
     } else {
       // not a PERF_RECORD_SAMPLE

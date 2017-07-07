@@ -113,6 +113,7 @@ typedef struct perf_mmap_data_s {
 
   // only for PERF_RECORD_SWITCH
   u32   context_switch_type;
+  u64 	context_switch_time;
 
 } perf_mmap_data_t;
 
