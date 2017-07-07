@@ -275,7 +275,7 @@ struct builder
   int count;
 };
 
-int
+static int
 dwarf_reg_states_callback(void *token,
 			  void *rs,
 			  size_t size,
