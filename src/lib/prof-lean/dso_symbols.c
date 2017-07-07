@@ -79,10 +79,6 @@
 #include <vdso.h>
 #include <dso_symbols.h>
 
-#if 0
-#include <libeblP.h>
-#endif
-
 
 
 //******************************************************************************
@@ -114,14 +110,7 @@ dso_symbols_internal
 {
   int status_ok = 0;
   int nsymbols;
-#if 0
-  size_t shstrndx;
-#endif
   if (elf) {
-#if 0
-    Ebl *ebl = ebl_openbackend(elf);
-#endif
-
     Elf_Scn *scn = NULL;
     GElf_Shdr shdr;
     while ((scn = elf_nextscn(elf, scn)) != NULL) {
@@ -140,7 +129,6 @@ dso_symbols_internal
 	break;
       }
     }
-    // elf_getshdrstrndx(ebl->elf,&shstrndx);
     if (status_ok) {
       status_ok = 0; // no symbols found yet
       Elf_Data *datap = elf_getdata(scn, NULL);
@@ -151,19 +139,23 @@ dso_symbols_internal
 	  GElf_Sym *symp = gelf_getsym(datap, i, &sym);
 	  if (symp) { // symbol properly read
 	    dso_symbol_bind_t binding = dso_symbol_binding(&sym);
-            int symtype = GELF_ST_TYPE(sym.st_info);
-	    if (binding != dso_symbol_bind_other &&
-	        (symtype == STT_FUNC || symtype == STT_NOTYPE)) {
-	      // if symtype is STT_FUNC, it is known to be a function 
-	      // symbol of interest
-	      //
-	      // for [vdso] on ppc64/BE, function symbols have been
-	      // observed to have STT_NOTYPE for 
-	      // Linux 2.6.32-642.6.2.el6.ppc64
-	      int64_t addr_signed = (int64_t) sym.st_value;
-	      note_symbol(elf_strptr(elf, shdr.sh_link, sym.st_name),
-			  addr_signed, binding, callback_arg);
-	      status_ok = 1; // at least one symbol found
+	    int symtype = GELF_ST_TYPE(sym.st_info);
+	    if (sym.st_shndx == SHN_UNDEF) continue;
+	    if (binding == dso_symbol_bind_other) continue;
+	    switch(symtype) {
+	    case STT_FUNC:
+	      // function symbols are definitely of interest
+	    case STT_NOTYPE:
+	      // for [vdso] LINUX 2.6.15 on ppc64 
+	      // functions have STT_NOTYPE. what nonsense!
+	      {
+		int64_t addr_signed = (int64_t) sym.st_value;
+		note_symbol(elf_strptr(elf, shdr.sh_link, sym.st_name),
+			    addr_signed, binding, callback_arg);
+		status_ok = 1; // at least one symbol found
+	      }
+	    default:
+	      break;
 	    }
 	  }
 	}
@@ -217,11 +209,7 @@ dso_symbols
     if (elf) {
       status_ok = dso_symbols_internal(elf, note_symbol, callback_arg);
       elf_end(elf);
-    } else {
-      errx(1, "unable to open elf information for file %s", filename);
-    }
-  } else {
-    errx(1, "unable to open file %s", filename);
+    } 
   }
   return status_ok;
 }

@@ -58,6 +58,7 @@
 //******************************************************************************
 
 #include <stdio.h>
+#include <string.h>
 
 #include <sys/param.h>
 
@@ -76,7 +77,7 @@
 //***************************************************************************
 
 typedef struct {
-  void *val;
+  const void *val;
   lm_seg_t *s;
 } lm_seg_finder_t;
 
@@ -131,7 +132,7 @@ lm_segment_find_by_name_callback
 )
 {
   lm_seg_finder_t *sinfo = (lm_seg_finder_t *) arg;
-  if (strcmp(s->path, (char *) sinfo->val) == 0) {
+  if (strcmp(s->path, (const char *) sinfo->val) == 0) {
     sinfo->s = s;
     return 1;
   }
@@ -147,7 +148,7 @@ int
 lm_segment_contains
 (
  lm_seg_t *s,
- void *addr
+ const void *addr
 )
 {
   return (s->start_address <= addr) && (addr < s->end_address);

@@ -104,7 +104,7 @@ int
 lm_segment_contains
 (
  lm_seg_t *s,
- void *addr
+ const void *addr
 );
 
 
