@@ -56,13 +56,15 @@
 //***************************************************************************
 
 
+#include "hpctoolkit-config.h"
+
+
+
 //***************************************************************************
 // system includes
 //***************************************************************************
 
 #include <string.h>
-
-#include <sys/auxv.h>
 
 
 
@@ -108,8 +110,8 @@ vdso_segment_addr
 (
 )
 {
-  unsigned long vdso_addr = getauxval(AT_SYSINFO_EHDR);
-  return (void *) vdso_addr;
+  lm_seg_t *s = lm_segment_find_by_name(VDSO_SEGMENT_NAME_SHORT);
+  return (s ? s->start_address : 0);
 }
 
 
@@ -118,7 +120,12 @@ vdso_segment_len
 (
 )
 {
-  lm_seg_t *s = lm_segment_find_by_addr(vdso_segment_addr());
-  return (s ? lm_segment_length(s) : 0);
+  void *vdso_addr = vdso_segment_addr();
+  size_t len = 0; 
+  if (vdso_addr) {
+    lm_seg_t *s = lm_segment_find_by_name(VDSO_SEGMENT_NAME_SHORT);
+    if (s) len = lm_segment_length(s);
+  }
+  return len;
 }
 

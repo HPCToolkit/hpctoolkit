@@ -104,7 +104,7 @@ int
 lm_segment_contains
 (
  lm_seg_t *s,
- void *addr
+ const void *addr
 );
 
 
@@ -136,6 +136,14 @@ lm_segment_find_by_addr
 (
   void *addr
 );
+
+
+lm_seg_t *
+lm_segment_find_by_name
+(
+  const char *name
+);
+
 
 #ifdef __cplusplus
 };

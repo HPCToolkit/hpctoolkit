@@ -108,7 +108,6 @@ dso_symbols_internal
 {
   int status_ok = 0;
   int nsymbols;
-
   if (elf) {
     Elf_Scn *scn = NULL;
     GElf_Shdr shdr;
@@ -138,13 +137,23 @@ dso_symbols_internal
 	  GElf_Sym *symp = gelf_getsym(datap, i, &sym);
 	  if (symp) { // symbol properly read
 	    dso_symbol_bind_t binding = dso_symbol_binding(&sym);
-	    if (GELF_ST_TYPE(sym.st_info) == STT_FUNC &&
-		binding != dso_symbol_bind_other) {
-	      // known to be a function symbol of interest
-	      int64_t addr_signed = (int64_t) sym.st_value;
-	      note_symbol(elf_strptr(elf, shdr.sh_link, sym.st_name),
-			  addr_signed, binding, callback_arg);
-	      status_ok = 1; // at least one symbol found
+	    int symtype = GELF_ST_TYPE(sym.st_info);
+	    if (sym.st_shndx == SHN_UNDEF) continue;
+	    if (binding == dso_symbol_bind_other) continue;
+	    switch(symtype) {
+	    case STT_FUNC:
+	      // function symbols are definitely of interest
+	    case STT_NOTYPE:
+	      // for [vdso] LINUX 2.6.15 on ppc64 
+	      // functions have STT_NOTYPE. what nonsense!
+	      {
+		int64_t addr_signed = (int64_t) sym.st_value;
+		note_symbol(elf_strptr(elf, shdr.sh_link, sym.st_name),
+			    addr_signed, binding, callback_arg);
+		status_ok = 1; // at least one symbol found
+	      }
+	    default:
+	      break;
 	    }
 	  }
 	}
