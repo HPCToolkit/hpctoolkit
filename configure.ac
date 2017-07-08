@@ -289,7 +289,6 @@ AC_LANG([C])
 AC_HEADER_STDC()
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(inttypes.h)
-AC_CHECK_HEADERS(sys/auxv.h)
 
 AS_UNSET([ac_cv_header_unistd_h])   # retest for C++
 AS_UNSET([ac_cv_header_inttypes_h]) # retest for C++
