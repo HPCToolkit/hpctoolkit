@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,24 +44,24 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef files_h
-#define files_h
+#ifndef __KERNELSYMBOLS_HPP__
+#define __KERNELSYMBOLS_HPP__
 
-//*****************************************************************************
+//******************************************************************************
+// local includes 
+//******************************************************************************
 
-void hpcrun_files_set_directory();
-void hpcrun_files_set_executable(char *execname);   
-const char *hpcrun_files_executable_pathname();
-const char *hpcrun_files_executable_name();
+#include "SimpleSymbols.hpp"
 
-int hpcrun_open_log_file(void);
-int hpcrun_open_trace_file(int thread);
-int hpcrun_open_profile_file(int rank, int thread);
-int hpcrun_rename_log_file(int rank);
-int hpcrun_rename_trace_file(int rank, int thread);
 
-void hpcrun_save_vdso();
 
-//*****************************************************************************
+//******************************************************************************
+// type declarations
+//******************************************************************************
 
-#endif // files_h
+class LinuxKernelSymbols : public SimpleSymbols {
+public:
+  bool parseLinuxKernelSymbols();
+};
+
+#endif

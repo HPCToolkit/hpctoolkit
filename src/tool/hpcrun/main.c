@@ -499,6 +499,8 @@ hpcrun_init_internal(bool is_child)
   }
 #endif
 
+  hpcrun_save_vdso();
+
   // start the sampling process
 
   hpcrun_enable_sampling();

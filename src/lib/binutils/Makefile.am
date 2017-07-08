@@ -81,6 +81,9 @@ MYSOURCES = \
 	Dbg-Proc.hpp Dbg-Proc.cpp \
 	\
 	BinUtils.hpp BinUtils.cpp \
+	SimpleSymbols.hpp SimpleSymbols.cpp \
+	SimpleSymbols.hpp SimpleSymbols.cpp \
+	LinuxKernelSymbols.hpp LinuxKernelSymbols.cpp \
 	VMAInterval.hpp VMAInterval.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@

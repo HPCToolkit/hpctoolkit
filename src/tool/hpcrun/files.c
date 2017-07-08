@@ -129,6 +129,7 @@
 #include "sample_prob.h"
 
 #include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/vdso.h>
 #include <lib/support-lean/OSUtil.h>
 
 
@@ -138,6 +139,7 @@
 
 // directory/progname-rank-thread-hostid-pid-gen.suffix
 #define FILENAME_TEMPLATE  "%s/%s-%06u-%03d-%08lx-%u-%d.%s"
+#define VDSO_FILEPATH_TEMPLATE "%s/[vdso]"
 
 #define FILES_RANDOM_GEN  4
 #define FILES_MAX_GEN     11
@@ -184,6 +186,8 @@ static struct fileid lateid;
 static int log_done = 0;
 static int log_rename_done = 0;
 static int log_rename_ret = 0;
+
+static int vdso_written = 0;
 
 
 //***************************************************************
@@ -523,4 +527,65 @@ hpcrun_rename_trace_file(int rank, int thread)
   TMSG(TRACE, "(rename) Spin lock released for (R:%d, T:%d)", rank, thread);
 
   return ret;
+}
+
+
+// Record the contents of a [vdso] file, if one exists. Die on failure.
+void
+hpcrun_save_vdso()
+{
+  char name[PATH_MAX];
+  struct fileid *id;
+  int fd, ret;
+  int error;
+
+  // don't need to try writing it again after a fork
+  if (vdso_written) return;
+
+  // optimistically assume success; failure will cause an abort
+  vdso_written = 1;
+
+  void *vdso_addr = vdso_segment_addr();
+
+  // if there is a [vdso] to write
+  if (vdso_addr) {
+    size_t vdso_len = vdso_segment_len();
+
+  // loop enables us to use break for unstructured control flow
+  for(;;) {
+    errno = 0;
+    ret = snprintf(name, PATH_MAX, VDSO_FILEPATH_TEMPLATE, output_directory);
+    if (ret >= PATH_MAX) {
+      fd = -1;
+      error = ENAMETOOLONG;
+      break;
+    }
+    fd = open(name, O_WRONLY | O_CREAT | O_EXCL, 0644);
+    if (errno == EEXIST) {
+      // another process already wrote [vdso]
+      return; 
+    }
+    if (fd >= 0) {
+      // my process is the designated writer of [vdso]
+
+      if (write(fd, vdso_addr, vdso_len) != vdso_len) {
+	// write error; attempt to close file and 
+        // jump to error reporting. no checking on close
+        // necessary. we are reporting an error anyway
+        error = errno;
+        close(fd); 
+        break;
+      }
+      if (close(fd) == 0) {
+        return;
+      }
+      error = errno;
+      // fall through to error reporting
+    }
+    break;
+  }
+
+  // opening or writing [vdso] has failed. abort with error.
+  hpcrun_abort("hpctoolkit: unable to write [vdso] file: %s", strerror(error));
+  }
 }

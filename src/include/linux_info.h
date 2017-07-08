@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,24 +44,11 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef files_h
-#define files_h
+#ifndef linux_info_h
 
-//*****************************************************************************
+#define LINUX_KERNEL_NAME             "vmlinux"
+#define LINUX_KERNEL_SYMBOL_FILE      "/proc/kallsyms"
+#define LINUX_PERF_EVENTS_FILE        "/proc/sys/kernel/perf_event_paranoid"
+#define LINUX_KERNEL_SYMBOLS_RESTRICT "/proc/sys/kernel/kptr_restrict"
 
-void hpcrun_files_set_directory();
-void hpcrun_files_set_executable(char *execname);   
-const char *hpcrun_files_executable_pathname();
-const char *hpcrun_files_executable_name();
-
-int hpcrun_open_log_file(void);
-int hpcrun_open_trace_file(int thread);
-int hpcrun_open_profile_file(int rank, int thread);
-int hpcrun_rename_log_file(int rank);
-int hpcrun_rename_trace_file(int rank, int thread);
-
-void hpcrun_save_vdso();
-
-//*****************************************************************************
-
-#endif // files_h
+#endif /* linux_info_h */
