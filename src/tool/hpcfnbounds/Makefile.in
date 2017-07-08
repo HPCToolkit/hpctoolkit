@@ -162,8 +162,8 @@ hpcfnbounds_bin_OBJECTS = $(am_hpcfnbounds_bin_OBJECTS)
 am__DEPENDENCIES_1 =
 @USE_BOOST_LIBS_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 am__DEPENDENCIES_3 = $(HPCLIB_SupportLean) $(HPCLIB_ProfLean) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1)
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
 hpcfnbounds_bin_DEPENDENCIES = $(am__DEPENDENCIES_3) \
 	$(am__DEPENDENCIES_4)
@@ -374,10 +374,7 @@ LIBDWARF_COPY = @LIBDWARF_COPY@
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_COPY = @LIBELF_COPY@
-LIBELF_IFLAGS = @LIBELF_IFLAGS@
 LIBELF_INC = @LIBELF_INC@
-LIBELF_LDFLAGS = @LIBELF_LDFLAGS@
-LIBELF_LDLIBS = @LIBELF_LDLIBS@
 LIBELF_LIB = @LIBELF_LIB@
 LIBMONITOR_COPY = @LIBMONITOR_COPY@
 LIBMONITOR_INC = @LIBMONITOR_INC@
@@ -560,7 +557,6 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-LIBELF_LDADD = @LIBELF_LDFLAGS@ @LIBELF_LDLIBS@
 MYSOURCES = \
 	main.cpp \
 	code-ranges.cpp \
@@ -568,13 +564,13 @@ MYSOURCES = \
 	intervals.cpp \
 	server.cpp
 
-MYCPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) $(LIBELF_IFLAGS) -I$(LIBDWARF_INC) \
+MYCPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
 	-I$(SYMTABAPI_INC)
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
 MYLDADD = $(HPCLIB_SupportLean) $(HPCLIB_ProfLean) -L$(SYMTABAPI_LIB) \
 	$(SYMTABAPI_LIB_LIST) -L$(LIBDWARF_LIB) -ldwarf \
-	$(LIBELF_LDADD) $(am__append_1) $(am__append_2)
+	-L$(LIBELF_LIB) -lelf $(am__append_1) $(am__append_2)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibexec_SCRIPTS = hpcfnbounds
 hpcfnbounds_bin_SOURCES = $(MYSOURCES) $(am__append_3) $(am__append_6)

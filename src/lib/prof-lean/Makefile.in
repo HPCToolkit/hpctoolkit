@@ -143,7 +143,6 @@ am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 = libHPCprof_lean_la-hpcrun-fmt.lo \
 	libHPCprof_lean_la-hpcfmt.lo libHPCprof_lean_la-hpcio.lo \
 	libHPCprof_lean_la-hpcio-buffer.lo \
-	libHPCprof_lean_la-dso_symbols.lo \
 	libHPCprof_lean_la-mcs-lock.lo \
 	libHPCprof_lean_la-pfq-rwlock.lo \
 	libHPCprof_lean_la-spinlock.lo libHPCprof_lean_la-urand.lo \
@@ -304,10 +303,7 @@ LIBDWARF_COPY = @LIBDWARF_COPY@
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_COPY = @LIBELF_COPY@
-LIBELF_IFLAGS = @LIBELF_IFLAGS@
 LIBELF_INC = @LIBELF_INC@
-LIBELF_LDFLAGS = @LIBELF_LDFLAGS@
-LIBELF_LDLIBS = @LIBELF_LDLIBS@
 LIBELF_LIB = @LIBELF_LIB@
 LIBMONITOR_COPY = @LIBMONITOR_COPY@
 LIBMONITOR_INC = @LIBMONITOR_INC@
@@ -510,7 +506,6 @@ MYSOURCES = \
 	\
 	atomic.h \
 	atomic-op.h atomic-op.i \
-	dso_symbols.h dso_symbols.c \
 	mcs-lock.h mcs-lock.c \
 	pfq-rwlock.h pfq-rwlock.c \
 	spinlock.h spinlock.c \
@@ -531,7 +526,7 @@ MYSOURCES = \
 	randomizer.h randomizer.c \
 	vdso.h vdso.c
 
-MYCFLAGS = @HOST_CFLAGS@ -I@LIBELF_INC@ $(HPC_IFLAGS)
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
 MYLIBADD = 
@@ -622,7 +617,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-BalancedTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-binarytree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-cskiplist.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-dso_symbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-generic_pair.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcfmt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcio-buffer.Plo@am__quote@
@@ -690,13 +684,6 @@ libHPCprof_lean_la-hpcio-buffer.lo: hpcio-buffer.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hpcio-buffer.c' object='libHPCprof_lean_la-hpcio-buffer.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-hpcio-buffer.lo `test -f 'hpcio-buffer.c' || echo '$(srcdir)/'`hpcio-buffer.c
-
-libHPCprof_lean_la-dso_symbols.lo: dso_symbols.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-dso_symbols.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-dso_symbols.Tpo -c -o libHPCprof_lean_la-dso_symbols.lo `test -f 'dso_symbols.c' || echo '$(srcdir)/'`dso_symbols.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_lean_la-dso_symbols.Tpo $(DEPDIR)/libHPCprof_lean_la-dso_symbols.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='dso_symbols.c' object='libHPCprof_lean_la-dso_symbols.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-dso_symbols.lo `test -f 'dso_symbols.c' || echo '$(srcdir)/'`dso_symbols.c
 
 libHPCprof_lean_la-mcs-lock.lo: mcs-lock.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-mcs-lock.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-mcs-lock.Tpo -c -o libHPCprof_lean_la-mcs-lock.lo `test -f 'mcs-lock.c' || echo '$(srcdir)/'`mcs-lock.c

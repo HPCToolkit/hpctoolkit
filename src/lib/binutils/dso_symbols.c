@@ -74,7 +74,7 @@
 #include <libelf.h>
 #include <gelf.h>
 
-#include <vdso.h>
+#include <lib/prof-lean/vdso.h>
 #include <dso_symbols.h>
 
 

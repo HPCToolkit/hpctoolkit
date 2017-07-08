@@ -82,7 +82,6 @@ MYSOURCES = \
 	\
 	atomic.h \
 	atomic-op.h atomic-op.i \
-	dso_symbols.h dso_symbols.c \
 	mcs-lock.h mcs-lock.c \
 	pfq-rwlock.h pfq-rwlock.c \
 	spinlock.h spinlock.c \
@@ -103,7 +102,7 @@ MYSOURCES = \
 	randomizer.h randomizer.c \
 	vdso.h vdso.c
 
-MYCFLAGS = @HOST_CFLAGS@ -I@LIBELF_INC@ $(HPC_IFLAGS)
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

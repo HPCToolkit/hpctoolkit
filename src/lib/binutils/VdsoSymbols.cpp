@@ -56,7 +56,7 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/dso_symbols.h>
+#include "dso_symbols.h"
 #include "VdsoSymbols.hpp"
 
 
