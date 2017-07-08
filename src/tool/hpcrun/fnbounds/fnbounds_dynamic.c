@@ -45,8 +45,8 @@
 // ******************************************************* EndRiceCopyright *
 
 //=====================================================================
-// File: fnbounds_dynamic.c
-//
+// File: fnbounds_dynamic.c  
+// 
 //     provide information about function bounds for functions in
 //     dynamically linked load modules. use an extra "server" process
 //     to handle computing the symbols to insulate the client process
@@ -72,7 +72,7 @@
 #include <stdlib.h>    // for getenv
 #include <errno.h>     // for errno
 #include <stdint.h>
-#include <stdbool.h>
+#include <stdbool.h>   
 #include <sys/param.h> // for PATH_MAX
 #include <sys/types.h>
 #include <unistd.h>    // getpid
@@ -128,7 +128,7 @@
 // local variables
 //*********************************************************************
 
-// locking functions to ensure that dynamic bounds data structures
+// locking functions to ensure that dynamic bounds data structures 
 // are consistent.
 
 static spinlock_t fnbounds_lock = SPINLOCK_UNLOCKED;
@@ -163,19 +163,19 @@ fnbounds_map_executable();
 //*********************************************************************
 
 //---------------------------------------------------------------------
-// function fnbounds_init:
-//
+// function fnbounds_init: 
+// 
 //     for dynamically-linked executables, start an fnbounds server
 //     process to that will compute function bounds information upon
 //     demand for dynamically-linked load modules.
 //
-//     return code = 0 upon success, otherwise fork failed
+//     return code = 0 upon success, otherwise fork failed 
 //
 //     NOTE: don't make this routine idempotent: it may be needed to
 //     start a new server if the process forks
 //---------------------------------------------------------------------
 
-int
+int 
 fnbounds_init()
 {
   if (hpcrun_get_disabled()) return 0;
@@ -193,10 +193,10 @@ fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
   FNBOUNDS_LOCK;
 
   bool ret = false; // failure unless otherwise reset to 0 below
-
+  
   load_module_t* lm_ = fnbounds_get_loadModule(ip);
   dso_info_t* dso = (lm_) ? lm_->dso_info : NULL;
-
+  
   if (dso && dso->nsymbols > 0) {
     void* ip_norm = ip;
     if (dso->is_relocatable) {
@@ -207,7 +207,7 @@ fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
 
     if (dso->table) {
       // N.B.: works on normalized IPs
-      int rv = fnbounds_table_lookup(dso->table, dso->nsymbols, ip_norm,
+      int rv = fnbounds_table_lookup(dso->table, dso->nsymbols, ip_norm, 
 				     (void**) start, (void**) end);
 
       ret = (rv == 0);
@@ -232,7 +232,7 @@ fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
 
 //---------------------------------------------------------------------
 // Function: fnbounds_map_open_dsos
-// Purpose:
+// Purpose:  
 //     identify any new dsos that have been mapped.
 //     analyze them and add their information to the open list.
 //---------------------------------------------------------------------
@@ -269,7 +269,7 @@ fnbounds_find_exec_bounds_proc_maps(char* exename, void**start, void** end)
     // skip 3 tokens
     for (int i=0; i < 3; i++) { (void) strtok_r(NULL, delim, &save);}
     char* name = strtok_r(NULL, delim, &save);
-    realpath(name, tmpname);
+    realpath(name, tmpname); 
     if ((strncmp(perms, "r-x", 3) == 0) && (strcmp(tmpname, exename) == 0)) break;
   }
   fclose(loadmap);
@@ -313,7 +313,7 @@ fnbounds_dso_exec(void)
   else {
     TMSG(MAP_EXEC, "NON relocatable exec");
     char executable_name[PATH_MAX];
-    void* mstart;
+    void* mstart; 
     void* mend;
     if (dylib_find_module_containing_addr(nm_table[0],
 					  executable_name, &mstart, &mend)) {
@@ -356,7 +356,7 @@ fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
 
 //---------------------------------------------------------------------
 // Function: fnbounds_unmap_closed_dsos
-// Purpose:
+// Purpose:  
 //     identify any dsos that are no longer mapped.
 //     move them from the open to the closed list.
 //---------------------------------------------------------------------
@@ -383,13 +383,13 @@ fnbounds_unmap_closed_dsos()
 
 
 //---------------------------------------------------------------------
-// function fnbounds_fini:
-//
+// function fnbounds_fini: 
+// 
 //     for dynamically-linked executables, shut down the fnbounds
 //     server process
 //---------------------------------------------------------------------
 
-void
+void 
 fnbounds_fini()
 {
   if (hpcrun_get_disabled()) return;
@@ -401,7 +401,7 @@ fnbounds_fini()
 void
 fnbounds_release_lock(void)
 {
-  FNBOUNDS_UNLOCK;
+  FNBOUNDS_UNLOCK;  
 }
 
 
@@ -428,7 +428,7 @@ fnbounds_fetch_executable_table(void)
 // is already locked (mostly).
 //*********************************************************************
 
-static dso_info_t*
+static dso_info_t* 
 fnbounds_compute(const char* incoming_filename, void* start, void* end)
 {
   struct fnbounds_file_header fh;
@@ -442,7 +442,7 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
 
   // [vdso] and linux-gate.so are virtual files and don't exist
   // in the file system.
-  if (vdso_segment_p(incoming_filename)) {
+  if (vdso_segment_p(incoming_filename)) { 
     strncpy(filename, VDSO_SEGMENT_NAME_SHORT, PATH_MAX);
   } else if (strncmp(incoming_filename, "linux-gate.so", 13) == 0) {
     strncpy(filename, incoming_filename, PATH_MAX);
@@ -472,7 +472,7 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
   }
   else {
     char executable_name[PATH_MAX];
-    void *mstart;
+    void *mstart; 
     void *mend;
     if (dylib_find_module_containing_addr(nm_table[0],
 					  executable_name, &mstart, &mend)) {
@@ -508,7 +508,7 @@ fnbounds_get_loadModule(void *ip)
   if (!dso && ENABLED(DLOPEN_RISKY) && hpcrun_dlopen_pending() > 0) {
     char module_name[PATH_MAX];
     void *mstart, *mend;
-
+    
     if (dylib_find_module_containing_addr(ip, module_name, &mstart, &mend)) {
       dso = fnbounds_compute(module_name, mstart, mend);
       if (dso) {
@@ -516,7 +516,7 @@ fnbounds_get_loadModule(void *ip)
       }
     }
   }
-
+  
   return lm;
 }
 
