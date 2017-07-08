@@ -113,17 +113,17 @@ using std::endl;
 #define NORETURNS_DISABLE 0
 #define NORETURNS_DEBUG 0
 #define NORETURNS_RESULT_NOISY 0
-#define NORETURNS_LOOKUP_NOISY 0
+#define NORETURNS_LOOKUP_NOISY 0 
 #define NORETURNS_LOOKUP_LOCAL_NOISY 0
 
 
 
 //***************************************************************************
-// private data
+// private data 
 //***************************************************************************
 
 static const char *noreturn_table[] = {
-  // include machine-generated file containing names of functions
+  // include machine-generated file containing names of functions 
   // that don't return
 #include "names.cpp"
 };
@@ -147,45 +147,45 @@ public:
 
 class name_set : public std::set<const char*, cstring_compare> {
 public:
-  name_set() {
-    unsigned int i;
-    for(i = 0; i < sizeof(noreturn_table)/sizeof(char*); i++)
-      insert(noreturn_table[i]);
+  name_set() { 
+    unsigned int i; 
+    for(i = 0; i < sizeof(noreturn_table)/sizeof(char*); i++) 
+      insert(noreturn_table[i]); 
   }
 
-  void
-  dumpnames() {
-    for(name_set::iterator i = this->begin();
-      i != this->end(); i++) {
-      std::cout << *i << std::endl;
+  void 
+  dumpnames() {  
+    for(name_set::iterator i = this->begin(); 
+      i != this->end(); i++) {     
+      std::cout << *i << std::endl;  
     }
   }
 };
 
 
-name_set noreturn_fn_names;
+name_set noreturn_fn_names; 
 
 
 class NoReturns : private std::set<VMA> {
 public:
-
-  NoReturns() {
+  
+  NoReturns() { 
   };
 
   void
-  addSynSymEntries(asymbol* syms, long symcount) {
+  addSynSymEntries(asymbol* syms, long symcount) { 
 #if NORETURNS_RESULT_NOISY
     printf("-------- dyn sym noreturn functions ------ \n");
 #endif
     //-------------------------------------------------------------------
-    // iterate through the functions referenced through the load module's
-    // PLT to identify which of them are known to not return. for each
-    // PLT entry for a function that doesn't return, record the address
-    // of its PLT trampoline so that we can identify calls to functions
+    // iterate through the functions referenced through the load module's       
+    // PLT to identify which of them are known to not return. for each 
+    // PLT entry for a function that doesn't return, record the address 
+    // of its PLT trampoline so that we can identify calls to functions 
     // that don't return when building a control flow graph.
     //
-    // Note: the binutils interface to symbols in the PLT processes
-    //       the symbols and converts each symbol with name "symname" to
+    // Note: the binutils interface to symbols in the PLT processes 
+    //       the symbols and converts each symbol with name "symname" to 
     //       have name "symname@plt". Here, we strip off the suffix
     //       that begins with the @ before comparing a PLT symbol name
     //       with names of functions known to not return.
@@ -195,14 +195,14 @@ public:
        //-----------------------------------------------------
        // create a copy of the symbol name that we can modify
        //-----------------------------------------------------
-       char *name = strdup(bfd_asymbol_name(symbol));
+       char *name = strdup(bfd_asymbol_name(symbol)); 
 
        char *index = strchr(name,'@'); // look for an @ in the symbol
        if (index) {                     // if an @ was found
          *index = 0;                    // remove the suffix @...
          unsigned long addr = bfd_asymbol_value(symbol);
          //---------------------------------------------------------
-         // look for the symbol name in the set of functions known to
+         // look for the symbol name in the set of functions known to 
          // not return. if it is found, note the address of the PLT
          // entry as the address of a callee that won't return.
          //---------------------------------------------------------
@@ -217,15 +217,15 @@ public:
 
 
   void
-  addSymEntries(asymbol** syms, long symcount) {
+  addSymEntries(asymbol** syms, long symcount) { 
 #if NORETURNS_RESULT_NOISY
     printf("-------- sym noreturn functions ------ \n");
 #endif
     //-------------------------------------------------------------------
     // iterate through functions statically linked in the load module
-    // to identify which of them are known to not return. for each
-    // function that doesn't return, record its address so that we can
-    // identify calls to functions that don't return when building a
+    // to identify which of them are known to not return. for each 
+    // function that doesn't return, record its address so that we can 
+    // identify calls to functions that don't return when building a 
     // control flow graph.
     //-------------------------------------------------------------------
     asymbol **symbol = syms;
@@ -235,18 +235,18 @@ public:
         if (symbol[i]->flags & (BSF_FUNCTION))  {
           unsigned long addr = bfd_asymbol_value(symbol[i]);
 #if NORETURNS_LOOKUP_NOISY
-          std::cout << "looking up " << name << " @ " << std::hex << "0x"
+          std::cout << "looking up " << name << " @ " << std::hex << "0x" 
                     << addr << std::endl;
 #endif
           if (addr) {
             addIfNoReturn(name, addr);
           }
         } else if (symbol[i]->flags == BSF_LOCAL)  {
-          // look for plt_call and long branch trampolines found in
+          // look for plt_call and long branch trampolines found in 
           // Power binaries
 #if NORETURNS_LOOKUP_LOCAL_NOISY
           unsigned long laddr = bfd_asymbol_value(symbol[i]);
-          std::cout << "looking up local symbol " << name << std::hex << "0x"
+          std::cout << "looking up local symbol " << name << std::hex << "0x" 
                     << laddr << std::endl;
 #endif
           if (strstr(name, "long_branch_r2off")) {
@@ -257,7 +257,7 @@ public:
               if (index) {                     // if an @ was found
                 *index = 0;                    // remove the suffix @...
               }
-              // on power architectures, need to eliminate
+              // on power architectures, need to eliminate 
               // *.long_branch_r2off. prefix
               char *name = dname;
               char *name_suffix = strrchr(dname,'.');
@@ -265,7 +265,7 @@ public:
                 name = name_suffix + 1;
               }
 #if NORETURNS_LOOKUP_NOISY
-          std::cout << "looking up " << name << " @ " << std::hex << "0x"
+          std::cout << "looking up " << name << " @ " << std::hex << "0x" 
                     << addr << std::endl;
 #endif
               addIfNoReturn(name, addr);
@@ -286,7 +286,7 @@ public:
                 name = name_suffix + 1;
               }
 #if NORETURNS_LOOKUP_NOISY
-          std::cout << "looking up " << name << " @ " << std::hex << "0x"
+          std::cout << "looking up " << name << " @ " << std::hex << "0x" 
                     << addr << std::endl;
 #endif
               addIfNoReturn(name, addr);
@@ -298,12 +298,12 @@ public:
     }
   };
 
-  ~NoReturns() {
+  ~NoReturns() { 
   };
 
-  bool
+  bool 
   isNoReturn(VMA addr) {
-    return NORETURNS_DISABLE ? false : this->find(addr) != this->end();
+    return NORETURNS_DISABLE ? false : this->find(addr) != this->end();   
   };
 
 
@@ -318,12 +318,12 @@ public:
   };
 
 
-  void
-  dump() {
-    std::cout << "noreturns (addresses of functions that don't return)"
-              << std::endl;
-    for(std::set<VMA>::iterator i = this->begin(); i != this->end(); i++) {
-      std::cout << std::hex << "0x" << *i << std::endl;
+  void 
+  dump() {  
+    std::cout << "noreturns (addresses of functions that don't return)" 
+              << std::endl;  
+    for(std::set<VMA>::iterator i = this->begin(); i != this->end(); i++) {     
+      std::cout << std::hex << "0x" << *i << std::endl;  
     }
   };
 };
@@ -351,10 +351,10 @@ BinUtil::LM::LM(bool useBinutils)
   : m_type(TypeNULL), m_readFlags(ReadFlg_NULL),
     m_txtBeg(0), m_txtEnd(0), m_begVMA(0),
     m_textBegReloc(0), m_unrelocDelta(0),
-    m_bfd(NULL), m_bfdSymTab(NULL),
+    m_bfd(NULL), m_bfdSymTab(NULL), 
     m_bfdDynSymTab(NULL), m_bfdSynthTab(NULL),
     m_bfdSymTabSort(NULL), m_bfdSymTabSz(0), m_bfdDynSymTabSz(0),
-    m_bfdSymTabSortSz(0), m_bfdSynthTabSz(0), m_noreturns(0),
+    m_bfdSymTabSortSz(0), m_bfdSynthTabSz(0), m_noreturns(0), 
     m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils)
 {
 }
@@ -385,12 +385,12 @@ BinUtil::LM::~LM()
   m_bfdSynthTab = NULL;
 
   delete[] m_bfdSymTabSort;
-  m_bfdSymTabSort = NULL;
+  m_bfdSymTabSort = NULL; 
 
   m_bfdSymTabSz = 0;
   m_bfdSymTabSortSz = 0;
   m_bfdSynthTabSz = 0;
-
+  
   // reset isa
   delete isa;
   isa = NULL;
@@ -404,7 +404,7 @@ void
 BinUtil::LM::open(const char* filenm)
 {
   DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filenm), "Cannot open a different file!");
-
+  
   // -------------------------------------------------------
   // 1. Initialize bfd and open the object file.
   // -------------------------------------------------------
@@ -415,20 +415,20 @@ BinUtil::LM::open(const char* filenm)
   if (!m_bfd) {
     BINUTIL_Throw("'" << filenm << "': " << bfd_errmsg(bfd_get_error()));
   }
-
+  
   // bfd_object:  may contain data, symbols, relocations and debug info
   // bfd_archive: contains other BFDs and an optional index
   // bfd_core:    contains the result of an executable core dump
   if (!bfd_check_format(m_bfd, bfd_object)) {
     BINUTIL_Throw("'" << filenm << "': not an object or executable");
   }
-
+  
   m_name = filenm;
 
   if (!vdso_segment_p(filenm)) {
     m_realpathMgr.realpath(m_name);
   }
-
+  
   // -------------------------------------------------------
   // 2. Collect data from BFD
   // -------------------------------------------------------
@@ -438,32 +438,32 @@ BinUtil::LM::open(const char* filenm)
   flagword flags = bfd_get_file_flags(m_bfd);
   if (flags & EXEC_P) {         // BFD is directly executable
     m_type = TypeExe;
-  }
+  } 
   else if (flags & DYNAMIC) { // BFD is a dynamic object
     m_type = TypeDSO;
-  }
+  } 
   else {
     m_type = TypeNULL;
   }
-
+  
 #if defined(HAVE_HPC_GNUBINUTILS)
   if (bfd_get_arch(m_bfd) == bfd_arch_alpha) {
     m_txtBeg = bfd_ecoff_get_text_start(m_bfd);
     m_txtEnd = bfd_ecoff_get_text_end(m_bfd);
     m_begVMA = m_txtBeg;
-  }
+  } 
   else {
     // Currently, this is ELF specific
     m_txtBeg = bfd_get_start_address(m_bfd); // entry point
-    m_begVMA = bfd_get_first_addr(m_bfd);
+    m_begVMA = bfd_get_first_addr(m_bfd);     
   }
 #else
   m_txtBeg = bfd_get_start_address(m_bfd); // entry point
   m_begVMA = m_txtBeg;
 #endif /* HAVE_HPC_GNUBINUTILS */
-
+  
   // -------------------------------------------------------
-  // 3. Configure ISA.
+  // 3. Configure ISA.  
   // -------------------------------------------------------
 
   // Create a new ISA (this may not be necessary, but it is cheap)
@@ -546,19 +546,19 @@ BinUtil::LM::read(LM::ReadFlg readflg)
 // relocate: Internally, all operations are performed on non-relocated
 // VMAs.  All routines operating on VMAs should call unrelocate(),
 // which will do the right thing.
-void
+void 
 BinUtil::LM::relocate(VMA textBegReloc)
 {
   DIAG_Assert(m_txtBeg != 0, "LM::Relocate not supported!");
   m_textBegReloc = textBegReloc;
-
+  
   if (m_textBegReloc == 0) {
     m_unrelocDelta = 0;
-  }
+  } 
   else {
     //m_unrelocDelta = -(m_textBegReloc - m_txtBeg); // FMZ
       m_unrelocDelta = -(m_textBegReloc - m_begVMA);
-  }
+  } 
 }
 
 
@@ -572,7 +572,7 @@ BinUtil::LM::findMachInsn(VMA vma, ushort &size) const
     size  = insn->size();
     minsn = insn->bits();
   }
-  return minsn;
+  return minsn; 
 }
 
 
@@ -585,13 +585,13 @@ BinUtil::LM::findSrcCodeInfo(VMA vma, ushort opIndex,
   func = file = "";
   line = 0;
 
-  if (!m_bfdSymTab) {
-    return STATUS;
+  if (!m_bfdSymTab) { 
+    return STATUS; 
   }
-
+  
   VMA unrelocVMA = unrelocate(vma);
   VMA opVMA = isa->convertVMAToOpVMA(unrelocVMA, opIndex);
-
+  
   // Find the Seg where this vma lives.
   asection* bfdSeg = NULL;
   VMA base = 0;
@@ -609,16 +609,16 @@ BinUtil::LM::findSrcCodeInfo(VMA vma, ushort opIndex,
   // Obtain the source line information.
   const char *bfd_func = NULL, *bfd_file = NULL;
   uint bfd_line = 0;
-  bfd_boolean fnd =
+  bfd_boolean fnd = 
     bfd_find_nearest_line(m_bfd, bfdSeg, m_bfdSymTab,
 			  opVMA - base, &bfd_file, &bfd_func, &bfd_line);
   if (fnd) {
     STATUS = (bfd_file && bfd_func && SrcFile::isValid(bfd_line));
-
+    
     if (bfd_func) {
       func = bfd_func;
     }
-    if (bfd_file) {
+    if (bfd_file) { 
       file = bfd_file;
       m_realpathMgr.realpath(file);
     }
@@ -645,12 +645,12 @@ BinUtil::LM::findSrcCodeInfo(VMA begVMA, ushort bOpIndex,
   VMA endOpVMA = isa->convertVMAToOpVMA(endVMA, eOpIndex);
   if (! (begOpVMA <= endOpVMA) ) {
     VMA tmpVMA = begVMA;       // swap 'begVMA' with 'endVMA'
-    begVMA = endVMA;
+    begVMA = endVMA; 
     endVMA = tmpVMA;
     ushort tmpOpIdx = bOpIndex; // swap 'bOpIndex' with 'eOpIndex'
     bOpIndex = eOpIndex;
     eOpIndex = tmpOpIdx;
-  }
+  } 
 
   // Attempt to find source file info
   string func1, func2, file1, file2;
@@ -664,10 +664,10 @@ BinUtil::LM::findSrcCodeInfo(VMA begVMA, ushort bOpIndex,
     if (func1 != func2) {
       STATUS = false; // we are accross two different functions
     }
-  }
+  } 
   else if (!func1.empty() && func2.empty()) {
     func = func1;
-  }
+  } 
   else if (func1.empty() && !func2.empty()) {
     func = func2;
   } // else (func1.empty && func2.empty()): use default values
@@ -679,22 +679,22 @@ BinUtil::LM::findSrcCodeInfo(VMA begVMA, ushort bOpIndex,
       STATUS = false; // we are accross two different files
       endLine = begLine; // 'endLine' makes no sense since we return 'file1'
     }
-  }
+  } 
   else if (!file1.empty() && file2.empty()) {
     file = file1;
-  }
+  } 
   else if (file1.empty() && !file2.empty()) {
     file = file2;
   } // else (file1.empty && file2.empty()): use default values
 
   // Error checking and processing: 'begLine' and 'endLine'
-  if (SrcFile::isValid(begLine) && !SrcFile::isValid(endLine)) {
-    endLine = begLine;
-  }
+  if (SrcFile::isValid(begLine) && !SrcFile::isValid(endLine)) { 
+    endLine = begLine; 
+  } 
   else if (SrcFile::isValid(endLine) && !SrcFile::isValid(begLine)) {
     begLine = endLine;
-  }
-  else if (flags
+  } 
+  else if (flags 
 	   && begLine > endLine) { // perhaps due to insn. reordering...
     SrcFile::ln tmp = begLine;     // but unlikely given the way this is
     begLine = endLine;             // typically called
@@ -705,8 +705,8 @@ BinUtil::LM::findSrcCodeInfo(VMA begVMA, ushort bOpIndex,
 }
 
 
-bool
-BinUtil::LM::findProcSrcCodeInfo(VMA vma, ushort opIndex,
+bool 
+BinUtil::LM::findProcSrcCodeInfo(VMA vma, ushort opIndex, 
 				 SrcFile::ln &line) const
 {
   bool isfound = false;
@@ -723,7 +723,7 @@ BinUtil::LM::findProcSrcCodeInfo(VMA vma, ushort opIndex,
     line = proc->begLine();
     isfound = true;
   }
-  DIAG_MsgIf(DBG_BLD_PROC_MAP, "LM::findProcSrcCodeInfo "
+  DIAG_MsgIf(DBG_BLD_PROC_MAP, "LM::findProcSrcCodeInfo " 
 	     << ival.toString() << " = " << line);
 
   return isfound;
@@ -732,31 +732,31 @@ BinUtil::LM::findProcSrcCodeInfo(VMA vma, ushort opIndex,
 
 void
 BinUtil::LM::textBegEndVMA(VMA* begVMA, VMA* endVMA)
-{
+{ 
   VMA curr_begVMA;
   VMA curr_endVMA;
   VMA sml_begVMA = 0;
   VMA lg_endVMA  = 0;
   for (SegMap::iterator it = m_segMap.begin(); it != m_segMap.end(); ++it) {
-    Seg* seg = it->second;
-    if (seg->type() == Seg::TypeText)  {
+    Seg* seg = it->second; 
+    if (seg->type() == Seg::TypeText)  {    
       if (!(sml_begVMA || lg_endVMA)) {
 	sml_begVMA = seg->begVMA();
-	lg_endVMA  = seg->endVMA();
-      }
-      else {
+	lg_endVMA  = seg->endVMA(); 
+      } 
+      else { 
 	curr_begVMA = seg->begVMA();
-	curr_endVMA = seg->endVMA();
+	curr_endVMA = seg->endVMA(); 
 	if (curr_begVMA < sml_begVMA)
 	  sml_begVMA = curr_begVMA;
 	if (curr_endVMA > lg_endVMA)
 	  lg_endVMA = curr_endVMA;
       }
     }
-  }
-
+  }   
+  
   *begVMA = sml_begVMA;
-  *endVMA = lg_endVMA;
+  *endVMA = lg_endVMA; 
 }
 
 
@@ -784,7 +784,7 @@ BinUtil::LM::dump(std::ostream& o, int flags, const char* pre) const
 #else
   o << "-unknown-" << endl;
 #endif
-
+  
   o << std::showbase;
   o << p1 << "Load Module Information:\n";
   dumpModuleInfo(o, p2.c_str());
@@ -796,7 +796,7 @@ BinUtil::LM::dump(std::ostream& o, int flags, const char* pre) const
     o << p2 << "Symbol Table (" << m_bfdSymTabSz << "):\n";
     dumpSymTab(o, p2.c_str());
   }
-
+  
   o << p2 << "Sections (" << numSegs() << "):\n";
   for (SegMap::const_iterator it = segs().begin(); it != segs().end(); ++it) {
     Seg* seg = it->second;
@@ -821,12 +821,12 @@ BinUtil::LM::dumpme(std::ostream& GCC_ATTR_UNUSED o,
 
 
 void
-BinUtil::LM::dumpProcMap(std::ostream& os, unsigned flag,
+BinUtil::LM::dumpProcMap(std::ostream& os, unsigned flag, 
 			  const char* GCC_ATTR_UNUSED pre) const
 {
-  for (ProcMap::const_iterator it = m_procMap.begin();
+  for (ProcMap::const_iterator it = m_procMap.begin(); 
        it != m_procMap.end(); ++it) {
-    os << it->first.toString() << " --> " << std::hex << "Ox" << it->second
+    os << it->first.toString() << " --> " << std::hex << "Ox" << it->second 
        << std::dec << endl;
     if (flag != 0) {
       os << it->second->toString();
@@ -854,7 +854,7 @@ BinUtil::LM::cmpBFDSymByVMA(const void* s1, const void* s2)
     return -1;
   }
   else if (bfd_asymbol_value(a) > bfd_asymbol_value(b)) {
-    return 1;
+    return 1; 
   }
   else {
     return 0;
@@ -869,7 +869,7 @@ BinUtil::LM::readSymbolTables()
   // Read the normal symbol table
   // -------------------------------------------------------
   long bytesNeeded = bfd_get_symtab_upper_bound(m_bfd);
-
+  
   if (bytesNeeded > 0) {
     m_bfdSymTab = new asymbol*[bytesNeeded / sizeof(asymbol*)];
     m_bfdSymTabSz = bfd_canonicalize_symtab(m_bfd, m_bfdSymTab);
@@ -882,7 +882,7 @@ BinUtil::LM::readSymbolTables()
   }
 
   // -------------------------------------------------------
-  // Read the dynamic symbol table
+  // Read the dynamic symbol table 
   // -------------------------------------------------------
   {
     bytesNeeded = bfd_get_dynamic_symtab_upper_bound(m_bfd);
@@ -906,8 +906,8 @@ BinUtil::LM::readSymbolTables()
   // Note: the sorted table may be larger than the original table,
   // and size is the size of the sorted table (regular + synthetic).
   // -------------------------------------------------------
-  m_bfdSynthTabSz = bfd_get_synthetic_symtab(m_bfd, m_bfdSymTabSz, m_bfdSymTab,
-					     m_bfdDynSymTabSz, m_bfdDynSymTab,
+  m_bfdSynthTabSz = bfd_get_synthetic_symtab(m_bfd, m_bfdSymTabSz, m_bfdSymTab, 
+					     m_bfdDynSymTabSz, m_bfdDynSymTab, 
 					     &m_bfdSynthTab);
   if (m_bfdSynthTabSz < 0) {
     m_bfdSynthTabSz = 0;
@@ -950,7 +950,7 @@ BinUtil::LM::readSegs()
     bfd_vma segBeg = bfd_section_vma(m_bfd, sec);
     uint64_t segSz = bfd_section_size(m_bfd, sec) / bfd_octets_per_byte(m_bfd);
     bfd_vma segEnd = segBeg + segSz;
-
+    
     // 2. Create section
     Seg* seg = NULL;
     if (sec->flags & SEC_CODE) {
@@ -961,7 +961,7 @@ BinUtil::LM::readSegs()
     }
     bool ins = insertSeg(VMAInterval(segBeg, segEnd), seg);
     if (!ins) {
-      DIAG_WMsg(3, "Overlapping segment: " << segnm << ": "
+      DIAG_WMsg(3, "Overlapping segment: " << segnm << ": " 
 		<< std::hex << segBeg << " " << segEnd << std::dec);
       delete seg;
     }
@@ -974,7 +974,7 @@ void
 BinUtil::LM::computeNoReturns()
 {
   m_noreturns = new NoReturns();
-
+  
   // gather information about functions in this load module
   m_noreturns->addSymEntries(m_bfdSymTab, m_bfdSymTabSz);
 
@@ -1005,24 +1005,24 @@ BinUtil::LM::dumpModuleInfo(std::ostream& o, const char* pre) const
     case TypeNULL:
       o << "Unknown load module type'\n";
       break;
-    case TypeExe:
+    case TypeExe:    
       o << "Executable (fully linked except for possible DSOs)'\n";
       break;
-    case TypeDSO:
+    case TypeDSO: 
       o << "Dynamically Shared Library'\n";
       break;
     default:
       DIAG_Die("Invalid load module type: " << type());
   }
-
+  
   o << p << "Load VMA: " << std::hex << m_begVMA << std::dec << "\n";
 
-  o << p << "Text(beg,end): "
+  o << p << "Text(beg,end): " 
     << std::hex << textBeg() << ", " << textEnd() << std::dec << "\n";
-
+  
   o << p << "Endianness: `"
     << ( (bfd_big_endian(m_bfd)) ? "Big'\n" : "Little'\n" );
-
+  
   o << p << "Architecture: `";
   switch (bfd_get_arch(m_bfd)) {
     case bfd_arch_alpha:   o << "Alpha'\n"; break;
@@ -1030,7 +1030,7 @@ BinUtil::LM::dumpModuleInfo(std::ostream& o, const char* pre) const
     case bfd_arch_powerpc: o << "POWER'\n"; break;
     case bfd_arch_sparc:   o << "SPARC'\n"; break;
     case bfd_arch_i386:    o << "x86'\n";   break;
-    case bfd_arch_ia64:    o << "IA-64'\n"; break;
+    case bfd_arch_ia64:    o << "IA-64'\n"; break; 
 #ifdef bfd_mach_k1om
     case bfd_arch_k1om:    o << "K1OM'\n";  break;
 #endif
@@ -1065,7 +1065,7 @@ BinUtil::LM::dumpModuleInfo(std::ostream& o, const char* pre) const
         default:             o << "-unknown POWER-'\n";
       }
       break;
-    case bfd_arch_sparc:
+    case bfd_arch_sparc: 
       switch (bfd_get_mach(m_bfd)) {
         case bfd_mach_sparc_sparclet:     o << "let'\n"; break;
         case bfd_mach_sparc_sparclite:    o << "lite'\n"; break;
@@ -1088,17 +1088,17 @@ BinUtil::LM::dumpModuleInfo(std::ostream& o, const char* pre) const
       }
       break;
     case bfd_arch_ia64:
-      o << "IA-64'\n";
-      break;
+      o << "IA-64'\n"; 
+      break; 
 #ifdef bfd_mach_k1om
     case bfd_arch_k1om:
       o << "K1OM'\n";
       break;
 #endif
-    default:
+    default: 
       DIAG_Die("Unknown bfd arch: " << bfd_get_arch(m_bfd));
   }
-
+  
   o << p << "Bits per byte: "    << bfd_arch_bits_per_byte(m_bfd)    << endl;
   o << p << "Bits per address: " << bfd_arch_bits_per_address(m_bfd) << endl;
   o << p << "Bits per word: "    << m_bfd->arch_info->bits_per_word  << endl;
@@ -1163,7 +1163,7 @@ BinUtil::LM::dumpSymTab(std::ostream& o, const char* pre) const
 
 
 static void
-dumpSymFlag(std::ostream& o,
+dumpSymFlag(std::ostream& o, 
 	    asymbol* sym, int flag, const char* txt, bool& hasPrinted)
 {
   if ((sym->flags & flag)) {
