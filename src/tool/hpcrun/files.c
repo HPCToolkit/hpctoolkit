@@ -563,17 +563,17 @@ hpcrun_save_vdso()
     fd = open(name, O_WRONLY | O_CREAT | O_EXCL, 0644);
     if (errno == EEXIST) {
       // another process already wrote [vdso]
-      return; 
+      return;
     }
     if (fd >= 0) {
       // my process is the designated writer of [vdso]
 
       if (write(fd, vdso_addr, vdso_len) != vdso_len) {
-	// write error; attempt to close file and 
+	// write error; attempt to close file and
         // jump to error reporting. no checking on close
         // necessary. we are reporting an error anyway
         error = errno;
-        close(fd); 
+        close(fd);
         break;
       }
       if (close(fd) == 0) {

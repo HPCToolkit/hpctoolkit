@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 //******************************************************************************
-// system includes 
+// system includes
 //******************************************************************************
 
 #include <iostream>
@@ -86,14 +86,14 @@ note_symbol
  const char *sym_name,
  int64_t sym_addr,
  dso_symbol_bind_t binding,
- void *callback_arg 
-) 
+ void *callback_arg
+)
 {
   VdsoSymbols *vdso_syms = (VdsoSymbols *) callback_arg;
   SimpleSymbolBinding btype = binding_xlate(binding);
 
   // add name to the set of function symbols
-  vdso_syms->add((uint64_t) sym_addr, SimpleSymbolKind_Function, 
+  vdso_syms->add((uint64_t) sym_addr, SimpleSymbolKind_Function,
                  btype, sym_name);
 }
 
@@ -134,8 +134,8 @@ int main(int argc, char **argv)
     SimpleSymbol *sym = syms.find(addr);
     bool result = (sym != 0);
     if (result) name = sym->name();
-    std::cout << "Lookup " << std::hex << "0x" << addr << std::dec 
-	      << " (" << result << ")" << " --> " << name << std::endl; 
+    std::cout << "Lookup " << std::hex << "0x" << addr << std::dec
+	      << " (" << result << ")" << " --> " << name << std::endl;
   }
 }
 

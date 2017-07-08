@@ -73,8 +73,8 @@ LinuxKernelSymbols::parseLinuxKernelSymbols()
 
   if (fp) {
     size_t len = 4096;
-    char *line = (char *) malloc(len); 
-    
+    char *line = (char *) malloc(len);
+
     for(;;) {
       if (getline(&line, &len, fp) == EOF) break; // read a line from the file
 
@@ -91,14 +91,14 @@ LinuxKernelSymbols::parseLinuxKernelSymbols()
       switch(type) {
       case 't':
       case 'T':
-        // if module is non-empty, append it to name 
-	if (strlen(module) > 0) { 
-           strcat(name, " "); 
-           strcat(name, module); 
+        // if module is non-empty, append it to name
+	if (strlen(module) > 0) {
+           strcat(name, " ");
+           strcat(name, module);
         }
 
-        binding = ((type == 't') ? 
-	           SimpleSymbolBinding_Local : 
+        binding = ((type == 't') ?
+	           SimpleSymbolBinding_Local :
 	           SimpleSymbolBinding_Global);
 
         // add name to the set of function symbols
@@ -138,8 +138,8 @@ int main(int argc, char **argv)
     SimpleSymbol *sym = syms.find(addr);
     bool result = (sym != 0);
     if (result) name = sym->name();
-    std::cout << "Lookup " << std::hex << "0x" << addr << std::dec 
-	      << " (" << result << ")" << " --> " << name << std::endl; 
+    std::cout << "Lookup " << std::hex << "0x" << addr << std::dec
+	      << " (" << result << ")" << " --> " << name << std::endl;
   }
 }
 

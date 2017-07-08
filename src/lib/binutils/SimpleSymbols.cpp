@@ -71,7 +71,7 @@
 //******************************************************************************
 
 struct SimpleSymbolsRepr {
-  std::vector<SimpleSymbol*> simple_symbols; 
+  std::vector<SimpleSymbol*> simple_symbols;
   bool sorted;
 };
 
@@ -82,10 +82,10 @@ struct SimpleSymbolsRepr {
 //******************************************************************************
 
 
-static bool 
+static bool
 compareAddr(SimpleSymbol *s1, SimpleSymbol *s2)
 {
-  return s1->addr() < s2->addr(); 
+  return s1->addr() < s2->addr();
 }
 
 
@@ -99,7 +99,7 @@ kindString(SimpleSymbolKind _kind)
   case SimpleSymbolKind_Unknown: kind = "UNK"; break;
   case SimpleSymbolKind_Other: default: kind = "OTR"; break;
   }
-  return kind;  
+  return kind;
 }
 
 
@@ -107,33 +107,33 @@ static std::string
 bindingString(SimpleSymbolBinding _binding)
 {
   std::string binding;
-  switch(_binding) { 
+  switch(_binding) {
   case SimpleSymbolBinding_Local: binding = "LCL"; break;
   case SimpleSymbolBinding_Global: binding = "GBL"; break;
   case SimpleSymbolBinding_Weak: binding = " WK"; break;
   case SimpleSymbolBinding_Unknown: binding = "UNK"; break;
   case SimpleSymbolBinding_Other: default: binding = "OTR"; break;
   }
-  return binding;  
+  return binding;
 }
 
 
 SimpleSymbol::SimpleSymbol
 (
-  uint64_t __addr, 
-  SimpleSymbolKind  __kind, 
+  uint64_t __addr,
+  SimpleSymbolKind  __kind,
   SimpleSymbolBinding __binding,
   const char *__name
-) : _addr(__addr), _kind(__kind), _binding(__binding), _name(__name) 
+) : _addr(__addr), _kind(__kind), _binding(__binding), _name(__name)
 {
 }
 
 
-void  
-SimpleSymbol::dump() 
+void
+SimpleSymbol::dump()
 {
-    std::cout << std::hex << _addr << std::dec 
-	      << " " << kindString(_kind) << " " << bindingString(_binding) 
+    std::cout << std::hex << _addr << std::dec
+	      << " " << kindString(_kind) << " " << bindingString(_binding)
               << " " << _name << std::endl;
 }
 
@@ -142,7 +142,7 @@ SimpleSymbol::dump()
 // interface operations
 //******************************************************************************
 
-SimpleSymbols::SimpleSymbols() 
+SimpleSymbols::SimpleSymbols()
 {
   R = new struct SimpleSymbolsRepr;
   R->sorted = false;
@@ -152,25 +152,25 @@ SimpleSymbols::SimpleSymbols()
 void
 SimpleSymbols::add
 (
-  uint64_t addr, 
+  uint64_t addr,
   SimpleSymbolKind kind,
   SimpleSymbolBinding binding,
   const char *name
-) 
+)
 {
   R->sorted = false;
   R->simple_symbols.push_back(new SimpleSymbol(addr, kind, binding, name));
 }
 
 
-uint64_t 
+uint64_t
 SimpleSymbols::count()
 {
   return R->simple_symbols.size();
 }
 
 
-void 
+void
 SimpleSymbols::sort()
 {
   if (R->sorted == false) {
@@ -182,7 +182,7 @@ SimpleSymbols::sort()
 }
 
 
-void 
+void
 SimpleSymbols::coalesce(SimpleSymbolsCoalesceCallback coalesce_cb)
 {
   sort();
@@ -191,7 +191,7 @@ SimpleSymbols::coalesce(SimpleSymbolsCoalesceCallback coalesce_cb)
   for (int in = 1; in < nsyms; in++) {
     if (R->simple_symbols[out]->addr() == R->simple_symbols[in]->addr()) {
       // symbol[out] needs to be coalesced with symbol[in]
-      // note: coalesce produces the coalesced result in the first argument 
+      // note: coalesce produces the coalesced result in the first argument
       coalesce_cb(R->simple_symbols[out], R->simple_symbols[in]);
     } else {
       R->simple_symbols[++out] = R->simple_symbols[in];
@@ -199,13 +199,13 @@ SimpleSymbols::coalesce(SimpleSymbolsCoalesceCallback coalesce_cb)
   }
   // erase vector after last symbol to be output
   if (out < nsyms - 1) {
-    R->simple_symbols.erase(R->simple_symbols.begin() + out + 1, 
+    R->simple_symbols.erase(R->simple_symbols.begin() + out + 1,
                             R->simple_symbols.begin() + nsyms);
   }
 }
 
 
-void 
+void
 SimpleSymbols::dump()
 {
   sort();
@@ -231,13 +231,13 @@ SimpleSymbols::find(uint64_t vma)
     return R->simple_symbols[last];
   }
 
-  for(;;) { 
+  for(;;) {
     int mid = (first + last + 1) >> 1;
     if (vma >= R->simple_symbols[mid]->addr()) {
       first = mid;
     } else if (vma < R->simple_symbols[mid]->addr()) {
       last = mid;
-    } 
+    }
     if (last - first <= 1) {
       return R->simple_symbols[first];
     }
@@ -248,7 +248,7 @@ SimpleSymbols::find(uint64_t vma)
 void
 chooseHighestBinding
 (
-  SimpleSymbol *left, 
+  SimpleSymbol *left,
   const SimpleSymbol *right
 )
 {

@@ -48,7 +48,7 @@
 #define __SIMPLESYMBOLS__
 
 //******************************************************************************
-// system includes 
+// system includes
 //******************************************************************************
 
 #include <string>
@@ -79,7 +79,7 @@ typedef enum {
 class SimpleSymbol {
 public:
   SimpleSymbol(uint64_t __addr, SimpleSymbolKind __kind,
-	SimpleSymbolBinding __binding, const char *__name); 
+	SimpleSymbolBinding __binding, const char *__name);
 
   uint64_t addr() const { return _addr; };
   SimpleSymbolKind kind() const { return _kind; };
@@ -104,9 +104,9 @@ private:
 typedef void
 (SimpleSymbolsCoalesceCallback)
 (
-  SimpleSymbol *left, 
+  SimpleSymbol *left,
   const SimpleSymbol *right
-); 
+);
 
 
 // a useful coalescing callback
@@ -119,7 +119,7 @@ public:
 
   // simply add the element as presented. there is no attempt to incrementally
   // coalesce symbols with the same address. use the coalesce method after
-  // all insertions if symbols at the same address should be pruned. 
+  // all insertions if symbols at the same address should be pruned.
   void add(uint64_t addr, SimpleSymbolKind kind, SimpleSymbolBinding binding,
            const char *name);
 
@@ -129,7 +129,7 @@ public:
   SimpleSymbol *find(uint64_t vma);
 
   // invoke the coalesce method to collapse a pair of symbols at the same
-  // address into one. for n symbols at the same address, there will be 
+  // address into one. for n symbols at the same address, there will be
   // n - 1 callse to coalesce.
   void coalesce(SimpleSymbolsCoalesceCallback coalesce);
 
