@@ -82,7 +82,7 @@ MYSOURCES = \
 	\
 	BinUtils.hpp BinUtils.cpp \
 	SimpleSymbols.hpp SimpleSymbols.cpp \
-	SimpleSymbols.hpp SimpleSymbols.cpp \
+	VdsoSymbols.hpp VdsoSymbols.cpp \
 	LinuxKernelSymbols.hpp LinuxKernelSymbols.cpp \
 	VMAInterval.hpp VMAInterval.cpp
 

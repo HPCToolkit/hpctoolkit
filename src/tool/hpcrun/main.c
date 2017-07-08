@@ -390,6 +390,8 @@ hpcrun_init_internal(bool is_child)
   // because mapping of load modules affects the recipe map.
   hpcrun_unw_init();
 
+  hpcrun_save_vdso();
+
   // WARNING: a perfmon bug requires us to fork off the fnbounds
   // server before we call PAPI_init, which is done in argument
   // processing below. Also, fnbounds_init must be done after the
@@ -498,8 +500,6 @@ hpcrun_init_internal(bool is_child)
     if (addr1 || addr2) monitor_real_exit(0);
   }
 #endif
-
-  hpcrun_save_vdso();
 
   // start the sampling process
 

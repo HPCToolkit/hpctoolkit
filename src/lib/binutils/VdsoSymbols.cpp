@@ -56,7 +56,7 @@
 // local includes
 //******************************************************************************
 
-#include <dso_symbols.h>
+#include <lib/prof-lean/dso_symbols.h>
 #include "VdsoSymbols.hpp"
 
 
@@ -104,9 +104,12 @@ note_symbol
 //******************************************************************************
 
 bool
-VdsoSymbols::parseLinuxVdsoSymbols()
+VdsoSymbols::parse(const char *pathname)
 {
-  int success = dso_symbols_vdso(note_symbol, this);
+  int success = (pathname ? 
+                 dso_symbols(pathname, note_symbol, this) : 
+                 dso_symbols_vdso(note_symbol, this)) ; 
+
   if (success) coalesce(chooseHighestBinding);
 
   return success ? true : false;
@@ -117,14 +120,14 @@ VdsoSymbols::parseLinuxVdsoSymbols()
 //******************************************************************************
 // unit test
 //******************************************************************************
-#define UNIT_TEST
+// #define UNIT_TEST
 
 #ifdef UNIT_TEST
 
 int main(int argc, char **argv)
 {
   VdsoSymbols syms;
-  syms.parseLinuxVdsoSymbols();
+  syms.parse();
   syms.dump();
 
   uint64_t addr = 0;

@@ -128,6 +128,11 @@ public:
   // and coalesce at the end to avoid O(n^2) cost.
   SimpleSymbol *find(uint64_t vma);
 
+  // wrapper around find to support name query only
+  bool findEnclosingFunction(uint64_t vma, std::string &fnName);
+
+  virtual bool parse(const char *pathname) = 0;
+
   // invoke the coalesce method to collapse a pair of symbols at the same
   // address into one. for n symbols at the same address, there will be
   // n - 1 callse to coalesce.

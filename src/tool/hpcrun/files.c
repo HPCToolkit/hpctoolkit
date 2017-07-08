@@ -419,6 +419,13 @@ hpcrun_files_set_directory()
 }
 
 
+const char * 
+hpcrun_files_directory_pathname()
+{  
+  return output_directory;
+}
+
+
 void 
 hpcrun_files_set_executable(char *execname)
 {

@@ -144,7 +144,7 @@ am__objects_1 = libHPCbinutils_la-Demangler.lo libHPCbinutils_la-LM.lo \
 	libHPCbinutils_la-Insn.lo libHPCbinutils_la-Dbg-LM.lo \
 	libHPCbinutils_la-Dbg-Proc.lo libHPCbinutils_la-BinUtils.lo \
 	libHPCbinutils_la-SimpleSymbols.lo \
-	libHPCbinutils_la-SimpleSymbols.lo \
+	libHPCbinutils_la-VdsoSymbols.lo \
 	libHPCbinutils_la-LinuxKernelSymbols.lo \
 	libHPCbinutils_la-VMAInterval.lo
 am_libHPCbinutils_la_OBJECTS = $(am__objects_1)
@@ -313,7 +313,10 @@ LIBDWARF_COPY = @LIBDWARF_COPY@
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_COPY = @LIBELF_COPY@
+LIBELF_IFLAGS = @LIBELF_IFLAGS@
 LIBELF_INC = @LIBELF_INC@
+LIBELF_LDFLAGS = @LIBELF_LDFLAGS@
+LIBELF_LDLIBS = @LIBELF_LDLIBS@
 LIBELF_LIB = @LIBELF_LIB@
 LIBMONITOR_COPY = @LIBMONITOR_COPY@
 LIBMONITOR_INC = @LIBMONITOR_INC@
@@ -516,7 +519,7 @@ MYSOURCES = \
 	\
 	BinUtils.hpp BinUtils.cpp \
 	SimpleSymbols.hpp SimpleSymbols.cpp \
-	SimpleSymbols.hpp SimpleSymbols.cpp \
+	VdsoSymbols.hpp VdsoSymbols.cpp \
 	LinuxKernelSymbols.hpp LinuxKernelSymbols.cpp \
 	VMAInterval.hpp VMAInterval.cpp
 
@@ -611,6 +614,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Seg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-SimpleSymbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-VMAInterval.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-VdsoSymbols.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -695,6 +699,13 @@ libHPCbinutils_la-SimpleSymbols.lo: SimpleSymbols.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='SimpleSymbols.cpp' object='libHPCbinutils_la-SimpleSymbols.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-SimpleSymbols.lo `test -f 'SimpleSymbols.cpp' || echo '$(srcdir)/'`SimpleSymbols.cpp
+
+libHPCbinutils_la-VdsoSymbols.lo: VdsoSymbols.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-VdsoSymbols.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-VdsoSymbols.Tpo -c -o libHPCbinutils_la-VdsoSymbols.lo `test -f 'VdsoSymbols.cpp' || echo '$(srcdir)/'`VdsoSymbols.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-VdsoSymbols.Tpo $(DEPDIR)/libHPCbinutils_la-VdsoSymbols.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='VdsoSymbols.cpp' object='libHPCbinutils_la-VdsoSymbols.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-VdsoSymbols.lo `test -f 'VdsoSymbols.cpp' || echo '$(srcdir)/'`VdsoSymbols.cpp
 
 libHPCbinutils_la-LinuxKernelSymbols.lo: LinuxKernelSymbols.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-LinuxKernelSymbols.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-LinuxKernelSymbols.Tpo -c -o libHPCbinutils_la-LinuxKernelSymbols.lo `test -f 'LinuxKernelSymbols.cpp' || echo '$(srcdir)/'`LinuxKernelSymbols.cpp

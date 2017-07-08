@@ -98,6 +98,7 @@
 #include <hpcrun_dlfns.h>
 #include <hpcrun_stats.h>
 #include <disabled.h>
+#include <files.h>
 #include <loadmap.h>
 #include <epoch.h>
 #include <sample_event.h>
@@ -443,7 +444,8 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
   // [vdso] and linux-gate.so are virtual files and don't exist
   // in the file system.
   if (vdso_segment_p(incoming_filename)) { 
-    strncpy(filename, VDSO_SEGMENT_NAME_SHORT, PATH_MAX);
+    strcpy(filename, hpcrun_files_directory_pathname());
+    strcat(filename, "/" VDSO_SEGMENT_NAME_SHORT);
   } else if (strncmp(incoming_filename, "linux-gate.so", 13) == 0) {
     strncpy(filename, incoming_filename, PATH_MAX);
   } else {

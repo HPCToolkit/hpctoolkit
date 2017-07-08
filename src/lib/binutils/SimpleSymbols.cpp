@@ -245,6 +245,19 @@ SimpleSymbols::find(uint64_t vma)
 }
 
 
+bool 
+SimpleSymbols::findEnclosingFunction
+(
+  uint64_t vma, 
+  std::string &fnName
+)
+{
+  SimpleSymbol *symbol = find(vma);
+  if (symbol) fnName = symbol->name();
+  return symbol ? true : false;
+}
+
+
 void
 chooseHighestBinding
 (

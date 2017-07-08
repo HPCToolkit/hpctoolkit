@@ -61,7 +61,7 @@
 
 class VdsoSymbols : public SimpleSymbols {
 public:
-  bool parseLinuxVdsoSymbols();
+  bool parse(const char *pathname);
 };
 
 #endif

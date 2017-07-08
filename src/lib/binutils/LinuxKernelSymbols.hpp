@@ -61,7 +61,7 @@
 
 class LinuxKernelSymbols : public SimpleSymbols {
 public:
-  bool parseLinuxKernelSymbols();
+  bool parse(const char *pathname);
 };
 
 #endif

@@ -66,10 +66,10 @@
 //******************************************************************************
 
 bool
-LinuxKernelSymbols::parseLinuxKernelSymbols()
+LinuxKernelSymbols::parse(const char *pathname)
 {
   SimpleSymbolBinding binding;
-  FILE *fp = fopen(LINUX_KERNEL_SYMBOL_FILE, "r");
+  FILE *fp = fopen(pathname, "r");
 
   if (fp) {
     size_t len = 4096;
@@ -121,14 +121,14 @@ LinuxKernelSymbols::parseLinuxKernelSymbols()
 //******************************************************************************
 // unit test
 //******************************************************************************
-#define UNIT_TEST
+// #define UNIT_TEST
 
 #ifdef UNIT_TEST
 
 int main(int argc, char **argv)
 {
   LinuxKernelSymbols syms;
-  syms.parseLinuxKernelSymbols();
+  syms.parse(LINUX_KERNEL_SYMBOL_FILE);
   syms.dump();
 
   uint64_t addr = 0;

@@ -84,6 +84,9 @@ using std::endl;
 #include "Insn.hpp"
 #include "Proc.hpp"
 
+#include "LinuxKernelSymbols.hpp"
+#include "VdsoSymbols.hpp"
+
 #include "Dbg-LM.hpp"
 
 #include <lib/isa/AlphaISA.hpp>
@@ -101,6 +104,8 @@ using std::endl;
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
 #include <lib/support/QuickSort.hpp>
+
+#include <include/linux_info.h>
 
 
 
@@ -337,6 +342,9 @@ public:
 static void
 dumpSymFlag(std::ostream& o, asymbol* sym, int flag, const char* txt, bool& hasPrinted);
 
+static bool
+hasSimpleSymbols(const char *pathname);
+
 //***************************************************************************
 
 
@@ -355,7 +363,8 @@ BinUtil::LM::LM(bool useBinutils)
     m_bfdDynSymTab(NULL), m_bfdSynthTab(NULL),
     m_bfdSymTabSort(NULL), m_bfdSymTabSz(0), m_bfdDynSymTabSz(0),
     m_bfdSymTabSortSz(0), m_bfdSynthTabSz(0), m_noreturns(0), 
-    m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils)
+    m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils), 
+    simpleSymbols(0)
 {
 }
 
@@ -405,6 +414,11 @@ BinUtil::LM::open(const char* filenm)
 {
   DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filenm), "Cannot open a different file!");
   
+  if (hasSimpleSymbols(filenm)) {
+    m_name = filenm;
+    return;
+  }
+
   // -------------------------------------------------------
   // 1. Initialize bfd and open the object file.
   // -------------------------------------------------------
@@ -528,6 +542,39 @@ BinUtil::LM::open(const char* filenm)
 }
 
 
+static bool
+hasSimpleSymbols(const char *pathname)
+{
+  const char *slash = strrchr(pathname, '/');
+  const char *basename = (slash ? slash + 1 : pathname);
+  if (strcmp(basename, LINUX_KERNEL_NAME) == 0) {
+    return true;
+  } else if (strcmp(basename, VDSO_SEGMENT_NAME_SHORT) == 0) {
+    return true;
+  }
+  return false;
+}
+
+
+static
+SimpleSymbols *
+allocateSimpleSymbols(const char *pathname)
+{
+  SimpleSymbols *simpleSymbols; 
+
+  const char *slash = strrchr(pathname, '/');
+  const char *basename = (slash ? slash + 1 : pathname);
+  if (strcmp(basename, LINUX_KERNEL_NAME) == 0) {
+    simpleSymbols = new LinuxKernelSymbols;
+  } else if (strcmp(basename, VDSO_SEGMENT_NAME_SHORT) == 0) {
+    simpleSymbols = new VdsoSymbols;
+  } else { 
+    simpleSymbols = 0;
+  }
+  return simpleSymbols;
+}
+
+
 void
 BinUtil::LM::read(LM::ReadFlg readflg)
 {
@@ -535,6 +582,12 @@ BinUtil::LM::read(LM::ReadFlg readflg)
   DIAG_Assert(!m_name.empty(), "Must call LM::Open first");
 
   m_readFlags = (ReadFlg)(readflg | LM::ReadFlg_fSeg); // enforce ReadFlg rules
+
+  simpleSymbols = allocateSimpleSymbols(m_name.c_str());
+  if (simpleSymbols) {
+    simpleSymbols->parse(m_name.c_str());
+    return;
+  }
 
   readSymbolTables();
   readSegs();
@@ -584,6 +637,11 @@ BinUtil::LM::findSrcCodeInfo(VMA vma, ushort opIndex,
   bool STATUS = false;
   func = file = "";
   line = 0;
+
+  if (simpleSymbols) {
+    STATUS = simpleSymbols->findEnclosingFunction(vma, func);  
+    return STATUS;
+  }
 
   if (!m_bfdSymTab) { 
     return STATUS; 

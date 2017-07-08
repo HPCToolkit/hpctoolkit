@@ -76,6 +76,7 @@
 #include "Dbg-LM.hpp"
 #include "VMAInterval.hpp"
 #include "BinUtils.hpp"
+#include "SimpleSymbols.hpp"
 
 #include <lib/isa/ISATypes.hpp>
 #include <lib/isa/ISA.hpp>
@@ -333,6 +334,7 @@ public:
   Insn*
   findInsn(VMA vma, ushort opIndex) const
   {
+    if (simpleSymbols) return NULL;
     VMA vma_ur = unrelocate(vma);
     VMA opvma = isa->convertVMAToOpVMA(vma_ur, opIndex);
     
@@ -574,6 +576,7 @@ private:
   RealPathMgr& m_realpathMgr;
 
   bool m_useBinutils;
+  SimpleSymbols *simpleSymbols;
 };
 
 } // namespace BinUtil
