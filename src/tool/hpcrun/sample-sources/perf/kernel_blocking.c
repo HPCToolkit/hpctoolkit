@@ -53,9 +53,11 @@
  * (at least). This file will be updated once we find a way to make it work
  * properly.
  */
-
+#include <assert.h>
 #include <include/linux_info.h>
 #include <linux/version.h>
+
+#include <sample-sources/blame-shift/blame-shift.h>
 
 #ifdef ENABLE_PERFMON
 #include "perfmon-util.h"
@@ -88,28 +90,68 @@
 //******************************************************************************
 
 
+/******************************************************************************
+ * private operations
+ *****************************************************************************/
+
+/*******************************
+ * Handling when the processing leaving the kernel and re-entering the app.
+ * The caller can check if the call chain contains kernel code or not. If not, then
+ * we are leaving the kernel.
+ *******************************/
+static void
+blocking_metric_process_blame_for_sample(void* arg, int metric_id, cct_node_t *node, int metric_incr)
+{
+  event_thread_t *current_event = (event_thread_t*) arg;
+
+  // the process is go back to the app context
+  int metric_index = current_event->event->metric_custom->metric_index;
+
+  cct_metric_data_increment(metric_index, node,
+      (cct_metric_data_t){.i = metric_incr});
+
+  // it's important to always count the number of samples for debugging purpose
+  metric_aux_info_t *info = &current_event->event->metric_custom->metric_desc->info_data;
+  info->num_samples++;
+}
 
 
 /***********************************************************************
- * Method to handle kernel blocking. Called for every context switch event
+ * Method to handle kernel blocking. Called for every context switch event:
+ *
+ * If a timer event goes off:
+ * - check if
  ***********************************************************************/
 static void
 kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
     perf_mmap_data_t *mmap_data)
 {
-  if (current_event != NULL && sv.sample_node != NULL) {
-    u64 delta = mmap_data[1].time;
+  assert (current_event != NULL && sv.sample_node != NULL);
 
-    int metric_index =  current_event->event->metric_custom->metric_index;
-    cct_metric_data_increment(metric_index,
-                                sv.sample_node,
-                               (cct_metric_data_t){.i = delta});
+  if (current_event->time_cs_out == 0) {
+    // this is the first time we enter the kernel (leaving the app)
+    // needs to store the time to compute the blocking time in @see kernel_block_enter_app_process
+    current_event->time_cs_out = mmap_data->context_switch_time;
+  } else {
+    // check whether we are in kernel mode or not
+    if (mmap_data->nr == 0) {
+      // not in the kernel anymore
+      int delta = current_event->time_current - current_event->time_cs_out;
 
-    // it's important to always count the number of samples for debugging purpose
-    metric_aux_info_t *info = &current_event->event->metric_custom->metric_desc->info_data;
-    info->num_samples++;
+      // make sure the delta is zero or positive
+      assert(delta>=0);
+
+      blocking_metric_process_blame_for_sample(current_event,
+          current_event->event->metric_custom->metric_index, sv.sample_node, delta);
+
+      //blame_shift_apply(current_event->event->metric_custom->metric_index, sv.sample_node, delta);
+
+      // important: need to reset the value to inform that we are leaving the kernel
+      current_event->time_cs_out = 0;
+    }
   }
 }
+
 
 /***************************************************************
  * Register events to compute blocking time in the kernel
@@ -129,8 +171,8 @@ register_blocking(event_info_t *event_desc)
   // ------------------------------------------
   event_desc->metric_custom->metric_index = hpcrun_new_metric();
   event_desc->metric_custom->metric_desc  = hpcrun_set_metric_info_and_period(
-      	event_desc->metric_custom->metric_index, EVNAME_KERNEL_BLOCK,
-        MetricFlags_ValFmt_Int, 1 /* period */, metric_property_none);
+      event_desc->metric_custom->metric_index, EVNAME_KERNEL_BLOCK,
+      MetricFlags_ValFmt_Int, 1 /* period */, metric_property_none);
 
   // ------------------------------------------
   // create metric to store context switches
@@ -146,15 +188,15 @@ register_blocking(event_info_t *event_desc)
   // ------------------------------------------
   /* PERF_SAMPLE_STACK_USER may also be good to use */
   u64 sample_type = PERF_SAMPLE_IP   | PERF_SAMPLE_TID       |
-		    PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN |
-		    PERF_SAMPLE_CPU  | PERF_SAMPLE_PERIOD;
+      PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN |
+      PERF_SAMPLE_CPU  | PERF_SAMPLE_PERIOD;
 
   perf_attr_init(PERF_COUNT_SW_CONTEXT_SWITCHES, PERF_TYPE_SOFTWARE,
-                 &(event_desc->attr),
-                 true        /* use_period*/,
-		         1           /* sample every context switch*/,
-                 sample_type /* need additional info for sample type */
-				 );
+      &(event_desc->attr),
+      true        /* use_period*/,
+      1           /* sample every context switch*/,
+      sample_type /* need additional info for sample type */
+  );
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
   event_desc->attr.context_switch = 1;
@@ -167,8 +209,13 @@ register_blocking(event_info_t *event_desc)
 }
 
 
+/******************************************************************************
+ * interface operations
+ *****************************************************************************/
+
 void kernel_blocking_init()
 {
+  // unfortunately, the older version doesn't support context switch event properly
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
   event_custom_t *event_kernel_blocking = hpcrun_malloc(sizeof(event_custom_t));
   event_kernel_blocking->name = EVNAME_KERNEL_BLOCK;
@@ -178,5 +225,12 @@ void kernel_blocking_init()
   event_kernel_blocking->metric_desc  = NULL; 	 	// these fields to be defined later
 
   event_custom_register(event_kernel_blocking);
+
+  /*bs_fn_entry_t bs_entry;
+  bs_entry.fn   = blocking_metric_process_blame_for_sample;
+  bs_entry.next = 0;
+  bs_entry.arg  = 0;
+
+  blame_shift_register(&bs_entry);*/
 #endif
 }

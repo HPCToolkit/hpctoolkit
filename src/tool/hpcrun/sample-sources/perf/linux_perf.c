@@ -885,6 +885,10 @@ perf_event_handler(
       // start to handle the data from the buffer
       // ----------------------------------------------------------------------------
 
+      if (mmap_data.time > 0) {
+        current->time_current = mmap_data.time;
+      }
+
       // ----------------------------------------------------------------------------
       // for event with frequency, we need to increase the counter by its period
       // sampling taken by perf event kernel
@@ -922,7 +926,6 @@ perf_event_handler(
       info_aux->num_samples++;
       double delta				   = counter - info_aux->threshold_mean;
       info_aux->threshold_mean    += delta / info_aux->num_samples;
-      //info_aux->threshold_stdev   += delta * (counter-info_aux->threshold_mean);
 
       // ----------------------------------------------------------------------------
       // update the cct and add callchain if necessary
@@ -939,7 +942,7 @@ perf_event_handler(
         		current->event->metric_custom->handler_fn(current, sv, &mmap_data);
         }
       }
-      //blame_shift_apply( current->event->metric, sv.sample_node, 1 /*metricIncr*/);
+      //blame_shift_apply( current->event, sv.sample_node, 1 /*metricIncr*/);
 
     } while (more_data);
 #if LINUX_PERF_DEBUG

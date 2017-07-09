@@ -153,6 +153,7 @@ typedef struct event_info_s {
 
   // predefined metric
   event_custom_t *metric_custom;	// pointer to the predefined metric
+
 } event_info_t;
 
 
@@ -164,9 +165,12 @@ typedef struct perf_event_mmap_page pe_mmap_t;
 // this data is designed to be used within a thread
 // --------------------------------------------------------------
 typedef struct event_thread_s {
-  pe_mmap_t   *mmap;    // mmap buffer
-  int    fd;            // file descriptor of the event
-  event_info_t  *event; // pointer to main event description
+  pe_mmap_t    *mmap;  // mmap buffer
+  int          fd;     // file descriptor of the event
+  event_info_t *event; // pointer to main event description
+
+  u64          time_cs_out;  // time when leaving the application process
+  u64          time_current; // the latest or current sampling time
 } event_thread_t;
 
 
