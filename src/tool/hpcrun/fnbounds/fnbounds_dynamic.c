@@ -437,6 +437,19 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
   void** nm_table;
   long map_size;
 
+  // typically, we use the filename for the query to the system server. however, 
+  // for [vdso], the filename will be the name of a file in the measurements
+  // directory where a copy of the [vdso] segment will be saved. for parallel programs,
+  // there is a race between the one process that opens the file first in exclusive
+  // mode and other processes that just continue. one of the continuing processes
+  // might try to invoke the system server to compute function bounds based on the 
+  // file contents before the file is completely written. for that reason, we use
+  // declare below pathname_for_query, which will just be [vdso] rather than the
+  // name of the file that contains a copy. given [vdso], the system server will
+  // compute the bounds using its own memory-mapped copy of [vdso] rather than
+  // waiting for the file to be written -- johnmc 7/2017 
+  const char *pathname_for_query;
+
   if (incoming_filename == NULL) {
     return (NULL);
   }
@@ -446,13 +459,16 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
   if (vdso_segment_p(incoming_filename)) { 
     strcpy(filename, hpcrun_files_directory_pathname());
     strcat(filename, "/" VDSO_SEGMENT_NAME_SHORT);
+    pathname_for_query = VDSO_SEGMENT_NAME_SHORT;
   } else if (strncmp(incoming_filename, "linux-gate.so", 13) == 0) {
     strncpy(filename, incoming_filename, PATH_MAX);
+    pathname_for_query = filename;
   } else {
     realpath(incoming_filename, filename);
+    pathname_for_query = filename;
   }
 
-  nm_table = (void**) hpcrun_syserv_query(filename, &fh);
+  nm_table = (void**) hpcrun_syserv_query(pathname_for_query, &fh);
   if (nm_table == NULL) {
     return hpcrun_dso_make(filename, NULL, NULL, start, end, 0);
   }
