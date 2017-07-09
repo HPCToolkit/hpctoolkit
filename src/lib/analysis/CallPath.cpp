@@ -405,6 +405,10 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
     }
   }
 
+  // load module might have a "pretty" name, e.g., [vdso] instead
+  // of a full path to a file in a measurement directory 
+  if (lm) lmStrct->pretty_name(lm->name().c_str());
+
   Analysis::CallPath::overlayStaticStructure(prof, loadmap_lm, lmStrct, lm);
   
   // account for new structure inserted by BAnal::Struct::makeStructureSimple()

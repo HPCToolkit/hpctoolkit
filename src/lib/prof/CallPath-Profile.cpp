@@ -524,7 +524,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     bool fake_procedure = false;
     
     if (type == 1) { // LoadModule
-      nm = strct->name().c_str();
+      nm = static_cast<Prof::Struct::LM *>(strct)->pretty_name();
     }
     else if (type == 2) { // File
       nm = getFileName(strct);	
