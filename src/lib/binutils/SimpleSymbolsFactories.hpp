@@ -44,8 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __VDSOSYMBOLS_HPP__
-#define __VDSOSYMBOLS_HPP__
+#ifndef __SIMPLESYMBOLSFACTORIES__
+#define __SIMPLESYMBOLSFACTORIES__
 
 //******************************************************************************
 // local includes
@@ -59,17 +59,15 @@
 // type declarations
 //******************************************************************************
 
-class VdsoSymbols : public SimpleSymbols {
+class SimpleSymbolsFactories {
 public:
-  VdsoSymbols();
-  bool parse(const char *pathname);
+  SimpleSymbolsFactories();
+  // void registerFactory(SimpleSymbolsFactory *);
+  SimpleSymbolsFactory *find(const char *pathname);
+private:
+  struct SimpleSymbolsFactoriesRepr *R;
 };
 
-
-class VdsoSymbolsFactory : public SimpleSymbolsFactory {
-public:
-  bool match(const char *pathname);
-  SimpleSymbols *create();
-};
+extern SimpleSymbolsFactories simpleSymbolsFactories;
 
 #endif

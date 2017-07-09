@@ -44,14 +44,15 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __VDSOSYMBOLS_HPP__
-#define __VDSOSYMBOLS_HPP__
-
 //******************************************************************************
-// local includes
+// system include files
 //******************************************************************************
 
-#include "SimpleSymbols.hpp"
+#include <vector>
+
+#include "SimpleSymbolsFactories.hpp"
+#include "LinuxKernelSymbols.hpp"
+#include "VdsoSymbols.hpp"
 
 
 
@@ -59,17 +60,43 @@
 // type declarations
 //******************************************************************************
 
-class VdsoSymbols : public SimpleSymbols {
-public:
-  VdsoSymbols();
-  bool parse(const char *pathname);
+struct  SimpleSymbolsFactoriesRepr {
+  std::vector<SimpleSymbolsFactory *> factories;
 };
 
 
-class VdsoSymbolsFactory : public SimpleSymbolsFactory {
-public:
-  bool match(const char *pathname);
-  SimpleSymbols *create();
-};
 
-#endif
+//******************************************************************************
+// global data
+//******************************************************************************
+
+SimpleSymbolsFactories simpleSymbolsFactories;
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+SimpleSymbolsFactories::SimpleSymbolsFactories
+(
+ void
+)
+{
+  R = new struct SimpleSymbolsFactoriesRepr; 
+  R->factories.push_back(new VdsoSymbolsFactory);
+  R->factories.push_back(new LinuxKernelSymbolsFactory);
+}
+
+SimpleSymbolsFactory *
+SimpleSymbolsFactories::find
+(
+ const char *pathname
+)
+{
+  for (auto it = R->factories.begin();
+       it != R->factories.end(); ++it) {
+    if ((*it)->match(pathname)) return *it;
+  }
+  return NULL;
+}

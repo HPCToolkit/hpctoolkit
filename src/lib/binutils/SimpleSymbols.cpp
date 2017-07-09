@@ -72,6 +72,7 @@
 
 struct SimpleSymbolsRepr {
   std::vector<SimpleSymbol*> simple_symbols;
+  std::string name;
   bool sorted;
 };
 
@@ -142,10 +143,24 @@ SimpleSymbol::dump()
 // interface operations
 //******************************************************************************
 
-SimpleSymbols::SimpleSymbols()
+SimpleSymbols::SimpleSymbols
+(
+ const char *name
+)
 {
   R = new struct SimpleSymbolsRepr;
   R->sorted = false;
+  R->name = name;
+}
+
+
+const std::string &
+SimpleSymbols::name
+(
+ void
+)
+{
+  return R->name;
 }
 
 
@@ -209,7 +224,8 @@ void
 SimpleSymbols::dump()
 {
   sort();
-  for (auto it = R->simple_symbols.begin(); it != R->simple_symbols.end(); ++it) {
+  for (auto it = R->simple_symbols.begin();
+       it != R->simple_symbols.end(); ++it) {
     (*it)->dump();
   }
 }

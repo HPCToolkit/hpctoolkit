@@ -44,8 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __KERNELSYMBOLS_HPP__
-#define __KERNELSYMBOLS_HPP__
+#ifndef __LINUXKERNELSYMBOLS_HPP__
+#define __LINUXKERNELSYMBOLS_HPP__
 
 //******************************************************************************
 // local includes
@@ -61,7 +61,15 @@
 
 class LinuxKernelSymbols : public SimpleSymbols {
 public:
+  LinuxKernelSymbols();
   bool parse(const char *pathname);
 };
 
+
+class LinuxKernelSymbolsFactory : public SimpleSymbolsFactory {
+public:
+  bool match(const char *pathname);
+  SimpleSymbols *create();
+};
+     
 #endif

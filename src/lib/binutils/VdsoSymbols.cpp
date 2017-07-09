@@ -49,12 +49,15 @@
 //******************************************************************************
 
 #include <iostream>
+#include <string.h>
 
 
 
 //******************************************************************************
 // local includes
 //******************************************************************************
+
+#include <lib/prof-lean/vdso.h>
 
 #include "dso_symbols.h"
 #include "VdsoSymbols.hpp"
@@ -103,6 +106,14 @@ note_symbol
 // interface operations
 //******************************************************************************
 
+VdsoSymbols::VdsoSymbols
+(
+ void
+) : SimpleSymbols(VDSO_SEGMENT_NAME_SHORT)
+{
+}
+
+
 bool
 VdsoSymbols::parse(const char *pathname)
 {
@@ -116,6 +127,25 @@ VdsoSymbols::parse(const char *pathname)
 }
 
 
+bool
+VdsoSymbolsFactory::match
+(
+  const char *pathname
+)
+{
+  const char *slash = strrchr(pathname, '/');
+  const char *basename = (slash ? slash + 1 : pathname);
+  return strcmp(basename, VDSO_SEGMENT_NAME_SHORT) == 0;
+}
+
+SimpleSymbols *
+VdsoSymbolsFactory::create
+(
+ void
+)
+{
+    return new VdsoSymbols;
+}
 
 //******************************************************************************
 // unit test

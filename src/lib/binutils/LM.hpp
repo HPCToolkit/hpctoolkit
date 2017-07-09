@@ -168,7 +168,7 @@ public:
   // name: Return name of load module
   const std::string&
   name() const
-  { return m_name; }
+  { return simpleSymbols ? simpleSymbols->name() : m_name; }
 
   // type:  Return type of load module
   Type

@@ -82,6 +82,7 @@ MYSOURCES = \
 	\
 	BinUtils.hpp BinUtils.cpp \
 	SimpleSymbols.hpp SimpleSymbols.cpp \
+	SimpleSymbolsFactories.hpp SimpleSymbolsFactories.cpp \
 	dso_symbols.h dso_symbols.c \
 	VdsoSymbols.hpp VdsoSymbols.cpp \
 	LinuxKernelSymbols.hpp LinuxKernelSymbols.cpp \

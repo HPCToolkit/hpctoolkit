@@ -115,7 +115,8 @@ SimpleSymbolsCoalesceCallback chooseHighestBinding;
 
 class SimpleSymbols {
 public:
-  SimpleSymbols();
+  SimpleSymbols(const char *name);
+  const std::string& name();
 
   // simply add the element as presented. there is no attempt to incrementally
   // coalesce symbols with the same address. use the coalesce method after
@@ -146,6 +147,14 @@ private:
   void sort();
 
   struct SimpleSymbolsRepr *R;
+};
+
+
+class SimpleSymbolsFactory {
+public:
+  virtual bool match(const char *pathname) = 0;
+  virtual SimpleSymbols *create() = 0;
+
 };
 
 #endif

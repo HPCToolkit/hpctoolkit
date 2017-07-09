@@ -65,6 +65,14 @@
 // interface operations
 //******************************************************************************
 
+LinuxKernelSymbols::LinuxKernelSymbols
+(
+ void
+) : SimpleSymbols(LINUX_KERNEL_NAME)
+{
+}
+
+
 bool
 LinuxKernelSymbols::parse(const char *pathname)
 {
@@ -116,6 +124,27 @@ LinuxKernelSymbols::parse(const char *pathname)
   return count() > 0;
 }
 
+
+bool
+LinuxKernelSymbolsFactory::match
+(
+ const char *pathname
+)
+{
+  const char *slash = strrchr(pathname, '/');
+  const char *basename = (slash ? slash + 1 : pathname);
+  return strcmp(basename, LINUX_KERNEL_NAME) == 0;
+}
+
+
+SimpleSymbols *
+LinuxKernelSymbolsFactory::create
+(
+ void
+)
+{
+  return new LinuxKernelSymbols;
+}
 
 
 //******************************************************************************

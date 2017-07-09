@@ -84,8 +84,7 @@ using std::endl;
 #include "Insn.hpp"
 #include "Proc.hpp"
 
-#include "LinuxKernelSymbols.hpp"
-#include "VdsoSymbols.hpp"
+#include "SimpleSymbolsFactories.hpp"
 
 #include "Dbg-LM.hpp"
 
@@ -342,8 +341,6 @@ public:
 static void
 dumpSymFlag(std::ostream& o, asymbol* sym, int flag, const char* txt, bool& hasPrinted);
 
-static bool
-hasSimpleSymbols(const char *pathname);
 
 //***************************************************************************
 
@@ -414,7 +411,7 @@ BinUtil::LM::open(const char* filenm)
 {
   DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filenm), "Cannot open a different file!");
   
-  if (hasSimpleSymbols(filenm)) {
+  if (simpleSymbolsFactories.find(filenm)) {
     m_name = filenm;
     return;
   }
@@ -542,39 +539,6 @@ BinUtil::LM::open(const char* filenm)
 }
 
 
-static bool
-hasSimpleSymbols(const char *pathname)
-{
-  const char *slash = strrchr(pathname, '/');
-  const char *basename = (slash ? slash + 1 : pathname);
-  if (strcmp(basename, LINUX_KERNEL_NAME) == 0) {
-    return true;
-  } else if (strcmp(basename, VDSO_SEGMENT_NAME_SHORT) == 0) {
-    return true;
-  }
-  return false;
-}
-
-
-static
-SimpleSymbols *
-allocateSimpleSymbols(const char *pathname)
-{
-  SimpleSymbols *simpleSymbols; 
-
-  const char *slash = strrchr(pathname, '/');
-  const char *basename = (slash ? slash + 1 : pathname);
-  if (strcmp(basename, LINUX_KERNEL_NAME) == 0) {
-    simpleSymbols = new LinuxKernelSymbols;
-  } else if (strcmp(basename, VDSO_SEGMENT_NAME_SHORT) == 0) {
-    simpleSymbols = new VdsoSymbols;
-  } else { 
-    simpleSymbols = 0;
-  }
-  return simpleSymbols;
-}
-
-
 void
 BinUtil::LM::read(LM::ReadFlg readflg)
 {
@@ -583,8 +547,9 @@ BinUtil::LM::read(LM::ReadFlg readflg)
 
   m_readFlags = (ReadFlg)(readflg | LM::ReadFlg_fSeg); // enforce ReadFlg rules
 
-  simpleSymbols = allocateSimpleSymbols(m_name.c_str());
-  if (simpleSymbols) {
+  SimpleSymbolsFactory *sf = simpleSymbolsFactories.find(m_name.c_str());
+  if (sf) {
+    simpleSymbols = sf->create();
     simpleSymbols->parse(m_name.c_str());
     return;
   }
