@@ -19669,16 +19669,8 @@ case "$LIBELF" in
     ;;
 esac
 
-# LIBELF_IFLAGS="-I${LIBELF}/include"
-# LIBELF_LDFLAGS="-L${LIBELF}/lib"
-# LIBELF_LDLIBS="-lelf"
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBELF" >&5
 $as_echo "$LIBELF" >&6; }
-
-# AC_SUBST([LIBELF_IFLAGS])
-# AC_SUBST([LIBELF_LDFLAGS])
-# AC_SUBST([LIBELF_LDLIBS])
 
 
 
