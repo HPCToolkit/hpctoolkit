@@ -136,7 +136,6 @@ link_ui(unwind_interval *current, unwind_interval *next)
 {
   UWI_END_ADDR(current) = UWI_START_ADDR(next);
   bitree_uwi_set_rightsubtree(current, next);
-  bitree_uwi_set_leftsubtree(next, current);
 }
 
 static void
