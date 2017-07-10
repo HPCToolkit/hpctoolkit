@@ -143,11 +143,13 @@ am_hpcprof_bin_OBJECTS = $(am__objects_1)
 hpcprof_bin_OBJECTS = $(am_hpcprof_bin_OBJECTS)
 am__DEPENDENCIES_1 =
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-am__DEPENDENCIES_3 = $(HPCLIB_Analysis) $(HPCLIB_Banal_Simple) \
+am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_4 = $(HPCLIB_Analysis) $(HPCLIB_Banal_Simple) \
 	$(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
 	$(HPCLIB_ProfLean) $(HPCLIB_ISA) $(am__DEPENDENCIES_2) \
-	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean)
-hpcprof_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
+	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean) \
+	$(am__DEPENDENCIES_3)
+hpcprof_bin_DEPENDENCIES = $(am__DEPENDENCIES_4)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -543,6 +545,11 @@ MYSOURCES = \
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
+MY_LIB_Dyninst = -L$(SYMTABAPI_LIB)  -lparseAPI -linstructionAPI \
+	$(SYMTABAPI_LIB_LIST) \
+	-L$(LIBDWARF_LIB) -ldwarf \
+	-L@LIBELF_LIB@ -lelf
+
 MYLDFLAGS = \
 	@HPC_LT_LDFLAGS@ \
 	@HOST_CXXFLAGS@ \
@@ -564,6 +571,7 @@ MYLDADD = \
 	$(HPCLIB_SupportLean) \
 	-L@LIBELF_LIB@ -lelf \
 	@XERCES_LDLIBS@ \
+	$(MY_LIB_Dyninst) \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCPROF_LDFLAGS@
 

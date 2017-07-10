@@ -83,13 +83,13 @@ MYSOURCES = \
 	BinUtils.hpp BinUtils.cpp \
 	SimpleSymbols.hpp SimpleSymbols.cpp \
 	SimpleSymbolsFactories.hpp SimpleSymbolsFactories.cpp \
-	dso_symbols.h dso_symbols.c \
+	dso_symbols.h dso_symbols.cpp \
 	VdsoSymbols.hpp VdsoSymbols.cpp \
 	LinuxKernelSymbols.hpp LinuxKernelSymbols.cpp \
 	VMAInterval.hpp VMAInterval.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@ $(HPC_IFLAGS) -I@LIBELF_INC@ @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCFLAGS   = @HOST_CFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) -I@BOOST_INC@ -I@SYMTABAPI_INC@ @GNUBINUTILS_IFLAGS@
 
 if IS_HOST_AR
   MYAR = @HOST_AR@
