@@ -76,6 +76,12 @@ MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
 
+
+MY_LIB_Dyninst = -L$(SYMTABAPI_LIB)  -lparseAPI -linstructionAPI \
+	$(SYMTABAPI_LIB_LIST) \
+	-L$(LIBDWARF_LIB) -ldwarf \
+	-L@LIBELF_LIB@ -lelf
+
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
 
@@ -98,7 +104,7 @@ MYLDADD = \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
-	-L@LIBELF_LIB@ -lelf \
+	$(MY_LIB_Dyninst) \
 	@XERCES_LDLIBS@ \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCPROFTT_LDFLAGS@
