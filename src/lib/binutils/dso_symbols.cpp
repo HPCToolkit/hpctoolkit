@@ -260,20 +260,22 @@ addRegions
 }
 
 
-static void 
+static unsigned int 
 addSymbols
 (
- struct DsoInternalState *state
+ struct DsoInternalState *state,
+ Symbol::SymbolType sType
 ) 
 {
   vector<Dyninst::SymtabAPI::Symbol *> symbols;
-  state->the_symtab->getAllSymbolsByType(symbols, Symbol::ST_FUNCTION);
+  state->the_symtab->getAllSymbolsByType(symbols, sType);
   for (unsigned int i = 0; i < symbols.size(); i++) {
     Symbol *s = symbols[i];
     string mname = s->getMangledName();
     Offset o = s->getOffset();
     addFunction(state, o, mname);
   }
+  return symbols.size();
 }
 
 
@@ -325,9 +327,13 @@ dso_symbols_internal
   // state->the_symtab->parseTypesNow();
   
   addRegions(state);
-#if 0
-  addSymbols(state);
-#endif
+  if (addSymbols(state, Symbol::ST_FUNCTION) == 0) {
+    // no functions found; on Power [vdso] symbols are
+    // ST_NOTYPE. sigh. rather than hard coding this as
+    // a platform dependency, try this if "plan A" doesn't
+    // yield any function symbols. 
+    addSymbols(state, Symbol::ST_NOTYPE);
+  }
   addSymtabFunctions(state);
   addParseAPIfunctions(state);
   
