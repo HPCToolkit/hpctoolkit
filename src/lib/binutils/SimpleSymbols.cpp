@@ -285,5 +285,12 @@ chooseHighestBinding
     left->setBinding(right->binding());
     left->setKind(right->kind());
     left->setName(right->name());
+  } else if (left->binding() == right->binding()) {
+    // prefer real names to pseudo-names
+    if (left->name()[0] == '<') left->setName(right->name());
+    else {
+      // prefer low-level names
+      if (right->name()[0] == '_') left->setName(right->name());
+    }
   }
 }

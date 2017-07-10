@@ -51,8 +51,8 @@
 //   implementation that extracts dynamic symbols from a shared library
 //
 // Description:
-//   extract dynamic symbols from a shared library. this needs to be done
-//   at runtime to understand VDSOs.
+//   extract dynamic symbols from a shared library. one can extract the
+//   symbols from one's own memory-mapped [vdso] segment.
 //
 //
 //***************************************************************************

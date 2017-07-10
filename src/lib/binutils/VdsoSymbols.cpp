@@ -123,6 +123,10 @@ VdsoSymbols::parse(const char *pathname)
 
   if (success) coalesce(chooseHighestBinding);
 
+#ifdef DEBUG_VDSOSYMBOLS
+  dump();
+#endif
+
   return success ? true : false;
 }
 
