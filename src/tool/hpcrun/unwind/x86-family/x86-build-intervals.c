@@ -92,7 +92,6 @@ btuwi_status_t
 build_intervals(char *ins, unsigned int len, mem_alloc m_alloc)
 {
   btuwi_status_t status = x86_build_intervals(ins, len, 0, m_alloc);
-  bitree_uwi_finalize(status.first);
   return status;
 }
 
