@@ -74,6 +74,7 @@
 #include <sstream>
 
 #include <lib/binutils/BinUtils.hpp>
+#include <lib/binutils/VMAInterval.hpp>
 #include <lib/support/FileNameMap.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/StringTable.hpp>
@@ -101,6 +102,8 @@ using namespace std;
 
 #define USE_DYNINST_LINE_MAP    1
 #define USE_LIBDWARF_LINE_MAP   0
+
+#define ADD_PARSEAPI_GAPS  0
 
 #define DEBUG_CFG_SOURCE  0
 #define DEBUG_MAKE_SKEL   0
@@ -155,6 +158,9 @@ findLoopHeader(FileInfo *, GroupInfo *, ParseAPI::Function *,
 
 static TreeNode *
 deleteInlinePrefix(TreeNode *, Inline::InlineSeqn, HPC::StringTable &);
+
+static void
+computeGaps(VMAIntervalSet &, VMAIntervalSet &, VMA, VMA);
 
 #if DEBUG_CFG_SOURCE
 
@@ -525,6 +531,8 @@ static void
 doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 	       HPC::StringTable & strTab)
 {
+  VMAIntervalSet covered;
+
   long num_funcs = ginfo->procMap.size();
 
   // make a map of internal call edges (from target to source) across
@@ -600,6 +608,13 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       visited[block] = false;
     }
 
+#if ADD_PARSEAPI_GAPS
+    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+	Block * block = *bit;
+	covered.insert(block->start(), block->end());
+    }
+#endif
+
     // traverse the loop (Tarjan) tree
     LoopList *llist =
 	doLoopTree(finfo, ginfo, func, visited, func->getLoopTree(), strTab);
@@ -652,6 +667,35 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 	 << "parse:  '" << func->name() << "'\n";
 #endif
   }
+
+#if ADD_PARSEAPI_GAPS
+  auto pit = ginfo->procMap.begin();
+
+  if (pit != ginfo->procMap.end()) {
+    ProcInfo * pinfo = pit->second;
+    ParseAPI::Function * func = pinfo->func;
+    Address entry_addr = func->addr();
+    SymtabAPI::Function * sym_func = ginfo->sym_func;
+    Offset start = sym_func->getOffset();
+    Offset end = start + sym_func->getSize();
+
+    cout << "\n------------------------------------------------------------\n"
+	 << "func:  0x" << hex << entry_addr << dec
+	 << "  (" << num_funcs << ")\n"
+	 << "link:   " << ginfo->linkName << "\n"
+	 << "parse:  " << func->name() << "\n"
+	 << "0x" << hex << start << "--0x" << end << dec << "\n";
+
+    cout << "\ncovered:\n"
+	 << covered.toString() << "\n";
+
+    VMAIntervalSet gaps;
+    computeGaps(covered, gaps, start, end);
+
+    cout << "\ngaps:\n"
+	 << gaps.toString() << "\n";
+  }
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -1254,6 +1298,43 @@ deleteInlinePrefix(TreeNode * root, Inline::InlineSeqn prefix, HPC::StringTable 
   loops.clear();
 
   return root;
+}
+
+//----------------------------------------------------------------------
+
+// Compute gaps = the set of intervals in [start, end) that are not
+// covered in vset.
+//
+static void
+computeGaps(VMAIntervalSet & vset, VMAIntervalSet & gaps, VMA start, VMA end)
+{
+  gaps.clear();
+
+  auto it = vset.begin();
+
+  while (start < end)
+  {
+    if (it == vset.end()) {
+      gaps.insert(start, end);
+      break;
+    }
+    else if (it->end() <= start) {
+      // it entirely left of start
+      ++it;
+    }
+    else if (it->beg() <= start) {
+      // it contains start
+      start = it->end();
+      ++it;
+    }
+    else {
+      // it entirely right of start
+      VMA gap_end = std::min(it->beg(), end);
+      gaps.insert(start, gap_end);
+      start = it->end();
+      ++it;
+    }
+  }
 }
 
 //****************************************************************************
