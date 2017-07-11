@@ -430,6 +430,7 @@ BinUtil::LM::open(const char* filenm)
   }
   
   m_name = filenm;
+  m_realpathMgr.realpath(m_name);
 
   // -------------------------------------------------------
   // 2. Collect data from BFD
