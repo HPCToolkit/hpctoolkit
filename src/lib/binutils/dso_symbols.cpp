@@ -58,7 +58,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <stdint.h>
+#include <string.h>
 
 
 //******************************************************************************
@@ -200,7 +201,8 @@ procSymbol
 )
 {
   std::ostringstream s;
-  s << prefix
+  s << prefix 
+    << "0x"
     << std::hex
     << addr
     << " [" << basename << "]"; 
@@ -296,6 +298,27 @@ addSymtabFunctions
 }
 
 
+static bool 
+parseParseAPISyntheticName(const char *name, Offset &off)
+{
+  char buffer[2];
+  intptr_t val;
+  int success = sscanf(name, "targ%lx%1s", &val, buffer);
+  if (success == 1) off = val;
+  return success == 1;
+}
+
+
+static std::string 
+functionName(std::string name, const char *basename)
+{
+  Offset off;
+  bool isSynthetic = parseParseAPISyntheticName(name.c_str(), off);
+  if (isSynthetic) return procSymbol("<unknown procedure>@", off, basename);
+  else return name;
+}
+
+
 static void
 addParseAPIfunctions
 (
@@ -310,7 +333,8 @@ addParseAPIfunctions
   const CodeObject::funclist &funcList = the_code_obj->funcs();
   for (auto fit = funcList.begin(); fit != funcList.end(); ++fit) {
     ParseAPI::Function * func = *fit;
-    addFunction(state, func->addr(), func->name());
+    string fname = functionName(func->name(), state->basename);
+    addFunction(state, func->addr(), fname);
   }
 }
 

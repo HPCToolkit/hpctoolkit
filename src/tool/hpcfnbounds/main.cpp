@@ -586,6 +586,9 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
 #endif // USE_SYMTABAPI_EXCEPTION_BLOCKS 
 
   syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
+  if (symvec.size() == 0) {
+    syms->getAllSymbolsByType(symvec, Symbol::ST_NOTYPE);
+  }
 
 #ifdef __PPC64__
   {

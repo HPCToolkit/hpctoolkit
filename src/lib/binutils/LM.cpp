@@ -348,6 +348,7 @@ dumpSymFlag(std::ostream& o, asymbol* sym, int flag, const char* txt, bool& hasP
 //***************************************************************************
 // LM
 //***************************************************************************
+
 // current ISA (see comments in header)
 ISA* BinUtil::LM::isa = NULL;
 
@@ -436,10 +437,6 @@ BinUtil::LM::open(const char* filenm)
   
   m_name = filenm;
 
-  if (!vdso_segment_p(filenm)) {
-    m_realpathMgr.realpath(m_name);
-  }
-  
   // -------------------------------------------------------
   // 2. Collect data from BFD
   // -------------------------------------------------------
