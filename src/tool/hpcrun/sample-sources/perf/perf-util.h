@@ -154,6 +154,7 @@ typedef struct event_info_s {
   // predefined metric
   event_custom_t *metric_custom;	// pointer to the predefined metric
 
+  u32 perf_type; // either sample record or other
 } event_info_t;
 
 
@@ -170,7 +171,7 @@ typedef struct event_thread_s {
   event_info_t *event; // pointer to main event description
 
   u64          time_cs_out;  // time when leaving the application process
-  u64          time_current; // the latest or current sampling time
+  cct_node_t  *cct_kernel;   // cct of the last access to kernel
 } event_thread_t;
 
 

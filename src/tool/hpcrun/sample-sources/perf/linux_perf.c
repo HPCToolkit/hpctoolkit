@@ -874,20 +874,14 @@ perf_event_handler(
     // reading info from mmapped buffer
     int more_data = 0;
 
-    do {// ----------------------------------------------------------------------------
+    do {
+      // ----------------------------------------------------------------------------
     	// parse the buffer until it finishes reading all buffers
     	// ----------------------------------------------------------------------------
       perf_mmap_data_t mmap_data;
       memset(&mmap_data, 0, sizeof(perf_mmap_data_t));
+
       more_data = read_perf_buffer(current, &mmap_data);
-
-      // ----------------------------------------------------------------------------
-      // start to handle the data from the buffer
-      // ----------------------------------------------------------------------------
-
-      if (mmap_data.time > 0) {
-        current->time_current = mmap_data.time;
-      }
 
       // ----------------------------------------------------------------------------
       // for event with frequency, we need to increase the counter by its period
@@ -909,12 +903,21 @@ perf_event_handler(
       //	            = metric_inc * time_enabled / time running
       // ----------------------------------------------------------------------------
       double scale_f = (double) time_enabled / time_running;
+
+      // for period-based sampling with no multiplexing, there is no need to adjust
+      // the scale. Also for software event. For them, the value of time_enabled
+      //  and time_running are incorrect (the ratio is less than 1 which doesn't make sense)
+
+      if (scale_f < 1.0)
+        scale_f = 1.0;
+
       double counter = scale_f * metric_inc;
 
       // ----------------------------------------------------------------------------
       // set additional information for the metric description
       // ----------------------------------------------------------------------------
       metric_aux_info_t *info_aux = &(current->event->metric_desc->info_data);
+
       // check if this event is multiplexed. we need to notify the user that a multiplexed
       //  event is not accurate at all.
       // Note: perf event can report the scale to be close to 1 (like 1.02 or 0.99).
@@ -924,8 +927,8 @@ perf_event_handler(
       // case of multiplexed or frequency-based sampling, we need to store the mean and
       // the standard deviation of the sampling period
       info_aux->num_samples++;
-      double delta				   = counter - info_aux->threshold_mean;
-      info_aux->threshold_mean    += delta / info_aux->num_samples;
+      const double delta				= counter - info_aux->threshold_mean;
+      info_aux->threshold_mean += delta / info_aux->num_samples;
 
       // ----------------------------------------------------------------------------
       // update the cct and add callchain if necessary

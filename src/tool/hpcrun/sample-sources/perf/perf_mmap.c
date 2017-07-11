@@ -389,6 +389,9 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
   pe_mmap_t *current_perf_mmap = current->mmap;
 
   if (perf_read_header(current_perf_mmap, &hdr) == 0) {
+
+    current->event->perf_type = hdr.type;
+
 #if 0
 	  /* this tmsg may cause data races when profiling an omp application (test2)
 	   sometimes it runs just fine, sometimes it's deadlock with the following call stacks:
@@ -411,7 +414,6 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
       int sample_type = current->event->attr.sample_type;
       parse_buffer(sample_type, current, mmap_info);
 
-
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
     } else if (hdr.type == PERF_RECORD_SWITCH) {
       // only available since kernel 4.3
@@ -433,8 +435,6 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
       if (type & PERF_SAMPLE_CPU) {
         perf_read( current_perf_mmap, &cpu, sizeof(cpu) ) ;
       }
-      TMSG(LINUX_PERF, "SWITCH %d\nTime: %d, tid: %d, cpu: %d",
-    		  hdr.misc, mmap_info->context_switch_time, pid.pid, cpu.cpu);
 #endif
     } else {
       // not a PERF_RECORD_SAMPLE

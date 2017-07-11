@@ -57,8 +57,6 @@
 #include <include/linux_info.h>
 #include <linux/version.h>
 
-#include <sample-sources/blame-shift/blame-shift.h>
-
 #ifdef ENABLE_PERFMON
 #include "perfmon-util.h"
 #endif
@@ -94,62 +92,151 @@
  * private operations
  *****************************************************************************/
 
-/*******************************
- * Handling when the processing leaving the kernel and re-entering the app.
- * The caller can check if the call chain contains kernel code or not. If not, then
- * we are leaving the kernel.
- *******************************/
 static void
-blocking_metric_process_blame_for_sample(void* arg, int metric_id, cct_node_t *node, int metric_incr)
+blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
+    perf_mmap_data_t *mmap_data)
 {
-  event_thread_t *current_event = (event_thread_t*) arg;
+  // make sure the time is is zero or positive
+  assert(mmap_data->time >= current_event->time_cs_out);
 
-  // the process is go back to the app context
+  uint64_t delta = mmap_data->time - current_event->time_cs_out;
+
+  // ----------------------------------------------------------------
+  // blame the time spent in the kernel to the cct kernel
+  // ----------------------------------------------------------------
+
   int metric_index = current_event->event->metric_custom->metric_index;
 
-  cct_metric_data_increment(metric_index, node,
-      (cct_metric_data_t){.i = metric_incr});
+  cct_metric_data_increment(metric_index, cct_kernel,
+      (cct_metric_data_t){.i = delta});
 
   // it's important to always count the number of samples for debugging purpose
   metric_aux_info_t *info = &current_event->event->metric_custom->metric_desc->info_data;
   info->num_samples++;
 }
 
-
 /***********************************************************************
- * Method to handle kernel blocking. Called for every context switch event:
+ * this function is called when a cycle or time event occurs, OR a
+ *  context switch event occurs.
  *
- * If a timer event goes off:
- * - check if
+ * to compute kernel blocking time:
+ *  time_outside_kernel - time_inside_kernel
+ *
+ * algorithm:
+ *  if this is the first time entering kernel (time_cs_out == 0) then
+ *    set time_cs_out
+ *    store the cct to cct_kernel
+ *  else
+ *    if we are outside the kernel, then:
+ *      compute the blocking time
+ *      blame the time to the kernel cct
+ *
+ *    else if we are still inside the kernel with different cct_kernel:
+ *      compute the time
+ *      blame the time to the old cct_kernel
+ *      set time_cs_out to the current time
+ *      set cct_kernel with the new cct
+ *    end if
+ *  end if
  ***********************************************************************/
 static void
 kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
     perf_mmap_data_t *mmap_data)
 {
-  assert (current_event != NULL && sv.sample_node != NULL);
+  if (current_event == NULL || sv.sample_node == NULL || mmap_data == NULL) {
 
+    // somehow, at the end of the execution, a sample event is still triggered
+    // and in this case, the arguments are null. Is this our bug ? or gdb ?
+
+    return;
+  }
+
+  if (mmap_data->context_switch_time > 0) {
+    // ----------------------------------------------------------------
+    // when PERF_RECORD_SWITCH (context switch out) occurs:
+    //  if this is the first time, (time_cs_out is zero), then freeze the
+    //    cs time and the current cct
+    // ----------------------------------------------------------------
+
+    if (current_event->time_cs_out == 0) {
+      // ----------------------------------------------------------------
+      // this is the first time we enter the kernel (leaving the current process)
+      // needs to store the time to compute the blocking time in
+      //  the next step when leaving the kernel
+      // ----------------------------------------------------------------
+      current_event->time_cs_out = mmap_data->context_switch_time;
+      current_event->cct_kernel  = sv.sample_node;
+
+    } else {
+      if (mmap_data->time > 0) {
+        TMSG(LINUX_PERF, "cs out exist %x, t-cs: %u, t:%u", sv.sample_node,
+            mmap_data->context_switch_time, mmap_data->time);
+      }
+    }
+   } else if (mmap_data->time > 0) {
+
+     // ----------------------------------------------------------------
+     // when PERF_SAMPLE_RECORD occurs:
+     // check whether we are in kernel mode or not
+     // ----------------------------------------------------------------
+
+     if (mmap_data->nr == 0) {
+       // we are now outside the kernel
+       blame_kernel_time(current_event, current_event->cct_kernel, mmap_data);
+
+       current_event->cct_kernel   = NULL;
+
+     } else {
+       // still inside the kernel
+       blame_kernel_time(current_event, sv.sample_node, mmap_data);
+
+       current_event->cct_kernel  = sv.sample_node;
+     }
+     // important: need to reset the value to inform that we are leaving the kernel
+     current_event->time_cs_out  = 0;
+   } else {
+     // unlikely path; no context switch nor time
+     TMSG(LINUX_PERF, "No cs, no time in %x", sv.sample_node);
+   }
+
+#if 0
   if (current_event->time_cs_out == 0) {
-    // this is the first time we enter the kernel (leaving the app)
-    // needs to store the time to compute the blocking time in @see kernel_block_enter_app_process
-    current_event->time_cs_out = mmap_data->context_switch_time;
-  } else {
+
+    if (current_event->event->perf_type == PERF_RECORD_SWITCH) {
+      // ----------------------------------------------------------------
+      // this is the first time we enter the kernel (leaving the current process)
+      // needs to store the time to compute the blocking time in
+      //  the next step when leaving the kernel
+      // ----------------------------------------------------------------
+      current_event->time_cs_out = mmap_data->context_switch_time;
+      current_event->cct_kernel  = sv.sample_node;
+    }
+
+  } else if (current_event->event->perf_type == PERF_RECORD_SAMPLE){
     // check whether we are in kernel mode or not
-    if (mmap_data->nr == 0) {
-      // not in the kernel anymore
-      int delta = current_event->time_current - current_event->time_cs_out;
-
-      // make sure the delta is zero or positive
-      assert(delta>=0);
-
-      blocking_metric_process_blame_for_sample(current_event,
-          current_event->event->metric_custom->metric_index, sv.sample_node, delta);
-
-      //blame_shift_apply(current_event->event->metric_custom->metric_index, sv.sample_node, delta);
+    if (mmap_data->nr == 0 && mmap_data->time>0) {
+      // we are now outside the kernel
+      blame_kernel_time(current_event, current_event->cct_kernel, mmap_data);
 
       // important: need to reset the value to inform that we are leaving the kernel
-      current_event->time_cs_out = 0;
+      current_event->time_cs_out  = 0;
+      current_event->cct_kernel   = NULL;
+
+    } else {
+      // still inside the kernel
+      blame_kernel_time(current_event, current_event->cct_kernel, mmap_data);
+
+      if (mmap_data->context_switch_time > 0) {
+        current_event->time_cs_out = mmap_data->context_switch_time;
+      } else {
+        assert(mmap_data->time > 0);
+        current_event->time_cs_out = 0;
+      }
+
+      current_event->cct_kernel  = sv.sample_node;
     }
   }
+#endif
 }
 
 
@@ -225,12 +312,5 @@ void kernel_blocking_init()
   event_kernel_blocking->metric_desc  = NULL; 	 	// these fields to be defined later
 
   event_custom_register(event_kernel_blocking);
-
-  /*bs_fn_entry_t bs_entry;
-  bs_entry.fn   = blocking_metric_process_blame_for_sample;
-  bs_entry.next = 0;
-  bs_entry.arg  = 0;
-
-  blame_shift_register(&bs_entry);*/
 #endif
 }
