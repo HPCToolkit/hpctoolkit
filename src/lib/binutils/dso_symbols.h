@@ -60,6 +60,9 @@
 #ifndef __DSO_SYMBOLS_H__
 #define __DSO_SYMBOLS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //******************************************************************************
 // system includes
@@ -67,10 +70,6 @@
 
 #include <stdint.h>
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 
 //******************************************************************************
@@ -118,13 +117,8 @@ dso_symbols
 );
 
 
-
 #ifdef __cplusplus
 };
 #endif
-
-
-
-//***************************************************************************
 
 #endif
