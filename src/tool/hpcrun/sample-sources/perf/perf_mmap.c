@@ -254,11 +254,11 @@ perf_sample_callchain(pe_mmap_t *current_perf_mmap, perf_mmap_data_t* mmap_data)
         mmap_data->nr = 0;
         TMSG(LINUX_PERF, "unable to read all %d frames", mmap_data->nr);
       } else {
-	// warning: if the number of frames is bigger than the storage (MAX_CALLCHAIN_FRAMES)
-	// we have to truncate them. This is not a good practice, but so far it's the only
-	// simplest solution I can come up.
-	u64 num_frames_max = mmap_data->nr > MAX_CALLCHAIN_FRAMES ? MAX_CALLCHAIN_FRAMES : mmap_data->nr;
-	memcpy(mmap_data->ips, buffer, num_frames_max * sizeof(u64));
+        // warning: if the number of frames is bigger than the storage (MAX_CALLCHAIN_FRAMES)
+        // we have to truncate them. This is not a good practice, but so far it's the only
+        // simplest solution I can come up.
+        u64 num_frames_max = mmap_data->nr > MAX_CALLCHAIN_FRAMES ? MAX_CALLCHAIN_FRAMES : mmap_data->nr;
+        memcpy(mmap_data->ips, buffer, num_frames_max * sizeof(u64));
       }
     }
   } else {

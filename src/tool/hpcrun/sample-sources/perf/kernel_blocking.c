@@ -165,7 +165,7 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
       //  the next step when leaving the kernel
       // ----------------------------------------------------------------
       current_event->time_cs_out = mmap_data->context_switch_time;
-      current_event->cct_kernel  = sv.sample_node;
+      //current_event->cct_kernel  = sv.sample_node;
 
     } else {
       if (mmap_data->time > 0) {
@@ -180,63 +180,25 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
      // check whether we are in kernel mode or not
      // ----------------------------------------------------------------
 
+     if (current_event->time_cs_out > 0 && current_event->cct_kernel != NULL) {
+       blame_kernel_time(current_event, current_event->cct_kernel, mmap_data);
+       // important: need to reset the value to inform that we are leaving the kernel
+       current_event->time_cs_out  = 0;
+     }
+
      if (mmap_data->nr == 0) {
        // we are now outside the kernel
-       blame_kernel_time(current_event, current_event->cct_kernel, mmap_data);
-
        current_event->cct_kernel   = NULL;
 
      } else {
        // still inside the kernel
-       blame_kernel_time(current_event, sv.sample_node, mmap_data);
-
        current_event->cct_kernel  = sv.sample_node;
+       current_event->time_cs_out = mmap_data->time;
      }
-     // important: need to reset the value to inform that we are leaving the kernel
-     current_event->time_cs_out  = 0;
    } else {
      // unlikely path; no context switch nor time
      TMSG(LINUX_PERF, "No cs, no time in %x", sv.sample_node);
    }
-
-#if 0
-  if (current_event->time_cs_out == 0) {
-
-    if (current_event->event->perf_type == PERF_RECORD_SWITCH) {
-      // ----------------------------------------------------------------
-      // this is the first time we enter the kernel (leaving the current process)
-      // needs to store the time to compute the blocking time in
-      //  the next step when leaving the kernel
-      // ----------------------------------------------------------------
-      current_event->time_cs_out = mmap_data->context_switch_time;
-      current_event->cct_kernel  = sv.sample_node;
-    }
-
-  } else if (current_event->event->perf_type == PERF_RECORD_SAMPLE){
-    // check whether we are in kernel mode or not
-    if (mmap_data->nr == 0 && mmap_data->time>0) {
-      // we are now outside the kernel
-      blame_kernel_time(current_event, current_event->cct_kernel, mmap_data);
-
-      // important: need to reset the value to inform that we are leaving the kernel
-      current_event->time_cs_out  = 0;
-      current_event->cct_kernel   = NULL;
-
-    } else {
-      // still inside the kernel
-      blame_kernel_time(current_event, current_event->cct_kernel, mmap_data);
-
-      if (mmap_data->context_switch_time > 0) {
-        current_event->time_cs_out = mmap_data->context_switch_time;
-      } else {
-        assert(mmap_data->time > 0);
-        current_event->time_cs_out = 0;
-      }
-
-      current_event->cct_kernel  = sv.sample_node;
-    }
-  }
-#endif
 }
 
 
