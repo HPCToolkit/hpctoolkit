@@ -99,6 +99,15 @@ using namespace Prof;
 // 
 //****************************************************************************
 
+static const char *
+fileBasename(const char *pathname)
+{
+  const char *slash = strrchr(pathname, '/');
+  const char *basename = (slash ? slash + 1 : pathname);
+  return basename;
+}
+
+
 // makeStructureSimple: Uses the line map to make structure
 Prof::Struct::Stmt*
 BAnal::Struct::makeStructureSimple(Prof::Struct::LM* lmStrct,
@@ -110,10 +119,19 @@ BAnal::Struct::makeStructureSimple(Prof::Struct::LM* lmStrct,
   procnm = BinUtil::canonicalizeProcName(procnm);
   
   if (filenm.empty()) {
-    filenm = Prof::Struct::Tree::UnknownFileNm;
+    std::ostringstream s;
+    s << Prof::Struct::Tree::UnknownFileNm
+      << " [" << fileBasename(lm->name().c_str()) << "]";
+    filenm = s.str();
   }
   if (procnm.empty()) {
-    procnm = Prof::Struct::Tree::UnknownProcNm;
+    std::ostringstream s;
+    s << Prof::Struct::Tree::UnknownProcNm
+      << "0x"
+      << std::hex
+      << vma
+      << " [" << fileBasename(lm->name().c_str()) << "]";
+    procnm = s.str();
   }
   
   Prof::Struct::File* fileStrct = Prof::Struct::File::demand(lmStrct, filenm);
