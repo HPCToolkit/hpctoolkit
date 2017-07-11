@@ -103,7 +103,7 @@ using namespace std;
 #define USE_DYNINST_LINE_MAP    1
 #define USE_LIBDWARF_LINE_MAP   0
 
-#define ADD_PARSEAPI_GAPS  0
+#define ENABLE_PARSEAPI_GAPS  1
 
 #define DEBUG_CFG_SOURCE  0
 #define DEBUG_MAKE_SKEL   0
@@ -562,6 +562,8 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     Address entry_addr = func->addr();
     num++;
 
+    if (num == 1) { pinfo->leader = true; }
+
     // compute the inline seqn for the call site for this func, if
     // there is one.
     Inline::InlineSeqn prefix;
@@ -608,10 +610,10 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       visited[block] = false;
     }
 
-#if ADD_PARSEAPI_GAPS
+#if ENABLE_PARSEAPI_GAPS
     for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
-	Block * block = *bit;
-	covered.insert(block->start(), block->end());
+      Block * block = *bit;
+      covered.insert(block->start(), block->end());
     }
 #endif
 
@@ -668,33 +670,31 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 #endif
   }
 
-#if ADD_PARSEAPI_GAPS
-  auto pit = ginfo->procMap.begin();
+#if ENABLE_PARSEAPI_GAPS
+  VMAIntervalSet gaps;
+  computeGaps(covered, gaps, ginfo->start, ginfo->end);
 
-  if (pit != ginfo->procMap.end()) {
-    ProcInfo * pinfo = pit->second;
-    ParseAPI::Function * func = pinfo->func;
-    Address entry_addr = func->addr();
-    SymtabAPI::Function * sym_func = ginfo->sym_func;
-    Offset start = sym_func->getOffset();
-    Offset end = start + sym_func->getSize();
-
-    cout << "\n------------------------------------------------------------\n"
-	 << "func:  0x" << hex << entry_addr << dec
-	 << "  (" << num_funcs << ")\n"
-	 << "link:   " << ginfo->linkName << "\n"
-	 << "parse:  " << func->name() << "\n"
-	 << "0x" << hex << start << "--0x" << end << dec << "\n";
-
-    cout << "\ncovered:\n"
-	 << covered.toString() << "\n";
-
-    VMAIntervalSet gaps;
-    computeGaps(covered, gaps, start, end);
-
-    cout << "\ngaps:\n"
-	 << gaps.toString() << "\n";
+  for (auto git = gaps.begin(); git != gaps.end(); ++git) {
+    ginfo->gapList.push_back(GapInfo(git->beg(), git->end(), 0));
   }
+
+#if 0
+  auto pit = ginfo->procMap.begin();
+  ProcInfo * pinfo = pit->second;
+
+  cout << "\n------------------------------------------------------------\n"
+       << "func:  0x" << hex << pinfo->entry_vma << dec
+       << "  (" << num_funcs << ")\n"
+       << "link:   " << ginfo->linkName << "\n"
+       << "parse:  " << pinfo->func->name() << "\n"
+       << "0x" << hex << ginfo->start
+       << "--0x" << ginfo->end << dec << "\n";
+
+  cout << "\ncovered:\n"
+       << covered.toString() << "\n"
+       << "\ngaps:\n"
+       << gaps.toString() << "\n";
+#endif
 #endif
 }
 

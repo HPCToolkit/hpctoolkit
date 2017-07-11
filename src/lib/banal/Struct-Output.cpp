@@ -276,6 +276,25 @@ printProc(ostream * os, FileInfo * finfo, GroupInfo * ginfo,
       << VRANGE(pinfo->entry_vma, 1)
       << ">\n";
 
+  // simple version of function gaps -- add one extra stmt at the
+  // beginning of the proc scope containing all of the gaps for the
+  // group.  this only applies to the group leader.
+  //
+  if (pinfo->leader && ! ginfo->gapList.empty()) {
+    VMAIntervalSet vset;
+
+    for (auto git = ginfo->gapList.begin(); git != ginfo->gapList.end(); ++git) {
+      vset.insert(VMAInterval(git->start, git->end));
+    }
+
+    doIndent(os, 3);
+    *os << "<S"
+	<< INDEX
+	<< NUMBER("l", pinfo->line_num)
+	<< " v=\"" << vset.toString() << "\""
+	<< "/>\n";
+  }
+
   doTreeNode(os, 3, root, scope, strTab);
 
   doIndent(os, 2);

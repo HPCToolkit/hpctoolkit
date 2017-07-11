@@ -56,6 +56,7 @@
 #ifndef BAnal_Struct_Skel_hpp
 #define BAnal_Struct_Skel_hpp
 
+#include <list>
 #include <map>
 #include <string>
 
@@ -74,10 +75,12 @@ using namespace std;
 class FileInfo;
 class GroupInfo;
 class ProcInfo;
+class GapInfo;
 
 typedef map <string, FileInfo *> FileMap;
 typedef map <SymtabAPI::Function *, GroupInfo *> GroupMap;
 typedef map <VMA, ProcInfo *> ProcMap;
+typedef list <GapInfo> GapList;
 
 
 // FileInfo and FileMap are the top-level classes for files and
@@ -114,6 +117,7 @@ public:
   VMA  start;
   VMA  end;
   ProcMap procMap;
+  GapList gapList;
 
   GroupInfo(SymtabAPI::Function * sf, string ln, string pn)
   {
@@ -123,6 +127,7 @@ public:
     start = (sf != NULL) ? sf->getOffset() : 0;
     end = (sf != NULL) ? (start + sf->getSize()) : 0;
     procMap.clear();
+    gapList.clear();
   }
 };
 
@@ -138,6 +143,7 @@ public:
   TreeNode * root;
   long  line_num;
   VMA   entry_vma;
+  bool  leader;
 
   ProcInfo(ParseAPI::Function * fn, TreeNode * rt, long ln)
   {
@@ -145,6 +151,25 @@ public:
     root = rt;
     line_num = ln;
     entry_vma = (func != NULL) ? func->addr() : 0;
+    leader = false;
+  }
+};
+
+
+// GapInfo represents one vma range within a Function Group that is
+// not covered by any ParseAPI Function within that group.
+//
+class GapInfo {
+public:
+  VMA  start;
+  VMA  end;
+  long line;
+
+  GapInfo(VMA st, VMA en, long ln)
+  {
+    start = st;
+    end = en;
+    line = ln;
   }
 };
 
