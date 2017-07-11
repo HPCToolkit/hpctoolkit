@@ -55,11 +55,6 @@
 //
 //***************************************************************************
 
-
-#include "hpctoolkit-config.h"
-
-
-
 //***************************************************************************
 // system includes
 //***************************************************************************
@@ -108,6 +103,7 @@ vdso_segment_p
 void *
 vdso_segment_addr
 (
+ void
 )
 {
   lm_seg_t *s = lm_segment_find_by_name(VDSO_SEGMENT_NAME_SHORT);
@@ -118,6 +114,7 @@ vdso_segment_addr
 size_t
 vdso_segment_len
 (
+ void
 )
 {
   void *vdso_addr = vdso_segment_addr();
@@ -128,4 +125,3 @@ vdso_segment_len
   }
   return len;
 }
-

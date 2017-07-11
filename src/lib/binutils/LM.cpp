@@ -79,15 +79,6 @@ using std::endl;
 #include <include/gcc-attr.h>
 #include <include/uint.h>
 
-#include "LM.hpp"
-#include "Seg.hpp"
-#include "Insn.hpp"
-#include "Proc.hpp"
-
-#include "SimpleSymbolsFactories.hpp"
-
-#include "Dbg-LM.hpp"
-
 #include <lib/isa/AlphaISA.hpp>
 #include <lib/isa/EmptyISA.hpp>
 #include <lib/isa/IA64ISA.hpp>
@@ -98,13 +89,16 @@ using std::endl;
 #include <lib/isa/x86ISABinutils.hpp>
 #include <lib/isa/x86ISAXed.hpp>
 
-#include <lib/prof-lean/vdso.h>
-
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
 #include <lib/support/QuickSort.hpp>
 
-#include <include/linux_info.h>
+#include "LM.hpp"
+#include "Seg.hpp"
+#include "Insn.hpp"
+#include "Proc.hpp"
+#include "SimpleSymbolsFactories.hpp"
+#include "Dbg-LM.hpp"
 
 
 

@@ -88,6 +88,7 @@ SimpleSymbolsFactories::SimpleSymbolsFactories
   R->factories.push_back(new LinuxKernelSymbolsFactory);
 }
 
+
 SimpleSymbolsFactory *
 SimpleSymbolsFactories::find
 (

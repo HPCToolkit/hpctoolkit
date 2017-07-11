@@ -62,11 +62,16 @@
 class SimpleSymbolsFactories {
 public:
   SimpleSymbolsFactories();
-  // void registerFactory(SimpleSymbolsFactory *);
   SimpleSymbolsFactory *find(const char *pathname);
 private:
   struct SimpleSymbolsFactoriesRepr *R;
 };
+
+
+
+//******************************************************************************
+// global variables
+//******************************************************************************
 
 extern SimpleSymbolsFactories simpleSymbolsFactories;
 

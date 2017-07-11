@@ -58,6 +58,10 @@
 #ifndef __VDSO_H__
 #define __VDSO_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //***************************************************************************
 // macros
 //***************************************************************************
@@ -66,13 +70,10 @@
 #define VDSO_SEGMENT_NAME_LONG  "linux-vdso.so"
 
 
+
 //***************************************************************************
 // interface declarations
 //***************************************************************************
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 // returns non-zero value if segname is used for a VDSO segment
 int
@@ -80,7 +81,6 @@ vdso_segment_p
 (
  const char *filename
 );
-
 
 
 // returns address of VDSO segment
@@ -97,13 +97,8 @@ vdso_segment_len
 );
 
 
-
 #ifdef __cplusplus
 };
 #endif
-
-
-
-//***************************************************************************
 
 #endif

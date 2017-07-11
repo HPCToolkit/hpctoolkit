@@ -59,7 +59,6 @@
 
 #include <stdio.h>
 #include <string.h>
-
 #include <sys/param.h>
 
 
@@ -140,6 +139,7 @@ lm_segment_find_by_name_callback
 }
 
 
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -176,8 +176,8 @@ lm_segment_parse
 
   s->path[0] ='\0';
 
-  sscanf(line, "%p-%p %s %lx %s %d %s", &s->start_address, &s->end_address, item,
-	 &s->offset, s->device, &s->inode, s->path);
+  sscanf(line, "%p-%p %s %lx %s %d %s", &s->start_address, &s->end_address,
+	 item, &s->offset, s->device, &s->inode, s->path);
 
   s->permissions = lm_segment_permissions_decode(item);
 }

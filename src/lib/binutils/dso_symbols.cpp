@@ -62,6 +62,17 @@
 #include <string.h>
 
 
+
+//******************************************************************************
+// dyninst includes
+//******************************************************************************
+#include <CodeObject.h>
+#include <CodeSource.h>
+#include <Function.h>
+#include <Symtab.h>
+
+
+
 //******************************************************************************
 // local includes
 //******************************************************************************
@@ -69,32 +80,6 @@
 #include <lib/prof-lean/vdso.h>
 
 #include "dso_symbols.h"
-
-#include <err.h>
-#include <errno.h>
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-
-#include <iostream>
-#include <sstream>
-#include <ios>
-#include <string>
-
-#include <map>
-#include <set>
-
-#include <iomanip>
-#include <iostream>
-#include <ostream>
-#include <string>
-
-#include <CodeObject.h>
-#include <CodeSource.h>
-#include <Function.h>
-#include <Symtab.h>
 
 
 

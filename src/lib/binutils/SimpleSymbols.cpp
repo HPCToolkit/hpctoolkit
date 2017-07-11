@@ -82,7 +82,6 @@ struct SimpleSymbolsRepr {
 // private operations
 //******************************************************************************
 
-
 static bool
 compareAddr(SimpleSymbol *s1, SimpleSymbol *s2)
 {
@@ -137,6 +136,7 @@ SimpleSymbol::dump()
 	      << " " << kindString(_kind) << " " << bindingString(_binding)
               << " " << _name << std::endl;
 }
+
 
 
 //******************************************************************************

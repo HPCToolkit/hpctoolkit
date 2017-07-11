@@ -57,6 +57,7 @@
 #include <dlfcn.h> // dladdr
 
 
+
 //*****************************************************************************
 // local includes
 //*****************************************************************************
@@ -65,8 +66,8 @@
 #include "fnbounds_interface.h"
 
 #include <lib/prof-lean/vdso.h>
-
 #include <messages/messages.h>
+
 
 
 //*****************************************************************************
@@ -285,8 +286,8 @@ static int
 dylib_map_open_dsos_callback(struct dl_phdr_info *info, size_t size, 
 			     void *unused)
 {
-  struct dylib_seg_bounds_s bounds;
   if (strcmp(info->dlpi_name,"") != 0) {
+    struct dylib_seg_bounds_s bounds;
     dylib_get_segment_bounds(info, &bounds);
     fnbounds_ensure_mapped_dso(info->dlpi_name, bounds.start, bounds.end);
   }

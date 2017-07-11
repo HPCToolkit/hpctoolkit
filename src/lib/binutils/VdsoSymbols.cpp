@@ -142,6 +142,7 @@ VdsoSymbolsFactory::match
   return strcmp(basename, VDSO_SEGMENT_NAME_SHORT) == 0;
 }
 
+
 SimpleSymbols *
 VdsoSymbolsFactory::create
 (
@@ -150,6 +151,8 @@ VdsoSymbolsFactory::create
 {
     return new VdsoSymbols;
 }
+
+
 
 //******************************************************************************
 // unit test
