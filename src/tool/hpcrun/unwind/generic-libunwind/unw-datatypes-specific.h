@@ -27,6 +27,12 @@ typedef struct hpcrun_unw_cursor_t {
   ip_normalized_t the_function;
 
   ip_normalized_t pc_norm;
+
+  //unused, but forced by common/backtrace.c
+  void *sp;
+  void *bp;
+  fence_enum_t fence;
+
 } hpcrun_unw_cursor_t;
 
 #endif // UNW_DATATYPES_SPECIFIC_H 
