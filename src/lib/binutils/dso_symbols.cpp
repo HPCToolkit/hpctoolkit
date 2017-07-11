@@ -106,7 +106,7 @@ typedef std::map<Offset, NameSet *> FunctionEndpoints;
 
 struct DsoInternalState {
   DsoInternalState
-  (Symtab *_the_symtab, 
+  (Symtab *_the_symtab,
    dso_symbols_symbol_callback_t _note_symbol,
    void *_callback_arg,
    const char *_basename) :
@@ -116,15 +116,15 @@ struct DsoInternalState {
     basename(_basename) {};
 
   Symtab *the_symtab;
-  dso_symbols_symbol_callback_t *note_symbol; 
-  void *callback_arg;                        
+  dso_symbols_symbol_callback_t *note_symbol;
+  void *callback_arg;
   const char *basename;
 };
 
-  
+
 
 //******************************************************************************
-// global variables 
+// global variables
 //******************************************************************************
 
 FunctionEndpoints functionEndpoints;
@@ -147,7 +147,7 @@ fileBasename
 }
 
 
-static void 
+static void
 addFunction
 (
  struct DsoInternalState *state,
@@ -158,7 +158,7 @@ addFunction
   (*state->note_symbol)(name.c_str(),
 			offset,
 			dso_symbol_bind_global,
-			state->callback_arg); 
+			state->callback_arg);
 }
 
 
@@ -171,11 +171,11 @@ procSymbol
 )
 {
   std::ostringstream s;
-  s << prefix 
+  s << prefix
     << "0x"
     << std::hex
     << addr
-    << " [" << basename << "]"; 
+    << " [" << basename << "]";
   return s.str();
 }
 
@@ -217,7 +217,7 @@ addRegion
 }
 
 
-static void 
+static void
 addRegions
 (
  struct DsoInternalState *state
@@ -227,17 +227,17 @@ addRegions
   state->the_symtab->getCodeRegions(regions);
   for (unsigned int i = 0; i < regions.size(); i++) {
     Dyninst::SymtabAPI::Region *r = regions[i];
-    addRegion(state, r); 
+    addRegion(state, r);
   }
 }
 
 
-static unsigned int 
+static unsigned int
 addSymbols
 (
  struct DsoInternalState *state,
  Symbol::SymbolType sType
-) 
+)
 {
   vector<Dyninst::SymtabAPI::Symbol *> symbols;
   state->the_symtab->getAllSymbolsByType(symbols, sType);
@@ -251,7 +251,7 @@ addSymbols
 }
 
 
-static void 
+static void
 addSymtabFunctions
 (
  struct DsoInternalState *state
@@ -270,7 +270,7 @@ addSymtabFunctions
 }
 
 
-static bool 
+static bool
 parseParseAPISyntheticName(const char *name, Offset &off)
 {
   char buffer[2];
@@ -281,7 +281,7 @@ parseParseAPISyntheticName(const char *name, Offset &off)
 }
 
 
-static std::string 
+static std::string
 functionName(std::string name, const char *basename)
 {
   Offset off;
@@ -296,7 +296,7 @@ addParseAPIfunctions
 (
  struct DsoInternalState *state
 )
-{ 
+{
   SymtabCodeSource *code_src = new SymtabCodeSource(state->the_symtab);
   CodeObject *the_code_obj = new CodeObject(code_src);
 
@@ -319,18 +319,18 @@ dso_symbols_internal
 {
   int status_ok = 0;
   // state->the_symtab->parseTypesNow();
-  
+
   addRegions(state);
   if (addSymbols(state, Symbol::ST_FUNCTION) == 0) {
     // no functions found; on Power [vdso] symbols are
     // ST_NOTYPE. sigh. rather than hard coding this as
     // a platform dependency, try this if "plan A" doesn't
-    // yield any function symbols. 
+    // yield any function symbols.
     addSymbols(state, Symbol::ST_NOTYPE);
   }
   addSymtabFunctions(state);
   addParseAPIfunctions(state);
-  
+
   status_ok = 1;
   return status_ok;
 }
