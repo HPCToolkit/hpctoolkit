@@ -230,12 +230,13 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 
   // full unwind: stop at libmonitor fence.  this is where we hope the
   // unwind stops.
-  if (monitor_unwind_process_bottom_frame(pc)
-      || monitor_unwind_thread_bottom_frame(pc))
-  {
-    TMSG(UNW, "unw_step: stop at monitor fence: %p\n", pc);
-    return STEP_STOP;
-  }
+  cursor->fence = (monitor_unwind_process_bottom_frame(pc) ? FENCE_MAIN :
+		   monitor_unwind_thread_bottom_frame(pc)? FENCE_THREAD : FENCE_NONE);
+  if (cursor->fence != FENCE_NONE)
+    {
+      TMSG(UNW, "unw_step: stop at monitor fence: %p\n", pc);
+      return STEP_STOP;
+    }
 
   //-----------------------------------------------------------
   // compute unwind information for the caller's pc
