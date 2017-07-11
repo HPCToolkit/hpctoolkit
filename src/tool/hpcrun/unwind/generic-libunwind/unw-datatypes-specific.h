@@ -25,12 +25,7 @@ typedef struct hpcrun_unw_cursor_t {
   unw_cursor_t uc;
   // normalized ip for first instruction in enclosing function
   ip_normalized_t the_function;
-
   ip_normalized_t pc_norm;
-
-  //unused, but forced by common/backtrace.c
-  void *sp;
-  void *bp;
   fence_enum_t fence;
 
 } hpcrun_unw_cursor_t;
