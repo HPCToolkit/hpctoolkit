@@ -75,6 +75,8 @@
 // local includes
 //*****************************************************************************
 
+#include <lib/prof-lean/vdso.h>
+
 #include "code-ranges.h"
 #include "process-ranges.h"
 #include "function-entries.h"
@@ -83,11 +85,18 @@
 #include "Symtab.h"
 #include "Symbol.h"
 
-using namespace std;
+
+
+//*****************************************************************************
+// namespaces
+//*****************************************************************************
+
 using namespace Dyninst;
 using namespace SymtabAPI;
 
-#include "vdso.cpp"
+using namespace std;
+
+
 
 //*****************************************************************************
 // macros
@@ -520,6 +529,22 @@ assert_file_is_readable(const char *filename)
     fprintf(stderr, "hpcfnbounds: unable to open file: %s\n", filename);
     exit(-1);
   } 
+}
+
+
+static Symtab *
+symtabOpenVDSO()
+{
+  Symtab * the_symtab = NULL;
+
+  char *mem_image = (char *) vdso_segment_addr();
+  size_t vdso_size = vdso_segment_len();
+
+  if (Symtab::openFile(the_symtab, mem_image, vdso_size,
+		       VDSO_SEGMENT_NAME_SHORT)) {
+    return the_symtab;
+  }
+  return NULL;
 }
 
 

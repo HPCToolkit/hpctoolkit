@@ -120,6 +120,7 @@ struct DsoInternalState {
   void *callback_arg;                        
   const char *basename;
 };
+
   
 
 //******************************************************************************
@@ -129,10 +130,10 @@ struct DsoInternalState {
 FunctionEndpoints functionEndpoints;
 
 
+
 //******************************************************************************
 // private functions
 //******************************************************************************
-
 
 static const char *
 fileBasename
@@ -144,23 +145,6 @@ fileBasename
   const char *basename = (slash ? slash + 1 : pathname);
   return basename;
 }
-
-
-#if 0
-static int
-dso_symbol_binding
-(
- GElf_Sym *s
-)
-{
-  switch(GELF_ST_BIND(s->st_info)){
-  case STB_LOCAL:  return dso_symbol_bind_local;
-  case STB_GLOBAL: return dso_symbol_bind_global;
-  case STB_WEAK:   return dso_symbol_bind_weak;
-  default:         return dso_symbol_bind_other;
-  }
-}
-#endif
 
 
 static void 
