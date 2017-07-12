@@ -187,7 +187,7 @@ static int log_done = 0;
 static int log_rename_done = 0;
 static int log_rename_ret = 0;
 
-static int vdso_written = 0;
+static int vdso_written = 0; // for coordination across fork
 
 
 //***************************************************************
@@ -542,7 +542,6 @@ void
 hpcrun_save_vdso()
 {
   char name[PATH_MAX];
-  struct fileid *id;
   int fd, ret;
   int error;
 
