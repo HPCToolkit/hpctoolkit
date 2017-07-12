@@ -1259,7 +1259,8 @@ To fix this, set the permission of the library to 0755, and launch again the vie
 % ===========================================================================
 
 \section{When executing \hpcviewer, it complains cannot create ``Java Virtual Machine"}
-The error message indicates that your machine cannot instantiate the JVM 
+If you use Java 7 or older,
+the error message indicates that your machine cannot instantiate the JVM 
 with the default size specified for the Java heap. 
 If you encounter this problem, we recommend that you edit the 
 \texttt{hpcviewer.ini} 
@@ -1269,17 +1270,17 @@ By default, the content of the file is as follows:
 \begin{verbatim}
 -consoleLog
 -vmargs
--Dosgi.requiredJavaVersion=1.5
+-Dosgi.requiredJavaVersion=1.6
 -XX:MaxPermSize=256m
 -Xms40m
--Xmx1812m
+-Xmx2048m
+-Dosgi.locking=none
 \end{verbatim}
-You can decrease the maximum size of the Java heap from 1812MB to 1GB
+You can decrease the maximum size of the Java heap from 2048MB to 4GB
  by changing the {\tt Xmx} specification in the \texttt{hpcviewer.ini} file as follows:
 \begin{verbatim}
 -Xmx1024m
 \end{verbatim}
-
 
 
 % ===========================================================================
@@ -1290,6 +1291,14 @@ You can decrease the maximum size of the Java heap from 1812MB to 1GB
 The root cause of the error is due to a mix of old \and new hpcviewer{} binaries. 
 To solve this problem, you need to remove your hpcviewer workspace (usually in \texttt{\$HOME/.hpctoolkit/hpcviewer} directory, and run \hpcviewer{} again.
 
+
+% ===========================================================================
+% ===========================================================================
+
+\section{\hpcviewer{} throws so many error messages!}
+
+Some error messages are due to incompatibility with Eclipse E4 layer used by \hpcviewer{}.
+To remedy this issue, you should clear your \hpcviewer{} workspace  (usually in \texttt{\$HOME/.hpctoolkit/hpcviewer} directory, and run \hpcviewer{} again.
 
 
 % ===========================================================================
