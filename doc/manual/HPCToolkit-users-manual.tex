@@ -1295,11 +1295,19 @@ To solve this problem, you need to remove your hpcviewer workspace (usually in \
 % ===========================================================================
 % ===========================================================================
 
-\section{\hpcviewer{} throws so many error messages!}
 
-Some error messages are due to incompatibility with Eclipse E4 layer used by \hpcviewer{}.
-To remedy this issue, you should clear your \hpcviewer{} workspace  (usually in \texttt{\$HOME/.hpctoolkit/hpcviewer} directory, and run \hpcviewer{} again.
+\section{\hpcviewer{} writes a long list of Java error messages to the terminal!}
 
+The Eclipse Java framework that serves as the foundation for \hpcviewer{} can be somewhat temperamental. If the persistent state maintained by Eclipse for \hpcviewer{}
+gets corrupted, \hpcviewer{} may spew a list of errors deep within call chains of the Eclipse framework.  Below are a few suggestions that may fix the problem:
+
+On Linux, try removing your \hpcviewer{} Eclipse workspace with default location:\\
+ \texttt{\$HOME/.hpctoolkit/hpcviewer} \\
+ and run \hpcviewer{} again.  
+
+On MacOS, persistent state is currently stored within Mac app. If the Eclipse persistent state gets corrupted, one can’t simply clear the workspace because some initial persistent state is needed for Eclipse to function properly.  For MacOS, the thing to try is downloading a fresh copy of hpcviewer and running the freshly downloaded copy.
+
+If one of the aforementioned suggestions doesn’t fix the problem, report a bug.
 
 % ===========================================================================
 % ===========================================================================
