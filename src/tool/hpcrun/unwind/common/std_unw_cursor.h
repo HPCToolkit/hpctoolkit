@@ -50,6 +50,7 @@
 //************************* System Include Files ****************************
 
 #include <inttypes.h>
+#include <ucontext.h>
 
 //*************************** User Include Files ****************************
 
@@ -96,6 +97,10 @@ typedef struct hpcrun_unw_cursor_t {
   // unwind-provider-specific state
   // ------------------------------------------------------------
   int32_t flags;
+
+#ifdef HOST_CPU_PPC
+  ucontext_t *ctxt; // needed for register-based unwinding
+#endif
 
 } hpcrun_unw_cursor_t;
 
