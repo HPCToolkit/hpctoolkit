@@ -751,7 +751,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
-  if (is_perf_event_unavailable()) {
+  if (!is_perf_event_unavailable()) {
     printf(equals_separator);
     printf("Available Linux perf events\n");
     printf(equals_separator);
