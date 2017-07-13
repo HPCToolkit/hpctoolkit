@@ -54,7 +54,7 @@
 //***************************************************************************
 
 btuwi_status_t
-build_intervals(char  *ins, unsigned int len);
+build_intervals(char  *ins, unsigned int len, unwinder_t uw);
 
 //***************************************************************************
 

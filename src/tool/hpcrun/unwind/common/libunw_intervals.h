@@ -43,65 +43,19 @@
 // if advised of the possibility of such damage.
 //
 // ******************************************************* EndRiceCopyright *
-
-#ifndef UNWIND_CURSOR_H
-#define UNWIND_CURSOR_H
-
-//************************* System Include Files ****************************
-
-#include <inttypes.h>
-#include <libunwind.h>
-
-//*************************** User Include Files ****************************
-
-#include <unwind/common/fence_enum.h>
-#include <utilities/ip-normalized.h>
-
-//*************************** Forward Declarations **************************
-
-// HPC_UNW_LITE: It is not safe to have a pointer to the interval
-// since we cannot use dynamic storage.
-#if (HPC_UNW_LITE)
-
-   // there should probably have a check to ensure this is big enough
-   typedef struct { char data[128]; } unw_interval_opaque_t;
-#  define UNW_CURSOR_INTERVAL_t unw_interval_opaque_t
-
-#else
-
-#include "unwindr_info.h"
-#define UNW_CURSOR_INTERVAL_t bitree_uwi_t*
-
-#endif
-
-typedef struct hpcrun_unw_cursor_t {
-
-  // ------------------------------------------------------------
-  // common state
-  // ------------------------------------------------------------
-  void *pc_unnorm; //only place where un-normalized pc will exist
-  void **bp;
-  void **sp;
-  void *ra;
-
-  void *ra_loc;  // for trampolines
-
-  fence_enum_t fence; // Details on which fence stopped an unwind
-  unwindr_info_t unwr_info; // unwind recipe info
-  ip_normalized_t the_function; // (normalized) ip for function
-
-  //NOTE: will fail if HPC_UWN_LITE defined
-  ip_normalized_t pc_norm;
-
-  // ------------------------------------------------------------
-  // unwind-provider-specific state
-  // ------------------------------------------------------------
-  int32_t flags;
-
-  unw_cursor_t uc;
-} hpcrun_unw_cursor_t;
-
-
+//
+// This software was produced with support in part from the Defense Advanced
+// Research Projects Agency (DARPA) through AFRL Contract FA8650-09-C-1915. 
+// Nothing in this work should be construed as reflecting the official policy or
+// position of the Defense Department, the United States government, or
+// Rice University.
+//
 //***************************************************************************
 
-#endif
+#include "binarytree_uwi.h"
+
+void libunw_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context);
+
+btuwi_status_t libunw_build_intervals(char *beg_insn, unsigned int len);
+
+step_state libunw_unw_step(hpcrun_unw_cursor_t* cursor);

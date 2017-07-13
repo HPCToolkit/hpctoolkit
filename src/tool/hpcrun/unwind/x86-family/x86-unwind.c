@@ -182,13 +182,7 @@ hpcrun_unw_init(void)
   uw_recipe_map_init();
 }
 
-
-//
-// register codes (only 1 at the moment)
-//
-typedef enum {
-  UNW_REG_IP
-} unw_reg_code_t;
+typedef unw_frame_regnum_t unw_reg_code_t;
 
 static int
 hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id, 
