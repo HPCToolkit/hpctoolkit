@@ -87,6 +87,10 @@
 // local variables
 //******************************************************************************
 
+// metric index for kernel blocking
+// usually each thread has the same metric index, so it's safe to make it global
+// for each thread (I hope).
+static int metric_blocking_index = -1;
 
 /******************************************************************************
  * private operations
@@ -105,14 +109,15 @@ blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
   // blame the time spent in the kernel to the cct kernel
   // ----------------------------------------------------------------
 
-  int metric_index = current_event->event->metric_custom->metric_index;
-
-  cct_metric_data_increment(metric_index, cct_kernel,
+  cct_metric_data_increment(metric_blocking_index, cct_kernel,
       (cct_metric_data_t){.i = delta});
 
+  // ----------------------------------------------------------------
   // it's important to always count the number of samples for debugging purpose
-  metric_aux_info_t *info = &current_event->event->metric_custom->metric_desc->info_data;
-  info->num_samples++;
+  // ----------------------------------------------------------------
+
+  metric_desc_t *metric_blocking = hpcrun_id2metric(metric_blocking_index);
+  metric_blocking->info_data.num_samples++;
 }
 
 /***********************************************************************
@@ -139,10 +144,13 @@ blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
  *    end if
  *  end if
  ***********************************************************************/
-static void
+void
 kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
     perf_mmap_data_t *mmap_data)
 {
+  if (metric_blocking_index < 0)
+	  return; // not initialized or something wrong happens in the initialization
+
   if (current_event == NULL || sv.sample_node == NULL || mmap_data == NULL) {
 
     // somehow, at the end of the execution, a sample event is still triggered
@@ -165,33 +173,30 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
       //  the next step when leaving the kernel
       // ----------------------------------------------------------------
       current_event->time_cs_out = mmap_data->context_switch_time;
-      //current_event->cct_kernel  = sv.sample_node;
-
-    } else {
-      if (mmap_data->time > 0) {
-        TMSG(LINUX_PERF, "cs out exist %x, t-cs: %u, t:%u", sv.sample_node,
-            mmap_data->context_switch_time, mmap_data->time);
-      }
     }
    } else if (mmap_data->time > 0) {
 
      // ----------------------------------------------------------------
      // when PERF_SAMPLE_RECORD occurs:
-     // check whether we are in kernel mode or not
+     // check whether we were previously in the kernel or not (time_cs_out > 0)
+	 // if we were in the kernel, then we blame the different time to the
+	 //   cct kernel
      // ----------------------------------------------------------------
 
      if (current_event->time_cs_out > 0 && current_event->cct_kernel != NULL) {
        blame_kernel_time(current_event, current_event->cct_kernel, mmap_data);
+
        // important: need to reset the value to inform that we are leaving the kernel
        current_event->time_cs_out  = 0;
+       current_event->cct_kernel   = NULL;
      }
 
-     if (mmap_data->nr == 0) {
-       // we are now outside the kernel
-       current_event->cct_kernel   = NULL;
+     if (mmap_data->nr > 0) {
 
-     } else {
-       // still inside the kernel
+       // still inside the kernel:
+       // - record the new cct
+       // - initialize the new time out with the current time (not from the context switch out)
+
        current_event->cct_kernel  = sv.sample_node;
        current_event->time_cs_out = mmap_data->time;
      }
@@ -223,6 +228,7 @@ register_blocking(event_info_t *event_desc)
       event_desc->metric_custom->metric_index, EVNAME_KERNEL_BLOCK,
       MetricFlags_ValFmt_Int, 1 /* period */, metric_property_none);
 
+  metric_blocking_index = event_desc->metric_custom->metric_index;
   // ------------------------------------------
   // create metric to store context switches
   // ------------------------------------------

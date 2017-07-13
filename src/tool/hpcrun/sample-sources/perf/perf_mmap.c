@@ -94,8 +94,8 @@
  * local variables
  *****************************************************************************/
 
-static int pagesize;
-static size_t tail_mask;
+static int pagesize      = 0;
+static size_t tail_mask  = 0;
 
 
 /******************************************************************************
@@ -377,6 +377,11 @@ parse_buffer(int sample_type, event_thread_t *current, perf_mmap_data_t *mmap_in
     return data_read;
 }
 
+//----------------------------------------------------------------------
+// Public Interfaces
+//----------------------------------------------------------------------
+
+
 //----------------------------------------------------------
 // reading mmap buffer from the kernel
 // in/out: mmapped data of type perf_mmap_data_t.
@@ -437,7 +442,7 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
       }
 #endif
     } else {
-      // not a PERF_RECORD_SAMPLE
+      // not a PERF_RECORD_SAMPLE nor PERF_RECORD_SWITCH
       // skip it
       if (hdr.size <= 0) {
         return 0;
@@ -456,6 +461,9 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
 pe_mmap_t*
 set_mmap(int perf_fd)
 {
+  if (pagesize == 0) {
+    perf_mmap_init();
+  }
   void *map_result =
     mmap(NULL, PERF_MMAP_SIZE(pagesize), PROT_WRITE | PROT_READ,
      MAP_SHARED, perf_fd, MMAP_OFFSET_0);
@@ -477,17 +485,23 @@ set_mmap(int perf_fd)
   return mmap;
 }
 
+/***
+ * unmap buffer. need to call this at the end of the execution
+ */
 void
 perf_unmmap(pe_mmap_t *mmap)
 {
   munmap(mmap, PERF_MMAP_SIZE(pagesize));
 }
 
+/**
+ * initialize perf_mmap.
+ * caller needs to call this in the beginning before calling any API.
+ */
 void
 perf_mmap_init()
 {
   pagesize = sysconf(_SC_PAGESIZE);
   tail_mask = PERF_TAIL_MASK(pagesize);
-
 }
 

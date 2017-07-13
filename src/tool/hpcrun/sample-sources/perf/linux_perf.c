@@ -212,7 +212,7 @@ static event_info_t  *event_desc;
 //******************************************************************************
 
 // a list of event information, private for each thread
-static event_thread_t   __thread   *event_thread; 
+static event_thread_t   __thread   *event_thread;
 
 
 //******************************************************************************
@@ -944,10 +944,11 @@ perf_event_handler(
         if (current->event->metric_custom->handler_fn != NULL) {
         		current->event->metric_custom->handler_fn(current, sv, &mmap_data);
         }
+      } else {
+        kernel_block_handler(current, sv, &mmap_data);
       }
-      //blame_shift_apply( current->event, sv.sample_node, 1 /*metricIncr*/);
-
     } while (more_data);
+
 #if LINUX_PERF_DEBUG
     // this part is for debugging purpose
     if (current->event->attr.freq == 0) {
