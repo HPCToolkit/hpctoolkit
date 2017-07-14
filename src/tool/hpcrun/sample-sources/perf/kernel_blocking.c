@@ -116,8 +116,8 @@ blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
   // it's important to always count the number of samples for debugging purpose
   // ----------------------------------------------------------------
 
-  metric_desc_t *metric_blocking = hpcrun_id2metric(metric_blocking_index);
-  metric_blocking->info_data.num_samples++;
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->core_profile_trace_data.perf_event_info[metric_blocking_index].num_samples++;
 }
 
 /***********************************************************************
@@ -257,10 +257,6 @@ register_blocking(event_info_t *event_desc)
   event_desc->attr.context_switch = 1;
 #endif
   event_desc->attr.sample_id_all = 1;
-  // ------------------------------------------
-  // additional info for perf event metric
-  // ------------------------------------------
-  event_desc->metric_desc->info_data.is_frequency = (event_desc->attr.freq == 1);
 }
 
 

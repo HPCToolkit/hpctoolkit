@@ -492,13 +492,23 @@ METHOD_FN(start)
     return;
   }
 
-  int nevents  = (self->evl).nevents; 
+  int nevents 	  = (self->evl).nevents;
+  int num_metrics = hpcrun_get_num_metrics();
+
   event_thread = (event_thread_t*) hpcrun_malloc(sizeof(event_thread_t) * nevents);
-  
+
+  // allocate and initialize perf_event additional metric info
+
+  size_t mem_metrics_size = num_metrics * sizeof(metric_aux_info_t);
+  metric_aux_info_t* aux_info = (metric_aux_info_t*) hpcrun_malloc(mem_metrics_size);
+  memset(aux_info, 0, mem_metrics_size);
+
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
   //  but there will be no samples
-  for (int i=0; i<nevents; i++) {
+
+  for (int i=0; i<nevents; i++)
+  {
     // initialize this event. If it's valid, we set the metric for the event
     if (perf_thread_init( &(event_desc[i]), &(event_thread[i])) ) { 
       restart_perf_event( event_thread[i].fd );
@@ -507,6 +517,7 @@ METHOD_FN(start)
 
   thread_data_t* td = hpcrun_get_thread_data();
   td->ss_state[self->sel_idx] = START;
+  td->core_profile_trace_data.perf_event_info = aux_info;
 
   TMSG(LINUX_PERF, "%d: start OK", self->sel_idx);
 }
@@ -547,7 +558,7 @@ METHOD_FN(stop)
     return;
   }
 
-  int nevents  = (self->evl).nevents; 
+  int nevents  = (self->evl).nevents;
   for (int i=0; i<nevents; i++)
   {
     perf_stop( event_thread[i] );
@@ -727,7 +738,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (m == NULL) {
       EMSG("Error: unable to create metric #%d: %s", index, name);
     } else {
-      m->info_data.is_frequency = (event_desc[i].attr.freq == 1);
+      m->is_frequency_metric = (event_desc[i].attr.freq == 1);
     }
     event_desc[i].metric_desc = m;
   }
@@ -751,7 +762,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
-  if (is_perf_event_unavailable()) {
+  if (!is_perf_event_unavailable()) {
     printf(equals_separator);
     printf("Available Linux perf events\n");
     printf(equals_separator);
@@ -916,7 +927,8 @@ perf_event_handler(
       // ----------------------------------------------------------------------------
       // set additional information for the metric description
       // ----------------------------------------------------------------------------
-      metric_aux_info_t *info_aux = &(current->event->metric_desc->info_data);
+      thread_data_t *td = hpcrun_get_thread_data();
+      metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[current->event->metric]);
 
       // check if this event is multiplexed. we need to notify the user that a multiplexed
       //  event is not accurate at all.
@@ -927,7 +939,7 @@ perf_event_handler(
       // case of multiplexed or frequency-based sampling, we need to store the mean and
       // the standard deviation of the sampling period
       info_aux->num_samples++;
-      const double delta				= counter - info_aux->threshold_mean;
+      const double delta		= counter - info_aux->threshold_mean;
       info_aux->threshold_mean += delta / info_aux->num_samples;
 
       // ----------------------------------------------------------------------------

@@ -991,12 +991,14 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // metric-tbl
   // ----------------------------------------
   metric_tbl_t metricTbl;
-  ret = hpcrun_fmt_metricTbl_fread(&metricTbl, infs, hdr.version, malloc);
+  metric_aux_info_t *aux_info;
+
+  ret = hpcrun_fmt_metricTbl_fread(&metricTbl, &aux_info, infs, hdr.version, malloc);
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'metric-tbl'");
   }
   if (outfs) {
-    hpcrun_fmt_metricTbl_fprint(&metricTbl, outfs);
+    hpcrun_fmt_metricTbl_fprint(&metricTbl, aux_info, outfs);
   }
 
   const uint numMetricsSrc = metricTbl.len;
@@ -1510,8 +1512,14 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     mdesc.period = 1;
     mdesc.formula = NULL;
     mdesc.format = NULL;
+    mdesc.is_frequency_metric = false;
 
-    hpcrun_fmt_metricDesc_fwrite(&mdesc, fs);
+    metric_aux_info_t aux_info;
+    aux_info.is_multiplexed = false;
+    aux_info.num_samples    = 0;
+    aux_info.threshold_mean = 0;
+
+    hpcrun_fmt_metricDesc_fwrite(&mdesc, &aux_info, fs);
   }
 
 

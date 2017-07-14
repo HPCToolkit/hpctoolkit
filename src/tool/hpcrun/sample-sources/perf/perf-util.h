@@ -154,6 +154,8 @@ typedef struct event_info_s {
   // predefined metric
   event_custom_t *metric_custom;	// pointer to the predefined metric
 
+  metric_aux_info_t info_data;
+
   u32 perf_type; // either sample record or other
 } event_info_t;
 

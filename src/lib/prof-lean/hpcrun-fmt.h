@@ -358,19 +358,6 @@ hpcrun_metricVal_isZero(hpcrun_metricVal_t x)
 
 
 
-// --------------------------------------------------------------
-// additional metric information
-// this data is optional in metric description.
-// at the moment, only perf event sample source needs this info
-// --------------------------------------------------------------
-typedef struct metric_aux_info_s {
-	bool is_frequency;      // flag if the threshold is based on frequency
-	bool is_multiplexed;    // flag if the event is multiplexed
-	double threshold_mean;   // average threshold (if multiplexed)
-	//double threshold_stdev;  // standard deviation
-	uint64_t num_samples;   // number of samples
-} metric_aux_info_t;
-
 
 // --------------------------------------------------------------------------
 // metric_desc_t
@@ -390,12 +377,7 @@ typedef struct metric_desc_t {
   char* formula;
   char* format;
 
-  // --------------------------------------------------
-  // laks 03.30.2017 : add generic additional fields
-  // misc info about the metric. perf-event module
-  // adds info: multiplexing, frequency, etc..
-  // --------------------------------------------------
-  metric_aux_info_t info_data;
+  bool is_frequency_metric;
 } metric_desc_t;
 
 extern const metric_desc_t metricDesc_NULL;
@@ -417,28 +399,28 @@ HPCFMT_List_declare(metric_desc_p_t);
 typedef HPCFMT_List(metric_desc_p_t) metric_desc_p_tbl_t; // HPCFMT_List of metric_desc_t*
 
 extern int
-hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, FILE* in,
+hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, metric_aux_info_t **aux_info, FILE* in,
 			   double fmtVersion, hpcfmt_alloc_fn alloc);
 
 extern int
-hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, FILE* out);
+hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, metric_aux_info_t *aux_info, FILE* out);
 
 extern int
-hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metrics, FILE* out);
+hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metrics, metric_aux_info_t *aux_info, FILE* out);
 
 extern void
 hpcrun_fmt_metricTbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc);
 
 
 extern int
-hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* infs,
+hpcrun_fmt_metricDesc_fread(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* infs,
 			    double fmtVersion, hpcfmt_alloc_fn alloc);
 
 extern int
-hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* outfs);
+hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* outfs);
 
 extern int
-hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* outfs, const char* pre);
+hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* outfs, const char* pre);
 
 extern void
 hpcrun_fmt_metricDesc_free(metric_desc_t* x, hpcfmt_free_fn dealloc);
