@@ -204,9 +204,8 @@ show_event_info(pfm_event_info_t *info)
       printw(info->desc); 
       pfm_for_each_event_attr(i, info) {
         ret = pfm_get_event_attr_info(info->idx, i, PFM_OS_NONE, &ainfo);
-        if (ret != PFM_SUCCESS)
-	  EMSG( "cannot retrieve event %s attribute info: %s", info->name, pfm_strerror(ret));
-        else {
+        if (ret == PFM_SUCCESS)
+        {
           printf("%s::%s:%s\n", pinfo.name, info->name, ainfo.name); 
           printw(ainfo.desc);
         }
