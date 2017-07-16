@@ -68,6 +68,7 @@ using std::endl;
 #include <lib/prof-lean/hpcio.h>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/realpath.h>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
@@ -174,6 +175,25 @@ realmain(int argc, char* argv[])
   std::streambuf* os_buf = outFile->rdbuf();
   os_buf->pubsetbuf(outBuf, HPCIO_RWBufferSz);
 
+  std::string gapsName = "";
+  std::ostream* gapsFile = NULL;
+  char* gapsBuf = NULL;
+  std::streambuf* gaps_rdbuf = NULL;
+
+  if (args.show_gaps) {
+    // fixme: may want to add --gaps-name option
+    if (args.out_filenm == "-") {
+      DIAG_EMsg("Cannot make gaps file when hpcstruct file is stdout.");
+      exit(1);
+    }
+
+    gapsName = RealPath(osnm) + std::string(".gaps");
+    gapsFile = IOUtil::OpenOStream(gapsName.c_str());
+    gapsBuf = new char[HPCIO_RWBufferSz];
+    gaps_rdbuf = gapsFile->rdbuf();
+    gaps_rdbuf->pubsetbuf(gapsBuf, HPCIO_RWBufferSz);
+  }
+
   std::ostream* dotFile = NULL;
   char* dotBuf = NULL;
   std::streambuf* dot_rdbuf = NULL;
@@ -206,10 +226,16 @@ realmain(int argc, char* argv[])
     procNameMgr = new CilkNameMgr;
   }
 
-  BAnal::Struct::makeStructure(args.in_filenm, outFile, dotFile, procNameMgr);
+  BAnal::Struct::makeStructure(args.in_filenm, gapsName, outFile, gapsFile,
+			       dotFile, procNameMgr);
 
   IOUtil::CloseStream(outFile);
   delete[] outBuf;
+
+  if (gapsFile != NULL) {
+    IOUtil::CloseStream(gapsFile);
+    delete[] gapsBuf;
+  }
 
   if (dotFile != NULL) {
     IOUtil::CloseStream(dotFile);

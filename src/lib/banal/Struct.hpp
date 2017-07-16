@@ -62,7 +62,9 @@ namespace Struct {
 
 void
 makeStructure(std::string filenm,
+	      std::string gaps_filenm,
 	      std::ostream * outFile,
+	      std::ostream * gapsFile,
 	      std::ostream * dotFile,
 	      ProcNameMgr* procNameMgr = NULL);
 

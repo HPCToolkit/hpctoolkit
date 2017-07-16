@@ -95,6 +95,7 @@ using namespace Inline;
 using namespace std;
 
 static long next_index;
+static long gaps_line;
 
 static const char * hpcstruct_xml_head =
 #include <lib/xml/hpc-structure.dtd.h>
@@ -149,6 +150,9 @@ public:
 };
 
 static void
+doGaps(ostream *, ostream *, string, FileInfo *, GroupInfo *, ProcInfo *);
+
+static void
 doTreeNode(ostream *, int, TreeNode *, ScopeInfo, HPC::StringTable &);
 
 static void
@@ -164,7 +168,7 @@ locateTree(TreeNode *, ScopeInfo &, bool = false);
 
 // DOCTYPE header and <HPCToolkitStructure> tag.
 void
-printStructFileBegin(ostream * os)
+printStructFileBegin(ostream * os, ostream * gaps, string filenm)
 {
   if (os == NULL) {
     return;
@@ -175,11 +179,19 @@ printStructFileBegin(ostream * os)
       << hpcstruct_xml_head
       << "]>\n"
       << "<HPCToolkitStructure i=\"0\" version=\"4.6\" n=\"\">\n";
+
+  if (gaps != NULL) {
+    *gaps << "This file describes the unclaimed vma ranges (gaps) in the control\n"
+	  << "flow graph for the following file.  This is mostly for debugging and\n"
+	  << "improving ParseAPI.\n\n"
+	  << filenm << "\n";
+    gaps_line = 5;
+  }
 }
 
 // Closing tag.
 void
-printStructFileEnd(ostream * os)
+printStructFileEnd(ostream * os, ostream * gaps)
 {
   if (os == NULL) {
     return;
@@ -187,6 +199,10 @@ printStructFileEnd(ostream * os)
 
   *os << "</HPCToolkitStructure>\n";
   os->flush();
+
+  if (gaps != NULL) {
+    gaps->flush();
+  }
 }
 
 //----------------------------------------------------------------------
@@ -251,8 +267,9 @@ printFileEnd(ostream * os, FileInfo * finfo)
 
 // Entry point for <P> proc tag and its subtree.
 void
-printProc(ostream * os, FileInfo * finfo, GroupInfo * ginfo,
-	  ProcInfo * pinfo, HPC::StringTable & strTab)
+printProc(ostream * os, ostream * gaps, string gaps_file,
+	  FileInfo * finfo, GroupInfo * ginfo, ProcInfo * pinfo,
+	  HPC::StringTable & strTab)
 {
   if (os == NULL || finfo == NULL || ginfo == NULL
       || pinfo == NULL || pinfo->root == NULL) {
@@ -276,11 +293,85 @@ printProc(ostream * os, FileInfo * finfo, GroupInfo * ginfo,
       << VRANGE(pinfo->entry_vma, 1)
       << ">\n";
 
-  // simple version of function gaps -- add one extra stmt at the
-  // beginning of the proc scope containing all of the gaps for the
-  // group.  this only applies to the group leader.
-  //
-  if (pinfo->leader && ! ginfo->gapList.empty()) {
+  if (pinfo->leader) {
+    doGaps(os, gaps, gaps_file, finfo, ginfo, pinfo);
+  }
+
+  doTreeNode(os, 3, root, scope, strTab);
+
+  doIndent(os, 2);
+  *os << "</P>\n";
+}
+
+//----------------------------------------------------------------------
+
+// Write the unclaimed vma ranges (parseapi gaps) for one Symtab
+// function to the .hpcstruct and .hpcstruct.gaps files.  This only
+// applies to the group leader.
+//
+static void
+doGaps(ostream * os, ostream * gaps, string gaps_file,
+       FileInfo * finfo, GroupInfo * ginfo, ProcInfo * pinfo)
+{
+  if (ginfo->gapList.empty()) {
+    return;
+  }
+
+  if (gaps != NULL) {
+    //
+    // full version -- each gap has a separate <S> stmt linked to the
+    // .gaps file, all within a alien scope.
+    //
+    *gaps << "\nfunc:  " << ginfo->prettyName << "\n"
+	  << "link:  " << ginfo->linkName << "\n"
+	  << "file:  " << finfo->fileName << "  line: " << pinfo->line_num << "\n"
+	  << "0x" << hex << ginfo->start << "--0x" << ginfo->end << dec << "\n\n";
+    gaps_line += 6;
+
+    doIndent(os, 3);
+    *os << "<A"
+	<< INDEX
+	<< NUMBER("l", pinfo->line_num)
+	<< STRING("f", finfo->fileName)
+	<< STRING("n", "")
+	<< " v=\"{}\""
+	<< ">\n";
+
+    doIndent(os, 4);
+    *os << "<A"
+	<< INDEX
+	<< NUMBER("l", gaps_line - 4)
+	<< STRING("f", gaps_file)
+	<< STRING("n", "unclaimed region in: " + ginfo->prettyName)
+	<< " v=\"{}\""
+	<< ">\n";
+
+    for (auto git = ginfo->gapList.begin(); git != ginfo->gapList.end(); ++git) {
+      long len = git->end - git->start;
+
+      *gaps << "gap:  0x" << hex << git->start << "--0x" << git->end
+	    << dec << "  (" << len << ")\n";
+      gaps_line++;
+
+      doIndent(os, 5);
+      *os << "<S"
+	  << INDEX
+	  << NUMBER("l", gaps_line)
+	  << VRANGE(git->start, len)
+	  << "/>\n";
+    }
+
+    doIndent(os, 4);
+    *os << "</A>\n";
+
+    doIndent(os, 3);
+    *os << "</A>\n";
+  }
+  else {
+    //
+    // simple version -- single <S> stmt at the proc header containing
+    // all of the gaps, and no extra .gaps file.
+    //
     VMAIntervalSet vset;
 
     for (auto git = ginfo->gapList.begin(); git != ginfo->gapList.end(); ++git) {
@@ -294,11 +385,6 @@ printProc(ostream * os, FileInfo * finfo, GroupInfo * ginfo,
 	<< " v=\"" << vset.toString() << "\""
 	<< "/>\n";
   }
-
-  doTreeNode(os, 3, root, scope, strTab);
-
-  doIndent(os, 2);
-  *os << "</P>\n";
 }
 
 //----------------------------------------------------------------------

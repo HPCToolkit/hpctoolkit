@@ -145,6 +145,8 @@ Options: Structure recovery\n\
                        times.\n\
   --use-binutils       Use binutils as the default binary instruction decoder\n\
                        On x86 default is Intel XED library.\n\
+  --show-gaps          Experimental feature to show unclaimed vma ranges (gaps)\n\
+                       in the control-flow graph.\n\
 \n\
 Options: Demangling\n\
   --demangle-library <path to demangling library>\n\
@@ -196,14 +198,14 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Structure recovery options
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  ":",
      NULL },
-
   {  0 , "loop-intvl",      CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
   {  0 , "loop-fwd-subst",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
-
   { 'R', "replace-path",    CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL},
+  {  0 , "show-gaps",       CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
 
   // Output options
   { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
@@ -263,6 +265,7 @@ Args::Ctor()
   doDot = false;
   prettyPrintOutput = true;
   useBinutils = false;
+  show_gaps = false;
 }
 
 
@@ -389,6 +392,10 @@ Args::parse(int argc, const char* const argv[])
 	  ARG_ERROR("The \'=\' between the old path and new path is missing");
 	}
       }
+    }
+
+    if (parser.isOpt("show-gaps")) {
+      show_gaps = true;
     }
 
     // Instruction decoder options

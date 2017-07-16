@@ -123,6 +123,7 @@ public:
   bool doDot;
   bool prettyPrintOutput;         // default: true
   bool useBinutils;		  // default: false
+  bool show_gaps;                 // default: false
 
   // Parsed Data: arguments
   std::string in_filenm;

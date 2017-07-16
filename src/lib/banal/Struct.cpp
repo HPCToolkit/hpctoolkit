@@ -293,7 +293,9 @@ makeDotFile(std::ostream * dotFile, CodeObject * code_obj)
 //
 void
 makeStructure(string filename,
+	      string gaps_filenm,
 	      ostream * outFile,
+	      ostream * gapsFile,
 	      ostream * dotFile,
 	      ProcNameMgr * procNmMgr)
 {
@@ -330,7 +332,7 @@ makeStructure(string filename,
 
   FileMap * fileMap = makeSkeleton(code_obj, procNmMgr);
 
-  Output::printStructFileBegin(outFile);
+  Output::printStructFileBegin(outFile, gapsFile, filename);
   Output::printLoadModuleBegin(outFile, filename);
 
   // process the files in the skeleton map
@@ -348,7 +350,8 @@ makeStructure(string filename,
 
       for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
 	ProcInfo * pinfo = pit->second;
-	Output::printProc(outFile, finfo, ginfo, pinfo, strTab);
+	Output::printProc(outFile, gapsFile, gaps_filenm,
+			  finfo, ginfo, pinfo, strTab);
 
 	delete pinfo->root;
 	pinfo->root = NULL;
@@ -358,7 +361,7 @@ makeStructure(string filename,
   }
 
   Output::printLoadModuleEnd(outFile);
-  Output::printStructFileEnd(outFile);
+  Output::printStructFileEnd(outFile, gapsFile);
 
   // write CFG in dot (graphviz) format to file
   if (dotFile != NULL) {
