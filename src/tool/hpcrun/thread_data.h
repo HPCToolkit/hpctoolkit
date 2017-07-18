@@ -188,6 +188,7 @@ typedef struct thread_data_t {
   // cct2metrics map: associate a metric_set with
   // tracing: trace_min_time_us and trace_max_time_us
   // IO support file handle: hpcrun_file;
+  // Perf event support
   // ----------------------------------------
 
   core_profile_trace_data_t core_profile_trace_data;

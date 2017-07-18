@@ -204,7 +204,7 @@ static sigset_t sig_mask;
 
 // a list of main description of events, shared between threads
 // once initialize, this list doesn't change (but event description can change)
-static event_info_t  *event_desc; 
+static event_info_t  *event_desc = NULL;
 
 
 //******************************************************************************
@@ -212,7 +212,7 @@ static event_info_t  *event_desc;
 //******************************************************************************
 
 // a list of event information, private for each thread
-static event_thread_t   __thread   *event_thread;
+static event_thread_t   __thread   *event_thread = NULL;
 
 
 //******************************************************************************
@@ -503,6 +503,9 @@ METHOD_FN(start)
   metric_aux_info_t* aux_info = (metric_aux_info_t*) hpcrun_malloc(mem_metrics_size);
   memset(aux_info, 0, mem_metrics_size);
 
+  thread_data_t* td = hpcrun_get_thread_data();
+  td->core_profile_trace_data.perf_event_info = aux_info;
+
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
   //  but there will be no samples
@@ -514,10 +517,7 @@ METHOD_FN(start)
       restart_perf_event( event_thread[i].fd );
     }
   }
-
-  thread_data_t* td = hpcrun_get_thread_data();
   td->ss_state[self->sel_idx] = START;
-  td->core_profile_trace_data.perf_event_info = aux_info;
 
   TMSG(LINUX_PERF, "%d: start OK", self->sel_idx);
 }

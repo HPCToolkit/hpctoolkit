@@ -301,8 +301,23 @@ int
 hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, metric_aux_info_t *aux_info, FILE* fs)
 {
   hpcfmt_int4_fwrite(metric_tbl->len, fs);
+
   for (uint32_t i = 0; i < metric_tbl->len; i++) {
-    hpcrun_fmt_metricDesc_fwrite(metric_tbl->lst[i], &(aux_info[i]), fs);
+
+	  // corner case: for other sampling sources than perf event, the
+	  // value of aux_info is NULL
+
+    metric_aux_info_t info_tmp;
+	metric_aux_info_t *info_ptr = aux_info;
+
+	if (aux_info == NULL) {
+	  memset(&info_tmp, 0, sizeof(metric_aux_info_t));
+	  info_ptr = &info_tmp;
+	} else {
+	  info_ptr = &(aux_info[i]);
+	}
+
+    hpcrun_fmt_metricDesc_fwrite(metric_tbl->lst[i], info_ptr, fs);
   }
 
   return HPCFMT_OK;
@@ -398,11 +413,11 @@ hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, metric_aux_info_t *aux_info, FILE
   hpcfmt_str_fwrite(x->format, fs);
 
   hpcfmt_int2_fwrite (x->is_frequency_metric   , fs);
+
   hpcfmt_int2_fwrite (aux_info->is_multiplexed , fs);
   hpcfmt_real8_fwrite(aux_info->threshold_mean , fs);
-  // disabled temporarily
-  //hpcfmt_real8_fwrite(x->info_data.threshold_stdev, fs);
   hpcfmt_int8_fwrite (aux_info->num_samples    , fs);
+
   return HPCFMT_OK;
 }
 
