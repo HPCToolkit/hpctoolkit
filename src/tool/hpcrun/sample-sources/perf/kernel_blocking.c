@@ -183,23 +183,23 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
 	 //   cct kernel
      // ----------------------------------------------------------------
 
-     if (current_event->time_cs_out > 0 && current_event->cct_kernel != NULL) {
-       blame_kernel_time(current_event, current_event->cct_kernel, mmap_data);
+     if (current_event->time_cs_out > 0 &&
+    		 current_event->cct_kernel != NULL) {
 
-       // important: need to reset the value to inform that we are leaving the kernel
-       current_event->time_cs_out  = 0;
-       current_event->cct_kernel   = NULL;
+       blame_kernel_time(current_event, current_event->cct_kernel, mmap_data);
      }
+     // important: need to reset the value to inform that we are leaving the kernel
+     current_event->cct_kernel   = NULL;
+     current_event->time_cs_out  = 0;
 
      if (mmap_data->nr > 0) {
 
-       // still inside the kernel:
+       // inside the kernel:
        // - record the new cct
-       // - initialize the new time out with the current time (not from the context switch out)
 
        current_event->cct_kernel  = sv.sample_node;
-       current_event->time_cs_out = mmap_data->time;
      }
+
    } else {
      // unlikely path; no context switch nor time
      TMSG(LINUX_PERF, "No cs, no time in %x", sv.sample_node);

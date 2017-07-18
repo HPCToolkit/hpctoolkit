@@ -169,7 +169,7 @@ static bool
 perf_thread_init(event_info_t *event, event_thread_t *et);
 
 static void 
-perf_thread_fini(int nevents);
+perf_thread_fini(int nevents, event_thread_t *event_thread);
 
 static int perf_event_handler(
   int sig, 
@@ -207,13 +207,6 @@ static sigset_t sig_mask;
 static event_info_t  *event_desc = NULL;
 
 
-//******************************************************************************
-// thread local variables
-//******************************************************************************
-
-// a list of event information, private for each thread
-static event_thread_t   __thread   *event_thread = NULL;
-
 
 //******************************************************************************
 // private operations 
@@ -238,15 +231,6 @@ perf_stop(event_thread_t event)
     }
     TMSG(LINUX_PERF, "disabled: %d", event.fd);
 
-    // ------------------------------
-    // close the counter
-    // ------------------------------
-    ret = close(event.fd);
-    if (ret == -1) {
-      EMSG("Error while closing fd %d: %s", 
-            event.fd, strerror(errno));
-    }
-    TMSG(LINUX_PERF, "closed: %d", event.fd);
   }
 }
 
@@ -387,7 +371,7 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
 //  - close file descriptors used by each event
 //----------------------------------------------------------
 void
-perf_thread_fini(int nevents)
+perf_thread_fini(int nevents, event_thread_t *event_thread)
 {
   for(int i=0; i<nevents; i++) {
     if (event_thread[i].fd) 
@@ -404,7 +388,7 @@ perf_thread_fini(int nevents)
 // ---------------------------------------------
 
 static event_thread_t*
-get_fd_index(int nevents, int fd)
+get_fd_index(int nevents, int fd, event_thread_t *event_thread)
 {
   for(int i=0; i<nevents; i++) {
     if (event_thread[i].fd == fd)
@@ -474,12 +458,6 @@ METHOD_FN(start)
 {
   TMSG(LINUX_PERF, "%d: start", self->sel_idx);
 
-  // Special case to make perf init a soft failure.
-  // Make sure that we don't use perf if it won't work.
-  if (is_perf_event_unavailable()) {
-    return; 
-  }
-
   source_state_t my_state = TD_GET(ss_state)[self->sel_idx];
 
   // make LINUX_PERF start idempotent.  the application can turn on sampling
@@ -492,19 +470,9 @@ METHOD_FN(start)
     return;
   }
 
-  int nevents 	  = (self->evl).nevents;
-  int num_metrics = hpcrun_get_num_metrics();
+  int nevents = (self->evl).nevents;
 
-  event_thread = (event_thread_t*) hpcrun_malloc(sizeof(event_thread_t) * nevents);
-
-  // allocate and initialize perf_event additional metric info
-
-  size_t mem_metrics_size = num_metrics * sizeof(metric_aux_info_t);
-  metric_aux_info_t* aux_info = (metric_aux_info_t*) hpcrun_malloc(mem_metrics_size);
-  memset(aux_info, 0, mem_metrics_size);
-
-  thread_data_t* td = hpcrun_get_thread_data();
-  td->core_profile_trace_data.perf_event_info = aux_info;
+  event_thread_t *event_thread = (event_thread_t *)TD_GET(ss_info)[self->sel_idx].ptr;
 
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
@@ -512,11 +480,10 @@ METHOD_FN(start)
 
   for (int i=0; i<nevents; i++)
   {
-    // initialize this event. If it's valid, we set the metric for the event
-    if (perf_thread_init( &(event_desc[i]), &(event_thread[i])) ) { 
-      restart_perf_event( event_thread[i].fd );
-    }
+    restart_perf_event( event_thread[i].fd );
   }
+
+  thread_data_t* td = hpcrun_get_thread_data();
   td->ss_state[self->sel_idx] = START;
 
   TMSG(LINUX_PERF, "%d: start OK", self->sel_idx);
@@ -558,7 +525,9 @@ METHOD_FN(stop)
     return;
   }
 
+  event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
   int nevents  = (self->evl).nevents;
+
   for (int i=0; i<nevents; i++)
   {
     perf_stop( event_thread[i] );
@@ -582,8 +551,10 @@ METHOD_FN(shutdown)
   METHOD_CALL(self, stop); // make sure stop has been called
   // FIXME: add component shutdown code here
 
+  event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
   int nevents = (self->evl).nevents; 
-  perf_thread_fini(nevents);
+
+  perf_thread_fini(nevents, event_thread);
 
 #ifdef ENABLE_PERFMON
   // terminate perfmon
@@ -753,6 +724,45 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(gen_event_set, int lush_metrics)
 {
+  TMSG(LINUX_PERF, "gen_event_set");
+
+  // Special case to make perf init a soft failure.
+  // Make sure that we don't use perf if it won't work.
+  if (is_perf_event_unavailable()) {
+    return;
+  }
+
+  int nevents 	  = (self->evl).nevents;
+  int num_metrics = hpcrun_get_num_metrics();
+
+  // a list of event information, private for each thread
+  event_thread_t  *event_thread = (event_thread_t*) hpcrun_malloc(sizeof(event_thread_t) * nevents);
+
+  // allocate and initialize perf_event additional metric info
+
+  size_t mem_metrics_size = num_metrics * sizeof(metric_aux_info_t);
+  metric_aux_info_t* aux_info = (metric_aux_info_t*) hpcrun_malloc(mem_metrics_size);
+  memset(aux_info, 0, mem_metrics_size);
+
+  thread_data_t* td = hpcrun_get_thread_data();
+
+  td->core_profile_trace_data.perf_event_info = aux_info;
+  td->ss_info[self->sel_idx].ptr = event_thread;
+
+
+  // setup all requested events
+  // if an event cannot be initialized, we still keep it in our list
+  //  but there will be no samples
+
+  for (int i=0; i<nevents; i++)
+  {
+    // initialize this event. If it's valid, we set the metric for the event
+    if (!perf_thread_init( &(event_desc[i]), &(event_thread[i])) ) {
+      TMSG(LINUX_PERF, "FAIL to initialize %s", event_desc[i].metric_desc->name);
+    }
+  }
+
+  TMSG(LINUX_PERF, "gen_event_set OK");
 }
 
 
@@ -876,9 +886,10 @@ perf_event_handler(
   // ----------------------------------------------------------------------------
 
   sample_source_t *self = &obj_name();
+  event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
 
   int nevents = self->evl.nevents;
-  event_thread_t *current = get_fd_index(nevents, fd);
+  event_thread_t *current = get_fd_index(nevents, fd, event_thread);
 
   // store the metric if the metric index is correct
   if ( current != NULL ) {
