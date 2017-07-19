@@ -162,7 +162,7 @@ typedef struct perf_event_callchain_s {
 // forward declarations 
 //******************************************************************************
 
-static void 
+static int
 restart_perf_event(int fd);
 
 static bool 
@@ -219,7 +219,7 @@ static void
 perf_stop(event_thread_t event)
 {
   if ( event.fd >= 0 ) {
-    monitor_real_pthread_sigmask(SIG_BLOCK, &sig_mask, NULL);
+    //monitor_real_pthread_sigmask(SIG_BLOCK, &sig_mask, NULL);
 
     // ------------------------------
     // disable the counter
@@ -474,10 +474,6 @@ METHOD_FN(start)
 
   event_thread_t *event_thread = (event_thread_t *)TD_GET(ss_info)[self->sel_idx].ptr;
 
-  // setup all requested events
-  // if an event cannot be initialized, we still keep it in our list
-  //  but there will be no samples
-
   for (int i=0; i<nevents; i++)
   {
     restart_perf_event( event_thread[i].fd );
@@ -496,7 +492,6 @@ static void
 METHOD_FN(thread_fini_action)
 {
   TMSG(LINUX_PERF, "%d: unregister thread", self->sel_idx);
-  if (is_perf_event_unavailable()) { return; }
 
   TMSG(LINUX_PERF, "%d: unregister thread OK", self->sel_idx);
 }
@@ -796,36 +791,24 @@ METHOD_FN(display_events)
 }
 
 
-
-// ------------------------------------------------------------
-// Disable perf event
-// ------------------------------------------------------------
-static void
-disable_perf_event(int fd)
-{
-#if 0
-  if ( fd >= 0 ) { 
-    int ret = ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
-    if (ret < 0) {
-      TMSG(LINUX_PERF, "error fd %d in IOC_DISABLE", fd);
-    }
-  }
-#endif
-}
-
 // ------------------------------------------------------------
 // Refresh a disabled perf event
+// returns -1 if error, non-negative is success (any returns from ioctl)
 // ------------------------------------------------------------
 
-static void 
+static int
 restart_perf_event(int fd)
 {
+  int ret = -1;
   if ( fd >= 0 ) { 
-    int ret = ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
+    ret = ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
     if (ret == -1) {
       TMSG(LINUX_PERF, "error fd %d in IOC_REFRESH: %s", fd, strerror(errno));
     }
+  } else {
+	TMSG(LINUX_PERF, "Unable to start event: fd is not valid");
   }
+  return ret;
 }
 /***************************************************************************
  * object
@@ -864,9 +847,7 @@ perf_event_handler(
     return 1; // tell monitor the signal has not been handled.
   }
 #endif
-  // first, we need to disable the event
   int fd = siginfo->si_fd;
-  disable_perf_event(fd);
 
   // if the interrupt came while inside our code, then drop the sample
   // and return and avoid the potential for deadlock.
