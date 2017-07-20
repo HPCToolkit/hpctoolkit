@@ -115,7 +115,10 @@
 #include "perf_mmap.h"
 
 #include "event_custom.h"
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
 #include "kernel_blocking.h"
+#endif
 
 //******************************************************************************
 // macros
@@ -419,7 +422,9 @@ METHOD_FN(init)
   self->state = INIT;
 
   // init events
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
   kernel_blocking_init();
+#endif
 
   TMSG(LINUX_PERF, "%d: init OK", self->sel_idx);
 }
@@ -948,9 +953,10 @@ perf_event_handler(
         if (current->event->metric_custom->handler_fn != NULL) {
         		current->event->metric_custom->handler_fn(current, sv, &mmap_data);
         }
-      } else {
-        kernel_block_handler(current, sv, &mmap_data);
       }
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
+      kernel_block_handler(current, sv, &mmap_data);
+#endif
     } while (more_data);
 
 #if LINUX_PERF_DEBUG

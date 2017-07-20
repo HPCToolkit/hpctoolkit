@@ -271,7 +271,7 @@ void kernel_blocking_init()
   event_custom_t *event_kernel_blocking = hpcrun_malloc(sizeof(event_custom_t));
   event_kernel_blocking->name = EVNAME_KERNEL_BLOCK;
   event_kernel_blocking->register_fn  = register_blocking;   // call backs
-  event_kernel_blocking->handler_fn   = kernel_block_handler; // call backs
+  event_kernel_blocking->handler_fn   = NULL; 		// No call backs: we want all event to call us
   event_kernel_blocking->metric_index = 0;   		// these fields to be defined later
   event_kernel_blocking->metric_desc  = NULL; 	 	// these fields to be defined later
 
