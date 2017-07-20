@@ -731,6 +731,9 @@ SYMTABAPI_COPY
 SYMTABAPI_LIB_LIST
 SYMTABAPI_LIB
 SYMTABAPI_INC
+KERNEL_VERSION
+OPT_ENABLE_PERF_EVENT_FALSE
+OPT_ENABLE_PERF_EVENT_TRUE
 PERFMON_LIB
 PERFMON_INC
 OPT_PERFMON_FALSE
@@ -20396,6 +20399,47 @@ fi
 
 
 #-------------------------------------------------
+# check if perf event is available
+#-------------------------------------------------
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if perf event is available" >&5
+$as_echo_n "checking if perf event is available... " >&6; }
+
+PERF_EVENT_PARANOID="no"
+PERF_EVENT_PARANOID_PATH="/proc/sys/kernel/perf_event_paranoid"
+PERF_EVENT_AVAIL="no"
+
+if test -f $PERF_EVENT_PARANOID_PATH; then
+  PERF_EVENT_PARANOID=`cat "$PERF_EVENT_PARANOID_PATH"`
+  PERF_EVENT_AVAIL="yes"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PERF_EVENT_PARANOID" >&5
+$as_echo "$PERF_EVENT_PARANOID" >&6; }
+
+KERNEL_VER_MAJ=`uname -r | awk 'BEGIN{FS="."}{print $1;}'`
+KERNEL_VER_MIN=`uname -r | awk 'BEGIN{FS="."}{print $2;}'`
+
+KERNEL_VERSION="$KERNEL_VER_MAJ.$KERNEL_VER_MIN"
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking Linux kernel" >&5
+$as_echo_n "checking Linux kernel... " >&6; };
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $KERNEL_VERSION" >&5
+$as_echo "$KERNEL_VERSION" >&6; }
+
+ if test "$PERF_EVENT_PARANOID" != no; then
+  OPT_ENABLE_PERF_EVENT_TRUE=
+  OPT_ENABLE_PERF_EVENT_FALSE='#'
+else
+  OPT_ENABLE_PERF_EVENT_TRUE='#'
+  OPT_ENABLE_PERF_EVENT_FALSE=
+fi
+
+
+# substitution
+
+
+#-------------------------------------------------
 # Option: --with-symtabAPI=PATH
 #-------------------------------------------------
 
@@ -22614,6 +22658,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PERFMON_TRUE}" && test -z "${OPT_PERFMON_FALSE}"; then
   as_fn_error $? "conditional \"OPT_PERFMON\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_PERF_EVENT_TRUE}" && test -z "${OPT_ENABLE_PERF_EVENT_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_PERF_EVENT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_USE_ZLIB_TRUE}" && test -z "${OPT_USE_ZLIB_FALSE}"; then
@@ -25264,6 +25312,8 @@ $as_echo "$as_me:   datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}" >&6;}
 $as_echo "$as_me:   hpcserver?:   ${enable_hpcserver}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpcstruct:    $cfg_mesg" >&5
 $as_echo "$as_me:   hpcstruct:    $cfg_mesg" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   perf-events:  ${PERF_EVENT_AVAIL}" >&5
+$as_echo "$as_me:   perf-events:  ${PERF_EVENT_AVAIL}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   C compiler: $CC_VERSION" >&5

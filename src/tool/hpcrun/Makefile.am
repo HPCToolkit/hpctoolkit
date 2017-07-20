@@ -260,8 +260,8 @@ MY_BASE_FILES =				\
 	\
 	main.h main.c			\
 	disabled.c			\
-        cct_insert_backtrace.c          \
-        cct_backtrace_finalize.c        \
+	cct_insert_backtrace.c          \
+	cct_backtrace_finalize.c        \
 	env.c				\
 	epoch.c				\
 	files.c				\
@@ -277,22 +277,16 @@ MY_BASE_FILES =				\
 	sample_sources_all.c		\
 	sample-sources/blame-shift/blame-shift.c          \
 	sample-sources/blame-shift/blame-map.c            \
-        sample-sources/common.c         \
+	sample-sources/common.c         \
 	sample-sources/ga.c		\
 	sample-sources/io.c 		\
 	sample-sources/itimer.c		\
 	sample-sources/idle.c		\
-	sample-sources/perf/event_custom.c	\
-	sample-sources/perf/kernel_blocking.c	\
-	sample-sources/perf/linux_perf.c	\
-	sample-sources/perf/perf-util.c	\
-	sample-sources/perf/perf_mmap.c	\
-	sample-sources/datacentric.c	\
 	sample-sources/memleak.c	\
 	sample-sources/pthread-blame.c  \
 	sample-sources/none.c           \
-        sample-sources/retcnt.c         \
-        sample-sources/sync.c           \
+	sample-sources/retcnt.c         \
+	sample-sources/sync.c           \
 	sample_sources_registered.c	\
 	segv_handler.c			\
 	start-stop.c			\
@@ -305,13 +299,13 @@ MY_BASE_FILES =				\
 	write_data.c		        \
 	\
 	cct/cct_bundle.c		\
-        cct/cct_ctxt.c			\
+	cct/cct_ctxt.c			\
 	cct/cct.c               	\
 	\
-        cct2metrics.c                   \
-        \
-        trampoline/common/trampoline.c  \
-        \
+	cct2metrics.c                   \
+	\
+	trampoline/common/trampoline.c  \
+	\
 	lush/lush-backtrace.h lush/lush-backtrace.c \
 	lush/lush.h lush/lush.c	\
 	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
@@ -323,7 +317,7 @@ MY_BASE_FILES =				\
 	fnbounds/fnbounds_common.c	\
 	\
 	memory/mem.c			\
-        memory/mmap.c                   \
+	memory/mmap.c                   \
 	\
 	messages/debug-flag.c	        \
 	messages/messages-sync.c	\
@@ -345,6 +339,15 @@ endif
 ## 	sample-sources/mpi.c
 ## endif
 
+if OPT_ENABLE_PERF_EVENT
+MY_BASE_FILES +=  			\
+	sample-sources/perf/event_custom.c	\
+	sample-sources/perf/kernel_blocking.c	\
+	sample-sources/perf/linux_perf.c	\
+	sample-sources/perf/perf-util.c	\
+	sample-sources/perf/perf_mmap.c	\
+	sample-sources/datacentric.c	
+endif
 
 MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_client.c	\
