@@ -91,6 +91,8 @@
 // usually each thread has the same metric index, so it's safe to make it global
 // for each thread (I hope).
 static int metric_blocking_index = -1;
+static u64          time_cs_out;  // time when leaving the application process
+static cct_node_t  *cct_kernel;   // cct of the last access to kernel
 
 /******************************************************************************
  * private operations
@@ -101,9 +103,10 @@ blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
     perf_mmap_data_t *mmap_data)
 {
   // make sure the time is is zero or positive
-  assert(mmap_data->time >= current_event->time_cs_out);
+  if (mmap_data->time < time_cs_out)
+    return;
 
-  uint64_t delta = mmap_data->time - current_event->time_cs_out;
+  uint64_t delta = mmap_data->time - time_cs_out;
 
   // ----------------------------------------------------------------
   // blame the time spent in the kernel to the cct kernel
@@ -149,7 +152,7 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
     perf_mmap_data_t *mmap_data)
 {
   if (metric_blocking_index < 0)
-	  return; // not initialized or something wrong happens in the initialization
+    return; // not initialized or something wrong happens in the initialization
 
   if (current_event == NULL || sv.sample_node == NULL || mmap_data == NULL) {
 
@@ -166,44 +169,45 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
     //    cs time and the current cct
     // ----------------------------------------------------------------
 
-    if (current_event->time_cs_out == 0) {
+    if (time_cs_out == 0) {
       // ----------------------------------------------------------------
       // this is the first time we enter the kernel (leaving the current process)
       // needs to store the time to compute the blocking time in
       //  the next step when leaving the kernel
       // ----------------------------------------------------------------
-      current_event->time_cs_out = mmap_data->context_switch_time;
+      time_cs_out = mmap_data->context_switch_time;
     }
-   } else if (mmap_data->time > 0) {
+  } else {
 
-     // ----------------------------------------------------------------
-     // when PERF_SAMPLE_RECORD occurs:
-     // check whether we were previously in the kernel or not (time_cs_out > 0)
-	 // if we were in the kernel, then we blame the different time to the
-	 //   cct kernel
-     // ----------------------------------------------------------------
+    // ----------------------------------------------------------------
+    // when PERF_SAMPLE_RECORD occurs:
+    // check whether we were previously in the kernel or not (time_cs_out > 0)
+    // if we were in the kernel, then we blame the different time to the
+    //   cct kernel
+    // ----------------------------------------------------------------
 
-     if (current_event->time_cs_out > 0 &&
-    		 current_event->cct_kernel != NULL) {
+    if (current_event->event->attr.config == PERF_COUNT_SW_CONTEXT_SWITCHES) {
 
-       blame_kernel_time(current_event, current_event->cct_kernel, mmap_data);
-     }
-     // important: need to reset the value to inform that we are leaving the kernel
-     current_event->cct_kernel   = NULL;
-     current_event->time_cs_out  = 0;
+      if (cct_kernel != NULL) {
+        // corner case : context switch within a context switch !
+        blame_kernel_time(current_event, cct_kernel, mmap_data);
+        time_cs_out  = 0;
+      }
+      // context switch inside the kernel:  record the new cct
+      cct_kernel  = sv.sample_node;
 
-     if (mmap_data->nr > 0) {
+    } else if (cct_kernel != NULL) {
+      // other event than cs occurs (it can be cycles, clocks or others)
 
-       // inside the kernel:
-       // - record the new cct
+      if ((mmap_data->time > 0) && (time_cs_out > 0) && (mmap_data->nr==0)) {
 
-       current_event->cct_kernel  = sv.sample_node;
-     }
-
-   } else {
-     // unlikely path; no context switch nor time
-     TMSG(LINUX_PERF, "No cs, no time in %x", sv.sample_node);
-   }
+        blame_kernel_time(current_event, cct_kernel, mmap_data);
+        // important: need to reset the value to inform that we are leaving the kernel
+        cct_kernel   = NULL;
+        time_cs_out  = 0;
+      }
+    }
+  }
 }
 
 

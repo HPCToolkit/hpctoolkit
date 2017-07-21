@@ -168,12 +168,11 @@ typedef struct perf_event_mmap_page pe_mmap_t;
 // this data is designed to be used within a thread
 // --------------------------------------------------------------
 typedef struct event_thread_s {
+
   pe_mmap_t    *mmap;  // mmap buffer
   int          fd;     // file descriptor of the event
   event_info_t *event; // pointer to main event description
 
-  u64          time_cs_out;  // time when leaving the application process
-  cct_node_t  *cct_kernel;   // cct of the last access to kernel
 } event_thread_t;
 
 
