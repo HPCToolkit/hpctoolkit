@@ -347,6 +347,7 @@ typedef struct metric_aux_info_s {
 	double threshold_mean;  // average threshold (if multiplexed)
 
 	uint64_t num_samples;   // number of samples
+
 } metric_aux_info_t;
 
 #if defined(__cplusplus)

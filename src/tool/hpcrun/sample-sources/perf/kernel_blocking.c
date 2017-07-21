@@ -90,9 +90,9 @@
 // metric index for kernel blocking
 // usually each thread has the same metric index, so it's safe to make it global
 // for each thread (I hope).
-static int metric_blocking_index = -1;
-static u64          time_cs_out;  // time when leaving the application process
-static cct_node_t  *cct_kernel;   // cct of the last access to kernel
+static __thread int metric_blocking_index = -1;
+static __thread u64          time_cs_out;  // time when leaving the application process
+static __thread cct_node_t  *cct_kernel;   // cct of the last access to kernel
 
 /******************************************************************************
  * private operations
