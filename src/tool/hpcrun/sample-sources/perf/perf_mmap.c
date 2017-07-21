@@ -393,9 +393,12 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
   pe_header_t hdr;
   pe_mmap_t *current_perf_mmap = current->mmap;
 
-  if (perf_read_header(current_perf_mmap, &hdr) == 0) {
+  int read_successfully = perf_read_header(current_perf_mmap, &hdr);
+  if (read_successfully != 0) {
+    return 0;
+  }
 
-    current->event->perf_type = hdr.type;
+  current->event->perf_type = hdr.type;
 
 #if 0
 	  /* this tmsg may cause data races when profiling an omp application (test2)
@@ -412,7 +415,7 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
 	  TMSG(LINUX_PERF, "buffer header t: %d, s: %d, head: %d, tail: %d", hdr.type, hdr.size,
     		current_perf_mmap->data_tail, current_perf_mmap->data_head);
 #endif
-    if (hdr.type == PERF_RECORD_SAMPLE) {
+  if (hdr.type == PERF_RECORD_SAMPLE) {
       if (hdr.size <= 0) {
         return 0;
       }
@@ -420,7 +423,7 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
       parse_buffer(sample_type, current, mmap_info);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
-    } else if (hdr.type == PERF_RECORD_SWITCH) {
+  } else if (hdr.type == PERF_RECORD_SWITCH) {
       // only available since kernel 4.3
       mmap_info->context_switch_type = hdr.misc;
 
@@ -441,7 +444,7 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
         perf_read( current_perf_mmap, &cpu, sizeof(cpu) ) ;
       }
 #endif
-    } else {
+  } else {
       // not a PERF_RECORD_SAMPLE nor PERF_RECORD_SWITCH
       // skip it
       if (hdr.size <= 0) {
@@ -449,7 +452,6 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
       }
       skip_perf_data(current_perf_mmap, hdr.size);
       TMSG(LINUX_PERF, "skip header %d  %d : %d bytes", hdr.type, hdr.misc, hdr.size);
-    }
   }
 
   return (is_more_perf_data(current_perf_mmap));
