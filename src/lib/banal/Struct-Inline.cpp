@@ -87,7 +87,7 @@
 #include <lib/support/diagnostics.h>
 #include <lib/support/FileNameMap.hpp>
 #include <lib/support/FileUtil.hpp>
-#include <lib/support/realpath.h>
+#include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StringTable.hpp>
 
 #include "Struct-Inline.hpp"
@@ -238,7 +238,8 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 	//
 	InlinedFunction *ifunc = static_cast <InlinedFunction *> (func);
 	pair <string, Offset> callsite = ifunc->getCallsite();
-	string &filenm = getRealPath(callsite.first.c_str());
+	string filenm = callsite.first;
+	if (filenm != "") { RealPathMgr::singleton().realpath(filenm); }
 	long lineno = callsite.second;
 	string procnm = func->getName();
         if (procnm == "") { procnm = UNKNOWN_PROC; }
