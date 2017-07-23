@@ -77,6 +77,7 @@
 #include <lib/binutils/VMAInterval.hpp>
 #include <lib/support/FileNameMap.hpp>
 #include <lib/support/FileUtil.hpp>
+#include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StringTable.hpp>
 
 #include <CFG.h>
@@ -452,7 +453,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr)
     }
 
     if (filenm != "") {
-      filenm = getRealPath(filenm.c_str());
+      RealPathMgr::singleton().realpath(filenm);
     }
     else {
       filenm = unknown_file;
@@ -960,7 +961,8 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 	// use symtab value and save in cache
 	low_vma = svec[0]->startAddr();
 	high_vma = svec[0]->endAddr();
-	filenm = getRealPath(svec[0]->getFile().c_str());
+	filenm = svec[0]->getFile();
+	RealPathMgr::singleton().realpath(filenm);
 	line = svec[0]->getLine();
 	cache_filenm = filenm;
 	cache_line = line;
