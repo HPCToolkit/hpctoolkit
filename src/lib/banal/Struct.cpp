@@ -150,6 +150,10 @@ doBlock(GroupInfo *, ParseAPI::Function *, BlockSet &, Block *,
 	TreeNode *, HPC::StringTable &);
 
 static void
+doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
+	       HPC::StringTable & strTab);
+
+static void
 getStatement(StatementVector &, Offset, SymtabAPI::Function *);
 
 static LoopInfo *
@@ -277,9 +281,9 @@ makeDotFile(std::ostream * dotFile, CodeObject * code_obj)
 	*dotFile << "  " << mit->second << " -> " << endNum << ";\n";
       }
     }
+  }
 
     *dotFile << "}\n" << endl;
-  }
 }
 
 //----------------------------------------------------------------------
@@ -327,7 +331,9 @@ makeStructure(string filename,
   if (symtab != NULL) {
     code_src = new SymtabCodeSource(symtab);
     code_obj = new CodeObject(code_src);
-    code_obj->parse();
+    if (symtab->getArchitecture() != Dyninst::Arch_cuda) {
+      code_obj->parse();
+    }
   }
 
   FileMap * fileMap = makeSkeleton(code_obj, procNmMgr);
@@ -400,8 +406,31 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr)
     string  filenm;
     SrcFile::ln  line = 0;
 
+    bool found;
+    if (the_symtab->getArchitecture() == Dyninst::Arch_cuda) {
+      std::vector<SymtabAPI::Function *> fns;
+      const std::string &mname = func->mangledName();
+      found = the_symtab->findFunctionsByName(fns, mname, mangledName);
+      if (found) {
+	if (fns.size() > 1) {
+	  std::cerr << "warning: more than one symtab function for '"
+		    << func->name()
+		    << "': ";
+	  for (unsigned int i = 0; i < fns.size(); i++) {
+	    SymtabAPI::Function *f = fns[i];
+	    std::cerr << f->getName()
+		      << " ";
+	  }
+	  std::cerr << std::endl;
+	}
+	sym_func = fns[0];
+      }
+    } else {
+      found = the_symtab->getContainingFunction(vma, sym_func);
+    }
+
     // find the symtab symbol where this func is
-    if (the_symtab->getContainingFunction(vma, sym_func) && sym_func != NULL) {
+    if (found && sym_func != NULL) {
       auto mangled_it = sym_func->mangled_names_begin();
       auto typed_it = sym_func->typed_names_begin();
       VMA sym_vma = sym_func->getOffset();
@@ -544,6 +573,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
   //
   std::map <VMA, VMA> callMap;
 
+  if (symtab->getArchitecture() != Dyninst::Arch_cuda) {
   if (num_funcs > 1) {
     for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
       ParseAPI::Function * func = pit->second->func;
@@ -555,6 +585,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 	callMap[targ] = src;
       }
     }
+  }
   }
 
   // one binutils proc may contain several parseapi funcs
@@ -595,17 +626,24 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     }
 #endif
 
+    if (symtab->getArchitecture() != Dyninst::Arch_cuda) {
     // if this function is entirely contained within another function
     // (as determined by its entry block), then skip it.
     if (num_funcs > 1 && func->entry()->containingFuncs() > 1) {
       DEBUG_MESG("\nskipping duplicated function:  '" << func->name() << "'\n");
       continue;
     }
+    }
 
     TreeNode * root = new TreeNode;
 
+    // initially, create an empty blocklist for cuda
+    ParseAPI::Function::blocklist emptyBlockList; 
+    ParseAPI::Function::blocklist &blist = emptyBlockList;
+
+    if (symtab->getArchitecture() != Dyninst::Arch_cuda) {
     // basic blocks for this function
-    const ParseAPI::Function::blocklist & blist = func->blocks();
+    blist = func->blocks();
     BlockSet visited;
 
     for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
@@ -641,6 +679,9 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 
     for (auto it = llist->begin(); it != llist->end(); ++it) {
       mergeInlineLoop(root, empty, *it);
+    }
+    } else {
+      doCudaFunction(ginfo, func, root, strTab);
     }
 
     // delete the inline prefix from this func, if non-empty
@@ -935,6 +976,102 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
   }
 }
 
+// process a cuda function
+static void
+doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
+	       HPC::StringTable & strTab)
+{
+
+#if DEBUG_CFG_SOURCE
+  cout << "\nblock:\n";
+#endif
+
+#if USE_DYNINST_LINE_MAP
+  // save the last symtab line map query
+  Offset low_vma = 1;
+  Offset high_vma = 0;
+  string cache_filenm = "";
+  SrcFile::ln cache_line = 0;
+  int try_symtab = 1;
+#endif
+
+  std::vector<SymtabAPI::Function *> fns;
+  const std::string &name = func->mangledName();
+  bool found = the_symtab->findFunctionsByName(fns, name, mangledName);
+  
+  assert(found);
+  if (fns.size() > 1) {
+    std::cerr << "warning: more than one symtab function for '"
+	      << func->name()
+	      << "': ";
+    for (unsigned int i = 0; i < fns.size(); i++) {
+      SymtabAPI::Function *f = fns[i];
+      std::cerr << f->getName()
+		<< " ";
+    }
+    std::cerr << std::endl;
+  }
+ 
+  SymtabAPI::Function *f = fns[0];
+
+  const FuncRangeCollection &ranges = f->getRanges();
+  for (unsigned int r = 0; r < ranges.size(); r++) {
+    for (Offset vma = ranges[r].low(); vma < ranges[r].high(); vma += 4) {
+      int    len = 4;
+      string filenm = "";
+      SrcFile::ln line = 0;
+
+#if USE_LIBDWARF_LINE_MAP
+      LineRange lr;
+
+      the_linemap->getLineRange(vma, lr);
+      filenm = lr.filenm;
+      line = lr.lineno;
+#endif
+
+#if USE_DYNINST_LINE_MAP
+      if (low_vma <= vma && vma < high_vma) {
+	// use cached value
+	filenm = cache_filenm;
+	line = cache_line;
+      }
+      else {
+	StatementVector svec;
+	getStatement(svec, vma, ginfo->sym_func);
+
+#if USE_FULL_SYMTAB_BACKUP
+	// fall back on full symtab if module LineInfo fails.
+	// symtab lookups are very expensive, so limit to one failure
+	// per block.
+	if (svec.empty() && try_symtab) {
+	  the_symtab->getSourceLines(svec, vma);
+	  if (svec.empty()) {
+	    try_symtab = 0;
+	  }
+	}
+#endif
+	if (! svec.empty()) {
+	  // use symtab value and save in cache
+	  low_vma = svec[0]->startAddr();
+	  high_vma = svec[0]->endAddr();
+	  filenm = getRealPath(svec[0]->getFile().c_str());
+	  line = svec[0]->getLine();
+	  cache_filenm = filenm;
+	  cache_line = line;
+	}
+      }
+#endif
+
+#if DEBUG_CFG_SOURCE
+      debugStmt(vma, filenm, line);
+#endif
+
+      addStmtToTree(root, strTab, vma, len, filenm, line);
+    }
+  }
+}
+
+
 //****************************************************************************
 // Support functions
 //****************************************************************************
@@ -980,6 +1117,7 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
 }
 
 //----------------------------------------------------------------------
+
 
 // New heuristic for identifying loop header inside inline tree.
 // Start at the root, descend the inline tree and try to find where

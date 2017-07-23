@@ -192,10 +192,14 @@ closeSymtab()
 {
   bool ret = false;
 
+#if 0
+  // temporary for now -- johnmc
   if (the_symtab != NULL) {
     ret = Symtab::closeSymtab(the_symtab);
   }
+#endif
   the_symtab = NULL;
+
 
   restore_sighandler();
 
