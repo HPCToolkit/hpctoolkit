@@ -406,7 +406,67 @@ get_fd_index(int nevents, int fd, event_thread_t *event_thread)
 }
 
 
+static sample_val_t*
+record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
+    void* context, sample_val_t* sv)
+{
+  // ----------------------------------------------------------------------------
+  // for event with frequency, we need to increase the counter by its period
+  // sampling taken by perf event kernel
+  // ----------------------------------------------------------------------------
+  uint64_t metric_inc = 1;
+  if (current->event->attr.freq==1 && mmap_data->period > 0)
+    metric_inc = mmap_data->period;
 
+  // ----------------------------------------------------------------------------
+  // record time enabled and time running
+  // if the time enabled is not the same as running time, then it's multiplexed
+  // ----------------------------------------------------------------------------
+  u64 time_enabled = current->mmap->time_enabled;
+  u64 time_running = current->mmap->time_running;
+
+  // ----------------------------------------------------------------------------
+  // the estimate count = raw_count * scale_factor
+  //              = metric_inc * time_enabled / time running
+  // ----------------------------------------------------------------------------
+  double scale_f = (double) time_enabled / time_running;
+
+  // for period-based sampling with no multiplexing, there is no need to adjust
+  // the scale. Also for software event. For them, the value of time_enabled
+  //  and time_running are incorrect (the ratio is less than 1 which doesn't make sense)
+
+  if (scale_f < 1.0)
+    scale_f = 1.0;
+
+  double counter = scale_f * metric_inc;
+
+  // ----------------------------------------------------------------------------
+  // set additional information for the metric description
+  // ----------------------------------------------------------------------------
+  thread_data_t *td = hpcrun_get_thread_data();
+  metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[current->event->metric]);
+
+  // check if this event is multiplexed. we need to notify the user that a multiplexed
+  //  event is not accurate at all.
+  // Note: perf event can report the scale to be close to 1 (like 1.02 or 0.99).
+  //       we need to use a range of value to see if it's multiplexed or not
+  info_aux->is_multiplexed    |= (scale_f>PERF_MULTIPLEX_RANGE);
+
+  // case of multiplexed or frequency-based sampling, we need to store the mean and
+  // the standard deviation of the sampling period
+  info_aux->num_samples++;
+  const double delta    = counter - info_aux->threshold_mean;
+  info_aux->threshold_mean += delta / info_aux->num_samples;
+
+  // ----------------------------------------------------------------------------
+  // update the cct and add callchain if necessary
+  // ----------------------------------------------------------------------------
+  *sv = hpcrun_sample_callpath(context, current->event->metric,
+        (hpcrun_metricVal_t) {.r=counter},
+        0/*skipInner*/, 0/*isSync*/, (void*) mmap_data);
+
+  return sv;
+}
 
 /******************************************************************************
  * method functions
@@ -902,60 +962,11 @@ perf_event_handler(
 
       more_data = read_perf_buffer(current, &mmap_data);
 
-      // ----------------------------------------------------------------------------
-      // for event with frequency, we need to increase the counter by its period
-      // sampling taken by perf event kernel
-      // ----------------------------------------------------------------------------
-      uint64_t metric_inc = 1;
-      if (current->event->attr.freq==1 && mmap_data.period>0)
-        metric_inc = mmap_data.period;
+      sample_val_t sv;
+      memset(&sv, 0, sizeof(sample_val_t));
 
-      // ----------------------------------------------------------------------------
-      // record time enabled and time running
-      // if the time enabled is not the same as running time, then it's multiplexed
-      // ----------------------------------------------------------------------------
-      u64 time_enabled = current->mmap->time_enabled;
-      u64 time_running = current->mmap->time_running;
-
-      // ----------------------------------------------------------------------------
-      // the estimate count = raw_count * scale_factor
-      //	            = metric_inc * time_enabled / time running
-      // ----------------------------------------------------------------------------
-      double scale_f = (double) time_enabled / time_running;
-
-      // for period-based sampling with no multiplexing, there is no need to adjust
-      // the scale. Also for software event. For them, the value of time_enabled
-      //  and time_running are incorrect (the ratio is less than 1 which doesn't make sense)
-
-      if (scale_f < 1.0)
-        scale_f = 1.0;
-
-      double counter = scale_f * metric_inc;
-
-      // ----------------------------------------------------------------------------
-      // set additional information for the metric description
-      // ----------------------------------------------------------------------------
-      thread_data_t *td = hpcrun_get_thread_data();
-      metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[current->event->metric]);
-
-      // check if this event is multiplexed. we need to notify the user that a multiplexed
-      //  event is not accurate at all.
-      // Note: perf event can report the scale to be close to 1 (like 1.02 or 0.99).
-      //       we need to use a range of value to see if it's multiplexed or not
-      info_aux->is_multiplexed    |= (scale_f>PERF_MULTIPLEX_RANGE);
-
-      // case of multiplexed or frequency-based sampling, we need to store the mean and
-      // the standard deviation of the sampling period
-      info_aux->num_samples++;
-      const double delta		= counter - info_aux->threshold_mean;
-      info_aux->threshold_mean += delta / info_aux->num_samples;
-
-      // ----------------------------------------------------------------------------
-      // update the cct and add callchain if necessary
-      // ----------------------------------------------------------------------------
-      sample_val_t sv = hpcrun_sample_callpath(context, current->event->metric,
-  		      (hpcrun_metricVal_t) {.r=counter},
-            0/*skipInner*/, 0/*isSync*/, (void*) &mmap_data);
+      if (current->event->perf_type == PERF_RECORD_SAMPLE)
+        record_sample(current, &mmap_data, context, &sv);
 
       // ----------------------------------------------------------------------------
       // if the current event is a customized one, it requires a special handling
