@@ -210,6 +210,11 @@ static sigset_t sig_mask;
 static event_info_t  *event_desc = NULL;
 
 
+/******************************************************************************
+ * external thread-local variables
+ *****************************************************************************/
+extern __thread bool hpcrun_thread_suppress_sample;
+
 
 //******************************************************************************
 // private operations 
@@ -841,6 +846,12 @@ perf_event_handler(
          siginfo->si_code);
     return 1; // tell monitor the signal has not been handled.
   }
+
+  // if sampling disabled explicitly for this thread, skip all processing
+  if (hpcrun_thread_suppress_sample) {
+    return 0;
+  }
+
 #if 0
   // FIXME: (laks) sometimes we have signal code other than POll_HUP
   // and still has a valid information (x86 on les). Temporarily, we 
