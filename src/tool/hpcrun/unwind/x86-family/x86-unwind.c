@@ -147,19 +147,23 @@ static step_state (*dbg_unw_step)(hpcrun_unw_cursor_t* cursor) = t1_dbg_unw_step
 //************************************************
 
 static void
-compute_normalized_ips(hpcrun_unw_cursor_t* cursor, void *pc, void *bp, void *sp,
-		       void **ra_loc, unwindr_info_t unwr_info)
+save_registers(hpcrun_unw_cursor_t* cursor, void *pc, void *bp, void *sp,
+	       void **ra_loc)
 {
-      cursor->pc_unnorm = pc;
-      cursor->bp        = bp;
-      cursor->sp        = sp;
-      cursor->ra_loc    = ra_loc;
-      cursor->unwr_info = unwr_info;
+  cursor->pc_unnorm = pc;
+  cursor->bp        = bp;
+  cursor->sp        = sp;
+  cursor->ra_loc    = ra_loc;
+}
+
+static void
+compute_normalized_ips(hpcrun_unw_cursor_t* cursor, unwindr_info_t unwr_info)
+{
 
   void *func_start_pc =  (void*) unwr_info.interval.start;
   load_module_t* lm = unwr_info.lm;
 
-  cursor->pc_norm = hpcrun_normalize_ip(pc, lm);
+  cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, lm);
   cursor->the_function = hpcrun_normalize_ip(func_start_pc, lm);
 }
 
@@ -242,6 +246,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   bp 	    = MCONTEXT_BP(mc);
   sp 	    = MCONTEXT_SP(mc);
   ra_loc    = NULL;
+  save_registers(cursor, pc, bp, sp, ra_loc);
 
   TMSG(UNW, "unw_init: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
        pc, ra_loc, sp, bp);
@@ -254,7 +259,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 	 cursor->pc_unnorm);
   }
 
-  compute_normalized_ips(cursor, pc, bp, sp, ra_loc, unwr_info);
+  compute_normalized_ips(cursor, unwr_info);
 
   if (MYDBG) { dump_ui(unwr_info.btuwi, 0); }
 }
@@ -494,7 +499,8 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor, unwind_interval *uw)
 	   " Resetting next_bp to current bp = %p", next_bp);
     }
   }
-  compute_normalized_ips(cursor, next_pc, next_bp, next_sp, ra_loc, unwr_info);
+  save_registers(cursor, next_pc, next_bp, next_sp, ra_loc);
+  compute_normalized_ips(cursor, unwr_info);
 
   TMSG(UNW,"  step_sp: STEP_OK, has_intvl=%d, bp=%p, sp=%p, pc=%p",
        unwr_info.btuwi != NULL, next_bp, next_sp, next_pc);
@@ -555,7 +561,8 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor, unwind_interval *uw)
     TMSG(UNW,"  step_bp: STEP_ERROR, cannot build interval for next_pc(%p)", next_pc);
     return STEP_ERROR;
   }
-  compute_normalized_ips(cursor, next_pc, next_bp, next_sp, ra_loc, unwr_info);
+  save_registers(cursor, next_pc, next_bp, next_sp, ra_loc);
+  compute_normalized_ips(cursor, unwr_info);
 
   TMSG(UNW,"  step_bp: STEP_OK, has_intvl=%d, bp=%p, sp=%p, pc=%p",
        unwr_info.btuwi != NULL, next_bp, next_sp, next_pc);
@@ -665,7 +672,8 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
 	   next_pc, next_sp);
       TMSG(TROLL,"TROLL SUCCESS pc = %p", cursor->pc_unnorm);
 
-      compute_normalized_ips(cursor, next_pc, next_bp, next_sp, ra_loc, unwr_info);
+      save_registers(cursor, next_pc, next_bp, next_sp, ra_loc);
+      compute_normalized_ips(cursor, unwr_info);
       return; // success!
     }
     TMSG(TROLL, "No interval found for trolled pc, dropping sample,"
