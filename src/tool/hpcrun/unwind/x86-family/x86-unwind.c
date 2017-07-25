@@ -163,6 +163,7 @@ compute_normalized_ips(hpcrun_unw_cursor_t* cursor, unwindr_info_t unwr_info)
   void *func_start_pc =  (void*) unwr_info.interval.start;
   load_module_t* lm = unwr_info.lm;
 
+  cursor->unwr_info = unwr_info;
   cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, lm);
   cursor->the_function = hpcrun_normalize_ip(func_start_pc, lm);
 }
