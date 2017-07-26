@@ -134,6 +134,7 @@ typedef void (*event_handler_t)(struct event_thread_s*, sample_val_t , perf_mmap
 // --------------------------------------------------------------
 typedef struct event_custom_s {
   const char *name;            // unique name of the event
+  const char *desc;            // brief description of the event
 
   register_event_t register_fn;// function to register the event
   event_handler_t  handler_fn; // callback to be used during the sampling

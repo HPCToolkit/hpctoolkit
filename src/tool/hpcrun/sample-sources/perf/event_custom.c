@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -75,6 +75,29 @@ event_custom_find(const char *name)
 	  return item->event;
   }
   return NULL;
+}
+
+void
+event_custom_display(FILE *std)
+{
+  if (SLIST_EMPTY(&list_events_head)) {
+    return;
+  }
+  events_list_t *item = NULL;
+
+  fprintf(std, "===========================================================================\n");
+  fprintf(std, "Customized perf-event based\n");
+  fprintf(std, "===========================================================================\n");
+  fprintf(std, "Name\t\tDescription\n");
+  fprintf(std, "---------------------------------------------------------------------------\n");
+
+  // check if we already have the event
+  SLIST_FOREACH(item, &list_events_head, entries) {
+    if (item != NULL) {
+      fprintf(std, "%-10s\t%s\t%s\n", item->event->name, "", item->event->desc);
+    }
+  }
+  fprintf(std, "\n");
 }
 
 int
