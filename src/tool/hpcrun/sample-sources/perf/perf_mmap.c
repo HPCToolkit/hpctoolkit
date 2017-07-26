@@ -398,7 +398,8 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
     return 0;
   }
 
-  current->event->perf_type = hdr.type;
+  mmap_info->header_type = hdr.type;
+  mmap_info->header_misc = hdr.misc;
 
 #if 0
 	  /* this tmsg may cause data races when profiling an omp application (test2)
@@ -425,7 +426,6 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
   } else if (hdr.type == PERF_RECORD_SWITCH) {
       // only available since kernel 4.3
-      mmap_info->context_switch_type = hdr.misc;
 
       u64 type;
       struct { uint32_t pid, tid; } pid;

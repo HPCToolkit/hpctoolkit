@@ -92,8 +92,10 @@
 // for each thread (I hope).
 static int metric_blocking_index = -1;
 
-static __thread u64          time_cs_out;  // time when leaving the application process
-static __thread cct_node_t  *cct_kernel;   // cct of the last access to kernel
+static __thread u64          time_cs_out = 0;    // time when leaving the application process
+static __thread cct_node_t  *cct_kernel  = NULL; // cct of the last access to kernel
+static __thread u32          cpu = 0;           // cpu of the last sample
+static __thread u32          pid = 0, tid = 0;  // last pid/tid
 
 /******************************************************************************
  * private operations
@@ -104,8 +106,11 @@ blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
     perf_mmap_data_t *mmap_data)
 {
   // make sure the time is is zero or positive
-  if (mmap_data->time < time_cs_out)
+  if (mmap_data->time < time_cs_out) {
+    TMSG(LINUX_PERF, "old t: %d, c: %d, p: %d, td: %d -- vs -- t: %d, c: %d, p: %d, td: %d",
+        time_cs_out, cpu, pid, tid, mmap_data->time, mmap_data->cpu, mmap_data->pid, mmap_data->tid);
     return;
+  }
 
   uint64_t delta = mmap_data->time - time_cs_out;
 
@@ -155,7 +160,7 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
   if (metric_blocking_index < 0)
     return; // not initialized or something wrong happens in the initialization
 
-  if (current_event == NULL || sv.sample_node == NULL || mmap_data == NULL) {
+  if (mmap_data == NULL) {
 
     // somehow, at the end of the execution, a sample event is still triggered
     // and in this case, the arguments are null. Is this our bug ? or gdb ?
@@ -177,6 +182,9 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
       //  the next step when leaving the kernel
       // ----------------------------------------------------------------
       time_cs_out = mmap_data->context_switch_time;
+      cpu = mmap_data->cpu;
+      pid = mmap_data->pid;
+      tid = mmap_data->tid;
     }
   } else {
 
@@ -189,7 +197,7 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
 
     if (current_event->event->attr.config == PERF_COUNT_SW_CONTEXT_SWITCHES) {
 
-      if (cct_kernel != NULL) {
+      if (cct_kernel != NULL && time_cs_out > 0) {
         // corner case : context switch within a context switch !
         blame_kernel_time(current_event, cct_kernel, mmap_data);
         time_cs_out  = 0;
@@ -201,6 +209,8 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
       // other event than cs occurs (it can be cycles, clocks or others)
 
       if ((mmap_data->time > 0) && (time_cs_out > 0) && (mmap_data->nr==0)) {
+        unsigned int cpumode = mmap_data->header_misc & PERF_RECORD_MISC_CPUMODE_MASK;
+        assert(cpumode == PERF_RECORD_MISC_USER);
 
         blame_kernel_time(current_event, cct_kernel, mmap_data);
         // important: need to reset the value to inform that we are leaving the kernel

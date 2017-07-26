@@ -111,8 +111,11 @@ typedef struct perf_mmap_data_s {
   u64    *intr_regs;
                      /* if PERF_SAMPLE_REGS_INTR */
 
+  // header information in the buffer
+  u32   header_misc; /* information about the sample */
+  u32   header_type; /* either sample record or other */
+
   // only for PERF_RECORD_SWITCH
-  u32   context_switch_type;
   u64 	context_switch_time;
 
 } perf_mmap_data_t;
@@ -156,7 +159,6 @@ typedef struct event_info_s {
 
   metric_aux_info_t info_data;
 
-  u32 perf_type; // either sample record or other
 } event_info_t;
 
 

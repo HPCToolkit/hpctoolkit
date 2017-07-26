@@ -965,7 +965,7 @@ perf_event_handler(
       sample_val_t sv;
       memset(&sv, 0, sizeof(sample_val_t));
 
-      if (current->event->perf_type == PERF_RECORD_SAMPLE)
+      if (mmap_data.header_type == PERF_RECORD_SAMPLE)
         record_sample(current, &mmap_data, context, &sv);
 
       // ----------------------------------------------------------------------------
