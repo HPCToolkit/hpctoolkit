@@ -107,7 +107,7 @@ blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
 {
   // make sure the time is is zero or positive
   if (mmap_data->time < time_cs_out) {
-    TMSG(LINUX_PERF, "old t: %d, c: %d, p: %d, td: %d -- vs -- t: %d, c: %d, p: %d, td: %d",
+    TMSG(LINUX_PERF, "old t: %llu, c: %d, p: %d, td: %d -- vs -- t: %llu, c: %d, p: %d, td: %d",
         time_cs_out, cpu, pid, tid, mmap_data->time, mmap_data->cpu, mmap_data->pid, mmap_data->tid);
     return;
   }
