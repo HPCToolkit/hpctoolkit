@@ -72,6 +72,7 @@
 
 #include <hpcrun/messages/messages.h>
 #include "perf-util.h"    // u64, u32 and perf_mmap_data_t
+#include "sample-sources/display.h"
 
 /******************************************************************************
  * perfmon
@@ -90,13 +91,13 @@
  * use with PFM_OS_PERF, PFM_OS_PERF_EXT for pfm_get_os_event_encoding()
  */
 typedef struct {
-        struct perf_event_attr *attr;   /* in/out: perf_event struct pointer */
-        char **fstr;                    /* out/in: fully qualified event string */
-        size_t size;                    /* sizeof struct */
-        int idx;                        /* out: opaque event identifier */
-        int cpu;                        /* out: cpu to program, -1 = not set */
-        int flags;                      /* out: perf_event_open() flags */
-        int pad0;                       /* explicit 64-bit mode padding */
+  struct perf_event_attr *attr;   /* in/out: perf_event struct pointer */
+  char **fstr;                    /* out/in: fully qualified event string */
+  size_t size;                    /* sizeof struct */
+  int idx;                        /* out: opaque event identifier */
+  int cpu;                        /* out: cpu to program, -1 = not set */
+  int flags;                      /* out: perf_event_open() flags */
+  int pad0;                       /* explicit 64-bit mode padding */
 } pfm_perf_encode_arg_t;
 
 
@@ -105,16 +106,6 @@ typedef struct {
 // Constants
 //******************************************************************************
 
-const int MAXBUF   		     = 1024;
-const int MAX_CHARS_PER_LINE 	     = 74;
-static const char * dashes_separator = 
-  "---------------------------------------------------------------------------\n";
-
-//******************************************************************************
-// local variables
-//******************************************************************************
-
-#include "line_wrapping.h"
 
 
 //******************************************************************************
@@ -133,25 +124,10 @@ pfmu_getEventType(const char *eventname, u64 *code, u64 *type);
 static int
 event_has_pname(char *s)
 {
-	char *p;
-	return (p = strchr(s, ':')) && *(p+1) == ':';
+  char *p;
+  return (p = strchr(s, ':')) && *(p+1) == ':';
 }
 
-static void printw(const char *desc)
-{
-  char **line;
-  int *len;
-  char sdesc[MAX_CHARS_PER_LINE];
-
-  int lines = strwrap(desc, MAX_CHARS_PER_LINE, &line, &len);
-  for (int i=0; i<lines; i++) {
-    strncpy(sdesc, line[i], len[i]);
-    sdesc[len[i]] = '\0';
-    printf("\t%s\n", sdesc);
-  }
-  free (line);
-  free (len);
-}
 
 /*
  * test if the kernel can create the given event
@@ -199,15 +175,20 @@ show_event_info(pfm_event_info_t *info)
   u64 code, type;
   if (pfmu_getEventType(info->name, &code, &type) >0 ) {
     if (test_pmu(code, type)>=0) {
-      printf(dashes_separator);
-      printf("%s::%s\n", pinfo.name, info->name);
-      printw(info->desc); 
+
+      char buffer[256];
+
+      sprintf(buffer, "%s::%s", pinfo.name, info->name);
+      display_line_single(stdout);
+      display_event_info(stdout, buffer, info->desc);
+
       pfm_for_each_event_attr(i, info) {
         ret = pfm_get_event_attr_info(info->idx, i, PFM_OS_NONE, &ainfo);
         if (ret == PFM_SUCCESS)
         {
-          printf("%s::%s:%s\n", pinfo.name, info->name, ainfo.name); 
-          printw(ainfo.desc);
+          memset(buffer, 0, 256);
+          sprintf(buffer, "%s::%s:%s", pinfo.name, info->name, ainfo.name);
+          display_event_info(stdout, buffer, ainfo.desc);
         }
       }
     }
@@ -229,31 +210,31 @@ show_info(char *event )
 
   pname = event_has_pname(event);
 
- /*
-  * scan all supported events, incl. those
-  * from undetected PMU models
-  */
+  /*
+   * scan all supported events, incl. those
+   * from undetected PMU models
+   */
   pfm_for_all_pmus(j) {
 
     ret = pfm_get_pmu_info(j, &pinfo);
+    if (ret != PFM_SUCCESS)
+      continue;
+
+    /* no pmu prefix, just look for detected PMU models */
+    if (!pname && !pinfo.is_present)
+      continue;
+
+    for (i = pinfo.first_event; i != -1; i = pfm_get_event_next(i)) {
+      ret = pfm_get_event_info(i, PFM_OS_NONE, &info);
       if (ret != PFM_SUCCESS)
-	continue;
-
-     /* no pmu prefix, just look for detected PMU models */
-     if (!pname && !pinfo.is_present)
-	continue;
-
-     for (i = pinfo.first_event; i != -1; i = pfm_get_event_next(i)) {
-	ret = pfm_get_event_info(i, PFM_OS_NONE, &info);
-	if (ret != PFM_SUCCESS)
-	  EMSG( "cannot get event info: %s", pfm_strerror(ret));
-        else {
-	  show_event_info(&info);
-		match++;
-	}
-      } 
-   }
-   return match;
+        EMSG( "cannot get event info: %s", pfm_strerror(ret));
+      else {
+        show_event_info(&info);
+        match++;
+      }
+    }
+  }
+  return match;
 }
 
 
@@ -307,22 +288,22 @@ pfmu_isSupported(const char *eventname)
 int
 pfmu_init()
 {
-   /* to allow encoding of events from non detected PMU models */
-   int ret = setenv("LIBPFM_ENCODE_INACTIVE", "1", 1);
-   if (ret != PFM_SUCCESS)
-      EMSG( "cannot force inactive encoding");
+  /* to allow encoding of events from non detected PMU models */
+  int ret = setenv("LIBPFM_ENCODE_INACTIVE", "1", 1);
+  if (ret != PFM_SUCCESS)
+    EMSG( "cannot force inactive encoding");
 
-   ret = pfm_initialize();
-   if (ret != PFM_SUCCESS)
-      EMSG( "cannot initialize libpfm: %s", pfm_strerror(ret));
+  ret = pfm_initialize();
+  if (ret != PFM_SUCCESS)
+    EMSG( "cannot initialize libpfm: %s", pfm_strerror(ret));
 
-   return 1;
+  return 1;
 }
 
 void
 pfmu_fini()
 {
-   pfm_terminate();
+  pfm_terminate();
 }
 
 /*
@@ -331,63 +312,63 @@ pfmu_fini()
 int
 pfmu_showEventList()
 {
-   static char *argv_all =  ".*";
-             
-   int total_supported_events = 0;
-   int total_available_events = 0;
-   int i, ret;
-   pfm_pmu_info_t pinfo;
+  static char *argv_all =  ".*";
 
-   memset(&pinfo, 0, sizeof(pinfo));
-   pinfo.size = sizeof(pinfo);
+  int total_supported_events = 0;
+  int total_available_events = 0;
+  int i, ret;
+  pfm_pmu_info_t pinfo;
 
-   static const char *pmu_types[]={
-	"unknown type",
-	"core",
-	"uncore",
-	"OS generic",
-   };
+  memset(&pinfo, 0, sizeof(pinfo));
+  pinfo.size = sizeof(pinfo);
+
+  static const char *pmu_types[]={
+      "unknown type",
+      "core",
+      "uncore",
+      "OS generic",
+  };
 #if 0
-   printf("Supported PMU models:\n");
-   pfm_for_all_pmus(i) {
-	ret = pfm_get_pmu_info(i, &pinfo);
-	if (ret != PFM_SUCCESS)
-		continue;
+  printf("Supported PMU models:\n");
+  pfm_for_all_pmus(i) {
+    ret = pfm_get_pmu_info(i, &pinfo);
+    if (ret != PFM_SUCCESS)
+      continue;
 
-	printf("\t[%d, %s, \"%s\"]\n", i, pinfo.name,  pinfo.desc);
-   }  
+    printf("\t[%d, %s, \"%s\"]\n", i, pinfo.name,  pinfo.desc);
+  }
 #endif
-   printf("Detected PMU models:\n");
-   pfm_for_all_pmus(i) {
-	ret = pfm_get_pmu_info(i, &pinfo);
-	if (ret != PFM_SUCCESS)
-		continue;
+  printf("Detected PMU models:\n");
+  pfm_for_all_pmus(i) {
+    ret = pfm_get_pmu_info(i, &pinfo);
+    if (ret != PFM_SUCCESS)
+      continue;
 
-	if (pinfo.is_present) {
-		if (pinfo.type >= PFM_PMU_TYPE_MAX)
-			pinfo.type = PFM_PMU_TYPE_UNKNOWN;
+    if (pinfo.is_present) {
+      if (pinfo.type >= PFM_PMU_TYPE_MAX)
+        pinfo.type = PFM_PMU_TYPE_UNKNOWN;
 
-		printf("\t[%d, %s, \"%s\", %d events, %d max encoding, %d counters, %s PMU]\n",
-		       i,
-		       pinfo.name,
-		       pinfo.desc,
-		       pinfo.nevents,
-		       pinfo.max_encoding,
-		       pinfo.num_cntrs + pinfo.num_fixed_cntrs,
-		       pmu_types[pinfo.type]);
+      printf("\t[%d, %s, \"%s\", %d events, %d max encoding, %d counters, %s PMU]\n",
+          i,
+          pinfo.name,
+          pinfo.desc,
+          pinfo.nevents,
+          pinfo.max_encoding,
+          pinfo.num_cntrs + pinfo.num_fixed_cntrs,
+          pmu_types[pinfo.type]);
 
-		total_supported_events += pinfo.nevents;
-	}
-	total_available_events += pinfo.nevents;
-   }    
-   printf("Total events: %d available, %d supported\n", total_available_events, total_supported_events);
+      total_supported_events += pinfo.nevents;
+    }
+    total_available_events += pinfo.nevents;
+  }
+  printf("Total events: %d available, %d supported\n", total_available_events, total_supported_events);
 
-   printf(dashes_separator);
+  display_line_single(stdout);
 
-   show_info(argv_all);
+  show_info(argv_all);
 
-   pfm_terminate();
+  pfm_terminate();
 
-   return 0;
+  return 0;
 }
 

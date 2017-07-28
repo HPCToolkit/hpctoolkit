@@ -278,6 +278,7 @@ MY_BASE_FILES =				\
 	sample-sources/blame-shift/blame-shift.c          \
 	sample-sources/blame-shift/blame-map.c            \
 	sample-sources/common.c         \
+	sample-sources/display.c		\
 	sample-sources/ga.c		\
 	sample-sources/io.c 		\
 	sample-sources/itimer.c		\
