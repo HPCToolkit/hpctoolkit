@@ -113,8 +113,9 @@
 
 #include "perf-util.h"    // u64, u32 and perf_mmap_data_t
 #include "perf_mmap.h"
-
 #include "event_custom.h"
+
+#include "sample-sources/display.h"
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
 #include "kernel_blocking.h"
@@ -189,11 +190,6 @@ static int perf_event_handler(
 #ifndef ENABLE_PERFMON
 static const char *event_name = "CPU_CYCLES";
 #endif
-
-static const char * dashes_separator = 
-  "---------------------------------------------------------------------------\n";
-static const char * equals_separator =
-  "===========================================================================\n";
 
 
 
@@ -840,19 +836,16 @@ METHOD_FN(display_events)
   if (!is_perf_event_unavailable()) {
     event_custom_display(stdout);
 
-    printf(equals_separator);
-    printf("Available Linux perf events\n");
-    printf(equals_separator);
+    display_header(stdout, "Available Linux perf events");
 
 #ifdef ENABLE_PERFMON
     // perfmon is smart enough to detect if pfmu has been initialized or not
     pfmu_init();
-    printf(dashes_separator);
     pfmu_showEventList();
     pfmu_fini();
 #else
     printf("Name\t\tDescription\n");
-    printf(dashes_separator);
+    display_line_single(stdout);
 
     printf("%s\tTotal cycles.\n", 
      "PERF_COUNT_HW_CPU_CYCLES");

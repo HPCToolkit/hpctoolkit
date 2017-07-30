@@ -63,8 +63,8 @@
 //******************************************************************************
 
 const int MAXBUF             = 1024;
-const int MAX_DESC_PER_LINE  = 63;
-const int MAX_EVENT_NAME     = 17;
+const int MAX_DESC_PER_LINE  = 65;
+const int MAX_EVENT_NAME     = 15;
 
 static const char *line_double = "===========================================================================\n";
 static const char *line_single = "---------------------------------------------------------------------------\n";
@@ -86,17 +86,17 @@ printw(FILE *output, const char *name, const char *desc)
   for (int i=0; i<lines; i++) {
     strncpy(sdesc, line[i], len[i]);
     sdesc[len[i]] = '\0';
+    const char *name_ptr = " ";
+
     if (i == 0) {
       int len = strlen(name);
       if (len > MAX_EVENT_NAME) {
         fprintf(output, "%s\n", name);
       } else {
-        int padding = MAX_EVENT_NAME - len;
-        fprintf(output, "%-*s %s", MAX_EVENT_NAME, name, sdesc);
-        continue;
+	name_ptr = name;
       }
     }
-    fprintf(output, "%-17s %s\n", " ", sdesc);
+    fprintf(output, "%-*s %s\n", MAX_EVENT_NAME, name_ptr, sdesc);
   }
   free (line);
   free (len);
@@ -123,7 +123,7 @@ void
 display_header(FILE *output, const char *title)
 {
   display_line_double(output);
-  fprintf(output, title);
+  fprintf(output, "%s\n", title);
   display_line_double(output);
 }
 

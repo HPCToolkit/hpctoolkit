@@ -50,6 +50,8 @@
 
 #include "perf-util.h"
 
+#include "sample-sources/display.h"
+
 //*************************** type data structure **************************
 
 // list of callbacks
@@ -85,16 +87,14 @@ event_custom_display(FILE *std)
   }
   events_list_t *item = NULL;
 
-  fprintf(std, "===========================================================================\n");
-  fprintf(std, "Customized perf-event based\n");
-  fprintf(std, "===========================================================================\n");
+  display_header(stdout, "Customized perf-event based");
   fprintf(std, "Name\t\tDescription\n");
-  fprintf(std, "---------------------------------------------------------------------------\n");
+  display_line_single(stdout);
 
   // check if we already have the event
   SLIST_FOREACH(item, &list_events_head, entries) {
     if (item != NULL) {
-      fprintf(std, "%-10s\t%s\t%s\n", item->event->name, "", item->event->desc);
+       display_event_info(stdout, item->event->name, item->event->desc);
     }
   }
   fprintf(std, "\n");
