@@ -89,12 +89,13 @@
 #include <unwind/common/validate_return_addr.h>
 #include <unwind/common/fence_enum.h>
 #include <fnbounds/fnbounds_interface.h>
-#include "uw_recipe_map.h"
+#include <unwind/common/uw_recipe_map.h>
 #include <utilities/arch/mcontext.h>
 #include <utilities/ip-normalized.h>
 
 #include <hpcrun/main.h>
 #include <hpcrun/thread_data.h>
+#include "x86-build-intervals.h"
 #include "x86-unwind-interval.h"
 #include "x86-validate-retn-addr.h"
 
@@ -257,6 +258,15 @@ hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* cursor)
   return cursor->ra_loc;
 }
 
+btuwi_status_t
+build_intervals(char *ins, unsigned int len, unwinder_t uw)
+{
+  if (uw == NATIVE_UNWINDER)
+    return x86_build_intervals(ins, len, 0);
+  return libunw_build_intervals(ins, len);
+}
+
+
 static step_state
 hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
 {
@@ -266,15 +276,14 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
     if (STEP_ERROR != unw_res)
       return (unw_res);
 
-    void *pc, *bp, *sp, **ra_loc;
+    unw_word_t pc, bp, sp;
     unw_get_reg(&cursor->uc, UNW_REG_IP, &pc);
     unw_get_reg(&cursor->uc, UNW_REG_SP, &sp);
     unw_get_reg(&cursor->uc, UNW_TDEP_BP, &bp);
-    ra_loc    = NULL;
-    save_registers(cursor, pc, bp, sp, ra_loc);
+    save_registers(cursor, (void*)pc, (void*)bp, (void*)sp, NULL);
 
-    TMSG(UNW, "unw_init: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
-	 pc, ra_loc, sp, bp);
+    TMSG(UNW, "unw_init: pc=%p, sp=%p, bp=%p", 
+	 pc, sp, bp);
     cursor->unwr_info.btuwi = NULL;
     cursor->libunw_failed = 1;
   }

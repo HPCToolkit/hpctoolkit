@@ -85,13 +85,6 @@ static int x86_coalesce_unwind_intervals(unwind_interval *ui);
  *****************************************************************************/
 
 btuwi_status_t
-build_intervals(char *ins, unsigned int len, unwinder_t uw)
-{
-  return x86_build_intervals(ins, len, 0);
-}
-
-
-btuwi_status_t
 x86_build_intervals(void *ins, unsigned int len, int noisy)
 {
 
@@ -288,6 +281,6 @@ static btuwi_status_t d_istat;
 btuwi_status_t*
 d_build_intervals(void* b, unsigned l)
 {
-  d_istat = build_intervals(b, l, NATIVE_UNWINDER);
+  d_istat = x86_build_intervals(b, l, 1);
   return &d_istat;
 }
