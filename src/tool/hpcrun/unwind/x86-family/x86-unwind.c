@@ -63,11 +63,12 @@
 #include <unistd.h> // for getpid
 
 //***************************************************************************
-// libmonitor includes
+// external includes
 //***************************************************************************
 
 #include <monitor.h>
-
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
 
 //***************************************************************************
 // local include files 
@@ -83,6 +84,7 @@
 
 #include <unwind/common/unwind.h>
 #include <unwind/common/backtrace.h>
+#include <unwind/common/libunw_intervals.h>
 #include <unwind/common/unw-throw.h>
 #include <unwind/common/validate_return_addr.h>
 #include <unwind/common/fence_enum.h>
@@ -235,18 +237,7 @@ hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, void** reg_value)
 void 
 hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
-  mcontext_t *mc = GET_MCONTEXT(context);
-  void *pc, *bp, *sp, **ra_loc;
-
-  pc        = MCONTEXT_PC(mc); 
-  bp 	    = MCONTEXT_BP(mc);
-  sp 	    = MCONTEXT_SP(mc);
-  ra_loc    = NULL;
-  save_registers(cursor, pc, bp, sp, ra_loc);
-
-  TMSG(UNW, "unw_init: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
-       pc, ra_loc, sp, bp);
-  cursor->unwr_info.btuwi = NULL;
+  libunw_unw_init_cursor(cursor, context);
 }
 
 //
@@ -269,6 +260,25 @@ hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* cursor)
 static step_state
 hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
 {
+  step_state unw_res;
+  if (!cursor->libunw_failed) {
+    unw_res = libunw_unw_step(cursor);
+    if (STEP_ERROR != unw_res)
+      return (unw_res);
+
+    void *pc, *bp, *sp, **ra_loc;
+    unw_get_reg(&cursor->uc, UNW_REG_IP, &pc);
+    unw_get_reg(&cursor->uc, UNW_REG_SP, &sp);
+    unw_get_reg(&cursor->uc, UNW_TDEP_BP, &bp);
+    ra_loc    = NULL;
+    save_registers(cursor, pc, bp, sp, ra_loc);
+
+    TMSG(UNW, "unw_init: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
+	 pc, ra_loc, sp, bp);
+    cursor->unwr_info.btuwi = NULL;
+    cursor->libunw_failed = 1;
+  }
+
   void *pc = cursor->pc_unnorm;
   cursor->fence = (monitor_unwind_process_bottom_frame(pc) ? FENCE_MAIN :
 		   monitor_unwind_thread_bottom_frame(pc)? FENCE_THREAD : FENCE_NONE);
@@ -310,7 +320,6 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
     return STEP_TROLL;
   }
 
-  step_state unw_res;
   switch (UWI_RECIPE(uw)->ra_status){
   case RA_SP_RELATIVE:
     unw_res = unw_step_sp(cursor, uw);
