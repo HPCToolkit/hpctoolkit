@@ -135,8 +135,9 @@ perf_add_kernel_callchain(
   return parent;
 }
 
+#if 0
 //
-// add callchain
+// add user and kernel callchain
 //
 static cct_node_t *
 perf_add_callchain( cct_node_t        *parent_original, 
@@ -182,6 +183,8 @@ perf_add_callchain( cct_node_t        *parent_original,
   }
   return parent;
 }
+#endif
+
 
 /*
  * get int long value of variable environment.

@@ -236,36 +236,36 @@ hpcrun_sample_callpath(void* context, int metricId,
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
     if (epoch != NULL) {
-	  // node = help_hpcrun_sample_callpath(epoch, context, &leaf_func, metricId, metricIncr,
-	  //	  skipInner, isSync);  // TODO change the interface to return the function containing trace_pc.
+      // node = help_hpcrun_sample_callpath(epoch, context, &leaf_func, metricId, metricIncr,
+      //	  skipInner, isSync);  // TODO change the interface to return the function containing trace_pc.
 
-	  // Laks: copied from help_hpcrun_sample_callpath
-  	  void* pc = hpcrun_context_pc(context);
+      // Laks: copied from help_hpcrun_sample_callpath
+      void* pc = hpcrun_context_pc(context);
 
-  	  TMSG(SAMPLE_CALLPATH, "%s taking profile sample @ %p", __func__, pc);
-  	  TMSG(SAMPLE_METRIC_DATA, "--metric data for sample (as a uint64_t) = %"PRIu64"", metricIncr);
+      TMSG(SAMPLE_CALLPATH, "%s taking profile sample @ %p", __func__, pc);
+      TMSG(SAMPLE_METRIC_DATA, "--metric data for sample (as a uint64_t) = %"PRIu64"", metricIncr);
 
-  	  /* check to see if shared library loadmap (of current epoch) has changed out from under us */
-  	  epoch = hpcrun_check_for_new_loadmap(epoch);
+      /* check to see if shared library loadmap (of current epoch) has changed out from under us */
+      epoch = hpcrun_check_for_new_loadmap(epoch);
 
-  	  void *data_aux = NULL;
-  	  if (data != NULL)
-  	    data_aux = data->sample_data;
+      void *data_aux = NULL;
+      if (data != NULL)
+        data_aux = data->sample_data;
 
-  	  node  = hpcrun_backtrace2cct(&(epoch->csdata), context, &leaf_func, metricId, 
-                         metricIncr,
-			 skipInner, isSync, data_aux);
-	  // end copied from help_hpcrun_sample_callpath
+      node  = hpcrun_backtrace2cct(&(epoch->csdata), context, &leaf_func, metricId,
+          metricIncr,
+          skipInner, isSync, data_aux);
+      // end copied from help_hpcrun_sample_callpath
 
-	  if (ENABLED(DUMP_BACKTRACES)) {
-		hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
-	  }
+      if (ENABLED(DUMP_BACKTRACES)) {
+        hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
+      }
     }
   }
   else {
     cct_bundle_t* cct = &(td->core_profile_trace_data.epoch->csdata);
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
-				 metricId, metricIncr, skipInner, NULL);
+        metricId, metricIncr, skipInner, NULL);
     hpcrun_cleanup_partial_unwind();
   }
   // --------------------------------------

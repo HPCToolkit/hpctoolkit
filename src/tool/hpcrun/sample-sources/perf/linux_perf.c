@@ -462,9 +462,11 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   // ----------------------------------------------------------------------------
   // update the cct and add callchain if necessary
   // ----------------------------------------------------------------------------
+  sampling_info_t info = {.sample_clock = 0, .sample_data = mmap_data};
+
   *sv = hpcrun_sample_callpath(context, current->event->metric,
         (hpcrun_metricVal_t) {.r=counter},
-        0/*skipInner*/, 0/*isSync*/, (void*) mmap_data);
+        0/*skipInner*/, 0/*isSync*/, &info);
 
   return sv;
 }
