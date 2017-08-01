@@ -731,6 +731,15 @@ hpcmetricDB_fmt_hdr_fwrite(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
 int
 hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
 
+// --------------------------------------------------------------------------
+// additional sampling info
+// --------------------------------------------------------------------------
+
+typedef struct sampling_info_s {
+  uint64_t  sample_clock;
+  void     *sample_data;
+} sampling_info_t;
+
 
 //***************************************************************************
 

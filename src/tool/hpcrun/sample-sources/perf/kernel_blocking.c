@@ -285,7 +285,7 @@ void kernel_blocking_init()
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
   event_custom_t *event_kernel_blocking = hpcrun_malloc(sizeof(event_custom_t));
   event_kernel_blocking->name         = EVNAME_KERNEL_BLOCK;
-  event_kernel_blocking->desc         = "Approximate time spent in the kernel. The unit time is hardware-dependent.";
+  event_kernel_blocking->desc         = "Approximate blocking time spent in the kernel. The unit time is hardware-dependent.";
   event_kernel_blocking->register_fn  = register_blocking;   // call backs
   event_kernel_blocking->handler_fn   = NULL; 		// No call backs: we want all event to call us
   event_kernel_blocking->metric_index = 0;   		// these fields to be defined later

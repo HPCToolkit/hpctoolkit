@@ -177,7 +177,7 @@ hpcrun_drop_sample(void)
 sample_val_t
 hpcrun_sample_callpath(void* context, int metricId,
 		       hpcrun_metricVal_t metricIncr,
-		       int skipInner, int isSync, void *data)
+		       int skipInner, int isSync, sampling_info_t *data)
 {
   sample_val_t ret;
   hpcrun_sample_val_init(&ret);
@@ -248,9 +248,13 @@ hpcrun_sample_callpath(void* context, int metricId,
   	  /* check to see if shared library loadmap (of current epoch) has changed out from under us */
   	  epoch = hpcrun_check_for_new_loadmap(epoch);
 
+  	  void *data_aux = NULL;
+  	  if (data != NULL)
+  	    data_aux = data->sample_data;
+
   	  node  = hpcrun_backtrace2cct(&(epoch->csdata), context, &leaf_func, metricId, 
                          metricIncr,
-			 skipInner, isSync, data);
+			 skipInner, isSync, data_aux);
 	  // end copied from help_hpcrun_sample_callpath
 
 	  if (ENABLED(DUMP_BACKTRACES)) {
