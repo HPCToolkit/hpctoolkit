@@ -136,7 +136,12 @@
 #define sigev_notify_thread_id  _sigev_un._tid
 #endif
 
-#define PERF_SIGNAL SIGIO
+// replace SIGIO with SIGRTMIN to support multiple events
+// We know that:
+// - realtime uses SIGRTMIN+3
+// - PAPI uses SIGRTMIN+2
+// so SIGRTMIN+4 is a safe bet (temporarily)
+#define PERF_SIGNAL (SIGRTMIN+4)
 
 #define PERF_EVENT_AVAILABLE_UNKNOWN 0
 #define PERF_EVENT_AVAILABLE_NO      1
