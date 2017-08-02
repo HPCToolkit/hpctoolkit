@@ -681,8 +681,8 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     monitor_real_abort();
   }
   metric_incr = cur_time_us - TD_GET(last_time_us);
-  hpcrun_metricVal_t metric_delta = {.i = metric_incr};
 #endif
+  hpcrun_metricVal_t metric_delta = {.i = metric_incr};
 
   int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
   sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 

@@ -72,8 +72,6 @@
 
 typedef struct perf_event_header pe_header_t;
 
-typedef struct perf_event_mmap_page pe_mmap_t;
-
 
 /******************************************************************************
  *  interfaces
