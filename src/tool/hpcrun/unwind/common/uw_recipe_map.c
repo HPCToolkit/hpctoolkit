@@ -270,7 +270,7 @@ ilmstat_btuwi_pair_free(ilmstat_btuwi_pair_t* pair)
 //---------------------------------------------------------------------
 
 // The concrete representation of the abstract data type unwind recipe map.
-static cskiplist_t *addr2recipe_map = NULL;
+static cskiplist_t *addr2recipe_map[NUM_UNWINDERS];
 
 // memory allocator for creating addr2recipe_map
 // and inserting entries into addr2recipe_map:
@@ -374,13 +374,13 @@ uw_recipe_map_report(const char *op, void *start, void *end)
 #endif
 
 static void
-uw_recipe_map_poison(uintptr_t start, uintptr_t end)
+uw_recipe_map_poison(uintptr_t start, uintptr_t end, unwinder_t uw)
 {
   uw_recipe_map_report("uw_recipe_map_poison", (void *) start, (void *) end);
 
   ilmstat_btuwi_pair_t* itpair =
 	  ilmstat_btuwi_pair_build(start, end, NULL, NEVER, my_alloc);
-  csklnode_t *node = cskl_insert(addr2recipe_map, itpair, my_alloc);
+  csklnode_t *node = cskl_insert(addr2recipe_map[uw], itpair, my_alloc);
   if (itpair != (ilmstat_btuwi_pair_t*)node->val)
     ilmstat_btuwi_pair_free(itpair);
 }
@@ -391,9 +391,9 @@ uw_recipe_map_poison(uintptr_t start, uintptr_t end)
  * return that node, otherwise return NULL.
  */
 static ilmstat_btuwi_pair_t*
-uw_recipe_map_inrange_find(uintptr_t addr)
+uw_recipe_map_inrange_find(uintptr_t addr, unwinder_t uw)
 {
-  return (ilmstat_btuwi_pair_t*)cskl_inrange_find(addr2recipe_map, (void*)addr);
+  return (ilmstat_btuwi_pair_t*)cskl_inrange_find(addr2recipe_map[uw], (void*)addr);
 }
 
 static void
@@ -413,15 +413,16 @@ cskl_ilmstat_btuwi_free(void *anode)
 static bool
 uw_recipe_map_cmp_del_bulk_unsynch(
 	ilmstat_btuwi_pair_t* lo,
-	ilmstat_btuwi_pair_t* hi)
+	ilmstat_btuwi_pair_t* hi,
+	unwinder_t uw)
 {
-  return cskl_cmp_del_bulk_unsynch(addr2recipe_map, lo, hi, cskl_ilmstat_btuwi_free);
+  return cskl_cmp_del_bulk_unsynch(addr2recipe_map[uw], lo, hi, cskl_ilmstat_btuwi_free);
 }
 
 static void
-uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
+uw_recipe_map_unpoison(uintptr_t start, uintptr_t end, unwinder_t uw)
 {
-  ilmstat_btuwi_pair_t* ilmstat_btuwi =	uw_recipe_map_inrange_find(start);
+  ilmstat_btuwi_pair_t* ilmstat_btuwi =	uw_recipe_map_inrange_find(start, uw);
 
   uw_recipe_map_report("uw_recipe_map_unpoison", (void *) start, (void *) end);
 
@@ -432,38 +433,38 @@ uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
 
   uintptr_t s0 = ilmstat_btuwi->interval.start;
   uintptr_t e0 = ilmstat_btuwi->interval.end;
-  uw_recipe_map_cmp_del_bulk_unsynch(ilmstat_btuwi, ilmstat_btuwi);
-  uw_recipe_map_poison(s0, start);
-  uw_recipe_map_poison(end, e0);
+  uw_recipe_map_cmp_del_bulk_unsynch(ilmstat_btuwi, ilmstat_btuwi, uw);
+  uw_recipe_map_poison(s0, start, uw);
+  uw_recipe_map_poison(end, e0, uw);
 }
 
 
 static void
-uw_recipe_map_repoison(uintptr_t start, uintptr_t end)
+uw_recipe_map_repoison(uintptr_t start, uintptr_t end, unwinder_t uw)
 {
   if (start > 0) {
-    ilmstat_btuwi_pair_t* ileft = uw_recipe_map_inrange_find(start - 1);
+    ilmstat_btuwi_pair_t* ileft = uw_recipe_map_inrange_find(start - 1, uw);
     if (ileft) { 
       if ((ileft->interval.end == start) &&
           (NEVER == atomic_load_explicit(&ileft->stat, memory_order_acquire))) {
         // poisoned interval adjacent on the left
         start = ileft->interval.start;
-        uw_recipe_map_cmp_del_bulk_unsynch(ileft, ileft);
+        uw_recipe_map_cmp_del_bulk_unsynch(ileft, ileft, uw);
       }
     }
   }
   if (end < UINTPTR_MAX) {
-    ilmstat_btuwi_pair_t* iright = uw_recipe_map_inrange_find(end+1);
+    ilmstat_btuwi_pair_t* iright = uw_recipe_map_inrange_find(end+1, uw);
     if (iright) { 
       if ((iright->interval.start == end) &&
           (NEVER == atomic_load_explicit(&iright->stat, memory_order_acquire))) {
         // poisoned interval adjacent on the right
         end = iright->interval.end;
-        uw_recipe_map_cmp_del_bulk_unsynch(iright, iright);
+        uw_recipe_map_cmp_del_bulk_unsynch(iright, iright, uw);
       }
     }
   }
-  uw_recipe_map_poison(start, end);
+  uw_recipe_map_poison(start, end, uw);
 }
 
 
@@ -496,7 +497,9 @@ uw_recipe_map_notify_map(void *start, void *end)
 {
   uw_recipe_map_report_and_dump("*** map: before unpoisoning", start, end);
 
-  uw_recipe_map_unpoison((uintptr_t)start, (uintptr_t)end);
+  unwinder_t uw;
+  for (uw = 0; uw < NUM_UNWINDERS; uw++)
+    uw_recipe_map_unpoison((uintptr_t)start, (uintptr_t)end, uw);
 
   uw_recipe_map_report_and_dump("*** map: after unpoisoning", start, end);
 }
@@ -509,10 +512,13 @@ uw_recipe_map_notify_unmap(void *start, void *end)
 
   // Remove intervals in the range [start, end) from the unwind interval tree.
   TMSG(UW_RECIPE_MAP, "uw_recipe_map_delete_range from %p to %p", start, end);
-  cskl_inrange_del_bulk_unsynch(addr2recipe_map, start, ((void*)((char *) end) - 1), cskl_ilmstat_btuwi_free);
+  unwinder_t uw;
+  for (uw = 0; uw < NUM_UNWINDERS; uw++)
+    cskl_inrange_del_bulk_unsynch(addr2recipe_map[uw], start, ((void*)((char *) end) - 1), cskl_ilmstat_btuwi_free);
 
   // join poisoned intervals here.
-  uw_recipe_map_repoison((uintptr_t)start, (uintptr_t)end);
+  for (uw = 0; uw < NUM_UNWINDERS; uw++)
+    uw_recipe_map_repoison((uintptr_t)start, (uintptr_t)end, uw);
 
   uw_recipe_map_report_and_dump("*** unmap: after poisoning", start, end);
 }
@@ -562,9 +568,11 @@ uw_recipe_map_init(void)
 	  ilmstat_btuwi_pair_build(0, 0, NULL, NEVER, my_alloc );
   ilmstat_btuwi_pair_t* rsentinel =
 	  ilmstat_btuwi_pair_build(UINTPTR_MAX, UINTPTR_MAX, NULL, NEVER, my_alloc );
-  addr2recipe_map =
-	  cskl_new(lsentinel, rsentinel, SKIPLIST_HEIGHT,
-		  ilmstat_btuwi_pair_cmp, ilmstat_btuwi_pair_inrange, my_alloc);
+  unwinder_t uw;
+  for (uw = 0; uw < NUM_UNWINDERS; uw++)
+    addr2recipe_map[uw] =
+      cskl_new(lsentinel, rsentinel, SKIPLIST_HEIGHT,
+	       ilmstat_btuwi_pair_cmp, ilmstat_btuwi_pair_inrange, my_alloc);
 
   uw_recipe_map_notify_init();
 
@@ -572,7 +580,8 @@ uw_recipe_map_init(void)
   hpcrun_segv_register_cb(uw_cleanup);
 
   // initialize the map with a POISONED node ({([0, UINTPTR_MAX), NULL), NEVER}, NULL)
-  uw_recipe_map_poison(0, UINTPTR_MAX);
+  for (uw = 0; uw < NUM_UNWINDERS; uw++)
+    uw_recipe_map_poison(0, UINTPTR_MAX, uw);
 }
 
 
@@ -599,7 +608,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
 
   // check if addr is already in the range of an interval key in the map
   ilmstat_btuwi_pair_t* ilm_btui =
-	  uw_recipe_map_inrange_find((uintptr_t)addr);
+    uw_recipe_map_inrange_find((uintptr_t)addr, uw);
 
   if (!ilm_btui) {
 	load_module_t *lm;
@@ -621,7 +630,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
 			DEFERRED, my_alloc);
 
 	
-	csklnode_t *node = cskl_insert(addr2recipe_map, ilm_btui, my_alloc);
+	csklnode_t *node = cskl_insert(addr2recipe_map[uw], ilm_btui, my_alloc);
 	if (ilm_btui !=  (ilmstat_btuwi_pair_t*)node->val) {
 	  // interval_ldmod_pair ([fcn_start, fcn_end), lm) is already in the map,
 	  // so free the unused copy and use the mapped one
@@ -713,7 +722,10 @@ cskl_ilmstat_btuwi_node_tostr(void* nodeval, int node_height, int max_height,
 void
 uw_recipe_map_print(void)
 {
-  char buf[MAX_CSKIPLIST_STR];
-  cskl_tostr(addr2recipe_map, cskl_ilmstat_btuwi_node_tostr, buf, MAX_CSKIPLIST_STR);
-  fprintf(stderr, "%s", buf);
+  unwinder_t uw;
+  for (uw = 0; uw < NUM_UNWINDERS; uw++) {
+    char buf[MAX_CSKIPLIST_STR];
+    cskl_tostr(addr2recipe_map[uw], cskl_ilmstat_btuwi_node_tostr, buf, MAX_CSKIPLIST_STR);
+    fprintf(stderr, "%s", buf);
+  }
 }
