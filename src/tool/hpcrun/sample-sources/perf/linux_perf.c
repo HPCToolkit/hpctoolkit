@@ -111,14 +111,14 @@
 #include "perfmon-util.h"
 #endif
 
-#include "perf-util.h"    // u64, u32 and perf_mmap_data_t
-#include "perf_mmap.h"
-#include "event_custom.h"
+#include "perf-util.h"        // u64, u32 and perf_mmap_data_t
+#include "perf_mmap.h"        // api for parsing mmapped buffer
+#include "event_custom.h"     // api for pre-defined events
 
-#include "sample-sources/display.h"
+#include "sample-sources/display.h" // api to display available events
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
-#include "kernel_blocking.h"
+#include "kernel_blocking.h"  // api for predefined kernel blocking event
 #endif
 
 //******************************************************************************
