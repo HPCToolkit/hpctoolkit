@@ -1128,6 +1128,10 @@ LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
+LZMA_COPY = @LZMA_COPY@
+LZMA_LDFLAGS_DYN = @LZMA_LDFLAGS_DYN@
+LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
+LZMA_LIB = @LZMA_LIB@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -1717,16 +1721,17 @@ libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 	$(am__append_24)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
-	-lpthread -lrt $(LIBUNWIND_LDFLAGS_DYN) $(am__append_60) \
-	$(am__append_104) $(am__append_113) $(UNW_DYNAMIC_LD_FLAGS)
+	-lpthread -lrt $(LIBUNWIND_LDFLAGS_DYN) $(LZMA_LDFLAGS_DYN) \
+	$(am__append_60) $(am__append_104) $(am__append_113) \
+	$(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_121)
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
-libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) $(am__append_61) \
-	$(am__append_108) $(UNW_STATIC_LD_FLAGS)
+libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) $(LZMA_LDFLAGS_STAT) \
+	$(am__append_61) $(am__append_108) $(UNW_STATIC_LD_FLAGS)
 MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_73) \
 	$(UNW_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
