@@ -271,11 +271,20 @@ static step_state
 hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
 {
   step_state unw_res;
-  if (!cursor->libunw_failed) {
-    unw_res = libunw_unw_step(cursor);
-    if (STEP_ERROR != unw_res)
-      return (unw_res);
-
+  if (cursor->libunw_failed) {
+    unw_word_t pc, bp, sp;
+    pc = (unw_word_t)cursor->pc_unnorm;
+    bp = (unw_word_t)cursor->bp;
+    sp = (unw_word_t)cursor->sp;
+    unw_set_reg(&cursor->uc, UNW_REG_IP, pc);
+    unw_set_reg(&cursor->uc, UNW_REG_SP, sp);
+    unw_set_reg(&cursor->uc, UNW_TDEP_BP, bp);
+    cursor->libunw_failed = 0;
+  }
+  unw_res = libunw_unw_step(cursor);
+  if (STEP_ERROR != unw_res)
+    return (unw_res);
+  else {
     unw_word_t pc, bp, sp;
     unw_get_reg(&cursor->uc, UNW_REG_IP, &pc);
     unw_get_reg(&cursor->uc, UNW_REG_SP, &sp);
