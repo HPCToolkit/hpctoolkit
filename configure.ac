@@ -1731,6 +1731,72 @@ AM_CONDITIONAL([UNW_LIBUNW], [test "$UNWINDER" = libunw])
 
 
 #-------------------------------------------------
+# Option: --with-lzma=PATH
+#-------------------------------------------------
+
+# Test for lzma libraries and add to the build system if available.
+# New libunwind (aug 2017) uses liblzma to read compressed sections.
+# But allow for older externals that doesn't build them.
+#
+# Dynamically, add -llzma to libhpcrun.so and copy libs.
+# Statically, link liblzma.a into libhpcrun.o at build time.
+
+LZMA=no
+LZMA_STATIC=no
+LZMA_LDFLAGS_DYN=
+LZMA_LDFLAGS_STAT=
+LZMA_COPY=no
+LZMA_LIB=
+
+# allow for older externals which doesn't define ext_lzma_prefix
+if test "$use_externals" = yes && test "x$ext_lzma_prefix" != x ; then
+  LZMA="$ext_lzma_prefix"
+fi
+
+AC_ARG_WITH([lzma],
+  [AS_HELP_STRING([--with-lzma=PATH],
+      [path to lzma (xz) install directory])],
+  [LZMA="$withval"],
+  [])
+
+AC_MSG_CHECKING([for lzma])
+
+case "$LZMA" in
+  /* )
+    for lib in $multilib_path ; do
+      lzma_libdir="${LZMA}/$lib"
+      if test -f "${lzma_libdir}/liblzma.so" ; then
+        LZMA_LDFLAGS_DYN="-L${lzma_libdir} -llzma"
+	LZMA_COPY=yes
+	LZMA_LIB="$lzma_libdir"
+	if test -f "${lzma_libdir}/liblzma.a" ; then
+	  LZMA_STATIC=yes
+	  LZMA_LDFLAGS_STAT="${lzma_libdir}/liblzma.a"
+	fi
+	break
+      fi
+    done
+    if test "x$LZMA_LIB" = x ; then
+      AC_MSG_ERROR([invalid lzma directory: $LZMA])
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([lzma directory must be absolute path: $LZMA])
+    ;;
+esac
+
+AC_MSG_RESULT([$LZMA])
+AC_MSG_NOTICE([lzma static: $LZMA_STATIC])
+
+AC_SUBST([LZMA_LDFLAGS_DYN])
+AC_SUBST([LZMA_LDFLAGS_STAT])
+AC_SUBST([LZMA_COPY])
+AC_SUBST([LZMA_LIB])
+
+
+#-------------------------------------------------
 # with-monitor
 #-------------------------------------------------
 
@@ -3711,6 +3777,7 @@ AC_MSG_NOTICE([  libelf:       ${LIBELF}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
 AC_MSG_NOTICE([  monitor/old:  ${MONITOR}])
 AC_MSG_NOTICE([  libunwind:    ${LIBUNWIND}])
+AC_MSG_NOTICE([  lzma:         ${LZMA}])
 AC_MSG_NOTICE([  OpenAnalysis: ${OA}])
 AC_MSG_NOTICE([  Perfmon:      ${PERFMON}])
 AC_MSG_NOTICE([  symtabAPI:    ${SYMTABAPI}])

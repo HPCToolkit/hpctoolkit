@@ -756,6 +756,10 @@ OA_IFLAGS
 OPT_INSTALL_MONITOR
 HPC_MONITOR
 MONITOR
+LZMA_LIB
+LZMA_COPY
+LZMA_LDFLAGS_STAT
+LZMA_LDFLAGS_DYN
 UNW_LIBUNW_FALSE
 UNW_LIBUNW_TRUE
 UNW_MIPS_FALSE
@@ -994,6 +998,7 @@ with_libelf
 with_libmonitor
 with_libunwind
 enable_libunwind_primary
+with_lzma
 with_monitor
 with_open_analysis
 with_papi
@@ -1739,6 +1744,7 @@ Optional Packages:
   --with-libelf=PATH      path to libelf install directory
   --with-libmonitor=PATH  path to libmonitor install directory
   --with-libunwind=PATH   path to libunwind install directory
+  --with-lzma=PATH        path to lzma (xz) install directory
   --with-monitor=PATH     use given (old) libmonitor installation
   --with-open-analysis=PATH
                           path to OpenAnalysis install directory
@@ -19937,6 +19943,76 @@ fi
 
 
 #-------------------------------------------------
+# Option: --with-lzma=PATH
+#-------------------------------------------------
+
+# Test for lzma libraries and add to the build system if available.
+# New libunwind (aug 2017) uses liblzma to read compressed sections.
+# But allow for older externals that doesn't build them.
+#
+# Dynamically, add -llzma to libhpcrun.so and copy libs.
+# Statically, link liblzma.a into libhpcrun.o at build time.
+
+LZMA=no
+LZMA_STATIC=no
+LZMA_LDFLAGS_DYN=
+LZMA_LDFLAGS_STAT=
+LZMA_COPY=no
+LZMA_LIB=
+
+# allow for older externals which doesn't define ext_lzma_prefix
+if test "$use_externals" = yes && test "x$ext_lzma_prefix" != x ; then
+  LZMA="$ext_lzma_prefix"
+fi
+
+
+# Check whether --with-lzma was given.
+if test "${with_lzma+set}" = set; then :
+  withval=$with_lzma; LZMA="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for lzma" >&5
+$as_echo_n "checking for lzma... " >&6; }
+
+case "$LZMA" in
+  /* )
+    for lib in $multilib_path ; do
+      lzma_libdir="${LZMA}/$lib"
+      if test -f "${lzma_libdir}/liblzma.so" ; then
+        LZMA_LDFLAGS_DYN="-L${lzma_libdir} -llzma"
+	LZMA_COPY=yes
+	LZMA_LIB="$lzma_libdir"
+	if test -f "${lzma_libdir}/liblzma.a" ; then
+	  LZMA_STATIC=yes
+	  LZMA_LDFLAGS_STAT="${lzma_libdir}/liblzma.a"
+	fi
+	break
+      fi
+    done
+    if test "x$LZMA_LIB" = x ; then
+      as_fn_error $? "invalid lzma directory: $LZMA" "$LINENO" 5
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "lzma directory must be absolute path: $LZMA" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LZMA" >&5
+$as_echo "$LZMA" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: lzma static: $LZMA_STATIC" >&5
+$as_echo "$as_me: lzma static: $LZMA_STATIC" >&6;}
+
+
+
+
+
+
+
+#-------------------------------------------------
 # with-monitor
 #-------------------------------------------------
 
@@ -25366,6 +25442,8 @@ $as_echo "$as_me:   libmonitor:   ${LIBMONITOR}" >&6;}
 $as_echo "$as_me:   monitor/old:  ${MONITOR}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libunwind:    ${LIBUNWIND}" >&5
 $as_echo "$as_me:   libunwind:    ${LIBUNWIND}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   lzma:         ${LZMA}" >&5
+$as_echo "$as_me:   lzma:         ${LZMA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   OpenAnalysis: ${OA}" >&5
 $as_echo "$as_me:   OpenAnalysis: ${OA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   Perfmon:      ${PERFMON}" >&5
