@@ -2125,6 +2125,13 @@ AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
 #-------------------------------------------------
 
 PERFMON=no
+PERFMON_STATIC=no
+PERFMON_LDFLAGS_DYN=
+PERFMON_LDFLAGS_STAT=
+PERFMON_COPY=no
+PERFMON_LIB=
+PERFMON_INC=
+
 OPT_PERFMON=
 
 AC_ARG_WITH([perfmon],
@@ -2134,25 +2141,51 @@ AC_ARG_WITH([perfmon],
   [PERFMON="$withval"],
   [])
 
-AC_MSG_RESULT([$PERFMON])
-
 AC_MSG_CHECKING([for perfmon])
 
-if test "$PERFMON" != no \
-   && test -f "${PERFMON}/include/perfmon/pfmlib.h" \
-   && test -f "${PERFMON}/lib/libpfm.a"
-then
+if test -f "${PERFMON}/include/perfmon/pfmlib.h"; then
+  PERFMON_INC="${PERFMON}/include"
   OPT_PERFMON=yes
 fi
 
-AC_MSG_RESULT([$OPT_PERFMON])
+case "$PERFMON" in
+ /* )
+ for lib in $multilib_path ; do
+   perfmon_libdir="${PERFMON}/$lib"
+   if test -f "${perfmon_libdir}/libpfm.a"; then
+     PERFMON_STATIC=yes
+     PERFMON_LDFLAGS_STAT="${perfmon_libdir}/libpfm.a"
+     PERFMON_LIB="$perfmon_libdir"
+   fi
+   if test -f "${perfmon_libdir}/libpfm.so"; then
+     PERFMON_LDFLAGS_DYN="-L${perfmon_libdir} -lpfm"
+     PERFMON_COPY=yes
+     PERFMON_LIB="$perfmon_libdir"
+   fi
+   if test "x$PERFMON_LIB" != x;  then
+     break
+   fi
+ done
+ if test "x$PERFMON_LIB" = x ; then
+   AC_MSG_NOTICE([Perfmon lib: $lib])
+   AC_MSG_ERROR([invalid Perfmon Libpf4 directory: $PERFMON])
+ fi
+ ;;
+ no )
+   ;;
+ *)
+   AC_MSG_ERROR([Perfmon directory must be absolute path: $PERFMON])
+esac
 
-PERFMON_INC="${PERFMON}/include"
-PERFMON_LIB="${PERFMON}/lib"
+AC_MSG_RESULT([$PERFMON])
+AC_MSG_NOTICE([Perfmon static: $PERFMON_STATIC])
 
 AM_CONDITIONAL(OPT_PERFMON, [test "$OPT_PERFMON" = yes])
+
 AC_SUBST([PERFMON_INC])
-AC_SUBST([PERFMON_LIB])
+AC_SUBST([PERFMON_LDFLAGS_DYN])
+AC_SUBST([PERFMON_LDFLAGS_STAT])
+AC_SUBST([PERFMON_COPY])
 
 #-------------------------------------------------
 # check if perf event is available

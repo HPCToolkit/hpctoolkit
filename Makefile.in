@@ -351,8 +351,10 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PERFMON_COPY = @PERFMON_COPY@
 PERFMON_INC = @PERFMON_INC@
-PERFMON_LIB = @PERFMON_LIB@
+PERFMON_LDFLAGS_DYN = @PERFMON_LDFLAGS_DYN@
+PERFMON_LDFLAGS_STAT = @PERFMON_LDFLAGS_STAT@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -874,6 +876,7 @@ install-exec-local: myinstall-monitor
 	$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*)
 	$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*)
 	$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
+	$(call copy-libs,$(PERFMON_COPY),$(PERFMON_LIB),libpfm.so*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libcommon*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libsymtabAPI*)
 	$(call copy-libs,$(SYMTABAPI_COPY_DYN),$(SYMTABAPI_LIB),libdyn*)
@@ -925,6 +928,7 @@ endef
 @OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(EXT_LIBS_DIR),libunwind*.so*)
 @OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(EXT_LIBS_DIR),liblzma*.so*)
 @OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(MYMONITORDIR),libmonitor.so*)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(MYMONITORDIR),libpfm.so*)
 
 dist hpc-dist:
 	@echo "cleaning source tree (ignore errors) ..."

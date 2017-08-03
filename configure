@@ -734,7 +734,9 @@ SYMTABAPI_INC
 KERNEL_VERSION
 OPT_ENABLE_PERF_EVENT_FALSE
 OPT_ENABLE_PERF_EVENT_TRUE
-PERFMON_LIB
+PERFMON_COPY
+PERFMON_LDFLAGS_STAT
+PERFMON_LDFLAGS_DYN
 PERFMON_INC
 OPT_PERFMON_FALSE
 OPT_PERFMON_TRUE
@@ -20435,6 +20437,13 @@ fi
 #-------------------------------------------------
 
 PERFMON=no
+PERFMON_STATIC=no
+PERFMON_LDFLAGS_DYN=
+PERFMON_LDFLAGS_STAT=
+PERFMON_COPY=no
+PERFMON_LIB=
+PERFMON_INC=
+
 OPT_PERFMON=
 
 
@@ -20444,24 +20453,48 @@ if test "${with_perfmon+set}" = set; then :
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PERFMON" >&5
-$as_echo "$PERFMON" >&6; }
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for perfmon" >&5
 $as_echo_n "checking for perfmon... " >&6; }
 
-if test "$PERFMON" != no \
-   && test -f "${PERFMON}/include/perfmon/pfmlib.h" \
-   && test -f "${PERFMON}/lib/libpfm.a"
-then
+if test -f "${PERFMON}/include/perfmon/pfmlib.h"; then
+  PERFMON_INC="${PERFMON}/include"
   OPT_PERFMON=yes
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $OPT_PERFMON" >&5
-$as_echo "$OPT_PERFMON" >&6; }
+case "$PERFMON" in
+ /* )
+ for lib in $multilib_path ; do
+   perfmon_libdir="${PERFMON}/$lib"
+   if test -f "${perfmon_libdir}/libpfm.a"; then
+     PERFMON_STATIC=yes
+     PERFMON_LDFLAGS_STAT="${perfmon_libdir}/libpfm.a"
+     PERFMON_LIB="$perfmon_libdir"
+   fi
+   if test -f "${perfmon_libdir}/libpfm.so"; then
+     PERFMON_LDFLAGS_DYN="-L${perfmon_libdir} -lpfm"
+     PERFMON_COPY=yes
+     PERFMON_LIB="$perfmon_libdir"
+   fi
+   if test "x$PERFMON_LIB" != x;  then
+     break
+   fi
+ done
+ if test "x$PERFMON_LIB" = x ; then
+   { $as_echo "$as_me:${as_lineno-$LINENO}: Perfmon lib: $lib" >&5
+$as_echo "$as_me: Perfmon lib: $lib" >&6;}
+   as_fn_error $? "invalid Perfmon Libpf4 directory: $PERFMON" "$LINENO" 5
+ fi
+ ;;
+ no )
+   ;;
+ *)
+   as_fn_error $? "Perfmon directory must be absolute path: $PERFMON" "$LINENO" 5
+esac
 
-PERFMON_INC="${PERFMON}/include"
-PERFMON_LIB="${PERFMON}/lib"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PERFMON" >&5
+$as_echo "$PERFMON" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Perfmon static: $PERFMON_STATIC" >&5
+$as_echo "$as_me: Perfmon static: $PERFMON_STATIC" >&6;}
 
  if test "$OPT_PERFMON" = yes; then
   OPT_PERFMON_TRUE=
@@ -20470,6 +20503,9 @@ else
   OPT_PERFMON_TRUE='#'
   OPT_PERFMON_FALSE=
 fi
+
+
+
 
 
 

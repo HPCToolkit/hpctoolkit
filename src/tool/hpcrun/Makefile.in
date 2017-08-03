@@ -174,14 +174,14 @@ pkglibexec_PROGRAMS =
 @OPT_ENABLE_MPI_WRAP_TRUE@am__append_25 = mpi-overrides.c
 @OPT_BGQ_BACKEND_TRUE@am__append_26 = utilities/bgq-cnk/libhardware-thread-id.la
 @OPT_BGQ_BACKEND_TRUE@am__append_27 = utilities/bgq-cnk/libhardware-thread-id.la
-@OPT_PERFMON_TRUE@am__append_28 = -L$(PERFMON_LIB) -lpfm
 
 #-----------------------------------------------------------
 # whirled peas
 #-----------------------------------------------------------
-@HOST_OS_LINUX_TRUE@am__append_29 = $(MY_LINUX_DYNAMIC_FILES)
+@HOST_OS_LINUX_TRUE@am__append_28 = $(MY_LINUX_DYNAMIC_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_29 = $(MY_MIPS_FILES)
 @HOST_CPU_MIPS_TRUE@am__append_30 = $(MY_MIPS_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_31 = $(MY_MIPS_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_31 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_32 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_33 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_34 = $(MY_MIPS_INCLUDE_DIRS)
@@ -196,15 +196,15 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_MIPS_TRUE@am__append_43 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_44 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_45 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_46 = $(MY_MIPS_INCLUDE_DIRS)
 
 # Note: setting CCASFLAGS here is a no-op hack with the side effect of
 # prefixing the tramp.s file names so they will be compiled separately
 # for .o and .so targets.  CFLAGS does this for the .c files, but
 # CFLAGS doesn't apply to .s files.  See the automake docs section
 # 8.3.9.2, Objects created with both libtool and without.
+@HOST_CPU_PPC_TRUE@am__append_46 = $(MY_PPC_FILES)
 @HOST_CPU_PPC_TRUE@am__append_47 = $(MY_PPC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_48 = $(MY_PPC_FILES)
+@HOST_CPU_PPC_TRUE@am__append_48 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_49 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_50 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_51 = $(MY_PPC_INCLUDE_DIRS)
@@ -219,13 +219,13 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_PPC_TRUE@am__append_60 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_61 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_62 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_63 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_63 = $(MY_X86_FILES)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_64 = $(MY_X86_FILES)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_65 = $(MY_X86_FILES)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_65 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_66 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_67 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_68 = $(XED2_HPCRUN_LIBS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_69 = $(XED2_HPCLINK_LIBS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_67 = $(XED2_HPCRUN_LIBS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_68 = $(XED2_HPCLINK_LIBS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_69 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_70 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_71 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_72 = $(MY_X86_INCLUDE_DIRS)
@@ -239,9 +239,9 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_X86_FAMILY_TRUE@am__append_80 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_81 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_82 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_83 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_83 = $(MY_IA64_FILES)
 @HOST_CPU_IA64_TRUE@am__append_84 = $(MY_IA64_FILES)
-@HOST_CPU_IA64_TRUE@am__append_85 = $(MY_IA64_FILES)
+@HOST_CPU_IA64_TRUE@am__append_85 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_86 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_87 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_88 = $(MY_IA64_INCLUDE_DIRS)
@@ -254,9 +254,9 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_IA64_TRUE@am__append_95 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_96 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_97 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_98 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_98 = $(MY_AARCH64_FILES)
 @HOST_CPU_AARCH64_TRUE@am__append_99 = $(MY_AARCH64_FILES)
-@HOST_CPU_AARCH64_TRUE@am__append_100 = $(MY_AARCH64_FILES)
+@HOST_CPU_AARCH64_TRUE@am__append_100 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_101 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_102 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_103 = $(MY_AARCH64_INCLUDE_DIRS)
@@ -271,33 +271,32 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_AARCH64_TRUE@am__append_112 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_113 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_114 = $(MY_AARCH64_INCLUDE_DIRS)
-@HOST_CPU_AARCH64_TRUE@am__append_115 = $(MY_AARCH64_INCLUDE_DIRS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_116 = $(MY_PAPI_FILES)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_117 = $(PAPI_INC_FLGS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_118 = $(PAPI_LD_FLGS)
-@OPT_PAPI_CUPTI_TRUE@am__append_119 = $(CUPTI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_120 = $(MY_PAPI_FILES)
-@OPT_PAPI_STATIC_TRUE@am__append_121 = $(PAPI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_122 = $(PAPI_LD_FLGS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_115 = $(MY_PAPI_FILES)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_116 = $(PAPI_INC_FLGS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_117 = $(PAPI_LD_FLGS)
+@OPT_PAPI_CUPTI_TRUE@am__append_118 = $(CUPTI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_119 = $(MY_PAPI_FILES)
+@OPT_PAPI_STATIC_TRUE@am__append_120 = $(PAPI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_121 = $(PAPI_LD_FLGS)
+@OPT_ENABLE_UPC_TRUE@am__append_122 = $(MY_UPC_FILES)
 @OPT_ENABLE_UPC_TRUE@am__append_123 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_124 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_124 = $(OPT_UPC_IFLAGS)
 @OPT_ENABLE_UPC_TRUE@am__append_125 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_126 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_127 = $(OPT_UPC_LDFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_126 = $(OPT_UPC_LDFLAGS)
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_127 = -DLUSH_PTHREADS
 @OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_128 = -DLUSH_PTHREADS
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_129 = -DLUSH_PTHREADS
-@OPT_ENABLE_CUDA_TRUE@am__append_130 = $(CUDA_FILES)
-@OPT_ENABLE_CUDA_TRUE@am__append_131 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_132 = $(OPT_CUDA_IFLAGS) -g
+@OPT_ENABLE_CUDA_TRUE@am__append_129 = $(CUDA_FILES)
+@OPT_ENABLE_CUDA_TRUE@am__append_130 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_131 = $(OPT_CUDA_IFLAGS) -g
 #  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_133 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_134 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_135 = $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_136 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_137 = $(OPT_CUDA_IFLAGS)
-@OPT_PERFMON_TRUE@am__append_138 = -DENABLE_PERFMON
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_139 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_140 = libagent-pthread.la \
+@OPT_ENABLE_CUDA_TRUE@am__append_132 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_133 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_134 = $(OPT_CUDA_LDFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_135 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_136 = $(OPT_CUDA_IFLAGS)
+@OPT_PERFMON_TRUE@am__append_137 = -DENABLE_PERFMON
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_138 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_139 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -1254,8 +1253,10 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PERFMON_COPY = @PERFMON_COPY@
 PERFMON_INC = @PERFMON_INC@
-PERFMON_LIB = @PERFMON_LIB@
+PERFMON_LDFLAGS_DYN = @PERFMON_LDFLAGS_DYN@
+PERFMON_LDFLAGS_STAT = @PERFMON_LDFLAGS_STAT@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -1415,7 +1416,7 @@ include_HEADERS = $(am__append_3)
 pkglib_LIBRARIES = $(am__append_8) $(am__append_9) $(am__append_10) \
 	$(am__append_11)
 pkglib_LTLIBRARIES = $(am__append_4) $(am__append_5) $(am__append_6) \
-	$(am__append_13) $(am__append_139) $(am__append_140)
+	$(am__append_13) $(am__append_138) $(am__append_139)
 BUILT_SOURCES = $(am__append_22) $(am__append_24)
 CLEANFILES = $(am__append_23) $(am__append_25)
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
@@ -1587,14 +1588,14 @@ MY_AARCH64_INCLUDE_DIRS = \
 	-I$(srcdir)/utilities/arch/aarch64
 
 libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
-	$(am__append_29) $(am__append_30) $(am__append_47) \
-	$(am__append_64) $(am__append_84) $(am__append_99) \
-	$(am__append_116) $(am__append_123) $(am__append_130) \
+	$(am__append_28) $(am__append_29) $(am__append_46) \
+	$(am__append_63) $(am__append_83) $(am__append_98) \
+	$(am__append_115) $(am__append_122) $(am__append_129) \
 	$(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
-	$(am__append_31) $(am__append_48) $(am__append_65) \
-	$(am__append_85) $(am__append_100) $(am__append_120) \
-	$(am__append_124) $(UNW_SOURCE_FILES) utilities/last_func.c
+	$(am__append_30) $(am__append_47) $(am__append_64) \
+	$(am__append_84) $(am__append_99) $(am__append_119) \
+	$(am__append_123) $(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_wrap_a_SOURCES = \
 	monitor-exts/openmp.c
 
@@ -1655,67 +1656,67 @@ libhpctoolkit_a_SOURCES = \
 # cppflags
 #-----------------------------------------------------------
 libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(LIBUNWIND_CPPFLAGS_DYN) \
-	$(MY_INCLUDE_DIRS) $(am__append_20) $(am__append_32) \
-	$(am__append_49) $(am__append_66) $(am__append_86) \
-	$(am__append_101) $(am__append_117) $(am__append_119) \
-	$(am__append_125) $(am__append_128) $(am__append_131) \
-	$(am__append_138) $(UNW_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS) $(am__append_20) $(am__append_31) \
+	$(am__append_48) $(am__append_65) $(am__append_85) \
+	$(am__append_100) $(am__append_116) $(am__append_118) \
+	$(am__append_124) $(am__append_127) $(am__append_130) \
+	$(am__append_137) $(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(LIBUNWIND_CPPFLAGS_STAT) $(MY_INCLUDE_DIRS) $(am__append_21) \
-	$(am__append_33) $(am__append_50) $(am__append_67) \
-	$(am__append_87) $(am__append_102) $(am__append_121) \
-	$(am__append_126) $(am__append_129) $(UNW_INCLUDE_DIRS)
+	$(am__append_32) $(am__append_49) $(am__append_66) \
+	$(am__append_86) $(am__append_101) $(am__append_120) \
+	$(am__append_125) $(am__append_128) $(UNW_INCLUDE_DIRS)
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
 libhpcrun_ga_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_34) $(am__append_51) $(am__append_70) \
-	$(am__append_88) $(am__append_103) $(UNW_INCLUDE_DIRS)
+	$(am__append_33) $(am__append_50) $(am__append_69) \
+	$(am__append_87) $(am__append_102) $(UNW_INCLUDE_DIRS)
 libhpcrun_ga_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_35) $(am__append_52) \
-	$(am__append_71) $(am__append_89) $(am__append_104) \
+	$(MY_INCLUDE_DIRS) $(am__append_34) $(am__append_51) \
+	$(am__append_70) $(am__append_88) $(am__append_103) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_io_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_36) $(am__append_53) $(am__append_72) \
-	$(am__append_90) $(am__append_105) $(UNW_INCLUDE_DIRS)
+	$(am__append_35) $(am__append_52) $(am__append_71) \
+	$(am__append_89) $(am__append_104) $(UNW_INCLUDE_DIRS)
 libhpcrun_io_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
+	$(MY_INCLUDE_DIRS) $(am__append_36) $(am__append_53) \
+	$(am__append_72) $(am__append_90) $(am__append_105) \
+	$(UNW_INCLUDE_DIRS)
+libhpcrun_datacentric_la_CPPFLAGS = $(MY_CPP_DEFINES) \
 	$(MY_INCLUDE_DIRS) $(am__append_37) $(am__append_54) \
 	$(am__append_73) $(am__append_91) $(am__append_106) \
 	$(UNW_INCLUDE_DIRS)
-libhpcrun_datacentric_la_CPPFLAGS = $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_38) $(am__append_55) \
-	$(am__append_74) $(am__append_92) $(am__append_107) \
-	$(UNW_INCLUDE_DIRS)
 libhpcrun_datacentric_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
-	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_39) \
-	$(am__append_56) $(am__append_75) $(am__append_93) \
-	$(am__append_108) $(UNW_INCLUDE_DIRS)
+	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_38) \
+	$(am__append_55) $(am__append_74) $(am__append_92) \
+	$(am__append_107) $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_40) $(am__append_57) $(am__append_76) \
-	$(am__append_94) $(am__append_109) $(UNW_INCLUDE_DIRS)
+	$(am__append_39) $(am__append_56) $(am__append_75) \
+	$(am__append_93) $(am__append_108) $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
-	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_41) \
-	$(am__append_58) $(am__append_77) $(am__append_95) \
-	$(am__append_110) $(UNW_INCLUDE_DIRS)
+	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_40) \
+	$(am__append_57) $(am__append_76) $(am__append_94) \
+	$(am__append_109) $(UNW_INCLUDE_DIRS)
 libhpcrun_pthread_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_42) $(am__append_59) $(am__append_78) \
-	$(am__append_96) $(am__append_111) $(UNW_INCLUDE_DIRS)
+	$(am__append_41) $(am__append_58) $(am__append_77) \
+	$(am__append_95) $(am__append_110) $(UNW_INCLUDE_DIRS)
 libhpcrun_pthread_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
-	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_43) \
-	$(am__append_60) $(am__append_79) $(am__append_97) \
-	$(am__append_112) $(UNW_INCLUDE_DIRS)
+	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_42) \
+	$(am__append_59) $(am__append_78) $(am__append_96) \
+	$(am__append_111) $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_44) $(am__append_61) $(am__append_80) \
-	$(am__append_113) $(am__append_133) $(UNW_INCLUDE_DIRS)
+	$(am__append_43) $(am__append_60) $(am__append_79) \
+	$(am__append_112) $(am__append_132) $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_45) $(am__append_62) \
-	$(am__append_81) $(am__append_114) $(am__append_136) \
+	$(MY_INCLUDE_DIRS) $(am__append_44) $(am__append_61) \
+	$(am__append_80) $(am__append_113) $(am__append_135) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS = $(MY_CPP_DEFINES) -I$(MPI_INC) \
-	$(MY_INCLUDE_DIRS) $(am__append_46) $(am__append_63) \
-	$(am__append_82) $(am__append_98) $(am__append_115) \
+	$(MY_INCLUDE_DIRS) $(am__append_45) $(am__append_62) \
+	$(am__append_81) $(am__append_97) $(am__append_114) \
 	$(UNW_INCLUDE_DIRS)
 libhpctoolkit_la_CPPFLAGS = \
 	$(MY_CPP_DEFINES)		\
@@ -1738,7 +1739,7 @@ CUDA_FILES = sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c $(CUDA
 #-----------------------------------------------------------
 # cflags
 #-----------------------------------------------------------
-libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_132)
+libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_131)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -1752,9 +1753,9 @@ libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_134)
+	$(am__append_133)
 libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_137)
+	$(am__append_136)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 #-----------------------------------------------------------
@@ -1766,18 +1767,19 @@ libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 	$(am__append_27)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread -lrt $(LIBUNWIND_LDFLAGS_DYN) $(LZMA_LDFLAGS_DYN) \
-	$(am__append_28) $(am__append_68) $(am__append_118) \
-	$(am__append_127) $(UNW_DYNAMIC_LD_FLAGS)
+	$(PERFMON_LDFLAGS_DYN) $(am__append_67) $(am__append_117) \
+	$(am__append_126) $(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_datacentric_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
-libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_135)
+libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_134)
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) $(LZMA_LDFLAGS_STAT) \
-	$(am__append_69) $(am__append_122) $(UNW_STATIC_LD_FLAGS)
-MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_83) \
+	$(PERFMON_LDFLAGS_STAT) $(am__append_68) $(am__append_121) \
+	$(UNW_STATIC_LD_FLAGS)
+MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_82) \
 	$(UNW_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
 @HOST_CPU_PPC_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
