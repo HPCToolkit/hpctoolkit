@@ -129,6 +129,9 @@ perf_read(
   size_t bytes_wanted
 )
 {
+  if (current_perf_mmap == NULL)
+    return -1;
+
   // front of the circular data buffer
   char *data = BUFFER_FRONT(current_perf_mmap);
 
