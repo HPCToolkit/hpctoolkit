@@ -352,7 +352,6 @@ MY_MIPS_FILES = \
 	unwind/common/default_validation_summary.c
 
 MY_PPC_FILES = \
-	unwind/common/default_validation_summary.c \
         trampoline/ppc64/ppc64-tramp.s \
         \
         utilities/arch/ppc64/ppc64-context-pc.c
