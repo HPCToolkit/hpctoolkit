@@ -64,6 +64,9 @@
 #include <include/gcc-attr.h>
 #include <include/uint.h>
 #include <include/min-max.h>
+#include <unwind/common/unwind.h>
+#include <unwind/common/std_unw_cursor.h>
+#include <unwind/common/libunw_intervals.h>
 #include "ppc64-unwind-interval.h"
 #include "hpcrun-malloc.h"
 #include "uw_recipe_map.h"
@@ -97,6 +100,8 @@ sp_ty_string(sp_ty_t ty);
 btuwi_status_t
 build_intervals(char  *ins, unsigned int len, unwinder_t uw)
 {
+  if (uw != NATIVE_UNWINDER)
+    return libunw_build_intervals(ins, len);
   btuwi_status_t stat = ppc64_build_intervals(ins, len);
   if (MYDBG) {
     ppc64_print_interval_set(stat.first);
