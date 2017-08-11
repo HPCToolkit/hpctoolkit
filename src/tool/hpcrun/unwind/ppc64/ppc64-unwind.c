@@ -100,10 +100,7 @@
 //
 // register codes (only 1 at the moment)
 //
-typedef enum {
-  UNW_REG_IP
-} unw_reg_code_t;
-
+typedef unw_frame_regnum_t unw_reg_code_t;
 
 typedef enum {
   UnwFlg_NULL = 0,

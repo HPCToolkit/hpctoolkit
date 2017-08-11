@@ -95,7 +95,7 @@ sp_ty_string(sp_ty_t ty);
 //***************************************************************************
 
 btuwi_status_t
-build_intervals(char  *ins, unsigned int len)
+build_intervals(char  *ins, unsigned int len, unwinder_t uw)
 {
   btuwi_status_t stat = ppc64_build_intervals(ins, len);
   if (MYDBG) {
@@ -724,7 +724,7 @@ ppc64_dump_intervals(void* addr)
   uintptr_t llen = ((uintptr_t)e) - (uintptr_t)s;
 
   printf("build intervals from %p to %p (%"PRIuPTR")\n", s, e, llen);
-  intervals = ppc64_build_intervals(s, (unsigned int) llen, hpcrun_malloc);  // TODO: shelf hcprun_ui_malloc for now, as in x86_dump_intervals
+  intervals = ppc64_build_intervals(s, (unsigned int) llen);  // TODO: shelf hcprun_ui_malloc for now, as in x86_dump_intervals
 
   ppc64_print_interval_set((unwind_interval *) intervals.first);
 }
