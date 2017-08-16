@@ -50,6 +50,7 @@
 //************************* System Include Files ****************************
 
 #include <inttypes.h>
+#define UNW_LOCAL_ONLY
 #include <libunwind.h>
 
 //*************************** User Include Files ****************************

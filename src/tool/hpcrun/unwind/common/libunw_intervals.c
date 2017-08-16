@@ -73,7 +73,6 @@
 //************************************************
 
 #include <monitor.h>
-#include <libunwind.h>
 
 //************************************************
 // local includes
@@ -173,7 +172,7 @@ libunw_build_intervals(char *beg_insn, unsigned int len)
   void *space[2];		// enough space for any binarytree
   bitree_uwi_t *dummy = (bitree_uwi_t*)space;
   struct builder b = {DWARF_UNWINDER, dummy, 0};
-  int status unw_reg_states_iterate(&c, dwarf_reg_states_callback, &b);
+  int status = unw_reg_states_iterate(&c, dwarf_reg_states_callback, &b);
   /* whatever libutils says about the last address range,
    * we insist that it extend to the last address of this 
    * function range. */
