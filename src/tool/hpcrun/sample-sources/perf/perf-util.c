@@ -332,7 +332,7 @@ perf_attr_init(
   attr->sample_period = threshold;          /* Period or frequency of sampling     */
   attr->precise_ip    = get_precise_ip();   /* the precision is either detected automatically
                                               as precise as possible or  on the user's variable.  */
-  attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
+  //attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
   attr->disabled      = 1;                 /* the counter will be enabled later  */
   attr->sample_stack_user = 4096;
 
