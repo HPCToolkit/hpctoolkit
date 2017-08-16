@@ -173,13 +173,17 @@ libunw_build_intervals(char *beg_insn, unsigned int len)
   void *space[2];		// enough space for any binarytree
   bitree_uwi_t *dummy = (bitree_uwi_t*)space;
   struct builder b = {DWARF_UNWINDER, dummy, 0};
-  unw_reg_states_iterate(&c, dwarf_reg_states_callback, &b);
+  int status unw_reg_states_iterate(&c, dwarf_reg_states_callback, &b);
+  /* whatever libutils says about the last address range,
+   * we insist that it extend to the last address of this 
+   * function range. */
+  bitree_uwi_rootval(b.latest)->interval.end = (uintptr_t)(beg_insn + len);
   bitree_uwi_set_rightsubtree(b.latest, NULL);
 
   btuwi_status_t stat;
   stat.first_undecoded_ins = NULL;
   stat.count = b.count;
-  stat.errcode = 0;
+  stat.errcode = status;
   stat.first = bitree_uwi_rightsubtree(dummy);
 
   return stat; 
