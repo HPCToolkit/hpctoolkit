@@ -239,6 +239,7 @@ void
 hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
   libunw_unw_init_cursor(cursor, context);
+  cursor->libunw_failed = -1;
 }
 
 //
@@ -271,33 +272,25 @@ static step_state
 hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
 {
   step_state unw_res;
-  if (cursor->libunw_failed) {
-    unw_word_t pc, bp, sp;
-    pc = (unw_word_t)cursor->pc_unnorm;
-    bp = (unw_word_t)cursor->bp;
-    sp = (unw_word_t)cursor->sp;
-    unw_set_reg(&cursor->uc, UNW_REG_IP, pc);
-    unw_set_reg(&cursor->uc, UNW_REG_SP, sp);
-    unw_set_reg(&cursor->uc, UNW_TDEP_BP, bp);
-    cursor->libunw_failed = 0;
-  }
-  unw_res = libunw_unw_step(cursor);
-  if (STEP_ERROR != unw_res)
-    return (unw_res);
-  else {
-    unw_word_t pc, bp, sp;
-    unw_get_reg(&cursor->uc, UNW_REG_IP, &pc);
-    unw_get_reg(&cursor->uc, UNW_REG_SP, &sp);
-    unw_get_reg(&cursor->uc, UNW_TDEP_BP, &bp);
-    save_registers(cursor, (void*)pc, (void*)bp, (void*)sp, NULL);
+  void *pc, **bp, *sp;
 
-    TMSG(UNW, "unw_init: pc=%p, sp=%p, bp=%p", 
-	 pc, sp, bp);
-    cursor->unwr_info.btuwi = NULL;
-    cursor->libunw_failed = 1;
+  if (cursor->libunw_failed < 1) {
+    unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
+    unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
+    unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
+    unw_res = libunw_unw_step(cursor);
+    if (STEP_ERROR != unw_res) {
+      cursor->libunw_failed = 0;
+      return (unw_res);
+    }
   }
+  save_registers(cursor, pc, bp, sp,
+		 cursor->libunw_failed == 0 ? (void *)(sp - 1) : NULL);
 
-  void *pc = cursor->pc_unnorm;
+  TMSG(UNW, "unw_init: pc=%p, sp=%p, bp=%p", 
+       pc, sp, bp);
+  cursor->unwr_info.btuwi = NULL;
+  cursor->libunw_failed = 1;
   cursor->fence = (monitor_unwind_process_bottom_frame(pc) ? FENCE_MAIN :
 		   monitor_unwind_thread_bottom_frame(pc)? FENCE_THREAD : FENCE_NONE);
 		   
@@ -314,11 +307,9 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
   }
 
   // current frame  
-  void** bp = cursor->bp;
-  void*  sp = cursor->sp;
   unwind_interval* uw = cursor->unwr_info.btuwi;
 
-  if (!uw){
+  if (!uw) {
     unwindr_info_t unwr_info;
     bool found = uw_recipe_map_lookup(pc, NATIVE_UNWINDER, &unwr_info);
 
@@ -338,7 +329,7 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
     return STEP_TROLL;
   }
 
-  switch (UWI_RECIPE(uw)->ra_status){
+  switch (UWI_RECIPE(uw)->ra_status) {
   case RA_SP_RELATIVE:
     unw_res = unw_step_sp(cursor, uw);
     break;
@@ -524,6 +515,7 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor, unwind_interval *uw)
 	   " Resetting next_bp to current bp = %p", next_bp);
     }
   }
+  assert(ra_loc == (void *)(next_sp - 1));
   save_registers(cursor, next_pc, next_bp, next_sp, ra_loc);
   compute_normalized_ips(cursor, unwr_info);
 
@@ -586,6 +578,7 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor, unwind_interval *uw)
     TMSG(UNW,"  step_bp: STEP_ERROR, cannot build interval for next_pc(%p)", next_pc);
     return STEP_ERROR;
   }
+  assert(ra_loc == (void *)(next_sp - 1));
   save_registers(cursor, next_pc, next_bp, next_sp, ra_loc);
   compute_normalized_ips(cursor, unwr_info);
 
@@ -697,6 +690,7 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
 	   next_pc, next_sp);
       TMSG(TROLL,"TROLL SUCCESS pc = %p", cursor->pc_unnorm);
 
+      assert(ra_loc == (void *)(next_sp - 1));
       save_registers(cursor, next_pc, next_bp, next_sp, ra_loc);
       compute_normalized_ips(cursor, unwr_info);
       return; // success!
