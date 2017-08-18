@@ -272,25 +272,12 @@ static step_state
 hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
 {
   step_state unw_res;
-  void *pc, **bp, *sp;
-
-  if (cursor->libunw_failed < 1) {
-    unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
-    unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
-    unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
-    unw_res = libunw_unw_step(cursor);
-    if (STEP_ERROR != unw_res) {
-      cursor->libunw_failed = 0;
-      return (unw_res);
-    }
-  }
-  save_registers(cursor, pc, bp, sp,
-		 cursor->libunw_failed == 0 ? (void *)(sp - 1) : NULL);
-
+  void *pc = cursor->pc_unnorm;
+  void *bp = cursor->bp;
+  void *sp = cursor->sp;
   TMSG(UNW, "unw_init: pc=%p, sp=%p, bp=%p", 
        pc, sp, bp);
   cursor->unwr_info.btuwi = NULL;
-  cursor->libunw_failed = 1;
   cursor->fence = (monitor_unwind_process_bottom_frame(pc) ? FENCE_MAIN :
 		   monitor_unwind_thread_bottom_frame(pc)? FENCE_THREAD : FENCE_NONE);
 		   
@@ -405,6 +392,23 @@ vrecord(void *from, void *to, validation_status vstat)
 step_state
 hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
 {
+  step_state unw_res;
+  void *pc, **bp, *sp;
+
+  if (cursor->libunw_failed < 1) {
+    unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
+    unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
+    unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
+    unw_res = libunw_unw_step(cursor);
+    if (STEP_ERROR != unw_res) {
+      cursor->libunw_failed = 0;
+      return (unw_res);
+    }
+    save_registers(cursor, pc, bp, sp,
+		   cursor->libunw_failed == 0 ? (void *)(sp - 1) : NULL);
+    cursor->libunw_failed = 1;
+  }
+
   if ( ENABLED(DBG_UNW_STEP) ){
     return dbg_unw_step(cursor);
   }
