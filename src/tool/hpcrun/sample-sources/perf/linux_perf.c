@@ -129,8 +129,13 @@
 
 // default the number of samples per second
 // linux perf tool has default of 4000. It looks very high but
-// visually the overhead is still small
-#define DEFAULT_THRESHOLD  4000
+// visually the overhead is still small for them.
+// however, for some machines, the overhead is significant, and
+//  somehow it causes the kernel to adjust the period threshold to
+//  less than 100.
+// 300 samples per sec looks has relatively similar percentage
+// with perf tool
+#define DEFAULT_THRESHOLD  300
 
 #ifndef sigev_notify_thread_id
 #define sigev_notify_thread_id  _sigev_un._tid
