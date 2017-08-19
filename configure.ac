@@ -2194,7 +2194,7 @@ AC_SUBST([PERFMON_COPY])
 
 AC_MSG_CHECKING([if perf event is available])
 
-PERF_EVENT_PARANOID="no"
+PERF_EVENT_PARANOID="-1"
 PERF_EVENT_PARANOID_PATH="/proc/sys/kernel/perf_event_paranoid"
 PERF_EVENT_AVAIL="no"
 
@@ -2203,7 +2203,8 @@ if test -f $PERF_EVENT_PARANOID_PATH; then
   PERF_EVENT_AVAIL="yes"
 fi
 
-AC_MSG_RESULT([$PERF_EVENT_PARANOID])
+AC_MSG_RESULT([$PERF_EVENT_AVAIL])
+AC_MSG_NOTICE([value of perf paranoid in ${PERF_EVENT_PARANOID_PATH} : ${PERF_EVENT_PARANOID} ])
 
 KERNEL_VER_MAJ=`uname -r | awk 'BEGIN{FS="."}{print $1;}'`
 KERNEL_VER_MIN=`uname -r | awk 'BEGIN{FS="."}{print $2;}'`
@@ -2213,10 +2214,12 @@ KERNEL_VERSION="$KERNEL_VER_MAJ.$KERNEL_VER_MIN"
 AC_MSG_CHECKING([Linux kernel]);
 AC_MSG_RESULT([$KERNEL_VERSION])
 
-AM_CONDITIONAL(OPT_ENABLE_PERF_EVENT, [test "$PERF_EVENT_PARANOID" != no])
+AM_CONDITIONAL(OPT_ENABLE_PERF_EVENT, [test "$PERF_EVENT_AVAIL" != no])
 
 # substitution
 AC_SUBST([KERNEL_VERSION])
+AC_SUBST([PERF_EVENT_PARANOID])
+
 
 #-------------------------------------------------
 # Option: --with-symtabAPI=PATH

@@ -731,6 +731,7 @@ SYMTABAPI_COPY
 SYMTABAPI_LIB_LIST
 SYMTABAPI_LIB
 SYMTABAPI_INC
+PERF_EVENT_PARANOID
 KERNEL_VERSION
 OPT_ENABLE_PERF_EVENT_FALSE
 OPT_ENABLE_PERF_EVENT_TRUE
@@ -20519,7 +20520,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking if perf event is available" >&5
 $as_echo_n "checking if perf event is available... " >&6; }
 
-PERF_EVENT_PARANOID="no"
+PERF_EVENT_PARANOID="-1"
 PERF_EVENT_PARANOID_PATH="/proc/sys/kernel/perf_event_paranoid"
 PERF_EVENT_AVAIL="no"
 
@@ -20528,8 +20529,10 @@ if test -f $PERF_EVENT_PARANOID_PATH; then
   PERF_EVENT_AVAIL="yes"
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PERF_EVENT_PARANOID" >&5
-$as_echo "$PERF_EVENT_PARANOID" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PERF_EVENT_AVAIL" >&5
+$as_echo "$PERF_EVENT_AVAIL" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: value of perf paranoid in ${PERF_EVENT_PARANOID_PATH} : ${PERF_EVENT_PARANOID} " >&5
+$as_echo "$as_me: value of perf paranoid in ${PERF_EVENT_PARANOID_PATH} : ${PERF_EVENT_PARANOID} " >&6;}
 
 KERNEL_VER_MAJ=`uname -r | awk 'BEGIN{FS="."}{print $1;}'`
 KERNEL_VER_MIN=`uname -r | awk 'BEGIN{FS="."}{print $2;}'`
@@ -20541,7 +20544,7 @@ $as_echo_n "checking Linux kernel... " >&6; };
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $KERNEL_VERSION" >&5
 $as_echo "$KERNEL_VERSION" >&6; }
 
- if test "$PERF_EVENT_PARANOID" != no; then
+ if test "$PERF_EVENT_AVAIL" != no; then
   OPT_ENABLE_PERF_EVENT_TRUE=
   OPT_ENABLE_PERF_EVENT_FALSE='#'
 else
@@ -20551,6 +20554,8 @@ fi
 
 
 # substitution
+
+
 
 
 #-------------------------------------------------

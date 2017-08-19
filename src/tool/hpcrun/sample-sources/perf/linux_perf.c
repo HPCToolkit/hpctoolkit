@@ -249,31 +249,6 @@ perf_stop(event_thread_t event)
 }
 
 
-//----------------------------------------------------------
-// check if perf event is available
-//----------------------------------------------------------
-
-static bool
-is_perf_event_unavailable()
-{
-  static int checked = PERF_EVENT_AVAILABLE_UNKNOWN;
-  
-  switch (checked) {
-  case PERF_EVENT_AVAILABLE_UNKNOWN:
-    {
-      struct stat buf;
-      int rc = stat(PATH_KERNEL_PERF_PARANOID, &buf);
-      checked = (rc == 0) ? PERF_EVENT_AVAILABLE_YES : PERF_EVENT_AVAILABLE_NO;
-      break;
-    }
-  case PERF_EVENT_AVAILABLE_NO:      
-  case PERF_EVENT_AVAILABLE_YES:     
-    break;
-  }
-
-  return (checked != PERF_EVENT_AVAILABLE_YES);
-}
-
 
 //----------------------------------------------------------
 // initialization
@@ -588,8 +563,6 @@ METHOD_FN(stop)
 {
   TMSG(LINUX_PERF, "%d: stop", self->sel_idx);
 
-  if (is_perf_event_unavailable()) return;
-
   source_state_t my_state = TD_GET(ss_state)[self->sel_idx];
   if (my_state == STOP) {
     TMSG(LINUX_PERF,"%d: *NOTE* PERF stop called when already in state STOP",
@@ -624,8 +597,6 @@ METHOD_FN(shutdown)
 {
   TMSG(LINUX_PERF, "shutdown");
 
-  if (is_perf_event_unavailable()) { return; }
-
   METHOD_CALL(self, stop); // make sure stop has been called
   // FIXME: add component shutdown code here
 
@@ -658,8 +629,6 @@ METHOD_FN(supports_event, const char *ev_str)
   pfmu_init();
 #endif
 
-  if (is_perf_event_unavailable()) { return false; }
-
   if (self->state == UNINIT){
     METHOD_CALL(self, init);
   }
@@ -689,7 +658,6 @@ static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
   TMSG(LINUX_PERF, "process event list");
-  if (is_perf_event_unavailable()) { return; }
 
   metric_desc_properties_t prop = metric_property_none;
   char *event;
@@ -804,12 +772,6 @@ METHOD_FN(gen_event_set, int lush_metrics)
 {
   TMSG(LINUX_PERF, "gen_event_set");
 
-  // Special case to make perf init a soft failure.
-  // Make sure that we don't use perf if it won't work.
-  if (is_perf_event_unavailable()) {
-    return;
-  }
-
   int nevents 	  = (self->evl).nevents;
   int num_metrics = hpcrun_get_num_metrics();
 
@@ -850,26 +812,24 @@ METHOD_FN(gen_event_set, int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
-  if (!is_perf_event_unavailable()) {
-    event_custom_display(stdout);
+  event_custom_display(stdout);
 
-    display_header(stdout, "Available Linux perf events");
+  display_header(stdout, "Available Linux perf events");
 
 #ifdef ENABLE_PERFMON
-    // perfmon is smart enough to detect if pfmu has been initialized or not
-    pfmu_init();
-    pfmu_showEventList();
-    pfmu_fini();
+  // perfmon is smart enough to detect if pfmu has been initialized or not
+  pfmu_init();
+  pfmu_showEventList();
+  pfmu_fini();
 #else
-    printf("Name\t\tDescription\n");
-    display_line_single(stdout);
+  printf("Name\t\tDescription\n");
+  display_line_single(stdout);
 
-    printf("%s\tTotal cycles.\n", 
-     "PERF_COUNT_HW_CPU_CYCLES");
-    printf("\n");
+  printf("%s\tTotal cycles.\n",
+   "PERF_COUNT_HW_CPU_CYCLES");
+  printf("\n");
 #endif
-    printf("\n");
-  }
+  printf("\n");
 }
 
 
