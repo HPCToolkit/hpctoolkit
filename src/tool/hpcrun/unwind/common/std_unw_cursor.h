@@ -97,8 +97,8 @@ typedef struct hpcrun_unw_cursor_t {
   // ------------------------------------------------------------
   // unwind-provider-specific state
   // ------------------------------------------------------------
-  int32_t flags:31;
-  int libunw_failed:1;
+  int32_t flags:30;
+  int libunw_failed:2;
 
   unw_cursor_t uc;
 } hpcrun_unw_cursor_t;
