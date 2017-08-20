@@ -352,6 +352,12 @@ confirm_plt_call(void *addr, void *callee)
   return UNW_ADDR_WRONG;
 }
 
+static int
+return_addr_valid(void *addr, unwindr_info_t *unwr_info)
+{
+  return (uw_recipe_map_lookup(addr, unwr_info) && unwr_info->treestat != NEVER);
+}
+
 //****************************************************************************
 // interface operations 
 //****************************************************************************
@@ -364,13 +370,12 @@ deep_validate_return_addr(void* addr, void* generic)
        addr);
 
   unwindr_info_t unwr_info;
-  if (!uw_recipe_map_lookup(addr, &unwr_info) ) {
+  if (!return_addr_valid(addr, &unwr_info) ) {
     TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid", addr);
     return status_is_wrong();
   }
 
-  if (!uw_recipe_map_lookup(cursor->pc_unnorm, &unwr_info) ||
-      unwr_info.treestat == NEVER)
+  if (!return_addr_valid(cursor->pc_unnorm, &unwr_info))
     return status_is_wrong();
 
   void* callee = (void*)unwr_info.start;
@@ -415,9 +420,7 @@ dbg_val(void *addr, void *pc)
 validation_status
 validate_return_addr(void *addr, void *generic)
 {
-    unwindr_info_t unwr_info;
-	if (!uw_recipe_map_lookup(addr, &unwr_info) ) {
-    return UNW_ADDR_WRONG;
-  }
-  return UNW_ADDR_PROBABLE;
+  unwindr_info_t unwr_info;
+  return return_addr_valid(addr, &unwr_info) ?
+    UNW_ADDR_PROBABLE : UNW_ADDR_WRONG;
 }
