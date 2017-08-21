@@ -133,7 +133,7 @@ typedef map <VMA, HeaderInfo> HeaderList;
 typedef vector <Statement::Ptr> StatementVector;
 
 static FileMap *
-makeSkeleton(CodeObject *, ProcNameMgr *);
+makeSkeleton(CodeObject *, ProcNameMgr *, const string &);
 
 static void
 doFunctionList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &);
@@ -331,7 +331,8 @@ makeStructure(string filename,
     code_obj->parse();
   }
 
-  FileMap * fileMap = makeSkeleton(code_obj, procNmMgr);
+  string basename = FileUtil::basename(filename.c_str());
+  FileMap * fileMap = makeSkeleton(code_obj, procNmMgr, basename);
 
   Output::printStructFileBegin(outFile, gapsFile, filename);
   Output::printLoadModuleBegin(outFile, filename);
@@ -384,7 +385,7 @@ makeStructure(string filename,
 // symtab proc, so we make a func list (group).
 //
 static FileMap *
-makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr)
+makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & basename)
 {
   FileMap * fileMap = new FileMap;
 
@@ -427,7 +428,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr)
       RealPathMgr::singleton().realpath(filenm);
     }
     else {
-      filenm = unknown_file;
+      filenm = unknown_file + " [" + basename + "]";
     }
 
     //
