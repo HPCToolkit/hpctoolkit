@@ -395,6 +395,16 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   step_state unw_res;
   void *pc, **bp, *sp;
 
+  if (cursor->libunw_failed == 1) {
+    unw_context_t uc;
+    memcpy(&uc, &cursor->uc, sizeof(uc));
+    LV_MCONTEXT_PC(&uc.uc_mcontext) = (intptr_t)cursor->pc_unnorm;
+    LV_MCONTEXT_SP(&uc.uc_mcontext) = (intptr_t)cursor->sp;
+    LV_MCONTEXT_BP(&uc.uc_mcontext) = (intptr_t)cursor->bp;
+    unw_init_local(&cursor->uc, &uc);
+    cursor->libunw_failed = 0;
+  }
+
   if (cursor->libunw_failed < 1) {
     unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
     unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
