@@ -63,6 +63,8 @@
 #include <CFG.h>
 #include <Symtab.h>
 #include <Function.h>
+
+#include <lib/isa/ISATypes.hpp>
 #include "Struct-Inline.hpp"
 
 namespace BAnal {
@@ -78,7 +80,7 @@ class ProcInfo;
 class GapInfo;
 
 typedef map <string, FileInfo *> FileMap;
-typedef map <SymtabAPI::Function *, GroupInfo *> GroupMap;
+typedef map <VMA, GroupInfo *> GroupMap;
 typedef map <VMA, ProcInfo *> ProcMap;
 typedef list <GapInfo> GapList;
 
@@ -107,7 +109,8 @@ public:
 // includes the unnamed procs (targ4xxxxx) within one Function symbol,
 // eg, internal openmp regions.
 //
-// GroupMap is indexed by the SymtabAPI Function.
+// GroupMap is indexed by Function VMA (symtab if exists, else
+// parseapi for plt funcs).
 //
 class GroupInfo {
 public:
@@ -119,13 +122,13 @@ public:
   ProcMap procMap;
   GapList gapList;
 
-  GroupInfo(SymtabAPI::Function * sf, string ln, string pn)
+  GroupInfo(SymtabAPI::Function * sf, string ln, string pn, VMA st, VMA en)
   {
     sym_func = sf;
     linkName = ln;
     prettyName = pn;
-    start = (sf != NULL) ? sf->getOffset() : 0;
-    end = (sf != NULL) ? (start + sf->getSize()) : 0;
+    start = st;
+    end = en;
     procMap.clear();
     gapList.clear();
   }

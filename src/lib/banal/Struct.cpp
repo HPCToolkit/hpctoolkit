@@ -389,24 +389,37 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 {
   FileMap * fileMap = new FileMap;
 
-  // iterate over the ParseAPI Functions
+  // iterate over the ParseAPI Functions, order by vma
   const CodeObject::funclist & funcList = code_obj->funcs();
+  map <VMA, ParseAPI::Function *> funcMap;
 
   for (auto flit = funcList.begin(); flit != funcList.end(); ++flit) {
     ParseAPI::Function * func = *flit;
+    funcMap[func->addr()] = func;
+  }
+
+  for (auto fmit = funcMap.begin(); fmit != funcMap.end(); ++fmit) {
+    ParseAPI::Function * func = fmit->second;
     SymtabAPI::Function * sym_func = NULL;
     VMA  vma = func->addr();
+    VMA  sym_start = 0;
+    VMA  sym_end = 0;
+    Region * region = the_symtab->findEnclosingRegion(vma);
+    VMA  reg_end = (region != NULL) ? (region->getMemOffset() + region->getMemSize()) : 0;
 
     string  linknm = unknown_link;
     string  procnm = unknown_proc;
     string  filenm;
     SrcFile::ln  line = 0;
 
-    // find the symtab symbol where this func is
-    if (the_symtab->getContainingFunction(vma, sym_func) && sym_func != NULL) {
+    // find the symtab symbol where this func is.  symtabapi doesn't
+    // recognize plt funcs and puts them in the wrong region.
+    if (the_symtab->getContainingFunction(vma, sym_func)
+	&& sym_func != NULL
+	&& sym_func->getRegion() == region)
+    {
       auto mangled_it = sym_func->mangled_names_begin();
       auto typed_it = sym_func->typed_names_begin();
-      VMA sym_vma = sym_func->getOffset();
 
       if (mangled_it != sym_func->mangled_names_end()) {
 	linknm = *mangled_it;
@@ -415,15 +428,43 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	procnm = *typed_it;
       }
 
+      sym_start = sym_func->getOffset();
+      sym_end = sym_start + sym_func->getSize();
+
       vector <Statement::Ptr> svec;
-      getStatement(svec, sym_vma, sym_func);
+      getStatement(svec, sym_start, sym_func);
 
       if (! svec.empty()) {
 	filenm = svec[0]->getFile();
 	line = svec[0]->getLine();
       }
     }
+    else {
+      // make a fake func at the parseapi entry vma.  this normally
+      // only happens for plt funcs.
+      sym_func = NULL;
+      sym_start = vma;
+      linknm = func->name();
+      procnm = BinUtil::demangleProcName(linknm);
 
+      auto next_it = fmit;  ++next_it;
+      if (next_it != funcMap.end()) {
+	sym_end = next_it->second->addr();
+      }
+      else if (region != NULL) {
+	sym_end = reg_end;
+      }
+      else {
+	sym_end = sym_start + 20;
+      }
+    }
+
+    // symtab lets some funcs (_init) spill into the next region
+    if (region != NULL && sym_start < reg_end && reg_end < sym_end) {
+      sym_end = reg_end;
+    }
+
+    // normalize file name
     if (filenm != "") {
       RealPathMgr::singleton().realpath(filenm);
     }
@@ -450,13 +491,13 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
     //
     GroupInfo * ginfo = NULL;
 
-    auto git = finfo->groupMap.find(sym_func);
+    auto git = finfo->groupMap.find(sym_start);
     if (git != finfo->groupMap.end()) {
       ginfo = git->second;
     }
     else {
-      ginfo = new GroupInfo(sym_func, linknm, procnm);
-      finfo->groupMap[sym_func] = ginfo;
+      ginfo = new GroupInfo(sym_func, linknm, procnm, sym_start, sym_end);
+      finfo->groupMap[sym_start] = ginfo;
     }
     ginfo->procMap[vma] = new ProcInfo(func, NULL, line);
   }
