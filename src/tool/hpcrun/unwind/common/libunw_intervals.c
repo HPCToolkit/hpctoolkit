@@ -123,7 +123,7 @@ libunw_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   }
 
   cursor->pc_unnorm = (void *) pc;
-  cursor->libunw_failed = 0;
+  cursor->libunw_status = LIBUNW_INIT;
 
   compute_normalized_ips(cursor);
 

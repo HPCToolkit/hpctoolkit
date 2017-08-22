@@ -239,7 +239,6 @@ void
 hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
   libunw_unw_init_cursor(cursor, context);
-  cursor->libunw_failed = -1;
 }
 
 //
@@ -395,29 +394,25 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   step_state unw_res;
   void *pc, **bp, *sp;
 
-  if (cursor->libunw_failed == 1) {
+  if (cursor->libunw_status == LIBUNW_FAIL) {
     unw_context_t uc;
     memcpy(&uc, &cursor->uc, sizeof(uc));
     LV_MCONTEXT_PC(&uc.uc_mcontext) = (intptr_t)cursor->pc_unnorm;
     LV_MCONTEXT_SP(&uc.uc_mcontext) = (intptr_t)cursor->sp;
     LV_MCONTEXT_BP(&uc.uc_mcontext) = (intptr_t)cursor->bp;
     unw_init_local(&cursor->uc, &uc);
-    cursor->libunw_failed = 0;
+    cursor->libunw_status = LIBUNW_OK;
   }
 
-  if (cursor->libunw_failed < 1) {
-    unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
-    unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
-    unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
-    unw_res = libunw_unw_step(cursor);
-    if (STEP_ERROR != unw_res) {
-      cursor->libunw_failed = 0;
-      return (unw_res);
-    }
-    save_registers(cursor, pc, bp, sp,
-		   cursor->libunw_failed == 0 ? (void *)(sp - 1) : NULL);
-    cursor->libunw_failed = 1;
-  }
+  unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
+  unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
+  unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
+  unw_res = libunw_unw_step(cursor);
+  if (STEP_ERROR != unw_res)
+    return (unw_res);
+  save_registers(cursor, pc, bp, sp,
+		 cursor->libunw_status == LIBUNW_OK ? (void *)(sp - 1) : NULL);
+  cursor->libunw_status = LIBUNW_FAIL;
 
   if ( ENABLED(DBG_UNW_STEP) ){
     return dbg_unw_step(cursor);

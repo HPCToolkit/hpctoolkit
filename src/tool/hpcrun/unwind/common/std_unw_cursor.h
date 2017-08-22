@@ -75,6 +75,12 @@
 
 #endif
 
+enum libunw_state {
+  LIBUNW_INIT,
+  LIBUNW_OK,
+  LIBUNW_FAIL,
+};
+
 typedef struct hpcrun_unw_cursor_t {
 
   // ------------------------------------------------------------
@@ -98,7 +104,7 @@ typedef struct hpcrun_unw_cursor_t {
   // unwind-provider-specific state
   // ------------------------------------------------------------
   int32_t flags:30;
-  int libunw_failed:2;
+  enum libunw_state libunw_status:2;
 
   unw_cursor_t uc;
 } hpcrun_unw_cursor_t;

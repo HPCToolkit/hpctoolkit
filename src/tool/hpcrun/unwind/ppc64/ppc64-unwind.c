@@ -241,13 +241,13 @@ step_state
 hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 {
   step_state unw_res;
-  if (cursor->libunw_failed) {
+  if (cursor->libunw_state == LIBUNW_FAIL) {
     unw_word_t pc, sp;
     pc = (unw_word_t)cursor->pc_unnorm;
     sp = (unw_word_t)cursor->sp;
     unw_set_reg(&cursor->uc, UNW_REG_IP, pc);
     unw_set_reg(&cursor->uc, UNW_REG_SP, sp);
-    cursor->libunw_failed = 0;
+    cursor->libunw_status = LIBUNW_OK;
   }
   unw_res = libunw_unw_step(cursor);
   if (STEP_ERROR != unw_res) {
@@ -260,7 +260,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
     unw_get_reg(&cursor->uc, UNW_REG_SP, &sp);
     save_registers(cursor, (void*)pc, NULL, (void*)sp, NULL);
     cursor->unwr_info.btuwi = NULL;
-    cursor->libunw_failed = 1;
+    cursor->libunw_status = LIBUNW_FAILED;
   }
   // current frame
   void*  pc = cursor->pc_unnorm;
