@@ -150,8 +150,18 @@ Options: Profiling (Defaults shown in curly brackets {})
                        processor event or WALLCLOCK (microseconds).  May pass
                        multiple times as implementations permit.
                        {WALLCLOCK@5000}.
+                       For perf event's counter, it is possible to specify
+                       the number of frequency as the sample threshold by
+                       prefixing with f before the number. 
+                       For instance, to have 100 samples per second, the period
+                       is: @f100 .
                        N.B.: WALLCLOCK and hardware events cannot be mixed.
 
+  -c, --count <number>
+                       Only available for perf event's counter. This option
+                       specifies the event period to sample. It uses the same
+                       format of period as the option -e mentioned above. 
+                       
   -t, --trace          Generate a call path trace (in addition to a call
                        path profile).
 
@@ -160,7 +170,7 @@ Options: Profiling (Defaults shown in curly brackets {})
                        hpctoolkit_sampling_start().
 
   -p,  --precise-ip <level>
-                       Specify the precise ip level (used for perf events):
+                       Specify the precise ip level (used only with perf events):
                        0: sample ip can have arbitrary skid
                        1: sample ip must have constant skid
                        2: sample ip requested to have 0 skid
@@ -285,6 +295,11 @@ do
 	    ;;
 
 	# --------------------------------------------------
+
+ 	-c | --count )
+ 	 	export HPCRUN_PERF_COUNT="$1"
+	    shift
+	    ;;
 
 	-p | --precise-ip )
 	    export HPCRUN_PRECISE_IP="$1"

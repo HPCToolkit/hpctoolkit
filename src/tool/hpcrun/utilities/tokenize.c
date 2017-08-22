@@ -89,6 +89,36 @@ next_tok(void)
   return tk;
 }
 
+
+/**
+ * extract the threshold
+ */
+// Returns:
+//   2 if event has explicit frequency
+//   1 if event has explicit period threshold,
+//   0 if using default.
+int
+hpcrun_extract_threshold(const char *in, long *th, long def)
+{
+  if (in == NULL) {
+    *th = def;
+    return 0;
+  }
+
+  int is_period = in[0] == 'f';
+  int pos       = 0;
+  if (is_period) {
+    pos = 1;
+  }
+  long num = strtol(in + pos, (char **)NULL, 10);
+  *th = (num == 0 ? def : num);
+
+  if (is_period)
+    return 2;
+
+  return 1;
+}
+
 // event option syntax is event_name @ [f] threshold
 //   if the f indicator exist, the number is the frequency, otherwise
 //   it's a period number
@@ -100,7 +130,7 @@ next_tok(void)
 int
 hpcrun_extract_ev_thresh(const char *in, int evlen, char *ev, long *th, long def)
 {
-  unsigned int len, threshold_pos;
+  unsigned int len, threshold_pos = 0;
   int result = 0;
 
   char *dlm = strrchr(in, EVENT_DELIMITER);
@@ -108,29 +138,20 @@ hpcrun_extract_ev_thresh(const char *in, int evlen, char *ev, long *th, long def
     dlm = strrchr(in, ':');
   }
   if (dlm) {
-    threshold_pos = 0;
-    if (dlm[1] == 'f') {        // frequency
-      result = 2;
-      threshold_pos = 1;        // increment position to remove the letter 'f'
-    } else if (isdigit(dlm[1])) 
-      result = 1;               // period threshold
-    else result = 0;            // no number, just gibrish characters
+    // we probably have threshold number
+    len = MIN(dlm - in, evlen);
+    strncpy(ev, in, len);
+    ev[len] = '\0';
 
-    if (result > 0) {           // assume this is the threshold 
-      len = MIN(dlm - in, evlen);
-      strncpy(ev, in, len);
-      ev[len] = '\0';
-    }
-  }
-
-  if (result == 0) {     // no threshold or the threshold is not a number
+    result = hpcrun_extract_threshold(dlm+1+threshold_pos, th, def);
+  } else {
+    // no threshold or the threshold is not a number
     len = strlen(in);
     strncpy(ev, in, len);
     ev[len] = '\0';
+    *th = def;
   }
   
-  *th = result>0 ? strtol(dlm+1+threshold_pos,(char **)NULL,10) : def;
-
   return result;
 }
 
@@ -145,3 +166,21 @@ hpcrun_ev_is(const char* candidate, const char* event_name)
 {
   return (strstr(candidate, event_name) == candidate) && strchr("@:",candidate[strlen(event_name)]);
 }
+
+#if TEST_TOKENIZE
+
+int
+main (int argc, char *argv[])
+{
+  const char *tokens[]={ "one", "two@", "three@3", "four@f4", "five@f", "six@s" };
+  const int elem = 6;
+  int i, res;
+  long th;
+  char ev[10];
+
+  for(i=0; i<elem; i++) {
+    res = hpcrun_extract_ev_thresh(tokens[i], 10, ev, &th, -1);
+    printf("%d: %s --> ev: %s, t: %ld, r: %d\n", i, tokens[i], ev, th, res);
+  }
+}
+#endif

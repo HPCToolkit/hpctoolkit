@@ -171,7 +171,11 @@ typedef struct perf_event_callchain_s {
   u64 ips[];     /* vector of IPs */
 } pe_callchain_t;
 
-
+enum threshold_e { PERIOD, FREQUENCY };
+struct event_threshold_s {
+  long             threshold_num;
+  enum threshold_e threshold_type;
+};
 
 //******************************************************************************
 // forward declarations 
@@ -211,10 +215,11 @@ static const char *event_name = "CPU_CYCLES";
 
 static sigset_t sig_mask;
 
-
 // a list of main description of events, shared between threads
 // once initialize, this list doesn't change (but event description can change)
 static event_info_t  *event_desc = NULL;
+
+static struct event_threshold_s default_threshold = {DEFAULT_THRESHOLD, FREQUENCY};
 
 
 /******************************************************************************
@@ -359,7 +364,7 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
 //  - unmap the memory
 //  - close file descriptors used by each event
 //----------------------------------------------------------
-void
+static void
 perf_thread_fini(int nevents, event_thread_t *event_thread)
 {
   for(int i=0; i<nevents; i++) {
@@ -449,6 +454,25 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
         0/*skipInner*/, 0/*isSync*/, &info);
 
   return sv;
+}
+
+
+/***
+ * get the default event count threshold by looking from the environment variable
+ * (HPCRUN_PERF_COUNT) set by hpcrun when user specifies -c option
+ */
+static struct event_threshold_s
+init_default_count()
+{
+  const char *str_val= getenv("HPCRUN_PERF_COUNT");
+  if (str_val == NULL) {
+    return default_threshold;
+  }
+  int res = hpcrun_extract_threshold(str_val, &default_threshold.threshold_num, DEFAULT_THRESHOLD);
+  if (res == 1)
+    default_threshold.threshold_type = PERIOD;
+
+  return default_threshold;
 }
 
 /******************************************************************************
@@ -650,6 +674,7 @@ METHOD_FN(supports_event, const char *ev_str)
 #endif
 }
 
+
  
 // --------------------------------------------------------------------------
 // handle a list of events
@@ -666,16 +691,17 @@ METHOD_FN(process_event_list, int lush_metrics)
   int num_events = 0;
 
   // TODO: stupid way to count the number of events
+  // manually, setup the number of events. In theory, this is to be done
+  //  automatically. But in practice, it didn't. Not sure why.
 
   for (event = start_tok(evlist); more_tok(); event = next_tok(), num_events++);
 
-  // manually, setup the number of events. In theory, this is to be done
-  //  automatically. But in practice, it didn't. Not sure why.
   self->evl.nevents = num_events;
   
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
   //  but there will be no samples
+
   size_t size = sizeof(event_info_t) * num_events;
   event_desc = (event_info_t*) hpcrun_malloc(size);
   if (event_desc == NULL) {
@@ -685,6 +711,8 @@ METHOD_FN(process_event_list, int lush_metrics)
   memset(event_desc, 0, size);
 
   int i=0;
+
+  default_threshold = init_default_count();
 
   // ----------------------------------------------------------------------
   // for each perf's event, create the metric descriptor which will be used later
@@ -697,7 +725,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     TMSG(LINUX_PERF,"checking event spec = %s",event);
 
     int period_type = hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold,
-       DEFAULT_THRESHOLD);
+        default_threshold.threshold_num);
 
     // ------------------------------------------------------------
     // need a special case if we have our own customized  predefined  event

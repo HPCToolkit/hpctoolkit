@@ -226,7 +226,7 @@ get_precise_ip()
   attr.config = PERF_COUNT_HW_CPU_CYCLES; // Perf's cycle event
   attr.type   = PERF_TYPE_HARDWARE;     // it's a hardware event
 
-  // check if user wants specific precision
+  // check if user wants a specific ip-precision
   int val = getEnvLong(HPCRUN_OPTION_PRECISE_IP, PERF_EVENT_AUTODETECT_SKID);
   if (val >= PERF_EVENT_SKID_ARBITRARY && val <= PERF_EVENT_SKID_ZERO_REQUIRED)
   {
@@ -241,7 +241,7 @@ get_precise_ip()
       precise_ip = val;
       return precise_ip;
     }
-    EMSG("The kernel does not support the requested ip-precision: %d.\nhpcrun will use auto-detect ip-precision instead.", val);
+    EMSG("The kernel does not support the requested ip-precision: %d. hpcrun will use auto-detect ip-precision instead.", val);
   }
 
   // start with the most restrict skid (3) then 2, 1 and 0
