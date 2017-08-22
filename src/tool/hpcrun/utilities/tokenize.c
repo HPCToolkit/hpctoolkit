@@ -58,6 +58,8 @@
 #define MIN(a,b)  (((a)<=(b))?(a):(b))
 
 #define EVENT_DELIMITER '@'
+#define PREFIX_FREQUENCY 'f'
+
 
 static char *tmp;
 static char *tk;
@@ -130,29 +132,34 @@ hpcrun_extract_threshold(const char *in, long *th, long def)
 int
 hpcrun_extract_ev_thresh(const char *in, int evlen, char *ev, long *th, long def)
 {
-  unsigned int len, threshold_pos = 0;
+  unsigned int threshold_pos = 0;
   int result = 0;
+  unsigned int len = strlen(in);
 
   char *dlm = strrchr(in, EVENT_DELIMITER);
   if (!dlm) {
     dlm = strrchr(in, ':');
   }
   if (dlm) {
-    // we probably have threshold number
-    len = MIN(dlm - in, evlen);
-    strncpy(ev, in, len);
-    ev[len] = '\0';
+    if (isdigit(dlm[1]) || dlm[1] == PREFIX_FREQUENCY) {
+      // we probably have threshold number
+      len = MIN(dlm - in, evlen);
+      strncpy(ev, in, len);
+      ev[len] = '\0';
 
-    result = hpcrun_extract_threshold(dlm+1+threshold_pos, th, def);
-  } else {
-    // no threshold or the threshold is not a number
-    len = strlen(in);
-    strncpy(ev, in, len);
-    ev[len] = '\0';
-    *th = def;
+      result = hpcrun_extract_threshold(dlm+1+threshold_pos, th, def);
+      return result;
+    }
+    if (dlm[0] == EVENT_DELIMITER) {
+      len = MIN(dlm - in, evlen);
+    }
   }
+  // no threshold or the threshold is not a number
+  strncpy(ev, in, len);
+  ev[len] = '\0';
+  *th = def;
   
-  return result;
+  return 0;
 }
 
 //
@@ -172,14 +179,15 @@ hpcrun_ev_is(const char* candidate, const char* event_name)
 int
 main (int argc, char *argv[])
 {
-  const char *tokens[]={ "one", "two@", "three@3", "four@f4", "five@f", "six@s" };
-  const int elem = 6;
+  const char *tokens[]={ "one", "two@", "three@3", "four@f4", "five@f", "six@s", "seven::perf",
+      "perf::eight@", "perf::nine@f200", "perf:ten@10" };
+  const int elem = 10;
   int i, res;
   long th;
-  char ev[10];
+  char ev[100];
 
   for(i=0; i<elem; i++) {
-    res = hpcrun_extract_ev_thresh(tokens[i], 10, ev, &th, -1);
+    res = hpcrun_extract_ev_thresh(tokens[i], 100, ev, &th, -1);
     printf("%d: %s --> ev: %s, t: %ld, r: %d\n", i, tokens[i], ev, th, res);
   }
 }
