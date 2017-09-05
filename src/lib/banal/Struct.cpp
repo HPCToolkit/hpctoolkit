@@ -794,7 +794,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     computeGaps(covered, gaps, ginfo->start, ginfo->end);
 
     for (auto git = gaps.begin(); git != gaps.end(); ++git) {
-      ginfo->gapList.push_back(GapInfo(git->beg(), git->end(), 0));
+      ginfo->gapList.push_back(GapInfo(git->beg(), git->end()));
     }
   }
 
@@ -821,73 +821,6 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 #endif
 #endif
 }
-
-//----------------------------------------------------------------------
-
-#if 0
-// Keep me (for now): may want to integrate parts of this code into
-// the all-parseapi view of the world.
-//
-// Locate the beginning line number and VMA range for the inline tree
-// 'root' and make new Proc and File scope nodes for this function.
-// This is only for multiple parseAPI funcs within one binutils proc.
-//
-// Returns: proc scope node
-//
-static Prof::Struct::Proc *
-makeProcScope(Prof::Struct::LM * lm, ProcInfo * pinfo, ParseAPI::Function * func,
-	      TreeNode * root, const ParseAPI::Function::blocklist & blist,
-	      HPC::StringTable & strTab)
-{
-  long empty_index = strTab.str2index("");
-  long file_index = empty_index;
-  SrcFile::ln beg_line = 0;
-
-  // locate the func at the file/line of the lowest VMA among root's
-  // stmts (no inline steps) that has a non-empty file.  fall back on
-  // the original binutils proc name (eg, no debug info).
-  //
-  for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
-    StmtInfo *sinfo = sit->second;
-
-    if (sinfo->file_index != empty_index && sinfo->line_num != 0) {
-      file_index = sinfo->file_index;
-      beg_line = sinfo->line_num;
-      break;
-    }
-  }
-
-  string filenm = (file_index != empty_index) ?
-      strTab.index2str(file_index) : pinfo->proc_bin->filename();
-  string basenm = FileUtil::basename(filenm.c_str());
-  stringstream buf;
-
-  buf << "outline " << basenm << ":" << beg_line
-      << " (0x" << hex << func->addr() << dec << ")";
-
-  Prof::Struct::File * fileScope = Prof::Struct::File::demand(lm, filenm);
-  Prof::Struct::Proc * procScope =
-      Prof::Struct::Proc::demand(fileScope, buf.str(), func->name(),
-				 beg_line, beg_line, NULL);
-
-  // scan the func's basic blocks and set min/max VMA
-  VMA beg_vma = 0;
-  VMA end_vma = 0;
-
-  auto bit = blist.begin();
-  if (bit != blist.end()) {
-    beg_vma = (*bit)->start();
-    end_vma = (*bit)->end();
-  }
-  for (; bit != blist.end(); ++bit) {
-    beg_vma = std::min(beg_vma, (VMA) (*bit)->start());
-    end_vma = std::max(end_vma, (VMA) (*bit)->end());
-  }
-  procScope->vmaSet().insert(beg_vma, end_vma);
-
-  return procScope;
-}
-#endif
 
 //----------------------------------------------------------------------
 

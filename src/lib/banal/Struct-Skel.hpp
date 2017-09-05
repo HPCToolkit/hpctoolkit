@@ -177,11 +177,10 @@ public:
   VMA  end;
   long line;
 
-  GapInfo(VMA st, VMA en, long ln)
+  GapInfo(VMA st, VMA en)
   {
     start = st;
     end = en;
-    line = ln;
   }
 };
 
