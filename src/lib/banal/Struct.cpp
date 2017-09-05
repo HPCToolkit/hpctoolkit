@@ -108,6 +108,7 @@ using namespace std;
 
 #define DEBUG_CFG_SOURCE  0
 #define DEBUG_MAKE_SKEL   0
+#define DEBUG_GAPS        0
 
 // Copied from lib/prof/Struct-Tree.cpp
 static const string & unknown_file = "<unknown file>";
@@ -352,8 +353,11 @@ makeStructure(string filename,
 
       for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
 	ProcInfo * pinfo = pit->second;
-	Output::printProc(outFile, gapsFile, gaps_filenm,
-			  finfo, ginfo, pinfo, strTab);
+
+	if (! pinfo->gap_only) {
+	  Output::printProc(outFile, gapsFile, gaps_filenm,
+			    finfo, ginfo, pinfo, strTab);
+	}
 
 	delete pinfo->root;
 	pinfo->root = NULL;
@@ -375,6 +379,41 @@ makeStructure(string filename,
 
 //----------------------------------------------------------------------
 
+// addProc -- helper for makeSkeleton() to locate and add one ProcInfo
+// object into the global file map.
+//
+static void
+addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
+	SymtabAPI::Function * sym_func, VMA start, VMA end, bool alt_file = false)
+{
+  // locate in file map, or else insert
+  FileInfo * finfo = NULL;
+
+  auto fit = fileMap->find(filenm);
+  if (fit != fileMap->end()) {
+    finfo = fit->second;
+  }
+  else {
+    finfo = new FileInfo(filenm);
+    (*fileMap)[filenm] = finfo;
+  }
+
+  // locate in group map, or else insert
+  GroupInfo * ginfo = NULL;
+
+  auto git = finfo->groupMap.find(start);
+  if (git != finfo->groupMap.end()) {
+    ginfo = git->second;
+  }
+  else {
+    ginfo = new GroupInfo(sym_func, start, end, alt_file);
+    finfo->groupMap[start] = ginfo;
+  }
+
+  ginfo->procMap[pinfo->entry_vma] = pinfo;
+}
+
+
 // makeSkeleton -- the new buildLMSkeleton
 //
 // In the ParseAPI version, we iterate over the ParseAPI list of
@@ -388,6 +427,7 @@ static FileMap *
 makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & basename)
 {
   FileMap * fileMap = new FileMap;
+  string unknown_base = unknown_file + " [" + basename + "]";
 
   // iterate over the ParseAPI Functions, order by vma
   const CodeObject::funclist & funcList = code_obj->funcs();
@@ -402,104 +442,127 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
     ParseAPI::Function * func = fmit->second;
     SymtabAPI::Function * sym_func = NULL;
     VMA  vma = func->addr();
-    VMA  sym_start = 0;
-    VMA  sym_end = 0;
     Region * region = the_symtab->findEnclosingRegion(vma);
     VMA  reg_end = (region != NULL) ? (region->getMemOffset() + region->getMemSize()) : 0;
 
-    string  linknm = unknown_link;
-    string  procnm = unknown_proc;
-    string  filenm;
-    SrcFile::ln  line = 0;
+    stringstream buf;
+    buf << "0x" << hex << vma << dec;
+    string  vma_str = buf.str();
 
-    // find the symtab symbol where this func is.  symtabapi doesn't
-    // recognize plt funcs and puts them in the wrong region.
+    // see if entry vma lies within a valid symtab function
     if (the_symtab->getContainingFunction(vma, sym_func)
 	&& sym_func != NULL
 	&& sym_func->getRegion() == region)
     {
-      auto mangled_it = sym_func->mangled_names_begin();
-      auto typed_it = sym_func->typed_names_begin();
+      VMA sym_start = sym_func->getOffset();
+      VMA sym_end = sym_start + sym_func->getSize();
+      string filenm = unknown_base;
+      string linknm = unknown_link + vma_str;
+      string prettynm = unknown_proc + " " + vma_str + " [" + basename + "]";
+      SrcFile::ln line = 0;
 
-      if (mangled_it != sym_func->mangled_names_end()) {
-	linknm = *mangled_it;
+      // symtab lets some funcs (_init) spill into the next region
+      if (region != NULL && sym_start < reg_end && reg_end < sym_end) {
+	sym_end = reg_end;
       }
-      if (typed_it != sym_func->typed_names_end()) {
-	procnm = *typed_it;
-      }
 
-      sym_start = sym_func->getOffset();
-      sym_end = sym_start + sym_func->getSize();
-
+      // line map for symtab func
       vector <Statement::Ptr> svec;
       getStatement(svec, sym_start, sym_func);
 
       if (! svec.empty()) {
 	filenm = svec[0]->getFile();
 	line = svec[0]->getLine();
+	RealPathMgr::singleton().realpath(filenm);
+      }
+
+      if (vma == sym_start) {
+	//
+	// case 1 -- group leader of a valid symtab func.  take proc
+	// names from symtab func.  this is the normal case (but other
+	// cases are also valid).
+	//
+	auto mangled_it = sym_func->mangled_names_begin();
+	auto typed_it = sym_func->typed_names_begin();
+
+	if (mangled_it != sym_func->mangled_names_end()) {
+	  linknm = *mangled_it;
+	}
+	if (typed_it != sym_func->typed_names_end()) {
+	  prettynm = *typed_it;
+	}
+
+	ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, line);
+	addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
+      }
+      else {
+	// outline func -- see if parseapi and symtab file names match
+	string parse_filenm = unknown_base;
+	SrcFile::ln parse_line = 0;
+
+	// line map for parseapi func
+	vector <Statement::Ptr> pvec;
+	getStatement(pvec, vma, sym_func);
+
+	if (! pvec.empty()) {
+	  parse_filenm = pvec[0]->getFile();
+	  parse_line = pvec[0]->getLine();
+	  RealPathMgr::singleton().realpath(parse_filenm);
+	}
+
+	string parse_base = FileUtil::basename(parse_filenm.c_str());
+	stringstream buf;
+	buf << "outline " << parse_base << ":" << parse_line << " (" << vma_str << ")";
+
+	linknm = func->name();
+	prettynm = buf.str();
+
+	if (filenm == parse_filenm) {
+	  //
+	  // case 2 -- outline func inside symtab func with same file
+	  // name.  use 'outline 0xxxxxx' proc name.
+	  //
+	  ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
+	  addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
+	}
+	else {
+	  //
+	  // case 3 -- outline func but from a different file name.
+	  // add proc info to both files: outline file for full parse
+	  // (but no gaps), and symtab file for gap only.
+	  //
+	  ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
+	  addProc(fileMap, pinfo, parse_filenm, sym_func, sym_start, sym_end, true);
+
+	  pinfo = new ProcInfo(func, NULL, "", "", 0, true);
+	  addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
+	}
       }
     }
     else {
-      // make a fake func at the parseapi entry vma.  this normally
-      // only happens for plt funcs.
-      sym_func = NULL;
-      sym_start = vma;
-      linknm = func->name();
-      procnm = BinUtil::demangleProcName(linknm);
+      //
+      // case 4 -- no symtab symbol claiming this vma (and thus no
+      // line map).  make a fake group at the parseapi entry vma.
+      // this normally only happens for plt funcs.
+      //
+      string linknm = func->name();
+      string prettynm = BinUtil::demangleProcName(linknm);
+      VMA end = 0;
 
       auto next_it = fmit;  ++next_it;
       if (next_it != funcMap.end()) {
-	sym_end = next_it->second->addr();
+	end = next_it->second->addr();
       }
       else if (region != NULL) {
-	sym_end = reg_end;
+	end = reg_end;
       }
       else {
-	sym_end = sym_start + 20;
+	end = vma + 20;
       }
-    }
 
-    // symtab lets some funcs (_init) spill into the next region
-    if (region != NULL && sym_start < reg_end && reg_end < sym_end) {
-      sym_end = reg_end;
+      ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, 0);
+      addProc(fileMap, pinfo, unknown_base, NULL, vma, end);
     }
-
-    // normalize file name
-    if (filenm != "") {
-      RealPathMgr::singleton().realpath(filenm);
-    }
-    else {
-      filenm = unknown_file + " [" + basename + "]";
-    }
-
-    //
-    // locate in file map, or else insert
-    //
-    FileInfo * finfo = NULL;
-
-    auto fit = fileMap->find(filenm);
-    if (fit != fileMap->end()) {
-      finfo = fit->second;
-    }
-    else {
-      finfo = new FileInfo(filenm);
-      (*fileMap)[filenm] = finfo;
-    }
-
-    //
-    // insert into group map for this file
-    //
-    GroupInfo * ginfo = NULL;
-
-    auto git = finfo->groupMap.find(sym_start);
-    if (git != finfo->groupMap.end()) {
-      ginfo = git->second;
-    }
-    else {
-      ginfo = new GroupInfo(sym_func, linknm, procnm, sym_start, sym_end);
-      finfo->groupMap[sym_start] = ginfo;
-    }
-    ginfo->procMap[vma] = new ProcInfo(func, NULL, line);
   }
 
 #if DEBUG_MAKE_SKEL
@@ -522,8 +585,8 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	     << "symbol:  0x" << hex << ginfo->start
 	     << "--0x" << ginfo->end << dec << "\n"
 	     << "file:    " << finfo->fileName << "\n"
-	     << "link:    " << ginfo->linkName << "\n"
-	     << "pretty:  " << ginfo->prettyName << "\n"
+	     << "link:    " << pinfo->linkName << "\n"
+	     << "pretty:  " << pinfo->prettyName << "\n"
 	     << "parse:   " << pinfo->func->name() << "\n"
 	     << "line:    " << pinfo->line_num << "\n";
       }
@@ -578,7 +641,6 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 	       HPC::StringTable & strTab)
 {
   VMAIntervalSet covered;
-
   long num_funcs = ginfo->procMap.size();
 
   // make a map of internal call edges (from target to source) across
@@ -587,7 +649,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
   //
   std::map <VMA, VMA> callMap;
 
-  if (num_funcs > 1) {
+  if (ginfo->sym_func != NULL && !ginfo->alt_file && num_funcs > 1) {
     for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
       ParseAPI::Function * func = pit->second->func;
       const ParseAPI::Function::edgelist & elist = func->callEdges();
@@ -608,8 +670,6 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     Address entry_addr = func->addr();
     num++;
 
-    if (num == 1) { pinfo->leader = true; }
-
     // compute the inline seqn for the call site for this func, if
     // there is one.
     Inline::InlineSeqn prefix;
@@ -623,7 +683,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     cout << "\n------------------------------------------------------------\n"
 	 << "func:  0x" << hex << entry_addr << dec
 	 << "  (" << num << "/" << num_funcs << ")"
-	 << "  link='" << ginfo->linkName << "'\n"
+	 << "  link='" << pinfo->linkName << "'\n"
 	 << "parse:  '" << func->name() << "'\n"
 	 << "file:   '" << finfo->fileName << "'\n";
 
@@ -645,8 +705,6 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       continue;
     }
 
-    TreeNode * root = new TreeNode;
-
     // basic blocks for this function
     const ParseAPI::Function::blocklist & blist = func->blocks();
     BlockSet visited;
@@ -657,11 +715,24 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     }
 
 #if ENABLE_PARSEAPI_GAPS
-    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
-      Block * block = *bit;
-      covered.insert(block->start(), block->end());
+    if (! ginfo->alt_file) {
+      for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+	Block * block = *bit;
+	covered.insert(block->start(), block->end());
+      }
     }
 #endif
+
+    // if the outline func file name does not match the enclosing
+    // symtab func, then do the full parse in the outline file
+    // (alt-file) and use the symtab file for gaps only.
+    if (pinfo->gap_only) {
+      string mesg = "\nskipping full parse (gap only) for function:  '";
+      DEBUG_MESG(mesg << func->name() << "'\n");
+      continue;
+    }
+
+    TreeNode * root = new TreeNode;
 
     // traverse the loop (Tarjan) tree
     LoopList *llist =
@@ -696,7 +767,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 
 #if DEBUG_CFG_SOURCE
     cout << "\nfinal inline tree:  (" << num << "/" << num_funcs << ")"
-	 << "  link='" << ginfo->linkName << "'\n"
+	 << "  link='" << pinfo->linkName << "'\n"
 	 << "parse:  '" << func->name() << "'\n";
 
     if (call_it != callMap.end()) {
@@ -711,35 +782,42 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     cout << "\n";
     debugInlineTree(root, NULL, strTab, 0, true);
     cout << "\nend proc:  (" << num << "/" << num_funcs << ")"
-	 << "  link='" << ginfo->linkName << "'\n"
+	 << "  link='" << pinfo->linkName << "'\n"
 	 << "parse:  '" << func->name() << "'\n";
 #endif
   }
 
 #if ENABLE_PARSEAPI_GAPS
   VMAIntervalSet gaps;
-  computeGaps(covered, gaps, ginfo->start, ginfo->end);
 
-  for (auto git = gaps.begin(); git != gaps.end(); ++git) {
-    ginfo->gapList.push_back(GapInfo(git->beg(), git->end(), 0));
+  if (! ginfo->alt_file) {
+    computeGaps(covered, gaps, ginfo->start, ginfo->end);
+
+    for (auto git = gaps.begin(); git != gaps.end(); ++git) {
+      ginfo->gapList.push_back(GapInfo(git->beg(), git->end(), 0));
+    }
   }
 
-#if 0
+#if DEBUG_GAPS
   auto pit = ginfo->procMap.begin();
   ProcInfo * pinfo = pit->second;
 
-  cout << "\n------------------------------------------------------------\n"
-       << "func:  0x" << hex << pinfo->entry_vma << dec
-       << "  (" << num_funcs << ")\n"
-       << "link:   " << ginfo->linkName << "\n"
+  cout << "\nfunc:  0x" << hex << pinfo->entry_vma << dec
+       << "  (1/" << num_funcs << ")\n"
+       << "link:   " << pinfo->linkName << "\n"
        << "parse:  " << pinfo->func->name() << "\n"
        << "0x" << hex << ginfo->start
        << "--0x" << ginfo->end << dec << "\n";
 
-  cout << "\ncovered:\n"
-       << covered.toString() << "\n"
-       << "\ngaps:\n"
-       << gaps.toString() << "\n";
+  if (! ginfo->alt_file) {
+    cout << "\ncovered:\n"
+	 << covered.toString() << "\n"
+	 << "\ngaps:\n"
+	 << gaps.toString() << "\n";
+  }
+  else {
+    cout << "\ngaps: alt-file\n";
+  }
 #endif
 #endif
 }

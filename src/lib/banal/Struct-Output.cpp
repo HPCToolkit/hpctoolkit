@@ -284,16 +284,17 @@ printProc(ostream * os, ostream * gaps, string gaps_file,
   doIndent(os, 2);
   *os << "<P"
       << INDEX
-      << STRING("n", ginfo->prettyName);
+      << STRING("n", pinfo->prettyName);
 
-  if (ginfo->linkName != ginfo->prettyName) {
-    *os << STRING("ln", ginfo->linkName);
+  if (pinfo->linkName != pinfo->prettyName) {
+    *os << STRING("ln", pinfo->linkName);
   }
   *os << NUMBER("l", pinfo->line_num)
       << VRANGE(pinfo->entry_vma, 1)
       << ">\n";
 
-  if (pinfo->leader) {
+  // write the gap to the first proc (low vma) of the group
+  if (! ginfo->alt_file && pinfo == ginfo->procMap.begin()->second) {
     doGaps(os, gaps, gaps_file, finfo, ginfo, pinfo);
   }
 
@@ -322,8 +323,8 @@ doGaps(ostream * os, ostream * gaps, string gaps_file,
     // full version -- each gap has a separate <S> stmt linked to the
     // .gaps file, all within a alien scope.
     //
-    *gaps << "\nfunc:  " << ginfo->prettyName << "\n"
-	  << "link:  " << ginfo->linkName << "\n"
+    *gaps << "\nfunc:  " << pinfo->prettyName << "\n"
+	  << "link:  " << pinfo->linkName << "\n"
 	  << "file:  " << finfo->fileName << "  line: " << pinfo->line_num << "\n"
 	  << "0x" << hex << ginfo->start << "--0x" << ginfo->end << dec << "\n\n";
     gaps_line += 6;
@@ -342,7 +343,7 @@ doGaps(ostream * os, ostream * gaps, string gaps_file,
 	<< INDEX
 	<< NUMBER("l", gaps_line - 4)
 	<< STRING("f", gaps_file)
-	<< STRING("n", "unclaimed region in: " + ginfo->prettyName)
+	<< STRING("n", "unclaimed region in: " + pinfo->prettyName)
 	<< " v=\"{}\""
 	<< ">\n";
 

@@ -112,25 +112,26 @@ public:
 // GroupMap is indexed by Function VMA (symtab if exists, else
 // parseapi for plt funcs).
 //
+// alt_file is for outline funcs whose parseapi file name does not
+// match the enclosing symtab file (implies no gap analysis).
+//
 class GroupInfo {
 public:
   SymtabAPI::Function * sym_func;
-  string linkName;
-  string prettyName;
   VMA  start;
   VMA  end;
   ProcMap procMap;
   GapList gapList;
+  bool  alt_file;
 
-  GroupInfo(SymtabAPI::Function * sf, string ln, string pn, VMA st, VMA en)
+  GroupInfo(SymtabAPI::Function * sf, VMA st, VMA en, bool alt = false)
   {
     sym_func = sf;
-    linkName = ln;
-    prettyName = pn;
     start = st;
     end = en;
     procMap.clear();
     gapList.clear();
+    alt_file = alt;
   }
 };
 
@@ -140,21 +141,29 @@ public:
 //
 // ProcMap is indexed by the func's entry address.
 //
+// gap_only is for outline funcs that exist in another file (do the
+// full parse in the other file).
+//
 class ProcInfo {
 public:
   ParseAPI::Function * func;
   TreeNode * root;
+  string  linkName;
+  string  prettyName;
   long  line_num;
   VMA   entry_vma;
-  bool  leader;
+  bool  gap_only;
 
-  ProcInfo(ParseAPI::Function * fn, TreeNode * rt, long ln)
+  ProcInfo(ParseAPI::Function * fn, TreeNode * rt, string ln, string pn,
+	   long l, bool gap = false)
   {
     func = fn;
     root = rt;
-    line_num = ln;
+    linkName = ln;
+    prettyName = pn;
+    line_num = l;
     entry_vma = (func != NULL) ? func->addr() : 0;
-    leader = false;
+    gap_only = gap;
   }
 };
 
