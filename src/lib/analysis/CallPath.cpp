@@ -447,7 +447,14 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
 
       VMA lm_ip = n_dyn->lmIP();
       const Prof::Struct::ACodeNode* strct = lmStrct->findByVMA(lm_ip);
-      DIAG_Assert(strct, "Analysis::CallPath::noteStaticStructureOnLeaves: failed to find structure for: " << n_dyn->toStringMe(Prof::CCT::Tree::OFlg_DebugAll));
+
+      // Laks: I don't think an empty strct is critical. We can just send a warning
+      //  and then continue. (like the serial version of hpcprof)
+      if (!strct) {
+        DIAG_EMsg("Analysis::CallPath::noteStaticStructureOnLeaves: failed to find structure for: "
+            << n_dyn->toStringMe(Prof::CCT::Tree::OFlg_DebugAll));
+        continue;
+      }
 
       n->structure(strct);
     }
