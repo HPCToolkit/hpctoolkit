@@ -61,11 +61,8 @@
 // 5. Add full vma ranges for <P> proc tags.
 // ---> is this needed ?
 //
-// 7. Fix targ401420 names in <P> tags.
-//
-// 13. Handle unknown file/line more explicitly.
-//
 // 14. Deal with alien ln fields.
+// ---> is this needed ?
 
 //***************************************************************************
 

@@ -610,17 +610,8 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 // 6. Handle code movement wrt loops: loop fusion, fission, moving
 // code in/out of loops.
 //
-// 7. Maybe write our own functions for coalescing statements and
-// aliens and normalizing source code transforms.
-//
 // 10. Decide how to handle basic blocks that belong to multiple
 // functions.
-//
-// 14. Import fix for duplicate proc names (pretty vs. typed/mangled).
-//
-// 15. Some missing file names are "~unknown-file~", some are "", they
-// string match to not equal, causing a spurious alien.
-//
 
 //----------------------------------------------------------------------
 
