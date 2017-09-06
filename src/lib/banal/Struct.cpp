@@ -483,13 +483,10 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	// cases are also valid).
 	//
 	auto mangled_it = sym_func->mangled_names_begin();
-	auto typed_it = sym_func->typed_names_begin();
 
 	if (mangled_it != sym_func->mangled_names_end()) {
 	  linknm = *mangled_it;
-	}
-	if (typed_it != sym_func->typed_names_end()) {
-	  prettynm = *typed_it;
+	  prettynm = BinUtil::demangleProcName(linknm);
 	}
 
 	ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, line);
