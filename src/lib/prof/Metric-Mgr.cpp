@@ -176,10 +176,30 @@ Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
   for (uint i = 0; i < metricGroups.size(); ++i) {
     const Metric::ADescVec& mVec = *(metricGroups[i]);
     if (mVec.size() >= threshold) {
-      const Metric::ADesc* m = mVec[0];
+      Metric::ADesc* m = mVec[0];
 
-      Metric::ADesc* mNew =
-	makeSummaryMetric("Sum",  m, mVec);
+      Metric::ADesc* mNew =	makeSummaryMetric("Sum",  m, mVec);
+
+      // initialize perf event statistics with the first hpcrun
+      mNew->num_samples  (m->num_samples());
+      mNew->periodMean   (m->periodMean());
+      mNew->isMultiplexed(m->isMultiplexed());
+      mNew->sampling_type(m->sampling_type());
+
+      // -------------------------------------------------------
+      // aggregate metric info
+      // -------------------------------------------------------
+      for(uint j=1; j<mVec.size(); j++) {
+
+        uint64_t tot_samples = mNew->num_samples() + mVec[j]->num_samples();
+        float    period      = mNew->periodMean()  + mVec[j]->periodMean();
+
+        mNew->num_samples(tot_samples);
+        mNew->periodMean(period);
+      }
+      // compute the mean of the period of all hpcrun of this metric group
+      float period_mean = mNew->periodMean() / mVec.size();
+      mNew->periodMean(period_mean);
 
       if (needAllStats) {
         makeSummaryMetric("Mean",   m, mVec);

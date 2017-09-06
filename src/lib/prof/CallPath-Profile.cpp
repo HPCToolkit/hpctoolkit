@@ -646,9 +646,6 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   for (uint i = metricBeg; i < metricEnd; i++) {
     const Metric::ADesc* m = m_mMgr->metric(i);
 
-    const Metric::SampledDesc* mSmpl =
-      dynamic_cast<const Metric::SampledDesc*>(m);
-
     bool isDrvd = false;
     Metric::IDBExpr* mDrvdExpr = NULL;
     if (typeid(*m) == typeid(Metric::DerivedDesc)) {
@@ -663,6 +660,9 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     // Metric
     os << "    <Metric i" << MakeAttrNum(i)
        << " n" << MakeAttrStr(m->name())
+       << " pem=\"" << m->isMultiplexed()    << "\""
+       << " pes=\"" << m->num_samples()      << "\""
+       << " pep=\"" << m->periodMean()       << "\""
        << " v=\"" << m->toValueTyStringXML() << "\""
        << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\"";
     if (m->partner()) {
@@ -709,6 +709,9 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     // Info
     os << "      <Info>"
        << "<NV n=\"units\" v=\"events\"/>"; // or "samples" m->isUnitsEvents()
+
+    const Metric::SampledDesc* mSmpl =
+      dynamic_cast<const Metric::SampledDesc*>(m);
     if (mSmpl) {
       os << "<NV n=\"period\" v" << MakeAttrNum(mSmpl->period()) << "/>";
     }
@@ -1165,6 +1168,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   metric_desc_t* m_lst = metricTbl.lst;
   for (uint i = 0; i < numMetricsSrc; i++) {
     const metric_desc_t& mdesc = m_lst[i];
+    const metric_aux_info_t &current_aux_info = aux_info[i];
 
     // ----------------------------------------
     // 
@@ -1212,6 +1216,22 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     }
     m->flags(mdesc.flags);
     
+    // ----------------------------------------
+    // 1b. Update the additional perf event attributes
+    // ----------------------------------------
+
+    Prof::Metric::SamplingType_t sampling_type = mdesc.is_frequency_metric ?
+        Prof::Metric::SamplingType_t::FREQUENCY : Prof::Metric::SamplingType_t::PERIOD;
+
+    m->sampling_type(sampling_type);
+    m->isMultiplexed(current_aux_info.is_multiplexed);
+    m->periodMean   (current_aux_info.threshold_mean);
+    m->num_samples  (current_aux_info.num_samples);
+
+    // ----------------------------------------
+    // 1c. add to the list of metric
+    // ----------------------------------------
+
     prof->metricMgr()->insert(m);
 
     // ----------------------------------------
