@@ -1069,7 +1069,8 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
   }
 
   // a stmt is a loop exit condition if it has outgoing edges to
-  // blocks both inside and outside the loop.
+  // blocks both inside and outside the loop.  but don't include call
+  // edges.
   //
   for (auto bit = inclBlocks.begin(); bit != inclBlocks.end(); ++bit) {
     const Block::edgelist & outEdges = (*bit)->targets();
@@ -1078,9 +1079,12 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 
     for (auto eit = outEdges.begin(); eit != outEdges.end(); ++eit) {
       Block *dest = (*eit)->trg();
+      int type = (*eit)->type();
 
-      if (bset.find(dest) != bset.end()) { in_loop = true; }
-      else { out_loop = true; }
+      if (type != ParseAPI::CALL && type != ParseAPI::CALL_FT) {
+	if (bset.find(dest) != bset.end()) { in_loop = true; }
+	else { out_loop = true; }
+      }
     }
 
     if (in_loop && out_loop) {
