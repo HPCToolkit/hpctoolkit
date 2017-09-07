@@ -180,12 +180,6 @@ Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
 
       Metric::ADesc* mNew =	makeSummaryMetric("Sum",  m, mVec);
 
-      // initialize perf event statistics with the first hpcrun
-      mNew->num_samples  (m->num_samples());
-      mNew->periodMean   (m->periodMean());
-      mNew->isMultiplexed(m->isMultiplexed());
-      mNew->sampling_type(m->sampling_type());
-
       // -------------------------------------------------------
       // aggregate metric info
       // -------------------------------------------------------
@@ -317,6 +311,13 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   m->nameBase(mNmBase);
   m->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
   m->zeroDBInfo(); // clear
+
+  // copy some attributes from the source
+  m->periodMean   (mSrc->periodMean());
+  m->sampling_type(mSrc->sampling_type());
+  m->num_samples  (mSrc->num_samples());
+  m->isMultiplexed(mSrc->isMultiplexed());
+
   insert(m);
   expr->accumId(m->id());
 
@@ -405,6 +406,13 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 			true/*isSortKey*/, doDispPercent, isPercent);
   m->nameBase(mNmBase);
   m->zeroDBInfo(); // clear
+
+  // copy some attributes from the source
+  m->periodMean   (mSrc->periodMean());
+  m->sampling_type(mSrc->sampling_type());
+  m->num_samples  (mSrc->num_samples());
+  m->isMultiplexed(mSrc->isMultiplexed());
+
   insert(m);
   expr->accumId(m->id());
 
