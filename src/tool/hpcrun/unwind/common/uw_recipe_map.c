@@ -79,25 +79,19 @@
 // local include files
 //---------------------------------------------------------------------
 #include <memory/hpcrun-malloc.h>
+#include <main.h>
 #include "uw_recipe_map.h"
 #include "unwind-interval.h"
 #include <fnbounds/fnbounds_interface.h>
 #include <lib/prof-lean/cskiplist.h>
 #include <lib/prof-lean/mcs-lock.h>
 #include <lib/prof-lean/binarytree.h>
-#include "ildmod_stat.h"
 #include "binarytree_uwi.h"
 #include "segv_handler.h"
 #include <messages/messages.h>
 
 // libmonitor functions
 #include <monitor.h>
-
-/*
- * ilmstat_btuwi_pair.c
- *
- *      Author: dxnguyen
- */
 
 //******************************************************************************
 // global include files
@@ -115,25 +109,14 @@
 
 #define NUM_NODES 10
 
-/*
- * A <key, value> pair, whose key is a ildmod_stat_t* and whose value is a bitree_uwi_t.
- *   ildmod_stat_t (interval-load_module/stat) is a struct whose first component is
- *     an interval_ldmod_pair_t* and whose second component is a tree_stat_t (tree status)
- *   bitree_uwi_t (binary tree of unwind intervals) is binary search tree of unwind
- *     intervals uwi_t*.
- *     uwi_t is a <key, value> pair whose key is an interval interval_t, and whose
- *     value is an unwind recipe, recipe_t, as specified in uw_recipe.h.
- *
- *      Author: dxnguyen
- */
-
 //******************************************************************************
 // type
 //******************************************************************************
 
 typedef struct ilmstat_btuwi_pair_s {
-  struct ilmstat_btuwi_pair_s *next;
-  ildmod_stat_t *ilmstat;
+  interval_t interval;
+  load_module_t *lm;
+  _Atomic(tree_stat_t) stat;
   bitree_uwi_t *btuwi;
 } ilmstat_btuwi_pair_t;
 
@@ -144,25 +127,25 @@ typedef struct ilmstat_btuwi_pair_s {
 /*
  * pre-condition: lhs, rhs are ilmstat_btuwi_pair_t*
  */
-int
+static int
 ilmstat_btuwi_pair_cmp(void *lhs, void *rhs)
 {
   ilmstat_btuwi_pair_t *l = (ilmstat_btuwi_pair_t*)lhs;
   ilmstat_btuwi_pair_t *r = (ilmstat_btuwi_pair_t*)rhs;
   return interval_t_cmp(
-	 l->ilmstat->interval,
-	 r->ilmstat->interval);
+	 &l->interval,
+	 &r->interval);
 }
 
 /*
  * pre-condition: itp is a ilmstat_btuwi_pair_t*, address is a uintptr_t
  * return interval_ldmod_pair_inrange(itp->first, address)
  */
-extern int
+static int
 ilmstat_btuwi_pair_inrange(void *itp, void *address)
 {
   ilmstat_btuwi_pair_t *p = (ilmstat_btuwi_pair_t*)itp;
-  return interval_t_inrange(p->ilmstat->interval, address);
+  return interval_t_inrange(&p->interval, address);
 }
 
 static ilmstat_btuwi_pair_t *GF_ilmstat_btuwi = NULL; // global free list of ilmstat_btuwi_pair_t*
@@ -175,22 +158,50 @@ static  __thread  ilmstat_btuwi_pair_t *current_btuwi = NULL;
 // Constructors
 //******************************************************************************
 
+static inline ilmstat_btuwi_pair_t *
+ilmstat__btuwi_pair_init(ilmstat_btuwi_pair_t *node,
+			 tree_stat_t treestat,
+			 load_module_t *lm,
+			 uintptr_t start,
+			 uintptr_t end,
+			 bitree_uwi_t *tree)
+{
+  atomic_store_explicit(&node->stat, treestat, memory_order_relaxed);
+  node->lm = lm;
+  node->interval.start = start;
+  node->interval.end = end;
+  node->btuwi = tree;
+  return node;
+}
+
 static inline ilmstat_btuwi_pair_t*
-ilmstat_btuwi_pair_build(uintptr_t start, uintptr_t end, load_module_t *ldmod,
+ilmstat_btuwi_pair_build(uintptr_t start, uintptr_t end, load_module_t *lm,
 	tree_stat_t treestat, bitree_uwi_t *tree,	mem_alloc m_alloc)
 {
   ilmstat_btuwi_pair_t* node = m_alloc(sizeof(*node));
-  node->next = NULL;
-  node->ilmstat = ildmod_stat_build(start, end, ldmod, treestat, m_alloc);
-  node->btuwi = tree; 
-  return node;
+  return ilmstat__btuwi_pair_init(node, treestat, lm, start, end, tree);
+}
+
+static inline void
+push_free_pair(ilmstat_btuwi_pair_t **list, ilmstat_btuwi_pair_t *pair)
+{
+  pair->btuwi = (bitree_uwi_t *)*list;
+  *list = pair;
+}
+
+static inline ilmstat_btuwi_pair_t *
+pop_free_pair(ilmstat_btuwi_pair_t **list)
+{
+  ilmstat_btuwi_pair_t *head = *list;
+  *list = (ilmstat_btuwi_pair_t *)head->btuwi;
+  return head;
 }
 
 static ilmstat_btuwi_pair_t*
 ilmstat_btuwi_pair_malloc(
 	uintptr_t start,
 	uintptr_t end,
-	load_module_t *ldmod,
+	load_module_t *lm,
 	tree_stat_t treestat,
 	bitree_uwi_t *tree,
 	mem_alloc m_alloc)
@@ -209,10 +220,8 @@ ilmstat_btuwi_pair_malloc(
 	// transfer a bunch of nodes the global free list to the local free list
 	int n = 0;
 	while (GF_ilmstat_btuwi && n < NUM_NODES) {
-	  ilmstat_btuwi_pair_t *head = GF_ilmstat_btuwi;
-	  GF_ilmstat_btuwi = GF_ilmstat_btuwi->next;
-	  head->next = _lf_ilmstat_btuwi;
-	  _lf_ilmstat_btuwi = head;
+	  ilmstat_btuwi_pair_t *head = pop_free_pair(&GF_ilmstat_btuwi);
+	  push_free_pair(&_lf_ilmstat_btuwi, head);
 	  n++;
 	}
       }
@@ -221,10 +230,8 @@ ilmstat_btuwi_pair_malloc(
     if (!_lf_ilmstat_btuwi) {
       /* add a bunch of nodes to _lf_ilmstat_btuwi */
       for (int i = 0; i < NUM_NODES; i++) {
-	ilmstat_btuwi_pair_t *node =
-	  ilmstat_btuwi_pair_build(0, 0, NULL, DEFERRED, NULL, m_alloc);
-	node->next = _lf_ilmstat_btuwi;
-	_lf_ilmstat_btuwi = node;
+	ilmstat_btuwi_pair_t *node = m_alloc(sizeof(*node));
+	push_free_pair(&_lf_ilmstat_btuwi, node);
       }
     }
   }
@@ -238,17 +245,8 @@ ilmstat_btuwi_pair_malloc(
  * set its fields using the appropriate parameters
  * return the head node.
  */
-  ilmstat_btuwi_pair_t *ans = _lf_ilmstat_btuwi;
-  _lf_ilmstat_btuwi = _lf_ilmstat_btuwi->next;
-  ans->next = NULL;
-  ans->btuwi = tree;
-  ildmod_stat_t *ilmstat = ans->ilmstat;
-  atomic_store_explicit(&ilmstat->stat, treestat, memory_order_relaxed);
-  ilmstat->loadmod = ldmod;
-  interval_t *interval = ilmstat->interval;
-  interval->start = start;
-  interval->end = end;
-  return ans;
+  ilmstat_btuwi_pair_t *ans = pop_free_pair(&_lf_ilmstat_btuwi);
+  return ilmstat__btuwi_pair_init(ans, treestat, lm, start, end, tree);
 }
 
 //******************************************************************************
@@ -259,22 +257,71 @@ static void
 ilmstat_btuwi_pair_free(ilmstat_btuwi_pair_t* pair)
 {
   if (!pair) return;
-
-  bitree_uwi_t *btuwi = pair->btuwi;
-  pair->btuwi = NULL;
-  bitree_uwi_free(btuwi);
+  bitree_uwi_free(pair->btuwi);
 
   // add pair to the front of the  global free list of ilmstat_btuwi_pair_t*:
   mcs_node_t me;
   mcs_lock(&GFL_lock, &me);
-  pair->next = GF_ilmstat_btuwi;
-  GF_ilmstat_btuwi = pair;
+  push_free_pair(&GF_ilmstat_btuwi, pair);
   mcs_unlock(&GFL_lock, &me);
 }
+
+//---------------------------------------------------------------------
+// local data
+//---------------------------------------------------------------------
+
+// The concrete representation of the abstract data type unwind recipe map.
+static cskiplist_t *addr2recipe_map = NULL;
+
+// memory allocator for creating addr2recipe_map
+// and inserting entries into addr2recipe_map:
+static mem_alloc my_alloc = hpcrun_malloc;
 
 //******************************************************************************
 // String output
 //******************************************************************************
+
+
+#define MAX_STAT_STR 14
+#define LDMOD_NAME_LEN 128
+#define MAX_ILDMODSTAT_STR MAX_INTERVAL_STR+LDMOD_NAME_LEN+MAX_STAT_STR
+
+static void
+load_module_tostr(void* lm, char str[])
+{
+  load_module_t* ldmod = (load_module_t*)lm;
+  if (ldmod) {
+	snprintf(str, LDMOD_NAME_LEN, "%s%s%d", ldmod->name, " ", ldmod->id);
+  }
+  else {
+	snprintf(str, LDMOD_NAME_LEN, "%s", "nil");
+  }
+}
+
+static void
+treestat_tostr(tree_stat_t stat, char str[])
+{
+  switch (stat) {
+  case NEVER: strcpy(str, "      NEVER"); break;
+  case DEFERRED: strcpy(str, "   DEFERRED"); break;
+  case FORTHCOMING: strcpy(str, "FORTHCOMING"); break;
+  case READY: strcpy(str, "      READY"); break;
+  default: strcpy(str, "STAT_ERROR");
+  }
+}
+
+static void
+ildmod_stat_tostr(void* ilms, char str[])
+{
+  ilmstat_btuwi_pair_t *pair = ilms;
+  char intervalstr[MAX_INTERVAL_STR];
+  interval_t_tostr(&pair->interval, intervalstr);
+  char ldmodstr[LDMOD_NAME_LEN];
+  load_module_tostr(pair->lm, ldmodstr);
+  char statstr[MAX_STAT_STR];
+  treestat_tostr(atomic_load_explicit(&pair->stat, memory_order_relaxed), statstr);
+  sprintf(str, "(%s %s %s)", intervalstr, ldmodstr, statstr);
+}
 
 /*
  * Compute the string representation of ilmstat_btuwi_pair_t with appropriate
@@ -285,11 +332,10 @@ static void
 ilmstat_btuwi_pair_tostr_indent(void* itp, char* indents, char str[])
 {
   ilmstat_btuwi_pair_t* it_pair = (ilmstat_btuwi_pair_t*)itp;
-  ildmod_stat_t *ilms = it_pair->ilmstat;
   bitree_uwi_t *tree = it_pair->btuwi;
   char firststr[MAX_ILDMODSTAT_STR];
   char secondstr[MAX_TREE_STR];
-  ildmod_stat_tostr(ilms, firststr);
+  ildmod_stat_tostr(it_pair, firststr);
   bitree_uwi_tostring_indent(tree, indents, secondstr);
   snprintf(str, strlen(firststr) + strlen(secondstr) + 6, "%s%s%s%s%s",
 	  "(", firststr, ",  ", secondstr, ")");
@@ -302,16 +348,17 @@ max_ilmstat_btuwi_pair_len()
 }
 
 
-//---------------------------------------------------------------------
-// local data
-//---------------------------------------------------------------------
+static char
+ILdMod_Stat_MaxSpaces[] = "                                                                              ";
 
-// The concrete representation of the abstract data type unwind recipe map.
-static cskiplist_t *addr2recipe_map = NULL;
-
-// memory allocator for creating addr2recipe_map
-// and inserting entries into addr2recipe_map:
-static mem_alloc my_alloc = hpcrun_malloc;
+/*
+ * the max spaces occupied by "([start_address ... end_address), load module xx, status)
+ */
+static char*
+ildmod_stat_maxspaces()
+{
+  return ILdMod_Stat_MaxSpaces;
+}
 
 //---------------------------------------------------------------------
 // private operations
@@ -381,15 +428,11 @@ uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
 
 #if UW_RECIPE_MAP_DEBUG
   assert(ilmstat_btuwi != NULL); // start should be in range of some poisoned interval
-
-  ildmod_stat_t* ilmstat = ilmstat_btuwi->ilmstat;
-  assert(ilmstat != NULL); 
-  assert(atomic_load_explicit(&ilmstat->stat, memory_order_relaxed) == NEVER);  // should be a poisoned node
+  assert(atomic_load_explicit(&ilmstat_btuwi->stat, memory_order_relaxed) == NEVER);  // should be a poisoned node
 #endif
 
-  interval_t* interval = ilmstat_btuwi->ilmstat->interval;
-  uintptr_t s0 = interval->start;
-  uintptr_t e0 = interval->end;
+  uintptr_t s0 = ilmstat_btuwi->interval.start;
+  uintptr_t e0 = ilmstat_btuwi->interval.end;
   uw_recipe_map_cmp_del_bulk_unsynch(ilmstat_btuwi, ilmstat_btuwi);
   uw_recipe_map_poison(s0, start);
   uw_recipe_map_poison(end, e0);
@@ -402,11 +445,10 @@ uw_recipe_map_repoison(uintptr_t start, uintptr_t end)
   if (start > 0) {
     ilmstat_btuwi_pair_t* ileft = uw_recipe_map_inrange_find(start - 1);
     if (ileft) { 
-      ildmod_stat_t* ilmstat = ileft->ilmstat;
-      if ((ilmstat->interval->end == start) &&
-          (NEVER == atomic_load_explicit(&ilmstat->stat, memory_order_acquire))) {
+      if ((ileft->interval.end == start) &&
+          (NEVER == atomic_load_explicit(&ileft->stat, memory_order_acquire))) {
         // poisoned interval adjacent on the left
-        start = ilmstat->interval->start;
+        start = ileft->interval.start;
         uw_recipe_map_cmp_del_bulk_unsynch(ileft, ileft);
       }
     }
@@ -414,17 +456,28 @@ uw_recipe_map_repoison(uintptr_t start, uintptr_t end)
   if (end < UINTPTR_MAX) {
     ilmstat_btuwi_pair_t* iright = uw_recipe_map_inrange_find(end+1);
     if (iright) { 
-      ildmod_stat_t* ilmstat = iright->ilmstat;
-      if ((ilmstat->interval->start == end) &&
-          (NEVER == atomic_load_explicit(&ilmstat->stat, memory_order_acquire))) {
+      if ((iright->interval.start == end) &&
+          (NEVER == atomic_load_explicit(&iright->stat, memory_order_acquire))) {
         // poisoned interval adjacent on the right
-        end = ilmstat->interval->end;
+        end = iright->interval.end;
         uw_recipe_map_cmp_del_bulk_unsynch(iright, iright);
       }
     }
   }
   uw_recipe_map_poison(start, end);
 }
+
+
+#if UW_RECIPE_MAP_DEBUG_VERBOSE 
+static void
+uw_recipe_map_report_and_dump(const char *op, void *start, void *end)
+{
+  uw_recipe_map_report(op, start, end);
+  uw_recipe_map_print();
+}
+#else 
+#define uw_recipe_map_report_and_dump(op, start, end)
+#endif
 
 
 #if UW_RECIPE_MAP_DEBUG_VERBOSE 
@@ -482,10 +535,8 @@ uw_recipe_map_notify_init()
 static void
 uw_cleanup(void)
 {
-  if (current_btuwi) {
-    ildmod_stat_t *ilmstat = current_btuwi->ilmstat;
-    atomic_store_explicit(&ilmstat->stat, NEVER, memory_order_release);
-  }
+  if (current_btuwi)
+    atomic_store_explicit(&current_btuwi->stat, NEVER, memory_order_release);
 }
 
 //---------------------------------------------------------------------
@@ -495,7 +546,7 @@ uw_cleanup(void)
 void
 uw_recipe_map_init(void)
 {
-
+  hpcrun_set_real_siglongjmp();
 #if UW_RECIPE_MAP_DEBUG
   fprintf(stderr, "uw_recipe_map_init: call a2r_map_init(my_alloc) ... \n");
 #endif
@@ -544,8 +595,8 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
   unwr_info->btuwi    = NULL;
   unwr_info->treestat = NEVER;
   unwr_info->lm       = NULL;
-  unwr_info->start    = 0;
-  unwr_info->end      = 0;
+  unwr_info->interval.start = 0;
+  unwr_info->interval.end   = 0;
 
   // check if addr is already in the range of an interval key in the map
   ilmstat_btuwi_pair_t* ilm_btui =
@@ -584,38 +635,34 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
   assert(ilm_btui != NULL);
 #endif
 
-  ildmod_stat_t *ilmstat = ilm_btui->ilmstat;
   tree_stat_t oldstat = DEFERRED;
-  if (atomic_compare_exchange_strong_explicit(&ilmstat->stat, &oldstat, FORTHCOMING,
+  if (atomic_compare_exchange_strong_explicit(&ilm_btui->stat, &oldstat, FORTHCOMING,
 					      memory_order_release, memory_order_relaxed)) {
     // it is my responsibility to build the tree of intervals for the function
-    interval_t *interval = ilmstat->interval;
-    void *fcn_start = (void*)interval->start;
-    void *fcn_end   = (void*)interval->end;
+    void *fcn_start = (void*)ilm_btui->interval.start;
+    void *fcn_end   = (void*)ilm_btui->interval.end;
 
     // potentially crash in this statement. need to save the state 
     current_btuwi = ilm_btui;
 
     btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, my_alloc);
     if (btuwi_stat.first == NULL) {
+      atomic_store_explicit(&ilm_btui->stat, NEVER, memory_order_release);
       TMSG(UW_RECIPE_MAP, "BAD build_intervals failed: fcn range %p to %p",
 	   fcn_start, fcn_end);
       return false;
     }
-    ilm_btui->btuwi = bitree_uwi_rebalance(btuwi_stat.first);
+    ilm_btui->btuwi = bitree_uwi_rebalance(btuwi_stat.first, btuwi_stat.count);
     current_btuwi = NULL;
-    atomic_store_explicit(&ilmstat->stat, READY, memory_order_release);
+    atomic_store_explicit(&ilm_btui->stat, READY, memory_order_release);
   }
-  else switch (oldstat) {
-    case NEVER:
+  else {
+    while (FORTHCOMING == oldstat)
+      oldstat = atomic_load_explicit(&ilm_btui->stat, memory_order_acquire);
+    if (oldstat == NEVER) {
       // addr is in the range of some poisoned load module
       return false;
-  case FORTHCOMING:
-	// invariant: ilm_btui is non-null
-        while (READY != atomic_load_explicit(&ilmstat->stat, memory_order_acquire));
-	break;
-    default:
-	break;
+    }
   }
 
   TMSG(UW_RECIPE_MAP_LOOKUP, "found in unwind tree: addr %p", addr);
@@ -623,10 +670,8 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
   bitree_uwi_t *btuwi = ilm_btui->btuwi;
   unwr_info->btuwi    = bitree_uwi_inrange(btuwi, (uintptr_t)addr);
   unwr_info->treestat = READY;
-  unwr_info->lm         = ilmstat->loadmod;
-  interval_t *interval  = ilmstat->interval;
-  unwr_info->start      = interval->start;
-  unwr_info->end        = interval->end;
+  unwr_info->lm         = ilm_btui->lm;
+  unwr_info->interval   = ilm_btui->interval;
 
   return true;
 }

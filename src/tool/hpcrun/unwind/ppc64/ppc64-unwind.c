@@ -84,14 +84,6 @@
 #include <unwind/common/fence_enum.h>
 
 
-//***************************************************************************
-// external declarations
-//***************************************************************************
-
-extern void 
-hpcrun_set_real_siglongjmp(void);
-
-
 
 //***************************************************************************
 // macros
@@ -136,7 +128,7 @@ hpcrun_check_fence(void* ip);
 static void
 compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 {
-  void *func_start_pc =  (void*) cursor->unwr_info.start;
+  void *func_start_pc =  (void*) cursor->unwr_info.interval.start;
   load_module_t* lm = cursor->unwr_info.lm;
 
   cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, lm);
@@ -197,7 +189,6 @@ void
 hpcrun_unw_init(void)
 {
   uw_recipe_map_init();
-  hpcrun_set_real_siglongjmp();
 }
 
 int
@@ -208,7 +199,7 @@ hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c, ip_normalized_t* reg_value)
 
 
 int
-hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, unw_word_t* reg_value)
+hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, void** reg_value)
 {
   return hpcrun_unw_get_unnorm_reg(c, UNW_REG_IP, reg_value);
 }
