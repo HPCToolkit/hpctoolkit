@@ -363,30 +363,31 @@ deep_validate_return_addr(void* addr, void* generic)
        addr);
 
   unwindr_info_t unwr_info;
-  if (!uw_recipe_map_lookup(addr, NATIVE_UNWINDER, &unwr_info) ) {
-	TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid", addr);
+  if (!return_addr_valid(addr, &unwr_info) ) {
+    TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid", addr);
     return status_is_wrong();
   }
 
-  if (uw_recipe_map_lookup(cursor->pc_unnorm, NATIVE_UNWINDER, &unwr_info) ) {
-	 void* callee = (void*)unwr_info.interval.start;
-	    TMSG(VALIDATE_UNW, "beginning of my routine = %p", callee);
-	    if (confirm_call(addr, callee)) {
-	      TMSG(VALIDATE_UNW, "Instruction preceeding %p is a call to this routine. Unwind confirmed", addr);
-	      return UNW_ADDR_CONFIRMED;
-	    }
-	    validation_status result = confirm_plt_call(addr, callee);
-	    if (result != UNW_ADDR_WRONG) {
-	      TMSG(VALIDATE_UNW,
-		   "Instruction preceeding %p is a call through the PLT to this routine. Unwind confirmed",
-		   addr);
-	      return result;
-	    }
-	    result = confirm_tail_call(addr, callee);
-	    if (result != UNW_ADDR_WRONG) {
-	      TMSG(VALIDATE_UNW,"Instruction preceeding %p is a call to a routine that has tail calls. Unwind is LIKELY ok", addr);
-	      return result;
-	    }
+  if (!return_addr_valid(cursor->pc_unnorm, &unwr_info))
+    return status_is_wrong();
+
+  void* callee = (void*)unwr_info.interval.start;
+  TMSG(VALIDATE_UNW, "beginning of my routine = %p", callee);
+  if (confirm_call(addr, callee)) {
+    TMSG(VALIDATE_UNW, "Instruction preceeding %p is a call to this routine. Unwind confirmed", addr);
+    return UNW_ADDR_CONFIRMED;
+  }
+  validation_status result = confirm_plt_call(addr, callee);
+  if (result != UNW_ADDR_WRONG) {
+    TMSG(VALIDATE_UNW,
+	 "Instruction preceeding %p is a call through the PLT to this routine. Unwind confirmed",
+	 addr);
+    return result;
+  }
+  result = confirm_tail_call(addr, callee);
+  if (result != UNW_ADDR_WRONG) {
+    TMSG(VALIDATE_UNW,"Instruction preceeding %p is a call to a routine that has tail calls. Unwind is LIKELY ok", addr);
+    return result;
   }
 
   void* call_ins;
