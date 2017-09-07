@@ -77,6 +77,12 @@
 #endif
 
 /*
+ * language independent type to represent a Boolean value
+ */
+
+typedef int __Bool;
+
+/*
  * 7.17.1 Atomic lock-free macros.
  */
 
@@ -209,7 +215,7 @@ atomic_signal_fence(memory_order __order __unused)
 #if defined(_KERNEL)
 /* Atomics in kernelspace are always lock-free. */
 #define	atomic_is_lock_free(obj) \
-	((void)(obj), (_Bool)1)
+	((void)(obj), (__Bool)1)
 #elif defined(__CLANG_ATOMICS)
 #define	atomic_is_lock_free(obj) \
 	__atomic_is_lock_free(sizeof(*(obj)), obj)
@@ -225,7 +231,7 @@ atomic_signal_fence(memory_order __order __unused)
  * 7.17.6 Atomic integer types.
  */
 
-typedef _Atomic(_Bool)			atomic_bool;
+typedef _Atomic(__Bool)			atomic_bool;
 typedef _Atomic(char)			atomic_char;
 typedef _Atomic(signed char)		atomic_schar;
 typedef _Atomic(unsigned char)		atomic_uchar;
@@ -331,7 +337,7 @@ typedef _Atomic(uintmax_t)		atomic_uintmax_t;
 	__typeof__(expected) __ep = (expected);				\
 	__typeof__(*__ep) __e = *__ep;					\
 	(void)(success); (void)(failure);				\
-	(_Bool)((*__ep = __sync_val_compare_and_swap(&(object)->__val,	\
+	(__Bool)((*__ep = __sync_val_compare_and_swap(&(object)->__val,	\
 	    __e, desired)) == __e);					\
 })
 #define	atomic_compare_exchange_weak_explicit(object, expected,		\
@@ -420,7 +426,7 @@ typedef struct {
 
 #define	ATOMIC_FLAG_INIT		{ ATOMIC_VAR_INIT(0) }
 
-static __inline _Bool
+static __inline __Bool
 atomic_flag_test_and_set_explicit(volatile atomic_flag *__object,
     memory_order __order)
 {
@@ -435,7 +441,7 @@ atomic_flag_clear_explicit(volatile atomic_flag *__object, memory_order __order)
 }
 
 #ifndef _KERNEL
-static __inline _Bool
+static __inline __Bool
 atomic_flag_test_and_set(volatile atomic_flag *__object)
 {
 
