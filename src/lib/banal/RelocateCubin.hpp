@@ -1,5 +1,3 @@
-// -*-Mode: C++;-*-
-
 // * BeginRiceCopyright *****************************************************
 //
 // $HeadURL$
@@ -44,75 +42,34 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-// This file defines the API for Line Map Info that we get directly
-// from libdwarf.
+//***************************************************************************
 //
-// The client (Struct.cpp) should use the classes LineMap and
-// LineRange.  Everything else is internal.
-
+// File: relocate_cubin.hpp
+//
+// Purpose:
+//   Interface definition for in-memory cubin relocation.
+//
+// Description:
+//   The associated implementation performs in-memory relocation of a cubin so
+//   that all text segments and functions are non-overlapping. Following
+//   relocation
+//     - each text segment begins at its offset in the segment
+//     - each function, which is in a unique text segment, has its symbol
+//       adjusted to point to the new position of the function in its relocated
+//       text segment
+//     - addresses in line map entries are adjusted to account for the new
+//       offsets of the instructions to which they refer
+//
 //***************************************************************************
 
-#ifndef Banal_Linemap_hpp
-#define Banal_Linemap_hpp
+#ifndef __RelocateCubin_hpp__
+#define __RelocateCubin_hpp__
 
-#include <include/uint.h>
-#include <lib/isa/ISATypes.hpp>
-#include <lib/support/StringTable.hpp>
-
-#include "InputFile.hpp"
-
-#include "dwarf.h"
-#include "libdwarf.h"
-
-#include <map>
-
-//----------------------------------------------------------------------
-
-// One segment in the raw line map from libdwarf.
-// This is internal, not seen directly by the client.
-//
-// file is an index into m_str_tab.
-// line is the actual line number.
-//
-class LineMapInfo {
-public:
-  uint file;
-  uint line;
-
-  LineMapInfo(uint f = 0, uint l = 0) {
-    file = f;
-    line = l;
-  }
-};
-
-typedef std::map <VMA, LineMapInfo> InternalLineMap;
-
-//----------------------------------------------------------------------
-
-// External classes for Struct.cpp client.
-
-class LineRange {
-public:
-  VMA  start;
-  VMA  end;
-  const char *filenm;
-  uint lineno;
-};
-
-class LineMap {
-private:
-  InternalLineMap   m_line_map;
-  HPC::StringTable  m_str_tab;
-  uint  m_empty_index;
-
-  void do_line_map(Dwarf_Debug, Dwarf_Die);
-  void do_comp_unit(Dwarf_Debug, int, int, long, long);
-  void do_dwarf(ElfFile *elf);
-
-public:
-  LineMap();
-  void readFile(ElfFile *elf);
-  void getLineRange(VMA, LineRange &);
-};
+bool
+relocateCubin
+(
+ char *cubin_ptr,
+ Elf *cubin_elf
+);
 
 #endif

@@ -78,6 +78,8 @@
 #include <Symtab.h>
 #include <Function.h>
 
+class ElfFile;
+
 using namespace Dyninst;
 using namespace SymtabAPI;
 using namespace std;
@@ -329,7 +331,7 @@ public:
 
 //***************************************************************************
 
-Symtab * openSymtab(std::string filename);
+Symtab * openSymtab(ElfFile *elfFile); 
 bool closeSymtab();
 bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
 

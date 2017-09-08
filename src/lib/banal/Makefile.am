@@ -53,9 +53,12 @@ include $(top_srcdir)/src/Makeinclude.config
 BOOST_INC = @BOOST_INC@
 LIBDWARF_INC = @LIBDWARF_INC@
 SYMTABAPI_INC = @SYMTABAPI_INC@
+LIBELF_INC = @LIBELF_INC@
 
 MYSOURCES = \
+	InputFile.cpp  \
 	Linemap.cpp  \
+	RelocateCubin.cpp  \
 	Struct.cpp  \
 	Struct-Inline.cpp  \
 	Struct-Output.cpp
@@ -66,6 +69,7 @@ MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
 	$(HPC_IFLAGS)  \
 	@GNUBINUTILS_IFLAGS@  \
+	-I$(LIBELF_INC)  \
 	-I$(BOOST_INC)  \
 	-I$(LIBDWARF_INC)  \
 	-I$(SYMTABAPI_INC)

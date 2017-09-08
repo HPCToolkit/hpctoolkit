@@ -91,6 +91,7 @@
 #include <lib/support/StringTable.hpp>
 
 #include "Struct-Inline.hpp"
+#include "InputFile.hpp"
 
 #include <Symtab.h>
 #include <Function.h>
@@ -154,7 +155,7 @@ namespace Inline {
 
 // These functions return true on success.
 Symtab *
-openSymtab(string filename)
+openSymtab(ElfFile *elfFile)
 {
   bool ret = false;
 
@@ -165,7 +166,7 @@ openSymtab(string filename)
   if (sigsetjmp(jbuf, 1) == 0) {
     // normal return
     jbuf_active = 1;
-    ret = Symtab::openFile(the_symtab, filename);
+    ret = Symtab::openFile(the_symtab, elfFile->getMemory(), elfFile->getLength(), elfFile->getFileName());
     if (ret) {
       the_symtab->parseTypesNow();
       the_symtab->parseFunctionRanges();
@@ -178,7 +179,7 @@ openSymtab(string filename)
   jbuf_active = 0;
 
   if (! ret) {
-    DIAG_WMsgIf(1, "SymtabAPI was unable to open: " << filename);
+    DIAG_WMsgIf(1, "SymtabAPI was unable to open: " << elfFile->getFileName());
     DIAG_WMsgIf(1, "The static inline support does not work cross platform,");
     DIAG_WMsgIf(1, "so check that this file has the same arch type as hpctoolkit.");
     the_symtab = NULL;

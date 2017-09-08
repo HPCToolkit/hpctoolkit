@@ -106,7 +106,7 @@ using namespace std;
 
 #define ENABLE_PARSEAPI_GAPS  1
 
-#define DEBUG_CFG_SOURCE  0
+#define DEBUG_CFG_SOURCE  1
 #define DEBUG_MAKE_SKEL   0
 
 // Copied from lib/prof/Struct-Tree.cpp
@@ -287,6 +287,7 @@ makeDotFile(std::ostream * dotFile, CodeObject * code_obj)
     *dotFile << "}\n" << endl;
 }
 
+
 //----------------------------------------------------------------------
 
 // makeStructure -- the main entry point for hpcstruct realmain().
@@ -306,15 +307,18 @@ makeStructure(string filename,
 {
   HPC::StringTable strTab;
 
+  InputFile inputFile;
+  ElfFile *elfFile = inputFile.openFile(filename);
+
   // insert empty string "" first
   strTab.str2index("");
 
 #if USE_LIBDWARF_LINE_MAP
   the_linemap = new LineMap;
-  the_linemap->readFile(filename.c_str());
+  the_linemap->readFile(elfFile.getElf());
 #endif
 
-  Symtab * symtab = Inline::openSymtab(filename);
+  Symtab * symtab = Inline::openSymtab(elfFile);
   the_symtab = symtab;
 
 #if USE_DYNINST_LINE_MAP
@@ -1065,7 +1069,7 @@ doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
 #endif
 
 #if DEBUG_CFG_SOURCE
-      debugStmt(vma, filenm, line);
+      debugStmt(vma, len, filenm, line);
 #endif
 
       addStmtToTree(root, strTab, vma, len, filenm, line);
