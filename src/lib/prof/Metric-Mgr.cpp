@@ -180,21 +180,6 @@ Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
 
       Metric::ADesc* mNew =	makeSummaryMetric("Sum",  m, mVec);
 
-      // -------------------------------------------------------
-      // aggregate metric info
-      // -------------------------------------------------------
-      for(uint j=1; j<mVec.size(); j++) {
-
-        uint64_t tot_samples = mNew->num_samples() + mVec[j]->num_samples();
-        float    period      = mNew->periodMean()  + mVec[j]->periodMean();
-
-        mNew->num_samples(tot_samples);
-        mNew->periodMean(period);
-      }
-      // compute the mean of the period of all hpcrun of this metric group
-      float period_mean = mNew->periodMean() / mVec.size();
-      mNew->periodMean(period_mean);
-
       if (needAllStats) {
         makeSummaryMetric("Mean",   m, mVec);
         makeSummaryMetric("StdDev", m, mVec);
