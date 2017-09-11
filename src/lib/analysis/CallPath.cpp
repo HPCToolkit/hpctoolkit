@@ -84,6 +84,8 @@ using std::string;
 #include "Util.hpp"
 
 #include <lib/prof/CCT-Tree.hpp>
+#include <lib/prof/Metric-Mgr.hpp>
+#include <lib/prof/Metric-ADesc.hpp>
 
 #include <lib/profxml/XercesUtil.hpp>
 #include <lib/profxml/PGMReader.hpp>
@@ -1112,7 +1114,7 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   uint metricBegId = 0;
   uint metricEndId = prof.metricMgr()->size();
 
-  if (true /* CCT::Tree::OFlg_VisibleMetricsOnly*/) {
+ {
     Metric::ADesc* mBeg = prof.metricMgr()->findFirstVisible();
     Metric::ADesc* mEnd = prof.metricMgr()->findLastVisible();
     metricBegId = (mBeg) ? mBeg->id()     : Metric::Mgr::npos;
@@ -1124,7 +1126,7 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   os << "<?xml version=\"1.0\"?>\n";
   os << "<!DOCTYPE HPCToolkitExperiment [\n" << experimentDTD << "]>\n";
 
-  os << "<HPCToolkitExperiment version=\"2.0\">\n";
+  os << "<HPCToolkitExperiment version=\"3.0\">\n";
   os << "<Header n" << MakeAttrStr(name) << ">\n";
   os << "  <Info/>\n";
   os << "</Header>\n";

@@ -300,13 +300,6 @@ realmain(int argc, char* const* argv)
   }
   profGbl->structure(structure);
 
-  if (0) {
-    writeProfile(*profGbl, "dbg-canonical-cct-a", myRank);
-    writeStructure(*structure, "dbg-structure-a", myRank);
-    string fnm = makeFileName("dbg-overlay-structure", "txt", myRank);
-    Analysis::CallPath::dbgOs = IOUtil::OpenOStream(fnm.c_str());
-  }
-
   // N.B.: Ensures that each rank adds static structure in the same
   // order so that new corresponding nodes have identical node ids.
   Analysis::CallPath::overlayStaticStructureMain(*profGbl, args.agent,
@@ -314,12 +307,6 @@ realmain(int argc, char* const* argv)
 
   // N.B.: Dense ids are assigned w.r.t. Prof::CCT::...::cmpByStructureInfo()
   profGbl->cct()->makeDensePreorderIds();
-
-  if (0) {
-    writeProfile(*profGbl, "dbg-canonical-cct-b", myRank);
-    writeStructure(*structure, "dbg-structure-b", myRank);
-    IOUtil::CloseStream(Analysis::CallPath::dbgOs);
-  }
 
   // -------------------------------------------------------
   // 2a. Create summary metrics for canonical CCT
@@ -604,24 +591,6 @@ makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
 
   if (myRank == rootRank) {
     
-    // We now generate non-finalized metrics, so no need to do this
-    if (0) {
-      for (uint grpId = 1; grpId < groupIdToGroupMetricsMap.size(); ++grpId) {
-	const VMAIntervalSet* ivalset = groupIdToGroupMetricsMap[grpId];
-	
-	// degenerate case: group has no metrics => no derived metrics
-	if (!ivalset) { continue; }
-	
-	DIAG_Assert(ivalset->size() == 1, DIAG_UnexpectedInput);
-	
-	const VMAInterval& ival = *(ivalset->begin());
-	uint mBeg = (uint)ival.beg(), mEnd = (uint)ival.end();
-	
-	cctRoot->computeMetricsIncr(mMgrGbl, mBeg, mEnd,
-				    Prof::Metric::AExprIncr::FnFini);
-      }
-    }
-
     for (uint i = 0; i < mMgrGbl.size(); ++i) {
       Prof::Metric::ADesc* m = mMgrGbl.metric(i);
       m->computedType(Prof::Metric::ADesc::ComputedTy_NonFinal);
