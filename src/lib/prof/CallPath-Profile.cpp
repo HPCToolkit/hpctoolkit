@@ -1535,9 +1535,9 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     mdesc.is_frequency_metric = false;
 
     metric_aux_info_t aux_info;
-    aux_info.is_multiplexed = false;
-    aux_info.num_samples    = 0;
-    aux_info.threshold_mean = 0;
+    aux_info.is_multiplexed = m->isMultiplexed();
+    aux_info.num_samples    = m->num_samples();
+    aux_info.threshold_mean = m->periodMean();
 
     hpcrun_fmt_metricDesc_fwrite(&mdesc, &aux_info, fs);
   }

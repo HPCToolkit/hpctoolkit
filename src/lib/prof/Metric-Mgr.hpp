@@ -223,7 +223,13 @@ public:
   void
   computePartners();
 
-
+  // specifically for merging the statistics of perf event metrics
+  // it sums the statistics of the "source" into the correspondent metrics
+  // this doesn't check if the metric is exactly the same or not
+  // we assume the position of metrics in the source and target
+  // are the same.
+  void
+  mergePerfEventStatistics(Mgr *source);
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------

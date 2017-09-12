@@ -129,26 +129,6 @@ namespace Analysis {
 
 namespace CallPath {
 
-static void
-mergePerfEventStatistics(Prof::CallPath::Profile *prof_target,
-                         Prof::CallPath::Profile *prof_source)
-{
-
-  uint metricSize = prof_source->metricMgr()->size();
-
-  for (uint i=0; i<metricSize; i++) {
-
-    Prof::Metric::ADesc *m = prof_target->metricMgr()->metric(i);
-
-    uint64_t samples = m->num_samples() +
-        prof_source->metricMgr()->metric(i)->num_samples();
-    uint64_t period  = m->periodMean() +
-        prof_source->metricMgr()->metric(i)->periodMean();
-
-    m->num_samples(samples);
-    m->periodMean (period);
-  }
-}
 
 Prof::CallPath::Profile*
 read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
@@ -169,7 +149,7 @@ read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
     Prof::CallPath::Profile* p = read(profileFiles[i], groupId, rFlags);
     prof->merge(*p, mergeTy, mrgFlags);
 
-    mergePerfEventStatistics(prof, p);
+    prof->metricMgr()->mergePerfEventStatistics(p->metricMgr());
     delete p;
   }
   

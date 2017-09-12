@@ -199,6 +199,25 @@ Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
   return firstId;
 }
 
+void
+Mgr::mergePerfEventStatistics(Mgr *source)
+{
+
+
+  for (uint i=0; i<source->size(); i++) {
+
+    Prof::Metric::ADesc *m = metric(i);
+
+    uint64_t samples = m->num_samples() +
+        source->metric(i)->num_samples();
+    uint64_t period  = m->periodMean() +
+        source->metric(i)->periodMean();
+
+    m->num_samples(samples);
+    m->periodMean (period);
+  }
+}
+
 
 uint
 Mgr::makeSummaryMetricsIncr(bool needAllStats, uint srcBegId, uint srcEndId)

@@ -169,6 +169,9 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
     int mergeTy = Prof::CallPath::Profile::Merge_MergeMetricByName;
     profile_x->merge(*profile_y, mergeTy);
 
+    // merging the perf event statistics
+    profile_x->metricMgr()->mergePerfEventStatistics(profile_y->metricMgr());
+
     if (DBG_CCT_MERGE) {
       string pfx = ("[" + StrUtil::toStr(rank_y)
 		    + " => " + StrUtil::toStr(rank_x) + "]");
