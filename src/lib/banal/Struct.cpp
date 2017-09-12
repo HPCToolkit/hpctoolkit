@@ -192,23 +192,21 @@ class HeaderInfo {
 public:
   Block * block;
   bool  is_src;
-  bool  is_targ;
-  bool  is_cond;
-  bool  in_incl;
-  bool  in_excl;
+  bool  is_excl;
   int   depth;
-  int   score;
+  long  file_index;
+  long  base_index;
+  long  line_num;
 
   HeaderInfo(Block * blk = NULL)
   {
     block = blk;
     is_src = false;
-    is_targ = false;
-    is_cond = false;
-    in_incl = false;
-    in_excl = false;
+    is_excl = false;
     depth = 0;
-    score = 0;
+    file_index = 0;
+    base_index = 0;
+    line_num = 0;
   }
 };
 
@@ -1040,9 +1038,6 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 	       TreeNode * root, Loop * loop, const string & loopName,
 	       HPC::StringTable & strTab)
 {
-  long base_index = strTab.str2index(FileUtil::basename(finfo->fileName));
-  string procName = func->name();
-
   //------------------------------------------------------------
   // Step 1 -- build the list of loop exit conditions
   //------------------------------------------------------------
@@ -1061,8 +1056,9 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
   // edges.
   //
   for (auto bit = inclBlocks.begin(); bit != inclBlocks.end(); ++bit) {
-    const Block::edgelist & outEdges = (*bit)->targets();
-    VMA src_vma = (*bit)->last();
+    Block * block = *bit;
+    const Block::edgelist & outEdges = block->targets();
+    VMA src_vma = block->last();
     bool in_loop = false, out_loop = false;
 
     for (auto eit = outEdges.begin(); eit != outEdges.end(); ++eit) {
@@ -1076,13 +1072,31 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
     }
 
     if (in_loop && out_loop) {
-      clist[src_vma] = HeaderInfo(*bit);
-      clist[src_vma].is_cond = true;
-      clist[src_vma].score = 2;
+      string filenm = "";
+      SrcFile::ln line = 0;
+
+      StatementVector svec;
+      getStatement(svec, src_vma, ginfo->sym_func);
+
+      if (! svec.empty()) {
+        filenm = svec[0]->getFile();
+        line = svec[0]->getLine();
+        RealPathMgr::singleton().realpath(filenm);
+      }
+
+      InlineSeqn seqn;
+      analyzeAddr(seqn, src_vma);
+
+      clist[src_vma] = HeaderInfo(block);
+      clist[src_vma].is_excl = loop->hasBlockExclusive(block);
+      clist[src_vma].depth = seqn.size();
+      clist[src_vma].file_index = strTab.str2index(filenm);
+      clist[src_vma].base_index = strTab.str2index(FileUtil::basename(filenm));
+      clist[src_vma].line_num = line;
     }
   }
 
-  // add bonus points if the stmt is also a back edge source
+  // see if stmt is also a back edge source
   vector <Edge *> backEdges;
   loop->getBackEdges(backEdges);
 
@@ -1092,7 +1106,6 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
     auto it = clist.find(src_vma);
     if (it != clist.end()) {
       it->second.is_src = true;
-      it->second.score += 1;
     }
   }
 
@@ -1118,6 +1131,7 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 
   FLPSeqn  path;
   StmtMap  stmts;
+  int  depth_root = 0;
 
   while (root->nodeMap.size() == 1 && root->loopList.size() == 0) {
     FLPIndex flp = root->nodeMap.begin()->first;
@@ -1126,13 +1140,13 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
     for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
       VMA vma = cit->first;
 
-      if (cit->second.is_cond && root->stmtMap.member(vma)) {
+      if (root->stmtMap.member(vma)) {
 	goto found_level;
       }
 
       // reparented stmts must also match file name
       StmtInfo * sinfo = stmts.findStmt(vma);
-      if (cit->second.is_cond && sinfo != NULL && sinfo->base_index == flp.base_index) {
+      if (sinfo != NULL && sinfo->base_index == flp.base_index) {
 	goto found_level;
       }
     }
@@ -1148,7 +1162,7 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
     delete root;
     root = subtree;
     path.push_back(flp);
-    base_index = -1;
+    depth_root++;
 
     DEBUG_MESG("inline:  l=" << flp.line_num
 	       << "  f='" << strTab.index2str(flp.file_index)
@@ -1156,6 +1170,20 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 	       << "'\n");
   }
 found_level:
+
+#if DEBUG_CFG_SOURCE
+  if (root->nodeMap.size() > 0) {
+    cout << "\nremaining inline subtrees:\n";
+
+    for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
+      FLPIndex flp = nit->first;
+      cout << "inline:  l=" << flp.line_num
+	   << "  f='" << strTab.index2str(flp.file_index)
+	   << "'  p='" << debugPrettyName(strTab.index2str(flp.proc_index))
+	   << "'\n";
+    }
+  }
+#endif
 
   //------------------------------------------------------------
   // Step 3 -- reattach stmts into this level
@@ -1172,102 +1200,121 @@ found_level:
   // Step 4 -- choose a loop header file/line at this level
   //------------------------------------------------------------
 
+  // choose loop header file based on exit conditions, and then min
+  // line within that file.  ideally, we want a file that is both an
+  // exit cond and matches some other anchor: either the enclosing
+  // func (if top-level), or else an inline subtree.
+
+  long proc_file = strTab.str2index(finfo->fileName);
+  long proc_base = strTab.str2index(FileUtil::basename(finfo->fileName));
   long file_ans = 0;
   long base_ans = 0;
   long line_ans = 0;
 
-  if (root->nodeMap.size() > 0 || root->loopList.size() > 0) {
-    //
-    // if there is an inline callsite or subloop, then use that file
-    // name and the minimum line number among all callsites, subloops
-    // and loop conditions with the same file.
-    //
-    // if there is an inconsistent choice of file name, prefer the
-    // file matching the function, but do this only at top-level (no
-    // inline steps).  inline call sites show only where called from,
-    // not where defined.
-    //
-    for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
-      FLPIndex flp = nit->first;
-      file_ans = flp.file_index;
-      base_ans = flp.base_index;
-      line_ans = flp.line_num;
+  // first choice is the file for the enclosing func that matches some
+  // exit cond at top-level, but only if no inline steps
+  if (depth_root == 0) {
+    for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
+      HeaderInfo * info = &(cit->second);
 
-      if (base_index < 0 || flp.base_index == base_index) {
+      if (info->depth == depth_root && info->base_index == proc_base) {
+	file_ans = proc_file;
+	base_ans = proc_base;
 	goto found_file;
       }
     }
+  }
 
-    for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
-      LoopInfo *info = *lit;
+  // also good is an inline subtree that matches an exit cond
+  for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
+    FLPIndex flp = nit->first;
+
+    for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
+      HeaderInfo * info = &(cit->second);
+
+      if (info->depth == depth_root && info->base_index == flp.base_index) {
+	file_ans = flp.file_index;
+	base_ans = flp.base_index;
+	goto found_file;
+      }
+    }
+  }
+
+  // settle for any exit cond at root level.  this is the last of the
+  // good answers.
+  for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
+    HeaderInfo * info = &(cit->second);
+
+    if (info->depth == depth_root) {
       file_ans = info->file_index;
       base_ans = info->base_index;
-      line_ans = info->line_num;
-
-      if (base_index < 0 || info->base_index == base_index) {
-	goto found_file;
-      }
+      goto found_file;
     }
+  }
+
+  // enclosing func file, but without exit cond
+  if (depth_root == 0) {
+    file_ans = proc_file;
+    base_ans = proc_base;
+    goto found_file;
+  }
+
+  // inline subtree, but without exit cond
+  if (root->nodeMap.begin() != root->nodeMap.end()) {
+    FLPIndex flp = root->nodeMap.begin()->first;
+    file_ans = flp.file_index;
+    base_ans = flp.base_index;
+    goto found_file;
+  }
+
+  // subloop at root level
+  if (root->loopList.begin() != root->loopList.end()) {
+    LoopInfo * linfo = *(root->loopList.begin());
+    file_ans = linfo->file_index;
+    base_ans = linfo->base_index;
+    goto found_file;
+  }
+
+  // any stmt at root level
+  if (root->stmtMap.begin() != root->stmtMap.end()) {
+    StmtInfo * sinfo = root->stmtMap.begin()->second;
+    file_ans = sinfo->file_index;
+    base_ans = sinfo->base_index;
+    line_ans = sinfo->line_num;
+  }
 found_file:
 
-    // min of inline callsites
-    for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
-      FLPIndex flp = nit->first;
+  // min line of inline callsites
+  for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
+    FLPIndex flp = nit->first;
 
-      if (flp.base_index == base_ans && flp.line_num < line_ans) {
-	line_ans = flp.line_num;
-      }
-    }
-
-    // min of subloops
-    for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
-      LoopInfo *info = *lit;
-
-      if (info->base_index == base_ans && info->line_num < line_ans) {
-	line_ans = info->line_num;
-      }
-    }
-
-    // min of loop cond stmts
-    for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
-      VMA vma = cit->first;
-      StmtInfo *info = root->stmtMap.findStmt(vma);
-
-      if (cit->second.is_cond && info != NULL && info->base_index == base_ans
-	  && info->line_num < line_ans) {
-	line_ans = info->line_num;
-      }
-    }
-  }
-  else {
-    //
-    // if there are only terminal stmts, then select the file name of
-    // the best candidate (loop cond + back edge source, loop cond,
-    // then any stmt) and then the min line number.
-    //
-    int max_score = -1;
-
-    for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
-      VMA vma = sit->first;
-      StmtInfo *info = sit->second;
-      auto it = clist.lower_bound(vma);
-      int score = (it != clist.end() && info->member(it->first))
-                   ? it->second.score : 0;
-
-      if (score > max_score) {
-	max_score = score;
-	file_ans = info->file_index;
-	base_ans = info->base_index;
-	line_ans = info->line_num;
-      }
-      else if (score == max_score && info->base_index == base_ans
-	       && info->line_num < line_ans) {
-	line_ans = info->line_num;
-      }
+    if (flp.base_index == base_ans
+	&& (line_ans == 0 || (flp.line_num > 0 && flp.line_num < line_ans))) {
+      line_ans = flp.line_num;
     }
   }
 
-  DEBUG_MESG("header:  l=" << line_ans << "  f='"
+  // min line of subloops
+  for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
+    LoopInfo * linfo = *lit;
+
+    if (linfo->base_index == base_ans
+	&& (line_ans == 0 || (linfo->line_num > 0 && linfo->line_num < line_ans))) {
+      line_ans = linfo->line_num;
+    }
+  }
+
+  // min line of exit cond stmts at root level
+  for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
+    HeaderInfo * info = &(cit->second);
+
+    if (info->depth == depth_root
+	&& (line_ans == 0 || (info->line_num > 0 && info->line_num < line_ans))) {
+      line_ans = info->line_num;
+    }
+  }
+
+  DEBUG_MESG("\nheader:  l=" << line_ans << "  f='"
 	     << strTab.index2str(file_ans) << "'\n");
 
   vector <Block *> entryBlocks;
@@ -1459,6 +1506,27 @@ debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line)
 //----------------------------------------------------------------------
 
 static void
+debugAddr(GroupInfo * ginfo, VMA vma)
+{
+  StatementVector svec;
+  string filenm = "";
+  SrcFile::ln line = 0;
+
+  getStatement(svec, vma, ginfo->sym_func);
+
+  if (! svec.empty()) {
+    filenm = svec[0]->getFile();
+    line = svec[0]->getLine();
+    RealPathMgr::singleton().realpath(filenm);
+  }
+
+  cout << "0x" << hex << vma << dec
+       << "  l=" << line << "  f='" << filenm << "'\n";
+}
+
+//----------------------------------------------------------------------
+
+static void
 debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
 	  Loop * loop, const string & loopName,
 	  vector <Edge *> & backEdges, HeaderList & clist)
@@ -1468,9 +1536,12 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
 
   cout << "\nheader info:  " << loopName
        << ((num_ents == 1) ? "  (reducible)" : "  (irreducible)")
-       << "  '" << func->name() << "'\n\n";
+       << "  '" << func->name() << "'\n";
 
-  cout << "entry blocks:" << hex;
+  cout << "\nfunc header:\n";
+  debugAddr(ginfo, func->addr());
+
+  cout << "\nentry blocks:" << hex;
   for (auto bit = entBlocks.begin(); bit != entBlocks.end(); ++bit) {
     cout << "  0x" << (*bit)->start();
   }
@@ -1484,13 +1555,14 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
   for (auto eit = backEdges.begin(); eit != backEdges.end(); ++eit) {
     cout << "  0x" << (*eit)->trg()->start();
   }
+  cout << dec;
 
   cout << "\n\nexit conditions:\n";
   for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
     VMA vma = cit->first;
     HeaderInfo * info = &(cit->second);
     SrcFile::ln line;
-    string filenm, label;
+    string filenm;
 
     InlineSeqn seqn;
     analyzeAddr(seqn, vma);
@@ -1501,18 +1573,13 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
     if (! svec.empty()) {
       filenm = svec[0]->getFile();
       line = svec[0]->getLine();
+      RealPathMgr::singleton().realpath(filenm);
     }
 
-    if (info->is_src) { label = "src "; }
-    else if (info->is_targ) { label = "targ"; }
-    else if (info->is_cond) { label = "cond"; }
-    else { label = "??? "; }
-
     cout << "0x" << hex << vma << dec
-	 << "  " << label
-	 << "  excl: " << loop->hasBlockExclusive(info->block)
-	 << "  cond: " << info->is_cond
-	 << "  depth: " << seqn.size()
+	 << "  " << (info->is_src ? "src " : "cond")
+	 << "  excl: " << info->is_excl
+	 << "  depth: " << info->depth
 	 << "  l=" << line
 	 << "  f='" << filenm << "'\n";
   }
