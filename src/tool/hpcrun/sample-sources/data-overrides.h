@@ -47,6 +47,7 @@
 #ifndef __DATA_OVERRIDES_H
 #define __DATA_OVERRIDES_H
 
+cct_node_t *splay_lookup(void *key, void **start, void **end);
 
 #endif
 

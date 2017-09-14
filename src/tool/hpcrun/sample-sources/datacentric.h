@@ -62,7 +62,6 @@
  *  interface operations
  ******************************************************************************/
 
-cct_node_t *splay_lookup(void *key, void **start, void **end);
 int hpcrun_datacentric_alloc_id(); 
 int hpcrun_datacentric_active();
 void hpcrun_datacentric_free_inc(cct_node_t* node, int incr);

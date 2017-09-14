@@ -82,7 +82,7 @@ printw(FILE *output, const char *name, const char *desc)
   int *len;
   char sdesc[MAX_DESC_PER_LINE];
 
-  int lines = strwrap(desc, MAX_DESC_PER_LINE, &line, &len);
+  int lines = strwrap((char *)desc, MAX_DESC_PER_LINE, &line, &len);
   for (int i=0; i<lines; i++) {
     strncpy(sdesc, line[i], len[i]);
     sdesc[len[i]] = '\0';
