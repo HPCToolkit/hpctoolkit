@@ -423,10 +423,6 @@ MY_INCLUDE_DIRS =			\
         $(OPT_CUPTI_IFLAGS)             \
 	-I$(LIBMONITOR_INC)
 
-if OPT_PERFMON
-MY_INCLUDE_DIRS += -I$(PERFMON_INC)
-endif
-
 MY_MIPS_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/mips
 
@@ -645,8 +641,8 @@ endif
 # cflags
 #-----------------------------------------------------------
 
-libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
+libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -869,10 +865,6 @@ if OPT_ENABLE_CUDA
   libhpcrun_gpu_wrap_a_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_gpu_wrap_a_CFLAGS  += $(OPT_CUDA_IFLAGS)
 
-endif
-
-if OPT_PERFMON
-  libhpcrun_la_CPPFLAGS += -DENABLE_PERFMON
 endif
 
 if UNW_LIBUNW
