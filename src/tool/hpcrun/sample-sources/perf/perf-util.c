@@ -223,8 +223,13 @@ get_precise_ip()
   struct perf_event_attr attr;
 
   memset(&attr, 0, sizeof(attr));
+
   attr.config = PERF_COUNT_HW_CPU_CYCLES; // Perf's cycle event
   attr.type   = PERF_TYPE_HARDWARE;     // it's a hardware event
+
+  attr.exclude_kernel = 1;
+  attr.exclude_hv     = 1;
+  attr.exclude_idle   = 1;
 
   // check if user wants a specific ip-precision
   int val = getEnvLong(HPCRUN_OPTION_PRECISE_IP, PERF_EVENT_AUTODETECT_SKID);
@@ -272,13 +277,20 @@ get_precise_ip()
 // predicates that test perf availability
 //----------------------------------------------------------
 
-static FILE*
+static int
 perf_kernel_syms_avail()
 {
-  FILE *ksyms = fopen(LINUX_KERNEL_SYMBOL_FILE, "r");
-  bool success = (ksyms != NULL);
-  if (success) fclose(ksyms);
-  return ksyms;
+  FILE *pe_paranoid = fopen(LINUX_PERF_EVENTS_FILE, "r");
+  FILE *ksyms       = fopen(LINUX_KERNEL_SYMBOL_FILE, "r");
+  int level         = 3; // default : no access to perf event
+
+  if (ksyms != NULL && pe_paranoid != NULL) {
+    fscanf(pe_paranoid, "%d", &level) ;
+  }
+  if (ksyms)       fclose(ksyms);
+  if (pe_paranoid) fclose(pe_paranoid);
+
+  return level;
 }
 
 
@@ -297,9 +309,9 @@ is_perf_ksym_available()
   static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
 
   if (ksym_status == PERF_UNDEFINED) {
-  	FILE *file_ksyms = perf_kernel_syms_avail();
+  	int level = perf_kernel_syms_avail();
 
-    if (file_ksyms != NULL) {
+    if (level == 0 || level == 1) {
       hpcrun_kernel_callpath_register(perf_add_kernel_callchain);
       perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
       ksym_status = PERF_AVAILABLE;
@@ -343,14 +355,21 @@ perf_attr_init(
   attr->sample_period = threshold;          /* Period or frequency of sampling     */
   attr->precise_ip    = get_precise_ip();   /* the precision is either detected automatically
                                               as precise as possible or  on the user's variable.  */
-  //attr->wakeup_events = PERF_WAKEUP_EACH_SAMPLE;
   attr->disabled      = 1;                 /* the counter will be enabled later  */
-  attr->sample_stack_user = 4096;
+  attr->sample_type   = sample_type;
+
+  attr->exclude_callchain_user   = EXCLUDE_CALLCHAIN;
+  attr->exclude_callchain_kernel = EXCLUDE_CALLCHAIN;
 
   if (is_perf_ksym_available()) {
-    /* Records the callchain */
-    attr->sample_type            = sample_type | PERF_SAMPLE_CALLCHAIN;
-    attr->exclude_callchain_user = EXCLUDE_CALLCHAIN_USER;
+    /* Records kernel call-chain when we have privilege */
+    attr->sample_type             |= PERF_SAMPLE_CALLCHAIN;
+    attr->exclude_callchain_kernel = INCLUDE_CALLCHAIN;
+  } else {
+    /* case where kernel access is not allowed. */
+    attr->exclude_hv     = 1;
+    attr->exclude_idle   = 1;
+    attr->exclude_kernel = 1;
   }
   return true;
 }

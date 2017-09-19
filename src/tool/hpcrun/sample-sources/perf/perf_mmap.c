@@ -261,24 +261,22 @@ static int
 perf_sample_callchain(pe_mmap_t *current_perf_mmap, perf_mmap_data_t* mmap_data)
 {
   mmap_data->nr = 0;     // initialze the number of records to be 0
+  u64 num_records = 0;
 
   // determine how many frames in the call chain
-  if (perf_read_u64( current_perf_mmap, &mmap_data->nr) == 0) {
+  if (perf_read_u64( current_perf_mmap, &num_records) == 0) {
     if (mmap_data->nr > 0) {
-      // allocate space to receive IPs for kernel callchain
-      u64 buffer[mmap_data->nr];
+
+      // warning: if the number of frames is bigger than the storage (MAX_CALLCHAIN_FRAMES)
+      // we have to truncate them. This is not a good practice, but so far it's the only
+      // simplest solution I can come up.
+      mmap_data->nr = (num_records < MAX_CALLCHAIN_FRAMES ? num_records : MAX_CALLCHAIN_FRAMES);
 
       // read the IPs for the frames
-      if (perf_read( current_perf_mmap, buffer, mmap_data->nr * sizeof(u64)) != 0) {
+      if (perf_read( current_perf_mmap, mmap_data->ips, num_records * sizeof(u64)) != 0) {
         // the data seems invalid
         mmap_data->nr = 0;
         TMSG(LINUX_PERF, "unable to read all %d frames", mmap_data->nr);
-      } else {
-        // warning: if the number of frames is bigger than the storage (MAX_CALLCHAIN_FRAMES)
-        // we have to truncate them. This is not a good practice, but so far it's the only
-        // simplest solution I can come up.
-        u64 num_frames_max = mmap_data->nr > MAX_CALLCHAIN_FRAMES ? MAX_CALLCHAIN_FRAMES : mmap_data->nr;
-        memcpy(mmap_data->ips, buffer, num_frames_max * sizeof(u64));
       }
     }
   } else {
@@ -503,13 +501,12 @@ set_mmap(int perf_fd)
 
   pe_mmap_t *mmap  = (pe_mmap_t *) map_result;
 
-  if (mmap) {
-    memset(mmap, 0, sizeof(pe_mmap_t));
-    mmap->version = 0;
-    mmap->compat_version = 0;
-    mmap->data_head = 0;
-    mmap->data_tail = 0;
-  }
+  memset(mmap, 0, sizeof(pe_mmap_t));
+  mmap->version = 0;
+  mmap->compat_version = 0;
+  mmap->data_head = 0;
+  mmap->data_tail = 0;
+
   return mmap;
 }
 

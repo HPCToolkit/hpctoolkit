@@ -59,8 +59,8 @@
 #define PERF_REQUEST_0_SKID      2
 #define PERF_WAKEUP_EACH_SAMPLE  1
 
-#define EXCLUDE_CALLCHAIN_USER   1
-
+#define EXCLUDE_CALLCHAIN 1
+#define INCLUDE_CALLCHAIN 0
 
 
 #ifndef u32
