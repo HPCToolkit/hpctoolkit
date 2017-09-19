@@ -342,7 +342,7 @@ hpcfmt_nvpairList_free(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
 // at the moment, only perf event sample source needs this info
 // --------------------------------------------------------------
 typedef struct metric_aux_info_s {
-	//bool   is_frequency;    // flag if the threshold is based on frequency
+
 	bool   is_multiplexed;  // flag if the event is multiplexed
 	double threshold_mean;  // average threshold (if multiplexed)
 

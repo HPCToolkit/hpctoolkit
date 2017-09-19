@@ -48,9 +48,9 @@
 
 #include "include/queue.h" // Singly-linkled list macros
 
-#include "perf-util.h"
-
 #include "sample-sources/display.h"
+
+#include "event_custom.h"
 
 //*************************** type data structure **************************
 

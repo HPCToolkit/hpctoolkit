@@ -47,6 +47,7 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <sample_event.h>
 
+#include "event_custom.h"
 
 /******************************************************************************
  * macros
@@ -119,29 +120,6 @@ typedef struct perf_mmap_data_s {
   u64 	context_switch_time;
 
 } perf_mmap_data_t;
-
-// forward type declaration
-struct event_info_s;
-struct event_thread_s;
-
-// callback functions
-typedef void (*register_event_t)(struct event_info_s *);
-typedef void (*event_handler_t)(struct event_thread_s*, sample_val_t , perf_mmap_data_t* );
-
-// --------------------------------------------------------------
-// data structure for our customized event
-// this type should be used only within perf module.
-// --------------------------------------------------------------
-typedef struct event_custom_s {
-  const char *name;            // unique name of the event
-  const char *desc;            // brief description of the event
-
-  register_event_t register_fn;// function to register the event
-  event_handler_t  handler_fn; // callback to be used during the sampling
-
-  int            metric_index; // hpcrun's index metric
-  metric_desc_t *metric_desc;  // pointer to predefined metric
-} event_custom_t;
 
 
 // --------------------------------------------------------------
