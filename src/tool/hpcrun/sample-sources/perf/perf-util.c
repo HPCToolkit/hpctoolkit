@@ -295,6 +295,24 @@ perf_kernel_syms_avail()
 
 
 //----------------------------------------------------------
+// returns the maximum sample rate of this node
+// based on info provided by LINUX_PERF_EVENTS_MAX_RATE file
+//----------------------------------------------------------
+static int
+perf_max_sample_rate()
+{
+  FILE *perf_rate_file = fopen(LINUX_PERF_EVENTS_MAX_RATE, "r");
+  int max_sample_rate  = -1;
+
+  if (perf_rate_file != NULL) {
+    fscanf(perf_rate_file, "%d", &max_sample_rate);
+    fclose(perf_rate_file);
+  }
+  return max_sample_rate;
+}
+
+
+//----------------------------------------------------------
 // Interface to see if the kernel symbol is available
 // this function caches the value so that we don't need
 //   enquiry the same question all the time.
@@ -353,6 +371,13 @@ perf_attr_init(
   attr->freq   = (usePeriod ? 0 : 1);
 
   attr->sample_period = threshold;          /* Period or frequency of sampling     */
+  int max_sample_rate = perf_max_sample_rate();
+
+  if (attr->freq == 1 && threshold > max_sample_rate) {
+    EMSG("Error: the rate %d is higher than the supported sample rate %d",
+          threshold, max_sample_rate);
+  }
+
   attr->precise_ip    = get_precise_ip();   /* the precision is either detected automatically
                                               as precise as possible or  on the user's variable.  */
   attr->disabled      = 1;                 /* the counter will be enabled later  */
@@ -361,14 +386,16 @@ perf_attr_init(
   attr->exclude_callchain_user   = EXCLUDE_CALLCHAIN;
   attr->exclude_callchain_kernel = EXCLUDE_CALLCHAIN;
 
+  attr->exclude_hv     = 1;
+  attr->exclude_idle   = 1;
+
   if (is_perf_ksym_available()) {
     /* Records kernel call-chain when we have privilege */
     attr->sample_type             |= PERF_SAMPLE_CALLCHAIN;
     attr->exclude_callchain_kernel = INCLUDE_CALLCHAIN;
+    attr->exclude_kernel 	   = 0;
   } else {
     /* case where kernel access is not allowed. */
-    attr->exclude_hv     = 1;
-    attr->exclude_idle   = 1;
     attr->exclude_kernel = 1;
   }
   return true;

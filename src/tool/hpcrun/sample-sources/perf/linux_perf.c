@@ -319,7 +319,7 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
 	event->attr.type, event->attr.sample_freq, event->attr.freq);
 
   // check if perf_event_open is successful
-  if ( et->fd <0 ) {
+  if (et->fd < 0) {
     EMSG("Linux perf event open %d (%d) failed: %s",
           event->id, event->attr.config, strerror(errno));
     return false;
