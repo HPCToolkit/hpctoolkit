@@ -98,15 +98,14 @@ typedef struct binarytree_s binarytree_t;
 typedef struct binarytree_s {
   struct binarytree_s *left;
   struct binarytree_s *right;
-  void* val;
+  char val[];
 } binarytree_t;
 
 #endif
 
 // constructors
 binarytree_t *
-binarytree_new(void* value, binarytree_t *left, binarytree_t *right,
-	mem_alloc m_alloc);
+binarytree_new(size_t size, mem_alloc m_alloc);
 
 // destructor
 void binarytree_del(binarytree_t **root, mem_free m_free);
@@ -131,11 +130,6 @@ binarytree_rightsubtree(binarytree_t *tree);
  * Settors
  */
 void
-binarytree_set_rootval(
-	binarytree_t *tree,
-	void* rootval);
-
-void
 binarytree_set_leftsubtree(
 	binarytree_t *tree,
 	binarytree_t* subtree);
@@ -149,19 +143,18 @@ binarytree_set_rightsubtree(
 int
 binarytree_count(binarytree_t *node);
 
-// linearize a binary tree in order traversal into a vector
-void
-binarytree_to_vector(binarytree_t *nvec[], binarytree_t *tree);
-
-// construct a balanced binary tree from a vector of nodes.
-// post-condition: 0 <= |height(left subtree) - height(right subtree)| <= 1
+// given a tree that is a list, with all left children empty,
+// restructure to make a balanced tree
 binarytree_t *
-vector_to_binarytree(binarytree_t *nvec[], int l, int u);
+binarytree_list_to_tree(binarytree_t ** head, int count);
 
-// perform bulk rebalancing by gathering nodes into a vector and
-// rebuilding the tree from scratch using the same nodes.
+// restructure a binary tree so that all its left children are null
 binarytree_t *
-binarytree_rebalance(binarytree_t *tree);
+binarytree_listify(binarytree_t *root);
+
+// allocate a binary tree so that all its left children are null
+binarytree_t *
+binarytree_listalloc(size_t elt_size, int num_elts, mem_alloc m_alloc);
 
 // use binarytree_node_cmp to find a matching node in a binary search tree.
 // NULL is returned
@@ -187,36 +180,7 @@ binarytree_tostring_indent(binarytree_t *tree, val_tostr tostr,
 int
 binarytree_height(binarytree_t *tree);
 
-// an empty binary tree is balanced.
-// a non-empty binary tree is balanced iff the difference in height between
-// the left and right subtrees is less or equal to 1.
-bool
-binarytree_is_balanced(binarytree_t *tree);
-
-// an empty binary tree is in order
-// an non-empty binary tree is in order iff
-// its left subtree is in order and all of its elements are < the root element
-// its right subtree is in order and all of its elements are > the root element
-bool
-binarytree_is_inorder(binarytree_t *tree, val_cmp compare);
-
-
 binarytree_t *
-binarytree_insert(binarytree_t *tree, val_cmp compare, void *val, mem_alloc m_alloc);
-
-/*
- * if the tree is not NULL, remove the leftmost left node from the tree, make it
- * the new root of the tree, and set its left subtree to the old tree.
- * if the tree is NULL, do nothing.
- */
-void
-binarytree_leftmostleaf_to_root(binarytree_t **tree);
-
-/*
- * if the tree != NULL, remove and return the leftmost leaf node from the tree,
- * otherwise return NULL.
- */
-binarytree_t*
-binarytree_remove_leftmostleaf(binarytree_t **tree);
+binarytree_insert(binarytree_t *tree, val_cmp compare, binarytree_t *key);
 
 #endif

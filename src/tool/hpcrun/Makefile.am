@@ -186,7 +186,6 @@ UNW_UNIV_FILES = \
 UNW_COMMON_FILES = \
         $(UNW_UNIV_FILES)               \
 	unwind/common/binarytree_uwi.c		    \
-	unwind/common/ildmod_stat.c \
 	unwind/common/interval_t.c	    \
 	unwind/common/stack_troll.c	\
 	unwind/common/uw_recipe_map.c
@@ -234,7 +233,7 @@ UNW_PPC64_LD_FLAGS =
 # configuration
 
 UNW_LIBUNW_FILES = \
-       $(UNW_UNIV_FILES) \
+       $(UNW_COMMON_FILES) \
        unwind/generic-libunwind/libunw-unwind.c \
        unwind/common/default_validation_summary.c
 

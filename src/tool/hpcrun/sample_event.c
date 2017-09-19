@@ -148,7 +148,6 @@ record_partial_unwind(
   bt.last =  bt_last;
   bt.fence = FENCE_BAD;
   bt.has_tramp = false;
-  bt.trolled = false;
   bt.n_trolls = 0;
   bt.bottom_frame_elided = false;
 

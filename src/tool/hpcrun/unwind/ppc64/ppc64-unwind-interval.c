@@ -132,9 +132,8 @@ new_ui(char *startaddr,
   // filled in when a successor recipe is linked behind this one or
   // when the end of the enclosing routine is reached 
   // ----------------------------------------------------------------
-  interval_t *interval =  uwi->interval;
-  interval->start = (uintptr_t)startaddr;
-  interval->end = 0; 
+  uwi->interval.start = (uintptr_t)startaddr;
+  uwi->interval.end = 0; 
 
   // ----------------------------------------------------------------
   // initialize the unwind recipe for the given interval as specified
@@ -514,6 +513,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
     new_ui(beg_insn, SPTy_Reg, RATy_Reg, PPC_REG_SP, PPC_REG_LR, m_alloc);
   unwind_interval* ui = beg_ui;
   unwind_interval* canon_ui = beg_ui;
+  int count = 1;
 
   uint32_t* cur_insn = (uint32_t*) beg_insn;
   uint32_t* end_insn = (uint32_t*) (beg_insn + len);
@@ -685,6 +685,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
 
     if (prev_ui != ui) {
       link_ui(prev_ui, ui);
+      count++;
     }
     
     cur_insn++;
@@ -694,6 +695,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
 
   btuwi_status_t stat;
   stat.first_undecoded_ins = NULL;
+  stat.count = count;
   stat.errcode = 0;
   stat.first = beg_ui;
 
