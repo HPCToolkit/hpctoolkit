@@ -146,6 +146,11 @@ test_pmu(uint64_t code, uint64_t type)
   event_attr.type = type;
   event_attr.config = code;
 
+  // do not check if the event can run with kernel access
+  event_attr.exclude_kernel = 1;
+  event_attr.exclude_hv     = 1;
+  event_attr.exclude_idle   = 1;
+
   int fd = perf_event_open(&event_attr, 0, -1, -1, 0);
   if (fd == -1) {
     return -1;
@@ -154,6 +159,10 @@ test_pmu(uint64_t code, uint64_t type)
   return fd;
 }
 
+/******************
+ * show the information of a given pmu event
+ * the display will be formatted by display library
+ ******************/
 static void
 show_event_info(pfm_event_info_t *info)
 {
@@ -195,6 +204,9 @@ show_event_info(pfm_event_info_t *info)
   }
 }
 
+/******************
+ * show the list of supported events
+ ******************/
 static int
 show_info(char *event )
 {
