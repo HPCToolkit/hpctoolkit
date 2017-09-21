@@ -340,10 +340,14 @@ endif
 if OPT_ENABLE_PERF_EVENT
 MY_BASE_FILES +=  			\
 	sample-sources/perf/event_custom.c	\
-	sample-sources/perf/kernel_blocking.c	\
 	sample-sources/perf/linux_perf.c	\
 	sample-sources/perf/perf-util.c	\
 	sample-sources/perf/perf_mmap.c	
+endif
+
+if OPT_ENABLE_KERNEL_4_3
+MY_BASE_FILES +=  			\
+	sample-sources/perf/kernel_blocking.c	
 endif
 
 MY_DYNAMIC_FILES = 			\

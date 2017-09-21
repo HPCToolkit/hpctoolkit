@@ -2201,25 +2201,48 @@ PERF_EVENT_AVAIL="no"
 
 if test -f $PERF_EVENT_PARANOID_PATH; then
   PERF_EVENT_PARANOID=`cat "$PERF_EVENT_PARANOID_PATH"`
-  PERF_EVENT_AVAIL="yes"
 fi
 
-AC_MSG_RESULT([$PERF_EVENT_AVAIL])
+AC_COMPILE_IFELSE([
+AC_LANG_SOURCE([[
+#include <linux/perf_event.h>
+
+static struct perf_event_attr attr;
+void check_kernel()
+{
+  attr.sample_id_all = 1;
+}
+]])], [perf_event=yes], [perf_event=no])
+
+
+AC_MSG_RESULT([$perf_event])
 AC_MSG_NOTICE([value of perf paranoid in ${PERF_EVENT_PARANOID_PATH} : ${PERF_EVENT_PARANOID} ])
 
-KERNEL_VER_MAJ=`uname -r | awk 'BEGIN{FS="."}{print $1;}'`
-KERNEL_VER_MIN=`uname -r | awk 'BEGIN{FS="."}{print $2;}'`
-
-KERNEL_VERSION="$KERNEL_VER_MAJ.$KERNEL_VER_MIN"
-
-AC_MSG_CHECKING([Linux kernel]);
-AC_MSG_RESULT([$KERNEL_VERSION])
-
-AM_CONDITIONAL(OPT_ENABLE_PERF_EVENT, [test "$PERF_EVENT_AVAIL" != no])
+AM_CONDITIONAL(OPT_ENABLE_PERF_EVENT, [test "$perf_event" != no])
 
 # substitution
-AC_SUBST([KERNEL_VERSION])
 AC_SUBST([PERF_EVENT_PARANOID])
+
+#-------------------------------------------------
+# check if the kernel is 4.3 or newer
+#-------------------------------------------------
+
+AC_MSG_CHECKING([if the kernel is 4.3 or newer])
+
+AC_COMPILE_IFELSE([
+AC_LANG_SOURCE([[
+#include <linux/perf_event.h>
+
+static struct perf_event_attr attr;
+void check_kernel()
+{
+  attr.context_switch = 1;
+}
+]])], [kernel_4_3=yes], [kernel_4_3=no])
+
+AC_MSG_RESULT([$kernel_4_3])
+
+AM_CONDITIONAL([OPT_ENABLE_KERNEL_4_3], [test "$kernel_4_3" = yes])
 
 
 #-------------------------------------------------
@@ -3788,7 +3811,7 @@ AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
 AC_MSG_NOTICE([  hpcstruct:    $cfg_mesg])
-AC_MSG_NOTICE([  perf-events:  ${PERF_EVENT_AVAIL}])
+AC_MSG_NOTICE([  perf-events:  ${perf_event}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
 AC_MSG_NOTICE([  Path:      $CC_PATH])

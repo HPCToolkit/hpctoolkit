@@ -55,7 +55,8 @@
  */
 #include <assert.h>
 #include <include/linux_info.h>
-#include <linux/version.h>
+// #include <linux/version.h> // not used anymore. the build will decide if the
+                           // kernel is recent enough or not
 
 #ifdef ENABLE_PERFMON
 #include "perfmon-util.h"
@@ -268,9 +269,7 @@ register_blocking(event_info_t *event_desc)
       sample_type /* need additional info for sample type */
   );
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
   event_desc->attr.context_switch = 1;
-#endif
   event_desc->attr.sample_id_all = 1;
 }
 
@@ -282,7 +281,7 @@ register_blocking(event_info_t *event_desc)
 void kernel_blocking_init()
 {
   // unfortunately, the older version doesn't support context switch event properly
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
+
   event_custom_t *event_kernel_blocking = hpcrun_malloc(sizeof(event_custom_t));
   event_kernel_blocking->name         = EVNAME_KERNEL_BLOCK;
   event_kernel_blocking->desc         = "Approximate blocking time spent in the kernel. The unit time is hardware-dependent.";
@@ -292,5 +291,4 @@ void kernel_blocking_init()
   event_kernel_blocking->metric_desc  = NULL; 	 	// these fields to be defined later
 
   event_custom_register(event_kernel_blocking);
-#endif
 }
