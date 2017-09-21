@@ -374,8 +374,9 @@ perf_attr_init(
   int max_sample_rate = perf_max_sample_rate();
 
   if (attr->freq == 1 && threshold > max_sample_rate) {
-    EMSG("Error: the rate %d is higher than the supported sample rate %d",
+    EMSG("WARNING: the rate %d is higher than the supported sample rate %d. Adjusted to the max rate.",
           threshold, max_sample_rate);
+    attr->sample_period = max_sample_rate-1;
   }
 
   attr->precise_ip    = get_precise_ip();   /* the precision is either detected automatically
@@ -386,6 +387,7 @@ perf_attr_init(
   attr->exclude_callchain_user   = EXCLUDE_CALLCHAIN;
   attr->exclude_callchain_kernel = EXCLUDE_CALLCHAIN;
 
+  attr->exclude_kernel = 1;
   attr->exclude_hv     = 1;
   attr->exclude_idle   = 1;
 
@@ -394,9 +396,8 @@ perf_attr_init(
     attr->sample_type             |= PERF_SAMPLE_CALLCHAIN;
     attr->exclude_callchain_kernel = INCLUDE_CALLCHAIN;
     attr->exclude_kernel 	   = 0;
-  } else {
-    /* case where kernel access is not allowed. */
-    attr->exclude_kernel = 1;
+    attr->exclude_hv         = 0;
+    attr->exclude_idle       = 0;
   }
   return true;
 }

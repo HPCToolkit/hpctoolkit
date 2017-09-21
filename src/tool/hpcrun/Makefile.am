@@ -324,12 +324,12 @@ MY_BASE_FILES =				\
 	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/line_wrapping.c	\
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c
 
 if OPT_PERFMON
 MY_BASE_FILES +=  			\
-	utilities/line_wrapping.c	\
 	sample-sources/perf/perfmon-util.c	
 endif
 ## if OPT_ENABLE_MPI_WRAP

@@ -861,6 +861,26 @@ METHOD_FN(display_events)
 }
 
 
+// --------------------------------------------------------------------------
+// read a counter from the file descriptor,
+//  and returns the value of the counter
+// Note: this function is used for debugging purpose in gdb
+// --------------------------------------------------------------------------
+long
+read_fd(int fd)
+{
+  char buffer[1024];
+  if (fd <= 0)
+    return 0;
+
+  size_t t = read(fd, buffer, 1024);
+  if (t>0) {
+    return atoi(buffer);
+  }
+  return -1;
+}
+
+
 // ------------------------------------------------------------
 // Refresh a disabled perf event
 // returns -1 if error, non-negative is success (any returns from ioctl)
