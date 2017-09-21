@@ -265,7 +265,7 @@ perf_sample_callchain(pe_mmap_t *current_perf_mmap, perf_mmap_data_t* mmap_data)
 
   // determine how many frames in the call chain
   if (perf_read_u64( current_perf_mmap, &num_records) == 0) {
-    if (mmap_data->nr > 0) {
+    if (num_records > 0) {
 
       // warning: if the number of frames is bigger than the storage (MAX_CALLCHAIN_FRAMES)
       // we have to truncate them. This is not a good practice, but so far it's the only
