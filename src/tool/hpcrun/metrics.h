@@ -135,11 +135,16 @@ int hpcrun_new_metric(void);
 void hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
 				 MetricFlags_ValFmt_t valFmt, size_t period,
 				 metric_upd_proc_t upd_fn, metric_desc_properties_t prop);
+int hpcrun_set_new_metric_info_w_fn(const char* name,
+				    MetricFlags_ValFmt_t valFmt, size_t period,
+				    metric_upd_proc_t upd_fn, metric_desc_properties_t prop);
 
 void hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 				       MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
-
+int hpcrun_set_new_metric_info_and_period(const char* name,
+					  MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
 void hpcrun_set_metric_info(int metric_id, const char* name);
+int hpcrun_set_new_metric_info(const char* name);
 
 void hpcrun_set_metric_name(int metric_id, char* name);
 

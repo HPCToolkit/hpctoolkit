@@ -165,10 +165,8 @@ METHOD_FN(process_event_list,int lush_metrics)
     n_events = 1;
   }
 #endif // OLD_DEFAULT
-  for (int i = 0; i < n_events; i++) {
-    int n = hpcrun_new_metric();
-    hpcrun_set_metric_info(n, "RENAME");
-  }
+  for (int i = 0; i < n_events; i++)
+    hpcrun_set_new_metric_info("RENAME");
 }
 
 

@@ -164,11 +164,10 @@ METHOD_FN(supports_event,const char *ev_str)
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-  int metric_id = hpcrun_new_metric();
   TMSG(RETCNT_CTL, "Setting up return counts(trampolines)");
 
   // FIXME: MetricFlags_Ty_Final
-  hpcrun_set_metric_info(metric_id, HPCRUN_METRIC_RetCnt);
+  int metric_id = hpcrun_set_new_metric_info(HPCRUN_METRIC_RetCnt);
 
   METHOD_CALL(self, store_event, RETCNT_EVENT, IRRELEVANT);
   METHOD_CALL(self, store_metric_id, RETCNT_EVENT, metric_id);

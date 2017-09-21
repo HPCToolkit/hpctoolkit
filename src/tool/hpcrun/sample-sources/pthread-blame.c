@@ -355,15 +355,9 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   blame_shift_register(&bs_entry);
 
-  blame_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(blame_metric_id, PTHREAD_BLAME_METRIC,
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
-  blockwait_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(blockwait_metric_id, PTHREAD_BLOCKWAIT_METRIC,
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
-  spinwait_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(spinwait_metric_id, PTHREAD_SPINWAIT_METRIC,
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+  blame_metric_id = hpcrun_set_new_metric_info(PTHREAD_BLAME_METRIC);
+  blockwait_metric_id = hpcrun_set_new_metric_info(PTHREAD_BLOCKWAIT_METRIC);
+  spinwait_metric_id = hpcrun_set_new_metric_info(PTHREAD_SPINWAIT_METRIC);
   metric_id_set = true;
 
   // create & initialize blame table (once per process)

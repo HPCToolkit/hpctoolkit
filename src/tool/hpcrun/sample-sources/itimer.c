@@ -549,22 +549,20 @@ METHOD_FN(process_event_list, int lush_metrics)
   // handle metric allocation
   hpcrun_pre_allocate_metrics(1 + lush_metrics);
   
-  int metric_id = hpcrun_new_metric();
-  METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
 
   // set metric information in metric table
   TMSG(ITIMER_CTL, "setting metric timer period = %ld", sample_period);
-  hpcrun_set_metric_info_and_period(metric_id, the_metric_name,
-				    MetricFlags_ValFmt_Int,
-				    sample_period, metric_property_time);
+  int metric_id =
+    hpcrun_set_new_metric_info_and_period(the_metric_name, MetricFlags_ValFmt_Int,
+					  sample_period, metric_property_time);
+  METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
   if (lush_metrics == 1) {
-    int mid_idleness = hpcrun_new_metric();
+    int mid_idleness = 
+      hpcrun_set_new_metric_info_and_period(IDLE_METRIC_NAME,
+					    MetricFlags_ValFmt_Real,
+					    sample_period, metric_property_time);
     lush_agents->metric_time = metric_id;
     lush_agents->metric_idleness = mid_idleness;
-
-    hpcrun_set_metric_info_and_period(mid_idleness, IDLE_METRIC_NAME,
-				      MetricFlags_ValFmt_Real,
-				      sample_period, metric_property_time);
   }
 
   event = next_tok();

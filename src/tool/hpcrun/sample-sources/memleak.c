@@ -157,14 +157,12 @@ METHOD_FN(supports_event,const char *ev_str)
 static void
 METHOD_FN(process_event_list,int lush_metrics)
 {
-  alloc_metric_id = hpcrun_new_metric();
-  free_metric_id = hpcrun_new_metric();
+  alloc_metric_id = hpcrun_set_new_metric_info("Bytes Allocated");
+  free_metric_id = hpcrun_set_new_metric_info("Bytes Freed");
 
   TMSG(MEMLEAK, "Setting up metrics for memory leak detection");
 
-  hpcrun_set_metric_info(alloc_metric_id, "Bytes Allocated");
 
-  hpcrun_set_metric_info(free_metric_id, "Bytes Freed");
 }
 
 
