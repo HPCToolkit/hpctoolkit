@@ -348,6 +348,9 @@ endif
 if OPT_ENABLE_KERNEL_4_3
 MY_BASE_FILES +=  			\
 	sample-sources/perf/kernel_blocking.c	
+else
+MY_BASE_FILES +=  			\
+	sample-sources/perf/kernel_blocking_stub.c	
 endif
 
 MY_DYNAMIC_FILES = 			\
