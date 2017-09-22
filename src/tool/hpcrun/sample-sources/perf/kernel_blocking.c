@@ -62,6 +62,8 @@
 #include "perfmon-util.h"
 #endif
 
+#include "kernel_blocking.h"
+
 #include "perf-util.h"    // u64, u32 and perf_mmap_data_t
 #include "perf_mmap.h"
 #include "event_custom.h"
