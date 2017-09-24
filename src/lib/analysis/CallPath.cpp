@@ -152,6 +152,7 @@ read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
     prof->metricMgr()->mergePerfEventStatistics(p->metricMgr());
     delete p;
   }
+  prof->metricMgr()->mergePerfEventStatistics_finalize(profileFiles.size());
   
   return prof;
 }

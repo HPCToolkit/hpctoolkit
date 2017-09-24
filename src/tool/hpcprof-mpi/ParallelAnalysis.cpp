@@ -100,7 +100,7 @@ namespace ParallelAnalysis {
 
 void
 broadcast(Prof::CallPath::Profile*& profile,
-	  int myRank, int maxRank, MPI_Comm comm)
+	  int myRank, int maxRank, int rootRank, MPI_Comm comm)
 {
   if (myRank != RankTree::rootRank) {
     DIAG_Assert(!profile, "ParallelAnalysis::broadcast: " << DIAG_UnexpectedInput);
@@ -128,6 +128,9 @@ broadcast(Prof::CallPath::Profile*& profile,
     }
 
     MPI_Barrier(comm);
+  }
+  if (myRank == rootRank) {
+    profile->metricMgr()->mergePerfEventStatistics_finalize(maxRank);
   }
 }
 

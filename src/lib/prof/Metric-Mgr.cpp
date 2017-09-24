@@ -218,6 +218,18 @@ Mgr::mergePerfEventStatistics(Mgr *source)
   }
 }
 
+void
+Mgr::mergePerfEventStatistics_finalize(int num_profiles)
+{
+  for (uint i=0; i<m_metrics.size(); i++) {
+    Prof::Metric::ADesc *m = metric(i);
+
+    float period = m->periodMean();
+    float mean   = period / num_profiles;
+
+    m->periodMean(mean);
+  }
+}
 
 uint
 Mgr::makeSummaryMetricsIncr(bool needAllStats, uint srcBegId, uint srcEndId)

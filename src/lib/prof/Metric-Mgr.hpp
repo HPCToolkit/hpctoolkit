@@ -230,6 +230,10 @@ public:
   // are the same.
   void
   mergePerfEventStatistics(Mgr *source);
+
+  void
+  mergePerfEventStatistics_finalize(int num_profiles);
+
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------

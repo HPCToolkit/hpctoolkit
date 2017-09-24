@@ -285,7 +285,7 @@ realmain(int argc, char* const* argv)
   delete profLcl;
 
   // Post-INVARIANT: 'profGbl' is the canonical CCT
-  ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1);
+  ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1, rootRank);
 
   // -------------------------------------------------------
   // 1c. Add static structure to canonical CCT; form dense node ids
