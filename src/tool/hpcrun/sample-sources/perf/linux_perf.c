@@ -117,9 +117,7 @@
 
 #include "sample-sources/display.h" // api to display available events
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
 #include "kernel_blocking.h"  // api for predefined kernel blocking event
-#endif
 
 //******************************************************************************
 // macros
@@ -494,9 +492,7 @@ METHOD_FN(init)
   self->state = INIT;
 
   // init events
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
   kernel_blocking_init();
-#endif
 
   TMSG(LINUX_PERF, "%d: init OK", self->sel_idx);
 }
@@ -1011,9 +1007,8 @@ perf_event_handler(
     if (mmap_data.header_type == PERF_RECORD_SAMPLE)
       record_sample(current, &mmap_data, context, &sv);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
     kernel_block_handler(current, sv, &mmap_data);
-#endif
+
   } while (more_data);
 
   hpcrun_safe_exit();
