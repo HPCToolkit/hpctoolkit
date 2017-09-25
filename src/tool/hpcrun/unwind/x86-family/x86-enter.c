@@ -81,7 +81,7 @@ process_enter(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *ia
   TMSG(INTV,"new interval from ENTER");
   x86registers_t reg = UWI_RECIPE(iarg->current)->reg;
   reg.sp_ra_pos += offset;
-  reg.sp_bp_pos = 8;
+  reg.bp_ra_pos = 8;
   reg.bp_status = BP_SAVED;
   reg.sp_bp_pos += offset - 8;
   reg.bp_bp_pos = 0;
