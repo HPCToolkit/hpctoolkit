@@ -78,7 +78,7 @@
 #endif
 
 
-#define MCONTEXT_REG(mctxt, reg) (mctxt->gregs[reg])
+#define MCONTEXT_REG(mctxt, reg) ((mctxt)->gregs[reg])
 
 #define LV_MCONTEXT_PC(mctxt)         MCONTEXT_REG(mctxt, REG_INST_PTR)
 #define LV_MCONTEXT_BP(mctxt)         MCONTEXT_REG(mctxt, REG_BASE_PTR)

@@ -65,11 +65,17 @@ typedef struct btuwi_status_s {
   int errcode;
 } btuwi_status_t;
 
+typedef enum unwinder_e {
+  DWARF_UNWINDER,
+  NATIVE_UNWINDER,
+  NUM_UNWINDERS,
+} unwinder_t;
+
 /*
  * initialize the MCS lock for the hidden global free unwind interval tree.
  */
 void
-bitree_uwi_init();
+bitree_uwi_init(mem_alloc m_alloc);
 
 /*
  * Returns a bitree_uwi_t node whose left and right subtree nodes are NULL.
@@ -79,13 +85,13 @@ bitree_uwi_init();
  * recipe is non-null and points to a concrete instance of an unwind recipe.
  */
 bitree_uwi_t*
-bitree_uwi_malloc(mem_alloc m_alloc, size_t recipe_size);
+bitree_uwi_malloc(unwinder_t uw, size_t recipe_size);
 
 /*
  * If tree != NULL return tree to global free tree,
  * otherwise do nothing.
  */
-void bitree_uwi_free(bitree_uwi_t *tree);
+void bitree_uwi_free(unwinder_t uw, bitree_uwi_t *tree);
 
 
 // return the value at the root
