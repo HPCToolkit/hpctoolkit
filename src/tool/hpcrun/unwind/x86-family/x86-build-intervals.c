@@ -76,9 +76,6 @@ static int dump_ins = 0;
  * forward declarations 
  *****************************************************************************/
 
-static void set_status(btuwi_status_t *status, char *fui, int errcode,
-	unwind_interval *first);
-
 btuwi_status_t x86_build_intervals(void *ins, unsigned int len, int noisy,
 	mem_alloc m_alloc);
 
