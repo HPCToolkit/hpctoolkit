@@ -102,7 +102,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	  //                    to the offset from SP 
 	  //==================================================================
 	  reg.bp_status = BP_SAVED;
-	  reg.bp_ra_pos = xed_decoded_inst_get_memory_displacement(xptr, 0);
+	  reg.sp_bp_pos = xed_decoded_inst_get_memory_displacement(xptr, 0);
 	  next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg);
 	  hw_tmp->uwi = next;
 	  hw_tmp->state = 
@@ -142,7 +142,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	    next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
 	    if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED, 
 			      HW_BP_OVERWRITTEN) && 
-		(UWI_RECIPE(hw_tmp->uwi)->reg.sp_ra_pos == reg.sp_ra_pos)) {
+		(UWI_RECIPE(hw_tmp->uwi)->reg.sp_ra_pos == UWI_RECIPE(next)->reg.sp_ra_pos)) {
 	      hw_tmp->uwi = next;
 	      hw_tmp->state = 
 		HW_NEW_STATE(hw_tmp->state, HW_BP_OVERWRITTEN);
@@ -162,7 +162,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	//              BP_UNCHANGED
 	//================================================================
 	reg.sp_ra_pos = 0;
-	reg.sp_bp_pos = 0;
+	reg.bp_ra_pos = 0;
 	next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
       }
     }
@@ -177,6 +177,8 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
       // instruction: restore SP from BP
       // action:      begin a new SP_RELATIVE interval 
       //====================================================================
+      reg.sp_ra_pos = reg.bp_ra_pos;
+      reg.sp_bp_pos = reg.bp_bp_pos;
       next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
     } else if (x86_isReg_BP(reg0) && x86_isReg_SP(reg1)) {
       //====================================================================
@@ -184,6 +186,8 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
       // action:      begin a new interval 
       //====================================================================
       reg.bp_status = BP_SAVED;
+      reg.bp_ra_pos = reg.sp_ra_pos;
+      reg.bp_bp_pos = reg.sp_bp_pos;
       next = new_ui(nextInsn(iarg, xptr), RA_STD_FRAME, &reg);
       if (iarg->sp_realigned) {
         // SP was previously realigned. correct RA offsets based on typical 
@@ -219,10 +223,12 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	// action:      begin a new RA_SP_RELATIVE,BP_HOSED interval
 	//==================================================================
 	reg.bp_status = BP_HOSED;
+	reg.bp_ra_pos = reg.sp_ra_pos;
+	reg.bp_bp_pos = reg.sp_bp_pos;
 	next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
 	if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED, 
 			  HW_BP_OVERWRITTEN) && 
-	    (UWI_RECIPE(hw_tmp->uwi)->reg.sp_ra_pos == reg.sp_ra_pos)) {
+	    (UWI_RECIPE(hw_tmp->uwi)->reg.sp_ra_pos == UWI_RECIPE(next)->reg.sp_ra_pos)) {
 	  hw_tmp->uwi = next;
 	  hw_tmp->state = 
 	    HW_NEW_STATE(hw_tmp->state, HW_BP_OVERWRITTEN);
