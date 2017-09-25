@@ -207,7 +207,7 @@ hpcrun_get_num_metrics()
   // *** create a "NULL METRICS" dense array for use with
   // *** metric set dense copy
 
-    current_kind->null_metrics = (hpcrun_metricVal_t*) hpcrun_metric_set_new();
+    current_kind->null_metrics = hpcrun_malloc(n_metrics * sizeof(hpcrun_metricVal_t));
     for (int i = 0; i < n_metrics; i++) {
       current_kind->null_metrics[i].bits = 0;
     }
