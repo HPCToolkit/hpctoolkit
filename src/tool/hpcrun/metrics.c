@@ -269,11 +269,11 @@ hpcrun_get_metric_proc(int metric_id)
 //
 // Allocate new metric of a particular kind
 //
-int
+static int
 hpcrun_new_metric_of_kind(kind_info_t* kind)
 {
-  if (current_kind->has_set_max) {
-    return 0;
+  if (kind->has_set_max) {
+    return -1;
   }
 
   metric_list_t* n = NULL;
@@ -286,29 +286,29 @@ hpcrun_new_metric_of_kind(kind_info_t* kind)
   else {
     n = (metric_list_t*) hpcrun_malloc(sizeof(metric_list_t));
   }
-  n->next = current_kind->metric_data;
-  current_kind->metric_data = n;
-  current_kind->metric_data->id   = kind->idx++;
+  n->next = kind->metric_data;
+  kind->metric_data = n;
+  kind->metric_data->id   = kind->idx++;
 
   //
   // No preallocation for metric_proc tbl
   //
   metric_proc_map_t* m = (metric_proc_map_t*) hpcrun_malloc(sizeof(metric_proc_map_t));
   m->next = proc_map;
-  m->id   = current_kind->metric_data->id;
+  m->id   = kind->metric_data->id;
   m->proc = (metric_upd_proc_t*) NULL;
   proc_map = m;
   
   return m->id;
 }
 
-int
+static int
 hpcrun_new_metric(void)
 {
   return hpcrun_new_metric_of_kind(current_kind);
 }
 
-void
+static void
 hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
 			    MetricFlags_ValFmt_t valFmt, size_t period,
 			    metric_upd_proc_t upd_fn, metric_desc_properties_t prop)
@@ -368,7 +368,7 @@ hpcrun_set_new_metric_info_w_fn(const char* name,
 }
 
 
-void
+static void
 hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 				  MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop)
 {
@@ -391,7 +391,7 @@ hpcrun_set_new_metric_info_and_period(const char* name,
 //
 // utility routines to make an Async metric with period 1
 //
-void
+static void
 hpcrun_set_metric_info(int metric_id, const char* name)
 {
   hpcrun_set_metric_info_and_period(metric_id, name, MetricFlags_ValFmt_Int, 1, metric_property_none);
