@@ -149,6 +149,23 @@ extern __thread bool hpcrun_thread_suppress_sample;
  * method functions
  *****************************************************************************/
 
+// strip the prefix "papi::" from an event name, if exists.
+// this allows forcing a papi event over a perf event.
+// allow case-insensitive and any number of ':'
+static const char *
+strip_papi_prefix(const char *str)
+{
+  if (strncasecmp(str, "papi:", 5) == 0) {
+    str = &str[5];
+
+    while (str[0] == ':') {
+      str = &str[1];
+    }
+  }
+
+  return str;
+}
+
 static void
 METHOD_FN(init)
 {
@@ -320,6 +337,8 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
+  ev_str = strip_papi_prefix(ev_str);
+
   TMSG(PAPI, "supports event");
   if (papi_unavail) { return false; }
 
@@ -350,6 +369,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     char name[1024];
     int evcode;
     long thresh;
+
+    event = (char *) strip_papi_prefix(event);
 
     TMSG(PAPI,"checking event spec = %s",event);
     if (! hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh, DEFAULT_THRESHOLD)) {
