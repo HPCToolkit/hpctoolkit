@@ -20444,6 +20444,10 @@ PERFMON_LIB=
 
 OPT_PERFMON=
 
+if test "$use_externals" = yes && test "x$ext_perfmon_prefix" != x ; then
+  PERFMON="$ext_perfmon_prefix"
+fi
+
 
 # Check whether --with-perfmon was given.
 if test "${with_perfmon+set}" = set; then :

@@ -2135,6 +2135,10 @@ PERFMON_LIB=
 
 OPT_PERFMON=
 
+if test "$use_externals" = yes && test "x$ext_perfmon_prefix" != x ; then
+  PERFMON="$ext_perfmon_prefix"
+fi
+
 AC_ARG_WITH([perfmon],
   [AS_HELP_STRING([--with-perfmon=PATH],
 	  [path to perfmon2 (pfmlib4) build or install directory
