@@ -41,9 +41,9 @@
     <!ATTLIST Metric
 	      i            CDATA #REQUIRED
 	      n            CDATA #REQUIRED
-	      pes		   CDATA #IMPLIED
-	      pem		   CDATA #IMPLIED
-	      pep		   CDATA #IMPLIED
+	      es	   CDATA #IMPLIED
+	      em	   CDATA #IMPLIED
+	      ep	   CDATA #IMPLIED
 	      v            (raw|final|derived-incr|derived) "raw"
 	      t            (inclusive|exclusive|nil) "nil"
 	      partner      CDATA #IMPLIED
