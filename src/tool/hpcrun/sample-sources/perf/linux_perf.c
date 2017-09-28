@@ -164,10 +164,6 @@
 // type declarations
 //******************************************************************************
 
-typedef struct perf_event_callchain_s {
-  u64 nr;        /* number of IPs */ 
-  u64 ips[];     /* vector of IPs */
-} pe_callchain_t;
 
 enum threshold_e { PERIOD, FREQUENCY };
 struct event_threshold_s {

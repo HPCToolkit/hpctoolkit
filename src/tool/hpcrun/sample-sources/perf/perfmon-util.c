@@ -106,6 +106,7 @@ typedef struct {
 // Constants
 //******************************************************************************
 
+#define MAX_EVENT_NAME_CHARS 	256
 
 
 //******************************************************************************
@@ -185,7 +186,7 @@ show_event_info(pfm_event_info_t *info)
   if (pfmu_getEventType(info->name, &code, &type) >0 ) {
     if (test_pmu(code, type)>=0) {
 
-      char buffer[256];
+      char buffer[MAX_EVENT_NAME_CHARS];
 
       sprintf(buffer, "%s::%s", pinfo.name, info->name);
       display_line_single(stdout);
@@ -195,7 +196,7 @@ show_event_info(pfm_event_info_t *info)
         ret = pfm_get_event_attr_info(info->idx, i, PFM_OS_NONE, &ainfo);
         if (ret == PFM_SUCCESS)
         {
-          memset(buffer, 0, 256);
+          memset(buffer, 0, MAX_EVENT_NAME_CHARS);
           sprintf(buffer, "%s::%s:%s", pinfo.name, info->name, ainfo.name);
           display_event_info(stdout, buffer, ainfo.desc);
         }
@@ -340,17 +341,9 @@ pfmu_showEventList()
       "uncore",
       "OS generic",
   };
-#if 0
-  printf("Supported PMU models:\n");
-  pfm_for_all_pmus(i) {
-    ret = pfm_get_pmu_info(i, &pinfo);
-    if (ret != PFM_SUCCESS)
-      continue;
 
-    printf("\t[%d, %s, \"%s\"]\n", i, pinfo.name,  pinfo.desc);
-  }
-#endif
   printf("Detected PMU models:\n");
+  
   pfm_for_all_pmus(i) {
     ret = pfm_get_pmu_info(i, &pinfo);
     if (ret != PFM_SUCCESS)
