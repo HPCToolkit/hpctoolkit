@@ -81,8 +81,6 @@ extern "C" {
 // treated as a constant variable and not an actual constant.
 #define /*const char**/ HPCRUN_METRIC_RetCnt "RETCNT"
 
-// prefix for virtual metric that needs special treatement in hpcprof 
-#define PREFIX_HELPER_METRIC "H:"
 
 //***************************************************************************
 

@@ -836,7 +836,6 @@ namespace Prof {
 namespace CallPath {
 
 const char* Profile::FmtEpoch_NV_virtualMetrics = "is-virtual-metrics";
-//const string helper_metric_prefix = string(PREFIX_HELPER_METRIC);
 
 Profile*
 Profile::make(uint rFlags)
