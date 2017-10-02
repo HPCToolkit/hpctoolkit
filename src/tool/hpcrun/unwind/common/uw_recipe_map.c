@@ -673,7 +673,7 @@ uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info)
   unwr_info->lm         = ilm_btui->lm;
   unwr_info->interval   = ilm_btui->interval;
 
-  return true;
+  return (unwr_info->btuwi != NULL);
 }
 
 //---------------------------------------------------------------------
