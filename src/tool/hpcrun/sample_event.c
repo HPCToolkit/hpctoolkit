@@ -84,17 +84,6 @@
 
 //*************************** Forward Declarations **************************
 
-#if 0
-static cct_node_t*
-help_hpcrun_sample_callpath(epoch_t *epoch, void *context, ip_normalized_t *leaf_func,
-			    int metricId, uint64_t metricIncr,
-			    int skipInner, int isSync);
-
-static cct_node_t*
-hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context, void **trace_pc,
-			   int metricId, uint64_t metricIncr,
-			   int skipInner, int isSync);
-#endif
 
 //***************************************************************************
 
@@ -271,8 +260,6 @@ hpcrun_sample_callpath(void* context, int metricId,
   // --------------------------------------
   // end of handling sample
   // --------------------------------------
-  hpcrun_clear_handling_sample(td);
-
 
   ret.sample_node = node;
 
@@ -296,6 +283,7 @@ hpcrun_sample_callpath(void* context, int metricId,
     TMSG(TRACE, "Appended func_proxy node to trace");
   }
 
+  hpcrun_clear_handling_sample(td);
   if (TD_GET(mem_low) || ENABLED(FLUSH_EVERY_SAMPLE)) {
     hpcrun_flush_epochs(&(TD_GET(core_profile_trace_data)));
     hpcrun_reclaim_freeable_mem();
@@ -388,30 +376,4 @@ hpcrun_gen_thread_ctxt(void* context)
 
   return node;
 }
-
-#if 0
-static cct_node_t*
-help_hpcrun_sample_callpath(epoch_t *epoch, void *context, ip_normalized_t *leaf_func,
-			    int metricId,
-			    uint64_t metricIncr,
-			    int skipInner, int isSync)
-{
-  void* pc = hpcrun_context_pc(context);
-
-  TMSG(SAMPLE_CALLPATH, "%s taking profile sample @ %p", __func__, pc);
-  TMSG(SAMPLE_METRIC_DATA, "--metric data for sample (as a uint64_t) = %"PRIu64"", metricIncr);
-
-  /* check to see if shared library loadmap (of current epoch) has changed out from under us */
-  epoch = hpcrun_check_for_new_loadmap(epoch);
-
-  cct_node_t* n =
-    hpcrun_backtrace2cct(&(epoch->csdata), context, leaf_func, metricId, metricIncr,
-			 skipInner, isSync);
-
-  // FIXME: n == -1 if sample is filtered
-
-  return n;
-}
-<<<<<<< HEAD
-#endif
 
