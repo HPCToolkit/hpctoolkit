@@ -359,10 +359,11 @@ perf_attr_init(
 )
 {
   // by default, we always ask for sampling period information
-  unsigned int sample_type = sampletype | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME;
+  unsigned int sample_type = sampletype 
+                             | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME 
+                             | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR 
+                             | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID;
 
-  // for datacentric:
-  // sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_CPU | PERF_SAMPLE_TID ;
   memset(attr, 0, sizeof(struct perf_event_attr));
 
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
