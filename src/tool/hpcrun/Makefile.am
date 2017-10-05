@@ -219,7 +219,8 @@ UNW_X86_INCLUDE_DIRS = \
 UNW_PPC64_FILES = \
         $(UNW_COMMON_FILES) \
 	unwind/ppc64/ppc64-unwind.c \
-	unwind/ppc64/ppc64-unwind-interval.c
+	unwind/ppc64/ppc64-unwind-interval.c \
+	unwind/common/default_validation_summary.c
 
 UNW_PPC64_INCLUDE_DIRS = \
         -I$(srcdir)/unwind/ppc64
