@@ -187,7 +187,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   unw_context_t *ctx = (unw_context_t *) context;
   unw_word_t pc;
 
-  if (ctx != NULL && unw_init_local_signal(unw_cursor, ctx) == 0) {
+  if (ctx != NULL && unw_init_local2(unw_cursor, ctx, UNW_INIT_SIGNAL_FRAME) == 0) {
     unw_get_reg(unw_cursor, UNW_REG_IP, &pc);
   } else {
     pc = 0;
@@ -302,9 +302,9 @@ libunw_build_intervals(char *beg_insn, unsigned int len, mem_alloc m_alloc)
   unw_context_t uc;
   unw_getcontext(&uc);
   unw_cursor_t c;
-  unw_init_local_signal(&c, &uc);
+  unw_init_local2(&c, &uc, UNW_INIT_SIGNAL_FRAME);
   unw_set_reg(&c, UNW_REG_IP, (intptr_t)beg_insn);
-  void *space[2];		// enough space for any binarytree
+  void *space[2] __attribute((aligned (32))); // enough space for any binarytree
   bitree_uwi_t *dummy = (bitree_uwi_t*)space;
   struct builder b = {m_alloc, dummy, 0};
   int status = unw_reg_states_iterate(&c, dwarf_reg_states_callback, &b);
