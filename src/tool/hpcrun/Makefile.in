@@ -581,7 +581,8 @@ am__objects_31 = $(am__objects_30) \
 	unwind/common/libhpcrun_la-default_validation_summary.lo
 am__objects_32 = $(am__objects_30) \
 	unwind/ppc64/libhpcrun_la-ppc64-unwind.lo \
-	unwind/ppc64/libhpcrun_la-ppc64-unwind-interval.lo
+	unwind/ppc64/libhpcrun_la-ppc64-unwind-interval.lo \
+	unwind/common/libhpcrun_la-default_validation_summary.lo
 am__objects_33 = $(am__objects_30) \
 	unwind/x86-family/libhpcrun_la-x86-all.lo \
 	unwind/x86-family/libhpcrun_la-amd-xop.lo \
@@ -837,7 +838,8 @@ am__objects_54 = $(am__objects_53) \
 	unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
 am__objects_55 = $(am__objects_53) \
 	unwind/ppc64/libhpcrun_o-ppc64-unwind.$(OBJEXT) \
-	unwind/ppc64/libhpcrun_o-ppc64-unwind-interval.$(OBJEXT)
+	unwind/ppc64/libhpcrun_o-ppc64-unwind-interval.$(OBJEXT) \
+	unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
 am__objects_56 = $(am__objects_53) \
 	unwind/x86-family/libhpcrun_o-x86-all.$(OBJEXT) \
 	unwind/x86-family/libhpcrun_o-amd-xop.$(OBJEXT) \
@@ -1373,7 +1375,8 @@ UNW_X86_INCLUDE_DIRS = \
 UNW_PPC64_FILES = \
         $(UNW_COMMON_FILES) \
 	unwind/ppc64/ppc64-unwind.c \
-	unwind/ppc64/ppc64-unwind-interval.c
+	unwind/ppc64/ppc64-unwind-interval.c \
+	unwind/common/default_validation_summary.c
 
 UNW_PPC64_INCLUDE_DIRS = \
         -I$(srcdir)/unwind/ppc64
