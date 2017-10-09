@@ -182,8 +182,8 @@ another time-based event, such as \verb|CYCLES|. The \verb|BLOCKTIME| event shou
 \label{sec:perf-launching}
 
 When sampling with native events, by default hpcrun will profile using \perfevents{}. 
-To force HPCToolkit to use PAPI (assuming it’s available) instead of \perfevents{}, 
-one must prefix the event with "papi::” as follows:
+To force HPCToolkit to use PAPI (assuming it\textquotesingle s available) instead of \perfevents{}, 
+one must prefix the event with \lq{\verb|papi::|}\rq{} as follows:
 
 \begin{quote}
 \begin{verbatim}
@@ -192,7 +192,7 @@ hpcrun -e papi::CYCLES
 \end{quote}
 
 For PAPI presets, there is no need to prefix the event with
-“papi::”. For instance it is sufficient to specify \verb|PAPI_TOT_CYC| event
+ \lq{\verb|papi::|}\rq. For instance it is sufficient to specify \verb|PAPI_TOT_CYC| event
 without any prefix to profile using PAPI.
 
 To sample an execution 100 times per second (frequency-based sampling) counting \verb|CYCLES| 
@@ -222,11 +222,11 @@ hpcrun -e CYCLES -e INSTRUCTIONS …
 \end{verbatim}
 \end{quote}
 
-One can a different default rate for frequency-based sampling using the \verb|-c| option. The command below will sample \verb|CYCLES| at 200 samples per second and \verb|INSTRUCTIONS| at 200 samples per second:
+One can a different default rate using the \verb|-c| option. The command below will sample \verb|CYCLES| at 200 samples per second and \verb|INSTRUCTIONS| at 200 samples per second:
 
 \begin{quote}
 \begin{verbatim}
-hpcrun -c 200 -e CYCLES -e INSTRUCTIONS …
+hpcrun -c f200 -e CYCLES -e INSTRUCTIONS …
 \end{verbatim}
 \end{quote}
 
