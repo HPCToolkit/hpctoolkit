@@ -150,7 +150,7 @@ doBlock(GroupInfo *, ParseAPI::Function *, BlockSet &, Block *,
 	TreeNode *, HPC::StringTable &);
 
 static void
-addGaps(FileInfo *, GroupInfo *, VMAIntervalSet &, HPC::StringTable &);
+addGaps(FileInfo *, GroupInfo *, HPC::StringTable &);
 
 static void
 getStatement(StatementVector &, Offset, SymtabAPI::Function *);
@@ -775,18 +775,11 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 
   // add unclaimed regions (gaps) to the group leader, but skip groups
   // in an alternate file (handled in orig file).
-  VMAIntervalSet gaps;
-
   if (! ginfo->alt_file) {
-    computeGaps(covered, gaps, ginfo->start, ginfo->end);
+    computeGaps(covered, ginfo->gapSet, ginfo->start, ginfo->end);
 
-    if (fullGaps) {
-      for (auto git = gaps.begin(); git != gaps.end(); ++git) {
-	ginfo->gapList.push_back(GapInfo(git->beg(), git->end()));
-      }
-    }
-    else {
-      addGaps(finfo, ginfo, gaps, strTab);
+    if (! fullGaps) {
+      addGaps(finfo, ginfo, strTab);
     }
   }
 
@@ -990,8 +983,7 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 // line of func.  The full version is handled in Struct-Output.cpp.
 //
 static void
-addGaps(FileInfo * finfo, GroupInfo * ginfo, VMAIntervalSet & gaps,
-	HPC::StringTable & strTab)
+addGaps(FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab)
 {
   if (ginfo->procMap.begin() == ginfo->procMap.end()) {
     return;
@@ -1000,7 +992,7 @@ addGaps(FileInfo * finfo, GroupInfo * ginfo, VMAIntervalSet & gaps,
   ProcInfo * pinfo = ginfo->procMap.begin()->second;
   TreeNode * root = pinfo->root;
 
-  for (auto git = gaps.begin(); git != gaps.end(); ++git) {
+  for (auto git = ginfo->gapSet.begin(); git != ginfo->gapSet.end(); ++git) {
     VMA vma = git->beg();
     VMA end_gap = git->end();
 

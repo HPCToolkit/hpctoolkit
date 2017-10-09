@@ -316,7 +316,7 @@ static void
 doGaps(ostream * os, ostream * gaps, string gaps_file,
        FileInfo * finfo, GroupInfo * ginfo, ProcInfo * pinfo)
 {
-  if (gaps == NULL || ginfo->gapList.empty()) {
+  if (gaps == NULL || ginfo->gapSet.empty()) {
     return;
   }
 
@@ -344,10 +344,12 @@ doGaps(ostream * os, ostream * gaps, string gaps_file,
       << " v=\"{}\""
       << ">\n";
 
-  for (auto git = ginfo->gapList.begin(); git != ginfo->gapList.end(); ++git) {
-    long len = git->end - git->start;
+  for (auto git = ginfo->gapSet.begin(); git != ginfo->gapSet.end(); ++git) {
+    long start = git->beg();
+    long end = git->end();
+    long len = end - start;
 
-    *gaps << "gap:  0x" << hex << git->start << "--0x" << git->end
+    *gaps << "gap:  0x" << hex << start << "--0x" << end
 	  << dec << "  (" << len << ")\n";
     gaps_line++;
 
@@ -355,7 +357,7 @@ doGaps(ostream * os, ostream * gaps, string gaps_file,
     *os << "<S"
 	<< INDEX
 	<< NUMBER("l", gaps_line)
-	<< VRANGE(git->start, len)
+	<< VRANGE(start, len)
 	<< "/>\n";
   }
 

@@ -65,6 +65,7 @@
 #include <Function.h>
 
 #include <lib/isa/ISATypes.hpp>
+#include <lib/binutils/VMAInterval.hpp>
 #include "Struct-Inline.hpp"
 
 namespace BAnal {
@@ -77,12 +78,10 @@ using namespace std;
 class FileInfo;
 class GroupInfo;
 class ProcInfo;
-class GapInfo;
 
 typedef map <string, FileInfo *> FileMap;
 typedef map <VMA, GroupInfo *> GroupMap;
 typedef map <VMA, ProcInfo *> ProcMap;
-typedef list <GapInfo> GapList;
 
 
 // FileInfo and FileMap are the top-level classes for files and
@@ -121,7 +120,7 @@ public:
   VMA  start;
   VMA  end;
   ProcMap procMap;
-  GapList gapList;
+  VMAIntervalSet gapSet;
   bool  alt_file;
 
   GroupInfo(SymtabAPI::Function * sf, VMA st, VMA en, bool alt = false)
@@ -130,7 +129,7 @@ public:
     start = st;
     end = en;
     procMap.clear();
-    gapList.clear();
+    gapSet.clear();
     alt_file = alt;
   }
 };
@@ -164,23 +163,6 @@ public:
     line_num = l;
     entry_vma = (func != NULL) ? func->addr() : 0;
     gap_only = gap;
-  }
-};
-
-
-// GapInfo represents one vma range within a Function Group that is
-// not covered by any ParseAPI Function within that group.
-//
-class GapInfo {
-public:
-  VMA  start;
-  VMA  end;
-  long line;
-
-  GapInfo(VMA st, VMA en)
-  {
-    start = st;
-    end = en;
   }
 };
 
