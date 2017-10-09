@@ -104,8 +104,6 @@ using namespace std;
 #define USE_DYNINST_LINE_MAP    1
 #define USE_LIBDWARF_LINE_MAP   0
 
-#define ENABLE_PARSEAPI_GAPS  1
-
 #define DEBUG_CFG_SOURCE  0
 #define DEBUG_MAKE_SKEL   0
 #define DEBUG_GAPS        0
@@ -137,7 +135,7 @@ static FileMap *
 makeSkeleton(CodeObject *, ProcNameMgr *, const string &);
 
 static void
-doFunctionList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &);
+doFunctionList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &, bool);
 
 static LoopList *
 doLoopTree(FileInfo *, GroupInfo *, ParseAPI::Function *,
@@ -150,6 +148,9 @@ doLoopLate(GroupInfo *, ParseAPI::Function *, BlockSet &, Loop *,
 static void
 doBlock(GroupInfo *, ParseAPI::Function *, BlockSet &, Block *,
 	TreeNode *, HPC::StringTable &);
+
+static void
+addGaps(FileInfo *, GroupInfo *, VMAIntervalSet &, HPC::StringTable &);
 
 static void
 getStatement(StatementVector &, Offset, SymtabAPI::Function *);
@@ -347,7 +348,7 @@ makeStructure(string filename,
       GroupInfo * ginfo = git->second;
 
       // make the inline tree for all funcs in one group
-      doFunctionList(symtab, finfo, ginfo, strTab);
+      doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
 
       for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
 	ProcInfo * pinfo = pit->second;
@@ -624,7 +625,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 //
 static void
 doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
-	       HPC::StringTable & strTab)
+	       HPC::StringTable & strTab, bool fullGaps)
 {
   VMAIntervalSet covered;
   long num_funcs = ginfo->procMap.size();
@@ -700,14 +701,13 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       visited[block] = false;
     }
 
-#if ENABLE_PARSEAPI_GAPS
+    // add to the group's set of covered blocks
     if (! ginfo->alt_file) {
       for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
 	Block * block = *bit;
 	covered.insert(block->start(), block->end());
       }
     }
-#endif
 
     // if the outline func file name does not match the enclosing
     // symtab func, then do the full parse in the outline file
@@ -773,14 +773,20 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 #endif
   }
 
-#if ENABLE_PARSEAPI_GAPS
+  // add unclaimed regions (gaps) to the group leader, but skip groups
+  // in an alternate file (handled in orig file).
   VMAIntervalSet gaps;
 
   if (! ginfo->alt_file) {
     computeGaps(covered, gaps, ginfo->start, ginfo->end);
 
-    for (auto git = gaps.begin(); git != gaps.end(); ++git) {
-      ginfo->gapList.push_back(GapInfo(git->beg(), git->end()));
+    if (fullGaps) {
+      for (auto git = gaps.begin(); git != gaps.end(); ++git) {
+	ginfo->gapList.push_back(GapInfo(git->beg(), git->end()));
+      }
+    }
+    else {
+      addGaps(finfo, ginfo, gaps, strTab);
     }
   }
 
@@ -804,7 +810,6 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
   else {
     cout << "\ngaps: alt-file\n";
   }
-#endif
 #endif
 }
 
@@ -973,6 +978,52 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 #endif
 
     addStmtToTree(root, strTab, vma, len, filenm, line);
+  }
+}
+
+//----------------------------------------------------------------------
+
+// Add unclaimed regions (gaps) to the group leader.
+//
+// This is the basic version -- if line map exists, add a top-level
+// stmt to the func for each line map range, else assign to the first
+// line of func.  The full version is handled in Struct-Output.cpp.
+//
+static void
+addGaps(FileInfo * finfo, GroupInfo * ginfo, VMAIntervalSet & gaps,
+	HPC::StringTable & strTab)
+{
+  if (ginfo->procMap.begin() == ginfo->procMap.end()) {
+    return;
+  }
+
+  ProcInfo * pinfo = ginfo->procMap.begin()->second;
+  TreeNode * root = pinfo->root;
+
+  for (auto git = gaps.begin(); git != gaps.end(); ++git) {
+    VMA vma = git->beg();
+    VMA end_gap = git->end();
+
+    while (vma < end_gap) {
+      StatementVector svec;
+      getStatement(svec, vma, ginfo->sym_func);
+
+      if (! svec.empty()) {
+	string filenm = svec[0]->getFile();
+	SrcFile::ln line = svec[0]->getLine();
+	VMA end = std::min(((VMA) svec[0]->endAddr()), end_gap);
+
+	addStmtToTree(root, strTab, vma, end - vma, filenm, line);
+	vma = end;
+      }
+      else {
+	// fixme: could be better at finding end of range
+	VMA end = std::min(vma + 4, end_gap);
+
+	addStmtToTree(root, strTab, vma, end - vma, finfo->fileName, pinfo->line_num);
+	vma = end;
+      }
+    }
   }
 }
 
