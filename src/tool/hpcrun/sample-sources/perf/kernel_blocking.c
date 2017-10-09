@@ -76,7 +76,7 @@
 // Predefined events
 // -----------------------------------------------------
 
-#define EVNAME_KERNEL_BLOCK     "BLOCK_TIME"
+#define EVNAME_KERNEL_BLOCK     "BLOCKTIME"
 #define EVNAME_CONTEXT_SWITCHES "CS"
 
 
