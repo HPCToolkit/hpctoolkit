@@ -58,7 +58,14 @@ LIBELF_INC = @LIBELF_INC@
 MYSOURCES = \
 	InputFile.cpp  \
 	Linemap.cpp  \
-	RelocateCubin.cpp  \
+	ElfHelper.hpp \
+	ElfHelper.cpp \
+	Fatbin.hpp \
+	Fatbin.cpp \
+	InputFile.hpp \
+	InputFile.cpp \
+	RelocateCubin.hpp \
+	RelocateCubin.cpp \
 	Struct.cpp  \
 	Struct-Inline.cpp  \
 	Struct-Output.cpp

@@ -42,34 +42,26 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
 //***************************************************************************
 //
-// File:
+// File: ElfHelper.hpp
 //
 // Purpose:
-//
-// Description:
-//
+//   Interface for a module that scans an elf file and returns a vector
+//   of sections 
 //
 //***************************************************************************
+
+#ifndef __ElfHelper_hpp__
+#define __ElfHelper_hpp__
+
 
 
 //******************************************************************************
 // system includes
 //******************************************************************************
 
-#include <assert.h>
-#include <err.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <iostream>
 #include <vector>
 #include <string>
 
@@ -79,79 +71,51 @@
 
 
 //******************************************************************************
-// local includes
+// types
 //******************************************************************************
 
-#include "InputFile.hpp"
-#include "Fatbin.hpp"
-#include "RelocateCubin.hpp"
+class ElfFile {
+public:
+  ElfFile() { memPtr = 0; elf = 0; memLen = 0; }
+  bool open(char *_memPtr, size_t _memLen, std::string _fileName);
+  ~ElfFile();
+  Elf *getElf() { return elf; };
+  char *getMemory() { return memPtr; };
+  size_t getLength() { return memLen; };
+  std::string getFileName() { return fileName; };
+private:
+  char *memPtr;
+  size_t memLen;
+  Elf *elf;
+  std::string fileName;
+};
+
+
+typedef std::vector<ElfFile *> ElfFileVector;
+
+
+typedef std::vector<Elf_Scn *> ElfSectionVector;
+
 
 
 //******************************************************************************
-// private operations
+// interface functions
 //******************************************************************************
 
-int file_size(int fd)
-{
-  struct stat sb;
-  int retval = fstat(fd, &sb);
-  if (retval == 0 && S_ISREG(sb.st_mode)) {
-    return sb.st_size;
-  }
-  return 0;
-}
-
-
-
-//******************************************************************************
-// interface oeprations
-//******************************************************************************
-
-
-ElfFileVector *
-InputFile::openFile
+ElfSectionVector *
+elfGetSectionVector
 (
- std::string filename
-)
-{
-  const char *file_name = filename.c_str();
+ Elf *elf
+);
 
-  int    file_fd = open(file_name, O_RDONLY);
 
-  if (file_fd < 0) {
-    errx(1, "open failed: %s", file_name);
-  }
+char *
+elfSectionGetData
+(
+ char *obj_ptr,
+ GElf_Shdr *shdr
+);
 
-  size_t f_size = file_size(file_fd);
-  
-  if (f_size == 0) {
-    errx(1, "file size == 0: %s", file_name);
-  }
 
-  char  *file_buffer = (char *) malloc(f_size);
 
-  if (file_buffer == 0) {
-    errx(1, "unable to allocate file buffer of %lu bytes", f_size);
-  }
-
-  size_t bytes = read(file_fd, file_buffer, f_size);
-
-  if (f_size != bytes) {
-    errx(1, "read only %lu bytes of %lu bytes from file %s",
-	 bytes, f_size, file_name);
-  }
-
-  close(file_fd);
-
-  ElfFileVector *elfFileVector = 0;
-  ElfFile *elfFile = new ElfFile;
-  if (elfFile->open(file_buffer, f_size, filename)) {
-    elfFileVector = new ElfFileVector;
-    elfFileVector->push_back(elfFile);
-    findCubins(elfFile, elfFileVector);
-  } else {
-    delete elfFile;
-  }
-
-  return elfFileVector;
-}
+#endif

@@ -294,7 +294,11 @@ toStr(const int64_t x, int base)
   case 10:
     format = "%" PRId64;
     break;
-    
+
+  case 16:
+    format = "%#" PRIx64;
+    break;
+
   default:
     DIAG_Die(DIAG_Unimplemented);
   }

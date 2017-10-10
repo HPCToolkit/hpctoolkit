@@ -45,26 +45,24 @@
 
 //***************************************************************************
 //
-// File: InputFile.hpp
+// File: Fatbin.hpp
 //
 // Purpose:
-//   Open a file and return a vector that will contain a pointer to the
-//   Elf representation of that file as well pointers to any Elf files
-//   nested inside.
+//   Interface for a routine that inspects and Elf module and collects
+//   nested Elf modules.
 //
 //***************************************************************************
 
+#ifndef __Fatbin_hpp__
+#define __Fatbin_hpp__
 
-#ifndef __InputFile_hpp__
-#define __InputFile_hpp__
-
-#include <string>
 #include "ElfHelper.hpp"
 
-
-class InputFile {
-public:
-  ElfFileVector *openFile(std::string filename);
-};
+bool
+findCubins
+(
+ ElfFile *elfFile,
+ ElfFileVector *elfFileVector
+);
 
 #endif

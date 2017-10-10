@@ -308,78 +308,85 @@ makeStructure(string filename,
   HPC::StringTable strTab;
 
   InputFile inputFile;
-  ElfFile *elfFile = inputFile.openFile(filename);
 
-  // insert empty string "" first
-  strTab.str2index("");
+  ElfFileVector *elfFileVector = inputFile.openFile(filename);
+
+  if (elfFileVector && !elfFileVector->empty()) {
+    Output::printStructFileBegin(outFile, gapsFile, filename);
+    for (unsigned int i = 0; i < elfFileVector->size(); i++) {
+      ElfFile *elfFile = (*elfFileVector)[i]; 
+
+      // insert empty string "" first
+      strTab.str2index("");
 
 #if USE_LIBDWARF_LINE_MAP
-  the_linemap = new LineMap;
-  the_linemap->readFile(elfFile.getElf());
+      the_linemap = new LineMap;
+      the_linemap->readFile(elfFile.getElf());
 #endif
 
-  Symtab * symtab = Inline::openSymtab(elfFile);
-  the_symtab = symtab;
+      Symtab * symtab = Inline::openSymtab(elfFile);
+      the_symtab = symtab;
 
 #if USE_DYNINST_LINE_MAP
-  vector <Module *> modVec;
-  the_symtab->getAllModules(modVec);
+      vector <Module *> modVec;
+      the_symtab->getAllModules(modVec);
 
-  for (auto mit = modVec.begin(); mit != modVec.end(); ++mit) {
-    (*mit)->parseLineInformation();
-  }
+      for (auto mit = modVec.begin(); mit != modVec.end(); ++mit) {
+	(*mit)->parseLineInformation();
+      }
 #endif
 
-  SymtabCodeSource * code_src;
-  CodeObject * code_obj = NULL;
+      SymtabCodeSource * code_src;
+      CodeObject * code_obj = NULL;
 
-  if (symtab != NULL) {
-    code_src = new SymtabCodeSource(symtab);
-    code_obj = new CodeObject(code_src);
-    if (symtab->getArchitecture() != Dyninst::Arch_cuda) {
-      code_obj->parse();
-    }
-  }
-
-  FileMap * fileMap = makeSkeleton(code_obj, procNmMgr);
-
-  Output::printStructFileBegin(outFile, gapsFile, filename);
-  Output::printLoadModuleBegin(outFile, filename);
-
-  // process the files in the skeleton map
-  for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
-    FileInfo * finfo = fit->second;
-
-    Output::printFileBegin(outFile, finfo);
-
-    // process the groups within one file
-    for (auto git = finfo->groupMap.begin(); git != finfo->groupMap.end(); ++git) {
-      GroupInfo * ginfo = git->second;
-
-      // make the inline tree for all funcs in one group
-      doFunctionList(symtab, finfo, ginfo, strTab);
-
-      for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
-	ProcInfo * pinfo = pit->second;
-	Output::printProc(outFile, gapsFile, gaps_filenm,
-			  finfo, ginfo, pinfo, strTab);
-
-	delete pinfo->root;
-	pinfo->root = NULL;
+      if (symtab != NULL) {
+	code_src = new SymtabCodeSource(symtab);
+	code_obj = new CodeObject(code_src);
+	if (symtab->getArchitecture() != Dyninst::Arch_cuda) {
+	  code_obj->parse();
+	}
       }
+
+      FileMap * fileMap = makeSkeleton(code_obj, procNmMgr);
+
+      Output::printLoadModuleBegin(outFile, elfFile->getFileName());
+
+      // process the files in the skeleton map
+      for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
+	FileInfo * finfo = fit->second;
+
+	Output::printFileBegin(outFile, finfo);
+
+	// process the groups within one file
+	for (auto git = finfo->groupMap.begin(); git != finfo->groupMap.end(); ++git) {
+	  GroupInfo * ginfo = git->second;
+
+	  // make the inline tree for all funcs in one group
+	  doFunctionList(symtab, finfo, ginfo, strTab);
+
+	  for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
+	    ProcInfo * pinfo = pit->second;
+	    Output::printProc(outFile, gapsFile, gaps_filenm,
+			      finfo, ginfo, pinfo, strTab);
+
+	    delete pinfo->root;
+	    pinfo->root = NULL;
+	  }
+	}
+	Output::printFileEnd(outFile, finfo);
+      }
+
+      Output::printLoadModuleEnd(outFile);
+
+      // write CFG in dot (graphviz) format to file
+      if (dotFile != NULL) {
+	makeDotFile(dotFile, code_obj);
+      }
+
+      Inline::closeSymtab();
     }
-    Output::printFileEnd(outFile, finfo);
+    Output::printStructFileEnd(outFile, gapsFile);
   }
-
-  Output::printLoadModuleEnd(outFile);
-  Output::printStructFileEnd(outFile, gapsFile);
-
-  // write CFG in dot (graphviz) format to file
-  if (dotFile != NULL) {
-    makeDotFile(dotFile, code_obj);
-  }
-
-  Inline::closeSymtab();
 }
 
 //----------------------------------------------------------------------
@@ -720,6 +727,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
   }
 
 #if ENABLE_PARSEAPI_GAPS
+  if (symtab->getArchitecture() != Dyninst::Arch_cuda) {
   VMAIntervalSet gaps;
   computeGaps(covered, gaps, ginfo->start, ginfo->end);
 
@@ -744,6 +752,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
        << "\ngaps:\n"
        << gaps.toString() << "\n";
 #endif
+  }
 #endif
 }
 
@@ -1001,6 +1010,7 @@ doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
   int try_symtab = 1;
 #endif
 
+#if 0
   std::vector<SymtabAPI::Function *> fns;
   const std::string &name = func->mangledName();
   bool found = the_symtab->findFunctionsByName(fns, name, mangledName);
@@ -1017,12 +1027,18 @@ doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
     }
     std::cerr << std::endl;
   }
+#endif
  
-  SymtabAPI::Function *f = fns[0];
 
+#if 0
+  SymtabAPI::Function *f = fns[0];
   const FuncRangeCollection &ranges = f->getRanges();
   for (unsigned int r = 0; r < ranges.size(); r++) {
     for (Offset vma = ranges[r].low(); vma < ranges[r].high(); vma += 4) {
+#else
+  {
+    for (Offset vma = ginfo->start; vma < ginfo->end; vma += 4) {
+#endif
       int    len = 4;
       string filenm = "";
       SrcFile::ln line = 0;

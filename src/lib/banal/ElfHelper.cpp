@@ -42,14 +42,14 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
 //***************************************************************************
 //
-// File:
+// File: ElfHelper.cpp
 //
 // Purpose:
-//
-// Description:
-//
+//   implementation of a function that scans an elf file and returns a vector
+//   of sections 
 //
 //***************************************************************************
 
@@ -58,22 +58,7 @@
 // system includes
 //******************************************************************************
 
-#include <assert.h>
 #include <err.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <iostream>
-#include <vector>
-#include <string>
-
-#include <libelf.h>
 #include <gelf.h>
 
 
@@ -82,76 +67,94 @@
 // local includes
 //******************************************************************************
 
-#include "InputFile.hpp"
-#include "Fatbin.hpp"
+#include "ElfHelper.hpp"
 #include "RelocateCubin.hpp"
 
 
+
 //******************************************************************************
-// private operations
+// macros
 //******************************************************************************
 
-int file_size(int fd)
+#ifndef NULL
+#define NULL 0
+#endif
+
+
+
+//******************************************************************************
+// interface functions 
+//******************************************************************************
+
+bool
+ElfFile::open
+(
+ char *_memPtr,
+ size_t _memLen,
+ std::string _fileName
+)
 {
-  struct stat sb;
-  int retval = fstat(fd, &sb);
-  if (retval == 0 && S_ISREG(sb.st_mode)) {
-    return sb.st_size;
+  memPtr = _memPtr;
+  memLen = _memLen;
+  fileName = _fileName;
+
+  elf_version(EV_CURRENT);
+  elf = elf_memory(memPtr, memLen);
+  if (elf == 0) {
+    // err(1, "unable to open elf file: %s", fileName.c_str());
+    return false;
   }
-  return 0;
+  GElf_Ehdr ehdr_v; 
+  GElf_Ehdr *ehdr = gelf_getehdr (elf, &ehdr_v);
+  if (!ehdr) {
+    // err(1, "unable to read elf header: %s", fileName.c_str());
+    return false;
+  }
+  if (ehdr->e_machine == EM_CUDA) {
+    relocateCubin(memPtr, elf);
+  }
+
+  return true;
 }
 
 
+ElfFile::~ElfFile() 
+{
+  elf_end(elf);
+}
 
-//******************************************************************************
-// interface oeprations
-//******************************************************************************
 
-
-ElfFileVector *
-InputFile::openFile
+// assemble a vector of pointers to each section in an elf binary
+ElfSectionVector *
+elfGetSectionVector
 (
- std::string filename
+ Elf *elf
 )
 {
-  const char *file_name = filename.c_str();
-
-  int    file_fd = open(file_name, O_RDONLY);
-
-  if (file_fd < 0) {
-    errx(1, "open failed: %s", file_name);
+  ElfSectionVector *sections = new ElfSectionVector;
+  bool nonempty = false;
+  if (elf) {
+    Elf_Scn *scn = NULL;
+    while ((scn = elf_nextscn(elf, scn)) != NULL) {
+      sections->push_back(scn);
+      nonempty = true;
+    }
   }
-
-  size_t f_size = file_size(file_fd);
-  
-  if (f_size == 0) {
-    errx(1, "file size == 0: %s", file_name);
+  if (nonempty) return sections;
+  else {
+    delete sections;
+    return NULL;
   }
+}
 
-  char  *file_buffer = (char *) malloc(f_size);
 
-  if (file_buffer == 0) {
-    errx(1, "unable to allocate file buffer of %lu bytes", f_size);
-  }
-
-  size_t bytes = read(file_fd, file_buffer, f_size);
-
-  if (f_size != bytes) {
-    errx(1, "read only %lu bytes of %lu bytes from file %s",
-	 bytes, f_size, file_name);
-  }
-
-  close(file_fd);
-
-  ElfFileVector *elfFileVector = 0;
-  ElfFile *elfFile = new ElfFile;
-  if (elfFile->open(file_buffer, f_size, filename)) {
-    elfFileVector = new ElfFileVector;
-    elfFileVector->push_back(elfFile);
-    findCubins(elfFile, elfFileVector);
-  } else {
-    delete elfFile;
-  }
-
-  return elfFileVector;
+char *
+elfSectionGetData
+(
+ char *obj_ptr,
+ GElf_Shdr *shdr
+)
+{
+  char *sectionData = obj_ptr + shdr->sh_offset;
+  return sectionData;
 }

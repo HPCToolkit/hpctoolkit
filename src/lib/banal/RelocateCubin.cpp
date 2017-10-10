@@ -91,6 +91,7 @@
 // local includes
 //******************************************************************************
 
+#include "ElfHelper.hpp"
 #include "RelocateCubin.hpp"
 
 
@@ -107,6 +108,16 @@
 #define section_index(n) (n-1)
 
 #define DEBUG_CUBIN_RELOCATION 0
+
+
+//---------------------------------------------------------
+// NVIDIA CUDA line map relocation types 
+//   type name gleaned using cuobjdump
+//   value gleaned by examining binaries 
+//---------------------------------------------------------
+#define R_NV_32                 0x01
+#define R_NV_64                 0x02
+
 
 
 //******************************************************************************
@@ -156,26 +167,19 @@ binding_name
 #endif
 
 
-// assemble a vector of pointers to each section in an elf binary
-static Elf_SectionVector *
-elfGetSectionVector
-(
-  Elf *cubin_elf
-)
+// properly size the relocation update to an address based on the
+// relocation type
+static void
+applyRelocation(void *addr, unsigned rel_type, uint64_t rel_value)
 {
-  Elf_SectionVector *sections = new Elf_SectionVector;
-  bool nonempty = false;
-  if (cubin_elf) {
-    Elf_Scn *scn = NULL;
-    while ((scn = elf_nextscn(cubin_elf, scn)) != NULL) {
-      sections->push_back(scn);
-      nonempty = true;
-    }
-  }
-  if (nonempty) return sections;
-  else {
-    delete sections;
-    return NULL;
+  if (rel_type == R_NV_64) {
+    uint64_t *addr64 = (uint64_t *) addr;
+    *addr64 = rel_value;
+  } else if (rel_type == R_NV_32) {
+    uint32_t *addr32 = (uint32_t *) addr;
+    *addr32 = rel_value;
+  } else {
+    assert(0);
   }
 }
 
@@ -192,15 +196,18 @@ applyLineMapRelocation
   // get the symbol that is the basis for the relocation
   unsigned sym_index = GELF_R_SYM(rel->r_info);
 
+  // determine the type of relocation
+  unsigned rel_type = GELF_R_TYPE(rel->r_info);
+
   // get the new offset of the aforementioned symbol
   unsigned sym_value = (*symbol_values)[sym_index];
 
-  // compute the address in the line map where a relocation needs to be applied
-  unsigned long *addr = (unsigned long *) (line_map + rel->r_offset);
+  // compute address in the line map where a relocation needs to be applied
+  void *addr = (void *) (line_map + rel->r_offset);
 
-  // update the address in the line map entry based on the symbol value
-  // associated with the relocation entry
-  *addr = sym_value;
+  // update the address in the line map entry based on the
+  // symbol value associated with the relocation entry.
+  applyRelocation(addr, rel_type, sym_value);
 }
 
 
@@ -306,7 +313,6 @@ relocateLineMap
 }
 
 
-
 // apply one relocation to debug info 
 static void
 applyDebugInfoRelocation
@@ -319,15 +325,18 @@ applyDebugInfoRelocation
   // get the symbol that is the basis for the relocation
   unsigned sym_index = GELF_R_SYM(rela->r_info);
 
+  // determine the type of relocation
+  unsigned rel_type = GELF_R_TYPE(rela->r_info);
+
   // get the new offset of the aforementioned symbol
   unsigned sym_value = (*symbol_values)[sym_index];
 
   // compute the address in the line map where a relocation needs to be applied
-  unsigned long *addr = (unsigned long *) (debug_info + rela->r_offset);
+  void *addr = (unsigned long *) (debug_info + rela->r_offset);
 
   // update the address in the debug info entry based on the symbol value
   // and addend in the relocation entry
-  *addr = sym_value + rela->r_addend;
+  applyRelocation(addr, rel_type, sym_value + rela->r_addend);
 }
 
 
