@@ -101,13 +101,11 @@ ElfFile::open
   elf_version(EV_CURRENT);
   elf = elf_memory(memPtr, memLen);
   if (elf == 0) {
-    // err(1, "unable to open elf file: %s", fileName.c_str());
     return false;
   }
   GElf_Ehdr ehdr_v; 
   GElf_Ehdr *ehdr = gelf_getehdr (elf, &ehdr_v);
   if (!ehdr) {
-    // err(1, "unable to read elf header: %s", fileName.c_str());
     return false;
   }
   if (ehdr->e_machine == EM_CUDA) {

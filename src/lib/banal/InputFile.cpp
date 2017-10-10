@@ -58,23 +58,10 @@
 // system includes
 //******************************************************************************
 
-#include <assert.h>
 #include <err.h>
 #include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include <sys/types.h>
 #include <sys/stat.h>
-
-#include <iostream>
-#include <vector>
-#include <string>
-
-#include <libelf.h>
-#include <gelf.h>
+#include <unistd.h>
 
 
 
@@ -84,7 +71,6 @@
 
 #include "InputFile.hpp"
 #include "Fatbin.hpp"
-#include "RelocateCubin.hpp"
 
 
 //******************************************************************************

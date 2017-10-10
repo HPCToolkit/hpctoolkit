@@ -68,22 +68,7 @@
 //******************************************************************************
 
 #include <assert.h>
-#include <err.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <iostream>
-#include <vector>
-#include <string>
-
-#include <libelf.h>
-#include <gelf.h>
 
 
 
@@ -184,9 +169,8 @@ applyRelocation(void *addr, unsigned rel_type, uint64_t rel_value)
 }
 
 
-// apply one line map relocation to the line map
 static void
-applyLineMapRelocation
+applyRELrelocation
 (
  char *line_map,
  Elf_SymbolVector *symbol_values,
@@ -202,12 +186,38 @@ applyLineMapRelocation
   // get the new offset of the aforementioned symbol
   unsigned sym_value = (*symbol_values)[sym_index];
 
-  // compute address in the line map where a relocation needs to be applied
+  // compute address where a relocation needs to be applied
   void *addr = (void *) (line_map + rel->r_offset);
 
-  // update the address in the line map entry based on the
-  // symbol value associated with the relocation entry.
+  // update the address based on the symbol value associated with the
+  // relocation entry.
   applyRelocation(addr, rel_type, sym_value);
+}
+
+
+static void
+applyRELArelocation
+(
+ char *debug_info,
+ Elf_SymbolVector *symbol_values,
+ GElf_Rela *rela
+)
+{
+  // get the symbol that is the basis for the relocation
+  unsigned sym_index = GELF_R_SYM(rela->r_info);
+
+  // determine the type of relocation
+  unsigned rel_type = GELF_R_TYPE(rela->r_info);
+
+  // get the new offset of the aforementioned symbol
+  unsigned sym_value = (*symbol_values)[sym_index];
+
+  // compute the address where a relocation needs to be applied
+  void *addr = (unsigned long *) (debug_info + rela->r_offset);
+
+  // update the address in based on the symbol value and addend in the
+  // relocation entry
+  applyRelocation(addr, rel_type, sym_value + rela->r_addend);
 }
 
 
@@ -226,7 +236,7 @@ applyLineMapRelocations
   for (int i = 0; i < n_relocations; i++) {
     GElf_Rel rel_v;
     GElf_Rel *rel = gelf_getrel(relocations_data, i, &rel_v);
-    applyLineMapRelocation(line_map, symbol_values, rel);
+    applyRELrelocation(line_map, symbol_values, rel);
   }
 }
 
@@ -313,33 +323,6 @@ relocateLineMap
 }
 
 
-// apply one relocation to debug info 
-static void
-applyDebugInfoRelocation
-(
- char *debug_info,
- Elf_SymbolVector *symbol_values,
- GElf_Rela *rela
-)
-{
-  // get the symbol that is the basis for the relocation
-  unsigned sym_index = GELF_R_SYM(rela->r_info);
-
-  // determine the type of relocation
-  unsigned rel_type = GELF_R_TYPE(rela->r_info);
-
-  // get the new offset of the aforementioned symbol
-  unsigned sym_value = (*symbol_values)[sym_index];
-
-  // compute the address in the line map where a relocation needs to be applied
-  void *addr = (unsigned long *) (debug_info + rela->r_offset);
-
-  // update the address in the debug info entry based on the symbol value
-  // and addend in the relocation entry
-  applyRelocation(addr, rel_type, sym_value + rela->r_addend);
-}
-
-
 static void
 applyDebugInfoRelocations
 (
@@ -355,7 +338,7 @@ applyDebugInfoRelocations
   for (int i = 0; i < n_relocations; i++) {
     GElf_Rela rela_v;
     GElf_Rela *rela = gelf_getrela(relocations_data, i, &rela_v);
-    applyDebugInfoRelocation(debug_info, symbol_values, rela);
+    applyRELArelocation(debug_info, symbol_values, rela);
   }
 }
 

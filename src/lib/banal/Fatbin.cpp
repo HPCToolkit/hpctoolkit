@@ -58,23 +58,7 @@
 // system includes
 //******************************************************************************
 
-#include <assert.h>
-#include <err.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <iostream>
-#include <vector>
-#include <string>
-
-#include <libelf.h>
-#include <gelf.h>
 
 
 
@@ -101,6 +85,12 @@
 #define CUDA_FATBIN_MAGIC 	0x466243b1
 #define CUDA_FATBIN_VERSION 	1
 
+
+
+//******************************************************************************
+// type definitions
+//******************************************************************************
+
 typedef struct NvidiaFatBinHeader_s {
   int32_t magicNumber; 
   int32_t version; 
@@ -109,19 +99,33 @@ typedef struct NvidiaFatBinHeader_s {
 } NvidiaFatBinHeader_t; 
 
 
-
-//******************************************************************************
-// type definitions
-//******************************************************************************
-
-
 typedef std::vector<NvidiaFatBinHeader_t *> FatbinSectionVector;
 
-FatbinSectionVector fatbinSectionVector;
+
+
+//******************************************************************************
+// local variables
+//******************************************************************************
+
+static FatbinSectionVector fatbinSectionVector;
+
+
 
 //******************************************************************************
 // private functions
 //******************************************************************************
+
+static bool
+isCubin(Elf *elf)
+{
+  // open the header of the Elf object
+  GElf_Ehdr ehdr_v; 
+  GElf_Ehdr *obj_ehdr = gelf_getehdr(elf, &ehdr_v);
+
+  // check the header of the Elf object to see if it is a Cubin
+  return (obj_ehdr && (obj_ehdr->e_machine == EM_CUDA));
+}
+
 
 static bool
 recordIfNvFatbin
@@ -145,18 +149,6 @@ recordIfNvFatbin
     }
   }
   return isFatbin;
-}
-
-
-static bool
-isCubin(Elf *elf)
-{
-  // open the header of the Elf object
-  GElf_Ehdr ehdr_v; 
-  GElf_Ehdr *obj_ehdr = gelf_getehdr(elf, &ehdr_v);
-
-  // check the header of the Elf object to see if it is a Cubin
-  return (obj_ehdr && (obj_ehdr->e_machine == EM_CUDA));
 }
 
 
@@ -195,7 +187,6 @@ recordIfCubin
 }
 	
 
-
 // cubin text segments all start at offset 0 and are thus overlapping.
 // relocate each text segment so that it begins at its offset in the
 // cubin. when this function returns, text segments no longer overlap.
@@ -221,13 +212,15 @@ findCubinSections
 
       if (recordIfNvFatbin(obj_ptr, elf, ehdr, scn, shdr)) {
 	count++;
-      } else if (recordIfCubin(elfFile, obj_ptr, elf, ehdr, scn, shdr, elfFileVector)) {
+      } else if (recordIfCubin(elfFile, obj_ptr, elf, ehdr, scn,
+			       shdr, elfFileVector)) {
 	count++;
       }
     }
   }
   return count > 0;
 }
+
 
 
 //******************************************************************************
@@ -252,6 +245,13 @@ findCubins
   }
   return success;
 }
+
+
+
+//******************************************************************************
+// debugging support
+//******************************************************************************
+
 void
 writeElfFile
 (
@@ -264,6 +264,7 @@ writeElfFile
   fwrite(elfFile->getMemory(), elfFile->getLength(), 1, f);
   fclose(f);
 }
+
 
 void
 writeCubins(

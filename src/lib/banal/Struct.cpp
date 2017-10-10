@@ -106,7 +106,7 @@ using namespace std;
 
 #define ENABLE_PARSEAPI_GAPS  1
 
-#define DEBUG_CFG_SOURCE  1
+#define DEBUG_CFG_SOURCE  0
 #define DEBUG_MAKE_SKEL   0
 
 // Copied from lib/prof/Struct-Tree.cpp
@@ -1010,86 +1010,57 @@ doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
   int try_symtab = 1;
 #endif
 
-#if 0
-  std::vector<SymtabAPI::Function *> fns;
-  const std::string &name = func->mangledName();
-  bool found = the_symtab->findFunctionsByName(fns, name, mangledName);
-  
-  assert(found);
-  if (fns.size() > 1) {
-    std::cerr << "warning: more than one symtab function for '"
-	      << func->name()
-	      << "': ";
-    for (unsigned int i = 0; i < fns.size(); i++) {
-      SymtabAPI::Function *f = fns[i];
-      std::cerr << f->getName()
-		<< " ";
-    }
-    std::cerr << std::endl;
-  }
-#endif
- 
-
-#if 0
-  SymtabAPI::Function *f = fns[0];
-  const FuncRangeCollection &ranges = f->getRanges();
-  for (unsigned int r = 0; r < ranges.size(); r++) {
-    for (Offset vma = ranges[r].low(); vma < ranges[r].high(); vma += 4) {
-#else
-  {
-    for (Offset vma = ginfo->start; vma < ginfo->end; vma += 4) {
-#endif
-      int    len = 4;
-      string filenm = "";
-      SrcFile::ln line = 0;
+  for (Offset vma = ginfo->start; vma < ginfo->end; vma += 4) {
+    int    len = 4;
+    string filenm = "";
+    SrcFile::ln line = 0;
 
 #if USE_LIBDWARF_LINE_MAP
-      LineRange lr;
+    LineRange lr;
 
-      the_linemap->getLineRange(vma, lr);
-      filenm = lr.filenm;
-      line = lr.lineno;
+    the_linemap->getLineRange(vma, lr);
+    filenm = lr.filenm;
+    line = lr.lineno;
 #endif
 
 #if USE_DYNINST_LINE_MAP
-      if (low_vma <= vma && vma < high_vma) {
-	// use cached value
-	filenm = cache_filenm;
-	line = cache_line;
-      }
-      else {
-	StatementVector svec;
-	getStatement(svec, vma, ginfo->sym_func);
+    if (low_vma <= vma && vma < high_vma) {
+      // use cached value
+      filenm = cache_filenm;
+      line = cache_line;
+    }
+    else {
+      StatementVector svec;
+      getStatement(svec, vma, ginfo->sym_func);
 
 #if USE_FULL_SYMTAB_BACKUP
-	// fall back on full symtab if module LineInfo fails.
-	// symtab lookups are very expensive, so limit to one failure
-	// per block.
-	if (svec.empty() && try_symtab) {
-	  the_symtab->getSourceLines(svec, vma);
-	  if (svec.empty()) {
-	    try_symtab = 0;
-	  }
-	}
-#endif
-	if (! svec.empty()) {
-	  // use symtab value and save in cache
-	  low_vma = svec[0]->startAddr();
-	  high_vma = svec[0]->endAddr();
-	  filenm = getRealPath(svec[0]->getFile().c_str());
-	  line = svec[0]->getLine();
-	  cache_filenm = filenm;
-	  cache_line = line;
+      // fall back on full symtab if module LineInfo fails.
+      // symtab lookups are very expensive, so limit to one failure
+      // per block.
+      if (svec.empty() && try_symtab) {
+	the_symtab->getSourceLines(svec, vma);
+	if (svec.empty()) {
+	  try_symtab = 0;
 	}
       }
+#endif
+      if (! svec.empty()) {
+	// use symtab value and save in cache
+	low_vma = svec[0]->startAddr();
+	high_vma = svec[0]->endAddr();
+	filenm = getRealPath(svec[0]->getFile().c_str());
+	line = svec[0]->getLine();
+	cache_filenm = filenm;
+	cache_line = line;
+      }
+    }
 #endif
 
 #if DEBUG_CFG_SOURCE
-      debugStmt(vma, len, filenm, line);
+    debugStmt(vma, len, filenm, line);
 #endif
 
-      addStmtToTree(root, strTab, vma, len, filenm, line);
-    }
+    addStmtToTree(root, strTab, vma, len, filenm, line);
   }
 }
 
