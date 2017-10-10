@@ -4,8 +4,8 @@
 
 This chapter describes the mechanics of using \hpcrun{} and \hpclink{}
 to profile an application and collect performance data.  For advice on
-choosing sampling events, scaling studies, etc, see
-Chapter~\ref{chpt:effective-performance-analysis} on {\it Effective
+how to choose events, perform scaling studies, etc., see
+Chapter~\ref{chpt:effective-performance-analysis} {\it Effective
 Strategies for Analyzing Program Performance}.
 
 \section{Using \hpcrun{}}
@@ -105,12 +105,156 @@ Monitoring Statically Linked Applications}.
 
 \section{Sample Sources}
 
-This section covers the details of some individual sample sources.  To
+This section provide an overview of how to use sample sources supported by HPCToolkit.  To
 see a list of the available sample sources and events that \hpcrun{}
 supports, use `\verb|hpcrun -L|' (dynamic) or set
 `\verb|HPCRUN_EVENT_LIST=LIST|' (static).  Note that on systems with
-separate compute nodes, you will likely need to run this on one of the
+separate compute nodes, it is best to run this on one of the
 compute nodes.
+
+\newcommand{\perfevents}{{\tt perf\_events}}
+
+\subsection{Linux \perfevents}
+
+Linux \perfevents{} provides a powerful interface that supports 
+measurement of both application execution and kernel activity. 
+Using
+\perfevents{}, one can measure both hardware and software events. 
+Using a processor's hardware performance monitoring unit (PMU), the
+\perfevents{} interface can measure an execution using any hardware counter
+supported by the PMU. Examples of hardware events include cycles, instructions
+completed, cache misses, and stall cycles. Using instrumentation built in to the Linux kernel,
+the \perfevents{} interface can measure software events. Examples of software events include page
+faults, context switches, and CPU migrations. 
+
+
+
+\subsubsection{Capabilities of HPCToolkit's \perfevents{} Interface}
+
+\paragraph{Frequency-based sampling.} 
+Rather than picking a sample period for a hardware counter,
+the Linux \perfevents{} interface enables one to specify the desired sampling frequency
+and have the kernel automatically select and adjust the period 
+to try to achieve the desired sampling frequency.\footnote{The kernel may be unable to deliver the desired frequency if 
+there are fewer events per second than the desired frequency.}  
+To use frequency-based sampling, one can specify the sampling rate
+for an event as the desired number of samples per second
+by prefixing the
+rate with the letter “\verb|f|”. The subsequent subsection on {\em Launching} shows some
+examples of how to monitor an execution using frequency-based sampling.
+
+\paragraph{Multiplexing.} 
+Using multiplexing enables one to monitor more events
+in a single execution than the number of hardware counters a processor
+can support for each thread. The number of events that can be monitored in
+a single execution is only limited by the maximum number of concurrent
+events that the kernel will allow a user to multiplex using the
+\perfevents{} interface.
+
+When more events are specified than can be monitored simultaneously
+using a thread's hardware counters,\footnote{How many events can be
+  monitored simultaneously on a particular processor may depend on the
+  events specified.} the kernel will employ multiplexing and divide
+the set of events to be monitored into groups, monitor only one group
+of events at a time, and cycle repeatedly through the groups
+as a program executes. 
+
+For applications that have very regular,
+steady state behavior, e.g., an iterative code with lots of
+iterations, multiplexing will yield results that are suitably representative
+of execution behavior.  However, for executions that consist of
+unique short phases, measurements collected using multiplexing may
+not accurately represent the execution behavior. To obtain
+more accurate measurements, one can run an application multiple times and in 
+each run collect a subset of events that can be measured without multiplexing.
+Results from several such executions can be imported into HPCToolkit's \hpcviewer{} 
+and analyzed together.
+
+
+\paragraph{Thread blocking.} When a program executes, 
+a thread may block waiting for the kernel to complete some operation on its behalf.
+Example operations include waiting for a {\tt read} operation to complete or having the
+kernel service a page fault or zero-fill a page. On systems running Linux 4.3 or newer, one can use the \perfevents{} sample source to monitor how much time a thread is blocked and where the blocking occurs. To measure
+the time a thread spends blocked, one can profile with \verb|BLOCKTIME| event and
+another time-based event, such as \verb|CYCLES|. The \verb|BLOCKTIME| event shouldn't have any frequency or period specified, whereas \verb|CYCLES| should have a frequency or period specified.
+
+\subsubsection{Launching}
+\label{sec:perf-launching}
+
+When sampling with native events, by default hpcrun will profile using \perfevents{}. 
+To force HPCToolkit to use PAPI (assuming it\textquotesingle s available) instead of \perfevents{}, 
+one must prefix the event with \lq{\verb|papi::|}\rq{} as follows:
+
+\begin{quote}
+\begin{verbatim}
+hpcrun -e papi::CYCLES
+\end{verbatim}
+\end{quote}
+
+For PAPI presets, there is no need to prefix the event with
+ \lq{\verb|papi::|}\rq. For instance it is sufficient to specify \verb|PAPI_TOT_CYC| event
+without any prefix to profile using PAPI.
+
+To sample an execution 100 times per second (frequency-based sampling) counting \verb|CYCLES| 
+and 100 times a second counting \verb|INSTRUCTIONS|:
+
+\begin{quote}
+\begin{verbatim}
+hpcrun -e CYCLES@f100 -e INSTRUCTIONS@f100 ...
+\end{verbatim}
+\end{quote}
+
+To sample an execution every 1,000,000 cycles and every 1,000,000 instructions using period-based sampling:
+
+\begin{quote}
+\begin{verbatim}
+hpcrun -e CYCLES@1000000 -e INSTRUCTIONS@1000000
+\end{verbatim}
+\end{quote}
+
+By default, hpcrun will use frequency-based sampling with the rate
+300 samples per second per event type. Hence the following command will cause HPCToolkit to
+sample \verb|CYCLES| at 300 samples per second and \verb|INSTRUCTIONS| at 300 samples per second:
+
+\begin{quote}
+\begin{verbatim}
+hpcrun -e CYCLES -e INSTRUCTIONS …
+\end{verbatim}
+\end{quote}
+
+One can a different default rate using the \verb|-c| option. The command below will sample \verb|CYCLES| at 200 samples per second and \verb|INSTRUCTIONS| at 200 samples per second:
+
+\begin{quote}
+\begin{verbatim}
+hpcrun -c f200 -e CYCLES -e INSTRUCTIONS …
+\end{verbatim}
+\end{quote}
+
+
+
+\subsubsection{Caveats}
+
+\begin{itemize}
+\item
+\sloppy
+When a system is configured with suitable permissions, HPCToolkit will sample call stacks
+within the Linux kernel in addition to application-level call stacks. This feature can be useful to diagnose where and why a thread blocks.
+For this feature to be available, the file
+\verb|/proc/sys/kernel/perf_event_paranoid| file must have value 1.  To associate addresses
+in kernel call paths with function names, the value of
+\verb|/proc/sys/kernel/kptr_restrict| must be 0 (number zero). If these settings are not configured in this way on your system, you will need someone with administrator privileges to change them.
+
+\item
+Due to a limitation of all Linux kernel versions currently available,  
+\hpcrun{} can only approximate a thread's blocking time using first-party sampling rather than directly measuring the time between when a thread blocks and when it resumes.  
+
+
+\item
+Users need to be cautious to compare between different multiplexed
+counters. Currently, there is no direct information to 
+know if a metric is based on multiplexed counter. Currently the information
+is embedded in the \verb|experiment.xml| file produced when post-processing measurement data with \hpcprof{} or \hpcprofmpi, but not visible in the \hpcviewer.
+\end{itemize}
 
 \subsection{PAPI}
 
