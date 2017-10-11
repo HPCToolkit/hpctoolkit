@@ -286,7 +286,10 @@ void kernel_blocking_init()
 
   event_custom_t *event_kernel_blocking = hpcrun_malloc(sizeof(event_custom_t));
   event_kernel_blocking->name         = EVNAME_KERNEL_BLOCK;
-  event_kernel_blocking->desc         = "Approximation of a thread's blocking time. This event requires another event (such as CYCLES) to profile with. The unit time is hardware-dependent but mostly in microseconds.";
+  event_kernel_blocking->desc         = "Approximation of a thread's blocking time."  
+					" This event requires another event (such as CYCLES) to profile with."  
+					" The unit time is hardware-dependent but mostly in microseconds."  
+					" This event is only available on Linux kernel 4.3 or newer.";
   event_kernel_blocking->register_fn  = register_blocking;   // call backs
   event_kernel_blocking->handler_fn   = NULL; 		// No call backs: we want all event to call us
   event_kernel_blocking->metric_index = 0;   		// these fields to be defined later
