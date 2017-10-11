@@ -173,7 +173,7 @@ MPI_PROTO_FILE = @MPI_PROTO_FILE@
 
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
-PLUGIN_CONFIG_FILES = ga io memleak pthread
+PLUGIN_CONFIG_FILES = datacentric ga io memleak pthread
 
 if HOST_CPU_PPC
   PLUGIN_CONFIG_FILES += ibm-xlomp
