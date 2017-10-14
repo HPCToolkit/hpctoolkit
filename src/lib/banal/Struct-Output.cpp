@@ -61,11 +61,8 @@
 // 5. Add full vma ranges for <P> proc tags.
 // ---> is this needed ?
 //
-// 7. Fix targ401420 names in <P> tags.
-//
-// 13. Handle unknown file/line more explicitly.
-//
 // 14. Deal with alien ln fields.
+// ---> is this needed ?
 
 //***************************************************************************
 
@@ -284,16 +281,18 @@ printProc(ostream * os, ostream * gaps, string gaps_file,
   doIndent(os, 2);
   *os << "<P"
       << INDEX
-      << STRING("n", ginfo->prettyName);
+      << STRING("n", pinfo->prettyName);
 
-  if (ginfo->linkName != ginfo->prettyName) {
-    *os << STRING("ln", ginfo->linkName);
+  if (pinfo->linkName != pinfo->prettyName) {
+    *os << STRING("ln", pinfo->linkName);
   }
   *os << NUMBER("l", pinfo->line_num)
       << VRANGE(pinfo->entry_vma, 1)
       << ">\n";
 
-  if (pinfo->leader) {
+  // write the gaps to the first proc (low vma) of the group.  this
+  // only applies to full gaps.
+  if (gaps != NULL && (! ginfo->alt_file) && pinfo == ginfo->procMap.begin()->second) {
     doGaps(os, gaps, gaps_file, finfo, ginfo, pinfo);
   }
 
@@ -309,82 +308,64 @@ printProc(ostream * os, ostream * gaps, string gaps_file,
 // function to the .hpcstruct and .hpcstruct.gaps files.  This only
 // applies to the group leader.
 //
+// This is the full version -- each gap has a separate <S> stmt linked
+// to the .gaps file, all within a alien scope.  The basic version is
+// folded into the inline tree in Struct.cpp.
+//
 static void
 doGaps(ostream * os, ostream * gaps, string gaps_file,
        FileInfo * finfo, GroupInfo * ginfo, ProcInfo * pinfo)
 {
-  if (ginfo->gapList.empty()) {
+  if (gaps == NULL || ginfo->gapSet.empty()) {
     return;
   }
 
-  if (gaps != NULL) {
-    //
-    // full version -- each gap has a separate <S> stmt linked to the
-    // .gaps file, all within a alien scope.
-    //
-    *gaps << "\nfunc:  " << ginfo->prettyName << "\n"
-	  << "link:  " << ginfo->linkName << "\n"
-	  << "file:  " << finfo->fileName << "  line: " << pinfo->line_num << "\n"
-	  << "0x" << hex << ginfo->start << "--0x" << ginfo->end << dec << "\n\n";
-    gaps_line += 6;
+  *gaps << "\nfunc:  " << pinfo->prettyName << "\n"
+	<< "link:  " << pinfo->linkName << "\n"
+	<< "file:  " << finfo->fileName << "  line: " << pinfo->line_num << "\n"
+	<< "0x" << hex << ginfo->start << "--0x" << ginfo->end << dec << "\n\n";
+  gaps_line += 6;
 
-    doIndent(os, 3);
-    *os << "<A"
-	<< INDEX
-	<< NUMBER("l", pinfo->line_num)
-	<< STRING("f", finfo->fileName)
-	<< STRING("n", "")
-	<< " v=\"{}\""
-	<< ">\n";
+  doIndent(os, 3);
+  *os << "<A"
+      << INDEX
+      << NUMBER("l", pinfo->line_num)
+      << STRING("f", finfo->fileName)
+      << STRING("n", "")
+      << " v=\"{}\""
+      << ">\n";
 
-    doIndent(os, 4);
-    *os << "<A"
-	<< INDEX
-	<< NUMBER("l", gaps_line - 4)
-	<< STRING("f", gaps_file)
-	<< STRING("n", "unclaimed region in: " + ginfo->prettyName)
-	<< " v=\"{}\""
-	<< ">\n";
+  doIndent(os, 4);
+  *os << "<A"
+      << INDEX
+      << NUMBER("l", gaps_line - 4)
+      << STRING("f", gaps_file)
+      << STRING("n", "unclaimed region in: " + pinfo->prettyName)
+      << " v=\"{}\""
+      << ">\n";
 
-    for (auto git = ginfo->gapList.begin(); git != ginfo->gapList.end(); ++git) {
-      long len = git->end - git->start;
+  for (auto git = ginfo->gapSet.begin(); git != ginfo->gapSet.end(); ++git) {
+    long start = git->beg();
+    long end = git->end();
+    long len = end - start;
 
-      *gaps << "gap:  0x" << hex << git->start << "--0x" << git->end
-	    << dec << "  (" << len << ")\n";
-      gaps_line++;
+    *gaps << "gap:  0x" << hex << start << "--0x" << end
+	  << dec << "  (" << len << ")\n";
+    gaps_line++;
 
-      doIndent(os, 5);
-      *os << "<S"
-	  << INDEX
-	  << NUMBER("l", gaps_line)
-	  << VRANGE(git->start, len)
-	  << "/>\n";
-    }
-
-    doIndent(os, 4);
-    *os << "</A>\n";
-
-    doIndent(os, 3);
-    *os << "</A>\n";
-  }
-  else {
-    //
-    // simple version -- single <S> stmt at the proc header containing
-    // all of the gaps, and no extra .gaps file.
-    //
-    VMAIntervalSet vset;
-
-    for (auto git = ginfo->gapList.begin(); git != ginfo->gapList.end(); ++git) {
-      vset.insert(VMAInterval(git->start, git->end));
-    }
-
-    doIndent(os, 3);
+    doIndent(os, 5);
     *os << "<S"
 	<< INDEX
-	<< NUMBER("l", pinfo->line_num)
-	<< " v=\"" << vset.toString() << "\""
+	<< NUMBER("l", gaps_line)
+	<< VRANGE(start, len)
 	<< "/>\n";
   }
+
+  doIndent(os, 4);
+  *os << "</A>\n";
+
+  doIndent(os, 3);
+  *os << "</A>\n";
 }
 
 //----------------------------------------------------------------------

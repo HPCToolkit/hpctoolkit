@@ -63,6 +63,9 @@
 #include <CFG.h>
 #include <Symtab.h>
 #include <Function.h>
+
+#include <lib/isa/ISATypes.hpp>
+#include <lib/binutils/VMAInterval.hpp>
 #include "Struct-Inline.hpp"
 
 namespace BAnal {
@@ -75,12 +78,10 @@ using namespace std;
 class FileInfo;
 class GroupInfo;
 class ProcInfo;
-class GapInfo;
 
 typedef map <string, FileInfo *> FileMap;
-typedef map <SymtabAPI::Function *, GroupInfo *> GroupMap;
+typedef map <VMA, GroupInfo *> GroupMap;
 typedef map <VMA, ProcInfo *> ProcMap;
-typedef list <GapInfo> GapList;
 
 
 // FileInfo and FileMap are the top-level classes for files and
@@ -107,27 +108,29 @@ public:
 // includes the unnamed procs (targ4xxxxx) within one Function symbol,
 // eg, internal openmp regions.
 //
-// GroupMap is indexed by the SymtabAPI Function.
+// GroupMap is indexed by Function VMA (symtab if exists, else
+// parseapi for plt funcs).
+//
+// alt_file is for outline funcs whose parseapi file name does not
+// match the enclosing symtab file (implies no gap analysis).
 //
 class GroupInfo {
 public:
   SymtabAPI::Function * sym_func;
-  string linkName;
-  string prettyName;
   VMA  start;
   VMA  end;
   ProcMap procMap;
-  GapList gapList;
+  VMAIntervalSet gapSet;
+  bool  alt_file;
 
-  GroupInfo(SymtabAPI::Function * sf, string ln, string pn)
+  GroupInfo(SymtabAPI::Function * sf, VMA st, VMA en, bool alt = false)
   {
     sym_func = sf;
-    linkName = ln;
-    prettyName = pn;
-    start = (sf != NULL) ? sf->getOffset() : 0;
-    end = (sf != NULL) ? (start + sf->getSize()) : 0;
+    start = st;
+    end = en;
     procMap.clear();
-    gapList.clear();
+    gapSet.clear();
+    alt_file = alt;
   }
 };
 
@@ -137,39 +140,29 @@ public:
 //
 // ProcMap is indexed by the func's entry address.
 //
+// gap_only is for outline funcs that exist in another file (do the
+// full parse in the other file).
+//
 class ProcInfo {
 public:
   ParseAPI::Function * func;
   TreeNode * root;
+  string  linkName;
+  string  prettyName;
   long  line_num;
   VMA   entry_vma;
-  bool  leader;
+  bool  gap_only;
 
-  ProcInfo(ParseAPI::Function * fn, TreeNode * rt, long ln)
+  ProcInfo(ParseAPI::Function * fn, TreeNode * rt, string ln, string pn,
+	   long l, bool gap = false)
   {
     func = fn;
     root = rt;
-    line_num = ln;
+    linkName = ln;
+    prettyName = pn;
+    line_num = l;
     entry_vma = (func != NULL) ? func->addr() : 0;
-    leader = false;
-  }
-};
-
-
-// GapInfo represents one vma range within a Function Group that is
-// not covered by any ParseAPI Function within that group.
-//
-class GapInfo {
-public:
-  VMA  start;
-  VMA  end;
-  long line;
-
-  GapInfo(VMA st, VMA en, long ln)
-  {
-    start = st;
-    end = en;
-    line = ln;
+    gap_only = gap;
   }
 };
 
