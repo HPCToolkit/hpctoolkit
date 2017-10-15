@@ -467,29 +467,8 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
     buf << "0x" << hex << vma << dec;
     string  vma_str = buf.str();
 
-    bool found;
-    if (the_symtab->getArchitecture() == Dyninst::Arch_cuda) {
-      std::vector<SymtabAPI::Function *> fns;
-      const std::string &mname = func->mangledName();
-      found = the_symtab->findFunctionsByName(fns, mname, mangledName);
-      if (found) {
-	if (fns.size() > 1) {
-	  std::cerr << "warning: more than one symtab function for '"
-		    << func->name()
-		    << "': ";
-	  for (unsigned int i = 0; i < fns.size(); i++) {
-	    SymtabAPI::Function *f = fns[i];
-	    std::cerr << f->getName()
-		      << " ";
-	  }
-	  std::cerr << std::endl;
-	}
-	sym_func = fns[0];
-      }
-    } else {
-      // see if entry vma lies within a valid symtab function
-      found = the_symtab->getContainingFunction(vma, sym_func);
-    }
+    // see if entry vma lies within a valid symtab function
+    bool found = the_symtab->getContainingFunction(vma, sym_func);
 
     if (found
 	&& sym_func != NULL
