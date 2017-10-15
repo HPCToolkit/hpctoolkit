@@ -91,10 +91,10 @@ private:
 };
 
 
-typedef std::vector<ElfFile *> ElfFileVector;
+class ElfFileVector : public std::vector<ElfFile *> {};
 
 
-typedef std::vector<Elf_Scn *> ElfSectionVector;
+class ElfSectionVector : public std::vector<Elf_Scn *> {};
 
 
 

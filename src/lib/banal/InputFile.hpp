@@ -67,10 +67,10 @@
 
 
 //******************************************************************************
-// local includes
+// forward declarations 
 //******************************************************************************
 
-#include "ElfHelper.hpp"
+class ElfFileVector;
 
 
 
@@ -80,7 +80,14 @@
 
 class InputFile {
 public:
-  ElfFileVector *openFile(std::string filename);
+  InputFile() { filevector = 0; }
+  bool openFile(std::string &filename);
+  std::string &fileName() { return filename; }
+  const char *CfileName() { return filename.c_str(); }
+  ElfFileVector *fileVector() { return filevector; }
+private:
+  std::string filename;
+  ElfFileVector *filevector;
 };
 
 #endif

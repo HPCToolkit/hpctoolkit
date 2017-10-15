@@ -69,7 +69,10 @@
 // local includes
 //******************************************************************************
 
+#include <lib/support/diagnostics.h>
+
 #include "InputFile.hpp"
+#include "ElfHelper.hpp"
 #include "Fatbin.hpp"
 
 
@@ -94,50 +97,55 @@ int file_size(int fd)
 //******************************************************************************
 
 
-ElfFileVector *
+bool
 InputFile::openFile
 (
- std::string filename
+ std::string &filename
 )
 {
-  const char *file_name = filename.c_str();
+  this->filename = filename;
 
-  int    file_fd = open(file_name, O_RDONLY);
+  int    file_fd = open(filename.c_str(), O_RDONLY);
 
   if (file_fd < 0) {
-    errx(1, "open failed: %s", file_name);
+    DIAG_EMsg("unable to open input file: " << filename);
+    return false;
   }
 
   size_t f_size = file_size(file_fd);
   
   if (f_size == 0) {
-    errx(1, "file size == 0: %s", file_name);
+    DIAG_EMsg("empty input file: " << filename);
+    return false;
   }
 
   char  *file_buffer = (char *) malloc(f_size);
 
   if (file_buffer == 0) {
-    errx(1, "unable to allocate file buffer of %lu bytes", f_size);
+    DIAG_EMsg("unable to allocate file buffer of " << f_size << " bytes");
+    return false;
   }
 
   size_t bytes = read(file_fd, file_buffer, f_size);
 
   if (f_size != bytes) {
-    errx(1, "read only %lu bytes of %lu bytes from file %s",
-	 bytes, f_size, file_name);
+    DIAG_EMsg("read only " << bytes << " bytes of "
+	      << f_size << " bytes from file " << filename);
+    return false;
   }
 
   close(file_fd);
 
-  ElfFileVector *elfFileVector = 0;
   ElfFile *elfFile = new ElfFile;
-  if (elfFile->open(file_buffer, f_size, filename)) {
-    elfFileVector = new ElfFileVector;
-    elfFileVector->push_back(elfFile);
-    findCubins(elfFile, elfFileVector);
+  bool result = elfFile->open(file_buffer, f_size, filename);
+
+  if (result) {
+    filevector = new ElfFileVector;
+    filevector->push_back(elfFile);
+    findCubins(elfFile, filevector);
   } else {
     delete elfFile;
   }
 
-  return elfFileVector;
+  return result;
 }

@@ -150,6 +150,15 @@ realmain(int argc, char* argv[])
   RealPathMgr::singleton().searchPaths(args.searchPathStr);
   RealPathMgr::singleton().realpath(args.in_filenm);
 
+  // ------------------------------------------------------------
+  // open the specified load module
+  // ------------------------------------------------------------
+  InputFile loadModule;
+  bool loadModuleOpen = loadModule.openFile(args.in_filenm);
+  if (!loadModuleOpen) {
+    // error already printed by openFile
+    exit(1);
+  }
 
   // ------------------------------------------------------------
   // Set the demangler before reading the executable 
@@ -226,7 +235,7 @@ realmain(int argc, char* argv[])
     procNameMgr = new CilkNameMgr;
   }
 
-  BAnal::Struct::makeStructure(args.in_filenm, gapsName, outFile, gapsFile,
+  BAnal::Struct::makeStructure(loadModule, gapsName, outFile, gapsFile,
 			       dotFile, procNameMgr);
 
   IOUtil::CloseStream(outFile);
@@ -236,6 +245,7 @@ realmain(int argc, char* argv[])
     IOUtil::CloseStream(gapsFile);
     delete[] gapsBuf;
   }
+
 
   if (dotFile != NULL) {
     IOUtil::CloseStream(dotFile);

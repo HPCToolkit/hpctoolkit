@@ -89,7 +89,9 @@
 #include <include/uint.h>
 #include <lib/isa/ISATypes.hpp>
 #include <lib/support/StringTable.hpp>
+
 #include "Linemap.hpp"
+#include "ElfHelper.hpp"
 
 #include "dwarf.h"
 #include "libdwarf.h"

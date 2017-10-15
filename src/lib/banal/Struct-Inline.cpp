@@ -90,8 +90,8 @@
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StringTable.hpp>
 
+#include "ElfHelper.hpp"
 #include "Struct-Inline.hpp"
-#include "InputFile.hpp"
 
 #include <Symtab.h>
 #include <Function.h>

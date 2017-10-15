@@ -88,6 +88,7 @@
 #include <Module.h>
 #include <Symtab.h>
 
+#include "ElfHelper.hpp"
 #include "Linemap.hpp"
 #include "Struct.hpp"
 #include "Struct-Inline.hpp"
@@ -298,7 +299,7 @@ makeDotFile(std::ostream * dotFile, CodeObject * code_obj)
 // file if 'dotFile' is non-null.
 //
 void
-makeStructure(string filename,
+makeStructure(InputFile &inputFile,
 	      string gaps_filenm,
 	      ostream * outFile,
 	      ostream * gapsFile,
@@ -307,12 +308,12 @@ makeStructure(string filename,
 {
   HPC::StringTable strTab;
 
-  InputFile inputFile;
-
-  ElfFileVector *elfFileVector = inputFile.openFile(filename);
+  std::string &sfilename = inputFile.fileName();
+  const char *cfilename = inputFile.CfileName();
+  ElfFileVector *elfFileVector = inputFile.fileVector();
 
   if (elfFileVector && !elfFileVector->empty()) {
-    Output::printStructFileBegin(outFile, gapsFile, filename);
+    Output::printStructFileBegin(outFile, gapsFile, sfilename);
     for (unsigned int i = 0; i < elfFileVector->size(); i++) {
       ElfFile *elfFile = (*elfFileVector)[i]; 
 
@@ -347,7 +348,7 @@ makeStructure(string filename,
 	}
       }
 
-  string basename = FileUtil::basename(filename.c_str());
+  string basename = FileUtil::basename(cfilename);
   FileMap * fileMap = makeSkeleton(code_obj, procNmMgr, basename);
 
       Output::printLoadModuleBegin(outFile, elfFile->getFileName());

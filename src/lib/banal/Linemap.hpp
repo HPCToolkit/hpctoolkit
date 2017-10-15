@@ -59,12 +59,12 @@
 #include <lib/isa/ISATypes.hpp>
 #include <lib/support/StringTable.hpp>
 
-#include "InputFile.hpp"
-
 #include "dwarf.h"
 #include "libdwarf.h"
 
 #include <map>
+
+class ElfFile;
 
 //----------------------------------------------------------------------
 
