@@ -313,10 +313,12 @@ parse_buffer(int sample_type, event_thread_t *current, perf_mmap_data_t *mmap_in
 	pe_mmap_t *current_perf_mmap = current->mmap;
 
 	int data_read = 0;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0)
 	if (sample_type & PERF_SAMPLE_IDENTIFIER) {
 	  perf_read_u64(current_perf_mmap, &mmap_info->sample_id);
 	  data_read++;
 	}
+#endif
 	if (sample_type & PERF_SAMPLE_IP) {
 	  // to be used by datacentric event
 	  perf_read_u64(current_perf_mmap, &mmap_info->ip);
@@ -373,18 +375,22 @@ parse_buffer(int sample_type, event_thread_t *current, perf_mmap_data_t *mmap_in
 	if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
 	  data_read++;
 	}
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
 	if (sample_type & PERF_SAMPLE_REGS_USER) {
 	  data_read++;
 	}
 	if (sample_type & PERF_SAMPLE_STACK_USER) {
 	  data_read++;
 	}
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
 	if (sample_type & PERF_SAMPLE_WEIGHT) {
 	  data_read++;
 	}
 	if (sample_type & PERF_SAMPLE_DATA_SRC) {
 	  data_read++;
 	}
+#endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,13,0)
 	// only available since kernel 3.19
 	if (sample_type & PERF_SAMPLE_TRANSACTION) {
