@@ -509,7 +509,8 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	  prettynm = BinUtil::demangleProcName(linknm);
 	}
 
-	ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, line);
+	ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, line,
+					sym_func->getFirstSymbol()->getIndex());
 	addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
       }
       else {
@@ -772,6 +773,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     for (auto it = llist->begin(); it != llist->end(); ++it) {
       mergeInlineLoop(root, empty, *it);
     }
+    pinfo->symbol_index = 0; // clear for functions not in CUBINs 
     } else {
       doCudaFunction(ginfo, func, root, strTab);
     }

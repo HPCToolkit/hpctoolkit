@@ -151,10 +151,11 @@ public:
   string  prettyName;
   long  line_num;
   VMA   entry_vma;
+  unsigned symbol_index; 
   bool  gap_only;
 
   ProcInfo(ParseAPI::Function * fn, TreeNode * rt, string ln, string pn,
-	   long l, bool gap = false)
+	   long l, unsigned symindex = 0, bool gap = false)
   {
     func = fn;
     root = rt;
@@ -162,6 +163,7 @@ public:
     prettyName = pn;
     line_num = l;
     entry_vma = (func != NULL) ? func->addr() : 0;
+    symbol_index = symindex;
     gap_only = gap;
   }
 };
