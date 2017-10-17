@@ -88,14 +88,14 @@
  * local include files
  *****************************************************************************/
 
-#include <sample-sources/datacentric.h>
 #include <messages/messages.h>
 #include <safe-sampling.h>
 #include <sample_event.h>
 #include <monitor-exts/monitor_ext.h>
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/splay-macros.h>
-#include "datacentric.h"
+
+#include <sample-sources/datacentric/datacentric.h>
+
+#include "data_tree.h"
 
 // FIXME: the inline getcontext macro is broken on 32-bit x86, so
 // revert to the getcontext syscall for now.
@@ -113,18 +113,6 @@
 /******************************************************************************
  * type definitions
  *****************************************************************************/
-
-typedef struct leakinfo_s {
-  long magic;
-  cct_node_t *context;
-  size_t bytes;
-  void *memblock;
-  void *rmemblock;
-  struct leakinfo_s *left;
-  struct leakinfo_s *right;
-} leakinfo_t;
-
-leakinfo_t leakinfo_NULL = { .magic = 0, .context = NULL, .bytes = 0 };
 
 typedef void *memalign_fcn(size_t, size_t);
 typedef void *valloc_fcn(size_t);
@@ -177,10 +165,6 @@ static int leak_detection_init = 0;    // default is uninitialized
 static int use_datacentric_prob = 0;
 static float datacentric_prob = 0.0;
 
-static struct leakinfo_s *datacentric_tree_root = NULL;
-static spinlock_t memtree_lock = SPINLOCK_UNLOCKED;
-
-static int leakinfo_size = sizeof(struct leakinfo_s);
 static long datacentric_pagesize = DATACENTRIC_DEFAULT_PAGESIZE;
 
 enum {
@@ -193,117 +177,7 @@ static char *loc_name[4] = {
   NULL, "header", "footer", "none"
 };
 
-//static int byte_threshold = MIN_BYTES;
-
-/******************************************************************************
- * splay operations
- *****************************************************************************/
-
-
-static struct leakinfo_s *
-splay(struct leakinfo_s *root, void *key)
-{
-  REGULAR_SPLAY_TREE(leakinfo_s, root, key, memblock, left, right);
-  return root;
-}
-
-static struct leakinfo_s *
-interval_splay(struct leakinfo_s *root, void *key)
-{
-  INTERVAL_SPLAY_TREE(leakinfo_s, root, key, memblock, rmemblock, left, right);
-  return root;
-}
-
-static void
-splay_insert(struct leakinfo_s *node)
-{
-  void *memblock = node->memblock;
-
-  node->left = node->right = NULL;
-
-  spinlock_lock(&memtree_lock);  
-  if (datacentric_tree_root != NULL) {
-    datacentric_tree_root = splay(datacentric_tree_root, memblock);
-
-    if (memblock < datacentric_tree_root->memblock) {
-      node->left = datacentric_tree_root->left;
-      node->right = datacentric_tree_root;
-      datacentric_tree_root->left = NULL;
-    } else if (memblock > datacentric_tree_root->memblock) {
-      node->left = datacentric_tree_root;
-      node->right = datacentric_tree_root->right;
-      datacentric_tree_root->right = NULL;
-    } else {
-      TMSG(DATACENTRIC, "datacentric splay tree: unable to insert %p (already present)", 
-	   node->memblock);
-      assert(0);
-    }
-  }
-  datacentric_tree_root = node;
-  spinlock_unlock(&memtree_lock);  
-}
-
-
-static struct leakinfo_s *
-splay_delete(void *memblock)
-{
-  struct leakinfo_s *result = NULL;
-
-  spinlock_lock(&memtree_lock);  
-  if (datacentric_tree_root == NULL) {
-    spinlock_unlock(&memtree_lock);  
-    TMSG(DATACENTRIC, "datacentric splay tree empty: unable to delete %p", memblock);
-    return NULL;
-  }
-
-  datacentric_tree_root = splay(datacentric_tree_root, memblock);
-
-  if (memblock != datacentric_tree_root->memblock) {
-    spinlock_unlock(&memtree_lock);  
-    TMSG(DATACENTRIC, "datacentric splay tree: %p not in tree", memblock);
-    return NULL;
-  }
-
-  result = datacentric_tree_root;
-
-  if (datacentric_tree_root->left == NULL) {
-    datacentric_tree_root = datacentric_tree_root->right;
-    spinlock_unlock(&memtree_lock);  
-    return result;
-  }
-
-  datacentric_tree_root->left = splay(datacentric_tree_root->left, memblock);
-  datacentric_tree_root->left->right = datacentric_tree_root->right;
-  datacentric_tree_root =  datacentric_tree_root->left;
-  spinlock_unlock(&memtree_lock);  
-  return result;
-}
-
-/* interface for data-centric analysis */
-cct_node_t *
-splay_lookup(void *key, void **start, void **end)
-{
-  if(!datacentric_tree_root || !key) {
-    return NULL;
-  }
-
-  struct leakinfo_s *info;
-  spinlock_lock(&memtree_lock);  
-  datacentric_tree_root = interval_splay(datacentric_tree_root, key);
-  info = datacentric_tree_root;
-  if(!info) {
-    spinlock_unlock(&memtree_lock);  
-    return NULL;
-  }
-  if((info->memblock <= key) && (info->rmemblock > key)) {
-    *start = info->memblock;
-    *end = info->rmemblock;
-    spinlock_unlock(&memtree_lock);  
-    return info->context;
-  }
-  spinlock_unlock(&memtree_lock);  
-  return NULL;
-}
+static int datainfo_size = sizeof(struct datainfo_s);
 
 /******************************************************************************
  * private operations
@@ -403,11 +277,11 @@ datacentric_same_page(void *p1, void *p2)
 //
 static int
 datacentric_get_malloc_loc(void *sys_ptr, size_t bytes, size_t align,
-		       void **appl_ptr, leakinfo_t **info_ptr)
+		       void **appl_ptr, datainfo_t **info_ptr)
 {
 #if DATACENTRIC_USE_HYBRID_LAYOUT
-  if (datacentric_same_page(sys_ptr, sys_ptr + leakinfo_size) && align == 0) {
-    *appl_ptr = sys_ptr + leakinfo_size;
+  if (datacentric_same_page(sys_ptr, sys_ptr + datainfo_size) && align == 0) {
+    *appl_ptr = sys_ptr + datainfo_size;
     *info_ptr = sys_ptr;
     return DATACENTRIC_LOC_HEAD;
   }
@@ -426,13 +300,13 @@ datacentric_get_malloc_loc(void *sys_ptr, size_t bytes, size_t align,
 // and system and leakinfo pointers.
 //
 static int
-datacentric_get_free_loc(void *appl_ptr, void **sys_ptr, leakinfo_t **info_ptr)
+datacentric_get_free_loc(void *appl_ptr, void **sys_ptr, datainfo_t **info_ptr)
 {
   static int num_errors = 0;
 
 #if DATACENTRIC_USE_HYBRID_LAYOUT
   // try header first
-  *info_ptr = (leakinfo_t *) (appl_ptr - leakinfo_size);
+  *info_ptr = (datainfo_t *) (appl_ptr - datainfo_size);
   if (datacentric_same_page(*info_ptr, appl_ptr)
       && (*info_ptr)->magic == DATACENTRIC_MAGIC
       && (*info_ptr)->memblock == appl_ptr) {
@@ -471,7 +345,7 @@ datacentric_get_free_loc(void *appl_ptr, void **sys_ptr, leakinfo_t **info_ptr)
 //
 static void
 datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
-		     leakinfo_t *info_ptr, size_t bytes, ucontext_t *uc,
+		     datainfo_t *info_ptr, size_t bytes, ucontext_t *uc,
 		     int loc)
 {
   char *loc_str;
@@ -525,7 +399,7 @@ datacentric_malloc_helper(const char *name, size_t bytes, size_t align,
 		      int clear, ucontext_t *uc, int *ret)
 {
   void *sys_ptr, *appl_ptr;
-  leakinfo_t *info_ptr;
+  datainfo_t *info_ptr;
   char *inactive_mesg = "inactive";
   int active, loc;
   size_t size;
@@ -544,7 +418,7 @@ datacentric_malloc_helper(const char *name, size_t bytes, size_t align,
     active = 0;
     inactive_mesg = "not sampled";
   }
-  size = bytes + (active ? leakinfo_size : 0);
+  size = bytes + (active ? datainfo_size : 0);
   if (align != 0) {
     // there is no __libc_posix_memalign(), so we use __libc_memalign()
     // instead, or else use dlsym().
@@ -589,7 +463,7 @@ datacentric_malloc_helper(const char *name, size_t bytes, size_t align,
   // change the splay node section to be read/write.
   // make sure pages with the splay section have correct permissions
   p = (void *)((uint64_t)(uintptr_t) info_ptr & ~(pagesize - 1));
-  mprotect (p, (uint64_t)(uintptr_t) info_ptr + leakinfo_size - (uint64_t)(uintptr_t) p, PROT_READ | PROT_WRITE);
+  mprotect (p, (uint64_t)(uintptr_t) info_ptr + datainfo_size - (uint64_t)(uintptr_t) p, PROT_READ | PROT_WRITE);
   return appl_ptr;
 }
 
@@ -604,7 +478,7 @@ datacentric_malloc_helper(const char *name, size_t bytes, size_t align,
 //
 static void
 datacentric_free_helper(const char *name, void *sys_ptr, void *appl_ptr,
-		    leakinfo_t *info_ptr, int loc)
+		    datainfo_t *info_ptr, int loc)
 {
   char *loc_str;
 
@@ -787,7 +661,7 @@ MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
 void
 MONITOR_EXT_WRAP_NAME(free)(void *ptr)
 {
-  leakinfo_t *info_ptr;
+  datainfo_t *info_ptr;
   void *sys_ptr;
   int loc;
 
@@ -822,7 +696,7 @@ void *
 MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
 {
   ucontext_t uc;
-  leakinfo_t *info_ptr;
+  datainfo_t *info_ptr;
   void *ptr2, *appl_ptr, *sys_ptr;
   char *inactive_mesg = "inactive";
   int loc, loc2, active;
@@ -888,16 +762,16 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
   // realloc and add leak info to new location.  treat this as a
   // malloc of the new size.  note: if realloc moves the data and
   // switches header/footer, then need to slide the user data.
-  size_t size = bytes + leakinfo_size;
+  size_t size = bytes + datainfo_size;
   ptr2 = real_realloc(sys_ptr, size);
   loc2 = datacentric_get_malloc_loc(ptr2, bytes, 0, &appl_ptr, &info_ptr);
   if (loc == DATACENTRIC_LOC_HEAD && loc2 != DATACENTRIC_LOC_HEAD) {
     // slide left
-    memmove(ptr2, ptr2 + leakinfo_size, bytes);
+    memmove(ptr2, ptr2 + datainfo_size, bytes);
   }
   else if (loc != DATACENTRIC_LOC_HEAD && loc2 == DATACENTRIC_LOC_HEAD) {
     // slide right
-    memmove(ptr2 + leakinfo_size, ptr, bytes);
+    memmove(ptr2 + datainfo_size, ptr, bytes);
   }
   datacentric_add_leakinfo("realloc/malloc", ptr2, appl_ptr, info_ptr, bytes, &uc, loc2);
 

@@ -74,21 +74,31 @@
 #include <hpcrun/disabled.h>
 #include <hpcrun/metrics.h>
 #include <sample_event.h>
-#include "sample_source_obj.h"
-#include "common.h"
+#include "../sample_source_obj.h"
+#include "../common.h"
+#include "../simple_oo.h"
 #include <main.h>
 #include <hpcrun/sample_sources_registered.h>
-#include "simple_oo.h"
 #include <hpcrun/thread_data.h>
 
 #include <messages/messages.h>
 #include <utilities/tokenize.h>
-
-#include "datacentric.h"
 #include <safe-sampling.h>
 
-#define DEFAULT_THRESHOLD (8 * 1024)
+#include "datacentric.h"
+#include "data_tree.h"
 
+#include "sample-sources/display.h" // show the list of events
+
+/******************************************************************************
+ * constants
+ *****************************************************************************/
+#define DEFAULT_THRESHOLD (8 * 1024)
+#define EVNAME_DATACENTRIC "DATACENTRIC"
+
+/******************************************************************************
+ * local variables
+ *****************************************************************************/
 static int alloc_metric_id = -1;
 static int free_metric_id = -1;
 
@@ -97,7 +107,7 @@ static int free_metric_id = -1;
  * segv signal handler
  *****************************************************************************/
 // this segv handler is used to monitor first touches
-void
+static void
 segv_handler (int signal_number, siginfo_t *si, void *context)
 {
   int pagesize = getpagesize();
@@ -173,7 +183,7 @@ METHOD_FN(thread_init_action)
 static void
 METHOD_FN(start)
 {
-  TMSG(DATACENTRIC,"starting DATACENTRIC");
+  TMSG(DATACENTRIC,"starting " EVNAME_DATACENTRIC);
 
   TD_GET(ss_state)[self->sel_idx] = START;
 }
@@ -187,7 +197,7 @@ METHOD_FN(thread_fini_action)
 static void
 METHOD_FN(stop)
 {
-  TMSG(DATACENTRIC,"stopping DATACENTRIC");
+  TMSG(DATACENTRIC,"stopping " EVNAME_DATACENTRIC);
   TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
@@ -203,7 +213,7 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return hpcrun_ev_is(ev_str,"DATACENTRIC");
+  return hpcrun_ev_is(ev_str, EVNAME_DATACENTRIC);
 }
  
 
@@ -251,15 +261,10 @@ METHOD_FN(gen_event_set,int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
-#if DATACENTRIC_DEBUG
-  printf("===========================================================================\n");
-  printf("Available memory leak detection events\n");
-  printf("===========================================================================\n");
-  printf("Name\t\tDescription\n");
-  printf("---------------------------------------------------------------------------\n");
-  printf("DATACENTRIC\tThe number of bytes allocated and freed per dynamic context\n");
-  printf("\n");
-#endif
+  display_header(stdout, "Available datacentric events");
+  fprintf(stdout, "Name\t\tDescription\n");
+  display_line_single(stdout);
+  display_event_info(stdout, EVNAME_DATACENTRIC, "Experimental counter: counting the memory latency");
 }
 
 /***************************************************************************
@@ -272,8 +277,9 @@ METHOD_FN(display_events)
 
 #define ss_name datacentric
 #define ss_cls SS_SOFTWARE
+#define ss_sort_order  90
 
-#include "ss_obj.h"
+#include "../ss_obj.h"
 
 
 // ***************************************************************************
