@@ -277,7 +277,7 @@ METHOD_FN(display_events)
 
 #define ss_name datacentric
 #define ss_cls SS_SOFTWARE
-#define ss_sort_order  90
+#define ss_sort_order  50
 
 #include "../ss_obj.h"
 
