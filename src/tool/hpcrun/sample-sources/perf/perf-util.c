@@ -43,6 +43,12 @@
 
 
 /******************************************************************************
+ * includes
+ *****************************************************************************/
+
+#include <linux/version.h>
+
+/******************************************************************************
  * local includes
  *****************************************************************************/
 
@@ -385,8 +391,10 @@ perf_attr_init(
   attr->disabled      = 1;                 /* the counter will be enabled later  */
   attr->sample_type   = sample_type;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
   attr->exclude_callchain_user   = EXCLUDE_CALLCHAIN;
   attr->exclude_callchain_kernel = EXCLUDE_CALLCHAIN;
+#endif
 
   attr->exclude_kernel = 1;
   attr->exclude_hv     = 1;
@@ -395,7 +403,9 @@ perf_attr_init(
   if (is_perf_ksym_available()) {
     /* Records kernel call-chain when we have privilege */
     attr->sample_type             |= PERF_SAMPLE_CALLCHAIN;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
     attr->exclude_callchain_kernel = INCLUDE_CALLCHAIN;
+#endif
     attr->exclude_kernel 	   = 0;
     attr->exclude_hv         = 0;
     attr->exclude_idle       = 0;
