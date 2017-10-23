@@ -642,22 +642,20 @@ lushPthr_freelstDeq(lushPthr_t* pthr)
     // Case 1: empty
     return NULL;
   }
-  else if (pthr->freelstHead == pthr->freelstHead) {
-    // Case 2: non-empty
-    lushPtr_SyncObjData_t* x = pthr->freelstHead;
-    pthr->freelstHead = x->next;
-    x->next = NULL;
+  // Case 2: non-empty
+  lushPtr_SyncObjData_t* x = pthr->freelstHead;
+  pthr->freelstHead = x->next;
+  x->next = NULL;
 
-    if (!pthr->freelstHead) {
-      // Special case: one element
-      pthr->freelstTail = NULL;
-    }
+  if (!pthr->freelstHead) {
+    // Special case: one element
+    pthr->freelstTail = NULL;
+  }
 #if (LUSH_DBG_STATS)
-    atomic_fetch_add_explicit(&DBG_numLockFreelistCur, -1, memory_order_relaxed);
+  atomic_fetch_add_explicit(&DBG_numLockFreelistCur, -1, memory_order_relaxed);
 #endif
     
-    return x;
-  }
+  return x;
 }
 
 
