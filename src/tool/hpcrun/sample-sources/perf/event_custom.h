@@ -46,17 +46,14 @@
 
 #include "sample_event.h"
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include "sample-sources/perf/perf-util.h"
 
-
-// forward type declaration from perf-util.h
-struct event_info_s;
-struct event_thread_s;
-struct perf_mmap_data_s;
 
 // callback functions
 typedef void (*register_event_t)(struct event_info_s *);
 typedef void (*event_handler_t)(struct event_thread_s*, sample_val_t , struct perf_mmap_data_s* );
 
+typedef enum event_handle_type_e {EXCLUSIVE, INCLUSIVE} event_handle_type_t;
 
 // --------------------------------------------------------------
 // data structure for our customized event
@@ -71,10 +68,17 @@ typedef struct event_custom_s {
 
   int            metric_index; // hpcrun's index metric
   metric_desc_t *metric_desc;  // pointer to predefined metric
+
+  event_handle_type_t handle_type; // whether the handler will be called exclusively or inclusively (all events)
+
 } event_custom_t;
 
 event_custom_t *event_custom_find(const char *name);
+
 int event_custom_register(event_custom_t *event);
+
 void event_custom_display(FILE *std);
+
+int event_custom_handler(struct event_thread_s* event, sample_val_t sample, struct perf_mmap_data_s* data);
 
 #endif

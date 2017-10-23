@@ -292,8 +292,9 @@ void kernel_blocking_init()
 					" This event is only available on Linux kernel 4.3 or newer.";
   event_kernel_blocking->register_fn  = register_blocking;   // call backs
   event_kernel_blocking->handler_fn   = NULL; 		// No call backs: we want all event to call us
-  event_kernel_blocking->metric_index = 0;   		// these fields to be defined later
+  event_kernel_blocking->metric_index = 0;   			// these fields to be defined later
   event_kernel_blocking->metric_desc  = NULL; 	 	// these fields to be defined later
+  event_kernel_blocking->handle_type  = INCLUSIVE;// please call me for all events
 
   event_custom_register(event_kernel_blocking);
 }

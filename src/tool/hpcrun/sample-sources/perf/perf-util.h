@@ -47,7 +47,6 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <sample_event.h>
 
-#include "event_custom.h"
 
 /******************************************************************************
  * macros
@@ -121,6 +120,8 @@ typedef struct perf_mmap_data_s {
 
 } perf_mmap_data_t;
 
+// forward declaratio for custom event
+struct event_custom_s;
 
 // --------------------------------------------------------------
 // main data structure to store the information of an event.
@@ -134,7 +135,7 @@ typedef struct event_info_s {
   metric_desc_t *metric_desc;  // pointer on hpcrun metric descriptor
 
   // predefined metric
-  event_custom_t *metric_custom;	// pointer to the predefined metric
+  struct event_custom_s *metric_custom;	// pointer to the predefined metric
 
   metric_aux_info_t info_data;
 

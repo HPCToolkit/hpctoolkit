@@ -1045,7 +1045,7 @@ perf_event_handler(
     if (mmap_data.header_type == PERF_RECORD_SAMPLE)
       record_sample(current, &mmap_data, context, &sv);
 
-    kernel_block_handler(current, sv, &mmap_data);
+    event_custom_handler(current, sv, &mmap_data);
 
   } while (more_data);
 
