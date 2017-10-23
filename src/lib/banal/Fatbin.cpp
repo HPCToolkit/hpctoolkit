@@ -203,6 +203,7 @@ findCubinSections
   int count = 0;
   GElf_Ehdr ehdr_v;
   GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
+#if DYNINST_CUDA
   if (ehdr) {
     for (auto si = sections->begin(); si != sections->end(); si++) {
       Elf_Scn *scn = *si;
@@ -218,6 +219,7 @@ findCubinSections
       }
     }
   }
+#endif
   return count > 0;
 }
 

@@ -102,12 +102,31 @@ using namespace SymtabAPI;
 using namespace ParseAPI;
 using namespace std;
 
+
+
+//******************************************************************************
+// macros
+//******************************************************************************
+
+#if DYNINST_CUDA
+#define SYMTAB_ARCH_CUDA(symtab) \
+  (symtab->getArchitecture() == Dyninst::Arch_cuda) 
+#else
+#define SYMTAB_ARCH_CUDA(symtab) 0
+#endif
+
 #define USE_DYNINST_LINE_MAP    1
 #define USE_LIBDWARF_LINE_MAP   0
 
 #define DEBUG_CFG_SOURCE  0
 #define DEBUG_MAKE_SKEL   0
 #define DEBUG_GAPS        0
+
+
+
+//******************************************************************************
+// variables
+//******************************************************************************
 
 // Copied from lib/prof/Struct-Tree.cpp
 static const string & unknown_file = "<unknown file>";
@@ -343,7 +362,7 @@ makeStructure(InputFile &inputFile,
       if (symtab != NULL) {
 	code_src = new SymtabCodeSource(symtab);
 	code_obj = new CodeObject(code_src);
-	if (symtab->getArchitecture() != Dyninst::Arch_cuda) {
+	if (SYMTAB_ARCH_CUDA(symtab) == false) { 
 	  code_obj->parse();
 	}
       }
@@ -658,7 +677,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
   //
   std::map <VMA, VMA> callMap;
 
-  if (symtab->getArchitecture() != Dyninst::Arch_cuda) {
+  if (SYMTAB_ARCH_CUDA(symtab) == false) { 
   if (ginfo->sym_func != NULL && !ginfo->alt_file && num_funcs > 1) {
     for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
       ParseAPI::Function * func = pit->second->func;
@@ -709,7 +728,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     }
 #endif
 
-    if (symtab->getArchitecture() != Dyninst::Arch_cuda) {
+    if (SYMTAB_ARCH_CUDA(symtab) == false) { 
     // if this function is entirely contained within another function
     // (as determined by its entry block), then skip it.
     if (num_funcs > 1 && func->entry()->containingFuncs() > 1) {
@@ -724,7 +743,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     ParseAPI::Function::blocklist emptyBlockList; 
     ParseAPI::Function::blocklist &blist = emptyBlockList;
 
-    if (symtab->getArchitecture() != Dyninst::Arch_cuda) {
+    if (SYMTAB_ARCH_CUDA(symtab) == false) { 
     // basic blocks for this function
     blist = func->blocks();
     BlockSet visited;
@@ -808,7 +827,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 #endif
   }
 
-  if (symtab->getArchitecture() != Dyninst::Arch_cuda) {
+  if (SYMTAB_ARCH_CUDA(symtab) == false) { 
   // add unclaimed regions (gaps) to the group leader, but skip groups
   // in an alternate file (handled in orig file).
   if (! ginfo->alt_file) {

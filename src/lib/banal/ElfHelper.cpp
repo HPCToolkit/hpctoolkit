@@ -108,9 +108,18 @@ ElfFile::open
   if (!ehdr) {
     return false;
   }
+#ifdef EM_CUDA
+
   if (ehdr->e_machine == EM_CUDA) {
+#if DYNINST_CUDA
     relocateCubin(memPtr, elf);
+#else
+    elf_end(elf);
+    return false;
+#endif
   }
+
+#endif
 
   return true;
 }
