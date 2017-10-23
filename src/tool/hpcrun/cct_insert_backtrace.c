@@ -68,6 +68,8 @@
 #include "cct_insert_backtrace.h"
 #include "cct_backtrace_finalize.h"
 
+#include "place_folder.h"
+
 
 //
 // Misc externals (not in an include file)
