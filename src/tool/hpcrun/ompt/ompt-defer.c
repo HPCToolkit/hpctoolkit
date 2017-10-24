@@ -88,12 +88,23 @@ merge_metrics(cct_node_t *a, cct_node_t *b, merge_op_arg_t arg)
 static void
 omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
 {
+
   cct_node_t *prefix;
   thread_data_t *td = (thread_data_t *)a;
   uint64_t my_region_id = (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip;
+
+//  ompt_data_t *parallel_data = NULL;
+//  int team_size = 0;
+//  hpcrun_ompt_get_parallel_info(0, &parallel_data, &team_size);
+//  uint64_t my_region_id = parallel_data->value;
+//
+//  printf("Resolving: %lx! \n", my_region_id);
+
   TMSG(DEFER_CTXT, "omp_resolve: try to resolve region 0x%lx", my_region_id);
   uint64_t partial_region_id = 0;
-  if ((prefix = hpcrun_region_lookup(my_region_id))) {
+  prefix = hpcrun_region_lookup(my_region_id);
+  //printf("Prefix = %p\n", prefix);
+  if (prefix) {
     TMSG(DEFER_CTXT, "omp_resolve: resolve region 0x%lx to 0x%lx", my_region_id, is_partial_resolve(prefix));
     // delete cct from its original parent before merging
     hpcrun_cct_delete_self(cct);
@@ -113,7 +124,8 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
     else {
       prefix = hpcrun_cct_insert_path_return_leaf
 	((td->core_profile_trace_data.epoch->csdata).unresolved_root, prefix);
-      ompt_region_map_refcnt_update(partial_region_id, 1L);
+      //FIXME: Get region_data_t and update refcnt
+//      ompt_region_map_refcnt_update(partial_region_id, 1L);
       TMSG(DEFER_CTXT, "omp_resolve: get partial resolution to 0x%lx\n", partial_region_id);
     }
     // adjust the callsite of the prefix in side threads to make sure they are the same as
@@ -126,7 +138,8 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
       hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
       // must delete it when not used considering the performance
       TMSG(DEFER_CTXT, "omp_resolve: resolve region 0x%lx", my_region_id);
-      ompt_region_map_refcnt_update(my_region_id, -1L);
+      //ompt_region_map_refcnt_update(my_region_id, -1L);
+      //ompt_region_map_refcnt_update(my_region_id, -1L);
     }
   }
 }
@@ -145,7 +158,7 @@ need_defer_cntxt()
   if (ENABLED(OMPT_LOCAL_VIEW)) return 0;
 
   // master thread does not need to defer the context
-  if ((hpcrun_ompt_get_parallel_id(0) > 0) && !TD_GET(master)) {
+  if ((hpcrun_ompt_get_parallel_info_id(0) > 0) && !TD_GET(master)) {
     thread_data_t *td = hpcrun_get_thread_data();
     td->defer_flag = 1;
     return 1;
@@ -204,11 +217,11 @@ void resolve_cntxt()
   // the outermost region id in the current thread.
   //---------------------------------------------------------------------------
 
-  uint64_t innermost_region_id = hpcrun_ompt_get_parallel_id(0); 
+  uint64_t innermost_region_id = hpcrun_ompt_get_parallel_info_id(0);
   uint64_t outer_region_id = 0;
 
   if (td->outer_region_id > 0) {
-    uint64_t enclosing_region_id = hpcrun_ompt_get_parallel_id(1); 
+    uint64_t enclosing_region_id = hpcrun_ompt_get_parallel_info_id(1);
     if (enclosing_region_id == 0) {
       // we are currently in a single level parallel region.
       // forget the previously memoized outermost parallel region. 
@@ -253,11 +266,14 @@ void resolve_cntxt()
     // samples in the waiting region (which has the same region id with
     // the end_team_fn) after the region record is deleted.
     // solution: consider such sample not in openmp region (need no
-    // defer cntxt) 
-    if (ompt_region_map_refcnt_update(outer_region_id, 1L))
-      hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, outer_region_id)));
-    else
-      outer_region_id = 0;
+    // defer cntxt)
+
+
+    // FIXME: Accomodate to region_data_t
+//    if (ompt_region_map_refcnt_update(outer_region_id, 1L))
+//      hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, outer_region_id)));
+//    else
+//      outer_region_id = 0;
   }
 
 #ifdef DEBUG_DEFER
@@ -284,9 +300,42 @@ void resolve_cntxt()
 }
 
 
+struct cct_node_t {
+
+    // ---------------------------------------------------------
+    // a persistent node id is assigned for each node. this id
+    // is used both to reassemble a tree when reading it from
+    // a file as well as to identify call paths. a call path
+    // can simply be represented by the node id of the deepest
+    // node in the path.
+    // ---------------------------------------------------------
+    int32_t persistent_id;
+
+    // bundle abstract address components into a data type
+
+    cct_addr_t addr;
+
+    bool is_leaf;
+
+
+    // ---------------------------------------------------------
+    // tree structure
+    // ---------------------------------------------------------
+
+    // parent node and the beginning of the child list
+    struct cct_node_t* parent;
+    struct cct_node_t* children;
+
+    // left and right pointers for splay tree of siblings
+    struct cct_node_t* left;
+    struct cct_node_t* right;
+};
+
 void 
 resolve_cntxt_fini(thread_data_t *td)
 {
+  //printf("Resolving for thread... region = %d\n", td->region_id);
+  //printf("Root children = %p\n", td->core_profile_trace_data.epoch->csdata.unresolved_root->children);
   hpcrun_cct_walkset(td->core_profile_trace_data.epoch->csdata.unresolved_root, 
                      omp_resolve_and_free, td);
 }
@@ -297,10 +346,12 @@ hpcrun_region_lookup(uint64_t id)
 {
   cct_node_t *result = NULL;
 
-  ompt_region_map_entry_t *record = ompt_region_map_lookup(id);
-  if (record) {
-    result = ompt_region_map_entry_callpath_get(record);
-  }
+  // FIXME: Find another way to get infor about parallel region
+
+//  ompt_region_map_entry_t *record = ompt_region_map_lookup(id);
+//  if (record) {
+//    result = ompt_region_map_entry_callpath_get(record);
+//  }
 
   return result;
 }

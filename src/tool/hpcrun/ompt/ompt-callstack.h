@@ -4,6 +4,7 @@
 
 #include <ompt.h>
 
+
 typedef enum {
   ompt_context_begin,
   ompt_context_end

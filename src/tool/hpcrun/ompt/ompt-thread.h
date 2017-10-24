@@ -49,9 +49,12 @@
 // local includes  
 //******************************************************************************
 
+#ifndef OMPT_THREAD_H
+#define OMPT_THREAD_H
+
 #include <ompt.h>
 
-
+#define MAX_NUMBER_OF_NESTED_REGIONS 128
 
 //******************************************************************************
 // interface operations 
@@ -60,3 +63,17 @@
 void ompt_thread_type_set(ompt_thread_type_t ttype);
 
 ompt_thread_type_t ompt_thread_type_get();
+
+static __thread ompt_queue_data_t *thread_queue_data;
+static __thread int thread_region_stack[MAX_NUMBER_OF_NESTED_REGIONS];
+static __thread int thread_stack_top = 0;
+
+void thread_region_stack_push();
+
+void thread_region_stack_pop();
+
+void thread_region_stack_register_thread();
+
+int thread_region_stack_top();
+
+#endif

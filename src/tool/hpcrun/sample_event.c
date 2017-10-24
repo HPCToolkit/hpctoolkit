@@ -177,6 +177,7 @@ hpcrun_sample_callpath(void* context, int metricId,
 		       uint64_t metricIncr,
 		       int skipInner, int isSync)
 {
+  
   sample_val_t ret;
   hpcrun_sample_val_init(&ret);
 

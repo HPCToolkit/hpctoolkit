@@ -1,4 +1,3 @@
-
 #ifndef defer_cntxt_h
 #define defer_cntxt_h
 
@@ -8,7 +7,7 @@
 
 // support for deferred callstack resolution
 
-// check whether the lazy resolution is needed in an unwind
+// check whether the lazy resolution is needed in an unwind 
 int  need_defer_cntxt();
 
 /* resolve the contexts */

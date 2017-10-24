@@ -50,8 +50,9 @@
 //******************************************************************************
 
 #include <ompt.h>
-
-
+#include "ompt-thread.h"
+//#include <stdio.h>
+//#include <stdlib.h>
 
 //******************************************************************************
 // private variables 
@@ -76,4 +77,26 @@ ompt_thread_type_t
 ompt_thread_type_get()
 {
   return ompt_thread_type; 
+}
+
+void
+thread_region_stack_push(){
+  thread_region_stack[thread_stack_top++] = 0;
+//  printf("Number of elements on stack after push: %d.\n", thread_stack_top);
+}
+
+void
+thread_region_stack_pop(){
+  thread_region_stack[--thread_stack_top] = 0;
+//  printf("Number of elements on stack after pop: %d.\n", thread_stack_top);
+}
+
+void
+thread_region_stack_register_thread(){
+  thread_region_stack[thread_stack_top] = 1;
+}
+
+int
+thread_region_stack_top(){
+  return (thread_stack_top > 0) ? thread_region_stack[thread_stack_top - 1] : 0;
 }

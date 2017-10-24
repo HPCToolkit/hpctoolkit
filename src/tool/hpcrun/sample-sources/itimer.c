@@ -85,6 +85,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 #include "sample-filters.h"
+#include "itimer.h"
 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -107,7 +108,6 @@
 #include <lib/support-lean/timer.h>
 
 #include <sample-sources/blame-shift/blame-shift.h>
-
 
 
 /******************************************************************************
