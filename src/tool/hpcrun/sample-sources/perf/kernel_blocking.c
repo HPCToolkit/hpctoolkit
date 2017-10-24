@@ -282,8 +282,6 @@ register_blocking(event_info_t *event_desc)
 
 void kernel_blocking_init()
 {
-  // unfortunately, the older version doesn't support context switch event properly
-
   event_custom_t *event_kernel_blocking = hpcrun_malloc(sizeof(event_custom_t));
   event_kernel_blocking->name         = EVNAME_KERNEL_BLOCK;
   event_kernel_blocking->desc         = "Approximation of a thread's blocking time."  
@@ -291,7 +289,7 @@ void kernel_blocking_init()
 					" The unit time is hardware-dependent but mostly in microseconds."  
 					" This event is only available on Linux kernel 4.3 or newer.";
   event_kernel_blocking->register_fn  = register_blocking;   // call backs
-  event_kernel_blocking->handler_fn   = NULL; 		// No call backs: we want all event to call us
+  event_kernel_blocking->handler_fn   = kernel_block_handler;
   event_kernel_blocking->metric_index = 0;   			// these fields to be defined later
   event_kernel_blocking->metric_desc  = NULL; 	 	// these fields to be defined later
   event_kernel_blocking->handle_type  = INCLUSIVE;// please call me for all events

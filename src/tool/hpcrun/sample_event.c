@@ -349,9 +349,7 @@ hpcrun_gen_thread_ctxt(void* context)
       TMSG(THREAD_CTXT, "Thread correction, back off outermost backtrace entry");
       bt.last--;
     }
-    node = hpcrun_cct_record_backtrace(&(epoch->csdata), false, &bt,
-//				       bt.fence == FENCE_THREAD, bt.begin, bt.last,
-				       bt.has_tramp);
+    node = hpcrun_cct_record_backtrace(&(epoch->csdata), false, &bt, bt.has_tramp);
   }
   // FIXME: What to do when thread context is partial ?
 #if 0

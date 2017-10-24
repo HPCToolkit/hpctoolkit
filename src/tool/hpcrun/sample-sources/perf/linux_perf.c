@@ -118,6 +118,7 @@
 #include "sample-sources/display.h" // api to display available events
 
 #include "kernel_blocking.h"  // api for predefined kernel blocking event
+#include "sample-sources/datacentric/datacentric.h"      // api for datacentric
 
 //******************************************************************************
 // macros
@@ -511,6 +512,7 @@ METHOD_FN(init)
 
   // init events
   kernel_blocking_init();
+  datacentric_init();
 
   TMSG(LINUX_PERF, "%d: init OK", self->sel_idx);
 }

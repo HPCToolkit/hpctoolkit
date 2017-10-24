@@ -256,43 +256,6 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,  ip_normalized_t *l
   return n;
 }
 
-#if 0 // TODO: tallent: Use Mike's improved code; retire prior routines
-
-static cct_node_t*
-help_hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
-	       int metricId, uint64_t metricIncr,
-	       bt_mut_fn bt_fn, bt_fn_arg bt_arg);
-
-//
-// utility routine that does 3 things:
-//   1) Generate a std backtrace
-//   2) Modifies the backtrace according to a passed in function
-//   3) enters the generated backtrace in the cct
-//
-cct_node_t*
-hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
-	      int metricId, uint64_t metricIncr,
-	      bt_mut_fn bt_fn, bt_fn_arg arg, int isSync)
-{
-  cct_node_t* n = NULL;
-  if (hpcrun_isLogicalUnwind()) {
-#ifdef LATER
-    TMSG(LUSH,"lush backtrace2cct invoked");
-    n = lush_backtrace2cct(cct, context, metricId, metricIncr, skipInner,
-			   isSync);
-#endif
-  }
-  else {
-    TMSG(LUSH,"regular (NON-lush) bt2cct invoked");
-    n = help_hpcrun_bt2cct(cct, context, metricId, metricIncr, bt_fn);
-  }
-
-  // N.B.: for lush_backtrace() it may be that n = NULL
-
-  return n;
-}
-
-#endif
 
 cct_node_t*
 hpcrun_cct_record_backtrace(
@@ -320,12 +283,74 @@ hpcrun_cct_record_backtrace(
     TMSG(FENCE, "Thread stop ==> cursor = %p", cct_cursor);
   }
 
+  // datacentric support: attach samples to data allocation cct
+  cct_node_t *data_node = TD_GET(mem_data.data_node);
+  if(data_node) {
+    cct_node_t *prefix = hpcrun_cct_insert_path_return_leaf(data_node, cct_cursor);
+    cct_cursor = prefix;
+    TD_GET(mem_data.data_node) = NULL;
+  }
+
   TMSG(FENCE, "sanity check cursor = %p", cct_cursor);
   TMSG(FENCE, "further sanity check: bt->last frame = (%d, %p)", 
        bt->last->ip_norm.lm_id, bt->last->ip_norm.lm_ip);
 
   return hpcrun_cct_insert_backtrace(cct_cursor, bt->last, bt->begin);
 
+}
+
+#define POINTER_TO_FUNCTION
+
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
+#define POINTER_TO_FUNCTION *(void**)
+#endif
+
+static cct_node_t*
+hpcrun_cct_record_datacentric(cct_bundle_t* cct, cct_node_t* cct_cursor)
+{
+  // datacentric support: attach samples to data allocation cct
+  cct_node_t *data_node = TD_GET(mem_data.data_node);
+  uintptr_t lm_ip = TD_GET(mem_data.lm_ip);
+
+  if (data_node) {
+    // make sure at least two cct(s) are created (not delete the single root in cct normalization)
+    cct_cursor = hpcrun_insert_special_node(cct->tree_root,
+                                 POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(access_unknown));
+
+    cct_cursor = hpcrun_insert_special_node(cct->tree_root,
+                                            POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(heap));
+
+    // copy the call path of the malloc
+    cct_cursor = hpcrun_cct_insert_path_return_leaf(data_node, cct_cursor);
+
+    int first_touch = TD_GET(mem_data.first_touch);
+    if (first_touch) {
+      cct_cursor = hpcrun_insert_special_node(cct_cursor,
+                                              POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(first_touch));
+      cct_cursor = hpcrun_insert_special_node(cct_cursor,
+                                              POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(access_heap));
+    }
+    TD_GET(mem_data.data_node) = NULL;
+
+  } else if (lm_ip) {
+    cct_cursor = hpcrun_insert_special_node(cct_cursor,
+                                            POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(static));
+
+    uint16_t lm_id = TD_GET(mem_data.lm_id);
+    cct_cursor = hpcrun_cct_insert_addr(cct_cursor, &ADDR2(lm_id, lm_ip+1));
+
+    TD_GET(mem_data.lm_id) = 0;
+    TD_GET(mem_data.lm_ip) = 0;
+
+  } else if (TD_GET(mem_data.ldst)) {
+    cct_cursor = hpcrun_insert_special_node(cct->tree_root,
+                                            POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(unknown));
+
+  } else if (TD_GET(mem_data.in_malloc)) {
+    cct_cursor = hpcrun_insert_special_node(cct->tree_root,
+                                            POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(heap_allocation));
+  }
+  return cct_cursor;
 }
 
 cct_node_t*
@@ -354,6 +379,8 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
     cct_cursor = cct->thread_root;
     TMSG(FENCE, "Thread stop ==> cursor = %p", cct_cursor);
   }
+
+  cct_cursor = hpcrun_cct_record_datacentric(cct, cct_cursor);
 
   cct_cursor = cct_cursor_finalize(cct, bt, cct_cursor);
 

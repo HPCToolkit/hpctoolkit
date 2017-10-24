@@ -62,6 +62,7 @@
  *  interface operations
  ******************************************************************************/
 
+void datacentric_init();
 int hpcrun_datacentric_alloc_id(); 
 int hpcrun_datacentric_active();
 void hpcrun_datacentric_free_inc(cct_node_t* node, int incr);

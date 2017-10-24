@@ -47,25 +47,42 @@
 #ifndef __PLACE_FORLDER_H__
 #define __PLACE_FORLDER_H__
 
+#define FUNCTION_FOLDER_NAME(name) monitor_data ## _ ## name
+
 #define FUNCTION_FOLDER(name) 	void \
-			 	name(void) \
+			 	monitor_data ## _ ## name(void) \
 				{}
 
-#define FUNCTION_DATA_FOLDER(name,start,end) FUNCTION_FOLDER(name ## _ ## start ## _ ## end)
+#define FUNCTION_DATA_FOLDER_NAME(start,end) range ## _ ## start ## _ ## end
+
+#define FUNCTION_DATA_FOLDER(start,end)      FUNCTION_FOLDER(range_ ## start ## _ ## end)
+
 
 /********************************
  * place folder for data centric
  *******************************/
 
-FUNCTION_FOLDER(monitor_heap_data)
-FUNCTION_FOLDER(head_data_allocation)
+FUNCTION_FOLDER(heap)
+FUNCTION_FOLDER(static)
+FUNCTION_FOLDER(stack)
+FUNCTION_FOLDER(unknown)
+FUNCTION_FOLDER(access_unknown)
+FUNCTION_FOLDER(access_heap)
+FUNCTION_FOLDER(heap_allocation)
+FUNCTION_FOLDER(first_touch)
+
+FUNCTION_DATA_FOLDER(1, 5)
+FUNCTION_DATA_FOLDER(2, 5)
+FUNCTION_DATA_FOLDER(3, 5)
+FUNCTION_DATA_FOLDER(4, 5)
+FUNCTION_DATA_FOLDER(5, 5)
 
 #ifdef TEST_PF_DEBUG
 int main()
 {
   FUNCTION_FOLDER(head_data_allocation)
 
-  FUNCTION_DATA_FOLDER(data_range, 1, 5)
+  FUNCTION_DATA_FOLDER(1, 5)
 }
 #endif // TEST_PF_DEBUG
 

@@ -263,4 +263,11 @@ typedef void (*merge_op_t)(cct_node_t* a, cct_node_t*b, merge_op_arg_t arg);
 extern void hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
 			     merge_op_t merge, merge_op_arg_t arg);
 
+
+cct_node_t*
+hpcrun_insert_special_node(cct_node_t *root, void *addr);
+
+cct_node_t*
+hpcrun_cct_insert_path_return_leaf(cct_node_t *path, cct_node_t *root);
+
 #endif // cct_h
