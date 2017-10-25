@@ -267,10 +267,14 @@ write_epochs(FILE* fs, epoch_t* epoch)
     // == metrics ==
     //
 
-    metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl();
+    kind_info_t *curr = NULL;
+    metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl(&curr);
 
-    TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
-    hpcrun_fmt_metricTbl_fwrite(metric_tbl, fs);
+    while (curr != NULL) {
+      TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
+      hpcrun_fmt_metricTbl_fwrite(metric_tbl, fs);
+      metric_tbl = hpcrun_get_metric_tbl(&curr);
+    }
 
     TMSG(DATA_WRITE, "Done writing metric data");
 

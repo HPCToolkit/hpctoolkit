@@ -110,6 +110,7 @@ typedef struct metric_proc_map_t {
 // unimplemented at this time
 
 typedef struct kind_info_t kind_info_t;
+typedef struct metric_data_list_t metric_data_list_t;
 
 kind_info_t* hpcrun_metrics_new_kind();
 
@@ -121,11 +122,13 @@ void hpcrun_pre_allocate_metrics(size_t num);
 
 int hpcrun_get_num_metrics(void);
 
+int hpcrun_get_num_kind_metrics(void);
+
 metric_desc_t* hpcrun_id2metric(int id);
 
-metric_list_t* hpcrun_get_metric_data(void);
+metric_desc_list_t* hpcrun_get_metric_desc_data(void);
 
-metric_desc_p_tbl_t* hpcrun_get_metric_tbl(void);
+metric_desc_p_tbl_t* hpcrun_get_metric_tbl(kind_info_t**);
 
 metric_upd_proc_t* hpcrun_get_metric_proc(int metric_id);
 
@@ -145,11 +148,14 @@ extern metric_set_t* hpcrun_metric_set_new(void);
 extern cct_metric_data_t* hpcrun_metric_set_loc(metric_set_t* s, int id);
 extern void hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
 				  hpcrun_metricVal_t incr);
+extern metric_set_t* hpcrun_add_current_metric(metric_data_list_t *rv);
+extern metric_set_t* hpcrun_find_current_metric(metric_data_list_t *rv);
+
 //
 // copy a metric set
 //
 extern void hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
-					 metric_set_t* set,
+					 metric_data_list_t* list,
 					 int num_metrics);
 
 #endif // METRICS_H

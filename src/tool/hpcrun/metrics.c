@@ -80,7 +80,7 @@ struct  metric_set_t {
 //*************************** Local Data **************************
 
 // some sample sources will pre-allocate some metrics ...
-static metric_list_t* pre_alloc = NULL;
+static metric_desc_list_t* pre_alloc = NULL;
 
 //
 // To accomodate block sparse representation,
@@ -116,7 +116,7 @@ struct kind_info_t {
 // Dense array holding "0" values for nodes with no metrics
   hpcrun_metricVal_t *null_metrics;
 // information about tracked metrics
-  metric_list_t* metric_data;
+  metric_desc_list_t* metric_data;
 // local table of metric update functions
 // (indexed by metric id)
   metric_upd_proc_t** metric_proc_tbl;
@@ -125,6 +125,7 @@ struct kind_info_t {
 
 static kind_info_t kinds = {.idx = 0, .has_set_max = 0, .link = NULL };
 static kind_info_t* current_kind = &kinds;
+static int num_kind_metrics;
 
 kind_info_t*
 hpcrun_metrics_new_kind(void)
@@ -143,6 +144,12 @@ hpcrun_metrics_switch_kind(kind_info_t* kind)
 }
 
 //
+
+typedef struct metric_data_list_t {
+  struct metric_data_list_t* next;
+  kind_info_t *kind;
+  metric_set_t *metrics;
+} metric_data_list_t;
 
 static metric_proc_map_t* proc_map = NULL;
 
@@ -170,13 +177,19 @@ hpcrun_pre_allocate_metrics(size_t num)
     return;
   }
   for(int i=0; i < num; i++){
-    metric_list_t* n = (metric_list_t*) hpcrun_malloc(sizeof(metric_list_t));
+    metric_desc_list_t* n = (metric_desc_list_t*) hpcrun_malloc(sizeof(metric_desc_list_t));
     n->next = pre_alloc;
     pre_alloc = n;
   }
   // NOTE: actual metric count not incremented until a new metric is requested
 }
 
+
+int
+hpcrun_get_num_kind_metrics()
+{
+  return (num_kind_metrics);
+}
 
 //
 // first call to get_num_metrics will finalize
@@ -192,7 +205,7 @@ hpcrun_get_num_metrics()
   if (!current_kind->has_set_max) {
     current_kind->metric_tbl.len = n_metrics;
     current_kind->metric_tbl.lst = hpcrun_malloc(current_kind->idx * sizeof(metric_desc_t*));
-    for(metric_list_t* l = current_kind->metric_data; l; l = l->next){
+    for(metric_desc_list_t* l = current_kind->metric_data; l; l = l->next){
       TMSG(METRICS_FINALIZE,"metric_tbl[%d] = %s", l->id, l->val.name);
       current_kind->metric_tbl.lst[l->id] = &(l->val);
     }
@@ -211,6 +224,7 @@ hpcrun_get_num_metrics()
     for (int i = 0; i < n_metrics; i++) {
       current_kind->null_metrics[i].bits = 0;
     }
+    num_kind_metrics += n_metrics;
   }
   current_kind->has_set_max = true;
 
@@ -236,16 +250,18 @@ hpcrun_id2metric(int metric_id)
 
 
 metric_desc_p_tbl_t*
-hpcrun_get_metric_tbl()
+hpcrun_get_metric_tbl(kind_info_t **curr)
 {
-  hpcrun_get_num_metrics(); // make sure metric table finalized
-			    // in case of no samples
-  return &current_kind->metric_tbl;
+  if (*curr == NULL)
+    *curr = &kinds;
+  else
+    *curr = (*curr)->link;
+
+  return &(*curr)->metric_tbl;
 }
 
-
-metric_list_t*
-hpcrun_get_metric_data()
+metric_desc_list_t*
+hpcrun_get_metric_desc_data()
 {
   return current_kind->metric_data;
 }
@@ -266,6 +282,15 @@ hpcrun_get_metric_proc(int metric_id)
   return NULL;
 }
 
+metric_data_list_t *hpcrun_new_metric_data_list()
+{
+  metric_data_list_t *curr = hpcrun_malloc(sizeof(metric_data_list_t));
+  curr->kind = current_kind;
+  curr->metrics = hpcrun_metric_set_new();
+  curr->next = NULL;
+  return curr;
+}
+
 //
 // Allocate new metric of a particular kind
 //
@@ -276,7 +301,7 @@ hpcrun_new_metric_of_kind(kind_info_t* kind)
     return -1;
   }
 
-  metric_list_t* n = NULL;
+  metric_desc_list_t* n = NULL;
 
   // if there are pre-allocated metrics, use them
   if (pre_alloc) {
@@ -284,7 +309,7 @@ hpcrun_new_metric_of_kind(kind_info_t* kind)
     pre_alloc = pre_alloc->next;
   }
   else {
-    n = (metric_list_t*) hpcrun_malloc(sizeof(metric_list_t));
+    n = (metric_desc_list_t*) hpcrun_malloc(sizeof(metric_desc_list_t));
   }
   n->next = kind->metric_data;
   kind->metric_data = n;
@@ -318,7 +343,7 @@ hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
   }
 
   metric_desc_t* mdesc = NULL;
-  for (metric_list_t* l = current_kind->metric_data; l; l = l->next) {
+  for (metric_desc_list_t* l = current_kind->metric_data; l; l = l->next) {
     if (l->id == metric_id) {
       mdesc = &(l->val);
       break;
@@ -385,16 +410,6 @@ hpcrun_set_new_metric_info_and_period(const char* name,
   hpcrun_set_metric_info_w_fn(metric_id, name, valFmt, period,
 			      hpcrun_metric_std_inc, prop);
   return metric_id;
-}
-
-
-//
-// utility routines to make an Async metric with period 1
-//
-static void
-hpcrun_set_metric_info(int metric_id, const char* name)
-{
-  hpcrun_set_metric_info_and_period(metric_id, name, MetricFlags_ValFmt_Int, 1, metric_property_none);
 }
 
 
@@ -473,14 +488,50 @@ hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
   }
 }
 
+// add a metric of the current kind to a metric_data_list, if it's not already 
+// there, and return the metric
+metric_set_t*
+hpcrun_add_current_metric(metric_data_list_t *rv)
+{
+  metric_data_list_t *curr;
+  for (curr = rv; curr != NULL && curr->kind != current_kind; rv = curr, curr = curr->next);
+  if (curr == NULL) {
+    TMSG(CCT2METRICS, " -- Metric set was null, allocating new metric set");
+    curr = rv->next = hpcrun_new_metric_data_list();
+    if (curr == NULL)
+      return NULL;
+  }
+  return curr->metrics;
+}
+
+// find a metric of the current kind to a metric_data_list, or null
+metric_set_t*
+hpcrun_find_current_metric(metric_data_list_t *rv)
+{
+  metric_data_list_t *curr;
+  for (curr = rv; curr != NULL && curr->kind != current_kind; curr = curr->next);
+  if (curr == NULL)
+    return (NULL);
+  return curr->metrics;
+}
+
+
 //
 // copy a metric set
 //
 void
 hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
-			     metric_set_t* set,
+			     metric_data_list_t* list,
 			     int num_metrics)
 {
-  metric_set_t* actual = set ? set : (metric_set_t*) current_kind->null_metrics;
-  memcpy((char*) dest, (char*) actual, num_metrics * sizeof(cct_metric_data_t));
+  int offset = 0;
+  kind_info_t *curr_k = &kinds;
+  metric_data_list_t *curr;
+
+  for (curr_k = &kinds; curr_k != NULL; curr_k = curr_k->link) {
+    for (curr = list; curr != NULL && curr->kind != curr_k; curr = curr->next);
+    metric_set_t* actual = curr ? curr->metrics : (metric_set_t*) curr_k->null_metrics;
+    memcpy((char*) dest + offset, (char*) actual, curr_k->idx * sizeof(cct_metric_data_t));
+    offset += curr_k->idx;
+  }
 }
