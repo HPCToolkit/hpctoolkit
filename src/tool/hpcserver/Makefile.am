@@ -70,6 +70,9 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+ZLIB_LIB = @ZLIB_LIB@
+ZLIB_INC = @ZLIB_INC@
+
 MYSOURCES = \
 	Args.cpp \
 	BaseDataFile.cpp \
@@ -101,6 +104,12 @@ MYLDFLAGS  = -lz
 MYLDADD = \
         @HOST_LIBTREPOSITORY@ \
         $(HPCLIB_Support) 
+
+if OPT_USE_ZLIB
+MYLDADD    += -L$(ZLIB_LIB) -lz
+MYCFLAGS   += -I$(ZLIB_INC) 
+MYCXXFLAGS += -I$(ZLIB_INC)
+endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
