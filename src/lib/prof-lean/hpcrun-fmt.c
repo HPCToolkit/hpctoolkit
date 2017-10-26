@@ -294,7 +294,6 @@ hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, FILE* fs,
 int
 hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, FILE* fs)
 {
-  hpcfmt_int4_fwrite(metric_tbl->len, fs);
   for (uint32_t i = 0; i < metric_tbl->len; i++) {
     hpcrun_fmt_metricDesc_fwrite(metric_tbl->lst[i], fs);
   }
