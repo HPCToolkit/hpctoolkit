@@ -423,6 +423,8 @@ static void
 uw_recipe_map_unpoison(uintptr_t start, uintptr_t end)
 {
   ilmstat_btuwi_pair_t* ilmstat_btuwi =	uw_recipe_map_inrange_find(start);
+  if (ilmstat_btuwi == NULL)
+    return;
 
   uw_recipe_map_report("uw_recipe_map_unpoison", (void *) start, (void *) end);
 

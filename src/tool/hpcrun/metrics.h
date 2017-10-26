@@ -140,12 +140,16 @@ int hpcrun_set_new_metric_info_and_period(const char* name,
 					  MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
 int hpcrun_set_new_metric_info(const char* name);
 
+void hpcrun_set_metric_info(int metric_id, const char* name);
+
 void hpcrun_set_metric_name(int metric_id, char* name);
 
 // metric set operations
 
 extern metric_set_t* hpcrun_metric_set_new(void);
 extern cct_metric_data_t* hpcrun_metric_set_loc(metric_set_t* s, int id);
+extern void hpcrun_metric_std_set(int metric_id, metric_set_t* set,
+				  hpcrun_metricVal_t value);
 extern void hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
 				  hpcrun_metricVal_t incr);
 extern metric_set_t* hpcrun_add_current_metric(metric_data_list_t *rv);

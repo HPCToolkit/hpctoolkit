@@ -624,6 +624,7 @@ METHOD_FN(display_events)
 
 #define ss_name itimer
 #define ss_cls SS_HARDWARE
+#define ss_sort_order  20
 
 #include "ss_obj.h"
 
@@ -680,10 +681,12 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   }
   metric_incr = cur_time_us - TD_GET(last_time_us);
 #endif
+  hpcrun_metricVal_t metric_delta = {.i = metric_incr};
 
   int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
-  sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_incr,
-					    0/*skipInner*/, 0/*isSync*/);
+  sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 
+			metric_delta,
+					    0/*skipInner*/, 0/*isSync*/, NULL);
   blame_shift_apply(metric_id, sv.sample_node, metric_incr);
 
   if (hpcrun_is_sampling_disabled()) {

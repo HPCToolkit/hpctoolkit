@@ -82,7 +82,7 @@ m4_include(config/hpc-mpiutils.m4)
 # Initialization: 
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [2017.06],
+AC_INIT([hpctoolkit], [2017.10],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -2115,6 +2115,141 @@ AC_MSG_RESULT([$use_papi_c_cupti])
 AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
 
 #-------------------------------------------------
+# Option: --with-perfmon=PATH
+#
+# If specified, then use PATH as the root of the perfmon tree
+# May be absolute or relative path.
+#
+# Note: using perfmon is not strictly necessary, but if not used,
+# then you cannot use event name PMU
+#-------------------------------------------------
+
+PERFMON=no
+PERFMON_STATIC=no
+PERFMON_COPY=no
+
+PERFMON_CFLAGS=
+PERFMON_LDFLAGS_DYN=
+PERFMON_LDFLAGS_STAT=
+PERFMON_LIB=
+
+OPT_PERFMON=
+
+if test "$use_externals" = yes && test "x$ext_perfmon_prefix" != x ; then
+  PERFMON="$ext_perfmon_prefix"
+fi
+
+AC_ARG_WITH([perfmon],
+  [AS_HELP_STRING([--with-perfmon=PATH],
+	  [path to perfmon2 (pfmlib4) build or install directory
+	   (default is NO)])],
+  [PERFMON="$withval"],
+  [])
+
+AC_MSG_CHECKING([for perfmon])
+
+if test -f "${PERFMON}/include/perfmon/pfmlib.h"; then
+  PERFMON_CFLAGS="-I${PERFMON}/include -D ENABLE_PERFMON"
+  OPT_PERFMON=yes
+fi
+
+case "$PERFMON" in
+ /* )
+ for lib in $multilib_path ; do
+   perfmon_libdir="${PERFMON}/$lib"
+   if test -f "${perfmon_libdir}/libpfm.a"; then
+     PERFMON_STATIC=yes
+     PERFMON_LDFLAGS_STAT="${perfmon_libdir}/libpfm.a"
+     PERFMON_LIB="$perfmon_libdir"
+   fi
+   if test -f "${perfmon_libdir}/libpfm.so"; then
+     PERFMON_LDFLAGS_DYN="-L${perfmon_libdir} -lpfm"
+     PERFMON_COPY=yes
+     PERFMON_LIB="$perfmon_libdir"
+   fi
+   if test "x$PERFMON_LIB" != x;  then
+     break
+   fi
+ done
+ if test "x$PERFMON_LIB" = x ; then
+   AC_MSG_NOTICE([Perfmon lib: $lib])
+   AC_MSG_ERROR([invalid Perfmon Libpf4 directory: $PERFMON])
+ fi
+ ;;
+ no )
+   ;;
+ *)
+   AC_MSG_ERROR([Perfmon directory must be absolute path: $PERFMON])
+esac
+
+AC_MSG_RESULT([$PERFMON])
+AC_MSG_NOTICE([Perfmon static: $PERFMON_STATIC])
+
+AM_CONDITIONAL(OPT_PERFMON, [test "$OPT_PERFMON" = yes])
+
+AC_SUBST([PERFMON_CFLAGS])
+AC_SUBST([PERFMON_LIB])
+AC_SUBST([PERFMON_LDFLAGS_DYN])
+AC_SUBST([PERFMON_LDFLAGS_STAT])
+AC_SUBST([PERFMON_COPY])
+
+#-------------------------------------------------
+# check if perf event is available
+#-------------------------------------------------
+
+AC_MSG_CHECKING([if perf event is available])
+
+PERF_EVENT_PARANOID="-1"
+PERF_EVENT_PARANOID_PATH="/proc/sys/kernel/perf_event_paranoid"
+PERF_EVENT_AVAIL="no"
+
+if test -f $PERF_EVENT_PARANOID_PATH; then
+  PERF_EVENT_PARANOID=`cat "$PERF_EVENT_PARANOID_PATH"`
+fi
+
+AC_COMPILE_IFELSE([
+AC_LANG_SOURCE([[
+#include <linux/perf_event.h>
+
+static struct perf_event_attr attr;
+void check_kernel()
+{
+  attr.sample_id_all = 1;
+}
+]])], [perf_event=yes], [perf_event=no])
+
+
+AC_MSG_RESULT([$perf_event])
+AC_MSG_NOTICE([value of perf paranoid in ${PERF_EVENT_PARANOID_PATH} : ${PERF_EVENT_PARANOID} ])
+
+AM_CONDITIONAL(OPT_ENABLE_PERF_EVENT, [test "$perf_event" != no])
+
+# substitution
+AC_SUBST([PERF_EVENT_PARANOID])
+
+#-------------------------------------------------
+# check if the kernel is 4.3 or newer
+#-------------------------------------------------
+
+AC_MSG_CHECKING([if the kernel is 4.3 or newer])
+
+AC_COMPILE_IFELSE([
+AC_LANG_SOURCE([[
+#include <linux/perf_event.h>
+
+static struct perf_event_attr attr;
+void check_kernel()
+{
+  attr.context_switch = 1;
+}
+]])], [kernel_4_3=yes], [kernel_4_3=no])
+
+AC_MSG_RESULT([$kernel_4_3])
+
+AM_CONDITIONAL([OPT_ENABLE_KERNEL_4_3], [test "$kernel_4_3" = yes])
+
+
+#-------------------------------------------------
 # Option: --with-symtabAPI=PATH
 #-------------------------------------------------
 
@@ -3680,6 +3815,7 @@ AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
 AC_MSG_NOTICE([  hpcstruct:    $cfg_mesg])
+AC_MSG_NOTICE([  perf-events:  ${perf_event}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
 AC_MSG_NOTICE([  Path:      $CC_PATH])
@@ -3708,6 +3844,7 @@ AC_MSG_NOTICE([  monitor/old:  ${MONITOR}])
 AC_MSG_NOTICE([  libunwind:    ${LIBUNWIND}])
 AC_MSG_NOTICE([  lzma:         ${LZMA}])
 AC_MSG_NOTICE([  OpenAnalysis: ${OA}])
+AC_MSG_NOTICE([  Perfmon:      ${PERFMON}])
 AC_MSG_NOTICE([  symtabAPI:    ${SYMTABAPI}])
 AC_MSG_NOTICE([  xed2:         ${XED2}])
 AC_MSG_NOTICE([  xerces:       ${XERCES}])

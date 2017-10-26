@@ -509,7 +509,7 @@ hpcrun_cuda_kernel_callback(void *userdata,
 	  TMSG(CUDA, "sampling call path for metric_id = %d", metric_id);
 	  hpcrun_sample_callpath(&uc, metric_id, eventValues[i]/*metricIncr*/, 
 				 CUPTI_LAUNCH_CALLBACK_DEPTH/*skipInner*/, 
-				 0/*isSync*/);
+				 0/*isSync*/, NULL);
 	  TMSG(CUDA, "sampled call path for metric_id = %d", metric_id);
 	}
     }

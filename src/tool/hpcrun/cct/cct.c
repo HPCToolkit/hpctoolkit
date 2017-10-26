@@ -101,11 +101,9 @@ struct cct_node_t {
   int32_t persistent_id;
   
  // bundle abstract address components into a data type
-
   cct_addr_t addr;
 
   bool is_leaf;
-
   
   // ---------------------------------------------------------
   // tree structure

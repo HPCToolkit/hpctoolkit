@@ -369,6 +369,7 @@ reduce(T object, int myRank, int maxRank, MPI_Comm comm = MPI_COMM_WORLD)
 // ------------------------------------------------------------------------
 void
 broadcast(Prof::CallPath::Profile*& profile, int myRank, int maxRank, 
+    int rootRank,
 	  MPI_Comm comm = MPI_COMM_WORLD);
 
 

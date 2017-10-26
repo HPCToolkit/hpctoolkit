@@ -149,6 +149,23 @@ extern __thread bool hpcrun_thread_suppress_sample;
  * method functions
  *****************************************************************************/
 
+// strip the prefix "papi::" from an event name, if exists.
+// this allows forcing a papi event over a perf event.
+// allow case-insensitive and any number of ':'
+static const char *
+strip_papi_prefix(const char *str)
+{
+  if (strncasecmp(str, "papi:", 5) == 0) {
+    str = &str[5];
+
+    while (str[0] == ':') {
+      str = &str[1];
+    }
+  }
+
+  return str;
+}
+
 static void
 METHOD_FN(init)
 {
@@ -320,6 +337,8 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
+  ev_str = strip_papi_prefix(ev_str);
+
   TMSG(PAPI, "supports event");
   if (papi_unavail) { return false; }
 
@@ -350,6 +369,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     char name[1024];
     int evcode;
     long thresh;
+
+    event = (char *) strip_papi_prefix(event);
 
     TMSG(PAPI,"checking event spec = %s",event);
     if (! hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh, DEFAULT_THRESHOLD)) {
@@ -575,6 +596,7 @@ METHOD_FN(display_events)
 
 #define ss_name papi
 #define ss_cls SS_HARDWARE
+#define ss_sort_order  80
 
 #include "ss_obj.h"
 
@@ -679,9 +701,9 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     int metric_id = hpcrun_event2metric(&_papi_obj, my_events[i]);
 
     TMSG(PAPI_SAMPLE,"sampling call path for metric_id = %d", metric_id);
-
-    sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
-			   0/*skipInner*/, 0/*isSync*/);
+    hpcrun_metricVal_t value = {.i=1};
+    sample_val_t sv = hpcrun_sample_callpath(context, metric_id, value/*metricIncr*/, 
+			   0/*skipInner*/, 0/*isSync*/, NULL);
 
     blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
   }
@@ -696,8 +718,9 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     papi_source_info_t *psi = td->ss_info[self->sel_idx].ptr;
     for (i = 0; i < nevents; i++) {
       if (derived[i]) {
+        hpcrun_metricVal_t value = {.i = values[i] - psi->prev_values[i]};
 	hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),
-			       values[i] - psi->prev_values[i], 0, 0);
+			       value, 0, 0, NULL);
       }
     }
 
